@@ -122,6 +122,17 @@ class UAEPExecutor:
         else:
             self._middleware = MiddlewarePipeline()
 
+    @staticmethod
+    def _retention_days_from_metadata(metadata: dict[str, Any]) -> int | None:
+        raw = metadata.get("memory_retention_days")
+        if raw is None:
+            return None
+        try:
+            days = int(raw)
+        except (TypeError, ValueError):
+            return None
+        return days if days >= 1 else None
+
     @property
     def middleware(self) -> MiddlewarePipeline:
         return self._middleware
@@ -522,6 +533,8 @@ class UAEPExecutor:
             task_id=task_id,
             access_policy=access_policy,
             limits=self._memory_limits,
+            hook_registry=self._middleware.hooks,
+            retention_days=self._retention_days_from_metadata(request.metadata),
         )
         shared = load_shared_task_context_from_metadata(request.metadata)
         if shared is not None:
@@ -544,6 +557,7 @@ class UAEPExecutor:
             read_only=policy.read_only,
             write_denied_namespaces=denied,
             list_limit=policy.list_limit,
+            scope_boundary=policy.scope_boundary,
         )
 
     def _attach_shadow_workspace(

@@ -1,11 +1,16 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Bridge Tier-3 environment into Nexus RuntimeConfig (Phase H-APP.1.5)."""
+"""Bridge Tier-3 environment into Nexus RuntimeConfig (Phase H-APP.1.5, MEM-1)."""
 
 from __future__ import annotations
 
 from intergrax.agents.reference_harness import LabHarnessContext
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+from intergrax.applications._shared.memory_runtime_bridge import apply_environment_profiles_to_runtime_config
+from intergrax.applications._shared.memory_wiring import (
+    build_session_manager_from_environment,
+    resolve_memory_platform_wiring,
+)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import runtime_policies_for_execution_mode
@@ -14,8 +19,6 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
-from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 
@@ -47,9 +50,7 @@ def materialize_runtime_config(
     pipeline: RuntimePipeline | None = None,
 ) -> RuntimeConfig:
     """
-    Map ``ApplicationEnvironmentProfile`` → ``RuntimeConfig`` (H-APP.1.5).
-
-    Replaces scattered ``build_lab_agent_runtime_config`` call sites over time.
+    Map ``ApplicationEnvironmentProfile`` → ``RuntimeConfig`` (H-APP.1.5, MEM-1).
     """
     ctx_profile = env.context_profile
     trace_path: str | None = None
@@ -57,6 +58,7 @@ def materialize_runtime_config(
     policy_bundle: RuntimePolicyBundle | None = None
     modality_profile = env.modality_profile
     tool_wiring_context = None
+    integration_profile = env.integration_profile
 
     if isinstance(harness_ctx, LabHarnessContext):
         strict = harness_ctx.strict_harness
@@ -72,6 +74,8 @@ def materialize_runtime_config(
             trace_path = str(harness_ctx.trace_db_path)
         policy_bundle = harness_ctx.policy_bundle
         tool_wiring_context = harness_ctx.tool_wiring_context
+        if harness_ctx.integration_profile is not None:
+            integration_profile = harness_ctx.integration_profile
 
     resolved_llm = resolve_llm_adapter(env, agent_override=llm_adapter)
 
@@ -85,9 +89,11 @@ def materialize_runtime_config(
         modality_profile=modality_profile,
         tool_wiring_context=tool_wiring_context,
         runtime_policies=runtime_policies_for_execution_mode(env.execution_mode),
+        integration_profile=integration_profile,
     )
     if pipeline is not None:
         config.pipeline = pipeline
+    apply_environment_profiles_to_runtime_config(config, env)
     return apply_policy_bundle_to_runtime_config(config, policy_bundle)
 
 
@@ -99,7 +105,7 @@ def build_runtime_context_from_environment(
     llm_adapter: LLMAdapter | None = None,
     pipeline: RuntimePipeline | None = None,
 ) -> RuntimeContext:
-    """Build ``RuntimeContext`` from environment profile."""
+    """Build ``RuntimeContext`` from environment profile with resolved memory backends."""
     config = materialize_runtime_config(
         request,
         harness_ctx,
@@ -107,7 +113,17 @@ def build_runtime_context_from_environment(
         llm_adapter=llm_adapter,
         pipeline=pipeline,
     )
+    integration_profile = config.integration_profile or env.integration_profile
+    memory_wiring = resolve_memory_platform_wiring(
+        env,
+        integration_profile=integration_profile,
+    )
+    session_manager = build_session_manager_from_environment(
+        env,
+        integration_profile=integration_profile,
+        memory_wiring=memory_wiring,
+    )
     return RuntimeContext.build(
         config=config,
-        session_manager=SessionManager(storage=InMemorySessionStorage()),
+        session_manager=session_manager,
     )

@@ -35,6 +35,7 @@ class SQLiteIntegrationConfig(BaseIntegrationConfig):
     idempotency_db: Optional[Path] = None
     session_db: Optional[Path] = None
     organization_db: Optional[Path] = None
+    user_profile_db: Optional[Path] = None
 
     @classmethod
     def from_env(cls, **overrides: object) -> SQLiteIntegrationConfig:

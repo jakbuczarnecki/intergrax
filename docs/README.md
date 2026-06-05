@@ -1,6 +1,6 @@
 # Intergrax — Documentation
 
-**Last updated:** 2026-06-02 (plan §4.0a infrastructure vs business split; Phase AA/DX mostly Done; K.1/K.2 deferred)
+**Last updated:** 2026-06-02 (Phase MEM 48/48 Done; gate 558; K.1/K.2 deferred)
 
 The `docs/` folder holds the canonical platform documentation.
 
@@ -12,7 +12,7 @@ The `docs/` folder holds the canonical platform documentation.
 |----------|---------|
 | [**INTERGRAX_DEVELOPMENT_STRATEGY.md**](INTERGRAX_DEVELOPMENT_STRATEGY.md) | **Strategic goal** — decision hierarchy, lab vs production harness, work cycle |
 | [**intergrax_runtime_architecture.md**](intergrax_runtime_architecture.md) | **Architecture canon** — tiers, Nexus, UAEP §42, retry (§31), observability & trace storage (§33), RAG stack (§7.1.2) |
-| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; **§4.0a** scope split; **Phase AA** (Band 2g); **§6.3a** business backlog; Appendix A–I + Phase V + **Phase P-Ext** |
+| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; **§4.0a** scope split; **Phase MEM** (Band 2h, 48 tasks); **Phase AA** (Band 2g); **§6.3a** business backlog; Appendix A–I + Phase V + **Phase P-Ext** |
 | [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) | **Agent workflow** — scaffold → register → run → inspect → evaluate |
 | [**INTEGRATIONS.md**](INTEGRATIONS.md) | **Integration catalog** — all implemented providers, contracts, wiring, usage links |
 | [**TOOLS.md**](TOOLS.md) | **Tool catalog** — atomic LLM/MCP tools, engine status, four-layer stack |
@@ -50,7 +50,8 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | Understand strategic direction | [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) |
 | Understand the platform | Strategy doc, then implementation plan §0, then architecture canon §1–§5 |
 | Infrastructure vs business scope | [INTERGRAX_IMPLEMENTATION_PLAN.md §4.0a](INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business) |
-| See what to implement next (harness) | [§6.1z implementation queue](INTERGRAX_IMPLEMENTATION_PLAN.md#61z-harness-implementation-queue-consolidated) + [§6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) maintenance |
+| See what to implement next (harness) | [§6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) maintenance (Phase MEM **Done**) |
+| Memory platform (STM/LTM/context/hooks) | [Phase MEM](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem--memory-platform-completion) · **Done** 48/48 |
 | Business / product backlog only | [§6.3a](INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated) — after explicit product decision |
 | Understand Phase V sequence/dependencies | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase V — Execution matrix** |
 | See Phase V KPI thresholds | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase V — KPI thresholds and acceptance metrics** |
@@ -98,6 +99,8 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | **Phase W-ML — Model & modality plane** | **Docs Done** · implementation Planned — [MODALITY.md](MODALITY.md) · canon §7.1.9 |
 | **Phase V execution controls** | **Defined** — execution matrix, KPI thresholds, cadence, ownership, L3/L4 gates in Phase V section |
 | **Harness completion (§4.1)** | **Done** (2026-06-02) |
+| **Phase AA — Agents & applications conformance** | **Platform Done** (2026-06-02) |
+| **Phase MEM — Memory platform** | **Done** (48/48, gate 558) |
 | **Phase K — Business agents** | **End of plan** — §6.3; **not** default next |
 
 Gate: `uv run pytest -m gate -q` — **481 passed** (2026-06-02)

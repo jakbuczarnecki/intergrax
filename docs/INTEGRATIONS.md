@@ -225,7 +225,7 @@ trace_store = open_trace_store_from_profile(profile)
 |----------|----------|-------------|
 | `relational_store` | `RelationalStore` | SQL persistence, analytics warehouses |
 | `document_store` | `DocumentStore` | Flexible JSON / wide-column documents |
-| `key_value_cache` | `KeyValueCache` | Idempotency, rate limits, locks |
+| `key_value_cache` | `KeyValueCache` | Idempotency, rate limits, locks — **not** session or user LTM memory (see Phase MEM / `AGENT_CREATION_GUIDE` Appendix G) |
 | `message_bus` | `MessageBus` | Async task queues, worker transport |
 | `object_storage` | `ObjectStorage` | Artifacts, exports, large file handoff |
 | `vector_store` | `VectorStore` | RAG embedding indexes |

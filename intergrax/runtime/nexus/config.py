@@ -5,6 +5,8 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, Optional, Sequence, TYPE_CHECKING
 
+from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
+from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.runtime.nexus.config_types import ToolChoiceMode, ToolsContextScope
 
 if TYPE_CHECKING:
@@ -192,6 +194,14 @@ class RuntimeConfig:
     enable_user_profile_memory: bool = True
     enable_org_profile_memory: bool = True
     enable_user_longterm_memory: bool = True
+    enable_task_memory: bool = False
+    memory_retention_days: Optional[int] = None
+    memory_scope_boundary: str = "tenant"
+
+    # Context assembly (Phase MEM-1.2, MEM-CTX.1)
+    context_budget_policy: Optional["ContextBudgetPolicy"] = None
+    task_context_assembly_options: Optional[TaskContextAssemblyOptions] = None
+    context_decision_profile: Optional[Dict[str, Any]] = None
 
     # ------------------------------------------------------------------
     # MISC METADATA

@@ -49,6 +49,8 @@ HOOK_COVERAGE: dict[HookPoint, HookCoverage] = {
     HookPoint.AFTER_FINALIZATION: HookCoverage.WIRED,
     HookPoint.BEFORE_TRACE_PERSIST: HookCoverage.WIRED,
     HookPoint.AFTER_TRACE_PERSIST: HookCoverage.WIRED,
+    HookPoint.BEFORE_MEMORY_WRITE: HookCoverage.WIRED,
+    HookPoint.AFTER_MEMORY_WRITE: HookCoverage.WIRED,
 }
 
 

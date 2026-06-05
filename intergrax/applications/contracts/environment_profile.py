@@ -53,6 +53,17 @@ class ApplicationSecurityProfile(BaseModel):
     tenant_security_verify_enabled: bool = True
 
 
+class ContextDecisionProfile(BaseModel):
+    """Unified memory vs context vs RAG assembly policy (Phase MEM-CTX.1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    include_session_history: bool = True
+    prefer_longterm_memory: bool = True
+    prefer_rag_when_enabled: bool = True
+    max_memory_entries_in_context: int = Field(default=8, ge=1, le=64)
+
+
 class ContextProfile(BaseModel):
     """Context assembly defaults for Nexus (Phase H-APP.4.1)."""
 
@@ -62,6 +73,7 @@ class ContextProfile(BaseModel):
         default_factory=TaskContextAssemblyOptions
     )
     budget_policy: ContextBudgetPolicy | None = None
+    decision: ContextDecisionProfile = Field(default_factory=ContextDecisionProfile)
     enable_rag: bool = True
     enable_websearch: bool = True
 
@@ -74,6 +86,7 @@ class MemoryProfile(BaseModel):
     enable_user_memory: bool = False
     enable_org_memory: bool = False
     enable_long_term_memory: bool = False
+    enable_task_memory: bool = False
     retention_days: int | None = Field(default=None, ge=1)
     scope_boundary: str = "tenant"
 
@@ -208,6 +221,12 @@ class ApplicationEnvironmentProfile(BaseModel):
             modality_profile=lab_default_modality_profile(),
             llm_profile=LLMProfile.lab(),
             context_profile=ContextProfile(enable_rag=True, enable_websearch=True),
+            memory_profile=MemoryProfile(
+                enable_user_memory=True,
+                enable_org_memory=True,
+                enable_long_term_memory=True,
+                enable_task_memory=True,
+            ),
             reliability_profile=ReliabilityProfile(
                 long_running_scheduler_enabled=True,
                 idempotency_enabled=True,

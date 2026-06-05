@@ -2590,6 +2590,8 @@ Rules:
 - Agents must not silently mutate global memory.
 - Sensitive memory writes should require policy checks.
 
+**Graph RAG vs agent memory (Phase MEM):** `intergrax/rag/graph/` implements **document knowledge graphs** for retrieval — not user entity / episodic memory (Zep-style). Agent-mutable memory uses §27 stores and `MemoryView`; do not conflate Graph RAG nodes with LTM entries.
+
 ---
 
 # 28. Context Management

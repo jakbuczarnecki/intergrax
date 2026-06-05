@@ -19,6 +19,7 @@ ConflictPolicy = Literal["error", "skip", "override", "warn_override"]
 EP_INTEGRATIONS = "intergrax.integrations"
 EP_TOOLS = "intergrax.tools"
 EP_SKILLS = "intergrax.skills"
+EP_MEMORY_STORES = "intergrax.memory_stores"
 
 T = TypeVar("T")
 

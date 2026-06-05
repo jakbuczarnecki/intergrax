@@ -1,6 +1,12 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Reference :class:`IntegrationPlugin` for external packages."""
+"""Reference :class:`IntegrationPlugin` for external packages.
+
+This example implements ``KeyValueCache`` for integration idempotency/rate-limit
+patterns — it is **not** wired to Nexus ``TaskMemory`` or ``MemoryView``.
+For agent task KV use ``wire_task_memory_from_profile``; for user LTM use
+``UserProfileStore`` / sqlite bundle (Phase MEM).
+"""
 
 from __future__ import annotations
 

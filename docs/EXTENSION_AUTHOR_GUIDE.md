@@ -226,3 +226,20 @@ pytest tests/unit/core/plugins tests/unit/integrations/test_external_plugin.py -
 | `RuntimePlugin` / `plugin_bootstrap.py` | Nexus middleware, metrics, persistence hooks |
 
 Agents consume **tools** via `ToolRegistry` and **skills** via `SkillResolver` → `allowed_tools`. Agents MUST NOT import vendor SDKs or integration slugs directly when a catalog tool exists.
+
+---
+
+## 9. Memory store plugins (Phase MEM)
+
+Entry point group: `intergrax.memory_stores`
+
+| Protocol | Factory method | Replaces |
+|----------|----------------|----------|
+| `UserProfileStorePlugin` | `create_user_profile_store(**kwargs)` | Default `InMemoryUserProfileStore` / sqlite bundle |
+| `SessionStoragePlugin` | `create_session_storage(**kwargs)` | Default `InMemorySessionStorage` / sqlite bundle |
+
+Bootstrap: `intergrax.core.memory_bootstrap.bootstrap_memory_stores(discover_entry_points=True)`.
+
+Reference fixture: `tests/fixtures/plugin_packages/memory_store_plugin/`.
+
+Swap backends in Tier-3 by registering an EP plugin — agents still use `UserProfileManager` / `SessionManager`; never import store implementations from Tier-2.

@@ -1039,7 +1039,77 @@ Prefer `python -m intergrax.scaffold new-application <name> --profile lab|produc
 
 ## Appendix G — Memory & RAG naming (Phase Q)
 
-### Four memory stores
+### Four memory stores (canon §27 mapping)
+
+Canon §27 defines five memory **types**; runtime implements **four operational stores** plus trace and RAG:
+
+| Canon type | Runtime store | Module |
+|------------|---------------|--------|
+| Task memory | Task KV (`TaskMemory` + `MemoryView`) | `runtime/task_memory/` |
+| Agent local memory | Same task KV namespaces (UAEP) | `PolicyScopedMemoryView` |
+| User / org memory | `UserProfileManager` + `OrganizationProfileManager` | `intergrax/memory/`, `runtime/organization/` |
+| Long-term knowledge | RAG vectorstore (not agent-mutable memory) | `rag/` |
+| Execution trace | `RunTraceWriter` / `RuntimeEvent` (immutable) | `runtime/nexus/tracing/` |
+
+Short-term session history uses `SessionManager` + `SessionStorage` (SQLite when `relational_store=sqlite` on `IntegrationProfile`).
+
+**MemoryKind tags** (`USER_FACT`, `PREFERENCE`, `SESSION_SUMMARY`, `ORG_FACT`, `POLICY`) classify LTM **entries** — not a full episodic/semantic/procedural taxonomy (IDEAL vision only).
+
+### Session vs checkpoint vs task KV (LangGraph thread analogy)
+
+| Concept | Intergrax | Persists when |
+|---------|-----------|---------------|
+| Thread / session | `SessionManager` + `session_id` | `INTERGRAX_SESSION_DB` / sqlite bundle |
+| Checkpointer | `SQLiteTaskCheckpointStore` (long-running UAEP) | `INTERGRAX_TASK_CHECKPOINTS_DB` |
+| Scoped KV / store | `TaskMemory` + `MemoryView` namespaces | `INTERGRAX_TASK_MEMORY_DB` |
+
+Use **session** for turn-by-turn chat; **task KV** for per-run agent scratch state; **checkpoints** for resumable UAEP loops — do not mix them.
+
+### Persistence backends (Appendix G matrix)
+
+| Layer | In-memory | SQLite (lab default) | Notes |
+|-------|-----------|----------------------|-------|
+| Task KV | tests | `INTERGRAX_TASK_MEMORY_DB` | `wire_task_memory_from_profile` |
+| Session | fallback | sqlite bundle | `memory_wiring.resolve_memory_platform_wiring` |
+| User LTM | tests | `intergrax_user_profile.db` in bundle | `SQLiteUserProfileStore` |
+| Org profile | tests | sqlite bundle | `SQLiteOrganizationProfileStore` |
+| Redis | — | — | **Integration cache only** — not session/LTM |
+
+### Context compression strategy (§28.1)
+
+| Mechanism | Location | Strategy |
+|-----------|----------|----------|
+| Context budget | `ContextBudgetPolicy` on `ContextProfile` | char + token-estimate trim |
+| Summary tiers | `TaskContextAssemblyOptions` | FULL / SUMMARY_ONLY / STRUCTURED_ONLY / MINIMAL |
+| History layer | `engine_history_layer.py` | `SUMMARIZE_OLDEST`, truncate fallback |
+| LTM limits | `RuntimeConfig` | `max_longterm_entries_per_query`, `max_longterm_tokens` |
+
+Configure via `ApplicationEnvironmentProfile.context_profile` — mapped by `materialize_runtime_config` (Phase MEM).
+
+### Org memory scope
+
+Organization memory in Intergrax is **profile + instructions** (`OrganizationProfileManager`) — not a full shared episodic or team knowledge product. Use RAG / document stores for org-wide knowledge bases; use org profile for tone, constraints, and system instructions.
+
+### Task memory wiring vs Nexus LTM steps
+
+`wire_task_memory_from_profile` enables the **task KV database** when `MemoryProfile.enable_task_memory` (or user/org/LTM flags) is set. It does **not** auto-register Nexus runtime steps for user/org LTM — those flow through `SessionManager` profile managers when `enable_user_memory` / `enable_org_memory` are true on the environment profile.
+
+### MemoryView namespaces + delegation
+
+- Default namespaces: agent-specific keys under `PolicyScopedMemoryView`
+- Delegation: `task_id/delegation/{node_id}/` (see `delegation_memory.py`)
+- Shared handoff: `shared_task_context` metadata bridge
+
+### Recovery semantics
+
+| Layer | Key | Survives restart (sqlite lab) |
+|-------|-----|------------------------------|
+| Task KV | `tenant_id` + `task_id` + namespace | Yes |
+| Session | `session_id` | Yes |
+| User LTM | `tenant_id` + `user_id` | Yes (sqlite bundle) |
+| Checkpoint | `task_id` + UAEP cursor | Yes |
+
+### Four memory stores (legacy table)
 
 | Store | Module | When to use |
 |-------|--------|-------------|
@@ -1048,7 +1118,7 @@ Prefer `python -m intergrax.scaffold new-application <name> --profile lab|produc
 | Task KV | `TaskMemory` (`INTERGRAX_TASK_MEMORY_DB`) | Per-task scratch state, UAEP steps |
 | Shared graph context | `shared_task_context` metadata | Multi-agent handoff on one Nexus task |
 
-Enable SQLite task memory in Tier-3 via `wire_task_memory` from `intergrax.applications._shared.task_memory_wiring` and `.env.example` (`INTERGRAX_TASK_MEMORY_DB`). Lab factory calls this when `LAB_*` harness is active.
+Enable SQLite task memory in Tier-3 via `wire_task_memory_from_profile` and `memory_wiring` (Phase MEM). Lab `ApplicationEnvironmentProfile` enables task + user + org memory by default.
 
 ### Three “context builders”
 

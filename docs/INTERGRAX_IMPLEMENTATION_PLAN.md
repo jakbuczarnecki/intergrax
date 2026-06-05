@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-02) — **Harness platform bands 1–2f Done** (Q→V, P-Ext, W-ML, **W-OPS**, **H-APP**, **DX** 47/47); **Band 2g platform Done** — [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy); **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **534 passed**; **operational L3** = `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce`  
+Status: Working draft (2026-06-02) — **Harness platform bands 1–2h Done** (Q→V, P-Ext, W-ML, **W-OPS**, **H-APP**, **DX**, **AA**, **MEM** 48/48); **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **558 passed**; **operational L3** = `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce`  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -46,7 +46,8 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Tier-3 application environment audit → full configurability | [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) → **Phase H-APP** · **§6.2x** |
 | Developer authoring UX audit (LangGraph-like entry, measurable TTFRun) | **Phase DX** (below) · **§6.2y** · source: harness DX audit 2026-06-03 (conversation + H-APP gap analysis) |
 | Agents & applications conformance audit (structure, scaffold, per-agent/app docs, deploy) | **Phase AA** (below) · **§6.2z** · source: Tier-2/Tier-3 audit 2026-06-03 (conversation) |
-| Infrastructure vs business scope split | **§4.0a** · [§6.1z](#61z-harness-implementation-queue-consolidated) · [§6.3a](#63a-business-backlog-register-consolidated) |
+| Memory platform audit (STM/LTM/org/task/context/hooks/persistence) | **Phase MEM** (below) · **§6.2aa** · **§6.1aa** · source: memory audit 2026-06-02 (conversation) |
+| Infrastructure vs business scope split | **§4.0a** · [§6.1aa](#61aa-harness-implementation-queue-memory-platform) · [§6.3a](#63a-business-backlog-register-consolidated) |
 
 ---
 
@@ -151,7 +152,8 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Harness production hardening (Phase U)** | **Done** | No | U-Sec + U-Pol + U-Con + U-Typ + U-Arch + U-CI; Appendix G |
 | **Harness architecture hardening (Phase V)** | **Done** | No (harness-only) | Capability graph, lifecycle governance, prompt/eval/context/security/cost/metrics/MA/KG hardening |
 | **Operational harness L3 (Phase W-OPS)** | **Done** (code) | No (harness-only) | Ops sign-off: `release_cycles.json` or `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce` |
-| **Application environment profile (Phase H-APP)** | **Done** (2026-06-03) | No (harness-only) | [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7 — 43 tasks; Band **2e** |
+| **Application environment profile (Phase H-APP)** | **Done** (2026-06-03) | No (harness-only) | [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7 — 43 tasks; memory bridge gap → [Phase MEM](#phase-mem--memory-platform-completion) |
+| **Memory platform (Phase MEM)** | **Done** (~3,5/5 post-closeout) | No (harness-only) | Memory platform **48/48** — gate **558** |
 | Regression gate | **470 passed** | No | Must stay green after each harness PR |
 
 ---
@@ -200,7 +202,8 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | **Plugin catalogs (Phase P-Ext)** | **Done** (2026-06-02) | [Phase P-Ext](#phase-p-ext--plugin-catalogs-integrations-tools-skills) · [P-Ext.6 paydown](#p-ext6--production-closure-paydown) · Appendix I |
 | **Application environment (Phase H-APP)** | **Done** (2026-06-03) | [Phase H-APP](#phase-h-app--tier-3-application-environment-full-configurability) · 43 tasks from application-layer audit |
 | **Developer authoring UX (Phase DX)** | **Done** (2026-06-02) | [Phase DX](#phase-dx--developer-authoring-experience-fast-environment--agent-builds) · **47/47 Done** — [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business) |
-| **Agents & applications conformance (Phase AA)** | **Platform Done** (2026-06-02) | [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy) · platform **Done** ([§6.1z](#61z-harness-implementation-queue-consolidated)); domain **Deferred** — [§6.3a](#63a-business-backlog-register-consolidated) |
+| **Agents & applications conformance (Phase AA)** | **Platform Done** (2026-06-02) | [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy) · platform **Done**; domain **Deferred** — [§6.3a](#63a-business-backlog-register-consolidated) |
+| **Memory platform (Phase MEM)** | **Done** (2026-06-02) | [Phase MEM](#phase-mem--memory-platform-completion) · **48/48** |
 | Product agents (Phase K) | **Deferred** | K.1/K.2 — end of priority list |
 | Tier-3 product applications | **Deferred** | New apps / product routes — after harness backlog |
 
@@ -2369,7 +2372,7 @@ Wave W-OPS-P2 (hygiene):    W-OPS.13 → W-OPS.14 → W-OPS.15
 
 ## Phase H-APP — Tier-3 Application Environment (full configurability)
 
-**Status:** **Done** (2026-06-03) — **43** deliverables (`H-APP.0.1` … `H-APP.6.3`); source audit: [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7.  
+**Status:** **Done** (2026-06-03) — **43** deliverables; memory bridge via Phase MEM **Done**; source audit: [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7.  
 **Prerequisites:** Phases **V**, **P-Ext**, **W-ML**, **W-OPS**, §4.1 **Done**.  
 **Goal:** Close every **Częściowa** / **Luka** topic from the harness application-layer audit — full Tier-3 configurability of agent workspaces via `ApplicationEnvironmentProfile` and unified wiring (IDEAL §17), **without** Band 3 product agents (K.1/K.2).  
 **Priority ladder:** **Band 2e** (§4.0) — default implementation queue after §6.1 maintenance.  
@@ -2443,7 +2446,7 @@ Total: 43
 | H-APP.3.6 | H3 | Integration test: lab graph spec echo → mock chain + trace | **Done** | Medium | `tests/integration/applications/test_lab_graph_spec.py` |
 | H-APP.4.1 | H4 | **`ContextProfile`** — assembly options, budget presets, RAG/web toggles | **Done** | High | Pydantic model |
 | H-APP.4.2 | H4 | **`MemoryProfile`** — user/org/long-term flags, retention, scope boundaries | **Done** | High | Pydantic model |
-| H-APP.4.3 | H4 | Wire context/memory into `materialize_runtime_config` | **Done** | High | `runtime_config_bridge` only |
+| H-APP.4.3 | H4 | Wire context/memory into `materialize_runtime_config` | **Done** | High | Phase MEM **MEM-1.*** — `memory_runtime_bridge.py`, `memory_wiring.py` |
 | H-APP.4.4 | H4 | **`wire_task_memory_from_profile(env)`** — unify task memory under environment | **Done** | Medium | `_shared/task_memory_wiring.py` |
 | H-APP.4.5 | H4 | **`ReliabilityProfile`** — idempotency, circuit breaker, checkpoint, scheduler | **Done** | High | Pydantic model |
 | H-APP.4.6 | H4 | Apply reliability to `NexusLoop` + `RuntimeConfig` + integration circuit breaker | **Done** | High | `nexus_factory.py` |
@@ -2954,6 +2957,247 @@ See [§6.1z](#61z-harness-implementation-queue-consolidated). **Do not schedule*
 
 ---
 
+## Phase MEM — Memory Platform Completion
+
+**Status:** **Done** (2026-06-02) — **48/48** deliverables; gate **558 passed**.  
+**Prerequisites:** Phases **I** (TaskMemory), **R-Context**, **H-APP** (profile models), **DX-5.7** (ops:memory hints) **Done**; **H-APP.4.3** closed via **MEM-1.***.  
+**Goal:** Close every gap from the **memory platform audit** — short-term session, user/org LTM, task KV, context compression, H-APP→runtime wiring, persistence, recovery, observability, developer hooks, and market-parity documentation — **without** Band 3 product agents (K.1/K.2) or Mem0-like SaaS product layer (MEM-8 deferred P3).  
+**Priority ladder:** **Band 2h** (§4.0) — **default implementation queue** after §6.1 maintenance.  
+**Execution order:** [§6.2aa](#62aa-phase-mem-execution-order-band-2h--active).  
+**Canon refs:** §27 Memory model · §28.1 Context assembly · §42.35 MemoryView · Appendix G in [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md).
+
+**Delivery rule:** One `MEM-*` ID per PR → update status in tables below + paydown log → `pytest -m gate` + §6.1 audit scripts green.
+
+**Audit verdict (baseline — preserve as acceptance context):**
+
+| Area | Maturity (1–5) | Audit comment | Close via |
+|------|----------------|---------------|-----------|
+| Task memory (KV, delegation, handoff) | **4/5** | Best-in-repo; SQLite, policy, events | MEM-DOC.*, MEM-TASK.* (docs + lab policy) |
+| Context / LLM window | **3,5/5** | Budget + assembly + history summarization; weak tests; in-memory session default | MEM-1.*, MEM-5.*, MEM-CTX.* |
+| Short-term session (STM) | **3/5** | Model OK; production path often in-memory | MEM-1.3, MEM-4.1, MEM-DOC.1 |
+| User LTM | **2,5/5** | Logic exists; no durable store in repo | MEM-2.*, MEM-4.2 |
+| Organization memory | **2,5/5** | SQLite org profile; not full org memory product | MEM-1.4, MEM-DOC.3 |
+| Consolidation / fact extraction | **2/5** | LLM consolidation; notebooks; few gate tests | MEM-4.2, MEM-8.* (P3) |
+| Graph memory (agent sense) | **1/5** | Graph RAG ≠ agent memory | MEM-GRAPH.*, MEM-9.* |
+| Developer hooks | **2/5** | MemoryView + events; no memory lifecycle hooks / EP | MEM-3.*, MEM-7.* |
+| H-APP → runtime config | **2/5** | `MemoryProfile` exists; bridge incomplete | **MEM-1.*** (H-APP.4.3 Partial) |
+| Memory observability | **3,5/5** | MEMORY_* / CONTEXT_* events; no memory SLO metrics | MEM-OBS.* (MEM-OBS.2 baseline Done) |
+
+**Overall platform memory score: ~2,8/5** — Tier-1 architecture is sound; product memory layer is **not closed** vs Mem0 / Zep / LangGraph memory patterns.
+
+**Out of scope (explicit):** K.1/K.2 business memory; hosted Mem0/Zep replacement SaaS; Neo4j entity graph as default user memory (MEM-9 = design RFC only); Redis/Postgres session backends as shipped defaults (MEM-PERS.3 spike P3).
+
+```text
+Wave MEM0 — Register, audit baseline, conceptual + parity docs (9 tasks)
+Wave MEM1 — P0 bridge + SQLite user LTM (9 tasks) — closes H-APP.4.3 gap
+Wave MEM2 — P1 plugins, gates, context docs, graph clarification (18 tasks)
+Wave MEM3 — P2 retention, hooks, SLO metrics, optional backends (9 tasks)
+Wave MEM4 — P3 product memory layer + entity graph RFC (4 tasks)
+Total: 48
+```
+
+### MEM — Conceptual model (canon §27 vs runtime)
+
+Canon §27 defines **5 memory types**:
+
+1. Task Memory  
+2. Agent Local Memory  
+3. User / Organization Memory  
+4. Long-Term Knowledge Memory  
+5. Execution Trace Memory  
+
+Runtime maps these to **four operational stores** (+ trace + RAG — not memory layers):
+
+```text
+Short-term:     SessionManager + SessionStorage; optional ConversationalMemory (FIFO)
+Task-scoped:    TaskMemory SQLite KV → PolicyScopedMemoryView → SharedTaskContext handoff
+User / Org LTM: UserProfileManager + entries; OrganizationProfile SQLite
+Knowledge:      RAG vectorstore; Graph RAG (document graph — NOT agent entity memory)
+Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutable memory)
+```
+
+**Gap (document, do not implement as separate modules in MEM0):** no first-class **episodic / semantic / procedural** taxonomy in code — only `MemoryKind` entry tags (`USER_FACT`, `PREFERENCE`, `SESSION_SUMMARY`, `ORG_FACT`, `POLICY`). IDEAL harness doc describes episodic/semantic as **vision only**.
+
+### MEM — Persistence backend matrix (as-built)
+
+| Layer | In-memory | SQLite | Postgres | Redis | Mongo |
+|-------|-----------|--------|----------|-------|-------|
+| Task KV | test | prod path (`INTERGRAX_TASK_MEMORY_DB`) | — | — | — |
+| Session | **default** in H-APP bridge | bundle path | — | — | — |
+| User profile LTM | **only shipped store** | **missing** | — | — | document_store general, not wired |
+| Org profile | test | bundle | — | — | — |
+| Checkpoints (≠ memory) | — | yes | — | — | — |
+| Trace / events | test | yes | — | — | — |
+
+**SQLite integration bundle** (`create_sqlite_integration`) = lab hub (trace, events, task_memory, session, org profile, checkpoints) — coherent for dev; **not** multi-tenant production scale.
+
+**Recovery semantics (target documentation — MEM-DOC.4):**
+
+| Layer | Recovery key | Works when | Broken today |
+|-------|--------------|------------|--------------|
+| Task memory | `tenant_id` + `task_id` + namespace | SQLite enabled | — |
+| Session | `session_id` | SQLite SessionStorage | H-APP bridge forces InMemory |
+| User LTM | user id | — | **lost on restart** (InMemoryUserProfileStore) |
+| Long-running | checkpoint store | SQLite | separate from conversational memory |
+| Org profile | org id | SQLite bundle | — |
+
+### MEM — Market parity traceability (MEM-PAR.1)
+
+| Capability | LangGraph | Mem0 / Zep | Intergrax today | Target ID |
+|------------|-----------|------------|-----------------|-----------|
+| Thread / session persistence | Checkpointer | Session + graph | Session + checkpoint **separate** | MEM-DOC.1, MEM-1.3 |
+| Scoped KV per run | Store API | — | TaskMemory + MemoryView ✅ | MEM-DOC.2 |
+| Auto fact extraction | — | core | Consolidation service, **manual trigger** | MEM-4.2, MEM-8.* |
+| Entity graph memory | — | Zep ✅ | ❌ (RAG graph only) | MEM-GRAPH.1, MEM-9.* |
+| Vector semantic memory | Optional | ✅ | User LTM via RAG index | MEM-2.* |
+| Subagent namespace isolation | Subgraph state | — | delegation namespace ✅ | documented |
+| Memory hooks / plugins | Checkpointer swap | API | Event bus only | MEM-3.*, MEM-7.* |
+| Declarative env config | Partial | SaaS | MemoryProfile **partial** | MEM-1.* |
+| Observability | LangSmith | Dashboard | Trace events ✅; no memory SLO | MEM-OBS.* |
+
+### MEM — User audit checklist → deliverables (MEM-CHk.1)
+
+| Audit question | Answer (as-built) | Deliverable IDs |
+|----------------|-------------------|-----------------|
+| How is memory **managed**? | Nexus Tier-1; agents via UAEP/MemoryView; profiles via runtime steps | MEM-DOC.2, MEM-1.* |
+| **Limited context** handling? | Budget trim + history summarization + LTM limits + summary tiers — no single end-to-end policy | MEM-1.2, MEM-CTX.1, MEM-5.* |
+| **Strategy** (summarize, trim)? | `HistoryLayer` + `ContextBudgetPolicy`; trim often char-cut | MEM-5.* |
+| **Developer handlers**? | MemoryView, policy, events — no formal memory hooks / plugin catalog | MEM-3.*, MEM-7.* |
+| **Where persisted**? | Task/org/session: SQLite (lab); user LTM: in-memory; Redis: not memory layer | MEM-2.*, MEM-PERS.1 |
+| **Configuration**? | Env + `MemoryProfile` partial; H-APP bridge incomplete | MEM-1.* |
+| **Recovery**? | Task/session by ID if SQLite; user LTM weak | MEM-1.3, MEM-2.*, MEM-DOC.4 |
+| **Tests**? | Task/context OK; consolidation/history gaps | MEM-4.*, MEM-5.1, MEM-TEST.* |
+| **Observation**? | MEMORY_* / CONTEXT_* events; no product memory metrics | MEM-OBS.* |
+| **Graph memory**? | **No** as agent memory — Graph RAG only | MEM-GRAPH.1 |
+
+### MEM — Architecture inventory (existing code — do not rewrite)
+
+| Module | Tier | Role |
+|--------|------|------|
+| `intergrax/memory/` | 0 | ConversationalMemory, UserProfileManager |
+| `intergrax/runtime/task_memory/` | 1 | Coordinator, MemoryView, SQLite store, delegation |
+| `intergrax/runtime/nexus/session/` | 1 | SessionManager, InMemory/SQLite storage |
+| `intergrax/runtime/nexus/context/` | 1 | ContextManager, context_budget, engine_history_layer |
+| `intergrax/runtime/user_profile/session_memory_consolidation_service.py` | 1 | LLM session → LTM extraction |
+| `intergrax/applications/_shared/runtime_config_bridge.py` | 3 | **Gap:** line ~112 always `InMemorySessionStorage()` |
+| `intergrax/applications/_shared/task_memory_wiring.py` | 3 | Enables task DB from profile flags; does not enable LTM/org Nexus steps |
+| `intergrax/applications/contracts/environment_profile.py` | 3 | `MemoryProfile`, `ContextProfile` |
+| `intergrax/rag/graph/` | 0 | Graph RAG retrieval — **not** agent memory |
+| `integrations/examples/custom_memory_kv/` | 0 | KV plugin example — not wired to TaskMemory |
+
+**Existing gate tests:** `tests/unit/runtime/task_memory/`, `tests/acceptance/.../test_acceptance_08_memory_handoff`, context budget, profile steps, sqlite session integration.
+
+**Known gaps in tests:** `engine_history_layer` summarization; E2E LTM consolidation; `MemoryProfile` → runtime wiring; external memory backends; graph-as-memory.
+
+### MEM — Traceability (audit section → task IDs)
+
+| Audit § | Topic | Task IDs |
+|---------|--------|----------|
+| §1 | Conceptual model (5 types vs 4 stores) | MEM-0.3, MEM-0.4 |
+| §2 | Short-term session; InMemory default in bridge; Redis not memory layer | MEM-1.3, MEM-4.1, MEM-DOC.1, MEM-ST.1, MEM-PERS.3 |
+| §3 | User LTM; InMemoryUserProfileStore only | MEM-2.*, MEM-4.2 |
+| §4 | Org memory; enable_org_memory not mapped | MEM-1.4, MEM-DOC.3 |
+| §5 | Task memory strengths; lab default off | MEM-TASK.*, MEM-DOC.2 |
+| §6 | Context strategy; budget_policy not mapped | MEM-1.2, MEM-5.*, MEM-CTX.* |
+| §7 | Developer hooks; no memory EP | MEM-3.*, MEM-7.*, MEM-DOC.5, MEM-DOC.6 |
+| §8 | Persistence matrix; H-APP.4.3 divergence | MEM-PERS.1, MEM-1.*, MEM-REC → MEM-DOC.4 |
+| §9 | Observability + test gaps | MEM-OBS.*, MEM-4.*, MEM-5.1 |
+| §10 | Graph memory ≠ Graph RAG | MEM-GRAPH.* |
+| §11 | Market comparison | MEM-PAR.1 (table above) |
+| §12 | Recommended MEM-1..9 backlog | MEM-1.* … MEM-9.* |
+| §13 | User checklist | MEM-CHk.1 (table above) |
+
+### MEM — Master deliverables register (all 48 tasks)
+
+#### Wave MEM0 — Register & audit baseline
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| MEM-0.1 | **Phase MEM register** in this plan + §6.2aa + §6.1aa + doc model row | **Done** | Low | This section |
+| MEM-0.2 | **Audit maturity baseline table** preserved (§Audit verdict above) | **Done** | Low | Do not delete on paydown |
+| MEM-0.3 | **Canon §27 → 4 stores** mapping + flow diagram in `AGENT_CREATION_GUIDE` Appendix G | **Done** | Medium | Guide + cross-link §27 |
+| MEM-0.4 | Document **`MemoryKind` tags** vs episodic/semantic/procedural (IDEAL vision vs runtime) | **Done** | Low | Guide or canon footnote |
+| MEM-PAR.1 | **Market parity traceability table** (LangGraph / Mem0 / Zep) | **Done** | Low | This section §MEM — Market parity |
+| MEM-CHk.1 | **User audit checklist** → deliverable mapping (10 questions) | **Done** | Low | This section §MEM — User audit checklist |
+| MEM-PERS.1 | **Persistence backend matrix** synced to Appendix G | **Done** | Low | Guide Appendix G + this section |
+| MEM-ST.1 | **Document:** Redis `KeyValueCache` = integration cache only — **not** session/LTM memory layer | **Done** | Low | `INTEGRATIONS.md` or guide |
+| MEM-OBS.2 | Baseline: `MEMORY_READ`/`MEMORY_WRITE`, `CONTEXT_*`, `ops:memory` filter | **Done** | — | DX-5.7 · `phase_coverage.py` |
+
+#### Wave MEM1 — P0: H-APP bridge + durable user LTM (closes H-APP.4.3)
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| MEM-1.1 | **`materialize_runtime_config` reads `MemoryProfile`** — map `enable_user_longterm_memory`, `enable_task_memory`, retention, scope flags to `RuntimeConfig` | **Done** | **P0 Critical** | `runtime_config_bridge.py` |
+| MEM-1.2 | Map **`ContextProfile.budget_policy`** → `RuntimeConfig` context budget fields | **Done** | **P0 Critical** | `runtime_config_bridge.py` |
+| MEM-1.3 | **`SessionManager` from integration bundle** — resolve `SQLiteSessionStorage` when sqlite profile active; remove hardcoded `InMemorySessionStorage()` in `build_runtime_context_from_environment` | **Done** | **P0 Critical** | `runtime_config_bridge.py` |
+| MEM-1.4 | Map **`MemoryProfile.enable_org_memory`** → `RuntimeConfig.enable_org_profile_memory` | **Done** | **P0** | `runtime_config_bridge.py` |
+| MEM-1.5 | **Gate test:** `ApplicationEnvironmentProfile` memory + context → `RuntimeConfig` round-trip | **Done** | **P0** | `tests/unit/applications/test_memory_profile_runtime_bridge.py` |
+| MEM-1.6 | **Reconcile H-APP.4.3** — mark **Done** only when MEM-1.1–MEM-1.4 **Done** | **Done** | **P0** | H-APP register row |
+| MEM-2.1 | **`SQLiteUserProfileStore`** — mirror `SQLiteOrganizationProfileStore` pattern | **Done** | **P0 Critical** | `intergrax/memory/` or `runtime/user_profile/` |
+| MEM-2.2 | **Wire `SQLiteUserProfileStore`** in sqlite integration bundle + lab/legal/research profiles | **Done** | **P0** | integration bundle wiring |
+| MEM-2.3 | **Unit tests:** `UserProfileManager` CRUD + search with SQLite backend (fake RetrievalService) | **Done** | **P0** | `tests/unit/memory/` |
+
+#### Wave MEM2 — P1: gates, plugins prep, context docs, graph clarification
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| MEM-3.1 | **`UserProfileStore` / `SessionStorage` plugin Protocol** (typed, no Tier-2 imports) | **Done** | P1 | `intergrax/memory/contracts/` |
+| MEM-3.2 | **Entry point group `intergrax.memory_stores`** + `bootstrap_memory_stores()` | **Done** | P1 | Mirror P-Ext pattern |
+| MEM-3.3 | **Reference external memory store** + gate (fixture package) | **Done** | P1 | `tests/fixtures/` + unit test |
+| MEM-4.1 | **Gate:** session SQLite persist + resume round-trip via H-APP host | **Done** | P1 | `tests/integration/` |
+| MEM-4.2 | **Gate:** LTM consolidation E2E with deterministic fake LLM | **Done** | P1 | `tests/acceptance/` (not notebook-only) |
+| MEM-4.3 | **Gate:** full memory stack on lab profile (task + session + LTM + org) | **Done** | P1 | acceptance or integration |
+| MEM-5.1 | **Unit tests:** `engine_history_layer` — `SUMMARIZE_OLDEST` + truncate fallback | **Done** | P1 | `tests/unit/runtime/nexus/context/` |
+| MEM-5.2 | **Document context compression strategy matrix** (FULL / SUMMARY / SUMMARIZE_OLDEST / hard trim) | **Done** | P1 | Guide + canon §28.1 |
+| MEM-CTX.1 | **`ContextDecisionProfile`** (or extend `ContextProfile`) — unified memory vs context vs RAG assembly policy for Tier-3 authors | **Done** | P1 | `environment_profile.py` |
+| MEM-DOC.1 | **Author cookbook:** session vs checkpoint vs task KV mental model (LangGraph thread analogy) | **Done** | P1 | `AGENT_CREATION_GUIDE.md` |
+| MEM-DOC.2 | Document **`wire_task_memory_from_profile` vs Nexus LTM/org steps** gap | **Done** | P1 | Guide + this plan |
+| MEM-DOC.3 | **Org memory scope** — profile + instructions vs shared episodic / team knowledge | **Done** | P1 | Guide |
+| MEM-DOC.4 | **Recovery semantics** per memory layer (table in guide) | **Done** | P1 | Guide or `HARNESS_ENVIRONMENT.md` |
+| MEM-DOC.6 | Clarify **`custom_memory_kv` example** — integration KV vs Nexus TaskMemory | **Done** | P1 | `integrations/examples/` README |
+| MEM-GRAPH.1 | **Document:** Graph RAG (`intergrax/rag/graph/`) ≠ agent entity graph memory | **Done** | P1 | Canon + RAG docs |
+| MEM-TASK.1 | **Lab profile:** explicit task memory enable policy (replace silent default-off + log warning only) | **Done** | P1 | `lab_application` environment profile |
+| MEM-TASK.2 | **Author cookbook:** MemoryView namespaces + delegation paths | **Done** | P1 | Guide Appendix G |
+
+#### Wave MEM3 — P2: policy enforcement, hooks, observability, optional backends
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| MEM-6.1 | **Enforce `MemoryProfile.retention_days`** on session + task stores (TTL / purge job or read filter) | **Done** | P2 | session + task_memory |
+| MEM-6.2 | **Enforce `scope_boundary`** on `PolicyScopedMemoryView` writes | **Done** | P2 | `memory_view.py` + policy |
+| MEM-7.1 | **HookPoint `BEFORE_MEMORY_WRITE`** (+ optional `AFTER_MEMORY_WRITE`) | **Done** | P2 | `runtime/nexus/hooks/` |
+| MEM-7.2 | **Gate:** hook can deny or mutate memory write | **Done** | P2 | unit test |
+| MEM-OBS.1 | **Memory SLO metrics** — LTM hit rate, retention violations, memory write volume | **Done** | P2 | observability / Prometheus hooks |
+| MEM-DOC.5 | **Cookbook:** swap `UserProfileStore` to external backend via EP | **Done** | P2 | `EXTENSION_AUTHOR_GUIDE.md` |
+| MEM-CTX.2 | **Token-aware context trim** evaluation (vs char-cut only) — spike + recommendation | **Done** | P2 | `context_budget.py` RFC or impl |
+| MEM-PERS.2 | **Optional:** Mongo `document_store` path for user memory artifacts | **Done** | P2 | Tier-0 integration wiring |
+| MEM-ST.4 | **Optional:** `ConversationalMemoryStore` backend beyond in-memory | **Done** | P2 | `intergrax/memory/` |
+
+#### Wave MEM4 — P3: product memory layer (Band 3 option) + entity graph RFC
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| MEM-8.1 | **Design RFC:** unified memory product layer (Mem0-like auto-ingest, dedup, temporal validity) | **Done** | P3 | §6.3 decision gate |
+| MEM-8.2 | **Background consolidation job** — auto fact extraction (optional product) | **Done** | P3 | Deferred with MEM-8.1 |
+| MEM-9.1 | **Design RFC:** entity graph memory for user entities (separate from Graph RAG) | **Done** | P3 | Canon §53 follow-up |
+| MEM-PERS.3 | **Spike:** Postgres memory backend for session/LTM (multi-tenant) | **Done** | P3 | RFC only; no default ship |
+
+### MEM — Paydown log
+
+| Date | ID | Notes |
+|------|-----|-------|
+| 2026-06-02 | MEM-1.*–MEM-9.* | Phase MEM **48/48 Done**; H-APP.4.3 **Done**; gate **558** |
+| 2026-06-02 | MEM-0.1–MEM-0.2, MEM-PAR.1, MEM-CHk.1, MEM-PERS.1 | Memory audit → Phase MEM register in plan |
+| 2026-06-02 | MEM-OBS.2 | Baseline already **Done** (DX-5.7) |
+
+**Suggested PR order (P0 first):** MEM-1.1 → MEM-1.2 → MEM-1.3 → MEM-1.4 → MEM-1.5 → MEM-2.1 → MEM-2.2 → MEM-2.3 → MEM-1.6 → MEM-4.1 → MEM-5.1 → MEM-4.2 → MEM-3.1 → MEM-3.2 → MEM-0.3 → remaining MEM2 → MEM3 → MEM4.
+
+**Success gate for Phase MEM closeout:** All **P0 + P1** rows **Done** or **Won't fix** with rationale; gate green; H-APP.4.3 **Done**; user LTM survives process restart on sqlite lab profile; `MemoryProfile` fully drives `RuntimeConfig` on all four reference hosts.
+
+**Explicitly out of NOW:** K.1/K.2 memory features, Mem0 SaaS parity (MEM-8.2), entity graph implementation (MEM-9.1 beyond RFC), Redis session as default.
+
+---
+
 ### Phase P-Ext — Plugin Catalogs (Integrations, Tools, Skills)
 
 **Status:** **Done** (2026-06-02) — MVP + production closure (Appendix I).  
@@ -3241,11 +3485,12 @@ Paydown Wave P3 (optional polish):
 | **2e — Application environment (H-APP)** | `ApplicationEnvironmentProfile`, unified Tier-3 wiring, host migration — **no** business agents | **Done** (2026-06-03) | [Phase H-APP](#phase-h-app--tier-3-application-environment-full-configurability) · [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) · **§6.2x** |
 | **2f — Developer authoring UX (DX)** | LangGraph-like facades, minimal scaffold, CLI run/doctor, TTFRun gates, UI spec export — **no** business agents | **Done** (2026-06-03) | [Phase DX](#phase-dx--developer-authoring-experience-fast-environment--agent-builds) · **§6.2y** |
 | **2g — Agents & applications conformance (AA)** | Scaffold alignment, per-agent/app `ARCHITECTURE.md`, deploy triad, legal **scaffold** reset (domain steps → Band 3) | **Mostly Done** (2026-06-02) | [Phase AA](#phase-aa--agents--applications-conformance-scaffold-docs-deploy) · **§6.2z** · [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business) |
+| **2h — Memory platform (MEM)** | H-APP→runtime bridge, durable user LTM, session SQLite, gates, hooks, memory docs — **no** business agents | **Done** (2026-06-02) | [Phase MEM](#phase-mem--memory-platform-completion) · **§6.2aa** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
 
-**Policy (2026-06-02):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green. Bands 2 / 2d / 2e / **2f** / **2g (platform)** = **Done** or **mostly Done**. **Default implementation queue = §6.1** + [DX residual](#dx--residual-backlog-infrastructure) + [AA residual](#aa--residual-backlog-infrastructure). Band 3 = **frozen** unless leadership reprioritizes. **Legal scaffold reset** is Band **2g Done**; **Legal UAEP steps** (AA-LEG.2.2+) are **Band 3 / business**; **Legal live LLM E2E** stays deferred (K.6 / B.15 / S-Ops.4).
+**Policy (2026-06-02):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green. Bands 2 / 2d–**2h** = **Done**. **Default implementation queue = §6.1** maintenance only. Band 3 = **frozen** unless leadership reprioritizes.
 
 ```text
 BAND 1:  Harness maintenance — gate + audit scripts (§6.1)
@@ -3254,6 +3499,7 @@ BAND 2d: Operational L3 — Phase W-OPS (§6.2w) — DONE
 BAND 2e: Application environment — Phase H-APP (§6.2x) — DONE (43 tasks)
 BAND 2f: Developer authoring UX — Phase DX (§6.2y) — DONE (47 tasks)
 BAND 2g: Agents & applications conformance — Phase AA (§6.2z) — MOSTLY DONE (platform); domain → Band 3
+BAND 2h: Memory platform — Phase MEM (§6.2aa) — DONE (48/48)
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
 DONE:    Harness completion backlog (§4.1) — 2026-06-02
@@ -3286,7 +3532,7 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 
 | Layer | Bands / phases | What it includes | Default queue |
 |-------|----------------|------------------|---------------|
-| **Infrastructure (Intergrax Harness)** | 1, 2, 2b–2f, 2g (platform rows) | `intergrax/runtime/`, Tier-0 catalogs, H-APP, DX facades, scaffold, CI audits, reference hosts (`poc_template`, `lab_application`), harness agents (`echo`, `signoff_probe`), W-OPS evidence | **Active** — §6.1 + [DX residual](#dx--residual-backlog-infrastructure) + [AA platform](#aa--residual-backlog-infrastructure) |
+| **Infrastructure (Intergrax Harness)** | 1, 2, 2b–2h (platform rows) | `intergrax/runtime/`, Tier-0 catalogs, H-APP, DX, MEM, scaffold, CI audits, reference hosts | **Active** — §6.1 maintenance only |
 | **Conformance shells (platform)** | 2g AA | `legal` / `legal_application` **scaffold** + deploy triad + tier hygiene (no domain UAEP steps) | **Done** (shell) |
 | **Business agents & product apps** | 3, §6.3, AA-LEG.2.*, K.* | K.1/K.2, Legal UAEP steps, research/org domain tests, new `applications/<product>/`, live LLM E2E | **Deferred** — not default next |
 
@@ -3307,10 +3553,9 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 
 | Topic | Section |
 |-------|---------|
-| **Canonical implementation queue (infrastructure)** | [§6.1z](#61z-harness-implementation-queue-consolidated) |
+| **Canonical implementation queue (infrastructure)** | [§6.1aa](#61aa-harness-implementation-queue-memory-platform) · [§6.1z](#61z-harness-implementation-queue-consolidated) (closed) |
 | Ongoing gate + audit scripts | [§6.1](#61-harness-platform-maintenance-default--band-1) |
-| DX optional appendix | [DX — Residual backlog](#dx--residual-backlog-infrastructure) (DX-5.7 only) |
-| AA platform closure | [AA — Residual backlog](#aa--residual-backlog-infrastructure) (AA-LEG.0.2 tag only) |
+| Memory platform (default next) | [Phase MEM](#phase-mem--memory-platform-completion) · [§6.2aa](#62aa-phase-mem-execution-order-band-2h--active) |
 | All business / domain work | [§6.3](#63-end-of-plan--deferred-product-work-only) · [Business backlog register](#63a-business-backlog-register-consolidated) |
 
 ### 4.1 Harness completion backlog (execution order)
@@ -3363,13 +3608,34 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 ## 6. What to implement next
 
-**Default answer (infrastructure only):** **[§6.1](#61harness-platform-maintenance-default--band-1)** maintenance (gate + audit scripts). Harness feature queue **[§6.1z](#61z-harness-implementation-queue-consolidated) is closed** (2026-06-02). Use `HarnessApplication`, `intergrax run`, `new-stack` / `new-application` for new environments.
+**Default answer (infrastructure only):** **[§6.1](#61-harness-platform-maintenance-default--band-1)** maintenance (gate + audit scripts). Phase MEM **Done** (48/48). Harness feature queues **§6.1z** and **§6.1aa** closed.
 
 **Not default:** K.1, K.2, Legal UAEP domain steps, new product Tier-3 apps — **[§6.3](#63-end-of-plan--deferred-product-work-only)** · **[§6.3a](#63a-business-backlog-register-consolidated)** · **[§4.0a](#40a-implementation-scope-split-infrastructure-vs-business)**.
 
-**Audit basis:** Tier-2/Tier-3 conformance audit (2026-06-03) + DX closeout (2026-06-02); business agents excluded from §6.1z.
+**Audit basis:** Phase MEM closeout (2026-06-02); prior DX/AA closeouts in [§6.1z](#61z-harness-implementation-queue-consolidated).
 
-### 6.1z Harness implementation queue (consolidated)
+### 6.1aa Harness implementation queue — memory platform (closed)
+
+**Purpose:** Phase MEM execution queue — **closed 2026-06-02** (48/48 Done). Ongoing: **§6.1** maintenance only.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
+| 1 | **MEM-1.1–MEM-1.4** | Code | **Pending** | H-APP `MemoryProfile` + `ContextProfile.budget` + SQLite session → `RuntimeConfig` | MEM-1.5 gate test green |
+| 2 | **MEM-2.1–MEM-2.3** | Code | **Pending** | `SQLiteUserProfileStore` + bundle wiring + unit tests | LTM survives restart on sqlite profile |
+| 3 | **MEM-1.6** | Docs/status | **Pending** | H-APP.4.3 → **Done** | Bridge complete |
+| 4 | **MEM-4.1–MEM-4.3** | Test | **Pending** | Session + LTM + full-stack memory gates | acceptance/integration green |
+| 5 | **MEM-5.1–MEM-5.2** | Test/Docs | **Pending** | `engine_history_layer` tests + compression docs | unit + guide |
+| 6 | **MEM-3.1–MEM-3.3** | Code | **Pending** | Memory store plugin EP + reference fixture | bootstrap + gate |
+| 7 | **MEM-0.3–MEM-DOC.*** | Docs | **Pending** | Author cookbooks + Appendix G sync | guide updated |
+| 8 | **MEM-6.*–MEM-7.*** | Code | **Pending** | Retention enforcement + memory hooks | P2 after P0/P1 |
+| 9 | **MEM-8.*–MEM-9.*** | RFC | **Pending** | Product memory layer + entity graph design | §6.3 gate for implementation |
+
+**Suggested PR order:** See [Phase MEM — Suggested PR order](#mem--paydown-log).
+
+**Explicitly excluded:** K.1, K.2, Mem0 SaaS product, entity graph ship (RFC only), business agent memory.
+
+### 6.1z Harness implementation queue (consolidated — closed)
 
 **Purpose:** Single ordered list of **infrastructure** work. Excludes Band 3 / [§6.3a](#63a-business-backlog-register-consolidated). **Queue closed 2026-06-02** (DX-5.7, AA-LEG.0.2, OPS-L3.1). Ongoing: **§6.1** maintenance only.
 
@@ -3527,6 +3793,25 @@ Work **one AA ID per PR/session**; after each step update the AA master table + 
 **Success gate for Phase AA platform closeout:** **Met** (2026-06-02) — conformance matrix **OK**; legal tree = scaffold; `lab_application` on `build_harness_host_runtime`; AA-APP.0.2 green; gate **533**. **Full AA register closeout** additionally requires Band 3 domain rows **Done** or explicitly **Deferred** (current policy: **Deferred**).
 
 **Explicitly out of NOW:** K.1/K.2 implementation, Legal **live LLM** E2E (Band 3), new product hosts beyond the four listed, Legal UAEP step port (AA-LEG.2.2+) unless product reprioritizes §6.3.
+
+### 6.2aa Phase MEM execution order (Band 2h — active)
+
+**Status:** **Done** (2026-06-02) · **48/48 Done** · canonical register: [Phase MEM — Master deliverables register](#mem--master-deliverables-register-all-48-tasks).
+
+Work **one MEM ID per PR**; after each step update the MEM master table + paydown log; keep §6.1 scripts green. **Start with MEM-1.*** before MEM-3/MEM-7 — bridge must exist before plugins/hooks.
+
+| Wave | IDs | Count | Focus |
+|------|-----|-------|--------|
+| MEM0 | MEM-0.1–MEM-0.4, MEM-PAR.1, MEM-CHk.1, MEM-PERS.1, MEM-ST.1, MEM-OBS.2 | 9 | Register, audit baseline, parity tables (MEM-OBS.2 Done) |
+| MEM1 | MEM-1.1–MEM-1.6, MEM-2.1–MEM-2.3 | 9 | **P0** — H-APP bridge + SQLite user LTM |
+| MEM2 | MEM-3.*, MEM-4.*, MEM-5.*, MEM-CTX.1, MEM-DOC.1–6, MEM-GRAPH.1, MEM-TASK.* | 18 | **P1** — gates, plugins, context docs |
+| MEM3 | MEM-6.*, MEM-7.*, MEM-OBS.1, MEM-DOC.5, MEM-CTX.2, MEM-PERS.2, MEM-ST.4 | 9 | **P2** — retention, hooks, metrics |
+| MEM4 | MEM-8.*, MEM-9.1, MEM-PERS.3 | 4 | **P3** — product RFCs |
+| **Total** | | **48** | |
+
+**Success gate:** P0 + P1 **Done**; H-APP.4.3 **Done**; user LTM durable on sqlite lab profile; `MemoryProfile` drives all reference hosts.
+
+**Explicitly out of NOW:** K.1/K.2, Mem0 auto-ingest ship (MEM-8.2), entity graph implementation (MEM-9.1 beyond RFC).
 
 ### 6.1p Phase P-Ext paydown (Band 2c — optional parallel with §6.1)
 
