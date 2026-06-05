@@ -1,5 +1,11 @@
 # Intergrax
 
+[![Regression gate](https://github.com/jakbuczarnecki/intergrax-ai/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/jakbuczarnecki/intergrax-ai/actions/workflows/unit-tests.yml)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
+[![Harness AI](https://img.shields.io/badge/Harness%20AI-Agent%20OS-6c5ce7.svg)](#harness-ai--the-core-idea)
+[![Docs](https://img.shields.io/badge/docs-canonical-green.svg)](docs/README.md)
+[![LLM context](https://img.shields.io/badge/llms.txt-available-orange.svg)](llms.txt)
+
 **Agent OS and Harness AI runtime for building, orchestrating, experimenting with, and validating specialized AI agents.**
 
 Intergrax is a **production-grade Harness AI platform** — not a single chatbot or domain agent, but the **runtime environment** that lets teams define agent capabilities as reusable modules, compose multi-agent graphs, enforce policy and observability consistently, and graduate ideas from a fast **laboratory** to a governed **production harness**.
@@ -40,6 +46,7 @@ Intergrax is a **production-grade Harness AI platform** — not a single chatbot
 - [Audience](#audience)
 - [Local infrastructure](#local-infrastructure)
 - [License](#license)
+- [Contributing & community](#contributing--community)
 
 ---
 
@@ -881,9 +888,25 @@ Stable lab stack slugs: `sqlite`, `postgresql`, `redis`, `qdrant`, `slack`, `sen
 
 ## License
 
-All rights reserved © Artur Czarnecki.
+All rights reserved © Artur Czarnecki. See [LICENSE](LICENSE).
 
 This repository is currently in private R&D stage. Commercial licensing and partnership opportunities are available upon request.
+
+---
+
+## Contributing & community
+
+| Resource | Purpose |
+|----------|---------|
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Development setup, work cycle, PR process |
+| [AGENTS.md](AGENTS.md) | Instructions for AI coding agents (Cursor, Codex, Claude Code) |
+| [llms.txt](llms.txt) | Concise project map for LLM crawlers and context tools |
+| [llms-full.txt](llms-full.txt) | Extended LLM context map with full doc index |
+| [SECURITY.md](SECURITY.md) | Security policy and vulnerability reporting |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community standards |
+| [CITATION.cff](CITATION.cff) | Citation metadata for research and publications |
+
+**For AI agents:** start with [AGENTS.md](AGENTS.md) → [docs/README.md](docs/README.md) → relevant canon in `docs/`.
 
 ---
 

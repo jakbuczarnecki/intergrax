@@ -4,6 +4,16 @@
 
 The `docs/` folder holds the canonical platform documentation.
 
+**Discovery & AI context files** (repository root — route here, do not duplicate canon):
+
+| File | Purpose |
+|------|---------|
+| [../llms.txt](../llms.txt) | Concise LLM project map |
+| [../llms-full.txt](../llms-full.txt) | Extended LLM context map |
+| [../AGENTS.md](../AGENTS.md) | Instructions for AI coding agents |
+| [../CONTRIBUTING.md](../CONTRIBUTING.md) | Contribution guide |
+| [../CITATION.cff](../CITATION.cff) | Citation metadata |
+
 ---
 
 ## Documents

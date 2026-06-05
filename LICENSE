@@ -1,0 +1,44 @@
+Intergrax — Proprietary License
+
+Copyright © 2024–2026 Artur Czarnecki. All rights reserved.
+
+NOTICE: This software and associated documentation files (the "Software") are
+proprietary and confidential property of Artur Czarnecki.
+
+PERMITTED USE
+
+  Viewing the source code on GitHub for evaluation and reference purposes
+  is permitted. No other rights are granted unless explicitly agreed in
+  writing by the copyright holder.
+
+RESTRICTIONS
+
+  Without prior written permission from Artur Czarnecki, you may NOT:
+
+  - Use, copy, modify, merge, publish, distribute, sublicense, or sell
+    copies of the Software
+  - Create derivative works based on the Software
+  - Use the Software in production environments
+  - Incorporate the Software into other products or services
+  - Reverse engineer, decompile, or disassemble the Software except as
+    permitted by applicable law
+
+COMMERCIAL LICENSING
+
+  Commercial licensing and partnership opportunities are available upon
+  request. Contact: jakbu.czarnecki.83@gmail.com
+
+NO WARRANTY
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+  DEALINGS IN THE SOFTWARE.
+
+THIRD-PARTY COMPONENTS
+
+  The Software may include third-party open-source components governed by
+  their respective licenses. See pyproject.toml for dependency declarations.

@@ -1,0 +1,21 @@
+# Intergrax — crawler guidance
+# https://github.com/jakbuczarnecki/intergrax-ai
+
+User-agent: *
+Allow: /
+Allow: /docs/
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /AGENTS.md
+
+# LLM context files
+# Primary map: /llms.txt
+# Extended map: /llms-full.txt
+# Agent instructions: /AGENTS.md
+# Documentation canon: /docs/README.md
+
+# Test fixtures and build artifacts are not useful for indexing
+Disallow: /tests/fixtures/
+Disallow: /build/
+Disallow: /.venv/
+Disallow: /__pycache__/
