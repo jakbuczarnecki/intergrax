@@ -25,24 +25,27 @@ _FIXTURE_PKG = _REPO_ROOT / "tests" / "fixtures" / "plugin_packages" / "intergra
 
 
 def _install_catalog_fixture_package() -> None:
+    import importlib
     import shutil
 
+    python = sys.executable
     uv = shutil.which("uv")
     if uv is not None:
         subprocess.check_call(
-            [uv, "pip", "install", "-e", str(_FIXTURE_PKG)],
+            [uv, "pip", "install", str(_FIXTURE_PKG), "--python", python],
             cwd=str(_REPO_ROOT),
         )
-        return
-    subprocess.check_call(
-        [sys.executable, "-m", "pip", "install", "-e", str(_FIXTURE_PKG), "-q"],
-        cwd=str(_REPO_ROOT),
-    )
+    else:
+        subprocess.check_call(
+            [python, "-m", "pip", "install", str(_FIXTURE_PKG), "-q"],
+            cwd=str(_REPO_ROOT),
+        )
+    importlib.import_module("intergrax_catalog_fixture")
 
 
 @pytest.fixture(scope="session")
 def catalog_fixture_installed() -> None:
-    """Editable-install catalog entry-point fixture package (Phase P-Ext.0.5)."""
+    """Install catalog entry-point fixture package for pytest (Phase P-Ext.0.5)."""
     _install_catalog_fixture_package()
 from intergrax.runtime.nexus.planning.plan_sources import PlanSpec
 

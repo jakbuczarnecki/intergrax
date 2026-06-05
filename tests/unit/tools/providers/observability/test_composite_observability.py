@@ -5,10 +5,12 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import Any, Optional
 
 import pytest
 
+from intergrax.integrations.contracts.base import IntegrationCategory, UnknownIntegrationError
 from intergrax.integrations.contracts.observability_backend import TraceQueryResult, TraceRecord
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.tools.providers.observability.contracts import ErrorsCaptureInput, TracesQueryInput
@@ -83,9 +85,18 @@ def test_harness_profile_options_resolve_observability_backends(monkeypatch: pyt
             return langsmith
         return sentry
 
+    def _fake_get_entry(slug: str) -> SimpleNamespace:
+        if slug in {"langsmith", "sentry"}:
+            return SimpleNamespace(categories=(IntegrationCategory.OBSERVABILITY_BACKEND,))
+        raise UnknownIntegrationError(slug)
+
     monkeypatch.setattr(
         "intergrax.integrations.registry.factory.resolve",
         _fake_resolve,
+    )
+    monkeypatch.setattr(
+        "intergrax.integrations.registry.catalog.get_entry",
+        _fake_get_entry,
     )
     ctx = ToolWiringContext.from_integration_profile(IntegrationProfile.harness_lab())
     assert "sentry" in ctx.observability_backends
