@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from intergrax.contracts.agent_contract_meta import AgentContract
-from intergrax.skills.resolver import ResolvedSkillPack, SkillResolutionError, SkillResolver
+from intergrax.skills.resolver import ResolvedSkillPack, SkillResolutionError, SkillResolverProtocol
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.registry.runtime import ToolRegistry
 
@@ -15,7 +15,7 @@ def _extra_tool_ids(extra_tools: list[ToolContract]) -> list[str]:
 def resolve_contract_tools(
     contract: AgentContract,
     *,
-    skill_resolver: SkillResolver,
+    skill_resolver: SkillResolverProtocol,
     tool_registry: ToolRegistry | None = None,
 ) -> tuple[AgentContract, ResolvedSkillPack]:
     """
@@ -23,7 +23,9 @@ def resolve_contract_tools(
 
     Validates manifests and optional tool references when ``tool_registry`` is provided.
     """
-    resolver = (
+    from intergrax.skills.resolver import SkillResolver
+
+    resolver: SkillResolverProtocol = (
         SkillResolver(skill_resolver.skill_registry, tool_registry)
         if tool_registry is not None
         else skill_resolver

@@ -35,8 +35,9 @@ Implementation status: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTA
 19. [Appendix G — Memory & RAG naming](#appendix-g--memory--rag-naming-phase-q)
 20. [Appendix H — Governance, policy & observability](#appendix-h--governance-policy--observability-control-plane)
 21. [Appendix I — Orchestration control plane](#appendix-i--orchestration-control-plane)
-22. [Anti-patterns](#anti-patterns)
-23. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
+22. [Appendix J — Tools & skills control plane](#appendix-j--tools--skills-control-plane)
+23. [Anti-patterns](#anti-patterns)
+24. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
 
@@ -1443,6 +1444,118 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 
 ---
 
+## Appendix J — Tools & skills control plane
+
+**Audience:** Tier-3 application authors, extension authors, platform engineers.  
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §11 (Tool layer), §12 (Skill layer); canon [§7.1.6](intergrax_runtime_architecture.md#716-tool-catalog)–[§7.1.8](intergrax_runtime_architecture.md#718-skill-catalog).
+
+Intergrax separates **Integration → Tool → Skill → Agent** (Tier-0 → Tier-2). Tools are atomic, policy-governed operations; skills are composable capability packs (tool_ids + prompt instructions + policy fragments). Agents declare `skill_ids` on `AgentContract` — never copy tool lists or vendor SDK calls into agent steps.
+
+### J.1 Design principles (Harness audit)
+
+| Principle | Meaning in Intergrax |
+|-----------|----------------------|
+| Atomic tools | One `ToolContract` = one operation; no workflow-sized tools |
+| Policy-first invocation | Every call through `ToolRuntime` + `ToolScopePolicy` + security middleware |
+| Composable skills | `SkillManifest` merges tool allow-lists and prompt fragments — not agents |
+| Tier separation | Agents never import `integrations/providers/`; Tier-3 wires slugs via profiles |
+| Typed wiring | `ToolProfile`, `SkillProfile`, `SkillResolverProtocol` — no `getattr`/`setattr` on harness paths |
+
+### J.2 Tools & skills control plane map
+
+```text
+ApplicationEnvironmentProfile (Tier-3)
+  ├── tool_profile              enabled tool_ids / bundles · sandbox flags
+  ├── skill_profile             enabled skill bundles
+  └── integration_profile       backend slugs → ToolWiringContext
+
+wire_application_environment()
+  ├── build_application_tool_wiring()   → ToolRegistry + ToolWiringContext
+  ├── build_application_skill_wiring()    → SkillRegistry
+  ├── EnvironmentSkillToolConsistencyCheck (roster vs env profiles)
+  └── ApplicationBuildContext             tool/skill profiles + registries
+
+materialize_runtime_config() / build_runtime_context_from_environment()
+  ├── catalog_runtime_bridge.py           tool_profile · skill_profile · tool_wiring_context
+  └── memory_runtime_bridge.py            context/memory toggles (MEM)
+
+Agent execution (Tier-1)
+  ├── AgentRegistry + SkillResolver         contract.skills → allowed_tools merge
+  ├── CatalogToolPlanner + ToolRuntime    policy-checked invocation
+  └── RuntimeEvent bus                      tool/skill telemetry
+
+build_harness_host_runtime()
+  └── build_nexus_loop_from_environment() + resolve_llm_adapter() (engine planner)
+```
+
+**Rule:** register tools/skills in Tier-0 catalogs and enable them on `ApplicationEnvironmentProfile` — **never** create agent-local tool registries.
+
+### J.3 Core contracts (typed, inspectable)
+
+| Contract | Module | Role |
+|----------|--------|------|
+| `ToolContract` | `tools/core/contracts.py` | Atomic tool schema, risk, timeout |
+| `ToolProfile` | `tools/registry/profile.py` | Enabled tools/bundles for a host |
+| `ToolWiringContext` | `tools/registry/wiring.py` | Integration slug → provider wiring |
+| `ToolPlannerProtocol` | `runtime/nexus/tools/tool_planner_protocol.py` | Agent-local tool loop planning |
+| `SkillManifest` | `skills/core/contracts.py` | skill_id, tool_ids, prompts, policy fragment |
+| `SkillProfile` | `skills/registry/profile.py` | Enabled skill bundles for a host |
+| `SkillResolverProtocol` | `skills/resolver.py` | Resolve skill_ids → `ResolvedSkillPack` |
+| `RuntimeConfig.tool_profile` / `skill_profile` | `runtime/nexus/config.py` | Runtime catalog snapshot (TS-1) |
+
+### J.4 Customization surfaces (full control without forking runtime)
+
+| Surface | How to customize |
+|---------|------------------|
+| **Tool profile** | `ApplicationEnvironmentProfile.tool_profile` — enable tool_ids or bundles |
+| **Skill profile** | `ApplicationEnvironmentProfile.skill_profile` — enable skill bundles |
+| **Integration backends** | `IntegrationProfile` + `ToolWiringContext.from_integration_profile()` |
+| **Tool scope policy** | `RuntimePolicyBundle.tool_access` → `RuntimeConfig.tool_scope_policy` |
+| **Sandbox / shadow** | `tool_profile_with_sandbox()` + `wire_sandbox_sessions()` at bootstrap |
+| **Plugin catalogs** | `ToolPlugin` / `SkillPlugin` entry points (Phase P-Ext **Done**) |
+| **Agent contract** | `skills: list[SkillManifest]` + `extra_tools` — merged at registry bind time |
+| **Conformance** | `EnvironmentSkillToolConsistencyCheck` — roster tools/skills ⊆ environment |
+
+Agent-local tool orchestration: `RuntimeConfig.tool_planner` (`CatalogToolPlanner`) + `tools_mode` — still through `ToolRuntime`, separate from Nexus graph planning (Appendix I).
+
+### J.5 Runtime bridge (TS-1 — Done)
+
+| Bridge | Module | Maps |
+|--------|--------|------|
+| Catalog → RuntimeConfig | `catalog_runtime_bridge.py` | `tool_profile`, `skill_profile`, `tool_wiring_context` |
+| Environment → RuntimeConfig | `memory_runtime_bridge.py` | memory/context toggles |
+| Host → Nexus LLM | `harness_host_runtime.py` + `llm_resolver.py` | `resolve_llm_adapter(env)` for `planner_kind=engine` (TS-2) |
+
+Wired `ApplicationBuildContext` profiles **override** raw environment defaults (sandbox-adjusted tools).
+
+### J.6 What agents (Tier-2) must not do
+
+| Do not | Do instead |
+|--------|------------|
+| Import vendor SDKs in `agents/` | Declare `allowed_tools`; wire integration in Tier-3 |
+| Register tools inside agent package | Add `ToolPlugin` or catalog bundle; enable in `tool_profile` |
+| Model workflows as one giant tool | Create **Skill** pack + UAEP steps |
+| Copy prompt + tool lists per agent | Reuse `skill_ids` from [Skill Library](SKILLS.md) |
+| Bypass `ToolRuntime` | Return `ToolRequest`; runtime invokes with policy + trace |
+| Use `use_rag` / `use_websearch` booleans | Pass explicit `tool_ids` (`rag.retrieve`, `websearch.query`) |
+
+### J.7 Verification (audit evidence)
+
+| Concern | Command / test |
+|---------|----------------|
+| Catalog runtime bridge | `pytest tests/unit/applications/test_catalog_runtime_bridge.py -m gate` |
+| Harness host LLM wiring | `pytest tests/unit/applications/test_harness_host_runtime_llm.py -m gate` |
+| Skill resolver | `pytest tests/unit/skills/test_skill_resolver.py -m gate` |
+| Tool runtime / policy | `pytest tests/unit/runtime/nexus/tools/ -m gate` |
+| Environment conformance | `pytest tests/unit/applications/ -m gate -k conformance` |
+| Plugin catalogs | `python scripts/check_plugin_catalog.py` |
+| Legacy boolean flags | `python scripts/check_legacy_tool_plan_booleans.py` |
+| Full gate | `uv run pytest -m gate -q` |
+
+Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layers §11–§12: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
@@ -1492,4 +1605,5 @@ When asked to create a new Intergrax agent:
 7. Do **not** import `intergrax.integrations.providers.*` from agent code — wire integrations in Tier-3 only (Appendix E).
 8. For Tier-3 hosts, configure governance via `ApplicationEnvironmentProfile` + `RuntimePolicyBundle` — see [Appendix H](#appendix-h--governance-policy--observability-control-plane).
 9. For multi-agent / graph / delegation behavior, read [Appendix I](#appendix-i--orchestration-control-plane) — never wire cross-agent calls inside `agents/`.
-10. Do **not** create duplicate workflow documentation — update this file if the process changes.
+10. For tool/skill catalogs and runtime bridge, read [Appendix J](#appendix-j--tools--skills-control-plane) — enable profiles on environment, not in agent code.
+11. Do **not** create duplicate workflow documentation — update this file if the process changes.

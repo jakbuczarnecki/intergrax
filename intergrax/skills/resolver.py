@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import AbstractSet, Sequence
+from typing import AbstractSet, Protocol, Sequence
 
 from intergrax.skills.core.contracts import SkillManifest, SkillRiskTier
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -29,6 +29,21 @@ class ResolvedSkillPack:
         merged = set(self.tool_ids)
         merged.update(item.strip() for item in extra_allowed if item.strip())
         return tuple(sorted(merged))
+
+
+class SkillResolverProtocol(Protocol):
+    """Typed contract for skill composition resolution (Phase TS-3)."""
+
+    @property
+    def skill_registry(self) -> SkillRegistry: ...
+
+    def resolve(self, skill_ids: Sequence[str]) -> ResolvedSkillPack: ...
+
+    def validate_skill_ids(self, skill_ids: AbstractSet[str] | Sequence[str]) -> None: ...
+
+    def validate_skills(self, skills: Sequence[SkillManifest]) -> None: ...
+
+    def resolve_skills(self, skills: Sequence[SkillManifest]) -> ResolvedSkillPack: ...
 
 
 class SkillResolver:

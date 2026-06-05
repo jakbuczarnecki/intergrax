@@ -12,6 +12,7 @@ from intergrax.applications._shared.environment_wiring import (
     ApplicationEnvironmentWiring,
     wire_application_environment,
 )
+from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
 from intergrax.applications._shared.task_memory_wiring import wire_task_memory_from_profile
 from intergrax.applications._shared.wiring import build_application_registry
@@ -87,6 +88,7 @@ def build_harness_host_runtime(
         task_memory_db_path=task_memory.db_path,
         shadow_manager=env_wiring.shadow_manager,
         sandbox_manager=env_wiring.sandbox_manager,
+        llm_adapter=resolve_llm_adapter(environment),
     )
     _ = checkpoints_db_path
     return HarnessHostRuntime(

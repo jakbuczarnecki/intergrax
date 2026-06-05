@@ -686,6 +686,8 @@ Subagent Architecture Score: L0-L4
 
 ## 11. Tool Layer
 
+**Authoring map (control plane):** `AGENT_CREATION_GUIDE.md` **Appendix J** · implementation closeout: plan **Phase TS** (**Done**).
+
 ### Purpose
 
 Verify that tools are atomic, policy-governed, observable operations.
@@ -727,6 +729,8 @@ Tool Layer Score: L0-L4
 ---
 
 ## 12. Skill Layer
+
+**Authoring map (control plane):** `AGENT_CREATION_GUIDE.md` **Appendix J** · implementation closeout: plan **Phase TS** (**Done**).
 
 ### Purpose
 

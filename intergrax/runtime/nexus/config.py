@@ -45,6 +45,7 @@ from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.runtime.modality.modality_profile import ModalityProfile
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.provider import ToolProvider
+from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry import ToolProfile, ToolRegistry, ToolWiringContext, build_registry_from_profile
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.websearch.service.websearch_config import WebSearchConfig
@@ -182,6 +183,8 @@ class RuntimeConfig:
     tool_providers: Sequence[ToolProvider] = ()
 
     tool_profile: Optional[ToolProfile] = None
+
+    skill_profile: Optional[SkillProfile] = None
 
     tool_wiring_context: Optional[ToolWiringContext] = None
 

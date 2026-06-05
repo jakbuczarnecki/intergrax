@@ -5,6 +5,10 @@
 from __future__ import annotations
 
 from intergrax.agents.reference_harness import LabHarnessContext
+from intergrax.applications._shared.catalog_runtime_bridge import (
+    apply_catalog_profiles_from_build_context,
+    apply_catalog_profiles_from_environment,
+)
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 from intergrax.applications._shared.memory_runtime_bridge import apply_environment_profiles_to_runtime_config
 from intergrax.applications._shared.memory_wiring import (
@@ -95,6 +99,9 @@ def materialize_runtime_config(
     if pipeline is not None:
         config.pipeline = pipeline
     apply_environment_profiles_to_runtime_config(config, env)
+    apply_catalog_profiles_from_environment(config, env)
+    if isinstance(harness_ctx, ApplicationBuildContext):
+        apply_catalog_profiles_from_build_context(config, harness_ctx)
     return apply_policy_bundle_to_runtime_config(config, policy_bundle)
 
 
