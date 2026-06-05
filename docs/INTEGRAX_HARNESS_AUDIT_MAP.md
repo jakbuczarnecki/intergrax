@@ -1262,6 +1262,8 @@ Verify that data and execution safety are first-class platform properties.
 Security and Data Governance Score: L0-L4
 ```
 
+**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix H §H.3](AGENT_CREATION_GUIDE.md#h3-security-profile-per-application) (V-SEC toggles); [`AGENT_CREATION_GUIDE.md` Appendix S](AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) (wire-time middleware bridge + assembly validation). **Closeout:** [Phase SEC](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-sec--security-control-plane-closeout) **Done** (SEC-DOC.*).
+
 ---
 
 ## 24. Cost and Resource Governance

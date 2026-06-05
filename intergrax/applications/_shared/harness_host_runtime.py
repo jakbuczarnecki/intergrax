@@ -31,6 +31,13 @@ from intergrax.applications._shared.reliability_wiring import (
     ApplicationReliabilityWiring,
     wire_application_reliability,
 )
+from intergrax.applications._shared.security_assembly_resolver import (
+    assert_security_assembly_valid,
+)
+from intergrax.applications._shared.security_wiring import (
+    ApplicationSecurityWiring,
+    wire_application_security,
+)
 from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -46,6 +53,7 @@ class HarnessHostRuntime:
     registry: AgentRegistry
     observability: NexusObservabilityStores
     reliability: ApplicationReliabilityWiring
+    security: ApplicationSecurityWiring
     nexus_loop: NexusLoop
 
 
@@ -107,6 +115,8 @@ def build_harness_host_runtime(
         idempotency_db_path=idempotency_db_path,
     )
     assert_reliability_assembly_valid(reliability_wiring, environment)
+    security_wiring = wire_application_security(environment)
+    assert_security_assembly_valid(security_wiring, environment)
     task_memory = wire_task_memory_from_profile(environment)
     nexus_loop = build_nexus_loop_from_environment(
         resolved_registry,
@@ -121,7 +131,9 @@ def build_harness_host_runtime(
         sandbox_manager=env_wiring.sandbox_manager,
         llm_adapter=resolve_llm_adapter(environment),
         runtime_event_bus=env_wiring.build_context.runtime_event_bus,
+        security_wiring=security_wiring,
     )
+    assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)
     _ = checkpoints_db_path
     return HarnessHostRuntime(
         manifest=resolved_manifest,
@@ -130,5 +142,6 @@ def build_harness_host_runtime(
         registry=resolved_registry,
         observability=observability,
         reliability=reliability_wiring,
+        security=security_wiring,
         nexus_loop=nexus_loop,
     )

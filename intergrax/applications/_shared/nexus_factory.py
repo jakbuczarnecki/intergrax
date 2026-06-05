@@ -7,7 +7,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from intergrax.applications._shared.application_security_wiring import register_application_security_hooks
+from intergrax.applications._shared.security_wiring import (
+    ApplicationSecurityWiring,
+    apply_application_security_wiring,
+    wire_application_security,
+)
 from intergrax.applications._shared.context_wiring import resolve_context_manager_from_environment
 from intergrax.applications._shared.orchestration_wiring import (
     OrchestrationWiringContext,
@@ -44,6 +48,7 @@ def build_nexus_loop_from_environment(
     llm_adapter: LLMAdapter | None = None,
     runtime_event_bus: RuntimeEventBus | None = None,
     context_manager: ContextManager | None = None,
+    security_wiring: ApplicationSecurityWiring | None = None,
 ) -> NexusLoop:
     """Apply orchestration and reliability profiles to ``NexusLoop`` construction."""
     orch = env.orchestration_profile
@@ -81,5 +86,6 @@ def build_nexus_loop_from_environment(
         task_memory_db_path=task_memory_db_path,
         production_mode=env.execution_mode.value == "strict",
     )
-    register_application_security_hooks(loop, env.security_profile)
+    resolved_security = security_wiring or wire_application_security(env)
+    apply_application_security_wiring(loop, resolved_security)
     return loop

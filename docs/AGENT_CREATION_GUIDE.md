@@ -44,8 +44,9 @@ Implementation status: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTA
 28. [Appendix P — Capability graph control plane](#appendix-p--capability-graph-control-plane)
 29. [Appendix Q — Observability control plane closeout](#appendix-q--observability-control-plane-closeout)
 30. [Appendix R — Reliability control plane closeout](#appendix-r--reliability-control-plane-closeout)
-31. [Anti-patterns](#anti-patterns)
-32. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
+31. [Appendix S — Security control plane closeout](#appendix-s--security-control-plane-closeout)
+32. [Anti-patterns](#anti-patterns)
+33. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
 
@@ -2188,6 +2189,71 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 
 ---
 
+## Appendix S — Security control plane closeout
+
+**Audience:** Tier-3 application authors, platform engineers, security reviewers.  
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §23; Phase SEC **Done**; complements [Appendix H §H.3](#h3-security-profile-per-application) (V-SEC toggles).
+
+Tier-3 hosts must materialize V-SEC middleware and `RuntimeConfig.security_profile` from typed `ApplicationSecurityProfile` — not ad-hoc middleware registration in host factories.
+
+### S.1 Design principles (Harness audit)
+
+| Principle | Meaning in Intergrax |
+|-----------|----------------------|
+| Profile-driven | `ApplicationSecurityProfile` on `ApplicationEnvironmentProfile` |
+| Wire-time validation | `security_assembly_resolver` at `build_harness_host_runtime` |
+| Typed bridge | `SecurityWiringOptions` maps profile → middleware set |
+| Identity coupling | `identity_profile.tenant_required` requires `tenant_security_verify_enabled` |
+| Single host path | `wire_application_security` + `apply_application_security_wiring` |
+
+### S.2 Security wiring map
+
+```text
+ApplicationEnvironmentProfile (Tier-3)
+  └── security_profile
+        ├── prompt_defense_enabled           → PromptDefenseMiddleware
+        ├── tool_injection_defense_enabled   → ToolInjectionDefenseMiddleware
+        ├── retrieval_poisoning_defense_enabled → RagStep trust-score path (RuntimeConfig)
+        └── tenant_security_verify_enabled   → TenantSecurityMiddleware
+
+wire_application_security() (Tier-3)
+  └── security_runtime_bridge.py
+        ├── resolve_security_wiring_options()
+        └── apply_security_profiles_from_environment() → RuntimeConfig.security_profile
+
+build_nexus_loop_from_environment() (Tier-3)
+  └── security_wiring.py + application_security_wiring.py
+        └── apply_application_security_wiring() → NexusLoop middleware
+
+Release / CI
+  └── check_harness_security_wiring.py
+  └── test_harness_security_wiring.py
+```
+
+### S.3 Core contracts
+
+| Contract | Module | Role |
+|----------|--------|------|
+| `ApplicationSecurityProfile` | `contracts/environment_profile.py` | Author-facing V-SEC toggles |
+| `SecurityWiringOptions` | `security_runtime_bridge.py` | Profile → wiring flags |
+| `ApplicationSecurityWiring` | `security_wiring.py` | Resolved profile + middleware names |
+| `SecurityAssemblyValidationResult` | `security_assembly_resolver.py` | Wire-time conformance |
+| V-SEC middleware | `application_security_wiring.py` | Prompt/tool/tenant defenses |
+
+### S.4 Verification (audit evidence)
+
+| Concern | Command / test |
+|---------|----------------|
+| Profile → wiring bridge | `pytest tests/unit/applications/test_harness_security_wiring.py -m gate` |
+| Host security materialization | `python scripts/check_harness_security_wiring.py` |
+| Middleware behavior | `pytest tests/unit/applications/test_application_security_wiring.py -m gate` |
+| Integration security path | `pytest tests/integration/runtime/test_nexus_loop_security_wiring.py -m gate` |
+| Full gate | `uv run pytest -m gate -q` |
+
+Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §23: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
@@ -2222,6 +2288,7 @@ Run before opening a harness PR (see `scripts/`):
 | `check_harness_capability_graph_wiring.py` | Hosts materialize environment capability graph at wire time |
 | `check_harness_observability_wiring.py` | Hosts wire observability stores from `ObservabilityProfile` |
 | `check_harness_reliability_wiring.py` | Hosts wire reliability stores from `ReliabilityProfile` |
+| `check_harness_security_wiring.py` | Hosts wire V-SEC middleware from `ApplicationSecurityProfile` |
 | `check_agents_vendor_imports.py` | Agents do not import `integrations/providers/` |
 | `check_integration_vendor_imports.py` | Tier-0 does not import application/agent trees incorrectly |
 | `check_production_chat_agent_imports.py` | No `ChatAgent` on production paths |
@@ -2251,4 +2318,5 @@ When asked to create a new Intergrax agent:
 16. For capability graph lineage and blast-radius, read [Appendix P](#appendix-p--capability-graph-control-plane) — environment graph is built at wire time from catalog baseline.
 17. For observability wiring and assembly validation, read [Appendix Q](#appendix-q--observability-control-plane-closeout) — configure `ObservabilityProfile`, not direct `wire_nexus_observability()` in hosts.
 18. For reliability wiring and idempotency/circuit breaker assembly, read [Appendix R](#appendix-r--reliability-control-plane-closeout) — configure `ReliabilityProfile`, not ad-hoc `IdempotencyStore` in hosts.
-19. Do **not** create duplicate workflow documentation — update this file if the process changes.
+19. For security wiring and V-SEC middleware assembly, read [Appendix S](#appendix-s--security-control-plane-closeout) — configure `ApplicationSecurityProfile`, not direct middleware in host factories.
+20. Do **not** create duplicate workflow documentation — update this file if the process changes.
