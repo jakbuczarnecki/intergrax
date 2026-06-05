@@ -207,6 +207,7 @@ def _contract_py(slug: str, class_name: str, primary_capability: str) -> str:
         # Intergrax framework – proprietary and confidential.
 
         from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+        from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
         from {slug}.capabilities import CAPABILITIES
 
         # Register skill packs on the contract — see docs/SKILLS.md
@@ -222,6 +223,7 @@ def _contract_py(slug: str, class_name: str, primary_capability: str) -> str:
                 skills=[],
                 extra_tools=[],
                 risk_level=AgentRiskLevel.LOW,
+                lifecycle_state=AgentLifecycleState.DEVELOPMENT,
                 max_steps=10,
             )
         '''

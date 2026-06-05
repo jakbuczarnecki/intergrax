@@ -30,6 +30,7 @@ def test_agent_engine_rejects_retired_agent_in_production_mode() -> None:
                 id="retired",
                 name="Retired",
                 description="retired",
+                capabilities=["stub.cap"],
                 lifecycle_state=AgentLifecycleState.RETIRED,
             )
         )

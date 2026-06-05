@@ -9,6 +9,7 @@ from intergrax.agents.agent_contract import Agent
 from intergrax.agents.harness_reference_agent import assert_uaep_reference_agent
 from intergrax.agents.uaep_protocol import UAEPAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.runtime.registry.agent_assembly_resolver import assert_agent_assembly_valid
 from intergrax.runtime.registry.agent_routing_policy import evaluate_agent_routing
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.runtime.events.context_skill_recording import record_skill_resolved
@@ -52,6 +53,7 @@ class AgentRegistry:
         if requires_uaep:
             assert_uaep_reference_agent(agent)
         meta = contract or agent.get_contract()
+        assert_agent_assembly_valid(meta)
         if meta.skills or meta.extra_tools:
             if skill_registry is None:
                 skill_registry = _bootstrap_default_skill_registry()

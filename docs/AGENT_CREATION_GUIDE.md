@@ -39,8 +39,9 @@ Implementation status: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTA
 23. [Appendix K — Integration & RAG control plane](#appendix-k--integration--rag-control-plane)
 24. [Appendix L — Context engineering control plane](#appendix-l--context-engineering-control-plane)
 25. [Appendix M — Prompt registry control plane](#appendix-m--prompt-registry-control-plane)
-26. [Anti-patterns](#anti-patterns)
-27. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
+26. [Appendix N — Agent assembly control plane](#appendix-n--agent-assembly-control-plane)
+27. [Anti-patterns](#anti-patterns)
+28. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
 
@@ -1828,6 +1829,87 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 
 ---
 
+## Appendix N — Agent assembly control plane
+
+**Audience:** Tier-2 agent authors, platform engineers.  
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §18; ideal model §17 in [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md).
+
+Agents are **composable capability units** — not monolithic orchestrators. Assembly happens through declarative `AgentContract` metadata, skill packs, and registry-time resolution into `allowed_tools`.
+
+### N.1 Design principles (Harness audit)
+
+| Principle | Meaning in Intergrax |
+|-----------|----------------------|
+| Contract-first | `AgentContract` carries id, capabilities, skills, lifecycle — no runtime edits |
+| Skill composition | Authors declare `skills` (`SkillManifest`) + optional `extra_tools` (`ToolContract`) |
+| Registry resolution | `AgentRegistry.register` merges skills → `allowed_tools`; authors keep `allowed_tools=[]` |
+| Bounded local loop | UAEP steps on agent; Nexus owns global orchestration |
+| Lifecycle governance | `AgentLifecycleState` + `evaluate_agent_routing` gate production selection |
+| Register-time validation | `agent_assembly_resolver` fails fast on incomplete contracts |
+
+### N.2 Agent assembly map
+
+```text
+agents/<slug>/contract.py (Tier-2)
+  └── AgentContract
+        ├── capabilities[]          routing / discovery ids
+        ├── skills[]                SkillManifest packs from catalog
+        ├── extra_tools[]           optional ToolContract references
+        └── lifecycle_state         development → staging → production → deprecated → retired
+
+AgentRegistry.register (Tier-1)
+  └── agent_assembly_resolver       metadata + lifecycle validation
+  └── resolve_contract_tools        SkillResolver → allowed_tools
+  └── evaluate_agent_routing        production / deprecated / retired gating
+```
+
+### N.3 Lifecycle state mapping
+
+Audit vocabulary maps to the canonical enum in `agent_lifecycle_state.py`:
+
+| Audit term | `AgentLifecycleState` | Routing notes |
+|------------|----------------------|---------------|
+| draft | `development` | Lab / non-production routing |
+| experimental | `staging` | Allowed in production_mode selection |
+| certified | `production` | Default for GA agents; set `production_eligible` + owner metadata when shipping |
+| deprecated | `deprecated` | Not routable |
+| retired | `retired` | Not routable; may remain registered for introspection |
+
+### N.4 Core contracts
+
+| Contract | Module | Role |
+|----------|--------|------|
+| `AgentContract` | `contracts/agent_contract_meta.py` | Declarative agent metadata |
+| `AgentLifecycleState` | `contracts/agent_lifecycle_state.py` | Lifecycle enum |
+| `SkillManifest` | `skills/core/contracts.py` | Skill pack declaration |
+| `SkillResolverProtocol` | `skills/resolver.py` | Typed skill → tool resolution |
+| `AgentAssemblyValidationResult` | `runtime/registry/agent_assembly_resolver.py` | Register-time validation outcome |
+| `AgentRoutingDecision` | `runtime/registry/agent_routing_policy.py` | Nexus selection gating |
+
+### N.5 Authoring rules
+
+| Rule | Enforcement |
+|------|-------------|
+| Declare `capabilities` | `validate_contract_metadata` at register |
+| Use `skills` / `extra_tools` for tools | Do not set author-time `allowed_tools` |
+| `production_eligible=True` | Requires `owner_team`, `owner_contact`, `runbook_ref` |
+| Reuse across applications | Agent logic in `agents/`; wiring in Tier-3 `manifest.py` |
+| No private tool registry | Tools from catalog + `ToolProfile` on application host |
+
+### N.6 Verification (audit evidence)
+
+| Concern | Command / test |
+|---------|----------------|
+| Assembly resolver | `pytest tests/unit/runtime/registry/test_agent_assembly_resolver.py -m gate` |
+| Skill → allowed_tools | `pytest tests/unit/runtime/registry/test_agent_registry_skills.py -m gate` |
+| Author-time allowed_tools ban | `python scripts/check_agent_skill_resolution.py` |
+| Lifecycle routing | `pytest tests/unit/runtime/architecture/test_agent_routing_policy.py -m gate` |
+| Full gate | `uv run pytest -m gate -q` |
+
+Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §18: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
@@ -1857,6 +1939,7 @@ Run before opening a harness PR (see `scripts/`):
 |--------|----------|
 | `check_harness_no_getattr.py` | No new `getattr`/`setattr` under `runtime/nexus/` and `agents/` |
 | `check_legacy_modules_removed.py` | Removed modules (`tools_agent`, `chat_router`, `chains`) stay absent; no production imports |
+| `check_agent_skill_resolution.py` | Tier-2 agents do not pre-populate `allowed_tools`; skills resolve at register |
 | `check_agents_vendor_imports.py` | Agents do not import `integrations/providers/` |
 | `check_integration_vendor_imports.py` | Tier-0 does not import application/agent trees incorrectly |
 | `check_production_chat_agent_imports.py` | No `ChatAgent` on production paths |
@@ -1881,4 +1964,5 @@ When asked to create a new Intergrax agent:
 11. For integration backends and RAG retrieval, read [Appendix K](#appendix-k--integration--rag-control-plane) — wire `IntegrationProfile` in Tier-3 only.
 12. For context budget and assembly, read [Appendix L](#appendix-l--context-engineering-control-plane) — configure `ContextProfile`, not ad-hoc prompt stitching.
 13. For YAML prompt catalogs and registry wiring, read [Appendix M](#appendix-m--prompt-registry-control-plane) — configure `PromptProfile`, not inline prompt strings.
-14. Do **not** create duplicate workflow documentation — update this file if the process changes.
+14. For agent contract assembly, skills, and lifecycle, read [Appendix N](#appendix-n--agent-assembly-control-plane) — declare `skills` on `AgentContract`, not raw `allowed_tools`.
+15. Do **not** create duplicate workflow documentation — update this file if the process changes.
