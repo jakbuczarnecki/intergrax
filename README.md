@@ -745,11 +745,11 @@ This is **not classical reinforcement learning** (neural policy training, uncons
 | **What it does** | Observes run outcomes → proposes versioned profile changes → validates through governance → applies via shadow/canary → verifies improvement → rolls back on failure |
 | **What it discovers** | Operational patterns in traces (tool/agent/HITL sequences), routing inefficiencies, cost anomalies, eval regressions |
 | **What stays human-governed** | Policy-learning mutations, promotion to production traffic, skill/workflow creation from mined patterns |
-| **Current status** | Phase V delivered **L4 governance contracts** (`adaptive_governance.py`, maturity gates). **Runtime adaptation** is specified but not yet implemented — tracked as **Phase W-ADAPT**. |
+| **Current status** | Phase V delivered **L4 governance contracts**. **Wave W-ADAPT-0 Done** — ADR-ADAPT-001 + `intergrax/runtime/adaptive/` scaffold. **Next:** Wave 1 Observe (L4-O). |
 
 **Primary document:** [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) — full business case, component specification, data contracts, flow diagrams, phased roadmap (W-ADAPT-0 through W-ADAPT-7), KPIs, and L4 runtime acceptance gates.
 
-**Implementation plan:** [INTERGRAX_IMPLEMENTATION_PLAN.md — Phase W-ADAPT](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) — **70 tasks**, Band 2y, queue [§6.1t](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61t-harness-implementation-queue--adaptive-harness-intelligence-active), traceability [Appendix K](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-k--adaptive-harness-intelligence-traceability-phase-w-adapt).
+**Implementation plan:** [INTERGRAX_IMPLEMENTATION_PLAN.md — Phase W-ADAPT](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) — **5/70 Done** (Wave 0), Band 2y, queue [§6.1t](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61t-harness-implementation-queue--adaptive-harness-intelligence-active), ADR [`ADR-ADAPT-001`](docs/adr/ADR-ADAPT-001.md).
 
 **Canon summary:** [intergrax_runtime_architecture.md §54](docs/intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum)
 

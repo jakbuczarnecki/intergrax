@@ -258,6 +258,12 @@ from intergrax.runtime.architecture.adaptive_governance import (
     evaluate_adaptive_governance,
     evaluate_bounded_adaptive_loop,
 )
+from intergrax.runtime.adaptive import (
+    ADAPTIVE_PACKAGE_SCHEMA_VERSION,
+    AdaptiveLifecycleMode,
+    ProfileArtifactType,
+    ProfileVersionStatus,
+)
 from intergrax.runtime.architecture.maturity_gate_evidence import (
     MaturityGateCheck,
     MaturityGateEvidence,
@@ -439,6 +445,10 @@ __all__ = [
     "AdaptiveLoopGateResult",
     "AdaptiveLoopKind",
     "AdaptiveLoopProposal",
+    "AdaptiveLifecycleMode",
+    "ADAPTIVE_PACKAGE_SCHEMA_VERSION",
+    "ProfileArtifactType",
+    "ProfileVersionStatus",
     "MaturityGateCheck",
     "MaturityGateEvidence",
     "MaturityGateEvidenceReport",

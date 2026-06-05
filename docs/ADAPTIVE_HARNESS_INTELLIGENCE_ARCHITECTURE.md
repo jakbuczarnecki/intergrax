@@ -1225,7 +1225,7 @@ All must pass:
 | R3 | Implement W-ADAPT-1 before any auto-apply code | P0 |
 | R4 | Rename outward-facing term: **Adaptive Harness Intelligence**, not "RL" | P1 |
 | R5 | Extend `phase_v_closeout_gate.py` to distinguish governance-L4 vs runtime-L4 | P1 |
-| R6 | Author ADR-ADAPT-001 from Appendix C | P1 |
+| R6 | Author ADR-ADAPT-001 from Appendix C | P1 | **Done** — [`docs/adr/ADR-ADAPT-001.md`](adr/ADR-ADAPT-001.md) |
 | R7 | Defer ProcessPatternMiner until W-ADAPT-5 verifies core loop | P2 |
 
 ### 24.3 Decision requested
@@ -1272,6 +1272,8 @@ See plan: Phase W-ADAPT master register (W-ADAPT-0.1 … W-ADAPT-7.7) · Appendi
 ---
 
 ## Appendix C — ADR decision record
+
+**Canonical ADR:** [`docs/adr/ADR-ADAPT-001.md`](adr/ADR-ADAPT-001.md)
 
 **ADR-ADAPT-001: Adaptive Harness Intelligence over classical RL**
 
