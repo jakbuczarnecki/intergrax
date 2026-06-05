@@ -85,7 +85,7 @@ dependencies = [
   # -----------------
   # Data / parsing
   # -----------------
-  "numpy==1.26.4",
+  "numpy==2.4.6",
   "pandas>=2.1.4,<3.0.0",
   "beautifulsoup4>=4.12",
   "trafilatura>=1.8",
