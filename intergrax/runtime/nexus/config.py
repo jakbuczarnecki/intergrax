@@ -293,6 +293,7 @@ class RuntimeConfig:
     production_mode: bool = True
     security_profile: Optional["ApplicationSecurityProfile"] = None
 
+    prompt_catalog_path: Optional[str] = None
 
     # ------------------------------------------------------------------
     # COMPOSED SECTIONS (Phase Q-N.8)

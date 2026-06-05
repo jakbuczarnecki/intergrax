@@ -101,8 +101,9 @@ Harness → Runtime → Agents → Applications → Products
 | 7 | `docs/AGENT_CREATION_GUIDE.md` **Appendix J** | **Tools & skills control plane (authoring)** | `ToolProfile`, `SkillProfile`, `catalog_runtime_bridge`, `SkillResolverProtocol`, `ToolRuntime`, conformance checks — use when auditing §11–§12; implementation closeout: plan **Phase TS** (**Done**) |
 | 8 | `docs/AGENT_CREATION_GUIDE.md` **Appendix K** | **Integration & RAG control plane (authoring)** | `IntegrationProfile`, `integration_runtime_bridge`, `rag_runtime_bridge`, health probes, `RetrievalService` — use when auditing §13–§14; closeout: **Phase INT** + **Phase RAG** (**Done**) |
 | 9 | `docs/AGENT_CREATION_GUIDE.md` **Appendix L** | **Context engineering control plane (authoring)** | `ContextProfile`, `context_runtime_bridge`, `context_wiring`, `ContextManager`, `ContextBudgetPolicy` — use when auditing §16; closeout: **Phase CTX** (**Done**) |
+| 10 | `docs/AGENT_CREATION_GUIDE.md` **Appendix M** | **Prompt registry control plane (authoring)** | `PromptProfile`, `prompt_runtime_bridge`, `prompt_wiring`, `YamlPromptRegistry`, `PromptRegistryProtocol` — use when auditing §17; closeout: **Phase PE** (**Done**) |
 
-**Always distinguish these ten views — never conflate them:**
+**Always distinguish these eleven views — never conflate them:**
 
 - **Target** → `IDEAL_HARNESS_AI_ARCHITECTURE.md`
 - **Current architecture** → `intergrax_runtime_architecture.md`
@@ -112,6 +113,7 @@ Harness → Runtime → Agents → Applications → Products
 - **Tools/skills authoring** → `AGENT_CREATION_GUIDE.md` Appendix J
 - **Integration/RAG authoring** → `AGENT_CREATION_GUIDE.md` Appendix K
 - **Context engineering authoring** → `AGENT_CREATION_GUIDE.md` Appendix L
+- **Prompt registry authoring** → `AGENT_CREATION_GUIDE.md` Appendix M
 - **Implementation** → source code under `intergrax/`, `agents/`, `applications/`
 - **Verification** → tests, CI gates, scripts
 

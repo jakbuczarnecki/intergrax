@@ -38,8 +38,9 @@ Implementation status: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTA
 22. [Appendix J — Tools & skills control plane](#appendix-j--tools--skills-control-plane)
 23. [Appendix K — Integration & RAG control plane](#appendix-k--integration--rag-control-plane)
 24. [Appendix L — Context engineering control plane](#appendix-l--context-engineering-control-plane)
-25. [Anti-patterns](#anti-patterns)
-26. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
+25. [Appendix M — Prompt registry control plane](#appendix-m--prompt-registry-control-plane)
+26. [Anti-patterns](#anti-patterns)
+27. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
 
@@ -1751,6 +1752,81 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 
 ---
 
+## Appendix M — Prompt registry control plane
+
+**Audience:** Tier-3 application authors, platform engineers.  
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §17; governance schema: V-REM-PE.1/PE.2 (**Done**).
+
+Prompts are **versioned YAML assets** — not inline strings in agent code. Tier-3 hosts declare catalog location via `PromptProfile`; Nexus prompt builders resolve through `YamlPromptRegistry`.
+
+### M.1 Design principles (Harness audit)
+
+| Principle | Meaning in Intergrax |
+|-----------|----------------------|
+| Asset-first | Prompts live under versioned YAML catalogs (`prompt_id/1.yaml`, `stable.yaml`) |
+| Governance metadata | `PromptMeta` carries `owner_team`, `risk_tier`, version fields — validated on load |
+| Environment-driven | `PromptProfile` on `ApplicationEnvironmentProfile` — not agent imports |
+| Typed bridges | `prompt_runtime_bridge`, `prompt_wiring` — explicit Tier-3 → Tier-1 mapping |
+| Injectable registry | `RuntimeContext.build(prompt_registry=…)` — builders share one registry instance |
+
+### M.2 Prompt control plane map
+
+```text
+ApplicationEnvironmentProfile (Tier-3)
+  └── prompt_profile              catalog_path · load_on_startup
+
+materialize_runtime_config()
+  └── prompt_runtime_bridge.py    → RuntimeConfig.prompt_catalog_path
+
+wire_application_environment() / build_runtime_context_from_environment()
+  └── prompt_wiring.py            resolve_prompt_registry()
+        ├── ApplicationBuildContext.prompt_registry
+        └── RuntimeContext.build(prompt_registry=…)
+
+Nexus prompt builders (Tier-1)
+  └── DefaultRagPromptBuilder · DefaultUserLongTermMemoryPromptBuilder · …
+        └── prompt_registry.resolve() / resolve_localized()
+```
+
+### M.3 Core contracts
+
+| Contract | Module | Role |
+|----------|--------|------|
+| `PromptProfile` | `environment_profile.py` | Tier-3 catalog selection |
+| `PromptRegistryProtocol` | `prompts/registry/prompt_registry_protocol.py` | Typed resolve surface |
+| `YamlPromptRegistry` | `prompts/registry/yaml_registry.py` | Production YAML catalog loader |
+| `PromptMeta` | `prompts/schema/prompt_schema.py` | Owner/risk/version governance |
+
+### M.4 Customization surfaces
+
+| Surface | How to customize |
+|---------|------------------|
+| **Catalog path** | `ApplicationEnvironmentProfile.prompt_profile.catalog_path` (default: `prompts/`) |
+| **Eager load** | `PromptProfile.load_on_startup` — passed to `YamlPromptRegistry.create_default(load=…)` |
+| **Runtime fallback** | `RuntimeConfig.prompt_catalog_path` when `prompt_registry` not injected explicitly |
+| **Pin / version** | `PromptPinConfig` on `registry.resolve(prompt_id, pin=…)` |
+
+### M.5 Runtime bridges (PE — Done)
+
+| Bridge | Module | Maps |
+|--------|--------|------|
+| Prompt → RuntimeConfig | `prompt_runtime_bridge.py` | `catalog_path` → `prompt_catalog_path` |
+| Prompt → registry | `prompt_wiring.py` | `PromptProfile` → `YamlPromptRegistry` |
+| Environment wire | `environment_wiring.py` | `ApplicationBuildContext.prompt_registry` |
+
+### M.6 Verification (audit evidence)
+
+| Concern | Command / test |
+|---------|----------------|
+| Prompt runtime bridge | `pytest tests/unit/applications/test_prompt_runtime_bridge.py -m gate` |
+| Prompt wiring | `pytest tests/unit/applications/test_prompt_wiring.py -m gate` |
+| PromptMeta governance | `pytest tests/unit/prompts/test_prompt_governance_meta.py -m gate` |
+| Full gate | `uv run pytest -m gate -q` |
+
+Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §17: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
@@ -1803,4 +1879,5 @@ When asked to create a new Intergrax agent:
 10. For tool/skill catalogs and runtime bridge, read [Appendix J](#appendix-j--tools--skills-control-plane) — enable profiles on environment, not in agent code.
 11. For integration backends and RAG retrieval, read [Appendix K](#appendix-k--integration--rag-control-plane) — wire `IntegrationProfile` in Tier-3 only.
 12. For context budget and assembly, read [Appendix L](#appendix-l--context-engineering-control-plane) — configure `ContextProfile`, not ad-hoc prompt stitching.
-13. Do **not** create duplicate workflow documentation — update this file if the process changes.
+13. For YAML prompt catalogs and registry wiring, read [Appendix M](#appendix-m--prompt-registry-control-plane) — configure `PromptProfile`, not inline prompt strings.
+14. Do **not** create duplicate workflow documentation — update this file if the process changes.

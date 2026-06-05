@@ -64,6 +64,15 @@ class ContextDecisionProfile(BaseModel):
     max_memory_entries_in_context: int = Field(default=8, ge=1, le=64)
 
 
+class PromptProfile(BaseModel):
+    """YAML prompt catalog selection for a Tier-3 host (Phase PE-1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    catalog_path: Path | None = None
+    load_on_startup: bool = True
+
+
 class ContextProfile(BaseModel):
     """Context assembly defaults for Nexus (Phase H-APP.4.1)."""
 
@@ -164,6 +173,7 @@ class ApplicationEnvironmentProfile(BaseModel):
     skill_profile: SkillProfile = Field(default_factory=SkillProfile)
     modality_profile: ModalityProfile | None = None
     llm_profile: LLMProfile | None = None
+    prompt_profile: PromptProfile = Field(default_factory=PromptProfile)
     context_profile: ContextProfile = Field(default_factory=ContextProfile)
     memory_profile: MemoryProfile = Field(default_factory=MemoryProfile)
     reliability_profile: ReliabilityProfile = Field(default_factory=ReliabilityProfile)

@@ -946,6 +946,8 @@ Context Engineering Score: L0-L4
 
 ## 17. Prompt Engineering and Prompt Registry
 
+**Authoring map (control plane):** `AGENT_CREATION_GUIDE.md` **Appendix M** · implementation closeout: plan **Phase PE** (**Done**).
+
 ### Purpose
 
 Verify that prompts are managed architectural assets, not hidden strings in code.

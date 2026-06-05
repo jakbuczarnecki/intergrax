@@ -17,6 +17,7 @@ from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 from intergrax.applications._shared.rag_runtime_bridge import resolve_rag_stack_for_environment
 from intergrax.applications._shared.modality_wiring import wire_modality_extras
 from intergrax.applications._shared.policy_wiring import wire_policy_bundle
+from intergrax.applications._shared.prompt_wiring import resolve_prompt_registry
 from intergrax.applications._shared.sandbox_wiring import tool_profile_with_sandbox, wire_sandbox_sessions
 from intergrax.applications._shared.shadow_wiring import wire_shadow_workspace
 from intergrax.applications._shared.skill_wiring import ApplicationSkillWiring, build_application_skill_wiring
@@ -28,6 +29,7 @@ from intergrax.integrations.contracts.base import HealthStatus
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
+from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 
@@ -43,6 +45,7 @@ class ApplicationEnvironmentWiring:
     shadow_manager: ShadowWorkspaceManager | None
     sandbox_manager: SandboxSessionManager | None
     integration_health: tuple[HealthStatus, ...] = ()
+    prompt_registry: YamlPromptRegistry | None = None
 
 
 def wire_application_environment(
@@ -93,6 +96,7 @@ def wire_application_environment(
     )
     skill_wiring = build_application_skill_wiring(env.skill_profile)
     policy_bundle = wire_policy_bundle(env)
+    prompt_registry = resolve_prompt_registry(env.prompt_profile)
 
     tool_registry = tool_wiring.registry
     if not tool_wiring.profile.enabled and not tool_wiring.profile.enabled_bundles:
@@ -112,6 +116,7 @@ def wire_application_environment(
         strict_harness=strict_harness,
         trace_db_path=trace_db_path,
         environment=env,
+        prompt_registry=prompt_registry,
     )
 
     if conformance_check:
@@ -129,4 +134,5 @@ def wire_application_environment(
         shadow_manager=wire_shadow_workspace(env),
         sandbox_manager=wire_sandbox_sessions(env),
         integration_health=integration_health,
+        prompt_registry=prompt_registry,
     )

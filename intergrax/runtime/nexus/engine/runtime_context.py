@@ -258,8 +258,14 @@ class RuntimeContext:
         config.validate()
 
         if prompt_registry is None:
-            # Default production registry
-            prompt_registry = YamlPromptRegistry.create_default(load=True)
+            catalog_path = config.prompt_catalog_path
+            if catalog_path is not None:
+                prompt_registry = YamlPromptRegistry.create_default(
+                    path=catalog_path,
+                    load=True,
+                )
+            else:
+                prompt_registry = YamlPromptRegistry.create_default(load=True)
 
         # Resolve ContextBuilder (RAG)
         resolved_context_builder = context_builder
