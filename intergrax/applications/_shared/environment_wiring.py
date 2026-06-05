@@ -18,6 +18,13 @@ from intergrax.applications._shared.rag_runtime_bridge import resolve_rag_stack_
 from intergrax.applications._shared.modality_wiring import wire_modality_extras
 from intergrax.applications._shared.policy_wiring import wire_policy_bundle
 from intergrax.applications._shared.prompt_wiring import resolve_prompt_registry
+from intergrax.applications._shared.capability_graph_assembly_resolver import (
+    assert_capability_graph_assembly_valid,
+)
+from intergrax.applications._shared.capability_graph_wiring import (
+    EnvironmentCapabilityGraphView,
+    resolve_environment_capability_graph,
+)
 from intergrax.applications._shared.registry_assembly_resolver import assert_registry_assembly_valid
 from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot, resolve_registry_snapshot
 from intergrax.applications._shared.sandbox_wiring import tool_profile_with_sandbox, wire_sandbox_sessions
@@ -49,6 +56,7 @@ class ApplicationEnvironmentWiring:
     integration_health: tuple[HealthStatus, ...] = ()
     prompt_registry: YamlPromptRegistry | None = None
     registry_snapshot: HarnessRegistrySnapshot | None = None
+    capability_graph: EnvironmentCapabilityGraphView | None = None
 
 
 def wire_application_environment(
@@ -123,9 +131,11 @@ def wire_application_environment(
     )
 
     registry_snapshot = resolve_registry_snapshot(build_context)
+    capability_graph = resolve_environment_capability_graph(manifest, env, registry_snapshot)
 
     if conformance_check:
         assert_registry_assembly_valid(registry_snapshot, env)
+        assert_capability_graph_assembly_valid(capability_graph, registry_snapshot, manifest)
         EnvironmentSkillToolConsistencyCheck(fail_on_violation=False).validate_roster(
             manifest.agents,
             env,
@@ -142,4 +152,5 @@ def wire_application_environment(
         integration_health=integration_health,
         prompt_registry=prompt_registry,
         registry_snapshot=registry_snapshot,
+        capability_graph=capability_graph,
     )

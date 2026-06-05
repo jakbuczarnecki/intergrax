@@ -41,8 +41,9 @@ Implementation status: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTA
 25. [Appendix M — Prompt registry control plane](#appendix-m--prompt-registry-control-plane)
 26. [Appendix N — Agent assembly control plane](#appendix-n--agent-assembly-control-plane)
 27. [Appendix O — Registry architecture control plane](#appendix-o--registry-architecture-control-plane)
-28. [Anti-patterns](#anti-patterns)
-29. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
+28. [Appendix P — Capability graph control plane](#appendix-p--capability-graph-control-plane)
+29. [Anti-patterns](#anti-patterns)
+30. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
 
@@ -1990,6 +1991,69 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 
 ---
 
+## Appendix P — Capability graph control plane
+
+**Audience:** Tier-3 application authors, platform engineers, release/ops.  
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §20; Phase V-CG **Done**; environment closeout Phase CG.
+
+Dependencies between integrations, tools, skills, policies, agents, and applications must be **explicit, typed, and analyzable** for blast-radius and compatibility checks.
+
+### P.1 Design principles (Harness audit)
+
+| Principle | Meaning in Intergrax |
+|-----------|----------------------|
+| Typed graph | `CapabilityNodeType` + `CapabilityEdgeType` on `CapabilityGraph` |
+| Catalog baseline | `build_catalog_capability_graph()` from registries + reference manifests |
+| Environment slice | `resolve_environment_capability_graph()` — host-scoped subgraph |
+| Blast radius | `build_capability_impact_report()` — downstream node sets |
+| Compatibility | `evaluate_capability_graph_compatibility()` — release guard |
+| Wire-time validation | `capability_graph_assembly_resolver` at `wire_application_environment` |
+
+### P.2 Capability graph map
+
+```text
+Catalog baseline (Tier-0/1)
+  └── build_catalog_capability_graph()
+        ├── integration:*  → tool:*  (depends_on)
+        ├── skill:*        → tool:*  (depends_on)
+        ├── agent:*        → skill:* / tool:*  (depends_on)
+        └── application:*  → agent:*  (depends_on)
+
+wire_application_environment() (Tier-3)
+  └── capability_graph_wiring.py
+        ├── resolve_environment_capability_graph()
+        └── capability_graph_assembly_resolver.py
+
+Release / CI
+  └── phase_v_capability_graph_guard.py --enforce
+  └── check_harness_capability_graph_wiring.py
+```
+
+### P.3 Core contracts
+
+| Contract | Module | Role |
+|----------|--------|------|
+| `CapabilityGraph` | `runtime/architecture/capability_graph.py` | Typed nodes + edges |
+| `CapabilityGraphViewProtocol` | `applications/_shared/capability_graph_protocol.py` | Environment graph audit surface |
+| `EnvironmentCapabilityGraphView` | `applications/_shared/capability_graph_wiring.py` | Host-scoped subgraph |
+| `build_capability_lineage_report` | `capability_graph_lineage.py` | Upstream/downstream lineage |
+| `build_capability_impact_report` | `capability_graph_lineage.py` | Blast-radius analysis |
+| `evaluate_capability_graph_compatibility` | `capability_graph_compatibility.py` | Baseline diff guard |
+
+### P.4 Verification (audit evidence)
+
+| Concern | Command / test |
+|---------|----------------|
+| Environment graph wiring | `pytest tests/unit/applications/test_capability_graph_wiring.py -m gate` |
+| Host graph materialization | `python scripts/check_harness_capability_graph_wiring.py` |
+| Catalog compatibility guard | `uv run python scripts/phase_v_capability_graph_guard.py --enforce` |
+| Lineage / impact reports | `build/architecture_hardening/capability_*_report.json` |
+| Full gate | `uv run pytest -m gate -q` |
+
+Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §20: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
@@ -2021,6 +2085,7 @@ Run before opening a harness PR (see `scripts/`):
 | `check_legacy_modules_removed.py` | Removed modules (`tools_agent`, `chat_router`, `chains`) stay absent; no production imports |
 | `check_agent_skill_resolution.py` | Tier-2 agents do not pre-populate `allowed_tools`; skills resolve at register |
 | `check_harness_registry_resolution.py` | Tier-3 hosts wire catalogs via `wire_application_environment` / `build_harness_host_runtime` |
+| `check_harness_capability_graph_wiring.py` | Hosts materialize environment capability graph at wire time |
 | `check_agents_vendor_imports.py` | Agents do not import `integrations/providers/` |
 | `check_integration_vendor_imports.py` | Tier-0 does not import application/agent trees incorrectly |
 | `check_production_chat_agent_imports.py` | No `ChatAgent` on production paths |
@@ -2047,4 +2112,5 @@ When asked to create a new Intergrax agent:
 13. For YAML prompt catalogs and registry wiring, read [Appendix M](#appendix-m--prompt-registry-control-plane) — configure `PromptProfile`, not inline prompt strings.
 14. For agent contract assembly, skills, and lifecycle, read [Appendix N](#appendix-n--agent-assembly-control-plane) — declare `skills` on `AgentContract`, not raw `allowed_tools`.
 15. For registry wiring and catalog resolution, read [Appendix O](#appendix-o--registry-architecture-control-plane) — enable profiles on environment, not direct `ToolRegistry()` in hosts.
-16. Do **not** create duplicate workflow documentation — update this file if the process changes.
+16. For capability graph lineage and blast-radius, read [Appendix P](#appendix-p--capability-graph-control-plane) — environment graph is built at wire time from catalog baseline.
+17. Do **not** create duplicate workflow documentation — update this file if the process changes.

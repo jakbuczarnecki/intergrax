@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-02) — **Harness platform bands 1–2r Done**; **Phase REG closed**; default queue = **§6.1** maintenance; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; **Orchestration (ORCH)**, **Tools/skills (TS)**, **Integration (INT)**, **RAG**, **CTX**, **LEG**, **PE**, **CLEAN** closeouts **Done**; **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate green after CLEAN; **operational L3 signed off** (`release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce`)  
+Status: Working draft (2026-06-02) — **Harness platform bands 1–2s Done**; **Phase CG closed**; default queue = **§6.1** maintenance; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; **Orchestration (ORCH)**, **Tools/skills (TS)**, **Integration (INT)**, **RAG**, **CTX**, **LEG**, **PE**, **CLEAN** closeouts **Done**; **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate green after CLEAN; **operational L3 signed off** (`release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce`)  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -38,6 +38,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Legacy module closeout (chat_router, tools_agent, chains) | [Phase CLEAN](#phase-clean--legacy-module-closeout) · **§6.1j** |
 | Agent assembly closeout (contracts, capabilities, lifecycle) | [Phase AS](#phase-as--agent-assembly-control-plane-closeout) · **§6.1k** · Band **2q** · **Appendix N** |
 | Registry architecture closeout (snapshots, conformance, CI) | [Phase REG](#phase-reg--registry-architecture-control-plane-closeout) · **§6.1l** · Band **2r** · **Appendix O** |
+| Capability graph closeout (environment slice, blast-radius wire) | [Phase CG](#phase-cg--capability-graph-control-plane-closeout) · **§6.1m** · Band **2s** · **Appendix P** |
 | Tier-3 application environment (self-contained deploy) | Architecture canon §7.4.8–§7.4.10 |
 | Tier-3 composition engine (manifest, wiring API) | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
 | Tier-3 application hosts (`applications/<app>/`) | [`applications/USAGE.md`](../applications/USAGE.md) |
@@ -182,7 +183,8 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Legacy module closeout (Phase CLEAN)** | **Done** | No (harness-only) | CLEAN-1–4 — [§6.1j](#61j-harness-implementation-queue--legacy-module-closeout-closed) |
 | **Agent assembly closeout (Phase AS)** | **Done** (Band 2q) | No (harness-only) | AS-1–3 — [§6.1k](#61k-harness-implementation-queue--agent-assembly-closeout-closed) |
 | **Registry architecture closeout (Phase REG)** | **Done** (Band 2r) | No (harness-only) | REG-1–3 — [§6.1l](#61l-harness-implementation-queue--registry-architecture-closeout-closed) |
-| Regression gate | **642 passed** | No | Must stay green after each harness PR |
+| **Capability graph closeout (Phase CG)** | **Done** (Band 2s) | No (harness-only) | CG-1–3 — [§6.1m](#61m-harness-implementation-queue--capability-graph-closeout-closed) |
+| Regression gate | **649 passed** | No | Must stay green after each harness PR |
 
 ---
 
@@ -3599,6 +3601,7 @@ Paydown Wave P3 (optional polish):
 | **2p — Prompt registry closeout (PE)** | `PromptProfile`, `prompt_runtime_bridge`, `prompt_wiring`, Appendix M — **no** business agents | **Done** (2026-06-02) | [Phase PE](#phase-pe--prompt-registry-control-plane-closeout) · **§6.1i** |
 | **2q — Agent assembly closeout (AS)** | Agent contract conformance, capability/skill resolution, lifecycle state — **no** business agents | **Done** (2026-06-02) | [Phase AS](#phase-as--agent-assembly-control-plane-closeout) · **§6.1k** · **Appendix N** |
 | **2r — Registry architecture closeout (REG)** | Registry snapshot, assembly resolver, host resolution CI — **no** business agents | **Done** (2026-06-02) | [Phase REG](#phase-reg--registry-architecture-control-plane-closeout) · **§6.1l** · **Appendix O** |
+| **2s — Capability graph closeout (CG)** | Environment graph slice, wire-time validation, CI audit — **no** business agents | **Done** (2026-06-02) | [Phase CG](#phase-cg--capability-graph-control-plane-closeout) · **§6.1m** · **Appendix P** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
@@ -3624,6 +3627,7 @@ BAND 2o: Legacy tool plan closeout — Phase LEG (§6.1h) — DONE (LEG-1 → LE
 BAND 2p: Prompt registry closeout — Phase PE (§6.1i) — DONE (PE-1 → PE-3)
 BAND 2q: Agent assembly closeout — Phase AS (§6.1k) — DONE (AS-1 → AS-3)
 BAND 2r: Registry architecture closeout — Phase REG (§6.1l) — DONE (REG-1 → REG-3)
+BAND 2s: Capability graph closeout — Phase CG (§6.1m) — DONE (CG-1 → CG-3)
 DONE:    Phase CLEAN — legacy module closeout (§6.1j) — 2026-06-02
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
@@ -4037,9 +4041,30 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 ---
 
+## Phase CG — Capability graph control plane closeout
+
+**Status:** **Done** (2026-06-02) — **4/4** deliverables Done (CG-DOC.1 + CG-1–3)
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §20; Phase V-CG **Done**; author map: `AGENT_CREATION_GUIDE.md` **Appendix P**.
+
+**Priority ladder:** **Band 2s** (§4.0) — closed; default queue = **§6.1** maintenance.
+
+### CG — Master register
+
+| ID | Area | Deliverable | Status | Modules | Acceptance |
+|----|------|-------------|--------|---------|------------|
+| CG-DOC.1 | CG0 | **Appendix P** — capability graph control plane | **Done** | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| CG-1 | CG1 | **`capability_graph_wiring`** — environment subgraph from catalog + registry snapshot | **Done** | `capability_graph_wiring.py`, `capability_graph_protocol.py` | `test_capability_graph_wiring.py` |
+| CG-2 | CG2 | **`capability_graph_assembly_resolver`** — wire-time catalog node validation | **Done** | `capability_graph_assembly_resolver.py`, `environment_wiring.py` | `test_capability_graph_wiring.py` |
+| CG-3 | CG3 | **Host capability graph CI** — `check_harness_capability_graph_wiring.py` | **Done** | `scripts/`, CI workflow | audit script in CI |
+
+**Explicitly excluded:** new business agents (K.1/K.2), product-only graph nodes — [§6.3a](#63a-business-backlog-register-consolidated).
+
+---
+
 ## 6. What to implement next
 
-**Default answer (infrastructure only):** **[§6.1](#61-harness-platform-maintenance-default--band-1)** — keep gate green. Phase REG **Done**. Phase AS **Done**. Phase CLEAN **Done**. Phase PE **Done**. Phase LEG **Done**. Phase CTX **Done**. Phase INT + RAG **Done**. Phase TS **Done**. Phase ORCH **Done**. GOV-AUDIT **Done**. Phase V-REM **Done**. Phase MEM **Done** (48/48). Product work gated by [§6.3](#63-product--business-scope-gate).
+**Default answer (infrastructure only):** **[§6.1](#61-harness-platform-maintenance-default--band-1)** — keep gate green. Phase CG **Done**. Phase REG **Done**. Phase AS **Done**. Phase CLEAN **Done**. Phase PE **Done**. Phase LEG **Done**. Phase CTX **Done**. Phase INT + RAG **Done**. Phase TS **Done**. Phase ORCH **Done**. GOV-AUDIT **Done**. Phase V-REM **Done**. Phase MEM **Done** (48/48). Product work gated by [§6.3](#63-product--business-scope-gate).
 
 **Not default:** K.1, K.2, Legal UAEP domain steps, new product Tier-3 apps — **[§6.3](#63-end-of-plan--deferred-product-work-only)** · **[§6.3a](#63a-business-backlog-register-consolidated)** · **[§4.0a](#40a-implementation-scope-split-infrastructure-vs-business)**.
 
@@ -4101,6 +4126,20 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 | 4 | **REG-3** | CI | **Done** | `check_harness_registry_resolution.py` | CI green |
 
 **Suggested PR order (complete):** REG-DOC.1 → REG-1 → REG-2 → REG-3.
+
+### 6.1m Harness implementation queue — capability graph closeout (closed)
+
+**Purpose:** Single ordered list for **Phase CG** (Band 2s). **Closed 2026-06-02**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **CG-DOC.1** | Docs | **Done** | Appendix P + cross-refs | Author map complete |
+| 2 | **CG-1** | Code | **Done** | `capability_graph_wiring` | `test_capability_graph_wiring.py` |
+| 3 | **CG-2** | Code | **Done** | `capability_graph_assembly_resolver` | wire-time validation tests |
+| 4 | **CG-3** | CI | **Done** | `check_harness_capability_graph_wiring.py` | CI green |
+
+**Suggested PR order (complete):** CG-DOC.1 → CG-1 → CG-2 → CG-3.
 
 ### 6.1f Harness implementation queue — context engineering closeout (closed)
 
@@ -4244,6 +4283,7 @@ Verify (every harness PR):
   python scripts/check_legacy_modules_removed.py
   python scripts/check_agent_skill_resolution.py
   python scripts/check_harness_registry_resolution.py
+  python scripts/check_harness_capability_graph_wiring.py
   python scripts/check_legacy_tool_plan_booleans.py
   python scripts/check_plugin_catalog.py
   uv run python scripts/phase_w_ops_evidence.py
@@ -4258,6 +4298,17 @@ Verify (every harness PR):
 ```
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
+
+### 6.2bj Phase CG execution order (Band 2s — closed 2026-06-02)
+
+**Status:** **Done** · register: [Phase CG](#phase-cg--capability-graph-control-plane-closeout) · queue: [§6.1m](#61m-harness-implementation-queue--capability-graph-closeout-closed)
+
+| Step | ID | Deliverable | Priority |
+|------|-----|-------------|----------|
+| 1 | CG-DOC.1 | Appendix P + plan sync | High |
+| 2 | CG-1 | `capability_graph_wiring` | Critical |
+| 3 | CG-2 | `capability_graph_assembly_resolver` | High |
+| 4 | CG-3 | `check_harness_capability_graph_wiring.py` | Medium |
 
 ### 6.2bi Phase REG execution order (Band 2r — closed 2026-06-02)
 

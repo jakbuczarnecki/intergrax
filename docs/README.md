@@ -1,6 +1,6 @@
 # Intergrax — Documentation
 
-**Last updated:** 2026-06-02 (control-plane closeouts through REG Done; §6.1 maintenance)
+**Last updated:** 2026-06-02 (control-plane closeouts through CG Done; §6.1 maintenance)
 
 The `docs/` folder holds the canonical platform documentation.
 
@@ -53,6 +53,7 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | See what to implement next (harness) | [§6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) maintenance only |
 | **Agent assembly (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix N](AGENT_CREATION_GUIDE.md#appendix-n--agent-assembly-control-plane) · [Phase AS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-as--agent-assembly-control-plane-closeout) |
 | **Registry architecture (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix O](AGENT_CREATION_GUIDE.md#appendix-o--registry-architecture-control-plane) · [Phase REG](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-reg--registry-architecture-control-plane-closeout) |
+| **Capability graph (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix P](AGENT_CREATION_GUIDE.md#appendix-p--capability-graph-control-plane) · [Phase CG](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-cg--capability-graph-control-plane-closeout) |
 | **Policy, governance & observability (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · canon [§42.11](intergrax_runtime_architecture.md#4211-policy-engine) · [`HARNESS_ENVIRONMENT.md`](HARNESS_ENVIRONMENT.md) |
 | **Orchestration, graphs & delegation (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix I](AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) · canon [§42.43](intergrax_runtime_architecture.md#4243-multi-agent-collaboration-flow-reference) · [Appendix C](AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs) |
 | **Tools & skills (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix J](AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) · [Phase TS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-ts--tools--skills-control-plane-closeout) |
@@ -122,9 +123,10 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | **Phase CLEAN — Legacy module closeout** | **Done** (2026-06-02) — CLEAN-1→4 |
 | **Phase AS — Agent assembly closeout** | **Done** (2026-06-02) — AS-1→3 |
 | **Phase REG — Registry architecture closeout** | **Done** (2026-06-02) — REG-1→3 |
+| **Phase CG — Capability graph closeout** | **Done** (2026-06-02) — CG-1→3 |
 | **Phase K — Business agents** | **End of plan** — §6.3; **not** default next |
 
-Gate: `uv run pytest -m gate -q` — **642 passed** (2026-06-02)
+Gate: `uv run pytest -m gate -q` — **649 passed** (2026-06-02)
 
 Harness CI also runs: `python scripts/check_harness_no_getattr.py` (zero grandfathered paths)
 
