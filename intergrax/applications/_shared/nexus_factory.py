@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from intergrax.applications._shared.application_security_wiring import register_application_security_hooks
+from intergrax.applications._shared.context_wiring import resolve_context_manager_from_environment
 from intergrax.applications._shared.orchestration_wiring import (
     OrchestrationWiringContext,
     resolve_max_parallel_nodes,
@@ -16,8 +17,10 @@ from intergrax.applications._shared.orchestration_wiring import (
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.long_running.notification import NotificationAdapter
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
+from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
@@ -39,6 +42,8 @@ def build_nexus_loop_from_environment(
     shadow_manager: ShadowWorkspaceManager | None = None,
     sandbox_manager: SandboxSessionManager | None = None,
     llm_adapter: LLMAdapter | None = None,
+    runtime_event_bus: RuntimeEventBus | None = None,
+    context_manager: ContextManager | None = None,
 ) -> NexusLoop:
     """Apply orchestration and reliability profiles to ``NexusLoop`` construction."""
     orch = env.orchestration_profile
@@ -51,12 +56,18 @@ def build_nexus_loop_from_environment(
     planner = resolve_nexus_task_planner(env, wiring_context=wiring_context)
     classifier = resolve_nexus_task_classifier(registry, env)
     max_parallel_nodes = resolve_max_parallel_nodes(env)
+    resolved_context_manager = context_manager or resolve_context_manager_from_environment(
+        env,
+        event_bus=runtime_event_bus,
+    )
 
     loop = NexusLoop(
         registry,
         classifier=classifier,
         planner=planner,
         max_parallel_nodes=max_parallel_nodes,
+        context_manager=resolved_context_manager,
+        event_bus=runtime_event_bus,
         trace_store=trace_store,
         retry_policy=retry_policy,
         shadow_manager=shadow_manager,

@@ -15,7 +15,8 @@ from intergrax.applications._shared.integration_runtime_bridge import (
 )
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 from intergrax.applications._shared.rag_runtime_bridge import apply_rag_for_environment
-from intergrax.applications._shared.memory_runtime_bridge import apply_environment_profiles_to_runtime_config
+from intergrax.applications._shared.context_runtime_bridge import apply_context_profiles_from_environment
+from intergrax.applications._shared.memory_runtime_bridge import apply_memory_profile_to_runtime_config
 from intergrax.applications._shared.memory_wiring import (
     build_session_manager_from_environment,
     resolve_memory_platform_wiring,
@@ -103,7 +104,8 @@ def materialize_runtime_config(
     )
     if pipeline is not None:
         config.pipeline = pipeline
-    apply_environment_profiles_to_runtime_config(config, env)
+    apply_memory_profile_to_runtime_config(config, env.memory_profile)
+    apply_context_profiles_from_environment(config, env)
     apply_integration_profiles_from_environment(config, env)
     apply_catalog_profiles_from_environment(config, env)
     if isinstance(harness_ctx, ApplicationBuildContext):

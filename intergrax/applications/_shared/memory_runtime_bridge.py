@@ -4,12 +4,21 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.context_runtime_bridge import (
+    apply_context_profile_to_runtime_config,
+    apply_context_profiles_from_environment,
+)
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
-    ContextProfile,
     MemoryProfile,
 )
 from intergrax.runtime.nexus.config import RuntimeConfig
+
+__all__ = [
+    "apply_context_profile_to_runtime_config",
+    "apply_memory_profile_to_runtime_config",
+    "apply_environment_profiles_to_runtime_config",
+]
 
 
 def apply_memory_profile_to_runtime_config(
@@ -26,32 +35,11 @@ def apply_memory_profile_to_runtime_config(
     return config
 
 
-def apply_context_profile_to_runtime_config(
-    config: RuntimeConfig,
-    context: ContextProfile,
-) -> RuntimeConfig:
-    """Apply ``ContextProfile`` budget and assembly options."""
-    config.enable_rag = context.enable_rag
-    config.enable_websearch = context.enable_websearch
-    if context.budget_policy is not None:
-        config.context_budget_policy = context.budget_policy
-    config.task_context_assembly_options = context.assembly_options
-    config.context_decision_profile = context.decision.model_dump(mode="json")
-    if context.decision.max_memory_entries_in_context != config.max_longterm_entries_per_query:
-        config.max_longterm_entries_per_query = context.decision.max_memory_entries_in_context
-    return config
-
-
 def apply_environment_profiles_to_runtime_config(
     config: RuntimeConfig,
     env: ApplicationEnvironmentProfile,
 ) -> RuntimeConfig:
     """Full memory + context bridge from environment profile."""
     apply_memory_profile_to_runtime_config(config, env.memory_profile)
-    apply_context_profile_to_runtime_config(config, env.context_profile)
-    if config.context_budget_policy is not None and config.run_budget is None:
-        from intergrax.runtime.nexus.budget.budget_models import RunBudget
-
-        policy = config.context_budget_policy
-        config.run_budget = RunBudget(max_total_tokens=policy.max_tokens_estimate)
+    apply_context_profiles_from_environment(config, env)
     return config

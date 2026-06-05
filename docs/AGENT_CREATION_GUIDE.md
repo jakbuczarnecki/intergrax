@@ -37,8 +37,9 @@ Implementation status: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTA
 21. [Appendix I — Orchestration control plane](#appendix-i--orchestration-control-plane)
 22. [Appendix J — Tools & skills control plane](#appendix-j--tools--skills-control-plane)
 23. [Appendix K — Integration & RAG control plane](#appendix-k--integration--rag-control-plane)
-24. [Anti-patterns](#anti-patterns)
-25. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
+24. [Appendix L — Context engineering control plane](#appendix-l--context-engineering-control-plane)
+25. [Anti-patterns](#anti-patterns)
+26. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
 
@@ -1665,6 +1666,91 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 
 ---
 
+## Appendix L — Context engineering control plane
+
+**Audience:** Tier-3 application authors, platform engineers.  
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §16; canon [§28](intergrax_runtime_architecture.md#281-context-engineering); memory/RAG naming: [Appendix G](#appendix-g--memory--rag-naming-phase-q).
+
+Context engineering is a **first-class Nexus concern** — budgeted assembly, provenance, trimming telemetry, and deterministic pipelines. Agents do not hand-build prompts; `ContextManager` + `ContextBuilder` assemble bounded context from task, memory, RAG, tools, and graph outputs.
+
+### L.1 Design principles (Harness audit)
+
+| Principle | Meaning in Intergrax |
+|-----------|----------------------|
+| Central assembly | `ContextManager` (graph nodes) + `ContextBuilder` (runtime turns) |
+| Budget-first | `ContextBudgetPolicy` on `ContextProfile` → trim + `CONTEXT_TRIMMED` events |
+| Provenance | `ContextProvenance` on `AgentContextBundle` — source lineage per fragment |
+| Environment-driven | `ContextProfile` on `ApplicationEnvironmentProfile` — not agent code |
+| Typed bridges | `context_runtime_bridge`, `context_wiring` — explicit Tier-3 → Tier-1 mapping |
+
+### L.2 Context control plane map
+
+```text
+ApplicationEnvironmentProfile (Tier-3)
+  └── context_profile            budget_policy · assembly_options · decision · RAG flags
+
+materialize_runtime_config()
+  ├── context_runtime_bridge.py   → RuntimeConfig.context_budget_policy
+  │                                 task_context_assembly_options · run_budget
+  └── memory_runtime_bridge.py    memory toggles (MEM)
+
+wire_application_environment() / build_harness_host_runtime()
+  └── context_wiring.py           resolve_context_manager_from_environment()
+        └── build_nexus_loop_from_environment() → NexusLoop.context_manager
+
+Task intake (Tier-3 hosts)
+  └── merge_task_context_options_from_environment()   overlay assembly_options on TaskExecutionOptions
+
+Nexus graph execution (Tier-1)
+  └── ContextManager.build_agent_context()   provenance · summary tiers · budget trim
+        └── record_context_assembly() on RuntimeEventBus
+```
+
+### L.3 Core contracts
+
+| Contract | Module | Role |
+|----------|--------|------|
+| `ContextProfile` | `environment_profile.py` | Tier-3 context defaults |
+| `ContextBudgetPolicy` | `context/context_budget.py` | Char/token limits + trim |
+| `TaskContextAssemblyOptions` | `contracts/context_assembly.py` | Per-task assembly rules |
+| `ContextManager` | `context/context_manager.py` | Graph-node context bundles |
+| `AgentContextBundle` | `context/context_manager.py` | Bounded message + provenance |
+| `ContextProvenance` | `context/context_models.py` | Source lineage metadata |
+
+### L.4 Customization surfaces
+
+| Surface | How to customize |
+|---------|------------------|
+| **Context profile** | `ApplicationEnvironmentProfile.context_profile` |
+| **Budget** | `ContextProfile.budget_policy` → `RunBudget` via bridge |
+| **Assembly tier** | `ContextProfile.assembly_options.summary_tier` (FULL / SUMMARY_ONLY / …) |
+| **Memory in context** | `ContextDecisionProfile.max_memory_entries_in_context` |
+| **RAG/web flags** | `ContextProfile.enable_rag` / `enable_websearch` |
+| **Graph context** | `ContextManager` injected via `build_nexus_loop_from_environment` |
+| **Task intake** | `merge_task_context_options_from_environment()` at host boundary |
+
+### L.5 Runtime bridges (CTX — Done)
+
+| Bridge | Module | Maps |
+|--------|--------|------|
+| Context → RuntimeConfig | `context_runtime_bridge.py` | budget, assembly, decision, run_budget |
+| Context → Nexus | `context_wiring.py` | `ContextManager` + task option merge |
+| Memory → RuntimeConfig | `memory_runtime_bridge.py` | memory toggles only |
+
+### L.6 Verification (audit evidence)
+
+| Concern | Command / test |
+|---------|----------------|
+| Context runtime bridge | `pytest tests/unit/applications/test_context_runtime_bridge.py -m gate` |
+| Context wiring | `pytest tests/unit/applications/test_context_wiring.py -m gate` |
+| ContextManager v2 | `pytest tests/unit/runtime/nexus/context/ -m gate` |
+| Memory + context round-trip | `pytest tests/unit/applications/test_memory_profile_runtime_bridge.py -m gate` |
+| Full gate | `uv run pytest -m gate -q` |
+
+Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §16: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
@@ -1716,4 +1802,5 @@ When asked to create a new Intergrax agent:
 9. For multi-agent / graph / delegation behavior, read [Appendix I](#appendix-i--orchestration-control-plane) — never wire cross-agent calls inside `agents/`.
 10. For tool/skill catalogs and runtime bridge, read [Appendix J](#appendix-j--tools--skills-control-plane) — enable profiles on environment, not in agent code.
 11. For integration backends and RAG retrieval, read [Appendix K](#appendix-k--integration--rag-control-plane) — wire `IntegrationProfile` in Tier-3 only.
-12. Do **not** create duplicate workflow documentation — update this file if the process changes.
+12. For context budget and assembly, read [Appendix L](#appendix-l--context-engineering-control-plane) — configure `ContextProfile`, not ad-hoc prompt stitching.
+13. Do **not** create duplicate workflow documentation — update this file if the process changes.

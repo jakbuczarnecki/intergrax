@@ -89,6 +89,7 @@ def build_harness_host_runtime(
         shadow_manager=env_wiring.shadow_manager,
         sandbox_manager=env_wiring.sandbox_manager,
         llm_adapter=resolve_llm_adapter(environment),
+        runtime_event_bus=env_wiring.build_context.runtime_event_bus,
     )
     _ = checkpoints_db_path
     return HarnessHostRuntime(

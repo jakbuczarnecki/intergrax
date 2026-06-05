@@ -901,6 +901,8 @@ Memory Architecture Score: L0-L4
 
 ## 16. Context Engineering Layer
 
+**Authoring map (control plane):** `AGENT_CREATION_GUIDE.md` **Appendix L** · implementation closeout: plan **Phase CTX** (**Done**).
+
 ### Purpose
 
 Verify that context is built, scored, budgeted, compressed and traced as a first-class runtime concern.
