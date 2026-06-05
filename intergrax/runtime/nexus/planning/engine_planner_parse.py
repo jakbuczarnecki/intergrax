@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 from typing import Optional
 
+from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID
 
 from intergrax.runtime.nexus.planning.engine_plan_models import (
@@ -31,7 +32,14 @@ class EnginePlanJsonParser:
         return raw[start : end + 1]
 
     @classmethod
-    def parse(cls, raw: str, *, prompt_config: Optional[PlannerPromptConfig] = None) -> EnginePlan:
+    def parse(
+        cls,
+        raw: str,
+        *,
+        prompt_config: Optional[PlannerPromptConfig] = None,
+        prompt_registry: Optional[YamlPromptRegistry] = None,
+        catalog_path: Optional[str] = None,
+    ) -> EnginePlan:
         js = cls.extract_json_object(raw)
 
         try:
@@ -120,7 +128,11 @@ class EnginePlanJsonParser:
         if intent == PlanIntent.CLARIFY:
             ask_clarify = True
             if not clar_q:
-                clar_q = cls.fallback_clarify_question(prompt_config)
+                clar_q = cls.fallback_clarify_question(
+                    prompt_config,
+                    prompt_registry=prompt_registry,
+                    catalog_path=catalog_path,
+                )
             use_web = use_ltm = use_rag = use_tools = False
             tool_ids = []
             next_step = EngineNextStep.CLARIFY
@@ -128,7 +140,11 @@ class EnginePlanJsonParser:
             if ask_clarify:
                 intent = PlanIntent.CLARIFY
                 if not clar_q:
-                    clar_q = cls.fallback_clarify_question(prompt_config)
+                    clar_q = cls.fallback_clarify_question(
+                    prompt_config,
+                    prompt_registry=prompt_registry,
+                    catalog_path=catalog_path,
+                )
                 use_web = use_ltm = use_rag = use_tools = False
                 tool_ids = []
                 next_step = EngineNextStep.CLARIFY
@@ -170,8 +186,16 @@ class EnginePlanJsonParser:
         return [str(item).strip() for item in raw if str(item).strip()]
 
     @staticmethod
-    def fallback_clarify_question(prompt_config: Optional[PlannerPromptConfig]) -> str:
-        question = DEFAULT_PLANNER_FALLBACK_CLARIFY_QUESTION()
+    def fallback_clarify_question(
+        prompt_config: Optional[PlannerPromptConfig],
+        *,
+        prompt_registry: Optional[YamlPromptRegistry] = None,
+        catalog_path: Optional[str] = None,
+    ) -> str:
+        question = DEFAULT_PLANNER_FALLBACK_CLARIFY_QUESTION(
+            registry=prompt_registry,
+            catalog_path=catalog_path,
+        )
         if prompt_config is not None and prompt_config.fallback_clarify_question:
             question = prompt_config.fallback_clarify_question.strip()
         return question

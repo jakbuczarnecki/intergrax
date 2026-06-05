@@ -1820,6 +1820,7 @@ Nexus prompt builders (Tier-1)
 |---------|----------------|
 | Prompt runtime bridge | `pytest tests/unit/applications/test_prompt_runtime_bridge.py -m gate` |
 | Prompt wiring | `pytest tests/unit/applications/test_prompt_wiring.py -m gate` |
+| Nexus registry injection | `pytest tests/unit/runtime/nexus/runtime_steps/test_tools_step_prompt_registry.py -m gate` |
 | PromptMeta governance | `pytest tests/unit/prompts/test_prompt_governance_meta.py -m gate` |
 | Full gate | `uv run pytest -m gate -q` |
 

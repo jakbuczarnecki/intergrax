@@ -1,6 +1,6 @@
 # Intergrax — Documentation
 
-**Last updated:** 2026-06-02 (GOV-AUDIT + ORCH + TS + INT + RAG + CTX + PE Done; gate **621**)
+**Last updated:** 2026-06-02 (GOV-AUDIT + ORCH + TS + INT + RAG + CTX + PE Done; gate **624**)
 
 The `docs/` folder holds the canonical platform documentation.
 
@@ -119,7 +119,7 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | **Phase PE — Prompt registry closeout** | **Done** (2026-06-02) — PE-1→3 |
 | **Phase K — Business agents** | **End of plan** — §6.3; **not** default next |
 
-Gate: `uv run pytest -m gate -q` — **621 passed** (2026-06-02)
+Gate: `uv run pytest -m gate -q` — **624 passed** (2026-06-02)
 
 Harness CI also runs: `python scripts/check_harness_no_getattr.py` (zero grandfathered paths)
 

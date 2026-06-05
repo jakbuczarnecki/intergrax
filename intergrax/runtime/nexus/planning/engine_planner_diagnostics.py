@@ -41,7 +41,12 @@ class EnginePlannerDiagnostics:
         config: RuntimeConfig,
     ) -> EnginePlan:
         try:
-            return EnginePlanJsonParser.parse(raw, prompt_config=prompt_config)
+            return EnginePlanJsonParser.parse(
+                raw,
+                prompt_config=prompt_config,
+                prompt_registry=state.context.prompt_registry,
+                catalog_path=config.prompt_catalog_path,
+            )
         except (ValueError, TypeError) as e:
             self.trace_parse_failed(
                 state=state,

@@ -1,27 +1,48 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Planner prompt resolution for Tier-1 tool planning (Phase U-Typ.2)."""
+"""Planner prompt resolution for Tier-1 tool planning (Phase U-Typ.2, PE-4)."""
 
 from __future__ import annotations
 
+from intergrax.prompts.registry.prompt_registry_resolver import resolve_yaml_prompt_registry
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 
 
-def planner_prompt() -> str:
-    registry = YamlPromptRegistry.create_default(load=True)
-    return registry.resolve_localized("tools_agent_planner").system
+def _resolve_registry(
+    *,
+    registry: YamlPromptRegistry | None = None,
+    catalog_path: str | None = None,
+) -> YamlPromptRegistry:
+    return resolve_yaml_prompt_registry(registry=registry, catalog_path=catalog_path)
 
 
-def system_prompt() -> str:
-    registry = YamlPromptRegistry.create_default(load=True)
-    return registry.resolve_localized("tools_agent_system").system
+def planner_prompt(
+    *,
+    registry: YamlPromptRegistry | None = None,
+    catalog_path: str | None = None,
+) -> str:
+    reg = _resolve_registry(registry=registry, catalog_path=catalog_path)
+    return reg.resolve_localized("tools_agent_planner").system
 
 
-def system_context_template() -> str:
+def system_prompt(
+    *,
+    registry: YamlPromptRegistry | None = None,
+    catalog_path: str | None = None,
+) -> str:
+    reg = _resolve_registry(registry=registry, catalog_path=catalog_path)
+    return reg.resolve_localized("tools_agent_system").system
+
+
+def system_context_template(
+    *,
+    registry: YamlPromptRegistry | None = None,
+    catalog_path: str | None = None,
+) -> str:
     """
     Legacy-compatible template containing ``{context}`` placeholder.
     Formatting is done later via ``.format(context=...)``.
     """
-    registry = YamlPromptRegistry.create_default(load=True)
-    localized = registry.resolve_localized("tools_agent_context")
+    reg = _resolve_registry(registry=registry, catalog_path=catalog_path)
+    localized = reg.resolve_localized("tools_agent_context")
     return localized.user_template or ""
