@@ -549,7 +549,7 @@ Note: The code appears to be well-maintained and up-to-date, with proper documen
 	+ Read the source code
 	+ Send content + metadata to an LLM adapter
 	+ Generate a structured summary: purpose, domain, responsibilities
-* Output: Creates `PROJECT_STRUCTURE.md` containing a clear, navigable, human-readable and LLM-friendly description of the entire project layout
+* Output: Creates `docs/PROJECT_OVERVIEW.md` containing a clear, navigable, human-readable and LLM-friendly description of the entire project layout
 
 **Note:** The module appears to be part of the Intergrax framework's official documentation generation pipeline.
 

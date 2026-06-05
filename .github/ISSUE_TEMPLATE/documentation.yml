@@ -1,0 +1,73 @@
+name: Documentation
+description: Report a gap, error, or improvement in docs/ canon
+title: "[Docs]: "
+labels: ["documentation", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Documentation lives in `docs/` — one source of truth per topic.
+        Index: [docs/README.md](https://github.com/jakbuczarnecki/intergrax-ai/blob/main/docs/README.md)
+
+  - type: dropdown
+    id: document
+    attributes:
+      label: Affected document
+      options:
+        - docs/README.md
+        - docs/INTERGRAX_DEVELOPMENT_STRATEGY.md
+        - docs/intergrax_runtime_architecture.md
+        - docs/INTERGRAX_IMPLEMENTATION_PLAN.md
+        - docs/AGENT_CREATION_GUIDE.md
+        - docs/INTEGRATIONS.md
+        - docs/TOOLS.md
+        - docs/SKILLS.md
+        - docs/LLM_ADAPTERS.md
+        - docs/MODALITY.md
+        - docs/HARNESS_ENVIRONMENT.md
+        - docs/EXTENSION_AUTHOR_GUIDE.md
+        - docs/IDEAL_HARNESS_AI_ARCHITECTURE.md
+        - docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md
+        - README.md
+        - AGENTS.md / llms.txt
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Issue type
+      options:
+        - Factual error
+        - Outdated status / phase info
+        - Missing section
+        - Unclear explanation
+        - Broken link
+        - Duplicate / conflicting with another doc
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What is wrong or missing?
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested fix
+      description: Proposed correction or new content (keep in the correct canon file)
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: canon
+    attributes:
+      label: Canon compliance
+      options:
+        - label: This change should update an existing doc, not create a parallel guide
+          required: true

@@ -8,9 +8,37 @@ packages = ["intergrax"]
 [project]
 name = "Intergrax-ai"
 version = "0.1.0"
-description = "Intergrax is a modular AI runtime and orchestration framework for building deterministic, enterprise-grade AI agents, pipelines, and knowledge-driven systems. It provides a typed execution engine, planning and loop controllers, memory and RAG integration, and production-ready diagnostics for safe and observable AI applications."
+description = "Agent OS and Harness AI runtime for building, orchestrating, experimenting with, and validating specialized AI agents. Four-tier platform with Nexus orchestration, policy, tools, skills, RAG, and multi-agent graphs."
 readme = "README.md"
+license = { text = "Proprietary" }
 requires-python = ">=3.12,<3.13"
+keywords = [
+  "ai-agents",
+  "agent-framework",
+  "agent-os",
+  "harness-ai",
+  "multi-agent",
+  "llm",
+  "rag",
+  "orchestration",
+  "nexus",
+  "python",
+  "tool-use",
+  "human-in-the-loop",
+  "context-engineering",
+  "policy-engine",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Software Development :: Libraries :: Application Frameworks",
+  "Typing :: Typed",
+]
 dependencies = [
   # -----------------
   # Runtime / Server

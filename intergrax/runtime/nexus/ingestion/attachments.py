@@ -89,8 +89,8 @@ class FileSystemAttachmentResolver:
 
         # Case 2: proper file:// URI
         # Example on Windows:
-        #   file:///D:/Projekty/intergrax/PROJECT_STRUCTURE.md
-        #   -> parsed.path == "/D:/Projekty/intergrax/PROJECT_STRUCTURE.md"
+        #   file:///D:/Projekty/intergrax/README.md
+        #   -> parsed.path == "/D:/Projekty/intergrax/README.md"
         path_str = parsed.path
 
         # Fix Windows-style drive letters:

@@ -1,0 +1,93 @@
+name: Bug report
+description: Report a reproducible defect in the Intergrax platform
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Check [docs/README.md](https://github.com/jakbuczarnecki/intergrax-ai/blob/main/docs/README.md) first.
+        For security issues, see [SECURITY.md](https://github.com/jakbuczarnecki/intergrax-ai/blob/main/SECURITY.md).
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Nexus runtime (Tier-1)
+        - Agent (Tier-2)
+        - Application (Tier-3)
+        - Integration Library
+        - Tool Library
+        - Skill Library
+        - LLM adapters
+        - RAG / memory
+        - Scaffold / CLI
+        - CI / tests
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug description
+      description: Clear description of what went wrong
+      placeholder: When I run X, I expect Y but get Z...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps to reproduce the issue
+      placeholder: |
+        1. uv run pytest ...
+        2. python -m intergrax.scaffold ...
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version, uv version, relevant env vars (no secrets)
+      placeholder: |
+        OS: Windows 11 / Ubuntu 24.04
+        Python: 3.12.x
+        uv: 0.x
+        Branch: main
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / trace output
+      description: Paste relevant error messages or trace snippets (redact secrets)
+      render: shell
+
+  - type: checkboxes
+    id: gate
+    attributes:
+      label: Verification
+      options:
+        - label: I ran `uv run pytest -m gate -q` and can share the result
+          required: false
