@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-02) — **Harness platform bands 1–2x Done**; **Phase EVAL closed**; default queue = **§6.1** maintenance; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; **Orchestration (ORCH)**, **Tools/skills (TS)**, **Integration (INT)**, **RAG**, **CTX**, **LEG**, **PE**, **CLEAN** closeouts **Done**; **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate green after CLEAN; **operational L3 signed off** (`release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce`)  
+Status: Working draft (2026-06-05) — **Harness platform bands 1–2x Done**; **Phase W-ADAPT (Band 2y) opened** — default implementation queue after §6.1 maintenance; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done**; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate green; **operational L3 signed off**  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -44,6 +44,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Security closeout (V-SEC bridge, middleware assembly, CI) | [Phase SEC](#phase-sec--security-control-plane-closeout) · **§6.1q** · Band **2v** · **Appendix S** |
 | Cost governance closeout (budget bridge, policy bundle, CI) | [Phase COST](#phase-cost--cost-governance-control-plane-closeout) · **§6.1r** · Band **2w** · **Appendix T** |
 | Evaluation closeout (registry bridge, policy bundle, CI) | [Phase EVAL](#phase-eval--evaluation-control-plane-closeout) · **§6.1s** · Band **2x** · **Appendix U** |
+| **Adaptive Harness Intelligence (AHI / L4 runtime)** | [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · **§6.1t** · Band **2y** · [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · canon [§54](intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) · **Appendix K** |
 | Tier-3 application environment (self-contained deploy) | Architecture canon §7.4.8–§7.4.10 |
 | Tier-3 composition engine (manifest, wiring API) | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
 | Tier-3 application hosts (`applications/<app>/`) | [`applications/USAGE.md`](../applications/USAGE.md) |
@@ -194,6 +195,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Security closeout (Phase SEC)** | **Done** (Band 2v) | No (harness-only) | SEC-1–3 — [§6.1q](#61q-harness-implementation-queue--security-closeout-closed) |
 | **Cost governance closeout (Phase COST)** | **Done** (Band 2w) | No (harness-only) | COST-1–3 — [§6.1r](#61r-harness-implementation-queue--cost-governance-closeout-closed) |
 | **Evaluation closeout (Phase EVAL)** | **Done** (Band 2x) | No (harness-only) | EVAL-1–3 — [§6.1s](#61s-harness-implementation-queue--evaluation-closeout-closed) |
+| **Adaptive Harness Intelligence (Phase W-ADAPT)** | **Planned** (Band 2y) | No (harness-only) | L4 **runtime** closed loop — [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active) · AHIA · **70 tasks** (1 Done) |
 | Regression gate | **687 passed** | No | Must stay green after each harness PR |
 
 ---
@@ -2483,6 +2485,229 @@ Wave W-OPS-P2 (hygiene):    W-OPS.13 → W-OPS.14 → W-OPS.15
 
 ---
 
+## Phase W-ADAPT — Adaptive Harness Intelligence (L4 runtime)
+
+**Status:** **Planned** — **0/70 Done** (RFC + canon + README synced 2026-06-05; implementation not started)  
+**Architecture spec:** [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) (AHIA) · runtime canon [§54](intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) · IDEAL [§25](IDEAL_HARNESS_AI_ARCHITECTURE.md#25-adaptive-harness-layer)  
+**Prerequisites:** Phase **V** **Done** · Phase **V-REM** **Done** · Phase **W-OPS** **Done** · Phase **H-APP** **Done** · Phases **EVAL**, **COST**, **CG** closeouts **Done** (signal sources + governance envelopes exist)  
+**Goal:** Close the gap between **L4 governance contracts** (`adaptive_governance.py`, `phase_v_closeout_gate.py --enforce-l4`) and **L4 adaptive runtime** — governed closed loop: **observe → propose → gate → shadow/canary → apply → verify → rollback**  
+**Priority ladder:** **Band 2y** (§4.0) — **default harness implementation queue** after §6.1 maintenance  
+**Execution order:** [§6.2ac](#62ac-phase-w-adapt-execution-order-band-2y--active) · queue: [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active)  
+**Traceability:** [Appendix K](#appendix-k--adaptive-harness-intelligence-traceability-phase-w-adapt)
+
+**Delivery rule:** One **W-ADAPT.\*** ID per PR → update master table + Appendix K + paydown log → `pytest -m gate` green → run `phase_w_adapt_report.py` when touching signal/proposal paths.
+
+**Principle:** **evolve, not rewrite** · reuse Phase V contracts · **no classical RL** (ADR-ADAPT-001) · Tier-1 **domain-agnostic** · adaptation **async** (never block Nexus hot path) · **PolicyEngine** never bypassed.
+
+**Out of scope:** K.1/K.2 business agents · deep RL / neural policy training · foundation model fine-tuning inside Nexus · autonomous prompt string mutation without Prompt Registry · second trace/eval/policy stacks · Mem0-like product memory (MEM-8 RFC only) · integration marketplace UI.
+
+**L4 distinction (normative):**
+
+| Gate | What it proves | Artifact |
+|------|----------------|----------|
+| **Governance L4** (Phase V — **Done**) | Adaptive loop **envelopes** + sample proposals pass rules | `phase_v_closeout_gate.py --enforce-l4` |
+| **Runtime L4** (Phase W-ADAPT — **target**) | Closed loop **measurably improves** utility U on golden scenarios | `phase_w_adapt_closeout_gate.py --enforce-l4-runtime` |
+
+```text
+Wave W-ADAPT-0 (planning):       5 tasks  — RFC sync, ADR, package scaffold
+Wave W-ADAPT-1 (observe L4-O):  12 tasks — SignalCollector, utility, report
+Wave W-ADAPT-2 (recommend L4-R): 12 tasks — AdaptationEngine, proposals, scheduler
+Wave W-ADAPT-3 (shadow L4-S):    7 tasks — ProfileVersionStore, shadow executor
+Wave W-ADAPT-4 (apply L4-A):      10 tasks — canary, apply, rollback, runtime events
+Wave W-ADAPT-5 (verify L4-V):     12 tasks — VerificationLoop, runtime L4 closeout, runbooks
+Wave W-ADAPT-6 (patterns):         5 tasks — ProcessPatternMiner (after W-ADAPT-5 core)
+Wave W-ADAPT-7 (Tier-3 + docs):    7 tasks — AdaptiveProfile wiring, author guide, acceptance
+Total: 70 deliverables
+```
+
+### W-ADAPT — Traceability (AHIA section → task IDs)
+
+| AHIA § | Topic | Task IDs |
+|--------|--------|----------|
+| §5–§6 | Audit gap / missing components | W-ADAPT-0.*, W-ADAPT-1.1–1.3 |
+| §9.1 | SignalCollector | W-ADAPT-1.4–1.10 |
+| §10 | HarnessOutcomeSignal + utility U | W-ADAPT-1.1, W-ADAPT-1.8 |
+| §9.2 | AdaptationEngine sub-engines | W-ADAPT-2.1–2.7 |
+| §9.3–9.4 | ProposalBuilder + governance gate | W-ADAPT-2.6–2.9 |
+| §9.5 | AdaptationExecutor | W-ADAPT-3.3, W-ADAPT-4.2–4.5 |
+| §9.6 | VerificationLoop | W-ADAPT-5.1–2.5 |
+| §9.7 | ProcessPatternMiner | W-ADAPT-6.* |
+| §9.8 | ProfileVersionStore | W-ADAPT-3.1–3.2 |
+| §9.9 | AdaptationScheduler | W-ADAPT-2.12, W-ADAPT-6.5 |
+| §11 | Four AdaptiveLoopKind loops | W-ADAPT-2.2–2.5 |
+| §12 | Lifecycle modes L4-O→L4-V | W-ADAPT-1.* … W-ADAPT-5.* |
+| §14 | Nexus / eval / capability graph integration | W-ADAPT-1.9, W-ADAPT-2.8, W-ADAPT-4.8 |
+| §14.5 | AdaptiveProfile (Tier-3) | W-ADAPT-4.1, W-ADAPT-7.* |
+| §16 | Security, HITL, audit events | W-ADAPT-4.6–4.7, W-ADAPT-5.5 |
+| §20 | KPIs + L4 runtime evidence | W-ADAPT-5.6–5.12 |
+| §21 | Runbooks | W-ADAPT-5.9 |
+| Appendix A | Reuse existing modules | W-ADAPT-2.10, W-ADAPT-3.4, W-ADAPT-5.3–5.4 |
+
+### W-ADAPT — Master deliverables register (70 tasks)
+
+#### Wave W-ADAPT-0 — Planning and package scaffold
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| W-ADAPT-0.1 | **Plan + canon sync** — Phase W-ADAPT section, §4.0 Band 2y, §6.1t, §6.2ac, Appendix K; AHIA ↔ plan cross-links | **Done** | **Critical** | This section + AHIA Appendix B |
+| W-ADAPT-0.2 | **`docs/adr/ADR-ADAPT-001.md`** — Adaptive Harness Intelligence over classical RL (AHIA Appendix C) | Planned | High | ADR accepted; linked from AHIA + canon §54 |
+| W-ADAPT-0.3 | **Package scaffold** — `intergrax/runtime/adaptive/` with `contracts.py`, `__init__.py`, re-exports | Planned | **Critical** | Importable; no runtime side effects |
+| W-ADAPT-0.4 | **Extend `runtime/architecture/__init__.py`** — export adaptive contracts without duplicating `adaptive_governance.py` | Planned | Medium | Unit smoke import |
+| W-ADAPT-0.5 | **Gate test stub** — `tests/unit/runtime/adaptive/test_package_imports.py` | Planned | Medium | `pytest -m gate` green |
+
+#### Wave W-ADAPT-1 — Observe (L4-O)
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| W-ADAPT-1.1 | **`HarnessOutcomeSignal`** + **`UtilityWeights`** Pydantic contracts | Planned | **Critical** | Schema validated; AHIA §10.1 |
+| W-ADAPT-1.2 | **`ProfileVersionRecord`**, **`ProfileVersionDraft`**, **`ProcessPatternProposal`** contract stubs | Planned | High | Validators; status enum |
+| W-ADAPT-1.3 | **`SignalStore`** — SQLite persistence under `build/adaptive_harness/` | Planned | **Critical** | CRUD + list by tenant/window |
+| W-ADAPT-1.4 | **`SignalCollector`** — integrate `export_run_metrics()` / `RunMetricsExport` | Planned | **Critical** | behavioral + cost fields populated |
+| W-ADAPT-1.5 | **`SignalCollector`** — integrate `ExecutionGuard` + `HistoryAwareEvaluator` regression flags | Planned | High | `regression_flags` on signal |
+| W-ADAPT-1.6 | **`SignalCollector`** — integrate online/shadow eval (`OnlineEvaluationRegistry`) | Planned | High | `quality_score`, `eval_mode` |
+| W-ADAPT-1.7 | **`SignalCollector`** — integrate cost budget normalization (`cost_budget.py`) | Planned | High | `cost_normalized` |
+| W-ADAPT-1.8 | **`compute_utility()`** — AHIA §10.2 formula + default weights | Planned | **Critical** | Unit tests for weight boundaries |
+| W-ADAPT-1.9 | **`SignalCollector`** — HITL intervention counters from task/HITL runtime | Planned | Medium | `hitl_interventions` |
+| W-ADAPT-1.10 | **Nexus hook** — emit signal on task completion (`task_finisher` / lifecycle bridge) | Planned | **Critical** | ≥1 signal per completed Nexus task in integration test |
+| W-ADAPT-1.11 | **RuntimeEngine hook** — optional signal path for non-Nexus runs (parity with W-OPS shadow) | Planned | Medium | Lab runtime records signal |
+| W-ADAPT-1.12 | **`scripts/phase_w_adapt_report.py`** — signal trends + utility histograms | Planned | High | JSON under `build/adaptive_harness/signal_trends.json` |
+
+#### Wave W-ADAPT-2 — Recommend (L4-R)
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| W-ADAPT-2.1 | **`BanditStateStore`** — per `(tenant_id, task_class, arm_id)` Thompson state | Planned | **Critical** | Unit tests; partitioned by tenant |
+| W-ADAPT-2.2 | **`RoutingTuningEngine`** — `ROUTING_TUNING` proposals (LLM route + RAG tier arms) | Planned | **Critical** | Respects `max_delta_percent`; cooldown |
+| W-ADAPT-2.3 | **`ExecutionStrategyEngine`** — `EXECUTION_STRATEGY_TUNING` from step/retry/parallel metrics | Planned | High | Uses `HistoryAwareEvaluator` patterns |
+| W-ADAPT-2.4 | **`PolicyLearningEngine`** — `POLICY_LEARNING` proposals (tool deny deltas); **no apply** | Planned | High | Requires `human_approver_id` in proposal |
+| W-ADAPT-2.5 | **`EvaluationFeedbackEngine`** — `EVALUATION_FEEDBACK`; observe-only re-eval triggers | Planned | Medium | Links to `evaluation_registry_trends` |
+| W-ADAPT-2.6 | **`ProposalBuilder`** — wraps `AdaptiveLoopProposal` + attaches `ProfileVersionDraft` | Planned | **Critical** | Passes `evaluate_bounded_adaptive_loop()` |
+| W-ADAPT-2.7 | **`AdaptationEngine` facade** — ranks proposals from sub-engines | Planned | **Critical** | Unit tests with synthetic signals |
+| W-ADAPT-2.8 | **Governance gate stage 2** — `evaluate_capability_graph_compatibility()` pre-check | Planned | High | Rejects incompatible skill/policy edges |
+| W-ADAPT-2.9 | **Governance gate stage 4** — golden scenario smoke before shadow allocation | Planned | High | Uses eval assets / NexusEvalRunner |
+| W-ADAPT-2.10 | **Cost anomaly → proposal** — wire `cost_optimization.py` into `AdaptationEngine` | Planned | Medium | Anomalies produce ROUTING/COST proposals |
+| W-ADAPT-2.11 | **Extend `phase_w_adapt_report.py`** — proposal log + gate results | Planned | High | `build/adaptive_harness/proposals.json` |
+| W-ADAPT-2.12 | **`AdaptationScheduler` skeleton** — hourly `run_adaptation_engine` (recommend-only) | Planned | High | No executor calls in this wave |
+
+#### Wave W-ADAPT-3 — Shadow (L4-S)
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| W-ADAPT-3.1 | **`ProfileVersionStore`** — CRUD + immutable payloads | Planned | **Critical** | SQLite; gitignored path |
+| W-ADAPT-3.2 | **Profile version lifecycle** — `draft → shadow → canary → active → retired` | Planned | **Critical** | State machine tests |
+| W-ADAPT-3.3 | **`AdaptationExecutor.shadow()`** — allocate candidate version for shadow runs | Planned | **Critical** | Trace tag `candidate_profile_version_id` |
+| W-ADAPT-3.4 | **Extend `RuntimeArchitectureGovernanceBridge`** — candidate version in shadow observation | Planned | High | Extends W-OPS.11 hook |
+| W-ADAPT-3.5 | **`ProfilePromotionEvidence`** — mirror `agent_promotion.py` checklist for profiles | Planned | Medium | evaluation + rollback plan refs |
+| W-ADAPT-3.6 | **Integration test** — shadow run records observation with candidate version | Planned | High | `tests/integration/runtime/adaptive/` |
+| W-ADAPT-3.7 | **`QueryRouter` override** — load RAG tier weights from active/candidate profile | Planned | Medium | Unit test per profile version |
+
+#### Wave W-ADAPT-4 — Apply (L4-A)
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| W-ADAPT-4.1 | **`AdaptiveProfile`** on `ApplicationEnvironmentProfile` — mode, weights, loops, canary | Planned | **Critical** | Default `enabled=False`, `mode=observe` |
+| W-ADAPT-4.2 | **`wire_adaptive_profile()`** + **`nexus_factory`** — resolve active profile version pointers | Planned | **Critical** | Lab app smoke |
+| W-ADAPT-4.3 | **Canary traffic switch** — tenant allowlist + `canary_traffic_percent` | Planned | High | Only allowlisted tenants see candidate |
+| W-ADAPT-4.4 | **`AdaptationExecutor.apply()`** — atomic active pointer swap | Planned | **Critical** | Rollback pointer preserved |
+| W-ADAPT-4.5 | **`AdaptationExecutor.rollback()`** — restore previous pointer | Planned | **Critical** | <5 min in drill test |
+| W-ADAPT-4.6 | **HITL approval workflow** — `POLICY_LEARNING` blocked without approver confirmation | Planned | **Critical** | Security test: 0 unapproved applies |
+| W-ADAPT-4.7 | **`ADAPTIVE_*` RuntimeEvent types** — signal, proposal, apply, rollback | Planned | High | Events in trace export |
+| W-ADAPT-4.8 | **Extend governance bridge** — `submit_proposal()`, `apply_approved()` | Planned | High | Typed; audit trail |
+| W-ADAPT-4.9 | **Policy fragment versioning** — `RuntimePolicyBundle` slices via ProfileVersionStore | Planned | High | PolicyEngine loads version id |
+| W-ADAPT-4.10 | **Orchestration + RAG profile resolution** — versioned `OrchestrationProfile` / `RagProfile` | Planned | High | `build_nexus_loop_from_environment` reads store |
+
+#### Wave W-ADAPT-5 — Verify (L4-V)
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| W-ADAPT-5.1 | **`VerificationLoop`** — compare candidate vs baseline utility trends | Planned | **Critical** | AHIA §9.6 checks 1–4 |
+| W-ADAPT-5.2 | **Auto-rollback** on verification failure | Planned | **Critical** | Invokes W-ADAPT-4.5; blocks loop kind |
+| W-ADAPT-5.3 | **Eval registry integration** — `evaluation_registry_trends.py` in verify path | Planned | High | Release comparison report |
+| W-ADAPT-5.4 | **ExecutionGuard regression rate** — verify window threshold | Planned | High | No spike vs baseline |
+| W-ADAPT-5.5 | **Cost + adversarial checks** in verify — budget + prompt/tool/retrieval suites | Planned | High | V-SEC suites still green |
+| W-ADAPT-5.6 | **`scripts/phase_w_adapt_closeout_gate.py`** — `--enforce-l4-runtime` | Planned | **Critical** | CI optional then required |
+| W-ADAPT-5.7 | **`maturity_gate_evidence.py`** — `runtime_l4_closed_loop_passed` input | Planned | High | Distinct from governance L4 |
+| W-ADAPT-5.8 | **Extend `phase_v_closeout_gate.py`** — label governance-L4 vs runtime-L4 | Planned | Medium | Docs in AHIA §20.2 |
+| W-ADAPT-5.9 | **Runbooks** — `runbook/adaptive/rollback_profile.md`, `approve_policy_learning.md`, `shadow_failure_triage.md` | Planned | Medium | Linked from HARNESS_ENVIRONMENT |
+| W-ADAPT-5.10 | **Rollback drill acceptance test** | Planned | High | Documented + automated smoke |
+| W-ADAPT-5.11 | **`l4_runtime_evidence.json` generator** — 30-day utility improvement artifact | Planned | **Critical** | AHIA §20.3 path |
+| W-ADAPT-5.12 | **Scheduler: continuous verify** on active canaries | Planned | High | W-ADAPT-2.12 extended |
+
+#### Wave W-ADAPT-6 — Process pattern intelligence
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| W-ADAPT-6.1 | **`ProcessPatternMiner`** — sequence mining on trace events | Planned | High | PrefixSpan or n-gram v1 |
+| W-ADAPT-6.2 | **Trace reader** — load sequences from persisted runs / SQLite trace store | Planned | High | Tenant-scoped |
+| W-ADAPT-6.3 | **Pattern report + human review queue** in `phase_w_adapt_report.py` | Planned | Medium | `ProcessPatternProposal` export |
+| W-ADAPT-6.4 | **Optional skill stub generator** — scaffold manifest draft (no auto-register) | Planned | Low | Output file only; human merges |
+| W-ADAPT-6.5 | **Daily scheduler job** — `run_pattern_miner` | Planned | Medium | Cron via AdaptationScheduler |
+
+#### Wave W-ADAPT-7 — Tier-3 wiring, docs, acceptance
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| W-ADAPT-7.1 | **Default `AdaptiveProfile`** on `lab_application` + reference apps | Planned | High | All `enabled=False` initially |
+| W-ADAPT-7.2 | **`BusinessOutcomeWebhook` contract** — optional Tier-3 signal for `business_outcome` | Planned | Medium | Signed payload validation |
+| W-ADAPT-7.3 | **`AGENT_CREATION_GUIDE.md` Appendix V** — Adaptive Harness authoring | Planned | High | Control plane map |
+| W-ADAPT-7.4 | **`HARNESS_ENVIRONMENT.md`** — adaptive ops section + env vars | Planned | Medium | Lab enable observe mode docs |
+| W-ADAPT-7.5 | **Lab debug routes** (optional) — list proposals / signals read-only | Planned | Low | Behind lab profile flag |
+| W-ADAPT-7.6 | **Acceptance test** — end-to-end observe → recommend (no apply) | Planned | High | `tests/acceptance/adaptive/` |
+| W-ADAPT-7.7 | **Docs sync** — README, docs/README, Appendix H row for IDEAL §25 runtime | Planned | Medium | Zero stale "out of scope L4" |
+
+### W-ADAPT — Execution matrix (dependencies)
+
+```text
+W-ADAPT-0 ──► W-ADAPT-1 ──► W-ADAPT-2 ──► W-ADAPT-3 ──► W-ADAPT-4 ──► W-ADAPT-5
+                  │                                              │
+                  └──────────────────► W-ADAPT-6 (after W-ADAPT-5.1)
+W-ADAPT-4.1 ──► W-ADAPT-7 (parallel after W-ADAPT-4.1)
+W-ADAPT-5 ──► W-ADAPT-7.6 (full E2E acceptance)
+```
+
+**Critical rules:**
+
+- W-ADAPT-1 **must** complete before any `AdaptationExecutor.apply` code (W-ADAPT-4.4).
+- W-ADAPT-2 **must** stay recommend-only until W-ADAPT-3 shadow path is green.
+- W-ADAPT-6 **must not** start until W-ADAPT-5.1 verification core exists (AHIA R7).
+- Every PR: `pytest -m gate` + existing Phase V scripts unchanged green.
+
+### W-ADAPT — KPI thresholds (runtime L4)
+
+| KPI | Target | Verified by |
+|-----|--------|-------------|
+| Signal coverage | ≥ **95%** completed runs emit signal | W-ADAPT-1.10 + report |
+| Shadow beat baseline | ≥ **60%** candidates beat baseline U | W-ADAPT-5.1 |
+| Apply rollback rate | < **10%** of applies | W-ADAPT-5.2 metrics |
+| Golden utility improvement | ≥ **10%** vs static baseline | W-ADAPT-5.11 |
+| Unapproved policy learning applies | **0** | W-ADAPT-4.6 audit |
+| Mean rollback time | < **5 minutes** | W-ADAPT-5.10 drill |
+
+**Runtime L4 sign-off requires:** W-ADAPT-5.6 `--enforce-l4-runtime` green + W-ADAPT-5.11 artifact showing 30-day window on ≥ **3** golden scenarios.
+
+### W-ADAPT — Suggested PR order
+
+```text
+W-ADAPT-0.2 → 0.3 → 0.4 → 0.5
+→ 1.1 → 1.3 → 1.4 → 1.5 → 1.6 → 1.7 → 1.8 → 1.9 → 1.10 → 1.12
+→ 2.1 → 2.2 → 2.3 → 2.6 → 2.7 → 2.8 → 2.11 → 2.12
+→ 3.1 → 3.2 → 3.3 → 3.4 → 3.6
+→ 4.1 → 4.2 → 4.4 → 4.5 → 4.6 → 4.7 → 4.10
+→ 5.1 → 5.2 → 5.6 → 5.7 → 5.11 → 5.9 → 5.10
+→ 6.1 → 6.2 → 6.3 → 6.5
+→ 7.1 → 7.3 → 7.4 → 7.6 → 7.7
+(remaining IDs parallelize within wave constraints)
+```
+
+### W-ADAPT — Paydown log
+
+| Date | W-ADAPT ID | Summary |
+|------|------------|---------|
+| 2026-06-05 | W-ADAPT-0.1 | AHIA RFC + canon §54 + README; Phase W-ADAPT register opened in plan |
+| — | — | *(append row per merged PR)* |
+
+---
+
 ## Phase H-APP — Tier-3 Application Environment (full configurability)
 
 **Status:** **Done** (2026-06-03) — **43** deliverables; memory bridge via Phase MEM **Done**; source audit: [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7.  
@@ -2493,7 +2718,7 @@ Wave W-OPS-P2 (hygiene):    W-OPS.13 → W-OPS.14 → W-OPS.15
 
 **Delivery rule:** One `H-APP.*` ID per PR → update status in tables below + paydown log → `pytest -m gate` + §6.1 audit scripts green.
 
-**Out of scope (audit §7.7 — not counted in 43):** integration marketplace UI, catalog hot-reload, skill-as-LangGraph-pack, IDEAL L4 policy learning, new Tier-0 integration categories without §5.2.4 RFC, K.1/K.2 business agents.
+**Out of scope (audit §7.7 — not counted in 43):** integration marketplace UI, catalog hot-reload, skill-as-LangGraph-pack, **IDEAL L4 runtime adaptation** (scheduled in [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime), Band 2y), new Tier-0 integration categories without §5.2.4 RFC, K.1/K.2 business agents.
 
 ```text
 Wave H0 — Docs & hygiene (5 tasks)
@@ -2591,7 +2816,7 @@ Total: 43
 | Integration marketplace UI | Out of P-Ext / audit §3.8 scope |
 | Catalog hot-reload | Out of P-Ext scope |
 | LangGraph skill packs | Separate initiative |
-| IDEAL L4 adaptive / policy learning | IDEAL §25; not Band 2e |
+| IDEAL L4 adaptive / policy learning (runtime) | [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · Band **2y** · AHIA |
 | New Tier-0 integration categories | Requires canon §5.2.4 RFC (H-APP.0.2 documents process) |
 | K.1 / K.2 business agents | Band 3 frozen (§6.3) |
 
@@ -3617,14 +3842,16 @@ Paydown Wave P3 (optional polish):
 | **2v — Security closeout (SEC)** | V-SEC bridge, middleware assembly resolver, host CI — **no** business agents | **Done** (2026-06-02) | [Phase SEC](#phase-sec--security-control-plane-closeout) · **§6.1q** · **Appendix S** |
 | **2w — Cost governance closeout (COST)** | Budget bridge, policy bundle merge, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase COST](#phase-cost--cost-governance-control-plane-closeout) · **§6.1r** · **Appendix T** |
 | **2x — Evaluation closeout (EVAL)** | Registry bridge, policy bundle merge, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase EVAL](#phase-eval--evaluation-control-plane-closeout) · **§6.1s** · **Appendix U** |
+| **2y — Adaptive Harness Intelligence (W-ADAPT)** | L4 **runtime** closed loop — SignalCollector, AdaptationEngine, ProfileVersionStore, verify/rollback — **no** business agents | **Planned** (2026-06-05) | [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · **§6.1t** · **§6.2ac** · **Appendix K** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
 
-**Policy (2026-06-02):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2m** (ORCH, TS, INT, RAG) = **Done**. Bands 2 / 2b–**2m** platform rows = **Done**. Band 3 = **frozen** unless leadership reprioritizes.
+**Policy (2026-06-05):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2x** platform closeouts = **Done**. **Band 2y (W-ADAPT)** = **default implementation queue** after §6.1 maintenance. Band 3 = **frozen** unless leadership reprioritizes.
 
 ```text
-BAND 1:  Harness maintenance — gate + audit scripts (§6.1) — every PR (default next)
+BAND 1:  Harness maintenance — gate + audit scripts (§6.1) — every PR
+BAND 2y: Adaptive Harness Intelligence — Phase W-ADAPT (§6.1t) — ACTIVE DEFAULT NEXT
 BAND 2j: Orchestration closeout — Phase ORCH (§6.1b) — DONE (2026-06-05)
 BAND 2:  Harness architecture hardening — Phase V + V-REM — DONE (2026-06-05)
 BAND 2i: Phase V runtime remediation — V-REM — DONE (2026-06-05)
@@ -3648,6 +3875,7 @@ BAND 2u: Reliability closeout — Phase REL (§6.1o) — DONE (REL-1 → REL-3)
 BAND 2v: Security closeout — Phase SEC (§6.1q) — DONE (SEC-1 → SEC-3)
 BAND 2w: Cost governance closeout — Phase COST (§6.1r) — DONE (COST-1 → COST-3)
 BAND 2x: Evaluation closeout — Phase EVAL (§6.1s) — DONE (EVAL-1 → EVAL-3)
+BAND 2y: Adaptive Harness Intelligence — Phase W-ADAPT (§6.1t) — PLANNED (0/70)
 DONE:    Phase CLEAN — legacy module closeout (§6.1j) — 2026-06-02
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
@@ -4467,9 +4695,31 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 **Suggested PR order:** V-REM-CG.1 → V-REM-CG.2 → V-REM-ALG.1 → V-REM-ALG.2 → V-REM-SEC.1 → V-REM-SEC.2 → V-REM-SEC.3 → V-REM-PE.1 → V-REM-PE.2 → V-REM-A.1. Regressions → **REG-*** under §6.1.
 
+**Explicitly excluded:** K.1, K.2, new product eval modes requiring business datasets — [§6.3a](#63a-business-backlog-register-consolidated).
+
+### 6.1t Harness implementation queue — Adaptive Harness Intelligence (active)
+
+**Purpose:** Single ordered list for **Phase W-ADAPT** (Band 2y). **Opened 2026-06-05** — **0/70 Done** (W-ADAPT-0.1 plan sync **Done**). This is the **default harness implementation queue** after §6.1 maintenance.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
+| 1 | **W-ADAPT-0.2–0.5** | Docs/Code | Planned | ADR-ADAPT-001 + `intergrax/runtime/adaptive/` scaffold | Import + gate stub |
+| 2 | **W-ADAPT-1.1–1.12** | Code | Planned | Observe (L4-O): signals + utility + report | `phase_w_adapt_report.py` |
+| 3 | **W-ADAPT-2.1–2.12** | Code | Planned | Recommend (L4-R): engines + proposals (no apply) | Proposals in report |
+| 4 | **W-ADAPT-3.1–3.7** | Code | Planned | Shadow (L4-S): ProfileVersionStore + executor.shadow | Integration test green |
+| 5 | **W-ADAPT-4.1–4.10** | Code | Planned | Apply (L4-A): canary, apply, rollback, events | Policy learning HITL enforced |
+| 6 | **W-ADAPT-5.1–5.12** | Code/Docs | Planned | Verify (L4-V): VerificationLoop + runtime L4 closeout | `--enforce-l4-runtime` |
+| 7 | **W-ADAPT-6.1–6.5** | Code | Planned | ProcessPatternMiner (after 5.1) | Pattern report |
+| 8 | **W-ADAPT-7.1–7.7** | Code/Docs | Planned | Tier-3 AdaptiveProfile + Appendix V + acceptance | E2E observe→recommend |
+
+**Suggested PR order:** See [Phase W-ADAPT — Suggested PR order](#w-adapt--suggested-pr-order).
+
+**Explicitly excluded:** K.1, K.2, deep RL, foundation model training, autonomous prompt edits — [§6.3a](#63a-business-backlog-register-consolidated).
+
 ### 6.1 Harness platform maintenance (default — Band 1)
 
-§4.1 backlog is **closed**. Ongoing work = keep the harness green; fix regressions under band 1 only.
+§4.1 backlog is **closed**. Ongoing work = keep the harness green; **feature work** = [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active) (Phase W-ADAPT).
 
 ```text
 Verify (every harness PR):
@@ -4817,6 +5067,27 @@ Work **one MEM ID per PR**; after each step update the MEM master table + paydow
 | 12 | P-Ext.5.1, 3.10, 3.12 | Scaffold CLI (all three catalogs) + harness `requires_skills` demo | P3 |
 
 Full task register: [Appendix I](#appendix-i--plugin-catalog-traceability-phase-p-ext).
+
+**Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3. **Feature queue:** Phase W-ADAPT — §6.1t.
+
+### 6.2ac Phase W-ADAPT execution order (Band 2y — active)
+
+**Status:** **Planned** · register: [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · queue: [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active)
+
+```text
+Wave W-ADAPT-0 (planning):        W-ADAPT-0.2 → 0.3 → 0.4 → 0.5  (0.1 Done)
+Wave W-ADAPT-1 (observe L4-O):     W-ADAPT-1.1 → 1.3 → 1.4–1.10 → 1.12 → 1.11
+Wave W-ADAPT-2 (recommend L4-R):   W-ADAPT-2.1 → 2.2 → 2.3 → 2.6 → 2.7 → 2.8 → 2.10 → 2.11 → 2.12 → 2.4 → 2.5 → 2.9
+Wave W-ADAPT-3 (shadow L4-S):      W-ADAPT-3.1 → 3.2 → 3.3 → 3.4 → 3.6 → 3.7 → 3.5
+Wave W-ADAPT-4 (apply L4-A):       W-ADAPT-4.1 → 4.2 → 4.10 → 4.4 → 4.5 → 4.9 → 4.3 → 4.6 → 4.7 → 4.8
+Wave W-ADAPT-5 (verify L4-V):      W-ADAPT-5.1 → 5.3 → 5.4 → 5.5 → 5.2 → 5.11 → 5.6 → 5.7 → 5.8 → 5.9 → 5.10 → 5.12
+Wave W-ADAPT-6 (patterns):         W-ADAPT-6.2 → 6.1 → 6.3 → 6.5 → 6.4  (after W-ADAPT-5.1)
+Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 → 7.6 → 7.7
+```
+
+**Prerequisites:** Phase V + V-REM + W-OPS + EVAL + COST + CG closeouts **Done**.
+
+**Runtime L4 gate:** `uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime` (added in W-ADAPT-5.6).
 
 ### 6.2 Harness architecture hardening (Band 2 — Phase V) — Done
 
@@ -5771,6 +6042,7 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | Cost/resource governance | canon §53.9 | ideal §24 | V-COST.* | **Done** |
 | Multi-agent coordination pattern catalog | canon §42.43, §53.10 | ideal §6 + §25 | V-MA.* | **Done** |
 | Knowledge graph evolution path (Graph-RAG) | canon §53.11 | ideal §3.7.1 + §25 | V-KG.* | **Done** |
+| **Adaptive Harness Intelligence (L4 runtime closed loop)** | canon §54 | ideal §25 | **Phase W-ADAPT** · AHIA | **Planned (Band 2y)** — governance L4 **Done** (V-V6); runtime L4 **open** |
 | Observability and runtime traceability | canon §33, §42.24 | ideal §11 | Phases Q/Q+/S/U + §6.1 maintenance | **Done** |
 | Registry-driven extensibility (agent/tool/skill/policy/prompt/eval) | canon §7.1.5.1–§7.1.8, §15, §53.2 | ideal §19 | Phase R/U + V-CG/V-PE/V-EVAL + **P-Ext** | **Done** — plugin catalogs production-ready; marketplace UI out of scope |
 | Product agents and new product apps | canon §7.4, §52 | ideal §26 | §6.3 only | **Deferred (product scope)** |
@@ -5942,4 +6214,64 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ---
 
-*Plan synced (2026-06-02). **Harness platform** bands 1–2p **Done**; GOV-AUDIT + ORCH + TS + INT + RAG + CTX + LEG + PE **closed**. Gate: **623 passed**. **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance. Product work gated by [§6.3](#63-end-of-plan--deferred-product-work-only). Operational L3 **signed off**. P-Ext **Done** (61/61).*
+## Appendix K — Adaptive Harness Intelligence traceability (Phase W-ADAPT)
+
+**Purpose:** 100% mapping from [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) (AHIA) to concrete **W-ADAPT.\*** IDs. **Canonical phase narrative:** [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime).
+
+**Status:** **70 tasks** · **1 Done** (W-ADAPT-0.1) · **69 Planned** (2026-06-05).
+
+### K.1 AHIA component → W-ADAPT ID matrix
+
+| AHIA component (§9) | Existing module to reuse | W-ADAPT ID |
+|---------------------|--------------------------|------------|
+| SignalCollector | `metrics/export.py`, `execution_guard.py`, `online_evaluation_registry.py` | W-ADAPT-1.4–1.11 |
+| HarnessOutcomeSignal + utility | — (new) | W-ADAPT-1.1, W-ADAPT-1.8 |
+| SignalStore | — (new SQLite) | W-ADAPT-1.3 |
+| BanditStateStore | — (new) | W-ADAPT-2.1 |
+| RoutingTuningEngine | `rag/routing/query_router.py`, LLM profiles | W-ADAPT-2.2, W-ADAPT-3.7, W-ADAPT-4.10 |
+| ExecutionStrategyEngine | `history_evaluator.py`, `nexus_factory.py` | W-ADAPT-2.3, W-ADAPT-4.10 |
+| PolicyLearningEngine | `adaptive_governance.py`, `tool_security.py` | W-ADAPT-2.4, W-ADAPT-4.6, W-ADAPT-4.9 |
+| EvaluationFeedbackEngine | `evaluation_registry_trends.py` | W-ADAPT-2.5, W-ADAPT-5.3 |
+| ProposalBuilder | `adaptive_governance.py` (`AdaptiveLoopProposal`) | W-ADAPT-2.6 |
+| AdaptationEngine facade | — (new) | W-ADAPT-2.7 |
+| Governance gate | `adaptive_governance.py`, `capability_graph_compatibility.py` | W-ADAPT-2.8–2.9 |
+| ProfileVersionStore | — (new; pattern from `agent_promotion.py`) | W-ADAPT-3.1–3.2, W-ADAPT-3.5 |
+| AdaptationExecutor | `runtime_governance_bridge.py` (extend) | W-ADAPT-3.3–3.4, W-ADAPT-4.4–4.5, W-ADAPT-4.8 |
+| VerificationLoop | `evaluation_registry_trends.py`, `execution_guard.py` | W-ADAPT-5.1–5.5 |
+| ProcessPatternMiner | trace persistence | W-ADAPT-6.* |
+| AdaptationScheduler | Celery/message bus pattern from W-ML | W-ADAPT-2.12, W-ADAPT-5.12, W-ADAPT-6.5 |
+| AdaptiveProfile (Tier-3) | `environment_profile.py` | W-ADAPT-4.1, W-ADAPT-7.1–7.2 |
+| Ops reports / CI | `phase_v_governance_report.py` pattern | W-ADAPT-1.12, W-ADAPT-2.11, W-ADAPT-5.6–5.8 |
+| Runtime L4 evidence | `maturity_gate_evidence.py` | W-ADAPT-5.7, W-ADAPT-5.11 |
+| Author docs | AGENT_CREATION_GUIDE appendices | W-ADAPT-7.3–7.4 |
+
+### K.2 Adaptive loop kind → implementation wave
+
+| `AdaptiveLoopKind` | Engine | Apply wave | Authority default |
+|--------------------|--------|------------|-------------------|
+| `ROUTING_TUNING` | W-ADAPT-2.2 | W-ADAPT-4.10 | RECOMMEND |
+| `EXECUTION_STRATEGY_TUNING` | W-ADAPT-2.3 | W-ADAPT-4.10 | RECOMMEND |
+| `POLICY_LEARNING` | W-ADAPT-2.4 | W-ADAPT-4.6, W-ADAPT-4.9 | AUTO_WITH_HUMAN_GATE |
+| `EVALUATION_FEEDBACK` | W-ADAPT-2.5 | observe only (W-ADAPT-5.3) | OBSERVE_ONLY |
+
+### K.3 Lifecycle mode → task coverage
+
+| Mode | Code | Primary tasks |
+|------|------|---------------|
+| Observe | L4-O | W-ADAPT-1.* |
+| Recommend | L4-R | W-ADAPT-2.* |
+| Shadow | L4-S | W-ADAPT-3.* |
+| Canary | L4-C | W-ADAPT-4.3 |
+| Apply | L4-A | W-ADAPT-4.4–4.10 |
+| Verify | L4-V | W-ADAPT-5.* |
+
+### K.4 Paydown log
+
+| Date | W-ADAPT ID | Summary |
+|------|------------|---------|
+| 2026-06-05 | W-ADAPT-0.1 | Phase W-ADAPT register + §6.1t + §6.2ac + Appendix K + Band 2y |
+| — | — | *(append row per merged PR)* |
+
+---
+
+*Plan synced (2026-06-05). **Harness platform** bands 1–2x **Done**; **Band 2y W-ADAPT opened** (0/70). Gate: **687 passed**. **Default next:** [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active) W-ADAPT-0.2+. **Every PR:** §6.1 maintenance. Product work gated by [§6.3](#63-end-of-plan--deferred-product-work-only).*

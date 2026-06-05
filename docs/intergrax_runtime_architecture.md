@@ -5493,7 +5493,7 @@ Governance-only L4 (envelope unit tests) **does not** satisfy runtime L4.
 | Artifact | Location / action |
 |----------|-------------------|
 | Full AHIA document | `docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md` |
-| Planned phase | **Phase W-ADAPT** in `INTERGRAX_IMPLEMENTATION_PLAN.md` (to be synced from AHIA Appendix B) |
+| Planned phase | **Phase W-ADAPT** in `INTERGRAX_IMPLEMENTATION_PLAN.md` — **70 tasks**, Band 2y, Appendix K (synced 2026-06-05) |
 | New package (planned) | `intergrax/runtime/adaptive/` |
 | Reuse | `adaptive_governance.py`, `runtime_governance_bridge.py`, `execution_guard.py`, `evaluation_registry_trends.py` |
 | Closeout script (planned) | `scripts/phase_w_adapt_closeout_gate.py` |

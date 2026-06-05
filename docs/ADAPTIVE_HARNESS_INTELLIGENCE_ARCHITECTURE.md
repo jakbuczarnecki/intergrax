@@ -1220,7 +1220,7 @@ All must pass:
 
 | # | Recommendation | Priority |
 |---|----------------|----------|
-| R1 | Accept this RFC and add **Phase W-ADAPT** to implementation plan | P0 |
+| R1 | Accept this RFC and add **Phase W-ADAPT** to implementation plan | P0 | **Done** (2026-06-05) — plan §Phase W-ADAPT, Appendix K, Band 2y |
 | R2 | Default all Tier-3 apps to `AdaptiveProfile.enabled=False`, `mode=observe` | P0 |
 | R3 | Implement W-ADAPT-1 before any auto-apply code | P0 |
 | R4 | Rename outward-facing term: **Adaptive Harness Intelligence**, not "RL" | P1 |
@@ -1257,23 +1257,16 @@ Proceed with Phase W-ADAPT Wave 1 (SignalCollector + utility + observe mode) as 
 
 ## Appendix B — Proposed implementation plan task IDs
 
-Insert into [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) as **Phase W-ADAPT**:
+Insert into [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) as **Phase W-ADAPT** — **synced 2026-06-05** (70 tasks, Band 2y):
 
 ```text
 Phase W-ADAPT — Adaptive Harness Intelligence (AHI)
-Prerequisite: Phase V Done, Phase V-REM Done
-Band: 2j (proposed — after maintenance Band 1)
-Scope: Tier-1 adaptive/ + Tier-3 AdaptiveProfile + scripts + tests
+Prerequisite: Phase V Done, Phase V-REM Done, W-OPS Done, EVAL/COST/CG closeouts Done
+Band: 2y (§4.0) — default implementation queue after §6.1 maintenance
+Scope: Tier-1 intergrax/runtime/adaptive/ + Tier-3 AdaptiveProfile + scripts + tests
 Out of scope: K.1/K.2, deep RL, foundation model training
 
-W-ADAPT-0.1  RFC acceptance + plan sync + README/canon links
-W-ADAPT-1.*  Observe — SignalCollector, utility, report
-W-ADAPT-2.*  Recommend — AdaptationEngine, proposals, ops report
-W-ADAPT-3.*  Shadow — ProfileVersionStore, shadow executor
-W-ADAPT-4.*  Apply — canary, apply, rollback, runtime events
-W-ADAPT-5.*  Verify — VerificationLoop, L4 runtime closeout gate
-W-ADAPT-6.*  ProcessPatternMiner + proposals
-W-ADAPT-7.*  Tier-3 AdaptiveProfile wiring + runbooks + AGENT_CREATION_GUIDE appendix
+See plan: Phase W-ADAPT master register (W-ADAPT-0.1 … W-ADAPT-7.7) · Appendix K · §6.1t · §6.2ac
 ```
 
 ---

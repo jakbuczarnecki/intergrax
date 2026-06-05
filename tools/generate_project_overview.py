@@ -14,7 +14,7 @@ Purpose:
     - Generate a structured summary: purpose, domain, responsibilities.
 
 Output:
-- Creates `PROJECT_STRUCTURE.md` containing a clear, navigable, human-readable
+- Creates `docs/PROJECT_OVERVIEW.md` containing a clear, navigable, human-readable
   and LLM-friendly description of the entire project layout.
 - The result can be used:
     - for onboarding new developers,
@@ -62,7 +62,7 @@ class ProjectOverviewConfig:
         default_factory=lambda: find_project_root(Path(__file__).resolve().parent)
     )
     output_md: Path = field(
-        default_factory=lambda: find_project_root(Path(__file__).resolve().parent) / "PROJECT_STRUCTURE.md"
+        default_factory=lambda: find_project_root(Path(__file__).resolve().parent) / "docs" / "PROJECT_OVERVIEW.md"
     )
 
 
@@ -84,7 +84,7 @@ class ProjectOverviewConfig:
         ]
     )
     exclude_files_substring: Sequence[str] = field(
-        default_factory=lambda: ["PROJECT_STRUCTURE.md", "README.md"]
+        default_factory=lambda: ["PROJECT_OVERVIEW.md", "README.md"]
     )
     max_chars_per_file: int = 8000   # max content sent to LLM per file
     model_max_tokens: int = 1024     # expected max summary response tokens
@@ -253,7 +253,7 @@ if __name__ == "__main__":
 
     config = ProjectOverviewConfig(
         root_dir=project_root,
-        output_md=project_root / "PROJECT_STRUCTURE.md",
+        output_md=project_root / "docs" / "PROJECT_OVERVIEW.md",
         max_chars_per_file=8000,
         model_max_tokens=1024,
     )
