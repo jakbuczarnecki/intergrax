@@ -10,10 +10,6 @@ import pytest
 
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.orchestration_wiring import EngineBackedNexusPlanner
-from intergrax.applications.contracts.environment_profile import (
-    ApplicationEnvironmentProfile,
-    OrchestrationProfile,
-)
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
@@ -23,10 +19,13 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def test_build_harness_host_runtime_passes_llm_adapter_for_engine_planner() -> None:
-    env = build_lab_environment_profile(LabApplicationSettings.from_env()).model_copy(
+    base_env = build_lab_environment_profile(LabApplicationSettings.from_env())
+    env = base_env.model_copy(
         update={
-            "orchestration_profile": OrchestrationProfile(planner_kind="engine"),
-        }
+            "orchestration_profile": base_env.orchestration_profile.model_copy(
+                update={"planner_kind": "engine"},
+            ),
+        },
     )
     settings = LabApplicationSettings(include_echo=True, include_mock_agents=False)
     manifest = build_lab_manifest(settings)

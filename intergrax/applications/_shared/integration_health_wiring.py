@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from intergrax.integrations._shared.circuit_breaker import IntegrationCircuitBreakerConfig
 from intergrax.integrations._shared.health import health_check_all
 from intergrax.integrations.contracts.base import HealthStatus
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -13,13 +14,18 @@ def probe_integration_profile_health(
     profile: IntegrationProfile,
     *,
     use_circuit_breaker: bool = True,
+    circuit_breaker_config: IntegrationCircuitBreakerConfig | None = None,
 ) -> tuple[HealthStatus, ...]:
     """
     Run catalog health probes for all slugs selected by ``profile``.
 
     Returns an immutable tuple suitable for ``ApplicationEnvironmentWiring``.
     """
-    results = health_check_all(profile, use_circuit_breaker=use_circuit_breaker)
+    results = health_check_all(
+        profile,
+        use_circuit_breaker=use_circuit_breaker,
+        circuit_breaker_config=circuit_breaker_config,
+    )
     return tuple(results)
 
 

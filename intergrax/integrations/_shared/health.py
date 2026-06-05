@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Callable, Iterable, Optional
 
+from intergrax.integrations._shared.circuit_breaker import IntegrationCircuitBreakerConfig
 from intergrax.integrations._shared.circuit_breaker_registry import get_breaker_for_slug
 from intergrax.integrations.contracts.base import (
     HealthStatus,
@@ -32,10 +33,16 @@ def health_check_entry(entry: IntegrationEntry, instance: object) -> HealthStatu
     return health_check(instance, slug=entry.slug)
 
 
-def _resolve_with_breaker(profile: IntegrationProfile, category: str, slug: str) -> object:
+def _resolve_with_breaker(
+    profile: IntegrationProfile,
+    category: str,
+    slug: str,
+    *,
+    circuit_breaker_config: IntegrationCircuitBreakerConfig | None = None,
+) -> object:
     from intergrax.integrations.registry.factory import resolve_from_profile
 
-    breaker = get_breaker_for_slug(slug)
+    breaker = get_breaker_for_slug(slug, config=circuit_breaker_config)
     return breaker.call(lambda: resolve_from_profile(profile, category))
 
 
@@ -44,6 +51,7 @@ def health_check_all(
     *,
     categories: Optional[Iterable[str]] = None,
     use_circuit_breaker: bool = True,
+    circuit_breaker_config: IntegrationCircuitBreakerConfig | None = None,
 ) -> list[HealthStatus]:
     """Run optional health probes for all slugs selected by ``profile``."""
     from intergrax.integrations.contracts.base import PROFILE_FIELD_BY_CATEGORY
@@ -59,7 +67,12 @@ def health_check_all(
         seen.add(slug)
         try:
             if use_circuit_breaker:
-                instance = _resolve_with_breaker(profile, category, slug)
+                instance = _resolve_with_breaker(
+                    profile,
+                    category,
+                    slug,
+                    circuit_breaker_config=circuit_breaker_config,
+                )
             else:
                 from intergrax.integrations.registry.factory import resolve_from_profile
 

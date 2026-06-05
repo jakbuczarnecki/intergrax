@@ -20,6 +20,10 @@ from intergrax.applications._shared.memory_runtime_bridge import apply_memory_pr
 from intergrax.applications._shared.observability_runtime_bridge import (
     apply_observability_profiles_from_environment,
 )
+from intergrax.applications._shared.reliability_runtime_bridge import (
+    apply_reliability_profiles_from_environment,
+)
+from intergrax.applications._shared.reliability_wiring import wire_application_reliability
 from intergrax.applications._shared.prompt_runtime_bridge import apply_prompt_profiles_from_environment
 from intergrax.applications._shared.prompt_wiring import resolve_prompt_registry
 from intergrax.applications._shared.memory_wiring import (
@@ -112,6 +116,12 @@ def materialize_runtime_config(
     apply_memory_profile_to_runtime_config(config, env.memory_profile)
     apply_prompt_profiles_from_environment(config, env)
     apply_observability_profiles_from_environment(config, env)
+    reliability_wiring = wire_application_reliability(env)
+    apply_reliability_profiles_from_environment(
+        config,
+        env,
+        idempotency_store=reliability_wiring.idempotency_store,
+    )
     apply_context_profiles_from_environment(config, env)
     apply_integration_profiles_from_environment(config, env)
     apply_catalog_profiles_from_environment(config, env)

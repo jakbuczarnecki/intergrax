@@ -1219,6 +1219,8 @@ Verify that failures are anticipated, classified and handled safely.
 Reliability Score: L0-L4
 ```
 
+**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix R](AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) (wire-time idempotency bridge + circuit breaker assembly); H-APP `ReliabilityProfile` in [`environment_profile.py`](../intergrax/applications/contracts/environment_profile.py). **Closeout:** [Phase REL](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-rel--reliability-control-plane-closeout) **Done** (REL-DOC.*).
+
 ---
 
 ## 23. Security and Data Governance

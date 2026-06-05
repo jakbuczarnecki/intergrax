@@ -25,6 +25,7 @@ from intergrax.applications._shared.capability_graph_wiring import (
     EnvironmentCapabilityGraphView,
     resolve_environment_capability_graph,
 )
+from intergrax.applications._shared.reliability_wiring import wire_application_reliability
 from intergrax.applications._shared.registry_assembly_resolver import assert_registry_assembly_valid
 from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot, resolve_registry_snapshot
 from intergrax.applications._shared.sandbox_wiring import tool_profile_with_sandbox, wire_sandbox_sessions
@@ -79,7 +80,11 @@ def wire_application_environment(
     """
     bootstrap_application_integration_catalog()
     resolved_integration = integration_profile or env.integration_profile or manifest.integration_profile
-    integration_health = probe_integration_profile_health(resolved_integration)
+    reliability_wiring = wire_application_reliability(env)
+    integration_health = probe_integration_profile_health(
+        resolved_integration,
+        circuit_breaker_config=reliability_wiring.circuit_breaker_config,
+    )
 
     rag_stack = resolve_rag_stack_for_environment(
         env,

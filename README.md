@@ -584,7 +584,7 @@ Every decision and invocation is **traceable** — core Harness AI principle.
 | **OTLP** | OpenTelemetry export via `IntegrationProfile.harness_environment()` |
 | **Prometheus** | LLM/RAG metrics — [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) |
 
-Lab wiring: [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md) · Control plane: [Appendix Q](docs/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout)
+Lab wiring: [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md) · Control plane: [Appendix Q](docs/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) (observability) · [Appendix R](docs/AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) (reliability)
 
 Audit layer 21: [AUDIT_MAP §21](docs/INTEGRAX_HARNESS_AUDIT_MAP.md)
 

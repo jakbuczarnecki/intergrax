@@ -43,8 +43,9 @@ Implementation status: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTA
 27. [Appendix O — Registry architecture control plane](#appendix-o--registry-architecture-control-plane)
 28. [Appendix P — Capability graph control plane](#appendix-p--capability-graph-control-plane)
 29. [Appendix Q — Observability control plane closeout](#appendix-q--observability-control-plane-closeout)
-30. [Anti-patterns](#anti-patterns)
-31. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
+30. [Appendix R — Reliability control plane closeout](#appendix-r--reliability-control-plane-closeout)
+31. [Anti-patterns](#anti-patterns)
+32. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
 
@@ -2120,6 +2121,73 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 
 ---
 
+## Appendix R — Reliability control plane closeout
+
+**Audience:** Tier-3 application authors, platform engineers, release/ops.  
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §22; Phase REL **Done**; complements H-APP `ReliabilityProfile` (§H.2).
+
+Tier-3 hosts must materialize idempotency stores, circuit breaker thresholds, and long-running coherence from typed `ReliabilityProfile` — not ad-hoc store construction in host factories.
+
+### R.1 Design principles (Harness audit)
+
+| Principle | Meaning in Intergrax |
+|-----------|----------------------|
+| Profile-driven | `ReliabilityProfile` on `ApplicationEnvironmentProfile` |
+| Wire-time validation | `reliability_assembly_resolver` at `build_harness_host_runtime` |
+| Typed bridge | `ReliabilityWiringOptions` maps profile → stores and breaker config |
+| Orchestration coupling | `long_running_scheduler_enabled` requires `orchestration_profile.long_running_enabled` |
+| Integration resilience | `circuit_breaker_failure_threshold` drives `IntegrationCircuitBreakerConfig` on health probes |
+
+### R.2 Reliability wiring map
+
+```text
+ApplicationEnvironmentProfile (Tier-3)
+  └── reliability_profile
+        ├── idempotency_enabled        → SQLite or in-memory IdempotencyStore
+        ├── circuit_breaker_failure_threshold → IntegrationCircuitBreakerConfig
+        ├── checkpoint_interval_steps  → long-running checkpoint cadence (Nexus)
+        └── long_running_scheduler_enabled → requires orchestration long_running + checkpoint store
+
+wire_application_reliability() (Tier-3)
+  └── reliability_runtime_bridge.py
+        ├── resolve_reliability_wiring_options()
+        └── apply_reliability_profiles_from_environment() → RuntimeConfig.idempotency_store
+
+wire_application_environment() (Tier-3)
+  └── probe_integration_profile_health(circuit_breaker_config=…)
+
+build_harness_host_runtime() (Tier-3)
+  └── reliability_wiring.py + reliability_assembly_resolver.py
+
+Release / CI
+  └── check_harness_reliability_wiring.py
+  └── test_harness_reliability_wiring.py
+```
+
+### R.3 Core contracts
+
+| Contract | Module | Role |
+|----------|--------|------|
+| `ReliabilityProfile` | `contracts/environment_profile.py` | Author-facing reliability flags |
+| `ReliabilityWiringOptions` | `reliability_runtime_bridge.py` | Profile → wiring flags |
+| `ApplicationReliabilityWiring` | `reliability_wiring.py` | Resolved store + breaker config |
+| `ReliabilityAssemblyValidationResult` | `reliability_assembly_resolver.py` | Wire-time conformance |
+| `IdempotencyStore` | `contracts/idempotency_store.py` | Tool side-effect deduplication port |
+
+### R.4 Verification (audit evidence)
+
+| Concern | Command / test |
+|---------|----------------|
+| Profile → wiring bridge | `pytest tests/unit/applications/test_harness_reliability_wiring.py -m gate` |
+| Host reliability materialization | `python scripts/check_harness_reliability_wiring.py` |
+| Long-running via environment | `pytest tests/unit/applications/test_reliability_profile.py -m gate` |
+| Integration circuit breaker | `pytest tests/unit/integrations/test_integration_circuit_breaker.py -m gate` |
+| Full gate | `uv run pytest -m gate -q` |
+
+Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §22: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
@@ -2153,6 +2221,7 @@ Run before opening a harness PR (see `scripts/`):
 | `check_harness_registry_resolution.py` | Tier-3 hosts wire catalogs via `wire_application_environment` / `build_harness_host_runtime` |
 | `check_harness_capability_graph_wiring.py` | Hosts materialize environment capability graph at wire time |
 | `check_harness_observability_wiring.py` | Hosts wire observability stores from `ObservabilityProfile` |
+| `check_harness_reliability_wiring.py` | Hosts wire reliability stores from `ReliabilityProfile` |
 | `check_agents_vendor_imports.py` | Agents do not import `integrations/providers/` |
 | `check_integration_vendor_imports.py` | Tier-0 does not import application/agent trees incorrectly |
 | `check_production_chat_agent_imports.py` | No `ChatAgent` on production paths |
@@ -2181,4 +2250,5 @@ When asked to create a new Intergrax agent:
 15. For registry wiring and catalog resolution, read [Appendix O](#appendix-o--registry-architecture-control-plane) — enable profiles on environment, not direct `ToolRegistry()` in hosts.
 16. For capability graph lineage and blast-radius, read [Appendix P](#appendix-p--capability-graph-control-plane) — environment graph is built at wire time from catalog baseline.
 17. For observability wiring and assembly validation, read [Appendix Q](#appendix-q--observability-control-plane-closeout) — configure `ObservabilityProfile`, not direct `wire_nexus_observability()` in hosts.
-18. Do **not** create duplicate workflow documentation — update this file if the process changes.
+18. For reliability wiring and idempotency/circuit breaker assembly, read [Appendix R](#appendix-r--reliability-control-plane-closeout) — configure `ReliabilityProfile`, not ad-hoc `IdempotencyStore` in hosts.
+19. Do **not** create duplicate workflow documentation — update this file if the process changes.

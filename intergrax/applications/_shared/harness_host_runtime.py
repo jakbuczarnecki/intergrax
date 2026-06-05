@@ -24,6 +24,13 @@ from intergrax.applications._shared.observability_assembly_resolver import (
     assert_observability_assembly_valid,
 )
 from intergrax.applications._shared.observability_wiring import wire_application_observability
+from intergrax.applications._shared.reliability_assembly_resolver import (
+    assert_reliability_assembly_valid,
+)
+from intergrax.applications._shared.reliability_wiring import (
+    ApplicationReliabilityWiring,
+    wire_application_reliability,
+)
 from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -38,6 +45,7 @@ class HarnessHostRuntime:
     env_wiring: ApplicationEnvironmentWiring
     registry: AgentRegistry
     observability: NexusObservabilityStores
+    reliability: ApplicationReliabilityWiring
     nexus_loop: NexusLoop
 
 
@@ -49,6 +57,7 @@ def build_harness_host_runtime(
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
+    idempotency_db_path: Path | None = None,
     use_in_memory_trace: bool = False,
     builders: dict[type, Any] | None = None,
     registry: AgentRegistry | None = None,
@@ -93,6 +102,11 @@ def build_harness_host_runtime(
     else:
         assert_observability_assembly_valid(observability_wiring, environment)
         observability = observability_wiring.stores
+    reliability_wiring = wire_application_reliability(
+        environment,
+        idempotency_db_path=idempotency_db_path,
+    )
+    assert_reliability_assembly_valid(reliability_wiring, environment)
     task_memory = wire_task_memory_from_profile(environment)
     nexus_loop = build_nexus_loop_from_environment(
         resolved_registry,
@@ -115,5 +129,6 @@ def build_harness_host_runtime(
         env_wiring=env_wiring,
         registry=resolved_registry,
         observability=observability,
+        reliability=reliability_wiring,
         nexus_loop=nexus_loop,
     )
