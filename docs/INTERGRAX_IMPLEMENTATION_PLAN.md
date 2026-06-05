@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-02) — **Harness platform bands 1–2h Done** (Q→V, P-Ext, W-ML, **W-OPS**, **H-APP**, **DX**, **AA**, **MEM** 48/48); **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **558 passed**; **operational L3** = `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce`  
+Status: Working draft (2026-06-02) — **Harness platform bands 1–2h Done** (Q→V, P-Ext, W-ML, **W-OPS**, **H-APP**, **DX**, **AA**, **MEM** 48/48); **scope split** [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **561 passed**; **operational L3 signed off** (`release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce`)  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -153,8 +153,8 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Harness architecture hardening (Phase V)** | **Done** | No (harness-only) | Capability graph, lifecycle governance, prompt/eval/context/security/cost/metrics/MA/KG hardening |
 | **Operational harness L3 (Phase W-OPS)** | **Done** (code) | No (harness-only) | Ops sign-off: `release_cycles.json` or `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce` |
 | **Application environment profile (Phase H-APP)** | **Done** (2026-06-03) | No (harness-only) | [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7 — 43 tasks; memory bridge gap → [Phase MEM](#phase-mem--memory-platform-completion) |
-| **Memory platform (Phase MEM)** | **Done** (~3,5/5 post-closeout) | No (harness-only) | Memory platform **48/48** — gate **558** |
-| Regression gate | **470 passed** | No | Must stay green after each harness PR |
+| **Memory platform (Phase MEM)** | **Done** (~3,5/5 post-closeout) | No (harness-only) | Memory platform **48/48** — gate **561** |
+| Regression gate | **561 passed** | No | Must stay green after each harness PR |
 
 ---
 
@@ -192,7 +192,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | Harness quality (Phase Q) | **Done** | Appendix C — gate **417** at Phase Q close |
 | Harness hardening (Phase Q+) | **Done** | Appendix D — typing, monolith splits, zero grandfathered `getattr` |
 | Harness AI alignment (Phase R MVP) | **Done** | Appendix E — Skill Library, context, delegation, policy bundle |
-| Regression gate | **533 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
+| Regression gate | **561 passed** | `pytest -m gate`; also `scripts/check_harness_no_getattr.py` |
 | Harness environment GA (Phase S) | **Done** (2026-06-01) | S-H.* + S-Ops + S-Doc |
 | Harness cleanliness (Phase T) | **Done** (2026-06-01) | T-Ops + T-H |
 | Harness production hardening (Phase U) | **Done** | Appendix G audit → U.* (U-Leg residual) |
@@ -2959,7 +2959,7 @@ See [§6.1z](#61z-harness-implementation-queue-consolidated). **Do not schedule*
 
 ## Phase MEM — Memory Platform Completion
 
-**Status:** **Done** (2026-06-02) — **48/48** deliverables; gate **558 passed**.  
+**Status:** **Done** (2026-06-02) — **48/48** deliverables; gate **561 passed**.  
 **Prerequisites:** Phases **I** (TaskMemory), **R-Context**, **H-APP** (profile models), **DX-5.7** (ops:memory hints) **Done**; **H-APP.4.3** closed via **MEM-1.***.  
 **Goal:** Close every gap from the **memory platform audit** — short-term session, user/org LTM, task KV, context compression, H-APP→runtime wiring, persistence, recovery, observability, developer hooks, and market-parity documentation — **without** Band 3 product agents (K.1/K.2) or Mem0-like SaaS product layer (MEM-8 deferred P3).  
 **Priority ladder:** **Band 2h** (§4.0) — **default implementation queue** after §6.1 maintenance.  
@@ -2980,10 +2980,11 @@ See [§6.1z](#61z-harness-implementation-queue-consolidated). **Do not schedule*
 | Consolidation / fact extraction | **2/5** | LLM consolidation; notebooks; few gate tests | MEM-4.2, MEM-8.* (P3) |
 | Graph memory (agent sense) | **1/5** | Graph RAG ≠ agent memory | MEM-GRAPH.*, MEM-9.* |
 | Developer hooks | **2/5** | MemoryView + events; no memory lifecycle hooks / EP | MEM-3.*, MEM-7.* |
-| H-APP → runtime config | **2/5** | `MemoryProfile` exists; bridge incomplete | **MEM-1.*** (H-APP.4.3 Partial) |
-| Memory observability | **3,5/5** | MEMORY_* / CONTEXT_* events; no memory SLO metrics | MEM-OBS.* (MEM-OBS.2 baseline Done) |
+| H-APP → runtime config | **4/5** | Bridge **Done** via MEM-1.* | MEM-DOC.* maintenance |
+| Declarative env config | **4/5** | MemoryProfile wired via H-APP bridge | MEM-1.* |
+| Memory observability | **4/5** | MEMORY_* / CONTEXT_* events + memory SLO metrics baseline | MEM-OBS.* |
 
-**Overall platform memory score: ~2,8/5** — Tier-1 architecture is sound; product memory layer is **not closed** vs Mem0 / Zep / LangGraph memory patterns.
+**Overall platform memory score: ~3,5/5** — Tier-1 architecture closed for harness; product Mem0/Zep layer remains **§6.3** optional.
 
 **Out of scope (explicit):** K.1/K.2 business memory; hosted Mem0/Zep replacement SaaS; Neo4j entity graph as default user memory (MEM-9 = design RFC only); Redis/Postgres session backends as shipped defaults (MEM-PERS.3 spike P3).
 
@@ -3023,8 +3024,8 @@ Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutab
 | Layer | In-memory | SQLite | Postgres | Redis | Mongo |
 |-------|-----------|--------|----------|-------|-------|
 | Task KV | test | prod path (`INTERGRAX_TASK_MEMORY_DB`) | — | — | — |
-| Session | **default** in H-APP bridge | bundle path | — | — | — |
-| User profile LTM | **only shipped store** | **missing** | — | — | document_store general, not wired |
+| Session | lab SQLite via bridge | bundle path | — | — | — |
+| User profile LTM | test | bundle (`SQLiteUserProfileStore`) | — | — | optional `DocumentStoreUserProfileStore` (MEM-PERS.2) |
 | Org profile | test | bundle | — | — | — |
 | Checkpoints (≠ memory) | — | yes | — | — | — |
 | Trace / events | test | yes | — | — | — |
@@ -3036,8 +3037,8 @@ Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutab
 | Layer | Recovery key | Works when | Broken today |
 |-------|--------------|------------|--------------|
 | Task memory | `tenant_id` + `task_id` + namespace | SQLite enabled | — |
-| Session | `session_id` | SQLite SessionStorage | H-APP bridge forces InMemory |
-| User LTM | user id | — | **lost on restart** (InMemoryUserProfileStore) |
+| Session | `session_id` | SQLite SessionStorage when relational_store=sqlite | — |
+| User LTM | user id | SQLite bundle or Mongo document_store | — |
 | Long-running | checkpoint store | SQLite | separate from conversational memory |
 | Org profile | org id | SQLite bundle | — |
 
@@ -3052,7 +3053,7 @@ Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutab
 | Vector semantic memory | Optional | ✅ | User LTM via RAG index | MEM-2.* |
 | Subagent namespace isolation | Subgraph state | — | delegation namespace ✅ | documented |
 | Memory hooks / plugins | Checkpointer swap | API | Event bus only | MEM-3.*, MEM-7.* |
-| Declarative env config | Partial | SaaS | MemoryProfile **partial** | MEM-1.* |
+| Declarative env config | Partial | SaaS | MemoryProfile **Done** | MEM-1.* |
 | Observability | LangSmith | Dashboard | Trace events ✅; no memory SLO | MEM-OBS.* |
 
 ### MEM — User audit checklist → deliverables (MEM-CHk.1)
@@ -3186,7 +3187,8 @@ Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutab
 
 | Date | ID | Notes |
 |------|-----|-------|
-| 2026-06-02 | MEM-1.*–MEM-9.* | Phase MEM **48/48 Done**; H-APP.4.3 **Done**; gate **558** |
+| 2026-06-02 | MEM-1.*–MEM-9.* | Phase MEM **48/48 Done**; H-APP.4.3 **Done**; gate **561** |
+| 2026-06-02 | §6.1 post-MEM | MEM-PERS.2 Mongo `DocumentStoreUserProfileStore`; hatchling CLI install; CI `check_plugin_catalog`; release cycle `mem-platform-2026-06-02` |
 | 2026-06-02 | MEM-0.1–MEM-0.2, MEM-PAR.1, MEM-CHk.1, MEM-PERS.1 | Memory audit → Phase MEM register in plan |
 | 2026-06-02 | MEM-OBS.2 | Baseline already **Done** (DX-5.7) |
 
@@ -3621,15 +3623,15 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
 | 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
-| 1 | **MEM-1.1–MEM-1.4** | Code | **Pending** | H-APP `MemoryProfile` + `ContextProfile.budget` + SQLite session → `RuntimeConfig` | MEM-1.5 gate test green |
-| 2 | **MEM-2.1–MEM-2.3** | Code | **Pending** | `SQLiteUserProfileStore` + bundle wiring + unit tests | LTM survives restart on sqlite profile |
-| 3 | **MEM-1.6** | Docs/status | **Pending** | H-APP.4.3 → **Done** | Bridge complete |
-| 4 | **MEM-4.1–MEM-4.3** | Test | **Pending** | Session + LTM + full-stack memory gates | acceptance/integration green |
-| 5 | **MEM-5.1–MEM-5.2** | Test/Docs | **Pending** | `engine_history_layer` tests + compression docs | unit + guide |
-| 6 | **MEM-3.1–MEM-3.3** | Code | **Pending** | Memory store plugin EP + reference fixture | bootstrap + gate |
-| 7 | **MEM-0.3–MEM-DOC.*** | Docs | **Pending** | Author cookbooks + Appendix G sync | guide updated |
-| 8 | **MEM-6.*–MEM-7.*** | Code | **Pending** | Retention enforcement + memory hooks | P2 after P0/P1 |
-| 9 | **MEM-8.*–MEM-9.*** | RFC | **Pending** | Product memory layer + entity graph design | §6.3 gate for implementation |
+| 1 | **MEM-1.1–MEM-1.4** | Code | **Done** | H-APP `MemoryProfile` + `ContextProfile.budget` + SQLite session → `RuntimeConfig` | MEM-1.5 gate test green |
+| 2 | **MEM-2.1–MEM-2.3** | Code | **Done** | `SQLiteUserProfileStore` + bundle wiring + unit tests | LTM survives restart on sqlite profile |
+| 3 | **MEM-1.6** | Docs/status | **Done** | H-APP.4.3 → **Done** | Bridge complete |
+| 4 | **MEM-4.1–MEM-4.3** | Test | **Done** | Session + LTM + full-stack memory gates | acceptance/integration green |
+| 5 | **MEM-5.1–MEM-5.2** | Test/Docs | **Done** | `engine_history_layer` tests + compression docs | unit + guide |
+| 6 | **MEM-3.1–MEM-3.3** | Code | **Done** | Memory store plugin EP + reference fixture | bootstrap + gate |
+| 7 | **MEM-0.3–MEM-DOC.*** | Docs | **Done** | Author cookbooks + Appendix G sync | guide updated |
+| 8 | **MEM-6.*–MEM-7.*** | Code | **Done** | Retention enforcement + memory hooks | P2 after P0/P1 |
+| 9 | **MEM-8.*–MEM-9.*** | RFC | **Done (RFC)** | Product memory layer + entity graph design | §6.3 gate for implementation |
 
 **Suggested PR order:** See [Phase MEM — Suggested PR order](#mem--paydown-log).
 
@@ -3679,8 +3681,7 @@ Verify (every harness PR):
   uv run python scripts/record_harness_release_cycle.py --cycle-id <release-id> --verify-gate
   python scripts/check_scaffold_harness_alignment.py
   python scripts/check_agents_no_tier3_imports.py
-  # Residual (DX-8.1):
-  # uv run intergrax doctor --ci
+  uv run intergrax doctor --ci
 ```
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
@@ -4922,4 +4923,4 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ---
 
-*Plan synced (2026-06-03). **Harness baseline complete** (Q–V + P-Ext + W-ML + W-OPS + §4.1). Gate: **470 passed** (full regression). **Default next:** **§6.1** maintenance; operational L3 = `phase_w_ops_evidence.py --enforce` after two release cycles. P-Ext **Done** (61/61). **End of plan (§6.3):** K.1/K.2, product apps, Legal E2E — not default “next”.*
+*Plan synced (2026-06-02). **Harness baseline complete** (Q–V + P-Ext + W-ML + W-OPS + H-APP + DX + AA + MEM). Gate: **561 passed**. **Default next:** **§6.1** maintenance only; operational L3 **signed off** (`release_cycles.json` ≥2). P-Ext **Done** (61/61). **End of plan (§6.3):** K.1/K.2, product apps, Legal E2E — not default “next”.*

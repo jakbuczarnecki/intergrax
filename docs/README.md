@@ -1,6 +1,6 @@
 # Intergrax — Documentation
 
-**Last updated:** 2026-06-02 (Phase MEM 48/48 Done; gate 558; K.1/K.2 deferred)
+**Last updated:** 2026-06-02 (§6.1 maintenance; MEM-PERS.2 Mongo LTM path; gate **561**; operational L3 signed off)
 
 The `docs/` folder holds the canonical platform documentation.
 
@@ -100,7 +100,7 @@ Ideal Harness AI target   →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 | **Phase V execution controls** | **Defined** — execution matrix, KPI thresholds, cadence, ownership, L3/L4 gates in Phase V section |
 | **Harness completion (§4.1)** | **Done** (2026-06-02) |
 | **Phase AA — Agents & applications conformance** | **Platform Done** (2026-06-02) |
-| **Phase MEM — Memory platform** | **Done** (48/48, gate 558) |
+| **Phase MEM — Memory platform** | **Done** (48/48, gate 561) |
 | **Phase K — Business agents** | **End of plan** — §6.3; **not** default next |
 
 Gate: `uv run pytest -m gate -q` — **481 passed** (2026-06-02)

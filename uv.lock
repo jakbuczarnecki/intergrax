@@ -1596,7 +1596,7 @@ wheels = [
 [[package]]
 name = "intergrax-ai"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "anthropic", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "beautifulsoup4", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },

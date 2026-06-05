@@ -25,6 +25,7 @@ from intergrax.runtime.nexus.session.sqlite_session_storage import SQLiteSession
 from intergrax.runtime.organization.stores.sqlite_organization_profile_store import (
     SQLiteOrganizationProfileStore,
 )
+from tests.unit.integrations.providers.document_store.test_mongodb import _collection_factory
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -54,8 +55,38 @@ def test_resolve_memory_platform_wiring_falls_back_to_in_memory_without_sqlite()
     wiring = resolve_memory_platform_wiring(env)
 
     assert wiring.sqlite_bundle is None
+    assert wiring.mongodb_bundle is None
     assert isinstance(wiring.session_storage, InMemorySessionStorage)
     assert isinstance(wiring.user_profile_store, InMemoryUserProfileStore)
+    assert wiring.organization_profile_store is None
+
+
+def test_resolve_memory_platform_wiring_uses_mongodb_document_store_for_user_ltm() -> None:
+    from intergrax.integrations.core.binding import IntegrationBinding
+    from intergrax.integrations.providers.document_store.mongodb.manifest import MANIFEST
+    from intergrax.memory.stores.document_store_user_profile_store import DocumentStoreUserProfileStore
+
+    factory, _ = _collection_factory()
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.wiring.mongo")
+    env.integration_profile = IntegrationProfile(
+        document_store=IntegrationBinding.from_manifest(MANIFEST),
+    )
+    env.integration_profile.options = {
+        **(env.integration_profile.options or {}),
+        "mongodb": {
+            "uri": "mongodb://localhost:27017",
+            "database": "intergrax_test",
+            "collection_name": "user_profiles",
+            "collection_factory": factory,
+        },
+    }
+
+    wiring = resolve_memory_platform_wiring(env)
+
+    assert wiring.sqlite_bundle is None
+    assert wiring.mongodb_bundle is not None
+    assert isinstance(wiring.session_storage, InMemorySessionStorage)
+    assert isinstance(wiring.user_profile_store, DocumentStoreUserProfileStore)
     assert wiring.organization_profile_store is None
 
 
