@@ -79,6 +79,8 @@ from intergrax.integrations.contracts.vector_store import (
 )
 from intergrax.integrations.contracts.secrets_store import SecretsStore
 from intergrax.integrations.contracts.graph_store import GraphNodeRecord, GraphQueryResult, GraphStore
+from intergrax.integrations.contracts.feature_flag import FeatureFlagBackend, FeatureFlagEvaluation
+from intergrax.integrations.contracts.ci_cd import CheckSuiteRecord, CiCdBackend, WorkflowRunRecord
 
 __all__ = [
     "PROFILE_FIELD_BY_CATEGORY",
@@ -130,6 +132,11 @@ __all__ = [
     "GraphStore",
     "GraphNodeRecord",
     "GraphQueryResult",
+    "FeatureFlagBackend",
+    "FeatureFlagEvaluation",
+    "CiCdBackend",
+    "WorkflowRunRecord",
+    "CheckSuiteRecord",
     "TaskHandle",
     "TaskQueue",
     "TaskRequest",

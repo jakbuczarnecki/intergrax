@@ -36,6 +36,8 @@ class IntegrationCategory(str, Enum):
     GRAPH_STORE = "graph_store"
     DOCUMENT_PARSER = "document_parser"
     RERANK_PROVIDER = "rerank_provider"
+    FEATURE_FLAG = "feature_flag"
+    CI_CD = "ci_cd"
 
 
 @dataclass(frozen=True)
@@ -137,6 +139,8 @@ PROFILE_FIELD_BY_CATEGORY: dict[str, str] = {
     IntegrationCategory.GRAPH_STORE.value: "graph_store",
     IntegrationCategory.DOCUMENT_PARSER.value: "document_parser",
     IntegrationCategory.RERANK_PROVIDER.value: "rerank_provider",
+    IntegrationCategory.FEATURE_FLAG.value: "feature_flag",
+    IntegrationCategory.CI_CD.value: "ci_cd",
 }
 
 

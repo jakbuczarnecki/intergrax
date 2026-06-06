@@ -25,8 +25,9 @@ from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.integrations.contracts.search_provider import SearchProvider
 from intergrax.integrations.contracts.secrets_store import SecretsStore
 from intergrax.integrations.contracts.graph_store import GraphStore
+from intergrax.integrations.contracts.feature_flag import FeatureFlagBackend
+from intergrax.integrations.contracts.ci_cd import CiCdBackend
 from intergrax.integrations.contracts.vector_store import VectorStore
-from intergrax.integrations.contracts.object_storage import ObjectStorage
 
 
 def assert_implements(instance: object, protocol: type[T]) -> T:
@@ -107,3 +108,11 @@ def assert_secrets_store(instance: object) -> SecretsStore:
 
 def assert_graph_store(instance: object) -> GraphStore:
     return assert_implements(instance, GraphStore)
+
+
+def assert_feature_flag_backend(instance: object) -> FeatureFlagBackend:
+    return assert_implements(instance, FeatureFlagBackend)
+
+
+def assert_ci_cd_backend(instance: object) -> CiCdBackend:
+    return assert_implements(instance, CiCdBackend)

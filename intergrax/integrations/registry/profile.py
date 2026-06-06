@@ -86,6 +86,8 @@ class IntegrationProfile(BaseModel):
     graph_store: IntegrationBinding | None = None
     document_parser: IntegrationBinding | None = None
     rerank_provider: IntegrationBinding | None = None
+    feature_flag: IntegrationBinding | None = None
+    ci_cd: IntegrationBinding | None = None
 
     options: dict[str, dict[str, Any]] = Field(default_factory=dict)
 
@@ -317,4 +319,6 @@ IntegrationProfile._BINDING_ACCESSORS = {
     "graph_store": lambda profile: profile.graph_store,
     "document_parser": lambda profile: profile.document_parser,
     "rerank_provider": lambda profile: profile.rerank_provider,
+    "feature_flag": lambda profile: profile.feature_flag,
+    "ci_cd": lambda profile: profile.ci_cd,
 }

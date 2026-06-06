@@ -195,3 +195,6 @@ def register_extended_integrations(*, override: bool = False) -> None:
     register_opsgenie_integration(override=override)
     register_gitlab_integration(override=override)
     register_vespa_integration(override=override)
+    from intergrax.integrations.registry.bootstrap_m6_p4 import register_m6_p4_integrations
+
+    register_m6_p4_integrations(override=override)

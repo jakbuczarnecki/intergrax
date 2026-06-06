@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-06) — **Harness platform bands 1–2x Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39) — typed LLM response envelope; default queue = **§6.1 maintenance** only; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done**; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate green; **operational L3 signed off**  
+Status: Working draft (2026-06-02) — **Harness platform bands 1–2aa Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39); **Phase M.6 P4 (Band 2aa) Done** (28/28); default queue = **§6.1 maintenance**; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done**; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate green; **operational L3 signed off**  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -46,6 +46,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Evaluation closeout (registry bridge, policy bundle, CI) | [Phase EVAL](#phase-eval--evaluation-control-plane-closeout) · **§6.1s** · Band **2x** · **Appendix U** |
 | **Adaptive Harness Intelligence (AHI / L4 runtime)** | [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · **§6.1t** · Band **2y** · [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · canon [§54](intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) · **Appendix K** |
 | **LLM response envelope (typed completion contract)** | [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · **§6.1v** · Band **2z** · [LLM_ADAPTERS.md](LLM_ADAPTERS.md) · **Appendix L** |
+| **Integration catalog expansion (harness ROI slugs)** | [M.6 P4 register](#m6-p4--harness-platform-expansion-planned) · **§6.1w** · Band **2aa** · [INTEGRATIONS.md](INTEGRATIONS.md) |
 | Tier-3 application environment (self-contained deploy) | Architecture canon §7.4.8–§7.4.10 |
 | Tier-3 composition engine (manifest, wiring API) | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
 | Tier-3 application hosts (`applications/<app>/`) | [`applications/USAGE.md`](../applications/USAGE.md) |
@@ -302,7 +303,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | §19 Debug / experiments | CLI, API, registry, cost | **Done** | D.1–D.5 ✅ |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` |
-| §7.1 Integration Library | Catalog + contracts + providers | **Done** (beta) | Phase M core + M.6 P1/P2/P3; on-demand slugs only |
+| §7.1 Integration Library | Catalog + contracts + providers | **Done** (beta) · **127 slugs** | Phase M core + M.6 P1/P2/P3/P4 **Done** |
 
 | §19 Debug surface | CLI / API | **Done** | D.1 CLI + D.2 API ✅ |
 
@@ -655,6 +656,8 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 
 **Principle:** evolve existing modules (`queueing/`, `distributed/`, `websearch/`, …) into catalog providers; do not fork parallel stacks.
 
+**Catalog (2026-06-02):** **127** slugs shipped (beta) — **99** core + **28** M.6 P4 · `_shared/p5/factories.py` + thin provider shells.
+
 **Out of scope:** `intergrax/llm_adapters/` — LLM providers are **not** part of the Integration Library (§7.1.2).
 
 ### Phase M-LLM — LLM Adapter Layer (Tier-0)
@@ -875,6 +878,7 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 | M.5 | Provider conformance test harness | **Done** | `tests/unit/integrations/`, `_shared/conformance.py` |
 | M.6 | P1 providers (on demand) | **Done** (beta) | postgresql, mysql, jira, confluence, prometheus, ms365_graph, aws, azure, gcp — see M.4/M.6 trackers |
 | M.6 P2 | Extended providers (on demand) | **Done** (beta) | All P2/P3 slugs shipped 2026-05-30 — see **M.6 P2 tracker**; `_shared/p2/` + thin `providers/<slug>/` shells |
+| M.6 P4 | Harness platform expansion | **Done** (beta) (28/28) | `_shared/p5/` · `bootstrap_m6_p4.py` · [M.6 P4 register](#m6-p4--harness-platform-expansion-done) |
 | M.7 | Agent Creation Guide § integrations | **Done** | Appendix E — capabilities/tools vs `IntegrationProfile` / `wire_lab_integrations()` |
 | M.8 | Lab `IntegrationProfile` example | **Done** | `applications/lab_application/` — `wire_lab_integrations()` + `log` provider |
 
@@ -986,6 +990,70 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 | `jina_rerank` | **Done** (beta) | RAG rerank via integration resolver |
 | `reddit` | **Done** (beta) | Reddit OAuth2 search |
 | `google_places` | **Done** (beta) | Google Places text search |
+
+#### M.6 P4 — Harness platform expansion (Done)
+
+**Status:** **Done** (2026-06-02) — **28/28 Done** · catalog **127** slugs  
+**Source:** Integration harness ROI audit (2026-06-02)  
+**Queue:** [§6.1w](#61w-harness-implementation-queue--integration-expansion-m6-p4-closed) · **Execution order:** [§6.2ae](#62ae-phase-m6-p4-execution-order--done)  
+**Priority ladder:** **Band 2aa** (§4.0) — **Done**  
+**Implementation:** `intergrax/integrations/_shared/p5/` + thin shells via `scripts/wire_p5_m6_p4_providers.py` · `register_m6_p4_integrations()` in `bootstrap_extended.py`
+
+**Hard rules:**
+
+- **No** LLM API slugs — use `llm_adapters/` (canon §7.1.2).
+- **New categories** (`feature_flag`, `ci_cd`) require canon §5.2.4 review before merge — track **M-P4-CAT.\*** first.
+- Reuse M.4 workflow: contract (or extend existing) → `providers/<category>/<slug>/` → unit tests → `USAGE.md` → `layout.py` → gate green.
+- `ollama` bridges existing `infra/integration` Docker + `LLMAdapter` Ollama path — not a duplicate LLM stack.
+
+**New category proposals (M-P4-CAT):**
+
+| ID | Category | Slugs | Status | Acceptance |
+|----|----------|-------|--------|------------|
+| M-P4-CAT.1 | `feature_flag` | `unleash`, `launchdarkly` | **Done** | `FeatureFlagBackend` + `IntegrationCategory.FEATURE_FLAG` |
+| M-P4-CAT.2 | `ci_cd` | `github_actions` | **Done** | `CiCdBackend` + `IntegrationCategory.CI_CD` |
+
+##### M.6 P4 — Master register (28 slugs)
+
+| Wave | ID | Slug | Category | Priority | Status | Harness ROI | Acceptance |
+|------|-----|------|----------|----------|--------|-------------|------------|
+| H-INT-1 | M-P4.1 | `pgvector` | vector_store | **P0** | **Done** (beta) | Unify PostgreSQL (stable) + RAG vectors + adaptive stores | `IntegrationProfile.vector_store=pgvector`; RAG hybrid query; gate unit tests |
+| H-INT-1 | M-P4.2 | `duckdb` | relational_store | **P0** | **Done** (beta) | Local OLAP for `phase_w_adapt_report`, eval trends, golden scenarios | `RelationalStore` read path; CI-friendly file DB; report script optional backend |
+| H-INT-1 | M-P4.3 | `influxdb` | observability_backend | **P1** | **Done** (beta) | Time-series utility U, cost, latency — adaptive KPIs | `ObservabilityBackend` query_range; W-ADAPT signal export optional |
+| H-INT-1 | M-P4.4 | `timescaledb` | relational_store | **P1** | **Done** (beta) | Hypertables for adaptive + eval registry trends on Postgres | Extends `postgresql` contract; migration note in USAGE |
+| H-INT-2 | M-P4.5 | `grafana` | observability_backend | **P0** | **Done** (beta) | W-OPS.4 SLO dashboards; L3 release visibility | HTTP API health + dashboard URL artifact; lab stack doc |
+| H-INT-2 | M-P4.6 | `loki` | observability_backend | **P0** | **Done** (beta) | Log query for RuntimeEvents / structured logs | LogQL query adapter; complements `prometheus` |
+| H-INT-2 | M-P4.7 | `tempo` | observability_backend | **P0** | **Done** (beta) | Trace backend for OTEL (`otel` slug exists; dedicated store) | Trace query by `trace_id`; lab compose profile |
+| H-INT-3 | M-P4.8 | `aws_secrets_manager` | secrets_store | **P0** | **Done** (beta) | Prod harness secrets; complements `aws` facade | `SecretsStore` get/list; no secrets in agent code |
+| H-INT-3 | M-P4.9 | `azure_key_vault` | secrets_store | **P0** | **Done** (beta) | Azure prod parity | MI / SP auth via `azure` patterns |
+| H-INT-3 | M-P4.10 | `gcp_secret_manager` | secrets_store | **P0** | **Done** (beta) | GCP prod parity | ADC / SA via `gcp` patterns |
+| H-INT-3 | M-P4.11 | `doppler` | secrets_store | **P1** | **Done** (beta) | Dev/prod secret sync for harness authors | Project/config scoped fetch; lab `.env` bridge |
+| H-INT-4 | M-P4.12 | `unleash` | feature_flag | **P0** | **Done** (beta) | Gradual `AdaptiveProfile` rollout (observe→recommend) | Requires **M-P4-CAT.1**; tenant-scoped flags |
+| H-INT-4 | M-P4.13 | `launchdarkly` | feature_flag | **P1** | **Done** (beta) | Enterprise feature flags + canary | Requires **M-P4-CAT.1** |
+| H-INT-4 | M-P4.14 | `github_actions` | ci_cd | **P0** | **Done** (beta) | Harness release gate status; `harness-release.yml` evidence | Requires **M-P4-CAT.2**; workflow run + check suite read |
+| H-INT-4 | M-P4.15 | `redpanda` | message_bus | **P1** | **Done** (beta) | Kafka-compatible async `AdaptationScheduler` / pattern miner | Lab compose; consumer/producer contract tests |
+| H-INT-4 | M-P4.16 | `cloudflare_r2` | object_storage | **P1** | **Done** (beta) | S3-compatible cheap eval/adaptive artifacts | `ObjectStorage` put/get; reuse S3 adapter patterns |
+| H-INT-5 | M-P4.17 | `memgraph` | graph_store | **P1** | **Done** (beta) | GraphRAG alternative; lighter lab footprint | `GraphStore` contract; RAG `INTERGRAX_RAG_GRAPH_STORE` option |
+| H-INT-5 | M-P4.18 | `falkordb` | graph_store | **P2** | **Done** (beta) | Redis-module graph — reuse lab `redis` stack | Bolt/Redis protocol adapter |
+| H-INT-5 | M-P4.19 | `incident_io` | notification_channel | **P1** | **Done** (beta) | Ops runbooks (`runbook/adaptive/*`) → real incidents | Outbound incident create; HITL escalation path |
+| H-INT-5 | M-P4.20 | `kubernetes` | cloud_platform | **P1** | **Done** (beta) | Prod harness host deploy; health probes at scale | Extend `CloudPlatform` — namespace/workload health |
+| H-INT-5 | M-P4.21 | `servicenow` | issue_tracker | **P2** | **Done** (beta) | Enterprise change approval for policy learning | `IssueTracker` search/get; HITL change ticket |
+| H-INT-5 | M-P4.22 | `bitbucket` | issue_tracker | **P2** | **Done** (beta) | Atlassian stack beside `jira` | REST issues/PRs |
+| H-INT-5 | M-P4.23 | `asana` | issue_tracker | **P2** | **Done** (beta) | PM human task queue beside `linear` | Task search/create |
+| H-INT-5 | M-P4.24 | `sendgrid` | notification_channel | **P2** | **Done** (beta) | Deliverability beyond raw `email_smtp` | Transactional send API |
+| H-INT-5 | M-P4.25 | `mailgun` | interaction_surface | **P2** | **Done** (beta) | Inbound email → interaction intake | Webhook verify + payload normalize |
+| H-INT-5 | M-P4.26 | `mlflow` | observability_backend | **P2** | **Done** (beta) | Experiment tracking beside wandb/braintrust | Run/metric log API; lab workflow §35 |
+| H-INT-5 | M-P4.27 | `huggingface_hub` | object_storage | **P2** | **Done** (beta) | W-ML model artifact pull (ONNX/YOLO) | Model file get/list; modality plane bridge |
+| H-INT-5 | M-P4.28 | `ollama` | interaction_surface | **P2** | **Done** (beta) | Local inference host (`infra/integration` ollama service) | Health probe + model list; cross-link [MODALITY.md](MODALITY.md) · not LLM catalog slug |
+
+**Explicitly excluded from M.6 P4:** CRM (Salesforce, HubSpot), payment rails, blockchain, duplicate vector SaaS, LLM vendor APIs.
+
+##### M.6 P4 — Paydown log
+
+| Date | ID | Summary |
+|------|-----|---------|
+| 2026-06-02 | M-P4.0 | Register 28 harness-ROI integration slugs + §6.1w + §6.2ae + Band 2aa (audit → plan) |
+| 2026-06-02 | M-P4.1–M-P4.28 | All 28 M.6 P4 providers: `_shared/p5/`, layout **127**, tests `test_p5_m6_p4_providers.py`, gate green |
 
 #### M.6 P3 — Legacy backlog note (superseded)
 
@@ -4003,11 +4071,12 @@ Paydown Wave P3 (optional polish):
 | **2x — Evaluation closeout (EVAL)** | Registry bridge, policy bundle merge, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase EVAL](#phase-eval--evaluation-control-plane-closeout) · **§6.1s** · **Appendix U** |
 | **2y — Adaptive Harness Intelligence (W-ADAPT)** | L4 **runtime** closed loop — SignalCollector, AdaptationEngine, ProfileVersionStore, verify/rollback — **no** business agents | **Done** (2026-06-02) — **70/70 Done** | [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · **§6.1t** · **§6.2ac** · **Appendix K** |
 | **2z — LLM completion envelope (M-LLM-R)** | Typed `LLMAdapterResponse` replaces `str`/`dict` adapter returns; full consumer refactor — **no** business agents | **Done** (2026-06-06) — **39/39** | [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · **§6.1v** · **§6.2ad** · **Appendix L** |
+| **2aa — Integration expansion (M.6 P4)** | 28 harness-ROI provider slugs (secrets, observability stack, OLAP, feature flags, prod deploy) — **no** business agents | **Done** (2026-06-02) — **28/28** | [M.6 P4 register](#m6-p4--harness-platform-expansion-done) · **§6.1w** · **§6.2ae** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
 
-**Policy (2026-06-06):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2z** platform closeouts = **Done** (including W-ADAPT + M-LLM-R). Band 3 = **frozen** unless leadership reprioritizes.
+**Policy (2026-06-06):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2z** platform closeouts = **Done** (including W-ADAPT + M-LLM-R). Band **2aa** (M.6 P4) = **Done** (28/28). Band 3 = **frozen** unless leadership reprioritizes.
 
 ```text
 BAND 1:  Harness maintenance — gate + audit scripts (§6.1) — every PR
@@ -4038,6 +4107,7 @@ BAND 2w: Cost governance closeout — Phase COST (§6.1r) — DONE (COST-1 → C
 BAND 2x: Evaluation closeout — Phase EVAL (§6.1s) — DONE (EVAL-1 → EVAL-3)
 BAND 2y: Adaptive Harness Intelligence — Phase W-ADAPT (§6.1t) — DONE (70/70, Wave 0–7 Done)
 BAND 2z: LLM completion envelope — Phase M-LLM-R (§6.1v) — DONE (39/39)
+BAND 2aa: Integration expansion — Phase M.6 P4 (§6.1w) — DONE (28/28)
 DONE:    Phase CLEAN — legacy module closeout (§6.1j) — 2026-06-02
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
@@ -4051,7 +4121,7 @@ DONE:    Phase Q — Harness Quality (audit #1) — Waves 1–9
 DONE:    Phase L, M, M-LLM, M-RAG, N, O — harness GA (functional)
 DONE:    Phase K hardening K.3–K.5; Appendix B paydown (except B.15)
 
-PARALLEL (harness-only): M.6 provider slugs on demand; R-Skill catalog expansion (platform packs)
+PARALLEL (harness-only): M.6 P4 integration slugs (§6.1w, 28 planned); legacy M.6 on-demand slugs; R-Skill catalog expansion (platform packs)
 
 BAND 3 — END OF PLAN (see §6.3; not default “next”):
   • K.1 Problem Radar / K.2 Vendor Discovery (business agents)
@@ -4093,6 +4163,7 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 | Topic | Section |
 |-------|---------|
 | **Canonical implementation queue (infrastructure)** | [§6.1](#61-harness-platform-maintenance-default--band-1) (**active** — maintenance) · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) (all closed) · [§6.1z](#61z-harness-implementation-queue-consolidated) (closed) |
+| Integration catalog expansion (Done) | [M.6 P4](#m6-p4--harness-platform-expansion-done) · [§6.1w](#61w-harness-implementation-queue--integration-expansion-m6-p4-closed) — **28/28 Done** |
 | Ongoing gate + audit scripts | [§6.1](#61-harness-platform-maintenance-default--band-1) |
 | Memory platform (Done — §6.1 maintenance) | [Phase MEM](#phase-mem--memory-platform-completion) · [§6.2aa](#62aa-phase-mem-execution-order-band-2h--active) |
 | All business / domain work | [§6.3](#63-end-of-plan--deferred-product-work-only) · [Business backlog register](#63a-business-backlog-register-consolidated) |
@@ -4900,9 +4971,28 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 **Explicitly excluded:** K.1, K.2, product HTTP API DTOs, provider SDK rewrites — [§6.3a](#63a-business-backlog-register-consolidated).
 
+### 6.1w Harness implementation queue — Integration expansion (M.6 P4 closed)
+
+**Purpose:** Ordered backlog for **Phase M.6 P4** (Band 2aa). **Status:** **Done** (2026-06-02) — **28/28 Done** · catalog **127**.  
+**Register:** [M.6 P4 — Master register](#m6-p4--master-register-28-slugs) · **Execution order:** [§6.2ae](#62ae-phase-m6-p4-execution-order--done)  
+**Policy:** One slug per PR; runs **in parallel** with §6.1 maintenance — pull only when harness ops/adaptive/INT health needs the slug.
+
+| Order | Wave | IDs | Slugs | Priority | Status |
+|-------|------|-----|-------|----------|--------|
+| 0 | CAT | M-P4-CAT.1, M-P4-CAT.2 | *(categories)* | **P0** | **Done** (beta) |
+| 1 | H-INT-1 | M-P4.1–M-P4.4 | `pgvector`, `duckdb`, `influxdb`, `timescaledb` | P0/P1 | **Done** |
+| 2 | H-INT-2 | M-P4.5–M-P4.7 | `grafana`, `loki`, `tempo` | **P0** | **Done** |
+| 3 | H-INT-3 | M-P4.8–M-P4.11 | `aws_secrets_manager`, `azure_key_vault`, `gcp_secret_manager`, `doppler` | P0/P1 | **Done** |
+| 4 | H-INT-4 | M-P4.12–M-P4.16 | `unleash`, `launchdarkly`, `github_actions`, `redpanda`, `cloudflare_r2` | P0/P1 | **Done** |
+| 5 | H-INT-5 | M-P4.17–M-P4.28 | `memgraph`, `falkordb`, `incident_io`, `kubernetes`, `servicenow`, `bitbucket`, `asana`, `sendgrid`, `mailgun`, `mlflow`, `huggingface_hub`, `ollama` | P1/P2 | **Done** |
+
+**Per-slug checklist (M.4):** contract → `providers/<category>/<slug>/` → unit tests → `USAGE.md` → `layout.py` → `INTEGRATIONS.md` → canon §7.1.3 row → gate green → paydown log row.
+
+**Explicitly excluded:** CRM, payments, blockchain, duplicate vector SaaS, LLM vendor APIs — see [M.6 P4 register](#m6-p4--harness-platform-expansion-planned).
+
 ### 6.1 Harness platform maintenance (default — Band 1)
 
-§4.1 backlog is **closed**. Ongoing work = keep the harness green; **Band 2y W-ADAPT** and **Band 2z M-LLM-R** are **closed** — see [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-closed) and [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed). **Next feature work** = [§6.3](#63-end-of-plan--deferred-product-work-only) (product prioritization only).
+§4.1 backlog is **closed**. Ongoing work = keep the harness green; **Band 2y W-ADAPT**, **Band 2z M-LLM-R**, and **Band 2aa M.6 P4** are **closed**. **Next product work** = [§6.3](#63-end-of-plan--deferred-product-work-only) (product prioritization only).
 
 ```text
 Verify (every harness PR):
@@ -5254,7 +5344,24 @@ Work **one MEM ID per PR**; after each step update the MEM master table + paydow
 
 Full task register: [Appendix I](#appendix-i--plugin-catalog-traceability-phase-p-ext).
 
-**Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3. **Feature queue:** Phase W-ADAPT — §6.1t; Phase M-LLM-R — §6.1v.
+**Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3. **Feature queues:** Phase W-ADAPT — §6.1t; Phase M-LLM-R — §6.1v; Phase M.6 P4 — §6.1w.
+
+### 6.2ae Phase M.6 P4 execution order (Band 2aa — Done)
+
+**Status:** **Done** (2026-06-02) · register: [M.6 P4](#m6-p4--harness-platform-expansion-done) · queue: [§6.1w](#61w-harness-implementation-queue--integration-expansion-m6-p4-closed)
+
+```text
+Wave H-INT-0 (categories):  M-P4-CAT.1 → M-P4-CAT.2  (before first slug in new category)
+Wave H-INT-1 (storage):     M-P4.1 → M-P4.2 → M-P4.3 → M-P4.4
+Wave H-INT-2 (obs stack):   M-P4.5 → M-P4.6 → M-P4.7
+Wave H-INT-3 (secrets):     M-P4.8 → M-P4.9 → M-P4.10 → M-P4.11
+Wave H-INT-4 (control):     M-P4.12 → M-P4.13 → M-P4.14 → M-P4.15 → M-P4.16
+Wave H-INT-5 (enterprise):  M-P4.17 → M-P4.18 → M-P4.19 → M-P4.20 → M-P4.21 → M-P4.22 → M-P4.23 → M-P4.24 → M-P4.25 → M-P4.26 → M-P4.27 → M-P4.28
+```
+
+**Prerequisites:** Phase M core + M.6 P1/P2/P3 **Done**; Phase INT closeout **Done** (health probe patterns).  
+**Parallelism:** Any wave after H-INT-0 may start when a slug is needed — prefer H-INT-1 → H-INT-2 → H-INT-3 order for W-OPS/adaptive unblock.  
+**Closeout:** **Done** — catalog **127** in `layout.py`; `tests/unit/integrations/providers/test_p5_m6_p4_providers.py` (42 tests).
 
 ### 6.2ad Phase M-LLM-R execution order (Band 2z — closed 2026-06-06)
 
