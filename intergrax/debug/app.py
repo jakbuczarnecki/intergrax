@@ -13,6 +13,7 @@ from fastapi import FastAPI
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.interaction_service import DebugInteractionIntakeService
 from intergrax.debug.adaptive_debug_router import create_adaptive_debug_router
+from intergrax.debug.integration_health_debug_router import create_integration_health_debug_router
 from intergrax.debug.router import create_debug_router
 from intergrax.debug.store import (
     open_default_task_checkpoint_persistence,
@@ -47,6 +48,7 @@ def create_debug_app(
     adaptive_signal_store: SignalStore | None = None,
     adaptive_proposal_store: ProposalStore | None = None,
     include_adaptive_debug_routes: bool = False,
+    include_integration_health_routes: bool = False,
 ) -> FastAPI:
     """
     Laboratory debug API over trace, runtime events, checkpoints, and experiments.
@@ -116,4 +118,6 @@ def create_debug_app(
                 proposal_store=adaptive_proposal_store,
             )
         )
+    if include_integration_health_routes:
+        app.include_router(create_integration_health_debug_router())
     return app

@@ -129,6 +129,8 @@ Operational L3 evidence is separate from `phase_v_closeout_gate` (contract CI). 
 
 **M.6 P4 harness ROI probes (W-OPS.10 extension):** `health_check_harness_m6_p4_probes()` probes `pgvector`, `duckdb`, `grafana`, `loki`, `tempo`, `doppler`, `unleash`, `github_actions`, and `ollama` — catalog slugs promoted to **STABLE** for harness production wiring.
 
+**Lab debug API:** when `LAB_HARNESS=true`, lab host mounts `GET /debug/integrations/health?stack=lab|m6_p4|all` (circuit-breaker catalog probes for operators).
+
 **Shadow evaluation (W-OPS.11):** set `RuntimeRequest.metadata["harness_shadow_eval"]` to `{"scenario_id": "...", "passed": true, "score": 1.0}`; `RuntimeEngine` records `HarnessShadowEvalRecordedDiagV1` trace step and appends to `build/architecture_hardening/online_evaluation_observations.json`. After a release, export trends: `uv run python scripts/export_harness_shadow_eval_trend.py --release-id <id>` → `shadow_evaluation_trend_report.json` (snapshots in `evaluation_release_snapshots.json`).
 
 **Release cycles (W-OPS.5):** after a gate-green harness release, run `uv run python scripts/record_harness_release_cycle.py --cycle-id <id> [--verify-gate]`. Evidence script reads `build/architecture_hardening/release_cycles.json` (or `W_OPS_RELEASE_CYCLES`).
@@ -271,6 +273,7 @@ Current baseline delivered (Phase V V1):
 | `LAB_OBSERVABILITY_GRAFANA_STACK` | When `true`, binds Grafana + Loki + Tempo observability triad on lab host |
 | `LAB_ADAPTIVE_FEATURE_FLAG` | Optional feature-flag slug (e.g. `unleash`) for adaptive rollout gate wiring |
 | `LAB_SECRETS_BACKEND` | Optional secrets slug (`doppler`, `vault`, `aws_secrets_manager`); with `INTERGRAX_ENV=prod` selects `harness_production_defaults()` |
+| `LAB_HARNESS` | When `true`, enables harness tool bundle and mounts `GET /debug/integrations/health` |
 | `AdaptiveProfile.feature_flag_slug` | Tier-3 rollout guard — modes beyond `observe` downgrade unless flag backend enables `rollout_flag_key` |
 | `AdaptiveProfile.rollout_flag_key` | Flag key evaluated via `IntegrationProfile.feature_flag` (default `harness.adaptive.recommend`) |
 | `AdaptiveProfile.enabled` | Master switch for adaptive stores, executor, and signal collector |

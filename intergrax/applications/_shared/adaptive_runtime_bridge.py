@@ -100,9 +100,10 @@ def apply_adaptive_profiles_from_environment(
     routing_key: str = "",
 ) -> RuntimeConfig:
     """Apply environment-declared adaptive profile to runtime config."""
+    effective_profile = wiring.profile if wiring is not None else env.adaptive_profile
     updated = apply_adaptive_profile_to_runtime_config(
         config,
-        env.adaptive_profile,
+        effective_profile,
         wiring=wiring,
         tenant_id=tenant_id or config.tenant_id,
         task_class=task_class,

@@ -2406,7 +2406,7 @@ Tier-3 hosts configure adaptive closed-loop behavior exclusively through typed `
 |-----------|------------------------|
 | Profile-driven | `AdaptiveProfile` on `ApplicationEnvironmentProfile` |
 | Default safe | Lab: `enabled=True`, `mode=observe` (`LAB_ADAPTIVE_OBSERVE`, default on). Product reference hosts: `enabled=False`, `mode=observe` |
-| Rollout gate | Modes beyond `observe` require `IntegrationProfile.feature_flag` + enabled `rollout_flag_key` (`adaptive_feature_flag_gate.py`) |
+| Rollout gate | Modes beyond `observe` require `IntegrationProfile.feature_flag` + enabled `rollout_flag_key` (`adaptive_feature_flag_gate.py`); gated mode flows through `wire_adaptive_profile()` → `apply_adaptive_profiles_from_environment()` |
 | Store isolation | Signal/proposal/profile stores under `build/adaptive_harness/` (gitignored) |
 | Governance first | Recommend/shadow/apply gated by `AdaptiveLoopEnvelope` + HITL for policy learning |
 | Verify before trust | `VerificationLoop` + runtime L4 evidence before production auto-apply |

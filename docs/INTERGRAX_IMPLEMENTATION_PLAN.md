@@ -1055,6 +1055,7 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 | 2026-06-02 | M-P4.0 | Register 28 harness-ROI integration slugs + §6.1w + §6.2ae + Band 2aa (audit → plan) |
 | 2026-06-02 | M-P4.1–M-P4.28 | All 28 M.6 P4 providers: `_shared/p5/`, layout **127**, tests `test_p5_m6_p4_providers.py`, gate green |
 | 2026-06-02 | M-P4.FU | Tier-3 follow-up (no business agents): `harness_production_stack` / `harness_production_defaults`, lab env (`LAB_OBSERVABILITY_GRAFANA_STACK`, `LAB_ADAPTIVE_FEATURE_FLAG`, `LAB_SECRETS_BACKEND`), adaptive feature-flag gate, pgvector persistence + health, M6 P4 stable promotion (8 slugs), `health_check_harness_m6_p4_probes`, docs sync |
+| 2026-06-02 | M-P4.FU.2 | Adaptive runtime bridge uses gated `wiring.profile`; debug `GET /debug/integrations/health`; remove `getattr` from P5 health probes (`IntegrationHealthProbe`); W-OPS integration health debug gate; gate **790** |
 
 #### M.6 P3 — Legacy backlog note (superseded)
 
@@ -6654,4 +6655,4 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ---
 
-*Plan synced (2026-06-02). **Harness platform** bands 1–2x **Done**; **Band 2y W-ADAPT** **Done** (70/70); **Band 2z M-LLM-R** **Done** (39/39). Gate: **778 passed**. **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance + [§6.3](#63-end-of-plan--deferred-product-work-only) product prioritization. **Every PR:** §6.1 maintenance.*
+*Plan synced (2026-06-02). **Harness platform** bands 1–2x **Done**; **Band 2y W-ADAPT** **Done** (70/70); **Band 2z M-LLM-R** **Done** (39/39). Gate: **790 passed**. **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance + [§6.3](#63-end-of-plan--deferred-product-work-only) product prioritization. **Every PR:** §6.1 maintenance.*

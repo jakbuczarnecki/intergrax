@@ -124,6 +124,11 @@ def collect_operational_checks() -> OperationalMaturityEvidence:
             detail="Lab stable stack health probes (W-OPS.10)",
         ),
         OperationalHarnessCheck(
+            check_id="integration_health_debug_gate",
+            passed=_run_pytest("tests/unit/debug/test_integration_health_debug.py"),
+            detail="Debug integration health API (W-OPS.10 extension)",
+        ),
+        OperationalHarnessCheck(
             check_id="shadow_eval_gate",
             passed=_run_pytest(
                 "tests/unit/runtime/architecture/test_online_evaluation.py",

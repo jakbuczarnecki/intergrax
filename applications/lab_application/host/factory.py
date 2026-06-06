@@ -145,6 +145,7 @@ def create_lab_application(
         adaptive_signal_store=SQLiteSignalStore(db_path=default_signal_store_path()),
         adaptive_proposal_store=SQLiteProposalStore(db_path=default_proposal_store_path()),
         include_adaptive_debug_routes=lab_env.adaptive_profile.debug_readonly_routes,
+        include_integration_health_routes=settings.harness,
     )
     app.title = "Intergrax Lab Application"
     app.description = (

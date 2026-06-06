@@ -9,6 +9,7 @@ import json
 from typing import Any, Callable, Mapping, Optional, Sequence
 
 from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError
+from intergrax.integrations.contracts.health_probe import IntegrationHealthProbe
 from intergrax.integrations.contracts.ci_cd import CheckSuiteRecord, CiCdBackend, WorkflowRunRecord
 from intergrax.integrations.contracts.cloud_platform import CloudPlatform
 from intergrax.integrations.contracts.feature_flag import FeatureFlagBackend, FeatureFlagEvaluation
@@ -26,11 +27,10 @@ from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
 from intergrax.runtime.interactions.models import InboundInteraction
 
 
-def _probe_client_health(client: Any, *, slug: str, default_detail: str = "") -> HealthStatus:
-    probe = getattr(client, "health", None)
-    if callable(probe):
+def _probe_client_health(client: object, *, slug: str, default_detail: str = "") -> HealthStatus:
+    if isinstance(client, IntegrationHealthProbe):
         try:
-            result = probe()
+            result = client.health()
         except Exception as exc:  # noqa: BLE001 — health probe surface
             return HealthStatus(slug=slug, healthy=False, detail=str(exc))
         if isinstance(result, HealthStatus):
@@ -64,10 +64,9 @@ class RestSecretsStore:
     def health(self) -> HealthStatus | bool:
         if self._closed:
             return False
-        probe = getattr(self._client, "health", None)
-        if callable(probe):
+        if isinstance(self._client, IntegrationHealthProbe):
             try:
-                result = probe()
+                result = self._client.health()
             except Exception:  # noqa: BLE001 — health probe surface
                 return False
             if isinstance(result, HealthStatus):
