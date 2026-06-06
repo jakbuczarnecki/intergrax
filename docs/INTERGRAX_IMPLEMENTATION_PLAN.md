@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-05) — **Harness platform bands 1–2x Done**; **Phase W-ADAPT (Band 2y) opened** — default implementation queue after §6.1 maintenance; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done**; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate green; **operational L3 signed off**  
+Status: Working draft (2026-06-06) — **Harness platform bands 1–2x Done**; **Phase W-ADAPT (Band 2y)** in progress; **Phase M-LLM-R (Band 2z) opened** — LLM response envelope refactor (audit 2026-06-06); default implementation queue after §6.1 maintenance; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done**; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate green; **operational L3 signed off**  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -45,6 +45,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Cost governance closeout (budget bridge, policy bundle, CI) | [Phase COST](#phase-cost--cost-governance-control-plane-closeout) · **§6.1r** · Band **2w** · **Appendix T** |
 | Evaluation closeout (registry bridge, policy bundle, CI) | [Phase EVAL](#phase-eval--evaluation-control-plane-closeout) · **§6.1s** · Band **2x** · **Appendix U** |
 | **Adaptive Harness Intelligence (AHI / L4 runtime)** | [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · **§6.1t** · Band **2y** · [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · canon [§54](intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) · **Appendix K** |
+| **LLM response envelope (typed completion contract)** | [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · **§6.1v** · Band **2z** · [LLM_ADAPTERS.md](LLM_ADAPTERS.md) · **Appendix L** |
 | Tier-3 application environment (self-contained deploy) | Architecture canon §7.4.8–§7.4.10 |
 | Tier-3 composition engine (manifest, wiring API) | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
 | Tier-3 application hosts (`applications/<app>/`) | [`applications/USAGE.md`](../applications/USAGE.md) |
@@ -196,6 +197,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Cost governance closeout (Phase COST)** | **Done** (Band 2w) | No (harness-only) | COST-1–3 — [§6.1r](#61r-harness-implementation-queue--cost-governance-closeout-closed) |
 | **Evaluation closeout (Phase EVAL)** | **Done** (Band 2x) | No (harness-only) | EVAL-1–3 — [§6.1s](#61s-harness-implementation-queue--evaluation-closeout-closed) |
 | **Adaptive Harness Intelligence (Phase W-ADAPT)** | **In progress** (Band 2y) | No (harness-only) | Wave 0–4 **Done** (46/70) — [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active) · AHIA |
+| **LLM completion envelope (Phase M-LLM-R)** | **Planned** (Band 2z) | No (harness-only) | Audit 2026-06-06 — typed `LLMAdapterResponse`; **0/39** — [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-active) · **Appendix L** |
 | Regression gate | **750 passed** | No | Must stay green after each harness PR |
 
 ---
@@ -675,6 +677,165 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M-LLM.11 | Production ops layer | **Done** | OTLP/Prometheus routes, tenant metrics, rate limit + circuit breaker, secrets map, PR guard, extended network smoke |
 | M-LLM.12 | Nexus + governance wiring | **Done** | `llm_tenant_scope`, runtime metrics plugin, `INTERGRAX_LLM_TENANT_MAX_TOKENS` quota |
 | M-LLM.13 | Observability + secrets + distributed limits | **Done** | Pushgateway, `LLM_ADAPTERS.md` § Observability, Vault loader, Redis rate limit, governance warn |
+| M-LLM.14 | Typed completion envelope (`LLMAdapterResponse`) | **Planned** | Phase M-LLM-R — [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-active) |
+
+**Follow-up (audit 2026-06-06):** Plain `str` / `Dict[str, Any]` adapter returns do **not** meet production envelope requirements — see [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) (Band **2z**).
+
+### Phase M-LLM-R — LLM Completion Response Envelope (audit 2026-06-06)
+
+**Source:** Tier-0 LLM adapter audit (2026-06-06) — `generate_messages` returns `str`; `generate_with_tools` returns untyped dict via `make_tool_result`; SDK metadata (`finish_reason`, `response_id`, cached/reasoning tokens, refusal) discarded; usage only via side-channel `LLMAdapterUsageLog`; replay `LLMCallInfo` not fed from adapter returns.  
+**Canon:** §5.2.2 · **Doc:** [LLM_ADAPTERS.md](LLM_ADAPTERS.md) · **Traceability:** [Appendix L](#appendix-l--llm-completion-response-envelope-traceability-phase-m-llm-r)  
+**Status:** **Planned** — **0/39 Done**  
+**Priority ladder:** **Band 2z** (§4.0) — **parallel with W-ADAPT waves 5–7** (Tier-0; no Nexus primitive changes beyond consumer wiring)  
+**Execution order:** [§6.2ad](#62ad-phase-m-llm-r-execution-order-band-2z--planned) · queue: [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-active)  
+**Goal:** Replace plain `str` and `Dict[str, Any]` LLM adapter returns with a **single strongly typed envelope** — `LLMAdapterResponse` — carrying `content: str` plus production-standard metadata, extensible without dict soup.
+
+**Hard rules (non-negotiable):**
+
+- **No** public adapter method returns bare `str` or `Dict[str, Any]` for completions.
+- **No** `make_tool_result` dict factory — delete after migration; use typed builders only.
+- **No** untyped `tool_calls: list[dict]` — use frozen `LLMToolCall` (+ `LLMToolCallArgument` where needed).
+- Per-call `usage` **must** be present on every `LLMAdapterResponse` (sync with `LLMAdapterUsageLog.end_call`; prefer SDK counts over estimates when available).
+- `LLMAdapterUsageLog` remains for run-level aggregation; response envelope is the **per-call source of truth** for callers.
+- One **M-LLM-R.\*** ID per PR → update master table + Appendix L + paydown log → `pytest -m gate` + `tests/unit/llm_adapters/` green.
+
+**Canonical type (target contract):**
+
+| Type | Role |
+|------|------|
+| `LLMAdapterResponse` | Primary return for `generate_messages`, `generate_with_tools`, final stream event |
+| `LLMTokenUsage` | `input_tokens`, `output_tokens`, `total_tokens`, `cached_input_tokens`, `reasoning_tokens` |
+| `LLMFinishReason` | Enum: `completed`, `length`, `tool_calls`, `content_filter`, `refusal`, `error`, … |
+| `LLMToolCall` | Typed native tool call (`id`, `name`, `arguments_json` or validated args model) |
+| `LLMStreamEvent` | Streaming partial/final chunks (`event_kind`, `delta_content`, optional `completion` on final) |
+| `LLMStructuredResult[T]` | `generate_structured` → `(parsed: T, response: LLMAdapterResponse)` |
+| `LLMProviderExtensions` | Tagged optional extensions (OpenAI / Anthropic / Gemini slices) — **no** open `dict` bag |
+
+**Naming note:** `LLMAdapterResponse` (not bare `LLMResponse`) — Tier-0 adapter return type; avoids collision with HTTP transport and product API DTOs.
+
+#### M-LLM-R — Traceability (audit gap → task ID)
+
+| Audit gap | Task IDs |
+|-----------|----------|
+| `generate_messages` → `str` | M-LLM-R.2.1, M-LLM-R.3.*, M-LLM-R.4.*, M-LLM-R.5.*, M-LLM-R.6.* |
+| `generate_with_tools` → `Dict[str, Any]` | M-LLM-R.1.7, M-LLM-R.2.2, M-LLM-R.3.*, M-LLM-R.4.2 |
+| `stream_messages` → `Iterable[str]` | M-LLM-R.1.5, M-LLM-R.2.3, M-LLM-R.3.* |
+| `stream_with_tools` → `Iterable[Dict]` | M-LLM-R.1.5, M-LLM-R.2.4, M-LLM-R.3.* |
+| `generate_structured` untyped | M-LLM-R.1.6, M-LLM-R.2.5 |
+| SDK metadata discarded (`finish_reason`, `response_id`, refusal) | M-LLM-R.1.1, M-LLM-R.3.1–3.6 |
+| Usage only side-channel | M-LLM-R.1.2, M-LLM-R.2.6, M-LLM-R.7.1 |
+| Inconsistent token counting (estimate vs SDK) | M-LLM-R.3.5, M-LLM-R.3.6 |
+| Replay `LLMCallInfo` not fed from adapter | M-LLM-R.7.2, M-LLM-R.7.3 |
+| `CoreLLMAdapterReturnedDiagV1.adapter_return_type="str"` | M-LLM-R.7.4 |
+| Conformance asserts `isinstance(text, str)` | M-LLM-R.8.2 |
+| Public API missing response types | M-LLM-R.1.8, M-LLM-R.8.1 |
+
+#### Wave M-LLM-R-0 — Planning and canon sync
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-R.0.1 | **Plan register** — Phase M-LLM-R, §4.0 Band 2z, §6.1v, §6.2ad, Appendix L; M-LLM follow-up pointer | **Done** | **Critical** | This section | Cross-links from `LLM_ADAPTERS.md` |
+| M-LLM-R.0.2 | **`docs/adr/ADR-LLM-001.md`** — typed completion envelope vs plain string; two-layer usage model preserved | Planned | High | `docs/adr/` | ADR linked from plan + `LLM_ADAPTERS.md` |
+| M-LLM-R.0.3 | **Canon §5.2.2 addendum** — `LLMAdapterResponse` contract paragraph in `intergrax_runtime_architecture.md` | Planned | Medium | Architecture canon | No duplicate full spec in README |
+
+#### Wave M-LLM-R-1 — Contract types (Tier-0)
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-R.1.1 | **`LLMAdapterResponse`** — frozen dataclass: `content`, `finish_reason`, `usage`, `model`, `provider`, `response_id`, `refusal`, `tool_calls`, `provider_extensions` | Planned | **Critical** | `llm_adapters/contracts/adapter_response.py` | Unit: construction + immutability |
+| M-LLM-R.1.2 | **`LLMTokenUsage`** — frozen dataclass with cached/reasoning token fields | Planned | **Critical** | same module | `total_tokens` derived or validated |
+| M-LLM-R.1.3 | **`LLMFinishReason`** enum + **`LLMToolCall`** (+ argument typing) | Planned | **Critical** | `llm_adapters/contracts/tool_call.py` or same package | No raw tool dicts in public API |
+| M-LLM-R.1.4 | **`LLMProviderExtensions`** — tagged union slices (OpenAI / Anthropic / Gemini / Bedrock) | Planned | High | `llm_adapters/contracts/provider_extensions.py` | Extensibility without `Dict[str, Any]` |
+| M-LLM-R.1.5 | **`LLMStreamEvent`** — partial/final streaming envelope | Planned | High | `llm_adapters/contracts/stream_event.py` | Final event carries full `LLMAdapterResponse` |
+| M-LLM-R.1.6 | **`LLMStructuredResult[T]`** generic wrapper for structured output | Planned | High | `llm_adapters/contracts/structured_result.py` | Typed generic; mypy/pyright clean |
+| M-LLM-R.1.7 | **Typed builders** — replace `make_tool_result` with `build_adapter_response(...)` / `merge_stream_events(...)` | Planned | **Critical** | `llm_adapters/_shared/adapter_response_builders.py` | Delete `tool_results.py` dict factory |
+| M-LLM-R.1.8 | **Public re-exports** — response types from `llm_adapters/__init__.py` | Planned | Medium | `llm_adapters/__init__.py` | Import smoke test in gate |
+
+#### Wave M-LLM-R-2 — `LLMAdapter` ABC refactor
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-R.2.1 | **`generate_messages` → `LLMAdapterResponse`** | Planned | **Critical** | `contracts/llm_adapter.py` | ABC + all stubs updated |
+| M-LLM-R.2.2 | **`generate_with_tools` → `LLMAdapterResponse`** | Planned | **Critical** | same | `tool_calls` on response, not dict key |
+| M-LLM-R.2.3 | **`stream_messages` → `Iterable[LLMStreamEvent]`** | Planned | High | same | Final event mandatory |
+| M-LLM-R.2.4 | **`stream_with_tools` → `Iterable[LLMStreamEvent]`** | Planned | High | same | Tool deltas typed |
+| M-LLM-R.2.5 | **`generate_structured` → `LLMStructuredResult[T]`** | Planned | High | same | Return type annotated |
+| M-LLM-R.2.6 | **`_finalize_call` helper** — unify `begin_call`/`end_call` + populate `LLMTokenUsage` on response from same counters | Planned | **Critical** | `llm_adapter.py` or `_shared/call_lifecycle.py` | Single path; no duplicate counting |
+
+#### Wave M-LLM-R-3 — Provider adapters (all 19 slugs)
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-R.3.1 | **OpenAI Responses + Chat Completions** — map SDK usage, `finish_reason`, `response.id` / choice metadata | Planned | **Critical** | `openai_responses_adapter.py`, `openai_chat_completions_adapter.py` | Mocked unit tests per method |
+| M-LLM-R.3.2 | **Claude + Mistral + Cohere native** — SDK usage where available; map stop_reason / refusal | Planned | **Critical** | `claude_adapter.py`, `mistral_adapter.py`, `cohere_native_adapter.py` | Stop using estimate-only when SDK exposes usage |
+| M-LLM-R.3.3 | **Gemini + Vertex** — candidate finish reason, usage metadata, typed tool calls | Planned | High | `gemini_adapter.py`, `vertex_gemini_adapter.py` | Conformance green |
+| M-LLM-R.3.4 | **AWS Bedrock** — Converse + legacy paths; map stopReason, usage, toolUse blocks | Planned | High | `aws_bedrock_adapter.py` | Existing bedrock tool tests updated |
+| M-LLM-R.3.5 | **Ollama + OpenAI-compat family** — best-effort usage; document estimate fallback in `provider_extensions` | Planned | Medium | `ollama_adapter.py`, `openai_compat_*` | Explicit `usage.source` flag on extensions |
+| M-LLM-R.3.6 | **Streaming parity** — all `supports_streaming()` adapters emit typed `LLMStreamEvent` | Planned | High | all streaming providers | No `yield str` remaining |
+| M-LLM-R.3.7 | **Structured output parity** — return `LLMStructuredResult[T]` with raw completion preserved | Planned | Medium | adapters with `supports_structured_output()` | JSON parse failures attach to response metadata |
+
+#### Wave M-LLM-R-4 — Nexus runtime consumers (Tier-1)
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-R.4.1 | **`CoreLLMStep`** — `state.raw_answer = completion.content`; trace finish_reason + token snapshot | Planned | **Critical** | `runtime_steps/core_llm_step.py` | `test_core_llm_step.py` updated |
+| M-LLM-R.4.2 | **`ToolPlanningService`** — native tools path uses `completion.tool_calls`; planner text path uses `completion.content` | Planned | **Critical** | `tools/tool_planning_service.py` | Tool plan tests green |
+| M-LLM-R.4.3 | **`plan_sources` + `engine_history_layer`** — consume `.content` | Planned | High | `planning/plan_sources.py`, `context/engine_history_layer.py` | Unit tests updated |
+| M-LLM-R.4.4 | **User/org profile services + session consolidation** — all `generate_messages` call sites | Planned | High | `runtime/user_profile/*`, `runtime/organization/*` | Grep: zero `.generate_messages` → str assignment |
+| M-LLM-R.4.5 | **`supervisor.py`** — all LLM call sites | Planned | Medium | `intergrax/supervisor/supervisor.py` | Supervisor unit tests |
+| M-LLM-R.4.6 | **Optional: store last adapter response on `RuntimeState`** — `last_llm_adapter_response: LLMAdapterResponse \| None` for trace/replay | Planned | Medium | `engine/runtime_state.py` | Enables per-step cost attribution |
+
+#### Wave M-LLM-R-5 — RAG, websearch, legacy (Tier-0 consumers)
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-R.5.1 | **RAG LLM paths** — `query_refiner`, `query_expander`, `chunk_enricher`, `llm_graph_indexer` | Planned | **Critical** | `intergrax/rag/` | RAG unit tests use typed mocks |
+| M-LLM-R.5.2 | **Websearch** — `websearch_context_generator`, `websearch_answerer` | Planned | High | `intergrax/websearch/` | Tests updated |
+| M-LLM-R.5.3 | **Legacy `rag_answers`** — migrate or mark deprecated path to `.content` | Planned | Low | `legacy/rag_answers/` | No str assumption in active Nexus paths |
+
+#### Wave M-LLM-R-6 — Agents, scaffold, test support (Tier-2)
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-R.6.1 | **Agent pipeline mocks** — echo, legal, research, problem_radar, signoff_probe, organization_worker, lab mocks | Planned | High | `agents/*/steps/pipeline.py`, `agents/lab/mock_agents.py` | Agent unit tests green |
+| M-LLM-R.6.2 | **`scaffold/new_agent.py` template** — generated stub returns `LLMAdapterResponse` | Planned | High | `intergrax/scaffold/new_agent.py` | New-agent scaffold test |
+| M-LLM-R.6.3 | **`testing_support/builder.py` fake adapter** | Planned | Medium | `testing_support/builder.py` | Shared test helper |
+| M-LLM-R.6.4 | **Tier-2 rule check** — extend `check_agents_no_tier3_imports` or add lint: agents must not assume `str` from adapter | Planned | Low | `scripts/` | CI script in §6.1 maintenance list |
+
+#### Wave M-LLM-R-7 — Observability, replay, trace bridge
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-R.7.1 | **Align `LLMAdapterUsageLog.end_call` with response `usage`** — same integers; optional validation assert in debug | Planned | High | `llm_adapter.py` | Metrics unchanged; no double-count |
+| M-LLM-R.7.2 | **Emit `LLM_CALL` trace events from runtime** — populate `LLMCallInfo` fields from `LLMAdapterResponse` | Planned | **Critical** | Nexus trace bridge or `CoreLLMStep` | `test_replay_engine.py` passes with new payload |
+| M-LLM-R.7.3 | **`LLMCallInfo` typed bridge** — map `LLMAdapterResponse` → replay model (no loose dict payloads) | Planned | High | `runtime/replay/models.py` + mapper | Frozen mapper function |
+| M-LLM-R.7.4 | **Update diagnostics** — `CoreLLMAdapterReturnedDiagV1`: `finish_reason`, token fields, drop `adapter_return_type="str"` | Planned | Medium | `tracing/adapters/core_llm_adapter_returned.py` | PII-safe payload |
+| M-LLM-R.7.5 | **Adaptive harness signal hook (optional)** — expose per-call tokens/refusal for W-ADAPT cost/quality signals | Planned | Low | `runtime/adaptive/signal_collector.py` | Only if W-ADAPT-5+ needs per-call granularity |
+
+#### Wave M-LLM-R-8 — Docs, conformance, CI closeout
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-R.8.1 | **`LLM_ADAPTERS.md` rewrite** — response envelope section; migration guide; two-layer usage clarified | Planned | **Critical** | `docs/LLM_ADAPTERS.md` | Examples use `.content` |
+| M-LLM-R.8.2 | **Conformance suite** — `assert_generate_messages_returns_completion`; tools/stream/structured typed asserts | Planned | **Critical** | `_shared/conformance.py`, `tests/unit/llm_adapters/` | Gate + `llm-adapters-guard.yml` |
+| M-LLM-R.8.3 | **`check_llm_adapter_typed_returns.py`** — CI guard: no `-> str` / `-> Dict[str, Any]` on adapter public methods | Planned | High | `scripts/` | Added to §6.1 maintenance |
+| M-LLM-R.8.4 | **Phase closeout** — Appendix L paydown complete; M-LLM table row M-LLM.14 **Done**; remove audit follow-up pointer | Planned | Medium | This plan | All M-LLM-R.* Done |
+
+**Suggested PR order:**
+
+```text
+Wave 0:  M-LLM-R.0.2 → 0.3
+Wave 1:  M-LLM-R.1.1 → 1.2 → 1.3 → 1.4 → 1.5 → 1.6 → 1.7 → 1.8
+Wave 2:  M-LLM-R.2.6 → 2.1 → 2.2 → 2.3 → 2.4 → 2.5
+Wave 3:  M-LLM-R.3.1 → 3.2 → 3.3 → 3.4 → 3.5 → 3.6 → 3.7  (may split 1 PR per provider family)
+Wave 4:  M-LLM-R.4.1 → 4.2 → 4.3 → 4.4 → 4.5 → 4.6
+Wave 5:  M-LLM-R.5.1 → 5.2 → 5.3
+Wave 6:  M-LLM-R.6.1 → 6.2 → 6.3 → 6.4
+Wave 7:  M-LLM-R.7.1 → 7.2 → 7.3 → 7.4 → 7.5
+Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
+```
+
+**Explicitly out of scope:** K.1/K.2, new product Tier-3 apps, rewriting provider SDK clients, HTTP API response DTOs for product routes (Tier-3 owns those separately).
 
 ### Phase M-RAG — RAG Engine (Tier-0)
 
@@ -3843,15 +4004,17 @@ Paydown Wave P3 (optional polish):
 | **2w — Cost governance closeout (COST)** | Budget bridge, policy bundle merge, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase COST](#phase-cost--cost-governance-control-plane-closeout) · **§6.1r** · **Appendix T** |
 | **2x — Evaluation closeout (EVAL)** | Registry bridge, policy bundle merge, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase EVAL](#phase-eval--evaluation-control-plane-closeout) · **§6.1s** · **Appendix U** |
 | **2y — Adaptive Harness Intelligence (W-ADAPT)** | L4 **runtime** closed loop — SignalCollector, AdaptationEngine, ProfileVersionStore, verify/rollback — **no** business agents | **In progress** (2026-06-05) — Wave 0–4 **Done** (46/70) | [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · **§6.1t** · **§6.2ac** · **Appendix K** |
+| **2z — LLM completion envelope (M-LLM-R)** | Typed `LLMAdapterResponse` replaces `str`/`dict` adapter returns; full consumer refactor — **no** business agents | **Planned** (2026-06-06) — **0/39** | [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · **§6.1v** · **§6.2ad** · **Appendix L** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
 
-**Policy (2026-06-05):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2x** platform closeouts = **Done**. **Band 2y (W-ADAPT)** = **default implementation queue** after §6.1 maintenance. Band 3 = **frozen** unless leadership reprioritizes.
+**Policy (2026-06-06):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2x** platform closeouts = **Done**. **Band 2y (W-ADAPT)** = primary feature queue. **Band 2z (M-LLM-R)** = parallel Tier-0 refactor (typed LLM response envelope). Band 3 = **frozen** unless leadership reprioritizes.
 
 ```text
 BAND 1:  Harness maintenance — gate + audit scripts (§6.1) — every PR
-BAND 2y: Adaptive Harness Intelligence — Phase W-ADAPT (§6.1t) — ACTIVE DEFAULT NEXT
+BAND 2y: Adaptive Harness Intelligence — Phase W-ADAPT (§6.1t) — ACTIVE (46/70)
+BAND 2z: LLM completion envelope — Phase M-LLM-R (§6.1v) — PLANNED (parallel with W-ADAPT-5+)
 BAND 2j: Orchestration closeout — Phase ORCH (§6.1b) — DONE (2026-06-05)
 BAND 2:  Harness architecture hardening — Phase V + V-REM — DONE (2026-06-05)
 BAND 2i: Phase V runtime remediation — V-REM — DONE (2026-06-05)
@@ -3876,6 +4039,7 @@ BAND 2v: Security closeout — Phase SEC (§6.1q) — DONE (SEC-1 → SEC-3)
 BAND 2w: Cost governance closeout — Phase COST (§6.1r) — DONE (COST-1 → COST-3)
 BAND 2x: Evaluation closeout — Phase EVAL (§6.1s) — DONE (EVAL-1 → EVAL-3)
 BAND 2y: Adaptive Harness Intelligence — Phase W-ADAPT (§6.1t) — IN PROGRESS (46/70, Wave 0–4 Done)
+BAND 2z: LLM completion envelope — Phase M-LLM-R (§6.1v) — PLANNED (0/39)
 DONE:    Phase CLEAN — legacy module closeout (§6.1j) — 2026-06-02
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
@@ -4717,9 +4881,30 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 **Explicitly excluded:** K.1, K.2, deep RL, foundation model training, autonomous prompt edits — [§6.3a](#63a-business-backlog-register-consolidated).
 
+### 6.1v Harness implementation queue — LLM completion response envelope (active)
+
+**Purpose:** Single ordered list for **Phase M-LLM-R** (Band 2z). **Opened 2026-06-06** — **0/39 Done**. Runs **in parallel** with W-ADAPT waves 5–7 (Tier-0 LLM contract; independent of L4 runtime loop).
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
+| 1 | **M-LLM-R.0.2–0.3** | Docs | Planned | ADR-LLM-001 + canon §5.2.2 addendum | Linked from plan |
+| 2 | **M-LLM-R.1.1–1.8** | Code | Planned | Contract types + builders + public exports | Import smoke; no dict returns |
+| 3 | **M-LLM-R.2.1–2.6** | Code | Planned | `LLMAdapter` ABC typed signatures | ABC compiles; stubs updated |
+| 4 | **M-LLM-R.3.1–3.7** | Code | Planned | All provider adapters return envelope | Conformance per provider family |
+| 5 | **M-LLM-R.4.1–4.6** | Code | Planned | Nexus runtime consumers | `test_core_llm_step` + tool planner |
+| 6 | **M-LLM-R.5.1–5.3** | Code | Planned | RAG + websearch + legacy | RAG unit tests green |
+| 7 | **M-LLM-R.6.1–6.4** | Code | Planned | Agents + scaffold + CI lint | Agent tests + `check_llm_adapter_typed_returns.py` |
+| 8 | **M-LLM-R.7.1–7.5** | Code | Planned | Usage alignment + replay/trace bridge | `test_replay_engine` + diagnostics |
+| 9 | **M-LLM-R.8.1–8.4** | Docs/CI | Planned | Docs + conformance + closeout | M-LLM.14 Done; Appendix L complete |
+
+**Suggested PR order:** See [Phase M-LLM-R — Suggested PR order](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06).
+
+**Explicitly excluded:** K.1, K.2, product HTTP API DTOs, provider SDK rewrites — [§6.3a](#63a-business-backlog-register-consolidated).
+
 ### 6.1 Harness platform maintenance (default — Band 1)
 
-§4.1 backlog is **closed**. Ongoing work = keep the harness green; **feature work** = [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active) (Phase W-ADAPT).
+§4.1 backlog is **closed**. Ongoing work = keep the harness green; **feature work** = [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active) (Phase W-ADAPT) + [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-active) (Phase M-LLM-R).
 
 ```text
 Verify (every harness PR):
@@ -5068,7 +5253,29 @@ Work **one MEM ID per PR**; after each step update the MEM master table + paydow
 
 Full task register: [Appendix I](#appendix-i--plugin-catalog-traceability-phase-p-ext).
 
-**Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3. **Feature queue:** Phase W-ADAPT — §6.1t.
+**Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3. **Feature queue:** Phase W-ADAPT — §6.1t; Phase M-LLM-R — §6.1v.
+
+### 6.2ad Phase M-LLM-R execution order (Band 2z — planned)
+
+**Status:** **Planned** · register: [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · queue: [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-active)
+
+```text
+Wave M-LLM-R-0 (planning):     M-LLM-R.0.2 → 0.3  (0.1 **Done**)
+Wave M-LLM-R-1 (contracts):    M-LLM-R.1.1 → 1.8
+Wave M-LLM-R-2 (ABC):          M-LLM-R.2.6 → 2.1 → 2.2 → 2.3 → 2.4 → 2.5
+Wave M-LLM-R-3 (providers):    M-LLM-R.3.1 → 3.2 → 3.3 → 3.4 → 3.5 → 3.6 → 3.7
+Wave M-LLM-R-4 (Nexus):        M-LLM-R.4.1 → 4.2 → 4.3 → 4.4 → 4.5 → 4.6
+Wave M-LLM-R-5 (RAG/web):      M-LLM-R.5.1 → 5.2 → 5.3
+Wave M-LLM-R-6 (agents):       M-LLM-R.6.1 → 6.2 → 6.3 → 6.4
+Wave M-LLM-R-7 (obs/replay):   M-LLM-R.7.1 → 7.2 → 7.3 → 7.4 → 7.5
+Wave M-LLM-R-8 (closeout):     M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
+```
+
+**Prerequisites:** Phase M-LLM **Done** (M-LLM.1–13); no dependency on W-ADAPT runtime L4 gate.
+
+**Parallelism:** May run alongside W-ADAPT-5+; coordinate M-LLM-R.7.5 with W-ADAPT signal work if both touch `signal_collector.py`.
+
+**Closeout gate:** `scripts/check_llm_adapter_typed_returns.py` + full `tests/unit/llm_adapters/` gate green (M-LLM-R.8.3).
 
 ### 6.2ac Phase W-ADAPT execution order (Band 2y — active)
 
@@ -6276,4 +6483,59 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ---
 
-*Plan synced (2026-06-05). **Harness platform** bands 1–2x **Done**; **Band 2y W-ADAPT** Wave 0–4 **Done** (46/70). Gate: **750 passed**. **Default next:** [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active) W-ADAPT-5.1+. **Every PR:** §6.1 maintenance. Product work gated by [§6.3](#63-end-of-plan--deferred-product-work-only).*
+## Appendix L — LLM completion response envelope traceability (Phase M-LLM-R)
+
+**Source:** Tier-0 LLM adapter audit (2026-06-06) — plain `str` / `Dict[str, Any]` returns insufficient for production observability, replay, cost attribution, and L4 adaptive signals.
+
+**Phase register:** [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · **Band 2z** · queue [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-active)
+
+### L.1 Audit finding → remediation map
+
+| # | Audit finding | Remediation | Task IDs |
+|---|---------------|-------------|----------|
+| 1 | `generate_messages` returns bare `str` | `LLMAdapterResponse` with `content: str` | M-LLM-R.1.1, M-LLM-R.2.1, M-LLM-R.3.*, M-LLM-R.4–6.* |
+| 2 | `generate_with_tools` returns `Dict[str, Any]` | Same envelope; `tool_calls: tuple[LLMToolCall, ...]` | M-LLM-R.1.3, M-LLM-R.1.7, M-LLM-R.2.2, M-LLM-R.4.2 |
+| 3 | Streaming yields `str` / dict chunks | `LLMStreamEvent` partial/final | M-LLM-R.1.5, M-LLM-R.2.3–2.4, M-LLM-R.3.6 |
+| 4 | `generate_structured` return untyped | `LLMStructuredResult[T]` | M-LLM-R.1.6, M-LLM-R.2.5, M-LLM-R.3.7 |
+| 5 | SDK `finish_reason` / stop metadata lost | `LLMFinishReason` on response | M-LLM-R.1.1, M-LLM-R.3.1–3.4 |
+| 6 | Provider `response_id` / request correlation lost | `response_id: str \| None` on response | M-LLM-R.1.1, M-LLM-R.3.1 |
+| 7 | Cached / reasoning tokens discarded | `LLMTokenUsage.cached_input_tokens`, `reasoning_tokens` | M-LLM-R.1.2, M-LLM-R.3.1 |
+| 8 | Refusal / content-filter signals lost | `refusal: str \| None` + finish_reason enum | M-LLM-R.1.1, M-LLM-R.3.1–3.2 |
+| 9 | Usage only via side-channel (`LLMAdapterUsageLog`) | Per-call `usage` on response + aligned `end_call` | M-LLM-R.1.2, M-LLM-R.2.6, M-LLM-R.7.1 |
+| 10 | Inconsistent token counting (estimate vs SDK) | Prefer SDK counts; flag estimate in `LLMProviderExtensions` | M-LLM-R.3.5, M-LLM-R.1.4 |
+| 11 | No extensibility without dict bags | `LLMProviderExtensions` tagged union | M-LLM-R.1.4 |
+| 12 | Replay `LLMCallInfo` not populated from adapter | Trace bridge from `LLMAdapterResponse` | M-LLM-R.7.2, M-LLM-R.7.3 |
+| 13 | `CoreLLMAdapterReturnedDiagV1` tracks `adapter_return_type="str"` | Diagnostics carry finish_reason + tokens | M-LLM-R.7.4 |
+| 14 | Conformance enforces `isinstance(text, str)` | Typed conformance helpers | M-LLM-R.8.2 |
+| 15 | ~50 call sites assume `str` | Full consumer refactor (Nexus, RAG, agents, websearch) | M-LLM-R.4.*, M-LLM-R.5.*, M-LLM-R.6.* |
+| 16 | `make_tool_result` dict factory | Delete; typed `build_adapter_response` | M-LLM-R.1.7 |
+| 17 | Public API missing response types | Re-export from `llm_adapters/__init__.py` | M-LLM-R.1.8 |
+| 18 | Docs describe two-layer usage but not response envelope | `LLM_ADAPTERS.md` envelope section | M-LLM-R.8.1 |
+| 19 | No CI guard against regression to `str` returns | `check_llm_adapter_typed_returns.py` | M-LLM-R.8.3 |
+
+### L.2 Consumer inventory (must migrate)
+
+| Area | Modules | Task |
+|------|---------|------|
+| Nexus core LLM | `core_llm_step.py` | M-LLM-R.4.1 |
+| Tool planning | `tool_planning_service.py` | M-LLM-R.4.2 |
+| Planning / history | `plan_sources.py`, `engine_history_layer.py` | M-LLM-R.4.3 |
+| Profile services | `user_profile/*`, `organization/*`, `session_memory_consolidation_service.py` | M-LLM-R.4.4 |
+| Supervisor | `supervisor.py` | M-LLM-R.4.5 |
+| RAG | `query_refiner.py`, `query_expander.py`, `chunk_enricher.py`, `llm_graph_indexer.py` | M-LLM-R.5.1 |
+| Websearch | `websearch_context_generator.py`, `websearch_answerer.py` | M-LLM-R.5.2 |
+| Legacy RAG | `legacy/rag_answers/pipeline/answer_pipeline.py` | M-LLM-R.5.3 |
+| Agents (Tier-2) | `agents/*/steps/pipeline.py`, `mock_agents.py` | M-LLM-R.6.1 |
+| Scaffold / tests | `scaffold/new_agent.py`, `testing_support/builder.py` | M-LLM-R.6.2–6.3 |
+| All providers | `llm_adapters/providers/*` | M-LLM-R.3.* |
+
+### L.3 Paydown log
+
+| Date | M-LLM-R ID | Summary |
+|------|------------|---------|
+| 2026-06-06 | M-LLM-R.0.1 | Phase M-LLM-R register + §6.1v + §6.2ad + Appendix L + Band 2z |
+| — | — | *(append row per merged PR)* |
+
+---
+
+*Plan synced (2026-06-06). **Harness platform** bands 1–2x **Done**; **Band 2y W-ADAPT** Wave 0–4 **Done** (46/70); **Band 2z M-LLM-R** **opened** (0/39). **Default next:** [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active) W-ADAPT-5.1+ **parallel** [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-active) M-LLM-R.0.2+. **Every PR:** §6.1 maintenance. Product work gated by [§6.3](#63-end-of-plan--deferred-product-work-only).*
