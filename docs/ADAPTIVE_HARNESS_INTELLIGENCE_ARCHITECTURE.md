@@ -1080,15 +1080,24 @@ flowchart LR
 | W-ADAPT-5.6 | `phase_w_adapt_closeout_gate.py` | `--enforce-l4-runtime` CI gate |
 | W-ADAPT-5.11 | `l4_runtime_evidence.json` | 30-day golden scenario utility artifact |
 
-### 19.7 Wave W-ADAPT-6 — Pattern intelligence
+### 19.7 Wave W-ADAPT-6 — Pattern intelligence — **Done**
 
 | Task | Deliverable | Acceptance |
 |------|-------------|------------|
-| W-ADAPT-6.1 | `ProcessPatternMiner` | Patterns with support ≥ threshold |
-| W-ADAPT-6.2 | `ProcessPatternProposal` report | Human review queue |
-| W-ADAPT-6.3 | Link to scaffold skill stub | Optional generated manifest draft |
+| W-ADAPT-6.1 | `ProcessPatternMiner` | N-gram frequency over trace sequences |
+| W-ADAPT-6.2 | `PersistedTraceSequenceReader` | Reuses `RunTraceReader.list_runs` |
+| W-ADAPT-6.3 | Pattern report in `phase_w_adapt_report.py` | `process_patterns.json` export |
+| W-ADAPT-6.5 | `AdaptationScheduler.run_pattern_miner` | Daily job entry point |
 
-### 19.8 Dependencies
+### 19.8 Wave W-ADAPT-7 — Tier-3 wiring — **Done**
+
+| Task | Deliverable | Acceptance |
+|------|-------------|------------|
+| W-ADAPT-7.1 | Default `AdaptiveProfile` on lab/reference apps | `enabled=False` initially |
+| W-ADAPT-7.3 | AGENT_CREATION_GUIDE Appendix V | Control plane map |
+| W-ADAPT-7.6 | Acceptance E2E observe→recommend | No apply in test path |
+
+### 19.9 Dependencies
 
 ```text
 W-ADAPT-0 → W-ADAPT-1 → W-ADAPT-2 → W-ADAPT-3 → W-ADAPT-4 → W-ADAPT-5

@@ -38,6 +38,8 @@ from intergrax.applications._shared.harness_auth import (
     require_harness_api_key,
     resolve_harness_api_key,
 )
+from intergrax.runtime.adaptive.proposal_store import SQLiteProposalStore, default_proposal_store_path
+from intergrax.runtime.adaptive.signal_store import SQLiteSignalStore, default_signal_store_path
 from lab_application.serving.fastapi_router import mount_lab_routes
 
 
@@ -140,6 +142,9 @@ def create_lab_application(
         trace_store=integrations.trace_store,
         runtime_event_store=integrations.runtime_event_store,
         delivery_ledger=integrations.delivery_ledger,
+        adaptive_signal_store=SQLiteSignalStore(db_path=default_signal_store_path()),
+        adaptive_proposal_store=SQLiteProposalStore(db_path=default_proposal_store_path()),
+        include_adaptive_debug_routes=lab_env.adaptive_profile.debug_readonly_routes,
     )
     app.title = "Intergrax Lab Application"
     app.description = (

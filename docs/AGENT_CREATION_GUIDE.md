@@ -47,8 +47,9 @@ Implementation status: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTA
 31. [Appendix S — Security control plane closeout](#appendix-s--security-control-plane-closeout)
 32. [Appendix T — Cost governance control plane closeout](#appendix-t--cost-governance-control-plane-closeout)
 33. [Appendix U — Evaluation control plane closeout](#appendix-u--evaluation-control-plane-closeout)
-34. [Anti-patterns](#anti-patterns)
-35. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
+34. [Appendix V — Adaptive Harness control plane closeout](#appendix-v--adaptive-harness-control-plane-closeout)
+35. [Anti-patterns](#anti-patterns)
+36. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
 
@@ -1192,6 +1193,7 @@ ApplicationEnvironmentProfile (Tier-3 umbrella)
   ├── memory_profile            → STM/LTM/task flags → memory_wiring.py (Appendix G)
   ├── observability_profile     → trace SQLite, OTEL, metrics plugins
   ├── reliability_profile       → idempotency, circuit breaker, checkpoints, scheduler
+  ├── adaptive_profile          → L4 runtime loops, stores, canary traffic (Appendix V)
   ├── execution_mode            → strict | balanced | exploratory → runtime_policies
   └── integration_profile       → observability_backend slug (prometheus, otel, elasticsearch, …)
 
@@ -2388,6 +2390,73 @@ Release / CI
 | Full gate | `uv run pytest -m gate -q` |
 
 Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §25: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+
+---
+
+## Appendix V — Adaptive Harness control plane closeout
+
+**Audience:** Tier-3 application authors, platform engineers, harness operators.  
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) · Phase W-ADAPT **Done**; complements [Appendix H §H.2](#h2-control-plane-map-where-to-customize).
+
+Tier-3 hosts configure adaptive closed-loop behavior exclusively through typed `AdaptiveProfile` on `ApplicationEnvironmentProfile`.
+
+### V.1 Design principles
+
+| Principle | Meaning in Intergrax |
+|-----------|------------------------|
+| Profile-driven | `AdaptiveProfile` on `ApplicationEnvironmentProfile` |
+| Default safe | Reference apps ship with `enabled=False`, `mode="observe"` |
+| Store isolation | Signal/proposal/profile stores under `build/adaptive_harness/` (gitignored) |
+| Governance first | Recommend/shadow/apply gated by `AdaptiveLoopEnvelope` + HITL for policy learning |
+| Verify before trust | `VerificationLoop` + runtime L4 evidence before production auto-apply |
+
+### V.2 Adaptive wiring map
+
+```text
+ApplicationEnvironmentProfile (Tier-3)
+  └── adaptive_profile
+        ├── enabled / mode                 → wire_adaptive_profile()
+        ├── utility_weights                → SignalCollector U function
+        ├── canary_tenant_allowlist          → canary_traffic.py
+        ├── signal_store_path              → SQLiteSignalStore
+        ├── profile_versions_db_path       → ProfileVersionStore
+        ├── debug_readonly_routes          → /debug/adaptive/* (lab only)
+        └── business_outcome_webhook         → optional signed business_outcome signal
+
+wire_adaptive_profile() (Tier-3)
+  └── adaptive_wiring.py → ApplicationAdaptiveWiring
+
+Runtime loop (Tier-1)
+  └── SignalCollector → AdaptationEngine → AdaptationExecutor → VerificationLoop
+
+Ops / CI
+  └── scripts/phase_w_adapt_report.py
+  └── scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
+```
+
+### V.3 Core contracts
+
+| Contract | Module | Role |
+|----------|--------|------|
+| `AdaptiveProfile` | `contracts/environment_profile.py` | Author-facing adaptive flags |
+| `HarnessOutcomeSignal` | `runtime/adaptive/contracts.py` | Post-run observation (L4-O) |
+| `AdaptationEngine` | `runtime/adaptive/adaptation_engine.py` | Recommend-only proposal cycles |
+| `AdaptationExecutor` | `runtime/adaptive/adaptation_executor.py` | Shadow/canary/apply/rollback |
+| `VerificationLoop` | `runtime/adaptive/verification_loop.py` | Post-apply verify + auto-rollback |
+| `ProcessPatternMiner` | `runtime/adaptive/process_pattern_miner.py` | Offline trace pattern intelligence |
+| `BusinessOutcomeWebhookPayload` | `contracts/business_outcome_webhook.py` | Optional Tier-3 business outcome ingest |
+
+### V.4 Verification (audit evidence)
+
+| Concern | Command / test |
+|---------|----------------|
+| Adaptive package contracts | `pytest tests/unit/runtime/adaptive/ -m gate` |
+| Observe→recommend E2E | `pytest tests/acceptance/adaptive/ -m gate` |
+| Runtime L4 closeout | `python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime` |
+| Pattern report export | `python scripts/phase_w_adapt_report.py --patterns-output build/adaptive_harness/process_patterns.json` |
+| Full gate | `uv run pytest -m gate -q` |
+
+Runbooks: [`runbook/adaptive/`](../runbook/adaptive/) · architecture: [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md).
 
 ---
 

@@ -257,6 +257,28 @@ Current baseline delivered (Phase V V1):
 - **W-ADAPT-5** ops runbooks: [`runbook/adaptive/rollback_profile.md`](../runbook/adaptive/rollback_profile.md), [`approve_policy_learning.md`](../runbook/adaptive/approve_policy_learning.md), [`shadow_failure_triage.md`](../runbook/adaptive/shadow_failure_triage.md)
 - **W-ADAPT-5** evidence artifacts: `build/adaptive_harness/verification_report.json`, `build/adaptive_harness/l4_runtime_evidence.json`
 
+### Adaptive Harness Intelligence ops (W-ADAPT-7)
+
+Lab and reference apps ship with `AdaptiveProfile(enabled=False, mode="observe")` by default. Enable closed-loop behavior only in controlled environments.
+
+| Variable / flag | Purpose |
+|-----------------|--------|
+| `AdaptiveProfile.enabled` | Master switch for adaptive stores, executor, and signal collector |
+| `AdaptiveProfile.mode` | `observe` \| `recommend` \| `shadow` \| `canary` \| `apply` |
+| `AdaptiveProfile.signal_store_path` | SQLite path for harness outcome signals |
+| `AdaptiveProfile.proposal_store_path` | SQLite path for adaptation engine runs |
+| `AdaptiveProfile.debug_readonly_routes` | Mount `/debug/adaptive/signals` and `/debug/adaptive/proposals` on lab host |
+| `INTERGRAX_BUSINESS_OUTCOME_WEBHOOK_SECRET` | HMAC secret for optional Tier-3 `business_outcome` webhook payloads |
+
+Reports and closeout:
+
+```bash
+uv run python scripts/phase_w_adapt_report.py --patterns-output build/adaptive_harness/process_patterns.json
+uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
+```
+
+Authoring guide: [`AGENT_CREATION_GUIDE.md` Appendix V](AGENT_CREATION_GUIDE.md#appendix-v--adaptive-harness-control-plane-closeout).
+
 Execution references in the implementation plan:
 
 - **Phase V stream map:** `Phase V — Harness Architecture Hardening (post-U)`

@@ -5,7 +5,10 @@
 
 from __future__ import annotations
 
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import (
+    AdaptiveProfile,
+    ApplicationEnvironmentProfile,
+)
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
 from legal.legal_agent import LegalAgent
@@ -13,10 +16,19 @@ from legal_application.host.agent_factories import build_legal_agent_from_contex
 
 
 def _legal_environment() -> ApplicationEnvironmentProfile:
-    return ApplicationEnvironmentProfile.product_defaults(
-        profile_id="legal.product",
-        skill_bundles=["legal"],
-    ).model_copy(update={"integration_profile": IntegrationProfile.legal_product()}).with_harness_memory()
+    return (
+        ApplicationEnvironmentProfile.product_defaults(
+            profile_id="legal.product",
+            skill_bundles=["legal"],
+        )
+        .model_copy(
+            update={
+                "integration_profile": IntegrationProfile.legal_product(),
+                "adaptive_profile": AdaptiveProfile(enabled=False, mode="observe"),
+            }
+        )
+        .with_harness_memory()
+    )
 
 
 LEGAL_APPLICATION_MANIFEST = ApplicationManifest.product(

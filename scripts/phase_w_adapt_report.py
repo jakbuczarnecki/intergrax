@@ -21,6 +21,15 @@ for path in (REPO_ROOT, REPO_ROOT / "agents", REPO_ROOT / "applications"):
 
 from intergrax.runtime.adaptive.proposal_store import SQLiteProposalStore, default_proposal_store_path
 from intergrax.runtime.adaptive.signal_store import SQLiteSignalStore, default_signal_store_path
+from intergrax.runtime.adaptive.pattern_skill_stub import write_skill_stub_draft
+from intergrax.runtime.adaptive.process_pattern_miner import (
+    ProcessPatternMiner,
+    ProcessPatternMinerConfig,
+    ProcessPatternMinerResult,
+)
+from intergrax.runtime.adaptive.trace_sequence_reader import PersistedTraceSequenceReader
+from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
+from intergrax.runtime.adaptive.contracts import ProcessPatternProposal
 from intergrax.runtime.adaptive.verification_loop import VerificationLoop
 from intergrax.runtime.adaptive.verification_models import VerificationContext, VerificationReport
 
@@ -56,6 +65,14 @@ class ProposalTrendReport(BaseModel):
     failed_gate_count: int = 0
     tenant_ids: list[str] = Field(default_factory=list)
     proposals: list[ProposalGateSummary] = Field(default_factory=list)
+
+
+class ProcessPatternReport(BaseModel):
+    schema_version: str = "1.0.0"
+    scanned_run_count: int = 0
+    pattern_count: int = 0
+    patterns: list[ProcessPatternProposal] = Field(default_factory=list)
+    skill_stub_paths: list[str] = Field(default_factory=list)
 
 
 def _utility_bucket(utility: float) -> str:
@@ -142,6 +159,25 @@ def build_verification_report(
     )
 
 
+def build_process_pattern_report(
+    *,
+    miner_result: ProcessPatternMinerResult,
+    skill_stub_output_dir: Path | None = None,
+) -> ProcessPatternReport:
+    stub_paths: list[str] = []
+    if skill_stub_output_dir is not None:
+        for proposal in miner_result.proposals:
+            written = write_skill_stub_draft(proposal, output_dir=skill_stub_output_dir)
+            if written is not None:
+                stub_paths.append(written.as_posix())
+    return ProcessPatternReport(
+        scanned_run_count=miner_result.scanned_run_count,
+        pattern_count=len(miner_result.proposals),
+        patterns=miner_result.proposals,
+        skill_stub_paths=stub_paths,
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Export adaptive harness signal and proposal trends.")
     parser.add_argument(
@@ -185,6 +221,30 @@ def main() -> int:
         default=None,
         help="Optional verification report JSON path",
     )
+    parser.add_argument(
+        "--patterns-output",
+        type=Path,
+        default=None,
+        help="Optional process pattern report JSON path",
+    )
+    parser.add_argument(
+        "--trace-db-path",
+        type=Path,
+        default=REPO_ROOT / "build" / "intergrax_trace.db",
+        help="Trace DB path for pattern mining",
+    )
+    parser.add_argument(
+        "--patterns-tenant-id",
+        type=str,
+        default="lab",
+        help="Tenant id for pattern mining",
+    )
+    parser.add_argument(
+        "--skill-stub-output-dir",
+        type=Path,
+        default=REPO_ROOT / "build" / "adaptive_harness" / "skill_stubs",
+        help="Optional skill stub draft output directory",
+    )
     args = parser.parse_args()
 
     if not args.skip_signals:
@@ -222,6 +282,32 @@ def main() -> int:
         )
         print(f"adaptive verification report written: {args.verification_output}")
         print(f"verification_passed={verification_report.passed}")
+
+    if args.patterns_output is not None:
+        if not args.trace_db_path.is_file():
+            print(f"pattern mining skipped: trace db not found at {args.trace_db_path}")
+            return 0
+        signal_db_path = args.db_path or default_signal_store_path(REPO_ROOT)
+        trace_reader = SQLiteRunTraceStore(db_path=args.trace_db_path)
+        sequence_reader = PersistedTraceSequenceReader(
+            trace_reader,
+            signal_store=SQLiteSignalStore(db_path=signal_db_path),
+        )
+        miner = ProcessPatternMiner(sequence_reader=sequence_reader)
+        miner_result = miner.mine(
+            tenant_id=args.patterns_tenant_id,
+            config=ProcessPatternMinerConfig(min_support=2),
+        )
+        pattern_report = build_process_pattern_report(
+            miner_result=miner_result,
+            skill_stub_output_dir=args.skill_stub_output_dir,
+        )
+        args.patterns_output.parent.mkdir(parents=True, exist_ok=True)
+        args.patterns_output.write_text(pattern_report.model_dump_json(indent=2), encoding="utf-8")
+        print(f"adaptive process pattern report written: {args.patterns_output}")
+        print(
+            f"patterns={pattern_report.pattern_count} scanned_runs={pattern_report.scanned_run_count}"
+        )
     return 0
 
 

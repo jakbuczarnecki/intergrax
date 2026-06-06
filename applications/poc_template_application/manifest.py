@@ -4,7 +4,10 @@
 
 from __future__ import annotations
 
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import (
+    AdaptiveProfile,
+    ApplicationEnvironmentProfile,
+)
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
 from echo.echo_agent import EchoAgent
@@ -12,6 +15,9 @@ from echo.echo_agent import EchoAgent
 
 def build_poc_template_manifest() -> ApplicationManifest:
     environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="poc_template.scaffold")
+    environment = environment.model_copy(
+        update={"adaptive_profile": AdaptiveProfile(enabled=False, mode="observe")}
+    )
     return ApplicationManifest.lab(
         app_id="poc_template",
         name="Poc Template Lab Application",

@@ -43,4 +43,11 @@ def build_lab_environment_profile(
     )
     if _LAB_POLICY_RULES.is_file():
         env.policy_rules = PolicyRulesProfile(rules_path=_LAB_POLICY_RULES)
+    env.adaptive_profile = env.adaptive_profile.model_copy(
+        update={
+            "enabled": False,
+            "mode": "observe",
+            "debug_readonly_routes": True,
+        }
+    )
     return env

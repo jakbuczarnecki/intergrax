@@ -12,18 +12,22 @@ from fastapi import FastAPI
 
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.interaction_service import DebugInteractionIntakeService
+from intergrax.debug.adaptive_debug_router import create_adaptive_debug_router
 from intergrax.debug.router import create_debug_router
 from intergrax.debug.store import (
     open_default_task_checkpoint_persistence,
     open_runtime_event_persistence,
 )
 from intergrax.fastapi_core.routers.health import health_router
+from intergrax.runtime.adaptive.proposal_store import ProposalStore
+from intergrax.runtime.adaptive.signal_store import SignalStore
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
 from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
+from intergrax.runtime.registry.agent_registry import AgentRegistry
 
 
 def create_debug_app(
@@ -40,6 +44,9 @@ def create_debug_app(
     interaction_service: DebugInteractionIntakeService | None = None,
     nexus_loop: NexusLoop | None = None,
     delivery_ledger: DeliveryLedger | None = None,
+    adaptive_signal_store: SignalStore | None = None,
+    adaptive_proposal_store: ProposalStore | None = None,
+    include_adaptive_debug_routes: bool = False,
 ) -> FastAPI:
     """
     Laboratory debug API over trace, runtime events, checkpoints, and experiments.
@@ -102,4 +109,11 @@ def create_debug_app(
             delivery_ledger=delivery_ledger,
         )
     )
+    if include_adaptive_debug_routes:
+        app.include_router(
+            create_adaptive_debug_router(
+                signal_store=adaptive_signal_store,
+                proposal_store=adaptive_proposal_store,
+            )
+        )
     return app

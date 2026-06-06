@@ -34,6 +34,18 @@ from intergrax.runtime.adaptive.bandit_state_store import (
     SQLiteBanditStateStore,
     default_bandit_store_path,
 )
+from intergrax.runtime.adaptive.pattern_skill_stub import SkillStubDraft, build_skill_stub_draft, write_skill_stub_draft
+from intergrax.runtime.adaptive.process_pattern_miner import (
+    ProcessPatternMiner,
+    ProcessPatternMinerConfig,
+    ProcessPatternMinerResult,
+)
+from intergrax.runtime.adaptive.trace_sequence_reader import (
+    PersistedTraceSequenceReader,
+    ProcessSequenceToken,
+    RunProcessSequence,
+    TraceSequenceReader,
+)
 from intergrax.runtime.adaptive.l4_runtime_evidence import (
     DEFAULT_GOLDEN_SCENARIO_IDS,
     L4RuntimeEvidenceReport,
@@ -173,10 +185,18 @@ __all__ = [
     "ProfileVersionDraft",
     "ProfileVersionRecord",
     "ProfileVersionStatus",
+    "ProcessPatternMiner",
+    "ProcessPatternMinerConfig",
+    "ProcessPatternMinerResult",
+    "ProcessSequenceToken",
+    "PersistedTraceSequenceReader",
     "ProposalBuilder",
     "ProposalCooldownStore",
     "ProposalStore",
     "RoutingTuningEngine",
+    "RunProcessSequence",
+    "SkillStubDraft",
+    "TraceSequenceReader",
     "SignalAssemblyInput",
     "SignalCollector",
     "SignalStore",
@@ -197,6 +217,8 @@ __all__ = [
     "SQLiteProposalStore",
     "apply_rag_profile_version",
     "build_default_adaptive_proposals",
+    "build_skill_stub_draft",
+    "write_skill_stub_draft",
     "build_harness_baseline_l4_evidence",
     "build_l4_runtime_evidence_from_signals",
     "compute_utility",

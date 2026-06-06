@@ -19,6 +19,7 @@ from intergrax.runtime.modality.modality_profile import ModalityProfile, lab_def
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry.profile import ToolProfile
+from intergrax.applications.contracts.business_outcome_webhook import BusinessOutcomeWebhookConfig
 from intergrax.runtime.adaptive.contracts import UtilityWeights
 from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
 
@@ -170,6 +171,9 @@ class AdaptiveProfile(BaseModel):
     profile_versions_db_path: Path | None = None
     profile_pointers_db_path: Path | None = None
     signal_store_path: Path | None = None
+    proposal_store_path: Path | None = None
+    debug_readonly_routes: bool = False
+    business_outcome_webhook: BusinessOutcomeWebhookConfig | None = None
 
 
 class OrchestrationProfile(BaseModel):
@@ -317,6 +321,7 @@ class ApplicationEnvironmentProfile(BaseModel):
                 offline_eval_runner_enabled=True,
                 trend_comparison_enabled=True,
             ),
+            adaptive_profile=AdaptiveProfile(enabled=False, mode="observe"),
             orchestration_profile=OrchestrationProfile(long_running_enabled=True),
             identity_profile=IdentityProfile(require_api_key=False),
             shadow_workspace=ShadowWorkspaceProfile(),

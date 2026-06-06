@@ -163,6 +163,8 @@ class ProcessPatternProposal(BaseModel):
     description: str
     suggested_action: ProcessPatternAction
     evidence_run_ids: list[str] = Field(default_factory=list)
+    support_count: int = Field(default=0, ge=0)
+    avg_utility: float | None = Field(default=None, ge=-1.0, le=1.0)
     utility_correlation: float | None = Field(default=None, ge=-1.0, le=1.0)
 
     @field_validator("description")

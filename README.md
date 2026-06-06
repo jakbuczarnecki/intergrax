@@ -745,11 +745,11 @@ This is **not classical reinforcement learning** (neural policy training, uncons
 | **What it does** | Observes run outcomes → proposes versioned profile changes → validates through governance → applies via shadow/canary → verifies improvement → rolls back on failure |
 | **What it discovers** | Operational patterns in traces (tool/agent/HITL sequences), routing inefficiencies, cost anomalies, eval regressions |
 | **What stays human-governed** | Policy-learning mutations, promotion to production traffic, skill/workflow creation from mined patterns |
-| **Current status** | Wave **W-ADAPT-0–5 Done** — `VerificationLoop`, auto-rollback, L4 runtime evidence, `phase_w_adapt_closeout_gate.py`. **Next:** Wave 6 ProcessPatternMiner. |
+| **Current status** | **Done** — Wave **W-ADAPT-0–7** complete (70/70): observe → recommend → shadow → apply → verify → patterns → Tier-3 wiring. |
 
 **Primary document:** [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) — full business case, component specification, data contracts, flow diagrams, phased roadmap (W-ADAPT-0 through W-ADAPT-7), KPIs, and L4 runtime acceptance gates.
 
-**Implementation plan:** [INTERGRAX_IMPLEMENTATION_PLAN.md — Phase W-ADAPT](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) — **58/70 Done** (L4-O through L4-V), Band 2y, queue [§6.1t](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61t-harness-implementation-queue--adaptive-harness-intelligence-active), ADR [`ADR-ADAPT-001`](docs/adr/ADR-ADAPT-001.md).
+**Implementation plan:** [INTERGRAX_IMPLEMENTATION_PLAN.md — Phase W-ADAPT](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) — **70/70 Done**, Band 2y closed, ADR [`ADR-ADAPT-001`](docs/adr/ADR-ADAPT-001.md).
 
 **Canon summary:** [intergrax_runtime_architecture.md §54](docs/intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum)
 
