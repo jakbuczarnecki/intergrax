@@ -43,7 +43,7 @@ Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 135 pr
 
 ### M.6 P5 — Harness integration depth (Done — 33/34)
 
-**Register:** [INTERGRAX_IMPLEMENTATION_PLAN.md — M.6 P5](INTERGRAX_IMPLEMENTATION_PLAN.md#m6-p5--harness-integration-depth-planned) · Band **2ab**
+**Register:** [INTERGRAX_IMPLEMENTATION_PLAN.md — M.6 P5](INTERGRAX_IMPLEMENTATION_PLAN.md#m6-p5--harness-integration-depth-done--3334) · Band **2ab**
 
 | Wave | Focus | Status |
 |------|--------|--------|
@@ -679,7 +679,7 @@ All slugs from the 2026-05 harness recommendation (high / medium / low) are regi
 
 **New tools:** `gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`.
 
-**`slash_command`** interaction surface registered (catalog **99**).
+**`slash_command`** interaction surface registered (catalog **135**).
 
 **Lab harness:** `IntegrationProfile.harness_lab()` + `wire_lab_integrations(harness=True)` — composite observability (Sentry + LangSmith) + PagerDuty + harness tool bundle.
 
