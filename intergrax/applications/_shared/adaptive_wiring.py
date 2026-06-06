@@ -49,9 +49,18 @@ def wire_adaptive_profile(
     env: ApplicationEnvironmentProfile,
     *,
     evaluation_governance_bridge: RuntimeArchitectureGovernanceBridge | None = None,
+    tenant_id: str = "default",
 ) -> ApplicationAdaptiveWiring:
     """Materialize adaptive stores, executor, and signal collector from environment profile."""
-    profile = env.adaptive_profile
+    from intergrax.applications._shared.adaptive_feature_flag_gate import (
+        resolve_effective_adaptive_profile,
+    )
+
+    profile = resolve_effective_adaptive_profile(
+        env.adaptive_profile,
+        integration_profile=env.integration_profile,
+        tenant_id=tenant_id,
+    )
     if not profile.enabled:
         return ApplicationAdaptiveWiring(
             profile=profile,

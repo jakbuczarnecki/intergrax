@@ -10,6 +10,8 @@ from typing import Optional, Sequence
 from langchain_core.documents import Document
 
 from intergrax.integrations._shared.config import BaseIntegrationConfig
+from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError
+from intergrax.integrations.contracts.health_probe import IntegrationHealthProbe
 from intergrax.integrations.contracts.vector_store import MetadataFilter, VectorStore, VectorStoreHit
 
 
@@ -66,3 +68,8 @@ class VectorStoreBridge(VectorStore):
 
     def count(self) -> int:
         return self._inner.count()
+
+    def health(self) -> HealthStatus | bool:
+        if isinstance(self._inner, IntegrationHealthProbe):
+            return self._inner.health()
+        return True

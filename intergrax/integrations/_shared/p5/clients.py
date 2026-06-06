@@ -26,6 +26,19 @@ from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
 from intergrax.runtime.interactions.models import InboundInteraction
 
 
+def _probe_client_health(client: Any, *, slug: str, default_detail: str = "") -> HealthStatus:
+    probe = getattr(client, "health", None)
+    if callable(probe):
+        try:
+            result = probe()
+        except Exception as exc:  # noqa: BLE001 — health probe surface
+            return HealthStatus(slug=slug, healthy=False, detail=str(exc))
+        if isinstance(result, HealthStatus):
+            return result
+        return HealthStatus(slug=slug, healthy=bool(result), detail=default_detail or "client probe")
+    return HealthStatus(slug=slug, healthy=True, detail=default_detail or "no probe")
+
+
 class RestSecretsStore:
     """HTTP secrets facade used by Doppler and similar providers."""
 
@@ -47,6 +60,20 @@ class RestSecretsStore:
 
     def close(self) -> None:
         self._closed = True
+
+    def health(self) -> HealthStatus | bool:
+        if self._closed:
+            return False
+        probe = getattr(self._client, "health", None)
+        if callable(probe):
+            try:
+                result = probe()
+            except Exception:  # noqa: BLE001 — health probe surface
+                return False
+            if isinstance(result, HealthStatus):
+                return result
+            return bool(result)
+        return True
 
     def _require_open(self) -> None:
         if self._closed:
@@ -86,6 +113,9 @@ class HttpFeatureFlagBackend:
             )
         return FeatureFlagEvaluation(key=flag_key, enabled=bool(payload))
 
+    def health(self) -> HealthStatus:
+        return _probe_client_health(self._client, slug=self._provider)
+
 
 class HttpCiCdBackend:
     def __init__(self, client: Any, *, provider: str) -> None:
@@ -123,6 +153,9 @@ class HttpCiCdBackend:
                 )
             )
         return suites
+
+    def health(self) -> HealthStatus:
+        return _probe_client_health(self._client, slug=self._provider)
 
 
 class HttpObservabilityClientAdapter:
@@ -194,6 +227,9 @@ class HttpObservabilityClientAdapter:
                         ]
                     )
         return TraceQueryResult()
+
+    def health(self) -> HealthStatus:
+        return _probe_client_health(self._client, slug=self._provider)
 
 
 class MemgraphGraphStore(Neo4jGraphStore):

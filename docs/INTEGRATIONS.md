@@ -121,9 +121,10 @@ Typed factories in `intergrax.integrations.registry.presets` — use in `Applica
 | `legal_stack()` | `IntegrationProfile.legal_product()` | Legal product relational + vector |
 | `research_stack()` | `IntegrationProfile.research_product()` | Research product search + vector |
 | `data_stack(enable_redis=True, enable_qdrant=False)` | Lab harness + optional redis/qdrant | Data-heavy experiments |
-| `observability_stack(enable_otel=True)` | Lab harness OTEL-first | Trace/metrics focus |
+| `observability_stack(enable_otel=True, enable_grafana_stack=False)` | Lab harness OTEL-first; optional Grafana/Loki/Tempo triad | Trace/metrics focus |
+| `harness_production_stack(secrets_slug="doppler", enable_grafana_stack=True)` | PostgreSQL + pgvector + secrets + Grafana stack + Unleash + GitHub Actions | Harness production Tier-3 (no business agents) |
 
-CLI fragment helper: `uv run intergrax integrations pick postgres` (see `intergrax/cli/integrations_pick.py`).
+CLI fragment helper: `uv run intergrax integrations pick postgres` (presets: `lab`, `legal`, `research`, `data`, `observability`, `harness_production`). See `intergrax/cli/integrations_pick.py`.
 
 See [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md), `intergrax/integrations/examples/custom_memory_kv/`, and `tests/unit/integrations/test_external_plugin.py`.
 

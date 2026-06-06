@@ -1054,6 +1054,7 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 |------|-----|---------|
 | 2026-06-02 | M-P4.0 | Register 28 harness-ROI integration slugs + §6.1w + §6.2ae + Band 2aa (audit → plan) |
 | 2026-06-02 | M-P4.1–M-P4.28 | All 28 M.6 P4 providers: `_shared/p5/`, layout **127**, tests `test_p5_m6_p4_providers.py`, gate green |
+| 2026-06-02 | M-P4.FU | Tier-3 follow-up (no business agents): `harness_production_stack` / `harness_production_defaults`, lab env (`LAB_OBSERVABILITY_GRAFANA_STACK`, `LAB_ADAPTIVE_FEATURE_FLAG`, `LAB_SECRETS_BACKEND`), adaptive feature-flag gate, pgvector persistence + health, M6 P4 stable promotion (8 slugs), `health_check_harness_m6_p4_probes`, docs sync |
 
 #### M.6 P3 — Legacy backlog note (superseded)
 

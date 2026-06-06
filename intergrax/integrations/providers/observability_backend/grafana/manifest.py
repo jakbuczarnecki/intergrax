@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="grafana",
     categories=(IntegrationCategory.OBSERVABILITY_BACKEND,),
-    status=IntegrationStatus.BETA,
+    status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_GRAFANA',
     description='grafana integration (Phase M.6 P4)',
 )

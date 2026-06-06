@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="pgvector",
     categories=(IntegrationCategory.VECTOR_STORE,),
-    status=IntegrationStatus.BETA,
+    status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_PGVECTOR',
     description='pgvector integration (Phase M.6 P4)',
 )

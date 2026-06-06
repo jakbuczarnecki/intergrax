@@ -8,6 +8,7 @@ from collections.abc import Mapping, Sequence
 
 from intergrax.integrations.contracts.base import IntegrationMetadata, IntegrationStatus
 from intergrax.integrations.registry.catalog import metadata_for_slug
+
 HARNESS_LAB_STABLE_SLUGS: frozenset[str] = frozenset(
     {
         "sqlite",
@@ -19,6 +20,20 @@ HARNESS_LAB_STABLE_SLUGS: frozenset[str] = frozenset(
         "otel",
         "lab_json",
         "log",
+    }
+)
+
+HARNESS_M6_P4_PROBE_SLUGS: frozenset[str] = frozenset(
+    {
+        "pgvector",
+        "duckdb",
+        "grafana",
+        "loki",
+        "tempo",
+        "doppler",
+        "unleash",
+        "github_actions",
+        "ollama",
     }
 )
 

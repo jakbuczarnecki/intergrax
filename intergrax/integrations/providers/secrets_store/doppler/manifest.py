@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="doppler",
     categories=(IntegrationCategory.SECRETS_STORE,),
-    status=IntegrationStatus.BETA,
+    status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_DOPPLER',
     description='doppler integration (Phase M.6 P4)',
 )

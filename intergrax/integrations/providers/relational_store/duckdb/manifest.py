@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="duckdb",
     categories=(IntegrationCategory.RELATIONAL_STORE,),
-    status=IntegrationStatus.BETA,
+    status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_DUCKDB',
     description='duckdb integration (Phase M.6 P4)',
 )

@@ -155,6 +155,13 @@ def _http_obs(
                 payload = response.json()
                 return dict(payload) if isinstance(payload, dict) else {"traceID": trace_id}
 
+            def health(self) -> bool:
+                try:
+                    response = http.get("/api/health")
+                    return response.status_code < 500
+                except Exception:
+                    return False
+
         return HttpObservabilityClientAdapter(_Client(), provider=provider)
 
     if observability_backend is not None:
@@ -551,6 +558,13 @@ def create_doppler_secrets_store(
             def delete_secret(self, path: str) -> None:
                 http.delete(f"/v3/configs/config/secrets/{path}")
 
+            def health(self) -> bool:
+                try:
+                    response = http.get("/v3/configs/config")
+                    return response.status_code < 500
+                except Exception:
+                    return False
+
         return _Client()
 
     return _resolve(
@@ -594,6 +608,13 @@ def _feature_flag_factory(
                         if str(toggle.get("name")) == flag_key:
                             return {"enabled": bool(toggle.get("enabled")), "variant": str(toggle.get("variant") or "")}
                 return {"enabled": bool(payload.get("enabled")), "variant": str(payload.get("variant") or "")}
+
+            def health(self) -> bool:
+                try:
+                    response = http.get("/health")
+                    return response.status_code < 500
+                except Exception:
+                    return False
 
         return _Client()
 
@@ -668,6 +689,13 @@ def create_github_actions_ci_cd(
                 response.raise_for_status()
                 payload = response.json()
                 return list((payload.get("check_suites") if isinstance(payload, dict) else payload) or [])[:limit]
+
+            def health(self) -> bool:
+                try:
+                    response = http.get("/zen")
+                    return response.status_code < 400
+                except Exception:
+                    return False
 
         return _Client()
 
@@ -1011,8 +1039,11 @@ def create_ollama_interaction_surface(
 
         class _Client:
             def health(self) -> bool:
-                response = http.get("/api/tags")
-                return response.status_code < 400
+                try:
+                    response = http.get("/api/tags")
+                    return response.status_code < 400
+                except Exception:
+                    return False
 
             def list_models(self) -> list[str]:
                 response = http.get("/api/tags")

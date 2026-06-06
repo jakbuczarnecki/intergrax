@@ -141,6 +141,7 @@ def materialize_runtime_config(
     adaptive_wiring = wire_adaptive_profile(
         env,
         evaluation_governance_bridge=evaluation_wiring.governance_bridge,
+        tenant_id=request.tenant_id,
     )
     apply_evaluation_profiles_from_environment(
         config,

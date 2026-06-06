@@ -10,6 +10,8 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     PolicyRulesProfile,
 )
+from intergrax.fastapi_core.config import ApiEnvironment
+from intergrax.integrations.registry import presets
 from lab_application.host.settings import LabApplicationSettings
 
 _LAB_POLICY_RULES = (
@@ -26,10 +28,37 @@ def build_lab_environment_profile(
     settings: LabApplicationSettings,
 ) -> ApplicationEnvironmentProfile:
     """Compose lab environment from settings flags (replaces ad-hoc wiring)."""
-    env = ApplicationEnvironmentProfile.lab_defaults(
-        profile_id="lab.harness",
-        harness_tools=settings.harness,
-    )
+    if settings.environment == ApiEnvironment.PROD and settings.secrets_backend_slug:
+        env = ApplicationEnvironmentProfile.harness_production_defaults(
+            profile_id="lab.harness.prod",
+            harness_tools=settings.harness,
+            secrets_slug=settings.secrets_backend_slug,
+            enable_grafana_stack=settings.observability_grafana_stack,
+        )
+    else:
+        env = ApplicationEnvironmentProfile.lab_defaults(
+            profile_id="lab.harness",
+            harness_tools=settings.harness,
+        )
+        if settings.observability_grafana_stack:
+            env = env.model_copy(
+                update={
+                    "integration_profile": presets.observability_stack(
+                        enable_otel=settings.otel_enabled,
+                        enable_grafana_stack=True,
+                    )
+                }
+            )
+        elif settings.otel_enabled:
+            env = env.model_copy(
+                update={
+                    "integration_profile": presets.observability_stack(
+                        enable_otel=True,
+                        enable_grafana_stack=False,
+                    )
+                }
+            )
+
     env.identity_profile.require_api_key = settings.requires_harness_api_key
     env.observability_profile.otel_enabled = settings.otel_enabled
     env.reliability_profile.long_running_scheduler_enabled = settings.include_scheduler
@@ -43,11 +72,20 @@ def build_lab_environment_profile(
     )
     if _LAB_POLICY_RULES.is_file():
         env.policy_rules = PolicyRulesProfile(rules_path=_LAB_POLICY_RULES)
-    env.adaptive_profile = env.adaptive_profile.model_copy(
-        update={
-            "enabled": settings.adaptive_observe_enabled,
-            "mode": "observe",
-            "debug_readonly_routes": True,
-        }
-    )
+
+    adaptive_updates: dict[str, object] = {
+        "enabled": settings.adaptive_observe_enabled,
+        "mode": "observe",
+        "debug_readonly_routes": True,
+    }
+    if settings.adaptive_feature_flag_slug:
+        adaptive_updates["feature_flag_slug"] = settings.adaptive_feature_flag_slug
+        env = env.model_copy(
+            update={
+                "integration_profile": env.integration_profile.model_copy(
+                    update={"feature_flag": settings.adaptive_feature_flag_slug}
+                )
+            }
+        )
+    env.adaptive_profile = env.adaptive_profile.model_copy(update=adaptive_updates)
     return env

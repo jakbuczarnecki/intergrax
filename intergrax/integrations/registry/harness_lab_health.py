@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from intergrax.integrations._shared.health import health_check_catalog_slugs
 from intergrax.integrations.contracts.base import HealthStatus
-from intergrax.integrations.registry.harness_lab_stack import HARNESS_LAB_STABLE_SLUGS
+from intergrax.integrations.registry.harness_lab_stack import HARNESS_LAB_STABLE_SLUGS, HARNESS_M6_P4_PROBE_SLUGS
 
 
 def health_check_harness_lab_stack() -> list[HealthStatus]:
@@ -17,5 +17,13 @@ def health_check_harness_lab_stack() -> list[HealthStatus]:
     """
     return health_check_catalog_slugs(
         sorted(HARNESS_LAB_STABLE_SLUGS),
+        use_circuit_breaker=True,
+    )
+
+
+def health_check_harness_m6_p4_probes() -> list[HealthStatus]:
+    """Probe M.6 P4 harness-ROI slugs (beta catalog entries; W-OPS.10 extension)."""
+    return health_check_catalog_slugs(
+        sorted(HARNESS_M6_P4_PROBE_SLUGS),
         use_circuit_breaker=True,
     )

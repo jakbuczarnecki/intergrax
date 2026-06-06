@@ -222,6 +222,9 @@ def test_pgvector_vector_store() -> None:
     store = create_pgvector_vector_store()
     assert_vector_store(store)
     assert store.count() == 0
+    health = store.health()
+    assert health.healthy is True
+    assert health.slug == "pgvector"
 
 
 def test_duckdb_relational_store() -> None:

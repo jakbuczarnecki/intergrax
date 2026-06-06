@@ -126,7 +126,12 @@ class IntegrationProfile(BaseModel):
         accessor = self._BINDING_ACCESSORS.get(field_name)
         if accessor is None:
             raise ValueError(f"No binding accessor registered for field: {field_name!r}")
-        return accessor(self)
+        raw = accessor(self)
+        if raw is None:
+            return None
+        from intergrax.integrations.core.ref import normalize_integration_binding
+
+        return normalize_integration_binding(raw)
 
     def slug_for_category(self, category: str | IntegrationCategory) -> str | None:
         if isinstance(category, IntegrationCategory):
@@ -289,10 +294,29 @@ class IntegrationProfile(BaseModel):
         return _data_stack(enable_redis=enable_redis, enable_qdrant=enable_qdrant)
 
     @classmethod
-    def observability_stack(cls, *, enable_otel: bool = True) -> IntegrationProfile:
+    def observability_stack(
+        cls,
+        *,
+        enable_otel: bool = True,
+        enable_grafana_stack: bool = False,
+    ) -> IntegrationProfile:
         from intergrax.integrations.registry.presets import observability_stack as _obs_stack
 
-        return _obs_stack(enable_otel=enable_otel)
+        return _obs_stack(enable_otel=enable_otel, enable_grafana_stack=enable_grafana_stack)
+
+    @classmethod
+    def harness_production_stack(
+        cls,
+        *,
+        secrets_slug: str = "doppler",
+        enable_grafana_stack: bool = True,
+    ) -> IntegrationProfile:
+        from intergrax.integrations.registry.presets import harness_production_stack as _prod_stack
+
+        return _prod_stack(
+            secrets_slug=secrets_slug,
+            enable_grafana_stack=enable_grafana_stack,
+        )
 
 
 def default_lab_profile() -> IntegrationProfile:

@@ -174,6 +174,8 @@ class AdaptiveProfile(BaseModel):
     proposal_store_path: Path | None = None
     debug_readonly_routes: bool = False
     business_outcome_webhook: BusinessOutcomeWebhookConfig | None = None
+    feature_flag_slug: str | None = None
+    rollout_flag_key: str = "harness.adaptive.recommend"
 
 
 class OrchestrationProfile(BaseModel):
@@ -328,6 +330,45 @@ class ApplicationEnvironmentProfile(BaseModel):
             sandbox=SandboxProfile(enable_exec_tool=True),
             features=ApplicationFeatures.lab_defaults(),
             execution_mode=ExecutionMode.BALANCED,
+        )
+
+    @classmethod
+    def harness_production_defaults(
+        cls,
+        *,
+        profile_id: str = "harness.production",
+        harness_tools: bool = True,
+        secrets_slug: str = "doppler",
+        enable_grafana_stack: bool = True,
+    ) -> ApplicationEnvironmentProfile:
+        """Harness production Tier-3 preset — catalog secrets + observability stack (no business agents)."""
+        from intergrax.applications._shared.skill_wiring import lab_skill_profile
+        from intergrax.integrations.registry import presets
+
+        base = cls.lab_defaults(profile_id=profile_id, harness_tools=harness_tools)
+        return base.model_copy(
+            update={
+                "application_profile": ApplicationProfile.LAB,
+                "integration_profile": presets.harness_production_stack(
+                    secrets_slug=secrets_slug,
+                    enable_grafana_stack=enable_grafana_stack,
+                ),
+                "skill_profile": lab_skill_profile(),
+                "observability_profile": ObservabilityProfile(
+                    trace_sqlite_enabled=True,
+                    otel_enabled=True,
+                    metrics_plugins_enabled=True,
+                    debug_surface_override=False,
+                ),
+                "adaptive_profile": AdaptiveProfile(
+                    enabled=False,
+                    mode="observe",
+                    feature_flag_slug="unleash",
+                    rollout_flag_key="harness.adaptive.recommend",
+                ),
+                "identity_profile": IdentityProfile(require_api_key=True),
+                "execution_mode": ExecutionMode.STRICT,
+            }
         )
 
     @classmethod

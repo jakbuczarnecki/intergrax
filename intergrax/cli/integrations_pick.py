@@ -16,6 +16,7 @@ _PRESET_MAP = {
     "research": presets.research_stack,
     "data": presets.data_stack,
     "observability": presets.observability_stack,
+    "harness_production": presets.harness_production_stack,
 }
 
 
