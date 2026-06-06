@@ -1,7 +1,7 @@
 # Intergrax Adaptive Harness Intelligence Architecture (AHIA)
 
 **Document ID:** `ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`  
-**Status:** Architecture RFC — approved for planning (implementation not started)  
+**Status:** Architecture RFC — **implemented** (Phase W-ADAPT **Done**, 70/70, Wave 0–7)  
 **Version:** 1.0.0  
 **Date:** 2026-06-05  
 **Audience:** Platform architects, product leadership, harness engineers, security/compliance, implementation agents  

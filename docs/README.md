@@ -22,7 +22,7 @@ The `docs/` folder holds the canonical platform documentation.
 |----------|---------|
 | [**INTERGRAX_DEVELOPMENT_STRATEGY.md**](INTERGRAX_DEVELOPMENT_STRATEGY.md) | **Strategic goal** — decision hierarchy, lab vs production harness, work cycle |
 | [**intergrax_runtime_architecture.md**](intergrax_runtime_architecture.md) | **Architecture canon** — tiers, Nexus, UAEP §42, retry (§31), observability & trace storage (§33), RAG stack (§7.1.2) |
-| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; **Phase W-ADAPT** (Band 2y, 70 tasks); **§6.1t** default queue |
+| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; **Phase W-ADAPT Done** (Band 2y, 70/70); default queue = **§6.1 maintenance** |
 | [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) | **Agent workflow** — scaffold → register → run → inspect → evaluate |
 | [**INTEGRATIONS.md**](INTEGRATIONS.md) | **Integration catalog** — all implemented providers, contracts, wiring, usage links |
 | [**TOOLS.md**](TOOLS.md) | **Tool catalog** — atomic LLM/MCP tools, engine status, four-layer stack |
@@ -162,5 +162,5 @@ Harness CI also runs: `python scripts/check_harness_no_getattr.py` (zero grandfa
 6. **Skill packs / importers** → `SKILLS.md` + plan Appendix E (and Phase S when prod proof).
 7. **Modality / vision / speech / ML** → `MODALITY.md` + canon §7.1.9 + plan Phase W-ML.
 8. **Harness AI terms** → `intergrax_runtime_architecture.md` §5.3 only (single source of truth).
-9. **Adaptive Harness Intelligence (L4 runtime)** → `ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md` + canon §54; sync Phase W-ADAPT in implementation plan when opened.
+9. **Adaptive Harness Intelligence (L4 runtime)** → `ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md` + canon §54; Phase W-ADAPT **Done** — maintenance via §6.1 + `phase_w_adapt_closeout_gate.py`.
 10. After each merged harness PR: run gate + getattr audit; update §0 gate count in the plan footer.

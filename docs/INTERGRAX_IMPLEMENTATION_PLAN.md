@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-06) — **Harness platform bands 1–2x Done**; **Phase W-ADAPT (Band 2y)** in progress; **Phase M-LLM-R (Band 2z) Done** (39/39) — typed LLM response envelope; default implementation queue after §6.1 maintenance; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done**; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate green; **operational L3 signed off**  
+Status: Working draft (2026-06-06) — **Harness platform bands 1–2x Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39) — typed LLM response envelope; default queue = **§6.1 maintenance** only; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done**; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate green; **operational L3 signed off**  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -196,8 +196,8 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Security closeout (Phase SEC)** | **Done** (Band 2v) | No (harness-only) | SEC-1–3 — [§6.1q](#61q-harness-implementation-queue--security-closeout-closed) |
 | **Cost governance closeout (Phase COST)** | **Done** (Band 2w) | No (harness-only) | COST-1–3 — [§6.1r](#61r-harness-implementation-queue--cost-governance-closeout-closed) |
 | **Evaluation closeout (Phase EVAL)** | **Done** (Band 2x) | No (harness-only) | EVAL-1–3 — [§6.1s](#61s-harness-implementation-queue--evaluation-closeout-closed) |
-| **Adaptive Harness Intelligence (Phase W-ADAPT)** | **Done** (Band 2y) | No (harness-only) | Wave 0–7 **Done** (70/70) · [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active) · AHIA |
-| **LLM completion envelope (Phase M-LLM-R)** | **Done** (Band 2z) | No (harness-only) | Audit 2026-06-06 — typed `LLMAdapterResponse`; **39/39** — [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-active) · **Appendix L** |
+| **Adaptive Harness Intelligence (Phase W-ADAPT)** | **Done** (Band 2y) | No (harness-only) | Wave 0–7 **Done** (70/70) · [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-closed) · AHIA |
+| **LLM completion envelope (Phase M-LLM-R)** | **Done** (Band 2z) | No (harness-only) | Audit 2026-06-06 — typed `LLMAdapterResponse`; **39/39** — [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed) · **Appendix L** |
 | Regression gate | **750 passed** | No | Must stay green after each harness PR |
 
 ---
@@ -677,7 +677,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M-LLM.11 | Production ops layer | **Done** | OTLP/Prometheus routes, tenant metrics, rate limit + circuit breaker, secrets map, PR guard, extended network smoke |
 | M-LLM.12 | Nexus + governance wiring | **Done** | `llm_tenant_scope`, runtime metrics plugin, `INTERGRAX_LLM_TENANT_MAX_TOKENS` quota |
 | M-LLM.13 | Observability + secrets + distributed limits | **Done** | Pushgateway, `LLM_ADAPTERS.md` § Observability, Vault loader, Redis rate limit, governance warn |
-| M-LLM.14 | Typed completion envelope (`LLMAdapterResponse`) | **Done** | Phase M-LLM-R — [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-active) · gate **755** |
+| M-LLM.14 | Typed completion envelope (`LLMAdapterResponse`) | **Done** | Phase M-LLM-R — [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed) · gate **776** |
 
 ### Phase M-LLM-R — LLM Completion Response Envelope (audit 2026-06-06)
 
@@ -685,7 +685,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 **Canon:** §5.2.2 · **Doc:** [LLM_ADAPTERS.md](LLM_ADAPTERS.md) · **Traceability:** [Appendix L](#appendix-l--llm-completion-response-envelope-traceability-phase-m-llm-r)  
 **Status:** **Done** (2026-06-06) — **39/39 Done**  
 **Priority ladder:** **Band 2z** (§4.0) — **parallel with W-ADAPT waves 5–7** (Tier-0; no Nexus primitive changes beyond consumer wiring)  
-**Execution order:** [§6.2ad](#62ad-phase-m-llm-r-execution-order-band-2z--planned) · queue: [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-active)  
+**Execution order:** [§6.2ad](#62ad-phase-m-llm-r-execution-order-band-2z--closed-2026-06-06) · queue: [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed)  
 **Goal:** Replace plain `str` and `Dict[str, Any]` LLM adapter returns with a **single strongly typed envelope** — `LLMAdapterResponse` — carrying `content: str` plus production-standard metadata, extensible without dict soup.
 
 **Hard rules (non-negotiable):**
@@ -2650,8 +2650,8 @@ Wave W-OPS-P2 (hygiene):    W-OPS.13 → W-OPS.14 → W-OPS.15
 **Architecture spec:** [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) (AHIA) · runtime canon [§54](intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) · IDEAL [§25](IDEAL_HARNESS_AI_ARCHITECTURE.md#25-adaptive-harness-layer)  
 **Prerequisites:** Phase **V** **Done** · Phase **V-REM** **Done** · Phase **W-OPS** **Done** · Phase **H-APP** **Done** · Phases **EVAL**, **COST**, **CG** closeouts **Done** (signal sources + governance envelopes exist)  
 **Goal:** Close the gap between **L4 governance contracts** (`adaptive_governance.py`, `phase_v_closeout_gate.py --enforce-l4`) and **L4 adaptive runtime** — governed closed loop: **observe → propose → gate → shadow/canary → apply → verify → rollback**  
-**Priority ladder:** **Band 2y** (§4.0) — **default harness implementation queue** after §6.1 maintenance  
-**Execution order:** [§6.2ac](#62ac-phase-w-adapt-execution-order-band-2y--active) · queue: [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active)  
+**Priority ladder:** **Band 2y** (§4.0) — **closed**; default queue = **§6.1 maintenance**  
+**Execution order:** [§6.2ac](#62ac-phase-w-adapt-execution-order-band-2y--closed) · queue: [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-closed)  
 **Traceability:** [Appendix K](#appendix-k--adaptive-harness-intelligence-traceability-phase-w-adapt)
 
 **Delivery rule:** One **W-ADAPT.\*** ID per PR → update master table + Appendix K + paydown log → `pytest -m gate` green → run `phase_w_adapt_report.py` when touching signal/proposal paths.
@@ -4859,7 +4859,7 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 **Explicitly excluded:** K.1, K.2, new product eval modes requiring business datasets — [§6.3a](#63a-business-backlog-register-consolidated).
 
-### 6.1t Harness implementation queue — Adaptive Harness Intelligence (active)
+### 6.1t Harness implementation queue — Adaptive Harness Intelligence (closed)
 
 **Purpose:** Single ordered list for **Phase W-ADAPT** (Band 2y). **Closed 2026-06-02** — **70/70 Done** (Wave W-ADAPT-0 through Wave W-ADAPT-7 **Done**). Maintenance-only; see [§6.1](#61-harness-platform-maintenance-default--band-1).
 
@@ -4879,7 +4879,7 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 **Explicitly excluded:** K.1, K.2, deep RL, foundation model training, autonomous prompt edits — [§6.3a](#63a-business-backlog-register-consolidated).
 
-### 6.1v Harness implementation queue — LLM completion response envelope (active)
+### 6.1v Harness implementation queue — LLM completion response envelope (closed)
 
 **Purpose:** Single ordered list for **Phase M-LLM-R** (Band 2z). **Closed 2026-06-06** — **39/39 Done**. Runs **in parallel** with W-ADAPT waves 5–7 (Tier-0 LLM contract; independent of L4 runtime loop).
 
@@ -4902,7 +4902,7 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 ### 6.1 Harness platform maintenance (default — Band 1)
 
-§4.1 backlog is **closed**. Ongoing work = keep the harness green; **feature work** = [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active) (Phase W-ADAPT) + [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-active) (Phase M-LLM-R).
+§4.1 backlog is **closed**. Ongoing work = keep the harness green; **Band 2y W-ADAPT** and **Band 2z M-LLM-R** are **closed** — see [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-closed) and [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed). **Next feature work** = [§6.3](#63-end-of-plan--deferred-product-work-only) (product prioritization only).
 
 ```text
 Verify (every harness PR):
@@ -4914,6 +4914,8 @@ Verify (every harness PR):
   python scripts/check_harness_capability_graph_wiring.py
   python scripts/check_legacy_tool_plan_booleans.py
   python scripts/check_plugin_catalog.py
+  python scripts/check_llm_adapter_typed_returns.py
+  python scripts/check_agents_llm_adapter_response.py
   uv run python scripts/phase_w_ops_evidence.py
   # Per release (ops):
   uv run python scripts/export_harness_shadow_eval_trend.py --release-id <release-id>
@@ -4922,6 +4924,7 @@ Verify (every harness PR):
   python scripts/check_agents_no_tier3_imports.py
   uv run intergrax doctor --ci
   uv run python scripts/phase_v_closeout_gate.py --enforce --enforce-l4
+  uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
   uv run python scripts/phase_v_capability_graph_guard.py --enforce
 ```
 
@@ -5255,7 +5258,7 @@ Full task register: [Appendix I](#appendix-i--plugin-catalog-traceability-phase-
 
 ### 6.2ad Phase M-LLM-R execution order (Band 2z — closed 2026-06-06)
 
-**Status:** **Done** · register: [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · queue: [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-active)
+**Status:** **Done** · register: [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · queue: [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed)
 
 ```text
 Wave M-LLM-R-0 (planning):     M-LLM-R.0.2 → 0.3  (0.1 **Done**)
@@ -5275,9 +5278,9 @@ Wave M-LLM-R-8 (closeout):     M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 
 **Closeout gate:** `scripts/check_llm_adapter_typed_returns.py` + `scripts/check_agents_llm_adapter_response.py` + full `tests/unit/llm_adapters/` gate green (M-LLM-R.8.3, M-LLM-R.6.4).
 
-### 6.2ac Phase W-ADAPT execution order (Band 2y — active)
+### 6.2ac Phase W-ADAPT execution order (Band 2y — closed)
 
-**Status:** **Planned** · register: [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · queue: [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active)
+**Status:** **Done** (2026-06-02) · register: [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · queue: [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-closed)
 
 ```text
 Wave W-ADAPT-0 (planning):        W-ADAPT-0.2 → 0.3 → 0.4 → 0.5  (**Done**)
@@ -6477,7 +6480,12 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | 2026-06-05 | W-ADAPT-1.1–1.12 | Observe (L4-O): contracts, SignalStore, SignalCollector, Nexus/Runtime hooks, `phase_w_adapt_report.py` |
 | 2026-06-05 | W-ADAPT-0.2–0.5 | ADR-ADAPT-001 + `intergrax/runtime/adaptive/` scaffold + gate import tests |
 | 2026-06-05 | W-ADAPT-0.1 | Phase W-ADAPT register + §6.1t + §6.2ac + Appendix K + Band 2y |
-| — | — | *(append row per merged PR)* |
+| 2026-06-02 | W-ADAPT-2.1–2.12 | Recommend (L4-R): AdaptationEngine, ProposalBuilder, bandit store, proposal report |
+| 2026-06-02 | W-ADAPT-3.1–3.7 | Shadow (L4-S): ProfileVersionStore, shadow executor, integration tests |
+| 2026-06-02 | W-ADAPT-4.1–4.10 | Apply (L4-A): canary, apply, rollback, policy-learning HITL |
+| 2026-06-02 | W-ADAPT-5.1–5.12 | Verify (L4-V): VerificationLoop, auto-rollback, L4 runtime closeout gate, runbooks |
+| 2026-06-02 | W-ADAPT-6.1–6.5 | ProcessPatternMiner, trace sequence reader, pattern report export |
+| 2026-06-02 | W-ADAPT-7.1–7.7 | Tier-3 AdaptiveProfile wiring, debug routes, business outcome webhook, acceptance E2E |
 
 ---
 
@@ -6485,7 +6493,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 **Source:** Tier-0 LLM adapter audit (2026-06-06) — plain `str` / `Dict[str, Any]` returns insufficient for production observability, replay, cost attribution, and L4 adaptive signals.
 
-**Phase register:** [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · **Band 2z** · queue [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-active)
+**Phase register:** [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · **Band 2z** · queue [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed)
 
 ### L.1 Audit finding → remediation map
 
