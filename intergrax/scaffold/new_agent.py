@@ -224,6 +224,7 @@ def _contract_py(slug: str, class_name: str, primary_capability: str) -> str:
                 extra_tools=[],
                 risk_level=AgentRiskLevel.LOW,
                 lifecycle_state=AgentLifecycleState.DEVELOPMENT,
+                owner_team="platform",
                 max_steps=10,
             )
         '''

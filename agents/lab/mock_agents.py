@@ -23,6 +23,7 @@ from intergrax.agents.uaep_pipeline import (
     run_pipeline_step,
 )
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.agent_decision import AgentDecision
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -118,6 +119,8 @@ class _MockAgentBase(HarnessReferenceAgent):
             skills=[],
             extra_tools=[],
             risk_level=AgentRiskLevel.LOW,
+            lifecycle_state=AgentLifecycleState.DEVELOPMENT,
+            owner_team="platform",
             max_steps=5,
         )
 

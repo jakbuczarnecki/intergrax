@@ -2,6 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.skills.providers.legal.manifests import LEGAL_CONTRACT_REVIEW
 from legal.capabilities import CAPABILITIES
 
@@ -18,5 +19,7 @@ def build_agent_contract() -> AgentContract:
         skills=[LEGAL_CONTRACT_REVIEW],
         extra_tools=[],
         risk_level=AgentRiskLevel.HIGH,
+        lifecycle_state=AgentLifecycleState.STAGING,
+        owner_team="platform",
         max_steps=20,
     )

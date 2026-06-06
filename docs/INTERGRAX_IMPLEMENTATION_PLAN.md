@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-06) — **Harness platform bands 1–2ac Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39); **Phase M.6 P4 (Band 2aa) Done** (28/28); **Phase M.6 P5 (Band 2ab) Done** (33/34); **Phase M.6 P6 (Band 2ac) Done** (32/32); **Full architecture audit (FAUDIT-32) docs Done** (2026-06-06) — [Phase FAUDIT-32](#phase-faudit-32--full-architecture-audit-closeout) · **Appendix M** · remediation queue [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-active); default queue = **§6.1 maintenance** + **§6.1ah** (prioritized residuals); Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done** (wiring); **12/32 layers L3+** per FAUDIT scorecard — closeout ≠ full layer maturity; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **893 passed**; **operational L3 signed off** (W-OPS evidence artifact policy — see FAUDIT-OPS.1)  
+Status: Working draft (2026-06-06) — **Harness platform bands 1–2ad Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39); **Phase M.6 P4 (Band 2aa) Done** (28/28); **Phase M.6 P5 (Band 2ab) Done** (33/34); **Phase M.6 P6 (Band 2ac) Done** (32/32); **FAUDIT-32 remediation Done** (23/23 + [§6.1ai](#61ai-harness-implementation-queue--faudit-32-follow-up-closed) follow-up); default queue = **§6.1 maintenance** only; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done** (wiring); **12/32 layers L3+** per FAUDIT scorecard — closeout ≠ full layer maturity; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **901 passed**; **operational L3 signed off** (W-OPS evidence artifact policy — see FAUDIT-OPS.1)  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -202,7 +202,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Evaluation closeout (Phase EVAL)** | **Done** (Band 2x) | No (harness-only) | EVAL-1–3 — [§6.1s](#61s-harness-implementation-queue--evaluation-closeout-closed) |
 | **Adaptive Harness Intelligence (Phase W-ADAPT)** | **Done** (Band 2y) | No (harness-only) | Wave 0–7 **Done** (70/70) · [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-closed) · AHIA |
 | **LLM completion envelope (Phase M-LLM-R)** | **Done** (Band 2z) | No (harness-only) | Audit 2026-06-06 — typed `LLMAdapterResponse`; **39/39** — [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed) · **Appendix L** |
-| Regression gate | **893 passed** | No | Must stay green after each harness PR (FAUDIT-32 verify 2026-06-06) |
+| Regression gate | **901 passed** | No | Must stay green after each harness PR (FAUDIT-32 follow-up 2026-06-06) |
 | **Full architecture audit (FAUDIT-32)** | **Done** (2026-06-06) | No (harness-only) | 32-layer audit + **23/23 remediation** → [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-active) |
 
 ---
@@ -4290,7 +4290,7 @@ Paydown Wave P3 (optional polish):
 | **2aa — Integration expansion (M.6 P4)** | 28 harness-ROI provider slugs (secrets, observability stack, OLAP, feature flags, prod deploy) — **no** business agents | **Done** (2026-06-02) — **28/28** | [M.6 P4 register](#m6-p4--harness-platform-expansion-done) · **§6.1w** · **§6.2ae** |
 | **2ab — Integration depth (M.6 P5)** | Harden 25 beta + 8 greenfield harness slugs (metrics, CI/CD, eval, async, data plane) — **no** business agents | **Done** (2026-06-02) — **33/34** | [M.6 P5 register](#m6-p5--harness-integration-depth-done--3334) · **§6.1x** · **§6.2af** |
 | **2ac — Integration expansion (M.6 P6)** | 32 harness slugs + post-catalog wiring (tools, bridges, promote gate, infra `p6`) — **no** business agents | **Done** (2026-06-02) — **32/32 + M-P6-WIRE** | [M.6 P6 register](#m6-p6--harness-integration-expansion-planned) · **§6.1y** · **§6.2ag** |
-| **2ad — FAUDIT-32 remediation** | Close 32-layer audit residuals (tier gate, intake, observability taxonomy, registry depth, eval release gate) — **no** business agents | **Active** (2026-06-06) — **0/23 Done** | [Phase FAUDIT-32](#phase-faudit-32--full-architecture-audit-closeout) · **§6.1ah** · **Appendix M** |
+| **2ad — FAUDIT-32 remediation** | Close 32-layer audit residuals (tier gate, intake, observability taxonomy, registry depth, eval release gate) — **no** business agents | **Done** (2026-06-06) — **23/23 + §6.1ai follow-up** | [Phase FAUDIT-32](#phase-faudit-32--full-architecture-audit-closeout) · **§6.1ah** · **§6.1ai** · **Appendix M** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
@@ -5360,6 +5360,8 @@ Verify (every harness PR):
   python scripts/check_scaffold_harness_alignment.py
   python scripts/check_agents_no_tier3_imports.py
   python scripts/check_intergrax_no_applications_imports.py
+  uv run python scripts/check_harness_prompt_golden_catalog.py
+  uv run python scripts/check_agents_lifecycle_metadata.py
   uv run intergrax doctor --ci
   uv run python scripts/phase_v_closeout_gate.py --enforce --enforce-l4
   uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
@@ -5406,8 +5408,9 @@ Wave P3 (orchestration + cognition + memory):
 | FAUDIT-COG.1 | **Done** | High | `intergrax/contracts/decision_record.py` + UAEP emit |
 | FAUDIT-ORCH.1 | **Done** | Medium | `GraphExecutor` inflight backpressure |
 | FAUDIT-SUB.1 | **Done** | High | `SubtaskContract` + safer defaults |
-| FAUDIT-MEM.1 | **Done** | High | `retention_enforcement.py` |
-| FAUDIT-PE.1 | **Done** | High | `prompt_golden_catalog.py` + tests |
+| FAUDIT-MEM.1 | **Done** | High | `retention_enforcement.py` + `PolicyScopedMemoryView` STM purge |
+| FAUDIT-PE.1 | **Done** | High | `prompt_golden_catalog.py` + `tests/fixtures/prompt_golden/` + CI script |
+| FAUDIT-ALG.1 | **Done** | High | lifecycle states + reference agent `owner_team` adoption + CI script |
 | FAUDIT-REG.1 | **Done** | High | `HarnessRegistrySnapshot` agent/eval fields |
 | FAUDIT-CG.1 | **Done** | High | prompt seeds in `capability_graph_wiring.py` |
 | FAUDIT-CG.2 | **Done** | Medium | `phase_v_capability_graph_guard.py` impact log |
@@ -5416,10 +5419,22 @@ Wave P3 (orchestration + cognition + memory):
 | FAUDIT-SEC.1 | **Done** | High | `intergrax/contracts/data_classification.py` |
 | FAUDIT-COST.1 | **Done** | High | `run_budget` wired in `nexus_factory` |
 | FAUDIT-EVAL.1 | **Done** | High | `phase_v_closeout_gate.py` eval baseline |
-| FAUDIT-ALG.1 | **Done** | High | lifecycle states + `audit_map_lifecycle_label` |
 | FAUDIT-OPS.1 | **Done** | Medium | `build/architecture_hardening/release_cycles.json` |
 
 **DoD (§6.1ah queue closure):** All **Planned** rows **Done**; Appendix M scorecard shows **0 Critical**, **≤5 High** (documented deferrals only); tier gate green.
+
+### 6.1ai Harness implementation queue — FAUDIT-32 follow-up (closed)
+
+**Status:** **Done** (2026-06-06) — post-remediation depth for PE/ALG/MEM adoption  
+**Priority ladder:** **Band 2ad** (§4.0) — runs after §6.1ah closure
+
+| ID | Status | Deliverable |
+|----|--------|-------------|
+| FAUDIT-PE.1+ | **Done** | Real `prompts/` golden hashes in `tests/fixtures/prompt_golden/expectations.json`; `scripts/check_harness_prompt_golden_catalog.py`; gate test |
+| FAUDIT-ALG.1+ | **Done** | `lifecycle_state` + `owner_team` on reference Tier-2 agents; `scripts/check_agents_lifecycle_metadata.py` |
+| FAUDIT-MEM.1+ | **Done** | `should_forget_stm_record` wired in `PolicyScopedMemoryView.read` |
+
+**Explicitly deferred (Band 3 / product):** MEM-9 entity graph memory implementation (RFC only); K.1/K.2 business agents.
 
 ### 6.2bo Phase EVAL execution order (Band 2x — closed 2026-06-02)
 
@@ -7140,4 +7155,4 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ---
 
-*Plan synced (2026-06-06). **Harness platform** bands 1–2ac **Done** (M.6 P6 **32/32 + M-P6-WIRE**). **FAUDIT-32** docs **Done** — remediation [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-active) (Band 2ad). **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance + prioritized **FAUDIT-TIER.1**. Product: [§6.3](#63-end-of-plan--deferred-product-work-only). **Every PR:** §6.1 maintenance.*
+*Plan synced (2026-06-06). **Harness platform** bands 1–2ad **Done** (FAUDIT-32 **23/23** + [§6.1ai](#61ai-harness-implementation-queue--faudit-32-follow-up-closed) follow-up). **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance only. Product: [§6.3](#63-end-of-plan--deferred-product-work-only). **Every PR:** §6.1 maintenance.*

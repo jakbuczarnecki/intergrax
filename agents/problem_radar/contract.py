@@ -1,6 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.skills.providers.research.manifests import RESEARCH_LITERATURE_SCAN
 from problem_radar.capabilities import CAPABILITIES
 
@@ -18,6 +19,8 @@ def build_agent_contract() -> AgentContract:
         skills=[RESEARCH_LITERATURE_SCAN],
         extra_tools=[],
         risk_level=AgentRiskLevel.MEDIUM,
+        lifecycle_state=AgentLifecycleState.EXPERIMENTAL,
+        owner_team="platform",
         max_steps=12,
         validation_rules=["structured_output"],
     )

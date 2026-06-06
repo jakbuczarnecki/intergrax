@@ -1913,6 +1913,8 @@ Audit vocabulary maps to the canonical enum in `agent_lifecycle_state.py`:
 | Skill → allowed_tools | `pytest tests/unit/runtime/registry/test_agent_registry_skills.py -m gate` |
 | Author-time allowed_tools ban | `python scripts/check_agent_skill_resolution.py` |
 | Lifecycle routing | `pytest tests/unit/runtime/architecture/test_agent_routing_policy.py -m gate` |
+| Reference agent lifecycle metadata | `uv run python scripts/check_agents_lifecycle_metadata.py` |
+| Golden prompt regression | `uv run python scripts/check_harness_prompt_golden_catalog.py` |
 | Full gate | `uv run pytest -m gate -q` |
 
 Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §18: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).

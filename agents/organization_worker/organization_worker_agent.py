@@ -14,6 +14,7 @@ from typing import Optional, Sequence
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.agent_decision import (
     AgentDecision,
     AgentDecisionType,
@@ -77,6 +78,8 @@ class OrganizationWorkerAgent(Agent):
             skills=[],
             extra_tools=[],
             risk_level=AgentRiskLevel.MEDIUM,
+            lifecycle_state=AgentLifecycleState.STAGING,
+            owner_team="platform",
             max_steps=3,
         )
 
