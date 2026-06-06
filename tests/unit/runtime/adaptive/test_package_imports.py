@@ -29,9 +29,10 @@ def test_adaptive_package_schema_version() -> None:
 
 
 def test_adaptive_package_exports_adaptation_engine() -> None:
-    from intergrax.runtime.adaptive import AdaptationEngine, AdaptationScheduler
+    from intergrax.runtime.adaptive import AdaptationEngine, AdaptationExecutor, AdaptationScheduler
 
     assert AdaptationEngine is not None
+    assert AdaptationExecutor is not None
     assert AdaptationScheduler is not None
 
 

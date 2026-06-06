@@ -135,6 +135,8 @@ class ProfileVersionRecord(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     version_id: str
+    tenant_id: str
+    task_class: str = ""
     artifact_type: ProfileArtifactType
     artifact_payload: dict[str, Any] = Field(default_factory=dict)
     parent_version_id: str | None = None

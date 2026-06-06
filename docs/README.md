@@ -62,7 +62,7 @@ Adaptive Harness (L4)     →  ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md · 
 | Understand strategic direction | [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) |
 | Understand the platform | Strategy doc, then implementation plan §0, then architecture canon §1–§5 |
 | Infrastructure vs business scope | [INTERGRAX_IMPLEMENTATION_PLAN.md §4.0a](INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business) |
-| See what to implement next (harness) | [§6.1t](INTERGRAX_IMPLEMENTATION_PLAN.md#61t-harness-implementation-queue--adaptive-harness-intelligence-active) **W-ADAPT-3.1+** (Wave 3 Shadow) · [§6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) maintenance on every PR |
+| See what to implement next (harness) | [§6.1t](INTERGRAX_IMPLEMENTATION_PLAN.md#61t-harness-implementation-queue--adaptive-harness-intelligence-active) **W-ADAPT-4.1+** (Wave 4 Apply) · [§6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) maintenance on every PR |
 | Implement Adaptive Harness Intelligence (L4 runtime) | [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · [Phase W-ADAPT](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · [Appendix K](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-k--adaptive-harness-intelligence-traceability-phase-w-adapt) |
 | **Agent assembly (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix N](AGENT_CREATION_GUIDE.md#appendix-n--agent-assembly-control-plane) · [Phase AS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-as--agent-assembly-control-plane-closeout) |
 | **Registry architecture (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix O](AGENT_CREATION_GUIDE.md#appendix-o--registry-architecture-control-plane) · [Phase REG](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-reg--registry-architecture-control-plane-closeout) |
@@ -118,7 +118,7 @@ Adaptive Harness (L4)     →  ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md · 
 
 | Phase | Status |
 |-------|--------|
-| **Phase W-ADAPT — Adaptive Harness Intelligence** | **In progress** (Band 2y) — **29/70 Done** (Wave 0–2 L4-O + L4-R) · [AHIA](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · [ADR-ADAPT-001](adr/ADR-ADAPT-001.md) · [§6.1t](INTERGRAX_IMPLEMENTATION_PLAN.md#61t-harness-implementation-queue--adaptive-harness-intelligence-active) |
+| **Phase W-ADAPT — Adaptive Harness Intelligence** | **In progress** (Band 2y) — **36/70 Done** (Wave 0–3 L4-O + L4-R + L4-S) · [AHIA](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · [ADR-ADAPT-001](adr/ADR-ADAPT-001.md) · [§6.1t](INTERGRAX_IMPLEMENTATION_PLAN.md#61t-harness-implementation-queue--adaptive-harness-intelligence-active) |
 | **Phase Q+ — Harness hardening** | **Done** — [Appendix D](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-d--post-audit-hardening-traceability-phase-q) |
 | **Phase R — Harness AI alignment** | **Done (MVP)** — [Appendix E](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-e--harness-ai-alignment-traceability-phase-r) |
 | Phase Q — Harness quality | **Done** (Appendix C) |

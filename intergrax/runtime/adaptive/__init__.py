@@ -18,6 +18,7 @@ from intergrax.runtime.adaptive.contracts import (
     UtilityWeights,
 )
 from intergrax.runtime.adaptive.adaptation_engine import AdaptationEngine
+from intergrax.runtime.adaptive.adaptation_executor import AdaptationExecutor, ShadowAllocationResult
 from intergrax.runtime.adaptive.adaptation_models import (
     AdaptationEngineContext,
     AdaptationEngineRunResult,
@@ -51,6 +52,26 @@ from intergrax.runtime.adaptive.proposal_store import (
     ProposalStore,
     SQLiteProposalStore,
     default_proposal_store_path,
+)
+from intergrax.runtime.adaptive.profile_lifecycle import (
+    ProfileLifecycleTransitionError,
+    ProfileVersionLifecycleManager,
+    validate_profile_transition,
+)
+from intergrax.runtime.adaptive.profile_promotion import (
+    ProfilePromotionDecision,
+    ProfilePromotionEvidenceBundle,
+    evaluate_profile_promotion,
+)
+from intergrax.runtime.adaptive.profile_rag_router import (
+    ProfileAwareQueryRouter,
+    apply_rag_profile_version,
+)
+from intergrax.runtime.adaptive.profile_version_store import (
+    InMemoryProfileVersionStore,
+    ProfileVersionStore,
+    SQLiteProfileVersionStore,
+    default_profile_version_store_path,
 )
 from intergrax.runtime.adaptive.routing_tuning_engine import RoutingTuningEngine
 from intergrax.runtime.adaptive.cost_normalization import normalize_cost_against_budget
@@ -86,6 +107,7 @@ from intergrax.runtime.architecture.adaptive_governance import (
 __all__ = [
     "ADAPTIVE_PACKAGE_SCHEMA_VERSION",
     "AdaptationEngine",
+    "AdaptationExecutor",
     "AdaptationEngineContext",
     "AdaptationEngineRunResult",
     "AdaptationGovernancePipeline",
@@ -106,6 +128,7 @@ __all__ = [
     "ExecutionStrategyEngine",
     "HarnessOutcomeSignal",
     "InMemoryBanditStateStore",
+    "InMemoryProfileVersionStore",
     "InMemoryProposalCooldownStore",
     "InMemoryProposalStore",
     "InMemorySignalStore",
@@ -114,6 +137,12 @@ __all__ = [
     "ProcessPatternAction",
     "ProcessPatternProposal",
     "ProfileArtifactType",
+    "ProfileAwareQueryRouter",
+    "ProfileLifecycleTransitionError",
+    "ProfilePromotionDecision",
+    "ProfilePromotionEvidenceBundle",
+    "ProfileVersionLifecycleManager",
+    "ProfileVersionStore",
     "ProfileVersionDraft",
     "ProfileVersionRecord",
     "ProfileVersionStatus",
@@ -125,21 +154,27 @@ __all__ = [
     "SignalCollector",
     "SignalStore",
     "SQLiteBanditStateStore",
-    "SQLiteProposalStore",
+    "ShadowAllocationResult",
+    "SQLiteProfileVersionStore",
     "SQLiteSignalStore",
     "UtilityWeights",
+    "SQLiteProposalStore",
+    "apply_rag_profile_version",
     "build_default_adaptive_proposals",
     "compute_utility",
     "default_bandit_store_path",
+    "default_profile_version_store_path",
     "default_proposal_store_path",
     "default_signal_store",
     "default_signal_store_path",
     "evaluate_adaptive_governance",
     "evaluate_bounded_adaptive_loop",
+    "evaluate_profile_promotion",
     "normalize_cost_against_budget",
     "proposals_from_cost_anomalies",
     "record_runtime_engine_outcome_signal",
     "record_task_outcome_signal",
     "regression_flags_from_signals",
     "validate_evaluation_assets_bundle",
+    "validate_profile_transition",
 ]

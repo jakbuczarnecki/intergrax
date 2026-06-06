@@ -30,6 +30,7 @@ def test_profile_version_draft_requires_version_id() -> None:
 def test_profile_version_record_roundtrip() -> None:
     record = ProfileVersionRecord(
         version_id="v1",
+        tenant_id="tenant_a",
         artifact_type=ProfileArtifactType.ORCHESTRATION,
         artifact_payload={"long_running_enabled": True},
         created_by="proposal_1",

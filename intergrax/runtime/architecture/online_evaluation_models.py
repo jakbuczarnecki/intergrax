@@ -23,6 +23,7 @@ class OnlineEvaluationObservation(BaseModel):
     scenario_id: str
     passed: bool
     score: float = Field(ge=0.0, le=1.0)
+    candidate_profile_version_id: str | None = None
     recorded_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
