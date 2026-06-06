@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from intergrax.runtime.adaptive.adaptation_executor import AdaptationExecutor, ApplyProfileResult
+from intergrax.runtime.adaptive.adaptation_models import AdaptationProposalPackage
 from intergrax.runtime.architecture.adaptive_governance import (
     AdaptiveGovernanceReport,
     AdaptiveLoopProposal,
@@ -27,6 +29,7 @@ class RuntimeGovernanceTraceMetadata(BaseModel):
     coordination_pattern: str = ""
     adaptive_governance_passed: bool = True
     graph_trace_id: str = ""
+    candidate_profile_version_id: str = ""
     reasons: list[str] = Field(default_factory=list)
 
 
@@ -67,6 +70,7 @@ class RuntimeArchitectureGovernanceBridge:
         *,
         constraints: PlanningConstraints | None = None,
         adaptive_proposal: AdaptiveLoopProposal | None = None,
+        candidate_profile_version_id: str | None = None,
     ) -> RuntimeGovernanceTraceMetadata:
         reasons: list[str] = []
         pattern_name = ""
@@ -82,6 +86,7 @@ class RuntimeArchitectureGovernanceBridge:
         return RuntimeGovernanceTraceMetadata(
             coordination_pattern=pattern_name,
             adaptive_governance_passed=adaptive_passed,
+            candidate_profile_version_id=candidate_profile_version_id or "",
             reasons=reasons,
         )
 
@@ -93,8 +98,9 @@ class RuntimeArchitectureGovernanceBridge:
         scenario_id: str,
         passed: bool,
         score: float,
+        candidate_profile_version_id: str | None = None,
     ) -> OnlineEvaluationObservation:
-        """Append a shadow-mode harness evaluation observation (W-OPS.11)."""
+        """Append a shadow-mode harness evaluation observation (W-OPS.11, W-ADAPT-3.4)."""
         return record_shadow_observation(
             run_id=run_id,
             agent_id=agent_id,
@@ -102,4 +108,32 @@ class RuntimeArchitectureGovernanceBridge:
             passed=passed,
             score=score,
             registry=self._evaluation_registry,
+            candidate_profile_version_id=candidate_profile_version_id,
+        )
+
+    def submit_proposal(self, package: AdaptationProposalPackage) -> str:
+        """Register a governed proposal for ops/audit review (W-ADAPT-4.8)."""
+        if not package.passed_all_gates:
+            raise ValueError("Cannot submit a proposal that failed governance gates")
+        gate = evaluate_bounded_adaptive_loop(package.candidate.proposal)
+        if not gate.passed:
+            raise ValueError(f"Adaptive proposal failed envelope gate: {gate.reasons}")
+        return package.proposal_id
+
+    def apply_approved(
+        self,
+        package: AdaptationProposalPackage,
+        *,
+        executor: AdaptationExecutor,
+        tenant_id: str,
+        task_class: str,
+        version_id: str,
+    ) -> ApplyProfileResult:
+        """Apply a previously gated proposal through the adaptation executor (W-ADAPT-4.8)."""
+        self.submit_proposal(package)
+        return executor.apply(
+            package,
+            tenant_id=tenant_id,
+            task_class=task_class,
+            version_id=version_id,
         )

@@ -9,8 +9,18 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence
 from langchain_ollama import ChatOllama
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.adapter_response_builders import (
+    build_adapter_response,
+    final_stream_event,
+    partial_stream_event,
+)
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
+from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 
 
 class LangChainOllamaAdapter(LLMAdapter):
@@ -179,36 +189,41 @@ class LangChainOllamaAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> str:
+    ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-
-        in_tok = 0
-        out_tok = 0
+        response: LLMAdapterResponse | None = None
         success = False
         err_type = None
+        in_tok = 0
+        out_tok = 0
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
-
             lc_msgs = self._to_lc_messages(messages)
             kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
             res = self.chat.invoke(lc_msgs, **kwargs)
-
             text = res.content or str(res)
             out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
-
+            response = build_adapter_response(
+                content=text,
+                usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                model=self.model,
+                provider=self._provider_slug(),
+                provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+            )
             success = True
-            return text
+            return response
 
         except Exception as e:
             err_type = type(e).__name__
             raise
 
         finally:
+            usage = response.usage if (success and response and response.usage) else LLMTokenUsage()
             self.usage.end_call(
                 call,
-                input_tokens=in_tok,
-                output_tokens=out_tok,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
                 success=success,
                 error_type=err_type,
             )
@@ -222,20 +237,17 @@ class LangChainOllamaAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> Iterable[str]:
+    ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-
-        in_tok = 0
-        out_tok = 0
         success = False
         err_type = None
+        in_tok = 0
+        out_tok = 0
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
-
             lc_msgs = self._to_lc_messages(messages)
             kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
-
             buf: List[str] = []
 
             try:
@@ -243,24 +255,37 @@ class LangChainOllamaAdapter(LLMAdapter):
                     c = chunk.content
                     if c:
                         buf.append(c)
-                        yield c
+                        yield partial_stream_event(delta_content=c)
 
-                # normal stream end
                 out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
                 success = True
+                yield final_stream_event(
+                    response=build_adapter_response(
+                        content="".join(buf),
+                        usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                        model=self.model,
+                        provider=self._provider_slug(),
+                        provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+                    )
+                )
                 return
 
             except Exception:
-                # Streaming failed -> fallback to single-shot (but DO NOT call self.generate_messages here)
                 res = self.chat.invoke(lc_msgs, **kwargs)
                 text = res.content or str(res)
-
-                # emit fallback full text as one chunk
                 if text:
-                    yield text
-
+                    yield partial_stream_event(delta_content=text)
                 out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
                 success = True
+                yield final_stream_event(
+                    response=build_adapter_response(
+                        content=text,
+                        usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                        model=self.model,
+                        provider=self._provider_slug(),
+                        provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+                    )
+                )
                 return
 
         except Exception as e:
@@ -295,23 +320,21 @@ class LangChainOllamaAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ):
+    ) -> LLMStructuredResult[Any]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-
-        in_tok = 0
-        out_tok = 0
+        response: LLMAdapterResponse | None = None
         success = False
         err_type = None
+        in_tok = 0
+        out_tok = 0
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
-
             schema = self._model_json_schema(output_model)
 
             from langchain_core.messages import SystemMessage, HumanMessage
 
             lc_msgs = self._to_lc_messages(messages)
-
             strict = SystemMessage(
                 content=(
                     "Return ONLY a single JSON object that strictly conforms to the JSON Schema below. "
@@ -325,26 +348,33 @@ class LangChainOllamaAdapter(LLMAdapter):
             kwargs = self._with_ollama_options(self.defaults, temperature=temperature, max_tokens=max_tokens)
             res = self.chat.invoke(lc_msgs, **kwargs)
             txt = res.content or str(res)
-
             out_tok = int(self.estimate_tokens_for_text(txt, model_hint=self.model_name_for_token_estimation))
 
             json_str = self._extract_json_object(txt) or txt.strip()
             if not json_str:
                 raise ValueError("Model did not return JSON content for structured output (Ollama).")
 
-            obj = self._validate_with_model(output_model, json_str)
+            parsed = self._validate_with_model(output_model, json_str)
+            response = build_adapter_response(
+                content=txt,
+                usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                model=self.model,
+                provider=self._provider_slug(),
+                provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+            )
             success = True
-            return obj
+            return LLMStructuredResult(parsed=parsed, response=response)
 
         except Exception as e:
             err_type = type(e).__name__
             raise
 
         finally:
+            usage = response.usage if (success and response and response.usage) else LLMTokenUsage()
             self.usage.end_call(
                 call,
-                input_tokens=in_tok,
-                output_tokens=out_tok,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
                 success=success,
                 error_type=err_type,
             )

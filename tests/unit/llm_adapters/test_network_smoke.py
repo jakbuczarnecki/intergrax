@@ -23,12 +23,12 @@ def _one_shot(llm_provider: LLMProvider, *, model: str | None = None, **kwargs) 
     if model:
         create_kwargs["model"] = model
     llm = LLMAdapterRegistry.create(llm_provider, **create_kwargs)
-    text = llm.generate_messages(
+    response = llm.generate_messages(
         [ChatMessage(role="user", content="Reply with exactly: pong")],
         max_tokens=16,
         run_id=f"network-{llm_provider.value}",
     )
-    assert isinstance(text, str) and len(text.strip()) > 0
+    assert isinstance(response.content, str) and len(response.content.strip()) > 0
 
 
 @pytest.mark.skipif(not os.getenv("GROQ_API_KEY"), reason="GROQ_API_KEY not set")

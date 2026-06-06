@@ -28,6 +28,7 @@ from intergrax.applications._shared.capability_graph_wiring import (
 from intergrax.applications._shared.reliability_wiring import wire_application_reliability
 from intergrax.applications._shared.registry_assembly_resolver import assert_registry_assembly_valid
 from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot, resolve_registry_snapshot
+from intergrax.applications._shared.integration_tool_profile import extend_tool_profile_for_integration
 from intergrax.applications._shared.sandbox_wiring import tool_profile_with_sandbox, wire_sandbox_sessions
 from intergrax.applications._shared.shadow_wiring import wire_shadow_workspace
 from intergrax.applications._shared.skill_wiring import ApplicationSkillWiring, build_application_skill_wiring
@@ -93,9 +94,24 @@ def wire_application_environment(
     )
 
     tool_profile = tool_profile_with_sandbox(env)
+    if resolved_integration is not None:
+        tool_profile = extend_tool_profile_for_integration(tool_profile, resolved_integration)
     wiring_context = ToolWiringContext.from_integration_profile(resolved_integration)
     if env.modality_profile is not None:
         wire_modality_extras(wiring_context, modality_profile=env.modality_profile)
+    from intergrax.applications._shared.integration_tool_wiring import wire_integration_tool_context
+
+    wiring_context = wire_integration_tool_context(wiring_context, resolved_integration)
+
+    hosted_session = None
+    if wiring_context.sandbox_session is None and resolved_integration is not None:
+        from intergrax.applications._shared.sandbox_host_wiring import resolve_hosted_sandbox_session
+
+        hosted_session = resolve_hosted_sandbox_session(
+            resolved_integration,
+            tenant_id="harness",
+            task_id="bootstrap",
+        )
 
     tool_wiring = build_application_tool_wiring(
         tool_profile,
@@ -107,7 +123,7 @@ def wire_application_environment(
         reranker_manager=rag_stack.reranker_manager if rag_stack is not None else None,
         rag_profile=rag_stack.profile if rag_stack is not None else None,
         retrieval_service=rag_stack.retrieval_service if rag_stack is not None else None,
-        sandbox_session=sandbox_session,
+        sandbox_session=sandbox_session or hosted_session,
         websearch_executor=websearch_executor,
     )
     skill_wiring = build_application_skill_wiring(env.skill_profile)

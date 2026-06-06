@@ -6,7 +6,7 @@ param (
     [string]$Action,
 
     [Parameter(Position = 1)]
-    [ValidateSet("default", "minimal", "core", "queue", "rag", "data", "secrets", "observability", "cloud", "heavy", "all")]
+    [ValidateSet("default", "minimal", "core", "queue", "rag", "data", "secrets", "observability", "cloud", "heavy", "p6", "all")]
     [string]$Profile = "default"
 )
 
@@ -23,6 +23,7 @@ function Get-ProfileFlags {
         "all" { return @("--profile", "core", "--profile", "queue", "--profile", "rag", "--profile", "data", "--profile", "secrets", "--profile", "observability", "--profile", "cloud", "--profile", "heavy", "--profile", "all") }
         "default" { return @("--profile", "core", "--profile", "queue", "--profile", "rag", "--profile", "data", "--profile", "secrets") }
         "minimal" { return @("--profile", "core") }
+        "p6" { return @("--profile", "core", "--profile", "p6") }
         default { return @("--profile", $Name) }
     }
 }

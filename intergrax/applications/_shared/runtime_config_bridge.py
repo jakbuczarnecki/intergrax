@@ -26,6 +26,8 @@ from intergrax.applications._shared.reliability_runtime_bridge import (
 from intergrax.applications._shared.cost_runtime_bridge import (
     apply_cost_profiles_from_environment,
 )
+from intergrax.applications._shared.adaptive_runtime_bridge import apply_adaptive_profiles_from_environment
+from intergrax.applications._shared.adaptive_wiring import ApplicationAdaptiveWiring, wire_adaptive_profile
 from intergrax.applications._shared.evaluation_runtime_bridge import (
     apply_evaluation_profiles_from_environment,
 )
@@ -136,10 +138,23 @@ def materialize_runtime_config(
     apply_context_profiles_from_environment(config, env)
     apply_cost_profiles_from_environment(config, env)
     evaluation_wiring = wire_application_evaluation(env)
+    adaptive_wiring = wire_adaptive_profile(
+        env,
+        evaluation_governance_bridge=evaluation_wiring.governance_bridge,
+        tenant_id=request.tenant_id,
+    )
     apply_evaluation_profiles_from_environment(
         config,
         env,
         registry=evaluation_wiring.registry,
+    )
+    apply_adaptive_profiles_from_environment(
+        config,
+        env,
+        wiring=adaptive_wiring,
+        tenant_id=request.tenant_id,
+        task_class=str(request.metadata.get("task_class", "")),
+        routing_key=str(request.metadata.get("run_id", request.session_id)),
     )
     apply_integration_profiles_from_environment(config, env)
     apply_catalog_profiles_from_environment(config, env)

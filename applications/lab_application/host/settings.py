@@ -30,6 +30,10 @@ class LabApplicationSettings:
     harness: bool = False
     otel_enabled: bool = True
     strict_harness: bool = False
+    adaptive_observe_enabled: bool = True
+    observability_grafana_stack: bool = False
+    adaptive_feature_flag_slug: str | None = None
+    secrets_backend_slug: str | None = None
 
     @property
     def requires_harness_api_key(self) -> bool:
@@ -116,6 +120,19 @@ class LabApplicationSettings:
             "true",
             "yes",
         }
+        adaptive_observe = (os.getenv("LAB_ADAPTIVE_OBSERVE") or "true").strip().lower() not in {
+            "0",
+            "false",
+            "no",
+        }
+        grafana_stack = (os.getenv("LAB_OBSERVABILITY_GRAFANA_STACK") or "false").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+        feature_flag_raw = (os.getenv("LAB_ADAPTIVE_FEATURE_FLAG") or "").strip().lower()
+        adaptive_feature_flag = feature_flag_raw or None
+        secrets_backend = (os.getenv("LAB_SECRETS_BACKEND") or "").strip().lower() or None
         return cls(
             environment=environment,
             route_prefix=prefix,
@@ -134,4 +151,8 @@ class LabApplicationSettings:
             harness=harness,
             otel_enabled=otel_enabled,
             strict_harness=strict_harness,
+            adaptive_observe_enabled=adaptive_observe,
+            observability_grafana_stack=grafana_stack,
+            adaptive_feature_flag_slug=adaptive_feature_flag,
+            secrets_backend_slug=secrets_backend,
         )

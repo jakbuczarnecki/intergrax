@@ -51,6 +51,50 @@ class RuntimePolicyEngine:
             policy_rule_id="default.allow",
         )
 
+    def evaluate_pre_llm(
+        self,
+        *,
+        tenant_id: str,
+        agent_id: str,
+        message_count: int,
+        context: dict[str, Any] | None = None,
+    ) -> PolicyDecision:
+        _ = context
+        if message_count < 1:
+            return PolicyDecision(
+                action=PolicyAction.DENY,
+                reason="pre_llm_empty_context",
+                policy_rule_id="default.pre_llm_context",
+            )
+        return PolicyDecision(
+            action=PolicyAction.ALLOW,
+            reason="pre_llm_default_allow",
+            policy_rule_id="default.pre_llm_allow",
+            audit_payload={"tenant_id": tenant_id, "agent_id": agent_id},
+        )
+
+    def evaluate_pre_output(
+        self,
+        *,
+        tenant_id: str,
+        agent_id: str,
+        output_chars: int,
+        context: dict[str, Any] | None = None,
+    ) -> PolicyDecision:
+        _ = context
+        if output_chars <= 0:
+            return PolicyDecision(
+                action=PolicyAction.DENY,
+                reason="pre_output_empty",
+                policy_rule_id="default.pre_output_empty",
+            )
+        return PolicyDecision(
+            action=PolicyAction.ALLOW,
+            reason="pre_output_default_allow",
+            policy_rule_id="default.pre_output_allow",
+            audit_payload={"tenant_id": tenant_id, "agent_id": agent_id},
+        )
+
     def evaluate_interrupt(self, interrupt: ExecutionInterrupt) -> PolicyDecision:
         if interrupt.blocking:
             return PolicyDecision(

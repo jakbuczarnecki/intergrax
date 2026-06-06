@@ -10,6 +10,7 @@ from intergrax.agents.reference_harness import (
     default_reference_harness,
 )
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.skills.providers.research.manifests import RESEARCH_LITERATURE_SCAN
 from intergrax.contracts.agent_decision import AgentDecision
 from intergrax.contracts.agent_step import AgentStep, StepOutput
@@ -48,6 +49,8 @@ class ResearchAgent(HarnessReferenceAgent):
             skills=[RESEARCH_LITERATURE_SCAN],
             extra_tools=[],
             risk_level=AgentRiskLevel.LOW,
+            lifecycle_state=AgentLifecycleState.STAGING,
+            owner_team="platform",
             max_steps=10,
             validation_rules=["non_empty_summary"],
         )

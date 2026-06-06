@@ -119,12 +119,9 @@ class ToolPlanningService:
                 run_id=run_id,
             )
 
-            tool_calls = result.get("tool_calls") or []
-
-            for tc in tool_calls:
-                fn = tc.get("function") or {}
-                name = fn.get("name") or tc.get("name")
-                args_json = fn.get("arguments") or tc.get("arguments") or "{}"
+            for tc in result.tool_calls:
+                name = tc.name
+                args_json = tc.arguments_json or "{}"
 
                 try:
                     args = json.loads(args_json)
@@ -170,12 +167,13 @@ class ToolPlanningService:
         else:
             messages = [plan_intro] + messages
 
-        plan_text = self.llm.generate_messages(
+        plan_response = self.llm.generate_messages(
             messages,
             temperature=self.cfg.temperature,
             max_tokens=self.cfg.max_answer_tokens,
             run_id=run_id,
         )
+        plan_text = plan_response.content
 
         plan_obj = None
         try:

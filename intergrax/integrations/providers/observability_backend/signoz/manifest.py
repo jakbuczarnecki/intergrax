@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="signoz",
     categories=(IntegrationCategory.OBSERVABILITY_BACKEND,),
-    status=IntegrationStatus.BETA,
+    status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_SIGNOZ',
     description='signoz integration (Phase M.8 harness)',
 )

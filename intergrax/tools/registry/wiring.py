@@ -9,6 +9,13 @@ from dataclasses import dataclass, field
 from typing import Any, Mapping, Optional
 
 
+from intergrax.integrations.contracts.identity_provider import IdentityProviderBackend
+from intergrax.integrations.contracts.sandbox_host import SandboxHostBackend
+from intergrax.integrations.contracts.security_scanner import SecurityScannerBackend
+from intergrax.integrations.contracts.speech_provider import SpeechProviderBackend
+from intergrax.integrations.contracts.workflow_orchestrator import WorkflowOrchestratorBackend
+
+
 @dataclass
 class ToolWiringContext:
     """
@@ -34,6 +41,11 @@ class ToolWiringContext:
     retrieval_service: Any | None = None
     websearch_executor: Any | None = None
     sandbox_session: Any | None = None
+    security_scanner: SecurityScannerBackend | None = None
+    sandbox_host: SandboxHostBackend | None = None
+    identity_provider: IdentityProviderBackend | None = None
+    speech_provider: SpeechProviderBackend | None = None
+    workflow_orchestrator: WorkflowOrchestratorBackend | None = None
     extras: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -64,6 +76,9 @@ class ToolWiringContext:
         from intergrax.integrations.registry.factory import resolve
 
         def _optional(category: IntegrationCategory) -> Any | None:
+            instance = profile.instance_for_category(category)
+            if instance is not None:
+                return instance
             slug = profile.slug_for_category(category)
             if slug is None:
                 return None
@@ -104,6 +119,11 @@ class ToolWiringContext:
             notification_channel=_optional(IntegrationCategory.NOTIFICATION_CHANNEL),
             observability_backend=primary_obs,
             observability_backends=obs_backends,
+            security_scanner=_optional(IntegrationCategory.SECURITY_SCANNER),
+            sandbox_host=_optional(IntegrationCategory.SANDBOX_HOST),
+            identity_provider=_optional(IntegrationCategory.IDENTITY_PROVIDER),
+            speech_provider=_optional(IntegrationCategory.SPEECH_PROVIDER),
+            workflow_orchestrator=_optional(IntegrationCategory.WORKFLOW_ORCHESTRATOR),
             rag_manager=rag_manager,
             vectorstore_manager=vectorstore_manager,
             embedding_manager=embedding_manager,

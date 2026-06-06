@@ -19,12 +19,14 @@ from intergrax.applications._shared.orchestration_wiring import (
     resolve_nexus_task_classifier,
     resolve_nexus_task_planner,
 )
+from intergrax.applications._shared.adaptive_wiring import ApplicationAdaptiveWiring
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.long_running.notification import NotificationAdapter
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.nexus.context.context_manager import ContextManager
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
@@ -49,6 +51,8 @@ def build_nexus_loop_from_environment(
     runtime_event_bus: RuntimeEventBus | None = None,
     context_manager: ContextManager | None = None,
     security_wiring: ApplicationSecurityWiring | None = None,
+    adaptive_wiring: ApplicationAdaptiveWiring | None = None,
+    run_budget: RunBudget | None = None,
 ) -> NexusLoop:
     """Apply orchestration and reliability profiles to ``NexusLoop`` construction."""
     orch = env.orchestration_profile
@@ -85,6 +89,8 @@ def build_nexus_loop_from_environment(
         task_memory_store=task_memory_store,
         task_memory_db_path=task_memory_db_path,
         production_mode=env.execution_mode.value == "strict",
+        signal_collector=adaptive_wiring.signal_collector if adaptive_wiring else None,
+        run_budget=run_budget,
     )
     resolved_security = security_wiring or wire_application_security(env)
     apply_application_security_wiring(loop, resolved_security)

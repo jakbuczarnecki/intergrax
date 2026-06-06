@@ -19,6 +19,9 @@ from intergrax.runtime.modality.modality_profile import ModalityProfile, lab_def
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry.profile import ToolProfile
+from intergrax.applications.contracts.business_outcome_webhook import BusinessOutcomeWebhookConfig
+from intergrax.runtime.adaptive.contracts import UtilityWeights
+from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
 
 
 class IdentityProfile(BaseModel):
@@ -150,6 +153,31 @@ class EvaluationProfile(BaseModel):
     evaluation_assets_ref: str | None = None
 
 
+AdaptiveMode = Literal["observe", "recommend", "shadow", "canary", "apply"]
+
+
+class AdaptiveProfile(BaseModel):
+    """Adaptive Harness Intelligence Tier-3 configuration (AHIA §14.5, W-ADAPT-4.1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = False
+    mode: AdaptiveMode = "observe"
+    enabled_loops: list[AdaptiveLoopKind] = Field(default_factory=list)
+    utility_weights: UtilityWeights = Field(default_factory=UtilityWeights)
+    canary_tenant_allowlist: list[str] = Field(default_factory=list)
+    canary_traffic_percent: float = Field(default=0.0, ge=0.0, le=100.0)
+    human_approver_group: str | None = None
+    profile_versions_db_path: Path | None = None
+    profile_pointers_db_path: Path | None = None
+    signal_store_path: Path | None = None
+    proposal_store_path: Path | None = None
+    debug_readonly_routes: bool = False
+    business_outcome_webhook: BusinessOutcomeWebhookConfig | None = None
+    feature_flag_slug: str | None = None
+    rollout_flag_key: str = "harness.adaptive.recommend"
+
+
 class OrchestrationProfile(BaseModel):
     """Nexus loop composition overrides (Phase H-APP.3.1)."""
 
@@ -208,6 +236,7 @@ class ApplicationEnvironmentProfile(BaseModel):
     observability_profile: ObservabilityProfile = Field(default_factory=ObservabilityProfile)
     cost_profile: CostProfile = Field(default_factory=CostProfile)
     evaluation_profile: EvaluationProfile = Field(default_factory=EvaluationProfile)
+    adaptive_profile: AdaptiveProfile = Field(default_factory=AdaptiveProfile)
     orchestration_profile: OrchestrationProfile = Field(default_factory=OrchestrationProfile)
     identity_profile: IdentityProfile = Field(default_factory=IdentityProfile)
     security_profile: ApplicationSecurityProfile = Field(
@@ -294,12 +323,52 @@ class ApplicationEnvironmentProfile(BaseModel):
                 offline_eval_runner_enabled=True,
                 trend_comparison_enabled=True,
             ),
+            adaptive_profile=AdaptiveProfile(enabled=False, mode="observe"),
             orchestration_profile=OrchestrationProfile(long_running_enabled=True),
             identity_profile=IdentityProfile(require_api_key=False),
             shadow_workspace=ShadowWorkspaceProfile(),
             sandbox=SandboxProfile(enable_exec_tool=True),
             features=ApplicationFeatures.lab_defaults(),
             execution_mode=ExecutionMode.BALANCED,
+        )
+
+    @classmethod
+    def harness_production_defaults(
+        cls,
+        *,
+        profile_id: str = "harness.production",
+        harness_tools: bool = True,
+        secrets_slug: str = "doppler",
+        enable_grafana_stack: bool = True,
+    ) -> ApplicationEnvironmentProfile:
+        """Harness production Tier-3 preset — catalog secrets + observability stack (no business agents)."""
+        from intergrax.applications._shared.skill_wiring import lab_skill_profile
+        from intergrax.integrations.registry import presets
+
+        base = cls.lab_defaults(profile_id=profile_id, harness_tools=harness_tools)
+        return base.model_copy(
+            update={
+                "application_profile": ApplicationProfile.LAB,
+                "integration_profile": presets.harness_production_stack(
+                    secrets_slug=secrets_slug,
+                    enable_grafana_stack=enable_grafana_stack,
+                ),
+                "skill_profile": lab_skill_profile(),
+                "observability_profile": ObservabilityProfile(
+                    trace_sqlite_enabled=True,
+                    otel_enabled=True,
+                    metrics_plugins_enabled=True,
+                    debug_surface_override=False,
+                ),
+                "adaptive_profile": AdaptiveProfile(
+                    enabled=False,
+                    mode="observe",
+                    feature_flag_slug="unleash",
+                    rollout_flag_key="harness.adaptive.recommend",
+                ),
+                "identity_profile": IdentityProfile(require_api_key=True),
+                "execution_mode": ExecutionMode.STRICT,
+            }
         )
 
     @classmethod

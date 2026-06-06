@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="temporal",
     categories=(IntegrationCategory.MESSAGE_BUS,),
-    status=IntegrationStatus.BETA,
+    status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_TEMPORAL',
     description='temporal integration (Phase M.7)',
 )

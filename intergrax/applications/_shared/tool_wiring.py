@@ -85,6 +85,11 @@ def build_application_tool_wiring(
         retrieval_service=ctx.retrieval_service or retrieval_service,
         websearch_executor=ctx.websearch_executor or websearch_executor,
         sandbox_session=ctx.sandbox_session or sandbox_session,
+        security_scanner=ctx.security_scanner,
+        sandbox_host=ctx.sandbox_host,
+        identity_provider=ctx.identity_provider,
+        speech_provider=ctx.speech_provider,
+        workflow_orchestrator=ctx.workflow_orchestrator,
         extras=dict(ctx.extras),
     )
     registry = build_registry_from_profile(profile, ctx=ctx)

@@ -26,8 +26,8 @@ def test_groq_adapter_mocked_chat() -> None:
     with patch.dict("os.environ", {"GROQ_API_KEY": "test"}, clear=False):
         adapter = GroqChatAdapter(client=client, model="llama-3.3-70b-versatile")
 
-    text = adapter.generate_messages([ChatMessage(role="user", content="hi")], run_id="g1")
-    assert text == "ok"
+    response = adapter.generate_messages([ChatMessage(role="user", content="hi")], run_id="g1")
+    assert response.content == "ok"
     assert adapter.supports_tools() is True
 
 
@@ -40,8 +40,8 @@ def test_vllm_adapter_mocked_chat() -> None:
     client.chat.completions.create.return_value = res
 
     adapter = VllmChatAdapter(client=client, model="meta-llama/Llama-3.1-8B-Instruct")
-    text = adapter.generate_messages([ChatMessage(role="user", content="ping")], run_id="v1")
-    assert text == "local"
+    response = adapter.generate_messages([ChatMessage(role="user", content="ping")], run_id="v1")
+    assert response.content == "local"
 
 
 def test_registry_lazy_groq() -> None:

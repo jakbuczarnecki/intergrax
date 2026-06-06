@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="supabase",
     categories=(IntegrationCategory.RELATIONAL_STORE,),
-    status=IntegrationStatus.BETA,
+    status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_SUPABASE',
     description='supabase integration (Phase M.7)',
 )

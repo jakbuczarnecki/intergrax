@@ -77,6 +77,7 @@ jobs:
           && uv run python scripts/check_harness_observability_wiring.py
           && uv run python scripts/check_harness_reliability_wiring.py
           && uv run python scripts/check_harness_security_wiring.py
+          && uv run python scripts/check_harness_security_promote_gate.py
           && uv run python scripts/check_harness_cost_wiring.py
           && uv run python scripts/check_harness_evaluation_wiring.py
           && uv run python scripts/check_legacy_tool_plan_booleans.py
@@ -140,6 +141,7 @@ jobs:
           && uv run python scripts/check_harness_observability_wiring.py
           && uv run python scripts/check_harness_reliability_wiring.py
           && uv run python scripts/check_harness_security_wiring.py
+          && uv run python scripts/check_harness_security_promote_gate.py
           && uv run python scripts/check_harness_cost_wiring.py
           && uv run python scripts/check_harness_evaluation_wiring.py
           && uv run python scripts/check_legacy_tool_plan_booleans.py
@@ -154,6 +156,9 @@ jobs:
 
       - name: Phase V architecture closeout gate
         run: uv run python scripts/phase_v_closeout_gate.py --enforce --enforce-l4
+
+      - name: Phase W-ADAPT runtime L4 closeout gate
+        run: uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
 
       - name: Phase W-OPS operational evidence (non-enforcing)
         run: uv run python scripts/phase_w_ops_evidence.py

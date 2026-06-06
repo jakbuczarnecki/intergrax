@@ -1,6 +1,6 @@
 # Intergrax Integration Library
 
-**Last updated:** 2026-06-01 (Phase T harness stable stack)
+**Last updated:** 2026-06-02 (Phase M.6 P5 **Done** 33/34 · M.6 P6 **Done** 32/32)
 
 The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. Agents and applications wire backends **by category**, not by vendor SDK, so the same agent code can run in a local lab, a customer VPC, or a multi-cloud deployment.
 
@@ -39,17 +39,60 @@ The **lab harness environment** treats these catalog slugs as **`stable`** (prod
 uv run pytest tests/unit/integrations/test_harness_lab_stable_stack.py -m gate -q
 ```
 
-Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 99 providers stable in one release.
+Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 167 providers stable in one release.
+
+### M.6 P5 — Harness integration depth (Done — 33/34)
+
+**Register:** [INTERGRAX_IMPLEMENTATION_PLAN.md — M.6 P5](INTERGRAX_IMPLEMENTATION_PLAN.md#m6-p5--harness-integration-depth-done--3334) · Band **2ab**
+
+| Wave | Focus | Status |
+|------|--------|--------|
+| H-INT-6 | Ops, metrics, multi-CI, local cloud | **Done** (10/10) |
+| H-INT-7 | Eval observability, async bus, artifacts | **Done** (10/10) |
+| H-INT-8 | Data plane lab (graph, document, logs, vectors) | **Done** (8/8) |
+| H-INT-9 | P2 reserve | **Done** (5/6 — `trivy` deferred) |
+
+**Delivered:** 25 harden (STABLE + `IntegrationHealthProbe`) · 8 greenfield (`_shared/p6`) · 4 Tier-3 presets · `HARNESS_M6_P5_PROBE_SLUGS` · debug API `GET /debug/integrations/health?stack=m6_p5`.
+
+**Tier-3 presets (P5):** `harness_metrics_stack()`, `harness_eval_stack()`, `harness_async_stack()`, `harness_ci_stack()` — CLI: `intergrax integrations-pick harness_metrics|harness_eval|harness_async|harness_ci`.
+
+**Deferred:** `trivy` — absorbed into **M.6 P6** [M-P6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#m6-p6--master-register-32-slugs) (`security_scanner` / **M-P6-CAT.1**).
+
+### M.6 P6 — Harness integration expansion (Done — 32/32)
+
+**Register:** [INTERGRAX_IMPLEMENTATION_PLAN.md — M.6 P6](INTERGRAX_IMPLEMENTATION_PLAN.md#m6-p6--harness-integration-expansion-planned) · Band **2ac** · Queue **[§6.1y](INTERGRAX_IMPLEMENTATION_PLAN.md#61y-harness-implementation-queue--integration-expansion-m6-p6-planned)**
+
+| Wave | Focus | Slugs | Status |
+|------|--------|-------|--------|
+| H-INT-10 | Security + secrets | `trivy`, `snyk`, `semgrep`, `infisical` | **Done** |
+| H-INT-11 | Cloud sandbox | `e2b`, `modal`, `daytona` | **Done** |
+| H-INT-12 | Identity / tenant IAM | `auth0`, `keycloak`, `workos` | **Done** |
+| H-INT-13 | GitOps CI | `argocd`, `buildkite`, `jenkins` | **Done** |
+| H-INT-14 | Speech catalog | `elevenlabs`, `deepgram` | **Done** |
+| H-INT-15 | Enterprise ops | `newrelic`, `splunk`, `zendesk`, `statsig` | **Done** |
+| H-INT-16 | Data / workflow | `prefect`, `airflow`, `typesense`, `neon`, `pulsar` | **Done** |
+| H-INT-17 | Reserve | `algolia`, `confluent`, `backblaze_b2`, `triton`, `replicate`, `stripe`, `salesforce`, `hubspot` | **Done** |
+
+**New categories (9):** `security_scanner`, `sandbox_host`, `identity_provider`, `speech_provider`, `workflow_orchestrator`, `vision_serving`, `ml_inference_host`, `billing_meter`, `crm`.
+
+**Post-catalog wiring (M-P6-WIRE):** `wire_integration_tool_context()` resolves P6 slots into `ToolWiringContext`; `extend_tool_profile_for_integration()` auto-enables `security.scan`, `workflow.*`, and `sandbox.exec` when matching categories are configured. Speech catalog slugs bridge to Tier-0 speech tools via `IntegrationSpeechAdapter`.
+
+**Delivered:** 32 STABLE slugs (`_shared/p7`) · 9 category contracts · 4 Tier-3 presets · `HARNESS_M6_P6_PROBE_SLUGS` · debug API `GET /debug/integrations/health?stack=m6_p6`.
+
+**Tier-3 presets (P6):** `harness_security_stack()`, `harness_sandbox_stack()`, `harness_identity_stack()`, `harness_gitops_stack()` — CLI: `intergrax integrations-pick harness_security|harness_sandbox|harness_identity|harness_gitops`.
+
+**Catalog:** **167** slugs in `layout.py` (**12** core / **167** full preset).
 
 ---
 
 ## Local infrastructure (Docker)
 
-Run backing services locally before integration tests or lab hosts. Unified stack: `infra/integration/` with **compose profiles** (`core`, `queue`, `rag`, `data`, `secrets`, `observability`, `cloud`, `heavy`).
+Run backing services locally before integration tests or lab hosts. Unified stack: `infra/integration/` with **compose profiles** (`core`, `queue`, `rag`, `data`, `secrets`, `observability`, `cloud`, `heavy`, `p6`).
 
 ```bash
 cd infra/integration && ./manage.sh start          # default profiles
 cd infra/integration && ./manage.sh start rag      # vectors + neo4j + ollama + docling
+cd infra/integration && ./manage.sh start p6       # keycloak + typesense + airflow + core (PostgreSQL)
 cd infra/integration && ./manage.sh start all      # full stack
 ```
 
@@ -107,7 +150,7 @@ Catalog identity is the string **slug** (`"s3"`, `"postgresql"`) registered at r
 
 Third-party integrations **must not** extend a core enum. Register a plugin or call `register_from_manifest` from application startup.
 
-**Shipped vs plugin class:** ~99 providers register via `register_from_manifest(MANIFEST, create_*)`. External pip packages should implement `IntegrationPlugin` (`integration_manifest()` + `create_integration()`). `SqliteIntegrationPlugin` in `providers/relational_store/sqlite/plugin.py` documents the class-based pattern; shipped `register.py` keeps the manifest path for bootstrap performance.
+**Shipped vs plugin class:** ~167 providers register via `register_from_manifest(MANIFEST, create_*)`. External pip packages should implement `IntegrationPlugin` (`integration_manifest()` + `create_integration()`). `SqliteIntegrationPlugin` in `providers/relational_store/sqlite/plugin.py` documents the class-based pattern; shipped `register.py` keeps the manifest path for bootstrap performance.
 
 Tier-3 hosts should call `bootstrap_application_integration_catalog()` (not bare `register_default_integrations()`).
 
@@ -121,9 +164,10 @@ Typed factories in `intergrax.integrations.registry.presets` — use in `Applica
 | `legal_stack()` | `IntegrationProfile.legal_product()` | Legal product relational + vector |
 | `research_stack()` | `IntegrationProfile.research_product()` | Research product search + vector |
 | `data_stack(enable_redis=True, enable_qdrant=False)` | Lab harness + optional redis/qdrant | Data-heavy experiments |
-| `observability_stack(enable_otel=True)` | Lab harness OTEL-first | Trace/metrics focus |
+| `observability_stack(enable_otel=True, enable_grafana_stack=False)` | Lab harness OTEL-first; optional Grafana/Loki/Tempo triad | Trace/metrics focus |
+| `harness_production_stack(secrets_slug="doppler", enable_grafana_stack=True)` | PostgreSQL + pgvector + secrets + Grafana stack + Unleash + GitHub Actions | Harness production Tier-3 (no business agents) |
 
-CLI fragment helper: `uv run intergrax integrations pick postgres` (see `intergrax/cli/integrations_pick.py`).
+CLI fragment helper: `uv run intergrax integrations pick postgres` (presets: `lab`, `legal`, `research`, `data`, `observability`, `harness_production`). See `intergrax/cli/integrations_pick.py`.
 
 See [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md), `intergrax/integrations/examples/custom_memory_kv/`, and `tests/unit/integrations/test_external_plugin.py`.
 
@@ -261,40 +305,43 @@ Service-level slugs (`s3`, `azure_blob`, `gcs`, …) remain available for explic
 
 ---
 
-## Implemented providers (99)
+## Implemented providers (167)
 
 All providers below are registered in `register_default_integrations()`.  
 **Status:** `stable` = production-ready catalog entry; `beta` = shipped, API may evolve.
 
 - **P2** slugs delegate to `intergrax/integrations/_shared/p2/factories.py`
-- **P3 / M.7** harness slugs delegate to `intergrax/integrations/_shared/p3/factories.py` (2026-05-29)
+- **P3 / M.7** harness slugs delegate to `intergrax/integrations/_shared/p3/factories.py`
+- **P5 / M.6 P4** (2026-06-02) delegate to `intergrax/integrations/_shared/p5/factories.py`
 - Thin shells live under `providers/<category>/<slug>/` — see `providers/layout.py`
 
 ### Summary by category
 
 | Category | Count | Slugs |
 |----------|------:|-------|
-| `relational_store` | 10 | `sqlite`, `postgresql`, `mysql`, `databricks`, `oracle`, `mssql`, `azure_sql`, `cloud_sql`, `snowflake`, `supabase` |
+| `relational_store` | 12 | `sqlite`, `postgresql`, `mysql`, `databricks`, `oracle`, `mssql`, `azure_sql`, `cloud_sql`, `snowflake`, `supabase`, `duckdb`, `timescaledb` |
 | `document_store` | 3 | `cassandra`, `mongodb`, `dynamodb` |
 | `key_value_cache` | 3 | `redis`, `memcached`, `elasticache` |
-| `message_bus` | 8 | `kafka`, `celery`, `rabbitmq`, `sqs`, `service_bus`, `pubsub`, `temporal`, `nats` |
-| `object_storage` | 5 | `s3`, `azure_blob`, `gcs`, `minio`, `filesystem` |
-| `vector_store` | 7 | `pinecone`, `qdrant`, `chroma`, `weaviate`, `milvus`, `inmemory`, `vespa` |
+| `message_bus` | 9 | `kafka`, `celery`, `rabbitmq`, `sqs`, `service_bus`, `pubsub`, `temporal`, `nats`, `redpanda` |
+| `object_storage` | 7 | `s3`, `azure_blob`, `gcs`, `minio`, `filesystem`, `cloudflare_r2`, `huggingface_hub` |
+| `vector_store` | 8 | `pinecone`, `qdrant`, `chroma`, `weaviate`, `milvus`, `inmemory`, `vespa`, `pgvector` |
 | `search_provider` | 8 | `google_cse`, `bing`, `reddit`, `google_places`, `brave`, `serpapi`, `tavily`, `exa` |
-| `notification_channel` | 9 | `slack`, `teams`, `webhook`, `log`, `email_smtp`, `discord`, `twilio`, `pagerduty`, `opsgenie` |
-| `interaction_surface` | 2 (+2 dual) | `lab_json`, `slash_command`; `slack` / `teams` also register this category |
+| `notification_channel` | 11 | `slack`, `teams`, `webhook`, `log`, `email_smtp`, `discord`, `twilio`, `pagerduty`, `opsgenie`, `incident_io`, `sendgrid` |
+| `interaction_surface` | 4 (+2 dual) | `lab_json`, `slash_command`, `mailgun`, `ollama`; `slack` / `teams` also register this category |
 | `collaboration_suite` | 2 | `ms365_graph`, `google_workspace` |
-| `issue_tracker` | 5 | `jira`, `github`, `linear`, `azure_devops`, `gitlab` |
+| `issue_tracker` | 8 | `jira`, `github`, `linear`, `azure_devops`, `gitlab`, `servicenow`, `bitbucket`, `asana` |
 | `wiki_knowledge` | 3 | `confluence`, `notion`, `sharepoint` |
-| `observability_backend` | 17 | `prometheus`, `elasticsearch`, `otel`, `langfuse`, `datadog`, `clickhouse`, `sentry`, `langsmith`, `helicone`, `posthog`, `braintrust`, `signoz`, `honeycomb`, `arize`, `phoenix`, `wandb`, `opensearch` |
+| `observability_backend` | 22 | `prometheus`, `elasticsearch`, `otel`, `langfuse`, `datadog`, `clickhouse`, `sentry`, `langsmith`, `helicone`, `posthog`, `braintrust`, `signoz`, `honeycomb`, `arize`, `phoenix`, `wandb`, `opensearch`, `influxdb`, `grafana`, `loki`, `tempo`, `mlflow` |
 | `document_parser` | 7 | `docling`, `pymupdf`, `unstructured`, `python_docx`, `openpyxl`, `whisper`, `yt_dlp` |
 | `rerank_provider` | 2 | `cohere_rerank`, `jina_rerank` |
 | `browser_automation` | 3 | `playwright`, `firecrawl`, `selenium` |
-| `secrets_store` | 1 | `vault` |
-| `graph_store` | 1 | `neo4j` |
-| `cloud_platform` | 3 | `aws`, `azure`, `gcp` |
+| `secrets_store` | 5 | `vault`, `aws_secrets_manager`, `azure_key_vault`, `gcp_secret_manager`, `doppler` |
+| `graph_store` | 3 | `neo4j`, `memgraph`, `falkordb` |
+| `cloud_platform` | 4 | `aws`, `azure`, `gcp`, `kubernetes` |
+| `feature_flag` | 2 | `unleash`, `launchdarkly` |
+| `ci_cd` | 1 | `github_actions` |
 
-**Total unique slugs:** 99.
+**Total unique slugs:** 167.
 
 ### Implementation depth (code audit)
 
@@ -658,7 +705,7 @@ All slugs from the 2026-05 harness recommendation (high / medium / low) are regi
 
 **New tools:** `gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`.
 
-**`slash_command`** interaction surface registered (catalog **99**).
+**`slash_command`** interaction surface registered (catalog **167**).
 
 **Lab harness:** `IntegrationProfile.harness_lab()` + `wire_lab_integrations(harness=True)` — composite observability (Sentry + LangSmith) + PagerDuty + harness tool bundle.
 
@@ -706,13 +753,13 @@ Audit against typical agent stacks (LangGraph, CrewAI, LlamaIndex, enterprise VP
 | **Low** | `reddit`, `google_places` | search_provider | **Done** | Social/geo search (full packages) |
 | **Future** | `slash_command` | interaction_surface | **Done** (M.9) | Generic slash intake |
 
-**Strong harness coverage today:** **99** integrations — observability (17), notification (9 incl. PagerDuty/Opsgenie), issue trackers (5 incl. GitLab), vectors (7 incl. Vespa), document parsers (7), rerank (2), plus M.7 stack (Vault, Neo4j, Temporal, Tavily, …).
+**Strong harness coverage today:** **167** integrations — observability (24+), notification (11+), issue trackers (9), vectors (9 incl. typesense), secrets (6 incl. infisical), feature flags (3), CI/CD (8 incl. argocd), security scanners (3), sandbox hosts (3), identity (3), speech (2), workflow (2), CRM (2), plus M.7 stack (Vault, Neo4j, Temporal, …).
 
 **Tool Library:** `errors.capture`, `gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`. Optional deps: ``uv pip install 'Intergrax-ai[integrations-harness]'``.
 
 ---
 
-All **99** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
+All **167** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
 
 ```bash
 uv run python scripts/generate_integration_usage_docs.py

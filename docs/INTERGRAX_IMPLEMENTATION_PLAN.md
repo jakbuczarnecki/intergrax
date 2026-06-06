@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-05) — **Harness platform bands 1–2x Done**; **Phase W-ADAPT (Band 2y) opened** — default implementation queue after §6.1 maintenance; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done**; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate green; **operational L3 signed off**  
+Status: Working draft (2026-06-06) — **Harness platform bands 1–2ad Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39); **Phase M.6 P4 (Band 2aa) Done** (28/28); **Phase M.6 P5 (Band 2ab) Done** (33/34); **Phase M.6 P6 (Band 2ac) Done** (32/32); **FAUDIT-32 remediation Done** (23/23 + [§6.1ai](#61ai-harness-implementation-queue--faudit-32-follow-up-closed) follow-up); default queue = **§6.1 maintenance** only; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done** (wiring); **12/32 layers L3+** per FAUDIT scorecard — closeout ≠ full layer maturity; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **901 passed**; **operational L3 signed off** (W-OPS evidence artifact policy — see FAUDIT-OPS.1)  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -45,6 +45,10 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Cost governance closeout (budget bridge, policy bundle, CI) | [Phase COST](#phase-cost--cost-governance-control-plane-closeout) · **§6.1r** · Band **2w** · **Appendix T** |
 | Evaluation closeout (registry bridge, policy bundle, CI) | [Phase EVAL](#phase-eval--evaluation-control-plane-closeout) · **§6.1s** · Band **2x** · **Appendix U** |
 | **Adaptive Harness Intelligence (AHI / L4 runtime)** | [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · **§6.1t** · Band **2y** · [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · canon [§54](intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) · **Appendix K** |
+| **LLM response envelope (typed completion contract)** | [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · **§6.1v** · Band **2z** · [LLM_ADAPTERS.md](LLM_ADAPTERS.md) · **Appendix L** |
+| **Integration catalog expansion (harness ROI slugs)** | [M.6 P4 register](#m6-p4--harness-platform-expansion-done) · **§6.1w** · Band **2aa** · [INTEGRATIONS.md](INTEGRATIONS.md) |
+| **Integration harness depth (audit 2026-06-02)** | [M.6 P5 register](#m6-p5--harness-integration-depth-done--3334) · **§6.1x** · Band **2ab** · [INTEGRATIONS.md](INTEGRATIONS.md) |
+| **Integration harness expansion (audit 2026-06-02)** | [M.6 P6 register](#m6-p6--harness-integration-expansion-planned) · **§6.1y** · Band **2ac** · [INTEGRATIONS.md](INTEGRATIONS.md) |
 | Tier-3 application environment (self-contained deploy) | Architecture canon §7.4.8–§7.4.10 |
 | Tier-3 composition engine (manifest, wiring API) | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
 | Tier-3 application hosts (`applications/<app>/`) | [`applications/USAGE.md`](../applications/USAGE.md) |
@@ -69,6 +73,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Phase V runtime remediation (2026-06-05 audit) → close Partial gaps | **Phase V-REM** (below) · **Appendix J** · **§6.1z** · **§6.2v** · source: plan/code audit vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` |
 | Phase V remediation traceability (audit gap → V-REM ID) | **Appendix J** (below) |
 | Full architecture audit procedure (32 layers) | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) · prompt: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) |
+| **Full architecture audit closeout (32 layers, scope C)** | [Phase FAUDIT-32](#phase-faudit-32--full-architecture-audit-closeout) · **§6.1ah** · Band **2ad** · **Appendix M** · source: audit 2026-06-06 (`scope: C`, `audit-and-fix`) |
 | Infrastructure vs business scope split | **§4.0a** · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) (closed) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) (closed) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) (closed) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) (closed) · [§6.1g](#61g-harness-implementation-queue--governance-audit-closed) (closed) · [§6.3a](#63a-business-backlog-register-consolidated) |
 
 **Note on audit source documents:** Some historical audit narratives (e.g. `HARNESS_APPLICATION_LAYER_AUDIT.md`) may live outside the repo. **Task traceability in this plan is canonical** — H-APP (43 tasks), W-OPS, MEM, DX, AA registers below; do not re-derive scope from missing files.
@@ -195,8 +200,10 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Security closeout (Phase SEC)** | **Done** (Band 2v) | No (harness-only) | SEC-1–3 — [§6.1q](#61q-harness-implementation-queue--security-closeout-closed) |
 | **Cost governance closeout (Phase COST)** | **Done** (Band 2w) | No (harness-only) | COST-1–3 — [§6.1r](#61r-harness-implementation-queue--cost-governance-closeout-closed) |
 | **Evaluation closeout (Phase EVAL)** | **Done** (Band 2x) | No (harness-only) | EVAL-1–3 — [§6.1s](#61s-harness-implementation-queue--evaluation-closeout-closed) |
-| **Adaptive Harness Intelligence (Phase W-ADAPT)** | **Planned** (Band 2y) | No (harness-only) | L4 **runtime** closed loop — [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active) · AHIA · **70 tasks** (1 Done) |
-| Regression gate | **687 passed** | No | Must stay green after each harness PR |
+| **Adaptive Harness Intelligence (Phase W-ADAPT)** | **Done** (Band 2y) | No (harness-only) | Wave 0–7 **Done** (70/70) · [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-closed) · AHIA |
+| **LLM completion envelope (Phase M-LLM-R)** | **Done** (Band 2z) | No (harness-only) | Audit 2026-06-06 — typed `LLMAdapterResponse`; **39/39** — [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed) · **Appendix L** |
+| Regression gate | **901 passed** | No | Must stay green after each harness PR (FAUDIT-32 follow-up 2026-06-06) |
+| **Full architecture audit (FAUDIT-32)** | **Done** (2026-06-06) | No (harness-only) | 32-layer audit + **23/23 remediation** → [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-active) |
 
 ---
 
@@ -300,7 +307,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | §19 Debug / experiments | CLI, API, registry, cost | **Done** | D.1–D.5 ✅ |
 
 | §7.4 Repo split | agents / applications | **Done** | `agents/legal`, `applications/legal_application` |
-| §7.1 Integration Library | Catalog + contracts + providers | **Done** (beta) | Phase M core + M.6 P1/P2/P3; on-demand slugs only |
+| §7.1 Integration Library | Catalog + contracts + providers | **Done** · **167 slugs** | Phase M + M.6 P4/P5/P6 **Done** |
 
 | §19 Debug surface | CLI / API | **Done** | D.1 CLI + D.2 API ✅ |
 
@@ -653,6 +660,8 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 
 **Principle:** evolve existing modules (`queueing/`, `distributed/`, `websearch/`, …) into catalog providers; do not fork parallel stacks.
 
+**Catalog (2026-06-02):** **167** slugs in `layout.py` · **12** core / **167** full preset · timeline: pre-P4 **99** → M.6 P4 **127** (+28) → M.6 P5 **135** (+8 greenfield, 25 hardened) → M.6 P6 **167** (+32).
+
 **Out of scope:** `intergrax/llm_adapters/` — LLM providers are **not** part of the Integration Library (§7.1.2).
 
 ### Phase M-LLM — LLM Adapter Layer (Tier-0)
@@ -675,6 +684,163 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M-LLM.11 | Production ops layer | **Done** | OTLP/Prometheus routes, tenant metrics, rate limit + circuit breaker, secrets map, PR guard, extended network smoke |
 | M-LLM.12 | Nexus + governance wiring | **Done** | `llm_tenant_scope`, runtime metrics plugin, `INTERGRAX_LLM_TENANT_MAX_TOKENS` quota |
 | M-LLM.13 | Observability + secrets + distributed limits | **Done** | Pushgateway, `LLM_ADAPTERS.md` § Observability, Vault loader, Redis rate limit, governance warn |
+| M-LLM.14 | Typed completion envelope (`LLMAdapterResponse`) | **Done** | Phase M-LLM-R — [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed) · gate **776** |
+
+### Phase M-LLM-R — LLM Completion Response Envelope (audit 2026-06-06)
+
+**Source:** Tier-0 LLM adapter audit (2026-06-06) — `generate_messages` returns `str`; `generate_with_tools` returns untyped dict via `make_tool_result`; SDK metadata (`finish_reason`, `response_id`, cached/reasoning tokens, refusal) discarded; usage only via side-channel `LLMAdapterUsageLog`; replay `LLMCallInfo` not fed from adapter returns.  
+**Canon:** §5.2.2 · **Doc:** [LLM_ADAPTERS.md](LLM_ADAPTERS.md) · **Traceability:** [Appendix L](#appendix-l--llm-completion-response-envelope-traceability-phase-m-llm-r)  
+**Status:** **Done** (2026-06-06) — **39/39 Done**  
+**Priority ladder:** **Band 2z** (§4.0) — **parallel with W-ADAPT waves 5–7** (Tier-0; no Nexus primitive changes beyond consumer wiring)  
+**Execution order:** [§6.2ad](#62ad-phase-m-llm-r-execution-order-band-2z--closed-2026-06-06) · queue: [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed)  
+**Goal:** Replace plain `str` and `Dict[str, Any]` LLM adapter returns with a **single strongly typed envelope** — `LLMAdapterResponse` — carrying `content: str` plus production-standard metadata, extensible without dict soup.
+
+**Hard rules (non-negotiable):**
+
+- **No** public adapter method returns bare `str` or `Dict[str, Any]` for completions.
+- **No** `make_tool_result` dict factory — delete after migration; use typed builders only.
+- **No** untyped `tool_calls: list[dict]` — use frozen `LLMToolCall` (+ `LLMToolCallArgument` where needed).
+- Per-call `usage` **must** be present on every `LLMAdapterResponse` (sync with `LLMAdapterUsageLog.end_call`; prefer SDK counts over estimates when available).
+- `LLMAdapterUsageLog` remains for run-level aggregation; response envelope is the **per-call source of truth** for callers.
+- One **M-LLM-R.\*** ID per PR → update master table + Appendix L + paydown log → `pytest -m gate` + `tests/unit/llm_adapters/` green.
+
+**Canonical type (target contract):**
+
+| Type | Role |
+|------|------|
+| `LLMAdapterResponse` | Primary return for `generate_messages`, `generate_with_tools`, final stream event |
+| `LLMTokenUsage` | `input_tokens`, `output_tokens`, `total_tokens`, `cached_input_tokens`, `reasoning_tokens` |
+| `LLMFinishReason` | Enum: `completed`, `length`, `tool_calls`, `content_filter`, `refusal`, `error`, … |
+| `LLMToolCall` | Typed native tool call (`id`, `name`, `arguments_json` or validated args model) |
+| `LLMStreamEvent` | Streaming partial/final chunks (`event_kind`, `delta_content`, optional `completion` on final) |
+| `LLMStructuredResult[T]` | `generate_structured` → `(parsed: T, response: LLMAdapterResponse)` |
+| `LLMProviderExtensions` | Tagged optional extensions (OpenAI / Anthropic / Gemini slices) — **no** open `dict` bag |
+
+**Naming note:** `LLMAdapterResponse` (not bare `LLMResponse`) — Tier-0 adapter return type; avoids collision with HTTP transport and product API DTOs.
+
+#### M-LLM-R — Traceability (audit gap → task ID)
+
+| Audit gap | Task IDs |
+|-----------|----------|
+| `generate_messages` → `str` | M-LLM-R.2.1, M-LLM-R.3.*, M-LLM-R.4.*, M-LLM-R.5.*, M-LLM-R.6.* |
+| `generate_with_tools` → `Dict[str, Any]` | M-LLM-R.1.7, M-LLM-R.2.2, M-LLM-R.3.*, M-LLM-R.4.2 |
+| `stream_messages` → `Iterable[str]` | M-LLM-R.1.5, M-LLM-R.2.3, M-LLM-R.3.* |
+| `stream_with_tools` → `Iterable[Dict]` | M-LLM-R.1.5, M-LLM-R.2.4, M-LLM-R.3.* |
+| `generate_structured` untyped | M-LLM-R.1.6, M-LLM-R.2.5 |
+| SDK metadata discarded (`finish_reason`, `response_id`, refusal) | M-LLM-R.1.1, M-LLM-R.3.1–3.6 |
+| Usage only side-channel | M-LLM-R.1.2, M-LLM-R.2.6, M-LLM-R.7.1 |
+| Inconsistent token counting (estimate vs SDK) | M-LLM-R.3.5, M-LLM-R.3.6 |
+| Replay `LLMCallInfo` not fed from adapter | M-LLM-R.7.2, M-LLM-R.7.3 |
+| `CoreLLMAdapterReturnedDiagV1.adapter_return_type="str"` | M-LLM-R.7.4 |
+| Conformance asserts `isinstance(text, str)` | M-LLM-R.8.2 |
+| Public API missing response types | M-LLM-R.1.8, M-LLM-R.8.1 |
+
+#### Wave M-LLM-R-0 — Planning and canon sync
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-R.0.1 | **Plan register** — Phase M-LLM-R, §4.0 Band 2z, §6.1v, §6.2ad, Appendix L; M-LLM follow-up pointer | **Done** | **Critical** | This section | Cross-links from `LLM_ADAPTERS.md` |
+| M-LLM-R.0.2 | **`docs/adr/ADR-LLM-001.md`** — typed completion envelope vs plain string; two-layer usage model preserved | **Done** | High | `docs/adr/` | ADR linked from plan + `LLM_ADAPTERS.md` |
+| M-LLM-R.0.3 | **Canon §5.2.2 addendum** — `LLMAdapterResponse` contract paragraph in `intergrax_runtime_architecture.md` | **Done** | Medium | Architecture canon | No duplicate full spec in README |
+
+#### Wave M-LLM-R-1 — Contract types (Tier-0)
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-R.1.1 | **`LLMAdapterResponse`** — frozen dataclass: `content`, `finish_reason`, `usage`, `model`, `provider`, `response_id`, `refusal`, `tool_calls`, `provider_extensions` | **Done** | **Critical** | `llm_adapters/contracts/adapter_response.py` | Unit: construction + immutability |
+| M-LLM-R.1.2 | **`LLMTokenUsage`** — frozen dataclass with cached/reasoning token fields | **Done** | **Critical** | same module | `total_tokens` derived or validated |
+| M-LLM-R.1.3 | **`LLMFinishReason`** enum + **`LLMToolCall`** (+ argument typing) | **Done** | **Critical** | `llm_adapters/contracts/tool_call.py` or same package | No raw tool dicts in public API |
+| M-LLM-R.1.4 | **`LLMProviderExtensions`** — tagged union slices (OpenAI / Anthropic / Gemini / Bedrock) | **Done** | High | `llm_adapters/contracts/provider_extensions.py` | Extensibility without `Dict[str, Any]` |
+| M-LLM-R.1.5 | **`LLMStreamEvent`** — partial/final streaming envelope | **Done** | High | `llm_adapters/contracts/stream_event.py` | Final event carries full `LLMAdapterResponse` |
+| M-LLM-R.1.6 | **`LLMStructuredResult[T]`** generic wrapper for structured output | **Done** | High | `llm_adapters/contracts/structured_result.py` | Typed generic; mypy/pyright clean |
+| M-LLM-R.1.7 | **Typed builders** — replace `make_tool_result` with `build_adapter_response(...)` / `merge_stream_events(...)` | **Done** | **Critical** | `llm_adapters/_shared/adapter_response_builders.py` | Delete `tool_results.py` dict factory |
+| M-LLM-R.1.8 | **Public re-exports** — response types from `llm_adapters/__init__.py` | **Done** | Medium | `llm_adapters/__init__.py` | Import smoke test in gate |
+
+#### Wave M-LLM-R-2 — `LLMAdapter` ABC refactor
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-R.2.1 | **`generate_messages` → `LLMAdapterResponse`** | **Done** | **Critical** | `contracts/llm_adapter.py` | ABC + all stubs updated |
+| M-LLM-R.2.2 | **`generate_with_tools` → `LLMAdapterResponse`** | **Done** | **Critical** | same | `tool_calls` on response, not dict key |
+| M-LLM-R.2.3 | **`stream_messages` → `Iterable[LLMStreamEvent]`** | **Done** | High | same | Final event mandatory |
+| M-LLM-R.2.4 | **`stream_with_tools` → `Iterable[LLMStreamEvent]`** | **Done** | High | same | Tool deltas typed |
+| M-LLM-R.2.5 | **`generate_structured` → `LLMStructuredResult[T]`** | **Done** | High | same | Return type annotated |
+| M-LLM-R.2.6 | **`_finalize_call` helper** — unify `begin_call`/`end_call` + populate `LLMTokenUsage` on response from same counters | **Done** | **Critical** | `llm_adapter.py` or `_shared/call_lifecycle.py` | Single path; no duplicate counting |
+
+#### Wave M-LLM-R-3 — Provider adapters (all 19 slugs)
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-R.3.1 | **OpenAI Responses + Chat Completions** — map SDK usage, `finish_reason`, `response.id` / choice metadata | **Done** | **Critical** | `openai_responses_adapter.py`, `openai_chat_completions_adapter.py` | Mocked unit tests per method |
+| M-LLM-R.3.2 | **Claude + Mistral + Cohere native** — SDK usage where available; map stop_reason / refusal | **Done** | **Critical** | `claude_adapter.py`, `mistral_adapter.py`, `cohere_native_adapter.py` | Stop using estimate-only when SDK exposes usage |
+| M-LLM-R.3.3 | **Gemini + Vertex** — candidate finish reason, usage metadata, typed tool calls | **Done** | High | `gemini_adapter.py`, `vertex_gemini_adapter.py` | Conformance green |
+| M-LLM-R.3.4 | **AWS Bedrock** — Converse + legacy paths; map stopReason, usage, toolUse blocks | **Done** | High | `aws_bedrock_adapter.py` | Existing bedrock tool tests updated |
+| M-LLM-R.3.5 | **Ollama + OpenAI-compat family** — best-effort usage; document estimate fallback in `provider_extensions` | **Done** | Medium | `ollama_adapter.py`, `openai_compat_*` | Explicit `usage.source` flag on extensions |
+| M-LLM-R.3.6 | **Streaming parity** — all `supports_streaming()` adapters emit typed `LLMStreamEvent` | **Done** | High | all streaming providers | No `yield str` remaining |
+| M-LLM-R.3.7 | **Structured output parity** — return `LLMStructuredResult[T]` with raw completion preserved | **Done** | Medium | adapters with `supports_structured_output()` | JSON parse failures attach to response metadata |
+
+#### Wave M-LLM-R-4 — Nexus runtime consumers (Tier-1)
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-R.4.1 | **`CoreLLMStep`** — `state.raw_answer = completion.content`; trace finish_reason + token snapshot | **Done** | **Critical** | `runtime_steps/core_llm_step.py` | `test_core_llm_step.py` updated |
+| M-LLM-R.4.2 | **`ToolPlanningService`** — native tools path uses `completion.tool_calls`; planner text path uses `completion.content` | **Done** | **Critical** | `tools/tool_planning_service.py` | Tool plan tests green |
+| M-LLM-R.4.3 | **`plan_sources` + `engine_history_layer`** — consume `.content` | **Done** | High | `planning/plan_sources.py`, `context/engine_history_layer.py` | Unit tests updated |
+| M-LLM-R.4.4 | **User/org profile services + session consolidation** — all `generate_messages` call sites | **Done** | High | `runtime/user_profile/*`, `runtime/organization/*` | Grep: zero `.generate_messages` → str assignment |
+| M-LLM-R.4.5 | **`supervisor.py`** — all LLM call sites | **Done** | Medium | `intergrax/supervisor/supervisor.py` | Supervisor unit tests |
+| M-LLM-R.4.6 | **Optional: store last adapter response on `RuntimeState`** — `last_llm_adapter_response: LLMAdapterResponse \| None` for trace/replay | **Done** | Medium | `engine/runtime_state.py` | Enables per-step cost attribution |
+
+#### Wave M-LLM-R-5 — RAG, websearch, legacy (Tier-0 consumers)
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-R.5.1 | **RAG LLM paths** — `query_refiner`, `query_expander`, `chunk_enricher`, `llm_graph_indexer` | **Done** | **Critical** | `intergrax/rag/` | RAG unit tests use typed mocks |
+| M-LLM-R.5.2 | **Websearch** — `websearch_context_generator`, `websearch_answerer` | **Done** | High | `intergrax/websearch/` | Tests updated |
+| M-LLM-R.5.3 | **Legacy `rag_answers`** — migrate or mark deprecated path to `.content` | **Done** | Low | `legacy/rag_answers/` | No str assumption in active Nexus paths |
+
+#### Wave M-LLM-R-6 — Agents, scaffold, test support (Tier-2)
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-R.6.1 | **Agent pipeline mocks** — echo, legal, research, problem_radar, signoff_probe, organization_worker, lab mocks | **Done** | High | `agents/*/steps/pipeline.py`, `agents/lab/mock_agents.py` | Agent unit tests green |
+| M-LLM-R.6.2 | **`scaffold/new_agent.py` template** — generated stub returns `LLMAdapterResponse` | **Done** | High | `intergrax/scaffold/new_agent.py` | New-agent scaffold test |
+| M-LLM-R.6.3 | **`testing_support/builder.py` fake adapter** | **Done** | Medium | `testing_support/builder.py` | Shared test helper |
+| M-LLM-R.6.4 | **Tier-2 rule check** — agents must not assume `str` from adapter | **Done** | Low | `scripts/check_agents_llm_adapter_response.py` | CI script in §6.1 maintenance list |
+
+#### Wave M-LLM-R-7 — Observability, replay, trace bridge
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-R.7.1 | **Align `LLMAdapterUsageLog.end_call` with response `usage`** — same integers; optional validation assert in debug | **Done** | High | `llm_adapter.py` | Metrics unchanged; no double-count |
+| M-LLM-R.7.2 | **Emit `LLM_CALL` trace events from runtime** — populate `LLMCallInfo` fields from `LLMAdapterResponse` | **Done** | **Critical** | `core_llm_call_recorded.py`, `trace_replay_bridge.py`, `persisted_trace_event_store.py` | Gate: `test_trace_replay_bridge.py` |
+| M-LLM-R.7.3 | **`LLMCallInfo` typed bridge** — map `LLMAdapterResponse` → replay model (no loose dict payloads) | **Done** | High | `runtime/replay/models.py` + mapper | Frozen mapper function |
+| M-LLM-R.7.4 | **Update diagnostics** — `CoreLLMAdapterReturnedDiagV1`: `finish_reason`, token fields, drop `adapter_return_type="str"` | **Done** | Medium | `tracing/adapters/core_llm_adapter_returned.py` | PII-safe payload |
+| M-LLM-R.7.5 | **Adaptive harness signal hook (optional)** — expose per-call tokens/refusal for W-ADAPT cost/quality signals | **Done** | Low | `llm_call_summary.py`, `signal_collector.py`, `HarnessOutcomeSignal.last_llm_*` | Optional `SignalAssemblyInput.last_llm_call` |
+
+#### Wave M-LLM-R-8 — Docs, conformance, CI closeout
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-R.8.1 | **`LLM_ADAPTERS.md` rewrite** — response envelope section; migration guide; two-layer usage clarified | **Done** | **Critical** | `docs/LLM_ADAPTERS.md` | Examples use `.content` |
+| M-LLM-R.8.2 | **Conformance suite** — `assert_generate_messages_returns_completion`; tools/stream/structured typed asserts | **Done** | **Critical** | `_shared/conformance.py`, `tests/unit/llm_adapters/` | Gate + `llm-adapters-guard.yml` |
+| M-LLM-R.8.3 | **`check_llm_adapter_typed_returns.py`** — CI guard: no `-> str` / `-> Dict[str, Any]` on adapter public methods | **Done** | High | `scripts/` | Added to §6.1 maintenance |
+| M-LLM-R.8.4 | **Phase closeout** — Appendix L paydown complete; M-LLM table row M-LLM.14 **Done**; remove audit follow-up pointer | **Done** | Medium | This plan | All M-LLM-R.* Done |
+
+**Suggested PR order:**
+
+```text
+Wave 0:  M-LLM-R.0.2 → 0.3
+Wave 1:  M-LLM-R.1.1 → 1.2 → 1.3 → 1.4 → 1.5 → 1.6 → 1.7 → 1.8
+Wave 2:  M-LLM-R.2.6 → 2.1 → 2.2 → 2.3 → 2.4 → 2.5
+Wave 3:  M-LLM-R.3.1 → 3.2 → 3.3 → 3.4 → 3.5 → 3.6 → 3.7  (may split 1 PR per provider family)
+Wave 4:  M-LLM-R.4.1 → 4.2 → 4.3 → 4.4 → 4.5 → 4.6
+Wave 5:  M-LLM-R.5.1 → 5.2 → 5.3
+Wave 6:  M-LLM-R.6.1 → 6.2 → 6.3 → 6.4
+Wave 7:  M-LLM-R.7.1 → 7.2 → 7.3 → 7.4 → 7.5
+Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
+```
+
+**Explicitly out of scope:** K.1/K.2, new product Tier-3 apps, rewriting provider SDK clients, HTTP API response DTOs for product routes (Tier-3 owns those separately).
 
 ### Phase M-RAG — RAG Engine (Tier-0)
 
@@ -716,6 +882,9 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M.5 | Provider conformance test harness | **Done** | `tests/unit/integrations/`, `_shared/conformance.py` |
 | M.6 | P1 providers (on demand) | **Done** (beta) | postgresql, mysql, jira, confluence, prometheus, ms365_graph, aws, azure, gcp — see M.4/M.6 trackers |
 | M.6 P2 | Extended providers (on demand) | **Done** (beta) | All P2/P3 slugs shipped 2026-05-30 — see **M.6 P2 tracker**; `_shared/p2/` + thin `providers/<slug>/` shells |
+| M.6 P4 | Harness platform expansion | **Done** (beta) (28/28) | `_shared/p5/` · `bootstrap_m6_p4.py` · [M.6 P4 register](#m6-p4--harness-platform-expansion-done) |
+| M.6 P5 | Harness integration depth (audit 2026-06-02) | **Done** (33/34) | Harden 25 STABLE + health · 8 greenfield · `trivy` → [M.6 P6](#m6-p6--harness-integration-expansion-planned) · [M.6 P5 register](#m6-p5--harness-integration-depth-done--3334) |
+| M.6 P6 | Harness integration expansion (audit 2026-06-02) | **Done** (32/32) | Security, sandbox, identity, GitOps CI, speech catalog, enterprise ops, data/workflow, modality reserve · [M.6 P6 register](#m6-p6--harness-integration-expansion-planned) · Band **2ac** |
 | M.7 | Agent Creation Guide § integrations | **Done** | Appendix E — capabilities/tools vs `IntegrationProfile` / `wire_lab_integrations()` |
 | M.8 | Lab `IntegrationProfile` example | **Done** | `applications/lab_application/` — `wire_lab_integrations()` + `log` provider |
 
@@ -796,7 +965,7 @@ Deliver after M.6 P1 priorities unless a product app blocks on a specific slug. 
 
 **M.10 harness Tier A (Done beta):** composite observability (`observability_backends` + role-based `resolve_observability_backend`), HITL→PagerDuty runtime path (`create_harness_notification_adapter`, `LAB_HARNESS`), integration tests.
 
-**M.9 harness depth (Done beta):** full adapters (LangSmith, OpenSearch, Vespa, GitLab, PagerDuty, Braintrust), tools (`gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`), `slash_command`, lab harness profile, CI harness-smoke job. Catalog: **99**.
+**M.9 harness depth (Done beta):** full adapters (LangSmith, OpenSearch, Vespa, GitLab, PagerDuty, Braintrust), tools (`gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`), `slash_command`, lab harness profile, CI harness-smoke job. Catalog: **99** (M.9 closeout; **135** after M.6 P5).
 
 **M.8 harness gap (Done beta):** +14 slugs via `_shared/p4/factories.py`
 
@@ -827,6 +996,280 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 | `jina_rerank` | **Done** (beta) | RAG rerank via integration resolver |
 | `reddit` | **Done** (beta) | Reddit OAuth2 search |
 | `google_places` | **Done** (beta) | Google Places text search |
+
+#### M.6 P4 — Harness platform expansion (Done)
+
+**Status:** **Done** (2026-06-02) — **28/28 Done** · catalog **127** slugs  
+**Source:** Integration harness ROI audit (2026-06-02)  
+**Queue:** [§6.1w](#61w-harness-implementation-queue--integration-expansion-m6-p4-closed) · **Execution order:** [§6.2ae](#62ae-phase-m6-p4-execution-order--done)  
+**Priority ladder:** **Band 2aa** (§4.0) — **Done**  
+**Implementation:** `intergrax/integrations/_shared/p5/` + thin shells via `scripts/wire_p5_m6_p4_providers.py` · `register_m6_p4_integrations()` in `bootstrap_extended.py`
+
+**Hard rules:**
+
+- **No** LLM API slugs — use `llm_adapters/` (canon §7.1.2).
+- **New categories** (`feature_flag`, `ci_cd`) require canon §5.2.4 review before merge — track **M-P4-CAT.\*** first.
+- Reuse M.4 workflow: contract (or extend existing) → `providers/<category>/<slug>/` → unit tests → `USAGE.md` → `layout.py` → gate green.
+- `ollama` bridges existing `infra/integration` Docker + `LLMAdapter` Ollama path — not a duplicate LLM stack.
+
+**New category proposals (M-P4-CAT):**
+
+| ID | Category | Slugs | Status | Acceptance |
+|----|----------|-------|--------|------------|
+| M-P4-CAT.1 | `feature_flag` | `unleash`, `launchdarkly` | **Done** | `FeatureFlagBackend` + `IntegrationCategory.FEATURE_FLAG` |
+| M-P4-CAT.2 | `ci_cd` | `github_actions` | **Done** | `CiCdBackend` + `IntegrationCategory.CI_CD` |
+
+##### M.6 P4 — Master register (28 slugs)
+
+| Wave | ID | Slug | Category | Priority | Status | Harness ROI | Acceptance |
+|------|-----|------|----------|----------|--------|-------------|------------|
+| H-INT-1 | M-P4.1 | `pgvector` | vector_store | **P0** | **Done** (beta) | Unify PostgreSQL (stable) + RAG vectors + adaptive stores | `IntegrationProfile.vector_store=pgvector`; RAG hybrid query; gate unit tests |
+| H-INT-1 | M-P4.2 | `duckdb` | relational_store | **P0** | **Done** (beta) | Local OLAP for `phase_w_adapt_report`, eval trends, golden scenarios | `RelationalStore` read path; CI-friendly file DB; report script optional backend |
+| H-INT-1 | M-P4.3 | `influxdb` | observability_backend | **P1** | **Done** (beta) | Time-series utility U, cost, latency — adaptive KPIs | `ObservabilityBackend` query_range; W-ADAPT signal export optional |
+| H-INT-1 | M-P4.4 | `timescaledb` | relational_store | **P1** | **Done** (beta) | Hypertables for adaptive + eval registry trends on Postgres | Extends `postgresql` contract; migration note in USAGE |
+| H-INT-2 | M-P4.5 | `grafana` | observability_backend | **P0** | **Done** (beta) | W-OPS.4 SLO dashboards; L3 release visibility | HTTP API health + dashboard URL artifact; lab stack doc |
+| H-INT-2 | M-P4.6 | `loki` | observability_backend | **P0** | **Done** (beta) | Log query for RuntimeEvents / structured logs | LogQL query adapter; complements `prometheus` |
+| H-INT-2 | M-P4.7 | `tempo` | observability_backend | **P0** | **Done** (beta) | Trace backend for OTEL (`otel` slug exists; dedicated store) | Trace query by `trace_id`; lab compose profile |
+| H-INT-3 | M-P4.8 | `aws_secrets_manager` | secrets_store | **P0** | **Done** (beta) | Prod harness secrets; complements `aws` facade | `SecretsStore` get/list; no secrets in agent code |
+| H-INT-3 | M-P4.9 | `azure_key_vault` | secrets_store | **P0** | **Done** (beta) | Azure prod parity | MI / SP auth via `azure` patterns |
+| H-INT-3 | M-P4.10 | `gcp_secret_manager` | secrets_store | **P0** | **Done** (beta) | GCP prod parity | ADC / SA via `gcp` patterns |
+| H-INT-3 | M-P4.11 | `doppler` | secrets_store | **P1** | **Done** (beta) | Dev/prod secret sync for harness authors | Project/config scoped fetch; lab `.env` bridge |
+| H-INT-4 | M-P4.12 | `unleash` | feature_flag | **P0** | **Done** (beta) | Gradual `AdaptiveProfile` rollout (observe→recommend) | Requires **M-P4-CAT.1**; tenant-scoped flags |
+| H-INT-4 | M-P4.13 | `launchdarkly` | feature_flag | **P1** | **Done** (beta) | Enterprise feature flags + canary | Requires **M-P4-CAT.1** |
+| H-INT-4 | M-P4.14 | `github_actions` | ci_cd | **P0** | **Done** (beta) | Harness release gate status; `harness-release.yml` evidence | Requires **M-P4-CAT.2**; workflow run + check suite read |
+| H-INT-4 | M-P4.15 | `redpanda` | message_bus | **P1** | **Done** (beta) | Kafka-compatible async `AdaptationScheduler` / pattern miner | Lab compose; consumer/producer contract tests |
+| H-INT-4 | M-P4.16 | `cloudflare_r2` | object_storage | **P1** | **Done** (beta) | S3-compatible cheap eval/adaptive artifacts | `ObjectStorage` put/get; reuse S3 adapter patterns |
+| H-INT-5 | M-P4.17 | `memgraph` | graph_store | **P1** | **Done** (beta) | GraphRAG alternative; lighter lab footprint | `GraphStore` contract; RAG `INTERGRAX_RAG_GRAPH_STORE` option |
+| H-INT-5 | M-P4.18 | `falkordb` | graph_store | **P2** | **Done** (beta) | Redis-module graph — reuse lab `redis` stack | Bolt/Redis protocol adapter |
+| H-INT-5 | M-P4.19 | `incident_io` | notification_channel | **P1** | **Done** (beta) | Ops runbooks (`runbook/adaptive/*`) → real incidents | Outbound incident create; HITL escalation path |
+| H-INT-5 | M-P4.20 | `kubernetes` | cloud_platform | **P1** | **Done** (beta) | Prod harness host deploy; health probes at scale | Extend `CloudPlatform` — namespace/workload health |
+| H-INT-5 | M-P4.21 | `servicenow` | issue_tracker | **P2** | **Done** (beta) | Enterprise change approval for policy learning | `IssueTracker` search/get; HITL change ticket |
+| H-INT-5 | M-P4.22 | `bitbucket` | issue_tracker | **P2** | **Done** (beta) | Atlassian stack beside `jira` | REST issues/PRs |
+| H-INT-5 | M-P4.23 | `asana` | issue_tracker | **P2** | **Done** (beta) | PM human task queue beside `linear` | Task search/create |
+| H-INT-5 | M-P4.24 | `sendgrid` | notification_channel | **P2** | **Done** (beta) | Deliverability beyond raw `email_smtp` | Transactional send API |
+| H-INT-5 | M-P4.25 | `mailgun` | interaction_surface | **P2** | **Done** (beta) | Inbound email → interaction intake | Webhook verify + payload normalize |
+| H-INT-5 | M-P4.26 | `mlflow` | observability_backend | **P2** | **Done** (beta) | Experiment tracking beside wandb/braintrust | Run/metric log API; lab workflow §35 |
+| H-INT-5 | M-P4.27 | `huggingface_hub` | object_storage | **P2** | **Done** (beta) | W-ML model artifact pull (ONNX/YOLO) | Model file get/list; modality plane bridge |
+| H-INT-5 | M-P4.28 | `ollama` | interaction_surface | **P2** | **Done** (beta) | Local inference host (`infra/integration` ollama service) | Health probe + model list; cross-link [MODALITY.md](MODALITY.md) · not LLM catalog slug |
+
+**Explicitly excluded from M.6 P4:** CRM (Salesforce, HubSpot), payment rails, blockchain, duplicate vector SaaS, LLM vendor APIs.
+
+##### M.6 P4 — Paydown log
+
+| Date | ID | Summary |
+|------|-----|---------|
+| 2026-06-02 | M-P4.0 | Register 28 harness-ROI integration slugs + §6.1w + §6.2ae + Band 2aa (audit → plan) |
+| 2026-06-02 | M-P4.1–M-P4.28 | All 28 M.6 P4 providers: `_shared/p5/`, layout **127**, tests `test_p5_m6_p4_providers.py`, gate green |
+| 2026-06-02 | M-P4.FU | Tier-3 follow-up (no business agents): `harness_production_stack` / `harness_production_defaults`, lab env (`LAB_OBSERVABILITY_GRAFANA_STACK`, `LAB_ADAPTIVE_FEATURE_FLAG`, `LAB_SECRETS_BACKEND`), adaptive feature-flag gate, pgvector persistence + health, M6 P4 stable promotion (8 slugs), `health_check_harness_m6_p4_probes`, docs sync |
+| 2026-06-02 | M-P4.FU.2 | Adaptive runtime bridge uses gated `wiring.profile`; debug `GET /debug/integrations/health`; remove `getattr` from P5 health probes (`IntegrationHealthProbe`); W-OPS integration health debug gate; gate **790** |
+
+#### M.6 P5 — Harness integration depth (Done — 33/34)
+
+**Deferred:** `trivy` — absorbed into **M.6 P6** [M-P6.1](#m6-p6--master-register-32-slugs) with `security_scanner` category (**M-P6-CAT.1**).
+
+**Delivered (2026-06-02):**
+
+- `_shared/p6/factories.py` — 8 greenfield harness slugs
+- `bootstrap_m6_p5.py` + `layout.py` (+8 slugs → **135** catalog slugs)
+- Health probes on harden adapters; **STABLE** promotion (25 slugs)
+- Tier-3 presets: `harness_metrics_stack`, `harness_eval_stack`, `harness_async_stack`, `harness_ci_stack`
+- `HARNESS_M6_P5_PROBE_SLUGS` + `health_check_harness_m6_p5_probes()` + debug API `stack=m6_p5`
+- `integrations-pick` presets: `harness_metrics`, `harness_eval`, `harness_async`, `harness_ci`
+- Tests: `tests/unit/integrations/providers/test_p6_m6_p5_providers.py`
+
+#### M.6 P5 — Harness integration depth (register archive)
+
+**Status:** **Done** (2026-06-02) — **33/34** · catalog **135** slugs in layout.py (**136** when `trivy` ships)  
+**Source:** Harness integration re-audit (2026-06-02) — post M.6 P4 follow-up  
+**Queue:** [§6.1x](#61x-harness-implementation-queue--integration-depth-m6-p5-planned) · **Execution order:** [§6.2af](#62af-phase-m6-p5-execution-order-band-2ab--planned)  
+**Priority ladder:** **Band 2ab** (§4.0) — runs **in parallel** with §6.1 maintenance; **does not** unblock Band 3 product work
+
+**Scope split:**
+
+| Kind | Count | Meaning |
+|------|-------|---------|
+| **Harden** | 25 | Slug already in catalog (`beta`) — health probe, STABLE promotion, harness preset wiring, tests |
+| **Greenfield** | 9 | New slug + provider tree — same M.4 workflow as P4 |
+
+**Hard rules (inherit M.6 P4):**
+
+- **No** LLM vendor API slugs — use `llm_adapters/` (canon §7.1.2).
+- **No** CRM, payments, blockchain, or duplicate vector SaaS without explicit harness ROI.
+- Reuse `_shared/p5/` HTTP patterns or existing provider packages — **do not** fork RAG/runtime stores.
+- One slug (or one harden wave) per PR; gate green after each.
+- `infra/integration` Docker profile must be documented in slug `USAGE.md` when a local service exists.
+
+**New category proposals (M-P5-CAT):**
+
+| ID | Category | Slugs | Status | Acceptance |
+|----|----------|-------|--------|------------|
+| M-P5-CAT.1 | `ci_cd` (extend) | `gitlab_ci`, `circleci`, `azure_pipelines`, `codecov` | **Done** | Read-only workflow/check/coverage APIs on existing `CiCdBackend` |
+| M-P5-CAT.2 | `security_scanner` *(proposed)* | `trivy` | **Deferred** | `SecurityScannerBackend` with `scan_image(ref) -> ScanReport`; canon §5.2.4 review before merge |
+| M-P5-CAT.3 | — *(use existing)* | `mailpit`, `localstack`, `grafana_oncall`, `opentelemetry_collector` | **Done** | Map to existing categories (`notification_channel`, `cloud_platform`, `notification_channel`, `observability_backend`) |
+
+**Tier-3 named presets (deliver with H-INT-6 closeout):**
+
+| Preset function | Slugs (primary) | Harness use |
+|-----------------|-----------------|-------------|
+| `harness_metrics_stack()` | `prometheus` + `grafana` + `otel` | W-OPS.4 SLO / metrics-first lab |
+| `harness_eval_stack()` | `langfuse` + `minio` + `duckdb` | EVAL export + experiment traces |
+| `harness_async_stack()` | `redpanda` or `kafka` + `redis` + optional `temporal` | W-ADAPT async / long-running |
+| `harness_ci_stack()` | `github_actions` + `gitlab_ci` + optional `circleci` | Multi-CI release evidence |
+
+##### M.6 P5 — Master register (34 slugs)
+
+| Wave | ID | Slug | Category | Kind | Priority | Status | Harness ROI | Acceptance |
+|------|-----|------|----------|------|----------|--------|-------------|------------|
+| H-INT-6 | M-P5.1 | `prometheus` | observability_backend | harden | **P0** | **Done** | Metrics SLO backbone (W-OPS.4); complements Grafana stack | Health probe; `harness_metrics_stack`; infra `:9090` |
+| H-INT-6 | M-P5.2 | `clickhouse` | observability_backend | harden | **P0** | **Done** | OLAP eval/adaptive trends at scale | Query adapter; infra `:8123` |
+| H-INT-6 | M-P5.3 | `vault` | secrets_store | harden | **P0** | **Done** | Prod secrets alt in `harness_production_stack` | Health probe; STABLE; infra `:8200` |
+| H-INT-6 | M-P5.4 | `pagerduty` | notification_channel | harden | **P0** | **Done** | HITL / incident escalation (tool already wired) | Integration health + lab smoke |
+| H-INT-6 | M-P5.5 | `github` | issue_tracker | harden | **P0** | **Done** | PR/issue context for release board | Read API; links to `github_actions` evidence |
+| H-INT-6 | M-P5.6 | `gitlab_ci` | ci_cd | greenfield | **P0** | **Done** | GitLab pipeline status for harness release | **M-P5-CAT.1**; `CiCdBackend` read |
+| H-INT-6 | M-P5.7 | `circleci` | ci_cd | greenfield | **P0** | **Done** | Multi-CI release evidence | **M-P5-CAT.1** |
+| H-INT-6 | M-P5.8 | `azure_pipelines` | ci_cd | greenfield | **P0** | **Done** | Azure DevOps CI parity | **M-P5-CAT.1**; pairs with `azure_devops` issue tracker |
+| H-INT-6 | M-P5.9 | `mailpit` | notification_channel | greenfield | **P0** | **Done** | Local SMTP/HITL without SaaS | Infra `:1025`/`:8025`; email capture tests |
+| H-INT-6 | M-P5.10 | `localstack` | cloud_platform | greenfield | **P0** | **Done** | S3/SQS/DynamoDB smoke in CI | Infra `:4566`; pairs with `s3`/`sqs`/`dynamodb` slugs |
+| H-INT-7 | M-P5.11 | `langfuse` | observability_backend | harden | **P0** | **Done** | LLM trace + eval export (EVAL/W-ADAPT) | Infra `:3000`; `harness_eval_stack` |
+| H-INT-7 | M-P5.12 | `phoenix` | observability_backend | harden | **P0** | **Done** | Arize OSS trace UI for lab | Infra `:6006` |
+| H-INT-7 | M-P5.13 | `braintrust` | observability_backend | harden | **P1** | **Done** | Online eval registry bridge | API read + export hook |
+| H-INT-7 | M-P5.14 | `mlflow` | observability_backend | harden | **P1** | **Done** | Experiment tracking (M.6 P4 beta hardening) | STABLE promotion path |
+| H-INT-7 | M-P5.15 | `influxdb` | observability_backend | harden | **P1** | **Done** | Adaptive KPI time-series (M.6 P4 beta) | STABLE + W-ADAPT optional export |
+| H-INT-7 | M-P5.16 | `timescaledb` | relational_store | harden | **P1** | **Done** | Eval/adaptive hypertables on Postgres | Extends `postgresql` patterns |
+| H-INT-7 | M-P5.17 | `temporal` | message_bus | harden | **P1** | **Done** | Long-running harness workflows | Infra `heavy` profile `:7233` |
+| H-INT-7 | M-P5.18 | `redpanda` | message_bus | harden | **P1** | **Done** | Kafka-compat async adaptive bus (M.6 P4 beta) | STABLE + `harness_async_stack` |
+| H-INT-7 | M-P5.19 | `minio` | object_storage | harden | **P1** | **Done** | Local S3 for eval/adaptive artifacts | Infra `:9000`; preset with `harness_eval_stack` |
+| H-INT-7 | M-P5.20 | `s3` | object_storage | harden | **P1** | **Done** | Prod checkpoint/eval blob store | `harness_production_stack` option |
+| H-INT-8 | M-P5.21 | `neo4j` | graph_store | harden | **P1** | **Done** | GraphRAG harness eval | Infra `:7687`; health probe |
+| H-INT-8 | M-P5.22 | `mongodb` | document_store | harden | **P1** | **Done** | MEM platform JSON artifacts | Infra `:27017` |
+| H-INT-8 | M-P5.23 | `elasticsearch` | observability_backend | harden | **P1** | **Done** | Log search for RuntimeEvents | Infra `:9200` |
+| H-INT-8 | M-P5.24 | `nats` | message_bus | harden | **P2** | **Done** | Lightweight async bus | Infra `:4222` |
+| H-INT-8 | M-P5.25 | `chroma` | vector_store | harden | **P2** | **Done** | RAG lab alternative | Infra `:8000`; thin RAG bridge |
+| H-INT-8 | M-P5.26 | `weaviate` | vector_store | harden | **P2** | **Done** | RAG lab alternative | Infra `:8080` |
+| H-INT-8 | M-P5.27 | `launchdarkly` | feature_flag | harden | **P2** | **Done** | Enterprise canary beside Unleash | Adaptive gate smoke |
+| H-INT-8 | M-P5.28 | `signoz` | observability_backend | harden | **P2** | **Done** | Self-hosted OTEL APM | Optional Grafana stack alt |
+| H-INT-9 | M-P5.29 | `codecov` | ci_cd | greenfield | **P2** | **Done** | Coverage gate in release evidence | **M-P5-CAT.1** |
+| H-INT-9 | M-P5.30 | `trivy` | security_scanner | greenfield | **P2** | **→ M-P6.1** | Image/SBOM scan before STABLE promote | Absorbed into [M.6 P6](#m6-p6--harness-integration-expansion-planned) (**M-P6-CAT.1**) |
+| H-INT-9 | M-P5.31 | `grafana_oncall` | notification_channel | greenfield | **P2** | **Done** | On-call beside Grafana stack | Webhook/API incident create |
+| H-INT-9 | M-P5.32 | `opentelemetry_collector` | observability_backend | greenfield | **P2** | **Done** | Collector admin/health (export via `otel`) | Distinct from app OTEL export slug |
+| H-INT-9 | M-P5.33 | `snowflake` | relational_store | harden | **P2** | **Done** | Enterprise eval analytics | Existing beta hardening only |
+| H-INT-9 | M-P5.34 | `supabase` | relational_store | harden | **P2** | **Done** | Postgres+auth lab shortcut | Existing beta hardening only |
+
+**Explicitly excluded from M.6 P5:** CRM (Salesforce, HubSpot), payment rails, blockchain, `vespa`/`selenium` (heavy lab only), `servicenow`/`asana`/`notion`/`sharepoint`/`google_workspace` (business PM/collab), duplicate vector SaaS without infra smoke (`pinecone`, `milvus` until explicitly requested).
+
+**Per-slug checklist (harden):** health probe → STABLE promotion → harness preset slot (if applicable) → `HARNESS_M6_P5_PROBE_SLUGS` or W-OPS extension → gate green → paydown log row.
+
+**Per-slug checklist (greenfield):** contract/category gate → `providers/<category>/<slug>/` → unit tests → `USAGE.md` → `layout.py` → bootstrap register → gate green → paydown log row.
+
+##### M.6 P5 — Paydown log
+
+| Date | ID | Summary |
+|------|-----|---------|
+| 2026-06-02 | M-P5.0 | Register 34 harness-depth slugs from integration re-audit; §6.1x + §6.2af + Band 2ab |
+| 2026-06-02 | M-P5.1–34 | Implement 33/34 slugs: health + STABLE harden, p6 greenfield, presets, W-OPS probes; `trivy` deferred (M-P5-CAT.2) |
+| 2026-06-02 | M-P5.FU | W-OPS `harness_m6_p5_health_gate`; `IntegrationBinding` JSON dict roundtrip fix; register status sync |
+
+#### M.6 P6 — Harness integration expansion (Done — 32/32)
+
+**Status:** **Done** (2026-06-02) — **32/32** · catalog **167** slugs in layout.py  
+**Source:** Harness integration gap audit (2026-06-02) — post M.6 P5; all **32** proposed slugs registered below (includes `trivy` migrated from M-P5.30, plus `modal`, `daytona`, `workos`, `hubspot` from audit waves)  
+**Queue:** [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-planned) · **Execution order:** [§6.2ag](#62ag-phase-m6-p6-execution-order-band-2ac--planned)  
+**Priority ladder:** **Band 2ac** (§4.0) — runs **in parallel** with §6.1 maintenance; **does not** unblock Band 3 product work
+
+**Scope:** **32 greenfield** slugs — new provider trees + category contracts where noted. No business-agent logic.
+
+**Hard rules (inherit M.6 P4/P5):**
+
+- **No** LLM vendor API slugs — use `llm_adapters/` (canon §7.1.2).
+- Reuse `_shared/p6/` / `_shared/p7/` HTTP patterns — **do not** fork RAG/runtime stores.
+- One slug (or one category CAT wave) per PR; gate green after each.
+- `infra/integration` Docker profile documented in slug `USAGE.md` when a local service exists.
+- **`salesforce` / `hubspot` / `stripe`:** harness-platform slugs only (metering, CRM context for support agents) — **not** Band 3 product agents.
+
+**New category proposals (M-P6-CAT — canon §5.2.4 review before first slug in category):**
+
+| ID | Category | Slugs | Status | Acceptance |
+|----|----------|-------|--------|------------|
+| M-P6-CAT.1 | `security_scanner` | `trivy`, `snyk`, `semgrep` | **Done** | `SecurityScannerBackend`: `scan_image(ref)`, `scan_repo(path)` → `ScanReport`; completes **M-P5-CAT.2** |
+| M-P6-CAT.2 | `sandbox_host` | `e2b`, `modal`, `daytona` | **Done** | `SandboxHostBackend`: `create_session()`, `exec()`, `upload_artifact()`; bridges Tier-1 `sandbox.exec` tool |
+| M-P6-CAT.3 | `identity_provider` | `auth0`, `keycloak`, `workos` | **Done** | `IdentityProviderBackend`: `verify_token()`, `userinfo()`, optional `list_tenants()` |
+| M-P6-CAT.4 | `speech_provider` | `elevenlabs`, `deepgram` | **Done** | `SpeechProviderBackend`: TTS/STT; unifies `speech_adapters/` with Integration Library ([MODALITY.md](MODALITY.md)) |
+| M-P6-CAT.5 | `workflow_orchestrator` | `prefect`, `airflow` | **Done** | `WorkflowOrchestratorBackend`: trigger run, poll status, fetch logs (eval/RAG batch jobs) |
+| M-P6-CAT.6 | `vision_serving` | `triton` | **Done** | Remote CV inference host ([MODALITY.md](MODALITY.md) W-ML.4) |
+| M-P6-CAT.7 | `ml_inference_host` | `replicate` | **Done** | Managed model endpoint (`predict`, health) |
+| M-P6-CAT.8 | `billing_meter` | `stripe` | **Done** | Usage metering hook for harness SaaS path (canon §50 future) |
+| M-P6-CAT.9 | `crm` | `salesforce`, `hubspot` | **Done** | Read-only CRM context (accounts, contacts, tickets) for support harness agents |
+
+**Tier-3 named presets (deliver with H-INT-10 closeout or M-P6-PRE.1):**
+
+| Preset function | Slugs (primary) | Harness use |
+|-----------------|-----------------|-------------|
+| `harness_security_stack()` | `trivy` + `semgrep` + optional `snyk` | STABLE promote gate + V-SEC repo policy |
+| `harness_sandbox_stack()` | `e2b` + optional `modal` | Cloud `sandbox.exec` for lab/product hosts |
+| `harness_identity_stack()` | `keycloak` (lab) or `auth0` (prod) | Multi-tenant debug API / host auth |
+| `harness_gitops_stack()` | `argocd` + `github_actions` | Agent host deploy after eval gate |
+
+##### M.6 P6 — Master register (32 slugs)
+
+| Wave | ID | Slug | Category | Priority | Status | Harness ROI | Acceptance |
+|------|-----|------|----------|----------|--------|-------------|------------|
+| H-INT-10 | M-P6.1 | `trivy` | security_scanner | **P0** | **Done** | Image/SBOM scan before STABLE promote | **M-P6-CAT.1**; migrates M-P5.30 |
+| H-INT-10 | M-P6.2 | `snyk` | security_scanner | **P0** | **Done** | SAST/SCA in agent pack promotion pipeline | **M-P6-CAT.1** |
+| H-INT-10 | M-P6.3 | `semgrep` | security_scanner | **P0** | **Done** | Policy-as-code on agents/skills repos | **M-P6-CAT.1** |
+| H-INT-10 | M-P6.4 | `infisical` | secrets_store | **P0** | **Done** | Dev-friendly secrets sync (lab + prod) | Health probe; pairs with `harness_production_stack` |
+| H-INT-11 | M-P6.5 | `e2b` | sandbox_host | **P0** | **Done** | Cloud isolation for `sandbox.exec` | **M-P6-CAT.2**; sandbox tool bridge |
+| H-INT-11 | M-P6.6 | `modal` | sandbox_host | **P1** | **Done** | Serverless agent/compute workloads | **M-P6-CAT.2** |
+| H-INT-11 | M-P6.7 | `daytona` | sandbox_host | **P1** | **Done** | Dev environment sandbox alternative | **M-P6-CAT.2** |
+| H-INT-12 | M-P6.8 | `auth0` | identity_provider | **P0** | **Done** | SaaS OIDC for multi-tenant harness hosts | **M-P6-CAT.3** |
+| H-INT-12 | M-P6.9 | `keycloak` | identity_provider | **P0** | **Done** | Self-hosted OIDC (VPC customers) | **M-P6-CAT.3**; infra optional |
+| H-INT-12 | M-P6.10 | `workos` | identity_provider | **P1** | **Done** | Enterprise SSO + directory sync | **M-P6-CAT.3** |
+| H-INT-13 | M-P6.11 | `argocd` | ci_cd | **P0** | **Done** | GitOps deploy Tier-3 hosts after eval gate | Read API; `harness_gitops_stack` |
+| H-INT-13 | M-P6.12 | `buildkite` | ci_cd | **P1** | **Done** | Eval-before-merge pipelines | Extends `CiCdBackend` |
+| H-INT-13 | M-P6.13 | `jenkins` | ci_cd | **P1** | **Done** | Enterprise CI parity | Extends `CiCdBackend` |
+| H-INT-14 | M-P6.14 | `elevenlabs` | speech_provider | **P0** | **Done** | TTS catalog slug; bridges `speech_adapters/` | **M-P6-CAT.4**; `speech.synthesize` tool |
+| H-INT-14 | M-P6.15 | `deepgram` | speech_provider | **P0** | **Done** | STT for HITL voice + audio RAG ingest | **M-P6-CAT.4**; `speech.transcribe` tool |
+| H-INT-15 | M-P6.16 | `newrelic` | observability_backend | **P1** | **Done** | APM gap beside Datadog/Honeycomb | Health + query API |
+| H-INT-15 | M-P6.17 | `splunk` | observability_backend | **P1** | **Done** | Enterprise log search (RuntimeEvents export) | Search adapter |
+| H-INT-15 | M-P6.18 | `zendesk` | issue_tracker | **P1** | **Done** | Support tickets → agent tasks / HITL | Read/create ticket API |
+| H-INT-15 | M-P6.19 | `statsig` | feature_flag | **P1** | **Done** | Agent experiment gates beside Unleash/LD | Adaptive canary smoke |
+| H-INT-16 | M-P6.20 | `prefect` | workflow_orchestrator | **P1** | **Done** | Batch eval / dataset refresh orchestration | **M-P6-CAT.5** |
+| H-INT-16 | M-P6.21 | `airflow` | workflow_orchestrator | **P1** | **Done** | Data-eng standard for RAG reindex jobs | **M-P6-CAT.5** |
+| H-INT-16 | M-P6.22 | `typesense` | vector_store | **P1** | **Done** | Fast hybrid search lab backend | Thin RAG bridge + health |
+| H-INT-16 | M-P6.23 | `neon` | relational_store | **P1** | **Done** | Serverless Postgres for trace/eval lab | Extends `postgresql` patterns |
+| H-INT-16 | M-P6.24 | `pulsar` | message_bus | **P1** | **Done** | Multi-tenant streaming bus | Infra optional |
+| H-INT-17 | M-P6.25 | `algolia` | search_provider | **P2** | **Done** | SaaS search for product agents | Search API adapter |
+| H-INT-17 | M-P6.26 | `confluent` | message_bus | **P2** | **Done** | Managed Kafka for enterprise event bus | Pairs with `kafka` slug |
+| H-INT-17 | M-P6.27 | `backblaze_b2` | object_storage | **P2** | **Done** | Low-cost eval/shadow-workspace artifacts | S3-compat API |
+| H-INT-17 | M-P6.28 | `triton` | vision_serving | **P2** | **Done** | Remote CV inference (W-ML.4) | **M-P6-CAT.6** |
+| H-INT-17 | M-P6.29 | `replicate` | ml_inference_host | **P2** | **Done** | Hosted models without lab GPU | **M-P6-CAT.7** |
+| H-INT-17 | M-P6.30 | `stripe` | billing_meter | **P2** | **Done** | Usage metering for future harness SaaS | **M-P6-CAT.8**; read-only meter events |
+| H-INT-17 | M-P6.31 | `salesforce` | crm | **P2** | **Done** | Enterprise CRM context (support agents) | **M-P6-CAT.9**; read-only |
+| H-INT-17 | M-P6.32 | `hubspot` | crm | **P2** | **Done** | SMB CRM context (support agents) | **M-P6-CAT.9**; read-only |
+
+**Explicitly excluded from M.6 P6:** LLM vendor slugs; blockchain; duplicate thin observability without tool surface; `pinecone`/`milvus` until explicitly requested; Band 3 business agent implementations inside provider packages.
+
+**Per-slug checklist (greenfield):** category CAT gate (if new) → contract → `providers/<category>/<slug>/` → unit tests → `USAGE.md` → `layout.py` → bootstrap register → optional preset/probe → gate green → paydown log row.
+
+##### M.6 P6 — Paydown log
+
+| Date | ID | Summary |
+|------|-----|---------|
+| 2026-06-02 | M-P6.0 | Register **32** harness-expansion slugs from integration gap audit; §6.1y + §6.2ag + Band **2ac** |
+| 2026-06-02 | M-P6-WIRE | Post-catalog closeout: Tier-1 tools (`security.scan`, `workflow.*`), `HostedSandboxSession` bridge, `IntegrationSpeechAdapter`, `wire_application_identity`, V-SEC promote gate script, infra `p6` profile, CI hook |
+
+##### M.6 P6 — Post-catalog wiring closeout (Done — 2026-06-02)
+
+| ID | Deliverable | Status |
+|----|-------------|--------|
+| M-P6-WIRE.1 | `security.scan` tool + `ToolWiringContext.security_scanner` | **Done** |
+| M-P6-WIRE.2 | `workflow.trigger` / `workflow.poll` / `workflow.fetch_logs` + `workflow_orchestrator` wiring | **Done** |
+| M-P6-WIRE.3 | `sandbox.exec` → `SandboxHostBackend` via `HostedSandboxSession` | **Done** |
+| M-P6-WIRE.4 | Speech catalog → speech tools via `IntegrationSpeechAdapter` | **Done** |
+| M-P6-WIRE.5 | Harness OIDC auth via `wire_application_identity()` (lab + generic FastAPI hosts) | **Done** |
+| M-P6-WIRE.6 | `check_harness_security_promote_gate.py` (wiring default; optional live scan) | **Done** |
+| M-P6-WIRE.7 | Docker profile `p6` (keycloak, typesense, airflow) | **Done** |
+| M-P6-WIRE.8 | `extend_tool_profile_for_integration()` + lab MCP P6 wiring + product host identity | **Done** |
+| M-P6-OPS.1 | Release CLI security scan + P6 infra E2E script + `harness.reliability_smoke` P6 tools | **Done** |
 
 #### M.6 P3 — Legacy backlog note (superseded)
 
@@ -1840,7 +2283,7 @@ Wave R5 (policy):          R-Policy.1 → R-Policy.2 → R-Policy.3
 - **K.1 Problem Radar / K.2 Vendor Discovery** — **Phase K** (after U Done)
 - Multi-tenant SaaS (canon §50 — future)
 - Nested full harness per child — graph delegation remains default (R-Delegate)
-- `stable` on all 99 integration slugs — only the **lab harness stack** (see S-Ops.1)
+- `stable` on all **135** integration slugs — only the **lab harness stack** (see S-Ops.1)
 
 **Deferred from old Phase S scope → Phase K:** S-K.* (reference business agent proof).
 
@@ -2487,12 +2930,12 @@ Wave W-OPS-P2 (hygiene):    W-OPS.13 → W-OPS.14 → W-OPS.15
 
 ## Phase W-ADAPT — Adaptive Harness Intelligence (L4 runtime)
 
-**Status:** **Planned** — **0/70 Done** (RFC + canon + README synced 2026-06-05; implementation not started)  
+**Status:** **Done** (2026-06-02) — **70/70 Done** (Wave W-ADAPT-0 through Wave W-ADAPT-7 complete)  
 **Architecture spec:** [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) (AHIA) · runtime canon [§54](intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) · IDEAL [§25](IDEAL_HARNESS_AI_ARCHITECTURE.md#25-adaptive-harness-layer)  
 **Prerequisites:** Phase **V** **Done** · Phase **V-REM** **Done** · Phase **W-OPS** **Done** · Phase **H-APP** **Done** · Phases **EVAL**, **COST**, **CG** closeouts **Done** (signal sources + governance envelopes exist)  
 **Goal:** Close the gap between **L4 governance contracts** (`adaptive_governance.py`, `phase_v_closeout_gate.py --enforce-l4`) and **L4 adaptive runtime** — governed closed loop: **observe → propose → gate → shadow/canary → apply → verify → rollback**  
-**Priority ladder:** **Band 2y** (§4.0) — **default harness implementation queue** after §6.1 maintenance  
-**Execution order:** [§6.2ac](#62ac-phase-w-adapt-execution-order-band-2y--active) · queue: [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active)  
+**Priority ladder:** **Band 2y** (§4.0) — **closed**; default queue = **§6.1 maintenance**  
+**Execution order:** [§6.2ac](#62ac-phase-w-adapt-execution-order-band-2y--closed) · queue: [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-closed)  
 **Traceability:** [Appendix K](#appendix-k--adaptive-harness-intelligence-traceability-phase-w-adapt)
 
 **Delivery rule:** One **W-ADAPT.\*** ID per PR → update master table + Appendix K + paydown log → `pytest -m gate` green → run `phase_w_adapt_report.py` when touching signal/proposal paths.
@@ -2550,110 +2993,110 @@ Total: 70 deliverables
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
 | W-ADAPT-0.1 | **Plan + canon sync** — Phase W-ADAPT section, §4.0 Band 2y, §6.1t, §6.2ac, Appendix K; AHIA ↔ plan cross-links | **Done** | **Critical** | This section + AHIA Appendix B |
-| W-ADAPT-0.2 | **`docs/adr/ADR-ADAPT-001.md`** — Adaptive Harness Intelligence over classical RL (AHIA Appendix C) | Planned | High | ADR accepted; linked from AHIA + canon §54 |
-| W-ADAPT-0.3 | **Package scaffold** — `intergrax/runtime/adaptive/` with `contracts.py`, `__init__.py`, re-exports | Planned | **Critical** | Importable; no runtime side effects |
-| W-ADAPT-0.4 | **Extend `runtime/architecture/__init__.py`** — export adaptive contracts without duplicating `adaptive_governance.py` | Planned | Medium | Unit smoke import |
-| W-ADAPT-0.5 | **Gate test stub** — `tests/unit/runtime/adaptive/test_package_imports.py` | Planned | Medium | `pytest -m gate` green |
+| W-ADAPT-0.2 | **`docs/adr/ADR-ADAPT-001.md`** — Adaptive Harness Intelligence over classical RL (AHIA Appendix C) | **Done** | High | ADR accepted; linked from AHIA + canon §54 |
+| W-ADAPT-0.3 | **Package scaffold** — `intergrax/runtime/adaptive/` with `contracts.py`, `__init__.py`, re-exports | **Done** | **Critical** | Importable; no runtime side effects |
+| W-ADAPT-0.4 | **Extend `runtime/architecture/__init__.py`** — export adaptive contracts without duplicating `adaptive_governance.py` | **Done** | Medium | Unit smoke import |
+| W-ADAPT-0.5 | **Gate test stub** — `tests/unit/runtime/adaptive/test_package_imports.py` | **Done** | Medium | `pytest -m gate` green |
 
 #### Wave W-ADAPT-1 — Observe (L4-O)
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| W-ADAPT-1.1 | **`HarnessOutcomeSignal`** + **`UtilityWeights`** Pydantic contracts | Planned | **Critical** | Schema validated; AHIA §10.1 |
-| W-ADAPT-1.2 | **`ProfileVersionRecord`**, **`ProfileVersionDraft`**, **`ProcessPatternProposal`** contract stubs | Planned | High | Validators; status enum |
-| W-ADAPT-1.3 | **`SignalStore`** — SQLite persistence under `build/adaptive_harness/` | Planned | **Critical** | CRUD + list by tenant/window |
-| W-ADAPT-1.4 | **`SignalCollector`** — integrate `export_run_metrics()` / `RunMetricsExport` | Planned | **Critical** | behavioral + cost fields populated |
-| W-ADAPT-1.5 | **`SignalCollector`** — integrate `ExecutionGuard` + `HistoryAwareEvaluator` regression flags | Planned | High | `regression_flags` on signal |
-| W-ADAPT-1.6 | **`SignalCollector`** — integrate online/shadow eval (`OnlineEvaluationRegistry`) | Planned | High | `quality_score`, `eval_mode` |
-| W-ADAPT-1.7 | **`SignalCollector`** — integrate cost budget normalization (`cost_budget.py`) | Planned | High | `cost_normalized` |
-| W-ADAPT-1.8 | **`compute_utility()`** — AHIA §10.2 formula + default weights | Planned | **Critical** | Unit tests for weight boundaries |
-| W-ADAPT-1.9 | **`SignalCollector`** — HITL intervention counters from task/HITL runtime | Planned | Medium | `hitl_interventions` |
-| W-ADAPT-1.10 | **Nexus hook** — emit signal on task completion (`task_finisher` / lifecycle bridge) | Planned | **Critical** | ≥1 signal per completed Nexus task in integration test |
-| W-ADAPT-1.11 | **RuntimeEngine hook** — optional signal path for non-Nexus runs (parity with W-OPS shadow) | Planned | Medium | Lab runtime records signal |
-| W-ADAPT-1.12 | **`scripts/phase_w_adapt_report.py`** — signal trends + utility histograms | Planned | High | JSON under `build/adaptive_harness/signal_trends.json` |
+| W-ADAPT-1.1 | **`HarnessOutcomeSignal`** + **`UtilityWeights`** Pydantic contracts | **Done** | **Critical** | Schema validated; AHIA §10.1 |
+| W-ADAPT-1.2 | **`ProfileVersionRecord`**, **`ProfileVersionDraft`**, **`ProcessPatternProposal`** contract stubs | **Done** | High | Validators; status enum |
+| W-ADAPT-1.3 | **`SignalStore`** — SQLite persistence under `build/adaptive_harness/` | **Done** | **Critical** | CRUD + list by tenant/window |
+| W-ADAPT-1.4 | **`SignalCollector`** — integrate `export_run_metrics()` / `RunMetricsExport` | **Done** | **Critical** | behavioral + cost fields populated |
+| W-ADAPT-1.5 | **`SignalCollector`** — integrate `ExecutionGuard` + `HistoryAwareEvaluator` regression flags | **Done** | High | `regression_flags` on signal |
+| W-ADAPT-1.6 | **`SignalCollector`** — integrate online/shadow eval (`OnlineEvaluationRegistry`) | **Done** | High | `quality_score`, `eval_mode` |
+| W-ADAPT-1.7 | **`SignalCollector`** — integrate cost budget normalization (`cost_budget.py`) | **Done** | High | `cost_normalized` |
+| W-ADAPT-1.8 | **`compute_utility()`** — AHIA §10.2 formula + default weights | **Done** | **Critical** | Unit tests for weight boundaries |
+| W-ADAPT-1.9 | **`SignalCollector`** — HITL intervention counters from task/HITL runtime | **Done** | Medium | `hitl_interventions` |
+| W-ADAPT-1.10 | **Nexus hook** — emit signal on task completion (`task_finisher` / lifecycle bridge) | **Done** | **Critical** | ≥1 signal per completed Nexus task in integration test |
+| W-ADAPT-1.11 | **RuntimeEngine hook** — optional signal path for non-Nexus runs (parity with W-OPS shadow) | **Done** | Medium | Lab runtime records signal |
+| W-ADAPT-1.12 | **`scripts/phase_w_adapt_report.py`** — signal trends + utility histograms | **Done** | High | JSON under `build/adaptive_harness/signal_trends.json` |
 
 #### Wave W-ADAPT-2 — Recommend (L4-R)
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| W-ADAPT-2.1 | **`BanditStateStore`** — per `(tenant_id, task_class, arm_id)` Thompson state | Planned | **Critical** | Unit tests; partitioned by tenant |
-| W-ADAPT-2.2 | **`RoutingTuningEngine`** — `ROUTING_TUNING` proposals (LLM route + RAG tier arms) | Planned | **Critical** | Respects `max_delta_percent`; cooldown |
-| W-ADAPT-2.3 | **`ExecutionStrategyEngine`** — `EXECUTION_STRATEGY_TUNING` from step/retry/parallel metrics | Planned | High | Uses `HistoryAwareEvaluator` patterns |
-| W-ADAPT-2.4 | **`PolicyLearningEngine`** — `POLICY_LEARNING` proposals (tool deny deltas); **no apply** | Planned | High | Requires `human_approver_id` in proposal |
-| W-ADAPT-2.5 | **`EvaluationFeedbackEngine`** — `EVALUATION_FEEDBACK`; observe-only re-eval triggers | Planned | Medium | Links to `evaluation_registry_trends` |
-| W-ADAPT-2.6 | **`ProposalBuilder`** — wraps `AdaptiveLoopProposal` + attaches `ProfileVersionDraft` | Planned | **Critical** | Passes `evaluate_bounded_adaptive_loop()` |
-| W-ADAPT-2.7 | **`AdaptationEngine` facade** — ranks proposals from sub-engines | Planned | **Critical** | Unit tests with synthetic signals |
-| W-ADAPT-2.8 | **Governance gate stage 2** — `evaluate_capability_graph_compatibility()` pre-check | Planned | High | Rejects incompatible skill/policy edges |
-| W-ADAPT-2.9 | **Governance gate stage 4** — golden scenario smoke before shadow allocation | Planned | High | Uses eval assets / NexusEvalRunner |
-| W-ADAPT-2.10 | **Cost anomaly → proposal** — wire `cost_optimization.py` into `AdaptationEngine` | Planned | Medium | Anomalies produce ROUTING/COST proposals |
-| W-ADAPT-2.11 | **Extend `phase_w_adapt_report.py`** — proposal log + gate results | Planned | High | `build/adaptive_harness/proposals.json` |
-| W-ADAPT-2.12 | **`AdaptationScheduler` skeleton** — hourly `run_adaptation_engine` (recommend-only) | Planned | High | No executor calls in this wave |
+| W-ADAPT-2.1 | **`BanditStateStore`** — per `(tenant_id, task_class, arm_id)` Thompson state | **Done** | **Critical** | Unit tests; partitioned by tenant |
+| W-ADAPT-2.2 | **`RoutingTuningEngine`** — `ROUTING_TUNING` proposals (LLM route + RAG tier arms) | **Done** | **Critical** | Respects `max_delta_percent`; cooldown |
+| W-ADAPT-2.3 | **`ExecutionStrategyEngine`** — `EXECUTION_STRATEGY_TUNING` from step/retry/parallel metrics | **Done** | High | Uses `HistoryAwareEvaluator` patterns |
+| W-ADAPT-2.4 | **`PolicyLearningEngine`** — `POLICY_LEARNING` proposals (tool deny deltas); **no apply** | **Done** | High | Requires `human_approver_id` in proposal |
+| W-ADAPT-2.5 | **`EvaluationFeedbackEngine`** — `EVALUATION_FEEDBACK`; observe-only re-eval triggers | **Done** | Medium | Links to `evaluation_registry_trends` |
+| W-ADAPT-2.6 | **`ProposalBuilder`** — wraps `AdaptiveLoopProposal` + attaches `ProfileVersionDraft` | **Done** | **Critical** | Passes `evaluate_bounded_adaptive_loop()` |
+| W-ADAPT-2.7 | **`AdaptationEngine` facade** — ranks proposals from sub-engines | **Done** | **Critical** | Unit tests with synthetic signals |
+| W-ADAPT-2.8 | **Governance gate stage 2** — `evaluate_capability_graph_compatibility()` pre-check | **Done** | High | Rejects incompatible skill/policy edges |
+| W-ADAPT-2.9 | **Governance gate stage 4** — golden scenario smoke before shadow allocation | **Done** | High | Uses eval assets / NexusEvalRunner |
+| W-ADAPT-2.10 | **Cost anomaly → proposal** — wire `cost_optimization.py` into `AdaptationEngine` | **Done** | Medium | Anomalies produce ROUTING/COST proposals |
+| W-ADAPT-2.11 | **Extend `phase_w_adapt_report.py`** — proposal log + gate results | **Done** | High | `build/adaptive_harness/proposals.json` |
+| W-ADAPT-2.12 | **`AdaptationScheduler` skeleton** — hourly `run_adaptation_engine` (recommend-only) | **Done** | High | No executor calls in this wave |
 
 #### Wave W-ADAPT-3 — Shadow (L4-S)
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| W-ADAPT-3.1 | **`ProfileVersionStore`** — CRUD + immutable payloads | Planned | **Critical** | SQLite; gitignored path |
-| W-ADAPT-3.2 | **Profile version lifecycle** — `draft → shadow → canary → active → retired` | Planned | **Critical** | State machine tests |
-| W-ADAPT-3.3 | **`AdaptationExecutor.shadow()`** — allocate candidate version for shadow runs | Planned | **Critical** | Trace tag `candidate_profile_version_id` |
-| W-ADAPT-3.4 | **Extend `RuntimeArchitectureGovernanceBridge`** — candidate version in shadow observation | Planned | High | Extends W-OPS.11 hook |
-| W-ADAPT-3.5 | **`ProfilePromotionEvidence`** — mirror `agent_promotion.py` checklist for profiles | Planned | Medium | evaluation + rollback plan refs |
-| W-ADAPT-3.6 | **Integration test** — shadow run records observation with candidate version | Planned | High | `tests/integration/runtime/adaptive/` |
-| W-ADAPT-3.7 | **`QueryRouter` override** — load RAG tier weights from active/candidate profile | Planned | Medium | Unit test per profile version |
+| W-ADAPT-3.1 | **`ProfileVersionStore`** — CRUD + immutable payloads | **Done** | **Critical** | SQLite; gitignored path |
+| W-ADAPT-3.2 | **Profile version lifecycle** — `draft → shadow → canary → active → retired` | **Done** | **Critical** | State machine tests |
+| W-ADAPT-3.3 | **`AdaptationExecutor.shadow()`** — allocate candidate version for shadow runs | **Done** | **Critical** | Trace tag `candidate_profile_version_id` |
+| W-ADAPT-3.4 | **Extend `RuntimeArchitectureGovernanceBridge`** — candidate version in shadow observation | **Done** | High | Extends W-OPS.11 hook |
+| W-ADAPT-3.5 | **`ProfilePromotionEvidence`** — mirror `agent_promotion.py` checklist for profiles | **Done** | Medium | evaluation + rollback plan refs |
+| W-ADAPT-3.6 | **Integration test** — shadow run records observation with candidate version | **Done** | High | `tests/integration/runtime/adaptive/` |
+| W-ADAPT-3.7 | **`QueryRouter` override** — load RAG tier weights from active/candidate profile | **Done** | Medium | Unit test per profile version |
 
 #### Wave W-ADAPT-4 — Apply (L4-A)
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| W-ADAPT-4.1 | **`AdaptiveProfile`** on `ApplicationEnvironmentProfile` — mode, weights, loops, canary | Planned | **Critical** | Default `enabled=False`, `mode=observe` |
-| W-ADAPT-4.2 | **`wire_adaptive_profile()`** + **`nexus_factory`** — resolve active profile version pointers | Planned | **Critical** | Lab app smoke |
-| W-ADAPT-4.3 | **Canary traffic switch** — tenant allowlist + `canary_traffic_percent` | Planned | High | Only allowlisted tenants see candidate |
-| W-ADAPT-4.4 | **`AdaptationExecutor.apply()`** — atomic active pointer swap | Planned | **Critical** | Rollback pointer preserved |
-| W-ADAPT-4.5 | **`AdaptationExecutor.rollback()`** — restore previous pointer | Planned | **Critical** | <5 min in drill test |
-| W-ADAPT-4.6 | **HITL approval workflow** — `POLICY_LEARNING` blocked without approver confirmation | Planned | **Critical** | Security test: 0 unapproved applies |
-| W-ADAPT-4.7 | **`ADAPTIVE_*` RuntimeEvent types** — signal, proposal, apply, rollback | Planned | High | Events in trace export |
-| W-ADAPT-4.8 | **Extend governance bridge** — `submit_proposal()`, `apply_approved()` | Planned | High | Typed; audit trail |
-| W-ADAPT-4.9 | **Policy fragment versioning** — `RuntimePolicyBundle` slices via ProfileVersionStore | Planned | High | PolicyEngine loads version id |
-| W-ADAPT-4.10 | **Orchestration + RAG profile resolution** — versioned `OrchestrationProfile` / `RagProfile` | Planned | High | `build_nexus_loop_from_environment` reads store |
+| W-ADAPT-4.1 | **`AdaptiveProfile`** on `ApplicationEnvironmentProfile` — mode, weights, loops, canary | **Done** | **Critical** | Default `enabled=False`, `mode=observe` |
+| W-ADAPT-4.2 | **`wire_adaptive_profile()`** + **`nexus_factory`** — resolve active profile version pointers | **Done** | **Critical** | Lab app smoke |
+| W-ADAPT-4.3 | **Canary traffic switch** — tenant allowlist + `canary_traffic_percent` | **Done** | High | Only allowlisted tenants see candidate |
+| W-ADAPT-4.4 | **`AdaptationExecutor.apply()`** — atomic active pointer swap | **Done** | **Critical** | Rollback pointer preserved |
+| W-ADAPT-4.5 | **`AdaptationExecutor.rollback()`** — restore previous pointer | **Done** | **Critical** | <5 min in drill test |
+| W-ADAPT-4.6 | **HITL approval workflow** — `POLICY_LEARNING` blocked without approver confirmation | **Done** | **Critical** | Security test: 0 unapproved applies |
+| W-ADAPT-4.7 | **`ADAPTIVE_*` RuntimeEvent types** — signal, proposal, apply, rollback | **Done** | High | Events in trace export |
+| W-ADAPT-4.8 | **Extend governance bridge** — `submit_proposal()`, `apply_approved()` | **Done** | High | Typed; audit trail |
+| W-ADAPT-4.9 | **Policy fragment versioning** — `RuntimePolicyBundle` slices via ProfileVersionStore | **Done** | High | PolicyEngine loads version id |
+| W-ADAPT-4.10 | **Orchestration + RAG profile resolution** — versioned `OrchestrationProfile` / `RagProfile` | **Done** | High | `build_nexus_loop_from_environment` reads store |
 
 #### Wave W-ADAPT-5 — Verify (L4-V)
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| W-ADAPT-5.1 | **`VerificationLoop`** — compare candidate vs baseline utility trends | Planned | **Critical** | AHIA §9.6 checks 1–4 |
-| W-ADAPT-5.2 | **Auto-rollback** on verification failure | Planned | **Critical** | Invokes W-ADAPT-4.5; blocks loop kind |
-| W-ADAPT-5.3 | **Eval registry integration** — `evaluation_registry_trends.py` in verify path | Planned | High | Release comparison report |
-| W-ADAPT-5.4 | **ExecutionGuard regression rate** — verify window threshold | Planned | High | No spike vs baseline |
-| W-ADAPT-5.5 | **Cost + adversarial checks** in verify — budget + prompt/tool/retrieval suites | Planned | High | V-SEC suites still green |
-| W-ADAPT-5.6 | **`scripts/phase_w_adapt_closeout_gate.py`** — `--enforce-l4-runtime` | Planned | **Critical** | CI optional then required |
-| W-ADAPT-5.7 | **`maturity_gate_evidence.py`** — `runtime_l4_closed_loop_passed` input | Planned | High | Distinct from governance L4 |
-| W-ADAPT-5.8 | **Extend `phase_v_closeout_gate.py`** — label governance-L4 vs runtime-L4 | Planned | Medium | Docs in AHIA §20.2 |
-| W-ADAPT-5.9 | **Runbooks** — `runbook/adaptive/rollback_profile.md`, `approve_policy_learning.md`, `shadow_failure_triage.md` | Planned | Medium | Linked from HARNESS_ENVIRONMENT |
-| W-ADAPT-5.10 | **Rollback drill acceptance test** | Planned | High | Documented + automated smoke |
-| W-ADAPT-5.11 | **`l4_runtime_evidence.json` generator** — 30-day utility improvement artifact | Planned | **Critical** | AHIA §20.3 path |
-| W-ADAPT-5.12 | **Scheduler: continuous verify** on active canaries | Planned | High | W-ADAPT-2.12 extended |
+| W-ADAPT-5.1 | **`VerificationLoop`** — compare candidate vs baseline utility trends | **Done** | **Critical** | AHIA §9.6 checks 1–4 |
+| W-ADAPT-5.2 | **Auto-rollback** on verification failure | **Done** | **Critical** | Invokes W-ADAPT-4.5; blocks loop kind |
+| W-ADAPT-5.3 | **Eval registry integration** — `evaluation_registry_trends.py` in verify path | **Done** | High | Release comparison report |
+| W-ADAPT-5.4 | **ExecutionGuard regression rate** — verify window threshold | **Done** | High | No spike vs baseline |
+| W-ADAPT-5.5 | **Cost + adversarial checks** in verify — budget + prompt/tool/retrieval suites | **Done** | High | V-SEC suites still green |
+| W-ADAPT-5.6 | **`scripts/phase_w_adapt_closeout_gate.py`** — `--enforce-l4-runtime` | **Done** | **Critical** | CI optional then required |
+| W-ADAPT-5.7 | **`maturity_gate_evidence.py`** — `runtime_l4_closed_loop_passed` input | **Done** | High | Distinct from governance L4 |
+| W-ADAPT-5.8 | **Extend `phase_v_closeout_gate.py`** — label governance-L4 vs runtime-L4 | **Done** | Medium | Docs in AHIA §20.2 |
+| W-ADAPT-5.9 | **Runbooks** — `runbook/adaptive/rollback_profile.md`, `approve_policy_learning.md`, `shadow_failure_triage.md` | **Done** | Medium | Linked from HARNESS_ENVIRONMENT |
+| W-ADAPT-5.10 | **Rollback drill acceptance test** | **Done** | High | Documented + automated smoke |
+| W-ADAPT-5.11 | **`l4_runtime_evidence.json` generator** — 30-day utility improvement artifact | **Done** | **Critical** | AHIA §20.3 path |
+| W-ADAPT-5.12 | **Scheduler: continuous verify** on active canaries | **Done** | High | W-ADAPT-2.12 extended |
 
 #### Wave W-ADAPT-6 — Process pattern intelligence
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| W-ADAPT-6.1 | **`ProcessPatternMiner`** — sequence mining on trace events | Planned | High | PrefixSpan or n-gram v1 |
-| W-ADAPT-6.2 | **Trace reader** — load sequences from persisted runs / SQLite trace store | Planned | High | Tenant-scoped |
-| W-ADAPT-6.3 | **Pattern report + human review queue** in `phase_w_adapt_report.py` | Planned | Medium | `ProcessPatternProposal` export |
-| W-ADAPT-6.4 | **Optional skill stub generator** — scaffold manifest draft (no auto-register) | Planned | Low | Output file only; human merges |
-| W-ADAPT-6.5 | **Daily scheduler job** — `run_pattern_miner` | Planned | Medium | Cron via AdaptationScheduler |
+| W-ADAPT-6.1 | **`ProcessPatternMiner`** — sequence mining on trace events | **Done** | High | PrefixSpan or n-gram v1 |
+| W-ADAPT-6.2 | **Trace reader** — load sequences from persisted runs / SQLite trace store | **Done** | High | Tenant-scoped |
+| W-ADAPT-6.3 | **Pattern report + human review queue** in `phase_w_adapt_report.py` | **Done** | Medium | `ProcessPatternProposal` export |
+| W-ADAPT-6.4 | **Optional skill stub generator** — scaffold manifest draft (no auto-register) | **Done** | Low | Output file only; human merges |
+| W-ADAPT-6.5 | **Daily scheduler job** — `run_pattern_miner` | **Done** | Medium | Cron via AdaptationScheduler |
 
 #### Wave W-ADAPT-7 — Tier-3 wiring, docs, acceptance
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| W-ADAPT-7.1 | **Default `AdaptiveProfile`** on `lab_application` + reference apps | Planned | High | All `enabled=False` initially |
-| W-ADAPT-7.2 | **`BusinessOutcomeWebhook` contract** — optional Tier-3 signal for `business_outcome` | Planned | Medium | Signed payload validation |
-| W-ADAPT-7.3 | **`AGENT_CREATION_GUIDE.md` Appendix V** — Adaptive Harness authoring | Planned | High | Control plane map |
-| W-ADAPT-7.4 | **`HARNESS_ENVIRONMENT.md`** — adaptive ops section + env vars | Planned | Medium | Lab enable observe mode docs |
-| W-ADAPT-7.5 | **Lab debug routes** (optional) — list proposals / signals read-only | Planned | Low | Behind lab profile flag |
-| W-ADAPT-7.6 | **Acceptance test** — end-to-end observe → recommend (no apply) | Planned | High | `tests/acceptance/adaptive/` |
-| W-ADAPT-7.7 | **Docs sync** — README, docs/README, Appendix H row for IDEAL §25 runtime | Planned | Medium | Zero stale "out of scope L4" |
+| W-ADAPT-7.1 | **Default `AdaptiveProfile`** on `lab_application` + reference apps | **Done** | High | Lab: `enabled=True` observe (`LAB_ADAPTIVE_OBSERVE`); product refs: `enabled=False` |
+| W-ADAPT-7.2 | **`BusinessOutcomeWebhook` contract** — optional Tier-3 signal for `business_outcome` | **Done** | Medium | Signed payload validation |
+| W-ADAPT-7.3 | **`AGENT_CREATION_GUIDE.md` Appendix V** — Adaptive Harness authoring | **Done** | High | Control plane map |
+| W-ADAPT-7.4 | **`HARNESS_ENVIRONMENT.md`** — adaptive ops section + env vars | **Done** | Medium | Lab enable observe mode docs |
+| W-ADAPT-7.5 | **Lab debug routes** (optional) — list proposals / signals read-only | **Done** | Low | Behind lab profile flag |
+| W-ADAPT-7.6 | **Acceptance test** — end-to-end observe → recommend (no apply) | **Done** | High | `tests/acceptance/adaptive/` |
+| W-ADAPT-7.7 | **Docs sync** — README, docs/README, Appendix H row for IDEAL §25 runtime | **Done** | Medium | Zero stale "out of scope L4" |
 
 ### W-ADAPT — Execution matrix (dependencies)
 
@@ -3545,7 +3988,7 @@ Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutab
 **Goal:** Make all three Tier-0 catalogs **plugin-native** and aligned with market patterns (hexagonal adapters, MCP-style tools, capability packs) — including **pip-installable** extensions without editing Intergrax core.  
 **Tracker:** **Appendix I** (task-level status). **Author guide:** [`EXTENSION_AUTHOR_GUIDE.md`](EXTENSION_AUTHOR_GUIDE.md).
 
-**Delivered (2026-06-02):** `load_plugins` + `bootstrap_catalogs()` · three plugin protocols · lazy presets/bundle ids · EP fixture package · `warn_override` conflict policy · scaffold CLI · integrations **manifest+factory** (~99 full) + `IntegrationPlugin` for externals · tools **13/13** `ToolPlugin` · skills **3/3** `SkillPlugin` · `resolve_typed` (6 categories) · health API · `CatalogSnapshot` · expanded `check_plugin_catalog.py` · canon §7.1.5.1 + author guide.
+**Delivered (2026-06-02):** `load_plugins` + `bootstrap_catalogs()` · three plugin protocols · lazy presets/bundle ids · EP fixture package · `warn_override` conflict policy · scaffold CLI · integrations **manifest+factory** (**135** full) + `IntegrationPlugin` for externals · tools **13/13** `ToolPlugin` · skills **3/3** `SkillPlugin` · `resolve_typed` (6 categories) · health API · `CatalogSnapshot` · expanded `check_plugin_catalog.py` · canon §7.1.5.1 + author guide.
 
 **Principle:** Integration → Tool → Skill → Agent (unchanged) · explicit first-party bootstrap + optional entry points · one P-Ext.* ID per PR · gate green.
 
@@ -3553,7 +3996,7 @@ Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutab
 
 | Layer | Shipped catalog | External extension | Runtime materialization |
 |-------|-----------------|--------------------|-------------------------|
-| **Integrations** | **~99** slugs (`preset="full"`) / **12** core (`preset="core"`) via `register_from_manifest` + `create_*` — **0** shipped `register.py` use `register_integration_plugin` | `IntegrationPlugin` + EP `intergrax.integrations` | `IntegrationProfile.resolve(category, config=…)` → backend instance |
+| **Integrations** | **135** slugs (`preset="full"`) / **12** core (`preset="core"`) via `register_from_manifest` + `create_*` — **0** shipped `register.py` use `register_integration_plugin` | `IntegrationPlugin` + EP `intergrax.integrations` | `IntegrationProfile.resolve(category, config=…)` → backend instance |
 | **Tools** | **13** bundles / **~29** `tool_id` — **13/13** via `ToolPlugin` (`shipped_plugins.py`) | `ToolPlugin` + EP `intergrax.tools` | `bootstrap_catalogs` → `build_registry_from_profile(ToolProfile, ctx)` → `ToolRegistry` → `RuntimeToolInvoker` / MCP |
 | **Skills** | **3** bundles / **8** `skill_id` — **3/3** via `SkillPlugin` (`harness`×6, `legal`×1, `research`×1) | `SkillPlugin` + EP `intergrax.skills` | `build_registry_from_profile(SkillProfile)` → `SkillRegistry` → `SkillResolver` → `allowed_tools` |
 
@@ -3563,7 +4006,7 @@ Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutab
 - Runtime hot-reload of catalogs without process restart
 - Skill as executable workflow graph (LangGraph pack) — separate initiative
 - Replacing `ToolWiringContext` with a generic DI framework
-- Migrating all ~99 shipped integrations to `IntegrationPlugin` classes (optional long-term; manifest path remains supported)
+- Migrating all **135** shipped integrations to `IntegrationPlugin` classes (optional long-term; manifest path remains supported)
 
 #### P-Ext.0 — Shared plugin foundation
 
@@ -3595,12 +4038,12 @@ Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutab
 
 **Baseline:** `IntegrationManifest`, `IntegrationPlugin`, `register_from_manifest`, per-provider `manifest.py` (open slug catalog).
 
-**Audit snapshot (2026-06-02 — integrations only):**
+**Audit snapshot (2026-06-02 — integrations only; counts synced post M.6 P5 closeout):**
 
 | Area | Finding | Prod? |
 |------|---------|-------|
-| **Shipped catalog** | `bootstrap_core` **12** slugs + `bootstrap_extended` **~87** → **~99** full; all `register.py` call `register_from_manifest(MANIFEST, create_*)` | **Yes** — primary harness path |
-| **`IntegrationPlugin` shipped** | **0/99** providers register via `register_integration_plugin` in shipped code | N/A — external / explicit only |
+| **Shipped catalog** | `bootstrap_core` **12** slugs + `bootstrap_extended` **~123** → **135** full; all `register.py` call `register_from_manifest(MANIFEST, create_*)` | **Yes** — primary harness path |
+| **`IntegrationPlugin` shipped** | **0/135** providers register via `register_integration_plugin` in shipped code | N/A — external / explicit only |
 | **Reference plugin class** | `SqliteIntegrationPlugin` in `sqlite/plugin.py`; `register.py` still uses manifest path | Doc pattern only (P-Ext.1.12) |
 | **External example** | `integrations/examples/custom_memory_kv/` + `test_external_plugin.py` (explicit register) | **Yes** API; EP not tested |
 | **`IntegrationProfile.resolve`** | Manifest, plugin class, slug `str`, or pre-built instance via `IntegrationBinding` | **Yes** — Tier-3 prod |
@@ -3617,7 +4060,7 @@ Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutab
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
 | P-Ext.1.1 | Wire **`intergrax.integrations`** entry points in `bootstrap_catalogs()` | **Done** | **Critical** | `catalog_bootstrap.py` | `discover_entry_points=True` |
-| P-Ext.1.2 | Split **`register_default_integrations()`** → core + optional | **Done** | High | `integrations/registry/bootstrap_core.py` | `preset="core"` (12) \| `"full"` (~99) |
+| P-Ext.1.2 | Split **`register_default_integrations()`** → core + optional | **Done** | High | `integrations/registry/bootstrap_core.py` | `preset="core"` (12) \| `"full"` (135) |
 | P-Ext.1.3 | **Typed resolve** helpers (top categories) | **Done** | Medium | `integrations/registry/resolve_typed.py` | 3 categories today |
 | P-Ext.1.3a | Expand **`resolve_typed`** + unit tests | **Done** | Medium | `resolve_typed.py`, `tests/unit/integrations/test_resolve_typed.py` | +`vector_store`, `notification_channel`, `object_storage`; used in lab docs |
 | P-Ext.1.4 | **Health check** API per slug (optional) | **Done** | Low | `integrations/registry/health.py` | `ping(slug) -> bool` smoke helper |
@@ -3842,16 +4285,22 @@ Paydown Wave P3 (optional polish):
 | **2v — Security closeout (SEC)** | V-SEC bridge, middleware assembly resolver, host CI — **no** business agents | **Done** (2026-06-02) | [Phase SEC](#phase-sec--security-control-plane-closeout) · **§6.1q** · **Appendix S** |
 | **2w — Cost governance closeout (COST)** | Budget bridge, policy bundle merge, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase COST](#phase-cost--cost-governance-control-plane-closeout) · **§6.1r** · **Appendix T** |
 | **2x — Evaluation closeout (EVAL)** | Registry bridge, policy bundle merge, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase EVAL](#phase-eval--evaluation-control-plane-closeout) · **§6.1s** · **Appendix U** |
-| **2y — Adaptive Harness Intelligence (W-ADAPT)** | L4 **runtime** closed loop — SignalCollector, AdaptationEngine, ProfileVersionStore, verify/rollback — **no** business agents | **Planned** (2026-06-05) | [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · **§6.1t** · **§6.2ac** · **Appendix K** |
+| **2y — Adaptive Harness Intelligence (W-ADAPT)** | L4 **runtime** closed loop — SignalCollector, AdaptationEngine, ProfileVersionStore, verify/rollback — **no** business agents | **Done** (2026-06-02) — **70/70 Done** | [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · **§6.1t** · **§6.2ac** · **Appendix K** |
+| **2z — LLM completion envelope (M-LLM-R)** | Typed `LLMAdapterResponse` replaces `str`/`dict` adapter returns; full consumer refactor — **no** business agents | **Done** (2026-06-06) — **39/39** | [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · **§6.1v** · **§6.2ad** · **Appendix L** |
+| **2aa — Integration expansion (M.6 P4)** | 28 harness-ROI provider slugs (secrets, observability stack, OLAP, feature flags, prod deploy) — **no** business agents | **Done** (2026-06-02) — **28/28** | [M.6 P4 register](#m6-p4--harness-platform-expansion-done) · **§6.1w** · **§6.2ae** |
+| **2ab — Integration depth (M.6 P5)** | Harden 25 beta + 8 greenfield harness slugs (metrics, CI/CD, eval, async, data plane) — **no** business agents | **Done** (2026-06-02) — **33/34** | [M.6 P5 register](#m6-p5--harness-integration-depth-done--3334) · **§6.1x** · **§6.2af** |
+| **2ac — Integration expansion (M.6 P6)** | 32 harness slugs + post-catalog wiring (tools, bridges, promote gate, infra `p6`) — **no** business agents | **Done** (2026-06-02) — **32/32 + M-P6-WIRE** | [M.6 P6 register](#m6-p6--harness-integration-expansion-planned) · **§6.1y** · **§6.2ag** |
+| **2ad — FAUDIT-32 remediation** | Close 32-layer audit residuals (tier gate, intake, observability taxonomy, registry depth, eval release gate) — **no** business agents | **Done** (2026-06-06) — **23/23 + §6.1ai follow-up** | [Phase FAUDIT-32](#phase-faudit-32--full-architecture-audit-closeout) · **§6.1ah** · **§6.1ai** · **Appendix M** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
 
-**Policy (2026-06-05):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2x** platform closeouts = **Done**. **Band 2y (W-ADAPT)** = **default implementation queue** after §6.1 maintenance. Band 3 = **frozen** unless leadership reprioritizes.
+**Policy (2026-06-06):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2z** platform closeouts = **Done** (including W-ADAPT + M-LLM-R). Band **2aa** (M.6 P4) = **Done** (28/28). Band **2ab** (M.6 P5) = **Done** (33/34). Band **2ac** (M.6 P6) = **Done** (32/32 + wiring closeout). Band 3 = **frozen** unless leadership reprioritizes.
 
 ```text
 BAND 1:  Harness maintenance — gate + audit scripts (§6.1) — every PR
-BAND 2y: Adaptive Harness Intelligence — Phase W-ADAPT (§6.1t) — ACTIVE DEFAULT NEXT
+BAND 2y: Adaptive Harness Intelligence — Phase W-ADAPT (§6.1t) — DONE (70/70)
+BAND 2z: LLM completion envelope — Phase M-LLM-R (§6.1v) — DONE (2026-06-06)
 BAND 2j: Orchestration closeout — Phase ORCH (§6.1b) — DONE (2026-06-05)
 BAND 2:  Harness architecture hardening — Phase V + V-REM — DONE (2026-06-05)
 BAND 2i: Phase V runtime remediation — V-REM — DONE (2026-06-05)
@@ -3875,7 +4324,11 @@ BAND 2u: Reliability closeout — Phase REL (§6.1o) — DONE (REL-1 → REL-3)
 BAND 2v: Security closeout — Phase SEC (§6.1q) — DONE (SEC-1 → SEC-3)
 BAND 2w: Cost governance closeout — Phase COST (§6.1r) — DONE (COST-1 → COST-3)
 BAND 2x: Evaluation closeout — Phase EVAL (§6.1s) — DONE (EVAL-1 → EVAL-3)
-BAND 2y: Adaptive Harness Intelligence — Phase W-ADAPT (§6.1t) — PLANNED (0/70)
+BAND 2y: Adaptive Harness Intelligence — Phase W-ADAPT (§6.1t) — DONE (70/70, Wave 0–7 Done)
+BAND 2z: LLM completion envelope — Phase M-LLM-R (§6.1v) — DONE (39/39)
+BAND 2aa: Integration expansion — Phase M.6 P4 (§6.1w) — DONE (28/28)
+BAND 2ab: Integration depth — Phase M.6 P5 (§6.1x) — DONE (33/34)
+BAND 2ac: Integration expansion — Phase M.6 P6 (§6.1y) — DONE (32/32 + M-P6-WIRE)
 DONE:    Phase CLEAN — legacy module closeout (§6.1j) — 2026-06-02
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
@@ -3889,7 +4342,7 @@ DONE:    Phase Q — Harness Quality (audit #1) — Waves 1–9
 DONE:    Phase L, M, M-LLM, M-RAG, N, O — harness GA (functional)
 DONE:    Phase K hardening K.3–K.5; Appendix B paydown (except B.15)
 
-PARALLEL (harness-only): M.6 provider slugs on demand; R-Skill catalog expansion (platform packs)
+PARALLEL (harness-only): M.6 P6 integration expansion (§6.1y, **32 planned**); M.6 P5 residual `trivy` absorbed into P6 M-P6.1; legacy M.6 on-demand slugs; R-Skill catalog expansion (platform packs)
 
 BAND 3 — END OF PLAN (see §6.3; not default “next”):
   • K.1 Problem Radar / K.2 Vendor Discovery (business agents)
@@ -3931,6 +4384,9 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 | Topic | Section |
 |-------|---------|
 | **Canonical implementation queue (infrastructure)** | [§6.1](#61-harness-platform-maintenance-default--band-1) (**active** — maintenance) · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) (all closed) · [§6.1z](#61z-harness-implementation-queue-consolidated) (closed) |
+| Integration catalog expansion (Done) | [M.6 P4](#m6-p4--harness-platform-expansion-done) · [§6.1w](#61w-harness-implementation-queue--integration-expansion-m6-p4-closed) — **28/28 Done** |
+| Integration harness depth (Done) | [M.6 P5](#m6-p5--harness-integration-depth-done--3334) · [§6.1x](#61x-harness-implementation-queue--integration-depth-m6-p5-done) — **33/34 Done** |
+| Integration harness expansion | [M.6 P6](#m6-p6--harness-integration-expansion-planned) · [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-planned) — **Done** (32/32 + wiring) |
 | Ongoing gate + audit scripts | [§6.1](#61-harness-platform-maintenance-default--band-1) |
 | Memory platform (Done — §6.1 maintenance) | [Phase MEM](#phase-mem--memory-platform-completion) · [§6.2aa](#62aa-phase-mem-execution-order-band-2h--active) |
 | All business / domain work | [§6.3](#63-end-of-plan--deferred-product-work-only) · [Business backlog register](#63a-business-backlog-register-consolidated) |
@@ -3998,6 +4454,89 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 | GOV-PROD.1 | Unified product observability dashboard (beyond lab debug APIs) | **Deferred** | — | — | **§6.3** product decision; optional `observability_backend` remains harness path |
 
 **Explicitly out of scope:** K.1/K.2 policy; product-specific legal/org policy fragments beyond lab reference YAML.
+
+---
+
+## Phase FAUDIT-32 — Full architecture audit closeout
+
+**Status:** **Done** (2026-06-06) — 32-layer audit (`scope: C`) + **23/23 FAUDIT remediation** implemented → [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-active)  
+**Source:** [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §8  
+**Traceability:** **Appendix M** (layer scorecard + gap → FAUDIT ID matrix)
+
+**Audit verdict (2026-06-06):** Harness **control-plane wiring closeouts** (ORCH, TS, INT, RAG, CTX, PE, AS, REG, CG, OBS, REL, SEC, COST, EVAL, W-ADAPT, M-LLM-R) are **Done** as documented — but **closeout ≠ full layer maturity**. Per-layer inspection shows **12/32 layers at L3+**, **19/32 at L2**, **1 Critical** architecture violation, **~20 High** residuals spanning intake, identity, observability taxonomy, registry completeness, eval release gates, and tier boundaries.
+
+**Gate evidence (verify step):** `uv run pytest -m gate -q` → **893 passed**; `check_harness_no_getattr.py`, `check_agents_vendor_imports.py`, `check_integration_vendor_imports.py`, `check_scaffold_harness_alignment.py` → **OK**.
+
+### FAUDIT-32 — Layer scorecard (summary)
+
+| # | Layer | Score | Crit | High | Plan accurate? |
+|---|-------|-------|------|------|----------------|
+| 1 | Strategic Harness Model | L3 | 0 | 0 | Yes |
+| 2 | Tier Model and Dependency Boundaries | L2 | **1** | 1 | **Partial** |
+| 3 | Interface and Task Intake | L2 | 0 | 2 | Partial |
+| 4 | Identity, Trust and Tenancy | L2 | 0 | 2 | Partial |
+| 5 | Policy and Governance | L3 | 0 | 2 | Partial |
+| 6 | LLM and Model Adapter Layer | L3 | 0 | 1 | Yes |
+| 7 | Reasoning, Planning and Cognition | L2 | 0 | 1 | Partial |
+| 8 | Execution Runtime and Agent OS | L3 | 0 | 0 | Yes |
+| 9 | Orchestration, Scheduler and Execution Graph | L3 | 0 | 1 | Partial |
+| 10 | Subagents and Multi-Agent Coordination | L2 | 0 | 2 | Partial |
+| 11 | Tool Layer | L3 | 0 | 1 | Yes |
+| 12 | Skill Layer | L3 | 0 | 0 | Yes |
+| 13 | Integration Layer | L3 | 0 | 0 | Yes |
+| 14 | RAG and Retrieval Layer | L3 | 0 | 0 | Yes |
+| 15 | Memory Layer | L2 | 0 | 2 | Partial |
+| 16 | Context Engineering Layer | L3 | 0 | 0 | Yes |
+| 17 | Prompt Engineering and Prompt Registry | L2 | 0 | 1 | **No** |
+| 18 | Agent Assembly and Agent Contracts | L2 | 0 | 1 | Yes |
+| 19 | Registry Architecture | L2 | 0 | 2 | **No** |
+| 20 | Capability Graph Architecture | L2 | 0 | 2 | **No** |
+| 21 | Observability and Telemetry | L2 | 0 | 2 | **No** |
+| 22 | Error Handling and Reliability | L2 | 0 | 1 | **No** |
+| 23 | Security and Data Governance | L2 | 0 | 2 | **No** |
+| 24 | Cost and Resource Governance | L2 | 0 | 1 | **No** |
+| 25 | Evaluation and Benchmarking | L2 | 0 | 1 | **No** |
+| 26 | Testing, CI and Architecture Gates | L3 | 0 | 0 | Yes |
+| 27 | Developer Experience, Scaffold and Lab | L3 | 0 | 1 | Yes |
+| 28 | Product Environment and Tier-3 Applications | L3 | 0 | 2 | Partial |
+| 29 | Modality, Vision, Audio and Dedicated ML | L3 | 0 | 1 | Yes |
+| 30 | Operational Excellence and SLOs | L3 | 0 | 2 | Partial |
+| 31 | Agent Lifecycle Governance | L2 | 0 | 2 | Partial |
+| 32 | Architecture Governance and Documentation Loop | L3 | 0 | 1 | Yes |
+
+**Plan accuracy note:** Rows marked **No** or **Partial** mean the phase closeout register claims **Done** for **wiring/bridge** work, but FAUDIT found **High** gaps vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` / `INTEGRAX_HARNESS_AUDIT_MAP.md` §8 — tracked as **FAUDIT.\*** residuals, not reopening closed closeout phases.
+
+### FAUDIT-32 — Remediation register (implementation queue → §6.1ah)
+
+| ID | Layer | Gap | Severity | Module / acceptance |
+|----|-------|-----|----------|-------------------|
+| FAUDIT-TIER.1 | §2 | Tier-0 imports `applications/*` in `capability_graph_applications.py` | **Critical** | Move manifest catalog to Tier-3 injection or static metadata; zero `from applications` under `intergrax/` |
+| FAUDIT-TIER.2 | §2 | No CI gate for `intergrax/` → `applications/` imports | High | `scripts/check_intergrax_no_applications_imports.py` in §6.1 |
+| FAUDIT-INTAKE.1 | §3 | No canonical `TaskEnvelope`; `Task` + `RuntimeRequest` split | High | Typed envelope alias or consolidation; plan W-OPS.6 naming sync |
+| FAUDIT-INTAKE.2 | §3 | Worker≡HTTP intake parity test matrix incomplete | High | Acceptance test: CLI/worker/HTTP same `Task` shape |
+| FAUDIT-ID.1 | §4 | No user/service/agent identity distinction | High | Identity contracts + propagation to delegation |
+| FAUDIT-ID.2 | §4 | `DelegationSpec` lacks permission scope audit | High | Scope field + trace on child runs |
+| FAUDIT-POL.1 | §5 | No pre-LLM / pre-output policy hooks in runtime | High | PolicyEngine extension points documented + wired |
+| FAUDIT-LLM.1 | §6 | No policy-driven model routing / fallback chain | High | Router module or AdaptiveProfile integration |
+| FAUDIT-COG.1 | §7 | No universal `DecisionRecord` per UAEP step | High | Typed decision artifact + trace event |
+| FAUDIT-ORCH.1 | §9 | No graph backpressure beyond parallel cap | High | Queue depth / shed policy in `GraphExecutor` |
+| FAUDIT-SUB.1 | §10 | No formal `SubtaskContract`; `inherit_tool_policy=True` default | High | Contract type + safer delegation defaults |
+| FAUDIT-MEM.1 | §15 | Entity graph memory absent; STM retention partial | High | Route to MEM-9.* / new MEM row if scoped |
+| FAUDIT-PE.1 | §17 | No golden prompt content regression in CI | High | Golden YAML fixtures + gate test |
+| FAUDIT-REG.1 | §19 | `HarnessRegistrySnapshot` omits agents + eval registry | High | Extend snapshot + assembly resolver |
+| FAUDIT-CG.1 | §20 | Capability graph seed skips `prompt:*` nodes | High | `_seed_node_ids()` parity |
+| FAUDIT-CG.2 | §20 | Blast-radius not enforced at release | High | `phase_v_capability_graph_guard.py` impact check |
+| FAUDIT-OBS.1 | §21 | `RuntimeEventType` missing `LLM_CALL` / `POLICY_DECISION` | High | Canon event catalog + bridge from trace |
+| FAUDIT-REL.1 | §22 | Shallow error taxonomy (`VALIDATION_ERROR` only + 2) | High | Expand classifier per AUDIT_MAP §22 |
+| FAUDIT-SEC.1 | §23 | No `DataClassification` model | High | Security profile + enforcement hooks |
+| FAUDIT-COST.1 | §24 | Per-tenant cost attribution not mandatory in NexusLoop | High | Budget gate on main path |
+| FAUDIT-EVAL.1 | §25 | `require_baseline_for_release` not CI-enforced | High | `phase_v_closeout_gate.py` eval baseline check |
+| FAUDIT-ALG.1 | §31 | Lifecycle states ≠ AUDIT_MAP catalog; weak agent adoption | High | Align or document ADR; scaffold defaults |
+| FAUDIT-OPS.1 | §30 | `release_cycles.json` not in repo; W-OPS.5 artifact policy unclear | High | Document committed vs generated artifact |
+
+**Delivery rule:** One **FAUDIT.\*** ID per PR → update §6.1ah + Appendix M paydown log → gate green.
+
+**Explicitly out of scope (audit-and-fix):** source code or test changes during this audit pass; K.1/K.2; new product Tier-3 apps.
 
 ---
 
@@ -4697,29 +5236,110 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 **Explicitly excluded:** K.1, K.2, new product eval modes requiring business datasets — [§6.3a](#63a-business-backlog-register-consolidated).
 
-### 6.1t Harness implementation queue — Adaptive Harness Intelligence (active)
+### 6.1t Harness implementation queue — Adaptive Harness Intelligence (closed)
 
-**Purpose:** Single ordered list for **Phase W-ADAPT** (Band 2y). **Opened 2026-06-05** — **0/70 Done** (W-ADAPT-0.1 plan sync **Done**). This is the **default harness implementation queue** after §6.1 maintenance.
+**Purpose:** Single ordered list for **Phase W-ADAPT** (Band 2y). **Closed 2026-06-02** — **70/70 Done** (Wave W-ADAPT-0 through Wave W-ADAPT-7 **Done**). Maintenance-only; see [§6.1](#61-harness-platform-maintenance-default--band-1).
 
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
 | 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
-| 1 | **W-ADAPT-0.2–0.5** | Docs/Code | Planned | ADR-ADAPT-001 + `intergrax/runtime/adaptive/` scaffold | Import + gate stub |
-| 2 | **W-ADAPT-1.1–1.12** | Code | Planned | Observe (L4-O): signals + utility + report | `phase_w_adapt_report.py` |
-| 3 | **W-ADAPT-2.1–2.12** | Code | Planned | Recommend (L4-R): engines + proposals (no apply) | Proposals in report |
-| 4 | **W-ADAPT-3.1–3.7** | Code | Planned | Shadow (L4-S): ProfileVersionStore + executor.shadow | Integration test green |
-| 5 | **W-ADAPT-4.1–4.10** | Code | Planned | Apply (L4-A): canary, apply, rollback, events | Policy learning HITL enforced |
-| 6 | **W-ADAPT-5.1–5.12** | Code/Docs | Planned | Verify (L4-V): VerificationLoop + runtime L4 closeout | `--enforce-l4-runtime` |
-| 7 | **W-ADAPT-6.1–6.5** | Code | Planned | ProcessPatternMiner (after 5.1) | Pattern report |
-| 8 | **W-ADAPT-7.1–7.7** | Code/Docs | Planned | Tier-3 AdaptiveProfile + Appendix V + acceptance | E2E observe→recommend |
+| 1 | **W-ADAPT-0.2–0.5** | Docs/Code | **Done** | ADR-ADAPT-001 + `intergrax/runtime/adaptive/` scaffold | Import + gate stub |
+| 2 | **W-ADAPT-1.1–1.12** | Code | **Done** | Observe (L4-O): signals + utility + report | `phase_w_adapt_report.py` |
+| 3 | **W-ADAPT-2.1–2.12** | Code | **Done** | Recommend (L4-R): engines + proposals (no apply) | Proposals in report |
+| 4 | **W-ADAPT-3.1–3.7** | Code | **Done** | Shadow (L4-S): ProfileVersionStore + executor.shadow | Integration test green |
+| 5 | **W-ADAPT-4.1–4.10** | Code | **Done** | Apply (L4-A): canary, apply, rollback, events | Policy learning HITL enforced |
+| 6 | **W-ADAPT-5.1–5.12** | Code/Docs | **Done** | Verify (L4-V): VerificationLoop + runtime L4 closeout | `--enforce-l4-runtime` |
+| 7 | **W-ADAPT-6.1–6.5** | Code | **Done** | ProcessPatternMiner + daily scheduler | pattern report |
+| 8 | **W-ADAPT-7.1–7.7** | Code/Docs | **Done** | Tier-3 AdaptiveProfile + Appendix V + acceptance | E2E observe→recommend |
 
 **Suggested PR order:** See [Phase W-ADAPT — Suggested PR order](#w-adapt--suggested-pr-order).
 
 **Explicitly excluded:** K.1, K.2, deep RL, foundation model training, autonomous prompt edits — [§6.3a](#63a-business-backlog-register-consolidated).
 
+### 6.1v Harness implementation queue — LLM completion response envelope (closed)
+
+**Purpose:** Single ordered list for **Phase M-LLM-R** (Band 2z). **Closed 2026-06-06** — **39/39 Done**. Runs **in parallel** with W-ADAPT waves 5–7 (Tier-0 LLM contract; independent of L4 runtime loop).
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
+| 1 | **M-LLM-R.0.2–0.3** | Docs | **Done** | ADR-LLM-001 + canon §5.2.2 addendum | Linked from plan |
+| 2 | **M-LLM-R.1.1–1.8** | Code | **Done** | Contract types + builders + public exports | Import smoke; no dict returns |
+| 3 | **M-LLM-R.2.1–2.6** | Code | **Done** | `LLMAdapter` ABC typed signatures | ABC compiles; stubs updated |
+| 4 | **M-LLM-R.3.1–3.7** | Code | **Done** | All provider adapters return envelope | Conformance per provider family |
+| 5 | **M-LLM-R.4.1–4.6** | Code | **Done** | Nexus runtime consumers | `test_core_llm_step` + tool planner |
+| 6 | **M-LLM-R.5.1–5.3** | Code | **Done** | RAG + websearch + legacy | RAG unit tests green |
+| 7 | **M-LLM-R.6.1–6.4** | Code | **Done** | Agents + scaffold + CI lint | `check_llm_adapter_typed_returns.py` + `check_agents_llm_adapter_response.py` |
+| 8 | **M-LLM-R.7.1–7.5** | Code | **Done** | Usage alignment + replay/trace bridge | `test_replay_engine` + diagnostics |
+| 9 | **M-LLM-R.8.1–8.4** | Docs/CI | **Done** | Docs + conformance + closeout | M-LLM.14 Done; Appendix L complete |
+
+**Suggested PR order:** See [Phase M-LLM-R — Suggested PR order](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06).
+
+**Explicitly excluded:** K.1, K.2, product HTTP API DTOs, provider SDK rewrites — [§6.3a](#63a-business-backlog-register-consolidated).
+
+### 6.1w Harness implementation queue — Integration expansion (M.6 P4 closed)
+
+**Purpose:** Ordered backlog for **Phase M.6 P4** (Band 2aa). **Status:** **Done** (2026-06-02) — **28/28 Done** · catalog **127**.  
+**Register:** [M.6 P4 — Master register](#m6-p4--master-register-28-slugs) · **Execution order:** [§6.2ae](#62ae-phase-m6-p4-execution-order--done)  
+**Policy:** One slug per PR; runs **in parallel** with §6.1 maintenance — pull only when harness ops/adaptive/INT health needs the slug.
+
+| Order | Wave | IDs | Slugs | Priority | Status |
+|-------|------|-----|-------|----------|--------|
+| 0 | CAT | M-P4-CAT.1, M-P4-CAT.2 | *(categories)* | **P0** | **Done** (beta) |
+| 1 | H-INT-1 | M-P4.1–M-P4.4 | `pgvector`, `duckdb`, `influxdb`, `timescaledb` | P0/P1 | **Done** |
+| 2 | H-INT-2 | M-P4.5–M-P4.7 | `grafana`, `loki`, `tempo` | **P0** | **Done** |
+| 3 | H-INT-3 | M-P4.8–M-P4.11 | `aws_secrets_manager`, `azure_key_vault`, `gcp_secret_manager`, `doppler` | P0/P1 | **Done** |
+| 4 | H-INT-4 | M-P4.12–M-P4.16 | `unleash`, `launchdarkly`, `github_actions`, `redpanda`, `cloudflare_r2` | P0/P1 | **Done** |
+| 5 | H-INT-5 | M-P4.17–M-P4.28 | `memgraph`, `falkordb`, `incident_io`, `kubernetes`, `servicenow`, `bitbucket`, `asana`, `sendgrid`, `mailgun`, `mlflow`, `huggingface_hub`, `ollama` | P1/P2 | **Done** |
+
+**Per-slug checklist (M.4):** contract → `providers/<category>/<slug>/` → unit tests → `USAGE.md` → `layout.py` → `INTEGRATIONS.md` → canon §7.1.3 row → gate green → paydown log row.
+
+**Explicitly excluded:** CRM, payments, blockchain, duplicate vector SaaS, LLM vendor APIs — see [M.6 P4 register](#m6-p4--harness-platform-expansion-planned).
+
+### 6.1x Harness implementation queue — Integration depth (M.6 P5 done)
+
+**Purpose:** Closeout record for **Phase M.6 P5** (Band 2ab). **Status:** **Done** (2026-06-02) — **33/34**.  
+**Register:** [M.6 P5 — Master register](#m6-p5--master-register-34-slugs) · **Execution order:** [§6.2af](#62af-phase-m6-p5-execution-order-band-2ab--planned)  
+**Policy:** One slug per PR (or one harden wave ≤4 slugs); runs **in parallel** with §6.1 maintenance — pull when W-OPS / W-ADAPT / EVAL / prod stack needs the slug.
+
+| Order | Wave | IDs | Slugs (summary) | Priority | Status |
+|-------|------|-----|-----------------|----------|--------|
+| 0 | CAT | M-P5-CAT.1–3 | `ci_cd` extend, `security_scanner`, category mapping | **P0** | **Done** (CAT.2 deferred: `trivy`) |
+| 1 | H-INT-6 | M-P5.1–M-P5.10 | Ops/metrics/CI/local cloud: prometheus, clickhouse, vault, pagerduty, github, gitlab_ci, circleci, azure_pipelines, mailpit, localstack | **P0** | **Done** |
+| 2 | H-INT-7 | M-P5.11–M-P5.20 | Eval/async/artifacts: langfuse, phoenix, braintrust, mlflow, influxdb, timescaledb, temporal, redpanda, minio, s3 | **P0/P1** | **Done** |
+| 3 | H-INT-8 | M-P5.21–M-P5.28 | Data plane lab: neo4j, mongodb, elasticsearch, nats, chroma, weaviate, launchdarkly, signoz | **P1/P2** | **Done** |
+| 4 | H-INT-9 | M-P5.29–M-P5.34 | P2 reserve: codecov, trivy, grafana_oncall, opentelemetry_collector, snowflake, supabase | **P2** | **Done** |
+| 5 | PRE | M-P5-PRE.1 | Tier-3 presets: `harness_metrics_stack`, `harness_eval_stack`, `harness_async_stack`, `harness_ci_stack` | **P0** | **Done** |
+
+**Explicitly excluded:** Band 3 product agents; see [M.6 P5 register](#m6-p5--harness-integration-depth-done--3334).
+
+### 6.1y Harness implementation queue — Integration expansion (M.6 P6 planned)
+
+**Purpose:** Ordered backlog for **Phase M.6 P6** (Band 2ac). **Status:** **Done** (2026-06-02) — **32/32**.  
+**Register:** [M.6 P6 — Master register](#m6-p6--master-register-32-slugs) · **Execution order:** [§6.2ag](#62ag-phase-m6-p6-execution-order-band-2ac--planned)  
+**Policy:** One slug per PR (or one CAT wave before first slug in a new category); runs **in parallel** with §6.1 maintenance — pull when security/sandbox/identity/GitOps/speech harness gaps block ops.
+
+| Order | Wave | IDs | Slugs (summary) | Priority | Status |
+|-------|------|-----|-----------------|----------|--------|
+| 0 | CAT | M-P6-CAT.1–9 | New categories: `security_scanner`, `sandbox_host`, `identity_provider`, `speech_provider`, `workflow_orchestrator`, `vision_serving`, `ml_inference_host`, `billing_meter`, `crm` | **P0** | **Done** |
+| 1 | H-INT-10 | M-P6.1–M-P6.4 | Security + secrets: `trivy`, `snyk`, `semgrep`, `infisical` | **P0** | **Done** |
+| 2 | H-INT-11 | M-P6.5–M-P6.7 | Cloud sandbox: `e2b`, `modal`, `daytona` | **P0/P1** | **Done** |
+| 3 | H-INT-12 | M-P6.8–M-P6.10 | Identity: `auth0`, `keycloak`, `workos` | **P0/P1** | **Done** |
+| 4 | H-INT-13 | M-P6.11–M-P6.13 | GitOps CI: `argocd`, `buildkite`, `jenkins` | **P0/P1** | **Done** |
+| 5 | H-INT-14 | M-P6.14–M-P6.15 | Speech catalog: `elevenlabs`, `deepgram` | **P0** | **Done** |
+| 6 | H-INT-15 | M-P6.16–M-P6.19 | Enterprise ops: `newrelic`, `splunk`, `zendesk`, `statsig` | **P1** | **Done** |
+| 7 | H-INT-16 | M-P6.20–M-P6.24 | Data/workflow: `prefect`, `airflow`, `typesense`, `neon`, `pulsar` | **P1** | **Done** |
+| 8 | H-INT-17 | M-P6.25–M-P6.32 | Reserve: `algolia`, `confluent`, `backblaze_b2`, `triton`, `replicate`, `stripe`, `salesforce`, `hubspot` | **P2** | **Done** |
+| 9 | PRE | M-P6-PRE.1 | Tier-3 presets: `harness_security_stack`, `harness_sandbox_stack`, `harness_identity_stack`, `harness_gitops_stack` | **P0** | **Done** |
+| 10 | WIRE | M-P6-WIRE.1–7 | Tool surface + sandbox/speech/identity bridges + promote gate + infra `p6` | **P0** | **Done** |
+
+**Per-slug checklist:** see [M.6 P6 register](#m6-p6--harness-integration-expansion-planned).
+
+**Closeout target:** catalog **167** slugs; optional `HARNESS_M6_P6_PROBE_SLUGS`; four Tier-3 presets; gate green.
+
 ### 6.1 Harness platform maintenance (default — Band 1)
 
-§4.1 backlog is **closed**. Ongoing work = keep the harness green; **feature work** = [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active) (Phase W-ADAPT).
+§4.1 backlog is **closed**. Ongoing work = keep the harness green; **Band 2y W-ADAPT**, **Band 2z M-LLM-R**, **Band 2aa M.6 P4**, and **Band 2ab M.6 P5** are **closed**. **Band 2ac M.6 P6** = **Done** (32/32) — see **[§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-planned)**. **Next product work** = [§6.3](#63-end-of-plan--deferred-product-work-only) (product prioritization only).
 
 ```text
 Verify (every harness PR):
@@ -4731,18 +5351,90 @@ Verify (every harness PR):
   python scripts/check_harness_capability_graph_wiring.py
   python scripts/check_legacy_tool_plan_booleans.py
   python scripts/check_plugin_catalog.py
+  python scripts/check_llm_adapter_typed_returns.py
+  python scripts/check_agents_llm_adapter_response.py
   uv run python scripts/phase_w_ops_evidence.py
   # Per release (ops):
   uv run python scripts/export_harness_shadow_eval_trend.py --release-id <release-id>
   uv run python scripts/record_harness_release_cycle.py --cycle-id <release-id> --verify-gate
   python scripts/check_scaffold_harness_alignment.py
   python scripts/check_agents_no_tier3_imports.py
+  python scripts/check_intergrax_no_applications_imports.py
+  uv run python scripts/check_harness_prompt_golden_catalog.py
+  uv run python scripts/check_agents_lifecycle_metadata.py
   uv run intergrax doctor --ci
   uv run python scripts/phase_v_closeout_gate.py --enforce --enforce-l4
+  uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
   uv run python scripts/phase_v_capability_graph_guard.py --enforce
 ```
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
+
+### 6.1ah Harness implementation queue — FAUDIT-32 remediation (active)
+
+**Status:** **Done** (2026-06-06) — **23/23 Done**  
+**Source:** [Phase FAUDIT-32](#phase-faudit-32--full-architecture-audit-closeout) · **Appendix M**  
+**Priority ladder:** **Band 2ad** (§4.0) — runs **after** FAUDIT-TIER.1 on every harness PR that touches `intergrax/runtime/architecture/`
+
+**Execution order (recommended):**
+
+```text
+Wave P0 (architecture integrity):
+  FAUDIT-TIER.1 → FAUDIT-TIER.2
+
+Wave P1 (identity + intake + observability):
+  FAUDIT-INTAKE.1 → FAUDIT-ID.1 → FAUDIT-OBS.1 → FAUDIT-EVAL.1
+
+Wave P2 (control-plane depth):
+  FAUDIT-PE.1 → FAUDIT-REG.1 → FAUDIT-CG.1 → FAUDIT-CG.2
+  → FAUDIT-SEC.1 → FAUDIT-REL.1 → FAUDIT-COST.1
+
+Wave P3 (orchestration + cognition + memory):
+  FAUDIT-ORCH.1 → FAUDIT-SUB.1 → FAUDIT-COG.1 → FAUDIT-LLM.1
+  → FAUDIT-POL.1 → FAUDIT-MEM.1 → FAUDIT-ALG.1 → FAUDIT-OPS.1
+  → FAUDIT-INTAKE.2 → FAUDIT-ID.2
+```
+
+| ID | Status | Priority | Blocks |
+|----|--------|----------|--------|
+| FAUDIT-TIER.1 | **Done** | **Critical** | `intergrax/applications/reference/harness_manifest_catalog.py` |
+| FAUDIT-TIER.2 | **Done** | High | `scripts/check_intergrax_no_applications_imports.py` |
+| FAUDIT-INTAKE.1 | **Done** | High | `intergrax/contracts/task_envelope.py` |
+| FAUDIT-INTAKE.2 | **Done** | Medium | `tests/unit/runtime/architecture/test_faudit_remediation.py` |
+| FAUDIT-ID.1 | **Done** | High | `intergrax/contracts/actor_identity.py` |
+| FAUDIT-ID.2 | **Done** | Medium | `DelegationSpec.permission_scopes` |
+| FAUDIT-POL.1 | **Done** | High | `PolicyEngine.evaluate_pre_llm/pre_output` |
+| FAUDIT-LLM.1 | **Done** | High | `intergrax/llm_adapters/registry/model_router.py` |
+| FAUDIT-COG.1 | **Done** | High | `intergrax/contracts/decision_record.py` + UAEP emit |
+| FAUDIT-ORCH.1 | **Done** | Medium | `GraphExecutor` inflight backpressure |
+| FAUDIT-SUB.1 | **Done** | High | `SubtaskContract` + safer defaults |
+| FAUDIT-MEM.1 | **Done** | High | `retention_enforcement.py` + `PolicyScopedMemoryView` STM purge |
+| FAUDIT-PE.1 | **Done** | High | `prompt_golden_catalog.py` + `tests/fixtures/prompt_golden/` + CI script |
+| FAUDIT-ALG.1 | **Done** | High | lifecycle states + reference agent `owner_team` adoption + CI script |
+| FAUDIT-REG.1 | **Done** | High | `HarnessRegistrySnapshot` agent/eval fields |
+| FAUDIT-CG.1 | **Done** | High | prompt seeds in `capability_graph_wiring.py` |
+| FAUDIT-CG.2 | **Done** | Medium | `phase_v_capability_graph_guard.py` impact log |
+| FAUDIT-OBS.1 | **Done** | High | `RuntimeEventType.LLM_CALL/POLICY_DECISION` |
+| FAUDIT-REL.1 | **Done** | High | expanded `RuntimeErrorCode` + classifier |
+| FAUDIT-SEC.1 | **Done** | High | `intergrax/contracts/data_classification.py` |
+| FAUDIT-COST.1 | **Done** | High | `run_budget` wired in `nexus_factory` |
+| FAUDIT-EVAL.1 | **Done** | High | `phase_v_closeout_gate.py` eval baseline |
+| FAUDIT-OPS.1 | **Done** | Medium | `build/architecture_hardening/release_cycles.json` |
+
+**DoD (§6.1ah queue closure):** All **Planned** rows **Done**; Appendix M scorecard shows **0 Critical**, **≤5 High** (documented deferrals only); tier gate green.
+
+### 6.1ai Harness implementation queue — FAUDIT-32 follow-up (closed)
+
+**Status:** **Done** (2026-06-06) — post-remediation depth for PE/ALG/MEM adoption  
+**Priority ladder:** **Band 2ad** (§4.0) — runs after §6.1ah closure
+
+| ID | Status | Deliverable |
+|----|--------|-------------|
+| FAUDIT-PE.1+ | **Done** | Real `prompts/` golden hashes in `tests/fixtures/prompt_golden/expectations.json`; `scripts/check_harness_prompt_golden_catalog.py`; gate test |
+| FAUDIT-ALG.1+ | **Done** | `lifecycle_state` + `owner_team` on reference Tier-2 agents; `scripts/check_agents_lifecycle_metadata.py` |
+| FAUDIT-MEM.1+ | **Done** | `should_forget_stm_record` wired in `PolicyScopedMemoryView.read` |
+
+**Explicitly deferred (Band 3 / product):** MEM-9 entity graph memory implementation (RFC only); K.1/K.2 business agents.
 
 ### 6.2bo Phase EVAL execution order (Band 2x — closed 2026-06-02)
 
@@ -5068,21 +5760,98 @@ Work **one MEM ID per PR**; after each step update the MEM master table + paydow
 
 Full task register: [Appendix I](#appendix-i--plugin-catalog-traceability-phase-p-ext).
 
-**Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3. **Feature queue:** Phase W-ADAPT — §6.1t.
+**Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3. **Feature queues:** Phase W-ADAPT — §6.1t; Phase M-LLM-R — §6.1v; Phase M.6 P4 — §6.1w (closed); Phase M.6 P5 — §6.1x (closed); Phase M.6 P6 — §6.1y (planned).
 
-### 6.2ac Phase W-ADAPT execution order (Band 2y — active)
+### 6.2ag Phase M.6 P6 execution order (Band 2ac — Done)
 
-**Status:** **Planned** · register: [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · queue: [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active)
+**Status:** **Done** (2026-06-02) · register: [M.6 P6](#m6-p6--harness-integration-expansion-planned) · queue: [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-planned)
 
 ```text
-Wave W-ADAPT-0 (planning):        W-ADAPT-0.2 → 0.3 → 0.4 → 0.5  (0.1 Done)
-Wave W-ADAPT-1 (observe L4-O):     W-ADAPT-1.1 → 1.3 → 1.4–1.10 → 1.12 → 1.11
-Wave W-ADAPT-2 (recommend L4-R):   W-ADAPT-2.1 → 2.2 → 2.3 → 2.6 → 2.7 → 2.8 → 2.10 → 2.11 → 2.12 → 2.4 → 2.5 → 2.9
-Wave W-ADAPT-3 (shadow L4-S):      W-ADAPT-3.1 → 3.2 → 3.3 → 3.4 → 3.6 → 3.7 → 3.5
-Wave W-ADAPT-4 (apply L4-A):       W-ADAPT-4.1 → 4.2 → 4.10 → 4.4 → 4.5 → 4.9 → 4.3 → 4.6 → 4.7 → 4.8
-Wave W-ADAPT-5 (verify L4-V):      W-ADAPT-5.1 → 5.3 → 5.4 → 5.5 → 5.2 → 5.11 → 5.6 → 5.7 → 5.8 → 5.9 → 5.10 → 5.12
-Wave W-ADAPT-6 (patterns):         W-ADAPT-6.2 → 6.1 → 6.3 → 6.5 → 6.4  (after W-ADAPT-5.1)
-Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 → 7.6 → 7.7
+Wave H-INT-0 (categories):  M-P6-CAT.1 → M-P6-CAT.2 → M-P6-CAT.3 → M-P6-CAT.4 → M-P6-CAT.5 → M-P6-CAT.6 → M-P6-CAT.7 → M-P6-CAT.8 → M-P6-CAT.9
+Wave H-INT-10 (security):   M-P6.1 → M-P6.2 → M-P6.3 → M-P6.4
+Wave H-INT-11 (sandbox):    M-P6.5 → M-P6.6 → M-P6.7
+Wave H-INT-12 (identity):   M-P6.8 → M-P6.9 → M-P6.10
+Wave H-INT-13 (gitops CI):  M-P6.11 → M-P6.12 → M-P6.13
+Wave H-INT-14 (speech):     M-P6.14 → M-P6.15
+Wave H-INT-15 (enterprise): M-P6.16 → M-P6.17 → M-P6.18 → M-P6.19
+Wave H-INT-16 (data/wf):    M-P6.20 → M-P6.21 → M-P6.22 → M-P6.23 → M-P6.24
+Wave H-INT-17 (reserve):    M-P6.25 → M-P6.26 → M-P6.27 → M-P6.28 → M-P6.29 → M-P6.30 → M-P6.31 → M-P6.32
+Wave PRE (presets):         M-P6-PRE.1  (after H-INT-10 P0 slugs wired)
+```
+
+**Prerequisites:** Phase M.6 P5 **Done**; M-P5.FU wiring **Done**; Phase SEC closeout **Done** (V-SEC patterns for `security_scanner`).  
+**Parallelism:** H-INT-10 unblocks STABLE promote gate; H-INT-11 unblocks cloud `sandbox.exec`; H-INT-12 unblocks multi-tenant hosts; H-INT-14 unifies speech catalog.  
+**Closeout target:** catalog **167** slugs; optional `HARNESS_M6_P6_PROBE_SLUGS` + four Tier-3 presets; gate green.
+
+### 6.2af Phase M.6 P5 execution order (Band 2ab — Planned)
+
+**Status:** **Done** (2026-06-02) · register: [M.6 P5](#m6-p5--harness-integration-depth-done--3334) · queue: [§6.1x](#61x-harness-implementation-queue--integration-depth-m6-p5-done)
+
+```text
+Wave H-INT-0 (categories):  M-P5-CAT.1 → M-P5-CAT.2 → M-P5-CAT.3
+Wave H-INT-6 (ops/CI):      M-P5.1 → M-P5.2 → M-P5.3 → M-P5.4 → M-P5.5 → M-P5.6 → M-P5.7 → M-P5.8 → M-P5.9 → M-P5.10
+Wave H-INT-7 (eval/async):  M-P5.11 → M-P5.12 → M-P5.13 → M-P5.14 → M-P5.15 → M-P5.16 → M-P5.17 → M-P5.18 → M-P5.19 → M-P5.20
+Wave H-INT-8 (data lab):    M-P5.21 → M-P5.22 → M-P5.23 → M-P5.24 → M-P5.25 → M-P5.26 → M-P5.27 → M-P5.28
+Wave H-INT-9 (P2 reserve):  M-P5.29 → M-P5.30 → M-P5.31 → M-P5.32 → M-P5.33 → M-P5.34
+Wave PRE (presets):         M-P5-PRE.1  (after H-INT-6 P0 slugs wired)
+```
+
+**Prerequisites:** Phase M.6 P4 **Done**; M-P4.FU wiring **Done**; Phase INT closeout **Done** (health probe patterns).  
+**Parallelism:** H-INT-6 unblocks W-OPS metrics + multi-CI; H-INT-7 unblocks EVAL/W-ADAPT; H-INT-8 is lab-only.  
+**Closeout target:** catalog **136** slugs; `HARNESS_M6_P5_PROBE_SLUGS` + four Tier-3 presets; gate green.
+
+### 6.2ae Phase M.6 P4 execution order (Band 2aa — Done)
+
+**Status:** **Done** (2026-06-02) · register: [M.6 P4](#m6-p4--harness-platform-expansion-done) · queue: [§6.1w](#61w-harness-implementation-queue--integration-expansion-m6-p4-closed)
+
+```text
+Wave H-INT-0 (categories):  M-P4-CAT.1 → M-P4-CAT.2  (before first slug in new category)
+Wave H-INT-1 (storage):     M-P4.1 → M-P4.2 → M-P4.3 → M-P4.4
+Wave H-INT-2 (obs stack):   M-P4.5 → M-P4.6 → M-P4.7
+Wave H-INT-3 (secrets):     M-P4.8 → M-P4.9 → M-P4.10 → M-P4.11
+Wave H-INT-4 (control):     M-P4.12 → M-P4.13 → M-P4.14 → M-P4.15 → M-P4.16
+Wave H-INT-5 (enterprise):  M-P4.17 → M-P4.18 → M-P4.19 → M-P4.20 → M-P4.21 → M-P4.22 → M-P4.23 → M-P4.24 → M-P4.25 → M-P4.26 → M-P4.27 → M-P4.28
+```
+
+**Prerequisites:** Phase M core + M.6 P1/P2/P3 **Done**; Phase INT closeout **Done** (health probe patterns).  
+**Parallelism:** Any wave after H-INT-0 may start when a slug is needed — prefer H-INT-1 → H-INT-2 → H-INT-3 order for W-OPS/adaptive unblock.  
+**Closeout:** **Done** — catalog **127** in `layout.py`; `tests/unit/integrations/providers/test_p5_m6_p4_providers.py` (42 tests).
+
+### 6.2ad Phase M-LLM-R execution order (Band 2z — closed 2026-06-06)
+
+**Status:** **Done** · register: [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · queue: [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed)
+
+```text
+Wave M-LLM-R-0 (planning):     M-LLM-R.0.2 → 0.3  (0.1 **Done**)
+Wave M-LLM-R-1 (contracts):    M-LLM-R.1.1 → 1.8
+Wave M-LLM-R-2 (ABC):          M-LLM-R.2.6 → 2.1 → 2.2 → 2.3 → 2.4 → 2.5
+Wave M-LLM-R-3 (providers):    M-LLM-R.3.1 → 3.2 → 3.3 → 3.4 → 3.5 → 3.6 → 3.7
+Wave M-LLM-R-4 (Nexus):        M-LLM-R.4.1 → 4.2 → 4.3 → 4.4 → 4.5 → 4.6
+Wave M-LLM-R-5 (RAG/web):      M-LLM-R.5.1 → 5.2 → 5.3
+Wave M-LLM-R-6 (agents):       M-LLM-R.6.1 → 6.2 → 6.3 → 6.4
+Wave M-LLM-R-7 (obs/replay):   M-LLM-R.7.1 → 7.2 → 7.3 → 7.4 → 7.5
+Wave M-LLM-R-8 (closeout):     M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
+```
+
+**Prerequisites:** Phase M-LLM **Done** (M-LLM.1–13); no dependency on W-ADAPT runtime L4 gate.
+
+**Parallelism:** May run alongside W-ADAPT-5+; coordinate M-LLM-R.7.5 with W-ADAPT signal work if both touch `signal_collector.py`.
+
+**Closeout gate:** `scripts/check_llm_adapter_typed_returns.py` + `scripts/check_agents_llm_adapter_response.py` + full `tests/unit/llm_adapters/` gate green (M-LLM-R.8.3, M-LLM-R.6.4).
+
+### 6.2ac Phase W-ADAPT execution order (Band 2y — closed)
+
+**Status:** **Done** (2026-06-02) · register: [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · queue: [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-closed)
+
+```text
+Wave W-ADAPT-0 (planning):        W-ADAPT-0.2 → 0.3 → 0.4 → 0.5  (**Done**)
+Wave W-ADAPT-1 (observe L4-O):    W-ADAPT-1.1 → 1.12  (**Done**)
+Wave W-ADAPT-2 (recommend L4-R):  W-ADAPT-2.1 → 2.12  (**Done**)
+Wave W-ADAPT-3 (shadow L4-S):      W-ADAPT-3.1 → 3.2 → 3.3 → 3.4 → 3.6 → 3.7 → 3.5  (**Done**)
+Wave W-ADAPT-4 (apply L4-A):       W-ADAPT-4.1 → 4.10  (**Done**)
+Wave W-ADAPT-5 (verify L4-V):      W-ADAPT-5.1 → 5.3 → 5.4 → 5.5 → 5.2 → 5.11 → 5.6 → 5.7 → 5.8 → 5.9 → 5.10 → 5.12  (**Done**)
+Wave W-ADAPT-6 (patterns):         W-ADAPT-6.2 → 6.1 → 6.3 → 6.5 → 6.4  (**Done**)
+Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 → 7.6 → 7.7  (**Done**)
 ```
 
 **Prerequisites:** Phase V + V-REM + W-OPS + EVAL + COST + CG closeouts **Done**.
@@ -5099,7 +5868,7 @@ Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 �
 | V-REM | **Done** | 10/10 closed — §6.1z queue closed |
 | W-ML | **Done** | [MODALITY.md](MODALITY.md) |
 | P-Ext | **Done** | Appendix I |
-| M.6 / R-Skill expansion | **On demand** | W-OPS.10, W-OPS.8 |
+| M.6 P5 / M.6 P6 / R-Skill expansion | **On demand** | W-OPS.10, W-OPS.8, §6.1x, §6.1y |
 
 **Forbidden in Band 2/2d:** K.1, K.2, product-specific skills, new product application hosts.
 
@@ -6030,7 +6799,7 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | Domain (harness scope) | Intergrax canon anchor | Ideal harness anchor | Plan coverage | Status |
 |------------------------|------------------------|----------------------|---------------|--------|
 | Strategic objective + harness-first hierarchy | canon §2, §5.1, §51, §53.1 | ideal §0, §1, §26 | §0, §4.0, Phase V governance | **Done** |
-| Tier model and runtime boundaries | canon §5.1, §7.0–§7.4, §42 | ideal §3, §26 | §0.2, §2 map, Phases L/Q+/U | **Done** |
+| Tier model and runtime boundaries | canon §5.1, §7.0–§7.4, §42 | ideal §3, §26 | §0.2, §2 map, Phases L/Q+/U, **FAUDIT-TIER.\*** | **Done** — reference manifest catalog in `intergrax/applications/reference/` + CI gate |
 | Unified execution runtime (UAEP, lifecycle, interrupts, policy) | canon §42.* | ideal §3.3, §3.4, §5, §8 | §2 map, Phase U, gate suites | **Done** |
 | Context engineering core | canon §28.1, §42.35 | ideal §16 | Phase R (Done) + V-CE.* | **Done** |
 | Capability graph dependencies + impact analysis | canon §53.2 | ideal §19 + capability graph expectations | V-CG.* | **Done** |
@@ -6042,8 +6811,8 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | Cost/resource governance | canon §53.9 | ideal §24 | V-COST.* | **Done** |
 | Multi-agent coordination pattern catalog | canon §42.43, §53.10 | ideal §6 + §25 | V-MA.* | **Done** |
 | Knowledge graph evolution path (Graph-RAG) | canon §53.11 | ideal §3.7.1 + §25 | V-KG.* | **Done** |
-| **Adaptive Harness Intelligence (L4 runtime closed loop)** | canon §54 | ideal §25 | **Phase W-ADAPT** · AHIA | **Planned (Band 2y)** — governance L4 **Done** (V-V6); runtime L4 **open** |
-| Observability and runtime traceability | canon §33, §42.24 | ideal §11 | Phases Q/Q+/S/U + §6.1 maintenance | **Done** |
+| **Adaptive Harness Intelligence (L4 runtime closed loop)** | canon §54 | ideal §25 | **Phase W-ADAPT** · AHIA | **Done** (Band 2y, 70/70) — L4 runtime closed; observe/recommend/apply/verify per AHIA |
+| Observability and runtime traceability | canon §33, §42.24 | ideal §11 | Phases Q/Q+/S/U/OBS + **FAUDIT-OBS.1** | **Partial closeout** — dual-path telemetry; missing `LLM_CALL`/`POLICY_DECISION` in `RuntimeEventType` |
 | Registry-driven extensibility (agent/tool/skill/policy/prompt/eval) | canon §7.1.5.1–§7.1.8, §15, §53.2 | ideal §19 | Phase R/U + V-CG/V-PE/V-EVAL + **P-Ext** | **Done** — plugin catalogs production-ready; marketplace UI out of scope |
 | Product agents and new product apps | canon §7.4, §52 | ideal §26 | §6.3 only | **Deferred (product scope)** |
 
@@ -6169,6 +6938,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | 2026-06-02 | 0.1–0.4, 1.1–1.2, 2.1–2.8, 3.1–3.5, 4.1–4.2, 4.4, 5.2–5.4 | MVP: protocols, bootstrap, 13 tool + 3 skill plugins, lazy catalog, `custom_memory_kv` test |
 | 2026-06-02 | — | Plan updated: **MVP Done** + **P-Ext.6 paydown** backlog (EP fixture, external tool/skill tests, ops/docs) |
 | 2026-06-02 | 1.* audit | Integrations audit: 12 core / ~99 full manifest path; `resolve_typed` partial; Tier-3 integration_wiring gap; +P-Ext.1.3a, 1.8–1.12 |
+| 2026-06-02 | M.6 P5 closeout | Catalog **135** full (`12` core); timeline 99→127→135; P-Ext integration counts synced |
 | 2026-06-02 | 3.* audit | Skills audit: 3/3 `SkillPlugin`, 8 skill_id; Tier-3 `skill_wiring` OK; scaffold legacy; +P-Ext.3.9–3.12, 6.8 |
 | 2026-06-02 | 2.* audit | Tools audit section + `tool_wiring` lazy (P-Ext.2.12); P-Ext.4.5 unified counts; +P-Ext.6.9–6.10 |
 | 2026-06-02 | P-Ext paydown | Fixture EP package, external examples/tests, Tier-3 wiring, docs, CI smoke (residual: 1.5, 4.3, 5.1, 5.6) |
@@ -6218,7 +6988,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 **Purpose:** 100% mapping from [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) (AHIA) to concrete **W-ADAPT.\*** IDs. **Canonical phase narrative:** [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime).
 
-**Status:** **70 tasks** · **1 Done** (W-ADAPT-0.1) · **69 Planned** (2026-06-05).
+**Status:** **70 tasks** · **17 Done** (Wave W-ADAPT-0 + Wave W-ADAPT-1) · **53 Planned** (2026-06-05).
 
 ### K.1 AHIA component → W-ADAPT ID matrix
 
@@ -6269,9 +7039,120 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 | Date | W-ADAPT ID | Summary |
 |------|------------|---------|
+| 2026-06-05 | W-ADAPT-1.1–1.12 | Observe (L4-O): contracts, SignalStore, SignalCollector, Nexus/Runtime hooks, `phase_w_adapt_report.py` |
+| 2026-06-05 | W-ADAPT-0.2–0.5 | ADR-ADAPT-001 + `intergrax/runtime/adaptive/` scaffold + gate import tests |
 | 2026-06-05 | W-ADAPT-0.1 | Phase W-ADAPT register + §6.1t + §6.2ac + Appendix K + Band 2y |
+| 2026-06-02 | W-ADAPT-2.1–2.12 | Recommend (L4-R): AdaptationEngine, ProposalBuilder, bandit store, proposal report |
+| 2026-06-02 | W-ADAPT-3.1–3.7 | Shadow (L4-S): ProfileVersionStore, shadow executor, integration tests |
+| 2026-06-02 | W-ADAPT-4.1–4.10 | Apply (L4-A): canary, apply, rollback, policy-learning HITL |
+| 2026-06-02 | W-ADAPT-5.1–5.12 | Verify (L4-V): VerificationLoop, auto-rollback, L4 runtime closeout gate, runbooks |
+| 2026-06-02 | W-ADAPT-6.1–6.5 | ProcessPatternMiner, trace sequence reader, pattern report export |
+| 2026-06-02 | W-ADAPT-7.1–7.7 | Tier-3 AdaptiveProfile wiring, debug routes, business outcome webhook, acceptance E2E |
+| 2026-06-02 | W-ADAPT-OPS | Lab L4-O observe default (`LAB_ADAPTIVE_OBSERVE`); CI/release `--enforce-l4-runtime`; canon §54 + AHIA sync |
+
+---
+
+## Appendix L — LLM completion response envelope traceability (Phase M-LLM-R)
+
+**Source:** Tier-0 LLM adapter audit (2026-06-06) — plain `str` / `Dict[str, Any]` returns insufficient for production observability, replay, cost attribution, and L4 adaptive signals.
+
+**Phase register:** [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · **Band 2z** · queue [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed)
+
+### L.1 Audit finding → remediation map
+
+| # | Audit finding | Remediation | Task IDs |
+|---|---------------|-------------|----------|
+| 1 | `generate_messages` returns bare `str` | `LLMAdapterResponse` with `content: str` | M-LLM-R.1.1, M-LLM-R.2.1, M-LLM-R.3.*, M-LLM-R.4–6.* |
+| 2 | `generate_with_tools` returns `Dict[str, Any]` | Same envelope; `tool_calls: tuple[LLMToolCall, ...]` | M-LLM-R.1.3, M-LLM-R.1.7, M-LLM-R.2.2, M-LLM-R.4.2 |
+| 3 | Streaming yields `str` / dict chunks | `LLMStreamEvent` partial/final | M-LLM-R.1.5, M-LLM-R.2.3–2.4, M-LLM-R.3.6 |
+| 4 | `generate_structured` return untyped | `LLMStructuredResult[T]` | M-LLM-R.1.6, M-LLM-R.2.5, M-LLM-R.3.7 |
+| 5 | SDK `finish_reason` / stop metadata lost | `LLMFinishReason` on response | M-LLM-R.1.1, M-LLM-R.3.1–3.4 |
+| 6 | Provider `response_id` / request correlation lost | `response_id: str \| None` on response | M-LLM-R.1.1, M-LLM-R.3.1 |
+| 7 | Cached / reasoning tokens discarded | `LLMTokenUsage.cached_input_tokens`, `reasoning_tokens` | M-LLM-R.1.2, M-LLM-R.3.1 |
+| 8 | Refusal / content-filter signals lost | `refusal: str \| None` + finish_reason enum | M-LLM-R.1.1, M-LLM-R.3.1–3.2 |
+| 9 | Usage only via side-channel (`LLMAdapterUsageLog`) | Per-call `usage` on response + aligned `end_call` | M-LLM-R.1.2, M-LLM-R.2.6, M-LLM-R.7.1 |
+| 10 | Inconsistent token counting (estimate vs SDK) | Prefer SDK counts; flag estimate in `LLMProviderExtensions` | M-LLM-R.3.5, M-LLM-R.1.4 |
+| 11 | No extensibility without dict bags | `LLMProviderExtensions` tagged union | M-LLM-R.1.4 |
+| 12 | Replay `LLMCallInfo` not populated from adapter | Trace bridge from `LLMAdapterResponse` | M-LLM-R.7.2, M-LLM-R.7.3 |
+| 13 | `CoreLLMAdapterReturnedDiagV1` tracks `adapter_return_type="str"` | Diagnostics carry finish_reason + tokens | M-LLM-R.7.4 |
+| 14 | Conformance enforces `isinstance(text, str)` | Typed conformance helpers | M-LLM-R.8.2 |
+| 15 | ~50 call sites assume `str` | Full consumer refactor (Nexus, RAG, agents, websearch) | M-LLM-R.4.*, M-LLM-R.5.*, M-LLM-R.6.* |
+| 16 | `make_tool_result` dict factory | Delete; typed `build_adapter_response` | M-LLM-R.1.7 |
+| 17 | Public API missing response types | Re-export from `llm_adapters/__init__.py` | M-LLM-R.1.8 |
+| 18 | Docs describe two-layer usage but not response envelope | `LLM_ADAPTERS.md` envelope section | M-LLM-R.8.1 |
+| 19 | No CI guard against regression to `str` returns | `check_llm_adapter_typed_returns.py` | M-LLM-R.8.3 |
+
+### L.2 Consumer inventory (must migrate)
+
+| Area | Modules | Task |
+|------|---------|------|
+| Nexus core LLM | `core_llm_step.py` | M-LLM-R.4.1 |
+| Tool planning | `tool_planning_service.py` | M-LLM-R.4.2 |
+| Planning / history | `plan_sources.py`, `engine_history_layer.py` | M-LLM-R.4.3 |
+| Profile services | `user_profile/*`, `organization/*`, `session_memory_consolidation_service.py` | M-LLM-R.4.4 |
+| Supervisor | `supervisor.py` | M-LLM-R.4.5 |
+| RAG | `query_refiner.py`, `query_expander.py`, `chunk_enricher.py`, `llm_graph_indexer.py` | M-LLM-R.5.1 |
+| Websearch | `websearch_context_generator.py`, `websearch_answerer.py` | M-LLM-R.5.2 |
+| Legacy RAG | `legacy/rag_answers/pipeline/answer_pipeline.py` | M-LLM-R.5.3 |
+| Agents (Tier-2) | `agents/*/steps/pipeline.py`, `mock_agents.py` | M-LLM-R.6.1 |
+| Scaffold / tests | `scaffold/new_agent.py`, `testing_support/builder.py` | M-LLM-R.6.2–6.3 |
+| All providers | `llm_adapters/providers/*` | M-LLM-R.3.* |
+
+### L.3 Paydown log
+
+| Date | M-LLM-R ID | Summary |
+|------|------------|---------|
+| 2026-06-06 | M-LLM-R.0.1 | Phase M-LLM-R register + §6.1v + §6.2ad + Appendix L + Band 2z |
+| 2026-06-06 | M-LLM-R.* | Typed `LLMAdapterResponse` envelope; providers + consumers migrated; gate **755** passed |
 | — | — | *(append row per merged PR)* |
 
 ---
 
-*Plan synced (2026-06-05). **Harness platform** bands 1–2x **Done**; **Band 2y W-ADAPT opened** (0/70). Gate: **687 passed**. **Default next:** [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active) W-ADAPT-0.2+. **Every PR:** §6.1 maintenance. Product work gated by [§6.3](#63-end-of-plan--deferred-product-work-only).*
+## Appendix M — Full architecture audit traceability (Phase FAUDIT-32)
+
+**Purpose:** 100% mapping from 32-layer [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §8 audit to concrete **FAUDIT.\*** remediation IDs. **Canonical phase narrative:** [Phase FAUDIT-32](#phase-faudit-32--full-architecture-audit-closeout).
+
+**Status:** **Docs Done** (2026-06-06) · **23 remediation tasks Planned** · queue [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-active)
+
+### M.1 Layer → FAUDIT ID matrix (High + Critical only)
+
+| Layer | AUDIT_MAP § | Gap summary | Severity | FAUDIT ID |
+|-------|-------------|-------------|----------|-----------|
+| Tier boundaries | §2 | `intergrax/runtime/architecture/capability_graph_applications.py` imports `applications.*` | **Critical** | FAUDIT-TIER.1, FAUDIT-TIER.2 |
+| Task intake | §3 | No `TaskEnvelope`; worker≡HTTP parity incomplete | High | FAUDIT-INTAKE.1, FAUDIT-INTAKE.2 |
+| Identity | §4 | No service/agent identity; delegation scope | High | FAUDIT-ID.1, FAUDIT-ID.2 |
+| Policy | §5 | Pre-LLM/pre-output hooks absent | High | FAUDIT-POL.1 |
+| LLM adapters | §6 | No policy-driven routing | High | FAUDIT-LLM.1 |
+| Cognition | §7 | No `DecisionRecord` per step | High | FAUDIT-COG.1 |
+| Orchestration | §9 | No backpressure | High | FAUDIT-ORCH.1 |
+| Subagents | §10 | No `SubtaskContract` | High | FAUDIT-SUB.1 |
+| Memory | §15 | Entity graph memory; STM retention | High | FAUDIT-MEM.1 |
+| Prompts | §17 | No golden prompt CI | High | FAUDIT-PE.1 |
+| Registry | §19 | Snapshot omits agents/eval | High | FAUDIT-REG.1 |
+| Capability graph | §20 | Missing prompt nodes; no release impact gate | High | FAUDIT-CG.1, FAUDIT-CG.2 |
+| Observability | §21 | Missing `LLM_CALL`/`POLICY_DECISION` events | High | FAUDIT-OBS.1 |
+| Reliability | §22 | Shallow error taxonomy | High | FAUDIT-REL.1 |
+| Security | §23 | No `DataClassification` | High | FAUDIT-SEC.1 |
+| Cost | §24 | Tenant attribution not mandatory | High | FAUDIT-COST.1 |
+| Evaluation | §25 | Release baseline not CI-enforced | High | FAUDIT-EVAL.1 |
+| Lifecycle | §31 | State catalog mismatch; weak adoption | High | FAUDIT-ALG.1 |
+| Ops / SLOs | §30 | `release_cycles.json` artifact policy | High | FAUDIT-OPS.1 |
+
+### M.2 Cross-layer themes
+
+| Theme | Layers affected | Risk |
+|-------|-----------------|------|
+| **Closeout vs maturity** | §17–§25, §31 | Plan **Done** on wiring; AUDIT_MAP **L2** on depth — do not conflate |
+| **Dual-path telemetry** | §21, §6 | Trace replay vs `RuntimeEventType` — unified journal missing |
+| **Tier boundary drift** | §2, §28 | Single Critical violation undermines canon §7.4.4 |
+| **Identity / intake naming** | §3, §4 | `TaskEnvelope` in docs vs `Task`/`RuntimeRequest` in code |
+
+### M.3 Paydown log
+
+| Date | FAUDIT ID | Summary |
+|------|-----------|---------|
+| 2026-06-06 | FAUDIT-32.0 | Full 32-layer audit (`scope: C`, `audit-and-fix`); scorecard + §6.1ah queue + Appendix M; gate **893**; boundary scripts OK |
+
+---
+
+*Plan synced (2026-06-06). **Harness platform** bands 1–2ad **Done** (FAUDIT-32 **23/23** + [§6.1ai](#61ai-harness-implementation-queue--faudit-32-follow-up-closed) follow-up). **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance only. Product: [§6.3](#63-end-of-plan--deferred-product-work-only). **Every PR:** §6.1 maintenance.*

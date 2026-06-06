@@ -440,6 +440,60 @@ services:
     shm_size: 2gb
     restart: unless-stopped
 
+  keycloak:
+    <<: *profiles_all
+    image: quay.io/keycloak/keycloak:26.0.7
+    container_name: intergrax-keycloak
+    profiles:
+      - heavy
+      - p6
+      - all
+    command: ["start-dev", "--http-port=8088"]
+    ports:
+      - "8088:8088"
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    restart: unless-stopped
+
+  typesense:
+    <<: *profiles_all
+    image: typesense/typesense:27.1
+    container_name: intergrax-typesense
+    profiles:
+      - rag
+      - p6
+      - all
+    ports:
+      - "8108:8108"
+    command: ["--data-dir", "/data", "--api-key", "${TYPESENSE_API_KEY:-typesense-dev-key}", "--listen-port", "8108", "--enable-cors"]
+    volumes:
+      - typesense_data:/data
+    restart: unless-stopped
+
+  airflow-webserver:
+    <<: *profiles_all
+    image: apache/airflow:2.10.4-python3.12
+    container_name: intergrax-airflow-webserver
+    profiles:
+      - heavy
+      - p6
+      - all
+    ports:
+      - "8086:8080"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-intergrax}:${POSTGRES_PASSWORD:-intergrax}@postgresql:5432/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      _AIRFLOW_DB_MIGRATE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_USERNAME:-airflow}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_PASSWORD:-airflow}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   kafka_data:
@@ -461,3 +515,4 @@ volumes:
   localstack_data:
   azurite_data:
   vespa_data:
+  typesense_data:

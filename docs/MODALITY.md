@@ -158,7 +158,7 @@ Atomic tools (LLM-selectable, MCP-exportable):
 | `vision.detect` | C | **Done** |
 | `vision.segment` | C | **Done** |
 | `vision.ocr_regions` | C | **Done** |
-| `speech.synthesize` | C + speech_provider | **Done** |
+| `speech.synthesize` | C + speech_provider | **Done** — `IntegrationSpeechAdapter` bridges catalog `speech_provider` slugs (`elevenlabs`, `deepgram`) into Tier-0 speech tools via `wire_integration_tool_context()` |
 | `speech.transcribe` | B or speech_provider | **Done** (stub / provider) |
 | `ml.predict` | C | **Done** |
 | `ml.explain` | C | **Done** (feature importance stub) |

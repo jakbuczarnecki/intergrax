@@ -124,3 +124,10 @@ def test_profile_accepts_prebuilt_instance() -> None:
     sentinel = object()
     profile = IntegrationProfile(relational_store=sentinel)
     assert profile.instance_for_category(IntegrationCategory.RELATIONAL_STORE) is sentinel
+
+
+def test_integration_profile_json_roundtrip_preserves_slug_bindings() -> None:
+    register_sqlite_integration()
+    profile = IntegrationProfile(relational_store=SQLITE)
+    restored = IntegrationProfile.model_validate(profile.model_dump(mode="json"))
+    assert restored.slug_for_category(IntegrationCategory.RELATIONAL_STORE) == SQLITE.slug

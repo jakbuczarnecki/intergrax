@@ -122,3 +122,10 @@ class PrometheusRestClient:
         if not isinstance(data, dict):
             raise IntegrationConfigurationError("Unexpected Prometheus query data")
         return _parse_query_data(data)
+
+    def health(self) -> bool:
+        try:
+            response = self._http_client.get("/-/ready")
+            return int(response.status_code) < 400  # type: ignore[attr-defined]
+        except Exception:  # noqa: BLE001 — health probe surface
+            return False

@@ -82,8 +82,23 @@ def main() -> int:
     print(f"compatible: {compatibility_report.compatible}")
     print(f"artifacts: {output_dir.as_posix()}")
 
-    if args.enforce and not compatibility_report.compatible:
-        return 1
+    if args.enforce:
+        if not compatibility_report.compatible:
+            return 1
+        from intergrax.runtime.architecture.capability_graph_compatibility import CompatibilitySeverity
+
+        high_impact_removals = [
+            issue.node_id
+            for issue in compatibility_report.issues
+            if issue.severity == CompatibilitySeverity.ERROR and issue.node_id
+        ]
+        for node_id in high_impact_removals:
+            impact = next((item for item in impact_report.impacts if item.node_id == node_id), None)
+            if impact is not None and len(impact.blast_radius_node_ids) > 0:
+                print(
+                    f"release impact: removing {node_id} affects "
+                    f"{len(impact.blast_radius_node_ids)} downstream nodes"
+                )
     return 0
 
 

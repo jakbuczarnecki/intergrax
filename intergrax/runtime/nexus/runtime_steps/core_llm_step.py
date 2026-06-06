@@ -11,6 +11,7 @@ from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
 from intergrax.runtime.nexus.tracing.adapters.core_llm_adapter_failed import CoreLLMAdapterFailedDiagV1
 from intergrax.runtime.nexus.tracing.adapters.core_llm_adapter_returned import CoreLLMAdapterReturnedDiagV1
+from intergrax.runtime.nexus.tracing.adapters.core_llm_call_recorded import CoreLLMCallRecordedDiagV1
 from intergrax.runtime.nexus.tracing.adapters.core_llm_used_tools_agent_answer import CoreLLMUsedToolsAgentAnswerDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
@@ -71,12 +72,17 @@ class CoreLLMStep(RuntimeStep):
                 )
 
 
-            raw_answer = state.context.config.llm_adapter.generate_messages(
+            completion = state.context.config.llm_adapter.generate_messages(
                 msgs,
                 run_id=state.run_id,
                 **generate_kwargs,
             )
+            state.last_llm_adapter_response = completion
+            answer_text = completion.content
 
+            usage = completion.usage
+            input_tokens = int(usage.input_tokens) if usage else 0
+            output_tokens = int(usage.output_tokens) if usage else 0
             state.trace_event(
                 component=TraceComponent.ENGINE,
                 step="core_llm",
@@ -84,13 +90,32 @@ class CoreLLMStep(RuntimeStep):
                 level=TraceLevel.INFO,
                 payload=CoreLLMAdapterReturnedDiagV1(
                     used_tools_answer=False,
-                    adapter_return_type="str",
-                    answer_len=len(raw_answer),
-                    answer_is_empty=not bool(raw_answer),
+                    finish_reason=completion.finish_reason.value,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    answer_len=len(answer_text),
+                    answer_is_empty=not bool(answer_text),
+                ),
+            )
+            state.trace_event(
+                component=TraceComponent.ENGINE,
+                step="core_llm",
+                message="Core LLM call recorded for replay.",
+                level=TraceLevel.INFO,
+                payload=CoreLLMCallRecordedDiagV1(
+                    model=completion.model or "",
+                    provider=completion.provider or "",
+                    prompt_tokens=input_tokens,
+                    completion_tokens=output_tokens,
+                    total_tokens=input_tokens + output_tokens,
+                    finish_reason=completion.finish_reason.value,
+                    response_id=completion.response_id,
+                    has_refusal=bool(completion.refusal),
+                    has_tool_calls=completion.has_tool_calls,
                 ),
             )
 
-            state.raw_answer = raw_answer
+            state.raw_answer = answer_text
 
         except Exception as e:
             # Trace the error and whether a tool_planner_answer fallback is available.

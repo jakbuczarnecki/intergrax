@@ -86,6 +86,17 @@ class IntegrationProfile(BaseModel):
     graph_store: IntegrationBinding | None = None
     document_parser: IntegrationBinding | None = None
     rerank_provider: IntegrationBinding | None = None
+    feature_flag: IntegrationBinding | None = None
+    ci_cd: IntegrationBinding | None = None
+    security_scanner: IntegrationBinding | None = None
+    sandbox_host: IntegrationBinding | None = None
+    identity_provider: IntegrationBinding | None = None
+    speech_provider: IntegrationBinding | None = None
+    workflow_orchestrator: IntegrationBinding | None = None
+    vision_serving: IntegrationBinding | None = None
+    ml_inference_host: IntegrationBinding | None = None
+    billing_meter: IntegrationBinding | None = None
+    crm: IntegrationBinding | None = None
 
     options: dict[str, dict[str, Any]] = Field(default_factory=dict)
 
@@ -124,7 +135,12 @@ class IntegrationProfile(BaseModel):
         accessor = self._BINDING_ACCESSORS.get(field_name)
         if accessor is None:
             raise ValueError(f"No binding accessor registered for field: {field_name!r}")
-        return accessor(self)
+        raw = accessor(self)
+        if raw is None:
+            return None
+        from intergrax.integrations.core.ref import normalize_integration_binding
+
+        return normalize_integration_binding(raw)
 
     def slug_for_category(self, category: str | IntegrationCategory) -> str | None:
         if isinstance(category, IntegrationCategory):
@@ -287,10 +303,29 @@ class IntegrationProfile(BaseModel):
         return _data_stack(enable_redis=enable_redis, enable_qdrant=enable_qdrant)
 
     @classmethod
-    def observability_stack(cls, *, enable_otel: bool = True) -> IntegrationProfile:
+    def observability_stack(
+        cls,
+        *,
+        enable_otel: bool = True,
+        enable_grafana_stack: bool = False,
+    ) -> IntegrationProfile:
         from intergrax.integrations.registry.presets import observability_stack as _obs_stack
 
-        return _obs_stack(enable_otel=enable_otel)
+        return _obs_stack(enable_otel=enable_otel, enable_grafana_stack=enable_grafana_stack)
+
+    @classmethod
+    def harness_production_stack(
+        cls,
+        *,
+        secrets_slug: str = "doppler",
+        enable_grafana_stack: bool = True,
+    ) -> IntegrationProfile:
+        from intergrax.integrations.registry.presets import harness_production_stack as _prod_stack
+
+        return _prod_stack(
+            secrets_slug=secrets_slug,
+            enable_grafana_stack=enable_grafana_stack,
+        )
 
 
 def default_lab_profile() -> IntegrationProfile:
@@ -317,4 +352,15 @@ IntegrationProfile._BINDING_ACCESSORS = {
     "graph_store": lambda profile: profile.graph_store,
     "document_parser": lambda profile: profile.document_parser,
     "rerank_provider": lambda profile: profile.rerank_provider,
+    "feature_flag": lambda profile: profile.feature_flag,
+    "ci_cd": lambda profile: profile.ci_cd,
+    "security_scanner": lambda profile: profile.security_scanner,
+    "sandbox_host": lambda profile: profile.sandbox_host,
+    "identity_provider": lambda profile: profile.identity_provider,
+    "speech_provider": lambda profile: profile.speech_provider,
+    "workflow_orchestrator": lambda profile: profile.workflow_orchestrator,
+    "vision_serving": lambda profile: profile.vision_serving,
+    "ml_inference_host": lambda profile: profile.ml_inference_host,
+    "billing_meter": lambda profile: profile.billing_meter,
+    "crm": lambda profile: profile.crm,
 }

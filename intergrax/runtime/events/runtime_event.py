@@ -62,6 +62,15 @@ class RuntimeEventType(str, Enum):
     TASK_COMPLETED = "task_completed"
     TASK_FAILED = "task_failed"
     RUNTIME_HANDLER_FAILED = "runtime_handler_failed"
+    ADAPTIVE_SIGNAL_RECORDED = "adaptive_signal_recorded"
+    ADAPTIVE_PROPOSAL_SUBMITTED = "adaptive_proposal_submitted"
+    ADAPTIVE_PROFILE_APPLIED = "adaptive_profile_applied"
+    ADAPTIVE_PROFILE_ROLLBACK = "adaptive_profile_rollback"
+    ADAPTIVE_VERIFICATION_FAILED = "adaptive_verification_failed"
+    ADAPTIVE_LOOP_BLOCKED = "adaptive_loop_blocked"
+    LLM_CALL = "llm_call"
+    POLICY_DECISION = "policy_decision"
+    GRAPH_BACKPRESSURE = "graph_backpressure"
 
 
 class RuntimeEvent(BaseModel):

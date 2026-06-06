@@ -10,6 +10,7 @@ from uuid import uuid4
 from pydantic import BaseModel, Field, PrivateAttr, model_validator
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.runtime.task.task_contract import (
     TaskExecutionOptions,
     TaskResultSummary,
@@ -79,6 +80,28 @@ class Task(BaseModel):
         from intergrax.runtime.task.task_metadata_bridge import sync_task_metadata
 
         sync_task_metadata(self)
+
+    def to_envelope(self) -> TaskEnvelope:
+        return TaskEnvelope(
+            tenant_id=self.tenant_id,
+            user_id=self.user_id,
+            message=self.message,
+            session_id=self.session_id,
+            agent_id=self.agent_id,
+            workspace_id=self.metadata.get("workspace_id"),
+            metadata=dict(self.metadata),
+        )
+
+    @classmethod
+    def from_envelope(cls, envelope: TaskEnvelope) -> Task:
+        return cls(
+            tenant_id=envelope.tenant_id,
+            user_id=envelope.user_id,
+            message=envelope.message,
+            session_id=envelope.session_id,
+            agent_id=envelope.agent_id,
+            metadata=dict(envelope.metadata),
+        )
 
     def to_runtime_request(self) -> "RuntimeRequest":
         from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest

@@ -23,10 +23,13 @@ from intergrax.agents.uaep_pipeline import (
     run_pipeline_step,
 )
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.agent_decision import AgentDecision
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.memory.conversational_memory import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -56,14 +59,14 @@ class _StubLLM(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> str:
+    ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id)
         try:
             for msg in reversed(messages):
                 content = msg.content or ""
                 if content:
-                    return f"{self.provider}: {content[:120]}"
-            return f"{self.provider}: (empty)"
+                    return build_adapter_response(content=f"{self.provider}: {content[:120]}")
+            return build_adapter_response(content=f"{self.provider}: (empty)")
         finally:
             self.usage.end_call(call, input_tokens=0, output_tokens=1, success=True)
 
@@ -116,6 +119,8 @@ class _MockAgentBase(HarnessReferenceAgent):
             skills=[],
             extra_tools=[],
             risk_level=AgentRiskLevel.LOW,
+            lifecycle_state=AgentLifecycleState.DEVELOPMENT,
+            owner_team="platform",
             max_steps=5,
         )
 

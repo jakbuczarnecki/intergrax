@@ -33,11 +33,13 @@ from intergrax.applications._shared.harness_host_runtime import build_harness_ho
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
 from lab_application.manifest import build_lab_manifest
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
+from intergrax.applications._shared.identity_wiring import wire_application_identity
 from intergrax.applications._shared.harness_auth import (
-    apply_harness_auth_middleware,
-    require_harness_api_key,
+    require_harness_auth,
     resolve_harness_api_key,
 )
+from intergrax.runtime.adaptive.proposal_store import SQLiteProposalStore, default_proposal_store_path
+from intergrax.runtime.adaptive.signal_store import SQLiteSignalStore, default_signal_store_path
 from lab_application.serving.fastapi_router import mount_lab_routes
 
 
@@ -140,6 +142,10 @@ def create_lab_application(
         trace_store=integrations.trace_store,
         runtime_event_store=integrations.runtime_event_store,
         delivery_ledger=integrations.delivery_ledger,
+        adaptive_signal_store=SQLiteSignalStore(db_path=default_signal_store_path()),
+        adaptive_proposal_store=SQLiteProposalStore(db_path=default_proposal_store_path()),
+        include_adaptive_debug_routes=lab_env.adaptive_profile.debug_readonly_routes,
+        include_integration_health_routes=settings.harness,
     )
     app.title = "Intergrax Lab Application"
     app.description = (
@@ -159,7 +165,7 @@ def create_lab_application(
                 execute_default=True,
             ),
             prefix=settings.interaction_route_prefix,
-            dependencies=[Depends(require_harness_api_key)],
+            dependencies=[Depends(require_harness_auth)],
         )
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
     if settings.include_mcp:
@@ -183,5 +189,9 @@ def create_lab_application(
         apply_lifespans(app, make_scheduler_lifespan(scheduler))
     attach_plugin_shutdown(app, plugin_bootstrap.shutdown_callbacks)
     register_llm_metrics_routes(app)
-    apply_harness_auth_middleware(app)
+    wire_application_identity(
+        app,
+        lab_env.identity_profile,
+        integration_profile=integrations.profile,
+    )
     return app

@@ -18,6 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
+from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.llm.messages import AttachmentRef
 from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageReport
 from intergrax.runtime.nexus.tracing.trace_models import TraceEvent
@@ -148,6 +149,18 @@ class RuntimeRequest:
 
     # Optional UI / app metadata (channel, app name, etc.)
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def to_envelope(self) -> TaskEnvelope:
+        tenant = self.tenant_id or self.metadata.get("tenant_id") or "default"
+        return TaskEnvelope(
+            tenant_id=str(tenant),
+            user_id=self.user_id,
+            message=self.message,
+            session_id=self.session_id,
+            agent_id=self.agent_id,
+            workspace_id=self.workspace_id,
+            metadata=dict(self.metadata),
+        )
 
     # User-provided instructions (ChatGPT/Gemini-style)
     instructions: Optional[str] = None

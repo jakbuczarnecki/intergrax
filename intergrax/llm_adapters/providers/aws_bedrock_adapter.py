@@ -14,6 +14,11 @@ import boto3
 from mypy_boto3_bedrock_runtime import BedrockRuntimeClient
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.adapter_response_builders import (
+    build_adapter_response,
+    final_stream_event,
+    partial_stream_event,
+)
 from intergrax.llm_adapters._shared.anthropic_messages import map_anthropic_messages
 from intergrax.llm_adapters._shared.bedrock_converse import (
     build_converse_request,
@@ -24,14 +29,19 @@ from intergrax.llm_adapters._shared.bedrock_converse import (
     parse_converse_stream_tool_event,
 )
 from intergrax.llm_adapters._shared.messages import split_system_messages
-from intergrax.llm_adapters._shared.tool_results import make_tool_result
 from intergrax.llm_adapters._shared.bedrock_converse import extract_converse_tool_calls
 from intergrax.llm_adapters._shared.tool_schema import (
     openai_tools_to_anthropic,
     openai_tools_to_bedrock_converse,
 )
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
+from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
 
 
 class BedrockModelFamily(str, Enum):
@@ -444,6 +454,9 @@ class BedrockChatAdapter(LLMAdapter):
     # Core API
     # ------------------------------------------------------------------
 
+    def _estimate_extensions(self) -> LLMProviderExtensions:
+        return LLMProviderExtensions(usage_source="estimate")
+
     def generate_messages(
         self,
         messages: Sequence[ChatMessage],
@@ -451,13 +464,13 @@ class BedrockChatAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> str:
+    ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-
-        in_tok = 0
-        out_tok = 0
+        response: LLMAdapterResponse | None = None
         success = False
         err_type = None
+        in_tok = 0
+        out_tok = 0
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
@@ -474,8 +487,15 @@ class BedrockChatAdapter(LLMAdapter):
                 )
                 text = extract_converse_text(resp)
                 out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+                response = build_adapter_response(
+                    content=text,
+                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                    model=self.model,
+                    provider=self._provider_slug(),
+                    provider_extensions=self._estimate_extensions(),
+                )
                 success = True
-                return text
+                return response
 
             system_text, convo = split_system_messages(messages)
             codec = self._get_codec(self.config.family)
@@ -503,19 +523,26 @@ class BedrockChatAdapter(LLMAdapter):
 
             text = codec.extract_text(parsed)
             out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
-
+            response = build_adapter_response(
+                content=text,
+                usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                model=self.model,
+                provider=self._provider_slug(),
+                provider_extensions=self._estimate_extensions(),
+            )
             success = True
-            return text
+            return response
 
         except Exception as e:
             err_type = type(e).__name__
             raise
 
         finally:
+            usage = response.usage if (success and response and response.usage) else LLMTokenUsage()
             self.usage.end_call(
                 call,
-                input_tokens=in_tok,
-                output_tokens=out_tok,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
                 success=success,
                 error_type=err_type,
             )
@@ -528,14 +555,12 @@ class BedrockChatAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> Iterable[str]:
+    ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-
-        in_tok = 0
-        out_tok = 0
         success = False
         err_type = None
-
+        in_tok = 0
+        out_tok = 0
         buf: List[str] = []
 
         try:
@@ -554,13 +579,22 @@ class BedrockChatAdapter(LLMAdapter):
                 stream = resp.get("stream") if isinstance(resp, dict) else resp
                 for text in iter_converse_stream_text(stream):
                     buf.append(text)
-                    yield text
+                    yield partial_stream_event(delta_content=text)
                 out_tok = int(
                     self.estimate_tokens_for_text(
                         "".join(buf), model_hint=self.model_name_for_token_estimation
                     )
                 )
                 success = True
+                yield final_stream_event(
+                    response=build_adapter_response(
+                        content="".join(buf),
+                        usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                        model=self.model,
+                        provider=self._provider_slug(),
+                        provider_extensions=self._estimate_extensions(),
+                    )
+                )
                 return
 
             system_text, convo = split_system_messages(messages)
@@ -595,10 +629,19 @@ class BedrockChatAdapter(LLMAdapter):
                 text = codec.extract_stream_text(payload)
                 if text:
                     buf.append(text)
-                    yield text
+                    yield partial_stream_event(delta_content=text)
 
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
             success = True
+            yield final_stream_event(
+                response=build_adapter_response(
+                    content="".join(buf),
+                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                    model=self.model,
+                    provider=self._provider_slug(),
+                    provider_extensions=self._estimate_extensions(),
+                )
+            )
 
         except Exception as e:
             err_type = type(e).__name__
@@ -629,17 +672,18 @@ class BedrockChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> LLMAdapterResponse:
         if not self.supports_tools():
             raise NotImplementedError(
                 "Tools require Bedrock Converse API or an Anthropic model on InvokeModel."
             )
 
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-        in_tok = 0
-        out_tok = 0
+        response: LLMAdapterResponse | None = None
         success = False
         err_type = None
+        in_tok = 0
+        out_tok = 0
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
@@ -656,10 +700,20 @@ class BedrockChatAdapter(LLMAdapter):
                     lambda: self.client.converse(modelId=self.config.model_id, **req)
                 )
                 text = extract_converse_text(resp)
-                tool_calls = extract_converse_tool_calls(resp)
+                tool_calls = tool_calls_from_openai_dicts(extract_converse_tool_calls(resp))
                 out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+                finish = LLMFinishReason.TOOL_CALLS if tool_calls else LLMFinishReason.COMPLETED
+                response = build_adapter_response(
+                    content=text,
+                    finish_reason=finish,
+                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                    model=self.model,
+                    provider=self._provider_slug(),
+                    tool_calls=tool_calls,
+                    provider_extensions=self._estimate_extensions(),
+                )
                 success = True
-                return make_tool_result(content=text, tool_calls=tool_calls, finish_reason="completed")
+                return response
 
             system_text, convo = split_system_messages(messages)
             codec = self._get_codec(self.config.family)
@@ -686,15 +740,32 @@ class BedrockChatAdapter(LLMAdapter):
             )
             parsed = json.loads(res["body"].read().decode("utf-8"))
             text = codec.extract_text(parsed)
-            tool_calls = codec.extract_tool_calls(parsed)
+            tool_calls = tool_calls_from_openai_dicts(codec.extract_tool_calls(parsed))
             out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+            finish = LLMFinishReason.TOOL_CALLS if tool_calls else LLMFinishReason.COMPLETED
+            response = build_adapter_response(
+                content=text,
+                finish_reason=finish,
+                usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                model=self.model,
+                provider=self._provider_slug(),
+                tool_calls=tool_calls,
+                provider_extensions=self._estimate_extensions(),
+            )
             success = True
-            return make_tool_result(content=text, tool_calls=tool_calls, finish_reason="completed")
+            return response
         except Exception as e:
             err_type = type(e).__name__
             raise
         finally:
-            self.usage.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
+            usage = response.usage if (success and response and response.usage) else LLMTokenUsage()
+            self.usage.end_call(
+                call,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+                success=success,
+                error_type=err_type,
+            )
 
     def stream_with_tools(
         self,
@@ -705,15 +776,15 @@ class BedrockChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
-    ) -> Iterable[Dict[str, Any]]:
+    ) -> Iterable[LLMStreamEvent]:
         if not self.supports_tools():
             raise NotImplementedError("Tools are not supported for this Bedrock configuration.")
 
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-        in_tok = 0
-        out_tok = 0
         success = False
         err_type = None
+        in_tok = 0
+        out_tok = 0
         buf: List[str] = []
         tool_calls: List[Dict[str, Any]] = []
 
@@ -740,7 +811,7 @@ class BedrockChatAdapter(LLMAdapter):
                 for event in stream:
                     for text in iter_converse_stream_text([event]):
                         buf.append(text)
-                        yield make_tool_result(content=text, finish_reason="partial")
+                        yield partial_stream_event(delta_content=text)
                     completed = parse_converse_stream_tool_event(event, active_tools=active_tools)
                     if completed:
                         tool_calls.append(completed)
@@ -748,16 +819,24 @@ class BedrockChatAdapter(LLMAdapter):
                 for tu in active_tools.values():
                     tool_calls.append(tu)
 
+                typed_calls = tool_calls_from_openai_dicts(tool_calls)
+                finish = LLMFinishReason.TOOL_CALLS if typed_calls else LLMFinishReason.COMPLETED
                 out_tok = int(
                     self.estimate_tokens_for_text(
                         "".join(buf), model_hint=self.model_name_for_token_estimation
                     )
                 )
                 success = True
-                yield make_tool_result(
-                    content="".join(buf),
-                    tool_calls=tool_calls,
-                    finish_reason="completed",
+                yield final_stream_event(
+                    response=build_adapter_response(
+                        content="".join(buf),
+                        finish_reason=finish,
+                        usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                        model=self.model,
+                        provider=self._provider_slug(),
+                        tool_calls=typed_calls,
+                        provider_extensions=self._estimate_extensions(),
+                    )
                 )
                 return
 
@@ -769,10 +848,10 @@ class BedrockChatAdapter(LLMAdapter):
                 tool_choice=tool_choice,
                 run_id=run_id,
             )
-            content = result.get("content") or ""
+            content = result.content or ""
             if content:
-                yield make_tool_result(content=content, finish_reason="partial")
-            yield result
+                yield partial_stream_event(delta_content=content)
+            yield final_stream_event(response=result)
             success = True
         except Exception as e:
             err_type = type(e).__name__

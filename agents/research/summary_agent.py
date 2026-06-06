@@ -10,6 +10,7 @@ from intergrax.agents.reference_harness import (
     default_reference_harness,
 )
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.agent_decision import AgentDecision
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -36,6 +37,8 @@ class SummaryAgent(HarnessReferenceAgent):
             skills=[],
             extra_tools=[],
             risk_level=AgentRiskLevel.LOW,
+            lifecycle_state=AgentLifecycleState.STAGING,
+            owner_team="platform",
             max_steps=5,
             validation_rules=["non_empty_summary"],
         )

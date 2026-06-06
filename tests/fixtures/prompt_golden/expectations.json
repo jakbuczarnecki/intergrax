@@ -1,0 +1,17 @@
+[
+  {
+    "prompt_id": "harness_capability_summary",
+    "version": 1,
+    "content_sha256": "a19c1eeb1f4de865574bb37b7858cdb24e77af6eceecbb8a1738514865d6d7f1"
+  },
+  {
+    "prompt_id": "planner_base",
+    "version": 1,
+    "content_sha256": "ed345739d5420f66e4a57ea3e0cd9a4a445ee8ccbad6be994ec6f79ec8ac2735"
+  },
+  {
+    "prompt_id": "tools_agent_system",
+    "version": 1,
+    "content_sha256": "5600f7b24e4c21b032d37935a694d6c5d4c3100238220a443e0a4bb096b1858e"
+  }
+]

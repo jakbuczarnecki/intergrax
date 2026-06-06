@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="snowflake",
     categories=(IntegrationCategory.RELATIONAL_STORE,),
-    status=IntegrationStatus.BETA,
+    status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_SNOWFLAKE',
     description='snowflake integration (Phase M.7)',
 )

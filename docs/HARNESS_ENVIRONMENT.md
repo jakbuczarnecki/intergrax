@@ -103,7 +103,7 @@ Runtime events: `GET /debug/tasks/{id}/events` when SQLite runtime events DB is 
 | `harness.tool_smoke` | `rag.retrieve`, `websearch.query` | Tool catalog smoke |
 | `harness.context_demo` | `rag.retrieve` | Context budget exercises |
 | `harness.trace_read` | `sandbox.exec` | Isolated diagnostics |
-| `harness.reliability_smoke` | `observability.query_traces`, `rag.retrieve` | Reliability / ops smoke (W-OPS.8) |
+| `harness.reliability_smoke` | `observability.query_traces`, `rag.retrieve`, `security.scan`, `workflow.trigger` | Reliability / ops smoke incl. P6 tools (W-OPS.8) |
 | `harness.policy_smoke` | `rag.retrieve`, `websearch.query` | Policy bundle smoke (W-OPS.8) |
 | `harness.stack_demo` | requires `harness.tool_smoke` | `requires_skills` chain demo (W-OPS.9) |
 
@@ -115,7 +115,15 @@ Reference harness agents **must** set `AgentContract.skill_ids` — echo and sig
 
 Default enabled tools: `rag.retrieve`, `websearch.query`.
 
-`sandbox.exec` is enabled **only** when a sandbox session is passed into `wire_lab_tools(sandbox_session=...)` (Phase U-Sec.3). Skills may still declare `sandbox.exec` for harness exercises — wire a session before expecting successful invocations.
+`sandbox.exec` is enabled when `ToolWiringContext.sandbox_session` is set (local runtime sandbox) **or** when `IntegrationProfile.sandbox_host` resolves to a hosted backend — `wire_application_environment()` opens `HostedSandboxSession` via `resolve_hosted_sandbox_session()` (M.6 P6). Skills may still declare `sandbox.exec` for harness exercises — wire a session before expecting successful invocations.
+
+**P6 integration tool wiring:** `wire_integration_tool_context()` maps `security_scanner`, `sandbox_host`, `identity_provider`, `speech_provider`, and `workflow_orchestrator` from `IntegrationProfile` into `ToolWiringContext` (see `applications/_shared/integration_tool_wiring.py`). `extend_tool_profile_for_integration()` appends matching Tier-1 tool_ids to `ToolProfile` when categories are configured.
+
+**Harness host identity (M.6 P6):** `wire_application_identity()` attaches OIDC bearer validation (`IdentityProviderBackend.verify_token`) alongside optional `INTERGRAX_HARNESS_API_KEY`. Lab and generic harness FastAPI hosts call this after route assembly; MCP wrapper copies `HarnessAuthState` to the outer app.
+
+**V-SEC STABLE promote gate:** `scripts/check_harness_security_promote_gate.py` validates `harness_security_stack()` wiring (`trivy` + `semgrep` in options). Set `INTERGRAX_SECURITY_PROMOTE_RUN_SCAN=true` to execute scans. Release tags (`harness-release.yml`) use `INTERGRAX_SECURITY_PROMOTE_SCAN_BACKEND=cli` with Trivy + Semgrep CLIs.
+
+**P6 infra E2E (optional):** start `./manage.sh start p6` (includes `core` for PostgreSQL/Airflow), then `INTERGRAX_P6_INFRA_E2E=true uv run python scripts/check_p6_infra_health.py` or `pytest tests/integration/infra/test_p6_stack_health.py`.
 
 With `LAB_HARNESS=true`, also: `errors.capture`, `observability.query_traces`, `pagerduty.trigger_incident`, etc.
 
@@ -126,6 +134,14 @@ With `LAB_HARNESS=true`, also: `errors.capture`, `observability.query_traces`, `
 Operational L3 evidence is separate from `phase_v_closeout_gate` (contract CI). Use `scripts/phase_w_ops_evidence.py` (CI: non-enforcing) and set `W_OPS_RELEASE_CYCLES` or append cycles to `build/architecture_hardening/release_cycles.json` after release board sign-off.
 
 **Lab stack health (W-OPS.10):** `health_check_harness_lab_stack()` probes every `HARNESS_LAB_STABLE_SLUGS` catalog entry via `health_check_catalog_slugs` with circuit breaker protection.
+
+**M.6 P4 harness ROI probes (W-OPS.10 extension):** `health_check_harness_m6_p4_probes()` probes `pgvector`, `duckdb`, `grafana`, `loki`, `tempo`, `doppler`, `unleash`, `github_actions`, and `ollama` — catalog slugs promoted to **STABLE** for harness production wiring.
+
+**M.6 P5 harness depth probes (W-OPS.10 extension):** `health_check_harness_m6_p5_probes()` probes 21 slugs (`HARNESS_M6_P5_PROBE_SLUGS`) — metrics/CI/eval/async/data-plane harness stack. Tier-3 presets: `harness_metrics_stack`, `harness_eval_stack`, `harness_async_stack`, `harness_ci_stack`.
+
+**M.6 P6 harness expansion probes (W-OPS.10 extension):** `health_check_harness_m6_p6_probes()` probes 15 slugs (`HARNESS_M6_P6_PROBE_SLUGS`) — security/sandbox/identity/speech/workflow harness stack. Tier-3 presets: `harness_security_stack`, `harness_sandbox_stack`, `harness_identity_stack`, `harness_gitops_stack`.
+
+**Lab debug API:** when `LAB_HARNESS=true`, lab host mounts `GET /debug/integrations/health?stack=lab|m6_p4|m6_p5|m6_p6|all` (circuit-breaker catalog probes for operators).
 
 **Shadow evaluation (W-OPS.11):** set `RuntimeRequest.metadata["harness_shadow_eval"]` to `{"scenario_id": "...", "passed": true, "score": 1.0}`; `RuntimeEngine` records `HarnessShadowEvalRecordedDiagV1` trace step and appends to `build/architecture_hardening/online_evaluation_observations.json`. After a release, export trends: `uv run python scripts/export_harness_shadow_eval_trend.py --release-id <id>` → `shadow_evaluation_trend_report.json` (snapshots in `evaluation_release_snapshots.json`).
 
@@ -252,7 +268,41 @@ Current baseline delivered (Phase V V1):
 - governance artifacts script: `scripts/phase_v_governance_report.py`
 - `V-V6.1` bounded adaptive loop governance (`adaptive_governance.py`)
 - `V-V6.2` L3/L4 maturity gate evidence (`maturity_gate_evidence.py`)
-- `V-V6.3` CI closeout gate: `scripts/phase_v_closeout_gate.py` (`--enforce`, `--enforce-l4`)
+- `V-V6.3` CI closeout gate: `scripts/phase_v_closeout_gate.py` (`--enforce`, `--enforce-l4`; prints `l4_governance_passed` vs `l4_runtime_passed`)
+- **W-ADAPT-5** adaptive verify closeout: `scripts/phase_w_adapt_closeout_gate.py` (`--enforce-l4-runtime`)
+- **W-ADAPT-5** ops runbooks: [`runbook/adaptive/rollback_profile.md`](../runbook/adaptive/rollback_profile.md), [`approve_policy_learning.md`](../runbook/adaptive/approve_policy_learning.md), [`shadow_failure_triage.md`](../runbook/adaptive/shadow_failure_triage.md)
+- **W-ADAPT-5** evidence artifacts: `build/adaptive_harness/verification_report.json`, `build/adaptive_harness/l4_runtime_evidence.json`
+
+### Adaptive Harness Intelligence ops (W-ADAPT-7)
+
+**Lab host (`lab_application`):** `AdaptiveProfile(enabled=True, mode="observe")` by default — collects `HarnessOutcomeSignal` on every Nexus run without apply/shadow/canary. Disable with `LAB_ADAPTIVE_OBSERVE=false`.
+
+**Reference product hosts** (`legal_application`, `poc_template_application`, `research_application`): `AdaptiveProfile(enabled=False, mode="observe")` — enable closed-loop behavior only in controlled environments.
+
+| Variable / flag | Purpose |
+|-----------------|--------|
+| `LAB_ADAPTIVE_OBSERVE` | When `true` (default), lab host wires `SignalCollector` (L4-O observe) |
+| `LAB_OBSERVABILITY_GRAFANA_STACK` | When `true`, binds Grafana + Loki + Tempo observability triad on lab host |
+| `LAB_ADAPTIVE_FEATURE_FLAG` | Optional feature-flag slug (e.g. `unleash`) for adaptive rollout gate wiring |
+| `LAB_SECRETS_BACKEND` | Optional secrets slug (`doppler`, `vault`, `aws_secrets_manager`); with `INTERGRAX_ENV=prod` selects `harness_production_defaults()` |
+| `LAB_HARNESS` | When `true`, enables harness tool bundle and mounts `GET /debug/integrations/health` |
+| `AdaptiveProfile.feature_flag_slug` | Tier-3 rollout guard — modes beyond `observe` downgrade unless flag backend enables `rollout_flag_key` |
+| `AdaptiveProfile.rollout_flag_key` | Flag key evaluated via `IntegrationProfile.feature_flag` (default `harness.adaptive.recommend`) |
+| `AdaptiveProfile.enabled` | Master switch for adaptive stores, executor, and signal collector |
+| `AdaptiveProfile.mode` | `observe` \| `recommend` \| `shadow` \| `canary` \| `apply` |
+| `AdaptiveProfile.signal_store_path` | SQLite path for harness outcome signals |
+| `AdaptiveProfile.proposal_store_path` | SQLite path for adaptation engine runs |
+| `AdaptiveProfile.debug_readonly_routes` | Mount `/debug/adaptive/signals` and `/debug/adaptive/proposals` on lab host |
+| `INTERGRAX_BUSINESS_OUTCOME_WEBHOOK_SECRET` | HMAC secret for optional Tier-3 `business_outcome` webhook payloads |
+
+Reports and closeout:
+
+```bash
+uv run python scripts/phase_w_adapt_report.py --patterns-output build/adaptive_harness/process_patterns.json
+uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
+```
+
+Authoring guide: [`AGENT_CREATION_GUIDE.md` Appendix V](AGENT_CREATION_GUIDE.md#appendix-v--adaptive-harness-control-plane-closeout).
 
 Execution references in the implementation plan:
 
@@ -284,6 +334,7 @@ uv run python scripts/phase_v_foundations_report.py
 uv run python scripts/phase_v_capability_graph_guard.py
 uv run python scripts/phase_v_governance_report.py
 uv run python scripts/phase_v_closeout_gate.py --enforce --enforce-l4
+uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
 uv run python scripts/phase_w_ops_evidence.py
 ```
 

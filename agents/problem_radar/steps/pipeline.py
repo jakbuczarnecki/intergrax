@@ -8,6 +8,8 @@ from typing import Optional, Sequence
 from intergrax.agents.uaep_pipeline import run_pipeline_step
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.memory.conversational_memory import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -36,12 +38,12 @@ class _ProblemRadarLLMStub(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> str:
+    ) -> LLMAdapterResponse:
         for msg in reversed(messages):
             content = msg.content or ""
             if content:
-                return f"problem_radar: {content[:200]}"
-        return "problem_radar: (empty)"
+                return build_adapter_response(content=f"problem_radar: {content[:200]}")
+        return build_adapter_response(content="problem_radar: (empty)")
 
 
 class _ProblemRadarPipeline(RuntimePipeline):

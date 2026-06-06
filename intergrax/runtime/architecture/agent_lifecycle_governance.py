@@ -60,7 +60,11 @@ def compute_deprecation_deadline(request: AgentLifecycleTransitionRequest) -> da
 
 def _is_allowed_transition(current: AgentLifecycleState, target: AgentLifecycleState) -> bool:
     allowed: set[tuple[AgentLifecycleState, AgentLifecycleState]] = {
+        (AgentLifecycleState.EXPERIMENTAL, AgentLifecycleState.DEVELOPMENT),
+        (AgentLifecycleState.EXPERIMENTAL, AgentLifecycleState.CANDIDATE),
+        (AgentLifecycleState.DEVELOPMENT, AgentLifecycleState.CANDIDATE),
         (AgentLifecycleState.DEVELOPMENT, AgentLifecycleState.STAGING),
+        (AgentLifecycleState.CANDIDATE, AgentLifecycleState.STAGING),
         (AgentLifecycleState.STAGING, AgentLifecycleState.PRODUCTION),
         (AgentLifecycleState.PRODUCTION, AgentLifecycleState.DEPRECATED),
         (AgentLifecycleState.DEPRECATED, AgentLifecycleState.RETIRED),

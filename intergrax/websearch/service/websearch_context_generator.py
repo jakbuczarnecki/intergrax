@@ -265,12 +265,12 @@ class MapReduceContextGenerator:
                 ChatMessage(role="user", content=map_user),
             ]
 
-            map_text = self._cfg.llm.map_adapter.generate_messages(
+            map_response = self._cfg.llm.map_adapter.generate_messages(
                 map_messages,
                 run_id=self._cfg.run_id,
             )
 
-            map_text = (map_text or "").strip()
+            map_text = (map_response.content or "").strip()
             if not map_text or map_text == "NO_EVIDENCE":
                 continue
 
@@ -319,12 +319,12 @@ class MapReduceContextGenerator:
             ChatMessage(role="user", content=reduce_user),
         ]
 
-        reduce_text = self._cfg.llm.reduce_adapter.generate_messages(
+        reduce_response = self._cfg.llm.reduce_adapter.generate_messages(
             reduce_messages,
             run_id=self._cfg.run_id,
         )
 
-        reduce_text = (reduce_text or "").strip()
+        reduce_text = (reduce_response.content or "").strip()
 
         debug["executed"] = True
         debug["reduce_chars"] = len(reduce_text)

@@ -51,6 +51,14 @@ def normalize_integration_binding(value: IntegrationRef | None) -> IntegrationBi
         return None
     if isinstance(value, IntegrationBinding):
         return value
+    if isinstance(value, dict):
+        binding = IntegrationBinding.model_validate(value)
+        if binding.instance is not None:
+            return binding
+        slug = binding.resolved_slug()
+        if slug:
+            return IntegrationBinding.from_slug(slug)
+        return binding
     if isinstance(value, IntegrationManifest):
         return IntegrationBinding.from_manifest(value)
     if isinstance(value, type) and issubclass(value, IntegrationPlugin):

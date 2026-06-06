@@ -190,7 +190,7 @@ CONTENT:
             max_tokens=self.config.model_max_tokens,
         )
 
-        return str(response).strip()
+        return response.content.strip()
 
     # -----------------------------
     # 3) Build the Markdown file

@@ -8,6 +8,7 @@ from collections.abc import Mapping, Sequence
 
 from intergrax.integrations.contracts.base import IntegrationMetadata, IntegrationStatus
 from intergrax.integrations.registry.catalog import metadata_for_slug
+
 HARNESS_LAB_STABLE_SLUGS: frozenset[str] = frozenset(
     {
         "sqlite",
@@ -19,6 +20,66 @@ HARNESS_LAB_STABLE_SLUGS: frozenset[str] = frozenset(
         "otel",
         "lab_json",
         "log",
+    }
+)
+
+HARNESS_M6_P4_PROBE_SLUGS: frozenset[str] = frozenset(
+    {
+        "pgvector",
+        "duckdb",
+        "grafana",
+        "loki",
+        "tempo",
+        "doppler",
+        "unleash",
+        "github_actions",
+        "ollama",
+    }
+)
+
+HARNESS_M6_P5_PROBE_SLUGS: frozenset[str] = frozenset(
+    {
+        "prometheus",
+        "clickhouse",
+        "vault",
+        "pagerduty",
+        "github",
+        "gitlab_ci",
+        "circleci",
+        "azure_pipelines",
+        "mailpit",
+        "localstack",
+        "langfuse",
+        "phoenix",
+        "mlflow",
+        "influxdb",
+        "minio",
+        "redpanda",
+        "neo4j",
+        "elasticsearch",
+        "codecov",
+        "grafana_oncall",
+        "opentelemetry_collector",
+    }
+)
+
+HARNESS_M6_P6_PROBE_SLUGS: frozenset[str] = frozenset(
+    {
+        "trivy",
+        "snyk",
+        "semgrep",
+        "infisical",
+        "e2b",
+        "auth0",
+        "keycloak",
+        "argocd",
+        "elevenlabs",
+        "deepgram",
+        "prefect",
+        "typesense",
+        "neon",
+        "algolia",
+        "stripe",
     }
 )
 

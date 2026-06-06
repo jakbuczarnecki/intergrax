@@ -115,7 +115,7 @@ Harness (Nexus + app wiring)
 
 **Target reference model:** [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md) — policy-first, composable-by-default, trace-everything, human-governed autonomy, progressive extensibility.
 
-**L4 differentiation (planned):** [Adaptive Harness Intelligence Architecture](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) — governed closed-loop harness improvement (observe → propose → gate → apply → verify); canon [§54](docs/intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum).
+**L4 differentiation (Done):** [Adaptive Harness Intelligence Architecture](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) — governed closed-loop harness improvement (observe → propose → gate → apply → verify); lab observe enabled by default; canon [§54](docs/intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum).
 
 ---
 
@@ -249,6 +249,7 @@ Catalogs: [INTEGRATIONS.md](docs/INTEGRATIONS.md) · [TOOLS.md](docs/TOOLS.md) �
 | **ToolRuntime** | Unified tool gateway — `ToolRequest` / policy / trace / idempotency (§42.12) |
 | **PolicyEngine** | Pre-run, pre-tool, post-tool governance hooks |
 | **ContextManager** | Context assembly, budget trimming, memory views (§28.1) |
+| **Adaptive Control Plane** | L4 closed-loop harness improvement — signal collection, proposals, governance, canary, verification (`intergrax/runtime/adaptive/`) |
 
 Orchestration modules live under `intergrax/runtime/nexus/orchestration/` (`intake_runner`, `planning_runner`, `graph_runner`, `hitl_runner`, `task_events`, `lifecycle_bridge`, …).
 
@@ -383,7 +384,7 @@ Shared infrastructure used by all agents through **one canonical path** per conc
 | Concern | Module | Documentation |
 |---------|--------|---------------|
 | **LLM adapters** | `intergrax/llm_adapters/` — 19 providers | [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) |
-| **Integration Library** | `intergrax/integrations/` — 99 providers | [INTEGRATIONS.md](docs/INTEGRATIONS.md) |
+| **Integration Library** | `intergrax/integrations/` — 167 providers | [INTEGRATIONS.md](docs/INTEGRATIONS.md) |
 | **Tool Library** | `intergrax/tools/` — atomic LLM/MCP operations | [TOOLS.md](docs/TOOLS.md) |
 | **Skill Library** | `intergrax/skills/` — composable capability packs | [SKILLS.md](docs/SKILLS.md) |
 | **RAG** | `intergrax/rag/` — embeddings, vector stores, ingest | Architecture [§7.1.2](docs/intergrax_runtime_architecture.md) |
@@ -407,7 +408,7 @@ External systems are **pluggable, environment-specific infrastructure** — not 
 | **Portable profiles** | Same agent runs in lab (`IntegrationProfile.lab()`), customer VPC, or multi-cloud |
 | **Safe boundaries** | Vendor SDKs live only in provider `opens.py` — never in `agents/` |
 
-**99 providers** registered — relational stores, document DBs, Redis/Kafka/RabbitMQ/SQS, S3/Azure/GCS, Pinecone/Qdrant/Chroma, web search, Slack/Teams/SMTP, Jira/GitHub/Linear, Confluence/Notion, observability backends, Playwright, AWS/Azure/GCP facades.
+**167 providers** registered — relational stores, document DBs, Redis/Kafka/RabbitMQ/SQS, S3/Azure/GCS, Pinecone/Qdrant/Chroma, web search, Slack/Teams/SMTP, Jira/GitHub/Linear, Confluence/Notion, observability backends, Playwright, AWS/Azure/GCP facades, CI/CD (GitHub Actions, GitLab CI, Argo CD, …), security scanners, sandbox hosts, identity providers, speech, workflow orchestrators, CRM.
 
 ```python
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -477,21 +478,24 @@ Language models are accessed through **`LLMAdapter`** — not vendor SDKs direct
 
 | Property | Benefit |
 |----------|---------|
+| **Typed response envelope** | `LLMAdapterResponse` — `content`, `tool_calls`, `usage`, `finish_reason`, `refusal` (Phase M-LLM-R **Done**) |
 | **Unified contract** | `generate_messages`, `stream_messages`, `generate_with_tools`, `generate_structured` |
 | **Lazy registry** | `LLMAdapterRegistry.create("openai")` loads only needed provider |
 | **Tool-ready** | Native tool loops for `CatalogToolPlanner` |
-| **Usage tracking** | Per-`run_id` token and latency stats |
+| **Usage tracking** | Per-`run_id` token and latency stats; trace bridge from response envelope |
 | **Outside integrations** | LLM providers are **not** Integration Library slugs |
 
 ```python
+from intergrax.llm_adapters import LLMAdapterResponse
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
 llm = LLMAdapterRegistry.create(LLMProvider.OPENAI, model="gpt-4o-mini")
-text = llm.generate_messages([...], run_id=task_id)
+response: LLMAdapterResponse = llm.generate_messages([...], run_id=task_id)
+text = response.content
 ```
 
-**Full catalog:** [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) · Audit layer 6: [AUDIT_MAP §6](docs/INTEGRAX_HARNESS_AUDIT_MAP.md)
+**Full catalog:** [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) · Phase [M-LLM-R](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · Audit layer 6: [AUDIT_MAP §6](docs/INTEGRAX_HARNESS_AUDIT_MAP.md)
 
 ---
 
@@ -637,9 +641,10 @@ Intergrax optimizes **time-to-first-traced-run** — opinionated scaffolds, type
 | `intergrax.scaffold` | `new-agent`, `new-application`, `new-skill`, `new-stack` |
 | `intergrax run` | Launch application ASGI host |
 | `intergrax doctor` | Platform health checks |
-| `pytest -m gate` | Regression gate (656 tests) |
+| `pytest -m gate` | Regression gate (893 tests) |
 | `check_harness_no_getattr.py` | Zero grandfathered reflection in harness paths |
 | `check_harness_observability_wiring.py` | Tier-3 observability assembly validation |
+| `check_llm_adapter_typed_returns.py` | LLM adapter typed-return CI guard (M-LLM-R) |
 
 **Decision hierarchy** for all work:
 
@@ -666,6 +671,9 @@ Audit layer 27: [AUDIT_MAP §27 Developer Experience](docs/INTEGRAX_HARNESS_AUDI
 | Research | Web research pipeline | `agents/research/` |
 | Research Summary | Summarization in multi-agent flow | `agents/research/` |
 | Legal | Contract review (UAEP scaffold baseline) | `agents/legal/` |
+| Organization Worker | Long-running / HITL harness agent (`org.vendor_report`) | `agents/organization_worker/` |
+| Lab mock agents | Offline gate and lab roster fixtures | `agents/lab/mock_agents.py` |
+| Problem Radar | Business prototype — **frozen**, Phase K.1 deferred | `agents/problem_radar/` |
 
 Agents execute through **UAEP**, orchestrated by `AgentEngine` inside `NexusLoop`.
 
@@ -679,6 +687,10 @@ All harness control planes are **closed** — authoring maps live in AGENT_CREAT
 | REG | Registry architecture | [O](docs/AGENT_CREATION_GUIDE.md#appendix-o--registry-architecture-control-plane) |
 | CG | Capability graph | [P](docs/AGENT_CREATION_GUIDE.md#appendix-p--capability-graph-control-plane) |
 | OBS | Observability wiring | [Q](docs/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) |
+| REL | Reliability wiring | [R](docs/AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) |
+| SEC | Security wiring | [S](docs/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) |
+| COST | Cost governance | [T](docs/AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) |
+| EVAL | Evaluation wiring | [U](docs/AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout) |
 | ORCH | Orchestration | [I](docs/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) |
 | TS | Tools & skills | [J](docs/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) |
 | INT | Integrations | [K](docs/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) |
@@ -686,6 +698,7 @@ All harness control planes are **closed** — authoring maps live in AGENT_CREAT
 | CTX | Context engineering | [L](docs/AGENT_CREATION_GUIDE.md#appendix-l--context-engineering-control-plane) |
 | PE | Prompt registry | [M](docs/AGENT_CREATION_GUIDE.md#appendix-m--prompt-registry-control-plane) |
 | MEM | Memory platform | Plan [Phase MEM](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem--memory-platform-completion) |
+| W-ADAPT | Adaptive Harness Intelligence (L4 runtime) | [AHIA](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · [Phase W-ADAPT](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) |
 
 ---
 
@@ -693,13 +706,15 @@ All harness control planes are **closed** — authoring maps live in AGENT_CREAT
 
 ```text
 intergrax/              # Tier-0 platform + Tier-1 Nexus
-  integrations/         # Integration Library (99 providers)
+  integrations/         # Integration Library (167 providers)
   tools/                # Tool Library + MCP export
   skills/               # Skill Library + importers
   llm_adapters/         # 19 LLM providers
   rag/                  # Retrieval, ingest, embeddings
   memory/               # Session, STM/LTM
-  runtime/              # NexusLoop, AgentEngine, UAEP, governance
+  runtime/              # Tier-1 Nexus + L4 Adaptive Control Plane
+    nexus/              # NexusLoop, AgentEngine, UAEP, governance, orchestration
+    adaptive/           # L4 ACP — signals, proposals, governance, canary, verification
   applications/         # Tier-3 composition engine (manifest, wiring API)
   scaffold/             # new-agent, new-application, new-skill, new-stack
 agents/                 # Tier-2 specialized agents
@@ -720,7 +735,7 @@ Intergrax maintains a **layered audit model** — the platform is audited one ar
 | Document | Role |
 |----------|------|
 | [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md) | Target Harness AI reference (9 logical layers, L0–L4 maturity) |
-| [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) | **L4 Adaptive Harness Intelligence (AHI)** — closed-loop architecture RFC, Phase W-ADAPT roadmap |
+| [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) | **L4 Adaptive Harness Intelligence (AHI)** — closed-loop runtime spec; Phase W-ADAPT **Done** (70/70) |
 | [INTEGRAX_HARNESS_AUDIT_MAP.md](docs/INTEGRAX_HARNESS_AUDIT_MAP.md) | 32 auditable layers with DoD, evidence, risk scoring |
 | [HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md](docs/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) | Cursor/agent prompt template for focused audits |
 
@@ -745,11 +760,11 @@ This is **not classical reinforcement learning** (neural policy training, uncons
 | **What it does** | Observes run outcomes → proposes versioned profile changes → validates through governance → applies via shadow/canary → verifies improvement → rolls back on failure |
 | **What it discovers** | Operational patterns in traces (tool/agent/HITL sequences), routing inefficiencies, cost anomalies, eval regressions |
 | **What stays human-governed** | Policy-learning mutations, promotion to production traffic, skill/workflow creation from mined patterns |
-| **Current status** | Phase V delivered **L4 governance contracts** (`adaptive_governance.py`, maturity gates). **Runtime adaptation** is specified but not yet implemented — tracked as **Phase W-ADAPT**. |
+| **Current status** | **Done** — Wave **W-ADAPT-0–7** complete (70/70). **Lab** collects signals in L4-O observe mode by default (`LAB_ADAPTIVE_OBSERVE=true`). |
 
 **Primary document:** [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) — full business case, component specification, data contracts, flow diagrams, phased roadmap (W-ADAPT-0 through W-ADAPT-7), KPIs, and L4 runtime acceptance gates.
 
-**Implementation plan:** [INTERGRAX_IMPLEMENTATION_PLAN.md — Phase W-ADAPT](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) — **70 tasks**, Band 2y, queue [§6.1t](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61t-harness-implementation-queue--adaptive-harness-intelligence-active), traceability [Appendix K](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-k--adaptive-harness-intelligence-traceability-phase-w-adapt).
+**Implementation plan:** [INTERGRAX_IMPLEMENTATION_PLAN.md — Phase W-ADAPT](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) — **70/70 Done**, Band 2y closed, ADR [`ADR-ADAPT-001`](docs/adr/ADR-ADAPT-001.md).
 
 **Canon summary:** [intergrax_runtime_architecture.md §54](docs/intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum)
 
@@ -771,11 +786,12 @@ All platform documentation lives in [`docs/`](docs/). **One source of truth per 
 | [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md) | Ideal Harness AI target — evaluate implementation alignment |
 | [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) | **Adaptive Harness Intelligence (L4)** — business case, ACP architecture, W-ADAPT implementation waves |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) | Phase status, hardening streams, KPIs, business checklist (Appendix A) |
+
 ### Authoring and workflow
 
 | Document | Read when you want to… |
 |----------|------------------------|
-| [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) | **Canonical agent workflow** — scaffold → register → run → inspect (Appendices A–Q) |
+| [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) | **Canonical agent workflow** — scaffold → register → run → inspect (Appendices A–U) |
 | [EXTENSION_AUTHOR_GUIDE.md](docs/EXTENSION_AUTHOR_GUIDE.md) | Tier-0 plugin catalogs — integrations, tools, skills; entry points |
 | [applications/USAGE.md](applications/USAGE.md) | Application layout — env, Docker, host, deploy triad |
 | [intergrax/applications/USAGE.md](intergrax/applications/USAGE.md) | Composition engine — manifest, typed bindings, registry |
@@ -785,10 +801,10 @@ All platform documentation lives in [`docs/`](docs/). **One source of truth per 
 
 | Document | Read when you want to… |
 |----------|------------------------|
-| [INTEGRATIONS.md](docs/INTEGRATIONS.md) | **99 providers** — contracts, env vars, per-slug USAGE links |
+| [INTEGRATIONS.md](docs/INTEGRATIONS.md) | **167 providers** — contracts, env vars, per-slug USAGE links |
 | [TOOLS.md](docs/TOOLS.md) | Tool Library — atomic LLM/MCP operations, migration from legacy flags |
 | [SKILLS.md](docs/SKILLS.md) | Skill Library — manifests, importers, harness presets |
-| [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) | 19 LLM providers — streaming, tools, env vars, metrics |
+| [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) | 19 LLM providers — `LLMAdapterResponse` envelope, streaming, tools, metrics |
 | [MODALITY.md](docs/MODALITY.md) | Vision, audio, ML — three modality planes |
 
 ### Operations and environment
@@ -812,10 +828,10 @@ All platform documentation lives in [`docs/`](docs/). **One source of truth per 
 Strategic direction     →  INTERGRAX_DEVELOPMENT_STRATEGY.md
 Platform architecture   →  intergrax_runtime_architecture.md §1–§5
 New agent (< 1 hour)    →  AGENT_CREATION_GUIDE.md
-Integrations (99)       →  INTEGRATIONS.md
+Integrations (167)      →  INTEGRATIONS.md
 Tools                   →  TOOLS.md + intergrax/tools/USAGE.md
 Skills                  →  SKILLS.md
-LLM providers           →  LLM_ADAPTERS.md
+LLM providers           →  LLM_ADAPTERS.md (typed response envelope)
 Modality / CV / ML      →  MODALITY.md
 Lab environment         →  HARNESS_ENVIRONMENT.md
 New application         →  applications/USAGE.md + poc_template_application/
@@ -826,6 +842,8 @@ Phase status / gates    →  INTERGRAX_IMPLEMENTATION_PLAN.md
 Harness audit           →  INTEGRAX_HARNESS_AUDIT_MAP.md
 Governance / HITL       →  AGENT_CREATION_GUIDE.md Appendix H
 Orchestration / graphs  →  AGENT_CREATION_GUIDE.md Appendix I
+Reliability / security  →  AGENT_CREATION_GUIDE.md Appendices R–S
+Cost / evaluation       →  AGENT_CREATION_GUIDE.md Appendices T–U
 ```
 
 ---
@@ -838,21 +856,24 @@ Intergrax is under **active development** (private R&D). The **harness platform*
 |-------|--------|--------|
 | **L** | Agent OS certification | **Done** — Appendix A 20/20 |
 | **M / M-LLM / M-RAG / N / O** | Integration Library, LLM, RAG, applications, tools | **Done** |
+| **M.6 P4/P5/P6** | Integration catalog expansion + harness depth | **Done** — 33/34 + 32/32 |
+| **M-LLM-R** | Typed `LLMAdapterResponse` completion envelope | **Done** (39/39) |
 | **Q / Q+** | Harness quality + post-audit hardening | **Done** — Appendix C, D |
 | **R** | Harness AI alignment — Skill Library, context, delegation, policy | **Done (MVP)** — Appendix E |
 | **S** | Harness environment GA | **Done** — [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md) |
 | **T / U** | Harness cleanliness + production hardening | **Done** — Appendix G |
 | **V** | Harness architecture hardening — capability graph, lifecycle, metrics, prompt/eval/context/security/cost | **Done** (2026-06-05) |
 | **W-ML** | Model & modality plane | **Done** — [MODALITY.md](docs/MODALITY.md) |
+| **W-ADAPT** | Adaptive Harness Intelligence (L4 runtime) | **Done** (70/70) — [AHIA](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) |
 | **P-Ext** | Tier-0 plugin catalogs | **Done** (61/61) |
 | **AA** | Agents & applications conformance | **Platform Done** |
 | **MEM** | Memory platform | **Done** (48/48) |
-| **ORCH / TS / INT / RAG / CTX / PE / AS / REG / CG / OBS** | Control plane closeouts | **Done** |
+| **ORCH / TS / INT / RAG / CTX / PE / AS / REG / CG / OBS / REL / SEC / COST / EVAL** | Control plane closeouts | **Done** |
 | **K** | Business agents | **End of plan** — deferred |
 
-**Regression gate:** `uv run pytest -m gate -q` — **656 passed**
+**Regression gate:** `uv run pytest -m gate -q` — **893 passed** (2026-06-06)
 
-**Harness CI:** `python scripts/check_harness_no_getattr.py` (zero grandfathered paths)
+**Harness CI:** `python scripts/check_harness_no_getattr.py` · `python scripts/check_llm_adapter_typed_returns.py`
 
 Full tracker: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
 

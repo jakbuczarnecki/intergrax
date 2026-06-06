@@ -6,6 +6,7 @@ from __future__ import annotations
 from intergrax.tools.providers.sandbox.contracts import SandboxExecInput, SandboxExecOutput
 from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_TOOL_NAME
+from intergrax.runtime.sandbox.contracts import SandboxExecCapable
 from intergrax.runtime.sandbox.session import SandboxSession
 
 SANDBOX_EXEC_TOOL_ID = SANDBOX_TOOL_NAME
@@ -15,9 +16,12 @@ def sandbox_exec(ctx: ToolWiringContext, params: SandboxExecInput) -> SandboxExe
     raw_session = ctx.sandbox_session or ctx.extras.get("sandbox_session")
     if raw_session is None:
         return SandboxExecOutput(success=False, error="sandbox_session_not_configured")
-    if not isinstance(raw_session, SandboxSession):
+    if isinstance(raw_session, SandboxSession):
+        session: SandboxExecCapable = raw_session
+    elif isinstance(raw_session, SandboxExecCapable):
+        session = raw_session
+    else:
         return SandboxExecOutput(success=False, error="sandbox_session_invalid_type")
-    session: SandboxSession = raw_session
 
     result = session.execute(params.operation, dict(params.payload))
     output = dict(result.output or {})

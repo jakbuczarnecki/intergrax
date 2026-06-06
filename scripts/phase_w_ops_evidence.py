@@ -48,6 +48,12 @@ def _run_pytest(*targets: str) -> bool:
     return completed.returncode == 0
 
 
+def _run_security_promote_gate() -> bool:
+    cmd = [sys.executable, str(REPO_ROOT / "scripts" / "check_harness_security_promote_gate.py")]
+    completed = subprocess.run(cmd, cwd=REPO_ROOT, check=False)
+    return completed.returncode == 0
+
+
 def _resolve_release_cycles() -> int:
     env_raw = (os.getenv("W_OPS_RELEASE_CYCLES") or "").strip()
     if env_raw:
@@ -122,6 +128,32 @@ def collect_operational_checks() -> OperationalMaturityEvidence:
             check_id="harness_lab_health_gate",
             passed=_run_pytest("tests/unit/integrations/test_harness_lab_health.py"),
             detail="Lab stable stack health probes (W-OPS.10)",
+        ),
+        OperationalHarnessCheck(
+            check_id="integration_health_debug_gate",
+            passed=_run_pytest("tests/unit/debug/test_integration_health_debug.py"),
+            detail="Debug integration health API (W-OPS.10 extension)",
+        ),
+        OperationalHarnessCheck(
+            check_id="harness_m6_p5_health_gate",
+            passed=_run_pytest(
+                "tests/unit/integrations/providers/test_p6_m6_p5_providers.py",
+                "tests/unit/integrations/test_harness_lab_health.py::test_health_check_harness_m6_p5_probes_covers_catalog_slugs",
+            ),
+            detail="M.6 P5 harness depth probes + presets (W-OPS.10 extension)",
+        ),
+        OperationalHarnessCheck(
+            check_id="harness_m6_p6_health_gate",
+            passed=_run_pytest(
+                "tests/unit/integrations/providers/test_p7_m6_p6_providers.py",
+                "tests/unit/integrations/test_harness_lab_health.py::test_health_check_harness_m6_p6_probes_covers_catalog_slugs",
+            ),
+            detail="M.6 P6 harness expansion probes + presets (W-OPS.10 extension)",
+        ),
+        OperationalHarnessCheck(
+            check_id="security_promote_gate",
+            passed=_run_security_promote_gate(),
+            detail="V-SEC STABLE promote gate wiring (M-P6-WIRE.6)",
         ),
         OperationalHarnessCheck(
             check_id="shadow_eval_gate",

@@ -11,16 +11,27 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
 from anthropic import Anthropic
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.adapter_response_builders import (
+    build_adapter_response,
+    final_stream_event,
+    partial_stream_event,
+)
 from intergrax.llm_adapters._shared.anthropic_messages import (
     extract_anthropic_text,
     extract_anthropic_tool_calls,
     map_anthropic_messages,
 )
 from intergrax.llm_adapters._shared.messages import split_system_messages
-from intergrax.llm_adapters._shared.tool_results import make_tool_result
 from intergrax.llm_adapters._shared.tool_schema import openai_tools_to_anthropic
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason, parse_finish_reason
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
+from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
 
 
 class ClaudeChatAdapter(LLMAdapter):
@@ -29,17 +40,15 @@ class ClaudeChatAdapter(LLMAdapter):
 
     Contract (aligned with OpenAI adapter pattern):
       - __init__(client: Optional[Anthropic] = None, model: Optional[str] = None, **defaults)
-      - generate_messages(...) -> str
-      - stream_messages(...)   -> Iterable[str]
+      - generate_messages(...) -> LLMAdapterResponse
+      - stream_messages(...)   -> Iterable[LLMStreamEvent]
 
     Supports native tools (Anthropic tool_use) and streaming.
     """
 
-    # Conservative context window estimates (keep safe unless you add real token accounting).
     _CLAUDE_CONTEXT_WINDOWS: Dict[str, int] = {
         "claude-3-5-sonnet-latest": 200_000,
         "claude-3-5-haiku-latest": 200_000,
-        # Add exact model ids used in your env as needed.
     }
 
     DEFAULT_MODEL = "claude-3-5-sonnet-latest"
@@ -62,27 +71,49 @@ class ClaudeChatAdapter(LLMAdapter):
         resolved_model = model or env_model or self.DEFAULT_MODEL
 
         if client is None:
-
             if not api_key:
                 raise RuntimeError(
                     "ANTHROPIC_API_KEY not found in environment variables."
                 )
-
             client = Anthropic(api_key=api_key)
 
         self.client: Anthropic = client
         self.model: str = resolved_model
-
         self.defaults = defaults
         self.model_name_for_token_estimation: str = self.model
         self._context_window_tokens: int = self._CLAUDE_CONTEXT_WINDOWS.get(self.model, 32_000)
-
         self.provider = LLMProvider.CLAUDE
 
     @property
     def context_window_tokens(self) -> int:
         return self._context_window_tokens
 
+    def _estimate_extensions(self) -> LLMProviderExtensions:
+        return LLMProviderExtensions(usage_source="estimate")
+
+    def _build_response_from_message(
+        self,
+        resp: Any,
+        *,
+        content: str,
+        tool_calls_raw: List[Dict[str, Any]] | None = None,
+        in_tok: int = 0,
+        out_tok: int = 0,
+    ) -> LLMAdapterResponse:
+        tool_calls = tool_calls_from_openai_dicts(tool_calls_raw or extract_anthropic_tool_calls(resp))
+        finish = parse_finish_reason(getattr(resp, "stop_reason", None))
+        if tool_calls and finish == LLMFinishReason.COMPLETED:
+            finish = LLMFinishReason.TOOL_CALLS
+        return build_adapter_response(
+            content=content,
+            finish_reason=finish,
+            usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+            model=self.model,
+            provider=self._provider_slug(),
+            response_id=str(getattr(resp, "id", "") or "") or None,
+            tool_calls=tool_calls,
+            provider_extensions=self._estimate_extensions(),
+        )
 
     def generate_messages(
         self,
@@ -91,24 +122,20 @@ class ClaudeChatAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> str:
+    ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-
-        in_tok = 0
-        out_tok = 0
+        response: LLMAdapterResponse | None = None
         success = False
         err_type = None
+        in_tok = 0
+        out_tok = 0
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
-
             system_text, convo = split_system_messages(messages)
             payload_msgs = map_anthropic_messages(convo)
-
             temp = temperature if temperature is not None else self.defaults.get("temperature", None)
             out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens", None)
-
-            # Claude requires max_tokens
             if out_tokens is None:
                 out_tokens = 1024
 
@@ -123,25 +150,28 @@ class ClaudeChatAdapter(LLMAdapter):
             )
 
             text = extract_anthropic_text(resp)
-
             out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+            if getattr(resp, "usage", None):
+                in_tok = int(resp.usage.input_tokens or in_tok)
+                out_tok = int(resp.usage.output_tokens or out_tok)
+
+            response = self._build_response_from_message(resp, content=text, in_tok=in_tok, out_tok=out_tok)
             success = True
-            return text
+            return response
 
         except Exception as e:
             err_type = type(e).__name__
             raise
 
         finally:
+            usage = response.usage if (success and response and response.usage) else LLMTokenUsage()
             self.usage.end_call(
                 call,
-                input_tokens=in_tok,
-                output_tokens=out_tok,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
                 success=success,
                 error_type=err_type,
             )
-
-
 
     def stream_messages(
         self,
@@ -150,22 +180,18 @@ class ClaudeChatAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> Iterable[str]:
+    ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-
-        in_tok = 0
-        out_tok = 0
         success = False
         err_type = None
-
+        in_tok = 0
+        out_tok = 0
         buf: List[str] = []
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
-
             system_text, convo = split_system_messages(messages)
             payload_msgs = map_anthropic_messages(convo)
-
             temp = temperature if temperature is not None else self.defaults.get("temperature", None)
             out_tokens = max_tokens if max_tokens is not None else self.defaults.get("max_tokens", None)
             if out_tokens is None:
@@ -185,18 +211,25 @@ class ClaudeChatAdapter(LLMAdapter):
             for event in stream:
                 if event.type != "content_block_delta":
                     continue
-
                 delta = event.delta
                 if not hasattr(delta, "type") or delta.type != "text_delta":
                     continue
-
                 txt = delta.text or ""
                 if txt:
                     buf.append(txt)
-                    yield txt
+                    yield partial_stream_event(delta_content=txt)
 
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
             success = True
+            yield final_stream_event(
+                response=build_adapter_response(
+                    content="".join(buf),
+                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                    model=self.model,
+                    provider=self._provider_slug(),
+                    provider_extensions=self._estimate_extensions(),
+                )
+            )
 
         except Exception as e:
             err_type = type(e).__name__
@@ -210,8 +243,6 @@ class ClaudeChatAdapter(LLMAdapter):
                 success=success,
                 error_type=err_type,
             )
-
-
 
     def supports_tools(self) -> bool:
         return True
@@ -228,12 +259,13 @@ class ClaudeChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-        in_tok = 0
-        out_tok = 0
+        response: LLMAdapterResponse | None = None
         success = False
         err_type = None
+        in_tok = 0
+        out_tok = 0
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
@@ -259,17 +291,22 @@ class ClaudeChatAdapter(LLMAdapter):
                 in_tok = int(resp.usage.input_tokens or in_tok)
                 out_tok = int(resp.usage.output_tokens or 0)
 
+            content = extract_anthropic_text(resp)
+            response = self._build_response_from_message(resp, content=content, in_tok=in_tok, out_tok=out_tok)
             success = True
-            return make_tool_result(
-                content=extract_anthropic_text(resp),
-                tool_calls=extract_anthropic_tool_calls(resp),
-                finish_reason=getattr(resp, "stop_reason", None) or "completed",
-            )
+            return response
         except Exception as e:
             err_type = type(e).__name__
             raise
         finally:
-            self.usage.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
+            usage = response.usage if (success and response and response.usage) else LLMTokenUsage()
+            self.usage.end_call(
+                call,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+                success=success,
+                error_type=err_type,
+            )
 
     def stream_with_tools(
         self,
@@ -280,12 +317,12 @@ class ClaudeChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
-    ) -> Iterable[Dict[str, Any]]:
+    ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-        in_tok = 0
-        out_tok = 0
         success = False
         err_type = None
+        in_tok = 0
+        out_tok = 0
         buf: List[str] = []
 
         try:
@@ -316,7 +353,7 @@ class ClaudeChatAdapter(LLMAdapter):
                         txt = delta.text or ""
                         if txt:
                             buf.append(txt)
-                            yield make_tool_result(content=txt, finish_reason="partial")
+                            yield partial_stream_event(delta_content=txt)
 
             get_final = getattr(stream, "get_final_message", None)
             resp = get_final() if callable(get_final) else None
@@ -329,24 +366,28 @@ class ClaudeChatAdapter(LLMAdapter):
                     tool_choice=tool_choice,
                     run_id=run_id,
                 )
-                yield result
+                yield final_stream_event(response=result)
                 return
 
             if getattr(resp, "usage", None):
                 in_tok = int(resp.usage.input_tokens or in_tok)
                 out_tok = int(resp.usage.output_tokens or 0)
 
+            content = extract_anthropic_text(resp) or "".join(buf)
+            response = self._build_response_from_message(resp, content=content, in_tok=in_tok, out_tok=out_tok)
             success = True
-            yield make_tool_result(
-                content=extract_anthropic_text(resp) or "".join(buf),
-                tool_calls=extract_anthropic_tool_calls(resp),
-                finish_reason=getattr(resp, "stop_reason", None) or "completed",
-            )
+            yield final_stream_event(response=response)
         except Exception as e:
             err_type = type(e).__name__
             raise
         finally:
-            self.usage.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
+            self.usage.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
 
     def generate_structured(
         self,
@@ -356,7 +397,7 @@ class ClaudeChatAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ):
+    ) -> LLMStructuredResult[Any]:
         schema = self._model_json_schema(output_model)
         schema_msg = ChatMessage(
             role="user",
@@ -366,11 +407,13 @@ class ClaudeChatAdapter(LLMAdapter):
             ),
         )
         extended = list(messages) + [schema_msg]
-        raw = self.generate_messages(
+        adapter_response = self.generate_messages(
             extended,
             temperature=temperature,
             max_tokens=max_tokens,
             run_id=run_id,
         )
+        raw = adapter_response.content
         json_str = self._extract_json_object(raw) or raw.strip()
-        return self._validate_with_model(output_model, json_str)
+        parsed = self._validate_with_model(output_model, json_str)
+        return LLMStructuredResult(parsed=parsed, response=adapter_response)

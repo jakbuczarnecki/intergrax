@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Literal, Iterable, Callable
 import json, re, math
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 
 from .supervisor_components import Component, ComponentContext, ComponentResult, PipelineState
 from .supervisor_prompts import SupervisorPromptPack, SupervisorPromptPack as _DefaultPack
@@ -129,6 +130,8 @@ class IntergraxSupervisor:
         This avoids empty {} after str(raw), which caused score=0.0 everywhere.
         """
         try:
+            if isinstance(raw, LLMAdapterResponse):
+                return raw.content
             # common shape: {"choices":[{"message":{"role":"assistant","content":"..."}}]}
             if isinstance(raw, dict):
                 ch = raw.get("choices")

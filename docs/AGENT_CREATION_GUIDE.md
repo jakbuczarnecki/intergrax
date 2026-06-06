@@ -47,8 +47,9 @@ Implementation status: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTA
 31. [Appendix S — Security control plane closeout](#appendix-s--security-control-plane-closeout)
 32. [Appendix T — Cost governance control plane closeout](#appendix-t--cost-governance-control-plane-closeout)
 33. [Appendix U — Evaluation control plane closeout](#appendix-u--evaluation-control-plane-closeout)
-34. [Anti-patterns](#anti-patterns)
-35. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
+34. [Appendix V — Adaptive Harness control plane closeout](#appendix-v--adaptive-harness-control-plane-closeout)
+35. [Anti-patterns](#anti-patterns)
+36. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
 
@@ -1005,7 +1006,7 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 | `google_workspace`, `ms365_graph` | collaboration_suite | Mail / calendar / directory |
 | `otel`, `prometheus`, `elasticsearch` | observability_backend | Metrics and log search |
 
-Full catalog (99 providers, each with English `USAGE.md`): [`INTEGRATIONS.md`](INTEGRATIONS.md). Per-slug examples: `intergrax/integrations/providers/<category>/<slug>/USAGE.md`.
+Full catalog (167 providers, each with English `USAGE.md`): [`INTEGRATIONS.md`](INTEGRATIONS.md). Per-slug examples: `intergrax/integrations/providers/<category>/<slug>/USAGE.md`.
 
 LLM adapters (`intergrax/llm_adapters/`) are **not** part of the Integration Library — configure them separately.
 
@@ -1192,6 +1193,7 @@ ApplicationEnvironmentProfile (Tier-3 umbrella)
   ├── memory_profile            → STM/LTM/task flags → memory_wiring.py (Appendix G)
   ├── observability_profile     → trace SQLite, OTEL, metrics plugins
   ├── reliability_profile       → idempotency, circuit breaker, checkpoints, scheduler
+  ├── adaptive_profile          → L4 runtime loops, stores, canary traffic (Appendix V)
   ├── execution_mode            → strict | balanced | exploratory → runtime_policies
   └── integration_profile       → observability_backend slug (prometheus, otel, elasticsearch, …)
 
@@ -1911,6 +1913,8 @@ Audit vocabulary maps to the canonical enum in `agent_lifecycle_state.py`:
 | Skill → allowed_tools | `pytest tests/unit/runtime/registry/test_agent_registry_skills.py -m gate` |
 | Author-time allowed_tools ban | `python scripts/check_agent_skill_resolution.py` |
 | Lifecycle routing | `pytest tests/unit/runtime/architecture/test_agent_routing_policy.py -m gate` |
+| Reference agent lifecycle metadata | `uv run python scripts/check_agents_lifecycle_metadata.py` |
+| Golden prompt regression | `uv run python scripts/check_harness_prompt_golden_catalog.py` |
 | Full gate | `uv run pytest -m gate -q` |
 
 Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §18: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
@@ -2248,6 +2252,7 @@ Release / CI
 |---------|----------------|
 | Profile → wiring bridge | `pytest tests/unit/applications/test_harness_security_wiring.py -m gate` |
 | Host security materialization | `python scripts/check_harness_security_wiring.py` |
+| V-SEC STABLE promote gate (M.6 P6) | `python scripts/check_harness_security_promote_gate.py` |
 | Middleware behavior | `pytest tests/unit/applications/test_application_security_wiring.py -m gate` |
 | Integration security path | `pytest tests/integration/runtime/test_nexus_loop_security_wiring.py -m gate` |
 | Full gate | `uv run pytest -m gate -q` |
@@ -2391,6 +2396,74 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 
 ---
 
+## Appendix V — Adaptive Harness control plane closeout
+
+**Audience:** Tier-3 application authors, platform engineers, harness operators.  
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) · Phase W-ADAPT **Done**; complements [Appendix H §H.2](#h2-control-plane-map-where-to-customize).
+
+Tier-3 hosts configure adaptive closed-loop behavior exclusively through typed `AdaptiveProfile` on `ApplicationEnvironmentProfile`.
+
+### V.1 Design principles
+
+| Principle | Meaning in Intergrax |
+|-----------|------------------------|
+| Profile-driven | `AdaptiveProfile` on `ApplicationEnvironmentProfile` |
+| Default safe | Lab: `enabled=True`, `mode=observe` (`LAB_ADAPTIVE_OBSERVE`, default on). Product reference hosts: `enabled=False`, `mode=observe` |
+| Rollout gate | Modes beyond `observe` require `IntegrationProfile.feature_flag` + enabled `rollout_flag_key` (`adaptive_feature_flag_gate.py`); gated mode flows through `wire_adaptive_profile()` → `apply_adaptive_profiles_from_environment()` |
+| Store isolation | Signal/proposal/profile stores under `build/adaptive_harness/` (gitignored) |
+| Governance first | Recommend/shadow/apply gated by `AdaptiveLoopEnvelope` + HITL for policy learning |
+| Verify before trust | `VerificationLoop` + runtime L4 evidence before production auto-apply |
+
+### V.2 Adaptive wiring map
+
+```text
+ApplicationEnvironmentProfile (Tier-3)
+  └── adaptive_profile
+        ├── enabled / mode                 → wire_adaptive_profile()
+        ├── utility_weights                → SignalCollector U function
+        ├── canary_tenant_allowlist          → canary_traffic.py
+        ├── signal_store_path              → SQLiteSignalStore
+        ├── profile_versions_db_path       → ProfileVersionStore
+        ├── debug_readonly_routes          → /debug/adaptive/* (lab only)
+        └── business_outcome_webhook         → optional signed business_outcome signal
+
+wire_adaptive_profile() (Tier-3)
+  └── adaptive_wiring.py → ApplicationAdaptiveWiring
+
+Runtime loop (Tier-1)
+  └── SignalCollector → AdaptationEngine → AdaptationExecutor → VerificationLoop
+
+Ops / CI
+  └── scripts/phase_w_adapt_report.py
+  └── scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
+```
+
+### V.3 Core contracts
+
+| Contract | Module | Role |
+|----------|--------|------|
+| `AdaptiveProfile` | `contracts/environment_profile.py` | Author-facing adaptive flags |
+| `HarnessOutcomeSignal` | `runtime/adaptive/contracts.py` | Post-run observation (L4-O) |
+| `AdaptationEngine` | `runtime/adaptive/adaptation_engine.py` | Recommend-only proposal cycles |
+| `AdaptationExecutor` | `runtime/adaptive/adaptation_executor.py` | Shadow/canary/apply/rollback |
+| `VerificationLoop` | `runtime/adaptive/verification_loop.py` | Post-apply verify + auto-rollback |
+| `ProcessPatternMiner` | `runtime/adaptive/process_pattern_miner.py` | Offline trace pattern intelligence |
+| `BusinessOutcomeWebhookPayload` | `contracts/business_outcome_webhook.py` | Optional Tier-3 business outcome ingest |
+
+### V.4 Verification (audit evidence)
+
+| Concern | Command / test |
+|---------|----------------|
+| Adaptive package contracts | `pytest tests/unit/runtime/adaptive/ -m gate` |
+| Observe→recommend E2E | `pytest tests/acceptance/adaptive/ -m gate` |
+| Runtime L4 closeout | `python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime` |
+| Pattern report export | `python scripts/phase_w_adapt_report.py --patterns-output build/adaptive_harness/process_patterns.json` |
+| Full gate | `uv run pytest -m gate -q` |
+
+Runbooks: [`runbook/adaptive/`](../runbook/adaptive/) · architecture: [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md).
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
@@ -2426,6 +2499,8 @@ Run before opening a harness PR (see `scripts/`):
 | `check_harness_observability_wiring.py` | Hosts wire observability stores from `ObservabilityProfile` |
 | `check_harness_reliability_wiring.py` | Hosts wire reliability stores from `ReliabilityProfile` |
 | `check_harness_security_wiring.py` | Hosts wire V-SEC middleware from `ApplicationSecurityProfile` |
+| `check_harness_security_promote_gate.py` | Validates `harness_security_stack()` wiring (`trivy` + `semgrep`); optional live scan via `INTERGRAX_SECURITY_PROMOTE_RUN_SCAN=true`; release uses `INTERGRAX_SECURITY_PROMOTE_SCAN_BACKEND=cli` |
+| `check_p6_infra_health.py` | Optional P6 Docker stack probe (Keycloak :8088, Typesense :8108, Airflow :8086) when `INTERGRAX_P6_INFRA_E2E=true` |
 | `check_harness_cost_wiring.py` | Hosts wire budget policy from `CostProfile` |
 | `check_harness_evaluation_wiring.py` | Hosts wire evaluation registry from `EvaluationProfile` |
 | `check_agents_vendor_imports.py` | Agents do not import `integrations/providers/` |

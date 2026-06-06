@@ -1,7 +1,7 @@
 # Intergrax Adaptive Harness Intelligence Architecture (AHIA)
 
 **Document ID:** `ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`  
-**Status:** Architecture RFC — approved for planning (implementation not started)  
+**Status:** Architecture RFC — **implemented** (Phase W-ADAPT **Done**, 70/70, Wave 0–7)  
 **Version:** 1.0.0  
 **Date:** 2026-06-05  
 **Audience:** Platform architects, product leadership, harness engineers, security/compliance, implementation agents  
@@ -267,13 +267,15 @@ It does **not** confirm:
 - Automatic application of approved adaptations.
 - Continuous signal collection driving proposals.
 
-**Interpretation:** Intergrax achieved **L4 governance readiness**, not **L4 adaptive runtime readiness**. AHIA closes the second gap.
+**Interpretation:** Intergrax achieved **L4 governance readiness** (Phase V) and **L4 adaptive runtime readiness** (Phase W-ADAPT, 70/70 Done).
 
 ---
 
 ## 6. Gap analysis
 
-### 6.1 Missing components (must build)
+> **Historical audit (2026-06-05).** All gaps below were closed by Phase W-ADAPT (Wave 0–7). For current delivery status see [§19](#19-phased-implementation-roadmap--phase-w-adapt) and canon [§54.3](intergrax_runtime_architecture.md#543-implementation-state-phase-w-adapt--done).
+
+### 6.1 Missing components (must build) — **Done (W-ADAPT)**
 
 | ID | Component | Purpose |
 |----|-----------|---------|
@@ -286,7 +288,7 @@ It does **not** confirm:
 | G7 | `ProcessPatternMiner` | Trace sequence mining → `ProcessPatternProposal` |
 | G8 | Ops/report API | `phase_w_adapt_report.py` + optional HTTP debug routes |
 
-### 6.2 Partial components (must extend)
+### 6.2 Partial components (must extend) — **Done (W-ADAPT)**
 
 | Component | Gap |
 |-----------|-----|
@@ -296,7 +298,7 @@ It does **not** confirm:
 | `ApplicationEnvironmentProfile` | Add `AdaptiveProfile` section (weights, enabled loops, authority) |
 | `ExecutionGuard` | Emit structured signals into `SignalCollector` |
 
-### 6.3 Documentation / planning gaps
+### 6.3 Documentation / planning gaps — **Done**
 
 | Gap | Resolution |
 |-----|------------|
@@ -1071,24 +1073,33 @@ flowchart LR
 | W-ADAPT-4.3 | HITL approval for POLICY_LEARNING | Cannot apply without approver |
 | W-ADAPT-4.4 | ADAPTIVE_* runtime events | Events in trace export |
 
-### 19.6 Wave W-ADAPT-5 — Verify (L4-V)
+### 19.6 Wave W-ADAPT-5 — Verify (L4-V) — **Done**
 
 | Task | Deliverable | Acceptance |
 |------|-------------|------------|
-| W-ADAPT-5.1 | `VerificationLoop` | Compares eval registry trends |
-| W-ADAPT-5.2 | Auto-rollback | Failed verification restores pointer |
-| W-ADAPT-5.3 | `phase_w_adapt_closeout_gate.py` | CI enforce optional L4 runtime evidence |
-| W-ADAPT-5.4 | Update maturity_gate_evidence inputs | Real closed-loop flag |
+| W-ADAPT-5.1 | `VerificationLoop` | Compares eval registry trends + utility/regression/cost/security |
+| W-ADAPT-5.2 | Auto-rollback | Failed verification restores pointer + blocks loop kind |
+| W-ADAPT-5.6 | `phase_w_adapt_closeout_gate.py` | `--enforce-l4-runtime` CI gate |
+| W-ADAPT-5.11 | `l4_runtime_evidence.json` | 30-day golden scenario utility artifact |
 
-### 19.7 Wave W-ADAPT-6 — Pattern intelligence
+### 19.7 Wave W-ADAPT-6 — Pattern intelligence — **Done**
 
 | Task | Deliverable | Acceptance |
 |------|-------------|------------|
-| W-ADAPT-6.1 | `ProcessPatternMiner` | Patterns with support ≥ threshold |
-| W-ADAPT-6.2 | `ProcessPatternProposal` report | Human review queue |
-| W-ADAPT-6.3 | Link to scaffold skill stub | Optional generated manifest draft |
+| W-ADAPT-6.1 | `ProcessPatternMiner` | N-gram frequency over trace sequences |
+| W-ADAPT-6.2 | `PersistedTraceSequenceReader` | Reuses `RunTraceReader.list_runs` |
+| W-ADAPT-6.3 | Pattern report in `phase_w_adapt_report.py` | `process_patterns.json` export |
+| W-ADAPT-6.5 | `AdaptationScheduler.run_pattern_miner` | Daily job entry point |
 
-### 19.8 Dependencies
+### 19.8 Wave W-ADAPT-7 — Tier-3 wiring — **Done**
+
+| Task | Deliverable | Acceptance |
+|------|-------------|------------|
+| W-ADAPT-7.1 | Default `AdaptiveProfile` on lab/reference apps | `enabled=False` initially |
+| W-ADAPT-7.3 | AGENT_CREATION_GUIDE Appendix V | Control plane map |
+| W-ADAPT-7.6 | Acceptance E2E observe→recommend | No apply in test path |
+
+### 19.9 Dependencies
 
 ```text
 W-ADAPT-0 → W-ADAPT-1 → W-ADAPT-2 → W-ADAPT-3 → W-ADAPT-4 → W-ADAPT-5
@@ -1156,7 +1167,7 @@ All must pass:
 | Pattern proposal review | Biweekly |
 | L4 evidence audit | Per release candidate |
 
-### 21.3 Runbooks (to author in W-ADAPT-5)
+### 21.3 Runbooks (W-ADAPT-5 — Done)
 
 - `runbook/adaptive/rollback_profile.md`
 - `runbook/adaptive/approve_policy_learning.md`
@@ -1210,27 +1221,28 @@ All must pass:
 ### 24.1 Conclusions
 
 1. **Adaptive Harness Intelligence is strategically aligned** with Intergrax's harness-first mission and L4 maturity vision.
-2. **Implementation is feasible** by extending existing Phase V artifacts — not rewriting Nexus.
+2. **Implementation is complete** — Phase W-ADAPT **70/70 Done** (Wave 0–7); runtime package `intergrax/runtime/adaptive/`.
 3. **Classical RL is the wrong implementation model**; contextual bandits + governed proposals + verification loops are the right fit.
-4. **Current L4 status is governance-ready, not runtime-ready** — AHIA defines the remaining work explicitly.
+4. **L4 runtime readiness is achieved in code** — governance L4 (Phase V) + runtime L4 (W-ADAPT-5 closeout gate); production utility evidence accumulates when lab observe mode is active.
 5. **Process pattern discovery belongs in Tier-1 mining + Tier-2 authoring**, keeping Nexus domain-agnostic.
-6. **Differentiation is real** if shipped with policy gates, rollback, and measurable utility improvement — not merely "learning" marketing.
+6. **Differentiation is real** — policy gates, rollback, VerificationLoop, and measurable utility improvement are shipped.
 
 ### 24.2 Recommendations
 
-| # | Recommendation | Priority |
-|---|----------------|----------|
-| R1 | Accept this RFC and add **Phase W-ADAPT** to implementation plan | P0 | **Done** (2026-06-05) — plan §Phase W-ADAPT, Appendix K, Band 2y |
-| R2 | Default all Tier-3 apps to `AdaptiveProfile.enabled=False`, `mode=observe` | P0 |
-| R3 | Implement W-ADAPT-1 before any auto-apply code | P0 |
-| R4 | Rename outward-facing term: **Adaptive Harness Intelligence**, not "RL" | P1 |
-| R5 | Extend `phase_v_closeout_gate.py` to distinguish governance-L4 vs runtime-L4 | P1 |
-| R6 | Author ADR-ADAPT-001 from Appendix C | P1 |
-| R7 | Defer ProcessPatternMiner until W-ADAPT-5 verifies core loop | P2 |
+| # | Recommendation | Priority | Status |
+|---|----------------|----------|--------|
+| R1 | Accept this RFC and add **Phase W-ADAPT** to implementation plan | P0 | **Done** (2026-06-05) |
+| R2 | Default reference apps to safe posture; **lab** enables observe (`enabled=True`, `mode=observe`) | P0 | **Done** — `LAB_ADAPTIVE_OBSERVE`; product hosts remain `enabled=False` |
+| R3 | Implement W-ADAPT-1 before any auto-apply code | P0 | **Done** |
+| R4 | Rename outward-facing term: **Adaptive Harness Intelligence**, not "RL" | P1 | **Done** |
+| R5 | Extend `phase_v_closeout_gate.py` to distinguish governance-L4 vs runtime-L4 | P1 | **Done** (W-ADAPT-5.8) |
+| R6 | Author ADR-ADAPT-001 from Appendix C | P1 | **Done** — [`docs/adr/ADR-ADAPT-001.md`](adr/ADR-ADAPT-001.md) |
+| R7 | Defer ProcessPatternMiner until W-ADAPT-5 verifies core loop | P2 | **Done** (W-ADAPT-6 after W-ADAPT-5) |
+| R8 | Enforce `--enforce-l4-runtime` in CI and release pipeline | P1 | **Done** — `unit-tests.yml` + `harness-release.yml` |
 
-### 24.3 Decision requested
+### 24.3 Decision requested — **Closed**
 
-Proceed with Phase W-ADAPT Wave 1 (SignalCollector + utility + observe mode) as the first implementation PR after plan update.
+Phase W-ADAPT Wave 0–7 **Done** (2026-06-02). Ongoing work: §6.1 harness maintenance, lab signal collection, production 30-day L4 evidence when sufficient run volume exists.
 
 ---
 
@@ -1272,6 +1284,8 @@ See plan: Phase W-ADAPT master register (W-ADAPT-0.1 … W-ADAPT-7.7) · Appendi
 ---
 
 ## Appendix C — ADR decision record
+
+**Canonical ADR:** [`docs/adr/ADR-ADAPT-001.md`](adr/ADR-ADAPT-001.md)
 
 **ADR-ADAPT-001: Adaptive Harness Intelligence over classical RL**
 

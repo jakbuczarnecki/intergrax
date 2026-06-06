@@ -35,6 +35,15 @@ def build_research_registry(*, include_echo: bool = False) -> AgentRegistry:
     return registry
 
 
+def build_legal_registry() -> AgentRegistry:
+    """Registry with Legal agent for capability-graph reference hosts."""
+    from legal.legal_agent import LegalAgent
+
+    registry = AgentRegistry()
+    registry.register(LegalAgent())
+    return registry
+
+
 def build_organization_worker_registry(*, include_echo: bool = False) -> AgentRegistry:
     """Registry for §38 Organization Worker lab demos."""
     from organization_worker.organization_worker_agent import OrganizationWorkerAgent

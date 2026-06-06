@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="github",
     categories=(IntegrationCategory.ISSUE_TRACKER,),
-    status=IntegrationStatus.BETA,
+    status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_GITHUB',
     description='github integration (Phase M.6 P2/P3)',
 )

@@ -19,7 +19,7 @@ from intergrax.runtime.task_memory.metrics import memory_platform_metrics
 from intergrax.runtime.task_memory.models import TaskMemoryRecord
 from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
 from intergrax.runtime.task_memory.policy import MemoryAccessPolicy, memory_access_policy_from_metadata
-from intergrax.runtime.task_memory.retention import is_record_expired
+from intergrax.runtime.task_memory.retention_enforcement import should_forget_stm_record
 
 if TYPE_CHECKING:
     from intergrax.runtime.hooks.hook_registry import HookRegistry
@@ -70,7 +70,11 @@ class PolicyScopedMemoryView:
             namespace=namespace,
             key=key,
         )
-        if record is not None and is_record_expired(record.updated_at_utc, retention_days=self._retention_days):
+        if record is not None and should_forget_stm_record(
+            updated_at_utc=record.updated_at_utc,
+            retention_days=self._retention_days,
+            namespace=namespace,
+        ):
             memory_platform_metrics().record_retention_violation()
             record = None
         memory_platform_metrics().record_read()

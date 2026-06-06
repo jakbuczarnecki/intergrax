@@ -25,6 +25,9 @@ resolve_profiles() {
     core|queue|rag|data|secrets|observability|cloud|heavy)
       add_profiles "$PROFILE"
       ;;
+    p6)
+      add_profiles core p6
+      ;;
     default)
       add_profiles core queue rag data secrets
       ;;
@@ -34,7 +37,7 @@ resolve_profiles() {
     *)
       echo "Unknown profile: $PROFILE"
       echo "Usage: ./manage.sh {start|stop|status|build} [profile]"
-      echo "Profiles: default, minimal, core, queue, rag, data, secrets, observability, cloud, heavy, all"
+      echo "Profiles: default, minimal, core, queue, rag, data, secrets, observability, cloud, heavy, p6, all"
       exit 1
       ;;
   esac

@@ -5,7 +5,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Callable, Sequence, Iterable, Optional, Any, Dict, Union, List, TypeVar
+from typing import Callable, Sequence, Iterable, Optional, Any, Dict, Union, List, TypeVar, Generic
 
 T = TypeVar("T")
 import json
@@ -17,6 +17,9 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.call_config import LLMCallConfig, parse_call_config
 from intergrax.llm_adapters._shared.resilience import execute_with_resilience
 from intergrax.llm_adapters._shared.retry import call_with_retry
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
 
@@ -59,10 +62,13 @@ class LLMAdapter(ABC):
         self.call_config = parse_call_config(defaults)
 
     def _provider_slug(self) -> str:
-        prov = getattr(self, "provider", None)
+        prov = self.provider
         if isinstance(prov, LLMProvider):
             return prov.value
         return str(prov or "unknown")
+
+    def _adapter_identity(self) -> tuple[str, str]:
+        return self._provider_slug(), str(self.model or "")
 
     def _execute(self, fn: Callable[[], T]) -> T:
         """Run a provider SDK call with rate limit, circuit breaker, and optional retry."""
@@ -80,7 +86,7 @@ class LLMAdapter(ABC):
     
     
     def validate(self) -> None:
-        provider = getattr(self, "provider", None)
+        provider = self.provider
         if isinstance(provider, LLMProvider):
             provider = provider.value
         if not isinstance(provider, str) or not provider.strip():
@@ -116,7 +122,7 @@ class LLMAdapter(ABC):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> str:
+    ) -> LLMAdapterResponse:
         raise NotImplementedError
 
 
@@ -127,7 +133,7 @@ class LLMAdapter(ABC):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> Iterable[str]:
+    ) -> Iterable[LLMStreamEvent]:
         raise NotImplementedError("Streaming is not supported by this adapter.")
 
 
@@ -145,7 +151,7 @@ class LLMAdapter(ABC):
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> LLMAdapterResponse:
         raise NotImplementedError("Tools are not supported by this adapter.")
 
     def stream_with_tools(
@@ -157,7 +163,7 @@ class LLMAdapter(ABC):
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
-    ) -> Iterable[Dict[str, Any]]:
+    ) -> Iterable[LLMStreamEvent]:
         raise NotImplementedError("Tools streaming is not supported by this adapter.")
 
     # ---- Structured output (optional) ----
@@ -169,7 +175,7 @@ class LLMAdapter(ABC):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ):
+    ) -> LLMStructuredResult[Any]:
         raise NotImplementedError("Structured output is not supported by this adapter.")
 
     # ---- Token counting (base impl; moved from the removed LLMAdapter) ----
@@ -383,12 +389,12 @@ class LLMAdapterUsageLog:
             self._run_stats[rid] = LLMRunStats()
         call = LLMCallStats(run_id=rid)
         if adapter is not None:
-            prov = getattr(adapter, "provider", None)
+            prov = adapter.provider
             if isinstance(prov, LLMProvider):
                 call.provider = prov.value
             elif isinstance(prov, str):
                 call.provider = prov
-            call.model = str(getattr(adapter, "model", "") or "")
+            call.model = str(adapter.model or "")
         return call
 
 
@@ -428,7 +434,7 @@ class LLMAdapterUsageLog:
         if not call.success:
             st.errors += 1
 
-        if getattr(call, "provider", None):
+        if call.provider:
             from intergrax.llm_adapters.tracking.metrics import record_llm_call
 
             record_llm_call(

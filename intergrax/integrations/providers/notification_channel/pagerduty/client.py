@@ -60,3 +60,10 @@ class PagerDutyEventsClient:
             custom_details={"body": body, "task_id": task_id},
             dedup_key=task_id or None,
         )
+
+    def health(self) -> bool:
+        try:
+            response = self._http.get("/health")
+            return int(response.status_code) < 400  # type: ignore[attr-defined]
+        except Exception:  # noqa: BLE001 — health probe surface
+            return False

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from intergrax.integrations.contracts.base import HealthStatus
 from intergrax.queueing.contracts.task_queue import TaskHandle, TaskQueue, TaskRequest, TaskResult, TaskStatus
 
 
@@ -52,3 +53,8 @@ class CloudTaskQueue(TaskQueue):
         result = TaskResult(status=TaskStatus.SUCCEEDED, output=raw)
         self._results[handle.task_id] = result
         return result
+
+    def health(self) -> HealthStatus:
+        from intergrax.integrations._shared.health import probe_client_health
+
+        return probe_client_health(self._client, slug=self._provider)

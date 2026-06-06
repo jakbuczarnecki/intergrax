@@ -13,6 +13,9 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest_default
+from intergrax.fastapi_core.config import ApiEnvironment
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.registry import presets
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -40,6 +43,21 @@ def test_lab_manifest_with_environment_wiring() -> None:
     assert wiring.build_context.environment is env
 
 
+def test_lab_environment_profile_adaptive_observe_enabled_by_default() -> None:
+    settings = LabApplicationSettings()
+    env = build_lab_environment_profile(settings)
+    assert env.adaptive_profile.enabled is True
+    assert env.adaptive_profile.mode == "observe"
+    assert env.adaptive_profile.debug_readonly_routes is True
+
+
+def test_lab_environment_profile_adaptive_observe_disabled_via_settings() -> None:
+    settings = LabApplicationSettings(adaptive_observe_enabled=False)
+    env = build_lab_environment_profile(settings)
+    assert env.adaptive_profile.enabled is False
+    assert env.adaptive_profile.mode == "observe"
+
+
 def test_resolve_llm_adapter_precedence() -> None:
     from intergrax.llm_adapters.registry.profile import LLMProfile
 
@@ -48,3 +66,41 @@ def test_resolve_llm_adapter_precedence() -> None:
     assert adapter is not None
     env_with_llm = env.model_copy(update={"llm_profile": LLMProfile.lab()})
     assert resolve_llm_adapter(env_with_llm) is not None
+
+
+def test_harness_production_defaults_wires_catalog_stack() -> None:
+    env = ApplicationEnvironmentProfile.harness_production_defaults()
+    integration = env.integration_profile
+    assert integration.slug_for_category(IntegrationCategory.RELATIONAL_STORE) == "postgresql"
+    assert integration.slug_for_category(IntegrationCategory.VECTOR_STORE) == "pgvector"
+    assert integration.slug_for_category(IntegrationCategory.SECRETS_STORE) == "doppler"
+    assert integration.slug_for_category(IntegrationCategory.FEATURE_FLAG) == "unleash"
+    assert integration.slug_for_category(IntegrationCategory.CI_CD) == "github_actions"
+    assert env.identity_profile.require_api_key is True
+    assert env.adaptive_profile.feature_flag_slug == "unleash"
+
+
+def test_harness_production_stack_preset() -> None:
+    profile = presets.harness_production_stack(secrets_slug="vault", enable_grafana_stack=True)
+    assert profile.slug_for_category(IntegrationCategory.SECRETS_STORE) == "vault"
+    assert profile.slug_for_category(IntegrationCategory.OBSERVABILITY_BACKEND) == "grafana"
+
+
+def test_lab_environment_profile_prod_with_secrets_backend() -> None:
+    settings = LabApplicationSettings(
+        environment=ApiEnvironment.PROD,
+        secrets_backend_slug="doppler",
+        observability_grafana_stack=True,
+        adaptive_feature_flag_slug="unleash",
+    )
+    env = build_lab_environment_profile(settings)
+    assert env.integration_profile.slug_for_category(IntegrationCategory.SECRETS_STORE) == "doppler"
+    assert env.integration_profile.slug_for_category(IntegrationCategory.FEATURE_FLAG) == "unleash"
+    assert env.adaptive_profile.feature_flag_slug == "unleash"
+    assert env.identity_profile.require_api_key is True
+
+
+def test_lab_environment_profile_grafana_stack_in_dev() -> None:
+    settings = LabApplicationSettings(observability_grafana_stack=True, otel_enabled=True)
+    env = build_lab_environment_profile(settings)
+    assert env.integration_profile.slug_for_category(IntegrationCategory.OBSERVABILITY_BACKEND) == "grafana"

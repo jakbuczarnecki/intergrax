@@ -15,9 +15,12 @@ if TYPE_CHECKING:
     from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
     from intergrax.applications.contracts.environment_profile import (
         ApplicationSecurityProfile,
+        AdaptiveProfile,
         EvaluationProfile,
     )
     from intergrax.runtime.architecture.online_evaluation_registry import OnlineEvaluationRegistry
+    from intergrax.runtime.adaptive.signal_collector import SignalCollector
+    from intergrax.runtime.adaptive.profile_resolution import ResolvedProfileVersions
 
 from intergrax.rag.profiles.runtime_rag_sync import sync_rag_profile_from_runtime_config
 from intergrax.runtime.nexus.config_sections import (
@@ -298,6 +301,9 @@ class RuntimeConfig:
     security_profile: Optional["ApplicationSecurityProfile"] = None
     evaluation_profile: Optional["EvaluationProfile"] = None
     evaluation_registry: Optional["OnlineEvaluationRegistry"] = None
+    signal_collector: Optional["SignalCollector"] = None
+    adaptive_profile: Optional["AdaptiveProfile"] = None
+    resolved_profile_versions: Optional["ResolvedProfileVersions"] = None
 
     prompt_catalog_path: Optional[str] = None
 

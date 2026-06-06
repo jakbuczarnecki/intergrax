@@ -57,6 +57,15 @@ EVENT_PHASE_COVERAGE: dict[RuntimeEventType, ExecutionPhase] = {
     RuntimeEventType.TASK_COMPLETED: ExecutionPhase.COMPLETION,
     RuntimeEventType.TASK_FAILED: ExecutionPhase.COMPLETION,
     RuntimeEventType.RUNTIME_HANDLER_FAILED: ExecutionPhase.INTERRUPT_HANDLING,
+    RuntimeEventType.ADAPTIVE_SIGNAL_RECORDED: ExecutionPhase.TRACE_PERSISTENCE,
+    RuntimeEventType.ADAPTIVE_PROPOSAL_SUBMITTED: ExecutionPhase.FINALIZATION,
+    RuntimeEventType.ADAPTIVE_PROFILE_APPLIED: ExecutionPhase.FINALIZATION,
+    RuntimeEventType.ADAPTIVE_PROFILE_ROLLBACK: ExecutionPhase.FINALIZATION,
+    RuntimeEventType.ADAPTIVE_VERIFICATION_FAILED: ExecutionPhase.FINALIZATION,
+    RuntimeEventType.ADAPTIVE_LOOP_BLOCKED: ExecutionPhase.FINALIZATION,
+    RuntimeEventType.LLM_CALL: ExecutionPhase.STEP_EXECUTION,
+    RuntimeEventType.POLICY_DECISION: ExecutionPhase.STEP_EXECUTION,
+    RuntimeEventType.GRAPH_BACKPRESSURE: ExecutionPhase.STEP_EXECUTION,
 }
 
 EVENT_OPS_FILTER_HINTS: dict[RuntimeEventType, OpsFilterHint] = {
@@ -105,6 +114,15 @@ EVENT_OPS_FILTER_HINTS: dict[RuntimeEventType, OpsFilterHint] = {
     RuntimeEventType.TASK_COMPLETED: "ops:completion",
     RuntimeEventType.TASK_FAILED: "ops:alert",
     RuntimeEventType.RUNTIME_HANDLER_FAILED: "ops:alert",
+    RuntimeEventType.ADAPTIVE_SIGNAL_RECORDED: "ops:adaptive",
+    RuntimeEventType.ADAPTIVE_PROPOSAL_SUBMITTED: "ops:adaptive",
+    RuntimeEventType.ADAPTIVE_PROFILE_APPLIED: "ops:adaptive",
+    RuntimeEventType.ADAPTIVE_PROFILE_ROLLBACK: "ops:alert",
+    RuntimeEventType.ADAPTIVE_VERIFICATION_FAILED: "ops:alert",
+    RuntimeEventType.ADAPTIVE_LOOP_BLOCKED: "ops:alert",
+    RuntimeEventType.LLM_CALL: "ops:llm_audit",
+    RuntimeEventType.POLICY_DECISION: "ops:policy_audit",
+    RuntimeEventType.GRAPH_BACKPRESSURE: "ops:backpressure",
 }
 
 

@@ -14,6 +14,8 @@ from intergrax.integrations.contracts.notification_channel import NotificationCh
 from intergrax.integrations.contracts.object_storage import ObjectStorage
 from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.integrations.contracts.vector_store import VectorStore
+from intergrax.integrations.contracts.feature_flag import FeatureFlagBackend
+from intergrax.integrations.contracts.ci_cd import CiCdBackend
 from intergrax.integrations.registry.profile import IntegrationProfile
 
 T = TypeVar("T")
@@ -130,4 +132,30 @@ def resolve_object_storage(
         IntegrationCategory.OBJECT_STORAGE,
         config=config,
         expected=ObjectStorage,
+    )
+
+
+def resolve_feature_flag(
+    profile: IntegrationProfile,
+    *,
+    config: Optional[Mapping[str, Any]] = None,
+) -> FeatureFlagBackend:
+    return resolve_contract(
+        profile,
+        IntegrationCategory.FEATURE_FLAG,
+        config=config,
+        expected=FeatureFlagBackend,
+    )
+
+
+def resolve_ci_cd(
+    profile: IntegrationProfile,
+    *,
+    config: Optional[Mapping[str, Any]] = None,
+) -> CiCdBackend:
+    return resolve_contract(
+        profile,
+        IntegrationCategory.CI_CD,
+        config=config,
+        expected=CiCdBackend,
     )

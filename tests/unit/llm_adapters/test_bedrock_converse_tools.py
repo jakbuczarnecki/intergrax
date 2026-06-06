@@ -59,7 +59,7 @@ def test_bedrock_generate_with_tools_via_converse() -> None:
         [{"type": "function", "function": {"name": "search", "parameters": {}}}],
         run_id="b1",
     )
-    assert out["content"] == "done"
-    assert len(out["tool_calls"]) == 1
-    assert out["tool_calls"][0]["function"]["name"] == "search"
+    assert out.content == "done"
+    assert len(out.tool_calls) == 1
+    assert out.tool_calls[0].name == "search"
     client.converse.assert_called_once()

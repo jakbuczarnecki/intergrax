@@ -55,5 +55,5 @@ def test_openai_generate_with_tools_mocked() -> None:
         [{"type": "function", "function": {"name": "t", "parameters": {}}}],
         run_id="r1",
     )
-    assert out["content"] == "hi"
-    assert out["tool_calls"] == []
+    assert out.content == "hi"
+    assert out.tool_calls == ()

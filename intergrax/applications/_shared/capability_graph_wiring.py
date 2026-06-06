@@ -43,6 +43,8 @@ def _seed_node_ids(
         seeds.add(f"tool:{tool_id}")
     for skill_id in snapshot.skill_ids():
         seeds.add(f"skill:{skill_id}")
+    for prompt_id in snapshot.prompt_ids():
+        seeds.add(f"prompt:{prompt_id}")
     for binding in manifest.enabled_agents():
         contract_id = resolve_binding_agent_contract_id(binding)
         seeds.add(f"agent:{contract_id}")

@@ -8,12 +8,18 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.adapter_response_builders import (
+    build_adapter_response,
+    final_stream_event,
+    partial_stream_event,
+)
 from intergrax.llm_adapters._shared.conformance import (
     assert_generate_messages_returns_text,
     assert_supports_streaming,
     assert_supports_tools_contract,
     assert_usage_tracking,
 )
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.providers.claude_adapter import ClaudeChatAdapter
 from intergrax.llm_adapters.providers.openai_responses_adapter import OpenAIChatResponsesAdapter
@@ -39,14 +45,15 @@ class _StubAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> str:
+    ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id)
         self.usage.end_call(call, input_tokens=1, output_tokens=1, success=True)
-        return "ok"
+        return build_adapter_response(content="ok")
 
     def stream_messages(self, messages, **kwargs):
-        yield "a"
-        yield "b"
+        yield partial_stream_event(delta_content="a")
+        yield partial_stream_event(delta_content="b")
+        yield final_stream_event(response=build_adapter_response(content="ab"))
 
     def supports_streaming(self) -> bool:
         return True
@@ -54,8 +61,8 @@ class _StubAdapter(LLMAdapter):
     def supports_tools(self) -> bool:
         return True
 
-    def generate_with_tools(self, messages, tools_schema, **kwargs) -> Dict[str, Any]:
-        return {"content": "x", "tool_calls": [], "finish_reason": "completed"}
+    def generate_with_tools(self, messages, tools_schema, **kwargs) -> LLMAdapterResponse:
+        return build_adapter_response(content="x", tool_calls=())
 
 
 def test_stub_adapter_conformance_suite() -> None:

@@ -62,5 +62,5 @@ def test_adapter_execute_uses_resilience() -> None:
     )
     from intergrax.llm.messages import ChatMessage
 
-    text = adapter.generate_messages([ChatMessage(role="user", content="hi")], run_id="r1")
-    assert text == "x"
+    response = adapter.generate_messages([ChatMessage(role="user", content="hi")], run_id="r1")
+    assert response.content == "x"

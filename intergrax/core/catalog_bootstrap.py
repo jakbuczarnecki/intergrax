@@ -92,9 +92,10 @@ def bootstrap_catalogs(
                 override=not tool_catalog_snapshot(),
             )
         if not _tier0_shipped_done or not skill_catalog_snapshot():
+            skill_snap = skill_catalog_snapshot()
             register_default_skills(
                 bundle_ids=skill_bundle_ids,
-                override=not skill_catalog_snapshot(),
+                override=not bool(skill_snap) or skill_bundle_ids is not None,
             )
         _tier0_shipped_done = True
 

@@ -224,6 +224,7 @@ def _contract_py(slug: str, class_name: str, primary_capability: str) -> str:
                 extra_tools=[],
                 risk_level=AgentRiskLevel.LOW,
                 lifecycle_state=AgentLifecycleState.DEVELOPMENT,
+                owner_team="platform",
                 max_steps=10,
             )
         '''
@@ -261,6 +262,8 @@ def _steps_pipeline_py(slug: str, primary_capability: str) -> str:
         from intergrax.agents.uaep_pipeline import run_pipeline_step
         from intergrax.contracts.agent_step import AgentStep, StepOutput
         from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+        from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+        from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
         from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
         from intergrax.memory.conversational_memory import ChatMessage
         from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -286,12 +289,12 @@ def _steps_pipeline_py(slug: str, primary_capability: str) -> str:
                 temperature: Optional[float] = None,
                 max_tokens: Optional[int] = None,
                 run_id: Optional[str] = None,
-            ) -> str:
+            ) -> LLMAdapterResponse:
                 for msg in reversed(messages):
                     content = msg.content or ""
                     if content:
-                        return f"{slug}: {{content[:200]}}"
-                return "{slug}: (empty)"
+                        return build_adapter_response(content=f"{slug}: {{content[:200]}}")
+                return build_adapter_response(content="{slug}: (empty)")
 
 
         class _{pascal}Pipeline(RuntimePipeline):

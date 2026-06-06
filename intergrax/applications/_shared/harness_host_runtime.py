@@ -152,6 +152,7 @@ def build_harness_host_runtime(
         llm_adapter=resolve_llm_adapter(environment),
         runtime_event_bus=env_wiring.build_context.runtime_event_bus,
         security_wiring=security_wiring,
+        run_budget=cost_wiring.run_budget,
     )
     assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)
     _ = checkpoints_db_path

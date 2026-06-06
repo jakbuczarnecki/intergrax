@@ -94,6 +94,7 @@ def record_shadow_observation(
     passed: bool,
     score: float,
     registry: OnlineEvaluationRegistry | None = None,
+    candidate_profile_version_id: str | None = None,
 ) -> OnlineEvaluationObservation:
     """Record a single shadow-mode harness observation and append to the registry."""
     observation = OnlineEvaluationObservation(
@@ -104,6 +105,7 @@ def record_shadow_observation(
         scenario_id=scenario_id,
         passed=passed,
         score=score,
+        candidate_profile_version_id=candidate_profile_version_id,
     )
     target_registry = registry or default_online_evaluation_registry()
     target_registry.append(observation)

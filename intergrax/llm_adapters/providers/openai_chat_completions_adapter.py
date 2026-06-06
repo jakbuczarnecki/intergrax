@@ -9,18 +9,29 @@ Used by Groq, vLLM, and similar providers (same message/tools/stream shape).
 
 from __future__ import annotations
 
-import json
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
 
 from openai import OpenAI
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.adapter_response_builders import (
+    build_adapter_response,
+    final_stream_event,
+    partial_stream_event,
+)
 from intergrax.llm_adapters._shared.messages import map_chat_completion_messages, split_system_messages
-from intergrax.llm_adapters._shared.tool_results import make_tool_result
-from intergrax.llm_adapters._shared.tool_schema import extract_openai_tool_calls
+from intergrax.llm_adapters._shared.openai_completion_mapping import (
+    adapter_response_from_openai_chat_completion,
+)
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
+from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
 
 
 class OpenAIChatCompletionsAdapter(LLMAdapter):
@@ -58,10 +69,9 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> str:
+    ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-        in_tok = 0
-        out_tok = 0
+        response: LLMAdapterResponse | None = None
         success = False
         err_type = None
         try:
@@ -76,19 +86,25 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
             res: ChatCompletion = self._execute(
                 lambda: self.client.chat.completions.create(**payload)
             )
-            if res.usage:
-                in_tok = int(res.usage.prompt_tokens or 0)
-                out_tok = int(res.usage.completion_tokens or 0)
-            if not res.choices:
-                success = True
-                return ""
+            response = adapter_response_from_openai_chat_completion(
+                res,
+                model=self.model,
+                provider=self._provider_slug(),
+            )
             success = True
-            return res.choices[0].message.content or ""
+            return response
         except Exception as e:
             err_type = type(e).__name__
             raise
         finally:
-            self.usage.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
+            usage = response.usage if (success and response and response.usage) else LLMTokenUsage()
+            self.usage.end_call(
+                call,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+                success=success,
+                error_type=err_type,
+            )
 
     def stream_messages(
         self,
@@ -97,13 +113,13 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> Iterable[str]:
+    ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-        in_tok = 0
-        out_tok = 0
         success = False
         err_type = None
         buf: List[str] = []
+        in_tok = 0
+        out_tok = 0
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
             system_text, convo = split_system_messages(messages)
@@ -122,14 +138,28 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
                 delta = c.choices[0].delta
                 if delta and delta.content:
                     buf.append(delta.content)
-                    yield delta.content
+                    yield partial_stream_event(delta_content=delta.content)
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
             success = True
+            yield final_stream_event(
+                response=build_adapter_response(
+                    content="".join(buf),
+                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                    model=self.model,
+                    provider=self._provider_slug(),
+                )
+            )
         except Exception as e:
             err_type = type(e).__name__
             raise
         finally:
-            self.usage.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
+            self.usage.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
 
     def supports_tools(self) -> bool:
         return True
@@ -149,10 +179,9 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-        in_tok = 0
-        out_tok = 0
+        response: LLMAdapterResponse | None = None
         success = False
         err_type = None
         try:
@@ -169,24 +198,25 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
             res: ChatCompletion = self._execute(
                 lambda: self.client.chat.completions.create(**payload)
             )
-            if res.usage:
-                in_tok = int(res.usage.prompt_tokens or 0)
-                out_tok = int(res.usage.completion_tokens or 0)
-            if not res.choices:
-                success = True
-                return make_tool_result()
-            msg = res.choices[0].message
-            success = True
-            return make_tool_result(
-                content=msg.content or "",
-                tool_calls=extract_openai_tool_calls(msg),
-                finish_reason=res.choices[0].finish_reason or "completed",
+            response = adapter_response_from_openai_chat_completion(
+                res,
+                model=self.model,
+                provider=self._provider_slug(),
             )
+            success = True
+            return response
         except Exception as e:
             err_type = type(e).__name__
             raise
         finally:
-            self.usage.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
+            usage = response.usage if (success and response and response.usage) else LLMTokenUsage()
+            self.usage.end_call(
+                call,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+                success=success,
+                error_type=err_type,
+            )
 
     def stream_with_tools(
         self,
@@ -197,14 +227,14 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
-    ) -> Iterable[Dict[str, Any]]:
+    ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-        in_tok = 0
-        out_tok = 0
         success = False
         err_type = None
         buf: List[str] = []
         tool_calls_acc: List[Dict[str, Any]] = []
+        in_tok = 0
+        out_tok = 0
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
             system_text, convo = split_system_messages(messages)
@@ -224,7 +254,7 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
                 delta = chunk.choices[0].delta
                 if delta and delta.content:
                     buf.append(delta.content)
-                    yield make_tool_result(content=delta.content, finish_reason="partial")
+                    yield partial_stream_event(delta_content=delta.content)
                 if delta and delta.tool_calls:
                     for tc in delta.tool_calls:
                         idx = tc.index or 0
@@ -240,17 +270,31 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
                                 acc["function"]["name"] = tc.function.name
                             if tc.function.arguments:
                                 acc["function"]["arguments"] += tc.function.arguments
+            tool_calls = tool_calls_from_openai_dicts(tool_calls_acc)
+            finish = LLMFinishReason.TOOL_CALLS if tool_calls else LLMFinishReason.COMPLETED
+            out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
             success = True
-            yield make_tool_result(
-                content="".join(buf),
-                tool_calls=tool_calls_acc,
-                finish_reason="completed",
+            yield final_stream_event(
+                response=build_adapter_response(
+                    content="".join(buf),
+                    finish_reason=finish,
+                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                    model=self.model,
+                    provider=self._provider_slug(),
+                    tool_calls=tool_calls,
+                )
             )
         except Exception as e:
             err_type = type(e).__name__
             raise
         finally:
-            self.usage.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
+            self.usage.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
 
     def generate_structured(
         self,
@@ -260,7 +304,7 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ):
+    ) -> LLMStructuredResult[Any]:
         system_text, convo = split_system_messages(messages)
         schema = self._model_json_schema(output_model)
         payload = self._build_chat_params(
@@ -279,9 +323,15 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
             },
         )
         res = self._execute(lambda: self.client.chat.completions.create(**payload))
-        raw = (res.choices[0].message.content or "") if res.choices else ""
+        response = adapter_response_from_openai_chat_completion(
+            res,
+            model=self.model,
+            provider=self._provider_slug(),
+        )
+        raw = response.content
         json_str = self._extract_json_object(raw) or raw.strip()
-        return self._validate_with_model(output_model, json_str)
+        parsed = self._validate_with_model(output_model, json_str)
+        return LLMStructuredResult(parsed=parsed, response=response)
 
     def _build_chat_params(
         self,

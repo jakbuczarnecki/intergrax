@@ -13,7 +13,9 @@ from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 @dataclass(frozen=True)
 class CoreLLMAdapterReturnedDiagV1(DiagnosticPayload):
     used_tools_answer: bool
-    adapter_return_type: str
+    finish_reason: str
+    input_tokens: int
+    output_tokens: int
     answer_len: int
     answer_is_empty: bool
 
@@ -33,7 +35,9 @@ class CoreLLMAdapterReturnedDiagV1(DiagnosticPayload):
     def to_dict(self) -> Dict[str, Any]:
         return {
             "used_tools_answer": self.used_tools_answer,
-            "adapter_return_type": self.adapter_return_type,
+            "finish_reason": self.finish_reason,
+            "input_tokens": self.input_tokens,
+            "output_tokens": self.output_tokens,
             "answer_len": self.answer_len,
             "answer_is_empty": self.answer_is_empty,
         }

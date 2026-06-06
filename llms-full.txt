@@ -67,7 +67,7 @@ Agents must not import vendor SDKs directly — consume Tier-0 through Nexus pol
 
 ```text
 intergrax/              # Tier-0 + Tier-1 Nexus
-  integrations/         # 99 integration providers
+  integrations/         # 135 integration providers
   tools/                # Tool Library + MCP
   skills/               # Skill Library
   llm_adapters/         # 19 LLM providers
@@ -95,7 +95,7 @@ scripts/                # Harness CI checks
 | Skill | No (runtime resolves) | legal.contract_review |
 | Agent | — | LegalAgent in agents/legal/ |
 
-Catalogs: docs/INTEGRATIONS.md (99 providers) · docs/TOOLS.md · docs/SKILLS.md
+Catalogs: docs/INTEGRATIONS.md (135 providers) · docs/TOOLS.md · docs/SKILLS.md
 
 ---
 
@@ -150,7 +150,7 @@ Same codebase, different operational posture. Lab stack: docs/HARNESS_ENVIRONMEN
 |----------|---------|
 | docs/AGENT_CREATION_GUIDE.md | Agent workflow + control-plane appendices A–U |
 | docs/EXTENSION_AUTHOR_GUIDE.md | Tier-0 plugin catalogs |
-| docs/INTEGRATIONS.md | 99 integration providers |
+| docs/INTEGRATIONS.md | 135 integration providers |
 | docs/TOOLS.md | Tool Library |
 | docs/SKILLS.md | Skill Library |
 | docs/LLM_ADAPTERS.md | 19 LLM providers |
@@ -173,7 +173,7 @@ Harness platform: **complete** — default queue is §6.1 maintenance only.
 | Area | Status |
 |------|--------|
 | Agent OS certification (Phase L) | Done |
-| Integration Library (Phase M) | Done — 99 providers |
+| Integration Library (Phase M + M.6 P4/P5) | Done — 135 providers (33/34 P5; `trivy` deferred) |
 | LLM adapters (Phase M-LLM) | Done — 19 providers |
 | RAG engine (Phase M-RAG) | Done |
 | Harness environment (Phase S) | Done |
@@ -182,10 +182,10 @@ Harness platform: **complete** — default queue is §6.1 maintenance only.
 | Plugin catalogs (Phase P-Ext) | Done — 61/61 |
 | Memory platform (Phase MEM) | Done — 48/48 |
 | Control plane closeouts (ORCH, TS, INT, RAG, CTX, PE, AS, REG, CG, OBS, …) | Done |
-| Adaptive Harness Intelligence (Phase W-ADAPT) | Planned — 0/70 |
+| Adaptive Harness Intelligence (Phase W-ADAPT) | Done — 70/70 |
 | Business agents (Phase K) | End of plan — deferred |
 
-**Regression gate:** `uv run pytest -m gate -q` — 656 passed  
+**Regression gate:** `uv run pytest -m gate -q` — 722 passed  
 **Harness CI:** `python scripts/check_harness_no_getattr.py`
 
 ---

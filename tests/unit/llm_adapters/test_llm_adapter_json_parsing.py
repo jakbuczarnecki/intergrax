@@ -46,7 +46,7 @@ class _DummyAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> str:
+    ) -> LLMAdapterResponse:
         raise NotImplementedError("Not needed for these unit tests.")
 
 

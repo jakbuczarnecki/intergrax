@@ -14,6 +14,7 @@ import re
 from typing import Any, Callable
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic.json_schema import SkipJsonSchema
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.applications.contracts.agent_ref import qualname_for_agent, qualname_for_callable
@@ -54,7 +55,7 @@ class AgentBinding(BaseModel):
 
     model_config = ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
-    agent_type: type[Agent] | None = Field(
+    agent_type: SkipJsonSchema[type[Agent] | None] = Field(
         default=None,
         description="Tier-2 agent class (preferred — checked at authoring time)",
         exclude=True,
@@ -63,7 +64,7 @@ class AgentBinding(BaseModel):
         default=None,
         description="Serialized class path; auto-filled from agent_type when mounting",
     )
-    factory: Callable[..., Any] | None = Field(
+    factory: SkipJsonSchema[Callable[..., Any] | None] = Field(
         default=None,
         description="Typed Tier-3 factory callable (preferred over factory_path)",
         exclude=True,
@@ -135,6 +136,21 @@ class AgentBinding(BaseModel):
             enabled=enabled,
             default=default,
             requires_uaep=requires_uaep,
+        )
+
+    @classmethod
+    def reference(
+        cls,
+        contract_id: str,
+        *,
+        enabled: bool = True,
+        capabilities: list[str] | None = None,
+    ) -> AgentBinding:
+        """Contract-id-only binding for harness reference catalogs (no agent import)."""
+        return cls(
+            contract_id=contract_id,
+            capabilities=capabilities or [],
+            enabled=enabled,
         )
 
     @classmethod
@@ -228,8 +244,10 @@ class AgentBinding(BaseModel):
         if self.factory is not None and self.factory_path is None:
             object.__setattr__(self, "factory_path", qualname_for_callable(self.factory))
 
-        if self.agent_type is None and self.import_path is None:
-            raise ValueError("AgentBinding requires agent_type (mount) or import_path (deserialize)")
+        if self.agent_type is None and self.import_path is None and not self.contract_id:
+            raise ValueError(
+                "AgentBinding requires agent_type (mount), import_path (deserialize), or contract_id (reference)"
+            )
 
         if self.builder_key and self.factory is not None:
             raise ValueError("AgentBinding: factory and builder_key are mutually exclusive")
