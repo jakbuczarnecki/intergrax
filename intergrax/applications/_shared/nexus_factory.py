@@ -19,6 +19,7 @@ from intergrax.applications._shared.orchestration_wiring import (
     resolve_nexus_task_classifier,
     resolve_nexus_task_planner,
 )
+from intergrax.applications._shared.adaptive_wiring import ApplicationAdaptiveWiring
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -49,6 +50,7 @@ def build_nexus_loop_from_environment(
     runtime_event_bus: RuntimeEventBus | None = None,
     context_manager: ContextManager | None = None,
     security_wiring: ApplicationSecurityWiring | None = None,
+    adaptive_wiring: ApplicationAdaptiveWiring | None = None,
 ) -> NexusLoop:
     """Apply orchestration and reliability profiles to ``NexusLoop`` construction."""
     orch = env.orchestration_profile
@@ -85,6 +87,7 @@ def build_nexus_loop_from_environment(
         task_memory_store=task_memory_store,
         task_memory_db_path=task_memory_db_path,
         production_mode=env.execution_mode.value == "strict",
+        signal_collector=adaptive_wiring.signal_collector if adaptive_wiring else None,
     )
     resolved_security = security_wiring or wire_application_security(env)
     apply_application_security_wiring(loop, resolved_security)

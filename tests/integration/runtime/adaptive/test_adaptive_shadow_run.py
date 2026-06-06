@@ -13,6 +13,7 @@ from intergrax.runtime.adaptive.adaptation_models import (
 )
 from intergrax.runtime.adaptive.contracts import ProfileArtifactType, ProfileVersionDraft
 from intergrax.runtime.adaptive.profile_lifecycle import ProfileVersionLifecycleManager
+from intergrax.runtime.adaptive.profile_pointer_store import InMemoryProfileActivePointerStore
 from intergrax.runtime.adaptive.profile_version_store import InMemoryProfileVersionStore
 from intergrax.runtime.architecture.adaptive_governance import (
     AdaptiveAuthorityLevel,
@@ -29,8 +30,13 @@ pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
 def test_shadow_allocation_records_candidate_profile_version_observation() -> None:
     store = InMemoryProfileVersionStore()
+    pointer_store = InMemoryProfileActivePointerStore()
     lifecycle = ProfileVersionLifecycleManager(store)
-    executor = AdaptationExecutor(profile_store=store, lifecycle_manager=lifecycle)
+    executor = AdaptationExecutor(
+        profile_store=store,
+        pointer_store=pointer_store,
+        lifecycle_manager=lifecycle,
+    )
 
     envelope = AdaptiveLoopEnvelope(
         loop_id="routing-tuning-echo.basic",

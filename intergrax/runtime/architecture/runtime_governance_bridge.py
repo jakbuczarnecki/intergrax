@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from intergrax.runtime.adaptive.adaptation_executor import AdaptationExecutor, ApplyProfileResult
+from intergrax.runtime.adaptive.adaptation_models import AdaptationProposalPackage
 from intergrax.runtime.architecture.adaptive_governance import (
     AdaptiveGovernanceReport,
     AdaptiveLoopProposal,
@@ -107,4 +109,31 @@ class RuntimeArchitectureGovernanceBridge:
             score=score,
             registry=self._evaluation_registry,
             candidate_profile_version_id=candidate_profile_version_id,
+        )
+
+    def submit_proposal(self, package: AdaptationProposalPackage) -> str:
+        """Register a governed proposal for ops/audit review (W-ADAPT-4.8)."""
+        if not package.passed_all_gates:
+            raise ValueError("Cannot submit a proposal that failed governance gates")
+        gate = evaluate_bounded_adaptive_loop(package.candidate.proposal)
+        if not gate.passed:
+            raise ValueError(f"Adaptive proposal failed envelope gate: {gate.reasons}")
+        return package.proposal_id
+
+    def apply_approved(
+        self,
+        package: AdaptationProposalPackage,
+        *,
+        executor: AdaptationExecutor,
+        tenant_id: str,
+        task_class: str,
+        version_id: str,
+    ) -> ApplyProfileResult:
+        """Apply a previously gated proposal through the adaptation executor (W-ADAPT-4.8)."""
+        self.submit_proposal(package)
+        return executor.apply(
+            package,
+            tenant_id=tenant_id,
+            task_class=task_class,
+            version_id=version_id,
         )

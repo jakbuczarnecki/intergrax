@@ -5494,9 +5494,9 @@ Governance-only L4 (envelope unit tests) **does not** satisfy runtime L4.
 |----------|-------------------|
 | Full AHIA document | `docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md` |
 | ADR | `docs/adr/ADR-ADAPT-001.md` — governed AHI over classical RL (**Accepted**) |
-| Planned phase | **Phase W-ADAPT** in `INTERGRAX_IMPLEMENTATION_PLAN.md` — **70 tasks**, Band 2y, Appendix K — Wave 0–3 **Done** (36/70) |
-| Runtime package | `intergrax/runtime/adaptive/` — Wave 0–3 **Done** (SignalCollector, AdaptationEngine, ProfileVersionStore, AdaptationExecutor.shadow) |
-| Profile store | `build/adaptive_harness/profile_versions.db` |
+| Planned phase | **Phase W-ADAPT** in `INTERGRAX_IMPLEMENTATION_PLAN.md` — **70 tasks**, Band 2y, Appendix K — Wave 0–4 **Done** (46/70) |
+| Runtime package | `intergrax/runtime/adaptive/` — Wave 0–4 **Done** (apply, rollback, canary, AdaptiveProfile wiring) |
+| Profile pointers | `build/adaptive_harness/profile_pointers.db` |
 | Signal report | `scripts/phase_w_adapt_report.py` → `build/adaptive_harness/signal_trends.json` |
 | Proposal report | `scripts/phase_w_adapt_report.py` → `build/adaptive_harness/proposals.json` |
 | Reuse | `adaptive_governance.py`, `runtime_governance_bridge.py`, `execution_guard.py`, `evaluation_registry_trends.py` |

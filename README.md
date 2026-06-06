@@ -745,11 +745,11 @@ This is **not classical reinforcement learning** (neural policy training, uncons
 | **What it does** | Observes run outcomes → proposes versioned profile changes → validates through governance → applies via shadow/canary → verifies improvement → rolls back on failure |
 | **What it discovers** | Operational patterns in traces (tool/agent/HITL sequences), routing inefficiencies, cost anomalies, eval regressions |
 | **What stays human-governed** | Policy-learning mutations, promotion to production traffic, skill/workflow creation from mined patterns |
-| **Current status** | Wave **W-ADAPT-0–3 Done** — `ProfileVersionStore`, `AdaptationExecutor.shadow`, `ProfileAwareQueryRouter`, governance bridge shadow tagging. **Next:** Wave 4 Apply (L4-A). |
+| **Current status** | Wave **W-ADAPT-0–4 Done** — `AdaptiveProfile`, `AdaptationExecutor.apply/rollback`, canary traffic, HITL policy gate, `ADAPTIVE_*` events. **Next:** Wave 5 Verify (L4-V). |
 
 **Primary document:** [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) — full business case, component specification, data contracts, flow diagrams, phased roadmap (W-ADAPT-0 through W-ADAPT-7), KPIs, and L4 runtime acceptance gates.
 
-**Implementation plan:** [INTERGRAX_IMPLEMENTATION_PLAN.md — Phase W-ADAPT](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) — **36/70 Done** (L4-O + L4-R + L4-S), Band 2y, queue [§6.1t](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61t-harness-implementation-queue--adaptive-harness-intelligence-active), ADR [`ADR-ADAPT-001`](docs/adr/ADR-ADAPT-001.md).
+**Implementation plan:** [INTERGRAX_IMPLEMENTATION_PLAN.md — Phase W-ADAPT](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) — **46/70 Done** (L4-O through L4-A), Band 2y, queue [§6.1t](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61t-harness-implementation-queue--adaptive-harness-intelligence-active), ADR [`ADR-ADAPT-001`](docs/adr/ADR-ADAPT-001.md).
 
 **Canon summary:** [intergrax_runtime_architecture.md §54](docs/intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum)
 

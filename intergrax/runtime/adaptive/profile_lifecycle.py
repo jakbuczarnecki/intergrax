@@ -18,7 +18,7 @@ _ALLOWED_TRANSITIONS: dict[ProfileVersionStatus, frozenset[ProfileVersionStatus]
     ProfileVersionStatus.ACTIVE: frozenset(
         {ProfileVersionStatus.RETIRED, ProfileVersionStatus.DRAFT}
     ),
-    ProfileVersionStatus.RETIRED: frozenset(),
+    ProfileVersionStatus.RETIRED: frozenset({ProfileVersionStatus.ACTIVE}),
 }
 
 

@@ -28,6 +28,7 @@ from intergrax.runtime.adaptive.profile_promotion import (
     evaluate_profile_promotion,
 )
 from intergrax.runtime.adaptive.profile_rag_router import ProfileAwareQueryRouter
+from intergrax.runtime.adaptive.profile_pointer_store import InMemoryProfileActivePointerStore
 from intergrax.runtime.adaptive.profile_version_store import (
     InMemoryProfileVersionStore,
     SQLiteProfileVersionStore,
@@ -141,8 +142,13 @@ def test_profile_lifecycle_manager_promotes_draft_to_shadow() -> None:
 
 def test_adaptation_executor_shadow_allocates_candidate_version() -> None:
     store = InMemoryProfileVersionStore()
+    pointer_store = InMemoryProfileActivePointerStore()
     lifecycle = ProfileVersionLifecycleManager(store)
-    executor = AdaptationExecutor(profile_store=store, lifecycle_manager=lifecycle)
+    executor = AdaptationExecutor(
+        profile_store=store,
+        pointer_store=pointer_store,
+        lifecycle_manager=lifecycle,
+    )
     package = _sample_package()
     result = executor.shadow(package, tenant_id="tenant_a", task_class="echo.basic")
     assert result.candidate_profile_version_id == "draft-routing-echo-rag_tier_deep"
@@ -154,8 +160,13 @@ def test_adaptation_executor_shadow_allocates_candidate_version() -> None:
 
 def test_adaptation_executor_shadow_rejects_failed_gate() -> None:
     store = InMemoryProfileVersionStore()
+    pointer_store = InMemoryProfileActivePointerStore()
     lifecycle = ProfileVersionLifecycleManager(store)
-    executor = AdaptationExecutor(profile_store=store, lifecycle_manager=lifecycle)
+    executor = AdaptationExecutor(
+        profile_store=store,
+        pointer_store=pointer_store,
+        lifecycle_manager=lifecycle,
+    )
     with pytest.raises(ValueError, match="failed governance"):
         executor.shadow(_sample_package(passed=False), tenant_id="tenant_a", task_class="echo.basic")
 

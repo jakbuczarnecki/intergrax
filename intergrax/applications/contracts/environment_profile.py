@@ -19,6 +19,8 @@ from intergrax.runtime.modality.modality_profile import ModalityProfile, lab_def
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry.profile import ToolProfile
+from intergrax.runtime.adaptive.contracts import UtilityWeights
+from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
 
 
 class IdentityProfile(BaseModel):
@@ -150,6 +152,26 @@ class EvaluationProfile(BaseModel):
     evaluation_assets_ref: str | None = None
 
 
+AdaptiveMode = Literal["observe", "recommend", "shadow", "canary", "apply"]
+
+
+class AdaptiveProfile(BaseModel):
+    """Adaptive Harness Intelligence Tier-3 configuration (AHIA §14.5, W-ADAPT-4.1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = False
+    mode: AdaptiveMode = "observe"
+    enabled_loops: list[AdaptiveLoopKind] = Field(default_factory=list)
+    utility_weights: UtilityWeights = Field(default_factory=UtilityWeights)
+    canary_tenant_allowlist: list[str] = Field(default_factory=list)
+    canary_traffic_percent: float = Field(default=0.0, ge=0.0, le=100.0)
+    human_approver_group: str | None = None
+    profile_versions_db_path: Path | None = None
+    profile_pointers_db_path: Path | None = None
+    signal_store_path: Path | None = None
+
+
 class OrchestrationProfile(BaseModel):
     """Nexus loop composition overrides (Phase H-APP.3.1)."""
 
@@ -208,6 +230,7 @@ class ApplicationEnvironmentProfile(BaseModel):
     observability_profile: ObservabilityProfile = Field(default_factory=ObservabilityProfile)
     cost_profile: CostProfile = Field(default_factory=CostProfile)
     evaluation_profile: EvaluationProfile = Field(default_factory=EvaluationProfile)
+    adaptive_profile: AdaptiveProfile = Field(default_factory=AdaptiveProfile)
     orchestration_profile: OrchestrationProfile = Field(default_factory=OrchestrationProfile)
     identity_profile: IdentityProfile = Field(default_factory=IdentityProfile)
     security_profile: ApplicationSecurityProfile = Field(
