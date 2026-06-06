@@ -22,7 +22,7 @@ The `docs/` folder holds the canonical platform documentation.
 |----------|---------|
 | [**INTERGRAX_DEVELOPMENT_STRATEGY.md**](INTERGRAX_DEVELOPMENT_STRATEGY.md) | **Strategic goal** — decision hierarchy, lab vs production harness, work cycle |
 | [**intergrax_runtime_architecture.md**](intergrax_runtime_architecture.md) | **Architecture canon** — tiers, Nexus, UAEP §42, retry (§31), observability & trace storage (§33), RAG stack (§7.1.2) |
-| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; **Phase W-ADAPT Done** (Band 2y); **M.6 P5 Done** (Band 2ab, 33/34); default queue = **§6.1 maintenance** |
+| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; **Phase W-ADAPT Done** (Band 2y); **M.6 P5 Done** (Band 2ab, 33/34); **M.6 P6 Planned** (Band 2ac, 0/32); default queue = **§6.1 maintenance** |
 | [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) | **Agent workflow** — scaffold → register → run → inspect → evaluate |
 | [**INTEGRATIONS.md**](INTEGRATIONS.md) | **Integration catalog** — **135** providers, contracts, wiring, usage links |
 | [**TOOLS.md**](TOOLS.md) | **Tool catalog** — atomic LLM/MCP tools, engine status, four-layer stack |
@@ -62,7 +62,7 @@ Adaptive Harness (L4)     →  ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md · 
 | Understand strategic direction | [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) |
 | Understand the platform | Strategy doc, then implementation plan §0, then architecture canon §1–§5 |
 | Infrastructure vs business scope | [INTERGRAX_IMPLEMENTATION_PLAN.md §4.0a](INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business) |
-| See what to implement next (harness) | [§6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) maintenance · [M.6 P5 closeout](INTERGRAX_IMPLEMENTATION_PLAN.md#m6-p5--harness-integration-depth-done--3334) (`trivy` deferred) · [§6.3](INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only) product work |
+| See what to implement next (harness) | [§6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) maintenance · [M.6 P6 expansion](INTERGRAX_IMPLEMENTATION_PLAN.md#m6-p6--harness-integration-expansion-planned) (0/32) · [§6.3](INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only) product work |
 | Implement Adaptive Harness Intelligence (L4 runtime) | [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · [Phase W-ADAPT](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · [Appendix K](INTERGRAX_IMPLEMENTATION_PLAN.md#appendix-k--adaptive-harness-intelligence-traceability-phase-w-adapt) |
 | **Agent assembly (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix N](AGENT_CREATION_GUIDE.md#appendix-n--agent-assembly-control-plane) · [Phase AS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-as--agent-assembly-control-plane-closeout) |
 | **Registry architecture (control plane)** | [`AGENT_CREATION_GUIDE.md` Appendix O](AGENT_CREATION_GUIDE.md#appendix-o--registry-architecture-control-plane) · [Phase REG](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-reg--registry-architecture-control-plane-closeout) |

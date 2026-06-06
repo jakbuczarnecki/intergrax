@@ -1,6 +1,6 @@
 # Intergrax Integration Library
 
-**Last updated:** 2026-06-02 (Phase M.6 P5 — harness integration depth **Done** 33/34)
+**Last updated:** 2026-06-02 (Phase M.6 P5 **Done** 33/34 · M.6 P6 **Planned** 0/32)
 
 The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. Agents and applications wire backends **by category**, not by vendor SDK, so the same agent code can run in a local lab, a customer VPC, or a multi-cloud deployment.
 
@@ -54,9 +54,30 @@ Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 135 pr
 
 **Delivered:** 25 harden (STABLE + `IntegrationHealthProbe`) · 8 greenfield (`_shared/p6`) · 4 Tier-3 presets · `HARNESS_M6_P5_PROBE_SLUGS` · debug API `GET /debug/integrations/health?stack=m6_p5`.
 
-**Deferred:** `trivy` — new `security_scanner` category (**M-P5-CAT.2**) requires architecture sign-off.
+**Tier-3 presets (P5):** `harness_metrics_stack()`, `harness_eval_stack()`, `harness_async_stack()`, `harness_ci_stack()` — CLI: `intergrax integrations-pick harness_metrics|harness_eval|harness_async|harness_ci`.
 
-**Tier-3 presets:** `harness_metrics_stack()`, `harness_eval_stack()`, `harness_async_stack()`, `harness_ci_stack()` — CLI: `intergrax integrations-pick harness_metrics|harness_eval|harness_async|harness_ci`.
+**Deferred:** `trivy` — absorbed into **M.6 P6** [M-P6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#m6-p6--master-register-32-slugs) (`security_scanner` / **M-P6-CAT.1**).
+
+### M.6 P6 — Harness integration expansion (Planned — 0/32)
+
+**Register:** [INTERGRAX_IMPLEMENTATION_PLAN.md — M.6 P6](INTERGRAX_IMPLEMENTATION_PLAN.md#m6-p6--harness-integration-expansion-planned) · Band **2ac** · Queue **[§6.1y](INTERGRAX_IMPLEMENTATION_PLAN.md#61y-harness-implementation-queue--integration-expansion-m6-p6-planned)**
+
+| Wave | Focus | Slugs | Status |
+|------|--------|-------|--------|
+| H-INT-10 | Security + secrets | `trivy`, `snyk`, `semgrep`, `infisical` | **Planned** |
+| H-INT-11 | Cloud sandbox | `e2b`, `modal`, `daytona` | **Planned** |
+| H-INT-12 | Identity / tenant IAM | `auth0`, `keycloak`, `workos` | **Planned** |
+| H-INT-13 | GitOps CI | `argocd`, `buildkite`, `jenkins` | **Planned** |
+| H-INT-14 | Speech catalog | `elevenlabs`, `deepgram` | **Planned** |
+| H-INT-15 | Enterprise ops | `newrelic`, `splunk`, `zendesk`, `statsig` | **Planned** |
+| H-INT-16 | Data / workflow | `prefect`, `airflow`, `typesense`, `neon`, `pulsar` | **Planned** |
+| H-INT-17 | Reserve | `algolia`, `confluent`, `backblaze_b2`, `triton`, `replicate`, `stripe`, `salesforce`, `hubspot` | **Planned** |
+
+**New categories (9):** `security_scanner`, `sandbox_host`, `identity_provider`, `speech_provider`, `workflow_orchestrator`, `vision_serving`, `ml_inference_host`, `billing_meter`, `crm`.
+
+**Closeout target:** catalog **167** slugs (+32 from current **135**).
+
+**Tier-3 presets (planned):** `harness_security_stack`, `harness_sandbox_stack`, `harness_identity_stack`, `harness_gitops_stack`.
 
 ---
 
