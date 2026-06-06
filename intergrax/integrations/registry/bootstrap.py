@@ -23,7 +23,7 @@ def register_default_integrations(
     Idempotent registration of shipped integration providers.
 
     ``preset="core"`` registers lab essentials only (~12 slugs).
-    ``preset="full"`` registers the complete shipped catalog (135 slugs).
+    ``preset="full"`` registers the complete shipped catalog (167 slugs).
     """
     global _BOOTSTRAPPED
     if _BOOTSTRAPPED and not override:

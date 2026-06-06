@@ -383,7 +383,7 @@ Shared infrastructure used by all agents through **one canonical path** per conc
 | Concern | Module | Documentation |
 |---------|--------|---------------|
 | **LLM adapters** | `intergrax/llm_adapters/` — 19 providers | [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) |
-| **Integration Library** | `intergrax/integrations/` — 135 providers | [INTEGRATIONS.md](docs/INTEGRATIONS.md) |
+| **Integration Library** | `intergrax/integrations/` — 167 providers | [INTEGRATIONS.md](docs/INTEGRATIONS.md) |
 | **Tool Library** | `intergrax/tools/` — atomic LLM/MCP operations | [TOOLS.md](docs/TOOLS.md) |
 | **Skill Library** | `intergrax/skills/` — composable capability packs | [SKILLS.md](docs/SKILLS.md) |
 | **RAG** | `intergrax/rag/` — embeddings, vector stores, ingest | Architecture [§7.1.2](docs/intergrax_runtime_architecture.md) |
@@ -407,7 +407,7 @@ External systems are **pluggable, environment-specific infrastructure** — not 
 | **Portable profiles** | Same agent runs in lab (`IntegrationProfile.lab()`), customer VPC, or multi-cloud |
 | **Safe boundaries** | Vendor SDKs live only in provider `opens.py` — never in `agents/` |
 
-**135 providers** registered — relational stores, document DBs, Redis/Kafka/RabbitMQ/SQS, S3/Azure/GCS, Pinecone/Qdrant/Chroma, web search, Slack/Teams/SMTP, Jira/GitHub/Linear, Confluence/Notion, observability backends, Playwright, AWS/Azure/GCP facades, CI/CD (GitHub Actions, GitLab CI, …).
+**167 providers** registered — relational stores, document DBs, Redis/Kafka/RabbitMQ/SQS, S3/Azure/GCS, Pinecone/Qdrant/Chroma, web search, Slack/Teams/SMTP, Jira/GitHub/Linear, Confluence/Notion, observability backends, Playwright, AWS/Azure/GCP facades, CI/CD (GitHub Actions, GitLab CI, Argo CD, …), security scanners, sandbox hosts, identity providers, speech, workflow orchestrators, CRM.
 
 ```python
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -693,7 +693,7 @@ All harness control planes are **closed** — authoring maps live in AGENT_CREAT
 
 ```text
 intergrax/              # Tier-0 platform + Tier-1 Nexus
-  integrations/         # Integration Library (135 providers)
+  integrations/         # Integration Library (167 providers)
   tools/                # Tool Library + MCP export
   skills/               # Skill Library + importers
   llm_adapters/         # 19 LLM providers
@@ -785,7 +785,7 @@ All platform documentation lives in [`docs/`](docs/). **One source of truth per 
 
 | Document | Read when you want to… |
 |----------|------------------------|
-| [INTEGRATIONS.md](docs/INTEGRATIONS.md) | **135 providers** — contracts, env vars, per-slug USAGE links |
+| [INTEGRATIONS.md](docs/INTEGRATIONS.md) | **167 providers** — contracts, env vars, per-slug USAGE links |
 | [TOOLS.md](docs/TOOLS.md) | Tool Library — atomic LLM/MCP operations, migration from legacy flags |
 | [SKILLS.md](docs/SKILLS.md) | Skill Library — manifests, importers, harness presets |
 | [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) | 19 LLM providers — streaming, tools, env vars, metrics |
@@ -812,7 +812,7 @@ All platform documentation lives in [`docs/`](docs/). **One source of truth per 
 Strategic direction     →  INTERGRAX_DEVELOPMENT_STRATEGY.md
 Platform architecture   →  intergrax_runtime_architecture.md §1–§5
 New agent (< 1 hour)    →  AGENT_CREATION_GUIDE.md
-Integrations (135)      →  INTEGRATIONS.md
+Integrations (167)      →  INTEGRATIONS.md
 Tools                   →  TOOLS.md + intergrax/tools/USAGE.md
 Skills                  →  SKILLS.md
 LLM providers           →  LLM_ADAPTERS.md

@@ -14,6 +14,7 @@ from intergrax.integrations.registry.harness_lab_stack import (
     HARNESS_LAB_STABLE_SLUGS,
     HARNESS_M6_P4_PROBE_SLUGS,
     HARNESS_M6_P5_PROBE_SLUGS,
+    HARNESS_M6_P6_PROBE_SLUGS,
 )
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.nexus.config import RuntimeConfig
@@ -97,6 +98,18 @@ def test_integration_health_debug_route_m6_p5_stack() -> None:
     assert payload["count"] == len(HARNESS_M6_P5_PROBE_SLUGS)
     slugs = {item["slug"] for item in payload["probes"]}
     assert slugs == set(HARNESS_M6_P5_PROBE_SLUGS)
+
+
+def test_integration_health_debug_route_m6_p6_stack() -> None:
+    app = create_debug_app(include_integration_health_routes=True)
+    client = TestClient(app)
+    response = client.get("/debug/integrations/health?stack=m6_p6")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["stack"] == "m6_p6"
+    assert payload["count"] == len(HARNESS_M6_P6_PROBE_SLUGS)
+    slugs = {item["slug"] for item in payload["probes"]}
+    assert slugs == set(HARNESS_M6_P6_PROBE_SLUGS)
 
 
 def test_integration_health_debug_route_disabled_by_default() -> None:

@@ -10,6 +10,7 @@ from intergrax.integrations.registry.harness_lab_stack import (
     HARNESS_LAB_STABLE_SLUGS,
     HARNESS_M6_P4_PROBE_SLUGS,
     HARNESS_M6_P5_PROBE_SLUGS,
+    HARNESS_M6_P6_PROBE_SLUGS,
 )
 
 
@@ -37,5 +38,13 @@ def health_check_harness_m6_p5_probes() -> list[HealthStatus]:
     """Probe M.6 P5 harness-depth slugs (W-OPS.10 extension)."""
     return health_check_catalog_slugs(
         sorted(HARNESS_M6_P5_PROBE_SLUGS),
+        use_circuit_breaker=True,
+    )
+
+
+def health_check_harness_m6_p6_probes() -> list[HealthStatus]:
+    """Probe M.6 P6 harness expansion slugs (W-OPS.10 extension)."""
+    return health_check_catalog_slugs(
+        sorted(HARNESS_M6_P6_PROBE_SLUGS),
         use_circuit_breaker=True,
     )

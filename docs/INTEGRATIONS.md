@@ -1,6 +1,6 @@
 # Intergrax Integration Library
 
-**Last updated:** 2026-06-02 (Phase M.6 P5 **Done** 33/34 · M.6 P6 **Planned** 0/32)
+**Last updated:** 2026-06-02 (Phase M.6 P5 **Done** 33/34 · M.6 P6 **Done** 32/32)
 
 The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. Agents and applications wire backends **by category**, not by vendor SDK, so the same agent code can run in a local lab, a customer VPC, or a multi-cloud deployment.
 
@@ -39,7 +39,7 @@ The **lab harness environment** treats these catalog slugs as **`stable`** (prod
 uv run pytest tests/unit/integrations/test_harness_lab_stable_stack.py -m gate -q
 ```
 
-Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 135 providers stable in one release.
+Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 167 providers stable in one release.
 
 ### M.6 P5 — Harness integration depth (Done — 33/34)
 
@@ -58,26 +58,28 @@ Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 135 pr
 
 **Deferred:** `trivy` — absorbed into **M.6 P6** [M-P6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#m6-p6--master-register-32-slugs) (`security_scanner` / **M-P6-CAT.1**).
 
-### M.6 P6 — Harness integration expansion (Planned — 0/32)
+### M.6 P6 — Harness integration expansion (Done — 32/32)
 
 **Register:** [INTERGRAX_IMPLEMENTATION_PLAN.md — M.6 P6](INTERGRAX_IMPLEMENTATION_PLAN.md#m6-p6--harness-integration-expansion-planned) · Band **2ac** · Queue **[§6.1y](INTERGRAX_IMPLEMENTATION_PLAN.md#61y-harness-implementation-queue--integration-expansion-m6-p6-planned)**
 
 | Wave | Focus | Slugs | Status |
 |------|--------|-------|--------|
-| H-INT-10 | Security + secrets | `trivy`, `snyk`, `semgrep`, `infisical` | **Planned** |
-| H-INT-11 | Cloud sandbox | `e2b`, `modal`, `daytona` | **Planned** |
-| H-INT-12 | Identity / tenant IAM | `auth0`, `keycloak`, `workos` | **Planned** |
-| H-INT-13 | GitOps CI | `argocd`, `buildkite`, `jenkins` | **Planned** |
-| H-INT-14 | Speech catalog | `elevenlabs`, `deepgram` | **Planned** |
-| H-INT-15 | Enterprise ops | `newrelic`, `splunk`, `zendesk`, `statsig` | **Planned** |
-| H-INT-16 | Data / workflow | `prefect`, `airflow`, `typesense`, `neon`, `pulsar` | **Planned** |
-| H-INT-17 | Reserve | `algolia`, `confluent`, `backblaze_b2`, `triton`, `replicate`, `stripe`, `salesforce`, `hubspot` | **Planned** |
+| H-INT-10 | Security + secrets | `trivy`, `snyk`, `semgrep`, `infisical` | **Done** |
+| H-INT-11 | Cloud sandbox | `e2b`, `modal`, `daytona` | **Done** |
+| H-INT-12 | Identity / tenant IAM | `auth0`, `keycloak`, `workos` | **Done** |
+| H-INT-13 | GitOps CI | `argocd`, `buildkite`, `jenkins` | **Done** |
+| H-INT-14 | Speech catalog | `elevenlabs`, `deepgram` | **Done** |
+| H-INT-15 | Enterprise ops | `newrelic`, `splunk`, `zendesk`, `statsig` | **Done** |
+| H-INT-16 | Data / workflow | `prefect`, `airflow`, `typesense`, `neon`, `pulsar` | **Done** |
+| H-INT-17 | Reserve | `algolia`, `confluent`, `backblaze_b2`, `triton`, `replicate`, `stripe`, `salesforce`, `hubspot` | **Done** |
 
 **New categories (9):** `security_scanner`, `sandbox_host`, `identity_provider`, `speech_provider`, `workflow_orchestrator`, `vision_serving`, `ml_inference_host`, `billing_meter`, `crm`.
 
-**Closeout target:** catalog **167** slugs (+32 from current **135**).
+**Delivered:** 32 STABLE slugs (`_shared/p7`) · 9 category contracts · 4 Tier-3 presets · `HARNESS_M6_P6_PROBE_SLUGS` · debug API `GET /debug/integrations/health?stack=m6_p6`.
 
-**Tier-3 presets (planned):** `harness_security_stack`, `harness_sandbox_stack`, `harness_identity_stack`, `harness_gitops_stack`.
+**Tier-3 presets (P6):** `harness_security_stack()`, `harness_sandbox_stack()`, `harness_identity_stack()`, `harness_gitops_stack()` — CLI: `intergrax integrations-pick harness_security|harness_sandbox|harness_identity|harness_gitops`.
+
+**Catalog:** **167** slugs in `layout.py` (**12** core / **167** full preset).
 
 ---
 
@@ -145,7 +147,7 @@ Catalog identity is the string **slug** (`"s3"`, `"postgresql"`) registered at r
 
 Third-party integrations **must not** extend a core enum. Register a plugin or call `register_from_manifest` from application startup.
 
-**Shipped vs plugin class:** ~135 providers register via `register_from_manifest(MANIFEST, create_*)`. External pip packages should implement `IntegrationPlugin` (`integration_manifest()` + `create_integration()`). `SqliteIntegrationPlugin` in `providers/relational_store/sqlite/plugin.py` documents the class-based pattern; shipped `register.py` keeps the manifest path for bootstrap performance.
+**Shipped vs plugin class:** ~167 providers register via `register_from_manifest(MANIFEST, create_*)`. External pip packages should implement `IntegrationPlugin` (`integration_manifest()` + `create_integration()`). `SqliteIntegrationPlugin` in `providers/relational_store/sqlite/plugin.py` documents the class-based pattern; shipped `register.py` keeps the manifest path for bootstrap performance.
 
 Tier-3 hosts should call `bootstrap_application_integration_catalog()` (not bare `register_default_integrations()`).
 
@@ -300,7 +302,7 @@ Service-level slugs (`s3`, `azure_blob`, `gcs`, …) remain available for explic
 
 ---
 
-## Implemented providers (135)
+## Implemented providers (167)
 
 All providers below are registered in `register_default_integrations()`.  
 **Status:** `stable` = production-ready catalog entry; `beta` = shipped, API may evolve.
@@ -336,7 +338,7 @@ All providers below are registered in `register_default_integrations()`.
 | `feature_flag` | 2 | `unleash`, `launchdarkly` |
 | `ci_cd` | 1 | `github_actions` |
 
-**Total unique slugs:** 135.
+**Total unique slugs:** 167.
 
 ### Implementation depth (code audit)
 
@@ -700,7 +702,7 @@ All slugs from the 2026-05 harness recommendation (high / medium / low) are regi
 
 **New tools:** `gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`.
 
-**`slash_command`** interaction surface registered (catalog **135**).
+**`slash_command`** interaction surface registered (catalog **167**).
 
 **Lab harness:** `IntegrationProfile.harness_lab()` + `wire_lab_integrations(harness=True)` — composite observability (Sentry + LangSmith) + PagerDuty + harness tool bundle.
 
@@ -748,13 +750,13 @@ Audit against typical agent stacks (LangGraph, CrewAI, LlamaIndex, enterprise VP
 | **Low** | `reddit`, `google_places` | search_provider | **Done** | Social/geo search (full packages) |
 | **Future** | `slash_command` | interaction_surface | **Done** (M.9) | Generic slash intake |
 
-**Strong harness coverage today:** **135** integrations — observability (22+), notification (11+), issue trackers (8), vectors (8 incl. pgvector), secrets (5), feature flags (2), CI/CD (5 incl. gitlab_ci), graph (3), plus M.7 stack (Vault, Neo4j, Temporal, …).
+**Strong harness coverage today:** **167** integrations — observability (24+), notification (11+), issue trackers (9), vectors (9 incl. typesense), secrets (6 incl. infisical), feature flags (3), CI/CD (8 incl. argocd), security scanners (3), sandbox hosts (3), identity (3), speech (2), workflow (2), CRM (2), plus M.7 stack (Vault, Neo4j, Temporal, …).
 
 **Tool Library:** `errors.capture`, `gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`. Optional deps: ``uv pip install 'Intergrax-ai[integrations-harness]'``.
 
 ---
 
-All **135** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
+All **167** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
 
 ```bash
 uv run python scripts/generate_integration_usage_docs.py

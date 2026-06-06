@@ -63,6 +63,26 @@ HARNESS_M6_P5_PROBE_SLUGS: frozenset[str] = frozenset(
     }
 )
 
+HARNESS_M6_P6_PROBE_SLUGS: frozenset[str] = frozenset(
+    {
+        "trivy",
+        "snyk",
+        "semgrep",
+        "infisical",
+        "e2b",
+        "auth0",
+        "keycloak",
+        "argocd",
+        "elevenlabs",
+        "deepgram",
+        "prefect",
+        "typesense",
+        "neon",
+        "algolia",
+        "stripe",
+    }
+)
+
 
 class HarnessLabStackValidationError(ValueError):
     """Raised when a harness stack slug is missing or not marked stable."""

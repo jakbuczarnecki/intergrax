@@ -28,6 +28,15 @@ from intergrax.integrations.contracts.graph_store import GraphStore
 from intergrax.integrations.contracts.feature_flag import FeatureFlagBackend
 from intergrax.integrations.contracts.ci_cd import CiCdBackend
 from intergrax.integrations.contracts.vector_store import VectorStore
+from intergrax.integrations.contracts.security_scanner import SecurityScannerBackend
+from intergrax.integrations.contracts.sandbox_host import SandboxHostBackend
+from intergrax.integrations.contracts.identity_provider import IdentityProviderBackend
+from intergrax.integrations.contracts.speech_provider import SpeechProviderBackend
+from intergrax.integrations.contracts.workflow_orchestrator import WorkflowOrchestratorBackend
+from intergrax.integrations.contracts.vision_serving import VisionServingBackend
+from intergrax.integrations.contracts.ml_inference_host import MlInferenceHostBackend
+from intergrax.integrations.contracts.billing_meter import BillingMeterBackend
+from intergrax.integrations.contracts.crm import CrmBackend
 
 
 def assert_implements(instance: object, protocol: type[T]) -> T:
@@ -116,3 +125,39 @@ def assert_feature_flag_backend(instance: object) -> FeatureFlagBackend:
 
 def assert_ci_cd_backend(instance: object) -> CiCdBackend:
     return assert_implements(instance, CiCdBackend)
+
+
+def assert_security_scanner_backend(instance: object) -> SecurityScannerBackend:
+    return assert_implements(instance, SecurityScannerBackend)
+
+
+def assert_sandbox_host_backend(instance: object) -> SandboxHostBackend:
+    return assert_implements(instance, SandboxHostBackend)
+
+
+def assert_identity_provider_backend(instance: object) -> IdentityProviderBackend:
+    return assert_implements(instance, IdentityProviderBackend)
+
+
+def assert_speech_provider_backend(instance: object) -> SpeechProviderBackend:
+    return assert_implements(instance, SpeechProviderBackend)
+
+
+def assert_workflow_orchestrator_backend(instance: object) -> WorkflowOrchestratorBackend:
+    return assert_implements(instance, WorkflowOrchestratorBackend)
+
+
+def assert_vision_serving_backend(instance: object) -> VisionServingBackend:
+    return assert_implements(instance, VisionServingBackend)
+
+
+def assert_ml_inference_host_backend(instance: object) -> MlInferenceHostBackend:
+    return assert_implements(instance, MlInferenceHostBackend)
+
+
+def assert_billing_meter_backend(instance: object) -> BillingMeterBackend:
+    return assert_implements(instance, BillingMeterBackend)
+
+
+def assert_crm_backend(instance: object) -> CrmBackend:
+    return assert_implements(instance, CrmBackend)

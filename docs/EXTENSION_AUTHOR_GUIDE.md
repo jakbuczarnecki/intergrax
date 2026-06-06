@@ -78,7 +78,7 @@ Optional env: `INTERGRAX_DISCOVER_PLUGINS=true` enables entry-point discovery wh
 
 | Layer | Shipped registration | External package | Runtime materialization |
 |-------|---------------------|------------------|-------------------------|
-| Integration | `register_from_manifest` (135 slugs) | `IntegrationPlugin` + EP | `IntegrationProfile.resolve(category)` |
+| Integration | `register_from_manifest` (167 slugs) | `IntegrationPlugin` + EP | `IntegrationProfile.resolve(category)` |
 | Tool | `ToolPlugin` (13 bundles) | `ToolPlugin` + EP | `build_registry_from_profile(ToolProfile, ctx)` → invoke / MCP |
 | Skill | `SkillPlugin` (3 bundles) | `SkillPlugin` + EP | `build_registry_from_profile(SkillProfile)` → `SkillResolver` |
 

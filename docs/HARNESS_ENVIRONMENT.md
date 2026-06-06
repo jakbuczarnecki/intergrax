@@ -131,7 +131,9 @@ Operational L3 evidence is separate from `phase_v_closeout_gate` (contract CI). 
 
 **M.6 P5 harness depth probes (W-OPS.10 extension):** `health_check_harness_m6_p5_probes()` probes 21 slugs (`HARNESS_M6_P5_PROBE_SLUGS`) — metrics/CI/eval/async/data-plane harness stack. Tier-3 presets: `harness_metrics_stack`, `harness_eval_stack`, `harness_async_stack`, `harness_ci_stack`.
 
-**Lab debug API:** when `LAB_HARNESS=true`, lab host mounts `GET /debug/integrations/health?stack=lab|m6_p4|m6_p5|all` (circuit-breaker catalog probes for operators).
+**M.6 P6 harness expansion probes (W-OPS.10 extension):** `health_check_harness_m6_p6_probes()` probes 15 slugs (`HARNESS_M6_P6_PROBE_SLUGS`) — security/sandbox/identity/speech/workflow harness stack. Tier-3 presets: `harness_security_stack`, `harness_sandbox_stack`, `harness_identity_stack`, `harness_gitops_stack`.
+
+**Lab debug API:** when `LAB_HARNESS=true`, lab host mounts `GET /debug/integrations/health?stack=lab|m6_p4|m6_p5|m6_p6|all` (circuit-breaker catalog probes for operators).
 
 **Shadow evaluation (W-OPS.11):** set `RuntimeRequest.metadata["harness_shadow_eval"]` to `{"scenario_id": "...", "passed": true, "score": 1.0}`; `RuntimeEngine` records `HarnessShadowEvalRecordedDiagV1` trace step and appends to `build/architecture_hardening/online_evaluation_observations.json`. After a release, export trends: `uv run python scripts/export_harness_shadow_eval_trend.py --release-id <id>` → `shadow_evaluation_trend_report.json` (snapshots in `evaluation_release_snapshots.json`).
 

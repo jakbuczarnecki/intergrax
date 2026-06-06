@@ -201,3 +201,6 @@ def register_extended_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.registry.bootstrap_m6_p5 import register_m6_p5_integrations
 
     register_m6_p5_integrations(override=override)
+    from intergrax.integrations.registry.bootstrap_m6_p6 import register_m6_p6_integrations
+
+    register_m6_p6_integrations(override=override)

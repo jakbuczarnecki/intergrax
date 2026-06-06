@@ -38,6 +38,15 @@ class IntegrationCategory(str, Enum):
     RERANK_PROVIDER = "rerank_provider"
     FEATURE_FLAG = "feature_flag"
     CI_CD = "ci_cd"
+    SECURITY_SCANNER = "security_scanner"
+    SANDBOX_HOST = "sandbox_host"
+    IDENTITY_PROVIDER = "identity_provider"
+    SPEECH_PROVIDER = "speech_provider"
+    WORKFLOW_ORCHESTRATOR = "workflow_orchestrator"
+    VISION_SERVING = "vision_serving"
+    ML_INFERENCE_HOST = "ml_inference_host"
+    BILLING_METER = "billing_meter"
+    CRM = "crm"
 
 
 @dataclass(frozen=True)
@@ -141,6 +150,15 @@ PROFILE_FIELD_BY_CATEGORY: dict[str, str] = {
     IntegrationCategory.RERANK_PROVIDER.value: "rerank_provider",
     IntegrationCategory.FEATURE_FLAG.value: "feature_flag",
     IntegrationCategory.CI_CD.value: "ci_cd",
+    IntegrationCategory.SECURITY_SCANNER.value: "security_scanner",
+    IntegrationCategory.SANDBOX_HOST.value: "sandbox_host",
+    IntegrationCategory.IDENTITY_PROVIDER.value: "identity_provider",
+    IntegrationCategory.SPEECH_PROVIDER.value: "speech_provider",
+    IntegrationCategory.WORKFLOW_ORCHESTRATOR.value: "workflow_orchestrator",
+    IntegrationCategory.VISION_SERVING.value: "vision_serving",
+    IntegrationCategory.ML_INFERENCE_HOST.value: "ml_inference_host",
+    IntegrationCategory.BILLING_METER.value: "billing_meter",
+    IntegrationCategory.CRM.value: "crm",
 }
 
 

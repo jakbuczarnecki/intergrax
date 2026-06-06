@@ -207,3 +207,100 @@ def harness_ci_stack(
         document_parser=DOCLING,
         options=options,
     )
+
+
+def harness_security_stack(
+    *,
+    primary_scanner: str = "trivy",
+    enable_semgrep: bool = True,
+    enable_snyk: bool = False,
+) -> IntegrationProfile:
+    """Security scanner stack for STABLE promote gate and V-SEC repo policy."""
+    allowed = {"trivy", "snyk", "semgrep"}
+    normalized = primary_scanner.strip().lower()
+    if normalized not in allowed:
+        raise ValueError(f"Unsupported primary security scanner slug: {primary_scanner!r}")
+    options: dict[str, dict[str, object]] = {}
+    if enable_semgrep:
+        options["semgrep"] = {}
+    if enable_snyk:
+        options["snyk"] = {}
+    return IntegrationProfile(
+        relational_store=SQLITE,
+        security_scanner=normalized,
+        secrets_store="infisical",
+        notification_channel=LOG,
+        interaction_surface=LAB_JSON,
+        document_parser=DOCLING,
+        options=options,
+    )
+
+
+def harness_sandbox_stack(
+    *,
+    primary_sandbox: str = "e2b",
+    enable_modal: bool = False,
+) -> IntegrationProfile:
+    """Cloud sandbox stack bridging Tier-1 ``sandbox.exec`` tool."""
+    allowed = {"e2b", "modal", "daytona"}
+    normalized = primary_sandbox.strip().lower()
+    if normalized not in allowed:
+        raise ValueError(f"Unsupported sandbox host slug: {primary_sandbox!r}")
+    options: dict[str, dict[str, object]] = {}
+    if enable_modal:
+        options["modal"] = {}
+    return IntegrationProfile(
+        relational_store=SQLITE,
+        sandbox_host=normalized,
+        notification_channel=LOG,
+        interaction_surface=LAB_JSON,
+        document_parser=DOCLING,
+        options=options,
+    )
+
+
+def harness_identity_stack(
+    *,
+    primary_identity: str = "keycloak",
+    enable_workos: bool = False,
+) -> IntegrationProfile:
+    """Multi-tenant identity stack for harness host auth."""
+    allowed = {"auth0", "keycloak", "workos"}
+    normalized = primary_identity.strip().lower()
+    if normalized not in allowed:
+        raise ValueError(f"Unsupported identity provider slug: {primary_identity!r}")
+    options: dict[str, dict[str, object]] = {}
+    if enable_workos:
+        options["workos"] = {}
+    return IntegrationProfile(
+        relational_store=SQLITE,
+        identity_provider=normalized,
+        notification_channel=LOG,
+        interaction_surface=LAB_JSON,
+        document_parser=DOCLING,
+        options=options,
+    )
+
+
+def harness_gitops_stack(
+    *,
+    gitops_ci: str = "argocd",
+    enable_github_actions: bool = True,
+) -> IntegrationProfile:
+    """GitOps deploy stack after eval gate."""
+    allowed = {"argocd", "buildkite", "jenkins"}
+    normalized = gitops_ci.strip().lower()
+    if normalized not in allowed:
+        raise ValueError(f"Unsupported gitops CI slug: {gitops_ci!r}")
+    options: dict[str, dict[str, object]] = {GITHUB.slug: {}}
+    if enable_github_actions:
+        options[GITHUB_ACTIONS.slug] = {}
+    return IntegrationProfile(
+        relational_store=SQLITE,
+        ci_cd=normalized,
+        issue_tracker=GITHUB,
+        notification_channel=LOG,
+        interaction_surface=LAB_JSON,
+        document_parser=DOCLING,
+        options=options,
+    )

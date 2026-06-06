@@ -81,6 +81,15 @@ from intergrax.integrations.contracts.secrets_store import SecretsStore
 from intergrax.integrations.contracts.graph_store import GraphNodeRecord, GraphQueryResult, GraphStore
 from intergrax.integrations.contracts.feature_flag import FeatureFlagBackend, FeatureFlagEvaluation
 from intergrax.integrations.contracts.ci_cd import CheckSuiteRecord, CiCdBackend, WorkflowRunRecord
+from intergrax.integrations.contracts.security_scanner import ScanFinding, ScanReport, SecurityScannerBackend
+from intergrax.integrations.contracts.sandbox_host import SandboxArtifact, SandboxExecResult, SandboxHostBackend, SandboxSession
+from intergrax.integrations.contracts.identity_provider import IdentityProviderBackend, IdentityTenant, IdentityUser
+from intergrax.integrations.contracts.speech_provider import SpeechProviderBackend, SpeechSynthesisResult, SpeechTranscriptionResult
+from intergrax.integrations.contracts.workflow_orchestrator import WorkflowOrchestratorBackend, WorkflowRunHandle, WorkflowRunStatus
+from intergrax.integrations.contracts.vision_serving import VisionInferenceResult, VisionPrediction, VisionServingBackend
+from intergrax.integrations.contracts.ml_inference_host import InferencePrediction, MlInferenceHostBackend
+from intergrax.integrations.contracts.billing_meter import BillingMeterBackend, MeterEvent, MeterEventBatch
+from intergrax.integrations.contracts.crm import CrmAccount, CrmBackend, CrmContact, CrmTicket
 
 __all__ = [
     "PROFILE_FIELD_BY_CATEGORY",
@@ -137,6 +146,34 @@ __all__ = [
     "CiCdBackend",
     "WorkflowRunRecord",
     "CheckSuiteRecord",
+    "SecurityScannerBackend",
+    "ScanFinding",
+    "ScanReport",
+    "SandboxHostBackend",
+    "SandboxSession",
+    "SandboxExecResult",
+    "SandboxArtifact",
+    "IdentityProviderBackend",
+    "IdentityUser",
+    "IdentityTenant",
+    "SpeechProviderBackend",
+    "SpeechSynthesisResult",
+    "SpeechTranscriptionResult",
+    "WorkflowOrchestratorBackend",
+    "WorkflowRunHandle",
+    "WorkflowRunStatus",
+    "VisionServingBackend",
+    "VisionPrediction",
+    "VisionInferenceResult",
+    "MlInferenceHostBackend",
+    "InferencePrediction",
+    "BillingMeterBackend",
+    "MeterEvent",
+    "MeterEventBatch",
+    "CrmBackend",
+    "CrmAccount",
+    "CrmContact",
+    "CrmTicket",
     "TaskHandle",
     "TaskQueue",
     "TaskRequest",
