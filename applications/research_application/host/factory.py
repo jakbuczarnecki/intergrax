@@ -11,6 +11,7 @@ from intergrax.applications._shared.harness_host_runtime import build_harness_ho
 from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.config import ApiConfig, ApiEnvironment
 from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
+from intergrax.applications._shared.identity_wiring import wire_application_identity
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
@@ -81,5 +82,10 @@ def create_research_backend_app(
         )
         app = couple_fastapi_with_mcp(app, mcp, mount_path=settings.mcp_mount_path)
 
+    wire_application_identity(
+        app,
+        env.identity_profile,
+        integration_profile=env.integration_profile,
+    )
     attach_plugin_shutdown(app, platform.shutdown_callbacks)
     return app

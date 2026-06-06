@@ -117,7 +117,7 @@ Default enabled tools: `rag.retrieve`, `websearch.query`.
 
 `sandbox.exec` is enabled when `ToolWiringContext.sandbox_session` is set (local runtime sandbox) **or** when `IntegrationProfile.sandbox_host` resolves to a hosted backend — `wire_application_environment()` opens `HostedSandboxSession` via `resolve_hosted_sandbox_session()` (M.6 P6). Skills may still declare `sandbox.exec` for harness exercises — wire a session before expecting successful invocations.
 
-**P6 integration tool wiring:** `wire_integration_tool_context()` maps `security_scanner`, `sandbox_host`, `identity_provider`, `speech_provider`, and `workflow_orchestrator` from `IntegrationProfile` into `ToolWiringContext` (see `applications/_shared/integration_tool_wiring.py`).
+**P6 integration tool wiring:** `wire_integration_tool_context()` maps `security_scanner`, `sandbox_host`, `identity_provider`, `speech_provider`, and `workflow_orchestrator` from `IntegrationProfile` into `ToolWiringContext` (see `applications/_shared/integration_tool_wiring.py`). `extend_tool_profile_for_integration()` appends matching Tier-1 tool_ids to `ToolProfile` when categories are configured.
 
 **Harness host identity (M.6 P6):** `wire_application_identity()` attaches OIDC bearer validation (`IdentityProviderBackend.verify_token`) alongside optional `INTERGRAX_HARNESS_API_KEY`. Lab and generic harness FastAPI hosts call this after route assembly; MCP wrapper copies `HarnessAuthState` to the outer app.
 

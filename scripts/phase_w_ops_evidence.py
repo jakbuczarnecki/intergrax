@@ -48,6 +48,12 @@ def _run_pytest(*targets: str) -> bool:
     return completed.returncode == 0
 
 
+def _run_security_promote_gate() -> bool:
+    cmd = [sys.executable, str(REPO_ROOT / "scripts" / "check_harness_security_promote_gate.py")]
+    completed = subprocess.run(cmd, cwd=REPO_ROOT, check=False)
+    return completed.returncode == 0
+
+
 def _resolve_release_cycles() -> int:
     env_raw = (os.getenv("W_OPS_RELEASE_CYCLES") or "").strip()
     if env_raw:
@@ -143,6 +149,11 @@ def collect_operational_checks() -> OperationalMaturityEvidence:
                 "tests/unit/integrations/test_harness_lab_health.py::test_health_check_harness_m6_p6_probes_covers_catalog_slugs",
             ),
             detail="M.6 P6 harness expansion probes + presets (W-OPS.10 extension)",
+        ),
+        OperationalHarnessCheck(
+            check_id="security_promote_gate",
+            passed=_run_security_promote_gate(),
+            detail="V-SEC STABLE promote gate wiring (M-P6-WIRE.6)",
         ),
         OperationalHarnessCheck(
             check_id="shadow_eval_gate",

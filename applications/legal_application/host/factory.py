@@ -22,6 +22,7 @@ from intergrax.runtime.task.nexus_task_execution_adapter import NexusTaskExecuti
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
+from intergrax.applications._shared.identity_wiring import wire_application_identity
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
@@ -138,5 +139,10 @@ def create_legal_backend_app(
         )
         app = couple_fastapi_with_mcp(app, mcp, mount_path=settings.mcp_mount_path)
 
+    wire_application_identity(
+        app,
+        env.identity_profile,
+        integration_profile=env.integration_profile,
+    )
     attach_plugin_shutdown(app, platform.shutdown_callbacks)
     return app

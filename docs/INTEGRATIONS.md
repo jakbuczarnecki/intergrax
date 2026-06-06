@@ -75,6 +75,8 @@ Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 167 pr
 
 **New categories (9):** `security_scanner`, `sandbox_host`, `identity_provider`, `speech_provider`, `workflow_orchestrator`, `vision_serving`, `ml_inference_host`, `billing_meter`, `crm`.
 
+**Post-catalog wiring (M-P6-WIRE):** `wire_integration_tool_context()` resolves P6 slots into `ToolWiringContext`; `extend_tool_profile_for_integration()` auto-enables `security.scan`, `workflow.*`, and `sandbox.exec` when matching categories are configured. Speech catalog slugs bridge to Tier-0 speech tools via `IntegrationSpeechAdapter`.
+
 **Delivered:** 32 STABLE slugs (`_shared/p7`) · 9 category contracts · 4 Tier-3 presets · `HARNESS_M6_P6_PROBE_SLUGS` · debug API `GET /debug/integrations/health?stack=m6_p6`.
 
 **Tier-3 presets (P6):** `harness_security_stack()`, `harness_sandbox_stack()`, `harness_identity_stack()`, `harness_gitops_stack()` — CLI: `intergrax integrations-pick harness_security|harness_sandbox|harness_identity|harness_gitops`.
@@ -85,11 +87,12 @@ Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 167 pr
 
 ## Local infrastructure (Docker)
 
-Run backing services locally before integration tests or lab hosts. Unified stack: `infra/integration/` with **compose profiles** (`core`, `queue`, `rag`, `data`, `secrets`, `observability`, `cloud`, `heavy`).
+Run backing services locally before integration tests or lab hosts. Unified stack: `infra/integration/` with **compose profiles** (`core`, `queue`, `rag`, `data`, `secrets`, `observability`, `cloud`, `heavy`, `p6`).
 
 ```bash
 cd infra/integration && ./manage.sh start          # default profiles
 cd infra/integration && ./manage.sh start rag      # vectors + neo4j + ollama + docling
+cd infra/integration && ./manage.sh start p6       # keycloak + typesense + airflow (M.6 P6)
 cd infra/integration && ./manage.sh start all      # full stack
 ```
 

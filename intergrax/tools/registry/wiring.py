@@ -76,6 +76,9 @@ class ToolWiringContext:
         from intergrax.integrations.registry.factory import resolve
 
         def _optional(category: IntegrationCategory) -> Any | None:
+            instance = profile.instance_for_category(category)
+            if instance is not None:
+                return instance
             slug = profile.slug_for_category(category)
             if slug is None:
                 return None

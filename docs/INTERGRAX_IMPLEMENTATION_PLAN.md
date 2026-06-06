@@ -1266,6 +1266,7 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 | M-P6-WIRE.5 | Harness OIDC auth via `wire_application_identity()` (lab + generic FastAPI hosts) | **Done** |
 | M-P6-WIRE.6 | `check_harness_security_promote_gate.py` (wiring default; optional live scan) | **Done** |
 | M-P6-WIRE.7 | Docker profile `p6` (keycloak, typesense, airflow) | **Done** |
+| M-P6-WIRE.8 | `extend_tool_profile_for_integration()` + lab MCP P6 wiring + product host identity | **Done** |
 
 #### M.6 P3 — Legacy backlog note (superseded)
 

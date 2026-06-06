@@ -2250,6 +2250,7 @@ Release / CI
 |---------|----------------|
 | Profile → wiring bridge | `pytest tests/unit/applications/test_harness_security_wiring.py -m gate` |
 | Host security materialization | `python scripts/check_harness_security_wiring.py` |
+| V-SEC STABLE promote gate (M.6 P6) | `python scripts/check_harness_security_promote_gate.py` |
 | Middleware behavior | `pytest tests/unit/applications/test_application_security_wiring.py -m gate` |
 | Integration security path | `pytest tests/integration/runtime/test_nexus_loop_security_wiring.py -m gate` |
 | Full gate | `uv run pytest -m gate -q` |
@@ -2496,6 +2497,7 @@ Run before opening a harness PR (see `scripts/`):
 | `check_harness_observability_wiring.py` | Hosts wire observability stores from `ObservabilityProfile` |
 | `check_harness_reliability_wiring.py` | Hosts wire reliability stores from `ReliabilityProfile` |
 | `check_harness_security_wiring.py` | Hosts wire V-SEC middleware from `ApplicationSecurityProfile` |
+| `check_harness_security_promote_gate.py` | Validates `harness_security_stack()` wiring (`trivy` + `semgrep`); optional live scan via `INTERGRAX_SECURITY_PROMOTE_RUN_SCAN=true` |
 | `check_harness_cost_wiring.py` | Hosts wire budget policy from `CostProfile` |
 | `check_harness_evaluation_wiring.py` | Hosts wire evaluation registry from `EvaluationProfile` |
 | `check_agents_vendor_imports.py` | Agents do not import `integrations/providers/` |
