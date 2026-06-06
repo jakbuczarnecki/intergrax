@@ -60,7 +60,7 @@ All services bind to **localhost** unless noted. Use these ports in `INTERGRAX_*
 | `observability` | elasticsearch, prometheus, clickhouse, langfuse, phoenix, mailpit |
 | `cloud` | localstack, azurite, pubsub-emulator |
 | `heavy` | temporal, vespa, selenium, keycloak, airflow |
-| `p6` | keycloak, typesense, airflow (M.6 P6 lab services) |
+| `p6` | keycloak, typesense, airflow (+ `core` PostgreSQL via manage scripts) |
 | `all` | alias — same as enabling every profile above |
 
 **Default stack** (`./manage.sh start`): `core` + `queue` + `rag` + `data` + `secrets`.

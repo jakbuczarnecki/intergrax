@@ -851,7 +851,7 @@ def create_keycloak_identity_provider(
     return _identity_provider_factory(
         env_prefix="INTERGRAX_KEYCLOAK",
         provider="keycloak",
-        default_url=config.base_url or "http://127.0.0.1:8080",
+        default_url=config.base_url or "http://127.0.0.1:8088",
         health_path="/health/ready",
         identity_provider=identity_provider,
         client=client,
@@ -1124,7 +1124,7 @@ def create_airflow_workflow_orchestrator(
     return _workflow_orchestrator_factory(
         env_prefix="INTERGRAX_AIRFLOW",
         provider="airflow",
-        default_url="http://127.0.0.1:8080",
+        default_url="http://127.0.0.1:8086",
         health_path="/health",
         workflow_orchestrator=workflow_orchestrator,
         client=client,

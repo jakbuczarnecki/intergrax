@@ -103,7 +103,7 @@ Runtime events: `GET /debug/tasks/{id}/events` when SQLite runtime events DB is 
 | `harness.tool_smoke` | `rag.retrieve`, `websearch.query` | Tool catalog smoke |
 | `harness.context_demo` | `rag.retrieve` | Context budget exercises |
 | `harness.trace_read` | `sandbox.exec` | Isolated diagnostics |
-| `harness.reliability_smoke` | `observability.query_traces`, `rag.retrieve` | Reliability / ops smoke (W-OPS.8) |
+| `harness.reliability_smoke` | `observability.query_traces`, `rag.retrieve`, `security.scan`, `workflow.trigger` | Reliability / ops smoke incl. P6 tools (W-OPS.8) |
 | `harness.policy_smoke` | `rag.retrieve`, `websearch.query` | Policy bundle smoke (W-OPS.8) |
 | `harness.stack_demo` | requires `harness.tool_smoke` | `requires_skills` chain demo (W-OPS.9) |
 
@@ -121,7 +121,9 @@ Default enabled tools: `rag.retrieve`, `websearch.query`.
 
 **Harness host identity (M.6 P6):** `wire_application_identity()` attaches OIDC bearer validation (`IdentityProviderBackend.verify_token`) alongside optional `INTERGRAX_HARNESS_API_KEY`. Lab and generic harness FastAPI hosts call this after route assembly; MCP wrapper copies `HarnessAuthState` to the outer app.
 
-**V-SEC STABLE promote gate:** `scripts/check_harness_security_promote_gate.py` validates `harness_security_stack()` wiring (`trivy` + `semgrep` in options). Set `INTERGRAX_SECURITY_PROMOTE_RUN_SCAN=true` to execute live repo scans in release pipelines.
+**V-SEC STABLE promote gate:** `scripts/check_harness_security_promote_gate.py` validates `harness_security_stack()` wiring (`trivy` + `semgrep` in options). Set `INTERGRAX_SECURITY_PROMOTE_RUN_SCAN=true` to execute scans. Release tags (`harness-release.yml`) use `INTERGRAX_SECURITY_PROMOTE_SCAN_BACKEND=cli` with Trivy + Semgrep CLIs.
+
+**P6 infra E2E (optional):** start `./manage.sh start p6` (includes `core` for PostgreSQL/Airflow), then `INTERGRAX_P6_INFRA_E2E=true uv run python scripts/check_p6_infra_health.py` or `pytest tests/integration/infra/test_p6_stack_health.py`.
 
 With `LAB_HARNESS=true`, also: `errors.capture`, `observability.query_traces`, `pagerduty.trigger_incident`, etc.
 

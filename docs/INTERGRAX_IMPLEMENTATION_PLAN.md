@@ -1267,6 +1267,7 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 | M-P6-WIRE.6 | `check_harness_security_promote_gate.py` (wiring default; optional live scan) | **Done** |
 | M-P6-WIRE.7 | Docker profile `p6` (keycloak, typesense, airflow) | **Done** |
 | M-P6-WIRE.8 | `extend_tool_profile_for_integration()` + lab MCP P6 wiring + product host identity | **Done** |
+| M-P6-OPS.1 | Release CLI security scan + P6 infra E2E script + `harness.reliability_smoke` P6 tools | **Done** |
 
 #### M.6 P3 — Legacy backlog note (superseded)
 

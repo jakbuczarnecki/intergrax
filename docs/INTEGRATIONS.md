@@ -92,7 +92,7 @@ Run backing services locally before integration tests or lab hosts. Unified stac
 ```bash
 cd infra/integration && ./manage.sh start          # default profiles
 cd infra/integration && ./manage.sh start rag      # vectors + neo4j + ollama + docling
-cd infra/integration && ./manage.sh start p6       # keycloak + typesense + airflow (M.6 P6)
+cd infra/integration && ./manage.sh start p6       # keycloak + typesense + airflow + core (PostgreSQL)
 cd infra/integration && ./manage.sh start all      # full stack
 ```
 

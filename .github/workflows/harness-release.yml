@@ -15,6 +15,15 @@ jobs:
         with:
           python-version: "3.12"
       - run: uv sync --extra dev-ci --frozen
+      - name: Install Trivy
+        uses: aquasecurity/setup-trivy@v0.2.2
+      - name: Install Semgrep
+        run: uv pip install semgrep
+      - name: V-SEC STABLE promote gate (CLI scan)
+        env:
+          INTERGRAX_SECURITY_PROMOTE_RUN_SCAN: "true"
+          INTERGRAX_SECURITY_PROMOTE_SCAN_BACKEND: "cli"
+        run: uv run python scripts/check_harness_security_promote_gate.py
       - name: Enforce W-OPS / H-APP operational evidence
         run: uv run python scripts/phase_w_ops_evidence.py --enforce
       - name: Enforce W-ADAPT runtime L4 closeout

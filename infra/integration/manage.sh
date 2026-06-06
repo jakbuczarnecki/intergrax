@@ -22,8 +22,11 @@ resolve_profiles() {
     all)
       add_profiles core queue rag data secrets observability cloud heavy all
       ;;
-    core|queue|rag|data|secrets|observability|cloud|heavy|p6)
+    core|queue|rag|data|secrets|observability|cloud|heavy)
       add_profiles "$PROFILE"
+      ;;
+    p6)
+      add_profiles core p6
       ;;
     default)
       add_profiles core queue rag data secrets
