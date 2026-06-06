@@ -129,6 +129,14 @@ def collect_operational_checks() -> OperationalMaturityEvidence:
             detail="Debug integration health API (W-OPS.10 extension)",
         ),
         OperationalHarnessCheck(
+            check_id="harness_m6_p5_health_gate",
+            passed=_run_pytest(
+                "tests/unit/integrations/providers/test_p6_m6_p5_providers.py",
+                "tests/unit/integrations/test_harness_lab_health.py::test_health_check_harness_m6_p5_probes_covers_catalog_slugs",
+            ),
+            detail="M.6 P5 harness depth probes + presets (W-OPS.10 extension)",
+        ),
+        OperationalHarnessCheck(
             check_id="shadow_eval_gate",
             passed=_run_pytest(
                 "tests/unit/runtime/architecture/test_online_evaluation.py",

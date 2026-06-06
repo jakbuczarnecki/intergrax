@@ -264,6 +264,7 @@ def test_harness_m6_p5_health_with_injected_clients() -> None:
 
 
 def test_integration_profile_harness_metrics_preset_roundtrip() -> None:
+    register_default_integrations()
     profile = presets.harness_metrics_stack()
     restored = IntegrationProfile.model_validate(profile.model_dump(mode="json"))
     assert restored.slug_for_category(IntegrationCategory.OBSERVABILITY_BACKEND.value) == "prometheus"

@@ -47,7 +47,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | **Adaptive Harness Intelligence (AHI / L4 runtime)** | [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · **§6.1t** · Band **2y** · [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · canon [§54](intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) · **Appendix K** |
 | **LLM response envelope (typed completion contract)** | [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · **§6.1v** · Band **2z** · [LLM_ADAPTERS.md](LLM_ADAPTERS.md) · **Appendix L** |
 | **Integration catalog expansion (harness ROI slugs)** | [M.6 P4 register](#m6-p4--harness-platform-expansion-done) · **§6.1w** · Band **2aa** · [INTEGRATIONS.md](INTEGRATIONS.md) |
-| **Integration harness depth (audit 2026-06-02)** | [M.6 P5 register](#m6-p5--harness-integration-depth-planned) · **§6.1x** · Band **2ab** · [INTEGRATIONS.md](INTEGRATIONS.md) |
+| **Integration harness depth (audit 2026-06-02)** | [M.6 P5 register](#m6-p5--harness-integration-depth-done--3334) · **§6.1x** · Band **2ab** · [INTEGRATIONS.md](INTEGRATIONS.md) |
 | Tier-3 application environment (self-contained deploy) | Architecture canon §7.4.8–§7.4.10 |
 | Tier-3 composition engine (manifest, wiring API) | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
 | Tier-3 application hosts (`applications/<app>/`) | [`applications/USAGE.md`](../applications/USAGE.md) |
@@ -1099,9 +1099,9 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 
 | ID | Category | Slugs | Status | Acceptance |
 |----|----------|-------|--------|------------|
-| M-P5-CAT.1 | `ci_cd` (extend) | `gitlab_ci`, `circleci`, `azure_pipelines`, `codecov` | **Planned** | Read-only workflow/check/coverage APIs on existing `CiCdBackend` |
-| M-P5-CAT.2 | `security_scanner` *(proposed)* | `trivy` | **Planned** | `SecurityScannerBackend` with `scan_image(ref) -> ScanReport`; canon §5.2.4 review before merge |
-| M-P5-CAT.3 | — *(use existing)* | `mailpit`, `localstack`, `grafana_oncall`, `opentelemetry_collector` | **Planned** | Map to existing categories (`notification_channel`, `cloud_platform`, `notification_channel`, `observability_backend`) |
+| M-P5-CAT.1 | `ci_cd` (extend) | `gitlab_ci`, `circleci`, `azure_pipelines`, `codecov` | **Done** | Read-only workflow/check/coverage APIs on existing `CiCdBackend` |
+| M-P5-CAT.2 | `security_scanner` *(proposed)* | `trivy` | **Deferred** | `SecurityScannerBackend` with `scan_image(ref) -> ScanReport`; canon §5.2.4 review before merge |
+| M-P5-CAT.3 | — *(use existing)* | `mailpit`, `localstack`, `grafana_oncall`, `opentelemetry_collector` | **Done** | Map to existing categories (`notification_channel`, `cloud_platform`, `notification_channel`, `observability_backend`) |
 
 **Tier-3 named presets (deliver with H-INT-6 closeout):**
 
@@ -1116,40 +1116,40 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 
 | Wave | ID | Slug | Category | Kind | Priority | Status | Harness ROI | Acceptance |
 |------|-----|------|----------|------|----------|--------|-------------|------------|
-| H-INT-6 | M-P5.1 | `prometheus` | observability_backend | harden | **P0** | **Planned** | Metrics SLO backbone (W-OPS.4); complements Grafana stack | Health probe; `harness_metrics_stack`; infra `:9090` |
-| H-INT-6 | M-P5.2 | `clickhouse` | observability_backend | harden | **P0** | **Planned** | OLAP eval/adaptive trends at scale | Query adapter; infra `:8123` |
-| H-INT-6 | M-P5.3 | `vault` | secrets_store | harden | **P0** | **Planned** | Prod secrets alt in `harness_production_stack` | Health probe; STABLE; infra `:8200` |
-| H-INT-6 | M-P5.4 | `pagerduty` | notification_channel | harden | **P0** | **Planned** | HITL / incident escalation (tool already wired) | Integration health + lab smoke |
-| H-INT-6 | M-P5.5 | `github` | issue_tracker | harden | **P0** | **Planned** | PR/issue context for release board | Read API; links to `github_actions` evidence |
-| H-INT-6 | M-P5.6 | `gitlab_ci` | ci_cd | greenfield | **P0** | **Planned** | GitLab pipeline status for harness release | **M-P5-CAT.1**; `CiCdBackend` read |
-| H-INT-6 | M-P5.7 | `circleci` | ci_cd | greenfield | **P0** | **Planned** | Multi-CI release evidence | **M-P5-CAT.1** |
-| H-INT-6 | M-P5.8 | `azure_pipelines` | ci_cd | greenfield | **P0** | **Planned** | Azure DevOps CI parity | **M-P5-CAT.1**; pairs with `azure_devops` issue tracker |
-| H-INT-6 | M-P5.9 | `mailpit` | notification_channel | greenfield | **P0** | **Planned** | Local SMTP/HITL without SaaS | Infra `:1025`/`:8025`; email capture tests |
-| H-INT-6 | M-P5.10 | `localstack` | cloud_platform | greenfield | **P0** | **Planned** | S3/SQS/DynamoDB smoke in CI | Infra `:4566`; pairs with `s3`/`sqs`/`dynamodb` slugs |
-| H-INT-7 | M-P5.11 | `langfuse` | observability_backend | harden | **P0** | **Planned** | LLM trace + eval export (EVAL/W-ADAPT) | Infra `:3000`; `harness_eval_stack` |
-| H-INT-7 | M-P5.12 | `phoenix` | observability_backend | harden | **P0** | **Planned** | Arize OSS trace UI for lab | Infra `:6006` |
-| H-INT-7 | M-P5.13 | `braintrust` | observability_backend | harden | **P1** | **Planned** | Online eval registry bridge | API read + export hook |
-| H-INT-7 | M-P5.14 | `mlflow` | observability_backend | harden | **P1** | **Planned** | Experiment tracking (M.6 P4 beta hardening) | STABLE promotion path |
-| H-INT-7 | M-P5.15 | `influxdb` | observability_backend | harden | **P1** | **Planned** | Adaptive KPI time-series (M.6 P4 beta) | STABLE + W-ADAPT optional export |
-| H-INT-7 | M-P5.16 | `timescaledb` | relational_store | harden | **P1** | **Planned** | Eval/adaptive hypertables on Postgres | Extends `postgresql` patterns |
-| H-INT-7 | M-P5.17 | `temporal` | message_bus | harden | **P1** | **Planned** | Long-running harness workflows | Infra `heavy` profile `:7233` |
-| H-INT-7 | M-P5.18 | `redpanda` | message_bus | harden | **P1** | **Planned** | Kafka-compat async adaptive bus (M.6 P4 beta) | STABLE + `harness_async_stack` |
-| H-INT-7 | M-P5.19 | `minio` | object_storage | harden | **P1** | **Planned** | Local S3 for eval/adaptive artifacts | Infra `:9000`; preset with `harness_eval_stack` |
-| H-INT-7 | M-P5.20 | `s3` | object_storage | harden | **P1** | **Planned** | Prod checkpoint/eval blob store | `harness_production_stack` option |
-| H-INT-8 | M-P5.21 | `neo4j` | graph_store | harden | **P1** | **Planned** | GraphRAG harness eval | Infra `:7687`; health probe |
-| H-INT-8 | M-P5.22 | `mongodb` | document_store | harden | **P1** | **Planned** | MEM platform JSON artifacts | Infra `:27017` |
-| H-INT-8 | M-P5.23 | `elasticsearch` | observability_backend | harden | **P1** | **Planned** | Log search for RuntimeEvents | Infra `:9200` |
-| H-INT-8 | M-P5.24 | `nats` | message_bus | harden | **P2** | **Planned** | Lightweight async bus | Infra `:4222` |
-| H-INT-8 | M-P5.25 | `chroma` | vector_store | harden | **P2** | **Planned** | RAG lab alternative | Infra `:8000`; thin RAG bridge |
-| H-INT-8 | M-P5.26 | `weaviate` | vector_store | harden | **P2** | **Planned** | RAG lab alternative | Infra `:8080` |
-| H-INT-8 | M-P5.27 | `launchdarkly` | feature_flag | harden | **P2** | **Planned** | Enterprise canary beside Unleash | Adaptive gate smoke |
-| H-INT-8 | M-P5.28 | `signoz` | observability_backend | harden | **P2** | **Planned** | Self-hosted OTEL APM | Optional Grafana stack alt |
-| H-INT-9 | M-P5.29 | `codecov` | ci_cd | greenfield | **P2** | **Planned** | Coverage gate in release evidence | **M-P5-CAT.1** |
-| H-INT-9 | M-P5.30 | `trivy` | security_scanner | greenfield | **P2** | **Planned** | Image/SBOM scan before STABLE promote | **M-P5-CAT.2** |
-| H-INT-9 | M-P5.31 | `grafana_oncall` | notification_channel | greenfield | **P2** | **Planned** | On-call beside Grafana stack | Webhook/API incident create |
-| H-INT-9 | M-P5.32 | `opentelemetry_collector` | observability_backend | greenfield | **P2** | **Planned** | Collector admin/health (export via `otel`) | Distinct from app OTEL export slug |
-| H-INT-9 | M-P5.33 | `snowflake` | relational_store | harden | **P2** | **Planned** | Enterprise eval analytics | Existing beta hardening only |
-| H-INT-9 | M-P5.34 | `supabase` | relational_store | harden | **P2** | **Planned** | Postgres+auth lab shortcut | Existing beta hardening only |
+| H-INT-6 | M-P5.1 | `prometheus` | observability_backend | harden | **P0** | **Done** | Metrics SLO backbone (W-OPS.4); complements Grafana stack | Health probe; `harness_metrics_stack`; infra `:9090` |
+| H-INT-6 | M-P5.2 | `clickhouse` | observability_backend | harden | **P0** | **Done** | OLAP eval/adaptive trends at scale | Query adapter; infra `:8123` |
+| H-INT-6 | M-P5.3 | `vault` | secrets_store | harden | **P0** | **Done** | Prod secrets alt in `harness_production_stack` | Health probe; STABLE; infra `:8200` |
+| H-INT-6 | M-P5.4 | `pagerduty` | notification_channel | harden | **P0** | **Done** | HITL / incident escalation (tool already wired) | Integration health + lab smoke |
+| H-INT-6 | M-P5.5 | `github` | issue_tracker | harden | **P0** | **Done** | PR/issue context for release board | Read API; links to `github_actions` evidence |
+| H-INT-6 | M-P5.6 | `gitlab_ci` | ci_cd | greenfield | **P0** | **Done** | GitLab pipeline status for harness release | **M-P5-CAT.1**; `CiCdBackend` read |
+| H-INT-6 | M-P5.7 | `circleci` | ci_cd | greenfield | **P0** | **Done** | Multi-CI release evidence | **M-P5-CAT.1** |
+| H-INT-6 | M-P5.8 | `azure_pipelines` | ci_cd | greenfield | **P0** | **Done** | Azure DevOps CI parity | **M-P5-CAT.1**; pairs with `azure_devops` issue tracker |
+| H-INT-6 | M-P5.9 | `mailpit` | notification_channel | greenfield | **P0** | **Done** | Local SMTP/HITL without SaaS | Infra `:1025`/`:8025`; email capture tests |
+| H-INT-6 | M-P5.10 | `localstack` | cloud_platform | greenfield | **P0** | **Done** | S3/SQS/DynamoDB smoke in CI | Infra `:4566`; pairs with `s3`/`sqs`/`dynamodb` slugs |
+| H-INT-7 | M-P5.11 | `langfuse` | observability_backend | harden | **P0** | **Done** | LLM trace + eval export (EVAL/W-ADAPT) | Infra `:3000`; `harness_eval_stack` |
+| H-INT-7 | M-P5.12 | `phoenix` | observability_backend | harden | **P0** | **Done** | Arize OSS trace UI for lab | Infra `:6006` |
+| H-INT-7 | M-P5.13 | `braintrust` | observability_backend | harden | **P1** | **Done** | Online eval registry bridge | API read + export hook |
+| H-INT-7 | M-P5.14 | `mlflow` | observability_backend | harden | **P1** | **Done** | Experiment tracking (M.6 P4 beta hardening) | STABLE promotion path |
+| H-INT-7 | M-P5.15 | `influxdb` | observability_backend | harden | **P1** | **Done** | Adaptive KPI time-series (M.6 P4 beta) | STABLE + W-ADAPT optional export |
+| H-INT-7 | M-P5.16 | `timescaledb` | relational_store | harden | **P1** | **Done** | Eval/adaptive hypertables on Postgres | Extends `postgresql` patterns |
+| H-INT-7 | M-P5.17 | `temporal` | message_bus | harden | **P1** | **Done** | Long-running harness workflows | Infra `heavy` profile `:7233` |
+| H-INT-7 | M-P5.18 | `redpanda` | message_bus | harden | **P1** | **Done** | Kafka-compat async adaptive bus (M.6 P4 beta) | STABLE + `harness_async_stack` |
+| H-INT-7 | M-P5.19 | `minio` | object_storage | harden | **P1** | **Done** | Local S3 for eval/adaptive artifacts | Infra `:9000`; preset with `harness_eval_stack` |
+| H-INT-7 | M-P5.20 | `s3` | object_storage | harden | **P1** | **Done** | Prod checkpoint/eval blob store | `harness_production_stack` option |
+| H-INT-8 | M-P5.21 | `neo4j` | graph_store | harden | **P1** | **Done** | GraphRAG harness eval | Infra `:7687`; health probe |
+| H-INT-8 | M-P5.22 | `mongodb` | document_store | harden | **P1** | **Done** | MEM platform JSON artifacts | Infra `:27017` |
+| H-INT-8 | M-P5.23 | `elasticsearch` | observability_backend | harden | **P1** | **Done** | Log search for RuntimeEvents | Infra `:9200` |
+| H-INT-8 | M-P5.24 | `nats` | message_bus | harden | **P2** | **Done** | Lightweight async bus | Infra `:4222` |
+| H-INT-8 | M-P5.25 | `chroma` | vector_store | harden | **P2** | **Done** | RAG lab alternative | Infra `:8000`; thin RAG bridge |
+| H-INT-8 | M-P5.26 | `weaviate` | vector_store | harden | **P2** | **Done** | RAG lab alternative | Infra `:8080` |
+| H-INT-8 | M-P5.27 | `launchdarkly` | feature_flag | harden | **P2** | **Done** | Enterprise canary beside Unleash | Adaptive gate smoke |
+| H-INT-8 | M-P5.28 | `signoz` | observability_backend | harden | **P2** | **Done** | Self-hosted OTEL APM | Optional Grafana stack alt |
+| H-INT-9 | M-P5.29 | `codecov` | ci_cd | greenfield | **P2** | **Done** | Coverage gate in release evidence | **M-P5-CAT.1** |
+| H-INT-9 | M-P5.30 | `trivy` | security_scanner | greenfield | **P2** | **Deferred** | Image/SBOM scan before STABLE promote | **M-P5-CAT.2** |
+| H-INT-9 | M-P5.31 | `grafana_oncall` | notification_channel | greenfield | **P2** | **Done** | On-call beside Grafana stack | Webhook/API incident create |
+| H-INT-9 | M-P5.32 | `opentelemetry_collector` | observability_backend | greenfield | **P2** | **Done** | Collector admin/health (export via `otel`) | Distinct from app OTEL export slug |
+| H-INT-9 | M-P5.33 | `snowflake` | relational_store | harden | **P2** | **Done** | Enterprise eval analytics | Existing beta hardening only |
+| H-INT-9 | M-P5.34 | `supabase` | relational_store | harden | **P2** | **Done** | Postgres+auth lab shortcut | Existing beta hardening only |
 
 **Explicitly excluded from M.6 P5:** CRM (Salesforce, HubSpot), payment rails, blockchain, `vespa`/`selenium` (heavy lab only), `servicenow`/`asana`/`notion`/`sharepoint`/`google_workspace` (business PM/collab), duplicate vector SaaS without infra smoke (`pinecone`, `milvus` until explicitly requested).
 
@@ -1163,6 +1163,7 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 |------|-----|---------|
 | 2026-06-02 | M-P5.0 | Register 34 harness-depth slugs from integration re-audit; §6.1x + §6.2af + Band 2ab |
 | 2026-06-02 | M-P5.1–34 | Implement 33/34 slugs: health + STABLE harden, p6 greenfield, presets, W-OPS probes; `trivy` deferred (M-P5-CAT.2) |
+| 2026-06-02 | M-P5.FU | W-OPS `harness_m6_p5_health_gate`; `IntegrationBinding` JSON dict roundtrip fix; register status sync |
 
 #### M.6 P3 — Legacy backlog note (superseded)
 
@@ -5111,10 +5112,10 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 | Order | Wave | IDs | Slugs (summary) | Priority | Status |
 |-------|------|-----|-----------------|----------|--------|
 | 0 | CAT | M-P5-CAT.1–3 | `ci_cd` extend, `security_scanner`, category mapping | **P0** | **Planned** |
-| 1 | H-INT-6 | M-P5.1–M-P5.10 | Ops/metrics/CI/local cloud: prometheus, clickhouse, vault, pagerduty, github, gitlab_ci, circleci, azure_pipelines, mailpit, localstack | **P0** | **Planned** |
-| 2 | H-INT-7 | M-P5.11–M-P5.20 | Eval/async/artifacts: langfuse, phoenix, braintrust, mlflow, influxdb, timescaledb, temporal, redpanda, minio, s3 | **P0/P1** | **Planned** |
-| 3 | H-INT-8 | M-P5.21–M-P5.28 | Data plane lab: neo4j, mongodb, elasticsearch, nats, chroma, weaviate, launchdarkly, signoz | **P1/P2** | **Planned** |
-| 4 | H-INT-9 | M-P5.29–M-P5.34 | P2 reserve: codecov, trivy, grafana_oncall, opentelemetry_collector, snowflake, supabase | **P2** | **Planned** |
+| 1 | H-INT-6 | M-P5.1–M-P5.10 | Ops/metrics/CI/local cloud: prometheus, clickhouse, vault, pagerduty, github, gitlab_ci, circleci, azure_pipelines, mailpit, localstack | **P0** | **Done** |
+| 2 | H-INT-7 | M-P5.11–M-P5.20 | Eval/async/artifacts: langfuse, phoenix, braintrust, mlflow, influxdb, timescaledb, temporal, redpanda, minio, s3 | **P0/P1** | **Done** |
+| 3 | H-INT-8 | M-P5.21–M-P5.28 | Data plane lab: neo4j, mongodb, elasticsearch, nats, chroma, weaviate, launchdarkly, signoz | **P1/P2** | **Done** |
+| 4 | H-INT-9 | M-P5.29–M-P5.34 | P2 reserve: codecov, trivy, grafana_oncall, opentelemetry_collector, snowflake, supabase | **P2** | **Done** |
 | 5 | PRE | M-P5-PRE.1 | Tier-3 presets: `harness_metrics_stack`, `harness_eval_stack`, `harness_async_stack`, `harness_ci_stack` | **P0** | **Planned** |
 
 **Explicitly excluded:** Band 3 product agents; CRM; payments — see [M.6 P5 register](#m6-p5--harness-integration-depth-planned).

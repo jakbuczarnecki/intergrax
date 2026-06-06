@@ -39,7 +39,7 @@ The **lab harness environment** treats these catalog slugs as **`stable`** (prod
 uv run pytest tests/unit/integrations/test_harness_lab_stable_stack.py -m gate -q
 ```
 
-Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 127 providers stable in one release.
+Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 135 providers stable in one release.
 
 ### M.6 P5 — Harness integration depth (Done — 33/34)
 
@@ -124,7 +124,7 @@ Catalog identity is the string **slug** (`"s3"`, `"postgresql"`) registered at r
 
 Third-party integrations **must not** extend a core enum. Register a plugin or call `register_from_manifest` from application startup.
 
-**Shipped vs plugin class:** ~127 providers register via `register_from_manifest(MANIFEST, create_*)`. External pip packages should implement `IntegrationPlugin` (`integration_manifest()` + `create_integration()`). `SqliteIntegrationPlugin` in `providers/relational_store/sqlite/plugin.py` documents the class-based pattern; shipped `register.py` keeps the manifest path for bootstrap performance.
+**Shipped vs plugin class:** ~135 providers register via `register_from_manifest(MANIFEST, create_*)`. External pip packages should implement `IntegrationPlugin` (`integration_manifest()` + `create_integration()`). `SqliteIntegrationPlugin` in `providers/relational_store/sqlite/plugin.py` documents the class-based pattern; shipped `register.py` keeps the manifest path for bootstrap performance.
 
 Tier-3 hosts should call `bootstrap_application_integration_catalog()` (not bare `register_default_integrations()`).
 
@@ -279,7 +279,7 @@ Service-level slugs (`s3`, `azure_blob`, `gcs`, …) remain available for explic
 
 ---
 
-## Implemented providers (127)
+## Implemented providers (135)
 
 All providers below are registered in `register_default_integrations()`.  
 **Status:** `stable` = production-ready catalog entry; `beta` = shipped, API may evolve.
@@ -315,7 +315,7 @@ All providers below are registered in `register_default_integrations()`.
 | `feature_flag` | 2 | `unleash`, `launchdarkly` |
 | `ci_cd` | 1 | `github_actions` |
 
-**Total unique slugs:** 127.
+**Total unique slugs:** 135.
 
 ### Implementation depth (code audit)
 
@@ -727,13 +727,13 @@ Audit against typical agent stacks (LangGraph, CrewAI, LlamaIndex, enterprise VP
 | **Low** | `reddit`, `google_places` | search_provider | **Done** | Social/geo search (full packages) |
 | **Future** | `slash_command` | interaction_surface | **Done** (M.9) | Generic slash intake |
 
-**Strong harness coverage today:** **127** integrations — observability (22), notification (11), issue trackers (8), vectors (8 incl. pgvector), secrets (5), feature flags (2), CI/CD (1), graph (3), plus M.7 stack (Vault, Neo4j, Temporal, …).
+**Strong harness coverage today:** **135** integrations — observability (22+), notification (11+), issue trackers (8), vectors (8 incl. pgvector), secrets (5), feature flags (2), CI/CD (5 incl. gitlab_ci), graph (3), plus M.7 stack (Vault, Neo4j, Temporal, …).
 
 **Tool Library:** `errors.capture`, `gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`. Optional deps: ``uv pip install 'Intergrax-ai[integrations-harness]'``.
 
 ---
 
-All **127** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
+All **135** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
 
 ```bash
 uv run python scripts/generate_integration_usage_docs.py

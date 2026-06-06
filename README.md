@@ -383,7 +383,7 @@ Shared infrastructure used by all agents through **one canonical path** per conc
 | Concern | Module | Documentation |
 |---------|--------|---------------|
 | **LLM adapters** | `intergrax/llm_adapters/` — 19 providers | [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) |
-| **Integration Library** | `intergrax/integrations/` — 127 providers | [INTEGRATIONS.md](docs/INTEGRATIONS.md) |
+| **Integration Library** | `intergrax/integrations/` — 135 providers | [INTEGRATIONS.md](docs/INTEGRATIONS.md) |
 | **Tool Library** | `intergrax/tools/` — atomic LLM/MCP operations | [TOOLS.md](docs/TOOLS.md) |
 | **Skill Library** | `intergrax/skills/` — composable capability packs | [SKILLS.md](docs/SKILLS.md) |
 | **RAG** | `intergrax/rag/` — embeddings, vector stores, ingest | Architecture [§7.1.2](docs/intergrax_runtime_architecture.md) |
