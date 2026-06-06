@@ -2806,7 +2806,7 @@ Total: 70 deliverables
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| W-ADAPT-7.1 | **Default `AdaptiveProfile`** on `lab_application` + reference apps | **Done** | High | All `enabled=False` initially |
+| W-ADAPT-7.1 | **Default `AdaptiveProfile`** on `lab_application` + reference apps | **Done** | High | Lab: `enabled=True` observe (`LAB_ADAPTIVE_OBSERVE`); product refs: `enabled=False` |
 | W-ADAPT-7.2 | **`BusinessOutcomeWebhook` contract** — optional Tier-3 signal for `business_outcome` | **Done** | Medium | Signed payload validation |
 | W-ADAPT-7.3 | **`AGENT_CREATION_GUIDE.md` Appendix V** — Adaptive Harness authoring | **Done** | High | Control plane map |
 | W-ADAPT-7.4 | **`HARNESS_ENVIRONMENT.md`** — adaptive ops section + env vars | **Done** | Medium | Lab enable observe mode docs |
@@ -4007,7 +4007,7 @@ Paydown Wave P3 (optional polish):
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
 
-**Policy (2026-06-06):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2x** platform closeouts = **Done**. **Band 2y (W-ADAPT)** = primary feature queue. **Band 2z (M-LLM-R)** = parallel Tier-0 refactor (typed LLM response envelope). Band 3 = **frozen** unless leadership reprioritizes.
+**Policy (2026-06-06):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2z** platform closeouts = **Done** (including W-ADAPT + M-LLM-R). Band 3 = **frozen** unless leadership reprioritizes.
 
 ```text
 BAND 1:  Harness maintenance — gate + audit scripts (§6.1) — every PR
@@ -6486,6 +6486,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | 2026-06-02 | W-ADAPT-5.1–5.12 | Verify (L4-V): VerificationLoop, auto-rollback, L4 runtime closeout gate, runbooks |
 | 2026-06-02 | W-ADAPT-6.1–6.5 | ProcessPatternMiner, trace sequence reader, pattern report export |
 | 2026-06-02 | W-ADAPT-7.1–7.7 | Tier-3 AdaptiveProfile wiring, debug routes, business outcome webhook, acceptance E2E |
+| 2026-06-02 | W-ADAPT-OPS | Lab L4-O observe default (`LAB_ADAPTIVE_OBSERVE`); CI/release `--enforce-l4-runtime`; canon §54 + AHIA sync |
 
 ---
 
@@ -6545,4 +6546,4 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ---
 
-*Plan synced (2026-06-02). **Harness platform** bands 1–2x **Done**; **Band 2y W-ADAPT** **Done** (70/70); **Band 2z M-LLM-R** **Done** (39/39). Gate: **776 passed**. **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance + [§6.3](#63-end-of-plan--deferred-product-work-only) product prioritization. **Every PR:** §6.1 maintenance.*
+*Plan synced (2026-06-02). **Harness platform** bands 1–2x **Done**; **Band 2y W-ADAPT** **Done** (70/70); **Band 2z M-LLM-R** **Done** (39/39). Gate: **778 passed**. **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance + [§6.3](#63-end-of-plan--deferred-product-work-only) product prioritization. **Every PR:** §6.1 maintenance.*

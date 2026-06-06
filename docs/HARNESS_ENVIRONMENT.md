@@ -259,10 +259,13 @@ Current baseline delivered (Phase V V1):
 
 ### Adaptive Harness Intelligence ops (W-ADAPT-7)
 
-Lab and reference apps ship with `AdaptiveProfile(enabled=False, mode="observe")` by default. Enable closed-loop behavior only in controlled environments.
+**Lab host (`lab_application`):** `AdaptiveProfile(enabled=True, mode="observe")` by default — collects `HarnessOutcomeSignal` on every Nexus run without apply/shadow/canary. Disable with `LAB_ADAPTIVE_OBSERVE=false`.
+
+**Reference product hosts** (`legal_application`, `poc_template_application`, `research_application`): `AdaptiveProfile(enabled=False, mode="observe")` — enable closed-loop behavior only in controlled environments.
 
 | Variable / flag | Purpose |
 |-----------------|--------|
+| `LAB_ADAPTIVE_OBSERVE` | When `true` (default), lab host wires `SignalCollector` (L4-O observe) |
 | `AdaptiveProfile.enabled` | Master switch for adaptive stores, executor, and signal collector |
 | `AdaptiveProfile.mode` | `observe` \| `recommend` \| `shadow` \| `canary` \| `apply` |
 | `AdaptiveProfile.signal_store_path` | SQLite path for harness outcome signals |

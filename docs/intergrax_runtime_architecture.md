@@ -5366,7 +5366,7 @@ code MUST NOT import CV/ML vendor SDKs when a catalog path exists.
 
 # 54. Adaptive Harness Intelligence (AHI) — L4 Runtime Addendum
 
-**Status:** Architecture RFC accepted — **implementation not started** (Phase W-ADAPT)  
+**Status:** Architecture RFC — **implemented** (Phase W-ADAPT **Done**, 70/70, Wave 0–7)  
 **Full specification:** [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md)  
 **Target alignment:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md) §25 · L4 maturity in [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md)
 
@@ -5381,24 +5381,41 @@ Define how Intergrax evolves from **L4 governance contracts** (Phase V `adaptive
 | Term | Meaning in Intergrax |
 |------|----------------------|
 | **Adaptive Harness Intelligence (AHI)** | Platform capability — evidence-driven harness improvement |
-| **Adaptive Control Plane (ACP)** | Tier-1 subsystem in `intergrax/runtime/adaptive/` (planned) |
+| **Adaptive Control Plane (ACP)** | Tier-1 subsystem in `intergrax/runtime/adaptive/` (**Done**) |
 | **Classical RL** | **Not** the v1 implementation model — rejected for auditability and policy-first constraints |
 | **Policy learning** | Bounded refinement of `RuntimePolicyBundle` fragments with mandatory human gate |
 
-## 54.3 Current state vs target
+## 54.3 Implementation state (Phase W-ADAPT — Done)
 
-| Capability | Today (Phase V) | Target (Phase W-ADAPT) |
-|------------|-----------------|------------------------|
-| Adaptive loop envelopes | ✅ `adaptive_governance.py` | Reuse |
-| L4 CI gate (governance) | ✅ `phase_v_closeout_gate.py --enforce-l4` | Extend with runtime-L4 evidence |
-| Signal collection | ⚠️ Partial (metrics, eval, guard — not unified) | `HarnessOutcomeSignal` + `SignalCollector` |
-| Proposal generation | ⚠️ Sample proposals in tests/reports only | `AdaptationEngine` |
-| Profile versioning | ❌ | `ProfileVersionStore` |
-| Shadow/canary/apply | ⚠️ Shadow eval hook only | `AdaptationExecutor` |
-| Verification + rollback | ❌ | `VerificationLoop` |
-| Process pattern mining | ❌ | `ProcessPatternMiner` |
+| Capability | Status | Module / artifact |
+|------------|--------|-------------------|
+| Adaptive loop envelopes | **Done** | `adaptive_governance.py` (reuse) |
+| L4 CI gate (governance) | **Done** | `phase_v_closeout_gate.py --enforce-l4` |
+| L4 CI gate (runtime) | **Done** | `phase_w_adapt_closeout_gate.py --enforce-l4-runtime` |
+| Signal collection | **Done** | `HarnessOutcomeSignal`, `SignalCollector`, Nexus/RuntimeEngine hooks |
+| Proposal generation | **Done** | `AdaptationEngine` + four sub-engines |
+| Profile versioning | **Done** | `ProfileVersionStore`, lifecycle, pointer store |
+| Shadow/canary/apply | **Done** | `AdaptationExecutor` |
+| Verification + rollback | **Done** | `VerificationLoop`, auto-rollback, loop apply blocks |
+| Process pattern mining | **Done** | `ProcessPatternMiner`, `PersistedTraceSequenceReader` |
+| Tier-3 wiring | **Done** | `AdaptiveProfile`, `wire_adaptive_profile()` |
+| Lab observe default | **Done** | `lab_application` — `enabled=True`, `mode=observe` (`LAB_ADAPTIVE_OBSERVE`) |
+| Ops reports + debug | **Done** | `phase_w_adapt_report.py`, `/debug/adaptive/*` |
 
-**Interpretation:** Phase V achieved **L4 governance readiness**. AHI closes **L4 runtime readiness**.
+**Interpretation:** Phase V achieved **L4 governance readiness**. Phase W-ADAPT (Band 2y) achieved **L4 runtime readiness** in code; production **30-day utility evidence** is collected when lab hosts run with observe enabled (see HARNESS_ENVIRONMENT.md).
+
+### 54.3a Pre-implementation gap (historical — closed 2026-06-02)
+
+The table below recorded the audit gap **before** W-ADAPT delivery. Retained for traceability only.
+
+| Capability | Pre-W-ADAPT | Delivered in W-ADAPT |
+|------------|-------------|----------------------|
+| Signal collection | Partial | W-ADAPT-1.* |
+| Proposal generation | Sample only | W-ADAPT-2.* |
+| Profile versioning | Missing | W-ADAPT-3.* |
+| Shadow/canary/apply | Shadow eval hook only | W-ADAPT-3–4.* |
+| Verification + rollback | Missing | W-ADAPT-5.* |
+| Process pattern mining | Missing | W-ADAPT-6.* |
 
 ## 54.4 Architectural placement
 
@@ -5474,14 +5491,14 @@ Domain strategic intelligence (e.g. Problem Radar) remains **Tier-2 agent** scop
 3. **Every apply** creates `ProfileVersionRecord` with rollback pointer.
 4. **Capability graph compatibility** mandatory before skill/policy mutations.
 5. **Runtime events** for all adaptive actions: `ADAPTIVE_SIGNAL_RECORDED`, `ADAPTIVE_PROPOSAL_*`, `ADAPTIVE_PROFILE_APPLIED`, `ADAPTIVE_PROFILE_ROLLBACK`.
-6. **Default Tier-3 config:** `AdaptiveProfile.enabled = False`, `mode = observe`.
+6. **Default Tier-3 config:** product reference hosts — `AdaptiveProfile.enabled = False`, `mode = observe`. **Lab host** — `enabled = True`, `mode = observe` (`LAB_ADAPTIVE_OBSERVE`, default on); apply/shadow/canary require explicit mode change.
 
 ## 54.11 L4 runtime acceptance (extends Phase V §L4 gate)
 
 Runtime L4 is satisfied only when **all** hold:
 
 1. Phase V L3 + governance L4 gates green.
-2. Phase W-ADAPT waves 1–5 complete; `pytest -m gate` green.
+2. Phase W-ADAPT waves 1–7 complete; `pytest -m gate` green; `phase_w_adapt_closeout_gate.py --enforce-l4-runtime` in CI.
 3. **Measurable improvement:** mean utility of candidate profiles ≥ baseline + threshold on ≥ 3 golden scenarios over 30-day window.
 4. **Zero unapproved policy-learning applies** in production.
 5. Rollback drill documented and executed.
@@ -5494,13 +5511,19 @@ Governance-only L4 (envelope unit tests) **does not** satisfy runtime L4.
 |----------|-------------------|
 | Full AHIA document | `docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md` |
 | ADR | `docs/adr/ADR-ADAPT-001.md` — governed AHI over classical RL (**Accepted**) |
-| Planned phase | **Phase W-ADAPT** in `INTERGRAX_IMPLEMENTATION_PLAN.md` — **70 tasks**, Band 2y, Appendix K — Wave 0–4 **Done** (46/70) |
-| Runtime package | `intergrax/runtime/adaptive/` — Wave 0–4 **Done** (apply, rollback, canary, AdaptiveProfile wiring) |
+| Phase register | **Phase W-ADAPT** — **70/70 Done**, Band 2y, Appendix K, Wave 0–7 |
+| Runtime package | `intergrax/runtime/adaptive/` — **46 modules**, public exports in `__init__.py` |
 | Profile pointers | `build/adaptive_harness/profile_pointers.db` |
+| Signal store | `build/adaptive_harness/signals.db` (when observe enabled) |
 | Signal report | `scripts/phase_w_adapt_report.py` → `build/adaptive_harness/signal_trends.json` |
 | Proposal report | `scripts/phase_w_adapt_report.py` → `build/adaptive_harness/proposals.json` |
+| Pattern report | `scripts/phase_w_adapt_report.py --patterns-output` → `process_patterns.json` |
+| Verification report | `build/adaptive_harness/verification_report.json` |
+| L4 runtime evidence | `build/adaptive_harness/l4_runtime_evidence.json` |
 | Reuse | `adaptive_governance.py`, `runtime_governance_bridge.py`, `execution_guard.py`, `evaluation_registry_trends.py` |
-| Closeout script (planned) | `scripts/phase_w_adapt_closeout_gate.py` |
+| Closeout script | `scripts/phase_w_adapt_closeout_gate.py` (`--enforce-l4-runtime`; CI + release) |
+| Runbooks | `runbook/adaptive/rollback_profile.md`, `approve_policy_learning.md`, `shadow_failure_triage.md` |
+| Authoring | `AGENT_CREATION_GUIDE.md` Appendix V |
 
 ## 54.13 Forbidden patterns
 

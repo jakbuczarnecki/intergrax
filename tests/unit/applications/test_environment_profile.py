@@ -40,6 +40,21 @@ def test_lab_manifest_with_environment_wiring() -> None:
     assert wiring.build_context.environment is env
 
 
+def test_lab_environment_profile_adaptive_observe_enabled_by_default() -> None:
+    settings = LabApplicationSettings()
+    env = build_lab_environment_profile(settings)
+    assert env.adaptive_profile.enabled is True
+    assert env.adaptive_profile.mode == "observe"
+    assert env.adaptive_profile.debug_readonly_routes is True
+
+
+def test_lab_environment_profile_adaptive_observe_disabled_via_settings() -> None:
+    settings = LabApplicationSettings(adaptive_observe_enabled=False)
+    env = build_lab_environment_profile(settings)
+    assert env.adaptive_profile.enabled is False
+    assert env.adaptive_profile.mode == "observe"
+
+
 def test_resolve_llm_adapter_precedence() -> None:
     from intergrax.llm_adapters.registry.profile import LLMProfile
 

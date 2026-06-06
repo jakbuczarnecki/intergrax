@@ -21,6 +21,7 @@ Universal **Harness lab** — multi-agent roster, debug API, interactions, sched
 ## Manifest environment
 
 - `build_lab_environment_profile(settings)` embedded in `manifest.environment`
+- **Adaptive (L4-O):** `AdaptiveProfile(enabled=True, mode=observe)` by default — `LAB_ADAPTIVE_OBSERVE=false` to disable signal collection
 
 ## Dependencies
 

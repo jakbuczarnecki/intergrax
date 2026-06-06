@@ -45,7 +45,7 @@ def build_lab_environment_profile(
         env.policy_rules = PolicyRulesProfile(rules_path=_LAB_POLICY_RULES)
     env.adaptive_profile = env.adaptive_profile.model_copy(
         update={
-            "enabled": False,
+            "enabled": settings.adaptive_observe_enabled,
             "mode": "observe",
             "debug_readonly_routes": True,
         }

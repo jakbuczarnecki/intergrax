@@ -115,7 +115,7 @@ Harness (Nexus + app wiring)
 
 **Target reference model:** [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md) — policy-first, composable-by-default, trace-everything, human-governed autonomy, progressive extensibility.
 
-**L4 differentiation (planned):** [Adaptive Harness Intelligence Architecture](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) — governed closed-loop harness improvement (observe → propose → gate → apply → verify); canon [§54](docs/intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum).
+**L4 differentiation (Done):** [Adaptive Harness Intelligence Architecture](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) — governed closed-loop harness improvement (observe → propose → gate → apply → verify); lab observe enabled by default; canon [§54](docs/intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum).
 
 ---
 
@@ -745,7 +745,7 @@ This is **not classical reinforcement learning** (neural policy training, uncons
 | **What it does** | Observes run outcomes → proposes versioned profile changes → validates through governance → applies via shadow/canary → verifies improvement → rolls back on failure |
 | **What it discovers** | Operational patterns in traces (tool/agent/HITL sequences), routing inefficiencies, cost anomalies, eval regressions |
 | **What stays human-governed** | Policy-learning mutations, promotion to production traffic, skill/workflow creation from mined patterns |
-| **Current status** | **Done** — Wave **W-ADAPT-0–7** complete (70/70): observe → recommend → shadow → apply → verify → patterns → Tier-3 wiring. |
+| **Current status** | **Done** — Wave **W-ADAPT-0–7** complete (70/70). **Lab** collects signals in L4-O observe mode by default (`LAB_ADAPTIVE_OBSERVE=true`). |
 
 **Primary document:** [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) — full business case, component specification, data contracts, flow diagrams, phased roadmap (W-ADAPT-0 through W-ADAPT-7), KPIs, and L4 runtime acceptance gates.
 

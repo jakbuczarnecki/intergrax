@@ -30,6 +30,7 @@ class LabApplicationSettings:
     harness: bool = False
     otel_enabled: bool = True
     strict_harness: bool = False
+    adaptive_observe_enabled: bool = True
 
     @property
     def requires_harness_api_key(self) -> bool:
@@ -116,6 +117,11 @@ class LabApplicationSettings:
             "true",
             "yes",
         }
+        adaptive_observe = (os.getenv("LAB_ADAPTIVE_OBSERVE") or "true").strip().lower() not in {
+            "0",
+            "false",
+            "no",
+        }
         return cls(
             environment=environment,
             route_prefix=prefix,
@@ -134,4 +140,5 @@ class LabApplicationSettings:
             harness=harness,
             otel_enabled=otel_enabled,
             strict_harness=strict_harness,
+            adaptive_observe_enabled=adaptive_observe,
         )
