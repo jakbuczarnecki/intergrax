@@ -55,6 +55,7 @@ from intergrax.runtime.nexus.tracing.runtime.harness_shadow_eval_recorded import
 )
 from intergrax.runtime.nexus.tracing.runtime.runtime_run_start import RuntimeRunStartDiagV1
 from intergrax.runtime.architecture.multi_agent_coordination import PlanningConstraints
+from intergrax.runtime.adaptive.signal_emission import record_runtime_engine_outcome_signal
 from intergrax.runtime.architecture.runtime_governance_bridge import RuntimeArchitectureGovernanceBridge
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
@@ -256,6 +257,12 @@ class RuntimeEngine:
                         request=request,
                         state=state,
                         runtime_answer=runtime_answer,
+                    )
+                    self._maybe_record_adaptive_outcome_signal(
+                        request=request,
+                        state=state,
+                        runtime_answer=runtime_answer,
+                        start_perf=start_perf,
                     )
 
                     # Final trace entry for this request.
@@ -513,6 +520,37 @@ class RuntimeEngine:
                 score=observation.score,
                 observation_id=observation.observation_id,
             ),
+        )
+
+    def _maybe_record_adaptive_outcome_signal(
+        self,
+        *,
+        request: RuntimeRequest,
+        state: RuntimeState,
+        runtime_answer: RuntimeAnswer,
+        start_perf: float,
+    ) -> None:
+        """Optional adaptive signal when ``RuntimeConfig.signal_collector`` is wired (W-ADAPT-1.11)."""
+        collector = state.context.config.signal_collector
+        if collector is None:
+            return
+        elapsed_ms = int((time.perf_counter() - start_perf) * 1000)
+        total_tokens = 0
+        actual_cost: float | None = None
+        if state.llm_usage_tracker is not None:
+            report = state.llm_usage_tracker.build_report()
+            total_tokens = report.total.total_tokens
+            actual_cost = float(report.total.cost) if report.total.cost is not None else None
+        record_runtime_engine_outcome_signal(
+            collector,
+            request=request,
+            run_id=state.run_id,
+            answer=runtime_answer.answer,
+            latency_ms=elapsed_ms,
+            total_tokens=total_tokens,
+            actual_cost=actual_cost,
+            run_budget=state.context.config.run_budget,
+            evaluation_registry=state.context.config.evaluation_registry,
         )
 
     async def _run_with_timeout(

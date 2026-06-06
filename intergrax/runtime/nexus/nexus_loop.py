@@ -63,6 +63,10 @@ from intergrax.runtime.task.task_trace import PersistingTaskTraceEmitter, TaskTr
 from intergrax.agents.uaep import UAEPExecutor
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
+from intergrax.runtime.adaptive.signal_collector import SignalCollector
+from intergrax.runtime.adaptive.signal_emission import record_task_outcome_signal
+from intergrax.runtime.architecture.online_evaluation_registry import OnlineEvaluationRegistry
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
 
@@ -103,6 +107,9 @@ class NexusLoop:
         runtime_events_db_path: Optional[Path] = None,
         task_memory_store: Optional[TaskMemoryPersistence] = None,
         task_memory_db_path: Optional[Path] = None,
+        signal_collector: SignalCollector | None = None,
+        evaluation_registry: OnlineEvaluationRegistry | None = None,
+        run_budget: RunBudget | None = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -171,6 +178,9 @@ class NexusLoop:
         self._trace_emitter = trace_emitter
         self._trace_store = trace_store
         self._current_task: Optional[Task] = None
+        self._signal_collector = signal_collector
+        self._evaluation_registry = evaluation_registry
+        self._run_budget = run_budget
         trace_reader = trace_store if isinstance(trace_store, RunTraceReader) else None
         self._events = NexusRuntimeEventPublisher(
             self._event_bus,
@@ -371,7 +381,19 @@ class NexusLoop:
             )
         except NexusLifecycleHookError:
             pass
+        self._maybe_record_adaptive_outcome_signal(task, result)
         return result
+
+    def _maybe_record_adaptive_outcome_signal(self, task: Task, result: TaskResult) -> None:
+        if self._signal_collector is None:
+            return
+        record_task_outcome_signal(
+            self._signal_collector,
+            task=task,
+            result=result,
+            evaluation_registry=self._evaluation_registry,
+            run_budget=self._run_budget,
+        )
 
     def _build_result(
         self,

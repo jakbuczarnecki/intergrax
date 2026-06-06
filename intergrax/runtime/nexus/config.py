@@ -18,6 +18,7 @@ if TYPE_CHECKING:
         EvaluationProfile,
     )
     from intergrax.runtime.architecture.online_evaluation_registry import OnlineEvaluationRegistry
+    from intergrax.runtime.adaptive.signal_collector import SignalCollector
 
 from intergrax.rag.profiles.runtime_rag_sync import sync_rag_profile_from_runtime_config
 from intergrax.runtime.nexus.config_sections import (
@@ -298,6 +299,7 @@ class RuntimeConfig:
     security_profile: Optional["ApplicationSecurityProfile"] = None
     evaluation_profile: Optional["EvaluationProfile"] = None
     evaluation_registry: Optional["OnlineEvaluationRegistry"] = None
+    signal_collector: Optional["SignalCollector"] = None
 
     prompt_catalog_path: Optional[str] = None
 

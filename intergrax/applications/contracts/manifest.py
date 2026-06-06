@@ -14,6 +14,7 @@ import re
 from typing import Any, Callable
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic.json_schema import SkipJsonSchema
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.applications.contracts.agent_ref import qualname_for_agent, qualname_for_callable
@@ -54,7 +55,7 @@ class AgentBinding(BaseModel):
 
     model_config = ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
-    agent_type: type[Agent] | None = Field(
+    agent_type: SkipJsonSchema[type[Agent] | None] = Field(
         default=None,
         description="Tier-2 agent class (preferred — checked at authoring time)",
         exclude=True,
@@ -63,7 +64,7 @@ class AgentBinding(BaseModel):
         default=None,
         description="Serialized class path; auto-filled from agent_type when mounting",
     )
-    factory: Callable[..., Any] | None = Field(
+    factory: SkipJsonSchema[Callable[..., Any] | None] = Field(
         default=None,
         description="Typed Tier-3 factory callable (preferred over factory_path)",
         exclude=True,

@@ -39,7 +39,9 @@ def register_default_skills(
 
 def reset_default_skills_for_tests() -> None:
     global _BOOTSTRAPPED
+    from intergrax.core.catalog_bootstrap import reset_tier0_catalog_bootstrap_for_tests
     from intergrax.skills.registry.catalog import clear_skill_catalog
 
     clear_skill_catalog()
+    reset_tier0_catalog_bootstrap_for_tests()
     _BOOTSTRAPPED = False

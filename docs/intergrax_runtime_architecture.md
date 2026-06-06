@@ -5495,7 +5495,8 @@ Governance-only L4 (envelope unit tests) **does not** satisfy runtime L4.
 | Full AHIA document | `docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md` |
 | ADR | `docs/adr/ADR-ADAPT-001.md` — governed AHI over classical RL (**Accepted**) |
 | Planned phase | **Phase W-ADAPT** in `INTERGRAX_IMPLEMENTATION_PLAN.md` — **70 tasks**, Band 2y, Appendix K — Wave 0 **Done** (5/70) |
-| Runtime package | `intergrax/runtime/adaptive/` — scaffold **Done** (W-ADAPT-0.3) |
+| Runtime package | `intergrax/runtime/adaptive/` — Wave 0–1 **Done** (contracts, SignalStore, SignalCollector, utility, hooks) |
+| Signal report | `scripts/phase_w_adapt_report.py` → `build/adaptive_harness/signal_trends.json` |
 | Reuse | `adaptive_governance.py`, `runtime_governance_bridge.py`, `execution_guard.py`, `evaluation_registry_trends.py` |
 | Closeout script (planned) | `scripts/phase_w_adapt_closeout_gate.py` |
 
