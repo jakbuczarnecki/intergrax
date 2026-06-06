@@ -28,6 +28,13 @@ def test_adaptive_package_schema_version() -> None:
     assert ADAPTIVE_PACKAGE_SCHEMA_VERSION == "1.0.0"
 
 
+def test_adaptive_package_exports_adaptation_engine() -> None:
+    from intergrax.runtime.adaptive import AdaptationEngine, AdaptationScheduler
+
+    assert AdaptationEngine is not None
+    assert AdaptationScheduler is not None
+
+
 def test_lifecycle_modes_are_distinct() -> None:
     codes = {mode.value for mode in AdaptiveLifecycleMode}
     assert codes == {"l4_o", "l4_r", "l4_s", "l4_c", "l4_a", "l4_v"}
