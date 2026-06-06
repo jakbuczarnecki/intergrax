@@ -4,8 +4,9 @@
 
 from __future__ import annotations
 
-import json
 from typing import Any, Dict, List
+
+from intergrax.llm_adapters.contracts.tool_call import LLMToolCall, tool_calls_from_openai_message
 
 
 def openai_tools_to_anthropic(tools_schema: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -70,30 +71,6 @@ def openai_tools_to_bedrock_converse(tools_schema: List[Dict[str, Any]]) -> List
     return out
 
 
-def extract_openai_tool_calls(message: Any) -> List[Dict[str, Any]]:
-    """Extract tool_calls from an OpenAI-style chat completion message object."""
-    raw = getattr(message, "tool_calls", None) or []
-    out: List[Dict[str, Any]] = []
-    for tc in raw:
-        fn = getattr(tc, "function", None)
-        if fn is None and isinstance(tc, dict):
-            fn = tc.get("function")
-        name = getattr(fn, "name", None) if fn is not None else None
-        args = getattr(fn, "arguments", None) if fn is not None else None
-        if name is None and isinstance(fn, dict):
-            name = fn.get("name")
-            args = fn.get("arguments")
-        tc_id = getattr(tc, "id", None) or (tc.get("id") if isinstance(tc, dict) else None)
-        if not name:
-            continue
-        out.append(
-            {
-                "id": tc_id or "",
-                "type": "function",
-                "function": {
-                    "name": name,
-                    "arguments": args if isinstance(args, str) else json.dumps(args or {}, ensure_ascii=False),
-                },
-            }
-        )
-    return out
+def extract_openai_tool_calls(message: Any) -> tuple[LLMToolCall, ...]:
+    """Extract typed tool_calls from an OpenAI-style chat completion message object."""
+    return tool_calls_from_openai_message(message)

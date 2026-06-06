@@ -87,7 +87,7 @@ class WebSearchAnswerer:
         )
 
         # 4) Call LLM via adapter
-        answer_text = self.adapter.generate_messages(
+        answer_response = self.adapter.generate_messages(
             messages,
             temperature=temperature,
             max_tokens=max_tokens,
@@ -95,7 +95,7 @@ class WebSearchAnswerer:
         )
 
         return WebSearchAnswer(
-            answer=answer_text,
+            answer=answer_response.content,
             messages=messages,
             web_results=web_results,
         )

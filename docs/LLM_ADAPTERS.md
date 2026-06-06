@@ -1,10 +1,74 @@
 # Intergrax LLM Adapters
 
-**Last updated:** 2026-06-02
+**Last updated:** 2026-06-06
 
 Tier-0 LLM layer — `LLMAdapter`, registry, `LLMProfile`. Outside Integration Library (§5.2.2).
 
-**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §33 · [MODALITY.md](MODALITY.md) (Planes A/B/C) · [applications/USAGE.md](../applications/USAGE.md) · Phase **M-LLM** · Phase **W-ML** · Phase **V-COST / V-EVAL / V-SEC**
+**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §33 · [MODALITY.md](MODALITY.md) (Planes A/B/C) · [applications/USAGE.md](../applications/USAGE.md) · Phase **M-LLM** · Phase **M-LLM-R** · Phase **W-ML** · Phase **V-COST / V-EVAL / V-SEC** · [ADR-LLM-001](adr/ADR-LLM-001.md)
+
+---
+
+## Response envelope (M-LLM-R)
+
+All adapter completion methods return typed envelopes — **not** bare `str` or untyped dicts.
+
+| Method | Return type |
+|--------|-------------|
+| `generate_messages` | `LLMAdapterResponse` |
+| `generate_with_tools` | `LLMAdapterResponse` |
+| `stream_messages` / `stream_with_tools` | `Iterable[LLMStreamEvent]` |
+| `generate_structured` | `LLMStructuredResult[T]` |
+
+### `LLMAdapterResponse`
+
+Primary fields:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `content` | `str` | Assistant text (alias: `.text`) |
+| `finish_reason` | `LLMFinishReason` | Normalized stop reason |
+| `usage` | `LLMTokenUsage` | Per-call token accounting |
+| `model` / `provider` | `str` | Identity metadata |
+| `response_id` | `str \| None` | Provider correlation id |
+| `refusal` | `str \| None` | Safety/refusal signal when present |
+| `tool_calls` | `tuple[LLMToolCall, ...]` | Native tool calls |
+| `provider_extensions` | `LLMProviderExtensions` | Optional provider-specific slices |
+
+Example:
+
+```python
+from intergrax.llm_adapters import LLMAdapter, LLMAdapterResponse
+
+completion: LLMAdapterResponse = adapter.generate_messages(messages, run_id=run_id)
+answer = completion.content
+if completion.usage:
+    print(completion.usage.total_tokens)
+for tc in completion.tool_calls:
+    plan_args = tc.arguments_json
+```
+
+Build helpers (adapter internals): `build_adapter_response`, `partial_stream_event`, `final_stream_event` in `intergrax/llm_adapters/_shared/adapter_response_builders.py`.
+
+Call lifecycle helper (M-LLM-R.2.6): `LLMCallLifecycle` in `intergrax/llm_adapters/_shared/call_lifecycle.py` — shared `begin_call` / `end_call` + usage sync for provider adapters.
+
+### Trace and replay bridge (M-LLM-R.7.2)
+
+`CoreLLMStep` emits `CoreLLMCallRecordedDiagV1` on each successful LLM call. Persisted Nexus traces map to replay DTOs via:
+
+- `intergrax/runtime/replay/trace_replay_bridge.py` — `serialized_trace_events_to_replay_dtos`
+- `intergrax/runtime/replay/persisted_trace_event_store.py` — `PersistedRunTraceEventStore` (`TraceEventStore` over `RunTraceReader`)
+- `intergrax/runtime/replay/llm_call_mapper.py` — `llm_call_info_from_adapter_response`
+
+### Adaptive harness hook (M-LLM-R.7.5)
+
+Optional per-call metadata on harness outcome signals: pass `LLMCallSummary` into `SignalAssemblyInput.last_llm_call` (from `intergrax/runtime/adaptive/llm_call_summary.py`). Fields land on `HarnessOutcomeSignal` as `last_llm_*` columns.
+
+### CI guards
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/check_llm_adapter_typed_returns.py` | ABC public methods must not return bare `str` / dict |
+| `scripts/check_agents_llm_adapter_response.py` | Tier-2 agents must not annotate adapter returns as `str` |
 
 ---
 

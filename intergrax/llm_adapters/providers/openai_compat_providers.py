@@ -1,16 +1,21 @@
 # © Artur Czarnecki. All rights reserved.
-# Integrax framework – proprietary and confidential.
+# Intergrax framework – proprietary and confidential.
 
 """OpenAI Chat Completions-compatible provider adapters."""
 
 from __future__ import annotations
 
 import os
-from typing import Optional
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
 
 from openai import OpenAI
 
+from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.providers.openai_compat_factory import (
     OpenAICompatProviderConfig,
     create_openai_compat_adapter,
@@ -27,7 +32,7 @@ class _CompatAdapterBase(OpenAIChatCompletionsAdapter):
         model: Optional[str] = None,
         base_url: Optional[str] = None,
         api_key: Optional[str] = None,
-        **defaults,
+        **defaults: Any,
     ) -> None:
         self._delegate = create_openai_compat_adapter(
             self._CONFIG,
@@ -42,8 +47,115 @@ class _CompatAdapterBase(OpenAIChatCompletionsAdapter):
         self.call_config = self._delegate.call_config
         self.usage = self._delegate.usage
 
-    def __getattr__(self, name: str):
-        return getattr(self._delegate, name)
+    def generate_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
+    ) -> LLMAdapterResponse:
+        return self._delegate.generate_messages(
+            messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            run_id=run_id,
+        )
+
+    def stream_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
+    ) -> Iterable[LLMStreamEvent]:
+        return self._delegate.stream_messages(
+            messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            run_id=run_id,
+        )
+
+    def generate_with_tools(
+        self,
+        messages: Sequence[ChatMessage],
+        tools_schema: List[Dict[str, Any]],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        run_id: Optional[str] = None,
+    ) -> LLMAdapterResponse:
+        return self._delegate.generate_with_tools(
+            messages,
+            tools_schema,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            tool_choice=tool_choice,
+            run_id=run_id,
+        )
+
+    def stream_with_tools(
+        self,
+        messages: Sequence[ChatMessage],
+        tools_schema: List[Dict[str, Any]],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        run_id: Optional[str] = None,
+    ) -> Iterable[LLMStreamEvent]:
+        return self._delegate.stream_with_tools(
+            messages,
+            tools_schema,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            tool_choice=tool_choice,
+            run_id=run_id,
+        )
+
+    def generate_structured(
+        self,
+        messages: Sequence[ChatMessage],
+        output_model: type,
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
+    ) -> LLMStructuredResult[Any]:
+        return self._delegate.generate_structured(
+            messages,
+            output_model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            run_id=run_id,
+        )
+
+    def supports_streaming(self) -> bool:
+        return self._delegate.supports_streaming()
+
+    def supports_tools(self) -> bool:
+        return self._delegate.supports_tools()
+
+    def supports_structured_output(self) -> bool:
+        return self._delegate.supports_structured_output()
+
+    def supports_vision(self) -> bool:
+        return self._delegate.supports_vision()
+
+    def supports_audio_input(self) -> bool:
+        return self._delegate.supports_audio_input()
+
+    def supports_audio_output(self) -> bool:
+        return self._delegate.supports_audio_output()
+
+    @property
+    def context_window_tokens(self) -> int:
+        return self._delegate.context_window_tokens
+
+    def validate(self) -> None:
+        self._delegate.validate()
 
 
 class GroqChatAdapter(_CompatAdapterBase):
@@ -176,7 +288,7 @@ class AzureAiInferenceChatAdapter(_CompatAdapterBase):
         model: Optional[str] = None,
         base_url: Optional[str] = None,
         api_key: Optional[str] = None,
-        **defaults,
+        **defaults: Any,
     ) -> None:
         resolved_base = (
             base_url or os.getenv(self._CONFIG.base_url_env) or self._CONFIG.default_base_url

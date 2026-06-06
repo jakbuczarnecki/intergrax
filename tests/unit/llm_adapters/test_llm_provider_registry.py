@@ -25,6 +25,8 @@ from typing import Any, Callable, Dict, Iterator, Sequence, Optional
 import pytest
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
@@ -62,8 +64,8 @@ class _TestAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> str:
-        return "ok"
+    ) -> LLMAdapterResponse:
+        return build_adapter_response(content="ok")
 
 
 # ---------------------------------------------------------------------------

@@ -115,11 +115,11 @@ class AnswerPipeline:
         ]
 
         timer = StepTimer()
-        answer_text = request.llm.generate_messages(messages)
+        answer_response = request.llm.generate_messages(messages)
         trace.llm_latency_ms = timer.stop_ms()
 
         result = AnswerResult(
-            answer=answer_text,
+            answer=answer_response.content,
             context_documents=reranked_docs,
         )
 

@@ -5,10 +5,12 @@
 
 from __future__ import annotations
 
-from typing import Iterable, List, Optional, Sequence
+from typing import Iterable, Sequence
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 
 
 def assert_supports_streaming(adapter: LLMAdapter) -> None:
@@ -18,6 +20,7 @@ def assert_supports_streaming(adapter: LLMAdapter) -> None:
     assert isinstance(stream, Iterable)
     chunks = list(stream)
     assert isinstance(chunks, list)
+    assert all(isinstance(event, LLMStreamEvent) for event in chunks)
 
 
 def assert_supports_tools_contract(adapter: LLMAdapter) -> None:
@@ -27,9 +30,10 @@ def assert_supports_tools_contract(adapter: LLMAdapter) -> None:
         [{"type": "function", "function": {"name": "noop", "parameters": {"type": "object"}}}],
         run_id="conformance-tools",
     )
-    assert "content" in out
-    assert "tool_calls" in out
-    assert "finish_reason" in out
+    assert isinstance(out, LLMAdapterResponse)
+    assert isinstance(out.content, str)
+    assert isinstance(out.tool_calls, tuple)
+    assert out.finish_reason is not None
 
 
 def assert_stream_with_tools_contract(adapter: LLMAdapter) -> None:
@@ -44,17 +48,26 @@ def assert_stream_with_tools_contract(adapter: LLMAdapter) -> None:
     )
     chunks = list(stream)
     assert chunks, "stream_with_tools produced no events"
-    assert any("finish_reason" in c for c in chunks)
+    assert all(isinstance(event, LLMStreamEvent) for event in chunks)
+    assert any(event.is_final for event in chunks)
 
 
-def assert_generate_messages_returns_text(adapter: LLMAdapter, *, user_text: str = "Say OK") -> str:
-    text = adapter.generate_messages(
+def assert_generate_messages_returns_response(
+    adapter: LLMAdapter, *, user_text: str = "Say OK"
+) -> LLMAdapterResponse:
+    result = adapter.generate_messages(
         [ChatMessage(role="user", content=user_text)],
         max_tokens=32,
         run_id="conformance-chat",
     )
-    assert isinstance(text, str)
-    return text
+    assert isinstance(result, LLMAdapterResponse)
+    assert isinstance(result.content, str)
+    return result
+
+
+def assert_generate_messages_returns_text(adapter: LLMAdapter, *, user_text: str = "Say OK") -> str:
+    """Deprecated alias — prefer ``assert_generate_messages_returns_response``."""
+    return assert_generate_messages_returns_response(adapter, user_text=user_text).content
 
 
 def assert_usage_tracking(adapter: LLMAdapter, *, run_id: str = "conformance-usage") -> None:
@@ -77,7 +90,7 @@ def run_adapter_conformance(
 
     Call from unit tests after constructing an adapter with a mocked SDK client.
     """
-    assert_generate_messages_returns_text(adapter)
+    assert_generate_messages_returns_response(adapter)
     if adapter.supports_streaming():
         assert_supports_streaming(adapter)
     if adapter.supports_tools():

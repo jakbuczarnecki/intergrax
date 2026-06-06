@@ -12,11 +12,22 @@ from google import genai
 from google.genai import types
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.adapter_response_builders import (
+    build_adapter_response,
+    final_stream_event,
+    partial_stream_event,
+)
 from intergrax.llm_adapters._shared.messages import split_system_messages
-from intergrax.llm_adapters._shared.tool_results import make_tool_result
 from intergrax.llm_adapters._shared.tool_schema import openai_tools_to_gemini
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
+from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+from intergrax.llm_adapters.contracts.tool_call import LLMToolCall, tool_calls_from_openai_dicts
 
 
 class GeminiChatAdapter(LLMAdapter):
@@ -95,13 +106,13 @@ class GeminiChatAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> str:
+    ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-
-        in_tok = 0
-        out_tok = 0
+        response: LLMAdapterResponse | None = None
         success = False
         err_type = None
+        in_tok = 0
+        out_tok = 0
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
@@ -114,7 +125,6 @@ class GeminiChatAdapter(LLMAdapter):
                 max_tokens=max_tokens,
             )
 
-            # Typical case: last message is user -> create chat with history and send last user message.
             if convo and convo[-1].role == "user":
                 history = self._map_history(convo[:-1])
                 prompt = convo[-1].content or ""
@@ -124,33 +134,40 @@ class GeminiChatAdapter(LLMAdapter):
                     history=history,
                     config=config,
                 )
-                response = self._execute(lambda: chat_session.send_message(prompt))
-                text = response.text or ""
+                api_response = self._execute(lambda: chat_session.send_message(prompt))
+                text = api_response.text or ""
             else:
-                # Fallback: use generate_content with full contents list (handles odd turn ordering).
                 contents = self._map_contents(convo)
-                response = self._execute(
+                api_response = self._execute(
                     lambda: self.client.models.generate_content(
                         model=self.model,
                         contents=contents,
                         config=config,
                     )
                 )
-                text = response.text or ""
+                text = api_response.text or ""
 
             out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+            response = build_adapter_response(
+                content=text,
+                usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                model=self.model,
+                provider=self._provider_slug(),
+                provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+            )
             success = True
-            return text
+            return response
 
         except Exception as e:
             err_type = type(e).__name__
             raise
 
         finally:
+            usage = response.usage if (success and response and response.usage) else LLMTokenUsage()
             self.usage.end_call(
                 call,
-                input_tokens=in_tok,
-                output_tokens=out_tok,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
                 success=success,
                 error_type=err_type,
             )
@@ -164,14 +181,12 @@ class GeminiChatAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> Iterable[str]:
+    ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-
-        in_tok = 0
-        out_tok = 0
         success = False
         err_type = None
-
+        in_tok = 0
+        out_tok = 0
         buf: List[str] = []
 
         try:
@@ -199,19 +214,24 @@ class GeminiChatAdapter(LLMAdapter):
                     txt = chunk.text
                     if txt:
                         buf.append(txt)
-                        yield txt
+                        yield partial_stream_event(delta_content=txt)
 
                 out_tok = int(
                     self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation)
                 )
                 success = True
+                yield final_stream_event(
+                    response=build_adapter_response(
+                        content="".join(buf),
+                        usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                        model=self.model,
+                        provider=self._provider_slug(),
+                        provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+                    )
+                )
                 return
 
-            # Production-grade fallback: stream via generate_content_stream using full contents list.
-            # This mirrors generate_messages() fallback behavior and avoids hard failure on "odd turn ordering".
             contents = self._map_contents(convo)
-
-            # google-genai supports streaming on models via generate_content_stream (SDK-dependent).
             stream_fn = getattr(self.client.models, "generate_content_stream", None)
             if stream_fn is None:
                 raise RuntimeError(
@@ -227,12 +247,21 @@ class GeminiChatAdapter(LLMAdapter):
                 txt = getattr(chunk, "text", None)
                 if txt:
                     buf.append(txt)
-                    yield txt
+                    yield partial_stream_event(delta_content=txt)
 
             out_tok = int(
                 self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation)
             )
             success = True
+            yield final_stream_event(
+                response=build_adapter_response(
+                    content="".join(buf),
+                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                    model=self.model,
+                    provider=self._provider_slug(),
+                    provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+                )
+            )
             return
 
         except Exception as e:
@@ -276,12 +305,13 @@ class GeminiChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-        in_tok = 0
-        out_tok = 0
+        response: LLMAdapterResponse | None = None
         success = False
         err_type = None
+        in_tok = 0
+        out_tok = 0
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
@@ -293,20 +323,37 @@ class GeminiChatAdapter(LLMAdapter):
                 tools=openai_tools_to_gemini(tools_schema),
             )
             contents = self._map_contents(convo)
-            response = self.client.models.generate_content(
+            api_response = self.client.models.generate_content(
                 model=self.model,
                 contents=contents,
                 config=config,
             )
-            text, tool_calls = self._parse_gemini_response(response)
+            text, tool_calls = self._parse_gemini_response(api_response)
             out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
+            finish = LLMFinishReason.TOOL_CALLS if tool_calls else LLMFinishReason.COMPLETED
+            response = build_adapter_response(
+                content=text,
+                finish_reason=finish,
+                usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                model=self.model,
+                provider=self._provider_slug(),
+                tool_calls=tool_calls,
+                provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+            )
             success = True
-            return make_tool_result(content=text, tool_calls=tool_calls, finish_reason="completed")
+            return response
         except Exception as e:
             err_type = type(e).__name__
             raise
         finally:
-            self.usage.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
+            usage = response.usage if (success and response and response.usage) else LLMTokenUsage()
+            self.usage.end_call(
+                call,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+                success=success,
+                error_type=err_type,
+            )
 
     def stream_with_tools(
         self,
@@ -317,12 +364,12 @@ class GeminiChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
-    ) -> Iterable[Dict[str, Any]]:
+    ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-        in_tok = 0
-        out_tok = 0
         success = False
         err_type = None
+        in_tok = 0
+        out_tok = 0
         buf: List[str] = []
 
         try:
@@ -345,30 +392,44 @@ class GeminiChatAdapter(LLMAdapter):
                     tool_choice=tool_choice,
                     run_id=run_id,
                 )
-                yield result
+                yield final_stream_event(response=result)
                 return
 
-            tool_calls_acc: List[Dict[str, Any]] = []
+            tool_calls_acc: tuple[LLMToolCall, ...] = ()
             for chunk in stream_fn(model=self.model, contents=contents, config=config):
                 txt = getattr(chunk, "text", None)
                 if txt:
                     buf.append(txt)
-                    yield make_tool_result(content=txt, finish_reason="partial")
+                    yield partial_stream_event(delta_content=txt)
                 _, chunk_tools = self._parse_gemini_response(chunk)
                 if chunk_tools:
                     tool_calls_acc = chunk_tools
 
+            out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
+            finish = LLMFinishReason.TOOL_CALLS if tool_calls_acc else LLMFinishReason.COMPLETED
             success = True
-            yield make_tool_result(
-                content="".join(buf),
-                tool_calls=tool_calls_acc,
-                finish_reason="completed",
+            yield final_stream_event(
+                response=build_adapter_response(
+                    content="".join(buf),
+                    finish_reason=finish,
+                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                    model=self.model,
+                    provider=self._provider_slug(),
+                    tool_calls=tool_calls_acc,
+                    provider_extensions=LLMProviderExtensions(usage_source="estimate"),
+                )
             )
         except Exception as e:
             err_type = type(e).__name__
             raise
         finally:
-            self.usage.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
+            self.usage.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
 
     def generate_structured(
         self,
@@ -378,7 +439,7 @@ class GeminiChatAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ):
+    ) -> LLMStructuredResult[Any]:
         schema = self._model_json_schema(output_model)
         schema_msg = ChatMessage(
             role="user",
@@ -387,18 +448,20 @@ class GeminiChatAdapter(LLMAdapter):
                 + json.dumps(schema, ensure_ascii=False)
             ),
         )
-        raw = self.generate_messages(
+        adapter_response = self.generate_messages(
             list(messages) + [schema_msg],
             temperature=temperature,
             max_tokens=max_tokens,
             run_id=run_id,
         )
+        raw = adapter_response.content
         json_str = self._extract_json_object(raw) or raw.strip()
-        return self._validate_with_model(output_model, json_str)
+        parsed = self._validate_with_model(output_model, json_str)
+        return LLMStructuredResult(parsed=parsed, response=adapter_response)
 
-    def _parse_gemini_response(self, response: Any) -> tuple[str, List[Dict[str, Any]]]:
+    def _parse_gemini_response(self, response: Any) -> tuple[str, tuple[LLMToolCall, ...]]:
         text_parts: List[str] = []
-        tool_calls: List[Dict[str, Any]] = []
+        tool_calls_raw: List[Dict[str, Any]] = []
         candidates = getattr(response, "candidates", None) or []
         for cand in candidates:
             content = getattr(cand, "content", None)
@@ -411,7 +474,7 @@ class GeminiChatAdapter(LLMAdapter):
                 if fc is not None:
                     name = getattr(fc, "name", "") or ""
                     args = getattr(fc, "args", None) or {}
-                    tool_calls.append(
+                    tool_calls_raw.append(
                         {
                             "id": name or "gemini_call",
                             "type": "function",
@@ -421,7 +484,7 @@ class GeminiChatAdapter(LLMAdapter):
                             },
                         }
                     )
-        return "".join(text_parts), tool_calls
+        return "".join(text_parts), tool_calls_from_openai_dicts(tool_calls_raw)
 
     def _build_generation_config(
         self,

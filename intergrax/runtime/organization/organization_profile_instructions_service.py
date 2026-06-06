@@ -196,9 +196,10 @@ OUTPUT FORMAT:
             ),
         ]
 
-        return await self._llm.generate_messages(
+        response = await self._llm.generate_messages(
             messages,
             temperature=None,
             max_tokens=None,
             run_id=run_id,
         )
+        return response.content

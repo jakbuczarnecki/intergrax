@@ -12,11 +12,23 @@ from mistralai import Mistral
 from mistralai.models import ChatCompletionResponse
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.adapter_response_builders import (
+    build_adapter_response,
+    final_stream_event,
+    partial_stream_event,
+)
 from intergrax.llm_adapters._shared.messages import map_chat_completion_messages, split_system_messages
-from intergrax.llm_adapters._shared.tool_results import make_tool_result
-from intergrax.llm_adapters._shared.tool_schema import extract_openai_tool_calls
+from intergrax.llm_adapters._shared.openai_completion_mapping import (
+    adapter_response_from_openai_chat_completion,
+)
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
+from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
 
 
 # -----------------------------
@@ -108,11 +120,9 @@ class MistralChatAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> str:
+    ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-
-        in_tok = 0
-        out_tok = 0
+        response: LLMAdapterResponse | None = None
         success = False
         err_type = None
 
@@ -133,30 +143,24 @@ class MistralChatAdapter(LLMAdapter):
                 lambda: self.client.chat.complete(**payload)
             )
 
-            usage = getattr(res, "usage", None)
-            if usage is not None:
-                in_tok = int(getattr(usage, "prompt_tokens", 0) or 0)
-                out_tok = int(getattr(usage, "completion_tokens", 0) or 0)
-
-            if not res.choices:
-                success = True
-                return ""
-
-            text = res.choices[0].message.content or ""
-            out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
-
+            response = adapter_response_from_openai_chat_completion(
+                res,
+                model=self.model,
+                provider=self._provider_slug(),
+            )
             success = True
-            return text
+            return response
 
         except Exception as e:
             err_type = type(e).__name__
             raise
 
         finally:
+            usage = response.usage if (success and response and response.usage) else LLMTokenUsage()
             self.usage.end_call(
                 call,
-                input_tokens=in_tok,
-                output_tokens=out_tok,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
                 success=success,
                 error_type=err_type,
             )
@@ -170,13 +174,12 @@ class MistralChatAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> Iterable[str]:
+    ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-
-        in_tok = 0
-        out_tok = 0
         success = False
         err_type = None
+        in_tok = 0
+        out_tok = 0
 
         try:
             in_tok = int(self.estimate_tokens_for_messages(messages, model_hint=self.model_name_for_token_estimation))
@@ -203,10 +206,18 @@ class MistralChatAdapter(LLMAdapter):
                 delta = chunk.choices[0].delta
                 if delta.content:
                     buf.append(delta.content)
-                    yield delta.content
+                    yield partial_stream_event(delta_content=delta.content)
 
             out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
             success = True
+            yield final_stream_event(
+                response=build_adapter_response(
+                    content="".join(buf),
+                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                    model=self.model,
+                    provider=self._provider_slug(),
+                )
+            )
 
         except Exception as e:
             err_type = type(e).__name__
@@ -245,10 +256,9 @@ class MistralChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-        in_tok = 0
-        out_tok = 0
+        response: LLMAdapterResponse | None = None
         success = False
         err_type = None
 
@@ -266,25 +276,25 @@ class MistralChatAdapter(LLMAdapter):
             res: ChatCompletionResponse = self._execute(
                 lambda: self.client.chat.complete(**payload)
             )
-            usage = getattr(res, "usage", None)
-            if usage is not None:
-                in_tok = int(getattr(usage, "prompt_tokens", 0) or 0)
-                out_tok = int(getattr(usage, "completion_tokens", 0) or 0)
-            if not res.choices:
-                success = True
-                return make_tool_result()
-            msg = res.choices[0].message
-            success = True
-            return make_tool_result(
-                content=msg.content or "",
-                tool_calls=extract_openai_tool_calls(msg),
-                finish_reason="completed",
+            response = adapter_response_from_openai_chat_completion(
+                res,
+                model=self.model,
+                provider=self._provider_slug(),
             )
+            success = True
+            return response
         except Exception as e:
             err_type = type(e).__name__
             raise
         finally:
-            self.usage.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
+            usage = response.usage if (success and response and response.usage) else LLMTokenUsage()
+            self.usage.end_call(
+                call,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+                success=success,
+                error_type=err_type,
+            )
 
     def stream_with_tools(
         self,
@@ -295,12 +305,12 @@ class MistralChatAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
-    ) -> Iterable[Dict[str, Any]]:
+    ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-        in_tok = 0
-        out_tok = 0
         success = False
         err_type = None
+        in_tok = 0
+        out_tok = 0
         buf: List[str] = []
         tool_calls_acc: List[Dict[str, Any]] = []
 
@@ -325,7 +335,7 @@ class MistralChatAdapter(LLMAdapter):
                 delta = chunk.choices[0].delta
                 if delta.content:
                     buf.append(delta.content)
-                    yield make_tool_result(content=delta.content, finish_reason="partial")
+                    yield partial_stream_event(delta_content=delta.content)
                 raw_tc = getattr(delta, "tool_calls", None)
                 if raw_tc:
                     for tc in raw_tc:
@@ -343,17 +353,31 @@ class MistralChatAdapter(LLMAdapter):
                                     },
                                 }
                             )
+            tool_calls = tool_calls_from_openai_dicts(tool_calls_acc)
+            finish = LLMFinishReason.TOOL_CALLS if tool_calls else LLMFinishReason.COMPLETED
+            out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
             success = True
-            yield make_tool_result(
-                content="".join(buf),
-                tool_calls=tool_calls_acc,
-                finish_reason="completed",
+            yield final_stream_event(
+                response=build_adapter_response(
+                    content="".join(buf),
+                    finish_reason=finish,
+                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                    model=self.model,
+                    provider=self._provider_slug(),
+                    tool_calls=tool_calls,
+                )
             )
         except Exception as e:
             err_type = type(e).__name__
             raise
         finally:
-            self.usage.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
+            self.usage.end_call(
+                call,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                success=success,
+                error_type=err_type,
+            )
 
     def generate_structured(
         self,
@@ -363,7 +387,7 @@ class MistralChatAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ):
+    ) -> LLMStructuredResult[Any]:
         schema = self._model_json_schema(output_model)
         schema_msg = ChatMessage(
             role="user",
@@ -372,14 +396,16 @@ class MistralChatAdapter(LLMAdapter):
                 + json.dumps(schema, ensure_ascii=False)
             ),
         )
-        raw = self.generate_messages(
+        adapter_response = self.generate_messages(
             list(messages) + [schema_msg],
             temperature=temperature,
             max_tokens=max_tokens,
             run_id=run_id,
         )
+        raw = adapter_response.content
         json_str = self._extract_json_object(raw) or raw.strip()
-        return self._validate_with_model(output_model, json_str)
+        parsed = self._validate_with_model(output_model, json_str)
+        return LLMStructuredResult(parsed=parsed, response=adapter_response)
 
     def _build_chat_params(
         self,

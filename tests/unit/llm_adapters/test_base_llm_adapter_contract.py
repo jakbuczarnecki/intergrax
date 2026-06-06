@@ -22,6 +22,8 @@ from typing import Optional
 import pytest
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 
 
@@ -54,8 +56,8 @@ class _MinimalValidAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> str:
-        return ""
+    ) -> LLMAdapterResponse:
+        return build_adapter_response(content="")
 
 
 def test_adapter_with_empty_provider_is_rejected() -> None:

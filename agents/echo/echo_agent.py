@@ -18,6 +18,8 @@ from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.task.task import TaskContext
@@ -50,14 +52,14 @@ class _EchoLLMAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> str:
+    ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id)
         try:
             for msg in reversed(messages):
                 content = msg.content or ""
                 if content:
-                    return f"echo: {content}"
-            return "echo: (empty)"
+                    return build_adapter_response(content=f"echo: {content}")
+            return build_adapter_response(content="echo: (empty)")
         finally:
             self.usage.end_call(call, input_tokens=0, output_tokens=1, success=True)
 

@@ -27,6 +27,8 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.task.task import TaskContext
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
@@ -53,9 +55,9 @@ class _StubLLMAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> str:
+    ) -> LLMAdapterResponse:
         _ = messages, temperature, max_tokens, run_id
-        return self._text
+        return build_adapter_response(content=self._text)
 
 ORG_VENDOR_REPORT_CAPABILITY = "org.vendor_report"
 

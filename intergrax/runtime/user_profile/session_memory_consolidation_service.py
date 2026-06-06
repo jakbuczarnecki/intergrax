@@ -363,12 +363,13 @@ Conversation:
             ),
         ]
 
-        return  self._llm.generate_messages(
+        response = self._llm.generate_messages(
             messages=messages,
             temperature=self._config.temperature,
             max_tokens=None,
             run_id=run_id,
         )
+        return response.content
 
     # -------------------------------------------------------------------------
     # Internal: parsing and mapping

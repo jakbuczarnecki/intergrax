@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from intergrax.runtime.architecture.online_evaluation_models import OnlineEvaluationObservation
+from intergrax.runtime.adaptive.llm_call_summary import LLMCallSummary
 from intergrax.runtime.adaptive.signal_collector import SignalAssemblyInput, SignalCollector
 from intergrax.runtime.adaptive.contracts import HarnessOutcomeSignal
 from intergrax.runtime.architecture.online_evaluation_registry import OnlineEvaluationRegistry
@@ -55,6 +56,7 @@ def record_task_outcome_signal(
     regression: RegressionSignals | None = None,
     evaluation_registry: OnlineEvaluationRegistry | None = None,
     run_budget: RunBudget | None = None,
+    last_llm_call: LLMCallSummary | None = None,
 ) -> HarnessOutcomeSignal | None:
     """Persist a signal when a Nexus task completes successfully."""
     if result.state != TaskState.COMPLETED:
@@ -84,6 +86,7 @@ def record_task_outcome_signal(
             actual_cost=actual_cost,
             actual_tokens=actual_tokens,
             hitl_interventions=_resolve_hitl_interventions(task, result),
+            last_llm_call=last_llm_call,
         )
     )
 
@@ -99,6 +102,7 @@ def record_runtime_engine_outcome_signal(
     actual_cost: float | None = None,
     run_budget: RunBudget | None = None,
     evaluation_registry: OnlineEvaluationRegistry | None = None,
+    last_llm_call: LLMCallSummary | None = None,
 ) -> HarnessOutcomeSignal:
     """Persist a signal for a non-Nexus RuntimeEngine run."""
     observation = _latest_evaluation_for_run(evaluation_registry, run_id)
@@ -124,5 +128,6 @@ def record_runtime_engine_outcome_signal(
             run_budget=run_budget,
             actual_cost=actual_cost,
             actual_tokens=total_tokens,
+            last_llm_call=last_llm_call,
         )
     )

@@ -12,6 +12,7 @@ from intergrax.runtime.adaptive.contracts import (
     UtilityWeights,
 )
 from intergrax.runtime.adaptive.cost_normalization import normalize_cost_against_budget
+from intergrax.runtime.adaptive.llm_call_summary import LLMCallSummary
 from intergrax.runtime.adaptive.signal_store import SignalStore
 from intergrax.runtime.adaptive.utility import compute_utility
 from intergrax.runtime.architecture.online_evaluation_models import (
@@ -67,6 +68,7 @@ class SignalAssemblyInput:
     actual_tokens: int | None = None
     hitl_interventions: int = 0
     business_outcome: float | None = None
+    last_llm_call: LLMCallSummary | None = None
 
 
 class SignalCollector:
@@ -126,6 +128,7 @@ class SignalCollector:
         )
         eval_mode = eval_mode_from_observation(observation)
         regression_flags = regression_flags_from_signals(assembly.regression)
+        last_llm = assembly.last_llm_call
 
         signal = HarnessOutcomeSignal(
             run_id=assembly.run_id,
@@ -145,6 +148,13 @@ class SignalCollector:
             hitl_interventions=assembly.hitl_interventions,
             regression_flags=regression_flags,
             business_outcome=assembly.business_outcome,
+            last_llm_finish_reason=last_llm.finish_reason if last_llm else None,
+            last_llm_model=last_llm.model if last_llm else None,
+            last_llm_provider=last_llm.provider if last_llm else None,
+            last_llm_input_tokens=last_llm.input_tokens if last_llm else None,
+            last_llm_output_tokens=last_llm.output_tokens if last_llm else None,
+            last_llm_has_refusal=last_llm.has_refusal if last_llm else None,
+            last_llm_has_tool_calls=last_llm.has_tool_calls if last_llm else None,
         )
         utility = compute_utility(
             quality_score=signal.quality_score,

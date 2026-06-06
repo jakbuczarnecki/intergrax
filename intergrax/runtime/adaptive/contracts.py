@@ -107,6 +107,14 @@ class HarnessOutcomeSignal(BaseModel):
     business_outcome: float | None = None
     utility: float | None = None
 
+    last_llm_finish_reason: str | None = None
+    last_llm_model: str | None = None
+    last_llm_provider: str | None = None
+    last_llm_input_tokens: int | None = None
+    last_llm_output_tokens: int | None = None
+    last_llm_has_refusal: bool | None = None
+    last_llm_has_tool_calls: bool | None = None
+
 
 class ProfileVersionDraft(BaseModel):
     """Draft payload attached to an adaptive loop proposal (AHIA §9.3)."""

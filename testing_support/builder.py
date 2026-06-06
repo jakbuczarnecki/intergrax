@@ -17,7 +17,10 @@ import pytest
 from numpy.typing import NDArray
 from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
 from intergrax.fastapi_core.runs.store_base import RunStore
+from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm.messages import ChatMessage
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
@@ -87,12 +90,12 @@ class FakeLLMAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> str:
+    ) -> LLMAdapterResponse:
         # Deterministic response for tests.
         # Keep it simple: do NOT depend on message content.
         call = self.usage.begin_call(run_id=run_id)
         try:
-            return self._fixed_text
+            return build_adapter_response(content=self._fixed_text)
         finally:
             # Tokens are fake here; that's fine for tests.
             self.usage.end_call(
@@ -110,23 +113,24 @@ class FakeLLMAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ):
+    ) -> LLMStructuredResult[Any]:
         call = self.usage.begin_call(run_id=run_id)
 
         try:
             if self._fake_structured_data is not None:
                 obj = self._fake_structured_data
 
-                # Safety check: ensure correct type
                 if not isinstance(obj, output_model):
                     raise TypeError(
                         "FakeLLMAdapter: fake_structured_data must be instance of output_model"
                     )
 
-                return obj
+                parsed = obj
+            else:
+                parsed = output_model()
 
-            # Fallback: instantiate empty model (will fail if required fields exist)
-            return output_model()
+            response = build_adapter_response(content="")
+            return LLMStructuredResult(parsed=parsed, response=response)
 
         finally:
             self.usage.end_call(

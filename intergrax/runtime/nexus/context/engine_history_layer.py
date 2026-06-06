@@ -547,22 +547,18 @@ class HistoryLayer:
             generate_kwargs["max_tokens"] = max_summary_tokens
 
         try:
-            raw = adapter.generate_messages(
-                summary_prompt, 
+            raw_response = adapter.generate_messages(
+                summary_prompt,
                 run_id=run_id,
                 **generate_kwargs)
         except Exception:
             # If summarization fails for any reason, we simply return None
             # and let the caller fall back to truncation.
             return None
-        
-        if not isinstance(raw, str):
-            return None
 
-        if not raw:
+        text = (raw_response.content or "").strip()
+        if not text:
             return None
-        
-        text = raw.strip()
 
         # We wrap the summary in a system message so that it is clearly
         # separated from user/assistant turns.

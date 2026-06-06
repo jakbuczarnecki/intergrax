@@ -9,6 +9,7 @@ from dataclasses import dataclass
 import pytest
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.engine_history_layer import HistoryLayer
@@ -31,9 +32,9 @@ class _StubHistoryPromptBuilder:
 class _EmptySummaryLLMAdapter(FakeLLMAdapter):
     """Deterministic adapter that fails summarization by returning empty text."""
 
-    def generate_messages(self, messages, *, temperature=None, max_tokens=None, run_id=None) -> str:
+    def generate_messages(self, messages, *, temperature=None, max_tokens=None, run_id=None):
         _ = (messages, temperature, max_tokens, run_id)
-        return ""
+        return build_adapter_response(content="")
 
 
 def _history_layer(llm: LLMAdapter) -> HistoryLayer:

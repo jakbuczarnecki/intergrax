@@ -8,6 +8,7 @@ import pytest
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.bedrock_converse import iter_converse_stream_text
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEventKind
 from intergrax.llm_adapters.providers.aws_bedrock_adapter import BedrockChatAdapter, BedrockModelFamily
 
 
@@ -47,5 +48,8 @@ def test_bedrock_stream_messages_uses_converse_stream() -> None:
     chunks = list(
         adapter.stream_messages([ChatMessage(role="user", content="hi")], run_id="s1")
     )
-    assert chunks == ["a", "b"]
+    assert [c.delta_content for c in chunks if c.kind == LLMStreamEventKind.PARTIAL] == ["a", "b"]
+    assert chunks[-1].is_final
+    assert chunks[-1].response is not None
+    assert chunks[-1].response.content == "ab"
     client.converse_stream.assert_called_once()

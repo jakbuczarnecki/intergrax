@@ -139,14 +139,13 @@ class LLMPlanSource(PlanSource):
         *,
         req: PlanRequest,
     ) -> PlanSourceResult:
-        raw = req.llm_adapter.generate_messages(list(req.messages), run_id=req.run_id)
+        raw_response = req.llm_adapter.generate_messages(list(req.messages), run_id=req.run_id)
 
         import inspect
-        if inspect.iscoroutine(raw):
-            raw = await raw
+        if inspect.iscoroutine(raw_response):
+            raw_response = await raw_response
 
-        if not isinstance(raw, str):
-            raw = str(raw)
+        raw = raw_response.content
 
         return PlanSourceResult(
             raw=raw, 

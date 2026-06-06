@@ -39,5 +39,7 @@ def test_bedrock_stream_with_tools_converse_stream() -> None:
         )
     )
     assert len(events) >= 2
-    assert events[-1].get("finish_reason") == "completed"
+    assert events[-1].is_final
+    assert events[-1].response is not None
+    assert events[-1].response.finish_reason.value == "completed"
     client.converse_stream.assert_called_once()

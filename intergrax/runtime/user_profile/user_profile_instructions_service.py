@@ -220,10 +220,11 @@ OUTPUT FORMAT:
             ),
         ]
 
-        # LLMAdapter.generate_messages() returns a plain string.
-        return self._llm.generate_messages(
+        # LLMAdapter.generate_messages() returns LLMAdapterResponse.
+        response = self._llm.generate_messages(
             messages,
             temperature=None,
             max_tokens=None,
             run_id=run_id,
         )
+        return response.content

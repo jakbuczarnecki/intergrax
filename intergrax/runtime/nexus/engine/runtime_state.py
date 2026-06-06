@@ -8,6 +8,7 @@ from typing import Any, List, Optional
 from typing import TYPE_CHECKING
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
 from intergrax.contracts.runtime_cost import tokens_to_cost_units
 from intergrax.runtime.nexus.engine.contracts.agent_state import AgentState
@@ -123,6 +124,7 @@ class RuntimeState(RuntimeStateContract):
     # --- Core output (pipeline contract) ---
     # Filled by CoreLLM step
     raw_answer: Optional[str] = None
+    last_llm_adapter_response: Optional[LLMAdapterResponse] = None
 
     # Filled by Persist step (final runtime output)
     runtime_answer: Optional[RuntimeAnswer] = None

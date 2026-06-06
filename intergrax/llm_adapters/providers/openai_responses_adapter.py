@@ -12,10 +12,20 @@ from openai import Client
 from openai.types.responses import Response
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.adapter_response_builders import (
+    build_adapter_response,
+    final_stream_event,
+    partial_stream_event,
+)
 from intergrax.llm_adapters._shared.responses_input import messages_to_responses_input
-from intergrax.llm_adapters._shared.tool_results import make_tool_result
+from intergrax.llm_adapters._shared.openai_completion_mapping import adapter_response_from_openai_responses
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
+from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
+from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
 
 
 class OpenAIChatResponsesAdapter(LLMAdapter):
@@ -147,14 +157,12 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> str:
+    ) -> LLMAdapterResponse:
         """
         Single-shot completion (non-streaming) using Responses API.
-        """        
+        """
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-
-        in_tok = 0
-        out_tok = 0
+        response: LLMAdapterResponse | None = None
         success = False
         err_type = None
 
@@ -169,26 +177,32 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             if max_tokens is not None:
                 payload["max_output_tokens"] = max_tokens
 
-            response: Response = self._execute(
+            api_response: Response = self._execute(
                 lambda: self.client.responses.create(**payload, **self.defaults)
             )
 
-            usage = response.usage
-            if usage is not None:
-                in_tok = int(usage.input_tokens or 0)
-                out_tok = int(usage.output_tokens or 0)
-
-            output_text = self._collect_output_text(response)
-            
+            output_text = self._collect_output_text(api_response)
+            response = adapter_response_from_openai_responses(
+                api_response,
+                model=self.model,
+                provider=self._provider_slug(),
+                content=output_text,
+            )
             success = True
-
-            return output_text
+            return response
 
         except Exception as e:
             err_type = type(e).__name__
             raise
         finally:
-            self.usage.end_call(call, input_tokens=in_tok, output_tokens=out_tok, success=success, error_type=err_type)
+            usage = response.usage if (success and response and response.usage) else LLMTokenUsage()
+            self.usage.end_call(
+                call,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+                success=success,
+                error_type=err_type,
+            )
 
 
     def stream_messages(
@@ -198,20 +212,16 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> Iterable[str]:
+    ) -> Iterable[LLMStreamEvent]:
         """
         Streaming completion using Responses API.
-
-        Yields incremental text deltas taken from the streaming events.
         """
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-
-        in_tok = 0
-        out_tok = 0
         success = False
         err_type = None
+        in_tok = 0
+        out_tok = 0
 
-        # Fallback input tokens (streaming may not provide usage reliably)
         try:
             in_tok = int(self.count_messages_tokens(messages))
         except Exception:
@@ -234,23 +244,23 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
 
             with self.client.responses.stream(**payload, **self.defaults) as stream:
                 for ev in stream:
-                    # We are interested in "response.output_text.delta" events
-                    if ev.type == "response.output_text.delta":                                                                        
+                    if ev.type == "response.output_text.delta":
                         delta = ev.delta
                         if delta:
-                            # accumulate for token estimation on finish
                             buf.append(delta)
-                            yield delta
+                            yield partial_stream_event(delta_content=delta)
 
-            # If we reached here, the stream finished naturally
-            # Estimate output tokens from the assembled text
-            try:
-                full_text = "".join(buf)
-                out_tok = int(self.estimate_tokens_for_text(full_text))
-            except Exception:
-                out_tok = 0
-
+            full_text = "".join(buf)
+            out_tok = int(self.estimate_tokens_for_text(full_text))
             success = True
+            yield final_stream_event(
+                response=build_adapter_response(
+                    content=full_text,
+                    usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
+                    model=self.model,
+                    provider=self._provider_slug(),
+                )
+            )
 
         except Exception as e:
             err_type = type(e).__name__
@@ -288,17 +298,16 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
-    ) -> Iterable[Dict[str, Any]]:
+    ) -> Iterable[LLMStreamEvent]:
         """
-        Stream assistant text deltas, then yield the final tool result dict.
+        Stream assistant text deltas, then yield the final typed response.
         """
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-        in_tok = 0
-        out_tok = 0
         success = False
         err_type = None
+        in_tok = 0
+        out_tok = 0
         buf: List[str] = []
-        native_tool_calls: List[Dict[str, Any]] = []
 
         try:
             try:
@@ -325,25 +334,27 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
                         delta = ev.delta or ""
                         if delta:
                             buf.append(delta)
-                            yield make_tool_result(content=delta, finish_reason="partial")
+                            yield partial_stream_event(delta_content=delta)
 
                 get_final = getattr(stream, "get_final_response", None)
                 resp = get_final() if callable(get_final) else None
                 if resp is None:
                     raise RuntimeError("OpenAI responses stream did not return a final response")
 
+                native_tool_calls = self._extract_tool_calls_from_response(resp)
+                final_content = self._collect_output_text(resp) or "".join(buf)
+                final_response = adapter_response_from_openai_responses(
+                    resp,
+                    model=self.model,
+                    provider=self._provider_slug(),
+                    content=final_content,
+                    tool_calls=tool_calls_from_openai_dicts(native_tool_calls),
+                )
                 if resp.usage:
                     in_tok = int(resp.usage.input_tokens or in_tok)
                     out_tok = int(resp.usage.output_tokens or 0)
-
-                native_tool_calls = self._extract_tool_calls_from_response(resp)
-                final_content = self._collect_output_text(resp) or "".join(buf)
                 success = True
-                yield make_tool_result(
-                    content=final_content,
-                    tool_calls=native_tool_calls,
-                    finish_reason=getattr(resp, "status", None) or "completed",
-                )
+                yield final_stream_event(response=final_response)
                 return
 
         except Exception as e:
@@ -392,10 +403,9 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ):
+    ) -> LLMStructuredResult[Any]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-        in_tok = 0
-        out_tok = 0
+        response: LLMAdapterResponse | None = None
         success = False
         err_type = None
 
@@ -418,27 +428,30 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             if max_tokens is not None:
                 payload["max_output_tokens"] = max_tokens
 
-            response: Response = self._execute(
+            api_response: Response = self._execute(
                 lambda: self.client.responses.create(**payload, **self.defaults)
             )
-            if response.usage:
-                in_tok = int(response.usage.input_tokens or 0)
-                out_tok = int(response.usage.output_tokens or 0)
-
-            raw = self._collect_output_text(response)
+            raw = self._collect_output_text(api_response)
+            response = adapter_response_from_openai_responses(
+                api_response,
+                model=self.model,
+                provider=self._provider_slug(),
+                content=raw,
+            )
             json_str = self._extract_json_object(raw) or raw.strip()
-            obj = self._validate_with_model(output_model, json_str)
+            parsed = self._validate_with_model(output_model, json_str)
             success = True
-            return obj
+            return LLMStructuredResult(parsed=parsed, response=response)
 
         except Exception as e:
             err_type = type(e).__name__
             raise
         finally:
+            usage = response.usage if (success and response and response.usage) else LLMTokenUsage()
             self.usage.end_call(
                 call,
-                input_tokens=in_tok,
-                output_tokens=out_tok,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
                 success=success,
                 error_type=err_type,
             )
@@ -452,21 +465,12 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
         max_tokens: Optional[int] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
         run_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> LLMAdapterResponse:
         """
         Generate a response with potential function/tool calls.
-
-        Returns:
-            {
-            "content": str,
-            "tool_calls": [...],
-            "finish_reason": str
-            }
         """
         call = self.usage.begin_call(run_id=run_id, adapter=self)
-
-        in_tok = 0
-        out_tok = 0
+        response: LLMAdapterResponse | None = None
         success = False
         err_type = None
 
@@ -486,37 +490,32 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             if max_tokens is not None:
                 payload["max_output_tokens"] = max_tokens
 
-            response: Response = self._execute(
+            api_response: Response = self._execute(
                 lambda: self.client.responses.create(**payload, **self.defaults)
             )
 
-            usage = response.usage
-            if usage is not None:
-                in_tok = int(usage.input_tokens or 0)
-                out_tok = int(usage.output_tokens or 0)
-
-            # Assistant text (if present)
-            content = self._collect_output_text(response)
-
-            native_tool_calls = self._extract_tool_calls_from_response(response)
-            finish_reason = response.status or "completed"
-
-            success = True
-            return make_tool_result(
+            content = self._collect_output_text(api_response)
+            native_tool_calls = self._extract_tool_calls_from_response(api_response)
+            response = adapter_response_from_openai_responses(
+                api_response,
+                model=self.model,
+                provider=self._provider_slug(),
                 content=content or "",
-                tool_calls=native_tool_calls,
-                finish_reason=finish_reason,
+                tool_calls=tool_calls_from_openai_dicts(native_tool_calls),
             )
+            success = True
+            return response
 
         except Exception as e:
             err_type = type(e).__name__
             raise
 
         finally:
+            usage = response.usage if (success and response and response.usage) else LLMTokenUsage()
             self.usage.end_call(
                 call,
-                input_tokens=in_tok,
-                output_tokens=out_tok,
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
                 success=success,
                 error_type=err_type,
             )
