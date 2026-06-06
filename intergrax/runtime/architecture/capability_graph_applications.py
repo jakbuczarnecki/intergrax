@@ -23,18 +23,12 @@ def resolve_binding_agent_contract_id(binding: AgentBinding) -> str:
 
 
 def catalog_application_manifests() -> tuple[ApplicationManifest, ...]:
-    """Reference Tier-3 manifests used for harness capability graph edges."""
-    from applications.lab_application.manifest import build_lab_manifest_default
-    from applications.legal_application.manifest import LEGAL_APPLICATION_MANIFEST
-    from applications.poc_template_application.manifest import APPLICATION_MANIFEST
-    from applications.research_application.manifest import RESEARCH_APPLICATION_MANIFEST
-
-    return (
-        build_lab_manifest_default(),
-        LEGAL_APPLICATION_MANIFEST,
-        RESEARCH_APPLICATION_MANIFEST,
-        APPLICATION_MANIFEST,
+    """Reference manifests for harness capability graph edges (Tier-0 catalog)."""
+    from intergrax.applications.reference.harness_manifest_catalog import (
+        build_harness_reference_manifests,
     )
+
+    return build_harness_reference_manifests()
 
 
 def build_application_agent_edges(

@@ -15,9 +15,11 @@ class DelegationSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     child_agent_id: str
+    objective: str = ""
+    permission_scopes: tuple[str, ...] = ()
     isolated_memory_namespace: str = ""
     context_assembly: TaskContextAssemblyOptions | None = None
-    inherit_tool_policy: bool = True
+    inherit_tool_policy: bool = False
     parent_run_id: str | None = None
     parent_node_id: str | None = None
 

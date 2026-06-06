@@ -11,3 +11,8 @@ class RuntimeErrorCode(str, Enum):
     TIMEOUT = "timeout"
     LLM_ERROR = "llm_error"
     TOOL_ERROR = "tool_error"
+    USER_ERROR = "user_error"
+    POLICY_ERROR = "policy_error"
+    DEPENDENCY_ERROR = "dependency_error"
+    QUALITY_ERROR = "quality_error"
+    PERMISSION_ERROR = "permission_error"

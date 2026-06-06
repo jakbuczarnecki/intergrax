@@ -139,6 +139,21 @@ class AgentBinding(BaseModel):
         )
 
     @classmethod
+    def reference(
+        cls,
+        contract_id: str,
+        *,
+        enabled: bool = True,
+        capabilities: list[str] | None = None,
+    ) -> AgentBinding:
+        """Contract-id-only binding for harness reference catalogs (no agent import)."""
+        return cls(
+            contract_id=contract_id,
+            capabilities=capabilities or [],
+            enabled=enabled,
+        )
+
+    @classmethod
     def deserialize(
         cls,
         *,
@@ -229,8 +244,10 @@ class AgentBinding(BaseModel):
         if self.factory is not None and self.factory_path is None:
             object.__setattr__(self, "factory_path", qualname_for_callable(self.factory))
 
-        if self.agent_type is None and self.import_path is None:
-            raise ValueError("AgentBinding requires agent_type (mount) or import_path (deserialize)")
+        if self.agent_type is None and self.import_path is None and not self.contract_id:
+            raise ValueError(
+                "AgentBinding requires agent_type (mount), import_path (deserialize), or contract_id (reference)"
+            )
 
         if self.builder_key and self.factory is not None:
             raise ValueError("AgentBinding: factory and builder_key are mutually exclusive")

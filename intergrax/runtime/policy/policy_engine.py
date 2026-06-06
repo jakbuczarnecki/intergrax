@@ -57,6 +57,36 @@ class PolicyEngine:
     def evaluate_interrupt(self, interrupt: ExecutionInterrupt) -> RuntimePolicyDecision:
         return self.runtime.evaluate_interrupt(interrupt)
 
+    def evaluate_pre_llm(
+        self,
+        *,
+        tenant_id: str,
+        agent_id: str,
+        message_count: int,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> RuntimePolicyDecision:
+        return self.runtime.evaluate_pre_llm(
+            tenant_id=tenant_id,
+            agent_id=agent_id,
+            message_count=message_count,
+            context=context,
+        )
+
+    def evaluate_pre_output(
+        self,
+        *,
+        tenant_id: str,
+        agent_id: str,
+        output_chars: int,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> RuntimePolicyDecision:
+        return self.runtime.evaluate_pre_output(
+            tenant_id=tenant_id,
+            agent_id=agent_id,
+            output_chars=output_chars,
+            context=context,
+        )
+
     def evaluate_replay(
         self,
         metrics: ExecutionMetrics,

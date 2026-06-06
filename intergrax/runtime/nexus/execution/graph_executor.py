@@ -78,9 +78,12 @@ class GraphExecutor:
         event_bus: Optional[RuntimeEventBus] = None,
         middleware: Optional[MiddlewarePipeline] = None,
         max_parallel_nodes: int | None = None,
+        max_inflight_nodes: int | None = None,
     ) -> None:
         self._registry = registry
         self._max_parallel_nodes = max_parallel_nodes
+        self._max_inflight_nodes = max_inflight_nodes
+        self._inflight_semaphore: asyncio.Semaphore | None = None
         self._engine = engine or AgentEngine(registry)
         self._router = router or AgentRouter(registry)
         self._validation_engine = validation_engine or NexusValidationEngine()
@@ -190,6 +193,9 @@ class GraphExecutor:
             List[HandoffExtra],
         ]
     ]:
+        if self._inflight_semaphore is None and self._max_inflight_nodes is not None:
+            self._inflight_semaphore = asyncio.Semaphore(self._max_inflight_nodes)
+
         limit = self._max_parallel_nodes
         if limit is None or limit >= len(batch):
             return list(
@@ -222,7 +228,23 @@ class GraphExecutor:
             bool,
             List[HandoffExtra],
         ]:
+            inflight = self._inflight_semaphore
+            if inflight is not None and inflight.locked():
+                await self._emit_backpressure(task, node.node_id)
             async with semaphore:
+                if inflight is not None:
+                    async with inflight:
+                        return await self._execute_node(
+                            graph,
+                            task,
+                            node,
+                            prior_outputs,
+                            runtime_ckpt=runtime_ckpt,
+                            plan_criteria=plan_criteria,
+                            on_retry=on_retry,
+                            on_node_start=on_node_start,
+                            on_node_complete=on_node_complete,
+                        )
                 return await self._execute_node(
                     graph,
                     task,
@@ -563,6 +585,22 @@ class GraphExecutor:
                 event_type=event_type,
                 phase=ExecutionPhase.STEP_EXECUTION,
                 payload=payload,
+                correlation_id=task.task_id,
+            )
+        )
+
+    async def _emit_backpressure(self, task: Task, node_id: str) -> None:
+        if self._event_bus is None:
+            return
+        await self._event_bus.publish(
+            RuntimeEvent(
+                tenant_id=task.tenant_id,
+                task_id=task.task_id,
+                run_id=task.task_id,
+                node_id=node_id,
+                event_type=RuntimeEventType.GRAPH_BACKPRESSURE,
+                phase=ExecutionPhase.STEP_EXECUTION,
+                payload={"max_inflight_nodes": self._max_inflight_nodes},
                 correlation_id=task.task_id,
             )
         )

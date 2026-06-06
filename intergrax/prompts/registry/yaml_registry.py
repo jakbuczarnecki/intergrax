@@ -166,6 +166,9 @@ class YamlPromptRegistry:
         return version
     
 
+    def list_prompt_ids(self) -> tuple[str, ...]:
+        return tuple(sorted(self._cache.keys()))
+
     def _find_prompt_dir(self, prompt_id: str) -> Path:
         """
         Find prompt directory recursively by its name.

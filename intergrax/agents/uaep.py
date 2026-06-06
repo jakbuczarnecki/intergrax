@@ -305,6 +305,20 @@ class UAEPExecutor:
             governance = resolution
             exec_ctx.metadata["governance_resolution"] = resolution
 
+            from intergrax.contracts.decision_record import DecisionRecord
+
+            tenant_id = str(request.tenant_id or request.metadata.get("tenant_id") or "default")
+            decision_record = DecisionRecord(
+                trace_id=run_id,
+                run_id=run_id,
+                tenant_id=tenant_id,
+                task_id=task_id,
+                agent_id=contract.id,
+                step_id=step.step_id,
+                decision_type=decision.type.value,
+                rationale=decision.reason,
+                policy_action=resolution.policy_decision.action.value,
+            )
             await self._emit(
                 exec_ctx,
                 RuntimeEventType.DECISION_EMITTED,
@@ -313,6 +327,7 @@ class UAEPExecutor:
                     "step_id": step.step_id,
                     "decision": decision.type.value,
                     "policy_action": resolution.policy_decision.action.value,
+                    "decision_record": decision_record.model_dump(mode="json"),
                 },
             )
             await self._emit_governance(exec_ctx, resolution)
@@ -433,6 +448,16 @@ class UAEPExecutor:
         ctx: RuntimeExecutionContext,
         resolution: GovernanceResolution,
     ) -> None:
+        await self._emit(
+            ctx,
+            RuntimeEventType.POLICY_DECISION,
+            ExecutionPhase.STEP_EXECUTION,
+            {
+                "policy_action": resolution.policy_decision.action.value,
+                "policy_rule_id": resolution.policy_decision.policy_rule_id,
+                "reason": resolution.policy_decision.reason,
+            },
+        )
         if resolution.interrupt is not None:
             await self._emit(
                 ctx,

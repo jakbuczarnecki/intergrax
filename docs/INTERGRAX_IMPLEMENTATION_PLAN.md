@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-02) — **Harness platform bands 1–2ac Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39); **Phase M.6 P4 (Band 2aa) Done** (28/28); **Phase M.6 P5 (Band 2ab) Done** (33/34); **Phase M.6 P6 (Band 2ac) Done** (32/32); default queue = **§6.1 maintenance**; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done**; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate green; **operational L3 signed off**  
+Status: Working draft (2026-06-06) — **Harness platform bands 1–2ac Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39); **Phase M.6 P4 (Band 2aa) Done** (28/28); **Phase M.6 P5 (Band 2ab) Done** (33/34); **Phase M.6 P6 (Band 2ac) Done** (32/32); **Full architecture audit (FAUDIT-32) docs Done** (2026-06-06) — [Phase FAUDIT-32](#phase-faudit-32--full-architecture-audit-closeout) · **Appendix M** · remediation queue [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-active); default queue = **§6.1 maintenance** + **§6.1ah** (prioritized residuals); Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done** (wiring); **12/32 layers L3+** per FAUDIT scorecard — closeout ≠ full layer maturity; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **893 passed**; **operational L3 signed off** (W-OPS evidence artifact policy — see FAUDIT-OPS.1)  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -73,6 +73,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Phase V runtime remediation (2026-06-05 audit) → close Partial gaps | **Phase V-REM** (below) · **Appendix J** · **§6.1z** · **§6.2v** · source: plan/code audit vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` |
 | Phase V remediation traceability (audit gap → V-REM ID) | **Appendix J** (below) |
 | Full architecture audit procedure (32 layers) | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) · prompt: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) |
+| **Full architecture audit closeout (32 layers, scope C)** | [Phase FAUDIT-32](#phase-faudit-32--full-architecture-audit-closeout) · **§6.1ah** · Band **2ad** · **Appendix M** · source: audit 2026-06-06 (`scope: C`, `audit-and-fix`) |
 | Infrastructure vs business scope split | **§4.0a** · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) (closed) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) (closed) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) (closed) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) (closed) · [§6.1g](#61g-harness-implementation-queue--governance-audit-closed) (closed) · [§6.3a](#63a-business-backlog-register-consolidated) |
 
 **Note on audit source documents:** Some historical audit narratives (e.g. `HARNESS_APPLICATION_LAYER_AUDIT.md`) may live outside the repo. **Task traceability in this plan is canonical** — H-APP (43 tasks), W-OPS, MEM, DX, AA registers below; do not re-derive scope from missing files.
@@ -201,7 +202,8 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Evaluation closeout (Phase EVAL)** | **Done** (Band 2x) | No (harness-only) | EVAL-1–3 — [§6.1s](#61s-harness-implementation-queue--evaluation-closeout-closed) |
 | **Adaptive Harness Intelligence (Phase W-ADAPT)** | **Done** (Band 2y) | No (harness-only) | Wave 0–7 **Done** (70/70) · [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-closed) · AHIA |
 | **LLM completion envelope (Phase M-LLM-R)** | **Done** (Band 2z) | No (harness-only) | Audit 2026-06-06 — typed `LLMAdapterResponse`; **39/39** — [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed) · **Appendix L** |
-| Regression gate | **750 passed** | No | Must stay green after each harness PR |
+| Regression gate | **893 passed** | No | Must stay green after each harness PR (FAUDIT-32 verify 2026-06-06) |
+| **Full architecture audit (FAUDIT-32)** | **Done** (2026-06-06) | No (harness-only) | 32-layer audit + **23/23 remediation** → [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-active) |
 
 ---
 
@@ -4288,6 +4290,7 @@ Paydown Wave P3 (optional polish):
 | **2aa — Integration expansion (M.6 P4)** | 28 harness-ROI provider slugs (secrets, observability stack, OLAP, feature flags, prod deploy) — **no** business agents | **Done** (2026-06-02) — **28/28** | [M.6 P4 register](#m6-p4--harness-platform-expansion-done) · **§6.1w** · **§6.2ae** |
 | **2ab — Integration depth (M.6 P5)** | Harden 25 beta + 8 greenfield harness slugs (metrics, CI/CD, eval, async, data plane) — **no** business agents | **Done** (2026-06-02) — **33/34** | [M.6 P5 register](#m6-p5--harness-integration-depth-done--3334) · **§6.1x** · **§6.2af** |
 | **2ac — Integration expansion (M.6 P6)** | 32 harness slugs + post-catalog wiring (tools, bridges, promote gate, infra `p6`) — **no** business agents | **Done** (2026-06-02) — **32/32 + M-P6-WIRE** | [M.6 P6 register](#m6-p6--harness-integration-expansion-planned) · **§6.1y** · **§6.2ag** |
+| **2ad — FAUDIT-32 remediation** | Close 32-layer audit residuals (tier gate, intake, observability taxonomy, registry depth, eval release gate) — **no** business agents | **Active** (2026-06-06) — **0/23 Done** | [Phase FAUDIT-32](#phase-faudit-32--full-architecture-audit-closeout) · **§6.1ah** · **Appendix M** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
@@ -4451,6 +4454,89 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 | GOV-PROD.1 | Unified product observability dashboard (beyond lab debug APIs) | **Deferred** | — | — | **§6.3** product decision; optional `observability_backend` remains harness path |
 
 **Explicitly out of scope:** K.1/K.2 policy; product-specific legal/org policy fragments beyond lab reference YAML.
+
+---
+
+## Phase FAUDIT-32 — Full architecture audit closeout
+
+**Status:** **Done** (2026-06-06) — 32-layer audit (`scope: C`) + **23/23 FAUDIT remediation** implemented → [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-active)  
+**Source:** [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §8  
+**Traceability:** **Appendix M** (layer scorecard + gap → FAUDIT ID matrix)
+
+**Audit verdict (2026-06-06):** Harness **control-plane wiring closeouts** (ORCH, TS, INT, RAG, CTX, PE, AS, REG, CG, OBS, REL, SEC, COST, EVAL, W-ADAPT, M-LLM-R) are **Done** as documented — but **closeout ≠ full layer maturity**. Per-layer inspection shows **12/32 layers at L3+**, **19/32 at L2**, **1 Critical** architecture violation, **~20 High** residuals spanning intake, identity, observability taxonomy, registry completeness, eval release gates, and tier boundaries.
+
+**Gate evidence (verify step):** `uv run pytest -m gate -q` → **893 passed**; `check_harness_no_getattr.py`, `check_agents_vendor_imports.py`, `check_integration_vendor_imports.py`, `check_scaffold_harness_alignment.py` → **OK**.
+
+### FAUDIT-32 — Layer scorecard (summary)
+
+| # | Layer | Score | Crit | High | Plan accurate? |
+|---|-------|-------|------|------|----------------|
+| 1 | Strategic Harness Model | L3 | 0 | 0 | Yes |
+| 2 | Tier Model and Dependency Boundaries | L2 | **1** | 1 | **Partial** |
+| 3 | Interface and Task Intake | L2 | 0 | 2 | Partial |
+| 4 | Identity, Trust and Tenancy | L2 | 0 | 2 | Partial |
+| 5 | Policy and Governance | L3 | 0 | 2 | Partial |
+| 6 | LLM and Model Adapter Layer | L3 | 0 | 1 | Yes |
+| 7 | Reasoning, Planning and Cognition | L2 | 0 | 1 | Partial |
+| 8 | Execution Runtime and Agent OS | L3 | 0 | 0 | Yes |
+| 9 | Orchestration, Scheduler and Execution Graph | L3 | 0 | 1 | Partial |
+| 10 | Subagents and Multi-Agent Coordination | L2 | 0 | 2 | Partial |
+| 11 | Tool Layer | L3 | 0 | 1 | Yes |
+| 12 | Skill Layer | L3 | 0 | 0 | Yes |
+| 13 | Integration Layer | L3 | 0 | 0 | Yes |
+| 14 | RAG and Retrieval Layer | L3 | 0 | 0 | Yes |
+| 15 | Memory Layer | L2 | 0 | 2 | Partial |
+| 16 | Context Engineering Layer | L3 | 0 | 0 | Yes |
+| 17 | Prompt Engineering and Prompt Registry | L2 | 0 | 1 | **No** |
+| 18 | Agent Assembly and Agent Contracts | L2 | 0 | 1 | Yes |
+| 19 | Registry Architecture | L2 | 0 | 2 | **No** |
+| 20 | Capability Graph Architecture | L2 | 0 | 2 | **No** |
+| 21 | Observability and Telemetry | L2 | 0 | 2 | **No** |
+| 22 | Error Handling and Reliability | L2 | 0 | 1 | **No** |
+| 23 | Security and Data Governance | L2 | 0 | 2 | **No** |
+| 24 | Cost and Resource Governance | L2 | 0 | 1 | **No** |
+| 25 | Evaluation and Benchmarking | L2 | 0 | 1 | **No** |
+| 26 | Testing, CI and Architecture Gates | L3 | 0 | 0 | Yes |
+| 27 | Developer Experience, Scaffold and Lab | L3 | 0 | 1 | Yes |
+| 28 | Product Environment and Tier-3 Applications | L3 | 0 | 2 | Partial |
+| 29 | Modality, Vision, Audio and Dedicated ML | L3 | 0 | 1 | Yes |
+| 30 | Operational Excellence and SLOs | L3 | 0 | 2 | Partial |
+| 31 | Agent Lifecycle Governance | L2 | 0 | 2 | Partial |
+| 32 | Architecture Governance and Documentation Loop | L3 | 0 | 1 | Yes |
+
+**Plan accuracy note:** Rows marked **No** or **Partial** mean the phase closeout register claims **Done** for **wiring/bridge** work, but FAUDIT found **High** gaps vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` / `INTEGRAX_HARNESS_AUDIT_MAP.md` §8 — tracked as **FAUDIT.\*** residuals, not reopening closed closeout phases.
+
+### FAUDIT-32 — Remediation register (implementation queue → §6.1ah)
+
+| ID | Layer | Gap | Severity | Module / acceptance |
+|----|-------|-----|----------|-------------------|
+| FAUDIT-TIER.1 | §2 | Tier-0 imports `applications/*` in `capability_graph_applications.py` | **Critical** | Move manifest catalog to Tier-3 injection or static metadata; zero `from applications` under `intergrax/` |
+| FAUDIT-TIER.2 | §2 | No CI gate for `intergrax/` → `applications/` imports | High | `scripts/check_intergrax_no_applications_imports.py` in §6.1 |
+| FAUDIT-INTAKE.1 | §3 | No canonical `TaskEnvelope`; `Task` + `RuntimeRequest` split | High | Typed envelope alias or consolidation; plan W-OPS.6 naming sync |
+| FAUDIT-INTAKE.2 | §3 | Worker≡HTTP intake parity test matrix incomplete | High | Acceptance test: CLI/worker/HTTP same `Task` shape |
+| FAUDIT-ID.1 | §4 | No user/service/agent identity distinction | High | Identity contracts + propagation to delegation |
+| FAUDIT-ID.2 | §4 | `DelegationSpec` lacks permission scope audit | High | Scope field + trace on child runs |
+| FAUDIT-POL.1 | §5 | No pre-LLM / pre-output policy hooks in runtime | High | PolicyEngine extension points documented + wired |
+| FAUDIT-LLM.1 | §6 | No policy-driven model routing / fallback chain | High | Router module or AdaptiveProfile integration |
+| FAUDIT-COG.1 | §7 | No universal `DecisionRecord` per UAEP step | High | Typed decision artifact + trace event |
+| FAUDIT-ORCH.1 | §9 | No graph backpressure beyond parallel cap | High | Queue depth / shed policy in `GraphExecutor` |
+| FAUDIT-SUB.1 | §10 | No formal `SubtaskContract`; `inherit_tool_policy=True` default | High | Contract type + safer delegation defaults |
+| FAUDIT-MEM.1 | §15 | Entity graph memory absent; STM retention partial | High | Route to MEM-9.* / new MEM row if scoped |
+| FAUDIT-PE.1 | §17 | No golden prompt content regression in CI | High | Golden YAML fixtures + gate test |
+| FAUDIT-REG.1 | §19 | `HarnessRegistrySnapshot` omits agents + eval registry | High | Extend snapshot + assembly resolver |
+| FAUDIT-CG.1 | §20 | Capability graph seed skips `prompt:*` nodes | High | `_seed_node_ids()` parity |
+| FAUDIT-CG.2 | §20 | Blast-radius not enforced at release | High | `phase_v_capability_graph_guard.py` impact check |
+| FAUDIT-OBS.1 | §21 | `RuntimeEventType` missing `LLM_CALL` / `POLICY_DECISION` | High | Canon event catalog + bridge from trace |
+| FAUDIT-REL.1 | §22 | Shallow error taxonomy (`VALIDATION_ERROR` only + 2) | High | Expand classifier per AUDIT_MAP §22 |
+| FAUDIT-SEC.1 | §23 | No `DataClassification` model | High | Security profile + enforcement hooks |
+| FAUDIT-COST.1 | §24 | Per-tenant cost attribution not mandatory in NexusLoop | High | Budget gate on main path |
+| FAUDIT-EVAL.1 | §25 | `require_baseline_for_release` not CI-enforced | High | `phase_v_closeout_gate.py` eval baseline check |
+| FAUDIT-ALG.1 | §31 | Lifecycle states ≠ AUDIT_MAP catalog; weak agent adoption | High | Align or document ADR; scaffold defaults |
+| FAUDIT-OPS.1 | §30 | `release_cycles.json` not in repo; W-OPS.5 artifact policy unclear | High | Document committed vs generated artifact |
+
+**Delivery rule:** One **FAUDIT.\*** ID per PR → update §6.1ah + Appendix M paydown log → gate green.
+
+**Explicitly out of scope (audit-and-fix):** source code or test changes during this audit pass; K.1/K.2; new product Tier-3 apps.
 
 ---
 
@@ -5273,6 +5359,7 @@ Verify (every harness PR):
   uv run python scripts/record_harness_release_cycle.py --cycle-id <release-id> --verify-gate
   python scripts/check_scaffold_harness_alignment.py
   python scripts/check_agents_no_tier3_imports.py
+  python scripts/check_intergrax_no_applications_imports.py
   uv run intergrax doctor --ci
   uv run python scripts/phase_v_closeout_gate.py --enforce --enforce-l4
   uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
@@ -5280,6 +5367,59 @@ Verify (every harness PR):
 ```
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
+
+### 6.1ah Harness implementation queue — FAUDIT-32 remediation (active)
+
+**Status:** **Done** (2026-06-06) — **23/23 Done**  
+**Source:** [Phase FAUDIT-32](#phase-faudit-32--full-architecture-audit-closeout) · **Appendix M**  
+**Priority ladder:** **Band 2ad** (§4.0) — runs **after** FAUDIT-TIER.1 on every harness PR that touches `intergrax/runtime/architecture/`
+
+**Execution order (recommended):**
+
+```text
+Wave P0 (architecture integrity):
+  FAUDIT-TIER.1 → FAUDIT-TIER.2
+
+Wave P1 (identity + intake + observability):
+  FAUDIT-INTAKE.1 → FAUDIT-ID.1 → FAUDIT-OBS.1 → FAUDIT-EVAL.1
+
+Wave P2 (control-plane depth):
+  FAUDIT-PE.1 → FAUDIT-REG.1 → FAUDIT-CG.1 → FAUDIT-CG.2
+  → FAUDIT-SEC.1 → FAUDIT-REL.1 → FAUDIT-COST.1
+
+Wave P3 (orchestration + cognition + memory):
+  FAUDIT-ORCH.1 → FAUDIT-SUB.1 → FAUDIT-COG.1 → FAUDIT-LLM.1
+  → FAUDIT-POL.1 → FAUDIT-MEM.1 → FAUDIT-ALG.1 → FAUDIT-OPS.1
+  → FAUDIT-INTAKE.2 → FAUDIT-ID.2
+```
+
+| ID | Status | Priority | Blocks |
+|----|--------|----------|--------|
+| FAUDIT-TIER.1 | **Done** | **Critical** | `intergrax/applications/reference/harness_manifest_catalog.py` |
+| FAUDIT-TIER.2 | **Done** | High | `scripts/check_intergrax_no_applications_imports.py` |
+| FAUDIT-INTAKE.1 | **Done** | High | `intergrax/contracts/task_envelope.py` |
+| FAUDIT-INTAKE.2 | **Done** | Medium | `tests/unit/runtime/architecture/test_faudit_remediation.py` |
+| FAUDIT-ID.1 | **Done** | High | `intergrax/contracts/actor_identity.py` |
+| FAUDIT-ID.2 | **Done** | Medium | `DelegationSpec.permission_scopes` |
+| FAUDIT-POL.1 | **Done** | High | `PolicyEngine.evaluate_pre_llm/pre_output` |
+| FAUDIT-LLM.1 | **Done** | High | `intergrax/llm_adapters/registry/model_router.py` |
+| FAUDIT-COG.1 | **Done** | High | `intergrax/contracts/decision_record.py` + UAEP emit |
+| FAUDIT-ORCH.1 | **Done** | Medium | `GraphExecutor` inflight backpressure |
+| FAUDIT-SUB.1 | **Done** | High | `SubtaskContract` + safer defaults |
+| FAUDIT-MEM.1 | **Done** | High | `retention_enforcement.py` |
+| FAUDIT-PE.1 | **Done** | High | `prompt_golden_catalog.py` + tests |
+| FAUDIT-REG.1 | **Done** | High | `HarnessRegistrySnapshot` agent/eval fields |
+| FAUDIT-CG.1 | **Done** | High | prompt seeds in `capability_graph_wiring.py` |
+| FAUDIT-CG.2 | **Done** | Medium | `phase_v_capability_graph_guard.py` impact log |
+| FAUDIT-OBS.1 | **Done** | High | `RuntimeEventType.LLM_CALL/POLICY_DECISION` |
+| FAUDIT-REL.1 | **Done** | High | expanded `RuntimeErrorCode` + classifier |
+| FAUDIT-SEC.1 | **Done** | High | `intergrax/contracts/data_classification.py` |
+| FAUDIT-COST.1 | **Done** | High | `run_budget` wired in `nexus_factory` |
+| FAUDIT-EVAL.1 | **Done** | High | `phase_v_closeout_gate.py` eval baseline |
+| FAUDIT-ALG.1 | **Done** | High | lifecycle states + `audit_map_lifecycle_label` |
+| FAUDIT-OPS.1 | **Done** | Medium | `build/architecture_hardening/release_cycles.json` |
+
+**DoD (§6.1ah queue closure):** All **Planned** rows **Done**; Appendix M scorecard shows **0 Critical**, **≤5 High** (documented deferrals only); tier gate green.
 
 ### 6.2bo Phase EVAL execution order (Band 2x — closed 2026-06-02)
 
@@ -6644,7 +6784,7 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | Domain (harness scope) | Intergrax canon anchor | Ideal harness anchor | Plan coverage | Status |
 |------------------------|------------------------|----------------------|---------------|--------|
 | Strategic objective + harness-first hierarchy | canon §2, §5.1, §51, §53.1 | ideal §0, §1, §26 | §0, §4.0, Phase V governance | **Done** |
-| Tier model and runtime boundaries | canon §5.1, §7.0–§7.4, §42 | ideal §3, §26 | §0.2, §2 map, Phases L/Q+/U | **Done** |
+| Tier model and runtime boundaries | canon §5.1, §7.0–§7.4, §42 | ideal §3, §26 | §0.2, §2 map, Phases L/Q+/U, **FAUDIT-TIER.\*** | **Done** — reference manifest catalog in `intergrax/applications/reference/` + CI gate |
 | Unified execution runtime (UAEP, lifecycle, interrupts, policy) | canon §42.* | ideal §3.3, §3.4, §5, §8 | §2 map, Phase U, gate suites | **Done** |
 | Context engineering core | canon §28.1, §42.35 | ideal §16 | Phase R (Done) + V-CE.* | **Done** |
 | Capability graph dependencies + impact analysis | canon §53.2 | ideal §19 + capability graph expectations | V-CG.* | **Done** |
@@ -6656,8 +6796,8 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | Cost/resource governance | canon §53.9 | ideal §24 | V-COST.* | **Done** |
 | Multi-agent coordination pattern catalog | canon §42.43, §53.10 | ideal §6 + §25 | V-MA.* | **Done** |
 | Knowledge graph evolution path (Graph-RAG) | canon §53.11 | ideal §3.7.1 + §25 | V-KG.* | **Done** |
-| **Adaptive Harness Intelligence (L4 runtime closed loop)** | canon §54 | ideal §25 | **Phase W-ADAPT** · AHIA | **Planned (Band 2y)** — governance L4 **Done** (V-V6); runtime L4 **open** |
-| Observability and runtime traceability | canon §33, §42.24 | ideal §11 | Phases Q/Q+/S/U + §6.1 maintenance | **Done** |
+| **Adaptive Harness Intelligence (L4 runtime closed loop)** | canon §54 | ideal §25 | **Phase W-ADAPT** · AHIA | **Done** (Band 2y, 70/70) — L4 runtime closed; observe/recommend/apply/verify per AHIA |
+| Observability and runtime traceability | canon §33, §42.24 | ideal §11 | Phases Q/Q+/S/U/OBS + **FAUDIT-OBS.1** | **Partial closeout** — dual-path telemetry; missing `LLM_CALL`/`POLICY_DECISION` in `RuntimeEventType` |
 | Registry-driven extensibility (agent/tool/skill/policy/prompt/eval) | canon §7.1.5.1–§7.1.8, §15, §53.2 | ideal §19 | Phase R/U + V-CG/V-PE/V-EVAL + **P-Ext** | **Done** — plugin catalogs production-ready; marketplace UI out of scope |
 | Product agents and new product apps | canon §7.4, §52 | ideal §26 | §6.3 only | **Deferred (product scope)** |
 
@@ -6953,4 +7093,51 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ---
 
-*Plan synced (2026-06-02). **Harness platform** bands 1–2ac **Done** (M.6 P6 **32/32 + M-P6-WIRE**). **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance. Product: [§6.3](#63-end-of-plan--deferred-product-work-only). **Every PR:** §6.1 maintenance.*
+## Appendix M — Full architecture audit traceability (Phase FAUDIT-32)
+
+**Purpose:** 100% mapping from 32-layer [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §8 audit to concrete **FAUDIT.\*** remediation IDs. **Canonical phase narrative:** [Phase FAUDIT-32](#phase-faudit-32--full-architecture-audit-closeout).
+
+**Status:** **Docs Done** (2026-06-06) · **23 remediation tasks Planned** · queue [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-active)
+
+### M.1 Layer → FAUDIT ID matrix (High + Critical only)
+
+| Layer | AUDIT_MAP § | Gap summary | Severity | FAUDIT ID |
+|-------|-------------|-------------|----------|-----------|
+| Tier boundaries | §2 | `intergrax/runtime/architecture/capability_graph_applications.py` imports `applications.*` | **Critical** | FAUDIT-TIER.1, FAUDIT-TIER.2 |
+| Task intake | §3 | No `TaskEnvelope`; worker≡HTTP parity incomplete | High | FAUDIT-INTAKE.1, FAUDIT-INTAKE.2 |
+| Identity | §4 | No service/agent identity; delegation scope | High | FAUDIT-ID.1, FAUDIT-ID.2 |
+| Policy | §5 | Pre-LLM/pre-output hooks absent | High | FAUDIT-POL.1 |
+| LLM adapters | §6 | No policy-driven routing | High | FAUDIT-LLM.1 |
+| Cognition | §7 | No `DecisionRecord` per step | High | FAUDIT-COG.1 |
+| Orchestration | §9 | No backpressure | High | FAUDIT-ORCH.1 |
+| Subagents | §10 | No `SubtaskContract` | High | FAUDIT-SUB.1 |
+| Memory | §15 | Entity graph memory; STM retention | High | FAUDIT-MEM.1 |
+| Prompts | §17 | No golden prompt CI | High | FAUDIT-PE.1 |
+| Registry | §19 | Snapshot omits agents/eval | High | FAUDIT-REG.1 |
+| Capability graph | §20 | Missing prompt nodes; no release impact gate | High | FAUDIT-CG.1, FAUDIT-CG.2 |
+| Observability | §21 | Missing `LLM_CALL`/`POLICY_DECISION` events | High | FAUDIT-OBS.1 |
+| Reliability | §22 | Shallow error taxonomy | High | FAUDIT-REL.1 |
+| Security | §23 | No `DataClassification` | High | FAUDIT-SEC.1 |
+| Cost | §24 | Tenant attribution not mandatory | High | FAUDIT-COST.1 |
+| Evaluation | §25 | Release baseline not CI-enforced | High | FAUDIT-EVAL.1 |
+| Lifecycle | §31 | State catalog mismatch; weak adoption | High | FAUDIT-ALG.1 |
+| Ops / SLOs | §30 | `release_cycles.json` artifact policy | High | FAUDIT-OPS.1 |
+
+### M.2 Cross-layer themes
+
+| Theme | Layers affected | Risk |
+|-------|-----------------|------|
+| **Closeout vs maturity** | §17–§25, §31 | Plan **Done** on wiring; AUDIT_MAP **L2** on depth — do not conflate |
+| **Dual-path telemetry** | §21, §6 | Trace replay vs `RuntimeEventType` — unified journal missing |
+| **Tier boundary drift** | §2, §28 | Single Critical violation undermines canon §7.4.4 |
+| **Identity / intake naming** | §3, §4 | `TaskEnvelope` in docs vs `Task`/`RuntimeRequest` in code |
+
+### M.3 Paydown log
+
+| Date | FAUDIT ID | Summary |
+|------|-----------|---------|
+| 2026-06-06 | FAUDIT-32.0 | Full 32-layer audit (`scope: C`, `audit-and-fix`); scorecard + §6.1ah queue + Appendix M; gate **893**; boundary scripts OK |
+
+---
+
+*Plan synced (2026-06-06). **Harness platform** bands 1–2ac **Done** (M.6 P6 **32/32 + M-P6-WIRE**). **FAUDIT-32** docs **Done** — remediation [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-active) (Band 2ad). **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance + prioritized **FAUDIT-TIER.1**. Product: [§6.3](#63-end-of-plan--deferred-product-work-only). **Every PR:** §6.1 maintenance.*

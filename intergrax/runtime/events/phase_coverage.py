@@ -63,6 +63,9 @@ EVENT_PHASE_COVERAGE: dict[RuntimeEventType, ExecutionPhase] = {
     RuntimeEventType.ADAPTIVE_PROFILE_ROLLBACK: ExecutionPhase.FINALIZATION,
     RuntimeEventType.ADAPTIVE_VERIFICATION_FAILED: ExecutionPhase.FINALIZATION,
     RuntimeEventType.ADAPTIVE_LOOP_BLOCKED: ExecutionPhase.FINALIZATION,
+    RuntimeEventType.LLM_CALL: ExecutionPhase.STEP_EXECUTION,
+    RuntimeEventType.POLICY_DECISION: ExecutionPhase.STEP_EXECUTION,
+    RuntimeEventType.GRAPH_BACKPRESSURE: ExecutionPhase.STEP_EXECUTION,
 }
 
 EVENT_OPS_FILTER_HINTS: dict[RuntimeEventType, OpsFilterHint] = {
@@ -117,6 +120,9 @@ EVENT_OPS_FILTER_HINTS: dict[RuntimeEventType, OpsFilterHint] = {
     RuntimeEventType.ADAPTIVE_PROFILE_ROLLBACK: "ops:alert",
     RuntimeEventType.ADAPTIVE_VERIFICATION_FAILED: "ops:alert",
     RuntimeEventType.ADAPTIVE_LOOP_BLOCKED: "ops:alert",
+    RuntimeEventType.LLM_CALL: "ops:llm_audit",
+    RuntimeEventType.POLICY_DECISION: "ops:policy_audit",
+    RuntimeEventType.GRAPH_BACKPRESSURE: "ops:backpressure",
 }
 
 

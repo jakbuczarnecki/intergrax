@@ -68,6 +68,9 @@ class RuntimeEventType(str, Enum):
     ADAPTIVE_PROFILE_ROLLBACK = "adaptive_profile_rollback"
     ADAPTIVE_VERIFICATION_FAILED = "adaptive_verification_failed"
     ADAPTIVE_LOOP_BLOCKED = "adaptive_loop_blocked"
+    LLM_CALL = "llm_call"
+    POLICY_DECISION = "policy_decision"
+    GRAPH_BACKPRESSURE = "graph_backpressure"
 
 
 class RuntimeEvent(BaseModel):

@@ -1483,6 +1483,7 @@ applications/<app>/  →  agents/<agent>/  →  intergrax/
 Rules:
 
 - `intergrax/` MUST NOT import code from `agents/` or `applications/`.
+- Harness reference manifests for capability-graph seeding live in `intergrax/applications/reference/` (Tier-0 catalog, no `applications/` imports).
 - `agents/` MUST NOT import code from `applications/`.
 - `applications/` MAY import from `agents/` and `intergrax/`.
 - Multiple applications MAY register the same agent with different config.

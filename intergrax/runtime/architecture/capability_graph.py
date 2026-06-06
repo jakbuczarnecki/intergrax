@@ -232,9 +232,12 @@ def _agent_nodes_and_edges() -> tuple[list[CapabilityNode], list[CapabilityEdge]
         resolve_binding_agent_contract_id,
     )
 
+    from intergrax.runtime.registry.bootstrap import build_legal_registry
+
     registries = (
         build_harness_registry(),
         build_research_registry(),
+        build_legal_registry(),
         build_organization_worker_registry(),
     )
     contracts_by_id: dict[str, object] = {}
@@ -246,6 +249,8 @@ def _agent_nodes_and_edges() -> tuple[list[CapabilityNode], list[CapabilityEdge]
         for binding in manifest.enabled_agents():
             contract_id = resolve_binding_agent_contract_id(binding)
             if contract_id in contracts_by_id:
+                continue
+            if binding.import_path is None and binding.agent_type is None:
                 continue
             contract = binding.resolved_agent_type()().get_contract()
             contracts_by_id[contract_id] = contract
