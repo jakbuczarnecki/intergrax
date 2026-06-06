@@ -5,11 +5,21 @@
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
 from typing import Annotated
 
 from fastapi import Header, HTTPException, Request, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
+
+from intergrax.integrations.contracts.identity_provider import IdentityProviderBackend
+
+
+@dataclass(frozen=True, slots=True)
+class HarnessAuthState:
+    """Typed FastAPI app state for harness authentication."""
+
+    identity_provider: IdentityProviderBackend | None = None
 
 
 def resolve_harness_api_key() -> str | None:
@@ -63,25 +73,78 @@ def is_harness_api_key_valid(
     return bool(provided) and provided == expected
 
 
+def _identity_provider_from_request(request: Request) -> IdentityProviderBackend | None:
+    state = request.app.state.harness_auth if hasattr(request.app.state, "harness_auth") else None
+    if isinstance(state, HarnessAuthState) and state.identity_provider is not None:
+        return state.identity_provider
+    return None
+
+
+def is_harness_identity_token_valid(
+    *,
+    authorization: str | None,
+    identity_provider: IdentityProviderBackend,
+) -> bool:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return False
+    token = authorization[7:].strip()
+    if not token:
+        return False
+    try:
+        user = identity_provider.verify_token(token)
+    except Exception:  # noqa: BLE001 — auth boundary
+        return False
+    return bool(user.user_id)
+
+
+def require_harness_auth(
+    request: Request,
+    x_api_key: Annotated[str | None, Header(alias="X-Api-Key")] = None,
+    authorization: Annotated[str | None, Header()] = None,
+) -> None:
+    """Enforce static API key and/or OIDC bearer token when configured."""
+    if is_harness_api_key_valid(x_api_key=x_api_key, authorization=authorization):
+        return
+    identity_provider = _identity_provider_from_request(request)
+    if identity_provider is not None and is_harness_identity_token_valid(
+        authorization=authorization,
+        identity_provider=identity_provider,
+    ):
+        return
+    if resolve_harness_api_key() is None and identity_provider is None:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid or missing harness credentials",
+    )
+
+
 class HarnessApiKeyMiddleware(BaseHTTPMiddleware):
     """ASGI middleware for lab/MCP wrapper apps (covers mounted sub-apps)."""
 
     async def dispatch(self, request: Request, call_next):
-        expected = resolve_harness_api_key()
-        if expected is None:
-            return await call_next(request)
         if is_harness_api_key_valid(
             x_api_key=request.headers.get("X-Api-Key"),
             authorization=request.headers.get("Authorization"),
         ):
             return await call_next(request)
+        identity_provider = _identity_provider_from_request(request)
+        if identity_provider is not None and is_harness_identity_token_valid(
+            authorization=request.headers.get("Authorization"),
+            identity_provider=identity_provider,
+        ):
+            return await call_next(request)
+        if resolve_harness_api_key() is None and identity_provider is None:
+            return await call_next(request)
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"detail": "Invalid or missing harness API key"},
+            content={"detail": "Invalid or missing harness credentials"},
         )
 
 
 def apply_harness_auth_middleware(app) -> None:
-    """Attach API-key middleware when ``INTERGRAX_HARNESS_API_KEY`` is set."""
-    if resolve_harness_api_key() is not None:
+    """Attach harness auth middleware when API key or identity provider is configured."""
+    state = app.state.harness_auth if hasattr(app.state, "harness_auth") else None
+    identity_configured = isinstance(state, HarnessAuthState) and state.identity_provider is not None
+    if resolve_harness_api_key() is not None or identity_configured:
         app.add_middleware(HarnessApiKeyMiddleware)

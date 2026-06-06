@@ -96,6 +96,19 @@ def wire_application_environment(
     wiring_context = ToolWiringContext.from_integration_profile(resolved_integration)
     if env.modality_profile is not None:
         wire_modality_extras(wiring_context, modality_profile=env.modality_profile)
+    from intergrax.applications._shared.integration_tool_wiring import wire_integration_tool_context
+
+    wiring_context = wire_integration_tool_context(wiring_context, resolved_integration)
+
+    hosted_session = None
+    if wiring_context.sandbox_session is None and resolved_integration is not None:
+        from intergrax.applications._shared.sandbox_host_wiring import resolve_hosted_sandbox_session
+
+        hosted_session = resolve_hosted_sandbox_session(
+            resolved_integration,
+            tenant_id="harness",
+            task_id="bootstrap",
+        )
 
     tool_wiring = build_application_tool_wiring(
         tool_profile,
@@ -107,7 +120,7 @@ def wire_application_environment(
         reranker_manager=rag_stack.reranker_manager if rag_stack is not None else None,
         rag_profile=rag_stack.profile if rag_stack is not None else None,
         retrieval_service=rag_stack.retrieval_service if rag_stack is not None else None,
-        sandbox_session=sandbox_session,
+        sandbox_session=sandbox_session or hosted_session,
         websearch_executor=websearch_executor,
     )
     skill_wiring = build_application_skill_wiring(env.skill_profile)

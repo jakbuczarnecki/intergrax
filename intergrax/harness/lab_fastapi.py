@@ -10,6 +10,7 @@ from fastapi import APIRouter, FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
 
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
+from intergrax.applications._shared.identity_wiring import wire_application_identity
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -105,4 +106,9 @@ def create_lab_fastapi_from_runtime(
     if mount_routes:
         mount_harness_routes(app, nexus_loop=runtime.nexus_loop, prefix=route_prefix)
     attach_plugin_shutdown(app, platform.shutdown_callbacks)
+    wire_application_identity(
+        app,
+        runtime.environment.identity_profile,
+        integration_profile=runtime.environment.integration_profile,
+    )
     return app

@@ -34,6 +34,9 @@ All services bind to **localhost** unless noted. Use these ports in `INTERGRAX_*
 | Temporal | 7233 | heavy | `temporal` |
 | Vespa | **8089** (app, avoids Weaviate 8080), 19071 | heavy | `vespa` |
 | Selenium | 4444, 7900 (VNC) | heavy | `selenium` |
+| Keycloak | 8088 | heavy, p6 | `keycloak` identity provider |
+| Typesense | 8108 | rag, p6 | `typesense` hybrid search |
+| Airflow | 8086 → container 8080 | heavy, p6 | `airflow` workflow orchestrator |
 
 ## Resolved conflicts
 
@@ -56,7 +59,8 @@ All services bind to **localhost** unless noted. Use these ports in `INTERGRAX_*
 | `secrets` | vault |
 | `observability` | elasticsearch, prometheus, clickhouse, langfuse, phoenix, mailpit |
 | `cloud` | localstack, azurite, pubsub-emulator |
-| `heavy` | temporal, vespa, selenium |
+| `heavy` | temporal, vespa, selenium, keycloak, airflow |
+| `p6` | keycloak, typesense, airflow (M.6 P6 lab services) |
 | `all` | alias — same as enabling every profile above |
 
 **Default stack** (`./manage.sh start`): `core` + `queue` + `rag` + `data` + `secrets`.

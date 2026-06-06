@@ -33,9 +33,9 @@ from intergrax.applications._shared.harness_host_runtime import build_harness_ho
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
 from lab_application.manifest import build_lab_manifest
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
+from intergrax.applications._shared.identity_wiring import wire_application_identity
 from intergrax.applications._shared.harness_auth import (
-    apply_harness_auth_middleware,
-    require_harness_api_key,
+    require_harness_auth,
     resolve_harness_api_key,
 )
 from intergrax.runtime.adaptive.proposal_store import SQLiteProposalStore, default_proposal_store_path
@@ -165,7 +165,7 @@ def create_lab_application(
                 execute_default=True,
             ),
             prefix=settings.interaction_route_prefix,
-            dependencies=[Depends(require_harness_api_key)],
+            dependencies=[Depends(require_harness_auth)],
         )
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
     if settings.include_mcp:
@@ -189,5 +189,9 @@ def create_lab_application(
         apply_lifespans(app, make_scheduler_lifespan(scheduler))
     attach_plugin_shutdown(app, plugin_bootstrap.shutdown_callbacks)
     register_llm_metrics_routes(app)
-    apply_harness_auth_middleware(app)
+    wire_application_identity(
+        app,
+        lab_env.identity_profile,
+        integration_profile=integrations.profile,
+    )
     return app

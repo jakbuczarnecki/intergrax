@@ -61,7 +61,9 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
     )
     from intergrax.tools.providers.rag.bundle import RAG_BUNDLE_ID, RAG_TOOL_IDS, register_rag_tools
     from intergrax.tools.providers.sandbox.bundle import SANDBOX_BUNDLE_ID, SANDBOX_TOOL_IDS, register_sandbox_tools
+    from intergrax.tools.providers.security.bundle import SECURITY_BUNDLE_ID, SECURITY_TOOL_IDS, register_security_tools
     from intergrax.tools.providers.speech.bundle import SPEECH_BUNDLE_ID, register_speech_tools
+    from intergrax.tools.providers.workflow.bundle import WORKFLOW_BUNDLE_ID, WORKFLOW_TOOL_IDS, register_workflow_tools
     from intergrax.tools.providers.speech.service import SPEECH_SYNTHESIZE_TOOL_ID, SPEECH_TRANSCRIBE_TOOL_ID
     from intergrax.tools.providers.vision.bundle import VISION_BUNDLE_ID, register_vision_tools
     from intergrax.tools.providers.vision.service import (
@@ -147,6 +149,20 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
             register_fn=register_sandbox_tools,
             description="Sandboxed code execution tools.",
             class_name="SandboxToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=SECURITY_BUNDLE_ID,
+            tool_ids=SECURITY_TOOL_IDS,
+            register_fn=register_security_tools,
+            description="Security scanner tools (image/repo scan).",
+            class_name="SecurityToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=WORKFLOW_BUNDLE_ID,
+            tool_ids=WORKFLOW_TOOL_IDS,
+            register_fn=register_workflow_tools,
+            description="Workflow orchestrator tools (trigger/poll/logs).",
+            class_name="WorkflowToolPlugin",
         ),
         define_tool_plugin(
             bundle_id=SPEECH_BUNDLE_ID,

@@ -144,7 +144,21 @@ Status legend: **Done** = registered handler in catalog.
 
 | tool_id | Status | Description | Composes |
 |---------|--------|-------------|----------|
-| `sandbox.exec` | **Done** | Execute allowlisted operation in runtime sandbox | `sandbox_session` via `ToolWiringContext` |
+| `sandbox.exec` | **Done** | Execute allowlisted operation in runtime sandbox | `sandbox_session` via `ToolWiringContext`; optional `sandbox_host` integration → `HostedSandboxSession` bridge (M.6 P6) |
+
+### Security (M.6 P6)
+
+| tool_id | Status | Description | Composes |
+|---------|--------|-------------|----------|
+| `security.scan` | **Done** | Scan container image or repository path for policy violations | `security_scanner` (`trivy`, `semgrep`, `snyk`) via `ToolWiringContext` |
+
+### Workflow orchestration (M.6 P6)
+
+| tool_id | Status | Description | Composes |
+|---------|--------|-------------|----------|
+| `workflow.trigger` | **Done** | Trigger a batch eval / RAG refresh workflow run | `workflow_orchestrator` (`prefect`, `airflow`) |
+| `workflow.poll` | **Done** | Poll workflow run status | `workflow_orchestrator` |
+| `workflow.fetch_logs` | **Done** | Fetch tail logs for a workflow run | `workflow_orchestrator` |
 
 ### Issue tracker (Jira)
 
@@ -256,7 +270,11 @@ Alphabetical reference — all first-party catalog tools (Phase O complete).
 | `rag.retrieve` | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` | [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `rag.ingest_document` | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` | [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `rag.list_collections` | retrieval | **Done** | `vectorstore_manager` | [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
-| `sandbox.exec` | sandbox | **Done** | `sandbox_session` | [USAGE](../intergrax/tools/providers/sandbox/USAGE.md) |
+| `sandbox.exec` | sandbox | **Done** | `sandbox_session` or `sandbox_host` bridge | [USAGE](../intergrax/tools/providers/sandbox/USAGE.md) |
+| `security.scan` | security | **Done** | `security_scanner` slug |
+| `workflow.trigger` | workflow | **Done** | `workflow_orchestrator` slug |
+| `workflow.poll` | workflow | **Done** | `workflow_orchestrator` slug |
+| `workflow.fetch_logs` | workflow | **Done** | `workflow_orchestrator` slug |
 | `websearch.query` | retrieval | **Done** | `websearch_executor`, `search_provider` | [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
 | `websearch.read_url` | retrieval | **Done** | page fetch + text extraction | [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
 | `websearch.fetch_batch` | retrieval | **Done** | batch page fetch | [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |

@@ -1253,6 +1253,19 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 | Date | ID | Summary |
 |------|-----|---------|
 | 2026-06-02 | M-P6.0 | Register **32** harness-expansion slugs from integration gap audit; §6.1y + §6.2ag + Band **2ac** |
+| 2026-06-02 | M-P6-WIRE | Post-catalog closeout: Tier-1 tools (`security.scan`, `workflow.*`), `HostedSandboxSession` bridge, `IntegrationSpeechAdapter`, `wire_application_identity`, V-SEC promote gate script, infra `p6` profile, CI hook |
+
+##### M.6 P6 — Post-catalog wiring closeout (Done — 2026-06-02)
+
+| ID | Deliverable | Status |
+|----|-------------|--------|
+| M-P6-WIRE.1 | `security.scan` tool + `ToolWiringContext.security_scanner` | **Done** |
+| M-P6-WIRE.2 | `workflow.trigger` / `workflow.poll` / `workflow.fetch_logs` + `workflow_orchestrator` wiring | **Done** |
+| M-P6-WIRE.3 | `sandbox.exec` → `SandboxHostBackend` via `HostedSandboxSession` | **Done** |
+| M-P6-WIRE.4 | Speech catalog → speech tools via `IntegrationSpeechAdapter` | **Done** |
+| M-P6-WIRE.5 | Harness OIDC auth via `wire_application_identity()` (lab + generic FastAPI hosts) | **Done** |
+| M-P6-WIRE.6 | `check_harness_security_promote_gate.py` (wiring default; optional live scan) | **Done** |
+| M-P6-WIRE.7 | Docker profile `p6` (keycloak, typesense, airflow) | **Done** |
 
 #### M.6 P3 — Legacy backlog note (superseded)
 
@@ -4272,12 +4285,12 @@ Paydown Wave P3 (optional polish):
 | **2z — LLM completion envelope (M-LLM-R)** | Typed `LLMAdapterResponse` replaces `str`/`dict` adapter returns; full consumer refactor — **no** business agents | **Done** (2026-06-06) — **39/39** | [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · **§6.1v** · **§6.2ad** · **Appendix L** |
 | **2aa — Integration expansion (M.6 P4)** | 28 harness-ROI provider slugs (secrets, observability stack, OLAP, feature flags, prod deploy) — **no** business agents | **Done** (2026-06-02) — **28/28** | [M.6 P4 register](#m6-p4--harness-platform-expansion-done) · **§6.1w** · **§6.2ae** |
 | **2ab — Integration depth (M.6 P5)** | Harden 25 beta + 8 greenfield harness slugs (metrics, CI/CD, eval, async, data plane) — **no** business agents | **Done** (2026-06-02) — **33/34** | [M.6 P5 register](#m6-p5--harness-integration-depth-done--3334) · **§6.1x** · **§6.2af** |
-| **2ac — Integration expansion (M.6 P6)** | 32 harness slugs (security, sandbox, identity, GitOps, speech, enterprise ops, workflow, modality reserve) — **no** business agents | **Planned** (2026-06-02) — **0/32** | [M.6 P6 register](#m6-p6--harness-integration-expansion-planned) · **§6.1y** · **§6.2ag** |
+| **2ac — Integration expansion (M.6 P6)** | 32 harness slugs + post-catalog wiring (tools, bridges, promote gate, infra `p6`) — **no** business agents | **Done** (2026-06-02) — **32/32 + M-P6-WIRE** | [M.6 P6 register](#m6-p6--harness-integration-expansion-planned) · **§6.1y** · **§6.2ag** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
 
-**Policy (2026-06-06):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2z** platform closeouts = **Done** (including W-ADAPT + M-LLM-R). Band **2aa** (M.6 P4) = **Done** (28/28). Band **2ab** (M.6 P5) = **Done** (33/34). Band **2ac** (M.6 P6) = **Planned** (0/32). Band 3 = **frozen** unless leadership reprioritizes.
+**Policy (2026-06-06):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2z** platform closeouts = **Done** (including W-ADAPT + M-LLM-R). Band **2aa** (M.6 P4) = **Done** (28/28). Band **2ab** (M.6 P5) = **Done** (33/34). Band **2ac** (M.6 P6) = **Done** (32/32 + wiring closeout). Band 3 = **frozen** unless leadership reprioritizes.
 
 ```text
 BAND 1:  Harness maintenance — gate + audit scripts (§6.1) — every PR
@@ -4310,7 +4323,7 @@ BAND 2y: Adaptive Harness Intelligence — Phase W-ADAPT (§6.1t) — DONE (70/7
 BAND 2z: LLM completion envelope — Phase M-LLM-R (§6.1v) — DONE (39/39)
 BAND 2aa: Integration expansion — Phase M.6 P4 (§6.1w) — DONE (28/28)
 BAND 2ab: Integration depth — Phase M.6 P5 (§6.1x) — DONE (33/34)
-BAND 2ac: Integration expansion — Phase M.6 P6 (§6.1y) — PLANNED (0/32)
+BAND 2ac: Integration expansion — Phase M.6 P6 (§6.1y) — DONE (32/32 + M-P6-WIRE)
 DONE:    Phase CLEAN — legacy module closeout (§6.1j) — 2026-06-02
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
@@ -4368,7 +4381,7 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 | **Canonical implementation queue (infrastructure)** | [§6.1](#61-harness-platform-maintenance-default--band-1) (**active** — maintenance) · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) (all closed) · [§6.1z](#61z-harness-implementation-queue-consolidated) (closed) |
 | Integration catalog expansion (Done) | [M.6 P4](#m6-p4--harness-platform-expansion-done) · [§6.1w](#61w-harness-implementation-queue--integration-expansion-m6-p4-closed) — **28/28 Done** |
 | Integration harness depth (Done) | [M.6 P5](#m6-p5--harness-integration-depth-done--3334) · [§6.1x](#61x-harness-implementation-queue--integration-depth-m6-p5-done) — **33/34 Done** |
-| Integration harness expansion (Planned) | [M.6 P6](#m6-p6--harness-integration-expansion-planned) · [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-planned) — **0/32 Planned** |
+| Integration harness expansion | [M.6 P6](#m6-p6--harness-integration-expansion-planned) · [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-planned) — **Done** (32/32 + wiring) |
 | Ongoing gate + audit scripts | [§6.1](#61-harness-platform-maintenance-default--band-1) |
 | Memory platform (Done — §6.1 maintenance) | [Phase MEM](#phase-mem--memory-platform-completion) · [§6.2aa](#62aa-phase-mem-execution-order-band-2h--active) |
 | All business / domain work | [§6.3](#63-end-of-plan--deferred-product-work-only) · [Business backlog register](#63a-business-backlog-register-consolidated) |
@@ -5221,15 +5234,16 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 | Order | Wave | IDs | Slugs (summary) | Priority | Status |
 |-------|------|-----|-----------------|----------|--------|
 | 0 | CAT | M-P6-CAT.1–9 | New categories: `security_scanner`, `sandbox_host`, `identity_provider`, `speech_provider`, `workflow_orchestrator`, `vision_serving`, `ml_inference_host`, `billing_meter`, `crm` | **P0** | **Done** |
-| 1 | H-INT-10 | M-P6.1–M-P6.4 | Security + secrets: `trivy`, `snyk`, `semgrep`, `infisical` | **P0** | **Planned** |
-| 2 | H-INT-11 | M-P6.5–M-P6.7 | Cloud sandbox: `e2b`, `modal`, `daytona` | **P0/P1** | **Planned** |
-| 3 | H-INT-12 | M-P6.8–M-P6.10 | Identity: `auth0`, `keycloak`, `workos` | **P0/P1** | **Planned** |
-| 4 | H-INT-13 | M-P6.11–M-P6.13 | GitOps CI: `argocd`, `buildkite`, `jenkins` | **P0/P1** | **Planned** |
-| 5 | H-INT-14 | M-P6.14–M-P6.15 | Speech catalog: `elevenlabs`, `deepgram` | **P0** | **Planned** |
-| 6 | H-INT-15 | M-P6.16–M-P6.19 | Enterprise ops: `newrelic`, `splunk`, `zendesk`, `statsig` | **P1** | **Planned** |
-| 7 | H-INT-16 | M-P6.20–M-P6.24 | Data/workflow: `prefect`, `airflow`, `typesense`, `neon`, `pulsar` | **P1** | **Planned** |
-| 8 | H-INT-17 | M-P6.25–M-P6.32 | Reserve: `algolia`, `confluent`, `backblaze_b2`, `triton`, `replicate`, `stripe`, `salesforce`, `hubspot` | **P2** | **Planned** |
+| 1 | H-INT-10 | M-P6.1–M-P6.4 | Security + secrets: `trivy`, `snyk`, `semgrep`, `infisical` | **P0** | **Done** |
+| 2 | H-INT-11 | M-P6.5–M-P6.7 | Cloud sandbox: `e2b`, `modal`, `daytona` | **P0/P1** | **Done** |
+| 3 | H-INT-12 | M-P6.8–M-P6.10 | Identity: `auth0`, `keycloak`, `workos` | **P0/P1** | **Done** |
+| 4 | H-INT-13 | M-P6.11–M-P6.13 | GitOps CI: `argocd`, `buildkite`, `jenkins` | **P0/P1** | **Done** |
+| 5 | H-INT-14 | M-P6.14–M-P6.15 | Speech catalog: `elevenlabs`, `deepgram` | **P0** | **Done** |
+| 6 | H-INT-15 | M-P6.16–M-P6.19 | Enterprise ops: `newrelic`, `splunk`, `zendesk`, `statsig` | **P1** | **Done** |
+| 7 | H-INT-16 | M-P6.20–M-P6.24 | Data/workflow: `prefect`, `airflow`, `typesense`, `neon`, `pulsar` | **P1** | **Done** |
+| 8 | H-INT-17 | M-P6.25–M-P6.32 | Reserve: `algolia`, `confluent`, `backblaze_b2`, `triton`, `replicate`, `stripe`, `salesforce`, `hubspot` | **P2** | **Done** |
 | 9 | PRE | M-P6-PRE.1 | Tier-3 presets: `harness_security_stack`, `harness_sandbox_stack`, `harness_identity_stack`, `harness_gitops_stack` | **P0** | **Done** |
+| 10 | WIRE | M-P6-WIRE.1–7 | Tool surface + sandbox/speech/identity bridges + promote gate + infra `p6` | **P0** | **Done** |
 
 **Per-slug checklist:** see [M.6 P6 register](#m6-p6--harness-integration-expansion-planned).
 
@@ -5591,9 +5605,9 @@ Full task register: [Appendix I](#appendix-i--plugin-catalog-traceability-phase-
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3. **Feature queues:** Phase W-ADAPT — §6.1t; Phase M-LLM-R — §6.1v; Phase M.6 P4 — §6.1w (closed); Phase M.6 P5 — §6.1x (closed); Phase M.6 P6 — §6.1y (planned).
 
-### 6.2ag Phase M.6 P6 execution order (Band 2ac — Planned)
+### 6.2ag Phase M.6 P6 execution order (Band 2ac — Done)
 
-**Status:** **Planned** (2026-06-02) · register: [M.6 P6](#m6-p6--harness-integration-expansion-planned) · queue: [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-planned)
+**Status:** **Done** (2026-06-02) · register: [M.6 P6](#m6-p6--harness-integration-expansion-planned) · queue: [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-planned)
 
 ```text
 Wave H-INT-0 (categories):  M-P6-CAT.1 → M-P6-CAT.2 → M-P6-CAT.3 → M-P6-CAT.4 → M-P6-CAT.5 → M-P6-CAT.6 → M-P6-CAT.7 → M-P6-CAT.8 → M-P6-CAT.9
@@ -6937,4 +6951,4 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ---
 
-*Plan synced (2026-06-02). **Harness platform** bands 1–2ab **Done** (M.6 P5 **33/34**). **Band 2ac M.6 P6 Planned** (0/32). Gate: **722 passed** (pytest -m gate). **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance; optional parallel [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-planned). Product: [§6.3](#63-end-of-plan--deferred-product-work-only). **Every PR:** §6.1 maintenance.*
+*Plan synced (2026-06-02). **Harness platform** bands 1–2ac **Done** (M.6 P6 **32/32 + M-P6-WIRE**). **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance. Product: [§6.3](#63-end-of-plan--deferred-product-work-only). **Every PR:** §6.1 maintenance.*

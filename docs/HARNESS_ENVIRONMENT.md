@@ -115,7 +115,13 @@ Reference harness agents **must** set `AgentContract.skill_ids` — echo and sig
 
 Default enabled tools: `rag.retrieve`, `websearch.query`.
 
-`sandbox.exec` is enabled **only** when a sandbox session is passed into `wire_lab_tools(sandbox_session=...)` (Phase U-Sec.3). Skills may still declare `sandbox.exec` for harness exercises — wire a session before expecting successful invocations.
+`sandbox.exec` is enabled when `ToolWiringContext.sandbox_session` is set (local runtime sandbox) **or** when `IntegrationProfile.sandbox_host` resolves to a hosted backend — `wire_application_environment()` opens `HostedSandboxSession` via `resolve_hosted_sandbox_session()` (M.6 P6). Skills may still declare `sandbox.exec` for harness exercises — wire a session before expecting successful invocations.
+
+**P6 integration tool wiring:** `wire_integration_tool_context()` maps `security_scanner`, `sandbox_host`, `identity_provider`, `speech_provider`, and `workflow_orchestrator` from `IntegrationProfile` into `ToolWiringContext` (see `applications/_shared/integration_tool_wiring.py`).
+
+**Harness host identity (M.6 P6):** `wire_application_identity()` attaches OIDC bearer validation (`IdentityProviderBackend.verify_token`) alongside optional `INTERGRAX_HARNESS_API_KEY`. Lab and generic harness FastAPI hosts call this after route assembly; MCP wrapper copies `HarnessAuthState` to the outer app.
+
+**V-SEC STABLE promote gate:** `scripts/check_harness_security_promote_gate.py` validates `harness_security_stack()` wiring (`trivy` + `semgrep` in options). Set `INTERGRAX_SECURITY_PROMOTE_RUN_SCAN=true` to execute live repo scans in release pipelines.
 
 With `LAB_HARNESS=true`, also: `errors.capture`, `observability.query_traces`, `pagerduty.trigger_incident`, etc.
 
