@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="elasticsearch",
     categories=(IntegrationCategory.OBSERVABILITY_BACKEND,),
-    status=IntegrationStatus.BETA,
+    status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_ELASTICSEARCH',
     description='Elasticsearch log search (_search aggregations; query_string via ObservabilityBackend)',
 )

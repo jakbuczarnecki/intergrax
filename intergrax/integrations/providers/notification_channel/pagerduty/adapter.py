@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Optional
 
+from intergrax.integrations.contracts.base import HealthStatus
 from intergrax.integrations.providers.notification_channel.pagerduty.client import PagerDutyEventsClient
 from intergrax.runtime.notifications.models import NotificationMessage
 
@@ -43,4 +44,11 @@ class PagerDutyNotificationChannel:
             source=source,
             custom_details=custom_details,
             dedup_key=dedup_key,
+        )
+
+    def health(self) -> HealthStatus:
+        return HealthStatus(
+            slug="pagerduty",
+            healthy=bool(self._client.health()),
+            detail="pagerduty events API",
         )

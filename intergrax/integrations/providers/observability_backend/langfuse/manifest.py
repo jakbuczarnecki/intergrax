@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="langfuse",
     categories=(IntegrationCategory.OBSERVABILITY_BACKEND,),
-    status=IntegrationStatus.BETA,
+    status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_LANGFUSE',
     description='langfuse integration (Phase M.7)',
 )

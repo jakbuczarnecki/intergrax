@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 from typing import Any, Callable, Mapping, Optional, Sequence
 
+from intergrax.integrations._shared.health import probe_client_health
 from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError
 from intergrax.integrations.contracts.health_probe import IntegrationHealthProbe
 from intergrax.integrations.contracts.ci_cd import CheckSuiteRecord, CiCdBackend, WorkflowRunRecord
@@ -113,7 +114,7 @@ class HttpFeatureFlagBackend:
         return FeatureFlagEvaluation(key=flag_key, enabled=bool(payload))
 
     def health(self) -> HealthStatus:
-        return _probe_client_health(self._client, slug=self._provider)
+        return probe_client_health(self._client, slug=self._provider)
 
 
 class HttpCiCdBackend:
@@ -154,7 +155,7 @@ class HttpCiCdBackend:
         return suites
 
     def health(self) -> HealthStatus:
-        return _probe_client_health(self._client, slug=self._provider)
+        return probe_client_health(self._client, slug=self._provider)
 
 
 class HttpObservabilityClientAdapter:
@@ -228,7 +229,7 @@ class HttpObservabilityClientAdapter:
         return TraceQueryResult()
 
     def health(self) -> HealthStatus:
-        return _probe_client_health(self._client, slug=self._provider)
+        return probe_client_health(self._client, slug=self._provider)
 
 
 class MemgraphGraphStore(Neo4jGraphStore):

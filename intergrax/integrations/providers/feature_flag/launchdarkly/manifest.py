@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="launchdarkly",
     categories=(IntegrationCategory.FEATURE_FLAG,),
-    status=IntegrationStatus.BETA,
+    status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_LAUNCHDARKLY',
     description='launchdarkly integration (Phase M.6 P4)',
 )

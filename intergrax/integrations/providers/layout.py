@@ -134,6 +134,14 @@ SLUG_CATEGORY: dict[str, str] = {
     "mlflow": "observability_backend",
     "huggingface_hub": "object_storage",
     "ollama": "interaction_surface",
+    "gitlab_ci": "ci_cd",
+    "circleci": "ci_cd",
+    "azure_pipelines": "ci_cd",
+    "mailpit": "notification_channel",
+    "localstack": "cloud_platform",
+    "codecov": "ci_cd",
+    "grafana_oncall": "notification_channel",
+    "opentelemetry_collector": "observability_backend",
 }
 
 

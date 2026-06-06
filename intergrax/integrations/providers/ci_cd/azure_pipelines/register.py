@@ -1,0 +1,14 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+"""Register azure_pipelines in the integration catalog."""
+
+from __future__ import annotations
+
+from intergrax.integrations.providers.ci_cd.azure_pipelines.bundle import create_azure_pipelines_ci_cd
+from intergrax.integrations.providers.ci_cd.azure_pipelines.manifest import MANIFEST
+from intergrax.integrations.registry.plugin_register import register_from_manifest
+
+
+def register_azure_pipelines_integration(*, override: bool = False) -> None:
+    register_from_manifest(MANIFEST, create_azure_pipelines_ci_cd, override=override)

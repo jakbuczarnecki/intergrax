@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="prometheus",
     categories=(IntegrationCategory.OBSERVABILITY_BACKEND,),
-    status=IntegrationStatus.BETA,
+    status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_PROMETHEUS',
     description='Prometheus HTTP query API (query_instant, query_range via REST v1)',
 )

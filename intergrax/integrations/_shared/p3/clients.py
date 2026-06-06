@@ -7,11 +7,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional, Sequence
+from typing import Any, Callable, Mapping, Optional, Protocol, Sequence
 
 from intergrax.integrations._shared.rest_search import hits_from_exa_payload, hits_from_tavily_payload
 from intergrax.integrations._shared.vector_store_bridge import VectorStoreBridge
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError
 from intergrax.integrations.contracts.browser_automation import BrowserAutomation, PageContent
 from intergrax.integrations.contracts.graph_store import GraphNodeRecord, GraphQueryResult, GraphStore
 from intergrax.integrations.contracts.observability_backend import MetricPoint, MetricQueryResult, MetricSeries, TraceQueryResult, TraceRecord
@@ -20,6 +20,10 @@ from intergrax.integrations.contracts.search_provider import SearchProvider
 from intergrax.integrations.contracts.vector_store import VectorStore
 from intergrax.integrations._shared.p2.clients import RestSearchProvider
 from intergrax.websearch.schemas.search_hit import SearchHit
+
+
+class TraceQueryClient(Protocol):
+    def query_traces(self, *, limit: int = 20, name: Optional[str] = None) -> TraceQueryResult: ...
 
 
 class VaultSecretsStore:
@@ -42,6 +46,13 @@ class VaultSecretsStore:
 
     def close(self) -> None:
         self._closed = True
+
+    def health(self) -> HealthStatus | bool:
+        from intergrax.integrations._shared.health import probe_client_health
+
+        if self._closed:
+            return False
+        return probe_client_health(self._client, slug="vault")
 
     def _require_open(self) -> None:
         if self._closed:
@@ -76,6 +87,13 @@ class Neo4jGraphStore:
 
     def close(self) -> None:
         self._closed = True
+
+    def health(self) -> HealthStatus:
+        from intergrax.integrations._shared.health import probe_client_health
+
+        if self._closed:
+            return HealthStatus(slug="neo4j", healthy=False, detail="graph store closed")
+        return probe_client_health(self._client, slug="neo4j")
 
     def _require_open(self) -> None:
         if self._closed:
@@ -122,10 +140,14 @@ class HttpObservabilityBackend:
         )
 
     def query_traces(self, *, limit: int = 20, name: Optional[str] = None) -> TraceQueryResult:
-        query_fn = getattr(self._client, "query_traces", None)
-        if query_fn is None:
-            return TraceQueryResult()
-        return query_fn(limit=limit, name=name)
+        if isinstance(self._client, TraceQueryClient):
+            return self._client.query_traces(limit=limit, name=name)
+        return TraceQueryResult()
+
+    def health(self) -> HealthStatus:
+        from intergrax.integrations._shared.health import probe_client_health
+
+        return probe_client_health(self._client, slug=self._provider)
 
 
 class SentryObservabilityBackend:
@@ -181,9 +203,16 @@ class RestVectorStoreIntegration(VectorStoreBridge):
 
 
 class HttpNotificationChannel:
-    def __init__(self, sender: Callable[..., None], *, provider: str) -> None:
+    def __init__(
+        self,
+        sender: Callable[..., None],
+        *,
+        provider: str,
+        health_client: Optional[Any] = None,
+    ) -> None:
         self._sender = sender
         self._provider = provider
+        self._health_client = health_client
 
     async def notify(self, message: Any) -> None:
         from intergrax.runtime.notifications.models import NotificationMessage
@@ -191,6 +220,13 @@ class HttpNotificationChannel:
         if not isinstance(message, NotificationMessage):
             raise IntegrationConfigurationError(f"{self._provider} expects NotificationMessage")
         self._sender(message=message)
+
+    def health(self) -> HealthStatus:
+        from intergrax.integrations._shared.health import probe_client_health
+
+        if self._health_client is not None:
+            return probe_client_health(self._health_client, slug=self._provider)
+        return HealthStatus(slug=self._provider, healthy=True, detail="no probe")
 
 
 class FirecrawlBrowserAutomation:

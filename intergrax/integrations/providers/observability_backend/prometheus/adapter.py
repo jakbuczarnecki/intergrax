@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from intergrax.integrations.contracts.base import HealthStatus
 from intergrax.integrations.contracts.observability_backend import MetricQueryResult, TraceQueryResult
 from intergrax.integrations.providers.observability_backend.prometheus.client import PrometheusRestClient
 
@@ -41,3 +42,10 @@ class PrometheusObservabilityBackend:
     def query_traces(self, *, limit: int = 20, name: Optional[str] = None) -> TraceQueryResult:
         _ = limit, name
         return TraceQueryResult()
+
+    def health(self) -> HealthStatus:
+        return HealthStatus(
+            slug="prometheus",
+            healthy=bool(self._client.health()),
+            detail="prometheus ready probe",
+        )

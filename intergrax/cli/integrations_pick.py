@@ -17,6 +17,10 @@ _PRESET_MAP = {
     "data": presets.data_stack,
     "observability": presets.observability_stack,
     "harness_production": presets.harness_production_stack,
+    "harness_metrics": presets.harness_metrics_stack,
+    "harness_eval": presets.harness_eval_stack,
+    "harness_async": presets.harness_async_stack,
+    "harness_ci": presets.harness_ci_stack,
 }
 
 

@@ -1,6 +1,6 @@
 # Intergrax Integration Library
 
-**Last updated:** 2026-06-02 (Phase M.6 P5 register — harness integration depth planned)
+**Last updated:** 2026-06-02 (Phase M.6 P5 — harness integration depth **Done** 33/34)
 
 The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. Agents and applications wire backends **by category**, not by vendor SDK, so the same agent code can run in a local lab, a customer VPC, or a multi-cloud deployment.
 
@@ -41,20 +41,22 @@ uv run pytest tests/unit/integrations/test_harness_lab_stable_stack.py -m gate -
 
 Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 127 providers stable in one release.
 
-### M.6 P5 — Harness integration depth (Planned)
+### M.6 P5 — Harness integration depth (Done — 33/34)
 
-**Register:** [INTERGRAX_IMPLEMENTATION_PLAN.md — M.6 P5](INTERGRAX_IMPLEMENTATION_PLAN.md#m6-p5--harness-integration-depth-planned) · queue **§6.1x** · Band **2ab**
+**Register:** [INTERGRAX_IMPLEMENTATION_PLAN.md — M.6 P5](INTERGRAX_IMPLEMENTATION_PLAN.md#m6-p5--harness-integration-depth-planned) · Band **2ab**
 
-| Wave | Focus | Slug count |
-|------|--------|------------|
-| H-INT-6 | Ops, metrics, multi-CI, local cloud | 10 |
-| H-INT-7 | Eval observability, async bus, artifacts | 10 |
-| H-INT-8 | Data plane lab (graph, document, logs, vectors) | 8 |
-| H-INT-9 | P2 reserve (security scan, on-call, enterprise SQL) | 6 |
+| Wave | Focus | Status |
+|------|--------|--------|
+| H-INT-6 | Ops, metrics, multi-CI, local cloud | **Done** (10/10) |
+| H-INT-7 | Eval observability, async bus, artifacts | **Done** (10/10) |
+| H-INT-8 | Data plane lab (graph, document, logs, vectors) | **Done** (8/8) |
+| H-INT-9 | P2 reserve | **Done** (5/6 — `trivy` deferred) |
 
-**25 harden** (existing beta → STABLE + health + preset) · **9 greenfield** (new slug in `layout.py`).
+**Delivered:** 25 harden (STABLE + `IntegrationHealthProbe`) · 8 greenfield (`_shared/p6`) · 4 Tier-3 presets · `HARNESS_M6_P5_PROBE_SLUGS` · debug API `GET /debug/integrations/health?stack=m6_p5`.
 
-**Planned Tier-3 presets:** `harness_metrics_stack`, `harness_eval_stack`, `harness_async_stack`, `harness_ci_stack` — see plan M-P5-PRE.1.
+**Deferred:** `trivy` — new `security_scanner` category (**M-P5-CAT.2**) requires architecture sign-off.
+
+**Tier-3 presets:** `harness_metrics_stack()`, `harness_eval_stack()`, `harness_async_stack()`, `harness_ci_stack()` — CLI: `intergrax integrations-pick harness_metrics|harness_eval|harness_async|harness_ci`.
 
 ---
 

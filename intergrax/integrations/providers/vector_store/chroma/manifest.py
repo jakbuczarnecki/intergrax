@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="chroma",
     categories=(IntegrationCategory.VECTOR_STORE,),
-    status=IntegrationStatus.BETA,
+    status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_CHROMA',
     description='Chroma vector store catalog bridge — delegates to intergrax/rag/ ChromaVectorStore',
 )

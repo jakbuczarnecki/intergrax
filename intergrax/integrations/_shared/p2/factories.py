@@ -677,6 +677,11 @@ def _open_http_issue_client(config: HttpIntegrationConfig, *, base_path: str) ->
                 return payload
             return list(payload.get("issues") or payload.get("items") or [])
 
+        def health(self) -> bool:
+            from intergrax.integrations._shared.health import http_ping_ok
+
+            return http_ping_ok(http, path="/zen")
+
     return _Client()
 
 

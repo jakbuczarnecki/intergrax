@@ -129,7 +129,9 @@ Operational L3 evidence is separate from `phase_v_closeout_gate` (contract CI). 
 
 **M.6 P4 harness ROI probes (W-OPS.10 extension):** `health_check_harness_m6_p4_probes()` probes `pgvector`, `duckdb`, `grafana`, `loki`, `tempo`, `doppler`, `unleash`, `github_actions`, and `ollama` — catalog slugs promoted to **STABLE** for harness production wiring.
 
-**Lab debug API:** when `LAB_HARNESS=true`, lab host mounts `GET /debug/integrations/health?stack=lab|m6_p4|all` (circuit-breaker catalog probes for operators).
+**M.6 P5 harness depth probes (W-OPS.10 extension):** `health_check_harness_m6_p5_probes()` probes 21 slugs (`HARNESS_M6_P5_PROBE_SLUGS`) — metrics/CI/eval/async/data-plane harness stack. Tier-3 presets: `harness_metrics_stack`, `harness_eval_stack`, `harness_async_stack`, `harness_ci_stack`.
+
+**Lab debug API:** when `LAB_HARNESS=true`, lab host mounts `GET /debug/integrations/health?stack=lab|m6_p4|m6_p5|all` (circuit-breaker catalog probes for operators).
 
 **Shadow evaluation (W-OPS.11):** set `RuntimeRequest.metadata["harness_shadow_eval"]` to `{"scenario_id": "...", "passed": true, "score": 1.0}`; `RuntimeEngine` records `HarnessShadowEvalRecordedDiagV1` trace step and appends to `build/architecture_hardening/online_evaluation_observations.json`. After a release, export trends: `uv run python scripts/export_harness_shadow_eval_trend.py --release-id <id>` → `shadow_evaluation_trend_report.json` (snapshots in `evaluation_release_snapshots.json`).
 

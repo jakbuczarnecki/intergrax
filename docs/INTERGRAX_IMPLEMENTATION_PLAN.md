@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-02) — **Harness platform bands 1–2aa Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39); **Phase M.6 P4 (Band 2aa) Done** (28/28); **Phase M.6 P5 (Band 2ab) Planned** (34 slugs — harness audit 2026-06-02); default queue = **§6.1 maintenance** + optional **§6.1x** (M.6 P5); Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done**; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate green; **operational L3 signed off**  
+Status: Working draft (2026-06-02) — **Harness platform bands 1–2aa Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39); **Phase M.6 P4 (Band 2aa) Done** (28/28); **Phase M.6 P5 (Band 2ab) Done** (33/34 — `trivy` deferred pending **M-P5-CAT.2** `security_scanner` contract); default queue = **§6.1 maintenance**; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done**; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate green; **operational L3 signed off**  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -880,7 +880,7 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 | M.6 | P1 providers (on demand) | **Done** (beta) | postgresql, mysql, jira, confluence, prometheus, ms365_graph, aws, azure, gcp — see M.4/M.6 trackers |
 | M.6 P2 | Extended providers (on demand) | **Done** (beta) | All P2/P3 slugs shipped 2026-05-30 — see **M.6 P2 tracker**; `_shared/p2/` + thin `providers/<slug>/` shells |
 | M.6 P4 | Harness platform expansion | **Done** (beta) (28/28) | `_shared/p5/` · `bootstrap_m6_p4.py` · [M.6 P4 register](#m6-p4--harness-platform-expansion-done) |
-| M.6 P5 | Harness integration depth (audit 2026-06-02) | **Planned** (0/34) | Harden 25 existing beta + 9 greenfield · [M.6 P5 register](#m6-p5--harness-integration-depth-planned) · **§6.1x** |
+| M.6 P5 | Harness integration depth (audit 2026-06-02) | **Done** (33/34) | Harden 25 STABLE + health · 8 greenfield · `trivy` deferred (**M-P5-CAT.2**) · [M.6 P5 register](#m6-p5--harness-integration-depth-planned) |
 | M.7 | Agent Creation Guide § integrations | **Done** | Appendix E — capabilities/tools vs `IntegrationProfile` / `wire_lab_integrations()` |
 | M.8 | Lab `IntegrationProfile` example | **Done** | `applications/lab_application/` — `wire_lab_integrations()` + `log` provider |
 
@@ -1059,7 +1059,21 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 | 2026-06-02 | M-P4.FU | Tier-3 follow-up (no business agents): `harness_production_stack` / `harness_production_defaults`, lab env (`LAB_OBSERVABILITY_GRAFANA_STACK`, `LAB_ADAPTIVE_FEATURE_FLAG`, `LAB_SECRETS_BACKEND`), adaptive feature-flag gate, pgvector persistence + health, M6 P4 stable promotion (8 slugs), `health_check_harness_m6_p4_probes`, docs sync |
 | 2026-06-02 | M-P4.FU.2 | Adaptive runtime bridge uses gated `wiring.profile`; debug `GET /debug/integrations/health`; remove `getattr` from P5 health probes (`IntegrationHealthProbe`); W-OPS integration health debug gate; gate **790** |
 
-#### M.6 P5 — Harness integration depth (Planned)
+#### M.6 P5 — Harness integration depth (Done — 33/34)
+
+**Deferred:** `trivy` (M-P5.30) — requires new `SecurityScannerBackend` contract (**M-P5-CAT.2**); see architecture review before merge.
+
+**Delivered (2026-06-02):**
+
+- `_shared/p6/factories.py` — 8 greenfield harness slugs
+- `bootstrap_m6_p5.py` + `layout.py` (+8 slugs → **135** catalog slugs)
+- Health probes on harden adapters; **STABLE** promotion (25 slugs)
+- Tier-3 presets: `harness_metrics_stack`, `harness_eval_stack`, `harness_async_stack`, `harness_ci_stack`
+- `HARNESS_M6_P5_PROBE_SLUGS` + `health_check_harness_m6_p5_probes()` + debug API `stack=m6_p5`
+- `integrations-pick` presets: `harness_metrics`, `harness_eval`, `harness_async`, `harness_ci`
+- Tests: `tests/unit/integrations/providers/test_p6_m6_p5_providers.py`
+
+#### M.6 P5 — Harness integration depth (register archive)
 
 **Status:** **Planned** (2026-06-02) — **0/34** · catalog baseline **127** → target **136** after greenfield slugs  
 **Source:** Harness integration re-audit (2026-06-02) — post M.6 P4 follow-up  
@@ -1148,6 +1162,7 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 | Date | ID | Summary |
 |------|-----|---------|
 | 2026-06-02 | M-P5.0 | Register 34 harness-depth slugs from integration re-audit; §6.1x + §6.2af + Band 2ab |
+| 2026-06-02 | M-P5.1–34 | Implement 33/34 slugs: health + STABLE harden, p6 greenfield, presets, W-OPS probes; `trivy` deferred (M-P5-CAT.2) |
 
 #### M.6 P3 — Legacy backlog note (superseded)
 

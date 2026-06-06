@@ -37,6 +37,32 @@ HARNESS_M6_P4_PROBE_SLUGS: frozenset[str] = frozenset(
     }
 )
 
+HARNESS_M6_P5_PROBE_SLUGS: frozenset[str] = frozenset(
+    {
+        "prometheus",
+        "clickhouse",
+        "vault",
+        "pagerduty",
+        "github",
+        "gitlab_ci",
+        "circleci",
+        "azure_pipelines",
+        "mailpit",
+        "localstack",
+        "langfuse",
+        "phoenix",
+        "mlflow",
+        "influxdb",
+        "minio",
+        "redpanda",
+        "neo4j",
+        "elasticsearch",
+        "codecov",
+        "grafana_oncall",
+        "opentelemetry_collector",
+    }
+)
+
 
 class HarnessLabStackValidationError(ValueError):
     """Raised when a harness stack slug is missing or not marked stable."""

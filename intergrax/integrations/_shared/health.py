@@ -20,6 +20,29 @@ from intergrax.integrations.registry.profile import IntegrationProfile
 HealthProbe = Callable[[object], HealthStatus]
 
 
+def http_ping_ok(http_client: object, *, path: str = "/") -> bool:
+    """Return True when an HTTP client responds with status < 400."""
+    try:
+        response = http_client.get(path)
+        status_code = int(response.status_code)  # type: ignore[attr-defined]
+        return status_code < 400
+    except Exception:  # noqa: BLE001 — health probe surface
+        return False
+
+
+def probe_client_health(client: object, *, slug: str, default_detail: str = "") -> HealthStatus:
+    """Resolve ``IntegrationHealthProbe`` on a duck-typed client."""
+    if isinstance(client, IntegrationHealthProbe):
+        try:
+            result = client.health()
+        except Exception as exc:  # noqa: BLE001 — health probe surface
+            return HealthStatus(slug=slug, healthy=False, detail=str(exc))
+        if isinstance(result, HealthStatus):
+            return result
+        return HealthStatus(slug=slug, healthy=bool(result), detail=default_detail or "client probe")
+    return HealthStatus(slug=slug, healthy=True, detail=default_detail or "no probe")
+
+
 def health_check(instance: object, *, slug: str) -> HealthStatus:
     if isinstance(instance, IntegrationHealthProbe):
         result = instance.health()

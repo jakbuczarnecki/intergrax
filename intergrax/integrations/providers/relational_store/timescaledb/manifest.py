@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="timescaledb",
     categories=(IntegrationCategory.RELATIONAL_STORE,),
-    status=IntegrationStatus.BETA,
+    status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_TIMESCALEDB',
     description='timescaledb integration (Phase M.6 P4)',
 )

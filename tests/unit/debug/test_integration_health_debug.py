@@ -10,7 +10,11 @@ from intergrax.applications._shared.adaptive_wiring import wire_adaptive_profile
 from intergrax.applications.contracts.environment_profile import AdaptiveProfile, ApplicationEnvironmentProfile
 from intergrax.debug.app import create_debug_app
 from intergrax.integrations.contracts.feature_flag import FeatureFlagEvaluation
-from intergrax.integrations.registry.harness_lab_stack import HARNESS_LAB_STABLE_SLUGS, HARNESS_M6_P4_PROBE_SLUGS
+from intergrax.integrations.registry.harness_lab_stack import (
+    HARNESS_LAB_STABLE_SLUGS,
+    HARNESS_M6_P4_PROBE_SLUGS,
+    HARNESS_M6_P5_PROBE_SLUGS,
+)
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.nexus.config import RuntimeConfig
 from testing_support.builder import FakeLLMAdapter
@@ -81,6 +85,18 @@ def test_integration_health_debug_route_m6_p4_stack() -> None:
     assert payload["count"] == len(HARNESS_M6_P4_PROBE_SLUGS)
     slugs = {item["slug"] for item in payload["probes"]}
     assert slugs == set(HARNESS_M6_P4_PROBE_SLUGS)
+
+
+def test_integration_health_debug_route_m6_p5_stack() -> None:
+    app = create_debug_app(include_integration_health_routes=True)
+    client = TestClient(app)
+    response = client.get("/debug/integrations/health?stack=m6_p5")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["stack"] == "m6_p5"
+    assert payload["count"] == len(HARNESS_M6_P5_PROBE_SLUGS)
+    slugs = {item["slug"] for item in payload["probes"]}
+    assert slugs == set(HARNESS_M6_P5_PROBE_SLUGS)
 
 
 def test_integration_health_debug_route_disabled_by_default() -> None:

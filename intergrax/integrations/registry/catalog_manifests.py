@@ -91,7 +91,7 @@ JINA_RERANK = IntegrationManifest(
 PAGERDUTY = IntegrationManifest(
     slug="pagerduty",
     categories=(IntegrationCategory.NOTIFICATION_CHANNEL,),
-    status=IntegrationStatus.BETA,
+    status=IntegrationStatus.STABLE,
 )
 
 SENTRY = IntegrationManifest(
@@ -180,31 +180,102 @@ GITHUB_ACTIONS = IntegrationManifest(
     env_prefix="INTERGRAX_GITHUB_ACTIONS",
 )
 
+PROMETHEUS = IntegrationManifest(
+    slug="prometheus",
+    categories=(IntegrationCategory.OBSERVABILITY_BACKEND,),
+    status=IntegrationStatus.STABLE,
+    env_prefix="INTERGRAX_PROMETHEUS",
+)
+
+CLICKHOUSE = IntegrationManifest(
+    slug="clickhouse",
+    categories=(IntegrationCategory.OBSERVABILITY_BACKEND,),
+    status=IntegrationStatus.STABLE,
+    env_prefix="INTERGRAX_CLICKHOUSE",
+)
+
+VAULT = IntegrationManifest(
+    slug="vault",
+    categories=(IntegrationCategory.SECRETS_STORE,),
+    status=IntegrationStatus.STABLE,
+    env_prefix="INTERGRAX_VAULT",
+)
+
+GITHUB = IntegrationManifest(
+    slug="github",
+    categories=(IntegrationCategory.ISSUE_TRACKER,),
+    status=IntegrationStatus.STABLE,
+    env_prefix="INTERGRAX_GITHUB",
+)
+
+LANGFUSE = IntegrationManifest(
+    slug="langfuse",
+    categories=(IntegrationCategory.OBSERVABILITY_BACKEND,),
+    status=IntegrationStatus.STABLE,
+    env_prefix="INTERGRAX_LANGFUSE",
+)
+
+MINIO = IntegrationManifest(
+    slug="minio",
+    categories=(IntegrationCategory.OBJECT_STORAGE,),
+    status=IntegrationStatus.STABLE,
+    env_prefix="INTERGRAX_MINIO",
+)
+
+REDPANDA = IntegrationManifest(
+    slug="redpanda",
+    categories=(IntegrationCategory.MESSAGE_BUS,),
+    status=IntegrationStatus.STABLE,
+    env_prefix="INTERGRAX_REDPANDA",
+)
+
+KAFKA = IntegrationManifest(
+    slug="kafka",
+    categories=(IntegrationCategory.MESSAGE_BUS,),
+    status=IntegrationStatus.STABLE,
+)
+
+GITLAB_CI = IntegrationManifest(
+    slug="gitlab_ci",
+    categories=(IntegrationCategory.CI_CD,),
+    status=IntegrationStatus.STABLE,
+    env_prefix="INTERGRAX_GITLAB_CI",
+)
+
 __all__ = [
     "AWS",
     "AZURE",
+    "CLICKHOUSE",
     "COHERE_RERANK",
     "DOCLING",
     "DOPPLER",
     "DUCKDB",
     "GCP",
+    "GITHUB",
     "GITHUB_ACTIONS",
+    "GITLAB_CI",
     "GOOGLE_CSE",
     "GRAFANA",
     "INMEMORY",
     "JINA_RERANK",
+    "KAFKA",
     "LAB_JSON",
+    "LANGFUSE",
     "LANGSMITH",
     "LOG",
     "LOKI",
+    "MINIO",
     "OTEL",
     "PAGERDUTY",
     "PGVECTOR",
     "POSTGRESQL",
+    "PROMETHEUS",
     "QDRANT",
     "REDIS",
+    "REDPANDA",
     "SENTRY",
     "SQLITE",
     "TEMPO",
     "UNLEASH",
+    "VAULT",
 ]

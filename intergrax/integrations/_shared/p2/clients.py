@@ -9,7 +9,7 @@ import uuid
 from typing import Any, Callable, Optional, Sequence
 
 from intergrax.integrations._shared.rest_search import hits_from_brave_payload, hits_from_serpapi_payload
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError
 from intergrax.integrations.contracts.browser_automation import BrowserAutomation, PageContent
 from intergrax.integrations.contracts.collaboration_suite import (
     CalendarEventsResult,
@@ -167,6 +167,15 @@ class SqlRelationalStore:
             )
         return self._connection
 
+    def health(self) -> HealthStatus:
+        if self._connection is None:
+            return HealthStatus(slug=self._factory_name, healthy=False, detail="connection closed")
+        try:
+            self._connection.execute("SELECT 1")
+            return HealthStatus(slug=self._factory_name, healthy=True, detail="sql ping")
+        except Exception as exc:  # noqa: BLE001 — health probe surface
+            return HealthStatus(slug=self._factory_name, healthy=False, detail=str(exc))
+
 
 class SmtpNotificationChannel:
     def __init__(self, sender: Callable[..., None], *, from_address: str) -> None:
@@ -262,6 +271,11 @@ class RestIssueTracker:
             for row in rows
         ]
         return IssueSearchResult(issues=issues, total=len(issues))
+
+    def health(self) -> HealthStatus:
+        from intergrax.integrations._shared.health import probe_client_health
+
+        return probe_client_health(self._client, slug=self._provider)
 
 
 class RestWikiKnowledge:

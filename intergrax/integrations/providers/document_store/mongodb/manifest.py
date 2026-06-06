@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="mongodb",
     categories=(IntegrationCategory.DOCUMENT_STORE,),
-    status=IntegrationStatus.BETA,
+    status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_MONGODB',
     description='MongoDB flexible document store (partition-scoped get/put/delete/query)',
 )

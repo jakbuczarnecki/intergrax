@@ -217,6 +217,12 @@ def create_vault_secrets_store(
             def delete_secret(self, mount: str, path: str) -> None:
                 c.secrets.kv.v2.delete_metadata_and_all_versions(path=path, mount_point=mount)
 
+            def health(self) -> bool:
+                try:
+                    return bool(c.sys.is_initialized()) and bool(c.is_authenticated())
+                except Exception:  # noqa: BLE001 — health probe surface
+                    return False
+
         return _Facade()
 
     return _resolve(
@@ -301,6 +307,11 @@ def create_langfuse_observability_backend(
                         )
                     )
                 return TraceQueryResult(traces=traces)
+
+            def health(self) -> bool:
+                from intergrax.integrations._shared.health import http_ping_ok
+
+                return http_ping_ok(http, path="/api/public/health")
 
         return _Client()
 
@@ -397,6 +408,11 @@ def create_clickhouse_observability_backend(
                     if len(parts) >= 2:
                         rows.append({"timestamp": float(parts[0]), "value": float(parts[1])})
                 return rows
+
+            def health(self) -> bool:
+                from intergrax.integrations._shared.health import http_ping_ok
+
+                return http_ping_ok(http, path="/ping")
 
         return _Client()
 

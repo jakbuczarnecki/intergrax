@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="s3",
     categories=(IntegrationCategory.OBJECT_STORAGE,),
-    status=IntegrationStatus.BETA,
+    status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_S3',
     description='AWS S3 object storage (put/get/delete/presigned_url)',
 )
