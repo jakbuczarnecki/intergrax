@@ -129,12 +129,15 @@ class MaturityGateInputs(BaseModel):
     graph_rag_contract_valid: bool
     cost_forecast_available: bool
     cost_optimization_compliant: bool
+    runtime_l4_closed_loop_passed: bool = False
 
 
 class MaturityGateEvidenceReport(BaseModel):
     schema_version: str = "1.0.0"
     inputs: MaturityGateInputs
     l3: MaturityGateEvidence
+    l4_governance: MaturityGateEvidence
+    l4_runtime: MaturityGateEvidence
     l4: MaturityGateEvidence
 
 
@@ -177,7 +180,7 @@ def evaluate_maturity_gate_evidence(inputs: MaturityGateInputs) -> MaturityGateE
         passed=all(check.passed for check in l3_checks),
     )
 
-    l4_checks = [
+    l4_governance_checks = [
         MaturityGateCheck(
             check_id="multi_agent_acceptance_passed",
             passed=inputs.multi_agent_acceptance_passed,
@@ -204,12 +207,36 @@ def evaluate_maturity_gate_evidence(inputs: MaturityGateInputs) -> MaturityGateE
             detail="Cost optimization recommendations within guardrails",
         ),
     ]
+    l4_governance = MaturityGateEvidence(
+        level=MaturityLevel.L4,
+        checks=l4_governance_checks,
+        passed=l3.passed and all(check.passed for check in l4_governance_checks),
+    )
+    l4_runtime_checks = [
+        MaturityGateCheck(
+            check_id="runtime_l4_closed_loop_passed",
+            passed=inputs.runtime_l4_closed_loop_passed,
+            detail="Adaptive harness closed-loop verify + L4 runtime evidence",
+        ),
+    ]
+    l4_runtime = MaturityGateEvidence(
+        level=MaturityLevel.L4,
+        checks=l4_runtime_checks,
+        passed=l3.passed and all(check.passed for check in l4_runtime_checks),
+    )
+    l4_combined_checks = l4_governance_checks + l4_runtime_checks
     l4 = MaturityGateEvidence(
         level=MaturityLevel.L4,
-        checks=l4_checks,
-        passed=l3.passed and all(check.passed for check in l4_checks),
+        checks=l4_combined_checks,
+        passed=l3.passed and all(check.passed for check in l4_combined_checks),
     )
-    return MaturityGateEvidenceReport(inputs=inputs, l3=l3, l4=l4)
+    return MaturityGateEvidenceReport(
+        inputs=inputs,
+        l3=l3,
+        l4_governance=l4_governance,
+        l4_runtime=l4_runtime,
+        l4=l4,
+    )
 
 
 def collect_harness_governance_signals() -> MaturityGateInputs:
@@ -271,7 +298,19 @@ def collect_harness_governance_signals() -> MaturityGateInputs:
         graph_rag_contract_valid=graph_rag_valid,
         cost_forecast_available=forecast_available,
         cost_optimization_compliant=optimization_compliant,
+        runtime_l4_closed_loop_passed=_runtime_l4_closed_loop_passed(),
     )
+
+
+def evaluate_security_adversarial_baseline() -> bool:
+    """Public wrapper for V-SEC adversarial harness baseline (W-ADAPT-5.5)."""
+    return _evaluate_security_harness_baseline()
+
+
+def _runtime_l4_closed_loop_passed() -> bool:
+    from intergrax.runtime.adaptive.l4_runtime_evidence import build_harness_baseline_l4_evidence
+
+    return build_harness_baseline_l4_evidence().runtime_l4_closed_loop_passed
 
 
 def _evaluate_security_harness_baseline() -> bool:

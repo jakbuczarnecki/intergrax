@@ -1071,14 +1071,14 @@ flowchart LR
 | W-ADAPT-4.3 | HITL approval for POLICY_LEARNING | Cannot apply without approver |
 | W-ADAPT-4.4 | ADAPTIVE_* runtime events | Events in trace export |
 
-### 19.6 Wave W-ADAPT-5 — Verify (L4-V)
+### 19.6 Wave W-ADAPT-5 — Verify (L4-V) — **Done**
 
 | Task | Deliverable | Acceptance |
 |------|-------------|------------|
-| W-ADAPT-5.1 | `VerificationLoop` | Compares eval registry trends |
-| W-ADAPT-5.2 | Auto-rollback | Failed verification restores pointer |
-| W-ADAPT-5.3 | `phase_w_adapt_closeout_gate.py` | CI enforce optional L4 runtime evidence |
-| W-ADAPT-5.4 | Update maturity_gate_evidence inputs | Real closed-loop flag |
+| W-ADAPT-5.1 | `VerificationLoop` | Compares eval registry trends + utility/regression/cost/security |
+| W-ADAPT-5.2 | Auto-rollback | Failed verification restores pointer + blocks loop kind |
+| W-ADAPT-5.6 | `phase_w_adapt_closeout_gate.py` | `--enforce-l4-runtime` CI gate |
+| W-ADAPT-5.11 | `l4_runtime_evidence.json` | 30-day golden scenario utility artifact |
 
 ### 19.7 Wave W-ADAPT-6 — Pattern intelligence
 
@@ -1156,7 +1156,7 @@ All must pass:
 | Pattern proposal review | Biweekly |
 | L4 evidence audit | Per release candidate |
 
-### 21.3 Runbooks (to author in W-ADAPT-5)
+### 21.3 Runbooks (W-ADAPT-5 — Done)
 
 - `runbook/adaptive/rollback_profile.md`
 - `runbook/adaptive/approve_policy_learning.md`

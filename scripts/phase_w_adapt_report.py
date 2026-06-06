@@ -21,6 +21,8 @@ for path in (REPO_ROOT, REPO_ROOT / "agents", REPO_ROOT / "applications"):
 
 from intergrax.runtime.adaptive.proposal_store import SQLiteProposalStore, default_proposal_store_path
 from intergrax.runtime.adaptive.signal_store import SQLiteSignalStore, default_signal_store_path
+from intergrax.runtime.adaptive.verification_loop import VerificationLoop
+from intergrax.runtime.adaptive.verification_models import VerificationContext, VerificationReport
 
 
 class UtilityHistogramBucket(BaseModel):
@@ -122,6 +124,24 @@ def build_proposal_report(store: SQLiteProposalStore, *, limit: int = 100) -> Pr
     )
 
 
+def build_verification_report(
+    *,
+    signal_store: SQLiteSignalStore,
+    profile_store_path: Path | None = None,
+) -> VerificationReport:
+    from intergrax.runtime.adaptive.profile_lifecycle import ProfileVersionLifecycleManager
+    from intergrax.runtime.adaptive.profile_version_store import SQLiteProfileVersionStore
+
+    profile_store = SQLiteProfileVersionStore(db_path=profile_store_path)
+    verification_loop = VerificationLoop(
+        signal_store=signal_store,
+        profile_store=profile_store,
+    )
+    return verification_loop.verify_active_profiles(
+        context=VerificationContext(auto_rollback_enabled=False),
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Export adaptive harness signal and proposal trends.")
     parser.add_argument(
@@ -159,6 +179,12 @@ def main() -> int:
         action="store_true",
         help="Skip proposal trend export (signal-only mode)",
     )
+    parser.add_argument(
+        "--verification-output",
+        type=Path,
+        default=None,
+        help="Optional verification report JSON path",
+    )
     args = parser.parse_args()
 
     if not args.skip_signals:
@@ -184,6 +210,18 @@ def main() -> int:
             f"runs={proposal_report.run_count} proposals={proposal_report.proposal_count} "
             f"passed={proposal_report.passed_gate_count} failed={proposal_report.failed_gate_count}"
         )
+
+    if args.verification_output is not None:
+        db_path = args.db_path or default_signal_store_path(REPO_ROOT)
+        store = SQLiteSignalStore(db_path=db_path)
+        verification_report = build_verification_report(signal_store=store)
+        args.verification_output.parent.mkdir(parents=True, exist_ok=True)
+        args.verification_output.write_text(
+            verification_report.model_dump_json(indent=2),
+            encoding="utf-8",
+        )
+        print(f"adaptive verification report written: {args.verification_output}")
+        print(f"verification_passed={verification_report.passed}")
     return 0
 
 

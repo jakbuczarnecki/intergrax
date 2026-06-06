@@ -61,6 +61,8 @@ EVENT_PHASE_COVERAGE: dict[RuntimeEventType, ExecutionPhase] = {
     RuntimeEventType.ADAPTIVE_PROPOSAL_SUBMITTED: ExecutionPhase.FINALIZATION,
     RuntimeEventType.ADAPTIVE_PROFILE_APPLIED: ExecutionPhase.FINALIZATION,
     RuntimeEventType.ADAPTIVE_PROFILE_ROLLBACK: ExecutionPhase.FINALIZATION,
+    RuntimeEventType.ADAPTIVE_VERIFICATION_FAILED: ExecutionPhase.FINALIZATION,
+    RuntimeEventType.ADAPTIVE_LOOP_BLOCKED: ExecutionPhase.FINALIZATION,
 }
 
 EVENT_OPS_FILTER_HINTS: dict[RuntimeEventType, OpsFilterHint] = {
@@ -113,6 +115,8 @@ EVENT_OPS_FILTER_HINTS: dict[RuntimeEventType, OpsFilterHint] = {
     RuntimeEventType.ADAPTIVE_PROPOSAL_SUBMITTED: "ops:adaptive",
     RuntimeEventType.ADAPTIVE_PROFILE_APPLIED: "ops:adaptive",
     RuntimeEventType.ADAPTIVE_PROFILE_ROLLBACK: "ops:alert",
+    RuntimeEventType.ADAPTIVE_VERIFICATION_FAILED: "ops:alert",
+    RuntimeEventType.ADAPTIVE_LOOP_BLOCKED: "ops:alert",
 }
 
 

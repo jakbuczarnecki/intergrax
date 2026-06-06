@@ -196,7 +196,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Security closeout (Phase SEC)** | **Done** (Band 2v) | No (harness-only) | SEC-1–3 — [§6.1q](#61q-harness-implementation-queue--security-closeout-closed) |
 | **Cost governance closeout (Phase COST)** | **Done** (Band 2w) | No (harness-only) | COST-1–3 — [§6.1r](#61r-harness-implementation-queue--cost-governance-closeout-closed) |
 | **Evaluation closeout (Phase EVAL)** | **Done** (Band 2x) | No (harness-only) | EVAL-1–3 — [§6.1s](#61s-harness-implementation-queue--evaluation-closeout-closed) |
-| **Adaptive Harness Intelligence (Phase W-ADAPT)** | **In progress** (Band 2y) | No (harness-only) | Wave 0–4 **Done** (46/70) — [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active) · AHIA |
+| **Adaptive Harness Intelligence (Phase W-ADAPT)** | **In progress** (Band 2y) | No (harness-only) | Wave 0–5 **Done** (58/70) — [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active) · AHIA |
 | **LLM completion envelope (Phase M-LLM-R)** | **Done** (Band 2z) | No (harness-only) | Audit 2026-06-06 — typed `LLMAdapterResponse`; **39/39** — [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-active) · **Appendix L** |
 | Regression gate | **750 passed** | No | Must stay green after each harness PR |
 
@@ -2646,7 +2646,7 @@ Wave W-OPS-P2 (hygiene):    W-OPS.13 → W-OPS.14 → W-OPS.15
 
 ## Phase W-ADAPT — Adaptive Harness Intelligence (L4 runtime)
 
-**Status:** **In progress** — **46/70 Done** (Wave W-ADAPT-0 through Wave W-ADAPT-4 complete 2026-06-05)  
+**Status:** **In progress** — **58/70 Done** (Wave W-ADAPT-0 through Wave W-ADAPT-5 complete 2026-06-02)  
 **Architecture spec:** [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) (AHIA) · runtime canon [§54](intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) · IDEAL [§25](IDEAL_HARNESS_AI_ARCHITECTURE.md#25-adaptive-harness-layer)  
 **Prerequisites:** Phase **V** **Done** · Phase **V-REM** **Done** · Phase **W-OPS** **Done** · Phase **H-APP** **Done** · Phases **EVAL**, **COST**, **CG** closeouts **Done** (signal sources + governance envelopes exist)  
 **Goal:** Close the gap between **L4 governance contracts** (`adaptive_governance.py`, `phase_v_closeout_gate.py --enforce-l4`) and **L4 adaptive runtime** — governed closed loop: **observe → propose → gate → shadow/canary → apply → verify → rollback**  
@@ -2779,18 +2779,18 @@ Total: 70 deliverables
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| W-ADAPT-5.1 | **`VerificationLoop`** — compare candidate vs baseline utility trends | Planned | **Critical** | AHIA §9.6 checks 1–4 |
-| W-ADAPT-5.2 | **Auto-rollback** on verification failure | Planned | **Critical** | Invokes W-ADAPT-4.5; blocks loop kind |
-| W-ADAPT-5.3 | **Eval registry integration** — `evaluation_registry_trends.py` in verify path | Planned | High | Release comparison report |
-| W-ADAPT-5.4 | **ExecutionGuard regression rate** — verify window threshold | Planned | High | No spike vs baseline |
-| W-ADAPT-5.5 | **Cost + adversarial checks** in verify — budget + prompt/tool/retrieval suites | Planned | High | V-SEC suites still green |
-| W-ADAPT-5.6 | **`scripts/phase_w_adapt_closeout_gate.py`** — `--enforce-l4-runtime` | Planned | **Critical** | CI optional then required |
-| W-ADAPT-5.7 | **`maturity_gate_evidence.py`** — `runtime_l4_closed_loop_passed` input | Planned | High | Distinct from governance L4 |
-| W-ADAPT-5.8 | **Extend `phase_v_closeout_gate.py`** — label governance-L4 vs runtime-L4 | Planned | Medium | Docs in AHIA §20.2 |
-| W-ADAPT-5.9 | **Runbooks** — `runbook/adaptive/rollback_profile.md`, `approve_policy_learning.md`, `shadow_failure_triage.md` | Planned | Medium | Linked from HARNESS_ENVIRONMENT |
-| W-ADAPT-5.10 | **Rollback drill acceptance test** | Planned | High | Documented + automated smoke |
-| W-ADAPT-5.11 | **`l4_runtime_evidence.json` generator** — 30-day utility improvement artifact | Planned | **Critical** | AHIA §20.3 path |
-| W-ADAPT-5.12 | **Scheduler: continuous verify** on active canaries | Planned | High | W-ADAPT-2.12 extended |
+| W-ADAPT-5.1 | **`VerificationLoop`** — compare candidate vs baseline utility trends | **Done** | **Critical** | AHIA §9.6 checks 1–4 |
+| W-ADAPT-5.2 | **Auto-rollback** on verification failure | **Done** | **Critical** | Invokes W-ADAPT-4.5; blocks loop kind |
+| W-ADAPT-5.3 | **Eval registry integration** — `evaluation_registry_trends.py` in verify path | **Done** | High | Release comparison report |
+| W-ADAPT-5.4 | **ExecutionGuard regression rate** — verify window threshold | **Done** | High | No spike vs baseline |
+| W-ADAPT-5.5 | **Cost + adversarial checks** in verify — budget + prompt/tool/retrieval suites | **Done** | High | V-SEC suites still green |
+| W-ADAPT-5.6 | **`scripts/phase_w_adapt_closeout_gate.py`** — `--enforce-l4-runtime` | **Done** | **Critical** | CI optional then required |
+| W-ADAPT-5.7 | **`maturity_gate_evidence.py`** — `runtime_l4_closed_loop_passed` input | **Done** | High | Distinct from governance L4 |
+| W-ADAPT-5.8 | **Extend `phase_v_closeout_gate.py`** — label governance-L4 vs runtime-L4 | **Done** | Medium | Docs in AHIA §20.2 |
+| W-ADAPT-5.9 | **Runbooks** — `runbook/adaptive/rollback_profile.md`, `approve_policy_learning.md`, `shadow_failure_triage.md` | **Done** | Medium | Linked from HARNESS_ENVIRONMENT |
+| W-ADAPT-5.10 | **Rollback drill acceptance test** | **Done** | High | Documented + automated smoke |
+| W-ADAPT-5.11 | **`l4_runtime_evidence.json` generator** — 30-day utility improvement artifact | **Done** | **Critical** | AHIA §20.3 path |
+| W-ADAPT-5.12 | **Scheduler: continuous verify** on active canaries | **Done** | High | W-ADAPT-2.12 extended |
 
 #### Wave W-ADAPT-6 — Process pattern intelligence
 
@@ -4001,7 +4001,7 @@ Paydown Wave P3 (optional polish):
 | **2v — Security closeout (SEC)** | V-SEC bridge, middleware assembly resolver, host CI — **no** business agents | **Done** (2026-06-02) | [Phase SEC](#phase-sec--security-control-plane-closeout) · **§6.1q** · **Appendix S** |
 | **2w — Cost governance closeout (COST)** | Budget bridge, policy bundle merge, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase COST](#phase-cost--cost-governance-control-plane-closeout) · **§6.1r** · **Appendix T** |
 | **2x — Evaluation closeout (EVAL)** | Registry bridge, policy bundle merge, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase EVAL](#phase-eval--evaluation-control-plane-closeout) · **§6.1s** · **Appendix U** |
-| **2y — Adaptive Harness Intelligence (W-ADAPT)** | L4 **runtime** closed loop — SignalCollector, AdaptationEngine, ProfileVersionStore, verify/rollback — **no** business agents | **In progress** (2026-06-05) — Wave 0–4 **Done** (46/70) | [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · **§6.1t** · **§6.2ac** · **Appendix K** |
+| **2y — Adaptive Harness Intelligence (W-ADAPT)** | L4 **runtime** closed loop — SignalCollector, AdaptationEngine, ProfileVersionStore, verify/rollback — **no** business agents | **In progress** (2026-06-05) — Wave 0–5 **Done** (58/70) | [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · **§6.1t** · **§6.2ac** · **Appendix K** |
 | **2z — LLM completion envelope (M-LLM-R)** | Typed `LLMAdapterResponse` replaces `str`/`dict` adapter returns; full consumer refactor — **no** business agents | **Done** (2026-06-06) — **39/39** | [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · **§6.1v** · **§6.2ad** · **Appendix L** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
 
@@ -4011,7 +4011,7 @@ Paydown Wave P3 (optional polish):
 
 ```text
 BAND 1:  Harness maintenance — gate + audit scripts (§6.1) — every PR
-BAND 2y: Adaptive Harness Intelligence — Phase W-ADAPT (§6.1t) — ACTIVE (46/70)
+BAND 2y: Adaptive Harness Intelligence — Phase W-ADAPT (§6.1t) — ACTIVE (58/70)
 BAND 2z: LLM completion envelope — Phase M-LLM-R (§6.1v) — DONE (2026-06-06)
 BAND 2j: Orchestration closeout — Phase ORCH (§6.1b) — DONE (2026-06-05)
 BAND 2:  Harness architecture hardening — Phase V + V-REM — DONE (2026-06-05)
@@ -4036,7 +4036,7 @@ BAND 2u: Reliability closeout — Phase REL (§6.1o) — DONE (REL-1 → REL-3)
 BAND 2v: Security closeout — Phase SEC (§6.1q) — DONE (SEC-1 → SEC-3)
 BAND 2w: Cost governance closeout — Phase COST (§6.1r) — DONE (COST-1 → COST-3)
 BAND 2x: Evaluation closeout — Phase EVAL (§6.1s) — DONE (EVAL-1 → EVAL-3)
-BAND 2y: Adaptive Harness Intelligence — Phase W-ADAPT (§6.1t) — IN PROGRESS (46/70, Wave 0–4 Done)
+BAND 2y: Adaptive Harness Intelligence — Phase W-ADAPT (§6.1t) — IN PROGRESS (58/70, Wave 0–5 Done)
 BAND 2z: LLM completion envelope — Phase M-LLM-R (§6.1v) — DONE (39/39)
 DONE:    Phase CLEAN — legacy module closeout (§6.1j) — 2026-06-02
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
@@ -4861,7 +4861,7 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 ### 6.1t Harness implementation queue — Adaptive Harness Intelligence (active)
 
-**Purpose:** Single ordered list for **Phase W-ADAPT** (Band 2y). **Opened 2026-06-05** — **46/70 Done** (Wave W-ADAPT-0 through Wave W-ADAPT-4 **Done**). This is the **default harness implementation queue** after §6.1 maintenance.
+**Purpose:** Single ordered list for **Phase W-ADAPT** (Band 2y). **Opened 2026-06-05** — **58/70 Done** (Wave W-ADAPT-0 through Wave W-ADAPT-5 **Done**). This is the **default harness implementation queue** after §6.1 maintenance.
 
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
@@ -4871,8 +4871,8 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 | 3 | **W-ADAPT-2.1–2.12** | Code | **Done** | Recommend (L4-R): engines + proposals (no apply) | Proposals in report |
 | 4 | **W-ADAPT-3.1–3.7** | Code | **Done** | Shadow (L4-S): ProfileVersionStore + executor.shadow | Integration test green |
 | 5 | **W-ADAPT-4.1–4.10** | Code | **Done** | Apply (L4-A): canary, apply, rollback, events | Policy learning HITL enforced |
-| 6 | **W-ADAPT-5.1–5.12** | Code/Docs | Planned | Verify (L4-V): VerificationLoop + runtime L4 closeout | `--enforce-l4-runtime` |
-| 7 | **W-ADAPT-6.1–6.5** | Code | Planned | ProcessPatternMiner (after 5.1) | Pattern report |
+| 6 | **W-ADAPT-5.1–5.12** | Code/Docs | **Done** | Verify (L4-V): VerificationLoop + runtime L4 closeout | `--enforce-l4-runtime` |
+| 7 | **W-ADAPT-6.1–6.5** | Code | Planned | ProcessPatternMiner + daily scheduler | pattern report |
 | 8 | **W-ADAPT-7.1–7.7** | Code/Docs | Planned | Tier-3 AdaptiveProfile + Appendix V + acceptance | E2E observe→recommend |
 
 **Suggested PR order:** See [Phase W-ADAPT — Suggested PR order](#w-adapt--suggested-pr-order).
@@ -5285,8 +5285,8 @@ Wave W-ADAPT-1 (observe L4-O):    W-ADAPT-1.1 → 1.12  (**Done**)
 Wave W-ADAPT-2 (recommend L4-R):  W-ADAPT-2.1 → 2.12  (**Done**)
 Wave W-ADAPT-3 (shadow L4-S):      W-ADAPT-3.1 → 3.2 → 3.3 → 3.4 → 3.6 → 3.7 → 3.5  (**Done**)
 Wave W-ADAPT-4 (apply L4-A):       W-ADAPT-4.1 → 4.10  (**Done**)
-Wave W-ADAPT-5 (verify L4-V):      W-ADAPT-5.1 → 5.3 → 5.4 → 5.5 → 5.2 → 5.11 → 5.6 → 5.7 → 5.8 → 5.9 → 5.10 → 5.12  (**next**)
-Wave W-ADAPT-6 (patterns):         W-ADAPT-6.2 → 6.1 → 6.3 → 6.5 → 6.4  (after W-ADAPT-5.1)
+Wave W-ADAPT-5 (verify L4-V):      W-ADAPT-5.1 → 5.3 → 5.4 → 5.5 → 5.2 → 5.11 → 5.6 → 5.7 → 5.8 → 5.9 → 5.10 → 5.12  (**Done**)
+Wave W-ADAPT-6 (patterns):         W-ADAPT-6.2 → 6.1 → 6.3 → 6.5 → 6.4  (**next**)
 Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 → 7.6 → 7.7
 ```
 
@@ -6537,4 +6537,4 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ---
 
-*Plan synced (2026-06-06). **Harness platform** bands 1–2x **Done**; **Band 2y W-ADAPT** Wave 0–4 **Done** (46/70); **Band 2z M-LLM-R** **Done** (39/39). Gate: **757 passed**. **Default next:** [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active) W-ADAPT-5.1+. **Every PR:** §6.1 maintenance. Product work gated by [§6.3](#63-end-of-plan--deferred-product-work-only).*
+*Plan synced (2026-06-02). **Harness platform** bands 1–2x **Done**; **Band 2y W-ADAPT** Wave 0–5 **Done** (58/70); **Band 2z M-LLM-R** **Done** (39/39). Gate: **768 passed**. **Default next:** [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-active) W-ADAPT-6.1+. **Every PR:** §6.1 maintenance. Product work gated by [§6.3](#63-end-of-plan--deferred-product-work-only).*

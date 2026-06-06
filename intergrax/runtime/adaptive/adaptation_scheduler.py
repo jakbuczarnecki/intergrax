@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Recommend-only adaptation scheduler skeleton (Phase W-ADAPT-2.12)."""
+"""Adaptation scheduler for recommend and verify jobs (Phase W-ADAPT-2.12, W-ADAPT-5.12)."""
 
 from __future__ import annotations
 
@@ -9,13 +9,13 @@ from collections import defaultdict
 from intergrax.runtime.adaptive.adaptation_engine import AdaptationEngine
 from intergrax.runtime.adaptive.adaptation_models import AdaptationEngineContext, AdaptationEngineRunResult
 from intergrax.runtime.adaptive.signal_store import SignalStore
+from intergrax.runtime.adaptive.verification_loop import VerificationLoop
+from intergrax.runtime.adaptive.verification_models import VerificationContext, VerificationReport
 
 
 class AdaptationScheduler:
     """
-    Hourly recommend-only scheduler entry point.
-
-    Does not invoke AdaptationExecutor — L4-R scope only.
+    Scheduler entry point for adaptation engine and verification loop jobs.
     """
 
     def __init__(
@@ -23,9 +23,11 @@ class AdaptationScheduler:
         *,
         engine: AdaptationEngine,
         signal_store: SignalStore,
+        verification_loop: VerificationLoop | None = None,
     ) -> None:
         self._engine = engine
         self._signal_store = signal_store
+        self._verification_loop = verification_loop
 
     def run_adaptation_engine(
         self,
@@ -48,3 +50,17 @@ class AdaptationScheduler:
             )
             results.append(self._engine.run(context))
         return results
+
+    def run_verification_loop(
+        self,
+        *,
+        context: VerificationContext,
+        tenant_id: str | None = None,
+    ) -> VerificationReport:
+        """Continuous verify on active canaries (AHIA §9.9)."""
+        if self._verification_loop is None:
+            raise ValueError("VerificationLoop is not configured on AdaptationScheduler")
+        return self._verification_loop.verify_active_profiles(
+            context=context,
+            tenant_id=tenant_id,
+        )

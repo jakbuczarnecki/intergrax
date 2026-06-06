@@ -252,7 +252,10 @@ Current baseline delivered (Phase V V1):
 - governance artifacts script: `scripts/phase_v_governance_report.py`
 - `V-V6.1` bounded adaptive loop governance (`adaptive_governance.py`)
 - `V-V6.2` L3/L4 maturity gate evidence (`maturity_gate_evidence.py`)
-- `V-V6.3` CI closeout gate: `scripts/phase_v_closeout_gate.py` (`--enforce`, `--enforce-l4`)
+- `V-V6.3` CI closeout gate: `scripts/phase_v_closeout_gate.py` (`--enforce`, `--enforce-l4`; prints `l4_governance_passed` vs `l4_runtime_passed`)
+- **W-ADAPT-5** adaptive verify closeout: `scripts/phase_w_adapt_closeout_gate.py` (`--enforce-l4-runtime`)
+- **W-ADAPT-5** ops runbooks: [`runbook/adaptive/rollback_profile.md`](../runbook/adaptive/rollback_profile.md), [`approve_policy_learning.md`](../runbook/adaptive/approve_policy_learning.md), [`shadow_failure_triage.md`](../runbook/adaptive/shadow_failure_triage.md)
+- **W-ADAPT-5** evidence artifacts: `build/adaptive_harness/verification_report.json`, `build/adaptive_harness/l4_runtime_evidence.json`
 
 Execution references in the implementation plan:
 
@@ -284,6 +287,7 @@ uv run python scripts/phase_v_foundations_report.py
 uv run python scripts/phase_v_capability_graph_guard.py
 uv run python scripts/phase_v_governance_report.py
 uv run python scripts/phase_v_closeout_gate.py --enforce --enforce-l4
+uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
 uv run python scripts/phase_w_ops_evidence.py
 ```
 

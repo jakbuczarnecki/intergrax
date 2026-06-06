@@ -97,6 +97,8 @@ def main() -> int:
 
     print("phase-v closeout gate: OK")
     print(f"l3_passed: {maturity_report.l3.passed}")
+    print(f"l4_governance_passed: {maturity_report.l4_governance.passed}")
+    print(f"l4_runtime_passed: {maturity_report.l4_runtime.passed}")
     print(f"l4_passed: {maturity_report.l4.passed}")
     print(f"artifacts: {output_dir.as_posix()}")
 

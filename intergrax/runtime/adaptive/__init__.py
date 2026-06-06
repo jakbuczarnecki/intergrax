@@ -34,6 +34,29 @@ from intergrax.runtime.adaptive.bandit_state_store import (
     SQLiteBanditStateStore,
     default_bandit_store_path,
 )
+from intergrax.runtime.adaptive.l4_runtime_evidence import (
+    DEFAULT_GOLDEN_SCENARIO_IDS,
+    L4RuntimeEvidenceReport,
+    build_harness_baseline_l4_evidence,
+    build_l4_runtime_evidence_from_signals,
+)
+from intergrax.runtime.adaptive.loop_apply_block_store import (
+    InMemoryLoopApplyBlockStore,
+    LoopApplyBlockStore,
+    SQLiteLoopApplyBlockStore,
+)
+from intergrax.runtime.adaptive.verification_checks import (
+    HarnessSecurityAdversarialBaselineChecker,
+    SecurityAdversarialBaselineChecker,
+)
+from intergrax.runtime.adaptive.verification_loop import VerificationLoop
+from intergrax.runtime.adaptive.verification_models import (
+    VerificationCheckId,
+    VerificationContext,
+    VerificationReport,
+    VerificationResult,
+    VerificationTarget,
+)
 from intergrax.runtime.adaptive.cost_anomaly_bridge import proposals_from_cost_anomalies
 from intergrax.runtime.adaptive.evaluation_feedback_engine import EvaluationFeedbackEngine
 from intergrax.runtime.adaptive.execution_strategy_engine import ExecutionStrategyEngine
@@ -127,8 +150,12 @@ __all__ = [
     "EvaluationFeedbackEngine",
     "ExecutionStrategyEngine",
     "HarnessOutcomeSignal",
+    "HarnessSecurityAdversarialBaselineChecker",
+    "InMemoryLoopApplyBlockStore",
     "InMemoryBanditStateStore",
     "InMemoryProfileVersionStore",
+    "L4RuntimeEvidenceReport",
+    "LoopApplyBlockStore",
     "InMemoryProposalCooldownStore",
     "InMemoryProposalStore",
     "InMemorySignalStore",
@@ -153,14 +180,25 @@ __all__ = [
     "SignalAssemblyInput",
     "SignalCollector",
     "SignalStore",
+    "SecurityAdversarialBaselineChecker",
+    "SQLiteLoopApplyBlockStore",
     "SQLiteBanditStateStore",
     "ShadowAllocationResult",
     "SQLiteProfileVersionStore",
     "SQLiteSignalStore",
+    "VerificationCheckId",
+    "VerificationContext",
+    "VerificationLoop",
+    "VerificationReport",
+    "VerificationResult",
+    "VerificationTarget",
     "UtilityWeights",
+    "DEFAULT_GOLDEN_SCENARIO_IDS",
     "SQLiteProposalStore",
     "apply_rag_profile_version",
     "build_default_adaptive_proposals",
+    "build_harness_baseline_l4_evidence",
+    "build_l4_runtime_evidence_from_signals",
     "compute_utility",
     "default_bandit_store_path",
     "default_profile_version_store_path",

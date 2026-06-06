@@ -28,12 +28,13 @@ def test_adaptive_package_schema_version() -> None:
     assert ADAPTIVE_PACKAGE_SCHEMA_VERSION == "1.0.0"
 
 
-def test_adaptive_package_exports_adaptation_engine() -> None:
-    from intergrax.runtime.adaptive import AdaptationEngine, AdaptationExecutor, AdaptationScheduler
+def test_adaptive_package_exports_verification_loop() -> None:
+    from intergrax.runtime.adaptive import AdaptationEngine, AdaptationExecutor, AdaptationScheduler, VerificationLoop
 
     assert AdaptationEngine is not None
     assert AdaptationExecutor is not None
     assert AdaptationScheduler is not None
+    assert VerificationLoop is not None
 
 
 def test_lifecycle_modes_are_distinct() -> None:

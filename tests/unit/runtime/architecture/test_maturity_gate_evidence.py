@@ -11,6 +11,8 @@ def test_harness_governance_signals_pass_l3_and_l4() -> None:
     inputs = collect_harness_governance_signals()
     report = evaluate_maturity_gate_evidence(inputs)
     assert report.l3.passed is True
+    assert report.l4_governance.passed is True
+    assert report.l4_runtime.passed is True
     assert report.l4.passed is True
 
 
@@ -19,6 +21,7 @@ def test_l4_fails_when_adaptive_governance_fails() -> None:
     failing = inputs.model_copy(update={"adaptive_governance_passed": False})
     report = evaluate_maturity_gate_evidence(failing)
     assert report.l3.passed is True
+    assert report.l4_governance.passed is False
     assert report.l4.passed is False
 
 
