@@ -1,6 +1,6 @@
 # Intergrax Tool Library
 
-**Last updated:** 2026-06-07 — **34 bundles** · **95 catalog tools** (verified via `register_default_tools()`)
+**Last updated:** 2026-06-07 — **38 bundles** · **110 catalog tools** (verified via `register_default_tools()`)
 
 The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
 
@@ -99,7 +99,7 @@ registry = build_registry_from_profile(
 
 ## Tool engine (implemented today)
 
-Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** — full **95-tool** catalog registered):
+Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** · **T6 Done** — full **110-tool** catalog registered):
 
 | Component | Path | Status |
 |-----------|------|--------|
@@ -124,12 +124,12 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** — fu
 
 | Metric | Count |
 |--------|------:|
-| Shipped bundles (`ToolPlugin`) | **34** |
-| Registered `tool_id` values | **95** |
-| Stable bundles | **33** |
+| Shipped bundles (`ToolPlugin`) | **38** |
+| Registered `tool_id` values | **110** |
+| Stable bundles | **37** |
 | Beta bundles | **1** (`openai_vector_store`) |
 
-**Bundle index:** `rag` (5) · `websearch` (3) · `jira` (3) · `gitlab` (1) · `confluence` (3) · `notify` (1) · `pagerduty` (1) · `observability` (4) · `braintrust` (1) · `sandbox` (1) · `security` (2) · `workflow` (3) · `speech` (2) · `vision` (3) · `ml` (3) · `openai_vector_store` (3) · **`workspace` (6)** · **`memory` (3)** · **`knowledge` (2)** · **`document` (1)** · **`browser` (1)** · **`storage` (4)** · **`issues` (4)** · **`platform` (5)** · **`message_bus` (3)** · **`graph` (2)** · **`collaboration` (5)** · **`cache` (2)** · **`database` (2)** · **`records` (4)** · **`identity` (3)** · **`harness` (4)** · **`health` (2)** · **`eval` (3)**.
+**Bundle index:** `rag` (6) · `websearch` (3) · `jira` (3) · `gitlab` (1) · `confluence` (3) · `notify` (1) · `pagerduty` (1) · `observability` (4) · `braintrust` (1) · `sandbox` (1) · `security` (2) · `workflow` (3) · `speech` (2) · `vision` (3) · `ml` (3) · `openai_vector_store` (3) · **`workspace` (6)** · **`memory` (3)** · **`knowledge` (2)** · **`document` (1)** · **`browser` (1)** · **`storage` (4)** · **`issues` (4)** · **`platform` (6)** · **`message_bus` (3)** · **`graph` (2)** · **`collaboration` (5)** · **`cache` (4)** · **`database` (2)** · **`records` (4)** · **`identity` (3)** · **`harness` (4)** · **`health` (2)** · **`eval` (3)** · **`filesystem` (4)** · **`billing` (2)** · **`cost` (2)** · **`crm` (3)**.
 
 Source: `intergrax/tools/registry/shipped_plugins.py`.
 
@@ -350,7 +350,7 @@ OpenAI export: `intergrax.tools.exporters.to_openai_tools(registry)` — used by
 
 ## Full tool index
 
-Alphabetical reference — all **95** first-party catalog tools (Phase O + M.6 P6 + W-ML + **T-EXPAND** + **T4** + **T5**).
+Alphabetical reference — all **110** first-party catalog tools (Phase O + M.6 P6 + W-ML + **T-EXPAND** + **T4** + **T5** + **T6**).
 
 | tool_id | Bundle | Category | Status | Composes / module |
 |---------|--------|----------|--------|-------------------|
@@ -358,15 +358,28 @@ Alphabetical reference — all **95** first-party catalog tools (Phase O + M.6 P
 | `browser.fetch_page` | browser | browser | **Done** | `BrowserAutomation` |
 | `cache.get` | cache | cache | **Done** | `KeyValueCache` |
 | `cache.set` | cache | cache | **Done** | `KeyValueCache` |
+| `cache.delete` | cache | cache | **Done** | `KeyValueCache` |
+| `cache.list_keys` | cache | cache | **Done** | `KeyValueCacheListerBinding` (optional backend) |
+| `billing.list_usage` | billing | billing | **Done** | `BillingMeterBackend` |
+| `billing.record_usage` | billing | billing | **Done** | `BillingMeterBackend` |
+| `cost.check_quota` | cost | cost | **Done** | V-COST quota models / runtime-bound |
+| `cost.get_run_budget` | cost | cost | **Done** | `RunBudget` / runtime-bound |
 | `collaboration.get_message` | collaboration | collaboration | **Done** | `CollaborationSuite` |
 | `collaboration.get_user` | collaboration | collaboration | **Done** | `CollaborationSuite` |
 | `collaboration.list_calendar` | collaboration | collaboration | **Done** | `CollaborationSuite` |
 | `collaboration.list_messages` | collaboration | collaboration | **Done** | `CollaborationSuite` |
 | `collaboration.send_mail` | collaboration | collaboration | **Done** | `CollaborationSuite` |
+| `crm.get_account` | crm | crm | **Done** | `CrmBackend` |
+| `crm.list_contacts` | crm | crm | **Done** | `CrmBackend` |
+| `crm.list_tickets` | crm | crm | **Done** | `CrmBackend` |
 | `database.execute` | database | database | **Done** | `RelationalStore` |
 | `database.query` | database | database | **Done** | `RelationalStore` |
 | `confluence.get_page` | confluence | wiki | **Done** | `confluence` — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
 | `document.parse` | document | document | **Done** | `DocumentParser` |
+| `filesystem.glob` | filesystem | filesystem | **Done** | allowlisted read roots |
+| `filesystem.list` | filesystem | filesystem | **Done** | allowlisted read roots |
+| `filesystem.read_text` | filesystem | filesystem | **Done** | allowlisted read roots |
+| `filesystem.stat` | filesystem | filesystem | **Done** | allowlisted read roots |
 | `eval.list_observations` | eval | eval | **Done** | `OnlineEvaluationRegistry` (V-EVAL) |
 | `eval.record_observation` | eval | eval | **Done** | `OnlineEvaluationRegistry` (V-EVAL) |
 | `eval.summarize_release` | eval | eval | **Done** | `OnlineEvaluationRegistry` (V-EVAL) |
@@ -409,6 +422,7 @@ Alphabetical reference — all **95** first-party catalog tools (Phase O + M.6 P
 | `platform.evaluate_feature_flag` | platform | platform | **Done** | `FeatureFlagBackend` |
 | `platform.get_secret` | platform | platform | **Done** | `SecretsStore` |
 | `platform.put_secret` | platform | platform | **Done** | `SecretsStore` (CRITICAL risk) |
+| `platform.delete_secret` | platform | platform | **Done** | `SecretsStore` (CRITICAL risk) |
 | `platform.get_workflow_run` | platform | platform | **Done** | `CiCdBackend` |
 | `platform.list_check_suites` | platform | platform | **Done** | `CiCdBackend` |
 | `observability.query_traces` | observability | observability | **Done** | `langfuse` / observability slug — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
@@ -425,6 +439,7 @@ Alphabetical reference — all **95** first-party catalog tools (Phase O + M.6 P
 | `records.put` | records | records | **Done** | `DocumentStore` |
 | `records.query` | records | records | **Done** | `DocumentStore` |
 | `rag.retrieve` | rag | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.rerank` | rag | retrieval | **Done** | `reranker_manager` / `RerankProvider` |
 | `sandbox.exec` | sandbox | sandbox | **Done** | `sandbox_session` / `sandbox_host` — [USAGE](../intergrax/tools/providers/sandbox/USAGE.md) |
 | `storage.delete` | storage | storage | **Done** | `ObjectStorage` |
 | `storage.get` | storage | storage | **Done** | `ObjectStorage` |
@@ -450,7 +465,7 @@ Alphabetical reference — all **95** first-party catalog tools (Phase O + M.6 P
 | `workspace.snapshot` | workspace | workspace | **Done** | `ShadowWorkspace` |
 | `workspace.write_file` | workspace | workspace | **Done** | `ShadowWorkspace` |
 
-**Total:** 95 tools · 34 bundles.
+**Total:** 110 tools · 38 bundles.
 
 ---
 

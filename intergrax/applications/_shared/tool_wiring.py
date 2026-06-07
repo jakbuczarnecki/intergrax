@@ -107,6 +107,12 @@ def build_application_tool_wiring(
         identity_provider=ctx.identity_provider,
         speech_provider=ctx.speech_provider,
         workflow_orchestrator=ctx.workflow_orchestrator,
+        billing_meter=ctx.billing_meter,
+        crm_backend=ctx.crm_backend,
+        read_allowlist_roots=ctx.read_allowlist_roots,
+        run_budget=ctx.run_budget,
+        cost_envelopes=ctx.cost_envelopes,
+        cost_quotas=ctx.cost_quotas,
         extras=dict(ctx.extras),
     )
     registry = build_registry_from_profile(profile, ctx=ctx)

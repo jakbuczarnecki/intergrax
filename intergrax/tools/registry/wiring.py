@@ -8,9 +8,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Mapping, Optional
 
+from intergrax.integrations.contracts.billing_meter import BillingMeterBackend
 from intergrax.integrations.contracts.browser_automation import BrowserAutomation
 from intergrax.integrations.contracts.ci_cd import CiCdBackend
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
+from intergrax.integrations.contracts.crm import CrmBackend
 from intergrax.integrations.contracts.document_parser import DocumentParser
 from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.contracts.feature_flag import FeatureFlagBackend
@@ -87,6 +89,12 @@ class ToolWiringContext:
     identity_provider: IdentityProviderBackend | None = None
     speech_provider: SpeechProviderBackend | None = None
     workflow_orchestrator: WorkflowOrchestratorBackend | None = None
+    billing_meter: BillingMeterBackend | None = None
+    crm_backend: CrmBackend | None = None
+    read_allowlist_roots: frozenset[str] | None = None
+    run_budget: Any | None = None
+    cost_envelopes: tuple[Any, ...] = ()
+    cost_quotas: tuple[Any, ...] = ()
     extras: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -177,6 +185,8 @@ class ToolWiringContext:
             identity_provider=_optional(IntegrationCategory.IDENTITY_PROVIDER),
             speech_provider=_optional(IntegrationCategory.SPEECH_PROVIDER),
             workflow_orchestrator=_optional(IntegrationCategory.WORKFLOW_ORCHESTRATOR),
+            billing_meter=_optional(IntegrationCategory.BILLING_METER),
+            crm_backend=_optional(IntegrationCategory.CRM),
             integration_profile=profile,
             rag_manager=rag_manager,
             vectorstore_manager=vectorstore_manager,

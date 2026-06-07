@@ -35,6 +35,8 @@ _HARNESS_RUNTIME_BOUND_TOOLS = (
     "eval.record_observation",
     "eval.list_observations",
     "eval.summarize_release",
+    "cost.get_run_budget",
+    "cost.check_quota",
 )
 
 _HARNESS_MODALITY_TOOLS = (

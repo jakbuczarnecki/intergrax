@@ -12,11 +12,14 @@ from intergrax.tools.providers.platform.contracts import (
     PlatformGetWorkflowRunInput,
     PlatformListCheckSuitesInput,
     PlatformListCheckSuitesOutput,
+    PlatformDeleteSecretInput,
+    PlatformDeleteSecretOutput,
     PlatformPutSecretInput,
     PlatformPutSecretOutput,
     PlatformWorkflowRunOutput,
 )
 from intergrax.tools.providers.platform.handlers import (
+    PlatformDeleteSecretHandler,
     PlatformEvaluateFeatureFlagHandler,
     PlatformGetSecretHandler,
     PlatformGetWorkflowRunHandler,
@@ -24,6 +27,7 @@ from intergrax.tools.providers.platform.handlers import (
     PlatformPutSecretHandler,
 )
 from intergrax.tools.providers.platform.service import (
+    PLATFORM_DELETE_SECRET_TOOL_ID,
     PLATFORM_EVALUATE_FEATURE_FLAG_TOOL_ID,
     PLATFORM_GET_SECRET_TOOL_ID,
     PLATFORM_GET_WORKFLOW_RUN_TOOL_ID,
@@ -37,6 +41,7 @@ PLATFORM_BUNDLE_ID = "platform"
 PLATFORM_TOOL_IDS: tuple[str, ...] = (
     PLATFORM_GET_SECRET_TOOL_ID,
     PLATFORM_PUT_SECRET_TOOL_ID,
+    PLATFORM_DELETE_SECRET_TOOL_ID,
     PLATFORM_EVALUATE_FEATURE_FLAG_TOOL_ID,
     PLATFORM_GET_WORKFLOW_RUN_TOOL_ID,
     PLATFORM_LIST_CHECK_SUITES_TOOL_ID,
@@ -75,6 +80,22 @@ def register_platform_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> N
             tags=("platform", "secrets"),
         ),
         PlatformPutSecretHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=PLATFORM_DELETE_SECRET_TOOL_ID,
+            name=PLATFORM_DELETE_SECRET_TOOL_ID,
+            description="Delete a tenant-scoped secret from the configured secrets store.",
+            description_short="Delete secret.",
+            input_schema=PlatformDeleteSecretInput,
+            output_schema=PlatformDeleteSecretOutput,
+            error_mapping={},
+            side_effects=True,
+            category="platform",
+            risk_level=ToolRiskLevel.CRITICAL,
+            tags=("platform", "secrets"),
+        ),
+        PlatformDeleteSecretHandler(ctx),
     )
     registry.register(
         ToolContract(

@@ -29,6 +29,13 @@ class OnlineEvaluationRegistryBinding(Protocol):
 
 
 @runtime_checkable
+class KeyValueCacheListerBinding(Protocol):
+    """Optional cache backend extension for ``cache.list_keys``."""
+
+    def list_keys(self, tenant_id: str, *, prefix: str = "", limit: int = 100) -> List[str]: ...
+
+
+@runtime_checkable
 class TaskMemoryViewBinding(Protocol):
     """Structural binding for policy-scoped task memory (``PolicyScopedMemoryView``)."""
 

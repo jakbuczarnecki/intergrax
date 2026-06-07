@@ -26,6 +26,15 @@ class PlatformPutSecretOutput(BaseModel):
     stored: bool = True
 
 
+class PlatformDeleteSecretInput(BaseModel):
+    path: str = Field(..., min_length=1)
+
+
+class PlatformDeleteSecretOutput(BaseModel):
+    path: str
+    deleted: bool = True
+
+
 class PlatformEvaluateFeatureFlagInput(BaseModel):
     flag_key: str = Field(..., min_length=1)
     tenant_id: str = Field(..., min_length=1)

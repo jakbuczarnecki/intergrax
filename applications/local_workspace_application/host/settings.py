@@ -69,6 +69,7 @@ class LocalWorkspaceBackendSettings:
     enable_rag: bool = True
     enable_rag_ingest: bool = True
     extra_enabled_tool_ids: tuple[str, ...] = ()
+    allowed_read_roots: FrozenSet[str] = field(default_factory=frozenset)
     cors_allow_origins: FrozenSet[str] = field(default_factory=frozenset)
     allowed_hosts: FrozenSet[str] = field(default_factory=frozenset)
     openapi_enabled_override: Optional[bool] = None
@@ -179,4 +180,5 @@ class LocalWorkspaceBackendSettings:
             mcp_mount_path=mcp_mount,
             enable_rag=enable_rag,
             enable_rag_ingest=enable_rag_ingest,
+            allowed_read_roots=_env_csv_set("INTERGRAX_ALLOWED_READ_ROOTS"),
         )

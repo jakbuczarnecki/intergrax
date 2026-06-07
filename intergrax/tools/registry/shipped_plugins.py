@@ -27,7 +27,9 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
         BRAINTRUST_TOOL_IDS,
         register_braintrust_tools,
     )
-    from intergrax.tools.providers.cache.bundle import CACHE_BUNDLE_ID, CACHE_TOOL_IDS, register_cache_tools
+    from intergrax.tools.providers.billing.bundle import BILLING_BUNDLE_ID, BILLING_TOOL_IDS, register_billing_tools
+    from intergrax.tools.providers.cost.bundle import COST_BUNDLE_ID, COST_TOOL_IDS, register_cost_tools
+    from intergrax.tools.providers.crm.bundle import CRM_BUNDLE_ID, CRM_TOOL_IDS, register_crm_tools
     from intergrax.tools.providers.collaboration.bundle import (
         COLLABORATION_BUNDLE_ID,
         COLLABORATION_TOOL_IDS,
@@ -37,6 +39,12 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
         DATABASE_BUNDLE_ID,
         DATABASE_TOOL_IDS,
         register_database_tools,
+    )
+    from intergrax.tools.providers.cache.bundle import CACHE_BUNDLE_ID, CACHE_TOOL_IDS, register_cache_tools
+    from intergrax.tools.providers.filesystem.bundle import (
+        FILESYSTEM_BUNDLE_ID,
+        FILESYSTEM_TOOL_IDS,
+        register_filesystem_tools,
     )
     from intergrax.tools.providers.confluence.bundle import (
         CONFLUENCE_BUNDLE_ID,
@@ -355,6 +363,34 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
             register_fn=register_eval_tools,
             description="Harness online evaluation registry tools (V-EVAL).",
             class_name="EvalToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=FILESYSTEM_BUNDLE_ID,
+            tool_ids=FILESYSTEM_TOOL_IDS,
+            register_fn=register_filesystem_tools,
+            description="Read-only allowlisted filesystem browse tools (LKW.3).",
+            class_name="FilesystemToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=BILLING_BUNDLE_ID,
+            tool_ids=BILLING_TOOL_IDS,
+            register_fn=register_billing_tools,
+            description="Billing meter usage tools (V-COST / SaaS path).",
+            class_name="BillingToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=COST_BUNDLE_ID,
+            tool_ids=COST_TOOL_IDS,
+            register_fn=register_cost_tools,
+            description="Runtime-bound cost budget and quota governance tools (V-COST).",
+            class_name="CostToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=CRM_BUNDLE_ID,
+            tool_ids=CRM_TOOL_IDS,
+            register_fn=register_crm_tools,
+            description="Read-only CRM context tools for support harness agents.",
+            class_name="CrmToolPlugin",
         ),
     )
     _SHIPPED_TOOL_PLUGINS = plugins

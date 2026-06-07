@@ -7,7 +7,14 @@ from __future__ import annotations
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.tools.providers.browser.service import BROWSER_FETCH_PAGE_TOOL_ID
-from intergrax.tools.providers.cache.service import CACHE_GET_TOOL_ID, CACHE_SET_TOOL_ID
+from intergrax.tools.providers.cache.service import (
+    CACHE_DELETE_TOOL_ID,
+    CACHE_GET_TOOL_ID,
+    CACHE_LIST_KEYS_TOOL_ID,
+    CACHE_SET_TOOL_ID,
+)
+from intergrax.tools.providers.billing.service import BILLING_LIST_USAGE_TOOL_ID, BILLING_RECORD_USAGE_TOOL_ID
+from intergrax.tools.providers.crm.service import CRM_GET_ACCOUNT_TOOL_ID, CRM_LIST_CONTACTS_TOOL_ID, CRM_LIST_TICKETS_TOOL_ID
 from intergrax.tools.providers.collaboration.service import (
     COLLABORATION_GET_MESSAGE_TOOL_ID,
     COLLABORATION_GET_USER_TOOL_ID,
@@ -43,12 +50,14 @@ from intergrax.tools.providers.identity.service import (
     IDENTITY_VERIFY_TOKEN_TOOL_ID,
 )
 from intergrax.tools.providers.platform.service import (
+    PLATFORM_DELETE_SECRET_TOOL_ID,
     PLATFORM_EVALUATE_FEATURE_FLAG_TOOL_ID,
     PLATFORM_GET_SECRET_TOOL_ID,
     PLATFORM_GET_WORKFLOW_RUN_TOOL_ID,
     PLATFORM_LIST_CHECK_SUITES_TOOL_ID,
     PLATFORM_PUT_SECRET_TOOL_ID,
 )
+from intergrax.tools.providers.rag.rerank_service import RAG_RERANK_TOOL_ID
 from intergrax.tools.providers.records.service import (
     RECORDS_DELETE_TOOL_ID,
     RECORDS_GET_TOOL_ID,
@@ -122,6 +131,7 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
     IntegrationCategory.SECRETS_STORE: (
         PLATFORM_GET_SECRET_TOOL_ID,
         PLATFORM_PUT_SECRET_TOOL_ID,
+        PLATFORM_DELETE_SECRET_TOOL_ID,
     ),
     IntegrationCategory.FEATURE_FLAG: (PLATFORM_EVALUATE_FEATURE_FLAG_TOOL_ID,),
     IntegrationCategory.CI_CD: (
@@ -141,7 +151,12 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
         COLLABORATION_LIST_CALENDAR_TOOL_ID,
         COLLABORATION_GET_USER_TOOL_ID,
     ),
-    IntegrationCategory.KEY_VALUE_CACHE: (CACHE_GET_TOOL_ID, CACHE_SET_TOOL_ID),
+    IntegrationCategory.KEY_VALUE_CACHE: (
+        CACHE_GET_TOOL_ID,
+        CACHE_SET_TOOL_ID,
+        CACHE_DELETE_TOOL_ID,
+        CACHE_LIST_KEYS_TOOL_ID,
+    ),
     IntegrationCategory.NOTIFICATION_CHANNEL: (
         NOTIFY_SEND_TOOL_ID,
         PAGERDUTY_TRIGGER_INCIDENT_TOOL_ID,
@@ -152,6 +167,16 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
         METRICS_QUERY_INSTANT_TOOL_ID,
         TRACES_QUERY_TOOL_ID,
     ),
+    IntegrationCategory.BILLING_METER: (
+        BILLING_RECORD_USAGE_TOOL_ID,
+        BILLING_LIST_USAGE_TOOL_ID,
+    ),
+    IntegrationCategory.CRM: (
+        CRM_GET_ACCOUNT_TOOL_ID,
+        CRM_LIST_CONTACTS_TOOL_ID,
+        CRM_LIST_TICKETS_TOOL_ID,
+    ),
+    IntegrationCategory.RERANK_PROVIDER: (RAG_RERANK_TOOL_ID,),
 }
 
 

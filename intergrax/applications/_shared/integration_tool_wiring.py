@@ -68,6 +68,12 @@ def wire_integration_tool_context(
         speech_provider=ctx.speech_provider or _resolve_optional(integration_profile, IntegrationCategory.SPEECH_PROVIDER),
         workflow_orchestrator=ctx.workflow_orchestrator
         or _resolve_optional(integration_profile, IntegrationCategory.WORKFLOW_ORCHESTRATOR),
+        billing_meter=ctx.billing_meter or _resolve_optional(integration_profile, IntegrationCategory.BILLING_METER),
+        crm_backend=ctx.crm_backend or _resolve_optional(integration_profile, IntegrationCategory.CRM),
+        read_allowlist_roots=ctx.read_allowlist_roots,
+        run_budget=ctx.run_budget,
+        cost_envelopes=ctx.cost_envelopes,
+        cost_quotas=ctx.cost_quotas,
         extras=dict(ctx.extras),
     )
 

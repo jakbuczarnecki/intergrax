@@ -25,6 +25,9 @@ from intergrax.tools.providers.rag.lifecycle_service import (
     RAG_DESCRIBE_COLLECTION_TOOL_ID,
 )
 from intergrax.tools.providers.rag.list_collections_service import RAG_LIST_COLLECTIONS_TOOL_ID
+from intergrax.tools.providers.rag.rerank_contracts import RagRerankInput, RagRerankOutput
+from intergrax.tools.providers.rag.rerank_handler import RagRerankHandler
+from intergrax.tools.providers.rag.rerank_service import RAG_RERANK_TOOL_ID
 from intergrax.tools.providers.rag.service import RAG_TOOL_ID
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
@@ -36,6 +39,7 @@ RAG_TOOL_IDS: tuple[str, ...] = (
     RAG_LIST_COLLECTIONS_TOOL_ID,
     RAG_DELETE_DOCUMENTS_TOOL_ID,
     RAG_DESCRIBE_COLLECTION_TOOL_ID,
+    RAG_RERANK_TOOL_ID,
 )
 
 
@@ -136,12 +140,29 @@ def rag_describe_collection_contract() -> ToolContract:
     )
 
 
+def rag_rerank_contract() -> ToolContract:
+    return ToolContract(
+        tool_id=RAG_RERANK_TOOL_ID,
+        name="rag.rerank",
+        description="Rerank candidate text chunks for a query using the configured reranker manager.",
+        description_short="Rerank candidate chunks.",
+        input_schema=RagRerankInput,
+        output_schema=RagRerankOutput,
+        error_mapping={},
+        side_effects=False,
+        category="retrieval",
+        risk_level=ToolRiskLevel.LOW,
+        tags=("rag", "rerank", "retrieval"),
+    )
+
+
 def register_rag_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
     registry.register(rag_retrieve_contract(), RagRetrieveHandler(ctx))
     registry.register(rag_ingest_contract(), RagIngestHandler(ctx))
     registry.register(rag_list_collections_contract(), RagListCollectionsHandler(ctx))
     registry.register(rag_delete_documents_contract(), RagDeleteDocumentsHandler(ctx))
     registry.register(rag_describe_collection_contract(), RagDescribeCollectionHandler(ctx))
+    registry.register(rag_rerank_contract(), RagRerankHandler(ctx))
 
 
 RAG_RETRIEVE_TOOL_CONTRACT = rag_retrieve_contract()

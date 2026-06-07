@@ -14,6 +14,8 @@ from intergrax.tools.providers.platform.contracts import (
     PlatformGetWorkflowRunInput,
     PlatformListCheckSuitesInput,
     PlatformListCheckSuitesOutput,
+    PlatformDeleteSecretInput,
+    PlatformDeleteSecretOutput,
     PlatformPutSecretInput,
     PlatformPutSecretOutput,
     PlatformCheckSuiteOutput,
@@ -23,6 +25,7 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 
 PLATFORM_GET_SECRET_TOOL_ID = "platform.get_secret"
 PLATFORM_PUT_SECRET_TOOL_ID = "platform.put_secret"
+PLATFORM_DELETE_SECRET_TOOL_ID = "platform.delete_secret"
 PLATFORM_EVALUATE_FEATURE_FLAG_TOOL_ID = "platform.evaluate_feature_flag"
 PLATFORM_GET_WORKFLOW_RUN_TOOL_ID = "platform.get_workflow_run"
 PLATFORM_LIST_CHECK_SUITES_TOOL_ID = "platform.list_check_suites"
@@ -42,6 +45,14 @@ def platform_put_secret(ctx: ToolWiringContext, params: PlatformPutSecretInput) 
         raise RuntimeError("secrets_store_not_configured")
     store.put_secret(params.path.strip(), params.value)
     return PlatformPutSecretOutput(path=params.path.strip(), stored=True)
+
+
+def platform_delete_secret(ctx: ToolWiringContext, params: PlatformDeleteSecretInput) -> PlatformDeleteSecretOutput:
+    store: SecretsStore | None = ctx.secrets_store
+    if store is None:
+        raise RuntimeError("secrets_store_not_configured")
+    store.delete_secret(params.path.strip())
+    return PlatformDeleteSecretOutput(path=params.path.strip(), deleted=True)
 
 
 def platform_evaluate_feature_flag(

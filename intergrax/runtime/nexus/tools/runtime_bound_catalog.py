@@ -12,8 +12,16 @@ from pydantic import BaseModel, ValidationError
 
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
 from intergrax.runtime.workspace.shadow_workspace import ShadowWorkspace
+from intergrax.tools.providers.cost.contracts import CostCheckQuotaInput, CostGetRunBudgetInput
+from intergrax.tools.providers.cost.service import (
+    COST_CHECK_QUOTA_TOOL_ID,
+    COST_GET_RUN_BUDGET_TOOL_ID,
+    cost_check_quota,
+    cost_get_run_budget,
+)
 from intergrax.tools.providers.harness.contracts import (
     HarnessGetRunCostInput,
     HarnessGetRunEventsInput,
@@ -79,6 +87,8 @@ _RUNTIME_BOUND_TOOLS: dict[str, tuple[type[BaseModel], ServiceFn]] = {
     HARNESS_LIST_RUNS_TOOL_ID: (HarnessListRunsInput, harness_list_runs),
     HARNESS_GET_RUN_COST_TOOL_ID: (HarnessGetRunCostInput, harness_get_run_cost),
     HARNESS_GET_RUN_EVENTS_TOOL_ID: (HarnessGetRunEventsInput, harness_get_run_events),
+    COST_GET_RUN_BUDGET_TOOL_ID: (CostGetRunBudgetInput, cost_get_run_budget),
+    COST_CHECK_QUOTA_TOOL_ID: (CostCheckQuotaInput, cost_check_quota),
 }
 
 RUNTIME_BOUND_TOOL_IDS: frozenset[str] = frozenset(_RUNTIME_BOUND_TOOLS.keys())
@@ -97,10 +107,17 @@ def build_runtime_bound_context(exec_ctx: RuntimeExecutionContext) -> ToolWiring
         if isinstance(candidate, RunTraceReader):
             trace_reader = candidate
             break
+    run_budget = exec_ctx.metadata.get("run_budget")
+    budget: RunBudget | None = run_budget if isinstance(run_budget, RunBudget) else None
+    cost_envelopes = exec_ctx.metadata.get("cost_envelopes", ())
+    cost_quotas = exec_ctx.metadata.get("cost_quotas", ())
     return ToolWiringContext(
         shadow_workspace=shadow,
         memory_view=exec_ctx.memory_view,
         trace_reader=trace_reader,
+        run_budget=budget,
+        cost_envelopes=tuple(cost_envelopes) if isinstance(cost_envelopes, (list, tuple)) else (),
+        cost_quotas=tuple(cost_quotas) if isinstance(cost_quotas, (list, tuple)) else (),
     )
 
 

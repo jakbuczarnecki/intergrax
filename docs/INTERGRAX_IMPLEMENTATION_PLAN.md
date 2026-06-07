@@ -1774,7 +1774,7 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 - `harness.integration_bridge_smoke` skill pack + resolver test fix (skills vs tools `build_registry_from_profile`)
 - Lab harness `wire_lab_tools(harness=True)` enables runtime-bound + bridge tools
 - PoC template `extend_tool_profile_for_integration()` wiring
-- MCP full-catalog export smoke (95 tools)
+- MCP full-catalog export smoke (110 tools)
 
 #### T-EXPAND T4 — Agent Builder Essentials (2026-06-07) — **Done**
 
@@ -1807,7 +1807,24 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 
 **Delivered:** **95** catalog `tool_id` values · **34** shipped bundles.
 
-Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{identity,harness,health,eval,...}/`
+#### T-EXPAND T6 — LKW Filesystem + Harness Economics (2026-06-07) — **Done**
+
+**Goal:** LKW read-only filesystem browse (LKW.3), V-COST/billing tool surface, rerank/cache/CRM/platform extensions.
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `filesystem` | `filesystem.list`, `filesystem.glob`, `filesystem.read_text`, `filesystem.stat` | **Done** |
+| `billing` | `billing.record_usage`, `billing.list_usage` | **Done** |
+| `cost` | `cost.get_run_budget`, `cost.check_quota` | **Done** |
+| `crm` | `crm.get_account`, `crm.list_contacts`, `crm.list_tickets` | **Done** |
+| `platform` (+1) | `platform.delete_secret` | **Done** |
+| `rag` (+1) | `rag.rerank` | **Done** |
+| `cache` (+2) | `cache.delete`, `cache.list_keys` | **Done** |
+| wiring | `read_allowlist_roots` ctx slot; runtime-bound `cost.*`; LKW auto-enable filesystem | **Done** |
+
+**Delivered:** **110** catalog `tool_id` values · **38** shipped bundles.
+
+Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{filesystem,billing,cost,crm,...}/`
 
 #### O.5 — Unified tool model (migration design)
 
