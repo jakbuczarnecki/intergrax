@@ -23,18 +23,26 @@ from intergrax.runtime.events.trace_bridge import (
     runtime_event_from_task_state,
     trace_event_to_runtime_event,
 )
+from intergrax.runtime.events.unified_run_journal import (
+    JOURNAL_SCHEMA_VERSION,
+    bridge_persisted_trace_events,
+    build_unified_run_journal,
+)
 
 __all__ = [
     "DEFAULT_RUNTIME_EVENTS_DB",
     "ENV_RUNTIME_EVENTS_DB",
     "ExecutionPhase",
     "InMemoryRuntimeEventStore",
+    "JOURNAL_SCHEMA_VERSION",
     "NullRuntimeEventPersistence",
     "RuntimeEvent",
     "RuntimeEventBus",
     "RuntimeEventPersistence",
     "RuntimeEventType",
     "SQLiteRuntimeEventStore",
+    "bridge_persisted_trace_events",
+    "build_unified_run_journal",
     "open_runtime_event_store",
     "resolve_runtime_event_persistence",
     "resolve_runtime_events_db_path",

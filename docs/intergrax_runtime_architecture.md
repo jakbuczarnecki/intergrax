@@ -4359,6 +4359,12 @@ Every run MUST produce a **TraceRecord** containing:
 
 An operator MUST reconstruct **why** the runtime stopped using trace + events alone — without reading agent source code.
 
+**Unified run journal (OBS-DEPTH.1):** ``build_unified_run_journal()`` in
+``intergrax/runtime/events/unified_run_journal.py`` merges persisted
+``RuntimeEvent`` rows with trace-bridged events (``trace_bridge``) into one
+chronological timeline. Debug ``GET /debug/tasks/{run_id}/trace?include_runtime=true``
+and the debug CLI use this journal when runtime event persistence is configured.
+
 ---
 
 ## 42.25 Runtime Safety Enforcement

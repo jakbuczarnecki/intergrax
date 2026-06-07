@@ -17,8 +17,19 @@ from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.phase_coverage import phase_for_event
+from intergrax.runtime.nexus.tracing.adapters.core_llm_call_recorded import CoreLLMCallRecordedDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceEvent, TraceLevel
 from intergrax.runtime.task.task import Task, TaskState
+
+_CORE_LLM_CALL_SCHEMA = CoreLLMCallRecordedDiagV1.schema_id()
+_CORE_LLM_RETURNED_SCHEMA = "intergrax.diag.engine.core_llm.adapter_returned"
+
+_TOOL_STEP_TO_EVENT: dict[str, RuntimeEventType] = {
+    "tool_invocation_start": RuntimeEventType.TOOL_REQUESTED,
+    "tool_invocation_end": RuntimeEventType.TOOL_COMPLETED,
+    "tool_invocation_denied": RuntimeEventType.TOOL_DENIED,
+    "tool_invocation_error": RuntimeEventType.TOOL_FAILED,
+}
 
 _TASK_STATE_TO_EVENT: dict[TaskState, RuntimeEventType] = {
     TaskState.CREATED: RuntimeEventType.TASK_CREATED,
@@ -95,18 +106,29 @@ def runtime_event_from_task_state(
     )
 
 
-def trace_event_to_runtime_event(
+def _resolve_event_type_from_trace(
     trace: TraceEvent,
-    task: Task,
     *,
-    correlation_id: Optional[str] = None,
-) -> RuntimeEvent:
-    """Map a persisted ``TraceEvent`` to canonical ``RuntimeEvent``."""
+    payload_schema_id: Optional[str] = None,
+    payload_dict: Optional[Dict[str, Any]] = None,
+) -> tuple[RuntimeEventType, ExecutionPhase]:
     task_state_str = trace.tags.get("task_state")
     event_type = RuntimeEventType.STEP_STARTED
     phase = ExecutionPhase.STEP_EXECUTION
 
-    if trace.message.startswith("retry attempt"):
+    schema_id = payload_schema_id or ""
+    payload = dict(payload_dict or {})
+    if trace.payload is not None and not payload:
+        payload = trace.payload.to_dict()
+        schema_id = schema_id or trace.payload.__class__.schema_id()
+
+    if schema_id in {_CORE_LLM_CALL_SCHEMA, _CORE_LLM_RETURNED_SCHEMA}:
+        event_type = RuntimeEventType.LLM_CALL
+    elif trace.step == "core_llm" and "finish_reason" in payload:
+        event_type = RuntimeEventType.LLM_CALL
+    elif trace.step in _TOOL_STEP_TO_EVENT:
+        event_type = _TOOL_STEP_TO_EVENT[trace.step]
+    elif trace.message.startswith("retry attempt"):
         event_type = RuntimeEventType.RETRY_STARTED
         phase = ExecutionPhase.RETRY_HANDLING
     elif trace.step == "task_lifecycle" and task_state_str:
@@ -123,13 +145,61 @@ def trace_event_to_runtime_event(
         event_type = RuntimeEventType.STEP_COMPLETED
         phase = ExecutionPhase.STEP_EXECUTION
 
+    return event_type, phase
+
+
+def trace_event_to_runtime_event(
+    trace: TraceEvent,
+    task: Task,
+    *,
+    correlation_id: Optional[str] = None,
+    payload_schema_id: Optional[str] = None,
+    payload_dict: Optional[Dict[str, Any]] = None,
+) -> RuntimeEvent:
+    """Map a persisted ``TraceEvent`` to canonical ``RuntimeEvent``."""
+    event_type, phase = _resolve_event_type_from_trace(
+        trace,
+        payload_schema_id=payload_schema_id,
+        payload_dict=payload_dict,
+    )
+
     payload: Dict[str, Any] = {
         "trace_event_id": trace.event_id,
         "trace_step": trace.step,
         "trace_component": trace.component.value,
+        "trace_seq": trace.seq,
         "message": trace.message,
         "tags": dict(trace.tags),
+        "source": "trace_bridge",
     }
+    schema_id = payload_schema_id or ""
+    extra_payload = dict(payload_dict or {})
+    if trace.payload is not None and not extra_payload:
+        extra_payload = trace.payload.to_dict()
+        schema_id = schema_id or trace.payload.__class__.schema_id()
+    if schema_id:
+        payload["payload_schema_id"] = schema_id
+    if extra_payload:
+        payload["trace_payload"] = extra_payload
+    if event_type == RuntimeEventType.LLM_CALL and extra_payload:
+        payload.update(
+            {
+                "model": extra_payload.get("model", ""),
+                "prompt_tokens": int(extra_payload.get("prompt_tokens", 0) or 0),
+                "completion_tokens": int(extra_payload.get("completion_tokens", 0) or 0),
+                "total_tokens": int(extra_payload.get("total_tokens", 0) or 0),
+                "finish_reason": extra_payload.get("finish_reason"),
+            }
+        )
+    elif event_type in {
+        RuntimeEventType.TOOL_REQUESTED,
+        RuntimeEventType.TOOL_COMPLETED,
+        RuntimeEventType.TOOL_DENIED,
+        RuntimeEventType.TOOL_FAILED,
+    }:
+        tool_name = extra_payload.get("tool_name") or trace.tags.get("tool_name")
+        if tool_name:
+            payload["tool_name"] = tool_name
 
     mapped_phase = phase_for_event(event_type)
     if mapped_phase is not None:

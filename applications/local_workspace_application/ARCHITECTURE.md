@@ -1,10 +1,31 @@
 # Local Knowledge Workspace (LKW) — architecture
 
-**Status:** Scaffold + architecture baseline (2026-06-07) — Wave 0 product reprioritization  
+**Status:** Architecture baseline v2 (2026-06-07) — implementation-plan source of truth  
 **Tier:** Tier-3 application (`local_workspace_application`)  
 **Agents:** Tier-2 `local_indexer`, `local_search`, `local_synthesizer`  
 **Canonical plan row:** [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md` §6.3a LKW.*](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated)  
-**Local plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+**Derived plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) — generated from this document; do not fork scope elsewhere
+
+---
+
+## 0. How to use this document
+
+This file is the **single product architecture** for LKW. From it you derive:
+
+| Need | Read section |
+|------|----------------|
+| Product philosophy, boundaries | §3 · §4 |
+| What is frontend vs backend | §4 |
+| Solution + trust zones | §5 |
+| Agent roster | §6 |
+| Install / upgrade / uninstall | §7 |
+| Integrations, tools, skills | §8 |
+| Runtime + Slack (optional) | §9 |
+| Request flows | §10 |
+| Implementation waves + acceptance | §15 |
+| Env vars and paths on disk | §7.3 · §12 |
+
+**Rule:** change architecture first, then update [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) and platform [`§6.3a`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated). One coherent diff per wave.
 
 ---
 
@@ -36,7 +57,133 @@ LKW solves this with **read-heavy indexing + semantic retrieval + isolated write
 
 ---
 
-## 3. Solution overview
+## 3. Product philosophy
+
+### 3.1 What LKW is
+
+LKW is a **personal Agent OS instance** on the user's computer:
+
+- **Always-on backend** (local daemon) owns data, index, agents, and policy.
+- **Thin frontends** (tray, Cursor MCP, Slack, scripts) only send **tasks** and show **results**.
+- **Intergrax Nexus** is the only orchestrator — no ad-hoc agent loops in UI code.
+
+### 3.2 What LKW is not
+
+| Not this | Why |
+|----------|-----|
+| Slack bot that “is” the product | Slack is an **optional remote control**; execution stays on localhost |
+| Cloud SaaS with file upload | Files never leave the machine by default |
+| Single monolithic “chat agent” | Three bounded agents + graph pipeline |
+| Unrestricted filesystem agent | Read allowlist + shadow-only writes |
+| Replacement for Nexus / Tier-0 | Composition and wiring only — reuse platform mechanisms |
+
+### 3.3 Design principles (non-negotiable)
+
+1. **Compute local, control multi-channel** — index and embeddings on user disk; Slack/HTTP/MCP are equal task transports.
+2. **Read user FS, write shadow only** — originals are never modified by agents.
+3. **Integration → Tool → Skill → Agent** — no vendor SDKs in Tier-2; Tier-3 wires profiles.
+4. **Every surface → one Task** — same trace, policy, and agents regardless of UI.
+5. **Slack optional** — product must work with **localhost only** (LKW.1–5); Slack is LKW.6b enhancement.
+6. **Harness honesty** — gaps discovered during LKW feed back to Tier-0 plan, not Nexus forks.
+
+### 3.4 Primary vs optional user journeys
+
+| Journey | Channel | Required wave |
+|---------|---------|---------------|
+| Developer at desk | MCP / HTTP | LKW.0–1 |
+| Background index of folders | Daemon + watcher | LKW.7 |
+| Quick search anytime | HTTP / tray | LKW.1 + LKW.8 |
+| Remote command from phone | Slack slash | LKW.6b |
+| Approve draft report | Slack HITL / HTTP | LKW.2 + notify |
+
+---
+
+## 4. Frontend vs backend boundaries
+
+### 4.1 Layer map
+
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│  FRONTEND (thin clients — no agent logic, no direct RAG)                 │
+│  ┌─────────────┐ ┌─────────────┐ ┌──────────────┐ ┌─────────────────┐ │
+│  │ LKW Tray    │ │ Cursor MCP  │ │ Slack client │ │ curl / scripts  │ │
+│  │ (LKW.8)     │ │ (LKW.0)     │ │ (LKW.6b)     │ │ (LKW.0)         │ │
+│  └──────┬──────┘ └──────┬──────┘ └──────┬───────┘ └────────┬────────┘ │
+│         │               │               │                   │          │
+│         └───────────────┴───────────────┴───────────────────┘          │
+│                                    │ HTTP / MCP / interaction intake    │
+└────────────────────────────────────┼────────────────────────────────────┘
+                                     ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│  BACKEND — LKW Daemon (single product boundary on localhost)             │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │ Tier-3  local_workspace_application                                │  │
+│  │  FastAPI Core · /health · /v1/local_workspace/* · /mcp           │  │
+│  │  /v1/interactions/intake (LKW.6) · optional Socket Mode (LKW.6b) │  │
+│  │  manifest · environment_profile · tool_wiring · factory          │  │
+│  └───────────────────────────────┬───────────────────────────────────┘  │
+│                                  ▼                                       │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │ Tier-1  Nexus Agent OS                                             │  │
+│  │  NexusLoop · graph · HITL · trace · memory · policy                │  │
+│  └───────────────────────────────┬───────────────────────────────────┘  │
+│                                  ▼                                       │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │ Tier-2  local_indexer · local_search · local_synthesizer           │  │
+│  └───────────────────────────────┬───────────────────────────────────┘  │
+│                                  ▼                                       │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │ Tier-0  integrations · tools · skills · RAG · shadow workspace     │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────┐  optional: indexer sidecar (LKW.7)        │
+│  │ file watcher + queue   │  same host, enqueues ingest tasks          │
+│  └──────────────────────┘                                              │
+└─────────────────────────────────────────────────────────────────────────┘
+                                     │
+                                     ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│  LOCAL DATA PLANE (backend-owned paths — §7)                            │
+│  ~/.local/share/intergrax/lkw/  or  %LOCALAPPDATA%\Intergrax\LKW\       │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 4.2 Responsibility matrix
+
+| Concern | Frontend | Backend (LKW daemon) |
+|---------|----------|----------------------|
+| User message / command | Collects text, paths, template choice | Parses into `Task` |
+| Capability routing | May suggest `capability` in JSON | Nexus selects agent / graph |
+| RAG ingest / retrieve | **Never** | Agents + `rag.*` tools |
+| LLM calls | **Never** | `RuntimeConfig` / agent pipeline |
+| File read (user home) | May pick folder in tray | `filesystem.*` / ingest with allowlist |
+| File write (deliverables) | May open exported file | `workspace.*` shadow only |
+| Auth to localhost | Optional API key in tray config | `LocalWorkspaceBackendSettings` |
+| Slack tokens | **Never** stored in tray | Daemon config / env |
+| Trace / debug | May show run_id link | SQLite trace DB |
+
+### 4.3 Frontend catalog (planned)
+
+| Client | Technology | Talks to | Wave |
+|--------|------------|----------|------|
+| **HTTP API** | any HTTP client | `POST /v1/local_workspace/run` | LKW.0 Done |
+| **MCP** | Cursor, Claude Desktop | `http://127.0.0.1:8020/mcp` | LKW.0 Done |
+| **LKW Tray** | Tauri/Electron or native | localhost HTTP + folder picker | LKW.8 |
+| **Slack** | Slack App (Socket Mode) | intake inside daemon | LKW.6b |
+| **CLI operator** | `intergrax.debug` | trace DB | platform Done |
+
+### 4.4 Backend process model
+
+| Process | Role | Required |
+|---------|------|----------|
+| **`lkw-host`** | Uvicorn + FastAPI + NexusLoop + MCP + optional Slack socket | **Yes** — one per user session |
+| **`lkw-indexer-worker`** | File watcher → `message_bus.enqueue` → ingest | LKW.7 optional |
+| **External LLM API** | Inference only | Configurable (Ollama local or cloud) |
+
+**Single-host rule:** one `lkw-host` per user account binds `127.0.0.1:<port>` (default `8020`). Tray and MCP are clients, not second runtimes.
+
+---
+
+## 5. Solution overview
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -71,7 +218,7 @@ LKW solves this with **read-heavy indexing + semantic retrieval + isolated write
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.2 Four-layer composition (Integration → Tool → Skill → Agent)
+### 5.1 Four-layer composition (Integration → Tool → Skill → Agent)
 
 LKW follows the canonical Intergrax stack — agents never call vendor SDKs; Tier-3 selects backends and enables catalog surfaces:
 
@@ -96,7 +243,7 @@ AgentContract (Tier-2)
 
 **Rule:** Tier-3 **wires** integrations and tools; Tier-2 agents **declare** `skill_ids` on `AgentContract`; skills **compose** tool packs + prompts + policy fragments. See [`docs/SKILLS.md`](../../docs/SKILLS.md) · [`docs/TOOLS.md`](../../docs/TOOLS.md) · [`docs/INTEGRATIONS.md`](../../docs/INTEGRATIONS.md).
 
-### 3.1 Trust zones (filesystem safety)
+### 5.2 Trust zones (filesystem safety)
 
 | Zone | Purpose | Mechanism | Mutations |
 |------|---------|-----------|-----------|
@@ -108,7 +255,7 @@ AgentContract (Tier-2)
 
 ---
 
-## 4. Agent roster and capabilities
+## 6. Agent roster and capabilities
 
 | Agent | Module | Capability | Responsibility |
 |-------|--------|------------|----------------|
@@ -126,9 +273,125 @@ Agent architecture docs:
 
 ---
 
-## 5. Integrations, tools, and skills
+## 7. Installation, lifecycle, and on-disk layout
 
-### 5.1 Integrations (`IntegrationProfile`)
+### 7.1 Installation philosophy
+
+LKW installs as a **user-level background service** plus optional tray frontend. No system-wide server required. Python/uv environment ships with the product bundle (or uses existing Intergrax dev tree for engineering builds).
+
+**Target personas:**
+
+| Persona | Install path |
+|---------|--------------|
+| Developer | `uv sync` + `uvicorn` from repo (today) |
+| End user (future) | Installer → `%LOCALAPPDATA%\Intergrax\LKW` or `~/.local/share/intergrax/lkw` |
+
+### 7.2 Prerequisites
+
+| Requirement | Notes |
+|-------------|-------|
+| Python 3.12 + uv | Dev; packaged install may embed runtime |
+| LLM endpoint | Ollama local (`INTERGRAX_OLLAMA_*`) or cloud API key |
+| Disk space | Index + trace (plan ~1–5 GB for typical corpus) |
+| OS permissions | Read access to user-selected folders; macOS Full Disk Access if needed |
+
+### 7.3 On-disk layout (canonical paths)
+
+Default root: **`$LKW_DATA_HOME`** (env) with fallbacks:
+
+| OS | Default `LKW_DATA_HOME` |
+|----|-------------------------|
+| Linux | `~/.local/share/intergrax/lkw` |
+| macOS | `~/Library/Application Support/Intergrax/LKW` |
+| Windows | `%LOCALAPPDATA%\Intergrax\LKW` |
+
+```text
+$LKW_DATA_HOME/
+├── config/
+│   ├── .env                    # LOCAL_WORKSPACE_* secrets (gitignored)
+│   ├── allowed_read_roots.json # folder allowlist (LKW.3+)
+│   └── integration_profile.json  # optional Chroma override
+├── data/
+│   ├── chroma/                   # vector index (when chroma enabled)
+│   ├── sqlite/
+│   │   ├── intergrax_trace.db
+│   │   ├── intergrax_session.db
+│   │   └── intergrax_task_memory.db
+│   └── shadow_workspaces/        # INTERGRAX_SHADOW_ROOT override
+├── logs/
+│   └── lkw-host.log
+└── run/
+    └── lkw-host.pid
+```
+
+**Engineering default (repo dev):** `build/` under repository — override via env for product parity testing.
+
+### 7.4 Install steps by OS (LKW.6 target)
+
+#### Windows
+
+```text
+1. Installer copies bundle → %LOCALAPPDATA%\Intergrax\LKW\
+2. Register Windows Service OR Login Task → runs scripts/lkw-host.ps1
+3. Optional: tray app in Startup folder → localhost:8020
+4. First-run wizard (LKW.8): pick folders → writes allowed_read_roots.json
+```
+
+#### Linux (systemd user unit)
+
+```ini
+# ~/.config/systemd/user/lkw-host.service
+[Unit]
+Description=Intergrax Local Knowledge Workspace
+After=network.target
+
+[Service]
+ExecStart=%h/.local/share/intergrax/lkw/bin/lkw-host
+Restart=on-failure
+Environment=LKW_DATA_HOME=%h/.local/share/intergrax/lkw
+
+[Install]
+WantedBy=default.target
+```
+
+```bash
+systemctl --user enable --now lkw-host
+```
+
+#### macOS (LaunchAgent)
+
+```xml
+<!-- ~/Library/LaunchAgents/com.intergrax.lkw.plist -->
+Label: com.intergrax.lkw
+ProgramArguments: ~/.local/share/intergrax/lkw/bin/lkw-host
+RunAtLoad: true
+KeepAlive: true
+```
+
+Grant **Full Disk Access** if indexing outside home directory.
+
+### 7.5 Upgrade and uninstall
+
+| Action | Behaviour |
+|--------|-----------|
+| **Upgrade** | Stop service → replace `bin/` + Python env → migrate sqlite/chroma if schema version bumps → start |
+| **Uninstall** | Stop service → remove unit/plist → delete `$LKW_DATA_HOME` (user prompt: keep index?) |
+| **Config only reset** | Delete `config/.env`; keep `data/chroma` |
+
+### 7.6 Health and readiness
+
+| Check | Endpoint / command |
+|-------|-------------------|
+| Process up | `GET http://127.0.0.1:8020/health` |
+| Agents registered | `GET /v1/local_workspace/agents` |
+| Index ready | `rag.check_index_status` via MCP or debug task |
+| Integration health | host bootstrap probes at startup (log on failure) |
+
+---
+
+## 8. Integrations, tools, and skills
+
+### 8.1 Integrations (`IntegrationProfile`)
 
 **Baseline preset:** `IntegrationProfile.legal_product()` — RAG + document parsing without mandatory web search (unlike `research_product()`).
 
@@ -148,7 +411,7 @@ Agent architecture docs:
 
 Authoring: [`docs/AGENT_CREATION_GUIDE.md` Appendix K](../../docs/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) · catalog: [`docs/INTEGRATIONS.md`](../../docs/INTEGRATIONS.md).
 
-### 5.2 Tools (`ToolProfile` + `host/tool_wiring.py`)
+### 8.2 Tools (`ToolProfile` + `host/tool_wiring.py`)
 
 Tier-3 enables tools; agents invoke them through `BoundToolGateway` / `ctx.invoke_tool()` — never direct integration imports.
 
@@ -181,7 +444,7 @@ Tier-3 enables tools; agents invoke them through `BoundToolGateway` / `ctx.invok
 
 Catalog reference: [`docs/TOOLS.md`](../../docs/TOOLS.md) · wiring: [`host/tool_wiring.py`](host/tool_wiring.py).
 
-### 5.3 Skills (`SkillProfile` + `AgentContract.skill_ids`)
+### 8.3 Skills (`SkillProfile` + `AgentContract.skill_ids`)
 
 Skills are **composable packs** (tools + prompt instruction ids + optional policy fragments). The LLM does not call skills directly — Nexus resolves `skill_ids` into `allowed_tools` at register time.
 
@@ -206,7 +469,7 @@ Environment: [`manifest.py`](manifest.py) · [`host/environment_profile.py`](hos
 
 Skill authoring: [`docs/SKILLS.md`](../../docs/SKILLS.md) · Appendix J in [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane).
 
-### 5.4 Per-agent Integration / Tool / Skill matrix
+### 8.4 Per-agent Integration / Tool / Skill matrix
 
 | Agent | Integrations consumed (indirect) | Primary tools | Skill (LKW.2) |
 |-------|----------------------------------|---------------|---------------|
@@ -214,7 +477,7 @@ Skill authoring: [`docs/SKILLS.md`](../../docs/SKILLS.md) · Appendix J in [`doc
 | **LocalSearchAgent** | `vector_store`, `rerank_provider` | `rag.retrieve`, `cache.*`, `memory.*` | `local.workspace.search` |
 | **LocalSynthesizerAgent** | runtime shadow workspace (not integration slug) | `workspace.*`, `memory.read` | `local.workspace.synthesize` |
 
-### 5.5 Runtime wiring path (Tier-3 → Tier-1 → Tier-2)
+### 8.5 Runtime wiring path (Tier-3 → Tier-1 → Tier-2)
 
 ```text
 wire_application_environment(manifest, environment, settings)
@@ -231,7 +494,7 @@ build_application_registry(manifest, build_context, builders)
 NexusLoop → AgentEngine → UAEP ctx.invoke_tool(ToolRequest(tool_name="rag.retrieve", ...))
 ```
 
-### 5.6 Environment profile summary
+### 8.6 Environment profile summary
 
 - `ApplicationEnvironmentProfile.product_defaults(profile_id="local_workspace.product")`
 - `skill_bundles=["harness"]` (LKW.0); extend with `"local"` at LKW.2
@@ -244,11 +507,11 @@ See [`host/environment_profile.py`](host/environment_profile.py).
 
 ---
 
-## 6. Local OS runtime and interaction model
+## 9. Local OS runtime and interaction model
 
 LKW is a **local execution environment** (Tier-3 host + Nexus) that runs **in the background on the user's machine** (Windows, Linux, macOS). The user can submit work **at any time**; agents are spawned by Nexus on demand. Chat apps (Slack, Teams) are **interaction surfaces** — not the runtime — they deliver commands and receive summaries.
 
-### 6.1 Design principle: compute local, control multi-channel
+### 9.1 Design principle: compute local, control multi-channel
 
 | Layer | Where it runs | What it holds |
 |-------|---------------|---------------|
@@ -258,7 +521,7 @@ LKW is a **local execution environment** (Tier-3 host + Nexus) that runs **in th
 
 **Privacy default:** document chunks and embeddings stay on disk under user control. Slack receives **commands and condensed answers**, not full file dumps.
 
-### 6.2 Background process topology
+### 9.2 Background process topology
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
@@ -289,7 +552,7 @@ LKW is a **local execution environment** (Tier-3 host + Nexus) that runs **in th
                                               (outbound from daemon — no public IP required)
 ```
 
-#### OS service packaging (LKW.6)
+#### OS service packaging (see also §7.4)
 
 | OS | Recommended mechanism | Notes |
 |----|----------------------|-------|
@@ -307,7 +570,7 @@ Host entrypoint (today): `uvicorn local_workspace_application.host.main:app`. Pr
 4. **Notify** on completion / HITL (`notification_channel=slack` on long-running tasks).
 5. **Persist** checkpoints for pause/resume ([`docs/INTERGRAX_IMPLEMENTATION_PLAN.md` Appendix F.4](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md)).
 
-### 6.3 Interaction surfaces (how the user talks to LKW)
+### 9.3 Interaction surfaces (how the user talks to LKW)
 
 | Surface | Status | Endpoint / mechanism | Best for |
 |---------|--------|----------------------|----------|
@@ -320,9 +583,11 @@ Host entrypoint (today): `uvicorn local_workspace_application.host.main:app`. Pr
 
 **Rule:** every surface normalizes to a Nexus `Task` — same agents, same policy, same trace. See [`applications/USAGE.md` §4b](../USAGE.md) · canon §18.
 
-### 6.4 Slack as interaction channel — recommended architecture
+### 9.4 Slack as optional interaction channel
 
-**Yes — Slack fits LKW**, using existing Intergrax **interaction + notification** integrations (`slack` slug). Slack is **not** the execution environment; the **local LKW daemon** is.
+Slack is **supported and professional** as an **optional** channel — not the product core. Use existing Intergrax **interaction + notification** integrations (`slack` slug). Execution remains on the **local LKW daemon**.
+
+**Decision record:** Primary UX = localhost (HTTP/MCP/tray). Slack = remote/mobile/team + HITL. Product must pass acceptance tests **without** Slack configured.
 
 #### Reference flow (slash command)
 
@@ -391,7 +656,7 @@ LKW.6 wires this on the product host (mirror `lab_application` / `legal_applicat
 - Shadow workspace binary artifacts (link to local export path or summary).
 - Unredacted secrets from parsed files.
 
-### 6.5 Task timing: foreground vs background
+### 9.5 Task timing: foreground vs background
 
 | Pattern | Trigger | Nexus behaviour |
 |---------|---------|-----------------|
@@ -401,7 +666,7 @@ LKW.6 wires this on the product host (mirror `lab_application` / `legal_applicat
 
 User can **always** submit a new interactive task while background indexing runs — Nexus queue + idempotency prevent duplicate ingests (LKW.7).
 
-### 6.6 Integration profile extension for Slack (LKW.6)
+### 9.6 Integration profile extension for Slack (LKW.6b)
 
 Extend `IntegrationProfile` on LKW host (in addition to `legal_product()` RAG slots):
 
@@ -412,23 +677,11 @@ interaction_surface  = slack    # inbound slash / events (via intake router)
 
 Env (mirror legal/lab): `LOCAL_WORKSPACE_INCLUDE_INTERACTIONS=true`, `LOCAL_WORKSPACE_INTERACTION_SURFACE=slack`, Slack signing secret + bot token for Socket Mode.
 
-### 6.7 Implementation waves (product capabilities)
-
-| Wave | Deliverable |
-|------|-------------|
-| **LKW.1** | Domain UAEP steps; explicit-path ingest + search |
-| **LKW.2** | Multi-agent graph + `local.workspace.*` skills |
-| **LKW.3** | `filesystem.*` read tools + allowlist |
-| **LKW.6** | Always-on local daemon packaging (systemd / launchd / Windows) + interaction intake on host |
-| **LKW.6b** | Slack Socket Mode client + slash command mapping |
-| **LKW.7** | Background file watcher + incremental index + optional Slack batch notifications |
-| **LKW.8** | Tray / folder-picker UI (calls localhost API) |
-
 ---
 
-## 7. Request and data flows
+## 10. Request and data flows
 
-### 7.1 Index flow
+### 10.1 Index flow
 
 ```text
 Task(capability=local.workspace.index, metadata={source_paths: [...]})
@@ -438,7 +691,7 @@ Task(capability=local.workspace.index, metadata={source_paths: [...]})
   → StepOutput(metadata: {num_chunks, collection_id, parser_trace})
 ```
 
-### 7.2 Search flow
+### 10.2 Search flow
 
 ```text
 Task(capability=local.workspace.search, message="znajdź dokumenty o projekcie X")
@@ -447,7 +700,7 @@ Task(capability=local.workspace.search, message="znajdź dokumenty o projekcie X
   → Package evidence chunks + citations (path, page, chunk_id)
 ```
 
-### 7.3 Synthesize flow
+### 10.3 Synthesize flow
 
 ```text
 Task(capability=local.workspace.synthesize, metadata={template: "email"|"report"|...})
@@ -457,7 +710,7 @@ Task(capability=local.workspace.synthesize, metadata={template: "email"|"report"
   → metadata: {shadow_workspace_id, artifact_paths}
 ```
 
-### 7.4 Pipeline flow (Wave 2)
+### 10.4 Pipeline flow (Wave 2)
 
 ```text
 Task(capability=local.workspace.pipeline, intent=local_workspace_full)
@@ -467,7 +720,7 @@ Task(capability=local.workspace.pipeline, intent=local_workspace_full)
 
 ---
 
-## 8. Tier-3 composition map
+## 11. Tier-3 composition map
 
 | File | Role |
 |------|------|
@@ -486,9 +739,9 @@ Authoring guide: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUID
 
 ---
 
-## 9. Configuration
+## 12. Configuration
 
-### 9.1 Environment variables (`.env.example`)
+### 12.1 Environment variables (`.env.example`)
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
@@ -497,9 +750,12 @@ Authoring guide: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUID
 | `LOCAL_WORKSPACE_ENABLE_RAG` | `true` | Enable `rag.retrieve` |
 | `LOCAL_WORKSPACE_ENABLE_RAG_INGEST` | `true` | Enable `rag.ingest_document` |
 | `INTERGRAX_SHADOW_ROOT` | `build/shadow_workspaces` | Artifact isolation root |
-| `INTERGRAX_ALLOWED_READ_ROOTS` | *(planned Wave 3)* | Comma-separated read allowlist |
+| `LKW_DATA_HOME` | OS default (§7.3) | Product data root |
+| `INTERGRAX_ALLOWED_READ_ROOTS` | user config | Comma-separated read allowlist |
+| `LOCAL_WORKSPACE_INCLUDE_INTERACTIONS` | `false` | Enable `/v1/interactions/intake` (LKW.6) |
+| `LOCAL_WORKSPACE_INTERACTION_SURFACE` | `auto` | `slack` \| `teams` \| `lab` |
 
-### 9.2 Task metadata conventions (Wave 1+)
+### 12.2 Task metadata conventions (Wave 1+)
 
 ```python
 Task(
@@ -514,7 +770,7 @@ Task(
 
 ---
 
-## 10. Security and governance
+## 13. Security and governance
 
 - **Read-only user FS** in Waves 1–2 (ingest reads; no writes)
 - **Shadow workspace** mandatory for synthesizer outputs
@@ -524,7 +780,7 @@ Task(
 
 ---
 
-## 11. Observability and verification
+## 14. Observability and verification
 
 ```bash
 # Host smoke
@@ -541,25 +797,131 @@ Deploy triad: `docker/`, `BUILD_AND_DEPLOY.md` — gate `test_application_deploy
 
 ---
 
-## 12. Implementation waves (plan traceability)
+## 15. Implementation plan derivation (canonical)
 
-| ID | Deliverable | Status |
-|----|-------------|--------|
-| **LKW.0** | Scaffold agents + application + architecture doc | **Done** (this document) |
-| **LKW.1** | Wave 1 — single-path ingest + search smoke | Planned |
-| **LKW.2** | Multi-agent graph + pipeline capability | Planned |
-| **LKW.3** | Tier-0 `filesystem.*` read tools + allowlist policy | **Done** (T6) |
-| **LKW.4** | Background ingest queue (message_bus worker) | Planned |
-| **LKW.6** | Local OS daemon + interaction intake on host | Planned |
-| **LKW.6b** | Slack Socket Mode + slash → Nexus mapping | Planned |
-| **LKW.7** | File watcher + incremental index + Slack batch notify | Planned |
-| **LKW.8** | Tray / file-picker UI (localhost client) | Deferred product |
+Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) when scheduling work. **Depends** = prior waves. **Acceptance** = objective done criteria.
 
-Registered in [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md` §6.3a](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated).
+### 15.1 Wave summary
+
+| ID | Wave | Title | Layer | Depends | Status |
+|----|------|-------|-------|---------|--------|
+| **LKW.0** | 0 | Scaffold + architecture v2 | Tier-2/3 docs | — | **Done** |
+| **LKW.1** | 1 | Domain UAEP: ingest + search | Tier-2 agents | LKW.0 | Planned |
+| **LKW.2** | 2 | Graph pipeline + local skills | Tier-1 graph + Tier-0 skills | LKW.1 | Planned |
+| **LKW.3** | 3 | Filesystem browse + allowlist | Tier-0 tools + Tier-3 policy | LKW.0 | **Done** (T6) |
+| **LKW.4** | 4 | Background ingest queue | Tier-0 message_bus | LKW.1 | Planned |
+| **LKW.5** | 5 | Chroma persistent index + `LKW_DATA_HOME` | Tier-3 config | LKW.1 | Planned |
+| **LKW.6** | 6 | OS daemon packaging + interaction intake | Tier-3 host | LKW.1 | Planned |
+| **LKW.6b** | 6b | Slack Socket Mode (optional) | Tier-3 + slack integration | LKW.6 | Planned |
+| **LKW.7** | 7 | File watcher + incremental index | Tier-3 worker | LKW.4, LKW.5 | Planned |
+| **LKW.8** | 8 | Tray frontend (thin client) | Frontend | LKW.6 | Deferred |
+
+### 15.2 Wave detail (tasks + acceptance)
+
+#### LKW.1 — Domain UAEP: ingest + search
+
+| Task | Owner module | Deliverable |
+|------|--------------|-------------|
+| LKW.1.1 | `agents/local_indexer/steps/` | Ingest pipeline: validate paths → `rag.ingest_document` loop |
+| LKW.1.2 | `agents/local_search/steps/` | Search pipeline: `rag.retrieve` → evidence package |
+| LKW.1.3 | `agents/local_synthesizer/steps/` | Stub synthesize → `workspace.write_file` in shadow |
+| LKW.1.4 | tests | Acceptance: ingest fixture PDF → search returns citation |
+
+**Acceptance:** `POST /run` with `source_paths` + `local.workspace.search` returns grounded answer; shadow artifact on synthesize; pytest green.
+
+**Frontend:** HTTP/MCP only. **Backend:** all logic in agents.
 
 ---
 
-## 13. Known platform gaps (honest audit)
+#### LKW.2 — Graph pipeline + skills
+
+| Task | Owner module | Deliverable |
+|------|--------------|-------------|
+| LKW.2.1 | `intergrax/skills/providers/local/` | Skill manifests `local.workspace.*` |
+| LKW.2.2 | `agents/*/contract.py` | `skill_ids` on each agent |
+| LKW.2.3 | `host/environment_profile.py` | `skill_bundles=["harness","local"]` |
+| LKW.2.4 | `manifest` / graph_spec | `local.workspace.pipeline` graph |
+
+**Acceptance:** Single `POST /run` with pipeline capability runs index→search→synthesize without manual capability selection.
+
+---
+
+#### LKW.5 — Persistent index + data home
+
+| Task | Owner module | Deliverable |
+|------|--------------|-------------|
+| LKW.5.1 | `host/settings.py` | `LKW_DATA_HOME` resolution (§7.3) |
+| LKW.5.2 | env / profile | Chroma under `data/chroma/` |
+| LKW.5.3 | `BUILD_AND_DEPLOY.md` | Document paths per OS |
+
+**Acceptance:** Restart host → prior index still retrievable.
+
+---
+
+#### LKW.6 — OS daemon + interaction intake (backend productization)
+
+| Task | Owner module | Deliverable |
+|------|--------------|-------------|
+| LKW.6.1 | `scripts/lkw-host.*` | Start/stop wrapper for uvicorn |
+| LKW.6.2 | `packaging/` | systemd / launchd / Windows scripts (§7.4) |
+| LKW.6.3 | `host/factory.py` | `wire_interaction_intake_service` + router |
+| LKW.6.4 | `host/settings.py` | `LOCAL_WORKSPACE_INCLUDE_INTERACTIONS` |
+
+**Acceptance:** Service survives reboot; `GET /health` OK; intake JSON → completed task (no Slack required).
+
+**Frontend:** none new. **Backend:** host only.
+
+---
+
+#### LKW.6b — Slack optional channel
+
+| Task | Owner module | Deliverable |
+|------|--------------|-------------|
+| LKW.6b.1 | `host/slack_socket.py` (new) | Socket Mode client → local intake |
+| LKW.6b.2 | mapping | Slash `/lkw` → capability table (§9.4) |
+| LKW.6b.3 | profile | `notification_channel=slack` for HITL |
+
+**Acceptance:** `/lkw search foo` in Slack returns summary; **LKW.1 acceptance still passes with Slack disabled.**
+
+---
+
+#### LKW.7 — Background indexer
+
+| Task | Owner module | Deliverable |
+|------|--------------|-------------|
+| LKW.7.1 | `host/indexer_worker.py` | File watcher on allowlist roots |
+| LKW.7.2 | queue | `message_bus.enqueue` ingest jobs |
+| LKW.7.3 | notify | Optional Slack batch complete |
+
+**Acceptance:** Drop file in watched folder → indexed within N minutes without user command.
+
+---
+
+#### LKW.8 — Tray frontend (thin client)
+
+| Task | Owner module | Deliverable |
+|------|--------------|-------------|
+| LKW.8.1 | `clients/lkw-tray/` (new repo folder or app) | Status icon + search box |
+| LKW.8.2 | | Folder picker → `allowed_read_roots.json` |
+| LKW.8.3 | | Calls only `localhost:8020` API |
+
+**Acceptance:** No Python agent code in tray; uninstall tray does not remove index.
+
+---
+
+### 15.3 End-to-end scenarios (validation scripts)
+
+| # | Scenario | Channels | Waves required |
+|---|----------|----------|----------------|
+| E1 | First install → pick folders → index | Tray + HTTP | LKW.5, LKW.6, LKW.8 |
+| E2 | “Znajdź dokumenty o X” at desk | MCP | LKW.1 |
+| E3 | Full report draft | HTTP pipeline | LKW.2 |
+| E4 | New file auto-indexed | background | LKW.7 |
+| E5 | Search from phone | Slack | LKW.6b (optional) |
+
+---
+
+## 16. Known platform gaps (honest audit)
 
 | Gap | Impact | Mitigation (Wave) |
 |-----|--------|-------------------|
@@ -572,7 +934,7 @@ These gaps are **expected** — LKW exists to discover and close them without Ne
 
 ---
 
-## 14. References
+## 17. References
 
 | Topic | Document |
 |-------|----------|

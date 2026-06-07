@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List
 
+from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.nexus.tracing.persistence_models import (
     PersistedRun,
     RunSummary,
@@ -90,6 +91,7 @@ def build_trace_payload(
     persisted: PersistedRun,
     *,
     include_runtime: bool = False,
+    runtime_store: RuntimeEventPersistence | None = None,
 ) -> Dict[str, Any]:
     trace_events = [_normalize_trace_event(raw) for raw in persisted.events]
     payload: Dict[str, Any] = {
@@ -100,41 +102,14 @@ def build_trace_payload(
     if not include_runtime:
         return payload
 
-    from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event
-    from intergrax.runtime.nexus.tracing.trace_models import (
-        TraceComponent,
-        TraceEvent,
-        TraceLevel,
+    from intergrax.runtime.events.unified_run_journal import (
+        JOURNAL_SCHEMA_VERSION,
+        build_unified_run_journal,
     )
 
-    runtime_events: List[Dict[str, Any]] = []
-    task = _task_from_trace_tags({}, persisted.metadata.run_id, tenant_id=persisted.metadata.tenant_id)
-    for raw in trace_events:
-        tags = raw.get("tags") or {}
-        task = _task_from_trace_tags(
-            {
-                **tags,
-                "tenant_id": persisted.metadata.tenant_id,
-                "user_id": persisted.metadata.user_id,
-            },
-            persisted.metadata.run_id,
-            tenant_id=persisted.metadata.tenant_id,
-        )
-        trace = TraceEvent(
-            event_id=str(raw.get("event_id", "")),
-            run_id=str(raw.get("run_id", persisted.metadata.run_id)),
-            seq=int(raw.get("seq", 0)),
-            ts_utc=str(raw.get("ts_utc", "")),
-            level=TraceLevel(str(raw.get("level", "info"))),
-            component=TraceComponent(str(raw.get("component", "planner"))),
-            step=str(raw.get("step", "")),
-            message=str(raw.get("message", "")),
-            tags=tags,
-        )
-        runtime_events.append(
-            trace_event_to_runtime_event(trace, task).model_dump(mode="json")
-        )
-    payload["runtime_events"] = runtime_events
+    journal = build_unified_run_journal(persisted, runtime_store=runtime_store)
+    payload["runtime_events"] = [event.model_dump(mode="json") for event in journal]
+    payload["journal_schema_version"] = JOURNAL_SCHEMA_VERSION
     return payload
 
 
