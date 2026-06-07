@@ -1824,7 +1824,24 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 
 **Delivered:** **110** catalog `tool_id` values · **38** shipped bundles.
 
-Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{filesystem,billing,cost,crm,...}/`
+#### T-EXPAND T7 — Index Lifecycle + Async Queue (2026-06-07) — **Done**
+
+**Goal:** RAG index inspection, async task queue ops, observability range/tail, eval release compare, cost forecast.
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `message_bus` (+2) | `message_bus.list_tasks`, `message_bus.cancel` | **Done** |
+| `rag` (+3) | `rag.list_documents`, `rag.get_document`, `rag.check_index_status` | **Done** |
+| `document` (+1) | `document.parse_preview` | **Done** |
+| `observability` (+2) | `metrics.query_range`, `logs.tail` | **Done** |
+| `eval` (+1) | `eval.compare_releases` | **Done** |
+| `cost` (+1) | `cost.forecast_spend` | **Done** |
+| contracts | `TaskQueue.cancel` / `list_tasks`; `VectorStoreDocumentListerBinding` | **Done** |
+| wiring | auto-enable message_bus + observability extensions; runtime-bound `cost.forecast_spend` | **Done** |
+
+**Delivered:** **120** catalog `tool_id` values · **38** shipped bundles.
+
+Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{message_bus,rag,document,observability,eval,cost}/`
 
 #### O.5 — Unified tool model (migration design)
 

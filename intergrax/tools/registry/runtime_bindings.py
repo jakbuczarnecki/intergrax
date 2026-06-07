@@ -36,6 +36,15 @@ class KeyValueCacheListerBinding(Protocol):
 
 
 @runtime_checkable
+class VectorStoreDocumentListerBinding(Protocol):
+    """Optional vector store extension for ``rag.list_documents`` / ``rag.get_document``."""
+
+    def list_document_ids(self, *, limit: int = 100, offset: int = 0) -> List[str]: ...
+
+    def get_document(self, document_id: str) -> Optional[Dict[str, Any]]: ...
+
+
+@runtime_checkable
 class TaskMemoryViewBinding(Protocol):
     """Structural binding for policy-scoped task memory (``PolicyScopedMemoryView``)."""
 

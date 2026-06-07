@@ -9,6 +9,7 @@ from intergrax.queueing.contracts.task_queue import (
     TaskRequest,
     TaskResult,
     TaskStatus,
+    TaskSummary,
 )
 
 MessageBus = TaskQueue
@@ -20,4 +21,5 @@ __all__ = [
     "TaskRequest",
     "TaskResult",
     "TaskStatus",
+    "TaskSummary",
 ]

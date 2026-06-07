@@ -9,12 +9,23 @@ from intergrax.tools.providers.observability.contracts import (
     ErrorsCaptureOutput,
     LogsSearchInput,
     LogsSearchOutput,
+    LogsTailInput,
+    LogsTailOutput,
     MetricsQueryInstantInput,
     MetricsQueryInstantOutput,
+    MetricsQueryRangeInput,
+    MetricsQueryRangeOutput,
     TracesQueryInput,
     TracesQueryOutput,
 )
-from intergrax.tools.providers.observability.service import logs_search, metrics_query_instant, traces_query, errors_capture
+from intergrax.tools.providers.observability.service import (
+    errors_capture,
+    logs_search,
+    logs_tail,
+    metrics_query_instant,
+    metrics_query_range,
+    traces_query,
+)
 
 
 class MetricsQueryInstantHandler(
@@ -23,8 +34,18 @@ class MetricsQueryInstantHandler(
     _service = metrics_query_instant
 
 
+class MetricsQueryRangeHandler(
+    ServiceToolHandler[MetricsQueryRangeInput, MetricsQueryRangeOutput]
+):
+    _service = metrics_query_range
+
+
 class LogsSearchHandler(ServiceToolHandler[LogsSearchInput, LogsSearchOutput]):
     _service = logs_search
+
+
+class LogsTailHandler(ServiceToolHandler[LogsTailInput, LogsTailOutput]):
+    _service = logs_tail
 
 
 class TracesQueryHandler(ServiceToolHandler[TracesQueryInput, TracesQueryOutput]):

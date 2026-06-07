@@ -15,11 +15,17 @@ from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResp
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
 from intergrax.runtime.workspace.shadow_workspace import ShadowWorkspace
-from intergrax.tools.providers.cost.contracts import CostCheckQuotaInput, CostGetRunBudgetInput
+from intergrax.tools.providers.cost.contracts import (
+    CostCheckQuotaInput,
+    CostForecastSpendInput,
+    CostGetRunBudgetInput,
+)
 from intergrax.tools.providers.cost.service import (
     COST_CHECK_QUOTA_TOOL_ID,
+    COST_FORECAST_SPEND_TOOL_ID,
     COST_GET_RUN_BUDGET_TOOL_ID,
     cost_check_quota,
+    cost_forecast_spend,
     cost_get_run_budget,
 )
 from intergrax.tools.providers.harness.contracts import (
@@ -89,6 +95,7 @@ _RUNTIME_BOUND_TOOLS: dict[str, tuple[type[BaseModel], ServiceFn]] = {
     HARNESS_GET_RUN_EVENTS_TOOL_ID: (HarnessGetRunEventsInput, harness_get_run_events),
     COST_GET_RUN_BUDGET_TOOL_ID: (CostGetRunBudgetInput, cost_get_run_budget),
     COST_CHECK_QUOTA_TOOL_ID: (CostCheckQuotaInput, cost_check_quota),
+    COST_FORECAST_SPEND_TOOL_ID: (CostForecastSpendInput, cost_forecast_spend),
 }
 
 RUNTIME_BOUND_TOOL_IDS: frozenset[str] = frozenset(_RUNTIME_BOUND_TOOLS.keys())

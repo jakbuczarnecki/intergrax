@@ -162,6 +162,23 @@ class InMemoryVectorStore(LexicalHybridSupport, BaseVectorStore):
     def list_collections(self) -> List[str]:
         return [f"inmemory:{self._tenant_id}"]
 
+    def list_document_ids(self, *, limit: int = 100, offset: int = 0) -> List[str]:
+        ids = list(self._payloads.keys())
+        if offset < 0:
+            offset = 0
+        return ids[offset : offset + max(1, limit)]
+
+    def get_document(self, document_id: str) -> Optional[Dict[str, Any]]:
+        payload = self._payloads.get(document_id)
+        if payload is None:
+            return None
+        metadata = {key: value for key, value in payload.items() if key != "text"}
+        return {
+            "id": document_id,
+            "text": str(payload.get("text") or ""),
+            "metadata": metadata,
+        }
+
     # ---------------------------------------------------------
 
     def _cosine_similarity(

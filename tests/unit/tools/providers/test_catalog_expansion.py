@@ -9,6 +9,21 @@ from intergrax.tools.registry.catalog import clear_tool_catalog, get_bundle, lis
 
 pytestmark = pytest.mark.unit
 
+T7_NEW_TOOL_IDS = frozenset(
+    {
+        "message_bus.list_tasks",
+        "message_bus.cancel",
+        "rag.list_documents",
+        "rag.get_document",
+        "rag.check_index_status",
+        "document.parse_preview",
+        "metrics.query_range",
+        "logs.tail",
+        "eval.compare_releases",
+        "cost.forecast_spend",
+    }
+)
+
 T6_NEW_TOOL_IDS = frozenset(
     {
         "filesystem.list",
@@ -116,11 +131,12 @@ def _clean_catalog() -> None:
 def test_register_default_tools_expanded_catalog() -> None:
     register_default_tools()
     registered = frozenset(list_catalog_tool_ids())
-    assert len(registered) == 110
+    assert len(registered) == 120
     assert NEW_TOOL_IDS <= registered
     assert T4_NEW_TOOL_IDS <= registered
     assert T5_NEW_TOOL_IDS <= registered
     assert T6_NEW_TOOL_IDS <= registered
+    assert T7_NEW_TOOL_IDS <= registered
 
 
 def test_new_bundles_present_in_catalog() -> None:

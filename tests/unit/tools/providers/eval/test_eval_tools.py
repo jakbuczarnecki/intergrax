@@ -7,11 +7,13 @@ import pytest
 from intergrax.runtime.architecture.online_evaluation_models import OnlineEvaluationMode
 from intergrax.runtime.architecture.online_evaluation_registry import InMemoryOnlineEvaluationRegistry
 from intergrax.tools.providers.eval.contracts import (
+    EvalCompareReleasesInput,
     EvalListObservationsInput,
     EvalRecordObservationInput,
     EvalSummarizeReleaseInput,
 )
 from intergrax.tools.providers.eval.service import (
+    eval_compare_releases,
     eval_list_observations,
     eval_record_observation,
     eval_summarize_release,
@@ -82,3 +84,32 @@ def test_eval_summarize_release_matches_scenario_prefix() -> None:
 def test_eval_registry_not_configured() -> None:
     with pytest.raises(RuntimeError, match="evaluation_registry_not_configured"):
         eval_list_observations(ToolWiringContext(), EvalListObservationsInput())
+
+
+def test_eval_compare_releases() -> None:
+    registry = InMemoryOnlineEvaluationRegistry()
+    ctx = ToolWiringContext(evaluation_registry=registry)
+    for observation_id, release_prefix, passed, score in (
+        ("obs-1", "rel-a", True, 1.0),
+        ("obs-2", "rel-b", False, 0.2),
+    ):
+        eval_record_observation(
+            ctx,
+            EvalRecordObservationInput(
+                observation_id=observation_id,
+                run_id=f"run-{release_prefix}",
+                agent_id="agent-a",
+                mode=OnlineEvaluationMode.ONLINE.value,
+                scenario_id=f"{release_prefix}-smoke",
+                passed=passed,
+                score=score,
+                candidate_profile_version_id="v1",
+            ),
+        )
+    out = eval_compare_releases(
+        ctx,
+        EvalCompareReleasesInput(baseline_release_id="rel-a", candidate_release_id="rel-b"),
+    )
+    assert out.baseline_pass_rate == 1.0
+    assert out.candidate_pass_rate == 0.0
+    assert out.candidate_better is False

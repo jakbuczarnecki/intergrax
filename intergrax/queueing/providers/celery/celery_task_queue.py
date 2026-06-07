@@ -4,16 +4,17 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import List, Optional
 
 from celery import Celery
 
 from intergrax.queueing.contracts.task_queue import (
+    TaskHandle,
     TaskQueue,
     TaskRequest,
-    TaskHandle,
-    TaskStatus,
     TaskResult,
+    TaskStatus,
+    TaskSummary,
 )
 
 
@@ -113,3 +114,48 @@ class CeleryTaskQueue(TaskQueue):
 
         # Fallback — treat unknown states as not finished
         return None
+
+    def cancel(self, handle: TaskHandle) -> bool:
+        self._app.control.revoke(handle.task_id, terminate=True)
+        return True
+
+    def list_tasks(
+        self,
+        tenant_id: str,
+        *,
+        limit: int = 50,
+        status_filter: Optional[TaskStatus] = None,
+    ) -> List[TaskSummary]:
+        inspect = self._app.control.inspect()
+        if inspect is None:
+            return []
+
+        summaries: list[TaskSummary] = []
+        for fetch_name, mapped_status in (
+            ("active", TaskStatus.RUNNING),
+            ("reserved", TaskStatus.PENDING),
+            ("scheduled", TaskStatus.PENDING),
+        ):
+            fetch = getattr(inspect, fetch_name, None)
+            if fetch is None:
+                continue
+            tasks_by_worker = fetch() or {}
+            for worker_tasks in tasks_by_worker.values():
+                for task in worker_tasks or []:
+                    kwargs = task.get("kwargs") or {}
+                    if kwargs.get("tenant_id") != tenant_id:
+                        continue
+                    summary = TaskSummary(
+                        task_id=str(task.get("id") or ""),
+                        tenant_id=tenant_id,
+                        task_name=str(kwargs.get("logical_task_name") or task.get("name") or ""),
+                        status=mapped_status,
+                        provider="celery",
+                    )
+                    if status_filter is not None and summary.status != status_filter:
+                        continue
+                    if summary.task_id:
+                        summaries.append(summary)
+                    if len(summaries) >= limit:
+                        return summaries
+        return summaries

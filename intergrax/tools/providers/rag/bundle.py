@@ -13,6 +13,24 @@ from intergrax.tools.providers.rag.ingest_handler import RagIngestHandler
 from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
 from intergrax.tools.providers.rag.list_collections_contracts import RagListCollectionsInput, RagListCollectionsOutput
 from intergrax.tools.providers.rag.list_collections_handler import RagListCollectionsHandler
+from intergrax.tools.providers.rag.index_lifecycle_contracts import (
+    RagCheckIndexStatusInput,
+    RagCheckIndexStatusOutput,
+    RagGetDocumentInput,
+    RagGetDocumentOutput,
+    RagListDocumentsInput,
+    RagListDocumentsOutput,
+)
+from intergrax.tools.providers.rag.index_lifecycle_handler import (
+    RagCheckIndexStatusHandler,
+    RagGetDocumentHandler,
+    RagListDocumentsHandler,
+)
+from intergrax.tools.providers.rag.index_lifecycle_service import (
+    RAG_CHECK_INDEX_STATUS_TOOL_ID,
+    RAG_GET_DOCUMENT_TOOL_ID,
+    RAG_LIST_DOCUMENTS_TOOL_ID,
+)
 from intergrax.tools.providers.rag.lifecycle_contracts import (
     RagDeleteDocumentsInput,
     RagDeleteDocumentsOutput,
@@ -40,6 +58,9 @@ RAG_TOOL_IDS: tuple[str, ...] = (
     RAG_DELETE_DOCUMENTS_TOOL_ID,
     RAG_DESCRIBE_COLLECTION_TOOL_ID,
     RAG_RERANK_TOOL_ID,
+    RAG_LIST_DOCUMENTS_TOOL_ID,
+    RAG_GET_DOCUMENT_TOOL_ID,
+    RAG_CHECK_INDEX_STATUS_TOOL_ID,
 )
 
 
@@ -156,6 +177,54 @@ def rag_rerank_contract() -> ToolContract:
     )
 
 
+def rag_list_documents_contract() -> ToolContract:
+    return ToolContract(
+        tool_id=RAG_LIST_DOCUMENTS_TOOL_ID,
+        name="rag.list_documents",
+        description="List indexed document ids from the configured vector store (paginated).",
+        description_short="List indexed document ids.",
+        input_schema=RagListDocumentsInput,
+        output_schema=RagListDocumentsOutput,
+        error_mapping={},
+        side_effects=False,
+        category="retrieval",
+        risk_level=ToolRiskLevel.LOW,
+        tags=("rag", "vectorstore", "lifecycle"),
+    )
+
+
+def rag_get_document_contract() -> ToolContract:
+    return ToolContract(
+        tool_id=RAG_GET_DOCUMENT_TOOL_ID,
+        name="rag.get_document",
+        description="Fetch indexed document text and metadata by id from the configured vector store.",
+        description_short="Get indexed document.",
+        input_schema=RagGetDocumentInput,
+        output_schema=RagGetDocumentOutput,
+        error_mapping={},
+        side_effects=False,
+        category="retrieval",
+        risk_level=ToolRiskLevel.LOW,
+        tags=("rag", "vectorstore", "lifecycle"),
+    )
+
+
+def rag_check_index_status_contract() -> ToolContract:
+    return ToolContract(
+        tool_id=RAG_CHECK_INDEX_STATUS_TOOL_ID,
+        name="rag.check_index_status",
+        description="Check whether the vector index is ready (non-zero document count and collection metadata).",
+        description_short="Check index readiness.",
+        input_schema=RagCheckIndexStatusInput,
+        output_schema=RagCheckIndexStatusOutput,
+        error_mapping={},
+        side_effects=False,
+        category="retrieval",
+        risk_level=ToolRiskLevel.LOW,
+        tags=("rag", "vectorstore", "lifecycle"),
+    )
+
+
 def register_rag_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
     registry.register(rag_retrieve_contract(), RagRetrieveHandler(ctx))
     registry.register(rag_ingest_contract(), RagIngestHandler(ctx))
@@ -163,6 +232,9 @@ def register_rag_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
     registry.register(rag_delete_documents_contract(), RagDeleteDocumentsHandler(ctx))
     registry.register(rag_describe_collection_contract(), RagDescribeCollectionHandler(ctx))
     registry.register(rag_rerank_contract(), RagRerankHandler(ctx))
+    registry.register(rag_list_documents_contract(), RagListDocumentsHandler(ctx))
+    registry.register(rag_get_document_contract(), RagGetDocumentHandler(ctx))
+    registry.register(rag_check_index_status_contract(), RagCheckIndexStatusHandler(ctx))
 
 
 RAG_RETRIEVE_TOOL_CONTRACT = rag_retrieve_contract()

@@ -131,3 +131,19 @@ class VectorstoreManager(BaseVectorstoreManager):
 
     def list_collections(self) -> list[str]:
         return list(self._store.list_collections())
+
+    def list_document_ids(self, *, limit: int = 100, offset: int = 0) -> list[str]:
+        from intergrax.tools.registry.runtime_bindings import VectorStoreDocumentListerBinding
+
+        store = self._store
+        if isinstance(store, VectorStoreDocumentListerBinding):
+            return list(store.list_document_ids(limit=limit, offset=offset))
+        raise RuntimeError("vectorstore_list_documents_not_supported")
+
+    def get_document(self, document_id: str) -> dict[str, Any] | None:
+        from intergrax.tools.registry.runtime_bindings import VectorStoreDocumentListerBinding
+
+        store = self._store
+        if isinstance(store, VectorStoreDocumentListerBinding):
+            return store.get_document(document_id.strip())
+        raise RuntimeError("vectorstore_get_document_not_supported")

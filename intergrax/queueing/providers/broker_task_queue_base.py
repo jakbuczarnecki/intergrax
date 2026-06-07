@@ -9,10 +9,10 @@ from typing import Optional
 
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.queueing.contracts.task_queue import (
-    TaskQueue,
     TaskHandle,
-    TaskStatus,
+    TaskQueue,
     TaskResult,
+    TaskStatus,
 )
 
 
@@ -115,3 +115,13 @@ class BrokerBackedTaskQueueBase(TaskQueue):
             error_message=error_message,
             attempts=attempts,
         )
+
+    def cancel(self, handle: TaskHandle) -> bool:
+        if handle.tenant_id is None:
+            return False
+        self._kv_store.set(
+            tenant_id=handle.tenant_id,
+            key=self._status_key(handle.task_id),
+            value=TaskStatus.FAILED.value.encode("utf-8"),
+        )
+        return True

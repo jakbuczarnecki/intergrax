@@ -11,10 +11,14 @@ from intergrax.tools.providers.observability.contracts import (
     LogHitOutput,
     LogsSearchInput,
     LogsSearchOutput,
+    LogsTailInput,
+    LogsTailOutput,
     MetricPointOutput,
     MetricSeriesOutput,
     MetricsQueryInstantInput,
     MetricsQueryInstantOutput,
+    MetricsQueryRangeInput,
+    MetricsQueryRangeOutput,
     TraceRecordOutput,
     TracesQueryInput,
     TracesQueryOutput,
@@ -22,7 +26,9 @@ from intergrax.tools.providers.observability.contracts import (
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 METRICS_QUERY_INSTANT_TOOL_ID = "metrics.query_instant"
+METRICS_QUERY_RANGE_TOOL_ID = "metrics.query_range"
 LOGS_SEARCH_TOOL_ID = "logs.search"
+LOGS_TAIL_TOOL_ID = "logs.tail"
 TRACES_QUERY_TOOL_ID = "observability.query_traces"
 ERRORS_CAPTURE_TOOL_ID = "errors.capture"
 
@@ -49,6 +55,29 @@ def metrics_query_instant(
     return MetricsQueryInstantOutput(result_type=result.result_type, series=series)
 
 
+def metrics_query_range(ctx: ToolWiringContext, params: MetricsQueryRangeInput) -> MetricsQueryRangeOutput:
+    from intergrax.tools.providers.observability.resolve import resolve_observability_backend
+
+    backend = resolve_observability_backend(ctx, role="default")
+    result = backend.query_range(
+        params.query,
+        start=params.start,
+        end=params.end,
+        step=params.step,
+    )
+    series = [
+        MetricSeriesOutput(
+            metric=dict(item.metric or {}),
+            points=[
+                MetricPointOutput(timestamp=point.timestamp, value=point.value)
+                for point in item.points
+            ],
+        )
+        for item in result.series
+    ]
+    return MetricsQueryRangeOutput(result_type=result.result_type, series=series)
+
+
 def logs_search(ctx: ToolWiringContext, params: LogsSearchInput) -> LogsSearchOutput:
     from intergrax.tools.providers.observability.resolve import resolve_observability_backend
 
@@ -63,6 +92,15 @@ def logs_search(ctx: ToolWiringContext, params: LogsSearchInput) -> LogsSearchOu
     context_text = "\n".join(hit.message for hit in hits if hit.message).strip()
     total = _extract_total_hits(payload)
     return LogsSearchOutput(hits=hits, total=total, context_text=context_text)
+
+
+def logs_tail(ctx: ToolWiringContext, params: LogsTailInput) -> LogsTailOutput:
+    search_out = logs_search(ctx, LogsSearchInput(query=params.query or "*", limit=params.limit))
+    return LogsTailOutput(
+        hits=search_out.hits,
+        total=search_out.total,
+        context_text=search_out.context_text,
+    )
 
 
 def traces_query(ctx: ToolWiringContext, params: TracesQueryInput) -> TracesQueryOutput:

@@ -32,15 +32,19 @@ from intergrax.tools.providers.issues.service import (
 )
 from intergrax.tools.providers.knowledge.service import KNOWLEDGE_GET_PAGE_TOOL_ID, KNOWLEDGE_SEARCH_TOOL_ID
 from intergrax.tools.providers.message_bus.service import (
+    MESSAGE_BUS_CANCEL_TOOL_ID,
     MESSAGE_BUS_ENQUEUE_TOOL_ID,
     MESSAGE_BUS_GET_RESULT_TOOL_ID,
     MESSAGE_BUS_GET_STATUS_TOOL_ID,
+    MESSAGE_BUS_LIST_TASKS_TOOL_ID,
 )
 from intergrax.tools.providers.notify.service import NOTIFY_SEND_TOOL_ID
 from intergrax.tools.providers.observability.service import (
     ERRORS_CAPTURE_TOOL_ID,
     LOGS_SEARCH_TOOL_ID,
+    LOGS_TAIL_TOOL_ID,
     METRICS_QUERY_INSTANT_TOOL_ID,
+    METRICS_QUERY_RANGE_TOOL_ID,
     TRACES_QUERY_TOOL_ID,
 )
 from intergrax.tools.providers.pagerduty.service import PAGERDUTY_TRIGGER_INCIDENT_TOOL_ID
@@ -142,6 +146,8 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
         MESSAGE_BUS_ENQUEUE_TOOL_ID,
         MESSAGE_BUS_GET_STATUS_TOOL_ID,
         MESSAGE_BUS_GET_RESULT_TOOL_ID,
+        MESSAGE_BUS_LIST_TASKS_TOOL_ID,
+        MESSAGE_BUS_CANCEL_TOOL_ID,
     ),
     IntegrationCategory.GRAPH_STORE: (GRAPH_RUN_QUERY_TOOL_ID, GRAPH_GET_NODE_TOOL_ID),
     IntegrationCategory.COLLABORATION_SUITE: (
@@ -164,7 +170,9 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
     IntegrationCategory.OBSERVABILITY_BACKEND: (
         ERRORS_CAPTURE_TOOL_ID,
         LOGS_SEARCH_TOOL_ID,
+        LOGS_TAIL_TOOL_ID,
         METRICS_QUERY_INSTANT_TOOL_ID,
+        METRICS_QUERY_RANGE_TOOL_ID,
         TRACES_QUERY_TOOL_ID,
     ),
     IntegrationCategory.BILLING_METER: (

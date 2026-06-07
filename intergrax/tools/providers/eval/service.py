@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from intergrax.runtime.architecture.online_evaluation_models import OnlineEvaluationMode, OnlineEvaluationObservation
 from intergrax.tools.providers.eval.contracts import (
+    EvalCompareReleasesInput,
+    EvalCompareReleasesOutput,
     EvalListObservationsInput,
     EvalListObservationsOutput,
     EvalObservationOutput,
@@ -19,6 +21,7 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 EVAL_RECORD_OBSERVATION_TOOL_ID = "eval.record_observation"
 EVAL_LIST_OBSERVATIONS_TOOL_ID = "eval.list_observations"
 EVAL_SUMMARIZE_RELEASE_TOOL_ID = "eval.summarize_release"
+EVAL_COMPARE_RELEASES_TOOL_ID = "eval.compare_releases"
 
 
 def _require_eval_registry(ctx: ToolWiringContext) -> OnlineEvaluationRegistryBinding:
@@ -102,4 +105,39 @@ def eval_summarize_release(ctx: ToolWiringContext, params: EvalSummarizeReleaseI
         average_score=average_score,
         passed_count=passed_count,
         failed_count=total - passed_count,
+    )
+
+
+def _release_summary(
+    ctx: ToolWiringContext,
+    release_id: str,
+) -> EvalSummarizeReleaseOutput:
+    return eval_summarize_release(ctx, EvalSummarizeReleaseInput(release_id=release_id))
+
+
+def eval_compare_releases(
+    ctx: ToolWiringContext,
+    params: EvalCompareReleasesInput,
+) -> EvalCompareReleasesOutput:
+    baseline_id = params.baseline_release_id.strip()
+    candidate_id = params.candidate_release_id.strip()
+    baseline = _release_summary(ctx, baseline_id)
+    candidate = _release_summary(ctx, candidate_id)
+    pass_rate_delta = candidate.pass_rate - baseline.pass_rate
+    score_delta = candidate.average_score - baseline.average_score
+    candidate_better = pass_rate_delta > 0.0 or (
+        pass_rate_delta == 0.0 and score_delta > 0.0
+    )
+    return EvalCompareReleasesOutput(
+        baseline_release_id=baseline_id,
+        candidate_release_id=candidate_id,
+        baseline_observation_count=baseline.observation_count,
+        candidate_observation_count=candidate.observation_count,
+        baseline_pass_rate=baseline.pass_rate,
+        candidate_pass_rate=candidate.pass_rate,
+        pass_rate_delta=pass_rate_delta,
+        baseline_average_score=baseline.average_score,
+        candidate_average_score=candidate.average_score,
+        score_delta=score_delta,
+        candidate_better=candidate_better,
     )
