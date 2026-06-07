@@ -52,3 +52,14 @@ def test_rag_check_index_status(vectorstore_ctx: ToolWiringContext) -> None:
     assert out.used is True
     assert out.ready is True
     assert out.document_count == 1
+
+
+def test_rag_list_documents_unsupported_without_lifecycle_binding() -> None:
+    class MinimalManager:
+        def count(self) -> int:
+            return 0
+
+    ctx = ToolWiringContext(vectorstore_manager=MinimalManager())
+    out = perform_rag_list_documents(ctx, RagListDocumentsInput())
+    assert out.used is False
+    assert out.reason == "list_documents_not_supported"

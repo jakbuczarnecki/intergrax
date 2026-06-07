@@ -168,3 +168,10 @@ def test_new_bundles_present_in_catalog() -> None:
         bundle = get_bundle(bundle_id)
         assert bundle.bundle_id == bundle_id
         assert bundle.tool_ids
+
+    assert len(get_bundle("rag").tool_ids) == 9
+    assert len(get_bundle("observability").tool_ids) == 6
+    assert len(get_bundle("message_bus").tool_ids) == 5
+    assert len(get_bundle("document").tool_ids) == 2
+    assert len(get_bundle("eval").tool_ids) == 4
+    assert len(get_bundle("cost").tool_ids) == 3

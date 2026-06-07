@@ -36,6 +36,19 @@ class KeyValueCacheListerBinding(Protocol):
 
 
 @runtime_checkable
+class VectorstoreIndexLifecycleBinding(Protocol):
+    """Structural binding for ``rag.list_documents`` / ``rag.get_document`` / ``rag.check_index_status``."""
+
+    def list_document_ids(self, *, limit: int = 100, offset: int = 0) -> List[str]: ...
+
+    def get_document(self, document_id: str) -> Optional[Dict[str, Any]]: ...
+
+    def list_collections(self) -> List[str]: ...
+
+    def count(self) -> int: ...
+
+
+@runtime_checkable
 class VectorStoreDocumentListerBinding(Protocol):
     """Optional vector store extension for ``rag.list_documents`` / ``rag.get_document``."""
 

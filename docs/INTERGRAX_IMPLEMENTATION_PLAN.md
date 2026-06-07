@@ -1774,7 +1774,7 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 - `harness.integration_bridge_smoke` skill pack + resolver test fix (skills vs tools `build_registry_from_profile`)
 - Lab harness `wire_lab_tools(harness=True)` enables runtime-bound + bridge tools
 - PoC template `extend_tool_profile_for_integration()` wiring
-- MCP full-catalog export smoke (110 tools)
+- MCP full-catalog export smoke (120 tools)
 
 #### T-EXPAND T4 — Agent Builder Essentials (2026-06-07) — **Done**
 

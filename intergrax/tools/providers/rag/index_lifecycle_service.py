@@ -12,6 +12,7 @@ from intergrax.tools.providers.rag.index_lifecycle_contracts import (
     RagListDocumentsInput,
     RagListDocumentsOutput,
 )
+from intergrax.tools.registry.runtime_bindings import VectorstoreIndexLifecycleBinding
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 RAG_LIST_DOCUMENTS_TOOL_ID = "rag.list_documents"
@@ -26,13 +27,21 @@ def perform_rag_list_documents(
     vectorstore = ctx.vectorstore_manager
     if vectorstore is None:
         return RagListDocumentsOutput(used=False, reason="vectorstore_manager_not_configured")
-
-    list_fn = getattr(vectorstore, "list_document_ids", None)
-    if list_fn is None:
+    if not isinstance(vectorstore, VectorstoreIndexLifecycleBinding):
         return RagListDocumentsOutput(used=False, reason="list_documents_not_supported")
 
     try:
-        document_ids = [str(item) for item in list(list_fn(limit=params.limit, offset=params.offset))]
+        document_ids = [
+            str(item)
+            for item in vectorstore.list_document_ids(limit=params.limit, offset=params.offset)
+        ]
+    except RuntimeError as exc:
+        if "not_supported" in str(exc):
+            return RagListDocumentsOutput(used=False, reason="list_documents_not_supported")
+        return RagListDocumentsOutput(
+            used=False,
+            reason=f"list_documents_error:{exc.__class__.__name__}",
+        )
     except Exception as exc:
         return RagListDocumentsOutput(
             used=False,
@@ -55,13 +64,19 @@ def perform_rag_get_document(
     vectorstore = ctx.vectorstore_manager
     if vectorstore is None:
         return RagGetDocumentOutput(used=False, reason="vectorstore_manager_not_configured")
-
-    get_fn = getattr(vectorstore, "get_document", None)
-    if get_fn is None:
+    if not isinstance(vectorstore, VectorstoreIndexLifecycleBinding):
         return RagGetDocumentOutput(used=False, reason="get_document_not_supported")
 
     try:
-        payload = get_fn(params.document_id.strip())
+        payload = vectorstore.get_document(params.document_id.strip())
+    except RuntimeError as exc:
+        if "not_supported" in str(exc):
+            return RagGetDocumentOutput(used=False, reason="get_document_not_supported")
+        return RagGetDocumentOutput(
+            used=False,
+            document_id=params.document_id.strip(),
+            reason=f"get_document_error:{exc.__class__.__name__}",
+        )
     except Exception as exc:
         return RagGetDocumentOutput(
             used=False,
@@ -92,33 +107,23 @@ def perform_rag_check_index_status(
     vectorstore = ctx.vectorstore_manager
     if vectorstore is None:
         return RagCheckIndexStatusOutput(used=False, reason="vectorstore_manager_not_configured")
+    if not isinstance(vectorstore, VectorstoreIndexLifecycleBinding):
+        return RagCheckIndexStatusOutput(used=False, reason="count_not_supported")
 
-    collections: list[str] = []
-    list_fn = getattr(vectorstore, "list_collections", None)
-    if list_fn is not None:
-        try:
-            collections = [str(name) for name in list(list_fn())]
-        except Exception as exc:
-            return RagCheckIndexStatusOutput(
-                used=False,
-                reason=f"list_collections_error:{exc.__class__.__name__}",
-            )
+    try:
+        collections = [str(name) for name in vectorstore.list_collections()]
+    except Exception as exc:
+        return RagCheckIndexStatusOutput(
+            used=False,
+            reason=f"list_collections_error:{exc.__class__.__name__}",
+        )
 
     collection = params.collection.strip()
     if not collection and collections:
         collection = collections[0]
 
-    count_fn = getattr(vectorstore, "count", None)
-    if count_fn is None:
-        return RagCheckIndexStatusOutput(
-            used=False,
-            collections=collections,
-            collection=collection,
-            reason="count_not_supported",
-        )
-
     try:
-        document_count = int(count_fn())
+        document_count = int(vectorstore.count())
     except Exception as exc:
         return RagCheckIndexStatusOutput(
             used=False,

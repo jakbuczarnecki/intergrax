@@ -198,7 +198,9 @@ def test_observability_tools_registered_in_catalog() -> None:
     register_default_tools()
     ids = list_catalog_tool_ids()
     assert "metrics.query_instant" in ids
+    assert "metrics.query_range" in ids
     assert "logs.search" in ids
+    assert "logs.tail" in ids
     assert "errors.capture" in ids
     assert "observability.query_traces" in ids
     assert get_bundle("observability").tool_ids == (

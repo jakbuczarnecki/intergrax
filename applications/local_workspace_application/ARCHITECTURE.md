@@ -14,7 +14,7 @@
 1. **Product:** Give a user a local, safe assistant over their own files — search, gather context, produce structured outputs (reports, emails, estimates).
 2. **Harness validation:** Exercise the Agent OS on a real, observable workload without external market APIs (unlike deferred K.1 Problem Radar / K.2 Vendor Discovery).
 
-LKW validates: RAG ingest/retrieve, document parsing, shadow workspace, multi-agent orchestration, memory, policy, trace, MCP/HTTP serving, and Tier-3 composition — while surfacing platform gaps (e.g. read-only filesystem browse tools) early.
+LKW validates: RAG ingest/retrieve/index lifecycle, document parsing, shadow workspace, multi-agent orchestration, memory, policy, trace, MCP/HTTP serving, and Tier-3 composition — while surfacing platform gaps early.
 
 **Strategic frame:** [`docs/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) — explicit product reprioritization after Appendix A sign-off.
 
@@ -158,7 +158,11 @@ Tier-3 enables tools; agents invoke them through `BoundToolGateway` / `ctx.invok
 | `rag.ingest_document` | `rag` | `vector_store` + `document_parser` + embedding managers | Index local files |
 | `rag.retrieve` | `rag` | `vector_store` + optional `rerank_provider` | Semantic search |
 | `rag.list_collections` | `rag` | `vector_store` | Index diagnostics |
+| `rag.list_documents` | `rag` | `vectorstore_manager` | Paginated index inventory |
+| `rag.get_document` | `rag` | `vectorstore_manager` | Fetch indexed chunk by id |
+| `rag.check_index_status` | `rag` | `vectorstore_manager` | Index readiness probe |
 | `document.parse` | `document` | `document_parser` | Ad-hoc parse without full ingest |
+| `document.parse_preview` | `document` | `document_parser` | Bounded parse preview (no ingest) |
 | `workspace.read_file` | `workspace` | runtime `ShadowWorkspace` | Read shadow artifacts |
 | `workspace.write_file` | `workspace` | runtime `ShadowWorkspace` | Write drafts/reports |
 | `workspace.list_files` | `workspace` | runtime `ShadowWorkspace` | List artifacts |
@@ -170,7 +174,7 @@ Tier-3 enables tools; agents invoke them through `BoundToolGateway` / `ctx.invok
 
 **Env-gated (settings):** `LOCAL_WORKSPACE_ENABLE_RAG` → `rag.retrieve`; `LOCAL_WORKSPACE_ENABLE_RAG_INGEST` → `rag.ingest_document`.
 
-**Planned Wave 3 tools:** `filesystem.list`, `filesystem.read_text`, `filesystem.glob` (new Tier-0 bundle, read-only allowlist).
+**Filesystem browse (T6 / LKW.3 Done):** when `INTERGRAX_ALLOWED_READ_ROOTS` or `allowed_read_roots` is set, host auto-enables `filesystem.list`, `filesystem.glob`, `filesystem.read_text`, `filesystem.stat`.
 
 **Explicitly disabled:** `websearch.*`, `openai.file_search.*` — external retrieval out of scope for LKW baseline.
 
@@ -393,7 +397,7 @@ Deploy triad: `docker/`, `BUILD_AND_DEPLOY.md` — gate `test_application_deploy
 | **LKW.0** | Scaffold agents + application + architecture doc | **Done** (this document) |
 | **LKW.1** | Wave 1 — single-path ingest + search smoke | Planned |
 | **LKW.2** | Multi-agent graph + pipeline capability | Planned |
-| **LKW.3** | Tier-0 `filesystem.*` read tools + allowlist policy | Planned |
+| **LKW.3** | Tier-0 `filesystem.*` read tools + allowlist policy | **Done** (T6) |
 | **LKW.4** | Background ingest queue + incremental index | Planned |
 | **LKW.5** | Desktop client / file picker | Deferred product |
 
@@ -405,10 +409,10 @@ Registered in [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md` §6.3a](../../docs/INTERG
 
 | Gap | Impact | Mitigation (Wave) |
 |-----|--------|-------------------|
-| No `filesystem.list/glob` tools | User must pass explicit paths | LKW.1 manual paths; LKW.3 tools |
 | No file watcher | No auto re-index | LKW.4 worker |
 | In-memory vector store default | Index lost on restart | Chroma + `INTEGRATION_PROFILE_JSON` |
 | Windows path / OneDrive edge cases | Parser failures | Test matrix in LKW.1 acceptance |
+| Qdrant/Chroma lack `list_document_ids` | `rag.list_documents` empty/unsupported on some backends | Use InMemory for dev; extend provider bindings in follow-up |
 
 These gaps are **expected** — LKW exists to discover and close them without Nexus forks.
 
