@@ -563,7 +563,7 @@ Verify that reasoning is explicit, observable and separated from execution.
 Reasoning Architecture Score: L0-L4
 ```
 
-**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix I §I.4](AGENT_CREATION_GUIDE.md#i4-planning-strategies-explicit-customizable) (planning strategies); canon [§42.5](intergrax_runtime_architecture.md#425-unified-agent-execution-protocol) (UAEP separation). **Closeout:** [Phase ORCH ORCH-1](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-orch--orchestration-control-plane-closeout) — **Done**.
+**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix I §I.4](AGENT_CREATION_GUIDE.md#i4-planning-strategies-explicit-customizable) (planning strategies); canon [§42.5](intergrax_runtime_architecture.md#425-unified-agent-execution-protocol) (UAEP separation); **flow narrative:** [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §7–§8. **Closeout:** [Phase ORCH ORCH-1](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-orch--orchestration-control-plane-closeout) — **Done**.
 
 ---
 
@@ -600,7 +600,7 @@ Verify that Intergrax has one coherent runtime path and a domain-agnostic Agent 
 Execution Runtime Score: L0-L4
 ```
 
-**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix I §I.2](AGENT_CREATION_GUIDE.md#i2-orchestration-control-plane-map) (NexusLoop → AgentEngine stack); canon [§42.44](intergrax_runtime_architecture.md#4244-agentengine-as-universal-executor-summary).
+**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix I §I.2](AGENT_CREATION_GUIDE.md#i2-orchestration-control-plane-map) (NexusLoop → AgentEngine stack); canon [§42.44](intergrax_runtime_architecture.md#4244-agentengine-as-universal-executor-summary); **flow narrative:** [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §4–§6.
 
 ---
 
@@ -643,7 +643,7 @@ Verify that planning, scheduling, graph execution and routing are formal runtime
 Orchestration Score: L0-L4
 ```
 
-**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix I §I.5](AGENT_CREATION_GUIDE.md#i5-graph-execution-and-merge) (batches, retry, merge); `ExecutionGraph` / `GraphExecutor` in `intergrax/runtime/nexus/execution/`; coordination catalog `multi_agent_coordination.py` (V-MA). **Closeout:** [Phase ORCH](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-orch--orchestration-control-plane-closeout) ORCH-2, ORCH-3 — **Done**.
+**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix I §I.5](AGENT_CREATION_GUIDE.md#i5-graph-execution-and-merge) (batches, retry, merge); `ExecutionGraph` / `GraphExecutor` in `intergrax/runtime/nexus/execution/`; coordination catalog `multi_agent_coordination.py` (V-MA); **flow narrative:** [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §9, §14. **Closeout:** [Phase ORCH](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-orch--orchestration-control-plane-closeout) ORCH-2, ORCH-3 — **Done**.
 
 ---
 
@@ -680,7 +680,7 @@ Verify that subagents are isolated delegated executions, not nested uncontrolled
 Subagent Architecture Score: L0-L4
 ```
 
-**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix I §I.6](AGENT_CREATION_GUIDE.md#i6-subagent--delegation-semantics-r-delegate--done); canon [§42.14.3](intergrax_runtime_architecture.md#42143-graph-delegation-subagent-equivalent); `DelegationSpec` + `delegation_memory.py`.
+**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix I §I.6](AGENT_CREATION_GUIDE.md#i6-subagent--delegation-semantics-r-delegate--done); canon [§42.14.3](intergrax_runtime_architecture.md#42143-graph-delegation-subagent-equivalent); `DelegationSpec` + `delegation_memory.py`; **flow narrative + gaps:** [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §13, §22 (`FLOW-GAP-02`–`03`).
 
 ---
 

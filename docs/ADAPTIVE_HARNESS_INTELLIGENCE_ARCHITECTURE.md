@@ -13,7 +13,7 @@
 |----------|--------------|
 | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) §54 | Canonical runtime summary and tier placement |
 | [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md) §25 | Target Adaptive Harness Layer (L4 maturity) |
-| [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase W-ADAPT | Planned implementation tasks (to be added from this RFC) |
+| [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase W-ADAPT | **Done** (70/70, Band 2y) — implementation register closed |
 | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) | L4 maturity scoring model |
 | [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) | Harness-first strategic lock |
 

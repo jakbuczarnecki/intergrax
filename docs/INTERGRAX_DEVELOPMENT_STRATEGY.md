@@ -1,6 +1,6 @@
 # Intergrax — Development Strategy
 
-**Status:** Canonical (2026-06-05) — default queue: §6.1 maintenance  
+**Status:** Canonical (2026-06-06) — default queue: §6.1 maintenance; Band 2ad (FAUDIT-32) **Done**  
 **Audience:** Maintainers, architects, implementation agents, Cursor AI  
 **Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) · [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) · [docs/README.md](README.md)
 

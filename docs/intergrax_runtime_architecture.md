@@ -432,6 +432,8 @@ Tier-3 Applications  →  Tier-2 Agents  →  Tier-1 Nexus  →  Tier-0 Platform
 - Tier-1 MUST NOT import concrete agents or applications.
 - Tier-2 MUST NOT import applications.
 
+**Enforcement (FAUDIT-TIER, 2026-06-06):** Tier-3 application manifest metadata for harness capability-graph seeding lives in `intergrax/applications/reference/harness_manifest_catalog.py` (static reference data, not `from applications.*` under `intergrax/`). CI: `scripts/check_intergrax_no_applications_imports.py` and `scripts/check_agents_no_tier3_imports.py`.
+
 ## Relationship To “Layer 1 / 2 / 3” Naming
 
 Earlier sections and diagrams may refer to **Layer 1 / 2 / 3**. Mapping:
@@ -1840,6 +1842,8 @@ Responsibilities:
 - coordinate sequential work
 - request human approval when required
 - finalize output
+
+**Detailed runtime narrative** (sequence diagrams, decision matrix, `FLOW-GAP.*` plan rows): [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §4–§18.
 
 Pseudo-flow:
 
@@ -3986,7 +3990,9 @@ Harness literature describes **subagents** as autonomous units with their own ru
 
 **Forbidden:** Tier-2 agent spawning another agent by direct import or private API. **Required:** Nexus schedules child node after parent decision or plan edge.
 
-Implementation: R-Delegate (**Done**) in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Appendix E.
+**Declarative `DELEGATES_TO` (target semantics):** Tier-3 `ApplicationGraphSpec` may declare `DELEGATES_TO` as authoring sugar; the plan/graph builder **expands** it to a **child execution node** with `DelegationSpec` (ADR-FLOW-001 Option C). Until [FLOW-2](INTERGRAX_IMPLEMENTATION_PLAN.md) ships, runtime may attach `DelegationSpec` on the parent step only — see operational truth in [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §13.
+
+Implementation: R-Delegate (**Done**) for contracts and memory namespace; graph expansion (**pending** `FLOW-2`) in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) · [ADR-FLOW-001](adr/ADR-FLOW-001.md).
 
 ```text
 DelegationSpec:
@@ -4745,6 +4751,8 @@ Task: "Design and validate new checkout flow for SaaS product"
 All cross-agent data via `SharedTaskContext` / artifacts — never direct calls.
 
 **Authoring reference:** orchestration control plane (Nexus runners, `ExecutionGraph`, `DelegationSpec`, hooks, customization surfaces) — [`AGENT_CREATION_GUIDE.md` Appendix I](AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane).
+
+**End-to-end flow reference (diagrams, edge cases, plan traceability):** [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md).
 
 ---
 

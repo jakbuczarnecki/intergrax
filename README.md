@@ -265,7 +265,7 @@ Orchestrated by `AgentEngine` inside `NexusLoop`. The **Unified Execution Runtim
 
 **Registration rule:** new agents integrate through `AgentRegistry.register()` — never by editing `NexusLoop` or task lifecycle code.
 
-Canon: [architecture §42](docs/intergrax_runtime_architecture.md) · Author guide: [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) · Orchestration control plane: [Appendix I](docs/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane)
+Canon: [architecture §42](docs/intergrax_runtime_architecture.md) · **End-to-end flow (diagrams, edge cases):** [NEXUS_EXECUTION_FLOW_REFERENCE.md](docs/NEXUS_EXECUTION_FLOW_REFERENCE.md) · Author guide: [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) · Orchestration control plane: [Appendix I](docs/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane)
 
 Legacy Supervisor / LangGraph orchestration is **deprecated** and **optional** (`[langgraph-legacy]` extra only). Production paths use the Nexus runtime model.
 
@@ -641,7 +641,7 @@ Intergrax optimizes **time-to-first-traced-run** — opinionated scaffolds, type
 | `intergrax.scaffold` | `new-agent`, `new-application`, `new-skill`, `new-stack` |
 | `intergrax run` | Launch application ASGI host |
 | `intergrax doctor` | Platform health checks |
-| `pytest -m gate` | Regression gate (893 tests) |
+| `pytest -m gate` | Regression gate (901 tests) |
 | `check_harness_no_getattr.py` | Zero grandfathered reflection in harness paths |
 | `check_harness_observability_wiring.py` | Tier-3 observability assembly validation |
 | `check_llm_adapter_typed_returns.py` | LLM adapter typed-return CI guard (M-LLM-R) |
@@ -869,11 +869,12 @@ Intergrax is under **active development** (private R&D). The **harness platform*
 | **AA** | Agents & applications conformance | **Platform Done** |
 | **MEM** | Memory platform | **Done** (48/48) |
 | **ORCH / TS / INT / RAG / CTX / PE / AS / REG / CG / OBS / REL / SEC / COST / EVAL** | Control plane closeouts | **Done** |
+| **FAUDIT-32** | Full 32-layer architecture audit + remediation (Band 2ad) | **Done** (23/23 + follow-up) |
 | **K** | Business agents | **End of plan** — deferred |
 
-**Regression gate:** `uv run pytest -m gate -q` — **893 passed** (2026-06-06)
+**Regression gate:** `uv run pytest -m gate -q` — **901 passed** (2026-06-06)
 
-**Harness CI:** `python scripts/check_harness_no_getattr.py` · `python scripts/check_llm_adapter_typed_returns.py`
+**Harness CI:** `python scripts/check_harness_no_getattr.py` · `python scripts/check_llm_adapter_typed_returns.py` · `uv run python scripts/check_harness_prompt_golden_catalog.py` · `uv run python scripts/check_agents_lifecycle_metadata.py`
 
 Full tracker: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
 

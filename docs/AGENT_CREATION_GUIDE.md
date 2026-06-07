@@ -1301,6 +1301,8 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 **Audience:** Tier-3 application authors, platform engineers, operators.  
 **Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §7 (Reasoning/planning), §8 (Agent OS), §9 (Orchestration/graph), §10 (Subagents); canon [§42.3](intergrax_runtime_architecture.md#423-hook-system)–[§42.15](intergrax_runtime_architecture.md#4215-agent-handoff-contracts), [§42.43](intergrax_runtime_architecture.md#4243-multi-agent-collaboration-flow-reference).
 
+**Full execution flow (diagrams, data flow, edge cases, evaluation hooks, plan traceability):** [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) — read this for end-to-end narrative; Appendix I is the **configuration control plane** map. Delegation target semantics: [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md).
+
 Intergrax orchestration is **centralized in Tier-1 (Nexus)** — agents own **local** UAEP steps only. Planning, scheduling, graph execution, handoff, retry, HITL, and trace are **composable runtime responsibilities** with typed contracts and hook extension points.
 
 ### I.1 Design principles (Harness audit)

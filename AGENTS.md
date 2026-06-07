@@ -60,6 +60,7 @@ applications/    MAY import from agents/ and intergrax/
 - Status/phases → `docs/INTERGRAX_IMPLEMENTATION_PLAN.md`
 - Agent workflow → `docs/AGENT_CREATION_GUIDE.md`
 - Harness AI terms → `docs/intergrax_runtime_architecture.md` §5.3 only
+- Nexus execution flow (narrative + diagrams) → `docs/NEXUS_EXECUTION_FLOW_REFERENCE.md` · delegation ADR → `docs/adr/ADR-FLOW-001.md`
 
 ### Harness platform
 
@@ -82,7 +83,7 @@ applications/    MAY import from agents/ and intergrax/
 | New application (Tier-3) | `applications/USAGE.md` · `poc_template_application/` |
 | Plugin / extension | [docs/EXTENSION_AUTHOR_GUIDE.md](docs/EXTENSION_AUTHOR_GUIDE.md) |
 | Governance / policy / HITL | [docs/AGENT_CREATION_GUIDE.md Appendix H](docs/AGENT_CREATION_GUIDE.md) |
-| Multi-agent graphs | [docs/AGENT_CREATION_GUIDE.md Appendix C/I](docs/AGENT_CREATION_GUIDE.md) |
+| Multi-agent graphs / Nexus execution flow | [docs/NEXUS_EXECUTION_FLOW_REFERENCE.md](docs/NEXUS_EXECUTION_FLOW_REFERENCE.md) · [docs/AGENT_CREATION_GUIDE.md Appendix I](docs/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) |
 | Harness audit | [docs/INTEGRAX_HARNESS_AUDIT_MAP.md](docs/INTEGRAX_HARNESS_AUDIT_MAP.md) |
 | L4 adaptive harness | [docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) |
 
