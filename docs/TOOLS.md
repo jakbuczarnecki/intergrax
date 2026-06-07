@@ -99,7 +99,7 @@ registry = build_registry_from_profile(
 
 ## Tool engine (implemented today)
 
-Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** · **T6 Done** · **T7 Done** — full **120-tool** catalog registered):
+Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** · **T6 Done** · **T7 Done** · **T8 Done** — full **130-tool** catalog registered):
 
 | Component | Path | Status |
 |-----------|------|--------|
@@ -154,6 +154,8 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 | `rag.list_documents` | **Done** | Paginated document id listing | `vectorstore_manager` + `VectorStoreDocumentListerBinding` |
 | `rag.get_document` | **Done** | Fetch indexed document text/metadata by id | `vectorstore_manager` |
 | `rag.check_index_status` | **Done** | Index readiness probe (count + collections) | `vectorstore_manager` |
+| `rag.search_by_metadata` | **Done** | Metadata-only index scan (exact key/value filters) | `vectorstore_manager` + `VectorstoreIndexLifecycleBinding` |
+| `rag.purge_collection` | **Done** | Controlled collection purge (dry-run + tenant scope) | `vectorstore_manager` |
 
 **Catalog providers:** Phase O complete — all first-party tools registered; applications wire via `host/tool_wiring.py`.
 
@@ -292,13 +294,14 @@ UAEP agents invoke `workspace.*` / `memory.*` via `BoundToolGateway` → `runtim
 | `browser` | `browser.fetch_page` | `BrowserAutomation` |
 | `storage` | `storage.get`, `storage.put`, `storage.presigned_url`, `storage.delete` | `ObjectStorage` |
 | `issues` | `issues.get_issue`, `issues.add_comment`, `issues.search`, `issues.create_issue` | `IssueTracker` + `IssueCreator` (provider-agnostic; complements `jira.*` / `gitlab.*`) |
-| `platform` | `platform.get_secret`, `platform.evaluate_feature_flag`, `platform.get_workflow_run`, `platform.list_check_suites` | `SecretsStore`, `FeatureFlagBackend`, `CiCdBackend` |
+| `platform` | `platform.get_secret`, `platform.evaluate_feature_flag`, `platform.get_workflow_run`, `platform.list_check_suites`, `platform.list_workflow_runs`, `platform.cancel_workflow_run` | `SecretsStore`, `FeatureFlagBackend`, `CiCdBackend` |
 | `message_bus` | `message_bus.enqueue`, `message_bus.get_status`, `message_bus.get_result`, `message_bus.list_tasks`, `message_bus.cancel` | `MessageBus` (`TaskQueue`) |
 | `graph` | `graph.run_query`, `graph.get_node` | `GraphStore` |
 | `collaboration` | `collaboration.send_mail`, `collaboration.list_messages`, `collaboration.get_message`, `collaboration.list_calendar`, `collaboration.get_user` | `CollaborationSuite` |
 | `cache` | `cache.get`, `cache.set` | `KeyValueCache` |
-| `database` | `database.query`, `database.execute` | `RelationalStore` |
-| `records` | `records.get`, `records.put`, `records.delete`, `records.query` | `DocumentStore` |
+| `database` | `database.query`, `database.execute`, `database.describe_schema` | `RelationalStore` |
+| `records` | `records.get`, `records.put`, `records.delete`, `records.query`, `records.describe_collection` | `DocumentStore` |
+| `hitl` | `hitl.list_pending`, `hitl.get_decision`, `hitl.summarize_queue` | `HumanDecisionStoreBinding` (runtime-bound) |
 
 `extend_tool_profile_for_integration()` auto-appends agent-facing tool_ids when matching `IntegrationCategory` slots are configured (`integration_tool_profile.py`). Infrastructure-only slots (e.g. `document_parser` for RAG ingest) are **not** auto-enabled.
 
@@ -353,7 +356,7 @@ OpenAI export: `intergrax.tools.exporters.to_openai_tools(registry)` — used by
 
 ## Full tool index
 
-Alphabetical reference — all **120** first-party catalog tools (Phase O + M.6 P6 + W-ML + **T-EXPAND** + **T4** + **T5** + **T6** + **T7**).
+Alphabetical reference — all **130** first-party catalog tools (Phase O + M.6 P6 + W-ML + **T-EXPAND** + **T4** + **T5** + **T6** + **T7** + **T8**).
 
 | tool_id | Bundle | Category | Status | Composes / module |
 |---------|--------|----------|--------|-------------------|
@@ -376,6 +379,7 @@ Alphabetical reference — all **120** first-party catalog tools (Phase O + M.6 
 | `crm.get_account` | crm | crm | **Done** | `CrmBackend` |
 | `crm.list_contacts` | crm | crm | **Done** | `CrmBackend` |
 | `crm.list_tickets` | crm | crm | **Done** | `CrmBackend` |
+| `database.describe_schema` | database | database | **Done** | `RelationalStore` (sqlite introspection) |
 | `database.execute` | database | database | **Done** | `RelationalStore` |
 | `database.query` | database | database | **Done** | `RelationalStore` |
 | `confluence.get_page` | confluence | wiki | **Done** | `confluence` — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
@@ -385,6 +389,7 @@ Alphabetical reference — all **120** first-party catalog tools (Phase O + M.6 
 | `filesystem.list` | filesystem | filesystem | **Done** | allowlisted read roots |
 | `filesystem.read_text` | filesystem | filesystem | **Done** | allowlisted read roots |
 | `filesystem.stat` | filesystem | filesystem | **Done** | allowlisted read roots |
+| `filesystem.write_text` | filesystem | filesystem | **Done** | allowlisted read roots (write) |
 | `eval.compare_releases` | eval | eval | **Done** | `OnlineEvaluationRegistry` (V-EVAL) |
 | `eval.list_observations` | eval | eval | **Done** | `OnlineEvaluationRegistry` (V-EVAL) |
 | `eval.record_observation` | eval | eval | **Done** | `OnlineEvaluationRegistry` (V-EVAL) |
@@ -401,6 +406,9 @@ Alphabetical reference — all **120** first-party catalog tools (Phase O + M.6 
 | `harness.list_runs` | harness | harness | **Done** | `RunTraceReader` |
 | `health.check_integration` | health | health | **Done** | integration catalog health probes |
 | `health.check_profile` | health | health | **Done** | `IntegrationProfile` slot probes |
+| `hitl.get_decision` | hitl | hitl | **Done** | `HumanDecisionStoreBinding` |
+| `hitl.list_pending` | hitl | hitl | **Done** | `HumanDecisionStoreBinding` |
+| `hitl.summarize_queue` | hitl | hitl | **Done** | `HumanDecisionStoreBinding` |
 | `issues.add_comment` | issues | issues | **Done** | `IssueTracker` |
 | `issues.create_issue` | issues | issues | **Done** | `IssueCreator` |
 | `issues.get_issue` | issues | issues | **Done** | `IssueTracker` |
@@ -434,7 +442,8 @@ Alphabetical reference — all **120** first-party catalog tools (Phase O + M.6 
 | `platform.put_secret` | platform | platform | **Done** | `SecretsStore` (CRITICAL risk) |
 | `platform.delete_secret` | platform | platform | **Done** | `SecretsStore` (CRITICAL risk) |
 | `platform.get_workflow_run` | platform | platform | **Done** | `CiCdBackend` |
-| `platform.list_check_suites` | platform | platform | **Done** | `CiCdBackend` |
+| `platform.cancel_workflow_run` | platform | platform | **Done** | `CiCdBackend` |
+| `platform.list_workflow_runs` | platform | platform | **Done** | `CiCdBackend` |
 | `observability.query_traces` | observability | observability | **Done** | `langfuse` / observability slug — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
 | `openai.file_search.query` | openai_vector_store | retrieval | **Beta** | OpenAI `file_search` — [USAGE](../intergrax/tools/providers/openai_vector_store/USAGE.md) |
 | `openai.vector_store.clear` | openai_vector_store | retrieval | **Beta** | OpenAI vector store API — [USAGE](../intergrax/tools/providers/openai_vector_store/USAGE.md) |
@@ -446,7 +455,9 @@ Alphabetical reference — all **120** first-party catalog tools (Phase O + M.6 
 | `rag.get_document` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `rag.ingest_document` | rag | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `rag.list_collections` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
-| `rag.list_documents` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.purge_collection` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.search_by_metadata` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
+| `records.describe_collection` | records | records | **Done** | `DocumentStore` |
 | `records.delete` | records | records | **Done** | `DocumentStore` |
 | `records.get` | records | records | **Done** | `DocumentStore` |
 | `records.put` | records | records | **Done** | `DocumentStore` |
@@ -478,7 +489,7 @@ Alphabetical reference — all **120** first-party catalog tools (Phase O + M.6 
 | `workspace.snapshot` | workspace | workspace | **Done** | `ShadowWorkspace` |
 | `workspace.write_file` | workspace | workspace | **Done** | `ShadowWorkspace` |
 
-**Total:** 120 tools · 38 bundles.
+**Total:** 130 tools · 39 bundles.
 
 ---
 

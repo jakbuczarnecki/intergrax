@@ -22,7 +22,7 @@ from intergrax.tools.providers.collaboration.service import (
     COLLABORATION_LIST_MESSAGES_TOOL_ID,
     COLLABORATION_SEND_MAIL_TOOL_ID,
 )
-from intergrax.tools.providers.database.service import DATABASE_EXECUTE_TOOL_ID, DATABASE_QUERY_TOOL_ID
+from intergrax.tools.providers.database.service import DATABASE_DESCRIBE_SCHEMA_TOOL_ID, DATABASE_EXECUTE_TOOL_ID, DATABASE_QUERY_TOOL_ID
 from intergrax.tools.providers.graph.service import GRAPH_GET_NODE_TOOL_ID, GRAPH_RUN_QUERY_TOOL_ID
 from intergrax.tools.providers.issues.service import (
     ISSUES_ADD_COMMENT_TOOL_ID,
@@ -54,16 +54,19 @@ from intergrax.tools.providers.identity.service import (
     IDENTITY_VERIFY_TOKEN_TOOL_ID,
 )
 from intergrax.tools.providers.platform.service import (
+    PLATFORM_CANCEL_WORKFLOW_RUN_TOOL_ID,
     PLATFORM_DELETE_SECRET_TOOL_ID,
     PLATFORM_EVALUATE_FEATURE_FLAG_TOOL_ID,
     PLATFORM_GET_SECRET_TOOL_ID,
     PLATFORM_GET_WORKFLOW_RUN_TOOL_ID,
     PLATFORM_LIST_CHECK_SUITES_TOOL_ID,
+    PLATFORM_LIST_WORKFLOW_RUNS_TOOL_ID,
     PLATFORM_PUT_SECRET_TOOL_ID,
 )
 from intergrax.tools.providers.rag.rerank_service import RAG_RERANK_TOOL_ID
 from intergrax.tools.providers.records.service import (
     RECORDS_DELETE_TOOL_ID,
+    RECORDS_DESCRIBE_COLLECTION_TOOL_ID,
     RECORDS_GET_TOOL_ID,
     RECORDS_PUT_TOOL_ID,
     RECORDS_QUERY_TOOL_ID,
@@ -124,12 +127,14 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
     IntegrationCategory.RELATIONAL_STORE: (
         DATABASE_QUERY_TOOL_ID,
         DATABASE_EXECUTE_TOOL_ID,
+        DATABASE_DESCRIBE_SCHEMA_TOOL_ID,
     ),
     IntegrationCategory.DOCUMENT_STORE: (
         RECORDS_GET_TOOL_ID,
         RECORDS_PUT_TOOL_ID,
         RECORDS_DELETE_TOOL_ID,
         RECORDS_QUERY_TOOL_ID,
+        RECORDS_DESCRIBE_COLLECTION_TOOL_ID,
     ),
     IntegrationCategory.BROWSER_AUTOMATION: (BROWSER_FETCH_PAGE_TOOL_ID,),
     IntegrationCategory.SECRETS_STORE: (
@@ -141,6 +146,8 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
     IntegrationCategory.CI_CD: (
         PLATFORM_GET_WORKFLOW_RUN_TOOL_ID,
         PLATFORM_LIST_CHECK_SUITES_TOOL_ID,
+        PLATFORM_LIST_WORKFLOW_RUNS_TOOL_ID,
+        PLATFORM_CANCEL_WORKFLOW_RUN_TOOL_ID,
     ),
     IntegrationCategory.MESSAGE_BUS: (
         MESSAGE_BUS_ENQUEUE_TOOL_ID,

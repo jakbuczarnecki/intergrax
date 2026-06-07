@@ -11,11 +11,15 @@ from intergrax.tools.providers.rag.index_lifecycle_contracts import (
     RagCheckIndexStatusInput,
     RagGetDocumentInput,
     RagListDocumentsInput,
+    RagPurgeCollectionInput,
+    RagSearchByMetadataInput,
 )
 from intergrax.tools.providers.rag.index_lifecycle_service import (
     perform_rag_check_index_status,
     perform_rag_get_document,
     perform_rag_list_documents,
+    perform_rag_purge_collection,
+    perform_rag_search_by_metadata,
 )
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -52,6 +56,30 @@ def test_rag_check_index_status(vectorstore_ctx: ToolWiringContext) -> None:
     assert out.used is True
     assert out.ready is True
     assert out.document_count == 1
+
+
+def test_rag_search_by_metadata(vectorstore_ctx: ToolWiringContext) -> None:
+    out = perform_rag_search_by_metadata(
+        vectorstore_ctx,
+        RagSearchByMetadataInput(filters={"source": "a.md"}, limit=10),
+    )
+    assert out.used is True
+    assert out.total == 1
+    assert out.matches[0].document_id == "doc-1"
+
+
+def test_rag_purge_collection_dry_run(vectorstore_ctx: ToolWiringContext) -> None:
+    out = perform_rag_purge_collection(vectorstore_ctx, RagPurgeCollectionInput(dry_run=True))
+    assert out.used is True
+    assert out.would_delete == 1
+    assert perform_rag_list_documents(vectorstore_ctx, RagListDocumentsInput()).total == 1
+
+
+def test_rag_purge_collection_executes(vectorstore_ctx: ToolWiringContext) -> None:
+    out = perform_rag_purge_collection(vectorstore_ctx, RagPurgeCollectionInput(dry_run=False))
+    assert out.used is True
+    assert out.deleted == 1
+    assert perform_rag_list_documents(vectorstore_ctx, RagListDocumentsInput()).total == 0
 
 
 def test_rag_list_documents_unsupported_without_lifecycle_binding() -> None:

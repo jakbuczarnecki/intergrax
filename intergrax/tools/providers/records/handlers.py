@@ -7,6 +7,8 @@ from intergrax.tools.core.handler import ServiceToolHandler
 from intergrax.tools.providers.records.contracts import (
     RecordsDeleteInput,
     RecordsDeleteOutput,
+    RecordsDescribeCollectionInput,
+    RecordsDescribeCollectionOutput,
     RecordsGetInput,
     RecordsGetOutput,
     RecordsPutInput,
@@ -14,7 +16,13 @@ from intergrax.tools.providers.records.contracts import (
     RecordsQueryInput,
     RecordsQueryOutput,
 )
-from intergrax.tools.providers.records.service import records_delete, records_get, records_put, records_query
+from intergrax.tools.providers.records.service import (
+    records_delete,
+    records_describe_collection,
+    records_get,
+    records_put,
+    records_query,
+)
 
 
 class RecordsGetHandler(ServiceToolHandler[RecordsGetInput, RecordsGetOutput]):
@@ -31,3 +39,9 @@ class RecordsDeleteHandler(ServiceToolHandler[RecordsDeleteInput, RecordsDeleteO
 
 class RecordsQueryHandler(ServiceToolHandler[RecordsQueryInput, RecordsQueryOutput]):
     _service = records_query
+
+
+class RecordsDescribeCollectionHandler(
+    ServiceToolHandler[RecordsDescribeCollectionInput, RecordsDescribeCollectionOutput]
+):
+    _service = records_describe_collection

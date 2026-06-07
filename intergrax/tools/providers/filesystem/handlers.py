@@ -13,12 +13,15 @@ from intergrax.tools.providers.filesystem.contracts import (
     FilesystemReadTextOutput,
     FilesystemStatInput,
     FilesystemStatOutput,
+    FilesystemWriteTextInput,
+    FilesystemWriteTextOutput,
 )
 from intergrax.tools.providers.filesystem.service import (
     filesystem_glob,
     filesystem_list,
     filesystem_read_text,
     filesystem_stat,
+    filesystem_write_text,
 )
 
 
@@ -36,3 +39,7 @@ class FilesystemReadTextHandler(ServiceToolHandler[FilesystemReadTextInput, File
 
 class FilesystemStatHandler(ServiceToolHandler[FilesystemStatInput, FilesystemStatOutput]):
     _service = filesystem_stat
+
+
+class FilesystemWriteTextHandler(ServiceToolHandler[FilesystemWriteTextInput, FilesystemWriteTextOutput]):
+    _service = filesystem_write_text

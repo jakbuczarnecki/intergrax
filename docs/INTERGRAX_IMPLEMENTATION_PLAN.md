@@ -1774,7 +1774,7 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 - `harness.integration_bridge_smoke` skill pack + resolver test fix (skills vs tools `build_registry_from_profile`)
 - Lab harness `wire_lab_tools(harness=True)` enables runtime-bound + bridge tools
 - PoC template `extend_tool_profile_for_integration()` wiring
-- MCP full-catalog export smoke (120 tools)
+- MCP full-catalog export smoke (130 tools)
 
 #### T-EXPAND T4 — Agent Builder Essentials (2026-06-07) — **Done**
 
@@ -1841,7 +1841,24 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 
 **Delivered:** **120** catalog `tool_id` values · **38** shipped bundles.
 
-Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{message_bus,rag,document,observability,eval,cost}/`
+#### T-EXPAND T8 — Governance + Agent Safety + LKW write (2026-06-07) — **Done**
+
+**Goal:** Read-only HITL ops, allowlisted filesystem write, RAG metadata search/purge, schema introspection, CI/CD workflow ops.
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `hitl` (+3, new) | `hitl.list_pending`, `hitl.get_decision`, `hitl.summarize_queue` | **Done** |
+| `filesystem` (+1) | `filesystem.write_text` | **Done** |
+| `rag` (+2) | `rag.search_by_metadata`, `rag.purge_collection` | **Done** |
+| `database` (+1) | `database.describe_schema` | **Done** |
+| `records` (+1) | `records.describe_collection` | **Done** |
+| `platform` (+2) | `platform.list_workflow_runs`, `platform.cancel_workflow_run` | **Done** |
+| contracts | `HumanDecisionStoreBinding`; `CiCdBackend.list/cancel`; `VectorstoreIndexLifecycleBinding.search/purge` | **Done** |
+| wiring | LKW auto-enable write + RAG maintenance; integration profile CI/CD + schema tools | **Done** |
+
+**Delivered:** **130** catalog `tool_id` values · **39** shipped bundles.
+
+Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{hitl,filesystem,rag,database,records,platform}/`
 
 #### O.5 — Unified tool model (migration design)
 
@@ -6136,7 +6153,10 @@ See [`applications/TIER3_READINESS.md`](../applications/TIER3_READINESS.md). Exi
 | **LKW.2** | Multi-agent pipeline (`local.workspace.pipeline` graph) | `local_workspace_application/` + Nexus graph | High | LKW.1 |
 | **LKW.3** | Tier-0 `filesystem.*` read tools + allowlist policy | `intergrax/tools/providers/filesystem/` | Medium | LKW.1 |
 | **LKW.4** | Background ingest queue + incremental index | Tier-0 queue + Tier-3 worker | Medium | LKW.2 |
-| **LKW.5** | Desktop client / file picker shell | Product (out of harness) | Low | LKW.3 |
+| **LKW.6** | Local OS daemon (Win/Linux/macOS) + interaction intake on host | `local_workspace_application/` | High | LKW.1 |
+| **LKW.6b** | Slack Socket Mode + slash command → Nexus (interaction surface) | Tier-3 + `slack` integration | Medium | LKW.6 |
+| **LKW.7** | Background file watcher + incremental index + optional Slack notify | Tier-0 queue + Tier-3 worker | Medium | LKW.3 |
+| **LKW.8** | Tray / file-picker UI (localhost HTTP/MCP client) | Product (out of harness) | Low | LKW.6 |
 | **K.1** | Problem Radar prototype (wave 2+) | `agents/problem_radar/` | Product | Explicit reprioritization |
 | **K.2** | Vendor Discovery prototype | (greenfield) | Product | K.1 decision or parallel product call |
 | **AA-LEG.2.2** | Legal UAEP steps (one step per PR from `SPEC_FROM_LEGACY.md`) | `agents/legal/steps/` | High | Product/legal owner |

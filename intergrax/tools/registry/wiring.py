@@ -33,6 +33,7 @@ from intergrax.integrations.contracts.speech_provider import SpeechProviderBacke
 from intergrax.integrations.contracts.wiki_knowledge import WikiKnowledge
 from intergrax.integrations.contracts.workflow_orchestrator import WorkflowOrchestratorBackend
 from intergrax.tools.registry.runtime_bindings import (
+    HumanDecisionStoreBinding,
     OnlineEvaluationRegistryBinding,
     RunTraceReaderBinding,
     TaskMemoryViewBinding,
@@ -71,6 +72,7 @@ class ToolWiringContext:
     collaboration_suite: CollaborationSuite | None = None
     key_value_cache: KeyValueCache | None = None
     shadow_workspace: ShadowWorkspace | None = None
+    human_decision_store: HumanDecisionStoreBinding | None = None
     memory_view: TaskMemoryViewBinding | None = None
     trace_reader: RunTraceReaderBinding | None = None
     evaluation_registry: OnlineEvaluationRegistryBinding | None = None

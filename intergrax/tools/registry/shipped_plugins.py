@@ -56,6 +56,7 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
     from intergrax.tools.providers.graph.bundle import GRAPH_BUNDLE_ID, GRAPH_TOOL_IDS, register_graph_tools
     from intergrax.tools.providers.harness.bundle import HARNESS_BUNDLE_ID, HARNESS_TOOL_IDS, register_harness_tools
     from intergrax.tools.providers.health.bundle import HEALTH_BUNDLE_ID, HEALTH_TOOL_IDS, register_health_tools
+    from intergrax.tools.providers.hitl.bundle import HITL_BUNDLE_ID, HITL_TOOL_IDS, register_hitl_tools
     from intergrax.tools.providers.identity.bundle import IDENTITY_BUNDLE_ID, IDENTITY_TOOL_IDS, register_identity_tools
     from intergrax.tools.providers.gitlab.bundle import (
         GITLAB_BUNDLE_ID,
@@ -349,6 +350,13 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
             register_fn=register_harness_tools,
             description="Harness run trace read tools (persisted runs, cost, events).",
             class_name="HarnessToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=HITL_BUNDLE_ID,
+            tool_ids=HITL_TOOL_IDS,
+            register_fn=register_hitl_tools,
+            description="Read-only human-in-the-loop decision queue tools (governance).",
+            class_name="HitlToolPlugin",
         ),
         define_tool_plugin(
             bundle_id=HEALTH_BUNDLE_ID,

@@ -243,35 +243,185 @@ See [`host/environment_profile.py`](host/environment_profile.py).
 
 ---
 
-## 6. User-visible capabilities (product)
+## 6. Local OS runtime and interaction model
 
-### 6.1 Wave 1 (current scaffold target)
+LKW is a **local execution environment** (Tier-3 host + Nexus) that runs **in the background on the user's machine** (Windows, Linux, macOS). The user can submit work **at any time**; agents are spawned by Nexus on demand. Chat apps (Slack, Teams) are **interaction surfaces** — not the runtime — they deliver commands and receive summaries.
 
-- Accept **explicit file paths** or folder path list in task message/metadata
-- Ingest → retrieve → answer or short summary
-- Output written to **shadow workspace**; `shadow_workspace_id` in result metadata
-- HTTP: `POST /v1/local_workspace/run`
-- MCP: `list_agents`, `run_agent`, catalog tool describe
+### 6.1 Design principle: compute local, control multi-channel
 
-### 6.2 Wave 2 — multi-agent pipeline
+| Layer | Where it runs | What it holds |
+|-------|---------------|---------------|
+| **Execution** | User OS (localhost) | Nexus, agents, RAG index, shadow workspace, file access |
+| **Interaction** | Slack / Teams / HTTP / MCP / tray (optional) | Commands, status, HITL prompts, short answers |
+| **Cloud** | Optional (Slack API, LLM API) | Messaging + inference only — **not** user file storage |
 
-- Single request triggers graph: indexer (if stale) → search → synthesizer
-- `AgentGraph` on `ApplicationEnvironmentProfile.graph_spec`
-- Delegation per [`docs/NEXUS_EXECUTION_FLOW_REFERENCE.md`](../../docs/NEXUS_EXECUTION_FLOW_REFERENCE.md)
+**Privacy default:** document chunks and embeddings stay on disk under user control. Slack receives **commands and condensed answers**, not full file dumps.
 
-### 6.3 Wave 3 — filesystem browse
+### 6.2 Background process topology
 
-- Allowlisted roots; safe list/glob/read tools
-- Policy: read-only on user FS
+```text
+┌──────────────────────────────────────────────────────────────────────────┐
+│  User workstation (Windows / Linux / macOS)                              │
+│                                                                          │
+│  ┌─────────────────────┐    ┌──────────────────────┐                   │
+│  │ LKW Host (always-on) │    │ Indexer worker (opt) │                   │
+│  │ local_workspace_app  │    │ file watcher + queue │                   │
+│  │ :8020 localhost      │    │ Wave LKW.7           │                   │
+│  └──────────┬──────────┘    └──────────┬───────────┘                   │
+│             │                          │                                 │
+│             ▼                          ▼                                 │
+│  ┌─────────────────────────────────────────────────────────────┐        │
+│  │ Local data plane                                             │        │
+│  │ Chroma/SQLite index · shadow_workspaces/ · trace DB          │        │
+│  └─────────────────────────────────────────────────────────────┘        │
+│             ▲                                                            │
+│             │ POST /v1/local_workspace/run                               │
+│             │ POST /v1/interactions/intake  (Slack / Teams / JSON)       │
+│             │ MCP /v1/...                                                │
+│  ┌──────────┴──────────┐   ┌─────────────┐   ┌──────────────────┐     │
+│  │ Tray / CLI (LKW.8)  │   │ Cursor MCP  │   │ Slack / Teams    │     │
+│  │ (optional UI)       │   │ (local)     │   │ (remote surface) │     │
+│  └─────────────────────┘   └─────────────┘   └────────┬─────────┘     │
+└──────────────────────────────────────────────────────────┼───────────────┘
+                                                           │
+                                              Slack Socket Mode or HTTPS tunnel
+                                              (outbound from daemon — no public IP required)
+```
 
-### 6.4 Wave 4 — background indexing
+#### OS service packaging (LKW.6)
 
-- Queue-driven ingest (`message_bus.*` + worker)
-- Incremental re-index on file change (watcher — new Tier-0 or Tier-3 daemon)
+| OS | Recommended mechanism | Notes |
+|----|----------------------|-------|
+| **Windows** | Windows Service or scheduled task + tray helper | User-session for file access; avoid SYSTEM account for home-folder indexing |
+| **Linux** | `systemd` user unit (`lkw.service`) | `After=network.target`; restart on failure |
+| **macOS** | `launchd` LaunchAgent (`~/Library/LaunchAgents/`) | Full Disk Access may be required for user folders |
 
-### 6.5 Wave 5 — desktop shell (out of harness scope)
+Host entrypoint (today): `uvicorn local_workspace_application.host.main:app`. Production packaging: single binary or `uv run` wrapper in service unit.
 
-- Tray app / file picker calling HTTP or MCP — separate client repo or Tier-3 extension
+#### Always-on responsibilities
+
+1. **Listen** for user tasks (HTTP, MCP, interaction intake).
+2. **Maintain** local RAG index (background ingest — LKW.7).
+3. **Run** Nexus graph on demand (search now, synthesize on request).
+4. **Notify** on completion / HITL (`notification_channel=slack` on long-running tasks).
+5. **Persist** checkpoints for pause/resume ([`docs/INTERGRAX_IMPLEMENTATION_PLAN.md` Appendix F.4](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md)).
+
+### 6.3 Interaction surfaces (how the user talks to LKW)
+
+| Surface | Status | Endpoint / mechanism | Best for |
+|---------|--------|----------------------|----------|
+| **Local HTTP** | Scaffold **Done** | `POST /v1/local_workspace/run` | Scripts, tray, local integrations |
+| **Local MCP** | Scaffold **Done** | `/mcp` on same host | Cursor / IDE at desk |
+| **Interaction intake** | Platform **Done**; LKW host **planned LKW.6** | `POST /v1/interactions/intake` | Slack slash commands, Teams, lab JSON |
+| **Slack outbound** | Platform **Done** | `INTERGRAX_SLACK_WEBHOOK_URL`, HITL templates | Alerts, approvals, result snippets |
+| **Debug CLI** | Platform **Done** | `python -m intergrax.debug` | Operators |
+| **Tray / native UI** | **Deferred LKW.8** | Calls localhost HTTP/MCP | Folder picker, status icon |
+
+**Rule:** every surface normalizes to a Nexus `Task` — same agents, same policy, same trace. See [`applications/USAGE.md` §4b](../USAGE.md) · canon §18.
+
+### 6.4 Slack as interaction channel — recommended architecture
+
+**Yes — Slack fits LKW**, using existing Intergrax **interaction + notification** integrations (`slack` slug). Slack is **not** the execution environment; the **local LKW daemon** is.
+
+#### Reference flow (slash command)
+
+```text
+User in Slack:  /lkw search dokumenty o projekcie Alpha
+       │
+       ▼
+Slack Events API  ──►  (A) Socket Mode client in LKW daemon   [preferred: no inbound port]
+                    or (B) HTTPS tunnel → localhost:8020/v1/interactions/intake
+       │
+       ▼
+InteractionIntakeService  +  SlackInteractionAdapter
+       │  verify signature · parse slash payload · map text → Task
+       ▼
+NexusLoop.handle_task(capability=local.workspace.search, message=...)
+       │
+       ▼
+LocalSearchAgent → rag.retrieve (local Chroma index)
+       │
+       ▼
+Reply to Slack (response_url / chat.postMessage) — citations + short summary only
+```
+
+**Platform primitives to reuse (no Nexus fork):**
+
+| Primitive | Module / doc | LKW use |
+|-----------|--------------|---------|
+| `InteractionIntakeService` | `runtime/interactions/intake_service.py` | Inbound Slack → `Task` |
+| `SlackInteractionAdapter` | `integrations/providers/notification_channel/slack/` | Channel id `slack` |
+| `wire_interaction_intake_service` | `applications/_shared/interaction_wiring.py` | Enable on `local_workspace_application` factory |
+| `TaskLongRunningOptions.notify_channel="slack"` | plan Appendix F.4 | HITL + long ingest jobs |
+| Organization worker runbook | plan §H.6 | Prior art for slash → Nexus → resume |
+
+**Example intake (lab-equivalent, today):**
+
+```bash
+curl -s -X POST "http://127.0.0.1:8020/v1/interactions/intake?execute=true&tenant=U1" \
+  -H "Content-Type: application/json" \
+  -d '{"command":"/lkw","text":"search projekt Alpha","user_id":"U1","team_id":"T1"}'
+```
+
+LKW.6 wires this on the product host (mirror `lab_application` / `legal_application` interaction flags).
+
+#### Slack connectivity modes
+
+| Mode | Pros | Cons | LKW recommendation |
+|------|------|------|---------------------|
+| **Socket Mode** | No public URL; daemon initiates outbound WebSocket | Requires Slack app + bot token in local config | **Default for desktop daemon** |
+| **HTTPS tunnel** (ngrok, Cloudflare Tunnel) | Quick dev | Extra dependency; URL rotation | Dev / demo only |
+| **Slack notifications only** | Simple webhook | User cannot command from Slack | Phase 1 fallback — local MCP/HTTP for commands, Slack for HITL |
+
+#### Slack command mapping (convention)
+
+| User text (after `/lkw`) | `Task.context.capability` | Agent |
+|--------------------------|----------------------------|-------|
+| `index <path>` | `local.workspace.index` | `local_indexer` |
+| `search <query>` | `local.workspace.search` | `local_search` |
+| `draft email\|report\|estimate …` | `local.workspace.synthesize` | `local_synthesizer` |
+| free text (default) | `local.workspace.pipeline` | graph (LKW.2) |
+
+`tenant_id` / `user_id` from Slack identity map to Intergrax task scope for memory and index partitions.
+
+#### What must NOT go through Slack
+
+- Raw file uploads containing full document corpora (use local index instead).
+- Shadow workspace binary artifacts (link to local export path or summary).
+- Unredacted secrets from parsed files.
+
+### 6.5 Task timing: foreground vs background
+
+| Pattern | Trigger | Nexus behaviour |
+|---------|---------|-----------------|
+| **Interactive** | User message (Slack, HTTP, MCP) | Sync or async run; reply when `COMPLETED` or `WAITING_FOR_HUMAN` |
+| **Background index** | File watcher / cron (LKW.7) | `message_bus.enqueue` → worker runs `local.workspace.index`; Slack notify on batch complete |
+| **Long-running synthesize** | Large report | `TaskLongRunningOptions` + checkpoint; user resumes via Slack `approve` / HTTP |
+
+User can **always** submit a new interactive task while background indexing runs — Nexus queue + idempotency prevent duplicate ingests (LKW.7).
+
+### 6.6 Integration profile extension for Slack (LKW.6)
+
+Extend `IntegrationProfile` on LKW host (in addition to `legal_product()` RAG slots):
+
+```text
+notification_channel = slack    # HITL + completion alerts
+interaction_surface  = slack    # inbound slash / events (via intake router)
+```
+
+Env (mirror legal/lab): `LOCAL_WORKSPACE_INCLUDE_INTERACTIONS=true`, `LOCAL_WORKSPACE_INTERACTION_SURFACE=slack`, Slack signing secret + bot token for Socket Mode.
+
+### 6.7 Implementation waves (product capabilities)
+
+| Wave | Deliverable |
+|------|-------------|
+| **LKW.1** | Domain UAEP steps; explicit-path ingest + search |
+| **LKW.2** | Multi-agent graph + `local.workspace.*` skills |
+| **LKW.3** | `filesystem.*` read tools + allowlist |
+| **LKW.6** | Always-on local daemon packaging (systemd / launchd / Windows) + interaction intake on host |
+| **LKW.6b** | Slack Socket Mode client + slash command mapping |
+| **LKW.7** | Background file watcher + incremental index + optional Slack batch notifications |
+| **LKW.8** | Tray / folder-picker UI (calls localhost API) |
 
 ---
 
@@ -398,8 +548,11 @@ Deploy triad: `docker/`, `BUILD_AND_DEPLOY.md` — gate `test_application_deploy
 | **LKW.1** | Wave 1 — single-path ingest + search smoke | Planned |
 | **LKW.2** | Multi-agent graph + pipeline capability | Planned |
 | **LKW.3** | Tier-0 `filesystem.*` read tools + allowlist policy | **Done** (T6) |
-| **LKW.4** | Background ingest queue + incremental index | Planned |
-| **LKW.5** | Desktop client / file picker | Deferred product |
+| **LKW.4** | Background ingest queue (message_bus worker) | Planned |
+| **LKW.6** | Local OS daemon + interaction intake on host | Planned |
+| **LKW.6b** | Slack Socket Mode + slash → Nexus mapping | Planned |
+| **LKW.7** | File watcher + incremental index + Slack batch notify | Planned |
+| **LKW.8** | Tray / file-picker UI (localhost client) | Deferred product |
 
 Registered in [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md` §6.3a](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated).
 

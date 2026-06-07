@@ -13,18 +13,22 @@ from intergrax.tools.providers.filesystem.contracts import (
     FilesystemReadTextOutput,
     FilesystemStatInput,
     FilesystemStatOutput,
+    FilesystemWriteTextInput,
+    FilesystemWriteTextOutput,
 )
 from intergrax.tools.providers.filesystem.handlers import (
     FilesystemGlobHandler,
     FilesystemListHandler,
     FilesystemReadTextHandler,
     FilesystemStatHandler,
+    FilesystemWriteTextHandler,
 )
 from intergrax.tools.providers.filesystem.service import (
     FILESYSTEM_GLOB_TOOL_ID,
     FILESYSTEM_LIST_TOOL_ID,
     FILESYSTEM_READ_TEXT_TOOL_ID,
     FILESYSTEM_STAT_TOOL_ID,
+    FILESYSTEM_WRITE_TEXT_TOOL_ID,
 )
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
@@ -35,6 +39,7 @@ FILESYSTEM_TOOL_IDS: tuple[str, ...] = (
     FILESYSTEM_GLOB_TOOL_ID,
     FILESYSTEM_READ_TEXT_TOOL_ID,
     FILESYSTEM_STAT_TOOL_ID,
+    FILESYSTEM_WRITE_TEXT_TOOL_ID,
 )
 
 
@@ -102,4 +107,20 @@ def register_filesystem_tools(registry: ToolRegistry, ctx: ToolWiringContext) ->
             tags=("filesystem", "metadata", "read_only"),
         ),
         FilesystemStatHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=FILESYSTEM_WRITE_TEXT_TOOL_ID,
+            name=FILESYSTEM_WRITE_TEXT_TOOL_ID,
+            description="Write UTF-8 text to an allowlisted file with a byte cap (creates parent dirs when enabled).",
+            description_short="Write allowlisted text file.",
+            input_schema=FilesystemWriteTextInput,
+            output_schema=FilesystemWriteTextOutput,
+            error_mapping={},
+            side_effects=True,
+            category="filesystem",
+            risk_level=ToolRiskLevel.HIGH,
+            tags=("filesystem", "write"),
+        ),
+        FilesystemWriteTextHandler(ctx),
     )

@@ -47,3 +47,37 @@ class RagCheckIndexStatusOutput(BaseModel):
     document_count: int = 0
     collections: list[str] = Field(default_factory=list)
     reason: str = ""
+
+
+class RagSearchByMetadataInput(BaseModel):
+    filters: dict[str, Any] = Field(default_factory=dict, description="Exact-match metadata key/value filters.")
+    limit: int = Field(default=50, ge=1, le=500)
+    tenant_id: str = Field(default="", description="Optional tenant scope for purge/search.")
+
+
+class RagMetadataMatchOutput(BaseModel):
+    document_id: str
+    text: str = ""
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class RagSearchByMetadataOutput(BaseModel):
+    used: bool = False
+    matches: list[RagMetadataMatchOutput] = Field(default_factory=list)
+    total: int = 0
+    reason: str = ""
+
+
+class RagPurgeCollectionInput(BaseModel):
+    dry_run: bool = Field(default=True, description="When true, report delete count without mutating the index.")
+    tenant_id: str = Field(default="", description="Optional tenant scope guard for purge operations.")
+    collection: str = Field(default="", description="Optional collection name (informational for multi-collection backends).")
+
+
+class RagPurgeCollectionOutput(BaseModel):
+    used: bool = False
+    dry_run: bool = True
+    would_delete: int = 0
+    deleted: int = 0
+    tenant_id: str = ""
+    reason: str = ""

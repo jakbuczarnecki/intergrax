@@ -17,6 +17,8 @@ from intergrax.tools.providers.filesystem.contracts import (
     FilesystemReadTextOutput,
     FilesystemStatInput,
     FilesystemStatOutput,
+    FilesystemWriteTextInput,
+    FilesystemWriteTextOutput,
 )
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -24,6 +26,7 @@ FILESYSTEM_LIST_TOOL_ID = "filesystem.list"
 FILESYSTEM_GLOB_TOOL_ID = "filesystem.glob"
 FILESYSTEM_READ_TEXT_TOOL_ID = "filesystem.read_text"
 FILESYSTEM_STAT_TOOL_ID = "filesystem.stat"
+FILESYSTEM_WRITE_TEXT_TOOL_ID = "filesystem.write_text"
 
 
 def _roots(ctx: ToolWiringContext) -> frozenset[str]:
@@ -103,4 +106,21 @@ def filesystem_stat(ctx: ToolWiringContext, params: FilesystemStatInput) -> File
         is_file=target.is_file(),
         size_bytes=int(stat.st_size),
         modified_at_utc=modified,
+    )
+
+
+def filesystem_write_text(ctx: ToolWiringContext, params: FilesystemWriteTextInput) -> FilesystemWriteTextOutput:
+    file_path = resolve_allowed_path(params.path, _roots(ctx))
+    encoded = params.content.encode("utf-8")
+    if len(encoded) > params.max_bytes:
+        raise RuntimeError("content_exceeds_max_bytes")
+    created = not file_path.exists()
+    if params.create_dirs:
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+    file_path.write_bytes(encoded)
+    return FilesystemWriteTextOutput(
+        path=str(file_path),
+        written=True,
+        size_bytes=len(encoded),
+        created=created,
     )

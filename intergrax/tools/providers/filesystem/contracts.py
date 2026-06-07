@@ -59,3 +59,17 @@ class FilesystemStatOutput(BaseModel):
     is_file: bool = False
     size_bytes: int = 0
     modified_at_utc: str = ""
+
+
+class FilesystemWriteTextInput(BaseModel):
+    path: str = Field(..., min_length=1, description="Absolute file path inside an allowlisted root.")
+    content: str = Field(..., description="UTF-8 text content to write.")
+    create_dirs: bool = Field(default=True, description="Create parent directories when missing.")
+    max_bytes: int = Field(default=1_048_576, ge=1, le=1_048_576)
+
+
+class FilesystemWriteTextOutput(BaseModel):
+    path: str
+    written: bool = False
+    size_bytes: int = 0
+    created: bool = False

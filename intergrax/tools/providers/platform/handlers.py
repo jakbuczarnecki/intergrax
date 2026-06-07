@@ -12,18 +12,23 @@ from intergrax.tools.providers.platform.contracts import (
     PlatformGetWorkflowRunInput,
     PlatformListCheckSuitesInput,
     PlatformListCheckSuitesOutput,
+    PlatformCancelWorkflowRunInput,
     PlatformDeleteSecretInput,
     PlatformDeleteSecretOutput,
+    PlatformListWorkflowRunsInput,
+    PlatformListWorkflowRunsOutput,
     PlatformPutSecretInput,
     PlatformPutSecretOutput,
     PlatformWorkflowRunOutput,
 )
 from intergrax.tools.providers.platform.service import (
+    platform_cancel_workflow_run,
     platform_delete_secret,
     platform_evaluate_feature_flag,
     platform_get_secret,
     platform_get_workflow_run,
     platform_list_check_suites,
+    platform_list_workflow_runs,
     platform_put_secret,
 )
 
@@ -56,3 +61,15 @@ class PlatformListCheckSuitesHandler(
     ServiceToolHandler[PlatformListCheckSuitesInput, PlatformListCheckSuitesOutput]
 ):
     _service = platform_list_check_suites
+
+
+class PlatformListWorkflowRunsHandler(
+    ServiceToolHandler[PlatformListWorkflowRunsInput, PlatformListWorkflowRunsOutput]
+):
+    _service = platform_list_workflow_runs
+
+
+class PlatformCancelWorkflowRunHandler(
+    ServiceToolHandler[PlatformCancelWorkflowRunInput, PlatformWorkflowRunOutput]
+):
+    _service = platform_cancel_workflow_run

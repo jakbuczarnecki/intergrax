@@ -9,6 +9,21 @@ from intergrax.tools.registry.catalog import clear_tool_catalog, get_bundle, lis
 
 pytestmark = pytest.mark.unit
 
+T8_NEW_TOOL_IDS = frozenset(
+    {
+        "hitl.list_pending",
+        "hitl.get_decision",
+        "hitl.summarize_queue",
+        "filesystem.write_text",
+        "rag.search_by_metadata",
+        "rag.purge_collection",
+        "database.describe_schema",
+        "records.describe_collection",
+        "platform.list_workflow_runs",
+        "platform.cancel_workflow_run",
+    }
+)
+
 T7_NEW_TOOL_IDS = frozenset(
     {
         "message_bus.list_tasks",
@@ -131,12 +146,13 @@ def _clean_catalog() -> None:
 def test_register_default_tools_expanded_catalog() -> None:
     register_default_tools()
     registered = frozenset(list_catalog_tool_ids())
-    assert len(registered) == 120
+    assert len(registered) == 130
     assert NEW_TOOL_IDS <= registered
     assert T4_NEW_TOOL_IDS <= registered
     assert T5_NEW_TOOL_IDS <= registered
     assert T6_NEW_TOOL_IDS <= registered
     assert T7_NEW_TOOL_IDS <= registered
+    assert T8_NEW_TOOL_IDS <= registered
 
 
 def test_new_bundles_present_in_catalog() -> None:
@@ -159,6 +175,7 @@ def test_new_bundles_present_in_catalog() -> None:
         "identity",
         "harness",
         "health",
+        "hitl",
         "eval",
         "filesystem",
         "billing",
@@ -169,9 +186,14 @@ def test_new_bundles_present_in_catalog() -> None:
         assert bundle.bundle_id == bundle_id
         assert bundle.tool_ids
 
-    assert len(get_bundle("rag").tool_ids) == 9
+    assert len(get_bundle("rag").tool_ids) == 11
     assert len(get_bundle("observability").tool_ids) == 6
     assert len(get_bundle("message_bus").tool_ids) == 5
     assert len(get_bundle("document").tool_ids) == 2
     assert len(get_bundle("eval").tool_ids) == 4
     assert len(get_bundle("cost").tool_ids) == 3
+    assert len(get_bundle("filesystem").tool_ids) == 5
+    assert len(get_bundle("platform").tool_ids) == 8
+    assert len(get_bundle("database").tool_ids) == 3
+    assert len(get_bundle("records").tool_ids) == 5
+    assert len(get_bundle("hitl").tool_ids) == 3

@@ -15,11 +15,14 @@ from intergrax.tools.providers.filesystem.service import (
     FILESYSTEM_LIST_TOOL_ID,
     FILESYSTEM_READ_TEXT_TOOL_ID,
     FILESYSTEM_STAT_TOOL_ID,
+    FILESYSTEM_WRITE_TEXT_TOOL_ID,
 )
 from intergrax.tools.providers.rag.index_lifecycle_service import (
     RAG_CHECK_INDEX_STATUS_TOOL_ID,
     RAG_GET_DOCUMENT_TOOL_ID,
     RAG_LIST_DOCUMENTS_TOOL_ID,
+    RAG_PURGE_COLLECTION_TOOL_ID,
+    RAG_SEARCH_BY_METADATA_TOOL_ID,
 )
 from intergrax.tools.registry.profile import ToolProfile
 from intergrax.tools.registry.wiring import ToolWiringContext
@@ -44,6 +47,8 @@ _LKW_BASE_TOOL_IDS: tuple[str, ...] = (
     RAG_LIST_DOCUMENTS_TOOL_ID,
     RAG_GET_DOCUMENT_TOOL_ID,
     RAG_CHECK_INDEX_STATUS_TOOL_ID,
+    RAG_SEARCH_BY_METADATA_TOOL_ID,
+    RAG_PURGE_COLLECTION_TOOL_ID,
     "rag.rerank",
 )
 
@@ -52,6 +57,7 @@ _FILESYSTEM_TOOL_IDS: tuple[str, ...] = (
     FILESYSTEM_GLOB_TOOL_ID,
     FILESYSTEM_READ_TEXT_TOOL_ID,
     FILESYSTEM_STAT_TOOL_ID,
+    FILESYSTEM_WRITE_TEXT_TOOL_ID,
 )
 
 

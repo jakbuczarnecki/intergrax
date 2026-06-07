@@ -154,6 +154,50 @@ class HttpCiCdBackend:
             )
         return suites
 
+    def list_workflow_runs(
+        self,
+        *,
+        workflow_id: str = "",
+        ref: str = "",
+        limit: int = 20,
+    ) -> Sequence[WorkflowRunRecord]:
+        try:
+            rows = self._client.list_workflow_runs(workflow_id=workflow_id, ref=ref, limit=limit)
+        except AttributeError:
+            return []
+        runs: list[WorkflowRunRecord] = []
+        for item in list(rows or [])[:limit]:
+            if isinstance(item, WorkflowRunRecord):
+                runs.append(item)
+                continue
+            data = dict(item or {})
+            runs.append(
+                WorkflowRunRecord(
+                    id=str(data.get("id") or ""),
+                    name=str(data.get("name") or ""),
+                    status=str(data.get("status") or ""),
+                    conclusion=str(data.get("conclusion") or ""),
+                    url=str(data.get("url") or data.get("html_url") or ""),
+                )
+            )
+        return runs
+
+    def cancel_workflow_run(self, run_id: str) -> WorkflowRunRecord:
+        try:
+            payload = self._client.cancel_workflow_run(run_id)
+        except AttributeError as exc:
+            raise RuntimeError("cancel_workflow_run_not_supported") from exc
+        if isinstance(payload, WorkflowRunRecord):
+            return payload
+        data = dict(payload or {})
+        return WorkflowRunRecord(
+            id=str(data.get("id") or run_id),
+            name=str(data.get("name") or ""),
+            status=str(data.get("status") or "cancelled"),
+            conclusion=str(data.get("conclusion") or ""),
+            url=str(data.get("url") or data.get("html_url") or ""),
+        )
+
     def health(self) -> HealthStatus:
         return probe_client_health(self._client, slug=self._provider)
 

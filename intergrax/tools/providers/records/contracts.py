@@ -58,3 +58,17 @@ class RecordsQueryInput(BaseModel):
 class RecordsQueryOutput(BaseModel):
     documents: list[RecordsDocumentOutput] = Field(default_factory=list)
     total: int = 0
+
+
+class RecordsDescribeCollectionInput(BaseModel):
+    partition_key: str = Field(..., min_length=1)
+    sample_limit: int = Field(default=5, ge=1, le=50)
+
+
+class RecordsDescribeCollectionOutput(BaseModel):
+    used: bool = False
+    partition_key: str = ""
+    document_count: int = 0
+    sample_row_keys: list[str] = Field(default_factory=list)
+    sample_field_names: list[str] = Field(default_factory=list)
+    reason: str = ""

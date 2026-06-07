@@ -11,8 +11,15 @@ from intergrax.tools.providers.filesystem.contracts import (
     FilesystemListInput,
     FilesystemReadTextInput,
     FilesystemStatInput,
+    FilesystemWriteTextInput,
 )
-from intergrax.tools.providers.filesystem.service import filesystem_glob, filesystem_list, filesystem_read_text, filesystem_stat
+from intergrax.tools.providers.filesystem.service import (
+    filesystem_glob,
+    filesystem_list,
+    filesystem_read_text,
+    filesystem_stat,
+    filesystem_write_text,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 pytestmark = pytest.mark.unit
@@ -61,3 +68,13 @@ def test_filesystem_rejects_path_outside_allowlist(tmp_path: Path) -> None:
     outside.write_text("nope", encoding="utf-8")
     with pytest.raises(RuntimeError, match="path_not_in_allowlist"):
         filesystem_read_text(ctx, FilesystemReadTextInput(path=str(outside.resolve())))
+
+
+def test_filesystem_write_text_writes_allowlisted_file(allowlisted_ctx: ToolWiringContext, tmp_path: Path) -> None:
+    target = tmp_path / "docs" / "output.txt"
+    out = filesystem_write_text(
+        allowlisted_ctx,
+        FilesystemWriteTextInput(path=str(target.resolve()), content="saved"),
+    )
+    assert out.written is True
+    assert target.read_text(encoding="utf-8") == "saved"

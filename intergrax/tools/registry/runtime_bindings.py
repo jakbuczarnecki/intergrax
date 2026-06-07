@@ -37,7 +37,7 @@ class KeyValueCacheListerBinding(Protocol):
 
 @runtime_checkable
 class VectorstoreIndexLifecycleBinding(Protocol):
-    """Structural binding for ``rag.list_documents`` / ``rag.get_document`` / ``rag.check_index_status``."""
+    """Structural binding for RAG index lifecycle catalog tools."""
 
     def list_document_ids(self, *, limit: int = 100, offset: int = 0) -> List[str]: ...
 
@@ -46,6 +46,26 @@ class VectorstoreIndexLifecycleBinding(Protocol):
     def list_collections(self) -> List[str]: ...
 
     def count(self) -> int: ...
+
+    def search_by_metadata(
+        self,
+        *,
+        conditions: Dict[str, Any],
+        limit: int = 50,
+    ) -> List[Dict[str, Any]]: ...
+
+    def purge_collection(self, *, dry_run: bool = True, tenant_id: str = "") -> Dict[str, Any]: ...
+
+
+@runtime_checkable
+class HumanDecisionStoreBinding(Protocol):
+    """Structural binding for read-only HITL decision catalog tools."""
+
+    def list_escalations(self, tenant_id: str, *, limit: int = 50) -> List[Any]: ...
+
+    def get_decision(self, decision_id: str, tenant_id: str) -> Any | None: ...
+
+    def summarize_queue(self, tenant_id: str) -> Dict[str, int]: ...
 
 
 @runtime_checkable

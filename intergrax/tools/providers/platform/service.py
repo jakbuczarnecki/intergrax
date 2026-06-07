@@ -14,8 +14,11 @@ from intergrax.tools.providers.platform.contracts import (
     PlatformGetWorkflowRunInput,
     PlatformListCheckSuitesInput,
     PlatformListCheckSuitesOutput,
+    PlatformCancelWorkflowRunInput,
     PlatformDeleteSecretInput,
     PlatformDeleteSecretOutput,
+    PlatformListWorkflowRunsInput,
+    PlatformListWorkflowRunsOutput,
     PlatformPutSecretInput,
     PlatformPutSecretOutput,
     PlatformCheckSuiteOutput,
@@ -29,6 +32,8 @@ PLATFORM_DELETE_SECRET_TOOL_ID = "platform.delete_secret"
 PLATFORM_EVALUATE_FEATURE_FLAG_TOOL_ID = "platform.evaluate_feature_flag"
 PLATFORM_GET_WORKFLOW_RUN_TOOL_ID = "platform.get_workflow_run"
 PLATFORM_LIST_CHECK_SUITES_TOOL_ID = "platform.list_check_suites"
+PLATFORM_LIST_WORKFLOW_RUNS_TOOL_ID = "platform.list_workflow_runs"
+PLATFORM_CANCEL_WORKFLOW_RUN_TOOL_ID = "platform.cancel_workflow_run"
 
 
 def platform_get_secret(ctx: ToolWiringContext, params: PlatformGetSecretInput) -> PlatformGetSecretOutput:
@@ -110,3 +115,44 @@ def platform_list_check_suites(
         for item in backend.list_check_suites(ref=params.ref.strip(), limit=params.limit)
     ]
     return PlatformListCheckSuitesOutput(ref=params.ref.strip(), suites=suites, total=len(suites))
+
+
+def platform_list_workflow_runs(
+    ctx: ToolWiringContext,
+    params: PlatformListWorkflowRunsInput,
+) -> PlatformListWorkflowRunsOutput:
+    backend: CiCdBackend | None = ctx.ci_cd_backend
+    if backend is None:
+        raise RuntimeError("ci_cd_backend_not_configured")
+    runs = [
+        PlatformWorkflowRunOutput(
+            id=item.id,
+            name=item.name,
+            status=item.status,
+            conclusion=item.conclusion,
+            url=item.url,
+        )
+        for item in backend.list_workflow_runs(
+            workflow_id=params.workflow_id.strip(),
+            ref=params.ref.strip(),
+            limit=params.limit,
+        )
+    ]
+    return PlatformListWorkflowRunsOutput(runs=runs, total=len(runs))
+
+
+def platform_cancel_workflow_run(
+    ctx: ToolWiringContext,
+    params: PlatformCancelWorkflowRunInput,
+) -> PlatformWorkflowRunOutput:
+    backend: CiCdBackend | None = ctx.ci_cd_backend
+    if backend is None:
+        raise RuntimeError("ci_cd_backend_not_configured")
+    record = backend.cancel_workflow_run(params.run_id.strip())
+    return PlatformWorkflowRunOutput(
+        id=record.id,
+        name=record.name,
+        status=record.status,
+        conclusion=record.conclusion,
+        url=record.url,
+    )

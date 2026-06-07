@@ -11,6 +11,11 @@ from intergrax.tools.providers.rag.index_lifecycle_contracts import (
     RagGetDocumentOutput,
     RagListDocumentsInput,
     RagListDocumentsOutput,
+    RagMetadataMatchOutput,
+    RagPurgeCollectionInput,
+    RagPurgeCollectionOutput,
+    RagSearchByMetadataInput,
+    RagSearchByMetadataOutput,
 )
 from intergrax.tools.registry.runtime_bindings import VectorstoreIndexLifecycleBinding
 from intergrax.tools.registry.wiring import ToolWiringContext
@@ -18,6 +23,8 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 RAG_LIST_DOCUMENTS_TOOL_ID = "rag.list_documents"
 RAG_GET_DOCUMENT_TOOL_ID = "rag.get_document"
 RAG_CHECK_INDEX_STATUS_TOOL_ID = "rag.check_index_status"
+RAG_SEARCH_BY_METADATA_TOOL_ID = "rag.search_by_metadata"
+RAG_PURGE_COLLECTION_TOOL_ID = "rag.purge_collection"
 
 
 def perform_rag_list_documents(
@@ -138,5 +145,87 @@ def perform_rag_check_index_status(
         collection=collection,
         document_count=document_count,
         collections=collections,
+        reason="ok",
+    )
+
+
+def perform_rag_search_by_metadata(
+    ctx: ToolWiringContext,
+    params: RagSearchByMetadataInput,
+) -> RagSearchByMetadataOutput:
+    vectorstore = ctx.vectorstore_manager
+    if vectorstore is None:
+        return RagSearchByMetadataOutput(used=False, reason="vectorstore_manager_not_configured")
+    if not isinstance(vectorstore, VectorstoreIndexLifecycleBinding):
+        return RagSearchByMetadataOutput(used=False, reason="search_by_metadata_not_supported")
+
+    conditions = dict(params.filters)
+    tenant_id = params.tenant_id.strip()
+    if tenant_id:
+        conditions["tenant_id"] = tenant_id
+
+    try:
+        raw_matches = vectorstore.search_by_metadata(conditions=conditions, limit=params.limit)
+    except ValueError as exc:
+        return RagSearchByMetadataOutput(
+            used=False,
+            reason=f"search_by_metadata_error:{exc.__class__.__name__}",
+        )
+    except Exception as exc:
+        return RagSearchByMetadataOutput(
+            used=False,
+            reason=f"search_by_metadata_error:{exc.__class__.__name__}",
+        )
+
+    matches = [
+        RagMetadataMatchOutput(
+            document_id=str(item.get("id") or ""),
+            text=str(item.get("text") or ""),
+            metadata=dict(item.get("metadata") or {}),
+        )
+        for item in raw_matches
+    ]
+    return RagSearchByMetadataOutput(
+        used=True,
+        matches=matches,
+        total=len(matches),
+        reason="ok",
+    )
+
+
+def perform_rag_purge_collection(
+    ctx: ToolWiringContext,
+    params: RagPurgeCollectionInput,
+) -> RagPurgeCollectionOutput:
+    vectorstore = ctx.vectorstore_manager
+    if vectorstore is None:
+        return RagPurgeCollectionOutput(used=False, reason="vectorstore_manager_not_configured")
+    if not isinstance(vectorstore, VectorstoreIndexLifecycleBinding):
+        return RagPurgeCollectionOutput(used=False, reason="purge_collection_not_supported")
+
+    try:
+        result = vectorstore.purge_collection(
+            dry_run=params.dry_run,
+            tenant_id=params.tenant_id.strip(),
+        )
+    except ValueError as exc:
+        return RagPurgeCollectionOutput(
+            used=False,
+            reason=f"purge_collection_error:{exc.__class__.__name__}",
+        )
+    except Exception as exc:
+        return RagPurgeCollectionOutput(
+            used=False,
+            reason=f"purge_collection_error:{exc.__class__.__name__}",
+        )
+
+    would_delete = int(result.get("would_delete") or 0)
+    deleted = int(result.get("deleted") or 0)
+    return RagPurgeCollectionOutput(
+        used=True,
+        dry_run=bool(result.get("dry_run", params.dry_run)),
+        would_delete=would_delete,
+        deleted=deleted,
+        tenant_id=str(result.get("tenant_id") or params.tenant_id.strip()),
         reason="ok",
     )

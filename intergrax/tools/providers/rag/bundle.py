@@ -20,16 +20,24 @@ from intergrax.tools.providers.rag.index_lifecycle_contracts import (
     RagGetDocumentOutput,
     RagListDocumentsInput,
     RagListDocumentsOutput,
+    RagPurgeCollectionInput,
+    RagPurgeCollectionOutput,
+    RagSearchByMetadataInput,
+    RagSearchByMetadataOutput,
 )
 from intergrax.tools.providers.rag.index_lifecycle_handler import (
     RagCheckIndexStatusHandler,
     RagGetDocumentHandler,
     RagListDocumentsHandler,
+    RagPurgeCollectionHandler,
+    RagSearchByMetadataHandler,
 )
 from intergrax.tools.providers.rag.index_lifecycle_service import (
     RAG_CHECK_INDEX_STATUS_TOOL_ID,
     RAG_GET_DOCUMENT_TOOL_ID,
     RAG_LIST_DOCUMENTS_TOOL_ID,
+    RAG_PURGE_COLLECTION_TOOL_ID,
+    RAG_SEARCH_BY_METADATA_TOOL_ID,
 )
 from intergrax.tools.providers.rag.lifecycle_contracts import (
     RagDeleteDocumentsInput,
@@ -61,6 +69,8 @@ RAG_TOOL_IDS: tuple[str, ...] = (
     RAG_LIST_DOCUMENTS_TOOL_ID,
     RAG_GET_DOCUMENT_TOOL_ID,
     RAG_CHECK_INDEX_STATUS_TOOL_ID,
+    RAG_SEARCH_BY_METADATA_TOOL_ID,
+    RAG_PURGE_COLLECTION_TOOL_ID,
 )
 
 
@@ -225,6 +235,38 @@ def rag_check_index_status_contract() -> ToolContract:
     )
 
 
+def rag_search_by_metadata_contract() -> ToolContract:
+    return ToolContract(
+        tool_id=RAG_SEARCH_BY_METADATA_TOOL_ID,
+        name="rag.search_by_metadata",
+        description="Search indexed documents by exact metadata key/value filters (no semantic query).",
+        description_short="Search index by metadata.",
+        input_schema=RagSearchByMetadataInput,
+        output_schema=RagSearchByMetadataOutput,
+        error_mapping={},
+        side_effects=False,
+        category="retrieval",
+        risk_level=ToolRiskLevel.LOW,
+        tags=("rag", "vectorstore", "lifecycle", "metadata"),
+    )
+
+
+def rag_purge_collection_contract() -> ToolContract:
+    return ToolContract(
+        tool_id=RAG_PURGE_COLLECTION_TOOL_ID,
+        name="rag.purge_collection",
+        description="Purge all documents in the active vector collection (supports dry-run and tenant scope).",
+        description_short="Purge vector collection.",
+        input_schema=RagPurgeCollectionInput,
+        output_schema=RagPurgeCollectionOutput,
+        error_mapping={},
+        side_effects=True,
+        category="retrieval",
+        risk_level=ToolRiskLevel.CRITICAL,
+        tags=("rag", "vectorstore", "lifecycle", "destructive"),
+    )
+
+
 def register_rag_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
     registry.register(rag_retrieve_contract(), RagRetrieveHandler(ctx))
     registry.register(rag_ingest_contract(), RagIngestHandler(ctx))
@@ -235,6 +277,8 @@ def register_rag_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
     registry.register(rag_list_documents_contract(), RagListDocumentsHandler(ctx))
     registry.register(rag_get_document_contract(), RagGetDocumentHandler(ctx))
     registry.register(rag_check_index_status_contract(), RagCheckIndexStatusHandler(ctx))
+    registry.register(rag_search_by_metadata_contract(), RagSearchByMetadataHandler(ctx))
+    registry.register(rag_purge_collection_contract(), RagPurgeCollectionHandler(ctx))
 
 
 RAG_RETRIEVE_TOOL_CONTRACT = rag_retrieve_contract()

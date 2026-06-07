@@ -37,6 +37,10 @@ curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
 
 `http://127.0.0.1:8020/mcp` — `list_agents`, `run_agent`, catalog tools.
 
+## Runtime model
+
+LKW runs as a **background service on the user's OS** (Windows / Linux / macOS). Users submit tasks anytime via **local HTTP/MCP** or **Slack** (interaction surface — execution stays local). See [ARCHITECTURE.md §6](ARCHITECTURE.md#6-local-os-runtime-and-interaction-model).
+
 ## Platform stack
 
 LKW uses the canonical **Integration → Tool → Skill → Agent** model (§5 in [ARCHITECTURE.md](ARCHITECTURE.md)):
