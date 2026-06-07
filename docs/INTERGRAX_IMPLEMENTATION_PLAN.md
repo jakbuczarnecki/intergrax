@@ -1774,7 +1774,24 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 - `harness.integration_bridge_smoke` skill pack + resolver test fix (skills vs tools `build_registry_from_profile`)
 - Lab harness `wire_lab_tools(harness=True)` enables runtime-bound + bridge tools
 - PoC template `extend_tool_profile_for_integration()` wiring
-- MCP full-catalog export smoke (67 tools)
+- MCP full-catalog export smoke (81 tools)
+
+#### T-EXPAND T4 — Agent Builder Essentials (2026-06-07) — **Done**
+
+**Goal:** Close highest-ROI integration→tool gaps for agent/environment builders (SQL, document JSON, RAG lifecycle, workspace DX, collaboration read path, auto-enable wiring).
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `database` | `database.query`, `database.execute` | **Done** |
+| `records` | `records.get`, `records.put`, `records.delete`, `records.query` | **Done** |
+| `rag` (+2) | `rag.delete_documents`, `rag.describe_collection` | **Done** |
+| `workspace` (+2) | `workspace.delete_file`, `workspace.search` | **Done** |
+| `collaboration` (+4) | `collaboration.list_messages`, `get_message`, `list_calendar`, `get_user` | **Done** |
+| wiring | `relational_store` / `document_store` ctx slots; auto-enable notify/obs/database/records/collaboration | **Done** |
+
+**Delivered:** **81** catalog `tool_id` values · **30** shipped bundles.
+
+Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{database,records,...}/`
 - Capability graph compatibility edges for T-EXPAND tool pairs
 
 Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{workspace,memory,knowledge,...}/`

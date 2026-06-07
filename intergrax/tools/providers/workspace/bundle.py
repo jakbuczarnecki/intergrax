@@ -6,23 +6,31 @@ from __future__ import annotations
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.providers.workspace.contracts import (
     WorkspaceArtifactOutput,
+    WorkspaceDeleteFileInput,
+    WorkspaceDeleteFileOutput,
     WorkspaceListFilesInput,
     WorkspaceListFilesOutput,
     WorkspaceReadFileInput,
     WorkspaceReadFileOutput,
+    WorkspaceSearchInput,
+    WorkspaceSearchOutput,
     WorkspaceSnapshotInput,
     WorkspaceSnapshotOutput,
     WorkspaceWriteFileInput,
 )
 from intergrax.tools.providers.workspace.handlers import (
+    WorkspaceDeleteFileHandler,
     WorkspaceListFilesHandler,
     WorkspaceReadFileHandler,
+    WorkspaceSearchHandler,
     WorkspaceSnapshotHandler,
     WorkspaceWriteFileHandler,
 )
 from intergrax.tools.providers.workspace.service import (
+    WORKSPACE_DELETE_FILE_TOOL_ID,
     WORKSPACE_LIST_FILES_TOOL_ID,
     WORKSPACE_READ_FILE_TOOL_ID,
+    WORKSPACE_SEARCH_TOOL_ID,
     WORKSPACE_SNAPSHOT_TOOL_ID,
     WORKSPACE_WRITE_FILE_TOOL_ID,
 )
@@ -35,6 +43,8 @@ WORKSPACE_TOOL_IDS: tuple[str, ...] = (
     WORKSPACE_READ_FILE_TOOL_ID,
     WORKSPACE_LIST_FILES_TOOL_ID,
     WORKSPACE_SNAPSHOT_TOOL_ID,
+    WORKSPACE_DELETE_FILE_TOOL_ID,
+    WORKSPACE_SEARCH_TOOL_ID,
 )
 
 
@@ -102,4 +112,36 @@ def register_workspace_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> 
             tags=("workspace", "shadow", "snapshot"),
         ),
         WorkspaceSnapshotHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=WORKSPACE_DELETE_FILE_TOOL_ID,
+            name=WORKSPACE_DELETE_FILE_TOOL_ID,
+            description="Delete a file from the shadow workspace.",
+            description_short="Delete shadow workspace file.",
+            input_schema=WorkspaceDeleteFileInput,
+            output_schema=WorkspaceDeleteFileOutput,
+            error_mapping={},
+            side_effects=True,
+            category="workspace",
+            risk_level=ToolRiskLevel.MEDIUM,
+            tags=("workspace", "shadow", "filesystem"),
+        ),
+        WorkspaceDeleteFileHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=WORKSPACE_SEARCH_TOOL_ID,
+            name=WORKSPACE_SEARCH_TOOL_ID,
+            description="Search for a text substring across UTF-8 files in the shadow workspace.",
+            description_short="Search shadow workspace files.",
+            input_schema=WorkspaceSearchInput,
+            output_schema=WorkspaceSearchOutput,
+            error_mapping={},
+            side_effects=False,
+            category="workspace",
+            risk_level=ToolRiskLevel.LOW,
+            tags=("workspace", "shadow", "search"),
+        ),
+        WorkspaceSearchHandler(ctx),
     )

@@ -15,6 +15,8 @@ _LKW_BASE_TOOL_IDS: tuple[str, ...] = (
     "workspace.write_file",
     "workspace.list_files",
     "workspace.snapshot",
+    "workspace.delete_file",
+    "workspace.search",
     "memory.read",
     "memory.write",
     "memory.list_keys",

@@ -23,18 +23,24 @@ from intergrax.tools.providers.memory.service import (
 )
 from intergrax.tools.providers.memory.contracts import MemoryListKeysInput, MemoryReadInput, MemoryWriteInput
 from intergrax.tools.providers.workspace.service import (
+    WORKSPACE_DELETE_FILE_TOOL_ID,
     WORKSPACE_LIST_FILES_TOOL_ID,
     WORKSPACE_READ_FILE_TOOL_ID,
+    WORKSPACE_SEARCH_TOOL_ID,
     WORKSPACE_SNAPSHOT_TOOL_ID,
     WORKSPACE_WRITE_FILE_TOOL_ID,
+    workspace_delete_file,
     workspace_list_files,
     workspace_read_file,
+    workspace_search,
     workspace_snapshot,
     workspace_write_file,
 )
 from intergrax.tools.providers.workspace.contracts import (
+    WorkspaceDeleteFileInput,
     WorkspaceListFilesInput,
     WorkspaceReadFileInput,
+    WorkspaceSearchInput,
     WorkspaceSnapshotInput,
     WorkspaceWriteFileInput,
 )
@@ -47,6 +53,8 @@ _RUNTIME_BOUND_TOOLS: dict[str, tuple[type[BaseModel], ServiceFn]] = {
     WORKSPACE_READ_FILE_TOOL_ID: (WorkspaceReadFileInput, workspace_read_file),
     WORKSPACE_LIST_FILES_TOOL_ID: (WorkspaceListFilesInput, workspace_list_files),
     WORKSPACE_SNAPSHOT_TOOL_ID: (WorkspaceSnapshotInput, workspace_snapshot),
+    WORKSPACE_DELETE_FILE_TOOL_ID: (WorkspaceDeleteFileInput, workspace_delete_file),
+    WORKSPACE_SEARCH_TOOL_ID: (WorkspaceSearchInput, workspace_search),
     MEMORY_READ_TOOL_ID: (MemoryReadInput, memory_read),
     MEMORY_WRITE_TOOL_ID: (MemoryWriteInput, memory_write),
     MEMORY_LIST_KEYS_TOOL_ID: (MemoryListKeysInput, memory_list_keys),

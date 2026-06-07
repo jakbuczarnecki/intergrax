@@ -7,10 +7,15 @@ from intergrax.runtime.workspace.models import ShadowArtifact
 from intergrax.runtime.workspace.shadow_workspace import ShadowWorkspace
 from intergrax.tools.providers.workspace.contracts import (
     WorkspaceArtifactOutput,
+    WorkspaceDeleteFileInput,
+    WorkspaceDeleteFileOutput,
     WorkspaceListFilesInput,
     WorkspaceListFilesOutput,
     WorkspaceReadFileInput,
     WorkspaceReadFileOutput,
+    WorkspaceSearchInput,
+    WorkspaceSearchMatch,
+    WorkspaceSearchOutput,
     WorkspaceSnapshotInput,
     WorkspaceSnapshotOutput,
     WorkspaceWriteFileInput,
@@ -21,6 +26,8 @@ WORKSPACE_WRITE_FILE_TOOL_ID = "workspace.write_file"
 WORKSPACE_READ_FILE_TOOL_ID = "workspace.read_file"
 WORKSPACE_LIST_FILES_TOOL_ID = "workspace.list_files"
 WORKSPACE_SNAPSHOT_TOOL_ID = "workspace.snapshot"
+WORKSPACE_DELETE_FILE_TOOL_ID = "workspace.delete_file"
+WORKSPACE_SEARCH_TOOL_ID = "workspace.search"
 
 
 def _require_workspace(ctx: ToolWiringContext) -> ShadowWorkspace:
@@ -84,4 +91,30 @@ def workspace_snapshot(ctx: ToolWiringContext, params: WorkspaceSnapshotInput) -
         created_at_utc=snapshot.created_at_utc,
         files=dict(snapshot.files),
         file_count=len(snapshot.files),
+    )
+
+
+def workspace_delete_file(ctx: ToolWiringContext, params: WorkspaceDeleteFileInput) -> WorkspaceDeleteFileOutput:
+    workspace = _require_workspace(ctx)
+    path = params.path.strip()
+    deleted = workspace.delete_file(path)
+    return WorkspaceDeleteFileOutput(path=path, deleted=deleted, workspace_id=workspace.workspace_id)
+
+
+def workspace_search(ctx: ToolWiringContext, params: WorkspaceSearchInput) -> WorkspaceSearchOutput:
+    workspace = _require_workspace(ctx)
+    raw_matches = workspace.search_text(
+        params.query,
+        path_prefix=params.path_prefix,
+        case_insensitive=params.case_insensitive,
+        max_matches=params.max_matches,
+    )
+    matches = [
+        WorkspaceSearchMatch(path=path, line_number=line_number, line=line)
+        for path, line_number, line in raw_matches
+    ]
+    return WorkspaceSearchOutput(
+        matches=matches,
+        match_count=len(matches),
+        workspace_id=workspace.workspace_id,
     )

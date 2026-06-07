@@ -21,6 +21,8 @@ _HARNESS_RUNTIME_BOUND_TOOLS = (
     "workspace.read_file",
     "workspace.list_files",
     "workspace.snapshot",
+    "workspace.delete_file",
+    "workspace.search",
     "memory.read",
     "memory.write",
     "memory.list_keys",

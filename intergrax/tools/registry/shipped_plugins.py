@@ -33,6 +33,11 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
         COLLABORATION_TOOL_IDS,
         register_collaboration_tools,
     )
+    from intergrax.tools.providers.database.bundle import (
+        DATABASE_BUNDLE_ID,
+        DATABASE_TOOL_IDS,
+        register_database_tools,
+    )
     from intergrax.tools.providers.confluence.bundle import (
         CONFLUENCE_BUNDLE_ID,
         CONFLUENCE_TOOL_IDS,
@@ -82,6 +87,7 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
         register_pagerduty_tools,
     )
     from intergrax.tools.providers.rag.bundle import RAG_BUNDLE_ID, RAG_TOOL_IDS, register_rag_tools
+    from intergrax.tools.providers.records.bundle import RECORDS_BUNDLE_ID, RECORDS_TOOL_IDS, register_records_tools
     from intergrax.tools.providers.sandbox.bundle import SANDBOX_BUNDLE_ID, SANDBOX_TOOL_IDS, register_sandbox_tools
     from intergrax.tools.providers.storage.bundle import STORAGE_BUNDLE_ID, STORAGE_TOOL_IDS, register_storage_tools
     from intergrax.tools.providers.security.bundle import SECURITY_BUNDLE_ID, SECURITY_TOOL_IDS, register_security_tools
@@ -297,6 +303,20 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
             register_fn=register_collaboration_tools,
             description="Collaboration suite tools (mail, calendar, directory).",
             class_name="CollaborationToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=DATABASE_BUNDLE_ID,
+            tool_ids=DATABASE_TOOL_IDS,
+            register_fn=register_database_tools,
+            description="Relational store SQL tools (query/execute).",
+            class_name="DatabaseToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=RECORDS_BUNDLE_ID,
+            tool_ids=RECORDS_TOOL_IDS,
+            register_fn=register_records_tools,
+            description="Document store JSON record tools.",
+            class_name="RecordsToolPlugin",
         ),
         define_tool_plugin(
             bundle_id=CACHE_BUNDLE_ID,

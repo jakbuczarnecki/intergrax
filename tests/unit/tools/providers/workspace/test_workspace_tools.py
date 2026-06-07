@@ -33,6 +33,22 @@ def test_workspace_write_and_read(shadow_workspace: ShadowWorkspace) -> None:
     assert out.workspace_id == shadow_workspace.workspace_id
 
 
+def test_workspace_delete_and_search(shadow_workspace: ShadowWorkspace) -> None:
+    from intergrax.tools.providers.workspace.contracts import WorkspaceDeleteFileInput, WorkspaceSearchInput
+    from intergrax.tools.providers.workspace.service import workspace_delete_file, workspace_search, workspace_write_file
+
+    ctx = ToolWiringContext(shadow_workspace=shadow_workspace)
+    workspace_write_file(ctx, WorkspaceWriteFileInput(path="src/main.py", content="def run():\n    return 42\n"))
+    search_out = workspace_search(ctx, WorkspaceSearchInput(query="return 42"))
+    assert search_out.match_count == 1
+    assert search_out.matches[0].path == "src/main.py"
+
+    delete_out = workspace_delete_file(ctx, WorkspaceDeleteFileInput(path="src/main.py"))
+    assert delete_out.deleted is True
+    search_after = workspace_search(ctx, WorkspaceSearchInput(query="return 42"))
+    assert search_after.match_count == 0
+
+
 def test_workspace_not_configured() -> None:
     with pytest.raises(RuntimeError, match="shadow_workspace_not_configured"):
         workspace_write_file(ToolWiringContext(), WorkspaceWriteFileInput(path="a.txt", content="x"))

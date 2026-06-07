@@ -43,10 +43,10 @@ def test_mcp_exporter_full_catalog_after_t_expand() -> None:
         ctx=None,
     )
     catalog_ids = list_catalog_tool_ids()
-    assert len(catalog_ids) == 67
+    assert len(catalog_ids) == 81
     for tool_id in catalog_ids:
         assert registry.has(tool_id)
-    assert len(to_mcp_tools(registry)) == 67
+    assert len(to_mcp_tools(registry)) == 81
 
 
 def test_exporters_from_registry() -> None:

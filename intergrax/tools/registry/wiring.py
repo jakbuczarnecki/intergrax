@@ -12,6 +12,7 @@ from intergrax.integrations.contracts.browser_automation import BrowserAutomatio
 from intergrax.integrations.contracts.ci_cd import CiCdBackend
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
 from intergrax.integrations.contracts.document_parser import DocumentParser
+from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.contracts.feature_flag import FeatureFlagBackend
 from intergrax.integrations.contracts.graph_store import GraphStore
 from intergrax.integrations.contracts.identity_provider import IdentityProviderBackend
@@ -21,6 +22,7 @@ from intergrax.integrations.contracts.message_bus import MessageBus
 from intergrax.integrations.contracts.notification_channel import NotificationChannel
 from intergrax.integrations.contracts.object_storage import ObjectStorage
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
+from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.integrations.contracts.sandbox_host import SandboxHostBackend
 from intergrax.integrations.contracts.search_provider import SearchProvider
 from intergrax.integrations.contracts.secrets_store import SecretsStore
@@ -51,6 +53,8 @@ class ToolWiringContext:
     observability_backend: ObservabilityBackend | None = None
     observability_backends: dict[str, ObservabilityBackend] = field(default_factory=dict)
     object_storage: ObjectStorage | None = None
+    relational_store: RelationalStore | None = None
+    document_store: DocumentStore | None = None
     browser_automation: BrowserAutomation | None = None
     document_parser: DocumentParser | None = None
     secrets_store: SecretsStore | None = None
@@ -150,6 +154,8 @@ class ToolWiringContext:
             observability_backend=primary_obs,
             observability_backends=obs_backends,
             object_storage=_optional(IntegrationCategory.OBJECT_STORAGE),
+            relational_store=_optional(IntegrationCategory.RELATIONAL_STORE),
+            document_store=_optional(IntegrationCategory.DOCUMENT_STORE),
             browser_automation=_optional(IntegrationCategory.BROWSER_AUTOMATION),
             document_parser=_optional(IntegrationCategory.DOCUMENT_PARSER),
             secrets_store=_optional(IntegrationCategory.SECRETS_STORE),

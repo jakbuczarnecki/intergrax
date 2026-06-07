@@ -1,6 +1,6 @@
 # Intergrax Tool Library
 
-**Last updated:** 2026-06-07 — **28 bundles** · **67 catalog tools** (verified via `register_default_tools()`)
+**Last updated:** 2026-06-07 — **30 bundles** · **81 catalog tools** (verified via `register_default_tools()`)
 
 The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
 
@@ -99,7 +99,7 @@ registry = build_registry_from_profile(
 
 ## Tool engine (implemented today)
 
-Runtime tool engine (Phase O **Done** · **T-EXPAND Done** — full **67-tool** catalog registered):
+Runtime tool engine (Phase O **Done** · **T-EXPAND Done** — full **81-tool** catalog registered):
 
 | Component | Path | Status |
 |-----------|------|--------|
@@ -124,12 +124,12 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** — full **67-tool** 
 
 | Metric | Count |
 |--------|------:|
-| Shipped bundles (`ToolPlugin`) | **28** |
-| Registered `tool_id` values | **67** |
+| Shipped bundles (`ToolPlugin`) | **30** |
+| Registered `tool_id` values | **81** |
 | Stable bundles | **26** |
 | Beta bundles | **2** (`observability`, `openai_vector_store`) |
 
-**Bundle index:** `rag` (3) · `websearch` (3) · `jira` (3) · `gitlab` (1) · `confluence` (3) · `notify` (1) · `pagerduty` (1) · `observability` (4) · `braintrust` (1) · `sandbox` (1) · `security` (1) · `workflow` (3) · `speech` (2) · `vision` (3) · `ml` (3) · `openai_vector_store` (3) · **`workspace` (4)** · **`memory` (3)** · **`knowledge` (2)** · **`document` (1)** · **`browser` (1)** · **`storage` (4)** · **`issues` (4)** · **`platform` (4)** · **`message_bus` (3)** · **`graph` (2)** · **`collaboration` (1)** · **`cache` (2)**.
+**Bundle index:** `rag` (5) · `websearch` (3) · `jira` (3) · `gitlab` (1) · `confluence` (3) · `notify` (1) · `pagerduty` (1) · `observability` (4) · `braintrust` (1) · `sandbox` (1) · `security` (1) · `workflow` (3) · `speech` (2) · `vision` (3) · `ml` (3) · `openai_vector_store` (3) · **`workspace` (6)** · **`memory` (3)** · **`knowledge` (2)** · **`document` (1)** · **`browser` (1)** · **`storage` (4)** · **`issues` (4)** · **`platform` (4)** · **`message_bus` (3)** · **`graph` (2)** · **`collaboration` (5)** · **`cache` (2)** · **`database` (2)** · **`records` (4)**.
 
 Source: `intergrax/tools/registry/shipped_plugins.py`.
 
@@ -145,6 +145,8 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 |---------|--------|-------------|----------|
 | `rag.retrieve` | **Done** | Hybrid retrieval + optional rerank via `RetrievalService` / `RagProfile` | `vectorstore_manager`, `embedding_manager`, optional `retrieval_service` |
 | `rag.ingest_document` | **Done** | `IngestPipeline`: parse (catalog/handler registry) → chunk (strategy id) → embed → index | Same managers + optional `contextual_enricher` |
+| `rag.delete_documents` | **Done** | Delete indexed vector chunks by document id | `vectorstore_manager` |
+| `rag.describe_collection` | **Done** | Collection stats: document count + available collection names | `vectorstore_manager` |
 | `websearch.query` | **Done** | Run web search and return normalized snippets | `websearch_executor` or `SearchProvider` |
 | `websearch.read_url` | **Done** | Fetch a URL and return extracted title + plain text | `websearch` page fetch pipeline |
 | `websearch.fetch_batch` | **Done** | Fetch multiple URLs and return combined context | `websearch` page fetch pipeline |
@@ -270,6 +272,8 @@ Harness lab uses **one primary** `observability_backend` (Sentry) plus **additio
 | `workspace.read_file` | **Done** | Read shadow workspace file | `ShadowWorkspace` |
 | `workspace.list_files` | **Done** | List workspace artifacts | `ShadowWorkspace` |
 | `workspace.snapshot` | **Done** | Point-in-time workspace snapshot | `ShadowWorkspace` |
+| `workspace.delete_file` | **Done** | Delete a file from shadow workspace | `ShadowWorkspace` |
+| `workspace.search` | **Done** | Grep/search text across workspace files | `ShadowWorkspace` |
 | `memory.read` | **Done** | Read task memory record | `ToolWiringContext.memory_view` (`TaskMemoryViewBinding`) |
 | `memory.write` | **Done** | Write/merge task memory | `PolicyScopedMemoryView` |
 | `memory.list_keys` | **Done** | List keys in namespace | `PolicyScopedMemoryView` |
@@ -288,8 +292,10 @@ UAEP agents invoke `workspace.*` / `memory.*` via `BoundToolGateway` → `runtim
 | `platform` | `platform.get_secret`, `platform.evaluate_feature_flag`, `platform.get_workflow_run`, `platform.list_check_suites` | `SecretsStore`, `FeatureFlagBackend`, `CiCdBackend` |
 | `message_bus` | `message_bus.enqueue`, `message_bus.get_status`, `message_bus.get_result` | `MessageBus` (`TaskQueue`) |
 | `graph` | `graph.run_query`, `graph.get_node` | `GraphStore` |
-| `collaboration` | `collaboration.send_mail` | `CollaborationSuite` |
+| `collaboration` | `collaboration.send_mail`, `collaboration.list_messages`, `collaboration.get_message`, `collaboration.list_calendar`, `collaboration.get_user` | `CollaborationSuite` |
 | `cache` | `cache.get`, `cache.set` | `KeyValueCache` |
+| `database` | `database.query`, `database.execute` | `RelationalStore` |
+| `records` | `records.get`, `records.put`, `records.delete`, `records.query` | `DocumentStore` |
 
 `extend_tool_profile_for_integration()` auto-appends agent-facing tool_ids when matching `IntegrationCategory` slots are configured (`integration_tool_profile.py`). Infrastructure-only slots (e.g. `document_parser` for RAG ingest) are **not** auto-enabled.
 
@@ -344,7 +350,7 @@ OpenAI export: `intergrax.tools.exporters.to_openai_tools(registry)` — used by
 
 ## Full tool index
 
-Alphabetical reference — all **67** first-party catalog tools (Phase O + M.6 P6 + W-ML + **T-EXPAND**).
+Alphabetical reference — all **81** first-party catalog tools (Phase O + M.6 P6 + W-ML + **T-EXPAND** + **T4**).
 
 | tool_id | Bundle | Category | Status | Composes / module |
 |---------|--------|----------|--------|-------------------|
@@ -352,7 +358,13 @@ Alphabetical reference — all **67** first-party catalog tools (Phase O + M.6 P
 | `browser.fetch_page` | browser | browser | **Done** | `BrowserAutomation` |
 | `cache.get` | cache | cache | **Done** | `KeyValueCache` |
 | `cache.set` | cache | cache | **Done** | `KeyValueCache` |
+| `collaboration.get_message` | collaboration | collaboration | **Done** | `CollaborationSuite` |
+| `collaboration.get_user` | collaboration | collaboration | **Done** | `CollaborationSuite` |
+| `collaboration.list_calendar` | collaboration | collaboration | **Done** | `CollaborationSuite` |
+| `collaboration.list_messages` | collaboration | collaboration | **Done** | `CollaborationSuite` |
 | `collaboration.send_mail` | collaboration | collaboration | **Done** | `CollaborationSuite` |
+| `database.execute` | database | database | **Done** | `RelationalStore` |
+| `database.query` | database | database | **Done** | `RelationalStore` |
 | `confluence.get_page` | confluence | wiki | **Done** | `confluence` — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
 | `document.parse` | document | document | **Done** | `DocumentParser` |
 | `confluence.search` | confluence | wiki | **Done** | `confluence` (alias) — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
@@ -391,8 +403,14 @@ Alphabetical reference — all **67** first-party catalog tools (Phase O + M.6 P
 | `openai.vector_store.clear` | openai_vector_store | retrieval | **Beta** | OpenAI vector store API — [USAGE](../intergrax/tools/providers/openai_vector_store/USAGE.md) |
 | `openai.vector_store.upload` | openai_vector_store | retrieval | **Beta** | OpenAI Files API — [USAGE](../intergrax/tools/providers/openai_vector_store/USAGE.md) |
 | `pagerduty.trigger_incident` | pagerduty | notification | **Done** | `pagerduty` — [USAGE](../intergrax/tools/providers/pagerduty/USAGE.md) |
+| `rag.delete_documents` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.describe_collection` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `rag.ingest_document` | rag | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `rag.list_collections` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
+| `records.delete` | records | records | **Done** | `DocumentStore` |
+| `records.get` | records | records | **Done** | `DocumentStore` |
+| `records.put` | records | records | **Done** | `DocumentStore` |
+| `records.query` | records | records | **Done** | `DocumentStore` |
 | `rag.retrieve` | rag | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `sandbox.exec` | sandbox | sandbox | **Done** | `sandbox_session` / `sandbox_host` — [USAGE](../intergrax/tools/providers/sandbox/USAGE.md) |
 | `storage.delete` | storage | storage | **Done** | `ObjectStorage` |
@@ -411,12 +429,14 @@ Alphabetical reference — all **67** first-party catalog tools (Phase O + M.6 P
 | `workflow.fetch_logs` | workflow | workflow | **Done** | `workflow_orchestrator` |
 | `workflow.poll` | workflow | workflow | **Done** | `workflow_orchestrator` |
 | `workflow.trigger` | workflow | workflow | **Done** | `workflow_orchestrator` |
+| `workspace.delete_file` | workspace | workspace | **Done** | `ShadowWorkspace` |
 | `workspace.list_files` | workspace | workspace | **Done** | `ShadowWorkspace` |
 | `workspace.read_file` | workspace | workspace | **Done** | `ShadowWorkspace` |
+| `workspace.search` | workspace | workspace | **Done** | `ShadowWorkspace` |
 | `workspace.snapshot` | workspace | workspace | **Done** | `ShadowWorkspace` |
 | `workspace.write_file` | workspace | workspace | **Done** | `ShadowWorkspace` |
 
-**Total:** 67 tools · 28 bundles.
+**Total:** 81 tools · 30 bundles.
 
 ---
 

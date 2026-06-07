@@ -8,7 +8,14 @@ from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.tools.providers.browser.service import BROWSER_FETCH_PAGE_TOOL_ID
 from intergrax.tools.providers.cache.service import CACHE_GET_TOOL_ID, CACHE_SET_TOOL_ID
-from intergrax.tools.providers.collaboration.service import COLLABORATION_SEND_MAIL_TOOL_ID
+from intergrax.tools.providers.collaboration.service import (
+    COLLABORATION_GET_MESSAGE_TOOL_ID,
+    COLLABORATION_GET_USER_TOOL_ID,
+    COLLABORATION_LIST_CALENDAR_TOOL_ID,
+    COLLABORATION_LIST_MESSAGES_TOOL_ID,
+    COLLABORATION_SEND_MAIL_TOOL_ID,
+)
+from intergrax.tools.providers.database.service import DATABASE_EXECUTE_TOOL_ID, DATABASE_QUERY_TOOL_ID
 from intergrax.tools.providers.graph.service import GRAPH_GET_NODE_TOOL_ID, GRAPH_RUN_QUERY_TOOL_ID
 from intergrax.tools.providers.issues.service import (
     ISSUES_ADD_COMMENT_TOOL_ID,
@@ -22,11 +29,25 @@ from intergrax.tools.providers.message_bus.service import (
     MESSAGE_BUS_GET_RESULT_TOOL_ID,
     MESSAGE_BUS_GET_STATUS_TOOL_ID,
 )
+from intergrax.tools.providers.notify.service import NOTIFY_SEND_TOOL_ID
+from intergrax.tools.providers.observability.service import (
+    ERRORS_CAPTURE_TOOL_ID,
+    LOGS_SEARCH_TOOL_ID,
+    METRICS_QUERY_INSTANT_TOOL_ID,
+    TRACES_QUERY_TOOL_ID,
+)
+from intergrax.tools.providers.pagerduty.service import PAGERDUTY_TRIGGER_INCIDENT_TOOL_ID
 from intergrax.tools.providers.platform.service import (
     PLATFORM_EVALUATE_FEATURE_FLAG_TOOL_ID,
     PLATFORM_GET_SECRET_TOOL_ID,
     PLATFORM_GET_WORKFLOW_RUN_TOOL_ID,
     PLATFORM_LIST_CHECK_SUITES_TOOL_ID,
+)
+from intergrax.tools.providers.records.service import (
+    RECORDS_DELETE_TOOL_ID,
+    RECORDS_GET_TOOL_ID,
+    RECORDS_PUT_TOOL_ID,
+    RECORDS_QUERY_TOOL_ID,
 )
 from intergrax.tools.providers.security.service import SECURITY_SCAN_TOOL_ID
 from intergrax.tools.providers.storage.service import (
@@ -73,6 +94,16 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
         STORAGE_PRESIGNED_URL_TOOL_ID,
         STORAGE_DELETE_TOOL_ID,
     ),
+    IntegrationCategory.RELATIONAL_STORE: (
+        DATABASE_QUERY_TOOL_ID,
+        DATABASE_EXECUTE_TOOL_ID,
+    ),
+    IntegrationCategory.DOCUMENT_STORE: (
+        RECORDS_GET_TOOL_ID,
+        RECORDS_PUT_TOOL_ID,
+        RECORDS_DELETE_TOOL_ID,
+        RECORDS_QUERY_TOOL_ID,
+    ),
     IntegrationCategory.BROWSER_AUTOMATION: (BROWSER_FETCH_PAGE_TOOL_ID,),
     IntegrationCategory.SECRETS_STORE: (PLATFORM_GET_SECRET_TOOL_ID,),
     IntegrationCategory.FEATURE_FLAG: (PLATFORM_EVALUATE_FEATURE_FLAG_TOOL_ID,),
@@ -86,8 +117,24 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
         MESSAGE_BUS_GET_RESULT_TOOL_ID,
     ),
     IntegrationCategory.GRAPH_STORE: (GRAPH_RUN_QUERY_TOOL_ID, GRAPH_GET_NODE_TOOL_ID),
-    IntegrationCategory.COLLABORATION_SUITE: (COLLABORATION_SEND_MAIL_TOOL_ID,),
+    IntegrationCategory.COLLABORATION_SUITE: (
+        COLLABORATION_SEND_MAIL_TOOL_ID,
+        COLLABORATION_LIST_MESSAGES_TOOL_ID,
+        COLLABORATION_GET_MESSAGE_TOOL_ID,
+        COLLABORATION_LIST_CALENDAR_TOOL_ID,
+        COLLABORATION_GET_USER_TOOL_ID,
+    ),
     IntegrationCategory.KEY_VALUE_CACHE: (CACHE_GET_TOOL_ID, CACHE_SET_TOOL_ID),
+    IntegrationCategory.NOTIFICATION_CHANNEL: (
+        NOTIFY_SEND_TOOL_ID,
+        PAGERDUTY_TRIGGER_INCIDENT_TOOL_ID,
+    ),
+    IntegrationCategory.OBSERVABILITY_BACKEND: (
+        ERRORS_CAPTURE_TOOL_ID,
+        LOGS_SEARCH_TOOL_ID,
+        METRICS_QUERY_INSTANT_TOOL_ID,
+        TRACES_QUERY_TOOL_ID,
+    ),
 }
 
 

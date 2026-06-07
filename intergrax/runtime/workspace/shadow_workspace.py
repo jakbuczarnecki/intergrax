@@ -102,6 +102,43 @@ class ShadowWorkspace:
         target = self.root / rel
         return target.read_text(encoding="utf-8")
 
+    def delete_file(self, relative_path: str) -> bool:
+        rel = _safe_relative_path(relative_path)
+        target = self.root / rel
+        if not target.is_file():
+            return False
+        target.unlink()
+        return True
+
+    def search_text(
+        self,
+        query: str,
+        *,
+        path_prefix: str = "",
+        case_insensitive: bool = True,
+        max_matches: int = 50,
+    ) -> list[tuple[str, int, str]]:
+        if not query:
+            return []
+        prefix = path_prefix.strip().replace("\\", "/").strip("/")
+        needle = query if not case_insensitive else query.casefold()
+        matches: list[tuple[str, int, str]] = []
+        for artifact in self.list_artifacts():
+            rel_path = artifact.relative_path
+            if prefix and not (rel_path == prefix or rel_path.startswith(f"{prefix}/")):
+                continue
+            try:
+                content = self.read_text(rel_path)
+            except UnicodeDecodeError:
+                continue
+            for line_number, line in enumerate(content.splitlines(), start=1):
+                haystack = line if not case_insensitive else line.casefold()
+                if needle in haystack:
+                    matches.append((rel_path, line_number, line))
+                    if len(matches) >= max_matches:
+                        return matches
+        return matches
+
     def list_artifacts(self) -> list[ShadowArtifact]:
         artifacts: list[ShadowArtifact] = []
         if not self.root.exists():

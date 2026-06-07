@@ -6,17 +6,23 @@ from __future__ import annotations
 from intergrax.tools.core.handler import ServiceToolHandler
 from intergrax.tools.providers.workspace.contracts import (
     WorkspaceArtifactOutput,
+    WorkspaceDeleteFileInput,
+    WorkspaceDeleteFileOutput,
     WorkspaceListFilesInput,
     WorkspaceListFilesOutput,
     WorkspaceReadFileInput,
     WorkspaceReadFileOutput,
+    WorkspaceSearchInput,
+    WorkspaceSearchOutput,
     WorkspaceSnapshotInput,
     WorkspaceSnapshotOutput,
     WorkspaceWriteFileInput,
 )
 from intergrax.tools.providers.workspace.service import (
+    workspace_delete_file,
     workspace_list_files,
     workspace_read_file,
+    workspace_search,
     workspace_snapshot,
     workspace_write_file,
 )
@@ -36,3 +42,11 @@ class WorkspaceListFilesHandler(ServiceToolHandler[WorkspaceListFilesInput, Work
 
 class WorkspaceSnapshotHandler(ServiceToolHandler[WorkspaceSnapshotInput, WorkspaceSnapshotOutput]):
     _service = workspace_snapshot
+
+
+class WorkspaceDeleteFileHandler(ServiceToolHandler[WorkspaceDeleteFileInput, WorkspaceDeleteFileOutput]):
+    _service = workspace_delete_file
+
+
+class WorkspaceSearchHandler(ServiceToolHandler[WorkspaceSearchInput, WorkspaceSearchOutput]):
+    _service = workspace_search

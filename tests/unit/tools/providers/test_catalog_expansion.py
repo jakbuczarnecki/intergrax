@@ -9,6 +9,25 @@ from intergrax.tools.registry.catalog import clear_tool_catalog, get_bundle, lis
 
 pytestmark = pytest.mark.unit
 
+T4_NEW_TOOL_IDS = frozenset(
+    {
+        "database.query",
+        "database.execute",
+        "records.get",
+        "records.put",
+        "records.delete",
+        "records.query",
+        "rag.delete_documents",
+        "rag.describe_collection",
+        "workspace.delete_file",
+        "workspace.search",
+        "collaboration.list_messages",
+        "collaboration.get_message",
+        "collaboration.list_calendar",
+        "collaboration.get_user",
+    }
+)
+
 NEW_TOOL_IDS = frozenset(
     {
         "workspace.write_file",
@@ -58,8 +77,9 @@ def _clean_catalog() -> None:
 def test_register_default_tools_expanded_catalog() -> None:
     register_default_tools()
     registered = frozenset(list_catalog_tool_ids())
-    assert len(registered) == 67
+    assert len(registered) == 81
     assert NEW_TOOL_IDS <= registered
+    assert T4_NEW_TOOL_IDS <= registered
 
 
 def test_new_bundles_present_in_catalog() -> None:
@@ -77,6 +97,8 @@ def test_new_bundles_present_in_catalog() -> None:
         "graph",
         "collaboration",
         "cache",
+        "database",
+        "records",
     ):
         bundle = get_bundle(bundle_id)
         assert bundle.bundle_id == bundle_id

@@ -53,3 +53,32 @@ class WorkspaceSnapshotOutput(BaseModel):
     files: dict[str, str] = Field(default_factory=dict)
     file_count: int = 0
     extra: dict[str, Any] = Field(default_factory=dict)
+
+
+class WorkspaceDeleteFileInput(BaseModel):
+    path: str = Field(..., min_length=1, description="Relative path inside the shadow workspace.")
+
+
+class WorkspaceDeleteFileOutput(BaseModel):
+    path: str
+    deleted: bool = False
+    workspace_id: str = ""
+
+
+class WorkspaceSearchInput(BaseModel):
+    query: str = Field(..., min_length=1, description="Substring to search for in workspace files.")
+    path_prefix: str = Field(default="", description="Optional relative path prefix filter.")
+    case_insensitive: bool = True
+    max_matches: int = Field(default=50, ge=1, le=500)
+
+
+class WorkspaceSearchMatch(BaseModel):
+    path: str
+    line_number: int
+    line: str
+
+
+class WorkspaceSearchOutput(BaseModel):
+    matches: list[WorkspaceSearchMatch] = Field(default_factory=list)
+    match_count: int = 0
+    workspace_id: str = ""
