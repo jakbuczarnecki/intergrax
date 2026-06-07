@@ -32,6 +32,10 @@ def wire_integration_tool_context(
         observability_backend=ctx.observability_backend,
         observability_backends=dict(ctx.observability_backends),
         object_storage=ctx.object_storage or _resolve_optional(integration_profile, IntegrationCategory.OBJECT_STORAGE),
+        relational_store=ctx.relational_store
+        or _resolve_optional(integration_profile, IntegrationCategory.RELATIONAL_STORE),
+        document_store=ctx.document_store
+        or _resolve_optional(integration_profile, IntegrationCategory.DOCUMENT_STORE),
         browser_automation=ctx.browser_automation
         or _resolve_optional(integration_profile, IntegrationCategory.BROWSER_AUTOMATION),
         document_parser=ctx.document_parser or _resolve_optional(integration_profile, IntegrationCategory.DOCUMENT_PARSER),
@@ -46,6 +50,9 @@ def wire_integration_tool_context(
         key_value_cache=ctx.key_value_cache or _resolve_optional(integration_profile, IntegrationCategory.KEY_VALUE_CACHE),
         shadow_workspace=ctx.shadow_workspace,
         memory_view=ctx.memory_view,
+        trace_reader=ctx.trace_reader,
+        evaluation_registry=ctx.evaluation_registry,
+        integration_profile=integration_profile,
         rag_manager=ctx.rag_manager,
         vectorstore_manager=ctx.vectorstore_manager,
         embedding_manager=ctx.embedding_manager,

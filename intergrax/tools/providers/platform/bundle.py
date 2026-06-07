@@ -12,6 +12,8 @@ from intergrax.tools.providers.platform.contracts import (
     PlatformGetWorkflowRunInput,
     PlatformListCheckSuitesInput,
     PlatformListCheckSuitesOutput,
+    PlatformPutSecretInput,
+    PlatformPutSecretOutput,
     PlatformWorkflowRunOutput,
 )
 from intergrax.tools.providers.platform.handlers import (
@@ -19,12 +21,14 @@ from intergrax.tools.providers.platform.handlers import (
     PlatformGetSecretHandler,
     PlatformGetWorkflowRunHandler,
     PlatformListCheckSuitesHandler,
+    PlatformPutSecretHandler,
 )
 from intergrax.tools.providers.platform.service import (
     PLATFORM_EVALUATE_FEATURE_FLAG_TOOL_ID,
     PLATFORM_GET_SECRET_TOOL_ID,
     PLATFORM_GET_WORKFLOW_RUN_TOOL_ID,
     PLATFORM_LIST_CHECK_SUITES_TOOL_ID,
+    PLATFORM_PUT_SECRET_TOOL_ID,
 )
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
@@ -32,6 +36,7 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 PLATFORM_BUNDLE_ID = "platform"
 PLATFORM_TOOL_IDS: tuple[str, ...] = (
     PLATFORM_GET_SECRET_TOOL_ID,
+    PLATFORM_PUT_SECRET_TOOL_ID,
     PLATFORM_EVALUATE_FEATURE_FLAG_TOOL_ID,
     PLATFORM_GET_WORKFLOW_RUN_TOOL_ID,
     PLATFORM_LIST_CHECK_SUITES_TOOL_ID,
@@ -54,6 +59,22 @@ def register_platform_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> N
             tags=("platform", "secrets"),
         ),
         PlatformGetSecretHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=PLATFORM_PUT_SECRET_TOOL_ID,
+            name=PLATFORM_PUT_SECRET_TOOL_ID,
+            description="Create or update a tenant-scoped secret in the configured secrets store.",
+            description_short="Put secret.",
+            input_schema=PlatformPutSecretInput,
+            output_schema=PlatformPutSecretOutput,
+            error_mapping={},
+            side_effects=True,
+            category="platform",
+            risk_level=ToolRiskLevel.CRITICAL,
+            tags=("platform", "secrets"),
+        ),
+        PlatformPutSecretHandler(ctx),
     )
     registry.register(
         ToolContract(

@@ -37,11 +37,17 @@ from intergrax.tools.providers.observability.service import (
     TRACES_QUERY_TOOL_ID,
 )
 from intergrax.tools.providers.pagerduty.service import PAGERDUTY_TRIGGER_INCIDENT_TOOL_ID
+from intergrax.tools.providers.identity.service import (
+    IDENTITY_GET_USER_TOOL_ID,
+    IDENTITY_LIST_TENANTS_TOOL_ID,
+    IDENTITY_VERIFY_TOKEN_TOOL_ID,
+)
 from intergrax.tools.providers.platform.service import (
     PLATFORM_EVALUATE_FEATURE_FLAG_TOOL_ID,
     PLATFORM_GET_SECRET_TOOL_ID,
     PLATFORM_GET_WORKFLOW_RUN_TOOL_ID,
     PLATFORM_LIST_CHECK_SUITES_TOOL_ID,
+    PLATFORM_PUT_SECRET_TOOL_ID,
 )
 from intergrax.tools.providers.records.service import (
     RECORDS_DELETE_TOOL_ID,
@@ -49,7 +55,7 @@ from intergrax.tools.providers.records.service import (
     RECORDS_PUT_TOOL_ID,
     RECORDS_QUERY_TOOL_ID,
 )
-from intergrax.tools.providers.security.service import SECURITY_SCAN_TOOL_ID
+from intergrax.tools.providers.security.service import SECURITY_SCAN_TOOL_ID, SECURITY_SUMMARIZE_FINDINGS_TOOL_ID
 from intergrax.tools.providers.storage.service import (
     STORAGE_DELETE_TOOL_ID,
     STORAGE_GET_TOOL_ID,
@@ -64,7 +70,15 @@ from intergrax.tools.providers.workflow.service import (
 from intergrax.tools.registry.profile import ToolProfile
 
 _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
-    IntegrationCategory.SECURITY_SCANNER: (SECURITY_SCAN_TOOL_ID,),
+    IntegrationCategory.SECURITY_SCANNER: (
+        SECURITY_SCAN_TOOL_ID,
+        SECURITY_SUMMARIZE_FINDINGS_TOOL_ID,
+    ),
+    IntegrationCategory.IDENTITY_PROVIDER: (
+        IDENTITY_VERIFY_TOKEN_TOOL_ID,
+        IDENTITY_GET_USER_TOOL_ID,
+        IDENTITY_LIST_TENANTS_TOOL_ID,
+    ),
     IntegrationCategory.SANDBOX_HOST: ("sandbox.exec",),
     IntegrationCategory.WORKFLOW_ORCHESTRATOR: (
         WORKFLOW_TRIGGER_TOOL_ID,
@@ -105,7 +119,10 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
         RECORDS_QUERY_TOOL_ID,
     ),
     IntegrationCategory.BROWSER_AUTOMATION: (BROWSER_FETCH_PAGE_TOOL_ID,),
-    IntegrationCategory.SECRETS_STORE: (PLATFORM_GET_SECRET_TOOL_ID,),
+    IntegrationCategory.SECRETS_STORE: (
+        PLATFORM_GET_SECRET_TOOL_ID,
+        PLATFORM_PUT_SECRET_TOOL_ID,
+    ),
     IntegrationCategory.FEATURE_FLAG: (PLATFORM_EVALUATE_FEATURE_FLAG_TOOL_ID,),
     IntegrationCategory.CI_CD: (
         PLATFORM_GET_WORKFLOW_RUN_TOOL_ID,

@@ -26,6 +26,15 @@ _HARNESS_RUNTIME_BOUND_TOOLS = (
     "memory.read",
     "memory.write",
     "memory.list_keys",
+    "harness.get_run",
+    "harness.list_runs",
+    "harness.get_run_cost",
+    "harness.get_run_events",
+    "health.check_integration",
+    "health.check_profile",
+    "eval.record_observation",
+    "eval.list_observations",
+    "eval.summarize_release",
 )
 
 _HARNESS_MODALITY_TOOLS = (

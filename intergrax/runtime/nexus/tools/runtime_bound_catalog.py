@@ -12,7 +12,25 @@ from pydantic import BaseModel, ValidationError
 
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
+from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
 from intergrax.runtime.workspace.shadow_workspace import ShadowWorkspace
+from intergrax.tools.providers.harness.contracts import (
+    HarnessGetRunCostInput,
+    HarnessGetRunEventsInput,
+    HarnessGetRunInput,
+    HarnessListRunsInput,
+)
+from intergrax.tools.providers.harness.service import (
+    HARNESS_GET_RUN_COST_TOOL_ID,
+    HARNESS_GET_RUN_EVENTS_TOOL_ID,
+    HARNESS_GET_RUN_TOOL_ID,
+    HARNESS_LIST_RUNS_TOOL_ID,
+    harness_get_run,
+    harness_get_run_cost,
+    harness_get_run_events,
+    harness_list_runs,
+)
+from intergrax.tools.providers.memory.contracts import MemoryListKeysInput, MemoryReadInput, MemoryWriteInput
 from intergrax.tools.providers.memory.service import (
     MEMORY_LIST_KEYS_TOOL_ID,
     MEMORY_READ_TOOL_ID,
@@ -21,7 +39,14 @@ from intergrax.tools.providers.memory.service import (
     memory_read,
     memory_write,
 )
-from intergrax.tools.providers.memory.contracts import MemoryListKeysInput, MemoryReadInput, MemoryWriteInput
+from intergrax.tools.providers.workspace.contracts import (
+    WorkspaceDeleteFileInput,
+    WorkspaceListFilesInput,
+    WorkspaceReadFileInput,
+    WorkspaceSearchInput,
+    WorkspaceSnapshotInput,
+    WorkspaceWriteFileInput,
+)
 from intergrax.tools.providers.workspace.service import (
     WORKSPACE_DELETE_FILE_TOOL_ID,
     WORKSPACE_LIST_FILES_TOOL_ID,
@@ -35,14 +60,6 @@ from intergrax.tools.providers.workspace.service import (
     workspace_search,
     workspace_snapshot,
     workspace_write_file,
-)
-from intergrax.tools.providers.workspace.contracts import (
-    WorkspaceDeleteFileInput,
-    WorkspaceListFilesInput,
-    WorkspaceReadFileInput,
-    WorkspaceSearchInput,
-    WorkspaceSnapshotInput,
-    WorkspaceWriteFileInput,
 )
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -58,6 +75,10 @@ _RUNTIME_BOUND_TOOLS: dict[str, tuple[type[BaseModel], ServiceFn]] = {
     MEMORY_READ_TOOL_ID: (MemoryReadInput, memory_read),
     MEMORY_WRITE_TOOL_ID: (MemoryWriteInput, memory_write),
     MEMORY_LIST_KEYS_TOOL_ID: (MemoryListKeysInput, memory_list_keys),
+    HARNESS_GET_RUN_TOOL_ID: (HarnessGetRunInput, harness_get_run),
+    HARNESS_LIST_RUNS_TOOL_ID: (HarnessListRunsInput, harness_list_runs),
+    HARNESS_GET_RUN_COST_TOOL_ID: (HarnessGetRunCostInput, harness_get_run_cost),
+    HARNESS_GET_RUN_EVENTS_TOOL_ID: (HarnessGetRunEventsInput, harness_get_run_events),
 }
 
 RUNTIME_BOUND_TOOL_IDS: frozenset[str] = frozenset(_RUNTIME_BOUND_TOOLS.keys())
@@ -70,9 +91,16 @@ def is_runtime_bound_tool(tool_name: str) -> bool:
 def build_runtime_bound_context(exec_ctx: RuntimeExecutionContext) -> ToolWiringContext:
     workspace = exec_ctx.metadata.get("shadow_workspace")
     shadow: ShadowWorkspace | None = workspace if isinstance(workspace, ShadowWorkspace) else None
+    trace_reader: RunTraceReader | None = None
+    for key in ("trace_reader", "trace_store"):
+        candidate = exec_ctx.metadata.get(key)
+        if isinstance(candidate, RunTraceReader):
+            trace_reader = candidate
+            break
     return ToolWiringContext(
         shadow_workspace=shadow,
         memory_view=exec_ctx.memory_view,
+        trace_reader=trace_reader,
     )
 
 

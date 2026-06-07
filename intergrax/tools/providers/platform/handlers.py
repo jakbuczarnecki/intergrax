@@ -12,6 +12,8 @@ from intergrax.tools.providers.platform.contracts import (
     PlatformGetWorkflowRunInput,
     PlatformListCheckSuitesInput,
     PlatformListCheckSuitesOutput,
+    PlatformPutSecretInput,
+    PlatformPutSecretOutput,
     PlatformWorkflowRunOutput,
 )
 from intergrax.tools.providers.platform.service import (
@@ -19,11 +21,16 @@ from intergrax.tools.providers.platform.service import (
     platform_get_secret,
     platform_get_workflow_run,
     platform_list_check_suites,
+    platform_put_secret,
 )
 
 
 class PlatformGetSecretHandler(ServiceToolHandler[PlatformGetSecretInput, PlatformGetSecretOutput]):
     _service = platform_get_secret
+
+
+class PlatformPutSecretHandler(ServiceToolHandler[PlatformPutSecretInput, PlatformPutSecretOutput]):
+    _service = platform_put_secret
 
 
 class PlatformEvaluateFeatureFlagHandler(

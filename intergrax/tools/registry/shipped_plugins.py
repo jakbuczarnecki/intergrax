@@ -44,7 +44,11 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
         register_confluence_tools,
     )
     from intergrax.tools.providers.document.bundle import DOCUMENT_BUNDLE_ID, DOCUMENT_TOOL_IDS, register_document_tools
+    from intergrax.tools.providers.eval.bundle import EVAL_BUNDLE_ID, EVAL_TOOL_IDS, register_eval_tools
     from intergrax.tools.providers.graph.bundle import GRAPH_BUNDLE_ID, GRAPH_TOOL_IDS, register_graph_tools
+    from intergrax.tools.providers.harness.bundle import HARNESS_BUNDLE_ID, HARNESS_TOOL_IDS, register_harness_tools
+    from intergrax.tools.providers.health.bundle import HEALTH_BUNDLE_ID, HEALTH_TOOL_IDS, register_health_tools
+    from intergrax.tools.providers.identity.bundle import IDENTITY_BUNDLE_ID, IDENTITY_TOOL_IDS, register_identity_tools
     from intergrax.tools.providers.gitlab.bundle import (
         GITLAB_BUNDLE_ID,
         GITLAB_TOOL_IDS,
@@ -166,7 +170,6 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
             bundle_id=OBSERVABILITY_BUNDLE_ID,
             tool_ids=OBSERVABILITY_TOOL_IDS,
             register_fn=register_observability_tools,
-            status=ToolBundleStatus.BETA,
             description="Metrics, logs, traces, and error capture tools.",
             class_name="ObservabilityToolPlugin",
         ),
@@ -324,6 +327,34 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
             register_fn=register_cache_tools,
             description="Tenant-scoped key-value cache tools.",
             class_name="CacheToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=IDENTITY_BUNDLE_ID,
+            tool_ids=IDENTITY_TOOL_IDS,
+            register_fn=register_identity_tools,
+            description="Identity provider tools (token verify, user profile, tenant directory).",
+            class_name="IdentityToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=HARNESS_BUNDLE_ID,
+            tool_ids=HARNESS_TOOL_IDS,
+            register_fn=register_harness_tools,
+            description="Harness run trace read tools (persisted runs, cost, events).",
+            class_name="HarnessToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=HEALTH_BUNDLE_ID,
+            tool_ids=HEALTH_TOOL_IDS,
+            register_fn=register_health_tools,
+            description="Integration and profile health probe tools.",
+            class_name="HealthToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=EVAL_BUNDLE_ID,
+            tool_ids=EVAL_TOOL_IDS,
+            register_fn=register_eval_tools,
+            description="Harness online evaluation registry tools (V-EVAL).",
+            class_name="EvalToolPlugin",
         ),
     )
     _SHIPPED_TOOL_PLUGINS = plugins

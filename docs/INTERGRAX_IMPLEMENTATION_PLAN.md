@@ -1774,7 +1774,7 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 - `harness.integration_bridge_smoke` skill pack + resolver test fix (skills vs tools `build_registry_from_profile`)
 - Lab harness `wire_lab_tools(harness=True)` enables runtime-bound + bridge tools
 - PoC template `extend_tool_profile_for_integration()` wiring
-- MCP full-catalog export smoke (81 tools)
+- MCP full-catalog export smoke (95 tools)
 
 #### T-EXPAND T4 — Agent Builder Essentials (2026-06-07) — **Done**
 
@@ -1791,10 +1791,23 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 
 **Delivered:** **81** catalog `tool_id` values · **30** shipped bundles.
 
-Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{database,records,...}/`
-- Capability graph compatibility edges for T-EXPAND tool pairs
+#### T-EXPAND T5 — Production Harness Ops (2026-06-07) — **Done**
 
-Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{workspace,memory,knowledge,...}/`
+**Goal:** Production harness operations for identity, persisted run trace read, integration health probes, online evaluation registry, and platform/security extensions.
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `identity` | `identity.verify_token`, `identity.get_user`, `identity.list_tenants` | **Done** |
+| `harness` | `harness.get_run`, `harness.list_runs`, `harness.get_run_cost`, `harness.get_run_events` | **Done** |
+| `health` | `health.check_integration`, `health.check_profile` | **Done** |
+| `eval` | `eval.record_observation`, `eval.list_observations`, `eval.summarize_release` | **Done** |
+| `security` (+1) | `security.summarize_findings` | **Done** |
+| `platform` (+1) | `platform.put_secret` | **Done** |
+| wiring | `trace_reader` / `evaluation_registry` / `integration_profile` ctx slots; runtime-bound `harness.*`; observability bundle promoted STABLE | **Done** |
+
+**Delivered:** **95** catalog `tool_id` values · **34** shipped bundles.
+
+Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{identity,harness,health,eval,...}/`
 
 #### O.5 — Unified tool model (migration design)
 

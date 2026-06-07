@@ -16,6 +16,16 @@ class PlatformGetSecretOutput(BaseModel):
     value: str
 
 
+class PlatformPutSecretInput(BaseModel):
+    path: str = Field(..., min_length=1)
+    value: str = Field(..., min_length=1)
+
+
+class PlatformPutSecretOutput(BaseModel):
+    path: str
+    stored: bool = True
+
+
 class PlatformEvaluateFeatureFlagInput(BaseModel):
     flag_key: str = Field(..., min_length=1)
     tenant_id: str = Field(..., min_length=1)

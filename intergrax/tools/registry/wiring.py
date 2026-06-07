@@ -30,7 +30,11 @@ from intergrax.integrations.contracts.security_scanner import SecurityScannerBac
 from intergrax.integrations.contracts.speech_provider import SpeechProviderBackend
 from intergrax.integrations.contracts.wiki_knowledge import WikiKnowledge
 from intergrax.integrations.contracts.workflow_orchestrator import WorkflowOrchestratorBackend
-from intergrax.tools.registry.runtime_bindings import TaskMemoryViewBinding
+from intergrax.tools.registry.runtime_bindings import (
+    OnlineEvaluationRegistryBinding,
+    RunTraceReaderBinding,
+    TaskMemoryViewBinding,
+)
 
 if TYPE_CHECKING:
     from intergrax.runtime.workspace.shadow_workspace import ShadowWorkspace
@@ -66,6 +70,9 @@ class ToolWiringContext:
     key_value_cache: KeyValueCache | None = None
     shadow_workspace: ShadowWorkspace | None = None
     memory_view: TaskMemoryViewBinding | None = None
+    trace_reader: RunTraceReaderBinding | None = None
+    evaluation_registry: OnlineEvaluationRegistryBinding | None = None
+    integration_profile: Any | None = None
     rag_manager: Any | None = None
     vectorstore_manager: Any | None = None
     embedding_manager: Any | None = None
@@ -170,6 +177,7 @@ class ToolWiringContext:
             identity_provider=_optional(IntegrationCategory.IDENTITY_PROVIDER),
             speech_provider=_optional(IntegrationCategory.SPEECH_PROVIDER),
             workflow_orchestrator=_optional(IntegrationCategory.WORKFLOW_ORCHESTRATOR),
+            integration_profile=profile,
             rag_manager=rag_manager,
             vectorstore_manager=vectorstore_manager,
             embedding_manager=embedding_manager,

@@ -11,6 +11,24 @@ from intergrax.contracts.memory_write_policy import MemoryWritePolicy
 
 
 @runtime_checkable
+class RunTraceReaderBinding(Protocol):
+    """Structural binding for persisted run trace reads (``RunTraceReader``)."""
+
+    def read_run(self, run_id: str, tenant_id: str) -> Any: ...
+
+    def list_runs(self, tenant_id: str, *, limit: int = 50) -> List[Any]: ...
+
+
+@runtime_checkable
+class OnlineEvaluationRegistryBinding(Protocol):
+    """Append-only harness evaluation registry (V-EVAL / W-OPS.11)."""
+
+    def append(self, observation: Any) -> None: ...
+
+    def list_observations(self) -> List[Any]: ...
+
+
+@runtime_checkable
 class TaskMemoryViewBinding(Protocol):
     """Structural binding for policy-scoped task memory (``PolicyScopedMemoryView``)."""
 

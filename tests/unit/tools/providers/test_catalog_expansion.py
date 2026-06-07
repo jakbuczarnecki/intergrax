@@ -9,6 +9,25 @@ from intergrax.tools.registry.catalog import clear_tool_catalog, get_bundle, lis
 
 pytestmark = pytest.mark.unit
 
+T5_NEW_TOOL_IDS = frozenset(
+    {
+        "identity.verify_token",
+        "identity.get_user",
+        "identity.list_tenants",
+        "harness.get_run",
+        "harness.list_runs",
+        "harness.get_run_cost",
+        "harness.get_run_events",
+        "health.check_integration",
+        "health.check_profile",
+        "eval.record_observation",
+        "eval.list_observations",
+        "eval.summarize_release",
+        "security.summarize_findings",
+        "platform.put_secret",
+    }
+)
+
 T4_NEW_TOOL_IDS = frozenset(
     {
         "database.query",
@@ -77,9 +96,10 @@ def _clean_catalog() -> None:
 def test_register_default_tools_expanded_catalog() -> None:
     register_default_tools()
     registered = frozenset(list_catalog_tool_ids())
-    assert len(registered) == 81
+    assert len(registered) == 95
     assert NEW_TOOL_IDS <= registered
     assert T4_NEW_TOOL_IDS <= registered
+    assert T5_NEW_TOOL_IDS <= registered
 
 
 def test_new_bundles_present_in_catalog() -> None:
@@ -99,6 +119,10 @@ def test_new_bundles_present_in_catalog() -> None:
         "cache",
         "database",
         "records",
+        "identity",
+        "harness",
+        "health",
+        "eval",
     ):
         bundle = get_bundle(bundle_id)
         assert bundle.bundle_id == bundle_id

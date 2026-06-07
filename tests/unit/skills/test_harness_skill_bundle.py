@@ -71,4 +71,5 @@ def test_harness_skill_resolver_merges_platform_pack() -> None:
     )
     assert "rag.retrieve" in pack.tool_ids
     assert "websearch.query" in pack.tool_ids
-    assert "sandbox.exec" in pack.tool_ids
+    assert "harness.get_run" in pack.tool_ids
+    assert "harness.get_run_events" in pack.tool_ids
