@@ -1915,8 +1915,8 @@ Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{workfl
 | Area | Platform behavior | Product follow-up |
 |------|-------------------|-------------------|
 | `notify.schedule` | Records deferred delivery in `ScheduledNotificationBinding` (in-memory default via Tier-3 wiring) | Production dispatcher/cron in application host |
-| `message_bus.purge_completed` | Optional `TaskQueue.purge_completed` — default returns `0` | Implement on queue backends that maintain a task index |
-| `pagerduty.acknowledge_incident` | Requires optional `acknowledge_incident` on notification adapter | PagerDuty adapter extension when ops needs it |
+| `message_bus.purge_completed` | **Done** — KV task index on broker queues (`rabbitmq`, `kafka`); Celery unchanged | Residual: Celery result-backend purge |
+| `pagerduty.acknowledge_incident` | **Done** — `PagerDutyEventsClient.acknowledge_incident` + adapter + typed `PagerDutyIncidentChannel` | — |
 
 Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{workspace,notify,interaction,eval,storage,memory,pagerduty,message_bus,records}/`
 
@@ -5656,7 +5656,7 @@ Verify (every harness PR):
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
 
-**Maintenance depth (2026-06-07):** **OBS-DEPTH.1 Done** — `build_unified_run_journal()` merges persisted `RuntimeEvent` store + trace-bridge view; debug trace API uses journal when `include_runtime=true` and runtime event persistence is configured. Residual: live `LLM_CALL` bus emit on every adapter path (trace-bridge covers persisted trace).
+**Maintenance depth (2026-06-07):** **OBS-DEPTH.1 Done** — unified run journal. **T10-DEPTH.1 Done** — broker task index + PagerDuty acknowledge adapter.
 
 ### 6.1ah Harness implementation queue — FAUDIT-32 remediation (closed)
 

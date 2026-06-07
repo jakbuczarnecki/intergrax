@@ -152,6 +152,18 @@ class FakePagerDutyChannel:
     def __init__(self) -> None:
         self.acked: list[str] = []
 
+    def trigger_incident(
+        self,
+        *,
+        summary: str,
+        severity: str = "error",
+        source: str = "intergrax",
+        custom_details=None,
+        dedup_key: str | None = None,
+    ) -> str:
+        del summary, severity, source, custom_details
+        return dedup_key or "dedup-generated"
+
     def acknowledge_incident(self, *, dedup_key: str, note: str | None = None) -> None:
         del note
         self.acked.append(dedup_key)

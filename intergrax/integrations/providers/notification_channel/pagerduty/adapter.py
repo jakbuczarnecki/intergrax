@@ -46,6 +46,14 @@ class PagerDutyNotificationChannel:
             dedup_key=dedup_key,
         )
 
+    def acknowledge_incident(
+        self,
+        *,
+        dedup_key: str,
+        note: str | None = None,
+    ) -> None:
+        self._client.acknowledge_incident(dedup_key=dedup_key, note=note)
+
     def health(self) -> HealthStatus:
         return HealthStatus(
             slug="pagerduty",

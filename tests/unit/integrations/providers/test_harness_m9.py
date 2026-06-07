@@ -86,6 +86,9 @@ class _FakePagerDutyClient:
     def trigger_incident(self, **kwargs: Any) -> str:
         return "dedup-abc"
 
+    def acknowledge_incident(self, *, dedup_key: str, note: str | None = None) -> None:
+        _ = dedup_key, note
+
     def send_notification(self, *, subject: str, body: str, task_id: str) -> None:
         _ = subject, body, task_id
 

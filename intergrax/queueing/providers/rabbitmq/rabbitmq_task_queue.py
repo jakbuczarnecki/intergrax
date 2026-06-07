@@ -11,8 +11,9 @@ import uuid
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.queueing.contracts.message_producer import MessageProducer
 from intergrax.queueing.contracts.task_queue import (
-    TaskRequest,
     TaskHandle,
+    TaskRequest,
+    TaskStatus,
 )
 from intergrax.queueing.providers.broker_task_queue_base import (
     BrokerBackedTaskQueueBase,
@@ -56,6 +57,12 @@ class RabbitMQTaskQueue(BrokerBackedTaskQueueBase):
             key=self._status_key(task_id),
             value=b"PENDING",
         )
+        self.register_task_index(
+            tenant_id=request.tenant_id,
+            task_id=task_id,
+            task_name=request.task_name,
+            status=TaskStatus.PENDING,
+        )
 
         encoded_payload: str = base64.b64encode(request.payload).decode("ascii")
 
@@ -64,6 +71,7 @@ class RabbitMQTaskQueue(BrokerBackedTaskQueueBase):
             "tenant_id": request.tenant_id,
             "run_id": request.run_id,
             "task_name": request.task_name,
+            "provider": self._provider_name,
             "payload": encoded_payload,
             "idempotency_key": request.idempotency_key,
         }

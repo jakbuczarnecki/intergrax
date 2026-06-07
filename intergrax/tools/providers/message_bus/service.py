@@ -116,7 +116,7 @@ def message_bus_purge_completed(
     ctx: ToolWiringContext,
     params: MessageBusPurgeCompletedInput,
 ) -> MessageBusPurgeCompletedOutput:
-    """Purge completed tasks; returns 0 when the configured ``TaskQueue`` has no index."""
+    """Purge completed tasks from broker-backed queue indexes (returns 0 for backends without index)."""
     bus = _require_bus(ctx)
     purged = bus.purge_completed(
         params.tenant_id.strip(),
