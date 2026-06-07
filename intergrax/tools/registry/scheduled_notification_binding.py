@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""In-memory scheduled notification store for ``notify.schedule`` / ``notify.list_scheduled``."""
+"""In-memory scheduled notification store for ``notify.schedule`` (Tier-3 wiring default)."""
 
 from __future__ import annotations
 

@@ -82,6 +82,7 @@ def notify_send_batch(ctx: ToolWiringContext, params: NotifySendBatchInput) -> N
 
 
 def notify_schedule(ctx: ToolWiringContext, params: NotifyScheduleInput) -> NotifyScheduleOutput:
+    """Record a deferred notification; delivery requires a Tier-3 scheduler/dispatcher."""
     scheduler = _require_scheduler(ctx)
     schedule_id = scheduler.schedule(
         tenant_id=params.tenant_id.strip(),

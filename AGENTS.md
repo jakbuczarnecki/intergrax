@@ -19,6 +19,8 @@ Tier-3  applications/        Deployable product environments
 **Strategic goal:** production-grade Harness AI aligned with modern Agent Engineering practice.  
 **Source:** [docs/INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
+**Documentation boundary:** `docs/intergrax_runtime_architecture.md` and `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` cover the **Harness / Agent OS platform** only. Each **business environment** (`applications/<product>/`) and **business agent** (`agents/<name>/`) has its own architecture and implementation plan — do not treat platform canon as the product deployment plan.
+
 ---
 
 ## Before you write code

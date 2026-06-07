@@ -4,6 +4,8 @@
 **Composition engine:** [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md)  
 **Architecture:** `docs/intergrax_runtime_architecture.md` §7.4.8–§7.4.10
 
+> **Documentation boundary:** Platform docs in `docs/` (architecture canon, `INTERGRAX_IMPLEMENTATION_PLAN.md`) describe the **Harness** and how to host applications. Each product under `applications/<name>/` maintains its own **`ARCHITECTURE.md`**, **`IMPLEMENTATION_PLAN.md`**, and deployment notes — those are **not** duplicated in the platform plan.
+
 Each folder under `applications/` is a **self-contained execution environment**: host, env, agent roster, integrations, and (when scaffolded) Docker.  
 Tier-2 agent logic lives in `agents/` — not here.
 

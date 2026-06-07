@@ -1,8 +1,18 @@
 # Intergrax — Documentation
 
-**Last updated:** 2026-06-06 (FAUDIT-32 remediation Done; Band 2ad closed; §6.1 maintenance)
+**Last updated:** 2026-06-07 (T-EXPAND T10 Done · **150** catalog tools · **40** bundles)
 
-The `docs/` folder holds the canonical platform documentation.
+The `docs/` folder holds the canonical **Harness AI / Agent OS platform** documentation.
+
+### What lives here vs elsewhere
+
+| In `docs/` (platform) | Outside `docs/` (product / domain) |
+|------------------------|-------------------------------------|
+| Architecture canon, Nexus, Tier-0 catalogs, Harness maintenance plan | `applications/<product>/ARCHITECTURE.md` + `IMPLEMENTATION_PLAN.md` per business environment |
+| Default implementation queue (§6.1), T-EXPAND tool waves | `agents/<name>/ARCHITECTURE.md` + agent roadmap per business agent |
+| How to wire agents and application hosts on the Harness | Domain logic, E2E product milestones, customer deployment |
+
+**Rule:** Platform architecture and [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) cover **running environments on the Harness**, not replacing per-product or per-agent documentation.
 
 **Discovery & AI context files** (repository root — route here, do not duplicate canon):
 
@@ -25,7 +35,7 @@ The `docs/` folder holds the canonical platform documentation.
 | [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; **FAUDIT-32 Done** (Band 2ad, 23/23 + §6.1ai); **M.6 P6 Done** (Band 2ac, 32/32); gate **901**; default queue = **§6.1 maintenance** |
 | [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) | **Agent workflow** — scaffold → register → run → inspect → evaluate |
 | [**INTEGRATIONS.md**](INTEGRATIONS.md) | **Integration catalog** — **167** providers, contracts, wiring, usage links |
-| [**TOOLS.md**](TOOLS.md) | **Tool catalog** — **36** LLM/MCP tools in **16** bundles, engine status, four-layer stack |
+| [**TOOLS.md**](TOOLS.md) | **Tool catalog** — **150** LLM/MCP tools in **40** bundles, engine status, four-layer stack |
 | [**SKILLS.md**](SKILLS.md) | **Skill Library** — composable capability packs, registry, importers |
 | [**EXTENSION_AUTHOR_GUIDE.md**](EXTENSION_AUTHOR_GUIDE.md) | **Tier-0 plugins** — integrations, tools, skills; entry points, bootstrap |
 | [**MODALITY.md**](MODALITY.md) | **Model & modality plane** — vision (YOLO/ONNX/…), audio/speech, classical ML, Hugging Face roles |
@@ -65,6 +75,7 @@ Adaptive Harness (L4)     →  ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md · 
 | I want to… | Read |
 |------------|------|
 | Understand strategic direction | [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) |
+| **Platform vs product/agent docs** | [Strategy §Documentation boundary](INTERGRAX_DEVELOPMENT_STRATEGY.md#documentation-boundary) · [Architecture §1.1](intergrax_runtime_architecture.md#11-documentation-boundary-platform-vs-product) · [Plan §4.0a](INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business) |
 | Understand the platform | Strategy doc, then implementation plan §0, then architecture canon §1–§5 |
 | Infrastructure vs business scope | [INTERGRAX_IMPLEMENTATION_PLAN.md §4.0a](INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business) |
 | See what to implement next (harness) | [§6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) maintenance only · [§6.3](INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only) product work (deferred) |

@@ -13,7 +13,7 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 | [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md) | **External tool plugins** — `ToolPlugin`, entry points, MCP export |
 | [intergrax/tools/USAGE.md](../intergrax/tools/USAGE.md) | **Operational guide** — wire tools in Tier-3 apps and invoke from agents |
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.6–§7.1.7, §22 | Architecture canon — Tool Library, unified tool model |
-| [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase O · **T-EXPAND** | Phase status, catalog expansion waves T1–T3 |
+| [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase O · **T-EXPAND** | Phase status, catalog expansion waves T1–T10 |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase V | Architecture hardening: security/cost governance and evaluation discipline (`V-SEC.*`, `V-COST.*`, `V-EVAL.*`) |
 | [INTEGRATIONS.md](INTEGRATIONS.md) | **167** backend adapters tools compose (not called directly by agents) |
 | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) Appendix E | How agents declare `allowed_tools` vs applications wire backends |
@@ -406,6 +406,7 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `eval.list_observations` | eval | eval | **Done** | `OnlineEvaluationRegistry` (V-EVAL) |
 | `eval.record_observation` | eval | eval | **Done** | `OnlineEvaluationRegistry` (V-EVAL) |
 | `eval.summarize_release` | eval | eval | **Done** | `OnlineEvaluationRegistry` (V-EVAL) |
+| `eval.export_observations` | eval | eval | **Done** (T10) | `OnlineEvaluationRegistry` (V-EVAL) |
 | `confluence.search` | confluence | wiki | **Done** | `confluence` (alias) — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
 | `confluence.search_pages` | confluence | wiki | **Done** | `confluence` — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
 | `errors.capture` | observability | observability | **Done** | `sentry` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
@@ -425,6 +426,7 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `hitl.summarize_queue` | hitl | hitl | **Done** | `HumanDecisionStoreBinding` |
 | `interaction.get_last_input` | interaction | interaction | **Done** | `SessionStorageBinding` |
 | `interaction.list_sessions` | interaction | interaction | **Done** | `SessionStorageBinding` |
+| `interaction.get_session_history` | interaction | interaction | **Done** (T10) | `SessionStorageBinding` |
 | `issues.add_comment` | issues | issues | **Done** | `IssueTracker` |
 | `issues.create_issue` | issues | issues | **Done** | `IssueCreator` |
 | `issues.get_issue` | issues | issues | **Done** | `IssueTracker` |
@@ -440,11 +442,13 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `memory.list_keys` | memory | memory | **Done** | `TaskMemoryViewBinding` |
 | `memory.read` | memory | memory | **Done** | `TaskMemoryViewBinding` |
 | `memory.write` | memory | memory | **Done** | `TaskMemoryViewBinding` |
+| `memory.delete_key` | memory | memory | **Done** (T10) | `TaskMemoryViewBinding` |
 | `message_bus.cancel` | message_bus | message_bus | **Done** | `MessageBus` |
 | `message_bus.enqueue` | message_bus | message_bus | **Done** | `MessageBus` |
 | `message_bus.get_result` | message_bus | message_bus | **Done** | `MessageBus` |
 | `message_bus.get_status` | message_bus | message_bus | **Done** | `MessageBus` |
 | `message_bus.list_tasks` | message_bus | message_bus | **Done** | `MessageBus` |
+| `message_bus.purge_completed` | message_bus | message_bus | **Done** (T10) | `MessageBus` (`TaskQueue.purge_completed`) |
 | `logs.search` | observability | observability | **Done** | `elasticsearch` / `opensearch` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
 | `logs.tail` | observability | observability | **Done** | `elasticsearch` / `opensearch` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
 | `metrics.query_instant` | observability | observability | **Done** | `prometheus` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
@@ -454,6 +458,7 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `ml.predict` | ml | ml | **Done** | `model_inference` |
 | `notify.send` | notify | notification | **Done** | `notification_channel` slug — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
 | `notify.send_batch` | notify | notification | **Done** | `notification_channel` slug — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.schedule` | notify | notification | **Done** (T10) | `ScheduledNotificationBinding` — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
 | `platform.evaluate_feature_flag` | platform | platform | **Done** | `FeatureFlagBackend` |
 | `platform.get_secret` | platform | platform | **Done** | `SecretsStore` |
 | `platform.put_secret` | platform | platform | **Done** | `SecretsStore` (CRITICAL risk) |
@@ -466,6 +471,7 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `openai.vector_store.clear` | openai_vector_store | retrieval | **Beta** | OpenAI vector store API — [USAGE](../intergrax/tools/providers/openai_vector_store/USAGE.md) |
 | `openai.vector_store.upload` | openai_vector_store | retrieval | **Beta** | OpenAI Files API — [USAGE](../intergrax/tools/providers/openai_vector_store/USAGE.md) |
 | `pagerduty.trigger_incident` | pagerduty | notification | **Done** | `pagerduty` — [USAGE](../intergrax/tools/providers/pagerduty/USAGE.md) |
+| `pagerduty.acknowledge_incident` | pagerduty | notification | **Done** (T10) | `pagerduty` adapter — [USAGE](../intergrax/tools/providers/pagerduty/USAGE.md) |
 | `rag.check_index_status` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `rag.delete_documents` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `rag.describe_collection` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
@@ -479,6 +485,7 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `records.get` | records | records | **Done** | `DocumentStore` |
 | `records.put` | records | records | **Done** | `DocumentStore` |
 | `records.query` | records | records | **Done** | `DocumentStore` |
+| `records.count` | records | records | **Done** (T10) | `DocumentStore` |
 | `rag.retrieve` | rag | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `rag.rerank` | rag | retrieval | **Done** | `reranker_manager` / `RerankProvider` |
 | `sandbox.exec` | sandbox | sandbox | **Done** | `sandbox_session` / `sandbox_host` — [USAGE](../intergrax/tools/providers/sandbox/USAGE.md) |
@@ -486,6 +493,7 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `storage.get` | storage | storage | **Done** | `ObjectStorage` |
 | `storage.presigned_url` | storage | storage | **Done** | `ObjectStorage` |
 | `storage.put` | storage | storage | **Done** | `ObjectStorage` |
+| `storage.exists` | storage | storage | **Done** (T10) | `ObjectStorage` |
 | `security.scan` | security | security | **Done** | `security_scanner` (`trivy`, `semgrep`, `snyk`) |
 | `security.summarize_findings` | security | security | **Done** | pure aggregation (no backend) |
 | `speech.synthesize` | speech | speech | **Done** | `SpeechProviderBackend` |
@@ -508,6 +516,8 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `workspace.search` | workspace | workspace | **Done** | `ShadowWorkspace` |
 | `workspace.snapshot` | workspace | workspace | **Done** | `ShadowWorkspace` |
 | `workspace.write_file` | workspace | workspace | **Done** | `ShadowWorkspace` |
+| `workspace.export_artifact` | workspace | workspace | **Done** (T10) | `ShadowWorkspace` + `ObjectStorage` |
+| `workspace.import_artifact` | workspace | workspace | **Done** (T10) | `ShadowWorkspace` + `ObjectStorage` |
 
 **Total:** 150 tools · 40 bundles.
 

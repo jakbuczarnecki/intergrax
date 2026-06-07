@@ -37,6 +37,11 @@ async def test_session_storage_tool_binding_lists_sessions_and_last_input() -> N
     last = binding.get_last_user_input("tenant-a", session.id)
     assert last == "hello from session"
 
+    history = binding.get_session_history("tenant-a", session.id, limit=10)
+    assert len(history) == 1
+    assert history[0]["role"] == "user"
+    assert history[0]["content"] == "hello from session"
+
 
 def test_wire_session_storage_tool_binding_attaches_binding() -> None:
     storage = InMemorySessionStorage()

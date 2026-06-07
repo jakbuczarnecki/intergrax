@@ -42,6 +42,25 @@ This document is an architectural and implementation guide.
 
 ---
 
+# 1.1 Documentation boundary (platform vs product)
+
+**In scope for this document and for [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md):**
+
+- **Intergrax Harness AI / Agent OS** — Tier-0 platform, Tier-1 Nexus runtime, reference Tier-2/Tier-3 wiring patterns, and the **infrastructure** to run agent environments.
+
+**Out of scope (each artifact owns its own canon):**
+
+| Artifact | Own documentation (architecture · roadmap · implementation) |
+|----------|----------------------------------------------------------------|
+| **Tier-3 business environment** (`applications/<product>/`) | `ARCHITECTURE.md`, `IMPLEMENTATION_PLAN.md`, product `README.md` — e.g. [`applications/local_workspace_application/`](../applications/local_workspace_application/) |
+| **Tier-2 business agent** (`agents/<name>/`) | `ARCHITECTURE.md`, agent `README.md`, local notebooks/tests — e.g. `agents/local_indexer/` |
+
+Platform docs describe **how to compose** agents and application hosts on the Harness. They do **not** replace product-specific architecture or deployment plans for a given business environment or business agent.
+
+Navigation: [`docs/README.md`](README.md) · [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) §Documentation boundary · plan [§4.0a](INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business)
+
+---
+
 # 2. Executive Summary
 
 Intergrax is an AI Operating System / Agent Runtime / **Harness AI environment**.

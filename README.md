@@ -75,6 +75,21 @@ Intergrax is **not** a chatbot, a prompt collection, a single agent, a workflow 
 
 Canon: [architecture §3–§4](docs/intergrax_runtime_architecture.md) · [ideal Harness AI model](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 
+### Documentation boundary
+
+Repository **`docs/`** architecture canon and **[implementation plan](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)** describe the **Harness AI / Agent OS platform** — infrastructure to run and govern agent environments.
+
+They **do not** replace per-product or per-agent documentation:
+
+| Layer | Platform docs (`docs/`) | Own docs (mandatory for domain work) |
+|-------|-------------------------|--------------------------------------|
+| Tier-3 business environment | Wiring patterns, `applications/USAGE.md` | `applications/<product>/ARCHITECTURE.md`, `IMPLEMENTATION_PLAN.md` |
+| Tier-2 business agent | [Agent creation guide](docs/AGENT_CREATION_GUIDE.md), scaffold workflow | `agents/<name>/ARCHITECTURE.md`, agent README, local plan |
+
+Example: [Local Knowledge Workspace](applications/local_workspace_application/ARCHITECTURE.md) is documented under its application folder, not in the platform implementation plan.
+
+Details: [Strategy §Documentation boundary](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md#documentation-boundary) · [Architecture §1.1](docs/intergrax_runtime_architecture.md#11-documentation-boundary-platform-vs-product) · [Plan §4.0a](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business)
+
 ---
 
 ## Harness AI — the core idea
@@ -777,6 +792,8 @@ This is **not classical reinforcement learning** (neural policy training, uncons
 
 All platform documentation lives in [`docs/`](docs/). **One source of truth per topic.**
 
+**Scope:** These documents cover the **Intergrax Harness / Agent OS platform** only. Each **business environment** (`applications/<product>/`) and **business agent** (`agents/<name>/`) has its own architecture and implementation plan — see [Documentation boundary](#documentation-boundary) above.
+
 ### Strategy and architecture
 
 | Document | Read when you want to… |
@@ -803,7 +820,7 @@ All platform documentation lives in [`docs/`](docs/). **One source of truth per 
 | Document | Read when you want to… |
 |----------|------------------------|
 | [INTEGRATIONS.md](docs/INTEGRATIONS.md) | **167 providers** — contracts, env vars, per-slug USAGE links |
-| [TOOLS.md](docs/TOOLS.md) | Tool Library — atomic LLM/MCP operations, migration from legacy flags |
+| [TOOLS.md](docs/TOOLS.md) | Tool Library — **150** catalog tools · **40** bundles; atomic LLM/MCP operations |
 | [SKILLS.md](docs/SKILLS.md) | Skill Library — manifests, importers, harness presets |
 | [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) | 19 LLM providers — `LLMAdapterResponse` envelope, streaming, tools, metrics |
 | [MODALITY.md](docs/MODALITY.md) | Vision, audio, ML — three modality planes |

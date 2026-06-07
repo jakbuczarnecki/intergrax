@@ -14,7 +14,16 @@ Principle: **evolve, not rewrite** · **reuse Tier-0** (canon §5.2)
 
 ## Documentation model
 
-Do not maintain separate status/readiness/roadmap files. This plan is the **only** live implementation document:
+Do not maintain separate status/readiness/roadmap files. This plan is the **only** live **platform (Harness / Agent OS)** implementation document:
+
+### Documentation boundary
+
+| Covers | Does **not** cover |
+|--------|---------------------|
+| Harness AI platform, Nexus Agent OS, Tier-0 catalogs, reference hosts, §6.1 maintenance, T-EXPAND tool waves | Architecture, roadmap, or deployment plan of a **specific business environment** (`applications/<product>/`) |
+| How Tier-2 agents and Tier-3 apps **plug into** the Harness | Architecture, roadmap, or deployment plan of a **specific business agent** (`agents/<name>/`) |
+
+Each **business environment** and each **business agent** maintains its own `ARCHITECTURE.md`, local implementation plan, and product roadmap. See [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business) and [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) §1.1.
 
 | Topic | Where |
 |-------|--------|
@@ -1900,6 +1909,14 @@ Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{workfl
 **Delivered:** **150** catalog `tool_id` values · **40** shipped bundles.
 
 **Verification:** `164 passed` (`tests/unit/tools/providers/` + exporters) · `check_harness_no_getattr.py` OK · MCP full-catalog export smoke (**150** tools)
+
+**Closeout notes (accepted platform limits):**
+
+| Area | Platform behavior | Product follow-up |
+|------|-------------------|-------------------|
+| `notify.schedule` | Records deferred delivery in `ScheduledNotificationBinding` (in-memory default via Tier-3 wiring) | Production dispatcher/cron in application host |
+| `message_bus.purge_completed` | Optional `TaskQueue.purge_completed` — default returns `0` | Implement on queue backends that maintain a task index |
+| `pagerduty.acknowledge_incident` | Requires optional `acknowledge_incident` on notification adapter | PagerDuty adapter extension when ops needs it |
 
 Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{workspace,notify,interaction,eval,storage,memory,pagerduty,message_bus,records}/`
 
@@ -4524,6 +4541,8 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 ### 4.0a Implementation scope split (infrastructure vs business)
 
 **Canonical rule:** Default implementation queue = **infrastructure only** (Bands 1–2g + §6.1). **Business** work runs only after explicit product prioritization — **[§6.3](#63-end-of-plan--deferred-product-work-only)**.
+
+**Documentation rule:** This plan and [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) document **platform** delivery (Harness / Agent OS). They do **not** subsume `applications/<product>/IMPLEMENTATION_PLAN.md` or `agents/<name>/` product roadmaps — each business environment and business agent owns its architecture and deployment narrative.
 
 | Layer | Bands / phases | What it includes | Default queue |
 |-------|----------------|------------------|---------------|
