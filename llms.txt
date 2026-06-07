@@ -44,7 +44,7 @@ Intergrax is a **production-grade Harness AI platform** — not a chatbot or sin
 - docs/INTERGRAX_IMPLEMENTATION_PLAN.md — phase tracker, gates, maintenance queue (§6.1)
 - Harness platform: **complete** (maintenance-only default queue)
 - Regression gate: `uv run pytest -m gate -q`
-- Business agents (Phase K): **end of plan** — deferred until explicit product decision
+- Business agents (Phase K): K.1/K.2 deferred; **Local Knowledge Workspace (LKW)** active — applications/local_workspace_application/ARCHITECTURE.md · plan §6.3a LKW.*
 
 ## Architecture & maturity
 

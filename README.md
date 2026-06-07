@@ -367,6 +367,7 @@ NexusLoop + IntegrationProfile + FastAPI  →  HTTP / Docker in production
 | [`lab_application/`](applications/lab_application/) | Universal lab — multiple agents, debug API, `IntegrationProfile.lab_stack()` |
 | [`legal_application/`](applications/legal_application/) | Product host — scaffold `LegalAgent`, auth, FastAPI core |
 | [`research_application/`](applications/research_application/) | Multi-agent HTTP host — research + summary agents |
+| [`local_workspace_application/`](applications/local_workspace_application/) | **Local Knowledge Workspace (LKW)** — local file index, search, synthesis ([ARCHITECTURE.md](applications/local_workspace_application/ARCHITECTURE.md)) |
 
 **Usage guides:**
 

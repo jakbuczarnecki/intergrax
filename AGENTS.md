@@ -153,7 +153,7 @@ Full local suite: `scripts\test.bat unit` (Windows) or equivalent `uv run pytest
 | `intergrax/rag/` | RAG engine |
 | `intergrax/scaffold/` | Scaffolding CLI |
 | `agents/` | Tier-2 agents |
-| `applications/` | Tier-3 application hosts |
+| `applications/` | Tier-3 application hosts (`local_workspace_application` — LKW product) |
 | `docs/` | Canonical documentation |
 | `tests/` | Unit, integration, acceptance tests |
 | `scripts/` | Harness CI scripts |
