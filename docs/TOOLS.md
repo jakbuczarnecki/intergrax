@@ -1,6 +1,6 @@
 # Intergrax Tool Library
 
-**Last updated:** 2026-06-02
+**Last updated:** 2026-06-07 — **16 bundles** · **36 catalog tools** (verified via `register_default_tools()`)
 
 The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
 
@@ -99,7 +99,7 @@ registry = build_registry_from_profile(
 
 ## Tool engine (implemented today)
 
-These components exist in the repository **before** the full provider catalog ships:
+Runtime tool engine (Phase O **Done** — full **36-tool** catalog registered):
 
 | Component | Path | Status |
 |-----------|------|--------|
@@ -119,9 +119,24 @@ These components exist in the repository **before** the full provider catalog sh
 
 ---
 
+## Catalog summary
+
+| Metric | Count |
+|--------|------:|
+| Shipped bundles (`ToolPlugin`) | **16** |
+| Registered `tool_id` values | **36** |
+| Stable bundles | **14** |
+| Beta bundles | **2** (`observability`, `openai_vector_store`) |
+
+**Bundle index:** `rag` (3) · `websearch` (3) · `jira` (3) · `gitlab` (1) · `confluence` (3) · `notify` (1) · `pagerduty` (1) · `observability` (4) · `braintrust` (1) · `sandbox` (1) · `security` (1) · `workflow` (3) · `speech` (2) · `vision` (3) · `ml` (3) · `openai_vector_store` (3).
+
+Source: `intergrax/tools/registry/shipped_plugins.py`.
+
+---
+
 ## Catalog tools
 
-Status legend: **Done** = registered handler in catalog.
+Status legend: **Done** = registered handler in catalog. **Beta** = bundle status `ToolBundleStatus.BETA`.
 
 ### Context & retrieval
 
@@ -182,17 +197,65 @@ Status legend: **Done** = registered handler in catalog.
 |---------|--------|-------------|----------|
 | `notify.send` | **Done** | Send outbound notification message | `NotificationChannel` |
 
-### Observability
+### Issue tracker (GitLab)
 
 | tool_id | Status | Description | Composes |
 |---------|--------|-------------|----------|
-| `metrics.query_instant` | observability | **Done** | Instant metrics query | `ObservabilityBackend` |
-| `logs.search` | observability | **Done** | Search log index | `ObservabilityBackend` (`elasticsearch`, `opensearch`) |
-| `observability.query_traces` | observability | **Done** | Query LLM/agent traces | `ObservabilityBackend` (`langfuse`, `langsmith`, …) |
-| `errors.capture` | observability | **Done** | Report error events | `ObservabilityBackend` (`sentry`) |
-| `braintrust.log_eval` | observability | **Done** | Log eval score | `ObservabilityBackend` (`braintrust`, role `eval`) |
-| `gitlab.create_issue` | issue_tracker | **Done** | Create GitLab issue | `IssueTracker` (`gitlab`) |
-| `pagerduty.trigger_incident` | notification | **Done** | Trigger on-call incident | `NotificationChannel` (`pagerduty`) |
+| `gitlab.create_issue` | **Done** | Create GitLab issue | `IssueTracker` (`gitlab`) |
+
+### Observability (bundle **beta**)
+
+| tool_id | Status | Description | Composes |
+|---------|--------|-------------|----------|
+| `metrics.query_instant` | **Done** | Instant metrics query | `ObservabilityBackend` (`prometheus`) |
+| `logs.search` | **Done** | Search log index | `ObservabilityBackend` (`elasticsearch`, `opensearch`) |
+| `observability.query_traces` | **Done** | Query LLM/agent traces | `ObservabilityBackend` (`langfuse`, `langsmith`, …) |
+| `errors.capture` | **Done** | Report error events | `ObservabilityBackend` (`sentry`) |
+
+### Eval logging
+
+| tool_id | Status | Description | Composes |
+|---------|--------|-------------|----------|
+| `braintrust.log_eval` | **Done** | Log eval score | `ObservabilityBackend` (`braintrust`, role `eval`) |
+
+### PagerDuty
+
+| tool_id | Status | Description | Composes |
+|---------|--------|-------------|----------|
+| `pagerduty.trigger_incident` | **Done** | Trigger on-call incident | `NotificationChannel` (`pagerduty`) |
+
+### Speech (modality — Phase W-ML)
+
+| tool_id | Status | Description | Composes |
+|---------|--------|-------------|----------|
+| `speech.synthesize` | **Done** | Text-to-speech synthesis | `SpeechProviderBackend` (`deepgram`, `elevenlabs`, …) via `ToolWiringContext.speech_provider` |
+| `speech.transcribe` | **Done** | Speech-to-text transcription | `SpeechProviderBackend` |
+
+### Vision (modality — Plane C)
+
+| tool_id | Status | Description | Composes |
+|---------|--------|-------------|----------|
+| `vision.detect` | **Done** | Object detection (YOLO/ONNX backends) | `intergrax/model_inference/` + `ModalityInferenceExecutor` |
+| `vision.segment` | **Done** | Image segmentation | `model_inference` registry |
+| `vision.ocr_regions` | **Done** | OCR text regions from media | `model_inference` registry |
+
+### Classical ML (modality)
+
+| tool_id | Status | Description | Composes |
+|---------|--------|-------------|----------|
+| `ml.predict` | **Done** | Single prediction | `intergrax/model_inference/` |
+| `ml.explain` | **Done** | Model explainability | `model_inference` |
+| `ml.batch_predict` | **Done** | Batch inference | `model_inference` |
+
+### OpenAI managed vector store (bundle **beta**, vendor-specific)
+
+| tool_id | Status | Description | Composes |
+|---------|--------|-------------|----------|
+| `openai.file_search.query` | **Beta** | Query OpenAI hosted vector store (`file_search`) | OpenAI Responses API (not harness `rag.retrieve`) |
+| `openai.vector_store.upload` | **Beta** | Upload folder files to OpenAI vector store | OpenAI Files API |
+| `openai.vector_store.clear` | **Beta** | Clear all files from OpenAI vector store (destructive) | OpenAI vector store API |
+
+See [openai_vector_store USAGE](../intergrax/tools/providers/openai_vector_store/USAGE.md).
 
 ### Composite observability (Phase M.10)
 
@@ -249,35 +312,48 @@ OpenAI export: `intergrax.tools.exporters.to_openai_tools(registry)` — used by
 
 ## Full tool index
 
-Alphabetical reference — all first-party catalog tools (Phase O complete).
+Alphabetical reference — all **36** first-party catalog tools (Phase O + M.6 P6 + W-ML modality complete).
 
-| tool_id | Category | Status | Integration / module |
-|---------|----------|--------|----------------------|
-| `confluence.get_page` | wiki | **Done** | `confluence` | [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
-| `confluence.search_pages` | wiki | **Done** | `confluence` | [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
-| `confluence.search` | wiki | **Done** | `confluence` (alias) | [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
-| `jira.add_comment` | issue_tracker | **Done** | `jira` | [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
-| `jira.get_issue` | issue_tracker | **Done** | `jira` | [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
-| `jira.search_tasks` | issue_tracker | **Done** | `jira` | [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
-| `braintrust.log_eval` | observability | **Done** | `braintrust` | [USAGE](../intergrax/tools/providers/braintrust/USAGE.md) |
-| `errors.capture` | observability | **Done** | `sentry` | [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
-| `gitlab.create_issue` | issue_tracker | **Done** | `gitlab` | [USAGE](../intergrax/tools/providers/gitlab/USAGE.md) |
-| `pagerduty.trigger_incident` | notification | **Done** | `pagerduty` | [USAGE](../intergrax/tools/providers/pagerduty/USAGE.md) |
-| `logs.search` | observability | **Done** | `elasticsearch` | [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
-| `metrics.query_instant` | observability | **Done** | `prometheus` | [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
-| `observability.query_traces` | observability | **Done** | `langfuse` / observability slug | [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
-| `notify.send` | notification | **Done** | `notification_channel` slug | [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
-| `rag.retrieve` | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` | [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
-| `rag.ingest_document` | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` | [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
-| `rag.list_collections` | retrieval | **Done** | `vectorstore_manager` | [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
-| `sandbox.exec` | sandbox | **Done** | `sandbox_session` or `sandbox_host` bridge | [USAGE](../intergrax/tools/providers/sandbox/USAGE.md) |
-| `security.scan` | security | **Done** | `security_scanner` slug |
-| `workflow.trigger` | workflow | **Done** | `workflow_orchestrator` slug |
-| `workflow.poll` | workflow | **Done** | `workflow_orchestrator` slug |
-| `workflow.fetch_logs` | workflow | **Done** | `workflow_orchestrator` slug |
-| `websearch.query` | retrieval | **Done** | `websearch_executor`, `search_provider` | [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
-| `websearch.read_url` | retrieval | **Done** | page fetch + text extraction | [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
-| `websearch.fetch_batch` | retrieval | **Done** | batch page fetch | [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
+| tool_id | Bundle | Category | Status | Composes / module |
+|---------|--------|----------|--------|-------------------|
+| `braintrust.log_eval` | braintrust | observability | **Done** | `braintrust` — [USAGE](../intergrax/tools/providers/braintrust/USAGE.md) |
+| `confluence.get_page` | confluence | wiki | **Done** | `confluence` — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
+| `confluence.search` | confluence | wiki | **Done** | `confluence` (alias) — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
+| `confluence.search_pages` | confluence | wiki | **Done** | `confluence` — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
+| `errors.capture` | observability | observability | **Beta** | `sentry` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
+| `gitlab.create_issue` | gitlab | issue_tracker | **Done** | `gitlab` — [USAGE](../intergrax/tools/providers/gitlab/USAGE.md) |
+| `jira.add_comment` | jira | issue_tracker | **Done** | `jira` — [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
+| `jira.get_issue` | jira | issue_tracker | **Done** | `jira` — [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
+| `jira.search_tasks` | jira | issue_tracker | **Done** | `jira` — [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
+| `logs.search` | observability | observability | **Beta** | `elasticsearch` / `opensearch` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
+| `metrics.query_instant` | observability | observability | **Beta** | `prometheus` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
+| `ml.batch_predict` | ml | ml | **Done** | `intergrax/model_inference/` |
+| `ml.explain` | ml | ml | **Done** | `model_inference` |
+| `ml.predict` | ml | ml | **Done** | `model_inference` |
+| `notify.send` | notify | notification | **Done** | `notification_channel` slug — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
+| `observability.query_traces` | observability | observability | **Beta** | `langfuse` / observability slug — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
+| `openai.file_search.query` | openai_vector_store | retrieval | **Beta** | OpenAI `file_search` — [USAGE](../intergrax/tools/providers/openai_vector_store/USAGE.md) |
+| `openai.vector_store.clear` | openai_vector_store | retrieval | **Beta** | OpenAI vector store API — [USAGE](../intergrax/tools/providers/openai_vector_store/USAGE.md) |
+| `openai.vector_store.upload` | openai_vector_store | retrieval | **Beta** | OpenAI Files API — [USAGE](../intergrax/tools/providers/openai_vector_store/USAGE.md) |
+| `pagerduty.trigger_incident` | pagerduty | notification | **Done** | `pagerduty` — [USAGE](../intergrax/tools/providers/pagerduty/USAGE.md) |
+| `rag.ingest_document` | rag | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.list_collections` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.retrieve` | rag | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
+| `sandbox.exec` | sandbox | sandbox | **Done** | `sandbox_session` / `sandbox_host` — [USAGE](../intergrax/tools/providers/sandbox/USAGE.md) |
+| `security.scan` | security | security | **Done** | `security_scanner` (`trivy`, `semgrep`, `snyk`) |
+| `speech.synthesize` | speech | speech | **Done** | `SpeechProviderBackend` |
+| `speech.transcribe` | speech | speech | **Done** | `SpeechProviderBackend` |
+| `vision.detect` | vision | vision | **Done** | `model_inference` (Plane C) |
+| `vision.ocr_regions` | vision | vision | **Done** | `model_inference` |
+| `vision.segment` | vision | vision | **Done** | `model_inference` |
+| `websearch.fetch_batch` | websearch | retrieval | **Done** | page fetch pipeline — [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
+| `websearch.query` | websearch | retrieval | **Done** | `websearch_executor`, `search_provider` — [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
+| `websearch.read_url` | websearch | retrieval | **Done** | page fetch — [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
+| `workflow.fetch_logs` | workflow | workflow | **Done** | `workflow_orchestrator` |
+| `workflow.poll` | workflow | workflow | **Done** | `workflow_orchestrator` |
+| `workflow.trigger` | workflow | workflow | **Done** | `workflow_orchestrator` |
+
+**Total:** 36 tools · 16 bundles.
 
 ---
 

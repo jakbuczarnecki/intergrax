@@ -7,7 +7,10 @@ from pathlib import Path
 from typing import List, Optional
 
 from intergrax.agents.agent_engine import AgentEngine
-from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.contracts.agent_execution_result import (
+    AgentExecutionResult,
+    AgentExecutionStatus,
+)
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.context.context_manager import ContextManager
@@ -16,6 +19,11 @@ from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 from intergrax.runtime.nexus.planning.nexus_planner_protocol import NexusTaskPlannerProtocol
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, TaskPlanner
 from intergrax.runtime.nexus.task_classifier_protocol import NexusTaskClassifierProtocol
+from intergrax.contracts.orchestration_enums import MergeStrategy
+from intergrax.runtime.architecture.online_evaluation_models import (
+    OnlineEvaluationMode,
+    OnlineEvaluationObservation,
+)
 from intergrax.runtime.nexus.response.final_response_composer import FinalResponseComposer
 from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy, RetryRecord
 from intergrax.runtime.nexus.task_classifier import ClassifyingTaskClassifier
@@ -84,6 +92,10 @@ class NexusLoop:
         classifier: NexusTaskClassifierProtocol | None = None,
         planner: NexusTaskPlannerProtocol | None = None,
         max_parallel_nodes: int | None = None,
+        max_inflight_nodes: int | None = None,
+        max_delegation_depth: int | None = None,
+        max_run_retries: int = 0,
+        merge_strategy: MergeStrategy = MergeStrategy.CONCAT,
         validation_engine: Optional[NexusValidationEngine] = None,
         retry_engine: Optional[RetryEngine] = None,
         graph_executor: Optional[GraphExecutor] = None,
@@ -172,8 +184,10 @@ class NexusLoop:
             event_bus=self._event_bus,
             middleware=self._middleware,
             max_parallel_nodes=max_parallel_nodes,
+            max_inflight_nodes=max_inflight_nodes,
+            max_delegation_depth=max_delegation_depth,
         )
-        self._composer = FinalResponseComposer()
+        self._composer = FinalResponseComposer(merge_strategy=merge_strategy)
         self._lifecycle = lifecycle
         self._trace_emitter = trace_emitter
         self._trace_store = trace_store
@@ -208,6 +222,7 @@ class NexusLoop:
             finish_task=self._finish_task,
             finalize_trace=self._finalize_persisting_trace,
             maybe_checkpoint=self._maybe_checkpoint_long_running,
+            max_run_retries=max_run_retries,
         )
         self._intake_runner = NexusIntakeRunner(
             hitl=self._hitl,
@@ -223,6 +238,7 @@ class NexusLoop:
             publish=self._publish_runtime_event,
             finish_task=self._finish_task,
             maybe_checkpoint=self._maybe_checkpoint_long_running,
+            policy_engine=self._policy_engine,
         )
 
     @property
@@ -382,7 +398,29 @@ class NexusLoop:
         except NexusLifecycleHookError:
             pass
         self._maybe_record_adaptive_outcome_signal(task, result)
+        self._maybe_record_multi_agent_evaluation(executions, task_id=task.task_id)
         return result
+
+    def _maybe_record_multi_agent_evaluation(
+        self,
+        executions: List[AgentExecutionResult],
+        *,
+        task_id: str,
+    ) -> None:
+        if self._evaluation_registry is None or len(executions) < 2:
+            return
+        passed = all(item.status == AgentExecutionStatus.COMPLETED for item in executions)
+        self._evaluation_registry.append(
+            OnlineEvaluationObservation(
+                observation_id=f"obs_{task_id}_multi_agent",
+                run_id=task_id,
+                agent_id=",".join(item.agent_id for item in executions if item.agent_id),
+                mode=OnlineEvaluationMode.SHADOW,
+                scenario_id="multi_agent_fan_in",
+                passed=passed,
+                score=1.0 if passed else 0.0,
+            )
+        )
 
     def _maybe_record_adaptive_outcome_signal(self, task: Task, result: TaskResult) -> None:
         if self._signal_collector is None:

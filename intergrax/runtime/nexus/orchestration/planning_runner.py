@@ -18,7 +18,9 @@ from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
 from intergrax.runtime.nexus.planning.nexus_planner_protocol import NexusTaskPlannerProtocol
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.nexus.task_classifier_protocol import NexusTaskClassifierProtocol
+from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.runtime.nexus.task_classifier import TaskClassification
+from intergrax.runtime.policy.policy_engine import PolicyEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
@@ -45,6 +47,7 @@ class NexusPlanningRunner:
     publish: PublishFn
     finish_task: FinishFn
     maybe_checkpoint: CheckpointFn
+    policy_engine: PolicyEngine | None = None
 
     async def run(
         self,
@@ -148,6 +151,35 @@ class NexusPlanningRunner:
         )
         if hook_failure is not None:
             return PlanningPhaseOutcome(early_result=hook_failure)
+
+        if self.policy_engine is not None:
+            policy_decision = self.policy_engine.evaluate_pre_llm(
+                tenant_id=task.tenant_id,
+                agent_id=task.agent_id or "",
+                message_count=1,
+                context={
+                    "phase": "nexus_planning",
+                    "classification": classification,
+                },
+            )
+            if policy_decision.action is PolicyAction.DENY:
+                lifecycle.transition(task, TaskState.FAILED)
+                return PlanningPhaseOutcome(
+                    early_result=await self.finish_task(
+                        task,
+                        trace_emitter,
+                        answer="",
+                        executions=[],
+                        validation=ValidationResult(
+                            valid=False,
+                            errors=[policy_decision.reason or "planning_blocked_by_policy"],
+                        ),
+                        plan=None,
+                        retry_records=[],
+                        graph_id="",
+                    ),
+                    classification=classification,
+                )
 
         plan = self.planner.plan(task, self.registry)
         task.runtime.orchestration.plan_id = plan.plan_id

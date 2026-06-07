@@ -12,6 +12,10 @@ from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.delegation import DelegationSpec
 
 
+class ExecutionGraphCycleError(ValueError):
+    """Raised when the execution graph contains a dependency cycle."""
+
+
 class ExecutionNodeStatus(str, Enum):
     PENDING = "pending"
     RUNNING = "running"
@@ -61,7 +65,10 @@ class ExecutionGraph(BaseModel):
         while in_degree:
             ready_ids = [nid for nid, deg in in_degree.items() if deg == 0]
             if not ready_ids:
-                ready_ids = list(in_degree.keys())
+                remaining = list(in_degree.keys())
+                raise ExecutionGraphCycleError(
+                    f"cycle detected in execution graph; remaining nodes: {remaining}"
+                )
 
             batch: List[ExecutionNode] = []
             for nid in ready_ids:

@@ -3,20 +3,40 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any, Dict, List
 
+from intergrax.contracts.orchestration_enums import MergeStrategy
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 
 
 class FinalResponseComposer:
     """Compose Nexus final response from one or more AgentExecutionResults (§10.10, Phase B.7)."""
 
-    @staticmethod
-    def compose_summary(results: List[AgentExecutionResult]) -> str:
+    def __init__(self, *, merge_strategy: MergeStrategy = MergeStrategy.CONCAT) -> None:
+        self._merge_strategy = merge_strategy
+
+    def compose_summary(self, results: List[AgentExecutionResult]) -> str:
         if not results:
             return ""
         if len(results) == 1:
             return results[0].summary or ""
+        if self._merge_strategy is MergeStrategy.LAST_WINS:
+            for result in reversed(results):
+                summary = (result.summary or "").strip()
+                if summary:
+                    return summary
+            return ""
+        if self._merge_strategy is MergeStrategy.STRUCTURED_JSON:
+            payload = [
+                {
+                    "agent_id": result.agent_id,
+                    "status": result.status.value,
+                    "summary": result.summary or "",
+                }
+                for result in results
+            ]
+            return json.dumps({"agents": payload}, ensure_ascii=False)
         parts: List[str] = []
         for result in results:
             label = result.agent_id or "agent"

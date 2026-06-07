@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Proposed (target: **Accepted** in FLOW-16) |
+| **Status** | Accepted (FLOW-16) |
 | **Date** | 2026-06-07 |
 | **Deciders** | Intergrax platform architecture |
 | **Related** | [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](../NEXUS_EXECUTION_FLOW_REFERENCE.md) §10 · plan `FLOW-16` / `FLOW-GAP-15` |
@@ -13,7 +13,7 @@
 
 Product teams need a clear contract: either implement bounded replan, or document that replan is **out of scope** for harness v1 (dynamic changes go through `HANDOFF` or declarative `graph_spec` only).
 
-## Decision (proposed — finalize in FLOW-16)
+## Decision
 
 Adopt **Option B — reserved with explicit non-support in v1**:
 

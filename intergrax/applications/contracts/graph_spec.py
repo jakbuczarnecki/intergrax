@@ -39,6 +39,7 @@ class ApplicationGraphSpec(BaseModel):
 
     nodes: list[GraphNode] = Field(default_factory=list)
     edges: list[GraphEdge] = Field(default_factory=list)
+    retry_on_error: int | None = Field(default=None, ge=0, le=32)
 
     def roster_agent_ids(self) -> frozenset[str]:
         return frozenset(node.agent_id for node in self.nodes)

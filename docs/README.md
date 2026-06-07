@@ -25,7 +25,7 @@ The `docs/` folder holds the canonical platform documentation.
 | [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; **FAUDIT-32 Done** (Band 2ad, 23/23 + §6.1ai); **M.6 P6 Done** (Band 2ac, 32/32); gate **901**; default queue = **§6.1 maintenance** |
 | [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) | **Agent workflow** — scaffold → register → run → inspect → evaluate |
 | [**INTEGRATIONS.md**](INTEGRATIONS.md) | **Integration catalog** — **167** providers, contracts, wiring, usage links |
-| [**TOOLS.md**](TOOLS.md) | **Tool catalog** — atomic LLM/MCP tools, engine status, four-layer stack |
+| [**TOOLS.md**](TOOLS.md) | **Tool catalog** — **36** LLM/MCP tools in **16** bundles, engine status, four-layer stack |
 | [**SKILLS.md**](SKILLS.md) | **Skill Library** — composable capability packs, registry, importers |
 | [**EXTENSION_AUTHOR_GUIDE.md**](EXTENSION_AUTHOR_GUIDE.md) | **Tier-0 plugins** — integrations, tools, skills; entry points, bootstrap |
 | [**MODALITY.md**](MODALITY.md) | **Model & modality plane** — vision (YOLO/ONNX/…), audio/speech, classical ML, Hugging Face roles |
@@ -33,8 +33,10 @@ The `docs/` folder holds the canonical platform documentation.
 | [**../README.md**](../README.md) | **GitHub landing** — tiers, Integration/Tool/Skill/Agent stack, links to canon and plan |
 | [**LLM_ADAPTERS.md**](LLM_ADAPTERS.md) | **LLM adapter catalog** — providers, streaming, tools, env vars, Prometheus/governance |
 | [**IDEAL_HARNESS_AI_ARCHITECTURE.md**](IDEAL_HARNESS_AI_ARCHITECTURE.md) | **Target Harness AI architecture** — ideal Agent OS reference model for Integrax alignment |
-| [**NEXUS_EXECUTION_FLOW_REFERENCE.md**](NEXUS_EXECUTION_FLOW_REFERENCE.md) | **Nexus execution flow** — operational narrative, diagrams, edge cases, evaluation hooks, plan traceability (`FLOW-GAP-01`…`16` → [Phase FLOW](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-flow--nexus-execution-depth) **0/18** · **§6.1aj**) |
-| [**adr/ADR-FLOW-001.md**](adr/ADR-FLOW-001.md) | **Delegation semantics** — `DELEGATES_TO` graph expansion (Option C); implementation via `FLOW-2` |
+| [**NEXUS_EXECUTION_FLOW_REFERENCE.md**](NEXUS_EXECUTION_FLOW_REFERENCE.md) | **Nexus execution flow** — operational narrative, diagrams, edge cases, evaluation hooks, plan traceability ([Phase FLOW](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-flow--nexus-execution-depth) **Done** 17/18 · **FLOW-8 Deferred**) |
+| [**adr/ADR-FLOW-001.md**](adr/ADR-FLOW-001.md) | **Delegation semantics** — `DELEGATES_TO` graph expansion (Option C); **implemented** (`FLOW-2`, `FLOW-14`) |
+| [**adr/ADR-FLOW-002.md**](adr/ADR-FLOW-002.md) | **Lifecycle semantics** — reserved `WAITING_FOR_RESOURCES` / `EXPIRED` states (`FLOW-10`) |
+| [**adr/ADR-FLOW-003.md**](adr/ADR-FLOW-003.md) | **`MODIFY_PLAN` semantics** — reserved v1; `MODIFY_PLAN_NOT_SUPPORTED` without handoff (`FLOW-16`) |
 | [**ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md**](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) | **Adaptive Harness Intelligence (AHI)** — L4 closed-loop architecture RFC, business case, Phase W-ADAPT roadmap |
 | [**../infra/README.md**](../infra/README.md) | **Local Docker infra** — compose profiles, `manage.sh` |
 | [**../infra/PORTS.md**](../infra/PORTS.md) | Host port matrix for integration backends |

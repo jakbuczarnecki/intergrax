@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Accepted (target semantics) · **implementation pending** (`FLOW-2`) |
+| **Status** | Accepted · **implemented** (`FLOW-2`, `FLOW-14`) |
 | **Date** | 2026-06-07 |
 | **Deciders** | Intergrax platform architecture |
 | **Related** | [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](../NEXUS_EXECUTION_FLOW_REFERENCE.md) §13 · canon [§42.14.3](../intergrax_runtime_architecture.md#42143-graph-delegation-subagent-equivalent) · plan `FLOW-2` / `FLOW-GAP-02` |
@@ -16,14 +16,7 @@ Tier-3 authors can declare topology via `ApplicationGraphSpec`:
 - `DEPENDS_ON` — sequential dependency between agents (separate plan steps / graph nodes)
 - `DELEGATES_TO` — attaches `DelegationSpec` with `child_agent_id` on the **source** step
 
-**Runtime truth (2026-06-07):** `graph_spec_to_plan.py` sets `DelegationSpec.child_agent_id`, but `GraphExecutor` still executes `node.agent_id` (the parent). Delegation metadata affects memory namespace and trace only — the child agent is **not** scheduled unless it also appears as its own graph node.
-
-This creates a semantic gap between:
-
-- **Canonical intent** — subagent = child execution with isolation
-- **Current implementation** — `DELEGATES_TO` = parent run + delegation metadata
-
-[`NEXUS_EXECUTION_FLOW_REFERENCE.md`](../NEXUS_EXECUTION_FLOW_REFERENCE.md) documents this gap as `FLOW-GAP-02`.
+**Runtime truth (post FLOW-2/14):** `graph_spec_to_plan.py` expands `DELEGATES_TO` into a child `PlanStep` with `DelegationSpec` on the **child** node; `GraphExecutor` routes execution to `child_agent_id` when delegation is present. `FLOW-GAP-02` is **closed**.
 
 ## Decision
 

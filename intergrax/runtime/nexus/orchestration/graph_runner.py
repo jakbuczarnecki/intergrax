@@ -26,8 +26,9 @@ from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
 from intergrax.runtime.nexus.orchestration.task_events import NexusRuntimeEventPublisher
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.nexus.response.final_response_composer import FinalResponseComposer
+from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.retry.coordinator import RetryCoordinator
-from intergrax.runtime.nexus.retry.retry_engine import RetryRecord
+from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy, RetryRecord
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
@@ -63,6 +64,7 @@ class NexusGraphRunner:
     finish_task: FinishFn
     finalize_trace: FinalizeFn
     maybe_checkpoint: CheckpointFn
+    max_run_retries: int = 0
 
     async def run(
         self,
@@ -74,10 +76,20 @@ class NexusGraphRunner:
         trace_emitter: TaskTraceEmitter,
     ) -> GraphPhaseOutcome:
         callbacks = GraphTraceCallbacks(task=task, trace_emitter=trace_emitter)
-        coordinator = RetryCoordinator(
-            max_run_retries=0,
-            retry_run_on=frozenset(),
+        retry_codes = (
+            frozenset({RuntimeErrorCode.VALIDATION_ERROR})
+            if self.max_run_retries > 0
+            else frozenset()
         )
+        coordinator = RetryCoordinator(
+            max_run_retries=self.max_run_retries,
+            retry_run_on=retry_codes,
+        )
+
+        if plan.graph_retry_on_error is not None:
+            self.graph_executor.set_retry_policy(
+                RetryPolicy(max_retries=plan.graph_retry_on_error),
+            )
 
         async def on_retry(record: RetryRecord) -> None:
             callbacks.on_retry(record)
@@ -90,14 +102,44 @@ class NexusGraphRunner:
                 task=task,
             )
 
-        executions, retry_records, graph, graph_cancelled = await self.graph_executor.execute(
-            graph,
-            task,
-            plan_criteria=plan.validation_criteria,
-            on_retry=on_retry,
-            on_node_start=callbacks.on_node_start,
-            on_node_complete=callbacks.on_node_complete,
-        )
+        run_attempt = 0
+        executions: List[AgentExecutionResult] = []
+        retry_records: List[RetryRecord] = []
+        graph_cancelled = False
+        while True:
+            executions, attempt_retries, graph, graph_cancelled = await self.graph_executor.execute(
+                graph,
+                task,
+                plan_criteria=plan.validation_criteria,
+                on_retry=on_retry,
+                on_node_start=callbacks.on_node_start,
+                on_node_complete=callbacks.on_node_complete,
+            )
+            retry_records.extend(attempt_retries)
+            failed_nodes = [
+                n.node_id for n in graph.nodes if n.status == ExecutionNodeStatus.FAILED
+            ]
+            if not failed_nodes or graph_cancelled:
+                break
+            if not coordinator.should_retry_run(
+                attempt=run_attempt,
+                error_code=RuntimeErrorCode.VALIDATION_ERROR,
+            ):
+                break
+            await self.events.publish(
+                coordinator.scheduled_event_for_run_retry(
+                    task,
+                    run_id=task.task_id,
+                    attempt=run_attempt + 1,
+                    error_code=RuntimeErrorCode.VALIDATION_ERROR,
+                ),
+                task=task,
+            )
+            run_attempt += 1
+            for node in graph.nodes:
+                if node.status is ExecutionNodeStatus.FAILED:
+                    node.status = ExecutionNodeStatus.PENDING
+                    node.execution_result = None
 
         if graph_cancelled or CancellationCoordinator.is_requested(task.metadata):
             return await self._handle_cancellation(

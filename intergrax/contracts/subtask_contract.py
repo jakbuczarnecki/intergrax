@@ -19,6 +19,8 @@ class SubtaskContract(BaseModel):
     permission_scopes: tuple[str, ...] = Field(default_factory=tuple)
     isolated_memory_namespace: str = ""
     inherit_tool_policy: bool = False
+    max_llm_calls: int | None = Field(default=None, ge=0)
+    max_tool_calls: int | None = Field(default=None, ge=0)
 
     def to_delegation_spec(
         self,
@@ -34,4 +36,6 @@ class SubtaskContract(BaseModel):
             parent_node_id=parent_node_id,
             permission_scopes=self.permission_scopes,
             objective=self.objective,
+            max_llm_calls=self.max_llm_calls,
+            max_tool_calls=self.max_tool_calls,
         )

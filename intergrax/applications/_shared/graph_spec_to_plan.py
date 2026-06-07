@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Convert Tier-3 ``ApplicationGraphSpec`` into a Nexus plan (Phase ORCH-2)."""
+"""Convert Tier-3 ``ApplicationGraphSpec`` into a Nexus plan (Phase ORCH-2, FLOW-2/14)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from intergrax.applications.contracts.graph_spec import (
     ApplicationGraphSpec,
     GraphEdgeKind,
 )
-from intergrax.contracts.delegation import DelegationSpec
+from intergrax.contracts.subtask_contract import SubtaskContract
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, PlanStep
 from intergrax.runtime.nexus.task_classifier import TaskClassification
 from intergrax.runtime.task.task import Task
@@ -28,32 +28,43 @@ def application_graph_spec_to_nexus_plan(
     classification: str,
 ) -> NexusPlan:
     """
-    Map declarative application topology to a sequential ``NexusPlan``.
+    Map declarative application topology to a ``NexusPlan``.
 
     ``DEPENDS_ON`` edges become ``PlanStep.depends_on``.
-    ``DELEGATES_TO`` edges attach ``DelegationSpec`` on the source step.
+    ``DELEGATES_TO`` edges expand per ADR-FLOW-001: child step depends on parent;
+    ``DelegationSpec`` (via ``SubtaskContract``) is attached on the **child** step.
     """
     if not spec.nodes:
         raise ValueError("ApplicationGraphSpec must contain at least one node")
 
     step_ids = {_step_id_for_agent(node.agent_id): node.agent_id for node in spec.nodes}
     depends_on: dict[str, list[str]] = defaultdict(list)
-    delegations: dict[str, DelegationSpec] = {}
+    child_delegations: dict[str, SubtaskContract] = {}
 
     for edge in spec.edges:
         source_step = _step_id_for_agent(edge.source_agent_id)
         target_step = _step_id_for_agent(edge.target_agent_id)
         if edge.kind is GraphEdgeKind.DEPENDS_ON:
-            depends_on[target_step].append(source_step)
+            if source_step not in depends_on[target_step]:
+                depends_on[target_step].append(source_step)
         elif edge.kind is GraphEdgeKind.DELEGATES_TO:
-            delegations[source_step] = DelegationSpec(
+            if source_step not in depends_on[target_step]:
+                depends_on[target_step].append(source_step)
+            child_delegations[target_step] = SubtaskContract(
                 child_agent_id=edge.target_agent_id,
-                parent_node_id=source_step,
+                objective=f"delegated subtask from {edge.source_agent_id}",
+                inherit_tool_policy=False,
             )
 
     steps: list[PlanStep] = []
     for node in spec.nodes:
         step_id = _step_id_for_agent(node.agent_id)
+        contract = child_delegations.get(step_id)
+        delegation = None
+        if contract is not None:
+            parent_candidates = depends_on.get(step_id, [])
+            parent_step_id = parent_candidates[0] if parent_candidates else None
+            delegation = contract.to_delegation_spec(parent_node_id=parent_step_id)
         steps.append(
             PlanStep(
                 step_id=step_id,
@@ -61,7 +72,7 @@ def application_graph_spec_to_nexus_plan(
                 capability=task.context.capability,
                 description=f"graph node {node.agent_id}",
                 depends_on=list(depends_on.get(step_id, [])),
-                delegation=delegations.get(step_id),
+                delegation=delegation,
             )
         )
 
@@ -75,6 +86,7 @@ def application_graph_spec_to_nexus_plan(
         classification=classification or TaskClassification.MULTI_AGENT.value,
         steps=steps,
         validation_criteria=criteria,
+        graph_retry_on_error=spec.retry_on_error,
     )
 
 
