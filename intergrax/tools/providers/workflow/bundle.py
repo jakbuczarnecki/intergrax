@@ -5,20 +5,27 @@ from __future__ import annotations
 
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.providers.workflow.contracts import (
+    WorkflowCancelRunInput,
     WorkflowFetchLogsInput,
     WorkflowFetchLogsOutput,
+    WorkflowListRunsInput,
+    WorkflowListRunsOutput,
     WorkflowPollInput,
     WorkflowPollOutput,
     WorkflowTriggerInput,
     WorkflowTriggerOutput,
 )
 from intergrax.tools.providers.workflow.handlers import (
+    WorkflowCancelRunHandler,
     WorkflowFetchLogsHandler,
+    WorkflowListRunsHandler,
     WorkflowPollHandler,
     WorkflowTriggerHandler,
 )
 from intergrax.tools.providers.workflow.service import (
+    WORKFLOW_CANCEL_RUN_TOOL_ID,
     WORKFLOW_FETCH_LOGS_TOOL_ID,
+    WORKFLOW_LIST_RUNS_TOOL_ID,
     WORKFLOW_POLL_TOOL_ID,
     WORKFLOW_TRIGGER_TOOL_ID,
 )
@@ -30,6 +37,8 @@ WORKFLOW_TOOL_IDS: tuple[str, ...] = (
     WORKFLOW_TRIGGER_TOOL_ID,
     WORKFLOW_POLL_TOOL_ID,
     WORKFLOW_FETCH_LOGS_TOOL_ID,
+    WORKFLOW_LIST_RUNS_TOOL_ID,
+    WORKFLOW_CANCEL_RUN_TOOL_ID,
 )
 
 
@@ -81,4 +90,36 @@ def register_workflow_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> N
             tags=("workflow", "logs"),
         ),
         WorkflowFetchLogsHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=WORKFLOW_LIST_RUNS_TOOL_ID,
+            name=WORKFLOW_LIST_RUNS_TOOL_ID,
+            description="List recent workflow orchestrator runs.",
+            description_short="List workflow runs.",
+            input_schema=WorkflowListRunsInput,
+            output_schema=WorkflowListRunsOutput,
+            error_mapping={},
+            side_effects=False,
+            category="workflow",
+            risk_level=ToolRiskLevel.LOW,
+            tags=("workflow", "status"),
+        ),
+        WorkflowListRunsHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=WORKFLOW_CANCEL_RUN_TOOL_ID,
+            name=WORKFLOW_CANCEL_RUN_TOOL_ID,
+            description="Request cancellation of a workflow orchestrator run.",
+            description_short="Cancel workflow run.",
+            input_schema=WorkflowCancelRunInput,
+            output_schema=WorkflowPollOutput,
+            error_mapping={},
+            side_effects=True,
+            category="workflow",
+            risk_level=ToolRiskLevel.HIGH,
+            tags=("workflow", "cancel"),
+        ),
+        WorkflowCancelRunHandler(ctx),
     )

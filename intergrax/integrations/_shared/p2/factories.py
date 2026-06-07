@@ -822,6 +822,37 @@ def _open_google_workspace_client(config: HttpIntegrationConfig) -> Any:
             response.raise_for_status()
             return response.json()
 
+        def reply_message(self, user_id: str, message_id: str, *, body: str) -> None:
+            response = http.post(
+                f"{base}/gmail/v1/users/{user_id}/messages/{message_id}/reply",
+                json={"comment": body},
+            )
+            response.raise_for_status()
+
+        def create_event(
+            self,
+            user_id: str,
+            *,
+            subject: str,
+            start: str,
+            end: str,
+            location: str = "",
+            attendees: list[str] | None = None,
+        ) -> dict[str, Any]:
+            payload = {
+                "summary": subject,
+                "start": {"dateTime": start},
+                "end": {"dateTime": end},
+            }
+            if location:
+                payload["location"] = location
+            response = http.post(
+                f"{base}/calendar/v3/calendars/{user_id}/events",
+                json=payload,
+            )
+            response.raise_for_status()
+            return response.json()
+
     return _Client()
 
 

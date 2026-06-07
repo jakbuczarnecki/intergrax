@@ -87,3 +87,18 @@ class CollaborationSuite(Protocol):
 
     def get_user(self, user_id: str) -> UserRecord:
         """Resolve a directory user (id, UPN, or mail alias)."""
+
+    def reply_message(self, user_id: str, message_id: str, *, body: str) -> None:
+        """Reply to an existing mail message thread."""
+
+    def create_event(
+        self,
+        user_id: str,
+        *,
+        subject: str,
+        start: str,
+        end: str,
+        location: str = "",
+        attendees: Sequence[str] = (),
+    ) -> CalendarEvent:
+        """Create a calendar event for ``user_id``."""

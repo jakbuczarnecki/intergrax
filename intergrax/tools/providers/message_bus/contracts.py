@@ -7,7 +7,7 @@ import base64
 
 from pydantic import BaseModel, Field, field_validator
 
-from intergrax.queueing.contracts.task_queue import TaskStatus
+from intergrax.queueing.contracts.task_queue import TaskStatus, TaskSummary
 
 
 class MessageBusEnqueueInput(BaseModel):
@@ -54,3 +54,43 @@ class MessageBusGetResultOutput(BaseModel):
     output_base64: str = ""
     error_message: str = ""
     attempts: int = 0
+
+
+class MessageBusListTasksInput(BaseModel):
+    tenant_id: str = Field(..., min_length=1)
+    limit: int = Field(default=50, ge=1, le=500)
+    status_filter: TaskStatus | None = None
+
+
+class MessageBusTaskSummaryOutput(BaseModel):
+    task_id: str
+    tenant_id: str
+    task_name: str
+    status: TaskStatus
+    provider: str
+
+
+class MessageBusListTasksOutput(BaseModel):
+    tasks: list[MessageBusTaskSummaryOutput] = Field(default_factory=list)
+    total: int = 0
+
+
+class MessageBusCancelInput(BaseModel):
+    task_id: str = Field(..., min_length=1)
+    provider: str = Field(..., min_length=1)
+    tenant_id: str | None = None
+
+
+class MessageBusCancelOutput(BaseModel):
+    task_id: str
+    cancelled: bool
+
+
+class MessageBusPurgeCompletedInput(BaseModel):
+    tenant_id: str = Field(..., min_length=1)
+    older_than_seconds: int = Field(default=0, ge=0, le=86400 * 30)
+
+
+class MessageBusPurgeCompletedOutput(BaseModel):
+    tenant_id: str
+    purged_count: int = 0

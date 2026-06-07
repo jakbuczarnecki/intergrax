@@ -29,6 +29,110 @@ class OnlineEvaluationRegistryBinding(Protocol):
 
 
 @runtime_checkable
+class KeyValueCacheListerBinding(Protocol):
+    """Optional cache backend extension for ``cache.list_keys``."""
+
+    def list_keys(self, tenant_id: str, *, prefix: str = "", limit: int = 100) -> List[str]: ...
+
+
+@runtime_checkable
+class VectorstoreIndexLifecycleBinding(Protocol):
+    """Structural binding for RAG index lifecycle catalog tools."""
+
+    def list_document_ids(self, *, limit: int = 100, offset: int = 0) -> List[str]: ...
+
+    def get_document(self, document_id: str) -> Optional[Dict[str, Any]]: ...
+
+    def list_collections(self) -> List[str]: ...
+
+    def count(self) -> int: ...
+
+    def search_by_metadata(
+        self,
+        *,
+        conditions: Dict[str, Any],
+        limit: int = 50,
+    ) -> List[Dict[str, Any]]: ...
+
+    def purge_collection(self, *, dry_run: bool = True, tenant_id: str = "") -> Dict[str, Any]: ...
+
+
+@runtime_checkable
+class HumanDecisionStoreBinding(Protocol):
+    """Structural binding for HITL decision catalog tools."""
+
+    def list_escalations(self, tenant_id: str, *, limit: int = 50) -> List[Any]: ...
+
+    def get_decision(self, decision_id: str, tenant_id: str) -> Any | None: ...
+
+    def summarize_queue(self, tenant_id: str) -> Dict[str, int]: ...
+
+    def record(self, record: Any) -> Any: ...
+
+    def list_for_task(self, task_id: str, tenant_id: str) -> List[Any]: ...
+
+
+@runtime_checkable
+class WebSearchCacheBinding(Protocol):
+    """Structural binding for ``websearch.invalidate_cache``."""
+
+    def invalidate_query_cache(self, *, query: str = "", clear_all: bool = False) -> int: ...
+
+
+@runtime_checkable
+class ScheduledNotificationBinding(Protocol):
+    """Structural binding for deferred outbound notification catalog tools."""
+
+    def schedule(
+        self,
+        *,
+        tenant_id: str,
+        channel: str,
+        subject: str,
+        body: str,
+        deliver_at_utc: str,
+    ) -> str: ...
+
+    def list_scheduled(
+        self,
+        tenant_id: str,
+        *,
+        limit: int = 50,
+        status: str = "pending",
+    ) -> List[Dict[str, str]]: ...
+
+    def cancel_scheduled(self, schedule_id: str, tenant_id: str) -> bool: ...
+
+    def mark_delivered(self, schedule_id: str, tenant_id: str) -> bool: ...
+
+
+@runtime_checkable
+class SessionStorageBinding(Protocol):
+    """Structural binding for interaction session read tools."""
+
+    def list_sessions(self, tenant_id: str, user_id: str, *, limit: int = 20) -> List[Dict[str, str]]: ...
+
+    def get_last_user_input(self, tenant_id: str, session_id: str) -> Optional[str]: ...
+
+    def get_session_history(
+        self,
+        tenant_id: str,
+        session_id: str,
+        *,
+        limit: int = 50,
+    ) -> List[Dict[str, str]]: ...
+
+
+@runtime_checkable
+class VectorStoreDocumentListerBinding(Protocol):
+    """Optional vector store extension for ``rag.list_documents`` / ``rag.get_document``."""
+
+    def list_document_ids(self, *, limit: int = 100, offset: int = 0) -> List[str]: ...
+
+    def get_document(self, document_id: str) -> Optional[Dict[str, Any]]: ...
+
+
+@runtime_checkable
 class TaskMemoryViewBinding(Protocol):
     """Structural binding for policy-scoped task memory (``PolicyScopedMemoryView``)."""
 
@@ -44,3 +148,5 @@ class TaskMemoryViewBinding(Protocol):
     ) -> None: ...
 
     async def list(self, namespace: str, prefix: str = "") -> List[Any]: ...
+
+    async def delete(self, namespace: str, key: str) -> bool: ...

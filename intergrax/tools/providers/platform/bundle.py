@@ -12,22 +12,33 @@ from intergrax.tools.providers.platform.contracts import (
     PlatformGetWorkflowRunInput,
     PlatformListCheckSuitesInput,
     PlatformListCheckSuitesOutput,
+    PlatformCancelWorkflowRunInput,
+    PlatformDeleteSecretInput,
+    PlatformDeleteSecretOutput,
+    PlatformListWorkflowRunsInput,
+    PlatformListWorkflowRunsOutput,
     PlatformPutSecretInput,
     PlatformPutSecretOutput,
     PlatformWorkflowRunOutput,
 )
 from intergrax.tools.providers.platform.handlers import (
+    PlatformCancelWorkflowRunHandler,
+    PlatformDeleteSecretHandler,
     PlatformEvaluateFeatureFlagHandler,
     PlatformGetSecretHandler,
     PlatformGetWorkflowRunHandler,
     PlatformListCheckSuitesHandler,
+    PlatformListWorkflowRunsHandler,
     PlatformPutSecretHandler,
 )
 from intergrax.tools.providers.platform.service import (
+    PLATFORM_CANCEL_WORKFLOW_RUN_TOOL_ID,
+    PLATFORM_DELETE_SECRET_TOOL_ID,
     PLATFORM_EVALUATE_FEATURE_FLAG_TOOL_ID,
     PLATFORM_GET_SECRET_TOOL_ID,
     PLATFORM_GET_WORKFLOW_RUN_TOOL_ID,
     PLATFORM_LIST_CHECK_SUITES_TOOL_ID,
+    PLATFORM_LIST_WORKFLOW_RUNS_TOOL_ID,
     PLATFORM_PUT_SECRET_TOOL_ID,
 )
 from intergrax.tools.registry.runtime import ToolRegistry
@@ -37,9 +48,12 @@ PLATFORM_BUNDLE_ID = "platform"
 PLATFORM_TOOL_IDS: tuple[str, ...] = (
     PLATFORM_GET_SECRET_TOOL_ID,
     PLATFORM_PUT_SECRET_TOOL_ID,
+    PLATFORM_DELETE_SECRET_TOOL_ID,
     PLATFORM_EVALUATE_FEATURE_FLAG_TOOL_ID,
     PLATFORM_GET_WORKFLOW_RUN_TOOL_ID,
     PLATFORM_LIST_CHECK_SUITES_TOOL_ID,
+    PLATFORM_LIST_WORKFLOW_RUNS_TOOL_ID,
+    PLATFORM_CANCEL_WORKFLOW_RUN_TOOL_ID,
 )
 
 
@@ -75,6 +89,22 @@ def register_platform_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> N
             tags=("platform", "secrets"),
         ),
         PlatformPutSecretHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=PLATFORM_DELETE_SECRET_TOOL_ID,
+            name=PLATFORM_DELETE_SECRET_TOOL_ID,
+            description="Delete a tenant-scoped secret from the configured secrets store.",
+            description_short="Delete secret.",
+            input_schema=PlatformDeleteSecretInput,
+            output_schema=PlatformDeleteSecretOutput,
+            error_mapping={},
+            side_effects=True,
+            category="platform",
+            risk_level=ToolRiskLevel.CRITICAL,
+            tags=("platform", "secrets"),
+        ),
+        PlatformDeleteSecretHandler(ctx),
     )
     registry.register(
         ToolContract(
@@ -123,4 +153,36 @@ def register_platform_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> N
             tags=("platform", "cicd"),
         ),
         PlatformListCheckSuitesHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=PLATFORM_LIST_WORKFLOW_RUNS_TOOL_ID,
+            name=PLATFORM_LIST_WORKFLOW_RUNS_TOOL_ID,
+            description="List recent CI/CD workflow runs from the configured backend.",
+            description_short="List workflow runs.",
+            input_schema=PlatformListWorkflowRunsInput,
+            output_schema=PlatformListWorkflowRunsOutput,
+            error_mapping={},
+            side_effects=False,
+            category="platform",
+            risk_level=ToolRiskLevel.LOW,
+            tags=("platform", "cicd"),
+        ),
+        PlatformListWorkflowRunsHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=PLATFORM_CANCEL_WORKFLOW_RUN_TOOL_ID,
+            name=PLATFORM_CANCEL_WORKFLOW_RUN_TOOL_ID,
+            description="Request cancellation of a CI/CD workflow run via the configured backend.",
+            description_short="Cancel workflow run.",
+            input_schema=PlatformCancelWorkflowRunInput,
+            output_schema=PlatformWorkflowRunOutput,
+            error_mapping={},
+            side_effects=True,
+            category="platform",
+            risk_level=ToolRiskLevel.HIGH,
+            tags=("platform", "cicd"),
+        ),
+        PlatformCancelWorkflowRunHandler(ctx),
     )

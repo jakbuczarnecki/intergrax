@@ -9,21 +9,29 @@ from intergrax.tools.providers.observability.contracts import (
     ErrorsCaptureOutput,
     LogsSearchInput,
     LogsSearchOutput,
+    LogsTailInput,
+    LogsTailOutput,
     MetricsQueryInstantInput,
     MetricsQueryInstantOutput,
+    MetricsQueryRangeInput,
+    MetricsQueryRangeOutput,
     TracesQueryInput,
     TracesQueryOutput,
 )
 from intergrax.tools.providers.observability.handlers import (
     ErrorsCaptureHandler,
     LogsSearchHandler,
+    LogsTailHandler,
     MetricsQueryInstantHandler,
+    MetricsQueryRangeHandler,
     TracesQueryHandler,
 )
 from intergrax.tools.providers.observability.service import (
     ERRORS_CAPTURE_TOOL_ID,
     LOGS_SEARCH_TOOL_ID,
+    LOGS_TAIL_TOOL_ID,
     METRICS_QUERY_INSTANT_TOOL_ID,
+    METRICS_QUERY_RANGE_TOOL_ID,
     TRACES_QUERY_TOOL_ID,
 )
 from intergrax.tools.registry.runtime import ToolRegistry
@@ -32,7 +40,9 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 OBSERVABILITY_BUNDLE_ID = "observability"
 OBSERVABILITY_TOOL_IDS: tuple[str, ...] = (
     METRICS_QUERY_INSTANT_TOOL_ID,
+    METRICS_QUERY_RANGE_TOOL_ID,
     LOGS_SEARCH_TOOL_ID,
+    LOGS_TAIL_TOOL_ID,
     TRACES_QUERY_TOOL_ID,
     ERRORS_CAPTURE_TOOL_ID,
 )
@@ -57,6 +67,22 @@ def register_observability_tools(registry: ToolRegistry, ctx: ToolWiringContext)
     )
     registry.register(
         ToolContract(
+            tool_id=METRICS_QUERY_RANGE_TOOL_ID,
+            name=METRICS_QUERY_RANGE_TOOL_ID,
+            description="Run a range PromQL metrics query against the configured observability backend.",
+            description_short="Query metrics range.",
+            input_schema=MetricsQueryRangeInput,
+            output_schema=MetricsQueryRangeOutput,
+            error_mapping={},
+            side_effects=False,
+            category="observability",
+            risk_level=ToolRiskLevel.LOW,
+            tags=("metrics", "prometheus", "observability"),
+        ),
+        MetricsQueryRangeHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
             tool_id=LOGS_SEARCH_TOOL_ID,
             name=LOGS_SEARCH_TOOL_ID,
             description="Search log entries using the configured observability backend (Elasticsearch).",
@@ -71,6 +97,23 @@ def register_observability_tools(registry: ToolRegistry, ctx: ToolWiringContext)
             tags=("logs", "elasticsearch", "observability"),
         ),
         LogsSearchHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=LOGS_TAIL_TOOL_ID,
+            name=LOGS_TAIL_TOOL_ID,
+            description="Tail recent log entries using the configured observability backend (Elasticsearch).",
+            description_short="Tail recent logs.",
+            input_schema=LogsTailInput,
+            output_schema=LogsTailOutput,
+            error_mapping={},
+            side_effects=False,
+            injects_context=True,
+            category="observability",
+            risk_level=ToolRiskLevel.LOW,
+            tags=("logs", "elasticsearch", "observability"),
+        ),
+        LogsTailHandler(ctx),
     )
     registry.register(
         ToolContract(

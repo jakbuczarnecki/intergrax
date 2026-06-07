@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.providers.collaboration.contracts import (
+    CollaborationCreateEventInput,
+    CollaborationCreateEventOutput,
     CollaborationGetMessageInput,
     CollaborationGetMessageOutput,
     CollaborationGetUserInput,
@@ -13,21 +15,27 @@ from intergrax.tools.providers.collaboration.contracts import (
     CollaborationListCalendarOutput,
     CollaborationListMessagesInput,
     CollaborationListMessagesOutput,
+    CollaborationReplyMessageInput,
+    CollaborationReplyMessageOutput,
     CollaborationSendMailInput,
     CollaborationSendMailOutput,
 )
 from intergrax.tools.providers.collaboration.handlers import (
+    CollaborationCreateEventHandler,
     CollaborationGetMessageHandler,
     CollaborationGetUserHandler,
     CollaborationListCalendarHandler,
     CollaborationListMessagesHandler,
+    CollaborationReplyMessageHandler,
     CollaborationSendMailHandler,
 )
 from intergrax.tools.providers.collaboration.service import (
+    COLLABORATION_CREATE_EVENT_TOOL_ID,
     COLLABORATION_GET_MESSAGE_TOOL_ID,
     COLLABORATION_GET_USER_TOOL_ID,
     COLLABORATION_LIST_CALENDAR_TOOL_ID,
     COLLABORATION_LIST_MESSAGES_TOOL_ID,
+    COLLABORATION_REPLY_MESSAGE_TOOL_ID,
     COLLABORATION_SEND_MAIL_TOOL_ID,
 )
 from intergrax.tools.registry.runtime import ToolRegistry
@@ -40,6 +48,8 @@ COLLABORATION_TOOL_IDS: tuple[str, ...] = (
     COLLABORATION_GET_MESSAGE_TOOL_ID,
     COLLABORATION_LIST_CALENDAR_TOOL_ID,
     COLLABORATION_GET_USER_TOOL_ID,
+    COLLABORATION_REPLY_MESSAGE_TOOL_ID,
+    COLLABORATION_CREATE_EVENT_TOOL_ID,
 )
 
 
@@ -123,4 +133,36 @@ def register_collaboration_tools(registry: ToolRegistry, ctx: ToolWiringContext)
             tags=("collaboration", "directory"),
         ),
         CollaborationGetUserHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=COLLABORATION_REPLY_MESSAGE_TOOL_ID,
+            name=COLLABORATION_REPLY_MESSAGE_TOOL_ID,
+            description="Reply to an existing mail thread via the configured collaboration suite.",
+            description_short="Reply to mail message.",
+            input_schema=CollaborationReplyMessageInput,
+            output_schema=CollaborationReplyMessageOutput,
+            error_mapping={},
+            side_effects=True,
+            category="collaboration",
+            risk_level=ToolRiskLevel.HIGH,
+            tags=("collaboration", "mail"),
+        ),
+        CollaborationReplyMessageHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=COLLABORATION_CREATE_EVENT_TOOL_ID,
+            name=COLLABORATION_CREATE_EVENT_TOOL_ID,
+            description="Create a calendar event via the configured collaboration suite.",
+            description_short="Create calendar event.",
+            input_schema=CollaborationCreateEventInput,
+            output_schema=CollaborationCreateEventOutput,
+            error_mapping={},
+            side_effects=True,
+            category="collaboration",
+            risk_level=ToolRiskLevel.MEDIUM,
+            tags=("collaboration", "calendar"),
+        ),
+        CollaborationCreateEventHandler(ctx),
     )

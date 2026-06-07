@@ -5,14 +5,23 @@ from __future__ import annotations
 
 from intergrax.tools.core.handler import ServiceToolHandler
 from intergrax.tools.providers.workflow.contracts import (
+    WorkflowCancelRunInput,
     WorkflowFetchLogsInput,
     WorkflowFetchLogsOutput,
+    WorkflowListRunsInput,
+    WorkflowListRunsOutput,
     WorkflowPollInput,
     WorkflowPollOutput,
     WorkflowTriggerInput,
     WorkflowTriggerOutput,
 )
-from intergrax.tools.providers.workflow.service import workflow_fetch_logs, workflow_poll, workflow_trigger
+from intergrax.tools.providers.workflow.service import (
+    workflow_cancel_run,
+    workflow_fetch_logs,
+    workflow_list_runs,
+    workflow_poll,
+    workflow_trigger,
+)
 
 
 class WorkflowTriggerHandler(ServiceToolHandler[WorkflowTriggerInput, WorkflowTriggerOutput]):
@@ -25,3 +34,11 @@ class WorkflowPollHandler(ServiceToolHandler[WorkflowPollInput, WorkflowPollOutp
 
 class WorkflowFetchLogsHandler(ServiceToolHandler[WorkflowFetchLogsInput, WorkflowFetchLogsOutput]):
     _service = workflow_fetch_logs
+
+
+class WorkflowListRunsHandler(ServiceToolHandler[WorkflowListRunsInput, WorkflowListRunsOutput]):
+    _service = workflow_list_runs
+
+
+class WorkflowCancelRunHandler(ServiceToolHandler[WorkflowCancelRunInput, WorkflowPollOutput]):
+    _service = workflow_cancel_run

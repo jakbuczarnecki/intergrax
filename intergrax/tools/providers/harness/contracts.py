@@ -84,3 +84,36 @@ class HarnessGetRunEventsOutput(BaseModel):
     run_id: str
     events: list[HarnessRunEventOutput] = Field(default_factory=list)
     total: int = 0
+
+
+class HarnessCompareRunsInput(BaseModel):
+    tenant_id: str = Field(..., min_length=1)
+    baseline_run_id: str = Field(..., min_length=1)
+    candidate_run_id: str = Field(..., min_length=1)
+
+
+class HarnessRunComparisonOutput(BaseModel):
+    run_id: str
+    duration_ms: int = 0
+    event_count: int = 0
+    llm_usage: dict[str, Any] = Field(default_factory=dict)
+    error_type: str = ""
+
+
+class HarnessCompareRunsOutput(BaseModel):
+    baseline: HarnessRunComparisonOutput
+    candidate: HarnessRunComparisonOutput
+    duration_delta_ms: int = 0
+    event_count_delta: int = 0
+
+
+class HarnessExportRunBundleInput(BaseModel):
+    run_id: str = Field(..., min_length=1)
+    tenant_id: str = Field(..., min_length=1)
+    max_events: int = Field(default=200, ge=1, le=1000)
+
+
+class HarnessExportRunBundleOutput(BaseModel):
+    run_id: str
+    bundle_json: str
+    event_count: int = 0

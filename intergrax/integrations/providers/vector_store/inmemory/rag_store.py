@@ -162,6 +162,65 @@ class InMemoryVectorStore(LexicalHybridSupport, BaseVectorStore):
     def list_collections(self) -> List[str]:
         return [f"inmemory:{self._tenant_id}"]
 
+    def list_document_ids(self, *, limit: int = 100, offset: int = 0) -> List[str]:
+        ids = list(self._payloads.keys())
+        if offset < 0:
+            offset = 0
+        return ids[offset : offset + max(1, limit)]
+
+    def get_document(self, document_id: str) -> Optional[Dict[str, Any]]:
+        payload = self._payloads.get(document_id)
+        if payload is None:
+            return None
+        metadata = {key: value for key, value in payload.items() if key != "text"}
+        return {
+            "id": document_id,
+            "text": str(payload.get("text") or ""),
+            "metadata": metadata,
+        }
+
+    def search_by_metadata(
+        self,
+        *,
+        conditions: Dict[str, Any],
+        limit: int = 50,
+    ) -> List[Dict[str, Any]]:
+        effective_where = dict(conditions)
+        existing = effective_where.get("tenant_id")
+        if existing is not None and existing != self._tenant_id:
+            raise ValueError(
+                f"Query tenant_id mismatch: expected '{self._tenant_id}', got '{existing}'."
+            )
+        effective_where["tenant_id"] = self._tenant_id
+
+        results: List[Dict[str, Any]] = []
+        for doc_id, payload in self._payloads.items():
+            match = all(payload.get(key) == value for key, value in effective_where.items())
+            if not match:
+                continue
+            metadata = {key: value for key, value in payload.items() if key != "text"}
+            results.append(
+                {
+                    "id": doc_id,
+                    "text": str(payload.get("text") or ""),
+                    "metadata": metadata,
+                }
+            )
+            if len(results) >= max(1, limit):
+                break
+        return results
+
+    def purge_collection(self, *, dry_run: bool = True, tenant_id: str = "") -> Dict[str, Any]:
+        if tenant_id and tenant_id != self._tenant_id:
+            raise ValueError(
+                f"Purge tenant_id mismatch: expected '{self._tenant_id}', got '{tenant_id}'."
+            )
+        document_count = len(self._payloads)
+        if dry_run:
+            return {"dry_run": True, "would_delete": document_count, "tenant_id": self._tenant_id}
+        self.delete(list(self._payloads.keys()))
+        return {"dry_run": False, "deleted": document_count, "tenant_id": self._tenant_id}
+
     # ---------------------------------------------------------
 
     def _cosine_similarity(

@@ -7,6 +7,8 @@ from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.providers.storage.contracts import (
     StorageDeleteInput,
     StorageDeleteOutput,
+    StorageExistsInput,
+    StorageExistsOutput,
     StorageGetInput,
     StorageGetOutput,
     StoragePresignedUrlInput,
@@ -16,12 +18,14 @@ from intergrax.tools.providers.storage.contracts import (
 )
 from intergrax.tools.providers.storage.handlers import (
     StorageDeleteHandler,
+    StorageExistsHandler,
     StorageGetHandler,
     StoragePresignedUrlHandler,
     StoragePutHandler,
 )
 from intergrax.tools.providers.storage.service import (
     STORAGE_DELETE_TOOL_ID,
+    STORAGE_EXISTS_TOOL_ID,
     STORAGE_GET_TOOL_ID,
     STORAGE_PRESIGNED_URL_TOOL_ID,
     STORAGE_PUT_TOOL_ID,
@@ -35,6 +39,7 @@ STORAGE_TOOL_IDS: tuple[str, ...] = (
     STORAGE_PUT_TOOL_ID,
     STORAGE_PRESIGNED_URL_TOOL_ID,
     STORAGE_DELETE_TOOL_ID,
+    STORAGE_EXISTS_TOOL_ID,
 )
 
 
@@ -102,4 +107,20 @@ def register_storage_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> No
             tags=("storage", "object"),
         ),
         StorageDeleteHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=STORAGE_EXISTS_TOOL_ID,
+            name=STORAGE_EXISTS_TOOL_ID,
+            description="Check whether an object exists in blob storage without returning body bytes.",
+            description_short="Check storage object exists.",
+            input_schema=StorageExistsInput,
+            output_schema=StorageExistsOutput,
+            error_mapping={},
+            side_effects=False,
+            category="storage",
+            risk_level=ToolRiskLevel.LOW,
+            tags=("storage", "object", "metadata"),
+        ),
+        StorageExistsHandler(ctx),
     )

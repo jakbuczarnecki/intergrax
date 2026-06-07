@@ -28,6 +28,18 @@ class MetricsQueryInstantOutput(BaseModel):
     series: list[MetricSeriesOutput] = Field(default_factory=list)
 
 
+class MetricsQueryRangeInput(BaseModel):
+    query: str = Field(..., min_length=1, description="PromQL range query.")
+    start: float = Field(..., description="Range start timestamp (epoch seconds).")
+    end: float = Field(..., description="Range end timestamp (epoch seconds).")
+    step: str = Field(default="15s", min_length=1, description="Query resolution step.")
+
+
+class MetricsQueryRangeOutput(BaseModel):
+    result_type: str = ""
+    series: list[MetricSeriesOutput] = Field(default_factory=list)
+
+
 class LogsSearchInput(BaseModel):
     query: str = Field(..., min_length=1, description="Log search query (Lucene query_string for Elasticsearch).")
     limit: int = Field(default=20, ge=1, le=100)
@@ -41,6 +53,17 @@ class LogHitOutput(BaseModel):
 
 
 class LogsSearchOutput(BaseModel):
+    hits: list[LogHitOutput] = Field(default_factory=list)
+    total: int = 0
+    context_text: str = ""
+
+
+class LogsTailInput(BaseModel):
+    limit: int = Field(default=20, ge=1, le=100)
+    query: str = Field(default="*", description="Optional Lucene query filter.")
+
+
+class LogsTailOutput(BaseModel):
     hits: list[LogHitOutput] = Field(default_factory=list)
     total: int = 0
     context_text: str = ""

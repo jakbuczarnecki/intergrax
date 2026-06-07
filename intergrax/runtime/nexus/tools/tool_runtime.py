@@ -99,8 +99,20 @@ def capability_payload_to_tool_ids(payload: Mapping[str, Any]) -> tuple[str, ...
 
     ids: list[str] = []
     if bool(payload.get("use_rag", False)):
+        if not payload.get("tool_ids"):
+            warnings.warn(
+                "capability payload use_rag without tool_ids is deprecated; use rag.retrieve",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         ids.append(RAG_RETRIEVE_TOOL_ID)
     if bool(payload.get("use_websearch", False)):
+        if not payload.get("tool_ids"):
+            warnings.warn(
+                "capability payload use_websearch without tool_ids is deprecated; use websearch.query",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         ids.append(WEBSEARCH_QUERY_TOOL_ID)
     return tuple(dict.fromkeys(ids))
 

@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.providers.memory.contracts import (
+    MemoryDeleteKeyInput,
+    MemoryDeleteKeyOutput,
     MemoryListKeysInput,
     MemoryListKeysOutput,
     MemoryReadInput,
@@ -13,11 +15,13 @@ from intergrax.tools.providers.memory.contracts import (
     MemoryWriteOutput,
 )
 from intergrax.tools.providers.memory.handlers import (
+    MemoryDeleteKeyHandler,
     MemoryListKeysHandler,
     MemoryReadHandler,
     MemoryWriteHandler,
 )
 from intergrax.tools.providers.memory.service import (
+    MEMORY_DELETE_KEY_TOOL_ID,
     MEMORY_LIST_KEYS_TOOL_ID,
     MEMORY_READ_TOOL_ID,
     MEMORY_WRITE_TOOL_ID,
@@ -30,6 +34,7 @@ MEMORY_TOOL_IDS: tuple[str, ...] = (
     MEMORY_READ_TOOL_ID,
     MEMORY_WRITE_TOOL_ID,
     MEMORY_LIST_KEYS_TOOL_ID,
+    MEMORY_DELETE_KEY_TOOL_ID,
 )
 
 
@@ -81,4 +86,20 @@ def register_memory_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> Non
             tags=("memory", "task"),
         ),
         MemoryListKeysHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=MEMORY_DELETE_KEY_TOOL_ID,
+            name=MEMORY_DELETE_KEY_TOOL_ID,
+            description="Delete a policy-scoped task memory record by namespace and key.",
+            description_short="Delete task memory key.",
+            input_schema=MemoryDeleteKeyInput,
+            output_schema=MemoryDeleteKeyOutput,
+            error_mapping={},
+            side_effects=True,
+            category="memory",
+            risk_level=ToolRiskLevel.MEDIUM,
+            tags=("memory", "task"),
+        ),
+        MemoryDeleteKeyHandler(ctx),
     )

@@ -56,3 +56,32 @@ class EvalSummarizeReleaseOutput(BaseModel):
     average_score: float = 0.0
     passed_count: int = 0
     failed_count: int = 0
+
+
+class EvalCompareReleasesInput(BaseModel):
+    baseline_release_id: str = Field(..., min_length=1)
+    candidate_release_id: str = Field(..., min_length=1)
+
+
+class EvalCompareReleasesOutput(BaseModel):
+    baseline_release_id: str
+    candidate_release_id: str
+    baseline_observation_count: int = 0
+    candidate_observation_count: int = 0
+    baseline_pass_rate: float = 0.0
+    candidate_pass_rate: float = 0.0
+    pass_rate_delta: float = 0.0
+    baseline_average_score: float = 0.0
+    candidate_average_score: float = 0.0
+    score_delta: float = 0.0
+    candidate_better: bool = False
+
+
+class EvalExportObservationsInput(BaseModel):
+    limit: int = Field(default=1000, ge=1, le=5000)
+
+
+class EvalExportObservationsOutput(BaseModel):
+    exported: bool = True
+    observation_count: int = 0
+    export_json: str = ""

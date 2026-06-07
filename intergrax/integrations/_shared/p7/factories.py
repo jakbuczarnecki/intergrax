@@ -332,6 +332,40 @@ def _workflow_orchestrator_factory(
                     return str(payload.get("logs") or payload.get("content") or "")
                 return str(payload)
 
+            def list_runs(self, *, workflow_id: str = "", limit: int = 20) -> list[dict[str, Any]]:
+                if provider == "prefect":
+                    params: dict[str, Any] = {"limit": limit}
+                    if workflow_id:
+                        params["deployment_id"] = workflow_id
+                    response = http.get("/api/flow_runs", params=params)
+                else:
+                    dag = workflow_id or "~"
+                    response = http.get(f"/api/v1/dags/{dag}/dagRuns", params={"limit": limit})
+                response.raise_for_status()
+                payload = response.json()
+                rows = payload if isinstance(payload, list) else list(
+                    payload.get("dag_runs") or payload.get("flow_runs") or []
+                )
+                return [
+                    dict(item) if isinstance(item, dict) else {"run_id": str(item)}
+                    for item in rows[:limit]
+                ]
+
+            def cancel_run(self, run_id: str) -> dict[str, Any]:
+                if provider == "prefect":
+                    response = http.post(
+                        f"/api/flow_runs/{run_id}/set_state",
+                        json={"state": {"type": "CANCELLED"}},
+                    )
+                else:
+                    response = http.patch(
+                        f"/api/v1/dags/~/dagRuns/{run_id}",
+                        json={"state": "failed"},
+                    )
+                response.raise_for_status()
+                payload = response.json()
+                return dict(payload) if isinstance(payload, dict) else {"run_id": run_id, "status": "cancelled"}
+
             def health(self) -> bool:
                 return http_ping_ok(http, path=health_path)
 

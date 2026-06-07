@@ -803,6 +803,8 @@ def readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> s
 
         Scaffolded **product** profile — FastAPI Core (`/health`, `/v1/*`) + ``POST {route_prefix}/run``.
 
+        **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md) · **Plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+
         **Build & deploy:** [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md)
 
         ## Three-command quickstart

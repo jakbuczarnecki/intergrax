@@ -12,6 +12,7 @@ from typing import Optional
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.queueing.contracts.task_queue import TaskStatus
+from intergrax.queueing.task_index import record_task_index
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.execution import execute_logical_task
 
@@ -85,6 +86,14 @@ class BrokerWorkerBase(ABC):
             key=self._status_key(task_id),
             value=TaskStatus.RUNNING.value.encode("utf-8"),
         )
+        record_task_index(
+            self._kv_store,
+            tenant_id=tenant_id,
+            task_id=task_id,
+            task_name=task_name,
+            provider=str(message.get("provider") or "broker"),
+            status=TaskStatus.RUNNING,
+        )
 
         try:
             result = execute_logical_task(
@@ -116,6 +125,14 @@ class BrokerWorkerBase(ABC):
                 key=self._result_key(task_id),
                 value=result_record.encode("utf-8"),
             )
+            record_task_index(
+                self._kv_store,
+                tenant_id=tenant_id,
+                task_id=task_id,
+                task_name=task_name,
+                provider=str(message.get("provider") or "broker"),
+                status=TaskStatus.SUCCEEDED,
+            )
 
         except Exception as exc:
             # Persist FAILED
@@ -132,6 +149,14 @@ class BrokerWorkerBase(ABC):
                 tenant_id=tenant_id,
                 key=self._result_key(task_id),
                 value=result_record.encode("utf-8"),
+            )
+            record_task_index(
+                self._kv_store,
+                tenant_id=tenant_id,
+                task_id=task_id,
+                task_name=task_name,
+                provider=str(message.get("provider") or "broker"),
+                status=TaskStatus.FAILED,
             )
 
             raise exc

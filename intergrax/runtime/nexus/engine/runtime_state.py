@@ -174,6 +174,9 @@ class RuntimeState(RuntimeStateContract):
             safe_message = message        
             
 
+        meta = self.request.metadata or {}
+        task_id = meta.get("task_id") if isinstance(meta.get("task_id"), str) else self.run_id
+
         evt = TraceEvent(
             event_id=TraceEvent.new_id(),
             run_id=self.run_id,
@@ -184,7 +187,11 @@ class RuntimeState(RuntimeStateContract):
             step=step,
             message=safe_message,
             payload=payload,
-            tags={},
+            tags={
+                "tenant_id": self.tenant_id,
+                "task_id": task_id or self.run_id,
+                "agent_id": self.request.agent_id or "",
+            },
             artifact_refs=list(artifact_refs) if artifact_refs else [],
         )
         self.trace_events.append(evt)
@@ -192,6 +199,20 @@ class RuntimeState(RuntimeStateContract):
         writer = self.context.trace_writer
         if writer is not None:
             writer.append_event(evt)
+
+        bus = self.context.config.runtime_event_bus
+        if bus is not None:
+            from intergrax.runtime.events.trace_bridge import (
+                trace_bridge_subject_from_tags,
+                trace_event_to_runtime_event,
+            )
+
+            subject = trace_bridge_subject_from_tags(
+                tenant_id=self.tenant_id,
+                task_id=str(task_id or self.run_id),
+                agent_id=self.request.agent_id or "",
+            )
+            bus.record(trace_event_to_runtime_event(evt, subject))
 
 
     def configure_llm_tracker(self) -> None:     

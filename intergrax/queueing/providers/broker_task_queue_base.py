@@ -5,14 +5,21 @@
 from __future__ import annotations
 
 import base64
-from typing import Optional
+from typing import List, Optional
 
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.queueing.contracts.task_queue import (
-    TaskQueue,
     TaskHandle,
-    TaskStatus,
+    TaskQueue,
     TaskResult,
+    TaskStatus,
+    TaskSummary,
+)
+from intergrax.queueing.task_index import (
+    list_tasks_from_index,
+    purge_completed_tasks_from_index,
+    record_task_index,
+    update_task_index_status,
 )
 
 
@@ -114,4 +121,66 @@ class BrokerBackedTaskQueueBase(TaskQueue):
             output=output,
             error_message=error_message,
             attempts=attempts,
+        )
+
+    def cancel(self, handle: TaskHandle) -> bool:
+        if handle.tenant_id is None:
+            return False
+        self._kv_store.set(
+            tenant_id=handle.tenant_id,
+            key=self._status_key(handle.task_id),
+            value=TaskStatus.FAILED.value.encode("utf-8"),
+        )
+        update_task_index_status(
+            self._kv_store,
+            tenant_id=handle.tenant_id,
+            task_id=handle.task_id,
+            provider=self._provider_name,
+            status=TaskStatus.FAILED,
+        )
+        return True
+
+    def list_tasks(
+        self,
+        tenant_id: str,
+        *,
+        limit: int = 50,
+        status_filter: Optional[TaskStatus] = None,
+    ) -> list[TaskSummary]:
+        return list_tasks_from_index(
+            self._kv_store,
+            tenant_id,
+            provider=self._provider_name,
+            limit=limit,
+            status_filter=status_filter,
+        )
+
+    def purge_completed(
+        self,
+        tenant_id: str,
+        *,
+        older_than_seconds: int = 0,
+    ) -> int:
+        return purge_completed_tasks_from_index(
+            self._kv_store,
+            tenant_id=tenant_id,
+            provider=self._provider_name,
+            older_than_seconds=older_than_seconds,
+        )
+
+    def register_task_index(
+        self,
+        *,
+        tenant_id: str,
+        task_id: str,
+        task_name: str,
+        status: TaskStatus,
+    ) -> None:
+        record_task_index(
+            self._kv_store,
+            tenant_id=tenant_id,
+            task_id=task_id,
+            task_name=task_name,
+            provider=self._provider_name,
+            status=status,
         )

@@ -29,10 +29,22 @@ class CheckSuiteRecord(BaseModel):
 
 @runtime_checkable
 class CiCdBackend(Protocol):
-    """Read-only CI/CD status facade (GitHub Actions, GitLab CI, …)."""
+    """CI/CD status and workflow run operations (GitHub Actions, GitLab CI, …)."""
 
     def get_workflow_run(self, run_id: str) -> WorkflowRunRecord:
         """Fetch a workflow run by id."""
 
     def list_check_suites(self, *, ref: str, limit: int = 20) -> Sequence[CheckSuiteRecord]:
         """List recent check suites for a git ref (branch/tag/sha)."""
+
+    def list_workflow_runs(
+        self,
+        *,
+        workflow_id: str = "",
+        ref: str = "",
+        limit: int = 20,
+    ) -> Sequence[WorkflowRunRecord]:
+        """List recent workflow runs, optionally filtered by workflow id or git ref."""
+
+    def cancel_workflow_run(self, run_id: str) -> WorkflowRunRecord:
+        """Request cancellation of a workflow run and return updated status."""

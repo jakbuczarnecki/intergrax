@@ -219,15 +219,20 @@ def create_debug_router(
         tenant: str = Query(default="default", description="Tenant id"),
         include_runtime: bool = Query(
             default=False,
-            description="Include RuntimeEvent view via trace_bridge",
+            description="Include unified RuntimeEvent journal (trace bridge + persisted events)",
         ),
         reader: RunTraceReader = Depends(get_reader),
+        store: RuntimeEventPersistence | None = Depends(get_runtime_events),
     ) -> TraceResponse:
         try:
             persisted = reader.read_run(run_id, tenant)
         except (ValueError, KeyError) as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
-        payload = build_trace_payload(persisted, include_runtime=include_runtime)
+        payload = build_trace_payload(
+            persisted,
+            include_runtime=include_runtime,
+            runtime_store=store if include_runtime else None,
+        )
         return TraceResponse(
             run_id=str(payload["run_id"]),
             tenant_id=persisted.metadata.tenant_id,

@@ -38,3 +38,23 @@ class WorkflowFetchLogsInput(BaseModel):
 class WorkflowFetchLogsOutput(BaseModel):
     run_id: str
     logs: str = ""
+
+
+class WorkflowListRunsInput(BaseModel):
+    workflow_id: str = Field(default="", description="Optional workflow identifier filter.")
+    limit: int = Field(default=20, ge=1, le=100)
+
+
+class WorkflowRunSummaryOutput(BaseModel):
+    run_id: str
+    status: str = ""
+    url: str = ""
+
+
+class WorkflowListRunsOutput(BaseModel):
+    runs: list[WorkflowRunSummaryOutput] = Field(default_factory=list)
+    total: int = 0
+
+
+class WorkflowCancelRunInput(BaseModel):
+    run_id: str = Field(..., min_length=1)

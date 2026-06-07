@@ -26,6 +26,15 @@ class PlatformPutSecretOutput(BaseModel):
     stored: bool = True
 
 
+class PlatformDeleteSecretInput(BaseModel):
+    path: str = Field(..., min_length=1)
+
+
+class PlatformDeleteSecretOutput(BaseModel):
+    path: str
+    deleted: bool = True
+
+
 class PlatformEvaluateFeatureFlagInput(BaseModel):
     flag_key: str = Field(..., min_length=1)
     tenant_id: str = Field(..., min_length=1)
@@ -68,3 +77,18 @@ class PlatformListCheckSuitesOutput(BaseModel):
     ref: str
     suites: list[PlatformCheckSuiteOutput] = Field(default_factory=list)
     total: int = 0
+
+
+class PlatformListWorkflowRunsInput(BaseModel):
+    workflow_id: str = Field(default="", description="Optional workflow identifier filter.")
+    ref: str = Field(default="", description="Optional git ref filter (branch/tag/sha).")
+    limit: int = Field(default=20, ge=1, le=100)
+
+
+class PlatformListWorkflowRunsOutput(BaseModel):
+    runs: list[PlatformWorkflowRunOutput] = Field(default_factory=list)
+    total: int = 0
+
+
+class PlatformCancelWorkflowRunInput(BaseModel):
+    run_id: str = Field(..., min_length=1)

@@ -3,12 +3,18 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from intergrax.runtime.workspace.models import ShadowArtifact
 from intergrax.runtime.workspace.shadow_workspace import ShadowWorkspace
 from intergrax.tools.providers.workspace.contracts import (
     WorkspaceArtifactOutput,
     WorkspaceDeleteFileInput,
     WorkspaceDeleteFileOutput,
+    WorkspaceExportArtifactInput,
+    WorkspaceExportArtifactOutput,
+    WorkspaceImportArtifactInput,
+    WorkspaceImportArtifactOutput,
     WorkspaceListFilesInput,
     WorkspaceListFilesOutput,
     WorkspaceReadFileInput,
@@ -28,6 +34,8 @@ WORKSPACE_LIST_FILES_TOOL_ID = "workspace.list_files"
 WORKSPACE_SNAPSHOT_TOOL_ID = "workspace.snapshot"
 WORKSPACE_DELETE_FILE_TOOL_ID = "workspace.delete_file"
 WORKSPACE_SEARCH_TOOL_ID = "workspace.search"
+WORKSPACE_EXPORT_ARTIFACT_TOOL_ID = "workspace.export_artifact"
+WORKSPACE_IMPORT_ARTIFACT_TOOL_ID = "workspace.import_artifact"
 
 
 def _require_workspace(ctx: ToolWiringContext) -> ShadowWorkspace:
@@ -99,6 +107,89 @@ def workspace_delete_file(ctx: ToolWiringContext, params: WorkspaceDeleteFileInp
     path = params.path.strip()
     deleted = workspace.delete_file(path)
     return WorkspaceDeleteFileOutput(path=path, deleted=deleted, workspace_id=workspace.workspace_id)
+
+
+def _require_object_storage(ctx: ToolWiringContext):
+    storage = ctx.object_storage
+    if storage is None:
+        raise RuntimeError("object_storage_not_configured")
+    return storage
+
+
+def _safe_relative_path(relative_path: str) -> Path:
+    path = Path(relative_path)
+    if path.is_absolute() or ".." in path.parts:
+        raise ValueError(f"unsafe relative path: {relative_path}")
+    return path
+
+
+def workspace_export_artifact(
+    ctx: ToolWiringContext,
+    params: WorkspaceExportArtifactInput,
+) -> WorkspaceExportArtifactOutput:
+    workspace = _require_workspace(ctx)
+    object_storage = _require_object_storage(ctx)
+    rel = _safe_relative_path(params.path.strip())
+    target = workspace.root / rel
+    if not target.is_file():
+        return WorkspaceExportArtifactOutput(
+            exported=False,
+            path=params.path.strip(),
+            storage_key=params.storage_key.strip(),
+            workspace_id=workspace.workspace_id,
+            reason="artifact_not_found",
+        )
+    body = target.read_bytes()
+    content_type = params.content_type.strip() or "application/octet-stream"
+    for artifact in workspace.list_artifacts():
+        if artifact.relative_path == rel.as_posix() and artifact.content_type:
+            content_type = artifact.content_type
+            break
+    storage_key = params.storage_key.strip()
+    object_storage.put(storage_key, body, content_type=content_type)
+    return WorkspaceExportArtifactOutput(
+        exported=True,
+        path=rel.as_posix(),
+        storage_key=storage_key,
+        size_bytes=len(body),
+        workspace_id=workspace.workspace_id,
+        content_type=content_type,
+        reason="ok",
+    )
+
+
+def workspace_import_artifact(
+    ctx: ToolWiringContext,
+    params: WorkspaceImportArtifactInput,
+) -> WorkspaceImportArtifactOutput:
+    workspace = _require_workspace(ctx)
+    object_storage = _require_object_storage(ctx)
+    storage_key = params.storage_key.strip()
+    stored = object_storage.get(storage_key)
+    if stored is None:
+        return WorkspaceImportArtifactOutput(
+            imported=False,
+            path=params.path.strip(),
+            storage_key=storage_key,
+            workspace_id=workspace.workspace_id,
+            reason="object_not_found",
+        )
+    content_type = params.content_type.strip() or stored.content_type
+    if content_type.startswith("text/") or content_type in {"application/json", "application/xml"}:
+        workspace.write_text(params.path.strip(), stored.body.decode("utf-8"), content_type=content_type)
+    else:
+        rel = _safe_relative_path(params.path.strip())
+        target = workspace.root / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(stored.body)
+    return WorkspaceImportArtifactOutput(
+        imported=True,
+        path=params.path.strip(),
+        storage_key=storage_key,
+        size_bytes=len(stored.body),
+        workspace_id=workspace.workspace_id,
+        reason="ok",
+    )
 
 
 def workspace_search(ctx: ToolWiringContext, params: WorkspaceSearchInput) -> WorkspaceSearchOutput:

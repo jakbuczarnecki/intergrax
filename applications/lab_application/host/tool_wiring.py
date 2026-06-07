@@ -30,11 +30,15 @@ _HARNESS_RUNTIME_BOUND_TOOLS = (
     "harness.list_runs",
     "harness.get_run_cost",
     "harness.get_run_events",
+    "harness.compare_runs",
+    "harness.export_run_bundle",
     "health.check_integration",
     "health.check_profile",
     "eval.record_observation",
     "eval.list_observations",
     "eval.summarize_release",
+    "cost.get_run_budget",
+    "cost.check_quota",
 )
 
 _HARNESS_MODALITY_TOOLS = (

@@ -19,6 +19,8 @@ Tier-3  applications/        Deployable product environments
 **Strategic goal:** production-grade Harness AI aligned with modern Agent Engineering practice.  
 **Source:** [docs/INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
+**Documentation boundary:** `docs/intergrax_runtime_architecture.md` and `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` cover the **Harness / Agent OS platform** only. Each **business environment** (`applications/<product>/`) and **business agent** (`agents/<name>/`) has its own architecture and implementation plan — do not treat platform canon as the product deployment plan.
+
 ---
 
 ## Before you write code
@@ -84,8 +86,11 @@ applications/    MAY import from agents/ and intergrax/
 | Plugin / extension | [docs/EXTENSION_AUTHOR_GUIDE.md](docs/EXTENSION_AUTHOR_GUIDE.md) |
 | Governance / policy / HITL | [docs/AGENT_CREATION_GUIDE.md Appendix H](docs/AGENT_CREATION_GUIDE.md) |
 | Multi-agent graphs / Nexus execution flow | [docs/NEXUS_EXECUTION_FLOW_REFERENCE.md](docs/NEXUS_EXECUTION_FLOW_REFERENCE.md) · [docs/AGENT_CREATION_GUIDE.md Appendix I](docs/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) |
+| Available agents (roster) | [agents/README.md](agents/README.md) |
+| Available application environments | [applications/README.md](applications/README.md) |
 | Harness audit | [docs/INTEGRAX_HARNESS_AUDIT_MAP.md](docs/INTEGRAX_HARNESS_AUDIT_MAP.md) |
 | L4 adaptive harness | [docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) |
+| Critic / verification / LLM-as-judge | [docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · canon §55 · Phase CRIT-V |
 
 ---
 
@@ -152,8 +157,8 @@ Full local suite: `scripts\test.bat unit` (Windows) or equivalent `uv run pytest
 | `intergrax/llm_adapters/` | LLM provider adapters |
 | `intergrax/rag/` | RAG engine |
 | `intergrax/scaffold/` | Scaffolding CLI |
-| `agents/` | Tier-2 agents |
-| `applications/` | Tier-3 application hosts (`local_workspace_application` — LKW product) |
+| `agents/` | Tier-2 agents — roster: [agents/README.md](agents/README.md) |
+| `applications/` | Tier-3 application hosts — index: [applications/README.md](applications/README.md) (LKW, DSW, legal, research, lab) |
 | `docs/` | Canonical documentation |
 | `tests/` | Unit, integration, acceptance tests |
 | `scripts/` | Harness CI scripts |

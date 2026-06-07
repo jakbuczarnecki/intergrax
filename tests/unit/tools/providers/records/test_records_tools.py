@@ -9,11 +9,18 @@ import pytest
 from intergrax.integrations.contracts.document_store import DocumentQueryResult, DocumentRecord
 from intergrax.tools.providers.records.contracts import (
     RecordsDeleteInput,
+    RecordsDescribeCollectionInput,
     RecordsGetInput,
     RecordsPutInput,
     RecordsQueryInput,
 )
-from intergrax.tools.providers.records.service import records_delete, records_get, records_put, records_query
+from intergrax.tools.providers.records.service import (
+    records_delete,
+    records_describe_collection,
+    records_get,
+    records_put,
+    records_query,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 pytestmark = pytest.mark.unit
@@ -73,3 +80,16 @@ def test_records_put_get_query_delete() -> None:
 def test_records_not_configured() -> None:
     with pytest.raises(RuntimeError, match="document_store_not_configured"):
         records_get(ToolWiringContext(), RecordsGetInput(partition_key="a", row_key="b"))
+
+
+def test_records_describe_collection() -> None:
+    ctx = ToolWiringContext(document_store=InMemoryDocumentStore())
+    records_put(
+        ctx,
+        RecordsPutInput(partition_key="tenant-1", row_key="artifact-1", data={"status": "ready", "kind": "note"}),
+    )
+    out = records_describe_collection(ctx, RecordsDescribeCollectionInput(partition_key="tenant-1"))
+    assert out.used is True
+    assert out.document_count == 1
+    assert "status" in out.sample_field_names
+    assert out.sample_row_keys == ["artifact-1"]

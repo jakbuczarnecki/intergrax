@@ -1,5 +1,7 @@
 # Echo agent — architecture
 
+Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+
 ## Purpose
 
 Minimal **Harness reference agent** for gate tests, lab roster, and `poc_template_application`.

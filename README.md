@@ -41,6 +41,7 @@ Intergrax is a **production-grade Harness AI platform** — not a single chatbot
 - [Repository layout](#repository-layout)
 - [Architecture maturity and audits](#architecture-maturity-and-audits)
 - [Adaptive Harness Intelligence (L4)](#adaptive-harness-intelligence-l4)
+- [Critic & Verification Layer (PEV Verify)](#critic--verification-layer-pev-verify)
 - [Documentation index](#documentation-index)
 - [Status](#status)
 - [Audience](#audience)
@@ -74,6 +75,21 @@ It is designed for teams who treat **the Harness as the durable product** and ag
 Intergrax is **not** a chatbot, a prompt collection, a single agent, a workflow builder, a marketplace, or a finished multi-tenant SaaS product today. It **learns from** Cursor, Viktor, NotebookLM, and modern agent runtimes — the **laboratory** optimizes controlled experimentation; the **harness** optimizes governed, repeatable production agent work on the **same codebase**.
 
 Canon: [architecture §3–§4](docs/intergrax_runtime_architecture.md) · [ideal Harness AI model](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+
+### Documentation boundary
+
+Repository **`docs/`** architecture canon and **[implementation plan](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)** describe the **Harness AI / Agent OS platform** — infrastructure to run and govern agent environments.
+
+They **do not** replace per-product or per-agent documentation:
+
+| Layer | Platform docs (`docs/`) | Own docs (mandatory for domain work) |
+|-------|-------------------------|--------------------------------------|
+| Tier-3 business environment | Wiring patterns, `applications/USAGE.md` | `applications/<product>/ARCHITECTURE.md`, `IMPLEMENTATION_PLAN.md` |
+| Tier-2 business agent | [Agent creation guide](docs/AGENT_CREATION_GUIDE.md), scaffold workflow | `agents/<name>/ARCHITECTURE.md`, agent README, local plan |
+
+Examples: [Local Knowledge Workspace](applications/local_workspace_application/ARCHITECTURE.md) and [Dispute Simulation Workspace](applications/dispute_sim_application/ARCHITECTURE.md) are documented under their application folders, not in the platform implementation plan.
+
+Details: [Strategy §Documentation boundary](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md#documentation-boundary) · [Architecture §1.1](docs/intergrax_runtime_architecture.md#11-documentation-boundary-platform-vs-product) · [Plan §4.0a](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business)
 
 ---
 
@@ -359,6 +375,19 @@ NexusLoop + IntegrationProfile + FastAPI  →  HTTP / Docker in production
 | Own `.env` / Docker | No | Partial (lab defaults) | Yes — full isolation |
 | Typical use | Build & test capability | Quick HTTP + `/debug/*` | Ship legal API, concept lab, customer host |
 
+### Available environments and agents
+
+**Full index:** [`agents/README.md`](agents/README.md) (Tier-2 roster) · [`applications/README.md`](applications/README.md) (Tier-3 hosts)
+
+| Application | Port | Agents | Role |
+|-------------|------|--------|------|
+| [`lab_application/`](applications/lab_application/) | 8090 | Echo, SignoffProbe, Legal, Research, … | Universal lab + debug trace API |
+| [`poc_template_application/`](applications/poc_template_application/) | 8095 | Echo | Canonical Tier-3 scaffold reference |
+| [`legal_application/`](applications/legal_application/) | 8000 | LegalAgent | Contract review product API |
+| [`research_application/`](applications/research_application/) | 8010 | ResearchAgent, SummaryAgent | Research → summarize pipeline |
+| [`local_workspace_application/`](applications/local_workspace_application/) | 8020 | LocalIndexer, LocalSearch, LocalSynthesizer | **LKW** — local knowledge workspace |
+| [`dispute_sim_application/`](applications/dispute_sim_application/) | 8025 | DisputeIntake, DisputeAnalyst, DisputeStrategist, DisputeScenario | **DSW** — dispute simulation workspace |
+
 ### Example applications in this repository
 
 | Application | What it demonstrates |
@@ -368,6 +397,7 @@ NexusLoop + IntegrationProfile + FastAPI  →  HTTP / Docker in production
 | [`legal_application/`](applications/legal_application/) | Product host — scaffold `LegalAgent`, auth, FastAPI core |
 | [`research_application/`](applications/research_application/) | Multi-agent HTTP host — research + summary agents |
 | [`local_workspace_application/`](applications/local_workspace_application/) | **Local Knowledge Workspace (LKW)** — local file index, search, synthesis ([ARCHITECTURE.md](applications/local_workspace_application/ARCHITECTURE.md)) |
+| [`dispute_sim_application/`](applications/dispute_sim_application/) | **Dispute Simulation Workspace (DSW)** — case intake, argument analysis, strategy, court simulation ([ARCHITECTURE.md](applications/dispute_sim_application/ARCHITECTURE.md)) |
 
 **Usage guides:**
 
@@ -663,20 +693,21 @@ Audit layer 27: [AUDIT_MAP §27 Developer Experience](docs/INTEGRAX_HARNESS_AUDI
 
 ## Reference agents and applications
 
-### Tier-2 reference agents
+**Canonical roster:** [`agents/README.md`](agents/README.md) · **Application hosts:** [`applications/README.md`](applications/README.md)
 
-| Agent | Capability | Path |
-|-------|------------|------|
-| Echo | Minimal UAEP reference | `agents/echo/` |
-| Signoff Probe | Harness sign-off / policy probe | `agents/signoff_probe/` |
-| Research | Web research pipeline | `agents/research/` |
-| Research Summary | Summarization in multi-agent flow | `agents/research/` |
-| Legal | Contract review (UAEP scaffold baseline) | `agents/legal/` |
-| Organization Worker | Long-running / HITL harness agent (`org.vendor_report`) | `agents/organization_worker/` |
-| Lab mock agents | Offline gate and lab roster fixtures | `agents/lab/mock_agents.py` |
-| Problem Radar | Business prototype — **frozen**, Phase K.1 deferred | `agents/problem_radar/` |
+### Tier-2 agents
 
-Agents execute through **UAEP**, orchestrated by `AgentEngine` inside `NexusLoop`.
+| Category | Agents | Capabilities | Host |
+|----------|--------|--------------|------|
+| **Harness / lab** | Echo, SignoffProbe | `echo.basic`, harness probe | `lab_application` |
+| **Research** | Research, Summary | `research.web_search`, `research.pipeline`, `research.summarize` | `research_application` |
+| **Legal review** | Legal | `legal.review` | `legal_application` |
+| **LKW product** | LocalIndexer, LocalSearch, LocalSynthesizer | `local.workspace.index`, `.search`, `.synthesize` | `local_workspace_application` |
+| **DSW product** | DisputeIntake, DisputeAnalyst, DisputeStrategist, DisputeScenario | `dispute.intake`, `.analyze`, `.strategy`, `.scenario` | `dispute_sim_application` |
+| **Harness demo** | OrganizationWorker | `org.vendor_report` | `lab_application` (optional) |
+| **Deferred** | ProblemRadar | `problem_radar.scan` | — (Phase K.1) |
+
+Agents execute through **UAEP**, orchestrated by `AgentEngine` inside `NexusLoop`. Per-agent docs: `agents/<name>/README.md` + `ARCHITECTURE.md`.
 
 ### Control plane closeouts (platform Done)
 
@@ -692,6 +723,7 @@ All harness control planes are **closed** — authoring maps live in AGENT_CREAT
 | SEC | Security wiring | [S](docs/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) |
 | COST | Cost governance | [T](docs/AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) |
 | EVAL | Evaluation wiring | [U](docs/AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout) |
+| CRIT-V | Critic & Verification Layer | [CVL](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · [Phase CRIT-V](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-crit-v--critic--verification-layer) |
 | ORCH | Orchestration | [I](docs/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) |
 | TS | Tools & skills | [J](docs/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) |
 | INT | Integrations | [K](docs/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) |
@@ -773,9 +805,36 @@ This is **not classical reinforcement learning** (neural policy training, uncons
 
 ---
 
+## Critic & Verification Layer (PEV Verify)
+
+Intergrax implements **Plan–Execute–Verify (PEV)** through the **Critic & Verification Layer (CVL)** — a tier-separated stack that judges whether partial and final agent outputs are actually correct.
+
+| Layer | Type | Owner | Examples |
+|-------|------|-------|----------|
+| **L0** | Deterministic | Harness + Agent contract | Schema, `NexusValidationEngine`, executable tests |
+| **L1** | Semantic (opt-in) | Harness primitives + Agent rubrics | `eval.judge`, `eval.trajectory`, ValidatorAgent |
+| **L2** | Authoritative | Policy + Human | HITL sign-off, compliance review |
+
+**Tier separation:** The Harness orchestrates *how* verification runs (hooks, retry, registry, release gates). Agents supply *what* is verified (domain rubrics, ValidatorAgents). Applications configure *when* and *how strictly* (`CriticProfile`, golden datasets).
+
+LLM-as-judge is **opt-in** — not mandatory on every run. Structural L0 validation runs on every graph node by default.
+
+| Document | Purpose |
+|----------|---------|
+| [CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) | Full CVL specification — competencies, components, flows |
+| [INTERGRAX_IMPLEMENTATION_PLAN — Phase CRIT-V](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-crit-v--critic--verification-layer) | Implementation register (Band 2ak, **Active**) |
+| [intergrax_runtime_architecture.md §55](docs/intergrax_runtime_architecture.md#55-critic--verification-layer-cvl--pev-verify-addendum) | Canon addendum |
+| [ADR-CRITIC-001](docs/adr/ADR-CRITIC-001.md) | Architecture decision — tier-separated verify stack |
+
+**Builds on:** Phase EVAL (evaluation registry wiring), Phase FLOW (graph hooks), existing `NexusValidationEngine`.
+
+---
+
 ## Documentation index
 
 All platform documentation lives in [`docs/`](docs/). **One source of truth per topic.**
+
+**Scope:** These documents cover the **Intergrax Harness / Agent OS platform** only. Each **business environment** (`applications/<product>/`) and **business agent** (`agents/<name>/`) has its own architecture and implementation plan — see [Documentation boundary](#documentation-boundary) above.
 
 ### Strategy and architecture
 
@@ -786,6 +845,7 @@ All platform documentation lives in [`docs/`](docs/). **One source of truth per 
 | [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Full architecture canon — tiers, Nexus, UAEP §42, Harness §5.3 |
 | [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md) | Ideal Harness AI target — evaluate implementation alignment |
 | [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) | **Adaptive Harness Intelligence (L4)** — business case, ACP architecture, W-ADAPT implementation waves |
+| [CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) | **Critic & Verification Layer (CVL)** — PEV verify stack, L0/L1/L2 critics, tier competencies, CRIT-V roadmap |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) | Phase status, hardening streams, KPIs, business checklist (Appendix A) |
 
 ### Authoring and workflow
@@ -803,7 +863,7 @@ All platform documentation lives in [`docs/`](docs/). **One source of truth per 
 | Document | Read when you want to… |
 |----------|------------------------|
 | [INTEGRATIONS.md](docs/INTEGRATIONS.md) | **167 providers** — contracts, env vars, per-slug USAGE links |
-| [TOOLS.md](docs/TOOLS.md) | Tool Library — atomic LLM/MCP operations, migration from legacy flags |
+| [TOOLS.md](docs/TOOLS.md) | Tool Library — **150** catalog tools · **40** bundles; atomic LLM/MCP operations |
 | [SKILLS.md](docs/SKILLS.md) | Skill Library — manifests, importers, harness presets |
 | [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) | 19 LLM providers — `LLMAdapterResponse` envelope, streaming, tools, metrics |
 | [MODALITY.md](docs/MODALITY.md) | Vision, audio, ML — three modality planes |
@@ -835,6 +895,7 @@ Skills                  →  SKILLS.md
 LLM providers           →  LLM_ADAPTERS.md (typed response envelope)
 Modality / CV / ML      →  MODALITY.md
 Lab environment         →  HARNESS_ENVIRONMENT.md
+Agents & environments   →  agents/README.md + applications/README.md
 New application         →  applications/USAGE.md + poc_template_application/
 Plugin extension        →  EXTENSION_AUTHOR_GUIDE.md
 Ideal harness target    →  IDEAL_HARNESS_AI_ARCHITECTURE.md
@@ -851,7 +912,7 @@ Cost / evaluation       →  AGENT_CREATION_GUIDE.md Appendices T–U
 
 ## Status
 
-Intergrax is under **active development** (private R&D). The **harness platform** is **complete** — default queue is maintenance only ([§6.1](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1)). Business agents (Phase K) are **end of plan** until explicit product prioritization ([§6.3](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only)).
+Intergrax is under **active development** (private R&D). The **harness platform** maintenance queue runs on every PR ([§6.1](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1)). **Active implementation:** [Phase CRIT-V — Critic & Verification Layer](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-crit-v--critic--verification-layer) (Band 2ak). Business agents (Phase K) are **end of plan** until explicit product prioritization ([§6.3](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only)).
 
 | Phase | Focus | Status |
 |-------|--------|--------|
@@ -866,6 +927,7 @@ Intergrax is under **active development** (private R&D). The **harness platform*
 | **V** | Harness architecture hardening — capability graph, lifecycle, metrics, prompt/eval/context/security/cost | **Done** (2026-06-05) |
 | **W-ML** | Model & modality plane | **Done** — [MODALITY.md](docs/MODALITY.md) |
 | **W-ADAPT** | Adaptive Harness Intelligence (L4 runtime) | **Done** (70/70) — [AHIA](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) |
+| **CRIT-V** | Critic & Verification Layer (PEV verify depth) | **Active** (1/24) — [CVL](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) |
 | **P-Ext** | Tier-0 plugin catalogs | **Done** (61/61) |
 | **AA** | Agents & applications conformance | **Platform Done** |
 | **MEM** | Memory platform | **Done** (48/48) |

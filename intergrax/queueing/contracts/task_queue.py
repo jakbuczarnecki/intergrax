@@ -7,7 +7,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 
 
 class TaskStatus(str, Enum):
@@ -48,6 +48,17 @@ class TaskHandle:
     task_id: str
     provider: str
     tenant_id: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class TaskSummary:
+    """Lightweight task listing row for queue inspection tools."""
+
+    task_id: str
+    tenant_id: str
+    task_name: str
+    status: TaskStatus
+    provider: str
 
 
 @dataclass(frozen=True)
@@ -110,3 +121,26 @@ class TaskQueue(ABC):
         Returns None if task not completed.
         """
         ...
+
+    def cancel(self, handle: TaskHandle) -> bool:
+        """Request cancellation of a queued or running task. Default: unsupported."""
+        return False
+
+    def list_tasks(
+        self,
+        tenant_id: str,
+        *,
+        limit: int = 50,
+        status_filter: Optional[TaskStatus] = None,
+    ) -> List[TaskSummary]:
+        """List recent tasks for a tenant. Default: empty when backend has no index."""
+        return []
+
+    def purge_completed(
+        self,
+        tenant_id: str,
+        *,
+        older_than_seconds: int = 0,
+    ) -> int:
+        """Remove completed task records for a tenant. Default: unsupported."""
+        return 0

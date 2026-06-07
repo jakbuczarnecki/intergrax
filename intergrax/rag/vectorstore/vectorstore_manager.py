@@ -131,3 +131,40 @@ class VectorstoreManager(BaseVectorstoreManager):
 
     def list_collections(self) -> list[str]:
         return list(self._store.list_collections())
+
+    def list_document_ids(self, *, limit: int = 100, offset: int = 0) -> list[str]:
+        from intergrax.tools.registry.runtime_bindings import VectorStoreDocumentListerBinding
+
+        store = self._store
+        if isinstance(store, VectorStoreDocumentListerBinding):
+            return list(store.list_document_ids(limit=limit, offset=offset))
+        raise RuntimeError("vectorstore_list_documents_not_supported")
+
+    def get_document(self, document_id: str) -> dict[str, Any] | None:
+        from intergrax.tools.registry.runtime_bindings import VectorStoreDocumentListerBinding
+
+        store = self._store
+        if isinstance(store, VectorStoreDocumentListerBinding):
+            return store.get_document(document_id.strip())
+        raise RuntimeError("vectorstore_get_document_not_supported")
+
+    def search_by_metadata(
+        self,
+        *,
+        conditions: dict[str, Any],
+        limit: int = 50,
+    ) -> list[dict[str, Any]]:
+        from intergrax.tools.registry.runtime_bindings import VectorstoreIndexLifecycleBinding
+
+        store = self._store
+        if isinstance(store, VectorstoreIndexLifecycleBinding):
+            return list(store.search_by_metadata(conditions=conditions, limit=limit))
+        raise RuntimeError("vectorstore_search_by_metadata_not_supported")
+
+    def purge_collection(self, *, dry_run: bool = True, tenant_id: str = "") -> dict[str, Any]:
+        from intergrax.tools.registry.runtime_bindings import VectorstoreIndexLifecycleBinding
+
+        store = self._store
+        if isinstance(store, VectorstoreIndexLifecycleBinding):
+            return dict(store.purge_collection(dry_run=dry_run, tenant_id=tenant_id))
+        raise RuntimeError("vectorstore_purge_collection_not_supported")

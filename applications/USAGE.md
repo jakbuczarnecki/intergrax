@@ -4,6 +4,8 @@
 **Composition engine:** [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md)  
 **Architecture:** `docs/intergrax_runtime_architecture.md` §7.4.8–§7.4.10
 
+> **Documentation boundary:** Platform docs in `docs/` (architecture canon, `INTERGRAX_IMPLEMENTATION_PLAN.md`) describe the **Harness** and how to host applications. Each product under `applications/<name>/` maintains its own **`ARCHITECTURE.md`**, **`IMPLEMENTATION_PLAN.md`**, and deployment notes — those are **not** duplicated in the platform plan.
+
 Each folder under `applications/` is a **self-contained execution environment**: host, env, agent roster, integrations, and (when scaffolded) Docker.  
 Tier-2 agent logic lives in `agents/` — not here.
 
@@ -28,6 +30,8 @@ Primary tracker: `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` Phase V.
 applications/my_lab/
     manifest.py              # ApplicationManifest + AgentBinding.mount(...)
     README.md                  # Quickstart (uvicorn, curl, docker)
+    ARCHITECTURE.md            # Host purpose, manifest, dependencies
+    IMPLEMENTATION_PLAN.md     # Local implementation queue
     .env.example               # App-prefixed env vars (MY_LAB_*)
     host/
         main.py                # ASGI entry, load_dotenv
@@ -55,8 +59,9 @@ Every Tier-3 host under `applications/<app>/` must ship:
 | **Docker** | `docker/Dockerfile`, `docker-compose.yml`, `build-docker.sh` / `.bat` | Image build from repo root context |
 | **Deploy doc** | `BUILD_AND_DEPLOY.md` | From scaffold `render_build_deploy_doc` or kept in sync manually |
 | **Dependencies** | `ARCHITECTURE.md` § Dependencies | Which `pyproject.toml` extras apply (`harness-author`, `llm-*`, `dev-ci`, …) |
+| **Implementation plan** | `IMPLEMENTATION_PLAN.md` | Local task queue — scaffold emits on create; links to `ARCHITECTURE.md` |
 
-Gate: `tests/unit/applications/test_application_deploy_triad.py`.
+Gate: `tests/unit/applications/test_application_deploy_triad.py` · doc pair: `tests/unit/applications/test_agent_app_doc_pair.py`.
 
 **Scaffold default vs `--full`:** `python -m intergrax.scaffold new-application …` emits H-APP `factory.py` + `environment_profile.py` without `integration_wiring.py` / `tool_wiring.py`. Use `--full` only when custom catalog wiring is required.
 

@@ -131,3 +131,11 @@ def test_get_result_not_finished():
     result = queue.get_result(handle)
 
     assert result is None
+
+
+def test_celery_cancel():
+    mock_app = Mock()
+    queue = CeleryTaskQueue(app=mock_app)
+    handle = TaskHandle(task_id="task-99", provider="celery")
+    assert queue.cancel(handle) is True
+    mock_app.control.revoke.assert_called_once_with("task-99", terminate=True)

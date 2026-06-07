@@ -5,6 +5,10 @@ from __future__ import annotations
 
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.providers.eval.contracts import (
+    EvalCompareReleasesInput,
+    EvalCompareReleasesOutput,
+    EvalExportObservationsInput,
+    EvalExportObservationsOutput,
     EvalListObservationsInput,
     EvalListObservationsOutput,
     EvalRecordObservationInput,
@@ -13,11 +17,15 @@ from intergrax.tools.providers.eval.contracts import (
     EvalSummarizeReleaseOutput,
 )
 from intergrax.tools.providers.eval.handlers import (
+    EvalCompareReleasesHandler,
+    EvalExportObservationsHandler,
     EvalListObservationsHandler,
     EvalRecordObservationHandler,
     EvalSummarizeReleaseHandler,
 )
 from intergrax.tools.providers.eval.service import (
+    EVAL_COMPARE_RELEASES_TOOL_ID,
+    EVAL_EXPORT_OBSERVATIONS_TOOL_ID,
     EVAL_LIST_OBSERVATIONS_TOOL_ID,
     EVAL_RECORD_OBSERVATION_TOOL_ID,
     EVAL_SUMMARIZE_RELEASE_TOOL_ID,
@@ -30,6 +38,8 @@ EVAL_TOOL_IDS: tuple[str, ...] = (
     EVAL_RECORD_OBSERVATION_TOOL_ID,
     EVAL_LIST_OBSERVATIONS_TOOL_ID,
     EVAL_SUMMARIZE_RELEASE_TOOL_ID,
+    EVAL_COMPARE_RELEASES_TOOL_ID,
+    EVAL_EXPORT_OBSERVATIONS_TOOL_ID,
 )
 
 
@@ -81,4 +91,36 @@ def register_eval_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
             tags=("eval", "harness", "release"),
         ),
         EvalSummarizeReleaseHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=EVAL_COMPARE_RELEASES_TOOL_ID,
+            name=EVAL_COMPARE_RELEASES_TOOL_ID,
+            description="Compare evaluation pass rate and average score between two release labels.",
+            description_short="Compare release eval.",
+            input_schema=EvalCompareReleasesInput,
+            output_schema=EvalCompareReleasesOutput,
+            error_mapping={},
+            side_effects=False,
+            category="eval",
+            risk_level=ToolRiskLevel.LOW,
+            tags=("eval", "harness", "release"),
+        ),
+        EvalCompareReleasesHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=EVAL_EXPORT_OBSERVATIONS_TOOL_ID,
+            name=EVAL_EXPORT_OBSERVATIONS_TOOL_ID,
+            description="Export harness evaluation observations as JSON for offline analysis.",
+            description_short="Export eval observations.",
+            input_schema=EvalExportObservationsInput,
+            output_schema=EvalExportObservationsOutput,
+            error_mapping={},
+            side_effects=False,
+            category="eval",
+            risk_level=ToolRiskLevel.LOW,
+            tags=("eval", "harness", "export"),
+        ),
+        EvalExportObservationsHandler(ctx),
     )

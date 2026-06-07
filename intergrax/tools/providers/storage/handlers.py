@@ -7,6 +7,8 @@ from intergrax.tools.core.handler import ServiceToolHandler
 from intergrax.tools.providers.storage.contracts import (
     StorageDeleteInput,
     StorageDeleteOutput,
+    StorageExistsInput,
+    StorageExistsOutput,
     StorageGetInput,
     StorageGetOutput,
     StoragePresignedUrlInput,
@@ -16,6 +18,7 @@ from intergrax.tools.providers.storage.contracts import (
 )
 from intergrax.tools.providers.storage.service import (
     storage_delete,
+    storage_exists,
     storage_get,
     storage_presigned_url,
     storage_put,
@@ -36,3 +39,7 @@ class StoragePresignedUrlHandler(ServiceToolHandler[StoragePresignedUrlInput, St
 
 class StorageDeleteHandler(ServiceToolHandler[StorageDeleteInput, StorageDeleteOutput]):
     _service = storage_delete
+
+
+class StorageExistsHandler(ServiceToolHandler[StorageExistsInput, StorageExistsOutput]):
+    _service = storage_exists

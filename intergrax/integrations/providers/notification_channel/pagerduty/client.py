@@ -54,6 +54,22 @@ class PagerDutyEventsClient:
             return str(data.get("dedup_key") or data.get("message") or "")
         return ""
 
+    def acknowledge_incident(
+        self,
+        *,
+        dedup_key: str,
+        note: str | None = None,
+    ) -> None:
+        payload: dict[str, object] = {
+            "routing_key": self._config.routing_key,
+            "event_action": "acknowledge",
+            "dedup_key": dedup_key.strip(),
+        }
+        if note:
+            payload["payload"] = {"summary": note.strip()}
+        response = self._http.post("/v2/enqueue", json=payload)
+        response.raise_for_status()
+
     def send_notification(self, *, subject: str, body: str, task_id: str) -> None:
         self.trigger_incident(
             summary=subject or task_id,

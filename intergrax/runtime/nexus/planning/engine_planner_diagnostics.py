@@ -41,7 +41,7 @@ class EnginePlannerDiagnostics:
         config: RuntimeConfig,
     ) -> EnginePlan:
         try:
-            return EnginePlanJsonParser.parse(
+            plan = EnginePlanJsonParser.parse(
                 raw,
                 prompt_config=prompt_config,
                 prompt_registry=state.context.prompt_registry,
@@ -56,6 +56,17 @@ class EnginePlannerDiagnostics:
                 error=e,
             )
             raise
+        if plan.legacy_retrieval_booleans:
+            state.trace_event(
+                component=TraceComponent.PLANNER,
+                step="engine_planner",
+                message=(
+                    "Deprecated planner fields use_rag/use_websearch detected; "
+                    "prefer tool_ids (rag.retrieve, websearch.query)."
+                ),
+                level=TraceLevel.WARNING,
+            )
+        return plan
 
     def build_planner_debug(
         self,

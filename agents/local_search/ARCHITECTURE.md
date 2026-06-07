@@ -1,5 +1,7 @@
 # LocalSearchAgent — architecture
 
+Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+
 **Capability:** `local.workspace.search`  
 **Host:** [`applications/local_workspace_application/`](../../applications/local_workspace_application/)  
 **Default agent** on LKW host roster.  

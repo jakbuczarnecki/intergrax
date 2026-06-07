@@ -2,7 +2,7 @@
 
 Universal experimentation environment for the Agent Operating System (Phase L.3).
 
-**Build & deploy:** [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md)
+**Build & deploy:** [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) · **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md) · **Plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
 ## Purpose
 

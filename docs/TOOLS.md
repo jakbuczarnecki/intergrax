@@ -1,6 +1,6 @@
 # Intergrax Tool Library
 
-**Last updated:** 2026-06-07 — **34 bundles** · **95 catalog tools** (verified via `register_default_tools()`)
+**Last updated:** 2026-06-07 — **42 bundles** · **170 catalog tools** (verified via `register_default_tools()`)
 
 The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
 
@@ -13,7 +13,7 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 | [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md) | **External tool plugins** — `ToolPlugin`, entry points, MCP export |
 | [intergrax/tools/USAGE.md](../intergrax/tools/USAGE.md) | **Operational guide** — wire tools in Tier-3 apps and invoke from agents |
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.6–§7.1.7, §22 | Architecture canon — Tool Library, unified tool model |
-| [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase O · **T-EXPAND** | Phase status, catalog expansion waves T1–T3 |
+| [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase O · **T-EXPAND** | Phase status, catalog expansion waves T1–T11 |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase V | Architecture hardening: security/cost governance and evaluation discipline (`V-SEC.*`, `V-COST.*`, `V-EVAL.*`) |
 | [INTEGRATIONS.md](INTEGRATIONS.md) | **167** backend adapters tools compose (not called directly by agents) |
 | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) Appendix E | How agents declare `allowed_tools` vs applications wire backends |
@@ -99,7 +99,7 @@ registry = build_registry_from_profile(
 
 ## Tool engine (implemented today)
 
-Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** — full **95-tool** catalog registered):
+Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T11 Done** · **T12 Done** — full **170-tool** catalog registered):
 
 | Component | Path | Status |
 |-----------|------|--------|
@@ -109,7 +109,7 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** — fu
 | `ToolExecutionRequest` / `ToolExecutionResult` | `intergrax/tools/execution_models.py` | **Done** |
 | `ToolProvider` protocol | `intergrax/tools/core/provider.py` | **Done** — accepts optional `ToolWiringContext` |
 | `ToolCatalog` / `ToolProfile` / `ToolWiringContext` | `intergrax/tools/registry/` | **Done** — Phase O.2; typed integration slots + `TaskMemoryViewBinding` / `shadow_workspace` (T-EXPAND) |
-| `runtime_bound_catalog` | `intergrax/runtime/nexus/tools/runtime_bound_catalog.py` | **Done** — UAEP dispatch for `workspace.*` / `memory.*` / `harness.*` (§42.12, mirrors `sandbox.exec`) |
+| `runtime_bound_catalog` | `intergrax/runtime/nexus/tools/runtime_bound_catalog.py` | **Done** — UAEP dispatch for `workspace.*` / `memory.*` / `harness.*` (incl. compare/export) · §42.12 |
 | `register_default_tools()` / `build_registry_from_profile()` | `intergrax/tools/registry/bootstrap.py`, `factory.py` | **Done** |
 | `RuntimeToolInvoker` | `intergrax/runtime/nexus/tools/invoker.py` | **Done** — validation, trace, error mapping |
 | `RuntimeToolGateway` | `intergrax/runtime/nexus/tools/tool_gateway.py` | **Done** — UAEP / §42.12 entry; `nexus.capability_plan` prefers `tool_ids` (e.g. `rag.retrieve`) over legacy `use_rag` booleans |
@@ -124,12 +124,12 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** — fu
 
 | Metric | Count |
 |--------|------:|
-| Shipped bundles (`ToolPlugin`) | **34** |
-| Registered `tool_id` values | **95** |
-| Stable bundles | **33** |
+| Shipped bundles (`ToolPlugin`) | **40** |
+| Registered `tool_id` values | **150** |
+| Stable bundles | **39** |
 | Beta bundles | **1** (`openai_vector_store`) |
 
-**Bundle index:** `rag` (5) · `websearch` (3) · `jira` (3) · `gitlab` (1) · `confluence` (3) · `notify` (1) · `pagerduty` (1) · `observability` (4) · `braintrust` (1) · `sandbox` (1) · `security` (2) · `workflow` (3) · `speech` (2) · `vision` (3) · `ml` (3) · `openai_vector_store` (3) · **`workspace` (6)** · **`memory` (3)** · **`knowledge` (2)** · **`document` (1)** · **`browser` (1)** · **`storage` (4)** · **`issues` (4)** · **`platform` (5)** · **`message_bus` (3)** · **`graph` (2)** · **`collaboration` (5)** · **`cache` (2)** · **`database` (2)** · **`records` (4)** · **`identity` (3)** · **`harness` (4)** · **`health` (2)** · **`eval` (3)**.
+**Bundle index (selected):** `interaction` (2) · `workflow` (5) · `harness` (6) · `websearch` (4) · `notify` (6) · `health` (11) · `collaboration` (7) · `hitl` (5) · `platform` (8) · `rag` (11) — full list in [Full tool index](#full-tool-index) below.
 
 Source: `intergrax/tools/registry/shipped_plugins.py`.
 
@@ -150,7 +150,13 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 | `websearch.query` | **Done** | Run web search and return normalized snippets | `websearch_executor` or `SearchProvider` |
 | `websearch.read_url` | **Done** | Fetch a URL and return extracted title + plain text | `websearch` page fetch pipeline |
 | `websearch.fetch_batch` | **Done** | Fetch multiple URLs and return combined context | `websearch` page fetch pipeline |
+| `websearch.invalidate_cache` | **Done** | Invalidate cached web search query results | `WebSearchCacheBinding` on `websearch_executor` |
 | `rag.list_collections` | **Done** | List vector index collection names | `vectorstore_manager` |
+| `rag.list_documents` | **Done** | Paginated document id listing | `vectorstore_manager` + `VectorStoreDocumentListerBinding` |
+| `rag.get_document` | **Done** | Fetch indexed document text/metadata by id | `vectorstore_manager` |
+| `rag.check_index_status` | **Done** | Index readiness probe (count + collections) | `vectorstore_manager` |
+| `rag.search_by_metadata` | **Done** | Metadata-only index scan (exact key/value filters) | `vectorstore_manager` + `VectorstoreIndexLifecycleBinding` |
+| `rag.purge_collection` | **Done** | Controlled collection purge (dry-run + tenant scope) | `vectorstore_manager` |
 
 **Catalog providers:** Phase O complete — all first-party tools registered; applications wire via `host/tool_wiring.py`.
 
@@ -177,6 +183,8 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 | `workflow.trigger` | **Done** | Trigger a batch eval / RAG refresh workflow run | `workflow_orchestrator` (`prefect`, `airflow`) |
 | `workflow.poll` | **Done** | Poll workflow run status | `workflow_orchestrator` |
 | `workflow.fetch_logs` | **Done** | Fetch tail logs for a workflow run | `workflow_orchestrator` |
+| `workflow.list_runs` | **Done** | List recent orchestrator runs (optional workflow filter) | `workflow_orchestrator` |
+| `workflow.cancel_run` | **Done** | Cancel a running orchestrator run | `workflow_orchestrator` |
 
 ### Issue tracker (Jira)
 
@@ -199,6 +207,10 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 | tool_id | Status | Description | Composes |
 |---------|--------|-------------|----------|
 | `notify.send` | **Done** | Send outbound notification message | `NotificationChannel` |
+| `notify.send_batch` | **Done** | Send up to 50 notification messages in one call | `NotificationChannel` |
+| `notify.schedule` | **Done** (T10) | Schedule deferred notification delivery | `ScheduledNotificationBinding` |
+| `notify.list_scheduled` | **Done** (T11) | List deferred notification schedules | `ScheduledNotificationBinding` |
+| `notify.cancel_scheduled` | **Done** (T11) | Cancel a pending deferred notification | `ScheduledNotificationBinding` |
 
 ### Issue tracker (GitLab)
 
@@ -226,6 +238,7 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 | tool_id | Status | Description | Composes |
 |---------|--------|-------------|----------|
 | `pagerduty.trigger_incident` | **Done** | Trigger on-call incident | `NotificationChannel` (`pagerduty`) |
+| `pagerduty.acknowledge_incident` | **Done** (T10) | Acknowledge incident by dedup key | `NotificationChannel` (`pagerduty`) |
 
 ### Speech (modality — Phase W-ML)
 
@@ -274,9 +287,12 @@ Harness lab uses **one primary** `observability_backend` (Sentry) plus **additio
 | `workspace.snapshot` | **Done** | Point-in-time workspace snapshot | `ShadowWorkspace` |
 | `workspace.delete_file` | **Done** | Delete a file from shadow workspace | `ShadowWorkspace` |
 | `workspace.search` | **Done** | Grep/search text across workspace files | `ShadowWorkspace` |
+| `workspace.export_artifact` | **Done** (T10) | Export shadow artifact to object storage | `ShadowWorkspace` + `ObjectStorage` |
+| `workspace.import_artifact` | **Done** (T10) | Import object storage blob into shadow workspace | `ShadowWorkspace` + `ObjectStorage` |
 | `memory.read` | **Done** | Read task memory record | `ToolWiringContext.memory_view` (`TaskMemoryViewBinding`) |
 | `memory.write` | **Done** | Write/merge task memory | `PolicyScopedMemoryView` |
 | `memory.list_keys` | **Done** | List keys in namespace | `PolicyScopedMemoryView` |
+| `memory.delete_key` | **Done** (T10) | Delete task memory record | `PolicyScopedMemoryView` |
 
 UAEP agents invoke `workspace.*` / `memory.*` via `BoundToolGateway` → `runtime_bound_catalog.py` (same pattern as `sandbox.exec`).
 
@@ -285,17 +301,21 @@ UAEP agents invoke `workspace.*` / `memory.*` via `BoundToolGateway` → `runtim
 | Bundle | tool_ids | Composes |
 |--------|----------|----------|
 | `knowledge` | `knowledge.get_page`, `knowledge.search` | `WikiKnowledge` (any wiki slug) |
-| `document` | `document.parse` | `DocumentParser` — enable explicitly in `ToolProfile` (not auto-enabled from ingest-only profiles) |
+| `document` | `document.parse`, `document.parse_preview` | `DocumentParser` — enable explicitly in `ToolProfile` (not auto-enabled from ingest-only profiles) |
 | `browser` | `browser.fetch_page` | `BrowserAutomation` |
-| `storage` | `storage.get`, `storage.put`, `storage.presigned_url`, `storage.delete` | `ObjectStorage` |
+| `storage` | `storage.get`, `storage.put`, `storage.presigned_url`, `storage.delete`, `storage.exists` | `ObjectStorage` |
 | `issues` | `issues.get_issue`, `issues.add_comment`, `issues.search`, `issues.create_issue` | `IssueTracker` + `IssueCreator` (provider-agnostic; complements `jira.*` / `gitlab.*`) |
-| `platform` | `platform.get_secret`, `platform.evaluate_feature_flag`, `platform.get_workflow_run`, `platform.list_check_suites` | `SecretsStore`, `FeatureFlagBackend`, `CiCdBackend` |
-| `message_bus` | `message_bus.enqueue`, `message_bus.get_status`, `message_bus.get_result` | `MessageBus` (`TaskQueue`) |
+| `platform` | `platform.get_secret`, `platform.evaluate_feature_flag`, `platform.get_workflow_run`, `platform.list_check_suites`, `platform.list_workflow_runs`, `platform.cancel_workflow_run` | `SecretsStore`, `FeatureFlagBackend`, `CiCdBackend` |
+| `message_bus` | `message_bus.enqueue`, `message_bus.get_status`, `message_bus.get_result`, `message_bus.list_tasks`, `message_bus.cancel`, `message_bus.purge_completed` | `MessageBus` (`TaskQueue`) |
 | `graph` | `graph.run_query`, `graph.get_node` | `GraphStore` |
-| `collaboration` | `collaboration.send_mail`, `collaboration.list_messages`, `collaboration.get_message`, `collaboration.list_calendar`, `collaboration.get_user` | `CollaborationSuite` |
+| `collaboration` | `collaboration.send_mail`, `collaboration.list_messages`, `collaboration.get_message`, `collaboration.list_calendar`, `collaboration.get_user`, `collaboration.reply_message`, `collaboration.create_event` | `CollaborationSuite` |
 | `cache` | `cache.get`, `cache.set` | `KeyValueCache` |
-| `database` | `database.query`, `database.execute` | `RelationalStore` |
-| `records` | `records.get`, `records.put`, `records.delete`, `records.query` | `DocumentStore` |
+| `database` | `database.query`, `database.execute`, `database.describe_schema` | `RelationalStore` |
+| `records` | `records.get`, `records.put`, `records.delete`, `records.query`, `records.describe_collection`, `records.count` | `DocumentStore` |
+| `hitl` | `hitl.list_pending`, `hitl.get_decision`, `hitl.summarize_queue`, `hitl.submit_response`, `hitl.list_for_task` | `HumanDecisionStoreBinding` (runtime-bound) |
+| `cloud_platform` | `cloud_platform.health`, `cloud_platform.resolve` | `CloudPlatform` |
+| `vector_store` | `vector_store.count`, `vector_store.delete`, `vector_store.list_collections`, `vector_store.health` | `vectorstore_manager` |
+| `interaction` | `interaction.list_sessions`, `interaction.get_last_input`, `interaction.get_session_history` | `SessionStorageBinding` (runtime-bound) |
 
 `extend_tool_profile_for_integration()` auto-appends agent-facing tool_ids when matching `IntegrationCategory` slots are configured (`integration_tool_profile.py`). Infrastructure-only slots (e.g. `document_parser` for RAG ingest) are **not** auto-enabled.
 
@@ -350,7 +370,7 @@ OpenAI export: `intergrax.tools.exporters.to_openai_tools(registry)` — used by
 
 ## Full tool index
 
-Alphabetical reference — all **95** first-party catalog tools (Phase O + M.6 P6 + W-ML + **T-EXPAND** + **T4** + **T5**).
+Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 P6 + W-ML + **T-EXPAND** + **T4** + **T5** + **T6** + **T7** + **T8** + **T9** + **T10**).
 
 | tool_id | Bundle | Category | Status | Composes / module |
 |---------|--------|----------|--------|-------------------|
@@ -358,18 +378,41 @@ Alphabetical reference — all **95** first-party catalog tools (Phase O + M.6 P
 | `browser.fetch_page` | browser | browser | **Done** | `BrowserAutomation` |
 | `cache.get` | cache | cache | **Done** | `KeyValueCache` |
 | `cache.set` | cache | cache | **Done** | `KeyValueCache` |
+| `cache.delete` | cache | cache | **Done** | `KeyValueCache` |
+| `cache.list_keys` | cache | cache | **Done** | `KeyValueCacheListerBinding` (optional backend) |
+| `cloud_platform.health` | cloud_platform | cloud_platform | **Done** (T11) | `CloudPlatform` |
+| `cloud_platform.resolve` | cloud_platform | cloud_platform | **Done** (T11) | `CloudPlatform` |
+| `billing.list_usage` | billing | billing | **Done** | `BillingMeterBackend` |
+| `billing.record_usage` | billing | billing | **Done** | `BillingMeterBackend` |
+| `cost.check_quota` | cost | cost | **Done** | V-COST quota models / runtime-bound |
+| `cost.forecast_spend` | cost | cost | **Done** | V-COST.3 `build_cost_forecast_report` / runtime-bound |
+| `cost.get_run_budget` | cost | cost | **Done** | `RunBudget` / runtime-bound |
+| `collaboration.create_event` | collaboration | collaboration | **Done** | `CollaborationSuite` |
 | `collaboration.get_message` | collaboration | collaboration | **Done** | `CollaborationSuite` |
 | `collaboration.get_user` | collaboration | collaboration | **Done** | `CollaborationSuite` |
 | `collaboration.list_calendar` | collaboration | collaboration | **Done** | `CollaborationSuite` |
 | `collaboration.list_messages` | collaboration | collaboration | **Done** | `CollaborationSuite` |
 | `collaboration.send_mail` | collaboration | collaboration | **Done** | `CollaborationSuite` |
+| `collaboration.reply_message` | collaboration | collaboration | **Done** | `CollaborationSuite` |
+| `crm.get_account` | crm | crm | **Done** | `CrmBackend` |
+| `crm.list_contacts` | crm | crm | **Done** | `CrmBackend` |
+| `crm.list_tickets` | crm | crm | **Done** | `CrmBackend` |
+| `database.describe_schema` | database | database | **Done** | `RelationalStore` (sqlite introspection) |
 | `database.execute` | database | database | **Done** | `RelationalStore` |
 | `database.query` | database | database | **Done** | `RelationalStore` |
 | `confluence.get_page` | confluence | wiki | **Done** | `confluence` — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
 | `document.parse` | document | document | **Done** | `DocumentParser` |
+| `document.parse_preview` | document | document | **Done** | `DocumentParser` (bounded preview) |
+| `filesystem.glob` | filesystem | filesystem | **Done** | allowlisted read roots |
+| `filesystem.list` | filesystem | filesystem | **Done** | allowlisted read roots |
+| `filesystem.read_text` | filesystem | filesystem | **Done** | allowlisted read roots |
+| `filesystem.stat` | filesystem | filesystem | **Done** | allowlisted read roots |
+| `filesystem.write_text` | filesystem | filesystem | **Done** | allowlisted read roots (write) |
+| `eval.compare_releases` | eval | eval | **Done** | `OnlineEvaluationRegistry` (V-EVAL) |
 | `eval.list_observations` | eval | eval | **Done** | `OnlineEvaluationRegistry` (V-EVAL) |
 | `eval.record_observation` | eval | eval | **Done** | `OnlineEvaluationRegistry` (V-EVAL) |
 | `eval.summarize_release` | eval | eval | **Done** | `OnlineEvaluationRegistry` (V-EVAL) |
+| `eval.export_observations` | eval | eval | **Done** (T10) | `OnlineEvaluationRegistry` (V-EVAL) |
 | `confluence.search` | confluence | wiki | **Done** | `confluence` (alias) — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
 | `confluence.search_pages` | confluence | wiki | **Done** | `confluence` — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
 | `errors.capture` | observability | observability | **Done** | `sentry` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
@@ -380,8 +423,27 @@ Alphabetical reference — all **95** first-party catalog tools (Phase O + M.6 P
 | `harness.get_run_cost` | harness | harness | **Done** | `RunTraceReader` / V-COST stats |
 | `harness.get_run_events` | harness | harness | **Done** | `RunTraceReader` |
 | `harness.list_runs` | harness | harness | **Done** | `RunTraceReader` |
+| `harness.compare_runs` | harness | harness | **Done** | `RunTraceReader` / runtime-bound |
+| `harness.export_run_bundle` | harness | harness | **Done** | `RunTraceReader` / runtime-bound |
 | `health.check_integration` | health | health | **Done** | integration catalog health probes |
 | `health.check_profile` | health | health | **Done** | `IntegrationProfile` slot probes |
+| `health.check_object_storage` | health | health | **Done** (T12) | category slot probe |
+| `health.check_relational_store` | health | health | **Done** (T12) | category slot probe |
+| `health.check_document_store` | health | health | **Done** (T12) | category slot probe |
+| `health.check_vector_store` | health | health | **Done** (T12) | category slot probe |
+| `health.check_message_bus` | health | health | **Done** (T12) | category slot probe |
+| `health.check_cache` | health | health | **Done** (T12) | category slot probe |
+| `health.check_secrets_backend` | health | health | **Done** (T12) | category slot probe |
+| `health.check_observability_backend` | health | health | **Done** (T12) | category slot probe |
+| `health.check_notification_channel` | health | health | **Done** (T12) | category slot probe |
+| `hitl.get_decision` | hitl | hitl | **Done** | `HumanDecisionStoreBinding` |
+| `hitl.list_for_task` | hitl | hitl | **Done** (T11) | `HumanDecisionStoreBinding` |
+| `hitl.list_pending` | hitl | hitl | **Done** | `HumanDecisionStoreBinding` |
+| `hitl.submit_response` | hitl | hitl | **Done** (T11) | `HumanDecisionStoreBinding` |
+| `hitl.summarize_queue` | hitl | hitl | **Done** | `HumanDecisionStoreBinding` |
+| `interaction.get_last_input` | interaction | interaction | **Done** | `SessionStorageBinding` |
+| `interaction.list_sessions` | interaction | interaction | **Done** | `SessionStorageBinding` |
+| `interaction.get_session_history` | interaction | interaction | **Done** (T10) | `SessionStorageBinding` |
 | `issues.add_comment` | issues | issues | **Done** | `IssueTracker` |
 | `issues.create_issue` | issues | issues | **Done** | `IssueCreator` |
 | `issues.get_issue` | issues | issues | **Done** | `IssueTracker` |
@@ -397,39 +459,61 @@ Alphabetical reference — all **95** first-party catalog tools (Phase O + M.6 P
 | `memory.list_keys` | memory | memory | **Done** | `TaskMemoryViewBinding` |
 | `memory.read` | memory | memory | **Done** | `TaskMemoryViewBinding` |
 | `memory.write` | memory | memory | **Done** | `TaskMemoryViewBinding` |
+| `memory.delete_key` | memory | memory | **Done** (T10) | `TaskMemoryViewBinding` |
+| `message_bus.cancel` | message_bus | message_bus | **Done** | `MessageBus` |
 | `message_bus.enqueue` | message_bus | message_bus | **Done** | `MessageBus` |
 | `message_bus.get_result` | message_bus | message_bus | **Done** | `MessageBus` |
 | `message_bus.get_status` | message_bus | message_bus | **Done** | `MessageBus` |
+| `message_bus.list_tasks` | message_bus | message_bus | **Done** | `MessageBus` |
+| `message_bus.purge_completed` | message_bus | message_bus | **Done** (T10) | `MessageBus` (`TaskQueue.purge_completed`) |
 | `logs.search` | observability | observability | **Done** | `elasticsearch` / `opensearch` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
+| `logs.tail` | observability | observability | **Done** | `elasticsearch` / `opensearch` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
 | `metrics.query_instant` | observability | observability | **Done** | `prometheus` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
+| `metrics.query_range` | observability | observability | **Done** | `prometheus` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
 | `ml.batch_predict` | ml | ml | **Done** | `intergrax/model_inference/` |
 | `ml.explain` | ml | ml | **Done** | `model_inference` |
 | `ml.predict` | ml | ml | **Done** | `model_inference` |
 | `notify.send` | notify | notification | **Done** | `notification_channel` slug — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.send_batch` | notify | notification | **Done** | `notification_channel` slug — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.schedule` | notify | notification | **Done** (T10) | `ScheduledNotificationBinding` — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.list_scheduled` | notify | notification | **Done** (T11) | `ScheduledNotificationBinding` — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.cancel_scheduled` | notify | notification | **Done** (T11) | `ScheduledNotificationBinding` — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.dispatch_due` | notify | notification | **Done** (T12) | Tier-0 scheduled notification dispatcher — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
 | `platform.evaluate_feature_flag` | platform | platform | **Done** | `FeatureFlagBackend` |
 | `platform.get_secret` | platform | platform | **Done** | `SecretsStore` |
 | `platform.put_secret` | platform | platform | **Done** | `SecretsStore` (CRITICAL risk) |
+| `platform.delete_secret` | platform | platform | **Done** | `SecretsStore` (CRITICAL risk) |
 | `platform.get_workflow_run` | platform | platform | **Done** | `CiCdBackend` |
-| `platform.list_check_suites` | platform | platform | **Done** | `CiCdBackend` |
+| `platform.cancel_workflow_run` | platform | platform | **Done** | `CiCdBackend` |
+| `platform.list_workflow_runs` | platform | platform | **Done** | `CiCdBackend` |
 | `observability.query_traces` | observability | observability | **Done** | `langfuse` / observability slug — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
 | `openai.file_search.query` | openai_vector_store | retrieval | **Beta** | OpenAI `file_search` — [USAGE](../intergrax/tools/providers/openai_vector_store/USAGE.md) |
 | `openai.vector_store.clear` | openai_vector_store | retrieval | **Beta** | OpenAI vector store API — [USAGE](../intergrax/tools/providers/openai_vector_store/USAGE.md) |
 | `openai.vector_store.upload` | openai_vector_store | retrieval | **Beta** | OpenAI Files API — [USAGE](../intergrax/tools/providers/openai_vector_store/USAGE.md) |
 | `pagerduty.trigger_incident` | pagerduty | notification | **Done** | `pagerduty` — [USAGE](../intergrax/tools/providers/pagerduty/USAGE.md) |
+| `pagerduty.acknowledge_incident` | pagerduty | notification | **Done** (T10) | `pagerduty` adapter — [USAGE](../intergrax/tools/providers/pagerduty/USAGE.md) |
+| `rag.check_index_status` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `rag.delete_documents` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `rag.describe_collection` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.get_document` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `rag.ingest_document` | rag | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `rag.list_collections` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.purge_collection` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.search_by_metadata` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
+| `records.describe_collection` | records | records | **Done** | `DocumentStore` |
 | `records.delete` | records | records | **Done** | `DocumentStore` |
 | `records.get` | records | records | **Done** | `DocumentStore` |
 | `records.put` | records | records | **Done** | `DocumentStore` |
 | `records.query` | records | records | **Done** | `DocumentStore` |
+| `records.count` | records | records | **Done** (T10) | `DocumentStore` |
 | `rag.retrieve` | rag | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.rerank` | rag | retrieval | **Done** | `reranker_manager` / `RerankProvider` |
 | `sandbox.exec` | sandbox | sandbox | **Done** | `sandbox_session` / `sandbox_host` — [USAGE](../intergrax/tools/providers/sandbox/USAGE.md) |
 | `storage.delete` | storage | storage | **Done** | `ObjectStorage` |
 | `storage.get` | storage | storage | **Done** | `ObjectStorage` |
 | `storage.presigned_url` | storage | storage | **Done** | `ObjectStorage` |
 | `storage.put` | storage | storage | **Done** | `ObjectStorage` |
+| `storage.exists` | storage | storage | **Done** (T10) | `ObjectStorage` |
 | `security.scan` | security | security | **Done** | `security_scanner` (`trivy`, `semgrep`, `snyk`) |
 | `security.summarize_findings` | security | security | **Done** | pure aggregation (no backend) |
 | `speech.synthesize` | speech | speech | **Done** | `SpeechProviderBackend` |
@@ -437,20 +521,29 @@ Alphabetical reference — all **95** first-party catalog tools (Phase O + M.6 P
 | `vision.detect` | vision | vision | **Done** | `model_inference` (Plane C) |
 | `vision.ocr_regions` | vision | vision | **Done** | `model_inference` |
 | `vision.segment` | vision | vision | **Done** | `model_inference` |
+| `vector_store.count` | vector_store | vector_store | **Done** (T11) | `vectorstore_manager` |
+| `vector_store.delete` | vector_store | vector_store | **Done** (T11) | `vectorstore_manager` |
+| `vector_store.health` | vector_store | vector_store | **Done** (T11) | `vectorstore_manager` |
+| `vector_store.list_collections` | vector_store | vector_store | **Done** (T11) | `vectorstore_manager` |
 | `websearch.fetch_batch` | websearch | retrieval | **Done** | page fetch pipeline — [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
 | `websearch.query` | websearch | retrieval | **Done** | `websearch_executor`, `search_provider` — [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
 | `websearch.read_url` | websearch | retrieval | **Done** | page fetch — [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
+| `websearch.invalidate_cache` | websearch | retrieval | **Done** | `WebSearchCacheBinding` — [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
+| `workflow.cancel_run` | workflow | workflow | **Done** | `workflow_orchestrator` |
 | `workflow.fetch_logs` | workflow | workflow | **Done** | `workflow_orchestrator` |
 | `workflow.poll` | workflow | workflow | **Done** | `workflow_orchestrator` |
 | `workflow.trigger` | workflow | workflow | **Done** | `workflow_orchestrator` |
+| `workflow.list_runs` | workflow | workflow | **Done** | `workflow_orchestrator` |
 | `workspace.delete_file` | workspace | workspace | **Done** | `ShadowWorkspace` |
 | `workspace.list_files` | workspace | workspace | **Done** | `ShadowWorkspace` |
 | `workspace.read_file` | workspace | workspace | **Done** | `ShadowWorkspace` |
 | `workspace.search` | workspace | workspace | **Done** | `ShadowWorkspace` |
 | `workspace.snapshot` | workspace | workspace | **Done** | `ShadowWorkspace` |
 | `workspace.write_file` | workspace | workspace | **Done** | `ShadowWorkspace` |
+| `workspace.export_artifact` | workspace | workspace | **Done** (T10) | `ShadowWorkspace` + `ObjectStorage` |
+| `workspace.import_artifact` | workspace | workspace | **Done** (T10) | `ShadowWorkspace` + `ObjectStorage` |
 
-**Total:** 95 tools · 34 bundles.
+**Total:** 170 tools · 42 bundles.
 
 ---
 

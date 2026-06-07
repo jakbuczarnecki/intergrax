@@ -2,6 +2,8 @@
 
 **Status:** Hard reset complete (Phase AA-LEG). Legacy pipeline removed; UAEP scaffold is the only implementation path.
 
+Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+
 ## Purpose
 
 Tier-2 contract review capability (`legal.review`) composed into `legal_application` via Nexus / UAEP.

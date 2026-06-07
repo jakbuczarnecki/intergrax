@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-07) — **Harness platform bands 1–2ad Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39); **Phase M.6 P4 (Band 2aa) Done** (28/28); **Phase M.6 P5 (Band 2ab) Done** (33/34); **Phase M.6 P6 (Band 2ac) Done** (32/32); **FAUDIT-32 remediation Done** (23/23 + [§6.1ai](#61ai-harness-implementation-queue--faudit-32-follow-up-closed) follow-up); **default active queue = [§6.1](#61-harness-implementation-queue--continuous-gate) maintenance** (Phase FLOW Band 2aj **Done** 17/18; **FLOW-8 Deferred** §6.3) + §6.1 gate on every PR; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done** (wiring); **12/32 layers L3+** per FAUDIT scorecard — closeout ≠ full layer maturity; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **909 passed**; **operational L3 signed off** (W-OPS evidence artifact policy — see FAUDIT-OPS.1)  
+Status: Working draft (2026-06-07) — **Harness platform bands 1–2ad Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39); **Phase M.6 P4–P6 Done**; **FAUDIT-32 remediation Done** (23/23); **Phase FLOW (Band 2aj) Done** (17/18; FLOW-8 Deferred); **active implementation queue = [Phase CRIT-V](#phase-crit-v--critic--verification-layer) (Band 2ak)** + [§6.1](#61-harness-implementation-queue--continuous-gate) gate on every PR; Phase EVAL closed (wiring); Evaluation layer depth → CRIT-V; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **967 passed**; **13/32 layers L3+** per FAUDIT scorecard — closeout ≠ full layer maturity  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -14,7 +14,16 @@ Principle: **evolve, not rewrite** · **reuse Tier-0** (canon §5.2)
 
 ## Documentation model
 
-Do not maintain separate status/readiness/roadmap files. This plan is the **only** live implementation document:
+Do not maintain separate status/readiness/roadmap files. This plan is the **only** live **platform (Harness / Agent OS)** implementation document:
+
+### Documentation boundary
+
+| Covers | Does **not** cover |
+|--------|---------------------|
+| Harness AI platform, Nexus Agent OS, Tier-0 catalogs, reference hosts, §6.1 maintenance, T-EXPAND tool waves | Architecture, roadmap, or deployment plan of a **specific business environment** (`applications/<product>/`) |
+| How Tier-2 agents and Tier-3 apps **plug into** the Harness | Architecture, roadmap, or deployment plan of a **specific business agent** (`agents/<name>/`) |
+
+Each **business environment** and each **business agent** maintains its own `ARCHITECTURE.md`, local implementation plan, and product roadmap. See [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business) and [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) §1.1.
 
 | Topic | Where |
 |-------|--------|
@@ -45,6 +54,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Security closeout (V-SEC bridge, middleware assembly, CI) | [Phase SEC](#phase-sec--security-control-plane-closeout) · **§6.1q** · Band **2v** · **Appendix S** |
 | Cost governance closeout (budget bridge, policy bundle, CI) | [Phase COST](#phase-cost--cost-governance-control-plane-closeout) · **§6.1r** · Band **2w** · **Appendix T** |
 | Evaluation closeout (registry bridge, policy bundle, CI) | [Phase EVAL](#phase-eval--evaluation-control-plane-closeout) · **§6.1s** · Band **2x** · **Appendix U** |
+| **Critic & Verification Layer (PEV verify depth)** | [Phase CRIT-V](#phase-crit-v--critic--verification-layer) · **§6.1ak** · Band **2ak** · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · canon [§55](intergrax_runtime_architecture.md#55-critic--verification-layer-cvl--pev-verify-addendum) · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md) |
 | **Adaptive Harness Intelligence (AHI / L4 runtime)** | [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · **§6.1t** · Band **2y** · [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · canon [§54](intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) · **Appendix K** |
 | **LLM response envelope (typed completion contract)** | [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · **§6.1v** · Band **2z** · [LLM_ADAPTERS.md](LLM_ADAPTERS.md) · **Appendix L** |
 | **Integration catalog expansion (harness ROI slugs)** | [M.6 P4 register](#m6-p4--harness-platform-expansion-done) · **§6.1w** · Band **2aa** · [INTEGRATIONS.md](INTEGRATIONS.md) |
@@ -208,6 +218,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | Regression gate | **906 passed** | No | Must stay green after each harness PR (Phase FLOW closeout 2026-06-07) |
 | **Full architecture audit (FAUDIT-32)** | **Done** (2026-06-06) | No (harness-only) | 32-layer audit + **23/23 remediation** → [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-closed) |
 | **Nexus execution depth (Phase FLOW)** | **Done** (17/18) | No (harness-only) | Band **2aj** — [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed) · **FLOW-8 Deferred** · source: [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) |
+| **Critic & Verification Layer (Phase CRIT-V)** | **Active** (1/24) | No (harness-only) | Band **2ak** — [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-active) · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) |
 
 ---
 
@@ -1774,7 +1785,7 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 - `harness.integration_bridge_smoke` skill pack + resolver test fix (skills vs tools `build_registry_from_profile`)
 - Lab harness `wire_lab_tools(harness=True)` enables runtime-bound + bridge tools
 - PoC template `extend_tool_profile_for_integration()` wiring
-- MCP full-catalog export smoke (95 tools)
+- MCP full-catalog export smoke (130 tools)
 
 #### T-EXPAND T4 — Agent Builder Essentials (2026-06-07) — **Done**
 
@@ -1807,7 +1818,143 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 
 **Delivered:** **95** catalog `tool_id` values · **34** shipped bundles.
 
-Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{identity,harness,health,eval,...}/`
+#### T-EXPAND T6 — LKW Filesystem + Harness Economics (2026-06-07) — **Done**
+
+**Goal:** LKW read-only filesystem browse (LKW.3), V-COST/billing tool surface, rerank/cache/CRM/platform extensions.
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `filesystem` | `filesystem.list`, `filesystem.glob`, `filesystem.read_text`, `filesystem.stat` | **Done** |
+| `billing` | `billing.record_usage`, `billing.list_usage` | **Done** |
+| `cost` | `cost.get_run_budget`, `cost.check_quota` | **Done** |
+| `crm` | `crm.get_account`, `crm.list_contacts`, `crm.list_tickets` | **Done** |
+| `platform` (+1) | `platform.delete_secret` | **Done** |
+| `rag` (+1) | `rag.rerank` | **Done** |
+| `cache` (+2) | `cache.delete`, `cache.list_keys` | **Done** |
+| wiring | `read_allowlist_roots` ctx slot; runtime-bound `cost.*`; LKW auto-enable filesystem | **Done** |
+
+**Delivered:** **110** catalog `tool_id` values · **38** shipped bundles.
+
+#### T-EXPAND T7 — Index Lifecycle + Async Queue (2026-06-07) — **Done**
+
+**Goal:** RAG index inspection, async task queue ops, observability range/tail, eval release compare, cost forecast.
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `message_bus` (+2) | `message_bus.list_tasks`, `message_bus.cancel` | **Done** |
+| `rag` (+3) | `rag.list_documents`, `rag.get_document`, `rag.check_index_status` | **Done** |
+| `document` (+1) | `document.parse_preview` | **Done** |
+| `observability` (+2) | `metrics.query_range`, `logs.tail` | **Done** |
+| `eval` (+1) | `eval.compare_releases` | **Done** |
+| `cost` (+1) | `cost.forecast_spend` | **Done** |
+| contracts | `TaskQueue.cancel` / `list_tasks`; `VectorStoreDocumentListerBinding` | **Done** |
+| wiring | auto-enable message_bus + observability extensions; runtime-bound `cost.forecast_spend` | **Done** |
+
+**Delivered:** **120** catalog `tool_id` values · **38** shipped bundles.
+
+#### T-EXPAND T8 — Governance + Agent Safety + LKW write (2026-06-07) — **Done**
+
+**Goal:** Read-only HITL ops, allowlisted filesystem write, RAG metadata search/purge, schema introspection, CI/CD workflow ops.
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `hitl` (+3, new) | `hitl.list_pending`, `hitl.get_decision`, `hitl.summarize_queue` | **Done** |
+| `filesystem` (+1) | `filesystem.write_text` | **Done** |
+| `rag` (+2) | `rag.search_by_metadata`, `rag.purge_collection` | **Done** |
+| `database` (+1) | `database.describe_schema` | **Done** |
+| `records` (+1) | `records.describe_collection` | **Done** |
+| `platform` (+2) | `platform.list_workflow_runs`, `platform.cancel_workflow_run` | **Done** |
+| contracts | `HumanDecisionStoreBinding`; `CiCdBackend.list/cancel`; `VectorstoreIndexLifecycleBinding.search/purge` | **Done** |
+| wiring | LKW auto-enable write + RAG maintenance; integration profile CI/CD + schema tools | **Done** |
+
+**Delivered:** **130** catalog `tool_id` values · **39** shipped bundles.
+
+#### T-EXPAND T9 — Async orchestration + interaction (2026-06-07) — **Done**
+
+**Goal:** Workflow run ops, notify batch, collaboration write-back, websearch cache invalidation, harness run diff/export, interaction session reads.
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `workflow` (+2) | `workflow.list_runs`, `workflow.cancel_run` | **Done** |
+| `notify` (+1) | `notify.send_batch` | **Done** |
+| `collaboration` (+2) | `collaboration.reply_message`, `collaboration.create_event` | **Done** |
+| `websearch` (+1) | `websearch.invalidate_cache` | **Done** |
+| `harness` (+2) | `harness.compare_runs`, `harness.export_run_bundle` | **Done** |
+| `interaction` (+2, new) | `interaction.list_sessions`, `interaction.get_last_input` | **Done** |
+| contracts | `WorkflowOrchestratorBackend.list/cancel`; `CollaborationSuite.reply/create`; `WebSearchCacheBinding` | **Done** |
+| wiring | integration profile workflow/collaboration/notify extensions; `session_storage` via `session_tool_wiring.py` + `SessionStorageToolBinding` | **Done** |
+
+**Delivered:** **140** catalog `tool_id` values · **40** shipped bundles.
+
+**Verification:** `152 passed` (`tests/unit/tools/providers/` + exporters) · `check_harness_no_getattr.py` OK · MCP full-catalog export smoke (**140** tools)
+
+Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{workflow,notify,collaboration,websearch,harness,interaction}/`
+
+#### T-EXPAND T10 — LKW storage bridge + deferred scheduling (2026-06-07) — **Done**
+
+**Goal:** Close T8/T9 deferred tools (`workspace.export_artifact`, `notify.schedule`) and extend builder/LKW ops without new bundles.
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `workspace` (+2) | `workspace.export_artifact`, `workspace.import_artifact` | **Done** |
+| `notify` (+1) | `notify.schedule` | **Done** |
+| `interaction` (+1) | `interaction.get_session_history` | **Done** |
+| `eval` (+1) | `eval.export_observations` | **Done** |
+| `storage` (+1) | `storage.exists` | **Done** |
+| `memory` (+1) | `memory.delete_key` | **Done** |
+| `pagerduty` (+1) | `pagerduty.acknowledge_incident` | **Done** |
+| `message_bus` (+1) | `message_bus.purge_completed` | **Done** |
+| `records` (+1) | `records.count` | **Done** |
+| contracts | `ScheduledNotificationBinding`; `SessionStorageBinding.get_session_history`; `TaskMemoryViewBinding.delete`; `TaskQueue.purge_completed` | **Done** |
+| wiring | `notify_tool_wiring.py` + `PolicyScopedMemoryView.delete` | **Done** |
+
+**Delivered:** **150** catalog `tool_id` values · **40** shipped bundles.
+
+**Verification:** `164 passed` (`tests/unit/tools/providers/` + exporters) · `check_harness_no_getattr.py` OK · MCP full-catalog export smoke (**150** tools)
+
+**Closeout notes (accepted platform limits):**
+
+| Area | Platform behavior | Product follow-up |
+|------|-------------------|-------------------|
+| `notify.schedule` | Records deferred delivery in `ScheduledNotificationBinding` (in-memory default via Tier-3 wiring) | Production dispatcher/cron in application host |
+| `message_bus.purge_completed` | **Done** — KV task index on broker queues (`rabbitmq`, `kafka`); Celery unchanged | Residual: Celery result-backend purge |
+| `pagerduty.acknowledge_incident` | **Done** — `PagerDutyEventsClient.acknowledge_incident` + adapter + typed `PagerDutyIncidentChannel` | — |
+
+Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{workspace,notify,interaction,eval,storage,memory,pagerduty,message_bus,records}/`
+
+#### T-EXPAND T11 — HITL write path + cloud/vector store ops (2026-06-07) — **Done**
+
+**Goal:** Close T8/T10 deferred governance and integration-bridge gaps without product scope.
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `hitl` (+2) | `hitl.submit_response`, `hitl.list_for_task` | **Done** |
+| `notify` (+2) | `notify.list_scheduled`, `notify.cancel_scheduled` | **Done** |
+| `cloud_platform` (new) | `cloud_platform.health`, `cloud_platform.resolve` | **Done** |
+| `vector_store` (new) | `vector_store.count`, `vector_store.delete`, `vector_store.list_collections`, `vector_store.health` | **Done** |
+| contracts | `HumanDecisionStoreBinding.record` / `list_for_task`; `ScheduledNotificationBinding.cancel_scheduled` | **Done** |
+| wiring | `ToolWiringContext.cloud_platform`; `IntegrationProfile` cloud platform resolution | **Done** |
+
+**Delivered:** **160** catalog `tool_id` values · **42** shipped bundles.
+
+**Verification:** provider unit tests + MCP full-catalog export smoke (**160** tools) · `check_harness_no_getattr.py` OK
+
+Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{hitl,notify,cloud_platform,vector_store,health}/`
+
+#### T-EXPAND T12 — Integration slot health + notify dispatcher (2026-06-07) — **Done**
+
+**Goal:** Close post-T11 harness ops gaps (category health probes, scheduled notify dispatch, Celery purge index).
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `health` (+9) | `health.check_object_storage`, `health.check_key_value_cache`, `health.check_message_bus`, `health.check_graph_store`, `health.check_identity_provider`, `health.check_relational_store`, `health.check_wiki_knowledge`, `health.check_search_provider`, `health.check_notification_channel` | **Done** |
+| `notify` (+1) | `notify.dispatch_due` | **Done** |
+| queue | Celery optional KV task index + `purge_completed` | **Done** |
+| contracts | `ScheduledNotificationBinding.mark_delivered` | **Done** |
+| planner | LEG-DEPTH — remove `use_rag`/`use_websearch` from LLM schema; deprecation trace | **Done** |
+| observability | OBS-DEPTH.2 trace bridge phase gate; live emit via `runtime_event_bus` | **Done** |
+
+**Delivered:** **170** catalog `tool_id` values · **42** shipped bundles.
 
 #### O.5 — Unified tool model (migration design)
 
@@ -3529,6 +3676,7 @@ Each `applications/<app>/` MUST document and maintain:
 |-------|------------------|------------|
 | **Docker** | `docker/Dockerfile`, `docker/docker-compose.yml`, `docker/build-docker.sh`, `docker/build-docker.bat`, `docker/.dockerignore` | Image builds locally; health path matches manifest `route_prefix` |
 | **Deploy doc** | `BUILD_AND_DEPLOY.md` | Generated/updated via `intergrax.applications._shared.build_deploy_doc.render_build_deploy_doc` (scaffold) or manual parity with scaffold output |
+| **`ARCHITECTURE.md` + `IMPLEMENTATION_PLAN.md`** | Per agent/app directory | Cross-linked doc pair; local task queue in `IMPLEMENTATION_PLAN.md`; scaffold emits both (`intergrax/scaffold/doc_templates.py`) |
 | **`pyproject.toml` deps** | Root `[project]` + `[project.optional-dependencies]` | Section in `applications/<app>/ARCHITECTURE.md`: which **core** deps apply, which **extras** (`harness-author`, `langgraph-legacy`, `llm-*`, `dev-ci`, integration extras) the host requires; no undeclared imports |
 
 Scaffold already emits Docker + `BUILD_AND_DEPLOY.md` for **new** apps (`new-application`, `new-stack`). Phase AA **backfills and verifies** this triad on all four existing applications.
@@ -3572,6 +3720,7 @@ Total: 83 (incl. AA-LG.1 counted in AA0)
 | A5 | Legal pre-UAEP monolith | **AA-LEG.1–AA-LEG.12** (hard reset) |
 | A6 | Per-agent architecture MD | AA-ECHO.1, AA-PR.1, AA-ORG.1, AA-RES.1, AA-SIG.1, AA-LEG.3 |
 | A7 | Per-application architecture MD + deploy triad | AA-LABAPP.1, AA-POC.1, AA-RESAPP.1, AA-LEGAPP.1, AA-APP.0.1–AA-APP.0.3 |
+| A13 | Doc pair `ARCHITECTURE.md` + `IMPLEMENTATION_PLAN.md` (scaffold + gate) | AA-D0.6, `intergrax/scaffold/doc_templates.py` |
 | A8 | Root README completeness vs canon | AA-D0.1 |
 | A9 | `AGENT_CREATION_GUIDE` / `TIER3_READINESS` stale | AA-D0.2–AA-D0.4 |
 | A10 | LangGraph not required | AA-LG.1 (**Done**) |
@@ -3594,8 +3743,9 @@ Total: 83 (incl. AA-LG.1 counted in AA0)
 | AA-S0.6 | Document **`--full`** vs default scaffold (integration/tool wiring) | **Done** | Medium | `applications/USAGE.md` |
 | AA-LG.1 | **LangGraph optional** — not in core deps; `langgraph-legacy` extra; `check_langgraph_not_required.py` | **Done** | High | `pyproject.toml`, CI |
 | AA-APP.0.1 | **Deploy triad standard** — Docker + `BUILD_AND_DEPLOY.md` + pyproject extras section (canonical template) | **Done** | High | `applications/USAGE.md` §Deploy triad |
-| AA-APP.0.2 | **Gate**: each existing `applications/*_application/` has `docker/`, `BUILD_AND_DEPLOY.md`, ARCHITECTURE deploy section | **Done** | High | `tests/unit/applications/test_application_deploy_triad.py` |
+| AA-APP.0.2 | **Gate**: each existing `applications/*_application/` has `docker/`, `BUILD_AND_DEPLOY.md`, ARCHITECTURE deploy section | **Done** | High | `tests/unit/applications/test_application_deploy_triad.py` (incl. `local_workspace_application`) |
 | AA-APP.0.3 | **Scaffold verify**: `new-application` output includes deploy triad (regression) | **Done** | High | `tests/unit/scaffold/test_scaffold_deploy_triad.py` |
+| AA-D0.6 | **Gate**: doc pair `ARCHITECTURE.md` + `IMPLEMENTATION_PLAN.md` on listed agents/apps; cross-links | **Done** | High | `tests/unit/applications/test_agent_app_doc_pair.py` |
 
 **AA scaffold matrix (generator vs H-APP target):**
 
@@ -3603,6 +3753,7 @@ Total: 83 (incl. AA-LG.1 counted in AA0)
 |--------|-------------|----------------------------|---------------------------|
 | UAEP `Agent` + `steps/pipeline.py` | Yes | — | — |
 | `contract.py` / `capabilities.py` | Yes | — | — |
+| `ARCHITECTURE.md` + `IMPLEMENTATION_PLAN.md` | Yes | Yes | Yes |
 | `manifest.py` + `AgentBinding` | — | Yes | Yes |
 | `host/environment_profile.py` | — | Yes | Yes |
 | `host/factory.py` → `build_harness_host_runtime` | — | Yes | Yes |
@@ -4356,11 +4507,12 @@ Paydown Wave P3 (optional polish):
 | **2ac — Integration expansion (M.6 P6)** | 32 harness slugs + post-catalog wiring (tools, bridges, promote gate, infra `p6`) — **no** business agents | **Done** (2026-06-02) — **32/32 + M-P6-WIRE** | [M.6 P6 register](#m6-p6--harness-integration-expansion-planned) · **§6.1y** · **§6.2ag** |
 | **2ad — FAUDIT-32 remediation** | Close 32-layer audit residuals (tier gate, intake, observability taxonomy, registry depth, eval release gate) — **no** business agents | **Done** (2026-06-06) — **23/23 + §6.1ai follow-up** | [Phase FAUDIT-32](#phase-faudit-32--full-architecture-audit-closeout) · **§6.1ah** · **§6.1ai** · **Appendix M** |
 | **2aj — Nexus execution depth (FLOW)** | Close `FLOW-GAP.*` (01–16) — delegation, SubtaskContract, backpressure profile, LLM planner, merge, eval, graph hardening — **no** K.1/K.2 | **Done** (2026-06-07) — **17/18** (**FLOW-8 Deferred**) | [Phase FLOW](#phase-flow--nexus-execution-depth) · **§6.1aj** · **§6.2aj** · **Appendix N (FLOW)** |
+| **2ak — Critic & Verification Layer (CRIT-V)** | PEV verify depth — `CriticOrchestrator`, `eval.judge`, `eval.trajectory`, evaluator-loop, semantic offline runner — **no** business agents | **Active** | [Phase CRIT-V](#phase-crit-v--critic--verification-layer) · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · **§6.1ak** · **§6.2ak** · canon §55 · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md) |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 · FLOW-8 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
 
-**Policy (2026-06-07):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2ad** platform closeouts = **Done** (including W-ADAPT + M-LLM-R + FAUDIT-32). **Band 2aj (Phase FLOW)** = **Done** (17/18; **FLOW-8 Deferred**) — closed queue [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed). Band 3 = **frozen** unless leadership reprioritizes.
+**Policy (2026-06-07):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2ad** platform closeouts = **Done**. **Band 2aj (Phase FLOW)** = **Done** (17/18; FLOW-8 Deferred). **Band 2ak (Phase CRIT-V)** = **Active** — default implementation queue after §6.1 gate. Band 3 = **frozen** unless leadership reprioritizes.
 
 ```text
 BAND 1:  Harness maintenance — gate + audit scripts (§6.1) — every PR
@@ -4396,6 +4548,7 @@ BAND 2ab: Integration depth — Phase M.6 P5 (§6.1x) — DONE (33/34)
 BAND 2ac: Integration expansion — Phase M.6 P6 (§6.1y) — DONE (32/32 + M-P6-WIRE)
 BAND 2ad: FAUDIT-32 remediation — DONE (2026-06-06)
 BAND 2aj: Nexus execution depth — Phase FLOW (§6.1aj) — DONE (17/18; FLOW-8 Deferred)
+BAND 2ak: Critic & Verification Layer — Phase CRIT-V (§6.1ak) — ACTIVE
 DONE:    Phase CLEAN — legacy module closeout (§6.1j) — 2026-06-02
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
@@ -4426,6 +4579,8 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 ### 4.0a Implementation scope split (infrastructure vs business)
 
 **Canonical rule:** Default implementation queue = **infrastructure only** (Bands 1–2g + §6.1). **Business** work runs only after explicit product prioritization — **[§6.3](#63-end-of-plan--deferred-product-work-only)**.
+
+**Documentation rule:** This plan and [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) document **platform** delivery (Harness / Agent OS). They do **not** subsume `applications/<product>/IMPLEMENTATION_PLAN.md` or `agents/<name>/` product roadmaps — each business environment and business agent owns its architecture and deployment narrative.
 
 | Layer | Bands / phases | What it includes | Default queue |
 |-------|----------------|------------------|---------------|
@@ -5093,9 +5248,61 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 
 ---
 
+## Phase CRIT-V — Critic & Verification Layer
+
+**Status:** **Active** (2026-06-07) — **1/24** deliverables Done (CRIT-V-0 architecture + ADR)  
+**Prerequisites:** Phase EVAL **Done** (registry wiring), Phase FLOW **Done** (graph hooks), Phase M-LLM-R **Done** (typed LLM envelope)  
+**Goal:** Deliver production-grade PEV **Verify** infrastructure — L0/L1/L2 critic stack with tier-separated competencies; uplift Evaluation audit layer L2→L3.  
+**Priority ladder:** **Band 2ak** (§4.0) — **default active implementation queue** after §6.1 gate on each PR.  
+**Architecture:** [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · canon [§55](intergrax_runtime_architecture.md#55-critic--verification-layer-cvl--pev-verify-addendum) · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md)  
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §25 (Evaluation), §7 (Reasoning), §10 (Multi-agent); closes **FAUDIT-EVAL.1** residual  
+**Execution order:** [§6.2ak](#62ak-phase-crit-v-execution-order-band-2ak--active) · queue: [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-active)
+
+**Delivery rule:** One **CRIT-V-*** ID per PR → update master table + §6.1ak + gate green.
+
+### CRIT-V — Master register
+
+| ID | Wave | Deliverable | Status | Modules / docs | Acceptance |
+|----|------|-------------|--------|----------------|------------|
+| CRIT-V-0.1 | 0 | **Architecture RFC** — CVL full spec | **Done** | `CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md` | Linked from canon §55, README |
+| CRIT-V-0.2 | 0 | **ADR-CRITIC-001** — tier-separated PEV verify | **Done** | `docs/adr/ADR-CRITIC-001.md` | Status Accepted; adr index |
+| CRIT-V-0.3 | 0 | **Canon §55** addendum | **Done** | `intergrax_runtime_architecture.md` §55 | Cross-links resolve |
+| CRIT-V-0.4 | 0 | **README** sections (root + docs) | **Done** | `README.md`, `docs/README.md` | Navigation table |
+| CRIT-V-1.1 | 1 | **`CriticProfile`** on `ApplicationEnvironmentProfile` | **Planned** | `contracts/environment_profile.py` | Typed fields; defaults safe-off |
+| CRIT-V-1.2 | 1 | **CVL contracts** — `CriticRequest`, `CriticVerdict`, `LayerVerdict`, `RubricSpec` | **Planned** | `runtime/critic/contracts.py` | Unit: construction + immutability |
+| CRIT-V-1.3 | 1 | **`EvaluatorLoopSpec`** — max iterations, revise routing | **Planned** | `runtime/critic/evaluator_loop_spec.py` | Validated bounds |
+| CRIT-V-2.1 | 2 | **`eval.judge` tool** — semantic scoring via separate LLM profile | **Planned** | `tools/providers/eval/judge.py`, bundle | Gate test; trace event |
+| CRIT-V-2.2 | 2 | **`eval.trajectory` tool** — process scoring from replay slice | **Planned** | `tools/providers/eval/trajectory.py` | Uses `ReplayEngine` |
+| CRIT-V-2.3 | 2 | **Registry hook** — judge/trajectory → `OnlineEvaluationObservation` | **Planned** | extend `eval/service.py` | Observation appended when registry bound |
+| CRIT-V-3.1 | 3 | **`CriticOrchestrator`** — L0→L1→L2 pipeline | **Planned** | `runtime/critic/critic_orchestrator.py` | Unit: short-circuit, layer order |
+| CRIT-V-3.2 | 3 | **`L0Gateway`** — wraps `NexusValidationEngine` + schema | **Planned** | `runtime/critic/l0_gateway.py` | Reuses existing validators |
+| CRIT-V-3.3 | 3 | **`L1Gateway`** — invokes eval tools via ToolRuntime | **Planned** | `runtime/critic/l1_gateway.py` | No direct LLM in Tier-1 |
+| CRIT-V-3.4 | 3 | **Graph partial hook** — `GraphExecutor` → `verify_partial` | **Planned** | `graph_executor.py`, `critic_wiring.py` | Integration test: L0 fail → retry |
+| CRIT-V-3.5 | 3 | **Graph final hook** — `GraphRunner` → `verify_final` | **Planned** | `graph_runner.py` | Terminal state respects verdict |
+| CRIT-V-3.6 | 3 | **Critic trace events** — `critic.*` trace steps | **Planned** | `runtime/critic/trace.py` | Visible in lab trace API |
+| CRIT-V-4.1 | 4 | **`EvaluatorLoopExecutor`** — critique→revise routing | **Planned** | `runtime/critic/evaluator_loop_executor.py` | Unit: budget exhaustion → FAIL/HITL |
+| CRIT-V-4.2 | 4 | **Graph integration** — `EVALUATOR_LOOP` pattern wired | **Planned** | `graph_executor.py`, coordination catalog | Acceptance: 2-iteration loop |
+| CRIT-V-5.1 | 5 | **`NexusEvalRunner` semantic mode** — optional L1 via `eval.judge` | **Planned** | `eval/nexus_eval_runner.py` | Integration: non-exact pass |
+| CRIT-V-5.2 | 5 | **`EvalCase` rubric field** — rubric_ref + semantic_threshold | **Planned** | `eval/eval_case.py` | Backward compatible |
+| CRIT-V-6.1 | 6 | **`wire_application_critic()`** — Tier-3 wiring | **Planned** | `applications/_shared/critic_wiring.py` | Mirror EVAL pattern |
+| CRIT-V-6.2 | 6 | **`critic_assembly_resolver`** — wire-time validation | **Planned** | `critic_assembly_resolver.py` | CI script |
+| CRIT-V-6.3 | 6 | **Policy bundle** — `critic_governance` fragment | **Planned** | `policy_wiring.py` | Merged at host build |
+| CRIT-V-6.4 | 6 | **Appendix W** — critic control plane author map | **Planned** | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| CRIT-V-7.1 | 7 | **FAUDIT-EVAL.1** — `require_baseline_for_release` CI gate | **Planned** | `phase_v_closeout_gate.py` | Fails CI when baseline missing |
+| CRIT-V-7.2 | 7 | **Flow reference §18 sync** — CVL hook table | **Planned** | `NEXUS_EXECUTION_FLOW_REFERENCE.md` | Hooks documented |
+| CRIT-V-7.3 | 7 | **Lab harness demo** — L0+L1 on sample agent (not FLOW-8) | **Planned** | lab host config | Trace shows critic steps |
+
+**Explicitly excluded:** FLOW-8 §42.43 product reference app ([§6.3](#63-end-of-plan--deferred-product-work-only)); domain rubric packs in Tier-0; mandatory universal LLM-judge on all runs.
+
+**Phase CRIT-V complete when:** CRIT-V-1 through CRIT-V-7 **Done**; Evaluation audit layer ≥ **L3**; gate green; FAUDIT-EVAL.1 closed.
+
+---
+
 ## 6. What to implement next
 
-**Default answer (infrastructure only):** **[§6.1](#61-harness-platform-maintenance-default--band-1)** — keep gate green. Phase EVAL **Done**. Phase COST **Done**. Phase SEC **Done**. Phase REL **Done**. Phase OBS **Done**. Phase REG **Done**. Phase AS **Done**. Phase CLEAN **Done**. Phase PE **Done**. Phase LEG **Done**. Phase CTX **Done**. Phase INT + RAG **Done**. Phase TS **Done**. Phase ORCH **Done**. GOV-AUDIT **Done**. Phase V-REM **Done**. Phase MEM **Done** (48/48). Product work gated by [§6.3](#63-product--business-scope-gate).
+**Default answer (infrastructure):** **[Phase CRIT-V](#phase-crit-v--critic--verification-layer) (Band 2ak)** — one CRIT-V ID per PR + **[§6.1](#61-harness-platform-maintenance-default--band-1)** gate green.
+
+**Maintenance-only mode:** If CRIT-V paused by explicit decision, revert to §6.1 gate-only maintenance.
 
 **Not default:** K.1, K.2, Legal UAEP domain steps, new product Tier-3 apps — **[§6.3](#63-end-of-plan--deferred-product-work-only)** · **[§6.3a](#63a-business-backlog-register-consolidated)** · **[§4.0a](#40a-implementation-scope-split-infrastructure-vs-business)**.
 
@@ -5341,6 +5548,26 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 
 **Explicitly excluded:** K.1, K.2 (unless FLOW-8 activated), nested harness per child.
 
+### 6.1ak Harness implementation queue — Critic & Verification Layer (active)
+
+**Purpose:** Single ordered list for **Phase CRIT-V** (Band 2ak). **Active 2026-06-07** — default harness implementation queue after §6.1 gate.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
+| 1 | **CRIT-V-0.*** | Docs | **Done** | Architecture RFC + ADR + canon §55 + README | Cross-links resolve |
+| 2 | **CRIT-V-1.*** | Code | **Planned** | `CriticProfile` + CVL contracts | Unit tests |
+| 3 | **CRIT-V-2.*** | Code | **Planned** | `eval.judge` + `eval.trajectory` tools | Tool gate tests |
+| 4 | **CRIT-V-3.*** | Code | **Planned** | `CriticOrchestrator` + graph hooks | Integration tests |
+| 5 | **CRIT-V-4.*** | Code | **Planned** | `EvaluatorLoopExecutor` | Loop budget tests |
+| 6 | **CRIT-V-5.*** | Code | **Planned** | Semantic `NexusEvalRunner` | Eval integration test |
+| 7 | **CRIT-V-6.*** | Code/Docs | **Planned** | Tier-3 wiring + Appendix W | CI assembly script |
+| 8 | **CRIT-V-7.*** | Code/Docs | **Planned** | FAUDIT-EVAL.1 + flow reference sync | Closeout gate green |
+
+**Suggested PR order:** See [§6.2ak](#62ak-phase-crit-v-execution-order-band-2ak--active).
+
+**Explicitly excluded:** FLOW-8 product app; domain rubric packs in Tier-0; mandatory universal LLM-judge.
+
 ### 6.1b Harness implementation queue — orchestration closeout (closed)
 
 **Purpose:** Single ordered list for **Phase ORCH** (Band 2j). **Closed 2026-06-05** — all ORCH rows **Done**. Ongoing: **§6.1** maintenance only.
@@ -5519,6 +5746,7 @@ Verify (every harness PR):
   python scripts/check_harness_registry_resolution.py
   python scripts/check_harness_capability_graph_wiring.py
   python scripts/check_legacy_tool_plan_booleans.py
+  python scripts/check_trace_bridge_event_catalog.py
   python scripts/check_plugin_catalog.py
   python scripts/check_llm_adapter_typed_returns.py
   python scripts/check_agents_llm_adapter_response.py
@@ -5538,6 +5766,8 @@ Verify (every harness PR):
 ```
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
+
+**Maintenance depth (2026-06-07):** **OBS-DEPTH.1 Done** — unified run journal. **T10-DEPTH.1 Done** — broker task index + PagerDuty acknowledge adapter. **T-EXPAND T11 Done** — 160 tools. **LEG-DEPTH.1–3 + O.5 depth Done** — planner schema uses `tool_ids`; legacy booleans accepted with deprecation trace; `from_legacy()` gated by `check_legacy_tool_plan_booleans.py`. **OBS-DEPTH.2 Done** — `check_trace_bridge_event_catalog.py` + gate test. **OBS live emit Done** — `RuntimeState.trace_event` → `runtime_event_bus`. **Celery purge_completed Done** — optional KV task index. **notify.dispatch_due Done** — Tier-0 dispatcher tool. **T-EXPAND T12 Done** — 170 tools (health slot probes + notify dispatcher). **L2→L3 §21 Done** — `test_observability_layer_depth_gate.py` regression gate.
 
 ### 6.1ah Harness implementation queue — FAUDIT-32 remediation (closed)
 
@@ -5772,6 +6002,32 @@ Work **one FLOW ID per PR**; after each step update FLOW master table + §6.1aj 
 | 16 | FLOW-17 | `MULTI_AGENT` ordering policy | Low | — |
 | 17 | FLOW-DOC.* | Docs closeout | Low | FLOW-1–17 (except deferred FLOW-8) |
 
+### 6.2ak Phase CRIT-V execution order (Band 2ak — active)
+
+**Status:** **Active** · register: [Phase CRIT-V](#phase-crit-v--critic--verification-layer) · queue: [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-active)
+
+Work **one CRIT-V ID per PR**; after each step update CRIT-V master table + §6.1ak; keep §6.1 scripts green.
+
+| Step | ID | Deliverable | Priority | Depends on |
+|------|-----|-------------|----------|------------|
+| 1 | CRIT-V-0.* | Architecture + ADR + canon + README | High | — |
+| 2 | CRIT-V-1.1 | `CriticProfile` on environment profile | **Critical** | CRIT-V-0 |
+| 3 | CRIT-V-1.2 | CVL contracts (`CriticRequest`, `CriticVerdict`, …) | **Critical** | CRIT-V-1.1 |
+| 4 | CRIT-V-1.3 | `EvaluatorLoopSpec` | High | CRIT-V-1.2 |
+| 5 | CRIT-V-2.1 | `eval.judge` tool | **Critical** | CRIT-V-1.2, M-LLM-R |
+| 6 | CRIT-V-2.2 | `eval.trajectory` tool | High | CRIT-V-2.1 |
+| 7 | CRIT-V-2.3 | Registry observation hook for judge/trajectory | Medium | CRIT-V-2.1 |
+| 8 | CRIT-V-3.1 | `CriticOrchestrator` | **Critical** | CRIT-V-2.1 |
+| 9 | CRIT-V-3.2–3.3 | L0/L1 gateways | High | CRIT-V-3.1 |
+| 10 | CRIT-V-3.4–3.5 | Graph partial + final hooks | High | CRIT-V-3.1 |
+| 11 | CRIT-V-3.6 | Critic trace events | Medium | CRIT-V-3.4 |
+| 12 | CRIT-V-4.1–4.2 | Evaluator-loop executor + graph wire | High | CRIT-V-3.4 |
+| 13 | CRIT-V-5.1–5.2 | Semantic offline eval runner | Medium | CRIT-V-2.1 |
+| 14 | CRIT-V-6.1–6.3 | Tier-3 critic wiring + policy + CI | High | CRIT-V-3.1 |
+| 15 | CRIT-V-6.4 | Appendix W author map | Medium | CRIT-V-6.1 |
+| 16 | CRIT-V-7.1 | FAUDIT-EVAL.1 baseline CI gate | High | CRIT-V-6.3 |
+| 17 | CRIT-V-7.2–7.3 | Flow reference sync + lab demo | Medium | CRIT-V-3.6 |
+
 ### 6.2bb Phase ORCH execution order (Band 2j — closed 2026-06-05)
 
 **Status:** **Done** · register: [Phase ORCH](#phase-orch--orchestration-control-plane-closeout) · queue: [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed)
@@ -5905,11 +6161,13 @@ Work **one AA ID per PR/session**; after each step update the AA master table + 
 
 **Suggested PR order:** AA-S0.2 → AA-S0.5 → AA-APP.0.1 → AA-APP.0.3 → AA-POC.1 → AA-POC.2 → AA-LABAPP.2 → AA-ECHO.2 → AA-LEG.0.3 → AA-LEG.1.1 → AA-LEG.1.2 → AA-LEG.1.3 → AA-LEG.2.1 → AA-LEG.2.2 → … → AA-LEGAPP.1–AA-LEGAPP.6 → AA-D0.1 → AA-D0.3–AA-D0.5 → AA-RESAPP.* → AA-LABAPP.1 → AA-APP.0.2 → remaining ARCHITECTURE.md rows.
 
-**Per-application deploy triad gate (AA-APP.0.2):** for each of `lab_application`, `legal_application`, `poc_template_application`, `research_application` assert:
+**Per-application deploy triad gate (AA-APP.0.2):** for each of `lab_application`, `legal_application`, `local_workspace_application`, `poc_template_application`, `research_application` assert:
 
 1. `docker/Dockerfile` + `docker-compose.yml` + `build-docker.sh` / `.bat`
 2. `BUILD_AND_DEPLOY.md` present and matches scaffold generator output (or documented drift)
 3. `ARCHITECTURE.md` § **Dependencies** lists required `pyproject.toml` extras (e.g. `harness-author`, provider-specific `llm-*`, `dev-ci` for tests)
+
+**Doc pair gate (AA-D0.6):** for each listed Tier-2 agent and Tier-3 application assert `ARCHITECTURE.md` and `IMPLEMENTATION_PLAN.md` exist and cross-link. Gate: `tests/unit/applications/test_agent_app_doc_pair.py`.
 
 **Success gate for Phase AA platform closeout:** **Met** (2026-06-02) — conformance matrix **OK**; legal tree = scaffold; `lab_application` on `build_harness_host_runtime`; AA-APP.0.2 green; gate **533**. **Full AA register closeout** additionally requires Band 3 domain rows **Done** or explicitly **Deferred** (current policy: **Deferred**).
 
@@ -6102,7 +6360,19 @@ See [`applications/TIER3_READINESS.md`](../applications/TIER3_READINESS.md). Exi
 | **LKW.2** | Multi-agent pipeline (`local.workspace.pipeline` graph) | `local_workspace_application/` + Nexus graph | High | LKW.1 |
 | **LKW.3** | Tier-0 `filesystem.*` read tools + allowlist policy | `intergrax/tools/providers/filesystem/` | Medium | LKW.1 |
 | **LKW.4** | Background ingest queue + incremental index | Tier-0 queue + Tier-3 worker | Medium | LKW.2 |
-| **LKW.5** | Desktop client / file picker shell | Product (out of harness) | Low | LKW.3 |
+| **LKW.5** | `LKW_DATA_HOME` + Chroma persistent local index | `local_workspace_application/host/settings.py` | High | LKW.1 |
+| **LKW.6** | Local OS daemon (Win/Linux/macOS) + interaction intake on host | `local_workspace_application/` | High | LKW.1 |
+| **LKW.6b** | Slack Socket Mode + slash command → Nexus (interaction surface) | Tier-3 + `slack` integration | Medium | LKW.6 |
+| **LKW.7** | Background file watcher + incremental index + optional Slack notify | Tier-0 queue + Tier-3 worker | Medium | LKW.3 |
+| **LKW.8** | Tray / file-picker UI (localhost HTTP/MCP client) | Product (out of harness) | Low | LKW.6 |
+| **DSW.0** | Dispute Simulation Workspace — scaffold + architecture baseline | `agents/dispute_{intake,analyst,strategist,scenario}/`, `applications/dispute_sim_application/` | **High** | Product reprioritization (2026-06-07) — **Done** |
+| **DSW.1** | Wave 1 — case intake + RAG ingest + timeline artifact | `agents/dispute_intake/steps/` | **High** | DSW.0 |
+| **DSW.2** | Multi-agent pipeline (`dispute.pipeline` graph) | `dispute_sim_application/` + Nexus graph | High | DSW.1 |
+| **DSW.3** | Analyst matrix + strategist brief domain steps | `agents/dispute_analyst/`, `agents/dispute_strategist/` | High | DSW.1 |
+| **DSW.4** | Scenario variants + correspondence review + HITL | `agents/dispute_scenario/` | High | DSW.3 |
+| **DSW.5** | Optional subgraph to `legal.review` for clause drill-down | Nexus graph | Medium | DSW.3 |
+| **DSW.6** | Case persistence + retention policy | `dispute_sim_application/host/settings.py` | Medium | DSW.1 |
+| **DSW.7** | Polish dispute eval fixtures + regression | `tests/` / agent eval | Medium | DSW.4 |
 | **K.1** | Problem Radar prototype (wave 2+) | `agents/problem_radar/` | Product | Explicit reprioritization |
 | **K.2** | Vendor Discovery prototype | (greenfield) | Product | K.1 decision or parallel product call |
 | **AA-LEG.2.2** | Legal UAEP steps (one step per PR from `SPEC_FROM_LEGACY.md`) | `agents/legal/steps/` | High | Product/legal owner |
@@ -7013,7 +7283,7 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | Multi-agent coordination pattern catalog | canon §42.43, §53.10 | ideal §6 + §25 | V-MA.* | **Done** |
 | Knowledge graph evolution path (Graph-RAG) | canon §53.11 | ideal §3.7.1 + §25 | V-KG.* | **Done** |
 | **Adaptive Harness Intelligence (L4 runtime closed loop)** | canon §54 | ideal §25 | **Phase W-ADAPT** · AHIA | **Done** (Band 2y, 70/70) — L4 runtime closed; observe/recommend/apply/verify per AHIA |
-| Observability and runtime traceability | canon §33, §42.24 | ideal §11 | Phases Q/Q+/S/U/OBS + **FAUDIT-OBS.1** | **Done** — `RuntimeEventType.LLM_CALL` / `POLICY_DECISION` added; residual: unified trace↔event journal (maintenance, not Band 2ad) |
+| Observability and runtime traceability | canon §33, §42.24 | ideal §11 | Phases Q/Q+/S/U/OBS + **FAUDIT-OBS.1** + **OBS-DEPTH.1** | **Done** — unified run journal (`unified_run_journal.py`); residual: live bus emit for all LLM paths |
 | Registry-driven extensibility (agent/tool/skill/policy/prompt/eval) | canon §7.1.5.1–§7.1.8, §15, §53.2 | ideal §19 | Phase R/U + V-CG/V-PE/V-EVAL + **P-Ext** | **Done** — plugin catalogs production-ready; marketplace UI out of scope |
 | Product agents and new product apps | canon §7.4, §52 | ideal §26 | §6.3 only | **Deferred (product scope)** |
 
@@ -7344,7 +7614,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | Theme | Layers affected | Risk |
 |-------|-----------------|------|
 | **Closeout vs maturity** | §17–§25, §31 | Plan **Done** on wiring; AUDIT_MAP **L2** on depth — do not conflate |
-| **Dual-path telemetry** | §21, §6 | Trace replay vs `RuntimeEventType` — unified journal missing |
+| **Dual-path telemetry** | §21, §6 | Trace replay ↔ `RuntimeEventType` — **OBS-DEPTH.1** unified journal + **OBS live emit** on `RuntimeState.trace_event`; gate: `test_observability_layer_depth_gate.py` |
 | **Tier boundary drift** | §2, §28 | Single Critical violation undermines canon §7.4.4 |
 | **Identity / intake naming** | §3, §4 | Resolved — `TaskEnvelope` in `intergrax/contracts/task_envelope.py`; parity tests in `test_faudit_remediation.py` |
 
@@ -7355,6 +7625,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | 2026-06-06 | FAUDIT-32.0 | Full 32-layer audit (`scope: C`, `audit-and-fix`); scorecard + §6.1ah queue + Appendix M; gate **893**; boundary scripts OK |
 | 2026-06-06 | FAUDIT-TIER.1–OPS.1 | **23/23** remediation implemented; tier gate + intake + observability + registry depth |
 | 2026-06-06 | FAUDIT-PE.1+/ALG.1+/MEM.1+ | Golden prompt CI, reference agent lifecycle metadata, STM retention wiring; gate **901** |
+| 2026-06-07 | OBS-DEPTH.* + T12 + LEG depth | Unified journal + trace bridge gate + live bus emit + 170-tool catalog + §21 L3 depth gate; gate **967** |
 
 ---
 

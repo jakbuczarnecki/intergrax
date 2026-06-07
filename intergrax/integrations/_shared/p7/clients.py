@@ -260,6 +260,47 @@ class HttpWorkflowOrchestratorBackend:
     def fetch_logs(self, run_id: str, *, tail_lines: int = 200) -> str:
         return str(self._client.fetch_logs(run_id, tail_lines=tail_lines))
 
+    def list_runs(
+        self,
+        *,
+        workflow_id: str = "",
+        limit: int = 20,
+    ) -> Sequence[WorkflowRunHandle]:
+        try:
+            rows = self._client.list_runs(workflow_id=workflow_id, limit=limit)
+        except AttributeError:
+            return []
+        runs: list[WorkflowRunHandle] = []
+        for item in list(rows or [])[:limit]:
+            if isinstance(item, WorkflowRunHandle):
+                runs.append(item)
+                continue
+            data = dict(item or {})
+            runs.append(
+                WorkflowRunHandle(
+                    run_id=str(data.get("run_id") or data.get("id") or ""),
+                    status=str(data.get("status") or ""),
+                    url=str(data.get("url") or ""),
+                    metadata={k: str(v) for k, v in dict(data.get("metadata") or {}).items()},
+                )
+            )
+        return runs
+
+    def cancel_run(self, run_id: str) -> WorkflowRunStatus:
+        try:
+            payload = self._client.cancel_run(run_id)
+        except AttributeError as exc:
+            raise RuntimeError("cancel_run_not_supported") from exc
+        if isinstance(payload, WorkflowRunStatus):
+            return payload
+        data = dict(payload or {})
+        return WorkflowRunStatus(
+            run_id=run_id,
+            status=str(data.get("status") or "cancelled"),
+            conclusion=str(data.get("conclusion") or ""),
+            logs_uri=str(data.get("logs_uri") or data.get("logs_url") or ""),
+        )
+
     def health(self) -> HealthStatus:
         return probe_client_health(self._client, slug=self._provider)
 

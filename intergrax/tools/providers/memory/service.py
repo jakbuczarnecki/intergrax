@@ -7,6 +7,8 @@ from intergrax.runtime.task_memory.models import TaskMemoryRecord
 from intergrax.tools.registry.runtime_bindings import TaskMemoryViewBinding
 from intergrax.tools._shared.async_dispatch import run_async
 from intergrax.tools.providers.memory.contracts import (
+    MemoryDeleteKeyInput,
+    MemoryDeleteKeyOutput,
     MemoryKeyRecord,
     MemoryListKeysInput,
     MemoryListKeysOutput,
@@ -20,6 +22,7 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 MEMORY_READ_TOOL_ID = "memory.read"
 MEMORY_WRITE_TOOL_ID = "memory.write"
 MEMORY_LIST_KEYS_TOOL_ID = "memory.list_keys"
+MEMORY_DELETE_KEY_TOOL_ID = "memory.delete_key"
 
 
 def _require_memory_view(ctx: ToolWiringContext) -> TaskMemoryViewBinding:
@@ -86,4 +89,14 @@ def memory_list_keys(ctx: ToolWiringContext, params: MemoryListKeysInput) -> Mem
         prefix=params.prefix,
         keys=keys,
         total=len(keys),
+    )
+
+
+def memory_delete_key(ctx: ToolWiringContext, params: MemoryDeleteKeyInput) -> MemoryDeleteKeyOutput:
+    view = _require_memory_view(ctx)
+    deleted = run_async(view.delete(params.namespace.strip(), params.key.strip()))
+    return MemoryDeleteKeyOutput(
+        namespace=params.namespace.strip(),
+        key=params.key.strip(),
+        deleted=bool(deleted),
     )

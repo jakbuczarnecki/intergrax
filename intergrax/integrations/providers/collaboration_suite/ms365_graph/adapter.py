@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Sequence
 
 from intergrax.integrations.contracts.collaboration_suite import (
+    CalendarEvent,
     CalendarEventsResult,
     MailListResult,
     MailMessage,
@@ -69,3 +70,25 @@ class Ms365GraphCollaborationSuite:
 
     def get_user(self, user_id: str) -> UserRecord:
         return self._client.get_user(user_id)
+
+    def reply_message(self, user_id: str, message_id: str, *, body: str) -> None:
+        self._client.reply_message(user_id, message_id, body=body)
+
+    def create_event(
+        self,
+        user_id: str,
+        *,
+        subject: str,
+        start: str,
+        end: str,
+        location: str = "",
+        attendees: Sequence[str] = (),
+    ) -> CalendarEvent:
+        return self._client.create_event(
+            user_id,
+            subject=subject,
+            start=start,
+            end=end,
+            location=location,
+            attendees=attendees,
+        )

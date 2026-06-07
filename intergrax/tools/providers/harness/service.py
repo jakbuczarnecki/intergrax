@@ -3,8 +3,14 @@
 
 from __future__ import annotations
 
+import json
+
 from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, RunMetadata, RunSummary
 from intergrax.tools.providers.harness.contracts import (
+    HarnessCompareRunsInput,
+    HarnessCompareRunsOutput,
+    HarnessExportRunBundleInput,
+    HarnessExportRunBundleOutput,
     HarnessGetRunCostInput,
     HarnessGetRunCostOutput,
     HarnessGetRunEventsInput,
@@ -13,6 +19,7 @@ from intergrax.tools.providers.harness.contracts import (
     HarnessGetRunOutput,
     HarnessListRunsInput,
     HarnessListRunsOutput,
+    HarnessRunComparisonOutput,
     HarnessRunEventOutput,
     HarnessRunMetadataOutput,
     HarnessRunSummaryOutput,
@@ -24,6 +31,8 @@ HARNESS_GET_RUN_TOOL_ID = "harness.get_run"
 HARNESS_LIST_RUNS_TOOL_ID = "harness.list_runs"
 HARNESS_GET_RUN_COST_TOOL_ID = "harness.get_run_cost"
 HARNESS_GET_RUN_EVENTS_TOOL_ID = "harness.get_run_events"
+HARNESS_COMPARE_RUNS_TOOL_ID = "harness.compare_runs"
+HARNESS_EXPORT_RUN_BUNDLE_TOOL_ID = "harness.export_run_bundle"
 
 
 def _require_trace_reader(ctx: ToolWiringContext) -> RunTraceReaderBinding:
@@ -142,4 +151,51 @@ def harness_get_run_events(ctx: ToolWiringContext, params: HarnessGetRunEventsIn
         run_id=params.run_id.strip(),
         events=filtered,
         total=len(filtered),
+    )
+
+
+def _comparison_output(persisted: PersistedRun) -> HarnessRunComparisonOutput:
+    meta = _metadata_output(persisted.metadata)
+    return HarnessRunComparisonOutput(
+        run_id=meta.run_id,
+        duration_ms=meta.duration_ms,
+        event_count=len(persisted.events),
+        llm_usage=dict(meta.llm_usage),
+        error_type=meta.error_type,
+    )
+
+
+def harness_compare_runs(ctx: ToolWiringContext, params: HarnessCompareRunsInput) -> HarnessCompareRunsOutput:
+    reader = _require_trace_reader(ctx)
+    baseline = _read_persisted(reader, params.baseline_run_id.strip(), params.tenant_id.strip())
+    candidate = _read_persisted(reader, params.candidate_run_id.strip(), params.tenant_id.strip())
+    baseline_out = _comparison_output(baseline)
+    candidate_out = _comparison_output(candidate)
+    return HarnessCompareRunsOutput(
+        baseline=baseline_out,
+        candidate=candidate_out,
+        duration_delta_ms=candidate_out.duration_ms - baseline_out.duration_ms,
+        event_count_delta=candidate_out.event_count - baseline_out.event_count,
+    )
+
+
+def harness_export_run_bundle(
+    ctx: ToolWiringContext,
+    params: HarnessExportRunBundleInput,
+) -> HarnessExportRunBundleOutput:
+    persisted = _read_persisted(
+        _require_trace_reader(ctx),
+        params.run_id.strip(),
+        params.tenant_id.strip(),
+    )
+    events = [dict(item) for item in persisted.events[: params.max_events]]
+    payload = {
+        "metadata": _metadata_output(persisted.metadata).model_dump(),
+        "events": events,
+        "truncated": len(persisted.events) > len(events),
+    }
+    return HarnessExportRunBundleOutput(
+        run_id=params.run_id.strip(),
+        bundle_json=json.dumps(payload, indent=2),
+        event_count=len(events),
     )

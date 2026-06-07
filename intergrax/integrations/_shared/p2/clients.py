@@ -12,6 +12,7 @@ from intergrax.integrations._shared.rest_search import hits_from_brave_payload, 
 from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError
 from intergrax.integrations.contracts.browser_automation import BrowserAutomation, PageContent
 from intergrax.integrations.contracts.collaboration_suite import (
+    CalendarEvent,
     CalendarEventsResult,
     MailListResult,
     MailMessage,
@@ -369,6 +370,45 @@ class GoogleWorkspaceCollaborationSuite:
             id=str(payload.get("id") or user_id),
             display_name=str(payload.get("display_name") or payload.get("name") or ""),
             email=payload.get("email"),
+        )
+
+    def reply_message(self, user_id: str, message_id: str, *, body: str) -> None:
+        try:
+            self._client.reply_message(user_id, message_id, body=body)
+        except AttributeError as exc:
+            raise RuntimeError("reply_message_not_supported") from exc
+
+    def create_event(
+        self,
+        user_id: str,
+        *,
+        subject: str,
+        start: str,
+        end: str,
+        location: str = "",
+        attendees: Sequence[str] = (),
+    ) -> CalendarEvent:
+        try:
+            payload = self._client.create_event(
+                user_id,
+                subject=subject,
+                start=start,
+                end=end,
+                location=location,
+                attendees=list(attendees),
+            )
+        except AttributeError as exc:
+            raise RuntimeError("create_event_not_supported") from exc
+        if isinstance(payload, CalendarEvent):
+            return payload
+        data = dict(payload or {})
+        return CalendarEvent(
+            id=str(data.get("id") or ""),
+            subject=str(data.get("subject") or subject),
+            start=str(data.get("start") or start),
+            end=str(data.get("end") or end),
+            location=str(data.get("location") or location),
+            organizer=data.get("organizer"),
         )
 
 

@@ -8,6 +8,10 @@ from intergrax.tools.providers.workspace.contracts import (
     WorkspaceArtifactOutput,
     WorkspaceDeleteFileInput,
     WorkspaceDeleteFileOutput,
+    WorkspaceExportArtifactInput,
+    WorkspaceExportArtifactOutput,
+    WorkspaceImportArtifactInput,
+    WorkspaceImportArtifactOutput,
     WorkspaceListFilesInput,
     WorkspaceListFilesOutput,
     WorkspaceReadFileInput,
@@ -20,6 +24,8 @@ from intergrax.tools.providers.workspace.contracts import (
 )
 from intergrax.tools.providers.workspace.handlers import (
     WorkspaceDeleteFileHandler,
+    WorkspaceExportArtifactHandler,
+    WorkspaceImportArtifactHandler,
     WorkspaceListFilesHandler,
     WorkspaceReadFileHandler,
     WorkspaceSearchHandler,
@@ -28,6 +34,8 @@ from intergrax.tools.providers.workspace.handlers import (
 )
 from intergrax.tools.providers.workspace.service import (
     WORKSPACE_DELETE_FILE_TOOL_ID,
+    WORKSPACE_EXPORT_ARTIFACT_TOOL_ID,
+    WORKSPACE_IMPORT_ARTIFACT_TOOL_ID,
     WORKSPACE_LIST_FILES_TOOL_ID,
     WORKSPACE_READ_FILE_TOOL_ID,
     WORKSPACE_SEARCH_TOOL_ID,
@@ -45,6 +53,8 @@ WORKSPACE_TOOL_IDS: tuple[str, ...] = (
     WORKSPACE_SNAPSHOT_TOOL_ID,
     WORKSPACE_DELETE_FILE_TOOL_ID,
     WORKSPACE_SEARCH_TOOL_ID,
+    WORKSPACE_EXPORT_ARTIFACT_TOOL_ID,
+    WORKSPACE_IMPORT_ARTIFACT_TOOL_ID,
 )
 
 
@@ -144,4 +154,36 @@ def register_workspace_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> 
             tags=("workspace", "shadow", "search"),
         ),
         WorkspaceSearchHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=WORKSPACE_EXPORT_ARTIFACT_TOOL_ID,
+            name=WORKSPACE_EXPORT_ARTIFACT_TOOL_ID,
+            description="Export a shadow workspace artifact to configured object storage.",
+            description_short="Export workspace artifact.",
+            input_schema=WorkspaceExportArtifactInput,
+            output_schema=WorkspaceExportArtifactOutput,
+            error_mapping={},
+            side_effects=True,
+            category="workspace",
+            risk_level=ToolRiskLevel.MEDIUM,
+            tags=("workspace", "shadow", "storage", "export"),
+        ),
+        WorkspaceExportArtifactHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=WORKSPACE_IMPORT_ARTIFACT_TOOL_ID,
+            name=WORKSPACE_IMPORT_ARTIFACT_TOOL_ID,
+            description="Import an object storage blob into the shadow workspace.",
+            description_short="Import workspace artifact.",
+            input_schema=WorkspaceImportArtifactInput,
+            output_schema=WorkspaceImportArtifactOutput,
+            error_mapping={},
+            side_effects=True,
+            category="workspace",
+            risk_level=ToolRiskLevel.MEDIUM,
+            tags=("workspace", "shadow", "storage", "import"),
+        ),
+        WorkspaceImportArtifactHandler(ctx),
     )

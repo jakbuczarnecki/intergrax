@@ -1,5 +1,7 @@
 # Research agents — architecture
 
+Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+
 ## Purpose
 
 Two-agent **research pipeline** for `research_application`: primary research + summary agents sharing graph delegation intent.

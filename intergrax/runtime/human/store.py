@@ -134,6 +134,32 @@ class SQLiteHumanDecisionStore:
             ).fetchall()
         return [self._row_to_record(row) for row in rows]
 
+    def get_decision(self, decision_id: str, tenant_id: str) -> Optional[HumanDecisionRecord]:
+        with self._connection() as conn:
+            row = conn.execute(
+                """
+                SELECT * FROM human_decisions
+                WHERE decision_id = ? AND tenant_id = ?
+                """,
+                (decision_id, tenant_id),
+            ).fetchone()
+        if row is None:
+            return None
+        return self._row_to_record(row)
+
+    def summarize_queue(self, tenant_id: str) -> dict[str, int]:
+        with self._connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT verdict, COUNT(*) AS cnt
+                FROM human_decisions
+                WHERE tenant_id = ?
+                GROUP BY verdict
+                """,
+                (tenant_id,),
+            ).fetchall()
+        return {str(row["verdict"]): int(row["cnt"]) for row in rows}
+
     @staticmethod
     def _row_to_record(row: sqlite3.Row) -> HumanDecisionRecord:
         target = row["escalation_target"]

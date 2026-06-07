@@ -37,3 +37,26 @@ class CacheSetOutput(BaseModel):
     tenant_id: str
     key: str
     stored: bool = True
+
+
+class CacheDeleteInput(BaseModel):
+    tenant_id: str = Field(..., min_length=1)
+    key: str = Field(..., min_length=1)
+
+
+class CacheDeleteOutput(BaseModel):
+    tenant_id: str
+    key: str
+    deleted: bool = True
+
+
+class CacheListKeysInput(BaseModel):
+    tenant_id: str = Field(..., min_length=1)
+    prefix: str = ""
+    limit: int = Field(default=100, ge=1, le=1000)
+
+
+class CacheListKeysOutput(BaseModel):
+    tenant_id: str
+    keys: list[str] = Field(default_factory=list)
+    total: int = 0

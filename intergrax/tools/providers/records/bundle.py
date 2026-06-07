@@ -7,6 +7,10 @@ from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.providers.records.contracts import (
     RecordsDeleteInput,
     RecordsDeleteOutput,
+    RecordsDescribeCollectionInput,
+    RecordsDescribeCollectionOutput,
+    RecordsCountInput,
+    RecordsCountOutput,
     RecordsGetInput,
     RecordsGetOutput,
     RecordsPutInput,
@@ -16,12 +20,16 @@ from intergrax.tools.providers.records.contracts import (
 )
 from intergrax.tools.providers.records.handlers import (
     RecordsDeleteHandler,
+    RecordsDescribeCollectionHandler,
+    RecordsCountHandler,
     RecordsGetHandler,
     RecordsPutHandler,
     RecordsQueryHandler,
 )
 from intergrax.tools.providers.records.service import (
     RECORDS_DELETE_TOOL_ID,
+    RECORDS_DESCRIBE_COLLECTION_TOOL_ID,
+    RECORDS_COUNT_TOOL_ID,
     RECORDS_GET_TOOL_ID,
     RECORDS_PUT_TOOL_ID,
     RECORDS_QUERY_TOOL_ID,
@@ -35,6 +43,8 @@ RECORDS_TOOL_IDS: tuple[str, ...] = (
     RECORDS_PUT_TOOL_ID,
     RECORDS_DELETE_TOOL_ID,
     RECORDS_QUERY_TOOL_ID,
+    RECORDS_DESCRIBE_COLLECTION_TOOL_ID,
+    RECORDS_COUNT_TOOL_ID,
 )
 
 
@@ -102,4 +112,36 @@ def register_records_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> No
             tags=("records", "document_store", "json"),
         ),
         RecordsQueryHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=RECORDS_DESCRIBE_COLLECTION_TOOL_ID,
+            name=RECORDS_DESCRIBE_COLLECTION_TOOL_ID,
+            description="Describe a document-store partition: sample row keys and JSON field names.",
+            description_short="Describe records partition.",
+            input_schema=RecordsDescribeCollectionInput,
+            output_schema=RecordsDescribeCollectionOutput,
+            error_mapping={},
+            side_effects=False,
+            category="records",
+            risk_level=ToolRiskLevel.LOW,
+            tags=("records", "document_store", "schema", "read_only"),
+        ),
+        RecordsDescribeCollectionHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=RECORDS_COUNT_TOOL_ID,
+            name=RECORDS_COUNT_TOOL_ID,
+            description="Return document count for a document-store partition without fetching rows.",
+            description_short="Count records in partition.",
+            input_schema=RecordsCountInput,
+            output_schema=RecordsCountOutput,
+            error_mapping={},
+            side_effects=False,
+            category="records",
+            risk_level=ToolRiskLevel.LOW,
+            tags=("records", "document_store", "metadata"),
+        ),
+        RecordsCountHandler(ctx),
     )

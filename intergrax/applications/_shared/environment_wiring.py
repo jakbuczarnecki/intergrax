@@ -29,6 +29,10 @@ from intergrax.applications._shared.reliability_wiring import wire_application_r
 from intergrax.applications._shared.registry_assembly_resolver import assert_registry_assembly_valid
 from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot, resolve_registry_snapshot
 from intergrax.applications._shared.integration_tool_profile import extend_tool_profile_for_integration
+from intergrax.applications._shared.memory_wiring import resolve_memory_platform_wiring
+from intergrax.applications._shared.notify_tool_wiring import wire_scheduled_notification_tool_binding
+from intergrax.applications._shared.session_tool_wiring import wire_session_storage_tool_binding
+from intergrax.applications._shared.skill_tool_profile import extend_tool_profile_for_skills
 from intergrax.applications._shared.sandbox_wiring import tool_profile_with_sandbox, wire_sandbox_sessions
 from intergrax.applications._shared.shadow_wiring import wire_shadow_workspace
 from intergrax.applications._shared.skill_wiring import ApplicationSkillWiring, build_application_skill_wiring
@@ -94,6 +98,7 @@ def wire_application_environment(
     )
 
     tool_profile = tool_profile_with_sandbox(env)
+    tool_profile = extend_tool_profile_for_skills(tool_profile, env.skill_profile)
     if resolved_integration is not None:
         tool_profile = extend_tool_profile_for_integration(tool_profile, resolved_integration)
     wiring_context = ToolWiringContext.from_integration_profile(resolved_integration)
@@ -102,6 +107,10 @@ def wire_application_environment(
     from intergrax.applications._shared.integration_tool_wiring import wire_integration_tool_context
 
     wiring_context = wire_integration_tool_context(wiring_context, resolved_integration)
+
+    memory_wiring = resolve_memory_platform_wiring(env, integration_profile=resolved_integration)
+    wiring_context = wire_session_storage_tool_binding(wiring_context, memory_wiring.session_storage)
+    wiring_context = wire_scheduled_notification_tool_binding(wiring_context)
 
     hosted_session = None
     if wiring_context.sandbox_session is None and resolved_integration is not None:

@@ -201,3 +201,37 @@ class GraphRestClient:
         if not isinstance(payload, dict):
             raise IntegrationConfigurationError("Unexpected Graph get_user response")
         return _user_from_payload(payload)
+
+    def reply_message(self, user_id: str, message_id: str, *, body: str) -> None:
+        path = f"/users/{quote(user_id, safe='')}/messages/{quote(message_id, safe='')}/reply"
+        response = self._http_client.post(path, json={"comment": body})
+        response.raise_for_status()
+
+    def create_event(
+        self,
+        user_id: str,
+        *,
+        subject: str,
+        start: str,
+        end: str,
+        location: str = "",
+        attendees: Sequence[str] = (),
+    ) -> CalendarEvent:
+        payload: dict[str, Any] = {
+            "subject": subject,
+            "start": {"dateTime": start, "timeZone": "UTC"},
+            "end": {"dateTime": end, "timeZone": "UTC"},
+        }
+        if location:
+            payload["location"] = {"displayName": location}
+        if attendees:
+            payload["attendees"] = [
+                {"emailAddress": {"address": address}, "type": "required"} for address in attendees
+            ]
+        path = f"/users/{quote(user_id, safe='')}/calendar/events"
+        response = self._http_client.post(path, json=payload)
+        response.raise_for_status()
+        body = response.json()
+        if not isinstance(body, dict):
+            raise IntegrationConfigurationError("Unexpected Graph create_event response")
+        return _event_from_payload(body)

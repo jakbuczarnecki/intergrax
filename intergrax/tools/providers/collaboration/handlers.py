@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from intergrax.tools.core.handler import ServiceToolHandler
 from intergrax.tools.providers.collaboration.contracts import (
+    CollaborationCreateEventInput,
+    CollaborationCreateEventOutput,
     CollaborationGetMessageInput,
     CollaborationGetMessageOutput,
     CollaborationGetUserInput,
@@ -13,14 +15,18 @@ from intergrax.tools.providers.collaboration.contracts import (
     CollaborationListCalendarOutput,
     CollaborationListMessagesInput,
     CollaborationListMessagesOutput,
+    CollaborationReplyMessageInput,
+    CollaborationReplyMessageOutput,
     CollaborationSendMailInput,
     CollaborationSendMailOutput,
 )
 from intergrax.tools.providers.collaboration.service import (
+    collaboration_create_event,
     collaboration_get_message,
     collaboration_get_user,
     collaboration_list_calendar,
     collaboration_list_messages,
+    collaboration_reply_message,
     collaboration_send_mail,
 )
 
@@ -47,3 +53,15 @@ class CollaborationListCalendarHandler(
 
 class CollaborationGetUserHandler(ServiceToolHandler[CollaborationGetUserInput, CollaborationGetUserOutput]):
     _service = collaboration_get_user
+
+
+class CollaborationReplyMessageHandler(
+    ServiceToolHandler[CollaborationReplyMessageInput, CollaborationReplyMessageOutput]
+):
+    _service = collaboration_reply_message
+
+
+class CollaborationCreateEventHandler(
+    ServiceToolHandler[CollaborationCreateEventInput, CollaborationCreateEventOutput]
+):
+    _service = collaboration_create_event

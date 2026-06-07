@@ -8,9 +8,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Mapping, Optional
 
+from intergrax.integrations.contracts.billing_meter import BillingMeterBackend
 from intergrax.integrations.contracts.browser_automation import BrowserAutomation
+from intergrax.integrations.contracts.cloud_platform import CloudPlatform
 from intergrax.integrations.contracts.ci_cd import CiCdBackend
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
+from intergrax.integrations.contracts.crm import CrmBackend
 from intergrax.integrations.contracts.document_parser import DocumentParser
 from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.contracts.feature_flag import FeatureFlagBackend
@@ -31,8 +34,11 @@ from intergrax.integrations.contracts.speech_provider import SpeechProviderBacke
 from intergrax.integrations.contracts.wiki_knowledge import WikiKnowledge
 from intergrax.integrations.contracts.workflow_orchestrator import WorkflowOrchestratorBackend
 from intergrax.tools.registry.runtime_bindings import (
+    HumanDecisionStoreBinding,
     OnlineEvaluationRegistryBinding,
     RunTraceReaderBinding,
+    ScheduledNotificationBinding,
+    SessionStorageBinding,
     TaskMemoryViewBinding,
 )
 
@@ -69,6 +75,9 @@ class ToolWiringContext:
     collaboration_suite: CollaborationSuite | None = None
     key_value_cache: KeyValueCache | None = None
     shadow_workspace: ShadowWorkspace | None = None
+    human_decision_store: HumanDecisionStoreBinding | None = None
+    session_storage: SessionStorageBinding | None = None
+    scheduled_notification_store: ScheduledNotificationBinding | None = None
     memory_view: TaskMemoryViewBinding | None = None
     trace_reader: RunTraceReaderBinding | None = None
     evaluation_registry: OnlineEvaluationRegistryBinding | None = None
@@ -87,6 +96,13 @@ class ToolWiringContext:
     identity_provider: IdentityProviderBackend | None = None
     speech_provider: SpeechProviderBackend | None = None
     workflow_orchestrator: WorkflowOrchestratorBackend | None = None
+    billing_meter: BillingMeterBackend | None = None
+    crm_backend: CrmBackend | None = None
+    cloud_platform: CloudPlatform | None = None
+    read_allowlist_roots: frozenset[str] | None = None
+    run_budget: Any | None = None
+    cost_envelopes: tuple[Any, ...] = ()
+    cost_quotas: tuple[Any, ...] = ()
     extras: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -177,6 +193,9 @@ class ToolWiringContext:
             identity_provider=_optional(IntegrationCategory.IDENTITY_PROVIDER),
             speech_provider=_optional(IntegrationCategory.SPEECH_PROVIDER),
             workflow_orchestrator=_optional(IntegrationCategory.WORKFLOW_ORCHESTRATOR),
+            billing_meter=_optional(IntegrationCategory.BILLING_METER),
+            crm_backend=_optional(IntegrationCategory.CRM),
+            cloud_platform=_optional(IntegrationCategory.CLOUD_PLATFORM),
             integration_profile=profile,
             rag_manager=rag_manager,
             vectorstore_manager=vectorstore_manager,

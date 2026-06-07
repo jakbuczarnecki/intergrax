@@ -27,7 +27,9 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
         BRAINTRUST_TOOL_IDS,
         register_braintrust_tools,
     )
-    from intergrax.tools.providers.cache.bundle import CACHE_BUNDLE_ID, CACHE_TOOL_IDS, register_cache_tools
+    from intergrax.tools.providers.billing.bundle import BILLING_BUNDLE_ID, BILLING_TOOL_IDS, register_billing_tools
+    from intergrax.tools.providers.cost.bundle import COST_BUNDLE_ID, COST_TOOL_IDS, register_cost_tools
+    from intergrax.tools.providers.crm.bundle import CRM_BUNDLE_ID, CRM_TOOL_IDS, register_crm_tools
     from intergrax.tools.providers.collaboration.bundle import (
         COLLABORATION_BUNDLE_ID,
         COLLABORATION_TOOL_IDS,
@@ -37,6 +39,17 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
         DATABASE_BUNDLE_ID,
         DATABASE_TOOL_IDS,
         register_database_tools,
+    )
+    from intergrax.tools.providers.cache.bundle import CACHE_BUNDLE_ID, CACHE_TOOL_IDS, register_cache_tools
+    from intergrax.tools.providers.cloud_platform.bundle import (
+        CLOUD_PLATFORM_BUNDLE_ID,
+        CLOUD_PLATFORM_TOOL_IDS,
+        register_cloud_platform_tools,
+    )
+    from intergrax.tools.providers.filesystem.bundle import (
+        FILESYSTEM_BUNDLE_ID,
+        FILESYSTEM_TOOL_IDS,
+        register_filesystem_tools,
     )
     from intergrax.tools.providers.confluence.bundle import (
         CONFLUENCE_BUNDLE_ID,
@@ -48,7 +61,13 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
     from intergrax.tools.providers.graph.bundle import GRAPH_BUNDLE_ID, GRAPH_TOOL_IDS, register_graph_tools
     from intergrax.tools.providers.harness.bundle import HARNESS_BUNDLE_ID, HARNESS_TOOL_IDS, register_harness_tools
     from intergrax.tools.providers.health.bundle import HEALTH_BUNDLE_ID, HEALTH_TOOL_IDS, register_health_tools
+    from intergrax.tools.providers.hitl.bundle import HITL_BUNDLE_ID, HITL_TOOL_IDS, register_hitl_tools
     from intergrax.tools.providers.identity.bundle import IDENTITY_BUNDLE_ID, IDENTITY_TOOL_IDS, register_identity_tools
+    from intergrax.tools.providers.interaction.bundle import (
+        INTERACTION_BUNDLE_ID,
+        INTERACTION_TOOL_IDS,
+        register_interaction_tools,
+    )
     from intergrax.tools.providers.gitlab.bundle import (
         GITLAB_BUNDLE_ID,
         GITLAB_TOOL_IDS,
@@ -103,6 +122,11 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
         VISION_DETECT_TOOL_ID,
         VISION_OCR_REGIONS_TOOL_ID,
         VISION_SEGMENT_TOOL_ID,
+    )
+    from intergrax.tools.providers.vector_store.bundle import (
+        VECTOR_STORE_BUNDLE_ID,
+        VECTOR_STORE_TOOL_IDS,
+        register_vector_store_tools,
     )
     from intergrax.tools.providers.websearch.bundle import (
         WEBSEARCH_BUNDLE_ID,
@@ -214,6 +238,13 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
             register_fn=register_vision_tools,
             description="Vision detection, segmentation, and OCR tools.",
             class_name="VisionToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=VECTOR_STORE_BUNDLE_ID,
+            tool_ids=VECTOR_STORE_TOOL_IDS,
+            register_fn=register_vector_store_tools,
+            description="Vector store backend ops tools (count, delete, collections, health).",
+            class_name="VectorStoreToolPlugin",
         ),
         define_tool_plugin(
             bundle_id=ML_BUNDLE_ID,
@@ -329,6 +360,13 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
             class_name="CacheToolPlugin",
         ),
         define_tool_plugin(
+            bundle_id=CLOUD_PLATFORM_BUNDLE_ID,
+            tool_ids=CLOUD_PLATFORM_TOOL_IDS,
+            register_fn=register_cloud_platform_tools,
+            description="Cloud platform facade health and category default resolution tools.",
+            class_name="CloudPlatformToolPlugin",
+        ),
+        define_tool_plugin(
             bundle_id=IDENTITY_BUNDLE_ID,
             tool_ids=IDENTITY_TOOL_IDS,
             register_fn=register_identity_tools,
@@ -343,6 +381,20 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
             class_name="HarnessToolPlugin",
         ),
         define_tool_plugin(
+            bundle_id=HITL_BUNDLE_ID,
+            tool_ids=HITL_TOOL_IDS,
+            register_fn=register_hitl_tools,
+            description="Human-in-the-loop decision queue tools (read + policy-gated write).",
+            class_name="HitlToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=INTERACTION_BUNDLE_ID,
+            tool_ids=INTERACTION_TOOL_IDS,
+            register_fn=register_interaction_tools,
+            description="Interaction session read tools (list sessions, last user input).",
+            class_name="InteractionToolPlugin",
+        ),
+        define_tool_plugin(
             bundle_id=HEALTH_BUNDLE_ID,
             tool_ids=HEALTH_TOOL_IDS,
             register_fn=register_health_tools,
@@ -355,6 +407,34 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
             register_fn=register_eval_tools,
             description="Harness online evaluation registry tools (V-EVAL).",
             class_name="EvalToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=FILESYSTEM_BUNDLE_ID,
+            tool_ids=FILESYSTEM_TOOL_IDS,
+            register_fn=register_filesystem_tools,
+            description="Read-only allowlisted filesystem browse tools (LKW.3).",
+            class_name="FilesystemToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=BILLING_BUNDLE_ID,
+            tool_ids=BILLING_TOOL_IDS,
+            register_fn=register_billing_tools,
+            description="Billing meter usage tools (V-COST / SaaS path).",
+            class_name="BillingToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=COST_BUNDLE_ID,
+            tool_ids=COST_TOOL_IDS,
+            register_fn=register_cost_tools,
+            description="Runtime-bound cost budget and quota governance tools (V-COST).",
+            class_name="CostToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=CRM_BUNDLE_ID,
+            tool_ids=CRM_TOOL_IDS,
+            register_fn=register_crm_tools,
+            description="Read-only CRM context tools for support harness agents.",
+            class_name="CrmToolPlugin",
         ),
     )
     _SHIPPED_TOOL_PLUGINS = plugins

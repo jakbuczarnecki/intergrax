@@ -13,6 +13,12 @@ from intergrax.tools.providers.websearch.fetch_batch_handler import WebsearchFet
 from intergrax.tools.providers.websearch.fetch_batch_service import WEBSEARCH_FETCH_BATCH_TOOL_ID
 from intergrax.tools.providers.websearch.read_url_contracts import WebsearchReadUrlInput, WebsearchReadUrlOutput
 from intergrax.tools.providers.websearch.read_url_handler import WebsearchReadUrlHandler
+from intergrax.tools.providers.websearch.invalidate_cache_contracts import (
+    WebsearchInvalidateCacheInput,
+    WebsearchInvalidateCacheOutput,
+)
+from intergrax.tools.providers.websearch.invalidate_cache_handler import WebsearchInvalidateCacheHandler
+from intergrax.tools.providers.websearch.invalidate_cache_service import WEBSEARCH_INVALIDATE_CACHE_TOOL_ID
 from intergrax.tools.providers.websearch.read_url_service import WEBSEARCH_READ_URL_TOOL_ID
 from intergrax.tools.providers.websearch.service import WEBSEARCH_TOOL_ID
 from intergrax.tools.registry.runtime import ToolRegistry
@@ -23,6 +29,7 @@ WEBSEARCH_TOOL_IDS: tuple[str, ...] = (
     WEBSEARCH_TOOL_ID,
     WEBSEARCH_READ_URL_TOOL_ID,
     WEBSEARCH_FETCH_BATCH_TOOL_ID,
+    WEBSEARCH_INVALIDATE_CACHE_TOOL_ID,
 )
 
 
@@ -87,10 +94,27 @@ def websearch_fetch_batch_contract() -> ToolContract:
     )
 
 
+def websearch_invalidate_cache_contract() -> ToolContract:
+    return ToolContract(
+        tool_id=WEBSEARCH_INVALIDATE_CACHE_TOOL_ID,
+        name="websearch.invalidate_cache",
+        description="Invalidate cached websearch query results (prefix or full clear).",
+        description_short="Invalidate websearch cache.",
+        input_schema=WebsearchInvalidateCacheInput,
+        output_schema=WebsearchInvalidateCacheOutput,
+        error_mapping={},
+        side_effects=True,
+        category="retrieval",
+        risk_level=ToolRiskLevel.LOW,
+        tags=("websearch", "cache"),
+    )
+
+
 def register_websearch_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
     registry.register(websearch_query_contract(), WebsearchQueryHandler(ctx))
     registry.register(websearch_read_url_contract(), WebsearchReadUrlHandler(ctx))
     registry.register(websearch_fetch_batch_contract(), WebsearchFetchBatchHandler(ctx))
+    registry.register(websearch_invalidate_cache_contract(), WebsearchInvalidateCacheHandler(ctx))
 
 
 WEBSEARCH_QUERY_TOOL_CONTRACT = websearch_query_contract()

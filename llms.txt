@@ -41,10 +41,18 @@ Intergrax is a **production-grade Harness AI platform** — not a chatbot or sin
 
 ## Implementation & status
 
-- docs/INTERGRAX_IMPLEMENTATION_PLAN.md — phase tracker, gates, maintenance queue (§6.1)
+- docs/INTERGRAX_IMPLEMENTATION_PLAN.md — **platform** phase tracker, gates, maintenance queue (§6.1); not product/agent deployment plans
+- Tool catalog: **150** tools · **40** bundles (T-EXPAND T10 Done) — docs/TOOLS.md
 - Harness platform: **complete** (maintenance-only default queue)
 - Regression gate: `uv run pytest -m gate -q`
-- Business agents (Phase K): K.1/K.2 deferred; **Local Knowledge Workspace (LKW)** active — applications/local_workspace_application/ARCHITECTURE.md · plan §6.3a LKW.*
+- Business agents (Phase K): K.1/K.2 deferred; **Local Knowledge Workspace (LKW)** — applications/local_workspace_application/ARCHITECTURE.md · plan §6.3a LKW.*
+
+## Documentation boundary
+
+- docs/intergrax_runtime_architecture.md + docs/INTERGRAX_IMPLEMENTATION_PLAN.md = **Harness AI / Agent OS platform** (run environments on the runtime)
+- applications/<product>/ARCHITECTURE.md + IMPLEMENTATION_PLAN.md = **business environment** (product)
+- agents/<name>/ARCHITECTURE.md = **business agent** (domain capability)
+- Do not treat platform canon as the deployment plan for a specific product or agent
 
 ## Architecture & maturity
 

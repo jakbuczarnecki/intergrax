@@ -123,6 +123,7 @@ def test_websearch_tool_registered_in_catalog() -> None:
         "websearch.query",
         "websearch.read_url",
         "websearch.fetch_batch",
+        "websearch.invalidate_cache",
     )
 
 

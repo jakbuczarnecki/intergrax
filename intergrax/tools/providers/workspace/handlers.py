@@ -8,6 +8,10 @@ from intergrax.tools.providers.workspace.contracts import (
     WorkspaceArtifactOutput,
     WorkspaceDeleteFileInput,
     WorkspaceDeleteFileOutput,
+    WorkspaceExportArtifactInput,
+    WorkspaceExportArtifactOutput,
+    WorkspaceImportArtifactInput,
+    WorkspaceImportArtifactOutput,
     WorkspaceListFilesInput,
     WorkspaceListFilesOutput,
     WorkspaceReadFileInput,
@@ -20,6 +24,8 @@ from intergrax.tools.providers.workspace.contracts import (
 )
 from intergrax.tools.providers.workspace.service import (
     workspace_delete_file,
+    workspace_export_artifact,
+    workspace_import_artifact,
     workspace_list_files,
     workspace_read_file,
     workspace_search,
@@ -50,3 +56,15 @@ class WorkspaceDeleteFileHandler(ServiceToolHandler[WorkspaceDeleteFileInput, Wo
 
 class WorkspaceSearchHandler(ServiceToolHandler[WorkspaceSearchInput, WorkspaceSearchOutput]):
     _service = workspace_search
+
+
+class WorkspaceExportArtifactHandler(
+    ServiceToolHandler[WorkspaceExportArtifactInput, WorkspaceExportArtifactOutput]
+):
+    _service = workspace_export_artifact
+
+
+class WorkspaceImportArtifactHandler(
+    ServiceToolHandler[WorkspaceImportArtifactInput, WorkspaceImportArtifactOutput]
+):
+    _service = workspace_import_artifact

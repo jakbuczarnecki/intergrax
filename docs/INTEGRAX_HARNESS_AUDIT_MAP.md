@@ -1350,7 +1350,7 @@ Verify that intelligent behavior is measured, compared and regression-tested.
 Evaluation Score: L0-L4
 ```
 
-**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix U](AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout) (wire-time evaluation bridge + policy bundle merge); V-EVAL contracts in `runtime/architecture/online_evaluation*.py`, `eval/nexus_eval_runner.py`. **Closeout:** [Phase EVAL](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-eval--evaluation-control-plane-closeout) **Done** (EVAL-DOC.*).
+**Authoring reference:** [`AGENT_CREATION_GUIDE.md` Appendix U](AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout) (wire-time evaluation bridge + policy bundle merge); V-EVAL contracts in `runtime/architecture/online_evaluation*.py`, `eval/nexus_eval_runner.py`; **CVL depth:** [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · Phase CRIT-V. **Closeout:** [Phase EVAL](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-eval--evaluation-control-plane-closeout) **Done** (EVAL-DOC.*); execution depth → [Phase CRIT-V](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-crit-v--critic--verification-layer).
 
 ---
 

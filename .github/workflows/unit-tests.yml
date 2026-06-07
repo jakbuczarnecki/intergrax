@@ -2,8 +2,11 @@
 # Intergrax framework – proprietary and confidential.
 #
 # CI profiles:
-#   push (feature branches) — fast: unit gate + governance scripts (~1 min)
+#   push (feature branches) — fast: tests/unit -m gate + governance scripts (~1 min)
 #   push (main), pull_request, workflow_dispatch — full: gate + harness + Phase V
+#
+# Gate marker (`-m gate`) selects deterministic, network-free regression tests.
+# Harness job runs only non-gate harness-depth tests (gate-covered paths omitted).
 #
 # Local full suite: scripts\test.bat unit  (uv sync --extra dev)
 
@@ -112,14 +115,7 @@ jobs:
       - name: Run full regression gate
         run: >-
           uv run pytest
-          tests/unit/debug
-          tests/unit/experiments
-          tests/unit/runtime
-          tests/unit/agents
-          tests/unit/contracts
-          tests/unit/llm_adapters
-          tests/unit/applications
-          tests/unit/docs
+          tests/unit
           tests/integration
           tests/acceptance
           applications/legal_application/legal_tests/host
@@ -184,10 +180,10 @@ jobs:
           enable-cache: true
           python-version: "3.12"
 
-      - name: Install dependencies (harness extras)
-        run: uv sync --extra dev-ci --extra integrations-harness --frozen
+      - name: Install dependencies (CI minimal)
+        run: uv sync --extra dev-ci --frozen
 
-      - name: Harness smoke tests
+      - name: Harness depth tests (non-gate only)
         run: >-
           uv run pytest
           tests/unit/integrations/providers/test_harness_m9.py
@@ -196,16 +192,9 @@ jobs:
           tests/unit/tools/providers/gitlab/
           tests/unit/tools/providers/pagerduty/
           tests/unit/tools/providers/braintrust/
-          tests/integration/runtime/test_harness_hitl_pagerduty.py
           tests/unit/applications/test_task_defaults.py
           tests/unit/applications/test_harness_default_notify.py
-          tests/unit/integrations/test_harness_lab_stable_stack.py
-          tests/unit/integrations/test_harness_lab_health.py
-          tests/unit/runtime/architecture/test_runtime_shadow_evaluation.py
-          tests/unit/skills/test_harness_skill_bundle.py
-          tests/unit/applications/test_lab_harness_environment_wiring.py
-          tests/unit/applications/test_lab_application_settings_phase_u.py
-          -n auto -q --tb=line
+          -m "not gate" -n auto -q --tb=line
 
       - name: Strict harness profile tests
         env:

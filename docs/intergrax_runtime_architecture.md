@@ -42,6 +42,25 @@ This document is an architectural and implementation guide.
 
 ---
 
+# 1.1 Documentation boundary (platform vs product)
+
+**In scope for this document and for [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md):**
+
+- **Intergrax Harness AI / Agent OS** — Tier-0 platform, Tier-1 Nexus runtime, reference Tier-2/Tier-3 wiring patterns, and the **infrastructure** to run agent environments.
+
+**Out of scope (each artifact owns its own canon):**
+
+| Artifact | Own documentation (architecture · roadmap · implementation) |
+|----------|----------------------------------------------------------------|
+| **Tier-3 business environment** (`applications/<product>/`) | `ARCHITECTURE.md`, `IMPLEMENTATION_PLAN.md`, product `README.md` — e.g. [`applications/local_workspace_application/`](../applications/local_workspace_application/) |
+| **Tier-2 business agent** (`agents/<name>/`) | `ARCHITECTURE.md`, agent `README.md`, local notebooks/tests — e.g. `agents/local_indexer/` |
+
+Platform docs describe **how to compose** agents and application hosts on the Harness. They do **not** replace product-specific architecture or deployment plans for a given business environment or business agent.
+
+Navigation: [`docs/README.md`](README.md) · [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) §Documentation boundary · plan [§4.0a](INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business)
+
+---
+
 # 2. Executive Summary
 
 Intergrax is an AI Operating System / Agent Runtime / **Harness AI environment**.
@@ -4340,6 +4359,12 @@ Every run MUST produce a **TraceRecord** containing:
 
 An operator MUST reconstruct **why** the runtime stopped using trace + events alone — without reading agent source code.
 
+**Unified run journal (OBS-DEPTH.1):** ``build_unified_run_journal()`` in
+``intergrax/runtime/events/unified_run_journal.py`` merges persisted
+``RuntimeEvent`` rows with trace-bridged events (``trace_bridge``) into one
+chronological timeline. Debug ``GET /debug/tasks/{run_id}/trace?include_runtime=true``
+and the debug CLI use this journal when runtime event persistence is configured.
+
 ---
 
 ## 42.25 Runtime Safety Enforcement
@@ -5543,4 +5568,76 @@ Governance-only L4 (envelope unit tests) **does not** satisfy runtime L4.
 - Declaring L4 complete based on governance proposals alone.
 
 See AHIA §22 for full anti-pattern list.
+
+---
+
+# 55. Critic & Verification Layer (CVL) — PEV Verify Addendum
+
+**Status:** Architecture RFC — **Planned** (Phase CRIT-V, Band 2ak)  
+**Full specification:** [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md)  
+**Decision record:** [`adr/ADR-CRITIC-001.md`](adr/ADR-CRITIC-001.md)  
+**Target alignment:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md) §6.4, §17.2, §18 · canon §29 Validation Model
+
+## 55.1 Purpose
+
+Define the Harness **Verify** phase of Plan–Execute–Verify (PEV): how partial and final agent outputs are judged for correctness through a **three-layer critic stack (L0/L1/L2)** with **tier-separated competencies**.
+
+**Strategic positioning:** The Harness orchestrates verification and records verdicts; agents and applications supply domain rubrics and policy — not a monolithic platform critic.
+
+## 55.2 Terminology lock
+
+| Term | Meaning in Intergrax |
+|------|----------------------|
+| **CVL** | Critic & Verification Layer — Tier-1 orchestration + Tier-0 judge/trajectory tools |
+| **L0 critic** | Deterministic — `NexusValidationEngine`, schema, contract rules, executable tests |
+| **L1 critic** | Semantic — `eval.judge`, `eval.trajectory`, ValidatorAgent, secondary model |
+| **L2 critic** | Authoritative — HITL, compliance sign-off |
+| **Partial verification** | After graph node, subtask, or UAEP step |
+| **Final verification** | Before terminal task state |
+
+**Not CVL:** L4 adaptive `VerificationLoop` (`runtime/adaptive/`) — consumes CVL/registry signals for profile promotion, not per-run domain correctness.
+
+## 55.3 Tier competencies (summary)
+
+| Tier | Verification responsibility |
+|------|----------------------------|
+| **Tier-0** | `eval.judge`, `eval.trajectory` tools; `ValidationResult`; registry |
+| **Tier-1** | `CriticOrchestrator`, `EvaluatorLoopExecutor`, graph/UAEP hooks, policy bridge |
+| **Tier-2** | Rubrics, ValidatorAgents, `Agent.validate()`, domain tests |
+| **Tier-3** | `CriticProfile`, thresholds, golden datasets, `require_critic_on_completion` |
+
+LLM-as-judge is **opt-in** via `CriticProfile` — not mandatory on every run. See [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §18.
+
+## 55.4 Relationship to existing mechanisms
+
+| Existing | CVL role |
+|----------|----------|
+| `NexusValidationEngine` | L0 gateway — retained, not replaced |
+| `EvaluationProfile` + registry (Phase EVAL) | Observation store and shadow/online modes |
+| `evaluation_automation.py` | Aggregates rule + judge scores from registry |
+| `CoordinationPattern.EVALUATOR_LOOP` | Critique–revise pattern; CVL adds executor |
+| `NexusEvalRunner` | Offline path; CVL adds optional semantic mode |
+
+## 55.5 Implementation state
+
+| Capability | Status | Phase |
+|------------|--------|-------|
+| L0 structural validation per node | **Done** | B.4 / ORCH |
+| Evaluation registry wiring | **Done** | EVAL |
+| CVL architecture + ADR | **Done** | CRIT-V-0 |
+| `CriticProfile` + contracts | **Planned** | CRIT-V-1 |
+| `eval.judge` / `eval.trajectory` tools | **Planned** | CRIT-V-2 |
+| `CriticOrchestrator` + hooks | **Planned** | CRIT-V-3 |
+| Evaluator-loop executor | **Planned** | CRIT-V-4 |
+| Semantic offline runner | **Planned** | CRIT-V-5 |
+| Tier-3 wiring + CI | **Planned** | CRIT-V-6–7 |
+
+## 55.6 Forbidden patterns
+
+- Domain rubrics inside Nexus or `CriticOrchestrator`.
+- Same LLM profile for producer and critic without explicit policy.
+- L1-only verification skipping L0.
+- Second evaluation registry for critic scores.
+
+Full specification: [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) §17.
 

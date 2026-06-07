@@ -26,6 +26,8 @@ def test_scaffold_creates_application_tree(tmp_path):
     pkg = "concept_lab_application"
     assert target.is_dir()
     assert (target / "manifest.py").exists()
+    assert (target / "ARCHITECTURE.md").exists()
+    assert (target / "IMPLEMENTATION_PLAN.md").exists()
     assert (target / ".env.example").exists()
     assert (target / "host" / "factory.py").exists()
     assert (target / "host" / "wiring.py").exists()

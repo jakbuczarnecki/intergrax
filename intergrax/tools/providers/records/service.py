@@ -7,6 +7,10 @@ from intergrax.integrations.contracts.document_store import DocumentRecord, Docu
 from intergrax.tools.providers.records.contracts import (
     RecordsDeleteInput,
     RecordsDeleteOutput,
+    RecordsDescribeCollectionInput,
+    RecordsDescribeCollectionOutput,
+    RecordsCountInput,
+    RecordsCountOutput,
     RecordsDocumentOutput,
     RecordsGetInput,
     RecordsGetOutput,
@@ -21,6 +25,8 @@ RECORDS_GET_TOOL_ID = "records.get"
 RECORDS_PUT_TOOL_ID = "records.put"
 RECORDS_DELETE_TOOL_ID = "records.delete"
 RECORDS_QUERY_TOOL_ID = "records.query"
+RECORDS_DESCRIBE_COLLECTION_TOOL_ID = "records.describe_collection"
+RECORDS_COUNT_TOOL_ID = "records.count"
 
 
 def _require_document_store(ctx: ToolWiringContext) -> DocumentStore:
@@ -79,3 +85,40 @@ def records_query(ctx: ToolWiringContext, params: RecordsQueryInput) -> RecordsQ
     )
     documents = [_to_document_output(item) for item in result.documents]
     return RecordsQueryOutput(documents=documents, total=result.total or len(documents))
+
+
+def records_describe_collection(
+    ctx: ToolWiringContext,
+    params: RecordsDescribeCollectionInput,
+) -> RecordsDescribeCollectionOutput:
+    store = _require_document_store(ctx)
+    partition_key = params.partition_key.strip()
+    result = store.query(partition_key, limit=params.sample_limit)
+    documents = list(result.documents)
+    field_names: set[str] = set()
+    sample_row_keys: list[str] = []
+    for item in documents:
+        sample_row_keys.append(item.row_key)
+        field_names.update(str(key) for key in item.data.keys())
+    total = int(result.total or len(documents))
+    return RecordsDescribeCollectionOutput(
+        used=True,
+        partition_key=partition_key,
+        document_count=total,
+        sample_row_keys=sample_row_keys,
+        sample_field_names=sorted(field_names),
+        reason="ok",
+    )
+
+
+def records_count(ctx: ToolWiringContext, params: RecordsCountInput) -> RecordsCountOutput:
+    store = _require_document_store(ctx)
+    result = store.query(
+        params.partition_key.strip(),
+        limit=1,
+        row_key_prefix=params.row_key_prefix,
+    )
+    return RecordsCountOutput(
+        partition_key=params.partition_key.strip(),
+        total=int(result.total or len(result.documents)),
+    )

@@ -6,6 +6,8 @@ from __future__ import annotations
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite, MailMessage
 from intergrax.tools.providers.collaboration.contracts import (
     CollaborationCalendarEventOutput,
+    CollaborationCreateEventInput,
+    CollaborationCreateEventOutput,
     CollaborationGetMessageInput,
     CollaborationGetMessageOutput,
     CollaborationGetUserInput,
@@ -15,6 +17,8 @@ from intergrax.tools.providers.collaboration.contracts import (
     CollaborationListMessagesInput,
     CollaborationListMessagesOutput,
     CollaborationMailMessageOutput,
+    CollaborationReplyMessageInput,
+    CollaborationReplyMessageOutput,
     CollaborationSendMailInput,
     CollaborationSendMailOutput,
     CollaborationUserOutput,
@@ -26,6 +30,8 @@ COLLABORATION_LIST_MESSAGES_TOOL_ID = "collaboration.list_messages"
 COLLABORATION_GET_MESSAGE_TOOL_ID = "collaboration.get_message"
 COLLABORATION_LIST_CALENDAR_TOOL_ID = "collaboration.list_calendar"
 COLLABORATION_GET_USER_TOOL_ID = "collaboration.get_user"
+COLLABORATION_REPLY_MESSAGE_TOOL_ID = "collaboration.reply_message"
+COLLABORATION_CREATE_EVENT_TOOL_ID = "collaboration.create_event"
 
 
 def _require_suite(ctx: ToolWiringContext) -> CollaborationSuite:
@@ -108,5 +114,41 @@ def collaboration_get_user(ctx: ToolWiringContext, params: CollaborationGetUserI
             id=user.id,
             display_name=user.display_name,
             email=user.email,
+        )
+    )
+
+
+def collaboration_reply_message(
+    ctx: ToolWiringContext,
+    params: CollaborationReplyMessageInput,
+) -> CollaborationReplyMessageOutput:
+    _require_suite(ctx).reply_message(
+        params.user_id.strip(),
+        params.message_id.strip(),
+        body=params.body,
+    )
+    return CollaborationReplyMessageOutput(replied=True)
+
+
+def collaboration_create_event(
+    ctx: ToolWiringContext,
+    params: CollaborationCreateEventInput,
+) -> CollaborationCreateEventOutput:
+    event = _require_suite(ctx).create_event(
+        params.user_id.strip(),
+        subject=params.subject,
+        start=params.start,
+        end=params.end,
+        location=params.location,
+        attendees=params.attendees,
+    )
+    return CollaborationCreateEventOutput(
+        event=CollaborationCalendarEventOutput(
+            id=event.id,
+            subject=event.subject,
+            start=event.start,
+            end=event.end,
+            location=event.location,
+            organizer=event.organizer,
         )
     )

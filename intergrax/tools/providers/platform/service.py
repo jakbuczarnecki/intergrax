@@ -14,6 +14,11 @@ from intergrax.tools.providers.platform.contracts import (
     PlatformGetWorkflowRunInput,
     PlatformListCheckSuitesInput,
     PlatformListCheckSuitesOutput,
+    PlatformCancelWorkflowRunInput,
+    PlatformDeleteSecretInput,
+    PlatformDeleteSecretOutput,
+    PlatformListWorkflowRunsInput,
+    PlatformListWorkflowRunsOutput,
     PlatformPutSecretInput,
     PlatformPutSecretOutput,
     PlatformCheckSuiteOutput,
@@ -23,9 +28,12 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 
 PLATFORM_GET_SECRET_TOOL_ID = "platform.get_secret"
 PLATFORM_PUT_SECRET_TOOL_ID = "platform.put_secret"
+PLATFORM_DELETE_SECRET_TOOL_ID = "platform.delete_secret"
 PLATFORM_EVALUATE_FEATURE_FLAG_TOOL_ID = "platform.evaluate_feature_flag"
 PLATFORM_GET_WORKFLOW_RUN_TOOL_ID = "platform.get_workflow_run"
 PLATFORM_LIST_CHECK_SUITES_TOOL_ID = "platform.list_check_suites"
+PLATFORM_LIST_WORKFLOW_RUNS_TOOL_ID = "platform.list_workflow_runs"
+PLATFORM_CANCEL_WORKFLOW_RUN_TOOL_ID = "platform.cancel_workflow_run"
 
 
 def platform_get_secret(ctx: ToolWiringContext, params: PlatformGetSecretInput) -> PlatformGetSecretOutput:
@@ -42,6 +50,14 @@ def platform_put_secret(ctx: ToolWiringContext, params: PlatformPutSecretInput) 
         raise RuntimeError("secrets_store_not_configured")
     store.put_secret(params.path.strip(), params.value)
     return PlatformPutSecretOutput(path=params.path.strip(), stored=True)
+
+
+def platform_delete_secret(ctx: ToolWiringContext, params: PlatformDeleteSecretInput) -> PlatformDeleteSecretOutput:
+    store: SecretsStore | None = ctx.secrets_store
+    if store is None:
+        raise RuntimeError("secrets_store_not_configured")
+    store.delete_secret(params.path.strip())
+    return PlatformDeleteSecretOutput(path=params.path.strip(), deleted=True)
 
 
 def platform_evaluate_feature_flag(
@@ -99,3 +115,44 @@ def platform_list_check_suites(
         for item in backend.list_check_suites(ref=params.ref.strip(), limit=params.limit)
     ]
     return PlatformListCheckSuitesOutput(ref=params.ref.strip(), suites=suites, total=len(suites))
+
+
+def platform_list_workflow_runs(
+    ctx: ToolWiringContext,
+    params: PlatformListWorkflowRunsInput,
+) -> PlatformListWorkflowRunsOutput:
+    backend: CiCdBackend | None = ctx.ci_cd_backend
+    if backend is None:
+        raise RuntimeError("ci_cd_backend_not_configured")
+    runs = [
+        PlatformWorkflowRunOutput(
+            id=item.id,
+            name=item.name,
+            status=item.status,
+            conclusion=item.conclusion,
+            url=item.url,
+        )
+        for item in backend.list_workflow_runs(
+            workflow_id=params.workflow_id.strip(),
+            ref=params.ref.strip(),
+            limit=params.limit,
+        )
+    ]
+    return PlatformListWorkflowRunsOutput(runs=runs, total=len(runs))
+
+
+def platform_cancel_workflow_run(
+    ctx: ToolWiringContext,
+    params: PlatformCancelWorkflowRunInput,
+) -> PlatformWorkflowRunOutput:
+    backend: CiCdBackend | None = ctx.ci_cd_backend
+    if backend is None:
+        raise RuntimeError("ci_cd_backend_not_configured")
+    record = backend.cancel_workflow_run(params.run_id.strip())
+    return PlatformWorkflowRunOutput(
+        id=record.id,
+        name=record.name,
+        status=record.status,
+        conclusion=record.conclusion,
+        url=record.url,
+    )

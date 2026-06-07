@@ -33,6 +33,21 @@ When priority 1 and priority 2/3 conflict, **update architecture and plan first*
 
 ---
 
+## Documentation boundary
+
+Canonical **`docs/`** architecture and **`INTERGRAX_IMPLEMENTATION_PLAN.md`** describe the **Intergrax Harness AI / Agent OS platform** — the runtime and infrastructure for launching and governing agent environments.
+
+They **do not** describe:
+
+- the architecture or deployment plan of a **specific Tier-3 business environment** (product host under `applications/<name>/`), or
+- the architecture or roadmap of a **specific Tier-2 business agent** (domain capability under `agents/<name>/`).
+
+Each business environment and each business agent carries its own **`ARCHITECTURE.md`**, local **`IMPLEMENTATION_PLAN.md`** (where used), and product roadmap. Platform docs explain composition and wiring; product docs explain domain behavior and go-live.
+
+See also: [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §1.1 · [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §4.0a · [`applications/USAGE.md`](../applications/USAGE.md).
+
+---
+
 ## Laboratory vs production harness
 
 Intergrax deliberately supports **two modes** on one codebase:

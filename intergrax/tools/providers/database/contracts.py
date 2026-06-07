@@ -25,3 +25,27 @@ class DatabaseExecuteInput(BaseModel):
 
 class DatabaseExecuteOutput(BaseModel):
     executed: bool = True
+
+
+class DatabaseDescribeSchemaInput(BaseModel):
+    table: str = Field(default="", description="Optional table name filter.")
+    limit: int = Field(default=100, ge=1, le=500)
+
+
+class DatabaseColumnOutput(BaseModel):
+    name: str
+    type: str = ""
+    not_null: bool = False
+    primary_key: bool = False
+
+
+class DatabaseTableOutput(BaseModel):
+    name: str
+    type: str = "table"
+    columns: list[DatabaseColumnOutput] = Field(default_factory=list)
+
+
+class DatabaseDescribeSchemaOutput(BaseModel):
+    used: bool = False
+    tables: list[DatabaseTableOutput] = Field(default_factory=list)
+    reason: str = ""

@@ -89,6 +89,9 @@ def build_application_tool_wiring(
         collaboration_suite=ctx.collaboration_suite,
         key_value_cache=ctx.key_value_cache,
         shadow_workspace=ctx.shadow_workspace,
+        human_decision_store=ctx.human_decision_store,
+        session_storage=ctx.session_storage,
+        scheduled_notification_store=ctx.scheduled_notification_store,
         memory_view=ctx.memory_view,
         trace_reader=ctx.trace_reader,
         evaluation_registry=ctx.evaluation_registry,
@@ -107,6 +110,12 @@ def build_application_tool_wiring(
         identity_provider=ctx.identity_provider,
         speech_provider=ctx.speech_provider,
         workflow_orchestrator=ctx.workflow_orchestrator,
+        billing_meter=ctx.billing_meter,
+        crm_backend=ctx.crm_backend,
+        read_allowlist_roots=ctx.read_allowlist_roots,
+        run_budget=ctx.run_budget,
+        cost_envelopes=ctx.cost_envelopes,
+        cost_quotas=ctx.cost_quotas,
         extras=dict(ctx.extras),
     )
     registry = build_registry_from_profile(profile, ctx=ctx)

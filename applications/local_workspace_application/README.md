@@ -2,7 +2,7 @@
 
 Tier-3 product host for local document indexing, semantic search, and synthesis.
 
-**Architecture (canonical):** [ARCHITECTURE.md](ARCHITECTURE.md)  
+**Architecture (canonical):** [ARCHITECTURE.md](ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)  
 **Build & deploy:** [BUILD_AND_DEPLOY.md](BUILD_AND_DEPLOY.md)
 
 ## Agents
@@ -37,9 +37,19 @@ curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
 
 `http://127.0.0.1:8020/mcp` — `list_agents`, `run_agent`, catalog tools.
 
+## Runtime model
+
+**Philosophy:** local **backend daemon** (Nexus + agents + index) + **thin frontends** (MCP, tray, optional Slack). See [ARCHITECTURE.md §3–§4](ARCHITECTURE.md#3-product-philosophy).
+
+**Install & data paths:** [ARCHITECTURE.md §7](ARCHITECTURE.md#7-installation-lifecycle-and-on-disk-layout)
+
+**Runtime:** [ARCHITECTURE.md §9](ARCHITECTURE.md#9-local-os-runtime-and-interaction-model) — Slack is **optional** (§9.4).
+
+**Implementation waves:** [ARCHITECTURE.md §15](ARCHITECTURE.md#15-implementation-plan-derivation-canonical) · [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)
+
 ## Platform stack
 
-LKW uses the canonical **Integration → Tool → Skill → Agent** model (§5 in [ARCHITECTURE.md](ARCHITECTURE.md)):
+LKW uses the canonical **Integration → Tool → Skill → Agent** model ([ARCHITECTURE.md §8](ARCHITECTURE.md#8-integrations-tools-and-skills)):
 
 - **Integrations:** `IntegrationProfile.legal_product()` (Docling, SQLite, vector store, rerank)
 - **Tools:** `host/tool_wiring.py` — `rag.*`, `document.parse`, `workspace.*`, `memory.*`, `cache.*`

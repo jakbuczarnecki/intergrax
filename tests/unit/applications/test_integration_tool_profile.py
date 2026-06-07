@@ -15,7 +15,15 @@ from intergrax.integrations.providers.security_scanner.trivy.bundle import creat
 from intergrax.integrations.registry.presets import harness_security_stack, harness_sandbox_stack
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.tools.providers.security.service import SECURITY_SCAN_TOOL_ID
-from intergrax.tools.providers.workflow.service import WORKFLOW_TRIGGER_TOOL_ID
+from intergrax.tools.providers.notify.service import NOTIFY_SEND_BATCH_TOOL_ID, NOTIFY_SCHEDULE_TOOL_ID
+from intergrax.tools.providers.storage.service import STORAGE_EXISTS_TOOL_ID
+from intergrax.tools.providers.records.service import RECORDS_COUNT_TOOL_ID
+from intergrax.tools.providers.message_bus.service import MESSAGE_BUS_PURGE_COMPLETED_TOOL_ID
+from intergrax.tools.providers.workflow.service import (
+    WORKFLOW_CANCEL_RUN_TOOL_ID,
+    WORKFLOW_LIST_RUNS_TOOL_ID,
+    WORKFLOW_TRIGGER_TOOL_ID,
+)
 from intergrax.tools.registry.profile import ToolProfile
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -87,3 +95,28 @@ def test_workflow_tools_enabled_for_orchestrator_slug() -> None:
     profile = IntegrationProfile(workflow_orchestrator="prefect")
     tool_profile = extend_tool_profile_for_integration(ToolProfile(enabled=[]), profile)
     assert WORKFLOW_TRIGGER_TOOL_ID in tool_profile.enabled
+    assert WORKFLOW_LIST_RUNS_TOOL_ID in tool_profile.enabled
+    assert WORKFLOW_CANCEL_RUN_TOOL_ID in tool_profile.enabled
+
+
+def test_notify_batch_enabled_for_notification_channel() -> None:
+    from intergrax.integrations.registry.bootstrap import register_default_integrations
+    from intergrax.integrations.registry.catalog_manifests import LOG
+
+    register_default_integrations()
+    profile = IntegrationProfile(notification_channel=LOG)
+    tool_profile = extend_tool_profile_for_integration(ToolProfile(enabled=[]), profile)
+    assert NOTIFY_SEND_BATCH_TOOL_ID in tool_profile.enabled
+    assert NOTIFY_SCHEDULE_TOOL_ID in tool_profile.enabled
+
+
+def test_t10_integration_tools_enabled_for_matching_categories() -> None:
+    profile = IntegrationProfile(
+        object_storage=object(),
+        document_store=object(),
+        message_bus=object(),
+    )
+    tool_profile = extend_tool_profile_for_integration(ToolProfile(enabled=[]), profile)
+    assert STORAGE_EXISTS_TOOL_ID in tool_profile.enabled
+    assert RECORDS_COUNT_TOOL_ID in tool_profile.enabled
+    assert MESSAGE_BUS_PURGE_COMPLETED_TOOL_ID in tool_profile.enabled

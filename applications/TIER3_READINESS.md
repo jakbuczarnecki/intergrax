@@ -27,6 +27,8 @@ See [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md) Step **4E*
 | Host runtime | `host/factory.py` → `build_harness_host_runtime` |
 | Tool catalog (optional) | `host/tool_wiring.py` only with scaffold `--full` |
 | Deploy triad | `docker/`, `BUILD_AND_DEPLOY.md`, `ARCHITECTURE.md` § Dependencies |
+| Doc pair | `ARCHITECTURE.md` + `IMPLEMENTATION_PLAN.md` (cross-linked) |
+| Implementation plan | `IMPLEMENTATION_PLAN.md` — local task queue (scaffold emits on create) |
 | HTTP + MCP | `host/factory.py`, `mcp/server.py` |
 | Env + deploy | `.env.example`, `BUILD_AND_DEPLOY.md`, `docker/build-docker.*` |
 | Smoke tests | `<pkg>_tests/host/` |
@@ -90,12 +92,16 @@ See [EXTENSION_AUTHOR_GUIDE.md](../docs/EXTENSION_AUTHOR_GUIDE.md).
 
 ## Reference hosts
 
-| Application | Profile | Notes |
-|-------------|---------|--------|
-| `poc_template_application` | lab | Committed scaffold reference |
-| `lab_application` | lab | Debug API + integrations lab profile + `INTERGRAX_DISCOVER_PLUGINS` |
-| `legal_application` | product | Mature chat/legal serving (extend scaffold product) |
-| `research_application` | product | Multi-agent pipeline |
+| Application | Profile | Port | Agents | Notes |
+|-------------|---------|------|--------|--------|
+| `poc_template_application` | lab | 8095 | Echo | Committed scaffold reference |
+| `lab_application` | lab | 8090 | Echo, SignoffProbe, Legal, Research, … | Debug API + integrations lab profile + `INTERGRAX_DISCOVER_PLUGINS` |
+| `legal_application` | product | 8000 | LegalAgent | Contract review product API |
+| `research_application` | product | 8010 | ResearchAgent, SummaryAgent | Multi-agent pipeline |
+| `local_workspace_application` | product | 8020 | LocalIndexer, LocalSearch, LocalSynthesizer | **LKW** — first business product |
+| `dispute_sim_application` | product | 8025 | DisputeIntake, DisputeAnalyst, DisputeStrategist, DisputeScenario | **DSW** — dispute simulation workspace |
+
+Full index: [`applications/README.md`](README.md) · [`agents/README.md`](../agents/README.md)
 
 ## Engine package
 

@@ -49,6 +49,9 @@ def wire_integration_tool_context(
         or _resolve_optional(integration_profile, IntegrationCategory.COLLABORATION_SUITE),
         key_value_cache=ctx.key_value_cache or _resolve_optional(integration_profile, IntegrationCategory.KEY_VALUE_CACHE),
         shadow_workspace=ctx.shadow_workspace,
+        human_decision_store=ctx.human_decision_store,
+        session_storage=ctx.session_storage,
+        scheduled_notification_store=ctx.scheduled_notification_store,
         memory_view=ctx.memory_view,
         trace_reader=ctx.trace_reader,
         evaluation_registry=ctx.evaluation_registry,
@@ -68,6 +71,13 @@ def wire_integration_tool_context(
         speech_provider=ctx.speech_provider or _resolve_optional(integration_profile, IntegrationCategory.SPEECH_PROVIDER),
         workflow_orchestrator=ctx.workflow_orchestrator
         or _resolve_optional(integration_profile, IntegrationCategory.WORKFLOW_ORCHESTRATOR),
+        billing_meter=ctx.billing_meter or _resolve_optional(integration_profile, IntegrationCategory.BILLING_METER),
+        crm_backend=ctx.crm_backend or _resolve_optional(integration_profile, IntegrationCategory.CRM),
+        cloud_platform=ctx.cloud_platform or _resolve_optional(integration_profile, IntegrationCategory.CLOUD_PLATFORM),
+        read_allowlist_roots=ctx.read_allowlist_roots,
+        run_budget=ctx.run_budget,
+        cost_envelopes=ctx.cost_envelopes,
+        cost_quotas=ctx.cost_quotas,
         extras=dict(ctx.extras),
     )
 

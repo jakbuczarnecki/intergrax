@@ -4,8 +4,6 @@
 
 from __future__ import annotations
 
-import warnings
-
 import pytest
 
 from intergrax.runtime.nexus.tools.tool_runtime import (
@@ -29,9 +27,8 @@ def test_capability_payload_to_tool_ids_maps_legacy_booleans() -> None:
     assert ids == (RAG_RETRIEVE_TOOL_ID,)
 
 
-def test_tool_invocation_plan_from_capability_payload_without_deprecation() -> None:
-    with warnings.catch_warnings():
-        warnings.simplefilter("error", DeprecationWarning)
+def test_tool_invocation_plan_from_capability_payload_legacy_booleans_warns() -> None:
+    with pytest.warns(DeprecationWarning, match="use_rag without tool_ids"):
         plan = tool_invocation_plan_from_capability_payload(
             {"use_rag": True, "use_websearch": True, "use_tools": False},
         )
