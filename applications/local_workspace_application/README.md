@@ -37,6 +37,14 @@ curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
 
 `http://127.0.0.1:8020/mcp` — `list_agents`, `run_agent`, catalog tools.
 
+## Platform stack
+
+LKW uses the canonical **Integration → Tool → Skill → Agent** model (§5 in [ARCHITECTURE.md](ARCHITECTURE.md)):
+
+- **Integrations:** `IntegrationProfile.legal_product()` (Docling, SQLite, vector store, rerank)
+- **Tools:** `host/tool_wiring.py` — `rag.*`, `document.parse`, `workspace.*`, `memory.*`, `cache.*`
+- **Skills:** `harness` bundle (LKW.0); domain `local.workspace.*` skills planned (LKW.2)
+
 ## Docs
 
 - LKW architecture: [ARCHITECTURE.md](ARCHITECTURE.md)

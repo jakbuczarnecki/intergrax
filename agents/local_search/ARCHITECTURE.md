@@ -57,12 +57,32 @@ steps/pipeline.py
 
 ---
 
-## Tools
+## Integrations, tools, and skills
 
-- `rag.retrieve` (primary)
-- `rag.list_collections` (diagnostics)
-- `memory.read` / `memory.write` (session context)
-- `cache.get` / `cache.set` (query result cache)
+### Integrations (indirect)
+
+| Slot | Default slug | Used by |
+|------|--------------|---------|
+| `vector_store` | `inmemory` / `chroma` | `rag.retrieve` hybrid search |
+| `rerank_provider` | `cohere_rerank` | optional rerank in `RetrievalService` |
+| `relational_store` | `sqlite` | task / session memory |
+
+### Tools
+
+| tool_id | Role |
+|---------|------|
+| `rag.retrieve` | Primary — semantic retrieval + citations |
+| `rag.list_collections` | Diagnostics / collection scope |
+| `memory.read` / `memory.write` | Session evidence cache |
+| `cache.get` / `cache.set` | Query-result dedup |
+
+### Skills (planned LKW.2)
+
+| `skill_id` | `tool_ids` | Status |
+|------------|------------|--------|
+| `local.workspace.search` | `rag.retrieve`, `rag.list_collections`, `cache.get`, `cache.set` | Planned |
+
+Host baseline: [`applications/local_workspace_application/host/tool_wiring.py`](../../applications/local_workspace_application/host/tool_wiring.py).
 
 ---
 

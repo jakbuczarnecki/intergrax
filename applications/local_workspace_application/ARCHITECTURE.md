@@ -64,10 +64,36 @@ LKW solves this with **read-heavy indexing + semantic retrieval + isolated write
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  Tier-0  Platform                                                       │
-│  rag.* · document.parse · workspace.* · memory.* · cache.* · parsers    │
+│  Tier-0  Platform — four-layer stack (canon §7.1.6–§7.1.8)              │
+│  Integration → Tool → Skill → Agent                                     │
+│  Docling · SQLite · vector store · rag.* · workspace.* · local.* skills │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
+
+### 3.2 Four-layer composition (Integration → Tool → Skill → Agent)
+
+LKW follows the canonical Intergrax stack — agents never call vendor SDKs; Tier-3 selects backends and enables catalog surfaces:
+
+```text
+IntegrationProfile (Tier-3 host)
+  ├── document_parser=docling     → DocumentParser backend
+  ├── vector_store=inmemory|chroma → VectorStore for RAG index
+  ├── relational_store=sqlite     → trace, session, task memory
+  ├── rerank_provider=cohere_rerank → optional rerank on rag.retrieve
+  └── observability_backend=otel  → traces (optional)
+
+ToolProfile (Tier-3 host/tool_wiring.py)
+  └── enabled tool_ids → ToolRegistry + ToolWiringContext
+
+SkillProfile (Tier-3 environment)
+  └── enabled_bundles: harness (LKW.0) · local (LKW.2 planned)
+      → resolves skill_ids → allowed_tools + prompt refs on AgentContract
+
+AgentContract (Tier-2)
+  └── skill_ids[] + capabilities[] → UAEP steps invoke tools via ToolRuntime
+```
+
+**Rule:** Tier-3 **wires** integrations and tools; Tier-2 agents **declare** `skill_ids` on `AgentContract`; skills **compose** tool packs + prompts + policy fragments. See [`docs/SKILLS.md`](../../docs/SKILLS.md) · [`docs/TOOLS.md`](../../docs/TOOLS.md) · [`docs/INTEGRATIONS.md`](../../docs/INTEGRATIONS.md).
 
 ### 3.1 Trust zones (filesystem safety)
 
@@ -99,43 +125,115 @@ Agent architecture docs:
 
 ---
 
-## 5. Enabled platform capabilities
+## 5. Integrations, tools, and skills
 
-### 5.1 Tools (`host/tool_wiring.py`)
+### 5.1 Integrations (`IntegrationProfile`)
 
-| tool_id | Role in LKW |
-|---------|-------------|
-| `rag.ingest_document` | Index local file into vector store |
-| `rag.retrieve` | Semantic search over indexed chunks |
-| `rag.list_collections` | Inspect index partitions |
-| `document.parse` | Parse single file to text fragments (pre-ingest or ad-hoc) |
-| `workspace.read_file` | Read artifact from shadow workspace |
-| `workspace.write_file` | Write report/draft to shadow workspace |
-| `workspace.list_files` | List shadow artifacts |
-| `workspace.snapshot` | Point-in-time artifact snapshot |
-| `memory.read` / `memory.write` / `memory.list_keys` | Task-scoped working memory |
-| `cache.get` / `cache.set` | Dedup parse/embedding work |
+**Baseline preset:** `IntegrationProfile.legal_product()` — RAG + document parsing without mandatory web search (unlike `research_product()`).
 
-**Explicitly disabled in baseline:** `websearch.*` — LKW is local-first.
+| `IntegrationCategory` slot | Slug (default) | Role in LKW | Wired via |
+|--------------------------|----------------|-------------|-----------|
+| `relational_store` | `sqlite` | Trace DB, session state, task memory persistence | `wire_application_environment` → `memory_wiring` |
+| `vector_store` | `inmemory` | RAG chunk index (dev); replace with `chroma` for durable local index | `rag_runtime_bridge` → `ToolWiringContext.vectorstore_manager` |
+| `document_parser` | `docling` | PDF/DOCX/XLSX parsing inside `rag.ingest_document` / `document.parse` | `CatalogDocumentParser` — infra slot, not auto-exposed as agent tool |
+| `rerank_provider` | `cohere_rerank` | Optional rerank after hybrid retrieval in `rag.retrieve` | `RetrievalService` / `RagProfile` |
+| `observability_backend` | `otel` (optional) | Export traces when OTLP enabled on environment profile | `host/environment_profile.py` |
+| `object_storage` | `filesystem` (Wave 4) | Export shadow artifacts / checkpoint blobs | `storage.*` tools when enabled |
+| `message_bus` | queue slug (Wave 4) | Background ingest jobs | `message_bus.*` when worker enabled |
 
-**Planned Tier-0 (Wave 3):** `filesystem.list`, `filesystem.read_text`, `filesystem.glob` with `INTERGRAX_ALLOWED_READ_ROOTS`.
+**Override:** `INTERGRAX_INTEGRATION_PROFILE_JSON` — e.g. swap `vector_store` to `chroma` for persistent local index.
 
-### 5.2 Integrations (`IntegrationProfile.legal_product()`)
+**Explicitly excluded in baseline:** `search_provider` (web), `collaboration` (mail APIs) — LKW is local-first.
 
-| Slot | Provider | Notes |
-|------|----------|-------|
-| `relational_store` | SQLite | Trace, session, task memory |
-| `vector_store` | In-memory (dev); Chroma/Qdrant (Wave 2+) | Per-user collection naming TBD |
-| `document_parser` | Docling | PDF/DOCX/XLSX via `ParserPipeline` fallback |
+Authoring: [`docs/AGENT_CREATION_GUIDE.md` Appendix K](../../docs/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) · catalog: [`docs/INTEGRATIONS.md`](../../docs/INTEGRATIONS.md).
 
-Override via `INTERGRAX_INTEGRATION_PROFILE_JSON` for Chroma local persistence.
+### 5.2 Tools (`ToolProfile` + `host/tool_wiring.py`)
 
-### 5.3 Environment profile
+Tier-3 enables tools; agents invoke them through `BoundToolGateway` / `ctx.invoke_tool()` — never direct integration imports.
+
+#### Host-wide tool allowlist (`_LKW_BASE_TOOL_IDS`)
+
+| tool_id | Bundle | Composes (integration slot) | LKW role |
+|---------|--------|----------------------------|----------|
+| `rag.ingest_document` | `rag` | `vector_store` + `document_parser` + embedding managers | Index local files |
+| `rag.retrieve` | `rag` | `vector_store` + optional `rerank_provider` | Semantic search |
+| `rag.list_collections` | `rag` | `vector_store` | Index diagnostics |
+| `document.parse` | `document` | `document_parser` | Ad-hoc parse without full ingest |
+| `workspace.read_file` | `workspace` | runtime `ShadowWorkspace` | Read shadow artifacts |
+| `workspace.write_file` | `workspace` | runtime `ShadowWorkspace` | Write drafts/reports |
+| `workspace.list_files` | `workspace` | runtime `ShadowWorkspace` | List artifacts |
+| `workspace.snapshot` | `workspace` | runtime `ShadowWorkspace` | Point-in-time snapshot |
+| `workspace.delete_file` | `workspace` | runtime `ShadowWorkspace` | Remove draft revisions in shadow only |
+| `workspace.search` | `workspace` | runtime `ShadowWorkspace` | Grep across shadow artifacts |
+| `memory.read` / `memory.write` / `memory.list_keys` | `memory` | `relational_store` + task memory | Session working state |
+| `cache.get` / `cache.set` | `cache` | optional KV backend | Dedup parse/embedding keys |
+
+**Env-gated (settings):** `LOCAL_WORKSPACE_ENABLE_RAG` → `rag.retrieve`; `LOCAL_WORKSPACE_ENABLE_RAG_INGEST` → `rag.ingest_document`.
+
+**Planned Wave 3 tools:** `filesystem.list`, `filesystem.read_text`, `filesystem.glob` (new Tier-0 bundle, read-only allowlist).
+
+**Explicitly disabled:** `websearch.*`, `openai.file_search.*` — external retrieval out of scope for LKW baseline.
+
+Catalog reference: [`docs/TOOLS.md`](../../docs/TOOLS.md) · wiring: [`host/tool_wiring.py`](host/tool_wiring.py).
+
+### 5.3 Skills (`SkillProfile` + `AgentContract.skill_ids`)
+
+Skills are **composable packs** (tools + prompt instruction ids + optional policy fragments). The LLM does not call skills directly — Nexus resolves `skill_ids` into `allowed_tools` at register time.
+
+#### Enabled today (LKW.0)
+
+| Bundle | `skill_bundles` | Purpose |
+|--------|-----------------|---------|
+| `harness` | `["harness"]` on `ApplicationEnvironmentProfile` | Platform smoke packs (`harness.tool_smoke`, `harness.trace_read`, …) — harness validation only |
+
+Environment: [`manifest.py`](manifest.py) · [`host/environment_profile.py`](host/environment_profile.py).
+
+#### Planned domain bundle (LKW.2) — `intergrax/skills/providers/local/`
+
+| `skill_id` | Agent | `tool_ids` | `prompt_instruction_ids` |
+|------------|-------|------------|----------------------------|
+| `local.workspace.index` | `local_indexer` | `rag.ingest_document`, `document.parse`, `rag.list_collections` | `local.workspace.index.system` |
+| `local.workspace.search` | `local_search` | `rag.retrieve`, `rag.list_collections`, `cache.get`, `cache.set` | `local.workspace.search.system` |
+| `local.workspace.synthesize` | `local_synthesizer` | `workspace.read_file`, `workspace.write_file`, `workspace.list_files`, `workspace.search`, `memory.read` | `local.workspace.synthesize.system` |
+| `local.workspace.pipeline` | graph intent (all three) | union of above (via `requires_skills`) | orchestration prompt refs |
+
+**Agent wiring (LKW.2):** each `AgentContract` gains `skill_ids=[...]`; register via `registry.register(agent, skill_registry=..., tool_registry=...)`. Until then, agents use scaffold `skills=[]` and rely on host `ToolProfile` only.
+
+Skill authoring: [`docs/SKILLS.md`](../../docs/SKILLS.md) · Appendix J in [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane).
+
+### 5.4 Per-agent Integration / Tool / Skill matrix
+
+| Agent | Integrations consumed (indirect) | Primary tools | Skill (LKW.2) |
+|-------|----------------------------------|---------------|---------------|
+| **LocalIndexerAgent** | `document_parser`, `vector_store`, embedding managers | `rag.ingest_document`, `document.parse`, `rag.list_collections` | `local.workspace.index` |
+| **LocalSearchAgent** | `vector_store`, `rerank_provider` | `rag.retrieve`, `cache.*`, `memory.*` | `local.workspace.search` |
+| **LocalSynthesizerAgent** | runtime shadow workspace (not integration slug) | `workspace.*`, `memory.read` | `local.workspace.synthesize` |
+
+### 5.5 Runtime wiring path (Tier-3 → Tier-1 → Tier-2)
+
+```text
+wire_application_environment(manifest, environment, settings)
+  ├── bootstrap_application_integration_catalog()
+  ├── probe_integration_profile_health()
+  ├── resolve_rag_stack_for_environment()     # ContextProfile.enable_rag=true
+  ├── build_application_tool_wiring()           # ToolProfile → ToolRegistry
+  ├── build_application_skill_wiring()        # SkillProfile → SkillRegistry
+  └── ApplicationBuildContext                 # passed to agent factories
+
+build_application_registry(manifest, build_context, builders)
+  └── register agents; resolve skill_ids → allowed_tools
+
+NexusLoop → AgentEngine → UAEP ctx.invoke_tool(ToolRequest(tool_name="rag.retrieve", ...))
+```
+
+### 5.6 Environment profile summary
 
 - `ApplicationEnvironmentProfile.product_defaults(profile_id="local_workspace.product")`
+- `skill_bundles=["harness"]` (LKW.0); extend with `"local"` at LKW.2
+- `integration_profile=IntegrationProfile.legal_product()`
 - `ContextProfile(enable_rag=True, enable_websearch=False)`
 - `with_harness_memory()` — STM/LTM hooks for long sessions
-- OTLP observability optional (`LOCAL_WORKSPACE_*` + `IntegrationProfile` OTEL slot)
+- OTLP optional on `observability_profile` + `IntegrationProfile` OTEL slot
 
 See [`host/environment_profile.py`](host/environment_profile.py).
 
@@ -321,7 +419,10 @@ These gaps are **expected** — LKW exists to discover and close them without Ne
 | Topic | Document |
 |-------|----------|
 | Agent workflow | [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md) |
+| Integration catalog | [`docs/INTEGRATIONS.md`](../../docs/INTEGRATIONS.md) |
 | Tools catalog | [`docs/TOOLS.md`](../../docs/TOOLS.md) |
+| Skill Library | [`docs/SKILLS.md`](../../docs/SKILLS.md) |
+| Tools & skills control plane | [`docs/AGENT_CREATION_GUIDE.md` Appendix J](../../docs/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) |
 | RAG control plane | [`docs/AGENT_CREATION_GUIDE.md` Appendix K](../../docs/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) |
 | Shadow workspace | [`docs/AGENT_CREATION_GUIDE.md` Appendix B](../../docs/AGENT_CREATION_GUIDE.md#appendix-b--shadow-workspace-and-sandbox) |
 | Multi-agent graphs | [`docs/AGENT_CREATION_GUIDE.md` Appendix C](../../docs/AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs) |

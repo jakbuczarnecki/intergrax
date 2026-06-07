@@ -58,11 +58,38 @@ Implement domain logic only in `steps/` — no Tier-3 imports.
 
 ---
 
-## Tools (via Tier-3 ToolProfile)
+## Integrations, tools, and skills
 
-- `rag.ingest_document` (primary)
-- `document.parse` (optional pre-flight)
-- `memory.write` (job status cache)
+### Integrations (indirect — Tier-3 `IntegrationProfile`)
+
+| Slot | Default slug | Used by |
+|------|--------------|---------|
+| `document_parser` | `docling` | `rag.ingest_document`, `document.parse` |
+| `vector_store` | `inmemory` / `chroma` | ingest pipeline embed + index |
+| `relational_store` | `sqlite` | task memory for job status |
+
+Agents do **not** import `integrations/providers/` — see [`docs/INTEGRATIONS.md`](../../docs/INTEGRATIONS.md).
+
+### Tools (`ToolProfile` on host)
+
+| tool_id | Role |
+|---------|------|
+| `rag.ingest_document` | Primary — parse, chunk, embed, index |
+| `document.parse` | Pre-flight / single-file parse |
+| `rag.list_collections` | Verify collection after ingest |
+| `memory.write` | Persist ingest job status |
+
+Invoke via `ctx.invoke_tool(ToolRequest(...))` in UAEP steps.
+
+### Skills (planned LKW.2)
+
+| `skill_id` | `tool_ids` | Status |
+|------------|------------|--------|
+| `local.workspace.index` | `rag.ingest_document`, `document.parse`, `rag.list_collections` | Planned — register on `AgentContract.skill_ids` |
+
+Until LKW.2: host `ToolProfile` enables tools; `contract.py` has `skills=[]`.
+
+See [`docs/SKILLS.md`](../../docs/SKILLS.md) · LKW stack: [`applications/local_workspace_application/ARCHITECTURE.md` §5](../../applications/local_workspace_application/ARCHITECTURE.md#5-integrations-tools-and-skills).
 
 ---
 

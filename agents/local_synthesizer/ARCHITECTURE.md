@@ -64,11 +64,33 @@ Task(..., metadata={"shadow_workspace": True})
 
 ---
 
-## Tools
+## Integrations, tools, and skills
 
-- `workspace.write_file`, `workspace.read_file`, `workspace.list_files`
-- `memory.read`
-- LLM via `RuntimeConfig` (no direct vendor SDK in agent)
+### Integrations (indirect)
+
+| Slot | Role |
+|------|------|
+| runtime `ShadowWorkspace` | Artifact writes — **not** an integration slug; bound via `ToolWiringContext.shadow_workspace` |
+| `relational_store` | `sqlite` — task memory for evidence handoff |
+| LLM adapter | Resolved from `ApplicationEnvironmentProfile.llm_profile` / env — no vendor SDK in agent |
+
+### Tools
+
+| tool_id | Role |
+|---------|------|
+| `workspace.write_file` | Primary — save draft/report to shadow |
+| `workspace.read_file` | Read back for revision loops |
+| `workspace.list_files` | List deliverables |
+| `workspace.search` | Grep within shadow artifacts |
+| `memory.read` | Load evidence from search step / graph handoff |
+
+### Skills (planned LKW.2)
+
+| `skill_id` | `tool_ids` | Policy |
+|------------|------------|--------|
+| `local.workspace.synthesize` | `workspace.*`, `memory.read` | `policy_fragment_id` for HITL on financial/legal drafts (TBD) |
+
+Requires task `metadata={"shadow_workspace": True}`.
 
 ---
 
