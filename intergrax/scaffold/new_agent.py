@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 from textwrap import dedent
 
+from intergrax.scaffold.adr_templates import write_agent_adr_scaffold
 from intergrax.scaffold.doc_templates import (
     render_agent_architecture_doc,
     render_agent_implementation_plan,
@@ -446,6 +447,7 @@ def _readme(slug: str, class_name: str, capabilities: list[str]) -> str:
 
         - [`ARCHITECTURE.md`](ARCHITECTURE.md) — purpose, contracts, runtime layout
         - [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) — task queue and verification
+        - [`adr/README.md`](adr/README.md) — architecture decision records
 
         ## Quick start
 
@@ -478,6 +480,7 @@ def _readme(slug: str, class_name: str, capabilities: list[str]) -> str:
         - ``schemas/`` — I/O models
         - ``tests/`` — agent smoke tests
         - ``notebooks/`` — interactive experiments
+        - ``adr/`` — architecture decision records
         """
     )
 
@@ -555,6 +558,7 @@ def create_agent(
     )
     if not minimal:
         _write(target / "README.md", _readme(slug, class_name, capabilities), force=force)
+    write_agent_adr_scaffold(agent_dir=target, slug=slug, force=force)
 
     return target
 

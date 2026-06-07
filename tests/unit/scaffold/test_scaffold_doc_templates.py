@@ -31,6 +31,8 @@ def test_agent_scaffold_emits_architecture_and_plan() -> None:
         assert "doc_probe agent — Implementation Plan" in plan
         assert "DOC_PROBE-1" in plan
         assert "ARCHITECTURE.md" in plan
+        assert (target / "adr" / "README.md").is_file()
+        assert (target / "adr" / "TEMPLATE.md").is_file()
 
 
 def test_application_scaffold_emits_architecture_and_plan() -> None:
@@ -50,3 +52,5 @@ def test_application_scaffold_emits_architecture_and_plan() -> None:
         plan = (target / "IMPLEMENTATION_PLAN.md").read_text(encoding="utf-8")
         assert "DOC_APP-4" in plan
         assert "expand" in plan.lower()
+        assert (target / "adr" / "README.md").is_file()
+        assert (target / "adr" / "TEMPLATE.md").is_file()

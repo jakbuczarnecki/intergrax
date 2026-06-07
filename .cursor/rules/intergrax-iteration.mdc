@@ -135,6 +135,28 @@ Do not mix languages within a single response unless explicitly requested.
 - New doc file only if existing canon is insufficient — **state why**.
 - Short summaries in chat are allowed when they aid understanding — do not replace or fork canonical docs.
 
+## Architecture Decision Records (ADR)
+
+Every **significant architecture change or design decision** must produce a proper ADR in the **correct domain** before or with implementation. Trivial fixes and test-only changes do not require ADRs.
+
+| Domain | ADR location | When |
+|--------|--------------|------|
+| **Harness platform** (Tier-0/Tier-1) | `docs/adr/` — see [`docs/adr/README.md`](docs/adr/README.md) | Nexus semantics, tools/skills/integrations contracts, LLM/RAG/policy, cross-cutting platform behavior |
+| **Business agent** (Tier-2) | `agents/<slug>/adr/` — see `agents/<slug>/adr/README.md` | Domain pipelines, capabilities, agent-specific tool/skill policy, I/O contracts |
+| **Business application** (Tier-3) | `applications/<pkg>/adr/` — see `applications/<pkg>/adr/README.md` | Manifest roster, host profiles, serving/deployment, product orchestration |
+
+**Process:**
+
+1. Copy domain `adr/TEMPLATE.md` to the next sequential id (`ADR-{AREA}-{NNN}.md`).
+2. Fill Context, Decision, Consequences; set Status when accepted.
+3. Link from the domain `ARCHITECTURE.md` and/or `IMPLEMENTATION_PLAN.md`.
+4. For Harness ADRs, also link from `intergrax_runtime_architecture.md` or `INTERGRAX_IMPLEMENTATION_PLAN.md` when applicable.
+5. If no ADR is needed, record **"no ADR needed"** with rationale in the plan row or PR — do not skip silently.
+
+**Scaffolds:** `python -m intergrax.scaffold new-agent` and `new-application` emit `adr/README.md` + `adr/TEMPLATE.md` automatically.
+
+**Completion criteria:** Do not mark an architecture-changing iteration complete without the ADR (or explicit "no ADR needed" note) in the correct domain.
+
 ## Testing and verification
 
 After harness/runtime changes:
@@ -186,7 +208,8 @@ Do not consider an implementation item complete unless:
 - implementation plan remains consistent,
 - relevant tests pass,
 - affected documentation is updated,
-- no unnecessary Tier-0 duplication was introduced.
+- no unnecessary Tier-0 duplication was introduced,
+- significant architecture decisions have an ADR (or explicit "no ADR needed") in the correct domain.
 
 Never claim that the whole platform is complete.
 Only report completion for the currently implemented scope.

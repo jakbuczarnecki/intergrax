@@ -65,6 +65,7 @@ def render_agent_architecture_doc(
         | `prompts/system.md` | Prompt assets |
         | `schemas/` | I/O models |
         | `tests/` | Agent smoke tests |
+        | `adr/` | Architecture decision records — [`adr/README.md`](adr/README.md) |
 
         ## Runtime
 
@@ -122,6 +123,7 @@ def render_agent_implementation_plan(
         |-------|--------|
         | Purpose, contracts, I/O, runtime layout | **ARCHITECTURE.md** (this directory) |
         | Task status, phases, next steps | **This file** |
+        | Significant agent architecture decisions | **`adr/`** — [`adr/README.md`](adr/README.md) |
         | Platform harness work | `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` §6.1 |
         | UAEP / Nexus workflow | `docs/AGENT_CREATION_GUIDE.md` |
 
@@ -223,6 +225,10 @@ def render_application_architecture_doc(
         `{cap}`
 
         {deploy_section}
+        ## Architecture decisions
+
+        - `adr/` — [`adr/README.md`](adr/README.md) (decision index + `TEMPLATE.md`)
+
         ## Dependencies (pyproject.toml)
 
         - Core `Intergrax-ai` install from repository root (`uv sync`)
@@ -280,6 +286,7 @@ def render_application_implementation_plan(
         |-------|--------|
         | Host purpose, manifest, factory, dependencies | **ARCHITECTURE.md** (this directory) |
         | Task status, phases, next steps | **This file** |
+        | Significant application architecture decisions | **`adr/`** — [`adr/README.md`](adr/README.md) |
         | Platform harness work | `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` §6.1 |
         | Scaffold / deploy recipes | `applications/TIER3_READINESS.md` |
 

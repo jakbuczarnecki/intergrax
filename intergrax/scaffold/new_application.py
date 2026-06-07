@@ -12,6 +12,7 @@ from textwrap import dedent
 
 from intergrax.applications._shared.build_deploy_doc import render_build_deploy_doc
 from intergrax.applications._shared.docker_templates import write_application_docker
+from intergrax.scaffold.adr_templates import write_application_adr_scaffold
 from intergrax.scaffold.agent_catalog import ScaffoldAgentSpec, resolve_agent_specs
 from intergrax.scaffold.doc_templates import (
     render_application_architecture_doc,
@@ -851,7 +852,7 @@ def _readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> 
 
         Scaffolded lab-profile application — debug API + ``POST {route_prefix}/run``.
 
-        **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md) · **Plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+        **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md) · **Plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · **ADRs:** [`adr/README.md`](adr/README.md)
 
         **Build & deploy:** [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md)
 
@@ -1045,6 +1046,13 @@ def _create_lab_application(
             ),
             force=force,
         )
+    write_application_adr_scaffold(
+        app_dir=target,
+        pkg=names.pkg,
+        short=names.short,
+        display=names.display,
+        force=force,
+    )
 
 
 def _create_product_application(
@@ -1141,6 +1149,13 @@ def _create_product_application(
             tests_pkg=names.tests_pkg,
             display=names.display,
         ),
+        force=force,
+    )
+    write_application_adr_scaffold(
+        app_dir=target,
+        pkg=names.pkg,
+        short=names.short,
+        display=names.display,
         force=force,
     )
 

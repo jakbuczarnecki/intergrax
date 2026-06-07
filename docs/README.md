@@ -44,6 +44,7 @@ The `docs/` folder holds the canonical **Harness AI / Agent OS platform** docume
 | [**LLM_ADAPTERS.md**](LLM_ADAPTERS.md) | **LLM adapter catalog** — providers, streaming, tools, env vars, Prometheus/governance |
 | [**IDEAL_HARNESS_AI_ARCHITECTURE.md**](IDEAL_HARNESS_AI_ARCHITECTURE.md) | **Target Harness AI architecture** — ideal Agent OS reference model for Integrax alignment |
 | [**NEXUS_EXECUTION_FLOW_REFERENCE.md**](NEXUS_EXECUTION_FLOW_REFERENCE.md) | **Nexus execution flow** — operational narrative, diagrams, edge cases, evaluation hooks, plan traceability ([Phase FLOW](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-flow--nexus-execution-depth) **Done** 17/18 · **FLOW-8 Deferred**) |
+| [**adr/README.md**](adr/README.md) | **Harness ADR index** — process, naming, template; platform decision records |
 | [**adr/ADR-FLOW-001.md**](adr/ADR-FLOW-001.md) | **Delegation semantics** — `DELEGATES_TO` graph expansion (Option C); **implemented** (`FLOW-2`, `FLOW-14`) |
 | [**adr/ADR-FLOW-002.md**](adr/ADR-FLOW-002.md) | **Lifecycle semantics** — reserved `WAITING_FOR_RESOURCES` / `EXPIRED` states (`FLOW-10`) |
 | [**adr/ADR-FLOW-003.md**](adr/ADR-FLOW-003.md) | **`MODIFY_PLAN` semantics** — reserved v1; `MODIFY_PLAN_NOT_SUPPORTED` without handoff (`FLOW-16`) |
