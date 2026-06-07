@@ -1,5 +1,7 @@
 # legal_application — architecture
 
+Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+
 ## Purpose
 
 Product-style Tier-3 host for scaffold `LegalAgent` — auth, FastAPI core, MCP, deploy triad.

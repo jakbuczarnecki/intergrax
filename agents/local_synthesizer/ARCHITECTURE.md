@@ -1,5 +1,7 @@
 # LocalSynthesizerAgent — architecture
 
+Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+
 **Capability:** `local.workspace.synthesize`  
 **Host:** [`applications/local_workspace_application/`](../../applications/local_workspace_application/)  
 **Status:** Scaffold — domain steps pending Wave LKW.1

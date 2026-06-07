@@ -1,6 +1,6 @@
 # Problem Radar Agent (Phase K.1)
 
-Architecture: [ARCHITECTURE.md](ARCHITECTURE.md). Tier-2 business agent prototype — discovers and clusters user pain signals (canon §36).
+Architecture: [ARCHITECTURE.md](ARCHITECTURE.md) · Plan: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). Tier-2 business agent prototype — discovers and clusters user pain signals (canon §36).
 
 ## Status
 

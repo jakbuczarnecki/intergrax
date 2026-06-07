@@ -1,5 +1,7 @@
 # Signoff probe agent — architecture
 
+Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+
 ## Purpose
 
 Gate and lab **sign-off probe** for Appendix A human-approval flows (`signoff.probe` capability).

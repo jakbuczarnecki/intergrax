@@ -1,5 +1,7 @@
 # research_application — architecture
 
+Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+
 ## Purpose
 
 Multi-agent HTTP host for **ResearchAgent** + **SummaryAgent** with Nexus loop enabled by default.

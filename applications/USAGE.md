@@ -28,6 +28,8 @@ Primary tracker: `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` Phase V.
 applications/my_lab/
     manifest.py              # ApplicationManifest + AgentBinding.mount(...)
     README.md                  # Quickstart (uvicorn, curl, docker)
+    ARCHITECTURE.md            # Host purpose, manifest, dependencies
+    IMPLEMENTATION_PLAN.md     # Local implementation queue
     .env.example               # App-prefixed env vars (MY_LAB_*)
     host/
         main.py                # ASGI entry, load_dotenv
@@ -55,8 +57,9 @@ Every Tier-3 host under `applications/<app>/` must ship:
 | **Docker** | `docker/Dockerfile`, `docker-compose.yml`, `build-docker.sh` / `.bat` | Image build from repo root context |
 | **Deploy doc** | `BUILD_AND_DEPLOY.md` | From scaffold `render_build_deploy_doc` or kept in sync manually |
 | **Dependencies** | `ARCHITECTURE.md` § Dependencies | Which `pyproject.toml` extras apply (`harness-author`, `llm-*`, `dev-ci`, …) |
+| **Implementation plan** | `IMPLEMENTATION_PLAN.md` | Local task queue — scaffold emits on create; links to `ARCHITECTURE.md` |
 
-Gate: `tests/unit/applications/test_application_deploy_triad.py`.
+Gate: `tests/unit/applications/test_application_deploy_triad.py` · doc pair: `tests/unit/applications/test_agent_app_doc_pair.py`.
 
 **Scaffold default vs `--full`:** `python -m intergrax.scaffold new-application …` emits H-APP `factory.py` + `environment_profile.py` without `integration_wiring.py` / `tool_wiring.py`. Use `--full` only when custom catalog wiring is required.
 

@@ -1,6 +1,6 @@
 # Research Agent Prototype
 
-Architecture: [ARCHITECTURE.md](ARCHITECTURE.md). Capability module for multi-agent research experiments (Phase C).
+Architecture: [ARCHITECTURE.md](ARCHITECTURE.md) · Plan: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). Capability module for multi-agent research experiments (Phase C).
 
 Agents:
 - `ResearchAgent` — `research.web_search` (stub findings)

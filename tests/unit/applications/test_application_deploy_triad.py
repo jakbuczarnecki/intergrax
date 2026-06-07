@@ -10,6 +10,7 @@ REPO = Path(__file__).resolve().parents[3]
 APPLICATIONS = (
     "lab_application",
     "legal_application",
+    "local_workspace_application",
     "poc_template_application",
     "research_application",
 )

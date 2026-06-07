@@ -2,7 +2,7 @@
 
 Tier-3 product host for local document indexing, semantic search, and synthesis.
 
-**Architecture (canonical):** [ARCHITECTURE.md](ARCHITECTURE.md)  
+**Architecture (canonical):** [ARCHITECTURE.md](ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)  
 **Build & deploy:** [BUILD_AND_DEPLOY.md](BUILD_AND_DEPLOY.md)
 
 ## Agents

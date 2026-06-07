@@ -1,5 +1,7 @@
 # Problem radar agent — architecture
 
+Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+
 ## Purpose
 
 **Band 3 placeholder** — problem discovery capability (`problem_radar.scan`). No product feature work until K.1 reprioritized.

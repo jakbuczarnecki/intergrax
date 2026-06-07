@@ -27,6 +27,7 @@ def test_agent_scaffold_emits_architecture_and_plan() -> None:
         plan = (target / "IMPLEMENTATION_PLAN.md").read_text(encoding="utf-8")
         assert "doc_probe agent — architecture" in arch
         assert "IMPLEMENTATION_PLAN.md" in arch
+        assert "ARCHITECTURE.md" in plan
         assert "doc_probe agent — Implementation Plan" in plan
         assert "DOC_PROBE-1" in plan
         assert "ARCHITECTURE.md" in plan

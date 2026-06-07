@@ -1,5 +1,7 @@
 # poc_template_application — architecture
 
+Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+
 ## Purpose
 
 **Canonical Tier-3 lab shell** — minimal H-APP host for new applications (Phase AA reference).
