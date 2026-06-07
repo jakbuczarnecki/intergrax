@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-07) — **Harness platform bands 1–2ad Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39); **Phase M.6 P4 (Band 2aa) Done** (28/28); **Phase M.6 P5 (Band 2ab) Done** (33/34); **Phase M.6 P6 (Band 2ac) Done** (32/32); **FAUDIT-32 remediation Done** (23/23 + [§6.1ai](#61ai-harness-implementation-queue--faudit-32-follow-up-closed) follow-up); **default active queue = [§6.1](#61-harness-implementation-queue--continuous-gate) maintenance** (Phase FLOW Band 2aj **Done** 17/18; **FLOW-8 Deferred** §6.3) + §6.1 gate on every PR; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done** (wiring); **12/32 layers L3+** per FAUDIT scorecard — closeout ≠ full layer maturity; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **909 passed**; **operational L3 signed off** (W-OPS evidence artifact policy — see FAUDIT-OPS.1)  
+Status: Working draft (2026-06-07) — **Harness platform bands 1–2ad Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39); **Phase M.6 P4 (Band 2aa) Done** (28/28); **Phase M.6 P5 (Band 2ab) Done** (33/34); **Phase M.6 P6 (Band 2ac) Done** (32/32); **FAUDIT-32 remediation Done** (23/23 + [§6.1ai](#61ai-harness-implementation-queue--faudit-32-follow-up-closed) follow-up); **default active queue = [§6.1](#61-harness-implementation-queue--continuous-gate) maintenance** (Phase FLOW Band 2aj **Done** 17/18; **FLOW-8 Deferred** §6.3) + §6.1 gate on every PR; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done** (wiring); **13/32 layers L3+** per FAUDIT scorecard (§21 Observability depth uplift **Done** 2026-06-07) — closeout ≠ full layer maturity; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **967 passed**; **operational L3 signed off** (W-OPS evidence artifact policy — see FAUDIT-OPS.1)  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -1937,7 +1937,22 @@ Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{worksp
 
 **Verification:** provider unit tests + MCP full-catalog export smoke (**160** tools) · `check_harness_no_getattr.py` OK
 
-Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{hitl,notify,cloud_platform,vector_store}/`
+Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{hitl,notify,cloud_platform,vector_store,health}/`
+
+#### T-EXPAND T12 — Integration slot health + notify dispatcher (2026-06-07) — **Done**
+
+**Goal:** Close post-T11 harness ops gaps (category health probes, scheduled notify dispatch, Celery purge index).
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `health` (+9) | `health.check_object_storage`, `health.check_key_value_cache`, `health.check_message_bus`, `health.check_graph_store`, `health.check_identity_provider`, `health.check_relational_store`, `health.check_wiki_knowledge`, `health.check_search_provider`, `health.check_notification_channel` | **Done** |
+| `notify` (+1) | `notify.dispatch_due` | **Done** |
+| queue | Celery optional KV task index + `purge_completed` | **Done** |
+| contracts | `ScheduledNotificationBinding.mark_delivered` | **Done** |
+| planner | LEG-DEPTH — remove `use_rag`/`use_websearch` from LLM schema; deprecation trace | **Done** |
+| observability | OBS-DEPTH.2 trace bridge phase gate; live emit via `runtime_event_bus` | **Done** |
+
+**Delivered:** **170** catalog `tool_id` values · **42** shipped bundles.
 
 #### O.5 — Unified tool model (migration design)
 
@@ -5655,6 +5670,7 @@ Verify (every harness PR):
   python scripts/check_harness_registry_resolution.py
   python scripts/check_harness_capability_graph_wiring.py
   python scripts/check_legacy_tool_plan_booleans.py
+  python scripts/check_trace_bridge_event_catalog.py
   python scripts/check_plugin_catalog.py
   python scripts/check_llm_adapter_typed_returns.py
   python scripts/check_agents_llm_adapter_response.py
@@ -5675,7 +5691,7 @@ Verify (every harness PR):
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
 
-**Maintenance depth (2026-06-07):** **OBS-DEPTH.1 Done** — unified run journal. **T10-DEPTH.1 Done** — broker task index + PagerDuty acknowledge adapter.
+**Maintenance depth (2026-06-07):** **OBS-DEPTH.1 Done** — unified run journal. **T10-DEPTH.1 Done** — broker task index + PagerDuty acknowledge adapter. **T-EXPAND T11 Done** — 160 tools. **LEG-DEPTH.1–3 + O.5 depth Done** — planner schema uses `tool_ids`; legacy booleans accepted with deprecation trace; `from_legacy()` gated by `check_legacy_tool_plan_booleans.py`. **OBS-DEPTH.2 Done** — `check_trace_bridge_event_catalog.py` + gate test. **OBS live emit Done** — `RuntimeState.trace_event` → `runtime_event_bus`. **Celery purge_completed Done** — optional KV task index. **notify.dispatch_due Done** — Tier-0 dispatcher tool. **T-EXPAND T12 Done** — 170 tools (health slot probes + notify dispatcher). **L2→L3 §21 Done** — `test_observability_layer_depth_gate.py` regression gate.
 
 ### 6.1ah Harness implementation queue — FAUDIT-32 remediation (closed)
 
@@ -7488,7 +7504,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | Theme | Layers affected | Risk |
 |-------|-----------------|------|
 | **Closeout vs maturity** | §17–§25, §31 | Plan **Done** on wiring; AUDIT_MAP **L2** on depth — do not conflate |
-| **Dual-path telemetry** | §21, §6 | Trace replay vs `RuntimeEventType` — **OBS-DEPTH.1** unified journal for read path; live emit parity incremental |
+| **Dual-path telemetry** | §21, §6 | Trace replay ↔ `RuntimeEventType` — **OBS-DEPTH.1** unified journal + **OBS live emit** on `RuntimeState.trace_event`; gate: `test_observability_layer_depth_gate.py` |
 | **Tier boundary drift** | §2, §28 | Single Critical violation undermines canon §7.4.4 |
 | **Identity / intake naming** | §3, §4 | Resolved — `TaskEnvelope` in `intergrax/contracts/task_envelope.py`; parity tests in `test_faudit_remediation.py` |
 
@@ -7499,6 +7515,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | 2026-06-06 | FAUDIT-32.0 | Full 32-layer audit (`scope: C`, `audit-and-fix`); scorecard + §6.1ah queue + Appendix M; gate **893**; boundary scripts OK |
 | 2026-06-06 | FAUDIT-TIER.1–OPS.1 | **23/23** remediation implemented; tier gate + intake + observability + registry depth |
 | 2026-06-06 | FAUDIT-PE.1+/ALG.1+/MEM.1+ | Golden prompt CI, reference agent lifecycle metadata, STM retention wiring; gate **901** |
+| 2026-06-07 | OBS-DEPTH.* + T12 + LEG depth | Unified journal + trace bridge gate + live bus emit + 170-tool catalog + §21 L3 depth gate; gate **967** |
 
 ---
 

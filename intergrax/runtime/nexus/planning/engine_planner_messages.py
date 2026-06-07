@@ -66,10 +66,9 @@ class EnginePlannerMessageBuilder:
                 "reasoning_summary",
                 "ask_clarifying_question",
                 "clarifying_question",
-                "use_websearch",
                 "use_user_longterm_memory",
-                "use_rag",
                 "use_tools",
+                "tool_ids",
             ],
             "properties": {
                 "version": {"type": "string"},
@@ -84,14 +83,15 @@ class EnginePlannerMessageBuilder:
                 "reasoning_summary": {"type": "string"},
                 "ask_clarifying_question": {"type": "boolean"},
                 "clarifying_question": {"type": ["string", "null"]},
-                "use_websearch": {"type": "boolean"},
                 "use_user_longterm_memory": {"type": "boolean"},
-                "use_rag": {"type": "boolean"},
                 "use_tools": {"type": "boolean"},
                 "tool_ids": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Canonical catalog tool ids (e.g. rag.retrieve, websearch.query).",
+                    "description": (
+                        "Canonical catalog tool ids (e.g. rag.retrieve, websearch.query). "
+                        "Replaces deprecated use_rag/use_websearch booleans."
+                    ),
                 },
             },
         }

@@ -7,6 +7,8 @@ from intergrax.tools.core.handler import ServiceToolHandler
 from intergrax.tools.providers.notify.contracts import (
     NotifyCancelScheduledInput,
     NotifyCancelScheduledOutput,
+    NotifyDispatchDueInput,
+    NotifyDispatchDueOutput,
     NotifyListScheduledInput,
     NotifyListScheduledOutput,
     NotifyScheduleInput,
@@ -18,6 +20,7 @@ from intergrax.tools.providers.notify.contracts import (
 )
 from intergrax.tools.providers.notify.service import (
     notify_cancel_scheduled,
+    notify_dispatch_due,
     notify_list_scheduled,
     notify_schedule,
     notify_send,
@@ -43,3 +46,7 @@ class NotifyListScheduledHandler(ServiceToolHandler[NotifyListScheduledInput, No
 
 class NotifyCancelScheduledHandler(ServiceToolHandler[NotifyCancelScheduledInput, NotifyCancelScheduledOutput]):
     _service = notify_cancel_scheduled
+
+
+class NotifyDispatchDueHandler(ServiceToolHandler[NotifyDispatchDueInput, NotifyDispatchDueOutput]):
+    _service = notify_dispatch_due

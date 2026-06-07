@@ -10,8 +10,9 @@ existing ``RunTraceWriter`` / ``TaskTraceEmitter`` (architecture §5.2, §42.1).
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_phase import ExecutionPhase
@@ -20,6 +21,28 @@ from intergrax.runtime.events.phase_coverage import phase_for_event
 from intergrax.runtime.nexus.tracing.adapters.core_llm_call_recorded import CoreLLMCallRecordedDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceEvent, TraceLevel
 from intergrax.runtime.task.task import Task, TaskState
+
+TraceBridgeSubject = Union[Task, "TraceBridgeSubjectView"]
+
+
+@dataclass(frozen=True)
+class TraceBridgeSubjectView:
+    tenant_id: str
+    task_id: str
+    agent_id: str = ""
+
+
+def trace_bridge_subject_from_tags(
+    *,
+    tenant_id: str,
+    task_id: str,
+    agent_id: str = "",
+) -> TraceBridgeSubjectView:
+    return TraceBridgeSubjectView(
+        tenant_id=tenant_id.strip() or "default",
+        task_id=task_id.strip() or "unknown",
+        agent_id=agent_id.strip(),
+    )
 
 _CORE_LLM_CALL_SCHEMA = CoreLLMCallRecordedDiagV1.schema_id()
 _CORE_LLM_RETURNED_SCHEMA = "intergrax.diag.engine.core_llm.adapter_returned"
@@ -150,7 +173,7 @@ def _resolve_event_type_from_trace(
 
 def trace_event_to_runtime_event(
     trace: TraceEvent,
-    task: Task,
+    subject: TraceBridgeSubject,
     *,
     correlation_id: Optional[str] = None,
     payload_schema_id: Optional[str] = None,
@@ -207,15 +230,15 @@ def trace_event_to_runtime_event(
 
     return RuntimeEvent(
         event_id=f"rt_{trace.event_id}",
-        tenant_id=str(trace.tags.get("tenant_id") or task.tenant_id),
-        task_id=str(trace.tags.get("task_id") or task.task_id),
+        tenant_id=str(trace.tags.get("tenant_id") or subject.tenant_id),
+        task_id=str(trace.tags.get("task_id") or subject.task_id),
         run_id=trace.run_id,
-        agent_id=trace.tags.get("agent_id") or task.agent_id,
+        agent_id=trace.tags.get("agent_id") or subject.agent_id or None,
         event_type=event_type,
         phase=phase,
         severity=_trace_level_to_severity(trace.level),
         payload=payload,
         timestamp=_parse_timestamp(trace.ts_utc),
-        correlation_id=correlation_id or task.task_id,
+        correlation_id=correlation_id or subject.task_id,
         schema_version="runtime_event.v1",
     )

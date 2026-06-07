@@ -68,6 +68,7 @@ class InMemoryScheduledNotificationStore:
                     "tenant_id": item.tenant_id,
                     "channel": item.channel,
                     "subject": item.subject,
+                    "body": item.body,
                     "deliver_at_utc": item.deliver_at_utc,
                     "status": item.status,
                 }
@@ -89,6 +90,23 @@ class InMemoryScheduledNotificationStore:
             body=record.body,
             deliver_at_utc=record.deliver_at_utc,
             status="cancelled",
+        )
+        return True
+
+    def mark_delivered(self, schedule_id: str, tenant_id: str) -> bool:
+        record = self._records.get(schedule_id.strip())
+        if record is None or record.tenant_id != tenant_id.strip():
+            return False
+        if record.status != "pending":
+            return False
+        self._records[schedule_id.strip()] = ScheduledNotificationRecord(
+            schedule_id=record.schedule_id,
+            tenant_id=record.tenant_id,
+            channel=record.channel,
+            subject=record.subject,
+            body=record.body,
+            deliver_at_utc=record.deliver_at_utc,
+            status="delivered",
         )
         return True
 

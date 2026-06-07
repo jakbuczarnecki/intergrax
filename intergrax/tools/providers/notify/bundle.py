@@ -7,6 +7,8 @@ from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.providers.notify.contracts import (
     NotifyCancelScheduledInput,
     NotifyCancelScheduledOutput,
+    NotifyDispatchDueInput,
+    NotifyDispatchDueOutput,
     NotifyListScheduledInput,
     NotifyListScheduledOutput,
     NotifyScheduleInput,
@@ -18,6 +20,7 @@ from intergrax.tools.providers.notify.contracts import (
 )
 from intergrax.tools.providers.notify.handlers import (
     NotifyCancelScheduledHandler,
+    NotifyDispatchDueHandler,
     NotifyListScheduledHandler,
     NotifyScheduleHandler,
     NotifySendBatchHandler,
@@ -25,6 +28,7 @@ from intergrax.tools.providers.notify.handlers import (
 )
 from intergrax.tools.providers.notify.service import (
     NOTIFY_CANCEL_SCHEDULED_TOOL_ID,
+    NOTIFY_DISPATCH_DUE_TOOL_ID,
     NOTIFY_LIST_SCHEDULED_TOOL_ID,
     NOTIFY_SCHEDULE_TOOL_ID,
     NOTIFY_SEND_BATCH_TOOL_ID,
@@ -40,6 +44,7 @@ NOTIFY_TOOL_IDS: tuple[str, ...] = (
     NOTIFY_SCHEDULE_TOOL_ID,
     NOTIFY_LIST_SCHEDULED_TOOL_ID,
     NOTIFY_CANCEL_SCHEDULED_TOOL_ID,
+    NOTIFY_DISPATCH_DUE_TOOL_ID,
 )
 
 
@@ -123,4 +128,20 @@ def register_notify_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> Non
             tags=("notify", "notification", "schedule"),
         ),
         NotifyCancelScheduledHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=NOTIFY_DISPATCH_DUE_TOOL_ID,
+            name=NOTIFY_DISPATCH_DUE_TOOL_ID,
+            description="Dispatch pending scheduled notifications due before a UTC cutoff.",
+            description_short="Dispatch due notifications.",
+            input_schema=NotifyDispatchDueInput,
+            output_schema=NotifyDispatchDueOutput,
+            error_mapping={},
+            side_effects=True,
+            category="notification",
+            risk_level=ToolRiskLevel.MEDIUM,
+            tags=("notify", "notification", "schedule", "dispatcher"),
+        ),
+        NotifyDispatchDueHandler(ctx),
     )

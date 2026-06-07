@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import json
+import warnings
 from typing import Optional
 
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
@@ -76,6 +77,14 @@ class EnginePlanJsonParser:
                 return value.strip()
             raise ValueError(f"Key '{key}' must be string or null.")
 
+        def req_tool_ids(key: str = "tool_ids") -> list[str]:
+            if key not in data:
+                raise ValueError(f"Missing required key: {key}")
+            raw_ids = data[key]
+            if not isinstance(raw_ids, list):
+                raise ValueError(f"Key '{key}' must be an array.")
+            return [str(item).strip() for item in raw_ids if str(item).strip()]
+
         def opt_version_str(key: str, default: str = "1.0") -> str:
             if key not in data:
                 return default
@@ -110,20 +119,27 @@ class EnginePlanJsonParser:
         ask_clarify = req_bool("ask_clarifying_question")
         clar_q = req_str_or_null("clarifying_question")
 
-        use_web = req_bool("use_websearch")
+        legacy_retrieval_booleans = "use_rag" in data or "use_websearch" in data
+        if legacy_retrieval_booleans:
+            warnings.warn(
+                "Planner JSON used deprecated use_rag/use_websearch; use tool_ids instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         use_ltm = req_bool("use_user_longterm_memory")
-        use_rag = req_bool("use_rag")
         use_tools = req_bool("use_tools")
-        tool_ids = cls._optional_tool_ids(data)
-        if tool_ids:
-            use_rag = RAG_RETRIEVE_TOOL_ID in tool_ids or use_rag
-            use_web = WEBSEARCH_QUERY_TOOL_ID in tool_ids or use_web
-        elif use_rag or use_web:
-            tool_ids = []
-            if use_rag:
-                tool_ids.append(RAG_RETRIEVE_TOOL_ID)
-            if use_web:
-                tool_ids.append(WEBSEARCH_QUERY_TOOL_ID)
+        tool_ids = req_tool_ids()
+
+        legacy_rag = bool(data.get("use_rag")) if legacy_retrieval_booleans else False
+        legacy_web = bool(data.get("use_websearch")) if legacy_retrieval_booleans else False
+        if legacy_rag and RAG_RETRIEVE_TOOL_ID not in tool_ids:
+            tool_ids.append(RAG_RETRIEVE_TOOL_ID)
+        if legacy_web and WEBSEARCH_QUERY_TOOL_ID not in tool_ids:
+            tool_ids.append(WEBSEARCH_QUERY_TOOL_ID)
+
+        use_rag = RAG_RETRIEVE_TOOL_ID in tool_ids or next_step == EngineNextStep.RAG
+        use_web = WEBSEARCH_QUERY_TOOL_ID in tool_ids or next_step == EngineNextStep.WEBSEARCH
 
         if intent == PlanIntent.CLARIFY:
             ask_clarify = True
@@ -136,19 +152,21 @@ class EnginePlanJsonParser:
             use_web = use_ltm = use_rag = use_tools = False
             tool_ids = []
             next_step = EngineNextStep.CLARIFY
+            legacy_retrieval_booleans = False
         else:
             if ask_clarify:
                 intent = PlanIntent.CLARIFY
                 if not clar_q:
                     clar_q = cls.fallback_clarify_question(
-                    prompt_config,
-                    prompt_registry=prompt_registry,
-                    catalog_path=catalog_path,
-                )
+                        prompt_config,
+                        prompt_registry=prompt_registry,
+                        catalog_path=catalog_path,
+                    )
                 use_web = use_ltm = use_rag = use_tools = False
                 tool_ids = []
                 next_step = EngineNextStep.CLARIFY
                 reasoning_summary = "clarify_required"
+                legacy_retrieval_booleans = False
             else:
                 clar_q = None
                 if next_step == EngineNextStep.CLARIFY:
@@ -176,14 +194,8 @@ class EnginePlanJsonParser:
             use_rag=use_rag,
             use_tools=use_tools,
             tool_ids=tool_ids,
+            legacy_retrieval_booleans=legacy_retrieval_booleans,
         )
-
-    @staticmethod
-    def _optional_tool_ids(data: dict) -> list[str]:
-        raw = data.get("tool_ids")
-        if not isinstance(raw, list):
-            return []
-        return [str(item).strip() for item in raw if str(item).strip()]
 
     @staticmethod
     def fallback_clarify_question(

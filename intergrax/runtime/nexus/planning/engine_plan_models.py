@@ -56,6 +56,7 @@ class EnginePlan:
     use_rag: bool = False
     use_tools: bool = False
     tool_ids: List[str] = field(default_factory=list)
+    legacy_retrieval_booleans: bool = False
 
     def resolved_tool_ids(self) -> List[str]:
         ids = list(self.tool_ids)

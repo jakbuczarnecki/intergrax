@@ -103,6 +103,8 @@ class ScheduledNotificationBinding(Protocol):
 
     def cancel_scheduled(self, schedule_id: str, tenant_id: str) -> bool: ...
 
+    def mark_delivered(self, schedule_id: str, tenant_id: str) -> bool: ...
+
 
 @runtime_checkable
 class SessionStorageBinding(Protocol):

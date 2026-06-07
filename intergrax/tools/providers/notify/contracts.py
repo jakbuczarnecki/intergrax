@@ -88,3 +88,15 @@ class NotifyCancelScheduledOutput(BaseModel):
     cancelled: bool = False
     schedule_id: str = ""
     detail: str = ""
+
+
+class NotifyDispatchDueInput(BaseModel):
+    tenant_id: str = Field(default="default")
+    deliver_before_utc: str = Field(..., min_length=1)
+    limit: int = Field(default=20, ge=1, le=100)
+
+
+class NotifyDispatchDueOutput(BaseModel):
+    dispatched_count: int = 0
+    failed_count: int = 0
+    details: list[str] = Field(default_factory=list)

@@ -40,3 +40,24 @@ def test_notify_list_and_cancel_scheduled() -> None:
 
     pending = notify_list_scheduled(ctx, NotifyListScheduledInput(status="pending"))
     assert pending.total == 0
+
+
+def test_notify_dispatch_due() -> None:
+    from intergrax.integrations.registry.catalog_manifests import LOG
+    from intergrax.tools.providers.notify.contracts import NotifyDispatchDueInput
+    from intergrax.tools.providers.notify.service import notify_dispatch_due
+
+    ctx = wire_scheduled_notification_tool_binding(ToolWiringContext(notification_channel=LOG))
+    notify_schedule(
+        ctx,
+        NotifyScheduleInput(
+            subject="due",
+            body="send me",
+            deliver_at_utc="2026-06-01T00:00:00Z",
+        ),
+    )
+    out = notify_dispatch_due(
+        ctx,
+        NotifyDispatchDueInput(deliver_before_utc="2026-06-07T00:00:00Z"),
+    )
+    assert out.dispatched_count == 1

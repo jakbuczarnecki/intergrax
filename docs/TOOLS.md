@@ -1,6 +1,6 @@
 # Intergrax Tool Library
 
-**Last updated:** 2026-06-07 — **42 bundles** · **160 catalog tools** (verified via `register_default_tools()`)
+**Last updated:** 2026-06-07 — **42 bundles** · **170 catalog tools** (verified via `register_default_tools()`)
 
 The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
 
@@ -99,7 +99,7 @@ registry = build_registry_from_profile(
 
 ## Tool engine (implemented today)
 
-Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** · **T6 Done** · **T7 Done** · **T8 Done** · **T9 Done** · **T10 Done** · **T11 Done** — full **160-tool** catalog registered):
+Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T11 Done** · **T12 Done** — full **170-tool** catalog registered):
 
 | Component | Path | Status |
 |-----------|------|--------|
@@ -129,7 +129,7 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** · **T
 | Stable bundles | **39** |
 | Beta bundles | **1** (`openai_vector_store`) |
 
-**Bundle index (selected):** `interaction` (2) · `workflow` (5) · `harness` (6) · `websearch` (4) · `notify` (2) · `collaboration` (7) · `hitl` (3) · `platform` (8) · `rag` (11) — full list in [Full tool index](#full-tool-index) below.
+**Bundle index (selected):** `interaction` (2) · `workflow` (5) · `harness` (6) · `websearch` (4) · `notify` (6) · `health` (11) · `collaboration` (7) · `hitl` (5) · `platform` (8) · `rag` (11) — full list in [Full tool index](#full-tool-index) below.
 
 Source: `intergrax/tools/registry/shipped_plugins.py`.
 
@@ -427,6 +427,15 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `harness.export_run_bundle` | harness | harness | **Done** | `RunTraceReader` / runtime-bound |
 | `health.check_integration` | health | health | **Done** | integration catalog health probes |
 | `health.check_profile` | health | health | **Done** | `IntegrationProfile` slot probes |
+| `health.check_object_storage` | health | health | **Done** (T12) | category slot probe |
+| `health.check_relational_store` | health | health | **Done** (T12) | category slot probe |
+| `health.check_document_store` | health | health | **Done** (T12) | category slot probe |
+| `health.check_vector_store` | health | health | **Done** (T12) | category slot probe |
+| `health.check_message_bus` | health | health | **Done** (T12) | category slot probe |
+| `health.check_cache` | health | health | **Done** (T12) | category slot probe |
+| `health.check_secrets_backend` | health | health | **Done** (T12) | category slot probe |
+| `health.check_observability_backend` | health | health | **Done** (T12) | category slot probe |
+| `health.check_notification_channel` | health | health | **Done** (T12) | category slot probe |
 | `hitl.get_decision` | hitl | hitl | **Done** | `HumanDecisionStoreBinding` |
 | `hitl.list_for_task` | hitl | hitl | **Done** (T11) | `HumanDecisionStoreBinding` |
 | `hitl.list_pending` | hitl | hitl | **Done** | `HumanDecisionStoreBinding` |
@@ -469,6 +478,7 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `notify.schedule` | notify | notification | **Done** (T10) | `ScheduledNotificationBinding` — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
 | `notify.list_scheduled` | notify | notification | **Done** (T11) | `ScheduledNotificationBinding` — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
 | `notify.cancel_scheduled` | notify | notification | **Done** (T11) | `ScheduledNotificationBinding` — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.dispatch_due` | notify | notification | **Done** (T12) | Tier-0 scheduled notification dispatcher — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
 | `platform.evaluate_feature_flag` | platform | platform | **Done** | `FeatureFlagBackend` |
 | `platform.get_secret` | platform | platform | **Done** | `SecretsStore` |
 | `platform.put_secret` | platform | platform | **Done** | `SecretsStore` (CRITICAL risk) |
@@ -533,7 +543,7 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `workspace.export_artifact` | workspace | workspace | **Done** (T10) | `ShadowWorkspace` + `ObjectStorage` |
 | `workspace.import_artifact` | workspace | workspace | **Done** (T10) | `ShadowWorkspace` + `ObjectStorage` |
 
-**Total:** 160 tools · 42 bundles.
+**Total:** 170 tools · 42 bundles.
 
 ---
 

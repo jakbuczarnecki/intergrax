@@ -1,6 +1,6 @@
 # Intergrax — Documentation
 
-**Last updated:** 2026-06-07 (T-EXPAND T11 Done · **160** catalog tools · **42** bundles)
+**Last updated:** 2026-06-07 (T-EXPAND T12 Done · **170** catalog tools · **42** bundles)
 
 The `docs/` folder holds the canonical **Harness AI / Agent OS platform** documentation.
 
@@ -35,7 +35,7 @@ The `docs/` folder holds the canonical **Harness AI / Agent OS platform** docume
 | [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; **FAUDIT-32 Done** (Band 2ad, 23/23 + §6.1ai); **M.6 P6 Done** (Band 2ac, 32/32); gate **901**; default queue = **§6.1 maintenance** |
 | [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) | **Agent workflow** — scaffold → register → run → inspect → evaluate |
 | [**INTEGRATIONS.md**](INTEGRATIONS.md) | **Integration catalog** — **167** providers, contracts, wiring, usage links |
-| [**TOOLS.md**](TOOLS.md) | **Tool catalog** — **160** LLM/MCP tools in **42** bundles, engine status, four-layer stack |
+| [**TOOLS.md**](TOOLS.md) | **Tool catalog** — **170** LLM/MCP tools in **42** bundles, engine status, four-layer stack |
 | [**SKILLS.md**](SKILLS.md) | **Skill Library** — composable capability packs, registry, importers |
 | [**EXTENSION_AUTHOR_GUIDE.md**](EXTENSION_AUTHOR_GUIDE.md) | **Tier-0 plugins** — integrations, tools, skills; entry points, bootstrap |
 | [**MODALITY.md**](MODALITY.md) | **Model & modality plane** — vision (YOLO/ONNX/…), audio/speech, classical ML, Hugging Face roles |

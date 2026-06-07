@@ -10,6 +10,8 @@ from intergrax.runtime.notifications.models import NotificationMessage
 from intergrax.tools.providers.notify.contracts import (
     NotifyCancelScheduledInput,
     NotifyCancelScheduledOutput,
+    NotifyDispatchDueInput,
+    NotifyDispatchDueOutput,
     NotifyListScheduledInput,
     NotifyListScheduledOutput,
     NotifyScheduledItemOutput,
@@ -28,6 +30,7 @@ NOTIFY_SEND_BATCH_TOOL_ID = "notify.send_batch"
 NOTIFY_SCHEDULE_TOOL_ID = "notify.schedule"
 NOTIFY_LIST_SCHEDULED_TOOL_ID = "notify.list_scheduled"
 NOTIFY_CANCEL_SCHEDULED_TOOL_ID = "notify.cancel_scheduled"
+NOTIFY_DISPATCH_DUE_TOOL_ID = "notify.dispatch_due"
 
 
 def _require_scheduler(ctx: ToolWiringContext) -> ScheduledNotificationBinding:
@@ -143,6 +146,51 @@ def notify_cancel_scheduled(
         cancelled=cancelled,
         schedule_id=params.schedule_id.strip(),
         detail=detail,
+    )
+
+
+def notify_dispatch_due(ctx: ToolWiringContext, params: NotifyDispatchDueInput) -> NotifyDispatchDueOutput:
+    """Dispatch pending scheduled notifications whose deliver_at_utc <= deliver_before_utc."""
+    scheduler = _require_scheduler(ctx)
+    channel = ctx.notification_channel
+    if channel is None:
+        return NotifyDispatchDueOutput(
+            dispatched_count=0,
+            failed_count=0,
+            details=["notification_channel_not_configured"],
+        )
+
+    cutoff = params.deliver_before_utc.strip()
+    rows = scheduler.list_scheduled(params.tenant_id.strip(), limit=params.limit, status="pending")
+    dispatched = 0
+    failed = 0
+    details: list[str] = []
+    for row in rows:
+        if row.get("deliver_at_utc", "") > cutoff:
+            continue
+        schedule_id = str(row.get("schedule_id", ""))
+        message = NotificationMessage(
+            channel=str(row.get("channel", "default")),
+            subject=str(row.get("subject", "")),
+            body=str(row.get("body", "")),
+            task_id=schedule_id or "notify",
+            tenant_id=params.tenant_id.strip(),
+            metadata={"schedule_id": schedule_id},
+        )
+        try:
+            _dispatch_notify(channel, message)
+            if scheduler.mark_delivered(schedule_id, params.tenant_id.strip()):
+                dispatched += 1
+            else:
+                failed += 1
+                details.append(f"{schedule_id}:mark_delivered_failed")
+        except Exception as exc:
+            failed += 1
+            details.append(f"{schedule_id}:{exc.__class__.__name__}")
+    return NotifyDispatchDueOutput(
+        dispatched_count=dispatched,
+        failed_count=failed,
+        details=details,
     )
 
 

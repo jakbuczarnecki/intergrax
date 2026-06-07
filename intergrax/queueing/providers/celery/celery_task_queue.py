@@ -8,6 +8,7 @@ from typing import List, Optional
 
 from celery import Celery
 
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.queueing.contracts.task_queue import (
     TaskHandle,
     TaskQueue,
@@ -15,6 +16,12 @@ from intergrax.queueing.contracts.task_queue import (
     TaskResult,
     TaskStatus,
     TaskSummary,
+)
+from intergrax.queueing.task_index import (
+    list_tasks_from_index,
+    purge_completed_tasks_from_index,
+    record_task_index,
+    update_task_index_status,
 )
 
 
@@ -32,8 +39,11 @@ class CeleryTaskQueue(TaskQueue):
     def __init__(
         self,
         app: Celery,
+        *,
+        kv_store: DistributedKVStore | None = None,
     ) -> None:
         self._app: Celery = app
+        self._kv_store = kv_store
 
 
     def enqueue(
@@ -50,11 +60,21 @@ class CeleryTaskQueue(TaskQueue):
         # Registered task entrypoint — respects task_always_eager (send_task does not).
         result = self._app.tasks["intergrax.execute"].apply_async(kwargs=kwargs)
 
-        return TaskHandle(
+        handle = TaskHandle(
             task_id=result.id,
             provider="celery",
             tenant_id=request.tenant_id,
         )
+        if self._kv_store is not None:
+            record_task_index(
+                self._kv_store,
+                tenant_id=request.tenant_id,
+                task_id=handle.task_id,
+                task_name=request.task_name,
+                provider="celery",
+                status=TaskStatus.PENDING,
+            )
+        return handle
 
 
     def get_status(
@@ -95,6 +115,14 @@ class CeleryTaskQueue(TaskQueue):
         if state == "SUCCESS":
             from intergrax.queueing.worker.result_codec import worker_result_bytes_from_transport
 
+            if self._kv_store is not None and handle.tenant_id is not None:
+                update_task_index_status(
+                    self._kv_store,
+                    tenant_id=handle.tenant_id,
+                    task_id=handle.task_id,
+                    provider="celery",
+                    status=TaskStatus.SUCCEEDED,
+                )
             return TaskResult(
                 status=TaskStatus.SUCCEEDED,
                 output=worker_result_bytes_from_transport(async_result.result),
@@ -105,6 +133,14 @@ class CeleryTaskQueue(TaskQueue):
         if state in ("FAILURE", "REVOKED"):
             error = async_result.result
 
+            if self._kv_store is not None and handle.tenant_id is not None:
+                update_task_index_status(
+                    self._kv_store,
+                    tenant_id=handle.tenant_id,
+                    task_id=handle.task_id,
+                    provider="celery",
+                    status=TaskStatus.FAILED,
+                )
             return TaskResult(
                 status=TaskStatus.FAILED,
                 output=None,
@@ -158,4 +194,29 @@ class CeleryTaskQueue(TaskQueue):
                         summaries.append(summary)
                     if len(summaries) >= limit:
                         return summaries
+        if self._kv_store is not None:
+            indexed = list_tasks_from_index(
+                self._kv_store,
+                tenant_id,
+                provider="celery",
+                limit=limit,
+                status_filter=status_filter,
+            )
+            if indexed:
+                return indexed
         return summaries
+
+    def purge_completed(
+        self,
+        tenant_id: str,
+        *,
+        older_than_seconds: int = 0,
+    ) -> int:
+        if self._kv_store is None:
+            return 0
+        return purge_completed_tasks_from_index(
+            self._kv_store,
+            tenant_id=tenant_id,
+            provider="celery",
+            older_than_seconds=older_than_seconds,
+        )

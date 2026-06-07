@@ -69,6 +69,21 @@ T11_NEW_TOOL_IDS = frozenset(
     }
 )
 
+T12_NEW_TOOL_IDS = frozenset(
+    {
+        "notify.dispatch_due",
+        "health.check_object_storage",
+        "health.check_key_value_cache",
+        "health.check_message_bus",
+        "health.check_graph_store",
+        "health.check_identity_provider",
+        "health.check_relational_store",
+        "health.check_wiki_knowledge",
+        "health.check_search_provider",
+        "health.check_notification_channel",
+    }
+)
+
 T7_NEW_TOOL_IDS = frozenset(
     {
         "message_bus.list_tasks",
@@ -191,7 +206,7 @@ def _clean_catalog() -> None:
 def test_register_default_tools_expanded_catalog() -> None:
     register_default_tools()
     registered = frozenset(list_catalog_tool_ids())
-    assert len(registered) == 160
+    assert len(registered) == 170
     assert NEW_TOOL_IDS <= registered
     assert T4_NEW_TOOL_IDS <= registered
     assert T5_NEW_TOOL_IDS <= registered
@@ -201,6 +216,7 @@ def test_register_default_tools_expanded_catalog() -> None:
     assert T9_NEW_TOOL_IDS <= registered
     assert T10_NEW_TOOL_IDS <= registered
     assert T11_NEW_TOOL_IDS <= registered
+    assert T12_NEW_TOOL_IDS <= registered
 
 
 def test_new_bundles_present_in_catalog() -> None:
@@ -250,7 +266,8 @@ def test_new_bundles_present_in_catalog() -> None:
     assert len(get_bundle("workflow").tool_ids) == 5
     assert len(get_bundle("harness").tool_ids) == 6
     assert len(get_bundle("websearch").tool_ids) == 4
-    assert len(get_bundle("notify").tool_ids) == 5
+    assert len(get_bundle("notify").tool_ids) == 6
+    assert len(get_bundle("health").tool_ids) == 11
     assert len(get_bundle("workspace").tool_ids) == 8
     assert len(get_bundle("storage").tool_ids) == 5
     assert len(get_bundle("memory").tool_ids) == 4
