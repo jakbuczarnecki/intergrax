@@ -1331,7 +1331,8 @@ Task intake
                                 └── AgentEngine → UAEPExecutor | RuntimeEngine pipeline
 
 ApplicationEnvironmentProfile (Tier-3)
-  ├── orchestration_profile     planner_kind · classifier_kind · retry_policy_name · max_parallel_nodes · max_delegation_depth
+  ├── orchestration_profile     planner_kind · classifier_kind · retry_policy_name · max_parallel_nodes · max_inflight_nodes
+  │                             max_delegation_depth · max_run_retries · merge_strategy · multi_agent_order
   ├── graph_spec                ApplicationGraphSpec → GraphSpecSeedingPlanner (`graph_spec_to_plan.py`)
   ├── execution_mode            strict | balanced | exploratory → Nexus production_mode + policies
   ├── reliability_profile       checkpoint store · scheduler · idempotency
@@ -1360,7 +1361,7 @@ Coordination patterns (Phase V-MA)
 | `AgentHandoff` | `contracts/agent_handoff.py` | Nexus-mediated transfer (never direct agent calls) |
 | `TaskContextAssemblyOptions` | `contracts/context_assembly.py` | Bounded child context (FULL / SUMMARY_ONLY / …) |
 | `AgentExecutionResult` | `contracts/agent_execution_result.py` | Status, decision, artifacts for merge |
-| `AgentDecision` | `contracts/agent_decision.py` | COMPLETE · RETRY · INTERRUPT · MODIFY_PLAN · HANDOFF |
+| `AgentDecision` | `contracts/agent_decision.py` | COMPLETE · RETRY · INTERRUPT · MODIFY_PLAN · HANDOFF (`MODIFY_PLAN` without handoff → `MODIFY_PLAN_NOT_SUPPORTED` per [ADR-FLOW-003](adr/ADR-FLOW-003.md)) |
 | `ValidationResult` | `contracts/validation.py` | Step/node/task validation gates |
 | `ApplicationGraphSpec` | `applications/contracts/graph_spec.py` | Declarative multi-agent topology on manifest roster |
 
@@ -1373,10 +1374,10 @@ Canon reference flow (PM → UX → Legal → Validator → Human): [§42.43](in
 | No planner (single agent) | `TaskClassification.SINGLE_AGENT_DEFAULT` | Default lab path |
 | Deterministic multi-step | `TaskPlanner._multi_agent_plan`, `_research_pipeline_plan` | Known capability pipelines |
 | LLM step planner | `step_planner/` + `RuntimeConfig.step_planner_cfg` | Agent-local tool loops |
-| LLM engine planner | `engine_planner_orchestrator.py` | Nexus-level plan from LLM |
+| LLM engine planner | `EngineBackedNexusPlanner` + `nexus_llm_plan_builder.py` | Nexus-level plan from LLM JSON parse; falls back to `TaskPlanner` on parse failure |
 | Graph from plan | `plan_to_execution_graph()` | Every Nexus run after planning |
 
-`OrchestrationProfile.planner_kind` / `classifier_kind` resolve via `orchestration_wiring.py` → `build_nexus_loop_from_environment` (ORCH-1 **Done**). Also wired: `retry_policy_name`, `long_running_enabled`, `max_parallel_nodes` (ORCH-3). Kinds: `default` | `engine` (requires `llm_adapter` at factory). Unknown kinds fail fast at bootstrap.
+`OrchestrationProfile.planner_kind` / `classifier_kind` resolve via `orchestration_wiring.py` → `build_nexus_loop_from_environment` (ORCH-1 **Done**). Also wired (Phase FLOW): `retry_policy_name`, `long_running_enabled`, `max_parallel_nodes`, `max_inflight_nodes`, `max_delegation_depth`, `max_run_retries`, `merge_strategy`, `multi_agent_order`, `allow_dynamic_replan`. Planner kinds: `default` | `engine` (`engine` requires `llm_adapter` at factory; uses `build_nexus_plan_from_llm`). Unknown kinds fail fast at bootstrap.
 
 ### I.5 Graph execution and merge
 
@@ -1387,11 +1388,11 @@ Canon reference flow (PM → UX → Legal → Validator → Human): [§42.43](in
 | Retry | `RetryEngine` at node level; `RetryCoordinator` at run level; hooks `BEFORE_RETRY` / `AFTER_RETRY` |
 | Handoff | `AgentDecision` / `resolve_handoff_from_execution` → `HandoffCoordinator` inserts node |
 | Delegation | `ExecutionNode.delegation: DelegationSpec` → isolated `MemoryView` namespace |
-| Merge | `FinalResponseComposer.compose_summary(executions)` — deterministic summary merge |
+| Merge | `FinalResponseComposer.compose_summary(executions)` — profile-driven `MergeStrategy` (`concat` \| `last_wins` \| `structured_json`) |
 | Checkpoint skip | `apply_runtime_checkpoint_to_graph` — resume long runs |
 | Cancel | `CancellationCoordinator` — marks pending nodes cancelled |
 
-**Concurrency:** `OrchestrationProfile.max_parallel_nodes` caps parallel nodes per graph batch (`GraphExecutor` semaphore). Tenant-level cap remains on `RuntimeEngine` (`max_parallel_per_tenant`).
+**Concurrency:** `OrchestrationProfile.max_parallel_nodes` caps parallel nodes per graph batch; `max_inflight_nodes` caps total in-flight executions (`GRAPH_BACKPRESSURE` event when saturated). Tenant-level cap remains on `RuntimeEngine` (`max_parallel_per_tenant`).
 
 ### I.6 Subagent / delegation semantics (R-Delegate — Done)
 

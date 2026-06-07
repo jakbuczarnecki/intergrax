@@ -317,8 +317,8 @@ stateDiagram-v2
 
 | State | Status | Plan action |
 |-------|--------|-------------|
-| `WAITING_FOR_RESOURCES` | **Reserved / future** — transitions exist in `TaskLifecycle` but no runner sets this state | Schedule via `FLOW-GAP-08` or remove from enum in a dedicated lifecycle ADR |
-| `EXPIRED` | **Reserved / future** — intended for HITL/scheduler timeout | Same as above |
+| `WAITING_FOR_RESOURCES` | **Reserved v1** — valid transitions; Nexus graph runner does not enter this state; see [ADR-FLOW-002](adr/ADR-FLOW-002.md) | Long-running / scheduler band |
+| `EXPIRED` | **Reserved v1** — intended for HITL/scheduler timeout; see [ADR-FLOW-002](adr/ADR-FLOW-002.md) | Long-running / scheduler band |
 
 Until implemented, operators should assume only the states in the diagram above are reachable from Nexus.
 
@@ -376,10 +376,10 @@ flowchart TD
 | `planner_kind` | Implementation | LLM used? |
 |----------------|----------------|-----------|
 | `null` / `default` | `TaskPlanner()` | No |
-| `engine` | `EngineBackedNexusPlanner` | **No** (delegates to `TaskPlanner`; validates LLM at bootstrap) — see §24, `FLOW-GAP-01` |
+| `engine` | `EngineBackedNexusPlanner` → `build_nexus_plan_from_llm()` | **Yes** (LLM JSON parse; falls back to `TaskPlanner` on failure) |
 | unknown | — | `OrchestrationWiringError` at bootstrap |
 
-**Important:** `planner_kind=engine` is a **bootstrap contract placeholder**, not a Cognition-plane LLM planner. Modules under `engine_planner_orchestrator.py` exist but are **not** wired into `NexusTaskPlannerProtocol.plan()` yet.
+**Note:** `planner_kind=engine` requires `llm_adapter` at factory bootstrap. Parsed plan steps must reference routable `agent_id` values from the registry.
 
 If `ApplicationEnvironmentProfile.graph_spec.nodes` is non-empty:
 
@@ -409,7 +409,7 @@ GraphSpecSeedingPlanner wraps inner planner
 | Edge kind | Effect on `NexusPlan` |
 |-----------|----------------------|
 | `DEPENDS_ON` | Target step `depends_on` source step |
-| `DELEGATES_TO` | `DelegationSpec` on **source** step (not a separate child execution — see §12) |
+| `DELEGATES_TO` | Child step `depends_on` parent; `DelegationSpec` on **child** via `SubtaskContract` (ADR-FLOW-001) |
 
 Fluent builder: `AgentGraph` — `intergrax/applications/contracts/graph_builder.py`
 
@@ -493,25 +493,17 @@ flowchart TD
 
 ### 9.5 Final result merge
 
-**Current (lab MVP):** `FinalResponseComposer.compose_summary()` — `intergrax/runtime/nexus/response/final_response_composer.py`
+**Implemented (FLOW-7):** `FinalResponseComposer.compose_summary()` — `intergrax/runtime/nexus/response/final_response_composer.py`
 
-- 1 execution → agent `summary`
-- N executions → `"[agent_id] summary"` blocks joined by `\n\n`
+| `OrchestrationProfile.merge_strategy` | Behavior |
+|---------------------------------------|----------|
+| `concat` (default) | `"[agent_id] summary"` blocks joined by `\n\n` |
+| `last_wins` | Last non-empty agent summary |
+| `structured_json` | JSON payload with per-agent status and summary |
 
 Metadata via `compose_metadata()`: `plan_id`, `agent_ids`, `retry_count`, `all_completed`.
 
-**Production target (not implemented — `FLOW-GAP-07` / FLOW-7):** multi-agent harnesses need a typed merge layer comparable to ideal Harness AI cognition/evaluation:
-
-| Target artifact | Purpose |
-|-----------------|--------|
-| `MergePolicy` / `FinalResponseComposerProfile` on Tier-3 profile | Select merge strategy per application |
-| Deterministic merge | Current concat + structured sections (default) |
-| Citation-preserving merge | Carry artifact refs from `SharedTaskContext` |
-| Validator-aware merge | Fold in `ValidationResult` from validator nodes |
-| LLM-assisted merge | Optional synthesis step (policy-gated, traced) |
-| Conflict-aware merge | Detect contradictory agent summaries → HITL or evaluator node |
-
-Until FLOW-7, **do not assume** production-quality fan-in from multi-agent graphs — only concatenated summaries.
+**Future (not in FLOW-7):** citation-preserving merge, validator-aware merge, LLM-assisted synthesis, conflict-aware HITL — see [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md).
 
 ---
 
@@ -689,38 +681,31 @@ resume restores plan/graph/UAEP cursor from SQLite
 | Mechanism | When | Who schedules child | Memory model |
 |-----------|------|---------------------|--------------|
 | `DEPENDS_ON` | Declarative graph | Plan → separate graph node | Shared context via `ContextManager` |
-| `DELEGATES_TO` | Declarative graph | **Target:** expanded child node ([ADR-FLOW-001](adr/ADR-FLOW-001.md)) · **Today:** parent node only | **Target:** child node + `DelegationSpec` · **Today:** namespace on parent run |
+| `DELEGATES_TO` | Declarative graph | Plan expansion → child node ([ADR-FLOW-001](adr/ADR-FLOW-001.md)) | Child node + `DelegationSpec` via `SubtaskContract` |
 | `AgentDecision.HANDOFF` | Runtime | `HandoffCoordinator` inserts node | Handoff payload in shared context |
 | UAEP steps | Inside one node | Same agent | Agent-local + shared read |
 
-### 13.2 Canon vs runtime vs target (critical)
+### 13.2 Runtime semantics (post FLOW-2/14)
 
 | View | `DELEGATES_TO` meaning |
 |------|------------------------|
-| **Canon §42.14.3 (intent)** | Subagent equivalent — child execution with `DelegationSpec` |
-| **Runtime today (truth)** | `DelegationSpec` on parent step; `GraphExecutor` runs `node.agent_id`; `child_agent_id` **not routed** |
-| **Target (ADR-FLOW-001 Option C)** | Authoring sugar → plan/graph builder **expands** to child `ExecutionNode` with `DelegationSpec` |
+| **Canon §42.14.3** | Subagent equivalent — child execution with `DelegationSpec` |
+| **Runtime (truth)** | `graph_spec_to_plan.py` expands edge → child `PlanStep`; `DelegationSpec` on **child**; `GraphExecutor` routes `child_agent_id` |
 
 ```mermaid
 flowchart LR
-    subgraph Today["Runtime today"]
-        DT1[DELEGATES_TO edge] --> PS[Parent PlanStep]
-        PS --> PN[Parent node executes]
-    end
-    subgraph Target["Target FLOW-2"]
-        DT2[DELEGATES_TO edge] --> EXP[Graph expansion]
-        EXP --> CN[Child ExecutionNode]
-        CN --> DS[DelegationSpec on child]
-    end
+    DT[DELEGATES_TO edge] --> EXP[graph_spec_to_plan expansion]
+    EXP --> CS[Child PlanStep]
+    CS --> CN[Child ExecutionNode]
+    CN --> DS[DelegationSpec on child]
+    CS --> DEP[depends_on parent step]
 ```
 
-**Workaround until FLOW-2:** add the child agent as an explicit graph node with `DEPENDS_ON` from child → parent (sequential multi-agent without delegation isolation).
-
-**`max_delegation_depth`:** declared on `OrchestrationProfile`, **not enforced** (`FLOW-GAP-03`). Enforce after ADR expansion lands.
+**`max_delegation_depth`:** enforced in `GraphExecutor` (FLOW-3). **`max_llm_calls` / `max_tool_calls`:** optional delegation budget envelope (FLOW-15).
 
 ### 13.3 Decision record
 
-Accepted: [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md) — implement via plan row **FLOW-2**.
+Accepted and implemented: [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md) (FLOW-2, FLOW-14).
 
 ---
 
@@ -936,7 +921,7 @@ flowchart TD
 
 **L3+ ideal harness alignment:** baseline scores before change, post-change scores in `OnlineEvaluationRegistry`, trend comparison before promotion — see [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md) and plan Phase EVAL / V gates.
 
-**Gap (`FLOW-GAP-11`):** execution flow does not yet mandate evaluator nodes or automatic LLM-judge after every multi-agent run — product/eval policy choice.
+**Post-graph hook (FLOW-9):** `NexusLoop` records multi-agent evaluation observations when `EvaluationProfile` is enabled. Evaluator nodes and LLM-judge remain **opt-in** per application policy — not mandatory on every run.
 
 ---
 
@@ -1048,10 +1033,10 @@ Honest deltas for plan scheduling. **Closeout phases (ORCH Done) wired bootstrap
 
 | Category | Meaning | Examples |
 |----------|---------|----------|
-| **Runtime-core** | Blocks correct Harness semantics in production multi-agent | FLOW-GAP-01, 02, 03, 04, 06, 12, 13 |
-| **Production-hardening** | Lab works; product needs richer merge/eval/policy | FLOW-GAP-07, 09, 11, 14 |
-| **Product-proof** | Needs Tier-2/Tier-3 product agents, not platform code | FLOW-GAP-10 |
-| **DX / documentation** | Authoring ergonomics or doc-only until ADR | FLOW-GAP-05, 08, 15, 16 |
+| **Runtime-core** | Blocks correct Harness semantics in production multi-agent | **Closed** (FLOW-1–6, 13–15) |
+| **Production-hardening** | Lab works; product needs richer merge/eval/policy | **Closed** (FLOW-7, 9, 11, 14) |
+| **Product-proof** | Needs Tier-2/Tier-3 product agents, not platform code | **Deferred** (FLOW-8 → §6.3) |
+| **DX / documentation** | Authoring ergonomics or doc-only until ADR | **Closed** (FLOW-5, 10, 16, 17) |
 
 ### 23.2 Gap register
 
@@ -1141,9 +1126,9 @@ Harness MVP and new Tier-2 agents remain unblocked. LLM-backed dynamic decomposi
 - [x] Update this doc §23 gaps table (paydown log) — 2026-06-07 Phase FLOW closeout
 - [x] ADR-FLOW-001/002/003 accepted
 - [x] Run gate + §6.1 scripts per AGENTS.md — **906 passed**
-- [ ] Update plan §0.3 execution path if entry points change
-- [ ] Update Appendix I §I.4 if planner kinds change
-- [ ] Update canon §42.14.3 when FLOW-2 merges (ADR-FLOW-001 compliance)
+- [x] Update Appendix I §I.4 — `planner_kind=engine` (`EngineBackedNexusPlanner`) — 2026-06-07
+- [x] Update canon §42.14.3 — ADR-FLOW-001 implementation — 2026-06-07
+- [x] Plan §0.3 execution path unchanged (entry points stable)
 
 ---
 

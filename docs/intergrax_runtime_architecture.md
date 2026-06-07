@@ -3990,9 +3990,9 @@ Harness literature describes **subagents** as autonomous units with their own ru
 
 **Forbidden:** Tier-2 agent spawning another agent by direct import or private API. **Required:** Nexus schedules child node after parent decision or plan edge.
 
-**Declarative `DELEGATES_TO` (target semantics):** Tier-3 `ApplicationGraphSpec` may declare `DELEGATES_TO` as authoring sugar; the plan/graph builder **expands** it to a **child execution node** with `DelegationSpec` (ADR-FLOW-001 Option C). Until [FLOW-2](INTERGRAX_IMPLEMENTATION_PLAN.md) ships, runtime may attach `DelegationSpec` on the parent step only — see operational truth in [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §13.
+**Declarative `DELEGATES_TO` (implemented):** Tier-3 `ApplicationGraphSpec` may declare `DELEGATES_TO` as authoring sugar; `graph_spec_to_plan.py` **expands** it to a **child `PlanStep` / `ExecutionNode`** with `DelegationSpec` on the **child** node ([ADR-FLOW-001](adr/ADR-FLOW-001.md) Option C). `SubtaskContract` supplies objective, scopes, and budget envelope on the child delegation path (FLOW-14/15).
 
-Implementation: R-Delegate (**Done**) for contracts and memory namespace; graph expansion (**pending** `FLOW-2`) in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) · [ADR-FLOW-001](adr/ADR-FLOW-001.md).
+Implementation: R-Delegate (**Done**) for contracts and memory namespace; graph expansion (**Done**, Phase FLOW) in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) · operational narrative [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §13.
 
 ```text
 DelegationSpec:

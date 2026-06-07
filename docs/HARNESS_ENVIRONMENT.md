@@ -207,7 +207,7 @@ Governance, policy, and observability are **composable control-plane layers** �
 
 **Modularity:** swap observability backend via `IntegrationProfile.observability_backend`; add policy via YAML + EP handlers; enable V-SEC defenses via `ApplicationSecurityProfile` — without changing Tier-2 agent code.
 
-**Orchestration:** graph execution, delegation, handoff, hooks — [`AGENT_CREATION_GUIDE.md` Appendix I](AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane). **End-to-end flow (diagrams, edge cases):** [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md). Wired via `orchestration_wiring.py` + `graph_spec_to_plan.py` (Phase ORCH **Done**). Multi-agent quick start: [Appendix C](AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs).
+**Orchestration:** graph execution, delegation, handoff, hooks — [`AGENT_CREATION_GUIDE.md` Appendix I](AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane). **End-to-end flow (diagrams, edge cases):** [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md). Wired via `orchestration_wiring.py` + `graph_spec_to_plan.py` (Phase ORCH **Done**; Phase FLOW **Done** 17/18). Multi-agent quick start: [Appendix C](AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs).
 
 ---
 

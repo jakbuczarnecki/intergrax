@@ -157,7 +157,7 @@ HTTP / CLI / Worker
     → Trace + RuntimeEvents + TaskResult
 ```
 
-**Detailed narrative** (sequence/state diagrams, decision matrix, edge cases, `FLOW-GAP.*` → plan rows): [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md).
+**Detailed narrative** (sequence/state diagrams, decision matrix, edge cases, Phase FLOW paydown): [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) — **Done** 17/18 (**FLOW-8 Deferred**).
 
 ### 0.4 Agent OS rule
 
