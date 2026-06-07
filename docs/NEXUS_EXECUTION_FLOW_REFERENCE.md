@@ -1093,9 +1093,9 @@ This does **not** block harness MVP or new Tier-2 agents. It **does** block clai
 
 ## 25. Plan traceability matrix
 
-**How to use:** When updating [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md), add rows to §6.1 maintenance or a new **Phase FLOW** band. Each `FLOW-GAP-*` becomes one deliverable with acceptance from §22.
+**Status:** **Scheduled** (2026-06-07) — canonical implementation in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) [Phase FLOW](#phase-flow--nexus-execution-depth) · active queue [§6.1aj](INTERGRAX_IMPLEMENTATION_PLAN.md#61aj-harness-implementation-queue--nexus-execution-depth-active) · execution [§6.2aj](INTERGRAX_IMPLEMENTATION_PLAN.md#62aj-phase-flow-execution-order-band-2aj--active-2026-06-07) · traceability **Appendix N (FLOW)**.
 
-### 25.1 Proposed implementation rows (not yet scheduled)
+### 25.1 Implementation rows (Phase FLOW — Band 2aj)
 
 | Plan ID | Source | Deliverable | Acceptance | Priority |
 |---------|--------|-------------|------------|----------|
@@ -1109,19 +1109,23 @@ This does **not** block harness MVP or new Tier-2 agents. It **does** block clai
 | FLOW-8 | FLOW-GAP-10 | Reference Tier-3 app implementing §42.43 | 3+ agent graph_spec demo | Product |
 | FLOW-9 | FLOW-GAP-11 | Documented evaluator-node pattern + optional post-graph eval hook | Eval registry observation per multi-agent run | Medium |
 | FLOW-10 | FLOW-GAP-08 | Implement or remove reserved lifecycle states | ADR + runner sets state OR enum trim | Low |
+| FLOW-11 | FLOW-GAP-09 | Pre-plan / pre-LLM policy extension points | Hook tests + Appendix H cross-ref | Medium |
+| FLOW-12 | §24 / FAUDIT-COG-1 | `DecisionRecord` per UAEP step | Gate test decision persisted | Medium |
+| FLOW-DOC.* | — | Flow reference + plan sync after each PR | No stale `FLOW-GAP` rows | Low |
 
 ### 25.2 FAUDIT layer uplift targets
 
 | AUDIT_MAP § | Current (FAUDIT-32) | This doc sections | Close via |
 |-------------|---------------------|-------------------|-----------|
-| §7 Reasoning/Planning | L2 | §7–§8, §24, FLOW-GAP-01 | FLOW-1 |
+| §7 Reasoning/Planning | L2 | §7–§8, §24, FLOW-GAP-01 | FLOW-1, FLOW-12 |
 | §8 Execution Runtime | L3 | §4–§5, §10 | Maintenance |
 | §9 Orchestration/Graph | L3 partial | §9, §14, FLOW-GAP-04–07 | FLOW-3–7 |
 | §10 Subagents | L2 | §13, FLOW-GAP-02–03 | **FLOW-2** (ADR) |
 | §25 Evaluation | L2 | §18, FLOW-GAP-11 | FLOW-9 |
 
-### 25.3 Documentation sync checklist (after plan update)
+### 25.3 Documentation sync checklist (per FLOW PR)
 
+- [x] Phase FLOW registered in plan — master table, §6.1aj, §6.2aj, Appendix N (FLOW)
 - [ ] Update plan §0.3 execution path if entry points change
 - [ ] Update Appendix I §I.4 if planner kinds change
 - [ ] Update canon §42.14.3 when FLOW-2 merges (ADR-FLOW-001 compliance)

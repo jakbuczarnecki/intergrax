@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-06) — **Harness platform bands 1–2ad Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39); **Phase M.6 P4 (Band 2aa) Done** (28/28); **Phase M.6 P5 (Band 2ab) Done** (33/34); **Phase M.6 P6 (Band 2ac) Done** (32/32); **FAUDIT-32 remediation Done** (23/23 + [§6.1ai](#61ai-harness-implementation-queue--faudit-32-follow-up-closed) follow-up); default queue = **§6.1 maintenance** only; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done** (wiring); **12/32 layers L3+** per FAUDIT scorecard — closeout ≠ full layer maturity; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **901 passed**; **operational L3 signed off** (W-OPS evidence artifact policy — see FAUDIT-OPS.1)  
+Status: Working draft (2026-06-07) — **Harness platform bands 1–2ad Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39); **Phase M.6 P4 (Band 2aa) Done** (28/28); **Phase M.6 P5 (Band 2ab) Done** (33/34); **Phase M.6 P6 (Band 2ac) Done** (32/32); **FAUDIT-32 remediation Done** (23/23 + [§6.1ai](#61ai-harness-implementation-queue--faudit-32-follow-up-closed) follow-up); **default active queue = [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-active) (Phase FLOW, Band 2aj, 0/13)** + §6.1 gate on every PR; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done** (wiring); **12/32 layers L3+** per FAUDIT scorecard — closeout ≠ full layer maturity; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **901 passed**; **operational L3 signed off** (W-OPS evidence artifact policy — see FAUDIT-OPS.1)  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -28,7 +28,7 @@ Do not maintain separate status/readiness/roadmap files. This plan is the **only
 | Agent creation workflow | `AGENT_CREATION_GUIDE.md` |
 | Governance / policy / observability control plane (authoring) | `AGENT_CREATION_GUIDE.md` **Appendix H** · canon §42.11 · `EXTENSION_AUTHOR_GUIDE.md` §10 (`intergrax.policy_rules`) |
 | Orchestration / graph / delegation control plane (authoring) | `AGENT_CREATION_GUIDE.md` **Appendix I** · canon §42.3–§42.15, §42.43 · R-Delegate **Done** · closeout [Phase ORCH](#phase-orch--orchestration-control-plane-closeout) |
-| **Nexus execution flow (runtime narrative, diagrams, gap → plan rows)** | [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) · §25 `FLOW-GAP.*` / proposed `FLOW-*` deliverables · [ADR-FLOW-001](adr/ADR-FLOW-001.md) (delegation) |
+| **Nexus execution flow (runtime narrative, diagrams, gap → plan rows)** | [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) · [Phase FLOW](#phase-flow--nexus-execution-depth) · **§6.1aj** · Band **2aj** · **Appendix N (FLOW)** · [ADR-FLOW-001](adr/ADR-FLOW-001.md) |
 | Governance audit closeout (docs + residuals register) | [Phase GOV-AUDIT](#phase-gov-audit--governance-control-plane-audit-closeout) · **GOV-DOC.\*** **Done** |
 | Orchestration audit closeout (runtime wiring) | [Phase ORCH](#phase-orch--orchestration-control-plane-closeout) · **§6.1b** · Band **2j** |
 | Tools / skills audit closeout (runtime bridge) | [Phase TS](#phase-ts--tools--skills-control-plane-closeout) · **§6.1c** · Band **2k** · `AGENT_CREATION_GUIDE.md` **Appendix J** |
@@ -207,6 +207,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **LLM completion envelope (Phase M-LLM-R)** | **Done** (Band 2z) | No (harness-only) | Audit 2026-06-06 — typed `LLMAdapterResponse`; **39/39** — [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed) · **Appendix L** |
 | Regression gate | **901 passed** | No | Must stay green after each harness PR (FAUDIT-32 follow-up 2026-06-06) |
 | **Full architecture audit (FAUDIT-32)** | **Done** (2026-06-06) | No (harness-only) | 32-layer audit + **23/23 remediation** → [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-closed) |
+| **Nexus execution depth (Phase FLOW)** | **Scheduled** (0/13) | No (harness-only) | Band **2aj** — [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-active) · source: [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) |
 
 ---
 
@@ -4294,11 +4295,12 @@ Paydown Wave P3 (optional polish):
 | **2ab — Integration depth (M.6 P5)** | Harden 25 beta + 8 greenfield harness slugs (metrics, CI/CD, eval, async, data plane) — **no** business agents | **Done** (2026-06-02) — **33/34** | [M.6 P5 register](#m6-p5--harness-integration-depth-done--3334) · **§6.1x** · **§6.2af** |
 | **2ac — Integration expansion (M.6 P6)** | 32 harness slugs + post-catalog wiring (tools, bridges, promote gate, infra `p6`) — **no** business agents | **Done** (2026-06-02) — **32/32 + M-P6-WIRE** | [M.6 P6 register](#m6-p6--harness-integration-expansion-planned) · **§6.1y** · **§6.2ag** |
 | **2ad — FAUDIT-32 remediation** | Close 32-layer audit residuals (tier gate, intake, observability taxonomy, registry depth, eval release gate) — **no** business agents | **Done** (2026-06-06) — **23/23 + §6.1ai follow-up** | [Phase FAUDIT-32](#phase-faudit-32--full-architecture-audit-closeout) · **§6.1ah** · **§6.1ai** · **Appendix M** |
-| **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 |
+| **2aj — Nexus execution depth (FLOW)** | Close `FLOW-GAP.*` — delegation expansion (ADR-FLOW-001), LLM planner, merge policy, eval hooks, graph hardening — **no** K.1/K.2 | **Scheduled** (2026-06-07) — **0/13** | [Phase FLOW](#phase-flow--nexus-execution-depth) · **§6.1aj** · **§6.2aj** · **Appendix N (FLOW)** |
+| **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 · FLOW-8 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
 
-**Policy (2026-06-06):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2z** platform closeouts = **Done** (including W-ADAPT + M-LLM-R). Band **2aa** (M.6 P4) = **Done** (28/28). Band **2ab** (M.6 P5) = **Done** (33/34). Band **2ac** (M.6 P6) = **Done** (32/32 + wiring closeout). Band 3 = **frozen** unless leadership reprioritizes.
+**Policy (2026-06-07):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2ad** platform closeouts = **Done** (including W-ADAPT + M-LLM-R + FAUDIT-32). **Band 2aj (Phase FLOW)** = **recommended next harness band** — active queue [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-active). Band 3 = **frozen** unless leadership reprioritizes.
 
 ```text
 BAND 1:  Harness maintenance — gate + audit scripts (§6.1) — every PR
@@ -4332,6 +4334,8 @@ BAND 2z: LLM completion envelope — Phase M-LLM-R (§6.1v) — DONE (39/39)
 BAND 2aa: Integration expansion — Phase M.6 P4 (§6.1w) — DONE (28/28)
 BAND 2ab: Integration depth — Phase M.6 P5 (§6.1x) — DONE (33/34)
 BAND 2ac: Integration expansion — Phase M.6 P6 (§6.1y) — DONE (32/32 + M-P6-WIRE)
+BAND 2ad: FAUDIT-32 remediation — DONE (2026-06-06)
+BAND 2aj: Nexus execution depth — Phase FLOW (§6.1aj) — SCHEDULED (0/13) — recommended next harness band
 DONE:    Phase CLEAN — legacy module closeout (§6.1j) — 2026-06-02
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
@@ -4605,20 +4609,65 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 ---
 
-## Phase FLOW — Nexus execution depth (proposed, not scheduled)
+## Phase FLOW — Nexus execution depth
 
-**Status:** **Proposed** (2026-06-07) — register derived from [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §23–§25 · **not** in default §6.1 queue until explicit scheduling decision  
-**Prerequisite:** Phase ORCH **Done**; [ADR-FLOW-001](adr/ADR-FLOW-001.md) **Accepted** (delegation expansion semantics)  
-**Goal:** Close **runtime-core** orchestration depth gaps (`FLOW-GAP.*`) — not duplicate ORCH wiring closeout
+**Status:** **Scheduled** (2026-06-07) — **0/13** deliverables Done · source: [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §23–§25  
+**Prerequisites:** Phase ORCH **Done**; [ADR-FLOW-001](adr/ADR-FLOW-001.md) **Accepted** (delegation target semantics)  
+**Goal:** Close orchestration **depth** gaps (`FLOW-GAP.*`) — uplift AUDIT_MAP §7, §9, §10, §25 from L2/L3-partial to **L3+** operational maturity per flow reference  
+**Priority ladder:** **Band 2aj** (§4.0) — **recommended next harness band** after §6.1 gate (before §6.3 product)  
+**Execution order:** [§6.2aj](#62aj-phase-flow-execution-order-band-2aj--active) · queue: [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-active)  
+**Traceability:** **Appendix N (FLOW)** — [`§Appendix N`](#appendix-n--nexus-execution-flow-traceability-phase-flow)
 
-| Priority | ID | Source gap | Deliverable (summary) |
-|----------|-----|------------|------------------------|
-| **Critical** | FLOW-2 | FLOW-GAP-02 | Expand `DELEGATES_TO` → child `ExecutionNode` per ADR-FLOW-001 |
-| High | FLOW-1 | FLOW-GAP-01 | Wire `EngineBackedNexusPlanner` → `engine_planner_orchestrator` |
-| Medium | FLOW-3–7, FLOW-9 | §23.2 register | Delegation depth, run retry, merge policy, eval hooks, cycle detect |
-| Product | FLOW-8 | FLOW-GAP-10 | §42.43 reference Tier-3 app (Phase K gate) |
+**Delivery rule:** One **FLOW-*** ID per PR → update master table + §6.1aj + Appendix N paydown → `pytest -m gate` + §6.1 scripts green.
 
-**Activate:** Copy §25.1 rows into §6.1 maintenance (or new Band 2ae) when product/platform prioritizes orchestration depth over §6.3 business agents.
+**Maturity target (phase complete):**
+
+| AUDIT_MAP § | Baseline (FAUDIT-32) | Target after FLOW |
+|-------------|----------------------|-------------------|
+| §7 Reasoning / planning | L2 | **L3** (FLOW-1) |
+| §8 Execution runtime | L3 | **L3** (maintain) |
+| §9 Orchestration / graph | L3 partial | **L3+** (FLOW-3–7, FLOW-6) |
+| §10 Subagents | L2 | **L3** (FLOW-2, FLOW-3) |
+| §25 Evaluation | L2 | **L3** (FLOW-9) |
+
+**Explicitly out of scope:** Nested full harness per child; new graph node **types** (Tier-1 canon change); K.1/K.2 business agents (FLOW-8 → §6.3 unless reprioritized).
+
+### FLOW — Master register
+
+| ID | Wave | Gap | Deliverable | Status | Priority | Module / test | Acceptance |
+|----|------|-----|-------------|--------|----------|---------------|------------|
+| FLOW-DOC.1 | FLOW0 | — | **Flow reference sync** — paydown §23 gaps in `NEXUS_EXECUTION_FLOW_REFERENCE.md` after each FLOW PR | **Planned** | Low | `docs/NEXUS_EXECUTION_FLOW_REFERENCE.md` | No stale `FLOW-GAP` rows for Done IDs |
+| FLOW-2 | FLOW1 | FLOW-GAP-02 | **ADR-FLOW-001 implementation** — expand `DELEGATES_TO` to child `PlanStep` + `ExecutionNode`; `DelegationSpec` on **child**; `GraphExecutor` routes `child_agent_id` | **Planned** | **Critical** | `graph_spec_to_plan.py`, `graph_builder.py`, `graph_executor.py` | `test_graph_spec_to_plan.py` + integration delegation path; canon §42.14.3 note updated |
+| FLOW-3 | FLOW1 | FLOW-GAP-03 | **`max_delegation_depth` enforcement** — count expanded delegation chain in `GraphExecutor`; fail with trace | **Planned** | High | `graph_executor.py`, `environment_profile.py` | Unit test depth exceeded |
+| FLOW-1 | FLOW2 | FLOW-GAP-01 | **Real `EngineBackedNexusPlanner`** — bridge `engine_planner_orchestrator` → `NexusTaskPlannerProtocol`; typed `NexusPlan` from LLM parse | **Planned** | High | `orchestration_wiring.py`, `planning/engine_planner_*.py` | `test_orchestration_wiring.py` + planner integration tests |
+| FLOW-6 | FLOW2 | FLOW-GAP-06 | **Strict cycle detection** — `ExecutionGraph.batches()` raises on cycle; no unsafe fallback | **Planned** | High | `execution_graph.py` | Unit test cyclic graph → error |
+| FLOW-4 | FLOW3 | FLOW-GAP-04 | **Opt-in run-level retry** — `OrchestrationProfile.max_run_retries`; wire `RetryCoordinator` in `NexusGraphRunner` | **Planned** | Medium | `environment_profile.py`, `graph_runner.py`, `nexus_factory.py` | Integration test graph retry once |
+| FLOW-7 | FLOW3 | FLOW-GAP-07 | **`MergePolicy` / `FinalResponseComposerProfile`** — deterministic + structured merge; optional LLM merge hook (policy-gated) | **Planned** | Medium | `final_response_composer.py`, `environment_profile.py` | Multi-agent merge unit tests |
+| FLOW-9 | FLOW3 | FLOW-GAP-11 | **Evaluation hooks on multi-agent fan-in** — post-graph eval observation; evaluator-node cookbook; registry write on multi-node runs | **Planned** | Medium | `nexus_loop.py`, `evaluation_wiring.py`, docs §18 | `EvaluationProfile` observation recorded; guide §18 |
+| FLOW-11 | FLOW3 | FLOW-GAP-09 | **Pre-plan / pre-LLM policy extension points** — document + wire hooks at planning boundary | **Planned** | Medium | `planning_runner.py`, `policy_engine.py` | Hook tests + Appendix H cross-ref |
+| FLOW-5 | FLOW4 | FLOW-GAP-05 | **`AgentGraph.on_error(retry)`** — wire to `RetryPolicy` / graph executor | **Planned** | Low | `graph_builder.py`, `orchestration_wiring.py` | Integration test declared retry |
+| FLOW-10 | FLOW4 | FLOW-GAP-08 | **Reserved lifecycle states** — ADR: implement `WAITING_FOR_RESOURCES`/`EXPIRED` **or** trim enum + canon sync | **Planned** | Low | `task_lifecycle.py`, `adr/ADR-FLOW-002.md` (if trim) | Lifecycle doc + no dead transitions |
+| FLOW-12 | FLOW4 | §24 / FAUDIT-COG | **`DecisionRecord` per UAEP step** — typed artifact + trace event | **Planned** | Medium | `uaep.py`, `contracts/` | Gate test decision persisted |
+| FLOW-8 | FLOW5 | FLOW-GAP-10 | **§42.43 reference Tier-3 app** — 3+ agent `graph_spec` demo (PM/UX/Legal pattern) | **Deferred** | Product | `applications/` new host or lab extension | Acceptance multi-agent + HITL path · **§6.3 gate** |
+| FLOW-DOC.2 | FLOW5 | — | **Phase closeout** — Appendix I/N, flow reference §23 paydown, maturity dashboard §0.5 | **Planned** | Low | `docs/*` | All non-deferred FLOW rows **Done** |
+
+### FLOW — Suggested PR order
+
+```text
+FLOW-2 → FLOW-3 → FLOW-6 → FLOW-1 → FLOW-4 → FLOW-7 → FLOW-9 → FLOW-11 → FLOW-5 → FLOW-10 → FLOW-12 → FLOW-DOC.*
+```
+
+**Parallel OK after FLOW-2:** FLOW-1 and FLOW-6 (disjoint modules).
+
+**FLOW-8:** Schedule only after explicit product decision ([§6.3](#63-end-of-plan--deferred-product-work-only)).
+
+### FLOW — Paydown log
+
+| Date | FLOW ID | Summary |
+|------|---------|---------|
+| 2026-06-07 | — | Phase FLOW scheduled from `NEXUS_EXECUTION_FLOW_REFERENCE.md` §25; queue §6.1aj; Appendix N (FLOW) |
+
+**Phase FLOW complete when:** FLOW-2–7, FLOW-9, FLOW-11, FLOW-12, FLOW-DOC.* **Done**; FLOW-8 **Deferred** or Done per product; §6.1aj closed; AUDIT_MAP §7/§9/§10/§25 at target maturity; gate green.
 
 ---
 
@@ -5194,6 +5243,31 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 **Explicitly excluded:** K.1, K.2, Mem0 SaaS product, entity graph ship (RFC only), business agent memory.
 
+### 6.1aj Harness implementation queue — Nexus execution depth (active)
+
+**Purpose:** Single ordered list for **Phase FLOW** (Band 2aj). **Active 2026-06-07** — closes gaps from [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §23.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
+| 1 | **FLOW-2** | Code | **Planned** | ADR-FLOW-001 — `DELEGATES_TO` → child node | Delegation integration tests |
+| 2 | **FLOW-3** | Code | **Planned** | `max_delegation_depth` enforcement | Depth limit test |
+| 3 | **FLOW-6** | Code | **Planned** | Graph cycle detection | Cyclic graph fails fast |
+| 4 | **FLOW-1** | Code | **Planned** | Real `EngineBackedNexusPlanner` | LLM plan parse tests |
+| 5 | **FLOW-4** | Code | **Planned** | Run-level retry profile field | Graph retry integration |
+| 6 | **FLOW-7** | Code | **Planned** | `MergePolicy` / composer profile | Multi-agent merge tests |
+| 7 | **FLOW-9** | Code | **Planned** | Multi-agent eval hooks | Registry observation |
+| 8 | **FLOW-11** | Code | **Planned** | Pre-plan policy hooks | Planning boundary tests |
+| 9 | **FLOW-5** | Code | **Planned** | `AgentGraph.on_error` wire | Integration test |
+| 10 | **FLOW-10** | Code/Docs | **Planned** | Reserved lifecycle ADR + implement or trim | Lifecycle doc |
+| 11 | **FLOW-12** | Code | **Planned** | `DecisionRecord` per UAEP step | Gate test |
+| 12 | **FLOW-DOC.*** | Docs | **Planned** | Flow reference + Appendix N paydown | Gaps table current |
+| — | **FLOW-8** | Product | **Deferred** | §42.43 reference app | **§6.3** gate only |
+
+**Suggested PR order:** See [Phase FLOW — Suggested PR order](#flow--suggested-pr-order).
+
+**Explicitly excluded:** K.1, K.2 (unless FLOW-8 activated), nested harness per child.
+
 ### 6.1b Harness implementation queue — orchestration closeout (closed)
 
 **Purpose:** Single ordered list for **Phase ORCH** (Band 2j). **Closed 2026-06-05** — all ORCH rows **Done**. Ongoing: **§6.1** maintenance only.
@@ -5598,6 +5672,27 @@ Work **one TS ID per PR**; after each step update the TS master table + §6.1c +
 | 2 | TS-2 | Harness host LLM adapter wiring | High | — |
 | 3 | TS-3 | `SkillResolverProtocol` | Medium | — |
 | 4 | TS-DOC.1–2 | Appendix J + plan sync | Low | TS-1–3 |
+
+### 6.2aj Phase FLOW execution order (Band 2aj — active 2026-06-07)
+
+**Status:** **Active** · register: [Phase FLOW](#phase-flow--nexus-execution-depth) · queue: [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-active)
+
+Work **one FLOW ID per PR**; after each step update FLOW master table + §6.1aj + Appendix N; keep §6.1 scripts green.
+
+| Step | ID | Deliverable | Priority | Depends on |
+|------|-----|-------------|----------|------------|
+| 1 | FLOW-2 | Delegation graph expansion (ADR-FLOW-001) | **Critical** | — |
+| 2 | FLOW-3 | `max_delegation_depth` enforcement | High | FLOW-2 |
+| 3 | FLOW-6 | Strict graph cycle detection | High | — |
+| 4 | FLOW-1 | LLM-backed Nexus planner | High | — (parallel with 2–3 after step 1) |
+| 5 | FLOW-4 | Run-level retry profile | Medium | FLOW-2 |
+| 6 | FLOW-7 | Merge policy / composer profile | Medium | — |
+| 7 | FLOW-9 | Multi-agent evaluation hooks | Medium | FLOW-7 optional |
+| 8 | FLOW-11 | Pre-plan policy hooks | Medium | — |
+| 9 | FLOW-5 | `AgentGraph.on_error` wire | Low | FLOW-4 optional |
+| 10 | FLOW-10 | Reserved lifecycle states ADR | Low | — |
+| 11 | FLOW-12 | UAEP `DecisionRecord` | Medium | — |
+| 12 | FLOW-DOC.* | Docs closeout | Low | FLOW-2–12 (except deferred FLOW-8) |
 
 ### 6.2bb Phase ORCH execution order (Band 2j — closed 2026-06-05)
 
@@ -7179,4 +7274,51 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ---
 
-*Plan synced (2026-06-06). **Harness platform** bands 1–2ad **Done** (FAUDIT-32 **23/23** + [§6.1ai](#61ai-harness-implementation-queue--faudit-32-follow-up-closed) follow-up). **Default next:** [§6.1](#61-harness-platform-maintenance-default--band-1) maintenance only. Product: [§6.3](#63-end-of-plan--deferred-product-work-only). **Every PR:** §6.1 maintenance.*
+## Appendix N — Nexus execution flow traceability (Phase FLOW)
+
+**Source:** [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §23–§25 · [ADR-FLOW-001](adr/ADR-FLOW-001.md)
+
+**Phase register:** [Phase FLOW](#phase-flow--nexus-execution-depth) · **Band 2aj** · queue [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-active) · execution [§6.2aj](#62aj-phase-flow-execution-order-band-2aj--active-2026-06-07)
+
+**Status:** **Scheduled** (2026-06-07) · **0/13** deliverables Done
+
+> **Note:** Distinct from `AGENT_CREATION_GUIDE.md` Appendix N (agent assembly). This appendix maps **orchestration runtime depth** gaps only.
+
+### N.1 FLOW-GAP → FLOW ID matrix
+
+| Gap ID | Category | Severity | FLOW ID | Deliverable | AUDIT_MAP § |
+|--------|----------|----------|---------|-------------|-------------|
+| FLOW-GAP-01 | Runtime-core | High | FLOW-1 | Real `EngineBackedNexusPlanner` | §7 |
+| FLOW-GAP-02 | Runtime-core | **Critical** | FLOW-2 | ADR-FLOW-001 delegation expansion | §10 |
+| FLOW-GAP-03 | Runtime-core | Medium | FLOW-3 | `max_delegation_depth` enforcement | §10 |
+| FLOW-GAP-04 | Runtime-core | Medium | FLOW-4 | Opt-in run-level retry | §9, §22 |
+| FLOW-GAP-05 | DX | Low | FLOW-5 | `AgentGraph.on_error` wire | §9 |
+| FLOW-GAP-06 | Runtime-core | Medium | FLOW-6 | Strict cycle detection | §9 |
+| FLOW-GAP-07 | Production-hardening | Medium | FLOW-7 | `MergePolicy` / composer profile | §9 |
+| FLOW-GAP-08 | DX / lifecycle | Low | FLOW-10 | Reserved lifecycle states ADR | §8 |
+| FLOW-GAP-09 | Production-hardening | Medium | FLOW-11 | Pre-plan policy hooks | §5 |
+| FLOW-GAP-10 | Product-proof | Product | FLOW-8 | §42.43 reference Tier-3 app (**Deferred**) | §28 |
+| FLOW-GAP-11 | Production-hardening | Medium | FLOW-9 | Multi-agent eval hooks | §25 |
+| §24 / FAUDIT-COG-1 | Cognition | Medium | FLOW-12 | `DecisionRecord` per UAEP step | §7 |
+| — | Docs | Low | FLOW-DOC.* | Flow reference + plan sync | — |
+
+### N.2 Maturity uplift targets
+
+| AUDIT_MAP § | Baseline (FAUDIT-32) | Target | Closing FLOW IDs |
+|-------------|----------------------|--------|------------------|
+| §7 Reasoning / planning | L2 | **L3** | FLOW-1, FLOW-12 |
+| §8 Execution runtime | L3 | **L3** (maintain) | — |
+| §9 Orchestration / graph | L3 partial | **L3+** | FLOW-4–7, FLOW-6 |
+| §10 Subagents | L2 | **L3** | FLOW-2, FLOW-3 |
+| §25 Evaluation | L2 | **L3** | FLOW-9 |
+
+### N.3 Paydown log
+
+| Date | FLOW ID | Summary |
+|------|---------|---------|
+| 2026-06-07 | — | Phase FLOW scheduled; Appendix N (FLOW) created; §6.1aj + §6.2aj active |
+| — | — | *(append row per merged PR)* |
+
+---
+
+*Plan synced (2026-06-07). **Harness platform** bands 1–2ad **Done** (FAUDIT-32 **23/23** + [§6.1ai](#61ai-harness-implementation-queue--faudit-32-follow-up-closed) follow-up). **Default active queue:** [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-active) (Phase FLOW, **0/13**). Product: [§6.3](#63-end-of-plan--deferred-product-work-only). **Every PR:** §6.1 maintenance.*
