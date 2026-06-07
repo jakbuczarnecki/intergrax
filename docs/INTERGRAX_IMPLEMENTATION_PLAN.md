@@ -5656,6 +5656,8 @@ Verify (every harness PR):
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
 
+**Maintenance depth (2026-06-07):** **OBS-DEPTH.1 Done** — `build_unified_run_journal()` merges persisted `RuntimeEvent` store + trace-bridge view; debug trace API uses journal when `include_runtime=true` and runtime event persistence is configured. Residual: live `LLM_CALL` bus emit on every adapter path (trace-bridge covers persisted trace).
+
 ### 6.1ah Harness implementation queue — FAUDIT-32 remediation (closed)
 
 **Status:** **Done** (2026-06-06) — **23/23 Done**  
@@ -7136,7 +7138,7 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | Multi-agent coordination pattern catalog | canon §42.43, §53.10 | ideal §6 + §25 | V-MA.* | **Done** |
 | Knowledge graph evolution path (Graph-RAG) | canon §53.11 | ideal §3.7.1 + §25 | V-KG.* | **Done** |
 | **Adaptive Harness Intelligence (L4 runtime closed loop)** | canon §54 | ideal §25 | **Phase W-ADAPT** · AHIA | **Done** (Band 2y, 70/70) — L4 runtime closed; observe/recommend/apply/verify per AHIA |
-| Observability and runtime traceability | canon §33, §42.24 | ideal §11 | Phases Q/Q+/S/U/OBS + **FAUDIT-OBS.1** | **Done** — `RuntimeEventType.LLM_CALL` / `POLICY_DECISION` added; residual: unified trace↔event journal (maintenance, not Band 2ad) |
+| Observability and runtime traceability | canon §33, §42.24 | ideal §11 | Phases Q/Q+/S/U/OBS + **FAUDIT-OBS.1** + **OBS-DEPTH.1** | **Done** — unified run journal (`unified_run_journal.py`); residual: live bus emit for all LLM paths |
 | Registry-driven extensibility (agent/tool/skill/policy/prompt/eval) | canon §7.1.5.1–§7.1.8, §15, §53.2 | ideal §19 | Phase R/U + V-CG/V-PE/V-EVAL + **P-Ext** | **Done** — plugin catalogs production-ready; marketplace UI out of scope |
 | Product agents and new product apps | canon §7.4, §52 | ideal §26 | §6.3 only | **Deferred (product scope)** |
 
@@ -7467,7 +7469,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | Theme | Layers affected | Risk |
 |-------|-----------------|------|
 | **Closeout vs maturity** | §17–§25, §31 | Plan **Done** on wiring; AUDIT_MAP **L2** on depth — do not conflate |
-| **Dual-path telemetry** | §21, §6 | Trace replay vs `RuntimeEventType` — unified journal missing |
+| **Dual-path telemetry** | §21, §6 | Trace replay vs `RuntimeEventType` — **OBS-DEPTH.1** unified journal for read path; live emit parity incremental |
 | **Tier boundary drift** | §2, §28 | Single Critical violation undermines canon §7.4.4 |
 | **Identity / intake naming** | §3, §4 | Resolved — `TaskEnvelope` in `intergrax/contracts/task_envelope.py`; parity tests in `test_faudit_remediation.py` |
 
