@@ -1048,10 +1048,10 @@ Honest deltas for plan scheduling. **Closeout phases (ORCH Done) wired bootstrap
 
 | Category | Meaning | Examples |
 |----------|---------|----------|
-| **Runtime-core** | Blocks correct Harness semantics in production multi-agent | FLOW-GAP-01, 02, 03, 04, 06 |
-| **Production-hardening** | Lab works; product needs richer merge/eval/policy | FLOW-GAP-07, 09, 11 |
+| **Runtime-core** | Blocks correct Harness semantics in production multi-agent | FLOW-GAP-01, 02, 03, 04, 06, 12, 13 |
+| **Production-hardening** | Lab works; product needs richer merge/eval/policy | FLOW-GAP-07, 09, 11, 14 |
 | **Product-proof** | Needs Tier-2/Tier-3 product agents, not platform code | FLOW-GAP-10 |
-| **DX / documentation** | Authoring ergonomics or doc-only until ADR | FLOW-GAP-05, 08 |
+| **DX / documentation** | Authoring ergonomics or doc-only until ADR | FLOW-GAP-05, 08, 15, 16 |
 
 ### 23.2 Gap register
 
@@ -1068,8 +1068,13 @@ Honest deltas for plan scheduling. **Closeout phases (ORCH Done) wired bootstrap
 | FLOW-GAP-09 | Pre-plan LLM policy hooks | Limited vs ideal harness | Production-hardening | Medium | §5 |
 | FLOW-GAP-10 | Product multi-agent proof | No shipped §42.43 app | Product-proof | Product | §28 |
 | FLOW-GAP-11 | Evaluator / LLM-judge not mandatory on multi-agent fan-in | Opt-in only via eval profile | Production-hardening | Medium | §25 |
+| FLOW-GAP-12 | `max_inflight_nodes` not on `OrchestrationProfile` | `GraphExecutor` supports param; `nexus_factory` wires only `max_parallel_nodes` | Runtime-core | Medium | §9 |
+| FLOW-GAP-13 | `SubtaskContract` not used in declarative graph | `graph_spec_to_plan` builds raw `DelegationSpec`; type exists but not on author path | Runtime-core | Medium | §10 |
+| FLOW-GAP-14 | Subagent budget not delegated | No `budget_envelope` on delegation; parent budget applies opaquely | Production-hardening | Medium | §10 |
+| FLOW-GAP-15 | `MODIFY_PLAN` reserved / undocumented | `AgentDecision.MODIFY_PLAN` in enum; no runner semantics | DX | Low | §9 |
+| FLOW-GAP-16 | `MULTI_AGENT` step order fragile | Registry iteration order for same-capability agents | DX | Low | §9 |
 
-**Priority after this document:** **FLOW-GAP-02** (delegation expansion per ADR-FLOW-001) — largest canon↔runtime divergence.
+**Priority after this document:** **FLOW-GAP-02** (delegation expansion per ADR-FLOW-001) — largest canon↔runtime divergence. **Full closeout:** all `FLOW-GAP-01`…`16` via [Phase FLOW](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-flow--nexus-execution-depth) (**0/18**); `FLOW-GAP-10` → FLOW-8 (**Deferred** §6.3).
 
 ---
 
@@ -1084,7 +1089,7 @@ Ideal Harness AI ([`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITEC
 | Deterministic `TaskPlanner` + classifier | **Done** — production-lab ready |
 | Declarative `graph_spec` | **Done** (ORCH-2) |
 | LLM-backed Nexus planner (`planner_kind=engine`) | **Stub** (FLOW-GAP-01) |
-| `DecisionRecord` universal per UAEP step | **Partial** (FAUDIT-COG-1) |
+| `DecisionRecord` universal per UAEP step | **Partial** — emit exists (FAUDIT-COG-1); regression gate **FLOW-12** |
 | Engine planner modules (`engine_planner_orchestrator.py`) | Exist — not bridged to Nexus planner protocol |
 
 This does **not** block harness MVP or new Tier-2 agents. It **does** block claims of parity with Cursor/Claude Code-class **dynamic task decomposition** until FLOW-1 lands.
@@ -1110,22 +1115,29 @@ This does **not** block harness MVP or new Tier-2 agents. It **does** block clai
 | FLOW-9 | FLOW-GAP-11 | Documented evaluator-node pattern + optional post-graph eval hook | Eval registry observation per multi-agent run | Medium |
 | FLOW-10 | FLOW-GAP-08 | Implement or remove reserved lifecycle states | ADR + runner sets state OR enum trim | Low |
 | FLOW-11 | FLOW-GAP-09 | Pre-plan / pre-LLM policy extension points | Hook tests + Appendix H cross-ref | Medium |
-| FLOW-12 | §24 / FAUDIT-COG-1 | `DecisionRecord` per UAEP step | Gate test decision persisted | Medium |
-| FLOW-DOC.* | — | Flow reference + plan sync after each PR | No stale `FLOW-GAP` rows | Low |
+| FLOW-12 | §24 / FAUDIT-COG-1 | `DecisionRecord` regression gate | `DECISION_EMITTED` on every step decision | Medium |
+| FLOW-13 | FLOW-GAP-12 | `max_inflight_nodes` on profile + factory wire | `GRAPH_BACKPRESSURE` when cap hit | Medium |
+| FLOW-14 | FLOW-GAP-13 | `SubtaskContract` in ADR-FLOW-001 expansion | Scopes/objective on child `DelegationSpec` | Medium |
+| FLOW-15 | FLOW-GAP-14 | Subagent budget envelope enforcement | Child exceeds envelope → fail | Medium |
+| FLOW-16 | FLOW-GAP-15 | `MODIFY_PLAN` ADR ([ADR-FLOW-003](adr/ADR-FLOW-003.md)) | Reserved semantics or enum trim | Low |
+| FLOW-17 | FLOW-GAP-16 | `MULTI_AGENT` ordering policy on profile | Stable declared agent order | Low |
+| FLOW-DOC.* | — | Flow reference + plan sync after each PR | Zero open `FLOW-GAP` in §23 | Low |
 
 ### 25.2 FAUDIT layer uplift targets
 
 | AUDIT_MAP § | Current (FAUDIT-32) | This doc sections | Close via |
 |-------------|---------------------|-------------------|-----------|
+| §5 Policy | L2 partial | §17, FLOW-GAP-09 | FLOW-11 |
 | §7 Reasoning/Planning | L2 | §7–§8, §24, FLOW-GAP-01 | FLOW-1, FLOW-12 |
-| §8 Execution Runtime | L3 | §4–§5, §10 | Maintenance |
-| §9 Orchestration/Graph | L3 partial | §9, §14, FLOW-GAP-04–07 | FLOW-3–7 |
-| §10 Subagents | L2 | §13, FLOW-GAP-02–03 | **FLOW-2** (ADR) |
+| §8 Execution Runtime | L3 | §4–§6, §19, FLOW-GAP-08 | FLOW-10, maintenance |
+| §9 Orchestration/Graph | L3 partial | §9, §14, FLOW-GAP-04–07, 12, 15–16 | FLOW-3–7, FLOW-13, FLOW-16, FLOW-17 |
+| §10 Subagents | L2 | §13, FLOW-GAP-02–03, 13–14 | **FLOW-2**, FLOW-3, FLOW-14, FLOW-15 |
 | §25 Evaluation | L2 | §18, FLOW-GAP-11 | FLOW-9 |
 
 ### 25.3 Documentation sync checklist (per FLOW PR)
 
 - [x] Phase FLOW registered in plan — master table, §6.1aj, §6.2aj, Appendix N (FLOW)
+- [x] FLOW-GAP-12–16 + FLOW-13–17 added (2026-06-07 audit closeout)
 - [ ] Update plan §0.3 execution path if entry points change
 - [ ] Update Appendix I §I.4 if planner kinds change
 - [ ] Update canon §42.14.3 when FLOW-2 merges (ADR-FLOW-001 compliance)
@@ -1146,6 +1158,7 @@ This does **not** block harness MVP or new Tier-2 agents. It **does** block clai
 | Root README | [`../README.md`](../README.md) |
 | AGENTS.md (AI routing) | [`../AGENTS.md`](../AGENTS.md) |
 | Delegation ADR | [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md) |
+| MODIFY_PLAN ADR | [`adr/ADR-FLOW-003.md`](adr/ADR-FLOW-003.md) |
 | Ideal harness target | [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md) |
 
 ---

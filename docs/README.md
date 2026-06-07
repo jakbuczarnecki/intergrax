@@ -33,7 +33,7 @@ The `docs/` folder holds the canonical platform documentation.
 | [**../README.md**](../README.md) | **GitHub landing** — tiers, Integration/Tool/Skill/Agent stack, links to canon and plan |
 | [**LLM_ADAPTERS.md**](LLM_ADAPTERS.md) | **LLM adapter catalog** — providers, streaming, tools, env vars, Prometheus/governance |
 | [**IDEAL_HARNESS_AI_ARCHITECTURE.md**](IDEAL_HARNESS_AI_ARCHITECTURE.md) | **Target Harness AI architecture** — ideal Agent OS reference model for Integrax alignment |
-| [**NEXUS_EXECUTION_FLOW_REFERENCE.md**](NEXUS_EXECUTION_FLOW_REFERENCE.md) | **Nexus execution flow** — operational narrative, diagrams, edge cases, evaluation hooks, plan traceability (`FLOW-GAP.*` → [Phase FLOW](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-flow--nexus-execution-depth) **§6.1aj**) |
+| [**NEXUS_EXECUTION_FLOW_REFERENCE.md**](NEXUS_EXECUTION_FLOW_REFERENCE.md) | **Nexus execution flow** — operational narrative, diagrams, edge cases, evaluation hooks, plan traceability (`FLOW-GAP-01`…`16` → [Phase FLOW](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-flow--nexus-execution-depth) **0/18** · **§6.1aj**) |
 | [**adr/ADR-FLOW-001.md**](adr/ADR-FLOW-001.md) | **Delegation semantics** — `DELEGATES_TO` graph expansion (Option C); implementation via `FLOW-2` |
 | [**ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md**](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) | **Adaptive Harness Intelligence (AHI)** — L4 closed-loop architecture RFC, business case, Phase W-ADAPT roadmap |
 | [**../infra/README.md**](../infra/README.md) | **Local Docker infra** — compose profiles, `manage.sh` |
