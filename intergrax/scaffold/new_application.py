@@ -13,6 +13,10 @@ from textwrap import dedent
 from intergrax.applications._shared.build_deploy_doc import render_build_deploy_doc
 from intergrax.applications._shared.docker_templates import write_application_docker
 from intergrax.scaffold.agent_catalog import ScaffoldAgentSpec, resolve_agent_specs
+from intergrax.scaffold.doc_templates import (
+    render_application_architecture_doc,
+    render_application_implementation_plan,
+)
 from intergrax.scaffold.application_names import (
     ScaffoldApplicationNames,
     app_slug,
@@ -847,6 +851,8 @@ def _readme(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> 
 
         Scaffolded lab-profile application — debug API + ``POST {route_prefix}/run``.
 
+        **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md) · **Plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
+
         **Build & deploy:** [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md)
 
         ## Three-command quickstart
@@ -958,6 +964,26 @@ def _create_lab_application(
     _write(target / "manifest.py", _manifest_py(names, specs), force=force)
     _write(target / "README.md", _readme(names, specs), force=force)
     _write(
+        target / "ARCHITECTURE.md",
+        render_application_architecture_doc(
+            names=names,
+            specs=specs,
+            profile=profile,
+            minimal=minimal,
+        ),
+        force=force,
+    )
+    _write(
+        target / "IMPLEMENTATION_PLAN.md",
+        render_application_implementation_plan(
+            names=names,
+            specs=specs,
+            profile=profile,
+            minimal=minimal,
+        ),
+        force=force,
+    )
+    _write(
         target / ".env.example",
         _env_example(names.env_prefix, names.route_prefix, names.port, specs),
         force=force,
@@ -1038,6 +1064,24 @@ def _create_product_application(
     _write(target / "__init__.py", "", force=force)
     _write(target / "manifest.py", product_tpl.manifest_py(names, specs), force=force)
     _write(target / "README.md", product_tpl.readme(names, specs), force=force)
+    _write(
+        target / "ARCHITECTURE.md",
+        render_application_architecture_doc(
+            names=names,
+            specs=specs,
+            profile=profile,
+        ),
+        force=force,
+    )
+    _write(
+        target / "IMPLEMENTATION_PLAN.md",
+        render_application_implementation_plan(
+            names=names,
+            specs=specs,
+            profile=profile,
+        ),
+        force=force,
+    )
     _write(
         target / ".env.example",
         product_tpl.env_example(names.env_prefix, names.route_prefix, names.port, specs),

@@ -27,6 +27,7 @@ See [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md) Step **4E*
 | Host runtime | `host/factory.py` → `build_harness_host_runtime` |
 | Tool catalog (optional) | `host/tool_wiring.py` only with scaffold `--full` |
 | Deploy triad | `docker/`, `BUILD_AND_DEPLOY.md`, `ARCHITECTURE.md` § Dependencies |
+| Implementation plan | `IMPLEMENTATION_PLAN.md` — local task queue (scaffold emits on create) |
 | HTTP + MCP | `host/factory.py`, `mcp/server.py` |
 | Env + deploy | `.env.example`, `BUILD_AND_DEPLOY.md`, `docker/build-docker.*` |
 | Smoke tests | `<pkg>_tests/host/` |

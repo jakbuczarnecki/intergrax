@@ -11,6 +11,11 @@ import sys
 from pathlib import Path
 from textwrap import dedent
 
+from intergrax.scaffold.doc_templates import (
+    render_agent_architecture_doc,
+    render_agent_implementation_plan,
+)
+
 
 def _slug(name: str) -> str:
     slug = re.sub(r"[^a-z0-9_]+", "_", name.strip().lower())
@@ -437,6 +442,11 @@ def _readme(slug: str, class_name: str, capabilities: list[str]) -> str:
 
         UAEP-first scaffold. Full process: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md) (single canonical guide).
 
+        ## Docs
+
+        - [`ARCHITECTURE.md`](ARCHITECTURE.md) — purpose, contracts, runtime layout
+        - [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) — task queue and verification
+
         ## Quick start
 
         1. Implement domain logic in `steps/`
@@ -512,6 +522,26 @@ def create_agent(
     _write(target / "tests" / f"test_{slug}_agent.py", _test_agent_py(slug, class_name, primary_capability), force=force)
     if not minimal:
         _write(target / "notebooks" / f"01_{slug}_experiment.ipynb", _notebook_stub(slug, primary_capability), force=force)
+    _write(
+        target / "ARCHITECTURE.md",
+        render_agent_architecture_doc(
+            slug=slug,
+            class_name=class_name,
+            capabilities=capabilities,
+            reference=reference,
+        ),
+        force=force,
+    )
+    _write(
+        target / "IMPLEMENTATION_PLAN.md",
+        render_agent_implementation_plan(
+            slug=slug,
+            class_name=class_name,
+            capabilities=capabilities,
+            reference=reference,
+        ),
+        force=force,
+    )
     _write(
         target / "__init__.py",
         dedent(

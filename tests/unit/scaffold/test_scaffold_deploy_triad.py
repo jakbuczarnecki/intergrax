@@ -30,6 +30,8 @@ def test_scaffolded_lab_application_includes_deploy_triad() -> None:
         assert (target / "docker" / "Dockerfile").is_file()
         assert (target / "docker" / "docker-compose.yml").is_file()
         assert (target / "BUILD_AND_DEPLOY.md").is_file()
+        assert (target / "ARCHITECTURE.md").is_file()
+        assert (target / "IMPLEMENTATION_PLAN.md").is_file()
         assert (target / "host" / "factory.py").read_text(encoding="utf-8").count(
             "build_harness_host_runtime"
         ) >= 1
