@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-07) — **Harness platform bands 1–2ad Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39); **Phase M.6 P4 (Band 2aa) Done** (28/28); **Phase M.6 P5 (Band 2ab) Done** (33/34); **Phase M.6 P6 (Band 2ac) Done** (32/32); **FAUDIT-32 remediation Done** (23/23 + [§6.1ai](#61ai-harness-implementation-queue--faudit-32-follow-up-closed) follow-up); **default active queue = [§6.1](#61-harness-implementation-queue--continuous-gate) maintenance** (Phase FLOW Band 2aj **Done** 17/18; **FLOW-8 Deferred** §6.3) + §6.1 gate on every PR; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done** (wiring); **13/32 layers L3+** per FAUDIT scorecard (§21 Observability depth uplift **Done** 2026-06-07) — closeout ≠ full layer maturity; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **967 passed**; **operational L3 signed off** (W-OPS evidence artifact policy — see FAUDIT-OPS.1)  
+Status: Working draft (2026-06-07) — **Harness platform bands 1–2ad Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39); **Phase M.6 P4–P6 Done**; **FAUDIT-32 remediation Done** (23/23); **Phase FLOW (Band 2aj) Done** (17/18; FLOW-8 Deferred); **active implementation queue = [Phase CRIT-V](#phase-crit-v--critic--verification-layer) (Band 2ak)** + [§6.1](#61-harness-implementation-queue--continuous-gate) gate on every PR; Phase EVAL closed (wiring); Evaluation layer depth → CRIT-V; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **967 passed**; **13/32 layers L3+** per FAUDIT scorecard — closeout ≠ full layer maturity  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -54,6 +54,7 @@ Each **business environment** and each **business agent** maintains its own `ARC
 | Security closeout (V-SEC bridge, middleware assembly, CI) | [Phase SEC](#phase-sec--security-control-plane-closeout) · **§6.1q** · Band **2v** · **Appendix S** |
 | Cost governance closeout (budget bridge, policy bundle, CI) | [Phase COST](#phase-cost--cost-governance-control-plane-closeout) · **§6.1r** · Band **2w** · **Appendix T** |
 | Evaluation closeout (registry bridge, policy bundle, CI) | [Phase EVAL](#phase-eval--evaluation-control-plane-closeout) · **§6.1s** · Band **2x** · **Appendix U** |
+| **Critic & Verification Layer (PEV verify depth)** | [Phase CRIT-V](#phase-crit-v--critic--verification-layer) · **§6.1ak** · Band **2ak** · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · canon [§55](intergrax_runtime_architecture.md#55-critic--verification-layer-cvl--pev-verify-addendum) · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md) |
 | **Adaptive Harness Intelligence (AHI / L4 runtime)** | [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · **§6.1t** · Band **2y** · [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · canon [§54](intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) · **Appendix K** |
 | **LLM response envelope (typed completion contract)** | [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · **§6.1v** · Band **2z** · [LLM_ADAPTERS.md](LLM_ADAPTERS.md) · **Appendix L** |
 | **Integration catalog expansion (harness ROI slugs)** | [M.6 P4 register](#m6-p4--harness-platform-expansion-done) · **§6.1w** · Band **2aa** · [INTEGRATIONS.md](INTEGRATIONS.md) |
@@ -217,6 +218,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | Regression gate | **906 passed** | No | Must stay green after each harness PR (Phase FLOW closeout 2026-06-07) |
 | **Full architecture audit (FAUDIT-32)** | **Done** (2026-06-06) | No (harness-only) | 32-layer audit + **23/23 remediation** → [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-closed) |
 | **Nexus execution depth (Phase FLOW)** | **Done** (17/18) | No (harness-only) | Band **2aj** — [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed) · **FLOW-8 Deferred** · source: [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) |
+| **Critic & Verification Layer (Phase CRIT-V)** | **Active** (1/24) | No (harness-only) | Band **2ak** — [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-active) · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) |
 
 ---
 
@@ -4505,11 +4507,12 @@ Paydown Wave P3 (optional polish):
 | **2ac — Integration expansion (M.6 P6)** | 32 harness slugs + post-catalog wiring (tools, bridges, promote gate, infra `p6`) — **no** business agents | **Done** (2026-06-02) — **32/32 + M-P6-WIRE** | [M.6 P6 register](#m6-p6--harness-integration-expansion-planned) · **§6.1y** · **§6.2ag** |
 | **2ad — FAUDIT-32 remediation** | Close 32-layer audit residuals (tier gate, intake, observability taxonomy, registry depth, eval release gate) — **no** business agents | **Done** (2026-06-06) — **23/23 + §6.1ai follow-up** | [Phase FAUDIT-32](#phase-faudit-32--full-architecture-audit-closeout) · **§6.1ah** · **§6.1ai** · **Appendix M** |
 | **2aj — Nexus execution depth (FLOW)** | Close `FLOW-GAP.*` (01–16) — delegation, SubtaskContract, backpressure profile, LLM planner, merge, eval, graph hardening — **no** K.1/K.2 | **Done** (2026-06-07) — **17/18** (**FLOW-8 Deferred**) | [Phase FLOW](#phase-flow--nexus-execution-depth) · **§6.1aj** · **§6.2aj** · **Appendix N (FLOW)** |
+| **2ak — Critic & Verification Layer (CRIT-V)** | PEV verify depth — `CriticOrchestrator`, `eval.judge`, `eval.trajectory`, evaluator-loop, semantic offline runner — **no** business agents | **Active** | [Phase CRIT-V](#phase-crit-v--critic--verification-layer) · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · **§6.1ak** · **§6.2ak** · canon §55 · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md) |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 · FLOW-8 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
 
-**Policy (2026-06-07):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2ad** platform closeouts = **Done** (including W-ADAPT + M-LLM-R + FAUDIT-32). **Band 2aj (Phase FLOW)** = **Done** (17/18; **FLOW-8 Deferred**) — closed queue [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed). Band 3 = **frozen** unless leadership reprioritizes.
+**Policy (2026-06-07):** Harness completion in §4.1 is **Done**. Band 1 = keep gate green on every PR. Bands **2j–2ad** platform closeouts = **Done**. **Band 2aj (Phase FLOW)** = **Done** (17/18; FLOW-8 Deferred). **Band 2ak (Phase CRIT-V)** = **Active** — default implementation queue after §6.1 gate. Band 3 = **frozen** unless leadership reprioritizes.
 
 ```text
 BAND 1:  Harness maintenance — gate + audit scripts (§6.1) — every PR
@@ -4545,6 +4548,7 @@ BAND 2ab: Integration depth — Phase M.6 P5 (§6.1x) — DONE (33/34)
 BAND 2ac: Integration expansion — Phase M.6 P6 (§6.1y) — DONE (32/32 + M-P6-WIRE)
 BAND 2ad: FAUDIT-32 remediation — DONE (2026-06-06)
 BAND 2aj: Nexus execution depth — Phase FLOW (§6.1aj) — DONE (17/18; FLOW-8 Deferred)
+BAND 2ak: Critic & Verification Layer — Phase CRIT-V (§6.1ak) — ACTIVE
 DONE:    Phase CLEAN — legacy module closeout (§6.1j) — 2026-06-02
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
@@ -5244,9 +5248,61 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 
 ---
 
+## Phase CRIT-V — Critic & Verification Layer
+
+**Status:** **Active** (2026-06-07) — **1/24** deliverables Done (CRIT-V-0 architecture + ADR)  
+**Prerequisites:** Phase EVAL **Done** (registry wiring), Phase FLOW **Done** (graph hooks), Phase M-LLM-R **Done** (typed LLM envelope)  
+**Goal:** Deliver production-grade PEV **Verify** infrastructure — L0/L1/L2 critic stack with tier-separated competencies; uplift Evaluation audit layer L2→L3.  
+**Priority ladder:** **Band 2ak** (§4.0) — **default active implementation queue** after §6.1 gate on each PR.  
+**Architecture:** [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · canon [§55](intergrax_runtime_architecture.md#55-critic--verification-layer-cvl--pev-verify-addendum) · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md)  
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §25 (Evaluation), §7 (Reasoning), §10 (Multi-agent); closes **FAUDIT-EVAL.1** residual  
+**Execution order:** [§6.2ak](#62ak-phase-crit-v-execution-order-band-2ak--active) · queue: [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-active)
+
+**Delivery rule:** One **CRIT-V-*** ID per PR → update master table + §6.1ak + gate green.
+
+### CRIT-V — Master register
+
+| ID | Wave | Deliverable | Status | Modules / docs | Acceptance |
+|----|------|-------------|--------|----------------|------------|
+| CRIT-V-0.1 | 0 | **Architecture RFC** — CVL full spec | **Done** | `CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md` | Linked from canon §55, README |
+| CRIT-V-0.2 | 0 | **ADR-CRITIC-001** — tier-separated PEV verify | **Done** | `docs/adr/ADR-CRITIC-001.md` | Status Accepted; adr index |
+| CRIT-V-0.3 | 0 | **Canon §55** addendum | **Done** | `intergrax_runtime_architecture.md` §55 | Cross-links resolve |
+| CRIT-V-0.4 | 0 | **README** sections (root + docs) | **Done** | `README.md`, `docs/README.md` | Navigation table |
+| CRIT-V-1.1 | 1 | **`CriticProfile`** on `ApplicationEnvironmentProfile` | **Planned** | `contracts/environment_profile.py` | Typed fields; defaults safe-off |
+| CRIT-V-1.2 | 1 | **CVL contracts** — `CriticRequest`, `CriticVerdict`, `LayerVerdict`, `RubricSpec` | **Planned** | `runtime/critic/contracts.py` | Unit: construction + immutability |
+| CRIT-V-1.3 | 1 | **`EvaluatorLoopSpec`** — max iterations, revise routing | **Planned** | `runtime/critic/evaluator_loop_spec.py` | Validated bounds |
+| CRIT-V-2.1 | 2 | **`eval.judge` tool** — semantic scoring via separate LLM profile | **Planned** | `tools/providers/eval/judge.py`, bundle | Gate test; trace event |
+| CRIT-V-2.2 | 2 | **`eval.trajectory` tool** — process scoring from replay slice | **Planned** | `tools/providers/eval/trajectory.py` | Uses `ReplayEngine` |
+| CRIT-V-2.3 | 2 | **Registry hook** — judge/trajectory → `OnlineEvaluationObservation` | **Planned** | extend `eval/service.py` | Observation appended when registry bound |
+| CRIT-V-3.1 | 3 | **`CriticOrchestrator`** — L0→L1→L2 pipeline | **Planned** | `runtime/critic/critic_orchestrator.py` | Unit: short-circuit, layer order |
+| CRIT-V-3.2 | 3 | **`L0Gateway`** — wraps `NexusValidationEngine` + schema | **Planned** | `runtime/critic/l0_gateway.py` | Reuses existing validators |
+| CRIT-V-3.3 | 3 | **`L1Gateway`** — invokes eval tools via ToolRuntime | **Planned** | `runtime/critic/l1_gateway.py` | No direct LLM in Tier-1 |
+| CRIT-V-3.4 | 3 | **Graph partial hook** — `GraphExecutor` → `verify_partial` | **Planned** | `graph_executor.py`, `critic_wiring.py` | Integration test: L0 fail → retry |
+| CRIT-V-3.5 | 3 | **Graph final hook** — `GraphRunner` → `verify_final` | **Planned** | `graph_runner.py` | Terminal state respects verdict |
+| CRIT-V-3.6 | 3 | **Critic trace events** — `critic.*` trace steps | **Planned** | `runtime/critic/trace.py` | Visible in lab trace API |
+| CRIT-V-4.1 | 4 | **`EvaluatorLoopExecutor`** — critique→revise routing | **Planned** | `runtime/critic/evaluator_loop_executor.py` | Unit: budget exhaustion → FAIL/HITL |
+| CRIT-V-4.2 | 4 | **Graph integration** — `EVALUATOR_LOOP` pattern wired | **Planned** | `graph_executor.py`, coordination catalog | Acceptance: 2-iteration loop |
+| CRIT-V-5.1 | 5 | **`NexusEvalRunner` semantic mode** — optional L1 via `eval.judge` | **Planned** | `eval/nexus_eval_runner.py` | Integration: non-exact pass |
+| CRIT-V-5.2 | 5 | **`EvalCase` rubric field** — rubric_ref + semantic_threshold | **Planned** | `eval/eval_case.py` | Backward compatible |
+| CRIT-V-6.1 | 6 | **`wire_application_critic()`** — Tier-3 wiring | **Planned** | `applications/_shared/critic_wiring.py` | Mirror EVAL pattern |
+| CRIT-V-6.2 | 6 | **`critic_assembly_resolver`** — wire-time validation | **Planned** | `critic_assembly_resolver.py` | CI script |
+| CRIT-V-6.3 | 6 | **Policy bundle** — `critic_governance` fragment | **Planned** | `policy_wiring.py` | Merged at host build |
+| CRIT-V-6.4 | 6 | **Appendix W** — critic control plane author map | **Planned** | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| CRIT-V-7.1 | 7 | **FAUDIT-EVAL.1** — `require_baseline_for_release` CI gate | **Planned** | `phase_v_closeout_gate.py` | Fails CI when baseline missing |
+| CRIT-V-7.2 | 7 | **Flow reference §18 sync** — CVL hook table | **Planned** | `NEXUS_EXECUTION_FLOW_REFERENCE.md` | Hooks documented |
+| CRIT-V-7.3 | 7 | **Lab harness demo** — L0+L1 on sample agent (not FLOW-8) | **Planned** | lab host config | Trace shows critic steps |
+
+**Explicitly excluded:** FLOW-8 §42.43 product reference app ([§6.3](#63-end-of-plan--deferred-product-work-only)); domain rubric packs in Tier-0; mandatory universal LLM-judge on all runs.
+
+**Phase CRIT-V complete when:** CRIT-V-1 through CRIT-V-7 **Done**; Evaluation audit layer ≥ **L3**; gate green; FAUDIT-EVAL.1 closed.
+
+---
+
 ## 6. What to implement next
 
-**Default answer (infrastructure only):** **[§6.1](#61-harness-platform-maintenance-default--band-1)** — keep gate green. Phase EVAL **Done**. Phase COST **Done**. Phase SEC **Done**. Phase REL **Done**. Phase OBS **Done**. Phase REG **Done**. Phase AS **Done**. Phase CLEAN **Done**. Phase PE **Done**. Phase LEG **Done**. Phase CTX **Done**. Phase INT + RAG **Done**. Phase TS **Done**. Phase ORCH **Done**. GOV-AUDIT **Done**. Phase V-REM **Done**. Phase MEM **Done** (48/48). Product work gated by [§6.3](#63-product--business-scope-gate).
+**Default answer (infrastructure):** **[Phase CRIT-V](#phase-crit-v--critic--verification-layer) (Band 2ak)** — one CRIT-V ID per PR + **[§6.1](#61-harness-platform-maintenance-default--band-1)** gate green.
+
+**Maintenance-only mode:** If CRIT-V paused by explicit decision, revert to §6.1 gate-only maintenance.
 
 **Not default:** K.1, K.2, Legal UAEP domain steps, new product Tier-3 apps — **[§6.3](#63-end-of-plan--deferred-product-work-only)** · **[§6.3a](#63a-business-backlog-register-consolidated)** · **[§4.0a](#40a-implementation-scope-split-infrastructure-vs-business)**.
 
@@ -5491,6 +5547,26 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 **Suggested PR order:** See [Phase FLOW — Suggested PR order](#flow--suggested-pr-order).
 
 **Explicitly excluded:** K.1, K.2 (unless FLOW-8 activated), nested harness per child.
+
+### 6.1ak Harness implementation queue — Critic & Verification Layer (active)
+
+**Purpose:** Single ordered list for **Phase CRIT-V** (Band 2ak). **Active 2026-06-07** — default harness implementation queue after §6.1 gate.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
+| 1 | **CRIT-V-0.*** | Docs | **Done** | Architecture RFC + ADR + canon §55 + README | Cross-links resolve |
+| 2 | **CRIT-V-1.*** | Code | **Planned** | `CriticProfile` + CVL contracts | Unit tests |
+| 3 | **CRIT-V-2.*** | Code | **Planned** | `eval.judge` + `eval.trajectory` tools | Tool gate tests |
+| 4 | **CRIT-V-3.*** | Code | **Planned** | `CriticOrchestrator` + graph hooks | Integration tests |
+| 5 | **CRIT-V-4.*** | Code | **Planned** | `EvaluatorLoopExecutor` | Loop budget tests |
+| 6 | **CRIT-V-5.*** | Code | **Planned** | Semantic `NexusEvalRunner` | Eval integration test |
+| 7 | **CRIT-V-6.*** | Code/Docs | **Planned** | Tier-3 wiring + Appendix W | CI assembly script |
+| 8 | **CRIT-V-7.*** | Code/Docs | **Planned** | FAUDIT-EVAL.1 + flow reference sync | Closeout gate green |
+
+**Suggested PR order:** See [§6.2ak](#62ak-phase-crit-v-execution-order-band-2ak--active).
+
+**Explicitly excluded:** FLOW-8 product app; domain rubric packs in Tier-0; mandatory universal LLM-judge.
 
 ### 6.1b Harness implementation queue — orchestration closeout (closed)
 
@@ -5925,6 +6001,32 @@ Work **one FLOW ID per PR**; after each step update FLOW master table + §6.1aj 
 | 15 | FLOW-16 | `MODIFY_PLAN` ADR (ADR-FLOW-003) | Low | — |
 | 16 | FLOW-17 | `MULTI_AGENT` ordering policy | Low | — |
 | 17 | FLOW-DOC.* | Docs closeout | Low | FLOW-1–17 (except deferred FLOW-8) |
+
+### 6.2ak Phase CRIT-V execution order (Band 2ak — active)
+
+**Status:** **Active** · register: [Phase CRIT-V](#phase-crit-v--critic--verification-layer) · queue: [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-active)
+
+Work **one CRIT-V ID per PR**; after each step update CRIT-V master table + §6.1ak; keep §6.1 scripts green.
+
+| Step | ID | Deliverable | Priority | Depends on |
+|------|-----|-------------|----------|------------|
+| 1 | CRIT-V-0.* | Architecture + ADR + canon + README | High | — |
+| 2 | CRIT-V-1.1 | `CriticProfile` on environment profile | **Critical** | CRIT-V-0 |
+| 3 | CRIT-V-1.2 | CVL contracts (`CriticRequest`, `CriticVerdict`, …) | **Critical** | CRIT-V-1.1 |
+| 4 | CRIT-V-1.3 | `EvaluatorLoopSpec` | High | CRIT-V-1.2 |
+| 5 | CRIT-V-2.1 | `eval.judge` tool | **Critical** | CRIT-V-1.2, M-LLM-R |
+| 6 | CRIT-V-2.2 | `eval.trajectory` tool | High | CRIT-V-2.1 |
+| 7 | CRIT-V-2.3 | Registry observation hook for judge/trajectory | Medium | CRIT-V-2.1 |
+| 8 | CRIT-V-3.1 | `CriticOrchestrator` | **Critical** | CRIT-V-2.1 |
+| 9 | CRIT-V-3.2–3.3 | L0/L1 gateways | High | CRIT-V-3.1 |
+| 10 | CRIT-V-3.4–3.5 | Graph partial + final hooks | High | CRIT-V-3.1 |
+| 11 | CRIT-V-3.6 | Critic trace events | Medium | CRIT-V-3.4 |
+| 12 | CRIT-V-4.1–4.2 | Evaluator-loop executor + graph wire | High | CRIT-V-3.4 |
+| 13 | CRIT-V-5.1–5.2 | Semantic offline eval runner | Medium | CRIT-V-2.1 |
+| 14 | CRIT-V-6.1–6.3 | Tier-3 critic wiring + policy + CI | High | CRIT-V-3.1 |
+| 15 | CRIT-V-6.4 | Appendix W author map | Medium | CRIT-V-6.1 |
+| 16 | CRIT-V-7.1 | FAUDIT-EVAL.1 baseline CI gate | High | CRIT-V-6.3 |
+| 17 | CRIT-V-7.2–7.3 | Flow reference sync + lab demo | Medium | CRIT-V-3.6 |
 
 ### 6.2bb Phase ORCH execution order (Band 2j — closed 2026-06-05)
 

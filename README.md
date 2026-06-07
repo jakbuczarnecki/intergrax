@@ -41,6 +41,7 @@ Intergrax is a **production-grade Harness AI platform** — not a single chatbot
 - [Repository layout](#repository-layout)
 - [Architecture maturity and audits](#architecture-maturity-and-audits)
 - [Adaptive Harness Intelligence (L4)](#adaptive-harness-intelligence-l4)
+- [Critic & Verification Layer (PEV Verify)](#critic--verification-layer-pev-verify)
 - [Documentation index](#documentation-index)
 - [Status](#status)
 - [Audience](#audience)
@@ -707,6 +708,7 @@ All harness control planes are **closed** — authoring maps live in AGENT_CREAT
 | SEC | Security wiring | [S](docs/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) |
 | COST | Cost governance | [T](docs/AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) |
 | EVAL | Evaluation wiring | [U](docs/AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout) |
+| CRIT-V | Critic & Verification Layer | [CVL](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · [Phase CRIT-V](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-crit-v--critic--verification-layer) |
 | ORCH | Orchestration | [I](docs/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) |
 | TS | Tools & skills | [J](docs/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) |
 | INT | Integrations | [K](docs/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) |
@@ -788,6 +790,31 @@ This is **not classical reinforcement learning** (neural policy training, uncons
 
 ---
 
+## Critic & Verification Layer (PEV Verify)
+
+Intergrax implements **Plan–Execute–Verify (PEV)** through the **Critic & Verification Layer (CVL)** — a tier-separated stack that judges whether partial and final agent outputs are actually correct.
+
+| Layer | Type | Owner | Examples |
+|-------|------|-------|----------|
+| **L0** | Deterministic | Harness + Agent contract | Schema, `NexusValidationEngine`, executable tests |
+| **L1** | Semantic (opt-in) | Harness primitives + Agent rubrics | `eval.judge`, `eval.trajectory`, ValidatorAgent |
+| **L2** | Authoritative | Policy + Human | HITL sign-off, compliance review |
+
+**Tier separation:** The Harness orchestrates *how* verification runs (hooks, retry, registry, release gates). Agents supply *what* is verified (domain rubrics, ValidatorAgents). Applications configure *when* and *how strictly* (`CriticProfile`, golden datasets).
+
+LLM-as-judge is **opt-in** — not mandatory on every run. Structural L0 validation runs on every graph node by default.
+
+| Document | Purpose |
+|----------|---------|
+| [CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) | Full CVL specification — competencies, components, flows |
+| [INTERGRAX_IMPLEMENTATION_PLAN — Phase CRIT-V](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-crit-v--critic--verification-layer) | Implementation register (Band 2ak, **Active**) |
+| [intergrax_runtime_architecture.md §55](docs/intergrax_runtime_architecture.md#55-critic--verification-layer-cvl--pev-verify-addendum) | Canon addendum |
+| [ADR-CRITIC-001](docs/adr/ADR-CRITIC-001.md) | Architecture decision — tier-separated verify stack |
+
+**Builds on:** Phase EVAL (evaluation registry wiring), Phase FLOW (graph hooks), existing `NexusValidationEngine`.
+
+---
+
 ## Documentation index
 
 All platform documentation lives in [`docs/`](docs/). **One source of truth per topic.**
@@ -803,6 +830,7 @@ All platform documentation lives in [`docs/`](docs/). **One source of truth per 
 | [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Full architecture canon — tiers, Nexus, UAEP §42, Harness §5.3 |
 | [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md) | Ideal Harness AI target — evaluate implementation alignment |
 | [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) | **Adaptive Harness Intelligence (L4)** — business case, ACP architecture, W-ADAPT implementation waves |
+| [CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) | **Critic & Verification Layer (CVL)** — PEV verify stack, L0/L1/L2 critics, tier competencies, CRIT-V roadmap |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) | Phase status, hardening streams, KPIs, business checklist (Appendix A) |
 
 ### Authoring and workflow
@@ -868,7 +896,7 @@ Cost / evaluation       →  AGENT_CREATION_GUIDE.md Appendices T–U
 
 ## Status
 
-Intergrax is under **active development** (private R&D). The **harness platform** is **complete** — default queue is maintenance only ([§6.1](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1)). Business agents (Phase K) are **end of plan** until explicit product prioritization ([§6.3](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only)).
+Intergrax is under **active development** (private R&D). The **harness platform** maintenance queue runs on every PR ([§6.1](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1)). **Active implementation:** [Phase CRIT-V — Critic & Verification Layer](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-crit-v--critic--verification-layer) (Band 2ak). Business agents (Phase K) are **end of plan** until explicit product prioritization ([§6.3](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only)).
 
 | Phase | Focus | Status |
 |-------|--------|--------|
@@ -883,6 +911,7 @@ Intergrax is under **active development** (private R&D). The **harness platform*
 | **V** | Harness architecture hardening — capability graph, lifecycle, metrics, prompt/eval/context/security/cost | **Done** (2026-06-05) |
 | **W-ML** | Model & modality plane | **Done** — [MODALITY.md](docs/MODALITY.md) |
 | **W-ADAPT** | Adaptive Harness Intelligence (L4 runtime) | **Done** (70/70) — [AHIA](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) |
+| **CRIT-V** | Critic & Verification Layer (PEV verify depth) | **Active** (1/24) — [CVL](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) |
 | **P-Ext** | Tier-0 plugin catalogs | **Done** (61/61) |
 | **AA** | Agents & applications conformance | **Platform Done** |
 | **MEM** | Memory platform | **Done** (48/48) |

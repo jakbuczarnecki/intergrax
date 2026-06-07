@@ -88,6 +88,7 @@ applications/    MAY import from agents/ and intergrax/
 | Multi-agent graphs / Nexus execution flow | [docs/NEXUS_EXECUTION_FLOW_REFERENCE.md](docs/NEXUS_EXECUTION_FLOW_REFERENCE.md) · [docs/AGENT_CREATION_GUIDE.md Appendix I](docs/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) |
 | Harness audit | [docs/INTEGRAX_HARNESS_AUDIT_MAP.md](docs/INTEGRAX_HARNESS_AUDIT_MAP.md) |
 | L4 adaptive harness | [docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) |
+| Critic / verification / LLM-as-judge | [docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · canon §55 · Phase CRIT-V |
 
 ---
 
