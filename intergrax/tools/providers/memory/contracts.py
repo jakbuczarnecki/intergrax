@@ -51,3 +51,14 @@ class MemoryListKeysOutput(BaseModel):
     prefix: str
     keys: list[MemoryKeyRecord] = Field(default_factory=list)
     total: int = 0
+
+
+class MemoryDeleteKeyInput(BaseModel):
+    namespace: str = Field(..., min_length=1)
+    key: str = Field(..., min_length=1)
+
+
+class MemoryDeleteKeyOutput(BaseModel):
+    namespace: str
+    key: str
+    deleted: bool = False

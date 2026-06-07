@@ -72,3 +72,13 @@ class RecordsDescribeCollectionOutput(BaseModel):
     sample_row_keys: list[str] = Field(default_factory=list)
     sample_field_names: list[str] = Field(default_factory=list)
     reason: str = ""
+
+
+class RecordsCountInput(BaseModel):
+    partition_key: str = Field(..., min_length=1)
+    row_key_prefix: Optional[str] = None
+
+
+class RecordsCountOutput(BaseModel):
+    partition_key: str
+    total: int = 0

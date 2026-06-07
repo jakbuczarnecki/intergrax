@@ -9,6 +9,8 @@ from intergrax.integrations.contracts.object_storage import ObjectStorage, Presi
 from intergrax.tools.providers.storage.contracts import (
     StorageDeleteInput,
     StorageDeleteOutput,
+    StorageExistsInput,
+    StorageExistsOutput,
     StorageGetInput,
     StorageGetOutput,
     StoragePresignedUrlInput,
@@ -22,6 +24,7 @@ STORAGE_GET_TOOL_ID = "storage.get"
 STORAGE_PUT_TOOL_ID = "storage.put"
 STORAGE_PRESIGNED_URL_TOOL_ID = "storage.presigned_url"
 STORAGE_DELETE_TOOL_ID = "storage.delete"
+STORAGE_EXISTS_TOOL_ID = "storage.exists"
 
 
 def _require_storage(ctx: ToolWiringContext) -> ObjectStorage:
@@ -72,3 +75,15 @@ def storage_presigned_url(ctx: ToolWiringContext, params: StoragePresignedUrlInp
 def storage_delete(ctx: ToolWiringContext, params: StorageDeleteInput) -> StorageDeleteOutput:
     _require_storage(ctx).delete(params.key.strip())
     return StorageDeleteOutput(key=params.key.strip(), deleted=True)
+
+
+def storage_exists(ctx: ToolWiringContext, params: StorageExistsInput) -> StorageExistsOutput:
+    stored = _require_storage(ctx).get(params.key.strip())
+    if stored is None:
+        return StorageExistsOutput(key=params.key.strip(), exists=False)
+    return StorageExistsOutput(
+        key=stored.key,
+        exists=True,
+        content_type=stored.content_type,
+        size_bytes=stored.size_bytes or len(stored.body),
+    )

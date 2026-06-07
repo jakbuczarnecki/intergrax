@@ -6,6 +6,9 @@ from __future__ import annotations
 from intergrax.tools.providers.interaction.contracts import (
     InteractionGetLastInputInput,
     InteractionGetLastInputOutput,
+    InteractionGetSessionHistoryInput,
+    InteractionGetSessionHistoryOutput,
+    InteractionHistoryMessageOutput,
     InteractionListSessionsInput,
     InteractionListSessionsOutput,
     InteractionSessionOutput,
@@ -15,6 +18,7 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 
 INTERACTION_LIST_SESSIONS_TOOL_ID = "interaction.list_sessions"
 INTERACTION_GET_LAST_INPUT_TOOL_ID = "interaction.get_last_input"
+INTERACTION_GET_SESSION_HISTORY_TOOL_ID = "interaction.get_session_history"
 
 
 def _require_session_storage(ctx: ToolWiringContext) -> SessionStorageBinding:
@@ -63,3 +67,29 @@ def interaction_get_last_input(
     if not message:
         return InteractionGetLastInputOutput(used=True, found=False, reason="input_not_found")
     return InteractionGetLastInputOutput(used=True, found=True, message=message, reason="ok")
+
+
+def interaction_get_session_history(
+    ctx: ToolWiringContext,
+    params: InteractionGetSessionHistoryInput,
+) -> InteractionGetSessionHistoryOutput:
+    storage = _require_session_storage(ctx)
+    raw = storage.get_session_history(
+        params.tenant_id.strip(),
+        params.session_id.strip(),
+        limit=params.limit,
+    )
+    messages = [
+        InteractionHistoryMessageOutput(
+            role=str(item.get("role") or ""),
+            content=str(item.get("content") or ""),
+        )
+        for item in raw
+        if str(item.get("content") or "")
+    ]
+    return InteractionGetSessionHistoryOutput(
+        used=True,
+        messages=messages,
+        total=len(messages),
+        reason="ok",
+    )

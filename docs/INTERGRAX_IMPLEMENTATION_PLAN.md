@@ -1879,6 +1879,30 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 
 Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{workflow,notify,collaboration,websearch,harness,interaction}/`
 
+#### T-EXPAND T10 — LKW storage bridge + deferred scheduling (2026-06-07) — **Done**
+
+**Goal:** Close T8/T9 deferred tools (`workspace.export_artifact`, `notify.schedule`) and extend builder/LKW ops without new bundles.
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `workspace` (+2) | `workspace.export_artifact`, `workspace.import_artifact` | **Done** |
+| `notify` (+1) | `notify.schedule` | **Done** |
+| `interaction` (+1) | `interaction.get_session_history` | **Done** |
+| `eval` (+1) | `eval.export_observations` | **Done** |
+| `storage` (+1) | `storage.exists` | **Done** |
+| `memory` (+1) | `memory.delete_key` | **Done** |
+| `pagerduty` (+1) | `pagerduty.acknowledge_incident` | **Done** |
+| `message_bus` (+1) | `message_bus.purge_completed` | **Done** |
+| `records` (+1) | `records.count` | **Done** |
+| contracts | `ScheduledNotificationBinding`; `SessionStorageBinding.get_session_history`; `TaskMemoryViewBinding.delete`; `TaskQueue.purge_completed` | **Done** |
+| wiring | `notify_tool_wiring.py` + `PolicyScopedMemoryView.delete` | **Done** |
+
+**Delivered:** **150** catalog `tool_id` values · **40** shipped bundles.
+
+**Verification:** `164 passed` (`tests/unit/tools/providers/` + exporters) · `check_harness_no_getattr.py` OK · MCP full-catalog export smoke (**150** tools)
+
+Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{workspace,notify,interaction,eval,storage,memory,pagerduty,message_bus,records}/`
+
 #### O.5 — Unified tool model (migration design)
 
 **Problem:** Two parallel mechanisms — boolean plan flags dispatching pipeline steps vs `ToolRegistry` for function tools.

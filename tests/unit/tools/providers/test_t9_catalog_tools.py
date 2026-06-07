@@ -121,6 +121,16 @@ class FakeSessionStorage:
             return "hello harness"
         return None
 
+    def get_session_history(
+        self,
+        tenant_id: str,
+        session_id: str,
+        *,
+        limit: int = 50,
+    ) -> list[dict[str, str]]:
+        del tenant_id, limit
+        return []
+
 
 class InMemoryTraceReader:
     def __init__(self) -> None:

@@ -76,12 +76,43 @@ class WebSearchCacheBinding(Protocol):
 
 
 @runtime_checkable
+class ScheduledNotificationBinding(Protocol):
+    """Structural binding for deferred outbound notification catalog tools."""
+
+    def schedule(
+        self,
+        *,
+        tenant_id: str,
+        channel: str,
+        subject: str,
+        body: str,
+        deliver_at_utc: str,
+    ) -> str: ...
+
+    def list_scheduled(
+        self,
+        tenant_id: str,
+        *,
+        limit: int = 50,
+        status: str = "pending",
+    ) -> List[Dict[str, str]]: ...
+
+
+@runtime_checkable
 class SessionStorageBinding(Protocol):
     """Structural binding for interaction session read tools."""
 
     def list_sessions(self, tenant_id: str, user_id: str, *, limit: int = 20) -> List[Dict[str, str]]: ...
 
     def get_last_user_input(self, tenant_id: str, session_id: str) -> Optional[str]: ...
+
+    def get_session_history(
+        self,
+        tenant_id: str,
+        session_id: str,
+        *,
+        limit: int = 50,
+    ) -> List[Dict[str, str]]: ...
 
 
 @runtime_checkable
@@ -109,3 +140,5 @@ class TaskMemoryViewBinding(Protocol):
     ) -> None: ...
 
     async def list(self, namespace: str, prefix: str = "") -> List[Any]: ...
+
+    async def delete(self, namespace: str, key: str) -> bool: ...

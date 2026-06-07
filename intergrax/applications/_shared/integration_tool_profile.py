@@ -39,8 +39,9 @@ from intergrax.tools.providers.message_bus.service import (
     MESSAGE_BUS_GET_RESULT_TOOL_ID,
     MESSAGE_BUS_GET_STATUS_TOOL_ID,
     MESSAGE_BUS_LIST_TASKS_TOOL_ID,
+    MESSAGE_BUS_PURGE_COMPLETED_TOOL_ID,
 )
-from intergrax.tools.providers.notify.service import NOTIFY_SEND_BATCH_TOOL_ID, NOTIFY_SEND_TOOL_ID
+from intergrax.tools.providers.notify.service import NOTIFY_SCHEDULE_TOOL_ID, NOTIFY_SEND_BATCH_TOOL_ID, NOTIFY_SEND_TOOL_ID
 from intergrax.tools.providers.observability.service import (
     ERRORS_CAPTURE_TOOL_ID,
     LOGS_SEARCH_TOOL_ID,
@@ -49,7 +50,10 @@ from intergrax.tools.providers.observability.service import (
     METRICS_QUERY_RANGE_TOOL_ID,
     TRACES_QUERY_TOOL_ID,
 )
-from intergrax.tools.providers.pagerduty.service import PAGERDUTY_TRIGGER_INCIDENT_TOOL_ID
+from intergrax.tools.providers.pagerduty.service import (
+    PAGERDUTY_ACKNOWLEDGE_INCIDENT_TOOL_ID,
+    PAGERDUTY_TRIGGER_INCIDENT_TOOL_ID,
+)
 from intergrax.tools.providers.identity.service import (
     IDENTITY_GET_USER_TOOL_ID,
     IDENTITY_LIST_TENANTS_TOOL_ID,
@@ -69,6 +73,7 @@ from intergrax.tools.providers.rag.rerank_service import RAG_RERANK_TOOL_ID
 from intergrax.tools.providers.records.service import (
     RECORDS_DELETE_TOOL_ID,
     RECORDS_DESCRIBE_COLLECTION_TOOL_ID,
+    RECORDS_COUNT_TOOL_ID,
     RECORDS_GET_TOOL_ID,
     RECORDS_PUT_TOOL_ID,
     RECORDS_QUERY_TOOL_ID,
@@ -76,6 +81,7 @@ from intergrax.tools.providers.records.service import (
 from intergrax.tools.providers.security.service import SECURITY_SCAN_TOOL_ID, SECURITY_SUMMARIZE_FINDINGS_TOOL_ID
 from intergrax.tools.providers.storage.service import (
     STORAGE_DELETE_TOOL_ID,
+    STORAGE_EXISTS_TOOL_ID,
     STORAGE_GET_TOOL_ID,
     STORAGE_PRESIGNED_URL_TOOL_ID,
     STORAGE_PUT_TOOL_ID,
@@ -129,6 +135,7 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
         STORAGE_PUT_TOOL_ID,
         STORAGE_PRESIGNED_URL_TOOL_ID,
         STORAGE_DELETE_TOOL_ID,
+        STORAGE_EXISTS_TOOL_ID,
     ),
     IntegrationCategory.RELATIONAL_STORE: (
         DATABASE_QUERY_TOOL_ID,
@@ -141,6 +148,7 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
         RECORDS_DELETE_TOOL_ID,
         RECORDS_QUERY_TOOL_ID,
         RECORDS_DESCRIBE_COLLECTION_TOOL_ID,
+        RECORDS_COUNT_TOOL_ID,
     ),
     IntegrationCategory.BROWSER_AUTOMATION: (BROWSER_FETCH_PAGE_TOOL_ID,),
     IntegrationCategory.SECRETS_STORE: (
@@ -161,6 +169,7 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
         MESSAGE_BUS_GET_RESULT_TOOL_ID,
         MESSAGE_BUS_LIST_TASKS_TOOL_ID,
         MESSAGE_BUS_CANCEL_TOOL_ID,
+        MESSAGE_BUS_PURGE_COMPLETED_TOOL_ID,
     ),
     IntegrationCategory.GRAPH_STORE: (GRAPH_RUN_QUERY_TOOL_ID, GRAPH_GET_NODE_TOOL_ID),
     IntegrationCategory.COLLABORATION_SUITE: (
@@ -181,7 +190,9 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
     IntegrationCategory.NOTIFICATION_CHANNEL: (
         NOTIFY_SEND_TOOL_ID,
         NOTIFY_SEND_BATCH_TOOL_ID,
+        NOTIFY_SCHEDULE_TOOL_ID,
         PAGERDUTY_TRIGGER_INCIDENT_TOOL_ID,
+        PAGERDUTY_ACKNOWLEDGE_INCIDENT_TOOL_ID,
     ),
     IntegrationCategory.OBSERVABILITY_BACKEND: (
         ERRORS_CAPTURE_TOOL_ID,

@@ -9,6 +9,8 @@ from intergrax.tools.providers.records.contracts import (
     RecordsDeleteOutput,
     RecordsDescribeCollectionInput,
     RecordsDescribeCollectionOutput,
+    RecordsCountInput,
+    RecordsCountOutput,
     RecordsGetInput,
     RecordsGetOutput,
     RecordsPutInput,
@@ -17,6 +19,7 @@ from intergrax.tools.providers.records.contracts import (
     RecordsQueryOutput,
 )
 from intergrax.tools.providers.records.service import (
+    records_count,
     records_delete,
     records_describe_collection,
     records_get,
@@ -45,3 +48,7 @@ class RecordsDescribeCollectionHandler(
     ServiceToolHandler[RecordsDescribeCollectionInput, RecordsDescribeCollectionOutput]
 ):
     _service = records_describe_collection
+
+
+class RecordsCountHandler(ServiceToolHandler[RecordsCountInput, RecordsCountOutput]):
+    _service = records_count

@@ -15,6 +15,8 @@ from intergrax.tools.providers.message_bus.contracts import (
     MessageBusGetStatusOutput,
     MessageBusListTasksInput,
     MessageBusListTasksOutput,
+    MessageBusPurgeCompletedInput,
+    MessageBusPurgeCompletedOutput,
 )
 from intergrax.tools.providers.message_bus.service import (
     message_bus_cancel,
@@ -22,6 +24,7 @@ from intergrax.tools.providers.message_bus.service import (
     message_bus_get_result,
     message_bus_get_status,
     message_bus_list_tasks,
+    message_bus_purge_completed,
 )
 
 
@@ -43,3 +46,9 @@ class MessageBusListTasksHandler(ServiceToolHandler[MessageBusListTasksInput, Me
 
 class MessageBusCancelHandler(ServiceToolHandler[MessageBusCancelInput, MessageBusCancelOutput]):
     _service = message_bus_cancel
+
+
+class MessageBusPurgeCompletedHandler(
+    ServiceToolHandler[MessageBusPurgeCompletedInput, MessageBusPurgeCompletedOutput]
+):
+    _service = message_bus_purge_completed

@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from intergrax.tools.core.handler import ServiceToolHandler
 from intergrax.tools.providers.memory.contracts import (
+    MemoryDeleteKeyInput,
+    MemoryDeleteKeyOutput,
     MemoryListKeysInput,
     MemoryListKeysOutput,
     MemoryReadInput,
@@ -12,7 +14,7 @@ from intergrax.tools.providers.memory.contracts import (
     MemoryWriteInput,
     MemoryWriteOutput,
 )
-from intergrax.tools.providers.memory.service import memory_list_keys, memory_read, memory_write
+from intergrax.tools.providers.memory.service import memory_delete_key, memory_list_keys, memory_read, memory_write
 
 
 class MemoryReadHandler(ServiceToolHandler[MemoryReadInput, MemoryReadOutput]):
@@ -25,3 +27,7 @@ class MemoryWriteHandler(ServiceToolHandler[MemoryWriteInput, MemoryWriteOutput]
 
 class MemoryListKeysHandler(ServiceToolHandler[MemoryListKeysInput, MemoryListKeysOutput]):
     _service = memory_list_keys
+
+
+class MemoryDeleteKeyHandler(ServiceToolHandler[MemoryDeleteKeyInput, MemoryDeleteKeyOutput]):
+    _service = memory_delete_key

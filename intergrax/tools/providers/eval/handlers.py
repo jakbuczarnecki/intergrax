@@ -7,6 +7,8 @@ from intergrax.tools.core.handler import ServiceToolHandler
 from intergrax.tools.providers.eval.contracts import (
     EvalCompareReleasesInput,
     EvalCompareReleasesOutput,
+    EvalExportObservationsInput,
+    EvalExportObservationsOutput,
     EvalListObservationsInput,
     EvalListObservationsOutput,
     EvalRecordObservationInput,
@@ -16,6 +18,7 @@ from intergrax.tools.providers.eval.contracts import (
 )
 from intergrax.tools.providers.eval.service import (
     eval_compare_releases,
+    eval_export_observations,
     eval_list_observations,
     eval_record_observation,
     eval_summarize_release,
@@ -36,3 +39,9 @@ class EvalSummarizeReleaseHandler(ServiceToolHandler[EvalSummarizeReleaseInput, 
 
 class EvalCompareReleasesHandler(ServiceToolHandler[EvalCompareReleasesInput, EvalCompareReleasesOutput]):
     _service = eval_compare_releases
+
+
+class EvalExportObservationsHandler(
+    ServiceToolHandler[EvalExportObservationsInput, EvalExportObservationsOutput]
+):
+    _service = eval_export_observations

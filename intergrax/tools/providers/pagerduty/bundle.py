@@ -4,14 +4,28 @@
 from __future__ import annotations
 
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
-from intergrax.tools.providers.pagerduty.contracts import PagerDutyTriggerIncidentInput, PagerDutyTriggerIncidentOutput
-from intergrax.tools.providers.pagerduty.handlers import PagerDutyTriggerIncidentHandler
-from intergrax.tools.providers.pagerduty.service import PAGERDUTY_TRIGGER_INCIDENT_TOOL_ID
+from intergrax.tools.providers.pagerduty.contracts import (
+    PagerDutyAcknowledgeIncidentInput,
+    PagerDutyAcknowledgeIncidentOutput,
+    PagerDutyTriggerIncidentInput,
+    PagerDutyTriggerIncidentOutput,
+)
+from intergrax.tools.providers.pagerduty.handlers import (
+    PagerDutyAcknowledgeIncidentHandler,
+    PagerDutyTriggerIncidentHandler,
+)
+from intergrax.tools.providers.pagerduty.service import (
+    PAGERDUTY_ACKNOWLEDGE_INCIDENT_TOOL_ID,
+    PAGERDUTY_TRIGGER_INCIDENT_TOOL_ID,
+)
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 PAGERDUTY_BUNDLE_ID = "pagerduty"
-PAGERDUTY_TOOL_IDS: tuple[str, ...] = (PAGERDUTY_TRIGGER_INCIDENT_TOOL_ID,)
+PAGERDUTY_TOOL_IDS: tuple[str, ...] = (
+    PAGERDUTY_TRIGGER_INCIDENT_TOOL_ID,
+    PAGERDUTY_ACKNOWLEDGE_INCIDENT_TOOL_ID,
+)
 
 
 def register_pagerduty_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
@@ -30,4 +44,20 @@ def register_pagerduty_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> 
             tags=("pagerduty", "notification", "escalation"),
         ),
         PagerDutyTriggerIncidentHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=PAGERDUTY_ACKNOWLEDGE_INCIDENT_TOOL_ID,
+            name=PAGERDUTY_ACKNOWLEDGE_INCIDENT_TOOL_ID,
+            description="Acknowledge a PagerDuty incident by dedup key via Events API v2 adapter.",
+            description_short="Acknowledge PagerDuty incident.",
+            input_schema=PagerDutyAcknowledgeIncidentInput,
+            output_schema=PagerDutyAcknowledgeIncidentOutput,
+            error_mapping={},
+            side_effects=True,
+            category="notification",
+            risk_level=ToolRiskLevel.HIGH,
+            tags=("pagerduty", "notification", "escalation"),
+        ),
+        PagerDutyAcknowledgeIncidentHandler(ctx),
     )

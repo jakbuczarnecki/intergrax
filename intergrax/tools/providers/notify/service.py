@@ -8,15 +8,26 @@ from typing import Any
 
 from intergrax.runtime.notifications.models import NotificationMessage
 from intergrax.tools.providers.notify.contracts import (
+    NotifyScheduleInput,
+    NotifyScheduleOutput,
     NotifySendBatchInput,
     NotifySendBatchOutput,
     NotifySendInput,
     NotifySendOutput,
 )
+from intergrax.tools.registry.runtime_bindings import ScheduledNotificationBinding
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 NOTIFY_SEND_TOOL_ID = "notify.send"
 NOTIFY_SEND_BATCH_TOOL_ID = "notify.send_batch"
+NOTIFY_SCHEDULE_TOOL_ID = "notify.schedule"
+
+
+def _require_scheduler(ctx: ToolWiringContext) -> ScheduledNotificationBinding:
+    store = ctx.scheduled_notification_store
+    if store is None:
+        raise RuntimeError("scheduled_notification_store_not_configured")
+    return store
 
 
 def notify_send(ctx: ToolWiringContext, params: NotifySendInput) -> NotifySendOutput:
@@ -67,6 +78,23 @@ def notify_send_batch(ctx: ToolWiringContext, params: NotifySendBatchInput) -> N
         sent_count=sent_count,
         failed_count=failed_count,
         details=details,
+    )
+
+
+def notify_schedule(ctx: ToolWiringContext, params: NotifyScheduleInput) -> NotifyScheduleOutput:
+    scheduler = _require_scheduler(ctx)
+    schedule_id = scheduler.schedule(
+        tenant_id=params.tenant_id.strip(),
+        channel=params.channel.strip(),
+        subject=params.subject.strip(),
+        body=params.body.strip(),
+        deliver_at_utc=params.deliver_at_utc.strip(),
+    )
+    return NotifyScheduleOutput(
+        scheduled=True,
+        schedule_id=schedule_id,
+        deliver_at_utc=params.deliver_at_utc.strip(),
+        detail="ok",
     )
 
 

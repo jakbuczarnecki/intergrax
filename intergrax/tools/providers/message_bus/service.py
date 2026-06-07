@@ -18,6 +18,8 @@ from intergrax.tools.providers.message_bus.contracts import (
     MessageBusGetStatusOutput,
     MessageBusListTasksInput,
     MessageBusListTasksOutput,
+    MessageBusPurgeCompletedInput,
+    MessageBusPurgeCompletedOutput,
     MessageBusTaskSummaryOutput,
 )
 from intergrax.tools.registry.wiring import ToolWiringContext
@@ -27,6 +29,7 @@ MESSAGE_BUS_GET_STATUS_TOOL_ID = "message_bus.get_status"
 MESSAGE_BUS_GET_RESULT_TOOL_ID = "message_bus.get_result"
 MESSAGE_BUS_LIST_TASKS_TOOL_ID = "message_bus.list_tasks"
 MESSAGE_BUS_CANCEL_TOOL_ID = "message_bus.cancel"
+MESSAGE_BUS_PURGE_COMPLETED_TOOL_ID = "message_bus.purge_completed"
 
 
 def _require_bus(ctx: ToolWiringContext) -> MessageBus:
@@ -107,3 +110,15 @@ def message_bus_cancel(ctx: ToolWiringContext, params: MessageBusCancelInput) ->
     bus = _require_bus(ctx)
     cancelled = bus.cancel(_handle(params.task_id, params.provider, params.tenant_id))
     return MessageBusCancelOutput(task_id=params.task_id.strip(), cancelled=cancelled)
+
+
+def message_bus_purge_completed(
+    ctx: ToolWiringContext,
+    params: MessageBusPurgeCompletedInput,
+) -> MessageBusPurgeCompletedOutput:
+    bus = _require_bus(ctx)
+    purged = bus.purge_completed(
+        params.tenant_id.strip(),
+        older_than_seconds=params.older_than_seconds,
+    )
+    return MessageBusPurgeCompletedOutput(tenant_id=params.tenant_id.strip(), purged_count=purged)

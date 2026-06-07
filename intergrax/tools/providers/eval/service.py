@@ -3,10 +3,14 @@
 
 from __future__ import annotations
 
+import json
+
 from intergrax.runtime.architecture.online_evaluation_models import OnlineEvaluationMode, OnlineEvaluationObservation
 from intergrax.tools.providers.eval.contracts import (
     EvalCompareReleasesInput,
     EvalCompareReleasesOutput,
+    EvalExportObservationsInput,
+    EvalExportObservationsOutput,
     EvalListObservationsInput,
     EvalListObservationsOutput,
     EvalObservationOutput,
@@ -22,6 +26,7 @@ EVAL_RECORD_OBSERVATION_TOOL_ID = "eval.record_observation"
 EVAL_LIST_OBSERVATIONS_TOOL_ID = "eval.list_observations"
 EVAL_SUMMARIZE_RELEASE_TOOL_ID = "eval.summarize_release"
 EVAL_COMPARE_RELEASES_TOOL_ID = "eval.compare_releases"
+EVAL_EXPORT_OBSERVATIONS_TOOL_ID = "eval.export_observations"
 
 
 def _require_eval_registry(ctx: ToolWiringContext) -> OnlineEvaluationRegistryBinding:
@@ -140,4 +145,22 @@ def eval_compare_releases(
         candidate_average_score=candidate.average_score,
         score_delta=score_delta,
         candidate_better=candidate_better,
+    )
+
+
+def eval_export_observations(
+    ctx: ToolWiringContext,
+    params: EvalExportObservationsInput,
+) -> EvalExportObservationsOutput:
+    raw = _require_eval_registry(ctx).list_observations()
+    observations: list[dict[str, object]] = []
+    for item in raw[: params.limit]:
+        if not isinstance(item, OnlineEvaluationObservation):
+            continue
+        observations.append(_observation_output(item).model_dump())
+    payload = {"observations": observations, "total": len(observations)}
+    return EvalExportObservationsOutput(
+        exported=True,
+        observation_count=len(observations),
+        export_json=json.dumps(payload, sort_keys=True),
     )

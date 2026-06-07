@@ -82,3 +82,34 @@ class WorkspaceSearchOutput(BaseModel):
     matches: list[WorkspaceSearchMatch] = Field(default_factory=list)
     match_count: int = 0
     workspace_id: str = ""
+
+
+class WorkspaceExportArtifactInput(BaseModel):
+    path: str = Field(..., min_length=1, description="Relative path inside the shadow workspace.")
+    storage_key: str = Field(..., min_length=1, description="Destination object storage key.")
+    content_type: str = Field(default="application/octet-stream")
+
+
+class WorkspaceExportArtifactOutput(BaseModel):
+    exported: bool = False
+    path: str = ""
+    storage_key: str = ""
+    size_bytes: int = 0
+    workspace_id: str = ""
+    content_type: str = ""
+    reason: str = ""
+
+
+class WorkspaceImportArtifactInput(BaseModel):
+    storage_key: str = Field(..., min_length=1)
+    path: str = Field(..., min_length=1, description="Relative path inside the shadow workspace.")
+    content_type: str = Field(default="text/plain")
+
+
+class WorkspaceImportArtifactOutput(BaseModel):
+    imported: bool = False
+    path: str = ""
+    storage_key: str = ""
+    size_bytes: int = 0
+    workspace_id: str = ""
+    reason: str = ""

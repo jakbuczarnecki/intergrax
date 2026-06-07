@@ -75,3 +75,13 @@ class EvalCompareReleasesOutput(BaseModel):
     candidate_average_score: float = 0.0
     score_delta: float = 0.0
     candidate_better: bool = False
+
+
+class EvalExportObservationsInput(BaseModel):
+    limit: int = Field(default=1000, ge=1, le=5000)
+
+
+class EvalExportObservationsOutput(BaseModel):
+    exported: bool = True
+    observation_count: int = 0
+    export_json: str = ""

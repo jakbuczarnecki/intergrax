@@ -1,6 +1,6 @@
 # Intergrax Tool Library
 
-**Last updated:** 2026-06-07 — **40 bundles** · **140 catalog tools** (verified via `register_default_tools()`)
+**Last updated:** 2026-06-07 — **40 bundles** · **150 catalog tools** (verified via `register_default_tools()`)
 
 The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
 
@@ -99,7 +99,7 @@ registry = build_registry_from_profile(
 
 ## Tool engine (implemented today)
 
-Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** · **T6 Done** · **T7 Done** · **T8 Done** · **T9 Done** — full **140-tool** catalog registered):
+Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** · **T6 Done** · **T7 Done** · **T8 Done** · **T9 Done** · **T10 Done** — full **150-tool** catalog registered):
 
 | Component | Path | Status |
 |-----------|------|--------|
@@ -125,7 +125,7 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** · **T
 | Metric | Count |
 |--------|------:|
 | Shipped bundles (`ToolPlugin`) | **40** |
-| Registered `tool_id` values | **140** |
+| Registered `tool_id` values | **150** |
 | Stable bundles | **39** |
 | Beta bundles | **1** (`openai_vector_store`) |
 
@@ -208,6 +208,7 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 |---------|--------|-------------|----------|
 | `notify.send` | **Done** | Send outbound notification message | `NotificationChannel` |
 | `notify.send_batch` | **Done** | Send up to 50 notification messages in one call | `NotificationChannel` |
+| `notify.schedule` | **Done** (T10) | Schedule deferred notification delivery | `ScheduledNotificationBinding` |
 
 ### Issue tracker (GitLab)
 
@@ -235,6 +236,7 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 | tool_id | Status | Description | Composes |
 |---------|--------|-------------|----------|
 | `pagerduty.trigger_incident` | **Done** | Trigger on-call incident | `NotificationChannel` (`pagerduty`) |
+| `pagerduty.acknowledge_incident` | **Done** (T10) | Acknowledge incident by dedup key | `NotificationChannel` (`pagerduty`) |
 
 ### Speech (modality — Phase W-ML)
 
@@ -283,9 +285,12 @@ Harness lab uses **one primary** `observability_backend` (Sentry) plus **additio
 | `workspace.snapshot` | **Done** | Point-in-time workspace snapshot | `ShadowWorkspace` |
 | `workspace.delete_file` | **Done** | Delete a file from shadow workspace | `ShadowWorkspace` |
 | `workspace.search` | **Done** | Grep/search text across workspace files | `ShadowWorkspace` |
+| `workspace.export_artifact` | **Done** (T10) | Export shadow artifact to object storage | `ShadowWorkspace` + `ObjectStorage` |
+| `workspace.import_artifact` | **Done** (T10) | Import object storage blob into shadow workspace | `ShadowWorkspace` + `ObjectStorage` |
 | `memory.read` | **Done** | Read task memory record | `ToolWiringContext.memory_view` (`TaskMemoryViewBinding`) |
 | `memory.write` | **Done** | Write/merge task memory | `PolicyScopedMemoryView` |
 | `memory.list_keys` | **Done** | List keys in namespace | `PolicyScopedMemoryView` |
+| `memory.delete_key` | **Done** (T10) | Delete task memory record | `PolicyScopedMemoryView` |
 
 UAEP agents invoke `workspace.*` / `memory.*` via `BoundToolGateway` → `runtime_bound_catalog.py` (same pattern as `sandbox.exec`).
 
@@ -296,17 +301,17 @@ UAEP agents invoke `workspace.*` / `memory.*` via `BoundToolGateway` → `runtim
 | `knowledge` | `knowledge.get_page`, `knowledge.search` | `WikiKnowledge` (any wiki slug) |
 | `document` | `document.parse`, `document.parse_preview` | `DocumentParser` — enable explicitly in `ToolProfile` (not auto-enabled from ingest-only profiles) |
 | `browser` | `browser.fetch_page` | `BrowserAutomation` |
-| `storage` | `storage.get`, `storage.put`, `storage.presigned_url`, `storage.delete` | `ObjectStorage` |
+| `storage` | `storage.get`, `storage.put`, `storage.presigned_url`, `storage.delete`, `storage.exists` | `ObjectStorage` |
 | `issues` | `issues.get_issue`, `issues.add_comment`, `issues.search`, `issues.create_issue` | `IssueTracker` + `IssueCreator` (provider-agnostic; complements `jira.*` / `gitlab.*`) |
 | `platform` | `platform.get_secret`, `platform.evaluate_feature_flag`, `platform.get_workflow_run`, `platform.list_check_suites`, `platform.list_workflow_runs`, `platform.cancel_workflow_run` | `SecretsStore`, `FeatureFlagBackend`, `CiCdBackend` |
-| `message_bus` | `message_bus.enqueue`, `message_bus.get_status`, `message_bus.get_result`, `message_bus.list_tasks`, `message_bus.cancel` | `MessageBus` (`TaskQueue`) |
+| `message_bus` | `message_bus.enqueue`, `message_bus.get_status`, `message_bus.get_result`, `message_bus.list_tasks`, `message_bus.cancel`, `message_bus.purge_completed` | `MessageBus` (`TaskQueue`) |
 | `graph` | `graph.run_query`, `graph.get_node` | `GraphStore` |
 | `collaboration` | `collaboration.send_mail`, `collaboration.list_messages`, `collaboration.get_message`, `collaboration.list_calendar`, `collaboration.get_user`, `collaboration.reply_message`, `collaboration.create_event` | `CollaborationSuite` |
 | `cache` | `cache.get`, `cache.set` | `KeyValueCache` |
 | `database` | `database.query`, `database.execute`, `database.describe_schema` | `RelationalStore` |
-| `records` | `records.get`, `records.put`, `records.delete`, `records.query`, `records.describe_collection` | `DocumentStore` |
+| `records` | `records.get`, `records.put`, `records.delete`, `records.query`, `records.describe_collection`, `records.count` | `DocumentStore` |
 | `hitl` | `hitl.list_pending`, `hitl.get_decision`, `hitl.summarize_queue` | `HumanDecisionStoreBinding` (runtime-bound) |
-| `interaction` | `interaction.list_sessions`, `interaction.get_last_input` | `SessionStorageBinding` (runtime-bound) |
+| `interaction` | `interaction.list_sessions`, `interaction.get_last_input`, `interaction.get_session_history` | `SessionStorageBinding` (runtime-bound) |
 
 `extend_tool_profile_for_integration()` auto-appends agent-facing tool_ids when matching `IntegrationCategory` slots are configured (`integration_tool_profile.py`). Infrastructure-only slots (e.g. `document_parser` for RAG ingest) are **not** auto-enabled.
 
@@ -361,7 +366,7 @@ OpenAI export: `intergrax.tools.exporters.to_openai_tools(registry)` — used by
 
 ## Full tool index
 
-Alphabetical reference — all **140** first-party catalog tools (Phase O + M.6 P6 + W-ML + **T-EXPAND** + **T4** + **T5** + **T6** + **T7** + **T8** + **T9**).
+Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 P6 + W-ML + **T-EXPAND** + **T4** + **T5** + **T6** + **T7** + **T8** + **T9** + **T10**).
 
 | tool_id | Bundle | Category | Status | Composes / module |
 |---------|--------|----------|--------|-------------------|
@@ -504,7 +509,7 @@ Alphabetical reference — all **140** first-party catalog tools (Phase O + M.6 
 | `workspace.snapshot` | workspace | workspace | **Done** | `ShadowWorkspace` |
 | `workspace.write_file` | workspace | workspace | **Done** | `ShadowWorkspace` |
 
-**Total:** 140 tools · 40 bundles.
+**Total:** 150 tools · 40 bundles.
 
 ---
 

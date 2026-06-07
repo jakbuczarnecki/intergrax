@@ -7,15 +7,19 @@ from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.providers.interaction.contracts import (
     InteractionGetLastInputInput,
     InteractionGetLastInputOutput,
+    InteractionGetSessionHistoryInput,
+    InteractionGetSessionHistoryOutput,
     InteractionListSessionsInput,
     InteractionListSessionsOutput,
 )
 from intergrax.tools.providers.interaction.handlers import (
     InteractionGetLastInputHandler,
+    InteractionGetSessionHistoryHandler,
     InteractionListSessionsHandler,
 )
 from intergrax.tools.providers.interaction.service import (
     INTERACTION_GET_LAST_INPUT_TOOL_ID,
+    INTERACTION_GET_SESSION_HISTORY_TOOL_ID,
     INTERACTION_LIST_SESSIONS_TOOL_ID,
 )
 from intergrax.tools.registry.runtime import ToolRegistry
@@ -25,6 +29,7 @@ INTERACTION_BUNDLE_ID = "interaction"
 INTERACTION_TOOL_IDS: tuple[str, ...] = (
     INTERACTION_LIST_SESSIONS_TOOL_ID,
     INTERACTION_GET_LAST_INPUT_TOOL_ID,
+    INTERACTION_GET_SESSION_HISTORY_TOOL_ID,
 )
 
 
@@ -60,4 +65,20 @@ def register_interaction_tools(registry: ToolRegistry, ctx: ToolWiringContext) -
             tags=("interaction", "session", "read_only"),
         ),
         InteractionGetLastInputHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=INTERACTION_GET_SESSION_HISTORY_TOOL_ID,
+            name=INTERACTION_GET_SESSION_HISTORY_TOOL_ID,
+            description="Fetch recent chat messages for a session (read-only).",
+            description_short="Get session history.",
+            input_schema=InteractionGetSessionHistoryInput,
+            output_schema=InteractionGetSessionHistoryOutput,
+            error_mapping={},
+            side_effects=False,
+            category="interaction",
+            risk_level=ToolRiskLevel.LOW,
+            tags=("interaction", "session", "read_only"),
+        ),
+        InteractionGetSessionHistoryHandler(ctx),
     )

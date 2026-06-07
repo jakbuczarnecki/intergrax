@@ -36,6 +36,7 @@ from intergrax.tools.registry.runtime_bindings import (
     HumanDecisionStoreBinding,
     OnlineEvaluationRegistryBinding,
     RunTraceReaderBinding,
+    ScheduledNotificationBinding,
     SessionStorageBinding,
     TaskMemoryViewBinding,
 )
@@ -75,6 +76,7 @@ class ToolWiringContext:
     shadow_workspace: ShadowWorkspace | None = None
     human_decision_store: HumanDecisionStoreBinding | None = None
     session_storage: SessionStorageBinding | None = None
+    scheduled_notification_store: ScheduledNotificationBinding | None = None
     memory_view: TaskMemoryViewBinding | None = None
     trace_reader: RunTraceReaderBinding | None = None
     evaluation_registry: OnlineEvaluationRegistryBinding | None = None

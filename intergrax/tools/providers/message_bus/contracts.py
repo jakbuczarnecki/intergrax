@@ -84,3 +84,13 @@ class MessageBusCancelInput(BaseModel):
 class MessageBusCancelOutput(BaseModel):
     task_id: str
     cancelled: bool
+
+
+class MessageBusPurgeCompletedInput(BaseModel):
+    tenant_id: str = Field(..., min_length=1)
+    older_than_seconds: int = Field(default=0, ge=0, le=86400 * 30)
+
+
+class MessageBusPurgeCompletedOutput(BaseModel):
+    tenant_id: str
+    purged_count: int = 0

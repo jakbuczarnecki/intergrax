@@ -9,6 +9,8 @@ from intergrax.tools.providers.records.contracts import (
     RecordsDeleteOutput,
     RecordsDescribeCollectionInput,
     RecordsDescribeCollectionOutput,
+    RecordsCountInput,
+    RecordsCountOutput,
     RecordsDocumentOutput,
     RecordsGetInput,
     RecordsGetOutput,
@@ -24,6 +26,7 @@ RECORDS_PUT_TOOL_ID = "records.put"
 RECORDS_DELETE_TOOL_ID = "records.delete"
 RECORDS_QUERY_TOOL_ID = "records.query"
 RECORDS_DESCRIBE_COLLECTION_TOOL_ID = "records.describe_collection"
+RECORDS_COUNT_TOOL_ID = "records.count"
 
 
 def _require_document_store(ctx: ToolWiringContext) -> DocumentStore:
@@ -105,4 +108,17 @@ def records_describe_collection(
         sample_row_keys=sample_row_keys,
         sample_field_names=sorted(field_names),
         reason="ok",
+    )
+
+
+def records_count(ctx: ToolWiringContext, params: RecordsCountInput) -> RecordsCountOutput:
+    store = _require_document_store(ctx)
+    result = store.query(
+        params.partition_key.strip(),
+        limit=1,
+        row_key_prefix=params.row_key_prefix,
+    )
+    return RecordsCountOutput(
+        partition_key=params.partition_key.strip(),
+        total=int(result.total or len(result.documents)),
     )

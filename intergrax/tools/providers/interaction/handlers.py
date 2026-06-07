@@ -7,10 +7,12 @@ from intergrax.tools.core.handler import ServiceToolHandler
 from intergrax.tools.providers.interaction.contracts import (
     InteractionGetLastInputInput,
     InteractionGetLastInputOutput,
+    InteractionGetSessionHistoryInput,
+    InteractionGetSessionHistoryOutput,
     InteractionListSessionsInput,
     InteractionListSessionsOutput,
 )
-from intergrax.tools.providers.interaction.service import interaction_get_last_input, interaction_list_sessions
+from intergrax.tools.providers.interaction.service import interaction_get_last_input, interaction_get_session_history, interaction_list_sessions
 
 
 class InteractionListSessionsHandler(
@@ -23,3 +25,9 @@ class InteractionGetLastInputHandler(
     ServiceToolHandler[InteractionGetLastInputInput, InteractionGetLastInputOutput]
 ):
     _service = interaction_get_last_input
+
+
+class InteractionGetSessionHistoryHandler(
+    ServiceToolHandler[InteractionGetSessionHistoryInput, InteractionGetSessionHistoryOutput]
+):
+    _service = interaction_get_session_history

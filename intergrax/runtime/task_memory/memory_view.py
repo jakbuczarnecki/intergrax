@@ -174,6 +174,24 @@ class PolicyScopedMemoryView:
         )
         return records
 
+    async def delete(self, namespace: str, key: str) -> bool:
+        self._guard_namespace(namespace, write=True)
+        deleted = self._store.delete(
+            tenant_id=self._tenant_id,
+            task_id=self._task_id,
+            namespace=namespace.strip(),
+            key=key.strip(),
+        )
+        memory_platform_metrics().record_write()
+        await self._emit(
+            RuntimeEventType.MEMORY_WRITE,
+            namespace=namespace,
+            key=key.strip(),
+            found=deleted,
+            extra={"operation": "delete", "deleted": deleted},
+        )
+        return deleted
+
     def _guard_namespace(self, namespace: str, *, write: bool) -> None:
         ns = (namespace or "").strip()
         if not ns:

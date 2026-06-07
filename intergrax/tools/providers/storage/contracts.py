@@ -58,3 +58,14 @@ class StorageDeleteInput(BaseModel):
 class StorageDeleteOutput(BaseModel):
     key: str
     deleted: bool = True
+
+
+class StorageExistsInput(BaseModel):
+    key: str = Field(..., min_length=1)
+
+
+class StorageExistsOutput(BaseModel):
+    key: str
+    exists: bool = False
+    content_type: str = "application/octet-stream"
+    size_bytes: int = 0

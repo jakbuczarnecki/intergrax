@@ -3,10 +3,16 @@
 
 from __future__ import annotations
 
-from intergrax.tools.providers.pagerduty.contracts import PagerDutyTriggerIncidentInput, PagerDutyTriggerIncidentOutput
+from intergrax.tools.providers.pagerduty.contracts import (
+    PagerDutyAcknowledgeIncidentInput,
+    PagerDutyAcknowledgeIncidentOutput,
+    PagerDutyTriggerIncidentInput,
+    PagerDutyTriggerIncidentOutput,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 PAGERDUTY_TRIGGER_INCIDENT_TOOL_ID = "pagerduty.trigger_incident"
+PAGERDUTY_ACKNOWLEDGE_INCIDENT_TOOL_ID = "pagerduty.acknowledge_incident"
 
 
 def pagerduty_trigger_incident(
@@ -27,3 +33,18 @@ def pagerduty_trigger_incident(
         dedup_key=params.dedup_key or None,
     )
     return PagerDutyTriggerIncidentOutput(dedup_key=str(dedup_key), triggered=True)
+
+
+def pagerduty_acknowledge_incident(
+    ctx: ToolWiringContext,
+    params: PagerDutyAcknowledgeIncidentInput,
+) -> PagerDutyAcknowledgeIncidentOutput:
+    channel = ctx.notification_channel
+    if channel is None:
+        raise RuntimeError("notification_channel_not_configured")
+    acknowledge = getattr(channel, "acknowledge_incident", None)
+    if acknowledge is None:
+        raise RuntimeError("notification_channel_does_not_support_incident_acknowledge")
+    dedup_key = params.dedup_key.strip()
+    acknowledge(dedup_key=dedup_key, note=params.note or None)
+    return PagerDutyAcknowledgeIncidentOutput(dedup_key=dedup_key, acknowledged=True)

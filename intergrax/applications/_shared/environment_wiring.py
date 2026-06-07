@@ -30,6 +30,7 @@ from intergrax.applications._shared.registry_assembly_resolver import assert_reg
 from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot, resolve_registry_snapshot
 from intergrax.applications._shared.integration_tool_profile import extend_tool_profile_for_integration
 from intergrax.applications._shared.memory_wiring import resolve_memory_platform_wiring
+from intergrax.applications._shared.notify_tool_wiring import wire_scheduled_notification_tool_binding
 from intergrax.applications._shared.session_tool_wiring import wire_session_storage_tool_binding
 from intergrax.applications._shared.skill_tool_profile import extend_tool_profile_for_skills
 from intergrax.applications._shared.sandbox_wiring import tool_profile_with_sandbox, wire_sandbox_sessions
@@ -109,6 +110,7 @@ def wire_application_environment(
 
     memory_wiring = resolve_memory_platform_wiring(env, integration_profile=resolved_integration)
     wiring_context = wire_session_storage_tool_binding(wiring_context, memory_wiring.session_storage)
+    wiring_context = wire_scheduled_notification_tool_binding(wiring_context)
 
     hosted_session = None
     if wiring_context.sandbox_session is None and resolved_integration is not None:

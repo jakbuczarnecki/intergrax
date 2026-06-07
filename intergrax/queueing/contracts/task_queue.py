@@ -135,3 +135,12 @@ class TaskQueue(ABC):
     ) -> List[TaskSummary]:
         """List recent tasks for a tenant. Default: empty when backend has no index."""
         return []
+
+    def purge_completed(
+        self,
+        tenant_id: str,
+        *,
+        older_than_seconds: int = 0,
+    ) -> int:
+        """Remove completed task records for a tenant. Default: unsupported."""
+        return 0

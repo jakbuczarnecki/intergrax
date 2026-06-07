@@ -1,23 +1,24 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Wire interaction session catalog tools from Tier-3 memory platform storage."""
+"""Wire scheduled notification catalog tools when a notification channel is configured."""
 
 from __future__ import annotations
 
-from intergrax.runtime.nexus.session.session_storage import SessionStorage
-from intergrax.tools.registry.session_storage_binding import session_storage_tool_binding
+from intergrax.tools.registry.scheduled_notification_binding import (
+    InMemoryScheduledNotificationStore,
+    scheduled_notification_binding,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 
-def wire_session_storage_tool_binding(
-    ctx: ToolWiringContext,
-    storage: SessionStorage | None,
-) -> ToolWiringContext:
-    """Attach ``SessionStorageBinding`` when memory platform storage is available."""
-    binding = session_storage_tool_binding(storage)
-    if binding is None:
+def wire_scheduled_notification_tool_binding(ctx: ToolWiringContext) -> ToolWiringContext:
+    """Attach in-memory schedule store when notify tools are usable."""
+    if ctx.notification_channel is None:
         return ctx
-    if ctx.session_storage is not None:
+    binding = scheduled_notification_binding(ctx.scheduled_notification_store)
+    if binding is None:
+        binding = InMemoryScheduledNotificationStore()
+    if ctx.scheduled_notification_store is binding:
         return ctx
     return ToolWiringContext(
         issue_tracker=ctx.issue_tracker,
@@ -40,8 +41,8 @@ def wire_session_storage_tool_binding(
         key_value_cache=ctx.key_value_cache,
         shadow_workspace=ctx.shadow_workspace,
         human_decision_store=ctx.human_decision_store,
-        session_storage=binding,
-        scheduled_notification_store=ctx.scheduled_notification_store,
+        session_storage=ctx.session_storage,
+        scheduled_notification_store=binding,
         memory_view=ctx.memory_view,
         trace_reader=ctx.trace_reader,
         evaluation_registry=ctx.evaluation_registry,

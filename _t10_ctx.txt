@@ -1,0 +1,446 @@
+=== LINE 109 ===
+[REDACTED]
+
+=== LINE 213 ===
+Oparcie: **110 narzędzi · 38 bundle** (T6 Done), plus **T7 częściowo w kodzie** (message bus, RAG lifecycle, `document.parse_preview`) — bez domknięcia testów, bundle observability i dokumentacji.
+
+Poniżej propozycja **kolejnej fali o najwyższym ROI**, w logice T-EXPAND: najpierw dokończyć T7, potem T8.
+
+---
+
+## Najpierw: dokończyć T7 (~10 narzędzi → **120**)
+
+To nie jest „nowy zestaw”, tylko **niedokończona iteracja** — warto ją zamknąć przed T8.
+
+| Priorytet | Bundle | Narzędzia | Wartość |
+|-----------|--------|-----------|---------|
+| P0 | `message_bus` (+2) | `list_tasks`, `cancel` | Operacje async — kolejka, anulowanie, SRE |
+| P0 | `rag` (+3) | `list_documents`, `get_document`, `check_index_status` | Pełny cykl indeksu LKW (poza ingest/retrieve) |
+| P1 | `document` (+1) | `parse_preview` | Bezpieczny podgląd przed ingestem |
+| P1 | `observability` (+2) | `metrics.query_range`, `logs.tail` | Debug produkcyjny (SLO, incydenty) |
+| P1 | `eval` (+1) | `compare_releases` | Gate promocji release |
+| P1 | `cost` (+1) | `forecast_spend` | Prognoza spend/token drift (V-COST.3) |
+
+**Świadomie odłożone w T7:** `hitl.*`, `filesystem.write_*`, duplikaty `vector_store.*`.
+
+---
+
+## T8 — Governance, bezpieczeństwo agenta, LKW write (~10 narzędzi → **130**)
+
+Największa luka po T6/T7: **agent może czytać świat, ale słabo zarządza ryzykiem, indeksem i lokalnym zapisem**.
+
+```mermaid
+flowchart LR
+  subgraph T8_P0["T8 P0 — operacje i LKW"]
+    HITL[hitl.* read-only]
+    FS[filesystem.write_text]
+    RAG[rag.search_by_metadata / purge]
+  end
+  subgraph T8_P1["T8 P1 — bezpieczny builder"]
+    DB[database.describe_schema]
+    REC[records.describe_collection]
+    PLAT[platform workflow ops]
+  end
+  Agent --> HITL
+  Agent --> FS
+  Agent --> RAG
+  Agent --> DB
+  Agent --> REC
+```
+
+### P0 — najwyższa wartość produkcyjna
+
+| Bundle | tool_id | Dlaczego |
+|--------|---------|----------|
+| **`hitl`** (nowy, 3) | `list_pending`, `get_decision`, `summarize_queue` | Nexus ma HITL (`SQLiteHumanDecisionStore`, escalation), ale **brak narzędzi katalogowych** dla agentów ops / organization_worker. Tylko **odczyt** — bez `record_response` (omijałby policy gateway). |
+| **`filesystem`** (+1) | `write_text` | LKW nadal ma gap write na dysku lokalnym (T6 dał tylko read). Allowlist + limit rozmiaru, jak `read_text`. |
+| **`rag`** (+2) | `search_by_metadata`, `purge_collection` | T7 daje list/get/status; brakuje **filtrowania metadanych** i **controlled purge** (dry-run + tenant scope). |
+
+### P1 — bezpieczniejszy „agent builder”
+
+| Bundle | tool_id | Dlaczego |
+|--------|---------|----------|
+| **`database`** (+1) | `describe_schema` | Przed `database.execute` agent powinien znać schemat — mniej destrukcyjnych błędów. |
+| **`records`** (+1) | `describe_collection` | To samo dla `DocumentStore` / JSON records. |
+| **`platform`** (+2) | `list_workflow_runs`, `cancel_workflow_run` | Parity z `message_bus.*` + `workflow.*` — CI/CD ops bez vendor SDK. |
+| **`workspace`** (+1) | `export_artifact` | Most `filesystem.read_text` → `storage.put` / backup snapshotu LKW. |
+
+**Szacunek:** 3 + 1 + 2 + 1 + 1 + 2 + 1 = **11 tooli** (można ściąć `export_artifact` → dokładnie 10).
+
+---
+
+## T9 — Async orchestration + interakcja (kolejna fala, ~8–10 → **~140**)
+
+Niższy priorytet, ale wysoka wartość długoterminowa:
+
+| Obszar | Propozycja | Uzasadnienie |
+|--------|------------|--------------|
+| **`workflow`** | `list_runs`, `cancel_run` | Uzupełnienie `trigger/poll/fetch_logs` |
+| **`notify`** | `send_batch`, `schedule` | Incident/runbook automation |
+| **`collaboration`** | `reply_message`, `create_event` | Zamknięcie pętli mail/calendar (dziś głównie read) |
+| **`websearch`** | `invalidate_cache` | Kontrola kosztu/stabilności fetch pipeline |
+| **`harness`** | `compare_runs`, `export_run_bundle` | Debug multi-run LKW bez SQL trace |
+| **`interaction`** (nowy) | `list_sessions`, `get_last_input` | `InteractionSurface` bez narzędzi LLM |
+
+**Odłożyć:** `cloud_platform.*` (infra, mała wartość LLM), duplikaty OpenAI `vector_store.*`, pełne `hitl.submit_response` (wymaga twardego policy/HITL gateway).
+
+---
+
+## Kryteria wyboru (dlaczego akurat te)
+
+1. **Zamyka realne luki LKW** — write lokalny + RAG maintenance + export.
+2. **Wzmacnia Harness, nie jednego agenta** — HITL read, eval/cost/harness ops.
+3. **Reuse Tier-0** — `HumanDecisionStore`, `VectorStore`, `CiCdBackend`, allowlist filesystem; bez forków Nexus.
+4. **Niski koszt ryzyka** — read-first HITL, dry-run purge, describe-before-execute.
+5. **Auto-enable przez `IntegrationProfile`** — jak dotychczas w T4–T6.
+
+---
+
+## Rekomendacja kolejności pracy
+
+```text
+1. Domknąć T7 (120 tooli, testy, TOOLS.md, plan)
+2. T8 P0: hitl.* + filesystem.write_text + rag.search/purge
+3. T8 P1: describe_schema + platform workflow ops
+4. T9 dopiero po walidacji LKW na T7+T8
+```
+
+Jeśli chcesz, mogę od razu **wdrożyć T7** (dokończenie observability/eval/cost + testy + docs) albo od razu **T8 P0** — napisz, którą iterację priorytetyzujesz.
+
+[REDACTED]
+
+=== LINE 260 ===
+[REDACTED]
+
+=== LINE 261 ===
+[REDACTED]
+
+=== LINE 262 ===
+Zamknięte niedoróbki przed kolejną falą narzędzi. Oto co zostało domknięte:
+
+## Co naprawiono
+
+### 1. Testy i środowisko
+- **OpenCV** — uszkodzona instalacja `cv2` (tylko DLL, brak `imread`) naprawiona przez `uv sync --reinstall-package opencv-python-headless` + pełny `uv sync --all-extras --all-groups`
+- **145/145** testów `tests/unit/tools/providers/` + runtime-bound + celery + LKW — **PASS**
+
+### 2. T7 — spójność implementacji
+- **`VectorstoreIndexLifecycleBinding`** w `runtime_bindings.py` — `index_lifecycle_service.py` bez `getattr`, przez `isinstance(..., VectorstoreIndexLifecycleBinding)`
+- **`cost.forecast_spend`** — test runtime-bound w `test_runtime_bound_catalog.py`
+- **Bundle counts** — asercje w `test_catalog_expansion.py` (rag=9, observability=6, message_bus=5, …)
+- **Observability** — asercje `metrics.query_range` / `logs.tail` w teście katalogu
+
+### 3. LKW (Tier-3)
+- **`tool_wiring.py`** — dodane T7: `document.parse_preview`, `rag.list_documents`, `rag.get_document`, `rag.check_index_status`
+- **`ARCHITECTURE.md`** — LKW.3 **Done**, usunięty fałszywy gap `filesystem.*`, zaktualizowana tabela narzędzi i sekcja gaps
+- **Nowy test** `test_local_workspace_tool_wiring.py` — weryfikuje enable T7 w LKW
+
+### 4. Dokumentacja
+- **`INTERGRAX_IMPLEMENTATION_PLAN.md`** — „110 tools” → **120 tools** w follow-up T-EXPAND
+
+### 5. Weryfikacja harness
+```text
+python scripts/check_harness_no_getattr.py → OK
+register_default_tools() → 120 tools · 38 bundles
+```
+
+## Świadomie pozostawione (nie bugi T7)
+
+| Temat | Status |
+|-------|--------|
+| `rag.list_documents` na Qdrant/Chroma | Wymaga rozszerzenia providerów — udokumentowane w LKW §13 |
+| `hitl.*`, `filesystem.write_*` | Celowo odłożone do **T8** |
+| 2 warningi DeprecationWarning w websearch | Istniejące, poza T7 |
+
+Repozytorium jest spójne na **120 narzędzi** — możemy przejść do **T8** (hitl, write, RAG bulk).
+
+[REDACTED]
+
+=== LINE 263 ===
+<user_query>
+przejdź do T8 zgodnie z rule cursor
+</user_query>
+
+=== LINE 264 ===
+Wdrażam T8 zgodnie z regułami iteracji — najpierw analizuję istniejące mechanizmy Tier-0 i stan katalogu (120 narzędzi).
+
+[REDACTED]
+
+=== LINE 265 ===
+[REDACTED]
+
+=== LINE 266 ===
+<user_query>
+przejdź do T8 zgodnie z rule cursor
+</user_query>
+
+=== LINE 267 ===
+[REDACTED]
+
+=== LINE 268 ===
+[REDACTED]
+
+=== LINE 269 ===
+[REDACTED]
+
+=== LINE 270 ===
+[REDACTED]
+
+=== LINE 271 ===
+[REDACTED]
+
+=== LINE 272 ===
+[REDACTED]
+
+=== LINE 273 ===
+[REDACTED]
+
+=== LINE 274 ===
+[REDACTED]
+
+=== LINE 275 ===
+Implementuję T8 — najpierw przejrzę wzorce w repo i istniejące kontrakty.
+
+[REDACTED]
+
+=== LINE 276 ===
+[REDACTED]
+
+=== LINE 277 ===
+[REDACTED]
+
+=== LINE 278 ===
+[REDACTED]
+
+=== LINE 279 ===
+[REDACTED]
+
+=== LINE 280 ===
+[REDACTED]
+
+=== LINE 319 ===
+## Podsumowanie iteracji — T-EXPAND T8
+
+### 1. Ukończony element planu
+**T-EXPAND T8 — Governance + Agent Safety + LKW write** → **130 narzędzi · 39 bundle**
+
+### 2. Warstwa Harness AI
+**Tier-0 Tool Library** + kontrakty (`HumanDecisionStoreBinding`, rozszerzony `CiCdBackend`, `VectorstoreIndexLifecycleBinding`) + **Tier-3 wiring** (LKW, `integration_tool_profile`)
+
+### 3. Nowe / rozszerzone narzędzia (+10)
+
+| Bundle | Narzędzia |
+|--------|-----------|
+| **`hitl`** (nowy) | `list_pending`, `get_decision`, `summarize_queue` |
+| **`filesystem`** | `write_text` |
+| **`rag`** | `search_by_metadata`, `purge_collection` |
+| **`database`** | `describe_schema` |
+| **`records`** | `describe_collection` |
+| **`platform`** | `list_workflow_runs`, `cancel_workflow_run` |
+
+### 4. Kluczowe zmiany techniczne
+- **`SQLiteHumanDecisionStore`** — `get_decision()`, `summarize_queue()`
+- **`ToolWiringContext.human_decision_store`** — slot dla HITL (read-only)
+- **`InMemoryVectorStore`** — `search_by_metadata()`, `purge_collection(dry_run=…)`
+- **`filesystem.write_text`** — ten sam allowlist co read + limit bajtów
+- **LKW** — auto-enable `write_text` + RAG maintenance w `tool_wiring.py`
+
+### 5. Testy
+Nowe/rozszerzone: `hitl`, `filesystem`, `rag` lifecycle, `database`, `records`, `platform`, `test_catalog_expansion`, `test_exporters`
+
+### 6. Weryfikacja
+```text
+uv run pytest tests/unit/tools/providers/ tests/unit/tools/exporters/test_exporters.py -q
+→ 145 passed
+
+python scripts/check_harness_no_getattr.py
+→ OK
+```
+
+### 7. Dokumentacja
+- `docs/TOOLS.md` — 130 tools · 39 bundles
+- `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` — sekcja **T8 Done**
+
+### 8. Wpływ architektoniczny
+Katalog narzędzi pokrywa governance (HITL read), bezpieczny zapis lokalny, maintenance indeksu RAG i introspekcję schematu przed mutacjami — bez obejścia policy gateway i bez gałęzi Nexus pod jednego agenta.
+
+### 9. Pozostałe ryzyka
+- `database.describe_schema` — sqlite `PRAGMA` (PostgreSQL wymaga osobnego rozszerzenia)
+- `rag.purge_collection` — pełna implementacja na Qdrant/Chroma poza InMemory
+- HITL tools wymagają `human_decision_store` w `ToolWiringContext` (jak `trace_reader` dla harness)
+
+### 10. Poza zakresem
+- `workspace.export_artifact` (opcjonalny 11. tool T8 — świadomie pominięty)
+- `hitl.submit_response` (wymaga twardego policy/HITL gateway)
+- T9 (workflow list/cancel, interaction surface, …)
+
+### 11. Sugerowany następny krok
+**T9 — Async orchestration + interakcja** albo walidacja LKW E2E na T7+T8 (index + write + purge dry-run).
+
+### 12. Commit message (bez commitu)
+```
+Add T-EXPAND T8 catalog tools for HITL read, filesystem write, RAG maintenance, and schema introspection
+```
+
+[REDACTED]
+
+=== LINE 321 ===
+Kolejny krok to T9 — najpierw sprawdzę plan implementacji i stan katalogu narzędzi.
+
+[REDACTED]
+
+=== LINE 323 ===
+[REDACTED]
+
+=== LINE 326 ===
+[REDACTED]
+
+=== LINE 333 ===
+Wdrażam T9 — 10 narzędzi (130 → 140): workflow, notify, collaboration, websearch, harness i nowy bundle `interaction`.
+
+[REDACTED]
+
+=== LINE 356 ===
+[REDACTED]
+
+=== LINE 359 ===
+[REDACTED]
+
+=== LINE 362 ===
+[REDACTED]
+
+=== LINE 370 ===
+Domykam T9: rejestracja pluginów, profile integracji, stuby workflow, testy i dokumentacja.
+
+[REDACTED]
+
+=== LINE 373 ===
+[REDACTED]
+
+=== LINE 377 ===
+[REDACTED]
+
+=== LINE 388 ===
+[REDACTED]
+
+=== LINE 389 ===
+## Podsumowanie iteracji — T-EXPAND T9
+
+### 1. Zrealizowany element planu
+**T-EXPAND T9 — Async orchestration + interaction** — katalog **140 narzędzi · 40 bundle’ów** (+10 tooli, nowy bundle `interaction`).
+
+### 2. Warstwa Harness AI
+**Tier-0 Tool Library** — rozszerzenie katalogu, kontraktów integracji, bindingów runtime i profilu integracji.
+
+### 3. Zmienione pliki (domknięcie tej iteracji)
+| Obszar | Pliki |
+|--------|--------|
+| Rejestracja | `intergrax/tools/registry/shipped_plugins.py` — bundle `interaction` |
+| Profil integracji | `intergrax/applications/_shared/integration_tool_profile.py` — workflow/collaboration/notify T9 |
+| Stub P7 | `intergrax/integrations/_shared/p7/factories.py` — `list_runs` / `cancel_run` |
+| Testy katalogu | `tests/unit/tools/providers/test_catalog_expansion.py`, `test_exporters.py`, `test_t9_catalog_tools.py` |
+| Testy regresji | `notify/test_notify_send.py`, `websearch/test_websearch_query.py` |
+| Dokumentacja | `docs/TOOLS.md`, `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` |
+
+*(Implementacja handlerów T9 była już w kodzie z poprzedniej sesji.)*
+
+### 4. Testy dodane/zaktualizowane
+- Nowy: `tests/unit/tools/providers/test_t9_catalog_tools.py` — 7 scenariuszy (workflow, notify batch, collaboration, websearch cache, harness compare/export, interaction)
+- Zaktualizowane: liczniki **140/40**, asercje bundle `notify` i `websearch`
+
+### 5. Wykonane testy
+```text
+uv run pytest tests/unit/tools/providers/ tests/unit/tools/exporters/test_exporters.py -q  → 152 passed
+python scripts/check_harness_no_getattr.py  → OK
+```
+
+### 6. Dokumentacja
+- `docs/TOOLS.md` — T9 Done, 140 tools · 40 bundles, nowe wpisy w indeksie
+- `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` — sekcja **T-EXPAND T9 Done**
+
+### 7. Wpływ architektoniczny
+Rozszerzenie katalogu Tier-0 bez nowych gałęzi w Nexus; `interaction.*` korzysta z `SessionStorageBinding`, harness compare/export z `trace_reader`, websearch invalidate z `WebSearchCacheBinding`. Granice tierów zachowane.
+
+### 8. Pozostałe ryzyka
+- Bundle `interaction` wymaga podpięcia `session_storage` w hostach (LKW/lab) — analogicznie do `trace_reader` dla harness
+- Stuby HTTP workflow (`prefect`/`airflow`) nie były weryfikowane end-to-end z prawdziwymi API
+
+### 9. Poza zakresem
+- Wiring `session_storage` w `local_workspace_application` (opcjonalny follow-up)
+- `notify.schedule`, `workspace.export_artifact` — celowo wyłączone z T9
+
+### 10. Sugerowany następny krok
+**T-EXPAND T10** (jeśli zdefiniowany w planie) albo **LKW wiring** — podłączenie `session_storage` + smoke test hosta z nowymi toolami interaction.
+
+### 11. Commit message (bez commitu — na życzenie)
+```
+Add T-EXPAND T9 catalog tools for workflow ops, notify batch, collaboration write-back, and interaction sessions
+```
+
+[REDACTED]
+
+=== LINE 391 ===
+Przeszukam repozytorium pod kątem niedomkniętych elementów T9: wiring, liczniki w docs i brakujące testy.
+
+[REDACTED]
+
+=== LINE 429 ===
+[REDACTED]
+
+=== LINE 434 ===
+## Domknięcie niedoróbek T9
+
+Przed kolejnym krokiem zamknąłem pozostałe luki z T9 i ryzyka wskazane w poprzedniej iteracji.
+
+### Wiring i runtime
+
+| Problem | Rozwiązanie |
+|--------|-------------|
+| `interaction.*` bez działającego `session_storage` | `SessionStorageToolBinding` — adapter sync z async `SessionStorage` |
+| Brak podpięcia w hostach Tier-3 | `wire_session_storage_tool_binding()` w `environment_wiring.py` (lab, LKW przez `build_harness_host_runtime`) |
+| `session_storage` gubione w merge ctx | Propagacja w `tool_wiring.py` i `integration_tool_wiring.py` |
+| Lab harness bez nowych tooli harness | Dodano `harness.compare_runs`, `harness.export_run_bundle` do `_HARNESS_RUNTIME_BOUND_TOOLS` |
+
+### Dokumentacja (niespójności)
+
+- `docs/TOOLS.md` — nagłówek **40/140**, zaktualizowany bundle index, opis `runtime_bound_catalog`
+- `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` — sekcja weryfikacji T9 + opis wiringu session
+
+### Testy
+
+- `tests/unit/tools/registry/test_session_storage_binding.py` — adapter + integracja z interaction tools
+- `test_integration_tool_profile.py` — workflow list/cancel, notify batch
+- `test_lab_harness_tool_wiring.py` — harness compare/export w lab harness
+- `test_registry_wiring.py` — session binding w `wire_application_environment`
+
+### Weryfikacja
+
+```text
+171 passed  (tools/providers + exporters + registry + applications wiring)
+check_harness_no_getattr.py → OK
+```
+
+### Świadomie pozostawione (poza scope T9)
+
+- **`InMemorySessionStorage.list_sessions_for_user`** — sygnatura bez `tenant_id` (legacy); adapter obsługuje oba warianty przez `inspect.signature`. Pełna unifikacja protokołu session layer to osobny ticket.
+- **LKW domyślny `ToolProfile`** — nie włącza `interaction.*` (celowo; binding jest gotowy, gdy tooli dodasz do profilu).
+- **`websearch.invalidate_cache`** — wymaga executora z `invalidate_query_cache` (już na `WebSearchExecutor`); brak auto-wiringu poza skonfigurowanym `websearch_executor`.
+
+---
+
+**T9 jest domknięte** — katalog **140 tooli · 40 bundle’ów**, wiring session storage, docs i testy są spójne.
+
+Propozycja commit message (bez commitu):
+```
+Wire SessionStorageToolBinding for interaction tools and close T9 doc/test gaps
+```
+
+Chcesz przejść do **T10** / kolejnego punktu planu, czy najpierw commit?
+
+[REDACTED]
+
+=== LINE 435 ===
+<user_query>
+wykonaj kolejny punkt planu T10 zgodnie z rules cursor ai
+</user_query>
+

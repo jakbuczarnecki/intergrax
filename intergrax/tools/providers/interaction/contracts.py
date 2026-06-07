@@ -36,3 +36,21 @@ class InteractionGetLastInputOutput(BaseModel):
     found: bool = False
     message: str = ""
     reason: str = ""
+
+
+class InteractionHistoryMessageOutput(BaseModel):
+    role: str = ""
+    content: str = ""
+
+
+class InteractionGetSessionHistoryInput(BaseModel):
+    tenant_id: str = Field(..., min_length=1)
+    session_id: str = Field(..., min_length=1)
+    limit: int = Field(default=50, ge=1, le=200)
+
+
+class InteractionGetSessionHistoryOutput(BaseModel):
+    used: bool = False
+    messages: list[InteractionHistoryMessageOutput] = Field(default_factory=list)
+    total: int = 0
+    reason: str = ""

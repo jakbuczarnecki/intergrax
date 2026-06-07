@@ -72,6 +72,31 @@ class SessionStorageToolBinding:
                     return content
         return None
 
+    def get_session_history(
+        self,
+        tenant_id: str,
+        session_id: str,
+        *,
+        limit: int = 50,
+    ) -> List[dict[str, str]]:
+        history = _run_async(
+            self._storage.get_history(tenant_id=tenant_id, session_id=session_id),
+        )
+        rows: list[dict[str, str]] = []
+        for message in list(history or [])[-limit:]:
+            content = str(getattr(message, "content", "") or "").strip()
+            if not content:
+                continue
+            rows.append(
+                {
+                    "role": str(getattr(message, "role", "") or ""),
+                    "content": content,
+                    "session_id": session_id.strip(),
+                    "tenant_id": tenant_id.strip(),
+                }
+            )
+        return rows
+
 
 def session_storage_tool_binding(storage: SessionStorage | SessionStorageBinding | None) -> SessionStorageBinding | None:
     if storage is None:

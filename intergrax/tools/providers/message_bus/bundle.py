@@ -15,6 +15,8 @@ from intergrax.tools.providers.message_bus.contracts import (
     MessageBusGetStatusOutput,
     MessageBusListTasksInput,
     MessageBusListTasksOutput,
+    MessageBusPurgeCompletedInput,
+    MessageBusPurgeCompletedOutput,
 )
 from intergrax.tools.providers.message_bus.handlers import (
     MessageBusCancelHandler,
@@ -22,6 +24,7 @@ from intergrax.tools.providers.message_bus.handlers import (
     MessageBusGetResultHandler,
     MessageBusGetStatusHandler,
     MessageBusListTasksHandler,
+    MessageBusPurgeCompletedHandler,
 )
 from intergrax.tools.providers.message_bus.service import (
     MESSAGE_BUS_CANCEL_TOOL_ID,
@@ -29,6 +32,7 @@ from intergrax.tools.providers.message_bus.service import (
     MESSAGE_BUS_GET_RESULT_TOOL_ID,
     MESSAGE_BUS_GET_STATUS_TOOL_ID,
     MESSAGE_BUS_LIST_TASKS_TOOL_ID,
+    MESSAGE_BUS_PURGE_COMPLETED_TOOL_ID,
 )
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
@@ -40,6 +44,7 @@ MESSAGE_BUS_TOOL_IDS: tuple[str, ...] = (
     MESSAGE_BUS_GET_RESULT_TOOL_ID,
     MESSAGE_BUS_LIST_TASKS_TOOL_ID,
     MESSAGE_BUS_CANCEL_TOOL_ID,
+    MESSAGE_BUS_PURGE_COMPLETED_TOOL_ID,
 )
 
 
@@ -123,4 +128,20 @@ def register_message_bus_tools(registry: ToolRegistry, ctx: ToolWiringContext) -
             tags=("message_bus", "async"),
         ),
         MessageBusCancelHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=MESSAGE_BUS_PURGE_COMPLETED_TOOL_ID,
+            name=MESSAGE_BUS_PURGE_COMPLETED_TOOL_ID,
+            description="Purge completed async tasks for a tenant from the configured message bus index.",
+            description_short="Purge completed tasks.",
+            input_schema=MessageBusPurgeCompletedInput,
+            output_schema=MessageBusPurgeCompletedOutput,
+            error_mapping={},
+            side_effects=True,
+            category="message_bus",
+            risk_level=ToolRiskLevel.MEDIUM,
+            tags=("message_bus", "async", "maintenance"),
+        ),
+        MessageBusPurgeCompletedHandler(ctx),
     )

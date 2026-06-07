@@ -19,3 +19,13 @@ class PagerDutyTriggerIncidentInput(BaseModel):
 class PagerDutyTriggerIncidentOutput(BaseModel):
     dedup_key: str
     triggered: bool = True
+
+
+class PagerDutyAcknowledgeIncidentInput(BaseModel):
+    dedup_key: str = Field(..., min_length=1)
+    note: str = ""
+
+
+class PagerDutyAcknowledgeIncidentOutput(BaseModel):
+    dedup_key: str
+    acknowledged: bool = True

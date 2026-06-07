@@ -51,6 +51,7 @@ def wire_integration_tool_context(
         shadow_workspace=ctx.shadow_workspace,
         human_decision_store=ctx.human_decision_store,
         session_storage=ctx.session_storage,
+        scheduled_notification_store=ctx.scheduled_notification_store,
         memory_view=ctx.memory_view,
         trace_reader=ctx.trace_reader,
         evaluation_registry=ctx.evaluation_registry,
