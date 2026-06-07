@@ -119,6 +119,17 @@ class InMemoryQueryCache:
     def clear(self) -> None:
         self._store.clear()
 
+    def invalidate_matching(self, *, query_prefix: str = "", clear_all: bool = False) -> int:
+        if clear_all or not query_prefix.strip():
+            count = len(self._store)
+            self.clear()
+            return count
+        prefix = query_prefix.strip().lower()
+        keys = [key for key in self._store if str(key[0]).lower().startswith(prefix)]
+        for key in keys:
+            self._store.pop(key, None)
+        return len(keys)
+
     def _is_expired(self, entry: QueryCacheEntry) -> bool:
         if self._ttl_seconds is None:
             return False

@@ -7,10 +7,16 @@ import asyncio
 from typing import Any
 
 from intergrax.runtime.notifications.models import NotificationMessage
-from intergrax.tools.providers.notify.contracts import NotifySendInput, NotifySendOutput
+from intergrax.tools.providers.notify.contracts import (
+    NotifySendBatchInput,
+    NotifySendBatchOutput,
+    NotifySendInput,
+    NotifySendOutput,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 NOTIFY_SEND_TOOL_ID = "notify.send"
+NOTIFY_SEND_BATCH_TOOL_ID = "notify.send_batch"
 
 
 def notify_send(ctx: ToolWiringContext, params: NotifySendInput) -> NotifySendOutput:
@@ -28,6 +34,40 @@ def notify_send(ctx: ToolWiringContext, params: NotifySendInput) -> NotifySendOu
     )
     _dispatch_notify(channel, message)
     return NotifySendOutput(sent=True, channel=params.channel, detail="ok")
+
+
+def notify_send_batch(ctx: ToolWiringContext, params: NotifySendBatchInput) -> NotifySendBatchOutput:
+    channel = ctx.notification_channel
+    if channel is None:
+        return NotifySendBatchOutput(
+            sent_count=0,
+            failed_count=len(params.messages),
+            details=["notification_channel_not_configured"],
+        )
+
+    sent_count = 0
+    failed_count = 0
+    details: list[str] = []
+    for item in params.messages:
+        message = NotificationMessage(
+            channel=item.channel,
+            subject=item.subject,
+            body=item.body,
+            task_id=params.task_id or "tool",
+            tenant_id=params.tenant_id,
+            metadata=dict(item.metadata),
+        )
+        try:
+            _dispatch_notify(channel, message)
+            sent_count += 1
+        except Exception as exc:
+            failed_count += 1
+            details.append(f"{item.channel}:{exc.__class__.__name__}")
+    return NotifySendBatchOutput(
+        sent_count=sent_count,
+        failed_count=failed_count,
+        details=details,
+    )
 
 
 def _dispatch_notify(channel: Any, message: NotificationMessage) -> None:

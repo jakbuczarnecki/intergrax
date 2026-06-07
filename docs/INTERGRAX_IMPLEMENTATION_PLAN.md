@@ -1858,7 +1858,24 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 
 **Delivered:** **130** catalog `tool_id` values · **39** shipped bundles.
 
-Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{hitl,filesystem,rag,database,records,platform}/`
+#### T-EXPAND T9 — Async orchestration + interaction (2026-06-07) — **Done**
+
+**Goal:** Workflow run ops, notify batch, collaboration write-back, websearch cache invalidation, harness run diff/export, interaction session reads.
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `workflow` (+2) | `workflow.list_runs`, `workflow.cancel_run` | **Done** |
+| `notify` (+1) | `notify.send_batch` | **Done** |
+| `collaboration` (+2) | `collaboration.reply_message`, `collaboration.create_event` | **Done** |
+| `websearch` (+1) | `websearch.invalidate_cache` | **Done** |
+| `harness` (+2) | `harness.compare_runs`, `harness.export_run_bundle` | **Done** |
+| `interaction` (+2, new) | `interaction.list_sessions`, `interaction.get_last_input` | **Done** |
+| contracts | `WorkflowOrchestratorBackend.list/cancel`; `CollaborationSuite.reply/create`; `WebSearchCacheBinding` | **Done** |
+| wiring | integration profile workflow/collaboration/notify extensions; `session_storage` ctx slot | **Done** |
+
+**Delivered:** **140** catalog `tool_id` values · **40** shipped bundles.
+
+Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{workflow,notify,collaboration,websearch,harness,interaction}/`
 
 #### O.5 — Unified tool model (migration design)
 

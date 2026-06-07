@@ -58,6 +58,11 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
     from intergrax.tools.providers.health.bundle import HEALTH_BUNDLE_ID, HEALTH_TOOL_IDS, register_health_tools
     from intergrax.tools.providers.hitl.bundle import HITL_BUNDLE_ID, HITL_TOOL_IDS, register_hitl_tools
     from intergrax.tools.providers.identity.bundle import IDENTITY_BUNDLE_ID, IDENTITY_TOOL_IDS, register_identity_tools
+    from intergrax.tools.providers.interaction.bundle import (
+        INTERACTION_BUNDLE_ID,
+        INTERACTION_TOOL_IDS,
+        register_interaction_tools,
+    )
     from intergrax.tools.providers.gitlab.bundle import (
         GITLAB_BUNDLE_ID,
         GITLAB_TOOL_IDS,
@@ -357,6 +362,13 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
             register_fn=register_hitl_tools,
             description="Read-only human-in-the-loop decision queue tools (governance).",
             class_name="HitlToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=INTERACTION_BUNDLE_ID,
+            tool_ids=INTERACTION_TOOL_IDS,
+            register_fn=register_interaction_tools,
+            description="Interaction session read tools (list sessions, last user input).",
+            class_name="InteractionToolPlugin",
         ),
         define_tool_plugin(
             bundle_id=HEALTH_BUNDLE_ID,

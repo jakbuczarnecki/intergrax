@@ -79,3 +79,26 @@ class CollaborationUserOutput(BaseModel):
 
 class CollaborationGetUserOutput(BaseModel):
     user: CollaborationUserOutput
+
+
+class CollaborationReplyMessageInput(BaseModel):
+    user_id: str = Field(..., min_length=1)
+    message_id: str = Field(..., min_length=1)
+    body: str = Field(..., min_length=1)
+
+
+class CollaborationReplyMessageOutput(BaseModel):
+    replied: bool = True
+
+
+class CollaborationCreateEventInput(BaseModel):
+    user_id: str = Field(..., min_length=1)
+    subject: str = Field(..., min_length=1)
+    start: str = Field(..., min_length=1, description="ISO8601 start time.")
+    end: str = Field(..., min_length=1, description="ISO8601 end time.")
+    location: str = Field(default="")
+    attendees: list[str] = Field(default_factory=list)
+
+
+class CollaborationCreateEventOutput(BaseModel):
+    event: CollaborationCalendarEventOutput

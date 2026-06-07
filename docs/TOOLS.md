@@ -99,7 +99,7 @@ registry = build_registry_from_profile(
 
 ## Tool engine (implemented today)
 
-Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** · **T6 Done** · **T7 Done** · **T8 Done** — full **130-tool** catalog registered):
+Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** · **T6 Done** · **T7 Done** · **T8 Done** · **T9 Done** — full **140-tool** catalog registered):
 
 | Component | Path | Status |
 |-----------|------|--------|
@@ -124,8 +124,8 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** · **T
 
 | Metric | Count |
 |--------|------:|
-| Shipped bundles (`ToolPlugin`) | **38** |
-| Registered `tool_id` values | **120** |
+| Shipped bundles (`ToolPlugin`) | **40** |
+| Registered `tool_id` values | **140** |
 | Stable bundles | **37** |
 | Beta bundles | **1** (`openai_vector_store`) |
 
@@ -150,6 +150,7 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 | `websearch.query` | **Done** | Run web search and return normalized snippets | `websearch_executor` or `SearchProvider` |
 | `websearch.read_url` | **Done** | Fetch a URL and return extracted title + plain text | `websearch` page fetch pipeline |
 | `websearch.fetch_batch` | **Done** | Fetch multiple URLs and return combined context | `websearch` page fetch pipeline |
+| `websearch.invalidate_cache` | **Done** | Invalidate cached web search query results | `WebSearchCacheBinding` on `websearch_executor` |
 | `rag.list_collections` | **Done** | List vector index collection names | `vectorstore_manager` |
 | `rag.list_documents` | **Done** | Paginated document id listing | `vectorstore_manager` + `VectorStoreDocumentListerBinding` |
 | `rag.get_document` | **Done** | Fetch indexed document text/metadata by id | `vectorstore_manager` |
@@ -182,6 +183,8 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 | `workflow.trigger` | **Done** | Trigger a batch eval / RAG refresh workflow run | `workflow_orchestrator` (`prefect`, `airflow`) |
 | `workflow.poll` | **Done** | Poll workflow run status | `workflow_orchestrator` |
 | `workflow.fetch_logs` | **Done** | Fetch tail logs for a workflow run | `workflow_orchestrator` |
+| `workflow.list_runs` | **Done** | List recent orchestrator runs (optional workflow filter) | `workflow_orchestrator` |
+| `workflow.cancel_run` | **Done** | Cancel a running orchestrator run | `workflow_orchestrator` |
 
 ### Issue tracker (Jira)
 
@@ -204,6 +207,7 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 | tool_id | Status | Description | Composes |
 |---------|--------|-------------|----------|
 | `notify.send` | **Done** | Send outbound notification message | `NotificationChannel` |
+| `notify.send_batch` | **Done** | Send up to 50 notification messages in one call | `NotificationChannel` |
 
 ### Issue tracker (GitLab)
 
@@ -297,11 +301,12 @@ UAEP agents invoke `workspace.*` / `memory.*` via `BoundToolGateway` → `runtim
 | `platform` | `platform.get_secret`, `platform.evaluate_feature_flag`, `platform.get_workflow_run`, `platform.list_check_suites`, `platform.list_workflow_runs`, `platform.cancel_workflow_run` | `SecretsStore`, `FeatureFlagBackend`, `CiCdBackend` |
 | `message_bus` | `message_bus.enqueue`, `message_bus.get_status`, `message_bus.get_result`, `message_bus.list_tasks`, `message_bus.cancel` | `MessageBus` (`TaskQueue`) |
 | `graph` | `graph.run_query`, `graph.get_node` | `GraphStore` |
-| `collaboration` | `collaboration.send_mail`, `collaboration.list_messages`, `collaboration.get_message`, `collaboration.list_calendar`, `collaboration.get_user` | `CollaborationSuite` |
+| `collaboration` | `collaboration.send_mail`, `collaboration.list_messages`, `collaboration.get_message`, `collaboration.list_calendar`, `collaboration.get_user`, `collaboration.reply_message`, `collaboration.create_event` | `CollaborationSuite` |
 | `cache` | `cache.get`, `cache.set` | `KeyValueCache` |
 | `database` | `database.query`, `database.execute`, `database.describe_schema` | `RelationalStore` |
 | `records` | `records.get`, `records.put`, `records.delete`, `records.query`, `records.describe_collection` | `DocumentStore` |
 | `hitl` | `hitl.list_pending`, `hitl.get_decision`, `hitl.summarize_queue` | `HumanDecisionStoreBinding` (runtime-bound) |
+| `interaction` | `interaction.list_sessions`, `interaction.get_last_input` | `SessionStorageBinding` (runtime-bound) |
 
 `extend_tool_profile_for_integration()` auto-appends agent-facing tool_ids when matching `IntegrationCategory` slots are configured (`integration_tool_profile.py`). Infrastructure-only slots (e.g. `document_parser` for RAG ingest) are **not** auto-enabled.
 
@@ -356,7 +361,7 @@ OpenAI export: `intergrax.tools.exporters.to_openai_tools(registry)` — used by
 
 ## Full tool index
 
-Alphabetical reference — all **130** first-party catalog tools (Phase O + M.6 P6 + W-ML + **T-EXPAND** + **T4** + **T5** + **T6** + **T7** + **T8**).
+Alphabetical reference — all **140** first-party catalog tools (Phase O + M.6 P6 + W-ML + **T-EXPAND** + **T4** + **T5** + **T6** + **T7** + **T8** + **T9**).
 
 | tool_id | Bundle | Category | Status | Composes / module |
 |---------|--------|----------|--------|-------------------|
@@ -371,11 +376,13 @@ Alphabetical reference — all **130** first-party catalog tools (Phase O + M.6 
 | `cost.check_quota` | cost | cost | **Done** | V-COST quota models / runtime-bound |
 | `cost.forecast_spend` | cost | cost | **Done** | V-COST.3 `build_cost_forecast_report` / runtime-bound |
 | `cost.get_run_budget` | cost | cost | **Done** | `RunBudget` / runtime-bound |
+| `collaboration.create_event` | collaboration | collaboration | **Done** | `CollaborationSuite` |
 | `collaboration.get_message` | collaboration | collaboration | **Done** | `CollaborationSuite` |
 | `collaboration.get_user` | collaboration | collaboration | **Done** | `CollaborationSuite` |
 | `collaboration.list_calendar` | collaboration | collaboration | **Done** | `CollaborationSuite` |
 | `collaboration.list_messages` | collaboration | collaboration | **Done** | `CollaborationSuite` |
 | `collaboration.send_mail` | collaboration | collaboration | **Done** | `CollaborationSuite` |
+| `collaboration.reply_message` | collaboration | collaboration | **Done** | `CollaborationSuite` |
 | `crm.get_account` | crm | crm | **Done** | `CrmBackend` |
 | `crm.list_contacts` | crm | crm | **Done** | `CrmBackend` |
 | `crm.list_tickets` | crm | crm | **Done** | `CrmBackend` |
@@ -404,11 +411,15 @@ Alphabetical reference — all **130** first-party catalog tools (Phase O + M.6 
 | `harness.get_run_cost` | harness | harness | **Done** | `RunTraceReader` / V-COST stats |
 | `harness.get_run_events` | harness | harness | **Done** | `RunTraceReader` |
 | `harness.list_runs` | harness | harness | **Done** | `RunTraceReader` |
+| `harness.compare_runs` | harness | harness | **Done** | `RunTraceReader` / runtime-bound |
+| `harness.export_run_bundle` | harness | harness | **Done** | `RunTraceReader` / runtime-bound |
 | `health.check_integration` | health | health | **Done** | integration catalog health probes |
 | `health.check_profile` | health | health | **Done** | `IntegrationProfile` slot probes |
 | `hitl.get_decision` | hitl | hitl | **Done** | `HumanDecisionStoreBinding` |
 | `hitl.list_pending` | hitl | hitl | **Done** | `HumanDecisionStoreBinding` |
 | `hitl.summarize_queue` | hitl | hitl | **Done** | `HumanDecisionStoreBinding` |
+| `interaction.get_last_input` | interaction | interaction | **Done** | `SessionStorageBinding` |
+| `interaction.list_sessions` | interaction | interaction | **Done** | `SessionStorageBinding` |
 | `issues.add_comment` | issues | issues | **Done** | `IssueTracker` |
 | `issues.create_issue` | issues | issues | **Done** | `IssueCreator` |
 | `issues.get_issue` | issues | issues | **Done** | `IssueTracker` |
@@ -437,6 +448,7 @@ Alphabetical reference — all **130** first-party catalog tools (Phase O + M.6 
 | `ml.explain` | ml | ml | **Done** | `model_inference` |
 | `ml.predict` | ml | ml | **Done** | `model_inference` |
 | `notify.send` | notify | notification | **Done** | `notification_channel` slug — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.send_batch` | notify | notification | **Done** | `notification_channel` slug — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
 | `platform.evaluate_feature_flag` | platform | platform | **Done** | `FeatureFlagBackend` |
 | `platform.get_secret` | platform | platform | **Done** | `SecretsStore` |
 | `platform.put_secret` | platform | platform | **Done** | `SecretsStore` (CRITICAL risk) |
@@ -479,9 +491,12 @@ Alphabetical reference — all **130** first-party catalog tools (Phase O + M.6 
 | `websearch.fetch_batch` | websearch | retrieval | **Done** | page fetch pipeline — [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
 | `websearch.query` | websearch | retrieval | **Done** | `websearch_executor`, `search_provider` — [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
 | `websearch.read_url` | websearch | retrieval | **Done** | page fetch — [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
+| `websearch.invalidate_cache` | websearch | retrieval | **Done** | `WebSearchCacheBinding` — [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
+| `workflow.cancel_run` | workflow | workflow | **Done** | `workflow_orchestrator` |
 | `workflow.fetch_logs` | workflow | workflow | **Done** | `workflow_orchestrator` |
 | `workflow.poll` | workflow | workflow | **Done** | `workflow_orchestrator` |
 | `workflow.trigger` | workflow | workflow | **Done** | `workflow_orchestrator` |
+| `workflow.list_runs` | workflow | workflow | **Done** | `workflow_orchestrator` |
 | `workspace.delete_file` | workspace | workspace | **Done** | `ShadowWorkspace` |
 | `workspace.list_files` | workspace | workspace | **Done** | `ShadowWorkspace` |
 | `workspace.read_file` | workspace | workspace | **Done** | `ShadowWorkspace` |
@@ -489,7 +504,7 @@ Alphabetical reference — all **130** first-party catalog tools (Phase O + M.6 
 | `workspace.snapshot` | workspace | workspace | **Done** | `ShadowWorkspace` |
 | `workspace.write_file` | workspace | workspace | **Done** | `ShadowWorkspace` |
 
-**Total:** 130 tools · 39 bundles.
+**Total:** 140 tools · 40 bundles.
 
 ---
 

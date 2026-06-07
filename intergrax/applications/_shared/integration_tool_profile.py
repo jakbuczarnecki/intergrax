@@ -16,10 +16,12 @@ from intergrax.tools.providers.cache.service import (
 from intergrax.tools.providers.billing.service import BILLING_LIST_USAGE_TOOL_ID, BILLING_RECORD_USAGE_TOOL_ID
 from intergrax.tools.providers.crm.service import CRM_GET_ACCOUNT_TOOL_ID, CRM_LIST_CONTACTS_TOOL_ID, CRM_LIST_TICKETS_TOOL_ID
 from intergrax.tools.providers.collaboration.service import (
+    COLLABORATION_CREATE_EVENT_TOOL_ID,
     COLLABORATION_GET_MESSAGE_TOOL_ID,
     COLLABORATION_GET_USER_TOOL_ID,
     COLLABORATION_LIST_CALENDAR_TOOL_ID,
     COLLABORATION_LIST_MESSAGES_TOOL_ID,
+    COLLABORATION_REPLY_MESSAGE_TOOL_ID,
     COLLABORATION_SEND_MAIL_TOOL_ID,
 )
 from intergrax.tools.providers.database.service import DATABASE_DESCRIBE_SCHEMA_TOOL_ID, DATABASE_EXECUTE_TOOL_ID, DATABASE_QUERY_TOOL_ID
@@ -38,7 +40,7 @@ from intergrax.tools.providers.message_bus.service import (
     MESSAGE_BUS_GET_STATUS_TOOL_ID,
     MESSAGE_BUS_LIST_TASKS_TOOL_ID,
 )
-from intergrax.tools.providers.notify.service import NOTIFY_SEND_TOOL_ID
+from intergrax.tools.providers.notify.service import NOTIFY_SEND_BATCH_TOOL_ID, NOTIFY_SEND_TOOL_ID
 from intergrax.tools.providers.observability.service import (
     ERRORS_CAPTURE_TOOL_ID,
     LOGS_SEARCH_TOOL_ID,
@@ -79,7 +81,9 @@ from intergrax.tools.providers.storage.service import (
     STORAGE_PUT_TOOL_ID,
 )
 from intergrax.tools.providers.workflow.service import (
+    WORKFLOW_CANCEL_RUN_TOOL_ID,
     WORKFLOW_FETCH_LOGS_TOOL_ID,
+    WORKFLOW_LIST_RUNS_TOOL_ID,
     WORKFLOW_POLL_TOOL_ID,
     WORKFLOW_TRIGGER_TOOL_ID,
 )
@@ -100,6 +104,8 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
         WORKFLOW_TRIGGER_TOOL_ID,
         WORKFLOW_POLL_TOOL_ID,
         WORKFLOW_FETCH_LOGS_TOOL_ID,
+        WORKFLOW_LIST_RUNS_TOOL_ID,
+        WORKFLOW_CANCEL_RUN_TOOL_ID,
     ),
     IntegrationCategory.WIKI_KNOWLEDGE: (
         KNOWLEDGE_GET_PAGE_TOOL_ID,
@@ -163,6 +169,8 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
         COLLABORATION_GET_MESSAGE_TOOL_ID,
         COLLABORATION_LIST_CALENDAR_TOOL_ID,
         COLLABORATION_GET_USER_TOOL_ID,
+        COLLABORATION_REPLY_MESSAGE_TOOL_ID,
+        COLLABORATION_CREATE_EVENT_TOOL_ID,
     ),
     IntegrationCategory.KEY_VALUE_CACHE: (
         CACHE_GET_TOOL_ID,
@@ -172,6 +180,7 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
     ),
     IntegrationCategory.NOTIFICATION_CHANNEL: (
         NOTIFY_SEND_TOOL_ID,
+        NOTIFY_SEND_BATCH_TOOL_ID,
         PAGERDUTY_TRIGGER_INCIDENT_TOOL_ID,
     ),
     IntegrationCategory.OBSERVABILITY_BACKEND: (

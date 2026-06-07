@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import Protocol, Sequence, runtime_checkable
 
 from pydantic import BaseModel, Field
 
@@ -40,3 +40,14 @@ class WorkflowOrchestratorBackend(Protocol):
 
     def fetch_logs(self, run_id: str, *, tail_lines: int = 200) -> str:
         """Return recent log output for a run."""
+
+    def list_runs(
+        self,
+        *,
+        workflow_id: str = "",
+        limit: int = 20,
+    ) -> Sequence[WorkflowRunHandle]:
+        """List recent workflow runs, optionally filtered by workflow id."""
+
+    def cancel_run(self, run_id: str) -> WorkflowRunStatus:
+        """Request cancellation of a workflow run."""

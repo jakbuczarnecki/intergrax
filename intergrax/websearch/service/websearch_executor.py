@@ -259,3 +259,8 @@ class WebSearchExecutor:
                 top_n_fetch=top_n_fetch,
             )
         )
+
+    def invalidate_query_cache(self, *, query: str = "", clear_all: bool = False) -> int:
+        if self._query_cache is None:
+            return 0
+        return self._query_cache.invalidate_matching(query_prefix=query, clear_all=clear_all)

@@ -24,6 +24,21 @@ T8_NEW_TOOL_IDS = frozenset(
     }
 )
 
+T9_NEW_TOOL_IDS = frozenset(
+    {
+        "workflow.list_runs",
+        "workflow.cancel_run",
+        "notify.send_batch",
+        "collaboration.reply_message",
+        "collaboration.create_event",
+        "websearch.invalidate_cache",
+        "harness.compare_runs",
+        "harness.export_run_bundle",
+        "interaction.list_sessions",
+        "interaction.get_last_input",
+    }
+)
+
 T7_NEW_TOOL_IDS = frozenset(
     {
         "message_bus.list_tasks",
@@ -146,13 +161,14 @@ def _clean_catalog() -> None:
 def test_register_default_tools_expanded_catalog() -> None:
     register_default_tools()
     registered = frozenset(list_catalog_tool_ids())
-    assert len(registered) == 130
+    assert len(registered) == 140
     assert NEW_TOOL_IDS <= registered
     assert T4_NEW_TOOL_IDS <= registered
     assert T5_NEW_TOOL_IDS <= registered
     assert T6_NEW_TOOL_IDS <= registered
     assert T7_NEW_TOOL_IDS <= registered
     assert T8_NEW_TOOL_IDS <= registered
+    assert T9_NEW_TOOL_IDS <= registered
 
 
 def test_new_bundles_present_in_catalog() -> None:
@@ -176,6 +192,7 @@ def test_new_bundles_present_in_catalog() -> None:
         "harness",
         "health",
         "hitl",
+        "interaction",
         "eval",
         "filesystem",
         "billing",
@@ -197,3 +214,9 @@ def test_new_bundles_present_in_catalog() -> None:
     assert len(get_bundle("database").tool_ids) == 3
     assert len(get_bundle("records").tool_ids) == 5
     assert len(get_bundle("hitl").tool_ids) == 3
+    assert len(get_bundle("interaction").tool_ids) == 2
+    assert len(get_bundle("workflow").tool_ids) == 5
+    assert len(get_bundle("harness").tool_ids) == 6
+    assert len(get_bundle("websearch").tool_ids) == 4
+    assert len(get_bundle("notify").tool_ids) == 2
+    assert len(get_bundle("collaboration").tool_ids) == 7

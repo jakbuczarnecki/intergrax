@@ -29,16 +29,22 @@ from intergrax.tools.providers.cost.service import (
     cost_get_run_budget,
 )
 from intergrax.tools.providers.harness.contracts import (
+    HarnessCompareRunsInput,
+    HarnessExportRunBundleInput,
     HarnessGetRunCostInput,
     HarnessGetRunEventsInput,
     HarnessGetRunInput,
     HarnessListRunsInput,
 )
 from intergrax.tools.providers.harness.service import (
+    HARNESS_COMPARE_RUNS_TOOL_ID,
+    HARNESS_EXPORT_RUN_BUNDLE_TOOL_ID,
     HARNESS_GET_RUN_COST_TOOL_ID,
     HARNESS_GET_RUN_EVENTS_TOOL_ID,
     HARNESS_GET_RUN_TOOL_ID,
     HARNESS_LIST_RUNS_TOOL_ID,
+    harness_compare_runs,
+    harness_export_run_bundle,
     harness_get_run,
     harness_get_run_cost,
     harness_get_run_events,
@@ -93,6 +99,8 @@ _RUNTIME_BOUND_TOOLS: dict[str, tuple[type[BaseModel], ServiceFn]] = {
     HARNESS_LIST_RUNS_TOOL_ID: (HarnessListRunsInput, harness_list_runs),
     HARNESS_GET_RUN_COST_TOOL_ID: (HarnessGetRunCostInput, harness_get_run_cost),
     HARNESS_GET_RUN_EVENTS_TOOL_ID: (HarnessGetRunEventsInput, harness_get_run_events),
+    HARNESS_COMPARE_RUNS_TOOL_ID: (HarnessCompareRunsInput, harness_compare_runs),
+    HARNESS_EXPORT_RUN_BUNDLE_TOOL_ID: (HarnessExportRunBundleInput, harness_export_run_bundle),
     COST_GET_RUN_BUDGET_TOOL_ID: (CostGetRunBudgetInput, cost_get_run_budget),
     COST_CHECK_QUOTA_TOOL_ID: (CostCheckQuotaInput, cost_check_quota),
     COST_FORECAST_SPEND_TOOL_ID: (CostForecastSpendInput, cost_forecast_spend),

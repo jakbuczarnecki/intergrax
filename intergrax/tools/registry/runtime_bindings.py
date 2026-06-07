@@ -69,6 +69,22 @@ class HumanDecisionStoreBinding(Protocol):
 
 
 @runtime_checkable
+class WebSearchCacheBinding(Protocol):
+    """Structural binding for ``websearch.invalidate_cache``."""
+
+    def invalidate_query_cache(self, *, query: str = "", clear_all: bool = False) -> int: ...
+
+
+@runtime_checkable
+class SessionStorageBinding(Protocol):
+    """Structural binding for interaction session read tools."""
+
+    def list_sessions(self, tenant_id: str, user_id: str, *, limit: int = 20) -> List[Dict[str, str]]: ...
+
+    def get_last_user_input(self, tenant_id: str, session_id: str) -> Optional[str]: ...
+
+
+@runtime_checkable
 class VectorStoreDocumentListerBinding(Protocol):
     """Optional vector store extension for ``rag.list_documents`` / ``rag.get_document``."""
 
