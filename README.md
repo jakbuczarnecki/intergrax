@@ -87,7 +87,7 @@ They **do not** replace per-product or per-agent documentation:
 | Tier-3 business environment | Wiring patterns, `applications/USAGE.md` | `applications/<product>/ARCHITECTURE.md`, `IMPLEMENTATION_PLAN.md` |
 | Tier-2 business agent | [Agent creation guide](docs/AGENT_CREATION_GUIDE.md), scaffold workflow | `agents/<name>/ARCHITECTURE.md`, agent README, local plan |
 
-Example: [Local Knowledge Workspace](applications/local_workspace_application/ARCHITECTURE.md) is documented under its application folder, not in the platform implementation plan.
+Examples: [Local Knowledge Workspace](applications/local_workspace_application/ARCHITECTURE.md) and [Dispute Simulation Workspace](applications/dispute_sim_application/ARCHITECTURE.md) are documented under their application folders, not in the platform implementation plan.
 
 Details: [Strategy §Documentation boundary](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md#documentation-boundary) · [Architecture §1.1](docs/intergrax_runtime_architecture.md#11-documentation-boundary-platform-vs-product) · [Plan §4.0a](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business)
 
@@ -375,6 +375,19 @@ NexusLoop + IntegrationProfile + FastAPI  →  HTTP / Docker in production
 | Own `.env` / Docker | No | Partial (lab defaults) | Yes — full isolation |
 | Typical use | Build & test capability | Quick HTTP + `/debug/*` | Ship legal API, concept lab, customer host |
 
+### Available environments and agents
+
+**Full index:** [`agents/README.md`](agents/README.md) (Tier-2 roster) · [`applications/README.md`](applications/README.md) (Tier-3 hosts)
+
+| Application | Port | Agents | Role |
+|-------------|------|--------|------|
+| [`lab_application/`](applications/lab_application/) | 8090 | Echo, SignoffProbe, Legal, Research, … | Universal lab + debug trace API |
+| [`poc_template_application/`](applications/poc_template_application/) | 8095 | Echo | Canonical Tier-3 scaffold reference |
+| [`legal_application/`](applications/legal_application/) | 8000 | LegalAgent | Contract review product API |
+| [`research_application/`](applications/research_application/) | 8010 | ResearchAgent, SummaryAgent | Research → summarize pipeline |
+| [`local_workspace_application/`](applications/local_workspace_application/) | 8020 | LocalIndexer, LocalSearch, LocalSynthesizer | **LKW** — local knowledge workspace |
+| [`dispute_sim_application/`](applications/dispute_sim_application/) | 8025 | DisputeIntake, DisputeAnalyst, DisputeStrategist, DisputeScenario | **DSW** — dispute simulation workspace |
+
 ### Example applications in this repository
 
 | Application | What it demonstrates |
@@ -384,6 +397,7 @@ NexusLoop + IntegrationProfile + FastAPI  →  HTTP / Docker in production
 | [`legal_application/`](applications/legal_application/) | Product host — scaffold `LegalAgent`, auth, FastAPI core |
 | [`research_application/`](applications/research_application/) | Multi-agent HTTP host — research + summary agents |
 | [`local_workspace_application/`](applications/local_workspace_application/) | **Local Knowledge Workspace (LKW)** — local file index, search, synthesis ([ARCHITECTURE.md](applications/local_workspace_application/ARCHITECTURE.md)) |
+| [`dispute_sim_application/`](applications/dispute_sim_application/) | **Dispute Simulation Workspace (DSW)** — case intake, argument analysis, strategy, court simulation ([ARCHITECTURE.md](applications/dispute_sim_application/ARCHITECTURE.md)) |
 
 **Usage guides:**
 
@@ -679,20 +693,21 @@ Audit layer 27: [AUDIT_MAP §27 Developer Experience](docs/INTEGRAX_HARNESS_AUDI
 
 ## Reference agents and applications
 
-### Tier-2 reference agents
+**Canonical roster:** [`agents/README.md`](agents/README.md) · **Application hosts:** [`applications/README.md`](applications/README.md)
 
-| Agent | Capability | Path |
-|-------|------------|------|
-| Echo | Minimal UAEP reference | `agents/echo/` |
-| Signoff Probe | Harness sign-off / policy probe | `agents/signoff_probe/` |
-| Research | Web research pipeline | `agents/research/` |
-| Research Summary | Summarization in multi-agent flow | `agents/research/` |
-| Legal | Contract review (UAEP scaffold baseline) | `agents/legal/` |
-| Organization Worker | Long-running / HITL harness agent (`org.vendor_report`) | `agents/organization_worker/` |
-| Lab mock agents | Offline gate and lab roster fixtures | `agents/lab/mock_agents.py` |
-| Problem Radar | Business prototype — **frozen**, Phase K.1 deferred | `agents/problem_radar/` |
+### Tier-2 agents
 
-Agents execute through **UAEP**, orchestrated by `AgentEngine` inside `NexusLoop`.
+| Category | Agents | Capabilities | Host |
+|----------|--------|--------------|------|
+| **Harness / lab** | Echo, SignoffProbe | `echo.basic`, harness probe | `lab_application` |
+| **Research** | Research, Summary | `research.web_search`, `research.pipeline`, `research.summarize` | `research_application` |
+| **Legal review** | Legal | `legal.review` | `legal_application` |
+| **LKW product** | LocalIndexer, LocalSearch, LocalSynthesizer | `local.workspace.index`, `.search`, `.synthesize` | `local_workspace_application` |
+| **DSW product** | DisputeIntake, DisputeAnalyst, DisputeStrategist, DisputeScenario | `dispute.intake`, `.analyze`, `.strategy`, `.scenario` | `dispute_sim_application` |
+| **Harness demo** | OrganizationWorker | `org.vendor_report` | `lab_application` (optional) |
+| **Deferred** | ProblemRadar | `problem_radar.scan` | — (Phase K.1) |
+
+Agents execute through **UAEP**, orchestrated by `AgentEngine` inside `NexusLoop`. Per-agent docs: `agents/<name>/README.md` + `ARCHITECTURE.md`.
 
 ### Control plane closeouts (platform Done)
 
@@ -880,6 +895,7 @@ Skills                  →  SKILLS.md
 LLM providers           →  LLM_ADAPTERS.md (typed response envelope)
 Modality / CV / ML      →  MODALITY.md
 Lab environment         →  HARNESS_ENVIRONMENT.md
+Agents & environments   →  agents/README.md + applications/README.md
 New application         →  applications/USAGE.md + poc_template_application/
 Plugin extension        →  EXTENSION_AUTHOR_GUIDE.md
 Ideal harness target    →  IDEAL_HARNESS_AI_ARCHITECTURE.md

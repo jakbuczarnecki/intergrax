@@ -1,6 +1,8 @@
-# Research Agent Prototype
+# Research agents (ResearchAgent + SummaryAgent)
 
-Architecture: [ARCHITECTURE.md](ARCHITECTURE.md) · Plan: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). Capability module for multi-agent research experiments (Phase C).
+**Host:** [`applications/research_application/`](../../applications/research_application/) · **Roster:** [`agents/README.md`](../README.md)
+
+Architecture: [ARCHITECTURE.md](ARCHITECTURE.md) · Plan: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). Multi-agent research pipeline (Phase C).
 
 Agents:
 - `ResearchAgent` — `research.web_search` (stub findings)

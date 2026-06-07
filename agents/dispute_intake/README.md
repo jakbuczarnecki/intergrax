@@ -1,6 +1,9 @@
-# dispute_intake agent
+# DisputeIntakeAgent
 
-UAEP-first scaffold. Full process: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md) (single canonical guide).
+Case material intake for **Dispute Simulation Workspace (DSW)** — classify documents, build chronology, ingest to case-scoped RAG.
+
+**Host:** [`applications/dispute_sim_application/`](../../applications/dispute_sim_application/) · **Product architecture:** [ARCHITECTURE.md](../../applications/dispute_sim_application/ARCHITECTURE.md)  
+**Agent roster:** [`agents/README.md`](../README.md)
 
 ## Docs
 
@@ -12,7 +15,7 @@ UAEP-first scaffold. Full process: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/A
 
 1. Implement domain logic in `steps/`
 2. Run smoke test: `uv run pytest agents/dispute_intake/tests -q`
-3. For lab HTTP: register in `applications/lab_application/host/wiring.py` (see guide Step 4C)
+3. Run via product host: `uv run uvicorn dispute_sim_application.host.main:app --port 8025` → `POST /v1/dispute_sim/run` with `capability: dispute.intake`
 
 ## Register (programmatic)
 

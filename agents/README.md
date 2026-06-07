@@ -1,0 +1,111 @@
+# Tier-2 agents (`agents/`)
+
+**Role:** Reusable domain capabilities — UAEP steps, contracts, prompts.  
+**Hosts:** Tier-3 applications under `applications/` mount agents via `AgentBinding.mount(...)`.  
+**Workflow:** [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md)
+
+```text
+agents/<slug>/     →  capability modules (no applications/ imports)
+applications/      →  deployable environments that compose agents
+```
+
+---
+
+## Agent roster
+
+| Agent | Capability | Lifecycle | Host application(s) | Docs |
+|-------|------------|-----------|---------------------|------|
+| **EchoAgent** | `echo.basic` | production | `lab_application`, `poc_template_application` | [`echo/`](echo/) |
+| **SignoffProbeAgent** | (harness probe) | staging | `lab_application` | [`signoff_probe/`](signoff_probe/) |
+| **ResearchAgent** | `research.web_search`, `research.pipeline` | staging | `research_application`, `lab_application` | [`research/`](research/) |
+| **SummaryAgent** | `research.summarize` | staging | `research_application` | [`research/`](research/) |
+| **LegalAgent** | `legal.review` | staging | `legal_application`, `lab_application` | [`legal/`](legal/) |
+| **LocalIndexerAgent** | `local.workspace.index` | staging | `local_workspace_application` | [`local_indexer/`](local_indexer/) |
+| **LocalSearchAgent** | `local.workspace.search` | staging | `local_workspace_application` | [`local_search/`](local_search/) |
+| **LocalSynthesizerAgent** | `local.workspace.synthesize` | staging | `local_workspace_application` | [`local_synthesizer/`](local_synthesizer/) |
+| **DisputeIntakeAgent** | `dispute.intake` | staging | `dispute_sim_application` | [`dispute_intake/`](dispute_intake/) |
+| **DisputeAnalystAgent** | `dispute.analyze` | staging | `dispute_sim_application` | [`dispute_analyst/`](dispute_analyst/) |
+| **DisputeStrategistAgent** | `dispute.strategy` | staging | `dispute_sim_application` | [`dispute_strategist/`](dispute_strategist/) |
+| **DisputeScenarioAgent** | `dispute.scenario` | staging | `dispute_sim_application` | [`dispute_scenario/`](dispute_scenario/) |
+| **OrganizationWorkerAgent** | `org.vendor_report` | development | `lab_application` (optional flag) | [`organization_worker/`](organization_worker/) |
+| **ProblemRadarAgent** | `problem_radar.scan` | frozen | — (Phase K.1 deferred) | [`problem_radar/`](problem_radar/) |
+| **Lab mock agents** | harness fixtures | — | `lab_application` tests | [`lab/mock_agents.py`](lab/mock_agents.py) |
+
+---
+
+## By product environment
+
+### Local Knowledge Workspace (LKW)
+
+| Agent | Capability | Pipeline step |
+|-------|------------|---------------|
+| `local_indexer` | `local.workspace.index` | Ingest paths → RAG index |
+| `local_search` | `local.workspace.search` | Retrieve + answer |
+| `local_synthesizer` | `local.workspace.synthesize` | Shadow artifact drafts |
+
+**Host:** [`applications/local_workspace_application/`](../applications/local_workspace_application/) · **Architecture:** [ARCHITECTURE.md](../applications/local_workspace_application/ARCHITECTURE.md)
+
+### Dispute Simulation Workspace (DSW)
+
+| Agent | Capability | Pipeline step |
+|-------|------------|---------------|
+| `dispute_intake` | `dispute.intake` | Classify materials, chronology, case RAG |
+| `dispute_analyst` | `dispute.analyze` | Argument matrix, strengths/weaknesses |
+| `dispute_strategist` | `dispute.strategy` | Attack/defense lines, emphasis map |
+| `dispute_scenario` | `dispute.scenario` | Court variants, correspondence review |
+
+**Host:** [`applications/dispute_sim_application/`](../applications/dispute_sim_application/) · **Architecture:** [ARCHITECTURE.md](../applications/dispute_sim_application/ARCHITECTURE.md)
+
+### Legal review (single-agent SKU)
+
+| Agent | Capability |
+|-------|------------|
+| `legal` | `legal.review` |
+
+**Host:** [`applications/legal_application/`](../applications/legal_application/) — contract review; distinct from DSW dispute lifecycle.
+
+### Research (multi-agent)
+
+| Agent | Capability |
+|-------|------------|
+| `research` | `research.web_search`, `research.pipeline` |
+| `summary` | `research.summarize` |
+
+**Host:** [`applications/research_application/`](../applications/research_application/)
+
+---
+
+## Harness / lab agents
+
+Use **`lab_application`** (port `8090`) to experiment with any registered agent — debug API, trace inspection, optional plugin discovery.
+
+| Agent | Typical use |
+|-------|-------------|
+| `echo` | Minimal UAEP smoke |
+| `signoff_probe` | Policy / harness sign-off probes |
+| `organization_worker` | Long-running / HITL harness demo |
+
+---
+
+## Per-agent documentation
+
+Each agent folder ships:
+
+| File | Purpose |
+|------|---------|
+| `README.md` | Quick start, capabilities, registration |
+| `ARCHITECTURE.md` | Purpose, layout, runtime contracts |
+| `IMPLEMENTATION_PLAN.md` | Local task queue |
+| `adr/` | Agent-level architecture decisions (when needed) |
+
+---
+
+## Create a new agent
+
+```bash
+python -m intergrax.scaffold new-agent my_agent --capability domain.action
+# Or agent + application bundle:
+python -m intergrax.scaffold new-stack my_feature --profile lab --capability my_feature.basic
+```
+
+Full workflow: [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md)

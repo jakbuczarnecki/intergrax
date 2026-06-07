@@ -1,18 +1,18 @@
-# dispute_analyst agent
+# DisputeAnalystAgent
 
-UAEP-first scaffold. Full process: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md) (single canonical guide).
+Argument analysis for **Dispute Simulation Workspace (DSW)** — strength/weakness matrix, evidence gaps, party positions.
+
+**Host:** [`applications/dispute_sim_application/`](../../applications/dispute_sim_application/) · **Roster:** [`agents/README.md`](../README.md)
 
 ## Docs
 
-- [`ARCHITECTURE.md`](ARCHITECTURE.md) — purpose, contracts, runtime layout
-- [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) — task queue and verification
-- [`adr/README.md`](adr/README.md) — architecture decision records
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`adr/README.md`](adr/README.md)
 
 ## Quick start
 
 1. Implement domain logic in `steps/`
-2. Run smoke test: `uv run pytest agents/dispute_analyst/tests -q`
-3. For lab HTTP: register in `applications/lab_application/host/wiring.py` (see guide Step 4C)
+2. `uv run pytest agents/dispute_analyst/tests -q`
+3. Host run: `capability: dispute.analyze` on `POST /v1/dispute_sim/run` (port 8025)
 
 ## Register (programmatic)
 
