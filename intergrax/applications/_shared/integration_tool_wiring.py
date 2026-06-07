@@ -31,6 +31,21 @@ def wire_integration_tool_context(
         notification_channel=ctx.notification_channel,
         observability_backend=ctx.observability_backend,
         observability_backends=dict(ctx.observability_backends),
+        object_storage=ctx.object_storage or _resolve_optional(integration_profile, IntegrationCategory.OBJECT_STORAGE),
+        browser_automation=ctx.browser_automation
+        or _resolve_optional(integration_profile, IntegrationCategory.BROWSER_AUTOMATION),
+        document_parser=ctx.document_parser or _resolve_optional(integration_profile, IntegrationCategory.DOCUMENT_PARSER),
+        secrets_store=ctx.secrets_store or _resolve_optional(integration_profile, IntegrationCategory.SECRETS_STORE),
+        feature_flag_backend=ctx.feature_flag_backend
+        or _resolve_optional(integration_profile, IntegrationCategory.FEATURE_FLAG),
+        ci_cd_backend=ctx.ci_cd_backend or _resolve_optional(integration_profile, IntegrationCategory.CI_CD),
+        message_bus=ctx.message_bus or _resolve_optional(integration_profile, IntegrationCategory.MESSAGE_BUS),
+        graph_store=ctx.graph_store or _resolve_optional(integration_profile, IntegrationCategory.GRAPH_STORE),
+        collaboration_suite=ctx.collaboration_suite
+        or _resolve_optional(integration_profile, IntegrationCategory.COLLABORATION_SUITE),
+        key_value_cache=ctx.key_value_cache or _resolve_optional(integration_profile, IntegrationCategory.KEY_VALUE_CACHE),
+        shadow_workspace=ctx.shadow_workspace,
+        memory_view=ctx.memory_view,
         rag_manager=ctx.rag_manager,
         vectorstore_manager=ctx.vectorstore_manager,
         embedding_manager=ctx.embedding_manager,

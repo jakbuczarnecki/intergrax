@@ -13,6 +13,10 @@ from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResp
 from intergrax.runtime.nexus.tools.tool_access_policy import ToolAccessPolicy
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.tools.tool_gateway import RuntimeToolGateway
+from intergrax.runtime.nexus.tools.runtime_bound_catalog import (
+    invoke_runtime_bound_tool,
+    is_runtime_bound_tool,
+)
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_TOOL_NAME
 
 
@@ -40,6 +44,8 @@ class BoundToolGateway:
     async def invoke(self, request: ToolRequest) -> ToolResponse:
         if request.tool_name == SANDBOX_TOOL_NAME:
             return await self._invoke_sandbox(request)
+        if is_runtime_bound_tool(request.tool_name):
+            return invoke_runtime_bound_tool(self._exec_ctx, request)
 
         state = self._exec_ctx.metadata.get("runtime_state")
         if state is None:

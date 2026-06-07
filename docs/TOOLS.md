@@ -1,6 +1,6 @@
 # Intergrax Tool Library
 
-**Last updated:** 2026-06-07 — **16 bundles** · **36 catalog tools** (verified via `register_default_tools()`)
+**Last updated:** 2026-06-07 — **28 bundles** · **66 catalog tools** (verified via `register_default_tools()`)
 
 The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
 
@@ -13,7 +13,7 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 | [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md) | **External tool plugins** — `ToolPlugin`, entry points, MCP export |
 | [intergrax/tools/USAGE.md](../intergrax/tools/USAGE.md) | **Operational guide** — wire tools in Tier-3 apps and invoke from agents |
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.6–§7.1.7, §22 | Architecture canon — Tool Library, unified tool model |
-| [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase O | Phase status, backlog, delivery workflow |
+| [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase O · **T-EXPAND** | Phase status, catalog expansion waves T1–T3 |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase V | Architecture hardening: security/cost governance and evaluation discipline (`V-SEC.*`, `V-COST.*`, `V-EVAL.*`) |
 | [INTEGRATIONS.md](INTEGRATIONS.md) | **167** backend adapters tools compose (not called directly by agents) |
 | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) Appendix E | How agents declare `allowed_tools` vs applications wire backends |
@@ -99,7 +99,7 @@ registry = build_registry_from_profile(
 
 ## Tool engine (implemented today)
 
-Runtime tool engine (Phase O **Done** — full **36-tool** catalog registered):
+Runtime tool engine (Phase O **Done** · **T-EXPAND Done** — full **66-tool** catalog registered):
 
 | Component | Path | Status |
 |-----------|------|--------|
@@ -108,7 +108,8 @@ Runtime tool engine (Phase O **Done** — full **36-tool** catalog registered):
 | `ToolHandler` / `ToolExecutor` | `intergrax/tools/tool_executor.py` | **Done** |
 | `ToolExecutionRequest` / `ToolExecutionResult` | `intergrax/tools/execution_models.py` | **Done** |
 | `ToolProvider` protocol | `intergrax/tools/core/provider.py` | **Done** — accepts optional `ToolWiringContext` |
-| `ToolCatalog` / `ToolProfile` / `ToolWiringContext` | `intergrax/tools/registry/` | **Done** — Phase O.2 |
+| `ToolCatalog` / `ToolProfile` / `ToolWiringContext` | `intergrax/tools/registry/` | **Done** — Phase O.2; typed integration slots + `TaskMemoryViewBinding` / `shadow_workspace` (T-EXPAND) |
+| `runtime_bound_catalog` | `intergrax/runtime/nexus/tools/runtime_bound_catalog.py` | **Done** — UAEP dispatch for `workspace.*` / `memory.*` (§42.12, mirrors `sandbox.exec`) |
 | `register_default_tools()` / `build_registry_from_profile()` | `intergrax/tools/registry/bootstrap.py`, `factory.py` | **Done** |
 | `RuntimeToolInvoker` | `intergrax/runtime/nexus/tools/invoker.py` | **Done** — validation, trace, error mapping |
 | `RuntimeToolGateway` | `intergrax/runtime/nexus/tools/tool_gateway.py` | **Done** — UAEP / §42.12 entry; `nexus.capability_plan` prefers `tool_ids` (e.g. `rag.retrieve`) over legacy `use_rag` booleans |
@@ -123,12 +124,12 @@ Runtime tool engine (Phase O **Done** — full **36-tool** catalog registered):
 
 | Metric | Count |
 |--------|------:|
-| Shipped bundles (`ToolPlugin`) | **16** |
-| Registered `tool_id` values | **36** |
-| Stable bundles | **14** |
+| Shipped bundles (`ToolPlugin`) | **28** |
+| Registered `tool_id` values | **66** |
+| Stable bundles | **26** |
 | Beta bundles | **2** (`observability`, `openai_vector_store`) |
 
-**Bundle index:** `rag` (3) · `websearch` (3) · `jira` (3) · `gitlab` (1) · `confluence` (3) · `notify` (1) · `pagerduty` (1) · `observability` (4) · `braintrust` (1) · `sandbox` (1) · `security` (1) · `workflow` (3) · `speech` (2) · `vision` (3) · `ml` (3) · `openai_vector_store` (3).
+**Bundle index:** `rag` (3) · `websearch` (3) · `jira` (3) · `gitlab` (1) · `confluence` (3) · `notify` (1) · `pagerduty` (1) · `observability` (4) · `braintrust` (1) · `sandbox` (1) · `security` (1) · `workflow` (3) · `speech` (2) · `vision` (3) · `ml` (3) · `openai_vector_store` (3) · **`workspace` (4)** · **`memory` (3)** · **`knowledge` (2)** · **`document` (1)** · **`browser` (1)** · **`storage` (4)** · **`issues` (3)** · **`platform` (4)** · **`message_bus` (3)** · **`graph` (2)** · **`collaboration` (1)** · **`cache` (2)**.
 
 Source: `intergrax/tools/registry/shipped_plugins.py`.
 
@@ -261,6 +262,37 @@ See [openai_vector_store USAGE](../intergrax/tools/providers/openai_vector_store
 
 Harness lab uses **one primary** `observability_backend` (Sentry) plus **additional slugs** in `IntegrationProfile.options` (LangSmith). `ToolWiringContext.from_integration_profile()` builds `observability_backends`; each tool picks a backend by role (`errors`, `traces`, `logs`, `eval`) via `resolve_observability_backend()`. See [observability USAGE](../intergrax/tools/providers/observability/USAGE.md).
 
+### Runtime-bound workspace & memory (T-EXPAND T1)
+
+| tool_id | Status | Description | Composes |
+|---------|--------|-------------|----------|
+| `workspace.write_file` | **Done** | Write UTF-8 text into shadow workspace | `ToolWiringContext.shadow_workspace` or UAEP `exec_ctx.metadata["shadow_workspace"]` |
+| `workspace.read_file` | **Done** | Read shadow workspace file | `ShadowWorkspace` |
+| `workspace.list_files` | **Done** | List workspace artifacts | `ShadowWorkspace` |
+| `workspace.snapshot` | **Done** | Point-in-time workspace snapshot | `ShadowWorkspace` |
+| `memory.read` | **Done** | Read task memory record | `ToolWiringContext.memory_view` (`TaskMemoryViewBinding`) |
+| `memory.write` | **Done** | Write/merge task memory | `PolicyScopedMemoryView` |
+| `memory.list_keys` | **Done** | List keys in namespace | `PolicyScopedMemoryView` |
+
+UAEP agents invoke `workspace.*` / `memory.*` via `BoundToolGateway` → `runtime_bound_catalog.py` (same pattern as `sandbox.exec`).
+
+### Provider-agnostic integration bridges (T-EXPAND T1–T3)
+
+| Bundle | tool_ids | Composes |
+|--------|----------|----------|
+| `knowledge` | `knowledge.get_page`, `knowledge.search` | `WikiKnowledge` (any wiki slug) |
+| `document` | `document.parse` | `DocumentParser` — enable explicitly in `ToolProfile` (not auto-enabled from ingest-only profiles) |
+| `browser` | `browser.fetch_page` | `BrowserAutomation` |
+| `storage` | `storage.get`, `storage.put`, `storage.presigned_url`, `storage.delete` | `ObjectStorage` |
+| `issues` | `issues.get_issue`, `issues.add_comment`, `issues.search` | `IssueTracker` (provider-agnostic; complements `jira.*` / `gitlab.*`) |
+| `platform` | `platform.get_secret`, `platform.evaluate_feature_flag`, `platform.get_workflow_run`, `platform.list_check_suites` | `SecretsStore`, `FeatureFlagBackend`, `CiCdBackend` |
+| `message_bus` | `message_bus.enqueue`, `message_bus.get_status`, `message_bus.get_result` | `MessageBus` (`TaskQueue`) |
+| `graph` | `graph.run_query`, `graph.get_node` | `GraphStore` |
+| `collaboration` | `collaboration.send_mail` | `CollaborationSuite` |
+| `cache` | `cache.get`, `cache.set` | `KeyValueCache` |
+
+`extend_tool_profile_for_integration()` auto-appends agent-facing tool_ids when matching `IntegrationCategory` slots are configured (`integration_tool_profile.py`). Infrastructure-only slots (e.g. `document_parser` for RAG ingest) are **not** auto-enabled.
+
 ---
 
 ## Tool metadata (contract — Phase O.1 Done)
@@ -312,25 +344,47 @@ OpenAI export: `intergrax.tools.exporters.to_openai_tools(registry)` — used by
 
 ## Full tool index
 
-Alphabetical reference — all **36** first-party catalog tools (Phase O + M.6 P6 + W-ML modality complete).
+Alphabetical reference — all **66** first-party catalog tools (Phase O + M.6 P6 + W-ML + **T-EXPAND**).
 
 | tool_id | Bundle | Category | Status | Composes / module |
 |---------|--------|----------|--------|-------------------|
 | `braintrust.log_eval` | braintrust | observability | **Done** | `braintrust` — [USAGE](../intergrax/tools/providers/braintrust/USAGE.md) |
+| `browser.fetch_page` | browser | browser | **Done** | `BrowserAutomation` |
+| `cache.get` | cache | cache | **Done** | `KeyValueCache` |
+| `cache.set` | cache | cache | **Done** | `KeyValueCache` |
+| `collaboration.send_mail` | collaboration | collaboration | **Done** | `CollaborationSuite` |
 | `confluence.get_page` | confluence | wiki | **Done** | `confluence` — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
+| `document.parse` | document | document | **Done** | `DocumentParser` |
 | `confluence.search` | confluence | wiki | **Done** | `confluence` (alias) — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
 | `confluence.search_pages` | confluence | wiki | **Done** | `confluence` — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
 | `errors.capture` | observability | observability | **Beta** | `sentry` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
 | `gitlab.create_issue` | gitlab | issue_tracker | **Done** | `gitlab` — [USAGE](../intergrax/tools/providers/gitlab/USAGE.md) |
+| `graph.get_node` | graph | graph | **Done** | `GraphStore` |
+| `graph.run_query` | graph | graph | **Done** | `GraphStore` |
+| `issues.add_comment` | issues | issues | **Done** | `IssueTracker` |
+| `issues.get_issue` | issues | issues | **Done** | `IssueTracker` |
+| `issues.search` | issues | issues | **Done** | `IssueTracker` |
+| `knowledge.get_page` | knowledge | knowledge | **Done** | `WikiKnowledge` |
+| `knowledge.search` | knowledge | knowledge | **Done** | `WikiKnowledge` |
 | `jira.add_comment` | jira | issue_tracker | **Done** | `jira` — [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
 | `jira.get_issue` | jira | issue_tracker | **Done** | `jira` — [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
 | `jira.search_tasks` | jira | issue_tracker | **Done** | `jira` — [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
+| `memory.list_keys` | memory | memory | **Done** | `TaskMemoryViewBinding` |
+| `memory.read` | memory | memory | **Done** | `TaskMemoryViewBinding` |
+| `memory.write` | memory | memory | **Done** | `TaskMemoryViewBinding` |
+| `message_bus.enqueue` | message_bus | message_bus | **Done** | `MessageBus` |
+| `message_bus.get_result` | message_bus | message_bus | **Done** | `MessageBus` |
+| `message_bus.get_status` | message_bus | message_bus | **Done** | `MessageBus` |
 | `logs.search` | observability | observability | **Beta** | `elasticsearch` / `opensearch` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
 | `metrics.query_instant` | observability | observability | **Beta** | `prometheus` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
 | `ml.batch_predict` | ml | ml | **Done** | `intergrax/model_inference/` |
 | `ml.explain` | ml | ml | **Done** | `model_inference` |
 | `ml.predict` | ml | ml | **Done** | `model_inference` |
 | `notify.send` | notify | notification | **Done** | `notification_channel` slug — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
+| `platform.evaluate_feature_flag` | platform | platform | **Done** | `FeatureFlagBackend` |
+| `platform.get_secret` | platform | platform | **Done** | `SecretsStore` |
+| `platform.get_workflow_run` | platform | platform | **Done** | `CiCdBackend` |
+| `platform.list_check_suites` | platform | platform | **Done** | `CiCdBackend` |
 | `observability.query_traces` | observability | observability | **Beta** | `langfuse` / observability slug — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
 | `openai.file_search.query` | openai_vector_store | retrieval | **Beta** | OpenAI `file_search` — [USAGE](../intergrax/tools/providers/openai_vector_store/USAGE.md) |
 | `openai.vector_store.clear` | openai_vector_store | retrieval | **Beta** | OpenAI vector store API — [USAGE](../intergrax/tools/providers/openai_vector_store/USAGE.md) |
@@ -340,6 +394,10 @@ Alphabetical reference — all **36** first-party catalog tools (Phase O + M.6 P
 | `rag.list_collections` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `rag.retrieve` | rag | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
 | `sandbox.exec` | sandbox | sandbox | **Done** | `sandbox_session` / `sandbox_host` — [USAGE](../intergrax/tools/providers/sandbox/USAGE.md) |
+| `storage.delete` | storage | storage | **Done** | `ObjectStorage` |
+| `storage.get` | storage | storage | **Done** | `ObjectStorage` |
+| `storage.presigned_url` | storage | storage | **Done** | `ObjectStorage` |
+| `storage.put` | storage | storage | **Done** | `ObjectStorage` |
 | `security.scan` | security | security | **Done** | `security_scanner` (`trivy`, `semgrep`, `snyk`) |
 | `speech.synthesize` | speech | speech | **Done** | `SpeechProviderBackend` |
 | `speech.transcribe` | speech | speech | **Done** | `SpeechProviderBackend` |
@@ -352,8 +410,12 @@ Alphabetical reference — all **36** first-party catalog tools (Phase O + M.6 P
 | `workflow.fetch_logs` | workflow | workflow | **Done** | `workflow_orchestrator` |
 | `workflow.poll` | workflow | workflow | **Done** | `workflow_orchestrator` |
 | `workflow.trigger` | workflow | workflow | **Done** | `workflow_orchestrator` |
+| `workspace.list_files` | workspace | workspace | **Done** | `ShadowWorkspace` |
+| `workspace.read_file` | workspace | workspace | **Done** | `ShadowWorkspace` |
+| `workspace.snapshot` | workspace | workspace | **Done** | `ShadowWorkspace` |
+| `workspace.write_file` | workspace | workspace | **Done** | `ShadowWorkspace` |
 
-**Total:** 36 tools · 16 bundles.
+**Total:** 66 tools · 28 bundles.
 
 ---
 

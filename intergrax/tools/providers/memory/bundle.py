@@ -1,0 +1,84 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+from __future__ import annotations
+
+from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
+from intergrax.tools.providers.memory.contracts import (
+    MemoryListKeysInput,
+    MemoryListKeysOutput,
+    MemoryReadInput,
+    MemoryReadOutput,
+    MemoryWriteInput,
+    MemoryWriteOutput,
+)
+from intergrax.tools.providers.memory.handlers import (
+    MemoryListKeysHandler,
+    MemoryReadHandler,
+    MemoryWriteHandler,
+)
+from intergrax.tools.providers.memory.service import (
+    MEMORY_LIST_KEYS_TOOL_ID,
+    MEMORY_READ_TOOL_ID,
+    MEMORY_WRITE_TOOL_ID,
+)
+from intergrax.tools.registry.runtime import ToolRegistry
+from intergrax.tools.registry.wiring import ToolWiringContext
+
+MEMORY_BUNDLE_ID = "memory"
+MEMORY_TOOL_IDS: tuple[str, ...] = (
+    MEMORY_READ_TOOL_ID,
+    MEMORY_WRITE_TOOL_ID,
+    MEMORY_LIST_KEYS_TOOL_ID,
+)
+
+
+def register_memory_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
+    registry.register(
+        ToolContract(
+            tool_id=MEMORY_READ_TOOL_ID,
+            name=MEMORY_READ_TOOL_ID,
+            description="Read a policy-scoped task memory record by namespace and key.",
+            description_short="Read task memory.",
+            input_schema=MemoryReadInput,
+            output_schema=MemoryReadOutput,
+            error_mapping={},
+            side_effects=False,
+            category="memory",
+            risk_level=ToolRiskLevel.LOW,
+            tags=("memory", "task"),
+        ),
+        MemoryReadHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=MEMORY_WRITE_TOOL_ID,
+            name=MEMORY_WRITE_TOOL_ID,
+            description="Write or merge a task memory record under policy guardrails.",
+            description_short="Write task memory.",
+            input_schema=MemoryWriteInput,
+            output_schema=MemoryWriteOutput,
+            error_mapping={},
+            side_effects=True,
+            category="memory",
+            risk_level=ToolRiskLevel.MEDIUM,
+            tags=("memory", "task"),
+        ),
+        MemoryWriteHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=MEMORY_LIST_KEYS_TOOL_ID,
+            name=MEMORY_LIST_KEYS_TOOL_ID,
+            description="List task memory keys in a namespace (optional prefix filter).",
+            description_short="List task memory keys.",
+            input_schema=MemoryListKeysInput,
+            output_schema=MemoryListKeysOutput,
+            error_mapping={},
+            side_effects=False,
+            category="memory",
+            risk_level=ToolRiskLevel.LOW,
+            tags=("memory", "task"),
+        ),
+        MemoryListKeysHandler(ctx),
+    )

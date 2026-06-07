@@ -1749,6 +1749,27 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 [ ] 8. Update TOOLS.md status + this plan tracker
 ```
 
+#### T-EXPAND — Integration bridge catalog expansion (2026-06-07) — **Done**
+
+**Goal:** Close the integration→tool coverage gap (~78% integrations without LLM tools) by shipping provider-agnostic bundles that compose existing `IntegrationCategory` contracts.
+
+| Wave | Bundles | Tools | Status |
+|------|---------|------:|--------|
+| T1 (DX / runtime-bound) | `workspace`, `memory`, `knowledge`, `document`, `browser`, `storage` (get) | 12 | **Done** |
+| T2 (prod harness) | `storage` (+put/presigned/delete), `issues`, `platform` | 10 | **Done** |
+| T3 (async / graph / collab / cache) | `message_bus`, `graph`, `collaboration`, `cache` | 8 | **Done** |
+
+**Delivered:**
+
+- **66** catalog `tool_id` values · **28** shipped bundles (`shipped_plugins.py`)
+- Typed `ToolWiringContext` slots for all new integration categories
+- `TaskMemoryViewBinding` protocol (avoids Tier-0 ↔ UAEP import cycle)
+- UAEP `runtime_bound_catalog.py` for `workspace.*` / `memory.*` (mirrors `sandbox.exec`)
+- `extend_tool_profile_for_integration()` P6 auto-enable (excludes ingest-only `document_parser`)
+- Gate: **906** passed (`uv run pytest -m gate -q`)
+
+Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{workspace,memory,knowledge,...}/`
+
 #### O.5 — Unified tool model (migration design)
 
 **Problem:** Two parallel mechanisms — boolean plan flags dispatching pipeline steps vs `ToolRegistry` for function tools.
