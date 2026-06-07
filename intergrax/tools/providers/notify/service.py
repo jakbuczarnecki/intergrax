@@ -8,6 +8,11 @@ from typing import Any
 
 from intergrax.runtime.notifications.models import NotificationMessage
 from intergrax.tools.providers.notify.contracts import (
+    NotifyCancelScheduledInput,
+    NotifyCancelScheduledOutput,
+    NotifyListScheduledInput,
+    NotifyListScheduledOutput,
+    NotifyScheduledItemOutput,
     NotifyScheduleInput,
     NotifyScheduleOutput,
     NotifySendBatchInput,
@@ -21,6 +26,8 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 NOTIFY_SEND_TOOL_ID = "notify.send"
 NOTIFY_SEND_BATCH_TOOL_ID = "notify.send_batch"
 NOTIFY_SCHEDULE_TOOL_ID = "notify.schedule"
+NOTIFY_LIST_SCHEDULED_TOOL_ID = "notify.list_scheduled"
+NOTIFY_CANCEL_SCHEDULED_TOOL_ID = "notify.cancel_scheduled"
 
 
 def _require_scheduler(ctx: ToolWiringContext) -> ScheduledNotificationBinding:
@@ -96,6 +103,46 @@ def notify_schedule(ctx: ToolWiringContext, params: NotifyScheduleInput) -> Noti
         schedule_id=schedule_id,
         deliver_at_utc=params.deliver_at_utc.strip(),
         detail="ok",
+    )
+
+
+def notify_list_scheduled(ctx: ToolWiringContext, params: NotifyListScheduledInput) -> NotifyListScheduledOutput:
+    scheduler = _require_scheduler(ctx)
+    rows = scheduler.list_scheduled(
+        params.tenant_id.strip(),
+        limit=params.limit,
+        status=params.status.strip(),
+    )
+    schedules = [
+        NotifyScheduledItemOutput(
+            schedule_id=str(item.get("schedule_id", "")),
+            tenant_id=str(item.get("tenant_id", "")),
+            channel=str(item.get("channel", "")),
+            subject=str(item.get("subject", "")),
+            deliver_at_utc=str(item.get("deliver_at_utc", "")),
+            status=str(item.get("status", "")),
+        )
+        for item in rows
+    ]
+    return NotifyListScheduledOutput(
+        used=True,
+        schedules=schedules,
+        total=len(schedules),
+        detail="ok",
+    )
+
+
+def notify_cancel_scheduled(
+    ctx: ToolWiringContext,
+    params: NotifyCancelScheduledInput,
+) -> NotifyCancelScheduledOutput:
+    scheduler = _require_scheduler(ctx)
+    cancelled = scheduler.cancel_scheduled(params.schedule_id.strip(), params.tenant_id.strip())
+    detail = "ok" if cancelled else "schedule_not_found_or_not_pending"
+    return NotifyCancelScheduledOutput(
+        cancelled=cancelled,
+        schedule_id=params.schedule_id.strip(),
+        detail=detail,
     )
 
 

@@ -5,6 +5,10 @@ from __future__ import annotations
 
 from intergrax.tools.core.handler import ServiceToolHandler
 from intergrax.tools.providers.notify.contracts import (
+    NotifyCancelScheduledInput,
+    NotifyCancelScheduledOutput,
+    NotifyListScheduledInput,
+    NotifyListScheduledOutput,
     NotifyScheduleInput,
     NotifyScheduleOutput,
     NotifySendBatchInput,
@@ -12,7 +16,13 @@ from intergrax.tools.providers.notify.contracts import (
     NotifySendInput,
     NotifySendOutput,
 )
-from intergrax.tools.providers.notify.service import notify_schedule, notify_send, notify_send_batch
+from intergrax.tools.providers.notify.service import (
+    notify_cancel_scheduled,
+    notify_list_scheduled,
+    notify_schedule,
+    notify_send,
+    notify_send_batch,
+)
 
 
 class NotifySendHandler(ServiceToolHandler[NotifySendInput, NotifySendOutput]):
@@ -25,3 +35,11 @@ class NotifySendBatchHandler(ServiceToolHandler[NotifySendBatchInput, NotifySend
 
 class NotifyScheduleHandler(ServiceToolHandler[NotifyScheduleInput, NotifyScheduleOutput]):
     _service = notify_schedule
+
+
+class NotifyListScheduledHandler(ServiceToolHandler[NotifyListScheduledInput, NotifyListScheduledOutput]):
+    _service = notify_list_scheduled
+
+
+class NotifyCancelScheduledHandler(ServiceToolHandler[NotifyCancelScheduledInput, NotifyCancelScheduledOutput]):
+    _service = notify_cancel_scheduled

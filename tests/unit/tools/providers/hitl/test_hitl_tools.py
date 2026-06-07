@@ -10,10 +10,18 @@ from intergrax.runtime.human.models import EscalationTarget, HumanResponseVerdic
 from intergrax.runtime.human.store import SQLiteHumanDecisionStore
 from intergrax.tools.providers.hitl.contracts import (
     HitlGetDecisionInput,
+    HitlListForTaskInput,
     HitlListPendingInput,
+    HitlSubmitResponseInput,
     HitlSummarizeQueueInput,
 )
-from intergrax.tools.providers.hitl.service import hitl_get_decision, hitl_list_pending, hitl_summarize_queue
+from intergrax.tools.providers.hitl.service import (
+    hitl_get_decision,
+    hitl_list_for_task,
+    hitl_list_pending,
+    hitl_submit_response,
+    hitl_summarize_queue,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 pytestmark = pytest.mark.unit
@@ -64,3 +72,36 @@ def test_hitl_summarize_queue(hitl_ctx: ToolWiringContext) -> None:
 def test_hitl_not_configured() -> None:
     with pytest.raises(RuntimeError, match="human_decision_store_not_configured"):
         hitl_list_pending(ToolWiringContext(), HitlListPendingInput(tenant_id="tenant-1"))
+
+
+def test_hitl_submit_response(hitl_ctx: ToolWiringContext) -> None:
+    out = hitl_submit_response(
+        hitl_ctx,
+        HitlSubmitResponseInput(
+            tenant_id="tenant-1",
+            task_id="task-2",
+            user_id="operator-1",
+            verdict="approve",
+            response_text="looks good",
+        ),
+    )
+    assert out.used is True
+    assert out.recorded is True
+    assert out.decision is not None
+    assert out.decision.verdict == "approve"
+
+
+def test_hitl_list_for_task(hitl_ctx: ToolWiringContext) -> None:
+    hitl_submit_response(
+        hitl_ctx,
+        HitlSubmitResponseInput(
+            tenant_id="tenant-1",
+            task_id="task-2",
+            verdict="reject",
+            response_text="no",
+        ),
+    )
+    out = hitl_list_for_task(hitl_ctx, HitlListForTaskInput(tenant_id="tenant-1", task_id="task-2"))
+    assert out.used is True
+    assert out.total == 1
+    assert out.decisions[0].verdict == "reject"

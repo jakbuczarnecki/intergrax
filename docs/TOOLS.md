@@ -1,6 +1,6 @@
 # Intergrax Tool Library
 
-**Last updated:** 2026-06-07 — **40 bundles** · **150 catalog tools** (verified via `register_default_tools()`)
+**Last updated:** 2026-06-07 — **42 bundles** · **160 catalog tools** (verified via `register_default_tools()`)
 
 The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
 
@@ -13,7 +13,7 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 | [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md) | **External tool plugins** — `ToolPlugin`, entry points, MCP export |
 | [intergrax/tools/USAGE.md](../intergrax/tools/USAGE.md) | **Operational guide** — wire tools in Tier-3 apps and invoke from agents |
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.6–§7.1.7, §22 | Architecture canon — Tool Library, unified tool model |
-| [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase O · **T-EXPAND** | Phase status, catalog expansion waves T1–T10 |
+| [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase O · **T-EXPAND** | Phase status, catalog expansion waves T1–T11 |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase V | Architecture hardening: security/cost governance and evaluation discipline (`V-SEC.*`, `V-COST.*`, `V-EVAL.*`) |
 | [INTEGRATIONS.md](INTEGRATIONS.md) | **167** backend adapters tools compose (not called directly by agents) |
 | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) Appendix E | How agents declare `allowed_tools` vs applications wire backends |
@@ -99,7 +99,7 @@ registry = build_registry_from_profile(
 
 ## Tool engine (implemented today)
 
-Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** · **T6 Done** · **T7 Done** · **T8 Done** · **T9 Done** · **T10 Done** — full **150-tool** catalog registered):
+Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** · **T6 Done** · **T7 Done** · **T8 Done** · **T9 Done** · **T10 Done** · **T11 Done** — full **160-tool** catalog registered):
 
 | Component | Path | Status |
 |-----------|------|--------|
@@ -209,6 +209,8 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 | `notify.send` | **Done** | Send outbound notification message | `NotificationChannel` |
 | `notify.send_batch` | **Done** | Send up to 50 notification messages in one call | `NotificationChannel` |
 | `notify.schedule` | **Done** (T10) | Schedule deferred notification delivery | `ScheduledNotificationBinding` |
+| `notify.list_scheduled` | **Done** (T11) | List deferred notification schedules | `ScheduledNotificationBinding` |
+| `notify.cancel_scheduled` | **Done** (T11) | Cancel a pending deferred notification | `ScheduledNotificationBinding` |
 
 ### Issue tracker (GitLab)
 
@@ -310,7 +312,9 @@ UAEP agents invoke `workspace.*` / `memory.*` via `BoundToolGateway` → `runtim
 | `cache` | `cache.get`, `cache.set` | `KeyValueCache` |
 | `database` | `database.query`, `database.execute`, `database.describe_schema` | `RelationalStore` |
 | `records` | `records.get`, `records.put`, `records.delete`, `records.query`, `records.describe_collection`, `records.count` | `DocumentStore` |
-| `hitl` | `hitl.list_pending`, `hitl.get_decision`, `hitl.summarize_queue` | `HumanDecisionStoreBinding` (runtime-bound) |
+| `hitl` | `hitl.list_pending`, `hitl.get_decision`, `hitl.summarize_queue`, `hitl.submit_response`, `hitl.list_for_task` | `HumanDecisionStoreBinding` (runtime-bound) |
+| `cloud_platform` | `cloud_platform.health`, `cloud_platform.resolve` | `CloudPlatform` |
+| `vector_store` | `vector_store.count`, `vector_store.delete`, `vector_store.list_collections`, `vector_store.health` | `vectorstore_manager` |
 | `interaction` | `interaction.list_sessions`, `interaction.get_last_input`, `interaction.get_session_history` | `SessionStorageBinding` (runtime-bound) |
 
 `extend_tool_profile_for_integration()` auto-appends agent-facing tool_ids when matching `IntegrationCategory` slots are configured (`integration_tool_profile.py`). Infrastructure-only slots (e.g. `document_parser` for RAG ingest) are **not** auto-enabled.
@@ -376,6 +380,8 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `cache.set` | cache | cache | **Done** | `KeyValueCache` |
 | `cache.delete` | cache | cache | **Done** | `KeyValueCache` |
 | `cache.list_keys` | cache | cache | **Done** | `KeyValueCacheListerBinding` (optional backend) |
+| `cloud_platform.health` | cloud_platform | cloud_platform | **Done** (T11) | `CloudPlatform` |
+| `cloud_platform.resolve` | cloud_platform | cloud_platform | **Done** (T11) | `CloudPlatform` |
 | `billing.list_usage` | billing | billing | **Done** | `BillingMeterBackend` |
 | `billing.record_usage` | billing | billing | **Done** | `BillingMeterBackend` |
 | `cost.check_quota` | cost | cost | **Done** | V-COST quota models / runtime-bound |
@@ -422,7 +428,9 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `health.check_integration` | health | health | **Done** | integration catalog health probes |
 | `health.check_profile` | health | health | **Done** | `IntegrationProfile` slot probes |
 | `hitl.get_decision` | hitl | hitl | **Done** | `HumanDecisionStoreBinding` |
+| `hitl.list_for_task` | hitl | hitl | **Done** (T11) | `HumanDecisionStoreBinding` |
 | `hitl.list_pending` | hitl | hitl | **Done** | `HumanDecisionStoreBinding` |
+| `hitl.submit_response` | hitl | hitl | **Done** (T11) | `HumanDecisionStoreBinding` |
 | `hitl.summarize_queue` | hitl | hitl | **Done** | `HumanDecisionStoreBinding` |
 | `interaction.get_last_input` | interaction | interaction | **Done** | `SessionStorageBinding` |
 | `interaction.list_sessions` | interaction | interaction | **Done** | `SessionStorageBinding` |
@@ -459,6 +467,8 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `notify.send` | notify | notification | **Done** | `notification_channel` slug — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
 | `notify.send_batch` | notify | notification | **Done** | `notification_channel` slug — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
 | `notify.schedule` | notify | notification | **Done** (T10) | `ScheduledNotificationBinding` — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.list_scheduled` | notify | notification | **Done** (T11) | `ScheduledNotificationBinding` — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.cancel_scheduled` | notify | notification | **Done** (T11) | `ScheduledNotificationBinding` — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
 | `platform.evaluate_feature_flag` | platform | platform | **Done** | `FeatureFlagBackend` |
 | `platform.get_secret` | platform | platform | **Done** | `SecretsStore` |
 | `platform.put_secret` | platform | platform | **Done** | `SecretsStore` (CRITICAL risk) |
@@ -501,6 +511,10 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `vision.detect` | vision | vision | **Done** | `model_inference` (Plane C) |
 | `vision.ocr_regions` | vision | vision | **Done** | `model_inference` |
 | `vision.segment` | vision | vision | **Done** | `model_inference` |
+| `vector_store.count` | vector_store | vector_store | **Done** (T11) | `vectorstore_manager` |
+| `vector_store.delete` | vector_store | vector_store | **Done** (T11) | `vectorstore_manager` |
+| `vector_store.health` | vector_store | vector_store | **Done** (T11) | `vectorstore_manager` |
+| `vector_store.list_collections` | vector_store | vector_store | **Done** (T11) | `vectorstore_manager` |
 | `websearch.fetch_batch` | websearch | retrieval | **Done** | page fetch pipeline — [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
 | `websearch.query` | websearch | retrieval | **Done** | `websearch_executor`, `search_provider` — [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
 | `websearch.read_url` | websearch | retrieval | **Done** | page fetch — [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
@@ -519,7 +533,7 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `workspace.export_artifact` | workspace | workspace | **Done** (T10) | `ShadowWorkspace` + `ObjectStorage` |
 | `workspace.import_artifact` | workspace | workspace | **Done** (T10) | `ShadowWorkspace` + `ObjectStorage` |
 
-**Total:** 150 tools · 40 bundles.
+**Total:** 160 tools · 42 bundles.
 
 ---
 

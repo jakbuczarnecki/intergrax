@@ -1920,6 +1920,25 @@ Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{workfl
 
 Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{workspace,notify,interaction,eval,storage,memory,pagerduty,message_bus,records}/`
 
+#### T-EXPAND T11 — HITL write path + cloud/vector store ops (2026-06-07) — **Done**
+
+**Goal:** Close T8/T10 deferred governance and integration-bridge gaps without product scope.
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `hitl` (+2) | `hitl.submit_response`, `hitl.list_for_task` | **Done** |
+| `notify` (+2) | `notify.list_scheduled`, `notify.cancel_scheduled` | **Done** |
+| `cloud_platform` (new) | `cloud_platform.health`, `cloud_platform.resolve` | **Done** |
+| `vector_store` (new) | `vector_store.count`, `vector_store.delete`, `vector_store.list_collections`, `vector_store.health` | **Done** |
+| contracts | `HumanDecisionStoreBinding.record` / `list_for_task`; `ScheduledNotificationBinding.cancel_scheduled` | **Done** |
+| wiring | `ToolWiringContext.cloud_platform`; `IntegrationProfile` cloud platform resolution | **Done** |
+
+**Delivered:** **160** catalog `tool_id` values · **42** shipped bundles.
+
+**Verification:** provider unit tests + MCP full-catalog export smoke (**160** tools) · `check_harness_no_getattr.py` OK
+
+Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{hitl,notify,cloud_platform,vector_store}/`
+
 #### O.5 — Unified tool model (migration design)
 
 **Problem:** Two parallel mechanisms — boolean plan flags dispatching pipeline steps vs `ToolRegistry` for function tools.

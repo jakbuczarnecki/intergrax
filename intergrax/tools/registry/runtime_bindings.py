@@ -59,13 +59,17 @@ class VectorstoreIndexLifecycleBinding(Protocol):
 
 @runtime_checkable
 class HumanDecisionStoreBinding(Protocol):
-    """Structural binding for read-only HITL decision catalog tools."""
+    """Structural binding for HITL decision catalog tools."""
 
     def list_escalations(self, tenant_id: str, *, limit: int = 50) -> List[Any]: ...
 
     def get_decision(self, decision_id: str, tenant_id: str) -> Any | None: ...
 
     def summarize_queue(self, tenant_id: str) -> Dict[str, int]: ...
+
+    def record(self, record: Any) -> Any: ...
+
+    def list_for_task(self, task_id: str, tenant_id: str) -> List[Any]: ...
 
 
 @runtime_checkable
@@ -96,6 +100,8 @@ class ScheduledNotificationBinding(Protocol):
         limit: int = 50,
         status: str = "pending",
     ) -> List[Dict[str, str]]: ...
+
+    def cancel_scheduled(self, schedule_id: str, tenant_id: str) -> bool: ...
 
 
 @runtime_checkable

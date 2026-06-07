@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Mapping, Optional
 
 from intergrax.integrations.contracts.billing_meter import BillingMeterBackend
 from intergrax.integrations.contracts.browser_automation import BrowserAutomation
+from intergrax.integrations.contracts.cloud_platform import CloudPlatform
 from intergrax.integrations.contracts.ci_cd import CiCdBackend
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
 from intergrax.integrations.contracts.crm import CrmBackend
@@ -97,6 +98,7 @@ class ToolWiringContext:
     workflow_orchestrator: WorkflowOrchestratorBackend | None = None
     billing_meter: BillingMeterBackend | None = None
     crm_backend: CrmBackend | None = None
+    cloud_platform: CloudPlatform | None = None
     read_allowlist_roots: frozenset[str] | None = None
     run_budget: Any | None = None
     cost_envelopes: tuple[Any, ...] = ()
@@ -193,6 +195,7 @@ class ToolWiringContext:
             workflow_orchestrator=_optional(IntegrationCategory.WORKFLOW_ORCHESTRATOR),
             billing_meter=_optional(IntegrationCategory.BILLING_METER),
             crm_backend=_optional(IntegrationCategory.CRM),
+            cloud_platform=_optional(IntegrationCategory.CLOUD_PLATFORM),
             integration_profile=profile,
             rag_manager=rag_manager,
             vectorstore_manager=vectorstore_manager,

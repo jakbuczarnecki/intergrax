@@ -54,6 +54,21 @@ T10_NEW_TOOL_IDS = frozenset(
     }
 )
 
+T11_NEW_TOOL_IDS = frozenset(
+    {
+        "hitl.submit_response",
+        "hitl.list_for_task",
+        "notify.list_scheduled",
+        "notify.cancel_scheduled",
+        "cloud_platform.health",
+        "cloud_platform.resolve",
+        "vector_store.count",
+        "vector_store.delete",
+        "vector_store.list_collections",
+        "vector_store.health",
+    }
+)
+
 T7_NEW_TOOL_IDS = frozenset(
     {
         "message_bus.list_tasks",
@@ -176,7 +191,7 @@ def _clean_catalog() -> None:
 def test_register_default_tools_expanded_catalog() -> None:
     register_default_tools()
     registered = frozenset(list_catalog_tool_ids())
-    assert len(registered) == 150
+    assert len(registered) == 160
     assert NEW_TOOL_IDS <= registered
     assert T4_NEW_TOOL_IDS <= registered
     assert T5_NEW_TOOL_IDS <= registered
@@ -185,6 +200,7 @@ def test_register_default_tools_expanded_catalog() -> None:
     assert T8_NEW_TOOL_IDS <= registered
     assert T9_NEW_TOOL_IDS <= registered
     assert T10_NEW_TOOL_IDS <= registered
+    assert T11_NEW_TOOL_IDS <= registered
 
 
 def test_new_bundles_present_in_catalog() -> None:
@@ -229,14 +245,16 @@ def test_new_bundles_present_in_catalog() -> None:
     assert len(get_bundle("platform").tool_ids) == 8
     assert len(get_bundle("database").tool_ids) == 3
     assert len(get_bundle("records").tool_ids) == 6
-    assert len(get_bundle("hitl").tool_ids) == 3
+    assert len(get_bundle("hitl").tool_ids) == 5
     assert len(get_bundle("interaction").tool_ids) == 3
     assert len(get_bundle("workflow").tool_ids) == 5
     assert len(get_bundle("harness").tool_ids) == 6
     assert len(get_bundle("websearch").tool_ids) == 4
-    assert len(get_bundle("notify").tool_ids) == 3
+    assert len(get_bundle("notify").tool_ids) == 5
     assert len(get_bundle("workspace").tool_ids) == 8
     assert len(get_bundle("storage").tool_ids) == 5
     assert len(get_bundle("memory").tool_ids) == 4
     assert len(get_bundle("pagerduty").tool_ids) == 2
     assert len(get_bundle("collaboration").tool_ids) == 7
+    assert len(get_bundle("cloud_platform").tool_ids) == 2
+    assert len(get_bundle("vector_store").tool_ids) == 4

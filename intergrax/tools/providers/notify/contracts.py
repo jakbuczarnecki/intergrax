@@ -55,3 +55,36 @@ class NotifyScheduleOutput(BaseModel):
     schedule_id: str = ""
     deliver_at_utc: str = ""
     detail: str = ""
+
+
+class NotifyListScheduledInput(BaseModel):
+    tenant_id: str = Field(default="default")
+    limit: int = Field(default=50, ge=1, le=200)
+    status: str = Field(default="pending", description="Filter by schedule status (empty = all).")
+
+
+class NotifyScheduledItemOutput(BaseModel):
+    schedule_id: str
+    tenant_id: str
+    channel: str
+    subject: str = ""
+    deliver_at_utc: str
+    status: str
+
+
+class NotifyListScheduledOutput(BaseModel):
+    used: bool = False
+    schedules: list[NotifyScheduledItemOutput] = Field(default_factory=list)
+    total: int = 0
+    detail: str = ""
+
+
+class NotifyCancelScheduledInput(BaseModel):
+    tenant_id: str = Field(default="default")
+    schedule_id: str = Field(..., min_length=1)
+
+
+class NotifyCancelScheduledOutput(BaseModel):
+    cancelled: bool = False
+    schedule_id: str = ""
+    detail: str = ""

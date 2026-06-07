@@ -41,6 +41,11 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
         register_database_tools,
     )
     from intergrax.tools.providers.cache.bundle import CACHE_BUNDLE_ID, CACHE_TOOL_IDS, register_cache_tools
+    from intergrax.tools.providers.cloud_platform.bundle import (
+        CLOUD_PLATFORM_BUNDLE_ID,
+        CLOUD_PLATFORM_TOOL_IDS,
+        register_cloud_platform_tools,
+    )
     from intergrax.tools.providers.filesystem.bundle import (
         FILESYSTEM_BUNDLE_ID,
         FILESYSTEM_TOOL_IDS,
@@ -117,6 +122,11 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
         VISION_DETECT_TOOL_ID,
         VISION_OCR_REGIONS_TOOL_ID,
         VISION_SEGMENT_TOOL_ID,
+    )
+    from intergrax.tools.providers.vector_store.bundle import (
+        VECTOR_STORE_BUNDLE_ID,
+        VECTOR_STORE_TOOL_IDS,
+        register_vector_store_tools,
     )
     from intergrax.tools.providers.websearch.bundle import (
         WEBSEARCH_BUNDLE_ID,
@@ -228,6 +238,13 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
             register_fn=register_vision_tools,
             description="Vision detection, segmentation, and OCR tools.",
             class_name="VisionToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=VECTOR_STORE_BUNDLE_ID,
+            tool_ids=VECTOR_STORE_TOOL_IDS,
+            register_fn=register_vector_store_tools,
+            description="Vector store backend ops tools (count, delete, collections, health).",
+            class_name="VectorStoreToolPlugin",
         ),
         define_tool_plugin(
             bundle_id=ML_BUNDLE_ID,
@@ -343,6 +360,13 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
             class_name="CacheToolPlugin",
         ),
         define_tool_plugin(
+            bundle_id=CLOUD_PLATFORM_BUNDLE_ID,
+            tool_ids=CLOUD_PLATFORM_TOOL_IDS,
+            register_fn=register_cloud_platform_tools,
+            description="Cloud platform facade health and category default resolution tools.",
+            class_name="CloudPlatformToolPlugin",
+        ),
+        define_tool_plugin(
             bundle_id=IDENTITY_BUNDLE_ID,
             tool_ids=IDENTITY_TOOL_IDS,
             register_fn=register_identity_tools,
@@ -360,7 +384,7 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
             bundle_id=HITL_BUNDLE_ID,
             tool_ids=HITL_TOOL_IDS,
             register_fn=register_hitl_tools,
-            description="Read-only human-in-the-loop decision queue tools (governance).",
+            description="Human-in-the-loop decision queue tools (read + policy-gated write).",
             class_name="HitlToolPlugin",
         ),
         define_tool_plugin(

@@ -5,6 +5,10 @@ from __future__ import annotations
 
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.providers.notify.contracts import (
+    NotifyCancelScheduledInput,
+    NotifyCancelScheduledOutput,
+    NotifyListScheduledInput,
+    NotifyListScheduledOutput,
     NotifyScheduleInput,
     NotifyScheduleOutput,
     NotifySendBatchInput,
@@ -12,13 +16,31 @@ from intergrax.tools.providers.notify.contracts import (
     NotifySendInput,
     NotifySendOutput,
 )
-from intergrax.tools.providers.notify.handlers import NotifyScheduleHandler, NotifySendBatchHandler, NotifySendHandler
-from intergrax.tools.providers.notify.service import NOTIFY_SCHEDULE_TOOL_ID, NOTIFY_SEND_BATCH_TOOL_ID, NOTIFY_SEND_TOOL_ID
+from intergrax.tools.providers.notify.handlers import (
+    NotifyCancelScheduledHandler,
+    NotifyListScheduledHandler,
+    NotifyScheduleHandler,
+    NotifySendBatchHandler,
+    NotifySendHandler,
+)
+from intergrax.tools.providers.notify.service import (
+    NOTIFY_CANCEL_SCHEDULED_TOOL_ID,
+    NOTIFY_LIST_SCHEDULED_TOOL_ID,
+    NOTIFY_SCHEDULE_TOOL_ID,
+    NOTIFY_SEND_BATCH_TOOL_ID,
+    NOTIFY_SEND_TOOL_ID,
+)
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 NOTIFY_BUNDLE_ID = "notify"
-NOTIFY_TOOL_IDS: tuple[str, ...] = (NOTIFY_SEND_TOOL_ID, NOTIFY_SEND_BATCH_TOOL_ID, NOTIFY_SCHEDULE_TOOL_ID)
+NOTIFY_TOOL_IDS: tuple[str, ...] = (
+    NOTIFY_SEND_TOOL_ID,
+    NOTIFY_SEND_BATCH_TOOL_ID,
+    NOTIFY_SCHEDULE_TOOL_ID,
+    NOTIFY_LIST_SCHEDULED_TOOL_ID,
+    NOTIFY_CANCEL_SCHEDULED_TOOL_ID,
+)
 
 
 def register_notify_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
@@ -69,4 +91,36 @@ def register_notify_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> Non
             tags=("notify", "notification", "schedule"),
         ),
         NotifyScheduleHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=NOTIFY_LIST_SCHEDULED_TOOL_ID,
+            name=NOTIFY_LIST_SCHEDULED_TOOL_ID,
+            description="List deferred notifications recorded by notify.schedule.",
+            description_short="List scheduled notifications.",
+            input_schema=NotifyListScheduledInput,
+            output_schema=NotifyListScheduledOutput,
+            error_mapping={},
+            side_effects=False,
+            category="notification",
+            risk_level=ToolRiskLevel.LOW,
+            tags=("notify", "notification", "schedule", "read_only"),
+        ),
+        NotifyListScheduledHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=NOTIFY_CANCEL_SCHEDULED_TOOL_ID,
+            name=NOTIFY_CANCEL_SCHEDULED_TOOL_ID,
+            description="Cancel a pending deferred notification schedule entry.",
+            description_short="Cancel scheduled notification.",
+            input_schema=NotifyCancelScheduledInput,
+            output_schema=NotifyCancelScheduledOutput,
+            error_mapping={},
+            side_effects=True,
+            category="notification",
+            risk_level=ToolRiskLevel.MEDIUM,
+            tags=("notify", "notification", "schedule"),
+        ),
+        NotifyCancelScheduledHandler(ctx),
     )
