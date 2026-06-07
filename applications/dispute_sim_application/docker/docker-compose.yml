@@ -1,0 +1,17 @@
+# © Artur Czarnecki. All rights reserved.
+# Run from repository root: docker compose -f applications/dispute_sim_application/docker/docker-compose.yml up --build
+
+services:
+  dispute_sim:
+    build:
+      context: ../../..
+      dockerfile: applications/dispute_sim_application/docker/Dockerfile
+    image: dispute_sim-application:latest
+    ports:
+      - "8020:8020"
+    env_file:
+      - ../.env
+    environment:
+      DISPUTE_SIM_BACKEND_HOST: "0.0.0.0"
+      DISPUTE_SIM_BACKEND_PORT: "8020"
+      INTERGRAX_ENV: prod

@@ -1,0 +1,22 @@
+        # Per-application ignore file — monorepo root as context.
+        # BuildKit: docker buildx build -f applications/dispute_sim_application/docker/Dockerfile \
+        #   --ignorefile applications/dispute_sim_application/docker/.dockerignore -t dispute_sim-application .
+        # Classic: cp this file to repo-root .dockerignore, then docker build -f ...
+
+        .git
+        .venv
+        build/
+        **/__pycache__/
+        *.pyc
+        .pytest_cache
+        notebooks/
+        docs/
+        tests/
+        infra/
+        applications/*
+        !applications/dispute_sim_application/
+        agents/*
+        !agents/dispute_analyst/
+!agents/dispute_intake/
+!agents/dispute_scenario/
+!agents/dispute_strategist/

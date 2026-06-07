@@ -1,0 +1,24 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
+from dispute_scenario.capabilities import CAPABILITIES
+
+# Register skill packs on the contract — see docs/SKILLS.md
+
+
+def build_agent_contract() -> AgentContract:
+    return AgentContract(
+        id="dispute_scenario",
+        name="DisputeScenarioAgent",
+        description="DSW process simulation and correspondence pitfall review.",
+        version="0.1.0",
+        capabilities=CAPABILITIES,
+        skills=[],
+        extra_tools=[],
+        risk_level=AgentRiskLevel.LOW,
+        lifecycle_state=AgentLifecycleState.STAGING,
+        owner_team="platform",
+        max_steps=10,
+    )
