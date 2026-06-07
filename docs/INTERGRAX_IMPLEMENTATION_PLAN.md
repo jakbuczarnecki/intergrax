@@ -1871,9 +1871,11 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 | `harness` (+2) | `harness.compare_runs`, `harness.export_run_bundle` | **Done** |
 | `interaction` (+2, new) | `interaction.list_sessions`, `interaction.get_last_input` | **Done** |
 | contracts | `WorkflowOrchestratorBackend.list/cancel`; `CollaborationSuite.reply/create`; `WebSearchCacheBinding` | **Done** |
-| wiring | integration profile workflow/collaboration/notify extensions; `session_storage` ctx slot | **Done** |
+| wiring | integration profile workflow/collaboration/notify extensions; `session_storage` via `session_tool_wiring.py` + `SessionStorageToolBinding` | **Done** |
 
 **Delivered:** **140** catalog `tool_id` values · **40** shipped bundles.
+
+**Verification:** `152 passed` (`tests/unit/tools/providers/` + exporters) · `check_harness_no_getattr.py` OK · MCP full-catalog export smoke (**140** tools)
 
 Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{workflow,notify,collaboration,websearch,harness,interaction}/`
 

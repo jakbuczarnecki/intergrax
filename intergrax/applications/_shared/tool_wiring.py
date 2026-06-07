@@ -89,6 +89,8 @@ def build_application_tool_wiring(
         collaboration_suite=ctx.collaboration_suite,
         key_value_cache=ctx.key_value_cache,
         shadow_workspace=ctx.shadow_workspace,
+        human_decision_store=ctx.human_decision_store,
+        session_storage=ctx.session_storage,
         memory_view=ctx.memory_view,
         trace_reader=ctx.trace_reader,
         evaluation_registry=ctx.evaluation_registry,

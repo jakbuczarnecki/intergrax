@@ -1,6 +1,6 @@
 # Intergrax Tool Library
 
-**Last updated:** 2026-06-07 — **38 bundles** · **120 catalog tools** (verified via `register_default_tools()`)
+**Last updated:** 2026-06-07 — **40 bundles** · **140 catalog tools** (verified via `register_default_tools()`)
 
 The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
 
@@ -109,7 +109,7 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** · **T
 | `ToolExecutionRequest` / `ToolExecutionResult` | `intergrax/tools/execution_models.py` | **Done** |
 | `ToolProvider` protocol | `intergrax/tools/core/provider.py` | **Done** — accepts optional `ToolWiringContext` |
 | `ToolCatalog` / `ToolProfile` / `ToolWiringContext` | `intergrax/tools/registry/` | **Done** — Phase O.2; typed integration slots + `TaskMemoryViewBinding` / `shadow_workspace` (T-EXPAND) |
-| `runtime_bound_catalog` | `intergrax/runtime/nexus/tools/runtime_bound_catalog.py` | **Done** — UAEP dispatch for `workspace.*` / `memory.*` / `harness.*` (§42.12, mirrors `sandbox.exec`) |
+| `runtime_bound_catalog` | `intergrax/runtime/nexus/tools/runtime_bound_catalog.py` | **Done** — UAEP dispatch for `workspace.*` / `memory.*` / `harness.*` (incl. compare/export) · §42.12 |
 | `register_default_tools()` / `build_registry_from_profile()` | `intergrax/tools/registry/bootstrap.py`, `factory.py` | **Done** |
 | `RuntimeToolInvoker` | `intergrax/runtime/nexus/tools/invoker.py` | **Done** — validation, trace, error mapping |
 | `RuntimeToolGateway` | `intergrax/runtime/nexus/tools/tool_gateway.py` | **Done** — UAEP / §42.12 entry; `nexus.capability_plan` prefers `tool_ids` (e.g. `rag.retrieve`) over legacy `use_rag` booleans |
@@ -126,10 +126,10 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T5 Done** · **T
 |--------|------:|
 | Shipped bundles (`ToolPlugin`) | **40** |
 | Registered `tool_id` values | **140** |
-| Stable bundles | **37** |
+| Stable bundles | **39** |
 | Beta bundles | **1** (`openai_vector_store`) |
 
-**Bundle index:** `rag` (9) · `websearch` (3) · `jira` (3) · `gitlab` (1) · `confluence` (3) · `notify` (1) · `pagerduty` (1) · `observability` (6) · `braintrust` (1) · `sandbox` (1) · `security` (2) · `workflow` (3) · `speech` (2) · `vision` (3) · `ml` (3) · `openai_vector_store` (3) · **`workspace` (6)** · **`memory` (3)** · **`knowledge` (2)** · **`document` (2)** · **`browser` (1)** · **`storage` (4)** · **`issues` (4)** · **`platform` (6)** · **`message_bus` (5)** · **`graph` (2)** · **`collaboration` (5)** · **`cache` (4)** · **`database` (2)** · **`records` (4)** · **`identity` (3)** · **`harness` (4)** · **`health` (2)** · **`eval` (4)** · **`filesystem` (4)** · **`billing` (2)** · **`cost` (3)** · **`crm` (3)**.
+**Bundle index (selected):** `interaction` (2) · `workflow` (5) · `harness` (6) · `websearch` (4) · `notify` (2) · `collaboration` (7) · `hitl` (3) · `platform` (8) · `rag` (11) — full list in [Full tool index](#full-tool-index) below.
 
 Source: `intergrax/tools/registry/shipped_plugins.py`.
 

@@ -21,6 +21,8 @@ def test_harness_lab_tools_include_runtime_bound_catalog_tools() -> None:
         "workspace.read_file",
         "memory.read",
         "issues.create_issue",
+        "harness.compare_runs",
+        "harness.export_run_bundle",
     ):
         assert registry.has(tool_id), tool_id
 

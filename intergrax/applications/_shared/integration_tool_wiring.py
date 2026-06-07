@@ -49,6 +49,8 @@ def wire_integration_tool_context(
         or _resolve_optional(integration_profile, IntegrationCategory.COLLABORATION_SUITE),
         key_value_cache=ctx.key_value_cache or _resolve_optional(integration_profile, IntegrationCategory.KEY_VALUE_CACHE),
         shadow_workspace=ctx.shadow_workspace,
+        human_decision_store=ctx.human_decision_store,
+        session_storage=ctx.session_storage,
         memory_view=ctx.memory_view,
         trace_reader=ctx.trace_reader,
         evaluation_registry=ctx.evaluation_registry,

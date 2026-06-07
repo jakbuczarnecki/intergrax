@@ -19,6 +19,7 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.skills.registry.runtime import SkillRegistry
 from intergrax.tools.registry.runtime import ToolRegistry
+from intergrax.tools.registry.runtime_bindings import SessionStorageBinding
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
 
@@ -53,6 +54,14 @@ def test_wire_application_environment_includes_registry_snapshot() -> None:
     wiring = wire_application_environment(build_lab_manifest(settings), env)
 
     assert wiring.registry_snapshot is not None
+
+
+def test_wire_application_environment_wires_session_storage_binding() -> None:
+    settings = LabApplicationSettings.from_env()
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="reg.session.binding")
+    wiring = wire_application_environment(build_lab_manifest(settings), env, conformance_check=False)
+
+    assert isinstance(wiring.tool_wiring.wiring_context.session_storage, SessionStorageBinding)
     assert wiring.registry_snapshot.policy_bundle is wiring.policy_bundle
 
 
