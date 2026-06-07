@@ -15,9 +15,9 @@ from intergrax.applications._shared.security_wiring import (
 from intergrax.applications._shared.context_wiring import resolve_context_manager_from_environment
 from intergrax.applications._shared.orchestration_wiring import (
     OrchestrationWiringContext,
-    resolve_max_parallel_nodes,
     resolve_nexus_task_classifier,
     resolve_nexus_task_planner,
+    resolve_orchestration_runtime_settings,
 )
 from intergrax.applications._shared.adaptive_wiring import ApplicationAdaptiveWiring
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
@@ -64,7 +64,7 @@ def build_nexus_loop_from_environment(
     wiring_context = OrchestrationWiringContext(llm_adapter=llm_adapter)
     planner = resolve_nexus_task_planner(env, wiring_context=wiring_context)
     classifier = resolve_nexus_task_classifier(registry, env)
-    max_parallel_nodes = resolve_max_parallel_nodes(env)
+    runtime_settings = resolve_orchestration_runtime_settings(env)
     resolved_context_manager = context_manager or resolve_context_manager_from_environment(
         env,
         event_bus=runtime_event_bus,
@@ -74,7 +74,11 @@ def build_nexus_loop_from_environment(
         registry,
         classifier=classifier,
         planner=planner,
-        max_parallel_nodes=max_parallel_nodes,
+        max_parallel_nodes=runtime_settings.max_parallel_nodes,
+        max_inflight_nodes=runtime_settings.max_inflight_nodes,
+        max_delegation_depth=runtime_settings.max_delegation_depth,
+        max_run_retries=runtime_settings.max_run_retries,
+        merge_strategy=runtime_settings.merge_strategy,
         context_manager=resolved_context_manager,
         event_bus=runtime_event_bus,
         trace_store=trace_store,

@@ -103,6 +103,7 @@ Runtime events: `GET /debug/tasks/{id}/events` when SQLite runtime events DB is 
 | `harness.tool_smoke` | `rag.retrieve`, `websearch.query` | Tool catalog smoke |
 | `harness.context_demo` | `rag.retrieve` | Context budget exercises |
 | `harness.trace_read` | `sandbox.exec` | Isolated diagnostics |
+| `harness.integration_bridge_smoke` | `storage.get`, `knowledge.search` | T-EXPAND integration bridge smoke (provider-agnostic) |
 | `harness.reliability_smoke` | `observability.query_traces`, `rag.retrieve`, `security.scan`, `workflow.trigger` | Reliability / ops smoke incl. P6 tools (W-OPS.8) |
 | `harness.policy_smoke` | `rag.retrieve`, `websearch.query` | Policy bundle smoke (W-OPS.8) |
 | `harness.stack_demo` | requires `harness.tool_smoke` | `requires_skills` chain demo (W-OPS.9) |
@@ -114,6 +115,8 @@ Reference harness agents **must** set `AgentContract.skill_ids` — echo and sig
 ## Tool preset (lab)
 
 Default enabled tools: `rag.retrieve`, `websearch.query`.
+
+Harness mode (`wire_lab_tools(..., harness=True)`) additionally enables runtime-bound `workspace.*` / `memory.*`, P6 integration-backed tools from `extend_tool_profile_for_integration()`, and harness modality / observability tools.
 
 `sandbox.exec` is enabled when `ToolWiringContext.sandbox_session` is set (local runtime sandbox) **or** when `IntegrationProfile.sandbox_host` resolves to a hosted backend — `wire_application_environment()` opens `HostedSandboxSession` via `resolve_hosted_sandbox_session()` (M.6 P6). Skills may still declare `sandbox.exec` for harness exercises — wire a session before expecting successful invocations.
 
@@ -207,7 +210,7 @@ Governance, policy, and observability are **composable control-plane layers** �
 
 **Modularity:** swap observability backend via `IntegrationProfile.observability_backend`; add policy via YAML + EP handlers; enable V-SEC defenses via `ApplicationSecurityProfile` — without changing Tier-2 agent code.
 
-**Orchestration:** graph execution, delegation, handoff, hooks — [`AGENT_CREATION_GUIDE.md` Appendix I](AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane). Wired via `orchestration_wiring.py` + `graph_spec_to_plan.py` (Phase ORCH **Done**). Multi-agent quick start: [Appendix C](AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs).
+**Orchestration:** graph execution, delegation, handoff, hooks — [`AGENT_CREATION_GUIDE.md` Appendix I](AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane). **End-to-end flow (diagrams, edge cases):** [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md). Wired via `orchestration_wiring.py` + `graph_spec_to_plan.py` (Phase ORCH **Done**; Phase FLOW **Done** 17/18). Multi-agent quick start: [Appendix C](AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs).
 
 ---
 

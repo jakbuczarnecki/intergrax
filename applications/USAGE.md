@@ -285,8 +285,9 @@ python -m intergrax.scaffold new-application my_product --profile product --agen
 | `lab_application` | Universal lab + `/debug/*` | `uv run uvicorn lab_application.host.main:app --port 8090` |
 | `legal_application` | Product API + Legal agent | `uv run uvicorn legal_application.host.main:app --port 8000` |
 | `research_application` | Research pipeline host | See `research_application/README.md` |
+| `local_workspace_application` | **Local Knowledge Workspace (LKW)** — local index, search, synthesis | See [`local_workspace_application/ARCHITECTURE.md`](local_workspace_application/ARCHITECTURE.md) |
 
-Per-app details: each application's `README.md`.
+Per-app details: each application's `README.md` and `ARCHITECTURE.md` where present.
 
 ---
 

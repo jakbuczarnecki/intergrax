@@ -14,7 +14,7 @@ from intergrax.integrations.contracts.cloud_platform import CloudPlatform
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
 from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.contracts.interaction_surface import InteractionSurface
-from intergrax.integrations.contracts.issue_tracker import IssueTracker
+from intergrax.integrations.contracts.issue_tracker import IssueCreator, IssueTracker
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
 from intergrax.integrations.contracts.wiki_knowledge import WikiKnowledge
 from intergrax.integrations.contracts.key_value_cache import KeyValueCache
@@ -73,6 +73,10 @@ def assert_interaction_surface(instance: object) -> InteractionSurface:
 
 def assert_issue_tracker(instance: object) -> IssueTracker:
     return assert_implements(instance, IssueTracker)
+
+
+def assert_issue_creator(instance: object) -> IssueCreator:
+    return assert_implements(instance, IssueCreator)
 
 
 def assert_wiki_knowledge(instance: object) -> WikiKnowledge:

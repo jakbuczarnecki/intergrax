@@ -6,6 +6,7 @@ import pytest
 
 from intergrax.skills.providers.harness.manifests import (
     HARNESS_CONTEXT_DEMO,
+    HARNESS_INTEGRATION_BRIDGE_SMOKE,
     HARNESS_SKILL_REGISTRY,
     HARNESS_TOOL_SMOKE,
     HARNESS_TRACE_READ,
@@ -37,8 +38,27 @@ def test_harness_bundle_registers_platform_skills() -> None:
         HARNESS_SKILL_REGISTRY,
         HARNESS_MODALITY_SMOKE,
         HARNESS_VISION_QA,
+        HARNESS_INTEGRATION_BRIDGE_SMOKE,
     ):
         assert registry.has(manifest.skill_id)
+
+
+def test_harness_integration_bridge_smoke_merges_bridge_tools() -> None:
+    from intergrax.tools.registry.bootstrap import register_default_tools, reset_default_tools_bootstrap
+    from intergrax.tools.registry.catalog import clear_tool_catalog
+    from intergrax.tools.registry.factory import build_registry_from_profile as build_tool_registry
+    from intergrax.tools.registry.profile import ToolProfile
+
+    clear_tool_catalog()
+    reset_default_tools_bootstrap()
+    register_default_tools()
+    tool_registry = build_tool_registry(
+        ToolProfile(enabled=["storage.get", "knowledge.search"]),
+        ctx=None,
+    )
+    skill_registry = build_registry_from_profile(SkillProfile(enabled_bundles=["harness"]))
+    pack = SkillResolver(skill_registry, tool_registry).resolve([HARNESS_INTEGRATION_BRIDGE_SMOKE.skill_id])
+    assert pack.tool_ids == frozenset({"storage.get", "knowledge.search"})
 
 
 def test_harness_skill_resolver_merges_platform_pack() -> None:
@@ -51,4 +71,5 @@ def test_harness_skill_resolver_merges_platform_pack() -> None:
     )
     assert "rag.retrieve" in pack.tool_ids
     assert "websearch.query" in pack.tool_ids
-    assert "sandbox.exec" in pack.tool_ids
+    assert "harness.get_run" in pack.tool_ids
+    assert "harness.get_run_events" in pack.tool_ids

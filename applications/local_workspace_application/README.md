@@ -1,0 +1,53 @@
+# Local Knowledge Workspace (LKW)
+
+Tier-3 product host for local document indexing, semantic search, and synthesis.
+
+**Architecture (canonical):** [ARCHITECTURE.md](ARCHITECTURE.md)  
+**Build & deploy:** [BUILD_AND_DEPLOY.md](BUILD_AND_DEPLOY.md)
+
+## Agents
+
+| Agent | Capability |
+|-------|------------|
+| `LocalIndexerAgent` | `local.workspace.index` |
+| `LocalSearchAgent` | `local.workspace.search` (default) |
+| `LocalSynthesizerAgent` | `local.workspace.synthesize` |
+
+## Quickstart
+
+From repository root:
+
+```bash
+uv run pytest applications/local_workspace_application/local_workspace_application_tests -q
+cp applications/local_workspace_application/.env.example applications/local_workspace_application/.env
+uv run uvicorn local_workspace_application.host.main:app --host 127.0.0.1 --port 8020
+```
+
+## HTTP
+
+```bash
+curl -s http://127.0.0.1:8020/health
+curl -s http://127.0.0.1:8020/v1/local_workspace/agents
+curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
+  -H "Content-Type: application/json" \
+  -d '{"message":"znajdź informacje o projekcie X","capability":"local.workspace.search"}'
+```
+
+## MCP
+
+`http://127.0.0.1:8020/mcp` — `list_agents`, `run_agent`, catalog tools.
+
+## Platform stack
+
+LKW uses the canonical **Integration → Tool → Skill → Agent** model (§5 in [ARCHITECTURE.md](ARCHITECTURE.md)):
+
+- **Integrations:** `IntegrationProfile.legal_product()` (Docling, SQLite, vector store, rerank)
+- **Tools:** `host/tool_wiring.py` — `rag.*`, `document.parse`, `workspace.*`, `memory.*`, `cache.*`
+- **Skills:** `harness` bundle (LKW.0); domain `local.workspace.*` skills planned (LKW.2)
+
+## Docs
+
+- LKW architecture: [ARCHITECTURE.md](ARCHITECTURE.md)
+- Plan register: [docs/INTERGRAX_IMPLEMENTATION_PLAN.md §6.3a](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated)
+- Agent workflow: [docs/AGENT_CREATION_GUIDE.md](../../docs/AGENT_CREATION_GUIDE.md)
+- Application layout: [applications/USAGE.md](../USAGE.md)

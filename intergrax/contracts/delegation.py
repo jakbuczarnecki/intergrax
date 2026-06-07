@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, Field
 
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 
@@ -22,6 +22,8 @@ class DelegationSpec(BaseModel):
     inherit_tool_policy: bool = False
     parent_run_id: str | None = None
     parent_node_id: str | None = None
+    max_llm_calls: int | None = Field(default=None, ge=0)
+    max_tool_calls: int | None = Field(default=None, ge=0)
 
     def resolved_memory_namespace(self, *, task_id: str, node_id: str) -> str:
         if self.isolated_memory_namespace.strip():

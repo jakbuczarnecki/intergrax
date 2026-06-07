@@ -29,6 +29,26 @@ def test_mcp_exporter_includes_annotations() -> None:
     assert items[0]["annotations"]["injects_context"] is True
 
 
+def test_mcp_exporter_full_catalog_after_t_expand() -> None:
+    from intergrax.tools.registry.bootstrap import register_default_tools, reset_default_tools_bootstrap
+    from intergrax.tools.registry.catalog import clear_tool_catalog, list_catalog_tool_ids
+    from intergrax.tools.registry.factory import build_registry_from_profile
+    from intergrax.tools.registry.profile import ToolProfile
+
+    clear_tool_catalog()
+    reset_default_tools_bootstrap()
+    register_default_tools()
+    registry = build_registry_from_profile(
+        ToolProfile(register_all_catalog_bundles=True),
+        ctx=None,
+    )
+    catalog_ids = list_catalog_tool_ids()
+    assert len(catalog_ids) == 95
+    for tool_id in catalog_ids:
+        assert registry.has(tool_id)
+    assert len(to_mcp_tools(registry)) == 95
+
+
 def test_exporters_from_registry() -> None:
     registry = ToolRegistry()
     contract = rag_retrieve_contract()

@@ -29,8 +29,8 @@ HARNESS_CONTEXT_DEMO = SkillManifest(
 HARNESS_TRACE_READ = SkillManifest(
     skill_id="harness.trace_read",
     version="1.0.0",
-    description="Observability-oriented pack: sandbox exec for isolated diagnostics (trace-friendly).",
-    tool_ids=("sandbox.exec",),
+    description="Observability-oriented pack: persisted harness run trace read and event filtering.",
+    tool_ids=("harness.get_run", "harness.get_run_events", "observability.query_traces"),
     prompt_instruction_ids=("harness.trace_read.system",),
     policy_fragment_id=None,
     risk_tier=SkillRiskTier.LOW,
@@ -68,6 +68,17 @@ HARNESS_SKILL_REGISTRY = SkillManifest(
     policy_fragment_id=None,
     risk_tier=SkillRiskTier.LOW,
     tags=("harness", "registry", "skills"),
+)
+
+HARNESS_INTEGRATION_BRIDGE_SMOKE = SkillManifest(
+    skill_id="harness.integration_bridge_smoke",
+    version="1.0.0",
+    description="Integration bridge smoke: provider-agnostic storage and knowledge tool paths.",
+    tool_ids=("storage.get", "knowledge.search"),
+    prompt_instruction_ids=("harness.integration_bridge_smoke.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("harness", "integrations", "tools"),
 )
 
 HARNESS_RELIABILITY_SMOKE = SkillManifest(

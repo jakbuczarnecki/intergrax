@@ -1,7 +1,7 @@
 # RAG tool bundle
 
 **Bundle id:** `rag`  
-**Tools:** `rag.retrieve`, `rag.ingest_document`, `rag.list_collections`
+**Tools:** `rag.retrieve`, `rag.ingest_document`, `rag.list_collections`, `rag.delete_documents`, `rag.describe_collection`
 
 ## Dependencies (`ToolWiringContext`)
 
@@ -75,6 +75,14 @@ Parsers are **not** fixed to Docling — handlers use smart parsers + `ParserPip
 ### `rag.list_collections`
 
 Returns collection names from the active vector store (`VectorStore.list_collections()`).
+
+### `rag.delete_documents`
+
+Deletes indexed vector chunks by document id via `vectorstore_manager.delete(ids)`.
+
+### `rag.describe_collection`
+
+Returns document count and available collection names from the active vector store.
 
 ## Agent allow-list
 

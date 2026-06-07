@@ -66,5 +66,8 @@ def test_graph_spec_to_plan_topology() -> None:
     step_a = next(s for s in plan.steps if s.agent_id == "AgentA")
     step_b = next(s for s in plan.steps if s.agent_id == "AgentB")
     assert step_b.depends_on == [step_a.step_id]
-    assert step_a.delegation is not None
-    assert step_a.delegation.child_agent_id == "AgentB"
+    assert step_a.delegation is None
+    assert step_b.delegation is not None
+    assert step_b.delegation.child_agent_id == "AgentB"
+    assert step_b.delegation.parent_node_id == step_a.step_id
+    assert step_b.delegation.inherit_tool_policy is False

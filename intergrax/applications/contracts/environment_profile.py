@@ -189,6 +189,11 @@ class OrchestrationProfile(BaseModel):
     long_running_enabled: bool = False
     max_delegation_depth: int = Field(default=4, ge=1, le=32)
     max_parallel_nodes: int | None = Field(default=None, ge=1, le=256)
+    max_inflight_nodes: int | None = Field(default=None, ge=1, le=256)
+    max_run_retries: int = Field(default=0, ge=0, le=32)
+    merge_strategy: str = "concat"
+    multi_agent_order: str = "registry"
+    allow_dynamic_replan: bool = False
 
 
 class ShadowWorkspaceProfile(BaseModel):

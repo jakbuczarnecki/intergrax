@@ -46,6 +46,11 @@ class GovernanceResolution(BaseModel):
 
     @property
     def should_fail(self) -> bool:
+        if self.agent_decision.type is AgentDecisionType.MODIFY_PLAN:
+            from intergrax.contracts.agent_handoff import handoff_from_decision
+
+            if handoff_from_decision(self.agent_decision) is None:
+                return True
         return self.agent_decision.type in {
             AgentDecisionType.FAIL,
             AgentDecisionType.CANCEL,
@@ -91,6 +96,17 @@ class ExecutionInterruptHandler:
             policy = self._policy.evaluate_interrupt(interrupt)
             if interrupt.blocking:
                 policy_ctx.setdefault("has_unresolved_critical_interrupt", True)
+        elif decision.type is AgentDecisionType.MODIFY_PLAN:
+            from intergrax.contracts.agent_handoff import handoff_from_decision
+
+            if handoff_from_decision(decision) is None:
+                policy = PolicyDecision(
+                    action=PolicyAction.DENY,
+                    reason="MODIFY_PLAN_NOT_SUPPORTED",
+                    policy_rule_id="modify_plan_not_supported",
+                )
+            else:
+                policy = self._policy.evaluate_decision(decision, context=policy_ctx)
         else:
             policy = self._policy.evaluate_decision(decision, context=policy_ctx)
 

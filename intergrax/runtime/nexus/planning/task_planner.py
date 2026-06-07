@@ -8,7 +8,10 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
+from intergrax.agents.agent_contract import Agent
+from intergrax.contracts.orchestration_enums import MultiAgentOrder
 from intergrax.contracts.delegation import DelegationSpec
+from intergrax.runtime.task.task import TaskContext
 from intergrax.runtime.nexus.task_classifier import TaskClassification
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
@@ -33,6 +36,7 @@ class NexusPlan(BaseModel):
     classification: str
     steps: List[PlanStep] = Field(default_factory=list)
     validation_criteria: List[str] = Field(default_factory=list)
+    graph_retry_on_error: int | None = None
 
 
 class TaskPlanner:
@@ -41,6 +45,9 @@ class TaskPlanner:
 
     Produces a sequential plan; multi-step plans prepare for ExecutionGraph (Phase C).
     """
+
+    def __init__(self, *, multi_agent_order: MultiAgentOrder = MultiAgentOrder.REGISTRY) -> None:
+        self._multi_agent_order = multi_agent_order
 
     def plan(self, task: Task, registry: AgentRegistry) -> NexusPlan:
         classification = task.classification or TaskClassification.SINGLE_AGENT_DEFAULT.value
@@ -96,6 +103,7 @@ class TaskPlanner:
     ) -> NexusPlan:
         capability = task.context.capability or ""
         agents = registry.find_by_capability(capability) if capability else []
+        agents = self._sort_agents(agents, capability=capability)
         steps: List[PlanStep] = []
         prev_id: Optional[str] = None
         for idx, agent in enumerate(agents, start=1):
@@ -152,6 +160,18 @@ class TaskPlanner:
             ],
             validation_criteria=["non_empty_summary", "capability:research.pipeline"],
         )
+
+    def _sort_agents(self, agents: list[Agent], *, capability: str) -> list[Agent]:
+        if self._multi_agent_order is MultiAgentOrder.STABLE_ALPHA:
+            return sorted(agents, key=lambda agent: agent.get_contract().id)
+        if self._multi_agent_order is MultiAgentOrder.PRIORITY:
+            context = TaskContext(capability=capability) if capability else TaskContext()
+            return sorted(
+                agents,
+                key=lambda agent: agent.can_handle(context).score,
+                reverse=True,
+            )
+        return list(agents)
 
     @staticmethod
     def _agent_for_capability(

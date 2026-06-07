@@ -1,0 +1,192 @@
+---
+description: Intergrax Harness AI — iteration workflow, architectural safety fuse, and Definition of Done
+alwaysApply: true
+---
+
+# Intergrax — Iteration Instruction (Harness AI Implementation)
+
+You are implementing the **Intergrax Harness AI / Agent Operating System**.
+
+## Strategic frame (never forget)
+
+- The **Harness is the product**. Agents are replaceable. The runtime is permanent.
+- Applications are compositions of reusable Tier-0 capabilities.
+- Default scope: **§6.1 harness maintenance** unless the user explicitly selects another plan item.
+- **Phase K business agents** and **§6.3 deferred product work** require explicit user reprioritization — do not start silently.
+
+Repository baseline rules live in **`AGENTS.md`** — treat them as hard constraints. This instruction adds iteration workflow and communication protocol only.
+
+## Canonical sources (single source of truth)
+
+Use existing canonical documents whenever possible.
+
+Do not duplicate architectural knowledge into new files or chat summaries unless explicitly requested.
+
+Prefer updating the appropriate canonical document over creating a parallel source of truth.
+
+| Priority | Document | Role |
+|----------|----------|------|
+| 1 | `docs/INTERGRAX_DEVELOPMENT_STRATEGY.md` | Strategic goal, decision hierarchy, work cycle |
+| 2 | `docs/IDEAL_HARNESS_AI_ARCHITECTURE.md` | Target Harness AI architecture |
+| 3 | `docs/intergrax_runtime_architecture.md` | Current architecture canon |
+| 4 | `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` | Roadmap, status, next item |
+| 5 | `docs/INTERGRAX_HARNESS_AUDIT_MAP.md` | Harness layers, audit methodology |
+| 6 | `docs/NEXUS_EXECUTION_FLOW_REFERENCE.md` | Canonical execution / orchestration flow |
+
+Task-specific routing: follow the table in **`AGENTS.md`** (agents, tools, skills, RAG, HITL, L4 adaptive, etc.).
+
+## Scope per iteration
+
+- Implement **one coherent implementation-plan item** per iteration unless the user explicitly requests a batch.
+- Never silently expand scope to "all remaining steps".
+- If you find issues **outside current scope**: report as out-of-scope findings; do not fix or redesign silently.
+
+## Mandatory work order
+
+Follow the strategy work cycle:
+
+```text
+ANALIZA → OCENA ARCHITEKTURY → OCENA PLANU → PROPOZYCJA (if needed)
+  → AKTUALIZACJA DOKUMENTACJI (tylko dotkniętej) → IMPLEMENTACJA → WERYFIKACJA → WNIOSKI
+```
+
+**Architectural safety fuse:** If the implementation plan, current architecture, and target architecture are inconsistent, **stop implementation** and explain the conflict before modifying code.
+
+Operational steps:
+
+1. Identify the **next implementation item** (from user request or `INTERGRAX_IMPLEMENTATION_PLAN.md`).
+2. Map it to the **Harness AI layer** (`INTERGRAX_HARNESS_AUDIT_MAP.md`).
+3. Verify alignment: strategy ↔ ideal architecture ↔ current architecture ↔ plan.
+4. **If misaligned — STOP.**
+   Explain the conflict using the primary language of the current operator session.
+   Propose the required plan and/or architecture update before coding.
+5. Inspect existing code and Tier-0 mechanisms; **reuse before creating**.
+6. Implement the **smallest coherent diff** that satisfies the item.
+7. Add or update tests when they cover **real behavior** (not trivial assertions).
+8. Run the **most relevant verification** (see below).
+9. Update **only documentation directly affected** by the change.
+10. Deliver the iteration summary (template below).
+
+## Architecture rules
+
+### Tier boundaries
+
+```text
+Tier-0  intergrax/           Platform — integrations, tools, skills, LLM, RAG, memory
+Tier-1  intergrax/runtime/   Nexus — Agent OS (orchestration, policy, HITL)
+Tier-2  agents/              Specialized capabilities
+Tier-3  applications/        Deployable product wiring
+```
+
+```text
+intergrax/       MUST NOT import from agents/ or applications/
+agents/          MUST NOT import from applications/
+applications/    MAY import from agents/ and intergrax/
+```
+
+### Always
+
+- Strengthen the **Harness**, not a single agent.
+- Extend existing components; prefer composition and wiring.
+- Preserve modular, scalable, reusable architecture.
+- Match surrounding code style (Python 3.12, `uv`, copyright header on new files).
+
+### Never
+
+- Duplicate existing Tier-0 universal mechanisms.
+- Place business logic inside Nexus.
+- Put vendor SDK access inside Tier-2 agents (use Nexus policy + `ToolRuntime`).
+- Create agent-specific runtime branches or modify `intergrax/runtime/` for one agent.
+- Bypass platform mechanisms or introduce architecture shortcuts.
+- Use `getattr`, `setattr`, reflection-style loose coupling, or untyped dicts where typed contracts exist.
+- Commit secrets (`.env`, credentials, API keys).
+- Create new documentation files without explicit justification.
+- Declare the **whole platform** complete — only evaluate the **current scope**.
+
+### New component gate
+
+If existing mechanisms are insufficient:
+
+1. **STOP implementation.**
+2. Explain to the operator using the primary language of the current operator session:
+   - the problem,
+   - why existing mechanisms are insufficient,
+   - possible alternatives,
+   - the recommended option.
+3. **Wait for operator decision** before proceeding.
+
+## Typing and contracts
+
+Prefer: `Protocol`, ABC, `Enum`, Pydantic models, explicit interfaces and inheritance.
+
+## Language rules
+
+| Context | Language |
+|---------|----------|
+| Repository artifacts (source code, comments, docstrings, documentation, logs, tests, commit messages) | English |
+| Operator-facing interactive communication (summaries, explanations, conflict reports, implementation reports, recommendations) | Use the primary language of the current operator session unless explicitly requested otherwise |
+
+Do not translate repository artifacts.
+Do not mix languages within a single response unless explicitly requested.
+
+## Documentation rules
+
+- One source of truth per topic — update existing docs in `docs/`, do not create parallel guides.
+- New doc file only if existing canon is insufficient — **state why**.
+- Short summaries in chat are allowed when they aid understanding — do not replace or fork canonical docs.
+
+## Testing and verification
+
+After harness/runtime changes:
+
+```bash
+uv run pytest -m gate -q
+python scripts/check_harness_no_getattr.py
+```
+
+Agent-only work:
+
+```bash
+uv run pytest agents/<agent>/tests/ -q
+```
+
+Broader local check: `scripts\test.bat unit` (Windows) or `uv run pytest`.
+
+- If tests cannot run, explain exactly why — **never claim completion without verification evidence**.
+- Do not add tests that only assert the obvious.
+
+## Git rules
+
+- **Do not commit** unless the user explicitly asks.
+- When asked, provide a one-line English commit message; user decides whether to commit.
+
+## Iteration summary
+
+Present the entire summary using the primary language of the current operator session.
+
+At the end of every iteration, provide:
+
+1. **Completed implementation item**
+2. **Harness AI layer** (from audit map)
+3. **Changed files**
+4. **Tests** added or updated
+5. **Tests executed** (commands + result)
+6. **Documentation** updated (specific files)
+7. **Architectural impact**
+8. **Remaining risks**
+9. **Out-of-scope findings**
+10. **Suggested next step** aligned with the Intergrax Harness AI vision
+11. **One-line commit message** (English) — no commit unless the operator requests
+
+## Completion criteria
+
+Do not consider an implementation item complete unless:
+
+- architecture remains consistent,
+- implementation plan remains consistent,
+- relevant tests pass,
+- affected documentation is updated,
+- no unnecessary Tier-0 duplication was introduced.
+
+Never claim that the whole platform is complete.
+Only report completion for the currently implemented scope.

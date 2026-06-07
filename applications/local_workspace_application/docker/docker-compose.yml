@@ -1,0 +1,17 @@
+# © Artur Czarnecki. All rights reserved.
+# Run from repository root: docker compose -f applications/local_workspace_application/docker/docker-compose.yml up --build
+
+services:
+  local_workspace:
+    build:
+      context: ../../..
+      dockerfile: applications/local_workspace_application/docker/Dockerfile
+    image: local_workspace-application:latest
+    ports:
+      - "8020:8020"
+    env_file:
+      - ../.env
+    environment:
+      LOCAL_WORKSPACE_BACKEND_HOST: "0.0.0.0"
+      LOCAL_WORKSPACE_BACKEND_PORT: "8020"
+      INTERGRAX_ENV: prod

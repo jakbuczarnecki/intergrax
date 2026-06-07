@@ -100,10 +100,12 @@ def test_rag_retrieve_missing_vectorstore() -> None:
 
 
 def test_rag_tool_registered_via_catalog() -> None:
+    from intergrax.tools.providers.rag.bundle import RAG_TOOL_IDS
+
     register_default_tools()
     assert "rag.retrieve" in list_catalog_tool_ids()
     bundle = get_bundle("rag")
-    assert bundle.tool_ids == ("rag.retrieve", "rag.ingest_document", "rag.list_collections")
+    assert bundle.tool_ids == RAG_TOOL_IDS
 
 
 def test_rag_retrieve_via_runtime_invoker() -> None:

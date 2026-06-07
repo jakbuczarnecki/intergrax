@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Resolve Nexus orchestration collaborators from ``ApplicationEnvironmentProfile`` (Phase ORCH-1)."""
+"""Resolve Nexus orchestration collaborators from ``ApplicationEnvironmentProfile`` (Phase ORCH-1, FLOW)."""
 
 from __future__ import annotations
 
@@ -13,7 +13,9 @@ from intergrax.applications._shared.graph_spec_to_plan import (
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
+from intergrax.contracts.orchestration_enums import MergeStrategy, MultiAgentOrder
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.runtime.nexus.planning.nexus_llm_plan_builder import build_nexus_plan_from_llm
 from intergrax.runtime.nexus.planning.nexus_planner_protocol import NexusTaskPlannerProtocol
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, TaskPlanner
 from intergrax.runtime.nexus.task_classifier import ClassifyingTaskClassifier
@@ -42,21 +44,52 @@ class OrchestrationWiringContext:
     llm_adapter: LLMAdapter | None = None
 
 
+@dataclass(frozen=True)
+class OrchestrationRuntimeSettings:
+    """Resolved orchestration knobs passed into ``NexusLoop`` (Phase FLOW)."""
+
+    max_parallel_nodes: int | None
+    max_inflight_nodes: int | None
+    max_delegation_depth: int | None
+    max_run_retries: int
+    merge_strategy: MergeStrategy
+    multi_agent_order: MultiAgentOrder
+    allow_dynamic_replan: bool
+
+
+def _resolve_multi_agent_order(raw: str) -> MultiAgentOrder:
+    try:
+        return MultiAgentOrder(raw)
+    except ValueError:
+        return MultiAgentOrder.REGISTRY
+
+
+def _resolve_merge_strategy(raw: str) -> MergeStrategy:
+    try:
+        return MergeStrategy(raw)
+    except ValueError:
+        return MergeStrategy.CONCAT
+
+
+def resolve_task_planner(env: ApplicationEnvironmentProfile) -> TaskPlanner:
+    order = _resolve_multi_agent_order(env.orchestration_profile.multi_agent_order)
+    return TaskPlanner(multi_agent_order=order)
+
+
 class EngineBackedNexusPlanner:
-    """
-    Nexus planner registered under ``planner_kind=engine``.
+    """Nexus planner registered under ``planner_kind=engine`` (Phase FLOW-1)."""
 
-    Validates LLM availability at bootstrap; uses deterministic ``TaskPlanner`` for
-    Nexus-level steps until async ``EnginePlan`` bridging is product-scheduled.
-    """
-
-    def __init__(self, llm_adapter: LLMAdapter) -> None:
+    def __init__(self, llm_adapter: LLMAdapter, fallback: TaskPlanner) -> None:
         self._llm_adapter = llm_adapter
-        self._inner = TaskPlanner()
+        self._fallback = fallback
 
     def plan(self, task: Task, registry: AgentRegistry) -> NexusPlan:
-        _ = self._llm_adapter
-        return self._inner.plan(task, registry)
+        return build_nexus_plan_from_llm(
+            task,
+            registry,
+            self._llm_adapter,
+            fallback=self._fallback,
+        )
 
 
 class GraphSpecSeedingPlanner:
@@ -109,15 +142,19 @@ def resolve_nexus_task_planner(
     """Map ``OrchestrationProfile.planner_kind`` to a concrete planner implementation."""
     kind = _normalize_planner_kind(env.orchestration_profile.planner_kind)
     context = wiring_context or OrchestrationWiringContext()
+    fallback = resolve_task_planner(env)
 
     if kind is NexusPlannerKind.ENGINE:
         if context.llm_adapter is None:
             raise OrchestrationWiringError(
                 "planner_kind='engine' requires OrchestrationWiringContext.llm_adapter"
             )
-        inner: NexusTaskPlannerProtocol = EngineBackedNexusPlanner(context.llm_adapter)
+        inner: NexusTaskPlannerProtocol = EngineBackedNexusPlanner(
+            context.llm_adapter,
+            fallback=fallback,
+        )
     else:
-        inner = TaskPlanner()
+        inner = fallback
 
     graph_spec = env.graph_spec
     if graph_spec is not None and graph_spec.nodes:
@@ -136,6 +173,26 @@ def resolve_nexus_task_classifier(
     raise OrchestrationWiringError(f"Unhandled classifier_kind: {kind.value}")
 
 
+def resolve_orchestration_runtime_settings(
+    env: ApplicationEnvironmentProfile,
+) -> OrchestrationRuntimeSettings:
+    profile = env.orchestration_profile
+    return OrchestrationRuntimeSettings(
+        max_parallel_nodes=profile.max_parallel_nodes,
+        max_inflight_nodes=profile.max_inflight_nodes,
+        max_delegation_depth=profile.max_delegation_depth,
+        max_run_retries=profile.max_run_retries,
+        merge_strategy=_resolve_merge_strategy(profile.merge_strategy),
+        multi_agent_order=_resolve_multi_agent_order(profile.multi_agent_order),
+        allow_dynamic_replan=profile.allow_dynamic_replan,
+    )
+
+
 def resolve_max_parallel_nodes(env: ApplicationEnvironmentProfile) -> int | None:
     """Return graph batch concurrency cap from the environment profile."""
     return env.orchestration_profile.max_parallel_nodes
+
+
+def resolve_max_inflight_nodes(env: ApplicationEnvironmentProfile) -> int | None:
+    """Return graph backpressure cap from the environment profile."""
+    return env.orchestration_profile.max_inflight_nodes

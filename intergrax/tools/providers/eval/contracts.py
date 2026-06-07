@@ -1,0 +1,58 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+from __future__ import annotations
+
+from pydantic import BaseModel, Field
+
+
+class EvalRecordObservationInput(BaseModel):
+    observation_id: str = Field(..., min_length=1)
+    run_id: str = Field(..., min_length=1)
+    agent_id: str = Field(..., min_length=1)
+    mode: str = Field(default="shadow", pattern="^(online|shadow)$")
+    scenario_id: str = Field(..., min_length=1)
+    passed: bool
+    score: float = Field(ge=0.0, le=1.0)
+    candidate_profile_version_id: str | None = None
+
+
+class EvalRecordObservationOutput(BaseModel):
+    recorded: bool = True
+    observation_id: str
+
+
+class EvalListObservationsInput(BaseModel):
+    limit: int = Field(default=100, ge=1, le=1000)
+
+
+class EvalObservationOutput(BaseModel):
+    observation_id: str
+    run_id: str
+    agent_id: str
+    mode: str
+    scenario_id: str
+    passed: bool
+    score: float
+    candidate_profile_version_id: str | None = None
+    recorded_at: str = ""
+
+
+class EvalListObservationsOutput(BaseModel):
+    observations: list[EvalObservationOutput] = Field(default_factory=list)
+    total: int = 0
+    pass_rate: float = 0.0
+    average_score: float = 0.0
+
+
+class EvalSummarizeReleaseInput(BaseModel):
+    release_id: str = Field(..., min_length=1)
+
+
+class EvalSummarizeReleaseOutput(BaseModel):
+    release_id: str
+    observation_count: int = 0
+    pass_rate: float = 0.0
+    average_score: float = 0.0
+    passed_count: int = 0
+    failed_count: int = 0

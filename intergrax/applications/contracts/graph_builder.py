@@ -62,7 +62,11 @@ class AgentGraph:
         return self
 
     def build(self) -> ApplicationGraphSpec:
-        return ApplicationGraphSpec(nodes=list(self._nodes), edges=list(self._edges))
+        return ApplicationGraphSpec(
+            nodes=list(self._nodes),
+            edges=list(self._edges),
+            retry_on_error=self._retry_on_error,
+        )
 
     @property
     def default_agent_id(self) -> str | None:

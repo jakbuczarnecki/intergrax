@@ -34,10 +34,11 @@ from intergrax.runtime.nexus.context.metadata_keys import HANDOFF_STRUCTURED_OUT
 from intergrax.runtime.nexus.handoff.coordinator import HandoffCoordinator
 from intergrax.runtime.nexus.execution.execution_graph import (
     ExecutionGraph,
+    ExecutionGraphCycleError,
     ExecutionNode,
     ExecutionNodeStatus,
 )
-from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryRecord
+from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy, RetryRecord
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
@@ -79,10 +80,12 @@ class GraphExecutor:
         middleware: Optional[MiddlewarePipeline] = None,
         max_parallel_nodes: int | None = None,
         max_inflight_nodes: int | None = None,
+        max_delegation_depth: int | None = None,
     ) -> None:
         self._registry = registry
         self._max_parallel_nodes = max_parallel_nodes
         self._max_inflight_nodes = max_inflight_nodes
+        self._max_delegation_depth = max_delegation_depth
         self._inflight_semaphore: asyncio.Semaphore | None = None
         self._engine = engine or AgentEngine(registry)
         self._router = router or AgentRouter(registry)
@@ -95,6 +98,13 @@ class GraphExecutor:
         self._handoff = handoff_coordinator or HandoffCoordinator(registry)
         self._event_bus = event_bus
         self._middleware = middleware or MiddlewarePipeline()
+
+    def set_retry_policy(self, policy: RetryPolicy) -> None:
+        self._retry_engine = RetryEngine(
+            self._registry,
+            policy=policy,
+            middleware=self._middleware,
+        )
 
     async def execute(
         self,
@@ -114,7 +124,19 @@ class GraphExecutor:
         if runtime_ckpt is not None:
             apply_runtime_checkpoint_to_graph(graph, runtime_ckpt, prior_outputs)
 
-        for batch in graph.batches():
+        try:
+            batches = graph.batches()
+        except ExecutionGraphCycleError as exc:
+            failed = AgentExecutionResult(
+                agent_id="",
+                run_id=task.task_id,
+                status=AgentExecutionStatus.FAILED,
+                summary="",
+                errors=[str(exc)],
+            )
+            return [failed], [], graph, False
+
+        for batch in batches:
             if CancellationCoordinator.is_requested(task.metadata):
                 CancellationCoordinator.mark_pending_graph_nodes_cancelled(graph)
                 return all_executions, all_retries, graph, True
@@ -306,6 +328,21 @@ class GraphExecutor:
         node.status = ExecutionNodeStatus.RUNNING
         if on_node_start is not None:
             on_node_start(node)
+
+        delegation_error = self._validate_delegation_constraints(graph, node)
+        if delegation_error is not None:
+            failed = AgentExecutionResult(
+                agent_id=node.agent_id or "",
+                run_id=task.task_id,
+                status=AgentExecutionStatus.FAILED,
+                summary="",
+                errors=[delegation_error],
+            )
+            node.execution_result = failed
+            node.status = ExecutionNodeStatus.FAILED
+            if on_node_complete is not None:
+                on_node_complete(node)
+            return failed, [], True, False, []
 
         bundle = self._context_manager.build_agent_context(task, node, prior_outputs)
         node_task = self._context_manager.apply_to_task(task, bundle)
@@ -604,3 +641,33 @@ class GraphExecutor:
                 correlation_id=task.task_id,
             )
         )
+
+    def _delegation_depth(self, graph: ExecutionGraph, node: ExecutionNode) -> int:
+        if node.delegation is None:
+            return 0
+        parent_depth = 0
+        for dep_id in node.depends_on:
+            dep = graph.node_by_id(dep_id)
+            parent_depth = max(parent_depth, self._delegation_depth(graph, dep))
+        return 1 + parent_depth
+
+    def _validate_delegation_constraints(
+        self,
+        graph: ExecutionGraph,
+        node: ExecutionNode,
+    ) -> str | None:
+        if node.delegation is None:
+            return None
+        if self._max_delegation_depth is not None:
+            depth = self._delegation_depth(graph, node)
+            if depth > self._max_delegation_depth:
+                return (
+                    f"max_delegation_depth exceeded: depth={depth} "
+                    f"limit={self._max_delegation_depth}"
+                )
+        delegation = node.delegation
+        if delegation.max_llm_calls is not None and delegation.max_llm_calls < 1:
+            return "delegation_budget_llm_calls_exhausted"
+        if delegation.max_tool_calls is not None and delegation.max_tool_calls < 1:
+            return "delegation_budget_tool_calls_exhausted"
+        return None

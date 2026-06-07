@@ -6,14 +6,38 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Mapping, Optional
+from typing import TYPE_CHECKING, Any, Mapping, Optional
 
-
+from intergrax.integrations.contracts.browser_automation import BrowserAutomation
+from intergrax.integrations.contracts.ci_cd import CiCdBackend
+from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
+from intergrax.integrations.contracts.document_parser import DocumentParser
+from intergrax.integrations.contracts.document_store import DocumentStore
+from intergrax.integrations.contracts.feature_flag import FeatureFlagBackend
+from intergrax.integrations.contracts.graph_store import GraphStore
 from intergrax.integrations.contracts.identity_provider import IdentityProviderBackend
+from intergrax.integrations.contracts.issue_tracker import IssueTracker
+from intergrax.integrations.contracts.key_value_cache import KeyValueCache
+from intergrax.integrations.contracts.message_bus import MessageBus
+from intergrax.integrations.contracts.notification_channel import NotificationChannel
+from intergrax.integrations.contracts.object_storage import ObjectStorage
+from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
+from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.integrations.contracts.sandbox_host import SandboxHostBackend
+from intergrax.integrations.contracts.search_provider import SearchProvider
+from intergrax.integrations.contracts.secrets_store import SecretsStore
 from intergrax.integrations.contracts.security_scanner import SecurityScannerBackend
 from intergrax.integrations.contracts.speech_provider import SpeechProviderBackend
+from intergrax.integrations.contracts.wiki_knowledge import WikiKnowledge
 from intergrax.integrations.contracts.workflow_orchestrator import WorkflowOrchestratorBackend
+from intergrax.tools.registry.runtime_bindings import (
+    OnlineEvaluationRegistryBinding,
+    RunTraceReaderBinding,
+    TaskMemoryViewBinding,
+)
+
+if TYPE_CHECKING:
+    from intergrax.runtime.workspace.shadow_workspace import ShadowWorkspace
 
 
 @dataclass
@@ -26,12 +50,29 @@ class ToolWiringContext:
     resolve integrations themselves.
     """
 
-    issue_tracker: Any | None = None
-    search_provider: Any | None = None
-    wiki_knowledge: Any | None = None
-    notification_channel: Any | None = None
-    observability_backend: Any | None = None
-    observability_backends: dict[str, Any] = field(default_factory=dict)
+    issue_tracker: IssueTracker | None = None
+    search_provider: SearchProvider | None = None
+    wiki_knowledge: WikiKnowledge | None = None
+    notification_channel: NotificationChannel | None = None
+    observability_backend: ObservabilityBackend | None = None
+    observability_backends: dict[str, ObservabilityBackend] = field(default_factory=dict)
+    object_storage: ObjectStorage | None = None
+    relational_store: RelationalStore | None = None
+    document_store: DocumentStore | None = None
+    browser_automation: BrowserAutomation | None = None
+    document_parser: DocumentParser | None = None
+    secrets_store: SecretsStore | None = None
+    feature_flag_backend: FeatureFlagBackend | None = None
+    ci_cd_backend: CiCdBackend | None = None
+    message_bus: MessageBus | None = None
+    graph_store: GraphStore | None = None
+    collaboration_suite: CollaborationSuite | None = None
+    key_value_cache: KeyValueCache | None = None
+    shadow_workspace: ShadowWorkspace | None = None
+    memory_view: TaskMemoryViewBinding | None = None
+    trace_reader: RunTraceReaderBinding | None = None
+    evaluation_registry: OnlineEvaluationRegistryBinding | None = None
+    integration_profile: Any | None = None
     rag_manager: Any | None = None
     vectorstore_manager: Any | None = None
     embedding_manager: Any | None = None
@@ -119,11 +160,24 @@ class ToolWiringContext:
             notification_channel=_optional(IntegrationCategory.NOTIFICATION_CHANNEL),
             observability_backend=primary_obs,
             observability_backends=obs_backends,
+            object_storage=_optional(IntegrationCategory.OBJECT_STORAGE),
+            relational_store=_optional(IntegrationCategory.RELATIONAL_STORE),
+            document_store=_optional(IntegrationCategory.DOCUMENT_STORE),
+            browser_automation=_optional(IntegrationCategory.BROWSER_AUTOMATION),
+            document_parser=_optional(IntegrationCategory.DOCUMENT_PARSER),
+            secrets_store=_optional(IntegrationCategory.SECRETS_STORE),
+            feature_flag_backend=_optional(IntegrationCategory.FEATURE_FLAG),
+            ci_cd_backend=_optional(IntegrationCategory.CI_CD),
+            message_bus=_optional(IntegrationCategory.MESSAGE_BUS),
+            graph_store=_optional(IntegrationCategory.GRAPH_STORE),
+            collaboration_suite=_optional(IntegrationCategory.COLLABORATION_SUITE),
+            key_value_cache=_optional(IntegrationCategory.KEY_VALUE_CACHE),
             security_scanner=_optional(IntegrationCategory.SECURITY_SCANNER),
             sandbox_host=_optional(IntegrationCategory.SANDBOX_HOST),
             identity_provider=_optional(IntegrationCategory.IDENTITY_PROVIDER),
             speech_provider=_optional(IntegrationCategory.SPEECH_PROVIDER),
             workflow_orchestrator=_optional(IntegrationCategory.WORKFLOW_ORCHESTRATOR),
+            integration_profile=profile,
             rag_manager=rag_manager,
             vectorstore_manager=vectorstore_manager,
             embedding_manager=embedding_manager,

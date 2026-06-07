@@ -4,7 +4,8 @@ Configured execution environments that compose Nexus, agents, and integrations f
 
 **Ready to scaffold?** [`TIER3_READINESS.md`](TIER3_READINESS.md)  
 **Usage guide:** [`USAGE.md`](USAGE.md)  
-**Composition engine:** [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md)
+**Composition engine:** [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md)  
+**Nexus execution flow (how tasks run through Nexus):** [`docs/NEXUS_EXECUTION_FLOW_REFERENCE.md`](../docs/NEXUS_EXECUTION_FLOW_REFERENCE.md)
 
 | Application | Role |
 |-------------|------|

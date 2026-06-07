@@ -32,6 +32,7 @@ Intergrax is a **production-grade Harness AI platform** — not a chatbot or sin
 | Four-tier model (Tier-0…3) | docs/intergrax_runtime_architecture.md §1–§5 |
 | Harness AI terminology | docs/intergrax_runtime_architecture.md §5.3 |
 | Nexus runtime & UAEP | docs/intergrax_runtime_architecture.md §42 |
+| Nexus execution flow (diagrams, edge cases) | docs/NEXUS_EXECUTION_FLOW_REFERENCE.md |
 | Integration → Tool → Skill → Agent | docs/INTEGRATIONS.md · docs/TOOLS.md · docs/SKILLS.md |
 | LLM providers (19 adapters) | docs/LLM_ADAPTERS.md |
 | RAG & memory | docs/intergrax_runtime_architecture.md §7.1.2 · Phase MEM in docs/INTERGRAX_IMPLEMENTATION_PLAN.md |
@@ -43,7 +44,7 @@ Intergrax is a **production-grade Harness AI platform** — not a chatbot or sin
 - docs/INTERGRAX_IMPLEMENTATION_PLAN.md — phase tracker, gates, maintenance queue (§6.1)
 - Harness platform: **complete** (maintenance-only default queue)
 - Regression gate: `uv run pytest -m gate -q`
-- Business agents (Phase K): **end of plan** — deferred until explicit product decision
+- Business agents (Phase K): K.1/K.2 deferred; **Local Knowledge Workspace (LKW)** active — applications/local_workspace_application/ARCHITECTURE.md · plan §6.3a LKW.*
 
 ## Architecture & maturity
 

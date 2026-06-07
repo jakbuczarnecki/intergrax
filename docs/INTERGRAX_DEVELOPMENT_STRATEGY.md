@@ -1,6 +1,6 @@
 # Intergrax — Development Strategy
 
-**Status:** Canonical (2026-06-05) — default queue: §6.1 maintenance  
+**Status:** Canonical (2026-06-06) — default queue: §6.1 maintenance; Band 2ad (FAUDIT-32) **Done**  
 **Audience:** Maintainers, architects, implementation agents, Cursor AI  
 **Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) · [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) · [docs/README.md](README.md)
 
@@ -44,7 +44,7 @@ Intergrax deliberately supports **two modes** on one codebase:
 
 **Laboratory is the adoption phase; production harness is the strategic destination.**
 
-The architecture canon (§2, §50–§51) describes both. Phase **L** certified the OS; phases **Q / Q+ / R** hardened harness semantics; phases **S / T** delivered harness environment and cleanliness; phase **U** closed the gap to **production harness** baseline (security, policy wiring, contracts). **Phase V** is the default post-U architecture hardening track (capability graph, lifecycle governance, context/prompt/evaluation hardening, metrics, security/cost governance). **Business agents (Phase K)** remain end-of-plan and require explicit reprioritization.
+The architecture canon (§2, §50–§51) describes both. Phase **L** certified the OS; phases **Q / Q+ / R** hardened harness semantics; phases **S / T** delivered harness environment and cleanliness; phase **U** closed the gap to **production harness** baseline (security, policy wiring, contracts). **Phase V** is the default post-U architecture hardening track (capability graph, lifecycle governance, context/prompt/evaluation hardening, metrics, security/cost governance). **Business agents (Phase K)** remain end-of-plan for K.1/K.2; **Local Knowledge Workspace (LKW)** started 2026-06-07 as the first harness-validation product — see [`applications/local_workspace_application/ARCHITECTURE.md`](../applications/local_workspace_application/ARCHITECTURE.md) and plan §6.3a **LKW.***.
 
 Intergrax is **not** a finished multi-tenant SaaS today (§4 canon). That remains a **future** evolution (canon §50). Production harness **does** require: certified runtime, product reference agents, skill catalog depth, and selected integration **stable** tiers — not full-catalog beta breadth alone.
 

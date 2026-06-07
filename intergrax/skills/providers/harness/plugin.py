@@ -7,6 +7,7 @@ from __future__ import annotations
 from intergrax.skills.core.manifest import SkillBundleManifest
 from intergrax.skills.providers.harness.manifests import (
     HARNESS_CONTEXT_DEMO,
+    HARNESS_INTEGRATION_BRIDGE_SMOKE,
     HARNESS_MODALITY_SMOKE,
     HARNESS_POLICY_SMOKE,
     HARNESS_RELIABILITY_SMOKE,
@@ -26,6 +27,7 @@ _HARNESS_MANIFESTS = (
     HARNESS_SKILL_REGISTRY,
     HARNESS_MODALITY_SMOKE,
     HARNESS_VISION_QA,
+    HARNESS_INTEGRATION_BRIDGE_SMOKE,
     HARNESS_RELIABILITY_SMOKE,
     HARNESS_POLICY_SMOKE,
     HARNESS_STACK_DEMO,

@@ -21,22 +21,52 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
     if _SHIPPED_TOOL_PLUGINS is not None:
         return _SHIPPED_TOOL_PLUGINS
 
+    from intergrax.tools.providers.browser.bundle import BROWSER_BUNDLE_ID, BROWSER_TOOL_IDS, register_browser_tools
     from intergrax.tools.providers.braintrust.bundle import (
         BRAINTRUST_BUNDLE_ID,
         BRAINTRUST_TOOL_IDS,
         register_braintrust_tools,
+    )
+    from intergrax.tools.providers.cache.bundle import CACHE_BUNDLE_ID, CACHE_TOOL_IDS, register_cache_tools
+    from intergrax.tools.providers.collaboration.bundle import (
+        COLLABORATION_BUNDLE_ID,
+        COLLABORATION_TOOL_IDS,
+        register_collaboration_tools,
+    )
+    from intergrax.tools.providers.database.bundle import (
+        DATABASE_BUNDLE_ID,
+        DATABASE_TOOL_IDS,
+        register_database_tools,
     )
     from intergrax.tools.providers.confluence.bundle import (
         CONFLUENCE_BUNDLE_ID,
         CONFLUENCE_TOOL_IDS,
         register_confluence_tools,
     )
+    from intergrax.tools.providers.document.bundle import DOCUMENT_BUNDLE_ID, DOCUMENT_TOOL_IDS, register_document_tools
+    from intergrax.tools.providers.eval.bundle import EVAL_BUNDLE_ID, EVAL_TOOL_IDS, register_eval_tools
+    from intergrax.tools.providers.graph.bundle import GRAPH_BUNDLE_ID, GRAPH_TOOL_IDS, register_graph_tools
+    from intergrax.tools.providers.harness.bundle import HARNESS_BUNDLE_ID, HARNESS_TOOL_IDS, register_harness_tools
+    from intergrax.tools.providers.health.bundle import HEALTH_BUNDLE_ID, HEALTH_TOOL_IDS, register_health_tools
+    from intergrax.tools.providers.identity.bundle import IDENTITY_BUNDLE_ID, IDENTITY_TOOL_IDS, register_identity_tools
     from intergrax.tools.providers.gitlab.bundle import (
         GITLAB_BUNDLE_ID,
         GITLAB_TOOL_IDS,
         register_gitlab_tools,
     )
+    from intergrax.tools.providers.issues.bundle import ISSUES_BUNDLE_ID, ISSUES_TOOL_IDS, register_issues_tools
     from intergrax.tools.providers.jira.bundle import JIRA_BUNDLE_ID, JIRA_TOOL_IDS, register_jira_tools
+    from intergrax.tools.providers.knowledge.bundle import (
+        KNOWLEDGE_BUNDLE_ID,
+        KNOWLEDGE_TOOL_IDS,
+        register_knowledge_tools,
+    )
+    from intergrax.tools.providers.memory.bundle import MEMORY_BUNDLE_ID, MEMORY_TOOL_IDS, register_memory_tools
+    from intergrax.tools.providers.message_bus.bundle import (
+        MESSAGE_BUS_BUNDLE_ID,
+        MESSAGE_BUS_TOOL_IDS,
+        register_message_bus_tools,
+    )
     from intergrax.tools.providers.ml.bundle import ML_BUNDLE_ID, register_ml_tools
     from intergrax.tools.providers.ml.service import (
         ML_BATCH_PREDICT_TOOL_ID,
@@ -44,6 +74,7 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
         ML_PREDICT_TOOL_ID,
     )
     from intergrax.tools.providers.notify.bundle import NOTIFY_BUNDLE_ID, NOTIFY_TOOL_IDS, register_notify_tools
+    from intergrax.tools.providers.platform.bundle import PLATFORM_BUNDLE_ID, PLATFORM_TOOL_IDS, register_platform_tools
     from intergrax.tools.providers.openai_vector_store.bundle import (
         OPENAI_VECTOR_STORE_BUNDLE_ID,
         OPENAI_VECTOR_STORE_TOOL_IDS,
@@ -60,7 +91,9 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
         register_pagerduty_tools,
     )
     from intergrax.tools.providers.rag.bundle import RAG_BUNDLE_ID, RAG_TOOL_IDS, register_rag_tools
+    from intergrax.tools.providers.records.bundle import RECORDS_BUNDLE_ID, RECORDS_TOOL_IDS, register_records_tools
     from intergrax.tools.providers.sandbox.bundle import SANDBOX_BUNDLE_ID, SANDBOX_TOOL_IDS, register_sandbox_tools
+    from intergrax.tools.providers.storage.bundle import STORAGE_BUNDLE_ID, STORAGE_TOOL_IDS, register_storage_tools
     from intergrax.tools.providers.security.bundle import SECURITY_BUNDLE_ID, SECURITY_TOOL_IDS, register_security_tools
     from intergrax.tools.providers.speech.bundle import SPEECH_BUNDLE_ID, register_speech_tools
     from intergrax.tools.providers.workflow.bundle import WORKFLOW_BUNDLE_ID, WORKFLOW_TOOL_IDS, register_workflow_tools
@@ -75,6 +108,11 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
         WEBSEARCH_BUNDLE_ID,
         WEBSEARCH_TOOL_IDS,
         register_websearch_tools,
+    )
+    from intergrax.tools.providers.workspace.bundle import (
+        WORKSPACE_BUNDLE_ID,
+        WORKSPACE_TOOL_IDS,
+        register_workspace_tools,
     )
     from intergrax.tools.registry.catalog import ToolBundleStatus
 
@@ -132,7 +170,6 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
             bundle_id=OBSERVABILITY_BUNDLE_ID,
             tool_ids=OBSERVABILITY_TOOL_IDS,
             register_fn=register_observability_tools,
-            status=ToolBundleStatus.BETA,
             description="Metrics, logs, traces, and error capture tools.",
             class_name="ObservabilityToolPlugin",
         ),
@@ -192,6 +229,132 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
             status=ToolBundleStatus.BETA,
             description="OpenAI managed vector store + file_search tools (vendor-specific).",
             class_name="OpenaiVectorStoreToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=WORKSPACE_BUNDLE_ID,
+            tool_ids=WORKSPACE_TOOL_IDS,
+            register_fn=register_workspace_tools,
+            description="Shadow workspace filesystem tools (runtime-bound).",
+            class_name="WorkspaceToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=MEMORY_BUNDLE_ID,
+            tool_ids=MEMORY_TOOL_IDS,
+            register_fn=register_memory_tools,
+            description="Policy-scoped task memory tools (runtime-bound).",
+            class_name="MemoryToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=KNOWLEDGE_BUNDLE_ID,
+            tool_ids=KNOWLEDGE_TOOL_IDS,
+            register_fn=register_knowledge_tools,
+            description="Provider-agnostic wiki/knowledge base tools.",
+            class_name="KnowledgeToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=DOCUMENT_BUNDLE_ID,
+            tool_ids=DOCUMENT_TOOL_IDS,
+            register_fn=register_document_tools,
+            description="Document parser tools for RAG ingestion pipelines.",
+            class_name="DocumentToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=BROWSER_BUNDLE_ID,
+            tool_ids=BROWSER_TOOL_IDS,
+            register_fn=register_browser_tools,
+            description="Headless browser automation tools.",
+            class_name="BrowserToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=STORAGE_BUNDLE_ID,
+            tool_ids=STORAGE_TOOL_IDS,
+            register_fn=register_storage_tools,
+            description="Object/blob storage tools.",
+            class_name="StorageToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=ISSUES_BUNDLE_ID,
+            tool_ids=ISSUES_TOOL_IDS,
+            register_fn=register_issues_tools,
+            description="Provider-agnostic issue tracker tools.",
+            class_name="IssuesToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=PLATFORM_BUNDLE_ID,
+            tool_ids=PLATFORM_TOOL_IDS,
+            register_fn=register_platform_tools,
+            description="Platform tools: secrets, feature flags, CI/CD status.",
+            class_name="PlatformToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=MESSAGE_BUS_BUNDLE_ID,
+            tool_ids=MESSAGE_BUS_TOOL_IDS,
+            register_fn=register_message_bus_tools,
+            description="Asynchronous task queue / message bus tools.",
+            class_name="MessageBusToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=GRAPH_BUNDLE_ID,
+            tool_ids=GRAPH_TOOL_IDS,
+            register_fn=register_graph_tools,
+            description="Property-graph query tools.",
+            class_name="GraphToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=COLLABORATION_BUNDLE_ID,
+            tool_ids=COLLABORATION_TOOL_IDS,
+            register_fn=register_collaboration_tools,
+            description="Collaboration suite tools (mail, calendar, directory).",
+            class_name="CollaborationToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=DATABASE_BUNDLE_ID,
+            tool_ids=DATABASE_TOOL_IDS,
+            register_fn=register_database_tools,
+            description="Relational store SQL tools (query/execute).",
+            class_name="DatabaseToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=RECORDS_BUNDLE_ID,
+            tool_ids=RECORDS_TOOL_IDS,
+            register_fn=register_records_tools,
+            description="Document store JSON record tools.",
+            class_name="RecordsToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=CACHE_BUNDLE_ID,
+            tool_ids=CACHE_TOOL_IDS,
+            register_fn=register_cache_tools,
+            description="Tenant-scoped key-value cache tools.",
+            class_name="CacheToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=IDENTITY_BUNDLE_ID,
+            tool_ids=IDENTITY_TOOL_IDS,
+            register_fn=register_identity_tools,
+            description="Identity provider tools (token verify, user profile, tenant directory).",
+            class_name="IdentityToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=HARNESS_BUNDLE_ID,
+            tool_ids=HARNESS_TOOL_IDS,
+            register_fn=register_harness_tools,
+            description="Harness run trace read tools (persisted runs, cost, events).",
+            class_name="HarnessToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=HEALTH_BUNDLE_ID,
+            tool_ids=HEALTH_TOOL_IDS,
+            register_fn=register_health_tools,
+            description="Integration and profile health probe tools.",
+            class_name="HealthToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=EVAL_BUNDLE_ID,
+            tool_ids=EVAL_TOOL_IDS,
+            register_fn=register_eval_tools,
+            description="Harness online evaluation registry tools (V-EVAL).",
+            class_name="EvalToolPlugin",
         ),
     )
     _SHIPPED_TOOL_PLUGINS = plugins
