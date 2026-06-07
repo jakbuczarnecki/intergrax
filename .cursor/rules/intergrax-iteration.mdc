@@ -57,13 +57,15 @@ Operational steps:
 1. Identify the **next implementation item** (from user request or `INTERGRAX_IMPLEMENTATION_PLAN.md`).
 2. Map it to the **Harness AI layer** (`INTERGRAX_HARNESS_AUDIT_MAP.md`).
 3. Verify alignment: strategy ↔ ideal architecture ↔ current architecture ↔ plan.
-4. **If misaligned — STOP.** Explain the conflict in Polish; propose plan/architecture update before coding.
+4. **If misaligned — STOP.**
+   Explain the conflict using the primary language of the current operator session.
+   Propose the required plan and/or architecture update before coding.
 5. Inspect existing code and Tier-0 mechanisms; **reuse before creating**.
 6. Implement the **smallest coherent diff** that satisfies the item.
 7. Add or update tests when they cover **real behavior** (not trivial assertions).
 8. Run the **most relevant verification** (see below).
 9. Update **only documentation directly affected** by the change.
-10. Deliver the Polish iteration summary (template below).
+10. Deliver the iteration summary (template below).
 
 ## Architecture rules
 
@@ -106,8 +108,12 @@ applications/    MAY import from agents/ and intergrax/
 If existing mechanisms are insufficient:
 
 1. **STOP implementation.**
-2. Explain in Polish: problem, why reuse fails, alternatives, recommended option.
-3. **Wait for user decision** before proceeding.
+2. Explain to the operator using the primary language of the current operator session:
+   - the problem,
+   - why existing mechanisms are insufficient,
+   - possible alternatives,
+   - the recommended option.
+3. **Wait for operator decision** before proceeding.
 
 ## Typing and contracts
 
@@ -118,7 +124,10 @@ Prefer: `Protocol`, ABC, `Enum`, Pydantic models, explicit interfaces and inheri
 | Context | Language |
 |---------|----------|
 | Repository artifacts (source code, comments, docstrings, documentation, logs, tests, commit messages) | English |
-| User-facing interactive communication (summaries, explanations, conflict reports, implementation reports, recommendations) | **Polish** (unless the user explicitly requests another language) |
+| Operator-facing interactive communication (summaries, explanations, conflict reports, implementation reports, recommendations) | Use the primary language of the current operator session unless explicitly requested otherwise |
+
+Do not translate repository artifacts.
+Do not mix languages within a single response unless explicitly requested.
 
 ## Documentation rules
 
@@ -151,21 +160,23 @@ Broader local check: `scripts\test.bat unit` (Windows) or `uv run pytest`.
 - **Do not commit** unless the user explicitly asks.
 - When asked, provide a one-line English commit message; user decides whether to commit.
 
-## Iteration summary (always in Polish)
+## Iteration summary
+
+Present the entire summary using the primary language of the current operator session.
 
 At the end of every iteration, provide:
 
-1. **Zrealizowany element** implementacji
-2. **Warstwa Harness AI** (z audit map)
-3. **Zmienione pliki**
-4. **Testy** dodane/zaktualizowane
-5. **Testy uruchomione** (komendy + wynik)
-6. **Dokumentacja** zaktualizowana (konkretne pliki)
-7. **Wpływ architektoniczny**
-8. **Pozostałe ryzyka**
-9. **Ustalenia poza zakresem** (out-of-scope)
-10. **Proponowany następny krok** zgodny z wizją Intergrax Harness AI
-11. **Jednolinijkowy commit message** (English) — bez commitu, chyba że użytkownik poprosi
+1. **Completed implementation item**
+2. **Harness AI layer** (from audit map)
+3. **Changed files**
+4. **Tests** added or updated
+5. **Tests executed** (commands + result)
+6. **Documentation** updated (specific files)
+7. **Architectural impact**
+8. **Remaining risks**
+9. **Out-of-scope findings**
+10. **Suggested next step** aligned with the Intergrax Harness AI vision
+11. **One-line commit message** (English) — no commit unless the operator requests
 
 ## Completion criteria
 

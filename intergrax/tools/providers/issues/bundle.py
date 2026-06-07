@@ -7,6 +7,8 @@ from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.providers.issues.contracts import (
     IssuesAddCommentInput,
     IssuesCommentOutput,
+    IssuesCreateIssueInput,
+    IssuesCreateIssueOutput,
     IssuesGetIssueInput,
     IssuesIssueOutput,
     IssuesSearchInput,
@@ -14,11 +16,13 @@ from intergrax.tools.providers.issues.contracts import (
 )
 from intergrax.tools.providers.issues.handlers import (
     IssuesAddCommentHandler,
+    IssuesCreateIssueHandler,
     IssuesGetIssueHandler,
     IssuesSearchHandler,
 )
 from intergrax.tools.providers.issues.service import (
     ISSUES_ADD_COMMENT_TOOL_ID,
+    ISSUES_CREATE_ISSUE_TOOL_ID,
     ISSUES_GET_ISSUE_TOOL_ID,
     ISSUES_SEARCH_TOOL_ID,
 )
@@ -30,6 +34,7 @@ ISSUES_TOOL_IDS: tuple[str, ...] = (
     ISSUES_GET_ISSUE_TOOL_ID,
     ISSUES_ADD_COMMENT_TOOL_ID,
     ISSUES_SEARCH_TOOL_ID,
+    ISSUES_CREATE_ISSUE_TOOL_ID,
 )
 
 
@@ -81,4 +86,20 @@ def register_issues_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> Non
             tags=("issues", "tracker"),
         ),
         IssuesSearchHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=ISSUES_CREATE_ISSUE_TOOL_ID,
+            name=ISSUES_CREATE_ISSUE_TOOL_ID,
+            description="Create an issue when the configured tracker implements IssueCreator.",
+            description_short="Create issue.",
+            input_schema=IssuesCreateIssueInput,
+            output_schema=IssuesCreateIssueOutput,
+            error_mapping={},
+            side_effects=True,
+            category="issues",
+            risk_level=ToolRiskLevel.MEDIUM,
+            tags=("issues", "tracker"),
+        ),
+        IssuesCreateIssueHandler(ctx),
     )

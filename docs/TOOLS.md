@@ -1,6 +1,6 @@
 # Intergrax Tool Library
 
-**Last updated:** 2026-06-07 — **28 bundles** · **66 catalog tools** (verified via `register_default_tools()`)
+**Last updated:** 2026-06-07 — **28 bundles** · **67 catalog tools** (verified via `register_default_tools()`)
 
 The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
 
@@ -99,7 +99,7 @@ registry = build_registry_from_profile(
 
 ## Tool engine (implemented today)
 
-Runtime tool engine (Phase O **Done** · **T-EXPAND Done** — full **66-tool** catalog registered):
+Runtime tool engine (Phase O **Done** · **T-EXPAND Done** — full **67-tool** catalog registered):
 
 | Component | Path | Status |
 |-----------|------|--------|
@@ -125,11 +125,11 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** — full **66-tool** 
 | Metric | Count |
 |--------|------:|
 | Shipped bundles (`ToolPlugin`) | **28** |
-| Registered `tool_id` values | **66** |
+| Registered `tool_id` values | **67** |
 | Stable bundles | **26** |
 | Beta bundles | **2** (`observability`, `openai_vector_store`) |
 
-**Bundle index:** `rag` (3) · `websearch` (3) · `jira` (3) · `gitlab` (1) · `confluence` (3) · `notify` (1) · `pagerduty` (1) · `observability` (4) · `braintrust` (1) · `sandbox` (1) · `security` (1) · `workflow` (3) · `speech` (2) · `vision` (3) · `ml` (3) · `openai_vector_store` (3) · **`workspace` (4)** · **`memory` (3)** · **`knowledge` (2)** · **`document` (1)** · **`browser` (1)** · **`storage` (4)** · **`issues` (3)** · **`platform` (4)** · **`message_bus` (3)** · **`graph` (2)** · **`collaboration` (1)** · **`cache` (2)**.
+**Bundle index:** `rag` (3) · `websearch` (3) · `jira` (3) · `gitlab` (1) · `confluence` (3) · `notify` (1) · `pagerduty` (1) · `observability` (4) · `braintrust` (1) · `sandbox` (1) · `security` (1) · `workflow` (3) · `speech` (2) · `vision` (3) · `ml` (3) · `openai_vector_store` (3) · **`workspace` (4)** · **`memory` (3)** · **`knowledge` (2)** · **`document` (1)** · **`browser` (1)** · **`storage` (4)** · **`issues` (4)** · **`platform` (4)** · **`message_bus` (3)** · **`graph` (2)** · **`collaboration` (1)** · **`cache` (2)**.
 
 Source: `intergrax/tools/registry/shipped_plugins.py`.
 
@@ -284,7 +284,7 @@ UAEP agents invoke `workspace.*` / `memory.*` via `BoundToolGateway` → `runtim
 | `document` | `document.parse` | `DocumentParser` — enable explicitly in `ToolProfile` (not auto-enabled from ingest-only profiles) |
 | `browser` | `browser.fetch_page` | `BrowserAutomation` |
 | `storage` | `storage.get`, `storage.put`, `storage.presigned_url`, `storage.delete` | `ObjectStorage` |
-| `issues` | `issues.get_issue`, `issues.add_comment`, `issues.search` | `IssueTracker` (provider-agnostic; complements `jira.*` / `gitlab.*`) |
+| `issues` | `issues.get_issue`, `issues.add_comment`, `issues.search`, `issues.create_issue` | `IssueTracker` + `IssueCreator` (provider-agnostic; complements `jira.*` / `gitlab.*`) |
 | `platform` | `platform.get_secret`, `platform.evaluate_feature_flag`, `platform.get_workflow_run`, `platform.list_check_suites` | `SecretsStore`, `FeatureFlagBackend`, `CiCdBackend` |
 | `message_bus` | `message_bus.enqueue`, `message_bus.get_status`, `message_bus.get_result` | `MessageBus` (`TaskQueue`) |
 | `graph` | `graph.run_query`, `graph.get_node` | `GraphStore` |
@@ -344,7 +344,7 @@ OpenAI export: `intergrax.tools.exporters.to_openai_tools(registry)` — used by
 
 ## Full tool index
 
-Alphabetical reference — all **66** first-party catalog tools (Phase O + M.6 P6 + W-ML + **T-EXPAND**).
+Alphabetical reference — all **67** first-party catalog tools (Phase O + M.6 P6 + W-ML + **T-EXPAND**).
 
 | tool_id | Bundle | Category | Status | Composes / module |
 |---------|--------|----------|--------|-------------------|
@@ -362,6 +362,7 @@ Alphabetical reference — all **66** first-party catalog tools (Phase O + M.6 P
 | `graph.get_node` | graph | graph | **Done** | `GraphStore` |
 | `graph.run_query` | graph | graph | **Done** | `GraphStore` |
 | `issues.add_comment` | issues | issues | **Done** | `IssueTracker` |
+| `issues.create_issue` | issues | issues | **Done** | `IssueCreator` |
 | `issues.get_issue` | issues | issues | **Done** | `IssueTracker` |
 | `issues.search` | issues | issues | **Done** | `IssueTracker` |
 | `knowledge.get_page` | knowledge | knowledge | **Done** | `WikiKnowledge` |
@@ -415,7 +416,7 @@ Alphabetical reference — all **66** first-party catalog tools (Phase O + M.6 P
 | `workspace.snapshot` | workspace | workspace | **Done** | `ShadowWorkspace` |
 | `workspace.write_file` | workspace | workspace | **Done** | `ShadowWorkspace` |
 
-**Total:** 66 tools · 28 bundles.
+**Total:** 67 tools · 28 bundles.
 
 ---
 

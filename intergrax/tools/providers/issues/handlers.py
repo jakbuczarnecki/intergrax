@@ -7,12 +7,19 @@ from intergrax.tools.core.handler import ServiceToolHandler
 from intergrax.tools.providers.issues.contracts import (
     IssuesAddCommentInput,
     IssuesCommentOutput,
+    IssuesCreateIssueInput,
+    IssuesCreateIssueOutput,
     IssuesGetIssueInput,
     IssuesIssueOutput,
     IssuesSearchInput,
     IssuesSearchOutput,
 )
-from intergrax.tools.providers.issues.service import issues_add_comment, issues_get_issue, issues_search
+from intergrax.tools.providers.issues.service import (
+    issues_add_comment,
+    issues_create_issue,
+    issues_get_issue,
+    issues_search,
+)
 
 
 class IssuesGetIssueHandler(ServiceToolHandler[IssuesGetIssueInput, IssuesIssueOutput]):
@@ -25,3 +32,7 @@ class IssuesAddCommentHandler(ServiceToolHandler[IssuesAddCommentInput, IssuesCo
 
 class IssuesSearchHandler(ServiceToolHandler[IssuesSearchInput, IssuesSearchOutput]):
     _service = issues_search
+
+
+class IssuesCreateIssueHandler(ServiceToolHandler[IssuesCreateIssueInput, IssuesCreateIssueOutput]):
+    _service = issues_create_issue

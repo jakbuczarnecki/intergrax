@@ -3,10 +3,12 @@
 
 from __future__ import annotations
 
-from intergrax.integrations.contracts.issue_tracker import IssueRecord, IssueTracker
+from intergrax.integrations.contracts.issue_tracker import IssueCreator, IssueRecord, IssueTracker
 from intergrax.tools.providers.issues.contracts import (
     IssuesAddCommentInput,
     IssuesCommentOutput,
+    IssuesCreateIssueInput,
+    IssuesCreateIssueOutput,
     IssuesGetIssueInput,
     IssuesIssueOutput,
     IssuesSearchInput,
@@ -17,6 +19,7 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 ISSUES_GET_ISSUE_TOOL_ID = "issues.get_issue"
 ISSUES_ADD_COMMENT_TOOL_ID = "issues.add_comment"
 ISSUES_SEARCH_TOOL_ID = "issues.search"
+ISSUES_CREATE_ISSUE_TOOL_ID = "issues.create_issue"
 
 
 def _require_tracker(ctx: ToolWiringContext) -> IssueTracker:
@@ -50,3 +53,15 @@ def issues_search(ctx: ToolWiringContext, params: IssuesSearchInput) -> IssuesSe
     result = _require_tracker(ctx).search_issues(params.query.strip(), limit=params.limit)
     issues = [_to_issue_output(item) for item in result.issues]
     return IssuesSearchOutput(issues=issues, total=int(result.total))
+
+
+def issues_create_issue(ctx: ToolWiringContext, params: IssuesCreateIssueInput) -> IssuesCreateIssueOutput:
+    tracker = _require_tracker(ctx)
+    if not isinstance(tracker, IssueCreator):
+        raise RuntimeError("issue_tracker_does_not_support_create_issue")
+    record = tracker.create_issue(
+        title=params.title.strip(),
+        description=params.description,
+        labels=params.labels or None,
+    )
+    return IssuesCreateIssueOutput(issue=_to_issue_output(record))

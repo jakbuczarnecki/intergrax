@@ -38,3 +38,13 @@ class IssuesSearchInput(BaseModel):
 class IssuesSearchOutput(BaseModel):
     issues: list[IssuesIssueOutput] = Field(default_factory=list)
     total: int = 0
+
+
+class IssuesCreateIssueInput(BaseModel):
+    title: str = Field(..., min_length=1)
+    description: str = ""
+    labels: list[str] = Field(default_factory=list)
+
+
+class IssuesCreateIssueOutput(BaseModel):
+    issue: IssuesIssueOutput

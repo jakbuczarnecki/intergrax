@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-07) — **Harness platform bands 1–2ad Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39); **Phase M.6 P4 (Band 2aa) Done** (28/28); **Phase M.6 P5 (Band 2ab) Done** (33/34); **Phase M.6 P6 (Band 2ac) Done** (32/32); **FAUDIT-32 remediation Done** (23/23 + [§6.1ai](#61ai-harness-implementation-queue--faudit-32-follow-up-closed) follow-up); **default active queue = [§6.1](#61-harness-implementation-queue--continuous-gate) maintenance** (Phase FLOW Band 2aj **Done** 17/18; **FLOW-8 Deferred** §6.3) + §6.1 gate on every PR; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done** (wiring); **12/32 layers L3+** per FAUDIT scorecard — closeout ≠ full layer maturity; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **906 passed**; **operational L3 signed off** (W-OPS evidence artifact policy — see FAUDIT-OPS.1)  
+Status: Working draft (2026-06-07) — **Harness platform bands 1–2ad Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39); **Phase M.6 P4 (Band 2aa) Done** (28/28); **Phase M.6 P5 (Band 2ab) Done** (33/34); **Phase M.6 P6 (Band 2ac) Done** (32/32); **FAUDIT-32 remediation Done** (23/23 + [§6.1ai](#61ai-harness-implementation-queue--faudit-32-follow-up-closed) follow-up); **default active queue = [§6.1](#61-harness-implementation-queue--continuous-gate) maintenance** (Phase FLOW Band 2aj **Done** 17/18; **FLOW-8 Deferred** §6.3) + §6.1 gate on every PR; Phase EVAL closed; Phase V + V-REM **closed**; **Governance audit (GOV-AUDIT) docs Done**; control-plane closeouts **Done** (wiring); **12/32 layers L3+** per FAUDIT scorecard — closeout ≠ full layer maturity; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **909 passed**; **operational L3 signed off** (W-OPS evidence artifact policy — see FAUDIT-OPS.1)  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -1761,12 +1761,21 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 
 **Delivered:**
 
-- **66** catalog `tool_id` values · **28** shipped bundles (`shipped_plugins.py`)
+- **67** catalog `tool_id` values · **28** shipped bundles (`shipped_plugins.py`)
 - Typed `ToolWiringContext` slots for all new integration categories
 - `TaskMemoryViewBinding` protocol (avoids Tier-0 ↔ UAEP import cycle)
 - UAEP `runtime_bound_catalog.py` for `workspace.*` / `memory.*` (mirrors `sandbox.exec`)
 - `extend_tool_profile_for_integration()` P6 auto-enable (excludes ingest-only `document_parser`)
-- Gate: **906** passed (`uv run pytest -m gate -q`)
+- Gate: **909** passed (`uv run pytest -m gate -q`)
+
+**Follow-up (2026-06-07) — Done:**
+
+- `IssueCreator` protocol + `issues.create_issue` (no `getattr` in GitLab tool path)
+- `harness.integration_bridge_smoke` skill pack + resolver test fix (skills vs tools `build_registry_from_profile`)
+- Lab harness `wire_lab_tools(harness=True)` enables runtime-bound + bridge tools
+- PoC template `extend_tool_profile_for_integration()` wiring
+- MCP full-catalog export smoke (67 tools)
+- Capability graph compatibility edges for T-EXPAND tool pairs
 
 Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{workspace,memory,knowledge,...}/`
 

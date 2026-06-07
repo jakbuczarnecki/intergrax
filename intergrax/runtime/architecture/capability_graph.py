@@ -305,6 +305,10 @@ def _modality_compatibility_edges() -> list[CapabilityEdge]:
         ("tool:vision.detect", "tool:ml.predict"),
         ("tool:ml.predict", "tool:ml.batch_predict"),
         ("tool:speech.synthesize", "tool:speech.transcribe"),
+        ("tool:storage.get", "tool:knowledge.search"),
+        ("tool:workspace.write_file", "tool:memory.write"),
+        ("tool:issues.get_issue", "tool:issues.add_comment"),
+        ("tool:issues.create_issue", "tool:issues.get_issue"),
     )
     edges: list[CapabilityEdge] = []
     for left, right in pairs:

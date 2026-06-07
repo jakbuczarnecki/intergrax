@@ -103,6 +103,7 @@ Runtime events: `GET /debug/tasks/{id}/events` when SQLite runtime events DB is 
 | `harness.tool_smoke` | `rag.retrieve`, `websearch.query` | Tool catalog smoke |
 | `harness.context_demo` | `rag.retrieve` | Context budget exercises |
 | `harness.trace_read` | `sandbox.exec` | Isolated diagnostics |
+| `harness.integration_bridge_smoke` | `storage.get`, `knowledge.search` | T-EXPAND integration bridge smoke (provider-agnostic) |
 | `harness.reliability_smoke` | `observability.query_traces`, `rag.retrieve`, `security.scan`, `workflow.trigger` | Reliability / ops smoke incl. P6 tools (W-OPS.8) |
 | `harness.policy_smoke` | `rag.retrieve`, `websearch.query` | Policy bundle smoke (W-OPS.8) |
 | `harness.stack_demo` | requires `harness.tool_smoke` | `requires_skills` chain demo (W-OPS.9) |
@@ -114,6 +115,8 @@ Reference harness agents **must** set `AgentContract.skill_ids` — echo and sig
 ## Tool preset (lab)
 
 Default enabled tools: `rag.retrieve`, `websearch.query`.
+
+Harness mode (`wire_lab_tools(..., harness=True)`) additionally enables runtime-bound `workspace.*` / `memory.*`, P6 integration-backed tools from `extend_tool_profile_for_integration()`, and harness modality / observability tools.
 
 `sandbox.exec` is enabled when `ToolWiringContext.sandbox_session` is set (local runtime sandbox) **or** when `IntegrationProfile.sandbox_host` resolves to a hosted backend — `wire_application_environment()` opens `HostedSandboxSession` via `resolve_hosted_sandbox_session()` (M.6 P6). Skills may still declare `sandbox.exec` for harness exercises — wire a session before expecting successful invocations.
 

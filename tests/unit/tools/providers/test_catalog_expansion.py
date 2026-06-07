@@ -29,6 +29,7 @@ NEW_TOOL_IDS = frozenset(
         "issues.get_issue",
         "issues.add_comment",
         "issues.search",
+        "issues.create_issue",
         "platform.get_secret",
         "platform.evaluate_feature_flag",
         "platform.get_workflow_run",
@@ -57,7 +58,7 @@ def _clean_catalog() -> None:
 def test_register_default_tools_expanded_catalog() -> None:
     register_default_tools()
     registered = frozenset(list_catalog_tool_ids())
-    assert len(registered) == 66
+    assert len(registered) == 67
     assert NEW_TOOL_IDS <= registered
 
 

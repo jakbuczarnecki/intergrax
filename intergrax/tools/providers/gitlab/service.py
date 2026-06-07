@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations.contracts.issue_tracker import IssueRecord
+from intergrax.integrations.contracts.issue_tracker import IssueCreator, IssueRecord
 from intergrax.tools.providers.gitlab.contracts import GitLabCreateIssueInput, GitLabCreateIssueOutput, GitLabIssueOutput
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -24,10 +24,9 @@ def gitlab_create_issue(ctx: ToolWiringContext, params: GitLabCreateIssueInput) 
     tracker = ctx.issue_tracker
     if tracker is None:
         raise RuntimeError("issue_tracker_not_configured")
-    create_issue = getattr(tracker, "create_issue", None)
-    if create_issue is None:
+    if not isinstance(tracker, IssueCreator):
         raise RuntimeError("issue_tracker_does_not_support_create_issue")
-    record = create_issue(
+    record = tracker.create_issue(
         title=params.title.strip(),
         description=params.description,
         labels=params.labels or None,

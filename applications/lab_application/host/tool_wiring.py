@@ -16,6 +16,16 @@ from intergrax.speech_adapters.registry.profile import SpeechProfile
 from intergrax.tools.registry.profile import ToolProfile
 from intergrax.tools.registry.wiring import ToolWiringContext
 
+_HARNESS_RUNTIME_BOUND_TOOLS = (
+    "workspace.write_file",
+    "workspace.read_file",
+    "workspace.list_files",
+    "workspace.snapshot",
+    "memory.read",
+    "memory.write",
+    "memory.list_keys",
+)
+
 _HARNESS_MODALITY_TOOLS = (
     "speech.synthesize",
     "speech.transcribe",
@@ -52,10 +62,12 @@ def wire_lab_tools(
     if harness:
         enabled.extend(
             [
+                *_HARNESS_RUNTIME_BOUND_TOOLS,
                 "errors.capture",
                 "observability.query_traces",
                 "pagerduty.trigger_incident",
                 "gitlab.create_issue",
+                "issues.create_issue",
                 "braintrust.log_eval",
                 *_HARNESS_MODALITY_TOOLS,
             ]

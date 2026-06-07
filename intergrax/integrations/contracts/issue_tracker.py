@@ -48,3 +48,17 @@ class IssueTracker(Protocol):
 
     def search_issues(self, jql: str, *, limit: int = 50) -> IssueSearchResult:
         """Search issues using provider-native query language (JQL for Jira)."""
+
+
+@runtime_checkable
+class IssueCreator(Protocol):
+    """Optional create capability for issue tracker backends (GitLab, GitHub, …)."""
+
+    def create_issue(
+        self,
+        *,
+        title: str,
+        description: str = "",
+        labels: Optional[Sequence[str]] = None,
+    ) -> IssueRecord:
+        """Create a new issue and return the normalized record."""

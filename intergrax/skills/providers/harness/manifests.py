@@ -70,6 +70,17 @@ HARNESS_SKILL_REGISTRY = SkillManifest(
     tags=("harness", "registry", "skills"),
 )
 
+HARNESS_INTEGRATION_BRIDGE_SMOKE = SkillManifest(
+    skill_id="harness.integration_bridge_smoke",
+    version="1.0.0",
+    description="Integration bridge smoke: provider-agnostic storage and knowledge tool paths.",
+    tool_ids=("storage.get", "knowledge.search"),
+    prompt_instruction_ids=("harness.integration_bridge_smoke.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("harness", "integrations", "tools"),
+)
+
 HARNESS_RELIABILITY_SMOKE = SkillManifest(
     skill_id="harness.reliability_smoke",
     version="1.0.0",

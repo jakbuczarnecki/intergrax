@@ -12,6 +12,7 @@ from intergrax.tools.providers.collaboration.service import COLLABORATION_SEND_M
 from intergrax.tools.providers.graph.service import GRAPH_GET_NODE_TOOL_ID, GRAPH_RUN_QUERY_TOOL_ID
 from intergrax.tools.providers.issues.service import (
     ISSUES_ADD_COMMENT_TOOL_ID,
+    ISSUES_CREATE_ISSUE_TOOL_ID,
     ISSUES_GET_ISSUE_TOOL_ID,
     ISSUES_SEARCH_TOOL_ID,
 )
@@ -60,6 +61,7 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
         ISSUES_GET_ISSUE_TOOL_ID,
         ISSUES_ADD_COMMENT_TOOL_ID,
         ISSUES_SEARCH_TOOL_ID,
+        ISSUES_CREATE_ISSUE_TOOL_ID,
         "jira.get_issue",
         "jira.add_comment",
         "jira.search_tasks",
