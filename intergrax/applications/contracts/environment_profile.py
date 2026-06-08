@@ -101,6 +101,7 @@ class MemoryProfile(BaseModel):
     enable_task_memory: bool = False
     retention_days: int | None = Field(default=None, ge=1)
     scope_boundary: str = "tenant"
+    consolidation_mode: Literal["manual", "scheduled", "auto"] = "manual"
 
 
 class ReliabilityProfile(BaseModel):

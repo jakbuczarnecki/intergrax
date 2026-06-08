@@ -209,6 +209,7 @@ class RuntimeConfig:
     enable_task_memory: bool = False
     memory_retention_days: Optional[int] = None
     memory_scope_boundary: str = "tenant"
+    memory_consolidation_mode: str = "manual"
 
     # Context assembly (Phase MEM-1.2, MEM-CTX.1)
     context_budget_policy: Optional["ContextBudgetPolicy"] = None

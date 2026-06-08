@@ -9,6 +9,7 @@ from typing import Any, Dict
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
+from intergrax.runtime.nexus.context.context_preflight import verify_context_preflight
 from intergrax.runtime.nexus.tracing.adapters.core_llm_adapter_failed import CoreLLMAdapterFailedDiagV1
 from intergrax.runtime.nexus.tracing.adapters.core_llm_adapter_returned import CoreLLMAdapterReturnedDiagV1
 from intergrax.runtime.nexus.tracing.adapters.core_llm_call_recorded import CoreLLMCallRecordedDiagV1
@@ -50,6 +51,11 @@ class CoreLLMStep(RuntimeStep):
                 generate_kwargs["max_tokens"] = max_output_tokens
 
             msgs = state.messages_for_llm
+            verify_context_preflight(
+                msgs,
+                state.context.config.llm_adapter,
+                max_output_tokens=max_output_tokens,
+            )
             if not msgs or msgs[-1].role != "user":
                 last_role = msgs[-1].role if msgs else None
                 roles_tail = [m.role for m in msgs[-8:]] if msgs else []

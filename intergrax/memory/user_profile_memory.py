@@ -24,6 +24,7 @@ class MemoryKind(Enum):
     USER_FACT = "user_fact"
     PREFERENCE = "preference"
     SESSION_SUMMARY = "session_summary"
+    EPISODIC_EVENT = "episodic_event"
     ORG_FACT = "org_fact"
     POLICY = "policy"
     OTHER = "other"
@@ -75,6 +76,10 @@ class UserProfileMemoryEntry:
     # Additional, less frequently queried metadata.
     # Example: {"tags": ["intergrax", "memory", "profiles"], "source": "session_summarizer"}
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+    # Temporal validity (Phase MEM-DEPTH-5.2).
+    valid_from: Optional[str] = None
+    valid_until: Optional[str] = None
 
     # Unit-of-work flags used by the manager/store.
     deleted: bool = False

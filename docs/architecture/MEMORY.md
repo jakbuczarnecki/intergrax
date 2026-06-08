@@ -43,11 +43,11 @@ Production-grade Harness AI separates three cooperating layers:
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-| Layer | Phase MEM (Done) | Phase MEM-DEPTH (Planned) |
-|-------|------------------|---------------------------|
-| **A — Stores** | Four operational stores + trace + RAG wired | Session parity on all durable profiles |
-| **B — Lifecycle** | Manual/scheduled consolidation service | Auto background ingest, dedup, temporal validity |
-| **C — Context Compiler** | Separate steps (`HistoryLayer`, budget trim) | Unified `ContextCompiler` + global budget allocator |
+| Layer | Phase MEM (Done) | Phase MEM-DEPTH (Done) |
+|-------|------------------|------------------------|
+| **A — Stores** | Four operational stores + trace + RAG wired | Mongo session parity + entity graph store |
+| **B — Lifecycle** | Manual/scheduled consolidation service | Auto job, dedup, episodic, structured summaries |
+| **C — Context Compiler** | Separate steps (`HistoryLayer`, budget trim) | Unified `ContextCompiler` + `DegradationLadder` + pre-flight |
 
 ---
 
@@ -57,8 +57,8 @@ Industry systems (LangMem, Mem0, Zep, Letta, CoALA) use a cognitive taxonomy. In
 
 | Cognitive type | Purpose | Intergrax store / mechanism | Maturity |
 |----------------|---------|----------------------------|----------|
-| **Working memory** | Active turn context | `state.base_history` + injected LTM/RAG/tool blocks + `AgentContextBundle` | Partial — no unified compiler |
-| **Episodic** | Specific past events / trajectories | `SESSION_SUMMARY` entries; session history; trace replay | Weak — no dedicated episodic store |
+| **Working memory** | Active turn context | `state.base_history` + injected LTM/RAG/tool blocks + `AgentContextBundle` | Strong — `ContextCompiler` |
+| **Episodic** | Specific past events / trajectories | `EPISODIC_EVENT` + `SESSION_SUMMARY`; session history; trace replay | Medium |
 | **Semantic** | Stable facts and preferences | `USER_FACT`, `PREFERENCE`, `ORG_FACT` + vector index | Medium — extract + RAG search |
 | **Procedural** | How the system should behave | `system_instructions` (user/org profile); Prompt Registry | Minimal — no versioned procedural store |
 | **Knowledge** | Document / corpus truth | RAG vectorstore; Graph RAG (documents) | Strong |
@@ -166,7 +166,7 @@ flowchart LR
 
 Extraction produces up to `max_facts` `USER_FACT`, `max_preferences` `PREFERENCE`, optional `SESSION_SUMMARY`. May regenerate `system_instructions` via `UserProfileInstructionsService`.
 
-**As-built gap:** consolidation is **opt-in** via wired service — not fully automatic background ingest (Mem0-style). Target: MEM-DEPTH-3.1.
+**As-built:** `MemoryConsolidationJob` + `consolidation_mode` (`manual` \| `scheduled` \| `auto`) on `MemoryProfile`. ADR: [`ADR-MEM-001`](../adr/ADR-MEM-001.md).
 
 ### 6.3 Retention and forget
 
@@ -232,7 +232,7 @@ Today each layer applies **local** limits:
 | `ContextBudgetPolicy` | `max_chars` + token estimate; char-cut fallback |
 | `TaskContextAssemblyOptions` | `max_prior_chars`, summary tiers |
 
-**There is no single allocator** that ranks all candidates against one global token budget. Target: **Context Compiler** (MEM-DEPTH-1.1).
+**Unified allocator:** `ContextCompiler` + `CompileContextStep` before `CoreLLMStep`; see [`ADR-MEM-001`](../adr/ADR-MEM-001.md).
 
 ---
 
@@ -294,7 +294,7 @@ prefer_rag_when_enabled: bool = True
 max_memory_entries_in_context: int = 8
 ```
 
-**As-built gap:** profile exists but is not fully enforced by a unified compiler. Target: MEM-DEPTH-1.4.
+**Enforced** by `ContextCompiler` via `ContextDecisionProfile` on `RuntimeConfig`.
 
 ### 9.3 Selection matrix (normative)
 
@@ -479,6 +479,9 @@ See [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) §3.
 | `intergrax/runtime/nexus/context/` | 1 | ContextManager, HistoryLayer, context_budget |
 | `intergrax/runtime/user_profile/` | 1 | Consolidation + instructions services |
 | `intergrax/applications/_shared/memory_wiring.py` | 3 | Platform wiring |
+| `intergrax/runtime/nexus/context/context_compiler.py` | 1 | Context Compiler + degradation ladder |
+| `intergrax/runtime/nexus/session/document_store_session_storage.py` | 1 | Mongo session persistence |
+| `intergrax/memory/entity_graph_memory.py` | 0 | User entity graph (≠ Graph RAG) |
 | `intergrax/tools/providers/memory/` | 0 | `memory.read/write/list_keys/delete_key` |
 | `intergrax/rag/` | 0 | Knowledge retrieval (not agent LTM) |
 
@@ -486,19 +489,19 @@ See [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) §3.
 
 ## 17. Maturity scorecard and gap register
 
-| Area | Score (1–5) | Phase MEM | MEM-DEPTH target |
-|------|-------------|-----------|------------------|
-| Task KV | 4 | Done | Maintain |
-| Context / LLM window | 3.5 | Partial | 4.5 via Context Compiler |
-| STM session | 3 | Partial | 4 via persistence parity |
-| User LTM | 2.5 | Partial | 4 via lifecycle automation |
-| Org memory | 2.5 | Partial | 3 |
-| Consolidation | 2 | Partial | 4 |
-| Graph agent memory | 1 | RFC only | 3–4 |
-| Context compiler (unified) | 2 | N/A | 4.5 |
-| **Overall** | **~3.5** | Platform wiring Done | **~4.5** after MEM-DEPTH P0–P1 |
+| Area | Score (1–5) | Phase MEM | Phase MEM-DEPTH |
+|------|-------------|-----------|-----------------|
+| Task KV | 4 | Done | 4 (maintain) |
+| Context / LLM window | 4.5 | Partial | Done — Context Compiler |
+| STM session | 4 | Partial | Done — Mongo + SQLite parity |
+| User LTM | 4 | Partial | Done — dedup, episodic, temporal |
+| Org memory | 2.5 | Partial | 2.5 |
+| Consolidation | 4 | Partial | Done — job + modes |
+| Graph agent memory | 3 | RFC only | Done — `EntityGraphMemoryStore` |
+| Context compiler (unified) | 4.5 | N/A | Done |
+| **Overall** | **~4.2** | Platform wiring Done | **Done** (2026-06-08) |
 
-**FAUDIT-32:** Memory Layer **L2** · Context Engineering **L3** — closeout ≠ full depth.
+**FAUDIT-32:** Memory Layer **L3+** · Context Engineering **L4** — Phase MEM-DEPTH closeout.
 
 All implementation tasks: [Phase MEM-DEPTH](../plan/MEMORY.md).
 

@@ -25,6 +25,7 @@ def test_mid_session_requires_interval_and_cooldown() -> None:
         service=MagicMock(spec=SessionMemoryConsolidationService),
         user_turns_interval=4,
         cooldown_seconds=60,
+        consolidation_mode="auto",
     )
     assert not coord.should_consolidate_mid_session(session, user_turns=3)
     assert coord.should_consolidate_mid_session(session, user_turns=4)
@@ -37,6 +38,7 @@ def test_mid_session_blocked_by_cooldown() -> None:
         service=MagicMock(spec=SessionMemoryConsolidationService),
         user_turns_interval=4,
         cooldown_seconds=3600,
+        consolidation_mode="auto",
     )
     assert not coord.should_consolidate_mid_session(session, user_turns=4)
 

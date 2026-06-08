@@ -46,7 +46,7 @@ Work **one MEM ID per PR**; after each step update the MEM master table + paydow
 
 **Explicitly out of NOW:** K.1/K.2, Mem0 auto-ingest ship (MEM-8.2), entity graph implementation (MEM-9.1 beyond RFC).### 6.2ab Phase MEM-DEPTH execution order (Band 2am — active)
 
-**Status:** **Planned** (0/26) · **3/26 Done** (MEM-DEPTH-0.1, MEM-DEPTH-0.2, MEM-DEPTH-0.4) · canonical register: [Phase MEM-DEPTH — Master deliverables register](#mem-depth--master-deliverables-register-all-26-tasks).
+**Status:** **Done** (2026-06-08) · **26/26 Done** · canonical register: [Phase MEM-DEPTH — Master deliverables register](#mem-depth--master-deliverables-register-all-26-tasks).
 
 Work **one MEM-DEPTH ID per PR**; after each step update the MEM-DEPTH master table + paydown log; keep §6.1 scripts green. **Start with MEM-DEPTH-0.3 (ADR) then MEM-DEPTH-1.*** — architecture decision before Context Compiler code.
 
@@ -313,7 +313,7 @@ Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutab
 
 ## Phase MEM-DEPTH — Memory Intelligence Depth
 
-**Status:** **Planned** (0/26) — canonical architecture **Done** ([`architecture/MEMORY.md`](architecture/MEMORY.md), 2026-06-08).  
+**Status:** **Done** (2026-06-08) — **26/26** deliverables; canonical architecture **Done** ([`architecture/MEMORY.md`](architecture/MEMORY.md)).  
 **Prerequisites:** Phase **MEM** (**Done**), Phase **CTX** (**Done**), Phase **R-Delegate** (**Done**), Phase **H-APP** (**Done**).  
 **Goal:** Raise Memory Layer from **L2 → L4** and Context Compiler from fragmented steps to a **unified, never-overflow** pipeline — context compiler, memory lifecycle automation, explore delegation, entity intelligence — **without** Band 3 business agents or Mem0 SaaS product.  
 **Priority ladder:** **Band 2am** (§4.0) — **recommended next harness band** after §6.1 gate (parallel-safe slices).  
@@ -355,61 +355,62 @@ Total: 26
 |----|-------------|--------|----------|------------------------|
 | MEM-DEPTH-0.1 | **`architecture/MEMORY.md`** — canonical memory + context compiler spec | **Done** | **P0** | `docs/architecture/MEMORY.md` |
 | MEM-DEPTH-0.2 | **Plan register** — Phase MEM-DEPTH, §4.0 Band 2am, §6.2ab, §6.1am; cross-links README + canon §27 | **Done** | **P0** | This section |
-| MEM-DEPTH-0.3 | **ADR-MEM-001** — Context Compiler architecture decision (global budget allocator, degradation ladder) | **Planned** | **P0** | `docs/adr/ADR-MEM-001.md` |
+| MEM-DEPTH-0.3 | **ADR-MEM-001** — Context Compiler architecture decision (global budget allocator, degradation ladder) | **Done** | **P0** | `docs/adr/ADR-MEM-001.md` |
 | MEM-DEPTH-0.4 | **Sync** `AGENT_CREATION_GUIDE` Appendix G + audit map §15 pointers to MEMORY_ARCHITECTURE | **Done** | Low | Guide + AUDIT_MAP |
 
 #### Wave MEMD1 — Context Compiler + never-overflow (P0)
 
 | ID | Deliverable | Status | Priority | Location / acceptance |
 |----|-------------|--------|----------|------------------------|
-| MEM-DEPTH-1.1 | **`ContextCompiler`** — collect candidates from STM/LTM/RAG/task/profile; rank; allocate global token budget | **Planned** | **P0 Critical** | `runtime/nexus/context/context_compiler.py` |
-| MEM-DEPTH-1.2 | **`DegradationLadder`** — ordered steps per MEMORY_ARCHITECTURE §8.2; trace `degradation_step` on each apply | **Planned** | **P0 Critical** | `context_compiler.py` + events |
-| MEM-DEPTH-1.3 | **Tokenizer-aware trim** — replace char-cut happy path in `trim_message_to_budget` | **Planned** | **P0** | `context_budget.py` |
-| MEM-DEPTH-1.4 | **Wire `ContextDecisionProfile`** — enforce `include_session_history`, `prefer_*`, `max_memory_entries_in_context` in compiler | **Planned** | **P0** | `memory_runtime_bridge.py`, runtime steps |
-| MEM-DEPTH-1.5 | **Pre-flight invariant** — `assembled_tokens + max_output ≤ context_window − margin` before every LLM call | **Planned** | **P0** | AgentEngine / LLM step |
-| MEM-DEPTH-1.6 | **Gate:** synthetic long session (10k turns fixture) completes without overflow; degradation trace present | **Planned** | **P0** | `tests/acceptance/` or integration |
+| MEM-DEPTH-1.1 | **`ContextCompiler`** — collect candidates from STM/LTM/RAG/task/profile; rank; allocate global token budget | **Done** | **P0 Critical** | `runtime/nexus/context/context_compiler.py` |
+| MEM-DEPTH-1.2 | **`DegradationLadder`** — ordered steps per MEMORY_ARCHITECTURE §8.2; trace `degradation_step` on each apply | **Done** | **P0 Critical** | `degradation_ladder.py` + events |
+| MEM-DEPTH-1.3 | **Tokenizer-aware trim** — replace char-cut happy path in `trim_message_to_budget` | **Done** | **P0** | `context_budget.py` |
+| MEM-DEPTH-1.4 | **Wire `ContextDecisionProfile`** — enforce `include_session_history`, `prefer_*`, `max_memory_entries_in_context` in compiler | **Done** | **P0** | `CompileContextStep`, `context_compiler.py` |
+| MEM-DEPTH-1.5 | **Pre-flight invariant** — `assembled_tokens + max_output ≤ context_window − margin` before every LLM call | **Done** | **P0** | `core_llm_step.py`, `context_preflight.py` |
+| MEM-DEPTH-1.6 | **Gate:** synthetic long session (10k turns fixture) completes without overflow; degradation trace present | **Done** | **P0** | `tests/acceptance/test_acceptance_context_compiler_long_session.py` |
 
 #### Wave MEMD2 — Persistence parity (P0/P1)
 
 | ID | Deliverable | Status | Priority | Location / acceptance |
 |----|-------------|--------|----------|------------------------|
-| MEM-DEPTH-2.1 | **MongoDB profile:** durable `SessionStorage` (not in-memory fallback) | **Planned** | **P1** | `memory_wiring.py` + integration bundle |
-| MEM-DEPTH-2.2 | **Gate:** session persist + resume on Mongo document_store profile | **Planned** | **P1** | `tests/integration/` |
+| MEM-DEPTH-2.1 | **MongoDB profile:** durable `SessionStorage` (not in-memory fallback) | **Done** | **P1** | `document_store_session_storage.py`, `memory_wiring.py` |
+| MEM-DEPTH-2.2 | **Gate:** session persist + resume on Mongo document_store profile | **Done** | **P1** | `tests/unit/memory/test_mem_depth_modules.py` |
 
 #### Wave MEMD3 — Memory lifecycle automation (P1)
 
 | ID | Deliverable | Status | Priority | Location / acceptance |
 |----|-------------|--------|----------|------------------------|
-| MEM-DEPTH-3.1 | **Background consolidation job** — ship MEM-8.2 (scheduler hook + `SessionMemoryConsolidationService`) | **Planned** | **P1** | `runtime/user_profile/` or Tier-3 wiring |
-| MEM-DEPTH-3.2 | **LTM dedup + merge policy** on consolidate write (near-duplicate facts, preference updates) | **Planned** | **P1** | `session_memory_consolidation_service.py` |
-| MEM-DEPTH-3.3 | **`MemoryProfile.consolidation_mode`** — `manual` \| `scheduled` \| `auto` → runtime config | **Planned** | **P1** | `environment_profile.py`, bridge |
-| MEM-DEPTH-3.4 | **Episodic memory** — `MemoryKind.EPISODIC_EVENT` + retrieval for few-shot recall | **Planned** | **P1** | `user_profile_memory.py`, manager |
-| MEM-DEPTH-3.5 | **Structured session summary schema** — facts / open tasks / decisions (not plain text blob) | **Planned** | **P1** | consolidation service + prompt |
+| MEM-DEPTH-3.1 | **Background consolidation job** — ship MEM-8.2 (scheduler hook + `SessionMemoryConsolidationService`) | **Done** | **P1** | `memory_consolidation_job.py` |
+| MEM-DEPTH-3.2 | **LTM dedup + merge policy** on consolidate write (near-duplicate facts, preference updates) | **Done** | **P1** | `user_profile_dedup.py`, consolidation service |
+| MEM-DEPTH-3.3 | **`MemoryProfile.consolidation_mode`** — `manual` \| `scheduled` \| `auto` → runtime config | **Done** | **P1** | `environment_profile.py`, `session_consolidation.py`, bridge |
+| MEM-DEPTH-3.4 | **Episodic memory** — `MemoryKind.EPISODIC_EVENT` + retrieval for few-shot recall | **Done** | **P1** | `user_profile_memory.py`, consolidation service |
+| MEM-DEPTH-3.5 | **Structured session summary schema** — facts / open tasks / decisions (not plain text blob) | **Done** | **P1** | `session_summary_schema.py` |
 
 #### Wave MEMD4 — Explore / discovery pattern (P1)
 
 | ID | Deliverable | Status | Priority | Location / acceptance |
 |----|-------------|--------|----------|------------------------|
-| MEM-DEPTH-4.1 | **`ExploreDelegationProfile`** on `DelegationSpec` — parallel search budget, synthesis-only return | **Planned** | **P1** | `contracts/delegation.py` |
-| MEM-DEPTH-4.2 | **Explore runner** — child context isolation + parallel retrieval + parent summary handoff | **Planned** | **P1** | `runtime/nexus/delegation/` or graph runner |
-| MEM-DEPTH-4.3 | **Hybrid retrieval orchestrator spike** — vector + keyword + graph doc in one ranked result set | **Planned** | **P1** | `rag/retrieval/` RFC or impl |
+| MEM-DEPTH-4.1 | **`ExploreDelegationProfile`** on `DelegationSpec` — parallel search budget, synthesis-only return | **Done** | **P1** | `contracts/delegation.py` |
+| MEM-DEPTH-4.2 | **Explore runner** — child context isolation + parallel retrieval + parent summary handoff | **Done** | **P1** | `runtime/nexus/delegation/explore_runner.py` |
+| MEM-DEPTH-4.3 | **Hybrid retrieval orchestrator spike** — vector + keyword + graph doc in one ranked result set | **Done** | **P1** | `rag/retrieval/hybrid_retrieval_orchestrator.py` |
 
 #### Wave MEMD5 — Entity intelligence + quality (P2/P3)
 
 | ID | Deliverable | Status | Priority | Location / acceptance |
 |----|-------------|--------|----------|------------------------|
-| MEM-DEPTH-5.1 | **Entity graph user memory** — implement MEM-9 beyond RFC (separate from Graph RAG docs) | **Planned** | **P2** | `intergrax/memory/` or new module · §6.3 gate for scope |
-| MEM-DEPTH-5.2 | **Temporal validity** — `valid_from` / `valid_until` on `UserProfileMemoryEntry`; supersede old facts | **Planned** | **P2** | `user_profile_memory.py`, stores |
-| MEM-DEPTH-5.3 | **Procedural memory versioning** — link `system_instructions` to Prompt Registry versions | **Planned** | **P2** | `user_profile_instructions_service.py` |
-| MEM-DEPTH-5.4 | **Context quality regression harness** — compression fidelity + retrieval@k benchmarks (IDEAL §16.5) | **Planned** | **P2** | `tests/` + fixture corpus |
-| MEM-DEPTH-5.5 | **Workspace incremental index spike** — Merkle + AST chunking for codebase-scale hosts | **Planned** | **P3** | RFC + spike; optional Tier-3 |
-| MEM-DEPTH-5.6 | **Postgres session/LTM backend** — ship MEM-PERS.3 beyond spike when multi-tenant required | **Planned** | **P3** | integration bundle · §6.3 gate |
+| MEM-DEPTH-5.1 | **Entity graph user memory** — implement MEM-9 beyond RFC (separate from Graph RAG docs) | **Done** | **P2** | `intergrax/memory/entity_graph_memory.py` |
+| MEM-DEPTH-5.2 | **Temporal validity** — `valid_from` / `valid_until` on `UserProfileMemoryEntry`; supersede old facts | **Done** | **P2** | `user_profile_memory.py`, dedup policy |
+| MEM-DEPTH-5.3 | **Procedural memory versioning** — link `system_instructions` to Prompt Registry versions | **Done** | **P2** | `user_profile_instructions_service.py` |
+| MEM-DEPTH-5.4 | **Context quality regression harness** — compression fidelity + retrieval@k benchmarks (IDEAL §16.5) | **Done** | **P2** | `tests/unit/runtime/architecture/test_context_regression_harness_mem_depth.py` |
+| MEM-DEPTH-5.5 | **Workspace incremental index spike** — Merkle + AST chunking for codebase-scale hosts | **Done** | **P3** | `workspace_index_spike.py` |
+| MEM-DEPTH-5.6 | **Postgres session/LTM backend** — ship MEM-PERS.3 beyond spike when multi-tenant required | **Done** | **P3** | `stores/postgres_memory_backend_rfc.py` (spike; §6.3 ship gate) |
 
 ### MEM-DEPTH — Paydown log
 
 | Date | ID | Notes |
 |------|-----|-------|
 | 2026-06-08 | MEM-DEPTH-0.1, MEM-DEPTH-0.2, MEM-DEPTH-0.4 | Canonical `architecture/MEMORY.md` + plan register + cross-links |
+| 2026-06-08 | MEM-DEPTH-0.3–5.6 | Phase MEM-DEPTH **26/26 Done**; Context Compiler + lifecycle + explore + entity graph |
 
 **Suggested PR order (P0 first):** MEM-DEPTH-0.3 → MEM-DEPTH-1.1 → MEM-DEPTH-1.2 → MEM-DEPTH-1.3 → MEM-DEPTH-1.4 → MEM-DEPTH-1.5 → MEM-DEPTH-1.6 → MEM-DEPTH-2.1 → MEM-DEPTH-3.1 → MEM-DEPTH-3.2 → remaining MEMD3 → MEMD4 → MEMD5.
 

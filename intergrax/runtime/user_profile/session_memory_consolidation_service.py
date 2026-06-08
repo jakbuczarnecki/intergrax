@@ -17,7 +17,10 @@ from intergrax.memory.user_profile_memory import (
     MemoryKind,
     MemoryImportance,
 )
+from intergrax.memory.session_summary_schema import SessionSummarySchema
+from intergrax.memory.user_profile_dedup import deduplicate_memory_entries
 from intergrax.runtime.user_profile.user_profile_instructions_service import UserProfileInstructionsService
+from intergrax.utils.time_provider import SystemTimeProvider
 
 
 @dataclass
@@ -153,10 +156,14 @@ class SessionMemoryConsolidationService:
             parsed=parsed,
         )
 
-        # Persist entries via UserProfileManager.
+        profile = await self._profile_manager.get_profile(user_id)
+        now_iso = SystemTimeProvider.utc_now().isoformat()
+        for entry in entries:
+            entry.valid_from = entry.valid_from or now_iso
+        entries = deduplicate_memory_entries(profile.memory_entries, entries)
+
         stored_entries: List[UserProfileMemoryEntry] = []
         for entry in entries:
-            # The manager is responsible for assigning entry_id / timestamps if needed.
             stored = await self._profile_manager.add_memory_entry(user_id, entry)
             stored_entries.append(stored)
 
@@ -443,16 +450,49 @@ Conversation:
 
         # Session summary
         if self._config.include_session_summary and summary:
+            structured = self._structured_summary_from_parsed(summary, session_id=session_id)
             summary_entry = self._create_entry_from_item(
-                item=summary,
+                item={
+                    "title": structured.title,
+                    "content": structured.to_storage_text(),
+                    "importance": summary.get("importance") if isinstance(summary, dict) else "MEDIUM",
+                    "tags": summary.get("tags") if isinstance(summary, dict) else ["session_summary"],
+                },
                 session_id=session_id,
                 expected_kind=MemoryKind.SESSION_SUMMARY,
                 default_importance=self._config.default_summary_importance,
             )
             if summary_entry is not None:
+                summary_entry.metadata["structured_summary"] = structured.model_dump(mode="json")
                 entries.append(summary_entry)
+                episodic = UserProfileMemoryEntry(
+                    content=structured.narrative or structured.to_storage_text(),
+                    session_id=session_id,
+                    kind=MemoryKind.EPISODIC_EVENT,
+                    title=structured.title or "Session episodic recap",
+                    importance=self._config.default_summary_importance,
+                    metadata={"source": "session_consolidation", "structured": True},
+                )
+                entries.append(episodic)
 
         return entries
+
+    def _structured_summary_from_parsed(
+        self,
+        summary: object,
+        *,
+        session_id: str,
+    ) -> SessionSummarySchema:
+        if not isinstance(summary, dict):
+            return SessionSummarySchema(session_id=session_id, narrative=str(summary))
+        return SessionSummarySchema(
+            title=str(summary.get("title") or ""),
+            narrative=str(summary.get("content") or summary.get("narrative") or ""),
+            facts=[str(item) for item in (summary.get("facts") or [])],
+            open_tasks=[str(item) for item in (summary.get("open_tasks") or [])],
+            decisions=[str(item) for item in (summary.get("decisions") or [])],
+            session_id=session_id,
+        )
 
     def _create_entry_from_item(
         self,

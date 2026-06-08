@@ -20,6 +20,7 @@ from intergrax.integrations.providers.relational_store.sqlite.bundle import crea
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
 from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileStore
+from intergrax.runtime.nexus.session.document_store_session_storage import DocumentStoreSessionStorage
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.sqlite_session_storage import SQLiteSessionStorage
 from intergrax.runtime.organization.stores.sqlite_organization_profile_store import (
@@ -85,7 +86,7 @@ def test_resolve_memory_platform_wiring_uses_mongodb_document_store_for_user_ltm
 
     assert wiring.sqlite_bundle is None
     assert wiring.mongodb_bundle is not None
-    assert isinstance(wiring.session_storage, InMemorySessionStorage)
+    assert isinstance(wiring.session_storage, DocumentStoreSessionStorage)
     assert isinstance(wiring.user_profile_store, DocumentStoreUserProfileStore)
     assert wiring.organization_profile_store is None
 

@@ -48,6 +48,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-LLM-001](ADR-LLM-001.md) | Typed LLM adapter response envelope | Accepted |
 | [ADR-CRITIC-001](ADR-CRITIC-001.md) | Critic & Verification Layer — tier-separated PEV verify stack | Accepted |
 | [ADR-OBS-001](ADR-OBS-001.md) | Harness Observability Spine — unified bus for all tiers | Accepted |
+| [ADR-MEM-001](ADR-MEM-001.md) | Context Compiler — global budget allocator and degradation ladder | Accepted |
 
 ---
 

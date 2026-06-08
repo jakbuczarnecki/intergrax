@@ -32,6 +32,7 @@ def apply_memory_profile_to_runtime_config(
     config.enable_task_memory = memory.enable_task_memory
     config.memory_retention_days = memory.retention_days
     config.memory_scope_boundary = memory.scope_boundary
+    config.memory_consolidation_mode = memory.consolidation_mode
     return config
 
 
