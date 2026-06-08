@@ -209,6 +209,7 @@ class NexusLoop:
             self._event_bus,
             current_task=lambda: self._current_task,
             trace_reader=trace_reader,
+            runtime_event_store=self._runtime_event_store,
         )
         self._hitl = NexusHitlRunner(
             publish=self._publish_runtime_event,

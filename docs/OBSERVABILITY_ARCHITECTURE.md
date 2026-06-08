@@ -295,7 +295,7 @@ with TraceScope.emitter.run(run_id, task_id, tenant_id) as scope:
 | Graph nodes use string messages only | Weak typing | **Done** (OBS-BUS-3) |
 | `RuntimeEvent.payload` is `dict` | Magic keys at canonical layer | **Done** (OBS-BUS-1) |
 | Critic `evaluator_loop` not in bridge catalog | Journal gap | **Done** (OBS-BUS-3) |
-| Parser trace separate from run journal | Ingest observability split | OBS-BUS-6 |
+| Parser trace separate from run journal | Ingest observability split | **Done** (OBS-BUS-6) |
 
 ---
 
@@ -373,8 +373,8 @@ wiring = wire_application_observability(env_profile)
 | Trigger | Backend | Integration | Runtime contract |
 |---------|---------|-------------|------------------|
 | >1M events/day/tenant | Cassandra | `document_store=cassandra` | `DocumentBackedRuntimeEventStore` via `cassandra/runtime_events.py` |
-| Full-text on payloads | Elasticsearch / OpenSearch | `observability_backend=elasticsearch` | Same `RuntimeEventPersistence` protocol; search index dual-write in OBS-BUS-6 |
-| Centralized trace UI | Phoenix, Langfuse | Dual-write from journal export; parser trace for ingest | — |
+| Full-text on payloads | Elasticsearch / OpenSearch | `observability_backend=elasticsearch` | Same `RuntimeEventPersistence` protocol; search index via document-backed store |
+| Centralized trace UI | Phoenix, Langfuse | Dual-write from journal export (`export_bridge.py`); parser trace for ingest | `INTERGRAX_EXPORT_JOURNAL` (default on) |
 | Metrics at scale | Prometheus + OTLP | `IntegrationProfile.harness_environment()` | — |
 
 **Profile wiring:** `open_runtime_event_store_from_profile()` resolves SQLite (default), Cassandra document store, or Elasticsearch lab index — all wrapped in `ValidatingRuntimeEventPersistence`.
@@ -401,6 +401,20 @@ journal = build_unified_run_journal(persisted_run, runtime_store=event_store)
 ```
 
 Merge rules: persisted bus events win on `event_id`; dedupe by `trace_event_id`.
+
+### 10.1.1 Journal export (OBS-BUS-6)
+
+On ``TASK_COMPLETED``:
+
+1. **Payload ref** — `journal_ref` on the terminal runtime event (`schema_version`, `run_id`, `tenant_id`, `event_count`, `parser_trace_count`).
+2. **Plugin export** — `runtime.journal_export` builds `build_journal_export_snapshot()`, logs OTLP-style JSON (`render_journal_otlp_json`), and calls `export_parser_traces_from_events()` for ingest parser spans.
+
+```python
+from intergrax.runtime.observability.journal_export import build_journal_export_snapshot, render_journal_otlp_json
+from intergrax.runtime.observability.export_bridge import register_journal_export_plugin
+```
+
+Disable export: `INTERGRAX_EXPORT_JOURNAL=0`. Parser vendor export remains `INTERGRAX_EXPORT_PARSER_TRACE=1`.
 
 ### 10.2 Operator surfaces
 
@@ -493,6 +507,7 @@ Audit map §21 score today: **L3**. Target after OBS-BUS: **L4**.
 | Extension SDK | `intergrax/runtime/observability/extension_sdk.py`, `intergrax/scaffold/tracing_templates.py` |
 | Persistence conformance | `intergrax/runtime/observability/persistence_conformance.py`, `events/stores/document_backed_runtime_event_store.py` |
 | Unified journal | `intergrax/runtime/events/unified_run_journal.py` |
+| Journal export | `intergrax/runtime/observability/journal_export.py`, `export_bridge.py` |
 | Nexus wiring | `intergrax/runtime/nexus/observability_wiring.py` |
 | App wiring | `intergrax/applications/_shared/observability_wiring.py` |
 | Pipeline emit | `intergrax/runtime/nexus/engine/runtime_state.py` |

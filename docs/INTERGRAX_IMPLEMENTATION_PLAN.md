@@ -5183,7 +5183,7 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 
 ## Phase OBS-BUS — Unified Observability Spine
 
-**Status:** **Planned** (2026-06-08) — **6/8** deliverables · OBS-BUS-0–5 **Done** · next: **OBS-BUS-6**
+**Status:** **Planned** (2026-06-08) — **7/8** deliverables · OBS-BUS-0–6 **Done** · next: **OBS-BUS-7**
 
 **Purpose:** Implement the full **Harness Observability Spine (HOS)** — one bus for Harness, applications, and agents; typed extension; causal trees; complete catalog emission; L4 audit §21.
 
@@ -5205,7 +5205,7 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 | OBS-BUS-3 | OBS3 | **Emission coverage** — `AGENT_SELECTED`, `STEP_FAILED`, graph typed payloads, critic `evaluator_loop` bridge | **Done** | `agent_router.py`, `graph_trace_callbacks.py`, `task_trace.py`, `trace_bridge.py`, `graph_node_diag.py` | `check_observability_emission_coverage.py` |
 | OBS-BUS-4 | OBS4 | **Extension SDK** — agent/app `DiagnosticPayload` scaffold, namespace rules, `PayloadSchemaRegistry` | **Done** | `extension_sdk.py`, `tracing_templates.py`, `new_agent.py`, `new_application.py` | `check_payload_schema_registry.py` |
 | OBS-BUS-5 | OBS5 | **Persistence conformance** — Cassandra/ES adapters implement same protocols; profile docs | **Done** | `document_backed_runtime_event_store.py`, `persistence_conformance.py`, profile wiring | `check_observability_persistence_conformance.py` |
-| OBS-BUS-6 | OBS6 | **Export sinks** — OTLP dual-write from unified journal; parser trace link | **Planned** | `observability_bridge.py`, journal export hook | TASK_COMPLETED carries journal ref or export snapshot |
+| OBS-BUS-6 | OBS6 | **Export sinks** — OTLP dual-write from unified journal; parser trace link | **Done** | `journal_export.py`, `export_bridge.py`, `task_events.py`, `platform_wiring.py` | `TASK_COMPLETED` carries `journal_ref`; export plugin dual-writes OTLP JSON + parser trace |
 | OBS-BUS-7 | OBS7 | **CI gates** — emission coverage + schema registry + L4 §21 evidence | **Planned** | `scripts/check_observability_emission_coverage.py`, `check_payload_schema_registry.py` | Gate suite green; audit map §21 → L4 |
 
 ### OBS-BUS — Execution order (recommended)
@@ -5644,7 +5644,7 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 | 4 | **OBS-BUS-3** | Code | **Done** | Emission coverage gaps | `check_observability_emission_coverage.py` |
 | 5 | **OBS-BUS-4** | Code/Docs | **Done** | Extension SDK + scaffold | Agent tracing template |
 | 6 | **OBS-BUS-5** | Code | **Done** | Persistence conformance | Integration tests |
-| 7 | **OBS-BUS-6** | Code | **Planned** | OTLP/journal dual-write | Export hook tests |
+| 7 | **OBS-BUS-6** | Code | **Done** | OTLP/journal dual-write | `test_journal_export.py`, `test_export_bridge.py` |
 | 8 | **OBS-BUS-7** | CI | **Planned** | L4 §21 gates | Audit map §21 → L4 |
 
 **Suggested PR order:** See [Phase OBS-BUS — Execution order](#obs-bus--execution-order-recommended).
