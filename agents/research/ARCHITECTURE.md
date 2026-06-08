@@ -20,7 +20,7 @@ Two-agent **research pipeline** for `research_application`: primary research + s
 
 ## Skills
 
-- Skill ids registered on each agent `contract.py` per `docs/SKILLS.md`
+- Skill ids registered on each agent `contract.py` per `docs/architecture/SKILLS.md`
 
 ## Tests
 

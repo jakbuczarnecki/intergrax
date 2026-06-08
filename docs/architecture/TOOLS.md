@@ -1,8 +1,56 @@
+# Tools — Architecture, ToolRuntime, and Catalog
+
+**Status:** Canonical architecture document
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Implementation:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](../INTERGRAX_IMPLEMENTATION_PLAN.md) · [`plan/phases/`](../plan/phases/)
+
+---
+
+## Architecture — ToolRuntime and unified tool model
+
+------|----------|
+| Tool contract + handler protocol | `intergrax/tools/core/`, `intergrax/tools/tool_executor.py` |
+| Catalog + providers | `intergrax/tools/providers/` (Phase O) |
+| Registry | `intergrax/tools/registry/` |
+| LLM planner | `intergrax/tools/tools_agent.py` |
+| Runtime enforcement | `intergrax/runtime/nexus/tools/` (`RuntimeToolInvoker`, `RuntimeToolGateway`) |
+
+**Catalog index:** [`architecture/TOOLS.md`](architecture/TOOLS.md) — first-party catalog (11 `tool_id`s: retrieval, Jira, Confluence, notify, observability, sandbox) registered via `register_default_tools()` (Phase O.4, 2026-05-30).
+
+## 22.1 Context-Injection Tools
+
+Some tools exist primarily to ** enrich the LLM prompt** rather than to perform irreversible side effects (e.g. `rag.retrieve`, `websearch.query`).
+
+When `ToolContract.injects_context = true`:
+
+1. Runtime invokes the tool through the same `RuntimeToolInvoker` path.
+2. Nexus merges a bounded preview of the tool output into `state.tools_context_parts` / message assembly (replacing implicit `RagStep` / `WebsearchStep` injection).
+3. Trace records both `tool_invocation_*` and context-injection diagnostics.
+
+Side-effect tools (`injects_context = false`) return results to the agent loop only — they do not auto-inject into the main LLM prompt unless the agent explicitly uses the output.
+
+## 22.2 Legacy Pipeline Flags (Deprecated)
+
+Phase O.5 migration is **Done**. Nexus MAY still accept `ToolInvocationPlan(use_rag=…, use_websearch=…, use_tools=…)` as **deprecated aliases** that map to catalog tool_ids:
+
+```text
+use_rag=True        → rag.retrieve
+use_websearch=True  → websearch.query
+use_tools=True      → ToolsAgent planner over ToolRegistry
+```
+
+New code MUST use explicit tool_ids and `ToolRequest` — not boolean plan flags.
+
+---
+
+---
+
 # Intergrax Tool Library
 
 **Last updated:** 2026-06-07 — **42 bundles** · **172 catalog tools** (verified via `register_default_tools()`)
 
-The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
+The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](architecture/INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
 
 **Related docs:**
 
@@ -10,13 +58,13 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 |----------|---------|
 | Phase **M-RAG** | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) — RAG engine phases M-RAG.1–M-RAG.17 |
 | RAG stack canon | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) — Tier-0 retrieval architecture |
-| [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md) | **External tool plugins** — `ToolPlugin`, entry points, MCP export |
+| [guides/EXTENSION_AUTHOR_GUIDE.md](guides/EXTENSION_AUTHOR_GUIDE.md) | **External tool plugins** — `ToolPlugin`, entry points, MCP export |
 | [intergrax/tools/USAGE.md](../intergrax/tools/USAGE.md) | **Operational guide** — wire tools in Tier-3 apps and invoke from agents |
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.6–§7.1.7, §22 | Architecture canon — Tool Library, unified tool model |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase O · **T-EXPAND** | Phase status, catalog expansion waves T1–T11 |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase V | Architecture hardening: security/cost governance and evaluation discipline (`V-SEC.*`, `V-COST.*`, `V-EVAL.*`) |
-| [INTEGRATIONS.md](INTEGRATIONS.md) | **167** backend adapters tools compose (not called directly by agents) |
-| [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) Appendix E | How agents declare `allowed_tools` vs applications wire backends |
+| [architecture/INTEGRATIONS.md](architecture/INTEGRATIONS.md) | **167** backend adapters tools compose (not called directly by agents) |
+| [guides/AGENT_CREATION_GUIDE.md](guides/AGENT_CREATION_GUIDE.md) Appendix E | How agents declare `allowed_tools` vs applications wire backends |
 
 ---
 
@@ -40,7 +88,7 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 Tier-2  Agent (skill_ids, allowed_tools, ToolRequest)
         │
         ▼
-Tier-0  Skill Library (MVP Done) — composable packs: tool_ids + prompts + policy — see [SKILLS.md](SKILLS.md)
+Tier-0  Skill Library (MVP Done) — composable packs: tool_ids + prompts + policy — see [architecture/SKILLS.md](architecture/SKILLS.md)
         │
         ▼
 Tier-0  Tool Library (rag.retrieve, jira.search_tasks, …)
@@ -49,7 +97,7 @@ Tier-0  Tool Library (rag.retrieve, jira.search_tasks, …)
 Tier-0  Integration Library (IssueTracker, SearchProvider, VectorStore, …)
 ```
 
-Skills are **not** tools — see architecture §7.1.8. Catalog: [SKILLS.md](SKILLS.md).
+Skills are **not** tools — see architecture §7.1.8. Catalog: [architecture/SKILLS.md](architecture/SKILLS.md).
 
 **Agents declare tool_ids.** **Applications enable tools** via `ToolProfile` and inject integrations via `ToolWiringContext`. **Integrations** remain vendor-swappable without agent changes.
 
@@ -579,3 +627,4 @@ uv run pytest tests/unit/tools/providers/ -q
 
 For harness hardening streams, additionally run adversarial and governance-focused checks
 when available in Phase V (`V-SEC.*`, `V-COST.*`, `V-EVAL.*`) before release cut.
+

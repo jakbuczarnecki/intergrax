@@ -25,7 +25,7 @@
 |------|------|---------|
 | 2026-06-01 | S.0.* | Strategy doc; canon; initial Phase S |
 | 2026-06-01 | S.0.4 | Pivot: Phase S = harness environment only; K.1/K.2 → Phase K |
-| 2026-06-01 | **Phase S** | harness_lab_stack, harness.* skills, OTEL profile, HARNESS_ENVIRONMENT.md, tests |
+| 2026-06-01 | **Phase S** | harness_lab_stack, harness.* skills, OTEL profile, guides/HARNESS_ENVIRONMENT.md, tests |
 | — | — | *(append row per merged PR)* |
 
 **Coverage target:** Phase S definition of done met — **yes** (2026-06-01).

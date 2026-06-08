@@ -6,7 +6,7 @@ Status: **Done** (harness reference baseline) — maintenance only
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 Platform plan: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md) · Phase AA-ECHO  
-Agent workflow: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md)
+Agent workflow: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md)
 
 Principle: **stable harness reference** · **gate smoke must stay green** · **no Tier-3 imports**
 

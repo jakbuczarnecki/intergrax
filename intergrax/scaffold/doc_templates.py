@@ -80,7 +80,7 @@ def render_agent_architecture_doc(
 
         - Programmatic: `AgentRegistry.register({class_name}())`
         - Tier-3 host: `AgentBinding.mount({class_name}, ...)` in application `manifest.py`
-        - Workflow: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md) Step 4
+        - Workflow: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md) Step 4
         """
     )
 
@@ -109,7 +109,7 @@ def render_agent_implementation_plan(
 
         Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
         Platform plan: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md)  
-        Agent workflow: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md)
+        Agent workflow: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md)
 
         Principle: **evolve, not rewrite** · **reuse Tier-0** · **no Tier-3 imports in agent code**
 
@@ -125,7 +125,7 @@ def render_agent_implementation_plan(
         | Task status, phases, next steps | **This file** |
         | Significant agent architecture decisions | **`adr/`** — [`adr/README.md`](adr/README.md) |
         | Platform harness work | `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` §6.1 |
-        | UAEP / Nexus workflow | `docs/AGENT_CREATION_GUIDE.md` |
+        | UAEP / Nexus workflow | `docs/guides/AGENT_CREATION_GUIDE.md` |
 
         ---
 
@@ -147,7 +147,7 @@ def render_agent_implementation_plan(
         |----|------|--------|----------|-------|
         | {prefix}-1 | Replace scaffold stub in `steps/pipeline.py` | Planned | High | One PR per domain step |
         | {prefix}-2 | Extend `prompts/system.md` for domain | Planned | Medium | Keep prompts versioned here |
-        | {prefix}-3 | Register skills/tools on `contract.py` | Planned | Medium | See `docs/SKILLS.md` |
+        | {prefix}-3 | Register skills/tools on `contract.py` | Planned | Medium | See `docs/architecture/SKILLS.md` |
         | {prefix}-4 | Agent smoke test green | Done | High | `tests/test_{slug}_agent.py` |
         | {prefix}-5 | Mount in Tier-3 host (optional) | Planned | Medium | `AgentBinding.mount({class_name}, ...)` |
 

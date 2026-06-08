@@ -96,24 +96,24 @@ Harness → Runtime → Agents → Applications → Products
 | 2 | `docs/intergrax_runtime_architecture.md` | **Current canonical architecture** | Four-tier model (Tier-0→3), §42 Unified Execution Runtime, forbidden patterns, implementation rules |
 | 3 | `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` | **Implementation roadmap & status** | Phase trackers (Q, Q+, R, S, U, V, W-OPS, H-APP, MEM, DX, AA…), gate counts, Done/In-progress rows |
 | 4 | `docs/INTEGRAX_HARNESS_AUDIT_MAP.md` | **Audit procedure** | Layer-specific audit questions, typical gaps, scoring model, output format, global rules |
-| 5 | `docs/AGENT_CREATION_GUIDE.md` **Appendix H** | **Governance control plane (authoring)** | `ApplicationEnvironmentProfile` map, `RuntimePolicyBundle`, security profile, observability mandatory vs optional, verification commands — use when auditing §5 Policy and §21 Observability |
-| 6 | `docs/AGENT_CREATION_GUIDE.md` **Appendix I** | **Orchestration control plane (authoring)** | Nexus runners, `ExecutionGraph`, `DelegationSpec`, hooks, planning strategies, customization surfaces — use when auditing §7–§10; implementation closeout: plan **Phase ORCH** (**Done**) |
-| 7 | `docs/AGENT_CREATION_GUIDE.md` **Appendix J** | **Tools & skills control plane (authoring)** | `ToolProfile`, `SkillProfile`, `catalog_runtime_bridge`, `SkillResolverProtocol`, `ToolRuntime`, conformance checks — use when auditing §11–§12; implementation closeout: plan **Phase TS** (**Done**) |
-| 8 | `docs/AGENT_CREATION_GUIDE.md` **Appendix K** | **Integration & RAG control plane (authoring)** | `IntegrationProfile`, `integration_runtime_bridge`, `rag_runtime_bridge`, health probes, `RetrievalService` — use when auditing §13–§14; closeout: **Phase INT** + **Phase RAG** (**Done**) |
-| 9 | `docs/AGENT_CREATION_GUIDE.md` **Appendix L** | **Context engineering control plane (authoring)** | `ContextProfile`, `context_runtime_bridge`, `context_wiring`, `ContextManager`, `ContextBudgetPolicy` — use when auditing §16; closeout: **Phase CTX** (**Done**) |
-| 10 | `docs/AGENT_CREATION_GUIDE.md` **Appendix M** | **Prompt registry control plane (authoring)** | `PromptProfile`, `prompt_runtime_bridge`, `prompt_wiring`, `YamlPromptRegistry`, `PromptRegistryProtocol` — use when auditing §17; closeout: **Phase PE** (**Done**) |
+| 5 | `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix H** | **Governance control plane (authoring)** | `ApplicationEnvironmentProfile` map, `RuntimePolicyBundle`, security profile, observability mandatory vs optional, verification commands — use when auditing §5 Policy and §21 Observability |
+| 6 | `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix I** | **Orchestration control plane (authoring)** | Nexus runners, `ExecutionGraph`, `DelegationSpec`, hooks, planning strategies, customization surfaces — use when auditing §7–§10; implementation closeout: plan **Phase ORCH** (**Done**) |
+| 7 | `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix J** | **Tools & skills control plane (authoring)** | `ToolProfile`, `SkillProfile`, `catalog_runtime_bridge`, `SkillResolverProtocol`, `ToolRuntime`, conformance checks — use when auditing §11–§12; implementation closeout: plan **Phase TS** (**Done**) |
+| 8 | `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix K** | **Integration & RAG control plane (authoring)** | `IntegrationProfile`, `integration_runtime_bridge`, `rag_runtime_bridge`, health probes, `RetrievalService` — use when auditing §13–§14; closeout: **Phase INT** + **Phase RAG** (**Done**) |
+| 9 | `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix L** | **Context engineering control plane (authoring)** | `ContextProfile`, `context_runtime_bridge`, `context_wiring`, `ContextManager`, `ContextBudgetPolicy` — use when auditing §16; closeout: **Phase CTX** (**Done**) |
+| 10 | `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix M** | **Prompt registry control plane (authoring)** | `PromptProfile`, `prompt_runtime_bridge`, `prompt_wiring`, `YamlPromptRegistry`, `PromptRegistryProtocol` — use when auditing §17; closeout: **Phase PE** (**Done**) |
 
 **Always distinguish these eleven views — never conflate them:**
 
 - **Target** → `IDEAL_HARNESS_AI_ARCHITECTURE.md`
 - **Current architecture** → `intergrax_runtime_architecture.md`
 - **Plan** → `INTERGRAX_IMPLEMENTATION_PLAN.md`
-- **Governance authoring** → `AGENT_CREATION_GUIDE.md` Appendix H
-- **Orchestration authoring** → `AGENT_CREATION_GUIDE.md` Appendix I
-- **Tools/skills authoring** → `AGENT_CREATION_GUIDE.md` Appendix J
-- **Integration/RAG authoring** → `AGENT_CREATION_GUIDE.md` Appendix K
-- **Context engineering authoring** → `AGENT_CREATION_GUIDE.md` Appendix L
-- **Prompt registry authoring** → `AGENT_CREATION_GUIDE.md` Appendix M
+- **Governance authoring** → `guides/AGENT_CREATION_GUIDE.md` Appendix H
+- **Orchestration authoring** → `guides/AGENT_CREATION_GUIDE.md` Appendix I
+- **Tools/skills authoring** → `guides/AGENT_CREATION_GUIDE.md` Appendix J
+- **Integration/RAG authoring** → `guides/AGENT_CREATION_GUIDE.md` Appendix K
+- **Context engineering authoring** → `guides/AGENT_CREATION_GUIDE.md` Appendix L
+- **Prompt registry authoring** → `guides/AGENT_CREATION_GUIDE.md` Appendix M
 - **Implementation** → source code under `intergrax/`, `agents/`, `applications/`
 - **Verification** → tests, CI gates, scripts
 

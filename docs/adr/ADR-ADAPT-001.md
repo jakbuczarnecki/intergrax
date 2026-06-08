@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-06-05 |
 | **Deciders** | Intergrax platform architecture |
-| **Related** | [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](../ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · canon [§54](../ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) · [Phase W-ADAPT](../plan/phases/evaluation-adaptive-critic.md) |
+| **Related** | [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) · canon [§54](../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) · [Phase W-ADAPT](../plan/phases/evaluation-adaptive-critic.md) |
 
 ## Context
 

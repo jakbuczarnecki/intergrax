@@ -21,7 +21,7 @@ Intergrax is under **active private R&D**. The **harness platform is complete** 
 | [docs/INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) | Always — strategic goal and work cycle |
 | [docs/intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Architecture changes |
 | [docs/INTERGRAX_IMPLEMENTATION_PLAN.md](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) | Status, phases, gates |
-| [docs/AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) | Agent or application work |
+| [docs/guides/AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md) | Agent or application work |
 | [AGENTS.md](AGENTS.md) | AI coding agents working in this repo |
 
 ### Work cycle (mandatory for significant changes)
@@ -71,7 +71,7 @@ uv run intergrax doctor
 cd infra && ./manage.sh up redis qdrant postgresql
 ```
 
-See [infra/README.md](infra/README.md) and [docs/HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md).
+See [infra/README.md](infra/README.md) and [docs/guides/HARNESS_ENVIRONMENT.md](docs/guides/HARNESS_ENVIRONMENT.md).
 
 ---
 
@@ -81,8 +81,8 @@ See [infra/README.md](infra/README.md) and [docs/HARNESS_ENVIRONMENT.md](docs/HA
 
 - **Harness maintenance** — bug fixes, regression tests, CI improvements (§6.1)
 - **Documentation** — corrections and clarifications in `docs/` (one source of truth per topic)
-- **Tier-2 agents** — new specialized agents following [AGENT_CREATION_GUIDE](docs/AGENT_CREATION_GUIDE.md)
-- **Tier-0 plugins** — integrations, tools, skills via [EXTENSION_AUTHOR_GUIDE](docs/EXTENSION_AUTHOR_GUIDE.md)
+- **Tier-2 agents** — new specialized agents following [AGENT_CREATION_GUIDE](docs/guides/AGENT_CREATION_GUIDE.md)
+- **Tier-0 plugins** — integrations, tools, skills via [EXTENSION_AUTHOR_GUIDE](docs/guides/EXTENSION_AUTHOR_GUIDE.md)
 - **Tier-3 applications** — deployable environments following `applications/USAGE.md`
 - **Test coverage** — meaningful tests for real behavior (not trivial assertions)
 
@@ -141,10 +141,10 @@ git checkout -b feature/short-description
 | Strategy / goal | `docs/INTERGRAX_DEVELOPMENT_STRATEGY.md` |
 | Architecture | `docs/intergrax_runtime_architecture.md` + sync plan §0 |
 | Phase status | `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` |
-| Agent workflow | `docs/AGENT_CREATION_GUIDE.md` |
-| Integration catalog | `docs/INTEGRATIONS.md` |
-| Tool catalog | `docs/TOOLS.md` |
-| Skill catalog | `docs/SKILLS.md` |
+| Agent workflow | `docs/guides/AGENT_CREATION_GUIDE.md` |
+| Integration catalog | `docs/architecture/INTEGRATIONS.md` |
+| Tool catalog | `docs/architecture/TOOLS.md` |
+| Skill catalog | `docs/architecture/SKILLS.md` |
 
 ### 4. Verify
 

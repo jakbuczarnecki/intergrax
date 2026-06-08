@@ -31,7 +31,7 @@ Prefer updating the appropriate canonical document over creating a parallel sour
 | 3 | `docs/intergrax_runtime_architecture.md` + `docs/architecture/` | Architecture hub + domain canon |
 | 4 | `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` + `docs/plan/phases/` | Plan hub + phase registers |
 | 5 | `docs/INTERGRAX_HARNESS_AUDIT_MAP.md` | Harness layers, audit methodology |
-| 6 | `docs/NEXUS_EXECUTION_FLOW_REFERENCE.md` | Canonical execution / orchestration flow |
+| 6 | `docs/architecture/NEXUS_EXECUTION_FLOW.md` | Canonical execution / orchestration flow |
 
 Task-specific routing: follow the table in **`AGENTS.md`** (agents, tools, skills, RAG, HITL, L4 adaptive, etc.).
 

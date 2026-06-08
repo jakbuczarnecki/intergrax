@@ -49,7 +49,7 @@ Intergrax implements security as a **control plane** within the Harness AI platf
 | Topic | Document |
 |-------|----------|
 | Policy engine | [docs/intergrax_runtime_architecture.md §42.11](docs/intergrax_runtime_architecture.md) |
-| Security control plane | [docs/AGENT_CREATION_GUIDE.md Appendix S](docs/AGENT_CREATION_GUIDE.md) |
+| Security control plane | [docs/guides/AGENT_CREATION_GUIDE.md Appendix S](docs/guides/AGENT_CREATION_GUIDE.md) |
 | Production hardening | [docs/INTERGRAX_IMPLEMENTATION_PLAN.md Phase U](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) |
 | Harness audit (security layers) | [docs/INTEGRAX_HARNESS_AUDIT_MAP.md](docs/INTEGRAX_HARNESS_AUDIT_MAP.md) |
 
@@ -69,7 +69,7 @@ Intergrax implements security as a **control plane** within the Harness AI platf
 ### Secrets
 
 - **Never** commit API keys, tokens, passwords, or `.env` files
-- Use environment variables — see integration docs in [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)
+- Use environment variables — see integration docs in [docs/architecture/INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md)
 - Rotate credentials if accidentally exposed
 
 ### Dependencies
@@ -81,12 +81,12 @@ Intergrax implements security as a **control plane** within the Harness AI platf
 
 - New tools must go through `ToolRuntime` with policy hooks
 - Do not bypass `PolicyEngine` for convenience
-- Follow [docs/AGENT_CREATION_GUIDE.md Appendix S](docs/AGENT_CREATION_GUIDE.md) for security wiring
+- Follow [docs/guides/AGENT_CREATION_GUIDE.md Appendix S](docs/guides/AGENT_CREATION_GUIDE.md) for security wiring
 
 ### Infrastructure
 
 - Local Docker backends: [infra/README.md](infra/README.md) — do not expose to public networks in development
-- Lab harness presets: [docs/HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md)
+- Lab harness presets: [docs/guides/HARNESS_ENVIRONMENT.md](docs/guides/HARNESS_ENVIRONMENT.md)
 
 ---
 

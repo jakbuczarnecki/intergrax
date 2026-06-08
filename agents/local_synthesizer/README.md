@@ -38,4 +38,4 @@ uv run pytest agents/local_synthesizer/tests -q
 
 ## Authoring
 
-See [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md) Appendix B (shadow workspace).
+See [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md) Appendix B (shadow workspace).

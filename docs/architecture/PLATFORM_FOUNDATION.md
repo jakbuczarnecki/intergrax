@@ -113,7 +113,7 @@ Platform work MUST **extend and wire** existing Tier-0 modules — not introduce
 
 **Capability stack (Tier-0 + Tier-2):** Integration → Tool → **Skill** → Agent (§7.1.6–§7.1.8). Skills are composable packs; tools remain atomic LLM operations.
 
-**Model & modality stack (Tier-0):** three **modality planes** — generative LLM (§5.2.2), media ingest/RAG (§7.1.2), dedicated inference — vision CV, speech, classical ML (§7.1.9). Catalog index: [`MODALITY.md`](MODALITY.md).
+**Model & modality stack (Tier-0):** three **modality planes** — generative LLM (§5.2.2), media ingest/RAG (§7.1.2), dedicated inference — vision CV, speech, classical ML (§7.1.9). Catalog index: [`architecture/MODALITY.md`](architecture/MODALITY.md).
 
 ---
 
@@ -545,7 +545,7 @@ Agents MUST NOT call integrations directly. Agents MUST NOT import CV/ML SDKs (`
 | **1 — Skills = tools** | Encode instructions + multi-tool workflows as oversized tools | **Rejected** — breaks atomic LLM function schema, MCP export, risk/idempotency per operation, and external tool ecosystems |
 | **2 — Skill Library** | Fourth layer: Integration → Tool → **Skill** → Agent | **Adopted** — **MVP Done**; importers for external formats (e.g. Cursor `SKILL.md`) after manifest validation |
 
-Implementation tracker: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Appendix E · catalog [`SKILLS.md`](SKILLS.md).
+Implementation tracker: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Appendix E · catalog [`architecture/SKILLS.md`](architecture/SKILLS.md).
 
 ---
 
@@ -680,7 +680,7 @@ intergrax/integrations/
 
 **Layout map:** `intergrax/integrations/providers/layout.py` — slug → category folder.
 
-**Documentation:** all **167** registered providers ship `providers/<category>/<slug>/USAGE.md` (English). Regenerate via `scripts/generate_integration_usage_docs.py`. Catalog index: [`docs/INTEGRATIONS.md`](INTEGRATIONS.md).
+**Documentation:** all **167** registered providers ship `providers/<category>/<slug>/USAGE.md` (English). Regenerate via `scripts/generate_integration_usage_docs.py`. Catalog index: [`docs/architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md).
 
 **Rules:**
 
@@ -731,7 +731,7 @@ Category contracts MUST be **backend-agnostic**: same method names and DTOs whet
 
 | Concern | Canonical module | Notes |
 |---------|------------------|-------|
-| **LLM providers** | `intergrax/llm_adapters/` (`LLMAdapter`, `LLMAdapterRegistry`, `LLMProfile`, metrics) | 19 slugs — [LLM_ADAPTERS.md](LLM_ADAPTERS.md) §5.2.2 |
+| **LLM providers** | `intergrax/llm_adapters/` (`LLMAdapter`, `LLMAdapterRegistry`, `LLMProfile`, metrics) | 19 slugs — [architecture/LLM_ADAPTERS.md](architecture/LLM_ADAPTERS.md) §5.2.2 |
 | **Tokenization** | `intergrax/tokenizers/` | Not an external integration slug |
 | **RAG pipeline** | `intergrax/rag/` | Vector stores + document parsers use **catalog bridges**; orchestration stays in `rag/` |
 | **Model & modality inference** | `intergrax/model_inference/` (planned), tools, optional integration hosts | Vision CV (YOLO, ONNX, …), classical ML, speech APIs — §7.1.9; **not** LLM slugs in Integration Library |
@@ -955,7 +955,7 @@ bootstrap_catalogs(
 - **Runtime Nexus plugins** (`RuntimePlugin`, `plugin_bootstrap.py`) are a **separate** extensibility plane from Tier-0 catalog plugins.
 - Tool execution observability (trace, scope policy, error mapping) lives in `RuntimeToolInvoker` — not in plugin registration.
 
-Author guide: [`EXTENSION_AUTHOR_GUIDE.md`](EXTENSION_AUTHOR_GUIDE.md). Implementation tracker: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase P-Ext + Appendix I.
+Author guide: [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md). Implementation tracker: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase P-Ext + Appendix I.
 
 ### 7.1.6 Tool Library — Canonical Catalog
 
@@ -1044,7 +1044,7 @@ Every catalog tool MUST be exportable as:
 
 Single source of truth: `ToolContract` in the catalog — not parallel schema definitions per surface.
 
-**Catalog reference:** [`TOOLS.md`](TOOLS.md) — 11 first-party tools **Done** (Phase O.4, 2026-05-30) · Implementation: Phase O in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
+**Catalog reference:** [`architecture/TOOLS.md`](architecture/TOOLS.md) — 11 first-party tools **Done** (Phase O.4, 2026-05-30) · Implementation: Phase O in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
 
 ### 7.1.7 Unified Tool Model — Everything Is a Tool
 
@@ -1093,7 +1093,7 @@ Agent / planner
 ### 7.1.8 Skill Library — Composable Capability Packs
 
 **Status:** Architecture **defined**; implementation **MVP Done** (Phase R, 2026-06-01).  
-**Catalog:** [`SKILLS.md`](SKILLS.md) · **Harness AI terms:** §5.3 (this document).
+**Catalog:** [`architecture/SKILLS.md`](architecture/SKILLS.md) · **Harness AI terms:** §5.3 (this document).
 
 **First-party skills (2026-06-01):**
 
@@ -1190,7 +1190,7 @@ UAEP `get_steps` / domain pipelines remain **agent-local orchestration**. A skil
 ### 7.1.9 Model & Modality Plane (Vision, Audio, Classical ML)
 
 **Status:** Architecture **defined** (2026-06-02); harness registry + modality tools + lab `ModalityProfile` wiring **Done** (Phase W-ML); remote Triton/HF live serving **incremental**.  
-**Catalog index:** [`MODALITY.md`](MODALITY.md) · **Harness alignment:** §5.3 · **ADR:** extends §44.10 (LLM stays out of Integration Library).
+**Catalog index:** [`architecture/MODALITY.md`](architecture/MODALITY.md) · **Harness alignment:** §5.3 · **ADR:** extends §44.10 (LLM stays out of Integration Library).
 
 #### Strategic intent
 
@@ -1232,7 +1232,7 @@ Plane C — Dedicated inference      model_inference/ (planned)  (YOLO, ONNX, sk
   - mapping `AttachmentRef` → vendor content parts in `generate_messages` / streaming paths.
 - **Policy:** multimodal attachments subject to `ContextBudgetPolicy`, MIME allowlists, and tenant media quotas (extends V-COST).
 
-See [LLM_ADAPTERS.md](LLM_ADAPTERS.md) — **Multimodal capabilities** section.
+See [architecture/LLM_ADAPTERS.md](architecture/LLM_ADAPTERS.md) — **Multimodal capabilities** section.
 
 #### Plane B — Media ingest (existing RAG stack)
 
@@ -1728,7 +1728,7 @@ Client (HTTP / MCP)
 | `local_workspace_application` | Fixed multi-agent file pipeline (LKW) |
 | **IAA** | General chat hub + **LLM env swap** + optional platform delegation |
 
-LLM resolution: `ApplicationEnvironmentProfile.llm_profile` from `INTERGRAX_LLM_PROVIDER` / `INTERGRAX_LLM_MODEL` (see [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md)). Default port `8096`.
+LLM resolution: `ApplicationEnvironmentProfile.llm_profile` from `INTERGRAX_LLM_PROVIDER` / `INTERGRAX_LLM_MODEL` (see [`architecture/LLM_ADAPTERS.md`](architecture/LLM_ADAPTERS.md)). Default port `8096`.
 
 ---
 
@@ -2379,7 +2379,7 @@ until explicit product reprioritization in the implementation plan.
 ## 53.13 Model & modality plane (vision, audio, classical ML)
 
 Harness evolution after Phase U includes a **documented and extensible modality
-architecture** (canon §7.1.9, [`MODALITY.md`](MODALITY.md)):
+architecture** (canon §7.1.9, [`architecture/MODALITY.md`](architecture/MODALITY.md)):
 
 - **Plane A** — generative multimodal LLM via `llm_adapters/` only.
 - **Plane B** — media ingest and embeddings via RAG + `document_parser` (partially shipped).

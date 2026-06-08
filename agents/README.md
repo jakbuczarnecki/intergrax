@@ -2,7 +2,7 @@
 
 **Role:** Reusable domain capabilities — UAEP steps, contracts, prompts.  
 **Hosts:** Tier-3 applications under `applications/` mount agents via `AgentBinding.mount(...)`.  
-**Workflow:** [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md)
+**Workflow:** [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.md)
 
 ```text
 agents/<slug>/     →  capability modules (no applications/ imports)
@@ -119,4 +119,4 @@ python -m intergrax.scaffold new-agent my_agent --capability domain.action
 python -m intergrax.scaffold new-stack my_feature --profile lab --capability my_feature.basic
 ```
 
-Full workflow: [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md)
+Full workflow: [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.md)

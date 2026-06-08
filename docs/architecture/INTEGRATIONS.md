@@ -1,4 +1,87 @@
-# Intergrax Integration Library
+# Integrations — Architecture and Catalog
+
+**Status:** Canonical architecture document
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Implementation:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](../INTERGRAX_IMPLEMENTATION_PLAN.md) · [`plan/phases/`](../plan/phases/)
+
+---
+
+## Architecture
+
+---
+
+# 18. Slack / Teams / Communication Integration Philosophy
+
+Intergrax should support Slack and Teams as interaction surfaces.
+
+This follows the Viktor-like idea where an AI worker can live inside organizational communication tools.
+
+Slack and Teams should be implemented as adapters.
+
+They may provide:
+
+- task intake
+- notifications
+- approval requests
+- progress updates
+- final responses
+- interactive buttons
+- user context
+- channel context
+
+They should NOT own the runtime.
+
+Correct model:
+
+```text
+Slack message
+    -> SlackAdapter
+    -> normalized Task
+    -> Nexus Runtime
+    -> Agent execution
+    -> Nexus final result
+    -> SlackAdapter sends response
+```
+
+Incorrect model:
+
+```text
+Slack bot contains orchestration logic
+Slack bot directly manages agents
+Slack bot stores global task state
+```
+
+---
+
+
+---
+
+# 46. Checklist For New Adapter Implementation
+
+Before implementing a new adapter, answer:
+
+```text
+1. What external system does it connect to?
+2. What operations does it expose?
+3. What permissions are required?
+4. Is it read-only or write-capable?
+5. What are risk levels?
+6. What errors can happen?
+7. What timeout/retry policy is needed?
+8. What data should be logged?
+9. What data must be protected?
+10. Which agents or runtime components may use it?
+```
+
+Adapters should be generic and reusable.
+
+---
+
+---
+
+## Catalog
+
 
 **Last updated:** 2026-06-02 (Phase M.6 P5 **Done** 33/34 · M.6 P6 **Done** 32/32)
 
@@ -10,12 +93,12 @@ The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular
 |----------|---------|
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1 | Architecture canon — tiers, contracts, registry rules |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase M | Phase status, backlog, delivery workflow |
-| [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) Appendix E | How agents vs applications use integrations |
-| [TOOLS.md](TOOLS.md) | Agent-facing tools that compose these integrations |
+| [guides/AGENT_CREATION_GUIDE.md](guides/AGENT_CREATION_GUIDE.md) Appendix E | How agents vs applications use integrations |
+| [architecture/TOOLS.md](architecture/TOOLS.md) | Agent-facing tools that compose these integrations |
 | Per-provider guides | `intergrax/integrations/providers/<category>/<slug>/USAGE.md` |
 | [../infra/README.md](../infra/README.md) | **Local Docker infrastructure** — compose profiles, manage scripts |
 | [../infra/PORTS.md](../infra/PORTS.md) | Host port matrix for integration tests |
-| [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) | Lab harness stack, OTLP, verification |
+| [guides/HARNESS_ENVIRONMENT.md](guides/HARNESS_ENVIRONMENT.md) | Lab harness stack, OTLP, verification |
 
 ---
 
@@ -169,7 +252,7 @@ Typed factories in `intergrax.integrations.registry.presets` — use in `Applica
 
 CLI fragment helper: `uv run intergrax integrations pick postgres` (presets: `lab`, `legal`, `research`, `data`, `observability`, `harness_production`). See `intergrax/cli/integrations_pick.py`.
 
-See [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md), `intergrax/integrations/examples/custom_memory_kv/`, and `tests/unit/integrations/test_external_plugin.py`.
+See [guides/EXTENSION_AUTHOR_GUIDE.md](guides/EXTENSION_AUTHOR_GUIDE.md), `intergrax/integrations/examples/custom_memory_kv/`, and `tests/unit/integrations/test_external_plugin.py`.
 
 Scaffold a new provider tree: `python -m intergrax.scaffold new-integration <slug> --category <category>`.
 
@@ -205,7 +288,7 @@ IntegrationProfile  ──►  IntegrationRegistry.resolve(category)
                          passed into runtime / RAG / tools
 ```
 
-Agents consume integrations **through catalog tools** ([TOOLS.md](TOOLS.md)), not by importing provider adapters. Tier-3 may also pass resolved contracts into `ToolWiringContext` for tool handlers.
+Agents consume integrations **through catalog tools** ([architecture/TOOLS.md](architecture/TOOLS.md)), not by importing provider adapters. Tier-3 may also pass resolved contracts into `ToolWiringContext` for tool handlers.
 
 **Example — declarative profile:**
 
@@ -795,3 +878,4 @@ uv run pytest tests/unit/integrations/test_vendor_import_governance.py -q
 Allowed vendor import modules: `opens.py`, `rag_store.py`, `client.py`, `web_client.py`, `_shared/p3/factories.py`, `_shared/p3/clients.py` (integrations); `parser_trace_exporter.py` (rag). **No** vendor imports under `agents/`.
 
 Conformance helpers: `intergrax/integrations/_shared/conformance.py`.
+

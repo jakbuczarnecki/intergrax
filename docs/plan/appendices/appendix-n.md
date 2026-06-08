@@ -4,13 +4,13 @@
 
 ## Appendix N — Nexus execution flow traceability (Phase FLOW)
 
-**Source:** [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §23–§25 · [ADR-FLOW-001](adr/ADR-FLOW-001.md)
+**Source:** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §23–§25 · [ADR-FLOW-001](adr/ADR-FLOW-001.md)
 
 **Phase register:** [Phase FLOW](#phase-flow--nexus-execution-depth) · **Band 2aj** · queue [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed) · execution [§6.2aj](#62aj-phase-flow-execution-order-band-2aj--closed-2026-06-07)
 
 **Status:** **Done** (2026-06-07) · **17/18** deliverables Done (**FLOW-8 Deferred**)
 
-> **Note:** Distinct from `AGENT_CREATION_GUIDE.md` Appendix N (agent assembly). This appendix maps **orchestration runtime depth** gaps only.
+> **Note:** Distinct from `guides/AGENT_CREATION_GUIDE.md` Appendix N (agent assembly). This appendix maps **orchestration runtime depth** gaps only.
 
 ### N.1 FLOW-GAP → FLOW ID matrix (complete)
 

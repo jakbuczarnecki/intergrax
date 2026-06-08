@@ -1,6 +1,6 @@
 # signoff_probe agent
 
-Architecture: [ARCHITECTURE.md](ARCHITECTURE.md) · Plan: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). Full process: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md).
+Architecture: [ARCHITECTURE.md](ARCHITECTURE.md) · Plan: [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). Full process: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md).
 
 ## Quick start
 
@@ -18,7 +18,7 @@ registry = AgentRegistry()
 registry.register(SignoffProbeAgent())
 ```
 
-See **Step 4** in AGENT_CREATION_GUIDE.md for all registration contexts.
+See **Step 4** in guides/AGENT_CREATION_GUIDE.md for all registration contexts.
 
 ## Capabilities
 

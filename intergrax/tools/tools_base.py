@@ -43,7 +43,7 @@ class ToolBase:
     Legacy base class for ad-hoc tools in deprecated ``ChatAgent``.
 
 Removal timeline: after Phase Q-R.12 (catalog ``tool_ids`` only). Do not import
-from new agents — use ``ToolProvider`` + ``ToolRegistry`` (see ``docs/TOOLS.md``).
+from new agents — use ``ToolProvider`` + ``ToolRegistry`` (see ``docs/architecture/TOOLS.md``).
     """
     name: str = "tool"
     description: str = "No description"

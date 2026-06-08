@@ -1,5 +1,13 @@
 # Critic & Verification Layer (CVL) — Architecture
 
+**Status:** Canonical architecture document
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Implementation:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](../INTERGRAX_IMPLEMENTATION_PLAN.md) · [`plan/phases/`](../plan/phases/)
+
+---
+
+
 **Status:** **Done** (Phase CRIT-V, Band 2ak — 24/24 deliverables)  
 **Date:** 2026-06-07  
 **Audience:** Harness platform engineers, Tier-2 agent authors, Tier-3 application operators  
@@ -323,7 +331,7 @@ CVL **feeds** existing infrastructure; does not replace it:
 | `evaluation_automation.evaluate_automated_results` | Consumes L1 scores from registry |
 | `RuntimeArchitectureGovernanceBridge.record_shadow_run_evaluation` | Shadow runs use CVL verdict |
 | `VerificationLoop.check_eval_registry_trend` | Adaptive L4 consumes CVL observations |
-| `NEXUS_EXECUTION_FLOW_REFERENCE` §18 | Update hook table when CRIT-V ships |
+| `NEXUS_EXECUTION_FLOW` §18 | Update hook table when CRIT-V ships |
 
 ---
 
@@ -454,9 +462,9 @@ See [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) — *
 ## 18. References
 
 - Canon §29 Validation Model · §42.43 Multi-Agent Flow · §53.10 Coordination patterns
-- [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §18 Evaluation hooks
-- [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) Appendix U (Evaluation) · Appendix W (Critic)
-- [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) — L4 verify loop consumes CVL signals
+- [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §18 Evaluation hooks
+- [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) Appendix U (Evaluation) · Appendix W (Critic)
+- [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) — L4 verify loop consumes CVL signals
 
 ---
 

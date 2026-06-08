@@ -1,10 +1,18 @@
 # Intergrax LLM Adapters
 
+**Status:** Canonical architecture document
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Implementation:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](../INTERGRAX_IMPLEMENTATION_PLAN.md) · [`plan/phases/`](../plan/phases/)
+
+---
+
+
 **Last updated:** 2026-06-06
 
 Tier-0 LLM layer — `LLMAdapter`, registry, `LLMProfile`. Outside Integration Library (§5.2.2).
 
-**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §33 · [MODALITY.md](MODALITY.md) (Planes A/B/C) · [applications/USAGE.md](../applications/USAGE.md) · Phase **M-LLM** · Phase **M-LLM-R** · Phase **W-ML** · Phase **V-COST / V-EVAL / V-SEC** · [ADR-LLM-001](adr/ADR-LLM-001.md)
+**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §33 · [architecture/MODALITY.md](architecture/MODALITY.md) (Planes A/B/C) · [applications/USAGE.md](../applications/USAGE.md) · Phase **M-LLM** · Phase **M-LLM-R** · Phase **W-ML** · Phase **V-COST / V-EVAL / V-SEC** · [ADR-LLM-001](adr/ADR-LLM-001.md)
 
 ---
 
@@ -80,8 +88,8 @@ LLM adapters own **Plane A** of the Model & Modality architecture (canon §7.1.9
 |---------|-------|-------|
 | Chat reasoning over text | `llm_adapters/` | Existing |
 | Native vendor vision/audio in dialog | `llm_adapters/` | Capability flags + content parts (W-ML.1) |
-| Dedicated vision CV / TTS-STT tools | `model_inference/` + `speech_adapters/` | `VisionProfile` / `SpeechProfile` (same pattern as `LLMProfile`) — see [MODALITY.md](MODALITY.md) |
-| Audio/file → text for RAG | `document_parser` + `rag/` | Plane B — [MODALITY.md](MODALITY.md) |
+| Dedicated vision CV / TTS-STT tools | `model_inference/` + `speech_adapters/` | `VisionProfile` / `SpeechProfile` (same pattern as `LLMProfile`) — see [architecture/MODALITY.md](architecture/MODALITY.md) |
+| Audio/file → text for RAG | `document_parser` + `rag/` | Plane B — [architecture/MODALITY.md](architecture/MODALITY.md) |
 | Object detection / segmentation | `model_inference/` (planned) | Plane C — tools `vision.*` |
 
 ### Message attachments
@@ -275,4 +283,4 @@ Workflows: `unit-tests.yml`, `llm-adapters-guard.yml`, optional `llm-network-smo
 | Evaluation score baselines for model/profile changes | Phase V `V-EVAL.*` |
 | Adversarial prompt/tool defense validation on model paths | Phase V `V-SEC.*` |
 
-**Out of scope:** product E2E gates, per-business-agent adapter code in `llm_adapters/`, YOLO/ONNX/CV engines (see [MODALITY.md](MODALITY.md) Plane C).
+**Out of scope:** product E2E gates, per-business-agent adapter code in `llm_adapters/`, YOLO/ONNX/CV engines (see [architecture/MODALITY.md](architecture/MODALITY.md) Plane C).

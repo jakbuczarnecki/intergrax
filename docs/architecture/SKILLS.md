@@ -1,8 +1,16 @@
 # Intergrax Skill Library
 
+**Status:** Canonical architecture document
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Implementation:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](../INTERGRAX_IMPLEMENTATION_PLAN.md) · [`plan/phases/`](../plan/phases/)
+
+---
+
+
 **Last updated:** 2026-06-02 · Phase R MVP **Done** · Phase S platform `harness.*` bundle **Done** · Phase V hardening alignment
 
-Composable **capability packs** between the [Tool Library](TOOLS.md) and Tier-2 agents. Canon: [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.8 · Harness terms: §5.3 · Modality tools (`vision.*`, `speech.*`, `ml.*`): [MODALITY.md](MODALITY.md) §7.1.9 · Tracker: [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Appendix E + Phase V (`V-PE.*`, `V-EVAL.*`) + Phase W-ML.
+Composable **capability packs** between the [Tool Library](architecture/TOOLS.md) and Tier-2 agents. Canon: [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.8 · Harness terms: §5.3 · Modality tools (`vision.*`, `speech.*`, `ml.*`): [architecture/MODALITY.md](architecture/MODALITY.md) §7.1.9 · Tracker: [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Appendix E + Phase V (`V-PE.*`, `V-EVAL.*`) + Phase W-ML.
 
 ---
 
@@ -50,7 +58,7 @@ bootstrap_catalogs(register_shipped=True, skill_bundle_ids=("legal",))
 registry = build_registry_from_profile(SkillProfile(enabled_bundles=["legal"]))
 ```
 
-External bundles: `SkillPlugin` + `register_skill_plugin()` or entry point `intergrax.skills`. See [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md).
+External bundles: `SkillPlugin` + `register_skill_plugin()` or entry point `intergrax.skills`. See [guides/EXTENSION_AUTHOR_GUIDE.md](guides/EXTENSION_AUTHOR_GUIDE.md).
 
 Tier-3 helper: `intergrax.applications._shared.skill_wiring.build_application_skill_wiring`.
 
@@ -96,7 +104,7 @@ python -m intergrax.scaffold new-skill legal.my_skill --domain legal
 
 Register with `register_skill_plugin(...)` or add the class to `shipped_plugins.py` (see `intergrax/scaffold new-skill`).
 
-**Application profiles:** `lab_application` enables `harness` + `legal` + `research`; `legal_application` → `legal`; `research_application` → `research` (see `skill_wiring.py`, [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md)).
+**Application profiles:** `lab_application` enables `harness` + `legal` + `research`; `legal_application` → `legal`; `research_application` → `research` (see `skill_wiring.py`, [guides/HARNESS_ENVIRONMENT.md](guides/HARNESS_ENVIRONMENT.md)).
 
 ---
 

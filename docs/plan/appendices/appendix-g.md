@@ -53,7 +53,7 @@
 
 | Audit ID | Finding | U ID | Status |
 |----------|---------|------|--------|
-| DOC-01 | `HARNESS_ENVIRONMENT.md` claims policy bundle wired — lab does not apply bridge | U-Doc.1, U-Pol.1 | Done |
+| DOC-01 | `guides/HARNESS_ENVIRONMENT.md` claims policy bundle wired — lab does not apply bridge | U-Doc.1, U-Pol.1 | Done |
 | DOC-02 | Phase K footer still "after Phase S" in harness docs | U-Doc.3 | Done |
 | CI-01 | harness-smoke omits Phase T unit tests | U-CI.1 | Done |
 | CI-02 | No acceptance test for strict production harness path | U-CI.2 | Done |

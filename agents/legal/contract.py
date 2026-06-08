@@ -6,7 +6,7 @@ from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.skills.providers.legal.manifests import LEGAL_CONTRACT_REVIEW
 from legal.capabilities import CAPABILITIES
 
-# Skill packs: docs/SKILLS.md
+# Skill packs: docs/architecture/SKILLS.md
 
 
 def build_agent_contract() -> AgentContract:

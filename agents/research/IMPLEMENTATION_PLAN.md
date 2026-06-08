@@ -16,7 +16,7 @@ Platform plan: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IM
 |-------|--------|
 | Two-agent layout, capabilities, host wiring | **ARCHITECTURE.md** |
 | Task status, phases | **This file** |
-| Orchestration / graph | `docs/AGENT_CREATION_GUIDE.md` Appendix I |
+| Orchestration / graph | `docs/guides/AGENT_CREATION_GUIDE.md` Appendix I |
 
 ---
 
@@ -27,7 +27,7 @@ Platform plan: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IM
 | RES-1 | UAEP smoke for `ResearchAgent` + `SummaryAgent` | **Done** | High | `agents/research/tests/` |
 | RES-2 | `research_application` manifest + environment | **Done** | High | AA-RESAPP.* |
 | RES-3 | Graph delegation (`research.pipeline`) | Planned | Medium | Nexus graph intent documented in ARCHITECTURE |
-| RES-4 | Skill packs on contracts | Planned | Medium | Per `docs/SKILLS.md` |
+| RES-4 | Skill packs on contracts | Planned | Medium | Per `docs/architecture/SKILLS.md` |
 | RES-5 | Product research features | Deferred | Low | Band 3 unless reprioritized |
 
 ---

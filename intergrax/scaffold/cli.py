@@ -88,7 +88,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Created UAEP agent scaffold at {path}")
         print(f"  Register: from {slug}.{slug}_agent import {class_name}")
         print(f"  Test:     uv run pytest {path / 'tests'} -q")
-        print(f"  Guide:    docs/AGENT_CREATION_GUIDE.md")
+        print(f"  Guide:    docs/guides/AGENT_CREATION_GUIDE.md")
         return 0
 
     if args.command == "new-application":

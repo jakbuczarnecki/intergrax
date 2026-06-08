@@ -51,7 +51,7 @@ applications/    MAY import from agents/ and intergrax/
 
 - **Never modify `intergrax/runtime/`** when creating Tier-2 agents
 - Agents consume Tier-0 only through Nexus policy and `ToolRuntime` — no direct vendor SDK imports
-- Canonical workflow: [docs/AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md)
+- Canonical workflow: [docs/guides/AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md)
 - Success metric: idea → first Nexus run in **under one hour**
 
 ### Documentation
@@ -61,9 +61,9 @@ applications/    MAY import from agents/ and intergrax/
 - Architecture hub → `docs/intergrax_runtime_architecture.md`
 - Architecture domains → `docs/architecture/<domain>.md` (index: `docs/architecture/README.md`)
 - Status/phases → `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` + `docs/plan/phases/`
-- Agent workflow → `docs/AGENT_CREATION_GUIDE.md`
+- Agent workflow → `docs/guides/AGENT_CREATION_GUIDE.md`
 - Harness AI terms → `docs/architecture/PLATFORM_FOUNDATION.md` §5.3 only
-- Nexus execution flow (narrative + diagrams) → `docs/NEXUS_EXECUTION_FLOW_REFERENCE.md` · delegation ADR → `docs/adr/ADR-FLOW-001.md`
+- Nexus execution flow (narrative + diagrams) → `docs/architecture/NEXUS_EXECUTION_FLOW.md` · delegation ADR → `docs/adr/ADR-FLOW-001.md`
 
 ### Harness platform
 
@@ -77,23 +77,23 @@ applications/    MAY import from agents/ and intergrax/
 
 | Task | Read first |
 |------|------------|
-| Create a new agent | [docs/AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) |
-| Wire integrations | [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) |
-| Add or use tools | [docs/TOOLS.md](docs/TOOLS.md) · `intergrax/tools/USAGE.md` |
-| Add or use skills | [docs/SKILLS.md](docs/SKILLS.md) |
-| Configure LLM providers | [docs/LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) |
-| RAG / retrieval | [docs/architecture/RAG_AND_RETRIEVAL.md](docs/architecture/RAG_AND_RETRIEVAL.md) · [docs/AGENT_CREATION_GUIDE.md Appendix K](docs/AGENT_CREATION_GUIDE.md) |
-| Memory / context / LTM | [docs/MEMORY_ARCHITECTURE.md](docs/MEMORY_ARCHITECTURE.md) · [docs/architecture/CONTEXT_ENGINEERING.md](docs/architecture/CONTEXT_ENGINEERING.md) · [Appendix G](docs/AGENT_CREATION_GUIDE.md#appendix-g--memory--rag-naming-phase-q) |
+| Create a new agent | [docs/guides/AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md) |
+| Wire integrations | [docs/architecture/INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) |
+| Add or use tools | [docs/architecture/TOOLS.md](docs/architecture/TOOLS.md) · `intergrax/tools/USAGE.md` |
+| Add or use skills | [docs/architecture/SKILLS.md](docs/architecture/SKILLS.md) |
+| Configure LLM providers | [docs/architecture/LLM_ADAPTERS.md](docs/architecture/LLM_ADAPTERS.md) |
+| RAG / retrieval | [docs/architecture/INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) · [docs/guides/AGENT_CREATION_GUIDE.md Appendix K](docs/guides/AGENT_CREATION_GUIDE.md) |
+| Memory / context / LTM | [docs/architecture/MEMORY.md](docs/architecture/MEMORY.md) · [Appendix G](docs/guides/AGENT_CREATION_GUIDE.md#appendix-g--memory--rag-naming-phase-q) |
 | New application (Tier-3) | `applications/USAGE.md` · `poc_template_application/` |
-| Plugin / extension | [docs/EXTENSION_AUTHOR_GUIDE.md](docs/EXTENSION_AUTHOR_GUIDE.md) |
-| Governance / policy / HITL | [docs/AGENT_CREATION_GUIDE.md Appendix H](docs/AGENT_CREATION_GUIDE.md) |
-| Multi-agent graphs / Nexus execution flow | [docs/NEXUS_EXECUTION_FLOW_REFERENCE.md](docs/NEXUS_EXECUTION_FLOW_REFERENCE.md) · [docs/AGENT_CREATION_GUIDE.md Appendix I](docs/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) |
+| Plugin / extension | [docs/guides/EXTENSION_AUTHOR_GUIDE.md](docs/guides/EXTENSION_AUTHOR_GUIDE.md) |
+| Governance / policy / HITL | [docs/guides/AGENT_CREATION_GUIDE.md Appendix H](docs/guides/AGENT_CREATION_GUIDE.md) |
+| Multi-agent graphs / Nexus execution flow | [docs/architecture/NEXUS_EXECUTION_FLOW.md](docs/architecture/NEXUS_EXECUTION_FLOW.md) · [docs/guides/AGENT_CREATION_GUIDE.md Appendix I](docs/guides/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) |
 | Available agents (roster) | [agents/README.md](agents/README.md) |
 | Available application environments | [applications/README.md](applications/README.md) |
 | Harness audit | [docs/INTEGRAX_HARNESS_AUDIT_MAP.md](docs/INTEGRAX_HARNESS_AUDIT_MAP.md) |
-| L4 adaptive harness | [docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) |
-| Critic / verification / LLM-as-judge | [docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · Phase CRIT-V · [plan/phases/evaluation-adaptive-critic.md](docs/plan/phases/evaluation-adaptive-critic.md) |
-| Observability spine / bus / extension | [docs/OBSERVABILITY_ARCHITECTURE.md](docs/OBSERVABILITY_ARCHITECTURE.md) · [ADR-OBS-001](docs/adr/ADR-OBS-001.md) · [plan/phases/observability-reliability.md](docs/plan/phases/observability-reliability.md) |
+| L4 adaptive harness | [docs/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md](docs/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
+| Critic / verification / LLM-as-judge | [docs/architecture/CRITIC_VERIFICATION.md](docs/architecture/CRITIC_VERIFICATION.md) · Phase CRIT-V · [plan/phases/evaluation-adaptive-critic.md](docs/plan/phases/evaluation-adaptive-critic.md) |
+| Observability spine / bus / extension | [docs/architecture/OBSERVABILITY.md](docs/architecture/OBSERVABILITY.md) · [ADR-OBS-001](docs/adr/ADR-OBS-001.md) · [plan/phases/observability-reliability.md](docs/plan/phases/observability-reliability.md) |
 | UAEP / execution runtime | [docs/architecture/UNIFIED_EXECUTION_RUNTIME.md](docs/architecture/UNIFIED_EXECUTION_RUNTIME.md) |
 | Orchestration / graphs (canon) | [docs/architecture/ORCHESTRATION.md](docs/architecture/ORCHESTRATION.md) |
 
@@ -178,7 +178,7 @@ Full local suite: `scripts\test.bat unit` (Windows) or equivalent `uv run pytest
 
 - [llms.txt](llms.txt) — concise project map for LLM crawlers
 - [llms-full.txt](llms-full.txt) — extended context map
-- [docs/AGENT_CREATION_GUIDE.md § Instructions for LLM coding agents](docs/AGENT_CREATION_GUIDE.md) — detailed agent instructions
+- [docs/guides/AGENT_CREATION_GUIDE.md § Instructions for LLM coding agents](docs/guides/AGENT_CREATION_GUIDE.md) — detailed agent instructions
 
 ---
 

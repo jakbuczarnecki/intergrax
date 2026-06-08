@@ -4,7 +4,7 @@
 
 Operator and author guide for the **lab harness stack** — Tier-0 integrations, Tier-1 Nexus, Tier-3 `lab_application` wiring, platform skills, and observability. Business agents (Problem Radar, Vendor Discovery) are **Phase K** and out of scope here.
 
-**Related:** [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase S/U/V · [SKILLS.md](SKILLS.md) · [INTEGRATIONS.md](INTEGRATIONS.md) · Architecture [§5.3](architecture/PLATFORM_FOUNDATION.md#53-harness-ai-alignment-conceptual-model) and [§53](architecture/PLATFORM_FOUNDATION.md#53-harness-architecture-hardening-addendum-post-u)
+**Related:** [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase S/U/V · [architecture/SKILLS.md](architecture/SKILLS.md) · [architecture/INTEGRATIONS.md](architecture/INTEGRATIONS.md) · Architecture [§5.3](architecture/PLATFORM_FOUNDATION.md#53-harness-ai-alignment-conceptual-model) and [§53](architecture/PLATFORM_FOUNDATION.md#53-harness-architecture-hardening-addendum-post-u)
 
 ---
 
@@ -78,15 +78,15 @@ uv run uvicorn lab_application.host.main:app --host 127.0.0.1 --port 8090
 
 Runtime events: `GET /debug/tasks/{id}/events` when SQLite runtime events DB is wired.
 
-**Tier-3 observability wiring (Phase OBS):** `wire_application_observability()` maps `ObservabilityProfile` to `NexusObservabilityStores`; `build_harness_host_runtime()` validates assembly via `observability_assembly_resolver`. Author map: [`AGENT_CREATION_GUIDE.md` Appendix Q](AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout). CI: `scripts/check_harness_observability_wiring.py`.
+**Tier-3 observability wiring (Phase OBS):** `wire_application_observability()` maps `ObservabilityProfile` to `NexusObservabilityStores`; `build_harness_host_runtime()` validates assembly via `observability_assembly_resolver`. Author map: [`guides/AGENT_CREATION_GUIDE.md` Appendix Q](guides/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout). CI: `scripts/check_harness_observability_wiring.py`.
 
-**Tier-3 reliability wiring (Phase REL):** `wire_application_reliability()` maps `ReliabilityProfile` to `IdempotencyStore` and `IntegrationCircuitBreakerConfig`; `materialize_runtime_config()` applies idempotency to `RuntimeConfig`. Author map: [`AGENT_CREATION_GUIDE.md` Appendix R](AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout). CI: `scripts/check_harness_reliability_wiring.py`.
+**Tier-3 reliability wiring (Phase REL):** `wire_application_reliability()` maps `ReliabilityProfile` to `IdempotencyStore` and `IntegrationCircuitBreakerConfig`; `materialize_runtime_config()` applies idempotency to `RuntimeConfig`. Author map: [`guides/AGENT_CREATION_GUIDE.md` Appendix R](guides/AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout). CI: `scripts/check_harness_reliability_wiring.py`.
 
-**Tier-3 security wiring (Phase SEC):** `wire_application_security()` maps `ApplicationSecurityProfile` to V-SEC middleware; `build_harness_host_runtime()` validates assembly via `security_assembly_resolver`. Author map: [`AGENT_CREATION_GUIDE.md` Appendix S](AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout). CI: `scripts/check_harness_security_wiring.py`.
+**Tier-3 security wiring (Phase SEC):** `wire_application_security()` maps `ApplicationSecurityProfile` to V-SEC middleware; `build_harness_host_runtime()` validates assembly via `security_assembly_resolver`. Author map: [`guides/AGENT_CREATION_GUIDE.md` Appendix S](guides/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout). CI: `scripts/check_harness_security_wiring.py`.
 
-**Tier-3 cost wiring (Phase COST):** `wire_application_cost()` maps `CostProfile` to `BudgetPolicy` / `RunBudget`; `wire_policy_bundle()` merges cost governance into `RuntimePolicyBundle`. Author map: [`AGENT_CREATION_GUIDE.md` Appendix T](AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout). CI: `scripts/check_harness_cost_wiring.py`.
+**Tier-3 cost wiring (Phase COST):** `wire_application_cost()` maps `CostProfile` to `BudgetPolicy` / `RunBudget`; `wire_policy_bundle()` merges cost governance into `RuntimePolicyBundle`. Author map: [`guides/AGENT_CREATION_GUIDE.md` Appendix T](guides/AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout). CI: `scripts/check_harness_cost_wiring.py`.
 
-**Tier-3 evaluation wiring (Phase EVAL):** `wire_application_evaluation()` maps `EvaluationProfile` to `OnlineEvaluationRegistry` / governance bridge; `wire_policy_bundle()` merges `evaluation_governance` into `RuntimePolicyBundle`. Author map: [`AGENT_CREATION_GUIDE.md` Appendix U](AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout). CI: `scripts/check_harness_evaluation_wiring.py`.
+**Tier-3 evaluation wiring (Phase EVAL):** `wire_application_evaluation()` maps `EvaluationProfile` to `OnlineEvaluationRegistry` / governance bridge; `wire_policy_bundle()` merges `evaluation_governance` into `RuntimePolicyBundle`. Author map: [`guides/AGENT_CREATION_GUIDE.md` Appendix U](guides/AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout). CI: `scripts/check_harness_evaluation_wiring.py`.
 
 **Context engineering events** (Tier-1): `CONTEXT_ASSEMBLED`, `CONTEXT_TRIMMED` — see architecture §28.1.
 
@@ -199,18 +199,18 @@ Governance, policy, and observability are **composable control-plane layers** �
 
 | Need | Where |
 |------|--------|
-| Full control-plane map (profiles, bundles, hooks, EP groups) | [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
+| Full control-plane map (profiles, bundles, hooks, EP groups) | [`guides/AGENT_CREATION_GUIDE.md` Appendix H](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
 | Operator policy read order | Architecture [§42.11.5](architecture/UNIFIED_EXECUTION_RUNTIME.md#42115-how-to-read-policy-for-a-run-operator) |
-| Policy rule handler plugins (`intergrax.policy_rules`) | [`EXTENSION_AUTHOR_GUIDE.md` §10](EXTENSION_AUTHOR_GUIDE.md#10-policy-rule-handler-plugins-phase-dx-58) |
+| Policy rule handler plugins (`intergrax.policy_rules`) | [`guides/EXTENSION_AUTHOR_GUIDE.md` §10](guides/EXTENSION_AUTHOR_GUIDE.md#10-policy-rule-handler-plugins-phase-dx-58) |
 | Audit layers (policy §5, observability §21) | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) |
-| Observability wire-time closeout (§21) | [`AGENT_CREATION_GUIDE.md` Appendix Q](AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [Phase OBS](plan/phases/observability-reliability.md) |
-| Reliability wire-time closeout (§22) | [`AGENT_CREATION_GUIDE.md` Appendix R](AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) · [Phase REL](plan/phases/observability-reliability.md) |
-| Security wire-time closeout (§23) | [`AGENT_CREATION_GUIDE.md` Appendix S](AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) · [Phase SEC](plan/phases/governance-security.md) |
-| Cost wire-time closeout (§24) | [`AGENT_CREATION_GUIDE.md` Appendix T](AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) · [Phase COST](plan/phases/governance-security.md) |
+| Observability wire-time closeout (§21) | [`guides/AGENT_CREATION_GUIDE.md` Appendix Q](guides/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [Phase OBS](plan/phases/observability-reliability.md) |
+| Reliability wire-time closeout (§22) | [`guides/AGENT_CREATION_GUIDE.md` Appendix R](guides/AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) · [Phase REL](plan/phases/observability-reliability.md) |
+| Security wire-time closeout (§23) | [`guides/AGENT_CREATION_GUIDE.md` Appendix S](guides/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) · [Phase SEC](plan/phases/governance-security.md) |
+| Cost wire-time closeout (§24) | [`guides/AGENT_CREATION_GUIDE.md` Appendix T](guides/AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) · [Phase COST](plan/phases/governance-security.md) |
 
 **Modularity:** swap observability backend via `IntegrationProfile.observability_backend`; add policy via YAML + EP handlers; enable V-SEC defenses via `ApplicationSecurityProfile` — without changing Tier-2 agent code.
 
-**Orchestration:** graph execution, delegation, handoff, hooks — [`AGENT_CREATION_GUIDE.md` Appendix I](AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane). **End-to-end flow (diagrams, edge cases):** [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md). Wired via `orchestration_wiring.py` + `graph_spec_to_plan.py` (Phase ORCH **Done**; Phase FLOW **Done** 17/18). Multi-agent quick start: [Appendix C](AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs).
+**Orchestration:** graph execution, delegation, handoff, hooks — [`guides/AGENT_CREATION_GUIDE.md` Appendix I](guides/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane). **End-to-end flow (diagrams, edge cases):** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md). Wired via `orchestration_wiring.py` + `graph_spec_to_plan.py` (Phase ORCH **Done**; Phase FLOW **Done** 17/18). Multi-agent quick start: [Appendix C](guides/AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs).
 
 ---
 
@@ -305,7 +305,7 @@ uv run python scripts/phase_w_adapt_report.py --patterns-output build/adaptive_h
 uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
 ```
 
-Authoring guide: [`AGENT_CREATION_GUIDE.md` Appendix V](AGENT_CREATION_GUIDE.md#appendix-v--adaptive-harness-control-plane-closeout).
+Authoring guide: [`guides/AGENT_CREATION_GUIDE.md` Appendix V](guides/AGENT_CREATION_GUIDE.md#appendix-v--adaptive-harness-control-plane-closeout).
 
 Execution references in the implementation plan:
 

@@ -73,7 +73,7 @@ Gate: `tests/unit/applications/test_application_deploy_triad.py` · doc pair: `t
 | **Standard** | `new-stack` or `new-application` without `--minimal` | Full lab/product scaffold (Docker, MCP, deploy doc) |
 | **Promote** | `python -m intergrax.scaffold expand <app_slug>` | Upgrade minimal lab tree to standard layout |
 
-Author path: [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md) Step 4E § E.0.
+Author path: [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.md) Step 4E § E.0.
 
 ---
 
@@ -162,7 +162,7 @@ def wire_my_lab_tools(*, integration_profile=None):
     )
 ```
 
-Full guide: [`intergrax/tools/USAGE.md`](../intergrax/tools/USAGE.md) · catalog: [`docs/TOOLS.md`](../docs/TOOLS.md)
+Full guide: [`intergrax/tools/USAGE.md`](../intergrax/tools/USAGE.md) · catalog: [`docs/architecture/TOOLS.md`](../docs/architecture/TOOLS.md)
 
 ### 4. Host — HTTP + Nexus
 
@@ -325,14 +325,14 @@ llm = LLMProfile(provider=LLMProvider.GROQ, model="llama-3.3-70b-versatile").cre
 llm = llm_profile_from_env(prefix="INTERGRAX_LLM").create_adapter()
 ```
 
-Set API keys via env or `secrets=` on `LLMProfile.create_adapter()`. Enable `INTERGRAX_LLM_METRICS_ENABLED=true`; optional `register_llm_metrics_routes(app)`. Nexus hosts using `bootstrap_nexus_platform()` get automatic tenant-scoped LLM metrics on task completion — no manual `set_llm_tenant_id` required. Optional quota: `INTERGRAX_LLM_TENANT_MAX_TOKENS`. See [LLM_ADAPTERS.md](../docs/LLM_ADAPTERS.md).
+Set API keys via env or `secrets=` on `LLMProfile.create_adapter()`. Enable `INTERGRAX_LLM_METRICS_ENABLED=true`; optional `register_llm_metrics_routes(app)`. Nexus hosts using `bootstrap_nexus_platform()` get automatic tenant-scoped LLM metrics on task completion — no manual `set_llm_tenant_id` required. Optional quota: `INTERGRAX_LLM_TENANT_MAX_TOKENS`. See [architecture/LLM_ADAPTERS.md](../docs/architecture/LLM_ADAPTERS.md).
 
 | Task | Where |
 |------|--------|
 | Create agent | `python -m intergrax.scaffold new-agent …` → `agents/` |
 | Register in app | `AgentBinding.mount(...)` in `applications/<app>/manifest.py` |
 | Wire backends | `IntegrationProfile` in manifest + `integration_wiring.py` |
-| Select LLM provider | `LLMProfile` or env `INTERGRAX_LLM_PROVIDER` / `INTERGRAX_LLM_MODEL` — see [LLM_ADAPTERS.md](../docs/LLM_ADAPTERS.md) |
+| Select LLM provider | `LLMProfile` or env `INTERGRAX_LLM_PROVIDER` / `INTERGRAX_LLM_MODEL` — see [architecture/LLM_ADAPTERS.md](../docs/architecture/LLM_ADAPTERS.md) |
 | Enable catalog tools | `tool_wiring.py` + pass `tool_profile` via `ApplicationBuildContext` |
 | Scaffold app | [`TIER3_READINESS.md`](TIER3_READINESS.md) · Guide Step **4E** — `new-stack` or `new-application --profile lab\|product` |
 
@@ -341,7 +341,7 @@ Set API keys via env or `secrets=` on `LLMProfile.create_adapter()`. Enable `INT
 ## Related docs
 
 - **Engine API (define / invoke registry):** [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md)
-- **LLM adapters (providers, env, deployment):** [`docs/LLM_ADAPTERS.md`](../docs/LLM_ADAPTERS.md)
+- **LLM adapters (providers, env, deployment):** [`docs/architecture/LLM_ADAPTERS.md`](../docs/architecture/LLM_ADAPTERS.md)
 - **Tool catalog wiring:** [`intergrax/tools/USAGE.md`](../intergrax/tools/USAGE.md)
-- **Agent creation:** [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md)
+- **Agent creation:** [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.md)
 - **Phase N plan:** [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../docs/INTERGRAX_IMPLEMENTATION_PLAN.md)

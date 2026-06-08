@@ -4,7 +4,7 @@ contact_links:
     url: https://github.com/jakbuczarnecki/intergrax-ai/blob/main/README.md#documentation-index
     about: Canonical platform documentation — start here
   - name: Agent Creation Guide
-    url: https://github.com/jakbuczarnecki/intergrax-ai/blob/main/docs/AGENT_CREATION_GUIDE.md
+    url: https://github.com/jakbuczarnecki/intergrax-ai/blob/main/docs/guides/AGENT_CREATION_GUIDE.md
     about: How to create, register, and run agents
   - name: Security vulnerability
     url: https://github.com/jakbuczarnecki/intergrax-ai/blob/main/SECURITY.md

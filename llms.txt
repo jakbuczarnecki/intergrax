@@ -1,83 +1,10 @@
-# Intergrax
+# Intergrax — Agent OS / Harness AI
 
-> Agent OS and Harness AI runtime for building, orchestrating, experimenting with, and validating specialized AI agents in Python.
+**Hub:** docs/intergrax_runtime_architecture.md  
+**Architecture (17 domain docs):** docs/architecture/README.md  
+**Plan:** docs/INTERGRAX_IMPLEMENTATION_PLAN.md · docs/plan/phases/  
+**Guides:** docs/guides/
 
-Intergrax is a **production-grade Harness AI platform** — not a chatbot or single agent. It provides a four-tier stack (Platform → Nexus Agent OS → Agents → Applications), governed runtime (policy, tools, skills, context, trace), and a capability model: Integration → Tool → Skill → Agent.
+Domains: PLATFORM_FOUNDATION · UNIFIED_EXECUTION_RUNTIME · ORCHESTRATION · NEXUS_EXECUTION_FLOW · AGENT_CONTRACTS_AND_ASSEMBLY · INTEGRATIONS · TOOLS · SKILLS · LLM_ADAPTERS · MEMORY · MODALITY · OBSERVABILITY · RELIABILITY_FAILURE_AND_HITL · TIER3_APPLICATION_ENVIRONMENT · EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE · ADAPTIVE_HARNESS_INTELLIGENCE · CRITIC_VERIFICATION
 
-**Repository:** https://github.com/jakbuczarnecki/intergrax-ai  
-**Documentation index (canonical):** README.md#documentation-index  
-**License:** Proprietary — see LICENSE
-
-## When to use Intergrax
-
-- Build **specialized AI agents** on a shared Harness instead of one-off LLM scripts
-- **Experiment rapidly** — idea to first traced Nexus run in under one hour
-- Orchestrate **multi-agent graphs** with policy, human-in-the-loop, and observability
-- Extend via **pip-installable plugins** (integrations, tools, skills)
-- Deploy **Tier-3 application hosts** that compose agents into products
-- Evaluate platform maturity against an **ideal Harness AI reference model** (L0–L4 gates)
-
-## Start here (read in this order)
-
-- README.md — product overview, quick start, repository layout
-- README.md#start-here — documentation navigation and current phase focus
-- docs/INTERGRAX_DEVELOPMENT_STRATEGY.md — strategic goal, lab vs production harness
-- docs/intergrax_runtime_architecture.md — architecture hub (concept map, tiers, links)
-- docs/architecture/README.md — decomposed architecture canon by domain
-- docs/AGENT_CREATION_GUIDE.md — canonical agent workflow (scaffold → register → run → evaluate)
-
-## Core concepts
-
-| Concept | Document |
-|---------|----------|
-| Four-tier model (Tier-0…3) | docs/intergrax_runtime_architecture.md · docs/architecture/PLATFORM_FOUNDATION.md |
-| Harness AI terminology | docs/architecture/PLATFORM_FOUNDATION.md §5.3 |
-| Nexus runtime & UAEP | docs/architecture/UNIFIED_EXECUTION_RUNTIME.md |
-| Nexus execution flow (diagrams, edge cases) | docs/NEXUS_EXECUTION_FLOW_REFERENCE.md |
-| Integration → Tool → Skill → Agent | docs/INTEGRATIONS.md · docs/TOOLS.md · docs/SKILLS.md |
-| LLM providers (19 adapters) | docs/LLM_ADAPTERS.md |
-| RAG & memory | docs/MEMORY_ARCHITECTURE.md · docs/architecture/RAG_AND_RETRIEVAL.md · docs/architecture/CONTEXT_ENGINEERING.md |
-| Modality / vision / audio / ML | docs/MODALITY.md |
-| Lab harness environment | docs/HARNESS_ENVIRONMENT.md |
-
-## Implementation & status
-
-- docs/INTERGRAX_IMPLEMENTATION_PLAN.md — plan hub: priority ladder, §6.1 queue, phase index
-- docs/plan/phases/ — decomposed phase registers
-- Regression gate: `uv run pytest -m gate -q`
-- Business agents (Phase K): deferred — see plan §6.3
-
-## Documentation boundary
-
-- docs/intergrax_runtime_architecture.md + docs/architecture/ + docs/INTERGRAX_IMPLEMENTATION_PLAN.md + docs/plan/ = **Harness AI / Agent OS platform**
-- applications/<product>/ARCHITECTURE.md = **business environment**
-- agents/<name>/ARCHITECTURE.md = **business agent**
-
-## Architecture & maturity
-
-- docs/IDEAL_HARNESS_AI_ARCHITECTURE.md — target Harness AI reference (9 layers, L0–L4)
-- docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md — L4 Adaptive Harness Intelligence (AHI)
-- docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md — Critic & Verification Layer (CVL)
-- docs/OBSERVABILITY_ARCHITECTURE.md — Unified Observability Spine
-- docs/INTEGRAX_HARNESS_AUDIT_MAP.md — 32 auditable layers
-- docs/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md — focused audit prompt for coding agents
-
-## Authoring guides
-
-- docs/AGENT_CREATION_GUIDE.md — agents (Appendices A–U for control planes)
-- docs/EXTENSION_AUTHOR_GUIDE.md — Tier-0 plugin catalogs
-- applications/USAGE.md — Tier-3 application layout
-- intergrax/tools/USAGE.md — wire catalog tools
-
-## Quick start commands
-
-```bash
-uv run pytest -m gate -q
-python -m intergrax.scaffold new-agent my_agent --capability domain.action
-uv run intergrax doctor
-```
-
-## For AI coding agents
-
-- AGENTS.md — hard rules, task routing, verification commands
-- .cursor/rules/intergrax-iteration.mdc — iteration workflow for harness maintenance
+**Agents:** AGENTS.md

@@ -796,7 +796,7 @@ See [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) for p
 Tier-2  agents/           WHAT the agent needs     → capabilities, allowed_tools, ToolRequest
 Tier-3  applications/     WHICH vendor/backend     → IntegrationProfile, ToolProfile, factory wiring
 Tier-0  integrations/     HOW to talk to backend   → providers/<slug>/, contracts
-Tier-0  tools/              WHAT the LLM invokes     → providers/<domain>/, ToolContract (see TOOLS.md)
+Tier-0  tools/              WHAT the LLM invokes     → providers/<domain>/, ToolContract (see architecture/TOOLS.md)
 ```
 
 | Layer | Declares | Example |
@@ -836,7 +836,7 @@ response = await ctx.invoke_tool(
 )
 ```
 
-The application ensures the tool runtime is backed by the correct Tier-0 provider (e.g. Google CSE vs Bing via host config, not agent code). See [TOOLS.md](TOOLS.md) for catalog tool_ids and Phase O wiring (`ToolProfile`, `ToolWiringContext`).
+The application ensures the tool runtime is backed by the correct Tier-0 provider (e.g. Google CSE vs Bing via host config, not agent code). See [architecture/TOOLS.md](architecture/TOOLS.md) for catalog tool_ids and Phase O wiring (`ToolProfile`, `ToolWiringContext`).
 
 #### Tool catalog wiring (Phase O.8 — unified model)
 
@@ -1007,7 +1007,7 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 | `google_workspace`, `ms365_graph` | collaboration_suite | Mail / calendar / directory |
 | `otel`, `prometheus`, `elasticsearch` | observability_backend | Metrics and log search |
 
-Full catalog (167 providers, each with English `USAGE.md`): [`INTEGRATIONS.md`](INTEGRATIONS.md). Per-slug examples: `intergrax/integrations/providers/<category>/<slug>/USAGE.md`.
+Full catalog (167 providers, each with English `USAGE.md`): [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md). Per-slug examples: `intergrax/integrations/providers/<category>/<slug>/USAGE.md`.
 
 LLM adapters (`intergrax/llm_adapters/`) are **not** part of the Integration Library — configure them separately.
 
@@ -1060,7 +1060,7 @@ Prefer `python -m intergrax.scaffold new-application <name> --profile lab|produc
 
 ## Appendix G — Memory & RAG naming (Phase Q)
 
-> **Full architecture:** [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) — canonical deep dive (stores, lifecycle, context compiler, strategy matrix). This appendix is the **author control plane** summary.
+> **Full architecture:** [`architecture/MEMORY.md`](architecture/MEMORY.md) — canonical deep dive (stores, lifecycle, context compiler, strategy matrix). This appendix is the **author control plane** summary.
 
 ### Four memory stores (canon §27 mapping)
 
@@ -1165,7 +1165,7 @@ Nexus owns **what the LLM sees** per step (`ContextManager`, `TaskContextAssembl
 | Tool | `allowed_tools` | `ToolProfile` |
 | Skill | `skill_ids` on contract | `SkillProfile` |
 
-Do **not** register markdown instruction packs as `ToolContract`. Import external skills via `CursorSkillImporter` — see [SKILLS.md](SKILLS.md). Canon: §7.1.8.
+Do **not** register markdown instruction packs as `ToolContract`. Import external skills via `CursorSkillImporter` — see [architecture/SKILLS.md](architecture/SKILLS.md). Canon: §7.1.8.
 
 ---
 
@@ -1266,7 +1266,7 @@ uv run uvicorn lab_application.host.main:app --host 127.0.0.1 --port 8090
 # GET /debug/tasks/{id}/events  →  GET /debug/tasks/{id}/metrics
 ```
 
-Operator SLO catalog, runbooks, release cycles: [`HARNESS_ENVIRONMENT.md`](HARNESS_ENVIRONMENT.md).
+Operator SLO catalog, runbooks, release cycles: [`guides/HARNESS_ENVIRONMENT.md`](guides/HARNESS_ENVIRONMENT.md).
 
 ### H.6 Policy rule plugins
 
@@ -1274,7 +1274,7 @@ Entry point group: `intergrax.policy_rules` (mirror P-Ext pattern).
 
 - Loader: `intergrax/runtime/policy/rules/plugin_loader.py`
 - Declarative YAML: `load_policy_rules_from_path` + `PolicyRulesProfile.rules_path`
-- Author guide: [`EXTENSION_AUTHOR_GUIDE.md`](EXTENSION_AUTHOR_GUIDE.md) §10
+- Author guide: [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md) §10
 
 ### H.7 What agents (Tier-2) must not do
 
@@ -1295,7 +1295,7 @@ Entry point group: `intergrax.policy_rules` (mirror P-Ext pattern).
 | Harness getattr hygiene | `python scripts/check_harness_no_getattr.py` |
 | Operational L3 | `release_cycles.json` ≥2 + `phase_w_ops_evidence.py --enforce` |
 
-Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer checklists: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer checklists: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
 
 ---
 
@@ -1304,7 +1304,7 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 **Audience:** Tier-3 application authors, platform engineers, operators.  
 **Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §7 (Reasoning/planning), §8 (Agent OS), §9 (Orchestration/graph), §10 (Subagents); canon [§42.3](architecture/UNIFIED_EXECUTION_RUNTIME.md#423-hook-system)–[§42.15](architecture/UNIFIED_EXECUTION_RUNTIME.md#4215-agent-handoff-contracts), [§42.43](architecture/UNIFIED_EXECUTION_RUNTIME.md#4243-multi-agent-collaboration-flow-reference).
 
-**Full execution flow (diagrams, data flow, edge cases, evaluation hooks, plan traceability):** [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) — read this for end-to-end narrative; Appendix I is the **configuration control plane** map. Delegation target semantics: [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md).
+**Full execution flow (diagrams, data flow, edge cases, evaluation hooks, plan traceability):** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) — read this for end-to-end narrative; Appendix I is the **configuration control plane** map. Delegation target semantics: [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md).
 
 Intergrax orchestration is **centralized in Tier-1 (Nexus)** — agents own **local** UAEP steps only. Planning, scheduling, graph execution, handoff, retry, HITL, and trace are **composable runtime responsibilities** with typed contracts and hook extension points.
 
@@ -1459,7 +1459,7 @@ Agent-local tool orchestration: `RuntimeConfig.tool_planner` (`ToolPlannerProtoc
 | No agent branches in NexusLoop | `python scripts/check_harness_no_getattr.py` + code review |
 | Full gate | `uv run pytest -m gate -q` |
 
-Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layers §7–§10: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layers §7–§10: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
 
 ---
 
@@ -1554,7 +1554,7 @@ Wired `ApplicationBuildContext` profiles **override** raw environment defaults (
 | Import vendor SDKs in `agents/` | Declare `allowed_tools`; wire integration in Tier-3 |
 | Register tools inside agent package | Add `ToolPlugin` or catalog bundle; enable in `tool_profile` |
 | Model workflows as one giant tool | Create **Skill** pack + UAEP steps |
-| Copy prompt + tool lists per agent | Reuse `skill_ids` from [Skill Library](SKILLS.md) |
+| Copy prompt + tool lists per agent | Reuse `skill_ids` from [Skill Library](architecture/SKILLS.md) |
 | Bypass `ToolRuntime` | Return `ToolRequest`; runtime invokes with policy + trace |
 | Use `use_rag` / `use_websearch` booleans | Pass explicit `tool_ids` (`rag.retrieve`, `websearch.query`) |
 
@@ -1571,7 +1571,7 @@ Wired `ApplicationBuildContext` profiles **override** raw environment defaults (
 | Legacy boolean flags | `python scripts/check_legacy_tool_plan_booleans.py` |
 | Full gate | `uv run pytest -m gate -q` |
 
-Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layers §11–§12: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layers §11–§12: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
 
 ---
 
@@ -1679,14 +1679,14 @@ Wired `ApplicationBuildContext.integration_profile` **overrides** raw environmen
 | Vendor import gates | `python scripts/check_agents_vendor_imports.py` |
 | Full gate | `uv run pytest -m gate -q` |
 
-Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layers §13–§14: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layers §13–§14: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
 
 ---
 
 ## Appendix L — Context engineering control plane
 
 **Audience:** Tier-3 application authors, platform engineers.  
-**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §16; canon [§28](architecture/CONTEXT_ENGINEERING.md#281-context-engineering); memory/RAG naming: [Appendix G](#appendix-g--memory--rag-naming-phase-q).
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §16; canon [`architecture/MEMORY.md`](../architecture/MEMORY.md); memory/RAG naming: [Appendix G](#appendix-g--memory--rag-naming-phase-q).
 
 Context engineering is a **first-class Nexus concern** — budgeted assembly, provenance, trimming telemetry, and deterministic pipelines. Agents do not hand-build prompts; `ContextManager` + `ContextBuilder` assemble bounded context from task, memory, RAG, tools, and graph outputs.
 
@@ -1764,7 +1764,7 @@ Nexus graph execution (Tier-1)
 | Memory + context round-trip | `pytest tests/unit/applications/test_memory_profile_runtime_bridge.py -m gate` |
 | Full gate | `uv run pytest -m gate -q` |
 
-Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §16: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §16: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
 
 ---
 
@@ -1840,7 +1840,7 @@ Nexus prompt builders (Tier-1)
 | PromptMeta governance | `pytest tests/unit/prompts/test_prompt_governance_meta.py -m gate` |
 | Full gate | `uv run pytest -m gate -q` |
 
-Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §17: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §17: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
 
 ---
 
@@ -1923,7 +1923,7 @@ Audit vocabulary maps to the canonical enum in `agent_lifecycle_state.py`:
 | Golden prompt regression | `uv run python scripts/check_harness_prompt_golden_catalog.py` |
 | Full gate | `uv run pytest -m gate -q` |
 
-Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §18: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §18: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
 
 ---
 
@@ -2002,7 +2002,7 @@ AgentRegistry.register (Tier-1)
 | Capability graph guard | `uv run python scripts/phase_v_capability_graph_guard.py --enforce` |
 | Full gate | `uv run pytest -m gate -q` |
 
-Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §19: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §19: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
 
 ---
 
@@ -2065,7 +2065,7 @@ Release / CI
 | Lineage / impact reports | `build/architecture_hardening/capability_*_report.json` |
 | Full gate | `uv run pytest -m gate -q` |
 
-Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §20: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §20: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
 
 ---
 
@@ -2126,11 +2126,11 @@ Release / CI
 |---------|----------------|
 | Profile → wiring bridge | `pytest tests/unit/applications/test_harness_observability_wiring.py -m gate` |
 | Host observability materialization | `python scripts/check_harness_observability_wiring.py` |
-| Lab OTLP / debug APIs | [`HARNESS_ENVIRONMENT.md`](HARNESS_ENVIRONMENT.md#otlp--observability-s-ops2) |
+| Lab OTLP / debug APIs | [`guides/HARNESS_ENVIRONMENT.md`](guides/HARNESS_ENVIRONMENT.md#otlp--observability-s-ops2) |
 | Mandatory vs optional signals | [Appendix H §H.5](#h5-observability--what-is-mandatory-vs-optional) |
 | Full gate | `uv run pytest -m gate -q` |
 
-Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §21: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §21: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
 
 ---
 
@@ -2197,7 +2197,7 @@ Release / CI
 | Integration circuit breaker | `pytest tests/unit/integrations/test_integration_circuit_breaker.py -m gate` |
 | Full gate | `uv run pytest -m gate -q` |
 
-Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §22: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §22: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
 
 ---
 
@@ -2263,7 +2263,7 @@ Release / CI
 | Integration security path | `pytest tests/integration/runtime/test_nexus_loop_security_wiring.py -m gate` |
 | Full gate | `uv run pytest -m gate -q` |
 
-Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §23: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §23: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
 
 ---
 
@@ -2329,7 +2329,7 @@ Release / CI
 | Runtime config bridge | `pytest tests/unit/applications/test_runtime_config_bridge.py -m gate` |
 | Full gate | `uv run pytest -m gate -q` |
 
-Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §24: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §24: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
 
 ---
 
@@ -2398,14 +2398,14 @@ Release / CI
 | Runtime config bridge | `pytest tests/unit/applications/test_runtime_config_bridge.py -m gate` |
 | Full gate | `uv run pytest -m gate -q` |
 
-Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §25: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §25: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
 
 ---
 
 ## Appendix W — Critic & Verification control plane closeout
 
 **Audience:** Tier-3 application authors, platform engineers, quality engineers.  
-**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §25; Phase CRIT-V **Done**; canon [§55](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md#55-critic--verification-layer-cvl--pev-verify-addendum); architecture [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md).
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §25; Phase CRIT-V **Done**; canon [§55](architecture/CRITIC_VERIFICATION.md#55-critic--verification-layer-cvl--pev-verify-addendum); architecture [`architecture/CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md).
 
 Tier-3 hosts materialize critic graph hooks, policy fragments, and assembly validation from typed `CriticProfile` — not ad-hoc `CriticOrchestrator` construction in host factories.
 
@@ -2522,7 +2522,7 @@ Ops / CI
 | Pattern report export | `python scripts/phase_w_adapt_report.py --patterns-output build/adaptive_harness/process_patterns.json` |
 | Full gate | `uv run pytest -m gate -q` |
 
-Runbooks: [`runbook/adaptive/`](../runbook/adaptive/) · architecture: [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md).
+Runbooks: [`runbook/adaptive/`](../runbook/adaptive/) · architecture: [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md).
 
 ---
 
@@ -2540,7 +2540,7 @@ Runbooks: [`runbook/adaptive/`](../runbook/adaptive/) · architecture: [`ADAPTIV
 | Import `integrations/providers/` from `agents/` | Declare `allowed_tools`; wire slugs in Tier-3 `factory.py` |
 | Hardcode Slack/Postgres/Redis in agent steps | `ToolRequest` + application `IntegrationProfile` |
 | Model a business workflow as one giant `ToolContract` | **Skill** pack (tool_ids + prompts) + UAEP steps on agent |
-| Copy prompt + tool lists into every new agent | Reuse `skill_ids` from [Skill Library](SKILLS.md) |
+| Copy prompt + tool lists into every new agent | Reuse `skill_ids` from [Skill Library](architecture/SKILLS.md) |
 | Tie agent to one product | Reusable capability in `agents/` |
 | Document this workflow in multiple files | Update **this guide only** |
 | Use `getattr` / `setattr` on harness paths (`runtime/nexus/`, `agents/`) | Explicit `Protocol` / typed fields; CI `scripts/check_harness_no_getattr.py` |

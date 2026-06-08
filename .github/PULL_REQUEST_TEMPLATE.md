@@ -22,7 +22,7 @@
 - [ ] docs/INTERGRAX_DEVELOPMENT_STRATEGY.md
 - [ ] docs/intergrax_runtime_architecture.md
 - [ ] docs/INTERGRAX_IMPLEMENTATION_PLAN.md
-- [ ] docs/AGENT_CREATION_GUIDE.md
+- [ ] docs/guides/AGENT_CREATION_GUIDE.md
 - [ ] Other: <!-- list -->
 
 ## Architecture compliance

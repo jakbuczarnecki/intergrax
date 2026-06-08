@@ -217,7 +217,7 @@ def _contract_py(slug: str, class_name: str, primary_capability: str) -> str:
         from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
         from {slug}.capabilities import CAPABILITIES
 
-        # Register skill packs on the contract — see docs/SKILLS.md
+        # Register skill packs on the contract — see docs/architecture/SKILLS.md
 
 
         def build_agent_contract() -> AgentContract:
@@ -442,7 +442,7 @@ def _readme(slug: str, class_name: str, capabilities: list[str]) -> str:
         f"""\
         # {slug} agent
 
-        UAEP-first scaffold. Full process: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md) (single canonical guide).
+        UAEP-first scaffold. Full process: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md) (single canonical guide).
 
         ## Docs
 
@@ -466,7 +466,7 @@ def _readme(slug: str, class_name: str, capabilities: list[str]) -> str:
         registry.register({class_name}())
         ```
 
-        See **Step 4** in AGENT_CREATION_GUIDE.md for all registration contexts.
+        See **Step 4** in guides/AGENT_CREATION_GUIDE.md for all registration contexts.
 
         ## Capabilities
 

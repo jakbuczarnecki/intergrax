@@ -1,5 +1,13 @@
 # Intergrax — Model & Modality Plane
 
+**Status:** Canonical architecture document
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Implementation:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](../INTERGRAX_IMPLEMENTATION_PLAN.md) · [`plan/phases/`](../plan/phases/)
+
+---
+
+
 **Last updated:** 2026-06-02 · **Phase W-ML** (W-ML.0–W-ML.8 **Done**; harness backends: OpenCV contours, optional Ultralytics, ElevenLabs TTS when keyed; lab `ModalityProfile` wiring **Done**)
 
 Catalog and harness rules for **vision**, **audio/speech**, **classical ML**, and **Hugging Face** usage — aligned with Integration → Tool → Skill → Agent (§5.3, §7.1.9).
@@ -7,7 +15,7 @@ Catalog and harness rules for **vision**, **audio/speech**, **classical ML**, an
 **Canon:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.9 · §5.3  
 **Target model:** [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5.1, §7.1  
 **Implementation tracker:** [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase W-ML**  
-**Related:** [LLM_ADAPTERS.md](LLM_ADAPTERS.md) (generative multimodal) · [INTEGRATIONS.md](INTEGRATIONS.md) (catalog slugs) · RAG §7.1.2 (ingest/embeddings)
+**Related:** [architecture/LLM_ADAPTERS.md](architecture/LLM_ADAPTERS.md) (generative multimodal) · [architecture/INTEGRATIONS.md](architecture/INTEGRATIONS.md) (catalog slugs) · RAG §7.1.2 (ingest/embeddings)
 
 ---
 
@@ -284,7 +292,7 @@ Registries: `VisionAdapterRegistry`, `SpeechAdapterRegistry` (same pattern as `L
 [ ] 6. Policy: risk_tier, max_batch, allowed MIME types, tenant allowlist
 [ ] 7. Metrics + trace fields on ToolInvocation
 [ ] 8. Unit tests (golden tensors or fixture images) + gate subset
-[ ] 9. USAGE.md under provider folder; update INTEGRATIONS.md or this file
+[ ] 9. USAGE.md under provider folder; update architecture/INTEGRATIONS.md or this file
 ```
 
 Agents: declare `tool_ids` / `ModalityProfile` — never import vendor SDKs.

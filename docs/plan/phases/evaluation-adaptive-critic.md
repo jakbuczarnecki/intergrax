@@ -7,7 +7,7 @@
 ## Phase W-ADAPT — Adaptive Harness Intelligence (L4 runtime)
 
 **Status:** **Done** (2026-06-02) — **70/70 Done** (Wave W-ADAPT-0 through Wave W-ADAPT-7 complete)  
-**Architecture spec:** [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) (AHIA) · runtime canon [§54](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) · IDEAL [§25](IDEAL_HARNESS_AI_ARCHITECTURE.md#25-adaptive-harness-layer)  
+**Architecture spec:** [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) (AHIA) · runtime canon [§54](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) · IDEAL [§25](IDEAL_HARNESS_AI_ARCHITECTURE.md#25-adaptive-harness-layer)  
 **Prerequisites:** Phase **V** **Done** · Phase **V-REM** **Done** · Phase **W-OPS** **Done** · Phase **H-APP** **Done** · Phases **EVAL**, **COST**, **CG** closeouts **Done** (signal sources + governance envelopes exist)  
 **Goal:** Close the gap between **L4 governance contracts** (`adaptive_governance.py`, `phase_v_closeout_gate.py --enforce-l4`) and **L4 adaptive runtime** — governed closed loop: **observe → propose → gate → shadow/canary → apply → verify → rollback**  
 **Priority ladder:** **Band 2y** (§4.0) — **closed**; default queue = **§6.1 maintenance**  
@@ -168,8 +168,8 @@ Total: 70 deliverables
 |----|-------------|--------|----------|------------|
 | W-ADAPT-7.1 | **Default `AdaptiveProfile`** on `lab_application` + reference apps | **Done** | High | Lab: `enabled=True` observe (`LAB_ADAPTIVE_OBSERVE`); product refs: `enabled=False` |
 | W-ADAPT-7.2 | **`BusinessOutcomeWebhook` contract** — optional Tier-3 signal for `business_outcome` | **Done** | Medium | Signed payload validation |
-| W-ADAPT-7.3 | **`AGENT_CREATION_GUIDE.md` Appendix V** — Adaptive Harness authoring | **Done** | High | Control plane map |
-| W-ADAPT-7.4 | **`HARNESS_ENVIRONMENT.md`** — adaptive ops section + env vars | **Done** | Medium | Lab enable observe mode docs |
+| W-ADAPT-7.3 | **`guides/AGENT_CREATION_GUIDE.md` Appendix V** — Adaptive Harness authoring | **Done** | High | Control plane map |
+| W-ADAPT-7.4 | **`guides/HARNESS_ENVIRONMENT.md`** — adaptive ops section + env vars | **Done** | Medium | Lab enable observe mode docs |
 | W-ADAPT-7.5 | **Lab debug routes** (optional) — list proposals / signals read-only | **Done** | Low | Behind lab profile flag |
 | W-ADAPT-7.6 | **Acceptance test** — end-to-end observe → recommend (no apply) | **Done** | High | `tests/acceptance/adaptive/` |
 | W-ADAPT-7.7 | **Docs sync** — README, docs/README, Appendix H row for IDEAL §25 runtime | **Done** | Medium | Zero stale "out of scope L4" |
@@ -231,7 +231,7 @@ W-ADAPT-0.2 → 0.3 → 0.4 → 0.5
 
 **Status:** **Done** (2026-06-02) — **4/4** deliverables Done (EVAL-DOC.1 + EVAL-1–3)
 
-**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §25; V-EVAL **Done**; author map: `AGENT_CREATION_GUIDE.md` **Appendix U**.
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §25; V-EVAL **Done**; author map: `guides/AGENT_CREATION_GUIDE.md` **Appendix U**.
 
 **Priority ladder:** **Band 2x** (§4.0) — closed; default queue = **§6.1** maintenance.
 
@@ -239,7 +239,7 @@ W-ADAPT-0.2 → 0.3 → 0.4 → 0.5
 
 | ID | Area | Deliverable | Status | Modules | Acceptance |
 |----|------|-------------|--------|---------|------------|
-| EVAL-DOC.1 | EVAL0 | **Appendix U** — evaluation control plane closeout | **Done** | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| EVAL-DOC.1 | EVAL0 | **Appendix U** — evaluation control plane closeout | **Done** | `guides/AGENT_CREATION_GUIDE.md` | TOC + verification table |
 | EVAL-1 | EVAL1 | **`EvaluationProfile`** + **`evaluation_runtime_bridge`** + **`evaluation_wiring`** | **Done** | `environment_profile.py`, `evaluation_runtime_bridge.py`, `evaluation_wiring.py`, `policy_wiring.py` | `test_harness_evaluation_wiring.py` |
 | EVAL-2 | EVAL2 | **`evaluation_assembly_resolver`** — profile ↔ registry conformance | **Done** | `evaluation_assembly_resolver.py`, `harness_host_runtime.py`, `runtime_config_bridge.py`, `runtime.py` | assembly validation tests |
 | EVAL-3 | EVAL3 | **Host evaluation CI** — `check_harness_evaluation_wiring.py` | **Done** | `scripts/`, CI workflow | audit script in CI |
@@ -254,7 +254,7 @@ W-ADAPT-0.2 → 0.3 → 0.4 → 0.5
 **Prerequisites:** Phase EVAL **Done** (registry wiring), Phase FLOW **Done** (graph hooks), Phase M-LLM-R **Done** (typed LLM envelope)  
 **Goal:** Deliver production-grade PEV **Verify** infrastructure — L0/L1/L2 critic stack with tier-separated competencies; uplift Evaluation audit layer L2→L3.  
 **Priority ladder:** **Band 2ak** (§4.0) — **Done** (2026-06-08). Default queue reverts to §6.1 gate maintenance.  
-**Architecture:** [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · canon [§55](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md#55-critic--verification-layer-cvl--pev-verify-addendum) · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md)  
+**Architecture:** [`architecture/CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md) · canon [§55](architecture/CRITIC_VERIFICATION.md#55-critic--verification-layer-cvl--pev-verify-addendum) · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md)  
 **Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §25 (Evaluation), §7 (Reasoning), §10 (Multi-agent); closes **FAUDIT-EVAL.1** residual  
 **Execution order:** [§6.2ak](#62ak-phase-crit-v-execution-order-band-2ak--closed) · queue: [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-closed)
 
@@ -264,7 +264,7 @@ W-ADAPT-0.2 → 0.3 → 0.4 → 0.5
 
 | ID | Wave | Deliverable | Status | Modules / docs | Acceptance |
 |----|------|-------------|--------|----------------|------------|
-| CRIT-V-0.1 | 0 | **Architecture RFC** — CVL full spec | **Done** | `CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md` | Linked from canon §55, README |
+| CRIT-V-0.1 | 0 | **Architecture RFC** — CVL full spec | **Done** | `architecture/CRITIC_VERIFICATION.md` | Linked from canon §55, README |
 | CRIT-V-0.2 | 0 | **ADR-CRITIC-001** — tier-separated PEV verify | **Done** | `docs/adr/ADR-CRITIC-001.md` | Status Accepted; adr index |
 | CRIT-V-0.3 | 0 | **Canon §55** addendum | **Done** | `intergrax_runtime_architecture.md` §55 | Cross-links resolve |
 | CRIT-V-0.4 | 0 | **README** sections (root + docs) | **Done** | `README.md`, `docs/README.md` | Navigation table |
@@ -287,9 +287,9 @@ W-ADAPT-0.2 → 0.3 → 0.4 → 0.5
 | CRIT-V-6.1 | 6 | **`wire_application_critic()`** — Tier-3 wiring | **Done** | `applications/_shared/critic_wiring.py` | Mirror EVAL pattern |
 | CRIT-V-6.2 | 6 | **`critic_assembly_resolver`** — wire-time validation | **Done** | `critic_assembly_resolver.py`, `check_harness_critic_wiring.py` | CI script |
 | CRIT-V-6.3 | 6 | **Policy bundle** — `critic_governance` fragment | **Done** | `policy_wiring.py` | Merged at host build |
-| CRIT-V-6.4 | 6 | **Appendix W** — critic control plane author map | **Done** | `AGENT_CREATION_GUIDE.md` | TOC + verification table |
+| CRIT-V-6.4 | 6 | **Appendix W** — critic control plane author map | **Done** | `guides/AGENT_CREATION_GUIDE.md` | TOC + verification table |
 | CRIT-V-7.1 | 7 | **FAUDIT-EVAL.1** — `require_baseline_for_release` CI gate | **Done** | `phase_v_closeout_gate.py`, `check_harness_critic_wiring.py` | Closeout gate green |
-| CRIT-V-7.2 | 7 | **Flow reference §18 sync** — CVL hook table | **Done** | `NEXUS_EXECUTION_FLOW_REFERENCE.md` | Hooks documented |
+| CRIT-V-7.2 | 7 | **Flow reference §18 sync** — CVL hook table | **Done** | `architecture/NEXUS_EXECUTION_FLOW.md` | Hooks documented |
 | CRIT-V-7.3 | 7 | **Lab harness demo** — L0+L1 on sample agent (not FLOW-8) | **Done** | `test_harness_critic_wiring.py`, lab host | Trace shows critic steps |
 | CRIT-V-F.1 | F | **`ToolRegistryCriticEvalClient`** — L1 bridge to Tier-0 eval tools | **Done** | `runtime/critic/tool_registry_client.py`, `critic_tool_wiring.py` | `test_critic_closeout.py` |
 | CRIT-V-F.2 | F | **`critic_llm_profile`** — separate judge LLM adapter | **Done** | `critic_llm_resolver.py`, `environment_profile.py` | Assembly + wiring tests |
@@ -583,7 +583,7 @@ W-ADAPT-0.2 → 0.3 → 0.4 → 0.5
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
 | 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
-| 1 | **OBS-BUS-0** | Docs | **Done** | `OBSERVABILITY_ARCHITECTURE.md` + ADR-OBS-001 + canon/README | Links resolve |
+| 1 | **OBS-BUS-0** | Docs | **Done** | `architecture/OBSERVABILITY.md` + ADR-OBS-001 + canon/README | Links resolve |
 | 2 | **OBS-BUS-1** | Code | **Done** | `RuntimeEventPayload` registry | Payload registry gate |
 | 3 | **OBS-BUS-2** | Code | **Done** | `ObservabilityEmitter` + `TraceScope` | Causal tree tests |
 | 4 | **OBS-BUS-3** | Code | **Done** | Emission coverage gaps | `check_observability_emission_coverage.py` |
@@ -603,7 +603,7 @@ W-ADAPT-0.2 → 0.3 → 0.4 → 0.5
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
 | 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
-| 1 | **MEM-DEPTH-0.1–0.4** | Docs | **3/4 Done** | `MEMORY_ARCHITECTURE.md` + plan + cross-links | MEM-DEPTH-0.3 ADR pending |
+| 1 | **MEM-DEPTH-0.1–0.4** | Docs | **3/4 Done** | `architecture/MEMORY.md` + plan + cross-links | MEM-DEPTH-0.3 ADR pending |
 | 2 | **MEM-DEPTH-1.1–1.6** | Code/Test | **Planned** | Context Compiler + never-overflow | Long-session gate green |
 | 3 | **MEM-DEPTH-2.1–2.2** | Code/Test | **Planned** | Mongo session persistence | Integration round-trip |
 | 4 | **MEM-DEPTH-3.1–3.5** | Code | **Planned** | Lifecycle automation | Auto consolidate on lab profile |
@@ -734,7 +734,7 @@ W-ADAPT-0.2 → 0.3 → 0.4 → 0.5
 | 4 | H-INT-4 | M-P4.12–M-P4.16 | `unleash`, `launchdarkly`, `github_actions`, `redpanda`, `cloudflare_r2` | P0/P1 | **Done** |
 | 5 | H-INT-5 | M-P4.17–M-P4.28 | `memgraph`, `falkordb`, `incident_io`, `kubernetes`, `servicenow`, `bitbucket`, `asana`, `sendgrid`, `mailgun`, `mlflow`, `huggingface_hub`, `ollama` | P1/P2 | **Done** |
 
-**Per-slug checklist (M.4):** contract → `providers/<category>/<slug>/` → unit tests → `USAGE.md` → `layout.py` → `INTEGRATIONS.md` → canon §7.1.3 row → gate green → paydown log row.
+**Per-slug checklist (M.4):** contract → `providers/<category>/<slug>/` → unit tests → `USAGE.md` → `layout.py` → `architecture/INTEGRATIONS.md` → canon §7.1.3 row → gate green → paydown log row.
 
 **Explicitly excluded:** CRM, payments, blockchain, duplicate vector SaaS, LLM vendor APIs — see [M.6 P4 register](#m6-p4--harness-platform-expansion-planned).
 
@@ -1385,7 +1385,7 @@ Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 �
 |------|--------|-------|
 | V-CG … V-V6 | **Done** | Governance + CI + runtime enforcement |
 | V-REM | **Done** | 10/10 closed — §6.1z queue closed |
-| W-ML | **Done** | [MODALITY.md](MODALITY.md) |
+| W-ML | **Done** | [architecture/MODALITY.md](architecture/MODALITY.md) |
 | P-Ext | **Done** | Appendix I |
 | M.6 P5 / M.6 P6 / R-Skill expansion | **On demand** | W-OPS.10, W-OPS.8, §6.1x, §6.1y |
 
@@ -1405,7 +1405,7 @@ Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 �
 | Domain skills | Product agent skill packs (non-`harness.*`) | **Deferred** | With K.1 or K.2 |
 | `agents/problem_radar/` | Wave 1 scaffold frozen | **Deferred** | Do not extend until K.1 reprioritized |
 
-**When Band 3 may start:** Record the decision in this plan (date + chosen K.1 vs K.2), then follow [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md). Tier-3 scaffold reference (Phase N) applies **only after** that decision — not as ongoing harness work.
+**When Band 3 may start:** Record the decision in this plan (date + chosen K.1 vs K.2), then follow [guides/AGENT_CREATION_GUIDE.md](guides/AGENT_CREATION_GUIDE.md). Tier-3 scaffold reference (Phase N) applies **only after** that decision — not as ongoing harness work.
 
 **Tier-3 scaffold (for when Band 3 is approved):**
 
@@ -1826,13 +1826,13 @@ Decision:       L1 certified — GO Phase S (harness environment), then Phase K 
 | 2026-05-30 | M.6-mysql | `providers/mysql/` — beta `RelationalStore` (pymysql); single-entry `opens.py` |
 | 2026-05-30 | M.6-provider-layout | Providers grouped under `providers/<category>/<slug>/`; `layout.py` slug map; tests mirrored by category |
 | 2026-05-30 | M.6-p2-batch | P2/P3 integrations — 22 slugs (`azure_blob`, `gcs`, `dynamodb`, cloud queues, SQL variants, SMTP, OTEL, GitHub/Linear/Azure DevOps, Notion/SharePoint, Google Workspace, Brave/SerpAPI, Playwright); `_shared/p2/`; **324** integration unit tests |
-| 2026-05-30 | M.7-agent-guide-integrations | `AGENT_CREATION_GUIDE.md` Appendix E — agents vs Tier-3 wiring |
+| 2026-05-30 | M.7-agent-guide-integrations | `guides/AGENT_CREATION_GUIDE.md` Appendix E — agents vs Tier-3 wiring |
 | 2026-05-30 | N.2.1-unified-wiring | `ApplicationBuildContext`, `builder_key`/`factory_path`, lab+legal on `build_application_registry` |
 | 2026-05-30 | N.2-conformance | `build_registry_from_manifest`, `load_agent_from_binding` + unit tests |
 | 2026-05-30 | N.1-manifest | `ApplicationManifest`, `AgentBinding`, `ApplicationFeatures` + unit tests |
 | 2026-05-30 | N.10-new-stack | `scaffold new-stack` — agent + application; `TIER3_READINESS.md` |
 | 2026-05-30 | N.9-scaffold-acceptance | `test_scaffold_acceptance.py` — lab/product runtime E2E; fix product `agent_factories.py` indent |
-| 2026-05-30 | N.8-agent-guide-4e | `AGENT_CREATION_GUIDE.md` Step 4E — `new-application`, Docker scripts, §7.4.8 links |
+| 2026-05-30 | N.8-agent-guide-4e | `guides/AGENT_CREATION_GUIDE.md` Step 4E — `new-application`, Docker scripts, §7.4.8 links |
 | 2026-05-30 | N.4-product-scaffold | `--profile product` → FastAPI Core host, `agent_factories.py`, auth stub env; `new_application_product.py` |
 | 2026-05-30 | N.5-docker-build-scripts | `build-docker.sh` / `build-docker.bat` in scaffold + lab/legal/research/poc; `docker_templates.py` |
 | 2026-05-30 | N.0-docs | Canon §7.4.8–§7.4.10 + Phase N plan (application environment, manifest, scaffold steps) |
@@ -2006,7 +2006,7 @@ Decision:       L1 certified — GO Phase S (harness environment), then Phase K 
 |----------|---------|------|--------|
 | L-01 | Dead `tracked_llm_call` | Q-L.1 | Done |
 | L-02 | Empty `llm_adapters/__init__.py` | Q-L.2 | Done |
-| L-03 | `LLM_ADAPTERS.md` missing provider table | Q-L.3 | Done |
+| L-03 | `architecture/LLM_ADAPTERS.md` missing provider table | Q-L.3 | Done |
 | L-04 | `LLMProfile` docstring `max_retries` wrong | Q-L.4 | Done |
 | L-05 | `supports_streaming()` default True | Q-L.5 | Done |
 | L-06 | PolicyEngine ignores `llm_cost_evaluation` | Q-L.6 | Done |
@@ -2098,7 +2098,7 @@ Decision:       L1 certified — GO Phase S (harness environment), then Phase K 
 | 2026-06-01 | Q-T.2,Q-T.3,Q-T.6 | New unit/integration tests; gate **399 passed** (+2) |
 | 2026-06-01 | Q-N.1(partial),Q-N.10,Q-N.13,Q-N.15 | `hitl_runner.py`; lab `harness_production_mode`; AgentEngine `event_bus`; graph checkpoint tests |
 | 2026-06-01 | Q-L.9–Q-L.11,Q-O.6,Q-O.11,Q-O.14 | Bedrock windows, OpenAI-compat delegation, LLM env appendix, metrics behavioral, debug types, trace storage §33.1 |
-| 2026-06-01 | docs-consolidation | Merged LLM/RAG observability, retry, trace ADR into canon + `LLM_ADAPTERS.md`; removed satellite `docs/*.md` |
+| 2026-06-01 | docs-consolidation | Merged LLM/RAG observability, retry, trace ADR into canon + `architecture/LLM_ADAPTERS.md`; removed satellite `docs/*.md` |
 | 2026-06-01 | Q-N.1,Q-X.2,Wave 9 | `graph_runner`, `task_events`, `lifecycle_bridge`; UAEP `execution_options_for_request`; gate **417 passed** |
 | 2026-06-01 | Q-X.2(partial),Q-X.4,Q-X.5 | Legacy metadata warnings; `tools_base` timeline; M.6 beta slugs; gate **415 passed** |
 | — | — | *(append row per merged PR)* |
@@ -2238,7 +2238,7 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 |------|------|---------|
 | 2026-06-01 | S.0.* | Strategy doc; canon; initial Phase S |
 | 2026-06-01 | S.0.4 | Pivot: Phase S = harness environment only; K.1/K.2 → Phase K |
-| 2026-06-01 | **Phase S** | harness_lab_stack, harness.* skills, OTEL profile, HARNESS_ENVIRONMENT.md, tests |
+| 2026-06-01 | **Phase S** | harness_lab_stack, harness.* skills, OTEL profile, guides/HARNESS_ENVIRONMENT.md, tests |
 | — | — | *(append row per merged PR)* |
 
 **Coverage target:** Phase S definition of done met — **yes** (2026-06-01).
@@ -2296,7 +2296,7 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 
 | Audit ID | Finding | U ID | Status |
 |----------|---------|------|--------|
-| DOC-01 | `HARNESS_ENVIRONMENT.md` claims policy bundle wired — lab does not apply bridge | U-Doc.1, U-Pol.1 | Done |
+| DOC-01 | `guides/HARNESS_ENVIRONMENT.md` claims policy bundle wired — lab does not apply bridge | U-Doc.1, U-Pol.1 | Done |
 | DOC-02 | Phase K footer still "after Phase S" in harness docs | U-Doc.3 | Done |
 | CI-01 | harness-smoke omits Phase T unit tests | U-CI.1 | Done |
 | CI-02 | No acceptance test for strict production harness path | U-CI.2 | Done |
@@ -2349,7 +2349,7 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | Multi-agent coordination pattern catalog | canon §42.43, §53.10 | ideal §6 + §25 | V-MA.* | **Done** |
 | Knowledge graph evolution path (Graph-RAG) | canon §53.11 | ideal §3.7.1 + §25 | V-KG.* | **Done** |
 | **Adaptive Harness Intelligence (L4 runtime closed loop)** | canon §54 | ideal §25 | **Phase W-ADAPT** · AHIA | **Done** (Band 2y, 70/70) — L4 runtime closed; observe/recommend/apply/verify per AHIA |
-| Observability and runtime traceability | canon §33, §42.24 · [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) | ideal §11 | Phases OBS + OBS-DEPTH.* + **Phase OBS-BUS** | **L4 Done** — spine, typed payloads, emitter, emission coverage, journal export; gate: `check_observability_gates.py` |
+| Observability and runtime traceability | canon §33, §42.24 · [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) | ideal §11 | Phases OBS + OBS-DEPTH.* + **Phase OBS-BUS** | **L4 Done** — spine, typed payloads, emitter, emission coverage, journal export; gate: `check_observability_gates.py` |
 | Registry-driven extensibility (agent/tool/skill/policy/prompt/eval) | canon §7.1.5.1–§7.1.8, §15, §53.2 | ideal §19 | Phase R/U + V-CG/V-PE/V-EVAL + **P-Ext** | **Done** — plugin catalogs production-ready; marketplace UI out of scope |
 | Product agents and new product apps | canon §7.4, §52 | ideal §26 | §6.3 only | **Deferred (product scope)** |
 
@@ -2391,7 +2391,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | P-Ext.0.1 | All | `load_plugins()` / entry point discovery | **Done** | P0 |
 | P-Ext.0.2 | All | `PluginConflictError`, `PluginLoadError` | **Done** | P0 |
 | P-Ext.0.3 | All | `bootstrap_catalogs()` Tier-3 API | **Done** | P0 |
-| P-Ext.0.4 | All | `EXTENSION_AUTHOR_GUIDE.md` (EN) | **Done** | P0 |
+| P-Ext.0.4 | All | `guides/EXTENSION_AUTHOR_GUIDE.md` (EN) | **Done** | P0 |
 | P-Ext.0.5 | All | Test fixture pip package | **Done** | P0 |
 | P-Ext.0.6 | All | EP discovery tests (3 groups) | **Done** | P0 |
 | P-Ext.0.7 | All | `INTERGRAX_DISCOVER_PLUGINS` + lab wiring | **Done** | P1 |
@@ -2523,7 +2523,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ## Appendix K — Adaptive Harness Intelligence traceability (Phase W-ADAPT)
 
-**Purpose:** 100% mapping from [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) (AHIA) to concrete **W-ADAPT.\*** IDs. **Canonical phase narrative:** [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime).
+**Purpose:** 100% mapping from [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) (AHIA) to concrete **W-ADAPT.\*** IDs. **Canonical phase narrative:** [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime).
 
 **Status:** **70/70 Done** (Band 2y closed 2026-06-05) — Waves W-ADAPT-0 through W-ADAPT-7 complete.
 
@@ -2616,7 +2616,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | 15 | ~50 call sites assume `str` | Full consumer refactor (Nexus, RAG, agents, websearch) | M-LLM-R.4.*, M-LLM-R.5.*, M-LLM-R.6.* |
 | 16 | `make_tool_result` dict factory | Delete; typed `build_adapter_response` | M-LLM-R.1.7 |
 | 17 | Public API missing response types | Re-export from `llm_adapters/__init__.py` | M-LLM-R.1.8 |
-| 18 | Docs describe two-layer usage but not response envelope | `LLM_ADAPTERS.md` envelope section | M-LLM-R.8.1 |
+| 18 | Docs describe two-layer usage but not response envelope | `architecture/LLM_ADAPTERS.md` envelope section | M-LLM-R.8.1 |
 | 19 | No CI guard against regression to `str` returns | `check_llm_adapter_typed_returns.py` | M-LLM-R.8.3 |
 
 ### L.2 Consumer inventory (must migrate)
@@ -2699,13 +2699,13 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ## Appendix N — Nexus execution flow traceability (Phase FLOW)
 
-**Source:** [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §23–§25 · [ADR-FLOW-001](adr/ADR-FLOW-001.md)
+**Source:** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §23–§25 · [ADR-FLOW-001](adr/ADR-FLOW-001.md)
 
 **Phase register:** [Phase FLOW](#phase-flow--nexus-execution-depth) · **Band 2aj** · queue [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed) · execution [§6.2aj](#62aj-phase-flow-execution-order-band-2aj--closed-2026-06-07)
 
 **Status:** **Done** (2026-06-07) · **17/18** deliverables Done (**FLOW-8 Deferred**)
 
-> **Note:** Distinct from `AGENT_CREATION_GUIDE.md` Appendix N (agent assembly). This appendix maps **orchestration runtime depth** gaps only.
+> **Note:** Distinct from `guides/AGENT_CREATION_GUIDE.md` Appendix N (agent assembly). This appendix maps **orchestration runtime depth** gaps only.
 
 ### N.1 FLOW-GAP → FLOW ID matrix (complete)
 

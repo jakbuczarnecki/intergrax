@@ -19,7 +19,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | P-Ext.0.1 | All | `load_plugins()` / entry point discovery | **Done** | P0 |
 | P-Ext.0.2 | All | `PluginConflictError`, `PluginLoadError` | **Done** | P0 |
 | P-Ext.0.3 | All | `bootstrap_catalogs()` Tier-3 API | **Done** | P0 |
-| P-Ext.0.4 | All | `EXTENSION_AUTHOR_GUIDE.md` (EN) | **Done** | P0 |
+| P-Ext.0.4 | All | `guides/EXTENSION_AUTHOR_GUIDE.md` (EN) | **Done** | P0 |
 | P-Ext.0.5 | All | Test fixture pip package | **Done** | P0 |
 | P-Ext.0.6 | All | EP discovery tests (3 groups) | **Done** | P0 |
 | P-Ext.0.7 | All | `INTERGRAX_DISCOVER_PLUGINS` + lab wiring | **Done** | P1 |

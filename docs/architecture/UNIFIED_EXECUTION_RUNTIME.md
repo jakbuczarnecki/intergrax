@@ -319,7 +319,7 @@ def enforce_cost_ceiling(ctx: HookContext) -> HookResult:
 - Hooks MUST NOT call adapters directly; they influence policy and decisions only.
 - Hooks MUST be registered in `HookRegistry` at application startup (Tier-3) or Nexus bootstrap.
 
-**Authoring reference:** full `HookPoint` list and orchestration hook placement — [`AGENT_CREATION_GUIDE.md` Appendix I §I.2](AGENT_CREATION_GUIDE.md#i2-orchestration-control-plane-map) · governance hooks Appendix H.
+**Authoring reference:** full `HookPoint` list and orchestration hook placement — [`guides/AGENT_CREATION_GUIDE.md` Appendix I §I.2](guides/AGENT_CREATION_GUIDE.md#i2-orchestration-control-plane-map) · governance hooks Appendix H.
 
 ---
 
@@ -706,7 +706,7 @@ For a single task/run, policy is **composed once** at Tier-3 startup and read do
 
 **Trace checklist:** `RuntimeEvent` stream (`PLAN_CREATED`, `SKILL_RESOLVED`, `CONTEXT_ASSEMBLED`, tool events) + Nexus trace DB for planner/tool steps. Planner hard failures emit `PLAN_FAILED` (parse / PlanSource).
 
-**Authoring reference:** Tier-3 control-plane map (profiles, bundles, observability mandatory vs optional, verification commands) — [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane). Harness operator context: [`HARNESS_ENVIRONMENT.md`](HARNESS_ENVIRONMENT.md#harness-control-plane-authoring).
+**Authoring reference:** Tier-3 control-plane map (profiles, bundles, observability mandatory vs optional, verification commands) — [`guides/AGENT_CREATION_GUIDE.md` Appendix H](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane). Harness operator context: [`guides/HARNESS_ENVIRONMENT.md`](guides/HARNESS_ENVIRONMENT.md#harness-control-plane-authoring).
 
 ---
 
@@ -851,7 +851,7 @@ Harness literature describes **subagents** as autonomous units with their own ru
 
 **Declarative `DELEGATES_TO` (implemented):** Tier-3 `ApplicationGraphSpec` may declare `DELEGATES_TO` as authoring sugar; `graph_spec_to_plan.py` **expands** it to a **child `PlanStep` / `ExecutionNode`** with `DelegationSpec` on the **child** node ([ADR-FLOW-001](adr/ADR-FLOW-001.md) Option C). `SubtaskContract` supplies objective, scopes, and budget envelope on the child delegation path (FLOW-14/15).
 
-Implementation: R-Delegate (**Done**) for contracts and memory namespace; graph expansion (**Done**, Phase FLOW) in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) · operational narrative [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §13.
+Implementation: R-Delegate (**Done**) for contracts and memory namespace; graph expansion (**Done**, Phase FLOW) in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) · operational narrative [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §13.
 
 ```text
 DelegationSpec:
@@ -1615,9 +1615,9 @@ Task: "Design and validate new checkout flow for SaaS product"
 
 All cross-agent data via `SharedTaskContext` / artifacts — never direct calls.
 
-**Authoring reference:** orchestration control plane (Nexus runners, `ExecutionGraph`, `DelegationSpec`, hooks, customization surfaces) — [`AGENT_CREATION_GUIDE.md` Appendix I](AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane).
+**Authoring reference:** orchestration control plane (Nexus runners, `ExecutionGraph`, `DelegationSpec`, hooks, customization surfaces) — [`guides/AGENT_CREATION_GUIDE.md` Appendix I](guides/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane).
 
-**End-to-end flow reference (diagrams, edge cases, plan traceability):** [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md).
+**End-to-end flow reference (diagrams, edge cases, plan traceability):** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md).
 
 ---
 

@@ -1,5 +1,13 @@
 # Nexus Execution Flow Reference
 
+**Status:** Canonical architecture document
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Implementation:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](../INTERGRAX_IMPLEMENTATION_PLAN.md) · [`plan/phases/`](../plan/phases/)
+
+---
+
+
 **Status:** Living **operational** reference for Nexus execution flow (2026-06-07) — narrative aligned with **current runtime code**, with explicit target semantics where canon ahead of implementation  
 **Audience:** Platform engineers, Tier-3 authors, auditors, implementers updating the plan  
 **Scope:** Task intake → Nexus orchestration → agent execution → result, governance, observability, evaluation hooks  
@@ -11,7 +19,7 @@ This document is the **single narrative guide** for how Intergrax orchestrates a
 ```text
 IDEAL_HARNESS_AI_ARCHITECTURE.md     →  target Harness AI reference (L0–L4)
 intergrax_runtime_architecture.md    →  canonical contracts + architecture (§42)
-NEXUS_EXECUTION_FLOW_REFERENCE.md    →  operational execution narrative (this file)
+architecture/NEXUS_EXECUTION_FLOW.md    →  operational execution narrative (this file)
 INTERGRAX_IMPLEMENTATION_PLAN.md     →  implementation status, phases, gap queue
 ```
 
@@ -19,11 +27,11 @@ INTERGRAX_IMPLEMENTATION_PLAN.md     →  implementation status, phases, gap que
 |------|------------------|
 | Target architecture | [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md) |
 | Contracts (what) | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) §42 |
-| Control plane (how to configure) | [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) Appendix I, H, J |
+| Control plane (how to configure) | [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) Appendix I, H, J |
 | Phase status / gaps | [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) |
 | Audit layers §7–§10 | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) |
 | Delegation target semantics | [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md) |
-| L4 adaptive loops (separate) | [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) |
+| L4 adaptive loops (separate) | [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
 
 **Use this doc to update the plan:** Section [25 — Plan traceability matrix](#25-plan-traceability-matrix) maps runtime gaps to proposed plan rows (`FLOW-GAP.*`).
 
@@ -50,7 +58,7 @@ INTERGRAX_IMPLEMENTATION_PLAN.md     →  implementation status, phases, gap que
 ### 1.2 What this document does not cover
 
 - Full `AgentContract` field reference → canon §12, Appendix N
-- Integration/tool/skill catalogs → `INTEGRATIONS.md`, `TOOLS.md`, `SKILLS.md`
+- Integration/tool/skill catalogs → `architecture/INTEGRATIONS.md`, `architecture/TOOLS.md`, `architecture/SKILLS.md`
 - Business product agents (Phase K) → plan §6.3
 - L4 adaptive closed loops → AHIA + canon §54
 
@@ -888,7 +896,7 @@ GET /debug/tasks/{id}/events
 GET /debug/tasks/{id}/metrics
 ```
 
-See [`HARNESS_ENVIRONMENT.md`](HARNESS_ENVIRONMENT.md), Appendix H §H.5.
+See [`guides/HARNESS_ENVIRONMENT.md`](guides/HARNESS_ENVIRONMENT.md), Appendix H §H.5.
 
 ---
 
@@ -1142,7 +1150,7 @@ Harness MVP and new Tier-2 agents remain unblocked. LLM-backed dynamic decomposi
 |----------|------|
 | Docs index | [README.md — Documentation index](../README.md#documentation-index) |
 | Architecture canon | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) |
-| Agent workflow | [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) |
+| Agent workflow | [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) |
 | Implementation plan | [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) |
 | Harness audit map | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) |
 | Root README | [`../README.md`](../README.md) |

@@ -27,7 +27,7 @@ registry = AgentRegistry()
 registry.register(DisputeIntakeAgent())
 ```
 
-See **Step 4** in AGENT_CREATION_GUIDE.md for all registration contexts.
+See **Step 4** in guides/AGENT_CREATION_GUIDE.md for all registration contexts.
 
 ## Capabilities
 

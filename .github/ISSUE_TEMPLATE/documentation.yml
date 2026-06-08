@@ -18,16 +18,16 @@ body:
         - docs/INTERGRAX_DEVELOPMENT_STRATEGY.md
         - docs/intergrax_runtime_architecture.md
         - docs/INTERGRAX_IMPLEMENTATION_PLAN.md
-        - docs/AGENT_CREATION_GUIDE.md
-        - docs/INTEGRATIONS.md
-        - docs/TOOLS.md
-        - docs/SKILLS.md
-        - docs/LLM_ADAPTERS.md
-        - docs/MODALITY.md
-        - docs/HARNESS_ENVIRONMENT.md
-        - docs/EXTENSION_AUTHOR_GUIDE.md
+        - docs/guides/AGENT_CREATION_GUIDE.md
+        - docs/architecture/INTEGRATIONS.md
+        - docs/architecture/TOOLS.md
+        - docs/architecture/SKILLS.md
+        - docs/architecture/LLM_ADAPTERS.md
+        - docs/architecture/MODALITY.md
+        - docs/guides/HARNESS_ENVIRONMENT.md
+        - docs/guides/EXTENSION_AUTHOR_GUIDE.md
         - docs/IDEAL_HARNESS_AI_ARCHITECTURE.md
-        - docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md
+        - docs/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md
         - README.md
         - AGENTS.md / llms.txt
         - Other

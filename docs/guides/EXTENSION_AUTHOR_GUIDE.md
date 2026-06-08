@@ -260,6 +260,6 @@ Bootstrap: `intergrax.runtime.policy.rules.plugin_loader.register_policy_rule_pl
 
 **Composition:** YAML + EP handlers merge into `RuntimePolicyBundle.domain_fragments["policy_rules"]` via `intergrax/applications/_shared/policy_wiring.py`. They **never** bypass `ToolRuntime` or `ApplicationSecurityProfile` middleware.
 
-**Author map:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) [Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · canon [§42.11](architecture/UNIFIED_EXECUTION_RUNTIME.md#4211-policy-engine).
+**Author map:** [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) [Appendix H](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · canon [§42.11](architecture/UNIFIED_EXECUTION_RUNTIME.md#4211-policy-engine).
 
 Lab reference: `applications/lab_application/policy/rules/harness_lab.yaml`.

@@ -1,9 +1,17 @@
 # Intergrax — Observability Architecture
 
+**Status:** Canonical architecture document
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Implementation:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](../INTERGRAX_IMPLEMENTATION_PLAN.md) · [`plan/phases/`](../plan/phases/)
+
+---
+
+
 **Status:** Canonical architecture (Harness platform) · **Phase OBS-BUS Done** (8/8) · audit map §21 **L4**  
 **Last updated:** 2026-06-08 (closeout sync)  
 **Audience:** Harness maintainers, Tier-3 application authors, Tier-2 agent authors, operators  
-**Hub:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) · **Related:** [architecture/UNIFIED_EXECUTION_RUNTIME.md](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.24 · [ADR-OBS-001](adr/ADR-OBS-001.md) · [plan/phases/observability-reliability.md](plan/phases/observability-reliability.md) · [AGENT_CREATION_GUIDE.md Appendix Q](AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md)
+**Hub:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) · **Related:** [architecture/UNIFIED_EXECUTION_RUNTIME.md](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.24 · [ADR-OBS-001](adr/ADR-OBS-001.md) · [plan/phases/observability-reliability.md](plan/phases/observability-reliability.md) · [guides/AGENT_CREATION_GUIDE.md Appendix Q](guides/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [guides/HARNESS_ENVIRONMENT.md](guides/HARNESS_ENVIRONMENT.md)
 
 ---
 
@@ -477,12 +485,12 @@ External: wire `RuntimeEventBus.subscribe()` to PagerDuty/Slack via `notify` too
 | Document | Relationship |
 |----------|--------------|
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §33, §42.1, §42.24 | Normative summary; this doc is the deep dive |
-| [NEXUS_EXECUTION_FLOW_REFERENCE.md](NEXUS_EXECUTION_FLOW_REFERENCE.md) | Execution narrative; cross-links execution phases |
-| [CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) | Critic trace steps on the spine |
-| [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) | `ADAPTIVE_*` events |
-| [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) | Lab OTLP, env vars, local backends |
-| [LLM_ADAPTERS.md](LLM_ADAPTERS.md) | LLM metrics plane |
-| [AGENT_CREATION_GUIDE.md Appendix Q](AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) | Author wiring checklist |
+| [architecture/NEXUS_EXECUTION_FLOW.md](architecture/NEXUS_EXECUTION_FLOW.md) | Execution narrative; cross-links execution phases |
+| [architecture/CRITIC_VERIFICATION.md](architecture/CRITIC_VERIFICATION.md) | Critic trace steps on the spine |
+| [architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) | `ADAPTIVE_*` events |
+| [guides/HARNESS_ENVIRONMENT.md](guides/HARNESS_ENVIRONMENT.md) | Lab OTLP, env vars, local backends |
+| [architecture/LLM_ADAPTERS.md](architecture/LLM_ADAPTERS.md) | LLM metrics plane |
+| [guides/AGENT_CREATION_GUIDE.md Appendix Q](guides/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) | Author wiring checklist |
 
 ---
 

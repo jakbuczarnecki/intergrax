@@ -295,7 +295,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 ### Phase L — Agent OS Certification
 
 **Directive:** L1 certification recorded in Appendix A. K.1/K.2 are **Phase K product work** — **last** in the plan (§6.3), not concurrent with harness bands 1–2.  
-**Agent workflow:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)
+**Agent workflow:** [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md)
 
 | # | Deliverable | Status | Req | Notes |
 |---|-------------|--------|-----|-------|
@@ -343,7 +343,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 
 ### Phase M-LLM — LLM Adapter Layer (Tier-0)
 
-**Canon:** §5.2.2 · **Doc:** [LLM_ADAPTERS.md](LLM_ADAPTERS.md)  
+**Canon:** §5.2.2 · **Doc:** [architecture/LLM_ADAPTERS.md](architecture/LLM_ADAPTERS.md)  
 **Goal:** One `LLMAdapter` contract, lazy registry, streaming + native tools + structured output across commercial and self-hosted providers.
 
 | # | Deliverable | Status | Notes |
@@ -353,20 +353,20 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | M-LLM.3 | Groq + vLLM (OpenAI-compatible) | **Done** | `openai_compat_providers.py` |
 | M-LLM.4 | Bedrock Converse + tools + stream | **Done** | `INTERGRAX_BEDROCK_USE_CONVERSE`, `converse_stream` |
 | M-LLM.5 | Conformance tests in CI gate | **Done** | `tests/unit/llm_adapters/` |
-| M-LLM.6 | `LLM_ADAPTERS.md` + README section | **Done** | 19 providers |
+| M-LLM.6 | `architecture/LLM_ADAPTERS.md` + README section | **Done** | 19 providers |
 | M-LLM.7 | OpenAI-compat expansion + Vertex + `LLMProfile` | **Done** | Together, Fireworks, OpenRouter, DeepSeek, xAI, llama.cpp, Cohere, Vertex |
 | M-LLM.8 | Optional network smoke workflow | **Done** | Weekly schedule + `workflow_dispatch` |
 | M-LLM.9 | Azure refactor (Chat Completions base) | **Done** | Thin `AzureOpenAIChatAdapter` |
 | M-LLM.10 | Production hardening | **Done** | Metrics, builtin conformance, `LLMProfile`, Bedrock tools stream, `cohere_native`, `azure_ai_inference` |
 | M-LLM.11 | Production ops layer | **Done** | OTLP/Prometheus routes, tenant metrics, rate limit + circuit breaker, secrets map, PR guard, extended network smoke |
 | M-LLM.12 | Nexus + governance wiring | **Done** | `llm_tenant_scope`, runtime metrics plugin, `INTERGRAX_LLM_TENANT_MAX_TOKENS` quota |
-| M-LLM.13 | Observability + secrets + distributed limits | **Done** | Pushgateway, `LLM_ADAPTERS.md` § Observability, Vault loader, Redis rate limit, governance warn |
+| M-LLM.13 | Observability + secrets + distributed limits | **Done** | Pushgateway, `architecture/LLM_ADAPTERS.md` § Observability, Vault loader, Redis rate limit, governance warn |
 | M-LLM.14 | Typed completion envelope (`LLMAdapterResponse`) | **Done** | Phase M-LLM-R — [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed) · gate **776** |
 
 ### Phase M-LLM-R — LLM Completion Response Envelope (audit 2026-06-06)
 
 **Source:** Tier-0 LLM adapter audit (2026-06-06) — `generate_messages` returns `str`; `generate_with_tools` returns untyped dict via `make_tool_result`; SDK metadata (`finish_reason`, `response_id`, cached/reasoning tokens, refusal) discarded; usage only via side-channel `LLMAdapterUsageLog`; replay `LLMCallInfo` not fed from adapter returns.  
-**Canon:** §5.2.2 · **Doc:** [LLM_ADAPTERS.md](LLM_ADAPTERS.md) · **Traceability:** [Appendix L](#appendix-l--llm-completion-response-envelope-traceability-phase-m-llm-r)  
+**Canon:** §5.2.2 · **Doc:** [architecture/LLM_ADAPTERS.md](architecture/LLM_ADAPTERS.md) · **Traceability:** [Appendix L](#appendix-l--llm-completion-response-envelope-traceability-phase-m-llm-r)  
 **Status:** **Done** (2026-06-06) — **39/39 Done**  
 **Priority ladder:** **Band 2z** (§4.0) — **parallel with W-ADAPT waves 5–7** (Tier-0; no Nexus primitive changes beyond consumer wiring)  
 **Execution order:** [§6.2ad](#62ad-phase-m-llm-r-execution-order-band-2z--closed-2026-06-06) · queue: [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed)  
@@ -416,8 +416,8 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| M-LLM-R.0.1 | **Plan register** — Phase M-LLM-R, §4.0 Band 2z, §6.1v, §6.2ad, Appendix L; M-LLM follow-up pointer | **Done** | **Critical** | This section | Cross-links from `LLM_ADAPTERS.md` |
-| M-LLM-R.0.2 | **`docs/adr/ADR-LLM-001.md`** — typed completion envelope vs plain string; two-layer usage model preserved | **Done** | High | `docs/adr/` | ADR linked from plan + `LLM_ADAPTERS.md` |
+| M-LLM-R.0.1 | **Plan register** — Phase M-LLM-R, §4.0 Band 2z, §6.1v, §6.2ad, Appendix L; M-LLM follow-up pointer | **Done** | **Critical** | This section | Cross-links from `architecture/LLM_ADAPTERS.md` |
+| M-LLM-R.0.2 | **`docs/adr/ADR-LLM-001.md`** — typed completion envelope vs plain string; two-layer usage model preserved | **Done** | High | `docs/adr/` | ADR linked from plan + `architecture/LLM_ADAPTERS.md` |
 | M-LLM-R.0.3 | **Canon §5.2.2 addendum** — `LLMAdapterResponse` contract paragraph in `intergrax_runtime_architecture.md` | **Done** | Medium | Architecture canon | No duplicate full spec in README |
 
 #### Wave M-LLM-R-1 — Contract types (Tier-0)
@@ -498,7 +498,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| M-LLM-R.8.1 | **`LLM_ADAPTERS.md` rewrite** — response envelope section; migration guide; two-layer usage clarified | **Done** | **Critical** | `docs/LLM_ADAPTERS.md` | Examples use `.content` |
+| M-LLM-R.8.1 | **`architecture/LLM_ADAPTERS.md` rewrite** — response envelope section; migration guide; two-layer usage clarified | **Done** | **Critical** | `docs/architecture/LLM_ADAPTERS.md` | Examples use `.content` |
 | M-LLM-R.8.2 | **Conformance suite** — `assert_generate_messages_returns_completion`; tools/stream/structured typed asserts | **Done** | **Critical** | `_shared/conformance.py`, `tests/unit/llm_adapters/` | Gate + `llm-adapters-guard.yml` |
 | M-LLM-R.8.3 | **`check_llm_adapter_typed_returns.py`** — CI guard: no `-> str` / `-> Dict[str, Any]` on adapter public methods | **Done** | High | `scripts/` | Added to §6.1 maintenance |
 | M-LLM-R.8.4 | **Phase closeout** — Appendix L paydown complete; M-LLM table row M-LLM.14 **Done**; remove audit follow-up pointer | **Done** | Medium | This plan | All M-LLM-R.* Done |
@@ -727,7 +727,7 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 | H-INT-5 | M-P4.25 | `mailgun` | interaction_surface | **P2** | **Done** (beta) | Inbound email → interaction intake | Webhook verify + payload normalize |
 | H-INT-5 | M-P4.26 | `mlflow` | observability_backend | **P2** | **Done** (beta) | Experiment tracking beside wandb/braintrust | Run/metric log API; lab workflow §35 |
 | H-INT-5 | M-P4.27 | `huggingface_hub` | object_storage | **P2** | **Done** (beta) | W-ML model artifact pull (ONNX/YOLO) | Model file get/list; modality plane bridge |
-| H-INT-5 | M-P4.28 | `ollama` | interaction_surface | **P2** | **Done** (beta) | Local inference host (`infra/integration` ollama service) | Health probe + model list; cross-link [MODALITY.md](MODALITY.md) · not LLM catalog slug |
+| H-INT-5 | M-P4.28 | `ollama` | interaction_surface | **P2** | **Done** (beta) | Local inference host (`infra/integration` ollama service) | Health probe + model list; cross-link [architecture/MODALITY.md](architecture/MODALITY.md) · not LLM catalog slug |
 
 **Explicitly excluded from M.6 P4:** CRM (Salesforce, HubSpot), payment rails, blockchain, duplicate vector SaaS, LLM vendor APIs.
 
@@ -870,9 +870,9 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 | M-P6-CAT.1 | `security_scanner` | `trivy`, `snyk`, `semgrep` | **Done** | `SecurityScannerBackend`: `scan_image(ref)`, `scan_repo(path)` → `ScanReport`; completes **M-P5-CAT.2** |
 | M-P6-CAT.2 | `sandbox_host` | `e2b`, `modal`, `daytona` | **Done** | `SandboxHostBackend`: `create_session()`, `exec()`, `upload_artifact()`; bridges Tier-1 `sandbox.exec` tool |
 | M-P6-CAT.3 | `identity_provider` | `auth0`, `keycloak`, `workos` | **Done** | `IdentityProviderBackend`: `verify_token()`, `userinfo()`, optional `list_tenants()` |
-| M-P6-CAT.4 | `speech_provider` | `elevenlabs`, `deepgram` | **Done** | `SpeechProviderBackend`: TTS/STT; unifies `speech_adapters/` with Integration Library ([MODALITY.md](MODALITY.md)) |
+| M-P6-CAT.4 | `speech_provider` | `elevenlabs`, `deepgram` | **Done** | `SpeechProviderBackend`: TTS/STT; unifies `speech_adapters/` with Integration Library ([architecture/MODALITY.md](architecture/MODALITY.md)) |
 | M-P6-CAT.5 | `workflow_orchestrator` | `prefect`, `airflow` | **Done** | `WorkflowOrchestratorBackend`: trigger run, poll status, fetch logs (eval/RAG batch jobs) |
-| M-P6-CAT.6 | `vision_serving` | `triton` | **Done** | Remote CV inference host ([MODALITY.md](MODALITY.md) W-ML.4) |
+| M-P6-CAT.6 | `vision_serving` | `triton` | **Done** | Remote CV inference host ([architecture/MODALITY.md](architecture/MODALITY.md) W-ML.4) |
 | M-P6-CAT.7 | `ml_inference_host` | `replicate` | **Done** | Managed model endpoint (`predict`, health) |
 | M-P6-CAT.8 | `billing_meter` | `stripe` | **Done** | Usage metering hook for harness SaaS path (canon §50 future) |
 | M-P6-CAT.9 | `crm` | `salesforce`, `hubspot` | **Done** | Read-only CRM context (accounts, contacts, tickets) for support harness agents |
@@ -1236,7 +1236,7 @@ Conformance test pattern: given a fake backend, assert all Protocol methods beha
 
 #### M.7 — Agent Creation Guide (Appendix E)
 
-Documented in [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) Appendix E:
+Documented in [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) Appendix E:
 
 - Agents: `capabilities`, `allowed_tools`, `ToolRequest` — no integration slug imports.
 - Applications: `IntegrationProfile`, `wire_lab_integrations()`, `register_default_integrations()`.
@@ -1301,7 +1301,7 @@ Szablony utrzymywane przez `scripts/generate_integration_usage_docs.py` (regener
 | N.5 | Docker templates under `applications/<app>/docker/` | **Done** | §7.4.8 | Dockerfile + `.dockerignore` + `docker-compose.yml` + `build-docker.sh` / `.bat`; monorepo-root context |
 | N.6 | Reference app `poc_template_application` (committed example) | **Done** | §7.4.8 | `applications/poc_template_application/`; README three-command quickstart; gate smoke |
 | N.7 | Backfill `.env.example` on existing apps | **Done** | §7.4.8 | `lab_application`, `legal_application`, `research_application`, `poc_template_application` |
-| N.8 | `AGENT_CREATION_GUIDE.md` Step 4E (dedicated application) | **Done** | — | Step 4E + Appendix F cross-links; gate doc test |
+| N.8 | `guides/AGENT_CREATION_GUIDE.md` Step 4E (dedicated application) | **Done** | — | Step 4E + Appendix F cross-links; gate doc test |
 | N.9 | Acceptance `test_scaffold_application` (gate) | **Done** | — | `test_scaffold_acceptance.py` — lab/product E2E, CLI profiles, docker scripts |
 | N.10 | Optional `new-stack` (agent + application in one CLI) | **Done** | — | `intergrax/scaffold/new_stack.py`; gate test in `test_scaffold_acceptance.py` |
 
@@ -1368,13 +1368,13 @@ uv run pytest -m gate -q
 
 **Prerequisite:** Phase M.3 (`IntegrationProfile`) available; tool engine (`ToolRegistry`, `RuntimeToolInvoker`) exists.
 
-**Catalog reference:** [`TOOLS.md`](TOOLS.md)
+**Catalog reference:** [`architecture/TOOLS.md`](architecture/TOOLS.md)
 
-**Delivery rule:** One domain or migration slice per iteration — implement → gate → update `TOOLS.md` → next step.
+**Delivery rule:** One domain or migration slice per iteration — implement → gate → update `architecture/TOOLS.md` → next step.
 
 | # | Deliverable | Status | Canon | Notes |
 |---|-------------|--------|-------|-------|
-| O.0 | Architecture & catalog documented | **Done** | §7.1.6–§7.1.7, §22 | Runtime canon + `TOOLS.md` + this section (2026-05-30) |
+| O.0 | Architecture & catalog documented | **Done** | §7.1.6–§7.1.7, §22 | Runtime canon + `architecture/TOOLS.md` + this section (2026-05-30) |
 | O.1 | Extended `ToolContract` | **Done** | §22 | `ToolRiskLevel`, `ToolRetryPolicy`, metadata fields; invoker timeout/retry/trace (2026-05-30) |
 | O.2 | `ToolCatalog` + `ToolProfile` + `ToolWiringContext` | **Done** | §7.1.6 | `intergrax/tools/registry/`; `build_registry_from_profile`; RuntimeConfig wiring (2026-05-30) |
 | O.3 | Context tools: `rag.retrieve`, `websearch.query` | **Done** | §7.1.7, §22.1 | `providers/rag/`, `providers/websearch/` (2026-05-30) |
@@ -1419,7 +1419,7 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 [ ] 5. Register in tools/registry/catalog.py
 [ ] 6. Unit tests with fakes (no live vendor in default gate)
 [ ] 7. Wire in lab or poc_template via ToolProfile
-[ ] 8. Update TOOLS.md status + this plan tracker
+[ ] 8. Update architecture/TOOLS.md status + this plan tracker
 ```
 
 #### T-EXPAND — Integration bridge catalog expansion (2026-06-07) — **Done**
@@ -1550,7 +1550,7 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 
 **Verification:** `152 passed` (`tests/unit/tools/providers/` + exporters) · `check_harness_no_getattr.py` OK · MCP full-catalog export smoke (**140** tools)
 
-Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{workflow,notify,collaboration,websearch,harness,interaction}/`
+Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergrax/tools/providers/{workflow,notify,collaboration,websearch,harness,interaction}/`
 
 #### T-EXPAND T10 — LKW storage bridge + deferred scheduling (2026-06-07) — **Done**
 
@@ -1582,7 +1582,7 @@ Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{workfl
 | `message_bus.purge_completed` | **Done** — KV task index on broker queues (`rabbitmq`, `kafka`); Celery unchanged | Residual: Celery result-backend purge |
 | `pagerduty.acknowledge_incident` | **Done** — `PagerDutyEventsClient.acknowledge_incident` + adapter + typed `PagerDutyIncidentChannel` | — |
 
-Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{workspace,notify,interaction,eval,storage,memory,pagerduty,message_bus,records}/`
+Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergrax/tools/providers/{workspace,notify,interaction,eval,storage,memory,pagerduty,message_bus,records}/`
 
 #### T-EXPAND T11 — HITL write path + cloud/vector store ops (2026-06-07) — **Done**
 
@@ -1601,7 +1601,7 @@ Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{worksp
 
 **Verification:** provider unit tests + MCP full-catalog export smoke (**160** tools) · `check_harness_no_getattr.py` OK
 
-Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{hitl,notify,cloud_platform,vector_store,health}/`
+Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergrax/tools/providers/{hitl,notify,cloud_platform,vector_store,health}/`
 
 #### T-EXPAND T12 — Integration slot health + notify dispatcher (2026-06-07) — **Done**
 
@@ -1630,7 +1630,7 @@ Canon: [TOOLS.md](TOOLS.md) · handlers under `intergrax/tools/providers/{hitl,n
 
 **Verification:** `test_eval_critic_tools.py` · `test_catalog_expansion.py` (172) · MCP export smoke (**172** tools)
 
-Canon: [TOOLS.md](TOOLS.md) · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md)
+Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · [`architecture/CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md)
 
 
 **Problem:** Two parallel mechanisms — boolean plan flags dispatching pipeline steps vs `ToolRegistry` for function tools.
@@ -1707,7 +1707,7 @@ AFTER (canonical):
 | Q-N.7 | **Rename Nexus context helpers module** — `runtime_steps/tools.py` → `runtime_steps/tool_context_helpers.py` (or merge into `tools_step.py`); update imports | **Done** | Low | `tool_context_helpers.py` + shim `tools.py` | Backward-compatible re-export (2026-06-01) |
 | Q-N.8 | **Split `RuntimeConfig`** — `ModelRuntimeConfig`, `RetrievalRuntimeConfig`, `ToolsRuntimeConfig`, `PlanningRuntimeConfig`, `TraceRuntimeConfig`; composed `RuntimeConfig`; `validate()` cross-field | **Done** | High | `nexus/config.py` | Backward-compatible properties or migration shim one release; all factories updated |
 | Q-N.9 | **Type `integration_profile`** — `IntegrationProfile` from `intergrax.integrations` on `RuntimeConfig` / wiring contexts | **Done** | Medium | `nexus/config.py`, `engine/runtime_context.py` | No `Optional[object]` for profile in public config |
-| Q-N.10 | **`production_mode` lab default** — `lab_application` / scaffold sets `production_mode=False`; document in Step 4E | **Done** | Low | Tier-3 factories, `AGENT_CREATION_GUIDE.md` | `harness_production_mode()` in `applications/_shared/runtime_defaults.py` |
+| Q-N.10 | **`production_mode` lab default** — `lab_application` / scaffold sets `production_mode=False`; document in Step 4E | **Done** | Low | Tier-3 factories, `guides/AGENT_CREATION_GUIDE.md` | `harness_production_mode()` in `applications/_shared/runtime_defaults.py` |
 | Q-N.11 | **Graph callback typing** — `ExecutionNode` instead of `object` in `GraphExecutor` / NexusLoop node callbacks | **Done** | Low | `execution/graph_executor.py`, `nexus_loop.py` | Mypy/ruff on execution package |
 | Q-N.12 | **Interrupt handler hygiene** — remove duplicate `InterruptType` import; add unit test for interrupt → policy path | **Done** | Low | `interrupts/handler.py` | Duplicate import removed (2026-06-01) |
 | Q-N.13 | **`AgentEngine` static UAEP** — document or inject `event_bus` for `AgentEngine.run` static path; no silent missing events | **Done** | Low | `agents/agent_engine.py` | `_resolve_static_executor`; `tests/unit/agents/test_agent_engine_event_bus.py` |
@@ -1718,21 +1718,21 @@ AFTER (canonical):
 
 #### Phase Q-L — LLM adapters
 
-**Components:** `intergrax/llm_adapters/`, `docs/LLM_ADAPTERS.md`, governance plugin.
+**Components:** `intergrax/llm_adapters/`, `docs/architecture/LLM_ADAPTERS.md`, governance plugin.
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
 | Q-L.1 | **Remove or complete `tracked_llm_call`** — if kept: `finally` calls `usage.end_call`; if removed: delete `tracked_call.py` + references | **Done** | Medium | `_shared/tracked_call.py` | File removed (unused) (2026-06-01) |
 | Q-L.2 | **Public API surface** — re-export `LLMAdapter`, `LLMProvider`, `LLMAdapterRegistry`, `LLMProfile` from `llm_adapters/__init__.py` | **Done** | Low | `llm_adapters/__init__.py` | Public re-exports (2026-06-01) |
-| Q-L.3 | **Provider catalog table in docs** — 19 rows: slug, adapter class, env vars, tools/stream/structured, native vs compat | **Done** | High | `docs/LLM_ADAPTERS.md` | Table matches `LLMProvider` enum + conformance list |
+| Q-L.3 | **Provider catalog table in docs** — 19 rows: slug, adapter class, env vars, tools/stream/structured, native vs compat | **Done** | High | `docs/architecture/LLM_ADAPTERS.md` | Table matches `LLMProvider` enum + conformance list |
 | Q-L.4 | **Fix `LLMProfile` docstring** — `max_retries` only via `options={}`; align examples in guide | **Done** | Low | `registry/profile.py`, tests | Example fixed (2026-06-01) |
 | Q-L.5 | **Per-provider `supports_streaming()` / `supports_structured_output()`** — override defaults (`False` base default for streaming); table in Q-L.3 | **Done** | Medium | Each `providers/*.py`, ABC defaults | Conformance reads flags; no false positives |
 | Q-L.6 | **`PolicyEngine` + `llm_cost_evaluation`** — rule hook on `TASK_COMPLETED` or policy replay; or remove “next step” from docs until done | **Done** | Medium | `governance/`, `observability_bridge.py`, `policy_engine.py` | Test: over-quota/warn triggers policy decision or structured log contract |
-| Q-L.7 | **Usage tracking doc** — distinguish adapter `LLMAdapterUsageLog` vs runtime `LLMUsageTracker` | **Done** | Low | `docs/LLM_ADAPTERS.md` § Observability | Two-layer table |
+| Q-L.7 | **Usage tracking doc** — distinguish adapter `LLMAdapterUsageLog` vs runtime `LLMUsageTracker` | **Done** | Low | `docs/architecture/LLM_ADAPTERS.md` § Observability | Two-layer table |
 | Q-L.8 | **Conformance: structured output** — parametrize providers with `supports_structured_output`; mock SDK | **Done** | Medium | `tests/unit/llm_adapters/` | Added to gate subset in `llm-adapters-guard.yml` |
 | Q-L.9 | **Bedrock `context_window_tokens`** — lookup table or model metadata for common `model_id` | **Done** | Low | `providers/aws_bedrock_adapter.py` | `_CONTEXT_WINDOWS` + prefix fallback; `test_bedrock_context_window.py` |
 | Q-L.10 | **OpenAI-compat adapter init** — replace `__dict__.update` with explicit delegation or composition wrapper | **Done** | Low | `openai_compat_providers.py`, factory | `_delegate` + `__getattr__` composition |
-| Q-L.11 | **Central env appendix** — single table: `INTERGRAX_LLM_*`, secrets map, per-provider overrides | **Done** | Medium | `LLM_ADAPTERS.md` appendix | Cross-links from each `providers/*/USAGE.md` |
+| Q-L.11 | **Central env appendix** — single table: `INTERGRAX_LLM_*`, secrets map, per-provider overrides | **Done** | Medium | `architecture/LLM_ADAPTERS.md` appendix | Cross-links from each `providers/*/USAGE.md` |
 
 ---
 
@@ -1787,7 +1787,7 @@ AFTER (canonical):
 | Q-O.10 | **Unify phase mapping** — `trace_bridge` delegates phase to `phase_coverage.py`; single source | **Done** | Medium | `events/trace_bridge.py`, `phase_coverage.py` | Unit test: same `ExecutionPhase` for sample events |
 | Q-O.11 | **Debug router type imports** — explicit imports for `DebugHitlResumeService`, `AgentRegistry` in annotations | **Done** | Low | `debug/router.py`, `debug/app.py` | Explicit imports in `debug/router.py` |
 | Q-O.12 | **`trace_bridge` unit tests** | **Done** | Medium | `tests/unit/runtime/events/test_trace_bridge.py` | Gate marker |
-| Q-O.13 | **Clarify dual Prometheus** — in-process scrape vs `integrations` PromQL backend | **Done** | Low | `docs/LLM_ADAPTERS.md` § Observability | Prevents operator confusion |
+| Q-O.13 | **Clarify dual Prometheus** — in-process scrape vs `integrations` PromQL backend | **Done** | Low | `docs/architecture/LLM_ADAPTERS.md` § Observability | Prevents operator confusion |
 | Q-O.14 | **Event/trace store adoption** — SQLite-first default; scale-out criteria for `cassandra` / `elasticsearch` | **Done** | Low | Architecture §33.1 + `cassandra/USAGE.md` | No separate ADR file |
 
 ---
@@ -2081,7 +2081,7 @@ intergrax/skills/
 | R-Skill.3 | **`SkillResolver`** — given `skill_ids`, produce resolved `allowed_tools` ∪, prompt pack refs, policy fragments; **no LLM execution** in resolver | **Done** | **Critical** | `intergrax/skills/resolver.py` | Unit: two skills merge tool lists with conflict rules |
 | R-Skill.4 | **Tier-3 wiring** — skill profile in `ApplicationBuildContext`, `skill_wiring.py`, legal host | **Done** | High | `applications/_shared/skill_wiring.py` | Legal registry resolves skills |
 | R-Skill.5 | **`AgentContract.skill_ids`** + validation against registry at register time | **Done** | High | `intergrax/contracts/`, `AgentRegistry` | Unknown skill_id → register error |
-| R-Skill.6 | **`docs/SKILLS.md`** — catalog, layering diagram, import rules | **Done** | Medium | `docs/SKILLS.md`, `docs/README.md` index row | Approved index entry |
+| R-Skill.6 | **`docs/architecture/SKILLS.md`** — catalog, layering diagram, import rules | **Done** | Medium | `docs/architecture/SKILLS.md`, `docs/README.md` index row | Approved index entry |
 | R-Skill.7 | **Scaffold `new-skill`** | **Done** | Medium | `intergrax/scaffold/new_skill.py` | `python -m intergrax.scaffold new-skill <id>` |
 | R-Skill.8 | **`CursorSkillImporter`** — parse `SKILL.md` + frontmatter → `SkillManifest` (best-effort; reject on schema fail) | **Done** | High | `intergrax/skills/importers/cursor_skill_md.py` | Fixture test with sample SKILL.md |
 | R-Skill.9 | **Pilot skill pack** — `legal.contract_review` (tool_ids + prompt refs + policy fragment) | **Done** | High | `intergrax/skills/providers/legal/` | Legal agent lists `skill_ids`; gate green |
@@ -2104,7 +2104,7 @@ intergrax/skills/
 |---|-------------|--------|----------|----------|------------|
 | R-Context.1 | **`ContextBudgetPolicy`** — `max_chars`, `max_tokens_estimate`, `summary_tier` defaults; applied in `ContextManager.build_agent_context()` | **Done** | **Critical** | `runtime/nexus/context/context_budget.py` | Test: over-budget input trimmed |
 | R-Context.2 | **Trace events** — `CONTEXT_ASSEMBLED`, `CONTEXT_TRIMMED` with before/after sizes | **Done** | High | `ContextManager` + `context_skill_recording` | Emitted when `event_bus` wired |
-| R-Context.3 | **AGENT_CREATION_GUIDE** — “Context engineering” subsection links canon §28.1 | **Done** | Medium | `AGENT_CREATION_GUIDE.md` Appendix G | No duplicate truth |
+| R-Context.3 | **AGENT_CREATION_GUIDE** — “Context engineering” subsection links canon §28.1 | **Done** | Medium | `guides/AGENT_CREATION_GUIDE.md` Appendix G | No duplicate truth |
 | R-Context.4 | **Finish unified tool path** — residual `use_rag` / `RagStep` callers → `rag.retrieve` | **Done** | High | `tool_gateway.py`, legal bridge, `context_builder.py` | Bridge uses `tool_ids`; LLM booleans sync in `LegalToolPlan` only |
 
 ---
@@ -2186,7 +2186,7 @@ Wave R5 (policy):          R-Policy.1 → R-Policy.2 → R-Policy.3
 
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
-| S-Ops.1 | **Integration stable track** — lab harness stack (`sqlite`, `redis`, `qdrant`, `slack`, `sentry`, …) marked `stable` in catalog | **Done** | **Critical** | `harness_lab_stack.py`, `INTEGRATIONS.md` | `test_harness_lab_stable_stack.py` |
+| S-Ops.1 | **Integration stable track** — lab harness stack (`sqlite`, `redis`, `qdrant`, `slack`, `sentry`, …) marked `stable` in catalog | **Done** | **Critical** | `harness_lab_stack.py`, `architecture/INTEGRATIONS.md` | `test_harness_lab_stable_stack.py` |
 | S-Ops.2 | **OTLP / observability** — lab profile wires `otel` when `LAB_OTEL_ENABLED`; document noop vs export | **Done** | High | `IntegrationProfile.harness_environment()`, `.env.example` | `test_lab_harness_environment_wiring.py` |
 | S-Ops.3 | **Harness-smoke CI** — expand M.12+ coverage for stable stack (network optional) | **Done** | Medium | `.github/workflows/unit-tests.yml` | harness-smoke includes S unit tests |
 | S-Ops.4 | **Legal live LLM E2E** | **Deferred** | Low | K.6 / B.15 | Not blocking harness environment |
@@ -2195,8 +2195,8 @@ Wave R5 (policy):          R-Policy.1 → R-Policy.2 → R-Policy.3
 
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
-| S-H.1 | **Platform skill bundle `harness`** — ≥3 skills (e.g. `harness.tool_smoke`, `harness.context_demo`, `harness.trace_read`) | **Done** | **Critical** | `intergrax/skills/providers/harness/`, `SKILLS.md`, bootstrap | `test_harness_skill_bundle.py` |
-| S-H.2 | **Lab wiring** — `SkillProfile` + `ToolProfile` + policy bundle documented as canonical harness preset | **Done** | High | `skill_wiring.py`, `HARNESS_ENVIRONMENT.md` | lab enables `harness` bundle |
+| S-H.1 | **Platform skill bundle `harness`** — ≥3 skills (e.g. `harness.tool_smoke`, `harness.context_demo`, `harness.trace_read`) | **Done** | **Critical** | `intergrax/skills/providers/harness/`, `architecture/SKILLS.md`, bootstrap | `test_harness_skill_bundle.py` |
+| S-H.2 | **Lab wiring** — `SkillProfile` + `ToolProfile` + policy bundle documented as canonical harness preset | **Done** | High | `skill_wiring.py`, `guides/HARNESS_ENVIRONMENT.md` | lab enables `harness` bundle |
 | S-H.3 | **Cursor SKILL.md importer** in gate | **Done** | Medium | `tests/unit/skills/importers/test_cursor_skill_md.py` | `pytest.mark.gate` |
 | S-H.4 | **`rag.answers` test migration** — no deprecation warnings in gate | **Done** | Low | `tests/integration/rag/answers/` | `RetrievalService` only |
 | S-H.5 | **Echo/signoff path** — lab run proves skills + trace + policy bundle (existing agents) | **Done** | High | `tests/acceptance/agent_os/test_lab_application.py` | gate + harness wiring tests |
@@ -2205,15 +2205,15 @@ Wave R5 (policy):          R-Policy.1 → R-Policy.2 → R-Policy.3
 
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
-| S-Doc.1 | **`HARNESS_ENVIRONMENT.md`** — lab stack, env vars, stable integrations, OTLP, policy bundle read order | **Done** | **Critical** | `docs/HARNESS_ENVIRONMENT.md`, `docs/README.md` index | Linked from plan §6 |
-| S-Doc.2 | **Context / trace operator section** — `CONTEXT_*` events, debug API, metrics routes | **Done** | Medium | `HARNESS_ENVIRONMENT.md` | Pointers to canon §28.1 |
+| S-Doc.1 | **`guides/HARNESS_ENVIRONMENT.md`** — lab stack, env vars, stable integrations, OTLP, policy bundle read order | **Done** | **Critical** | `docs/guides/HARNESS_ENVIRONMENT.md`, `docs/README.md` index | Linked from plan §6 |
+| S-Doc.2 | **Context / trace operator section** — `CONTEXT_*` events, debug API, metrics routes | **Done** | Medium | `guides/HARNESS_ENVIRONMENT.md` | Pointers to canon §28.1 |
 
 #### Phase S — Definition of done
 
 1. **Stable** integration list for lab harness stack published and tested (S-Ops.1).
 2. **OTLP path** documented and wired for lab when env configured (S-Ops.2).
 3. **≥ 3** `harness.*` platform skills + legal/research bundles registered (S-H.1).
-4. **`HARNESS_ENVIRONMENT.md`** complete; lab wiring matches doc (S-H.2, S-Doc.1).
+4. **`guides/HARNESS_ENVIRONMENT.md`** complete; lab wiring matches doc (S-H.2, S-Doc.1).
 5. Gate: `uv run pytest -m gate -q` green; `python scripts/check_harness_no_getattr.py` OK.
 6. §0.5 **Harness environment GA** row **Done** with date; Appendix F updated.
 7. **K.1/K.2 remain Deferred** — not required for Phase S close.
@@ -2285,7 +2285,7 @@ Parallel:            S-Ops.4, domain skill growth (legal/research) — not requi
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
 | U-Sec.1 | **AuthZ on lab surfaces** — optional API key / bearer for `POST /v1/lab/run`, `/debug/*`, MCP mount; default **deny** when `INTERGRAX_HARNESS_API_KEY` set | **Done** | **Critical** | `harness_auth.py`, lab/debug/MCP routes | `test_harness_auth.py` |
-| U-Sec.2 | **MCP default opt-in** — `LAB_INCLUDE_MCP=false` default for strict profile; document in `HARNESS_ENVIRONMENT.md` | **Done** | High | `LabApplicationSettings`, `.env.example` | `test_lab_application_settings_phase_u.py` |
+| U-Sec.2 | **MCP default opt-in** — `LAB_INCLUDE_MCP=false` default for strict profile; document in `guides/HARNESS_ENVIRONMENT.md` | **Done** | High | `LabApplicationSettings`, `.env.example` | `test_lab_application_settings_phase_u.py` |
 | U-Sec.3 | **Sandbox tool policy** — lab enables `sandbox.exec` only when `SandboxSessionManager` wired; document risk | **Done** | High | `tool_wiring.py`, harness docs | Unit: sandbox omitted without session |
 | U-Sec.4 | **`strict_harness` runtime profile** — `production_mode=True`, `GovernanceService`, persisted `trace_db_path`, OTEL; env `LAB_STRICT_HARNESS=true` | **Done** | **Critical** | `lab_runtime_config.py`, lab wiring | `test_lab_strict_harness.py` |
 
@@ -2335,9 +2335,9 @@ Parallel:            S-Ops.4, domain skill growth (legal/research) — not requi
 
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
-| U-Doc.1 | **`HARNESS_ENVIRONMENT.md`** — security (auth, MCP), strict profile, policy bundle wiring truth | **Done** | High | `docs/HARNESS_ENVIRONMENT.md` | Phase U security section |
+| U-Doc.1 | **`guides/HARNESS_ENVIRONMENT.md`** — security (auth, MCP), strict profile, policy bundle wiring truth | **Done** | High | `docs/guides/HARNESS_ENVIRONMENT.md` | Phase U security section |
 | U-Doc.2 | **Canon §52 / strategy** — lab vs production harness checklist references Phase U | **Won't fix** | Medium | — | Deferred; plan + HARNESS_ENVIRONMENT sufficient |
-| U-Doc.3 | **Fix Phase K footer** in `HARNESS_ENVIRONMENT.md` (post-T, gated on U) | **Done** | Low | `HARNESS_ENVIRONMENT.md` | Gated on Phase U |
+| U-Doc.3 | **Fix Phase K footer** in `guides/HARNESS_ENVIRONMENT.md` (post-T, gated on U) | **Done** | Low | `guides/HARNESS_ENVIRONMENT.md` | Gated on Phase U |
 
 #### U-CI — Verification & smoke
 

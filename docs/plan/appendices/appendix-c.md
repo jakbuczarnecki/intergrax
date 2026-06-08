@@ -34,7 +34,7 @@
 |----------|---------|------|--------|
 | L-01 | Dead `tracked_llm_call` | Q-L.1 | Done |
 | L-02 | Empty `llm_adapters/__init__.py` | Q-L.2 | Done |
-| L-03 | `LLM_ADAPTERS.md` missing provider table | Q-L.3 | Done |
+| L-03 | `architecture/LLM_ADAPTERS.md` missing provider table | Q-L.3 | Done |
 | L-04 | `LLMProfile` docstring `max_retries` wrong | Q-L.4 | Done |
 | L-05 | `supports_streaming()` default True | Q-L.5 | Done |
 | L-06 | PolicyEngine ignores `llm_cost_evaluation` | Q-L.6 | Done |
@@ -126,7 +126,7 @@
 | 2026-06-01 | Q-T.2,Q-T.3,Q-T.6 | New unit/integration tests; gate **399 passed** (+2) |
 | 2026-06-01 | Q-N.1(partial),Q-N.10,Q-N.13,Q-N.15 | `hitl_runner.py`; lab `harness_production_mode`; AgentEngine `event_bus`; graph checkpoint tests |
 | 2026-06-01 | Q-L.9–Q-L.11,Q-O.6,Q-O.11,Q-O.14 | Bedrock windows, OpenAI-compat delegation, LLM env appendix, metrics behavioral, debug types, trace storage §33.1 |
-| 2026-06-01 | docs-consolidation | Merged LLM/RAG observability, retry, trace ADR into canon + `LLM_ADAPTERS.md`; removed satellite `docs/*.md` |
+| 2026-06-01 | docs-consolidation | Merged LLM/RAG observability, retry, trace ADR into canon + `architecture/LLM_ADAPTERS.md`; removed satellite `docs/*.md` |
 | 2026-06-01 | Q-N.1,Q-X.2,Wave 9 | `graph_runner`, `task_events`, `lifecycle_bridge`; UAEP `execution_options_for_request`; gate **417 passed** |
 | 2026-06-01 | Q-X.2(partial),Q-X.4,Q-X.5 | Legacy metadata warnings; `tools_base` timeline; M.6 beta slugs; gate **415 passed** |
 | — | — | *(append row per merged PR)* |

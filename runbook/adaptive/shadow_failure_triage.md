@@ -42,4 +42,4 @@ Operational runbook for investigating shadow-mode adaptive candidates that fail 
 
 - `build/adaptive_harness/signal_trends.json`
 - `build/adaptive_harness/verification_report.json`
-- [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](../docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) §12
+- [architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md](../docs/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) §12

@@ -37,4 +37,4 @@ curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
 
 ## Authoring
 
-See [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md).
+See [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md).

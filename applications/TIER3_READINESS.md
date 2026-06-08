@@ -15,7 +15,7 @@ python -m intergrax.scaffold new-application my_feature --profile lab --agents m
 python -m intergrax.scaffold new-application my_product --profile product --agents echo --port 8000
 ```
 
-See [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md) Step **4E**.
+See [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.md) Step **4E**.
 
 ## What you get
 
@@ -88,7 +88,7 @@ python -m intergrax.scaffold new-tool-bundle acme_ops --tool-id acme_ops.ping
 python -m intergrax.scaffold new-skill legal.contract_review
 ```
 
-See [EXTENSION_AUTHOR_GUIDE.md](../docs/EXTENSION_AUTHOR_GUIDE.md).
+See [guides/EXTENSION_AUTHOR_GUIDE.md](../docs/guides/EXTENSION_AUTHOR_GUIDE.md).
 
 ## Reference hosts
 

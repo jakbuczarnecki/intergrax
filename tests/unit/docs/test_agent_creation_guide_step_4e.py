@@ -8,7 +8,7 @@ import pytest
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
-_GUIDE = Path(__file__).resolve().parents[3] / "docs" / "AGENT_CREATION_GUIDE.md"
+_GUIDE = Path(__file__).resolve().parents[3] / "docs" / "guides/AGENT_CREATION_GUIDE.md"
 
 
 def test_agent_creation_guide_documents_step_4e_scaffold() -> None:

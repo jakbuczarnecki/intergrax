@@ -94,7 +94,7 @@ DSW answers these through **structured agent pipelines** on a **case-scoped RAG 
 | **Correspondence drafts** | HITL mandatory (`dispute.correspondence` skill path — DSW.4) |
 | **PII / retention** | Case data scoped per tenant; retention policy in host settings (DSW.6) |
 | **Audit** | Full Nexus trace + artifact hash for every strategy/scenario output |
-| **CVL (planned)** | L1 critic on argument maps; L2 critic on outbound drafts — see [`docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](../../docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) |
+| **CVL (planned)** | L1 critic on argument maps; L2 critic on outbound drafts — see [`docs/architecture/CRITIC_VERIFICATION.md`](../../docs/architecture/CRITIC_VERIFICATION.md) |
 
 ---
 

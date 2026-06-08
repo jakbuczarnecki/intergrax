@@ -15,7 +15,7 @@ Platform plan: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IM
 |-------|--------|
 | HITL-oriented purpose, capability | **ARCHITECTURE.md** |
 | Task status | **This file** |
-| HITL authoring | `docs/AGENT_CREATION_GUIDE.md` Appendix H |
+| HITL authoring | `docs/guides/AGENT_CREATION_GUIDE.md` Appendix H |
 
 ---
 

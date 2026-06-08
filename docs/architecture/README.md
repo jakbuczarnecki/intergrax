@@ -1,42 +1,25 @@
-# Intergrax Architecture — Domain Documents
+# Harness Architecture — Domain Documents
 
-**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
 
-This directory contains decomposed **current-state** architecture canon Each file is authoritative for its domain.
+| Document | Domain |
+|----------|--------|
+| [PLATFORM_FOUNDATION.md](PLATFORM_FOUNDATION.md) | Tiers, principles, reuse, anti-patterns, Harness terms |
+| [UNIFIED_EXECUTION_RUNTIME.md](UNIFIED_EXECUTION_RUNTIME.md) | UAEP — events, hooks, lifecycle, policy runtime, ToolRuntime |
+| [ORCHESTRATION.md](ORCHESTRATION.md) | Nexus loop, graphs, planning, task lifecycle |
+| [NEXUS_EXECUTION_FLOW.md](NEXUS_EXECUTION_FLOW.md) | End-to-end flows, diagrams, delegation edge cases |
+| [AGENT_CONTRACTS_AND_ASSEMBLY.md](AGENT_CONTRACTS_AND_ASSEMBLY.md) | Agent contract, registry, capabilities, capability graph |
+| [INTEGRATIONS.md](INTEGRATIONS.md) | Integration architecture + provider catalog (incl. RAG backends) |
+| [TOOLS.md](TOOLS.md) | ToolRuntime + tool catalog |
+| [SKILLS.md](SKILLS.md) | Skill packs and composition |
+| [LLM_ADAPTERS.md](LLM_ADAPTERS.md) | LLM providers, profiles, response envelope |
+| [MEMORY.md](MEMORY.md) | Memory, context engineering, context compiler |
+| [MODALITY.md](MODALITY.md) | Vision, audio, classical ML |
+| [OBSERVABILITY.md](OBSERVABILITY.md) | Observability spine, trace, telemetry |
+| [RELIABILITY_FAILURE_AND_HITL.md](RELIABILITY_FAILURE_AND_HITL.md) | Failure, retry, HITL |
+| [TIER3_APPLICATION_ENVIRONMENT.md](TIER3_APPLICATION_ENVIRONMENT.md) | Application hosts, sandbox |
+| [EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) | Lab workflow, DX, evaluation, CI gates |
+| [ADAPTIVE_HARNESS_INTELLIGENCE.md](ADAPTIVE_HARNESS_INTELLIGENCE.md) | L4 adaptive harness (AHI) |
+| [CRITIC_VERIFICATION.md](CRITIC_VERIFICATION.md) | Critic & verification layer (CVL) |
 
-## Index
-
-| File | Domain |
-|------|--------|
-| [PLATFORM_FOUNDATION.md](PLATFORM_FOUNDATION.md) | Tiers, principles, reuse, anti-patterns |
-| [UNIFIED_EXECUTION_RUNTIME.md](UNIFIED_EXECUTION_RUNTIME.md) | UAEP, §42 contracts |
-| [ORCHESTRATION.md](ORCHESTRATION.md) | Nexus, graphs, lifecycle |
-| [REASONING_AND_PLANNING.md](REASONING_AND_PLANNING.md) | Planning and cognition |
-| [SUBAGENTS_AND_COORDINATION.md](SUBAGENTS_AND_COORDINATION.md) | Delegation and multi-agent |
-| [INTERFACE_AND_INTAKE.md](INTERFACE_AND_INTAKE.md) | Task intake |
-| [AGENT_CONTRACTS_AND_ASSEMBLY.md](AGENT_CONTRACTS_AND_ASSEMBLY.md) | Agent model |
-| [INTEGRATIONS_ARCHITECTURE.md](INTEGRATIONS_ARCHITECTURE.md) | Adapter architecture |
-| [TOOLS_RUNTIME.md](TOOLS_RUNTIME.md) | ToolRuntime |
-| [RAG_AND_RETRIEVAL.md](RAG_AND_RETRIEVAL.md) | RAG |
-| [CONTEXT_ENGINEERING.md](CONTEXT_ENGINEERING.md) | Context assembly |
-| [PROMPT_REGISTRY.md](PROMPT_REGISTRY.md) | Prompt registry |
-| [REGISTRY_ARCHITECTURE.md](REGISTRY_ARCHITECTURE.md) | Registries |
-| [CAPABILITY_GRAPH.md](CAPABILITY_GRAPH.md) | Capability graph |
-| [POLICY_AND_GOVERNANCE.md](POLICY_AND_GOVERNANCE.md) | Policy engine |
-| [IDENTITY_TRUST_AND_TENANCY.md](IDENTITY_TRUST_AND_TENANCY.md) | Identity |
-| [RELIABILITY_FAILURE_AND_HITL.md](RELIABILITY_FAILURE_AND_HITL.md) | Failure and HITL |
-| [SECURITY_AND_DATA_GOVERNANCE.md](SECURITY_AND_DATA_GOVERNANCE.md) | Security |
-| [COST_AND_RESOURCE_GOVERNANCE.md](COST_AND_RESOURCE_GOVERNANCE.md) | Cost |
-| [EVALUATION_AND_BENCHMARKING.md](EVALUATION_AND_BENCHMARKING.md) | Evaluation |
-| [TIER3_APPLICATION_ENVIRONMENT.md](TIER3_APPLICATION_ENVIRONMENT.md) | Tier-3 hosts |
-| [EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) | Lab and DX |
-| [TESTING_CI_AND_ARCHITECTURE_GATES.md](TESTING_CI_AND_ARCHITECTURE_GATES.md) | CI gates |
-
-## Specialized canon (parent `docs/`)
-
-- [MEMORY_ARCHITECTURE.md](../MEMORY_ARCHITECTURE.md)
-- [OBSERVABILITY_ARCHITECTURE.md](../OBSERVABILITY_ARCHITECTURE.md)
-- [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](../ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md)
-- [CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md](../CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md)
-- Catalogs: [INTEGRATIONS.md](../INTEGRATIONS.md), [TOOLS.md](../TOOLS.md), [SKILLS.md](../SKILLS.md), [LLM_ADAPTERS.md](../LLM_ADAPTERS.md), [MODALITY.md](../MODALITY.md)
+**Authoring:** [`guides/`](../guides/) · **Status:** [`plan/`](../plan/)

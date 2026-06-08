@@ -843,7 +843,7 @@ Cost and resource control must be explicit, measurable, and enforceable.
 
 This layer defines future-state capabilities and maps directly to L4 maturity.
 
-**Implementation specification (Intergrax):** [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · runtime canon [§54](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) · planned phase **W-ADAPT** in the implementation plan.
+**Implementation specification (Intergrax):** [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) · runtime canon [§54](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) · planned phase **W-ADAPT** in the implementation plan.
 
 ### 25.1 Dynamic model routing
 

@@ -144,6 +144,6 @@ Copy `infra/integration/.env.example` to `infra/integration/.env` to override cr
 
 ## Related documentation
 
-- [docs/INTEGRATIONS.md](../docs/INTEGRATIONS.md) — provider slugs and `INTERGRAX_*` env vars
+- [docs/architecture/INTEGRATIONS.md](../docs/architecture/INTEGRATIONS.md) — provider slugs and `INTERGRAX_*` env vars
 - [docs/intergrax_runtime_architecture.md](../docs/intergrax_runtime_architecture.md) §7.1.2, §33 — RAG/LLM metrics and observability backends (Prometheus/Langfuse/Phoenix)
 - [intergrax/integrations/providers/*/USAGE.md](../intergrax/integrations/providers/) — per-provider connection examples

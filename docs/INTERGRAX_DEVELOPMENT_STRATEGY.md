@@ -107,8 +107,8 @@ Implementation is not the goal. Correct architecture is not the goal.
 | Strategic direction | **This file** |
 | Tiers, Nexus, UAEP, Harness terms | `intergrax_runtime_architecture.md` (hub) + `architecture/` (§5.3 Harness terms = `architecture/PLATFORM_FOUNDATION.md`) |
 | Phase status, deliverables, gates | `INTERGRAX_IMPLEMENTATION_PLAN.md` |
-| Agent author workflow | `AGENT_CREATION_GUIDE.md` |
-| Integration / tool / skill catalogs | `INTEGRATIONS.md` / `TOOLS.md` / `SKILLS.md` |
+| Agent author workflow | `guides/AGENT_CREATION_GUIDE.md` |
+| Integration / tool / skill catalogs | `architecture/INTEGRATIONS.md` / `architecture/TOOLS.md` / `architecture/SKILLS.md` |
 
 After each merged harness PR: `uv run pytest -m gate -q` green; `python scripts/check_harness_no_getattr.py`; sync plan §0.5 gate count.
 
@@ -121,7 +121,7 @@ After each merged harness PR: `uv run pytest -m gate -q` green; `python scripts/
 | Agent OS certification (Phase L) | **Done** — Appendix A 20/20 |
 | Harness quality + hardening (Q, Q+) | **Done** — gate **990** (current); zero grandfathered getattr in harness paths |
 | Harness AI alignment MVP (Phase R) | **Done** — Skill Library, context, delegation, policy |
-| **Harness environment GA (Phase S)** | **Done** (2026-06-01) — see [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) |
+| **Harness environment GA (Phase S)** | **Done** (2026-06-01) — see [guides/HARNESS_ENVIRONMENT.md](guides/HARNESS_ENVIRONMENT.md) |
 | **Harness production hardening (Phase U)** | **Done** (2026-06-01) |
 | **Harness architecture hardening (Phase V)** | **Done** (2026-06-05) | Phase V + V-REM closed; L3/L4 CI closeout + operational L3 signed off |
 | **Orchestration closeout (Phase ORCH)** | **Done** (2026-06-05) | planner/classifier wiring, graph spec plan seed, parallel cap |
@@ -131,8 +131,8 @@ After each merged harness PR: `uv run pytest -m gate -q` green; `python scripts/
 
 **Default implementation queue:** [plan §6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) maintenance only. Phase ORCH + GOV-AUDIT **Done**. **Not** business agents or new product apps.
 
-**Governance / policy / observability authoring:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) Appendix H; audit §5 + §21 in [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+**Governance / policy / observability authoring:** [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) Appendix H; audit §5 + §21 in [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
 
-**Orchestration / graph / delegation authoring:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) Appendix I; audit §7–§10 in [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+**Orchestration / graph / delegation authoring:** [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) Appendix I; audit §7–§10 in [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
 
 See [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §4.0 (priority ladder) and §6.

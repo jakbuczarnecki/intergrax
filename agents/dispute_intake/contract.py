@@ -5,7 +5,7 @@ from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLeve
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from dispute_intake.capabilities import CAPABILITIES
 
-# Register skill packs on the contract — see docs/SKILLS.md
+# Register skill packs on the contract — see docs/architecture/SKILLS.md
 
 
 def build_agent_contract() -> AgentContract:

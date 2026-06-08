@@ -33,7 +33,7 @@ INTERGRAX_LLM_PROVIDER=openai
 INTERGRAX_LLM_MODEL=gpt-4o-mini
 ```
 
-See [`docs/LLM_ADAPTERS.md`](../../docs/LLM_ADAPTERS.md).
+See [`docs/architecture/LLM_ADAPTERS.md`](../../docs/architecture/LLM_ADAPTERS.md).
 
 ## Optional specialists
 

@@ -1,6 +1,6 @@
 # intergrax_assistant agent
 
-UAEP-first scaffold. Full process: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md) (single canonical guide).
+UAEP-first scaffold. Full process: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md) (single canonical guide).
 
 ## Docs
 
@@ -24,7 +24,7 @@ registry = AgentRegistry()
 registry.register(IntergraxAssistantAgent())
 ```
 
-See **Step 4** in AGENT_CREATION_GUIDE.md for all registration contexts.
+See **Step 4** in guides/AGENT_CREATION_GUIDE.md for all registration contexts.
 
 ## Capabilities
 

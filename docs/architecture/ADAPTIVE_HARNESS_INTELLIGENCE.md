@@ -1,6 +1,14 @@
 # Intergrax Adaptive Harness Intelligence Architecture (AHIA)
 
-**Document ID:** `ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`  
+**Status:** Canonical architecture document
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Implementation:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](../INTERGRAX_IMPLEMENTATION_PLAN.md) · [`plan/phases/`](../plan/phases/)
+
+---
+
+
+**Document ID:** `architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`  
 **Status:** Architecture RFC — **implemented** (Phase W-ADAPT **Done**, 70/70, Wave 0–7)  
 **Version:** 1.0.0  
 **Date:** 2026-06-05  
@@ -273,7 +281,7 @@ It does **not** confirm:
 
 ## 6. Gap analysis
 
-> **Historical audit (2026-06-05).** All gaps below were closed by Phase W-ADAPT (Wave 0–7). For current delivery status see [§19](#19-phased-implementation-roadmap--phase-w-adapt) and canon [§54.3](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md#543-implementation-state-phase-w-adapt--done).
+> **Historical audit (2026-06-05).** All gaps below were closed by Phase W-ADAPT (Wave 0–7). For current delivery status see [§19](#19-phased-implementation-roadmap--phase-w-adapt) and canon [§54.3](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md#543-implementation-state-phase-w-adapt--done).
 
 ### 6.1 Missing components (must build) — **Done (W-ADAPT)**
 

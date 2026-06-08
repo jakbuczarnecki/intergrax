@@ -7,7 +7,7 @@
 ## Phase W-ML — Model & Modality Plane (Vision, Audio, Classical ML)
 
 **Status:** **Done** (2026-06-02) — docs + implementation waves W-ML.0–W-ML.8.  
-**Canon:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.9, §53.13 · **Catalog:** [`MODALITY.md`](MODALITY.md) · **Ideal:** [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5.1, §7.1, §17.
+**Canon:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.9, §53.13 · **Catalog:** [`architecture/MODALITY.md`](architecture/MODALITY.md) · **Ideal:** [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5.1, §7.1, §17.
 
 **Strategic fit:** Extends Harness AI at scale without MLOps scope creep. Same patterns as LLM adapters and Integration Library — registries, contracts, atomic tools, policy, trace, V-COST budgets.
 
@@ -34,7 +34,7 @@
 
 | # | Deliverable | Status | Priority | Acceptance |
 |---|-------------|--------|----------|------------|
-| W-ML.0 | Canon §7.1.9 + §53.13 + `MODALITY.md` + IDEAL/LLM_ADAPTERS sync | **Done** | **Critical** | Docs merged; three planes documented |
+| W-ML.0 | Canon §7.1.9 + §53.13 + `architecture/MODALITY.md` + IDEAL/LLM_ADAPTERS sync | **Done** | **Critical** | Docs merged; three planes documented |
 | W-ML.1 | Multimodal LLM contract — `supports_vision` / audio flags; `AttachmentRef` → vendor parts | **Done** | High | Conformance tests in `tests/unit/llm_adapters/`; OpenAI + Gemini vision flags |
 | W-ML.2 | `speech_provider` category + `elevenlabs` (or stub) + tools `speech.synthesize` / `speech.transcribe` | **Done** | Medium | `ElevenLabsSpeechBackend` when `ELEVENLABS_API_KEY` set; stub otherwise |
 | W-ML.3 | `intergrax/model_inference/` scaffold — `VisionInferenceAdapter`, registry, `yolo_ultralytics` + `onnxruntime` slugs | **Done** | High | OpenCV contour adapter (default); optional Ultralytics; golden PNG fixture |
@@ -72,7 +72,7 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 
 | Date | W-ML ID | Summary |
 |------|---------|---------|
-| 2026-06-02 | W-ML.0 | Canon §7.1.9, §53.13, `MODALITY.md`, IDEAL §3.5.1/§7.1/§17, `LLM_ADAPTERS.md` multimodal section, docs README |
+| 2026-06-02 | W-ML.0 | Canon §7.1.9, §53.13, `architecture/MODALITY.md`, IDEAL §3.5.1/§7.1/§17, `architecture/LLM_ADAPTERS.md` multimodal section, docs README |
 | 2026-06-02 | W-ML.1–W-ML.8 | Multimodal LLM flags + attachment mapping, speech/vision/ml tools, model_inference scaffold, ModalityProfile, modality metrics, runtime governance bridge |
 | 2026-06-02 | W-ML.2–W-ML.3, W-ML.6 | Lab harness modality tool wiring, OpenCV/ElevenLabs backends, golden vision fixture, `RuntimeConfig.modality_profile` |
 | 2026-06-02 | W-ML.4+ | Triton/HF vision adapters, `vision.segment`/`vision.ocr_regions`/`ml.explain`, `harness.vision_qa`, extended `ModalityProfile`, legal `LEGAL_ENABLE_MODALITY_TOOLS` |

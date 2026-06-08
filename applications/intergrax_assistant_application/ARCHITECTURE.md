@@ -124,7 +124,7 @@ INTERGRAX_LLM_MODEL=gpt-4o-mini
 OPENAI_API_KEY=sk-...
 ```
 
-See [`docs/LLM_ADAPTERS.md`](../../docs/LLM_ADAPTERS.md) for the full provider matrix.
+See [`docs/architecture/LLM_ADAPTERS.md`](../../docs/architecture/LLM_ADAPTERS.md) for the full provider matrix.
 
 ---
 
@@ -133,8 +133,8 @@ See [`docs/LLM_ADAPTERS.md`](../../docs/LLM_ADAPTERS.md) for the full provider m
 | Plane | IAA configuration | Module / doc |
 |-------|-------------------|--------------|
 | **Integrations** | `IntegrationProfile.lab_stack()` | `integrations/registry/profile.py` |
-| **Tools** | Curated harness tool allow-list from `lab_defaults()` | [`docs/TOOLS.md`](../../docs/TOOLS.md) |
-| **Skills** | Lab skill profile | [`docs/SKILLS.md`](../../docs/SKILLS.md) |
+| **Tools** | Curated harness tool allow-list from `lab_defaults()` | [`docs/architecture/TOOLS.md`](../../docs/architecture/TOOLS.md) |
+| **Skills** | Lab skill profile | [`docs/architecture/SKILLS.md`](../../docs/architecture/SKILLS.md) |
 | **Session STM** | `SessionManager` + sqlite bundle | AGENT_CREATION_GUIDE Appendix G |
 | **User LTM** | `UserProfileManager` | Appendix G |
 | **Task KV** | `TaskMemory` / `MemoryView` | Appendix G |
@@ -273,7 +273,7 @@ uv run pytest applications/intergrax_assistant_application/intergrax_assistant_a
 
 - Core `Intergrax-ai` from repo root (`uv sync`)
 - Local LLM: Ollama running when `INTERGRAX_LLM_PROVIDER=ollama`
-- Optional cloud keys per provider — see `docs/LLM_ADAPTERS.md`
+- Optional cloud keys per provider — see `docs/architecture/LLM_ADAPTERS.md`
 - Deploy triad: `docker/`, `BUILD_AND_DEPLOY.md`
 
 ---
@@ -284,8 +284,8 @@ uv run pytest applications/intergrax_assistant_application/intergrax_assistant_a
 |----------|------|
 | [`agents/intergrax_assistant/ARCHITECTURE.md`](../../agents/intergrax_assistant/ARCHITECTURE.md) | Hub agent (Tier-2) |
 | [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) §7.4.11 | Platform canon entry |
-| [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md) Appendix F · I · G | Tier-3, orchestration, memory |
-| [`docs/LLM_ADAPTERS.md`](../../docs/LLM_ADAPTERS.md) | Provider swap |
+| [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md) Appendix F · I · G | Tier-3, orchestration, memory |
+| [`docs/architecture/LLM_ADAPTERS.md`](../../docs/architecture/LLM_ADAPTERS.md) | Provider swap |
 | [`applications/TIER3_READINESS.md`](../TIER3_READINESS.md) | Scaffold checklist |
 
 ---

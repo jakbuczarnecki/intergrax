@@ -55,4 +55,4 @@ python -m intergrax.scaffold new-stack my_feature --profile lab
 python -m intergrax.scaffold new-application my_product --profile product --agents my_agent --port 8030
 ```
 
-Readiness checklist: [`TIER3_READINESS.md`](TIER3_READINESS.md) · Author guide: [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md) Appendix F
+Readiness checklist: [`TIER3_READINESS.md`](TIER3_READINESS.md) · Author guide: [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.md) Appendix F
