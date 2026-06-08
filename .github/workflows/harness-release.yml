@@ -16,7 +16,7 @@ jobs:
           python-version: "3.12"
       - run: uv sync --extra dev-ci --frozen
       - name: Install Trivy
-        uses: aquasecurity/setup-trivy@v0.2.2
+        uses: aquasecurity/setup-trivy@v0.3.1
       - name: Install Semgrep
         run: uv pip install semgrep
       - name: V-SEC STABLE promote gate (CLI scan)
