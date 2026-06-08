@@ -1,6 +1,6 @@
 # Intergrax Tool Library
 
-**Last updated:** 2026-06-07 — **42 bundles** · **170 catalog tools** (verified via `register_default_tools()`)
+**Last updated:** 2026-06-07 — **42 bundles** · **172 catalog tools** (verified via `register_default_tools()`)
 
 The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
 
@@ -99,7 +99,7 @@ registry = build_registry_from_profile(
 
 ## Tool engine (implemented today)
 
-Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T11 Done** · **T12 Done** — full **170-tool** catalog registered):
+Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T12 Done** · **T13 Done** (CRIT-V) — full **172-tool** catalog registered):
 
 | Component | Path | Status |
 |-----------|------|--------|
@@ -129,7 +129,7 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T11 Done** · **
 | Stable bundles | **39** |
 | Beta bundles | **1** (`openai_vector_store`) |
 
-**Bundle index (selected):** `interaction` (2) · `workflow` (5) · `harness` (6) · `websearch` (4) · `notify` (6) · `health` (11) · `collaboration` (7) · `hitl` (5) · `platform` (8) · `rag` (11) — full list in [Full tool index](#full-tool-index) below.
+**Bundle index (selected):** `interaction` (3) · `workflow` (5) · `harness` (6) · `websearch` (4) · `notify` (6) · `health` (11) · `eval` (7) · `collaboration` (7) · `hitl` (5) · `platform` (8) · `rag` (11) — full list in [Full tool index](#full-tool-index) below.
 
 Source: `intergrax/tools/registry/shipped_plugins.py`.
 
@@ -413,6 +413,8 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `eval.record_observation` | eval | eval | **Done** | `OnlineEvaluationRegistry` (V-EVAL) |
 | `eval.summarize_release` | eval | eval | **Done** | `OnlineEvaluationRegistry` (V-EVAL) |
 | `eval.export_observations` | eval | eval | **Done** (T10) | `OnlineEvaluationRegistry` (V-EVAL) |
+| `eval.judge` | eval | eval | **Done** (T13 / CRIT-V) | LLM-as-judge semantic scoring — `CriticProfile` |
+| `eval.trajectory` | eval | eval | **Done** (T13 / CRIT-V) | Trajectory/process scoring from run trace |
 | `confluence.search` | confluence | wiki | **Done** | `confluence` (alias) — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
 | `confluence.search_pages` | confluence | wiki | **Done** | `confluence` — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
 | `errors.capture` | observability | observability | **Done** | `sentry` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
@@ -428,13 +430,13 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `health.check_integration` | health | health | **Done** | integration catalog health probes |
 | `health.check_profile` | health | health | **Done** | `IntegrationProfile` slot probes |
 | `health.check_object_storage` | health | health | **Done** (T12) | category slot probe |
-| `health.check_relational_store` | health | health | **Done** (T12) | category slot probe |
-| `health.check_document_store` | health | health | **Done** (T12) | category slot probe |
-| `health.check_vector_store` | health | health | **Done** (T12) | category slot probe |
+| `health.check_key_value_cache` | health | health | **Done** (T12) | category slot probe |
 | `health.check_message_bus` | health | health | **Done** (T12) | category slot probe |
-| `health.check_cache` | health | health | **Done** (T12) | category slot probe |
-| `health.check_secrets_backend` | health | health | **Done** (T12) | category slot probe |
-| `health.check_observability_backend` | health | health | **Done** (T12) | category slot probe |
+| `health.check_graph_store` | health | health | **Done** (T12) | category slot probe |
+| `health.check_identity_provider` | health | health | **Done** (T12) | category slot probe |
+| `health.check_relational_store` | health | health | **Done** (T12) | category slot probe |
+| `health.check_wiki_knowledge` | health | health | **Done** (T12) | category slot probe |
+| `health.check_search_provider` | health | health | **Done** (T12) | category slot probe |
 | `health.check_notification_channel` | health | health | **Done** (T12) | category slot probe |
 | `hitl.get_decision` | hitl | hitl | **Done** | `HumanDecisionStoreBinding` |
 | `hitl.list_for_task` | hitl | hitl | **Done** (T11) | `HumanDecisionStoreBinding` |
@@ -543,7 +545,7 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `workspace.export_artifact` | workspace | workspace | **Done** (T10) | `ShadowWorkspace` + `ObjectStorage` |
 | `workspace.import_artifact` | workspace | workspace | **Done** (T10) | `ShadowWorkspace` + `ObjectStorage` |
 
-**Total:** 170 tools · 42 bundles.
+**Total:** 172 tools · 42 bundles.
 
 ---
 

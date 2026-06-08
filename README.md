@@ -866,7 +866,7 @@ All platform documentation lives in [`docs/`](docs/). **One source of truth per 
 | Document | Read when you want to… |
 |----------|------------------------|
 | [INTEGRATIONS.md](docs/INTEGRATIONS.md) | **167 providers** — contracts, env vars, per-slug USAGE links |
-| [TOOLS.md](docs/TOOLS.md) | Tool Library — **150** catalog tools · **40** bundles; atomic LLM/MCP operations |
+| [TOOLS.md](docs/TOOLS.md) | Tool Library — **172** catalog tools · **42** bundles; atomic LLM/MCP operations |
 | [SKILLS.md](docs/SKILLS.md) | Skill Library — manifests, importers, harness presets |
 | [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) | 19 LLM providers — `LLMAdapterResponse` envelope, streaming, tools, metrics |
 | [MODALITY.md](docs/MODALITY.md) | Vision, audio, ML — three modality planes |

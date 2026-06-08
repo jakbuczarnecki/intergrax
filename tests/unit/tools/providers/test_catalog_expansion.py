@@ -263,7 +263,7 @@ def test_new_bundles_present_in_catalog() -> None:
     assert len(get_bundle("observability").tool_ids) == 6
     assert len(get_bundle("message_bus").tool_ids) == 6
     assert len(get_bundle("document").tool_ids) == 2
-        assert len(get_bundle("eval").tool_ids) == 7
+    assert len(get_bundle("eval").tool_ids) == 7
     assert len(get_bundle("cost").tool_ids) == 3
     assert len(get_bundle("filesystem").tool_ids) == 5
     assert len(get_bundle("platform").tool_ids) == 8

@@ -119,7 +119,7 @@ After each merged harness PR: `uv run pytest -m gate -q` green; `python scripts/
 | Milestone | Status |
 |-----------|--------|
 | Agent OS certification (Phase L) | **Done** — Appendix A 20/20 |
-| Harness quality + hardening (Q, Q+) | **Done** — gate **623** (current); zero grandfathered getattr in harness paths |
+| Harness quality + hardening (Q, Q+) | **Done** — gate **990** (current); zero grandfathered getattr in harness paths |
 | Harness AI alignment MVP (Phase R) | **Done** — Skill Library, context, delegation, policy |
 | **Harness environment GA (Phase S)** | **Done** (2026-06-01) — see [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) |
 | **Harness production hardening (Phase U)** | **Done** (2026-06-01) |

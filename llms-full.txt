@@ -173,8 +173,9 @@ Harness platform: **complete** — default queue is §6.1 maintenance only.
 | Area | Status |
 |------|--------|
 | Agent OS certification (Phase L) | Done |
-| Integration Library (Phase M + M.6 P4/P5) | Done — 135 providers (33/34 P5; `trivy` deferred) |
-| LLM adapters (Phase M-LLM) | Done — 19 providers |
+| Integration Library (Phase M + M.6 P4/P5/P6) | Done — 167 providers |
+| Tool catalog (T-EXPAND T13 / CRIT-V) | Done — 172 tools · 42 bundles |
+| LLM adapters (Phase M-LLM + M-LLM-R) | Done — 19 providers · typed `LLMAdapterResponse` |
 | RAG engine (Phase M-RAG) | Done |
 | Harness environment (Phase S) | Done |
 | Production hardening (Phase U) | Done |
@@ -183,9 +184,10 @@ Harness platform: **complete** — default queue is §6.1 maintenance only.
 | Memory platform (Phase MEM) | Done — 48/48 |
 | Control plane closeouts (ORCH, TS, INT, RAG, CTX, PE, AS, REG, CG, OBS, …) | Done |
 | Adaptive Harness Intelligence (Phase W-ADAPT) | Done — 70/70 |
+| Critic & Verification Layer (Phase CRIT-V) | Active — 10/24 (Band 2ak) |
 | Business agents (Phase K) | End of plan — deferred |
 
-**Regression gate:** `uv run pytest -m gate -q` — 722 passed  
+**Regression gate:** `uv run pytest -m gate -q` — 990 passed  
 **Harness CI:** `python scripts/check_harness_no_getattr.py`
 
 ---
