@@ -1747,6 +1747,8 @@ It should NOT currently optimize for:
 
 Nexus owns the global reasoning loop.
 
+**Canonical depth:** [`architecture/REASONING_AND_COGNITION.md`](architecture/REASONING_AND_COGNITION.md) — three cognition planes, planners, classifiers, `DecisionRecord`.
+
 Nexus decides:
 
 - what the user wants

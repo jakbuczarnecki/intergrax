@@ -4,7 +4,7 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Plan (1:1):** [`plan/NEXUS_EXECUTION_FLOW.md`](../plan/NEXUS_EXECUTION_FLOW.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
-**Audit layers:** 7–10  
+**Audit layers:** 8, 9, 10 (flow narrative) · cognition depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §7–§10  
 ---
 
 ## 1. Purpose and boundaries
@@ -302,6 +302,8 @@ Until implemented, operators should assume only the states in the diagram above 
 
 ## 7. Classification — first orchestration decision
 
+> **Canonical depth:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9 — this section is the **flow narrative** summary only.
+
 `TaskClassifier` / `ClassifyingTaskClassifier` — `intergrax/runtime/nexus/task_classifier.py`
 
 **Classifier does not mutate `Task.state`** — only `task.runtime.classification`. `TaskLifecycle` owns state.
@@ -346,6 +348,8 @@ flowchart TD
 ---
 
 ## 8. Planning — graph topology before execution
+
+> **Canonical depth:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §10–§11 — this section is the **flow narrative** summary only.
 
 ### 8.1 Planner selection
 
@@ -1044,6 +1048,8 @@ Honest deltas for plan scheduling. **Closeout phases (ORCH Done) wired bootstrap
 ---
 
 ## 24. Cognition / planning depth note
+
+> **Canonical owner:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) — §21 maturity scorecard, §21 gap register, [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_AND_COGNITION.md) Phase COG-DEPTH.
 
 Ideal Harness AI ([`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)) expects explicit **cognition plane**: model selection, prompt compiler layers, structured plan contracts, `DecisionRecord` per step.
 

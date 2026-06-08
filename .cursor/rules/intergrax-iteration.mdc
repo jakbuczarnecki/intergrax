@@ -27,9 +27,9 @@ docs/plan/<DOMAIN>.md                      ← how to implement / status / tasks
 docs/guides/                               ← strategy, ideal model, audit, authoring
 ```
 
-**17 domain pairs** (same basename in `architecture/` and `plan/`):
+**18 domain pairs** (same basename in `architecture/` and `plan/`):
 
-`PLATFORM_FOUNDATION`, `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `NEXUS_EXECUTION_FLOW`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `INTEGRATIONS`, `TOOLS`, `SKILLS`, `LLM_ADAPTERS`, `MEMORY`, `MODALITY`, `OBSERVABILITY`, `RELIABILITY_FAILURE_AND_HITL`, `TIER3_APPLICATION_ENVIRONMENT`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`, `ADAPTIVE_HARNESS_INTELLIGENCE`, `CRITIC_VERIFICATION`.
+`PLATFORM_FOUNDATION`, `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `NEXUS_EXECUTION_FLOW`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `INTEGRATIONS`, `TOOLS`, `SKILLS`, `LLM_ADAPTERS`, `MEMORY`, `MODALITY`, `OBSERVABILITY`, `RELIABILITY_FAILURE_AND_HITL`, `TIER3_APPLICATION_ENVIRONMENT`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`, `ADAPTIVE_HARNESS_INTELLIGENCE`, `CRITIC_VERIFICATION`, `REASONING_AND_COGNITION`.
 
 **Per-iteration reading rule:** when working on a harness layer, read **only**:
 1. `docs/intergrax_runtime_architecture.md` (hub / pair picker)
@@ -55,7 +55,8 @@ Do **not** load unrelated domain pairs. There is **no** monolithic implementatio
 |--------------|---------------------|
 | Tiers, principles, product backlog §6.3, gate maintenance | `PLATFORM_FOUNDATION` |
 | UAEP, policy, identity, security, cost | `UNIFIED_EXECUTION_RUNTIME` |
-| Nexus loop, planner, scheduler, intake, queueing | `ORCHESTRATION` |
+| Nexus loop, scheduler, intake, queueing, execution graph | `ORCHESTRATION` |
+| Reasoning, planning, cognition, classifiers, planners, DecisionRecord | `REASONING_AND_COGNITION` |
 | Execution flow, subagents, delegation, coordination §27 | `NEXUS_EXECUTION_FLOW` |
 | Agent contract, registry, prompt, capability graph | `AGENT_CONTRACTS_AND_ASSEMBLY` |
 | Integrations catalog, RAG backends | `INTEGRATIONS` |

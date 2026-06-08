@@ -4,7 +4,8 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Plan (1:1):** [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
-**Audit layers:** 3, 7, 9  
+**Audit layers:** 3, 9  
+**Reasoning / planning canon:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) (audit layer 7)  
 ---
 
 # 9.1 Global Nexus Loop
@@ -16,9 +17,9 @@ The Nexus loop controls global execution.
 Responsibilities:
 
 - receive user task
-- classify task
+- classify task (see [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9)
 - determine complexity
-- create or update plan
+- create or update plan (see [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §10)
 - select agents
 - prepare context
 - execute agents

@@ -43,6 +43,7 @@ Execution: [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EX
 | [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) | [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
 | [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) | [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](plan/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
 | [`architecture/CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md) | [`plan/CRITIC_VERIFICATION.md`](plan/CRITIC_VERIFICATION.md) |
+| [`architecture/REASONING_AND_COGNITION.md`](architecture/REASONING_AND_COGNITION.md) | [`plan/REASONING_AND_COGNITION.md`](plan/REASONING_AND_COGNITION.md) |
 
 ---
 
@@ -65,7 +66,9 @@ Execution: [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EX
 | 4 Identity / trust | `UNIFIED_EXECUTION_RUNTIME` §42.44 |
 | 5 Policy | `UNIFIED_EXECUTION_RUNTIME` §42.11 |
 | 6 LLM | `LLM_ADAPTERS` |
-| 7–9 Cognition / runtime / orchestration | `ORCHESTRATION` + `NEXUS_EXECUTION_FLOW` |
+| 7 Reasoning / planning / cognition | `REASONING_AND_COGNITION` |
+| 8 Execution runtime / Agent OS | `UNIFIED_EXECUTION_RUNTIME` + `NEXUS_EXECUTION_FLOW` (narrative) |
+| 9 Orchestration / graph / scheduler | `ORCHESTRATION` + `NEXUS_EXECUTION_FLOW` |
 | 10 Subagents | `NEXUS_EXECUTION_FLOW` §27 |
 | 11–13 Tools / skills / integrations | `TOOLS` · `SKILLS` · `INTEGRATIONS` |
 | 14 RAG | `INTEGRATIONS` + `MEMORY` §20 |

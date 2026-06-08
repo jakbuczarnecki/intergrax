@@ -567,7 +567,8 @@ Verify that reasoning is explicit, observable and separated from execution.
 Reasoning Architecture Score: L0-L4
 ```
 
-**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix I §I.4](guides/AGENT_CREATION_GUIDE.md#i4-planning-strategies-explicit-customizable) (planning strategies); canon [§42.5](architecture/UNIFIED_EXECUTION_RUNTIME.md#425-unified-agent-execution-protocol) (UAEP separation); **flow narrative:** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §7–§8. **Closeout:** [Phase ORCH ORCH-1](plan/ORCHESTRATION.md) — **Done**.
+**Domain pair (canon):** [`architecture/REASONING_AND_COGNITION.md`](architecture/REASONING_AND_COGNITION.md) ↔ [`plan/REASONING_AND_COGNITION.md`](plan/REASONING_AND_COGNITION.md)  
+**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix I §I.4](guides/AGENT_CREATION_GUIDE.md#i4-planning-strategies-explicit-customizable) (planning strategies); canon [§42.5](architecture/UNIFIED_EXECUTION_RUNTIME.md#425-unified-agent-execution-protocol) (UAEP separation); **flow narrative:** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §4–§18. **Historical closeout:** ORCH-1, FLOW-1/11/12 — **Done**; maturity uplift: [Phase COG-DEPTH](plan/REASONING_AND_COGNITION.md).
 
 ---
 
