@@ -12,3 +12,14 @@ MESSAGE_BUS_ASYNC_RUNNER = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("message_bus", "async", "queue"),
 )
+
+MESSAGE_BUS_TASK_ADMIN = SkillManifest(
+    skill_id="message_bus.task_admin",
+    version="1.0.0",
+    description="Message bus task administration: list, cancel, and purge completed tasks.",
+    tool_ids=("message_bus.list_tasks", "message_bus.cancel", "message_bus.purge_completed"),
+    prompt_instruction_ids=("message_bus.task_admin.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("message_bus", "admin", "tasks"),
+)

@@ -1,7 +1,7 @@
 # Eval skill bundle
 
-**Bundle id:** `eval` · **Plugin:** `EvalSkillPlugin` · SK-EXP2
-
 | skill_id | Guide |
 |----------|-------|
+| `eval.release_compare` | [eval.release_compare/USAGE.md](eval.release_compare/USAGE.md) |
 | `eval.score_logger` | [eval.score_logger/USAGE.md](eval.score_logger/USAGE.md) |
+| `eval.trajectory_judge` | [eval.trajectory_judge/USAGE.md](eval.trajectory_judge/USAGE.md) |

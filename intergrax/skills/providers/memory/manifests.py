@@ -23,3 +23,14 @@ MEMORY_SESSION_CLEANUP = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("memory", "cleanup", "session"),
 )
+
+MEMORY_LTM_CURATOR = SkillManifest(
+    skill_id="memory.ltm_curator",
+    version="1.0.0",
+    description="Long-term memory curation: write durable facts, search LTM, and read session context.",
+    tool_ids=("ltm.write_fact", "ltm.search", "memory.read"),
+    prompt_instruction_ids=("memory.ltm_curator.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("memory", "ltm", "facts"),
+)

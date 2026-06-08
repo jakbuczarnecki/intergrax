@@ -12,3 +12,14 @@ WORKSPACE_AUTHORING = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("workspace", "authoring", "shadow"),
 )
+
+WORKSPACE_SNAPSHOT_MANAGER = SkillManifest(
+    skill_id="workspace.snapshot_manager",
+    version="1.0.0",
+    description="Workspace lifecycle: snapshot state, list files, and delete stale artifacts.",
+    tool_ids=("workspace.snapshot", "workspace.list_files", "workspace.delete_file"),
+    prompt_instruction_ids=("workspace.snapshot_manager.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("workspace", "snapshot", "lifecycle"),
+)

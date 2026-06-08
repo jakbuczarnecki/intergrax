@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 from intergrax.skills.core.manifest import SkillBundleManifest
-from intergrax.skills.providers.memory.manifests import MEMORY_SESSION_CLEANUP, MEMORY_TASK_SCRATCHPAD
+from intergrax.skills.providers.memory.manifests import (
+    MEMORY_LTM_CURATOR,
+    MEMORY_SESSION_CLEANUP,
+    MEMORY_TASK_SCRATCHPAD,
+)
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
 
-_MEMORY_MANIFESTS = (MEMORY_TASK_SCRATCHPAD, MEMORY_SESSION_CLEANUP)
+_MEMORY_MANIFESTS = (MEMORY_TASK_SCRATCHPAD, MEMORY_SESSION_CLEANUP, MEMORY_LTM_CURATOR)
 
 
 class MemorySkillPlugin:

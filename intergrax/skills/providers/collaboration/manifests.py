@@ -31,3 +31,18 @@ COLLABORATION_CALENDAR = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("collaboration", "calendar", "scheduling"),
 )
+
+COLLABORATION_THREAD_REPLY = SkillManifest(
+    skill_id="collaboration.thread_reply",
+    version="1.0.0",
+    description="Email thread follow-up: read messages, list threads, and send replies.",
+    tool_ids=(
+        "collaboration.reply_message",
+        "collaboration.get_message",
+        "collaboration.list_messages",
+    ),
+    prompt_instruction_ids=("collaboration.thread_reply.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("collaboration", "email", "reply"),
+)

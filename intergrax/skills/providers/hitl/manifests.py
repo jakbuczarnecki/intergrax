@@ -17,3 +17,14 @@ HITL_APPROVAL_GATE = SkillManifest(
     risk_tier=SkillRiskTier.HIGH,
     tags=("hitl", "approval", "governance"),
 )
+
+HITL_QUEUE_MANAGER = SkillManifest(
+    skill_id="hitl.queue_manager",
+    version="1.0.0",
+    description="HITL queue operations: list task decisions, summarize queue depth, and list pending items.",
+    tool_ids=("hitl.list_for_task", "hitl.summarize_queue", "hitl.list_pending"),
+    prompt_instruction_ids=("hitl.queue_manager.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("hitl", "queue", "operations"),
+)

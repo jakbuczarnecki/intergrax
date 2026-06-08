@@ -126,3 +126,48 @@ def modality_skill_profile() -> SkillProfile:
 def notify_skill_profile() -> SkillProfile:
     """Deferred and immediate notification scheduling."""
     return SkillProfile(enabled_bundles=["notify"])
+
+
+def cost_skill_profile() -> SkillProfile:
+    """Run budget and quota governance."""
+    return SkillProfile(enabled_bundles=["cost"])
+
+
+def identity_skill_profile() -> SkillProfile:
+    """Identity verification and tenancy resolution."""
+    return SkillProfile(enabled_bundles=["identity"])
+
+
+def health_skill_profile() -> SkillProfile:
+    """Integration health probes for operator hosts."""
+    return SkillProfile(enabled_bundles=["health"])
+
+
+def context_skill_profile() -> SkillProfile:
+    """Context token planning and summarization."""
+    return SkillProfile(enabled_bundles=["context", "memory"])
+
+
+def agent_roster_skill_profile() -> SkillProfile:
+    """Agent roster introspection and skill resolution."""
+    return SkillProfile(enabled_bundles=["agent", "platform"])
+
+
+def vector_store_skill_profile() -> SkillProfile:
+    """Vector store administration and health checks."""
+    return SkillProfile(enabled_bundles=["vector_store", "rag"])
+
+
+def crm_skill_profile() -> SkillProfile:
+    """CRM account and support ticket lookup."""
+    return SkillProfile(enabled_bundles=["crm"])
+
+
+def billing_skill_profile() -> SkillProfile:
+    """Usage metering and run cost correlation."""
+    return SkillProfile(enabled_bundles=["billing", "cost"])
+
+
+def metrics_skill_profile() -> SkillProfile:
+    """Runtime metrics with trace correlation."""
+    return SkillProfile(enabled_bundles=["metrics", "ops"])

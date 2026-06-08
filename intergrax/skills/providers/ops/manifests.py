@@ -45,3 +45,25 @@ OPS_WORKFLOW_RUNNER = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("ops", "workflow", "orchestration"),
 )
+
+OPS_WORKFLOW_ADMIN = SkillManifest(
+    skill_id="ops.workflow_admin",
+    version="1.0.0",
+    description="Workflow run administration: list runs, cancel in-flight work, and fetch logs.",
+    tool_ids=("workflow.list_runs", "workflow.cancel_run", "workflow.fetch_logs"),
+    prompt_instruction_ids=("ops.workflow_admin.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("ops", "workflow", "admin"),
+)
+
+OPS_FINDINGS_REVIEW = SkillManifest(
+    skill_id="ops.findings_review",
+    version="1.0.0",
+    description="Security findings review: scan artifacts, summarize results, and notify owners.",
+    tool_ids=("security.summarize_findings", "security.scan", "notify.send"),
+    prompt_instruction_ids=("ops.findings_review.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.HIGH,
+    tags=("ops", "security", "findings"),
+)

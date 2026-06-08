@@ -6,3 +6,4 @@
 | `rag.document_ingest` | [rag.document_ingest/USAGE.md](rag.document_ingest/USAGE.md) |
 | `rag.hybrid_qa` | [rag.hybrid_qa/USAGE.md](rag.hybrid_qa/USAGE.md) |
 | `rag.index_admin` | [rag.index_admin/USAGE.md](rag.index_admin/USAGE.md) |
+| `rag.retrieval_tuner` | [rag.retrieval_tuner/USAGE.md](rag.retrieval_tuner/USAGE.md) |

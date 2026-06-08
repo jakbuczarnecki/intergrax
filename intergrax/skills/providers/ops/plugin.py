@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from intergrax.skills.core.manifest import SkillBundleManifest
 from intergrax.skills.providers.ops.manifests import (
+    OPS_FINDINGS_REVIEW,
     OPS_INCIDENT_DISPATCH,
     OPS_SECURITY_AUDIT,
     OPS_TRACE_DEBUG,
+    OPS_WORKFLOW_ADMIN,
     OPS_WORKFLOW_RUNNER,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
@@ -17,6 +19,8 @@ _OPS_MANIFESTS = (
     OPS_INCIDENT_DISPATCH,
     OPS_SECURITY_AUDIT,
     OPS_WORKFLOW_RUNNER,
+    OPS_WORKFLOW_ADMIN,
+    OPS_FINDINGS_REVIEW,
 )
 
 

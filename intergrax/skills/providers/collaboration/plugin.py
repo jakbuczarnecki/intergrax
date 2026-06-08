@@ -6,11 +6,16 @@ from intergrax.skills.core.manifest import SkillBundleManifest
 from intergrax.skills.providers.collaboration.manifests import (
     COLLABORATION_CALENDAR,
     COLLABORATION_OUTREACH,
+    COLLABORATION_THREAD_REPLY,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
 
-_COLLABORATION_MANIFESTS = (COLLABORATION_OUTREACH, COLLABORATION_CALENDAR)
+_COLLABORATION_MANIFESTS = (
+    COLLABORATION_OUTREACH,
+    COLLABORATION_CALENDAR,
+    COLLABORATION_THREAD_REPLY,
+)
 
 
 class CollaborationSkillPlugin:

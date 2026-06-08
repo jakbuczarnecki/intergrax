@@ -50,3 +50,14 @@ RAG_COLLECTION_LIFECYCLE = SkillManifest(
     risk_tier=SkillRiskTier.HIGH,
     tags=("rag", "lifecycle", "purge"),
 )
+
+RAG_RETRIEVAL_TUNER = SkillManifest(
+    skill_id="rag.retrieval_tuner",
+    version="1.0.0",
+    description="Retrieval tuning: preview candidates, rerank results, and execute retrieval.",
+    tool_ids=("rag.preview_retrieval", "rag.rerank", "rag.retrieve"),
+    prompt_instruction_ids=("rag.retrieval_tuner.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("rag", "retrieval", "tuning"),
+)

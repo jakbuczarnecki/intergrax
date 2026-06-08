@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 from intergrax.skills.core.manifest import SkillBundleManifest
-from intergrax.skills.providers.dev.manifests import DEV_ISSUE_CREATOR, DEV_ISSUE_TRIAGE
+from intergrax.skills.providers.dev.manifests import (
+    DEV_ISSUE_CREATOR,
+    DEV_ISSUE_TRIAGE,
+    DEV_ISSUE_UPDATER,
+)
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
 
-_DEV_MANIFESTS = (DEV_ISSUE_TRIAGE, DEV_ISSUE_CREATOR)
+_DEV_MANIFESTS = (DEV_ISSUE_TRIAGE, DEV_ISSUE_CREATOR, DEV_ISSUE_UPDATER)
 
 
 class DevSkillPlugin:

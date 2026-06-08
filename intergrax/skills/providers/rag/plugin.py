@@ -8,6 +8,7 @@ from intergrax.skills.providers.rag.manifests import (
     RAG_DOCUMENT_INGEST,
     RAG_HYBRID_QA,
     RAG_INDEX_ADMIN,
+    RAG_RETRIEVAL_TUNER,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -17,6 +18,7 @@ _RAG_MANIFESTS = (
     RAG_DOCUMENT_INGEST,
     RAG_INDEX_ADMIN,
     RAG_COLLECTION_LIFECYCLE,
+    RAG_RETRIEVAL_TUNER,
 )
 
 

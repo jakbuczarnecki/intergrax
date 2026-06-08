@@ -23,3 +23,14 @@ DEV_ISSUE_CREATOR = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("dev", "issues", "create"),
 )
+
+DEV_ISSUE_UPDATER = SkillManifest(
+    skill_id="dev.issue_updater",
+    version="1.0.0",
+    description="Update existing tracker issues: fetch, comment, and transition state.",
+    tool_ids=("issues.update_issue", "issues.add_comment", "issues.get_issue"),
+    prompt_instruction_ids=("dev.issue_updater.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("dev", "issues", "update"),
+)
