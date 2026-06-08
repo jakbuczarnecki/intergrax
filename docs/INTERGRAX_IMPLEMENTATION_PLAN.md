@@ -218,7 +218,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | Regression gate | **906 passed** | No | Must stay green after each harness PR (Phase FLOW closeout 2026-06-07) |
 | **Full architecture audit (FAUDIT-32)** | **Done** (2026-06-06) | No (harness-only) | 32-layer audit + **23/23 remediation** → [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-closed) |
 | **Nexus execution depth (Phase FLOW)** | **Done** (17/18) | No (harness-only) | Band **2aj** — [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed) · **FLOW-8 Deferred** · source: [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) |
-| **Critic & Verification Layer (Phase CRIT-V)** | **Active** (7/24) | No (harness-only) | Band **2ak** — [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-active) · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) |
+| **Critic & Verification Layer (Phase CRIT-V)** | **Active** (10/24) | No (harness-only) | Band **2ak** — [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-active) · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) |
 
 ---
 
@@ -5250,7 +5250,7 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 
 ## Phase CRIT-V — Critic & Verification Layer
 
-**Status:** **Active** (2026-06-07) — **7/24** deliverables Done (CRIT-V-0 + CRIT-V-1)  
+**Status:** **Active** (2026-06-07) — **10/24** deliverables Done (CRIT-V-0 + CRIT-V-1 + CRIT-V-2)  
 **Prerequisites:** Phase EVAL **Done** (registry wiring), Phase FLOW **Done** (graph hooks), Phase M-LLM-R **Done** (typed LLM envelope)  
 **Goal:** Deliver production-grade PEV **Verify** infrastructure — L0/L1/L2 critic stack with tier-separated competencies; uplift Evaluation audit layer L2→L3.  
 **Priority ladder:** **Band 2ak** (§4.0) — **default active implementation queue** after §6.1 gate on each PR.  
@@ -5271,9 +5271,9 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 | CRIT-V-1.1 | 1 | **`CriticProfile`** on `ApplicationEnvironmentProfile` | **Done** | `contracts/environment_profile.py`, `critic_runtime_bridge.py`, `RuntimeConfig` | Unit: `test_harness_critic_wiring.py` |
 | CRIT-V-1.2 | 1 | **CVL contracts** — `CriticRequest`, `CriticVerdict`, `LayerVerdict`, `RubricSpec` | **Done** | `runtime/critic/contracts.py` | Unit: `test_critic_contracts.py` |
 | CRIT-V-1.3 | 1 | **`EvaluatorLoopSpec`** — max iterations, revise routing | **Done** | `runtime/critic/evaluator_loop_spec.py` | Unit: `test_evaluator_loop_spec.py` |
-| CRIT-V-2.1 | 2 | **`eval.judge` tool** — semantic scoring via separate LLM profile | **Planned** | `tools/providers/eval/judge.py`, bundle | Gate test; trace event |
-| CRIT-V-2.2 | 2 | **`eval.trajectory` tool** — process scoring from replay slice | **Planned** | `tools/providers/eval/trajectory.py` | Uses `ReplayEngine` |
-| CRIT-V-2.3 | 2 | **Registry hook** — judge/trajectory → `OnlineEvaluationObservation` | **Planned** | extend `eval/service.py` | Observation appended when registry bound |
+| CRIT-V-2.1 | 2 | **`eval.judge` tool** — semantic scoring via separate LLM profile | **Done** | `tools/providers/eval/judge.py`, bundle | `test_eval_critic_tools.py` |
+| CRIT-V-2.2 | 2 | **`eval.trajectory` tool** — process scoring from replay slice | **Done** | `tools/providers/eval/trajectory.py` | Uses `trace_reader` |
+| CRIT-V-2.3 | 2 | **Registry hook** — judge/trajectory → `OnlineEvaluationObservation` | **Done** | `service.py` `_append_critic_observation` | Observation appended when registry bound |
 | CRIT-V-3.1 | 3 | **`CriticOrchestrator`** — L0→L1→L2 pipeline | **Planned** | `runtime/critic/critic_orchestrator.py` | Unit: short-circuit, layer order |
 | CRIT-V-3.2 | 3 | **`L0Gateway`** — wraps `NexusValidationEngine` + schema | **Planned** | `runtime/critic/l0_gateway.py` | Reuses existing validators |
 | CRIT-V-3.3 | 3 | **`L1Gateway`** — invokes eval tools via ToolRuntime | **Planned** | `runtime/critic/l1_gateway.py` | No direct LLM in Tier-1 |
@@ -5557,7 +5557,7 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 | 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
 | 1 | **CRIT-V-0.*** | Docs | **Done** | Architecture RFC + ADR + canon §55 + README | Cross-links resolve |
 | 2 | **CRIT-V-1.*** | Code | **Done** | `CriticProfile` + CVL contracts | Unit tests |
-| 3 | **CRIT-V-2.*** | Code | **Planned** | `eval.judge` + `eval.trajectory` tools | Tool gate tests |
+| 3 | **CRIT-V-2.*** | Code | **Done** | `eval.judge` + `eval.trajectory` tools | Tool gate tests |
 | 4 | **CRIT-V-3.*** | Code | **Planned** | `CriticOrchestrator` + graph hooks | Integration tests |
 | 5 | **CRIT-V-4.*** | Code | **Planned** | `EvaluatorLoopExecutor` | Loop budget tests |
 | 6 | **CRIT-V-5.*** | Code | **Planned** | Semantic `NexusEvalRunner` | Eval integration test |

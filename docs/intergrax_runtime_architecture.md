@@ -418,6 +418,9 @@ An application is not an agent. It is the **product shell** — the “Cursor AI
 
 - `legal_application` — legal review for law firms (Legal agent + compliance rules)
 - `research_application` — research → summarize pipeline for analysts
+- `intergrax_assistant_application` — harness-native conversational lab (hub agent + swappable LLM + optional specialist delegation) — see §7.4.11
+- `local_workspace_application` — Local Knowledge Workspace (LKW)
+- `dispute_sim_application` — Dispute Simulation Workspace (DSW)
 - Future: `agency_application`, `saas_pm_application`, `ecommerce_ux_application`
 
 **Rules:**
@@ -1678,6 +1681,39 @@ The manifest is the **roster contract** (who is mounted). **Instance creation** 
 See [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase N for step-by-step delivery.
 
 **Usage guides:** composition engine — [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md); application hosts — [`applications/USAGE.md`](../applications/USAGE.md).
+
+### 7.4.11 Intergrax Assistant Application (IAA)
+
+**Role:** Harness-native **conversational lab** — ChatGPT-shaped product shell for experimenting with the full Agent OS on a **swappable LLM adapter** (local Ollama default).
+
+| Piece | Location |
+|-------|----------|
+| Tier-3 host | `applications/intergrax_assistant_application/` |
+| Hub agent | `agents/intergrax_assistant/` — capability `platform.assist` |
+| Architecture | [`applications/intergrax_assistant_application/ARCHITECTURE.md`](../applications/intergrax_assistant_application/ARCHITECTURE.md) |
+| ADR | [`ADR-INTERGRAX_ASSISTANT-001`](../applications/intergrax_assistant_application/adr/ADR-INTERGRAX_ASSISTANT-001.md) |
+
+**Topology (hub-and-spoke):**
+
+```text
+Client (HTTP / MCP)
+    → intergrax_assistant_application (Tier-3)
+        → NexusLoop: classify → plan (engine when `INTERGRAX_ASSISTANT_ENGINE_PLANNER=true`) → graph
+            → intergrax_assistant (hub, default)
+            → optional DelegationSpec → Legal / Research / … (env-mounted roster)
+        → FinalResponseComposer → client
+```
+
+**Differentiators vs other hosts:**
+
+| Host | Pattern |
+|------|---------|
+| `lab_application` | Multi-agent debug lab — no chat product contract |
+| `legal_application` | Single-domain chat SKU |
+| `local_workspace_application` | Fixed multi-agent file pipeline (LKW) |
+| **IAA** | General chat hub + **LLM env swap** + optional platform delegation |
+
+LLM resolution: `ApplicationEnvironmentProfile.llm_profile` from `INTERGRAX_LLM_PROVIDER` / `INTERGRAX_LLM_MODEL` (see [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md)). Default port `8096`.
 
 ---
 
@@ -5626,7 +5662,7 @@ LLM-as-judge is **opt-in** via `CriticProfile` — not mandatory on every run. S
 | Evaluation registry wiring | **Done** | EVAL |
 | CVL architecture + ADR | **Done** | CRIT-V-0 |
 | `CriticProfile` + contracts | **Done** | CRIT-V-1 |
-| `eval.judge` / `eval.trajectory` tools | **Planned** | CRIT-V-2 |
+| `eval.judge` / `eval.trajectory` tools | **Done** | CRIT-V-2 |
 | `CriticOrchestrator` + hooks | **Planned** | CRIT-V-3 |
 | Evaluator-loop executor | **Planned** | CRIT-V-4 |
 | Semantic offline runner | **Planned** | CRIT-V-5 |

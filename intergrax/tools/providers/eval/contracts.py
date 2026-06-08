@@ -85,3 +85,50 @@ class EvalExportObservationsOutput(BaseModel):
     exported: bool = True
     observation_count: int = 0
     export_json: str = ""
+
+
+class EvalJudgeInput(BaseModel):
+    output_text: str = Field(..., min_length=1)
+    rubric_id: str = Field(..., min_length=1)
+    criteria: list[str] = Field(default_factory=list)
+    reference_context: str | None = None
+    min_score: float = Field(default=0.75, ge=0.0, le=1.0)
+    run_id: str | None = None
+    agent_id: str | None = None
+    record_observation: bool = False
+    observation_id: str | None = None
+    scenario_id: str | None = None
+    mode: str = Field(default="online", pattern="^(online|shadow)$")
+    candidate_profile_version_id: str | None = None
+
+
+class EvalJudgeOutput(BaseModel):
+    rubric_id: str
+    score: float = Field(ge=0.0, le=1.0)
+    passed: bool
+    reasons: list[str] = Field(default_factory=list)
+    observation_recorded: bool = False
+
+
+class EvalTrajectoryInput(BaseModel):
+    run_id: str = Field(..., min_length=1)
+    tenant_id: str = Field(default="default", min_length=1)
+    min_score: float = Field(default=0.75, ge=0.0, le=1.0)
+    agent_id: str = Field(default="unknown", min_length=1)
+    record_observation: bool = False
+    observation_id: str | None = None
+    scenario_id: str | None = None
+    mode: str = Field(default="online", pattern="^(online|shadow)$")
+    candidate_profile_version_id: str | None = None
+
+
+class EvalTrajectoryOutput(BaseModel):
+    run_id: str
+    score: float = Field(ge=0.0, le=1.0)
+    passed: bool
+    reasons: list[str] = Field(default_factory=list)
+    tool_call_count: int = 0
+    duplicate_tool_calls: int = 0
+    error_count: int = 0
+    denied_count: int = 0
+    observation_recorded: bool = False

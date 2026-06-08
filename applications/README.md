@@ -15,6 +15,7 @@
 | [`research_application/`](research_application/) | product | 8010 | ResearchAgent, SummaryAgent | Research → summarize pipeline |
 | [`local_workspace_application/`](local_workspace_application/) | product | 8020 | LocalIndexer, LocalSearch, LocalSynthesizer | **LKW** — local file index, search, synthesis |
 | [`dispute_sim_application/`](dispute_sim_application/) | product | 8025 | DisputeIntake, DisputeAnalyst, DisputeStrategist, DisputeScenario | **DSW** — dispute prep and court simulation |
+| [`intergrax_assistant_application/`](intergrax_assistant_application/) | lab | 8096 | IntergraxAssistant (+ optional Legal, Research, …) | **IAA** — harness chat lab, swappable LLM |
 
 **Agent index:** [`agents/README.md`](../agents/README.md)
 
@@ -26,6 +27,7 @@
 |---------|-----------|--------|
 | **Local Knowledge Workspace (LKW)** | `LKW.*` in [§6.3a](../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated) | LKW.0 Done · active LKW.1 |
 | **Dispute Simulation Workspace (DSW)** | `DSW.*` in [§6.3a](../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated) | DSW.0 Done · active DSW.1 |
+| **Intergrax Assistant (IAA)** | Local plan in [ARCHITECTURE.md](intergrax_assistant_application/ARCHITECTURE.md) | IAA.0 Done · lab host runnable |
 
 Platform docs in `docs/` describe **how to host** applications — product scope lives in each app's `ARCHITECTURE.md` + `IMPLEMENTATION_PLAN.md`.
 

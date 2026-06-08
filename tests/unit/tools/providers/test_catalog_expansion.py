@@ -84,6 +84,13 @@ T12_NEW_TOOL_IDS = frozenset(
     }
 )
 
+T13_NEW_TOOL_IDS = frozenset(
+    {
+        "eval.judge",
+        "eval.trajectory",
+    }
+)
+
 T7_NEW_TOOL_IDS = frozenset(
     {
         "message_bus.list_tasks",
@@ -206,7 +213,7 @@ def _clean_catalog() -> None:
 def test_register_default_tools_expanded_catalog() -> None:
     register_default_tools()
     registered = frozenset(list_catalog_tool_ids())
-    assert len(registered) == 170
+    assert len(registered) == 172
     assert NEW_TOOL_IDS <= registered
     assert T4_NEW_TOOL_IDS <= registered
     assert T5_NEW_TOOL_IDS <= registered
@@ -217,6 +224,7 @@ def test_register_default_tools_expanded_catalog() -> None:
     assert T10_NEW_TOOL_IDS <= registered
     assert T11_NEW_TOOL_IDS <= registered
     assert T12_NEW_TOOL_IDS <= registered
+    assert T13_NEW_TOOL_IDS <= registered
 
 
 def test_new_bundles_present_in_catalog() -> None:
@@ -255,7 +263,7 @@ def test_new_bundles_present_in_catalog() -> None:
     assert len(get_bundle("observability").tool_ids) == 6
     assert len(get_bundle("message_bus").tool_ids) == 6
     assert len(get_bundle("document").tool_ids) == 2
-    assert len(get_bundle("eval").tool_ids) == 5
+        assert len(get_bundle("eval").tool_ids) == 7
     assert len(get_bundle("cost").tool_ids) == 3
     assert len(get_bundle("filesystem").tool_ids) == 5
     assert len(get_bundle("platform").tool_ids) == 8

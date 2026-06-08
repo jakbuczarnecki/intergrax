@@ -100,6 +100,7 @@ See [EXTENSION_AUTHOR_GUIDE.md](../docs/EXTENSION_AUTHOR_GUIDE.md).
 | `research_application` | product | 8010 | ResearchAgent, SummaryAgent | Multi-agent pipeline |
 | `local_workspace_application` | product | 8020 | LocalIndexer, LocalSearch, LocalSynthesizer | **LKW** — first business product |
 | `dispute_sim_application` | product | 8025 | DisputeIntake, DisputeAnalyst, DisputeStrategist, DisputeScenario | **DSW** — dispute simulation workspace |
+| `intergrax_assistant_application` | lab | 8096 | IntergraxAssistant (+ optional specialists) | **IAA** — harness chat lab, swappable LLM |
 
 Full index: [`applications/README.md`](README.md) · [`agents/README.md`](../agents/README.md)
 

@@ -87,7 +87,7 @@ They **do not** replace per-product or per-agent documentation:
 | Tier-3 business environment | Wiring patterns, `applications/USAGE.md` | `applications/<product>/ARCHITECTURE.md`, `IMPLEMENTATION_PLAN.md` |
 | Tier-2 business agent | [Agent creation guide](docs/AGENT_CREATION_GUIDE.md), scaffold workflow | `agents/<name>/ARCHITECTURE.md`, agent README, local plan |
 
-Examples: [Local Knowledge Workspace](applications/local_workspace_application/ARCHITECTURE.md) and [Dispute Simulation Workspace](applications/dispute_sim_application/ARCHITECTURE.md) are documented under their application folders, not in the platform implementation plan.
+Examples: [Intergrax Assistant](applications/intergrax_assistant_application/ARCHITECTURE.md) (harness chat lab), [Local Knowledge Workspace](applications/local_workspace_application/ARCHITECTURE.md), and [Dispute Simulation Workspace](applications/dispute_sim_application/ARCHITECTURE.md) are documented under their application folders, not in the platform implementation plan.
 
 Details: [Strategy §Documentation boundary](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md#documentation-boundary) · [Architecture §1.1](docs/intergrax_runtime_architecture.md#11-documentation-boundary-platform-vs-product) · [Plan §4.0a](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business)
 
@@ -387,6 +387,7 @@ NexusLoop + IntegrationProfile + FastAPI  →  HTTP / Docker in production
 | [`research_application/`](applications/research_application/) | 8010 | ResearchAgent, SummaryAgent | Research → summarize pipeline |
 | [`local_workspace_application/`](applications/local_workspace_application/) | 8020 | LocalIndexer, LocalSearch, LocalSynthesizer | **LKW** — local knowledge workspace |
 | [`dispute_sim_application/`](applications/dispute_sim_application/) | 8025 | DisputeIntake, DisputeAnalyst, DisputeStrategist, DisputeScenario | **DSW** — dispute simulation workspace |
+| [`intergrax_assistant_application/`](applications/intergrax_assistant_application/) | 8096 | IntergraxAssistant (+ optional Legal, Research, …) | **IAA** — harness chat lab, swappable LLM |
 
 ### Example applications in this repository
 
@@ -398,6 +399,7 @@ NexusLoop + IntegrationProfile + FastAPI  →  HTTP / Docker in production
 | [`research_application/`](applications/research_application/) | Multi-agent HTTP host — research + summary agents |
 | [`local_workspace_application/`](applications/local_workspace_application/) | **Local Knowledge Workspace (LKW)** — local file index, search, synthesis ([ARCHITECTURE.md](applications/local_workspace_application/ARCHITECTURE.md)) |
 | [`dispute_sim_application/`](applications/dispute_sim_application/) | **Dispute Simulation Workspace (DSW)** — case intake, argument analysis, strategy, court simulation ([ARCHITECTURE.md](applications/dispute_sim_application/ARCHITECTURE.md)) |
+| [`intergrax_assistant_application/`](applications/intergrax_assistant_application/) | **Intergrax Assistant (IAA)** — ChatGPT-shaped harness lab, local/cloud LLM swap, hub + specialist delegation ([ARCHITECTURE.md](applications/intergrax_assistant_application/ARCHITECTURE.md)) |
 
 **Usage guides:**
 
@@ -704,6 +706,7 @@ Audit layer 27: [AUDIT_MAP §27 Developer Experience](docs/INTEGRAX_HARNESS_AUDI
 | **Legal review** | Legal | `legal.review` | `legal_application` |
 | **LKW product** | LocalIndexer, LocalSearch, LocalSynthesizer | `local.workspace.index`, `.search`, `.synthesize` | `local_workspace_application` |
 | **DSW product** | DisputeIntake, DisputeAnalyst, DisputeStrategist, DisputeScenario | `dispute.intake`, `.analyze`, `.strategy`, `.scenario` | `dispute_sim_application` |
+| **IAA harness chat** | IntergraxAssistant | `platform.assist` | `intergrax_assistant_application` |
 | **Harness demo** | OrganizationWorker | `org.vendor_report` | `lab_application` (optional) |
 | **Deferred** | ProblemRadar | `problem_radar.scan` | — (Phase K.1) |
 
@@ -927,7 +930,7 @@ Intergrax is under **active development** (private R&D). The **harness platform*
 | **V** | Harness architecture hardening — capability graph, lifecycle, metrics, prompt/eval/context/security/cost | **Done** (2026-06-05) |
 | **W-ML** | Model & modality plane | **Done** — [MODALITY.md](docs/MODALITY.md) |
 | **W-ADAPT** | Adaptive Harness Intelligence (L4 runtime) | **Done** (70/70) — [AHIA](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) |
-| **CRIT-V** | Critic & Verification Layer (PEV verify depth) | **Active** (7/24) — [CVL](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) |
+| **CRIT-V** | Critic & Verification Layer (PEV verify depth) | **Active** (10/24) — [CVL](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) |
 | **P-Ext** | Tier-0 plugin catalogs | **Done** (61/61) |
 | **AA** | Agents & applications conformance | **Platform Done** |
 | **MEM** | Memory platform | **Done** (48/48) |

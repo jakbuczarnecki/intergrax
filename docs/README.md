@@ -144,7 +144,7 @@ Critic & Verification     →  CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md · cano
 | Phase | Status |
 |-------|--------|
 | **Phase FAUDIT-32 — Full architecture audit** | **Done** (Band 2ad) — 23/23 remediation + [§6.1ai](INTERGRAX_IMPLEMENTATION_PLAN.md#61ai-harness-implementation-queue--faudit-32-follow-up-closed) follow-up |
-| **Phase CRIT-V — Critic & Verification Layer** | **Active** (Band 2ak) — **7/24 Done** (CRIT-V-0 + CRIT-V-1) · [CVL architecture](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md) |
+| **Phase CRIT-V — Critic & Verification Layer** | **Active** (Band 2ak) — **10/24 Done** (CRIT-V-0–2) · [CVL architecture](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md) |
 | **Phase W-ADAPT — Adaptive Harness Intelligence** | **Done** (Band 2y) — **70/70 Done** (Wave 0–7) · [AHIA](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · [ADR-ADAPT-001](adr/ADR-ADAPT-001.md) |
 | **Phase M-LLM-R — LLM completion envelope** | **Done** (Band 2z, 39/39) |
 | **Phase M.6 P6 — Integration expansion** | **Done** (Band 2ac, 32/32) |
