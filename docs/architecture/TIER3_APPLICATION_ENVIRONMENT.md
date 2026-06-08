@@ -139,6 +139,7 @@ Every Tier-3 application MUST:
 | [`applications/USAGE.md`](../../applications/USAGE.md) | Authoring Tier-3 hosts |
 | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) | UAEP + policy runtime |
 | [`ORCHESTRATION.md`](ORCHESTRATION.md) | Nexus orchestration fields on profile |
+| [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) | `ScalingProfile`, deploy/Helm vs ECP provisioning |
 | [`guides/HARNESS_ENVIRONMENT.md`](../guides/HARNESS_ENVIRONMENT.md) | Lab stack operator guide |
 
 ---

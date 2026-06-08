@@ -389,6 +389,8 @@ wiring = wire_application_observability(env_profile)
 
 **Rule (canon §33.1):** Extend `RunTraceWriter` / `RuntimeEventPersistence` — do not fork a parallel trace system.
 
+**Compute / worker elastic capacity** (Nexus replicas, queue workers, load balancers): [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) — distinct from datastore scale-out above.
+
 ### 9.4 Custom persistence adapter
 
 Implement `RuntimeEventPersistence` protocol (`append`, `list_for_run`, `list_for_task`) and `RunTraceWriter` / `RunTraceReader`. Register via `IntegrationProfile` factory — same as other integration providers. Run the conformance harness before shipping a new backend.

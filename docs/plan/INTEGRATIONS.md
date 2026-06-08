@@ -417,7 +417,7 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 | H-INT-5 | M-P4.17 | `memgraph` | graph_store | **P1** | **Done** (beta) | GraphRAG alternative; lighter lab footprint | `GraphStore` contract; RAG `INTERGRAX_RAG_GRAPH_STORE` option |
 | H-INT-5 | M-P4.18 | `falkordb` | graph_store | **P2** | **Done** (beta) | Redis-module graph — reuse lab `redis` stack | Bolt/Redis protocol adapter |
 | H-INT-5 | M-P4.19 | `incident_io` | notification_channel | **P1** | **Done** (beta) | Ops runbooks (`runbook/adaptive/*`) → real incidents | Outbound incident create; HITL escalation path |
-| H-INT-5 | M-P4.20 | `kubernetes` | cloud_platform | **P1** | **Done** (beta) | Prod harness host deploy; health probes at scale | Extend `CloudPlatform` — namespace/workload health |
+| H-INT-5 | M-P4.20 | `kubernetes` | cloud_platform | **P1** | **Done** (beta) | Prod harness host deploy; health probes at scale | Extend `CloudPlatform` — scale API: [ECP-4.*](plan/ELASTIC_CAPACITY_AND_SCALING.md) |
 | H-INT-5 | M-P4.21 | `servicenow` | issue_tracker | **P2** | **Done** (beta) | Enterprise change approval for policy learning | `IssueTracker` search/get; HITL change ticket |
 | H-INT-5 | M-P4.22 | `bitbucket` | issue_tracker | **P2** | **Done** (beta) | Atlassian stack beside `jira` | REST issues/PRs |
 | H-INT-5 | M-P4.23 | `asana` | issue_tracker | **P2** | **Done** (beta) | PM human task queue beside `linear` | Task search/create |

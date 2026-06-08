@@ -1547,6 +1547,8 @@ Verify that the system can be operated as a production platform.
 Operational Excellence Score: L0-L4
 ```
 
+**Domain pair (canon):** [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](architecture/ELASTIC_CAPACITY_AND_SCALING.md) ↔ [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](plan/ELASTIC_CAPACITY_AND_SCALING.md) · [ADR-SCALE-001](adr/ADR-SCALE-001.md) — closed-loop **elastic capacity** (Harness ECP) extends this layer; SLO/runbook baseline: Phase W-OPS **Done**.
+
 ---
 
 ## 31. Agent Lifecycle Governance

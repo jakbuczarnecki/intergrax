@@ -675,6 +675,7 @@ All implementation tasks: [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_
 | [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix I §I.4 | Planning strategies for authors |
 | [`adr/ADR-FLOW-001.md`](../adr/ADR-FLOW-001.md) | Delegation expansion in plans |
 | [`adr/ADR-FLOW-003.md`](../adr/ADR-FLOW-003.md) | MODIFY_PLAN reserved semantics |
+| [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) | Execution capacity (dimension A) vs agent topology (dimension B) |
 
 ---
 

@@ -19,7 +19,7 @@ Tier-3  applications/        Deployable product environments
 **Strategic goal:** production-grade Harness AI aligned with modern Agent Engineering practice.  
 **Source:** [docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-**Documentation boundary:** `docs/intergrax_runtime_architecture.md` (sole file in `docs/` root) indexes **18 domain pairs**: `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md` (1:1 filenames). Strategy, ideal model, and audit live in `docs/guides/`. Each **business environment** (`applications/<product>/`) and **business agent** (`agents/<name>/`) has its own architecture and implementation plan — do not treat platform canon as the product deployment plan.
+**Documentation boundary:** `docs/intergrax_runtime_architecture.md` (sole file in `docs/` root) indexes **19 domain pairs**: `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md` (1:1 filenames). Strategy, ideal model, and audit live in `docs/guides/`. Each **business environment** (`applications/<product>/`) and **business agent** (`agents/<name>/`) has its own architecture and implementation plan — do not treat platform canon as the product deployment plan.
 
 **Per-iteration reading rule:** when implementing a harness layer, read **only** the matching architecture + plan pair (e.g. `MEMORY.md` in both folders) plus `docs/guides/` as needed — do not load unrelated domain docs.
 
@@ -95,6 +95,7 @@ applications/    MAY import from agents/ and intergrax/
 | Observability | [OBSERVABILITY.md](docs/architecture/OBSERVABILITY.md) · [plan/OBSERVABILITY.md](docs/plan/OBSERVABILITY.md) · [ADR-OBS-001](docs/adr/ADR-OBS-001.md) |
 | Reliability / HITL | [RELIABILITY_FAILURE_AND_HITL.md](docs/architecture/RELIABILITY_FAILURE_AND_HITL.md) · [plan/RELIABILITY_FAILURE_AND_HITL.md](docs/plan/RELIABILITY_FAILURE_AND_HITL.md) |
 | L4 adaptive harness | [ADAPTIVE_HARNESS_INTELLIGENCE.md](docs/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) · [plan/ADAPTIVE_HARNESS_INTELLIGENCE.md](docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
+| Elastic capacity / platform scaling | [ELASTIC_CAPACITY_AND_SCALING.md](docs/architecture/ELASTIC_CAPACITY_AND_SCALING.md) · [plan/ELASTIC_CAPACITY_AND_SCALING.md](docs/plan/ELASTIC_CAPACITY_AND_SCALING.md) |
 | Critic / verification | [CRITIC_VERIFICATION.md](docs/architecture/CRITIC_VERIFICATION.md) · [plan/CRITIC_VERIFICATION.md](docs/plan/CRITIC_VERIFICATION.md) |
 | DX / evaluation / gates | [EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md](docs/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) · [plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md](docs/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
 | Platform ladder / product backlog | [PLATFORM_FOUNDATION.md](docs/architecture/PLATFORM_FOUNDATION.md) · [plan/PLATFORM_FOUNDATION.md](docs/plan/PLATFORM_FOUNDATION.md) |
@@ -161,7 +162,7 @@ Full local suite: `scripts\test.bat unit` (Windows) or equivalent `uv run pytest
 
 | Path | Contents |
 |------|----------|
-| `docs/intergrax_runtime_architecture.md` | Sole `docs/` root file — hub indexing 18 domain pairs |
+| `docs/intergrax_runtime_architecture.md` | Sole `docs/` root file — hub indexing 19 domain pairs |
 | `docs/architecture/` | Domain architecture canon (17 files) |
 | `docs/plan/` | Domain implementation plans (17 files, 1:1 with architecture) |
 | `docs/guides/` | Strategy, ideal model, audit map, authoring guides |
