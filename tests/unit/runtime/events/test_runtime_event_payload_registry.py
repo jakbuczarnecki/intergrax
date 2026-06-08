@@ -88,7 +88,7 @@ def test_runtime_event_with_payload_merges_envelope() -> None:
 
 
 def test_extension_payload_registration() -> None:
-    class _AgentCustomPayload(PayloadBase):
+    class _AgentCustomPayload(RuntimeEventPayload):
         schema_id = "agents.test.diag.custom"
 
         detail: str

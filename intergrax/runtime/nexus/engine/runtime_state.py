@@ -17,6 +17,7 @@ from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import Runt
 
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.artifacts.models import ArtifactRef
+    from intergrax.runtime.observability.emitter import ObservabilityEmitter
 
 from intergrax.runtime.nexus.context.context_builder import BuiltContext
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -25,7 +26,7 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, Run
 from intergrax.runtime.nexus.session.chat_session import ChatSession
 from intergrax.runtime.nexus.tracing.adapters.llm_usage_finalize import LLMUsageFinalizeDiag
 from intergrax.runtime.nexus.tracing.adapters.llm_usage_snapshot import LLMUsageSnapshotDiag
-from intergrax.runtime.nexus.tracing.trace_models import DEFAULT_REDACTED_TEXT, DiagnosticPayload, ToolCallTrace, TraceComponent, TraceEvent, TraceLevel, utc_now_iso
+from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload, ToolCallTrace, TraceComponent, TraceEvent, TraceLevel
 from intergrax.utils.time_provider import SystemTimeProvider
 
 
@@ -109,6 +110,9 @@ class RuntimeState(RuntimeStateContract):
     # Production trace (append-only structured events)
     trace_events: List[TraceEvent] = field(default_factory=list)
     _trace_seq: int = field(default=0, init=False, repr=False)
+    _observability_emitter: Optional["ObservabilityEmitter"] = field(
+        default=None, init=False, repr=False
+    )
 
     # Token accounting (filled in _step_build_base_history)
     history_token_count: Optional[int] = None
@@ -140,6 +144,31 @@ class RuntimeState(RuntimeStateContract):
         return tenant
 
 
+    def _next_trace_seq(self) -> int:
+        self._trace_seq += 1
+        return self._trace_seq
+
+    def _get_observability_emitter(self) -> ObservabilityEmitter:
+        if self._observability_emitter is None:
+            from intergrax.runtime.observability.emitter import ObservabilityEmitter
+
+            meta = self.request.metadata or {}
+            task_id = (
+                meta.get("task_id") if isinstance(meta.get("task_id"), str) else self.run_id
+            )
+            self._observability_emitter = ObservabilityEmitter(
+                run_id=self.run_id,
+                task_id=str(task_id or self.run_id),
+                tenant_id=self.tenant_id,
+                agent_id=self.request.agent_id or "",
+                trace_writer=self.context.trace_writer,
+                event_bus=self.context.config.runtime_event_bus,
+                trace_events=self.trace_events,
+                production_mode=self.context.config.production_mode,
+                next_seq=self._next_trace_seq,
+            )
+        return self._observability_emitter
+
     def trace_event(
         self,
         *,
@@ -150,69 +179,14 @@ class RuntimeState(RuntimeStateContract):
         payload: Optional[DiagnosticPayload] = None,
         artifact_refs: Optional[List["ArtifactRef"]] = None,
     ) -> None:
-        if not self.run_id:
-            raise RuntimeError("RuntimeState.run_id must be provided (got empty).")
-
-        # Enforce DiagnosticPayload contract
-        if payload is not None:
-            if not isinstance(payload, DiagnosticPayload):
-                raise TypeError(
-                    "Trace payload must implement DiagnosticPayload."
-                )
-
-            payload = payload.redact()
-
-        if payload is not None and not isinstance(payload, DiagnosticPayload):
-            raise TypeError(f"payload must be DiagnosticPayload (got {type(payload).__name__}).")
-
-        self._trace_seq += 1
-
-        # Minimal P0 PII-safe logging (deterministic, no heuristics)
-        if self.context.config.production_mode:
-            safe_message = DEFAULT_REDACTED_TEXT
-        else:
-            safe_message = message        
-            
-
-        meta = self.request.metadata or {}
-        task_id = meta.get("task_id") if isinstance(meta.get("task_id"), str) else self.run_id
-
-        evt = TraceEvent(
-            event_id=TraceEvent.new_id(),
-            run_id=self.run_id,
-            seq=self._trace_seq,
-            ts_utc=utc_now_iso(),
-            level=level,
+        self._get_observability_emitter().emit_diagnostic(
             component=component,
             step=step,
-            message=safe_message,
+            message=message,
+            level=level,
             payload=payload,
-            tags={
-                "tenant_id": self.tenant_id,
-                "task_id": task_id or self.run_id,
-                "agent_id": self.request.agent_id or "",
-            },
-            artifact_refs=list(artifact_refs) if artifact_refs else [],
+            artifact_refs=artifact_refs,
         )
-        self.trace_events.append(evt)
-
-        writer = self.context.trace_writer
-        if writer is not None:
-            writer.append_event(evt)
-
-        bus = self.context.config.runtime_event_bus
-        if bus is not None:
-            from intergrax.runtime.events.trace_bridge import (
-                trace_bridge_subject_from_tags,
-                trace_event_to_runtime_event,
-            )
-
-            subject = trace_bridge_subject_from_tags(
-                tenant_id=self.tenant_id,
-                task_id=str(task_id or self.run_id),
-                agent_id=self.request.agent_id or "",
-            )
-            bus.record(trace_event_to_runtime_event(evt, subject))
 
 
     def configure_llm_tracker(self) -> None:     

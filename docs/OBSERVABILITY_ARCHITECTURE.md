@@ -484,6 +484,7 @@ Audit map §21 score today: **L3**. Target after OBS-BUS: **L4**.
 | Runtime events | `intergrax/runtime/events/runtime_event.py` |
 | Event bus | `intergrax/runtime/events/event_bus.py` |
 | Trace bridge | `intergrax/runtime/events/trace_bridge.py` |
+| Emitter + TraceScope | `intergrax/runtime/observability/emitter.py`, `trace_scope.py` |
 | Unified journal | `intergrax/runtime/events/unified_run_journal.py` |
 | Nexus wiring | `intergrax/runtime/nexus/observability_wiring.py` |
 | App wiring | `intergrax/applications/_shared/observability_wiring.py` |

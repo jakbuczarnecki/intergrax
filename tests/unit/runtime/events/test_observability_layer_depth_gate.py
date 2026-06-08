@@ -17,6 +17,7 @@ from intergrax.runtime.events.trace_bridge import (
 )
 from intergrax.runtime.events.unified_run_journal import build_unified_run_journal
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.observability.emitter import ObservabilityEmitter
 
 pytestmark = pytest.mark.gate
 
@@ -40,6 +41,10 @@ def test_observability_depth_trace_bridge_catalog_complete() -> None:
 
 
 def test_observability_depth_runtime_state_live_emit_wired() -> None:
-    source = inspect.getsource(RuntimeState.trace_event)
-    assert "runtime_event_bus" in source
-    assert "trace_event_to_runtime_event" in source or "record(" in source
+    trace_source = inspect.getsource(RuntimeState.trace_event)
+    wiring_source = inspect.getsource(RuntimeState._get_observability_emitter)
+    bridge_source = inspect.getsource(ObservabilityEmitter._bridge_trace_event)
+    assert "emit_diagnostic" in trace_source
+    assert "runtime_event_bus" in wiring_source
+    assert "trace_event_to_runtime_event" in bridge_source
+    assert "record(" in bridge_source
