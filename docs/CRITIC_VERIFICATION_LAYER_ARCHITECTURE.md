@@ -427,11 +427,11 @@ Integrates with existing `RuntimePolicyEngine` — no agent-specific branches.
 
 See [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) — **Phase CRIT-V**.
 
-| Wave | Focus |
-|------|-------|
-| CRIT-V-0 | This document, ADR-CRITIC-001, canon §55, README |
-| CRIT-V-1 | Contracts + `CriticProfile` |
-| CRIT-V-2 | Tier-0 tools `eval.judge`, `eval.trajectory` |
+| Wave | Focus | Status |
+|------|-------|--------|
+| CRIT-V-0 | This document, ADR-CRITIC-001, canon §55, README | **Done** |
+| CRIT-V-1 | Contracts + `CriticProfile` | **Done** |
+| CRIT-V-2 | Tier-0 tools `eval.judge`, `eval.trajectory` | Planned |
 | CRIT-V-3 | `CriticOrchestrator` + graph/UAEP hooks |
 | CRIT-V-4 | `EvaluatorLoopExecutor` |
 | CRIT-V-5 | `NexusEvalRunner` semantic mode |

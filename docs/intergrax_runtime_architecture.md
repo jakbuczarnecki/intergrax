@@ -5625,7 +5625,7 @@ LLM-as-judge is **opt-in** via `CriticProfile` — not mandatory on every run. S
 | L0 structural validation per node | **Done** | B.4 / ORCH |
 | Evaluation registry wiring | **Done** | EVAL |
 | CVL architecture + ADR | **Done** | CRIT-V-0 |
-| `CriticProfile` + contracts | **Planned** | CRIT-V-1 |
+| `CriticProfile` + contracts | **Done** | CRIT-V-1 |
 | `eval.judge` / `eval.trajectory` tools | **Planned** | CRIT-V-2 |
 | `CriticOrchestrator` + hooks | **Planned** | CRIT-V-3 |
 | Evaluator-loop executor | **Planned** | CRIT-V-4 |

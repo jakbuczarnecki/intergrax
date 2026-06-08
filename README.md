@@ -927,7 +927,7 @@ Intergrax is under **active development** (private R&D). The **harness platform*
 | **V** | Harness architecture hardening — capability graph, lifecycle, metrics, prompt/eval/context/security/cost | **Done** (2026-06-05) |
 | **W-ML** | Model & modality plane | **Done** — [MODALITY.md](docs/MODALITY.md) |
 | **W-ADAPT** | Adaptive Harness Intelligence (L4 runtime) | **Done** (70/70) — [AHIA](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) |
-| **CRIT-V** | Critic & Verification Layer (PEV verify depth) | **Active** (1/24) — [CVL](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) |
+| **CRIT-V** | Critic & Verification Layer (PEV verify depth) | **Active** (7/24) — [CVL](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) |
 | **P-Ext** | Tier-0 plugin catalogs | **Done** (61/61) |
 | **AA** | Agents & applications conformance | **Platform Done** |
 | **MEM** | Memory platform | **Done** (48/48) |
