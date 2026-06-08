@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-08) — **Harness platform bands 1–2ad Done**; **Phase CRIT-V (Band 2ak) Done** (24/24 + CRIT-V-FOLLOWUP closeout); **Phase OBS-BUS (Band 2al) Done** (8/8); **active implementation queue = [§6.1](#61-harness-implementation-queue--continuous-gate) gate on every PR**; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **1058 passed**; **13/32 layers L3+** per FAUDIT scorecard — closeout ≠ full layer maturity  
+Status: Working draft (2026-06-08) — **Harness platform bands 1–2al Done**; **Phase MEM-DEPTH (Band 2am) Planned** (3/26 doc register) · [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md); **active implementation queue = [§6.1am](#61am-harness-implementation-queue--memory-intelligence-depth-active)** + [§6.1](#61-harness-implementation-queue--continuous-gate) gate on every PR; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **1058 passed**; **13/32 layers L3+** per FAUDIT scorecard — closeout ≠ full layer maturity  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -82,6 +82,7 @@ Each **business environment** and each **business agent** maintains its own `ARC
 | Developer authoring UX audit (LangGraph-like entry, measurable TTFRun) | **Phase DX** (below) · **§6.2y** · source: harness DX audit 2026-06-03 (conversation + H-APP gap analysis) |
 | Agents & applications conformance audit (structure, scaffold, per-agent/app docs, deploy) | **Phase AA** (below) · **§6.2z** · source: Tier-2/Tier-3 audit 2026-06-03 (conversation) |
 | Memory platform audit (STM/LTM/org/task/context/hooks/persistence) | **Phase MEM** (below) · **§6.2aa** · **§6.1aa** · source: memory audit 2026-06-02 (conversation) |
+| **Memory intelligence depth (context compiler, lifecycle, explore)** | [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) · [Phase MEM-DEPTH](#phase-mem-depth--memory-intelligence-depth) · **§6.2ab** · **§6.1am** · source: memory audit 2026-06-08 |
 | Phase V runtime remediation (2026-06-05 audit) → close Partial gaps | **Phase V-REM** (below) · **Appendix J** · **§6.1z** · **§6.2v** · source: plan/code audit vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` |
 | Phase V remediation traceability (audit gap → V-REM ID) | **Appendix J** (below) |
 | Full architecture audit procedure (32 layers) | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) · prompt: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) |
@@ -198,6 +199,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Operational harness L3 (Phase W-OPS)** | **Done** (code) | No (harness-only) | Ops sign-off: `release_cycles.json` or `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce` |
 | **Application environment profile (Phase H-APP)** | **Done** (2026-06-03) | No (harness-only) | [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7 — 43 tasks; memory bridge gap → [Phase MEM](#phase-mem--memory-platform-completion) |
 | **Memory platform (Phase MEM)** | **Done** (~3,5/5 post-closeout) | No (harness-only) | Memory platform **48/48** — gate **581** |
+| **Memory intelligence depth (Phase MEM-DEPTH)** | **Planned** (0/26) | No (harness-only) | [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) · Band **2am** · **§6.2ab** |
 | **Governance audit closeout (GOV-AUDIT)** | **Done** (docs) | No | GOV-DOC.1–2; code via V-REM/H-APP/DX-5.8 |
 | **Orchestration closeout (Phase ORCH)** | **Done** (Band 2j) | No (harness-only) | ORCH-1–4 — [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) |
 | **Tools/skills closeout (Phase TS)** | **Done** (Band 2k) | No (harness-only) | TS-1–3 — [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) |
@@ -4211,6 +4213,114 @@ Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutab
 
 ---
 
+## Phase MEM-DEPTH — Memory Intelligence Depth
+
+**Status:** **Planned** (0/26) — canonical architecture **Done** ([`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md), 2026-06-08).  
+**Prerequisites:** Phase **MEM** (**Done**), Phase **CTX** (**Done**), Phase **R-Delegate** (**Done**), Phase **H-APP** (**Done**).  
+**Goal:** Raise Memory Layer from **L2 → L4** and Context Compiler from fragmented steps to a **unified, never-overflow** pipeline — context compiler, memory lifecycle automation, explore delegation, entity intelligence — **without** Band 3 business agents or Mem0 SaaS product.  
+**Priority ladder:** **Band 2am** (§4.0) — **recommended next harness band** after §6.1 gate (parallel-safe slices).  
+**Execution order:** [§6.2ab](#62ab-phase-mem-depth-execution-order-band-2am--active).  
+**Canon refs:** [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) · architecture §27–§28.1 · IDEAL §3.7, §16 · audit map §15–16.
+
+**Delivery rule:** One `MEM-DEPTH-*` ID per PR → update status in tables below + paydown log → `pytest -m gate` + §6.1 audit scripts green.
+
+**Audit verdict (target acceptance context):**
+
+| Area | Maturity today | Target after MEM-DEPTH |
+|------|----------------|------------------------|
+| Task KV | 4/5 | 4/5 (maintain) |
+| Context / never-overflow | 3/5 | 4.5/5 |
+| STM persistence parity | 3/5 | 4/5 |
+| User LTM lifecycle | 2.5/5 | 4/5 |
+| Consolidation automation | 2/5 | 4/5 |
+| Explore / discovery pattern | 1.5/5 | 4/5 |
+| Entity graph agent memory | 1/5 | 3/5 (P2) or RFC+ship (P3 decision) |
+| **Overall memory platform** | **~3.5/5** | **~4.5/5** |
+
+**Out of scope (explicit):** K.1/K.2 business memory; hosted Mem0/Zep replacement; Redis as default session backend; autonomous prompt mutation without Prompt Registry.
+
+```text
+Wave MEMD0 — Canon doc + plan register + ADR (4 tasks)
+Wave MEMD1 — Context Compiler + never-overflow (6 tasks) — P0
+Wave MEMD2 — Persistence parity (2 tasks) — P0/P1
+Wave MEMD3 — Memory lifecycle automation (5 tasks) — P1
+Wave MEMD4 — Explore / discovery pattern (3 tasks) — P1
+Wave MEMD5 — Entity intelligence + quality gates (6 tasks) — P2/P3
+Total: 26
+```
+
+### MEM-DEPTH — Master deliverables register (all 26 tasks)
+
+#### Wave MEMD0 — Canon & register
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| MEM-DEPTH-0.1 | **`MEMORY_ARCHITECTURE.md`** — canonical memory + context compiler spec | **Done** | **P0** | `docs/MEMORY_ARCHITECTURE.md` |
+| MEM-DEPTH-0.2 | **Plan register** — Phase MEM-DEPTH, §4.0 Band 2am, §6.2ab, §6.1am; cross-links README + canon §27 | **Done** | **P0** | This section |
+| MEM-DEPTH-0.3 | **ADR-MEM-001** — Context Compiler architecture decision (global budget allocator, degradation ladder) | **Planned** | **P0** | `docs/adr/ADR-MEM-001.md` |
+| MEM-DEPTH-0.4 | **Sync** `AGENT_CREATION_GUIDE` Appendix G + audit map §15 pointers to MEMORY_ARCHITECTURE | **Done** | Low | Guide + AUDIT_MAP |
+
+#### Wave MEMD1 — Context Compiler + never-overflow (P0)
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| MEM-DEPTH-1.1 | **`ContextCompiler`** — collect candidates from STM/LTM/RAG/task/profile; rank; allocate global token budget | **Planned** | **P0 Critical** | `runtime/nexus/context/context_compiler.py` |
+| MEM-DEPTH-1.2 | **`DegradationLadder`** — ordered steps per MEMORY_ARCHITECTURE §8.2; trace `degradation_step` on each apply | **Planned** | **P0 Critical** | `context_compiler.py` + events |
+| MEM-DEPTH-1.3 | **Tokenizer-aware trim** — replace char-cut happy path in `trim_message_to_budget` | **Planned** | **P0** | `context_budget.py` |
+| MEM-DEPTH-1.4 | **Wire `ContextDecisionProfile`** — enforce `include_session_history`, `prefer_*`, `max_memory_entries_in_context` in compiler | **Planned** | **P0** | `memory_runtime_bridge.py`, runtime steps |
+| MEM-DEPTH-1.5 | **Pre-flight invariant** — `assembled_tokens + max_output ≤ context_window − margin` before every LLM call | **Planned** | **P0** | AgentEngine / LLM step |
+| MEM-DEPTH-1.6 | **Gate:** synthetic long session (10k turns fixture) completes without overflow; degradation trace present | **Planned** | **P0** | `tests/acceptance/` or integration |
+
+#### Wave MEMD2 — Persistence parity (P0/P1)
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| MEM-DEPTH-2.1 | **MongoDB profile:** durable `SessionStorage` (not in-memory fallback) | **Planned** | **P1** | `memory_wiring.py` + integration bundle |
+| MEM-DEPTH-2.2 | **Gate:** session persist + resume on Mongo document_store profile | **Planned** | **P1** | `tests/integration/` |
+
+#### Wave MEMD3 — Memory lifecycle automation (P1)
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| MEM-DEPTH-3.1 | **Background consolidation job** — ship MEM-8.2 (scheduler hook + `SessionMemoryConsolidationService`) | **Planned** | **P1** | `runtime/user_profile/` or Tier-3 wiring |
+| MEM-DEPTH-3.2 | **LTM dedup + merge policy** on consolidate write (near-duplicate facts, preference updates) | **Planned** | **P1** | `session_memory_consolidation_service.py` |
+| MEM-DEPTH-3.3 | **`MemoryProfile.consolidation_mode`** — `manual` \| `scheduled` \| `auto` → runtime config | **Planned** | **P1** | `environment_profile.py`, bridge |
+| MEM-DEPTH-3.4 | **Episodic memory** — `MemoryKind.EPISODIC_EVENT` + retrieval for few-shot recall | **Planned** | **P1** | `user_profile_memory.py`, manager |
+| MEM-DEPTH-3.5 | **Structured session summary schema** — facts / open tasks / decisions (not plain text blob) | **Planned** | **P1** | consolidation service + prompt |
+
+#### Wave MEMD4 — Explore / discovery pattern (P1)
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| MEM-DEPTH-4.1 | **`ExploreDelegationProfile`** on `DelegationSpec` — parallel search budget, synthesis-only return | **Planned** | **P1** | `contracts/delegation.py` |
+| MEM-DEPTH-4.2 | **Explore runner** — child context isolation + parallel retrieval + parent summary handoff | **Planned** | **P1** | `runtime/nexus/delegation/` or graph runner |
+| MEM-DEPTH-4.3 | **Hybrid retrieval orchestrator spike** — vector + keyword + graph doc in one ranked result set | **Planned** | **P1** | `rag/retrieval/` RFC or impl |
+
+#### Wave MEMD5 — Entity intelligence + quality (P2/P3)
+
+| ID | Deliverable | Status | Priority | Location / acceptance |
+|----|-------------|--------|----------|------------------------|
+| MEM-DEPTH-5.1 | **Entity graph user memory** — implement MEM-9 beyond RFC (separate from Graph RAG docs) | **Planned** | **P2** | `intergrax/memory/` or new module · §6.3 gate for scope |
+| MEM-DEPTH-5.2 | **Temporal validity** — `valid_from` / `valid_until` on `UserProfileMemoryEntry`; supersede old facts | **Planned** | **P2** | `user_profile_memory.py`, stores |
+| MEM-DEPTH-5.3 | **Procedural memory versioning** — link `system_instructions` to Prompt Registry versions | **Planned** | **P2** | `user_profile_instructions_service.py` |
+| MEM-DEPTH-5.4 | **Context quality regression harness** — compression fidelity + retrieval@k benchmarks (IDEAL §16.5) | **Planned** | **P2** | `tests/` + fixture corpus |
+| MEM-DEPTH-5.5 | **Workspace incremental index spike** — Merkle + AST chunking for codebase-scale hosts | **Planned** | **P3** | RFC + spike; optional Tier-3 |
+| MEM-DEPTH-5.6 | **Postgres session/LTM backend** — ship MEM-PERS.3 beyond spike when multi-tenant required | **Planned** | **P3** | integration bundle · §6.3 gate |
+
+### MEM-DEPTH — Paydown log
+
+| Date | ID | Notes |
+|------|-----|-------|
+| 2026-06-08 | MEM-DEPTH-0.1, MEM-DEPTH-0.2, MEM-DEPTH-0.4 | Canonical `MEMORY_ARCHITECTURE.md` + plan register + cross-links |
+
+**Suggested PR order (P0 first):** MEM-DEPTH-0.3 → MEM-DEPTH-1.1 → MEM-DEPTH-1.2 → MEM-DEPTH-1.3 → MEM-DEPTH-1.4 → MEM-DEPTH-1.5 → MEM-DEPTH-1.6 → MEM-DEPTH-2.1 → MEM-DEPTH-3.1 → MEM-DEPTH-3.2 → remaining MEMD3 → MEMD4 → MEMD5.
+
+**Success gate for Phase MEM-DEPTH closeout:** All **P0 + P1** rows **Done**; Memory Layer audit **L3+**; never-overflow gate green; user LTM auto-consolidation optional on lab profile; `ContextDecisionProfile` enforced end-to-end.
+
+**Explicitly out of NOW:** K.1/K.2, Mem0 SaaS, Redis session default, entity graph without §6.3 decision (MEM-DEPTH-5.1).
+
+---
+
 ### Phase P-Ext — Plugin Catalogs (Integrations, Tools, Skills)
 
 **Status:** **Done** (2026-06-02) — MVP + production closure (Appendix I).  
@@ -4524,6 +4634,7 @@ Paydown Wave P3 (optional polish):
 | **2aj — Nexus execution depth (FLOW)** | Close `FLOW-GAP.*` (01–16) — delegation, SubtaskContract, backpressure profile, LLM planner, merge, eval, graph hardening — **no** K.1/K.2 | **Done** (2026-06-07) — **17/18** (**FLOW-8 Deferred**) | [Phase FLOW](#phase-flow--nexus-execution-depth) · **§6.1aj** · **§6.2aj** · **Appendix N (FLOW)** |
 | **2ak — Critic & Verification Layer (CRIT-V)** | PEV verify depth — `CriticOrchestrator`, `eval.judge`, `eval.trajectory`, evaluator-loop, semantic offline runner — **no** business agents | **Done** | [Phase CRIT-V](#phase-crit-v--critic--verification-layer) · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · **§6.1ak** · **§6.2ak** · canon §55 · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md) |
 | **2al — Unified Observability Spine (OBS-BUS)** | Full HOS — typed payloads, `ObservabilityEmitter`, emission coverage, extension SDK, L4 §21 — **no** business agents | **Done** | [Phase OBS-BUS](#phase-obs-bus--unified-observability-spine) · [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) · **§6.1al** · [ADR-OBS-001](adr/ADR-OBS-001.md) |
+| **2am — Memory intelligence depth (MEM-DEPTH)** | Context Compiler, never-overflow invariant, lifecycle automation, explore delegation, entity memory — **no** business agents | **Planned** (0/26) | [Phase MEM-DEPTH](#phase-mem-depth--memory-intelligence-depth) · [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) · **§6.2ab** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 · FLOW-8 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
@@ -4627,7 +4738,8 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 | Integration harness depth (Done) | [M.6 P5](#m6-p5--harness-integration-depth-done--3334) · [§6.1x](#61x-harness-implementation-queue--integration-depth-m6-p5-done) — **33/34 Done** |
 | Integration harness expansion | [M.6 P6](#m6-p6--harness-integration-expansion-planned) · [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-planned) — **Done** (32/32 + wiring) |
 | Ongoing gate + audit scripts | [§6.1](#61-harness-platform-maintenance-default--band-1) |
-| Memory platform (Done — §6.1 maintenance) | [Phase MEM](#phase-mem--memory-platform-completion) · [§6.2aa](#62aa-phase-mem-execution-order-band-2h--active) |
+| Memory platform wiring (Done) | [Phase MEM](#phase-mem--memory-platform-completion) · [§6.2aa](#62aa-phase-mem-execution-order-band-2h--active) |
+| **Memory intelligence depth (active)** | [Phase MEM-DEPTH](#phase-mem-depth--memory-intelligence-depth) · [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) · [§6.1am](#61am-harness-implementation-queue--memory-intelligence-depth-active) · [§6.2ab](#62ab-phase-mem-depth-execution-order-band-2am--active) |
 | All business / domain work | [§6.3](#63-end-of-plan--deferred-product-work-only) · [Business backlog register](#63a-business-backlog-register-consolidated) |
 
 ### 4.1 Harness completion backlog (execution order)
@@ -5658,6 +5770,24 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 
 **Explicitly excluded:** Product dashboards (§6.3a); vendor-only APM as sole store.
 
+### 6.1am Harness implementation queue — Memory intelligence depth (active)
+
+**Purpose:** Single ordered list for **Phase MEM-DEPTH** (Band 2am). **Active** — canonical architecture **Done**; implementation **0/23 code tasks** (3/26 with doc rows). Parallel-safe with **§6.1** maintenance.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
+| 1 | **MEM-DEPTH-0.1–0.4** | Docs | **3/4 Done** | `MEMORY_ARCHITECTURE.md` + plan + cross-links | MEM-DEPTH-0.3 ADR pending |
+| 2 | **MEM-DEPTH-1.1–1.6** | Code/Test | **Planned** | Context Compiler + never-overflow | Long-session gate green |
+| 3 | **MEM-DEPTH-2.1–2.2** | Code/Test | **Planned** | Mongo session persistence | Integration round-trip |
+| 4 | **MEM-DEPTH-3.1–3.5** | Code | **Planned** | Lifecycle automation | Auto consolidate on lab profile |
+| 5 | **MEM-DEPTH-4.1–4.3** | Code | **Planned** | Explore delegation | Delegation gate + synthesis return |
+| 6 | **MEM-DEPTH-5.1–5.6** | Code/RFC | **Planned** | Entity intelligence (§6.3 gate for 5.1) | FAUDIT Memory L3+ |
+
+**Suggested PR order:** See [§6.2ab](#62ab-phase-mem-depth-execution-order-band-2am--active).
+
+**Explicitly excluded:** K.1/K.2, Mem0 SaaS, Redis session default — [§6.3a](#63a-business-backlog-register-consolidated).
+
 ### 6.1b Harness implementation queue — orchestration closeout (closed)
 
 **Purpose:** Single ordered list for **Phase ORCH** (Band 2j). **Closed 2026-06-05** — all ORCH rows **Done**. Ongoing: **§6.1** maintenance only.
@@ -6281,6 +6411,26 @@ Work **one MEM ID per PR**; after each step update the MEM master table + paydow
 **Success gate:** P0 + P1 **Done**; H-APP.4.3 **Done**; user LTM durable on sqlite lab profile; `MemoryProfile` drives all reference hosts.
 
 **Explicitly out of NOW:** K.1/K.2, Mem0 auto-ingest ship (MEM-8.2), entity graph implementation (MEM-9.1 beyond RFC).
+
+### 6.2ab Phase MEM-DEPTH execution order (Band 2am — active)
+
+**Status:** **Planned** (0/26) · **3/26 Done** (MEM-DEPTH-0.1, MEM-DEPTH-0.2, MEM-DEPTH-0.4) · canonical register: [Phase MEM-DEPTH — Master deliverables register](#mem-depth--master-deliverables-register-all-26-tasks).
+
+Work **one MEM-DEPTH ID per PR**; after each step update the MEM-DEPTH master table + paydown log; keep §6.1 scripts green. **Start with MEM-DEPTH-0.3 (ADR) then MEM-DEPTH-1.*** — architecture decision before Context Compiler code.
+
+| Wave | IDs | Count | Focus |
+|------|-----|-------|--------|
+| MEMD0 | MEM-DEPTH-0.1–0.4 | 4 | Canon doc, plan register, ADR, cross-links |
+| MEMD1 | MEM-DEPTH-1.1–1.6 | 6 | **P0** — Context Compiler + never-overflow |
+| MEMD2 | MEM-DEPTH-2.1–2.2 | 2 | **P1** — Mongo session persistence parity |
+| MEMD3 | MEM-DEPTH-3.1–3.5 | 5 | **P1** — Lifecycle automation |
+| MEMD4 | MEM-DEPTH-4.1–4.3 | 3 | **P1** — Explore / discovery |
+| MEMD5 | MEM-DEPTH-5.1–5.6 | 6 | **P2/P3** — Entity graph, temporal validity, quality gates |
+| **Total** | | **26** | |
+
+**Success gate:** P0 + P1 **Done**; never-overflow acceptance green; Memory Layer **L3+** on FAUDIT re-run.
+
+**Explicitly out of NOW:** K.1/K.2, Mem0 SaaS, entity graph ship without §6.3 decision (MEM-DEPTH-5.1).
 
 ### 6.1p Phase P-Ext paydown (Band 2c — optional parallel with §6.1)
 

@@ -1060,6 +1060,8 @@ Prefer `python -m intergrax.scaffold new-application <name> --profile lab|produc
 
 ## Appendix G — Memory & RAG naming (Phase Q)
 
+> **Full architecture:** [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) — canonical deep dive (stores, lifecycle, context compiler, strategy matrix). This appendix is the **author control plane** summary.
+
 ### Four memory stores (canon §27 mapping)
 
 Canon §27 defines five memory **types**; runtime implements **four operational stores** plus trace and RAG:

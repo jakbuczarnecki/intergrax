@@ -2632,6 +2632,8 @@ Long-running tasks require:
 
 # 27. Memory Model
 
+> **Deep dive (canonical):** [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) — three-layer model (stores / lifecycle / context compiler), cognitive taxonomy, strategy selection, flows, persistence, gap register · implementation: [Phase MEM](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem--memory-platform-completion) (**Done**) · [Phase MEM-DEPTH](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem-depth--memory-intelligence-depth) (**Planned**)
+
 Memory must be explicit and bounded.
 
 Types of memory:
@@ -2671,6 +2673,8 @@ Rules:
 
 ## 28.1 Context Engineering (Harness Terminology)
 
+> **Deep dive:** [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) §7–§9 (read path, compression ladder, strategy selection) · audit map §16
+
 **Context engineering** is the deliberate design of what enters each LLM call: bounded memory reads, summary tiers, evidence vs interpretation, and provenance. In Intergrax this is implemented by Tier-1 — not by ad-hoc prompt concatenation in Tier-2 agents.
 
 ### Mechanisms
@@ -2689,7 +2693,7 @@ Rules:
 - Every trim or tier downgrade MUST be traceable (provenance in `AgentContextBundle`).
 - Task context, user memory, and tool-retrieved evidence MUST remain logically separated in the bundle.
 
-Agent workflow reference: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) Appendix G.
+Agent workflow reference: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) Appendix G · full memory canon: [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md).
 
 ---
 

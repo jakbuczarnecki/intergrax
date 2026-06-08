@@ -82,6 +82,7 @@ applications/    MAY import from agents/ and intergrax/
 | Add or use skills | [docs/SKILLS.md](docs/SKILLS.md) |
 | Configure LLM providers | [docs/LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) |
 | RAG / retrieval | Architecture §7.1.2 · [docs/AGENT_CREATION_GUIDE.md Appendix K](docs/AGENT_CREATION_GUIDE.md) |
+| Memory / context / LTM | [docs/MEMORY_ARCHITECTURE.md](docs/MEMORY_ARCHITECTURE.md) · canon §27–§28.1 · [Appendix G](docs/AGENT_CREATION_GUIDE.md#appendix-g--memory--rag-naming-phase-q) |
 | New application (Tier-3) | `applications/USAGE.md` · `poc_template_application/` |
 | Plugin / extension | [docs/EXTENSION_AUTHOR_GUIDE.md](docs/EXTENSION_AUTHOR_GUIDE.md) |
 | Governance / policy / HITL | [docs/AGENT_CREATION_GUIDE.md Appendix H](docs/AGENT_CREATION_GUIDE.md) |

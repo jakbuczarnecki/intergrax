@@ -858,6 +858,8 @@ RAG Architecture Score: L0-L4
 
 ## 15. Memory Layer
 
+**Canonical architecture:** [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) · implementation: [Phase MEM](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem--memory-platform-completion) (**Done**) · [Phase MEM-DEPTH](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem-depth--memory-intelligence-depth) (**Planned**)
+
 ### Purpose
 
 Verify that memory is explicit, scoped, governed and observable.

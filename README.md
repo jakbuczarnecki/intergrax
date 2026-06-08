@@ -561,9 +561,11 @@ Agents invoke modalities through **tools** and profiles only — never vendor SD
 | Layer | Components | Status |
 |-------|------------|--------|
 | **RAG** | `RetrievalService`, `RagProfile`, `IngestPipeline`, hybrid sparse/dense | Phase M-RAG **Done** |
-| **Memory** | STM/LTM, session storage, hooks, task memory | Phase MEM **Done** (48/48) |
+| **Memory** | STM/LTM, session storage, hooks, task memory | Phase MEM **Done** (48/48) · depth → [MEM-DEPTH](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem-depth--memory-intelligence-depth) |
 | **Context engineering** | `ContextManager`, `ContextBudgetPolicy`, `CONTEXT_ASSEMBLED` / `CONTEXT_TRIMMED` events | Phase CTX **Done** |
 | **Prompt registry** | Versioned prompts, assembly, policy overlays | Phase PE **Done** |
+
+**Architecture (deep dive):** [MEMORY_ARCHITECTURE.md](docs/MEMORY_ARCHITECTURE.md) — stores, lifecycle, context compiler, strategy matrix, flows · canon [§27](docs/intergrax_runtime_architecture.md#27-memory-model) · [§28.1](docs/intergrax_runtime_architecture.md#281-context-engineering-harness-terminology)
 
 Control planes: [Appendix G](docs/AGENT_CREATION_GUIDE.md#appendix-g--memory--rag-naming-phase-q) · [Appendix L](docs/AGENT_CREATION_GUIDE.md#appendix-l--context-engineering-control-plane) · [Appendix M](docs/AGENT_CREATION_GUIDE.md#appendix-m--prompt-registry-control-plane)
 
@@ -846,7 +848,8 @@ Task-oriented navigation for platform docs in [`docs/`](docs/). Product and agen
 | Understand strategic direction | [INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) |
 | **Platform vs product/agent docs** | [Strategy §Documentation boundary](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md#documentation-boundary) · [Architecture §1.1](docs/intergrax_runtime_architecture.md#11-documentation-boundary-platform-vs-product) · [Plan §4.0a](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business) |
 | Understand the platform | Strategy doc, then implementation plan §0, then architecture canon §1–§5 |
-| See what to implement next (harness) | [Phase CRIT-V](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-crit-v--critic--verification-layer) (Band 2ak) · [§6.1ak](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61ak-harness-implementation-queue--critic-verification-layer-active) · [Phase OBS-BUS](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine) (planned) · [§6.1](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) gate |
+| See what to implement next (harness) | [Phase MEM-DEPTH](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem-depth--memory-intelligence-depth) (Band 2am) · [§6.1am](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61am-harness-implementation-queue--memory-intelligence-depth-active) · [§6.1](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) gate |
+| **Memory architecture (stores, lifecycle, context compiler)** | [MEMORY_ARCHITECTURE.md](docs/MEMORY_ARCHITECTURE.md) · [Phase MEM](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem--memory-platform-completion) · [Phase MEM-DEPTH](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem-depth--memory-intelligence-depth) |
 | **Observability architecture (spine, bus, extension)** | [OBSERVABILITY_ARCHITECTURE.md](docs/OBSERVABILITY_ARCHITECTURE.md) · [ADR-OBS-001](docs/adr/ADR-OBS-001.md) · [Phase OBS-BUS](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine) |
 | **Observability wiring (control plane)** | [AGENT_CREATION_GUIDE Appendix Q](docs/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [Phase OBS](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs--observability-control-plane-closeout) |
 | **Critic & Verification Layer (PEV verify)** | [CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · [Phase CRIT-V](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-crit-v--critic--verification-layer) · [ADR-CRITIC-001](docs/adr/ADR-CRITIC-001.md) |
@@ -878,6 +881,7 @@ All platform documentation lives in [`docs/`](docs/). **One source of truth per 
 |----------|------------------------|
 | [INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) | Strategic goal, decision hierarchy, lab vs production, work cycle |
 | [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Full architecture canon — tiers, Nexus, UAEP §42, Harness §5.3 |
+| [MEMORY_ARCHITECTURE.md](docs/MEMORY_ARCHITECTURE.md) | Memory & context — stores, lifecycle, context compiler, strategy selection, flows |
 | [OBSERVABILITY_ARCHITECTURE.md](docs/OBSERVABILITY_ARCHITECTURE.md) | Harness Observability Spine — signal planes, persistence, extension contracts |
 | [NEXUS_EXECUTION_FLOW_REFERENCE.md](docs/NEXUS_EXECUTION_FLOW_REFERENCE.md) | Nexus execution flow — diagrams, edge cases, plan traceability |
 | [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md) | Ideal Harness AI target — evaluate implementation alignment |
@@ -938,6 +942,7 @@ New application         →  applications/USAGE.md + poc_template_application/
 Plugin extension        →  EXTENSION_AUTHOR_GUIDE.md
 Ideal harness target    →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 L4 adaptive harness     →  ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md · canon §54
+Memory (deep)           →  MEMORY_ARCHITECTURE.md · Phase MEM · Phase MEM-DEPTH
 Observability (deep)    →  OBSERVABILITY_ARCHITECTURE.md · ADR-OBS-001 · Phase OBS-BUS
 Nexus execution flow    →  NEXUS_EXECUTION_FLOW_REFERENCE.md
 Phase status / gates    →  INTERGRAX_IMPLEMENTATION_PLAN.md
@@ -956,16 +961,17 @@ When changing platform documentation, update the **canonical file for that topic
 
 1. **Strategy** → `docs/INTERGRAX_DEVELOPMENT_STRATEGY.md`
 2. **Architecture** (observability, retry, trace storage, RAG) → `docs/intergrax_runtime_architecture.md`; sync plan §0
-3. **Observability deep dive** → `docs/OBSERVABILITY_ARCHITECTURE.md`
-4. **Status / phases / gaps** → `docs/INTERGRAX_IMPLEMENTATION_PLAN.md`
-5. **Agent workflow** → `docs/AGENT_CREATION_GUIDE.md`
-6. **Integration or tool catalog** → `docs/INTEGRATIONS.md` or `docs/TOOLS.md`
-7. **Skills** → `docs/SKILLS.md`
-8. **Modality / ML** → `docs/MODALITY.md` + canon §7.1.9
-9. **Harness AI terms** → `docs/intergrax_runtime_architecture.md` §5.3 only
-10. **Nexus execution flow** → `docs/NEXUS_EXECUTION_FLOW_REFERENCE.md`
-11. **Navigation / phase focus** → **this README** (`Start here`, `Status`)
-12. After each harness PR: run gate + getattr audit; update gate count in plan footer
+3. **Memory deep dive** → `docs/MEMORY_ARCHITECTURE.md`
+4. **Observability deep dive** → `docs/OBSERVABILITY_ARCHITECTURE.md`
+5. **Status / phases / gaps** → `docs/INTERGRAX_IMPLEMENTATION_PLAN.md`
+6. **Agent workflow** → `docs/AGENT_CREATION_GUIDE.md`
+7. **Integration or tool catalog** → `docs/INTEGRATIONS.md` or `docs/TOOLS.md`
+8. **Skills** → `docs/SKILLS.md`
+9. **Modality / ML** → `docs/MODALITY.md` + canon §7.1.9
+10. **Harness AI terms** → `docs/intergrax_runtime_architecture.md` §5.3 only
+11. **Nexus execution flow** → `docs/NEXUS_EXECUTION_FLOW_REFERENCE.md`
+12. **Navigation / phase focus** → **this README** (`Start here`, `Status`)
+13. After each harness PR: run gate + getattr audit; update gate count in plan footer
 
 ---
 
