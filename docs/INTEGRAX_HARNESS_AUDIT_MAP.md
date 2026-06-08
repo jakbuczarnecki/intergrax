@@ -3,8 +3,10 @@
 **Status:** audit control document
 **Purpose:** structured audit map for comparing Intergrax against the target Harness AI architecture
 **Primary reference:** `IDEAL_HARNESS_AI_ARCHITECTURE.md`
-**Current architecture reference:** `intergrax_runtime_architecture.md`
-**Implementation reference:** `INTERGRAX_IMPLEMENTATION_PLAN.md`
+**Current architecture hub:** `intergrax_runtime_architecture.md`
+**Current architecture detail:** `architecture/` (domain documents)
+**Implementation hub:** `INTERGRAX_IMPLEMENTATION_PLAN.md`
+**Implementation detail:** `plan/phases/`
 
 ---
 
@@ -33,8 +35,8 @@ Each layer must have:
 The audit must always compare:
 
 1. `IDEAL_HARNESS_AI_ARCHITECTURE.md`
-2. `intergrax_runtime_architecture.md`
-3. `INTERGRAX_IMPLEMENTATION_PLAN.md`
+2. `intergrax_runtime_architecture.md` + relevant `architecture/<domain>.md`
+3. `INTERGRAX_IMPLEMENTATION_PLAN.md` + relevant `plan/phases/<domain>.md`
 4. source code
 5. tests
 6. documentation
@@ -125,7 +127,7 @@ Risk levels:
 
 ## 6. Required Architecture Updates
 
-Changes required in `intergrax_runtime_architecture.md`.
+Changes required in `intergrax_runtime_architecture.md` (hub) and/or the relevant `architecture/<domain>.md`.
 
 ## 7. Required Implementation Plan Updates
 
@@ -252,8 +254,8 @@ Out-of-scope finding:
 The agent must always distinguish:
 
 * **Target architecture:** `IDEAL_HARNESS_AI_ARCHITECTURE.md`
-* **Current architecture:** `intergrax_runtime_architecture.md`
-* **Implementation plan:** `INTERGRAX_IMPLEMENTATION_PLAN.md`
+* **Current architecture:** `intergrax_runtime_architecture.md` + `architecture/`
+* **Implementation plan:** `INTERGRAX_IMPLEMENTATION_PLAN.md` + `plan/phases/`
 * **Actual implementation:** source code
 * **Verification:** tests and gates
 
@@ -1652,8 +1654,8 @@ Do not declare the entire platform complete.
 Compare:
 
 1. `IDEAL_HARNESS_AI_ARCHITECTURE.md`
-2. `intergrax_runtime_architecture.md`
-3. `INTERGRAX_IMPLEMENTATION_PLAN.md`
+2. `intergrax_runtime_architecture.md` + relevant `architecture/<domain>.md`
+3. `INTERGRAX_IMPLEMENTATION_PLAN.md` + relevant `plan/phases/<domain>.md`
 4. source code
 5. tests
 6. documentation

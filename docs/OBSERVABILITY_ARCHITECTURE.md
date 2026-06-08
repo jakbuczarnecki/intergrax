@@ -3,7 +3,7 @@
 **Status:** Canonical architecture (Harness platform) · **Phase OBS-BUS Done** (8/8) · audit map §21 **L4**  
 **Last updated:** 2026-06-08 (closeout sync)  
 **Audience:** Harness maintainers, Tier-3 application authors, Tier-2 agent authors, operators  
-**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §33, §42.1, §42.24 · [ADR-OBS-001](adr/ADR-OBS-001.md) · [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) [Phase OBS-BUS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine) · [AGENT_CREATION_GUIDE.md Appendix Q](AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) · [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) §21
+**Hub:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) · **Related:** [architecture/UNIFIED_EXECUTION_RUNTIME.md](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.24 · [ADR-OBS-001](adr/ADR-OBS-001.md) · [plan/phases/observability-reliability.md](plan/phases/observability-reliability.md) · [AGENT_CREATION_GUIDE.md Appendix Q](AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md)
 
 ---
 

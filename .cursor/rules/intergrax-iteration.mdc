@@ -28,8 +28,8 @@ Prefer updating the appropriate canonical document over creating a parallel sour
 |----------|----------|------|
 | 1 | `docs/INTERGRAX_DEVELOPMENT_STRATEGY.md` | Strategic goal, decision hierarchy, work cycle |
 | 2 | `docs/IDEAL_HARNESS_AI_ARCHITECTURE.md` | Target Harness AI architecture |
-| 3 | `docs/intergrax_runtime_architecture.md` | Current architecture canon |
-| 4 | `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` | Roadmap, status, next item |
+| 3 | `docs/intergrax_runtime_architecture.md` + `docs/architecture/` | Architecture hub + domain canon |
+| 4 | `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` + `docs/plan/phases/` | Plan hub + phase registers |
 | 5 | `docs/INTERGRAX_HARNESS_AUDIT_MAP.md` | Harness layers, audit methodology |
 | 6 | `docs/NEXUS_EXECUTION_FLOW_REFERENCE.md` | Canonical execution / orchestration flow |
 

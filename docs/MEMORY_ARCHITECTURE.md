@@ -3,7 +3,7 @@
 **Status:** Canonical architecture (Harness platform) · **Phase MEM Done** (platform wiring) · **Phase MEM-DEPTH Planned** (intelligence depth)  
 **Last updated:** 2026-06-08  
 **Audience:** Harness maintainers, Tier-3 application authors, Tier-2 agent authors, operators  
-**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §27, §28.1 · [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.7, §16 · [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) [Phase MEM](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem--memory-platform-completion) · [Phase MEM-DEPTH](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem-depth--memory-intelligence-depth) · [AGENT_CREATION_GUIDE.md Appendix G](AGENT_CREATION_GUIDE.md#appendix-g--memory--rag-naming-phase-q) · [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) §15–16 · [NEXUS_EXECUTION_FLOW_REFERENCE.md](NEXUS_EXECUTION_FLOW_REFERENCE.md)
+**Hub:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) · **Related:** [architecture/CONTEXT_ENGINEERING.md](architecture/CONTEXT_ENGINEERING.md) · [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) · [plan/phases/rag-context-memory.md](plan/phases/rag-context-memory.md) · [AGENT_CREATION_GUIDE.md Appendix G](AGENT_CREATION_GUIDE.md#appendix-g--memory--rag-naming-phase-q) · [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) §15–16
 
 ---
 

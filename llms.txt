@@ -22,42 +22,43 @@ Intergrax is a **production-grade Harness AI platform** — not a chatbot or sin
 - README.md — product overview, quick start, repository layout
 - README.md#start-here — documentation navigation and current phase focus
 - docs/INTERGRAX_DEVELOPMENT_STRATEGY.md — strategic goal, lab vs production harness
-- docs/intergrax_runtime_architecture.md — architecture canon (tiers, Nexus, UAEP §42)
+- docs/intergrax_runtime_architecture.md — architecture hub (concept map, tiers, links)
+- docs/architecture/README.md — decomposed architecture canon by domain
 - docs/AGENT_CREATION_GUIDE.md — canonical agent workflow (scaffold → register → run → evaluate)
 
 ## Core concepts
 
 | Concept | Document |
 |---------|----------|
-| Four-tier model (Tier-0…3) | docs/intergrax_runtime_architecture.md §1–§5 |
-| Harness AI terminology | docs/intergrax_runtime_architecture.md §5.3 |
-| Nexus runtime & UAEP | docs/intergrax_runtime_architecture.md §42 |
+| Four-tier model (Tier-0…3) | docs/intergrax_runtime_architecture.md · docs/architecture/PLATFORM_FOUNDATION.md |
+| Harness AI terminology | docs/architecture/PLATFORM_FOUNDATION.md §5.3 |
+| Nexus runtime & UAEP | docs/architecture/UNIFIED_EXECUTION_RUNTIME.md |
 | Nexus execution flow (diagrams, edge cases) | docs/NEXUS_EXECUTION_FLOW_REFERENCE.md |
 | Integration → Tool → Skill → Agent | docs/INTEGRATIONS.md · docs/TOOLS.md · docs/SKILLS.md |
 | LLM providers (19 adapters) | docs/LLM_ADAPTERS.md |
-| RAG & memory | docs/MEMORY_ARCHITECTURE.md · docs/intergrax_runtime_architecture.md §27–§28.1 · Phase MEM + MEM-DEPTH in docs/INTERGRAX_IMPLEMENTATION_PLAN.md |
+| RAG & memory | docs/MEMORY_ARCHITECTURE.md · docs/architecture/RAG_AND_RETRIEVAL.md · docs/architecture/CONTEXT_ENGINEERING.md |
 | Modality / vision / audio / ML | docs/MODALITY.md |
 | Lab harness environment | docs/HARNESS_ENVIRONMENT.md |
 
 ## Implementation & status
 
-- docs/INTERGRAX_IMPLEMENTATION_PLAN.md — **platform** phase tracker, gates, maintenance queue (§6.1); **Phase CRIT-V (Band 2ak) Done** (24/24); not product/agent deployment plans
-- Tool catalog: **172** tools · **42** bundles (T-EXPAND T13 / CRIT-V Done) — docs/TOOLS.md
-- Harness platform: **complete** (§6.1 maintenance; **Phase CRIT-V** Done)
+- docs/INTERGRAX_IMPLEMENTATION_PLAN.md — plan hub: priority ladder, §6.1 queue, phase index
+- docs/plan/phases/ — decomposed phase registers
 - Regression gate: `uv run pytest -m gate -q`
-- Business agents (Phase K): K.1/K.2 deferred; **Local Knowledge Workspace (LKW)** — applications/local_workspace_application/ARCHITECTURE.md · plan §6.3a LKW.*
+- Business agents (Phase K): deferred — see plan §6.3
 
 ## Documentation boundary
 
-- docs/intergrax_runtime_architecture.md + docs/INTERGRAX_IMPLEMENTATION_PLAN.md = **Harness AI / Agent OS platform** (run environments on the runtime)
-- applications/<product>/ARCHITECTURE.md + IMPLEMENTATION_PLAN.md = **business environment** (product)
-- agents/<name>/ARCHITECTURE.md = **business agent** (domain capability)
-- Do not treat platform canon as the deployment plan for a specific product or agent
+- docs/intergrax_runtime_architecture.md + docs/architecture/ + docs/INTERGRAX_IMPLEMENTATION_PLAN.md + docs/plan/ = **Harness AI / Agent OS platform**
+- applications/<product>/ARCHITECTURE.md = **business environment**
+- agents/<name>/ARCHITECTURE.md = **business agent**
 
 ## Architecture & maturity
 
 - docs/IDEAL_HARNESS_AI_ARCHITECTURE.md — target Harness AI reference (9 layers, L0–L4)
 - docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md — L4 Adaptive Harness Intelligence (AHI)
+- docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md — Critic & Verification Layer (CVL)
+- docs/OBSERVABILITY_ARCHITECTURE.md — Unified Observability Spine
 - docs/INTEGRAX_HARNESS_AUDIT_MAP.md — 32 auditable layers
 - docs/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md — focused audit prompt for coding agents
 
@@ -78,19 +79,5 @@ uv run intergrax doctor
 
 ## For AI coding agents
 
-- AGENTS.md — repository conventions, tier rules, what not to modify
-- docs/AGENT_CREATION_GUIDE.md § "Instructions for LLM coding agents"
-- Do not duplicate canon in new docs — link to docs/ instead
-
-## Optional / deep dives
-
-- docs/key_components/ — reference component designs
-- docs/experiment_guide.md — experimentation patterns
-- infra/README.md — local Docker backends (Redis, Qdrant, PostgreSQL, …)
-- notebooks/nexus/ — runnable Nexus demos
-
-## Do not treat as canonical
-
-- docs/archive/ — historical documents
-- tests/fixtures/ — test data only
-- notebooks/ cached outputs — may be stale; prefer docs/ and source code
+- AGENTS.md — hard rules, task routing, verification commands
+- .cursor/rules/intergrax-iteration.mdc — iteration workflow for harness maintenance

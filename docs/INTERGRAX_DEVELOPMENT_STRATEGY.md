@@ -2,7 +2,7 @@
 
 **Status:** Canonical (2026-06-06) — default queue: §6.1 maintenance; Band 2ad (FAUDIT-32) **Done**  
 **Audience:** Maintainers, architects, implementation agents, Cursor AI  
-**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) · [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) · [README.md — Documentation index](../README.md#documentation-index)
+**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) (hub) · [architecture/](architecture/README.md) · [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) · [plan/phases/](plan/phases/) · [README.md — Documentation index](../README.md#documentation-index)
 
 This document defines **how** Intergrax is developed and **what** overrides what when goals conflict. It does not duplicate technical contracts (those live in the architecture canon).
 
@@ -26,7 +26,7 @@ If the implementation plan does not support it — the plan MUST change.
 | Priority | Source | Rule |
 |----------|--------|------|
 | **1** | **This document** — strategic goal | Production Harness AI / Agent OS |
-| **2** | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) | Architecture canon — living spec, not immutable truth |
+| **2** | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) + [architecture/](architecture/README.md) | Architecture hub + domain canon — living spec, not immutable truth |
 | **3** | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) | Implementation map — consequence of architecture; must not force bad architecture |
 
 When priority 1 and priority 2/3 conflict, **update architecture and plan first**, then implement.
@@ -105,7 +105,7 @@ Implementation is not the goal. Correct architecture is not the goal.
 | Change type | Update |
 |-------------|--------|
 | Strategic direction | **This file** |
-| Tiers, Nexus, UAEP, Harness terms | `intergrax_runtime_architecture.md` (§5.3 Harness terms = single vocabulary source) |
+| Tiers, Nexus, UAEP, Harness terms | `intergrax_runtime_architecture.md` (hub) + `architecture/` (§5.3 Harness terms = `architecture/PLATFORM_FOUNDATION.md`) |
 | Phase status, deliverables, gates | `INTERGRAX_IMPLEMENTATION_PLAN.md` |
 | Agent author workflow | `AGENT_CREATION_GUIDE.md` |
 | Integration / tool / skill catalogs | `INTEGRATIONS.md` / `TOOLS.md` / `SKILLS.md` |
