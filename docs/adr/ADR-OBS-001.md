@@ -70,4 +70,4 @@ Adopt the **Harness Observability Spine (HOS)** as the single observability mech
 
 - Architecture doc: `docs/OBSERVABILITY_ARCHITECTURE.md`
 - Implementation tracker: Phase OBS-BUS (OBS-BUS-0 through OBS-BUS-7)
-- Verification: existing gates + new emission/schema CI scripts (OBS-BUS-7)
+- Verification: `scripts/check_observability_gates.py` (OBS-BUS-7 Done)

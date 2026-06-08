@@ -78,6 +78,7 @@ jobs:
           && uv run python scripts/check_harness_registry_resolution.py
           && uv run python scripts/check_harness_capability_graph_wiring.py
           && uv run python scripts/check_harness_observability_wiring.py
+          && uv run python scripts/check_observability_gates.py
           && uv run python scripts/check_harness_reliability_wiring.py
           && uv run python scripts/check_harness_security_wiring.py
           && uv run python scripts/check_harness_security_promote_gate.py
@@ -135,6 +136,7 @@ jobs:
           && uv run python scripts/check_harness_registry_resolution.py
           && uv run python scripts/check_harness_capability_graph_wiring.py
           && uv run python scripts/check_harness_observability_wiring.py
+          && uv run python scripts/check_observability_gates.py
           && uv run python scripts/check_harness_reliability_wiring.py
           && uv run python scripts/check_harness_security_wiring.py
           && uv run python scripts/check_harness_security_promote_gate.py

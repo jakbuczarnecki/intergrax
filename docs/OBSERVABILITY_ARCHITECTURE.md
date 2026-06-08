@@ -487,10 +487,10 @@ External: wire `RuntimeEventBus.subscribe()` to PagerDuty/Slack via `notify` too
 | **L0** | Ad-hoc logging only |
 | **L1** | Trace file per run, no correlation |
 | **L2** | TraceEvent + SQLite, partial bus |
-| **L3** | Unified journal, DiagnosticPayload guard, wiring CI (**current**) |
-| **L4** | Typed RuntimeEvent payloads, TraceScope tree, 100% catalog emission, extension SDK (**target — OBS-BUS**) |
+| **L3** | Unified journal, DiagnosticPayload guard, wiring CI |
+| **L4** | Typed RuntimeEvent payloads, TraceScope tree, catalog emission, extension SDK, journal export (**current — OBS-BUS Done**) |
 
-Audit map §21 score today: **L3**. Target after OBS-BUS: **L4**.
+Audit map §21 score: **L4** (OBS-BUS-7 gate evidence).
 
 ---
 
@@ -518,7 +518,7 @@ Audit map §21 score today: **L3**. Target after OBS-BUS: **L4**.
 | Metrics export | `intergrax/runtime/metrics/export.py` |
 | Debug API | `intergrax/debug/router.py`, `formatters.py` |
 | SQLite stores | `intergrax/runtime/nexus/tracing/sqlite_run_trace_store.py`, `events/store.py` |
-| Gates | `tests/unit/runtime/events/test_observability_layer_depth_gate.py`, `check_trace_bridge_event_catalog.py` |
+| Gates | `scripts/check_observability_gates.py`, `test_observability_layer_depth_gate.py`, emission/schema/persistence audits |
 
 ---
 
@@ -532,11 +532,10 @@ python scripts/check_harness_no_getattr.py
 python scripts/check_trace_bridge_event_catalog.py
 ```
 
-Phase OBS-BUS adds:
+Phase OBS-BUS (CI umbrella):
 
 ```bash
-python scripts/check_observability_emission_coverage.py   # target
-python scripts/check_payload_schema_registry.py           # target
+uv run python scripts/check_observability_gates.py
 ```
 
 ---

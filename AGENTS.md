@@ -111,6 +111,7 @@ uv run intergrax doctor
 ```bash
 uv run pytest -m gate -q
 python scripts/check_harness_no_getattr.py
+uv run python scripts/check_observability_gates.py
 ```
 
 For agent-only work:

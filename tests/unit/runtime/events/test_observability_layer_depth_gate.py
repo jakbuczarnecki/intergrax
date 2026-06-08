@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""OBS L2→L3 depth gate — unified journal, trace bridge catalog, live bus emit."""
+"""OBS L3→L4 depth gate — unified journal, spine wiring, payload registry, export."""
 
 from __future__ import annotations
 
@@ -15,9 +15,12 @@ from intergrax.runtime.events.trace_bridge import (
     _TOOL_STEP_TO_EVENT,
     trace_event_to_runtime_event,
 )
+from intergrax.runtime.events.payload_registry import list_registered_payload_schema_ids
 from intergrax.runtime.events.unified_run_journal import build_unified_run_journal
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.nexus.orchestration.task_events import NexusRuntimeEventPublisher
 from intergrax.runtime.observability.emitter import ObservabilityEmitter
+from intergrax.runtime.observability.journal_export import JOURNAL_EXPORT_SCHEMA_VERSION
 
 pytestmark = pytest.mark.gate
 
@@ -48,3 +51,28 @@ def test_observability_depth_runtime_state_live_emit_wired() -> None:
     assert "runtime_event_bus" in wiring_source
     assert "trace_event_to_runtime_event" in bridge_source
     assert "record(" in bridge_source
+
+
+def test_observability_l4_payload_registry_covers_canonical_families() -> None:
+    registered = set(list_registered_payload_schema_ids())
+    for schema_id in (
+        "decision.v1",
+        "tool.v1",
+        "validation.v1",
+        "agent_selection.v1",
+        "graph_node.v1",
+    ):
+        assert schema_id in registered
+
+
+def test_observability_l4_journal_export_and_terminal_ref_wired() -> None:
+    terminal_source = inspect.getsource(NexusRuntimeEventPublisher._terminal_payload_for_task)
+    assert "journal_ref" in terminal_source
+    assert JOURNAL_EXPORT_SCHEMA_VERSION
+
+
+def test_observability_l4_platform_bootstrap_registers_journal_export() -> None:
+    from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
+
+    source = inspect.getsource(bootstrap_nexus_platform)
+    assert "register_journal_export_plugin" in source

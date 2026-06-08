@@ -4523,7 +4523,7 @@ Paydown Wave P3 (optional polish):
 | **2ad — FAUDIT-32 remediation** | Close 32-layer audit residuals (tier gate, intake, observability taxonomy, registry depth, eval release gate) — **no** business agents | **Done** (2026-06-06) — **23/23 + §6.1ai follow-up** | [Phase FAUDIT-32](#phase-faudit-32--full-architecture-audit-closeout) · **§6.1ah** · **§6.1ai** · **Appendix M** |
 | **2aj — Nexus execution depth (FLOW)** | Close `FLOW-GAP.*` (01–16) — delegation, SubtaskContract, backpressure profile, LLM planner, merge, eval, graph hardening — **no** K.1/K.2 | **Done** (2026-06-07) — **17/18** (**FLOW-8 Deferred**) | [Phase FLOW](#phase-flow--nexus-execution-depth) · **§6.1aj** · **§6.2aj** · **Appendix N (FLOW)** |
 | **2ak — Critic & Verification Layer (CRIT-V)** | PEV verify depth — `CriticOrchestrator`, `eval.judge`, `eval.trajectory`, evaluator-loop, semantic offline runner — **no** business agents | **Active** | [Phase CRIT-V](#phase-crit-v--critic--verification-layer) · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · **§6.1ak** · **§6.2ak** · canon §55 · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md) |
-| **2al — Unified Observability Spine (OBS-BUS)** | Full HOS — typed payloads, `ObservabilityEmitter`, emission coverage, extension SDK, L4 §21 — **no** business agents | **Planned** | [Phase OBS-BUS](#phase-obs-bus--unified-observability-spine) · [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) · **§6.1al** · [ADR-OBS-001](adr/ADR-OBS-001.md) |
+| **2al — Unified Observability Spine (OBS-BUS)** | Full HOS — typed payloads, `ObservabilityEmitter`, emission coverage, extension SDK, L4 §21 — **no** business agents | **Done** | [Phase OBS-BUS](#phase-obs-bus--unified-observability-spine) · [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) · **§6.1al** · [ADR-OBS-001](adr/ADR-OBS-001.md) |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 · FLOW-8 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
@@ -4565,7 +4565,7 @@ BAND 2ac: Integration expansion — Phase M.6 P6 (§6.1y) — DONE (32/32 + M-P6
 BAND 2ad: FAUDIT-32 remediation — DONE (2026-06-06)
 BAND 2aj: Nexus execution depth — Phase FLOW (§6.1aj) — DONE (17/18; FLOW-8 Deferred)
 BAND 2ak: Critic & Verification Layer — Phase CRIT-V (§6.1ak) — ACTIVE
-BAND 2al: Unified Observability Spine — Phase OBS-BUS (§6.1al) — PLANNED (after CRIT-V or §6.1 slices)
+BAND 2al: Unified Observability Spine — Phase OBS-BUS (§6.1al) — **Done**
 DONE:    Phase CLEAN — legacy module closeout (§6.1j) — 2026-06-02
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
@@ -5183,7 +5183,7 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 
 ## Phase OBS-BUS — Unified Observability Spine
 
-**Status:** **Planned** (2026-06-08) — **7/8** deliverables · OBS-BUS-0–6 **Done** · next: **OBS-BUS-7**
+**Status:** **Done** (2026-06-08) — **8/8** deliverables · OBS-BUS-0–7 **Done**
 
 **Purpose:** Implement the full **Harness Observability Spine (HOS)** — one bus for Harness, applications, and agents; typed extension; causal trees; complete catalog emission; L4 audit §21.
 
@@ -5206,7 +5206,7 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 | OBS-BUS-4 | OBS4 | **Extension SDK** — agent/app `DiagnosticPayload` scaffold, namespace rules, `PayloadSchemaRegistry` | **Done** | `extension_sdk.py`, `tracing_templates.py`, `new_agent.py`, `new_application.py` | `check_payload_schema_registry.py` |
 | OBS-BUS-5 | OBS5 | **Persistence conformance** — Cassandra/ES adapters implement same protocols; profile docs | **Done** | `document_backed_runtime_event_store.py`, `persistence_conformance.py`, profile wiring | `check_observability_persistence_conformance.py` |
 | OBS-BUS-6 | OBS6 | **Export sinks** — OTLP dual-write from unified journal; parser trace link | **Done** | `journal_export.py`, `export_bridge.py`, `task_events.py`, `platform_wiring.py` | `TASK_COMPLETED` carries `journal_ref`; export plugin dual-writes OTLP JSON + parser trace |
-| OBS-BUS-7 | OBS7 | **CI gates** — emission coverage + schema registry + L4 §21 evidence | **Planned** | `scripts/check_observability_emission_coverage.py`, `check_payload_schema_registry.py` | Gate suite green; audit map §21 → L4 |
+| OBS-BUS-7 | OBS7 | **CI gates** — emission coverage + schema registry + L4 §21 evidence | **Done** | `scripts/check_observability_gates.py`, emission/schema/persistence audits, CI workflow | Gate suite green; audit map §21 → **L4** |
 
 ### OBS-BUS — Execution order (recommended)
 
@@ -5645,7 +5645,7 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 | 5 | **OBS-BUS-4** | Code/Docs | **Done** | Extension SDK + scaffold | Agent tracing template |
 | 6 | **OBS-BUS-5** | Code | **Done** | Persistence conformance | Integration tests |
 | 7 | **OBS-BUS-6** | Code | **Done** | OTLP/journal dual-write | `test_journal_export.py`, `test_export_bridge.py` |
-| 8 | **OBS-BUS-7** | CI | **Planned** | L4 §21 gates | Audit map §21 → L4 |
+| 8 | **OBS-BUS-7** | CI | **Done** | L4 §21 gates | `check_observability_gates.py` in CI; audit map §21 → L4 |
 
 **Suggested PR order:** See [Phase OBS-BUS — Execution order](#obs-bus--execution-order-recommended).
 
@@ -7366,7 +7366,7 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | Multi-agent coordination pattern catalog | canon §42.43, §53.10 | ideal §6 + §25 | V-MA.* | **Done** |
 | Knowledge graph evolution path (Graph-RAG) | canon §53.11 | ideal §3.7.1 + §25 | V-KG.* | **Done** |
 | **Adaptive Harness Intelligence (L4 runtime closed loop)** | canon §54 | ideal §25 | **Phase W-ADAPT** · AHIA | **Done** (Band 2y, 70/70) — L4 runtime closed; observe/recommend/apply/verify per AHIA |
-| Observability and runtime traceability | canon §33, §42.24 · [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) | ideal §11 | Phases OBS + OBS-DEPTH.* + **Phase OBS-BUS** | **L3 Done** — journal + wiring; **L4 Planned** — [Phase OBS-BUS](#phase-obs-bus--unified-observability-spine) (typed payloads, emitter, emission coverage) |
+| Observability and runtime traceability | canon §33, §42.24 · [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) | ideal §11 | Phases OBS + OBS-DEPTH.* + **Phase OBS-BUS** | **L4 Done** — spine, typed payloads, emitter, emission coverage, journal export; gate: `check_observability_gates.py` |
 | Registry-driven extensibility (agent/tool/skill/policy/prompt/eval) | canon §7.1.5.1–§7.1.8, §15, §53.2 | ideal §19 | Phase R/U + V-CG/V-PE/V-EVAL + **P-Ext** | **Done** — plugin catalogs production-ready; marketplace UI out of scope |
 | Product agents and new product apps | canon §7.4, §52 | ideal §26 | §6.3 only | **Deferred (product scope)** |
 
@@ -7697,7 +7697,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | Theme | Layers affected | Risk |
 |-------|-----------------|------|
 | **Closeout vs maturity** | §17–§25, §31 | Plan **Done** on wiring; AUDIT_MAP **L2** on depth — do not conflate |
-| **Dual-path telemetry** | §21, §6 | **L3 Done:** OBS-DEPTH.1 journal + live emit; **L4 Planned:** [Phase OBS-BUS](#phase-obs-bus--unified-observability-spine) — `ObservabilityEmitter`, typed payloads, emission coverage |
+| **Dual-path telemetry** | §21, §6 | **L4 Done:** [Phase OBS-BUS](#phase-obs-bus--unified-observability-spine) — unified journal, `ObservabilityEmitter`, typed payloads, emission coverage, journal export |
 | **Tier boundary drift** | §2, §28 | Single Critical violation undermines canon §7.4.4 |
 | **Identity / intake naming** | §3, §4 | Resolved — `TaskEnvelope` in `intergrax/contracts/task_envelope.py`; parity tests in `test_faudit_remediation.py` |
 

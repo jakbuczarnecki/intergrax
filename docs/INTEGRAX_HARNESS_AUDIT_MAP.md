@@ -1171,10 +1171,10 @@ Verify that every important runtime decision and action is traceable, measurable
 ### Score
 
 ```text
-Observability Score: L0-L4
+Observability Score: L4
 ```
 
-**Authoring reference:** [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) (Harness Observability Spine — canonical deep dive); [`AGENT_CREATION_GUIDE.md` Appendix H §H.5](AGENT_CREATION_GUIDE.md#h5-observability--what-is-mandatory-vs-optional) (mandatory vs optional signals); [`AGENT_CREATION_GUIDE.md` Appendix Q](AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) (wire-time profile bridge + assembly validation); [`HARNESS_ENVIRONMENT.md`](HARNESS_ENVIRONMENT.md#otlp--observability-s-ops2) (OTLP / lab debug APIs); canon [§42.1](intergrax_runtime_architecture.md#421-runtimeevent-contract) (event catalog). **Closeout:** [Phase OBS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs--observability-control-plane-closeout) **Done** (wiring); **L4 target:** [Phase OBS-BUS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine).
+**Authoring reference:** [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) (Harness Observability Spine — canonical deep dive); [`AGENT_CREATION_GUIDE.md` Appendix H §H.5](AGENT_CREATION_GUIDE.md#h5-observability--what-is-mandatory-vs-optional) (mandatory vs optional signals); [`AGENT_CREATION_GUIDE.md` Appendix Q](AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) (wire-time profile bridge + assembly validation); [`HARNESS_ENVIRONMENT.md`](HARNESS_ENVIRONMENT.md#otlp--observability-s-ops2) (OTLP / lab debug APIs); canon [§42.1](intergrax_runtime_architecture.md#421-runtimeevent-contract) (event catalog). **Closeout:** [Phase OBS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs--observability-control-plane-closeout) **Done** (wiring); [Phase OBS-BUS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine) **Done** (spine L4). **Gate evidence:** `scripts/check_observability_gates.py` (emission coverage, payload registry, persistence conformance, trace bridge catalog, L4 depth gate).
 
 ---
 
