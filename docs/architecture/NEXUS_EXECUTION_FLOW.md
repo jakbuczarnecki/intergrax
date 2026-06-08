@@ -1142,6 +1142,8 @@ Harness MVP and new Tier-2 agents remain unblocked. LLM-backed dynamic decomposi
 
 ## 27. Multi-Agent Coordination Model Catalog
 
+> **Canonical strategy catalog:** [`ORCHESTRATION.md`](ORCHESTRATION.md) §50 — this section is the **runtime index**; pattern definitions and maturity live in the orchestration domain pair.
+
 Pattern selection MUST be explicit and policy-aware (IDEAL §6.4, AUDIT_MAP §10).
 
 | Pattern | When to use |

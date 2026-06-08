@@ -648,7 +648,7 @@ Verify that planning, scheduling, graph execution and routing are formal runtime
 Orchestration Score: L0-L4
 ```
 
-**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix I §I.5](guides/AGENT_CREATION_GUIDE.md#i5-graph-execution-and-merge) (batches, retry, merge); `ExecutionGraph` / `GraphExecutor` in `intergrax/runtime/nexus/execution/`; coordination catalog `multi_agent_coordination.py` (V-MA); **flow narrative:** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §9, §14. **Closeout:** [Phase ORCH](plan/ORCHESTRATION.md) ORCH-2, ORCH-3 — **Done**.
+**Authoring reference:** [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §50–§52 (strategy catalog, parallelism, resilience); [`guides/AGENT_CREATION_GUIDE.md` Appendix I §I.5](guides/AGENT_CREATION_GUIDE.md#i5-graph-execution-and-merge) (batches, retry, merge); `ExecutionGraph` / `GraphExecutor`; **flow narrative:** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §9, §14. **Closeout:** [Phase ORCH](plan/ORCHESTRATION.md) ORCH-2, ORCH-3 · [Phase ORCH-STRAT](plan/ORCHESTRATION.md) — **Done**.
 
 ---
 
@@ -685,7 +685,7 @@ Verify that subagents are isolated delegated executions, not nested uncontrolled
 Subagent Architecture Score: L0-L4
 ```
 
-**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix I §I.6](guides/AGENT_CREATION_GUIDE.md#i6-subagent--delegation-semantics-r-delegate--done); canon [§42.14.3](architecture/UNIFIED_EXECUTION_RUNTIME.md#42143-graph-delegation-subagent-equivalent); `DelegationSpec` + `delegation_memory.py`; **flow narrative + gaps:** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §13, §22 (`FLOW-GAP-02`–`03`).
+**Authoring reference:** [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §50, §53 (patterns, delegation, collaboration); [`guides/AGENT_CREATION_GUIDE.md` Appendix I §I.6](guides/AGENT_CREATION_GUIDE.md#i6-subagent--delegation-semantics-r-delegate--done); canon [§42.14.3](architecture/UNIFIED_EXECUTION_RUNTIME.md#42143-graph-delegation-subagent-equivalent); **flow narrative:** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §13.
 
 ---
 

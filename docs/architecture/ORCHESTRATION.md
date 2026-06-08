@@ -4,8 +4,32 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Plan (1:1):** [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
-**Audit layers:** 3, 9  
+**Audit layers:** 3, 9 · multi-agent patterns: audit layer 10 (cross-ref §50)  
 **Reasoning / planning canon:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) (audit layer 7)  
+**Elastic capacity:** [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) (infra replicas — not graph scheduling)  
+---
+
+## Document roles (read order)
+
+| Document | Role |
+|----------|------|
+| **This file (`ORCHESTRATION.md`)** | Orchestration **manifest** + **execution strategy catalog** (§50–§54) |
+| [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) | **Runtime narrative** — sequence diagrams, UC-*, edge cases, code paths |
+| [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) | Classification, planning, agent topology in plans |
+| [`guides/AGENT_CREATION_GUIDE.md` Appendix I](guides/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) | Author control plane (`OrchestrationProfile`, wiring) |
+
+**Rule:** strategy **names and selection** live here; step-by-step runtime truth lives in **NEXUS_EXECUTION_FLOW**.
+
+## Table of contents (strategy & execution)
+
+| § | Topic |
+|---|--------|
+| [§50](#50-orchestration-strategies-catalog) | Coordination pattern catalog |
+| [§51](#51-parallelism-merge-and-backpressure) | Parallelism, merge, backpressure |
+| [§52](#52-resilience-in-orchestration) | Retry, checkpoint, failover, partial |
+| [§53](#53-specialization-and-agent-collaboration) | Capability routing, delegation, handoff |
+| [§54](#54-maturity-and-gap-register) | Maturity scorecard |
+
 ---
 
 # 9.1 Global Nexus Loop
@@ -486,5 +510,222 @@ Long-running and asynchronous work uses the Tier-0 queueing plane — not ad-hoc
 **Elastic capacity (replicas, workers, provisioning):** [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) — ECP consumes `GRAPH_BACKPRESSURE` and queue signals; this section covers in-process scheduling only.
 
 **Plan:** [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md) Phase ORCH.
+
+---
+
+# 50. Orchestration Strategies Catalog
+
+Multi-agent and multi-step execution MUST use an **explicit coordination pattern** (IDEAL §6.4, AUDIT_MAP §10). Intergrax implements patterns through **declarative graphs**, **runtime handoff**, and **CVL evaluator loops** — not ad-hoc agent-to-agent calls.
+
+## 50.1 Pattern catalog
+
+Canonical enum: `CoordinationPattern` in `intergrax/runtime/architecture/multi_agent_coordination.py` (Phase V-MA **Done**).
+
+| Pattern | When to use | Harness mapping | Runtime depth |
+|---------|-------------|-----------------|---------------|
+| **Hierarchical** | Top-down plan; planner delegates to specialized executors | `graph_spec` + `DELEGATES_TO` ([ADR-FLOW-001](adr/ADR-FLOW-001.md)) | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §13 |
+| **Orchestrator–worker** | Central Nexus plan; workers are graph nodes with capabilities | `TaskPlanner` / `graph_spec` → sequential or batched nodes | §12 UC-4, §42.43 |
+| **Supervisor–worker** | Quality/policy supervision over workers; re-plan on failure | HITL + `AgentDecision.INTERRUPT` + policy hooks | UAEP §42.8, FLOW §11 |
+| **Peer-to-peer** | Independent subtasks; parallel decomposition | Topological **batches** + `MergePolicy` | §51 below |
+| **Swarm** | Many lightweight explorers; aggregate under budget | Parallel batch + cost/step caps (catalog + selection matrix) | **Partial** — catalog Done; full swarm runtime ORCH-5.* |
+| **Evaluator-loop** | Critique–revise before finalize | `CoordinationPattern.EVALUATOR_LOOP` + `EvaluatorLoopExecutor` | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
+
+```text
+Pattern selection (helper): select_coordination_pattern(constraints)
+    → uses risk / latency / cost / complexity levels
+    → authors SHOULD override via declarative graph_spec for production hosts
+```
+
+**Narrative flows:** [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §12 (UC-1–UC-9), §27. **Reference product flow:** UAEP [§42.43](UNIFIED_EXECUTION_RUNTIME.md#4243-multi-agent-collaboration-flow-reference) (PM → UX → Legal → Validator → Human).
+
+## 50.2 Collaboration vs specialization
+
+| Concept | Mechanism | Owner |
+|---------|-----------|-------|
+| **Specialization** | Tier-2 agents declare **capabilities**; Nexus routes by capability match | `AgentRegistry`, `TaskClassifier`, `AgentRouter` |
+| **Collaboration** | Multiple specialized agents in one **ExecutionGraph** via plan steps / edges | `NexusPlan`, `GraphExecutor` |
+| **Isolation** | Delegation namespaces, tool policy on child nodes | `DelegationSpec`, `SubtaskContract` |
+
+Agents MUST NOT call each other directly — all collaboration via **SharedTaskContext**, artifacts, and graph nodes (§53).
+
+## 50.3 Anti-patterns
+
+- Single mega-agent emulating multi-agent topology inside one UAEP loop.
+- Hidden parallel branches without `depends_on` / graph_spec edges.
+- Swarm without budget envelope (`max_delegation_depth`, cost profile).
+- Pattern name in docs but undeclared in host `graph_spec` or plan metadata.
+
+---
+
+# 51. Parallelism, Merge, and Backpressure
+
+## 51.1 Sequential vs parallel (summary)
+
+Full rules: §25 above. Runtime implementation: [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §9.
+
+| Mode | Prefer when | Harness mechanism |
+|------|-------------|-------------------|
+| **Sequential** | Output dependency, high risk, strict context control | `depends_on` chain in `NexusPlan` |
+| **Parallel** | Independent subtasks, split research, parallel validation | `ExecutionGraph.batches()` + `asyncio.gather` |
+
+## 51.2 Concurrency controls
+
+| Control | Profile field | Effect |
+|---------|---------------|--------|
+| Parallel within batch | `max_parallel_nodes` | Semaphore on concurrent nodes in one topological batch |
+| Global inflight cap | `max_inflight_nodes` | Semaphore across graph; emits `GRAPH_BACKPRESSURE` |
+| Tenant cap | `RuntimeEngine.max_parallel_per_tenant` | Cross-task fairness (UAEP bridge) |
+| Delegation depth | `max_delegation_depth` | Limits nested subagent expansion |
+
+```text
+GRAPH_BACKPRESSURE  →  ops:backpressure  →  optional input to ECP (infra scale)
+                      →  does NOT by itself add replicas (see ELASTIC_CAPACITY)
+```
+
+## 51.3 Merge policies
+
+After parallel or sequential multi-node runs, `FinalResponseComposer` applies `OrchestrationProfile.merge_strategy`:
+
+| Strategy | Behavior |
+|----------|----------|
+| `concat` | Default — concatenate agent summaries |
+| `last_wins` | Last successful node summary |
+| `structured_json` | JSON payload with per-agent status |
+
+**Future:** citation-preserving merge, LLM synthesis, conflict-aware HITL — IDEAL; not required for harness MVP.
+
+## 51.4 Acceptance coverage
+
+- Sequential multi-agent: `test_acceptance_02_sequential_multi_agent`
+- Parallel multi-agent: `test_acceptance_03_parallel_multi_agent`
+- Parallel cap: `test_graph_executor_parallel_cap.py`
+
+---
+
+# 52. Resilience in Orchestration
+
+Orchestration resilience spans **three retry layers**, **checkpoints**, **alternate agents**, and **partial completion**. Full matrix: [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §14.
+
+## 52.1 Three retry layers (do not conflate)
+
+| Layer | Component | Scope | Default |
+|-------|-----------|-------|---------|
+| **A — Graph node** | `RetryEngine` | Same node; may switch `agent_id` | `max_retries` per factory profile |
+| **B — UAEP / run** | `RuntimeEngine`, `AgentDecision.RETRY` | Inside one graph node | Per host `max_run_retries` |
+| **C — Whole run** | `RetryCoordinator` | Re-execute full graph | `max_run_retries=0` (opt-in) |
+
+**Failover (agent level):** closest harness primitive is **alternate agent** on node retry (Layer A) — not active-active duplicate nodes.
+
+**Redundancy (infra level):** multiple Nexus host **replicas** — [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md); not duplicate graph nodes by default.
+
+## 52.2 Long-running and recovery
+
+§26 requirements implemented via:
+
+| Mechanism | Module / event |
+|-----------|----------------|
+| Checkpoint store | `SQLiteTaskCheckpointStore`, long-running profile |
+| Resume mid-UAEP | acceptance `05b_mid_step_uaep_resume` |
+| Skip completed nodes | `GraphExecutor` + checkpoint bridge |
+| Cancel | `CancellationCoordinator` → `CANCELLED` |
+| Partial success | `PARTIALLY_COMPLETED` when policy allows |
+
+## 52.3 Cross-cutting reliability (Tier-0 / ops)
+
+Not orchestration scheduling — but required for resilient orchestration at scale:
+
+| Mechanism | Domain |
+|-----------|--------|
+| Side-effect idempotency | W-OPS.1 / `IdempotentToolInvoker` |
+| Integration circuit breaker | W-OPS.2 |
+| HITL escalation | [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) |
+
+## 52.4 Validation and evaluator resilience
+
+| Gate | When |
+|------|------|
+| `NexusValidationEngine` | After each graph node |
+| CVL partial / final verify | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
+| Evaluator-loop | Revise until budget exhausted |
+
+---
+
+# 53. Specialization and Agent Collaboration
+
+## 53.1 Capability-based specialization
+
+```text
+Task.capability  →  TaskClassifier  →  CAPABILITY_ROUTED | MULTI_AGENT
+                         ↓
+              AgentRegistry.find_by_capability()
+                         ↓
+              PlanStep.agent_id assignment
+```
+
+**Multi-agent same capability:** sequential steps for all matching agents (`MULTI_AGENT`); order from `OrchestrationProfile.multi_agent_order` (FLOW-17).
+
+Planning depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9–§10.
+
+## 53.2 Three collaboration mechanisms
+
+| Mechanism | Declared | Runtime effect | Context |
+|-----------|----------|----------------|---------|
+| `DEPENDS_ON` | `graph_spec` / plan | Separate node; topological order | `ContextManager` |
+| `DELEGATES_TO` | `graph_spec` | Child node + `DelegationSpec` on child | Isolated delegation namespace |
+| `AgentDecision.HANDOFF` | Runtime | `HandoffCoordinator` inserts node | Handoff payload in shared context |
+
+**Semantic detail:** [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §13.
+
+## 53.3 Shared context rules
+
+- Cross-agent data via `SharedTaskContext` / artifacts — **never** direct agent imports.
+- Nexus passes **bounded** context per node (`ContextManager`).
+- Delegation budgets: optional `budget_envelope` on `SubtaskContract` (FLOW-15).
+
+## 53.4 Authoring
+
+- Declarative: `AgentGraph` builder — `applications/contracts/graph_builder.py`
+- Profile: `OrchestrationProfile` on `ApplicationEnvironmentProfile`
+- Guide: [`AGENT_CREATION_GUIDE.md` Appendix I](guides/AGENT_CREATION_GUIDE.md)
+
+---
+
+# 54. Maturity and Gap Register
+
+| Area | Score (L0–L4) | Canon section | Notes |
+|------|---------------|---------------|-------|
+| Nexus loop / intake | L3–L4 | §9–§10, §48 | Done |
+| Sequential / parallel execution | L3 | §25, §51 | Runtime in FLOW §9 |
+| Coordination pattern catalog | L3 | §50 | Code + FLOW §27; ORCH canon (this update) |
+| Declarative graph + delegation | L3–L4 | §50, §53 | ORCH-2, ADR-FLOW-001 |
+| Merge policies | L3 | §51.3 | FLOW-7 Done |
+| Backpressure | L3 | §51.2 | FLOW-13 Done |
+| Retry / alternate agent | L3 | §52.1 | FLOW §14 |
+| Checkpoint / long-running | L3 partial | §26, §52.2 | Scheduler optional |
+| Swarm pattern runtime | L2 | §50.1 | Catalog Done; depth ORCH-5.1 |
+| Active-active node redundancy | L0 | §52.1 | Not planned — use retry + ECP replicas |
+| Infra elastic scale | L1 | cross-ref ECP | Phase ECP-DEPTH |
+| Product multi-agent demos | L2 deferred | §42.43 | Phase K / FLOW-8 |
+
+**Audit alignment:** AUDIT_MAP §9 (orchestration/graph) · §10 (subagents/multi-agent) — strategy rows consolidated in §50–§53.
+
+**Plan backlog:** [Phase ORCH-STRAT](plan/ORCHESTRATION.md) (docs Done) · [Phase ORCH-5](plan/ORCHESTRATION.md) (runtime gaps).
+
+---
+
+## Related documents
+
+| Document | Relationship |
+|----------|--------------|
+| [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) | Runtime narrative §4–§18, §27 |
+| [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) | Plan topology (dimension B) |
+| [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) | Replica/worker scale (dimension A infra) |
+| [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) | Evaluator-loop, verify nodes |
+| [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.43 | Reference collaboration flow |
+| [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](../guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §9–§10 | Audit procedure |
+
+---
+
+*End of Orchestration architecture canon (execution strategies §50–§54).*
 
 ---

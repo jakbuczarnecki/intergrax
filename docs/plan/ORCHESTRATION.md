@@ -23,7 +23,20 @@
 
 **Suggested PR order (complete):** ORCH-1 → ORCH-2 → ORCH-3 → ORCH-4.
 
-**Explicitly excluded:** K.1, K.2, new graph node types, nested harness per child — [§6.3a](#63a-business-backlog-register-consolidated).### 6.1g Harness implementation queue — governance audit (closed)
+**Explicitly excluded:** K.1, K.2, new graph node types, nested harness per child — [§6.3a](#63a-business-backlog-register-consolidated).
+
+### 6.1c Harness implementation queue — orchestration strategies (closed)
+
+**Purpose:** Phase **ORCH-STRAT** (Band 2ap) documentation closeout. **Closed 2026-06-08** — all ORCH-STRAT rows **Done**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 1 | **ORCH-STRAT.1–5** | Docs | **Done** | Architecture §50–§54 | Strategy catalog + gap register |
+| 2 | **ORCH-STRAT.6** | Docs | **Done** | Cross-ref sync | FLOW §27, AUDIT_MAP §9–§10 |
+
+**Runtime backlog:** [Phase ORCH-5](#phase-orch-5--orchestration-strategy-runtime-gaps-band-2aq--planned) — not started.
+
+### 6.1g Harness implementation queue — governance audit (closed)
 
 **Purpose:** Phase GOV-AUDIT documentation closeout — **closed 2026-06-05**.
 
@@ -1406,8 +1419,56 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | 2026-06-05 | ORCH-DOC.1, ORCH-DOC.2 | Governance + orchestration audit docs; Appendix H/I; AUDIT_MAP cross-refs |
 | 2026-06-05 | ORCH-1, ORCH-2, ORCH-3 | Orchestration wiring, graph spec plan seed, parallel cap; gate **581** |
 | 2026-06-05 | ORCH-4 | Plan + author guide closeout |
+| 2026-06-08 | ORCH-STRAT.1–6 | Strategy catalog §50–§54 in architecture; FLOW §27 + AUDIT_MAP §9–§10 cross-ref |
 
 **Phase ORCH complete when:** ORCH-1–4 **Done**; §6.1b queue closed; Appendix I has no “planned wiring” gaps; gate **581** green. **Status: complete (2026-06-05).**
+
+---
+
+## Phase ORCH-STRAT — Execution strategies canon (Band 2ap)
+
+**Status:** **Done** (2026-06-08) — strategy sections added to orchestration architecture pair  
+**Prerequisites:** Phase ORCH **Done** · Phase V-MA **Done** · Phase FLOW **Done**  
+**Goal:** Consolidate coordination patterns, parallelism, resilience, and specialization in [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §50–§54 — close audit gap “strategies only in FLOW”  
+**Priority ladder:** **Band 2ap** — **closed** on doc merge  
+**ADR:** **No ADR needed** — documentation consolidation; runtime contracts unchanged
+
+| ID | Deliverable | Status | Priority | Module / doc | Acceptance |
+|----|-------------|--------|----------|--------------|------------|
+| ORCH-STRAT.1 | **§50** — coordination pattern catalog + collaboration/specialization | **Done** | **Critical** | `architecture/ORCHESTRATION.md` | Maps to `CoordinationPattern` enum |
+| ORCH-STRAT.2 | **§51** — parallelism, merge, backpressure | **Done** | **Critical** | same | Cross-ref FLOW §9 |
+| ORCH-STRAT.3 | **§52** — resilience (retry layers, checkpoint, failover vs ECP) | **Done** | High | same | Cross-ref FLOW §14, RELIABILITY |
+| ORCH-STRAT.4 | **§53** — specialization, delegation, handoff | **Done** | High | same | Cross-ref REASONING, FLOW §13 |
+| ORCH-STRAT.5 | **§54** — maturity / gap register | **Done** | Medium | same + this plan | ORCH-5 backlog listed |
+| ORCH-STRAT.6 | **Cross-ref sync** — FLOW §27, AUDIT_MAP §9–§10, hub unchanged | **Done** | Medium | `docs/*` | Links resolve |
+
+---
+
+## Phase ORCH-5 — Orchestration strategy runtime gaps (Band 2aq — planned)
+
+**Status:** **Planned** — **0/5 Done**  
+**Prerequisites:** Phase ORCH-STRAT **Done** · default queue = §6.1 maintenance until Band 2aq prioritized  
+**Goal:** Close gaps in [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §54 — swarm depth, pattern metadata on plans, active redundancy policy
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| ORCH-5.1 | **Swarm runtime profile** — budget envelope + parallel cap for `CoordinationPattern.SWARM` | Planned | Medium | Gate test with 3+ parallel nodes |
+| ORCH-5.2 | **`coordination_pattern` on `NexusPlan` metadata** — explicit pattern id for trace/audit | Planned | Medium | `PLAN_CREATED` payload includes pattern |
+| ORCH-5.3 | **Wire `select_coordination_pattern()` to lab hosts** — optional advisory in planning trace | Planned | Low | Observe-only event |
+| ORCH-5.4 | **Advanced merge strategies** — citation-preserving or structured conflict (IDEAL) | Planned | Low | Profile flag + composer |
+| ORCH-5.5 | **Runbook: orchestration resilience** — link W-OPS SLO to §52 matrix | Planned | Low | `HARNESS_ENVIRONMENT.md` § |
+
+**Explicitly out of scope:** active-active duplicate graph nodes (use retry + ECP); K.1/K.2 product graphs (FLOW-8).
+
+### ORCH-STRAT traceability
+
+| Architecture § | Topic | Source |
+|----------------|--------|--------|
+| §50 | Patterns | V-MA.*, FLOW §27, `multi_agent_coordination.py` |
+| §51 | Parallelism | ORCH-3, FLOW-9, FLOW-13 |
+| §52 | Resilience | FLOW §14, W-OPS, RELIABILITY |
+| §53 | Specialization | REASONING §9–§10, R-Delegate, FLOW §13 |
+| §54 | Gaps | ORCH-5.* backlog |
 
 ---
 
