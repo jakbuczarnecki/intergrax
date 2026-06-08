@@ -6,6 +6,78 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
+**Last updated:** 2026-06-08 — engine docs sync + skill expansion backlog (§6.1ci).
+
+---
+
+### 6.1ci Harness implementation queue — skill catalog expansion (proposed)
+
+**Purpose:** Ordered backlog for **Tier-0 skill packs** that maximize reuse for agent and Tier-3 authors. **Not started** — requires explicit prioritization; **not** Band 3 business agents (K.1/K.2). Prerequisite for full prompt/policy value: **SK-BRIDGE.*** rows below.
+
+**Catalog today:** **13** skills · **4** bundles (`harness`, `legal`, `research`, `knowledge`). Target after waves: **~31** (+18).
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
+| 1 | **SK-DOC.1** | Docs | **Done** | Engine pipeline in `architecture/SKILLS.md`; §7.1.8 + Appendix J sync | This section + arch doc |
+| 2 | **SK-BRIDGE.1** | Code | **Planned** | `prompt_instruction_ids` → `ContextManager` / prompt registry at register | Integration test: skill prompt in assembled context |
+| 3 | **SK-BRIDGE.2** | Code | **Planned** | `policy_fragment_id` → `RuntimePolicyBundle.domain_fragments` merge | Policy conformance test |
+| 4 | **SK-EXP-P0** | Code | **Proposed** | Wave P0 — 6 universal packs (RAG, research, workspace) | Manifest + plugin + gate unit test per skill |
+| 5 | **SK-EXP-P1** | Code | **Proposed** | Wave P1 — 7 ops/dev/productivity packs | Same |
+| 6 | **SK-EXP-P2** | Code | **Proposed** | Wave P2 — 5 domain/platform packs | Same |
+| 7 | **SK-PRESET.1** | Code | **Proposed** | Tier-3 presets: `knowledge_skill_profile()`, `ops_skill_profile()`, LKW/DSW bundles | `skill_wiring.py` + host smoke |
+
+**Suggested PR order:** SK-BRIDGE.1 → SK-BRIDGE.2 (optional, unlocks manifest prompt value) → SK-EXP-P0 (one skill per PR) → SK-EXP-P1 → SK-EXP-P2 → SK-PRESET.1.
+
+**Explicitly excluded:** K.1, K.2, new Tier-2 agents, workflow-sized fake tools, unvalidated filesystem skill discovery.
+
+#### SK-EXP — Proposed skill register (18 packs)
+
+Priority for **platform users** (agent authors, Tier-3 hosts, extension authors). Each row = one `SkillManifest` + `SkillPlugin` bundle entry (new bundle or extend existing).
+
+**Wave P0 — Universal reuse (ship first)**
+
+| ID | skill_id | Bundle | `tool_ids` (core) | Value |
+|----|----------|--------|-------------------|-------|
+| SK-P0.1 | `rag.hybrid_qa` | `rag` | `rag.retrieve`, `rag.get_document`, `memory.read` | Default Q&A over index + session — LKW, Legal, Research, IAA |
+| SK-P0.2 | `rag.document_ingest` | `rag` | `document.parse`, `rag.ingest_document`, `rag.describe_collection` | Ingestion pipeline without per-agent tool lists |
+| SK-P0.3 | `research.web_evidence` | `research` | `websearch.query`, `websearch.read_url`, `websearch.fetch_batch` | Web-grounded evidence pack (complements `literature_scan`) |
+| SK-P0.4 | `workspace.authoring` | `workspace` | `workspace.read_file`, `workspace.write_file`, `workspace.search`, `memory.write` | Shadow workspace drafts — LKW synthesizer, coding assistants |
+| SK-P0.5 | `memory.task_scratchpad` | `memory` | `memory.read`, `memory.write`, `memory.list_keys` | Cross-step task KV — dispute sim, multi-turn agents |
+| SK-P0.6 | `knowledge.wiki_navigator` | `knowledge` | `knowledge.search`, `knowledge.get_page`, `confluence.search` | Internal docs + wiki — complements `openai_strict` |
+
+**Wave P1 — Ops, dev, collaboration**
+
+| ID | skill_id | Bundle | `tool_ids` (core) | Value |
+|----|----------|--------|-------------------|-------|
+| SK-P1.1 | `ops.trace_debug` | `ops` | `observability.query_traces`, `logs.search`, `errors.capture` | Harness/developer incident debugging |
+| SK-P1.2 | `ops.incident_dispatch` | `ops` | `pagerduty.trigger_incident`, `notify.send`, `logs.search` | On-call + notification wiring |
+| SK-P1.3 | `ops.security_audit` | `ops` | `security.scan`, `workspace.search`, `notify.send` | CI/security gate for agent workspaces |
+| SK-P1.4 | `ops.workflow_runner` | `ops` | `workflow.trigger`, `workflow.poll`, `workflow.fetch_logs` | Batch eval / RAG refresh orchestration |
+| SK-P1.5 | `dev.issue_triage` | `dev` | `issues.search`, `issues.get_issue`, `issues.add_comment`, `notify.send` | Provider-agnostic Jira/GitLab triage |
+| SK-P1.6 | `browser.research_fetch` | `browser` | `browser.fetch_page`, `websearch.read_url`, `document.parse_preview` | JS-heavy pages + extraction |
+| SK-P1.7 | `collaboration.outreach` | `collaboration` | `collaboration.send_mail`, `collaboration.list_messages`, `collaboration.get_message` | Email drafting / thread context |
+
+**Wave P2 — Domain depth + platform hub**
+
+| ID | skill_id | Bundle | `tool_ids` (core) | Value |
+|----|----------|--------|-------------------|-------|
+| SK-P2.1 | `legal.clause_compare` | `legal` | `rag.retrieve`, `workspace.write_file`, `websearch.query` | `requires_skills`: `legal.contract_review` |
+| SK-P2.2 | `legal.case_research` | `legal` | `rag.retrieve`, `knowledge.search`, `websearch.query` | Dispute sim + regulatory lookup |
+| SK-P2.3 | `research.citation_synthesis` | `research` | `rag.retrieve`, `websearch.query`, `workspace.write_file` | SummaryAgent / report pipelines |
+| SK-P2.4 | `data.sql_analyst` | `data` | `database.query`, `database.describe_schema`, `workspace.write_file` | Structured data Q&A |
+| SK-P2.5 | `platform.concierge` | `platform` | `rag.retrieve`, `websearch.query`, `memory.read`, `skill.resolve` | `intergrax_assistant` hub — introspection + retrieval |
+
+**Optional P2+ (defer until P0–P2 shipped):** `hitl.approval_gate` (`hitl.*`, `notify.send`), `graph.entity_explorer` (`graph.*`, `rag.retrieve`), `sandbox.code_exec` (`sandbox.exec`, `workspace.*`).
+
+**ADR:** no ADR for doc-only SK-DOC.1. New bundles follow existing Phase R pattern — **no ADR** unless a skill models a multi-step workflow as one tool (forbidden). SK-BRIDGE.* may need `docs/adr/` entry if context merge semantics change Nexus contracts.
+
+#### SK-EXP — Paydown log
+
+| Date | ID | Summary |
+|------|-----|---------|
+| 2026-06-08 | SK-DOC.1 | Engine pipeline documented; §7.1.8 + Appendix J contract fix; 18-pack backlog registered |
+
 ---
 
 ### 6.1c Harness implementation queue — tools/skills closeout (closed)
@@ -133,7 +205,7 @@ intergrax/skills/
 
 | # | Deliverable | Status | Priority | Location | Acceptance |
 |---|-------------|--------|----------|----------|------------|
-| R-Skill.1 | **`SkillManifest` + `SkillContract`** — frozen manifest: `skill_id`, `version`, `description`, `tool_ids`, `prompt_instruction_ids`, `policy_fragment_id`, `risk_tier`, `tags` | **Done** | **Critical** | `intergrax/skills/core/contracts.py` | Pydantic/jsonschema round-trip test |
+| R-Skill.1 | **`SkillManifest`** — frozen manifest: `skill_id`, `version`, `description`, `tool_ids`, `prompt_instruction_ids`, `policy_fragment_id`, `risk_tier`, `tags`, `requires_skills` | **Done** | **Critical** | `intergrax/skills/core/contracts.py` | Pydantic/jsonschema round-trip test |
 | R-Skill.2 | **`SkillRegistry` + `SkillProfile` + `SkillCatalog`** — mirror Tool registry pattern | **Done** | **Critical** | `intergrax/skills/registry/` | `build_registry_from_profile()` |
 | R-Skill.3 | **`SkillResolver`** — given `skill_ids`, produce resolved `allowed_tools` ∪, prompt pack refs, policy fragments; **no LLM execution** in resolver | **Done** | **Critical** | `intergrax/skills/resolver.py` | Unit: two skills merge tool lists with conflict rules |
 | R-Skill.4 | **Tier-3 wiring** — skill profile in `ApplicationBuildContext`, `skill_wiring.py`, legal host | **Done** | High | `applications/_shared/skill_wiring.py` | Legal registry resolves skills |
