@@ -53,6 +53,9 @@ def wire_application_critic(
         judge_threshold=options.judge_threshold,
         default_rubric_ref=options.default_rubric_ref,
         require_critic_on_completion=options.require_critic_on_completion,
+        l2_human_required=options.l2_human_required,
+        l2_borderline_margin=options.l2_borderline_margin,
+        verify_uaep_step=options.verify_uaep_step,
     )
     graph_hooks = build_critic_graph_hooks(
         config=hook_config,
@@ -76,6 +79,8 @@ def wire_application_critic(
                 "evaluator_loop_max_iterations": profile.evaluator_loop_max_iterations,
                 "default_rubric_ref": profile.default_rubric_ref,
                 "critic_llm_profile_ref": profile.critic_llm_profile_ref,
+                "l2_human_required": profile.l2_human_required,
+                "l2_borderline_margin": profile.l2_borderline_margin,
             },
         },
     )
@@ -87,3 +92,8 @@ def apply_application_critic_wiring(
 ) -> None:
     """Attach resolved critic hooks to an existing ``NexusLoop`` instance."""
     nexus.apply_critic_graph_hooks(wiring.graph_hooks)
+    if wiring.graph_hooks is not None:
+        nexus.apply_critic_uaep_hooks(
+            wiring.graph_hooks,
+            verify_uaep_step=wiring.options.verify_uaep_step,
+        )

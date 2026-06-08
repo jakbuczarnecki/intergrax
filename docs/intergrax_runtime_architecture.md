@@ -5611,7 +5611,7 @@ See AHIA §22 for full anti-pattern list.
 
 # 55. Critic & Verification Layer (CVL) — PEV Verify Addendum
 
-**Status:** Architecture RFC — **Planned** (Phase CRIT-V, Band 2ak)  
+**Status:** **Done** (Phase CRIT-V + closeout follow-up, Band 2ak)  
 **Full specification:** [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md)  
 **Decision record:** [`adr/ADR-CRITIC-001.md`](adr/ADR-CRITIC-001.md)  
 **Target alignment:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md) §6.4, §17.2, §18 · canon §29 Validation Model
@@ -5640,7 +5640,7 @@ Define the Harness **Verify** phase of Plan–Execute–Verify (PEV): how partia
 | Tier | Verification responsibility |
 |------|----------------------------|
 | **Tier-0** | `eval.judge`, `eval.trajectory` tools; `ValidationResult`; registry |
-| **Tier-1** | `CriticOrchestrator`, `EvaluatorLoopExecutor`, graph/UAEP hooks, policy bridge |
+| **Tier-1** | `CriticOrchestrator`, `EvaluatorLoopExecutor`, graph/UAEP hooks, `CriticPolicyBridge` |
 | **Tier-2** | Rubrics, ValidatorAgents, `Agent.validate()`, domain tests |
 | **Tier-3** | `CriticProfile`, thresholds, golden datasets, `require_critic_on_completion` |
 
@@ -5668,7 +5668,7 @@ LLM-as-judge is **opt-in** via `CriticProfile` — not mandatory on every run. S
 | `CriticOrchestrator` + hooks | **Done** | CRIT-V-3 |
 | Evaluator-loop executor | **Done** | CRIT-V-4 |
 | Semantic offline runner | **Done** | CRIT-V-5 |
-| Tier-3 wiring + CI | **Done** | CRIT-V-6–7 |
+| Tier-3 wiring + CI + L1 client + UAEP/L2 closeout | **Done** | CRIT-V-6–7, CRIT-V-FOLLOWUP |
 
 ## 55.6 Forbidden patterns
 

@@ -26,6 +26,8 @@ class CriticAssemblyError(ValueError):
 def validate_critic_wiring(
     wiring: ApplicationCriticWiring,
     env: ApplicationEnvironmentProfile,
+    *,
+    l1_client: object | None = None,
 ) -> CriticAssemblyValidationResult:
     errors: list[str] = []
     profile = env.critic_profile
@@ -41,6 +43,12 @@ def validate_critic_wiring(
 
     if profile.semantic_judge_enabled and not profile.default_rubric_ref:
         errors.append("semantic_judge_enabled requires default_rubric_ref")
+
+    if profile.semantic_judge_enabled or profile.trajectory_eval_enabled:
+        if l1_client is None:
+            errors.append("semantic or trajectory critic requires configured L1 eval tool client")
+        elif wiring.graph_hooks is not None and not wiring.graph_hooks.orchestrator.l1_client_configured:
+            errors.append("critic graph hooks require configured L1 eval tool client")
 
     if profile.require_critic_on_completion and not (
         profile.scopes.node_partial or profile.scopes.graph_final
@@ -63,7 +71,9 @@ def validate_critic_wiring(
 def assert_critic_assembly_valid(
     wiring: ApplicationCriticWiring,
     env: ApplicationEnvironmentProfile,
+    *,
+    l1_client: object | None = None,
 ) -> None:
-    result = validate_critic_wiring(wiring, env)
+    result = validate_critic_wiring(wiring, env, l1_client=l1_client)
     if not result.valid:
         raise CriticAssemblyError(result.errors)

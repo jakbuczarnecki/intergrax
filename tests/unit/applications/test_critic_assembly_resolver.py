@@ -33,6 +33,19 @@ def test_validate_critic_wiring_requires_rubric_for_semantic_judge() -> None:
     assert any("default_rubric_ref" in error for error in result.errors)
 
 
+def test_validate_critic_wiring_requires_l1_client_for_semantic_judge() -> None:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="critic.assembly.l1")
+    env.critic_profile = CriticProfile(
+        semantic_judge_enabled=True,
+        default_rubric_ref="rubric.default",
+        scopes=CriticVerificationScopes(node_partial=True),
+    )
+    wiring = wire_application_critic(env)
+    result = validate_critic_wiring(wiring, env, l1_client=None)
+    assert not result.valid
+    assert any("L1 eval tool client" in error for error in result.errors)
+
+
 def test_assert_critic_assembly_valid_passes_lab_defaults() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="critic.assembly.ok")
     wiring = wire_application_critic(env)

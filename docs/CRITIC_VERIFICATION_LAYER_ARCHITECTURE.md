@@ -141,7 +141,7 @@ Tier-1  Critic & Verification Layer (CVL)
            ├── L1Gateway                    ← invokes eval.judge / eval.trajectory via ToolRuntime
            ├── EvaluatorLoopExecutor        ← critique→revise routing in GraphExecutor
            ├── CriticTraceEmitter           ← trace steps + registry observations
-           └── CriticPolicyBridge           ← maps verdict → retry / HITL / fail / continue
+           └── CriticPolicyBridge           ← maps verdict → retry / HITL / fail / continue (**Done** — `policy_bridge.py`)
 
 Tier-0  Primitives
            ├── NexusValidationEngine        (existing)
@@ -221,9 +221,9 @@ Wiring mirrors EVAL phase: `wire_application_critic()` → `RuntimeConfig` → p
 
 ---
 
-## 8. Core contracts (planned)
+## 8. Core contracts
 
-**Package:** `intergrax/runtime/critic/contracts.py`
+**Package:** `intergrax/runtime/critic/contracts.py` — **Done** (CRIT-V-1)
 
 ```python
 # Conceptual — implement in CRIT-V-1
@@ -432,11 +432,12 @@ See [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) — *
 | CRIT-V-0 | This document, ADR-CRITIC-001, canon §55, README | **Done** |
 | CRIT-V-1 | Contracts + `CriticProfile` | **Done** |
 | CRIT-V-2 | Tier-0 tools `eval.judge`, `eval.trajectory` | **Done** |
-| CRIT-V-3 | `CriticOrchestrator` + graph/UAEP hooks | **Done** |
+| CRIT-V-3 | `CriticOrchestrator` + graph hooks + UAEP step hook | **Done** |
 | CRIT-V-4 | `EvaluatorLoopExecutor` | **Done** |
 | CRIT-V-5 | `NexusEvalRunner` semantic mode | **Done** |
 | CRIT-V-6 | Tier-3 wiring + policy bundle + CI | **Done** |
 | CRIT-V-7 | FAUDIT-EVAL.1 baseline gate + docs Appendix W | **Done** |
+| CRIT-V-FOLLOWUP | L1 tool client, L2 HITL, UAEP hook, policy bridge | **Done** |
 
 ---
 
@@ -454,7 +455,7 @@ See [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) — *
 
 - Canon §29 Validation Model · §42.43 Multi-Agent Flow · §53.10 Coordination patterns
 - [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §18 Evaluation hooks
-- [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) Appendix U (Evaluation) · Appendix W (planned — Critic)
+- [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) Appendix U (Evaluation) · Appendix W (Critic)
 - [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) — L4 verify loop consumes CVL signals
 
 ---

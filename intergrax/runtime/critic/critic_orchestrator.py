@@ -15,6 +15,7 @@ from intergrax.runtime.critic.contracts import (
 )
 from intergrax.runtime.critic.l0_gateway import L0Gateway
 from intergrax.runtime.critic.l1_gateway import L1Gateway
+from intergrax.runtime.critic.l2_gateway import L2Gateway
 
 _LAYER_PIPELINE: tuple[CriticLayer, ...] = (
     CriticLayer.L0_DETERMINISTIC,
@@ -37,9 +38,11 @@ class CriticOrchestrator:
         *,
         l0_gateway: L0Gateway | None = None,
         l1_gateway: L1Gateway | None = None,
+        l2_gateway: L2Gateway | None = None,
     ) -> None:
         self._l0 = l0_gateway or L0Gateway()
         self._l1 = l1_gateway or L1Gateway()
+        self._l2 = l2_gateway or L2Gateway()
 
     @property
     def l1_client_configured(self) -> bool:
@@ -116,11 +119,7 @@ class CriticOrchestrator:
             return self._l1.verify_semantic(request)
         if layer is CriticLayer.L1_TRAJECTORY:
             return self._l1.verify_trajectory(request)
-        return LayerVerdict(
-            layer=CriticLayer.L2_HUMAN,
-            passed=False,
-            errors=["L2 human verification is not wired; escalate via HITL policy"],
-        )
+        return self._l2.verify(request)
 
 
 def _resolve_contract(contract: AgentContract | None, request: CriticRequest) -> AgentContract:

@@ -261,6 +261,15 @@ class NexusLoop:
         self._graph_executor._critic_graph_hooks = hooks
         self._graph_runner.critic_graph_hooks = hooks
 
+    def apply_critic_uaep_hooks(
+        self,
+        hooks: Optional["CriticGraphHooks"],
+        *,
+        verify_uaep_step: bool = False,
+    ) -> None:
+        """Attach critic hooks to the UAEP executor for step-level verification."""
+        self._engine.uaep_executor.set_critic_hooks(hooks, verify_uaep_step=verify_uaep_step)
+
     @property
     def trace_emitter(self) -> Optional[TaskTraceEmitter]:
         return self._trace_emitter

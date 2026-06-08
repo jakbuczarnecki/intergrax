@@ -21,6 +21,7 @@ from intergrax.runtime.critic.critic_wiring import (
     validate_final_with_critic_detail,
     validate_node_with_critic,
     validate_node_with_critic_detail,
+    validate_uaep_step_with_critic_detail,
     critic_completion_blocked,
 )
 from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
@@ -40,6 +41,12 @@ from intergrax.runtime.critic.evaluator_loop_metadata import (
 from intergrax.runtime.critic.evaluator_loop_spec import EvaluatorLoopSpec
 from intergrax.runtime.critic.l0_gateway import L0Gateway
 from intergrax.runtime.critic.l1_gateway import L1Gateway
+from intergrax.runtime.critic.l2_gateway import L2Gateway
+from intergrax.runtime.critic.policy_bridge import (
+    borderline_l1_score,
+    resolve_critic_action,
+)
+from intergrax.runtime.critic.tool_registry_client import ToolRegistryCriticEvalClient
 from intergrax.runtime.critic.trace import (
     CriticTraceEmitter,
     build_critic_trace_emitter,
@@ -75,6 +82,10 @@ __all__ = [
     "critic_completion_blocked",
     "L0Gateway",
     "L1Gateway",
+    "L2Gateway",
+    "ToolRegistryCriticEvalClient",
+    "borderline_l1_score",
+    "resolve_critic_action",
     "LayerVerdict",
     "RubricSpec",
     "build_critic_graph_hooks",
@@ -88,4 +99,5 @@ __all__ = [
     "validate_final_with_critic_detail",
     "validate_node_with_critic",
     "validate_node_with_critic_detail",
+    "validate_uaep_step_with_critic_detail",
 ]

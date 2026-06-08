@@ -37,6 +37,7 @@ from intergrax.runtime.critic.critic_orchestrator import CriticOrchestrator
 from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
 from intergrax.runtime.critic.l0_gateway import L0Gateway
 from intergrax.runtime.critic.l1_gateway import L1Gateway
+from intergrax.runtime.critic.policy_bridge import resolve_critic_action
 from intergrax.runtime.critic.trace import CriticTraceEmitter
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 
@@ -47,11 +48,14 @@ class CriticHookConfig:
 
     verify_node_partial: bool = False
     verify_graph_final: bool = True
+    verify_uaep_step: bool = False
     semantic_judge_enabled: bool = False
     trajectory_eval_enabled: bool = False
     judge_threshold: float = 0.75
     default_rubric_ref: str | None = None
     require_critic_on_completion: bool = False
+    l2_human_required: bool = False
+    l2_borderline_margin: float = 0.05
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,7 +81,7 @@ def build_critic_graph_hooks(
     l1_client: CriticEvalToolClient | None = None,
 ) -> CriticGraphHooks | None:
     """Build graph hooks when at least one critic scope is enabled."""
-    if not config.verify_node_partial and not config.verify_graph_final:
+    if not config.verify_node_partial and not config.verify_graph_final and not config.verify_uaep_step:
         return None
     orchestrator = CriticOrchestrator(
         l0_gateway=L0Gateway(engine=validation_engine or NexusValidationEngine()),
@@ -92,7 +96,21 @@ def enabled_layers_for_scope(config: CriticHookConfig, *, partial: bool) -> tupl
         layers.append(CriticLayer.L1_SEMANTIC)
     if config.trajectory_eval_enabled and not partial:
         layers.append(CriticLayer.L1_TRAJECTORY)
+    if config.l2_human_required and not partial:
+        layers.append(CriticLayer.L2_HUMAN)
     return tuple(layers)
+
+
+def _finalize_critic_verdict(verdict: CriticVerdict, hooks: CriticGraphHooks) -> CriticVerdict:
+    action = resolve_critic_action(
+        verdict,
+        judge_threshold=hooks.config.judge_threshold,
+        l2_borderline_margin=hooks.config.l2_borderline_margin,
+        l2_human_required=hooks.config.l2_human_required,
+    )
+    if action is verdict.recommended_action:
+        return verdict
+    return verdict.model_copy(update={"recommended_action": action})
 
 
 def critic_verdict_to_validation_result(verdict: CriticVerdict) -> ValidationResult:
@@ -162,7 +180,10 @@ def validate_node_with_critic_detail(
         rubric=rubric,
         partial=True,
     )
-    verdict = hooks.orchestrator.verify_partial(request, contract=contract)
+    verdict = _finalize_critic_verdict(
+        hooks.orchestrator.verify_partial(request, contract=contract),
+        hooks,
+    )
     if trace_emitter is not None:
         trace_emitter.emit_verdict(
             request,
@@ -224,7 +245,10 @@ def validate_final_with_critic_detail(
         rubric=rubric,
         partial=False,
     )
-    verdict = hooks.orchestrator.verify_final(request, contract=contract)
+    verdict = _finalize_critic_verdict(
+        hooks.orchestrator.verify_final(request, contract=contract),
+        hooks,
+    )
     if trace_emitter is not None:
         trace_emitter.emit_verdict(
             request,
@@ -246,6 +270,53 @@ def validate_final_with_critic_detail(
             confidence=validation.confidence,
         )
     return validation, verdict
+
+
+def validate_uaep_step_with_critic_detail(
+    execution: AgentExecutionResult,
+    *,
+    contract: AgentContract,
+    hooks: CriticGraphHooks,
+    run_id: str,
+    tenant_id: str,
+    step_id: str | None = None,
+    rubric: RubricSpec | None = None,
+    trace_emitter: CriticTraceEmitter | None = None,
+) -> tuple[ValidationResult, CriticVerdict]:
+    """Run partial critic verification after a UAEP step milestone."""
+    resolved_rubric = rubric
+    if resolved_rubric is None and hooks.config.default_rubric_ref:
+        resolved_rubric = RubricSpec(
+            rubric_id=hooks.config.default_rubric_ref,
+            min_score=hooks.config.judge_threshold,
+        )
+    request = build_critic_request(
+        scope=CriticScope.UAEP_STEP,
+        run_id=run_id,
+        agent_id=contract.id,
+        enabled_layers=enabled_layers_for_scope(hooks.config, partial=True),
+        execution=execution,
+        rubric=resolved_rubric,
+        context={
+            "tenant_id": tenant_id,
+            "contract": contract,
+            "uaep_step_id": step_id,
+        },
+    )
+    verdict = _finalize_critic_verdict(
+        hooks.orchestrator.verify(request, contract=contract),
+        hooks,
+    )
+    if trace_emitter is not None:
+        trace_emitter.emit_verdict(
+            request,
+            verdict,
+            tenant_id=tenant_id,
+            task_id=run_id,
+            agent_id=contract.id,
+            node_id=step_id,
+        )
+    return critic_verdict_to_validation_result(verdict), verdict
 
 
 def _build_graph_critic_request(

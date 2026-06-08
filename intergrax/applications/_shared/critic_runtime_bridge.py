@@ -24,6 +24,8 @@ class CriticWiringOptions:
     evaluator_loop_max_iterations: int
     critic_llm_profile_ref: str | None
     default_rubric_ref: str | None
+    l2_human_required: bool
+    l2_borderline_margin: float
     verify_node_partial: bool
     verify_graph_final: bool
     verify_uaep_step: bool
@@ -39,6 +41,8 @@ def resolve_critic_wiring_options(profile: CriticProfile) -> CriticWiringOptions
         evaluator_loop_max_iterations=profile.evaluator_loop_max_iterations,
         critic_llm_profile_ref=profile.critic_llm_profile_ref,
         default_rubric_ref=profile.default_rubric_ref,
+        l2_human_required=profile.l2_human_required,
+        l2_borderline_margin=profile.l2_borderline_margin,
         verify_node_partial=profile.scopes.node_partial,
         verify_graph_final=profile.scopes.graph_final,
         verify_uaep_step=profile.scopes.uaep_step,

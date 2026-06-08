@@ -2,7 +2,7 @@
 
 **The single implementation map** — phases, status, gaps, priority, and readiness checklist.
 
-Status: Working draft (2026-06-07) — **Harness platform bands 1–2ad Done**; **Phase W-ADAPT (Band 2y) Done** (70/70); **Phase M-LLM-R (Band 2z) Done** (39/39); **Phase M.6 P4–P6 Done**; **FAUDIT-32 remediation Done** (23/23); **Phase FLOW (Band 2aj) Done** (17/18; FLOW-8 Deferred); **active implementation queue = [§6.1](#61-harness-implementation-queue--continuous-gate) gate on every PR**; **Phase CRIT-V (Band 2ak) Done** (24/24); Phase EVAL closed (wiring); product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **1051 passed**; **13/32 layers L3+** per FAUDIT scorecard — closeout ≠ full layer maturity  
+Status: Working draft (2026-06-08) — **Harness platform bands 1–2ad Done**; **Phase CRIT-V (Band 2ak) Done** (24/24 + CRIT-V-FOLLOWUP closeout); **Phase OBS-BUS (Band 2al) Done** (8/8); **active implementation queue = [§6.1](#61-harness-implementation-queue--continuous-gate) gate on every PR**; product **Deferred** [§6.3a](#63a-business-backlog-register-consolidated); gate **1058 passed**; **13/32 layers L3+** per FAUDIT scorecard — closeout ≠ full layer maturity  
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
@@ -4564,7 +4564,7 @@ BAND 2ab: Integration depth — Phase M.6 P5 (§6.1x) — DONE (33/34)
 BAND 2ac: Integration expansion — Phase M.6 P6 (§6.1y) — DONE (32/32 + M-P6-WIRE)
 BAND 2ad: FAUDIT-32 remediation — DONE (2026-06-06)
 BAND 2aj: Nexus execution depth — Phase FLOW (§6.1aj) — DONE (17/18; FLOW-8 Deferred)
-BAND 2ak: Critic & Verification Layer — Phase CRIT-V (§6.1ak) — ACTIVE
+BAND 2ak: Critic & Verification Layer — Phase CRIT-V (§6.1ak) — **Done** (incl. CRIT-V-FOLLOWUP)
 BAND 2al: Unified Observability Spine — Phase OBS-BUS (§6.1al) — **Done**
 DONE:    Phase CLEAN — legacy module closeout (§6.1j) — 2026-06-02
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
@@ -5318,7 +5318,7 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 **Priority ladder:** **Band 2ak** (§4.0) — **Done** (2026-06-08). Default queue reverts to §6.1 gate maintenance.  
 **Architecture:** [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · canon [§55](intergrax_runtime_architecture.md#55-critic--verification-layer-cvl--pev-verify-addendum) · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md)  
 **Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §25 (Evaluation), §7 (Reasoning), §10 (Multi-agent); closes **FAUDIT-EVAL.1** residual  
-**Execution order:** [§6.2ak](#62ak-phase-crit-v-execution-order-band-2ak--active) · queue: [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-active)
+**Execution order:** [§6.2ak](#62ak-phase-crit-v-execution-order-band-2ak--closed) · queue: [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-closed)
 
 **Delivery rule:** One **CRIT-V-*** ID per PR → update master table + §6.1ak + gate green.
 
@@ -5353,6 +5353,12 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 | CRIT-V-7.1 | 7 | **FAUDIT-EVAL.1** — `require_baseline_for_release` CI gate | **Done** | `phase_v_closeout_gate.py`, `check_harness_critic_wiring.py` | Closeout gate green |
 | CRIT-V-7.2 | 7 | **Flow reference §18 sync** — CVL hook table | **Done** | `NEXUS_EXECUTION_FLOW_REFERENCE.md` | Hooks documented |
 | CRIT-V-7.3 | 7 | **Lab harness demo** — L0+L1 on sample agent (not FLOW-8) | **Done** | `test_harness_critic_wiring.py`, lab host | Trace shows critic steps |
+| CRIT-V-F.1 | F | **`ToolRegistryCriticEvalClient`** — L1 bridge to Tier-0 eval tools | **Done** | `runtime/critic/tool_registry_client.py`, `critic_tool_wiring.py` | `test_critic_closeout.py` |
+| CRIT-V-F.2 | F | **`critic_llm_profile`** — separate judge LLM adapter | **Done** | `critic_llm_resolver.py`, `environment_profile.py` | Assembly + wiring tests |
+| CRIT-V-F.3 | F | **L2 `L2Gateway`** + HITL escalation path | **Done** | `l2_gateway.py`, `critic_orchestrator.py` | `test_critic_l2_gateway.py` |
+| CRIT-V-F.4 | F | **UAEP step hook** | **Done** | `uaep.py`, `validate_uaep_step_with_critic_detail` | UAEP critic path |
+| CRIT-V-F.5 | F | **`CriticPolicyBridge`** + policy engine | **Done** | `policy_bridge.py`, `runtime_policy_engine.py` | `test_critic_closeout.py` |
+| CRIT-V-F.6 | F | **Assembly gate** — require L1 client when semantic/trajectory enabled | **Done** | `critic_assembly_resolver.py` | `test_critic_assembly_resolver.py` |
 
 **Explicitly excluded:** FLOW-8 §42.43 product reference app ([§6.3](#63-end-of-plan--deferred-product-work-only)); domain rubric packs in Tier-0; mandatory universal LLM-judge on all runs.
 
@@ -5362,7 +5368,7 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 
 ## 6. What to implement next
 
-**Default answer (infrastructure):** **[Phase CRIT-V](#phase-crit-v--critic--verification-layer) (Band 2ak)** — one CRIT-V ID per PR + **[§6.1](#61-harness-platform-maintenance-default--band-1)** gate green.
+**Default answer (infrastructure):** **[§6.1](#61-harness-platform-maintenance-default--band-1)** gate green on every PR — CRIT-V and OBS-BUS platform closeouts **Done**.
 
 **Maintenance-only mode:** If CRIT-V paused by explicit decision, revert to §6.1 gate-only maintenance.
 
@@ -5610,9 +5616,9 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 
 **Explicitly excluded:** K.1, K.2 (unless FLOW-8 activated), nested harness per child.
 
-### 6.1ak Harness implementation queue — Critic & Verification Layer (active)
+### 6.1ak Harness implementation queue — Critic & Verification Layer (closed)
 
-**Purpose:** Single ordered list for **Phase CRIT-V** (Band 2ak). **Active 2026-06-07** — default harness implementation queue after §6.1 gate.
+**Purpose:** Single ordered list for **Phase CRIT-V** (Band 2ak). **Closed 2026-06-08** — CRIT-V-0…7 + **CRIT-V-FOLLOWUP** closeout **Done**.
 
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
@@ -5626,8 +5632,9 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 | 6 | **CRIT-V-5.*** | Code | **Done** | Semantic `NexusEvalRunner` | Eval integration test |
 | 7 | **CRIT-V-6.*** | Code/Docs | **Done** | Tier-3 wiring + Appendix W | CI assembly script |
 | 8 | **CRIT-V-7.*** | Code/Docs | **Done** | FAUDIT-EVAL.1 + flow reference sync | Closeout gate green |
+| 9 | **CRIT-V-FOLLOWUP** | Code | **Done** | L1 client, L2 HITL, UAEP hook, policy bridge | `test_critic_closeout.py`, gate green |
 
-**Suggested PR order:** See [§6.2ak](#62ak-phase-crit-v-execution-order-band-2ak--active).
+**Suggested PR order:** See [§6.2ak](#62ak-phase-crit-v-execution-order-band-2ak--closed).
 
 **Explicitly excluded:** FLOW-8 product app; domain rubric packs in Tier-0; mandatory universal LLM-judge.
 
