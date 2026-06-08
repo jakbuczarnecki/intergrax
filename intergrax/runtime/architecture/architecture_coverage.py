@@ -6,7 +6,26 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-from intergrax.runtime.architecture.capability_graph import CapabilityEdgeType, CapabilityGraph
+from intergrax.runtime.architecture.capability_graph import (
+    CapabilityEdgeType,
+    CapabilityGraph,
+    CapabilityNodeType,
+)
+
+GOVERNANCE_COVERAGE_NODE_TYPES = frozenset(
+    {
+        CapabilityNodeType.AGENT,
+        CapabilityNodeType.APPLICATION,
+        CapabilityNodeType.SKILL,
+        CapabilityNodeType.PRODUCT,
+    }
+)
+OBSERVABILITY_COVERAGE_NODE_TYPES = frozenset(
+    {
+        CapabilityNodeType.AGENT,
+        CapabilityNodeType.APPLICATION,
+    }
+)
 
 
 class ArchitectureCoverageSummary(BaseModel):
@@ -25,17 +44,6 @@ class ArchitectureCoverageReport(BaseModel):
 
 
 def compute_architecture_coverage(graph: CapabilityGraph) -> ArchitectureCoverageReport:
-    nodes_total = len(graph.nodes)
-    if nodes_total == 0:
-        summary = ArchitectureCoverageSummary(
-            nodes_total=0,
-            governed_nodes=0,
-            observed_nodes=0,
-            governance_coverage=0.0,
-            observability_coverage=0.0,
-        )
-        return ArchitectureCoverageReport(summary=summary)
-
     governed_targets = {
         edge.source_node_id
         for edge in graph.edges
@@ -46,18 +54,51 @@ def compute_architecture_coverage(graph: CapabilityGraph) -> ArchitectureCoverag
         for edge in graph.edges
         if edge.edge_type == CapabilityEdgeType.EVALUATES
     }
-    node_ids = {node.node_id for node in graph.nodes}
-    uncovered_governance = sorted(node_ids - governed_targets)
-    uncovered_observability = sorted(node_ids - observed_targets)
-    governed_nodes = len(node_ids) - len(uncovered_governance)
-    observed_nodes = len(node_ids) - len(uncovered_observability)
+
+    governance_scope_ids = {
+        node.node_id
+        for node in graph.nodes
+        if node.node_type in GOVERNANCE_COVERAGE_NODE_TYPES
+    }
+    observability_scope_ids = {
+        node.node_id
+        for node in graph.nodes
+        if node.node_type in OBSERVABILITY_COVERAGE_NODE_TYPES
+    }
+
+    if not governance_scope_ids and not observability_scope_ids:
+        summary = ArchitectureCoverageSummary(
+            nodes_total=0,
+            governed_nodes=0,
+            observed_nodes=0,
+            governance_coverage=0.0,
+            observability_coverage=0.0,
+        )
+        return ArchitectureCoverageReport(summary=summary)
+
+    governed_nodes = len(governance_scope_ids & governed_targets)
+    observed_nodes = len(observability_scope_ids & observed_targets)
+    uncovered_governance = sorted(governance_scope_ids - governed_targets)
+    uncovered_observability = sorted(observability_scope_ids - observed_targets)
+    nodes_total = len(governance_scope_ids | observability_scope_ids)
+
+    governance_coverage = (
+        float(governed_nodes) / float(len(governance_scope_ids))
+        if governance_scope_ids
+        else 0.0
+    )
+    observability_coverage = (
+        float(observed_nodes) / float(len(observability_scope_ids))
+        if observability_scope_ids
+        else 0.0
+    )
 
     summary = ArchitectureCoverageSummary(
         nodes_total=nodes_total,
         governed_nodes=governed_nodes,
         observed_nodes=observed_nodes,
-        governance_coverage=float(governed_nodes) / float(nodes_total),
-        observability_coverage=float(observed_nodes) / float(nodes_total),
+        governance_coverage=governance_coverage,
+        observability_coverage=observability_coverage,
     )
     return ArchitectureCoverageReport(
         summary=summary,

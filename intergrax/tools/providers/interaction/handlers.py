@@ -11,8 +11,15 @@ from intergrax.tools.providers.interaction.contracts import (
     InteractionGetSessionHistoryOutput,
     InteractionListSessionsInput,
     InteractionListSessionsOutput,
+    InteractionPostReplyInput,
+    InteractionPostReplyOutput,
 )
-from intergrax.tools.providers.interaction.service import interaction_get_last_input, interaction_get_session_history, interaction_list_sessions
+from intergrax.tools.providers.interaction.service import (
+    interaction_get_last_input,
+    interaction_get_session_history,
+    interaction_list_sessions,
+    interaction_post_reply,
+)
 
 
 class InteractionListSessionsHandler(
@@ -31,3 +38,7 @@ class InteractionGetSessionHistoryHandler(
     ServiceToolHandler[InteractionGetSessionHistoryInput, InteractionGetSessionHistoryOutput]
 ):
     _service = interaction_get_session_history
+
+
+class InteractionPostReplyHandler(ServiceToolHandler[InteractionPostReplyInput, InteractionPostReplyOutput]):
+    _service = interaction_post_reply

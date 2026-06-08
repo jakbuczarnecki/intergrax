@@ -62,3 +62,22 @@ class MemoryDeleteKeyOutput(BaseModel):
     namespace: str
     key: str
     deleted: bool = False
+
+
+class MemorySearchInput(BaseModel):
+    namespace: str = Field(..., min_length=1)
+    query: str = Field(..., min_length=1)
+    prefix: str = ""
+    limit: int = Field(default=20, ge=1, le=200)
+
+
+class MemorySearchMatch(BaseModel):
+    key: str
+    value: dict[str, Any] = Field(default_factory=dict)
+
+
+class MemorySearchOutput(BaseModel):
+    namespace: str
+    query: str
+    matches: list[MemorySearchMatch] = Field(default_factory=list)
+    total: int = 0

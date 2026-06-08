@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from intergrax.runtime.notifications.models import NotificationMessage
 from intergrax.tools.providers.interaction.contracts import (
     InteractionGetLastInputInput,
     InteractionGetLastInputOutput,
@@ -11,14 +12,18 @@ from intergrax.tools.providers.interaction.contracts import (
     InteractionHistoryMessageOutput,
     InteractionListSessionsInput,
     InteractionListSessionsOutput,
+    InteractionPostReplyInput,
+    InteractionPostReplyOutput,
     InteractionSessionOutput,
 )
+from intergrax.tools.providers.notify.service import _dispatch_notify
 from intergrax.tools.registry.runtime_bindings import SessionStorageBinding
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 INTERACTION_LIST_SESSIONS_TOOL_ID = "interaction.list_sessions"
 INTERACTION_GET_LAST_INPUT_TOOL_ID = "interaction.get_last_input"
 INTERACTION_GET_SESSION_HISTORY_TOOL_ID = "interaction.get_session_history"
+INTERACTION_POST_REPLY_TOOL_ID = "interaction.post_reply"
 
 
 def _require_session_storage(ctx: ToolWiringContext) -> SessionStorageBinding:
@@ -93,3 +98,24 @@ def interaction_get_session_history(
         total=len(messages),
         reason="ok",
     )
+
+
+def interaction_post_reply(ctx: ToolWiringContext, params: InteractionPostReplyInput) -> InteractionPostReplyOutput:
+    channel = ctx.notification_channel
+    if channel is None:
+        return InteractionPostReplyOutput(sent=False, channel=params.channel, detail="notification_channel_not_configured")
+    metadata: dict[str, str] = {}
+    if params.session_id.strip():
+        metadata["session_id"] = params.session_id.strip()
+    if params.thread_id.strip():
+        metadata["thread_id"] = params.thread_id.strip()
+    message = NotificationMessage(
+        channel=params.channel.strip(),
+        subject=params.subject,
+        body=params.body,
+        task_id=params.task_id.strip() or "interaction_reply",
+        tenant_id=params.tenant_id.strip(),
+        metadata=metadata,
+    )
+    _dispatch_notify(channel, message)
+    return InteractionPostReplyOutput(sent=True, channel=params.channel.strip(), detail="ok")

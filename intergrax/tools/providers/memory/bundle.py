@@ -11,6 +11,8 @@ from intergrax.tools.providers.memory.contracts import (
     MemoryListKeysOutput,
     MemoryReadInput,
     MemoryReadOutput,
+    MemorySearchInput,
+    MemorySearchOutput,
     MemoryWriteInput,
     MemoryWriteOutput,
 )
@@ -18,12 +20,14 @@ from intergrax.tools.providers.memory.handlers import (
     MemoryDeleteKeyHandler,
     MemoryListKeysHandler,
     MemoryReadHandler,
+    MemorySearchHandler,
     MemoryWriteHandler,
 )
 from intergrax.tools.providers.memory.service import (
     MEMORY_DELETE_KEY_TOOL_ID,
     MEMORY_LIST_KEYS_TOOL_ID,
     MEMORY_READ_TOOL_ID,
+    MEMORY_SEARCH_TOOL_ID,
     MEMORY_WRITE_TOOL_ID,
 )
 from intergrax.tools.registry.runtime import ToolRegistry
@@ -35,6 +39,7 @@ MEMORY_TOOL_IDS: tuple[str, ...] = (
     MEMORY_WRITE_TOOL_ID,
     MEMORY_LIST_KEYS_TOOL_ID,
     MEMORY_DELETE_KEY_TOOL_ID,
+    MEMORY_SEARCH_TOOL_ID,
 )
 
 
@@ -102,4 +107,20 @@ def register_memory_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> Non
             tags=("memory", "task"),
         ),
         MemoryDeleteKeyHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=MEMORY_SEARCH_TOOL_ID,
+            name=MEMORY_SEARCH_TOOL_ID,
+            description="Search task memory keys/values by substring within a namespace.",
+            description_short="Search task memory.",
+            input_schema=MemorySearchInput,
+            output_schema=MemorySearchOutput,
+            error_mapping={},
+            side_effects=False,
+            category="memory",
+            risk_level=ToolRiskLevel.LOW,
+            tags=("memory", "task", "search"),
+        ),
+        MemorySearchHandler(ctx),
     )

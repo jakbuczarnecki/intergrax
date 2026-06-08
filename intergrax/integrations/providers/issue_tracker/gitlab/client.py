@@ -102,3 +102,24 @@ class GitLabRestClient:
         if not isinstance(data, dict):
             raise IntegrationConfigurationError("Unexpected GitLab create_issue response")
         return _issue_from_payload(self._config, data)
+
+    def update_issue(
+        self,
+        issue_key: str,
+        *,
+        status: Optional[str] = None,
+        assignee: Optional[str] = None,
+        summary: Optional[str] = None,
+    ) -> IssueRecord:
+        iid = issue_key.split("#")[-1] if "#" in issue_key else issue_key
+        payload: dict[str, object] = {}
+        if summary is not None:
+            payload["title"] = summary
+        if status is not None:
+            state = status.strip().lower()
+            if state in {"open", "close", "closed", "reopen", "reopened"}:
+                payload["state_event"] = "close" if state in {"close", "closed"} else "reopen"
+        if payload:
+            response = self._http.put(f"{self._project_path()}/issues/{iid}", json=payload)
+            response.raise_for_status()
+        return self.get_issue(issue_key)

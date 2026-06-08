@@ -11,7 +11,7 @@
 
 # Intergrax Tool Library
 
-**Last updated:** 2026-06-08 — **42 bundles** · **172 catalog tools** (verified via `register_default_tools()`)
+**Last updated:** 2026-06-08 — **48 bundles** · **190 catalog tools** (verified via `register_default_tools()`)
 
 The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](architecture/INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
 
@@ -114,7 +114,7 @@ registry = build_registry_from_profile(
 
 ## Tool engine (implemented today)
 
-Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T12 Done** · **T13 Done** (CRIT-V) — full **172-tool** catalog registered):
+Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T14–T17 Done** — full **190-tool** catalog registered):
 
 | Component | Path | Status |
 |-----------|------|--------|
@@ -242,9 +242,9 @@ ToolExecutionRequest(run_id, step_id, tool_id, input, idempotency_key)
 
 | Metric | Count |
 |--------|------:|
-| Shipped bundles (`ToolPlugin`) | **40** |
-| Registered `tool_id` values | **150** |
-| Stable bundles | **39** |
+| Shipped bundles (`ToolPlugin`) | **48** |
+| Registered `tool_id` values | **190** |
+| Stable bundles | **47** |
 | Beta bundles | **1** (`openai_vector_store`) |
 
 **Bundle index (selected):** `interaction` (3) · `workflow` (5) · `harness` (6) · `websearch` (4) · `notify` (6) · `health` (11) · `eval` (7) · `collaboration` (7) · `hitl` (5) · `platform` (8) · `rag` (11) — full list in [Full tool index](#full-tool-index) below.
@@ -663,7 +663,30 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `workspace.export_artifact` | workspace | workspace | **Done** (T10) | `ShadowWorkspace` + `ObjectStorage` |
 | `workspace.import_artifact` | workspace | workspace | **Done** (T10) | `ShadowWorkspace` + `ObjectStorage` |
 
-**Total:** 172 tools · 42 bundles.
+### Agent builder essentials (T-EXPAND T14–T17)
+
+| tool_id | Status | Description | Composes |
+|---------|--------|-------------|----------|
+| `catalog.list_tools` | **Done** (T14) | List tools in current `ToolRegistry` | `ToolRegistry` (registration-time ref) |
+| `catalog.describe_tool` | **Done** (T14) | Describe one tool contract + JSON schemas | `ToolRegistry` |
+| `agent.list_agents` | **Done** (T14) | List registered agent ids | `AgentRegistryBinding` |
+| `agent.get_contract` | **Done** (T14) | Serialized `AgentContract` metadata | `AgentRegistryBinding` |
+| `skill.resolve` | **Done** (T14) | Resolve `skill_ids` → tool/prompt/policy pack | `SkillResolverBinding` |
+| `code.exec` | **Done** (T15) | Run Python in sandbox (`run_python` op) | `SandboxSession` |
+| `script.run` | **Done** (T15) | Run allowlisted script in sandbox root | `SandboxSession` |
+| `browser.run` | **Done** (T15) | Fetch page via `BrowserAutomation` or sandbox fallback | `BrowserAutomation` / sandbox |
+| `sandbox.list_operations` | **Done** (T15) | List allowlisted sandbox operations | `SandboxSession.manifest()` |
+| `ltm.search` | **Done** (T16) | Search user long-term memory | `UserProfileManagerBinding` |
+| `ltm.write_fact` | **Done** (T16) | Write governed LTM fact (`MemoryKind`) | `UserProfileManagerBinding` |
+| `memory.search` | **Done** (T16) | Substring search in task memory namespace | `TaskMemoryViewBinding` |
+| `context.summarize` | **Done** (T16) | Trim/compress text to token budget | `ContextBudgetPolicy` |
+| `context.estimate_tokens` | **Done** (T16) | Char→token estimate for budgeting | `context_budget.estimate_tokens` |
+| `http.request` | **Done** (T17) | Allowlisted HTTP call | `HttpClientBackend` |
+| `interaction.post_reply` | **Done** (T17) | Outbound reply with thread/session metadata | `NotificationChannel` |
+| `issues.update_issue` | **Done** (T17) | Update issue status/assignee/summary | `IssueTracker` + `IssueUpdater` |
+| `rag.preview_retrieval` | **Done** (T17) | Dry-run retrieval (no full context inject) | `RetrievalService` |
+
+**Total:** 190 tools · 48 bundles.
 
 ---
 

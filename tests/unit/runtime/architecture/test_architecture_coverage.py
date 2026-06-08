@@ -16,6 +16,7 @@ def test_architecture_coverage_reports_governance_and_observability() -> None:
             CapabilityNode(node_id="agent:research", node_type=CapabilityNodeType.AGENT),
             CapabilityNode(node_id="policy:runtime", node_type=CapabilityNodeType.POLICY),
             CapabilityNode(node_id="evaluation:runtime", node_type=CapabilityNodeType.EVALUATION),
+            CapabilityNode(node_id="tool:rag.retrieve", node_type=CapabilityNodeType.TOOL),
         ],
         edges=[
             CapabilityEdge(
@@ -31,6 +32,8 @@ def test_architecture_coverage_reports_governance_and_observability() -> None:
         ],
     )
     report = compute_architecture_coverage(graph)
-    assert report.summary.nodes_total == 3
-    assert 0.0 <= report.summary.governance_coverage <= 1.0
-    assert 0.0 <= report.summary.observability_coverage <= 1.0
+    assert report.summary.nodes_total == 1
+    assert report.summary.governance_coverage == 1.0
+    assert report.summary.observability_coverage == 1.0
+    assert report.uncovered_governance_node_ids == []
+    assert report.uncovered_observability_node_ids == []

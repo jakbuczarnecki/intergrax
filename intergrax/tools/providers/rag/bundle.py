@@ -52,6 +52,8 @@ from intergrax.tools.providers.rag.lifecycle_service import (
 )
 from intergrax.tools.providers.rag.list_collections_service import RAG_LIST_COLLECTIONS_TOOL_ID
 from intergrax.tools.providers.rag.rerank_contracts import RagRerankInput, RagRerankOutput
+from intergrax.tools.providers.rag.preview_handler import RagPreviewRetrievalHandler
+from intergrax.tools.providers.rag.preview_service import RAG_PREVIEW_RETRIEVAL_TOOL_ID
 from intergrax.tools.providers.rag.rerank_handler import RagRerankHandler
 from intergrax.tools.providers.rag.rerank_service import RAG_RERANK_TOOL_ID
 from intergrax.tools.providers.rag.service import RAG_TOOL_ID
@@ -71,6 +73,7 @@ RAG_TOOL_IDS: tuple[str, ...] = (
     RAG_CHECK_INDEX_STATUS_TOOL_ID,
     RAG_SEARCH_BY_METADATA_TOOL_ID,
     RAG_PURGE_COLLECTION_TOOL_ID,
+    RAG_PREVIEW_RETRIEVAL_TOOL_ID,
 )
 
 
@@ -251,6 +254,26 @@ def rag_search_by_metadata_contract() -> ToolContract:
     )
 
 
+def rag_preview_retrieval_contract() -> ToolContract:
+    return ToolContract(
+        tool_id=RAG_PREVIEW_RETRIEVAL_TOOL_ID,
+        name=RAG_PREVIEW_RETRIEVAL_TOOL_ID,
+        description=(
+            "Dry-run RAG retrieval — returns ranked chunks and a compact preview block "
+            "without full context injection (debug / quality checks)."
+        ),
+        description_short="Preview RAG retrieval.",
+        input_schema=RagRetrieveInput,
+        output_schema=RagRetrieveOutput,
+        error_mapping={},
+        side_effects=False,
+        injects_context=False,
+        category="retrieval",
+        risk_level=ToolRiskLevel.LOW,
+        tags=("rag", "retrieval", "preview"),
+    )
+
+
 def rag_purge_collection_contract() -> ToolContract:
     return ToolContract(
         tool_id=RAG_PURGE_COLLECTION_TOOL_ID,
@@ -279,6 +302,7 @@ def register_rag_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
     registry.register(rag_check_index_status_contract(), RagCheckIndexStatusHandler(ctx))
     registry.register(rag_search_by_metadata_contract(), RagSearchByMetadataHandler(ctx))
     registry.register(rag_purge_collection_contract(), RagPurgeCollectionHandler(ctx))
+    registry.register(rag_preview_retrieval_contract(), RagPreviewRetrievalHandler(ctx))
 
 
 RAG_RETRIEVE_TOOL_CONTRACT = rag_retrieve_contract()

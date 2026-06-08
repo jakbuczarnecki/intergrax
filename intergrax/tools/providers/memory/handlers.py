@@ -11,10 +11,18 @@ from intergrax.tools.providers.memory.contracts import (
     MemoryListKeysOutput,
     MemoryReadInput,
     MemoryReadOutput,
+    MemorySearchInput,
+    MemorySearchOutput,
     MemoryWriteInput,
     MemoryWriteOutput,
 )
-from intergrax.tools.providers.memory.service import memory_delete_key, memory_list_keys, memory_read, memory_write
+from intergrax.tools.providers.memory.service import (
+    memory_delete_key,
+    memory_list_keys,
+    memory_read,
+    memory_search,
+    memory_write,
+)
 
 
 class MemoryReadHandler(ServiceToolHandler[MemoryReadInput, MemoryReadOutput]):
@@ -31,3 +39,7 @@ class MemoryListKeysHandler(ServiceToolHandler[MemoryListKeysInput, MemoryListKe
 
 class MemoryDeleteKeyHandler(ServiceToolHandler[MemoryDeleteKeyInput, MemoryDeleteKeyOutput]):
     _service = memory_delete_key
+
+
+class MemorySearchHandler(ServiceToolHandler[MemorySearchInput, MemorySearchOutput]):
+    _service = memory_search

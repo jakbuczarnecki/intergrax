@@ -9,6 +9,8 @@ from intergrax.tools.providers.issues.contracts import (
     IssuesCommentOutput,
     IssuesCreateIssueInput,
     IssuesCreateIssueOutput,
+    IssuesUpdateIssueInput,
+    IssuesUpdateIssueOutput,
     IssuesGetIssueInput,
     IssuesIssueOutput,
     IssuesSearchInput,
@@ -19,10 +21,12 @@ from intergrax.tools.providers.issues.handlers import (
     IssuesCreateIssueHandler,
     IssuesGetIssueHandler,
     IssuesSearchHandler,
+    IssuesUpdateIssueHandler,
 )
 from intergrax.tools.providers.issues.service import (
     ISSUES_ADD_COMMENT_TOOL_ID,
     ISSUES_CREATE_ISSUE_TOOL_ID,
+    ISSUES_UPDATE_ISSUE_TOOL_ID,
     ISSUES_GET_ISSUE_TOOL_ID,
     ISSUES_SEARCH_TOOL_ID,
 )
@@ -35,6 +39,7 @@ ISSUES_TOOL_IDS: tuple[str, ...] = (
     ISSUES_ADD_COMMENT_TOOL_ID,
     ISSUES_SEARCH_TOOL_ID,
     ISSUES_CREATE_ISSUE_TOOL_ID,
+    ISSUES_UPDATE_ISSUE_TOOL_ID,
 )
 
 
@@ -102,4 +107,20 @@ def register_issues_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> Non
             tags=("issues", "tracker"),
         ),
         IssuesCreateIssueHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=ISSUES_UPDATE_ISSUE_TOOL_ID,
+            name=ISSUES_UPDATE_ISSUE_TOOL_ID,
+            description="Update issue fields (status, assignee, summary) when tracker implements IssueUpdater.",
+            description_short="Update issue.",
+            input_schema=IssuesUpdateIssueInput,
+            output_schema=IssuesUpdateIssueOutput,
+            error_mapping={},
+            side_effects=True,
+            category="issues",
+            risk_level=ToolRiskLevel.MEDIUM,
+            tags=("issues", "tracker"),
+        ),
+        IssuesUpdateIssueHandler(ctx),
     )

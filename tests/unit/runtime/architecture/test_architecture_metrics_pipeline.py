@@ -15,6 +15,30 @@ from intergrax.runtime.architecture.capability_graph import (
 )
 
 
+def _graph_without_governance() -> CapabilityGraph:
+    return CapabilityGraph(
+        nodes=[
+            CapabilityNode(node_id="integration:sqlite", node_type=CapabilityNodeType.INTEGRATION),
+            CapabilityNode(node_id="tool:rag.retrieve", node_type=CapabilityNodeType.TOOL),
+            CapabilityNode(node_id="agent:research", node_type=CapabilityNodeType.AGENT),
+            CapabilityNode(node_id="policy:runtime", node_type=CapabilityNodeType.POLICY),
+            CapabilityNode(node_id="evaluation:runtime", node_type=CapabilityNodeType.EVALUATION),
+        ],
+        edges=[
+            CapabilityEdge(
+                source_node_id="tool:rag.retrieve",
+                target_node_id="integration:sqlite",
+                edge_type=CapabilityEdgeType.DEPENDS_ON,
+            ),
+            CapabilityEdge(
+                source_node_id="agent:research",
+                target_node_id="tool:rag.retrieve",
+                edge_type=CapabilityEdgeType.DEPENDS_ON,
+            ),
+        ],
+    )
+
+
 def _graph_with_governance() -> CapabilityGraph:
     return CapabilityGraph(
         nodes=[
@@ -50,7 +74,7 @@ def _graph_with_governance() -> CapabilityGraph:
 
 
 def test_metrics_pipeline_gate_fails_when_thresholds_are_not_met() -> None:
-    report = compute_architecture_metrics(_graph_with_governance())
+    report = compute_architecture_metrics(_graph_without_governance())
     pipeline = build_metrics_pipeline_report(
         snapshots=[ArchitectureMetricsSnapshot(snapshot_id="current", report=report)]
     )
