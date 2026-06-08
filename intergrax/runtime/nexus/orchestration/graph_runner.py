@@ -38,6 +38,7 @@ from intergrax.utils.time_provider import SystemTimeProvider
 
 if TYPE_CHECKING:
     from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
+    from intergrax.runtime.critic.trace import CriticTraceEmitter
 
 FinishFn = Callable[..., Awaitable[TaskResult]]
 FinalizeFn = Callable[..., Awaitable[None]]
@@ -80,6 +81,11 @@ class NexusGraphRunner:
         trace_emitter: TaskTraceEmitter,
     ) -> GraphPhaseOutcome:
         callbacks = GraphTraceCallbacks(task=task, trace_emitter=trace_emitter)
+        critic_trace_emitter = _build_critic_trace_emitter(
+            task=task,
+            trace_emitter=trace_emitter,
+            hooks=self.critic_graph_hooks,
+        )
         retry_codes = (
             frozenset({RuntimeErrorCode.VALIDATION_ERROR})
             if self.max_run_retries > 0
@@ -118,6 +124,7 @@ class NexusGraphRunner:
                 on_retry=on_retry,
                 on_node_start=callbacks.on_node_start,
                 on_node_complete=callbacks.on_node_complete,
+                critic_trace_emitter=critic_trace_emitter,
             )
             retry_records.extend(attempt_retries)
             failed_nodes = [
@@ -201,6 +208,7 @@ class NexusGraphRunner:
                     tenant_id=task.tenant_id,
                     capability=task.context.capability,
                     plan_criteria=plan.validation_criteria,
+                    trace_emitter=critic_trace_emitter,
                 )
             else:
                 final_validation = self.validation_engine.validate(
@@ -368,3 +376,28 @@ class NexusGraphRunner:
             graph_id=graph.graph_id,
         )
         return GraphPhaseOutcome(early_result=early)
+
+
+def _build_critic_trace_emitter(
+    *,
+    task: Task,
+    trace_emitter: TaskTraceEmitter,
+    hooks: CriticGraphHooks | None,
+) -> CriticTraceEmitter | None:
+    if hooks is None:
+        return None
+    if not hooks.verify_node_partial and not hooks.verify_graph_final:
+        return None
+    from intergrax.runtime.critic.trace import build_critic_trace_emitter
+
+    trace_writer = (
+        trace_emitter.trace_store
+        if isinstance(trace_emitter, PersistingTaskTraceEmitter)
+        else None
+    )
+    return build_critic_trace_emitter(
+        run_id=task.task_id,
+        trace_writer=trace_writer,
+        event_bus=trace_emitter.event_bus,
+        seq_offset=len(trace_emitter.events),
+    )

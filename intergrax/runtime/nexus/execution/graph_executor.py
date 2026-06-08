@@ -46,6 +46,7 @@ from intergrax.runtime.task_memory.delegation_memory import TaskMemoryMetadataKe
 
 if TYPE_CHECKING:
     from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
+    from intergrax.runtime.critic.trace import CriticTraceEmitter
 
 ExecuteFn = Callable[[Agent, Task, ExecutionNode], Awaitable[AgentExecutionResult]]
 ValidateFn = Callable[[AgentExecutionResult, Agent, ExecutionNode], ValidationResult]
@@ -120,6 +121,7 @@ class GraphExecutor:
         on_retry: Optional[RetryCallback] = None,
         on_node_start: Optional[Callable[[ExecutionNode], None]] = None,
         on_node_complete: Optional[Callable[[ExecutionNode], None]] = None,
+        critic_trace_emitter: Optional["CriticTraceEmitter"] = None,
     ) -> tuple[List[AgentExecutionResult], List[RetryRecord], ExecutionGraph, bool]:
         prior_outputs: Dict[str, AgentExecutionResult] = {}
         all_executions: List[AgentExecutionResult] = []
@@ -158,6 +160,7 @@ class GraphExecutor:
                     on_retry=on_retry,
                     on_node_start=on_node_start,
                     on_node_complete=on_node_complete,
+                    critic_trace_emitter=critic_trace_emitter,
                 )
                 all_retries.extend(retries)
                 if cancelled:
@@ -181,6 +184,7 @@ class GraphExecutor:
                     on_retry=on_retry,
                     on_node_start=on_node_start,
                     on_node_complete=on_node_complete,
+                    critic_trace_emitter=critic_trace_emitter,
                 )
                 for execution, retries, failed, cancelled, handoff_extras in results:
                     all_retries.extend(retries)
@@ -211,6 +215,7 @@ class GraphExecutor:
         on_retry: Optional[RetryCallback],
         on_node_start: Optional[Callable[[ExecutionNode], None]],
         on_node_complete: Optional[Callable[[ExecutionNode], None]],
+        critic_trace_emitter: Optional["CriticTraceEmitter"] = None,
     ) -> list[
         tuple[
             AgentExecutionResult,
@@ -238,6 +243,7 @@ class GraphExecutor:
                             on_retry=on_retry,
                             on_node_start=on_node_start,
                             on_node_complete=on_node_complete,
+                            critic_trace_emitter=critic_trace_emitter,
                         )
                         for node in batch
                     ]
@@ -271,6 +277,7 @@ class GraphExecutor:
                             on_retry=on_retry,
                             on_node_start=on_node_start,
                             on_node_complete=on_node_complete,
+                            critic_trace_emitter=critic_trace_emitter,
                         )
                 return await self._execute_node(
                     graph,
@@ -282,6 +289,7 @@ class GraphExecutor:
                     on_retry=on_retry,
                     on_node_start=on_node_start,
                     on_node_complete=on_node_complete,
+                    critic_trace_emitter=critic_trace_emitter,
                 )
 
         return list(await asyncio.gather(*[_run_node(node) for node in batch]))
@@ -298,6 +306,7 @@ class GraphExecutor:
         on_retry: Optional[Callable[[RetryRecord], None]],
         on_node_start: Optional[Callable[[ExecutionNode], None]],
         on_node_complete: Optional[Callable[[ExecutionNode], None]],
+        critic_trace_emitter: Optional["CriticTraceEmitter"] = None,
     ) -> tuple[AgentExecutionResult, List[RetryRecord], bool, bool, List[HandoffExtra]]:
         if should_skip_graph_node(
             node,
@@ -416,6 +425,8 @@ class GraphExecutor:
                     tenant_id=task.tenant_id,
                     capability=cap,
                     plan_criteria=plan_criteria,
+                    trace_emitter=critic_trace_emitter,
+                    node_id=node.node_id,
                 )
             return self._validation_engine.validate(
                 execution,
@@ -496,6 +507,7 @@ class GraphExecutor:
                 on_retry=on_retry,
                 on_node_start=on_node_start,
                 on_node_complete=on_node_complete,
+                critic_trace_emitter=critic_trace_emitter,
             )
         else:
             node.status = ExecutionNodeStatus.FAILED
@@ -519,6 +531,7 @@ class GraphExecutor:
         on_retry: Optional[Callable[[RetryRecord], None]],
         on_node_start: Optional[Callable[[ExecutionNode], None]],
         on_node_complete: Optional[Callable[[ExecutionNode], None]],
+        critic_trace_emitter: Optional["CriticTraceEmitter"] = None,
     ) -> List[HandoffExtra]:
         handoff = resolve_handoff_from_execution(execution)
         if handoff is None:
@@ -587,6 +600,7 @@ class GraphExecutor:
             on_retry=on_retry,
             on_node_start=on_node_start,
             on_node_complete=on_node_complete,
+            critic_trace_emitter=critic_trace_emitter,
         )
         for record in handoff_retries:
             await _notify_retry(on_retry, record)

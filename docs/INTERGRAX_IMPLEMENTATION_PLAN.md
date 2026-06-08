@@ -218,7 +218,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | Regression gate | **906 passed** | No | Must stay green after each harness PR (Phase FLOW closeout 2026-06-07) |
 | **Full architecture audit (FAUDIT-32)** | **Done** (2026-06-06) | No (harness-only) | 32-layer audit + **23/23 remediation** → [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-closed) |
 | **Nexus execution depth (Phase FLOW)** | **Done** (17/18) | No (harness-only) | Band **2aj** — [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed) · **FLOW-8 Deferred** · source: [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) |
-| **Critic & Verification Layer (Phase CRIT-V)** | **Active** (15/24) | No (harness-only) | Band **2ak** — [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-active) · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) |
+| **Critic & Verification Layer (Phase CRIT-V)** | **Active** (16/24) | No (harness-only) | Band **2ak** — [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-active) · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) |
 
 ---
 
@@ -5263,7 +5263,7 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 
 ## Phase CRIT-V — Critic & Verification Layer
 
-**Status:** **Active** (2026-06-07) — **15/24** deliverables Done (CRIT-V-0 + CRIT-V-1 + CRIT-V-2 + CRIT-V-3.1–3.5)  
+**Status:** **Active** (2026-06-07) — **16/24** deliverables Done (CRIT-V-0 + CRIT-V-1 + CRIT-V-2 + CRIT-V-3.1–3.6)  
 **Prerequisites:** Phase EVAL **Done** (registry wiring), Phase FLOW **Done** (graph hooks), Phase M-LLM-R **Done** (typed LLM envelope)  
 **Goal:** Deliver production-grade PEV **Verify** infrastructure — L0/L1/L2 critic stack with tier-separated competencies; uplift Evaluation audit layer L2→L3.  
 **Priority ladder:** **Band 2ak** (§4.0) — **default active implementation queue** after §6.1 gate on each PR.  
@@ -5292,7 +5292,7 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 | CRIT-V-3.3 | 3 | **`L1Gateway`** — invokes eval tools via `CriticEvalToolClient` | **Done** | `runtime/critic/l1_gateway.py` | No direct LLM in Tier-1 |
 | CRIT-V-3.4 | 3 | **Graph partial hook** — `GraphExecutor` → `verify_partial` | **Done** | `graph_executor.py`, `critic_wiring.py` | Integration test: L0 fail → retry |
 | CRIT-V-3.5 | 3 | **Graph final hook** — `GraphRunner` → `verify_final` | **Done** | `graph_runner.py` | Terminal state respects verdict |
-| CRIT-V-3.6 | 3 | **Critic trace events** — `critic.*` trace steps | **Planned** | `runtime/critic/trace.py` | Visible in lab trace API |
+| CRIT-V-3.6 | 3 | **Critic trace events** — `critic.*` trace steps | **Done** | `runtime/critic/trace.py`, `trace_bridge.py` | Visible in lab trace API |
 | CRIT-V-4.1 | 4 | **`EvaluatorLoopExecutor`** — critique→revise routing | **Planned** | `runtime/critic/evaluator_loop_executor.py` | Unit: budget exhaustion → FAIL/HITL |
 | CRIT-V-4.2 | 4 | **Graph integration** — `EVALUATOR_LOOP` pattern wired | **Planned** | `graph_executor.py`, coordination catalog | Acceptance: 2-iteration loop |
 | CRIT-V-5.1 | 5 | **`NexusEvalRunner` semantic mode** — optional L1 via `eval.judge` | **Planned** | `eval/nexus_eval_runner.py` | Integration: non-exact pass |

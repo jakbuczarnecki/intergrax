@@ -24,6 +24,16 @@ from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
 from intergrax.runtime.critic.evaluator_loop_spec import EvaluatorLoopSpec
 from intergrax.runtime.critic.l0_gateway import L0Gateway
 from intergrax.runtime.critic.l1_gateway import L1Gateway
+from intergrax.runtime.critic.trace import (
+    CriticTraceEmitter,
+    build_critic_trace_emitter,
+)
+from intergrax.runtime.critic.trace_steps import (
+    CRITIC_STEP_FINAL_VERDICT,
+    CRITIC_STEP_L0_FAILED,
+    CRITIC_STEP_L1_JUDGE,
+    CRITIC_STEP_TRAJECTORY,
+)
 
 __all__ = [
     "CriticAction",
@@ -32,6 +42,7 @@ __all__ = [
     "CriticGraphHooks",
     "CriticHookConfig",
     "CriticOrchestrator",
+    "CriticTraceEmitter",
     "CriticRequest",
     "CriticScope",
     "CriticVerdict",
@@ -42,6 +53,11 @@ __all__ = [
     "RubricSpec",
     "build_critic_graph_hooks",
     "build_critic_request",
+    "build_critic_trace_emitter",
+    "CRITIC_STEP_FINAL_VERDICT",
+    "CRITIC_STEP_L0_FAILED",
+    "CRITIC_STEP_L1_JUDGE",
+    "CRITIC_STEP_TRAJECTORY",
     "validate_final_with_critic",
     "validate_node_with_critic",
 ]

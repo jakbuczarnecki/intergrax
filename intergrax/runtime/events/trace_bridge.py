@@ -54,6 +54,13 @@ _TOOL_STEP_TO_EVENT: dict[str, RuntimeEventType] = {
     "tool_invocation_error": RuntimeEventType.TOOL_FAILED,
 }
 
+_CRITIC_STEP_TO_EVENT: dict[str, RuntimeEventType] = {
+    "critic.l0_failed": RuntimeEventType.VALIDATION_FAILED,
+    "critic.l1_judge": RuntimeEventType.LLM_CALL,
+    "critic.trajectory": RuntimeEventType.STEP_COMPLETED,
+    "critic.final_verdict": RuntimeEventType.VALIDATION_STARTED,
+}
+
 _TASK_STATE_TO_EVENT: dict[TaskState, RuntimeEventType] = {
     TaskState.CREATED: RuntimeEventType.TASK_CREATED,
     TaskState.CLASSIFIED: RuntimeEventType.TASK_CLASSIFIED,
@@ -151,6 +158,15 @@ def _resolve_event_type_from_trace(
         event_type = RuntimeEventType.LLM_CALL
     elif trace.step in _TOOL_STEP_TO_EVENT:
         event_type = _TOOL_STEP_TO_EVENT[trace.step]
+    elif trace.step in _CRITIC_STEP_TO_EVENT:
+        event_type = _CRITIC_STEP_TO_EVENT[trace.step]
+        phase = ExecutionPhase.VALIDATION
+        if trace.step == "critic.final_verdict":
+            payload_passed = payload.get("passed")
+            if payload_passed is False:
+                event_type = RuntimeEventType.VALIDATION_FAILED
+            elif payload_passed is True:
+                event_type = RuntimeEventType.STEP_COMPLETED
     elif trace.message.startswith("retry attempt"):
         event_type = RuntimeEventType.RETRY_STARTED
         phase = ExecutionPhase.RETRY_HANDLING

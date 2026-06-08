@@ -21,6 +21,7 @@ from intergrax.runtime.critic.critic_orchestrator import CriticOrchestrator
 from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
 from intergrax.runtime.critic.l0_gateway import L0Gateway
 from intergrax.runtime.critic.l1_gateway import L1Gateway
+from intergrax.runtime.critic.trace import CriticTraceEmitter
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 
 
@@ -102,6 +103,8 @@ def validate_node_with_critic(
     capability: str | None = None,
     plan_criteria: list[str] | None = None,
     rubric: RubricSpec | None = None,
+    trace_emitter: CriticTraceEmitter | None = None,
+    node_id: str | None = None,
 ) -> ValidationResult:
     request = _build_graph_critic_request(
         execution=execution,
@@ -115,6 +118,15 @@ def validate_node_with_critic(
         partial=True,
     )
     verdict = hooks.orchestrator.verify_partial(request, contract=contract)
+    if trace_emitter is not None:
+        trace_emitter.emit_verdict(
+            request,
+            verdict,
+            tenant_id=tenant_id,
+            task_id=run_id,
+            agent_id=contract.id,
+            node_id=node_id,
+        )
     return critic_verdict_to_validation_result(verdict)
 
 
@@ -128,6 +140,7 @@ def validate_final_with_critic(
     capability: str | None = None,
     plan_criteria: list[str] | None = None,
     rubric: RubricSpec | None = None,
+    trace_emitter: CriticTraceEmitter | None = None,
 ) -> ValidationResult:
     request = _build_graph_critic_request(
         execution=execution,
@@ -141,6 +154,14 @@ def validate_final_with_critic(
         partial=False,
     )
     verdict = hooks.orchestrator.verify_final(request, contract=contract)
+    if trace_emitter is not None:
+        trace_emitter.emit_verdict(
+            request,
+            verdict,
+            tenant_id=tenant_id,
+            task_id=run_id,
+            agent_id=contract.id,
+        )
     return critic_verdict_to_validation_result(verdict)
 
 
