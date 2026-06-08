@@ -47,9 +47,10 @@ Implementation status: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTA
 31. [Appendix S — Security control plane closeout](#appendix-s--security-control-plane-closeout)
 32. [Appendix T — Cost governance control plane closeout](#appendix-t--cost-governance-control-plane-closeout)
 33. [Appendix U — Evaluation control plane closeout](#appendix-u--evaluation-control-plane-closeout)
-34. [Appendix V — Adaptive Harness control plane closeout](#appendix-v--adaptive-harness-control-plane-closeout)
-35. [Anti-patterns](#anti-patterns)
-36. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
+34. [Appendix W — Critic & Verification control plane closeout](#appendix-w--critic--verification-control-plane-closeout)
+35. [Appendix V — Adaptive Harness control plane closeout](#appendix-v--adaptive-harness-control-plane-closeout)
+36. [Anti-patterns](#anti-patterns)
+37. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
 
@@ -2399,6 +2400,62 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 
 ---
 
+## Appendix W — Critic & Verification control plane closeout
+
+**Audience:** Tier-3 application authors, platform engineers, quality engineers.  
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §25; Phase CRIT-V **Done**; canon [§55](intergrax_runtime_architecture.md#55-critic--verification-layer-cvl--pev-verify-addendum); architecture [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md).
+
+Tier-3 hosts materialize critic graph hooks, policy fragments, and assembly validation from typed `CriticProfile` — not ad-hoc `CriticOrchestrator` construction in host factories.
+
+### W.1 Design principles
+
+| Principle | Meaning in Intergrax |
+|-----------|------------------------|
+| Profile-driven | `CriticProfile` on `ApplicationEnvironmentProfile` |
+| Wire-time validation | `critic_assembly_resolver` at `build_harness_host_runtime` |
+| Typed bridge | `CriticWiringOptions` maps profile → `CriticHookConfig` |
+| Policy bundle merge | `wire_policy_bundle` attaches `critic_governance` fragment |
+| Opt-in L1 | `semantic_judge_enabled` requires `default_rubric_ref` + `CriticEvalToolClient` at wire time |
+| PEV separation | Tier-1 orchestrates; Tier-2 supplies rubrics; Tier-3 selects scopes |
+
+### W.2 Critic wiring map
+
+```text
+ApplicationEnvironmentProfile (Tier-3)
+  └── critic_profile
+        ├── scopes.node_partial / graph_final   → CriticHookConfig
+        ├── semantic_judge_enabled              → L1Gateway via eval.judge
+        └── evaluator_loop_max_iterations       → EvaluatorLoopSpec budget
+
+wire_application_critic() (Tier-3)
+  └── critic_runtime_bridge.py + critic_wiring.py
+        ├── resolve_critic_wiring_options()
+        └── build_critic_graph_hooks() → NexusLoop.apply_critic_graph_hooks()
+
+wire_policy_bundle() (Tier-3)
+  └── critic_governance domain fragment
+
+build_harness_host_runtime() (Tier-3)
+  └── critic_assembly_resolver.py
+
+Release / CI
+  └── check_harness_critic_wiring.py
+  └── phase_v_closeout_gate.py (includes critic wiring audit)
+```
+
+### W.3 Verification (audit evidence)
+
+| Concern | Command / test |
+|---------|----------------|
+| CVL contracts + orchestrator | `pytest tests/unit/runtime/critic/ -m gate` |
+| Evaluator-loop graph | `pytest tests/unit/runtime/critic/test_critic_evaluator_loop_graph.py -m gate` |
+| Tier-3 assembly | `pytest tests/unit/applications/test_critic_assembly_resolver.py -m gate` |
+| Semantic offline eval | `pytest tests/unit/eval/test_nexus_eval_runner_semantic.py -m gate` |
+| Harness critic wiring | `python scripts/check_harness_critic_wiring.py` |
+| Full gate | `uv run pytest -m gate -q` |
+
+---
+
 ## Appendix V — Adaptive Harness control plane closeout
 
 **Audience:** Tier-3 application authors, platform engineers, harness operators.  
@@ -2506,6 +2563,7 @@ Run before opening a harness PR (see `scripts/`):
 | `check_p6_infra_health.py` | Optional P6 Docker stack probe (Keycloak :8088, Typesense :8108, Airflow :8086) when `INTERGRAX_P6_INFRA_E2E=true` |
 | `check_harness_cost_wiring.py` | Hosts wire budget policy from `CostProfile` |
 | `check_harness_evaluation_wiring.py` | Hosts wire evaluation registry from `EvaluationProfile` |
+| `check_harness_critic_wiring.py` | Hosts wire critic hooks from `CriticProfile` (CRIT-V-6.2) |
 | `check_agents_vendor_imports.py` | Agents do not import `integrations/providers/` |
 | `check_integration_vendor_imports.py` | Tier-0 does not import application/agent trees incorrectly |
 | `check_production_chat_agent_imports.py` | No `ChatAgent` on production paths |
@@ -2538,4 +2596,5 @@ When asked to create a new Intergrax agent:
 19. For security wiring and V-SEC middleware assembly, read [Appendix S](#appendix-s--security-control-plane-closeout) — configure `ApplicationSecurityProfile`, not direct middleware in host factories.
 20. For cost governance wiring and budget assembly, read [Appendix T](#appendix-t--cost-governance-control-plane-closeout) — configure `CostProfile`, not ad-hoc `BudgetPolicy` in hosts.
 21. For evaluation wiring and shadow/online registry assembly, read [Appendix U](#appendix-u--evaluation-control-plane-closeout) — configure `EvaluationProfile`, not ad-hoc `OnlineEvaluationRegistry` in hosts.
-22. Do **not** create duplicate workflow documentation — update this file if the process changes.
+22. For critic / PEV verify wiring, read [Appendix W](#appendix-w--critic--verification-control-plane-closeout) — configure `CriticProfile`, not ad-hoc `CriticOrchestrator` in hosts.
+23. Do **not** create duplicate workflow documentation — update this file if the process changes.

@@ -12,9 +12,11 @@ from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.replay.metrics import ExecutionMetricsEngine
 from intergrax.runtime.replay.models import ReconstructedRun
 from intergrax.runtime.replay.replay_engine import ReplayEngine
+from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
 from intergrax.runtime.task.task import TaskState
 from intergrax.runtime.task.task_run_bridge import task_from_runtime_request
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from intergrax.tools.providers.eval.contracts import EvalJudgeInput
 
 
 class NexusEvalRunner:
@@ -29,10 +31,12 @@ class NexusEvalRunner:
         task_runner: UnifiedTaskRunner,
         replay_engine: Optional[ReplayEngine] = None,
         metrics_engine: Optional[ExecutionMetricsEngine] = None,
+        semantic_client: CriticEvalToolClient | None = None,
     ) -> None:
         self._task_runner = task_runner
         self._replay_engine = replay_engine
         self._metrics_engine = metrics_engine
+        self._semantic_client = semantic_client
 
     @classmethod
     def from_nexus_loop(
@@ -105,12 +109,12 @@ class NexusEvalRunner:
         if execution and execution.used_tools:
             tool_calls_count = max(tool_calls_count, len(execution.used_tools))
 
-        success = (
+        structural_ok = (
             result.state == TaskState.COMPLETED
             and execution is not None
             and execution.status == AgentExecutionStatus.COMPLETED
-            and final_answer == case.expected_output
         )
+        success = structural_ok and self._output_matches(case, final_answer, result.run_id or case.case_id)
 
         error = None
         if not success:
@@ -118,6 +122,8 @@ class NexusEvalRunner:
                 error = "; ".join(execution.errors)
             elif result.state != TaskState.COMPLETED:
                 error = f"task_state={result.state.value}"
+            elif case.semantic_match_enabled:
+                error = "semantic_mismatch"
             else:
                 error = "output_mismatch"
 
@@ -138,3 +144,29 @@ class NexusEvalRunner:
         for case in cases:
             results.append(await self.run_case(case))
         return results
+
+    def _output_matches(
+        self,
+        case: EvalCase,
+        final_answer: str,
+        run_id: str,
+    ) -> bool:
+        if case.semantic_match_enabled and case.rubric_ref:
+            return self._semantic_match(case, final_answer, run_id)
+        return final_answer == case.expected_output
+
+    def _semantic_match(self, case: EvalCase, final_answer: str, run_id: str) -> bool:
+        if self._semantic_client is None or not case.rubric_ref:
+            return final_answer == case.expected_output
+        agent_id = case.runtime_request.agent_id or "eval-agent"
+        result = self._semantic_client.judge(
+            EvalJudgeInput(
+                output_text=final_answer,
+                rubric_id=case.rubric_ref,
+                reference_context=case.expected_output,
+                min_score=case.semantic_threshold or 0.75,
+                run_id=run_id,
+                agent_id=agent_id,
+            ),
+        )
+        return result.passed

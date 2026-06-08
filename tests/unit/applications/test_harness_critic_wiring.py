@@ -11,6 +11,7 @@ from intergrax.applications._shared.critic_runtime_bridge import (
     apply_critic_profiles_from_environment,
     resolve_critic_wiring_options,
 )
+from intergrax.applications._shared.critic_wiring import wire_application_critic
 from intergrax.applications._shared.runtime_config_bridge import materialize_runtime_config
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.environment_profile import (
@@ -69,6 +70,14 @@ def test_lab_defaults_keep_semantic_critic_disabled() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="critic.lab")
     assert env.critic_profile.semantic_judge_enabled is False
     assert env.critic_profile.require_critic_on_completion is False
+
+
+def test_wire_application_critic_builds_graph_hooks_for_graph_final() -> None:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="critic.wire")
+    wiring = wire_application_critic(env)
+    assert wiring.graph_hooks is not None
+    assert wiring.graph_hooks.verify_graph_final is True
+    assert "critic_governance" in wiring.domain_fragments
 
 
 def test_materialize_runtime_config_applies_critic_profile() -> None:

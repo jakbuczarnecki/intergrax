@@ -5665,10 +5665,10 @@ LLM-as-judge is **opt-in** via `CriticProfile` — not mandatory on every run. S
 | CVL architecture + ADR | **Done** | CRIT-V-0 |
 | `CriticProfile` + contracts | **Done** | CRIT-V-1 |
 | `eval.judge` / `eval.trajectory` tools | **Done** | CRIT-V-2 |
-| `CriticOrchestrator` + hooks | **Planned** | CRIT-V-3 |
-| Evaluator-loop executor | **Planned** | CRIT-V-4 |
-| Semantic offline runner | **Planned** | CRIT-V-5 |
-| Tier-3 wiring + CI | **Planned** | CRIT-V-6–7 |
+| `CriticOrchestrator` + hooks | **Done** | CRIT-V-3 |
+| Evaluator-loop executor | **Done** | CRIT-V-4 |
+| Semantic offline runner | **Done** | CRIT-V-5 |
+| Tier-3 wiring + CI | **Done** | CRIT-V-6–7 |
 
 ## 55.6 Forbidden patterns
 

@@ -1,6 +1,6 @@
 # Critic & Verification Layer (CVL) — Architecture
 
-**Status:** Architecture RFC — **Planned** (Phase CRIT-V, Band 2ak)  
+**Status:** **Done** (Phase CRIT-V, Band 2ak — 24/24 deliverables)  
 **Date:** 2026-06-07  
 **Audience:** Harness platform engineers, Tier-2 agent authors, Tier-3 application operators  
 **Canon addendum:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) §55  
@@ -397,7 +397,7 @@ Integrates with existing `RuntimePolicyEngine` — no agent-specific branches.
 | **L3** | L2 + trajectory eval + evaluator-loop executor + semantic offline runner |
 | **L4** | L3 + adaptive critic threshold proposals + human-calibrated judge baseline in CI |
 
-**Current:** L1 (wiring). **Phase CRIT-V target:** L3.
+**Current:** L3 (CRIT-V complete). **Next:** L4 adaptive critic thresholds (deferred — AHIA / product gate).
 
 ---
 
@@ -432,11 +432,11 @@ See [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) — *
 | CRIT-V-0 | This document, ADR-CRITIC-001, canon §55, README | **Done** |
 | CRIT-V-1 | Contracts + `CriticProfile` | **Done** |
 | CRIT-V-2 | Tier-0 tools `eval.judge`, `eval.trajectory` | **Done** |
-| CRIT-V-3 | `CriticOrchestrator` + graph/UAEP hooks |
-| CRIT-V-4 | `EvaluatorLoopExecutor` |
-| CRIT-V-5 | `NexusEvalRunner` semantic mode |
-| CRIT-V-6 | Tier-3 wiring + policy bundle + CI |
-| CRIT-V-7 | FAUDIT-EVAL.1 baseline gate + docs Appendix W |
+| CRIT-V-3 | `CriticOrchestrator` + graph/UAEP hooks | **Done** |
+| CRIT-V-4 | `EvaluatorLoopExecutor` | **Done** |
+| CRIT-V-5 | `NexusEvalRunner` semantic mode | **Done** |
+| CRIT-V-6 | Tier-3 wiring + policy bundle + CI | **Done** |
+| CRIT-V-7 | FAUDIT-EVAL.1 baseline gate + docs Appendix W | **Done** |
 
 ---
 

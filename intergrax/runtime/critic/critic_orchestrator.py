@@ -41,6 +41,10 @@ class CriticOrchestrator:
         self._l0 = l0_gateway or L0Gateway()
         self._l1 = l1_gateway or L1Gateway()
 
+    @property
+    def l1_client_configured(self) -> bool:
+        return self._l1.client_configured
+
     def verify(
         self,
         request: CriticRequest,

@@ -41,9 +41,9 @@ Intergrax is a **production-grade Harness AI platform** — not a chatbot or sin
 
 ## Implementation & status
 
-- docs/INTERGRAX_IMPLEMENTATION_PLAN.md — **platform** phase tracker, gates, maintenance queue (§6.1); **active queue = Phase CRIT-V (Band 2ak)**; not product/agent deployment plans
+- docs/INTERGRAX_IMPLEMENTATION_PLAN.md — **platform** phase tracker, gates, maintenance queue (§6.1); **Phase CRIT-V (Band 2ak) Done** (24/24); not product/agent deployment plans
 - Tool catalog: **172** tools · **42** bundles (T-EXPAND T13 / CRIT-V Done) — docs/TOOLS.md
-- Harness platform: **complete** (§6.1 maintenance + **Phase CRIT-V** active queue)
+- Harness platform: **complete** (§6.1 maintenance; **Phase CRIT-V** Done)
 - Regression gate: `uv run pytest -m gate -q`
 - Business agents (Phase K): K.1/K.2 deferred; **Local Knowledge Workspace (LKW)** — applications/local_workspace_application/ARCHITECTURE.md · plan §6.3a LKW.*
 

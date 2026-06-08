@@ -256,6 +256,11 @@ class NexusLoop:
     def registry(self) -> AgentRegistry:
         return self._registry
 
+    def apply_critic_graph_hooks(self, hooks: Optional["CriticGraphHooks"]) -> None:
+        """Attach or clear critic graph hooks on executor and runner (CRIT-V-6.1)."""
+        self._graph_executor._critic_graph_hooks = hooks
+        self._graph_runner.critic_graph_hooks = hooks
+
     @property
     def trace_emitter(self) -> Optional[TaskTraceEmitter]:
         return self._trace_emitter

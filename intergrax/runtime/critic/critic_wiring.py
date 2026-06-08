@@ -17,6 +17,22 @@ from intergrax.runtime.critic.contracts import (
     RubricSpec,
     build_critic_request,
 )
+
+
+def critic_completion_blocked(
+    hooks: CriticGraphHooks,
+    *,
+    verdict: CriticVerdict,
+    l1_client_configured: bool,
+) -> bool:
+    """Fail-closed when completion requires critic layers that are unavailable."""
+    if not hooks.config.require_critic_on_completion:
+        return False
+    if not verdict.passed:
+        return True
+    if hooks.config.semantic_judge_enabled and not l1_client_configured:
+        return True
+    return False
 from intergrax.runtime.critic.critic_orchestrator import CriticOrchestrator
 from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
 from intergrax.runtime.critic.l0_gateway import L0Gateway
@@ -35,6 +51,7 @@ class CriticHookConfig:
     trajectory_eval_enabled: bool = False
     judge_threshold: float = 0.75
     default_rubric_ref: str | None = None
+    require_critic_on_completion: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,6 +123,34 @@ def validate_node_with_critic(
     trace_emitter: CriticTraceEmitter | None = None,
     node_id: str | None = None,
 ) -> ValidationResult:
+    validation, _ = validate_node_with_critic_detail(
+        execution,
+        contract=contract,
+        hooks=hooks,
+        run_id=run_id,
+        tenant_id=tenant_id,
+        capability=capability,
+        plan_criteria=plan_criteria,
+        rubric=rubric,
+        trace_emitter=trace_emitter,
+        node_id=node_id,
+    )
+    return validation
+
+
+def validate_node_with_critic_detail(
+    execution: AgentExecutionResult,
+    *,
+    contract: AgentContract,
+    hooks: CriticGraphHooks,
+    run_id: str,
+    tenant_id: str,
+    capability: str | None = None,
+    plan_criteria: list[str] | None = None,
+    rubric: RubricSpec | None = None,
+    trace_emitter: CriticTraceEmitter | None = None,
+    node_id: str | None = None,
+) -> tuple[ValidationResult, CriticVerdict]:
     request = _build_graph_critic_request(
         execution=execution,
         contract=contract,
@@ -127,7 +172,7 @@ def validate_node_with_critic(
             agent_id=contract.id,
             node_id=node_id,
         )
-    return critic_verdict_to_validation_result(verdict)
+    return critic_verdict_to_validation_result(verdict), verdict
 
 
 def validate_final_with_critic(
@@ -142,6 +187,32 @@ def validate_final_with_critic(
     rubric: RubricSpec | None = None,
     trace_emitter: CriticTraceEmitter | None = None,
 ) -> ValidationResult:
+    validation, _ = validate_final_with_critic_detail(
+        execution,
+        contract=contract,
+        hooks=hooks,
+        run_id=run_id,
+        tenant_id=tenant_id,
+        capability=capability,
+        plan_criteria=plan_criteria,
+        rubric=rubric,
+        trace_emitter=trace_emitter,
+    )
+    return validation
+
+
+def validate_final_with_critic_detail(
+    execution: AgentExecutionResult,
+    *,
+    contract: AgentContract,
+    hooks: CriticGraphHooks,
+    run_id: str,
+    tenant_id: str,
+    capability: str | None = None,
+    plan_criteria: list[str] | None = None,
+    rubric: RubricSpec | None = None,
+    trace_emitter: CriticTraceEmitter | None = None,
+) -> tuple[ValidationResult, CriticVerdict]:
     request = _build_graph_critic_request(
         execution=execution,
         contract=contract,
@@ -162,7 +233,19 @@ def validate_final_with_critic(
             task_id=run_id,
             agent_id=contract.id,
         )
-    return critic_verdict_to_validation_result(verdict)
+    validation = critic_verdict_to_validation_result(verdict)
+    if critic_completion_blocked(
+        hooks,
+        verdict=verdict,
+        l1_client_configured=hooks.orchestrator.l1_client_configured,
+    ):
+        validation = ValidationResult(
+            valid=False,
+            errors=["critic_completion_blocked"],
+            warnings=list(validation.warnings),
+            confidence=validation.confidence,
+        )
+    return validation, verdict
 
 
 def _build_graph_critic_request(

@@ -81,6 +81,9 @@ def main() -> int:
         governance_exit = _run_script("phase_v_governance_report.py")
         if governance_exit != 0:
             return governance_exit
+        critic_exit = _run_script("check_harness_critic_wiring.py")
+        if critic_exit != 0:
+            return critic_exit
 
     adaptive_report = evaluate_adaptive_governance(build_default_adaptive_proposals())
     inputs = collect_harness_governance_signals()

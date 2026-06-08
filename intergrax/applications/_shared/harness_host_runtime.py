@@ -41,6 +41,13 @@ from intergrax.applications._shared.cost_wiring import (
     ApplicationCostWiring,
     wire_application_cost,
 )
+from intergrax.applications._shared.critic_assembly_resolver import (
+    assert_critic_assembly_valid,
+)
+from intergrax.applications._shared.critic_wiring import (
+    ApplicationCriticWiring,
+    wire_application_critic,
+)
 from intergrax.applications._shared.evaluation_assembly_resolver import (
     assert_evaluation_assembly_valid,
 )
@@ -70,6 +77,7 @@ class HarnessHostRuntime:
     security: ApplicationSecurityWiring
     cost: ApplicationCostWiring
     evaluation: ApplicationEvaluationWiring
+    critic: ApplicationCriticWiring
     nexus_loop: NexusLoop
 
 
@@ -137,6 +145,8 @@ def build_harness_host_runtime(
     assert_cost_assembly_valid(cost_wiring, environment)
     evaluation_wiring = wire_application_evaluation(environment)
     assert_evaluation_assembly_valid(evaluation_wiring, environment)
+    critic_wiring = wire_application_critic(environment)
+    assert_critic_assembly_valid(critic_wiring, environment)
     task_memory = wire_task_memory_from_profile(environment)
     nexus_loop = build_nexus_loop_from_environment(
         resolved_registry,
@@ -152,6 +162,7 @@ def build_harness_host_runtime(
         llm_adapter=resolve_llm_adapter(environment),
         runtime_event_bus=env_wiring.build_context.runtime_event_bus,
         security_wiring=security_wiring,
+        critic_wiring=critic_wiring,
         run_budget=cost_wiring.run_budget,
     )
     assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)
@@ -166,5 +177,6 @@ def build_harness_host_runtime(
         security=security_wiring,
         cost=cost_wiring,
         evaluation=evaluation_wiring,
+        critic=critic_wiring,
         nexus_loop=nexus_loop,
     )

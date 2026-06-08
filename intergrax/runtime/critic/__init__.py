@@ -18,9 +18,25 @@ from intergrax.runtime.critic.critic_wiring import (
     CriticHookConfig,
     build_critic_graph_hooks,
     validate_final_with_critic,
+    validate_final_with_critic_detail,
     validate_node_with_critic,
+    validate_node_with_critic_detail,
+    critic_completion_blocked,
 )
 from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
+from intergrax.runtime.critic.evaluator_loop_executor import (
+    EvaluatorLoopDecision,
+    EvaluatorLoopExecutor,
+    EvaluatorLoopIterationState,
+    EvaluatorLoopOutcome,
+)
+from intergrax.runtime.critic.evaluator_loop_metadata import (
+    COORDINATION_PATTERN_KEY,
+    EVALUATOR_LOOP_ITERATION_KEY,
+    EVALUATOR_LOOP_SPEC_KEY,
+    evaluator_loop_spec_from_node,
+    tag_node_evaluator_loop,
+)
 from intergrax.runtime.critic.evaluator_loop_spec import EvaluatorLoopSpec
 from intergrax.runtime.critic.l0_gateway import L0Gateway
 from intergrax.runtime.critic.l1_gateway import L1Gateway
@@ -46,7 +62,17 @@ __all__ = [
     "CriticRequest",
     "CriticScope",
     "CriticVerdict",
+    "COORDINATION_PATTERN_KEY",
+    "EVALUATOR_LOOP_ITERATION_KEY",
+    "EVALUATOR_LOOP_SPEC_KEY",
+    "EvaluatorLoopDecision",
+    "EvaluatorLoopExecutor",
+    "EvaluatorLoopIterationState",
+    "EvaluatorLoopOutcome",
     "EvaluatorLoopSpec",
+    "evaluator_loop_spec_from_node",
+    "tag_node_evaluator_loop",
+    "critic_completion_blocked",
     "L0Gateway",
     "L1Gateway",
     "LayerVerdict",
@@ -59,5 +85,7 @@ __all__ = [
     "CRITIC_STEP_L1_JUDGE",
     "CRITIC_STEP_TRAJECTORY",
     "validate_final_with_critic",
+    "validate_final_with_critic_detail",
     "validate_node_with_critic",
+    "validate_node_with_critic_detail",
 ]
