@@ -4,6 +4,10 @@
 """Harness observability spine helpers (OBS-BUS-2+)."""
 
 from intergrax.runtime.observability.emitter import EmittedDiagnostic, ObservabilityEmitter
+from intergrax.runtime.observability.persistence_conformance import (
+    assert_runtime_event_persistence_conformance,
+    sample_runtime_event,
+)
 from intergrax.runtime.observability.extension_sdk import (
     ExtensionSchemaError,
     PayloadSchemaRegistry,
@@ -24,6 +28,7 @@ from intergrax.runtime.observability.trace_scope import (
 )
 
 __all__ = [
+    "assert_runtime_event_persistence_conformance",
     "EmittedDiagnostic",
     "ExtensionSchemaError",
     "ObservabilityEmitter",
@@ -36,6 +41,7 @@ __all__ = [
     "register_agent_diagnostic_payload",
     "register_application_diagnostic_payload",
     "register_extension_runtime_payload",
+    "sample_runtime_event",
     "TraceScopeState",
     "bind_parent_event_id",
     "current_parent_event_id",

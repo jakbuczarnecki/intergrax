@@ -370,18 +370,22 @@ wiring = wire_application_observability(env_profile)
 
 ### 9.3 Scale-out path
 
-| Trigger | Backend | Integration |
-|---------|---------|-------------|
-| >1M events/day/tenant | Cassandra | `integrations/providers/cassandra/` |
-| Full-text on payloads | Elasticsearch / OpenSearch | `observability_backend` slug |
-| Centralized trace UI | Phoenix, Langfuse | Dual-write from journal export; parser trace for ingest |
-| Metrics at scale | Prometheus + OTLP | `IntegrationProfile.harness_environment()` |
+| Trigger | Backend | Integration | Runtime contract |
+|---------|---------|-------------|------------------|
+| >1M events/day/tenant | Cassandra | `document_store=cassandra` | `DocumentBackedRuntimeEventStore` via `cassandra/runtime_events.py` |
+| Full-text on payloads | Elasticsearch / OpenSearch | `observability_backend=elasticsearch` | Same `RuntimeEventPersistence` protocol; search index dual-write in OBS-BUS-6 |
+| Centralized trace UI | Phoenix, Langfuse | Dual-write from journal export; parser trace for ingest | — |
+| Metrics at scale | Prometheus + OTLP | `IntegrationProfile.harness_environment()` | — |
+
+**Profile wiring:** `open_runtime_event_store_from_profile()` resolves SQLite (default), Cassandra document store, or Elasticsearch lab index — all wrapped in `ValidatingRuntimeEventPersistence`.
+
+**Conformance:** `assert_runtime_event_persistence_conformance()` in `intergrax/runtime/observability/persistence_conformance.py` — gate: `check_observability_persistence_conformance.py`.
 
 **Rule (canon §33.1):** Extend `RunTraceWriter` / `RuntimeEventPersistence` — do not fork a parallel trace system.
 
 ### 9.4 Custom persistence adapter
 
-Implement `RuntimeEventPersistence` protocol (`append`, `list_for_run`) and `RunTraceWriter` / `RunTraceReader`. Register via `IntegrationProfile` factory — same as other integration providers.
+Implement `RuntimeEventPersistence` protocol (`append`, `list_for_run`, `list_for_task`) and `RunTraceWriter` / `RunTraceReader`. Register via `IntegrationProfile` factory — same as other integration providers. Run the conformance harness before shipping a new backend.
 
 ---
 
@@ -487,6 +491,7 @@ Audit map §21 score today: **L3**. Target after OBS-BUS: **L4**.
 | Trace bridge | `intergrax/runtime/events/trace_bridge.py` |
 | Emitter + TraceScope | `intergrax/runtime/observability/emitter.py`, `trace_scope.py` |
 | Extension SDK | `intergrax/runtime/observability/extension_sdk.py`, `intergrax/scaffold/tracing_templates.py` |
+| Persistence conformance | `intergrax/runtime/observability/persistence_conformance.py`, `events/stores/document_backed_runtime_event_store.py` |
 | Unified journal | `intergrax/runtime/events/unified_run_journal.py` |
 | Nexus wiring | `intergrax/runtime/nexus/observability_wiring.py` |
 | App wiring | `intergrax/applications/_shared/observability_wiring.py` |
