@@ -37,10 +37,10 @@ Alternatives considered:
 Adopt the **Harness Observability Spine (HOS)** as the single observability mechanism for all tiers:
 
 1. **Event-first:** `RuntimeEvent` is the primary audit signal; `TraceEvent` carries rich `DiagnosticPayload` detail; metrics are derived.
-2. **Single emit API (target):** `ObservabilityEmitter` facade wraps `RuntimeState.trace_event`, `RuntimeEventBus.record`, and `RunTraceWriter.append` — developers do not choose stores.
-3. **Typed extension:** All tiers extend `DiagnosticPayload` with stable `schema_id`; agent schemas use `agents.<slug>.diag.*`, applications use `applications.<slug>.diag.*`.
-4. **TraceScope (target):** Context manager sets `parent_event_id` for causal trees.
-5. **Typed canonical payloads (target):** `RuntimeEventPayload` registry replaces raw dicts at the bus layer.
+2. **Single emit API:** `ObservabilityEmitter` facade wraps `RuntimeState.trace_event`, `RuntimeEventBus.record`, and `RunTraceWriter.append` — developers do not choose stores. *(OBS-BUS-2 Done)*
+3. **Typed extension:** All tiers extend `DiagnosticPayload` with stable `schema_id`; agent schemas use `agents.<slug>.diag.*`, applications use `applications.<slug>.diag.*`. *(OBS-BUS-4 Done)*
+4. **TraceScope:** Context manager sets `parent_event_id` for causal trees. *(OBS-BUS-2 Done)*
+5. **Typed canonical payloads:** `payload_registry` + `schema_guard` enforce `payload_schema_id` + structured `data` at the bus layer. *(OBS-BUS-1 Done; Pydantic field union on `RuntimeEvent.payload` is residual — see OBSERVABILITY_ARCHITECTURE.md §8.2)*
 6. **Unified read model:** `build_unified_run_journal` remains the operator timeline; external sinks subscribe or dual-write from the journal.
 7. **Wiring unchanged at Tier-3:** `wire_application_observability` — no per-product trace stores.
 
@@ -56,8 +56,8 @@ Adopt the **Harness Observability Spine (HOS)** as the single observability mech
 
 ### Negative
 
-- Migration effort for `RuntimeEvent.payload` typing (OBS-BUS-1)
-- Short-term dual emit paths remain until `ObservabilityEmitter` ships (OBS-BUS-2)
+- Residual typing: `RuntimeEvent.payload` model field remains `Dict[str, Any]` with registry-backed contents (§8.2)
+- Legacy `RuntimeState.trace_event()` path coexists with `ObservabilityEmitter` (same bridge, dual entry)
 - Agent authors must learn `DiagnosticPayload` contract (documented in OBSERVABILITY_ARCHITECTURE.md §5.3)
 
 ## Compliance
@@ -69,5 +69,6 @@ Adopt the **Harness Observability Spine (HOS)** as the single observability mech
 ## Implementation notes
 
 - Architecture doc: `docs/OBSERVABILITY_ARCHITECTURE.md`
-- Implementation tracker: Phase OBS-BUS (OBS-BUS-0 through OBS-BUS-7)
-- Verification: `scripts/check_observability_gates.py` (OBS-BUS-7 Done)
+- Implementation tracker: Phase OBS-BUS **Done** (OBS-BUS-0 through OBS-BUS-7)
+- Verification: `scripts/check_observability_gates.py` · audit map §21 **L4**
+- Closeout summary: `OBSERVABILITY_ARCHITECTURE.md` §17

@@ -1,7 +1,7 @@
 # Intergrax — Observability Architecture
 
-**Status:** Canonical architecture (Harness platform)  
-**Last updated:** 2026-06-08  
+**Status:** Canonical architecture (Harness platform) · **Phase OBS-BUS Done** (8/8) · audit map §21 **L4**  
+**Last updated:** 2026-06-08 (closeout sync)  
 **Audience:** Harness maintainers, Tier-3 application authors, Tier-2 agent authors, operators  
 **Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §33, §42.1, §42.24 · [ADR-OBS-001](adr/ADR-OBS-001.md) · [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) [Phase OBS-BUS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine) · [AGENT_CREATION_GUIDE.md Appendix Q](AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) · [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) §21
 
@@ -38,7 +38,7 @@ For every user interaction (question → answer), an operator MUST be able to re
 - Replacing external APM (Datadog, Honeycomb) as the **only** store — Intergrax owns the canonical journal; external systems are **optional sinks**
 - Storing raw prompts/completions in production traces (redaction is mandatory)
 - Per-agent custom SQLite trace databases
-- Untyped `dict` payloads as the long-term contract (transitional; see §8)
+- Raw `dict` payloads without `payload_schema_id` / registry (see §8.2 residual evolution)
 
 ---
 
@@ -73,7 +73,7 @@ The **Harness Observability Spine** is the universal “bus” through which all
 ├─────────────────────────────────────────────────────────────────────────┤
 │  NORMALIZE                                                               │
 │    trace_bridge                         TraceEvent → RuntimeEvent        │
-│    payload_registry (target)            schema_id → typed payload        │
+│    payload_registry + schema_guard      schema_id → typed payload        │
 ├─────────────────────────────────────────────────────────────────────────┤
 │  PERSIST (write path)                                                    │
 │    RunTraceWriter                       TraceEvent timeline (SQLite…)    │
@@ -85,6 +85,7 @@ The **Harness Observability Spine** is the universal “bus” through which all
 │    Debug API / CLI                      operator inspection                │
 ├─────────────────────────────────────────────────────────────────────────┤
 │  SINKS (optional, subscribe/export)                                      │
+│    journal_export plugin                unified journal OTLP snapshot      │
 │    OTLP / Prometheus                    LLM/RAG metrics plugins            │
 │    ObservabilityBackend tools           Langfuse, Sentry, Phoenix…         │
 │    Custom RuntimeEventBus handlers      alerting, webhooks               │
@@ -200,7 +201,7 @@ Developers **never** write to SQLite or invent parallel buses.
      schema_id = "intergrax.diag.<domain>.<name>"   # or "agents.<slug>.diag.<name>"
      implement to_dict(), redact()
 
-2. Emit through spine API (target: ObservabilityEmitter):
+2. Emit through spine API (`ObservabilityEmitter`):
      emitter.emit_diagnostic(
          component=TraceComponent.STEP,
          step="my_agent.custom_check",
@@ -240,23 +241,22 @@ Tier-2/3 payloads MUST subclass `DiagnosticPayload` from `trace_models.py` — *
 | `task_id` | User-facing work unit | Stable across retries unless policy splits |
 | `run_id` | Single execution attempt | One trace timeline per run |
 | `correlation_id` | Cross-service chain | Defaults to `task_id`; propagated to children |
-| `parent_event_id` | Causal tree | **Target:** set by `TraceScope` on nested calls |
+| `parent_event_id` | Causal tree | Set by `TraceScope` / `ObservabilityEmitter` on nested calls |
 | `event_id` | Unique event | `evt_*` (bus) or UUID (trace) |
 | `node_id` | Graph node | Set during graph execution |
 | `step_id` | UAEP / pipeline step | Middleware + UAEP |
 
-### 6.2 TraceScope (target — Phase OBS-BUS-2)
+### 6.2 TraceScope (OBS-BUS-2 — shipped)
 
-`TraceScope` is a context manager on the spine:
+`TraceScope` is a context manager on the spine (`intergrax/runtime/observability/trace_scope.py`):
 
 ```text
-with TraceScope.emitter.run(run_id, task_id, tenant_id) as scope:
-    with scope.step("tool.invoke", parent=scope.current):
-        ...  # child events inherit parent_event_id
+with TraceScope(emitter, run_id=..., task_id=..., tenant_id=...) as scope:
+    with scope.step("tool.invoke") as step_scope:
+        ...  # child events inherit parent_event_id from step anchor
 ```
 
-**Today:** `parent_event_id` exists on `RuntimeEvent` but is rarely populated.  
-**Target:** mandatory for tool calls, LLM calls, graph delegation, and critic layers.
+`ObservabilityEmitter` reads the active scope when bridging trace rows to the bus. Adoption continues path-by-path in harness emitters; the contract and API are platform-complete.
 
 ---
 
@@ -285,39 +285,36 @@ with TraceScope.emitter.run(run_id, task_id, tenant_id) as scope:
 
 `intergrax/agents/uaep.py` emits directly to the bus: `CONTEXT_BUILT`, `DECISION_EMITTED`, `VALIDATION_PASSED/FAILED`, `POLICY_DECISION`, `INTERRUPT_REQUESTED`, `HUMAN_APPROVAL_REQUESTED`.
 
-### 7.3 Known gaps (current → target)
+### 7.3 Closed harness gaps (OBS-BUS closeout)
 
-| Gap | Impact | Phase |
-|-----|--------|-------|
-| `AGENT_SELECTED` not emitted | Cannot audit routing | **Done** (OBS-BUS-3) |
-| `STEP_FAILED` not emitted on pipeline errors | Bus incomplete | **Done** (OBS-BUS-3) |
-| `parent_event_id` unused | No causal tree | **Done** (OBS-BUS-2) |
-| Graph nodes use string messages only | Weak typing | **Done** (OBS-BUS-3) |
-| `RuntimeEvent.payload` is `dict` | Magic keys at canonical layer | **Done** (OBS-BUS-1) |
-| Critic `evaluator_loop` not in bridge catalog | Journal gap | **Done** (OBS-BUS-3) |
-| Parser trace separate from run journal | Ingest observability split | **Done** (OBS-BUS-6) |
+All rows below were remediated in Phase OBS-BUS. **No open harness spine gaps** remain; product dashboards and mandatory external APM stay out of scope (plan §6.3a).
+
+| Gap | Remediation |
+|-----|-------------|
+| `AGENT_SELECTED` not emitted | `AgentRouter` + `agent_selection.v1` (OBS-BUS-3) |
+| `STEP_FAILED` not emitted on pipeline errors | `RuntimeStepFailedDiagV1` bridge (OBS-BUS-3) |
+| `parent_event_id` unused | `TraceScope` + `ObservabilityEmitter` (OBS-BUS-2) |
+| Graph nodes use string messages only | `graph_node.v1` payloads (OBS-BUS-3) |
+| Untyped runtime payload keys | `payload_registry` + `schema_guard` (OBS-BUS-1) |
+| Critic `evaluator_loop` not in bridge catalog | Bridge catalog entry (OBS-BUS-3) |
+| Parser trace separate from run journal | `journal_export` + parser flush link (OBS-BUS-6) |
 
 ---
 
 ## 8. Typing model
 
-### 8.1 Current state (L3)
+### 8.1 Current state (L4 — OBS-BUS Done)
 
 ```text
-TraceEvent.payload     → DiagnosticPayload (enforced)
-RuntimeEvent.payload   → Dict[str, Any] (transitional)
-TraceEvent.tags        → Dict[str, Any] (correlation keys)
+TraceEvent.payload        → DiagnosticPayload (enforced)
+RuntimeEvent.payload      → Dict envelope with payload_schema_id + data (registry-backed)
+PayloadSchemaRegistry     → schema_id ↔ Pydantic model (canonical + extension SDK)
+Extension SDK             → agents.<slug>.diag.* / applications.<slug>.diag.*
+TraceScope                → parent_event_id causal tree
+Persistence boundary      → JSON serialize at store append only
 ```
 
-`trace_bridge` flattens `DiagnosticPayload.to_dict()` into `payload["trace_payload"]` plus promoted fields (`model`, `tool_name`, …).
-
-### 8.2 Target state (L4 — Phase OBS-BUS-1)
-
-```text
-RuntimeEvent.payload   → RuntimeEventPayload (discriminated union / registry)
-PayloadSchemaRegistry  → schema_id ↔ Pydantic model
-Persistence layer      → JSON serialize at store boundary only
-```
+`trace_bridge` and `ObservabilityEmitter` populate `payload_schema_id` and structured `data` for catalog mappings. Legacy promoted keys (`model`, `tool_name`, …) may still appear for backward-compatible reads.
 
 Canonical payload families (canon §42.23.1):
 
@@ -329,8 +326,17 @@ Canonical payload families (canon §42.23.1):
 | `interrupt.v1` | Policy interrupts |
 | `human.v1` | HITL responses |
 | `handoff.v1` | Graph delegation |
-| `agent_selection.v1` | Router outcomes (**new**) |
-| `graph_node.v1` | Node execution (**new**) |
+| `agent_selection.v1` | Router outcomes |
+| `graph_node.v1` | Node execution |
+
+### 8.2 Residual evolution (post-OBS-BUS, not blocking L4)
+
+| Item | Notes |
+|------|-------|
+| `RuntimeEvent.payload` Pydantic field | Migrate from `Dict[str, Any]` to discriminated union on the model itself |
+| Store retention policy | Platform-wide TTL / archival (future) |
+| OTLP protobuf push | Journal export ships OTLP-style JSON; vendor protobuf encoders remain optional integrations |
+| Legacy dual emit entry | `RuntimeState.trace_event()` coexists with `ObservabilityEmitter`; both route through the same bridge |
 
 ### 8.3 Extension rules for developers
 
@@ -529,15 +535,21 @@ After harness observability changes:
 ```bash
 uv run pytest -m gate -q
 python scripts/check_harness_no_getattr.py
-python scripts/check_trace_bridge_event_catalog.py
-```
-
-Phase OBS-BUS (CI umbrella):
-
-```bash
 uv run python scripts/check_observability_gates.py
 ```
 
+`check_observability_gates.py` runs trace-bridge catalog, emission coverage, payload schema registry, persistence conformance, and L4 depth gate tests (CI: `.github/workflows/unit-tests.yml`).
+
 ---
 
-*This document is the canonical observability architecture. Update it when changing spine contracts, emission rules, or persistence profiles. Implementation status: [Phase OBS-BUS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine).*
+## 17. Session closeout (2026-06-08)
+
+**Harness Observability Spine:** **complete** for platform scope (OBS-BUS-0…7). Tier-3 wires stores; Tier-2 extends via `DiagnosticPayload` + extension SDK; optional sinks subscribe to the journal or `TASK_COMPLETED` export.
+
+**Not in spine scope:** product dashboards (§6.3a), mandatory external APM, per-agent private trace DBs.
+
+**Next harness work:** default §6.1 maintenance unless reprioritized (e.g. Phase CRIT-V, Phase K).
+
+---
+
+*This document is the canonical observability architecture. Update it when changing spine contracts, emission rules, or persistence profiles. Implementation status: [Phase OBS-BUS — Done](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine).*

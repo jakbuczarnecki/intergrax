@@ -2798,7 +2798,7 @@ Agents MUST NOT implement ad-hoc human gates or send approval messages directly.
 
 # 33. Observability And Tracing
 
-> **Deep dive (canonical):** [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) — Harness Observability Spine (HOS), three signal planes, extension contracts, persistence, scaling, operator surfaces, and implementation roadmap ([ADR-OBS-001](adr/ADR-OBS-001.md), [Phase OBS-BUS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine)).
+> **Deep dive (canonical):** [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) — Harness Observability Spine (HOS), three signal planes, extension contracts, persistence, scaling, operator surfaces ([ADR-OBS-001](adr/ADR-OBS-001.md), [Phase OBS-BUS — Done](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine), audit map §21 **L4**).
 
 Every execution should create a trace.
 
