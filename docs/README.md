@@ -1,6 +1,6 @@
 # Intergrax — Documentation
 
-**Last updated:** 2026-06-07 (T-EXPAND T13 / CRIT-V · **172** catalog tools · **42** bundles · gate **990**)
+**Last updated:** 2026-06-07 (T-EXPAND T13 / CRIT-V · **172** catalog tools · **42** bundles · gate **996**)
 
 The `docs/` folder holds the canonical **Harness AI / Agent OS platform** documentation.
 
@@ -32,7 +32,7 @@ The `docs/` folder holds the canonical **Harness AI / Agent OS platform** docume
 |----------|---------|
 | [**INTERGRAX_DEVELOPMENT_STRATEGY.md**](INTERGRAX_DEVELOPMENT_STRATEGY.md) | **Strategic goal** — decision hierarchy, lab vs production harness, work cycle |
 | [**intergrax_runtime_architecture.md**](intergrax_runtime_architecture.md) | **Architecture canon** — tiers, Nexus, UAEP §42, retry (§31), observability & trace storage (§33), RAG stack (§7.1.2) |
-| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; **active queue = Phase CRIT-V (Band 2ak)**; gate **990** |
+| [**INTERGRAX_IMPLEMENTATION_PLAN.md**](INTERGRAX_IMPLEMENTATION_PLAN.md) | **Implementation map** — phases, status, gaps; **active queue = Phase CRIT-V (Band 2ak)**; gate **996** |
 | [**AGENT_CREATION_GUIDE.md**](AGENT_CREATION_GUIDE.md) | **Agent workflow** — scaffold → register → run → inspect → evaluate |
 | [**INTEGRATIONS.md**](INTEGRATIONS.md) | **Integration catalog** — **167** providers, contracts, wiring, usage links |
 | [**TOOLS.md**](TOOLS.md) | **Tool catalog** — **172** LLM/MCP tools in **42** bundles, engine status, four-layer stack |
@@ -144,7 +144,7 @@ Critic & Verification     →  CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md · cano
 | Phase | Status |
 |-------|--------|
 | **Phase FAUDIT-32 — Full architecture audit** | **Done** (Band 2ad) — 23/23 remediation + [§6.1ai](INTERGRAX_IMPLEMENTATION_PLAN.md#61ai-harness-implementation-queue--faudit-32-follow-up-closed) follow-up |
-| **Phase CRIT-V — Critic & Verification Layer** | **Active** (Band 2ak) — **10/24 Done** (CRIT-V-0–2) · [CVL architecture](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md) |
+| **Phase CRIT-V — Critic & Verification Layer** | **Active** (Band 2ak) — **13/24 Done** (CRIT-V-0–3.3) · [CVL architecture](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md) |
 | **Phase W-ADAPT — Adaptive Harness Intelligence** | **Done** (Band 2y) — **70/70 Done** (Wave 0–7) · [AHIA](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · [ADR-ADAPT-001](adr/ADR-ADAPT-001.md) |
 | **Phase M-LLM-R — LLM completion envelope** | **Done** (Band 2z, 39/39) |
 | **Phase M.6 P6 — Integration expansion** | **Done** (Band 2ac, 32/32) |

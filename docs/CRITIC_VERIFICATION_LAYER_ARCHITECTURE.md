@@ -161,7 +161,7 @@ Tier-2  Domain
 
 ### 7.1 CriticOrchestrator (Tier-1)
 
-**Module (planned):** `intergrax/runtime/critic/critic_orchestrator.py`
+**Module:** `intergrax/runtime/critic/critic_orchestrator.py` (**Done** — CRIT-V-3.1)
 
 **Responsibilities:**
 
