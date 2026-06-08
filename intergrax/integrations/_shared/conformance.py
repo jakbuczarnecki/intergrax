@@ -12,6 +12,7 @@ T = TypeVar("T")
 from intergrax.integrations.contracts.browser_automation import BrowserAutomation
 from intergrax.integrations.contracts.cloud_platform import CloudPlatform
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
+from intergrax.integrations.contracts.document_parser import DocumentParser
 from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.contracts.interaction_surface import InteractionSurface
 from intergrax.integrations.contracts.issue_tracker import IssueCreator, IssueTracker
@@ -101,6 +102,10 @@ def assert_collaboration_suite(instance: object) -> CollaborationSuite:
 
 def assert_document_store(instance: object) -> DocumentStore:
     return assert_implements(instance, DocumentStore)
+
+
+def assert_document_parser(instance: object) -> DocumentParser:
+    return assert_implements(instance, DocumentParser)
 
 
 def assert_object_storage(instance: object) -> ObjectStorage:

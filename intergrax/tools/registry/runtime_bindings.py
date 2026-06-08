@@ -133,6 +133,47 @@ class VectorStoreDocumentListerBinding(Protocol):
 
 
 @runtime_checkable
+class AgentRegistryBinding(Protocol):
+    """Structural binding for Tier-1 agent registry introspection tools."""
+
+    def list_agent_ids(self) -> List[str]: ...
+
+    def get_agent_contract(self, agent_id: str) -> Any: ...
+
+
+@runtime_checkable
+class SkillResolverBinding(Protocol):
+    """Structural binding for ``skill.resolve`` catalog tool."""
+
+    def resolve(self, skill_ids: List[str]) -> Any: ...
+
+
+@runtime_checkable
+class UserProfileManagerBinding(Protocol):
+    """Structural binding for long-term user memory catalog tools."""
+
+    def is_longterm_rag_enabled(self) -> bool: ...
+
+    async def search_longterm_memory(
+        self,
+        user_id: str,
+        query: str,
+        *,
+        top_k: Optional[int] = None,
+        score_threshold: Optional[float] = None,
+    ) -> Dict[str, Any]: ...
+
+    async def add_memory_entry(
+        self,
+        user_id: str,
+        entry_or_content: Any,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Any: ...
+
+    async def get_profile(self, user_id: str) -> Any: ...
+
+
+@runtime_checkable
 class TaskMemoryViewBinding(Protocol):
     """Structural binding for policy-scoped task memory (``PolicyScopedMemoryView``)."""
 

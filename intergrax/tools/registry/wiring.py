@@ -18,6 +18,7 @@ from intergrax.integrations.contracts.document_parser import DocumentParser
 from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.contracts.feature_flag import FeatureFlagBackend
 from intergrax.integrations.contracts.graph_store import GraphStore
+from intergrax.integrations.contracts.http_client import HttpClientBackend
 from intergrax.integrations.contracts.identity_provider import IdentityProviderBackend
 from intergrax.integrations.contracts.issue_tracker import IssueTracker
 from intergrax.integrations.contracts.key_value_cache import KeyValueCache
@@ -34,12 +35,15 @@ from intergrax.integrations.contracts.speech_provider import SpeechProviderBacke
 from intergrax.integrations.contracts.wiki_knowledge import WikiKnowledge
 from intergrax.integrations.contracts.workflow_orchestrator import WorkflowOrchestratorBackend
 from intergrax.tools.registry.runtime_bindings import (
+    AgentRegistryBinding,
     HumanDecisionStoreBinding,
     OnlineEvaluationRegistryBinding,
     RunTraceReaderBinding,
     ScheduledNotificationBinding,
     SessionStorageBinding,
+    SkillResolverBinding,
     TaskMemoryViewBinding,
+    UserProfileManagerBinding,
 )
 
 if TYPE_CHECKING:
@@ -99,6 +103,10 @@ class ToolWiringContext:
     billing_meter: BillingMeterBackend | None = None
     crm_backend: CrmBackend | None = None
     cloud_platform: CloudPlatform | None = None
+    http_client: HttpClientBackend | None = None
+    agent_registry: AgentRegistryBinding | None = None
+    skill_resolver: SkillResolverBinding | None = None
+    user_profile_manager: UserProfileManagerBinding | None = None
     read_allowlist_roots: frozenset[str] | None = None
     run_budget: Any | None = None
     cost_envelopes: tuple[Any, ...] = ()

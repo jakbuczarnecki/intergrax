@@ -38,3 +38,18 @@ class GitLabIssueTracker:
         labels: Optional[list[str]] = None,
     ) -> IssueRecord:
         return self._client.create_issue(title=title, description=description, labels=labels)
+
+    def update_issue(
+        self,
+        issue_key: str,
+        *,
+        status: str | None = None,
+        assignee: str | None = None,
+        summary: str | None = None,
+    ) -> IssueRecord:
+        return self._client.update_issue(
+            issue_key,
+            status=status,
+            assignee=assignee,
+            summary=summary,
+        )

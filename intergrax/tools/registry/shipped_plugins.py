@@ -21,7 +21,10 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
     if _SHIPPED_TOOL_PLUGINS is not None:
         return _SHIPPED_TOOL_PLUGINS
 
+    from intergrax.tools.providers.agent.bundle import AGENT_BUNDLE_ID, AGENT_TOOL_IDS, register_agent_tools
     from intergrax.tools.providers.browser.bundle import BROWSER_BUNDLE_ID, BROWSER_TOOL_IDS, register_browser_tools
+    from intergrax.tools.providers.catalog.bundle import CATALOG_BUNDLE_ID, CATALOG_TOOL_IDS, register_catalog_tools
+    from intergrax.tools.providers.context_tool.bundle import CONTEXT_BUNDLE_ID, CONTEXT_TOOL_IDS, register_context_tools
     from intergrax.tools.providers.braintrust.bundle import (
         BRAINTRUST_BUNDLE_ID,
         BRAINTRUST_TOOL_IDS,
@@ -60,6 +63,7 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
     from intergrax.tools.providers.eval.bundle import EVAL_BUNDLE_ID, EVAL_TOOL_IDS, register_eval_tools
     from intergrax.tools.providers.graph.bundle import GRAPH_BUNDLE_ID, GRAPH_TOOL_IDS, register_graph_tools
     from intergrax.tools.providers.harness.bundle import HARNESS_BUNDLE_ID, HARNESS_TOOL_IDS, register_harness_tools
+    from intergrax.tools.providers.http.bundle import HTTP_BUNDLE_ID, HTTP_TOOL_IDS, register_http_tools
     from intergrax.tools.providers.health.bundle import HEALTH_BUNDLE_ID, HEALTH_TOOL_IDS, register_health_tools
     from intergrax.tools.providers.hitl.bundle import HITL_BUNDLE_ID, HITL_TOOL_IDS, register_hitl_tools
     from intergrax.tools.providers.identity.bundle import IDENTITY_BUNDLE_ID, IDENTITY_TOOL_IDS, register_identity_tools
@@ -80,6 +84,7 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
         KNOWLEDGE_TOOL_IDS,
         register_knowledge_tools,
     )
+    from intergrax.tools.providers.ltm.bundle import LTM_BUNDLE_ID, LTM_TOOL_IDS, register_ltm_tools
     from intergrax.tools.providers.memory.bundle import MEMORY_BUNDLE_ID, MEMORY_TOOL_IDS, register_memory_tools
     from intergrax.tools.providers.message_bus.bundle import (
         MESSAGE_BUS_BUNDLE_ID,
@@ -112,6 +117,7 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
     from intergrax.tools.providers.rag.bundle import RAG_BUNDLE_ID, RAG_TOOL_IDS, register_rag_tools
     from intergrax.tools.providers.records.bundle import RECORDS_BUNDLE_ID, RECORDS_TOOL_IDS, register_records_tools
     from intergrax.tools.providers.sandbox.bundle import SANDBOX_BUNDLE_ID, SANDBOX_TOOL_IDS, register_sandbox_tools
+    from intergrax.tools.providers.skill_tool.bundle import SKILL_BUNDLE_ID, SKILL_TOOL_IDS, register_skill_tools
     from intergrax.tools.providers.storage.bundle import STORAGE_BUNDLE_ID, STORAGE_TOOL_IDS, register_storage_tools
     from intergrax.tools.providers.security.bundle import SECURITY_BUNDLE_ID, SECURITY_TOOL_IDS, register_security_tools
     from intergrax.tools.providers.speech.bundle import SPEECH_BUNDLE_ID, register_speech_tools
@@ -141,6 +147,27 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
     from intergrax.tools.registry.catalog import ToolBundleStatus
 
     plugins: tuple[type, ...] = (
+        define_tool_plugin(
+            bundle_id=CATALOG_BUNDLE_ID,
+            tool_ids=CATALOG_TOOL_IDS,
+            register_fn=register_catalog_tools,
+            description="Tool catalog introspection for agent builders (list/describe tools).",
+            class_name="CatalogToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=AGENT_BUNDLE_ID,
+            tool_ids=AGENT_TOOL_IDS,
+            register_fn=register_agent_tools,
+            description="Agent registry introspection tools for multi-agent hosts.",
+            class_name="AgentToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=SKILL_BUNDLE_ID,
+            tool_ids=SKILL_TOOL_IDS,
+            register_fn=register_skill_tools,
+            description="Skill resolver introspection tool.",
+            class_name="SkillToolPlugin",
+        ),
         define_tool_plugin(
             bundle_id=RAG_BUNDLE_ID,
             tool_ids=RAG_TOOL_IDS,
@@ -208,8 +235,29 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
             bundle_id=SANDBOX_BUNDLE_ID,
             tool_ids=SANDBOX_TOOL_IDS,
             register_fn=register_sandbox_tools,
-            description="Sandboxed code execution tools.",
+            description="Sandboxed code execution tools (exec, code, script, browser).",
             class_name="SandboxToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=LTM_BUNDLE_ID,
+            tool_ids=LTM_TOOL_IDS,
+            register_fn=register_ltm_tools,
+            description="Long-term user memory search and write tools.",
+            class_name="LtmToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=CONTEXT_BUNDLE_ID,
+            tool_ids=CONTEXT_TOOL_IDS,
+            register_fn=register_context_tools,
+            description="Context budget helpers (summarize, token estimate).",
+            class_name="ContextToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=HTTP_BUNDLE_ID,
+            tool_ids=HTTP_TOOL_IDS,
+            register_fn=register_http_tools,
+            description="Allowlisted HTTP client tool.",
+            class_name="HttpToolPlugin",
         ),
         define_tool_plugin(
             bundle_id=SECURITY_BUNDLE_ID,

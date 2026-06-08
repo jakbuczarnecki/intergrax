@@ -3,9 +3,19 @@
 from __future__ import annotations
 
 from intergrax.skills.core.manifest import SkillBundleManifest
-from intergrax.skills.providers.knowledge.manifests import KNOWLEDGE_OPENAI_STRICT
+from intergrax.skills.providers.knowledge.manifests import (
+    KNOWLEDGE_OPENAI_STRICT,
+    KNOWLEDGE_WIKI_NAVIGATOR,
+    KNOWLEDGE_CONFLUENCE_NAVIGATOR,
+)
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
+
+_KNOWLEDGE_MANIFESTS = (
+    KNOWLEDGE_OPENAI_STRICT,
+    KNOWLEDGE_WIKI_NAVIGATOR,
+    KNOWLEDGE_CONFLUENCE_NAVIGATOR,
+)
 
 
 class KnowledgeSkillPlugin:
@@ -13,15 +23,16 @@ class KnowledgeSkillPlugin:
     def skill_bundle_manifest(cls) -> SkillBundleManifest:
         return SkillBundleManifest(
             bundle_id="knowledge",
-            skill_ids=(KNOWLEDGE_OPENAI_STRICT.skill_id,),
-            status=SkillBundleStatus.BETA,
-            description="Knowledge retrieval skills (OpenAI hosted and related packs)",
+            skill_ids=tuple(m.skill_id for m in _KNOWLEDGE_MANIFESTS),
+            status=SkillBundleStatus.STABLE,
+            description="Knowledge retrieval skills (OpenAI hosted, wiki, and related packs) (SK-EXP4)",
         )
 
     @classmethod
     def skill_manifests(cls) -> tuple:
-        return (KNOWLEDGE_OPENAI_STRICT,)
+        return _KNOWLEDGE_MANIFESTS
 
     @classmethod
     def register_skills(cls, registry: SkillRegistry) -> None:
-        registry.register(KNOWLEDGE_OPENAI_STRICT)
+        for manifest in _KNOWLEDGE_MANIFESTS:
+            registry.register(manifest)

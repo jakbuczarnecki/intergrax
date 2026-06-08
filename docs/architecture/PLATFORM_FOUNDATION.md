@@ -1063,12 +1063,13 @@ Agent / planner
 **Status:** Architecture **defined**; implementation **MVP Done** (Phase R, 2026-06-01).  
 **Catalog:** [`architecture/SKILLS.md`](architecture/SKILLS.md) · **Harness AI terms:** §5.3 (this document).
 
-**First-party skills (2026-06-01):**
+**First-party catalog (2026-06-08):** **149** skills · **41** bundles — full table in [`architecture/SKILLS.md`](architecture/SKILLS.md#first-party-catalog-149-skills--41-bundles). Product-facing examples:
 
 | skill_id | Bundle | Typical agent |
 |----------|--------|---------------|
 | `legal.contract_review` | `legal` | `LegalAgent` |
 | `research.literature_scan` | `research` | `ResearchAgent` |
+| `knowledge.openai_strict` | `knowledge` | OpenAI-hosted retrieval hosts |
 
 **Runtime events:** `SKILL_RESOLVED` / `SKILL_IMPORT_FAILED` via `runtime/events/context_skill_recording.py`; registration and import service call `RuntimeEventBus.record()`.
 
@@ -1091,11 +1092,10 @@ A **skill** is a **versioned, declarative capability pack** that groups:
 | `policy_fragment_id` | Optional link to tool/memory/HITL fragment |
 | `risk_tier`, `tags` | Governance and discovery |
 
-Skills are **not** invoked by the LLM as functions. The runtime **resolves** skills at agent registration or run start into:
+Skills are **not** invoked by the LLM as functions. The runtime **resolves** skills at **agent registration** (`AgentRegistry.register`) into:
 
-- merged `allowed_tools` (intersected with agent contract and `ToolAccessPolicy`),
-- prompt packs for `ContextManager`,
-- optional policy fragments for `RuntimePolicyBundle`.
+- merged `allowed_tools` (skill `tool_ids` ∪ `extra_tools`; then intersected with `ToolProfile` / `ToolAccessPolicy` at runtime),
+- `prompt_instruction_ids` and `policy_fragment_id` in `ResolvedSkillPack` (trace + capability graph; **automatic** `ContextManager` / `RuntimePolicyBundle` merge — **SK-BRIDGE.*** in [`plan/SKILLS.md`](plan/SKILLS.md), not yet shipped).
 
 #### What a skill is not
 
@@ -1129,27 +1129,29 @@ Rejected imports MUST emit `SKILL_IMPORT_FAILED` (trace) and MUST NOT partially 
 
 ```text
 intergrax/skills/
-├── core/           # SkillManifest, SkillContract, SkillProvider
+├── core/           # SkillManifest, SkillProvider protocol
 ├── registry/       # SkillCatalog, SkillProfile, bootstrap
+├── resolver.py     # SkillResolver → ResolvedSkillPack
 ├── importers/      # cursor_skill_md, …
 └── providers/
-    └── <domain>/   # manifest + USAGE.md
+    └── <domain>/   # manifests.py + plugin.py + USAGE.md
 ```
 
 #### Agent composition
 
 ```text
 AgentContract:
-    skill_ids: list[str]           # optional; resolved at register/run
-    allowed_tools: list[str]       # explicit extras OR superseded by skill union per policy
+    skills: list[SkillManifest]    # catalog manifest refs; resolved at register
+    extra_tools: list[ToolContract]  # optional tools beyond skill union
+    allowed_tools: list[str]       # OUTPUT — set by AgentRegistry after resolution
 ```
 
-Resolution order (canonical):
+Resolution order (canonical — see [`architecture/SKILLS.md`](architecture/SKILLS.md)):
 
-1. Start from agent `allowed_tools` and contract defaults.
-2. Union `tool_ids` from resolved `skill_ids` (validate each exists in `ToolRegistry`).
-3. Apply `ToolAccessPolicy` and Tier-3 `ToolProfile` (intersection).
-4. Attach prompt packs and policy fragments from skills to `RuntimePolicyBundle` / context build.
+1. Validate `contract.skills` against `SkillRegistry`; expand `requires_skills`.
+2. Union skill `tool_ids` with `extra_tools[].tool_id` → replace `allowed_tools`.
+3. At run time, intersect with `ToolProfile` and `ToolAccessPolicy`.
+4. **Planned (SK-BRIDGE.*):** attach `prompt_instruction_ids` / policy fragments to context and policy bundle automatically.
 
 #### Relationship to Tier-2 pipelines
 

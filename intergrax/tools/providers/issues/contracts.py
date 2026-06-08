@@ -48,3 +48,14 @@ class IssuesCreateIssueInput(BaseModel):
 
 class IssuesCreateIssueOutput(BaseModel):
     issue: IssuesIssueOutput
+
+
+class IssuesUpdateIssueInput(BaseModel):
+    issue_key: str = Field(..., min_length=1)
+    status: str = ""
+    assignee: str = ""
+    summary: str = ""
+
+
+class IssuesUpdateIssueOutput(BaseModel):
+    issue: IssuesIssueOutput

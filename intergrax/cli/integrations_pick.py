@@ -25,6 +25,9 @@ _PRESET_MAP = {
     "harness_sandbox": presets.harness_sandbox_stack,
     "harness_identity": presets.harness_identity_stack,
     "harness_gitops": presets.harness_gitops_stack,
+    "research_web": presets.research_web_stack,
+    "document_ingest": presets.document_ingest_stack,
+    "chat_bot": presets.chat_bot_stack,
 }
 
 

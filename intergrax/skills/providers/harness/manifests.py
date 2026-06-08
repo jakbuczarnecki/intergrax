@@ -114,3 +114,50 @@ HARNESS_STACK_DEMO = SkillManifest(
     risk_tier=SkillRiskTier.LOW,
     tags=("harness", "requires_skills", "demo"),
 )
+
+HARNESS_RUN_COMPARATOR = SkillManifest(
+    skill_id="harness.run_comparator",
+    version="1.0.0",
+    description="Harness run comparison: list runs, fetch details, and compare outcomes.",
+    tool_ids=("harness.list_runs", "harness.get_run", "harness.compare_runs"),
+    prompt_instruction_ids=("harness.run_comparator.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("harness", "runs", "compare"),
+)
+
+
+HARNESS_RUN_EXPORTER = SkillManifest(
+    skill_id="harness.run_exporter",
+    version="1.0.0",
+    description="Harness run export: bundle export with events and run metadata.",
+    tool_ids=("harness.export_run_bundle", "harness.get_run_events", "harness.get_run"),
+    prompt_instruction_ids=("harness.run_exporter.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("harness", "runs", "export"),
+)
+
+HARNESS_COST_ANALYST = SkillManifest(
+    skill_id="harness.cost_analyst",
+    version="1.0.0",
+    description="Run cost analysis with compare and instant metrics.",
+    tool_ids=("harness.get_run_cost", "harness.compare_runs", "metrics.query_instant"),
+    prompt_instruction_ids=("harness.cost_analyst.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("harness", "cost", "analyst"),
+)
+
+
+HARNESS_INTEGRATION_SWEEP = SkillManifest(
+    skill_id="harness.integration_sweep",
+    version="1.0.0",
+    description="Integration sweep with catalog introspection and skill resolve.",
+    tool_ids=("health.check_integration", "catalog.list_tools", "skill.resolve"),
+    prompt_instruction_ids=("harness.integration_sweep.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("harness", "integration", "sweep"),
+)
+

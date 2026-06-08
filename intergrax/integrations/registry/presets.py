@@ -12,6 +12,7 @@ from intergrax.integrations.registry.catalog_manifests import (
     GITHUB_ACTIONS,
     GITLAB_CI,
     GRAFANA,
+    INMEMORY,
     KAFKA,
     LAB_JSON,
     LANGFUSE,
@@ -280,6 +281,92 @@ def harness_identity_stack(
         document_parser=DOCLING,
         options=options,
     )
+
+
+def research_web_stack(
+    *,
+    primary_search: str = "perplexity",
+    enable_brave: bool = False,
+) -> IntegrationProfile:
+    """Research agent stack — AI-native search + in-memory vectors + wiki context."""
+    allowed = {"perplexity", "tavily", "exa", "arxiv", "semantic_scholar", "google_cse", "bing"}
+    normalized = primary_search.strip().lower()
+    if normalized not in allowed:
+        raise ValueError(f"Unsupported search provider for research web stack: {primary_search!r}")
+    options: dict[str, dict[str, object]] = {"wikipedia": {}, "inmemory": {}}
+    if enable_brave:
+        options["brave"] = {}
+    return IntegrationProfile(
+        relational_store=SQLITE,
+        search_provider=normalized,
+        vector_store=INMEMORY,
+        wiki_knowledge="wikipedia",
+        notification_channel=LOG,
+        interaction_surface=LAB_JSON,
+        document_parser=DOCLING,
+        options=options,
+    )
+
+
+def document_ingest_stack(
+    *,
+    document_parser_slug: str = "llamaparse",
+    vector_store_slug: str = "lancedb",
+    object_storage_slug: str = "minio",
+) -> IntegrationProfile:
+    """Document ingest stack — SaaS parser + vector index + artifact storage."""
+    allowed_parsers = {"llamaparse", "docling", "pymupdf", "unstructured"}
+    allowed_vectors = {"lancedb", "qdrant", "chroma", "inmemory", "pgvector"}
+    allowed_storage = {"minio", "s3", "google_drive", "filesystem"}
+    parser = document_parser_slug.strip().lower()
+    vector = vector_store_slug.strip().lower()
+    storage = object_storage_slug.strip().lower()
+    if parser not in allowed_parsers:
+        raise ValueError(f"Unsupported document parser: {document_parser_slug!r}")
+    if vector not in allowed_vectors:
+        raise ValueError(f"Unsupported vector store: {vector_store_slug!r}")
+    if storage not in allowed_storage:
+        raise ValueError(f"Unsupported object storage: {object_storage_slug!r}")
+    options: dict[str, dict[str, object]] = {}
+    if storage == "minio":
+        options[MINIO.slug] = {}
+    return IntegrationProfile(
+        relational_store=SQLITE,
+        document_parser=parser,
+        vector_store=vector,
+        object_storage=storage,
+        notification_channel=LOG,
+        interaction_surface=LAB_JSON,
+        options=options,
+    )
+
+
+def chat_bot_stack(
+    *,
+    interaction_slug: str = "telegram",
+    enable_langfuse: bool = True,
+) -> IntegrationProfile:
+    """Chat bot stack — messenger intake + redis session cache + trace export."""
+    allowed = {"telegram", "slack", "teams", "lab_json"}
+    normalized = interaction_slug.strip().lower()
+    if normalized not in allowed:
+        raise ValueError(f"Unsupported interaction surface: {interaction_slug!r}")
+    options: dict[str, dict[str, object]] = {REDIS.slug: {}}
+    observability_backend = LANGFUSE if enable_langfuse else OTEL
+    if enable_langfuse:
+        options[LANGFUSE.slug] = {}
+    profile_kwargs: dict[str, object] = {
+        "relational_store": SQLITE,
+        "key_value_cache": REDIS,
+        "notification_channel": normalized if normalized != "lab_json" else LOG,
+        "interaction_surface": normalized,
+        "observability_backend": observability_backend,
+        "document_parser": DOCLING,
+        "options": options,
+    }
+    if normalized == "telegram":
+        profile_kwargs["notification_channel"] = "telegram"
+    return IntegrationProfile(**profile_kwargs)
 
 
 def harness_gitops_stack(

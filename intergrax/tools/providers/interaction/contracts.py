@@ -49,6 +49,22 @@ class InteractionGetSessionHistoryInput(BaseModel):
     limit: int = Field(default=50, ge=1, le=200)
 
 
+class InteractionPostReplyInput(BaseModel):
+    tenant_id: str = Field(..., min_length=1)
+    channel: str = Field(..., min_length=1)
+    body: str = Field(..., min_length=1)
+    subject: str = ""
+    session_id: str = ""
+    thread_id: str = ""
+    task_id: str = ""
+
+
+class InteractionPostReplyOutput(BaseModel):
+    sent: bool = False
+    channel: str = ""
+    detail: str = ""
+
+
 class InteractionGetSessionHistoryOutput(BaseModel):
     used: bool = False
     messages: list[InteractionHistoryMessageOutput] = Field(default_factory=list)

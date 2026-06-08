@@ -31,3 +31,18 @@ class JiraIssueTracker:
 
     def search_issues(self, jql: str, *, limit: int = 50) -> IssueSearchResult:
         return self._client.search_issues(jql, limit=limit)
+
+    def update_issue(
+        self,
+        issue_key: str,
+        *,
+        status: str | None = None,
+        assignee: str | None = None,
+        summary: str | None = None,
+    ) -> IssueRecord:
+        return self._client.update_issue(
+            issue_key,
+            status=status,
+            assignee=assignee,
+            summary=summary,
+        )

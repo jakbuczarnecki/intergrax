@@ -416,6 +416,62 @@ Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergr
 
 Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · [`architecture/CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md)
 
+#### T-EXPAND T14 — Agent Builder DX introspection (2026-06-08) — **Done**
+
+**Goal:** Runtime/catalog introspection for agent builders — discover tools, agents, and skill resolution without reading source.
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `catalog` | `catalog.list_tools`, `catalog.describe_tool` | **Done** |
+| `agent` | `agent.list_agents`, `agent.get_contract` | **Done** |
+| `skill` | `skill.resolve` | **Done** |
+
+**Delivered:** **175** catalog `tool_id` values · **45** shipped bundles.
+
+#### T-EXPAND T15 — Sandbox execution depth (2026-06-08) — **Done**
+
+**Goal:** Close `SANDBOX_REQUIRED_TOOLS` policy gap (`code.exec`, `script.run`, `browser.run`) and sandbox self-discovery.
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `sandbox` (+4) | `code.exec`, `script.run`, `browser.run`, `sandbox.list_operations` | **Done** |
+| runtime | `AGENT_BUILDER_SANDBOX_OPERATIONS` + `run_python` / `run_script` / `browser_fetch` session ops | **Done** |
+
+**Delivered:** **179** catalog `tool_id` values · **45** shipped bundles.
+
+**ADR:** **No ADR needed** — extends existing sandbox session ops; policy constants already referenced in `sandbox_runtime.py`.
+
+#### T-EXPAND T16 — Memory & context builder surface (2026-06-08) — **Done**
+
+**Goal:** Agent-facing LTM, task memory search, and context budget helpers.
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `ltm` (new) | `ltm.search`, `ltm.write_fact` | **Done** |
+| `memory` (+1) | `memory.search` | **Done** |
+| `context` (new) | `context.summarize`, `context.estimate_tokens` | **Done** |
+| bindings | `UserProfileManagerBinding` on `ToolWiringContext` | **Done** |
+
+**Delivered:** **184** catalog `tool_id` values · **47** shipped bundles.
+
+#### T-EXPAND T17 — Integration completeness (2026-06-08) — **Done**
+
+**Goal:** HTTP allowlist client, interaction reply, issue update, RAG preview dry-run.
+
+| Bundle | Tools | Status |
+|--------|------:|--------|
+| `http` (new) | `http.request` | **Done** |
+| `interaction` (+1) | `interaction.post_reply` | **Done** |
+| `issues` (+1) | `issues.update_issue` | **Done** |
+| `rag` (+1) | `rag.preview_retrieval` | **Done** |
+| contracts | `HttpClientBackend`, `IssueUpdater`, `AllowlistHttpClient` | **Done** |
+
+**Delivered:** **190** catalog `tool_id` values · **48** shipped bundles.
+
+**Verification:** `test_t14_t17_builder_tools.py` · `test_catalog_expansion.py` (190) · MCP export smoke (**190** tools)
+
+Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergrax/tools/providers/{catalog,agent,skill_tool,ltm,context_tool,http}/`
+
 
 **Problem:** Two parallel mechanisms — boolean plan flags dispatching pipeline steps vs `ToolRegistry` for function tools.
 

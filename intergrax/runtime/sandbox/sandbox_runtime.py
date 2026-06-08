@@ -27,6 +27,15 @@ DEFAULT_SANDBOX_OPERATIONS: FrozenSet[str] = frozenset(
     {"echo", "write_file", "read_file", "list_files"}
 )
 
+AGENT_BUILDER_SANDBOX_OPERATIONS: FrozenSet[str] = frozenset(
+    {
+        *DEFAULT_SANDBOX_OPERATIONS,
+        "run_python",
+        "run_script",
+        "browser_fetch",
+    }
+)
+
 SANDBOX_REQUIRED_TOOLS: FrozenSet[str] = frozenset(
     {SANDBOX_TOOL_NAME, "code.exec", "browser.run", "script.run"}
 )

@@ -62,3 +62,18 @@ class IssueCreator(Protocol):
         labels: Optional[Sequence[str]] = None,
     ) -> IssueRecord:
         """Create a new issue and return the normalized record."""
+
+
+@runtime_checkable
+class IssueUpdater(Protocol):
+    """Optional update capability for issue tracker backends."""
+
+    def update_issue(
+        self,
+        issue_key: str,
+        *,
+        status: Optional[str] = None,
+        assignee: Optional[str] = None,
+        summary: Optional[str] = None,
+    ) -> IssueRecord:
+        """Update issue fields and return the normalized record."""

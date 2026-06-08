@@ -1468,7 +1468,7 @@ Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/H
 **Audience:** Tier-3 application authors, extension authors, platform engineers.  
 **Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §11 (Tool layer), §12 (Skill layer); canon [§7.1.6](architecture/PLATFORM_FOUNDATION.md#716-tool-catalog)–[§7.1.8](architecture/PLATFORM_FOUNDATION.md#718-skill-catalog).
 
-Intergrax separates **Integration → Tool → Skill → Agent** (Tier-0 → Tier-2). Tools are atomic, policy-governed operations; skills are composable capability packs (tool_ids + prompt instructions + policy fragments). Agents declare `skill_ids` on `AgentContract` — never copy tool lists or vendor SDK calls into agent steps.
+Intergrax separates **Integration → Tool → Skill → Agent** (Tier-0 → Tier-2). Tools are atomic, policy-governed operations; skills are composable capability packs (tool_ids + prompt instructions + policy fragments). Agents declare `skills: list[SkillManifest]` on `AgentContract` — never copy tool lists or vendor SDK calls into agent steps.
 
 ### J.1 Design principles (Harness audit)
 

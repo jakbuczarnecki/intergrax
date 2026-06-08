@@ -7,6 +7,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pydantic import BaseModel, Field, field_validator
 
+from intergrax.runtime.architecture.architecture_coverage import compute_architecture_coverage
 from intergrax.runtime.architecture.capability_graph import CapabilityEdgeType, CapabilityGraph
 
 
@@ -79,12 +80,11 @@ def compute_architecture_metrics(graph: CapabilityGraph) -> ArchitectureMetricsR
     modularity_score = max(0.0, min(1.0, 1.0 / (1.0 + avg_degree)))
 
     dependency_edges = sum(1 for edge in graph.edges if edge.edge_type == CapabilityEdgeType.DEPENDS_ON)
-    constrained_edges = sum(1 for edge in graph.edges if edge.edge_type == CapabilityEdgeType.CONSTRAINED_BY)
-    evaluated_edges = sum(1 for edge in graph.edges if edge.edge_type == CapabilityEdgeType.EVALUATES)
 
     dependency_health_score = 1.0 if dependency_edges > 0 else 0.0
-    observability_coverage = min(1.0, float(evaluated_edges) / float(max(1, nodes_total)))
-    governance_coverage = min(1.0, float(constrained_edges) / float(max(1, nodes_total)))
+    coverage = compute_architecture_coverage(graph)
+    observability_coverage = coverage.summary.observability_coverage
+    governance_coverage = coverage.summary.governance_coverage
 
     debt_penalty = (
         (1.0 - modularity_score) * 0.35

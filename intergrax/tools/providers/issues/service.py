@@ -3,12 +3,14 @@
 
 from __future__ import annotations
 
-from intergrax.integrations.contracts.issue_tracker import IssueCreator, IssueRecord, IssueTracker
+from intergrax.integrations.contracts.issue_tracker import IssueCreator, IssueRecord, IssueTracker, IssueUpdater
 from intergrax.tools.providers.issues.contracts import (
     IssuesAddCommentInput,
     IssuesCommentOutput,
     IssuesCreateIssueInput,
     IssuesCreateIssueOutput,
+    IssuesUpdateIssueInput,
+    IssuesUpdateIssueOutput,
     IssuesGetIssueInput,
     IssuesIssueOutput,
     IssuesSearchInput,
@@ -20,6 +22,7 @@ ISSUES_GET_ISSUE_TOOL_ID = "issues.get_issue"
 ISSUES_ADD_COMMENT_TOOL_ID = "issues.add_comment"
 ISSUES_SEARCH_TOOL_ID = "issues.search"
 ISSUES_CREATE_ISSUE_TOOL_ID = "issues.create_issue"
+ISSUES_UPDATE_ISSUE_TOOL_ID = "issues.update_issue"
 
 
 def _require_tracker(ctx: ToolWiringContext) -> IssueTracker:
@@ -65,3 +68,18 @@ def issues_create_issue(ctx: ToolWiringContext, params: IssuesCreateIssueInput) 
         labels=params.labels or None,
     )
     return IssuesCreateIssueOutput(issue=_to_issue_output(record))
+
+
+def issues_update_issue(ctx: ToolWiringContext, params: IssuesUpdateIssueInput) -> IssuesUpdateIssueOutput:
+    tracker = _require_tracker(ctx)
+    if not isinstance(tracker, IssueUpdater):
+        raise RuntimeError("issue_tracker_does_not_support_update_issue")
+    if not any([params.status.strip(), params.assignee.strip(), params.summary.strip()]):
+        raise ValueError("at_least_one_update_field_required")
+    record = tracker.update_issue(
+        params.issue_key.strip(),
+        status=params.status.strip() or None,
+        assignee=params.assignee.strip() or None,
+        summary=params.summary.strip() or None,
+    )
+    return IssuesUpdateIssueOutput(issue=_to_issue_output(record))

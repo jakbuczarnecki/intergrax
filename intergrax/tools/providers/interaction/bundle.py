@@ -11,16 +11,20 @@ from intergrax.tools.providers.interaction.contracts import (
     InteractionGetSessionHistoryOutput,
     InteractionListSessionsInput,
     InteractionListSessionsOutput,
+    InteractionPostReplyInput,
+    InteractionPostReplyOutput,
 )
 from intergrax.tools.providers.interaction.handlers import (
     InteractionGetLastInputHandler,
     InteractionGetSessionHistoryHandler,
     InteractionListSessionsHandler,
+    InteractionPostReplyHandler,
 )
 from intergrax.tools.providers.interaction.service import (
     INTERACTION_GET_LAST_INPUT_TOOL_ID,
     INTERACTION_GET_SESSION_HISTORY_TOOL_ID,
     INTERACTION_LIST_SESSIONS_TOOL_ID,
+    INTERACTION_POST_REPLY_TOOL_ID,
 )
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
@@ -30,6 +34,7 @@ INTERACTION_TOOL_IDS: tuple[str, ...] = (
     INTERACTION_LIST_SESSIONS_TOOL_ID,
     INTERACTION_GET_LAST_INPUT_TOOL_ID,
     INTERACTION_GET_SESSION_HISTORY_TOOL_ID,
+    INTERACTION_POST_REPLY_TOOL_ID,
 )
 
 
@@ -81,4 +86,20 @@ def register_interaction_tools(registry: ToolRegistry, ctx: ToolWiringContext) -
             tags=("interaction", "session", "read_only"),
         ),
         InteractionGetSessionHistoryHandler(ctx),
+    )
+    registry.register(
+        ToolContract(
+            tool_id=INTERACTION_POST_REPLY_TOOL_ID,
+            name=INTERACTION_POST_REPLY_TOOL_ID,
+            description="Post an outbound reply on an interaction channel (thread/session metadata preserved).",
+            description_short="Post interaction reply.",
+            input_schema=InteractionPostReplyInput,
+            output_schema=InteractionPostReplyOutput,
+            error_mapping={},
+            side_effects=True,
+            category="interaction",
+            risk_level=ToolRiskLevel.MEDIUM,
+            tags=("interaction", "reply", "notify"),
+        ),
+        InteractionPostReplyHandler(ctx),
     )

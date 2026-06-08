@@ -1,0 +1,99 @@
+# © Artur Czarnecki. All rights reserved.
+
+from intergrax.skills.core.contracts import SkillManifest, SkillRiskTier
+
+RAG_HYBRID_QA = SkillManifest(
+    skill_id="rag.hybrid_qa",
+    version="1.0.0",
+    description="Hybrid Q&A over vector index with document fetch and session memory read.",
+    tool_ids=("rag.retrieve", "rag.get_document", "memory.read"),
+    prompt_instruction_ids=("rag.hybrid_qa.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("rag", "qa", "retrieval", "memory"),
+)
+
+RAG_DOCUMENT_INGEST = SkillManifest(
+    skill_id="rag.document_ingest",
+    version="1.0.0",
+    description="Document parse and ingest pipeline with collection status probe.",
+    tool_ids=("document.parse", "rag.ingest_document", "rag.describe_collection"),
+    prompt_instruction_ids=("rag.document_ingest.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("rag", "ingest", "document"),
+)
+
+RAG_INDEX_ADMIN = SkillManifest(
+    skill_id="rag.index_admin",
+    version="1.0.0",
+    description="Vector index introspection: list collections, documents, and readiness probes.",
+    tool_ids=(
+        "rag.list_collections",
+        "rag.describe_collection",
+        "rag.check_index_status",
+        "rag.list_documents",
+    ),
+    prompt_instruction_ids=("rag.index_admin.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("rag", "index", "admin"),
+)
+
+RAG_COLLECTION_LIFECYCLE = SkillManifest(
+    skill_id="rag.collection_lifecycle",
+    version="1.0.0",
+    description="Controlled index lifecycle: metadata search, document delete, and collection purge.",
+    tool_ids=("rag.search_by_metadata", "rag.delete_documents", "rag.purge_collection"),
+    prompt_instruction_ids=("rag.collection_lifecycle.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.HIGH,
+    tags=("rag", "lifecycle", "purge"),
+)
+
+RAG_RETRIEVAL_TUNER = SkillManifest(
+    skill_id="rag.retrieval_tuner",
+    version="1.0.0",
+    description="Retrieval tuning: preview candidates, rerank results, and execute retrieval.",
+    tool_ids=("rag.preview_retrieval", "rag.rerank", "rag.retrieve"),
+    prompt_instruction_ids=("rag.retrieval_tuner.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("rag", "retrieval", "tuning"),
+)
+
+RAG_SEMANTIC_QA = SkillManifest(
+    skill_id="rag.semantic_qa",
+    version="1.0.0",
+    description="Semantic Q&A with memory search and document fetch.",
+    tool_ids=("rag.retrieve", "rag.get_document", "memory.search"),
+    prompt_instruction_ids=("rag.semantic_qa.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("rag", "semantic", "qa"),
+)
+
+
+RAG_INGEST_PIPELINE = SkillManifest(
+    skill_id="rag.ingest_pipeline",
+    version="1.0.0",
+    description="End-to-end ingest: parse, ingest, and index readiness check.",
+    tool_ids=("document.parse", "rag.ingest_document", "rag.check_index_status"),
+    prompt_instruction_ids=("rag.ingest_pipeline.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("rag", "ingest", "pipeline"),
+)
+
+
+RAG_METADATA_SEARCH = SkillManifest(
+    skill_id="rag.metadata_search",
+    version="1.0.0",
+    description="Metadata-filtered document discovery without destructive ops.",
+    tool_ids=("rag.search_by_metadata", "rag.list_documents", "rag.describe_collection"),
+    prompt_instruction_ids=("rag.metadata_search.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("rag", "metadata", "search"),
+)
+

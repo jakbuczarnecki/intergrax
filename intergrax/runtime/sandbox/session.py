@@ -6,7 +6,11 @@
 from __future__ import annotations
 
 import shutil
+import subprocess
+import sys
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import FrozenSet
 from uuid import uuid4
@@ -193,4 +197,76 @@ class SandboxSession:
                     if path.is_file():
                         files.append(path.relative_to(self.root).as_posix())
             return {"files": files}
+        if operation == "run_python":
+            return self._run_python(payload)
+        if operation == "run_script":
+            return self._run_script(payload)
+        if operation == "browser_fetch":
+            return self._browser_fetch(payload)
         raise ValueError(f"unsupported operation: {operation}")
+
+    def _run_python(self, payload: dict) -> dict:
+        code = str(payload.get("code", ""))
+        language = str(payload.get("language", "python")).strip().lower()
+        if language != "python":
+            raise ValueError(f"unsupported language: {language}")
+        timeout_s = max(1, min(int(payload.get("timeout_s", 30)), 120))
+        completed = subprocess.run(
+            [sys.executable, "-c", code],
+            cwd=self.root,
+            capture_output=True,
+            text=True,
+            timeout=timeout_s,
+        )
+        return {
+            "stdout": completed.stdout,
+            "stderr": completed.stderr,
+            "exit_code": completed.returncode,
+        }
+
+    def _run_script(self, payload: dict) -> dict:
+        rel = str(payload.get("path", ""))
+        interpreter = str(payload.get("interpreter", sys.executable))
+        args = [str(item) for item in payload.get("args", []) if str(item)]
+        timeout_s = max(1, min(int(payload.get("timeout_s", 60)), 300))
+        script_path = self.root / _safe_relative_path(rel)
+        if not script_path.is_file():
+            raise FileNotFoundError(f"script not found: {rel}")
+        completed = subprocess.run(
+            [interpreter, script_path.as_posix(), *args],
+            cwd=self.root,
+            capture_output=True,
+            text=True,
+            timeout=timeout_s,
+        )
+        return {
+            "path": rel,
+            "stdout": completed.stdout,
+            "stderr": completed.stderr,
+            "exit_code": completed.returncode,
+        }
+
+    def _browser_fetch(self, payload: dict) -> dict:
+        url = str(payload.get("url", "")).strip()
+        if not url:
+            raise ValueError("url is required")
+        max_chars = max(256, min(int(payload.get("max_chars", 50_000)), 200_000))
+        timeout_s = max(1, min(int(payload.get("timeout_s", 30)), 120))
+        request = urllib.request.Request(url, headers={"User-Agent": "IntergraxSandbox/1.0"})
+        try:
+            with urllib.request.urlopen(request, timeout=timeout_s) as response:
+                raw = response.read()
+                content_type = response.headers.get("Content-Type", "")
+        except urllib.error.URLError as exc:
+            raise ValueError(f"fetch failed: {exc}") from exc
+        text = raw.decode("utf-8", errors="replace")
+        truncated = len(text) > max_chars
+        if truncated:
+            text = text[:max_chars]
+        return {
+            "url": url,
+            "content": text,
+            "content_type": content_type,
+            "truncated": truncated,
+            "size_bytes": len(raw),
+        }

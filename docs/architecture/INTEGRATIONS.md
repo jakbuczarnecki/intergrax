@@ -79,7 +79,7 @@ Adapters should be generic and reusable.
 ## Catalog
 
 
-**Last updated:** 2026-06-02 (Phase M.6 P5 **Done** 33/34 · M.6 P6 **Done** 32/32)
+**Last updated:** 2026-06-08 (Phase M.7 P7 **Done** 18/18 · M.6 P6 **Done** 32/32)
 
 The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. Agents and applications wire backends **by category**, not by vendor SDK, so the same agent code can run in a local lab, a customer VPC, or a multi-cloud deployment.
 
@@ -118,7 +118,7 @@ The **lab harness environment** treats these catalog slugs as **`stable`** (prod
 uv run pytest tests/unit/integrations/test_harness_lab_stable_stack.py -m gate -q
 ```
 
-Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 167 providers stable in one release.
+Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 185 providers stable in one release.
 
 ### M.6 P5 — Harness integration depth (Done — 33/34)
 
@@ -160,7 +160,22 @@ Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 167 pr
 
 **Tier-3 presets (P6):** `harness_security_stack()`, `harness_sandbox_stack()`, `harness_identity_stack()`, `harness_gitops_stack()` — CLI: `intergrax integrations-pick harness_security|harness_sandbox|harness_identity|harness_gitops`.
 
-**Catalog:** **167** slugs in `layout.py` (**12** core / **167** full preset).
+### M.7 P7 — Agent-developer integration expansion (Done — 18/18)
+
+**Register:** [plan/INTEGRATIONS.md — M.7 P7](../plan/INTEGRATIONS.md#m7-p7--agent-developer-integration-expansion-done--1818) · Band **2ad**
+
+| Wave | Focus | Slugs | Status |
+|------|--------|-------|--------|
+| H-INT-P7-1 | Research + RAG | `perplexity`, `arxiv`, `semantic_scholar`, `llamaparse`, `lancedb` | **Done** |
+| H-INT-P7-2 | Interaction + browser + storage | `telegram`, `browserbase`, `google_drive`, `apify` | **Done** |
+| H-INT-P7-3 | Workflow + wiki + identity + cache | `n8n`, `wikipedia`, `clerk`, `upstash_redis`, `upstash_qstash` | **Done** |
+| H-INT-P7-4 | Data warehouse | `okta`, `bigquery`, `motherduck`, `airbyte` | **Done** |
+
+**Delivered:** 18 STABLE slugs (`_shared/p8`) · 3 Tier-3 agent presets · `HARNESS_M7_P7_PROBE_SLUGS` · auto-wiring `search_provider` / `document_parser` / `vector_store` → catalog tools.
+
+**Tier-3 presets (P7):** `research_web_stack()`, `document_ingest_stack()`, `chat_bot_stack()` — CLI: `intergrax integrations-pick research_web|document_ingest|chat_bot`.
+
+**Catalog:** **185** slugs in `layout.py` (**12** core / **185** full preset).
 
 ---
 
@@ -384,7 +399,7 @@ Service-level slugs (`s3`, `azure_blob`, `gcs`, …) remain available for explic
 
 ---
 
-## Implemented providers (167)
+## Implemented providers (185)
 
 All providers below are registered in `register_default_integrations()`.  
 **Status:** `stable` = production-ready catalog entry; `beta` = shipped, API may evolve.
@@ -398,29 +413,29 @@ All providers below are registered in `register_default_integrations()`.
 
 | Category | Count | Slugs |
 |----------|------:|-------|
-| `relational_store` | 12 | `sqlite`, `postgresql`, `mysql`, `databricks`, `oracle`, `mssql`, `azure_sql`, `cloud_sql`, `snowflake`, `supabase`, `duckdb`, `timescaledb` |
+| `relational_store` | 14 | `sqlite`, `postgresql`, `mysql`, `databricks`, `oracle`, `mssql`, `azure_sql`, `cloud_sql`, `snowflake`, `supabase`, `duckdb`, `timescaledb`, `bigquery`, `motherduck` |
 | `document_store` | 3 | `cassandra`, `mongodb`, `dynamodb` |
-| `key_value_cache` | 3 | `redis`, `memcached`, `elasticache` |
-| `message_bus` | 9 | `kafka`, `celery`, `rabbitmq`, `sqs`, `service_bus`, `pubsub`, `temporal`, `nats`, `redpanda` |
-| `object_storage` | 7 | `s3`, `azure_blob`, `gcs`, `minio`, `filesystem`, `cloudflare_r2`, `huggingface_hub` |
-| `vector_store` | 8 | `pinecone`, `qdrant`, `chroma`, `weaviate`, `milvus`, `inmemory`, `vespa`, `pgvector` |
-| `search_provider` | 8 | `google_cse`, `bing`, `reddit`, `google_places`, `brave`, `serpapi`, `tavily`, `exa` |
-| `notification_channel` | 11 | `slack`, `teams`, `webhook`, `log`, `email_smtp`, `discord`, `twilio`, `pagerduty`, `opsgenie`, `incident_io`, `sendgrid` |
-| `interaction_surface` | 4 (+2 dual) | `lab_json`, `slash_command`, `mailgun`, `ollama`; `slack` / `teams` also register this category |
+| `key_value_cache` | 4 | `redis`, `memcached`, `elasticache`, `upstash_redis` |
+| `message_bus` | 10 | `kafka`, `celery`, `rabbitmq`, `sqs`, `service_bus`, `pubsub`, `temporal`, `nats`, `redpanda`, `upstash_qstash` |
+| `object_storage` | 8 | `s3`, `azure_blob`, `gcs`, `minio`, `filesystem`, `cloudflare_r2`, `huggingface_hub`, `google_drive` |
+| `vector_store` | 9 | `pinecone`, `qdrant`, `chroma`, `weaviate`, `milvus`, `inmemory`, `vespa`, `pgvector`, `lancedb` |
+| `search_provider` | 11 | `google_cse`, `bing`, `reddit`, `google_places`, `brave`, `serpapi`, `tavily`, `exa`, `perplexity`, `arxiv`, `semantic_scholar` |
+| `notification_channel` | 12 | `slack`, `teams`, `webhook`, `log`, `email_smtp`, `discord`, `twilio`, `pagerduty`, `opsgenie`, `incident_io`, `sendgrid`, `telegram` |
+| `interaction_surface` | 5 (+3 dual) | `lab_json`, `slash_command`, `mailgun`, `ollama`; `slack` / `teams` / `telegram` also register this category |
 | `collaboration_suite` | 2 | `ms365_graph`, `google_workspace` |
 | `issue_tracker` | 8 | `jira`, `github`, `linear`, `azure_devops`, `gitlab`, `servicenow`, `bitbucket`, `asana` |
-| `wiki_knowledge` | 3 | `confluence`, `notion`, `sharepoint` |
+| `wiki_knowledge` | 4 | `confluence`, `notion`, `sharepoint`, `wikipedia` |
 | `observability_backend` | 22 | `prometheus`, `elasticsearch`, `otel`, `langfuse`, `datadog`, `clickhouse`, `sentry`, `langsmith`, `helicone`, `posthog`, `braintrust`, `signoz`, `honeycomb`, `arize`, `phoenix`, `wandb`, `opensearch`, `influxdb`, `grafana`, `loki`, `tempo`, `mlflow` |
-| `document_parser` | 7 | `docling`, `pymupdf`, `unstructured`, `python_docx`, `openpyxl`, `whisper`, `yt_dlp` |
+| `document_parser` | 8 | `docling`, `pymupdf`, `unstructured`, `python_docx`, `openpyxl`, `whisper`, `yt_dlp`, `llamaparse` |
 | `rerank_provider` | 2 | `cohere_rerank`, `jina_rerank` |
-| `browser_automation` | 3 | `playwright`, `firecrawl`, `selenium` |
+| `browser_automation` | 5 | `playwright`, `firecrawl`, `selenium`, `browserbase`, `apify` |
 | `secrets_store` | 5 | `vault`, `aws_secrets_manager`, `azure_key_vault`, `gcp_secret_manager`, `doppler` |
 | `graph_store` | 3 | `neo4j`, `memgraph`, `falkordb` |
 | `cloud_platform` | 4 | `aws`, `azure`, `gcp`, `kubernetes` |
 | `feature_flag` | 2 | `unleash`, `launchdarkly` |
 | `ci_cd` | 1 | `github_actions` |
 
-**Total unique slugs:** 167.
+**Total unique slugs:** 185.
 
 ### Implementation depth (code audit)
 
@@ -832,13 +847,13 @@ Audit against typical agent stacks (LangGraph, CrewAI, LlamaIndex, enterprise VP
 | **Low** | `reddit`, `google_places` | search_provider | **Done** | Social/geo search (full packages) |
 | **Future** | `slash_command` | interaction_surface | **Done** (M.9) | Generic slash intake |
 
-**Strong harness coverage today:** **167** integrations — observability (24+), notification (11+), issue trackers (9), vectors (9 incl. typesense), secrets (6 incl. infisical), feature flags (3), CI/CD (8 incl. argocd), security scanners (3), sandbox hosts (3), identity (3), speech (2), workflow (2), CRM (2), plus M.7 stack (Vault, Neo4j, Temporal, …).
+**Strong harness coverage today:** **185** integrations — observability (24+), notification (11+), issue trackers (9), vectors (9 incl. typesense), secrets (6 incl. infisical), feature flags (3), CI/CD (8 incl. argocd), security scanners (3), sandbox hosts (3), identity (3), speech (2), workflow (2), CRM (2), plus M.7 stack (Vault, Neo4j, Temporal, …).
 
 **Tool Library:** `errors.capture`, `gitlab.create_issue`, `pagerduty.trigger_incident`, `braintrust.log_eval`. Optional deps: ``uv pip install 'Intergrax-ai[integrations-harness]'``.
 
 ---
 
-All **167** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
+All **185** shipped providers include an English usage guide at `intergrax/integrations/providers/<category>/<slug>/USAGE.md`. Regenerate after catalog changes:
 
 ```bash
 uv run python scripts/generate_integration_usage_docs.py

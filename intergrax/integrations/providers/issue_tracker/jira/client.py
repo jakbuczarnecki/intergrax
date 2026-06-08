@@ -132,3 +132,40 @@ class JiraRestClient:
         total_raw = data.get("total", len(issues))
         total = int(total_raw) if isinstance(total_raw, int) else len(issues)
         return IssueSearchResult(issues=issues, total=total)
+
+    def update_issue(
+        self,
+        issue_key: str,
+        *,
+        status: Optional[str] = None,
+        assignee: Optional[str] = None,
+        summary: Optional[str] = None,
+    ) -> IssueRecord:
+        fields: dict[str, object] = {}
+        if summary is not None:
+            fields["summary"] = summary
+        if assignee is not None:
+            fields["assignee"] = {"name": assignee}
+        if fields:
+            response = self._http_client.put(f"/issue/{issue_key}", json={"fields": fields})
+            response.raise_for_status()
+        if status is not None:
+            transitions = self._http_client.get(f"/issue/{issue_key}/transitions")
+            transitions.raise_for_status()
+            payload = transitions.json()
+            transition_id = None
+            if isinstance(payload, dict):
+                for item in payload.get("transitions") or []:
+                    if not isinstance(item, dict):
+                        continue
+                    to_obj = item.get("to")
+                    to_name = to_obj.get("name") if isinstance(to_obj, dict) else None
+                    if str(to_name or "").lower() == status.strip().lower():
+                        transition_id = item.get("id")
+                        break
+            if transition_id is not None:
+                self._http_client.post(
+                    f"/issue/{issue_key}/transitions",
+                    json={"transition": {"id": transition_id}},
+                )
+        return self.get_issue(issue_key)
