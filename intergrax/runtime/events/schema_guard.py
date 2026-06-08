@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from intergrax.runtime.events.payload_registry import assert_runtime_event_payload
 from intergrax.runtime.events.phase_coverage import phase_for_event
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.schema.registry import validate_schema_version
@@ -25,3 +26,7 @@ def assert_runtime_event_schema(event: RuntimeEvent) -> None:
             f"phase mismatch for {event.event_type.value}: "
             f"expected {expected_phase.value}, got {event.phase.value}"
         )
+    try:
+        assert_runtime_event_payload(event)
+    except ValueError as exc:
+        raise RuntimeEventSchemaError(str(exc)) from exc

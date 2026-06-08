@@ -16,6 +16,13 @@ from typing import Any, Dict, Optional, Union
 
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.runtime.events.payload_registry import merge_payload_envelope
+from intergrax.runtime.events.payloads import (
+    LlmCallPayloadV1,
+    TaskLifecyclePayloadV1,
+    ToolPayloadV1,
+    TraceBridgePayloadV1,
+)
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.phase_coverage import phase_for_event
 from intergrax.runtime.nexus.tracing.adapters.core_llm_call_recorded import CoreLLMCallRecordedDiagV1
@@ -115,9 +122,11 @@ def runtime_event_from_task_state(
     message: str = "",
     correlation_id: Optional[str] = None,
 ) -> RuntimeEvent:
+    from intergrax.runtime.events.payload_registry import runtime_event_with_payload
+
     event_type = _TASK_STATE_TO_EVENT.get(task.state, RuntimeEventType.STEP_STARTED)
     phase = _TASK_STATE_TO_PHASE.get(task.state, ExecutionPhase.STEP_EXECUTION)
-    return RuntimeEvent(
+    base = RuntimeEvent(
         tenant_id=task.tenant_id,
         task_id=task.task_id,
         run_id=run_id,
@@ -125,14 +134,25 @@ def runtime_event_from_task_state(
         event_type=event_type,
         phase=phase,
         severity=EventSeverity.INFO,
-        payload={
-            "task_state": task.state.value,
-            "message": message,
-            "capability": task.context.capability,
-            "source": "task_lifecycle",
-        },
         timestamp=datetime.now(timezone.utc),
         correlation_id=correlation_id or task.task_id,
+    )
+    capability = task.context.capability or ""
+    lifecycle = TaskLifecyclePayloadV1(
+        task_state=task.state.value,
+        message=message,
+        capability=capability,
+        source="task_lifecycle",
+    )
+    return runtime_event_with_payload(
+        base,
+        lifecycle,
+        promote_fields={
+            "task_state": task.state.value,
+            "message": message,
+            "capability": capability,
+            "source": "task_lifecycle",
+        },
     )
 
 
@@ -187,6 +207,93 @@ def _resolve_event_type_from_trace(
     return event_type, phase
 
 
+_TOOL_STATUS_BY_EVENT: dict[RuntimeEventType, str] = {
+    RuntimeEventType.TOOL_REQUESTED: "requested",
+    RuntimeEventType.TOOL_COMPLETED: "completed",
+    RuntimeEventType.TOOL_DENIED: "denied",
+    RuntimeEventType.TOOL_FAILED: "failed",
+}
+
+
+def _attach_typed_bridge_payload(
+    *,
+    event_type: RuntimeEventType,
+    base: dict[str, Any],
+    trace: TraceEvent,
+    extra_payload: dict[str, Any],
+    diagnostic_schema_id: str,
+) -> dict[str, Any]:
+    if event_type == RuntimeEventType.LLM_CALL and extra_payload:
+        typed = LlmCallPayloadV1(
+            model=str(extra_payload.get("model", "")),
+            prompt_tokens=int(extra_payload.get("prompt_tokens", 0) or 0),
+            completion_tokens=int(extra_payload.get("completion_tokens", 0) or 0),
+            total_tokens=int(extra_payload.get("total_tokens", 0) or 0),
+            finish_reason=extra_payload.get("finish_reason"),
+            label=str(extra_payload.get("label", "")),
+        )
+        return merge_payload_envelope(
+            base,
+            typed,
+            promote_fields={
+                "model": typed.model,
+                "prompt_tokens": typed.prompt_tokens,
+                "completion_tokens": typed.completion_tokens,
+                "total_tokens": typed.total_tokens,
+                "finish_reason": typed.finish_reason,
+            },
+        )
+    if event_type in _TOOL_STATUS_BY_EVENT:
+        tool_name = str(
+            extra_payload.get("tool_id")
+            or extra_payload.get("tool_name")
+            or trace.tags.get("tool_name")
+            or ""
+        )
+        typed = ToolPayloadV1(
+            tool_name=tool_name,
+            status=_TOOL_STATUS_BY_EVENT[event_type],
+            duration_ms=int(extra_payload.get("duration_ms", 0) or 0),
+            redacted_input_summary=str(extra_payload.get("redacted_input_summary", "")),
+            step_id=str(extra_payload.get("step_id", "")),
+        )
+        promote: dict[str, Any] = {"tool_name": tool_name} if tool_name else {}
+        return merge_payload_envelope(base, typed, promote_fields=promote or None)
+    if trace.step == "task_lifecycle":
+        task_state = str(trace.tags.get("task_state") or extra_payload.get("task_state") or "")
+        typed = TaskLifecyclePayloadV1(
+            task_state=task_state,
+            message=trace.message,
+            capability=str(trace.tags.get("capability") or ""),
+            source="task_lifecycle",
+        )
+        return merge_payload_envelope(
+            base,
+            typed,
+            promote_fields={
+                "task_state": task_state,
+                "message": trace.message,
+                "capability": trace.tags.get("capability"),
+                "source": "task_lifecycle",
+            },
+        )
+    typed = TraceBridgePayloadV1(
+        trace_event_id=trace.event_id,
+        trace_step=trace.step,
+        trace_component=trace.component.value,
+        trace_seq=trace.seq,
+        message=trace.message,
+        diagnostic_schema_id=diagnostic_schema_id,
+        diagnostic_data=dict(extra_payload),
+    )
+    merged = merge_payload_envelope(base, typed)
+    if diagnostic_schema_id:
+        merged["diagnostic_schema_id"] = diagnostic_schema_id
+    if extra_payload:
+        merged["trace_payload"] = dict(extra_payload)
+    return merged
+
+
 def trace_event_to_runtime_event(
     trace: TraceEvent,
     subject: TraceBridgeSubject,
@@ -216,29 +323,13 @@ def trace_event_to_runtime_event(
     if trace.payload is not None and not extra_payload:
         extra_payload = trace.payload.to_dict()
         schema_id = schema_id or trace.payload.__class__.schema_id()
-    if schema_id:
-        payload["payload_schema_id"] = schema_id
-    if extra_payload:
-        payload["trace_payload"] = extra_payload
-    if event_type == RuntimeEventType.LLM_CALL and extra_payload:
-        payload.update(
-            {
-                "model": extra_payload.get("model", ""),
-                "prompt_tokens": int(extra_payload.get("prompt_tokens", 0) or 0),
-                "completion_tokens": int(extra_payload.get("completion_tokens", 0) or 0),
-                "total_tokens": int(extra_payload.get("total_tokens", 0) or 0),
-                "finish_reason": extra_payload.get("finish_reason"),
-            }
-        )
-    elif event_type in {
-        RuntimeEventType.TOOL_REQUESTED,
-        RuntimeEventType.TOOL_COMPLETED,
-        RuntimeEventType.TOOL_DENIED,
-        RuntimeEventType.TOOL_FAILED,
-    }:
-        tool_name = extra_payload.get("tool_name") or trace.tags.get("tool_name")
-        if tool_name:
-            payload["tool_name"] = tool_name
+    payload = _attach_typed_bridge_payload(
+        event_type=event_type,
+        base=payload,
+        trace=trace,
+        extra_payload=extra_payload,
+        diagnostic_schema_id=schema_id,
+    )
 
     mapped_phase = phase_for_event(event_type)
     if mapped_phase is not None:
