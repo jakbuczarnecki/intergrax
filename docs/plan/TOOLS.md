@@ -102,6 +102,47 @@
 
 ---
 
+## Phase TOOL-ENG-DOC — Tool execution pipeline canon (Band 2ar)
+
+**Status:** **Done** (2026-06-08) — end-to-end tool engine documented in architecture pair  
+**Prerequisites:** Phase TS **Done** · Phase O **Done** · Phase LEG **Done**  
+**Goal:** Consolidate **selection → invocation → logging** for the Tier-1 tool engine in [`architecture/TOOLS.md`](../architecture/TOOLS.md) — close audit gap “engine spread across FLOW / UAEP only”  
+**Priority ladder:** **Band 2ar** — **closed** on doc merge  
+**ADR:** **No ADR needed** — documentation consolidation; runtime contracts unchanged
+
+| ID | Deliverable | Status | Priority | Module / doc | Acceptance |
+|----|-------------|--------|----------|--------------|------------|
+| TOOL-ENG-DOC.1 | **`Tool execution pipeline`** section — diagram + phase table + entry paths | **Done** | **Critical** | `architecture/TOOLS.md` | Covers select, invoke, log |
+| TOOL-ENG-DOC.2 | **Component naming note** — Tool engine vs `ToolRuntime` facade | **Done** | High | same | Linked from §Tool engine table |
+| TOOL-ENG-DOC.3 | **Cross-ref sync** — FLOW §15, AUDIT_MAP §11, Appendix J | **Done** | Medium | `docs/*` | Links resolve |
+
+### TOOL-ENG-DOC traceability
+
+| Pipeline phase | Canon section | Runtime modules |
+|----------------|---------------|-----------------|
+| Selection | TOOLS §Tool execution pipeline · FLOW §15 | `CatalogToolPlanner`, `ToolAccessPolicy`, `tool_policy_resolution.py` |
+| Invocation | TOOLS §Tool execution pipeline · UAEP §42.12 | `ToolRuntime`, `RuntimeToolInvoker`, `tool_gateway.py` |
+| Logging | TOOLS §Tool execution pipeline · FLOW §17 · OBS | `trace_event`, `RuntimeEvent` `TOOL_*`, `ToolsStep` |
+
+### TOOL-ENG-DOC — Paydown log
+
+| Date | ID | Summary |
+|------|-----|---------|
+| 2026-06-08 | TOOL-ENG-DOC.1–3 | Tool execution pipeline § in architecture; AUDIT_MAP §11 + Appendix J + FLOW §15 cross-refs |
+
+---
+
+### 6.1d Harness implementation queue — tool engine docs (closed)
+
+**Purpose:** Phase **TOOL-ENG-DOC** (Band 2ar) documentation closeout. **Closed 2026-06-08**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 1 | **TOOL-ENG-DOC.1–2** | Docs | **Done** | Architecture pipeline § + naming | Select / invoke / log covered |
+| 2 | **TOOL-ENG-DOC.3** | Docs | **Done** | Cross-ref sync | FLOW, AUDIT_MAP, Appendix J |
+
+---
+
 ---
 
 ### Phase O — Tool Library & Unified Tool Model (Tier-0)

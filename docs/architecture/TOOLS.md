@@ -11,7 +11,7 @@
 
 # Intergrax Tool Library
 
-**Last updated:** 2026-06-07 — **42 bundles** · **172 catalog tools** (verified via `register_default_tools()`)
+**Last updated:** 2026-06-08 — **42 bundles** · **172 catalog tools** (verified via `register_default_tools()`)
 
 The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](architecture/INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
 
@@ -19,15 +19,19 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 
 | Document | Purpose |
 |----------|---------|
-| Phase **M-RAG** | [plan/TOOLS.md) — RAG engine phases M-RAG.1–M-RAG.17 |
-| RAG stack canon | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) — Tier-0 retrieval architecture |
-| [guides/EXTENSION_AUTHOR_GUIDE.md](guides/EXTENSION_AUTHOR_GUIDE.md) | **External tool plugins** — `ToolPlugin`, entry points, MCP export |
-| [intergrax/tools/USAGE.md](../intergrax/tools/USAGE.md) | **Operational guide** — wire tools in Tier-3 apps and invoke from agents |
-| [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.6–§7.1.7, §22 | Architecture canon — Tool Library, unified tool model |
-| [plan/TOOLS.md) Phase O · **T-EXPAND** | Phase status, catalog expansion waves T1–T11 |
-| [plan/TOOLS.md) Phase V | Architecture hardening: security/cost governance and evaluation discipline (`V-SEC.*`, `V-COST.*`, `V-EVAL.*`) |
-| [architecture/INTEGRATIONS.md](architecture/INTEGRATIONS.md) | **167** backend adapters tools compose (not called directly by agents) |
-| [guides/AGENT_CREATION_GUIDE.md](guides/AGENT_CREATION_GUIDE.md) Appendix E | How agents declare `allowed_tools` vs applications wire backends |
+| Phase **M-RAG** | [`plan/TOOLS.md`](../plan/TOOLS.md) — RAG engine phases M-RAG.1–M-RAG.17 |
+| RAG stack canon | [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) — Tier-0 retrieval architecture |
+| [guides/EXTENSION_AUTHOR_GUIDE.md](../guides/EXTENSION_AUTHOR_GUIDE.md) | **External tool plugins** — `ToolPlugin`, entry points, MCP export |
+| [intergrax/tools/USAGE.md](../../intergrax/tools/USAGE.md) | **Operational guide** — wire tools in Tier-3 apps and invoke from agents |
+| [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) §7.1.6–§7.1.7, §22 | Architecture canon — Tool Library, unified tool model |
+| [`plan/TOOLS.md`](../plan/TOOLS.md) Phase O · **T-EXPAND** | Phase status, catalog expansion waves T1–T11 |
+| [`plan/TOOLS.md`](../plan/TOOLS.md) Phase V | Architecture hardening: security/cost governance and evaluation discipline (`V-SEC.*`, `V-COST.*`, `V-EVAL.*`) |
+| [INTEGRATIONS.md](INTEGRATIONS.md) | **167** backend adapters tools compose (not called directly by agents) |
+| [guides/AGENT_CREATION_GUIDE.md](../guides/AGENT_CREATION_GUIDE.md) Appendix E | How agents declare `allowed_tools` vs applications wire backends |
+| [NEXUS_EXECUTION_FLOW.md](NEXUS_EXECUTION_FLOW.md) §15 | Runtime narrative — tool **selection** flow (diagram) |
+| [UNIFIED_EXECUTION_RUNTIME.md](UNIFIED_EXECUTION_RUNTIME.md) §42.12 | `ToolRuntime` enforcement — `ToolRequest`, `TOOL_*` events |
+| [OBSERVABILITY.md](OBSERVABILITY.md) | Tool audit signals — `ops:tool_audit`, trace taxonomy |
+| **This doc — [Tool execution pipeline](#tool-execution-pipeline)** | End-to-end select → invoke → log (canonical for audit §11) |
 
 ---
 
@@ -128,6 +132,109 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T12 Done** · **
 | `ToolAccessPolicy` | `intergrax/runtime/nexus/tools/tool_access_policy.py` | **Done** |
 | `resolve_allowed_tools_from_config` | `intergrax/runtime/policy/tool_policy_resolution.py` | **Done** — merges `RuntimePolicyBundle.tool_access` (`StaticToolScopePolicy`) into `ToolRuntime` / gateway |
 | Legacy `ToolBase` | `intergrax/tools/tools_base.py` | **Deprecated** — use `ToolContract` (Phase O.7 Done) |
+
+**Naming:** docs use **Tool engine** for the Tier-1 runtime stack below; **`ToolRuntime`** is the enforcement facade agents and Nexus MUST call (§42.12). Catalog types live in Tier-0 `intergrax/tools/`.
+
+---
+
+## Tool execution pipeline
+
+The **tool engine** is the Tier-1 stack that **selects** which catalog tools may run, **invokes** them through a single policy-checked path, and **logs** every attempt. Agents and graph nodes never call handlers or integrations directly.
+
+**Read order:** this section (manifest) → [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §15–§17 (runtime sequence) → [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.12 (contracts).
+
+```mermaid
+flowchart TD
+    subgraph Select["1 — Selection"]
+        TP[ToolProfile bootstrap → ToolRegistry]
+        SK[SkillResolver → AgentContract.allowed_tools]
+        PB[RuntimePolicyBundle.tool_access]
+        CTP[CatalogToolPlanner / EnginePlan tool_ids]
+        LLM[LLM adapter tool_calls or text plan]
+        TAP[ToolAccessPolicy.apply]
+    end
+
+    subgraph Invoke["2 — Invocation"]
+        TR[ToolRuntime.invoke / invoke_request]
+        GW[RuntimeToolGateway / BoundToolGateway]
+        RTI[RuntimeToolInvoker]
+        IID[IdempotentToolInvoker optional]
+        EX[ToolExecutor → ToolHandler]
+        BE[Integration / RAG / sandbox backend]
+    end
+
+    subgraph Log["3 — Logging & governance"]
+        TE[Nexus trace_event TraceComponent.TOOLS]
+        EVT[RuntimeEventBus TOOL_REQUESTED / TOOL_*]
+        MW[Middleware BEFORE/AFTER_TOOL_CALL]
+        TRW[RunTraceWriter · ToolsStep.tool_traces]
+    end
+
+    TP --> TR
+    SK --> CTP
+    PB --> TAP
+    CTP --> LLM --> TAP --> TR
+    TR --> GW --> RTI --> IID --> EX --> BE
+    RTI --> TE --> EVT
+    RTI --> MW
+    TE --> TRW
+```
+
+### Phase responsibilities
+
+| Phase | Question answered | Primary components | Tier |
+|-------|-------------------|-------------------|------|
+| **1 — Selection** | Which tools exist and which may this run use? | `ToolProfile`, `SkillResolver`, `resolve_allowed_tools_from_config`, `CatalogToolPlanner`, `ToolPlanningService`, `ToolAccessPolicy` | Tier-3 bootstrap + Tier-1 |
+| **2 — Invocation** | How is one tool call executed safely? | `ToolRuntime`, `RuntimeToolGateway`, `RuntimeToolInvoker`, `ToolExecutor`, `runtime_bound_catalog` | Tier-1 |
+| **3 — Logging** | What happened, for audit and debug? | `trace_event`, `RuntimeEvent` (`TOOL_*`), security middleware, `RunTraceWriter`, `ToolsStep.tool_traces` | Tier-1 + observability |
+
+### Entry paths (same invoker)
+
+| Path | When used | Module |
+|------|-----------|--------|
+| **UAEP agent step** | Agent-local tool loop (`tools_mode`) | `ToolsStep` → `RuntimeToolInvoker` |
+| **Capability plan** | Engine / Nexus plan with `tool_ids` | `ToolRuntime.invoke` → pipeline steps or catalog |
+| **Graph / UAEP gateway** | Bound agent with `ToolRequest` | `RuntimeToolGateway` / `BoundToolGateway` |
+| **Direct catalog context** | Nexus-internal bounded inject | `catalog_context.invoke_catalog_context_tool` |
+
+All paths converge on **`RuntimeToolInvoker`** — registry lookup, input/output schema validation, `ToolScopePolicy`, timeout/retry, error mapping to `RuntimeErrorCode`, and trace start/end.
+
+### Selection detail
+
+1. **Bootstrap (host):** `ToolProfile` + `ToolWiringContext` → `build_registry_from_profile()` — only enabled tools exist in the registry ([How wiring works](#how-wiring-works-phase-o2)).
+2. **Per run:** `SkillResolver` merges `skill_ids` → tool allow-list on `AgentContract`; `RuntimePolicyBundle.tool_access` may further restrict.
+3. **Per step:** `CatalogToolPlanner` exports OpenAI function schemas from the filtered registry; LLM returns `tool_calls` or structured plan (`EnginePlan.tool_ids`).
+4. **Pre-invoke filter:** `ToolAccessPolicy.apply()` intersects planned `tool_ids` with effective allow-list and optional `ModalityProfile`.
+
+See [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) — cognition dimension **3 (Tool)**: `ToolPlanDecision` → `ToolRuntime`.
+
+### Invocation detail
+
+```text
+ToolExecutionRequest(run_id, step_id, tool_id, input, idempotency_key)
+    → RuntimeToolInvoker.invoke(state, agent_id, request)
+        → ToolScopePolicy.is_allowed(agent_id, tool_id)  # deny → trace + ToolScopeViolationError
+        → ToolRegistry.get_contract(tool_id)
+        → validate input_schema / execute handler / validate output_schema
+        → map exceptions → RuntimeErrorCode
+        → optional ToolRetryPolicy (runtime-managed, not agent loop)
+    → ToolExecutionResult(success, output | error)
+```
+
+`ToolRuntime.invoke_request(ToolRequest)` is the UAEP §42.12 contract surface; legacy pipeline booleans normalize to `tool_ids` before dispatch (Phase LEG **Done**).
+
+### Logging detail
+
+| Signal | Mechanism | When |
+|--------|-----------|------|
+| Step trace | `state.trace_event(component=TOOLS, step=tool_invocation_*)` | Every invoker attempt (incl. denied scope) |
+| Runtime events | `TOOL_REQUESTED`, terminal `TOOL_COMPLETED` / `TOOL_FAILED` / `TOOL_DENIED` | §42.12 — gate: every invoke |
+| Ops filter | `ops:tool_audit` hint on tool events | [`OBSERVABILITY.md`](OBSERVABILITY.md) |
+| Agent loop summary | `ToolsStep` → `state.tool_traces` (`ToolCallTrace`) | Agent-local planner loop |
+| Security | `MiddlewarePipeline` `BEFORE/AFTER_TOOL_CALL` | Injection defense (`ApplicationSecurityProfile`) |
+| Persisted run | `RunTraceWriter` / lab `GET /debug/tasks/{id}/trace` | Full run post-mortem |
+
+**Authoring:** [`AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix J · **Audit:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §11.
 
 ---
 

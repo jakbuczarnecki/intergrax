@@ -1509,6 +1509,8 @@ build_harness_host_runtime()
 
 **Rule:** register tools/skills in Tier-0 catalogs and enable them on `ApplicationEnvironmentProfile` — **never** create agent-local tool registries.
 
+**Runtime pipeline (select → invoke → log):** [`architecture/TOOLS.md`](architecture/TOOLS.md#tool-execution-pipeline) · enforcement [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.12 · flow narrative [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §15–§17.
+
 ### J.3 Core contracts (typed, inspectable)
 
 | Contract | Module | Role |
