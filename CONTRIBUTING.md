@@ -110,7 +110,7 @@ applications/    MAY import from agents/ and intergrax/
 
 ### Reuse rule
 
-Tier-1/2/3 work is **composition and wiring** of existing Tier-0 modules — not parallel universal mechanisms. See [architecture §5.2](docs/intergrax_runtime_architecture.md#52-platform-reuse-and-no-redundancy-principle).
+Tier-1/2/3 work is **composition and wiring** of existing Tier-0 modules — not parallel universal mechanisms. See [architecture §5.2](docs/architecture/PLATFORM_FOUNDATION.md#52-platform-reuse-and-no-redundancy-principle).
 
 ### Agent creation
 

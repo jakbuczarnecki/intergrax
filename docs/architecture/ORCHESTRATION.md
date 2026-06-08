@@ -42,7 +42,7 @@ Responsibilities:
 - request human approval when required
 - finalize output
 
-**Detailed runtime narrative** (sequence diagrams, decision matrix, `FLOW-GAP.*` plan rows): [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) [§4](PLATFORM_FOUNDATION.md)–[§18](INTEGRATIONS_ARCHITECTURE.md).
+**Detailed runtime narrative** (sequence diagrams, decision matrix, `FLOW-GAP.*` plan rows): [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §4–§18.
 
 Pseudo-flow:
 
@@ -78,7 +78,7 @@ while task.status not in [completed, failed, cancelled]:
 
 # 9.2 Local Agent Loop
 
-Agents MAY have local loops — but loops MUST be **runtime-controlled** ([§42](UNIFIED_EXECUTION_RUNTIME.md).32, [§42](UNIFIED_EXECUTION_RUNTIME.md).33).
+Agents MAY have local loops — but loops MUST be **runtime-controlled** (§42.32, §42.33).
 
 Local loops are allowed when an agent requires multiple internal steps.
 
@@ -432,8 +432,8 @@ Before changing Nexus, answer:
 6. Does it avoid hardcoded business logic?
 7. Is the behavior traceable?
 8. Can it support future agents?
-9. Does it emit RuntimeEvents and respect UAEP ([§42](UNIFIED_EXECUTION_RUNTIME.md))?
-10. Does it integrate with HookRegistry / middleware pipeline ([§42](UNIFIED_EXECUTION_RUNTIME.md).20)?
+9. Does it emit RuntimeEvents and respect UAEP (§42)?
+10. Does it integrate with HookRegistry / middleware pipeline (§42.20)?
 ```
 
 If the change is domain-specific, it probably belongs in an agent.

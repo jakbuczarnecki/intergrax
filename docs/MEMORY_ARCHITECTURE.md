@@ -534,7 +534,7 @@ See [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) §3.
 
 **FAUDIT-32:** Memory Layer **L2** · Context Engineering **L3** — closeout ≠ full depth.
 
-All implementation tasks: [Phase MEM-DEPTH](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem-depth--memory-intelligence-depth).
+All implementation tasks: [Phase MEM-DEPTH](plan/phases/rag-context-memory.md).
 
 ---
 
@@ -542,7 +542,7 @@ All implementation tasks: [Phase MEM-DEPTH](INTERGRAX_IMPLEMENTATION_PLAN.md#pha
 
 | Document | Relationship |
 |----------|--------------|
-| [intergrax_runtime_architecture.md §27–§28](intergrax_runtime_architecture.md#27-memory-model) | Canon summary — links here for depth |
+| [intergrax_runtime_architecture.md §27–§28](MEMORY_ARCHITECTURE.md#27-memory-model) | Canon summary — links here for depth |
 | [AGENT_CREATION_GUIDE.md Appendix G](AGENT_CREATION_GUIDE.md#appendix-g--memory--rag-naming-phase-q) | Author control plane |
 | [AGENT_CREATION_GUIDE.md Appendix L](AGENT_CREATION_GUIDE.md#appendix-l--context-engineering-control-plane) | Context engineering control plane |
 | [TOOLS.md](TOOLS.md) | `memory.*` and `rag.retrieve` tools |

@@ -552,4 +552,4 @@ uv run python scripts/check_observability_gates.py
 
 ---
 
-*This document is the canonical observability architecture. Update it when changing spine contracts, emission rules, or persistence profiles. Implementation status: [Phase OBS-BUS — Done](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine).*
+*This document is the canonical observability architecture. Update it when changing spine contracts, emission rules, or persistence profiles. Implementation status: [Phase OBS-BUS — Done](plan/phases/observability-reliability.md).*

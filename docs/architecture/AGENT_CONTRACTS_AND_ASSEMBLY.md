@@ -89,7 +89,7 @@ Agent implementations should be simple.
 
 The goal is to let developers focus on domain logic, not infrastructure.
 
-All `execute()` implementations MUST delegate to `AgentEngine` and the Unified Agent Execution Protocol ([§42](UNIFIED_EXECUTION_RUNTIME.md).5). Agents MUST NOT implement private runtime lifecycles.
+All `execute()` implementations MUST delegate to `AgentEngine` and the Unified Agent Execution Protocol (§42.5). Agents MUST NOT implement private runtime lifecycles.
 
 ---
 
@@ -196,11 +196,11 @@ Before implementing a new agent, answer:
 8. What is the maximum acceptable cost/time?
 9. How will success be evaluated?
 10. How will Nexus route tasks to this agent?
-11. Which AgentSteps does the agent declare ([§42](UNIFIED_EXECUTION_RUNTIME.md).6)?
-12. Which AgentDecision types can the agent emit ([§42](UNIFIED_EXECUTION_RUNTIME.md).7)?
-13. Does the agent conform to UAEP via AgentEngine ([§42](UNIFIED_EXECUTION_RUNTIME.md).5)?
-14. Are all tool calls routed through ToolRuntime ([§42](UNIFIED_EXECUTION_RUNTIME.md).12)?
-15. Are forbidden runtime patterns avoided ([§42](UNIFIED_EXECUTION_RUNTIME.md).41)?
+11. Which AgentSteps does the agent declare (§42.6)?
+12. Which AgentDecision types can the agent emit (§42.7)?
+13. Does the agent conform to UAEP via AgentEngine (§42.5)?
+14. Are all tool calls routed through ToolRuntime (§42.12)?
+15. Are forbidden runtime patterns avoided (§42.41)?
 ```
 
 If these questions cannot be answered, do not implement the agent yet.

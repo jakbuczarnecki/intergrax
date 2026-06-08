@@ -23,11 +23,11 @@ This document is intentionally written to be readable by:
 
 This document MUST be treated as the canonical source of truth for implementing Intergrax.
 
-The platform is defined as **four tiers** (Tier-0 Platform → Tier-1 Nexus → Tier-2 Agents → Tier-3 Applications). See [§5](PLATFORM_FOUNDATION.md).1.
+The platform is defined as **four tiers** (Tier-0 Platform → Tier-1 Nexus → Tier-2 Agents → Tier-3 Applications). See §5.1.
 
-The **Unified Execution Runtime Specification** ([§42](UNIFIED_EXECUTION_RUNTIME.md)) defines the canonical implementation contracts for AgentEngine, events, hooks, lifecycle, decisions, interrupts, policy, middleware, and governance. All agent implementations MUST conform to [§42](UNIFIED_EXECUTION_RUNTIME.md).
+The **Unified Execution Runtime Specification** (§42) defines the canonical implementation contracts for AgentEngine, events, hooks, lifecycle, decisions, interrupts, policy, middleware, and governance. All agent implementations MUST conform to §42 ([`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md)).
 
-**Critical implementation rule:** Intergrax MUST **reuse existing Tier-0 platform mechanisms** — not duplicate them. New universal components require explicit human approval. See [§5](PLATFORM_FOUNDATION.md).2, [§8](PLATFORM_FOUNDATION.md).8, [§39](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md).8.
+**Critical implementation rule:** Intergrax MUST **reuse existing Tier-0 platform mechanisms** — not duplicate them. New universal components require explicit human approval. See §5.2, §8.8, §39.8.
 
 When an implementation decision is unclear, the implementation agent MUST prefer the principles, boundaries and contracts defined in this document.
 
@@ -54,7 +54,7 @@ This document is an architectural and implementation guide.
 
 Platform docs describe **how to compose** agents and application hosts on the Harness. They do **not** replace product-specific architecture or deployment plans for a given business environment or business agent.
 
-Navigation: [README.md — Documentation index](../README.md#documentation-index) · [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) §Documentation boundary · plan [[§4](PLATFORM_FOUNDATION.md).0a](INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business)
+Navigation: [README.md — Documentation index](../README.md#documentation-index) · [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) §Documentation boundary · plan [§4.0a](INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business)
 
 ---
 
@@ -74,7 +74,7 @@ Intergrax is an AI Operating System / Agent Runtime / **Harness AI environment**
 | **Laboratory** | Rapid experimentation — create, run, observe, validate or discard agent hypotheses quickly |
 | **Production harness** | Certified runtime + reference business agents + stable integration paths + operational observability |
 
-Intergrax is **not** a finished multi-tenant SaaS product today ([§4](PLATFORM_FOUNDATION.md)). The laboratory mode remains the **fast path for new ideas**; production harness is the **strategic destination** for agents that graduate from experiments (Phase S in the implementation plan).
+Intergrax is **not** a finished multi-tenant SaaS product today (§4). The laboratory mode remains the **fast path for new ideas**; production harness is the **strategic destination** for agents that graduate from experiments (Phase S in the implementation plan).
 
 The ideal workflow is:
 
@@ -105,15 +105,15 @@ The core asset is not any single agent.
 
 The core asset is the runtime that allows agents to be created and tested quickly.
 
-The platform is organized in **four tiers** (see [§5](PLATFORM_FOUNDATION.md).1): Platform → Nexus (Agent OS) → Agents → Applications.
+The platform is organized in **four tiers** (see §5.1): Platform → Nexus (Agent OS) → Agents → Applications.
 
-Execution is governed by **[§42](UNIFIED_EXECUTION_RUNTIME.md) Unified Execution Runtime Specification** — event-driven orchestration, shared `AgentEngine`, hooks, `AgentDecision`, interrupts, and ToolRuntime enforcement.
+Execution is governed by **§42 Unified Execution Runtime Specification** — event-driven orchestration, shared `AgentEngine`, hooks, `AgentDecision`, interrupts, and ToolRuntime enforcement.
 
-Platform work MUST **extend and wire** existing Tier-0 modules — not introduce parallel universal mechanisms ([§5](PLATFORM_FOUNDATION.md).2).
+Platform work MUST **extend and wire** existing Tier-0 modules — not introduce parallel universal mechanisms (§5.2).
 
-**Capability stack (Tier-0 + Tier-2):** Integration → Tool → **Skill** → Agent ([§7](PLATFORM_FOUNDATION.md).1.6–[§7](PLATFORM_FOUNDATION.md).1.8). Skills are composable packs; tools remain atomic LLM operations.
+**Capability stack (Tier-0 + Tier-2):** Integration → Tool → **Skill** → Agent (§7.1.6–§7.1.8). Skills are composable packs; tools remain atomic LLM operations.
 
-**Model & modality stack (Tier-0):** three **modality planes** — generative LLM ([§5](PLATFORM_FOUNDATION.md).2.2), media ingest/RAG ([§7](PLATFORM_FOUNDATION.md).1.2), dedicated inference — vision CV, speech, classical ML ([§7](PLATFORM_FOUNDATION.md).1.9). Catalog index: [`MODALITY.md`](MODALITY.md).
+**Model & modality stack (Tier-0):** three **modality planes** — generative LLM (§5.2.2), media ingest/RAG (§7.1.2), dedicated inference — vision CV, speech, classical ML (§7.1.9). Catalog index: [`MODALITY.md`](MODALITY.md).
 
 ---
 
@@ -124,7 +124,7 @@ Platform work MUST **extend and wire** existing Tier-0 modules — not introduce
 
 Intergrax IS:
 
-- a **four-tier AI platform** (Platform → Nexus → Agents → Applications — [§5](PLATFORM_FOUNDATION.md).1)
+- a **four-tier AI platform** (Platform → Nexus → Agents → Applications — §5.1)
 - an AI Operating System (Nexus / Tier-1)
 - an Agent Runtime
 - a Harness AI Environment
@@ -133,7 +133,7 @@ Intergrax IS:
 - a Capability Execution Platform
 - a runtime for testing business and technical agent hypotheses
 - a system for integrating agentic work with real organizational tools
-- a **Skill Library** for reusable capability packs (tools + prompts + policy) above the Tool Library ([§7](PLATFORM_FOUNDATION.md).1.8; **MVP Done**, Phase R)
+- a **Skill Library** for reusable capability packs (tools + prompts + policy) above the Tool Library (§7.1.8; **MVP Done**, Phase R)
 
 Intergrax is designed to answer this question:
 
@@ -223,7 +223,7 @@ Tier-0 provides capabilities that **any** runtime or agent may use. It does not 
 - Memory and conversation history primitives (`intergrax/memory/`, session storage)
 - RAG: embeddings, vector stores, document loaders (`intergrax/rag/`)
 - Tool integrations and invokers (`intergrax/tools/`, websearch, multimedia)
-- Infrastructure adapters: PostgreSQL, Redis, queues, Kafka, file storage — **catalogued in** `intergrax/integrations/` ([§7](PLATFORM_FOUNDATION.md).1)
+- Infrastructure adapters: PostgreSQL, Redis, queues, Kafka, file storage — **catalogued in** `intergrax/integrations/` (§7.1)
 - Network and ingestion: HTTP clients, web fetch, file parsing
 - Observability primitives: logging, error models, trace persistence backends
 - Shared utilities: time, config helpers, idempotency stores
@@ -234,7 +234,7 @@ Tier-0 provides capabilities that **any** runtime or agent may use. It does not 
 - Tier-0 MUST NOT contain agent business logic.
 - Tier-0 MUST NOT decide which agent runs.
 - Tier-0 exposes **stable interfaces** (adapters, managers, registries).
-- Tier-0 is the **single source of truth** for each universal platform capability ([§5](PLATFORM_FOUNDATION.md).2).
+- Tier-0 is the **single source of truth** for each universal platform capability (§5.2).
 - Higher tiers MUST consume Tier-0 through existing entry points — not reimplement them.
 
 **Repository:** primarily `intergrax/` subpackages **outside** `runtime/nexus/` orchestration (e.g. `adapters/`, `rag/`, `tools/`, `queueing/`, `llm_adapters/`, `memory/`, `logging.py`).
@@ -265,7 +265,7 @@ The platform MUST maintain **one canonical path** per universal concern. All tie
 | LLM calls | `intergrax/llm_adapters/` (`LLMAdapter`, `LLMAdapterResponse` envelope, registry, `LLMProfile`, metrics, resilience, Nexus `llm_tenant_scope`; replay via `trace_replay_bridge`) | Direct vendor SDKs in agents; duplicate LLM stacks; bare `str` adapter returns |
 | Logging | `intergrax/logging.py` and established log patterns | `print()`, ad-hoc loggers, duplicate logging frameworks |
 | Tracing (pipeline) | Nexus `trace_event()` / `RunTraceWriter` | Parallel untracked diagnostic streams |
-| Tools | `intergrax/tools/` (`ToolRegistry`, `ToolExecutor`, Tool Library [§7](PLATFORM_FOUNDATION.md).1.6) | Agent-local tool registries; boolean `use_rag` / `use_websearch` plan flags (deprecated [§22](TOOLS_RUNTIME.md).2) |
+| Tools | `intergrax/tools/` (`ToolRegistry`, `ToolExecutor`, Tool Library §7.1.6) | Agent-local tool registries; boolean `use_rag` / `use_websearch` plan flags (deprecated §22.2) |
 | RAG | `intergrax/rag/` (`RagProfile`, `RetrievalService`, `IngestPipeline`) | Duplicate embedding/retrieval stacks; dense-only `vectorstore.query` bypass in agents/Nexus |
 | Web search | `intergrax/websearch/` | Custom HTTP search clients in agents |
 | Memory / session | `intergrax/memory/`, Nexus session storage | Direct Redis/PostgreSQL access from agents |
@@ -280,17 +280,17 @@ This table is illustrative, not exhaustive. The rule is general:
 
 > **If a universal capability already exists in Tier-0, use it. Do not add a second one.**
 
-### 5.2.3 What [§42](UNIFIED_EXECUTION_RUNTIME.md) Contracts Are (And Are Not)
+### 5.2.3 What §42 Contracts Are (And Are Not)
 
-[§42](UNIFIED_EXECUTION_RUNTIME.md) Unified Execution Runtime defines **orchestration contracts and governance wiring** — how Nexus and agents coordinate execution.
+§42 Unified Execution Runtime defines **orchestration contracts and governance wiring** — how Nexus and agents coordinate execution.
 
-[§42](UNIFIED_EXECUTION_RUNTIME.md) does **NOT** authorize creating duplicate Tier-0 implementations. For example:
+§42 does **NOT** authorize creating duplicate Tier-0 implementations. For example:
 
 - `RuntimeEvent` MUST integrate with — not replace — existing trace/logging infrastructure.
 - `ToolRuntime` MUST delegate to existing `ToolRegistry` / tool steps — not a parallel tool system.
 - `AgentEngine` MUST use existing `RuntimeEngine` / pipeline — not a second execution engine.
 
-When [§42](UNIFIED_EXECUTION_RUNTIME.md) scaffold modules are wired (Phase P4+), they MUST **wrap and unify** existing mechanisms, not fork them.
+When §42 scaffold modules are wired (Phase P4+), they MUST **wrap and unify** existing mechanisms, not fork them.
 
 ### 5.2.4 Human Approval Required For New Universal Mechanisms
 
@@ -342,7 +342,7 @@ Duplicate mechanisms cause:
 
 Redundant implementations MUST be rejected in code review — even if they "work" in isolation.
 
-Reference: [§8](PLATFORM_FOUNDATION.md).8, [§39](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md).8, [§42](UNIFIED_EXECUTION_RUNTIME.md).41, [§43](PLATFORM_FOUNDATION.md).8.
+Reference: §8.8, §39.8, §42.41, §43.8.
 
 ---
 
@@ -414,12 +414,12 @@ An application is not an agent. It is the **product shell** — the “Cursor AI
 
 - Host entrypoint (`main.py`, `factory.py`, `settings.py`, `wiring.py`)
 - HTTP/CLI serving layer (routes, auth, tenant config)
-- **Self-contained operational configuration** — own `.env` and `.env.example` (application-prefixed variables; see [§7](PLATFORM_FOUNDATION.md).4.8)
+- **Self-contained operational configuration** — own `.env` and `.env.example` (application-prefixed variables; see §7.4.8)
 - Environment profiles (dev/staging/prod), SKU rules, feature flags
 - Agent registry wiring: which agents are registered, with which IDs and policies
 - `IntegrationProfile` composition — which Tier-0 backends this environment uses
 - Orchestration config: default capabilities, routing hints, multi-agent topologies
-- **Deployment package** — `docker/` (Dockerfile, optional `docker-compose.yml`) sufficient to build an image and push to production (see [§7](PLATFORM_FOUNDATION.md).4.8)
+- **Deployment package** — `docker/` (Dockerfile, optional `docker-compose.yml`) sufficient to build an image and push to production (see §7.4.8)
 
 **Self-sufficiency rule:** A Tier-3 application is a **runnable, deployable environment** on its own. A developer MUST be able to start the host and build a container using **only** files under `applications/<name>/` plus the monorepo Python dependencies (`pyproject.toml` / `uv` at repository root). Application-specific secrets and toggles MUST NOT live only in the repository-root `.env.example`.
 
@@ -427,7 +427,7 @@ An application is not an agent. It is the **product shell** — the “Cursor AI
 
 - `legal_application` — legal review for law firms (Legal agent + compliance rules)
 - `research_application` — research → summarize pipeline for analysts
-- `intergrax_assistant_application` — harness-native conversational lab (hub agent + swappable LLM + optional specialist delegation) — see [§7](PLATFORM_FOUNDATION.md).4.11
+- `intergrax_assistant_application` — harness-native conversational lab (hub agent + swappable LLM + optional specialist delegation) — see §7.4.11
 - `local_workspace_application` — Local Knowledge Workspace (LKW)
 - `dispute_sim_application` — Dispute Simulation Workspace (DSW)
 - Future: `agency_application`, `saas_pm_application`, `ecommerce_ux_application`
@@ -517,12 +517,12 @@ IDEAL chain: `Harness → Runtime → Agents → Applications → Products`. Int
 | **LLM** | Tier-0 `intergrax/llm_adapters/` — invoked per step/plan; not embedded inside Tier-2 agent class |
 | **Agent** | Tier-2 module (`agents/<name>/`) implementing `Agent` + `AgentContract` + UAEP |
 | **Runnable agent instance** | Harness + selected agent + `LLMProfile` + resolved `skill_ids` / `allowed_tools` + `RuntimePolicyBundle` for one run |
-| **Tool** | Tier-0 atomic `ToolContract` — LLM/MCP/FastAPI invocable ([§7](PLATFORM_FOUNDATION.md).1.6) |
-| **Skill** | Tier-0 composable **`SkillManifest`** — tools + prompts + policy fragment ([§7](PLATFORM_FOUNDATION.md).1.8) |
-| **Context engineering** | Tier-1 `ContextManager` + `TaskContextAssemblyOptions` + `MemoryView` + `ContextBudgetPolicy` ([§28](CONTEXT_ENGINEERING.md).1) |
-| **Subagent** | **Graph delegation** — Nexus `ExecutionGraph` child node, not nested OS ([§42](UNIFIED_EXECUTION_RUNTIME.md).14.3) |
-| **Policy** | `PolicyEngine`, `ToolAccessPolicy`, budgets, HITL, org profiles — composed as `RuntimePolicyBundle` ([§42](UNIFIED_EXECUTION_RUNTIME.md).11.4) |
-| **Modality / ML** | Planes B+C via **tools** + optional **`ModalityProfile`** ([§7](PLATFORM_FOUNDATION.md).1.9); generative vision/audio via **`LLMProfile`** (Plane A); never vendor SDKs in agents |
+| **Tool** | Tier-0 atomic `ToolContract` — LLM/MCP/FastAPI invocable (§7.1.6) |
+| **Skill** | Tier-0 composable **`SkillManifest`** — tools + prompts + policy fragment (§7.1.8) |
+| **Context engineering** | Tier-1 `ContextManager` + `TaskContextAssemblyOptions` + `MemoryView` + `ContextBudgetPolicy` (§28.1) |
+| **Subagent** | **Graph delegation** — Nexus `ExecutionGraph` child node, not nested OS (§42.14.3) |
+| **Policy** | `PolicyEngine`, `ToolAccessPolicy`, budgets, HITL, org profiles — composed as `RuntimePolicyBundle` (§42.11.4) |
+| **Modality / ML** | Planes B+C via **tools** + optional **`ModalityProfile`** (§7.1.9); generative vision/audio via **`LLMProfile`** (Plane A); never vendor SDKs in agents |
 
 ### 5.3.2 Agent composition (not harness + LLM only)
 
@@ -536,7 +536,7 @@ Harness (Nexus + app wiring)
         → Modality tools (vision.detect, speech.*, ml.predict)  →  Plane C registry / speech_provider
 ```
 
-Agents MUST NOT call integrations directly. Agents MUST NOT import CV/ML SDKs (`ultralytics`, `torch`, `onnxruntime`, …) when a catalog tool or adapter exists ([§7](PLATFORM_FOUNDATION.md).1.9). Skills MUST NOT replace `ToolRuntime` or appear as fake `ToolContract` entries.
+Agents MUST NOT call integrations directly. Agents MUST NOT import CV/ML SDKs (`ultralytics`, `torch`, `onnxruntime`, …) when a catalog tool or adapter exists (§7.1.9). Skills MUST NOT replace `ToolRuntime` or appear as fake `ToolContract` entries.
 
 ### 5.3.3 Architectural decision: Skill layer (ADR)
 
@@ -554,7 +554,7 @@ Implementation tracker: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENT
 
 # 6. High Level Architecture
 
-Intergrax consists of **four platform tiers** (see [§5](PLATFORM_FOUNDATION.md).1). The diagram below shows Tier-0 through Tier-3.
+Intergrax consists of **four platform tiers** (see §5.1). The diagram below shows Tier-0 through Tier-3.
 
 ```text
 +--------------------------------------------------------------+
@@ -618,16 +618,16 @@ User / API (Tier-3)
 
 # 7. Layer Responsibility Summary
 
-> **Canonical naming:** Tier-0..3 ([§5](PLATFORM_FOUNDATION.md).1). Subsections below retain legacy “Layer N” labels where noted.
+> **Canonical naming:** Tier-0..3 (§5.1). Subsections below retain legacy “Layer N” labels where noted.
 
 ## 7.0 Tier Overview
 
 | Tier | Section | Package / folder |
 |------|---------|------------------|
-| Tier-0 Platform | [§7](PLATFORM_FOUNDATION.md).1 | `intergrax/` + **`integrations/`** + **`tools/`** + **`skills/`** catalogs; rag, memory, queueing, … |
-| Tier-1 Nexus | [§7](PLATFORM_FOUNDATION.md).2 | `intergrax/runtime/`, `intergrax/contracts/` |
-| Tier-2 Agents | [§7](PLATFORM_FOUNDATION.md).3 | `agents/<name>/` |
-| Tier-3 Applications | [§7](PLATFORM_FOUNDATION.md).4 | `applications/<name>/` |
+| Tier-0 Platform | §7.1 | `intergrax/` + **`integrations/`** + **`tools/`** + **`skills/`** catalogs; rag, memory, queueing, … |
+| Tier-1 Nexus | §7.2 | `intergrax/runtime/`, `intergrax/contracts/` |
+| Tier-2 Agents | §7.3 | `agents/<name>/` |
+| Tier-3 Applications | §7.4 | `applications/<name>/` |
 
 ---
 
@@ -686,9 +686,9 @@ intergrax/integrations/
 
 - One **provider folder per integration** under **`providers/<category>/<slug>/`** — category matches `IntegrationCategory` (see `providers/layout.py`).
 - Providers implement **category contracts** from `integrations/contracts/` — not ad-hoc SDK wrappers.
-- Agents and Nexus MUST NOT import vendor SDKs directly when a catalog provider exists ([§5](PLATFORM_FOUNDATION.md).2).
+- Agents and Nexus MUST NOT import vendor SDKs directly when a catalog provider exists (§5.2).
 - Existing Tier-0 modules (`queueing/`, `distributed/`, `websearch/`, `rag/`, `runtime/notifications/`, `runtime/interactions/`) remain valid; new work and refactors **register through** `IntegrationRegistry` and gradually wrap legacy providers (evolve, not rewrite).
-- **`intergrax/llm_adapters/` is out of scope** for the Integration Library — LLM providers use `LLMAdapterRegistry` ([§5](PLATFORM_FOUNDATION.md).2.2), not `IntegrationRegistry`. Cloud facades (`aws`, `azure`, `gcp`) MUST NOT wrap or re-export Bedrock, Azure OpenAI, Vertex, or other LLM adapters.
+- **`intergrax/llm_adapters/` is out of scope** for the Integration Library — LLM providers use `LLMAdapterRegistry` (§5.2.2), not `IntegrationRegistry`. Cloud facades (`aws`, `azure`, `gcp`) MUST NOT wrap or re-export Bedrock, Azure OpenAI, Vertex, or other LLM adapters.
 - Production access from agents goes through **`ToolRuntime`** (tools) or **Tier-3 wiring** (stores, queues, notifications) — never raw clients in `agents/`.
 
 **Separation of concerns:**
@@ -731,10 +731,10 @@ Category contracts MUST be **backend-agnostic**: same method names and DTOs whet
 
 | Concern | Canonical module | Notes |
 |---------|------------------|-------|
-| **LLM providers** | `intergrax/llm_adapters/` (`LLMAdapter`, `LLMAdapterRegistry`, `LLMProfile`, metrics) | 19 slugs — [LLM_ADAPTERS.md](LLM_ADAPTERS.md) [§5](PLATFORM_FOUNDATION.md).2.2 |
+| **LLM providers** | `intergrax/llm_adapters/` (`LLMAdapter`, `LLMAdapterRegistry`, `LLMProfile`, metrics) | 19 slugs — [LLM_ADAPTERS.md](LLM_ADAPTERS.md) §5.2.2 |
 | **Tokenization** | `intergrax/tokenizers/` | Not an external integration slug |
 | **RAG pipeline** | `intergrax/rag/` | Vector stores + document parsers use **catalog bridges**; orchestration stays in `rag/` |
-| **Model & modality inference** | `intergrax/model_inference/` (planned), tools, optional integration hosts | Vision CV (YOLO, ONNX, …), classical ML, speech APIs — [§7](PLATFORM_FOUNDATION.md).1.9; **not** LLM slugs in Integration Library |
+| **Model & modality inference** | `intergrax/model_inference/` (planned), tools, optional integration hosts | Vision CV (YOLO, ONNX, …), classical ML, speech APIs — §7.1.9; **not** LLM slugs in Integration Library |
 
 #### RAG stack (Tier-0, Phase M-RAG)
 
@@ -861,7 +861,7 @@ P2/P3 batch implementations (2026-05-30) centralize shared logic in `intergrax/i
 
 **Vector-store note:** `pinecone`, `qdrant`, and `chroma` implementations live in `intergrax/rag/vectorstore/`. Integration Library adds thin catalog bridges (`providers/<slug>/`) so Tier-3 can set `IntegrationProfile.vector_store`. RAG bootstrap (`create_default_vectorstore_manager()`) resolves stores via the catalog — see Phase M.6 P2 in the implementation plan.
 
-New integrations require **human approval** when they introduce a new **category** ([§5](PLATFORM_FOUNDATION.md).2.4). New **providers** within an existing category follow the provider checklist in the implementation plan (Phase M).
+New integrations require **human approval** when they introduce a new **category** (§5.2.4). New **providers** within an existing category follow the provider checklist in the implementation plan (Phase M).
 
 ### 7.1.4 IntegrationRegistry And Tier-3 Composition
 
@@ -913,7 +913,7 @@ integrations:
 
 | Activity | Owner | Gate |
 |----------|-------|------|
-| New category contract | Platform team | Architecture review + [§5](PLATFORM_FOUNDATION.md).2.4 if new universal |
+| New category contract | Platform team | Architecture review + §5.2.4 if new universal |
 | New provider in existing category | Integration team | Contract conformance tests + README |
 | Security / credential rotation | Tier-3 application | Env + secret store; never in agent code |
 | Deprecation | Platform team | Registry marks `deprecated`; 1 release warning |
@@ -959,7 +959,7 @@ Author guide: [`EXTENSION_AUTHOR_GUIDE.md`](EXTENSION_AUTHOR_GUIDE.md). Implemen
 
 ### 7.1.6 Tool Library — Canonical Catalog
 
-Tier-0 agent-facing capabilities MUST live in a **single, discoverable Tool Library** under `intergrax/tools/`, mirroring the Integration Library pattern ([§7](PLATFORM_FOUNDATION.md).1.1).
+Tier-0 agent-facing capabilities MUST live in a **single, discoverable Tool Library** under `intergrax/tools/`, mirroring the Integration Library pattern (§7.1.1).
 
 **Problem this solves:** Integrations answer *how to talk to a backend* (Jira REST, PostgreSQL, Bing API). LLM agents and MCP clients need *what to call* — semantically named operations with JSON schemas, descriptions, risk metadata, and trace-enforced execution. Agents MUST NOT call integration contracts directly.
 
@@ -1000,8 +1000,8 @@ intergrax/tools/
 
 - One **domain folder** per tool family (`jira/`, `websearch/`, `rag/`, …) — not one folder per vendor SDK.
 - Tool handlers **compose** integration contracts — they MUST NOT reimplement vendor HTTP/SDK calls when a catalog integration exists.
-- Vendor SDKs remain in `integrations/providers/<slug>/opens.py` only ([§7](PLATFORM_FOUNDATION.md).1.1).
-- Agents and Nexus MUST NOT import `integrations/providers/*` for side effects; they invoke tools via **`ToolRuntime`** / `ToolRequest` ([§22](TOOLS_RUNTIME.md), [§42](UNIFIED_EXECUTION_RUNTIME.md).12).
+- Vendor SDKs remain in `integrations/providers/<slug>/opens.py` only (§7.1.1).
+- Agents and Nexus MUST NOT import `integrations/providers/*` for side effects; they invoke tools via **`ToolRuntime`** / `ToolRequest` (§22, §42.12).
 - Tool handlers receive dependencies through **`ToolWiringContext`** (Tier-3 composition): resolved integrations, RAG managers, websearch executors — injected at startup, not looked up ad hoc inside handlers.
 - **`ToolProvider.register_tools(registry, ctx)`** is the production registration contract (explicit wiring — no magic discovery).
 
@@ -1029,7 +1029,7 @@ intergrax/tools/
 
 | Concern | Canonical module | Notes |
 |---------|------------------|-------|
-| **LLM providers** | `intergrax/llm_adapters/` | Not tools — separate registry ([§5](PLATFORM_FOUNDATION.md).2.2) |
+| **LLM providers** | `intergrax/llm_adapters/` | Not tools — separate registry (§5.2.2) |
 | **Agent business logic** | `agents/<name>/` | Domain steps; may *call* tools, not define platform catalog entries |
 | **Orchestration / planning** | Tier-1 Nexus | Selects tools; does not implement tool handlers |
 | **Cursor-style skill files** | `intergrax/skills/importers/` | Import via **`SkillImporter`** → validated `SkillManifest`; MUST NOT register as `ToolContract` |
@@ -1075,7 +1075,7 @@ Agent / planner
 2. **`ToolInvocationPlan`** evolves to `planned_tools: Sequence[str]` (tool_ids) — boolean flags become deprecated aliases during transition.
 3. **`RagStep` / `WebsearchStep`** become thin **compatibility shims** that delegate to `rag.retrieve` / `websearch.query` handlers until all callers migrate.
 4. **`LegalToolPlan` / engine plan models** replace `use_rag` / `use_websearch` with `tools: list[str]` (or structured `PlannedToolCall`).
-5. **Context injection tools:** `rag.retrieve` and `websearch.query` MAY declare `injects_context: true` so Nexus knows to merge results into LLM prompt context (replaces implicit step behavior) — see [§22](TOOLS_RUNTIME.md).1.
+5. **Context injection tools:** `rag.retrieve` and `websearch.query` MAY declare `injects_context: true` so Nexus knows to merge results into LLM prompt context (replaces implicit step behavior) — see §22.1.
 
 **Why unify:**
 
@@ -1093,7 +1093,7 @@ Agent / planner
 ### 7.1.8 Skill Library — Composable Capability Packs
 
 **Status:** Architecture **defined**; implementation **MVP Done** (Phase R, 2026-06-01).  
-**Catalog:** [`SKILLS.md`](SKILLS.md) · **Harness AI terms:** [§5](PLATFORM_FOUNDATION.md).3 (this document).
+**Catalog:** [`SKILLS.md`](SKILLS.md) · **Harness AI terms:** §5.3 (this document).
 
 **First-party skills (2026-06-01):**
 
@@ -1190,7 +1190,7 @@ UAEP `get_steps` / domain pipelines remain **agent-local orchestration**. A skil
 ### 7.1.9 Model & Modality Plane (Vision, Audio, Classical ML)
 
 **Status:** Architecture **defined** (2026-06-02); harness registry + modality tools + lab `ModalityProfile` wiring **Done** (Phase W-ML); remote Triton/HF live serving **incremental**.  
-**Catalog index:** [`MODALITY.md`](MODALITY.md) · **Harness alignment:** [§5](PLATFORM_FOUNDATION.md).3 · **ADR:** extends [§44](PLATFORM_FOUNDATION.md).10 (LLM stays out of Integration Library).
+**Catalog index:** [`MODALITY.md`](MODALITY.md) · **Harness alignment:** §5.3 · **ADR:** extends §44.10 (LLM stays out of Integration Library).
 
 #### Strategic intent
 
@@ -1200,8 +1200,8 @@ A scalable Harness AI MUST support **multimodal cognition** and **deterministic 
 
 | Decision | Verdict |
 |----------|---------|
-| LLM providers (incl. native multimodal APIs) in Integration Catalog | **Rejected** — [§7](PLATFORM_FOUNDATION.md).1.2, [§44](PLATFORM_FOUNDATION.md).10 |
-| Skills wrapping entire CV/TTS pipelines as one fake tool | **Rejected** — [§7](PLATFORM_FOUNDATION.md).1.8 anti-patterns |
+| LLM providers (incl. native multimodal APIs) in Integration Catalog | **Rejected** — §7.1.2, §44.10 |
+| Skills wrapping entire CV/TTS pipelines as one fake tool | **Rejected** — §7.1.8 anti-patterns |
 | Dedicated **Plane C** registry for YOLO/ONNX/sklearn + atomic tools | **Adopted** |
 | Media ingest (Whisper, OCR, parsers) as **Plane B** via existing RAG/document_parser | **Adopted** (partially implemented) |
 | `speech_provider` integration category for SaaS TTS/STT (ElevenLabs, …) | **Adopted** (planned) |
@@ -1314,7 +1314,7 @@ Agent step  →  ToolRuntime.invoke("vision.detect")
 
 Env: `INTERGRAX_DEFAULT_HF_EMBED_MODEL` (existing). Do not conflate Hub download with runtime agent imports.
 
-#### Integration categories (planned — require [§5](PLATFORM_FOUNDATION.md).2.4 approval)
+#### Integration categories (planned — require §5.2.4 approval)
 
 | Category | Contract (planned) | Distinct from |
 |----------|-------------------|---------------|
@@ -1322,7 +1322,7 @@ Env: `INTERGRAX_DEFAULT_HF_EMBED_MODEL` (existing). Do not conflate Hub download
 | `vision_serving` | Remote CV gRPC/REST (Triton, TorchServe) | Plane A LLM vision |
 | `ml_inference_host` | Managed endpoints (HF, SageMaker, Azure ML, Vertex) | `cloud_platform` facade |
 
-Add rows to [§7](PLATFORM_FOUNDATION.md).1.2 table when each category is approved — do not overload `observability_backend` or `document_parser`.
+Add rows to §7.1.2 table when each category is approved — do not overload `observability_backend` or `document_parser`.
 
 #### Tool surface (planned)
 
@@ -1335,11 +1335,11 @@ Add rows to [§7](PLATFORM_FOUNDATION.md).1.2 table when each category is approv
 | `speech.transcribe` | B/C | Audio → text |
 | `ml.predict` | C | Structured inference |
 
-Each tool is one LLM-callable function with MCP export, risk class, and retry policy — same as [§7](PLATFORM_FOUNDATION.md).1.6.
+Each tool is one LLM-callable function with MCP export, risk class, and retry policy — same as §7.1.6.
 
 #### ModalityProfile (Tier-3 / agent assembly)
 
-Optional profile composes with `LLMProfile` (ideal [§17](INTEGRATIONS_ARCHITECTURE.md), implementation plan Phase W-ML):
+Optional profile composes with `LLMProfile` (ideal §17, implementation plan Phase W-ML):
 
 | Field | Purpose |
 |-------|---------|
@@ -1596,7 +1596,7 @@ If agent logic and host live together, split them before adding a second agent o
 
 ### 7.4.8 Tier-3 Application Environment (Self-Contained Operational Package)
 
-A Tier-3 application is an **isolated, configured execution environment** — not a runtime sandbox (see [§7](PLATFORM_FOUNDATION.md).4.9).
+A Tier-3 application is an **isolated, configured execution environment** — not a runtime sandbox (see §7.4.9).
 
 Each application under `applications/<app>/` MUST be operable as a **self-contained package**:
 
@@ -1862,7 +1862,7 @@ Intergrax is not a greenfield project. The Tier-0 platform already provides LLM 
 2. **Wire, don't rebuild.** Tier-1 and Tier-2 work composes existing capabilities through Nexus, `ToolRuntime`, and `AgentEngine`.
 3. **One mechanism per concern.** Never introduce a second LLM layer, logging stack, tool registry, vector store client, or trace system.
 4. **Extend in place.** If Tier-0 is insufficient, prefer extending the existing module over creating a parallel one.
-5. **Human gate for new universals.** New Tier-0 capabilities require explicit human approval ([§5](PLATFORM_FOUNDATION.md).2.4).
+5. **Human gate for new universals.** New Tier-0 capabilities require explicit human approval (§5.2.4).
 
 Implementation agents (including Cursor AI) that propose new universal modules MUST escalate to the human operator — this is a form of **human-in-the-loop governance for platform evolution**.
 
@@ -1944,9 +1944,9 @@ Do not implement agent capabilities inside `applications/`.
 
 Do not put FastAPI hosts, env settings, or HTTP serving inside `agents/`.
 
-See [§7](PLATFORM_FOUNDATION.md).4 for the canonical repository split.
+See §7.4 for the canonical repository split.
 
-See [§42](UNIFIED_EXECUTION_RUNTIME.md).41 for forbidden runtime patterns (direct adapters, private loops, runtime bypass).
+See §42.41 for forbidden runtime patterns (direct adapters, private loops, runtime bypass).
 
 ---
 
@@ -1963,7 +1963,7 @@ Examples of forbidden redundancy:
 - new trace store instead of extending `RunTraceWriter` / existing trace pipeline
 - direct SDK calls (OpenAI, Anthropic, Redis, boto3) in agents when Tier-0 adapter exists
 
-If existing Tier-0 is genuinely insufficient for a **cross-cutting** need, follow [§5](PLATFORM_FOUNDATION.md).2.4 — propose to human, do not implement autonomously.
+If existing Tier-0 is genuinely insufficient for a **cross-cutting** need, follow §5.2.4 — propose to human, do not implement autonomously.
 
 ---
 
@@ -2068,7 +2068,7 @@ Clear separation enables: reusable infrastructure, stable orchestration, swappab
 
 Decision:
 
-All agent execution MUST conform to [§42](UNIFIED_EXECUTION_RUNTIME.md) Unified Execution Runtime Specification: shared `AgentEngine`, `RuntimeEvent` stream, `AgentDecision` model, middleware pipeline, and ToolRuntime-only adapter access.
+All agent execution MUST conform to §42 Unified Execution Runtime Specification: shared `AgentEngine`, `RuntimeEvent` stream, `AgentDecision` model, middleware pipeline, and ToolRuntime-only adapter access.
 
 Reason:
 
@@ -2092,7 +2092,7 @@ Intergrax already has canonical LLM, logging, tracing, tools, RAG, memory, and a
 
 Constraint:
 
-[§42](UNIFIED_EXECUTION_RUNTIME.md) orchestration wiring integrates with — does not replace — existing Tier-0. See [§5](PLATFORM_FOUNDATION.md).2, [§8](PLATFORM_FOUNDATION.md).8, [§39](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md).8.
+§42 orchestration wiring integrates with — does not replace — existing Tier-0. See §5.2, §8.8, §39.8.
 
 ---
 
@@ -2100,9 +2100,9 @@ Constraint:
 
 Decision:
 
-All reusable **external infrastructure** adapters (databases, caches, queues, chat, search, issue trackers, observability backends, cloud infrastructure facades) MUST be registered in **`intergrax/integrations/`** under category contracts ([§7](PLATFORM_FOUNDATION.md).1).
+All reusable **external infrastructure** adapters (databases, caches, queues, chat, search, issue trackers, observability backends, cloud infrastructure facades) MUST be registered in **`intergrax/integrations/`** under category contracts (§7.1).
 
-**Excluded:** LLM providers remain in **`intergrax/llm_adapters/`** only — not in the Integration Library ([§7](PLATFORM_FOUNDATION.md).1.2).
+**Excluded:** LLM providers remain in **`intergrax/llm_adapters/`** only — not in the Integration Library (§7.1.2).
 
 Reason:
 
@@ -2111,7 +2111,7 @@ Multiple agent teams need the same building blocks (Redis cache, Jira tasks, Sla
 Constraint:
 
 - New **providers** follow Phase M checklist in the implementation plan.
-- New **categories** require [§5](PLATFORM_FOUNDATION.md).2.4 human approval.
+- New **categories** require §5.2.4 human approval.
 - Legacy modules (`queueing/`, `distributed/`, etc.) are wrapped, not duplicated.
 
 ---
@@ -2189,7 +2189,7 @@ But these are future possibilities.
 
 > Prove **production harness** on the certified Agent OS: reference business agents, skill catalog depth, and stable provider paths — while keeping the laboratory fast path for new hypotheses.
 
-**Long-term evolution** ([§50](PLATFORM_FOUNDATION.md)) — marketplace, multi-tenant SaaS, visual workflow builder — remains out of scope until harness proof (Phase S) is met.
+**Long-term evolution** (§50) — marketplace, multi-tenant SaaS, visual workflow builder — remains out of scope until harness proof (Phase S) is met.
 
 ---
 
@@ -2200,9 +2200,9 @@ But these are future possibilities.
 
 Intergrax is a **four-tier AI platform**: Platform (Tier-0) → Nexus Agent OS (Tier-1) → Agents (Tier-2) → Applications (Tier-3).
 
-Intergrax is a **unified, event-driven Agent OS and Harness AI runtime** governed by [§42](UNIFIED_EXECUTION_RUNTIME.md) Unified Execution Runtime Specification.
+Intergrax is a **unified, event-driven Agent OS and Harness AI runtime** governed by §42 Unified Execution Runtime Specification.
 
-Intergrax serves **both** as an internal **agent experimentation laboratory** and as a **Harness AI environment** for production agent work. New capabilities SHOULD start in the lab workflow ([§2](PLATFORM_FOUNDATION.md)); capabilities that ship to users MUST consume Integration → Tool → **Skill** → Agent ([§5](PLATFORM_FOUNDATION.md).3, [§7](PLATFORM_FOUNDATION.md).1.8) on the shared Nexus harness — not private runtimes or duplicated instruction packs.
+Intergrax serves **both** as an internal **agent experimentation laboratory** and as a **Harness AI environment** for production agent work. New capabilities SHOULD start in the lab workflow (§2); capabilities that ship to users MUST consume Integration → Tool → **Skill** → Agent (§5.3, §7.1.8) on the shared Nexus harness — not private runtimes or duplicated instruction packs.
 
 Tier-1 Nexus is the global orchestration runtime (Agent OS).
 
@@ -2214,7 +2214,7 @@ Tier-3 applications are configured environments that compose Nexus + agents for 
 
 Every agent MUST emit `RuntimeEvent`s, return `AgentDecision`s, and pass through the middleware pipeline. No private runtimes. No direct adapter access. No execution bypass.
 
-**Platform reuse is mandatory:** one canonical mechanism per universal concern (LLM, logging, tools, RAG, trace, memory). Do not duplicate Tier-0. New universal components require human approval ([§5](PLATFORM_FOUNDATION.md).2.4).
+**Platform reuse is mandatory:** one canonical mechanism per universal concern (LLM, logging, tools, RAG, trace, memory). Do not duplicate Tier-0. New universal components require human approval (§5.2.4).
 
 The architecture must optimize for rapid hypothesis validation, observability, modularity, enforceable execution governance, and clean separation of responsibilities.
 
@@ -2280,7 +2280,7 @@ Minimum requirements:
 
 ## 53.3 Agent lifecycle governance
 
-Beyond contract shape ([§12](AGENT_CONTRACTS_AND_ASSEMBLY.md)) and registry metadata ([§15](AGENT_CONTRACTS_AND_ASSEMBLY.md)), every agent lifecycle MUST include:
+Beyond contract shape (§12) and registry metadata (§15), every agent lifecycle MUST include:
 
 - certification gates (quality + policy + security),
 - promotion flow (dev -> staging -> production),
@@ -2290,7 +2290,7 @@ Beyond contract shape ([§12](AGENT_CONTRACTS_AND_ASSEMBLY.md)) and registry met
 
 ## 53.4 Context quality hardening
 
-Context engineering ([§28](CONTEXT_ENGINEERING.md).1) MUST include explicit quality controls:
+Context engineering (§28.1) MUST include explicit quality controls:
 
 - relevance/freshness/confidence scoring,
 - duplicate suppression and context-noise controls,
@@ -2379,7 +2379,7 @@ until explicit product reprioritization in the implementation plan.
 ## 53.13 Model & modality plane (vision, audio, classical ML)
 
 Harness evolution after Phase U includes a **documented and extensible modality
-architecture** (canon [§7](PLATFORM_FOUNDATION.md).1.9, [`MODALITY.md`](MODALITY.md)):
+architecture** (canon §7.1.9, [`MODALITY.md`](MODALITY.md)):
 
 - **Plane A** — generative multimodal LLM via `llm_adapters/` only.
 - **Plane B** — media ingest and embeddings via RAG + `document_parser` (partially shipped).
@@ -2388,7 +2388,7 @@ architecture** (canon [§7](PLATFORM_FOUNDATION.md).1.9, [`MODALITY.md`](MODALIT
 
 Implementation is tracked in **Phase W-ML** (documentation first, then registry and
 tools). New integration categories (`speech_provider`, `vision_serving`,
-`ml_inference_host`) require [§5](PLATFORM_FOUNDATION.md).2.4 approval before catalog registration.
+`ml_inference_host`) require §5.2.4 approval before catalog registration.
 
 Agents and product teams MUST use **ToolRuntime** for all Plane B/C effects; Tier-2
 code MUST NOT import CV/ML vendor SDKs when a catalog path exists.

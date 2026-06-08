@@ -3,7 +3,7 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
 
-This directory contains decomposed **current-state** architecture canon extracted from the former monolith. Each file is authoritative for its domain.
+This directory contains decomposed **current-state** architecture canon Each file is authoritative for its domain.
 
 ## Index
 

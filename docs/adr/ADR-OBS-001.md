@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-06-08 |
 | **Deciders** | Harness platform |
-| **Related** | [`OBSERVABILITY_ARCHITECTURE.md`](../OBSERVABILITY_ARCHITECTURE.md) · [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) §33 · [Phase OBS-BUS](../INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine) |
+| **Related** | [`OBSERVABILITY_ARCHITECTURE.md`](../OBSERVABILITY_ARCHITECTURE.md) · [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) §33 · [Phase OBS-BUS](../plan/phases/observability-reliability.md) |
 
 ## Context
 

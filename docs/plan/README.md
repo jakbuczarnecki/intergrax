@@ -8,4 +8,3 @@
 | [`phases/`](phases/) | Phase registers grouped by domain (ORCH, MEM, CRIT-V, …) |
 | [`appendices/`](appendices/) | Traceability appendices A–N |
 
-**Full monolith backup:** [`_archive_INTERGRAX_IMPLEMENTATION_PLAN_monolith.md`](../_archive_INTERGRAX_IMPLEMENTATION_PLAN_monolith.md)

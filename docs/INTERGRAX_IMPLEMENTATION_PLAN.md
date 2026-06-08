@@ -36,28 +36,28 @@ Each **business environment** and each **business agent** maintains its own `ARC
 | Tier-0 tool implementation (how) | **This file** Phase O |
 | Agent creation workflow | `AGENT_CREATION_GUIDE.md` |
 | Governance / policy / observability control plane (authoring) | `AGENT_CREATION_GUIDE.md` **Appendix H** · [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.11 · `EXTENSION_AUTHOR_GUIDE.md` §10 (`intergrax.policy_rules`) |
-| Orchestration / graph / delegation control plane (authoring) | `AGENT_CREATION_GUIDE.md` **Appendix I** · [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) · R-Delegate **Done** · closeout [Phase ORCH]](plan/phases/core-runtime.md) |
-| **Nexus execution flow (runtime narrative, diagrams, gap → plan rows)** | [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) · [Phase FLOW]](plan/phases/core-runtime.md) · **§6.1aj** · Band **2aj** · **Appendix N (FLOW)** · [ADR-FLOW-001](adr/ADR-FLOW-001.md) |
-| Governance audit closeout (docs + residuals register) | [Phase GOV-AUDIT]](plan/phases/governance-security.md) · **GOV-DOC.\*** **Done** |
-| Orchestration audit closeout (runtime wiring) | [Phase ORCH]](plan/phases/core-runtime.md) · **§6.1b** · Band **2j** |
-| Tools / skills audit closeout (runtime bridge) | [Phase TS]](plan/phases/tools-skills.md) · **§6.1c** · Band **2k** · `AGENT_CREATION_GUIDE.md` **Appendix J** |
-| Integration audit closeout (runtime bridge + health) | [Phase INT]](plan/phases/integrations.md) · **§6.1d** · Band **2l** · **Appendix K** |
-| RAG audit closeout (runtime bridge) | [Phase RAG]](plan/phases/rag-context-memory.md) · **§6.1e** · Band **2m** · **Appendix K** §K.5 |
-| Context engineering closeout (runtime + Nexus wiring) | [Phase CTX]](plan/phases/rag-context-memory.md) · **§6.1f** · Band **2n** · **Appendix L** |
-| Prompt registry closeout (runtime + environment wiring) | [Phase PE]](plan/phases/registry-capability.md) · **§6.1i** · Band **2p** · **Appendix M** |
-| Legacy module closeout (chat_router, tools_agent, chains) | [Phase CLEAN]](plan/phases/core-runtime.md) · **§6.1j** |
-| Agent assembly closeout (contracts, capabilities, lifecycle) | [Phase AS]](plan/phases/core-runtime.md) · **§6.1k** · Band **2q** · **Appendix N** |
-| Registry architecture closeout (snapshots, conformance, CI) | [Phase REG]](plan/phases/registry-capability.md) · **§6.1l** · Band **2r** · **Appendix O** |
-| Capability graph closeout (environment slice, blast-radius wire) | [Phase CG]](plan/phases/registry-capability.md) · **§6.1m** · Band **2s** · **Appendix P** |
-| Observability closeout (profile bridge, assembly resolver, CI) | [Phase OBS]](plan/phases/observability-reliability.md) · **§6.1n** · Band **2t** · **Appendix Q** |
-| **Unified Observability Spine (full mechanism)** | [Phase OBS-BUS]](plan/phases/observability-reliability.md) · **§6.1al** · Band **2al** · [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) · [ADR-OBS-001](adr/ADR-OBS-001.md) |
-| Reliability closeout (idempotency bridge, circuit breaker, CI) | [Phase REL]](plan/phases/observability-reliability.md) · **§6.1o** · Band **2u** · **Appendix R** |
-| Security closeout (V-SEC bridge, middleware assembly, CI) | [Phase SEC]](plan/phases/governance-security.md) · **§6.1q** · Band **2v** · **Appendix S** |
-| Cost governance closeout (budget bridge, policy bundle, CI) | [Phase COST]](plan/phases/governance-security.md) · **§6.1r** · Band **2w** · **Appendix T** |
-| Evaluation closeout (registry bridge, policy bundle, CI) | [Phase EVAL]](plan/phases/evaluation-adaptive-critic.md) · **§6.1s** · Band **2x** · **Appendix U** |
-| **Critic & Verification Layer (PEV verify depth)** | [Phase CRIT-V]](plan/phases/evaluation-adaptive-critic.md) · **§6.1ak** · Band **2ak** · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · canon [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md) |
-| **Adaptive Harness Intelligence (AHI / L4 runtime)** | [Phase W-ADAPT]](plan/phases/evaluation-adaptive-critic.md) · **§6.1t** · Band **2y** · [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · canon [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · **Appendix K** |
-| **LLM response envelope (typed completion contract)** | [Phase M-LLM-R]](plan/phases/llm-and-modality.md) · **§6.1v** · Band **2z** · [LLM_ADAPTERS.md](LLM_ADAPTERS.md) · **Appendix L** |
+| Orchestration / graph / delegation control plane (authoring) | `AGENT_CREATION_GUIDE.md` **Appendix I** · [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) · R-Delegate **Done** · closeout [Phase ORCH](plan/phases/core-runtime.md) |
+| **Nexus execution flow (runtime narrative, diagrams, gap → plan rows)** | [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) · [Phase FLOW](plan/phases/core-runtime.md) · **§6.1aj** · Band **2aj** · **Appendix N (FLOW)** · [ADR-FLOW-001](adr/ADR-FLOW-001.md) |
+| Governance audit closeout (docs + residuals register) | [Phase GOV-AUDIT](plan/phases/governance-security.md) · **GOV-DOC.\*** **Done** |
+| Orchestration audit closeout (runtime wiring) | [Phase ORCH](plan/phases/core-runtime.md) · **§6.1b** · Band **2j** |
+| Tools / skills audit closeout (runtime bridge) | [Phase TS](plan/phases/tools-skills.md) · **§6.1c** · Band **2k** · `AGENT_CREATION_GUIDE.md` **Appendix J** |
+| Integration audit closeout (runtime bridge + health) | [Phase INT](plan/phases/integrations.md) · **§6.1d** · Band **2l** · **Appendix K** |
+| RAG audit closeout (runtime bridge) | [Phase RAG](plan/phases/rag-context-memory.md) · **§6.1e** · Band **2m** · **Appendix K** §K.5 |
+| Context engineering closeout (runtime + Nexus wiring) | [Phase CTX](plan/phases/rag-context-memory.md) · **§6.1f** · Band **2n** · **Appendix L** |
+| Prompt registry closeout (runtime + environment wiring) | [Phase PE](plan/phases/registry-capability.md) · **§6.1i** · Band **2p** · **Appendix M** |
+| Legacy module closeout (chat_router, tools_agent, chains) | [Phase CLEAN](plan/phases/core-runtime.md) · **§6.1j** |
+| Agent assembly closeout (contracts, capabilities, lifecycle) | [Phase AS](plan/phases/core-runtime.md) · **§6.1k** · Band **2q** · **Appendix N** |
+| Registry architecture closeout (snapshots, conformance, CI) | [Phase REG](plan/phases/registry-capability.md) · **§6.1l** · Band **2r** · **Appendix O** |
+| Capability graph closeout (environment slice, blast-radius wire) | [Phase CG](plan/phases/registry-capability.md) · **§6.1m** · Band **2s** · **Appendix P** |
+| Observability closeout (profile bridge, assembly resolver, CI) | [Phase OBS](plan/phases/observability-reliability.md) · **§6.1n** · Band **2t** · **Appendix Q** |
+| **Unified Observability Spine (full mechanism)** | [Phase OBS-BUS](plan/phases/observability-reliability.md) · **§6.1al** · Band **2al** · [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) · [ADR-OBS-001](adr/ADR-OBS-001.md) |
+| Reliability closeout (idempotency bridge, circuit breaker, CI) | [Phase REL](plan/phases/observability-reliability.md) · **§6.1o** · Band **2u** · **Appendix R** |
+| Security closeout (V-SEC bridge, middleware assembly, CI) | [Phase SEC](plan/phases/governance-security.md) · **§6.1q** · Band **2v** · **Appendix S** |
+| Cost governance closeout (budget bridge, policy bundle, CI) | [Phase COST](plan/phases/governance-security.md) · **§6.1r** · Band **2w** · **Appendix T** |
+| Evaluation closeout (registry bridge, policy bundle, CI) | [Phase EVAL](plan/phases/evaluation-adaptive-critic.md) · **§6.1s** · Band **2x** · **Appendix U** |
+| **Critic & Verification Layer (PEV verify depth)** | [Phase CRIT-V](plan/phases/evaluation-adaptive-critic.md) · **§6.1ak** · Band **2ak** · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md) |
+| **Adaptive Harness Intelligence (AHI / L4 runtime)** | [Phase W-ADAPT](plan/phases/evaluation-adaptive-critic.md) · **§6.1t** · Band **2y** · [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · **Appendix K** |
+| **LLM response envelope (typed completion contract)** | [Phase M-LLM-R](plan/phases/llm-and-modality.md) · **§6.1v** · Band **2z** · [LLM_ADAPTERS.md](LLM_ADAPTERS.md) · **Appendix L** |
 | **Integration catalog expansion (harness ROI slugs)** | [M.6 P4 register](#m6-p4--harness-platform-expansion-done) · **§6.1w** · Band **2aa** · [INTEGRATIONS.md](INTEGRATIONS.md) |
 | **Integration harness depth (audit 2026-06-02)** | [M.6 P5 register](#m6-p5--harness-integration-depth-done--3334) · **§6.1x** · Band **2ab** · [INTEGRATIONS.md](INTEGRATIONS.md) |
 | **Integration harness expansion (audit 2026-06-02)** | [M.6 P6 register](#m6-p6--harness-integration-expansion-planned) · **§6.1y** · Band **2ac** · [INTEGRATIONS.md](INTEGRATIONS.md) |
@@ -82,11 +82,11 @@ Each **business environment** and each **business agent** maintains its own `ARC
 | Developer authoring UX audit (LangGraph-like entry, measurable TTFRun) | **Phase DX** (below) · **§6.2y** · source: harness DX audit 2026-06-03 (conversation + H-APP gap analysis) |
 | Agents & applications conformance audit (structure, scaffold, per-agent/app docs, deploy) | **Phase AA** (below) · **§6.2z** · source: Tier-2/Tier-3 audit 2026-06-03 (conversation) |
 | Memory platform audit (STM/LTM/org/task/context/hooks/persistence) | **Phase MEM** (below) · **§6.2aa** · **§6.1aa** · source: memory audit 2026-06-02 (conversation) |
-| **Memory intelligence depth (context compiler, lifecycle, explore)** | [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) · [Phase MEM-DEPTH]](plan/phases/rag-context-memory.md) · **§6.2ab** · **§6.1am** · source: memory audit 2026-06-08 |
+| **Memory intelligence depth (context compiler, lifecycle, explore)** | [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) · [Phase MEM-DEPTH](plan/phases/rag-context-memory.md) · **§6.2ab** · **§6.1am** · source: memory audit 2026-06-08 |
 | Phase V runtime remediation (2026-06-05 audit) → close Partial gaps | **Phase V-REM** (below) · **Appendix J** · **§6.1z** · **§6.2v** · source: plan/code audit vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` |
 | Phase V remediation traceability (audit gap → V-REM ID) | **[Appendix J](plan/appendices/appendix-j.md)** |
 | Full architecture audit procedure (32 layers) | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) · prompt: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) |
-| **Full architecture audit closeout (32 layers, scope C)** | [Phase FAUDIT-32]](plan/phases/platform-quality.md) · **§6.1ah** · Band **2ad** · **Appendix M** · source: audit 2026-06-06 (`scope: C`, `audit-and-fix`) |
+| **Full architecture audit closeout (32 layers, scope C)** | [Phase FAUDIT-32](plan/phases/platform-quality.md) · **§6.1ah** · Band **2ad** · **Appendix M** · source: audit 2026-06-06 (`scope: C`, `audit-and-fix`) |
 | Infrastructure vs business scope split | **§4.0a** · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) (closed) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) (closed) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) (closed) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) (closed) · [§6.1g](#61g-harness-implementation-queue--governance-audit-closed) (closed) · [§6.3a](#63a-business-backlog-register-consolidated) |
 
 **Note on audit source documents:** Some historical audit narratives (e.g. `HARNESS_APPLICATION_LAYER_AUDIT.md`) may live outside the repo. **Task traceability in this plan is canonical** — H-APP (43 tasks), W-OPS, MEM, DX, AA registers below; do not re-derive scope from missing files.
@@ -197,7 +197,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Harness architecture hardening (Phase V)** | **Done** | No (harness-only) | Phase V-REM closeout complete (2026-06-05) |
 | **Phase V runtime remediation (V-REM)** | **Done** | No (harness-only) | All V-REM rows closed; §6.1z queue closed |
 | **Operational harness L3 (Phase W-OPS)** | **Done** (code) | No (harness-only) | Ops sign-off: `release_cycles.json` or `W_OPS_RELEASE_CYCLES>=2` + `phase_w_ops_evidence.py --enforce` |
-| **Application environment profile (Phase H-APP)** | **Done** (2026-06-03) | No (harness-only) | [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7 — 43 tasks; memory bridge gap → [Phase MEM]](plan/phases/rag-context-memory.md) |
+| **Application environment profile (Phase H-APP)** | **Done** (2026-06-03) | No (harness-only) | [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7 — 43 tasks; memory bridge gap → [Phase MEM](plan/phases/rag-context-memory.md) |
 | **Memory platform (Phase MEM)** | **Done** (~3,5/5 post-closeout) | No (harness-only) | Memory platform **48/48** — gate **581** |
 | **Memory intelligence depth (Phase MEM-DEPTH)** | **Planned** (0/26) | No (harness-only) | [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) · Band **2am** · **§6.2ab** |
 | **Governance audit closeout (GOV-AUDIT)** | **Done** (docs) | No | GOV-DOC.1–2; code via V-REM/H-APP/DX-5.8 |
@@ -269,15 +269,15 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | Model & modality plane (Phase W-ML) | **Done** (2026-06-02) | Vision/speech profiles, tools, remote adapters, `harness.vision_qa` — canon §7.1.9 |
 | **Harness completion backlog** | **Done** (2026-06-02) | §4.1 — U-Leg, typing/CI, platform skills, research UAEP parity |
 | **Plugin catalogs (Phase P-Ext)** | **Done** (2026-06-02) | [Phase P-Ext](#phase-p-ext--plugin-catalogs-integrations-tools-skills) · [P-Ext.6 paydown](#p-ext6--production-closure-paydown) · Appendix I |
-| **Application environment (Phase H-APP)** | **Done** (2026-06-03) | [Phase H-APP]](plan/phases/tier3-dx-aa.md) · 43 tasks from application-layer audit |
-| **Developer authoring UX (Phase DX)** | **Done** (2026-06-02) | [Phase DX]](plan/phases/tier3-dx-aa.md) · **47/47 Done** — [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business) |
-| **Agents & applications conformance (Phase AA)** | **Platform Done** (2026-06-02) | [Phase AA]](plan/phases/tier3-dx-aa.md) · platform **Done**; domain **Deferred** — [§6.3a](#63a-business-backlog-register-consolidated) |
-| **Memory platform (Phase MEM)** | **Done** (2026-06-02) | [Phase MEM]](plan/phases/rag-context-memory.md) · **48/48** |
-| **Governance audit (GOV-AUDIT)** | **Done** (docs) | [Phase GOV-AUDIT]](plan/phases/governance-security.md) |
-| **Orchestration closeout (Phase ORCH)** | **Done** (2026-06-05) | [Phase ORCH]](plan/phases/core-runtime.md) · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) |
-| **Tools/skills closeout (Phase TS)** | **Done** (2026-06-02) | [Phase TS]](plan/phases/tools-skills.md) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) |
-| **Integration closeout (Phase INT)** | **Done** (2026-06-02) | [Phase INT]](plan/phases/integrations.md) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) |
-| **RAG closeout (Phase RAG)** | **Done** (2026-06-02) | [Phase RAG]](plan/phases/rag-context-memory.md) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) |
+| **Application environment (Phase H-APP)** | **Done** (2026-06-03) | [Phase H-APP](plan/phases/tier3-dx-aa.md) · 43 tasks from application-layer audit |
+| **Developer authoring UX (Phase DX)** | **Done** (2026-06-02) | [Phase DX](plan/phases/tier3-dx-aa.md) · **47/47 Done** — [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business) |
+| **Agents & applications conformance (Phase AA)** | **Platform Done** (2026-06-02) | [Phase AA](plan/phases/tier3-dx-aa.md) · platform **Done**; domain **Deferred** — [§6.3a](#63a-business-backlog-register-consolidated) |
+| **Memory platform (Phase MEM)** | **Done** (2026-06-02) | [Phase MEM](plan/phases/rag-context-memory.md) · **48/48** |
+| **Governance audit (GOV-AUDIT)** | **Done** (docs) | [Phase GOV-AUDIT](plan/phases/governance-security.md) |
+| **Orchestration closeout (Phase ORCH)** | **Done** (2026-06-05) | [Phase ORCH](plan/phases/core-runtime.md) · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) |
+| **Tools/skills closeout (Phase TS)** | **Done** (2026-06-02) | [Phase TS](plan/phases/tools-skills.md) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) |
+| **Integration closeout (Phase INT)** | **Done** (2026-06-02) | [Phase INT](plan/phases/integrations.md) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) |
+| **RAG closeout (Phase RAG)** | **Done** (2026-06-02) | [Phase RAG](plan/phases/rag-context-memory.md) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) |
 | Product agents (Phase K) | **Deferred** | K.1/K.2 — end of priority list |
 | Tier-3 product applications | **Deferred** | New apps / product routes — after harness backlog |
 
@@ -364,9 +364,7 @@ Historical phase registers (A–V) and closeout phases are decomposed under [`pl
 | Evaluation, AHI, critic | [`plan/phases/evaluation-adaptive-critic.md`](plan/phases/evaluation-adaptive-critic.md) |
 | Tier-3, DX, conformance | [`plan/phases/tier3-dx-aa.md`](plan/phases/tier3-dx-aa.md) |
 | Platform quality | [`plan/phases/platform-quality.md`](plan/phases/platform-quality.md) |
-| Other | [`plan/phases/misc-phases.md`](plan/phases/misc-phases.md) |
-
-Appendices: [`plan/appendices/`](plan/appendices/) · Full backup: [`_archive_INTERGRAX_IMPLEMENTATION_PLAN_monolith.md`](_archive_INTERGRAX_IMPLEMENTATION_PLAN_monolith.md)
+Appendices: [`plan/appendices/`](plan/appendices/)
 
 ## 4. Priority Order
 
@@ -378,39 +376,39 @@ Appendices: [`plan/appendices/`](plan/appendices/) · Full backup: [`_archive_IN
 |------|------|---------------------|----------|
 | **1 — Harness platform** | Tier-0/1/3 lab wiring, security, policy, typing, legacy removal, gate audits | **Maintenance** (§4.1 **Done**; keep green) | `pytest -m gate`, `check_harness_*`, `check_legacy_modules_removed.py`, regression fixes |
 | **2 — Harness architecture hardening** | Capability graph, lifecycle governance, prompt/eval/context/security/cost/metrics hardening — **no** business domain | **Done** (2026-06-05) | V-CG … V-KG, V-V6 closeout · V-REM |
-| **2i — Phase V runtime remediation (V-REM)** | Close 9 Partial Phase V + EvalRunner gate gaps — runtime enforcement, not new OS features | **Done** (2026-06-05) | [Phase V-REM]](plan/phases/core-runtime.md) · Appendix J |
+| **2i — Phase V runtime remediation (V-REM)** | Close 9 Partial Phase V + EvalRunner gate gaps — runtime enforcement, not new OS features | **Done** (2026-06-05) | [Phase V-REM](plan/phases/core-runtime.md) · Appendix J |
 | **2b — Modality plane (optional parallel)** | Vision CV, speech, classical ML — harness Tier-0 only | **Done** | W-ML complete; optional Celery bus wiring for Tier-3 scale-out |
 | **2c — Plugin catalogs (P-Ext)** | Entry points + `ToolPlugin` + `SkillPlugin` + `bootstrap_catalogs()` | **Done** (2026-06-02) | Appendix I · [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md) |
-| **2d — Operational L3 (W-OPS)** | Reliability, identity, SLO/ops evidence, online eval — **no** business agents | **Done** (2026-06-06) | [Phase W-OPS]](plan/phases/platform-quality.md) · `phase_w_ops_evidence.py` |
-| **2e — Application environment (H-APP)** | `ApplicationEnvironmentProfile`, unified Tier-3 wiring, host migration — **no** business agents | **Done** (2026-06-03) | [Phase H-APP]](plan/phases/tier3-dx-aa.md) · [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) · **§6.2x** |
-| **2f — Developer authoring UX (DX)** | LangGraph-like facades, minimal scaffold, CLI run/doctor, TTFRun gates, UI spec export — **no** business agents | **Done** (2026-06-03) | [Phase DX]](plan/phases/tier3-dx-aa.md) · **§6.2y** |
-| **2g — Agents & applications conformance (AA)** | Scaffold alignment, per-agent/app `ARCHITECTURE.md`, deploy triad, legal **scaffold** reset (domain steps → Band 3) | **Mostly Done** (2026-06-02) | [Phase AA]](plan/phases/tier3-dx-aa.md) · **§6.2z** · [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business) |
-| **2h — Memory platform (MEM)** | H-APP→runtime bridge, durable user LTM, session SQLite, gates, hooks, memory docs — **no** business agents | **Done** (2026-06-02) | [Phase MEM]](plan/phases/rag-context-memory.md) · **§6.2aa** |
-| **2j — Orchestration closeout (ORCH)** | Wire `planner_kind`/`classifier_kind`, `ApplicationGraphSpec`→plan, graph concurrency cap — **no** business agents | **Done** (2026-06-05) | [Phase ORCH]](plan/phases/core-runtime.md) · **§6.1b** · **§6.2bb** |
-| **2k — Tools/skills closeout (TS)** | Catalog→`RuntimeConfig` bridge, harness LLM wiring, `SkillResolverProtocol`, Appendix J — **no** business agents | **Done** (2026-06-02) | [Phase TS]](plan/phases/tools-skills.md) · **§6.1c** · **§6.2bc** |
-| **2l — Integration closeout (INT)** | `integration_runtime_bridge`, bootstrap health probes, Appendix K — **no** business agents | **Done** (2026-06-02) | [Phase INT]](plan/phases/integrations.md) · **§6.1d** · **§6.2bd** |
-| **2m — RAG closeout (RAG)** | `rag_runtime_bridge`, RAG stack on environment wire — **no** business agents | **Done** (2026-06-02) | [Phase RAG]](plan/phases/rag-context-memory.md) · **§6.1e** · **§6.2be** |
-| **2n — Context engineering closeout (CTX)** | `context_runtime_bridge`, `context_wiring`, Nexus `ContextManager` wire — **no** business agents | **Done** (2026-06-02) | [Phase CTX]](plan/phases/rag-context-memory.md) · **§6.1f** · **§6.2bf** |
-| **2o — Legacy tool plan closeout (LEG)** | `tool_ids` canonical path; gateway/engine planner migration — **no** business agents | **Done** (2026-06-02) | [Phase LEG]](plan/phases/tools-skills.md) · **§6.1h** |
-| **2p — Prompt registry closeout (PE)** | `PromptProfile`, `prompt_runtime_bridge`, `prompt_wiring`, Appendix M — **no** business agents | **Done** (2026-06-02) | [Phase PE]](plan/phases/registry-capability.md) · **§6.1i** |
-| **2q — Agent assembly closeout (AS)** | Agent contract conformance, capability/skill resolution, lifecycle state — **no** business agents | **Done** (2026-06-02) | [Phase AS]](plan/phases/core-runtime.md) · **§6.1k** · **Appendix N** |
-| **2r — Registry architecture closeout (REG)** | Registry snapshot, assembly resolver, host resolution CI — **no** business agents | **Done** (2026-06-02) | [Phase REG]](plan/phases/registry-capability.md) · **§6.1l** · **Appendix O** |
-| **2s — Capability graph closeout (CG)** | Environment graph slice, wire-time validation, CI audit — **no** business agents | **Done** (2026-06-02) | [Phase CG]](plan/phases/registry-capability.md) · **§6.1m** · **Appendix P** |
-| **2t — Observability closeout (OBS)** | Profile bridge, assembly resolver, host wiring CI — **no** business agents | **Done** (2026-06-02) | [Phase OBS]](plan/phases/observability-reliability.md) · **§6.1n** · **Appendix Q** |
-| **2u — Reliability closeout (REL)** | Idempotency bridge, circuit breaker wire, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase REL]](plan/phases/observability-reliability.md) · **§6.1o** · **Appendix R** |
-| **2v — Security closeout (SEC)** | V-SEC bridge, middleware assembly resolver, host CI — **no** business agents | **Done** (2026-06-02) | [Phase SEC]](plan/phases/governance-security.md) · **§6.1q** · **Appendix S** |
-| **2w — Cost governance closeout (COST)** | Budget bridge, policy bundle merge, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase COST]](plan/phases/governance-security.md) · **§6.1r** · **Appendix T** |
-| **2x — Evaluation closeout (EVAL)** | Registry bridge, policy bundle merge, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase EVAL]](plan/phases/evaluation-adaptive-critic.md) · **§6.1s** · **Appendix U** |
-| **2y — Adaptive Harness Intelligence (W-ADAPT)** | L4 **runtime** closed loop — SignalCollector, AdaptationEngine, ProfileVersionStore, verify/rollback — **no** business agents | **Done** (2026-06-02) — **70/70 Done** | [Phase W-ADAPT]](plan/phases/evaluation-adaptive-critic.md) · [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · **§6.1t** · **§6.2ac** · **Appendix K** |
-| **2z — LLM completion envelope (M-LLM-R)** | Typed `LLMAdapterResponse` replaces `str`/`dict` adapter returns; full consumer refactor — **no** business agents | **Done** (2026-06-06) — **39/39** | [Phase M-LLM-R]](plan/phases/llm-and-modality.md) · **§6.1v** · **§6.2ad** · **Appendix L** |
+| **2d — Operational L3 (W-OPS)** | Reliability, identity, SLO/ops evidence, online eval — **no** business agents | **Done** (2026-06-06) | [Phase W-OPS](plan/phases/platform-quality.md) · `phase_w_ops_evidence.py` |
+| **2e — Application environment (H-APP)** | `ApplicationEnvironmentProfile`, unified Tier-3 wiring, host migration — **no** business agents | **Done** (2026-06-03) | [Phase H-APP](plan/phases/tier3-dx-aa.md) · [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) · **§6.2x** |
+| **2f — Developer authoring UX (DX)** | LangGraph-like facades, minimal scaffold, CLI run/doctor, TTFRun gates, UI spec export — **no** business agents | **Done** (2026-06-03) | [Phase DX](plan/phases/tier3-dx-aa.md) · **§6.2y** |
+| **2g — Agents & applications conformance (AA)** | Scaffold alignment, per-agent/app `ARCHITECTURE.md`, deploy triad, legal **scaffold** reset (domain steps → Band 3) | **Mostly Done** (2026-06-02) | [Phase AA](plan/phases/tier3-dx-aa.md) · **§6.2z** · [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business) |
+| **2h — Memory platform (MEM)** | H-APP→runtime bridge, durable user LTM, session SQLite, gates, hooks, memory docs — **no** business agents | **Done** (2026-06-02) | [Phase MEM](plan/phases/rag-context-memory.md) · **§6.2aa** |
+| **2j — Orchestration closeout (ORCH)** | Wire `planner_kind`/`classifier_kind`, `ApplicationGraphSpec`→plan, graph concurrency cap — **no** business agents | **Done** (2026-06-05) | [Phase ORCH](plan/phases/core-runtime.md) · **§6.1b** · **§6.2bb** |
+| **2k — Tools/skills closeout (TS)** | Catalog→`RuntimeConfig` bridge, harness LLM wiring, `SkillResolverProtocol`, Appendix J — **no** business agents | **Done** (2026-06-02) | [Phase TS](plan/phases/tools-skills.md) · **§6.1c** · **§6.2bc** |
+| **2l — Integration closeout (INT)** | `integration_runtime_bridge`, bootstrap health probes, Appendix K — **no** business agents | **Done** (2026-06-02) | [Phase INT](plan/phases/integrations.md) · **§6.1d** · **§6.2bd** |
+| **2m — RAG closeout (RAG)** | `rag_runtime_bridge`, RAG stack on environment wire — **no** business agents | **Done** (2026-06-02) | [Phase RAG](plan/phases/rag-context-memory.md) · **§6.1e** · **§6.2be** |
+| **2n — Context engineering closeout (CTX)** | `context_runtime_bridge`, `context_wiring`, Nexus `ContextManager` wire — **no** business agents | **Done** (2026-06-02) | [Phase CTX](plan/phases/rag-context-memory.md) · **§6.1f** · **§6.2bf** |
+| **2o — Legacy tool plan closeout (LEG)** | `tool_ids` canonical path; gateway/engine planner migration — **no** business agents | **Done** (2026-06-02) | [Phase LEG](plan/phases/tools-skills.md) · **§6.1h** |
+| **2p — Prompt registry closeout (PE)** | `PromptProfile`, `prompt_runtime_bridge`, `prompt_wiring`, Appendix M — **no** business agents | **Done** (2026-06-02) | [Phase PE](plan/phases/registry-capability.md) · **§6.1i** |
+| **2q — Agent assembly closeout (AS)** | Agent contract conformance, capability/skill resolution, lifecycle state — **no** business agents | **Done** (2026-06-02) | [Phase AS](plan/phases/core-runtime.md) · **§6.1k** · **Appendix N** |
+| **2r — Registry architecture closeout (REG)** | Registry snapshot, assembly resolver, host resolution CI — **no** business agents | **Done** (2026-06-02) | [Phase REG](plan/phases/registry-capability.md) · **§6.1l** · **Appendix O** |
+| **2s — Capability graph closeout (CG)** | Environment graph slice, wire-time validation, CI audit — **no** business agents | **Done** (2026-06-02) | [Phase CG](plan/phases/registry-capability.md) · **§6.1m** · **Appendix P** |
+| **2t — Observability closeout (OBS)** | Profile bridge, assembly resolver, host wiring CI — **no** business agents | **Done** (2026-06-02) | [Phase OBS](plan/phases/observability-reliability.md) · **§6.1n** · **Appendix Q** |
+| **2u — Reliability closeout (REL)** | Idempotency bridge, circuit breaker wire, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase REL](plan/phases/observability-reliability.md) · **§6.1o** · **Appendix R** |
+| **2v — Security closeout (SEC)** | V-SEC bridge, middleware assembly resolver, host CI — **no** business agents | **Done** (2026-06-02) | [Phase SEC](plan/phases/governance-security.md) · **§6.1q** · **Appendix S** |
+| **2w — Cost governance closeout (COST)** | Budget bridge, policy bundle merge, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase COST](plan/phases/governance-security.md) · **§6.1r** · **Appendix T** |
+| **2x — Evaluation closeout (EVAL)** | Registry bridge, policy bundle merge, assembly resolver CI — **no** business agents | **Done** (2026-06-02) | [Phase EVAL](plan/phases/evaluation-adaptive-critic.md) · **§6.1s** · **Appendix U** |
+| **2y — Adaptive Harness Intelligence (W-ADAPT)** | L4 **runtime** closed loop — SignalCollector, AdaptationEngine, ProfileVersionStore, verify/rollback — **no** business agents | **Done** (2026-06-02) — **70/70 Done** | [Phase W-ADAPT](plan/phases/evaluation-adaptive-critic.md) · [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · **§6.1t** · **§6.2ac** · **Appendix K** |
+| **2z — LLM completion envelope (M-LLM-R)** | Typed `LLMAdapterResponse` replaces `str`/`dict` adapter returns; full consumer refactor — **no** business agents | **Done** (2026-06-06) — **39/39** | [Phase M-LLM-R](plan/phases/llm-and-modality.md) · **§6.1v** · **§6.2ad** · **Appendix L** |
 | **2aa — Integration expansion (M.6 P4)** | 28 harness-ROI provider slugs (secrets, observability stack, OLAP, feature flags, prod deploy) — **no** business agents | **Done** (2026-06-02) — **28/28** | [M.6 P4 register](#m6-p4--harness-platform-expansion-done) · **§6.1w** · **§6.2ae** |
 | **2ab — Integration depth (M.6 P5)** | Harden 25 beta + 8 greenfield harness slugs (metrics, CI/CD, eval, async, data plane) — **no** business agents | **Done** (2026-06-02) — **33/34** | [M.6 P5 register](#m6-p5--harness-integration-depth-done--3334) · **§6.1x** · **§6.2af** |
 | **2ac — Integration expansion (M.6 P6)** | 32 harness slugs + post-catalog wiring (tools, bridges, promote gate, infra `p6`) — **no** business agents | **Done** (2026-06-02) — **32/32 + M-P6-WIRE** | [M.6 P6 register](#m6-p6--harness-integration-expansion-planned) · **§6.1y** · **§6.2ag** |
-| **2ad — FAUDIT-32 remediation** | Close 32-layer audit residuals (tier gate, intake, observability taxonomy, registry depth, eval release gate) — **no** business agents | **Done** (2026-06-06) — **23/23 + §6.1ai follow-up** | [Phase FAUDIT-32]](plan/phases/platform-quality.md) · **§6.1ah** · **§6.1ai** · **Appendix M** |
-| **2aj — Nexus execution depth (FLOW)** | Close `FLOW-GAP.*` (01–16) — delegation, SubtaskContract, backpressure profile, LLM planner, merge, eval, graph hardening — **no** K.1/K.2 | **Done** (2026-06-07) — **17/18** (**FLOW-8 Deferred**) | [Phase FLOW]](plan/phases/core-runtime.md) · **§6.1aj** · **§6.2aj** · **Appendix N (FLOW)** |
-| **2ak — Critic & Verification Layer (CRIT-V)** | PEV verify depth — `CriticOrchestrator`, `eval.judge`, `eval.trajectory`, evaluator-loop, semantic offline runner — **no** business agents | **Done** | [Phase CRIT-V]](plan/phases/evaluation-adaptive-critic.md) · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · **§6.1ak** · **§6.2ak** · canon §55 · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md) |
-| **2al — Unified Observability Spine (OBS-BUS)** | Full HOS — typed payloads, `ObservabilityEmitter`, emission coverage, extension SDK, L4 §21 — **no** business agents | **Done** | [Phase OBS-BUS]](plan/phases/observability-reliability.md) · [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) · **§6.1al** · [ADR-OBS-001](adr/ADR-OBS-001.md) |
-| **2am — Memory intelligence depth (MEM-DEPTH)** | Context Compiler, never-overflow invariant, lifecycle automation, explore delegation, entity memory — **no** business agents | **Planned** (0/26) | [Phase MEM-DEPTH]](plan/phases/rag-context-memory.md) · [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) · **§6.2ab** |
+| **2ad — FAUDIT-32 remediation** | Close 32-layer audit residuals (tier gate, intake, observability taxonomy, registry depth, eval release gate) — **no** business agents | **Done** (2026-06-06) — **23/23 + §6.1ai follow-up** | [Phase FAUDIT-32](plan/phases/platform-quality.md) · **§6.1ah** · **§6.1ai** · **Appendix M** |
+| **2aj — Nexus execution depth (FLOW)** | Close `FLOW-GAP.*` (01–16) — delegation, SubtaskContract, backpressure profile, LLM planner, merge, eval, graph hardening — **no** K.1/K.2 | **Done** (2026-06-07) — **17/18** (**FLOW-8 Deferred**) | [Phase FLOW](plan/phases/core-runtime.md) · **§6.1aj** · **§6.2aj** · **Appendix N (FLOW)** |
+| **2ak — Critic & Verification Layer (CRIT-V)** | PEV verify depth — `CriticOrchestrator`, `eval.judge`, `eval.trajectory`, evaluator-loop, semantic offline runner — **no** business agents | **Done** | [Phase CRIT-V](plan/phases/evaluation-adaptive-critic.md) · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · **§6.1ak** · **§6.2ak** · canon §55 · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md) |
+| **2al — Unified Observability Spine (OBS-BUS)** | Full HOS — typed payloads, `ObservabilityEmitter`, emission coverage, extension SDK, L4 §21 — **no** business agents | **Done** | [Phase OBS-BUS](plan/phases/observability-reliability.md) · [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) · **§6.1al** · [ADR-OBS-001](adr/ADR-OBS-001.md) |
+| **2am — Memory intelligence depth (MEM-DEPTH)** | Context Compiler, never-overflow invariant, lifecycle automation, explore delegation, entity memory — **no** business agents | **Planned** (0/26) | [Phase MEM-DEPTH](plan/phases/rag-context-memory.md) · [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) · **§6.2ab** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 · FLOW-8 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
@@ -514,8 +512,8 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 | Integration harness depth (Done) | [M.6 P5](#m6-p5--harness-integration-depth-done--3334) · [§6.1x](#61x-harness-implementation-queue--integration-depth-m6-p5-done) — **33/34 Done** |
 | Integration harness expansion | [M.6 P6](#m6-p6--harness-integration-expansion-planned) · [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-planned) — **Done** (32/32 + wiring) |
 | Ongoing gate + audit scripts | [§6.1](#61-harness-platform-maintenance-default--band-1) |
-| Memory platform wiring (Done) | [Phase MEM]](plan/phases/rag-context-memory.md) · [§6.2aa](#62aa-phase-mem-execution-order-band-2h--active) |
-| **Memory intelligence depth (active)** | [Phase MEM-DEPTH]](plan/phases/rag-context-memory.md) · [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) · [§6.1am](#61am-harness-implementation-queue--memory-intelligence-depth-active) · [§6.2ab](#62ab-phase-mem-depth-execution-order-band-2am--active) |
+| Memory platform wiring (Done) | [Phase MEM](plan/phases/rag-context-memory.md) · [§6.2aa](#62aa-phase-mem-execution-order-band-2h--active) |
+| **Memory intelligence depth (active)** | [Phase MEM-DEPTH](plan/phases/rag-context-memory.md) · [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) · [§6.1am](#61am-harness-implementation-queue--memory-intelligence-depth-active) · [§6.2ab](#62ab-phase-mem-depth-execution-order-band-2am--active) |
 | All business / domain work | [§6.3](#63-end-of-plan--deferred-product-work-only) · [Business backlog register](#63a-business-backlog-register-consolidated) |
 
 ### 4.1 Harness completion backlog (execution order)
@@ -970,7 +968,7 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 
 **Audit basis:** Phase U-Leg residual; `scripts/check_legacy_modules_removed.py`; prior `check_tools_agent_*` audits merged.
 
-**Priority ladder:** closeout between Band 2p and 2q; default queue = **Band 2q** [Phase AS]](plan/phases/core-runtime.md).
+**Priority ladder:** closeout between Band 2p and 2q; default queue = **Band 2q** [Phase AS](plan/phases/core-runtime.md).
 
 ### CLEAN — Master register
 
@@ -1665,7 +1663,7 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 | 8 | **M-LLM-R.7.1–7.5** | Code | **Done** | Usage alignment + replay/trace bridge | `test_replay_engine` + diagnostics |
 | 9 | **M-LLM-R.8.1–8.4** | Docs/CI | **Done** | Docs + conformance + closeout | M-LLM.14 Done; Appendix L complete |
 
-**Suggested PR order:** See [Phase M-LLM-R — Suggested PR order]](plan/phases/llm-and-modality.md).
+**Suggested PR order:** See [Phase M-LLM-R — Suggested PR order](plan/phases/llm-and-modality.md).
 
 **Explicitly excluded:** K.1, K.2, product HTTP API DTOs, provider SDK rewrites — [§6.3a](#63a-business-backlog-register-consolidated).
 
@@ -1768,7 +1766,7 @@ Verify (every harness PR):
 ### 6.1ah Harness implementation queue — FAUDIT-32 remediation (closed)
 
 **Status:** **Done** (2026-06-06) — **23/23 Done**  
-**Source:** [Phase FAUDIT-32]](plan/phases/platform-quality.md) · **Appendix M**  
+**Source:** [Phase FAUDIT-32](plan/phases/platform-quality.md) · **Appendix M**  
 **Priority ladder:** **Band 2ad** (§4.0) — runs **after** FAUDIT-TIER.1 on every harness PR that touches `intergrax/runtime/architecture/`
 
 **Execution order (recommended):**
@@ -1833,7 +1831,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bo Phase EVAL execution order (Band 2x — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase EVAL]](plan/phases/evaluation-adaptive-critic.md) · queue: [§6.1s](#61s-harness-implementation-queue--evaluation-closeout-closed)
+**Status:** **Done** · register: [Phase EVAL](plan/phases/evaluation-adaptive-critic.md) · queue: [§6.1s](#61s-harness-implementation-queue--evaluation-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -1844,7 +1842,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bn Phase COST execution order (Band 2w — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase COST]](plan/phases/governance-security.md) · queue: [§6.1r](#61r-harness-implementation-queue--cost-governance-closeout-closed)
+**Status:** **Done** · register: [Phase COST](plan/phases/governance-security.md) · queue: [§6.1r](#61r-harness-implementation-queue--cost-governance-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -1855,7 +1853,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bm Phase SEC execution order (Band 2v — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase SEC]](plan/phases/governance-security.md) · queue: [§6.1q](#61q-harness-implementation-queue--security-closeout-closed)
+**Status:** **Done** · register: [Phase SEC](plan/phases/governance-security.md) · queue: [§6.1q](#61q-harness-implementation-queue--security-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -1866,7 +1864,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bl Phase REL execution order (Band 2u — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase REL]](plan/phases/observability-reliability.md) · queue: [§6.1o](#61o-harness-implementation-queue--reliability-closeout-closed)
+**Status:** **Done** · register: [Phase REL](plan/phases/observability-reliability.md) · queue: [§6.1o](#61o-harness-implementation-queue--reliability-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -1877,7 +1875,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bk Phase OBS execution order (Band 2t — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase OBS]](plan/phases/observability-reliability.md) · queue: [§6.1n](#61n-harness-implementation-queue--observability-closeout-closed)
+**Status:** **Done** · register: [Phase OBS](plan/phases/observability-reliability.md) · queue: [§6.1n](#61n-harness-implementation-queue--observability-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -1888,7 +1886,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bj Phase CG execution order (Band 2s — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase CG]](plan/phases/registry-capability.md) · queue: [§6.1m](#61m-harness-implementation-queue--capability-graph-closeout-closed)
+**Status:** **Done** · register: [Phase CG](plan/phases/registry-capability.md) · queue: [§6.1m](#61m-harness-implementation-queue--capability-graph-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -1899,7 +1897,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bi Phase REG execution order (Band 2r — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase REG]](plan/phases/registry-capability.md) · queue: [§6.1l](#61l-harness-implementation-queue--registry-architecture-closeout-closed)
+**Status:** **Done** · register: [Phase REG](plan/phases/registry-capability.md) · queue: [§6.1l](#61l-harness-implementation-queue--registry-architecture-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -1910,7 +1908,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bg Phase AS execution order (Band 2q — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase AS]](plan/phases/core-runtime.md) · queue: [§6.1k](#61k-harness-implementation-queue--agent-assembly-closeout-closed)
+**Status:** **Done** · register: [Phase AS](plan/phases/core-runtime.md) · queue: [§6.1k](#61k-harness-implementation-queue--agent-assembly-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -1921,7 +1919,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bh Phase CLEAN execution order (closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase CLEAN]](plan/phases/core-runtime.md) · queue: [§6.1j](#61j-harness-implementation-queue--legacy-module-closeout-closed)
+**Status:** **Done** · register: [Phase CLEAN](plan/phases/core-runtime.md) · queue: [§6.1j](#61j-harness-implementation-queue--legacy-module-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -1932,7 +1930,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bf Phase CTX execution order (Band 2n — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase CTX]](plan/phases/rag-context-memory.md) · queue: [§6.1f](#61f-harness-implementation-queue--context-engineering-closeout-closed)
+**Status:** **Done** · register: [Phase CTX](plan/phases/rag-context-memory.md) · queue: [§6.1f](#61f-harness-implementation-queue--context-engineering-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -1942,7 +1940,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2be Phase RAG execution order (Band 2m — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase RAG]](plan/phases/rag-context-memory.md) · queue: [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed)
+**Status:** **Done** · register: [Phase RAG](plan/phases/rag-context-memory.md) · queue: [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -1951,7 +1949,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bd Phase INT execution order (Band 2l — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase INT]](plan/phases/integrations.md) · queue: [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed)
+**Status:** **Done** · register: [Phase INT](plan/phases/integrations.md) · queue: [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -1961,7 +1959,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bc Phase TS execution order (Band 2k — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase TS]](plan/phases/tools-skills.md) · queue: [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed)
+**Status:** **Done** · register: [Phase TS](plan/phases/tools-skills.md) · queue: [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed)
 
 Work **one TS ID per PR**; after each step update the TS master table + §6.1c + paydown log; keep §6.1 scripts green.
 
@@ -1974,7 +1972,7 @@ Work **one TS ID per PR**; after each step update the TS master table + §6.1c +
 
 ### 6.2aj Phase FLOW execution order (Band 2aj — closed 2026-06-07)
 
-**Status:** **Done** · register: [Phase FLOW]](plan/phases/core-runtime.md) · queue: [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed)
+**Status:** **Done** · register: [Phase FLOW](plan/phases/core-runtime.md) · queue: [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed)
 
 Work **one FLOW ID per PR**; after each step update FLOW master table + §6.1aj + Appendix N; keep §6.1 scripts green.
 
@@ -2000,7 +1998,7 @@ Work **one FLOW ID per PR**; after each step update FLOW master table + §6.1aj 
 
 ### 6.2ak Phase CRIT-V execution order (Band 2ak — active)
 
-**Status:** **Active** · register: [Phase CRIT-V]](plan/phases/evaluation-adaptive-critic.md) · queue: [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-active)
+**Status:** **Active** · register: [Phase CRIT-V](plan/phases/evaluation-adaptive-critic.md) · queue: [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-active)
 
 Work **one CRIT-V ID per PR**; after each step update CRIT-V master table + §6.1ak; keep §6.1 scripts green.
 
@@ -2026,7 +2024,7 @@ Work **one CRIT-V ID per PR**; after each step update CRIT-V master table + §6.
 
 ### 6.2bb Phase ORCH execution order (Band 2j — closed 2026-06-05)
 
-**Status:** **Done** · register: [Phase ORCH]](plan/phases/core-runtime.md) · queue: [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed)
+**Status:** **Done** · register: [Phase ORCH](plan/phases/core-runtime.md) · queue: [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed)
 
 Work **one ORCH ID per PR**; after each step update the ORCH master table + §6.1b + paydown log; keep §6.1 scripts green.
 
@@ -2039,7 +2037,7 @@ Work **one ORCH ID per PR**; after each step update the ORCH master table + §6.
 
 ### 6.2v Phase V-REM execution order (Band 2i — closed 2026-06-05)
 
-**Status:** **Done** · register: [Phase V-REM]](plan/phases/core-runtime.md) · queue: [§6.1z](#61z-harness-implementation-queue-consolidated) (closed)
+**Status:** **Done** · register: [Phase V-REM](plan/phases/core-runtime.md) · queue: [§6.1z](#61z-harness-implementation-queue-consolidated) (closed)
 
 Work **one V-REM ID per PR**; after each step update the V-REM master table + Appendix J + paydown log; keep §6.1 scripts green.
 
@@ -2060,7 +2058,7 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 
 ### 6.2w Phase W-OPS execution order (Band 2d — complete 2026-06-06)
 
-**Status:** **Done** · register: [Phase W-OPS]](plan/phases/platform-quality.md)
+**Status:** **Done** · register: [Phase W-OPS](plan/phases/platform-quality.md)
 
 Work **one W-OPS ID per PR**; after each step update the W-OPS table + paydown log; keep §6.1 scripts green.
 
@@ -2288,7 +2286,7 @@ Wave H-INT-5 (enterprise):  M-P4.17 → M-P4.18 → M-P4.19 → M-P4.20 → M-P4
 
 ### 6.2ad Phase M-LLM-R execution order (Band 2z — closed 2026-06-06)
 
-**Status:** **Done** · register: [Phase M-LLM-R]](plan/phases/llm-and-modality.md) · queue: [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed)
+**Status:** **Done** · register: [Phase M-LLM-R](plan/phases/llm-and-modality.md) · queue: [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed)
 
 ```text
 Wave M-LLM-R-0 (planning):     M-LLM-R.0.2 → 0.3  (0.1 **Done**)
@@ -2310,7 +2308,7 @@ Wave M-LLM-R-8 (closeout):     M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 
 ### 6.2ac Phase W-ADAPT execution order (Band 2y — closed)
 
-**Status:** **Done** (2026-06-02) · register: [Phase W-ADAPT]](plan/phases/evaluation-adaptive-critic.md) · queue: [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-closed)
+**Status:** **Done** (2026-06-02) · register: [Phase W-ADAPT](plan/phases/evaluation-adaptive-critic.md) · queue: [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-closed)
 
 ```text
 Wave W-ADAPT-0 (planning):        W-ADAPT-0.2 → 0.3 → 0.4 → 0.5  (**Done**)
@@ -3441,7 +3439,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 
 
-**Purpose:** 100% mapping from **Partial** audit findings (2026-06-05) to concrete remediation IDs. **Canonical phase narrative:** [Phase V-REM]](plan/phases/core-runtime.md).
+**Purpose:** 100% mapping from **Partial** audit findings (2026-06-05) to concrete remediation IDs. **Canonical phase narrative:** [Phase V-REM](plan/phases/core-runtime.md).
 
 **Status:** **12 tasks** · **12 Done** (2026-06-05).
 
@@ -3473,7 +3471,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 
 
-**Purpose:** 100% mapping from [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) (AHIA) to concrete **W-ADAPT.\*** IDs. **Canonical phase narrative:** [Phase W-ADAPT]](plan/phases/evaluation-adaptive-critic.md).
+**Purpose:** 100% mapping from [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) (AHIA) to concrete **W-ADAPT.\*** IDs. **Canonical phase narrative:** [Phase W-ADAPT](plan/phases/evaluation-adaptive-critic.md).
 
 **Status:** **70/70 Done** (Band 2y closed 2026-06-05) — Waves W-ADAPT-0 through W-ADAPT-7 complete.
 
@@ -3543,7 +3541,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 **Source:** Tier-0 LLM adapter audit (2026-06-06) — plain `str` / `Dict[str, Any]` returns insufficient for production observability, replay, cost attribution, and L4 adaptive signals.
 
-**Phase register:** [Phase M-LLM-R]](plan/phases/llm-and-modality.md) · **Band 2z** · queue [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed)
+**Phase register:** [Phase M-LLM-R](plan/phases/llm-and-modality.md) · **Band 2z** · queue [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed)
 
 ### L.1 Audit finding → remediation map
 
@@ -3597,7 +3595,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 
 
-**Purpose:** 100% mapping from 32-layer [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §8 audit to concrete **FAUDIT.\*** remediation IDs. **Canonical phase narrative:** [Phase FAUDIT-32]](plan/phases/platform-quality.md).
+**Purpose:** 100% mapping from 32-layer [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §8 audit to concrete **FAUDIT.\*** remediation IDs. **Canonical phase narrative:** [Phase FAUDIT-32](plan/phases/platform-quality.md).
 
 **Status:** **Done** (2026-06-06) · **23/23 remediation Done** + [§6.1ai](#61ai-harness-implementation-queue--faudit-32-follow-up-closed) follow-up · gate **901**
 
@@ -3630,7 +3628,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | Theme | Layers affected | Risk |
 |-------|-----------------|------|
 | **Closeout vs maturity** | §17–§25, §31 | Plan **Done** on wiring; AUDIT_MAP **L2** on depth — do not conflate |
-| **Dual-path telemetry** | §21, §6 | **L4 Done:** [Phase OBS-BUS]](plan/phases/observability-reliability.md) — unified journal, `ObservabilityEmitter`, typed payloads, emission coverage, journal export |
+| **Dual-path telemetry** | §21, §6 | **L4 Done:** [Phase OBS-BUS](plan/phases/observability-reliability.md) — unified journal, `ObservabilityEmitter`, typed payloads, emission coverage, journal export |
 | **Tier boundary drift** | §2, §28 | Single Critical violation undermines canon §7.4.4 |
 | **Identity / intake naming** | §3, §4 | Resolved — `TaskEnvelope` in `intergrax/contracts/task_envelope.py`; parity tests in `test_faudit_remediation.py` |
 
@@ -3651,7 +3649,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 **Source:** [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §23–§25 · [ADR-FLOW-001](adr/ADR-FLOW-001.md)
 
-**Phase register:** [Phase FLOW]](plan/phases/core-runtime.md) · **Band 2aj** · queue [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed) · execution [§6.2aj](#62aj-phase-flow-execution-order-band-2aj--closed-2026-06-07)
+**Phase register:** [Phase FLOW](plan/phases/core-runtime.md) · **Band 2aj** · queue [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed) · execution [§6.2aj](#62aj-phase-flow-execution-order-band-2aj--closed-2026-06-07)
 
 **Status:** **Done** (2026-06-07) · **17/18** deliverables Done (**FLOW-8 Deferred**)
 

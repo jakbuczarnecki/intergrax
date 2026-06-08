@@ -530,7 +530,7 @@ response: LLMAdapterResponse = llm.generate_messages([...], run_id=task_id)
 text = response.content
 ```
 
-**Full catalog:** [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) · Phase [M-LLM-R](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · Audit layer 6: [AUDIT_MAP §6](docs/INTEGRAX_HARNESS_AUDIT_MAP.md)
+**Full catalog:** [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) · Phase [M-LLM-R](docs/plan/phases/misc-phases.md) · Audit layer 6: [AUDIT_MAP §6](docs/INTEGRAX_HARNESS_AUDIT_MAP.md)
 
 ---
 
@@ -561,7 +561,7 @@ Agents invoke modalities through **tools** and profiles only — never vendor SD
 | Layer | Components | Status |
 |-------|------------|--------|
 | **RAG** | `RetrievalService`, `RagProfile`, `IngestPipeline`, hybrid sparse/dense | Phase M-RAG **Done** |
-| **Memory** | STM/LTM, session storage, hooks, task memory | Phase MEM **Done** (48/48) · depth → [MEM-DEPTH](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem-depth--memory-intelligence-depth) |
+| **Memory** | STM/LTM, session storage, hooks, task memory | Phase MEM **Done** (48/48) · depth → [MEM-DEPTH](docs/plan/phases/rag-context-memory.md) |
 | **Context engineering** | `ContextManager`, `ContextBudgetPolicy`, `CONTEXT_ASSEMBLED` / `CONTEXT_TRIMMED` events | Phase CTX **Done** |
 | **Prompt registry** | Versioned prompts, assembly, policy overlays | Phase PE **Done** |
 
@@ -637,7 +637,7 @@ Every decision and invocation is **traceable** — core Harness AI principle. Al
 | **OTLP** | OpenTelemetry export via `IntegrationProfile.harness_environment()` |
 | **Prometheus** | LLM/RAG metrics — [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) |
 
-Lab wiring: [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md) · Architecture: [OBSERVABILITY_ARCHITECTURE.md](docs/OBSERVABILITY_ARCHITECTURE.md) · [ADR-OBS-001](docs/adr/ADR-OBS-001.md) · Implementation: [Phase OBS-BUS](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine) · Control plane: [Appendix Q](docs/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) (wiring) · [Appendix R](docs/AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) (reliability) · [Appendix S](docs/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) (security) · [Appendix T](docs/AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) (cost) · [Appendix U](docs/AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout) (evaluation)
+Lab wiring: [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md) · Architecture: [OBSERVABILITY_ARCHITECTURE.md](docs/OBSERVABILITY_ARCHITECTURE.md) · [ADR-OBS-001](docs/adr/ADR-OBS-001.md) · Implementation: [Phase OBS-BUS](docs/plan/phases/observability-reliability.md) · Control plane: [Appendix Q](docs/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) (wiring) · [Appendix R](docs/AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) (reliability) · [Appendix S](docs/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) (security) · [Appendix T](docs/AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) (cost) · [Appendix U](docs/AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout) (evaluation)
 
 Audit layer 21: [AUDIT_MAP §21](docs/INTEGRAX_HARNESS_AUDIT_MAP.md)
 
@@ -732,15 +732,15 @@ All harness control planes are **closed** — authoring maps live in AGENT_CREAT
 | SEC | Security wiring | [S](docs/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) |
 | COST | Cost governance | [T](docs/AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) |
 | EVAL | Evaluation wiring | [U](docs/AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout) |
-| CRIT-V | Critic & Verification Layer | [CVL](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · [Phase CRIT-V](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-crit-v--critic--verification-layer) |
+| CRIT-V | Critic & Verification Layer | [CVL](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · [Phase CRIT-V](docs/plan/phases/evaluation-adaptive-critic.md) |
 | ORCH | Orchestration | [I](docs/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) |
 | TS | Tools & skills | [J](docs/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) |
 | INT | Integrations | [K](docs/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) |
 | RAG | Retrieval | [K](docs/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) |
 | CTX | Context engineering | [L](docs/AGENT_CREATION_GUIDE.md#appendix-l--context-engineering-control-plane) |
 | PE | Prompt registry | [M](docs/AGENT_CREATION_GUIDE.md#appendix-m--prompt-registry-control-plane) |
-| MEM | Memory platform | Plan [Phase MEM](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem--memory-platform-completion) |
-| W-ADAPT | Adaptive Harness Intelligence (L4 runtime) | [AHIA](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · [Phase W-ADAPT](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) |
+| MEM | Memory platform | Plan [Phase MEM](docs/plan/phases/rag-context-memory.md) |
+| W-ADAPT | Adaptive Harness Intelligence (L4 runtime) | [AHIA](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · [Phase W-ADAPT](docs/plan/phases/evaluation-adaptive-critic.md) |
 
 ---
 
@@ -806,7 +806,7 @@ This is **not classical reinforcement learning** (neural policy training, uncons
 
 **Primary document:** [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) — full business case, component specification, data contracts, flow diagrams, phased roadmap (W-ADAPT-0 through W-ADAPT-7), KPIs, and L4 runtime acceptance gates.
 
-**Implementation plan:** [INTERGRAX_IMPLEMENTATION_PLAN.md — Phase W-ADAPT](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) — **70/70 Done**, Band 2y closed, ADR [`ADR-ADAPT-001`](docs/adr/ADR-ADAPT-001.md).
+**Implementation plan:** [INTERGRAX_IMPLEMENTATION_PLAN.md — Phase W-ADAPT](docs/plan/phases/evaluation-adaptive-critic.md) — **70/70 Done**, Band 2y closed, ADR [`ADR-ADAPT-001`](docs/adr/ADR-ADAPT-001.md).
 
 **Canon summary:** [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md)
 
@@ -831,7 +831,7 @@ LLM-as-judge is **opt-in** — not mandatory on every run. Structural L0 validat
 | Document | Purpose |
 |----------|---------|
 | [CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) | Full CVL specification — competencies, components, flows |
-| [INTERGRAX_IMPLEMENTATION_PLAN — Phase CRIT-V](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-crit-v--critic--verification-layer) | Implementation register (Band 2ak, **Active**) |
+| [INTERGRAX_IMPLEMENTATION_PLAN — Phase CRIT-V](docs/plan/phases/evaluation-adaptive-critic.md) | Implementation register (Band 2ak, **Active**) |
 | [CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) | CVL canon |
 | [ADR-CRITIC-001](docs/adr/ADR-CRITIC-001.md) | Architecture decision — tier-separated verify stack |
 
@@ -846,19 +846,19 @@ Task-oriented navigation for platform docs in [`docs/`](docs/). Product and agen
 | I want to… | Read |
 |------------|------|
 | Understand strategic direction | [INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) |
-| **Platform vs product/agent docs** | [Strategy §Documentation boundary](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md#documentation-boundary) · [Architecture §1.1](docs/intergrax_runtime_architecture.md#11-documentation-boundary-platform-vs-product) · [Plan §4.0a](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business) |
+| **Platform vs product/agent docs** | [Strategy §Documentation boundary](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md#documentation-boundary) · [Architecture hub](docs/intergrax_runtime_architecture.md#documentation-boundary-platform-vs-product) · [Plan §4.0a](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business) |
 | Understand the platform | Strategy doc, then implementation plan §0, then architecture canon §1–§5 |
-| See what to implement next (harness) | [Phase MEM-DEPTH](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem-depth--memory-intelligence-depth) (Band 2am) · [§6.1am](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61am-harness-implementation-queue--memory-intelligence-depth-active) · [§6.1](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) gate |
-| **Memory architecture (stores, lifecycle, context compiler)** | [MEMORY_ARCHITECTURE.md](docs/MEMORY_ARCHITECTURE.md) · [Phase MEM](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem--memory-platform-completion) · [Phase MEM-DEPTH](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-mem-depth--memory-intelligence-depth) |
-| **Observability architecture (spine, bus, extension)** | [OBSERVABILITY_ARCHITECTURE.md](docs/OBSERVABILITY_ARCHITECTURE.md) · [ADR-OBS-001](docs/adr/ADR-OBS-001.md) · [Phase OBS-BUS](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine) |
-| **Observability wiring (control plane)** | [AGENT_CREATION_GUIDE Appendix Q](docs/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [Phase OBS](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs--observability-control-plane-closeout) |
-| **Critic & Verification Layer (PEV verify)** | [CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · [Phase CRIT-V](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-crit-v--critic--verification-layer) · [ADR-CRITIC-001](docs/adr/ADR-CRITIC-001.md) |
+| See what to implement next (harness) | [Phase MEM-DEPTH](docs/plan/phases/rag-context-memory.md) (Band 2am) · [§6.1am](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61am-harness-implementation-queue--memory-intelligence-depth-active) · [§6.1](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) gate |
+| **Memory architecture (stores, lifecycle, context compiler)** | [MEMORY_ARCHITECTURE.md](docs/MEMORY_ARCHITECTURE.md) · [Phase MEM](docs/plan/phases/rag-context-memory.md) · [Phase MEM-DEPTH](docs/plan/phases/rag-context-memory.md) |
+| **Observability architecture (spine, bus, extension)** | [OBSERVABILITY_ARCHITECTURE.md](docs/OBSERVABILITY_ARCHITECTURE.md) · [ADR-OBS-001](docs/adr/ADR-OBS-001.md) · [Phase OBS-BUS](docs/plan/phases/observability-reliability.md) |
+| **Observability wiring (control plane)** | [AGENT_CREATION_GUIDE Appendix Q](docs/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [Phase OBS](docs/plan/phases/observability-reliability.md) |
+| **Critic & Verification Layer (PEV verify)** | [CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · [Phase CRIT-V](docs/plan/phases/evaluation-adaptive-critic.md) · [ADR-CRITIC-001](docs/adr/ADR-CRITIC-001.md) |
 | **Full Nexus execution flow** | [NEXUS_EXECUTION_FLOW_REFERENCE.md](docs/NEXUS_EXECUTION_FLOW_REFERENCE.md) |
 | Create a new agent | [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) |
 | Wire integrations / tools / skills | [INTEGRATIONS.md](docs/INTEGRATIONS.md) · [TOOLS.md](docs/TOOLS.md) · [SKILLS.md](docs/SKILLS.md) |
 | **All Tier-2 agents** | [agents/README.md](agents/README.md) |
 | **All Tier-3 application hosts** | [applications/README.md](applications/README.md) |
-| L4 adaptive harness | [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · [Phase W-ADAPT](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) |
+| L4 adaptive harness | [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · [Phase W-ADAPT](docs/plan/phases/evaluation-adaptive-critic.md) |
 | Harness environment (lab, OTLP) | [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md) |
 | Governance / policy / HITL | [AGENT_CREATION_GUIDE Appendix H](docs/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
 | Orchestration / graphs | [AGENT_CREATION_GUIDE Appendix I](docs/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) · [NEXUS_EXECUTION_FLOW_REFERENCE.md](docs/NEXUS_EXECUTION_FLOW_REFERENCE.md) |
@@ -984,7 +984,7 @@ When changing platform documentation, update the **canonical file for that topic
 
 **Last updated:** 2026-06-08
 
-Intergrax is under **active development** (private R&D). The **harness platform** maintenance queue runs on every PR ([§6.1](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1)). **Active implementation:** [Phase CRIT-V — Critic & Verification Layer](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-crit-v--critic--verification-layer) (Band 2ak). **Planned:** [Phase OBS-BUS — Unified Observability Spine](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine) (Band 2al). Business agents (Phase K) are **end of plan** until explicit product prioritization ([§6.3](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only)).
+Intergrax is under **active development** (private R&D). The **harness platform** maintenance queue runs on every PR ([§6.1](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1)). **Active implementation:** [Phase CRIT-V — Critic & Verification Layer](docs/plan/phases/evaluation-adaptive-critic.md) (Band 2ak). **Planned:** [Phase OBS-BUS — Unified Observability Spine](docs/plan/phases/observability-reliability.md) (Band 2al). Business agents (Phase K) are **end of plan** until explicit product prioritization ([§6.3](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only)).
 
 | Phase | Focus | Status |
 |-------|--------|--------|

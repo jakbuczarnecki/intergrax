@@ -23,7 +23,7 @@ Rules:
 
 ## 28.1 Context Engineering (Harness Terminology)
 
-> **Deep dive:** [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) [§7](PLATFORM_FOUNDATION.md)–[§9](ORCHESTRATION.md) (read path, compression ladder, strategy selection) · audit map [§16](AGENT_CONTRACTS_AND_ASSEMBLY.md)
+> **Deep dive:** [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) §7–§9 (read path, compression ladder, strategy selection) · audit map §16
 
 **Context engineering** is the deliberate design of what enters each LLM call: bounded memory reads, summary tiers, evidence vs interpretation, and provenance. In Intergrax this is implemented by Tier-1 — not by ad-hoc prompt concatenation in Tier-2 agents.
 

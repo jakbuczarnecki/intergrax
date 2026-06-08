@@ -273,7 +273,7 @@ It does **not** confirm:
 
 ## 6. Gap analysis
 
-> **Historical audit (2026-06-05).** All gaps below were closed by Phase W-ADAPT (Wave 0–7). For current delivery status see [§19](#19-phased-implementation-roadmap--phase-w-adapt) and canon [§54.3](intergrax_runtime_architecture.md#543-implementation-state-phase-w-adapt--done).
+> **Historical audit (2026-06-05).** All gaps below were closed by Phase W-ADAPT (Wave 0–7). For current delivery status see [§19](#19-phased-implementation-roadmap--phase-w-adapt) and canon [§54.3](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md#543-implementation-state-phase-w-adapt--done).
 
 ### 6.1 Missing components (must build) — **Done (W-ADAPT)**
 

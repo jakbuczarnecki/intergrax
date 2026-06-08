@@ -119,10 +119,10 @@ Do not build a polished SaaS frontend at this stage.
 
 Before writing code, Cursor AI and implementation agents MUST:
 
-1. Identify whether the needed capability **already exists** in Tier-0 ([§5](PLATFORM_FOUNDATION.md).2.2).
+1. Identify whether the needed capability **already exists** in Tier-0 (§5.2.2).
 2. Use the **canonical entry point** (LLM adapters, logging, tools, RAG, trace, memory, queues).
 3. Implement **orchestration and domain logic only** in Tier-1 / Tier-2 / Tier-3.
-4. **STOP and ask the human** if a new universal Tier-0 mechanism appears necessary ([§5](PLATFORM_FOUNDATION.md).2.4).
+4. **STOP and ask the human** if a new universal Tier-0 mechanism appears necessary (§5.2.4).
 
 Cursor AI MUST NOT:
 
@@ -130,9 +130,9 @@ Cursor AI MUST NOT:
 - create agent-local logging or tracing systems,
 - introduce duplicate tool registries or adapter facades,
 - add new PostgreSQL/Redis/file clients in agents when Tier-0 adapters exist,
-- implement [§42](UNIFIED_EXECUTION_RUNTIME.md) scaffold as standalone replacements for existing Nexus trace/tool/LLM paths.
+- implement §42 scaffold as standalone replacements for existing Nexus trace/tool/LLM paths.
 
-When wiring [§42](UNIFIED_EXECUTION_RUNTIME.md) (events, hooks, UAEP), **integrate with** existing `RunTraceWriter`, `ToolRuntime`, `RuntimeEngine` — do not fork them.
+When wiring §42 (events, hooks, UAEP), **integrate with** existing `RunTraceWriter`, `ToolRuntime`, `RuntimeEngine` — do not fork them.
 
 ---
 

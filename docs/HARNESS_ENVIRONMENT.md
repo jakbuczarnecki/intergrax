@@ -4,7 +4,7 @@
 
 Operator and author guide for the **lab harness stack** — Tier-0 integrations, Tier-1 Nexus, Tier-3 `lab_application` wiring, platform skills, and observability. Business agents (Problem Radar, Vendor Discovery) are **Phase K** and out of scope here.
 
-**Related:** [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase S/U/V · [SKILLS.md](SKILLS.md) · [INTEGRATIONS.md](INTEGRATIONS.md) · Architecture [§5.3](intergrax_runtime_architecture.md#53-harness-ai-alignment-conceptual-model) and [§53](intergrax_runtime_architecture.md#53-harness-architecture-hardening-addendum-post-u)
+**Related:** [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase S/U/V · [SKILLS.md](SKILLS.md) · [INTEGRATIONS.md](INTEGRATIONS.md) · Architecture [§5.3](architecture/PLATFORM_FOUNDATION.md#53-harness-ai-alignment-conceptual-model) and [§53](architecture/PLATFORM_FOUNDATION.md#53-harness-architecture-hardening-addendum-post-u)
 
 ---
 
@@ -160,7 +160,7 @@ Operational L3 evidence is separate from `phase_v_closeout_gate` (contract CI). 
 
 **Incident budget (rolling 30d):** ≤ 2 Sev-2 harness regressions; ≤ 1 unresolved gate red > 24h.
 
-**Runtime event ops filters (Phase DX-5.7):** Every `RuntimeEventType` maps to an `ExecutionPhase` and a stable ops filter token (`ops:alert`, `ops:hitl`, `trace:step`, …). Source of truth: `intergrax.runtime.events.phase_coverage` (`EVENT_PHASE_COVERAGE`, `EVENT_OPS_FILTER_HINTS`). Canon table: [architecture §42.1.5](intergrax_runtime_architecture.md#4215-runtime-event-catalog-ops-filters). Gate: `test_all_runtime_event_types_have_ops_filter_hint`.
+**Runtime event ops filters (Phase DX-5.7):** Every `RuntimeEventType` maps to an `ExecutionPhase` and a stable ops filter token (`ops:alert`, `ops:hitl`, `trace:step`, …). Source of truth: `intergrax.runtime.events.phase_coverage` (`EVENT_PHASE_COVERAGE`, `EVENT_OPS_FILTER_HINTS`). Canon table: [architecture §42.1.5](architecture/UNIFIED_EXECUTION_RUNTIME.md#4215-runtime-event-catalog-ops-filters). Gate: `test_all_runtime_event_types_have_ops_filter_hint`.
 
 **Runbook stubs (owner: harness-platform):**
 
@@ -200,13 +200,13 @@ Governance, policy, and observability are **composable control-plane layers** �
 | Need | Where |
 |------|--------|
 | Full control-plane map (profiles, bundles, hooks, EP groups) | [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
-| Operator policy read order | Architecture [§42.11.5](intergrax_runtime_architecture.md#42115-how-to-read-policy-for-a-run-operator) |
+| Operator policy read order | Architecture [§42.11.5](architecture/UNIFIED_EXECUTION_RUNTIME.md#42115-how-to-read-policy-for-a-run-operator) |
 | Policy rule handler plugins (`intergrax.policy_rules`) | [`EXTENSION_AUTHOR_GUIDE.md` §10](EXTENSION_AUTHOR_GUIDE.md#10-policy-rule-handler-plugins-phase-dx-58) |
 | Audit layers (policy §5, observability §21) | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) |
-| Observability wire-time closeout (§21) | [`AGENT_CREATION_GUIDE.md` Appendix Q](AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [Phase OBS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs--observability-control-plane-closeout) |
-| Reliability wire-time closeout (§22) | [`AGENT_CREATION_GUIDE.md` Appendix R](AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) · [Phase REL](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-rel--reliability-control-plane-closeout) |
-| Security wire-time closeout (§23) | [`AGENT_CREATION_GUIDE.md` Appendix S](AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) · [Phase SEC](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-sec--security-control-plane-closeout) |
-| Cost wire-time closeout (§24) | [`AGENT_CREATION_GUIDE.md` Appendix T](AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) · [Phase COST](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-cost--cost-governance-control-plane-closeout) |
+| Observability wire-time closeout (§21) | [`AGENT_CREATION_GUIDE.md` Appendix Q](AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [Phase OBS](plan/phases/observability-reliability.md) |
+| Reliability wire-time closeout (§22) | [`AGENT_CREATION_GUIDE.md` Appendix R](AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) · [Phase REL](plan/phases/observability-reliability.md) |
+| Security wire-time closeout (§23) | [`AGENT_CREATION_GUIDE.md` Appendix S](AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) · [Phase SEC](plan/phases/governance-security.md) |
+| Cost wire-time closeout (§24) | [`AGENT_CREATION_GUIDE.md` Appendix T](AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) · [Phase COST](plan/phases/governance-security.md) |
 
 **Modularity:** swap observability backend via `IntegrationProfile.observability_backend`; add policy via YAML + EP handlers; enable V-SEC defenses via `ApplicationSecurityProfile` — without changing Tier-2 agent code.
 

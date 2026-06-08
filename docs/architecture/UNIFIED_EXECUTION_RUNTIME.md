@@ -10,21 +10,21 @@
 
 This section is the **canonical implementation specification** for the Intergrax execution environment.
 
-It extends [§5](PLATFORM_FOUNDATION.md).1 (Four-Tier Model), [§5](PLATFORM_FOUNDATION.md).2 (Platform Reuse), [§9](ORCHESTRATION.md) (Dual Loop), [§12](AGENT_CONTRACTS_AND_ASSEMBLY.md)–[§14](AGENT_CONTRACTS_AND_ASSEMBLY.md) (Contracts), [§22](TOOLS_RUNTIME.md)–§33 (ToolRuntime, Lifecycle, Validation, Observability) without changing architectural direction.
+It extends §5.1 (Four-Tier Model), §5.2 (Platform Reuse), §9 (Dual Loop), §12–§14 (Contracts), §22–§33 (ToolRuntime, Lifecycle, Validation, Observability) without changing architectural direction.
 
-**Important:** [§42](UNIFIED_EXECUTION_RUNTIME.md) specifies **how** Nexus orchestrates execution (events, decisions, hooks, lifecycle). It does **not** permit building duplicate Tier-0 infrastructure. All [§42](UNIFIED_EXECUTION_RUNTIME.md) implementation MUST reuse existing platform modules ([§5](PLATFORM_FOUNDATION.md).2, [§8](PLATFORM_FOUNDATION.md).8).
+**Important:** §42 specifies **how** Nexus orchestrates execution (events, decisions, hooks, lifecycle). It does **not** permit building duplicate Tier-0 infrastructure. All §42 implementation MUST reuse existing platform modules (§5.2, §8.8).
 
 Intergrax MUST be a **single, unified, event-driven Agent OS** — not a collection of loosely coupled agent implementations.
 
 Every agent:
 
-- implements the same contracts ([§12](AGENT_CONTRACTS_AND_ASSEMBLY.md), [§42](UNIFIED_EXECUTION_RUNTIME.md).13)
-- runs through the same lifecycle ([§42](UNIFIED_EXECUTION_RUNTIME.md).4, [§42](UNIFIED_EXECUTION_RUNTIME.md).6)
-- uses the same `AgentEngine` executor ([§42](UNIFIED_EXECUTION_RUNTIME.md).19)
-- emits the same `RuntimeEvent` stream ([§42](UNIFIED_EXECUTION_RUNTIME.md).1)
-- returns the same `AgentDecision` objects ([§42](UNIFIED_EXECUTION_RUNTIME.md).7)
-- passes through the same middleware pipeline ([§42](UNIFIED_EXECUTION_RUNTIME.md).20, [§42](UNIFIED_EXECUTION_RUNTIME.md).42)
-- accesses Tier-0 only through `ToolRuntime` policy ([§42](UNIFIED_EXECUTION_RUNTIME.md).12)
+- implements the same contracts (§12, §42.13)
+- runs through the same lifecycle (§42.4, §42.6)
+- uses the same `AgentEngine` executor (§42.19)
+- emits the same `RuntimeEvent` stream (§42.1)
+- returns the same `AgentDecision` objects (§42.7)
+- passes through the same middleware pipeline (§42.20, §42.42)
+- accesses Tier-0 only through `ToolRuntime` policy (§42.12)
 
 Agents provide **domain logic**. The runtime owns **execution governance**.
 
@@ -48,9 +48,9 @@ Agents provide **domain logic**. The runtime owns **execution governance**.
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Implementation status note (2026-05-27):** [§42](UNIFIED_EXECUTION_RUNTIME.md) platform infrastructure is **complete for laboratory and product hosts**. All Tier-3 factories (`lab`, `legal`, `research`, `poc_template`) use validating runtime event persistence, default runtime plugins, and resilient notification delivery (when webhook backend configured). Debug API covers trace, metrics, runtime events, delivery DLQ, and experiments. Remaining work is **harness environment GA** (Phase S: stable integration stack, OTLP, platform skills, operator docs), then **Phase K** business agents (K.1/K.2), Legal E2E B.15, and optional beta provider hardening — not runtime core gaps.
+**Implementation status note (2026-05-27):** §42 platform infrastructure is **complete for laboratory and product hosts**. All Tier-3 factories (`lab`, `legal`, `research`, `poc_template`) use validating runtime event persistence, default runtime plugins, and resilient notification delivery (when webhook backend configured). Debug API covers trace, metrics, runtime events, delivery DLQ, and experiments. Remaining work is **harness environment GA** (Phase S: stable integration stack, OTLP, platform skills, operator docs), then **Phase K** business agents (K.1/K.2), Legal E2E B.15, and optional beta provider hardening — not runtime core gaps.
 
-### [§42](UNIFIED_EXECUTION_RUNTIME.md) Table Of Contents
+### §42 Table Of Contents
 
 | Section | Topic |
 |---------|-------|
@@ -105,7 +105,7 @@ RuntimeEvent:
     agent_id: str | null       # agent responsible for this event
     step_id: str | null        # AgentStep identifier, if applicable
     event_type: RuntimeEventType
-    phase: ExecutionPhase      # see [§42](UNIFIED_EXECUTION_RUNTIME.md).31
+    phase: ExecutionPhase      # see §42.31
     severity: EventSeverity    # DEBUG | INFO | WARNING | ERROR | CRITICAL
     payload: dict              # structured, schema-versioned
     timestamp: datetime        # UTC, ISO-8601
@@ -170,7 +170,7 @@ TASK_COMPLETED | TASK_FAILED
 - Every `AgentStep` MUST emit `STEP_STARTED` and `STEP_COMPLETED` or `STEP_FAILED`.
 - Every `ToolRuntime.invoke` MUST emit `TOOL_*` events.
 - Every `AgentDecision` MUST emit `DECISION_EMITTED`.
-- Events MUST be persisted to trace storage ([§42](UNIFIED_EXECUTION_RUNTIME.md).24).
+- Events MUST be persisted to trace storage (§42.24).
 - Events MUST NOT contain secrets; redact at emission time.
 
 ### 42.1.5 Runtime event catalog (ops filters)
@@ -253,7 +253,7 @@ interface RuntimeEventBus:
 - **Synchronous dispatch** for hooks and policy (same execution thread/task context).
 - **Async fan-out** permitted for metrics and external sinks only — MUST NOT block step execution.
 - Handlers MUST be idempotent where possible.
-- Handler failure MUST emit `RUNTIME_HANDLER_FAILED` and follow escalation policy ([§42](UNIFIED_EXECUTION_RUNTIME.md).38).
+- Handler failure MUST emit `RUNTIME_HANDLER_FAILED` and follow escalation policy (§42.38).
 
 ### 42.2.3 Anti-Pattern
 
@@ -265,7 +265,7 @@ Agents MUST NOT publish directly to external queues, webhooks, or Slack. They em
 
 Hooks are **registered, ordered, inspectable interceptors** invoked by the runtime at defined points.
 
-Hooks are NOT agent code. Hooks are Tier-1 runtime extensions ([§42](UNIFIED_EXECUTION_RUNTIME.md).22).
+Hooks are NOT agent code. Hooks are Tier-1 runtime extensions (§42.22).
 
 ### 42.3.1 HookPoint Enum
 
@@ -348,7 +348,7 @@ REGISTERED          # in AgentRegistry
 
 ### 42.4.2 Lifecycle vs Task Lifecycle
 
-- **Task lifecycle** ([§23](ORCHESTRATION.md)): global user-facing task states.
+- **Task lifecycle** (§23): global user-facing task states.
 - **Agent lifecycle** (this section): per-agent execution within a task.
 - One task may contain multiple agent lifecycles (sequential, parallel, handoff).
 
@@ -382,8 +382,8 @@ protocol UnifiedAgentExecution:
 ### 42.5.1 Rules
 
 - No agent MAY bypass steps 3–8.
-- `execute()` on `Agent` interface ([§13](AGENT_CONTRACTS_AND_ASSEMBLY.md)) MUST delegate to UAEP via `AgentEngine`.
-- Direct `RuntimeEngine.run()` from agent code is **forbidden** outside AgentEngine ([§42](UNIFIED_EXECUTION_RUNTIME.md).41).
+- `execute()` on `Agent` interface (§13) MUST delegate to UAEP via `AgentEngine`.
+- Direct `RuntimeEngine.run()` from agent code is **forbidden** outside AgentEngine (§42.41).
 
 ---
 
@@ -410,7 +410,7 @@ AgentStep:
     output_schema: JSONSchema
     allowed_tools: list[str]          # subset of agent contract
     max_duration_ms: int
-    max_retries: int                  # runtime-managed ([§42](UNIFIED_EXECUTION_RUNTIME.md).34)
+    max_retries: int                  # runtime-managed (§42.34)
     idempotent: bool
     trace_label: str
 ```
@@ -445,9 +445,9 @@ Agents express control flow intent through **`AgentDecision`** — never through
 AgentDecisionType:
     CONTINUE          # proceed to next step
     COMPLETE          # agent finished successfully
-    RETRY             # request runtime-managed retry ([§42](UNIFIED_EXECUTION_RUNTIME.md).34)
+    RETRY             # request runtime-managed retry (§42.34)
     REQUEST_HUMAN     # pause for human input/approval
-    INTERRUPT         # structured interrupt ([§42](UNIFIED_EXECUTION_RUNTIME.md).8)
+    INTERRUPT         # structured interrupt (§42.8)
     ESCALATE          # elevate to supervisor/policy/human
     MODIFY_PLAN       # request Nexus replanning
     FAIL              # terminal failure for this agent/node
@@ -475,7 +475,7 @@ return AgentDecision(
     reason="critical_liability_clause_detected",
     severity=CRITICAL,
     payload={
-        "clause_id": "[§14](AGENT_CONTRACTS_AND_ASSEMBLY.md).2",
+        "clause_id": "§14.2",
         "issue": "unlimited_liability",
         "evidence_artifact": "artifact_clause_flags.json"
     },
@@ -494,7 +494,7 @@ return AgentDecision(
 
 - Agent MUST NOT call `pause()`, `sleep()` waiting for human, or stop the event loop.
 - Agent MUST NOT send Slack messages directly for approval.
-- Nexus interprets `AgentDecision` via **PolicyEngine** ([§42](UNIFIED_EXECUTION_RUNTIME.md).11).
+- Nexus interprets `AgentDecision` via **PolicyEngine** (§42.11).
 - `DECISION_EMITTED` event MUST precede any Nexus action on the decision.
 
 ---
@@ -538,9 +538,9 @@ Agent emits AgentDecision(INTERRUPT, interrupt=...)
     → Middleware: BEFORE_INTERRUPT hooks
     → PolicyEngine.evaluate_interrupt(interrupt) → PolicyDecision
     → Nexus InterruptHandler:
-          REQUEST_HUMAN → pause + approval flow ([§42](UNIFIED_EXECUTION_RUNTIME.md).10)
-          MODIFY_PLAN   → replan ([§42](UNIFIED_EXECUTION_RUNTIME.md).31 PLANNING phase)
-          ESCALATE      → escalation flow ([§42](UNIFIED_EXECUTION_RUNTIME.md).38)
+          REQUEST_HUMAN → pause + approval flow (§42.10)
+          MODIFY_PLAN   → replan (§42.31 PLANNING phase)
+          ESCALATE      → escalation flow (§42.38)
           FAIL          → mark node failed, propagate per graph policy
     → Middleware: AFTER_INTERRUPT hooks
     → EventBus: INTERRUPT_HANDLED | INTERRUPT_ESCALATED
@@ -595,7 +595,7 @@ resume(task_id, resume_token, operator_input?)
 
 - Checkpoints MUST include: plan snapshot, graph node states, context refs, pending decisions.
 - Agents MUST NOT hold exclusive locks on external systems across pause; use idempotent re-entry.
-- Long pauses MUST support expiry and escalation ([§42](UNIFIED_EXECUTION_RUNTIME.md).38).
+- Long pauses MUST support expiry and escalation (§42.38).
 
 ---
 
@@ -607,7 +607,7 @@ Human approval is a **first-class runtime phase**, not ad-hoc agent logic.
 AgentDecision.REQUEST_HUMAN | Interrupt → HUMAN_JUDGMENT_REQUIRED
     → emit HUMAN_APPROVAL_REQUESTED
     → Middleware: BEFORE_HUMAN_APPROVAL
-    → PauseRecord created; task → waiting_for_human ([§23](ORCHESTRATION.md))
+    → PauseRecord created; task → waiting_for_human (§23)
     → Notification via Tier-0 adapter (Slack/Teams/UI) — triggered by Nexus, NOT agent
     → Human responds: APPROVE | REJECT | MODIFY | DELEGATE
     → emit HUMAN_APPROVAL_RECEIVED
@@ -688,7 +688,7 @@ RuntimePolicyBundle:
 
 - Tier-3 application factory builds the bundle once at startup → `ApplicationBuildContext.policy_bundle` → `RuntimeConfig.policy_bundle` / `RuntimeContext.policy_bundle` via `applications/_shared/runtime_config_bridge.py` (also maps `RuntimePolicyBundle.tool_access` → `RuntimeConfig.tool_scope_policy` when the bundle carries a `ToolScopePolicy` implementation).
 - Nexus and UAEP read from the bundle — agents MUST NOT construct parallel policy objects.
-- Skill `policy_fragment_id` ([§7](PLATFORM_FOUNDATION.md).1.8) merges into `domain_fragments` or tool policy — never bypasses `ToolRuntime`.
+- Skill `policy_fragment_id` (§7.1.8) merges into `domain_fragments` or tool policy — never bypasses `ToolRuntime`.
 
 Implementation: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) R-Policy (Done).
 
@@ -712,7 +712,7 @@ For a single task/run, policy is **composed once** at Tier-3 startup and read do
 
 ## 42.12 ToolRuntime Enforcement Rules
 
-All Tier-0 tool and adapter access MUST go through **`ToolRuntime`** ([§22](TOOLS_RUNTIME.md), `intergrax/runtime/nexus/tools/tool_runtime.py`).
+All Tier-0 tool and adapter access MUST go through **`ToolRuntime`** (§22, `intergrax/runtime/nexus/tools/tool_runtime.py`).
 
 ### 42.12.1 ToolRequest / ToolResponse Contracts
 
@@ -738,12 +738,12 @@ ToolResponse:
 
 ### 42.12.2 Enforcement Rules
 
-1. **No direct adapter imports** in `agents/` ([§42](UNIFIED_EXECUTION_RUNTIME.md).41).
+1. **No direct adapter imports** in `agents/` (§42.41).
 2. `ToolAccessPolicy` MUST filter against `AgentContract.allowed_tools`.
 3. Every invoke MUST emit `TOOL_REQUESTED` and terminal `TOOL_*` event.
 4. Denied tools return `ToolResponse(status=DENIED)` — agents MUST handle gracefully via `AgentDecision`.
 5. Sandbox-required tools MUST route through `SandboxAdapter` policy.
-6. Retries for tools are **runtime-managed** ([§42](UNIFIED_EXECUTION_RUNTIME.md).34), not agent loops.
+6. Retries for tools are **runtime-managed** (§42.34), not agent loops.
 
 ---
 
@@ -753,16 +753,16 @@ Canonical contract bundle — all MUST be implemented or delegated by `AgentEngi
 
 | Contract | Owner | Purpose |
 |----------|-------|---------|
-| `AgentContract` | Tier-2 agent | Capability declaration ([§12](AGENT_CONTRACTS_AND_ASSEMBLY.md)) |
-| `RuntimeExecutionContext` | Tier-1 | Unified per-run context ([§42](UNIFIED_EXECUTION_RUNTIME.md).13.1) |
-| `AgentStep` | Tier-2 / runtime | Step boundary ([§42](UNIFIED_EXECUTION_RUNTIME.md).6) |
-| `AgentDecision` | Tier-2 emit, Tier-1 interpret | Control flow ([§42](UNIFIED_EXECUTION_RUNTIME.md).7) |
-| `ExecutionInterrupt` | Tier-2 emit, Tier-1 handle | Structured interrupts ([§42](UNIFIED_EXECUTION_RUNTIME.md).8) |
-| `AgentExecutionResult` | Tier-1 assemble | Output to Nexus ([§14](AGENT_CONTRACTS_AND_ASSEMBLY.md)) |
-| `ValidationResult` | Tier-2 + Tier-1 | Validation ([§42](UNIFIED_EXECUTION_RUNTIME.md).16) |
-| `RuntimeEvent` | Tier-1 emit | Observability ([§42](UNIFIED_EXECUTION_RUNTIME.md).1) |
-| `ToolRequest/ToolResponse` | Tier-1 | Tool gateway ([§42](UNIFIED_EXECUTION_RUNTIME.md).12) |
-| `PolicyDecision` | Tier-1 | Governance ([§42](UNIFIED_EXECUTION_RUNTIME.md).11) |
+| `AgentContract` | Tier-2 agent | Capability declaration (§12) |
+| `RuntimeExecutionContext` | Tier-1 | Unified per-run context (§42.13.1) |
+| `AgentStep` | Tier-2 / runtime | Step boundary (§42.6) |
+| `AgentDecision` | Tier-2 emit, Tier-1 interpret | Control flow (§42.7) |
+| `ExecutionInterrupt` | Tier-2 emit, Tier-1 handle | Structured interrupts (§42.8) |
+| `AgentExecutionResult` | Tier-1 assemble | Output to Nexus (§14) |
+| `ValidationResult` | Tier-2 + Tier-1 | Validation (§42.16) |
+| `RuntimeEvent` | Tier-1 emit | Observability (§42.1) |
+| `ToolRequest/ToolResponse` | Tier-1 | Tool gateway (§42.12) |
+| `PolicyDecision` | Tier-1 | Governance (§42.11) |
 
 ### 42.13.1 RuntimeExecutionContext Contract
 
@@ -780,7 +780,7 @@ RuntimeExecutionContext:
     state: RuntimeStateView          # read-only runtime state for agent
     tool_gateway: ToolGateway        # ToolRuntime facade ONLY
     event_emitter: EventEmitter      # emit agent-scoped events (wrapped → EventBus)
-    memory_view: MemoryView          # policy-scoped memory ([§42](UNIFIED_EXECUTION_RUNTIME.md).35)
+    memory_view: MemoryView          # policy-scoped memory (§42.35)
     trace: TraceWriter
     metadata: dict
 ```
@@ -828,13 +828,13 @@ TaskContextAssemblyOptions:
     include_shared_artifacts: bool
 ```
 
-Canonical placement: `TaskExecutionOptions.context` ([§23](ORCHESTRATION.md) typed task contract).
+Canonical placement: `TaskExecutionOptions.context` (§23 typed task contract).
 
 `ContextManager.build_agent_context()` resolves policy from `task.options.context`, assembles `AgentContextBundle` with provenance, and applies summary-tier rules before agent execution.
 
 Legacy flat metadata keys remain supported via `task_metadata_bridge` for JSON/API serialization only.
 
-Handoff payloads in shared context use keys prefixed with `handoff:` (see [§42](UNIFIED_EXECUTION_RUNTIME.md).15).
+Handoff payloads in shared context use keys prefixed with `handoff:` (see §42.15).
 
 ### 42.14.3 Graph Delegation (Subagent Equivalent)
 
@@ -851,7 +851,7 @@ Harness literature describes **subagents** as autonomous units with their own ru
 
 **Declarative `DELEGATES_TO` (implemented):** Tier-3 `ApplicationGraphSpec` may declare `DELEGATES_TO` as authoring sugar; `graph_spec_to_plan.py` **expands** it to a **child `PlanStep` / `ExecutionNode`** with `DelegationSpec` on the **child** node ([ADR-FLOW-001](adr/ADR-FLOW-001.md) Option C). `SubtaskContract` supplies objective, scopes, and budget envelope on the child delegation path (FLOW-14/15).
 
-Implementation: R-Delegate (**Done**) for contracts and memory namespace; graph expansion (**Done**, Phase FLOW) in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) · operational narrative [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) [§13](AGENT_CONTRACTS_AND_ASSEMBLY.md).
+Implementation: R-Delegate (**Done**) for contracts and memory namespace; graph expansion (**Done**, Phase FLOW) in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) · operational narrative [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) §13.
 
 ```text
 DelegationSpec:
@@ -922,9 +922,9 @@ ValidationResult:
 ### 42.16.2 Validation Stages (ordered)
 
 1. **Step-local** — agent `validate_step()` (optional)
-2. **Agent-local** — agent `validate()` ([§13](AGENT_CONTRACTS_AND_ASSEMBLY.md), required)
+2. **Agent-local** — agent `validate()` (§13, required)
 3. **Runtime** — `NexusValidationEngine`
-4. **Dedicated ValidatorAgent** — graph node ([§42](UNIFIED_EXECUTION_RUNTIME.md).30)
+4. **Dedicated ValidatorAgent** — graph node (§42.30)
 5. **Human** — when policy requires
 
 Failure at CRITICAL severity MUST NOT silently downgrade to WARNING.
@@ -1013,14 +1013,14 @@ Each runtime step MUST:
 
 **`AgentEngine` is the single canonical executor for all Tier-2 agents.**
 
-Location: `intergrax/agents/agent_engine.py` (evolving toward full [§42](UNIFIED_EXECUTION_RUNTIME.md) compliance).
+Location: `intergrax/agents/agent_engine.py` (evolving toward full §42 compliance).
 
 ### 42.19.1 AgentEngine MUST
 
 - Resolve agent from `AgentRegistry`
 - Build `RuntimeExecutionContext`
-- Run UAEP ([§42](UNIFIED_EXECUTION_RUNTIME.md).5) including middleware pipeline
-- Invoke agent steps through runtime-controlled loop ([§42](UNIFIED_EXECUTION_RUNTIME.md).33)
+- Run UAEP (§42.5) including middleware pipeline
+- Invoke agent steps through runtime-controlled loop (§42.33)
 - Route all tool calls through `ToolRuntime`
 - Collect `AgentDecision` after each step
 - Invoke validation stages
@@ -1108,7 +1108,7 @@ middleware_stack = [
 
 Extensions are allowed only through **approved extension points**:
 
-1. `HookRegistry` — hooks ([§42](UNIFIED_EXECUTION_RUNTIME.md).3)
+1. `HookRegistry` — hooks (§42.3)
 2. `ToolRegistry` — new tools (Tier-0 + registration)
 3. `AgentRegistry` — new agents (Tier-2)
 4. `PolicyEngine` rules — Tier-3 config
@@ -1137,7 +1137,7 @@ RuntimePlugin:
 
 Tier-3 applications MAY load plugins at startup.
 
-Plugins MUST declare compatible runtime schema versions ([§42](UNIFIED_EXECUTION_RUNTIME.md).29).
+Plugins MUST declare compatible runtime schema versions (§42.29).
 
 Plugins MUST NOT import agent domain modules.
 
@@ -1175,7 +1175,7 @@ Unknown payload fields MUST be preserved (forward compatibility).
 
 ## 42.24 Runtime Observability Protocol
 
-Observability is **event-first** ([§42](UNIFIED_EXECUTION_RUNTIME.md).1), trace-second, metrics-third.
+Observability is **event-first** (§42.1), trace-second, metrics-third.
 
 ### 42.24.1 Trace Requirements
 
@@ -1220,7 +1220,7 @@ Safety controls are **mandatory defaults**, not optional agent behavior.
 | Human gate for CRITICAL | PolicyEngine |
 | Secret exclusion from events | Event emitter |
 
-Violations emit `SAFETY_VIOLATION` interrupt and follow escalation ([§42](UNIFIED_EXECUTION_RUNTIME.md).38).
+Violations emit `SAFETY_VIOLATION` interrupt and follow escalation (§42.38).
 
 ---
 
@@ -1271,7 +1271,7 @@ All runtime contracts carry `schema_version` or semver:
 - `agent_decision.v1`
 - `validation_result.v1`
 
-Breaking changes require new major version; runtime MUST support N and N-1 during migration windows ([§42](UNIFIED_EXECUTION_RUNTIME.md).29).
+Breaking changes require new major version; runtime MUST support N and N-1 during migration windows (§42.29).
 
 ---
 
@@ -1298,7 +1298,7 @@ RuntimeVersion:
 
 ## 42.30 Runtime Scheduling Model
 
-Nexus schedules work through **ExecutionGraph** ([§24](ORCHESTRATION.md)) with explicit modes:
+Nexus schedules work through **ExecutionGraph** (§24) with explicit modes:
 
 | Mode | Description |
 |------|-------------|
@@ -1391,7 +1391,7 @@ for step in steps:
     if decision.type != CONTINUE:
         return decision
 
-# FORBIDDEN — agent-owned loop calling adapters ([§42](UNIFIED_EXECUTION_RUNTIME.md).41)
+# FORBIDDEN — agent-owned loop calling adapters (§42.41)
 async def execute(...):
     while not done:
         await postgres.query(...)   # FORBIDDEN
@@ -1417,11 +1417,11 @@ RetryEngine (Tier-1):
         emit RETRY_SCHEDULED
         apply backoff
         emit RETRY_STARTED
-        re-enter STEP_EXECUTION or subgraph ([§42](UNIFIED_EXECUTION_RUNTIME.md).30)
+        re-enter STEP_EXECUTION or subgraph (§42.30)
         increment run attempt counter
 ```
 
-Agent emits **intent** (`RETRY`); runtime executes retry policy ([§31](RELIABILITY_FAILURE_AND_HITL.md)).
+Agent emits **intent** (`RETRY`); runtime executes retry policy (§31).
 
 ---
 
@@ -1439,13 +1439,13 @@ MemoryView:
 - Agents MUST NOT write to Redis/PostgreSQL memory adapters directly.
 - Namespaces scoped by `task_id` + policy from Tier-3 config.
 - Every read/write emits `MEMORY_READ` / `MEMORY_WRITE` events.
-- Cross-agent shared memory uses `SharedTaskContext` via ContextManager ([§42](UNIFIED_EXECUTION_RUNTIME.md).14).
+- Cross-agent shared memory uses `SharedTaskContext` via ContextManager (§42.14).
 
 ---
 
 ## 42.36 Runtime-Controlled Tool Access
 
-See [§42](UNIFIED_EXECUTION_RUNTIME.md).12. Summary:
+See §42.12. Summary:
 
 - `ctx.tool_gateway.invoke(ToolRequest)` — only path
 - Policy + contract enforced on every call
@@ -1510,7 +1510,7 @@ Critical events include: safety violations, unlimited liability detection, cost 
 ```text
 RecoveryCoordinator:
     on RUNTIME_RECOVERY_REQUIRED interrupt or node failure:
-        1. load checkpoint ([§42](UNIFIED_EXECUTION_RUNTIME.md).9)
+        1. load checkpoint (§42.9)
         2. classify: transient | permanent | partial
         3. transient → RETRY_HANDLING phase
         4. partial → replan excluding completed nodes
@@ -1540,13 +1540,13 @@ The following are **explicitly forbidden** in Tier-2 agents and discouraged ever
 | **Agent-to-agent direct calls** | Bypasses Nexus governance |
 | **Custom EventBus instances** | Fragments observability |
 | **Human prompts inside agent** | Must use REQUEST_HUMAN decision |
-| **Duplicate Tier-0 mechanisms** | Second LLM layer, logger, tool registry, RAG stack, DB client ([§5](PLATFORM_FOUNDATION.md).2) |
-| **[§42](UNIFIED_EXECUTION_RUNTIME.md) scaffold as parallel platform** | Must wire into existing trace/tools/LLM — not replace them |
-| **New universal Tier-0 without human approval** | Violates [§5](PLATFORM_FOUNDATION.md).2.4 platform governance |
+| **Duplicate Tier-0 mechanisms** | Second LLM layer, logger, tool registry, RAG stack, DB client (§5.2) |
+| **§42 scaffold as parallel platform** | Must wire into existing trace/tools/LLM — not replace them |
+| **New universal Tier-0 without human approval** | Violates §5.2.4 platform governance |
 
 Violation in code review MUST block merge.
 
-Reference also: [§43](PLATFORM_FOUNDATION.md) Anti-Patterns (architectural), [§43](PLATFORM_FOUNDATION.md).8 (redundancy), [§42](UNIFIED_EXECUTION_RUNTIME.md).33 (loop ownership).
+Reference also: §43 Anti-Patterns (architectural), §43.8 (redundancy), §42.33 (loop ownership).
 
 ---
 

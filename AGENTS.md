@@ -155,6 +155,9 @@ Full local suite: `scripts\test.bat unit` (Windows) or equivalent `uv run pytest
 
 | Path | Contents |
 |------|----------|
+| `docs/intergrax_runtime_architecture.md` | Architecture hub |
+| `docs/architecture/` | Decomposed architecture canon |
+| `docs/plan/phases/` | Implementation phase registers |
 | `intergrax/runtime/nexus/` | Nexus Agent OS core |
 | `intergrax/runtime/nexus/orchestration/` | Intake, planning, graph, HITL runners |
 | `intergrax/integrations/` | Integration Library |

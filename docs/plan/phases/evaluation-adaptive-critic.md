@@ -7,7 +7,7 @@
 ## Phase W-ADAPT — Adaptive Harness Intelligence (L4 runtime)
 
 **Status:** **Done** (2026-06-02) — **70/70 Done** (Wave W-ADAPT-0 through Wave W-ADAPT-7 complete)  
-**Architecture spec:** [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) (AHIA) · runtime canon [§54](intergrax_runtime_architecture.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) · IDEAL [§25](IDEAL_HARNESS_AI_ARCHITECTURE.md#25-adaptive-harness-layer)  
+**Architecture spec:** [`ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md`](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) (AHIA) · runtime canon [§54](ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md#54-adaptive-harness-intelligence-ahi--l4-runtime-addendum) · IDEAL [§25](IDEAL_HARNESS_AI_ARCHITECTURE.md#25-adaptive-harness-layer)  
 **Prerequisites:** Phase **V** **Done** · Phase **V-REM** **Done** · Phase **W-OPS** **Done** · Phase **H-APP** **Done** · Phases **EVAL**, **COST**, **CG** closeouts **Done** (signal sources + governance envelopes exist)  
 **Goal:** Close the gap between **L4 governance contracts** (`adaptive_governance.py`, `phase_v_closeout_gate.py --enforce-l4`) and **L4 adaptive runtime** — governed closed loop: **observe → propose → gate → shadow/canary → apply → verify → rollback**  
 **Priority ladder:** **Band 2y** (§4.0) — **closed**; default queue = **§6.1 maintenance**  
@@ -254,7 +254,7 @@ W-ADAPT-0.2 → 0.3 → 0.4 → 0.5
 **Prerequisites:** Phase EVAL **Done** (registry wiring), Phase FLOW **Done** (graph hooks), Phase M-LLM-R **Done** (typed LLM envelope)  
 **Goal:** Deliver production-grade PEV **Verify** infrastructure — L0/L1/L2 critic stack with tier-separated competencies; uplift Evaluation audit layer L2→L3.  
 **Priority ladder:** **Band 2ak** (§4.0) — **Done** (2026-06-08). Default queue reverts to §6.1 gate maintenance.  
-**Architecture:** [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · canon [§55](intergrax_runtime_architecture.md#55-critic--verification-layer-cvl--pev-verify-addendum) · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md)  
+**Architecture:** [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · canon [§55](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md#55-critic--verification-layer-cvl--pev-verify-addendum) · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md)  
 **Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §25 (Evaluation), §7 (Reasoning), §10 (Multi-agent); closes **FAUDIT-EVAL.1** residual  
 **Execution order:** [§6.2ak](#62ak-phase-crit-v-execution-order-band-2ak--closed) · queue: [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-closed)
 

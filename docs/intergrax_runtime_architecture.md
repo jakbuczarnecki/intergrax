@@ -9,8 +9,6 @@
 Audience: Humans, LLMs, coding agents, maintainers  
 Purpose: Single entry point for the **current** Intergrax Harness AI architecture. Detailed contracts live in decomposed domain documents under [`architecture/`](architecture/).
 
-**Monolith backup (pre-decomposition):** [`_archive_intergrax_runtime_architecture_monolith.md`](_archive_intergrax_runtime_architecture_monolith.md)
-
 ---
 
 ## Documentation model

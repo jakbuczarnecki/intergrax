@@ -8,7 +8,7 @@
 
 # 22. Tool Runtime
 
-Tools are callable operations exposed to Nexus, agents, and MCP clients. They are the **only** LLM-facing execution surface for platform capabilities ([§7](PLATFORM_FOUNDATION.md).1.6, [§7](PLATFORM_FOUNDATION.md).1.7).
+Tools are callable operations exposed to Nexus, agents, and MCP clients. They are the **only** LLM-facing execution surface for platform capabilities (§7.1.6, §7.1.7).
 
 Examples:
 
@@ -27,9 +27,9 @@ Tools must have:
 - `timeout_ms` and `retry_policy` (runtime-enforced)
 - optional `injects_context` — when true, Nexus merges output into LLM prompt context (retrieval tools)
 
-Tools MUST be registered in **`ToolRegistry`** via the Tool Library catalog (`intergrax/tools/providers/`, [§7](PLATFORM_FOUNDATION.md).1.6).
+Tools MUST be registered in **`ToolRegistry`** via the Tool Library catalog (`intergrax/tools/providers/`, §7.1.6).
 
-All agent and Nexus tool invocation MUST route through **`ToolRuntime`** with policy enforcement ([§42](UNIFIED_EXECUTION_RUNTIME.md).12, [§42](UNIFIED_EXECUTION_RUNTIME.md).36). Direct integration adapter calls from agents are forbidden ([§42](UNIFIED_EXECUTION_RUNTIME.md).41).
+All agent and Nexus tool invocation MUST route through **`ToolRuntime`** with policy enforcement (§42.12, §42.36). Direct integration adapter calls from agents are forbidden (§42.41).
 
 **Canonical modules:**
 

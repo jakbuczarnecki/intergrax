@@ -1235,7 +1235,7 @@ Wiring: `intergrax/applications/_shared/application_security_wiring.py`. Gate te
 
 ### H.4 Policy bundle — operator read order
 
-Canonical operator checklist: architecture [§42.11.5](intergrax_runtime_architecture.md#42115-how-to-read-policy-for-a-run-operator).
+Canonical operator checklist: architecture [§42.11.5](architecture/UNIFIED_EXECUTION_RUNTIME.md#42115-how-to-read-policy-for-a-run-operator).
 
 | Step | Inspect | Location |
 |------|---------|----------|
@@ -1302,7 +1302,7 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 ## Appendix I — Orchestration control plane
 
 **Audience:** Tier-3 application authors, platform engineers, operators.  
-**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §7 (Reasoning/planning), §8 (Agent OS), §9 (Orchestration/graph), §10 (Subagents); canon [§42.3](intergrax_runtime_architecture.md#423-hook-system)–[§42.15](intergrax_runtime_architecture.md#4215-agent-handoff-contracts), [§42.43](intergrax_runtime_architecture.md#4243-multi-agent-collaboration-flow-reference).
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §7 (Reasoning/planning), §8 (Agent OS), §9 (Orchestration/graph), §10 (Subagents); canon [§42.3](architecture/UNIFIED_EXECUTION_RUNTIME.md#423-hook-system)–[§42.15](architecture/UNIFIED_EXECUTION_RUNTIME.md#4215-agent-handoff-contracts), [§42.43](architecture/UNIFIED_EXECUTION_RUNTIME.md#4243-multi-agent-collaboration-flow-reference).
 
 **Full execution flow (diagrams, data flow, edge cases, evaluation hooks, plan traceability):** [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) — read this for end-to-end narrative; Appendix I is the **configuration control plane** map. Delegation target semantics: [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md).
 
@@ -1368,7 +1368,7 @@ Coordination patterns (Phase V-MA)
 | `ValidationResult` | `contracts/validation.py` | Step/node/task validation gates |
 | `ApplicationGraphSpec` | `applications/contracts/graph_spec.py` | Declarative multi-agent topology on manifest roster |
 
-Canon reference flow (PM → UX → Legal → Validator → Human): [§42.43](intergrax_runtime_architecture.md#4243-multi-agent-collaboration-flow-reference).
+Canon reference flow (PM → UX → Legal → Validator → Human): [§42.43](architecture/UNIFIED_EXECUTION_RUNTIME.md#4243-multi-agent-collaboration-flow-reference).
 
 ### I.4 Planning strategies (explicit, customizable)
 
@@ -1466,7 +1466,7 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 ## Appendix J — Tools & skills control plane
 
 **Audience:** Tier-3 application authors, extension authors, platform engineers.  
-**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §11 (Tool layer), §12 (Skill layer); canon [§7.1.6](intergrax_runtime_architecture.md#716-tool-catalog)–[§7.1.8](intergrax_runtime_architecture.md#718-skill-catalog).
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §11 (Tool layer), §12 (Skill layer); canon [§7.1.6](architecture/PLATFORM_FOUNDATION.md#716-tool-catalog)–[§7.1.8](architecture/PLATFORM_FOUNDATION.md#718-skill-catalog).
 
 Intergrax separates **Integration → Tool → Skill → Agent** (Tier-0 → Tier-2). Tools are atomic, policy-governed operations; skills are composable capability packs (tool_ids + prompt instructions + policy fragments). Agents declare `skill_ids` on `AgentContract` — never copy tool lists or vendor SDK calls into agent steps.
 
@@ -1578,7 +1578,7 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 ## Appendix K — Integration & RAG control plane
 
 **Audience:** Tier-3 application authors, extension authors, platform engineers.  
-**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §13 (Integration), §14 (RAG); canon [§7.1](intergrax_runtime_architecture.md#71-integration-library)–[§7.1.5](intergrax_runtime_architecture.md#715-integration-profile); memory/RAG naming: [Appendix G](#appendix-g--memory--rag-naming-phase-q).
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §13 (Integration), §14 (RAG); canon [§7.1](architecture/PLATFORM_FOUNDATION.md#71-integration-library)–[§7.1.5](architecture/PLATFORM_FOUNDATION.md#715-integration-profile); memory/RAG naming: [Appendix G](#appendix-g--memory--rag-naming-phase-q).
 
 Integrations are **backend/provider adapters** (Tier-0). RAG is a **full retrieval layer** composed from integration vector stores + embedding/rerank managers — not agent-local vector queries. Agents stay vendor-agnostic; Tier-3 selects providers via `IntegrationProfile`.
 
@@ -1686,7 +1686,7 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 ## Appendix L — Context engineering control plane
 
 **Audience:** Tier-3 application authors, platform engineers.  
-**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §16; canon [§28](intergrax_runtime_architecture.md#281-context-engineering); memory/RAG naming: [Appendix G](#appendix-g--memory--rag-naming-phase-q).
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §16; canon [§28](architecture/CONTEXT_ENGINEERING.md#281-context-engineering); memory/RAG naming: [Appendix G](#appendix-g--memory--rag-naming-phase-q).
 
 Context engineering is a **first-class Nexus concern** — budgeted assembly, provenance, trimming telemetry, and deterministic pipelines. Agents do not hand-build prompts; `ContextManager` + `ContextBuilder` assemble bounded context from task, memory, RAG, tools, and graph outputs.
 
@@ -2405,7 +2405,7 @@ Full audit procedure: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](HARNESS_IMPLEME
 ## Appendix W — Critic & Verification control plane closeout
 
 **Audience:** Tier-3 application authors, platform engineers, quality engineers.  
-**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §25; Phase CRIT-V **Done**; canon [§55](intergrax_runtime_architecture.md#55-critic--verification-layer-cvl--pev-verify-addendum); architecture [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md).
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §25; Phase CRIT-V **Done**; canon [§55](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md#55-critic--verification-layer-cvl--pev-verify-addendum); architecture [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md).
 
 Tier-3 hosts materialize critic graph hooks, policy fragments, and assembly validation from typed `CriticProfile` — not ad-hoc `CriticOrchestrator` construction in host factories.
 
