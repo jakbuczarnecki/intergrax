@@ -6,7 +6,7 @@ Status: **Shell Done** — domain steps live in `agents/legal/` (Band 3)
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 Agent plan: [`agents/legal/IMPLEMENTATION_PLAN.md`](../../agents/legal/IMPLEMENTATION_PLAN.md)  
-Platform plan: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md) · Phase AA-LEGAPP
+Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) · Phase AA-LEGAPP
 
 ---
 

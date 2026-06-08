@@ -100,7 +100,7 @@ def _shadow_trend_export_ok() -> bool:
 def collect_operational_checks() -> OperationalMaturityEvidence:
     release_cycles = _resolve_release_cycles()
 
-    slo_doc = REPO_ROOT / "docs" / "HARNESS_ENVIRONMENT.md"
+    slo_doc = REPO_ROOT / "docs" / "guides/HARNESS_ENVIRONMENT.md"
     checks = [
         OperationalHarnessCheck(
             check_id="idempotency_gate",
@@ -173,7 +173,7 @@ def collect_operational_checks() -> OperationalMaturityEvidence:
         OperationalHarnessCheck(
             check_id="slo_documentation",
             passed=slo_doc.is_file() and "Harness SLO catalog" in slo_doc.read_text(encoding="utf-8"),
-            detail="SLO catalog in HARNESS_ENVIRONMENT.md (W-OPS.4)",
+            detail="SLO catalog in guides/HARNESS_ENVIRONMENT.md (W-OPS.4)",
         ),
         OperationalHarnessCheck(
             check_id="memory_platform_gate",

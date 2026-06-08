@@ -176,7 +176,7 @@ Agent factory → agent config → `RuntimeConfig(tool_profile=..., tool_wiring_
 
 MCP hosts pass `tool_registry=tool_wiring.registry` to mount `list_catalog_tools` / `describe_catalog_tool`.
 
-See [`intergrax/tools/USAGE.md`](../tools/USAGE.md) and [`docs/TOOLS.md`](../../docs/TOOLS.md).
+See [`intergrax/tools/USAGE.md`](../tools/USAGE.md) and [`docs/architecture/TOOLS.md`](../../docs/architecture/TOOLS.md).
 
 ---
 
@@ -329,5 +329,5 @@ uv run pytest tests/acceptance/agent_os/test_lab_application.py -q
 ## Related docs
 
 - Repository Tier-3 folder: [`applications/USAGE.md`](../../applications/USAGE.md)
-- Agent workflow: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md)
-- Implementation plan Phase N: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
+- Agent workflow: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md)
+- Implementation plan Phase N: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md)

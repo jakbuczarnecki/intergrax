@@ -70,7 +70,7 @@ Implement domain logic only in `steps/` — no Tier-3 imports.
 | `vector_store` | `inmemory` / `chroma` | ingest pipeline embed + index |
 | `relational_store` | `sqlite` | task memory for job status |
 
-Agents do **not** import `integrations/providers/` — see [`docs/INTEGRATIONS.md`](../../docs/INTEGRATIONS.md).
+Agents do **not** import `integrations/providers/` — see [`docs/architecture/INTEGRATIONS.md`](../../docs/architecture/INTEGRATIONS.md).
 
 ### Tools (`ToolProfile` on host)
 
@@ -91,7 +91,7 @@ Invoke via `ctx.invoke_tool(ToolRequest(...))` in UAEP steps.
 
 Until LKW.2: host `ToolProfile` enables tools; `contract.py` has `skills=[]`.
 
-See [`docs/SKILLS.md`](../../docs/SKILLS.md) · LKW stack: [`applications/local_workspace_application/ARCHITECTURE.md` §5](../../applications/local_workspace_application/ARCHITECTURE.md#5-integrations-tools-and-skills).
+See [`docs/architecture/SKILLS.md`](../../docs/architecture/SKILLS.md) · LKW stack: [`applications/local_workspace_application/ARCHITECTURE.md` §5](../../applications/local_workspace_application/ARCHITECTURE.md#5-integrations-tools-and-skills).
 
 ---
 
@@ -113,4 +113,4 @@ uv run pytest agents/local_indexer/tests -q
 
 - LKW application architecture: [`applications/local_workspace_application/ARCHITECTURE.md`](../../applications/local_workspace_application/ARCHITECTURE.md)
 - RAG ingest tool: [`intergrax/tools/providers/rag/USAGE.md`](../../intergrax/tools/providers/rag/USAGE.md)
-- Agent creation: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md)
+- Agent creation: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md)

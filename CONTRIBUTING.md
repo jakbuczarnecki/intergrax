@@ -2,13 +2,13 @@
 
 Thank you for your interest in Intergrax. This document explains how to contribute effectively to the **Agent OS and Harness AI** platform.
 
-**Canonical documentation:** [`docs/`](docs/) — read [docs/README.md](docs/README.md) first.
+**Canonical documentation:** [`docs/`](docs/) — navigation and update rules in [README.md — Documentation index](README.md#documentation-index).
 
 ---
 
 ## Project status
 
-Intergrax is under **active private R&D**. The **harness platform is complete** — the default implementation queue is [§6.1 maintenance](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) only. Business agents (Phase K) are [end of plan](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only) until explicit product prioritization.
+Intergrax is under **active private R&D**. The **harness platform is complete** — the default implementation queue is [§6.1 maintenance](docs/intergrax_runtime_architecture.md#61-harness-platform-maintenance-default--band-1) only. Business agents (Phase K) are [end of plan](docs/intergrax_runtime_architecture.md#63-end-of-plan--deferred-product-work-only) until explicit product prioritization.
 
 ---
 
@@ -18,10 +18,10 @@ Intergrax is under **active private R&D**. The **harness platform is complete** 
 
 | Document | When |
 |----------|------|
-| [docs/INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) | Always — strategic goal and work cycle |
+| [docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) | Always — strategic goal and work cycle |
 | [docs/intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Architecture changes |
-| [docs/INTERGRAX_IMPLEMENTATION_PLAN.md](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) | Status, phases, gates |
-| [docs/AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) | Agent or application work |
+| [docs/intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Status, phases, gates |
+| [docs/guides/AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md) | Agent or application work |
 | [AGENTS.md](AGENTS.md) | AI coding agents working in this repo |
 
 ### Work cycle (mandatory for significant changes)
@@ -71,7 +71,7 @@ uv run intergrax doctor
 cd infra && ./manage.sh up redis qdrant postgresql
 ```
 
-See [infra/README.md](infra/README.md) and [docs/HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md).
+See [infra/README.md](infra/README.md) and [docs/guides/HARNESS_ENVIRONMENT.md](docs/guides/HARNESS_ENVIRONMENT.md).
 
 ---
 
@@ -81,8 +81,8 @@ See [infra/README.md](infra/README.md) and [docs/HARNESS_ENVIRONMENT.md](docs/HA
 
 - **Harness maintenance** — bug fixes, regression tests, CI improvements (§6.1)
 - **Documentation** — corrections and clarifications in `docs/` (one source of truth per topic)
-- **Tier-2 agents** — new specialized agents following [AGENT_CREATION_GUIDE](docs/AGENT_CREATION_GUIDE.md)
-- **Tier-0 plugins** — integrations, tools, skills via [EXTENSION_AUTHOR_GUIDE](docs/EXTENSION_AUTHOR_GUIDE.md)
+- **Tier-2 agents** — new specialized agents following [AGENT_CREATION_GUIDE](docs/guides/AGENT_CREATION_GUIDE.md)
+- **Tier-0 plugins** — integrations, tools, skills via [EXTENSION_AUTHOR_GUIDE](docs/guides/EXTENSION_AUTHOR_GUIDE.md)
 - **Tier-3 applications** — deployable environments following `applications/USAGE.md`
 - **Test coverage** — meaningful tests for real behavior (not trivial assertions)
 
@@ -110,7 +110,7 @@ applications/    MAY import from agents/ and intergrax/
 
 ### Reuse rule
 
-Tier-1/2/3 work is **composition and wiring** of existing Tier-0 modules — not parallel universal mechanisms. See [architecture §5.2](docs/intergrax_runtime_architecture.md#52-platform-reuse-and-no-redundancy-principle).
+Tier-1/2/3 work is **composition and wiring** of existing Tier-0 modules — not parallel universal mechanisms. See [architecture §5.2](docs/architecture/PLATFORM_FOUNDATION.md#52-platform-reuse-and-no-redundancy-principle).
 
 ### Agent creation
 
@@ -138,13 +138,13 @@ git checkout -b feature/short-description
 
 | Change type | Update |
 |-------------|--------|
-| Strategy / goal | `docs/INTERGRAX_DEVELOPMENT_STRATEGY.md` |
+| Strategy / goal | `docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md` |
 | Architecture | `docs/intergrax_runtime_architecture.md` + sync plan §0 |
-| Phase status | `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` |
-| Agent workflow | `docs/AGENT_CREATION_GUIDE.md` |
-| Integration catalog | `docs/INTEGRATIONS.md` |
-| Tool catalog | `docs/TOOLS.md` |
-| Skill catalog | `docs/SKILLS.md` |
+| Phase status | `docs/intergrax_runtime_architecture.md` |
+| Agent workflow | `docs/guides/AGENT_CREATION_GUIDE.md` |
+| Integration catalog | `docs/architecture/INTEGRATIONS.md` |
+| Tool catalog | `docs/architecture/TOOLS.md` |
+| Skill catalog | `docs/architecture/SKILLS.md` |
 
 ### 4. Verify
 

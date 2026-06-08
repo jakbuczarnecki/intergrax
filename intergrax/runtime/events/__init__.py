@@ -17,6 +17,14 @@ from intergrax.runtime.events.store import (
 )
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
+from intergrax.runtime.events.payload_registry import (
+    EVENT_TYPE_PREFERRED_SCHEMA,
+    get_payload_schema,
+    register_payload_schema,
+    runtime_event_with_payload,
+    validate_payload_envelope,
+)
+from intergrax.runtime.events.payloads import RuntimeEventPayload
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.trace_bridge import (
@@ -32,14 +40,20 @@ from intergrax.runtime.events.unified_run_journal import (
 __all__ = [
     "DEFAULT_RUNTIME_EVENTS_DB",
     "ENV_RUNTIME_EVENTS_DB",
+    "EVENT_TYPE_PREFERRED_SCHEMA",
     "ExecutionPhase",
     "InMemoryRuntimeEventStore",
     "JOURNAL_SCHEMA_VERSION",
     "NullRuntimeEventPersistence",
     "RuntimeEvent",
     "RuntimeEventBus",
+    "RuntimeEventPayload",
     "RuntimeEventPersistence",
     "RuntimeEventType",
+    "get_payload_schema",
+    "register_payload_schema",
+    "runtime_event_with_payload",
+    "validate_payload_envelope",
     "SQLiteRuntimeEventStore",
     "bridge_persisted_trace_events",
     "build_unified_run_journal",

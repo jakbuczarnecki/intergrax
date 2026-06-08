@@ -7,6 +7,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from intergrax.applications._shared.critic_wiring import (
+    ApplicationCriticWiring,
+    apply_application_critic_wiring,
+)
 from intergrax.applications._shared.security_wiring import (
     ApplicationSecurityWiring,
     apply_application_security_wiring,
@@ -51,6 +55,7 @@ def build_nexus_loop_from_environment(
     runtime_event_bus: RuntimeEventBus | None = None,
     context_manager: ContextManager | None = None,
     security_wiring: ApplicationSecurityWiring | None = None,
+    critic_wiring: ApplicationCriticWiring | None = None,
     adaptive_wiring: ApplicationAdaptiveWiring | None = None,
     run_budget: RunBudget | None = None,
 ) -> NexusLoop:
@@ -95,7 +100,10 @@ def build_nexus_loop_from_environment(
         production_mode=env.execution_mode.value == "strict",
         signal_collector=adaptive_wiring.signal_collector if adaptive_wiring else None,
         run_budget=run_budget,
+        critic_graph_hooks=critic_wiring.graph_hooks if critic_wiring else None,
     )
     resolved_security = security_wiring or wire_application_security(env)
     apply_application_security_wiring(loop, resolved_security)
+    if critic_wiring is not None:
+        apply_application_critic_wiring(loop, critic_wiring)
     return loop

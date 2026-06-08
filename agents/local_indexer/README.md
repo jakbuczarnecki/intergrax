@@ -31,6 +31,6 @@ uv run pytest agents/local_indexer/tests -q
 
 1. Implement domain logic in `steps/pipeline.py`
 2. Adjust [`prompts/system.md`](prompts/system.md)
-3. Register tools on contract — see [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md)
+3. Register tools on contract — see [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md)
 
 **Do not** import from `applications/` — Tier-2 only.

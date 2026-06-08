@@ -18,6 +18,7 @@ from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
 from intergrax.runtime.task.task_trace import PersistingTaskTraceEmitter
 from intergrax.llm_adapters.tracking.observability_bridge import register_llm_observability_plugin
 from intergrax.rag.tracking.observability_bridge import register_rag_observability_plugin
+from intergrax.runtime.observability.export_bridge import register_journal_export_plugin
 from intergrax.runtime.plugins.default_plugins import default_lab_plugins
 
 
@@ -36,4 +37,9 @@ def bootstrap_nexus_platform(
     plugins = default_lab_plugins(trace_store=reader, metrics_store=metrics_store)
     register_llm_observability_plugin(plugins)
     register_rag_observability_plugin(plugins)
+    register_journal_export_plugin(
+        plugins,
+        trace_store=reader,
+        runtime_event_store=nexus_loop.runtime_event_store,
+    )
     return bootstrap_application_plugins(plugins, nexus_loop=nexus_loop)

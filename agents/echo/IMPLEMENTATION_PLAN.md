@@ -1,12 +1,12 @@
-# echo agent — Implementation Plan
+﻿# echo agent — Implementation Plan
 
 **The implementation map** for this Tier-2 agent — phases, status, gaps, and verification.
 
 Status: **Done** (harness reference baseline) — maintenance only
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-Platform plan: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md) · Phase AA-ECHO  
-Agent workflow: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md)
+Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) · Phase AA-ECHO  
+Agent workflow: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md)
 
 Principle: **stable harness reference** · **gate smoke must stay green** · **no Tier-3 imports**
 
@@ -18,7 +18,7 @@ Principle: **stable harness reference** · **gate smoke must stay green** · **n
 |-------|--------|
 | Purpose, capabilities, lab registration | **ARCHITECTURE.md** |
 | Task status, phases | **This file** |
-| Platform harness work | `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` §6.1 |
+| Platform harness work | `docs/plan/PLATFORM_FOUNDATION.md` (gate maintenance) |
 
 ---
 

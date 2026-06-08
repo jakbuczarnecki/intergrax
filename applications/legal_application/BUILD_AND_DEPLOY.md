@@ -45,7 +45,7 @@
         | ``calls_per_minute`` (in profile options) | — | Optional LLM rate limit per provider |
         | ``circuit_breaker_threshold`` (in profile options) | — | Optional fail-fast after N errors |
 
-        Metrics HTTP (optional): ``register_llm_metrics_routes(app)`` → ``GET /metrics/llm``. See [LLM_ADAPTERS.md](../../docs/LLM_ADAPTERS.md).
+        Metrics HTTP (optional): ``register_llm_metrics_routes(app)`` → ``GET /metrics/llm``. See [architecture/LLM_ADAPTERS.md](../../docs/architecture/LLM_ADAPTERS.md).
 
         ### Tool catalog (optional)
 

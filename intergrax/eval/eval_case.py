@@ -26,3 +26,6 @@ class EvalCase:
     expected_output: str
     description: Optional[str] = None
     tags: Optional[Tuple[str, ...]] = None
+    semantic_match_enabled: bool = False
+    rubric_ref: Optional[str] = None
+    semantic_threshold: Optional[float] = None

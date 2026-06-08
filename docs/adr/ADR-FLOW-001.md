@@ -5,7 +5,7 @@
 | **Status** | Accepted · **implemented** (`FLOW-2`, `FLOW-14`) |
 | **Date** | 2026-06-07 |
 | **Deciders** | Intergrax platform architecture |
-| **Related** | [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](../NEXUS_EXECUTION_FLOW_REFERENCE.md) §13 · canon [§42.14.3](../intergrax_runtime_architecture.md#42143-graph-delegation-subagent-equivalent) · plan `FLOW-2` / `FLOW-GAP-02` |
+| **Related** | [`architecture/NEXUS_EXECUTION_FLOW.md`](../architecture/NEXUS_EXECUTION_FLOW.md) §13 · canon [§42.14.3](../architecture/UNIFIED_EXECUTION_RUNTIME.md#42143-graph-delegation-subagent-equivalent) · plan `FLOW-2` / `FLOW-GAP-02` |
 
 ## Context
 

@@ -42,16 +42,20 @@ class SessionMemoryConsolidationCoordinator:
         service: Optional[SessionMemoryConsolidationService],
         user_turns_interval: int,
         cooldown_seconds: int,
+        consolidation_mode: str = "manual",
     ) -> None:
         self._service = service
         self._user_turns_interval = user_turns_interval
         self._cooldown_seconds = cooldown_seconds
+        self._consolidation_mode = consolidation_mode
 
     @property
     def enabled(self) -> bool:
         return self._service is not None
 
     def should_consolidate_on_close(self, session: ChatSession) -> bool:
+        if self._consolidation_mode == "manual":
+            return False
         return self._service is not None and bool(session.user_id)
 
     def should_consolidate_mid_session(
@@ -60,6 +64,8 @@ class SessionMemoryConsolidationCoordinator:
         *,
         user_turns: int,
     ) -> bool:
+        if self._consolidation_mode not in {"scheduled", "auto"}:
+            return False
         if self._service is None or not session.user_id:
             return False
         interval = self._user_turns_interval

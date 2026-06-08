@@ -5,7 +5,7 @@
 Status: **Done** (Appendix A sign-off probe)
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-Platform plan: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md) · Phase AA-SIG
+Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) · Phase AA-SIG
 
 ---
 

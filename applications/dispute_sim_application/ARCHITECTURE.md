@@ -3,7 +3,7 @@
 **Status:** Architecture baseline v1 (2026-06-07) — scaffold + product design  
 **Tier:** Tier-3 application (`dispute_sim_application`)  
 **Agents:** Tier-2 `dispute_intake`, `dispute_analyst`, `dispute_strategist`, `dispute_scenario`  
-**Canonical plan row:** [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md` §6.3a DSW.*](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated)  
+**Canonical plan row:** [`docs/intergrax_runtime_architecture.md` §6.3a DSW.*](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)  
 **Derived plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 **Decision record:** [`adr/ADR-DISPUTE_SIM-001.md`](adr/ADR-DISPUTE_SIM-001.md)
 
@@ -21,7 +21,7 @@
 | Request flows | §10 |
 | Implementation waves | §15 |
 
-**Rule:** change architecture first, then update [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) and platform [`§6.3a`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated).
+**Rule:** change architecture first, then update [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) and platform [`§6.3a`](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated).
 
 ---
 
@@ -94,7 +94,7 @@ DSW answers these through **structured agent pipelines** on a **case-scoped RAG 
 | **Correspondence drafts** | HITL mandatory (`dispute.correspondence` skill path — DSW.4) |
 | **PII / retention** | Case data scoped per tenant; retention policy in host settings (DSW.6) |
 | **Audit** | Full Nexus trace + artifact hash for every strategy/scenario output |
-| **CVL (planned)** | L1 critic on argument maps; L2 critic on outbound drafts — see [`docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](../../docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) |
+| **CVL (planned)** | L1 critic on argument maps; L2 critic on outbound drafts — see [`docs/architecture/CRITIC_VERIFICATION.md`](../../docs/architecture/CRITIC_VERIFICATION.md) |
 
 ---
 

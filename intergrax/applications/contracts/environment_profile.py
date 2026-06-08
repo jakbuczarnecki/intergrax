@@ -101,6 +101,7 @@ class MemoryProfile(BaseModel):
     enable_task_memory: bool = False
     retention_days: int | None = Field(default=None, ge=1)
     scope_boundary: str = "tenant"
+    consolidation_mode: Literal["manual", "scheduled", "auto"] = "manual"
 
 
 class ReliabilityProfile(BaseModel):
@@ -151,6 +152,34 @@ class EvaluationProfile(BaseModel):
     require_baseline_for_release: bool = False
     registry_path: Path | None = None
     evaluation_assets_ref: str | None = None
+
+
+class CriticVerificationScopes(BaseModel):
+    """Which execution scopes run CVL checks when semantic/trajectory critics are enabled."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    node_partial: bool = False
+    graph_final: bool = True
+    uaep_step: bool = False
+
+
+class CriticProfile(BaseModel):
+    """Critic & Verification Layer posture for a Tier-3 host (Phase CRIT-V-1.1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    semantic_judge_enabled: bool = False
+    trajectory_eval_enabled: bool = False
+    judge_threshold: float = Field(default=0.75, ge=0.0, le=1.0)
+    require_critic_on_completion: bool = False
+    evaluator_loop_max_iterations: int = Field(default=2, ge=1, le=16)
+    critic_llm_profile_ref: str | None = None
+    critic_llm_profile: LLMProfile | None = None
+    default_rubric_ref: str | None = None
+    l2_human_required: bool = False
+    l2_borderline_margin: float = Field(default=0.05, ge=0.0, le=0.5)
+    scopes: CriticVerificationScopes = Field(default_factory=CriticVerificationScopes)
 
 
 AdaptiveMode = Literal["observe", "recommend", "shadow", "canary", "apply"]
@@ -241,6 +270,7 @@ class ApplicationEnvironmentProfile(BaseModel):
     observability_profile: ObservabilityProfile = Field(default_factory=ObservabilityProfile)
     cost_profile: CostProfile = Field(default_factory=CostProfile)
     evaluation_profile: EvaluationProfile = Field(default_factory=EvaluationProfile)
+    critic_profile: CriticProfile = Field(default_factory=CriticProfile)
     adaptive_profile: AdaptiveProfile = Field(default_factory=AdaptiveProfile)
     orchestration_profile: OrchestrationProfile = Field(default_factory=OrchestrationProfile)
     identity_profile: IdentityProfile = Field(default_factory=IdentityProfile)

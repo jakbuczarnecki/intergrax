@@ -34,6 +34,7 @@ class TraceComponent(str, Enum):
     RAG = "rag"
     MEMORY = "memory"
     PLANNER = "planner"
+    CRITIC = "critic"
 
 
 class DiagnosticPayload(ABC):

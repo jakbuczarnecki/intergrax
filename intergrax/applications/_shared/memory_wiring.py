@@ -22,6 +22,7 @@ from intergrax.memory.stores.document_store_user_profile_store import DocumentSt
 from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.memory.user_profile_store import UserProfileStore
+from intergrax.runtime.nexus.session.document_store_session_storage import DocumentStoreSessionStorage
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.session.session_storage import SessionStorage
@@ -98,7 +99,7 @@ def resolve_memory_platform_wiring(
         mongo_bundle = create_mongodb_integration(**_mongodb_integration_overrides(profile))
         document_store: DocumentStore = mongo_bundle.document_store
         return MemoryPlatformWiring(
-            session_storage=InMemorySessionStorage(),
+            session_storage=DocumentStoreSessionStorage(document_store),
             user_profile_store=DocumentStoreUserProfileStore(document_store),
             organization_profile_store=None,
             sqlite_bundle=None,

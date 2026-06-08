@@ -5,7 +5,7 @@
 Status: **Harness baseline Done** — HITL/long-running depth optional
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-Platform plan: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md) · Phase AA-ORG
+Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) · Phase AA-ORG
 
 ---
 
@@ -15,7 +15,7 @@ Platform plan: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IM
 |-------|--------|
 | HITL-oriented purpose, capability | **ARCHITECTURE.md** |
 | Task status | **This file** |
-| HITL authoring | `docs/AGENT_CREATION_GUIDE.md` Appendix H |
+| HITL authoring | `docs/guides/AGENT_CREATION_GUIDE.md` Appendix H |
 
 ---
 

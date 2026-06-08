@@ -75,6 +75,7 @@ class UserProfileInstructionsService:
         *,
         force: bool = False,
         run_id: Optional[str] = None,
+        prompt_registry_version: Optional[str] = None,
     ) -> str:
         """
         Generate and persist user-level system instructions.
@@ -113,6 +114,10 @@ class UserProfileInstructionsService:
             instructions = instructions[: self._config.max_chars].rstrip()
 
         await self._manager.update_system_instructions(user_id, instructions)
+        if prompt_registry_version:
+            profile = await self._manager.get_profile(user_id)
+            profile.preferences.extra["prompt_registry_version"] = prompt_registry_version
+            await self._manager.save_profile(profile)
         return instructions
 
     # ------------------------------------------------------------------

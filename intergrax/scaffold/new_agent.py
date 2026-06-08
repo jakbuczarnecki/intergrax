@@ -12,6 +12,7 @@ from pathlib import Path
 from textwrap import dedent
 
 from intergrax.scaffold.adr_templates import write_agent_adr_scaffold
+from intergrax.scaffold.tracing_templates import write_agent_tracing_scaffold
 from intergrax.scaffold.doc_templates import (
     render_agent_architecture_doc,
     render_agent_implementation_plan,
@@ -216,7 +217,7 @@ def _contract_py(slug: str, class_name: str, primary_capability: str) -> str:
         from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
         from {slug}.capabilities import CAPABILITIES
 
-        # Register skill packs on the contract — see docs/SKILLS.md
+        # Register skill packs on the contract — see docs/architecture/SKILLS.md
 
 
         def build_agent_contract() -> AgentContract:
@@ -441,7 +442,7 @@ def _readme(slug: str, class_name: str, capabilities: list[str]) -> str:
         f"""\
         # {slug} agent
 
-        UAEP-first scaffold. Full process: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md) (single canonical guide).
+        UAEP-first scaffold. Full process: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md) (single canonical guide).
 
         ## Docs
 
@@ -465,7 +466,7 @@ def _readme(slug: str, class_name: str, capabilities: list[str]) -> str:
         registry.register({class_name}())
         ```
 
-        See **Step 4** in AGENT_CREATION_GUIDE.md for all registration contexts.
+        See **Step 4** in guides/AGENT_CREATION_GUIDE.md for all registration contexts.
 
         ## Capabilities
 
@@ -478,6 +479,7 @@ def _readme(slug: str, class_name: str, capabilities: list[str]) -> str:
         - ``steps/`` — domain execution
         - ``prompts/`` — prompt assets
         - ``schemas/`` — I/O models
+        - ``tracing/`` — DiagnosticPayload extensions (OBS extension SDK)
         - ``tests/`` — agent smoke tests
         - ``notebooks/`` — interactive experiments
         - ``adr/`` — architecture decision records
@@ -559,6 +561,7 @@ def create_agent(
     if not minimal:
         _write(target / "README.md", _readme(slug, class_name, capabilities), force=force)
     write_agent_adr_scaffold(agent_dir=target, slug=slug, force=force)
+    write_agent_tracing_scaffold(target=target, slug=slug, force=force)
 
     return target
 

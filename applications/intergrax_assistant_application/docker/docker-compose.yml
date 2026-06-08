@@ -1,0 +1,17 @@
+# © Artur Czarnecki. All rights reserved.
+# Run from repository root: docker compose -f applications/intergrax_assistant_application/docker/docker-compose.yml up --build
+
+services:
+  intergrax_assistant:
+    build:
+      context: ../../..
+      dockerfile: applications/intergrax_assistant_application/docker/Dockerfile
+    image: intergrax_assistant-application:latest
+    ports:
+      - "8096:8096"
+    env_file:
+      - ../.env
+    environment:
+      INTERGRAX_ASSISTANT_BACKEND_HOST: "0.0.0.0"
+      INTERGRAX_ASSISTANT_BACKEND_PORT: "8096"
+      INTERGRAX_ENV: prod

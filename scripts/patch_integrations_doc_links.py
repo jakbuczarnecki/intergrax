@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Patch docs/INTEGRATIONS.md with USAGE.md links for all providers (category layout)."""
+"""Patch docs/architecture/INTEGRATIONS.md with USAGE.md links for all providers (category layout)."""
 from __future__ import annotations
 
 import re
@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT))
 
 from intergrax.integrations.providers.layout import SLUG_CATEGORY, provider_package_path
 
-DOCS = ROOT / "docs" / "INTEGRATIONS.md"
+DOCS = ROOT / "docs" / "architecture/INTEGRATIONS.md"
 PROVIDERS = ROOT / "intergrax" / "integrations" / "providers"
 
 

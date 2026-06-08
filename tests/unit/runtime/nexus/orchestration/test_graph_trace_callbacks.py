@@ -32,9 +32,8 @@ def test_graph_trace_callbacks_emit_node_and_retry_messages() -> None:
         )
     )
 
-    assert emitter.emit.call_count == 3
-    first_call = emitter.emit.call_args_list[0]
-    first_message = first_call.kwargs.get("message") or (
-        first_call.args[1] if len(first_call.args) > 1 else ""
-    )
-    assert "n1" in first_message
+    assert emitter.emit.call_count == 1
+    assert emitter.emit_trace_step.call_count == 2
+    start_call = emitter.emit_trace_step.call_args_list[0]
+    assert start_call.kwargs["step"] == "graph.node_start"
+    assert start_call.kwargs["payload"].node_id == "n1"

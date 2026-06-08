@@ -15,7 +15,7 @@ python -m intergrax.scaffold new-application my_feature --profile lab --agents m
 python -m intergrax.scaffold new-application my_product --profile product --agents echo --port 8000
 ```
 
-See [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md) Step **4E**.
+See [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.md) Step **4E**.
 
 ## What you get
 
@@ -88,7 +88,7 @@ python -m intergrax.scaffold new-tool-bundle acme_ops --tool-id acme_ops.ping
 python -m intergrax.scaffold new-skill legal.contract_review
 ```
 
-See [EXTENSION_AUTHOR_GUIDE.md](../docs/EXTENSION_AUTHOR_GUIDE.md).
+See [guides/EXTENSION_AUTHOR_GUIDE.md](../docs/guides/EXTENSION_AUTHOR_GUIDE.md).
 
 ## Reference hosts
 
@@ -100,6 +100,7 @@ See [EXTENSION_AUTHOR_GUIDE.md](../docs/EXTENSION_AUTHOR_GUIDE.md).
 | `research_application` | product | 8010 | ResearchAgent, SummaryAgent | Multi-agent pipeline |
 | `local_workspace_application` | product | 8020 | LocalIndexer, LocalSearch, LocalSynthesizer | **LKW** — first business product |
 | `dispute_sim_application` | product | 8025 | DisputeIntake, DisputeAnalyst, DisputeStrategist, DisputeScenario | **DSW** — dispute simulation workspace |
+| `intergrax_assistant_application` | lab | 8096 | IntergraxAssistant (+ optional specialists) | **IAA** — harness chat lab, swappable LLM |
 
 Full index: [`applications/README.md`](README.md) · [`agents/README.md`](../agents/README.md)
 
@@ -107,4 +108,4 @@ Full index: [`applications/README.md`](README.md) · [`agents/README.md`](../age
 
 Composition API: [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md)
 
-Plan tracker: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../docs/INTERGRAX_IMPLEMENTATION_PLAN.md) — Phase N + Tier-3 readiness table.
+Plan tracker: [`docs/intergrax_runtime_architecture.md`](../docs/intergrax_runtime_architecture.md) — Phase N + Tier-3 readiness table.

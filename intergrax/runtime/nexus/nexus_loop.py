@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from intergrax.agents.agent_engine import AgentEngine
 from intergrax.contracts.agent_execution_result import (
@@ -78,6 +78,9 @@ from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
 
+if TYPE_CHECKING:
+    from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
+
 class NexusLoop:
     """
     Global Nexus loop (§9.1, §41).
@@ -122,6 +125,7 @@ class NexusLoop:
         signal_collector: SignalCollector | None = None,
         evaluation_registry: OnlineEvaluationRegistry | None = None,
         run_budget: RunBudget | None = None,
+        critic_graph_hooks: Optional["CriticGraphHooks"] = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -172,7 +176,11 @@ class NexusLoop:
             policy=retry_policy or RetryPolicy(),
             middleware=self._middleware,
         )
-        self._router = AgentRouter(registry, production_mode=production_mode)
+        self._router = AgentRouter(
+            registry,
+            production_mode=production_mode,
+            event_bus=self._event_bus,
+        )
         self._context_manager = context_manager or ContextManager()
         self._graph_executor = graph_executor or GraphExecutor(
             registry,
@@ -186,6 +194,7 @@ class NexusLoop:
             max_parallel_nodes=max_parallel_nodes,
             max_inflight_nodes=max_inflight_nodes,
             max_delegation_depth=max_delegation_depth,
+            critic_graph_hooks=critic_graph_hooks,
         )
         self._composer = FinalResponseComposer(merge_strategy=merge_strategy)
         self._lifecycle = lifecycle
@@ -200,6 +209,7 @@ class NexusLoop:
             self._event_bus,
             current_task=lambda: self._current_task,
             trace_reader=trace_reader,
+            runtime_event_store=self._runtime_event_store,
         )
         self._hitl = NexusHitlRunner(
             publish=self._publish_runtime_event,
@@ -223,6 +233,7 @@ class NexusLoop:
             finalize_trace=self._finalize_persisting_trace,
             maybe_checkpoint=self._maybe_checkpoint_long_running,
             max_run_retries=max_run_retries,
+            critic_graph_hooks=critic_graph_hooks,
         )
         self._intake_runner = NexusIntakeRunner(
             hitl=self._hitl,
@@ -244,6 +255,20 @@ class NexusLoop:
     @property
     def registry(self) -> AgentRegistry:
         return self._registry
+
+    def apply_critic_graph_hooks(self, hooks: Optional["CriticGraphHooks"]) -> None:
+        """Attach or clear critic graph hooks on executor and runner (CRIT-V-6.1)."""
+        self._graph_executor._critic_graph_hooks = hooks
+        self._graph_runner.critic_graph_hooks = hooks
+
+    def apply_critic_uaep_hooks(
+        self,
+        hooks: Optional["CriticGraphHooks"],
+        *,
+        verify_uaep_step: bool = False,
+    ) -> None:
+        """Attach critic hooks to the UAEP executor for step-level verification."""
+        self._engine.uaep_executor.set_critic_hooks(hooks, verify_uaep_step=verify_uaep_step)
 
     @property
     def trace_emitter(self) -> Optional[TaskTraceEmitter]:

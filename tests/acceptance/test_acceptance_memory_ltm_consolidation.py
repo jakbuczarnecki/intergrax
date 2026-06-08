@@ -61,7 +61,15 @@ async def test_ltm_consolidation_e2e_with_deterministic_fake_llm() -> None:
         stored.append(entry)
         return entry
 
+    from intergrax.memory.user_profile_memory import UserIdentity, UserPreferences, UserProfile
+
     profile_manager = MagicMock()
+    profile_manager.get_profile = AsyncMock(
+        return_value=UserProfile(
+            identity=UserIdentity(user_id="user-ltm"),
+            preferences=UserPreferences(),
+        )
+    )
     profile_manager.add_memory_entry = AsyncMock(side_effect=_capture_entry)
 
     instructions_service = MagicMock(spec=UserProfileInstructionsService)
@@ -91,13 +99,14 @@ async def test_ltm_consolidation_e2e_with_deterministic_fake_llm() -> None:
         run_id="run-ltm-1",
     )
 
-    assert len(entries) == 3
+    assert len(entries) == 4
     kinds = {entry.kind for entry in entries}
     assert MemoryKind.USER_FACT in kinds
     assert MemoryKind.PREFERENCE in kinds
     assert MemoryKind.SESSION_SUMMARY in kinds
+    assert MemoryKind.EPISODIC_EVENT in kinds
     assert all(entry.session_id == "sess-ltm-1" for entry in entries)
-    assert profile_manager.add_memory_entry.await_count == 3
+    assert profile_manager.add_memory_entry.await_count == 4
     instructions_service.build_and_save_system_instructions.assert_awaited_once()
 
 

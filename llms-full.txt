@@ -24,33 +24,38 @@
 
 ### Strategic goal
 
-Build a **modern, production-grade Harness AI** and **Agent Operating System** aligned with leading agent platforms (Cursor, Claude Code, Codex-class harnesses, Viktor, Google ADK-style labs). Source: docs/INTERGRAX_DEVELOPMENT_STRATEGY.md
+Build a **modern, production-grade Harness AI** and **Agent Operating System**. Source: docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md
 
 ---
 
-## What Intergrax is / is not
+## Documentation structure (2026-06)
 
-### Is
-
-- Four-tier AI platform: Platform (Tier-0) → Nexus Agent OS (Tier-1) → Agents (Tier-2) → Applications (Tier-3)
-- Harness AI environment with policy, tools, skills, context engineering, trace, composable agents
-- Agent experimentation laboratory (idea → first traced run < 1 hour)
-- Capability execution platform: Integration → Tool → Skill → Agent
-- Integration bridge to organizational systems (Jira, Slack, PostgreSQL, Redis, Qdrant, …)
-
-### Is not
-
-- A chatbot, prompt collection, single agent, workflow builder, marketplace, or finished multi-tenant SaaS
+```text
+docs/
+├── intergrax_runtime_architecture.md    # Architecture hub (concept map + index)
+├── architecture/                      # Decomposed architecture canon by domain
+├── intergrax_runtime_architecture.md   # Plan hub (ladder, §6.1 queue)
+├── plan/                         # Phase registers by domain
+├── plan/                     # Traceability appendices A–N
+├── IDEAL_HARNESS_AI_ARCHITECTURE.md   # Target benchmark (unchanged)
+├── architecture/MEMORY.md             # Memory deep dive
+├── architecture/OBSERVABILITY.md      # Observability deep dive
+├── architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md
+├── architecture/CRITIC_VERIFICATION.md
+├── architecture/NEXUS_EXECUTION_FLOW.md
+├── architecture/INTEGRATIONS.md · architecture/TOOLS.md · architecture/SKILLS.md · architecture/LLM_ADAPTERS.md · architecture/MODALITY.md
+└── guides/AGENT_CREATION_GUIDE.md · guides/EXTENSION_AUTHOR_GUIDE.md · INTEGRAX_HARNESS_AUDIT_MAP.md
+```
 
 ---
 
 ## Four-tier architecture
 
 ```text
-Tier-3  Applications     →  deployable products (legal API, lab host, research service)
-Tier-2  Agents           →  specialized capability modules
-Tier-1  Nexus Runtime    →  Agent OS (NexusLoop, AgentEngine, UAEP, governance)
-Tier-0  Platform         →  integrations, tools, skills, LLM, RAG, memory, logging
+Tier-3  applications/     →  deployable products
+Tier-2  agents/           →  specialized capability modules
+Tier-1  intergrax/runtime/ →  Nexus Agent OS (NexusLoop, AgentEngine, UAEP)
+Tier-0  intergrax/        →  integrations, tools, skills, LLM, RAG, memory
 ```
 
 ### Mandatory dependency rules
@@ -61,180 +66,45 @@ agents/          MUST NOT import from applications/
 applications/    MAY import from agents/ and intergrax/
 ```
 
-Agents must not import vendor SDKs directly — consume Tier-0 through Nexus policy and ToolRuntime.
+---
 
-### Repository paths
+## Key architecture documents
 
-```text
-intergrax/              # Tier-0 + Tier-1 Nexus
-  integrations/         # 135 integration providers
-  tools/                # Tool Library + MCP
-  skills/               # Skill Library
-  llm_adapters/         # 19 LLM providers
-  rag/                  # Retrieval, ingest, embeddings
-  memory/               # Session, STM/LTM
-  runtime/              # NexusLoop, AgentEngine, UAEP, governance
-  applications/         # Tier-3 composition engine
-  scaffold/             # new-agent, new-application, new-skill, new-stack
-agents/                 # Tier-2 agents
-applications/           # Tier-3 deployable environments
-docs/                   # Canonical documentation
-infra/                  # Local Docker compose
-tests/                  # Unit, integration, acceptance
-scripts/                # Harness CI checks
-```
+| Topic | Document |
+|-------|----------|
+| Hub | docs/intergrax_runtime_architecture.md |
+| UAEP / §42 | docs/architecture/UNIFIED_EXECUTION_RUNTIME.md |
+| Tiers & principles | docs/architecture/PLATFORM_FOUNDATION.md |
+| Orchestration | docs/architecture/ORCHESTRATION.md |
+| Memory | docs/architecture/MEMORY.md |
+| Observability | docs/architecture/OBSERVABILITY.md |
+| Target model | docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md |
+| Execution flow | docs/architecture/NEXUS_EXECUTION_FLOW.md |
 
 ---
 
-## Capability stack (Harness AI)
+## Implementation status
 
-| Layer | LLM-invokable | Example |
-|-------|---------------|---------|
-| Integration | No | PostgreSQL, Bing, Jira REST |
-| Tool | Yes | rag.retrieve, jira.search_tasks |
-| Skill | No (runtime resolves) | legal.contract_review |
-| Agent | — | LegalAgent in agents/legal/ |
-
-Catalogs: docs/INTEGRATIONS.md (135 providers) · docs/TOOLS.md · docs/SKILLS.md
+- Plan hub: docs/intergrax_runtime_architecture.md
+- Phase detail: docs/plan/
+- Default queue: §6.1 maintenance (gate green every PR)
+- Active work: Phase MEM-DEPTH (memory intelligence depth)
+- Business agents (Phase K): deferred — §6.3
 
 ---
 
-## Nexus runtime (Tier-1)
-
-Core components:
-
-- **NexusLoop** — task intake, planning, lifecycle
-- **AgentRegistry** — registration, capability routing
-- **AgentEngine** — Nexus → agent UAEP bridge
-- **ExecutionGraph** — multi-agent workflows
-- **ToolRuntime** — unified tool gateway (policy, trace, idempotency)
-- **PolicyEngine** — pre-run, pre-tool, post-tool governance
-- **ContextManager** — context assembly, budget trimming
-
-Orchestration: `intergrax/runtime/nexus/orchestration/` (intake_runner, planning_runner, graph_runner, hitl_runner, …)
-
-UAEP (Unified Agent Execution Protocol): docs/intergrax_runtime_architecture.md §42
-
----
-
-## Laboratory vs production harness
-
-| Mode | Purpose | Metric |
-|------|---------|--------|
-| Laboratory | Fast hypothesis validation | Idea → traced run < 1 hour |
-| Production harness | Reliable Agent OS at scale | Reference agents + stable paths + ops SLOs |
-
-Same codebase, different operational posture. Lab stack: docs/HARNESS_ENVIRONMENT.md
-
----
-
-## Documentation canon (complete index)
-
-### Navigation
-
-- docs/README.md — master index, phase focus, update rules
-
-### Strategy & architecture
-
-| Document | Purpose |
-|----------|---------|
-| docs/INTERGRAX_DEVELOPMENT_STRATEGY.md | Strategic goal, decision hierarchy, work cycle |
-| docs/intergrax_runtime_architecture.md | Architecture canon — tiers, Nexus, UAEP, RAG, retry, observability |
-| docs/IDEAL_HARNESS_AI_ARCHITECTURE.md | Target Harness AI reference (9 layers, L0–L4) |
-| docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md | L4 Adaptive Harness Intelligence (AHI) RFC |
-| docs/INTERGRAX_IMPLEMENTATION_PLAN.md | Phase tracker, gaps, maintenance queue |
-
-### Authoring & catalogs
-
-| Document | Purpose |
-|----------|---------|
-| docs/AGENT_CREATION_GUIDE.md | Agent workflow + control-plane appendices A–U |
-| docs/EXTENSION_AUTHOR_GUIDE.md | Tier-0 plugin catalogs |
-| docs/INTEGRATIONS.md | 135 integration providers |
-| docs/TOOLS.md | Tool Library |
-| docs/SKILLS.md | Skill Library |
-| docs/LLM_ADAPTERS.md | 19 LLM providers |
-| docs/MODALITY.md | Vision, audio, ML modality plane |
-| docs/HARNESS_ENVIRONMENT.md | Lab harness stack, OTLP, presets |
-
-### Audits
-
-| Document | Purpose |
-|----------|---------|
-| docs/INTEGRAX_HARNESS_AUDIT_MAP.md | 32 auditable layers |
-| docs/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md | Audit prompt for coding agents |
-
----
-
-## Current platform status (2026-06)
-
-Harness platform: **complete** — default queue is §6.1 maintenance only.
-
-| Area | Status |
-|------|--------|
-| Agent OS certification (Phase L) | Done |
-| Integration Library (Phase M + M.6 P4/P5) | Done — 135 providers (33/34 P5; `trivy` deferred) |
-| LLM adapters (Phase M-LLM) | Done — 19 providers |
-| RAG engine (Phase M-RAG) | Done |
-| Harness environment (Phase S) | Done |
-| Production hardening (Phase U) | Done |
-| Architecture hardening (Phase V) | Done |
-| Plugin catalogs (Phase P-Ext) | Done — 61/61 |
-| Memory platform (Phase MEM) | Done — 48/48 |
-| Control plane closeouts (ORCH, TS, INT, RAG, CTX, PE, AS, REG, CG, OBS, …) | Done |
-| Adaptive Harness Intelligence (Phase W-ADAPT) | Done — 70/70 |
-| Business agents (Phase K) | End of plan — deferred |
-
-**Regression gate:** `uv run pytest -m gate -q` — 722 passed  
-**Harness CI:** `python scripts/check_harness_no_getattr.py`
-
----
-
-## Quick start
+## Verification
 
 ```bash
-# Prerequisites: Python 3.12, uv
-
-# Verify platform health
-uv run pytest tests/acceptance/agent_os -m agent_os -q
 uv run pytest -m gate -q
 python scripts/check_harness_no_getattr.py
-
-# Scaffold first agent
-python -m intergrax.scaffold new-agent my_agent --capability domain.action
-
-# CLI shortcuts
-uv run intergrax run <module>:app
-uv run intergrax doctor
-uv run python -m intergrax.scaffold new-stack <name>
+uv run python scripts/check_observability_gates.py
 ```
 
-Full workflow: docs/AGENT_CREATION_GUIDE.md
-
 ---
 
-## Search keywords (for discovery)
+## For AI coding agents
 
-agent framework, agent os, harness ai, multi-agent orchestration, ai agents python,
-llm runtime, rag framework, agent engineering, nexus runtime, uaep,
-tool runtime, skill library, integration library, human-in-the-loop,
-observability trace, policy engine, capability graph, context engineering,
-adaptive harness intelligence, production ai agents, enterprise ai
-
----
-
-## AI agent instructions
-
-1. Read AGENTS.md before modifying code
-2. Follow docs/INTERGRAX_DEVELOPMENT_STRATEGY.md work cycle: analyze → assess architecture → update docs → implement → verify
-3. Never modify `intergrax/runtime/` when creating Tier-2 agents
-4. Link to docs/ — do not duplicate canon in new files
-5. Run gate tests after harness changes: `uv run pytest -m gate -q`
-
----
-
-## Contact
-
-- Maintainer: Artur Czarnecki
-- Email: jakbu.czarnecki.83@gmail.com
-- Security: see SECURITY.md
+- AGENTS.md — hard rules and task routing
+- README.md#documentation-index — master navigation
+- llms.txt — concise map

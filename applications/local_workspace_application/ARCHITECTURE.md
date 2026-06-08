@@ -3,7 +3,7 @@
 **Status:** Architecture baseline v2 (2026-06-07) — implementation-plan source of truth  
 **Tier:** Tier-3 application (`local_workspace_application`)  
 **Agents:** Tier-2 `local_indexer`, `local_search`, `local_synthesizer`  
-**Canonical plan row:** [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md` §6.3a LKW.*](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated)  
+**Canonical plan row:** [`docs/intergrax_runtime_architecture.md` §6.3a LKW.*](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)  
 **Derived plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) — generated from this document; do not fork scope elsewhere
 
 ---
@@ -25,7 +25,7 @@ This file is the **single product architecture** for LKW. From it you derive:
 | Implementation waves + acceptance | §15 |
 | Env vars and paths on disk | §7.3 · §12 |
 
-**Rule:** change architecture first, then update [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) and platform [`§6.3a`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated). One coherent diff per wave.
+**Rule:** change architecture first, then update [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) and platform [`§6.3a`](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated). One coherent diff per wave.
 
 ---
 
@@ -38,7 +38,7 @@ This file is the **single product architecture** for LKW. From it you derive:
 
 LKW validates: RAG ingest/retrieve/index lifecycle, document parsing, shadow workspace, multi-agent orchestration, memory, policy, trace, MCP/HTTP serving, and Tier-3 composition — while surfacing platform gaps early.
 
-**Strategic frame:** [`docs/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) — explicit product reprioritization after Appendix A sign-off.
+**Strategic frame:** [`docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) — explicit product reprioritization after Appendix A sign-off.
 
 ---
 
@@ -241,7 +241,7 @@ AgentContract (Tier-2)
   └── skill_ids[] + capabilities[] → UAEP steps invoke tools via ToolRuntime
 ```
 
-**Rule:** Tier-3 **wires** integrations and tools; Tier-2 agents **declare** `skill_ids` on `AgentContract`; skills **compose** tool packs + prompts + policy fragments. See [`docs/SKILLS.md`](../../docs/SKILLS.md) · [`docs/TOOLS.md`](../../docs/TOOLS.md) · [`docs/INTEGRATIONS.md`](../../docs/INTEGRATIONS.md).
+**Rule:** Tier-3 **wires** integrations and tools; Tier-2 agents **declare** `skill_ids` on `AgentContract`; skills **compose** tool packs + prompts + policy fragments. See [`docs/architecture/SKILLS.md`](../../docs/architecture/SKILLS.md) · [`docs/architecture/TOOLS.md`](../../docs/architecture/TOOLS.md) · [`docs/architecture/INTEGRATIONS.md`](../../docs/architecture/INTEGRATIONS.md).
 
 ### 5.2 Trust zones (filesystem safety)
 
@@ -409,7 +409,7 @@ Grant **Full Disk Access** if indexing outside home directory.
 
 **Explicitly excluded in baseline:** `search_provider` (web), `collaboration` (mail APIs) — LKW is local-first.
 
-Authoring: [`docs/AGENT_CREATION_GUIDE.md` Appendix K](../../docs/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) · catalog: [`docs/INTEGRATIONS.md`](../../docs/INTEGRATIONS.md).
+Authoring: [`docs/guides/AGENT_CREATION_GUIDE.md` Appendix K](../../docs/guides/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) · catalog: [`docs/architecture/INTEGRATIONS.md`](../../docs/architecture/INTEGRATIONS.md).
 
 ### 8.2 Tools (`ToolProfile` + `host/tool_wiring.py`)
 
@@ -442,7 +442,7 @@ Tier-3 enables tools; agents invoke them through `BoundToolGateway` / `ctx.invok
 
 **Explicitly disabled:** `websearch.*`, `openai.file_search.*` — external retrieval out of scope for LKW baseline.
 
-Catalog reference: [`docs/TOOLS.md`](../../docs/TOOLS.md) · wiring: [`host/tool_wiring.py`](host/tool_wiring.py).
+Catalog reference: [`docs/architecture/TOOLS.md`](../../docs/architecture/TOOLS.md) · wiring: [`host/tool_wiring.py`](host/tool_wiring.py).
 
 ### 8.3 Skills (`SkillProfile` + `AgentContract.skill_ids`)
 
@@ -467,7 +467,7 @@ Environment: [`manifest.py`](manifest.py) · [`host/environment_profile.py`](hos
 
 **Agent wiring (LKW.2):** each `AgentContract` gains `skill_ids=[...]`; register via `registry.register(agent, skill_registry=..., tool_registry=...)`. Until then, agents use scaffold `skills=[]` and rely on host `ToolProfile` only.
 
-Skill authoring: [`docs/SKILLS.md`](../../docs/SKILLS.md) · Appendix J in [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane).
+Skill authoring: [`docs/architecture/SKILLS.md`](../../docs/architecture/SKILLS.md) · Appendix J in [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane).
 
 ### 8.4 Per-agent Integration / Tool / Skill matrix
 
@@ -568,7 +568,7 @@ Host entrypoint (today): `uvicorn local_workspace_application.host.main:app`. Pr
 2. **Maintain** local RAG index (background ingest — LKW.7).
 3. **Run** Nexus graph on demand (search now, synthesize on request).
 4. **Notify** on completion / HITL (`notification_channel=slack` on long-running tasks).
-5. **Persist** checkpoints for pause/resume ([`docs/INTERGRAX_IMPLEMENTATION_PLAN.md` Appendix F.4](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md)).
+5. **Persist** checkpoints for pause/resume ([`docs/intergrax_runtime_architecture.md` Appendix F.4](../../docs/intergrax_runtime_architecture.md)).
 
 ### 9.3 Interaction surfaces (how the user talks to LKW)
 
@@ -735,7 +735,7 @@ Task(capability=local.workspace.pipeline, intent=local_workspace_full)
 
 **No agent logic in Tier-3** — only wiring. Domain steps live in `agents/*/steps/`.
 
-Authoring guide: [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md) · Tier-3: [`applications/USAGE.md`](../USAGE.md).
+Authoring guide: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md) · Tier-3: [`applications/USAGE.md`](../USAGE.md).
 
 ---
 
@@ -774,7 +774,7 @@ Task(
 
 - **Read-only user FS** in Waves 1–2 (ingest reads; no writes)
 - **Shadow workspace** mandatory for synthesizer outputs
-- **HITL** optional for sensitive exports (`REQUEST_HUMAN`) — [`docs/AGENT_CREATION_GUIDE.md` Appendix A](../../docs/AGENT_CREATION_GUIDE.md#appendix-a--human-in-the-loop)
+- **HITL** optional for sensitive exports (`REQUEST_HUMAN`) — [`docs/guides/AGENT_CREATION_GUIDE.md` Appendix A](../../docs/guides/AGENT_CREATION_GUIDE.md#appendix-a--human-in-the-loop)
 - **Cost governance:** `CostProfile` on environment; embedding batch limits per ingest job
 - **Trace:** all tool calls via Nexus trace DB — debug with `intergrax.debug` CLI
 
@@ -938,14 +938,14 @@ These gaps are **expected** — LKW exists to discover and close them without Ne
 
 | Topic | Document |
 |-------|----------|
-| Agent workflow | [`docs/AGENT_CREATION_GUIDE.md`](../../docs/AGENT_CREATION_GUIDE.md) |
-| Integration catalog | [`docs/INTEGRATIONS.md`](../../docs/INTEGRATIONS.md) |
-| Tools catalog | [`docs/TOOLS.md`](../../docs/TOOLS.md) |
-| Skill Library | [`docs/SKILLS.md`](../../docs/SKILLS.md) |
-| Tools & skills control plane | [`docs/AGENT_CREATION_GUIDE.md` Appendix J](../../docs/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) |
-| RAG control plane | [`docs/AGENT_CREATION_GUIDE.md` Appendix K](../../docs/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) |
-| Shadow workspace | [`docs/AGENT_CREATION_GUIDE.md` Appendix B](../../docs/AGENT_CREATION_GUIDE.md#appendix-b--shadow-workspace-and-sandbox) |
-| Multi-agent graphs | [`docs/AGENT_CREATION_GUIDE.md` Appendix C](../../docs/AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs) |
-| Nexus execution flow | [`docs/NEXUS_EXECUTION_FLOW_REFERENCE.md`](../../docs/NEXUS_EXECUTION_FLOW_REFERENCE.md) |
-| Implementation plan | [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md) |
+| Agent workflow | [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md) |
+| Integration catalog | [`docs/architecture/INTEGRATIONS.md`](../../docs/architecture/INTEGRATIONS.md) |
+| Tools catalog | [`docs/architecture/TOOLS.md`](../../docs/architecture/TOOLS.md) |
+| Skill Library | [`docs/architecture/SKILLS.md`](../../docs/architecture/SKILLS.md) |
+| Tools & skills control plane | [`docs/guides/AGENT_CREATION_GUIDE.md` Appendix J](../../docs/guides/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) |
+| RAG control plane | [`docs/guides/AGENT_CREATION_GUIDE.md` Appendix K](../../docs/guides/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) |
+| Shadow workspace | [`docs/guides/AGENT_CREATION_GUIDE.md` Appendix B](../../docs/guides/AGENT_CREATION_GUIDE.md#appendix-b--shadow-workspace-and-sandbox) |
+| Multi-agent graphs | [`docs/guides/AGENT_CREATION_GUIDE.md` Appendix C](../../docs/guides/AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs) |
+| Nexus execution flow | [`docs/architecture/NEXUS_EXECUTION_FLOW.md`](../../docs/architecture/NEXUS_EXECUTION_FLOW.md) |
+| Implementation plan | [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) |
 | Quickstart | [`README.md`](README.md) · [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) |

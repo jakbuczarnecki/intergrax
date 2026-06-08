@@ -4,7 +4,7 @@
 
 Status: **DSW.0 Done** · **Active queue: DSW.1**
 
-Platform register: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md` §6.3a DSW.*](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated)
+Platform register: [`docs/intergrax_runtime_architecture.md` §6.3a DSW.*](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)
 
 Principle: **case-scoped RAG** · **shadow drafts** · **HITL on correspondence** · **simulation ≠ legal advice**
 

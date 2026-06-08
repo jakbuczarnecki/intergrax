@@ -5,7 +5,7 @@
 Status: **Done** (operational harness lab) — maintenance via §6.1
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-Platform plan: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md) · Phase AA-LABAPP
+Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) · Phase AA-LABAPP
 
 ---
 

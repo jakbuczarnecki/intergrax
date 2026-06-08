@@ -11,33 +11,81 @@ You are implementing the **Intergrax Harness AI / Agent Operating System**.
 
 - The **Harness is the product**. Agents are replaceable. The runtime is permanent.
 - Applications are compositions of reusable Tier-0 capabilities.
-- Default scope: **§6.1 harness maintenance** unless the user explicitly selects another plan item.
-- **Phase K business agents** and **§6.3 deferred product work** require explicit user reprioritization — do not start silently.
+- Default scope: **gate maintenance** in `docs/plan/PLATFORM_FOUNDATION.md` unless the user explicitly selects another domain plan item.
+- **Phase K business agents** and **§6.3 deferred product work** (`docs/plan/PLATFORM_FOUNDATION.md`) require explicit user reprioritization — do not start silently.
 
 Repository baseline rules live in **`AGENTS.md`** — treat them as hard constraints. This instruction adds iteration workflow and communication protocol only.
 
+## Documentation model — architecture ↔ implementation 1:1
+
+Platform harness documentation uses **paired domain documents** with **identical filenames**:
+
+```text
+docs/intergrax_runtime_architecture.md     ← sole file in docs/ root (hub)
+docs/architecture/<DOMAIN>.md              ← what the layer is
+docs/plan/<DOMAIN>.md                      ← how to implement / status / tasks
+docs/guides/                               ← strategy, ideal model, audit, authoring
+```
+
+**18 domain pairs** (same basename in `architecture/` and `plan/`):
+
+`PLATFORM_FOUNDATION`, `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `NEXUS_EXECUTION_FLOW`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `INTEGRATIONS`, `TOOLS`, `SKILLS`, `LLM_ADAPTERS`, `MEMORY`, `MODALITY`, `OBSERVABILITY`, `RELIABILITY_FAILURE_AND_HITL`, `TIER3_APPLICATION_ENVIRONMENT`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`, `ADAPTIVE_HARNESS_INTELLIGENCE`, `CRITIC_VERIFICATION`, `REASONING_AND_COGNITION`, `ELASTIC_CAPACITY_AND_SCALING`.
+
+**Per-iteration reading rule:** when working on a harness layer, read **only**:
+1. `docs/intergrax_runtime_architecture.md` (hub / pair picker)
+2. `docs/architecture/<DOMAIN>.md` + `docs/plan/<DOMAIN>.md` for the **selected domain**
+3. `docs/guides/*` only when strategy, audit, or authoring context is needed
+
+Do **not** load unrelated domain pairs. There is **no** monolithic implementation plan file.
+
 ## Canonical sources (single source of truth)
-
-Use existing canonical documents whenever possible.
-
-Do not duplicate architectural knowledge into new files or chat summaries unless explicitly requested.
-
-Prefer updating the appropriate canonical document over creating a parallel source of truth.
 
 | Priority | Document | Role |
 |----------|----------|------|
-| 1 | `docs/INTERGRAX_DEVELOPMENT_STRATEGY.md` | Strategic goal, decision hierarchy, work cycle |
-| 2 | `docs/IDEAL_HARNESS_AI_ARCHITECTURE.md` | Target Harness AI architecture |
-| 3 | `docs/intergrax_runtime_architecture.md` | Current architecture canon |
-| 4 | `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` | Roadmap, status, next item |
-| 5 | `docs/INTERGRAX_HARNESS_AUDIT_MAP.md` | Harness layers, audit methodology |
-| 6 | `docs/NEXUS_EXECUTION_FLOW_REFERENCE.md` | Canonical execution / orchestration flow |
+| 1 | `docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md` | Strategic goal, decision hierarchy, work cycle |
+| 2 | `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | Target Harness AI architecture |
+| 3 | `docs/intergrax_runtime_architecture.md` + `docs/architecture/<DOMAIN>.md` | Architecture hub + domain canon |
+| 4 | `docs/plan/<DOMAIN>.md` | Domain implementation plan (1:1 with architecture) |
+| 5 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | Harness layers, audit methodology |
+| 6 | `docs/architecture/NEXUS_EXECUTION_FLOW.md` + `docs/plan/NEXUS_EXECUTION_FLOW.md` | Execution flow narrative + tasks |
 
-Task-specific routing: follow the table in **`AGENTS.md`** (agents, tools, skills, RAG, HITL, L4 adaptive, etc.).
+## Domain selection — task → pair (read only this pair)
+
+| Task / topic | `<DOMAIN>` basename |
+|--------------|---------------------|
+| Tiers, principles, product backlog §6.3, gate maintenance | `PLATFORM_FOUNDATION` |
+| UAEP, policy, identity, security, cost | `UNIFIED_EXECUTION_RUNTIME` |
+| Nexus loop, scheduler, intake, queueing, execution graph | `ORCHESTRATION` |
+| Reasoning, planning, cognition, classifiers, planners, DecisionRecord | `REASONING_AND_COGNITION` |
+| Execution flow, subagents, delegation, coordination §27 | `NEXUS_EXECUTION_FLOW` |
+| Agent contract, registry, prompt, capability graph | `AGENT_CONTRACTS_AND_ASSEMBLY` |
+| Integrations catalog, RAG backends | `INTEGRATIONS` |
+| Tools / ToolRuntime | `TOOLS` |
+| Skills | `SKILLS` |
+| LLM adapters, response envelope | `LLM_ADAPTERS` |
+| Memory, context, knowledge graph | `MEMORY` |
+| Vision / audio / ML modality | `MODALITY` |
+| Observability spine | `OBSERVABILITY` |
+| Retry, HITL, failure model | `RELIABILITY_FAILURE_AND_HITL` |
+| Tier-3 hosts, `ApplicationEnvironmentProfile` | `TIER3_APPLICATION_ENVIRONMENT` |
+| DX, scaffold, eval, CI gates, W-OPS | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` |
+| L4 adaptive harness (AHI) | `ADAPTIVE_HARNESS_INTELLIGENCE` |
+| Critic / verification (CVL) | `CRITIC_VERIFICATION` |
+| Elastic capacity / platform scaling (ECP) | `ELASTIC_CAPACITY_AND_SCALING` |
+| New Tier-2 agent (workflow) | `guides/AGENT_CREATION_GUIDE.md` + relevant domain pair |
+
+**How to use docs in an iteration:**
+
+1. Open hub → pick `<DOMAIN>` from table above (or user-specified domain).
+2. Read `docs/architecture/<DOMAIN>.md` then `docs/plan/<DOMAIN>.md` — in that order.
+3. Implement the smallest item from the plan register; update **both** files if contracts change.
+4. Do **not** open other `docs/architecture/*` or `docs/plan/*` files unless the user expands scope.
+
+Full task routing also in **`AGENTS.md`**.
 
 ## Scope per iteration
 
-- Implement **one coherent implementation-plan item** per iteration unless the user explicitly requests a batch.
+- Implement **one coherent item from a single domain plan** unless the user explicitly requests a batch.
 - Never silently expand scope to "all remaining steps".
 - If you find issues **outside current scope**: report as out-of-scope findings; do not fix or redesign silently.
 
@@ -50,22 +98,23 @@ ANALIZA → OCENA ARCHITEKTURY → OCENA PLANU → PROPOZYCJA (if needed)
   → AKTUALIZACJA DOKUMENTACJI (tylko dotkniętej) → IMPLEMENTACJA → WERYFIKACJA → WNIOSKI
 ```
 
-**Architectural safety fuse:** If the implementation plan, current architecture, and target architecture are inconsistent, **stop implementation** and explain the conflict before modifying code.
+**Architectural safety fuse:** If the domain plan, domain architecture, and ideal architecture are inconsistent, **stop implementation** and explain the conflict before modifying code.
 
 Operational steps:
 
-1. Identify the **next implementation item** (from user request or `INTERGRAX_IMPLEMENTATION_PLAN.md`).
-2. Map it to the **Harness AI layer** (`INTERGRAX_HARNESS_AUDIT_MAP.md`).
-3. Verify alignment: strategy ↔ ideal architecture ↔ current architecture ↔ plan.
-4. **If misaligned — STOP.**
+1. Identify the **domain** and **next implementation item** (user request or `docs/plan/<DOMAIN>.md`).
+2. Read the **architecture + plan pair** for that domain only.
+3. Map the item to the **Harness AI layer** (`docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md`).
+4. Verify alignment: strategy ↔ ideal architecture ↔ domain architecture ↔ domain plan.
+5. **If misaligned — STOP.**
    Explain the conflict using the primary language of the current operator session.
    Propose the required plan and/or architecture update before coding.
-5. Inspect existing code and Tier-0 mechanisms; **reuse before creating**.
-6. Implement the **smallest coherent diff** that satisfies the item.
-7. Add or update tests when they cover **real behavior** (not trivial assertions).
-8. Run the **most relevant verification** (see below).
-9. Update **only documentation directly affected** by the change.
-10. Deliver the iteration summary (template below).
+6. Inspect existing code and Tier-0 mechanisms; **reuse before creating**.
+7. Implement the **smallest coherent diff** that satisfies the item.
+8. Add or update tests when they cover **real behavior** (not trivial assertions).
+9. Run the **most relevant verification** (see below).
+10. Update **only** the affected domain pair in `architecture/` and `plan/`, plus guides if workflow changes.
+11. Deliver the iteration summary (template below).
 
 ## Architecture rules
 
@@ -102,6 +151,7 @@ applications/    MAY import from agents/ and intergrax/
 - Commit secrets (`.env`, credentials, API keys).
 - Create new documentation files without explicit justification.
 - Declare the **whole platform** complete — only evaluate the **current scope**.
+- Reintroduce a monolithic implementation plan or `plan/phases/` subfolders.
 
 ### New component gate
 
@@ -131,7 +181,7 @@ Do not mix languages within a single response unless explicitly requested.
 
 ## Documentation rules
 
-- One source of truth per topic — update existing docs in `docs/`, do not create parallel guides.
+- One source of truth per topic — `docs/` root is hub-only; domain canon in paired `architecture/` + `plan/` files.
 - New doc file only if existing canon is insufficient — **state why**.
 - Short summaries in chat are allowed when they aid understanding — do not replace or fork canonical docs.
 
@@ -150,7 +200,7 @@ Every **significant architecture change or design decision** must produce a prop
 1. Copy domain `adr/TEMPLATE.md` to the next sequential id (`ADR-{AREA}-{NNN}.md`).
 2. Fill Context, Decision, Consequences; set Status when accepted.
 3. Link from the domain `ARCHITECTURE.md` and/or `IMPLEMENTATION_PLAN.md`.
-4. For Harness ADRs, also link from `intergrax_runtime_architecture.md` or `INTERGRAX_IMPLEMENTATION_PLAN.md` when applicable.
+4. For Harness ADRs, also link from `docs/intergrax_runtime_architecture.md` and the relevant `docs/plan/<DOMAIN>.md` when applicable.
 5. If no ADR is needed, record **"no ADR needed"** with rationale in the plan row or PR — do not skip silently.
 
 **Scaffolds:** `python -m intergrax.scaffold new-agent` and `new-application` emit `adr/README.md` + `adr/TEMPLATE.md` automatically.
@@ -164,6 +214,8 @@ After harness/runtime changes:
 ```bash
 uv run pytest -m gate -q
 python scripts/check_harness_no_getattr.py
+uv run python scripts/check_observability_gates.py
+python scripts/check_docs_domain_pairs.py
 ```
 
 Agent-only work:
@@ -189,11 +241,11 @@ Present the entire summary using the primary language of the current operator se
 At the end of every iteration, provide:
 
 1. **Completed implementation item**
-2. **Harness AI layer** (from audit map)
+2. **Domain pair** (`architecture/<DOMAIN>.md` + `plan/<DOMAIN>.md`) and Harness AI layer (audit map)
 3. **Changed files**
 4. **Tests** added or updated
 5. **Tests executed** (commands + result)
-6. **Documentation** updated (specific files)
+6. **Documentation** updated (specific domain pair files)
 7. **Architectural impact**
 8. **Remaining risks**
 9. **Out-of-scope findings**
@@ -205,9 +257,9 @@ At the end of every iteration, provide:
 Do not consider an implementation item complete unless:
 
 - architecture remains consistent,
-- implementation plan remains consistent,
+- domain plan remains consistent,
 - relevant tests pass,
-- affected documentation is updated,
+- affected domain pair documentation is updated,
 - no unnecessary Tier-0 duplication was introduced,
 - significant architecture decisions have an ADR (or explicit "no ADR needed") in the correct domain.
 

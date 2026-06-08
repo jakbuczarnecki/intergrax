@@ -2,7 +2,7 @@
 
 **Role:** Reusable domain capabilities — UAEP steps, contracts, prompts.  
 **Hosts:** Tier-3 applications under `applications/` mount agents via `AgentBinding.mount(...)`.  
-**Workflow:** [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md)
+**Workflow:** [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.md)
 
 ```text
 agents/<slug>/     →  capability modules (no applications/ imports)
@@ -28,6 +28,7 @@ applications/      →  deployable environments that compose agents
 | **DisputeStrategistAgent** | `dispute.strategy` | staging | `dispute_sim_application` | [`dispute_strategist/`](dispute_strategist/) |
 | **DisputeScenarioAgent** | `dispute.scenario` | staging | `dispute_sim_application` | [`dispute_scenario/`](dispute_scenario/) |
 | **OrganizationWorkerAgent** | `org.vendor_report` | development | `lab_application` (optional flag) | [`organization_worker/`](organization_worker/) |
+| **IntergraxAssistantAgent** | `platform.assist` | development | `intergrax_assistant_application` | [`intergrax_assistant/`](intergrax_assistant/) |
 | **ProblemRadarAgent** | `problem_radar.scan` | frozen | — (Phase K.1 deferred) | [`problem_radar/`](problem_radar/) |
 | **Lab mock agents** | harness fixtures | — | `lab_application` tests | [`lab/mock_agents.py`](lab/mock_agents.py) |
 
@@ -73,6 +74,16 @@ applications/      →  deployable environments that compose agents
 
 **Host:** [`applications/research_application/`](../applications/research_application/)
 
+### Intergrax Assistant (harness chat hub)
+
+| Agent | Capability | Role |
+|-------|------------|------|
+| `intergrax_assistant` | `platform.assist` | Conversational hub — default chat entry |
+
+Optional specialists (Legal, Research, …) are mounted in the same Tier-3 host via env flags; Nexus delegates — hub does not call them directly.
+
+**Host:** [`applications/intergrax_assistant_application/`](../applications/intergrax_assistant_application/) · **Architecture:** [ARCHITECTURE.md](../applications/intergrax_assistant_application/ARCHITECTURE.md)
+
 ---
 
 ## Harness / lab agents
@@ -108,4 +119,4 @@ python -m intergrax.scaffold new-agent my_agent --capability domain.action
 python -m intergrax.scaffold new-stack my_feature --profile lab --capability my_feature.basic
 ```
 
-Full workflow: [`docs/AGENT_CREATION_GUIDE.md`](../docs/AGENT_CREATION_GUIDE.md)
+Full workflow: [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.md)

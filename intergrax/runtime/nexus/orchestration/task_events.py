@@ -9,9 +9,11 @@ from typing import Callable, Optional
 
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
+from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, RunTraceReader
+from intergrax.runtime.observability.journal_export import build_journal_ref_payload
 from intergrax.runtime.observability.modality_metrics import build_task_completed_modality_payload
 from intergrax.runtime.task.task import Task
 
@@ -25,10 +27,12 @@ class NexusRuntimeEventPublisher:
         *,
         current_task: Callable[[], Optional[Task]],
         trace_reader: RunTraceReader | None = None,
+        runtime_event_store: RuntimeEventPersistence | None = None,
     ) -> None:
         self._event_bus = event_bus
         self._current_task = current_task
         self._trace_reader = trace_reader
+        self._runtime_event_store = runtime_event_store
 
     async def publish(self, event: RuntimeEvent, *, task: Optional[Task] = None) -> None:
         scoped_task = task or self._current_task()
@@ -38,20 +42,35 @@ class NexusRuntimeEventPublisher:
 
     async def publish_terminal(self, task: Task) -> None:
         base = runtime_event_from_task_state(task, run_id=task.task_id, message="task terminal")
-        modality_payload = self._modality_payload_for_task(task)
-        if modality_payload is not None:
-            merged = {**base.payload, **modality_payload}
+        terminal_payload = self._terminal_payload_for_task(task)
+        if terminal_payload:
+            merged = {**base.payload, **terminal_payload}
             base = base.model_copy(update={"payload": merged})
         await self.publish(base, task=task)
 
-    def _modality_payload_for_task(self, task: Task) -> dict[str, object] | None:
+    def _read_persisted_run(self, task: Task) -> PersistedRun | None:
         if self._trace_reader is None:
             return None
         try:
-            persisted = self._trace_reader.read_run(task.task_id, task.tenant_id)
+            return self._trace_reader.read_run(task.task_id, task.tenant_id)
         except (KeyError, ValueError):
             return None
-        return build_task_completed_modality_payload(persisted.events)
+
+    def _terminal_payload_for_task(self, task: Task) -> dict[str, object]:
+        persisted = self._read_persisted_run(task)
+        if persisted is None:
+            return {}
+        fragments: dict[str, object] = {}
+        modality_payload = build_task_completed_modality_payload(persisted.events)
+        if modality_payload is not None:
+            fragments.update(modality_payload)
+        journal_ref = build_journal_ref_payload(
+            persisted,
+            runtime_store=self._runtime_event_store,
+        )
+        if journal_ref is not None:
+            fragments["journal_ref"] = journal_ref
+        return fragments
 
     async def publish_from_task_state(
         self,

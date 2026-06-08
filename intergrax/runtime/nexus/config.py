@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from intergrax.applications.contracts.environment_profile import (
         ApplicationSecurityProfile,
         AdaptiveProfile,
+        CriticProfile,
         EvaluationProfile,
     )
     from intergrax.runtime.architecture.online_evaluation_registry import OnlineEvaluationRegistry
@@ -208,6 +209,7 @@ class RuntimeConfig:
     enable_task_memory: bool = False
     memory_retention_days: Optional[int] = None
     memory_scope_boundary: str = "tenant"
+    memory_consolidation_mode: str = "manual"
 
     # Context assembly (Phase MEM-1.2, MEM-CTX.1)
     context_budget_policy: Optional["ContextBudgetPolicy"] = None
@@ -301,6 +303,7 @@ class RuntimeConfig:
     security_profile: Optional["ApplicationSecurityProfile"] = None
     evaluation_profile: Optional["EvaluationProfile"] = None
     evaluation_registry: Optional["OnlineEvaluationRegistry"] = None
+    critic_profile: Optional["CriticProfile"] = None
     signal_collector: Optional["SignalCollector"] = None
     adaptive_profile: Optional["AdaptiveProfile"] = None
     resolved_profile_versions: Optional["ResolvedProfileVersions"] = None

@@ -1,10 +1,10 @@
-# Local Knowledge Workspace (LKW) — Implementation Plan
+﻿# Local Knowledge Workspace (LKW) — Implementation Plan
 
 **Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15 (do not diverge without updating architecture first)
 
 Status: **LKW.0 Done** · **LKW.3 Done** (T6) · **Active queue: LKW.1**
 
-Platform register: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md` §6.3a LKW.*](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated)
+Platform register: [`docs/intergrax_runtime_architecture.md` §6.3a LKW.*](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)
 
 Principle: **local backend daemon** · **thin frontends** · **Slack optional** · **shadow writes only**
 
@@ -116,5 +116,5 @@ uv run uvicorn local_workspace_application.host.main:app --host 127.0.0.1 --port
 ## 7. Platform alignment
 
 - Harness maintenance: platform **§6.1** only
-- LKW product: platform **§6.3a** — update when wave scope changes
+- LKW product: platform **`docs/plan/PLATFORM_FOUNDATION.md` §6.3a** — update when wave scope changes
 - One wave per PR unless operator batches explicitly

@@ -19,6 +19,9 @@ from intergrax.integrations.providers.relational_store.sqlite.bundle import (
     create_sqlite_integration,
 )
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.runtime.events.stores.validating_runtime_event_store import (
+    ValidatingRuntimeEventPersistence,
+)
 
 
 def sqlite_bundle_for_profile(
@@ -53,6 +56,12 @@ def open_trace_store_from_profile(
     return open_run_trace_store(path)
 
 
+def _validating(store: Any) -> ValidatingRuntimeEventPersistence:
+    if isinstance(store, ValidatingRuntimeEventPersistence):
+        return store
+    return ValidatingRuntimeEventPersistence(store)
+
+
 def open_runtime_event_store_from_profile(
     profile: IntegrationProfile,
     *,
@@ -61,10 +70,38 @@ def open_runtime_event_store_from_profile(
     if db_path is not None:
         from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_runtime_event_store
 
-        return create_sqlite_runtime_event_store(db_path=db_path)
+        return _validating(create_sqlite_runtime_event_store(db_path=db_path))
+
     bundle = sqlite_bundle_for_profile(profile)
     if bundle is not None:
-        return bundle.runtime_event_store
+        return _validating(bundle.runtime_event_store)
+
+    doc_slug = profile.slug_for_category(IntegrationCategory.DOCUMENT_STORE)
+    if doc_slug == "cassandra":
+        from intergrax.integrations.providers.document_store.cassandra.adapter import (
+            CassandraDocumentStore,
+        )
+        from intergrax.integrations.providers.document_store.cassandra.runtime_events import (
+            runtime_event_persistence_from_cassandra,
+        )
+
+        resolved = profile.resolve(IntegrationCategory.DOCUMENT_STORE)
+        if isinstance(resolved, CassandraDocumentStore):
+            return _validating(runtime_event_persistence_from_cassandra(resolved))
+
+    obs_slug = profile.slug_for_category(IntegrationCategory.OBSERVABILITY_BACKEND)
+    if obs_slug == "elasticsearch":
+        from intergrax.integrations.providers.observability_backend.elasticsearch.adapter import (
+            ElasticsearchObservabilityBackend,
+        )
+        from intergrax.integrations.providers.observability_backend.elasticsearch.runtime_events import (
+            runtime_event_persistence_from_elasticsearch_backend,
+        )
+
+        resolved = profile.resolve(IntegrationCategory.OBSERVABILITY_BACKEND)
+        if isinstance(resolved, ElasticsearchObservabilityBackend):
+            return _validating(runtime_event_persistence_from_elasticsearch_backend(resolved))
+
     from intergrax.runtime.events.store import resolve_runtime_event_persistence, resolve_runtime_events_db_path
 
     path = resolve_runtime_events_db_path(None)

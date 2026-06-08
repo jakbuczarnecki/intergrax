@@ -36,6 +36,38 @@ def _require_eval_registry(ctx: ToolWiringContext) -> OnlineEvaluationRegistryBi
     return registry
 
 
+def _append_critic_observation(
+    ctx: ToolWiringContext,
+    *,
+    record: bool,
+    observation_id: str,
+    run_id: str | None,
+    agent_id: str | None,
+    scenario_id: str,
+    mode: str,
+    passed: bool,
+    score: float,
+    candidate_profile_version_id: str | None,
+) -> bool:
+    """Append critic tool result to evaluation registry when requested (CRIT-V-2.3)."""
+    if not record:
+        return False
+    if not run_id or not agent_id:
+        raise RuntimeError("critic_observation_requires_run_id_and_agent_id")
+    observation = OnlineEvaluationObservation(
+        observation_id=observation_id.strip(),
+        run_id=run_id.strip(),
+        agent_id=agent_id.strip(),
+        mode=OnlineEvaluationMode(mode),
+        scenario_id=scenario_id.strip(),
+        passed=passed,
+        score=score,
+        candidate_profile_version_id=candidate_profile_version_id,
+    )
+    _require_eval_registry(ctx).append(observation)
+    return True
+
+
 def _observation_output(item: OnlineEvaluationObservation) -> EvalObservationOutput:
     return EvalObservationOutput(
         observation_id=item.observation_id,

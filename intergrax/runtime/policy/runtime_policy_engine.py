@@ -109,3 +109,32 @@ class RuntimePolicyEngine:
             reason="non_blocking_interrupt",
             policy_rule_id="default.non_blocking_interrupt",
         )
+
+    def evaluate_critic_verdict(
+        self,
+        *,
+        passed: bool,
+        recommended_action: str,
+        context: dict[str, Any] | None = None,
+    ) -> PolicyDecision:
+        ctx = context or {}
+        governance = ctx.get("critic_governance") or {}
+        if recommended_action == "escalate_hitl":
+            return PolicyDecision(
+                action=PolicyAction.REQUIRE_HUMAN,
+                reason="critic_escalate_hitl",
+                enforcement_level=EnforcementLevel.MANDATORY,
+                policy_rule_id="critic.l2_escalation",
+            )
+        if governance.get("require_critic_on_completion") and not passed:
+            return PolicyDecision(
+                action=PolicyAction.DENY,
+                reason="critic_completion_required",
+                enforcement_level=EnforcementLevel.MANDATORY,
+                policy_rule_id="critic.require_on_completion",
+            )
+        return PolicyDecision(
+            action=PolicyAction.ALLOW,
+            reason="critic_default_allow",
+            policy_rule_id="critic.allow",
+        )

@@ -7,6 +7,7 @@ from typing import Callable, List, Optional
 
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.nexus.tracing.trace_models import (
+    DiagnosticPayload,
     TraceComponent,
     TraceEvent,
     TraceLevel,
@@ -34,6 +35,48 @@ class TaskTraceEmitter:
     @property
     def event_bus(self) -> Optional[RuntimeEventBus]:
         return self._event_bus
+
+    def emit_trace_step(
+        self,
+        task: Task,
+        *,
+        component: TraceComponent,
+        step: str,
+        message: str,
+        level: TraceLevel = TraceLevel.INFO,
+        payload: DiagnosticPayload | None = None,
+        extra_tags: dict[str, object] | None = None,
+    ) -> TraceEvent:
+        if payload is not None:
+            payload = payload.redact()
+        self._seq += 1
+        tags: dict[str, object] = {
+            "task_id": task.task_id,
+            "task_state": task.state.value,
+            "agent_id": task.agent_id,
+            "capability": task.context.capability,
+            "tenant_id": task.tenant_id,
+        }
+        if extra_tags:
+            tags.update(extra_tags)
+        evt = TraceEvent(
+            event_id=TraceEvent.new_id(),
+            run_id=self._run_id,
+            seq=self._seq,
+            ts_utc=utc_now_iso(),
+            level=level,
+            component=component,
+            step=step,
+            message=message,
+            payload=payload,
+            tags=tags,
+        )
+        self.events.append(evt)
+        if self._event_bus is not None:
+            from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event
+
+            self._event_bus.record(trace_event_to_runtime_event(evt, task))
+        return evt
 
     def emit(self, task: Task, *, message: str) -> TraceEvent:
         self._seq += 1
@@ -93,6 +136,31 @@ class PersistingTaskTraceEmitter(TaskTraceEmitter):
 
     def emit(self, task: Task, *, message: str) -> TraceEvent:
         evt = super().emit(task, message=message)
+        self._trace_store.append_event(evt)
+        if self._started_at_utc is None:
+            self._started_at_utc = evt.ts_utc
+        return evt
+
+    def emit_trace_step(
+        self,
+        task: Task,
+        *,
+        component: TraceComponent,
+        step: str,
+        message: str,
+        level: TraceLevel = TraceLevel.INFO,
+        payload: DiagnosticPayload | None = None,
+        extra_tags: dict[str, object] | None = None,
+    ) -> TraceEvent:
+        evt = super().emit_trace_step(
+            task,
+            component=component,
+            step=step,
+            message=message,
+            level=level,
+            payload=payload,
+            extra_tags=extra_tags,
+        )
         self._trace_store.append_event(evt)
         if self._started_at_utc is None:
             self._started_at_utc = evt.ts_utc
