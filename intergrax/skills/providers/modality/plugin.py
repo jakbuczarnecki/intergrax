@@ -7,6 +7,8 @@ from intergrax.skills.providers.modality.manifests import (
     MODALITY_SPEECH_IO,
     MODALITY_VISION_OCR,
     MODALITY_VISION_SEGMENT,
+    MODALITY_AUDIO_TRANSCRIPT,
+    MODALITY_IMAGE_ANALYST,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -15,6 +17,8 @@ _MODALITY_MANIFESTS = (
     MODALITY_SPEECH_IO,
     MODALITY_VISION_OCR,
     MODALITY_VISION_SEGMENT,
+    MODALITY_AUDIO_TRANSCRIPT,
+    MODALITY_IMAGE_ANALYST,
 )
 
 
@@ -25,7 +29,7 @@ class ModalitySkillPlugin:
             bundle_id="modality",
             skill_ids=tuple(m.skill_id for m in _MODALITY_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Speech and vision modality skill packs (SK-EXP2)",
+            description="modality skill packs (SK-EXP5)",
         )
 
     @classmethod

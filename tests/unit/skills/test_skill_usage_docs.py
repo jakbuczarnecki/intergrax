@@ -37,8 +37,8 @@ def _usage_path_for_skill(skill_id: str) -> Path:
     return SKILLS_PROVIDERS / bundle / skill_id / "USAGE.md"
 
 
-def test_shipped_catalog_has_ninety_nine_skills() -> None:
-    assert len(list_catalog_skill_ids()) == 99
+def test_shipped_catalog_has_one_hundred_forty_nine_skills() -> None:
+    assert len(list_catalog_skill_ids()) == 149
 
 
 def test_each_shipped_skill_has_usage_md() -> None:

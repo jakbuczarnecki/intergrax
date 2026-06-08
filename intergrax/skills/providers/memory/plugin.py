@@ -8,6 +8,8 @@ from intergrax.skills.providers.memory.manifests import (
     MEMORY_SESSION_CLEANUP,
     MEMORY_LTM_CURATOR,
     MEMORY_SEMANTIC_SEARCH,
+    MEMORY_CROSS_TURN_NOTES,
+    MEMORY_FACT_EXTRACTOR,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -17,6 +19,8 @@ _MEMORY_MANIFESTS = (
     MEMORY_SESSION_CLEANUP,
     MEMORY_LTM_CURATOR,
     MEMORY_SEMANTIC_SEARCH,
+    MEMORY_CROSS_TURN_NOTES,
+    MEMORY_FACT_EXTRACTOR,
 )
 
 
@@ -27,7 +31,7 @@ class MemorySkillPlugin:
             bundle_id="memory",
             skill_ids=tuple(m.skill_id for m in _MEMORY_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Task memory skill packs (SK-EXP4)",
+            description="memory skill packs (SK-EXP5)",
         )
 
     @classmethod

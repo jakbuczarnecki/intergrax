@@ -6,7 +6,7 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**Last updated:** 2026-06-08 — SK-EXP through SK-EXP4 **Done** (99 skills · 41 bundles); SK-BRIDGE.* residual.
+**Last updated:** 2026-06-08 — SK-EXP through SK-EXP5 **Done** (149 skills · 41 bundles); SK-BRIDGE.* residual.
 
 ---
 
@@ -14,7 +14,7 @@
 
 **Purpose:** Tier-0 skill packs for agent and Tier-3 authors. **Closed 2026-06-08** — SK-EXP + SK-EXP2 + SK-EXP3 + SK-PRESET.1/2/3 **Done**. Residual: **SK-BRIDGE.*** (prompt/policy runtime merge). **Not** Band 3 business agents (K.1/K.2).
 
-**Catalog:** **99** skills · **41** bundles — see [`architecture/SKILLS.md`](../architecture/SKILLS.md#first-party-catalog-99-skills--41-bundles).
+**Catalog:** **149** skills · **41** bundles — see [`architecture/SKILLS.md`](../architecture/SKILLS.md#first-party-catalog-149-skills--41-bundles).
 
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
@@ -38,8 +38,10 @@
 | 17 | **SK-EXP4-P1** | Code | **Done** | Wave P1 — 10 eval/harness/ops extension packs | Same |
 | 18 | **SK-EXP4-P2** | Code | **Done** | Wave P2 — 9 domain/destructive-admin packs | Same |
 | 19 | **SK-PRESET.4** | Code | **Done** | SK-EXP4 presets in `skill_wiring.py` | `catalog_skill_profile`, `interaction_skill_profile`, … |
+| 20 | **SK-EXP5** | Code | **Done** | 50 compositional vertical packs (no new bundles) | `test_sk_exp5_skill_bundles.py` |
+| 21 | **SK-PRESET.5** | Code | **Done** | Vertical presets: oncall, legal_ops, research_lab, … | `skill_wiring.py` |
 
-**Suggested PR order (complete):** SK-EXP → SK-EXP4 → SK-PRESET.1–4. **SK-BRIDGE.*** optional follow-up.
+**Suggested PR order (complete):** SK-EXP → SK-EXP5 → SK-PRESET.1–5. **SK-BRIDGE.*** optional follow-up.
 
 **Explicitly excluded:** K.1, K.2, new Tier-2 agents, workflow-sized fake tools, unvalidated filesystem skill discovery.
 
@@ -297,6 +299,20 @@ All 30 rows **Done** — see [`architecture/SKILLS.md`](../architecture/SKILLS.m
 | 2026-06-08 | SK-DOC.4 | Per-skill `USAGE.md` for SK-EXP3 (20 files); gate count 69 |
 | 2026-06-08 | SK-EXP4-P0–P2, SK-PRESET.4 | 30 skill packs + 10 new bundles; 99 total skills; `test_sk_exp4_skill_bundles.py` |
 | 2026-06-08 | SK-DOC.5 | Per-skill `USAGE.md` for SK-EXP4 (30 files); gate count 99 |
+| 2026-06-08 | SK-EXP5, SK-PRESET.5 | 50 compositional packs; 149 total skills; vertical presets |
+| 2026-06-08 | SK-DOC.6 | Per-skill `USAGE.md` for SK-EXP5 (50 files); gate count 149 |
+
+#### SK-EXP5 — Compositional register (50 packs, shipped)
+
+Third wave after tool-coverage saturation (185/190 tools). Value = **vertical compositions** and **operator specializations** across 25 extended bundles — no new bundles.
+
+| Wave | Count | Examples |
+|------|-------|----------|
+| P0 Domain depth | 18 | `legal.redline_draft`, `rag.semantic_qa`, `research.deep_dive`, `workspace.artifact_exporter` |
+| P1 Ops/platform | 16 | `ops.oncall_runbook`, `ops.postmortem_writer`, `platform.deploy_inspector`, `hitl.escalation_router` |
+| P2 Dev/data/sandbox | 16 | `dev.sprint_planner`, `data.pipeline_probe`, `sandbox.refactor_loop`, `agent.capability_mapper` |
+
+All 50 rows **Done** — full skill_id list in `scripts/scaffold_sk_exp5.py`.
 
 ---
 

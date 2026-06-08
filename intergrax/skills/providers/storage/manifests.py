@@ -29,3 +29,26 @@ STORAGE_OBJECT_LIFECYCLE = SkillManifest(
     tags=("storage", "lifecycle", "object"),
 )
 
+STORAGE_BACKUP_SYNC = SkillManifest(
+    skill_id="storage.backup_sync",
+    version="1.0.0",
+    description="Backup sync between object storage and workspace snapshot.",
+    tool_ids=("storage.get", "storage.put", "workspace.snapshot"),
+    prompt_instruction_ids=("storage.backup_sync.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("storage", "backup", "sync"),
+)
+
+
+STORAGE_PRESIGNED_SHARE = SkillManifest(
+    skill_id="storage.presigned_share",
+    version="1.0.0",
+    description="Presigned URL sharing with existence check and notify.",
+    tool_ids=("storage.presigned_url", "storage.exists", "notify.send"),
+    prompt_instruction_ids=("storage.presigned_share.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("storage", "presigned", "share"),
+)
+

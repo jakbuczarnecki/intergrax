@@ -55,7 +55,7 @@ def _reset_catalogs() -> None:
     reset_default_tools_bootstrap()
 
 
-def test_shipped_catalog_has_forty_one_bundles_and_ninety_nine_skills() -> None:
+def test_shipped_catalog_has_forty_one_bundles_and_one_hundred_forty_nine_skills() -> None:
     assert len(SHIPPED_SKILL_PLUGINS) == 41
     assert SHIPPED_SKILL_BUNDLE_IDS == frozenset(
         {
@@ -102,7 +102,7 @@ def test_shipped_catalog_has_forty_one_bundles_and_ninety_nine_skills() -> None:
             "workspace",
         }
     )
-    assert len(list_catalog_skill_ids()) == 99
+    assert len(list_catalog_skill_ids()) == 149
 
 
 @pytest.mark.parametrize("skill_id", SK_EXP_SKILL_IDS)

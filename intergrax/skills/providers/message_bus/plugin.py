@@ -6,9 +6,18 @@ from intergrax.skills.core.manifest import SkillBundleManifest
 from intergrax.skills.providers.message_bus.manifests import (
     MESSAGE_BUS_ASYNC_RUNNER,
     MESSAGE_BUS_TASK_ADMIN,
+    MESSAGE_BUS_RETRY_HANDLER,
+    MESSAGE_BUS_DEAD_LETTER,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
+
+_MESSAGE_BUS_MANIFESTS = (
+    MESSAGE_BUS_ASYNC_RUNNER,
+    MESSAGE_BUS_TASK_ADMIN,
+    MESSAGE_BUS_RETRY_HANDLER,
+    MESSAGE_BUS_DEAD_LETTER,
+)
 
 
 class MessageBusSkillPlugin:
@@ -16,18 +25,16 @@ class MessageBusSkillPlugin:
     def skill_bundle_manifest(cls) -> SkillBundleManifest:
         return SkillBundleManifest(
             bundle_id="message_bus",
-            skill_ids=(MESSAGE_BUS_ASYNC_RUNNER.skill_id, MESSAGE_BUS_TASK_ADMIN.skill_id),
+            skill_ids=tuple(m.skill_id for m in _MESSAGE_BUS_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Message bus skill packs (SK-EXP2 + SK-EXP3)",
+            description="message_bus skill packs (SK-EXP5)",
         )
-
-    _MANIFESTS = (MESSAGE_BUS_ASYNC_RUNNER, MESSAGE_BUS_TASK_ADMIN)
 
     @classmethod
     def skill_manifests(cls) -> tuple:
-        return MessageBusSkillPlugin._MANIFESTS
+        return _MESSAGE_BUS_MANIFESTS
 
     @classmethod
     def register_skills(cls, registry: SkillRegistry) -> None:
-        for manifest in MessageBusSkillPlugin._MANIFESTS:
+        for manifest in _MESSAGE_BUS_MANIFESTS:
             registry.register(manifest)

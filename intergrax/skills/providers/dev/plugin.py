@@ -4,14 +4,24 @@ from __future__ import annotations
 
 from intergrax.skills.core.manifest import SkillBundleManifest
 from intergrax.skills.providers.dev.manifests import (
-    DEV_ISSUE_CREATOR,
     DEV_ISSUE_TRIAGE,
+    DEV_ISSUE_CREATOR,
     DEV_ISSUE_UPDATER,
+    DEV_PR_REVIEWER,
+    DEV_RELEASE_NOTES,
+    DEV_SPRINT_PLANNER,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
 
-_DEV_MANIFESTS = (DEV_ISSUE_TRIAGE, DEV_ISSUE_CREATOR, DEV_ISSUE_UPDATER)
+_DEV_MANIFESTS = (
+    DEV_ISSUE_TRIAGE,
+    DEV_ISSUE_CREATOR,
+    DEV_ISSUE_UPDATER,
+    DEV_PR_REVIEWER,
+    DEV_RELEASE_NOTES,
+    DEV_SPRINT_PLANNER,
+)
 
 
 class DevSkillPlugin:
@@ -21,7 +31,7 @@ class DevSkillPlugin:
             bundle_id="dev",
             skill_ids=tuple(m.skill_id for m in _DEV_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Developer workflow skill packs",
+            description="dev skill packs (SK-EXP5)",
         )
 
     @classmethod

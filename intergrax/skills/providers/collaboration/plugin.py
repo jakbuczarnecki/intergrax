@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from intergrax.skills.core.manifest import SkillBundleManifest
 from intergrax.skills.providers.collaboration.manifests import (
-    COLLABORATION_CALENDAR,
     COLLABORATION_OUTREACH,
+    COLLABORATION_CALENDAR,
     COLLABORATION_THREAD_REPLY,
+    COLLABORATION_MEETING_BRIEF,
+    COLLABORATION_STAKEHOLDER_PING,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -15,6 +17,8 @@ _COLLABORATION_MANIFESTS = (
     COLLABORATION_OUTREACH,
     COLLABORATION_CALENDAR,
     COLLABORATION_THREAD_REPLY,
+    COLLABORATION_MEETING_BRIEF,
+    COLLABORATION_STAKEHOLDER_PING,
 )
 
 
@@ -25,7 +29,7 @@ class CollaborationSkillPlugin:
             bundle_id="collaboration",
             skill_ids=tuple(m.skill_id for m in _COLLABORATION_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Collaboration suite skill packs",
+            description="collaboration skill packs (SK-EXP5)",
         )
 
     @classmethod

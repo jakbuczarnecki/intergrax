@@ -8,6 +8,9 @@ from intergrax.skills.providers.research.manifests import (
     RESEARCH_WEB_EVIDENCE,
     RESEARCH_CITATION_SYNTHESIS,
     RESEARCH_WEB_CACHE_ADMIN,
+    RESEARCH_DEEP_DIVE,
+    RESEARCH_SOURCE_VALIDATOR,
+    RESEARCH_REPORT_COMPILER,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -17,6 +20,9 @@ _RESEARCH_MANIFESTS = (
     RESEARCH_WEB_EVIDENCE,
     RESEARCH_CITATION_SYNTHESIS,
     RESEARCH_WEB_CACHE_ADMIN,
+    RESEARCH_DEEP_DIVE,
+    RESEARCH_SOURCE_VALIDATOR,
+    RESEARCH_REPORT_COMPILER,
 )
 
 
@@ -27,7 +33,7 @@ class ResearchSkillPlugin:
             bundle_id="research",
             skill_ids=tuple(m.skill_id for m in _RESEARCH_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Research domain skill packs (SK-EXP4)",
+            description="research skill packs (SK-EXP5)",
         )
 
     @classmethod

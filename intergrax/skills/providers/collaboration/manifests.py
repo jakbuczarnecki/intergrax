@@ -46,3 +46,27 @@ COLLABORATION_THREAD_REPLY = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("collaboration", "email", "reply"),
 )
+
+COLLABORATION_MEETING_BRIEF = SkillManifest(
+    skill_id="collaboration.meeting_brief",
+    version="1.0.0",
+    description="Meeting brief from calendar, user profile, and workspace draft.",
+    tool_ids=("collaboration.list_calendar", "collaboration.get_user", "workspace.write_file"),
+    prompt_instruction_ids=("collaboration.meeting_brief.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("collaboration", "meeting", "brief"),
+)
+
+
+COLLABORATION_STAKEHOLDER_PING = SkillManifest(
+    skill_id="collaboration.stakeholder_ping",
+    version="1.0.0",
+    description="Stakeholder outreach with CRM context, mail, and notify.",
+    tool_ids=("crm.get_account", "collaboration.send_mail", "notify.send"),
+    prompt_instruction_ids=("collaboration.stakeholder_ping.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("collaboration", "stakeholder", "ping"),
+)
+

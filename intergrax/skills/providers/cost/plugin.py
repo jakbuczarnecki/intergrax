@@ -3,9 +3,17 @@
 from __future__ import annotations
 
 from intergrax.skills.core.manifest import SkillBundleManifest
-from intergrax.skills.providers.cost.manifests import COST_BUDGET_GUARDIAN
+from intergrax.skills.providers.cost.manifests import (
+    COST_BUDGET_GUARDIAN,
+    COST_CHARGEBACK_REPORT,
+)
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
+
+_COST_MANIFESTS = (
+    COST_BUDGET_GUARDIAN,
+    COST_CHARGEBACK_REPORT,
+)
 
 
 class CostSkillPlugin:
@@ -13,15 +21,16 @@ class CostSkillPlugin:
     def skill_bundle_manifest(cls) -> SkillBundleManifest:
         return SkillBundleManifest(
             bundle_id="cost",
-            skill_ids=(COST_BUDGET_GUARDIAN.skill_id,),
+            skill_ids=tuple(m.skill_id for m in _COST_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Cost and budget governance skill packs (SK-EXP3)",
+            description="cost skill packs (SK-EXP5)",
         )
 
     @classmethod
     def skill_manifests(cls) -> tuple:
-        return (COST_BUDGET_GUARDIAN,)
+        return _COST_MANIFESTS
 
     @classmethod
     def register_skills(cls, registry: SkillRegistry) -> None:
-        registry.register(COST_BUDGET_GUARDIAN)
+        for manifest in _COST_MANIFESTS:
+            registry.register(manifest)

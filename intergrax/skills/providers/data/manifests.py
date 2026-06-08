@@ -47,3 +47,26 @@ DATA_RECORDS_ADMIN = SkillManifest(
     tags=("data", "records", "admin"),
 )
 
+DATA_PIPELINE_PROBE = SkillManifest(
+    skill_id="data.pipeline_probe",
+    version="1.0.0",
+    description="Data pipeline health: SQL probe, records query, store check.",
+    tool_ids=("database.query", "records.query", "health.check_relational_store"),
+    prompt_instruction_ids=("data.pipeline_probe.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("data", "pipeline", "probe"),
+)
+
+
+DATA_SCHEMA_DOCUMENTER = SkillManifest(
+    skill_id="data.schema_documenter",
+    version="1.0.0",
+    description="Schema documentation for SQL and records stores.",
+    tool_ids=("database.describe_schema", "records.describe_collection", "workspace.write_file"),
+    prompt_instruction_ids=("data.schema_documenter.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("data", "schema", "documenter"),
+)
+

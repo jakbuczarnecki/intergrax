@@ -4,11 +4,14 @@ from __future__ import annotations
 
 from intergrax.skills.core.manifest import SkillBundleManifest
 from intergrax.skills.providers.rag.manifests import (
-    RAG_COLLECTION_LIFECYCLE,
-    RAG_DOCUMENT_INGEST,
     RAG_HYBRID_QA,
+    RAG_DOCUMENT_INGEST,
     RAG_INDEX_ADMIN,
+    RAG_COLLECTION_LIFECYCLE,
     RAG_RETRIEVAL_TUNER,
+    RAG_SEMANTIC_QA,
+    RAG_INGEST_PIPELINE,
+    RAG_METADATA_SEARCH,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -19,6 +22,9 @@ _RAG_MANIFESTS = (
     RAG_INDEX_ADMIN,
     RAG_COLLECTION_LIFECYCLE,
     RAG_RETRIEVAL_TUNER,
+    RAG_SEMANTIC_QA,
+    RAG_INGEST_PIPELINE,
+    RAG_METADATA_SEARCH,
 )
 
 
@@ -29,7 +35,7 @@ class RagSkillPlugin:
             bundle_id="rag",
             skill_ids=tuple(m.skill_id for m in _RAG_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="RAG retrieval, ingest, and index administration skill packs",
+            description="rag skill packs (SK-EXP5)",
         )
 
     @classmethod

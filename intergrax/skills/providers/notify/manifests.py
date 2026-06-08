@@ -29,3 +29,14 @@ NOTIFY_BATCH_DISPATCH = SkillManifest(
     tags=("notify", "batch", "dispatch"),
 )
 
+NOTIFY_ESCALATION_LADDER = SkillManifest(
+    skill_id="notify.escalation_ladder",
+    version="1.0.0",
+    description="Escalation ladder: schedule, send, and PagerDuty trigger.",
+    tool_ids=("notify.schedule", "notify.send", "pagerduty.trigger_incident"),
+    prompt_instruction_ids=("notify.escalation_ladder.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.HIGH,
+    tags=("notify", "escalation", "ladder"),
+)
+

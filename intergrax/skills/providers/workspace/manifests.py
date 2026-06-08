@@ -23,3 +23,27 @@ WORKSPACE_SNAPSHOT_MANAGER = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("workspace", "snapshot", "lifecycle"),
 )
+
+WORKSPACE_DRAFT_REVIEWER = SkillManifest(
+    skill_id="workspace.draft_reviewer",
+    version="1.0.0",
+    description="Read-only draft review with workspace search and memory context.",
+    tool_ids=("workspace.read_file", "workspace.search", "memory.read"),
+    prompt_instruction_ids=("workspace.draft_reviewer.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("workspace", "draft", "review"),
+)
+
+
+WORKSPACE_ARTIFACT_EXPORTER = SkillManifest(
+    skill_id="workspace.artifact_exporter",
+    version="1.0.0",
+    description="Export workspace artifacts to durable object storage.",
+    tool_ids=("workspace.export_artifact", "storage.put", "workspace.list_files"),
+    prompt_instruction_ids=("workspace.artifact_exporter.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("workspace", "export", "artifact"),
+)
+

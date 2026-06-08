@@ -91,3 +91,50 @@ OPS_INCIDENT_ACK = SkillManifest(
     tags=("ops", "incident", "pagerduty"),
 )
 
+OPS_ONCALL_RUNBOOK = SkillManifest(
+    skill_id="ops.oncall_runbook",
+    version="1.0.0",
+    description="On-call runbook: logs, traces, and stakeholder notification.",
+    tool_ids=("logs.search", "observability.query_traces", "notify.send"),
+    prompt_instruction_ids=("ops.oncall_runbook.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("ops", "oncall", "runbook"),
+)
+
+
+OPS_POSTMORTEM_WRITER = SkillManifest(
+    skill_id="ops.postmortem_writer",
+    version="1.0.0",
+    description="Postmortem drafting from harness run metadata and logs.",
+    tool_ids=("harness.get_run", "logs.search", "workspace.write_file"),
+    prompt_instruction_ids=("ops.postmortem_writer.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("ops", "postmortem", "writer"),
+)
+
+
+OPS_CHANGE_APPROVER = SkillManifest(
+    skill_id="ops.change_approver",
+    version="1.0.0",
+    description="Change approval loop: HITL pending, notify, workflow poll.",
+    tool_ids=("hitl.list_pending", "notify.send", "workflow.poll"),
+    prompt_instruction_ids=("ops.change_approver.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.HIGH,
+    tags=("ops", "change", "approval"),
+)
+
+
+OPS_CAPACITY_PLANNER = SkillManifest(
+    skill_id="ops.capacity_planner",
+    version="1.0.0",
+    description="Capacity planning from metrics, cost forecast, and run history.",
+    tool_ids=("metrics.query_range", "cost.forecast_spend", "harness.list_runs"),
+    prompt_instruction_ids=("ops.capacity_planner.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("ops", "capacity", "planner"),
+)
+

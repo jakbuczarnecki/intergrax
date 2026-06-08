@@ -6,6 +6,7 @@ from intergrax.skills.core.manifest import SkillBundleManifest
 from intergrax.skills.providers.notify.manifests import (
     NOTIFY_SCHEDULED_ALERTS,
     NOTIFY_BATCH_DISPATCH,
+    NOTIFY_ESCALATION_LADDER,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -13,6 +14,7 @@ from intergrax.skills.registry.runtime import SkillRegistry
 _NOTIFY_MANIFESTS = (
     NOTIFY_SCHEDULED_ALERTS,
     NOTIFY_BATCH_DISPATCH,
+    NOTIFY_ESCALATION_LADDER,
 )
 
 
@@ -23,7 +25,7 @@ class NotifySkillPlugin:
             bundle_id="notify",
             skill_ids=tuple(m.skill_id for m in _NOTIFY_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Scheduled notification skill packs (SK-EXP2)",
+            description="notify skill packs (SK-EXP5)",
         )
 
     @classmethod

@@ -28,3 +28,27 @@ HITL_QUEUE_MANAGER = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("hitl", "queue", "operations"),
 )
+
+HITL_ESCALATION_ROUTER = SkillManifest(
+    skill_id="hitl.escalation_router",
+    version="1.0.0",
+    description="Escalate HITL queue depth to PagerDuty and notify.",
+    tool_ids=("hitl.summarize_queue", "pagerduty.trigger_incident", "notify.send"),
+    prompt_instruction_ids=("hitl.escalation_router.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.HIGH,
+    tags=("hitl", "escalation", "router"),
+)
+
+
+HITL_DECISION_AUDITOR = SkillManifest(
+    skill_id="hitl.decision_auditor",
+    version="1.0.0",
+    description="Audit HITL decisions with trace correlation.",
+    tool_ids=("hitl.get_decision", "hitl.list_for_task", "observability.query_traces"),
+    prompt_instruction_ids=("hitl.decision_auditor.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("hitl", "decision", "auditor"),
+)
+

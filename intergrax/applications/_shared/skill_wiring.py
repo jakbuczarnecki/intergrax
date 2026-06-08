@@ -221,3 +221,28 @@ def filesystem_skill_profile() -> SkillProfile:
 def cloud_platform_skill_profile() -> SkillProfile:
     """Cloud platform resolution and health checks."""
     return SkillProfile(enabled_bundles=["cloud_platform", "health"])
+
+
+def oncall_skill_profile() -> SkillProfile:
+    """On-call SRE: runbooks, log tail, incident ack, metrics."""
+    return SkillProfile(enabled_bundles=["ops", "metrics", "notify", "hitl"])
+
+
+def legal_ops_skill_profile() -> SkillProfile:
+    """Legal ops: redline, regulatory scan, obligation tracking."""
+    return SkillProfile(enabled_bundles=["legal", "rag", "workspace", "memory"])
+
+
+def research_lab_skill_profile() -> SkillProfile:
+    """Research lab: deep dive, validation, report compile, web cache."""
+    return SkillProfile(enabled_bundles=["research", "rag", "workspace", "browser"])
+
+
+def data_platform_skill_profile() -> SkillProfile:
+    """Data platform: SQL, records, schema docs, pipeline probes."""
+    return SkillProfile(enabled_bundles=["data", "health", "workspace"])
+
+
+def sandbox_dev_skill_profile() -> SkillProfile:
+    """Sandbox development: test runner, refactor loop, code exec."""
+    return SkillProfile(enabled_bundles=["sandbox", "code", "workspace"])

@@ -3,9 +3,17 @@
 from __future__ import annotations
 
 from intergrax.skills.core.manifest import SkillBundleManifest
-from intergrax.skills.providers.identity.manifests import IDENTITY_ACCESS_CHECKER
+from intergrax.skills.providers.identity.manifests import (
+    IDENTITY_ACCESS_CHECKER,
+    IDENTITY_SESSION_BOOTSTRAP,
+)
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
+
+_IDENTITY_MANIFESTS = (
+    IDENTITY_ACCESS_CHECKER,
+    IDENTITY_SESSION_BOOTSTRAP,
+)
 
 
 class IdentitySkillPlugin:
@@ -13,15 +21,16 @@ class IdentitySkillPlugin:
     def skill_bundle_manifest(cls) -> SkillBundleManifest:
         return SkillBundleManifest(
             bundle_id="identity",
-            skill_ids=(IDENTITY_ACCESS_CHECKER.skill_id,),
+            skill_ids=tuple(m.skill_id for m in _IDENTITY_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Identity and access skill packs (SK-EXP3)",
+            description="identity skill packs (SK-EXP5)",
         )
 
     @classmethod
     def skill_manifests(cls) -> tuple:
-        return (IDENTITY_ACCESS_CHECKER,)
+        return _IDENTITY_MANIFESTS
 
     @classmethod
     def register_skills(cls, registry: SkillRegistry) -> None:
-        registry.register(IDENTITY_ACCESS_CHECKER)
+        for manifest in _IDENTITY_MANIFESTS:
+            registry.register(manifest)

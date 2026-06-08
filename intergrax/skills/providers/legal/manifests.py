@@ -35,3 +35,39 @@ LEGAL_CASE_RESEARCH = SkillManifest(
     risk_tier=SkillRiskTier.HIGH,
     tags=("legal", "case", "research"),
 )
+
+LEGAL_REDLINE_DRAFT = SkillManifest(
+    skill_id="legal.redline_draft",
+    version="1.0.0",
+    description="Contract redline drafting with retrieval and workspace IO.",
+    tool_ids=("rag.retrieve", "workspace.read_file", "workspace.write_file"),
+    prompt_instruction_ids=("legal.redline_draft.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("legal", "redline", "draft"),
+)
+
+
+LEGAL_REGULATORY_SCAN = SkillManifest(
+    skill_id="legal.regulatory_scan",
+    version="1.0.0",
+    description="Regulatory lookup across web, wiki, and indexed corpus.",
+    tool_ids=("websearch.query", "knowledge.search", "rag.retrieve"),
+    prompt_instruction_ids=("legal.regulatory_scan.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("legal", "regulatory", "scan"),
+)
+
+
+LEGAL_OBLIGATION_TRACKER = SkillManifest(
+    skill_id="legal.obligation_tracker",
+    version="1.0.0",
+    description="Track contractual obligations in task memory and workspace.",
+    tool_ids=("memory.write", "memory.read", "workspace.write_file"),
+    prompt_instruction_ids=("legal.obligation_tracker.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("legal", "obligation", "tracker"),
+)
+

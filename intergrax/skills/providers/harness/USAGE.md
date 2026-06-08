@@ -1,9 +1,13 @@
 # Harness skill bundle
 
+**Bundle id:** `harness` · **Plugin:** `HarnessSkillPlugin` · SK-EXP5 extended
+
 | skill_id | Guide |
 |----------|-------|
 | `harness.context_demo` | [harness.context_demo/USAGE.md](harness.context_demo/USAGE.md) |
+| `harness.cost_analyst` | [harness.cost_analyst/USAGE.md](harness.cost_analyst/USAGE.md) |
 | `harness.integration_bridge_smoke` | [harness.integration_bridge_smoke/USAGE.md](harness.integration_bridge_smoke/USAGE.md) |
+| `harness.integration_sweep` | [harness.integration_sweep/USAGE.md](harness.integration_sweep/USAGE.md) |
 | `harness.modality_smoke` | [harness.modality_smoke/USAGE.md](harness.modality_smoke/USAGE.md) |
 | `harness.policy_smoke` | [harness.policy_smoke/USAGE.md](harness.policy_smoke/USAGE.md) |
 | `harness.reliability_smoke` | [harness.reliability_smoke/USAGE.md](harness.reliability_smoke/USAGE.md) |

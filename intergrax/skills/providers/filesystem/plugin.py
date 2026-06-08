@@ -3,9 +3,17 @@
 from __future__ import annotations
 
 from intergrax.skills.core.manifest import SkillBundleManifest
-from intergrax.skills.providers.filesystem.manifests import FILESYSTEM_LOCAL_IO
+from intergrax.skills.providers.filesystem.manifests import (
+    FILESYSTEM_LOCAL_IO,
+    FILESYSTEM_STAT_AUDITOR,
+)
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
+
+_FILESYSTEM_MANIFESTS = (
+    FILESYSTEM_LOCAL_IO,
+    FILESYSTEM_STAT_AUDITOR,
+)
 
 
 class FilesystemSkillPlugin:
@@ -13,15 +21,16 @@ class FilesystemSkillPlugin:
     def skill_bundle_manifest(cls) -> SkillBundleManifest:
         return SkillBundleManifest(
             bundle_id="filesystem",
-            skill_ids=(FILESYSTEM_LOCAL_IO.skill_id),
+            skill_ids=tuple(m.skill_id for m in _FILESYSTEM_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Filesystem skill packs (SK-EXP4)",
+            description="filesystem skill packs (SK-EXP5)",
         )
 
     @classmethod
     def skill_manifests(cls) -> tuple:
-        return (FILESYSTEM_LOCAL_IO)
+        return _FILESYSTEM_MANIFESTS
 
     @classmethod
     def register_skills(cls, registry: SkillRegistry) -> None:
-        registry.register(FILESYSTEM_LOCAL_IO)
+        for manifest in _FILESYSTEM_MANIFESTS:
+            registry.register(manifest)

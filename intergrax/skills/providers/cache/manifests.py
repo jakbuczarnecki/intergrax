@@ -24,3 +24,14 @@ CACHE_KEY_ADMIN = SkillManifest(
     tags=("cache", "admin", "keys"),
 )
 
+CACHE_WARM_PREFETCH = SkillManifest(
+    skill_id="cache.warm_prefetch",
+    version="1.0.0",
+    description="Warm session cache from retrieval results.",
+    tool_ids=("cache.set", "cache.get", "rag.retrieve"),
+    prompt_instruction_ids=("cache.warm_prefetch.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("cache", "warm", "prefetch"),
+)
+

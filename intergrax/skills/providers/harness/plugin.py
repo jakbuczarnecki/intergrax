@@ -16,6 +16,8 @@ from intergrax.skills.providers.harness.manifests import (
     HARNESS_STACK_DEMO,
     HARNESS_RUN_COMPARATOR,
     HARNESS_RUN_EXPORTER,
+    HARNESS_COST_ANALYST,
+    HARNESS_INTEGRATION_SWEEP,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -33,6 +35,8 @@ _HARNESS_MANIFESTS = (
     HARNESS_STACK_DEMO,
     HARNESS_RUN_COMPARATOR,
     HARNESS_RUN_EXPORTER,
+    HARNESS_COST_ANALYST,
+    HARNESS_INTEGRATION_SWEEP,
 )
 
 
@@ -43,7 +47,7 @@ class HarnessSkillPlugin:
             bundle_id="harness",
             skill_ids=tuple(m.skill_id for m in _HARNESS_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Platform harness capability packs (Phase S) (SK-EXP4)",
+            description="harness skill packs (SK-EXP5)",
         )
 
     @classmethod

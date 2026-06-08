@@ -23,3 +23,27 @@ MESSAGE_BUS_TASK_ADMIN = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("message_bus", "admin", "tasks"),
 )
+
+MESSAGE_BUS_RETRY_HANDLER = SkillManifest(
+    skill_id="message_bus.retry_handler",
+    version="1.0.0",
+    description="Retry failed async tasks via re-enqueue and status poll.",
+    tool_ids=("message_bus.get_status", "message_bus.enqueue", "notify.send"),
+    prompt_instruction_ids=("message_bus.retry_handler.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("message_bus", "retry", "handler"),
+)
+
+
+MESSAGE_BUS_DEAD_LETTER = SkillManifest(
+    skill_id="message_bus.dead_letter",
+    version="1.0.0",
+    description="Dead-letter hygiene: list, purge completed, and log search.",
+    tool_ids=("message_bus.list_tasks", "message_bus.purge_completed", "logs.search"),
+    prompt_instruction_ids=("message_bus.dead_letter.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("message_bus", "dead_letter", "hygiene"),
+)
+

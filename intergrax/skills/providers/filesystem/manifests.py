@@ -13,3 +13,14 @@ FILESYSTEM_LOCAL_IO = SkillManifest(
     tags=("filesystem", "local", "io"),
 )
 
+FILESYSTEM_STAT_AUDITOR = SkillManifest(
+    skill_id="filesystem.stat_auditor",
+    version="1.0.0",
+    description="Filesystem audit: stat, list, and read for operator hosts.",
+    tool_ids=("filesystem.stat", "filesystem.list", "filesystem.read_text"),
+    prompt_instruction_ids=("filesystem.stat_auditor.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("filesystem", "stat", "auditor"),
+)
+

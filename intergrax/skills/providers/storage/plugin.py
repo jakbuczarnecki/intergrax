@@ -6,6 +6,8 @@ from intergrax.skills.core.manifest import SkillBundleManifest
 from intergrax.skills.providers.storage.manifests import (
     STORAGE_ARTIFACT_SYNC,
     STORAGE_OBJECT_LIFECYCLE,
+    STORAGE_BACKUP_SYNC,
+    STORAGE_PRESIGNED_SHARE,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -13,6 +15,8 @@ from intergrax.skills.registry.runtime import SkillRegistry
 _STORAGE_MANIFESTS = (
     STORAGE_ARTIFACT_SYNC,
     STORAGE_OBJECT_LIFECYCLE,
+    STORAGE_BACKUP_SYNC,
+    STORAGE_PRESIGNED_SHARE,
 )
 
 
@@ -23,7 +27,7 @@ class StorageSkillPlugin:
             bundle_id="storage",
             skill_ids=tuple(m.skill_id for m in _STORAGE_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Object storage skill packs (SK-EXP2)",
+            description="storage skill packs (SK-EXP5)",
         )
 
     @classmethod

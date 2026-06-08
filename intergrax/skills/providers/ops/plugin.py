@@ -12,6 +12,10 @@ from intergrax.skills.providers.ops.manifests import (
     OPS_FINDINGS_REVIEW,
     OPS_LOG_TAIL,
     OPS_INCIDENT_ACK,
+    OPS_ONCALL_RUNBOOK,
+    OPS_POSTMORTEM_WRITER,
+    OPS_CHANGE_APPROVER,
+    OPS_CAPACITY_PLANNER,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -25,6 +29,10 @@ _OPS_MANIFESTS = (
     OPS_FINDINGS_REVIEW,
     OPS_LOG_TAIL,
     OPS_INCIDENT_ACK,
+    OPS_ONCALL_RUNBOOK,
+    OPS_POSTMORTEM_WRITER,
+    OPS_CHANGE_APPROVER,
+    OPS_CAPACITY_PLANNER,
 )
 
 
@@ -35,7 +43,7 @@ class OpsSkillPlugin:
             bundle_id="ops",
             skill_ids=tuple(m.skill_id for m in _OPS_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Operations and reliability skill packs (SK-EXP P1)",
+            description="ops skill packs (SK-EXP5)",
         )
 
     @classmethod

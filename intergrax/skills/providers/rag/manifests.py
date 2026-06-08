@@ -61,3 +61,39 @@ RAG_RETRIEVAL_TUNER = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("rag", "retrieval", "tuning"),
 )
+
+RAG_SEMANTIC_QA = SkillManifest(
+    skill_id="rag.semantic_qa",
+    version="1.0.0",
+    description="Semantic Q&A with memory search and document fetch.",
+    tool_ids=("rag.retrieve", "rag.get_document", "memory.search"),
+    prompt_instruction_ids=("rag.semantic_qa.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("rag", "semantic", "qa"),
+)
+
+
+RAG_INGEST_PIPELINE = SkillManifest(
+    skill_id="rag.ingest_pipeline",
+    version="1.0.0",
+    description="End-to-end ingest: parse, ingest, and index readiness check.",
+    tool_ids=("document.parse", "rag.ingest_document", "rag.check_index_status"),
+    prompt_instruction_ids=("rag.ingest_pipeline.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("rag", "ingest", "pipeline"),
+)
+
+
+RAG_METADATA_SEARCH = SkillManifest(
+    skill_id="rag.metadata_search",
+    version="1.0.0",
+    description="Metadata-filtered document discovery without destructive ops.",
+    tool_ids=("rag.search_by_metadata", "rag.list_documents", "rag.describe_collection"),
+    prompt_instruction_ids=("rag.metadata_search.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("rag", "metadata", "search"),
+)
+

@@ -6,6 +6,7 @@ from intergrax.skills.core.manifest import SkillBundleManifest
 from intergrax.skills.providers.health.manifests import (
     HEALTH_INTEGRATION_PROBE,
     HEALTH_FULL_STACK_PROBE,
+    HEALTH_IDENTITY_PROBE,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -13,6 +14,7 @@ from intergrax.skills.registry.runtime import SkillRegistry
 _HEALTH_MANIFESTS = (
     HEALTH_INTEGRATION_PROBE,
     HEALTH_FULL_STACK_PROBE,
+    HEALTH_IDENTITY_PROBE,
 )
 
 
@@ -23,7 +25,7 @@ class HealthSkillPlugin:
             bundle_id="health",
             skill_ids=tuple(m.skill_id for m in _HEALTH_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Integration health probe skill packs (SK-EXP3)",
+            description="health skill packs (SK-EXP5)",
         )
 
     @classmethod

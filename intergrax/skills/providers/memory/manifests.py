@@ -46,3 +46,26 @@ MEMORY_SEMANTIC_SEARCH = SkillManifest(
     tags=("memory", "semantic", "search"),
 )
 
+MEMORY_CROSS_TURN_NOTES = SkillManifest(
+    skill_id="memory.cross_turn_notes",
+    version="1.0.0",
+    description="Cross-turn note taking with list/read/write task memory.",
+    tool_ids=("memory.write", "memory.list_keys", "memory.read"),
+    prompt_instruction_ids=("memory.cross_turn_notes.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("memory", "notes", "cross_turn"),
+)
+
+
+MEMORY_FACT_EXTRACTOR = SkillManifest(
+    skill_id="memory.fact_extractor",
+    version="1.0.0",
+    description="Extract durable facts into LTM with context summarization.",
+    tool_ids=("ltm.write_fact", "memory.read", "context.summarize"),
+    prompt_instruction_ids=("memory.fact_extractor.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("memory", "fact", "extractor"),
+)
+

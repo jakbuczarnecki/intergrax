@@ -1,7 +1,7 @@
 # Skills
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Last updated:** 2026-06-08 — SK-EXP through SK-EXP4 shipped; **99** skills · **41** bundles  
+**Last updated:** 2026-06-08 — SK-EXP through SK-EXP5 shipped; **149** skills · **41** bundles  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Plan (1:1):** [`plan/SKILLS.md`](../plan/SKILLS.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
@@ -271,46 +271,41 @@ Every shipped `skill_id` **must** have a filled `intergrax/skills/providers/<bun
 
 ---
 
-## First-party catalog (99 skills · 41 bundles)
+## First-party catalog (149 skills · 41 bundles)
 
 | Bundle | skill_ids | Status |
 |--------|-----------|--------|
-| `harness` | 12 skills incl. `harness.run_comparator`, `harness.run_exporter` | **Done** |
-| `rag` | 5 skills | **Done** |
-| `workspace` | 2 skills | **Done** |
-| `memory` | 4 skills incl. `memory.semantic_search` | **Done** |
-| `research` | 4 skills incl. `research.web_cache_admin` | **Done** |
-| `knowledge` | 3 skills incl. `knowledge.confluence_navigator` | **Beta** |
-| `legal` | 3 skills | **Done** |
-| `ops` | 8 skills incl. `ops.log_tail`, `ops.incident_ack` | **Done** |
-| `dev` | 3 skills | **Done** |
-| `browser` | 2 skills incl. `browser.interactive_run` | **Done** |
-| `collaboration` | 3 skills | **Done** |
-| `data` | 4 skills incl. `data.sql_mutator`, `data.records_admin` | **Done** |
-| `platform` | 5 skills incl. `platform.secret_admin`, `platform.workflow_cancel` | **Done** |
-| `sandbox` | 1 skill | **Done** |
-| `hitl` | 2 skills | **Done** |
-| `graph` | 1 skill | **Done** |
-| `storage` | 2 skills incl. `storage.object_lifecycle` | **Done** |
-| `message_bus` | 2 skills | **Done** |
-| `cache` | 2 skills incl. `cache.key_admin` | **Done** |
-| `eval` | 4 skills incl. `eval.observation_browser` | **Done** |
-| `modality` | 3 skills incl. `modality.vision_segment` | **Done** |
-| `notify` | 2 skills incl. `notify.batch_dispatch` | **Done** |
-| `cost`, `identity`, `health`, `context`, `agent`, `vector_store`, `crm`, `billing`, `metrics` | 1 skill each (SK-EXP3) | **Done** |
-| `catalog` | `catalog.tool_introspect` | **Done** (SK-EXP4) |
-| `cloud_platform` | `cloud_platform.resolver` | **Done** (SK-EXP4) |
-| `code` | `code.runner` | **Done** (SK-EXP4) |
-| `filesystem` | `filesystem.local_io` | **Done** (SK-EXP4) |
-| `http` | `http.api_client` | **Done** (SK-EXP4) |
-| `interaction` | `interaction.session_handler`, `interaction.input_capture` | **Done** (SK-EXP4) |
-| `jira` | `jira.task_navigator` | **Done** (SK-EXP4) |
-| `gitlab` | `gitlab.issue_creator` | **Done** (SK-EXP4) |
-| `ml` | `ml.explain_predict` | **Done** (SK-EXP4) |
-| `openai` | `openai.vector_admin` | **Done** (SK-EXP4) |
+| Bundle | Skills (count) | Status |
+|--------|----------------|--------|
+| `harness` | 14 | **Done** |
+| `rag` | 8 | **Done** |
+| `ops` | 12 | **Done** |
+| `legal` | 6 | **Done** |
+| `research` | 7 | **Done** |
+| `eval` | 6 | **Done** |
+| `memory` | 6 | **Done** |
+| `platform` | 8 | **Done** |
+| `dev` | 6 | **Done** |
+| `data` | 6 | **Done** |
+| `modality` | 5 | **Done** |
+| `collaboration` | 5 | **Done** |
+| `workspace` | 4 | **Done** |
+| `hitl` | 4 | **Done** |
+| `storage` | 4 | **Done** |
+| `message_bus` | 4 | **Done** |
+| `knowledge` | 3 | **Beta** |
+| `graph` | 3 | **Done** |
+| `sandbox` | 3 | **Done** |
+| `cache` | 3 | **Done** |
+| `notify` | 3 | **Done** |
+| `health` | 3 | **Done** |
+| `cost`, `identity`, `filesystem`, `agent` | 2 each | **Done** |
+| `catalog`, `cloud_platform`, `code`, `http`, `jira`, `gitlab`, `ml`, `openai`, `context`, `vector_store`, `crm`, `billing`, `metrics`, `browser`, `interaction` | 1–2 each | **Done** |
+
+**SK-EXP5 (2026-06-08):** +50 compositional packs — product verticals (legal ops, on-call SRE, research lab, data platform, sandbox dev) without new bundles.
 
 Per-skill `USAGE.md` under `intergrax/skills/providers/<bundle>/`.  
-Verify counts: `register_default_skills()` → `list_catalog_skill_ids()` · gate: `test_sk_exp_skill_bundles.py` … `test_sk_exp4_skill_bundles.py`, `test_skill_usage_docs.py`.
+Verify: `register_default_skills()` → **149** · gate: `test_sk_exp5_skill_bundles.py`, `test_skill_usage_docs.py`.
 
 ---
 

@@ -8,6 +8,8 @@ from intergrax.skills.providers.eval.manifests import (
     EVAL_TRAJECTORY_JUDGE,
     EVAL_RELEASE_COMPARE,
     EVAL_OBSERVATION_BROWSER,
+    EVAL_BASELINE_RUNNER,
+    EVAL_REGRESSION_GUARD,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -17,6 +19,8 @@ _EVAL_MANIFESTS = (
     EVAL_TRAJECTORY_JUDGE,
     EVAL_RELEASE_COMPARE,
     EVAL_OBSERVATION_BROWSER,
+    EVAL_BASELINE_RUNNER,
+    EVAL_REGRESSION_GUARD,
 )
 
 
@@ -27,7 +31,7 @@ class EvalSkillPlugin:
             bundle_id="eval",
             skill_ids=tuple(m.skill_id for m in _EVAL_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Evaluation and scoring skill packs (SK-EXP2 + SK-EXP3)",
+            description="eval skill packs (SK-EXP5)",
         )
 
     @classmethod

@@ -46,3 +46,26 @@ EVAL_OBSERVATION_BROWSER = SkillManifest(
     tags=("eval", "observations", "browser"),
 )
 
+EVAL_BASELINE_RUNNER = SkillManifest(
+    skill_id="eval.baseline_runner",
+    version="1.0.0",
+    description="Baseline eval recording with Braintrust and run listing.",
+    tool_ids=("eval.record_observation", "braintrust.log_eval", "harness.list_runs"),
+    prompt_instruction_ids=("eval.baseline_runner.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("eval", "baseline", "runner"),
+)
+
+
+EVAL_REGRESSION_GUARD = SkillManifest(
+    skill_id="eval.regression_guard",
+    version="1.0.0",
+    description="Regression guard: compare releases, summarize, and alert.",
+    tool_ids=("eval.compare_releases", "eval.summarize_release", "notify.send"),
+    prompt_instruction_ids=("eval.regression_guard.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("eval", "regression", "guard"),
+)
+

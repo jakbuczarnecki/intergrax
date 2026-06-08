@@ -64,3 +64,38 @@ PLATFORM_WORKFLOW_CANCEL = SkillManifest(
     tags=("platform", "workflow", "cancel"),
 )
 
+PLATFORM_RUNBOOK_HUB = SkillManifest(
+    skill_id="platform.runbook_hub",
+    version="1.0.0",
+    description="Platform hub: skill resolve, agent roster, and retrieval.",
+    tool_ids=("skill.resolve", "agent.list_agents", "rag.retrieve"),
+    prompt_instruction_ids=("platform.runbook_hub.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("platform", "runbook", "hub"),
+)
+
+
+PLATFORM_FLAG_ROLLOUT = SkillManifest(
+    skill_id="platform.flag_rollout",
+    version="1.0.0",
+    description="Feature-flag rollout with metrics probe and notify.",
+    tool_ids=("platform.evaluate_feature_flag", "notify.send", "metrics.query_instant"),
+    prompt_instruction_ids=("platform.flag_rollout.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("platform", "flag", "rollout"),
+)
+
+
+PLATFORM_DEPLOY_INSPECTOR = SkillManifest(
+    skill_id="platform.deploy_inspector",
+    version="1.0.0",
+    description="Deploy inspection: workflow runs, check suites, and logs.",
+    tool_ids=("platform.list_workflow_runs", "platform.list_check_suites", "logs.search"),
+    prompt_instruction_ids=("platform.deploy_inspector.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("platform", "deploy", "inspector"),
+)
+

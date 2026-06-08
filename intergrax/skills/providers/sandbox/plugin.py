@@ -3,9 +3,19 @@
 from __future__ import annotations
 
 from intergrax.skills.core.manifest import SkillBundleManifest
-from intergrax.skills.providers.sandbox.manifests import SANDBOX_CODE_EXEC
+from intergrax.skills.providers.sandbox.manifests import (
+    SANDBOX_CODE_EXEC,
+    SANDBOX_TEST_RUNNER,
+    SANDBOX_REFACTOR_LOOP,
+)
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
+
+_SANDBOX_MANIFESTS = (
+    SANDBOX_CODE_EXEC,
+    SANDBOX_TEST_RUNNER,
+    SANDBOX_REFACTOR_LOOP,
+)
 
 
 class SandboxSkillPlugin:
@@ -13,15 +23,16 @@ class SandboxSkillPlugin:
     def skill_bundle_manifest(cls) -> SkillBundleManifest:
         return SkillBundleManifest(
             bundle_id="sandbox",
-            skill_ids=(SANDBOX_CODE_EXEC.skill_id,),
+            skill_ids=tuple(m.skill_id for m in _SANDBOX_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Sandbox execution skill packs (SK-EXP2)",
+            description="sandbox skill packs (SK-EXP5)",
         )
 
     @classmethod
     def skill_manifests(cls) -> tuple:
-        return (SANDBOX_CODE_EXEC,)
+        return _SANDBOX_MANIFESTS
 
     @classmethod
     def register_skills(cls, registry: SkillRegistry) -> None:
-        registry.register(SANDBOX_CODE_EXEC)
+        for manifest in _SANDBOX_MANIFESTS:
+            registry.register(manifest)

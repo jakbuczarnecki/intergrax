@@ -28,3 +28,14 @@ HEALTH_FULL_STACK_PROBE = SkillManifest(
     tags=("health", "full_stack", "probe"),
 )
 
+HEALTH_IDENTITY_PROBE = SkillManifest(
+    skill_id="health.identity_probe",
+    version="1.0.0",
+    description="Extended health sweep: identity, cache, notify, wiki backends.",
+    tool_ids=("health.check_identity_provider", "health.check_key_value_cache", "health.check_notification_channel", "health.check_wiki_knowledge"),
+    prompt_instruction_ids=("health.identity_probe.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("health", "identity", "probe"),
+)
+

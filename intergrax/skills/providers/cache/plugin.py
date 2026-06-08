@@ -6,6 +6,7 @@ from intergrax.skills.core.manifest import SkillBundleManifest
 from intergrax.skills.providers.cache.manifests import (
     CACHE_SESSION_CACHE,
     CACHE_KEY_ADMIN,
+    CACHE_WARM_PREFETCH,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -13,6 +14,7 @@ from intergrax.skills.registry.runtime import SkillRegistry
 _CACHE_MANIFESTS = (
     CACHE_SESSION_CACHE,
     CACHE_KEY_ADMIN,
+    CACHE_WARM_PREFETCH,
 )
 
 
@@ -23,7 +25,7 @@ class CacheSkillPlugin:
             bundle_id="cache",
             skill_ids=tuple(m.skill_id for m in _CACHE_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Key-value cache skill packs (SK-EXP2)",
+            description="cache skill packs (SK-EXP5)",
         )
 
     @classmethod
