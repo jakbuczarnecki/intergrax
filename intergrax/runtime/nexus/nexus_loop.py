@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from intergrax.agents.agent_engine import AgentEngine
 from intergrax.contracts.agent_execution_result import (
@@ -78,6 +78,9 @@ from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
 
+if TYPE_CHECKING:
+    from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
+
 class NexusLoop:
     """
     Global Nexus loop (§9.1, §41).
@@ -122,6 +125,7 @@ class NexusLoop:
         signal_collector: SignalCollector | None = None,
         evaluation_registry: OnlineEvaluationRegistry | None = None,
         run_budget: RunBudget | None = None,
+        critic_graph_hooks: Optional["CriticGraphHooks"] = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -186,6 +190,7 @@ class NexusLoop:
             max_parallel_nodes=max_parallel_nodes,
             max_inflight_nodes=max_inflight_nodes,
             max_delegation_depth=max_delegation_depth,
+            critic_graph_hooks=critic_graph_hooks,
         )
         self._composer = FinalResponseComposer(merge_strategy=merge_strategy)
         self._lifecycle = lifecycle
@@ -223,6 +228,7 @@ class NexusLoop:
             finalize_trace=self._finalize_persisting_trace,
             maybe_checkpoint=self._maybe_checkpoint_long_running,
             max_run_retries=max_run_retries,
+            critic_graph_hooks=critic_graph_hooks,
         )
         self._intake_runner = NexusIntakeRunner(
             hitl=self._hitl,

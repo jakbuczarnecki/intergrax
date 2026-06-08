@@ -13,6 +13,13 @@ from intergrax.runtime.critic.contracts import (
     build_critic_request,
 )
 from intergrax.runtime.critic.critic_orchestrator import CriticOrchestrator
+from intergrax.runtime.critic.critic_wiring import (
+    CriticGraphHooks,
+    CriticHookConfig,
+    build_critic_graph_hooks,
+    validate_final_with_critic,
+    validate_node_with_critic,
+)
 from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
 from intergrax.runtime.critic.evaluator_loop_spec import EvaluatorLoopSpec
 from intergrax.runtime.critic.l0_gateway import L0Gateway
@@ -22,6 +29,8 @@ __all__ = [
     "CriticAction",
     "CriticEvalToolClient",
     "CriticLayer",
+    "CriticGraphHooks",
+    "CriticHookConfig",
     "CriticOrchestrator",
     "CriticRequest",
     "CriticScope",
@@ -31,5 +40,8 @@ __all__ = [
     "L1Gateway",
     "LayerVerdict",
     "RubricSpec",
+    "build_critic_graph_hooks",
     "build_critic_request",
+    "validate_final_with_critic",
+    "validate_node_with_critic",
 ]

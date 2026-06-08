@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
-from typing import Awaitable, Callable, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Awaitable, Callable, Dict, List, Optional, Union
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.agent_engine import AgentEngine
@@ -44,6 +44,9 @@ from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task_memory.delegation_memory import TaskMemoryMetadataKey
 
+if TYPE_CHECKING:
+    from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
+
 ExecuteFn = Callable[[Agent, Task, ExecutionNode], Awaitable[AgentExecutionResult]]
 ValidateFn = Callable[[AgentExecutionResult, Agent, ExecutionNode], ValidationResult]
 RetryCallback = Callable[[RetryRecord], Union[None, Awaitable[None]]]
@@ -81,6 +84,7 @@ class GraphExecutor:
         max_parallel_nodes: int | None = None,
         max_inflight_nodes: int | None = None,
         max_delegation_depth: int | None = None,
+        critic_graph_hooks: Optional["CriticGraphHooks"] = None,
     ) -> None:
         self._registry = registry
         self._max_parallel_nodes = max_parallel_nodes
@@ -98,6 +102,7 @@ class GraphExecutor:
         self._handoff = handoff_coordinator or HandoffCoordinator(registry)
         self._event_bus = event_bus
         self._middleware = middleware or MiddlewarePipeline()
+        self._critic_graph_hooks = critic_graph_hooks
 
     def set_retry_policy(self, policy: RetryPolicy) -> None:
         self._retry_engine = RetryEngine(
@@ -395,10 +400,27 @@ class GraphExecutor:
             execution: AgentExecutionResult,
             current_agent: Agent,
         ) -> ValidationResult:
+            contract = current_agent.get_contract()
+            cap = node.capability or task.context.capability
+            if (
+                self._critic_graph_hooks is not None
+                and self._critic_graph_hooks.verify_node_partial
+            ):
+                from intergrax.runtime.critic.critic_wiring import validate_node_with_critic
+
+                return validate_node_with_critic(
+                    execution,
+                    contract=contract,
+                    hooks=self._critic_graph_hooks,
+                    run_id=execution.run_id or task.task_id,
+                    tenant_id=task.tenant_id,
+                    capability=cap,
+                    plan_criteria=plan_criteria,
+                )
             return self._validation_engine.validate(
                 execution,
-                contract=current_agent.get_contract(),
-                capability=node.capability or task.context.capability,
+                contract=contract,
+                capability=cap,
                 plan_criteria=plan_criteria,
             )
 

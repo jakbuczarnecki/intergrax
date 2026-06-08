@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Awaitable, Callable, List, Optional
+from typing import TYPE_CHECKING, Awaitable, Callable, List, Optional
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.execution_phase import ExecutionPhase
@@ -35,6 +35,9 @@ from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import PersistingTaskTraceEmitter, TaskTraceEmitter
 from intergrax.utils.time_provider import SystemTimeProvider
+
+if TYPE_CHECKING:
+    from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
 
 FinishFn = Callable[..., Awaitable[TaskResult]]
 FinalizeFn = Callable[..., Awaitable[None]]
@@ -65,6 +68,7 @@ class NexusGraphRunner:
     finalize_trace: FinalizeFn
     maybe_checkpoint: CheckpointFn
     max_run_retries: int = 0
+    critic_graph_hooks: CriticGraphHooks | None = None
 
     async def run(
         self,
@@ -182,12 +186,29 @@ class NexusGraphRunner:
         final_validation = ValidationResult(valid=True)
         if executions:
             final_agent = self.registry.get(executions[-1].agent_id)
-            final_validation = self.validation_engine.validate(
-                executions[-1],
-                contract=final_agent.get_contract(),
-                capability=task.context.capability,
-                plan_criteria=plan.validation_criteria,
-            )
+            final_contract = final_agent.get_contract()
+            if (
+                self.critic_graph_hooks is not None
+                and self.critic_graph_hooks.verify_graph_final
+            ):
+                from intergrax.runtime.critic.critic_wiring import validate_final_with_critic
+
+                final_validation = validate_final_with_critic(
+                    executions[-1],
+                    contract=final_contract,
+                    hooks=self.critic_graph_hooks,
+                    run_id=executions[-1].run_id or task.task_id,
+                    tenant_id=task.tenant_id,
+                    capability=task.context.capability,
+                    plan_criteria=plan.validation_criteria,
+                )
+            else:
+                final_validation = self.validation_engine.validate(
+                    executions[-1],
+                    contract=final_contract,
+                    capability=task.context.capability,
+                    plan_criteria=plan.validation_criteria,
+                )
 
         if not final_validation.valid:
             lifecycle.transition(task, TaskState.FAILED)
