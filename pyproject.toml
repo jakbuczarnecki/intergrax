@@ -168,7 +168,7 @@ llm-all = [
 ]
 dev = [
   "pytest>=8.4,<9",
-  "pytest-asyncio>=0.23,<0.24",
+  "pytest-asyncio>=0.23,<1.5",
   "ruff",
   "pyright",
   "redis>=5.0",
@@ -189,7 +189,7 @@ dev = [
 # Minimal deps for GitHub Actions regression gate (no docling / unstructured / linters).
 dev-ci = [
   "pytest>=8.4,<9",
-  "pytest-asyncio>=0.23,<0.24",
+  "pytest-asyncio>=0.23,<1.5",
   "pytest-xdist>=3.6,<4",
   "redis>=5.0",
   "celery>=5.3",
