@@ -2,8 +2,8 @@
 
 **Status:** Canonical architecture document
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Implementation:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](../INTERGRAX_IMPLEMENTATION_PLAN.md) · [`plan/phases/`](../plan/phases/)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Implementation:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`plan/`](../plan/)
 
 ---
 

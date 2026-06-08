@@ -2,8 +2,8 @@
 
 **Status:** Canonical architecture · **Phase MEM Done** · **Phase MEM-DEPTH Planned**  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)  
-**Plan:** [`plan/phases/rag-context-memory.md`](../plan/phases/rag-context-memory.md)  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Plan:** [`plan/MEMORY.md`](../plan/MEMORY.md)  
 **Authoring:** [`guides/AGENT_CREATION_GUIDE.md` Appendix G](../guides/AGENT_CREATION_GUIDE.md#appendix-g--memory--rag-naming-phase-q)
 
 ---
@@ -535,7 +535,7 @@ See [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) §3.
 
 **FAUDIT-32:** Memory Layer **L2** · Context Engineering **L3** — closeout ≠ full depth.
 
-All implementation tasks: [Phase MEM-DEPTH](plan/phases/rag-context-memory.md).
+All implementation tasks: [Phase MEM-DEPTH](plan/MEMORY.md).
 
 ---
 

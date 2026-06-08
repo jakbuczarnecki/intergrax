@@ -2,7 +2,7 @@
 
 **Status:** Canonical architecture (decomposed from platform canon)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
-**Target reference:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Target reference:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 
 ---
 
@@ -690,7 +690,7 @@ RuntimePolicyBundle:
 - Nexus and UAEP read from the bundle — agents MUST NOT construct parallel policy objects.
 - Skill `policy_fragment_id` (§7.1.8) merges into `domain_fragments` or tool policy — never bypasses `ToolRuntime`.
 
-Implementation: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) R-Policy (Done).
+Implementation: [`intergrax_runtime_architecture.md`](plan/UNIFIED_EXECUTION_RUNTIME.md) R-Policy (Done).
 
 ### 42.11.5 How to read policy for a run (operator)
 
@@ -851,7 +851,7 @@ Harness literature describes **subagents** as autonomous units with their own ru
 
 **Declarative `DELEGATES_TO` (implemented):** Tier-3 `ApplicationGraphSpec` may declare `DELEGATES_TO` as authoring sugar; `graph_spec_to_plan.py` **expands** it to a **child `PlanStep` / `ExecutionNode`** with `DelegationSpec` on the **child** node ([ADR-FLOW-001](adr/ADR-FLOW-001.md) Option C). `SubtaskContract` supplies objective, scopes, and budget envelope on the child delegation path (FLOW-14/15).
 
-Implementation: R-Delegate (**Done**) for contracts and memory namespace; graph expansion (**Done**, Phase FLOW) in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) · operational narrative [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §13.
+Implementation: R-Delegate (**Done**) for contracts and memory namespace; graph expansion (**Done**, Phase FLOW) in [`intergrax_runtime_architecture.md`](plan/UNIFIED_EXECUTION_RUNTIME.md) · operational narrative [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §13.
 
 ```text
 DelegationSpec:

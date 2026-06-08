@@ -1,13 +1,17 @@
-# Implementation Phases — Llm And Modality
+# Modality — Implementation Plan
 
-**Hub:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](../INTERGRAX_IMPLEMENTATION_PLAN.md)
+**Architecture (1:1):** [`architecture/MODALITY.md`](../architecture/MODALITY.md)  
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
+**Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
+
+> When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
 ---
 
 ## Phase W-ML — Model & Modality Plane (Vision, Audio, Classical ML)
 
 **Status:** **Done** (2026-06-02) — docs + implementation waves W-ML.0–W-ML.8.  
-**Canon:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.9, §53.13 · **Catalog:** [`architecture/MODALITY.md`](architecture/MODALITY.md) · **Ideal:** [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5.1, §7.1, §17.
+**Canon:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.9, §53.13 · **Catalog:** [`architecture/MODALITY.md`](architecture/MODALITY.md) · **Ideal:** [IDEAL_HARNESS_AI_ARCHITECTURE.md](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5.1, §7.1, §17.
 
 **Strategic fit:** Extends Harness AI at scale without MLOps scope creep. Same patterns as LLM adapters and Integration Library — registries, contracts, atomic tools, policy, trace, V-COST budgets.
 
@@ -82,4 +86,3 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 | 2026-06-03 | W-ML.7b | `TASK_COMPLETED` payload includes aggregated `modality_metrics` via `NexusRuntimeEventPublisher` + `RunTraceReader` |
 
 ---
-

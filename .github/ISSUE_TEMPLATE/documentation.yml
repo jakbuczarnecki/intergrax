@@ -15,9 +15,9 @@ body:
       label: Affected document
       options:
         - README.md (navigation / status)
-        - docs/INTERGRAX_DEVELOPMENT_STRATEGY.md
+        - docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md
         - docs/intergrax_runtime_architecture.md
-        - docs/INTERGRAX_IMPLEMENTATION_PLAN.md
+        - docs/intergrax_runtime_architecture.md
         - docs/guides/AGENT_CREATION_GUIDE.md
         - docs/architecture/INTEGRATIONS.md
         - docs/architecture/TOOLS.md
@@ -26,7 +26,7 @@ body:
         - docs/architecture/MODALITY.md
         - docs/guides/HARNESS_ENVIRONMENT.md
         - docs/guides/EXTENSION_AUTHOR_GUIDE.md
-        - docs/IDEAL_HARNESS_AI_ARCHITECTURE.md
+        - docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md
         - docs/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md
         - README.md
         - AGENTS.md / llms.txt

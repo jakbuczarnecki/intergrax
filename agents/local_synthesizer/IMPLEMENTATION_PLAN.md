@@ -1,4 +1,4 @@
-# LocalSynthesizerAgent — Implementation Plan
+﻿# LocalSynthesizerAgent — Implementation Plan
 
 **The implementation map** for this Tier-2 agent — phases, status, gaps, and verification.
 
@@ -6,7 +6,7 @@ Status: **Scaffold Done** — Wave **LKW.2** (after LKW.1 ingest/search)
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 Host: [`applications/local_workspace_application/`](../../applications/local_workspace_application/)  
-Platform plan: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md) · **LKW.2**
+Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) · **LKW.2**
 
 ---
 
@@ -15,7 +15,7 @@ Platform plan: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IM
 | Topic | Where |
 |-------|--------|
 | Synthesis responsibilities, shadow workspace | **ARCHITECTURE.md** |
-| Wave tasks | **This file** + platform **§6.3a LKW.*** |
+| Wave tasks | **This file** + platform **`docs/plan/PLATFORM_FOUNDATION.md` §6.3a LKW.*** |
 
 ---
 

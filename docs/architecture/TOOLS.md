@@ -2,8 +2,8 @@
 
 **Status:** Canonical architecture document
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Implementation:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](../INTERGRAX_IMPLEMENTATION_PLAN.md) · [`plan/phases/`](../plan/phases/)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Implementation:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`plan/`](../plan/)
 
 ---
 
@@ -56,13 +56,13 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 
 | Document | Purpose |
 |----------|---------|
-| Phase **M-RAG** | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) — RAG engine phases M-RAG.1–M-RAG.17 |
+| Phase **M-RAG** | [intergrax_runtime_architecture.md](plan/TOOLS.md) — RAG engine phases M-RAG.1–M-RAG.17 |
 | RAG stack canon | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) — Tier-0 retrieval architecture |
 | [guides/EXTENSION_AUTHOR_GUIDE.md](guides/EXTENSION_AUTHOR_GUIDE.md) | **External tool plugins** — `ToolPlugin`, entry points, MCP export |
 | [intergrax/tools/USAGE.md](../intergrax/tools/USAGE.md) | **Operational guide** — wire tools in Tier-3 apps and invoke from agents |
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.6–§7.1.7, §22 | Architecture canon — Tool Library, unified tool model |
-| [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase O · **T-EXPAND** | Phase status, catalog expansion waves T1–T11 |
-| [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase V | Architecture hardening: security/cost governance and evaluation discipline (`V-SEC.*`, `V-COST.*`, `V-EVAL.*`) |
+| [intergrax_runtime_architecture.md](plan/TOOLS.md) Phase O · **T-EXPAND** | Phase status, catalog expansion waves T1–T11 |
+| [intergrax_runtime_architecture.md](plan/TOOLS.md) Phase V | Architecture hardening: security/cost governance and evaluation discipline (`V-SEC.*`, `V-COST.*`, `V-EVAL.*`) |
 | [architecture/INTEGRATIONS.md](architecture/INTEGRATIONS.md) | **167** backend adapters tools compose (not called directly by agents) |
 | [guides/AGENT_CREATION_GUIDE.md](guides/AGENT_CREATION_GUIDE.md) Appendix E | How agents declare `allowed_tools` vs applications wire backends |
 
@@ -607,7 +607,7 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 6. Update this catalog and Phase O tracker in the implementation plan.
 7. Wire in one Tier-3 application via `ToolProfile` + `ToolWiringContext`.
 
-Delivery checklist: [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) — Phase O.4 workflow.
+Delivery checklist: [intergrax_runtime_architecture.md](plan/TOOLS.md) — Phase O.4 workflow.
 
 ---
 

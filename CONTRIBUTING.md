@@ -8,7 +8,7 @@ Thank you for your interest in Intergrax. This document explains how to contribu
 
 ## Project status
 
-Intergrax is under **active private R&D**. The **harness platform is complete** — the default implementation queue is [§6.1 maintenance](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) only. Business agents (Phase K) are [end of plan](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only) until explicit product prioritization.
+Intergrax is under **active private R&D**. The **harness platform is complete** — the default implementation queue is [§6.1 maintenance](docs/intergrax_runtime_architecture.md#61-harness-platform-maintenance-default--band-1) only. Business agents (Phase K) are [end of plan](docs/intergrax_runtime_architecture.md#63-end-of-plan--deferred-product-work-only) until explicit product prioritization.
 
 ---
 
@@ -18,9 +18,9 @@ Intergrax is under **active private R&D**. The **harness platform is complete** 
 
 | Document | When |
 |----------|------|
-| [docs/INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) | Always — strategic goal and work cycle |
+| [docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) | Always — strategic goal and work cycle |
 | [docs/intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Architecture changes |
-| [docs/INTERGRAX_IMPLEMENTATION_PLAN.md](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) | Status, phases, gates |
+| [docs/intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Status, phases, gates |
 | [docs/guides/AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md) | Agent or application work |
 | [AGENTS.md](AGENTS.md) | AI coding agents working in this repo |
 
@@ -138,9 +138,9 @@ git checkout -b feature/short-description
 
 | Change type | Update |
 |-------------|--------|
-| Strategy / goal | `docs/INTERGRAX_DEVELOPMENT_STRATEGY.md` |
+| Strategy / goal | `docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md` |
 | Architecture | `docs/intergrax_runtime_architecture.md` + sync plan §0 |
-| Phase status | `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` |
+| Phase status | `docs/intergrax_runtime_architecture.md` |
 | Agent workflow | `docs/guides/AGENT_CREATION_GUIDE.md` |
 | Integration catalog | `docs/architecture/INTEGRATIONS.md` |
 | Tool catalog | `docs/architecture/TOOLS.md` |

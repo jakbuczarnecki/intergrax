@@ -4,7 +4,7 @@
 **Composition engine:** [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md)  
 **Architecture:** `docs/intergrax_runtime_architecture.md` §7.4.8–§7.4.10
 
-> **Documentation boundary:** Platform docs in `docs/` (architecture canon, `INTERGRAX_IMPLEMENTATION_PLAN.md`) describe the **Harness** and how to host applications. Each product under `applications/<name>/` maintains its own **`ARCHITECTURE.md`**, **`IMPLEMENTATION_PLAN.md`**, and deployment notes — those are **not** duplicated in the platform plan.
+> **Documentation boundary:** Platform docs in `docs/` (architecture canon, `intergrax_runtime_architecture.md`) describe the **Harness** and how to host applications. Each product under `applications/<name>/` maintains its own **`ARCHITECTURE.md`**, **`IMPLEMENTATION_PLAN.md`**, and deployment notes — those are **not** duplicated in the platform plan.
 
 Each folder under `applications/` is a **self-contained execution environment**: host, env, agent roster, integrations, and (when scaffolded) Docker.  
 Tier-2 agent logic lives in `agents/` — not here.
@@ -20,7 +20,7 @@ When adding or changing Tier-3 application hosts, include harness hardening hook
 - context/prompt/eval regression compatibility in host pipelines (`V-CE.*`, `V-PE.*`, `V-EVAL.*`),
 - security and cost policy enforcement in runtime wiring (`V-SEC.*`, `V-COST.*`).
 
-Primary tracker: `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` Phase V.
+Primary tracker: `docs/intergrax_runtime_architecture.md` Phase V.
 
 ---
 
@@ -344,4 +344,4 @@ Set API keys via env or `secrets=` on `LLMProfile.create_adapter()`. Enable `INT
 - **LLM adapters (providers, env, deployment):** [`docs/architecture/LLM_ADAPTERS.md`](../docs/architecture/LLM_ADAPTERS.md)
 - **Tool catalog wiring:** [`intergrax/tools/USAGE.md`](../intergrax/tools/USAGE.md)
 - **Agent creation:** [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.md)
-- **Phase N plan:** [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
+- **Phase N plan:** [`docs/intergrax_runtime_architecture.md`](../docs/intergrax_runtime_architecture.md)

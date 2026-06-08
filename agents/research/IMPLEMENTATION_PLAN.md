@@ -6,7 +6,7 @@ Status: **Harness baseline Done** — graph/delegation depth optional
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 Host: [`applications/research_application/`](../../applications/research_application/)  
-Platform plan: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md) · Phase AA-RES
+Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) · Phase AA-RES
 
 ---
 

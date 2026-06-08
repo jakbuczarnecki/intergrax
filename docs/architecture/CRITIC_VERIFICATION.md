@@ -2,8 +2,8 @@
 
 **Status:** Canonical architecture document
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Implementation:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](../INTERGRAX_IMPLEMENTATION_PLAN.md) · [`plan/phases/`](../plan/phases/)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Implementation:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`plan/`](../plan/)
 
 ---
 
@@ -13,9 +13,9 @@
 **Audience:** Harness platform engineers, Tier-2 agent authors, Tier-3 application operators  
 **Canon addendum:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) §55  
 **Decision record:** [`adr/ADR-CRITIC-001.md`](adr/ADR-CRITIC-001.md)  
-**Implementation tracker:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) — Phase CRIT-V  
-**Target alignment:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md) §6.4, §17.2, §18  
-**Audit layer:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §25 (Evaluation), §7 (Reasoning), §10 (Multi-agent)
+**Implementation tracker:** [`intergrax_runtime_architecture.md`](plan/CRITIC_VERIFICATION.md) — Phase CRIT-V  
+**Target alignment:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §6.4, §17.2, §18  
+**Audit layer:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §25 (Evaluation), §7 (Reasoning), §10 (Multi-agent)
 
 ---
 
@@ -337,7 +337,7 @@ CVL **feeds** existing infrastructure; does not replace it:
 
 ## 10. Evaluator-loop pattern (critique–revise)
 
-Aligns with [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md) §6.4 and canon §53.10.
+Aligns with [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §6.4 and canon §53.10.
 
 ```mermaid
 sequenceDiagram
@@ -433,7 +433,7 @@ Integrates with existing `RuntimePolicyEngine` — no agent-specific branches.
 
 ## 16. Implementation tracking
 
-See [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) — **Phase CRIT-V**.
+See [`intergrax_runtime_architecture.md`](plan/CRITIC_VERIFICATION.md) — **Phase CRIT-V**.
 
 | Wave | Focus | Status |
 |------|-------|--------|

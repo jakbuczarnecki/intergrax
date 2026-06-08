@@ -1,7 +1,7 @@
 # Harness Implementation Audit — Copy-Paste Prompt
 
 **Purpose:** repeatable LLM prompt for Intergrax Harness AI implementation audits.  
-**Procedure source:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md)
+**Procedure source:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md)
 
 ---
 
@@ -92,10 +92,10 @@ Harness → Runtime → Agents → Applications → Products
 
 | # | Document | Role | What to extract |
 |---|----------|------|-----------------|
-| 1 | `docs/IDEAL_HARNESS_AI_ARCHITECTURE.md` | **Target state** | Ideal Harness AI: 9 logical layers, design principles, domain entities, reference flow, extension points |
+| 1 | `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | **Target state** | Ideal Harness AI: 9 logical layers, design principles, domain entities, reference flow, extension points |
 | 2 | `docs/intergrax_runtime_architecture.md` | **Current canonical architecture** | Four-tier model (Tier-0→3), §42 Unified Execution Runtime, forbidden patterns, implementation rules |
-| 3 | `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` | **Implementation roadmap & status** | Phase trackers (Q, Q+, R, S, U, V, W-OPS, H-APP, MEM, DX, AA…), gate counts, Done/In-progress rows |
-| 4 | `docs/INTEGRAX_HARNESS_AUDIT_MAP.md` | **Audit procedure** | Layer-specific audit questions, typical gaps, scoring model, output format, global rules |
+| 3 | `docs/intergrax_runtime_architecture.md` | **Implementation roadmap & status** | Phase trackers (Q, Q+, R, S, U, V, W-OPS, H-APP, MEM, DX, AA…), gate counts, Done/In-progress rows |
+| 4 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | **Audit procedure** | Layer-specific audit questions, typical gaps, scoring model, output format, global rules |
 | 5 | `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix H** | **Governance control plane (authoring)** | `ApplicationEnvironmentProfile` map, `RuntimePolicyBundle`, security profile, observability mandatory vs optional, verification commands — use when auditing §5 Policy and §21 Observability |
 | 6 | `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix I** | **Orchestration control plane (authoring)** | Nexus runners, `ExecutionGraph`, `DelegationSpec`, hooks, planning strategies, customization surfaces — use when auditing §7–§10; implementation closeout: plan **Phase ORCH** (**Done**) |
 | 7 | `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix J** | **Tools & skills control plane (authoring)** | `ToolProfile`, `SkillProfile`, `catalog_runtime_bridge`, `SkillResolverProtocol`, `ToolRuntime`, conformance checks — use when auditing §11–§12; implementation closeout: plan **Phase TS** (**Done**) |
@@ -107,7 +107,7 @@ Harness → Runtime → Agents → Applications → Products
 
 - **Target** → `IDEAL_HARNESS_AI_ARCHITECTURE.md`
 - **Current architecture** → `intergrax_runtime_architecture.md`
-- **Plan** → `INTERGRAX_IMPLEMENTATION_PLAN.md`
+- **Plan** → `intergrax_runtime_architecture.md`
 - **Governance authoring** → `guides/AGENT_CREATION_GUIDE.md` Appendix H
 - **Orchestration authoring** → `guides/AGENT_CREATION_GUIDE.md` Appendix I
 - **Tools/skills authoring** → `guides/AGENT_CREATION_GUIDE.md` Appendix J
@@ -161,7 +161,7 @@ Interpret **USER CONFIG** at the top of this prompt:
 | `mode` | Action |
 |--------|--------|
 | `audit-only` | Report only. **Do not edit any files.** |
-| `audit-and-fix` | Report, then update `INTERGRAX_IMPLEMENTATION_PLAN.md` (and architecture doc if drift found). **No code or test changes.** See §5 Step 8. |
+| `audit-and-fix` | Report, then update `intergrax_runtime_architecture.md` (and architecture doc if drift found). **No code or test changes.** See §5 Step 8. |
 
 If `scope: A` and `layer` is empty → stop and ask for layer name.  
 If `scope: B` and `phase` is empty → stop and ask for phase.  
@@ -234,7 +234,7 @@ Execute these steps **in order** for each layer in scope. Do not skip steps.
 ### Step 1 — Read references
 
 1. Read the relevant sections of the canonical documents for this layer (IDEAL, architecture canon, implementation plan, audit map; for **§5 Policy** and **§21 Observability** read Appendix H; for **§7–§10** planning/graph/subagents read Appendix I).
-2. Note which `INTERGRAX_IMPLEMENTATION_PLAN.md` phases/appendices claim Done vs In-progress for this area.
+2. Note which `intergrax_runtime_architecture.md` phases/appendices claim Done vs In-progress for this area.
 
 ### Step 2 — Map to codebase
 
@@ -262,7 +262,7 @@ List **concrete** gaps between:
 
 - Target (`IDEAL_HARNESS_AI_ARCHITECTURE.md`)
 - Current arch (`intergrax_runtime_architecture.md`)
-- Plan status (`INTERGRAX_IMPLEMENTATION_PLAN.md`)
+- Plan status (`intergrax_runtime_architecture.md`)
 - Actual code/tests
 
 Each gap must be specific, e.g. “`NexusLoop` contains agent-specific branch for legal_agent” — not “policy could be better”.
@@ -312,7 +312,7 @@ If a command cannot run, state why and what manual evidence substitutes it.
 
 Update documentation to close the **plan ↔ reality** gap:
 
-1. **`INTERGRAX_IMPLEMENTATION_PLAN.md`** (primary):
+1. **`intergrax_runtime_architecture.md`** (primary):
    - Fix incorrect status markers (Done/In-progress) backed by audit evidence
    - Add new task rows with phase IDs, priority, owner area, acceptance criteria
    - Update appendix traceability matrices (C, D, E, G, …) when audit source is known
@@ -390,7 +390,7 @@ Impact of gaps (Critical/High/Medium/Low).
 Changes needed in `intergrax_runtime_architecture.md`.
 
 ## 7. Required Implementation Plan Updates
-Changes needed in `INTERGRAX_IMPLEMENTATION_PLAN.md` (phase IDs, appendix rows).
+Changes needed in `intergrax_runtime_architecture.md` (phase IDs, appendix rows).
 (In `audit-and-fix` mode: mark which of these were applied.)
 
 ## 8. Recommended Code Changes
@@ -432,7 +432,7 @@ Precise criteria to mark this layer complete.
 Patterns spanning multiple layers (e.g. policy bypass, tier violations, missing telemetry).
 
 # Recommended Plan Restructure
-New phases, reprioritized tasks, or appendix updates for `INTERGRAX_IMPLEMENTATION_PLAN.md`.
+New phases, reprioritized tasks, or appendix updates for `intergrax_runtime_architecture.md`.
 
 # Recommended Next Focused Audits
 Which single layers deserve deep follow-up.

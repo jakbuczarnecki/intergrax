@@ -58,6 +58,6 @@ LKW uses the canonical **Integration → Tool → Skill → Agent** model ([ARCH
 ## Docs
 
 - LKW architecture: [ARCHITECTURE.md](ARCHITECTURE.md)
-- Plan register: [docs/INTERGRAX_IMPLEMENTATION_PLAN.md §6.3a](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated)
+- Plan register: [docs/intergrax_runtime_architecture.md §6.3a](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)
 - Agent workflow: [docs/guides/AGENT_CREATION_GUIDE.md](../../docs/guides/AGENT_CREATION_GUIDE.md)
 - Application layout: [applications/USAGE.md](../USAGE.md)

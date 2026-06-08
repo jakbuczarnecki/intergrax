@@ -80,7 +80,7 @@ def render_harness_adr_readme() -> str:
         **Domain:** Tier-0 platform + Tier-1 Nexus (`intergrax/`, `intergrax/runtime/`)
 
         Canonical architecture: [`../intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
-        Implementation tracker: [`../INTERGRAX_IMPLEMENTATION_PLAN.md`](../INTERGRAX_IMPLEMENTATION_PLAN.md)
+        Implementation tracker: [`../intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
 
         ---
 
@@ -111,7 +111,7 @@ def render_harness_adr_readme() -> str:
 
         1. Copy [`TEMPLATE.md`](TEMPLATE.md) to the next sequential id for your area tag.
         2. Fill **Context**, **Decision**, **Consequences**, and **Compliance**.
-        3. Link from canon (`intergrax_runtime_architecture.md`) and/or `INTERGRAX_IMPLEMENTATION_PLAN.md`.
+        3. Link from canon (`intergrax_runtime_architecture.md`) and/or `intergrax_runtime_architecture.md`.
         4. Set **Status** to `Accepted` when implemented; `Superseded` when replaced.
 
         ## Index

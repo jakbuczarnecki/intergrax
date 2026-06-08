@@ -1,11 +1,11 @@
-# problem_radar agent — Implementation Plan
+﻿# problem_radar agent — Implementation Plan
 
 **The implementation map** for this Tier-2 placeholder — phases, status, gaps, and verification.
 
 Status: **Frozen** — Band 3 (K.1) until explicit product reprioritization
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-Platform plan: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md) · K.1 · §6.3
+Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) · K.1 · §6.3
 
 ---
 
@@ -15,7 +15,7 @@ Platform plan: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IM
 |-------|--------|
 | Placeholder purpose, I/O schemas | **ARCHITECTURE.md** |
 | Scheduling / go-no-go | **This file** + platform **Appendix A** |
-| Product scope | Platform plan **§6.3** only |
+| Product scope | Platform plan **`docs/plan/PLATFORM_FOUNDATION.md` §6.3** only |
 
 ---
 

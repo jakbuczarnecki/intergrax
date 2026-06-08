@@ -1,9 +1,8 @@
 # Intergrax — Agent OS / Harness AI
 
-**Hub:** docs/intergrax_runtime_architecture.md  
-**Architecture (17 domain docs):** docs/architecture/README.md  
-**Plan:** docs/INTERGRAX_IMPLEMENTATION_PLAN.md · docs/plan/phases/  
-**Guides:** docs/guides/
+**Hub (sole docs/ root file):** docs/intergrax_runtime_architecture.md  
+**Domain pairs (1:1):** docs/architecture/<DOMAIN>.md ↔ docs/plan/<DOMAIN>.md  
+**Guides (strategy, ideal, audit):** docs/guides/
 
 Domains: PLATFORM_FOUNDATION · UNIFIED_EXECUTION_RUNTIME · ORCHESTRATION · NEXUS_EXECUTION_FLOW · AGENT_CONTRACTS_AND_ASSEMBLY · INTEGRATIONS · TOOLS · SKILLS · LLM_ADAPTERS · MEMORY · MODALITY · OBSERVABILITY · RELIABILITY_FAILURE_AND_HITL · TIER3_APPLICATION_ENVIRONMENT · EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE · ADAPTIVE_HARNESS_INTELLIGENCE · CRITIC_VERIFICATION
 

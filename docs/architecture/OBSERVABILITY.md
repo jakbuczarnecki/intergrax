@@ -2,8 +2,8 @@
 
 **Status:** Canonical architecture document
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Implementation:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](../INTERGRAX_IMPLEMENTATION_PLAN.md) · [`plan/phases/`](../plan/phases/)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Implementation:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`plan/`](../plan/)
 
 ---
 
@@ -11,7 +11,7 @@
 **Status:** Canonical architecture (Harness platform) · **Phase OBS-BUS Done** (8/8) · audit map §21 **L4**  
 **Last updated:** 2026-06-08 (closeout sync)  
 **Audience:** Harness maintainers, Tier-3 application authors, Tier-2 agent authors, operators  
-**Hub:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) · **Related:** [architecture/UNIFIED_EXECUTION_RUNTIME.md](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.24 · [ADR-OBS-001](adr/ADR-OBS-001.md) · [plan/phases/observability-reliability.md](plan/phases/observability-reliability.md) · [guides/AGENT_CREATION_GUIDE.md Appendix Q](guides/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [guides/HARNESS_ENVIRONMENT.md](guides/HARNESS_ENVIRONMENT.md)
+**Hub:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) · **Related:** [architecture/UNIFIED_EXECUTION_RUNTIME.md](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.24 · [ADR-OBS-001](adr/ADR-OBS-001.md) · [plan/OBSERVABILITY.md](plan/OBSERVABILITY.md) · [guides/AGENT_CREATION_GUIDE.md Appendix Q](guides/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [guides/HARNESS_ENVIRONMENT.md](guides/HARNESS_ENVIRONMENT.md)
 
 ---
 
@@ -560,4 +560,4 @@ uv run python scripts/check_observability_gates.py
 
 ---
 
-*This document is the canonical observability architecture. Update it when changing spine contracts, emission rules, or persistence profiles. Implementation status: [Phase OBS-BUS — Done](plan/phases/observability-reliability.md).*
+*This document is the canonical observability architecture. Update it when changing spine contracts, emission rules, or persistence profiles. Implementation status: [Phase OBS-BUS — Done](plan/OBSERVABILITY.md).*

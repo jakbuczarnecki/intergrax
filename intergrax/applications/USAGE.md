@@ -330,4 +330,4 @@ uv run pytest tests/acceptance/agent_os/test_lab_application.py -q
 
 - Repository Tier-3 folder: [`applications/USAGE.md`](../../applications/USAGE.md)
 - Agent workflow: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md)
-- Implementation plan Phase N: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
+- Implementation plan Phase N: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md)

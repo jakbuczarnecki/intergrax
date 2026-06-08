@@ -2,8 +2,8 @@
 
 **Status:** Canonical architecture document
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Implementation:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](../INTERGRAX_IMPLEMENTATION_PLAN.md) · [`plan/phases/`](../plan/phases/)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Implementation:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`plan/`](../plan/)
 
 ---
 
@@ -20,16 +20,16 @@ This document is the **single narrative guide** for how Intergrax orchestrates a
 IDEAL_HARNESS_AI_ARCHITECTURE.md     →  target Harness AI reference (L0–L4)
 intergrax_runtime_architecture.md    →  canonical contracts + architecture (§42)
 architecture/NEXUS_EXECUTION_FLOW.md    →  operational execution narrative (this file)
-INTERGRAX_IMPLEMENTATION_PLAN.md     →  implementation status, phases, gap queue
+intergrax_runtime_architecture.md     →  implementation status, phases, gap queue
 ```
 
 | Role | Canonical source |
 |------|------------------|
-| Target architecture | [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md) |
+| Target architecture | [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) |
 | Contracts (what) | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) §42 |
 | Control plane (how to configure) | [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) Appendix I, H, J |
-| Phase status / gaps | [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) |
-| Audit layers §7–§10 | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) |
+| Phase status / gaps | [`intergrax_runtime_architecture.md`](plan/NEXUS_EXECUTION_FLOW.md) |
+| Audit layers §7–§10 | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
 | Delegation target semantics | [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md) |
 | L4 adaptive loops (separate) | [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
 
@@ -511,7 +511,7 @@ flowchart TD
 
 Metadata via `compose_metadata()`: `plan_id`, `agent_ids`, `retry_count`, `all_completed`.
 
-**Future (not in FLOW-7):** citation-preserving merge, validator-aware merge, LLM-assisted synthesis, conflict-aware HITL — see [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md).
+**Future (not in FLOW-7):** citation-preserving merge, validator-aware merge, LLM-assisted synthesis, conflict-aware HITL — see [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md).
 
 ---
 
@@ -931,7 +931,7 @@ flowchart TD
 | **Baseline / release gate** | CI / ops | `require_baseline_for_release` | `phase_v_closeout_gate.py`, `maturity_gate_evidence.py` |
 | **Quality regression** | Compare runs | Evaluation registry trends | `evaluation_registry_trends.py` |
 
-**L3+ ideal harness alignment:** baseline scores before change, post-change scores in `OnlineEvaluationRegistry`, trend comparison before promotion — see [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md) and plan Phase EVAL / V gates.
+**L3+ ideal harness alignment:** baseline scores before change, post-change scores in `OnlineEvaluationRegistry`, trend comparison before promotion — see [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) and plan Phase EVAL / V gates.
 
 **Post-graph hook (FLOW-9):** `NexusLoop` records multi-agent evaluation observations when `EvaluationProfile` is enabled. Evaluator nodes and LLM-judge remain **opt-in** per application policy — not mandatory on every run.
 
@@ -1071,13 +1071,13 @@ Honest deltas for plan scheduling. **Closeout phases (ORCH Done) wired bootstrap
 | FLOW-GAP-15 | `MODIFY_PLAN` reserved / undocumented | **Closed (FLOW-16)** — [ADR-FLOW-003](adr/ADR-FLOW-003.md); `MODIFY_PLAN_NOT_SUPPORTED` without handoff | DX | Low | §9 |
 | FLOW-GAP-16 | `MULTI_AGENT` step order fragile | **Closed (FLOW-17)** — `multi_agent_order` on `OrchestrationProfile` | DX | Low | §9 |
 
-**Status (2026-06-07):** Phase FLOW **Done** (17/18); `FLOW-GAP-01`…`09`, `11`…`16` **closed**; `FLOW-GAP-10` → FLOW-8 **Deferred** (§6.3). See [Phase FLOW](plan/phases/core-runtime.md).
+**Status (2026-06-07):** Phase FLOW **Done** (17/18); `FLOW-GAP-01`…`09`, `11`…`16` **closed**; `FLOW-GAP-10` → FLOW-8 **Deferred** (§6.3). See [Phase FLOW](plan/ORCHESTRATION.md).
 
 ---
 
 ## 24. Cognition / planning depth note
 
-Ideal Harness AI ([`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md)) expects explicit **cognition plane**: model selection, prompt compiler layers, structured plan contracts, `DecisionRecord` per step.
+Ideal Harness AI ([`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)) expects explicit **cognition plane**: model selection, prompt compiler layers, structured plan contracts, `DecisionRecord` per step.
 
 **Intergrax today:**
 
@@ -1095,7 +1095,7 @@ Harness MVP and new Tier-2 agents remain unblocked. LLM-backed dynamic decomposi
 
 ## 25. Plan traceability matrix
 
-**Status:** **Done** (2026-06-07) — canonical implementation in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) [Phase FLOW](#phase-flow--nexus-execution-depth) · closed queue [§6.1aj](INTERGRAX_IMPLEMENTATION_PLAN.md#61aj-harness-implementation-queue--nexus-execution-depth-closed) · execution [§6.2aj](INTERGRAX_IMPLEMENTATION_PLAN.md#62aj-phase-flow-execution-order-band-2aj--active-2026-06-07) · traceability **Appendix N (FLOW)** · **FLOW-8 Deferred**.
+**Status:** **Done** (2026-06-07) — canonical implementation in [`intergrax_runtime_architecture.md`](plan/NEXUS_EXECUTION_FLOW.md) [Phase FLOW](#phase-flow--nexus-execution-depth) · closed queue [§6.1aj](plan/NEXUS_EXECUTION_FLOW.md#61aj-harness-implementation-queue--nexus-execution-depth-closed) · execution [§6.2aj](plan/NEXUS_EXECUTION_FLOW.md#62aj-phase-flow-execution-order-band-2aj--active-2026-06-07) · traceability **Appendix N (FLOW)** · **FLOW-8 Deferred**.
 
 ### 25.1 Implementation rows (Phase FLOW — Band 2aj)
 
@@ -1151,14 +1151,14 @@ Harness MVP and new Tier-2 agents remain unblocked. LLM-backed dynamic decomposi
 | Docs index | [README.md — Documentation index](../README.md#documentation-index) |
 | Architecture canon | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) |
 | Agent workflow | [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) |
-| Implementation plan | [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) |
-| Harness audit map | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) |
+| Implementation plan | [`intergrax_runtime_architecture.md`](plan/NEXUS_EXECUTION_FLOW.md) |
+| Harness audit map | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
 | Root README | [`../README.md`](../README.md) |
 | AGENTS.md (AI routing) | [`../AGENTS.md`](../AGENTS.md) |
 | Delegation ADR | [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md) |
 | Lifecycle ADR | [`adr/ADR-FLOW-002.md`](adr/ADR-FLOW-002.md) |
 | MODIFY_PLAN ADR | [`adr/ADR-FLOW-003.md`](adr/ADR-FLOW-003.md) |
-| Ideal harness target | [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md) |
+| Ideal harness target | [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) |
 
 ---
 

@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-06-08 |
 | **Deciders** | Harness platform |
-| **Related** | [`architecture/OBSERVABILITY.md`](../architecture/OBSERVABILITY.md) · [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) §33 · [Phase OBS-BUS](../plan/phases/observability-reliability.md) |
+| **Related** | [`architecture/OBSERVABILITY.md`](../architecture/OBSERVABILITY.md) · [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) §33 · [Phase OBS-BUS](../plan/OBSERVABILITY.md) |
 
 ## Context
 
@@ -64,7 +64,7 @@ Adopt the **Harness Observability Spine (HOS)** as the single observability mech
 
 - Tier boundaries preserved — Tier-2 does not own stores; Tier-3 wires, does not reimplement
 - PII redaction remains at `DiagnosticPayload.redact()` boundary
-- Linked: `architecture/OBSERVABILITY.md`, canon §33 pointer, `INTERGRAX_IMPLEMENTATION_PLAN.md` Phase OBS-BUS
+- Linked: `architecture/OBSERVABILITY.md`, canon §33 pointer, `intergrax_runtime_architecture.md` Phase OBS-BUS
 
 ## Implementation notes
 

@@ -20,7 +20,7 @@
 | Env vars and roster flags | §7 |
 | Run locally | §8 |
 
-**Rule:** change this file first, then update `IMPLEMENTATION_PLAN.md`. Platform harness work stays in `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` §6.1.
+**Rule:** change this file first, then update `IMPLEMENTATION_PLAN.md`. Platform harness work stays in `docs/intergrax_runtime_architecture.md` §6.1.
 
 ---
 

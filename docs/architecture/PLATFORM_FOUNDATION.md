@@ -2,7 +2,7 @@
 
 **Status:** Canonical architecture (decomposed from platform canon)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
-**Target reference:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Target reference:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 
 ---
 
@@ -41,7 +41,7 @@ This document is an architectural and implementation guide.
 
 # 1.1 Documentation boundary (platform vs product)
 
-**In scope for this document and for [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md):**
+**In scope for this document and for [`intergrax_runtime_architecture.md`](plan/PLATFORM_FOUNDATION.md):**
 
 - **Intergrax Harness AI / Agent OS** — Tier-0 platform, Tier-1 Nexus runtime, reference Tier-2/Tier-3 wiring patterns, and the **infrastructure** to run agent environments.
 
@@ -54,7 +54,7 @@ This document is an architectural and implementation guide.
 
 Platform docs describe **how to compose** agents and application hosts on the Harness. They do **not** replace product-specific architecture or deployment plans for a given business environment or business agent.
 
-Navigation: [README.md — Documentation index](../README.md#documentation-index) · [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) §Documentation boundary · plan [§4.0a](INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business)
+Navigation: [README.md — Documentation index](../README.md#documentation-index) · [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) §Documentation boundary · plan [§4.0a](plan/PLATFORM_FOUNDATION.md#40a-implementation-scope-split-infrastructure-vs-business)
 
 ---
 
@@ -65,7 +65,7 @@ Navigation: [README.md — Documentation index](../README.md#documentation-index
 
 Intergrax is an AI Operating System / Agent Runtime / **Harness AI environment**.
 
-**Strategic goal (priority 1):** build a **production-grade Harness AI** and Agent OS — orchestration, tools, skills, context, policy, trace, and composable agents at a standard comparable to modern agent platforms (Cursor, Claude Code, Codex-class harnesses, Viktor, enterprise agent runtimes). See [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md).
+**Strategic goal (priority 1):** build a **production-grade Harness AI** and Agent OS — orchestration, tools, skills, context, policy, trace, and composable agents at a standard comparable to modern agent platforms (Cursor, Claude Code, Codex-class harnesses, Viktor, enterprise agent runtimes). See [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](guides/INTERGRAX_DEVELOPMENT_STRATEGY.md).
 
 **Operating model — two modes on one codebase:**
 
@@ -545,7 +545,7 @@ Agents MUST NOT call integrations directly. Agents MUST NOT import CV/ML SDKs (`
 | **1 — Skills = tools** | Encode instructions + multi-tool workflows as oversized tools | **Rejected** — breaks atomic LLM function schema, MCP export, risk/idempotency per operation, and external tool ecosystems |
 | **2 — Skill Library** | Fourth layer: Integration → Tool → **Skill** → Agent | **Adopted** — **MVP Done**; importers for external formats (e.g. Cursor `SKILL.md`) after manifest validation |
 
-Implementation tracker: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Appendix E · catalog [`architecture/SKILLS.md`](architecture/SKILLS.md).
+Implementation tracker: [`intergrax_runtime_architecture.md`](plan/PLATFORM_FOUNDATION.md) Appendix E · catalog [`architecture/SKILLS.md`](architecture/SKILLS.md).
 
 ---
 
@@ -955,7 +955,7 @@ bootstrap_catalogs(
 - **Runtime Nexus plugins** (`RuntimePlugin`, `plugin_bootstrap.py`) are a **separate** extensibility plane from Tier-0 catalog plugins.
 - Tool execution observability (trace, scope policy, error mapping) lives in `RuntimeToolInvoker` — not in plugin registration.
 
-Author guide: [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md). Implementation tracker: [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase P-Ext + Appendix I.
+Author guide: [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md). Implementation tracker: [`intergrax_runtime_architecture.md`](plan/PLATFORM_FOUNDATION.md) Phase P-Ext + Appendix I.
 
 ### 7.1.6 Tool Library — Canonical Catalog
 
@@ -1044,7 +1044,7 @@ Every catalog tool MUST be exportable as:
 
 Single source of truth: `ToolContract` in the catalog — not parallel schema definitions per surface.
 
-**Catalog reference:** [`architecture/TOOLS.md`](architecture/TOOLS.md) — 11 first-party tools **Done** (Phase O.4, 2026-05-30) · Implementation: Phase O in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md).
+**Catalog reference:** [`architecture/TOOLS.md`](architecture/TOOLS.md) — 11 first-party tools **Done** (Phase O.4, 2026-05-30) · Implementation: Phase O in [`intergrax_runtime_architecture.md`](plan/PLATFORM_FOUNDATION.md).
 
 ### 7.1.7 Unified Tool Model — Everything Is a Tool
 
@@ -1369,7 +1369,7 @@ Extend V-COST envelopes: `inference_ms`, `media_bytes`, `tts_characters`.
 
 #### Implementation tracker
 
-Phase **W-ML** in [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md). Existing Plane B assets: M.6 (`whisper`, `yt_dlp`), image/audio smart loaders, HF embeddings.
+Phase **W-ML** in [`intergrax_runtime_architecture.md`](plan/PLATFORM_FOUNDATION.md). Existing Plane B assets: M.6 (`whisper`, `yt_dlp`), image/audio smart loaders, HF embeddings.
 
 ---
 
@@ -1693,7 +1693,7 @@ The manifest is the **roster contract** (who is mounted). **Instance creation** 
 - Reference: ``AgentBinding.mount(EchoAgent)`` + ``LAB_AGENT_BUILDERS`` keyed by type; ``AgentBinding.mount(LegalAgent, factory=build_legal_agent_from_context)``.
 - `python -m intergrax.scaffold new-application` generates manifest + builders skeleton (Phase N.3).
 
-See [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase N for step-by-step delivery.
+See [`intergrax_runtime_architecture.md`](plan/PLATFORM_FOUNDATION.md) Phase N for step-by-step delivery.
 
 **Usage guides:** composition engine — [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md); application hosts — [`applications/USAGE.md`](../applications/USAGE.md).
 

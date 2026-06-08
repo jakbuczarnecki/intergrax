@@ -2,8 +2,8 @@
 
 **Status:** Canonical architecture document
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Implementation:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](../INTERGRAX_IMPLEMENTATION_PLAN.md) · [`plan/phases/`](../plan/phases/)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Implementation:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`plan/`](../plan/)
 
 ---
 
@@ -20,10 +20,10 @@
 | Document | Relationship |
 |----------|--------------|
 | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) §54 | Canonical runtime summary and tier placement |
-| [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md) §25 | Target Adaptive Harness Layer (L4 maturity) |
-| [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase W-ADAPT | **Done** (70/70, Band 2y) — implementation register closed |
-| [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) | L4 maturity scoring model |
-| [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) | Harness-first strategic lock |
+| [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §25 | Target Adaptive Harness Layer (L4 maturity) |
+| [`intergrax_runtime_architecture.md`](plan/ADAPTIVE_HARNESS_INTELLIGENCE.md) Phase W-ADAPT | **Done** (70/70, Band 2y) — implementation register closed |
+| [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) | L4 maturity scoring model |
+| [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) | Harness-first strategic lock |
 
 ---
 
@@ -98,7 +98,7 @@ This is **not classical reinforcement learning** (policy-gradient training, unco
 
 ### 2.3 Alignment with Intergrax strategic lock
 
-From [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md):
+From [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](guides/INTERGRAX_DEVELOPMENT_STRATEGY.md):
 
 - **Harness is the durable product; agents are replaceable execution units.**
 - **Laboratory** optimizes hypothesis speed; **production harness** optimizes governed repeatability.
@@ -217,7 +217,7 @@ AHI addresses three related but distinct problems:
 
 ### 5.1 Maturity model recap
 
-From [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md):
+From [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md):
 
 | Level | Meaning |
 |-------|---------|
@@ -1277,7 +1277,7 @@ Phase W-ADAPT Wave 0–7 **Done** (2026-06-02). Ongoing work: §6.1 harness main
 
 ## Appendix B — Proposed implementation plan task IDs
 
-Insert into [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) as **Phase W-ADAPT** — **synced 2026-06-05** (70 tasks, Band 2y):
+Insert into [`intergrax_runtime_architecture.md`](plan/ADAPTIVE_HARNESS_INTELLIGENCE.md) as **Phase W-ADAPT** — **synced 2026-06-05** (70 tasks, Band 2y):
 
 ```text
 Phase W-ADAPT — Adaptive Harness Intelligence (AHI)

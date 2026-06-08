@@ -2,7 +2,7 @@
 
 **Status:** Canonical (2026-06-06) — default queue: §6.1 maintenance; Band 2ad (FAUDIT-32) **Done**  
 **Audience:** Maintainers, architects, implementation agents, Cursor AI  
-**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) (hub) · [architecture/](architecture/README.md) · [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) · [plan/phases/](plan/phases/) · [README.md — Documentation index](../README.md#documentation-index)
+**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) (hub) · [architecture/](intergrax_runtime_architecture.md) · [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) · [plan/](plan/) · [README.md — Documentation index](../README.md#documentation-index)
 
 This document defines **how** Intergrax is developed and **what** overrides what when goals conflict. It does not duplicate technical contracts (those live in the architecture canon).
 
@@ -26,8 +26,8 @@ If the implementation plan does not support it — the plan MUST change.
 | Priority | Source | Rule |
 |----------|--------|------|
 | **1** | **This document** — strategic goal | Production Harness AI / Agent OS |
-| **2** | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) + [architecture/](architecture/README.md) | Architecture hub + domain canon — living spec, not immutable truth |
-| **3** | [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) | Implementation map — consequence of architecture; must not force bad architecture |
+| **2** | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) + [architecture/](intergrax_runtime_architecture.md) | Architecture hub + domain canon — living spec, not immutable truth |
+| **3** | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) | Implementation map — consequence of architecture; must not force bad architecture |
 
 When priority 1 and priority 2/3 conflict, **update architecture and plan first**, then implement.
 
@@ -35,7 +35,7 @@ When priority 1 and priority 2/3 conflict, **update architecture and plan first*
 
 ## Documentation boundary
 
-Canonical **`docs/`** architecture and **`INTERGRAX_IMPLEMENTATION_PLAN.md`** describe the **Intergrax Harness AI / Agent OS platform** — the runtime and infrastructure for launching and governing agent environments.
+Canonical **`docs/`** architecture and **`intergrax_runtime_architecture.md`** describe the **Intergrax Harness AI / Agent OS platform** — the runtime and infrastructure for launching and governing agent environments.
 
 They **do not** describe:
 
@@ -44,7 +44,7 @@ They **do not** describe:
 
 Each business environment and each business agent carries its own **`ARCHITECTURE.md`**, local **`IMPLEMENTATION_PLAN.md`** (where used), and product roadmap. Platform docs explain composition and wiring; product docs explain domain behavior and go-live.
 
-See also: [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §1.1 · [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §4.0a · [`applications/USAGE.md`](../applications/USAGE.md).
+See also: [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §1.1 · [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §4.0a · [`applications/USAGE.md`](../applications/USAGE.md).
 
 ---
 
@@ -106,7 +106,7 @@ Implementation is not the goal. Correct architecture is not the goal.
 |-------------|--------|
 | Strategic direction | **This file** |
 | Tiers, Nexus, UAEP, Harness terms | `intergrax_runtime_architecture.md` (hub) + `architecture/` (§5.3 Harness terms = `architecture/PLATFORM_FOUNDATION.md`) |
-| Phase status, deliverables, gates | `INTERGRAX_IMPLEMENTATION_PLAN.md` |
+| Phase status, deliverables, gates | `intergrax_runtime_architecture.md` |
 | Agent author workflow | `guides/AGENT_CREATION_GUIDE.md` |
 | Integration / tool / skill catalogs | `architecture/INTEGRATIONS.md` / `architecture/TOOLS.md` / `architecture/SKILLS.md` |
 
@@ -125,14 +125,14 @@ After each merged harness PR: `uv run pytest -m gate -q` green; `python scripts/
 | **Harness production hardening (Phase U)** | **Done** (2026-06-01) |
 | **Harness architecture hardening (Phase V)** | **Done** (2026-06-05) | Phase V + V-REM closed; L3/L4 CI closeout + operational L3 signed off |
 | **Orchestration closeout (Phase ORCH)** | **Done** (2026-06-05) | planner/classifier wiring, graph spec plan seed, parallel cap |
-| **Harness completion backlog** | **Done** (2026-06-02) | §4.1 — U-Leg, typing/CI, platform skills ([plan §4.1](INTERGRAX_IMPLEMENTATION_PLAN.md#41-harness-completion-backlog-execution-order)) |
-| Product agents K.1 / K.2 | **End of plan** — [§6.3](INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only) only after explicit product decision |
+| **Harness completion backlog** | **Done** (2026-06-02) | §4.1 — U-Leg, typing/CI, platform skills ([plan §4.1](intergrax_runtime_architecture.md#41-harness-completion-backlog-execution-order)) |
+| Product agents K.1 / K.2 | **End of plan** — [§6.3](intergrax_runtime_architecture.md#63-end-of-plan--deferred-product-work-only) only after explicit product decision |
 | New Tier-3 product applications | **End of plan** — same §6.3; lab + reference hosts sufficient for all harness work |
 
-**Default implementation queue:** [plan §6.1](INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) maintenance only. Phase ORCH + GOV-AUDIT **Done**. **Not** business agents or new product apps.
+**Default implementation queue:** [plan §6.1](intergrax_runtime_architecture.md#61-harness-platform-maintenance-default--band-1) maintenance only. Phase ORCH + GOV-AUDIT **Done**. **Not** business agents or new product apps.
 
-**Governance / policy / observability authoring:** [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) Appendix H; audit §5 + §21 in [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+**Governance / policy / observability authoring:** [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) Appendix H; audit §5 + §21 in [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md).
 
-**Orchestration / graph / delegation authoring:** [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) Appendix I; audit §7–§10 in [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md).
+**Orchestration / graph / delegation authoring:** [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) Appendix I; audit §7–§10 in [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md).
 
-See [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) §4.0 (priority ladder) and §6.
+See [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §4.0 (priority ladder) and §6.

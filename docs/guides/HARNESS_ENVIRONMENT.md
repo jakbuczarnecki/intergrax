@@ -4,7 +4,7 @@
 
 Operator and author guide for the **lab harness stack** — Tier-0 integrations, Tier-1 Nexus, Tier-3 `lab_application` wiring, platform skills, and observability. Business agents (Problem Radar, Vendor Discovery) are **Phase K** and out of scope here.
 
-**Related:** [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) Phase S/U/V · [architecture/SKILLS.md](architecture/SKILLS.md) · [architecture/INTEGRATIONS.md](architecture/INTEGRATIONS.md) · Architecture [§5.3](architecture/PLATFORM_FOUNDATION.md#53-harness-ai-alignment-conceptual-model) and [§53](architecture/PLATFORM_FOUNDATION.md#53-harness-architecture-hardening-addendum-post-u)
+**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) Phase S/U/V · [architecture/SKILLS.md](architecture/SKILLS.md) · [architecture/INTEGRATIONS.md](architecture/INTEGRATIONS.md) · Architecture [§5.3](architecture/PLATFORM_FOUNDATION.md#53-harness-ai-alignment-conceptual-model) and [§53](architecture/PLATFORM_FOUNDATION.md#53-harness-architecture-hardening-addendum-post-u)
 
 ---
 
@@ -202,11 +202,11 @@ Governance, policy, and observability are **composable control-plane layers** �
 | Full control-plane map (profiles, bundles, hooks, EP groups) | [`guides/AGENT_CREATION_GUIDE.md` Appendix H](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
 | Operator policy read order | Architecture [§42.11.5](architecture/UNIFIED_EXECUTION_RUNTIME.md#42115-how-to-read-policy-for-a-run-operator) |
 | Policy rule handler plugins (`intergrax.policy_rules`) | [`guides/EXTENSION_AUTHOR_GUIDE.md` §10](guides/EXTENSION_AUTHOR_GUIDE.md#10-policy-rule-handler-plugins-phase-dx-58) |
-| Audit layers (policy §5, observability §21) | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) |
-| Observability wire-time closeout (§21) | [`guides/AGENT_CREATION_GUIDE.md` Appendix Q](guides/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [Phase OBS](plan/phases/observability-reliability.md) |
-| Reliability wire-time closeout (§22) | [`guides/AGENT_CREATION_GUIDE.md` Appendix R](guides/AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) · [Phase REL](plan/phases/observability-reliability.md) |
-| Security wire-time closeout (§23) | [`guides/AGENT_CREATION_GUIDE.md` Appendix S](guides/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) · [Phase SEC](plan/phases/governance-security.md) |
-| Cost wire-time closeout (§24) | [`guides/AGENT_CREATION_GUIDE.md` Appendix T](guides/AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) · [Phase COST](plan/phases/governance-security.md) |
+| Audit layers (policy §5, observability §21) | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
+| Observability wire-time closeout (§21) | [`guides/AGENT_CREATION_GUIDE.md` Appendix Q](guides/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [Phase OBS](plan/OBSERVABILITY.md) |
+| Reliability wire-time closeout (§22) | [`guides/AGENT_CREATION_GUIDE.md` Appendix R](guides/AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) · [Phase REL](plan/OBSERVABILITY.md) |
+| Security wire-time closeout (§23) | [`guides/AGENT_CREATION_GUIDE.md` Appendix S](guides/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) · [Phase SEC](plan/UNIFIED_EXECUTION_RUNTIME.md) |
+| Cost wire-time closeout (§24) | [`guides/AGENT_CREATION_GUIDE.md` Appendix T](guides/AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) · [Phase COST](plan/UNIFIED_EXECUTION_RUNTIME.md) |
 
 **Modularity:** swap observability backend via `IntegrationProfile.observability_backend`; add policy via YAML + EP handlers; enable V-SEC defenses via `ApplicationSecurityProfile` — without changing Tier-2 agent code.
 
@@ -360,4 +360,4 @@ uv run pytest tests/unit/applications/test_lab_strict_harness.py -m gate -q
 
 ## Product agents and applications (end of plan — not default next)
 
-Business agents (K.1 Problem Radar, K.2 Vendor Discovery) and new Tier-3 **product** applications are **last** in the [implementation plan](INTERGRAX_IMPLEMENTATION_PLAN.md) (§4.0 Band 3, **§6.3**). Harness work uses **§6.1 + §6.2 (Phase V)**. Product work starts only after an explicit prioritization decision — not because Phase U, §4.1, or initial Phase V waves are active.
+Business agents (K.1 Problem Radar, K.2 Vendor Discovery) and new Tier-3 **product** applications are **last** in the [implementation plan](intergrax_runtime_architecture.md) (§4.0 Band 3, **§6.3**). Harness work uses **§6.1 + §6.2 (Phase V)**. Product work starts only after an explicit prioritization decision — not because Phase U, §4.1, or initial Phase V waves are active.

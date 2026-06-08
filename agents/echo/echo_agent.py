@@ -98,7 +98,7 @@ class EchoAgent(HarnessReferenceAgent):
             production_eligible=True,
             owner_team="platform",
             owner_contact="harness@intergrax",
-            runbook_ref="docs/INTERGRAX_IMPLEMENTATION_PLAN.md",
+            runbook_ref="docs/intergrax_runtime_architecture.md",
             max_steps=5,
         )
 

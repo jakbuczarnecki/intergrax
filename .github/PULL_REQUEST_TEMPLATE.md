@@ -19,9 +19,9 @@
 <!-- One source of truth per topic — list files updated in docs/ -->
 
 - [ ] No documentation changes needed
-- [ ] docs/INTERGRAX_DEVELOPMENT_STRATEGY.md
+- [ ] docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md
 - [ ] docs/intergrax_runtime_architecture.md
-- [ ] docs/INTERGRAX_IMPLEMENTATION_PLAN.md
+- [ ] docs/intergrax_runtime_architecture.md
 - [ ] docs/guides/AGENT_CREATION_GUIDE.md
 - [ ] Other: <!-- list -->
 
@@ -30,7 +30,7 @@
 - [ ] Respects tier dependency boundaries (`intergrax/` ↛ `agents/`/`applications/`)
 - [ ] Reuses existing Tier-0 modules (no parallel universal mechanisms)
 - [ ] Does not modify `intergrax/runtime/` for agent-specific needs (if agent PR)
-- [ ] Aligns with [INTERGRAX_DEVELOPMENT_STRATEGY.md](../docs/INTERGRAX_DEVELOPMENT_STRATEGY.md)
+- [ ] Aligns with [INTERGRAX_DEVELOPMENT_STRATEGY.md](../docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
 ## Test evidence
 

@@ -7,7 +7,7 @@ Status: **Scaffold Done** — domain UAEP steps **Band 3** (explicit reprioritiz
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 Spec input: [`SPEC_FROM_LEGACY.md`](SPEC_FROM_LEGACY.md)  
 Host: [`applications/legal_application/`](../../applications/legal_application/)  
-Platform plan: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md) · Phase AA-LEG
+Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) · Phase AA-LEG
 
 ---
 

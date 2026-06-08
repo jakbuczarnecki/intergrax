@@ -2,8 +2,8 @@
 
 **Status:** Canonical architecture document
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Implementation:** [`INTERGRAX_IMPLEMENTATION_PLAN.md`](../INTERGRAX_IMPLEMENTATION_PLAN.md) · [`plan/phases/`](../plan/phases/)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Implementation:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`plan/`](../plan/)
 
 ---
 
@@ -13,8 +13,8 @@
 Catalog and harness rules for **vision**, **audio/speech**, **classical ML**, and **Hugging Face** usage — aligned with Integration → Tool → Skill → Agent (§5.3, §7.1.9).
 
 **Canon:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.9 · §5.3  
-**Target model:** [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5.1, §7.1  
-**Implementation tracker:** [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) **Phase W-ML**  
+**Target model:** [IDEAL_HARNESS_AI_ARCHITECTURE.md](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5.1, §7.1  
+**Implementation tracker:** [intergrax_runtime_architecture.md](plan/MODALITY.md) **Phase W-ML**  
 **Related:** [architecture/LLM_ADAPTERS.md](architecture/LLM_ADAPTERS.md) (generative multimodal) · [architecture/INTEGRATIONS.md](architecture/INTEGRATIONS.md) (catalog slugs) · RAG §7.1.2 (ingest/embeddings)
 
 ---

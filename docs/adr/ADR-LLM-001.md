@@ -41,4 +41,4 @@ Primary text field: **`content: str`** (alias **`text`**).
 ## References
 
 - [architecture/LLM_ADAPTERS.md](../architecture/LLM_ADAPTERS.md) § Response envelope
-- [INTERGRAX_IMPLEMENTATION_PLAN.md](../INTERGRAX_IMPLEMENTATION_PLAN.md) Phase M-LLM-R
+- [intergrax_runtime_architecture.md](../intergrax_runtime_architecture.md) Phase M-LLM-R

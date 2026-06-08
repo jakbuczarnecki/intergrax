@@ -6,7 +6,7 @@
 
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **ADR:** [`adr/ADR-INTERGRAX_ASSISTANT-001.md`](adr/ADR-INTERGRAX_ASSISTANT-001.md)  
-**Platform plan:** [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
+**Platform plan:** [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md)
 
 **Principle:** compose Tier-0 · no business logic in Nexus · manifest-driven wiring
 
@@ -62,5 +62,5 @@ curl -s http://127.0.0.1:8096/v1/intergrax_assistant/agents
 ## 3. Platform alignment
 
 Explicit product reprioritization — harness chat lab for architecture experimentation.  
-Platform maintenance queue: [`§6.1`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md).  
-Business backlog pattern: [`§6.3a`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated) (IAA tracked locally, not in platform §6.3a until promoted).
+Platform maintenance queue: [`§6.1`](../../docs/intergrax_runtime_architecture.md).  
+Business backlog pattern: [`§6.3a`](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated) (IAA tracked locally, not in platform §6.3a until promoted).

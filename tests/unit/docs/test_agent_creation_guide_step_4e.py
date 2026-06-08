@@ -19,5 +19,5 @@ def test_agent_creation_guide_documents_step_4e_scaffold() -> None:
     assert "--profile product" in text
     assert "build-docker.sh" in text
     assert "intergrax_runtime_architecture.md" in text
-    assert "INTERGRAX_IMPLEMENTATION_PLAN.md" in text
+    assert "intergrax_runtime_architecture.md" in text
     assert "poc_template_application" in text

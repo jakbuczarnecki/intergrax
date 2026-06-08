@@ -6,8 +6,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Propose features aligned with the [Harness AI strategic goal](https://github.com/jakbuczarnecki/intergrax-ai/blob/main/docs/INTERGRAX_DEVELOPMENT_STRATEGY.md).
-        Check [implementation plan](https://github.com/jakbuczarnecki/intergrax-ai/blob/main/docs/INTERGRAX_IMPLEMENTATION_PLAN.md) for existing phases.
+        Propose features aligned with the [Harness AI strategic goal](https://github.com/jakbuczarnecki/intergrax-ai/blob/main/docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md).
+        Check [implementation plan](https://github.com/jakbuczarnecki/intergrax-ai/blob/main/docs/intergrax_runtime_architecture.md) for existing phases.
 
   - type: textarea
     id: problem

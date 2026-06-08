@@ -24,7 +24,7 @@
 
 ### Strategic goal
 
-Build a **modern, production-grade Harness AI** and **Agent Operating System**. Source: docs/INTERGRAX_DEVELOPMENT_STRATEGY.md
+Build a **modern, production-grade Harness AI** and **Agent Operating System**. Source: docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md
 
 ---
 
@@ -34,9 +34,9 @@ Build a **modern, production-grade Harness AI** and **Agent Operating System**. 
 docs/
 ├── intergrax_runtime_architecture.md    # Architecture hub (concept map + index)
 ├── architecture/                      # Decomposed architecture canon by domain
-├── INTERGRAX_IMPLEMENTATION_PLAN.md   # Plan hub (ladder, §6.1 queue)
-├── plan/phases/                         # Phase registers by domain
-├── plan/appendices/                     # Traceability appendices A–N
+├── intergrax_runtime_architecture.md   # Plan hub (ladder, §6.1 queue)
+├── plan/                         # Phase registers by domain
+├── plan/                     # Traceability appendices A–N
 ├── IDEAL_HARNESS_AI_ARCHITECTURE.md   # Target benchmark (unchanged)
 ├── architecture/MEMORY.md             # Memory deep dive
 ├── architecture/OBSERVABILITY.md      # Observability deep dive
@@ -78,15 +78,15 @@ applications/    MAY import from agents/ and intergrax/
 | Orchestration | docs/architecture/ORCHESTRATION.md |
 | Memory | docs/architecture/MEMORY.md |
 | Observability | docs/architecture/OBSERVABILITY.md |
-| Target model | docs/IDEAL_HARNESS_AI_ARCHITECTURE.md |
+| Target model | docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md |
 | Execution flow | docs/architecture/NEXUS_EXECUTION_FLOW.md |
 
 ---
 
 ## Implementation status
 
-- Plan hub: docs/INTERGRAX_IMPLEMENTATION_PLAN.md
-- Phase detail: docs/plan/phases/
+- Plan hub: docs/intergrax_runtime_architecture.md
+- Phase detail: docs/plan/
 - Default queue: §6.1 maintenance (gate green every PR)
 - Active work: Phase MEM-DEPTH (memory intelligence depth)
 - Business agents (Phase K): deferred — §6.3

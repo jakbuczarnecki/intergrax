@@ -108,7 +108,7 @@ def render_agent_implementation_plan(
         Status: Working draft ({_today()}) — **Scaffold baseline**
 
         Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-        Platform plan: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md)  
+        Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md)  
         Agent workflow: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md)
 
         Principle: **evolve, not rewrite** · **reuse Tier-0** · **no Tier-3 imports in agent code**
@@ -124,7 +124,7 @@ def render_agent_implementation_plan(
         | Purpose, contracts, I/O, runtime layout | **ARCHITECTURE.md** (this directory) |
         | Task status, phases, next steps | **This file** |
         | Significant agent architecture decisions | **`adr/`** — [`adr/README.md`](adr/README.md) |
-        | Platform harness work | `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` §6.1 |
+        | Platform harness work | `docs/intergrax_runtime_architecture.md` §6.1 |
         | UAEP / Nexus workflow | `docs/guides/AGENT_CREATION_GUIDE.md` |
 
         ---
@@ -171,7 +171,7 @@ def render_agent_implementation_plan(
         ## 3. Platform alignment
 
         Business agents and product-only work remain **end of plan** unless explicitly reprioritized —
-        see platform [`§6.3`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only).
+        see platform [`§6.3`](../../docs/intergrax_runtime_architecture.md#63-end-of-plan--deferred-product-work-only).
         """
     )
 
@@ -271,7 +271,7 @@ def render_application_implementation_plan(
         Status: Working draft ({_today()}) — **{profile_label} profile scaffold**
 
         Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-        Platform plan: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md)  
+        Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md)  
         Application engine: [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md)
 
         Principle: **compose Tier-0** · **no business logic in Nexus** · **manifest-driven wiring**
@@ -287,7 +287,7 @@ def render_application_implementation_plan(
         | Host purpose, manifest, factory, dependencies | **ARCHITECTURE.md** (this directory) |
         | Task status, phases, next steps | **This file** |
         | Significant application architecture decisions | **`adr/`** — [`adr/README.md`](adr/README.md) |
-        | Platform harness work | `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` §6.1 |
+        | Platform harness work | `docs/intergrax_runtime_architecture.md` §6.1 |
         | Scaffold / deploy recipes | `applications/TIER3_READINESS.md` |
 
         ---
@@ -335,7 +335,7 @@ def render_application_implementation_plan(
         ## 3. Platform alignment
 
         Tier-3 product environments follow explicit reprioritization — see platform
-        [`§6.3`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only)
-        and [`§6.3a`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated).
+        [`§6.3`](../../docs/intergrax_runtime_architecture.md#63-end-of-plan--deferred-product-work-only)
+        and [`§6.3a`](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated).
         """
     )

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""One-off sync: mark P-Ext narrative rows Done in INTERGRAX_IMPLEMENTATION_PLAN.md."""
+"""One-off sync: mark P-Ext narrative rows Done in intergrax_runtime_architecture.md."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PLAN = ROOT / "docs" / "INTERGRAX_IMPLEMENTATION_PLAN.md"
+PLAN = ROOT / "docs" / "intergrax_runtime_architecture.md"
 
 
 def main() -> int:

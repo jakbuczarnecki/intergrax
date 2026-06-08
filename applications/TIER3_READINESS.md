@@ -108,4 +108,4 @@ Full index: [`applications/README.md`](README.md) · [`agents/README.md`](../age
 
 Composition API: [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md)
 
-Plan tracker: [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../docs/INTERGRAX_IMPLEMENTATION_PLAN.md) — Phase N + Tier-3 readiness table.
+Plan tracker: [`docs/intergrax_runtime_architecture.md`](../docs/intergrax_runtime_architecture.md) — Phase N + Tier-3 readiness table.

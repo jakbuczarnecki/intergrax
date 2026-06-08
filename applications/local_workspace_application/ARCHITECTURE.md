@@ -3,7 +3,7 @@
 **Status:** Architecture baseline v2 (2026-06-07) — implementation-plan source of truth  
 **Tier:** Tier-3 application (`local_workspace_application`)  
 **Agents:** Tier-2 `local_indexer`, `local_search`, `local_synthesizer`  
-**Canonical plan row:** [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md` §6.3a LKW.*](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated)  
+**Canonical plan row:** [`docs/intergrax_runtime_architecture.md` §6.3a LKW.*](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)  
 **Derived plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) — generated from this document; do not fork scope elsewhere
 
 ---
@@ -25,7 +25,7 @@ This file is the **single product architecture** for LKW. From it you derive:
 | Implementation waves + acceptance | §15 |
 | Env vars and paths on disk | §7.3 · §12 |
 
-**Rule:** change architecture first, then update [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) and platform [`§6.3a`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated). One coherent diff per wave.
+**Rule:** change architecture first, then update [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) and platform [`§6.3a`](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated). One coherent diff per wave.
 
 ---
 
@@ -38,7 +38,7 @@ This file is the **single product architecture** for LKW. From it you derive:
 
 LKW validates: RAG ingest/retrieve/index lifecycle, document parsing, shadow workspace, multi-agent orchestration, memory, policy, trace, MCP/HTTP serving, and Tier-3 composition — while surfacing platform gaps early.
 
-**Strategic frame:** [`docs/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) — explicit product reprioritization after Appendix A sign-off.
+**Strategic frame:** [`docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) — explicit product reprioritization after Appendix A sign-off.
 
 ---
 
@@ -568,7 +568,7 @@ Host entrypoint (today): `uvicorn local_workspace_application.host.main:app`. Pr
 2. **Maintain** local RAG index (background ingest — LKW.7).
 3. **Run** Nexus graph on demand (search now, synthesize on request).
 4. **Notify** on completion / HITL (`notification_channel=slack` on long-running tasks).
-5. **Persist** checkpoints for pause/resume ([`docs/INTERGRAX_IMPLEMENTATION_PLAN.md` Appendix F.4](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md)).
+5. **Persist** checkpoints for pause/resume ([`docs/intergrax_runtime_architecture.md` Appendix F.4](../../docs/intergrax_runtime_architecture.md)).
 
 ### 9.3 Interaction surfaces (how the user talks to LKW)
 
@@ -947,5 +947,5 @@ These gaps are **expected** — LKW exists to discover and close them without Ne
 | Shadow workspace | [`docs/guides/AGENT_CREATION_GUIDE.md` Appendix B](../../docs/guides/AGENT_CREATION_GUIDE.md#appendix-b--shadow-workspace-and-sandbox) |
 | Multi-agent graphs | [`docs/guides/AGENT_CREATION_GUIDE.md` Appendix C](../../docs/guides/AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs) |
 | Nexus execution flow | [`docs/architecture/NEXUS_EXECUTION_FLOW.md`](../../docs/architecture/NEXUS_EXECUTION_FLOW.md) |
-| Implementation plan | [`docs/INTERGRAX_IMPLEMENTATION_PLAN.md`](../../docs/INTERGRAX_IMPLEMENTATION_PLAN.md) |
+| Implementation plan | [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md) |
 | Quickstart | [`README.md`](README.md) · [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) |

@@ -5,8 +5,8 @@
 **Primary reference:** `IDEAL_HARNESS_AI_ARCHITECTURE.md`
 **Current architecture hub:** `intergrax_runtime_architecture.md`
 **Current architecture detail:** `architecture/` (domain documents)
-**Implementation hub:** `INTERGRAX_IMPLEMENTATION_PLAN.md`
-**Implementation detail:** `plan/phases/`
+**Implementation hub:** `intergrax_runtime_architecture.md`
+**Implementation detail:** `plan/`
 
 ---
 
@@ -36,7 +36,7 @@ The audit must always compare:
 
 1. `IDEAL_HARNESS_AI_ARCHITECTURE.md`
 2. `intergrax_runtime_architecture.md` + relevant `architecture/<domain>.md`
-3. `INTERGRAX_IMPLEMENTATION_PLAN.md` + relevant `plan/phases/<domain>.md`
+3. `intergrax_runtime_architecture.md` + relevant `plan/<domain>.md`
 4. source code
 5. tests
 6. documentation
@@ -131,7 +131,7 @@ Changes required in `intergrax_runtime_architecture.md` (hub) and/or the relevan
 
 ## 7. Required Implementation Plan Updates
 
-Changes required in `INTERGRAX_IMPLEMENTATION_PLAN.md`.
+Changes required in `intergrax_runtime_architecture.md`.
 
 ## 8. Required Code Changes
 
@@ -255,7 +255,7 @@ The agent must always distinguish:
 
 * **Target architecture:** `IDEAL_HARNESS_AI_ARCHITECTURE.md`
 * **Current architecture:** `intergrax_runtime_architecture.md` + `architecture/`
-* **Implementation plan:** `INTERGRAX_IMPLEMENTATION_PLAN.md` + `plan/phases/`
+* **Implementation plan:** `intergrax_runtime_architecture.md` + `plan/`
 * **Actual implementation:** source code
 * **Verification:** tests and gates
 
@@ -485,7 +485,7 @@ Nothing should execute without appropriate policy checks, permission checks and 
 Policy Enforcement Score: L0-L4
 ```
 
-**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix H](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) (control plane map, security profile, policy bundle read order); canon [§42.11](architecture/UNIFIED_EXECUTION_RUNTIME.md#4211-policy-engine); [`guides/EXTENSION_AUTHOR_GUIDE.md` §10](guides/EXTENSION_AUTHOR_GUIDE.md#10-policy-rule-handler-plugins-phase-dx-58) (`intergrax.policy_rules`). **Closeout:** [Phase GOV-AUDIT](plan/phases/governance-security.md) **Done** (GOV-DOC.*).
+**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix H](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) (control plane map, security profile, policy bundle read order); canon [§42.11](architecture/UNIFIED_EXECUTION_RUNTIME.md#4211-policy-engine); [`guides/EXTENSION_AUTHOR_GUIDE.md` §10](guides/EXTENSION_AUTHOR_GUIDE.md#10-policy-rule-handler-plugins-phase-dx-58) (`intergrax.policy_rules`). **Closeout:** [Phase GOV-AUDIT](plan/UNIFIED_EXECUTION_RUNTIME.md) **Done** (GOV-DOC.*).
 
 ---
 
@@ -565,7 +565,7 @@ Verify that reasoning is explicit, observable and separated from execution.
 Reasoning Architecture Score: L0-L4
 ```
 
-**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix I §I.4](guides/AGENT_CREATION_GUIDE.md#i4-planning-strategies-explicit-customizable) (planning strategies); canon [§42.5](architecture/UNIFIED_EXECUTION_RUNTIME.md#425-unified-agent-execution-protocol) (UAEP separation); **flow narrative:** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §7–§8. **Closeout:** [Phase ORCH ORCH-1](plan/phases/core-runtime.md) — **Done**.
+**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix I §I.4](guides/AGENT_CREATION_GUIDE.md#i4-planning-strategies-explicit-customizable) (planning strategies); canon [§42.5](architecture/UNIFIED_EXECUTION_RUNTIME.md#425-unified-agent-execution-protocol) (UAEP separation); **flow narrative:** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §7–§8. **Closeout:** [Phase ORCH ORCH-1](plan/ORCHESTRATION.md) — **Done**.
 
 ---
 
@@ -645,7 +645,7 @@ Verify that planning, scheduling, graph execution and routing are formal runtime
 Orchestration Score: L0-L4
 ```
 
-**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix I §I.5](guides/AGENT_CREATION_GUIDE.md#i5-graph-execution-and-merge) (batches, retry, merge); `ExecutionGraph` / `GraphExecutor` in `intergrax/runtime/nexus/execution/`; coordination catalog `multi_agent_coordination.py` (V-MA); **flow narrative:** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §9, §14. **Closeout:** [Phase ORCH](plan/phases/core-runtime.md) ORCH-2, ORCH-3 — **Done**.
+**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix I §I.5](guides/AGENT_CREATION_GUIDE.md#i5-graph-execution-and-merge) (batches, retry, merge); `ExecutionGraph` / `GraphExecutor` in `intergrax/runtime/nexus/execution/`; coordination catalog `multi_agent_coordination.py` (V-MA); **flow narrative:** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §9, §14. **Closeout:** [Phase ORCH](plan/ORCHESTRATION.md) ORCH-2, ORCH-3 — **Done**.
 
 ---
 
@@ -860,7 +860,7 @@ RAG Architecture Score: L0-L4
 
 ## 15. Memory Layer
 
-**Canonical architecture:** [`architecture/MEMORY.md`](architecture/MEMORY.md) · implementation: [Phase MEM](plan/phases/rag-context-memory.md) (**Done**) · [Phase MEM-DEPTH](plan/phases/rag-context-memory.md) (**Planned**)
+**Canonical architecture:** [`architecture/MEMORY.md`](architecture/MEMORY.md) · implementation: [Phase MEM](plan/MEMORY.md) (**Done**) · [Phase MEM-DEPTH](plan/MEMORY.md) (**Planned**)
 
 ### Purpose
 
@@ -1178,7 +1178,7 @@ Verify that every important runtime decision and action is traceable, measurable
 Observability Score: L4
 ```
 
-**Authoring reference:** [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) (Harness Observability Spine — canonical deep dive); [`guides/AGENT_CREATION_GUIDE.md` Appendix H §H.5](guides/AGENT_CREATION_GUIDE.md#h5-observability--what-is-mandatory-vs-optional) (mandatory vs optional signals); [`guides/AGENT_CREATION_GUIDE.md` Appendix Q](guides/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) (wire-time profile bridge + assembly validation); [`guides/HARNESS_ENVIRONMENT.md`](guides/HARNESS_ENVIRONMENT.md#otlp--observability-s-ops2) (OTLP / lab debug APIs); canon [§42.1](architecture/UNIFIED_EXECUTION_RUNTIME.md#421-runtimeevent-contract) (event catalog). **Closeout:** [Phase OBS](plan/phases/observability-reliability.md) **Done** (wiring); [Phase OBS-BUS](plan/phases/observability-reliability.md) **Done** (spine L4). **Gate evidence:** `scripts/check_observability_gates.py` (emission coverage, payload registry, persistence conformance, trace bridge catalog, L4 depth gate).
+**Authoring reference:** [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) (Harness Observability Spine — canonical deep dive); [`guides/AGENT_CREATION_GUIDE.md` Appendix H §H.5](guides/AGENT_CREATION_GUIDE.md#h5-observability--what-is-mandatory-vs-optional) (mandatory vs optional signals); [`guides/AGENT_CREATION_GUIDE.md` Appendix Q](guides/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) (wire-time profile bridge + assembly validation); [`guides/HARNESS_ENVIRONMENT.md`](guides/HARNESS_ENVIRONMENT.md#otlp--observability-s-ops2) (OTLP / lab debug APIs); canon [§42.1](architecture/UNIFIED_EXECUTION_RUNTIME.md#421-runtimeevent-contract) (event catalog). **Closeout:** [Phase OBS](plan/OBSERVABILITY.md) **Done** (wiring); [Phase OBS-BUS](plan/OBSERVABILITY.md) **Done** (spine L4). **Gate evidence:** `scripts/check_observability_gates.py` (emission coverage, payload registry, persistence conformance, trace bridge catalog, L4 depth gate).
 
 ---
 
@@ -1223,7 +1223,7 @@ Verify that failures are anticipated, classified and handled safely.
 Reliability Score: L0-L4
 ```
 
-**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix R](guides/AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) (wire-time idempotency bridge + circuit breaker assembly); H-APP `ReliabilityProfile` in [`environment_profile.py`](../intergrax/applications/contracts/environment_profile.py). **Closeout:** [Phase REL](plan/phases/observability-reliability.md) **Done** (REL-DOC.*).
+**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix R](guides/AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) (wire-time idempotency bridge + circuit breaker assembly); H-APP `ReliabilityProfile` in [`environment_profile.py`](../intergrax/applications/contracts/environment_profile.py). **Closeout:** [Phase REL](plan/OBSERVABILITY.md) **Done** (REL-DOC.*).
 
 ---
 
@@ -1266,7 +1266,7 @@ Verify that data and execution safety are first-class platform properties.
 Security and Data Governance Score: L0-L4
 ```
 
-**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix H §H.3](guides/AGENT_CREATION_GUIDE.md#h3-security-profile-per-application) (V-SEC toggles); [`guides/AGENT_CREATION_GUIDE.md` Appendix S](guides/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) (wire-time middleware bridge + assembly validation). **Closeout:** [Phase SEC](plan/phases/governance-security.md) **Done** (SEC-DOC.*).
+**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix H §H.3](guides/AGENT_CREATION_GUIDE.md#h3-security-profile-per-application) (V-SEC toggles); [`guides/AGENT_CREATION_GUIDE.md` Appendix S](guides/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) (wire-time middleware bridge + assembly validation). **Closeout:** [Phase SEC](plan/UNIFIED_EXECUTION_RUNTIME.md) **Done** (SEC-DOC.*).
 
 ---
 
@@ -1311,7 +1311,7 @@ Verify that cost and resource consumption are explicit, enforceable and optimiza
 Cost Governance Score: L0-L4
 ```
 
-**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix T](guides/AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) (wire-time budget bridge + policy bundle merge); V-COST contracts in `runtime/architecture/cost_*.py`. **Closeout:** [Phase COST](plan/phases/governance-security.md) **Done** (COST-DOC.*).
+**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix T](guides/AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) (wire-time budget bridge + policy bundle merge); V-COST contracts in `runtime/architecture/cost_*.py`. **Closeout:** [Phase COST](plan/UNIFIED_EXECUTION_RUNTIME.md) **Done** (COST-DOC.*).
 
 ---
 
@@ -1354,7 +1354,7 @@ Verify that intelligent behavior is measured, compared and regression-tested.
 Evaluation Score: L0-L4
 ```
 
-**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix U](guides/AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout) (wire-time evaluation bridge + policy bundle merge); V-EVAL contracts in `runtime/architecture/online_evaluation*.py`, `eval/nexus_eval_runner.py`; **CVL depth:** [`architecture/CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md) · Phase CRIT-V. **Closeout:** [Phase EVAL](plan/phases/evaluation-adaptive-critic.md) **Done** (EVAL-DOC.*); execution depth → [Phase CRIT-V](plan/phases/evaluation-adaptive-critic.md).
+**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix U](guides/AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout) (wire-time evaluation bridge + policy bundle merge); V-EVAL contracts in `runtime/architecture/online_evaluation*.py`, `eval/nexus_eval_runner.py`; **CVL depth:** [`architecture/CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md) · Phase CRIT-V. **Closeout:** [Phase EVAL](plan/CRITIC_VERIFICATION.md) **Done** (EVAL-DOC.*); execution depth → [Phase CRIT-V](plan/CRITIC_VERIFICATION.md).
 
 ---
 
@@ -1606,7 +1606,7 @@ Verify that architecture, implementation plan and documentation evolve together.
   * documentation update?
 * Is `IDEAL_HARNESS_AI_ARCHITECTURE.md` treated as target architecture?
 * Is `intergrax_runtime_architecture.md` treated as current architecture?
-* Is `INTERGRAX_IMPLEMENTATION_PLAN.md` treated as current execution plan?
+* Is `intergrax_runtime_architecture.md` treated as current execution plan?
 * Are ADRs used for significant decisions?
 * Are architecture risks tracked?
 * Is architecture debt tracked?
@@ -1655,7 +1655,7 @@ Compare:
 
 1. `IDEAL_HARNESS_AI_ARCHITECTURE.md`
 2. `intergrax_runtime_architecture.md` + relevant `architecture/<domain>.md`
-3. `INTERGRAX_IMPLEMENTATION_PLAN.md` + relevant `plan/phases/<domain>.md`
+3. `intergrax_runtime_architecture.md` + relevant `plan/<domain>.md`
 4. source code
 5. tests
 6. documentation
