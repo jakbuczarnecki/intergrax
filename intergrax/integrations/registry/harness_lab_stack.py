@@ -63,6 +63,29 @@ HARNESS_M6_P5_PROBE_SLUGS: frozenset[str] = frozenset(
     }
 )
 
+HARNESS_M7_P7_PROBE_SLUGS: frozenset[str] = frozenset(
+    {
+        "perplexity",
+        "llamaparse",
+        "lancedb",
+        "telegram",
+        "browserbase",
+        "n8n",
+        "wikipedia",
+        "clerk",
+        "upstash_redis",
+        "google_drive",
+        "arxiv",
+        "semantic_scholar",
+        "upstash_qstash",
+        "okta",
+        "bigquery",
+        "motherduck",
+        "airbyte",
+        "apify",
+    }
+)
+
 HARNESS_M6_P6_PROBE_SLUGS: frozenset[str] = frozenset(
     {
         "trivy",

@@ -69,7 +69,12 @@ from intergrax.tools.providers.platform.service import (
     PLATFORM_LIST_WORKFLOW_RUNS_TOOL_ID,
     PLATFORM_PUT_SECRET_TOOL_ID,
 )
+from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
 from intergrax.tools.providers.rag.rerank_service import RAG_RERANK_TOOL_ID
+from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID
+from intergrax.tools.providers.websearch.fetch_batch_service import WEBSEARCH_FETCH_BATCH_TOOL_ID
+from intergrax.tools.providers.websearch.read_url_service import WEBSEARCH_READ_URL_TOOL_ID
+from intergrax.tools.providers.websearch.service import WEBSEARCH_TOOL_ID
 from intergrax.tools.providers.records.service import (
     RECORDS_DELETE_TOOL_ID,
     RECORDS_DESCRIBE_COLLECTION_TOOL_ID,
@@ -212,6 +217,13 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
         CRM_LIST_TICKETS_TOOL_ID,
     ),
     IntegrationCategory.RERANK_PROVIDER: (RAG_RERANK_TOOL_ID,),
+    IntegrationCategory.SEARCH_PROVIDER: (
+        WEBSEARCH_TOOL_ID,
+        WEBSEARCH_READ_URL_TOOL_ID,
+        WEBSEARCH_FETCH_BATCH_TOOL_ID,
+    ),
+    IntegrationCategory.DOCUMENT_PARSER: (RAG_INGEST_TOOL_ID,),
+    IntegrationCategory.VECTOR_STORE: (RAG_RETRIEVE_TOOL_ID, RAG_INGEST_TOOL_ID),
 }
 
 

@@ -68,6 +68,23 @@
 
 **Closeout target:** catalog **167** slugs; optional `HARNESS_M6_P6_PROBE_SLUGS`; four Tier-3 presets; gate green.
 
+### 6.1z Harness implementation queue — Agent-developer expansion (M.7 P7 done)
+
+**Purpose:** Ordered backlog for **Phase M.7 P7** (Band 2ad). **Status:** **Done** (2026-06-08) — **18/18**.  
+**Register:** [M.7 P7 — Master register](#m7-p7--agent-developer-integration-expansion-done--1818)  
+**Policy:** Reuse existing category contracts; `_shared/p8` thin factories; auto-wire `search_provider` / `document_parser` / `vector_store` catalog tools.
+
+| Order | Wave | IDs | Slugs (summary) | Priority | Status |
+|-------|------|-----|-----------------|----------|--------|
+| 1 | H-INT-P7-1 | M-P7.1–M-P7.5 | Research + RAG: `perplexity`, `arxiv`, `semantic_scholar`, `llamaparse`, `lancedb` | **P0** | **Done** |
+| 2 | H-INT-P7-2 | M-P7.6–M-P7.9 | Interaction + browser + storage: `telegram`, `browserbase`, `google_drive`, `apify` | **P0** | **Done** |
+| 3 | H-INT-P7-3 | M-P7.10–M-P7.14 | Workflow + wiki + identity + cache: `n8n`, `wikipedia`, `clerk`, `upstash_redis`, `upstash_qstash` | **P0/P1** | **Done** |
+| 4 | H-INT-P7-4 | M-P7.15–M-P7.18 | Data warehouse: `okta`, `bigquery`, `motherduck`, `airbyte` | **P1** | **Done** |
+| 5 | PRE | M-P7-PRE.1 | Tier-3 presets: `research_web_stack`, `document_ingest_stack`, `chat_bot_stack` | **P0** | **Done** |
+| 6 | WIRE | M-P7-WIRE.1 | `extend_tool_profile_for_integration` — search/RAG auto-wiring | **P0** | **Done** |
+
+**Closeout target:** catalog **185** slugs; `HARNESS_M7_P7_PROBE_SLUGS`; three Tier-3 presets; gate green.
+
 ---
 
 ### 6.2bd Phase INT execution order (Band 2l — closed 2026-06-02)
@@ -211,7 +228,7 @@ Wave H-INT-5 (enterprise):  M-P4.17 → M-P4.18 → M-P4.19 → M-P4.20 → M-P4
 
 **Principle:** evolve existing modules (`queueing/`, `distributed/`, `websearch/`, …) into catalog providers; do not fork parallel stacks.
 
-**Catalog (2026-06-02):** **167** slugs in `layout.py` · **12** core / **167** full preset · timeline: pre-P4 **99** → M.6 P4 **127** (+28) → M.6 P5 **135** (+8 greenfield, 25 hardened) → M.6 P6 **167** (+32).
+**Catalog (2026-06-08):** **185** slugs in `layout.py` · **12** core / **185** full preset · timeline: pre-P4 **99** → M.6 P4 **127** (+28) → M.6 P5 **135** (+8 greenfield, 25 hardened) → M.6 P6 **167** (+32) → M.7 P7 **185** (+18).
 
 **Out of scope:** `intergrax/llm_adapters/` — LLM providers are **not** part of the Integration Library (§7.1.2).
 
@@ -260,6 +277,7 @@ Wave H-INT-5 (enterprise):  M-P4.17 → M-P4.18 → M-P4.19 → M-P4.20 → M-P4
 | M.6 P4 | Harness platform expansion | **Done** (beta) (28/28) | `_shared/p5/` · `bootstrap_m6_p4.py` · [M.6 P4 register](#m6-p4--harness-platform-expansion-done) |
 | M.6 P5 | Harness integration depth (audit 2026-06-02) | **Done** (33/34) | Harden 25 STABLE + health · 8 greenfield · `trivy` → [M.6 P6](#m6-p6--harness-integration-expansion-planned) · [M.6 P5 register](#m6-p5--harness-integration-depth-done--3334) |
 | M.6 P6 | Harness integration expansion (audit 2026-06-02) | **Done** (32/32) | Security, sandbox, identity, GitOps CI, speech catalog, enterprise ops, data/workflow, modality reserve · [M.6 P6 register](#m6-p6--harness-integration-expansion-planned) · Band **2ac** |
+| M.7 P7 | Agent-developer integration expansion (audit 2026-06-08) | **Done** (18/18) | Research/RAG, chat bots, browser automation, workflow glue, serverless cache/queue, warehouse analytics · [M.7 P7 register](#m7-p7--agent-developer-integration-expansion-done--1818) · Band **2ad** |
 | M.7 | Agent Creation Guide § integrations | **Done** | Appendix E — capabilities/tools vs `IntegrationProfile` / `wire_lab_integrations()` |
 | M.8 | Lab `IntegrationProfile` example | **Done** | `applications/lab_application/` — `wire_lab_integrations()` + `log` provider |
 
@@ -631,6 +649,61 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 |------|-----|---------|
 | 2026-06-02 | M-P6.0 | Register **32** harness-expansion slugs from integration gap audit; §6.1y + §6.2ag + Band **2ac** |
 | 2026-06-02 | M-P6-WIRE | Post-catalog closeout: Tier-1 tools (`security.scan`, `workflow.*`), `HostedSandboxSession` bridge, `IntegrationSpeechAdapter`, `wire_application_identity`, V-SEC promote gate script, infra `p6` profile, CI hook |
+
+#### M.7 P7 — Agent-developer integration expansion (Done — 18/18)
+
+**Status:** **Done** (2026-06-08) — **18/18** · catalog **185** slugs in `layout.py`  
+**Source:** Integration audit for Tier-2 agent authors (2026-06-08)  
+**Queue:** [§6.1z](#61z-harness-implementation-queue--agent-developer-expansion-m7-p7-done)  
+**Priority ladder:** **Band 2ad** — runs in parallel with §6.1 maintenance  
+**Implementation:** `intergrax/integrations/_shared/p8/` + thin shells via `scripts/wire_p8_m7_p7_providers.py` · `register_m7_p7_integrations()` in `bootstrap_m7_p7.py`
+
+**Hard rules:**
+
+- **No** LLM vendor API slugs — use `llm_adapters/`.
+- Reuse existing category contracts — **no** new universal mechanisms.
+- `telegram` dual-role slug (`notification_channel` + `interaction_surface`) like `slack`.
+- Auto-enable catalog tools when profile declares `search_provider`, `document_parser`, or `vector_store`.
+
+##### M.7 P7 — Master register (18 slugs)
+
+| Wave | ID | Slug | Category | Priority | Status | Agent-dev ROI | Acceptance |
+|------|-----|------|----------|----------|--------|---------------|------------|
+| H-INT-P7-1 | M-P7.1 | `perplexity` | search_provider | **P0** | **Done** | AI-native research beside `tavily`/`exa` | `websearch.query` auto-wire |
+| H-INT-P7-1 | M-P7.2 | `arxiv` | search_provider | **P0** | **Done** | Academic paper search | STABLE + conformance |
+| H-INT-P7-1 | M-P7.3 | `semantic_scholar` | search_provider | **P0** | **Done** | Citation-aware research | STABLE + conformance |
+| H-INT-P7-1 | M-P7.4 | `llamaparse` | document_parser | **P0** | **Done** | High-quality PDF/table ingest | `rag.ingest_document` auto-wire |
+| H-INT-P7-1 | M-P7.5 | `lancedb` | vector_store | **P0** | **Done** | Embedded local vector RAG | `rag.retrieve` auto-wire |
+| H-INT-P7-2 | M-P7.6 | `telegram` | notification + interaction | **P0** | **Done** | Chat bot intake/outbound | dual-category catalog factory |
+| H-INT-P7-2 | M-P7.7 | `browserbase` | browser_automation | **P0** | **Done** | Managed browser sessions | `browser.fetch_page` |
+| H-INT-P7-2 | M-P7.8 | `google_drive` | object_storage | **P0** | **Done** | Cloud document source | `storage.*` tools |
+| H-INT-P7-2 | M-P7.9 | `apify` | browser_automation | **P1** | **Done** | Structured web scraping | conformance tests |
+| H-INT-P7-3 | M-P7.10 | `n8n` | workflow_orchestrator | **P0** | **Done** | Low-code automation triggers | `workflow.*` tools |
+| H-INT-P7-3 | M-P7.11 | `wikipedia` | wiki_knowledge | **P0** | **Done** | Free structured knowledge | `knowledge.*` tools |
+| H-INT-P7-3 | M-P7.12 | `clerk` | identity_provider | **P1** | **Done** | Fast SaaS auth for new hosts | identity tools |
+| H-INT-P7-3 | M-P7.13 | `upstash_redis` | key_value_cache | **P1** | **Done** | Serverless Redis | `cache.*` tools |
+| H-INT-P7-3 | M-P7.14 | `upstash_qstash` | message_bus | **P1** | **Done** | Serverless queue | `message_bus.*` tools |
+| H-INT-P7-4 | M-P7.15 | `okta` | identity_provider | **P1** | **Done** | Enterprise SSO | identity tools |
+| H-INT-P7-4 | M-P7.16 | `bigquery` | relational_store | **P1** | **Done** | Warehouse analytics agents | `database.*` tools |
+| H-INT-P7-4 | M-P7.17 | `motherduck` | relational_store | **P1** | **Done** | Cloud DuckDB eval trends | extends `duckdb` patterns |
+| H-INT-P7-4 | M-P7.18 | `airbyte` | workflow_orchestrator | **P1** | **Done** | RAG reindex orchestration | `workflow.*` tools |
+
+**Tier-3 named presets (M-P7-PRE.1):**
+
+| Preset function | Slugs (primary) | Agent-dev use |
+|-----------------|-----------------|---------------|
+| `research_web_stack()` | `perplexity` + `wikipedia` + `inmemory` | ResearchAgent / assistant hub |
+| `document_ingest_stack()` | `llamaparse` + `lancedb` + `minio`/`google_drive` | Legal/LKW ingest |
+| `chat_bot_stack()` | `telegram` + `redis` + `langfuse` | Messenger bot + trace |
+
+**ADR:** no ADR needed — extends existing Integration Library contracts and M.6 factory patterns; no Nexus semantics change.
+
+##### M.7 P7 — Paydown log
+
+| Date | ID | Summary |
+|------|-----|---------|
+| 2026-06-08 | M-P7.0 | Register 18 agent-developer slugs; §6.1z + Band **2ad** |
+| 2026-06-08 | M-P7.1–18 | `_shared/p8`, bootstrap, presets, tool auto-wiring, tests `test_p8_m7_p7_providers.py` |
 
 ##### M.6 P6 — Post-catalog wiring closeout (Done — 2026-06-02)
 
