@@ -12,3 +12,14 @@ DEV_ISSUE_TRIAGE = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("dev", "issues", "triage"),
 )
+
+DEV_ISSUE_CREATOR = SkillManifest(
+    skill_id="dev.issue_creator",
+    version="1.0.0",
+    description="Create new tracker issues from agent findings with search dedup and notify.",
+    tool_ids=("issues.create_issue", "issues.search", "notify.send"),
+    prompt_instruction_ids=("dev.issue_creator.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("dev", "issues", "create"),
+)

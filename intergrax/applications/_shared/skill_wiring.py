@@ -81,3 +81,48 @@ def lkw_skill_profile() -> SkillProfile:
 def dispute_skill_profile() -> SkillProfile:
     """Dispute simulation: legal research, memory scratchpad, citation synthesis."""
     return SkillProfile(enabled_bundles=["legal", "rag", "memory", "research"])
+
+
+def sandbox_skill_profile() -> SkillProfile:
+    """Coding agents: sandbox exec with shadow workspace IO."""
+    return SkillProfile(enabled_bundles=["sandbox", "workspace"])
+
+
+def hitl_skill_profile() -> SkillProfile:
+    """Governed human-in-the-loop approval workflows."""
+    return SkillProfile(enabled_bundles=["hitl", "notify"])
+
+
+def graph_skill_profile() -> SkillProfile:
+    """Knowledge graph traversal with RAG grounding."""
+    return SkillProfile(enabled_bundles=["graph", "rag"])
+
+
+def storage_skill_profile() -> SkillProfile:
+    """Object storage sync with workspace artifact import/export."""
+    return SkillProfile(enabled_bundles=["storage", "workspace"])
+
+
+def message_bus_skill_profile() -> SkillProfile:
+    """Async background tasks via message bus queue."""
+    return SkillProfile(enabled_bundles=["message_bus"])
+
+
+def cache_skill_profile() -> SkillProfile:
+    """Session KV cache with task memory fallback."""
+    return SkillProfile(enabled_bundles=["cache", "memory"])
+
+
+def eval_skill_profile() -> SkillProfile:
+    """Eval harness: score logging and trace correlation."""
+    return SkillProfile(enabled_bundles=["eval", "ops"])
+
+
+def modality_skill_profile() -> SkillProfile:
+    """Voice and vision modality pipelines for lab hosts."""
+    return SkillProfile(enabled_bundles=["modality", "rag"])
+
+
+def notify_skill_profile() -> SkillProfile:
+    """Deferred and immediate notification scheduling."""
+    return SkillProfile(enabled_bundles=["notify"])

@@ -16,3 +16,18 @@ COLLABORATION_OUTREACH = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("collaboration", "email", "outreach"),
 )
+
+COLLABORATION_CALENDAR = SkillManifest(
+    skill_id="collaboration.calendar",
+    version="1.0.0",
+    description="Calendar scheduling: list events, create meetings, and resolve user profiles.",
+    tool_ids=(
+        "collaboration.list_calendar",
+        "collaboration.create_event",
+        "collaboration.get_user",
+    ),
+    prompt_instruction_ids=("collaboration.calendar.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("collaboration", "calendar", "scheduling"),
+)

@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from intergrax.skills.core.manifest import SkillBundleManifest
-from intergrax.skills.providers.data.manifests import DATA_SQL_ANALYST
+from intergrax.skills.providers.data.manifests import DATA_RECORDS_QUERY, DATA_SQL_ANALYST
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
+
+_DATA_MANIFESTS = (DATA_SQL_ANALYST, DATA_RECORDS_QUERY)
 
 
 class DataSkillPlugin:
@@ -13,15 +15,16 @@ class DataSkillPlugin:
     def skill_bundle_manifest(cls) -> SkillBundleManifest:
         return SkillBundleManifest(
             bundle_id="data",
-            skill_ids=(DATA_SQL_ANALYST.skill_id,),
+            skill_ids=tuple(m.skill_id for m in _DATA_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Data analyst skill packs (SK-EXP P2)",
+            description="Data analyst skill packs",
         )
 
     @classmethod
     def skill_manifests(cls) -> tuple:
-        return (DATA_SQL_ANALYST,)
+        return _DATA_MANIFESTS
 
     @classmethod
     def register_skills(cls, registry: SkillRegistry) -> None:
-        registry.register(DATA_SQL_ANALYST)
+        for manifest in _DATA_MANIFESTS:
+            registry.register(manifest)

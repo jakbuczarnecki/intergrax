@@ -6,15 +6,15 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**Last updated:** 2026-06-08 — SK-EXP **Done** (31 skills · 13 bundles); SK-BRIDGE.* residual.
+**Last updated:** 2026-06-08 — SK-EXP + SK-EXP2 **Done** (49 skills · 22 bundles); SK-BRIDGE.* residual.
 
 ---
 
 ### 6.1ci Harness implementation queue — skill catalog expansion (closed)
 
-**Purpose:** Tier-0 skill packs for agent and Tier-3 authors. **Closed 2026-06-08** — SK-EXP-P0/P1/P2 + SK-PRESET.1 **Done**. Residual: **SK-BRIDGE.*** (prompt/policy runtime merge). **Not** Band 3 business agents (K.1/K.2).
+**Purpose:** Tier-0 skill packs for agent and Tier-3 authors. **Closed 2026-06-08** — SK-EXP-P0/P1/P2 + SK-EXP2-P0/P1/P2 + SK-PRESET.1/2 **Done**. Residual: **SK-BRIDGE.*** (prompt/policy runtime merge). **Not** Band 3 business agents (K.1/K.2).
 
-**Catalog:** **31** skills · **13** bundles — see [`architecture/SKILLS.md`](../architecture/SKILLS.md#first-party-catalog-31-skills--13-bundles).
+**Catalog:** **49** skills · **22** bundles — see [`architecture/SKILLS.md`](../architecture/SKILLS.md#first-party-catalog-49-skills--22-bundles).
 
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
@@ -26,8 +26,12 @@
 | 5 | **SK-EXP-P1** | Code | **Done** | Wave P1 — 7 ops/dev/productivity packs | Same |
 | 6 | **SK-EXP-P2** | Code | **Done** | Wave P2 — 5 domain/platform packs | Same |
 | 7 | **SK-PRESET.1** | Code | **Done** | Tier-3 presets in `skill_wiring.py` | `lkw_skill_profile`, `dispute_skill_profile`, … |
+| 8 | **SK-EXP2-P0** | Code | **Done** | Wave P0 — 6 platform-governance packs | `test_sk_exp2_skill_bundles.py` |
+| 9 | **SK-EXP2-P1** | Code | **Done** | Wave P1 — 6 async/modality/eval packs | Same |
+| 10 | **SK-EXP2-P2** | Code | **Done** | Wave P2 — 6 domain/platform extension packs | Same |
+| 11 | **SK-PRESET.2** | Code | **Done** | SK-EXP2 presets in `skill_wiring.py` | `sandbox_skill_profile`, `hitl_skill_profile`, … |
 
-**Suggested PR order (complete):** SK-EXP-P0 → P1 → P2 → SK-PRESET.1. **SK-BRIDGE.*** optional follow-up.
+**Suggested PR order (complete):** SK-EXP-P0 → P1 → P2 → SK-PRESET.1 → SK-EXP2-P0 → P1 → P2 → SK-PRESET.2. **SK-BRIDGE.*** optional follow-up.
 
 **Explicitly excluded:** K.1, K.2, new Tier-2 agents, workflow-sized fake tools, unvalidated filesystem skill discovery.
 
@@ -68,9 +72,69 @@ Priority for **platform users** (agent authors, Tier-3 hosts, extension authors)
 | SK-P2.4 | `data.sql_analyst` | `data` | `database.query`, `database.describe_schema`, `workspace.write_file` | Structured data Q&A |
 | SK-P2.5 | `platform.concierge` | `platform` | `rag.retrieve`, `websearch.query`, `memory.read`, `skill.resolve` | `intergrax_assistant` hub — introspection + retrieval |
 
-**Optional P2+ (defer until P0–P2 shipped):** `hitl.approval_gate` (`hitl.*`, `notify.send`), `graph.entity_explorer` (`graph.*`, `rag.retrieve`), `sandbox.code_exec` (`sandbox.exec`, `workspace.*`).
+**Deferred to SK-EXP2 (now shipped):** `hitl.approval_gate`, `graph.entity_explorer`, `sandbox.code_exec` — see §6.1cj2 below.
 
 **ADR:** no ADR for doc-only SK-DOC.1. New bundles follow existing Phase R pattern — **no ADR** unless a skill models a multi-step workflow as one tool (forbidden). SK-BRIDGE.* may need `docs/adr/` entry if context merge semantics change Nexus contracts.
+
+#### SK-EXP2 — Proposed skill register (18 packs)
+
+Second wave after SK-EXP: platform governance, async/modality, and domain extensions. **9 new bundles** + **7 extended bundles**.
+
+**Wave P0 — Platform governance (ship first)**
+
+| ID | skill_id | Bundle | `tool_ids` (core) | Value |
+|----|----------|--------|-------------------|-------|
+| SK2-P0.1 | `rag.index_admin` | `rag` | `rag.list_collections`, `rag.describe_collection`, `rag.check_index_status`, `rag.list_documents` | Operator index introspection without destructive ops |
+| SK2-P0.2 | `rag.collection_lifecycle` | `rag` | `rag.search_by_metadata`, `rag.delete_documents`, `rag.purge_collection` | HIGH-risk controlled purge — admin hosts only |
+| SK2-P0.3 | `sandbox.code_exec` | `sandbox` | `sandbox.exec`, `workspace.read_file`, `workspace.write_file` | Coding agents with isolated exec |
+| SK2-P0.4 | `hitl.approval_gate` | `hitl` | `hitl.list_pending`, `hitl.submit_response`, `hitl.get_decision`, `notify.send` | Governed HITL without per-agent wiring |
+| SK2-P0.5 | `graph.entity_explorer` | `graph` | `graph.run_query`, `graph.get_node`, `rag.retrieve` | Knowledge graph + RAG grounding |
+| SK2-P0.6 | `storage.artifact_sync` | `storage` | `storage.get`, `storage.put`, `workspace.export_artifact`, `workspace.import_artifact` | Durable artifacts across runs |
+
+**Wave P1 — Async, cache, modality, eval**
+
+| ID | skill_id | Bundle | `tool_ids` (core) | Value |
+|----|----------|--------|-------------------|-------|
+| SK2-P1.1 | `message_bus.async_runner` | `message_bus` | `message_bus.enqueue`, `message_bus.get_status`, `message_bus.get_result` | Long-running tasks off sync Nexus loop |
+| SK2-P1.2 | `cache.session_cache` | `cache` | `cache.get`, `cache.set`, `memory.read` | Session acceleration with memory fallback |
+| SK2-P1.3 | `eval.score_logger` | `eval` | `braintrust.log_eval`, `observability.query_traces` | Eval harness score + trace correlation |
+| SK2-P1.4 | `modality.speech_io` | `modality` | `speech.transcribe`, `speech.synthesize` | Voice agents without vendor SDK in Tier-2 |
+| SK2-P1.5 | `modality.vision_ocr` | `modality` | `vision.ocr_regions`, `vision.detect`, `document.parse_preview` | Multimodal OCR before ingest |
+| SK2-P1.6 | `notify.scheduled_alerts` | `notify` | `notify.schedule`, `notify.list_scheduled`, `notify.cancel_scheduled`, `notify.send` | Deferred alerts for long workflows |
+
+**Wave P2 — Domain and platform extensions**
+
+| ID | skill_id | Bundle | `tool_ids` (core) | Value |
+|----|----------|--------|-------------------|-------|
+| SK2-P2.1 | `collaboration.calendar` | `collaboration` | `collaboration.list_calendar`, `collaboration.create_event`, `collaboration.get_user` | Meeting scheduling complement to outreach |
+| SK2-P2.2 | `platform.secrets_flags` | `platform` | `platform.get_secret`, `platform.evaluate_feature_flag` | Governed secrets/flags for trusted hosts |
+| SK2-P2.3 | `platform.cicd_inspector` | `platform` | `platform.list_workflow_runs`, `platform.get_workflow_run`, `platform.list_check_suites` | CI visibility for release automation |
+| SK2-P2.4 | `data.records_query` | `data` | `records.query`, `records.get`, `records.describe_collection` | NoSQL complement to `data.sql_analyst` |
+| SK2-P2.5 | `dev.issue_creator` | `dev` | `issues.create_issue`, `issues.search`, `notify.send` | Discovery-to-ticket loop |
+| SK2-P2.6 | `memory.session_cleanup` | `memory` | `memory.list_keys`, `memory.delete_key`, `memory.read` | Session hygiene for long multi-turn runs |
+
+#### SK-EXP2 — Master register (shipped)
+
+| ID | skill_id | Bundle | Status |
+|----|----------|--------|--------|
+| SK2-P0.1 | `rag.index_admin` | `rag` | **Done** |
+| SK2-P0.2 | `rag.collection_lifecycle` | `rag` | **Done** |
+| SK2-P0.3 | `sandbox.code_exec` | `sandbox` | **Done** |
+| SK2-P0.4 | `hitl.approval_gate` | `hitl` | **Done** |
+| SK2-P0.5 | `graph.entity_explorer` | `graph` | **Done** |
+| SK2-P0.6 | `storage.artifact_sync` | `storage` | **Done** |
+| SK2-P1.1 | `message_bus.async_runner` | `message_bus` | **Done** |
+| SK2-P1.2 | `cache.session_cache` | `cache` | **Done** |
+| SK2-P1.3 | `eval.score_logger` | `eval` | **Done** |
+| SK2-P1.4 | `modality.speech_io` | `modality` | **Done** |
+| SK2-P1.5 | `modality.vision_ocr` | `modality` | **Done** |
+| SK2-P1.6 | `notify.scheduled_alerts` | `notify` | **Done** |
+| SK2-P2.1 | `collaboration.calendar` | `collaboration` | **Done** |
+| SK2-P2.2 | `platform.secrets_flags` | `platform` | **Done** |
+| SK2-P2.3 | `platform.cicd_inspector` | `platform` | **Done** |
+| SK2-P2.4 | `data.records_query` | `data` | **Done** |
+| SK2-P2.5 | `dev.issue_creator` | `dev` | **Done** |
+| SK2-P2.6 | `memory.session_cleanup` | `memory` | **Done** |
 
 #### SK-EXP — Master register (shipped)
 
@@ -102,6 +166,8 @@ Priority for **platform users** (agent authors, Tier-3 hosts, extension authors)
 | 2026-06-08 | SK-DOC.1 | Engine pipeline documented; §7.1.8 + Appendix J contract fix |
 | 2026-06-08 | SK-EXP-P0–P2, SK-PRESET.1 | 18 skill packs + 9 new bundles; 31 total skills; `test_sk_exp_skill_bundles.py` |
 | 2026-06-08 | SK-DOC.2 | Per-skill `USAGE.md` (31 files) + bundle indexes; gate `test_skill_usage_docs.py`; scaffold emits skill USAGE template |
+| 2026-06-08 | SK-EXP2-P0–P2, SK-PRESET.2 | 18 skill packs + 9 new bundles; 49 total skills; `test_sk_exp2_skill_bundles.py`; SK-EXP2 presets in `skill_wiring.py` |
+| 2026-06-08 | SK-DOC.3 | Per-skill `USAGE.md` for SK-EXP2 (18 files); gate count 49 |
 
 ---
 
