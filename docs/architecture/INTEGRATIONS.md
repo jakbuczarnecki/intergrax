@@ -1,14 +1,10 @@
-﻿# Integrations — Architecture and Catalog
+# Integrations
 
-**Status:** Canonical architecture document
-**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Implementation:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`plan/`](../plan/)
-
----
-
-## Architecture
-
+**Status:** Canonical architecture (domain pair 1:1)  
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
+**Plan (1:1):** [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md)  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Audit layers:** 13–14  
 ---
 
 # 18. Slack / Teams / Communication Integration Philosophy

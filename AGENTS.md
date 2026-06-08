@@ -120,6 +120,7 @@ uv run intergrax doctor
 uv run pytest -m gate -q
 python scripts/check_harness_no_getattr.py
 uv run python scripts/check_observability_gates.py
+python scripts/check_docs_domain_pairs.py
 ```
 
 For agent-only work:

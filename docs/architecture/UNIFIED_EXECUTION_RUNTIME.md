@@ -1,91 +1,10 @@
-﻿# Unified Execution Runtime Specification (UAEP)
+# Unified Execution Runtime
 
-**Status:** Canonical architecture (decomposed from platform canon)  
+**Status:** Canonical architecture (domain pair 1:1)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
-**Target reference:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-
----
-
-# 42. Unified Execution Runtime Specification
-
-This section is the **canonical implementation specification** for the Intergrax execution environment.
-
-It extends §5.1 (Four-Tier Model), §5.2 (Platform Reuse), §9 (Dual Loop), §12–§14 (Contracts), §22–§33 (ToolRuntime, Lifecycle, Validation, Observability) without changing architectural direction.
-
-**Important:** §42 specifies **how** Nexus orchestrates execution (events, decisions, hooks, lifecycle). It does **not** permit building duplicate Tier-0 infrastructure. All §42 implementation MUST reuse existing platform modules (§5.2, §8.8).
-
-Intergrax MUST be a **single, unified, event-driven Agent OS** — not a collection of loosely coupled agent implementations.
-
-Every agent:
-
-- implements the same contracts (§12, §42.13)
-- runs through the same lifecycle (§42.4, §42.6)
-- uses the same `AgentEngine` executor (§42.19)
-- emits the same `RuntimeEvent` stream (§42.1)
-- returns the same `AgentDecision` objects (§42.7)
-- passes through the same middleware pipeline (§42.20, §42.42)
-- accesses Tier-0 only through `ToolRuntime` policy (§42.12)
-
-Agents provide **domain logic**. The runtime owns **execution governance**.
-
-```text
-┌─────────────────────────────────────────────────────────────┐
-│  Tier-3 Application (host, config, agent roster)            │
-└───────────────────────────┬─────────────────────────────────┘
-                            │ Task intake
-┌───────────────────────────▼─────────────────────────────────┐
-│  Tier-1 Nexus — Global loop, policy, scheduling, graph    │
-│  EventBus → Hooks → Middleware → Validation → Interrupts    │
-└───────────────────────────┬─────────────────────────────────┘
-                            │ AgentEngine.execute_step()
-┌───────────────────────────▼─────────────────────────────────┐
-│  Tier-2 Agent — domain steps, local reasoning, decisions    │
-│  NO private runtime · NO direct adapters · NO hidden loops  │
-└───────────────────────────┬─────────────────────────────────┘
-                            │ ToolRuntime.invoke() only
-┌───────────────────────────▼─────────────────────────────────┐
-│  Tier-0 Platform — LLM, DB, Redis, files, web, sandbox      │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**Implementation status note (2026-05-27):** §42 platform infrastructure is **complete for laboratory and product hosts**. All Tier-3 factories (`lab`, `legal`, `research`, `poc_template`) use validating runtime event persistence, default runtime plugins, and resilient notification delivery (when webhook backend configured). Debug API covers trace, metrics, runtime events, delivery DLQ, and experiments. Remaining work is **harness environment GA** (Phase S: stable integration stack, OTLP, platform skills, operator docs), then **Phase K** business agents (K.1/K.2), Legal E2E B.15, and optional beta provider hardening — not runtime core gaps.
-
-### §42 Table Of Contents
-
-| Section | Topic |
-|---------|-------|
-| 42.1 | Runtime Event Model |
-| 42.2 | Event Bus Architecture |
-| 42.3 | Hook System |
-| 42.4 | Standard Agent Lifecycle |
-| 42.5 | Unified Agent Execution Protocol (UAEP) |
-| 42.6 | Agent Step Lifecycle |
-| 42.7 | Agent Decision Model |
-| 42.8 | Execution Interrupt Model |
-| 42.9 | Pause / Resume Model |
-| 42.10 | Human In The Loop Runtime Flow |
-| 42.11 | Policy Engine |
-| 42.12 | ToolRuntime Enforcement Rules |
-| 42.13 | Shared Execution Contracts |
-| 42.14 | Cross-Agent Communication Contracts |
-| 42.15 | Agent Handoff Contracts |
-| 42.16 | Validation Contract Model |
-| 42.17 | Runtime State Machine |
-| 42.18 | Runtime Step Contracts |
-| 42.19 | AgentEngine Responsibilities |
-| 42.20 | Runtime Middleware Pipeline |
-| 42.21–42.22 | Extensibility & Plugin Architecture |
-| 42.23–42.24 | Event Payloads & Observability Protocol |
-| 42.25–42.26 | Safety & Cancellation |
-| 42.27–42.29 | Capability, Contract & Compatibility Versioning |
-| 42.30–42.31 | Scheduling Model & Execution Phases |
-| 42.32–42.36 | Local Loops, Retries, Memory & Tool Access |
-| 42.37–42.40 | Governance, Escalation, Critical Events, Recovery |
-| 42.41 | Forbidden Runtime Patterns |
-| 42.42 | Middleware Pipeline (canonical hook catalog) |
-| 42.43 | Multi-Agent Collaboration Flow (PM→UX→Legal→Validator→Human) |
-| 42.44 | AgentEngine As Universal Executor (summary) |
-
+**Plan (1:1):** [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../plan/UNIFIED_EXECUTION_RUNTIME.md)  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Audit layers:** 4–5, 8, 23–24  
 ---
 
 ## 42.1 Runtime Event Model

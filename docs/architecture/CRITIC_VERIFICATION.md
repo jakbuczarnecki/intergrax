@@ -1,22 +1,10 @@
-﻿# Critic & Verification Layer (CVL) — Architecture
+# Critic Verification
 
-**Status:** Canonical architecture document
-**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Implementation:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`plan/`](../plan/)
-
----
-
-
-**Status:** **Done** (Phase CRIT-V, Band 2ak — 24/24 deliverables)  
-**Date:** 2026-06-07  
-**Audience:** Harness platform engineers, Tier-2 agent authors, Tier-3 application operators  
-**Canon addendum:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) §55  
-**Decision record:** [`adr/ADR-CRITIC-001.md`](adr/ADR-CRITIC-001.md)  
-**Implementation tracker:** [`plan/CRITIC_VERIFICATION.md) — Phase CRIT-V  
-**Target alignment:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §6.4, §17.2, §18  
-**Audit layer:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §25 (Evaluation), §7 (Reasoning), §10 (Multi-agent)
-
+**Status:** Canonical architecture (domain pair 1:1)  
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
+**Plan (1:1):** [`plan/CRITIC_VERIFICATION.md`](../plan/CRITIC_VERIFICATION.md)  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Audit layers:** 25 (verify depth)  
 ---
 
 ## 1. Purpose

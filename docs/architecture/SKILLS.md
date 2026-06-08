@@ -1,17 +1,10 @@
-﻿# Intergrax Skill Library
+# Skills
 
-**Status:** Canonical architecture document
-**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Implementation:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`plan/`](../plan/)
-
----
-
-
-**Last updated:** 2026-06-02 · Phase R MVP **Done** · Phase S platform `harness.*` bundle **Done** · Phase V hardening alignment
-
-Composable **capability packs** between the [Tool Library](architecture/TOOLS.md) and Tier-2 agents. Canon: [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.8 · Harness terms: §5.3 · Modality tools (`vision.*`, `speech.*`, `ml.*`): [architecture/MODALITY.md](architecture/MODALITY.md) §7.1.9 · Tracker: [plan/SKILLS.md) Appendix E + Phase V (`V-PE.*`, `V-EVAL.*`) + Phase W-ML.
-
+**Status:** Canonical architecture (domain pair 1:1)  
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
+**Plan (1:1):** [`plan/SKILLS.md`](../plan/SKILLS.md)  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Audit layers:** 12  
 ---
 
 ## Four-layer stack

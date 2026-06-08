@@ -1,40 +1,11 @@
 # Agent Contracts, Registry, and Capability Model
 
-**Status:** Canonical architecture (decomposed from platform canon)  
+**Status:** Canonical architecture (domain pair 1:1)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
-**Target reference:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Plan (1:1):** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
-**Audit layers:** 17–20, 31 (prompt, registry, capability graph, lifecycle)
-
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Audit layers:** 17–20, 31  
 ---
-
-# 11. Agent Responsibilities
-
-Agents are specialized execution modules.
-
-An agent is responsible for:
-
-- understanding its local task
-- using allowed tools
-- executing domain-specific logic
-- producing structured output
-- validating local output
-- reporting uncertainty
-- reporting failures
-- returning artifacts to Nexus
-
-An agent is NOT responsible for:
-
-- global orchestration
-- global task lifecycle
-- global retries
-- user communication outside the contract
-- creating unrelated agents
-- bypassing Nexus
-- owning cross-agent memory
-
----
-
 
 ---
 

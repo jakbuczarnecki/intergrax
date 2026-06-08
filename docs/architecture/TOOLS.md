@@ -1,47 +1,10 @@
-﻿# Tools — Architecture, ToolRuntime, and Catalog
+# Tools
 
-**Status:** Canonical architecture document
-**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Implementation:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`plan/`](../plan/)
-
----
-
-## Architecture — ToolRuntime and unified tool model
-
-------|----------|
-| Tool contract + handler protocol | `intergrax/tools/core/`, `intergrax/tools/tool_executor.py` |
-| Catalog + providers | `intergrax/tools/providers/` (Phase O) |
-| Registry | `intergrax/tools/registry/` |
-| LLM planner | `intergrax/tools/tools_agent.py` |
-| Runtime enforcement | `intergrax/runtime/nexus/tools/` (`RuntimeToolInvoker`, `RuntimeToolGateway`) |
-
-**Catalog index:** [`architecture/TOOLS.md`](architecture/TOOLS.md) — first-party catalog (11 `tool_id`s: retrieval, Jira, Confluence, notify, observability, sandbox) registered via `register_default_tools()` (Phase O.4, 2026-05-30).
-
-## 22.1 Context-Injection Tools
-
-Some tools exist primarily to ** enrich the LLM prompt** rather than to perform irreversible side effects (e.g. `rag.retrieve`, `websearch.query`).
-
-When `ToolContract.injects_context = true`:
-
-1. Runtime invokes the tool through the same `RuntimeToolInvoker` path.
-2. Nexus merges a bounded preview of the tool output into `state.tools_context_parts` / message assembly (replacing implicit `RagStep` / `WebsearchStep` injection).
-3. Trace records both `tool_invocation_*` and context-injection diagnostics.
-
-Side-effect tools (`injects_context = false`) return results to the agent loop only — they do not auto-inject into the main LLM prompt unless the agent explicitly uses the output.
-
-## 22.2 Legacy Pipeline Flags (Deprecated)
-
-Phase O.5 migration is **Done**. Nexus MAY still accept `ToolInvocationPlan(use_rag=…, use_websearch=…, use_tools=…)` as **deprecated aliases** that map to catalog tool_ids:
-
-```text
-use_rag=True        → rag.retrieve
-use_websearch=True  → websearch.query
-use_tools=True      → ToolsAgent planner over ToolRegistry
-```
-
-New code MUST use explicit tool_ids and `ToolRequest` — not boolean plan flags.
-
+**Status:** Canonical architecture (domain pair 1:1)  
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
+**Plan (1:1):** [`plan/TOOLS.md`](../plan/TOOLS.md)  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Audit layers:** 11  
 ---
 
 ---

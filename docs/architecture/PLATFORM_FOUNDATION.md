@@ -1,42 +1,10 @@
-﻿# Platform Foundation — Tiers, Principles, and Boundaries
+# Platform Foundation
 
-**Status:** Canonical architecture (decomposed from platform canon)  
+**Status:** Canonical architecture (domain pair 1:1)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
-**Target reference:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-
----
-
-# 1. Purpose Of This Document
-
-This document is the primary architecture and implementation specification for the Intergrax runtime.
-
-This document is intentionally written to be readable by:
-
-- humans
-- LLMs
-- GPT-like models
-- Claude-like models
-- Gemini-like models
-- Cursor AI agents
-- autonomous coding agents
-- future implementation agents
-
-This document MUST be treated as the canonical source of truth for implementing Intergrax.
-
-The platform is defined as **four tiers** (Tier-0 Platform → Tier-1 Nexus → Tier-2 Agents → Tier-3 Applications). See §5.1.
-
-The **Unified Execution Runtime Specification** (§42) defines the canonical implementation contracts for AgentEngine, events, hooks, lifecycle, decisions, interrupts, policy, middleware, and governance. All agent implementations MUST conform to §42 ([`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md)).
-
-**Critical implementation rule:** Intergrax MUST **reuse existing Tier-0 platform mechanisms** — not duplicate them. New universal components require explicit human approval. See §5.2, §8.8, §39.8.
-
-When an implementation decision is unclear, the implementation agent MUST prefer the principles, boundaries and contracts defined in this document.
-
-This document is NOT a marketing document.
-
-This document is NOT a product roadmap.
-
-This document is an architectural and implementation guide.
-
+**Plan (1:1):** [`plan/PLATFORM_FOUNDATION.md`](../plan/PLATFORM_FOUNDATION.md)  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Audit layers:** 1–2, 32  
 ---
 
 # 1.1 Documentation boundary (platform vs product)

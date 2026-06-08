@@ -1,22 +1,10 @@
 # Orchestration, Nexus, and Execution Graph
 
-**Status:** Canonical architecture (decomposed from platform canon)  
+**Status:** Canonical architecture (domain pair 1:1)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
-**Target reference:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-
----
-
-# 9. Dual Loop Architecture
-
-Intergrax uses a dual-loop architecture.
-
-There are two types of loops:
-
-1. Global Nexus Loop
-2. Local Agent Loop
-
-This is a required architectural decision.
-
+**Plan (1:1):** [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md)  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Audit layers:** 3, 7, 9  
 ---
 
 # 9.1 Global Nexus Loop

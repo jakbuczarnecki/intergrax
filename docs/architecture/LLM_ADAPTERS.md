@@ -1,19 +1,10 @@
 # Intergrax LLM Adapters
 
-**Status:** Canonical architecture document
-**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Implementation:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`plan/`](../plan/)
-
----
-
-
-**Last updated:** 2026-06-06
-
-Tier-0 LLM layer — `LLMAdapter`, registry, `LLMProfile`. Outside Integration Library (§5.2.2).
-
-**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §33 · [architecture/MODALITY.md](architecture/MODALITY.md) (Planes A/B/C) · [applications/USAGE.md](../applications/USAGE.md) · Phase **M-LLM** · Phase **M-LLM-R** · Phase **W-ML** · Phase **V-COST / V-EVAL / V-SEC** · [ADR-LLM-001](adr/ADR-LLM-001.md)
-
+**Status:** Canonical architecture (domain pair 1:1)  
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
+**Plan (1:1):** [`plan/LLM_ADAPTERS.md`](../plan/LLM_ADAPTERS.md)  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Audit layers:** 6  
 ---
 
 ## Response envelope (M-LLM-R)

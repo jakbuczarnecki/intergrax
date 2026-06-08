@@ -49,7 +49,37 @@ Do **not** load unrelated domain pairs. There is **no** monolithic implementatio
 | 5 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | Harness layers, audit methodology |
 | 6 | `docs/architecture/NEXUS_EXECUTION_FLOW.md` + `docs/plan/NEXUS_EXECUTION_FLOW.md` | Execution flow narrative + tasks |
 
-Task-specific routing: follow the table in **`AGENTS.md`** (agents, tools, skills, RAG, HITL, L4 adaptive, etc.).
+## Domain selection — task → pair (read only this pair)
+
+| Task / topic | `<DOMAIN>` basename |
+|--------------|---------------------|
+| Tiers, principles, product backlog §6.3, gate maintenance | `PLATFORM_FOUNDATION` |
+| UAEP, policy, identity, security, cost | `UNIFIED_EXECUTION_RUNTIME` |
+| Nexus loop, planner, scheduler, intake, queueing | `ORCHESTRATION` |
+| Execution flow, subagents, delegation, coordination §27 | `NEXUS_EXECUTION_FLOW` |
+| Agent contract, registry, prompt, capability graph | `AGENT_CONTRACTS_AND_ASSEMBLY` |
+| Integrations catalog, RAG backends | `INTEGRATIONS` |
+| Tools / ToolRuntime | `TOOLS` |
+| Skills | `SKILLS` |
+| LLM adapters, response envelope | `LLM_ADAPTERS` |
+| Memory, context, knowledge graph | `MEMORY` |
+| Vision / audio / ML modality | `MODALITY` |
+| Observability spine | `OBSERVABILITY` |
+| Retry, HITL, failure model | `RELIABILITY_FAILURE_AND_HITL` |
+| Tier-3 hosts, `ApplicationEnvironmentProfile` | `TIER3_APPLICATION_ENVIRONMENT` |
+| DX, scaffold, eval, CI gates, W-OPS | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` |
+| L4 adaptive harness (AHI) | `ADAPTIVE_HARNESS_INTELLIGENCE` |
+| Critic / verification (CVL) | `CRITIC_VERIFICATION` |
+| New Tier-2 agent (workflow) | `guides/AGENT_CREATION_GUIDE.md` + relevant domain pair |
+
+**How to use docs in an iteration:**
+
+1. Open hub → pick `<DOMAIN>` from table above (or user-specified domain).
+2. Read `docs/architecture/<DOMAIN>.md` then `docs/plan/<DOMAIN>.md` — in that order.
+3. Implement the smallest item from the plan register; update **both** files if contracts change.
+4. Do **not** open other `docs/architecture/*` or `docs/plan/*` files unless the user expands scope.
+
+Full task routing also in **`AGENTS.md`**.
 
 ## Scope per iteration
 
@@ -183,6 +213,7 @@ After harness/runtime changes:
 uv run pytest -m gate -q
 python scripts/check_harness_no_getattr.py
 uv run python scripts/check_observability_gates.py
+python scripts/check_docs_domain_pairs.py
 ```
 
 Agent-only work:

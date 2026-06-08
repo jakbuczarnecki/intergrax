@@ -1,42 +1,10 @@
-﻿# Nexus Execution Flow Reference
+# Nexus Execution Flow
 
-**Status:** Canonical architecture document
-**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Implementation:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`plan/`](../plan/)
-
----
-
-
-**Status:** Living **operational** reference for Nexus execution flow (2026-06-07) — narrative aligned with **current runtime code**, with explicit target semantics where canon ahead of implementation  
-**Audience:** Platform engineers, Tier-3 authors, auditors, implementers updating the plan  
-**Scope:** Task intake → Nexus orchestration → agent execution → result, governance, observability, evaluation hooks  
-
-This document is the **single narrative guide** for how Intergrax orchestrates agents. It **does not replace** canonical contracts — it links and operationalizes them.
-
-### Document hierarchy (read order)
-
-```text
-IDEAL_HARNESS_AI_ARCHITECTURE.md     →  target Harness AI reference (L0–L4)
-intergrax_runtime_architecture.md    →  canonical contracts + architecture (§42)
-architecture/NEXUS_EXECUTION_FLOW.md    →  operational execution narrative (this file)
-intergrax_runtime_architecture.md     →  implementation status, phases, gap queue
-```
-
-| Role | Canonical source |
-|------|------------------|
-| Target architecture | [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) |
-| Contracts (what) | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) §42 |
-| Control plane (how to configure) | [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) Appendix I, H, J |
-| Phase status / gaps | [`plan/NEXUS_EXECUTION_FLOW.md) |
-| Audit layers §7–§10 | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
-| Delegation target semantics | [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md) |
-| L4 adaptive loops (separate) | [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
-
-**Use this doc to update the plan:** Section [25 — Plan traceability matrix](#25-plan-traceability-matrix) maps runtime gaps to proposed plan rows (`FLOW-GAP.*`).
-
-**Verdict:** Treat this file as **best current description of Nexus execution truth** plus a **gap map** — not as “architecture with zero gaps.”
-
+**Status:** Canonical architecture (domain pair 1:1)  
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
+**Plan (1:1):** [`plan/NEXUS_EXECUTION_FLOW.md`](../plan/NEXUS_EXECUTION_FLOW.md)  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Audit layers:** 7–10  
 ---
 
 ## 1. Purpose and boundaries

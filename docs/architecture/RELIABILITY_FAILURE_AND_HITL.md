@@ -1,35 +1,11 @@
 # Reliability, Failure Model, and Human-in-the-Loop
 
-**Status:** Canonical architecture (decomposed from platform canon)  
+**Status:** Canonical architecture (domain pair 1:1)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
-**Target reference:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-
+**Plan (1:1):** [`plan/RELIABILITY_FAILURE_AND_HITL.md`](../plan/RELIABILITY_FAILURE_AND_HITL.md)  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Audit layers:** 22  
 ---
-
-# 29. Validation Model
-
-Validation is mandatory.
-
-Validation should not rely only on LLM confidence.
-
-Possible validation types:
-
-- schema validation
-- rule-based validation
-- data completeness validation
-- source citation validation
-- secondary model review
-- separate validator agent
-- human review
-- executable tests
-- consistency checks
-
-Validation should be defined before or during planning.
-
-For high-risk tasks, Nexus should create a validation contract before execution.
-
----
-
 
 ---
 

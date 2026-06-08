@@ -1,40 +1,11 @@
 # Tier-3 Application Environment, Sandbox, and Shadow Workspace
 
-**Status:** Canonical architecture (decomposed from platform canon)  
+**Status:** Canonical architecture (domain pair 1:1)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
-**Target reference:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-
+**Plan (1:1):** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md)  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Audit layers:** 28  
 ---
-
-# 19. UI / UX Testing Requirement
-
-Even though Intergrax is not frontend-heavy, agents must be testable and observable.
-
-The system should support minimal UI/UX surfaces for:
-
-- viewing task list
-- viewing task status
-- viewing execution trace
-- viewing agent outputs
-- viewing tool calls
-- viewing errors
-- viewing artifacts
-- approving or rejecting steps
-- re-running tasks
-- comparing outputs
-
-This may be implemented as:
-
-- lightweight dashboard
-- CLI
-- chat interface
-- Slack/Teams messages
-- internal debug panel
-
-The UI is for observability and experimentation, not product polish.
-
----
-
 
 ---
 

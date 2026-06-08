@@ -1,18 +1,10 @@
-﻿# Intergrax — Observability Architecture
+# Observability
 
-**Status:** Canonical architecture document
-**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Implementation:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`plan/`](../plan/)
-
----
-
-
-**Status:** Canonical architecture (Harness platform) · **Phase OBS-BUS Done** (8/8) · audit map §21 **L4**  
-**Last updated:** 2026-06-08 (closeout sync)  
-**Audience:** Harness maintainers, Tier-3 application authors, Tier-2 agent authors, operators  
-**Hub:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) · **Related:** [architecture/UNIFIED_EXECUTION_RUNTIME.md](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.24 · [ADR-OBS-001](adr/ADR-OBS-001.md) · [plan/OBSERVABILITY.md](../plan/OBSERVABILITY.md) · [guides/AGENT_CREATION_GUIDE.md Appendix Q](guides/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [guides/HARNESS_ENVIRONMENT.md](guides/HARNESS_ENVIRONMENT.md)
-
+**Status:** Canonical architecture (domain pair 1:1)  
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
+**Plan (1:1):** [`plan/OBSERVABILITY.md`](../plan/OBSERVABILITY.md)  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Audit layers:** 21, 30  
 ---
 
 ## 1. Purpose and scope

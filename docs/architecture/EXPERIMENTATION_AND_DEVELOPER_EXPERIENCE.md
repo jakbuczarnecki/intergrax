@@ -1,36 +1,11 @@
 # Experimentation Workflow and Developer Experience
 
-**Status:** Canonical architecture (decomposed from platform canon)  
+**Status:** Canonical architecture (domain pair 1:1)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
-**Target reference:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-
+**Plan (1:1):** [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Audit layers:** 25–27, 30  
 ---
-
-# 35. Experimentation Workflow
-
-The expected workflow for a new idea:
-
-```text
-1. Define hypothesis
-2. Define agent capability
-3. Define expected output
-4. Define validation criteria
-5. Implement minimal agent
-6. Register agent
-7. Run through Nexus
-8. Observe execution trace
-9. Compare outputs
-10. Decide: keep, improve, pause or delete
-```
-
-Example hypothesis:
-
-> ProblemRadarAgent can discover repeated user complaints from Reddit and Hacker News and cluster them into potential product ideas.
-
-This should become an agent experiment, not a full product.
-
----
-
 
 ---
 

@@ -1,45 +1,10 @@
-﻿# Memory and Context Engineering
+# Memory
 
-**Status:** Canonical architecture · **Phase MEM Done** · **Phase MEM-DEPTH Planned**  
+**Status:** Canonical architecture (domain pair 1:1)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
+**Plan (1:1):** [`plan/MEMORY.md`](../plan/MEMORY.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
-**Plan:** [`plan/MEMORY.md`](../plan/MEMORY.md)  
-**Authoring:** [`guides/AGENT_CREATION_GUIDE.md` Appendix G](../guides/AGENT_CREATION_GUIDE.md#appendix-g--memory--rag-naming-phase-q)
-
----
-
-## 1. Purpose and scope
-
-### 1.1 What this document defines
-
-This is the **single source of truth** for how memory and context work across the Intergrax Harness:
-
-- **What** memory types exist and how they map to runtime stores
-- **How** memory is written (lifecycle, consolidation, policy, retention)
-- **How** memory is read into LLM context (context compiler, budgeting, compression)
-- **Which** strategy is selected for a given situation (decision matrix)
-- **Where** persistence, observability, and tier boundaries apply
-
-### 1.2 What this document does not define
-
-| Topic | Canonical location |
-|-------|-------------------|
-| RAG ingest/index pipeline details | Architecture canon §7.1.2 · `intergrax/rag/` |
-| Graph RAG document graphs | `intergrax/rag/graph/` · MEM-GRAPH.1 |
-| Business-agent domain memory | `agents/<slug>/ARCHITECTURE.md` |
-| Product-specific memory policies | `applications/<product>/ARCHITECTURE.md` |
-| Observability spine mechanics | [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) |
-
-### 1.3 Core invariant (never overflow)
-
-For every LLM call the Harness MUST enforce:
-
-```text
-tokens(assembled_context) + reserved_output ≤ context_window − safety_margin
-```
-
-When the invariant cannot be met with full fidelity, the Harness MUST apply a **traceable degradation ladder** (§8) — never silently drop content without `CONTEXT_TRIMMED` / history compression diagnostics.
-
+**Audit layers:** 15–16  
 ---
 
 ## 2. Design principles

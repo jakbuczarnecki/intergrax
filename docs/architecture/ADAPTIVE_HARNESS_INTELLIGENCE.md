@@ -1,30 +1,10 @@
-﻿# Intergrax Adaptive Harness Intelligence Architecture (AHIA)
+# Adaptive Harness Intelligence
 
-**Status:** Canonical architecture document
-**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
-**Implementation:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`plan/`](../plan/)
-
----
-
-
-**Document ID:** `architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`  
-**Status:** Architecture RFC — **implemented** (Phase W-ADAPT **Done**, 70/70, Wave 0–7)  
-**Version:** 1.0.0  
-**Date:** 2026-06-05  
-**Audience:** Platform architects, product leadership, harness engineers, security/compliance, implementation agents  
-**Scope:** Tier-1 Adaptive Control Plane + Tier-3 profile bindings — harness-only (no K.1/K.2 business-agent scope)
-
-**Related canon:**
-
-| Document | Relationship |
-|----------|--------------|
-| [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) §54 | Canonical runtime summary and tier placement |
-| [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §25 | Target Adaptive Harness Layer (L4 maturity) |
-| [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md) Phase W-ADAPT | **Done** (70/70, Band 2y) — implementation register closed |
-| [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) | L4 maturity scoring model |
-| [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) | Harness-first strategic lock |
-
+**Status:** Canonical architecture (domain pair 1:1)  
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
+**Plan (1:1):** [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../plan/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Audit layers:** L4 AHI  
 ---
 
 ## Table of contents
