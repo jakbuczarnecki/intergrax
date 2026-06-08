@@ -208,8 +208,9 @@ Developers **never** write to SQLite or invent parallel buses.
          event_type=RuntimeEventType.STEP_COMPLETED,  # optional canonical mapping
      )
 
-3. Register schema in payload registry (target: OBS-BUS-4):
-     PayloadSchemaRegistry.register(MyAgentCheckDiagV1)
+3. Register schema in payload registry (OBS-BUS-4):
+     from intergrax.runtime.observability.extension_sdk import PayloadSchemaRegistry
+     PayloadSchemaRegistry.register_agent_diagnostic(MyAgentCheckDiagV1, agent_slug="<slug>")
 
 4. (Optional) Add trace_bridge mapping if step → RuntimeEventType is non-obvious
 
@@ -485,6 +486,7 @@ Audit map §21 score today: **L3**. Target after OBS-BUS: **L4**.
 | Event bus | `intergrax/runtime/events/event_bus.py` |
 | Trace bridge | `intergrax/runtime/events/trace_bridge.py` |
 | Emitter + TraceScope | `intergrax/runtime/observability/emitter.py`, `trace_scope.py` |
+| Extension SDK | `intergrax/runtime/observability/extension_sdk.py`, `intergrax/scaffold/tracing_templates.py` |
 | Unified journal | `intergrax/runtime/events/unified_run_journal.py` |
 | Nexus wiring | `intergrax/runtime/nexus/observability_wiring.py` |
 | App wiring | `intergrax/applications/_shared/observability_wiring.py` |

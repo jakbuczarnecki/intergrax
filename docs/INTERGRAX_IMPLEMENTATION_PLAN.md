@@ -220,7 +220,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Full architecture audit (FAUDIT-32)** | **Done** (2026-06-06) | No (harness-only) | 32-layer audit + **23/23 remediation** → [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-closed) |
 | **Nexus execution depth (Phase FLOW)** | **Done** (17/18) | No (harness-only) | Band **2aj** — [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed) · **FLOW-8 Deferred** · source: [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) |
 | **Critic & Verification Layer (Phase CRIT-V)** | **Active** (16/24) | No (harness-only) | Band **2ak** — [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-active) · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) |
-| **Unified Observability Spine (Phase OBS-BUS)** | **Planned** (4/8) | No (harness-only) | Band **2al** — [§6.1al](#61al-harness-implementation-queue--unified-observability-spine-planned) · [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) · [ADR-OBS-001](adr/ADR-OBS-001.md) |
+| **Unified Observability Spine (Phase OBS-BUS)** | **Planned** (5/8) | No (harness-only) | Band **2al** — [§6.1al](#61al-harness-implementation-queue--unified-observability-spine-planned) · [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) · [ADR-OBS-001](adr/ADR-OBS-001.md) |
 
 ---
 
@@ -5183,7 +5183,7 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 
 ## Phase OBS-BUS — Unified Observability Spine
 
-**Status:** **Planned** (2026-06-08) — **4/8** deliverables · OBS-BUS-0–3 **Done** · next: **OBS-BUS-4**
+**Status:** **Planned** (2026-06-08) — **5/8** deliverables · OBS-BUS-0–4 **Done** · next: **OBS-BUS-5**
 
 **Purpose:** Implement the full **Harness Observability Spine (HOS)** — one bus for Harness, applications, and agents; typed extension; causal trees; complete catalog emission; L4 audit §21.
 
@@ -5203,7 +5203,7 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 | OBS-BUS-1 | OBS1 | **`RuntimeEventPayload` registry** — typed canonical payloads per `RuntimeEventType` (§42.23.1 families) | **Done** | `intergrax/runtime/events/payload_registry.py`, `payloads/`, `schema_guard.py`, `trace_bridge.py`, `context_skill_recording.py` | Gate: `test_runtime_event_payload_registry.py` |
 | OBS-BUS-2 | OBS2 | **`ObservabilityEmitter` + `TraceScope`** — single emit API; `parent_event_id` causal tree | **Done** | `intergrax/runtime/observability/emitter.py`, `trace_scope.py`, `runtime_state.py` | `RuntimeState.trace_event` delegates; `test_observability_emitter.py` |
 | OBS-BUS-3 | OBS3 | **Emission coverage** — `AGENT_SELECTED`, `STEP_FAILED`, graph typed payloads, critic `evaluator_loop` bridge | **Done** | `agent_router.py`, `graph_trace_callbacks.py`, `task_trace.py`, `trace_bridge.py`, `graph_node_diag.py` | `check_observability_emission_coverage.py` |
-| OBS-BUS-4 | OBS4 | **Extension SDK** — agent/app `DiagnosticPayload` scaffold, namespace rules, `PayloadSchemaRegistry` | **Planned** | `intergrax/scaffold/`, `agents/*/tracing/` template, registry CI | Scaffold emits example payload; doc §5.3 |
+| OBS-BUS-4 | OBS4 | **Extension SDK** — agent/app `DiagnosticPayload` scaffold, namespace rules, `PayloadSchemaRegistry` | **Done** | `extension_sdk.py`, `tracing_templates.py`, `new_agent.py`, `new_application.py` | `check_payload_schema_registry.py` |
 | OBS-BUS-5 | OBS5 | **Persistence conformance** — Cassandra/ES adapters implement same protocols; profile docs | **Planned** | `events/store.py`, integration providers | Integration test with in-memory + SQLite |
 | OBS-BUS-6 | OBS6 | **Export sinks** — OTLP dual-write from unified journal; parser trace link | **Planned** | `observability_bridge.py`, journal export hook | TASK_COMPLETED carries journal ref or export snapshot |
 | OBS-BUS-7 | OBS7 | **CI gates** — emission coverage + schema registry + L4 §21 evidence | **Planned** | `scripts/check_observability_emission_coverage.py`, `check_payload_schema_registry.py` | Gate suite green; audit map §21 → L4 |
@@ -5642,7 +5642,7 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 | 2 | **OBS-BUS-1** | Code | **Done** | `RuntimeEventPayload` registry | Payload registry gate |
 | 3 | **OBS-BUS-2** | Code | **Done** | `ObservabilityEmitter` + `TraceScope` | Causal tree tests |
 | 4 | **OBS-BUS-3** | Code | **Done** | Emission coverage gaps | `check_observability_emission_coverage.py` |
-| 5 | **OBS-BUS-4** | Code/Docs | **Planned** | Extension SDK + scaffold | Agent tracing template |
+| 5 | **OBS-BUS-4** | Code/Docs | **Done** | Extension SDK + scaffold | Agent tracing template |
 | 6 | **OBS-BUS-5** | Code | **Planned** | Persistence conformance | Integration tests |
 | 7 | **OBS-BUS-6** | Code | **Planned** | OTLP/journal dual-write | Export hook tests |
 | 8 | **OBS-BUS-7** | CI | **Planned** | L4 §21 gates | Audit map §21 → L4 |

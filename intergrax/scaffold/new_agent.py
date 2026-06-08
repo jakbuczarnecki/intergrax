@@ -12,6 +12,7 @@ from pathlib import Path
 from textwrap import dedent
 
 from intergrax.scaffold.adr_templates import write_agent_adr_scaffold
+from intergrax.scaffold.tracing_templates import write_agent_tracing_scaffold
 from intergrax.scaffold.doc_templates import (
     render_agent_architecture_doc,
     render_agent_implementation_plan,
@@ -478,6 +479,7 @@ def _readme(slug: str, class_name: str, capabilities: list[str]) -> str:
         - ``steps/`` — domain execution
         - ``prompts/`` — prompt assets
         - ``schemas/`` — I/O models
+        - ``tracing/`` — DiagnosticPayload extensions (OBS extension SDK)
         - ``tests/`` — agent smoke tests
         - ``notebooks/`` — interactive experiments
         - ``adr/`` — architecture decision records
@@ -559,6 +561,7 @@ def create_agent(
     if not minimal:
         _write(target / "README.md", _readme(slug, class_name, capabilities), force=force)
     write_agent_adr_scaffold(agent_dir=target, slug=slug, force=force)
+    write_agent_tracing_scaffold(target=target, slug=slug, force=force)
 
     return target
 
