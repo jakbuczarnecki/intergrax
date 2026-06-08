@@ -6,7 +6,7 @@ Status: Working draft (2026-06-07) — **Harness platform bands 1–2ad Done**; 
 Strategy: [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md)  
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 Agent workflow: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md)  
-Navigation: [`README.md`](README.md)  
+Navigation: [README.md — Documentation index](../README.md#documentation-index)  
 
 Principle: **evolve, not rewrite** · **reuse Tier-0** (canon §5.2)
 
@@ -50,6 +50,7 @@ Each **business environment** and each **business agent** maintains its own `ARC
 | Registry architecture closeout (snapshots, conformance, CI) | [Phase REG](#phase-reg--registry-architecture-control-plane-closeout) · **§6.1l** · Band **2r** · **Appendix O** |
 | Capability graph closeout (environment slice, blast-radius wire) | [Phase CG](#phase-cg--capability-graph-control-plane-closeout) · **§6.1m** · Band **2s** · **Appendix P** |
 | Observability closeout (profile bridge, assembly resolver, CI) | [Phase OBS](#phase-obs--observability-control-plane-closeout) · **§6.1n** · Band **2t** · **Appendix Q** |
+| **Unified Observability Spine (full mechanism)** | [Phase OBS-BUS](#phase-obs-bus--unified-observability-spine) · **§6.1al** · Band **2al** · [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) · [ADR-OBS-001](adr/ADR-OBS-001.md) |
 | Reliability closeout (idempotency bridge, circuit breaker, CI) | [Phase REL](#phase-rel--reliability-control-plane-closeout) · **§6.1o** · Band **2u** · **Appendix R** |
 | Security closeout (V-SEC bridge, middleware assembly, CI) | [Phase SEC](#phase-sec--security-control-plane-closeout) · **§6.1q** · Band **2v** · **Appendix S** |
 | Cost governance closeout (budget bridge, policy bundle, CI) | [Phase COST](#phase-cost--cost-governance-control-plane-closeout) · **§6.1r** · Band **2w** · **Appendix T** |
@@ -219,6 +220,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Full architecture audit (FAUDIT-32)** | **Done** (2026-06-06) | No (harness-only) | 32-layer audit + **23/23 remediation** → [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-closed) |
 | **Nexus execution depth (Phase FLOW)** | **Done** (17/18) | No (harness-only) | Band **2aj** — [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed) · **FLOW-8 Deferred** · source: [`NEXUS_EXECUTION_FLOW_REFERENCE.md`](NEXUS_EXECUTION_FLOW_REFERENCE.md) |
 | **Critic & Verification Layer (Phase CRIT-V)** | **Active** (16/24) | No (harness-only) | Band **2ak** — [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-active) · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) |
+| **Unified Observability Spine (Phase OBS-BUS)** | **Planned** (0/8) | No (harness-only) | Band **2al** — [§6.1al](#61al-harness-implementation-queue--unified-observability-spine-planned) · [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) · [ADR-OBS-001](adr/ADR-OBS-001.md) |
 
 ---
 
@@ -4521,6 +4523,7 @@ Paydown Wave P3 (optional polish):
 | **2ad — FAUDIT-32 remediation** | Close 32-layer audit residuals (tier gate, intake, observability taxonomy, registry depth, eval release gate) — **no** business agents | **Done** (2026-06-06) — **23/23 + §6.1ai follow-up** | [Phase FAUDIT-32](#phase-faudit-32--full-architecture-audit-closeout) · **§6.1ah** · **§6.1ai** · **Appendix M** |
 | **2aj — Nexus execution depth (FLOW)** | Close `FLOW-GAP.*` (01–16) — delegation, SubtaskContract, backpressure profile, LLM planner, merge, eval, graph hardening — **no** K.1/K.2 | **Done** (2026-06-07) — **17/18** (**FLOW-8 Deferred**) | [Phase FLOW](#phase-flow--nexus-execution-depth) · **§6.1aj** · **§6.2aj** · **Appendix N (FLOW)** |
 | **2ak — Critic & Verification Layer (CRIT-V)** | PEV verify depth — `CriticOrchestrator`, `eval.judge`, `eval.trajectory`, evaluator-loop, semantic offline runner — **no** business agents | **Active** | [Phase CRIT-V](#phase-crit-v--critic--verification-layer) · [`CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md`](CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · **§6.1ak** · **§6.2ak** · canon §55 · [ADR-CRITIC-001](adr/ADR-CRITIC-001.md) |
+| **2al — Unified Observability Spine (OBS-BUS)** | Full HOS — typed payloads, `ObservabilityEmitter`, emission coverage, extension SDK, L4 §21 — **no** business agents | **Planned** | [Phase OBS-BUS](#phase-obs-bus--unified-observability-spine) · [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) · **§6.1al** · [ADR-OBS-001](adr/ADR-OBS-001.md) |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 · FLOW-8 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
@@ -4562,6 +4565,7 @@ BAND 2ac: Integration expansion — Phase M.6 P6 (§6.1y) — DONE (32/32 + M-P6
 BAND 2ad: FAUDIT-32 remediation — DONE (2026-06-06)
 BAND 2aj: Nexus execution depth — Phase FLOW (§6.1aj) — DONE (17/18; FLOW-8 Deferred)
 BAND 2ak: Critic & Verification Layer — Phase CRIT-V (§6.1ak) — ACTIVE
+BAND 2al: Unified Observability Spine — Phase OBS-BUS (§6.1al) — PLANNED (after CRIT-V or §6.1 slices)
 DONE:    Phase CLEAN — legacy module closeout (§6.1j) — 2026-06-02
 BAND 3:  END OF PLAN — product agents & applications (§6.3) — DO NOT SCHEDULE AS DEFAULT NEXT
 
@@ -5177,6 +5181,51 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 
 ---
 
+## Phase OBS-BUS — Unified Observability Spine
+
+**Status:** **Planned** (2026-06-08) — **0/8** deliverables · architecture doc **Done** (OBS-BUS-0)
+
+**Purpose:** Implement the full **Harness Observability Spine (HOS)** — one bus for Harness, applications, and agents; typed extension; causal trees; complete catalog emission; L4 audit §21.
+
+**Architecture:** [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) · **ADR:** [ADR-OBS-001](adr/ADR-OBS-001.md)
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md) §21 · complements Phase OBS (wiring closeout) · supersedes residual “live bus emit for all LLM paths” row when OBS-BUS-2 ships.
+
+**Priority ladder:** **Band 2al** (§4.0) — runs **after** Phase CRIT-V (Band 2ak) or in parallel §6.1 maintenance slices; **one OBS-BUS ID per PR**.
+
+**Depends on:** Phase OBS (wiring) **Done** · OBS-DEPTH.1/2 **Done** · FAUDIT-OBS.1 **Done**
+
+### OBS-BUS — Master register
+
+| ID | Area | Deliverable | Status | Modules / artifacts | Acceptance |
+|----|------|-------------|--------|---------------------|------------|
+| OBS-BUS-0 | OBS0 | **Architecture canon** — `OBSERVABILITY_ARCHITECTURE.md` + ADR-OBS-001 + canon/README links | **Done** | `docs/OBSERVABILITY_ARCHITECTURE.md`, `docs/adr/ADR-OBS-001.md` | Doc review; links from §33 |
+| OBS-BUS-1 | OBS1 | **`RuntimeEventPayload` registry** — typed canonical payloads per `RuntimeEventType` (§42.23.1 families) | **Planned** | `intergrax/runtime/events/payload_registry.py`, Pydantic models | Gate: `test_runtime_event_payload_registry.py` |
+| OBS-BUS-2 | OBS2 | **`ObservabilityEmitter` + `TraceScope`** — single emit API; `parent_event_id` causal tree | **Planned** | `intergrax/runtime/observability/emitter.py`, `trace_scope.py` | `RuntimeState.trace_event` delegates; gate wiring test |
+| OBS-BUS-3 | OBS3 | **Emission coverage** — `AGENT_SELECTED`, `STEP_FAILED`, graph typed payloads, critic `evaluator_loop` bridge | **Planned** | `agent_router.py`, `runtime_steps/contract.py`, `graph_trace_callbacks.py`, `trace_bridge.py` | `check_observability_emission_coverage.py` |
+| OBS-BUS-4 | OBS4 | **Extension SDK** — agent/app `DiagnosticPayload` scaffold, namespace rules, `PayloadSchemaRegistry` | **Planned** | `intergrax/scaffold/`, `agents/*/tracing/` template, registry CI | Scaffold emits example payload; doc §5.3 |
+| OBS-BUS-5 | OBS5 | **Persistence conformance** — Cassandra/ES adapters implement same protocols; profile docs | **Planned** | `events/store.py`, integration providers | Integration test with in-memory + SQLite |
+| OBS-BUS-6 | OBS6 | **Export sinks** — OTLP dual-write from unified journal; parser trace link | **Planned** | `observability_bridge.py`, journal export hook | TASK_COMPLETED carries journal ref or export snapshot |
+| OBS-BUS-7 | OBS7 | **CI gates** — emission coverage + schema registry + L4 §21 evidence | **Planned** | `scripts/check_observability_emission_coverage.py`, `check_payload_schema_registry.py` | Gate suite green; audit map §21 → L4 |
+
+### OBS-BUS — Execution order (recommended)
+
+```text
+OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
+  → OBS-BUS-2 (emitter + TraceScope)
+  → OBS-BUS-3 (coverage gaps)
+  → OBS-BUS-4 (extension SDK)
+  → OBS-BUS-5 (persistence)
+  → OBS-BUS-6 (sinks)
+  → OBS-BUS-7 (gates / L4 closeout)
+```
+
+**DoD:** All OBS-BUS rows **Done**; `build_unified_run_journal` reproduces full Nexus+AgentEngine path without reading source; every `RuntimeEventType` in §42.1.2 has ≥1 production emitter; `parent_event_id` populated for tool/LLM/delegation; extension scaffold documented; gate green.
+
+**Explicitly excluded:** product-specific dashboards (§6.3a); replacing external APM as mandatory deployment.
+
+---
+
 ## Phase REL — Reliability control plane closeout
 
 **Status:** **Done** (2026-06-02) — **4/4** deliverables Done (REL-DOC.1 + REL-1–3)
@@ -5581,6 +5630,26 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 **Suggested PR order:** See [§6.2ak](#62ak-phase-crit-v-execution-order-band-2ak--active).
 
 **Explicitly excluded:** FLOW-8 product app; domain rubric packs in Tier-0; mandatory universal LLM-judge.
+
+### 6.1al Harness implementation queue — Unified Observability Spine (planned)
+
+**Purpose:** Single ordered list for **Phase OBS-BUS** (Band 2al). **Planned 2026-06-08** — starts after CRIT-V or via §6.1 maintenance slices.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
+| 1 | **OBS-BUS-0** | Docs | **Done** | `OBSERVABILITY_ARCHITECTURE.md` + ADR-OBS-001 + canon/README | Links resolve |
+| 2 | **OBS-BUS-1** | Code | **Planned** | `RuntimeEventPayload` registry | Payload registry gate |
+| 3 | **OBS-BUS-2** | Code | **Planned** | `ObservabilityEmitter` + `TraceScope` | Causal tree tests |
+| 4 | **OBS-BUS-3** | Code | **Planned** | Emission coverage gaps | `check_observability_emission_coverage.py` |
+| 5 | **OBS-BUS-4** | Code/Docs | **Planned** | Extension SDK + scaffold | Agent tracing template |
+| 6 | **OBS-BUS-5** | Code | **Planned** | Persistence conformance | Integration tests |
+| 7 | **OBS-BUS-6** | Code | **Planned** | OTLP/journal dual-write | Export hook tests |
+| 8 | **OBS-BUS-7** | CI | **Planned** | L4 §21 gates | Audit map §21 → L4 |
+
+**Suggested PR order:** See [Phase OBS-BUS — Execution order](#obs-bus--execution-order-recommended).
+
+**Explicitly excluded:** Product dashboards (§6.3a); vendor-only APM as sole store.
 
 ### 6.1b Harness implementation queue — orchestration closeout (closed)
 
@@ -7297,7 +7366,7 @@ Harness      →  Nexus + Tier-0 + Tier-3 wiring (orchestration, trace, policy e
 | Multi-agent coordination pattern catalog | canon §42.43, §53.10 | ideal §6 + §25 | V-MA.* | **Done** |
 | Knowledge graph evolution path (Graph-RAG) | canon §53.11 | ideal §3.7.1 + §25 | V-KG.* | **Done** |
 | **Adaptive Harness Intelligence (L4 runtime closed loop)** | canon §54 | ideal §25 | **Phase W-ADAPT** · AHIA | **Done** (Band 2y, 70/70) — L4 runtime closed; observe/recommend/apply/verify per AHIA |
-| Observability and runtime traceability | canon §33, §42.24 | ideal §11 | Phases Q/Q+/S/U/OBS + **FAUDIT-OBS.1** + **OBS-DEPTH.1** | **Done** — unified run journal (`unified_run_journal.py`); residual: live bus emit for all LLM paths |
+| Observability and runtime traceability | canon §33, §42.24 · [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) | ideal §11 | Phases OBS + OBS-DEPTH.* + **Phase OBS-BUS** | **L3 Done** — journal + wiring; **L4 Planned** — [Phase OBS-BUS](#phase-obs-bus--unified-observability-spine) (typed payloads, emitter, emission coverage) |
 | Registry-driven extensibility (agent/tool/skill/policy/prompt/eval) | canon §7.1.5.1–§7.1.8, §15, §53.2 | ideal §19 | Phase R/U + V-CG/V-PE/V-EVAL + **P-Ext** | **Done** — plugin catalogs production-ready; marketplace UI out of scope |
 | Product agents and new product apps | canon §7.4, §52 | ideal §26 | §6.3 only | **Deferred (product scope)** |
 
@@ -7628,7 +7697,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | Theme | Layers affected | Risk |
 |-------|-----------------|------|
 | **Closeout vs maturity** | §17–§25, §31 | Plan **Done** on wiring; AUDIT_MAP **L2** on depth — do not conflate |
-| **Dual-path telemetry** | §21, §6 | Trace replay ↔ `RuntimeEventType` — **OBS-DEPTH.1** unified journal + **OBS live emit** on `RuntimeState.trace_event`; gate: `test_observability_layer_depth_gate.py` |
+| **Dual-path telemetry** | §21, §6 | **L3 Done:** OBS-DEPTH.1 journal + live emit; **L4 Planned:** [Phase OBS-BUS](#phase-obs-bus--unified-observability-spine) — `ObservabilityEmitter`, typed payloads, emission coverage |
 | **Tier boundary drift** | §2, §28 | Single Critical violation undermines canon §7.4.4 |
 | **Identity / intake naming** | §3, §4 | Resolved — `TaskEnvelope` in `intergrax/contracts/task_envelope.py`; parity tests in `test_faudit_remediation.py` |
 

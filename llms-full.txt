@@ -132,7 +132,7 @@ Same codebase, different operational posture. Lab stack: docs/HARNESS_ENVIRONMEN
 
 ### Navigation
 
-- docs/README.md — master index, phase focus, update rules
+- README.md#documentation-index — master index, phase focus, update rules
 
 ### Strategy & architecture
 

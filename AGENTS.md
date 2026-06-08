@@ -25,7 +25,7 @@ Tier-3  applications/        Deployable product environments
 
 ## Before you write code
 
-1. Read [docs/README.md](docs/README.md) for navigation
+1. Read [README.md — Start here](README.md#start-here) for documentation navigation
 2. Read the relevant canon section in [docs/intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md)
 3. Check phase status in [docs/INTERGRAX_IMPLEMENTATION_PLAN.md](docs/INTERGRAX_IMPLEMENTATION_PLAN.md)
 4. Follow the work cycle in [docs/INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md):
@@ -91,6 +91,7 @@ applications/    MAY import from agents/ and intergrax/
 | Harness audit | [docs/INTEGRAX_HARNESS_AUDIT_MAP.md](docs/INTEGRAX_HARNESS_AUDIT_MAP.md) |
 | L4 adaptive harness | [docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) |
 | Critic / verification / LLM-as-judge | [docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · canon §55 · Phase CRIT-V |
+| Observability spine / bus / extension | [docs/OBSERVABILITY_ARCHITECTURE.md](docs/OBSERVABILITY_ARCHITECTURE.md) · [ADR-OBS-001](docs/adr/ADR-OBS-001.md) · Phase OBS-BUS · canon §33 |
 
 ---
 

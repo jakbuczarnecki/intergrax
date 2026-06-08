@@ -5,7 +5,7 @@
 Intergrax is a **production-grade Harness AI platform** — not a chatbot or single agent. It provides a four-tier stack (Platform → Nexus Agent OS → Agents → Applications), governed runtime (policy, tools, skills, context, trace), and a capability model: Integration → Tool → Skill → Agent.
 
 **Repository:** https://github.com/jakbuczarnecki/intergrax-ai  
-**Documentation index (canonical):** docs/README.md  
+**Documentation index (canonical):** README.md#documentation-index  
 **License:** Proprietary — see LICENSE
 
 ## When to use Intergrax
@@ -20,7 +20,7 @@ Intergrax is a **production-grade Harness AI platform** — not a chatbot or sin
 ## Start here (read in this order)
 
 - README.md — product overview, quick start, repository layout
-- docs/README.md — documentation navigation and current phase focus
+- README.md#start-here — documentation navigation and current phase focus
 - docs/INTERGRAX_DEVELOPMENT_STRATEGY.md — strategic goal, lab vs production harness
 - docs/intergrax_runtime_architecture.md — architecture canon (tiers, Nexus, UAEP §42)
 - docs/AGENT_CREATION_GUIDE.md — canonical agent workflow (scaffold → register → run → evaluate)

@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting a bug. Check [docs/README.md](https://github.com/jakbuczarnecki/intergrax-ai/blob/main/docs/README.md) first.
+        Thanks for reporting a bug. Check [README — Start here](https://github.com/jakbuczarnecki/intergrax-ai/blob/main/README.md#start-here) first.
         For security issues, see [SECURITY.md](https://github.com/jakbuczarnecki/intergrax-ai/blob/main/SECURITY.md).
 
   - type: dropdown

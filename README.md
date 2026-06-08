@@ -3,7 +3,7 @@
 [![Regression gate](https://github.com/jakbuczarnecki/intergrax-ai/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/jakbuczarnecki/intergrax-ai/actions/workflows/unit-tests.yml)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![Harness AI](https://img.shields.io/badge/Harness%20AI-Agent%20OS-6c5ce7.svg)](#harness-ai--the-core-idea)
-[![Docs](https://img.shields.io/badge/docs-canonical-green.svg)](docs/README.md)
+[![Docs](https://img.shields.io/badge/docs-canonical-green.svg)](#documentation-index)
 [![LLM context](https://img.shields.io/badge/llms.txt-available-orange.svg)](llms.txt)
 
 **Agent OS and Harness AI runtime for building, orchestrating, experimenting with, and validating specialized AI agents.**
@@ -42,7 +42,9 @@ Intergrax is a **production-grade Harness AI platform** — not a single chatbot
 - [Architecture maturity and audits](#architecture-maturity-and-audits)
 - [Adaptive Harness Intelligence (L4)](#adaptive-harness-intelligence-l4)
 - [Critic & Verification Layer (PEV Verify)](#critic--verification-layer-pev-verify)
+- [Start here](#start-here)
 - [Documentation index](#documentation-index)
+- [Documentation update rules](#documentation-update-rules)
 - [Status](#status)
 - [Audience](#audience)
 - [Local infrastructure](#local-infrastructure)
@@ -620,18 +622,20 @@ Audit layers: [§7 Cognition](docs/INTEGRAX_HARNESS_AUDIT_MAP.md) · [§9 Orches
 
 ## Observability and trace
 
-Every decision and invocation is **traceable** — core Harness AI principle.
+Every decision and invocation is **traceable** — core Harness AI principle. All tiers share one **Harness Observability Spine** (event bus + typed trace + unified journal) — no per-agent or per-app telemetry forks.
 
 | Surface | Purpose |
 |---------|---------|
-| **Run traces** | SQLite-persisted step timeline per task |
-| **Runtime events** | Structured event bus (`CONTEXT_ASSEMBLED`, tool invocations, policy interrupts) |
+| **Architecture** | [OBSERVABILITY_ARCHITECTURE.md](docs/OBSERVABILITY_ARCHITECTURE.md) — spine, signal planes, extension contracts, persistence, scaling |
+| **Run traces** | SQLite-persisted `TraceEvent` timeline (`DiagnosticPayload`) per run |
+| **Runtime events** | Canonical `RuntimeEvent` bus (`TOOL_*`, `LLM_CALL`, `AGENT_SELECTED`, …) |
+| **Unified journal** | `build_unified_run_journal()` — one chronological timeline per run |
 | **Debug CLI** | `python -m intergrax.debug` |
 | **Debug HTTP API** | `intergrax.debug.app` — `/debug/tasks/{id}/trace`, `/metrics`, `/events` |
 | **OTLP** | OpenTelemetry export via `IntegrationProfile.harness_environment()` |
 | **Prometheus** | LLM/RAG metrics — [LLM_ADAPTERS.md](docs/LLM_ADAPTERS.md) |
 
-Lab wiring: [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md) · Control plane: [Appendix Q](docs/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) (observability) · [Appendix R](docs/AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) (reliability) · [Appendix S](docs/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) (security) · [Appendix T](docs/AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) (cost) · [Appendix U](docs/AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout) (evaluation)
+Lab wiring: [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md) · Architecture: [OBSERVABILITY_ARCHITECTURE.md](docs/OBSERVABILITY_ARCHITECTURE.md) · [ADR-OBS-001](docs/adr/ADR-OBS-001.md) · Implementation: [Phase OBS-BUS](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine) · Control plane: [Appendix Q](docs/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) (wiring) · [Appendix R](docs/AGENT_CREATION_GUIDE.md#appendix-r--reliability-control-plane-closeout) (reliability) · [Appendix S](docs/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) (security) · [Appendix T](docs/AGENT_CREATION_GUIDE.md#appendix-t--cost-governance-control-plane-closeout) (cost) · [Appendix U](docs/AGENT_CREATION_GUIDE.md#appendix-u--evaluation-control-plane-closeout) (evaluation)
 
 Audit layer 21: [AUDIT_MAP §21](docs/INTEGRAX_HARNESS_AUDIT_MAP.md)
 
@@ -674,7 +678,7 @@ Intergrax optimizes **time-to-first-traced-run** — opinionated scaffolds, type
 | `intergrax.scaffold` | `new-agent`, `new-application`, `new-skill`, `new-stack` |
 | `intergrax run` | Launch application ASGI host |
 | `intergrax doctor` | Platform health checks |
-| `pytest -m gate` | Regression gate (901 tests) |
+| `pytest -m gate` | Regression gate (996 tests) |
 | `check_harness_no_getattr.py` | Zero grandfathered reflection in harness paths |
 | `check_harness_observability_wiring.py` | Tier-3 observability assembly validation |
 | `check_llm_adapter_typed_returns.py` | LLM adapter typed-return CI guard (M-LLM-R) |
@@ -833,9 +837,38 @@ LLM-as-judge is **opt-in** — not mandatory on every run. Structural L0 validat
 
 ---
 
+## Start here
+
+Task-oriented navigation for platform docs in [`docs/`](docs/). Product and agent docs live under `applications/<product>/` and `agents/<name>/` — see [Documentation boundary](#documentation-boundary).
+
+| I want to… | Read |
+|------------|------|
+| Understand strategic direction | [INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) |
+| **Platform vs product/agent docs** | [Strategy §Documentation boundary](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md#documentation-boundary) · [Architecture §1.1](docs/intergrax_runtime_architecture.md#11-documentation-boundary-platform-vs-product) · [Plan §4.0a](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business) |
+| Understand the platform | Strategy doc, then implementation plan §0, then architecture canon §1–§5 |
+| See what to implement next (harness) | [Phase CRIT-V](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-crit-v--critic--verification-layer) (Band 2ak) · [§6.1ak](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61ak-harness-implementation-queue--critic-verification-layer-active) · [Phase OBS-BUS](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine) (planned) · [§6.1](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1) gate |
+| **Observability architecture (spine, bus, extension)** | [OBSERVABILITY_ARCHITECTURE.md](docs/OBSERVABILITY_ARCHITECTURE.md) · [ADR-OBS-001](docs/adr/ADR-OBS-001.md) · [Phase OBS-BUS](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine) |
+| **Observability wiring (control plane)** | [AGENT_CREATION_GUIDE Appendix Q](docs/AGENT_CREATION_GUIDE.md#appendix-q--observability-control-plane-closeout) · [Phase OBS](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs--observability-control-plane-closeout) |
+| **Critic & Verification Layer (PEV verify)** | [CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) · [Phase CRIT-V](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-crit-v--critic--verification-layer) · [ADR-CRITIC-001](docs/adr/ADR-CRITIC-001.md) |
+| **Full Nexus execution flow** | [NEXUS_EXECUTION_FLOW_REFERENCE.md](docs/NEXUS_EXECUTION_FLOW_REFERENCE.md) |
+| Create a new agent | [AGENT_CREATION_GUIDE.md](docs/AGENT_CREATION_GUIDE.md) |
+| Wire integrations / tools / skills | [INTEGRATIONS.md](docs/INTEGRATIONS.md) · [TOOLS.md](docs/TOOLS.md) · [SKILLS.md](docs/SKILLS.md) |
+| **All Tier-2 agents** | [agents/README.md](agents/README.md) |
+| **All Tier-3 application hosts** | [applications/README.md](applications/README.md) |
+| L4 adaptive harness | [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) · [Phase W-ADAPT](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) |
+| Harness environment (lab, OTLP) | [HARNESS_ENVIRONMENT.md](docs/HARNESS_ENVIRONMENT.md) |
+| Governance / policy / HITL | [AGENT_CREATION_GUIDE Appendix H](docs/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
+| Orchestration / graphs | [AGENT_CREATION_GUIDE Appendix I](docs/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) · [NEXUS_EXECUTION_FLOW_REFERENCE.md](docs/NEXUS_EXECUTION_FLOW_REFERENCE.md) |
+| Harness audit (32 layers) | [INTEGRAX_HARNESS_AUDIT_MAP.md](docs/INTEGRAX_HARNESS_AUDIT_MAP.md) |
+| Business backlog only | [Plan §6.3a](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63a-business-backlog-register-consolidated) |
+
+**AI context files (repository root):** [llms.txt](llms.txt) · [llms-full.txt](llms-full.txt) · [AGENTS.md](AGENTS.md) · [CONTRIBUTING.md](CONTRIBUTING.md)
+
+---
+
 ## Documentation index
 
-All platform documentation lives in [`docs/`](docs/). **One source of truth per topic.**
+All platform documentation lives in [`docs/`](docs/). **One source of truth per topic.** Navigation and update rules live in **this README** (GitHub landing page).
 
 **Scope:** These documents cover the **Intergrax Harness / Agent OS platform** only. Each **business environment** (`applications/<product>/`) and **business agent** (`agents/<name>/`) has its own architecture and implementation plan — see [Documentation boundary](#documentation-boundary) above.
 
@@ -843,10 +876,12 @@ All platform documentation lives in [`docs/`](docs/). **One source of truth per 
 
 | Document | Read when you want to… |
 |----------|------------------------|
-| [docs/README.md](docs/README.md) | Navigate all docs, see current phase focus, update rules |
 | [INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/INTERGRAX_DEVELOPMENT_STRATEGY.md) | Strategic goal, decision hierarchy, lab vs production, work cycle |
 | [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Full architecture canon — tiers, Nexus, UAEP §42, Harness §5.3 |
+| [OBSERVABILITY_ARCHITECTURE.md](docs/OBSERVABILITY_ARCHITECTURE.md) | Harness Observability Spine — signal planes, persistence, extension contracts |
+| [NEXUS_EXECUTION_FLOW_REFERENCE.md](docs/NEXUS_EXECUTION_FLOW_REFERENCE.md) | Nexus execution flow — diagrams, edge cases, plan traceability |
 | [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/IDEAL_HARNESS_AI_ARCHITECTURE.md) | Ideal Harness AI target — evaluate implementation alignment |
+| [adr/README.md](docs/adr/README.md) | Harness ADR index — architecture decision records |
 | [ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) | **Adaptive Harness Intelligence (L4)** — business case, ACP architecture, W-ADAPT implementation waves |
 | [CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) | **Critic & Verification Layer (CVL)** — PEV verify stack, L0/L1/L2 critics, tier competencies, CRIT-V roadmap |
 | [INTERGRAX_IMPLEMENTATION_PLAN.md](docs/INTERGRAX_IMPLEMENTATION_PLAN.md) | Phase status, hardening streams, KPIs, business checklist (Appendix A) |
@@ -903,6 +938,8 @@ New application         →  applications/USAGE.md + poc_template_application/
 Plugin extension        →  EXTENSION_AUTHOR_GUIDE.md
 Ideal harness target    →  IDEAL_HARNESS_AI_ARCHITECTURE.md
 L4 adaptive harness     →  ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md · canon §54
+Observability (deep)    →  OBSERVABILITY_ARCHITECTURE.md · ADR-OBS-001 · Phase OBS-BUS
+Nexus execution flow    →  NEXUS_EXECUTION_FLOW_REFERENCE.md
 Phase status / gates    →  INTERGRAX_IMPLEMENTATION_PLAN.md
 Harness audit           →  INTEGRAX_HARNESS_AUDIT_MAP.md
 Governance / HITL       →  AGENT_CREATION_GUIDE.md Appendix H
@@ -913,9 +950,30 @@ Cost / evaluation       →  AGENT_CREATION_GUIDE.md Appendices T–U
 
 ---
 
+## Documentation update rules
+
+When changing platform documentation, update the **canonical file for that topic** — do not fork parallel guides.
+
+1. **Strategy** → `docs/INTERGRAX_DEVELOPMENT_STRATEGY.md`
+2. **Architecture** (observability, retry, trace storage, RAG) → `docs/intergrax_runtime_architecture.md`; sync plan §0
+3. **Observability deep dive** → `docs/OBSERVABILITY_ARCHITECTURE.md`
+4. **Status / phases / gaps** → `docs/INTERGRAX_IMPLEMENTATION_PLAN.md`
+5. **Agent workflow** → `docs/AGENT_CREATION_GUIDE.md`
+6. **Integration or tool catalog** → `docs/INTEGRATIONS.md` or `docs/TOOLS.md`
+7. **Skills** → `docs/SKILLS.md`
+8. **Modality / ML** → `docs/MODALITY.md` + canon §7.1.9
+9. **Harness AI terms** → `docs/intergrax_runtime_architecture.md` §5.3 only
+10. **Nexus execution flow** → `docs/NEXUS_EXECUTION_FLOW_REFERENCE.md`
+11. **Navigation / phase focus** → **this README** (`Start here`, `Status`)
+12. After each harness PR: run gate + getattr audit; update gate count in plan footer
+
+---
+
 ## Status
 
-Intergrax is under **active development** (private R&D). The **harness platform** maintenance queue runs on every PR ([§6.1](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1)). **Active implementation:** [Phase CRIT-V — Critic & Verification Layer](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-crit-v--critic--verification-layer) (Band 2ak). Business agents (Phase K) are **end of plan** until explicit product prioritization ([§6.3](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only)).
+**Last updated:** 2026-06-08
+
+Intergrax is under **active development** (private R&D). The **harness platform** maintenance queue runs on every PR ([§6.1](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#61-harness-platform-maintenance-default--band-1)). **Active implementation:** [Phase CRIT-V — Critic & Verification Layer](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-crit-v--critic--verification-layer) (Band 2ak). **Planned:** [Phase OBS-BUS — Unified Observability Spine](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine) (Band 2al). Business agents (Phase K) are **end of plan** until explicit product prioritization ([§6.3](docs/INTERGRAX_IMPLEMENTATION_PLAN.md#63-end-of-plan--deferred-product-work-only)).
 
 | Phase | Focus | Status |
 |-------|--------|--------|
@@ -930,7 +988,8 @@ Intergrax is under **active development** (private R&D). The **harness platform*
 | **V** | Harness architecture hardening — capability graph, lifecycle, metrics, prompt/eval/context/security/cost | **Done** (2026-06-05) |
 | **W-ML** | Model & modality plane | **Done** — [MODALITY.md](docs/MODALITY.md) |
 | **W-ADAPT** | Adaptive Harness Intelligence (L4 runtime) | **Done** (70/70) — [AHIA](docs/ADAPTIVE_HARNESS_INTELLIGENCE_ARCHITECTURE.md) |
-| **CRIT-V** | Critic & Verification Layer (PEV verify depth) | **Active** (10/24) — [CVL](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) |
+| **CRIT-V** | Critic & Verification Layer (PEV verify depth) | **Active** (16/24) — [CVL](docs/CRITIC_VERIFICATION_LAYER_ARCHITECTURE.md) |
+| **OBS-BUS** | Unified Observability Spine (full mechanism) | **Planned** (0/8) — [OBSERVABILITY_ARCHITECTURE.md](docs/OBSERVABILITY_ARCHITECTURE.md) |
 | **P-Ext** | Tier-0 plugin catalogs | **Done** (61/61) |
 | **AA** | Agents & applications conformance | **Platform Done** |
 | **MEM** | Memory platform | **Done** (48/48) |
@@ -938,7 +997,7 @@ Intergrax is under **active development** (private R&D). The **harness platform*
 | **FAUDIT-32** | Full 32-layer architecture audit + remediation (Band 2ad) | **Done** (23/23 + follow-up) |
 | **K** | Business agents | **End of plan** — deferred |
 
-**Regression gate:** `uv run pytest -m gate -q` — **901 passed** (2026-06-06)
+**Regression gate:** `uv run pytest -m gate -q` — **996 passed** (2026-06-07)
 
 **Harness CI:** `python scripts/check_harness_no_getattr.py` · `python scripts/check_llm_adapter_typed_returns.py` · `uv run python scripts/check_harness_prompt_golden_catalog.py` · `uv run python scripts/check_agents_lifecycle_metadata.py`
 
@@ -994,7 +1053,7 @@ This repository is currently in private R&D stage. Commercial licensing and part
 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community standards |
 | [CITATION.cff](CITATION.cff) | Citation metadata for research and publications |
 
-**For AI agents:** start with [AGENTS.md](AGENTS.md) → [docs/README.md](docs/README.md) → relevant canon in `docs/`.
+**For AI agents:** start with [AGENTS.md](AGENTS.md) → [Start here](#start-here) → relevant canon in `docs/`.
 
 ---
 

@@ -1136,7 +1136,7 @@ Harness MVP and new Tier-2 agents remain unblocked. LLM-backed dynamic decomposi
 
 | Document | Link |
 |----------|------|
-| Docs index | [`docs/README.md`](README.md) |
+| Docs index | [README.md — Documentation index](../README.md#documentation-index) |
 | Architecture canon | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) |
 | Agent workflow | [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) |
 | Implementation plan | [`INTERGRAX_IMPLEMENTATION_PLAN.md`](INTERGRAX_IMPLEMENTATION_PLAN.md) |

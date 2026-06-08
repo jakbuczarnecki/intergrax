@@ -2,7 +2,7 @@
 
 **Status:** Canonical (2026-06-06) — default queue: §6.1 maintenance; Band 2ad (FAUDIT-32) **Done**  
 **Audience:** Maintainers, architects, implementation agents, Cursor AI  
-**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) · [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) · [docs/README.md](README.md)
+**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) · [INTERGRAX_IMPLEMENTATION_PLAN.md](INTERGRAX_IMPLEMENTATION_PLAN.md) · [README.md — Documentation index](../README.md#documentation-index)
 
 This document defines **how** Intergrax is developed and **what** overrides what when goals conflict. It does not duplicate technical contracts (those live in the architecture canon).
 

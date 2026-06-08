@@ -57,7 +57,7 @@ This document is an architectural and implementation guide.
 
 Platform docs describe **how to compose** agents and application hosts on the Harness. They do **not** replace product-specific architecture or deployment plans for a given business environment or business agent.
 
-Navigation: [`docs/README.md`](README.md) · [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) §Documentation boundary · plan [§4.0a](INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business)
+Navigation: [README.md — Documentation index](../README.md#documentation-index) · [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) §Documentation boundary · plan [§4.0a](INTERGRAX_IMPLEMENTATION_PLAN.md#40a-implementation-scope-split-infrastructure-vs-business)
 
 ---
 
@@ -2798,9 +2798,11 @@ Agents MUST NOT implement ad-hoc human gates or send approval messages directly.
 
 # 33. Observability And Tracing
 
+> **Deep dive (canonical):** [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) — Harness Observability Spine (HOS), three signal planes, extension contracts, persistence, scaling, operator surfaces, and implementation roadmap ([ADR-OBS-001](adr/ADR-OBS-001.md), [Phase OBS-BUS](INTERGRAX_IMPLEMENTATION_PLAN.md#phase-obs-bus--unified-observability-spine)).
+
 Every execution should create a trace.
 
-The canonical observability model is **event-first** (§42.1, §42.24): `RuntimeEvent` stream persisted to trace storage, with correlation via `task_id`, `run_id`, and `correlation_id`.
+The canonical observability model is **event-first** (§42.1, §42.24): `RuntimeEvent` stream persisted to trace storage, with correlation via `task_id`, `run_id`, and `correlation_id`. All tiers (Harness, applications, agents) publish through the **same spine** — see [`OBSERVABILITY_ARCHITECTURE.md`](OBSERVABILITY_ARCHITECTURE.md) §3.
 
 Trace should include:
 

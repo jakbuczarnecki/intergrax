@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: Documentation index
-    url: https://github.com/jakbuczarnecki/intergrax-ai/blob/main/docs/README.md
+    url: https://github.com/jakbuczarnecki/intergrax-ai/blob/main/README.md#documentation-index
     about: Canonical platform documentation — start here
   - name: Agent Creation Guide
     url: https://github.com/jakbuczarnecki/intergrax-ai/blob/main/docs/AGENT_CREATION_GUIDE.md
