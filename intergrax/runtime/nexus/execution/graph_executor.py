@@ -93,7 +93,7 @@ class GraphExecutor:
         self._max_delegation_depth = max_delegation_depth
         self._inflight_semaphore: asyncio.Semaphore | None = None
         self._engine = engine or AgentEngine(registry)
-        self._router = router or AgentRouter(registry)
+        self._router = router or AgentRouter(registry, event_bus=event_bus)
         self._validation_engine = validation_engine or NexusValidationEngine()
         self._retry_engine = retry_engine or RetryEngine(
             registry,
@@ -396,7 +396,11 @@ class GraphExecutor:
                 on_node_complete(node)
             return failed, [], True, False, []
 
-        agent = self._router.route(node_task)
+        agent = self._router.route(
+            node_task,
+            run_id=task.task_id,
+            node_id=node.node_id,
+        )
         contract = agent.get_contract()
         node_task = node_task.model_copy(update={"agent_id": contract.id})
 

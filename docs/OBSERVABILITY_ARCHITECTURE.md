@@ -288,12 +288,12 @@ with TraceScope.emitter.run(run_id, task_id, tenant_id) as scope:
 
 | Gap | Impact | Phase |
 |-----|--------|-------|
-| `AGENT_SELECTED` not emitted | Cannot audit routing | OBS-BUS-3 |
-| `STEP_FAILED` not emitted on pipeline errors | Bus incomplete | OBS-BUS-3 |
-| `parent_event_id` unused | No causal tree | OBS-BUS-2 |
-| Graph nodes use string messages only | Weak typing | OBS-BUS-3 |
-| `RuntimeEvent.payload` is `dict` | Magic keys at canonical layer | OBS-BUS-1 |
-| Critic `evaluator_loop` not in bridge catalog | Journal gap | OBS-BUS-3 |
+| `AGENT_SELECTED` not emitted | Cannot audit routing | **Done** (OBS-BUS-3) |
+| `STEP_FAILED` not emitted on pipeline errors | Bus incomplete | **Done** (OBS-BUS-3) |
+| `parent_event_id` unused | No causal tree | **Done** (OBS-BUS-2) |
+| Graph nodes use string messages only | Weak typing | **Done** (OBS-BUS-3) |
+| `RuntimeEvent.payload` is `dict` | Magic keys at canonical layer | **Done** (OBS-BUS-1) |
+| Critic `evaluator_loop` not in bridge catalog | Journal gap | **Done** (OBS-BUS-3) |
 | Parser trace separate from run journal | Ingest observability split | OBS-BUS-6 |
 
 ---

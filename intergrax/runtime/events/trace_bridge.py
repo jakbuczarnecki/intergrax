@@ -18,11 +18,21 @@ from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.payload_registry import merge_payload_envelope
 from intergrax.runtime.events.payloads import (
+    GraphNodePayloadV1,
     LlmCallPayloadV1,
     TaskLifecyclePayloadV1,
     ToolPayloadV1,
     TraceBridgePayloadV1,
+    ValidationPayloadV1,
 )
+from intergrax.runtime.nexus.tracing.graph_node_diag import (
+    GRAPH_NODE_STEP_COMPLETE,
+    GRAPH_NODE_STEP_START,
+    GraphNodeDiagV1,
+)
+from intergrax.runtime.nexus.tracing.steps.step_failed import RuntimeStepFailedDiagV1
+from intergrax.runtime.nexus.tracing.steps.step_finished import RuntimeStepFinishedDiagV1
+from intergrax.runtime.nexus.tracing.steps.step_started import RuntimeStepStartedDiagV1
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.phase_coverage import phase_for_event
 from intergrax.runtime.nexus.tracing.adapters.core_llm_call_recorded import CoreLLMCallRecordedDiagV1
@@ -61,11 +71,25 @@ _TOOL_STEP_TO_EVENT: dict[str, RuntimeEventType] = {
     "tool_invocation_error": RuntimeEventType.TOOL_FAILED,
 }
 
+_CRITIC_STEP_EVALUATOR_LOOP = "critic.evaluator_loop"
+
 _CRITIC_STEP_TO_EVENT: dict[str, RuntimeEventType] = {
     "critic.l0_failed": RuntimeEventType.VALIDATION_FAILED,
     "critic.l1_judge": RuntimeEventType.LLM_CALL,
     "critic.trajectory": RuntimeEventType.STEP_COMPLETED,
+    _CRITIC_STEP_EVALUATOR_LOOP: RuntimeEventType.STEP_COMPLETED,
     "critic.final_verdict": RuntimeEventType.VALIDATION_STARTED,
+}
+
+_RUNTIME_STEP_SCHEMA_TO_EVENT: dict[str, RuntimeEventType] = {
+    RuntimeStepStartedDiagV1.schema_id(): RuntimeEventType.STEP_STARTED,
+    RuntimeStepFinishedDiagV1.schema_id(): RuntimeEventType.STEP_COMPLETED,
+    RuntimeStepFailedDiagV1.schema_id(): RuntimeEventType.STEP_FAILED,
+}
+
+_GRAPH_STEP_TO_EVENT: dict[str, RuntimeEventType] = {
+    GRAPH_NODE_STEP_START: RuntimeEventType.STEP_STARTED,
+    GRAPH_NODE_STEP_COMPLETE: RuntimeEventType.STEP_COMPLETED,
 }
 
 _TASK_STATE_TO_EVENT: dict[TaskState, RuntimeEventType] = {
@@ -172,7 +196,13 @@ def _resolve_event_type_from_trace(
         payload = trace.payload.to_dict()
         schema_id = schema_id or trace.payload.__class__.schema_id()
 
-    if schema_id in {_CORE_LLM_CALL_SCHEMA, _CORE_LLM_RETURNED_SCHEMA}:
+    if schema_id in _RUNTIME_STEP_SCHEMA_TO_EVENT:
+        event_type = _RUNTIME_STEP_SCHEMA_TO_EVENT[schema_id]
+    elif trace.step in _GRAPH_STEP_TO_EVENT:
+        event_type = _GRAPH_STEP_TO_EVENT[trace.step]
+    elif schema_id == GraphNodeDiagV1.schema_id() and trace.step in _GRAPH_STEP_TO_EVENT:
+        event_type = _GRAPH_STEP_TO_EVENT[trace.step]
+    elif schema_id in {_CORE_LLM_CALL_SCHEMA, _CORE_LLM_RETURNED_SCHEMA}:
         event_type = RuntimeEventType.LLM_CALL
     elif trace.step == "core_llm" and "finish_reason" in payload:
         event_type = RuntimeEventType.LLM_CALL
@@ -181,7 +211,7 @@ def _resolve_event_type_from_trace(
     elif trace.step in _CRITIC_STEP_TO_EVENT:
         event_type = _CRITIC_STEP_TO_EVENT[trace.step]
         phase = ExecutionPhase.VALIDATION
-        if trace.step == "critic.final_verdict":
+        if trace.step in {_CRITIC_STEP_EVALUATOR_LOOP, "critic.final_verdict"}:
             payload_passed = payload.get("passed")
             if payload_passed is False:
                 event_type = RuntimeEventType.VALIDATION_FAILED
@@ -223,6 +253,48 @@ def _attach_typed_bridge_payload(
     extra_payload: dict[str, Any],
     diagnostic_schema_id: str,
 ) -> dict[str, Any]:
+    if event_type in {
+        RuntimeEventType.STEP_STARTED,
+        RuntimeEventType.STEP_COMPLETED,
+    } and (
+        trace.step in _GRAPH_STEP_TO_EVENT
+        or diagnostic_schema_id == GraphNodeDiagV1.schema_id()
+        or trace.message.startswith("graph node ")
+    ):
+        node_id = str(
+            extra_payload.get("node_id")
+            or trace.tags.get("node_id")
+            or ""
+        )
+        status = str(extra_payload.get("status") or "")
+        agent_id = str(
+            extra_payload.get("agent_id") or trace.tags.get("agent_id") or ""
+        )
+        typed = GraphNodePayloadV1(
+            node_id=node_id,
+            status=status,
+            agent_id=agent_id,
+            message=trace.message,
+        )
+        return merge_payload_envelope(
+            base,
+            typed,
+            promote_fields={"node_id": node_id} if node_id else None,
+        )
+    if event_type == RuntimeEventType.STEP_FAILED and extra_payload:
+        step_name = str(extra_payload.get("step_name") or trace.step)
+        error_type = str(extra_payload.get("error_type") or "error")
+        typed = ValidationPayloadV1(
+            valid=False,
+            error_count=1,
+            stage=step_name,
+            rule_ids_failed=(error_type,),
+        )
+        return merge_payload_envelope(
+            base,
+            typed,
+            promote_fields={"stage": step_name, "error_type": error_type},
+        )
     if event_type == RuntimeEventType.LLM_CALL and extra_payload:
         typed = LlmCallPayloadV1(
             model=str(extra_payload.get("model", "")),
@@ -335,12 +407,23 @@ def trace_event_to_runtime_event(
     if mapped_phase is not None:
         phase = mapped_phase
 
+    node_id = trace.tags.get("node_id")
+    step_id = trace.tags.get("step_id")
+    if extra_payload.get("step_name") and event_type in {
+        RuntimeEventType.STEP_STARTED,
+        RuntimeEventType.STEP_COMPLETED,
+        RuntimeEventType.STEP_FAILED,
+    }:
+        step_id = step_id or extra_payload.get("step_name")
+
     return RuntimeEvent(
         event_id=f"rt_{trace.event_id}",
         tenant_id=str(trace.tags.get("tenant_id") or subject.tenant_id),
         task_id=str(trace.tags.get("task_id") or subject.task_id),
         run_id=trace.run_id,
         agent_id=trace.tags.get("agent_id") or subject.agent_id or None,
+        node_id=str(node_id) if node_id else None,
+        step_id=str(step_id) if step_id else None,
         event_type=event_type,
         phase=phase,
         severity=_trace_level_to_severity(trace.level),

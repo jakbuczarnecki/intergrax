@@ -176,7 +176,11 @@ class NexusLoop:
             policy=retry_policy or RetryPolicy(),
             middleware=self._middleware,
         )
-        self._router = AgentRouter(registry, production_mode=production_mode)
+        self._router = AgentRouter(
+            registry,
+            production_mode=production_mode,
+            event_bus=self._event_bus,
+        )
         self._context_manager = context_manager or ContextManager()
         self._graph_executor = graph_executor or GraphExecutor(
             registry,
