@@ -736,6 +736,8 @@ flowchart TD
 
 ## 15. Tool selection flow
 
+> **Canonical tool engine manifest:** [`TOOLS.md`](TOOLS.md#tool-execution-pipeline) — full select → invoke → log pipeline and component roles. This section covers the **selection** subgraph; §16–§17 cover governance hooks and telemetry.
+
 ```mermaid
 flowchart TD
     subgraph Config["Tier-3 bootstrap"]

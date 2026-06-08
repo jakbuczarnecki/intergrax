@@ -5,15 +5,19 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from intergrax.runtime.human.models import (
     EscalationOutcome,
     EscalationTarget,
     HumanResponseVerdict,
 )
 from intergrax.runtime.human.response_parser import parse_human_response
-from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_contract import EscalationStep
 from intergrax.runtime.task.task_metadata_keys import TaskMetadataKey
+
+if TYPE_CHECKING:
+    from intergrax.runtime.task.task import Task
 
 __all__ = [
     "EscalationRouter",
