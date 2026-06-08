@@ -2,7 +2,9 @@
 
 **Status:** Canonical architecture (decomposed from platform canon)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
-**Target reference:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Target reference:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Plan (1:1):** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
+**Audit layers:** 17–20, 31 (prompt, registry, capability graph, lifecycle)
 
 ---
 
@@ -207,3 +209,105 @@ If these questions cannot be answered, do not implement the agent yet.
 
 ---
 
+---
+
+# 17. Prompt Registry Architecture
+
+Prompt artifacts are **governed platform assets**, not ad-hoc strings in agents.
+
+## 17.1 Requirements
+
+- ownership and versioning on every prompt id (`PromptMeta`),
+- composable layers: system / task / policy / context,
+- deterministic policy injection overlays,
+- regression suites on golden prompt catalogs,
+- Tier-3 `PromptProfile` selects YAML catalog path per host.
+
+## 17.2 Code map
+
+| Module | Role |
+|--------|------|
+| `intergrax/prompts/registry/` | YamlPromptRegistry, governance validation |
+| `intergrax/runtime/architecture/prompt_registry_governance.py` | Ownership / risk tier gates |
+| `intergrax/runtime/architecture/prompt_composition.py` | Layer composition |
+| `intergrax/runtime/architecture/prompt_policy_overlay.py` | Policy overlays |
+| `intergrax/runtime/architecture/prompt_regression_suite.py` | Golden regression |
+| `intergrax/applications/_shared/prompt_wiring.py` | Environment → Nexus prompt registry |
+
+**Authoring:** [`guides/AGENT_CREATION_GUIDE.md` Appendix M](../guides/AGENT_CREATION_GUIDE.md) · **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase PE.
+
+---
+
+# 18. Registry Architecture
+
+Registries are versioned, snapshot-capable catalogs — not mutable globals.
+
+## 18.1 Registry types
+
+| Registry | Tier | Consumed by |
+|----------|------|-------------|
+| Agent registry | 1 | Nexus agent selection |
+| Tool registry | 0 | `ToolRuntime` |
+| Skill registry | 0 | Skill resolver |
+| Integration registry | 0 | Provider hosts |
+| Prompt registry | 0/1 | Nexus steps, eval |
+| Evaluation registry | 1 | EvalRunner, release gates |
+
+## 18.2 Assembly pattern
+
+Tier-3 `wire_application_environment()` materializes registries from `ApplicationEnvironmentProfile` tool/skill/integration/prompt profiles → `RuntimeConfig` via `runtime_config_bridge.py` and domain `*_assembly_resolver.py` modules.
+
+Snapshots and conformance CI validate registry shape before release (`scripts/check_agents_lifecycle_metadata.py`, harness registry guards).
+
+**Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase REG.
+
+---
+
+# 19. Capability Graph Architecture
+
+Registries and capability layers MUST be represented as a typed dependency graph:
+
+```text
+Integration -> Tool -> Skill -> Policy -> Agent -> Application -> Product
+```
+
+## 19.1 Minimum requirements
+
+- typed node and edge taxonomy,
+- dependency lineage and provenance,
+- blast-radius impact analysis for version/policy/runtime changes,
+- compatibility validation on graph edges before release.
+
+## 19.2 Code map
+
+| Module | Role |
+|--------|------|
+| `runtime/architecture/capability_graph.py` | Core graph model |
+| `capability_graph_lineage.py` | Lineage / provenance |
+| `capability_graph_compatibility.py` | Edge compatibility |
+| `capability_graph_applications.py` | Application slice |
+| `scripts/phase_v_capability_graph_guard.py` | CI guard |
+
+Nexus routes to **capabilities** (§16), not hardcoded class names. Graph edges MUST reflect manifest roster per application — not global cross-product shortcuts.
+
+**Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase CG.
+
+---
+
+# 20. Agent Lifecycle Governance
+
+Beyond contract shape (§12) and registry metadata (§15):
+
+| Stage | Requirement |
+|-------|-------------|
+| Certification | quality + policy + security gates before production |
+| Promotion | dev → staging → production with evidence |
+| Deprecation | migration windows, runtime filters for retired agents |
+| Retirement | rollback/archive semantics |
+| Ownership | explicit owner + escalation path |
+
+**Code:** `runtime/architecture/agent_lifecycle_governance.py`, `agent_certification.py`, `agent_promotion.py`, `production_ownership.py`.
+
+Runtime MUST reject or reroute retired/deprecated agents in production mode (V-REM-ALG.*). **Plan:** Phase AS + V-REM in [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md).
+
+---

@@ -1,4 +1,4 @@
-# Nexus Execution Flow Reference
+﻿# Nexus Execution Flow Reference
 
 **Status:** Canonical architecture document
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
@@ -28,7 +28,7 @@ intergrax_runtime_architecture.md     →  implementation status, phases, gap qu
 | Target architecture | [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) |
 | Contracts (what) | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) §42 |
 | Control plane (how to configure) | [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) Appendix I, H, J |
-| Phase status / gaps | [`intergrax_runtime_architecture.md`](plan/NEXUS_EXECUTION_FLOW.md) |
+| Phase status / gaps | [`plan/NEXUS_EXECUTION_FLOW.md) |
 | Audit layers §7–§10 | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
 | Delegation target semantics | [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md) |
 | L4 adaptive loops (separate) | [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
@@ -1071,7 +1071,7 @@ Honest deltas for plan scheduling. **Closeout phases (ORCH Done) wired bootstrap
 | FLOW-GAP-15 | `MODIFY_PLAN` reserved / undocumented | **Closed (FLOW-16)** — [ADR-FLOW-003](adr/ADR-FLOW-003.md); `MODIFY_PLAN_NOT_SUPPORTED` without handoff | DX | Low | §9 |
 | FLOW-GAP-16 | `MULTI_AGENT` step order fragile | **Closed (FLOW-17)** — `multi_agent_order` on `OrchestrationProfile` | DX | Low | §9 |
 
-**Status (2026-06-07):** Phase FLOW **Done** (17/18); `FLOW-GAP-01`…`09`, `11`…`16` **closed**; `FLOW-GAP-10` → FLOW-8 **Deferred** (§6.3). See [Phase FLOW](plan/ORCHESTRATION.md).
+**Status (2026-06-07):** Phase FLOW **Done** (17/18); `FLOW-GAP-01`…`09`, `11`…`16` **closed**; `FLOW-GAP-10` → FLOW-8 **Deferred** (§6.3). See [Phase FLOW](../plan/ORCHESTRATION.md).
 
 ---
 
@@ -1095,7 +1095,7 @@ Harness MVP and new Tier-2 agents remain unblocked. LLM-backed dynamic decomposi
 
 ## 25. Plan traceability matrix
 
-**Status:** **Done** (2026-06-07) — canonical implementation in [`intergrax_runtime_architecture.md`](plan/NEXUS_EXECUTION_FLOW.md) [Phase FLOW](#phase-flow--nexus-execution-depth) · closed queue [§6.1aj](plan/NEXUS_EXECUTION_FLOW.md#61aj-harness-implementation-queue--nexus-execution-depth-closed) · execution [§6.2aj](plan/NEXUS_EXECUTION_FLOW.md#62aj-phase-flow-execution-order-band-2aj--active-2026-06-07) · traceability **Appendix N (FLOW)** · **FLOW-8 Deferred**.
+**Status:** **Done** (2026-06-07) — canonical implementation in [`plan/NEXUS_EXECUTION_FLOW.md) [Phase FLOW](#phase-flow--nexus-execution-depth) · closed queue [§6.1aj](../plan/NEXUS_EXECUTION_FLOW.md#61aj-harness-implementation-queue--nexus-execution-depth-closed) · execution [§6.2aj](../plan/NEXUS_EXECUTION_FLOW.md#62aj-phase-flow-execution-order-band-2aj--active-2026-06-07) · traceability **Appendix N (FLOW)** · **FLOW-8 Deferred**.
 
 ### 25.1 Implementation rows (Phase FLOW — Band 2aj)
 
@@ -1151,7 +1151,7 @@ Harness MVP and new Tier-2 agents remain unblocked. LLM-backed dynamic decomposi
 | Docs index | [README.md — Documentation index](../README.md#documentation-index) |
 | Architecture canon | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) |
 | Agent workflow | [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) |
-| Implementation plan | [`intergrax_runtime_architecture.md`](plan/NEXUS_EXECUTION_FLOW.md) |
+| Implementation plan | [`plan/NEXUS_EXECUTION_FLOW.md) |
 | Harness audit map | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
 | Root README | [`../README.md`](../README.md) |
 | AGENTS.md (AI routing) | [`../AGENTS.md`](../AGENTS.md) |
@@ -1163,3 +1163,23 @@ Harness MVP and new Tier-2 agents remain unblocked. LLM-backed dynamic decomposi
 ---
 
 **Maintainer note:** When runtime behavior changes, update **this file first** (narrative truth), then sync canon §42.14.3 / §42.43, [ADR-FLOW-001](adr/ADR-FLOW-001.md), and plan traceability §25 — not the other way around.
+
+---
+
+## 27. Multi-Agent Coordination Model Catalog
+
+Pattern selection MUST be explicit and policy-aware (IDEAL §6.4, AUDIT_MAP §10).
+
+| Pattern | When to use |
+|---------|-------------|
+| Hierarchical | Top-down plan with delegated executors |
+| Orchestrator–worker | Central planner, specialized workers |
+| Supervisor–worker | Quality/policy supervision over workers |
+| Peer-to-peer | Parallel decomposition with merge policy |
+| Evaluator-loop / critique–revise | Quality gate before finalize |
+
+**Code:** `runtime/architecture/multi_agent_coordination.py`, `multi_agent_acceptance.py`.
+
+Narrative flows: §12–§14 in this document. Critic depth: [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md).
+
+---

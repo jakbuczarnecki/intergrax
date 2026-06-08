@@ -1,4 +1,4 @@
-# Critic & Verification Layer (CVL) — Architecture
+﻿# Critic & Verification Layer (CVL) — Architecture
 
 **Status:** Canonical architecture document
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
@@ -13,7 +13,7 @@
 **Audience:** Harness platform engineers, Tier-2 agent authors, Tier-3 application operators  
 **Canon addendum:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) §55  
 **Decision record:** [`adr/ADR-CRITIC-001.md`](adr/ADR-CRITIC-001.md)  
-**Implementation tracker:** [`intergrax_runtime_architecture.md`](plan/CRITIC_VERIFICATION.md) — Phase CRIT-V  
+**Implementation tracker:** [`plan/CRITIC_VERIFICATION.md) — Phase CRIT-V  
 **Target alignment:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §6.4, §17.2, §18  
 **Audit layer:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §25 (Evaluation), §7 (Reasoning), §10 (Multi-agent)
 
@@ -433,7 +433,7 @@ Integrates with existing `RuntimePolicyEngine` — no agent-specific branches.
 
 ## 16. Implementation tracking
 
-See [`intergrax_runtime_architecture.md`](plan/CRITIC_VERIFICATION.md) — **Phase CRIT-V**.
+See [`plan/CRITIC_VERIFICATION.md) — **Phase CRIT-V**.
 
 | Wave | Focus | Status |
 |------|-------|--------|

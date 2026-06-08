@@ -211,4 +211,65 @@ This validates the entire skeleton.
 
 ---
 
+---
 
+# 42. Evaluation and Benchmarking Operations
+
+Evaluation is a **first-class runtime subsystem**, not a post-hoc script.
+
+## 42.1 Modes
+
+| Mode | Purpose |
+|------|---------|
+| Offline | Golden datasets, regression before merge |
+| Online | Production sampling, score trends |
+| Shadow | Compare candidate path without user impact |
+| Human | HITL rubric scoring |
+
+## 42.2 Components
+
+| Module | Role |
+|--------|------|
+| `runtime/architecture/evaluation_modes.py` | Mode contracts |
+| `evaluation_automation.py` | Runner automation |
+| `evaluation_registry_trends.py` | Score history / trends |
+| `online_evaluation_registry.py` | Live eval registry |
+| `evaluation_assets.py` | Golden asset catalog |
+| `runtime/eval/` | NexusEvalRunner integration |
+
+Evaluators: rule-based, schema, LLM-judge (see [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md)).
+
+**Plan:** [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) Phase EVAL · [`plan/CRITIC_VERIFICATION.md`](../plan/CRITIC_VERIFICATION.md) CRIT-V.
+
+---
+
+# 43. Architecture Metrics, Debt, and CI Gates
+
+Architecture health MUST be measured, not inferred.
+
+## 43.1 Metric families
+
+- modularity and coupling indicators,
+- dependency graph health and incompatibility rate,
+- observability and governance coverage on critical paths,
+- policy / context / prompt / test coverage,
+- architecture debt index with trend tracking.
+
+**Code:** `runtime/architecture/architecture_metrics.py`, `architecture_metrics_pipeline.py`, `debt_governance.py`, `architecture_coverage.py`, `maturity_gate_evidence.py`.
+
+## 43.2 Developer experience surface
+
+| Surface | Role |
+|---------|------|
+| `intergrax/scaffold/` | `new-agent`, `new-application`, `new-skill` |
+| `intergrax/cli/doctor.py` | Harness health checks |
+| `scripts/test.bat` / `pytest -m gate` | Mandatory merge gates |
+| `guides/AGENT_CREATION_GUIDE.md` | Author workflow |
+
+**TTFRun** (idea → first Nexus run) is the primary DX metric. **Plan:** Phase DX, AA, W-OPS in [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md).
+
+## 43.3 Operational L3 evidence
+
+Release cycles, SLO snapshots, and ops sign-off are tracked via `scripts/phase_w_ops_evidence.py` and release cycle artifacts under `build/architecture_hardening/`.
+
+---

@@ -440,3 +440,60 @@ If the change is domain-specific, it probably belongs in an agent.
 
 ---
 
+---
+
+# 48. Task Intake and TaskEnvelope
+
+All entrypoints MUST normalize into a common intake contract before NexusLoop.
+
+## 48.1 TaskEnvelope (minimum)
+
+```text
+TaskEnvelope:
+    task_id / run_id
+    tenant_id
+    user_id | service_id
+    source_channel          # api | cli | slack | teams | webhook | scheduler
+    raw_input
+    constraints             # SLA, risk class, budget caps
+    correlation_ids         # trace_id parent
+```
+
+## 48.2 Intake pipeline
+
+```text
+Surface adapter -> contract validation -> TaskEnvelope -> TaskClassifier -> Planner
+```
+
+| Module | Role |
+|--------|------|
+| `applications/_shared/task_intake.py` | Shared intake helpers |
+| `fastapi_core/` | HTTP auth + request context |
+| `runtime/nexus/orchestration/` | Classifier, planner, graph |
+| `runtime/interactions/` | Slack/Teams interaction adapters |
+
+**Audit layer:** INTEGRAX_HARNESS_AUDIT_MAP §3 (Interface and Task Intake).
+
+---
+
+# 49. Scheduler and Queueing
+
+Long-running and asynchronous work uses the Tier-0 queueing plane — not ad-hoc threads in agents.
+
+## 49.1 Components
+
+| Module | Role |
+|--------|------|
+| `intergrax/queueing/` | Task index, registry, worker contracts |
+| `intergrax/distributed/` | Rate limiting, distributed locks |
+| Integration `message_bus` providers | Celery, RabbitMQ, Redis, Kafka |
+
+## 49.2 Orchestration integration
+
+- `OrchestrationProfile.long_running` enables checkpointed schedules.
+- Graph batch concurrency caps prevent provider overload.
+- Backpressure and semaphore limits are policy-aware (see [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §9).
+
+**Plan:** [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md) Phase ORCH.
+
+---

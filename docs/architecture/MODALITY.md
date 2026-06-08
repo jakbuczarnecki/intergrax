@@ -1,4 +1,4 @@
-# Intergrax — Model & Modality Plane
+﻿# Intergrax — Model & Modality Plane
 
 **Status:** Canonical architecture document
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
@@ -14,7 +14,7 @@ Catalog and harness rules for **vision**, **audio/speech**, **classical ML**, an
 
 **Canon:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.9 · §5.3  
 **Target model:** [IDEAL_HARNESS_AI_ARCHITECTURE.md](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5.1, §7.1  
-**Implementation tracker:** [intergrax_runtime_architecture.md](plan/MODALITY.md) **Phase W-ML**  
+**Implementation tracker:** [plan/MODALITY.md) **Phase W-ML**  
 **Related:** [architecture/LLM_ADAPTERS.md](architecture/LLM_ADAPTERS.md) (generative multimodal) · [architecture/INTEGRATIONS.md](architecture/INTEGRATIONS.md) (catalog slugs) · RAG §7.1.2 (ingest/embeddings)
 
 ---

@@ -56,4 +56,31 @@ Execution: [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EX
 
 **Per-iteration rule:** pick one domain — read only its architecture + plan pair; do not load unrelated domains.
 
+**Audit map routing (32 layers → domain pair):**
+
+| Layers | Domain pair |
+|--------|-------------|
+| 1–2 Strategic + tiers | `PLATFORM_FOUNDATION` |
+| 3 Intake | `ORCHESTRATION` + `TIER3_APPLICATION_ENVIRONMENT` |
+| 4 Identity / trust | `UNIFIED_EXECUTION_RUNTIME` §42.44 |
+| 5 Policy | `UNIFIED_EXECUTION_RUNTIME` §42.11 |
+| 6 LLM | `LLM_ADAPTERS` |
+| 7–9 Cognition / runtime / orchestration | `ORCHESTRATION` + `NEXUS_EXECUTION_FLOW` |
+| 10 Subagents | `NEXUS_EXECUTION_FLOW` §27 |
+| 11–13 Tools / skills / integrations | `TOOLS` · `SKILLS` · `INTEGRATIONS` |
+| 14 RAG | `INTEGRATIONS` + `MEMORY` §20 |
+| 15–16 Memory / context | `MEMORY` |
+| 17–20 Prompt / assembly / registry / capability graph | `AGENT_CONTRACTS_AND_ASSEMBLY` |
+| 21 Observability | `OBSERVABILITY` |
+| 22 Reliability / HITL | `RELIABILITY_FAILURE_AND_HITL` + UAEP §42.10 |
+| 23–24 Security / cost | `UNIFIED_EXECUTION_RUNTIME` §42.45–47 |
+| 25–27 Eval / CI / DX | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` + `CRITIC_VERIFICATION` |
+| 28 Tier-3 hosts | `TIER3_APPLICATION_ENVIRONMENT` |
+| 29 Modality | `MODALITY` |
+| 30 Ops / SLO | `EXPERIMENTATION` §43 + `OBSERVABILITY` |
+| 31 Agent lifecycle | `AGENT_CONTRACTS_AND_ASSEMBLY` §20 |
+| 32 Doc governance loop | `PLATFORM_FOUNDATION` + `guides/` |
+
+Full audit procedure: [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md).
+
 Platform docs do not replace `agents/*/ARCHITECTURE.md` or `applications/*/ARCHITECTURE.md`.

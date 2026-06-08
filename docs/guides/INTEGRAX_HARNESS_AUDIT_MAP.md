@@ -310,6 +310,8 @@ Audit production-level maturity.
 
 # 8. Full Audit Layer Map
 
+Each layer below maps to a **domain pair** (`docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md`). Routing index: [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) (Audit map routing table).
+
 ## 1. Strategic Harness Model
 
 ### Purpose

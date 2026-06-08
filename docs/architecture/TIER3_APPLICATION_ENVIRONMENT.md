@@ -92,3 +92,82 @@ Sandbox execution should be:
 
 ---
 
+---
+
+# 22. Application Environment Profile (canonical)
+
+Tier-3 hosts are configured through **`ApplicationEnvironmentProfile`** — a typed umbrella aggregating every harness control plane slice.
+
+## 22.1 Profile composition
+
+| Sub-profile | Purpose |
+|-------------|---------|
+| `IdentityProfile` | API key, tenant_required, service identities |
+| `PolicyRulesProfile` + `ExecutionMode` | Declarative rules + STRICT/BALANCED/EXPLORATORY |
+| `ApplicationSecurityProfile` | Per-app V-SEC toggles |
+| `ToolProfile` / `SkillProfile` | Allowed catalogs |
+| `IntegrationProfile` | Provider stack |
+| `LLMProfile` / `ModalityProfile` | Model and modality posture |
+| `ContextProfile` / `MemoryProfile` / `ContextDecisionProfile` | Assembly and stores |
+| `PromptProfile` | YAML prompt catalog path |
+| `ReliabilityProfile` | Idempotency, circuit breaker, checkpoint |
+| `ObservabilityProfile` | Trace, OTEL, metrics plugins |
+| `OrchestrationProfile` | Planner/classifier kinds, delegation depth |
+| `ApplicationGraphSpec` | Declarative multi-agent topology |
+
+**Contract:** `intergrax/applications/contracts/environment_profile.py`
+
+## 22.2 Unified wiring entrypoints
+
+```text
+ApplicationManifest
+    -> build ApplicationBuildContext
+    -> wire_application_environment(ctx, profile)
+    -> materialize_runtime_config(request, harness_ctx, env)
+    -> build_nexus_loop_from_environment(...)
+    -> UnifiedTaskRunner (§41)
+```
+
+| Module | Role |
+|--------|------|
+| `applications/_shared/environment_wiring.py` | Single wiring entry |
+| `runtime_config_bridge.py` | Environment → `RuntimeConfig` |
+| `nexus_factory.py` | NexusLoop from profile |
+| `identity_wiring.py` | Host auth from `IdentityProfile` |
+| `shadow_wiring.py` / `sandbox_wiring.py` | Isolated execution |
+| `*_runtime_bridge.py` | Domain bridges (RAG, memory, policy, …) |
+
+## 22.3 Interaction surfaces (intake)
+
+Normalized intake MUST converge on the same Nexus lifecycle:
+
+| Surface | Typical entry |
+|---------|---------------|
+| HTTP API | `applications/*/host/` FastAPI routers |
+| CLI | `intergrax` CLI / lab commands |
+| Slack / Teams | `POST /v1/interactions/intake` + adapters |
+| Webhook / worker | `applications/_shared/task_intake.py`, queue consumers |
+| Scheduler | `intergrax/queueing/` + long-running task API |
+
+See [`ORCHESTRATION.md`](ORCHESTRATION.md) §48 for `TaskEnvelope` normalization.
+
+## 22.4 Host migration rule
+
+Every Tier-3 application MUST:
+
+1. declare `environment` on `ApplicationManifest`,
+2. wire through `wire_application_environment` (no ad-hoc `getattr` profile access),
+3. keep business logic in Tier-2 agents — hosts only compose harness.
+
+**Plan:** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) Phase H-APP (43 tasks, Done).
+
+## 22.5 Related documents
+
+| Document | Relationship |
+|----------|--------------|
+| [`applications/USAGE.md`](../../applications/USAGE.md) | Authoring Tier-3 hosts |
+| [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) | UAEP + policy runtime |
+| [`ORCHESTRATION.md`](ORCHESTRATION.md) | Nexus orchestration fields on profile |
+| [`guides/HARNESS_ENVIRONMENT.md`](../guides/HARNESS_ENVIRONMENT.md) | Lab stack operator guide |
+
+---

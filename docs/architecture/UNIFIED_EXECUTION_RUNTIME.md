@@ -1,4 +1,4 @@
-# Unified Execution Runtime Specification (UAEP)
+﻿# Unified Execution Runtime Specification (UAEP)
 
 **Status:** Canonical architecture (decomposed from platform canon)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
@@ -690,7 +690,7 @@ RuntimePolicyBundle:
 - Nexus and UAEP read from the bundle — agents MUST NOT construct parallel policy objects.
 - Skill `policy_fragment_id` (§7.1.8) merges into `domain_fragments` or tool policy — never bypasses `ToolRuntime`.
 
-Implementation: [`intergrax_runtime_architecture.md`](plan/UNIFIED_EXECUTION_RUNTIME.md) R-Policy (Done).
+Implementation: [`plan/UNIFIED_EXECUTION_RUNTIME.md) R-Policy (Done).
 
 ### 42.11.5 How to read policy for a run (operator)
 
@@ -851,7 +851,7 @@ Harness literature describes **subagents** as autonomous units with their own ru
 
 **Declarative `DELEGATES_TO` (implemented):** Tier-3 `ApplicationGraphSpec` may declare `DELEGATES_TO` as authoring sugar; `graph_spec_to_plan.py` **expands** it to a **child `PlanStep` / `ExecutionNode`** with `DelegationSpec` on the **child** node ([ADR-FLOW-001](adr/ADR-FLOW-001.md) Option C). `SubtaskContract` supplies objective, scopes, and budget envelope on the child delegation path (FLOW-14/15).
 
-Implementation: R-Delegate (**Done**) for contracts and memory namespace; graph expansion (**Done**, Phase FLOW) in [`intergrax_runtime_architecture.md`](plan/UNIFIED_EXECUTION_RUNTIME.md) · operational narrative [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §13.
+Implementation: R-Delegate (**Done**) for contracts and memory namespace; graph expansion (**Done**, Phase FLOW) in [`plan/UNIFIED_EXECUTION_RUNTIME.md) · operational narrative [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §13.
 
 ```text
 DelegationSpec:
@@ -1651,3 +1651,76 @@ No exceptions without architecture decision record.
 ---
 ---
 
+---
+
+## 42.44 Identity, Trust, and Tenancy
+
+Every execution MUST carry identity, scope, and data boundaries (AUDIT_MAP §4).
+
+### 42.44.1 Identity kinds
+
+| Kind | Examples | Propagation |
+|------|----------|-------------|
+| User | Human operator, API user | `tenant_id`, roles → tool policy |
+| Service | Tier-3 host, worker | `service_identities` on `IdentityProfile` |
+| Agent | `agent_id` on contract | Scoped tool allow-list |
+
+### 42.44.2 Tenancy rules
+
+- `tenant_id` REQUIRED on trace events and policy evaluation for multi-tenant hosts.
+- Subagents MUST NOT inherit unrestricted parent permissions — delegation contracts cap scope.
+- Secrets ONLY via integration secrets backends — never in agent code or manifests.
+
+### 42.44.3 Code map
+
+| Module | Role |
+|--------|------|
+| `fastapi_core/auth/` | API key extraction, request context |
+| `applications/_shared/identity_wiring.py` | Profile → host auth |
+| `runtime/architecture/tenant_security.py` | Tenant isolation verification |
+| `integrations/providers/.../identity_*` | Auth0, Keycloak, WorkOS hosts |
+| `tools/providers/identity/` | `identity.*` tools |
+
+Tier-3 declares posture in `IdentityProfile`; Tier-1 enforces on execution path. **Plan:** [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../plan/UNIFIED_EXECUTION_RUNTIME.md) V-REM-SEC, SEC.
+
+---
+
+## 42.45 Security and Data Governance
+
+Agent-native threats MUST have explicit defenses (AUDIT_MAP §23):
+
+| Threat | Defense module |
+|--------|----------------|
+| Prompt injection | `prompt_security.py` |
+| Tool injection | `tool_security.py` + middleware |
+| Retrieval poisoning | `retrieval_security.py`, `retrieval_security_wiring.py` |
+| Tenant isolation | `tenant_security.py` |
+| Audit trail | Policy + trace on governance-critical actions |
+
+`ApplicationSecurityProfile` (Tier-3) toggles defenses per host. Wiring MUST reach `ToolRuntime` and RAG retrieval path — not documentation-only.
+
+**Authoring:** [`guides/AGENT_CREATION_GUIDE.md` Appendix S](../guides/AGENT_CREATION_GUIDE.md).
+
+---
+
+## 42.46 Cost and Resource Governance
+
+Cost control MUST be enforceable at runtime (AUDIT_MAP §24):
+
+- budget envelopes by tenant / application / agent / model / tool,
+- token and tool quotas,
+- forecast and anomaly signals,
+- optimization recommendations under policy constraints.
+
+| Module | Role |
+|--------|------|
+| `cost_budget.py` | Budget envelopes |
+| `cost_quota.py` | Quotas |
+| `cost_forecast.py` | Forecasting |
+| `cost_optimization.py` | Optimization loops |
+
+`RuntimePolicyBundle.budget` merges into Nexus and UAEP. Observability emits cost signals (see [`OBSERVABILITY.md`](OBSERVABILITY.md)).
+
+**Plan:** [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../plan/UNIFIED_EXECUTION_RUNTIME.md) Phase COST.
+
+---

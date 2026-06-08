@@ -1,4 +1,4 @@
-# Memory and Context Engineering
+﻿# Memory and Context Engineering
 
 **Status:** Canonical architecture · **Phase MEM Done** · **Phase MEM-DEPTH Planned**  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
@@ -535,7 +535,7 @@ See [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) §3.
 
 **FAUDIT-32:** Memory Layer **L2** · Context Engineering **L3** — closeout ≠ full depth.
 
-All implementation tasks: [Phase MEM-DEPTH](plan/MEMORY.md).
+All implementation tasks: [Phase MEM-DEPTH](../plan/MEMORY.md).
 
 ---
 
@@ -548,8 +548,46 @@ All implementation tasks: [Phase MEM-DEPTH](plan/MEMORY.md).
 | [guides/AGENT_CREATION_GUIDE.md Appendix L](guides/AGENT_CREATION_GUIDE.md#appendix-l--context-engineering-control-plane) | Context engineering control plane |
 | [architecture/TOOLS.md](architecture/TOOLS.md) | `memory.*` and `rag.retrieve` tools |
 | [architecture/NEXUS_EXECUTION_FLOW.md](architecture/NEXUS_EXECUTION_FLOW.md) | Runtime turn narrative |
-| [IDEAL_HARNESS_AI_ARCHITECTURE.md §16](IDEAL_HARNESS_AI_ARCHITECTURE.md#16-context-engineering-layer) | Target context compiler vision |
+| [IDEAL_HARNESS_AI_ARCHITECTURE.md §16](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md#16-context-engineering-layer) | Target context compiler vision |
 
 ---
 
 *End of Memory Architecture canon.*
+
+---
+
+## 19. Context Quality Hardening
+
+Context engineering MUST include explicit quality controls (not only token budgeting):
+
+| Control | Mechanism |
+|---------|-----------|
+| Relevance / freshness / confidence | Scoring in context assembly |
+| Duplicate suppression | Context noise controls |
+| Regression benchmarks | `context_regression_benchmark.py` |
+| Lineage | Traceable chain from output evidence → source |
+
+**Code:** `runtime/architecture/context_engineering.py`, `retrieval_effectiveness.py`, `runtime/nexus/context/`.
+
+**Authoring:** [`guides/AGENT_CREATION_GUIDE.md` Appendix L](../guides/AGENT_CREATION_GUIDE.md).
+
+---
+
+## 20. Knowledge Graph and Hybrid Retrieval
+
+Graph-native knowledge evolves from optional enhancement to first-class capability:
+
+- graph RAG support (`intergrax/rag/graph/`),
+- entity–relation semantic modeling,
+- hybrid retrieval: vector + keyword + graph traversal,
+- graph-backed explainability in reasoning traces.
+
+| Module | Role |
+|--------|------|
+| `runtime/architecture/graph_rag.py` | Graph RAG contracts |
+| `hybrid_retrieval.py` | Hybrid strategy |
+| `graph_provenance.py` | Lineage for graph edges |
+
+**Distinction:** Graph RAG indexes **document knowledge** — not user episodic memory (§4). Integration backends (Neo4j, etc.) are catalog providers in [`INTEGRATIONS.md`](INTEGRATIONS.md).
+
+---

@@ -1,4 +1,4 @@
-# Integrations — Architecture and Catalog
+﻿# Integrations — Architecture and Catalog
 
 **Status:** Canonical architecture document
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
@@ -92,7 +92,7 @@ The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular
 | Document | Purpose |
 |----------|---------|
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1 | Architecture canon — tiers, contracts, registry rules |
-| [intergrax_runtime_architecture.md](plan/INTEGRATIONS.md) Phase M | Phase status, backlog, delivery workflow |
+| [plan/INTEGRATIONS.md) Phase M | Phase status, backlog, delivery workflow |
 | [guides/AGENT_CREATION_GUIDE.md](guides/AGENT_CREATION_GUIDE.md) Appendix E | How agents vs applications use integrations |
 | [architecture/TOOLS.md](architecture/TOOLS.md) | Agent-facing tools that compose these integrations |
 | Per-provider guides | `intergrax/integrations/providers/<category>/<slug>/USAGE.md` |
@@ -126,7 +126,7 @@ Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 167 pr
 
 ### M.6 P5 — Harness integration depth (Done — 33/34)
 
-**Register:** [intergrax_runtime_architecture.md — M.6 P5](plan/INTEGRATIONS.md#m6-p5--harness-integration-depth-done--3334) · Band **2ab**
+**Register:** [intergrax_runtime_architecture.md — M.6 P5](../plan/INTEGRATIONS.md#m6-p5--harness-integration-depth-done--3334) · Band **2ab**
 
 | Wave | Focus | Status |
 |------|--------|--------|
@@ -139,11 +139,11 @@ Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 167 pr
 
 **Tier-3 presets (P5):** `harness_metrics_stack()`, `harness_eval_stack()`, `harness_async_stack()`, `harness_ci_stack()` — CLI: `intergrax integrations-pick harness_metrics|harness_eval|harness_async|harness_ci`.
 
-**Deferred:** `trivy` — absorbed into **M.6 P6** [M-P6.1](plan/INTEGRATIONS.md#m6-p6--master-register-32-slugs) (`security_scanner` / **M-P6-CAT.1**).
+**Deferred:** `trivy` — absorbed into **M.6 P6** [M-P6.1](../plan/INTEGRATIONS.md#m6-p6--master-register-32-slugs) (`security_scanner` / **M-P6-CAT.1**).
 
 ### M.6 P6 — Harness integration expansion (Done — 32/32)
 
-**Register:** [intergrax_runtime_architecture.md — M.6 P6](plan/INTEGRATIONS.md#m6-p6--harness-integration-expansion-planned) · Band **2ac** · Queue **[§6.1y](plan/INTEGRATIONS.md#61y-harness-implementation-queue--integration-expansion-m6-p6-planned)**
+**Register:** [intergrax_runtime_architecture.md — M.6 P6](../plan/INTEGRATIONS.md#m6-p6--harness-integration-expansion-planned) · Band **2ac** · Queue **[§6.1y](../plan/INTEGRATIONS.md#61y-harness-implementation-queue--integration-expansion-m6-p6-planned)**
 
 | Wave | Focus | Slugs | Status |
 |------|--------|-------|--------|
@@ -856,7 +856,7 @@ uv run python scripts/generate_integration_usage_docs.py
 4. Add an entry to `scripts/generate_integration_usage_docs.py` and run the generator (English `USAGE.md`).
 5. Update this catalog and the implementation plan tracker.
 
-Delivery checklist: [intergrax_runtime_architecture.md](plan/INTEGRATIONS.md) — Phase M.4 workflow.
+Delivery checklist: [plan/INTEGRATIONS.md) — Phase M.4 workflow.
 
 ---
 

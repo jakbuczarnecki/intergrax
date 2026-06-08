@@ -118,3 +118,53 @@ Agents MUST NOT implement ad-hoc human gates or send approval messages directly.
 
 ---
 
+---
+
+# 33. Reliability Primitives
+
+Reliability is enforced at **graph**, **run**, and **integration** layers.
+
+## 33.1 Idempotency and deduplication
+
+- Side-effectful tools SHOULD accept `idempotency_key` on `ToolRequest` (§42.12).
+- Tier-3 `ReliabilityProfile` enables idempotency stores via integration `key_value_cache` backends.
+- Duplicate intake deduplication uses stable task/run identifiers on `TaskEnvelope`.
+
+## 33.2 Circuit breaker and timeouts
+
+| Layer | Mechanism |
+|-------|-----------|
+| Integration calls | Circuit breaker on provider hosts; wired from `ReliabilityProfile` |
+| LLM adapters | Retry/backoff profiles on `LLMProfile` |
+| Graph steps | `RetryEngine` + `RetryPolicy` (§31.1) |
+| UAEP run | `RuntimeConfig.max_run_retries` |
+
+## 33.3 Checkpoint, resume, compensation
+
+- `RuntimeCheckpoint` captures plan snapshot, graph snapshot, UAEP cursor (§42.9).
+- HITL pause creates `PauseRecord`; resume restores checkpoint.
+- Long-running tasks expose partial results API + scheduler hooks (§26 in [`ORCHESTRATION.md`](ORCHESTRATION.md)).
+
+## 33.4 Error taxonomy (Harness)
+
+| Class | Examples | Typical response |
+|-------|----------|------------------|
+| `UserError` | Invalid input, denied permission | Fail fast, no retry |
+| `PolicyError` | Guardrail violation | DENY / REQUIRE_HUMAN |
+| `DependencyError` | Provider down | Retry + circuit breaker |
+| `RuntimeError` | Timeout, state corruption | Retry run or escalate |
+| `QualityError` | Schema / rubric failure | Retry alternate agent or critic loop |
+
+## 33.5 Code map
+
+| Module | Role |
+|--------|------|
+| `runtime/nexus/retry/retry_engine.py` | Graph-level retry |
+| `runtime/resilience/` | Circuit breaker helpers |
+| `applications/_shared/reliability_wiring.py` | Profile → runtime |
+| `runtime/sandbox/`, `runtime/shadow/` | Isolated risky execution |
+| `runtime/human/` | HITL approval flow (§32, UAEP §42.10) |
+
+**Plan:** [`plan/RELIABILITY_FAILURE_AND_HITL.md`](../plan/RELIABILITY_FAILURE_AND_HITL.md) Phase REL.
+
+---

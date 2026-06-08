@@ -1,4 +1,4 @@
-# Platform Foundation — Tiers, Principles, and Boundaries
+﻿# Platform Foundation — Tiers, Principles, and Boundaries
 
 **Status:** Canonical architecture (decomposed from platform canon)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
@@ -41,7 +41,7 @@ This document is an architectural and implementation guide.
 
 # 1.1 Documentation boundary (platform vs product)
 
-**In scope for this document and for [`intergrax_runtime_architecture.md`](plan/PLATFORM_FOUNDATION.md):**
+**In scope for this document and for [`plan/PLATFORM_FOUNDATION.md):**
 
 - **Intergrax Harness AI / Agent OS** — Tier-0 platform, Tier-1 Nexus runtime, reference Tier-2/Tier-3 wiring patterns, and the **infrastructure** to run agent environments.
 
@@ -54,7 +54,7 @@ This document is an architectural and implementation guide.
 
 Platform docs describe **how to compose** agents and application hosts on the Harness. They do **not** replace product-specific architecture or deployment plans for a given business environment or business agent.
 
-Navigation: [README.md — Documentation index](../README.md#documentation-index) · [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) §Documentation boundary · plan [§4.0a](plan/PLATFORM_FOUNDATION.md#40a-implementation-scope-split-infrastructure-vs-business)
+Navigation: [README.md — Documentation index](../README.md#documentation-index) · [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) §Documentation boundary · plan [§4.0a](../plan/PLATFORM_FOUNDATION.md#40a-implementation-scope-split-infrastructure-vs-business)
 
 ---
 
@@ -545,7 +545,7 @@ Agents MUST NOT call integrations directly. Agents MUST NOT import CV/ML SDKs (`
 | **1 — Skills = tools** | Encode instructions + multi-tool workflows as oversized tools | **Rejected** — breaks atomic LLM function schema, MCP export, risk/idempotency per operation, and external tool ecosystems |
 | **2 — Skill Library** | Fourth layer: Integration → Tool → **Skill** → Agent | **Adopted** — **MVP Done**; importers for external formats (e.g. Cursor `SKILL.md`) after manifest validation |
 
-Implementation tracker: [`intergrax_runtime_architecture.md`](plan/PLATFORM_FOUNDATION.md) Appendix E · catalog [`architecture/SKILLS.md`](architecture/SKILLS.md).
+Implementation tracker: [`plan/PLATFORM_FOUNDATION.md) Appendix E · catalog [`architecture/SKILLS.md`](architecture/SKILLS.md).
 
 ---
 
@@ -955,7 +955,7 @@ bootstrap_catalogs(
 - **Runtime Nexus plugins** (`RuntimePlugin`, `plugin_bootstrap.py`) are a **separate** extensibility plane from Tier-0 catalog plugins.
 - Tool execution observability (trace, scope policy, error mapping) lives in `RuntimeToolInvoker` — not in plugin registration.
 
-Author guide: [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md). Implementation tracker: [`intergrax_runtime_architecture.md`](plan/PLATFORM_FOUNDATION.md) Phase P-Ext + Appendix I.
+Author guide: [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md). Implementation tracker: [`plan/PLATFORM_FOUNDATION.md) Phase P-Ext + Appendix I.
 
 ### 7.1.6 Tool Library — Canonical Catalog
 
@@ -1044,7 +1044,7 @@ Every catalog tool MUST be exportable as:
 
 Single source of truth: `ToolContract` in the catalog — not parallel schema definitions per surface.
 
-**Catalog reference:** [`architecture/TOOLS.md`](architecture/TOOLS.md) — 11 first-party tools **Done** (Phase O.4, 2026-05-30) · Implementation: Phase O in [`intergrax_runtime_architecture.md`](plan/PLATFORM_FOUNDATION.md).
+**Catalog reference:** [`architecture/TOOLS.md`](architecture/TOOLS.md) — 11 first-party tools **Done** (Phase O.4, 2026-05-30) · Implementation: Phase O in [`plan/PLATFORM_FOUNDATION.md).
 
 ### 7.1.7 Unified Tool Model — Everything Is a Tool
 
@@ -1369,7 +1369,7 @@ Extend V-COST envelopes: `inference_ms`, `media_bytes`, `tts_characters`.
 
 #### Implementation tracker
 
-Phase **W-ML** in [`intergrax_runtime_architecture.md`](plan/PLATFORM_FOUNDATION.md). Existing Plane B assets: M.6 (`whisper`, `yt_dlp`), image/audio smart loaders, HF embeddings.
+Phase **W-ML** in [`plan/PLATFORM_FOUNDATION.md). Existing Plane B assets: M.6 (`whisper`, `yt_dlp`), image/audio smart loaders, HF embeddings.
 
 ---
 
@@ -1693,7 +1693,7 @@ The manifest is the **roster contract** (who is mounted). **Instance creation** 
 - Reference: ``AgentBinding.mount(EchoAgent)`` + ``LAB_AGENT_BUILDERS`` keyed by type; ``AgentBinding.mount(LegalAgent, factory=build_legal_agent_from_context)``.
 - `python -m intergrax.scaffold new-application` generates manifest + builders skeleton (Phase N.3).
 
-See [`intergrax_runtime_architecture.md`](plan/PLATFORM_FOUNDATION.md) Phase N for step-by-step delivery.
+See [`plan/PLATFORM_FOUNDATION.md) Phase N for step-by-step delivery.
 
 **Usage guides:** composition engine — [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md); application hosts — [`applications/USAGE.md`](../applications/USAGE.md).
 
@@ -2227,171 +2227,34 @@ This is the core architectural direction of Intergrax.
 
 ---
 
-# 53. Harness Architecture Hardening Addendum (Post-U)
+# 53. Harness Architecture Hardening Index
 
-This section formalizes post-U hardening required to align Intergrax with the
-ideal Harness AI architecture while staying in harness-only scope (no business-agent expansion).
+Post-U hardening topics are **owned by domain pairs** (architecture + plan), not this file.
 
-Implementation baseline (Phase V V1):
+| Topic | Architecture | Plan |
+|-------|--------------|------|
+| Capability graph | [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §19 | [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) |
+| Agent lifecycle governance | [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §20 | same |
+| Prompt registry | [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §17 | same |
+| Registry snapshots / assembly | [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §18 | same |
+| Context quality | [`MEMORY.md`](MEMORY.md) §19 | [`plan/MEMORY.md`](../plan/MEMORY.md) |
+| Knowledge graph / hybrid retrieval | [`MEMORY.md`](MEMORY.md) §20 · [`INTEGRATIONS.md`](INTEGRATIONS.md) | [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) |
+| Evaluation operations | [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) §42 | [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
+| Architecture metrics / debt | [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) §43 | same |
+| Security / tenant isolation | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.45–§42.46 | [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../plan/UNIFIED_EXECUTION_RUNTIME.md) |
+| Cost governance | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.47 | same |
+| Identity / trust / tenancy | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.44 | same |
+| Multi-agent coordination patterns | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §27 | [`plan/NEXUS_EXECUTION_FLOW.md`](../plan/NEXUS_EXECUTION_FLOW.md) |
+| Modality plane | [`MODALITY.md`](MODALITY.md) | [`plan/MODALITY.md`](../plan/MODALITY.md) |
 
-- typed contracts in `intergrax/runtime/architecture/` (`capability_graph.py`, `architecture_metrics.py`, `agent_certification.py`)
-- report-only artifact generator: `scripts/phase_v_foundations_report.py`
-- V-CG guard baseline: `capability_graph_lineage.py`, `capability_graph_compatibility.py`, `scripts/phase_v_capability_graph_guard.py`
-- governance baseline: `architecture_metrics_pipeline.py`, `agent_promotion.py`, `evaluation_modes.py`, `scripts/phase_v_governance_report.py`
-- lifecycle/eval assets baseline: `agent_lifecycle_governance.py`, `production_ownership.py`, `evaluation_assets.py`
-- eval automation and coverage baseline: `evaluation_automation.py`, `architecture_coverage.py`
-- ops maturity baseline: `debt_governance.py`, `evaluation_registry_trends.py`
-- security hardening baseline: `prompt_security.py`, `tool_security.py`
-- security isolation baseline: `retrieval_security.py`, `tenant_security.py`
-- cost governance baseline: `cost_budget.py`, `cost_quota.py`, `cost_forecast.py`, `cost_optimization.py`
-- context/prompt quality baseline: `context_engineering.py`, `prompt_registry_governance.py`, `prompt_composition.py`
-- context/prompt maturity baseline: `context_regression_benchmark.py`, `retrieval_effectiveness.py`, `prompt_policy_overlay.py`, `prompt_regression_suite.py`
-- multi-agent and graph-rag baseline: `multi_agent_coordination.py`, `multi_agent_acceptance.py`, `graph_rag.py`, `hybrid_retrieval.py`, `graph_provenance.py`
-- L4 adaptive and maturity closeout baseline: `adaptive_governance.py`, `maturity_gate_evidence.py`, `scripts/phase_v_closeout_gate.py`
-- modality plane baseline (W-ML): `intergrax/model_inference/` (OpenCV/Ultralytics/stub vision, Celery/thread-pool execution, harness bootstrap), `applications/lab_application/host/tool_wiring.py` (harness modality tools), `runtime/modality/modality_profile.py`, `runtime/observability/modality_metrics.py` + `modality_tool_trace.py`, tools `speech.*`, `vision.*`, `ml.*`, `runtime/architecture/runtime_governance_bridge.py`
-
-## 53.1 Strategic objective lock (harness-first)
-
-Intergrax MUST continue to treat the harness runtime as the durable product.
-Tier-2 business agents remain replaceable consumers of the runtime.
-
-Canonical relationship:
+**Harness-first lock (normative):**
 
 ```text
 Harness -> Runtime -> Agents -> Applications -> Products
 ```
 
-This model is normative for architecture decisions and implementation planning.
+Business-agent work (K.1/K.2, product apps) remains deferred until explicit product reprioritization — see [`plan/PLATFORM_FOUNDATION.md`](../plan/PLATFORM_FOUNDATION.md) §6.3.
 
-## 53.2 Capability graph architecture
-
-Registries and capability layers MUST be represented as a dependency graph:
-
-```text
-Integration -> Tool -> Skill -> Policy -> Agent -> Application -> Product
-```
-
-Minimum requirements:
-
-- typed node and edge taxonomy,
-- dependency lineage and provenance,
-- blast-radius impact analysis for version/policy/runtime changes,
-- compatibility validation executed on graph edges before release.
-
-## 53.3 Agent lifecycle governance
-
-Beyond contract shape (§12) and registry metadata (§15), every agent lifecycle MUST include:
-
-- certification gates (quality + policy + security),
-- promotion flow (dev -> staging -> production),
-- deprecation policy with migration windows,
-- retirement contract with rollback/archive semantics,
-- explicit owner and operational escalation path.
-
-## 53.4 Context quality hardening
-
-Context engineering (§28.1) MUST include explicit quality controls:
-
-- relevance/freshness/confidence scoring,
-- duplicate suppression and context-noise controls,
-- regression benchmarking for retrieval/context assembly,
-- traceable context-lineage chain from output evidence to source.
-
-## 53.5 Prompt engineering architecture
-
-Prompt artifacts MUST be treated as governed platform assets:
-
-- prompt registry ownership and versioning,
-- composable prompt layers (system/task/policy/context),
-- deterministic policy injection overlays,
-- prompt regression tests and change governance.
-
-## 53.6 Evaluation and benchmarking operations
-
-Evaluation MUST operate as a first-class runtime subsystem:
-
-- offline + online + shadow + human evaluation modes,
-- golden datasets and scenario regression suites,
-- rule-based and LLM-judge evaluators,
-- evaluation registry with score history, trend analysis, and release comparisons.
-
-## 53.7 Architecture metrics and debt governance
-
-Architecture health MUST be measured, not inferred.
-
-Minimum metric families:
-
-- modularity and coupling indicators,
-- dependency graph health and incompatibility rate,
-- observability and governance coverage,
-- policy/context/prompt/test critical-path coverage,
-- architecture debt index with trend tracking.
-
-## 53.8 Security and data-governance hardening
-
-Security controls MUST include explicit defenses for agent-native threats:
-
-- prompt injection defense,
-- tool injection defense,
-- retrieval poisoning defense,
-- tenant isolation verification,
-- immutable auditability for governance-critical actions.
-
-## 53.9 Cost and resource governance
-
-Cost control MUST be enforceable at runtime and observable at operations level:
-
-- budget envelopes by tenant/application/agent/model/tool,
-- token and tool quotas,
-- forecast and anomaly detection,
-- optimization loops with policy constraints.
-
-## 53.10 Multi-agent coordination model catalog
-
-Intergrax MUST support explicit coordination patterns with selection criteria:
-
-- hierarchical,
-- orchestrator-worker,
-- supervisor-worker,
-- peer-to-peer,
-- evaluator-loop / critique-revise.
-
-Pattern choice MUST be policy-aware and justified by task complexity, risk, latency, and cost.
-
-## 53.11 Knowledge graph evolution path
-
-Graph-native knowledge should evolve from optional retrieval enhancement to
-first-class capability:
-
-- graph RAG support,
-- entity-relation semantic modeling,
-- hybrid retrieval (vector + keyword + graph),
-- graph-backed explainability in reasoning traces.
-
-## 53.12 Architecture hardening policy
-
-Changes introduced by this section are harness-platform scope only and MUST be
-implemented through Tier-0/Tier-1/Tier-3 reusable mechanisms.
-
-Business-agent work (K.1/K.2, product apps, domain skills) remains deferred
-until explicit product reprioritization in the implementation plan.
-
-## 53.13 Model & modality plane (vision, audio, classical ML)
-
-Harness evolution after Phase U includes a **documented and extensible modality
-architecture** (canon §7.1.9, [`architecture/MODALITY.md`](architecture/MODALITY.md)):
-
-- **Plane A** — generative multimodal LLM via `llm_adapters/` only.
-- **Plane B** — media ingest and embeddings via RAG + `document_parser` (partially shipped).
-- **Plane C** — dedicated vision inference (YOLO, ONNX, OpenVINO, TensorRT, remote
-  serving) and classical ML via `model_inference/` registry + atomic tools.
-
-Implementation is tracked in **Phase W-ML** (documentation first, then registry and
-tools). New integration categories (`speech_provider`, `vision_serving`,
-`ml_inference_host`) require §5.2.4 approval before catalog registration.
-
-Agents and product teams MUST use **ToolRuntime** for all Plane B/C effects; Tier-2
-code MUST NOT import CV/ML vendor SDKs when a catalog path exists.
+**Phase V implementation baseline** (code modules, not duplicated here): `intergrax/runtime/architecture/` — capability graph, lifecycle, eval, security, cost, context/prompt quality, graph RAG helpers. Traceability: [`plan/PLATFORM_FOUNDATION.md`](../plan/PLATFORM_FOUNDATION.md) Phase V / FAUDIT-32.
 
 ---
-

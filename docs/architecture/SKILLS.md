@@ -1,4 +1,4 @@
-# Intergrax Skill Library
+﻿# Intergrax Skill Library
 
 **Status:** Canonical architecture document
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
@@ -10,7 +10,7 @@
 
 **Last updated:** 2026-06-02 · Phase R MVP **Done** · Phase S platform `harness.*` bundle **Done** · Phase V hardening alignment
 
-Composable **capability packs** between the [Tool Library](architecture/TOOLS.md) and Tier-2 agents. Canon: [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.8 · Harness terms: §5.3 · Modality tools (`vision.*`, `speech.*`, `ml.*`): [architecture/MODALITY.md](architecture/MODALITY.md) §7.1.9 · Tracker: [intergrax_runtime_architecture.md](plan/SKILLS.md) Appendix E + Phase V (`V-PE.*`, `V-EVAL.*`) + Phase W-ML.
+Composable **capability packs** between the [Tool Library](architecture/TOOLS.md) and Tier-2 agents. Canon: [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.8 · Harness terms: §5.3 · Modality tools (`vision.*`, `speech.*`, `ml.*`): [architecture/MODALITY.md](architecture/MODALITY.md) §7.1.9 · Tracker: [plan/SKILLS.md) Appendix E + Phase V (`V-PE.*`, `V-EVAL.*`) + Phase W-ML.
 
 ---
 
