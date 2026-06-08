@@ -17,3 +17,15 @@ STORAGE_ARTIFACT_SYNC = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("storage", "artifact", "sync"),
 )
+
+STORAGE_OBJECT_LIFECYCLE = SkillManifest(
+    skill_id="storage.object_lifecycle",
+    version="1.0.0",
+    description="Object storage lifecycle: exists check, presigned URLs, and delete.",
+    tool_ids=("storage.exists", "storage.presigned_url", "storage.delete"),
+    prompt_instruction_ids=("storage.object_lifecycle.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.HIGH,
+    tags=("storage", "lifecycle", "object"),
+)
+

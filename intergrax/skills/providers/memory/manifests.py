@@ -34,3 +34,15 @@ MEMORY_LTM_CURATOR = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("memory", "ltm", "facts"),
 )
+
+MEMORY_SEMANTIC_SEARCH = SkillManifest(
+    skill_id="memory.semantic_search",
+    version="1.0.0",
+    description="Semantic memory search across session memory and LTM index.",
+    tool_ids=("memory.search", "memory.read", "ltm.search"),
+    prompt_instruction_ids=("memory.semantic_search.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("memory", "semantic", "search"),
+)
+

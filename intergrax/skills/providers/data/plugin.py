@@ -3,11 +3,21 @@
 from __future__ import annotations
 
 from intergrax.skills.core.manifest import SkillBundleManifest
-from intergrax.skills.providers.data.manifests import DATA_RECORDS_QUERY, DATA_SQL_ANALYST
+from intergrax.skills.providers.data.manifests import (
+    DATA_SQL_ANALYST,
+    DATA_RECORDS_QUERY,
+    DATA_SQL_MUTATOR,
+    DATA_RECORDS_ADMIN,
+)
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
 
-_DATA_MANIFESTS = (DATA_SQL_ANALYST, DATA_RECORDS_QUERY)
+_DATA_MANIFESTS = (
+    DATA_SQL_ANALYST,
+    DATA_RECORDS_QUERY,
+    DATA_SQL_MUTATOR,
+    DATA_RECORDS_ADMIN,
+)
 
 
 class DataSkillPlugin:
@@ -17,7 +27,7 @@ class DataSkillPlugin:
             bundle_id="data",
             skill_ids=tuple(m.skill_id for m in _DATA_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Data analyst skill packs",
+            description="Data analyst skill packs (SK-EXP4)",
         )
 
     @classmethod

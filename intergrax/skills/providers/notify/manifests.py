@@ -17,3 +17,15 @@ NOTIFY_SCHEDULED_ALERTS = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("notify", "schedule", "alerts"),
 )
+
+NOTIFY_BATCH_DISPATCH = SkillManifest(
+    skill_id="notify.batch_dispatch",
+    version="1.0.0",
+    description="Batch notification dispatch with due scheduling and pending list.",
+    tool_ids=("notify.send_batch", "notify.dispatch_due", "notify.list_scheduled"),
+    prompt_instruction_ids=("notify.batch_dispatch.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("notify", "batch", "dispatch"),
+)
+

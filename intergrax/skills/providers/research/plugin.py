@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from intergrax.skills.core.manifest import SkillBundleManifest
 from intergrax.skills.providers.research.manifests import (
-    RESEARCH_CITATION_SYNTHESIS,
     RESEARCH_LITERATURE_SCAN,
     RESEARCH_WEB_EVIDENCE,
+    RESEARCH_CITATION_SYNTHESIS,
+    RESEARCH_WEB_CACHE_ADMIN,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -15,6 +16,7 @@ _RESEARCH_MANIFESTS = (
     RESEARCH_LITERATURE_SCAN,
     RESEARCH_WEB_EVIDENCE,
     RESEARCH_CITATION_SYNTHESIS,
+    RESEARCH_WEB_CACHE_ADMIN,
 )
 
 
@@ -25,7 +27,7 @@ class ResearchSkillPlugin:
             bundle_id="research",
             skill_ids=tuple(m.skill_id for m in _RESEARCH_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Research domain skill packs",
+            description="Research domain skill packs (SK-EXP4)",
         )
 
     @classmethod

@@ -171,3 +171,53 @@ def billing_skill_profile() -> SkillProfile:
 def metrics_skill_profile() -> SkillProfile:
     """Runtime metrics with trace correlation."""
     return SkillProfile(enabled_bundles=["metrics", "ops"])
+
+
+def catalog_skill_profile() -> SkillProfile:
+    """Tool catalog introspection and skill resolution."""
+    return SkillProfile(enabled_bundles=["catalog", "agent"])
+
+
+def interaction_skill_profile() -> SkillProfile:
+    """User interaction session handling and input capture."""
+    return SkillProfile(enabled_bundles=["interaction", "memory"])
+
+
+def ml_skill_profile() -> SkillProfile:
+    """ML predict/explain pipelines for lab hosts."""
+    return SkillProfile(enabled_bundles=["ml", "modality"])
+
+
+def openai_skill_profile() -> SkillProfile:
+    """OpenAI vector store admin and file_search."""
+    return SkillProfile(enabled_bundles=["openai", "knowledge"])
+
+
+def http_skill_profile() -> SkillProfile:
+    """HTTP API client with observability correlation."""
+    return SkillProfile(enabled_bundles=["http", "ops"])
+
+
+def jira_skill_profile() -> SkillProfile:
+    """Jira-native task navigation complementing generic dev bundle."""
+    return SkillProfile(enabled_bundles=["jira", "dev"])
+
+
+def gitlab_skill_profile() -> SkillProfile:
+    """GitLab issue creation complementing generic dev bundle."""
+    return SkillProfile(enabled_bundles=["gitlab", "dev"])
+
+
+def code_skill_profile() -> SkillProfile:
+    """Controlled code/script execution with sandbox listing."""
+    return SkillProfile(enabled_bundles=["code", "sandbox"])
+
+
+def filesystem_skill_profile() -> SkillProfile:
+    """Local filesystem IO for trusted operator hosts only."""
+    return SkillProfile(enabled_bundles=["filesystem"])
+
+
+def cloud_platform_skill_profile() -> SkillProfile:
+    """Cloud platform resolution and health checks."""
+    return SkillProfile(enabled_bundles=["cloud_platform", "health"])

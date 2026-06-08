@@ -4,14 +4,20 @@ from __future__ import annotations
 
 from intergrax.skills.core.manifest import SkillBundleManifest
 from intergrax.skills.providers.memory.manifests import (
-    MEMORY_LTM_CURATOR,
-    MEMORY_SESSION_CLEANUP,
     MEMORY_TASK_SCRATCHPAD,
+    MEMORY_SESSION_CLEANUP,
+    MEMORY_LTM_CURATOR,
+    MEMORY_SEMANTIC_SEARCH,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
 
-_MEMORY_MANIFESTS = (MEMORY_TASK_SCRATCHPAD, MEMORY_SESSION_CLEANUP, MEMORY_LTM_CURATOR)
+_MEMORY_MANIFESTS = (
+    MEMORY_TASK_SCRATCHPAD,
+    MEMORY_SESSION_CLEANUP,
+    MEMORY_LTM_CURATOR,
+    MEMORY_SEMANTIC_SEARCH,
+)
 
 
 class MemorySkillPlugin:
@@ -21,7 +27,7 @@ class MemorySkillPlugin:
             bundle_id="memory",
             skill_ids=tuple(m.skill_id for m in _MEMORY_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Task memory skill packs",
+            description="Task memory skill packs (SK-EXP4)",
         )
 
     @classmethod

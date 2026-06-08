@@ -26,3 +26,15 @@ KNOWLEDGE_WIKI_NAVIGATOR = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("knowledge", "wiki", "confluence"),
 )
+
+KNOWLEDGE_CONFLUENCE_NAVIGATOR = SkillManifest(
+    skill_id="knowledge.confluence_navigator",
+    version="1.0.0",
+    description="Confluence deep navigation: get page, search pages, and cross-search.",
+    tool_ids=("confluence.get_page", "confluence.search_pages", "confluence.search"),
+    prompt_instruction_ids=("knowledge.confluence_navigator.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("knowledge", "confluence", "navigator"),
+)
+

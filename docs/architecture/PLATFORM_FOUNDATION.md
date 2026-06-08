@@ -1063,7 +1063,7 @@ Agent / planner
 **Status:** Architecture **defined**; implementation **MVP Done** (Phase R, 2026-06-01).  
 **Catalog:** [`architecture/SKILLS.md`](architecture/SKILLS.md) · **Harness AI terms:** §5.3 (this document).
 
-**First-party catalog (2026-06-08):** **69** skills · **31** bundles — full table in [`architecture/SKILLS.md`](architecture/SKILLS.md#first-party-catalog-69-skills--31-bundles). Product-facing examples:
+**First-party catalog (2026-06-08):** **99** skills · **41** bundles — full table in [`architecture/SKILLS.md`](architecture/SKILLS.md#first-party-catalog-99-skills--41-bundles). Product-facing examples:
 
 | skill_id | Bundle | Typical agent |
 |----------|--------|---------------|

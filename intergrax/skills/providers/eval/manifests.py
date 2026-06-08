@@ -34,3 +34,15 @@ EVAL_RELEASE_COMPARE = SkillManifest(
     risk_tier=SkillRiskTier.LOW,
     tags=("eval", "release", "compare"),
 )
+
+EVAL_OBSERVATION_BROWSER = SkillManifest(
+    skill_id="eval.observation_browser",
+    version="1.0.0",
+    description="Eval observation browser: list observations, record new, and correlate traces.",
+    tool_ids=("eval.list_observations", "eval.record_observation", "observability.query_traces"),
+    prompt_instruction_ids=("eval.observation_browser.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("eval", "observations", "browser"),
+)
+

@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from intergrax.skills.core.manifest import SkillBundleManifest
 from intergrax.skills.providers.platform.manifests import (
-    PLATFORM_CICD_INSPECTOR,
     PLATFORM_CONCIERGE,
     PLATFORM_SECRETS_FLAGS,
+    PLATFORM_CICD_INSPECTOR,
+    PLATFORM_SECRET_ADMIN,
+    PLATFORM_WORKFLOW_CANCEL,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -15,6 +17,8 @@ _PLATFORM_MANIFESTS = (
     PLATFORM_CONCIERGE,
     PLATFORM_SECRETS_FLAGS,
     PLATFORM_CICD_INSPECTOR,
+    PLATFORM_SECRET_ADMIN,
+    PLATFORM_WORKFLOW_CANCEL,
 )
 
 
@@ -25,7 +29,7 @@ class PlatformSkillPlugin:
             bundle_id="platform",
             skill_ids=tuple(m.skill_id for m in _PLATFORM_MANIFESTS),
             status=SkillBundleStatus.STABLE,
-            description="Platform hub and control-plane skill packs",
+            description="Platform hub and control-plane skill packs (SK-EXP4)",
         )
 
     @classmethod

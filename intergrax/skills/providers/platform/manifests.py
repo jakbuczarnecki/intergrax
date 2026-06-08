@@ -40,3 +40,27 @@ PLATFORM_CICD_INSPECTOR = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("platform", "cicd", "inspector"),
 )
+
+PLATFORM_SECRET_ADMIN = SkillManifest(
+    skill_id="platform.secret_admin",
+    version="1.0.0",
+    description="Secret lifecycle admin: put, delete, and get runtime secrets.",
+    tool_ids=("platform.put_secret", "platform.delete_secret", "platform.get_secret"),
+    prompt_instruction_ids=("platform.secret_admin.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.HIGH,
+    tags=("platform", "secrets", "admin"),
+)
+
+
+PLATFORM_WORKFLOW_CANCEL = SkillManifest(
+    skill_id="platform.workflow_cancel",
+    version="1.0.0",
+    description="CI workflow cancellation: cancel run, fetch details, list runs.",
+    tool_ids=("platform.cancel_workflow_run", "platform.get_workflow_run", "platform.list_workflow_runs"),
+    prompt_instruction_ids=("platform.workflow_cancel.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.HIGH,
+    tags=("platform", "workflow", "cancel"),
+)
+

@@ -6,7 +6,7 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**Last updated:** 2026-06-08 — SK-EXP + SK-EXP2 + SK-EXP3 **Done** (69 skills · 31 bundles); SK-BRIDGE.* residual.
+**Last updated:** 2026-06-08 — SK-EXP through SK-EXP4 **Done** (99 skills · 41 bundles); SK-BRIDGE.* residual.
 
 ---
 
@@ -14,7 +14,7 @@
 
 **Purpose:** Tier-0 skill packs for agent and Tier-3 authors. **Closed 2026-06-08** — SK-EXP + SK-EXP2 + SK-EXP3 + SK-PRESET.1/2/3 **Done**. Residual: **SK-BRIDGE.*** (prompt/policy runtime merge). **Not** Band 3 business agents (K.1/K.2).
 
-**Catalog:** **69** skills · **31** bundles — see [`architecture/SKILLS.md`](../architecture/SKILLS.md#first-party-catalog-69-skills--31-bundles).
+**Catalog:** **99** skills · **41** bundles — see [`architecture/SKILLS.md`](../architecture/SKILLS.md#first-party-catalog-99-skills--41-bundles).
 
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
@@ -34,8 +34,12 @@
 | 13 | **SK-EXP3-P1** | Code | **Done** | Wave P1 — 7 eval/RAG/ops extension packs | Same |
 | 14 | **SK-EXP3-P2** | Code | **Done** | Wave P2 — 6 domain/productivity packs | Same |
 | 15 | **SK-PRESET.3** | Code | **Done** | SK-EXP3 presets in `skill_wiring.py` | `cost_skill_profile`, `metrics_skill_profile`, … |
+| 16 | **SK-EXP4-P0** | Code | **Done** | Wave P0 — 11 platform/integration packs | `test_sk_exp4_skill_bundles.py` |
+| 17 | **SK-EXP4-P1** | Code | **Done** | Wave P1 — 10 eval/harness/ops extension packs | Same |
+| 18 | **SK-EXP4-P2** | Code | **Done** | Wave P2 — 9 domain/destructive-admin packs | Same |
+| 19 | **SK-PRESET.4** | Code | **Done** | SK-EXP4 presets in `skill_wiring.py` | `catalog_skill_profile`, `interaction_skill_profile`, … |
 
-**Suggested PR order (complete):** SK-EXP → SK-EXP2 → SK-EXP3 → SK-PRESET.1/2/3. **SK-BRIDGE.*** optional follow-up.
+**Suggested PR order (complete):** SK-EXP → SK-EXP4 → SK-PRESET.1–4. **SK-BRIDGE.*** optional follow-up.
 
 **Explicitly excluded:** K.1, K.2, new Tier-2 agents, workflow-sized fake tools, unvalidated filesystem skill discovery.
 
@@ -204,6 +208,59 @@ Third wave: platform governance (cost, identity, health, context), eval/RAG dept
 | SK3-P2.5 | `collaboration.thread_reply` | `collaboration` | **Done** |
 | SK3-P2.6 | `ops.findings_review` | `ops` | **Done** |
 
+#### SK-EXP4 — Proposed skill register (30 packs)
+
+Fourth wave: close remaining tool-catalog gaps — catalog introspection, interaction, vendor-specific trackers (Jira/GitLab), harness run ops, destructive admin paths. **10 new bundles** + **15 extended bundles**.
+
+**Wave P0 — Platform integration (11 packs)**
+
+| ID | skill_id | Bundle | Value |
+|----|----------|--------|-------|
+| SK4-P0.1 | `catalog.tool_introspect` | `catalog` | Tool catalog discovery + skill.resolve |
+| SK4-P0.2 | `cloud_platform.resolver` | `cloud_platform` | Cloud endpoint resolution |
+| SK4-P0.3 | `code.runner` | `code` | Script/code exec with sandbox listing |
+| SK4-P0.4 | `filesystem.local_io` | `filesystem` | Trusted-host local filesystem IO |
+| SK4-P0.5 | `http.api_client` | `http` | Outbound HTTP with observability |
+| SK4-P0.6 | `interaction.session_handler` | `interaction` | User session list/history/reply |
+| SK4-P0.7 | `interaction.input_capture` | `interaction` | Last input capture + memory write |
+| SK4-P0.8 | `jira.task_navigator` | `jira` | Native Jira task navigation |
+| SK4-P0.9 | `gitlab.issue_creator` | `gitlab` | GitLab issue create loop |
+| SK4-P0.10 | `ml.explain_predict` | `ml` | ML predict + explain |
+| SK4-P0.11 | `openai.vector_admin` | `openai` | OpenAI vector store lifecycle |
+
+**Wave P1 — Harness, eval, ops depth (10 packs)**
+
+| ID | skill_id | Bundle | Value |
+|----|----------|--------|-------|
+| SK4-P1.1 | `browser.interactive_run` | `browser` | Interactive browser automation |
+| SK4-P1.2 | `cache.key_admin` | `cache` | Cache key list/delete admin |
+| SK4-P1.3 | `knowledge.confluence_navigator` | `knowledge` | Confluence page deep nav |
+| SK4-P1.4 | `eval.observation_browser` | `eval` | Eval observation listing |
+| SK4-P1.5 | `harness.run_comparator` | `harness` | Compare harness runs |
+| SK4-P1.6 | `harness.run_exporter` | `harness` | Export run bundles |
+| SK4-P1.7 | `health.full_stack_probe` | `health` | Multi-backend health sweep |
+| SK4-P1.8 | `ops.log_tail` | `ops` | Live log tail + search |
+| SK4-P1.9 | `memory.semantic_search` | `memory` | Semantic memory + LTM search |
+| SK4-P1.10 | `notify.batch_dispatch` | `notify` | Batch + due notification dispatch |
+
+**Wave P2 — Destructive admin + domain (9 packs)**
+
+| ID | skill_id | Bundle | Value |
+|----|----------|--------|-------|
+| SK4-P2.1 | `data.sql_mutator` | `data` | SQL execute (mutations) |
+| SK4-P2.2 | `data.records_admin` | `data` | Records put/delete/count |
+| SK4-P2.3 | `ops.incident_ack` | `ops` | PagerDuty acknowledge loop |
+| SK4-P2.4 | `platform.secret_admin` | `platform` | Secret put/delete admin |
+| SK4-P2.5 | `platform.workflow_cancel` | `platform` | CI workflow cancellation |
+| SK4-P2.6 | `storage.object_lifecycle` | `storage` | Object delete/presigned URL |
+| SK4-P2.7 | `vector_store.purge` | `vector_store` | Vector delete/purge |
+| SK4-P2.8 | `modality.vision_segment` | `modality` | Vision segmentation pipeline |
+| SK4-P2.9 | `research.web_cache_admin` | `research` | Web search cache invalidation |
+
+#### SK-EXP4 — Master register (shipped)
+
+All 30 rows **Done** — see [`architecture/SKILLS.md`](../architecture/SKILLS.md#first-party-catalog-99-skills--41-bundles).
+
 #### SK-EXP — Master register (shipped)
 
 | ID | skill_id | Bundle | Status |
@@ -238,6 +295,8 @@ Third wave: platform governance (cost, identity, health, context), eval/RAG dept
 | 2026-06-08 | SK-DOC.3 | Per-skill `USAGE.md` for SK-EXP2 (18 files); gate count 49 |
 | 2026-06-08 | SK-EXP3-P0–P2, SK-PRESET.3 | 20 skill packs + 9 new bundles; 69 total skills; `test_sk_exp3_skill_bundles.py`; SK-EXP3 presets in `skill_wiring.py` |
 | 2026-06-08 | SK-DOC.4 | Per-skill `USAGE.md` for SK-EXP3 (20 files); gate count 69 |
+| 2026-06-08 | SK-EXP4-P0–P2, SK-PRESET.4 | 30 skill packs + 10 new bundles; 99 total skills; `test_sk_exp4_skill_bundles.py` |
+| 2026-06-08 | SK-DOC.5 | Per-skill `USAGE.md` for SK-EXP4 (30 files); gate count 99 |
 
 ---
 

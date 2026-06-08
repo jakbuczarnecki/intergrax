@@ -34,3 +34,15 @@ RESEARCH_CITATION_SYNTHESIS = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("research", "citation", "synthesis"),
 )
+
+RESEARCH_WEB_CACHE_ADMIN = SkillManifest(
+    skill_id="research.web_cache_admin",
+    version="1.0.0",
+    description="Web search cache admin: invalidate cache, query, and batch fetch.",
+    tool_ids=("websearch.invalidate_cache", "websearch.query", "websearch.fetch_batch"),
+    prompt_instruction_ids=("research.web_cache_admin.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.LOW,
+    tags=("research", "web", "cache"),
+)
+

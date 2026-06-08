@@ -67,3 +67,27 @@ OPS_FINDINGS_REVIEW = SkillManifest(
     risk_tier=SkillRiskTier.HIGH,
     tags=("ops", "security", "findings"),
 )
+
+OPS_LOG_TAIL = SkillManifest(
+    skill_id="ops.log_tail",
+    version="1.0.0",
+    description="Live log tailing with search and error capture for incident response.",
+    tool_ids=("logs.tail", "logs.search", "errors.capture"),
+    prompt_instruction_ids=("ops.log_tail.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("ops", "logs", "tail"),
+)
+
+
+OPS_INCIDENT_ACK = SkillManifest(
+    skill_id="ops.incident_ack",
+    version="1.0.0",
+    description="PagerDuty incident acknowledge with trigger and notify escalation path.",
+    tool_ids=("pagerduty.acknowledge_incident", "pagerduty.trigger_incident", "notify.send"),
+    prompt_instruction_ids=("ops.incident_ack.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.HIGH,
+    tags=("ops", "incident", "pagerduty"),
+)
+

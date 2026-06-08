@@ -3,11 +3,19 @@
 from __future__ import annotations
 
 from intergrax.skills.core.manifest import SkillBundleManifest
-from intergrax.skills.providers.modality.manifests import MODALITY_SPEECH_IO, MODALITY_VISION_OCR
+from intergrax.skills.providers.modality.manifests import (
+    MODALITY_SPEECH_IO,
+    MODALITY_VISION_OCR,
+    MODALITY_VISION_SEGMENT,
+)
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
 
-_MODALITY_MANIFESTS = (MODALITY_SPEECH_IO, MODALITY_VISION_OCR)
+_MODALITY_MANIFESTS = (
+    MODALITY_SPEECH_IO,
+    MODALITY_VISION_OCR,
+    MODALITY_VISION_SEGMENT,
+)
 
 
 class ModalitySkillPlugin:

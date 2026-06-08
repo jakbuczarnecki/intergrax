@@ -23,3 +23,15 @@ MODALITY_VISION_OCR = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("modality", "vision", "ocr"),
 )
+
+MODALITY_VISION_SEGMENT = SkillManifest(
+    skill_id="modality.vision_segment",
+    version="1.0.0",
+    description="Vision segmentation pipeline: segment regions, detect, and OCR.",
+    tool_ids=("vision.segment", "vision.detect", "vision.ocr_regions"),
+    prompt_instruction_ids=("modality.vision_segment.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("modality", "vision", "segment"),
+)
+

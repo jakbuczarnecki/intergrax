@@ -3,9 +3,17 @@
 from __future__ import annotations
 
 from intergrax.skills.core.manifest import SkillBundleManifest
-from intergrax.skills.providers.health.manifests import HEALTH_INTEGRATION_PROBE
+from intergrax.skills.providers.health.manifests import (
+    HEALTH_INTEGRATION_PROBE,
+    HEALTH_FULL_STACK_PROBE,
+)
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
+
+_HEALTH_MANIFESTS = (
+    HEALTH_INTEGRATION_PROBE,
+    HEALTH_FULL_STACK_PROBE,
+)
 
 
 class HealthSkillPlugin:
@@ -13,15 +21,16 @@ class HealthSkillPlugin:
     def skill_bundle_manifest(cls) -> SkillBundleManifest:
         return SkillBundleManifest(
             bundle_id="health",
-            skill_ids=(HEALTH_INTEGRATION_PROBE.skill_id,),
+            skill_ids=tuple(m.skill_id for m in _HEALTH_MANIFESTS),
             status=SkillBundleStatus.STABLE,
             description="Integration health probe skill packs (SK-EXP3)",
         )
 
     @classmethod
     def skill_manifests(cls) -> tuple:
-        return (HEALTH_INTEGRATION_PROBE,)
+        return _HEALTH_MANIFESTS
 
     @classmethod
     def register_skills(cls, registry: SkillRegistry) -> None:
-        registry.register(HEALTH_INTEGRATION_PROBE)
+        for manifest in _HEALTH_MANIFESTS:
+            registry.register(manifest)

@@ -23,3 +23,27 @@ DATA_RECORDS_QUERY = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("data", "records", "document_store"),
 )
+
+DATA_SQL_MUTATOR = SkillManifest(
+    skill_id="data.sql_mutator",
+    version="1.0.0",
+    description="SQL mutation runner: execute statements with schema guard and query fallback.",
+    tool_ids=("database.execute", "database.describe_schema", "database.query"),
+    prompt_instruction_ids=("data.sql_mutator.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.HIGH,
+    tags=("data", "sql", "mutator"),
+)
+
+
+DATA_RECORDS_ADMIN = SkillManifest(
+    skill_id="data.records_admin",
+    version="1.0.0",
+    description="Records store admin: put, delete, and count documents.",
+    tool_ids=("records.put", "records.delete", "records.count"),
+    prompt_instruction_ids=("data.records_admin.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.HIGH,
+    tags=("data", "records", "admin"),
+)
+

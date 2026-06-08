@@ -1,7 +1,7 @@
 # Skills
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Last updated:** 2026-06-08 — SK-EXP + SK-EXP2 + SK-EXP3 shipped; **69** skills · **31** bundles  
+**Last updated:** 2026-06-08 — SK-EXP through SK-EXP4 shipped; **99** skills · **41** bundles  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Plan (1:1):** [`plan/SKILLS.md`](../plan/SKILLS.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
@@ -62,7 +62,7 @@ Agent bind time (Tier-1)
 | Tool auto-enable | `applications/_shared/skill_tool_profile.py` | `extend_tool_profile_for_skills()` |
 | Runtime snapshot | `applications/_shared/catalog_runtime_bridge.py` | `RuntimeConfig.skill_profile` (TS-1) |
 
-**Shipped bundles (31):** `harness`, `rag`, `workspace`, `memory`, `research`, `knowledge`, `legal`, `ops`, `dev`, `browser`, `collaboration`, `data`, `platform`, `sandbox`, `hitl`, `graph`, `storage`, `message_bus`, `cache`, `eval`, `modality`, `notify`, `cost`, `identity`, `health`, `context`, `agent`, `vector_store`, `crm`, `billing`, `metrics` — registered via `skills/registry/shipped_plugins.py`.  
+**Shipped bundles (41):** `harness`, `rag`, `workspace`, `memory`, `research`, `knowledge`, `legal`, `ops`, `dev`, `browser`, `collaboration`, `data`, `platform`, `sandbox`, `hitl`, `graph`, `storage`, `message_bus`, `cache`, `eval`, `modality`, `notify`, `cost`, `identity`, `health`, `context`, `agent`, `vector_store`, `crm`, `billing`, `metrics`, `catalog`, `cloud_platform`, `code`, `filesystem`, `http`, `interaction`, `jira`, `gitlab`, `ml`, `openai` — registered via `skills/registry/shipped_plugins.py`.  
 `knowledge` remains **BETA**; all other shipped bundles **STABLE**.
 
 ---
@@ -271,44 +271,46 @@ Every shipped `skill_id` **must** have a filled `intergrax/skills/providers/<bun
 
 ---
 
-## First-party catalog (69 skills · 31 bundles)
+## First-party catalog (99 skills · 41 bundles)
 
 | Bundle | skill_ids | Status |
 |--------|-----------|--------|
-| `harness` | `harness.tool_smoke`, `harness.context_demo`, `harness.trace_read`, `harness.skill_registry`, `harness.modality_smoke`, `harness.vision_qa`, `harness.integration_bridge_smoke`, `harness.reliability_smoke`, `harness.policy_smoke`, `harness.stack_demo` | **Done** |
-| `rag` | `rag.hybrid_qa`, `rag.document_ingest`, `rag.index_admin`, `rag.collection_lifecycle`, `rag.retrieval_tuner` | **Done** |
-| `workspace` | `workspace.authoring`, `workspace.snapshot_manager` | **Done** |
-| `memory` | `memory.task_scratchpad`, `memory.session_cleanup`, `memory.ltm_curator` | **Done** |
-| `research` | `research.literature_scan`, `research.web_evidence`, `research.citation_synthesis` | **Done** |
-| `knowledge` | `knowledge.openai_strict`, `knowledge.wiki_navigator` | **Beta** |
-| `legal` | `legal.contract_review`, `legal.clause_compare`, `legal.case_research` | **Done** |
-| `ops` | `ops.trace_debug`, `ops.incident_dispatch`, `ops.security_audit`, `ops.workflow_runner`, `ops.workflow_admin`, `ops.findings_review` | **Done** |
-| `dev` | `dev.issue_triage`, `dev.issue_creator`, `dev.issue_updater` | **Done** |
-| `browser` | `browser.research_fetch` | **Done** |
-| `collaboration` | `collaboration.outreach`, `collaboration.calendar`, `collaboration.thread_reply` | **Done** |
-| `data` | `data.sql_analyst`, `data.records_query` | **Done** |
-| `platform` | `platform.concierge`, `platform.secrets_flags`, `platform.cicd_inspector` | **Done** |
-| `sandbox` | `sandbox.code_exec` | **Done** |
-| `hitl` | `hitl.approval_gate`, `hitl.queue_manager` | **Done** |
-| `graph` | `graph.entity_explorer` | **Done** |
-| `storage` | `storage.artifact_sync` | **Done** |
-| `message_bus` | `message_bus.async_runner`, `message_bus.task_admin` | **Done** |
-| `cache` | `cache.session_cache` | **Done** |
-| `eval` | `eval.score_logger`, `eval.trajectory_judge`, `eval.release_compare` | **Done** |
-| `modality` | `modality.speech_io`, `modality.vision_ocr` | **Done** |
-| `notify` | `notify.scheduled_alerts` | **Done** |
-| `cost` | `cost.budget_guardian` | **Done** (SK-EXP3 P0) |
-| `identity` | `identity.access_checker` | **Done** (SK-EXP3 P0) |
-| `health` | `health.integration_probe` | **Done** (SK-EXP3 P0) |
-| `context` | `context.token_planner` | **Done** (SK-EXP3 P0) |
-| `agent` | `agent.roster_introspect` | **Done** (SK-EXP3 P0) |
-| `vector_store` | `vector_store.admin` | **Done** (SK-EXP3 P0) |
-| `crm` | `crm.account_lookup` | **Done** (SK-EXP3 P2) |
-| `billing` | `billing.usage_tracker` | **Done** (SK-EXP3 P2) |
-| `metrics` | `metrics.run_observer` | **Done** (SK-EXP3 P2) |
+| `harness` | 12 skills incl. `harness.run_comparator`, `harness.run_exporter` | **Done** |
+| `rag` | 5 skills | **Done** |
+| `workspace` | 2 skills | **Done** |
+| `memory` | 4 skills incl. `memory.semantic_search` | **Done** |
+| `research` | 4 skills incl. `research.web_cache_admin` | **Done** |
+| `knowledge` | 3 skills incl. `knowledge.confluence_navigator` | **Beta** |
+| `legal` | 3 skills | **Done** |
+| `ops` | 8 skills incl. `ops.log_tail`, `ops.incident_ack` | **Done** |
+| `dev` | 3 skills | **Done** |
+| `browser` | 2 skills incl. `browser.interactive_run` | **Done** |
+| `collaboration` | 3 skills | **Done** |
+| `data` | 4 skills incl. `data.sql_mutator`, `data.records_admin` | **Done** |
+| `platform` | 5 skills incl. `platform.secret_admin`, `platform.workflow_cancel` | **Done** |
+| `sandbox` | 1 skill | **Done** |
+| `hitl` | 2 skills | **Done** |
+| `graph` | 1 skill | **Done** |
+| `storage` | 2 skills incl. `storage.object_lifecycle` | **Done** |
+| `message_bus` | 2 skills | **Done** |
+| `cache` | 2 skills incl. `cache.key_admin` | **Done** |
+| `eval` | 4 skills incl. `eval.observation_browser` | **Done** |
+| `modality` | 3 skills incl. `modality.vision_segment` | **Done** |
+| `notify` | 2 skills incl. `notify.batch_dispatch` | **Done** |
+| `cost`, `identity`, `health`, `context`, `agent`, `vector_store`, `crm`, `billing`, `metrics` | 1 skill each (SK-EXP3) | **Done** |
+| `catalog` | `catalog.tool_introspect` | **Done** (SK-EXP4) |
+| `cloud_platform` | `cloud_platform.resolver` | **Done** (SK-EXP4) |
+| `code` | `code.runner` | **Done** (SK-EXP4) |
+| `filesystem` | `filesystem.local_io` | **Done** (SK-EXP4) |
+| `http` | `http.api_client` | **Done** (SK-EXP4) |
+| `interaction` | `interaction.session_handler`, `interaction.input_capture` | **Done** (SK-EXP4) |
+| `jira` | `jira.task_navigator` | **Done** (SK-EXP4) |
+| `gitlab` | `gitlab.issue_creator` | **Done** (SK-EXP4) |
+| `ml` | `ml.explain_predict` | **Done** (SK-EXP4) |
+| `openai` | `openai.vector_admin` | **Done** (SK-EXP4) |
 
 Per-skill `USAGE.md` under `intergrax/skills/providers/<bundle>/`.  
-Verify counts: `register_default_skills()` → `list_catalog_skill_ids()` · gate: `test_sk_exp_skill_bundles.py`, `test_sk_exp2_skill_bundles.py`, `test_sk_exp3_skill_bundles.py`, `test_skill_usage_docs.py`.
+Verify counts: `register_default_skills()` → `list_catalog_skill_ids()` · gate: `test_sk_exp_skill_bundles.py` … `test_sk_exp4_skill_bundles.py`, `test_skill_usage_docs.py`.
 
 ---
 

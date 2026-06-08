@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from intergrax.skills.core.manifest import SkillBundleManifest
 from intergrax.skills.providers.ops.manifests import (
-    OPS_FINDINGS_REVIEW,
+    OPS_TRACE_DEBUG,
     OPS_INCIDENT_DISPATCH,
     OPS_SECURITY_AUDIT,
-    OPS_TRACE_DEBUG,
-    OPS_WORKFLOW_ADMIN,
     OPS_WORKFLOW_RUNNER,
+    OPS_WORKFLOW_ADMIN,
+    OPS_FINDINGS_REVIEW,
+    OPS_LOG_TAIL,
+    OPS_INCIDENT_ACK,
 )
 from intergrax.skills.registry.catalog import SkillBundleStatus
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -21,6 +23,8 @@ _OPS_MANIFESTS = (
     OPS_WORKFLOW_RUNNER,
     OPS_WORKFLOW_ADMIN,
     OPS_FINDINGS_REVIEW,
+    OPS_LOG_TAIL,
+    OPS_INCIDENT_ACK,
 )
 
 
