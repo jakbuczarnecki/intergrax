@@ -37,6 +37,8 @@ def run_new_skill(args: argparse.Namespace) -> int:
     plugin_path = provider_dir / "plugin.py"
     bundle_path = provider_dir / "bundle.py"
     usage_path = provider_dir / "USAGE.md"
+    skill_usage_dir = provider_dir / skill_id
+    skill_usage_path = skill_usage_dir / "USAGE.md"
     if not manifest_path.exists() or args.force:
         manifest_path.write_text(
             textwrap.dedent(
@@ -112,8 +114,53 @@ def run_new_skill(args: argparse.Namespace) -> int:
         )
     if not usage_path.exists() or args.force:
         usage_path.write_text(
-            f"# Skill provider `{domain}`\n\n"
-            f"Register with `register_skill_plugin({class_name})` or add to `shipped_plugins.py`.\n",
+            f"# {domain.title()} skill bundle\n\n"
+            f"| skill_id | Guide |\n"
+            f"|----------|-------|\n"
+            f"| `{skill_id}` | [{skill_id}/USAGE.md]({skill_id}/USAGE.md) |\n",
+            encoding="utf-8",
+        )
+    if not skill_usage_path.exists() or args.force:
+        skill_usage_dir.mkdir(parents=True, exist_ok=True)
+        skill_usage_path.write_text(
+            textwrap.dedent(
+                f'''\
+                # `{skill_id}`
+
+                **Bundle:** `{domain}` · **Version:** 1.0.0 · **Risk:** `medium`
+
+                ## Purpose
+
+                TODO: Why this skill exists and which agents/hosts should use it.
+
+                ## How it works
+
+                TODO: Registration → SkillResolver → allowed_tools; list resolved `tool_ids`.
+
+                ## How to use
+
+                ```python
+                from intergrax.skills.providers.{domain}.manifests import {const}
+                from intergrax.skills.registry.profile import SkillProfile
+
+                AgentContract(id="my_agent", skills=[{const}], ...)
+                ```
+
+                ## What you get
+
+                TODO: Reusable allow-list, conformance, traceability benefits.
+
+                ## Tools unlocked
+
+                | `tool_id` | Role |
+                |-----------|------|
+                | TODO | TODO |
+
+                ## Related skills
+
+                - TODO
+                '''
+            ),
             encoding="utf-8",
         )
     print(f"Created skill scaffold under {provider_dir}")

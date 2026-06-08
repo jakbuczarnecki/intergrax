@@ -1,7 +1,7 @@
 # Skills
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Last updated:** 2026-06-08 — engine pipeline documented; **13** skills · **4** bundles  
+**Last updated:** 2026-06-08 — SK-EXP shipped; **31** skills · **13** bundles  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Plan (1:1):** [`plan/SKILLS.md`](../plan/SKILLS.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
@@ -62,8 +62,8 @@ Agent bind time (Tier-1)
 | Tool auto-enable | `applications/_shared/skill_tool_profile.py` | `extend_tool_profile_for_skills()` |
 | Runtime snapshot | `applications/_shared/catalog_runtime_bridge.py` | `RuntimeConfig.skill_profile` (TS-1) |
 
-**Shipped bundles (4):** `harness` (STABLE), `legal` (STABLE), `research` (STABLE), `knowledge` (BETA).  
-Registered via `skills/registry/shipped_plugins.py`.
+**Shipped bundles (13):** `harness`, `rag`, `workspace`, `memory`, `research`, `knowledge`, `legal`, `ops`, `dev`, `browser`, `collaboration`, `data`, `platform` — registered via `skills/registry/shipped_plugins.py`.  
+`knowledge` remains **BETA**; all other SK-EXP bundles **STABLE**.
 
 ---
 
@@ -87,15 +87,20 @@ wire_application_environment(manifest, env)
 
 **Rule:** enable skills on `ApplicationEnvironmentProfile.skill_profile` — do not create agent-local skill registries. See Appendix J.
 
-**Presets** (`skill_wiring.py`):
+**Presets** (`skill_wiring.py`, SK-PRESET.1):
 
 | Helper | `enabled_bundles` |
 |--------|-------------------|
 | `harness_platform_skill_profile()` | `harness` |
-| `lab_skill_profile()` | `harness`, `legal`, `research` |
-| `research_skill_profile()` | `research` |
-
-`knowledge` is shipped but has no Tier-3 preset yet — enable explicitly when needed.
+| `lab_skill_profile()` | `harness`, `legal`, `research`, `rag`, `workspace`, `memory`, `knowledge` |
+| `research_skill_profile()` | `research`, `rag`, `browser` |
+| `legal_skill_profile()` | `legal`, `rag`, `knowledge`, `workspace` |
+| `knowledge_skill_profile()` | `knowledge` |
+| `rag_skill_profile()` | `rag` |
+| `ops_skill_profile()` | `ops`, `dev`, `workspace` |
+| `platform_skill_profile()` | `platform`, `rag`, `memory`, `research` |
+| `lkw_skill_profile()` | `rag`, `workspace`, `memory`, `knowledge` |
+| `dispute_skill_profile()` | `legal`, `rag`, `memory`, `research` |
 
 ---
 
@@ -254,34 +259,38 @@ Register with `register_skill_plugin(...)` or add the plugin class to `shipped_p
 **Layout:**
 
 ```text
-intergrax/skills/providers/<domain>/
-  manifests.py    # SkillManifest constants
-  plugin.py       # SkillPlugin
-  bundle.py       # register_skill_plugin() helper
-  USAGE.md        # author guide (English)
+intergrax/skills/providers/<bundle>/
+  manifests.py              # SkillManifest constants
+  plugin.py                 # SkillPlugin
+  bundle.py                 # register_skill_plugin() helper
+  USAGE.md                  # bundle index (links to per-skill docs)
+  <skill_id>/USAGE.md       # required per skill — Purpose, How it works, How to use, What you get
 ```
+
+Every shipped `skill_id` **must** have a filled `intergrax/skills/providers/<bundle>/<skill_id>/USAGE.md` (English). Gate: `test_skill_usage_docs.py`.
 
 ---
 
-## First-party catalog (13 skills · 4 bundles)
+## First-party catalog (31 skills · 13 bundles)
 
-| skill_id | Bundle | Status | Typical `tool_ids` |
-|----------|--------|--------|-------------------|
-| `harness.tool_smoke` | `harness` | **Done** | harness smoke tools |
-| `harness.context_demo` | `harness` | **Done** | context demo |
-| `harness.trace_read` | `harness` | **Done** | trace read |
-| `harness.skill_registry` | `harness` | **Done** | registry introspection |
-| `harness.modality_smoke` | `harness` | **Done** | `vision.detect`, `ml.predict`, `ml.batch_predict` |
-| `harness.vision_qa` | `harness` | **Done** | `vision.detect`, `rag.retrieve` |
-| `harness.integration_bridge_smoke` | `harness` | **Done** | `storage.get`, `knowledge.search` |
-| `harness.reliability_smoke` | `harness` | **Done** | `security.scan`, `workflow.trigger` (when wired) |
-| `harness.policy_smoke` | `harness` | **Done** | policy fragment demo |
-| `harness.stack_demo` | `harness` | **Done** | `requires_skills` → `harness.tool_smoke` |
-| `legal.contract_review` | `legal` | **Done** | `rag.retrieve`, `websearch.query` |
-| `research.literature_scan` | `research` | **Done** | `rag.retrieve`, `websearch.query` |
-| `knowledge.openai_strict` | `knowledge` | **Beta** | OpenAI hosted vector / file_search tools |
+| Bundle | skill_ids | Status |
+|--------|-----------|--------|
+| `harness` | `harness.tool_smoke`, `harness.context_demo`, `harness.trace_read`, `harness.skill_registry`, `harness.modality_smoke`, `harness.vision_qa`, `harness.integration_bridge_smoke`, `harness.reliability_smoke`, `harness.policy_smoke`, `harness.stack_demo` | **Done** |
+| `rag` | `rag.hybrid_qa`, `rag.document_ingest` | **Done** (SK-EXP P0) |
+| `workspace` | `workspace.authoring` | **Done** (SK-EXP P0) |
+| `memory` | `memory.task_scratchpad` | **Done** (SK-EXP P0) |
+| `research` | `research.literature_scan`, `research.web_evidence`, `research.citation_synthesis` | **Done** |
+| `knowledge` | `knowledge.openai_strict`, `knowledge.wiki_navigator` | **Beta** |
+| `legal` | `legal.contract_review`, `legal.clause_compare`, `legal.case_research` | **Done** |
+| `ops` | `ops.trace_debug`, `ops.incident_dispatch`, `ops.security_audit`, `ops.workflow_runner` | **Done** (SK-EXP P1) |
+| `dev` | `dev.issue_triage` | **Done** (SK-EXP P1) |
+| `browser` | `browser.research_fetch` | **Done** (SK-EXP P1) |
+| `collaboration` | `collaboration.outreach` | **Done** (SK-EXP P1) |
+| `data` | `data.sql_analyst` | **Done** (SK-EXP P2) |
+| `platform` | `platform.concierge` | **Done** (SK-EXP P2) |
 
-Verify counts: `register_default_skills()` → `list_catalog_skill_ids()` (gate tests).
+Per-skill `USAGE.md` under `intergrax/skills/providers/<bundle>/`.  
+Verify counts: `register_default_skills()` → `list_catalog_skill_ids()` · gate: `test_sk_exp_skill_bundles.py`.
 
 ---
 

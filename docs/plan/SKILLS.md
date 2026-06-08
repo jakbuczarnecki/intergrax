@@ -6,28 +6,28 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**Last updated:** 2026-06-08 — engine docs sync + skill expansion backlog (§6.1ci).
+**Last updated:** 2026-06-08 — SK-EXP **Done** (31 skills · 13 bundles); SK-BRIDGE.* residual.
 
 ---
 
-### 6.1ci Harness implementation queue — skill catalog expansion (proposed)
+### 6.1ci Harness implementation queue — skill catalog expansion (closed)
 
-**Purpose:** Ordered backlog for **Tier-0 skill packs** that maximize reuse for agent and Tier-3 authors. **Not started** — requires explicit prioritization; **not** Band 3 business agents (K.1/K.2). Prerequisite for full prompt/policy value: **SK-BRIDGE.*** rows below.
+**Purpose:** Tier-0 skill packs for agent and Tier-3 authors. **Closed 2026-06-08** — SK-EXP-P0/P1/P2 + SK-PRESET.1 **Done**. Residual: **SK-BRIDGE.*** (prompt/policy runtime merge). **Not** Band 3 business agents (K.1/K.2).
 
-**Catalog today:** **13** skills · **4** bundles (`harness`, `legal`, `research`, `knowledge`). Target after waves: **~31** (+18).
+**Catalog:** **31** skills · **13** bundles — see [`architecture/SKILLS.md`](../architecture/SKILLS.md#first-party-catalog-31-skills--13-bundles).
 
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
 | 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
-| 1 | **SK-DOC.1** | Docs | **Done** | Engine pipeline in `architecture/SKILLS.md`; §7.1.8 + Appendix J sync | This section + arch doc |
+| 1 | **SK-DOC.1** | Docs | **Done** | Engine pipeline in `architecture/SKILLS.md`; §7.1.8 + Appendix J sync | Arch doc + §7.1.8 |
 | 2 | **SK-BRIDGE.1** | Code | **Planned** | `prompt_instruction_ids` → `ContextManager` / prompt registry at register | Integration test: skill prompt in assembled context |
 | 3 | **SK-BRIDGE.2** | Code | **Planned** | `policy_fragment_id` → `RuntimePolicyBundle.domain_fragments` merge | Policy conformance test |
-| 4 | **SK-EXP-P0** | Code | **Proposed** | Wave P0 — 6 universal packs (RAG, research, workspace) | Manifest + plugin + gate unit test per skill |
-| 5 | **SK-EXP-P1** | Code | **Proposed** | Wave P1 — 7 ops/dev/productivity packs | Same |
-| 6 | **SK-EXP-P2** | Code | **Proposed** | Wave P2 — 5 domain/platform packs | Same |
-| 7 | **SK-PRESET.1** | Code | **Proposed** | Tier-3 presets: `knowledge_skill_profile()`, `ops_skill_profile()`, LKW/DSW bundles | `skill_wiring.py` + host smoke |
+| 4 | **SK-EXP-P0** | Code | **Done** | Wave P0 — 6 universal packs | `test_sk_exp_skill_bundles.py` |
+| 5 | **SK-EXP-P1** | Code | **Done** | Wave P1 — 7 ops/dev/productivity packs | Same |
+| 6 | **SK-EXP-P2** | Code | **Done** | Wave P2 — 5 domain/platform packs | Same |
+| 7 | **SK-PRESET.1** | Code | **Done** | Tier-3 presets in `skill_wiring.py` | `lkw_skill_profile`, `dispute_skill_profile`, … |
 
-**Suggested PR order:** SK-BRIDGE.1 → SK-BRIDGE.2 (optional, unlocks manifest prompt value) → SK-EXP-P0 (one skill per PR) → SK-EXP-P1 → SK-EXP-P2 → SK-PRESET.1.
+**Suggested PR order (complete):** SK-EXP-P0 → P1 → P2 → SK-PRESET.1. **SK-BRIDGE.*** optional follow-up.
 
 **Explicitly excluded:** K.1, K.2, new Tier-2 agents, workflow-sized fake tools, unvalidated filesystem skill discovery.
 
@@ -72,11 +72,36 @@ Priority for **platform users** (agent authors, Tier-3 hosts, extension authors)
 
 **ADR:** no ADR for doc-only SK-DOC.1. New bundles follow existing Phase R pattern — **no ADR** unless a skill models a multi-step workflow as one tool (forbidden). SK-BRIDGE.* may need `docs/adr/` entry if context merge semantics change Nexus contracts.
 
+#### SK-EXP — Master register (shipped)
+
+| ID | skill_id | Bundle | Status |
+|----|----------|--------|--------|
+| SK-P0.1 | `rag.hybrid_qa` | `rag` | **Done** |
+| SK-P0.2 | `rag.document_ingest` | `rag` | **Done** |
+| SK-P0.3 | `research.web_evidence` | `research` | **Done** |
+| SK-P0.4 | `workspace.authoring` | `workspace` | **Done** |
+| SK-P0.5 | `memory.task_scratchpad` | `memory` | **Done** |
+| SK-P0.6 | `knowledge.wiki_navigator` | `knowledge` | **Done** |
+| SK-P1.1 | `ops.trace_debug` | `ops` | **Done** |
+| SK-P1.2 | `ops.incident_dispatch` | `ops` | **Done** |
+| SK-P1.3 | `ops.security_audit` | `ops` | **Done** |
+| SK-P1.4 | `ops.workflow_runner` | `ops` | **Done** |
+| SK-P1.5 | `dev.issue_triage` | `dev` | **Done** |
+| SK-P1.6 | `browser.research_fetch` | `browser` | **Done** |
+| SK-P1.7 | `collaboration.outreach` | `collaboration` | **Done** |
+| SK-P2.1 | `legal.clause_compare` | `legal` | **Done** |
+| SK-P2.2 | `legal.case_research` | `legal` | **Done** |
+| SK-P2.3 | `research.citation_synthesis` | `research` | **Done** |
+| SK-P2.4 | `data.sql_analyst` | `data` | **Done** |
+| SK-P2.5 | `platform.concierge` | `platform` | **Done** |
+
 #### SK-EXP — Paydown log
 
 | Date | ID | Summary |
 |------|-----|---------|
-| 2026-06-08 | SK-DOC.1 | Engine pipeline documented; §7.1.8 + Appendix J contract fix; 18-pack backlog registered |
+| 2026-06-08 | SK-DOC.1 | Engine pipeline documented; §7.1.8 + Appendix J contract fix |
+| 2026-06-08 | SK-EXP-P0–P2, SK-PRESET.1 | 18 skill packs + 9 new bundles; 31 total skills; `test_sk_exp_skill_bundles.py` |
+| 2026-06-08 | SK-DOC.2 | Per-skill `USAGE.md` (31 files) + bundle indexes; gate `test_skill_usage_docs.py`; scaffold emits skill USAGE template |
 
 ---
 

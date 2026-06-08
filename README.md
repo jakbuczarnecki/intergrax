@@ -264,15 +264,37 @@ Deep dive: [UNIFIED_EXECUTION_RUNTIME.md](docs/architecture/UNIFIED_EXECUTION_RU
 
 ---
 
+## Tier-0 catalog summary
+
+Shipped first-party catalogs (verified via `register_default_integrations(preset='full')`, `register_default_tools()`, `register_default_skills()` — **2026-06-08**).
+
+```text
+Integration  →  vendor backend (Postgres, Bing, Jira, …)
+Tool         →  atomic LLM/MCP operation (rag.retrieve, websearch.query, …)
+Skill        →  composable pack (tool_ids + prompts + policy fragment)
+```
+
+| Layer | Catalog size | Module | Architecture | Plan | Usage / authoring |
+|-------|--------------|--------|--------------|------|-------------------|
+| **Integrations** | **185** slugs · **30** contract categories (116 STABLE · 69 BETA) | [`intergrax/integrations/`](intergrax/integrations/) | [INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) | [plan/INTEGRATIONS.md](docs/plan/INTEGRATIONS.md) | Per-provider [USAGE.md](docs/architecture/INTEGRATIONS.md#implemented-providers-185) under `intergrax/integrations/providers/` |
+| **Tools** | **190** `tool_id`s · **48** bundles | [`intergrax/tools/`](intergrax/tools/) | [TOOLS.md](docs/architecture/TOOLS.md) | [plan/TOOLS.md](docs/plan/TOOLS.md) | [intergrax/tools/USAGE.md](intergrax/tools/USAGE.md) |
+| **Skills** | **31** `skill_id`s · **13** bundles | [`intergrax/skills/`](intergrax/skills/) | [SKILLS.md](docs/architecture/SKILLS.md) | [plan/SKILLS.md](docs/plan/SKILLS.md) | Per-skill `USAGE.md` under `intergrax/skills/providers/<bundle>/<skill_id>/` |
+
+**Control plane (profiles, wiring, resolver):** [AGENT_CREATION_GUIDE.md Appendix J](docs/guides/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) · **Extension plugins:** [EXTENSION_AUTHOR_GUIDE.md](docs/guides/EXTENSION_AUTHOR_GUIDE.md)
+
+**Skill bundles (13):** `harness`, `rag`, `workspace`, `memory`, `research`, `knowledge`, `legal`, `ops`, `dev`, `browser`, `collaboration`, `data`, `platform` — full index in [SKILLS.md § First-party catalog](docs/architecture/SKILLS.md#first-party-catalog-31-skills--13-bundles).
+
+---
+
 ## Platform capabilities
 
 Tier-0 building blocks — one canonical path per concern. Agents use these through Nexus; they do not reimplement them.
 
 | Concern | Scale / module | Documentation |
 |---------|----------------|---------------|
-| **Integrations** | 167 providers · `intergrax/integrations/` | [architecture/INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) |
-| **Tools** | 172 catalog tools · `intergrax/tools/` | [architecture/TOOLS.md](docs/architecture/TOOLS.md) · [USAGE](intergrax/tools/USAGE.md) |
-| **Skills** | Composable packs · `intergrax/skills/` | [architecture/SKILLS.md](docs/architecture/SKILLS.md) |
+| **Integrations** | **185** providers · `intergrax/integrations/` | [architecture/INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) · [plan](docs/plan/INTEGRATIONS.md) |
+| **Tools** | **190** catalog tools · **48** bundles · `intergrax/tools/` | [architecture/TOOLS.md](docs/architecture/TOOLS.md) · [plan](docs/plan/TOOLS.md) · [USAGE](intergrax/tools/USAGE.md) |
+| **Skills** | **31** skills · **13** bundles · `intergrax/skills/` | [architecture/SKILLS.md](docs/architecture/SKILLS.md) · [plan](docs/plan/SKILLS.md) |
 | **LLM adapters** | 19 providers · typed `LLMAdapterResponse` | [architecture/LLM_ADAPTERS.md](docs/architecture/LLM_ADAPTERS.md) |
 | **RAG & memory** | Retrieval, ingest, STM/LTM, context compiler | [architecture/MEMORY.md](docs/architecture/MEMORY.md) |
 | **Modality / ML** | Vision, speech, classical ML via catalog tools | [architecture/MODALITY.md](docs/architecture/MODALITY.md) |
@@ -354,7 +376,8 @@ tests/ · scripts/       # Gate tests and harness CI checks
 | See implementation status | [plan/PLATFORM_FOUNDATION.md](docs/plan/PLATFORM_FOUNDATION.md) |
 | Create a new agent | [AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md) |
 | Full Nexus execution flow | [NEXUS_EXECUTION_FLOW.md](docs/architecture/NEXUS_EXECUTION_FLOW.md) |
-| Wire integrations / tools / skills | [INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) · [TOOLS.md](docs/architecture/TOOLS.md) · [SKILLS.md](docs/architecture/SKILLS.md) |
+| See catalog sizes (integrations / tools / skills) | [Tier-0 catalog summary](#tier-0-catalog-summary) |
+| Wire integrations / tools / skills | [INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) · [TOOLS.md](docs/architecture/TOOLS.md) · [SKILLS.md](docs/architecture/SKILLS.md) · [Appendix J](docs/guides/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) |
 | All agents / applications | [agents/README.md](agents/README.md) · [applications/README.md](applications/README.md) |
 | Harness audit (32 layers) | [INTEGRAX_HARNESS_AUDIT_MAP.md](docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
 | Business backlog only | [plan/PLATFORM_FOUNDATION.md §6.3a](docs/plan/PLATFORM_FOUNDATION.md#63a-business-backlog-register-consolidated) |
@@ -364,7 +387,9 @@ tests/ · scripts/       # Gate tests and harness CI checks
 **One source of truth per topic.** Platform docs live in [`docs/`](docs/); product and agent docs live under `applications/<product>/` and `agents/<name>/`.
 
 ### Canonical map
-|----------|---------------|
+
+| Area | Links |
+|------|-------|
 | **Strategy & hub** | [Strategy](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) · [Architecture hub](docs/intergrax_runtime_architecture.md) · [Ideal model](docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) |
 | **Domain canon (19 pairs)** | `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md` — indexed in [hub](docs/intergrax_runtime_architecture.md) |
 | **Execution** | [UAEP / §42](docs/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [Nexus flow](docs/architecture/NEXUS_EXECUTION_FLOW.md) · [Orchestration](docs/architecture/ORCHESTRATION.md) |

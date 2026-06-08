@@ -15,3 +15,14 @@ KNOWLEDGE_OPENAI_STRICT = SkillManifest(
     risk_tier=SkillRiskTier.MEDIUM,
     tags=("knowledge", "openai", "file_search", "strict_rag"),
 )
+
+KNOWLEDGE_WIKI_NAVIGATOR = SkillManifest(
+    skill_id="knowledge.wiki_navigator",
+    version="1.0.0",
+    description="Internal wiki navigation: knowledge search, page fetch, and Confluence search.",
+    tool_ids=("knowledge.search", "knowledge.get_page", "confluence.search"),
+    prompt_instruction_ids=("knowledge.wiki_navigator.system",),
+    policy_fragment_id=None,
+    risk_tier=SkillRiskTier.MEDIUM,
+    tags=("knowledge", "wiki", "confluence"),
+)
