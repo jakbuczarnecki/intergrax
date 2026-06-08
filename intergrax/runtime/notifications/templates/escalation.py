@@ -6,11 +6,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from intergrax.runtime.human.models import EscalationOutcome
 from intergrax.runtime.notifications.models import NotificationMessage
-from intergrax.runtime.task.task import Task
+
+if TYPE_CHECKING:
+    from intergrax.runtime.task.task import Task
 
 ESCALATION_TEMPLATE_ID = "escalation.v1"
 
