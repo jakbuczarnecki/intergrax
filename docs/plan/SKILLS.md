@@ -20,8 +20,8 @@
 |-------|-----|------|--------|-------------|------------|
 | 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
 | 1 | **SK-DOC.1** | Docs | **Done** | Engine pipeline in `architecture/SKILLS.md`; §7.1.8 + Appendix J sync | Arch doc + §7.1.8 |
-| 2 | **SK-BRIDGE.1** | Code | **Planned** | `prompt_instruction_ids` → `ContextManager` / prompt registry at register | Integration test: skill prompt in assembled context |
-| 3 | **SK-BRIDGE.2** | Code | **Planned** | `policy_fragment_id` → `RuntimePolicyBundle.domain_fragments` merge | Policy conformance test |
+| 2 | **SK-BRIDGE.1** | Code | **Done** | `skill_bridge_wiring.py` — `skill_prompt_metadata()` | `test_skill_bridge_wiring.py` |
+| 3 | **SK-BRIDGE.2** | Code | **Done** | `merge_skill_policy_fragments()` → `RuntimePolicyBundle` | `test_skill_bridge_wiring.py` |
 | 4 | **SK-EXP-P0** | Code | **Done** | Wave P0 — 6 universal packs | `test_sk_exp_skill_bundles.py` |
 | 5 | **SK-EXP-P1** | Code | **Done** | Wave P1 — 7 ops/dev/productivity packs | Same |
 | 6 | **SK-EXP-P2** | Code | **Done** | Wave P2 — 5 domain/platform packs | Same |

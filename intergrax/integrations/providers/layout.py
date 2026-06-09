@@ -192,6 +192,15 @@ SLUG_CATEGORY: dict[str, str] = {
     "motherduck": "relational_store",
     "airbyte": "workflow_orchestrator",
     "apify": "browser_automation",
+    "llm_guard": "llm_guardrail",
+    "guardrails_ai": "llm_guardrail",
+    "nemo_guardrails": "llm_guardrail",
+    "openguardrails": "llm_guardrail",
+    "presidio": "llm_guardrail",
+    "llama_guard": "llm_guardrail",
+    "lakera": "llm_guardrail",
+    "azure_content_safety": "llm_guardrail",
+    "bedrock_guardrails": "llm_guardrail",
 }
 
 

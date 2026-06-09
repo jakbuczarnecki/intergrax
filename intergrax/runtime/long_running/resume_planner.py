@@ -73,6 +73,11 @@ def build_scheduled_resume_task(
     return task
 
 
+def build_checkpoint_resume_task(checkpoint: TaskCheckpoint) -> Task:
+    """Public helper for operator/API resume (FLOW-CTL.4)."""
+    return _base_resume_task(checkpoint)
+
+
 def _base_resume_task(checkpoint: TaskCheckpoint) -> Task:
     task = Task.model_validate(checkpoint.task_snapshot)
     task.options.long_running = TaskLongRunningOptions(

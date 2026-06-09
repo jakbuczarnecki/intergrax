@@ -29,7 +29,8 @@ Primary fields:
 | `usage` | `LLMTokenUsage` | Per-call token accounting |
 | `model` / `provider` | `str` | Identity metadata |
 | `response_id` | `str \| None` | Provider correlation id |
-| `refusal` | `str \| None` | Safety/refusal signal when present |
+| `refusal` | `str \| None` | Provider-native safety/refusal signal when present |
+| *(post-adapter)* | `GuardrailScanResult` | Optional Tier-3 `llm_guardrail` scan via middleware (`AFTER_LLM_OUTPUT`) — complements `refusal`; see [`INTEGRATIONS.md`](INTEGRATIONS.md) §47 |
 | `tool_calls` | `tuple[LLMToolCall, ...]` | Native tool calls |
 | `provider_extensions` | `LLMProviderExtensions` | Optional provider-specific slices |
 

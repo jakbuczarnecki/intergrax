@@ -90,9 +90,29 @@ def application_graph_spec_to_nexus_plan(
     )
 
 
-def should_seed_plan_from_graph_spec(task: Task) -> bool:
-    """True when the task has no pre-built orchestration plan id."""
+def should_seed_plan_from_graph_spec(task: Task, spec: ApplicationGraphSpec) -> bool:
+    """
+    True when the task has no pre-built plan id and capability matches graph seed rules.
+
+    Rules (ORCH-CONFIG.2 / ADR-FLOW-004):
+    1. ``trigger_capabilities`` non-empty → capability must be listed explicitly.
+    2. ``trigger_capabilities`` empty → capability must end with ``pipeline_capability_suffix``.
+    """
     plan_id = task.runtime.orchestration.plan_id
-    if plan_id is None:
+    if plan_id is not None and plan_id.strip():
+        return False
+    if not spec.nodes:
+        return False
+
+    capability = (task.context.capability or "").strip()
+    if not capability:
+        return False
+
+    explicit = [item.strip() for item in spec.trigger_capabilities if item.strip()]
+    if explicit:
+        return capability in explicit
+
+    suffix = spec.pipeline_capability_suffix
+    if suffix and capability.endswith(suffix):
         return True
-    return not plan_id.strip()
+    return False

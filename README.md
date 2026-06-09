@@ -299,6 +299,7 @@ Tier-0 building blocks — one canonical path per concern. Agents use these thro
 | **RAG & memory** | Retrieval, ingest, STM/LTM, context compiler | [architecture/MEMORY.md](docs/architecture/MEMORY.md) |
 | **Modality / ML** | Vision, speech, classical ML via catalog tools | [architecture/MODALITY.md](docs/architecture/MODALITY.md) |
 | **Governance & HITL** | Policy bundle, budgets, shadow workspace, sandbox | [UAEP §42.11](docs/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [Appendix H](docs/guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
+| **LLM guardrails** | Vendor scanners via Integration `llm_guardrail` (M.12) | [INTEGRATIONS §47](docs/architecture/INTEGRATIONS.md) · [UAEP §42.11.6](docs/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [ADR-GR-001](docs/adr/ADR-GR-001.md) |
 | **Observability** | Event bus, trace DB, unified journal, OTLP | [architecture/OBSERVABILITY.md](docs/architecture/OBSERVABILITY.md) |
 | **Plugins** | pip-installable integration/tool/skill catalogs | [EXTENSION_AUTHOR_GUIDE.md](docs/guides/EXTENSION_AUTHOR_GUIDE.md) |
 

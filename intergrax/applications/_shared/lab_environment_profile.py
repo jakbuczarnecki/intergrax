@@ -62,7 +62,12 @@ def build_lab_environment_profile(
     env.identity_profile.require_api_key = settings.requires_harness_api_key
     env.observability_profile.otel_enabled = settings.otel_enabled
     env.reliability_profile.long_running_scheduler_enabled = settings.include_scheduler
-    env.orchestration_profile.long_running_enabled = settings.include_scheduler
+    env.orchestration_profile = env.orchestration_profile.model_copy(
+        update={
+            "long_running_enabled": settings.include_scheduler,
+            "emit_coordination_advisory": settings.harness,
+        }
+    )
     env.features = env.features.model_copy(
         update={
             "debug_surface": True,
@@ -88,4 +93,21 @@ def build_lab_environment_profile(
             }
         )
     env.adaptive_profile = env.adaptive_profile.model_copy(update=adaptive_updates)
+    if settings.enable_llm_guardrails:
+        from intergrax.applications.contracts.environment_profile import GuardrailProfile
+
+        env = env.model_copy(
+            update={
+                "integration_profile": presets.harness_guardrail_stack(
+                    primary="llm_guard",
+                    semantic="presidio",
+                ),
+                "guardrail_profile": GuardrailProfile(
+                    enabled=True,
+                    scan_input=True,
+                    scan_output=True,
+                    secondary_slug="presidio",
+                ),
+            },
+        )
     return env

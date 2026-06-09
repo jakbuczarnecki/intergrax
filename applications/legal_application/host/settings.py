@@ -87,6 +87,11 @@ class LegalBackendSettings:
     interaction_route_prefix: str = "/v1/interactions"
     interaction_surface: str = "auto"
     interaction_execute_default: bool = True
+    include_task_control: bool = True
+    include_scheduler: bool = False
+    include_queue_worker: bool = False
+    task_control_route_prefix: str = "/v1/tasks"
+    scheduler_poll_seconds: float | None = None
     enable_rag: bool = False
     enable_rag_ingest: bool = False
     enable_websearch: bool = False
@@ -95,6 +100,9 @@ class LegalBackendSettings:
     extra_enabled_tool_ids: tuple[str, ...] = ()
     enable_modality_tools: bool = False
     legal_llm_model: Optional[str] = None
+    enable_llm_guardrails: bool = False
+    llm_guardrail_primary: str = "llm_guard"
+    llm_guardrail_semantic: str = "presidio"
 
     @property
     def enabled_tool_ids(self) -> list[str]:
@@ -182,6 +190,14 @@ class LegalBackendSettings:
             os.environ.get("LEGAL_INTERACTION_SURFACE") or "auto"
         ).strip().lower() or "auto"
         interaction_execute = _env_bool("LEGAL_INTERACTION_EXECUTE_DEFAULT", default=True)
+        include_task_control = _env_bool("LEGAL_INCLUDE_TASK_CONTROL", default=True)
+        include_scheduler = _env_bool("LEGAL_INCLUDE_SCHEDULER", default=True)
+        include_queue_worker = _env_bool("LEGAL_INCLUDE_QUEUE_WORKER", default=False)
+        task_control_prefix = (
+            os.environ.get("LEGAL_TASK_CONTROL_ROUTE_PREFIX") or "/v1/tasks"
+        ).strip() or "/v1/tasks"
+        poll_raw = (os.environ.get("INTERGRAX_SCHEDULER_POLL_SECONDS") or "").strip()
+        scheduler_poll = float(poll_raw) if poll_raw else None
 
         enable_rag = _env_bool("LEGAL_ENABLE_RAG", default=False)
         enable_rag_ingest = _env_bool("LEGAL_ENABLE_RAG_INGEST", default=False)
@@ -191,6 +207,9 @@ class LegalBackendSettings:
         extra_tools_raw = os.environ.get("LEGAL_ENABLED_TOOLS", "").strip()
         extra_tools = tuple(x.strip() for x in extra_tools_raw.split(",") if x.strip())
         enable_modality = _env_bool("LEGAL_ENABLE_MODALITY_TOOLS", default=False)
+        enable_llm_guardrails = _env_bool("LEGAL_ENABLE_LLM_GUARDRAILS", default=False)
+        guardrail_primary = os.environ.get("LEGAL_LLM_GUARDRAIL_PRIMARY", "llm_guard").strip() or "llm_guard"
+        guardrail_semantic = os.environ.get("LEGAL_LLM_GUARDRAIL_SEMANTIC", "presidio").strip() or "presidio"
 
         # Research SKU defaults — tools opt-in via env unless explicitly enabled
         if profile == "research" and not _env_bool("LEGAL_ENABLE_RAG", default=False) and os.environ.get("LEGAL_ENABLE_RAG") is None:
@@ -219,6 +238,11 @@ class LegalBackendSettings:
             interaction_route_prefix=interaction_prefix,
             interaction_surface=interaction_surface,
             interaction_execute_default=interaction_execute,
+            include_task_control=include_task_control,
+            include_scheduler=include_scheduler,
+            include_queue_worker=include_queue_worker,
+            task_control_route_prefix=task_control_prefix,
+            scheduler_poll_seconds=scheduler_poll,
             enable_rag=enable_rag,
             enable_rag_ingest=enable_rag_ingest,
             enable_websearch=enable_websearch,
@@ -226,4 +250,7 @@ class LegalBackendSettings:
             tools_mode=tools_mode,
             extra_enabled_tool_ids=extra_tools,
             enable_modality_tools=enable_modality,
+            enable_llm_guardrails=enable_llm_guardrails,
+            llm_guardrail_primary=guardrail_primary,
+            llm_guardrail_semantic=guardrail_semantic,
         )

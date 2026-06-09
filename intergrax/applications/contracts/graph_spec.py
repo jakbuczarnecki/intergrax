@@ -40,6 +40,18 @@ class ApplicationGraphSpec(BaseModel):
     nodes: list[GraphNode] = Field(default_factory=list)
     edges: list[GraphEdge] = Field(default_factory=list)
     retry_on_error: int | None = Field(default=None, ge=0, le=32)
+    trigger_capabilities: list[str] = Field(
+        default_factory=list,
+        description=(
+            "When non-empty, graph seeding applies only for these task capabilities. "
+            "When empty, seeding uses pipeline_capability_suffix convention (ORCH-CONFIG.2)."
+        ),
+    )
+    pipeline_capability_suffix: str = Field(
+        default=".pipeline",
+        min_length=1,
+        description="Capability suffix that triggers graph seed when trigger_capabilities is empty.",
+    )
 
     def roster_agent_ids(self) -> frozenset[str]:
         return frozenset(node.agent_id for node in self.nodes)

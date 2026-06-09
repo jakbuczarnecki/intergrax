@@ -59,13 +59,30 @@ class RuntimePolicyEngine:
         message_count: int,
         context: dict[str, Any] | None = None,
     ) -> PolicyDecision:
-        _ = context
+        ctx = context or {}
         if message_count < 1:
             return PolicyDecision(
                 action=PolicyAction.DENY,
                 reason="pre_llm_empty_context",
                 policy_rule_id="default.pre_llm_context",
             )
+        if ctx.get("phase") == "nexus_planning":
+            planner_model_id = str(ctx.get("planner_model_id", "")).strip()
+            denied = {
+                str(item).strip()
+                for item in ctx.get("denied_planner_model_ids", ())
+                if str(item).strip()
+            }
+            if planner_model_id and planner_model_id in denied:
+                return PolicyDecision(
+                    action=PolicyAction.DENY,
+                    reason="planner_model_denied",
+                    policy_rule_id="reasoning.planner_model_denied",
+                    audit_payload={
+                        "tenant_id": tenant_id,
+                        "planner_model_id": planner_model_id,
+                    },
+                )
         return PolicyDecision(
             action=PolicyAction.ALLOW,
             reason="pre_llm_default_allow",

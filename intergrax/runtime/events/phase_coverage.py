@@ -66,6 +66,14 @@ EVENT_PHASE_COVERAGE: dict[RuntimeEventType, ExecutionPhase] = {
     RuntimeEventType.LLM_CALL: ExecutionPhase.STEP_EXECUTION,
     RuntimeEventType.POLICY_DECISION: ExecutionPhase.STEP_EXECUTION,
     RuntimeEventType.GRAPH_BACKPRESSURE: ExecutionPhase.STEP_EXECUTION,
+    RuntimeEventType.CAPACITY_SIGNAL_COLLECTED: ExecutionPhase.STEP_EXECUTION,
+    RuntimeEventType.SCALE_EVALUATED: ExecutionPhase.STEP_EXECUTION,
+    RuntimeEventType.SCALE_APPLIED: ExecutionPhase.STEP_EXECUTION,
+    RuntimeEventType.SCALE_FAILED: ExecutionPhase.STEP_EXECUTION,
+    RuntimeEventType.AUTONOMY_LEVEL_SET: ExecutionPhase.INTAKE,
+    RuntimeEventType.AUTONOMY_LEVEL_CHANGED: ExecutionPhase.STEP_EXECUTION,
+    RuntimeEventType.RECOVERY_REBOOT: ExecutionPhase.RETRY_HANDLING,
+    RuntimeEventType.GUARDRAIL_BLOCKED: ExecutionPhase.CONTEXT_BUILDING,
 }
 
 EVENT_OPS_FILTER_HINTS: dict[RuntimeEventType, OpsFilterHint] = {
@@ -123,6 +131,14 @@ EVENT_OPS_FILTER_HINTS: dict[RuntimeEventType, OpsFilterHint] = {
     RuntimeEventType.LLM_CALL: "ops:llm_audit",
     RuntimeEventType.POLICY_DECISION: "ops:policy_audit",
     RuntimeEventType.GRAPH_BACKPRESSURE: "ops:backpressure",
+    RuntimeEventType.CAPACITY_SIGNAL_COLLECTED: "ops:capacity",
+    RuntimeEventType.SCALE_EVALUATED: "ops:capacity",
+    RuntimeEventType.SCALE_APPLIED: "ops:capacity",
+    RuntimeEventType.SCALE_FAILED: "ops:alert",
+    RuntimeEventType.AUTONOMY_LEVEL_SET: "ops:governance",
+    RuntimeEventType.AUTONOMY_LEVEL_CHANGED: "ops:governance",
+    RuntimeEventType.RECOVERY_REBOOT: "ops:retry",
+    RuntimeEventType.GUARDRAIL_BLOCKED: "ops:alert",
 }
 
 

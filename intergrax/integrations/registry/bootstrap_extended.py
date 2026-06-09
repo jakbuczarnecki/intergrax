@@ -207,3 +207,8 @@ def register_extended_integrations(*, override: bool = False) -> None:
     from intergrax.integrations.registry.bootstrap_m7_p7 import register_m7_p7_integrations
 
     register_m7_p7_integrations(override=override)
+    from intergrax.integrations.providers.llm_guardrail.register_all import (
+        register_llm_guardrail_integrations,
+    )
+
+    register_llm_guardrail_integrations(override=override)

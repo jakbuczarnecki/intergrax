@@ -15,9 +15,14 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
 from intergrax.contracts.orchestration_enums import MergeStrategy, MultiAgentOrder
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.runtime.nexus.orchestration_capabilities import (
+    orchestration_capabilities_from_graph_spec,
+)
 from intergrax.runtime.nexus.planning.nexus_llm_plan_builder import build_nexus_plan_from_llm
 from intergrax.runtime.nexus.planning.nexus_planner_protocol import NexusTaskPlannerProtocol
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, TaskPlanner
+from intergrax.runtime.nexus.llm_task_classifier import LlmTaskClassifier
+from intergrax.runtime.nexus.rules_task_classifier import RulesTaskClassifier
 from intergrax.runtime.nexus.task_classifier import ClassifyingTaskClassifier
 from intergrax.runtime.nexus.task_classifier_protocol import NexusTaskClassifierProtocol
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -35,6 +40,8 @@ class NexusPlannerKind(str, Enum):
 
 class NexusClassifierKind(str, Enum):
     DEFAULT = "default"
+    RULES = "rules"
+    LLM = "llm"
 
 
 @dataclass(frozen=True)
@@ -77,11 +84,18 @@ def resolve_task_planner(env: ApplicationEnvironmentProfile) -> TaskPlanner:
 
 
 class EngineBackedNexusPlanner:
-    """Nexus planner registered under ``planner_kind=engine`` (Phase FLOW-1)."""
+    """Nexus planner registered under ``planner_kind=engine`` (Phase FLOW-1 / COG-1.1)."""
 
-    def __init__(self, llm_adapter: LLMAdapter, fallback: TaskPlanner) -> None:
+    def __init__(
+        self,
+        llm_adapter: LLMAdapter,
+        fallback: TaskPlanner,
+        *,
+        planner_prompt_id: str = "nexus_task_planner",
+    ) -> None:
         self._llm_adapter = llm_adapter
         self._fallback = fallback
+        self._planner_prompt_id = planner_prompt_id
 
     def plan(self, task: Task, registry: AgentRegistry) -> NexusPlan:
         return build_nexus_plan_from_llm(
@@ -89,6 +103,7 @@ class EngineBackedNexusPlanner:
             registry,
             self._llm_adapter,
             fallback=self._fallback,
+            planner_prompt_id=self._planner_prompt_id,
         )
 
 
@@ -99,17 +114,31 @@ class GraphSpecSeedingPlanner:
         self,
         inner: NexusTaskPlannerProtocol,
         graph_spec: ApplicationGraphSpec,
+        *,
+        coordination_pattern: str | None = None,
     ) -> None:
         self._inner = inner
         self._graph_spec = graph_spec
+        self._coordination_pattern = coordination_pattern
 
     def plan(self, task: Task, registry: AgentRegistry) -> NexusPlan:
-        if should_seed_plan_from_graph_spec(task) and self._graph_spec.nodes:
+        if should_seed_plan_from_graph_spec(task, self._graph_spec):
             classification = task.classification or ""
-            return application_graph_spec_to_nexus_plan(
+            from intergrax.runtime.nexus.orchestration.swarm_policy import (
+                annotate_plan_coordination_pattern,
+            )
+
+            plan = application_graph_spec_to_nexus_plan(
                 self._graph_spec,
                 task,
                 classification=classification,
+            )
+            metadata = dict(plan.plan_metadata)
+            metadata["planner_source"] = "graph_spec"
+            plan = plan.model_copy(update={"plan_metadata": metadata})
+            return annotate_plan_coordination_pattern(
+                plan,
+                coordination_pattern=self._coordination_pattern,
             )
         return self._inner.plan(task, registry)
 
@@ -131,6 +160,10 @@ def _normalize_classifier_kind(raw: str | None) -> NexusClassifierKind:
     normalized = raw.strip().lower()
     if normalized == NexusClassifierKind.DEFAULT.value:
         return NexusClassifierKind.DEFAULT
+    if normalized == NexusClassifierKind.RULES.value:
+        return NexusClassifierKind.RULES
+    if normalized == NexusClassifierKind.LLM.value:
+        return NexusClassifierKind.LLM
     raise OrchestrationWiringError(f"Unknown classifier_kind: {raw!r}")
 
 
@@ -149,27 +182,65 @@ def resolve_nexus_task_planner(
             raise OrchestrationWiringError(
                 "planner_kind='engine' requires OrchestrationWiringContext.llm_adapter"
             )
-        inner: NexusTaskPlannerProtocol = EngineBackedNexusPlanner(
+        inner = EngineBackedNexusPlanner(
             context.llm_adapter,
             fallback=fallback,
+            planner_prompt_id=env.reasoning_profile.planner_prompt_id,
         )
     else:
         inner = fallback
 
     graph_spec = env.graph_spec
     if graph_spec is not None and graph_spec.nodes:
-        return GraphSpecSeedingPlanner(inner=inner, graph_spec=graph_spec)
+        return GraphSpecSeedingPlanner(
+            inner=inner,
+            graph_spec=graph_spec,
+            coordination_pattern=env.orchestration_profile.coordination_pattern,
+        )
     return inner
 
 
 def resolve_nexus_task_classifier(
     registry: AgentRegistry,
     env: ApplicationEnvironmentProfile,
+    *,
+    wiring_context: OrchestrationWiringContext | None = None,
 ) -> NexusTaskClassifierProtocol:
     """Map ``OrchestrationProfile.classifier_kind`` to a classifier implementation."""
     kind = _normalize_classifier_kind(env.orchestration_profile.classifier_kind)
+    context = wiring_context or OrchestrationWiringContext()
+    orch_triggers = orchestration_capabilities_from_graph_spec(env.graph_spec)
+    pipeline_suffix = (
+        env.graph_spec.pipeline_capability_suffix
+        if env.graph_spec is not None
+        else ".pipeline"
+    )
+    intent_routes = list(env.orchestration_profile.intent_routes)
     if kind is NexusClassifierKind.DEFAULT:
-        return ClassifyingTaskClassifier(registry)
+        return ClassifyingTaskClassifier(
+            registry,
+            orchestration_trigger_capabilities=orch_triggers,
+            pipeline_capability_suffix=pipeline_suffix,
+        )
+    if kind is NexusClassifierKind.RULES:
+        return RulesTaskClassifier(
+            registry,
+            intent_routes=intent_routes,
+            orchestration_trigger_capabilities=orch_triggers,
+            pipeline_capability_suffix=pipeline_suffix,
+        )
+    if kind is NexusClassifierKind.LLM:
+        if context.llm_adapter is None:
+            raise OrchestrationWiringError(
+                "classifier_kind='llm' requires OrchestrationWiringContext.llm_adapter"
+            )
+        return LlmTaskClassifier(
+            registry,
+            context.llm_adapter,
+            intent_routes=intent_routes,
+            orchestration_trigger_capabilities=orch_triggers,
+            pipeline_capability_suffix=pipeline_suffix,
+        )
     raise OrchestrationWiringError(f"Unhandled classifier_kind: {kind.value}")
 
 

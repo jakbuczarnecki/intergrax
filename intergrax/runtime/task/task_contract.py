@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from intergrax.contracts.agent_decision import HumanRequest
+from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt
 
@@ -47,6 +48,8 @@ class TaskGovernanceOptions(BaseModel):
     require_human_approval: bool = False
     require_human_on_critical: bool = True
     high_risk: bool = False
+    autonomy_level: AutonomyLevel | None = None
+    max_interrupts_per_run: int = Field(default=16, ge=1, le=256)
 
 
 class TaskLongRunningOptions(BaseModel):
@@ -100,6 +103,9 @@ class TaskClassificationState(BaseModel):
     requested_capability: Optional[str] = None
     unsupported_reason: Optional[str] = None
     risk_level: Optional[str] = None
+    confidence: Optional[float] = None
+    rationale: Optional[str] = None
+    classifier_source: Optional[str] = None
 
 
 class TaskOrchestrationState(BaseModel):

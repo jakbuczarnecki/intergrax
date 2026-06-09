@@ -62,7 +62,7 @@ Intergrax already implements substantial cognition mechanics, but until this dom
 | `EnginePlannerOrchestrator` bridged, not first-class Nexus path | Two planner stacks (`NexusPlan` vs `EnginePlan`) with incomplete unification |
 | Nexus-level decisions lack universal `DecisionRecord` | FAUDIT-COG.1 closed for UAEP steps only; planning phase rationale partial |
 | No explicit reasoning failure taxonomy | Planning parse errors, policy blocks, and runtime failures conflated in ops |
-| Classifier surface is `default` only | No LLM or rules-backed classification profile |
+| Classifier surface | **Done** — `classifier_kind=rules|llm` + `IntentRoute` (ORCH-CONFIG.1, COG-3.*) |
 | Model routing for reasoning not policy-unified | FAUDIT-LLM.1 residual — planner LLM ≠ producer LLM discipline incomplete at Nexus boundary |
 
 RCL closes the **documentation and contract boundary** gap first; runtime depth uplift is tracked in [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_AND_COGNITION.md) Phase COG-DEPTH.
@@ -272,7 +272,55 @@ flowchart TD
 | Classification | lifecycle hook diagnostics | `ops:planning` |
 | | payload includes `classification` | |
 
-**Future (COG-3.*):** LLM-backed classifier, rules classifier, confidence scores on classification.
+**Partial (ORCH-CONFIG.1):** `classifier_kind=rules` + `IntentRoute` on `OrchestrationProfile`. **Future (COG-3.*):** LLM-backed classifier, confidence scores on classification.
+
+### 9.4 Orchestration routing modes (do not confuse with `TaskClassification`)
+
+`TaskClassification` labels describe **how many agents match the requested capability**, not the **multi-agent collaboration topology**. Authors need a separate mental model:
+
+| Routing mode | How it is selected | Agent roles | Typical classification label |
+|--------------|-------------------|-------------|------------------------------|
+| **Single-agent routed** | One agent matches `task.context.capability` | One specialist | `CAPABILITY_ROUTED` |
+| **Same-capability multi-agent** | Multiple agents declare **identical** capability | Competing or sequential specialists with same skill tag | `MULTI_AGENT` |
+| **Pipeline graph** | `ApplicationGraphSpec` on profile + task without `plan_id` | Different capabilities in fixed order | `CAPABILITY_ROUTED` or `MULTI_AGENT` after graph seed |
+| **Pipeline capability** | `task.context.capability` ends with `.pipeline` (convention) | Planner emits known multi-step plan | Varies; often `CAPABILITY_ROUTED` |
+| **Engine-planned** | `planner_kind=engine` | LLM builds `NexusPlan` from registry + message | Underlying label preserved |
+| **Explicit agent** | `task.agent_id` set | Fixed agent regardless of capability | `SINGLE_AGENT_EXPLICIT` |
+
+```text
+WRONG:  "I have 2 agents (docs + web) → MULTI_AGENT will chain them"
+RIGHT:  "I have 2 agents → graph_spec DEPENDS_ON chain OR *.pipeline OR engine planner"
+```
+
+| Symptom | Misconfiguration | Fix |
+|---------|------------------|-----|
+| Only first agent runs | `CAPABILITY_ROUTED` with one matching capability | Add `graph_spec` or use `*.pipeline` |
+| All same-capability agents run in sequence | `MULTI_AGENT` triggered intentionally | Expected only for redundant specialists |
+| Graph ignored | Task carries pre-built `plan_id` | Clear `plan_id` for fresh graph seed |
+| Chat sends free text, wrong agent | No L1 capability; classifier not enabled | `classifier_kind=rules` + `IntentRoute`, or host `B1` shim |
+
+**Cross-ref:** full configuration canon (CFG-*, matrices, plan register) — [`ORCHESTRATION.md`](ORCHESTRATION.md) §56 · Tier-3 host summary — [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23.
+
+### 9.5 Intake → classification → planning contract
+
+```mermaid
+flowchart TD
+    INT["Task intake (any surface)"] --> CAP{"capability set?"}
+    CAP -->|no + classifier off| DEF["SINGLE_AGENT_DEFAULT"]
+    CAP -->|no + classifier on| CLS["COG-3 infer capability"]
+    CAP -->|yes, 1 agent| CR["CAPABILITY_ROUTED"]
+    CAP -->|yes, N agents same cap| MA["MULTI_AGENT"]
+    CLS --> PLN["Planner"]
+    DEF --> PLN
+    CR --> GS{"graph_spec + no plan_id?"}
+    MA --> PLN
+    GS -->|yes| GP["GraphSpecSeedingPlanner"]
+    GS -->|no| PLN
+    GP --> PLAN["NexusPlan"]
+    PLN --> PLAN
+```
+
+**Ownership:** Tier-3 sets `capability` unless COG-3 classifier is enabled. Tier-1 never parses vendor-specific payload formats — adapters normalize first.
 
 ---
 
@@ -321,6 +369,7 @@ class NexusPlan(BaseModel):
 | Default / single-agent classifications | 1 step |
 | `MULTI_AGENT` | N sequential steps with `depends_on` chain |
 | `research.pipeline` or `intent=research_summarize` | 2 steps: web_search → summarize |
+| `*.pipeline` (product convention) | Prefer `graph_spec` seed or registered planner rule — do not assume generic `TaskPlanner` knows every product |
 | `UNSUPPORTED` | 0 steps |
 
 **Ordering:** `OrchestrationProfile.multi_agent_order` — `registry` (default) or declared stable order (FLOW-17).
@@ -643,17 +692,18 @@ sequenceDiagram
 | Task classification (deterministic) | L3 | Done | COG-DOC.* |
 | Deterministic TaskPlanner | L3 | Done | maintain |
 | Declarative graph_spec seeding | L3 | Done | ORCH-2 |
-| LLM Nexus planner (bridged) | L2 | Partial | COG-1.* |
-| Engine planner unification | L2 | Bridged | COG-1.* |
+| LLM Nexus planner (bridged) | L3 | **Done** | COG-1.* |
+| Engine planner unification | L3 | **Done** | COG-1.* |
 | DecisionRecord on UAEP | L3 | Done | FLOW-12 |
-| DecisionRecord on Nexus planning | L1 | Gap | COG-4.* |
-| Prompt Registry on all planners | L2 | Partial | COG-2.* |
-| LLM classifier | L0 | Not started | COG-3.* |
-| Reasoning failure taxonomy in trace | L1 | Gap | COG-6.* |
-| Model routing for reasoning | L2 | Partial | COG-5.*, FAUDIT-LLM.1 |
-| **Overall RCL (FAUDIT-32 §7)** | **L2** | Partial plan | Phase COG-DEPTH |
+| DecisionRecord on Nexus planning | L3 | **Done** | COG-4.* |
+| Prompt Registry on all planners | L3 | **Done** | COG-2.* |
+| Rules classifier (`classifier_kind=rules`) | L3 | **Done** | ORCH-CONFIG.1 · COG-3.1 |
+| LLM classifier (`classifier_kind=llm`) | L2 | **Done** | COG-3.2–3.3 |
+| Reasoning failure taxonomy in trace | L3 | **Done** | COG-6.* |
+| Model routing for reasoning | L3 | **Done** | COG-5.* |
+| **Overall RCL (FAUDIT-32 §7)** | **L3+** | **Done** | Phase COG-DEPTH (2026-06-09) |
 
-**Target:** L3+ on FAUDIT re-run after COG-DEPTH P0/P1 complete.
+**Post-COG-DEPTH:** P0/P1/P2 complete; incremental L4 depth remains maintenance-only.
 
 All implementation tasks: [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_AND_COGNITION.md).
 

@@ -82,7 +82,7 @@ An ideal Harness AI system is built from 9 logical layers.
 ### 3.3 Policy & Governance Layer
 
 - Policy engine (ABAC/RBAC, limits, compliance, data boundaries).
-- Guardrails (prompt, output, tools, cost, execution time).
+- Guardrails (prompt, output, tools, cost, execution time) — **capability vector** of this layer, not a separate physical tier; Intergrax maps types to UAEP hooks in [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](../architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.11.6; vendor engines via [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) §47.
 - Governance hooks: pre-run, pre-tool, post-tool, post-run.
 - Execution modes: strict, balanced, exploratory.
 

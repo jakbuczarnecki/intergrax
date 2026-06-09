@@ -40,15 +40,16 @@
 | COG-DOC.3 | **Hub update** — 18 domain pairs; audit routing §7 → RCL pair | **Done** | High | `intergrax_runtime_architecture.md` | `check_docs_domain_pairs.py` OK |
 | COG-DOC.4 | **Cross-ref sync** — `ORCHESTRATION`, `NEXUS_EXECUTION_FLOW` §7–§8, §24; `AGENTS.md`; `INTEGRAX_HARNESS_AUDIT_MAP` §7 | **Done** | High | `docs/*` | No orphan §7 content |
 | COG-DOC.5 | **Gate script** — `python scripts/check_docs_domain_pairs.py` | **Done** | Medium | CI scripts | 18 pairs reported |
+| COG-DOC.6 | **Routing modes §9.4** — MULTI_AGENT vs pipeline graph vs engine planner | **Done** | High | `architecture/REASONING_AND_COGNITION.md` §9.4–§9.5 | Cross-ref TIER3 §23, ORCH §55 |
 
 ---
 
-## Phase COG-DEPTH — Reasoning layer maturity uplift (Band 2am — planned)
+## Phase COG-DEPTH — Reasoning layer maturity uplift (Band 2as — closed)
 
-**Status:** **Planned** — **0/22 Done** · canonical register: [COG-DEPTH — Master deliverables register](#cog-depth--master-deliverables-register-all-22-tasks)  
-**Prerequisites:** Phase COG-DOC **Done** · Phase FLOW **Done** · default queue = §6.1 gate maintenance until Band 2am prioritized  
+**Status:** **Done** (2026-06-09) — **22/22 Done** · canonical register: [COG-DEPTH — Master deliverables register](#cog-depth--master-deliverables-register-all-22-tasks)  
+**Prerequisites:** Phase COG-DOC **Done** · Phase FLOW **Done**  
 **Goal:** Raise FAUDIT-32 §7 from **L2 → L3+** — unified planner stack, Prompt Registry on planners, Nexus `DecisionRecord`, reasoning failure taxonomy, optional `ReasoningProfile`  
-**Priority ladder:** **Band 2am** (§4.0) — **not active**; requires explicit operator reprioritization off §6.1 maintenance  
+**Priority ladder:** **Band 2as** (§4.0) — **closed**; default queue = §6.1 maintenance  
 **Traceability:** [Appendix A](#appendix-a--reasoning-and-cognition-traceability-phase-cog-depth)
 
 **Delivery rule:** One **COG-* ID per PR** → update master table + architecture gap register §21 → `pytest -m gate` green.
@@ -104,15 +105,17 @@ Total COG-DEPTH: 22 (excluding COG-DOC)
 
 ---
 
-### 6.2am Phase COG-DEPTH execution order (Band 2am — planned)
+### 6.2as Phase COG-DEPTH execution order (Band 2as — closed)
 
-Work **one COG ID per PR** when Band 2am is activated.
+**Status:** **Done** (2026-06-09) · **22/22 Done** · canonical register: [COG-DEPTH — Master deliverables register](#cog-depth--master-deliverables-register-all-22-tasks).
+
+Work **one COG ID per PR** — phase **closed**; historical order below.
 
 | Wave | IDs | Count | Focus |
 |------|-----|-------|--------|
 | COG1 | COG-1.1–COG-1.5 | 5 | **P0** — Engine planner ↔ Nexus unification |
 | COG2 | COG-2.1–COG-2.4 | 4 | **P0** — Prompt Registry planner prompts |
-| COG3 | COG-3.1–COG-3.3 | 3 | **P1** — Classifier extensions |
+| COG3 | COG-3.1–COG-3.3 | 3 | **P1** — Classifier extensions (**Done** — ORCH-CONFIG.1 + COG-3.*) |
 | COG4 | COG-4.1–COG-4.2 | 2 | **P1** — Planning-phase DecisionRecord |
 | COG5 | COG-5.1–COG-5.3 | 3 | **P1** — ReasoningProfile + routing |
 | COG6 | COG-6.1–COG-6.3 | 3 | **P1** — Failure taxonomy |
@@ -127,58 +130,58 @@ Work **one COG ID per PR** when Band 2am is activated.
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| COG-1.1 | **`EngineBackedNexusPlanner` → `EnginePlannerOrchestrator` adapter** — shared parse/validate path for `NexusPlan` | Planned | **Critical** | `orchestration_wiring.py`, `nexus_llm_plan_builder.py` | Unit: same task → equivalent plan shape vs current bridge |
-| COG-1.2 | **Unified planner diagnostics** — single `planner_build_debug` surface on Nexus planning trace | Planned | High | `engine_planner_diagnostics.py` | `PLAN_CREATED` payload includes planner source |
-| COG-1.3 | **Plan validation gate** — reject LLM plans with cycles/unknown agents before graph build | Planned | High | `planning_runner.py` | Invalid plan → fallback or FAILED with `COG-PLAN-VALID` |
-| COG-1.4 | **`allow_dynamic_replan` wire** — document + test engine replan boundary vs Nexus plan immutability | Planned | Medium | `plan_loop_controller.py`, ADR note | Integration test replan does not mutate committed NexusPlan |
-| COG-1.5 | **Gate test** — `planner_kind=engine` regression suite with mock LLM | Planned | High | `tests/unit/runtime/nexus/planning/` | `-m gate` green |
+| COG-1.1 | **`EngineBackedNexusPlanner` → `EnginePlannerOrchestrator` adapter** — shared parse/validate path for `NexusPlan` | **Done** | **Critical** | `nexus_plan_bridge.py`, `orchestration_wiring.py` | `test_nexus_plan_bridge.py` |
+| COG-1.2 | **Unified planner diagnostics** — single `planner_build_debug` surface on Nexus planning trace | **Done** | High | `nexus_plan_bridge.py` | `PLAN_CREATED` payload includes `planner_source` |
+| COG-1.3 | **Plan validation gate** — reject LLM plans with cycles/unknown agents before graph build | **Done** | High | `plan_validator.py` · `planning_runner.py` | Unknown agent/dep → FAILED before graph build |
+| COG-1.4 | **`allow_dynamic_replan` wire** — document + test engine replan boundary vs Nexus plan immutability | **Done** | Medium | `interrupts/handler.py`, ADR-FLOW-003 | `test_cog_depth_residual_gate.py` |
+| COG-1.5 | **Gate test** — `planner_kind=engine` regression suite with mock LLM | **Done** | High | `test_nexus_plan_bridge.py`, `test_engine_planner_orchestration_gate.py` | `-m gate` green |
 
 ### Wave COG2 — Prompt Registry on planners (P0)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| COG-2.1 | **`nexus.task_planner.v1` prompt id** — replace inline string in `nexus_llm_plan_builder.py` | Planned | **Critical** | `prompts/`, `nexus_llm_plan_builder.py` | Golden catalog entry; gate script |
-| COG-2.2 | **Tool planner prompt ids** — ensure `ToolPlanningConfig` uses registry in all reference hosts | Planned | High | `tool_planning_config.py` | Lab host smoke |
-| COG-2.3 | **Engine planner `PlannerPromptConfig` registry binding** | Planned | High | `engine_plan_models.py` | Forced-plan replay uses registry |
-| COG-2.4 | **Author guide Appendix** — planner prompt authoring for Tier-3 | Planned | Medium | `guides/AGENT_CREATION_GUIDE.md` | TOC entry + cross-ref |
+| COG-2.1 | **`nexus.task_planner.v1` prompt id** — replace inline string in `nexus_llm_plan_builder.py` | **Done** | **Critical** | `prompts/nexus_task_planner/`, `nexus_planner_prompts.py` | `check_reasoning_gates.py` |
+| COG-2.2 | **Tool planner prompt ids** — ensure `ToolPlanningConfig` uses registry in all reference hosts | **Done** | High | `reasoning_wiring.py`, `tool_planning_config.py` | `test_cog_depth_residual_gate.py` |
+| COG-2.3 | **Engine planner `PlannerPromptConfig` registry binding** | **Done** | High | `reasoning_wiring.py` | `resolve_engine_planner_prompt_config()` |
+| COG-2.4 | **Author guide Appendix** — planner prompt authoring for Tier-3 | **Done** | Medium | `guides/AGENT_CREATION_GUIDE.md` | Appendix COG-2.4 |
 
 ### Wave COG3 — Classifier extensions (P1)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| COG-3.1 | **`classifier_kind` enum expansion** — document `rules` stub or LLM classifier protocol | Planned | Medium | `orchestration_wiring.py` | Wiring error on unknown kind preserved |
-| COG-3.2 | **Optional LLM classifier** — capability + message → classification with fallback to deterministic | Planned | Medium | `task_classifier.py` | Unit tests; fallback on parse fail |
-| COG-3.3 | **Classification trace enrichment** — confidence + rationale fields on hook payload | Planned | Low | `planning_runner.py` | Trace payload schema test |
+| COG-3.1 | **`classifier_kind=rules`** — `RulesTaskClassifier`, `IntentRoute`, orchestration tokens (ORCH-CONFIG.1) | **Done** | Medium | `orchestration_wiring.py`, `intent_routing.py` | `test_intent_routing.py`, `test_orchestration_cfg_simulation.py` |
+| COG-3.2 | **Optional LLM classifier** — capability + message → classification with fallback to deterministic | **Done** | Medium | `llm_task_classifier.py` | `test_llm_task_classifier.py`; fallback on parse fail |
+| COG-3.3 | **Classification trace enrichment** — confidence + rationale fields on hook payload | **Done** | Low | `task_contract.py`, `task_metadata_bridge.py` | `test_intent_routing.py`, `test_llm_task_classifier.py` |
 
 ### Wave COG4 — Planning-phase DecisionRecord (P1)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| COG-4.1 | **`DecisionRecord` on PLAN_CREATED** — planner choice, classification, fallback flag | Planned | High | `planning_runner.py`, `decision_record.py` | `DECISION_EMITTED` at planning phase |
-| COG-4.2 | **Gate test FAUDIT-COG-1 extension** — planning + UAEP paths | Planned | High | `tests/integration/` | Both phases covered |
+| COG-4.1 | **`DecisionRecord` on PLAN_CREATED** — planner choice, classification, fallback flag | **Done** | High | `planning_runner.py`, `decision_record.py` | `DECISION_EMITTED` at planning phase |
+| COG-4.2 | **Gate test FAUDIT-COG-1 extension** — planning + UAEP paths | **Done** | High | `test_planning_decision_record_gate.py` | Planning phase covered |
 
 ### Wave COG5 — ReasoningProfile and model routing (P1)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| COG-5.1 | **`ReasoningProfile` on `ApplicationEnvironmentProfile`** — planner LLM id, parse retries, prompt ids | Planned | High | `environment_profile.py` | Profile round-trip test |
-| COG-5.2 | **Wire ReasoningProfile → orchestration wiring** — optional separate adapter for planners | Planned | High | `orchestration_wiring.py` | `planner_kind=engine` uses profile LLM |
-| COG-5.3 | **Policy hook for planner model selection** — FAUDIT-LLM.1 partial close | Planned | Medium | `policy_engine.py` | Deny over-budget planner model |
+| COG-5.1 | **`ReasoningProfile` on `ApplicationEnvironmentProfile`** — planner LLM id, parse retries, prompt ids | **Done** | High | `contracts/reasoning_profile.py`, `environment_profile.py` | Profile on lab defaults |
+| COG-5.2 | **Wire ReasoningProfile → orchestration wiring** — optional separate adapter for planners | **Done** | High | `orchestration_wiring.py`, `nexus_factory.py` | `planner_prompt_id` + `planner_llm_profile_id` policy context |
+| COG-5.3 | **Policy hook for planner model selection** — FAUDIT-LLM.1 partial close | **Done** | Medium | `runtime_policy_engine.py`, `ReasoningProfile.denied_planner_model_ids` | Planning-phase deny gate |
 
 ### Wave COG6 — Reasoning failure taxonomy (P1)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| COG-6.1 | **`ReasoningFailureKind` enum** — §17 taxonomy as code | Planned | High | `intergrax/contracts/` | Used in trace payloads |
-| COG-6.2 | **Emit failure kind on planner fallback and policy block** | Planned | High | `planning_runner.py`, `nexus_llm_plan_builder.py` | Integration test asserts kind |
-| COG-6.3 | **Ops dashboard hints** — `ops:planning` failure counters | Planned | Medium | observability bridge | Metric names documented in OBS plan |
+| COG-6.1 | **`ReasoningFailureKind` enum** — §17 taxonomy as code | **Done** | High | `contracts/reasoning_failure.py` | Used in `nexus_plan_bridge` debug |
+| COG-6.2 | **Emit failure kind on planner fallback and policy block** | **Done** | High | `nexus_llm_plan_builder.py`, `planning_runner.py` | `failure_kind` in metadata + `DECISION_EMITTED` |
+| COG-6.3 | **Ops dashboard hints** — `ops:planning` failure counters | **Done** | Medium | `planning_metrics.py` | `ops_planning_failure_*_total` export |
 
 ### Wave COG7 — Planning observability (P2)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| COG-OBS.1 | **Planner latency + fallback rate metrics** | Planned | Medium | metrics export | SLO doc in OBSERVABILITY plan |
-| COG-OBS.2 | **`scripts/check_reasoning_gates.py`** — optional CI: no inline planner prompts | Planned | Low | `scripts/` | Fails if ad-hoc prompt detected in hot path |
+| COG-OBS.1 | **Planner latency + fallback rate metrics** | **Done** | Medium | `planning_metrics.py` | Export hooks on planning path |
+| COG-OBS.2 | **`scripts/check_reasoning_gates.py`** — optional CI: no inline planner prompts | **Done** | Low | `scripts/check_reasoning_gates.py` | Gate script green |
 
 ---
 
@@ -187,7 +190,8 @@ Work **one COG ID per PR** when Band 2am is activated.
 | Architecture § | Topic | Task IDs |
 |----------------|--------|----------|
 | §5 Three planes | Plane boundaries | COG-DOC.* |
-| §9 Classification | Classifier extensions | COG-3.* |
+| §9 Classification | Classifier extensions | COG-3.* · ORCH-CONFIG.1 **Done** |
+| §9.4 Routing modes | Authoring canon (docs) | COG-DOC.6 **Done** |
 | §10 Nexus planning | Planner unification | COG-1.* |
 | §10.4 LLM planner | Prompt Registry | COG-2.1 |
 | §12 Engine planner | Orchestrator bridge | COG-1.1 |
@@ -224,7 +228,7 @@ These items implemented under FLOW/ORCH phases — **Done**; canon now owned by 
 | Planning strategies explicit? | Yes | Canon §10, Appendix B | Maintain |
 | Prompt compilation layered? | Partial | Cross-ref §15 | COG-2.* Done |
 | Reasoning failures classified? | No | Taxonomy §17 doc | COG-6.* code |
-| **Layer score** | **L2** | **L2** (plan accurate) | **L3+** |
+| **Layer score** | **L2** | **L2** (plan accurate) | **L3** (COG-DEPTH **Done**) |
 
 ---
 
@@ -234,6 +238,14 @@ These items implemented under FLOW/ORCH phases — **Done**; canon now owned by 
 2. This plan — COG-DEPTH register when implementing
 3. [`architecture/NEXUS_EXECUTION_FLOW.md`](../architecture/NEXUS_EXECUTION_FLOW.md) — end-to-end flow only
 4. [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix I §I.4 — host planner configuration
+
+---
+
+### COG-DEPTH — Paydown log
+
+| Date | COG ID | Summary |
+|------|--------|---------|
+| 2026-06-09 | COG-1.*–COG-OBS.* | Phase COG-DEPTH **22/22 Done**; reference host engine planner presets |
 
 ---
 

@@ -311,6 +311,19 @@ class KubernetesCloudPlatform:
         }
         return defaults.get(category.strip().lower())
 
+    def get_replicas(self, *, deployment: str) -> int:
+        getter = getattr(self._client, "get_replicas", None)
+        if callable(getter):
+            return int(getter(deployment, namespace=self._namespace))
+        return int(getattr(self._client, "replicas", 1))
+
+    def scale_workload(self, *, deployment: str, replicas: int) -> int:
+        scaler = getattr(self._client, "scale_workload", None)
+        if callable(scaler):
+            return int(scaler(deployment, replicas=replicas, namespace=self._namespace))
+        setattr(self._client, "replicas", replicas)
+        return replicas
+
     def health(self) -> HealthStatus:
         healthy = bool(self._client.health())
         return HealthStatus(slug=self._slug, healthy=healthy, detail=f"namespace={self._namespace}")

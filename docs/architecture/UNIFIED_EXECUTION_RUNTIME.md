@@ -548,6 +548,30 @@ HumanRequest:
     default_on_timeout: AgentDecisionType | null
 ```
 
+### 42.10.2 Autonomy level (user steering)
+
+Distinct from host `ExecutionMode` (STRICT | BALANCED | EXPLORATORY) and agent `AgentExecutionMode` (SYNC | ASYNC).
+
+```text
+AutonomyLevel:
+    MANUAL       # user approves meaningful actions
+    ASK          # agent proposes; policy gates risky steps
+    AUTONOMOUS   # execute within policy envelope
+```
+
+| Field | Location | Semantics |
+|-------|----------|-----------|
+| `TaskExecutionOptions.autonomy_level` | Task envelope | User/session slider value |
+| Effective level | `PolicyEngine` | `min(user, tenant ceiling, execution_mode ceiling, agent risk)` |
+
+**Mid-run changes:** operator or client MAY set autonomy before the next UAEP step; downgrade takes effect immediately for new tool calls; upgrade MUST NOT bypass unresolved HITL items.
+
+**Events:** `AUTONOMY_LEVEL_SET`, `AUTONOMY_LEVEL_CHANGED` on `ops:governance` channel.
+
+**Full model:** [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) §35.
+
+**Implementation coverage (2026-06-09):** runtime enforcement **Done** (REL-ADV). **HTTP mid-run setter** is lab-only (`harness_task_routes`); see [`ORCHESTRATION.md`](ORCHESTRATION.md) §59.4 · [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23.7.
+
 ---
 
 ## 42.11 Policy Engine
@@ -626,6 +650,65 @@ For a single task/run, policy is **composed once** at Tier-3 startup and read do
 **Trace checklist:** `RuntimeEvent` stream (`PLAN_CREATED`, `SKILL_RESOLVED`, `CONTEXT_ASSEMBLED`, tool events) + Nexus trace DB for planner/tool steps. Planner hard failures emit `PLAN_FAILED` (parse / PlanSource).
 
 **Authoring reference:** Tier-3 control-plane map (profiles, bundles, observability mandatory vs optional, verification commands) — [`guides/AGENT_CREATION_GUIDE.md` Appendix H](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane). Harness operator context: [`guides/HARNESS_ENVIRONMENT.md`](guides/HARNESS_ENVIRONMENT.md#harness-control-plane-authoring).
+
+### 42.11.6 Guardrail catalog (operator index)
+
+**Terminology:** In Intergrax, **guardrails** are **not** a separate Tier-0/Tier-1 package. They are the **enforcement surface** of Policy & Governance — typed checks at UAEP hook points that produce `PolicyDecision`, `ValidationResult`, security inspection results, or provider safety signals (`refusal`, `content_filter`). Canonical Harness AI term: [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) §5.3.1.
+
+**Ideal model:** prompt, output, tools, cost, execution time — [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.3. **Third-party guardrail engines** (NeMo Guardrails, Guardrails AI, LLM Guard, OpenGuardrails, …) are wired as **Integration Library** backends — see [`INTEGRATIONS.md`](INTEGRATIONS.md) §47.
+
+#### Guardrail types → hook points → owners
+
+| Guardrail type | UAEP / Nexus hook | Primary owner | Enforcement artifact | Fail mode |
+|----------------|-------------------|---------------|----------------------|-----------|
+| **Tool allow-list / scope** | `before_tool_call` | `ToolRuntime` + `ToolAccessPolicy` | `PolicyDecision` DENY | Fail-closed |
+| **Tool argument / injection** | `before_tool_call` | `tool_security.py` + middleware | Block / modify `ToolRequest` | Fail-closed on CRITICAL |
+| **Budget / token / quota** | pre-LLM, pre-tool | `BudgetPolicy`, `cost_quota.py` | DENY / degrade | Configurable |
+| **Prompt injection (input)** | pre-LLM, intake | `prompt_security.py` + optional `llm_guardrail` integration | `PromptInspectionResult` → DENY | Profile-driven |
+| **Context / memory write** | pre-store | `MemoryWritePolicy` | DENY | Fail-closed |
+| **Plan / step policy** | pre-step, plan loop | `PlanLoopPolicy`, `plan_validator` | MODIFY / DENY | MANDATORY on strict hosts |
+| **Structural output (L0)** | post-step, post-node | `NexusValidationEngine`, CVL `L0Gateway` | `ValidationResult` | Retry / FAIL |
+| **Semantic output (L1)** | post-step, completion | CVL `eval.judge`, `CriticOrchestrator` | Score + policy consequence | Opt-in by `CriticProfile` |
+| **Human gate (L2)** | interrupt, completion | `PolicyEngine` + `HitlRunner` | `REQUIRE_HUMAN` | Pause until resume |
+| **Provider safety** | post-LLM | `LLM_ADAPTERS` envelope | `refusal`, `finish_reason=content_filter` | Surface to PolicyEngine |
+| **Retrieval poisoning** | pre-RAG inject | `retrieval_security.py` | Quarantine / deny chunk | Tenant-scoped |
+| **Tenant isolation** | all paths | `tenant_security.py` | DENY cross-tenant | Fail-closed |
+| **Execution time / retry** | step, graph node | `RetryEngine`, `ExecutionGuard` | RETRY / FAIL | Budget-capped |
+| **Cost optimization cap** | adaptive loop | `OptimizationGuardrail` | Cap recommendation ratio | Advisory |
+
+#### Composition flow (single run)
+
+```text
+Tier-3 startup
+    → RuntimePolicyBundle + ApplicationSecurityProfile
+    → optional IntegrationProfile.llm_guardrail slug
+
+INTAKE / pre-run
+    → PolicyEngine (autonomy ceiling, domain_fragments)
+
+Per UAEP step:
+    before_step → ContextManager (budget overlays)
+    pre-LLM     → prompt_security + optional llm_guardrail.scan_input()
+    post-LLM    → refusal/content_filter + optional llm_guardrail.scan_output()
+    before_tool_call → ToolAccessPolicy + tool_security
+    after_tool_call  → trace + policy hooks
+    post-step   → NexusValidationEngine (L0) → CVL L1 if enabled
+
+Terminal:
+    PolicyEngine (unresolved interrupts) → REQUIRE_HUMAN or FAIL
+    CVL final verification if require_critic_on_completion
+```
+
+#### What is explicitly not a guardrail layer
+
+| Anti-pattern | Why |
+|--------------|-----|
+| Agent-local `if` checks without trace | Untestable, bypasses PolicyEngine |
+| Direct vendor guardrail SDK in Tier-2 | Violates tier boundaries — use Integration → middleware |
+| Duplicate policy objects per agent | Use `RuntimePolicyBundle` only (§42.11.4) |
+| CVL rubrics in Nexus for domain logic | Tier-2 owns rubric content; Nexus orchestrates only |
+
+**Implementation plan:** [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../plan/UNIFIED_EXECUTION_RUNTIME.md) Phase **GR-DOC** (documentation) + [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) Phase **M.12** (vendor adapters).
 
 ---
 
@@ -1385,9 +1468,10 @@ Governance layers:
     4. ValidationEngine (multi-stage)
     5. HookRegistry (cross-cutting rules)
     6. Tier-3 application config (industry rules)
+    7. Optional llm_guardrail integration (vendor scanners — §42.11.6, INTEGRATIONS §47)
 ```
 
-No single layer is sufficient alone.
+No single layer is sufficient alone. **Guardrail catalog** (types, hooks, fail modes): §42.11.6.
 
 Governance failures MUST default to **fail-closed** for CRITICAL risk agents (legal, financial, safety).
 

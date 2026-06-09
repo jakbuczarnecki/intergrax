@@ -23,6 +23,9 @@ class PocTemplateApplicationSettings:
     interaction_surface: str = "auto"
     include_mcp: bool = True
     mcp_mount_path: str = "/mcp"
+    include_task_control: bool = True
+    include_queue_worker: bool = False
+    task_control_route_prefix: str = "/v1/tasks"
 
     @classmethod
     def from_env(cls) -> PocTemplateApplicationSettings:
@@ -51,6 +54,15 @@ class PocTemplateApplicationSettings:
             "no",
         }
         mcp_mount = (os.getenv("POC_TEMPLATE_MCP_MOUNT_PATH") or "/mcp").strip() or "/mcp"
+        include_task_control = (
+            os.getenv("POC_TEMPLATE_INCLUDE_TASK_CONTROL") or "true"
+        ).strip().lower() not in {"0", "false", "no"}
+        include_queue_worker = (
+            os.getenv("POC_TEMPLATE_INCLUDE_QUEUE_WORKER") or "false"
+        ).strip().lower() in {"1", "true", "yes", "on"}
+        task_control_prefix = (
+            os.getenv("POC_TEMPLATE_TASK_CONTROL_ROUTE_PREFIX") or "/v1/tasks"
+        ).strip() or "/v1/tasks"
         return cls(
             environment=environment,
             route_prefix=prefix,
@@ -63,4 +75,7 @@ class PocTemplateApplicationSettings:
             interaction_surface=interaction_surface,
             include_mcp=include_mcp,
             mcp_mount_path=mcp_mount,
+            include_task_control=include_task_control,
+            include_queue_worker=include_queue_worker,
+            task_control_route_prefix=task_control_prefix,
         )

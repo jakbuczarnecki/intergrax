@@ -20,7 +20,7 @@ def build_poc_template_registry(
     env = manifest.environment or ApplicationEnvironmentProfile.lab_defaults(
         profile_id="poc_template",
         harness_tools=False,
-    )
+    ).with_reference_host_platform_defaults()
     if manifest.environment is None:
         manifest = manifest.model_copy(update={"environment": env})
     env_wiring = wire_application_environment(manifest, env, settings=settings)

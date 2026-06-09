@@ -10,7 +10,12 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.applications.contracts.execution_mode import ExecutionMode
+from intergrax.contracts.autonomy_level import AutonomyLevel
+from intergrax.contracts.reasoning_profile import ReasoningProfile
+from intergrax.contracts.resilience_policy import ResiliencePolicy, default_resilience_policy
+from intergrax.runtime.capacity.contracts import ScalingPolicy
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
+from intergrax.applications.contracts.intent_route import IntentRoute
 from intergrax.applications.contracts.application_host import ApplicationFeatures, ApplicationProfile
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -54,6 +59,21 @@ class ApplicationSecurityProfile(BaseModel):
     tool_injection_defense_enabled: bool = True
     retrieval_poisoning_defense_enabled: bool = True
     tenant_security_verify_enabled: bool = True
+
+
+class GuardrailProfile(BaseModel):
+    """Vendor LLM guardrail scanning toggles (M-P12-WIRE.1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = False
+    scan_input: bool = True
+    scan_output: bool = True
+    scan_tool_calls: bool = False
+    secondary_slug: str | None = None
+    colang_config_path: str | None = None
+    bedrock_guardrail_policy_id: str | None = None
+    inference_slug: str | None = None
 
 
 class ContextDecisionProfile(BaseModel):
@@ -113,6 +133,9 @@ class ReliabilityProfile(BaseModel):
     circuit_breaker_failure_threshold: int = Field(default=5, ge=1)
     checkpoint_interval_steps: int = Field(default=1, ge=1)
     long_running_scheduler_enabled: bool = False
+    resilience_policy: ResiliencePolicy = Field(default_factory=default_resilience_policy)
+    default_autonomy_level: AutonomyLevel = AutonomyLevel.ASK
+    tenant_autonomy_ceiling: AutonomyLevel | None = None
 
 
 class ObservabilityProfile(BaseModel):
@@ -207,6 +230,14 @@ class AdaptiveProfile(BaseModel):
     rollout_flag_key: str = "harness.adaptive.recommend"
 
 
+class ScalingProfile(BaseModel):
+    """Elastic capacity posture (ECP-1.1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    policy: ScalingPolicy = Field(default_factory=ScalingPolicy)
+
+
 class OrchestrationProfile(BaseModel):
     """Nexus loop composition overrides (Phase H-APP.3.1)."""
 
@@ -223,6 +254,9 @@ class OrchestrationProfile(BaseModel):
     merge_strategy: str = "concat"
     multi_agent_order: str = "registry"
     allow_dynamic_replan: bool = False
+    intent_routes: list[IntentRoute] = Field(default_factory=list)
+    coordination_pattern: str | None = None
+    emit_coordination_advisory: bool = False
 
 
 class ShadowWorkspaceProfile(BaseModel):
@@ -273,10 +307,13 @@ class ApplicationEnvironmentProfile(BaseModel):
     critic_profile: CriticProfile = Field(default_factory=CriticProfile)
     adaptive_profile: AdaptiveProfile = Field(default_factory=AdaptiveProfile)
     orchestration_profile: OrchestrationProfile = Field(default_factory=OrchestrationProfile)
+    reasoning_profile: ReasoningProfile = Field(default_factory=ReasoningProfile)
+    scaling_profile: ScalingProfile = Field(default_factory=ScalingProfile)
     identity_profile: IdentityProfile = Field(default_factory=IdentityProfile)
     security_profile: ApplicationSecurityProfile = Field(
         default_factory=ApplicationSecurityProfile
     )
+    guardrail_profile: GuardrailProfile = Field(default_factory=GuardrailProfile)
     policy_rules: PolicyRulesProfile | None = None
     execution_mode: ExecutionMode = ExecutionMode.BALANCED
     graph_spec: ApplicationGraphSpec | None = None
@@ -403,6 +440,122 @@ class ApplicationEnvironmentProfile(BaseModel):
                 ),
                 "identity_profile": IdentityProfile(require_api_key=True),
                 "execution_mode": ExecutionMode.STRICT,
+            }
+        )
+
+    @classmethod
+    def strict_multi_agent_defaults(
+        cls,
+        *,
+        profile_id: str = "strict.multi_agent",
+    ) -> ApplicationEnvironmentProfile:
+        """CFG-20 preset — strict execution, structured merge, critic on completion (ORCH-CONFIG.7)."""
+        base = cls.lab_defaults(profile_id=profile_id)
+        return base.model_copy(
+            update={
+                "execution_mode": ExecutionMode.STRICT,
+                "orchestration_profile": OrchestrationProfile(
+                    merge_strategy="structured_json",
+                    max_parallel_nodes=8,
+                    max_run_retries=1,
+                ),
+                "critic_profile": CriticProfile(
+                    semantic_judge_enabled=True,
+                    require_critic_on_completion=True,
+                    scopes=CriticVerificationScopes(graph_final=True),
+                ),
+                "evaluation_profile": EvaluationProfile(
+                    shadow_eval_enabled=True,
+                    online_registry_enabled=True,
+                    offline_eval_runner_enabled=True,
+                    require_baseline_for_release=True,
+                ),
+            }
+        )
+
+    def with_reference_host_platform_defaults(
+        self,
+        *,
+        multi_agent_critic: bool = False,
+    ) -> ApplicationEnvironmentProfile:
+        """CFG-11/13/16 presets for reference Tier-3 hosts (ORCH-CONFIG closeout)."""
+        orchestration = self.orchestration_profile.model_copy(
+            update={
+                "planner_kind": self.orchestration_profile.planner_kind or "engine",
+                "classifier_kind": self.orchestration_profile.classifier_kind or "rules",
+                "long_running_enabled": True,
+            },
+        )
+        reliability = self.reliability_profile.model_copy(
+            update={"long_running_scheduler_enabled": True},
+        )
+        updates: dict[str, Any] = {
+            "orchestration_profile": orchestration,
+            "reliability_profile": reliability,
+        }
+        if multi_agent_critic:
+            strict = type(self).strict_multi_agent_defaults(profile_id=self.profile_id)
+            updates["execution_mode"] = strict.execution_mode
+            updates["critic_profile"] = strict.critic_profile.model_copy(
+                update={
+                    # CFG-16: require CVL on completion; L1 judge only when rubric is configured.
+                    "require_critic_on_completion": True,
+                    "semantic_judge_enabled": bool(strict.critic_profile.default_rubric_ref),
+                },
+            )
+            updates["evaluation_profile"] = strict.evaluation_profile
+            updates["orchestration_profile"] = orchestration.model_copy(
+                update={
+                    "merge_strategy": strict.orchestration_profile.merge_strategy,
+                    "max_run_retries": strict.orchestration_profile.max_run_retries,
+                    "max_parallel_nodes": strict.orchestration_profile.max_parallel_nodes,
+                },
+            )
+        return self.model_copy(update=updates)
+
+    @classmethod
+    def async_batch_defaults(
+        cls,
+        *,
+        profile_id: str = "async.batch",
+        max_parallel_nodes: int = 8,
+    ) -> ApplicationEnvironmentProfile:
+        """ORCH-6.2 — deferred execution via queue workers and long-running checkpoints."""
+        base = cls.lab_defaults(profile_id=profile_id)
+        return base.model_copy(
+            update={
+                "orchestration_profile": OrchestrationProfile(
+                    long_running_enabled=True,
+                    merge_strategy="structured_json",
+                    max_parallel_nodes=max_parallel_nodes,
+                    max_inflight_nodes=max_parallel_nodes,
+                ),
+                "reliability_profile": ReliabilityProfile(
+                    long_running_scheduler_enabled=True,
+                    checkpoint_interval_steps=1,
+                ),
+            }
+        )
+
+    @classmethod
+    def swarm_exploration_defaults(
+        cls,
+        *,
+        profile_id: str = "swarm.exploration",
+        max_parallel_nodes: int = 16,
+    ) -> ApplicationEnvironmentProfile:
+        """CFG-17 / D7 exploration preset — high parallel cap (ORCH-CONFIG.8 partial)."""
+        base = cls.lab_defaults(profile_id=profile_id)
+        from intergrax.runtime.architecture.multi_agent_coordination import CoordinationPattern
+
+        return base.model_copy(
+            update={
+                "orchestration_profile": OrchestrationProfile(
+                    merge_strategy="structured_json",
+                    max_parallel_nodes=max_parallel_nodes,
+                    max_inflight_nodes=max_parallel_nodes,
+                    coordination_pattern=CoordinationPattern.SWARM.value,
+                ),
             }
         )
 

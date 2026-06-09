@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from intergrax.runtime.interactions.factory import (
     create_interaction_adapter,
     resolve_interaction_settings,
@@ -18,6 +20,7 @@ def wire_interaction_intake_service(
     nexus_loop: NexusLoop,
     *,
     interaction_surface: str = "auto",
+    task_enricher: Callable[..., object] | None = None,
 ) -> InteractionIntakeService:
     """
     Build :class:`InteractionIntakeService` for ``POST /v1/interactions/intake``.
@@ -32,4 +35,5 @@ def wire_interaction_intake_service(
         nexus_loop=nexus_loop,
         adapter=adapter,
         verifier=verifier,
+        task_enricher=task_enricher,
     )

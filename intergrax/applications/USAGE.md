@@ -326,6 +326,29 @@ uv run pytest tests/acceptance/agent_os/test_lab_application.py -q
 
 ---
 
+## Orchestration configuration (ORCH-CONFIG / §56)
+
+Tier-3 hosts declare multi-agent topology and routing on `ApplicationEnvironmentProfile`:
+
+| Need | Profile fields | Notes |
+|------|----------------|-------|
+| Fixed pipeline | `graph_spec` + `trigger_capabilities` | Seed graph only for listed orchestration tokens ([ADR-FLOW-004](../../docs/adr/ADR-FLOW-004.md)) |
+| Free-text routing | `orchestration_profile.classifier_kind=rules` + `intent_routes` | Keyword → orchestration token; see `IntentRoute` |
+| LLM routing | `classifier_kind=llm` | Requires host LLM adapter; falls back to rules |
+| Long-running jobs | `orchestration_profile.long_running_enabled` | Apply `apply_long_running_from_profile(task, env)` at intake |
+| Production multi-agent | `ApplicationEnvironmentProfile.strict_multi_agent_defaults()` | Strict mode + critic + `structured_json` merge |
+| Parallel exploration | `ApplicationEnvironmentProfile.swarm_exploration_defaults()` | Raises `max_parallel_nodes` cap (CFG-17 partial) |
+
+**Harness proof:** `tests/integration/runtime/test_orchestration_cfg_simulation.py` (CFG-04/06/07/08/18).
+
+**Scaffold:** lab profile emits interaction intake + scheduler flags by default; product profile supports `{ENV_PREFIX}INCLUDE_INTERACTIONS`, `{ENV_PREFIX}INCLUDE_SCHEDULER`, `{ENV_PREFIX}INCLUDE_TASK_CONTROL`, and optional `{ENV_PREFIX}INCLUDE_QUEUE_WORKER` (legal / research / poc_template reference hosts).
+
+**Task control HTTP** (`/v1/tasks/run-async`, `cancel`, `autonomy`, `resume`): `intergrax/applications/_shared/task_control_wiring.py` · enabled when `INCLUDE_TASK_CONTROL=true` (default on reference hosts).
+
+Canon: [`docs/architecture/ORCHESTRATION.md`](../../docs/architecture/ORCHESTRATION.md) §56 · plan: [`docs/plan/ORCHESTRATION.md`](../../docs/plan/ORCHESTRATION.md) Phase ORCH-CONFIG.
+
+---
+
 ## Related docs
 
 - Repository Tier-3 folder: [`applications/USAGE.md`](../../applications/USAGE.md)

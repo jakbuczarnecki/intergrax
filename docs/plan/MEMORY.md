@@ -27,7 +27,7 @@
 
 ---
 
-### 6.2aa Phase MEM execution order (Band 2h — active)
+### 6.2aa Phase MEM execution order (Band 2h — closed)
 
 **Status:** **Done** (2026-06-02) · **48/48 Done** · canonical register: [Phase MEM — Master deliverables register](#mem--master-deliverables-register-all-48-tasks).
 
@@ -44,7 +44,9 @@ Work **one MEM ID per PR**; after each step update the MEM master table + paydow
 
 **Success gate:** P0 + P1 **Done**; H-APP.4.3 **Done**; user LTM durable on sqlite lab profile; `MemoryProfile` drives all reference hosts.
 
-**Explicitly out of NOW:** K.1/K.2, Mem0 auto-ingest ship (MEM-8.2), entity graph implementation (MEM-9.1 beyond RFC).### 6.2ab Phase MEM-DEPTH execution order (Band 2am — active)
+**Explicitly out of NOW:** K.1/K.2, Mem0 auto-ingest ship (MEM-8.2), entity graph implementation (MEM-9.1 beyond RFC).
+
+### 6.2ab Phase MEM-DEPTH execution order (Band 2am — closed)
 
 **Status:** **Done** (2026-06-08) · **26/26 Done** · canonical register: [Phase MEM-DEPTH — Master deliverables register](#mem-depth--master-deliverables-register-all-26-tasks).
 
@@ -71,8 +73,8 @@ Work **one MEM-DEPTH ID per PR**; after each step update the MEM-DEPTH master ta
 **Status:** **Done** (2026-06-02) — **48/48** deliverables; gate **571 passed**.  
 **Prerequisites:** Phases **I** (TaskMemory), **R-Context**, **H-APP** (profile models), **DX-5.7** (ops:memory hints) **Done**; **H-APP.4.3** closed via **MEM-1.***.  
 **Goal:** Close every gap from the **memory platform audit** — short-term session, user/org LTM, task KV, context compression, H-APP→runtime wiring, persistence, recovery, observability, developer hooks, and market-parity documentation — **without** Band 3 product agents (K.1/K.2) or Mem0-like SaaS product layer (MEM-8 deferred P3).  
-**Priority ladder:** **Band 2h** (§4.0) — **default implementation queue** after §6.1 maintenance.  
-**Execution order:** [§6.2aa](#62aa-phase-mem-execution-order-band-2h--active).  
+**Priority ladder:** **Band 2h** (§4.0) — **closed**; default queue = §6.1 maintenance.  
+**Execution order:** [§6.2aa](#62aa-phase-mem-execution-order-band-2h--closed).  
 **Canon refs:** §27 Memory model · §28.1 Context assembly · §42.35 MemoryView · Appendix G in [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md).
 
 **Delivery rule:** One `MEM-*` ID per PR → update status in tables below + paydown log → `pytest -m gate` + §6.1 audit scripts green.
@@ -316,7 +318,7 @@ Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutab
 **Status:** **Done** (2026-06-08) — **26/26** deliverables; canonical architecture **Done** ([`architecture/MEMORY.md`](architecture/MEMORY.md)).  
 **Prerequisites:** Phase **MEM** (**Done**), Phase **CTX** (**Done**), Phase **R-Delegate** (**Done**), Phase **H-APP** (**Done**).  
 **Goal:** Raise Memory Layer from **L2 → L4** and Context Compiler from fragmented steps to a **unified, never-overflow** pipeline — context compiler, memory lifecycle automation, explore delegation, entity intelligence — **without** Band 3 business agents or Mem0 SaaS product.  
-**Priority ladder:** **Band 2am** (§4.0) — **recommended next harness band** after §6.1 gate (parallel-safe slices).  
+**Priority ladder:** **Band 2am** (§4.0) — **closed** (2026-06-08); default queue = §6.1 maintenance.  
 **Execution order:** [§6.2ab](#62ab-phase-mem-depth-execution-order-band-2am--active).  
 **Canon refs:** [`architecture/MEMORY.md`](architecture/MEMORY.md) · architecture §27–§28.1 · IDEAL §3.7, §16 · audit map §15–16.
 

@@ -48,5 +48,13 @@ def apply_security_profiles_from_environment(
     config: RuntimeConfig,
     env: ApplicationEnvironmentProfile,
 ) -> RuntimeConfig:
-    """Apply environment-declared security profile."""
-    return apply_security_profile_to_runtime_config(config, env.security_profile)
+    """Apply environment-declared security profile and optional vendor guardrail (M-P12-WIRE.2)."""
+    config = apply_security_profile_to_runtime_config(config, env.security_profile)
+    from intergrax.applications._shared.guardrail_runtime_bridge import (
+        resolve_guardrail_wiring_options,
+    )
+
+    guardrail = resolve_guardrail_wiring_options(env)
+    if guardrail.enabled:
+        config.metadata["llm_guardrail_slug"] = guardrail.backend_slug or ""
+    return config

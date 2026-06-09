@@ -8,14 +8,24 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Awaitable, Callable, Optional
 
+from intergrax.contracts.decision_record import DecisionRecord
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.reasoning_failure import ReasoningFailureKind
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
+from intergrax.runtime.nexus.orchestration.planning_coordination_advisory import (
+    build_coordination_advisory_event,
+)
 from intergrax.runtime.nexus.planning.nexus_planner_protocol import NexusTaskPlannerProtocol
+from intergrax.runtime.nexus.observability.planning_metrics import (
+    record_planning_failure,
+    record_planner_fallback,
+)
+from intergrax.runtime.nexus.planning.plan_validator import validate_nexus_plan
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.nexus.task_classifier_protocol import NexusTaskClassifierProtocol
 from intergrax.contracts.runtime_policy import PolicyAction
@@ -48,6 +58,9 @@ class NexusPlanningRunner:
     finish_task: FinishFn
     maybe_checkpoint: CheckpointFn
     policy_engine: PolicyEngine | None = None
+    emit_coordination_advisory: bool = False
+    denied_planner_model_ids: tuple[str, ...] = ()
+    planner_model_id: str | None = None
 
     async def run(
         self,
@@ -160,9 +173,15 @@ class NexusPlanningRunner:
                 context={
                     "phase": "nexus_planning",
                     "classification": classification,
+                    "planner_model_id": self.planner_model_id or "",
+                    "denied_planner_model_ids": self.denied_planner_model_ids,
                 },
             )
             if policy_decision.action is PolicyAction.DENY:
+                failure_kind = ReasoningFailureKind.PLANNER_POLICY_BLOCKED
+                task.metadata["reasoning_failure_kind"] = failure_kind.value
+                record_planning_failure(kind=failure_kind.value)
+                task.sync_metadata()
                 lifecycle.transition(task, TaskState.FAILED)
                 return PlanningPhaseOutcome(
                     early_result=await self.finish_task(
@@ -182,9 +201,40 @@ class NexusPlanningRunner:
                 )
 
         plan = self.planner.plan(task, self.registry)
+        plan_errors = validate_nexus_plan(plan, self.registry)
+        if plan_errors:
+            lifecycle.transition(task, TaskState.FAILED)
+            return PlanningPhaseOutcome(
+                early_result=await self.finish_task(
+                    task,
+                    trace_emitter,
+                    answer="",
+                    executions=[],
+                    validation=ValidationResult(valid=False, errors=plan_errors),
+                    plan=plan,
+                    retry_records=[],
+                    graph_id="",
+                ),
+                classification=classification,
+            )
+
+        if plan.plan_metadata.get("used_fallback") == "true":
+            record_planner_fallback()
+            failure_kind = plan.plan_metadata.get("failure_kind")
+            if failure_kind:
+                record_planning_failure(kind=failure_kind)
+
         task.runtime.orchestration.plan_id = plan.plan_id
+        for key, value in plan.plan_metadata.items():
+            task.metadata[key] = value
         task.sync_metadata()
         lifecycle.transition(task, TaskState.PLANNED)
+        plan_payload: dict[str, object] = {
+            "plan_id": plan.plan_id,
+            "step_count": len(plan.steps),
+            "task_state": task.state.value,
+        }
+        plan_payload.update(plan.plan_metadata)
         await self.publish(
             runtime_event_from_task_state(
                 task, run_id=task.task_id, message="plan created"
@@ -192,14 +242,41 @@ class NexusPlanningRunner:
                 update={
                     "event_type": RuntimeEventType.PLAN_CREATED,
                     "phase": ExecutionPhase.PLANNING,
-                    "payload": {
-                        "plan_id": plan.plan_id,
-                        "step_count": len(plan.steps),
-                        "task_state": task.state.value,
-                    },
+                    "payload": plan_payload,
                 }
             )
         )
+        decision = DecisionRecord(
+            trace_id=task.task_id,
+            run_id=task.task_id,
+            tenant_id=task.tenant_id,
+            task_id=task.task_id,
+            decision_type="nexus_planning",
+            rationale=f"classification={classification}; planner_source={plan.plan_metadata.get('planner_source', 'default')}",
+            metadata={
+                "plan_id": plan.plan_id,
+                "step_count": str(len(plan.steps)),
+                "used_fallback": plan.plan_metadata.get("used_fallback", "false"),
+                "failure_kind": plan.plan_metadata.get("failure_kind", ""),
+            },
+        )
+        await self.publish(
+            RuntimeEvent(
+                event_type=RuntimeEventType.DECISION_EMITTED,
+                tenant_id=task.tenant_id,
+                task_id=task.task_id,
+                run_id=task.task_id,
+                phase=ExecutionPhase.PLANNING,
+                payload=decision.model_dump(mode="json"),
+            )
+        )
+        if self.emit_coordination_advisory:
+            await self.publish(
+                build_coordination_advisory_event(
+                    task_id=task.task_id,
+                    tenant_id=task.tenant_id,
+                )
+            )
 
         hook_failure = await self.hitl.run_lifecycle_hook(
             before=False,

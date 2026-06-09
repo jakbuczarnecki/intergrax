@@ -29,6 +29,7 @@ from intergrax.integrations.contracts.graph_store import GraphStore
 from intergrax.integrations.contracts.feature_flag import FeatureFlagBackend
 from intergrax.integrations.contracts.ci_cd import CiCdBackend
 from intergrax.integrations.contracts.vector_store import VectorStore
+from intergrax.integrations.contracts.llm_guardrail import LlmGuardrailBackend
 from intergrax.integrations.contracts.security_scanner import SecurityScannerBackend
 from intergrax.integrations.contracts.sandbox_host import SandboxHostBackend
 from intergrax.integrations.contracts.identity_provider import IdentityProviderBackend
@@ -170,3 +171,7 @@ def assert_billing_meter_backend(instance: object) -> BillingMeterBackend:
 
 def assert_crm_backend(instance: object) -> CrmBackend:
     return assert_implements(instance, CrmBackend)
+
+
+def assert_llm_guardrail_backend(instance: object) -> LlmGuardrailBackend:
+    return assert_implements(instance, LlmGuardrailBackend)

@@ -87,4 +87,45 @@ Execution: [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EX
 
 Full audit procedure: [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md).
 
+---
+
+## Platform runtime capabilities (cross-domain index)
+
+Essential platform behaviours span multiple domain pairs — use this index before opening unrelated docs.
+
+| Capability | Primary architecture | Plan phase |
+|------------|---------------------|------------|
+| Resilience policies (retry, reboot, circuit breaker) | [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](architecture/RELIABILITY_FAILURE_AND_HITL.md) §34 | REL-ADV |
+| Orchestration strategies (parallel, sequence, cooperation, scale, redundancy) | [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §50–§53, §58 | ORCH-5, ORCH-6 |
+| MVP → product evolution (eval, KPI, simulation, promotion) | [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) §44 | MVP-EVOL |
+| Autonomy slider (manual / ask / autonomous) | REL §35 + [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.10.2 | REL-ADV |
+| Sync / async execution postures | [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §57 | ORCH-6 |
+| Interrupt anywhere / resume from checkpoint | [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §28 + UAEP §42.8–§42.9 | FLOW-CTL |
+| Guardrails / policy enforcement (catalog) | [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.11.6 · §42.37 · vendor backends [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) §47 | GR-DOC · M.12 |
+
 Platform docs do not replace `agents/*/ARCHITECTURE.md` or `applications/*/ARCHITECTURE.md`.
+
+### Platform execution audit (2026-06-09, synced)
+
+**Verdict:** Tier-1 Nexus supports all documented launch/interaction scenarios (FLOW §3.1 S1–S7). Harness closeouts **Done**: ORCH-CONFIG, ORCH-5, H-APP-WIRING, MEM/COG/ECP-DEPTH, reference host CFG presets. **Remaining:** product-only items (§6.3) — FLOW-8 Tier-3 demo host, CFG-14 LKW daemon, GOV-PROD.1 dashboard.
+
+| Topic | Canonical register | Status |
+|-------|-------------------|--------|
+| CFG-* configuration cases | [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §56.7, §59.3 | **18/19 harness Done**; CFG-14 product **Deferred** §6.3 |
+| Host surface parity | [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §59.2 · [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](architecture/TIER3_APPLICATION_ENVIRONMENT.md) §23.7 | Reference hosts **Done**; LKW opt-in flags |
+| FLOW runtime gaps | [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §23.2 | FLOW-GAP-01–19 **Closed**; FLOW-GAP-20 **Deferred** §6.3 |
+| Depth bands | [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) §4.0 | MEM/COG/ECP/ORCH-CONFIG **Done** |
+| Default queue | [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) §6.1 | Gate maintenance only |
+
+---
+
+## ADRs (harness — selected)
+
+| ADR | Topic |
+|-----|-------|
+| [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md) | Declarative delegation (`DELEGATES_TO`) |
+| [`adr/ADR-FLOW-002.md`](adr/ADR-FLOW-002.md) | Reserved lifecycle states |
+| [`adr/ADR-FLOW-003.md`](adr/ADR-FLOW-003.md) | `MODIFY_PLAN` semantics |
+| [`adr/ADR-FLOW-004.md`](adr/ADR-FLOW-004.md) | Graph spec seed guard (`trigger_capabilities`) |
+
+**Platform configuration canon (CFG-*):** [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §56 · implementation [`plan/ORCHESTRATION.md`](plan/ORCHESTRATION.md) Phase **ORCH-CONFIG**.

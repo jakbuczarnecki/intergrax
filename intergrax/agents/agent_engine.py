@@ -7,9 +7,9 @@ from __future__ import annotations
 from typing import Dict, Optional, Union
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.agents.uaep import UAEPExecutor
+from intergrax.agents.uaep import UAEPBlockedError, UAEPExecutor
 from intergrax.agents.uaep_protocol import supports_uaep
-from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.runtime_mapping import runtime_answer_to_agent_result
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -133,12 +133,22 @@ class AgentEngine:
         event_bus: Optional[RuntimeEventBus] = None,
     ) -> AgentExecutionResult:
         executor = AgentEngine._resolve_static_executor(uaep_executor, event_bus)
-        answer, validation, _context, governance = await AgentEngine._execute_agent_impl(
-            agent,
-            request,
-            executor,
-        )
         contract = agent.get_contract()
+        run_id = str(request.metadata.get("run_id") or request.metadata.get("task_id") or "")
+        try:
+            answer, validation, _context, governance = await AgentEngine._execute_agent_impl(
+                agent,
+                request,
+                executor,
+            )
+        except UAEPBlockedError as exc:
+            return AgentExecutionResult(
+                agent_id=contract.id,
+                run_id=run_id,
+                status=AgentExecutionStatus.FAILED,
+                summary="",
+                errors=[str(exc)],
+            )
         return runtime_answer_to_agent_result(
             answer,
             agent_id=contract.id,

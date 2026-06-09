@@ -56,6 +56,13 @@ from intergrax.applications._shared.evaluation_wiring import (
     ApplicationEvaluationWiring,
     wire_application_evaluation,
 )
+from intergrax.applications._shared.guardrail_assembly_resolver import (
+    assert_guardrail_assembly_valid,
+)
+from intergrax.applications._shared.guardrail_wiring import (
+    ApplicationGuardrailWiring,
+    wire_application_guardrail,
+)
 from intergrax.applications._shared.security_wiring import (
     ApplicationSecurityWiring,
     wire_application_security,
@@ -76,6 +83,7 @@ class HarnessHostRuntime:
     observability: NexusObservabilityStores
     reliability: ApplicationReliabilityWiring
     security: ApplicationSecurityWiring
+    guardrail: ApplicationGuardrailWiring
     cost: ApplicationCostWiring
     evaluation: ApplicationEvaluationWiring
     critic: ApplicationCriticWiring
@@ -142,6 +150,7 @@ def build_harness_host_runtime(
     assert_reliability_assembly_valid(reliability_wiring, environment)
     security_wiring = wire_application_security(environment)
     assert_security_assembly_valid(security_wiring, environment)
+    guardrail_wiring = wire_application_guardrail(environment)
     cost_wiring = wire_application_cost(environment)
     assert_cost_assembly_valid(cost_wiring, environment)
     evaluation_wiring = wire_application_evaluation(environment)
@@ -169,10 +178,15 @@ def build_harness_host_runtime(
         llm_adapter=resolve_llm_adapter(environment),
         runtime_event_bus=env_wiring.build_context.runtime_event_bus,
         security_wiring=security_wiring,
+        guardrail_wiring=guardrail_wiring,
         critic_wiring=critic_wiring,
         run_budget=cost_wiring.run_budget,
     )
     assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)
+    assert_guardrail_assembly_valid(guardrail_wiring, environment, nexus=nexus_loop)
+    from intergrax.applications._shared.reliability_wiring import apply_reliability_governance_wiring
+
+    apply_reliability_governance_wiring(nexus_loop, environment)
     _ = checkpoints_db_path
     return HarnessHostRuntime(
         manifest=resolved_manifest,
@@ -182,6 +196,7 @@ def build_harness_host_runtime(
         observability=observability,
         reliability=reliability_wiring,
         security=security_wiring,
+        guardrail=guardrail_wiring,
         cost=cost_wiring,
         evaluation=evaluation_wiring,
         critic=critic_wiring,

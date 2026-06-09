@@ -126,6 +126,10 @@ class NexusLoop:
         evaluation_registry: OnlineEvaluationRegistry | None = None,
         run_budget: RunBudget | None = None,
         critic_graph_hooks: Optional["CriticGraphHooks"] = None,
+        emit_coordination_advisory: bool = False,
+        allow_dynamic_replan: bool = False,
+        denied_planner_model_ids: tuple[str, ...] = (),
+        planner_model_id: str | None = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -147,6 +151,7 @@ class NexusLoop:
         self._policy_engine = coerce_policy_engine(policy_engine)
         self._interrupt_handler = interrupt_handler or ExecutionInterruptHandler(
             policy_engine=self._policy_engine,
+            allow_dynamic_replan=allow_dynamic_replan,
         )
         self._shadow_manager = shadow_manager or ShadowWorkspaceManager()
         self._sandbox_manager = sandbox_manager or SandboxSessionManager()
@@ -250,6 +255,9 @@ class NexusLoop:
             finish_task=self._finish_task,
             maybe_checkpoint=self._maybe_checkpoint_long_running,
             policy_engine=self._policy_engine,
+            emit_coordination_advisory=emit_coordination_advisory,
+            denied_planner_model_ids=denied_planner_model_ids,
+            planner_model_id=planner_model_id,
         )
 
     @property
@@ -387,7 +395,7 @@ class NexusLoop:
                 HookPoint.BEFORE_FINALIZATION,
                 task,
                 phase=ExecutionPhase.COMPLETION,
-                extra={"task_state": task.state.value},
+                extra=_finalization_hook_extra(task, answer=answer),
             )
         except NexusLifecycleHookError as exc:
             await self._publish_terminal_runtime_event(task)
@@ -418,7 +426,7 @@ class NexusLoop:
                 HookPoint.AFTER_FINALIZATION,
                 task,
                 phase=ExecutionPhase.COMPLETION,
-                extra={"task_state": task.state.value},
+                extra=_finalization_hook_extra(task, answer=answer),
             )
         except NexusLifecycleHookError:
             pass
@@ -563,3 +571,13 @@ class NexusLoop:
             human_store=self._human_store,
             response_text=response_text,
         )
+
+
+def _finalization_hook_extra(task: Task, *, answer: str) -> dict[str, str]:
+    return {
+        "task_state": task.state.value,
+        "prompt": task.message,
+        "llm_output": answer,
+        "output": answer,
+        "tenant_id": task.tenant_id,
+    }

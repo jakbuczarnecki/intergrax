@@ -76,8 +76,9 @@ Tier-3 hosts are configured through **`ApplicationEnvironmentProfile`** — a ty
 | `IdentityProfile` | API key, tenant_required, service identities |
 | `PolicyRulesProfile` + `ExecutionMode` | Declarative rules + STRICT/BALANCED/EXPLORATORY |
 | `ApplicationSecurityProfile` | Per-app V-SEC toggles |
+| `GuardrailProfile` | Vendor LLM guardrail scan toggles (`enabled`, `scan_input/output/tool_calls`, Colang/Bedrock options) |
 | `ToolProfile` / `SkillProfile` | Allowed catalogs |
-| `IntegrationProfile` | Provider stack |
+| `IntegrationProfile` | Provider stack — includes optional `llm_guardrail` slug (§47) |
 | `LLMProfile` / `ModalityProfile` | Model and modality posture |
 | `ContextProfile` / `MemoryProfile` / `ContextDecisionProfile` | Assembly and stores |
 | `PromptProfile` | YAML prompt catalog path |
@@ -106,6 +107,7 @@ ApplicationManifest
 | `nexus_factory.py` | NexusLoop from profile |
 | `identity_wiring.py` | Host auth from `IdentityProfile` |
 | `shadow_wiring.py` / `sandbox_wiring.py` | Isolated execution |
+| `guardrail_wiring.py` / `guardrail_runtime_bridge.py` | `llm_guardrail` slug → `LlmGuardrailMiddleware` (M.12) |
 | `*_runtime_bridge.py` | Domain bridges (RAG, memory, policy, …) |
 
 ## 22.3 Interaction surfaces (intake)
@@ -141,5 +143,192 @@ Every Tier-3 application MUST:
 | [`ORCHESTRATION.md`](ORCHESTRATION.md) | Nexus orchestration fields on profile |
 | [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) | `ScalingProfile`, deploy/Helm vs ECP provisioning |
 | [`guides/HARNESS_ENVIRONMENT.md`](../guides/HARNESS_ENVIRONMENT.md) | Lab stack operator guide |
+
+---
+
+# 23. Application interaction postures (canonical)
+
+Tier-3 hosts are **composition shells** around a long-lived Nexus runtime. The same platform mechanisms support different **interaction postures** — selected through `ApplicationEnvironmentProfile` and host wiring, not separate runtime forks.
+
+> **Master configuration canon (all postures × agent counts × strategies × CFG cases):** [`ORCHESTRATION.md`](ORCHESTRATION.md) **§56** — start there for product design and implementation planning. This section is the **Tier-3 host summary** only.
+
+**Runtime narrative:** [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §3.1 · **Patterns:** [`ORCHESTRATION.md`](ORCHESTRATION.md) §50–§56 · **Routing modes:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9.4.
+
+## 23.1 Posture catalog
+
+| Posture | Process model | Task trigger | Typical surfaces |
+|---------|---------------|--------------|------------------|
+| **Reactive on-demand** | Host daemon idle until work arrives | User/API message per `Task` | HTTP `POST …/run`, MCP, Slack/Teams intake (`execute=true`) |
+| **Always-on daemon** | Host process runs continuously | Same as reactive; plus health/index maintenance | Local HTTP/MCP, tray, Socket Mode Slack |
+| **Scheduled / queued background** | Worker consumes queue or cron | Scheduler, file watcher, webhook enqueue | `intergrax/queueing/`, long-running API, `message_bus` |
+| **Hybrid** | Daemon + background workers | Mix of interactive and async tasks | LKW-style: index in background, Q&A on demand |
+
+**Invariant:** every posture normalizes work to **`Task` → `UnifiedTaskRunner` → `NexusLoop.handle_task()`**. Surfaces differ; Nexus lifecycle does not.
+
+```text
+Bootstrap (once per host process):
+  ApplicationManifest + ApplicationEnvironmentProfile
+    → wire_application_environment()
+    → build_application_registry()
+    → build_nexus_loop_from_environment()
+    → UnifiedTaskRunner(nexus_loop)
+
+Per unit of work (any posture):
+  Surface adapter → Task → UnifiedTaskRunner.run_task() → NexusLoop
+```
+
+Agents are **not** separate OS processes. They are registry entries invoked **on demand** per graph node. The host may be always-on; agents remain passive until Nexus schedules a node.
+
+## 23.2 Profile knobs per posture
+
+| Concern | Profile / module | Reactive | Always-on daemon | Background / hybrid |
+|---------|------------------|----------|------------------|---------------------|
+| HTTP/MCP serving | Host `factory.py` | Optional | **Required** | Often required for ops |
+| Interaction intake | `wire_interaction_intake_service` | Optional | Recommended | Optional (notify only) |
+| Long-running + checkpoint | `OrchestrationProfile.long_running_enabled`, `ReliabilityProfile` | Off unless large jobs | On for reports / HITL | **On** for batch pipelines |
+| Queue consumer | `applications/_shared/task_intake.py`, `queueing/` | Rare | Optional | **Required** for async |
+| Notification on complete | `NotificationAdapter`, integration webhooks | Optional | Recommended | **Required** for user alert |
+| Shadow / sandbox | `ShadowWorkspaceProfile`, `SandboxProfile` | Per task | Per task | Per task |
+| Execution mode | `ExecutionMode` STRICT / BALANCED / EXPLORATORY | Product choice | Product choice | Often BALANCED for batch |
+
+**Rule:** posture is a **product wiring decision** on Tier-3. Tier-1 Nexus semantics are identical across postures.
+
+## 23.3 Routing responsibility matrix (who sets `capability`)
+
+Free-text user input does **not** implicitly select agents. Routing is explicit at one of four layers:
+
+| Layer | Owner | When to use | Sets on `Task` |
+|-------|-------|-------------|----------------|
+| **L1 — Client / API contract** | Tier-3 router or API schema | Client knows intent (`dispute.scenario`, `research.pipeline`) | `context.capability`, optional `agent_id` |
+| **L2 — Interaction adapter** | `InteractionIntakeService` + surface adapter | Slack slash command, structured lab JSON | `message` + mapped `capability` from command prefix |
+| **L3 — Tier-1 classifier** | `TaskClassifier` / `classifier_kind=rules` / future LLM (`COG-3.*`) | Chat UX with raw user text | `classification` + inferred `capability` when rules/LLM enabled |
+| **L4 — Declarative graph** | `ApplicationGraphSpec` + `GraphSpecSeedingPlanner` | Multi-agent product with fixed topology | Plan steps from `graph_spec`; task `capability` selects pipeline entry |
+
+```mermaid
+flowchart LR
+    subgraph T3["Tier-3 host"]
+        API["HTTP / MCP router"]
+        ADP["Slack / Teams adapter"]
+    end
+    subgraph T1["Tier-1 Nexus"]
+        CLS["TaskClassifier"]
+        PLN["NexusTaskPlanner"]
+        GRF["GraphSpecSeedingPlanner"]
+        GE["GraphExecutor"]
+    end
+    API -->|capability explicit| PLN
+    ADP -->|command → capability| PLN
+    API -->|free text only| CLS
+    CLS --> PLN
+    GRF --> PLN
+    PLN --> GE
+```
+
+**Authoring defaults (harness):**
+
+| UX pattern | Minimum routing layer | Do not rely on |
+|------------|----------------------|----------------|
+| Typed REST API | L1 | Classifier alone |
+| Slash command (`/dsw analyze …`) | L2 | Default agent fallback |
+| Free-text chatbot | L3 when available; until then L1 shim in host | `SINGLE_AGENT_DEFAULT` |
+| Fixed multi-agent product | L1 `*.pipeline` capability + L4 `graph_spec` | `MULTI_AGENT` classification alone |
+
+See [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9.4 for classification vs orchestration mode.
+
+## 23.4 Multi-agent topology configuration (Tier-3)
+
+Three **supported** ways to run multiple agents with different roles. Pick one per product; do not mix ad-hoc.
+
+| Mode | Mechanism | Agent relationship | Classification typical |
+|------|-----------|-------------------|------------------------|
+| **A — Declarative graph** | `ApplicationGraphSpec` on profile | `depends_on` / `delegates_to` edges | `CAPABILITY_ROUTED` or `MULTI_AGENT` after seed |
+| **B — Pipeline capability** | `Task.context.capability = "<app>.pipeline"` | Sequential steps from `TaskPlanner` or graph seed | Product-specific; see §23.5 |
+| **C — Engine planner** | `OrchestrationProfile.planner_kind = engine` | LLM emits `NexusPlan` steps | Any; validated against registry |
+
+**Not a multi-agent mode:** `TaskClassification.MULTI_AGENT` when several agents declare the **same** capability — that is **competitive routing**, not a cross-role pipeline. See [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9.4.
+
+### Graph spec seeding rules (runtime today)
+
+`GraphSpecSeedingPlanner` wraps the inner planner when `environment.graph_spec.nodes` is non-empty:
+
+```text
+should_seed_plan_from_graph_spec(task) is True
+  AND graph_spec.nodes non-empty
+    → application_graph_spec_to_nexus_plan(spec, task)
+  ELSE
+    → inner.planner.plan(task, registry)   # TaskPlanner or EngineBackedNexusPlanner
+```
+
+`should_seed_plan_from_graph_spec` is true when the task has **no pre-assigned** `task.runtime.orchestration.plan_id`.
+
+**Authoring conventions:**
+
+| Convention | Purpose |
+|------------|---------|
+| `capability = "<product>.pipeline"` | Signals multi-step product intent to operators and traces |
+| `graph_spec` with `DEPENDS_ON` chain | Sequential cooperation (A → B → C) |
+| Parallel branches | Multiple nodes with no `depends_on` between them → same topological batch |
+| `DELEGATES_TO` edges | Hierarchical delegation per [ADR-FLOW-001](../adr/ADR-FLOW-001.md) |
+| `merge_strategy` on profile | How parallel/sequential summaries compose for the user |
+
+**Implemented (H-APP-DOC.2 / ORCH-CONFIG.2):** `ApplicationGraphSpec.trigger_capabilities` — seed graph only when task capability matches (avoids graph override on single-agent routes). See ADR-FLOW-004.
+
+## 23.5 Scenario recipes (configuration templates)
+
+Copy a row when designing a new Tier-3 host. Adjust profile fields; do not fork Nexus.
+
+| Product scenario | Posture | Agents | Coordination pattern | Key profile settings |
+|------------------|---------|--------|----------------------|----------------------|
+| Single Q&A agent | Reactive | 1 | Orchestrator–worker (1 node) | `planner_kind=default`, explicit `capability` on API |
+| Chat with raw user text | Reactive / daemon | 1+ | Classifier → single or pipeline | `classifier_kind=rules` + `intent_routes` (ORCH-CONFIG.1); `engine` when COG-3 done |
+| Research: search then summarize | Reactive | 2 | Sequential pipeline | `capability=research.pipeline` **or** `graph_spec` chain |
+| Dispute prep: intake → analyze → strategy → scenario | Reactive / hybrid | 4 | Sequential graph | `graph_spec` + `*.pipeline` token · product example §6.3 (DSW) · harness: CFG-06 sim |
+| Parallel doc review shards | Background + reactive | N | Peer-to-peer (parallel batch) | `graph_spec` without inter-node `depends_on`; `max_parallel_nodes` |
+| PM delegates to specialists | Reactive | 3+ | Hierarchical | `DELEGATES_TO` edges + `max_delegation_depth` |
+| Quality gate before answer | Reactive | 2+ | Evaluator-loop | CVL hooks + `CoordinationPattern.EVALUATOR_LOOP` |
+| Index corpus continuously | Hybrid daemon | 1 | Scheduled single-agent | Queue + `dispute.intake`; notify on batch complete |
+| Legal draft review + HITL | Reactive | 1–2 | Supervisor–worker | `require_human_approval`, shadow workspace, L2 critic |
+
+**Cross-ref:** pattern names and parallelism rules — [`ORCHESTRATION.md`](ORCHESTRATION.md) §50–§51; completion policy — [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md).
+
+## 23.6 Host checklist (every Tier-3 application)
+
+1. Declare `environment` on `ApplicationManifest` with intended posture (§23.2).
+2. Wire **all** chosen surfaces to `UnifiedTaskRunner` (HTTP, MCP, interaction intake if needed).
+3. For multi-agent: set `graph_spec` **or** document `*.pipeline` capability **or** enable `planner_kind=engine`.
+4. Set `merge_strategy` for multi-node UX (`concat` vs `last_wins` vs `structured_json`).
+5. Set `execution_mode=strict` in production; wire critic profile for high-risk capabilities.
+6. Do not implement business orchestration loops in Tier-2 — use Nexus graph + UAEP steps.
+
+**Plan:** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) Phase H-APP-DOC · platform cases **ORCH-CONFIG** in [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md).
+
+## 23.7 Tier-3 host wiring audit (as-built 2026-06-09)
+
+**Canonical full matrix:** [`ORCHESTRATION.md`](ORCHESTRATION.md) §59.2.
+
+Phase H-APP (**Done**) delivered unified `ApplicationEnvironmentProfile` and `wire_application_environment` — but **surface mounting** (task control API, scheduler, interactions, reliability enricher) is **per-host optional**. Only `lab_application` is the reference for full platform runtime capabilities (ORCH-6, FLOW-CTL, REL-ADV HTTP).
+
+| Gap ID | Symptom | Affected hosts | Plan |
+|--------|---------|----------------|------|
+| T3-GAP-01 | No `mount_harness_task_routes` | LKW, dispute_sim, assistant (opt-in) | **Closed** on lab/legal/research/poc · H-APP-WIRING.1 **Done** |
+| T3-GAP-02 | Reliability task enricher not in factory | LKW, dispute_sim, assistant | **Closed** on reference hosts · runner `task_enricher` |
+| T3-GAP-03 | Long-running scheduler not wired | LKW (opt-in) | **Closed** on reference hosts (legal/research/poc/dispute_sim/lab default on) |
+| T3-GAP-04 | Interaction intake not enabled | LKW (opt-in) | **Closed** on reference hosts incl. dispute_sim (`INCLUDE_INTERACTIONS` default on) |
+| T3-GAP-05 | Queue worker not scaffold-default | Most hosts | **Partial** — opt-in `INCLUDE_QUEUE_WORKER` (legal + scaffold); dispute_sim optional |
+| T3-GAP-06 | Hybrid daemon (CFG-14) — LKW incomplete | `local_workspace_application` | **Deferred** §6.3 · doc in LKW `ARCHITECTURE.md` |
+
+**Authoring rule:** do not claim CFG-13/14/20 production-ready on a host until §23.7 gaps for that host are closed or explicitly documented in product `ARCHITECTURE.md`.
+
+## 23.8 Technical debt — docs vs implementation (post closeout 2026-06-09)
+
+| Topic | Architecture says | Current code | Debt |
+|-------|-------------------|--------------|------|
+| Unified task control API | ORCH §57, FLOW §28, REL §35 | `mount_harness_task_routes` on reference hosts + scaffold | LKW opt-in only |
+| Async batch | ORCH-6 `run_async` | Reference hosts mount `/v1/tasks/run-async` | Durable queue opt-in (`INCLUDE_QUEUE_WORKER`) |
+| Strict multi-agent | `with_reference_host_platform_defaults()` | legal/research/poc/dispute_sim presets | Product E1+E3 demo **Deferred** §6.3 |
+| Free-text routing | `classifier_kind=rules` | Reference host presets enable rules classifier | LKW/assistant per-host opt-in |
+| Scaffold parity | H-APP-DOC.4 + H-APP-WIRING Done | Scaffold defaults: `INCLUDE_TASK_CONTROL`, interactions, scheduler | Queue worker still opt-in |
+
+**Paydown:** [Phase H-APP-WIRING](../plan/TIER3_APPLICATION_ENVIRONMENT.md) (Band 2aw) **Done** (2026-06-09). Default queue: §6.1 gate maintenance only.
 
 ---

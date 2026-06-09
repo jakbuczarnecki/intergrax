@@ -151,6 +151,54 @@ ApplicationManifest
 
 Key wiring: `intergrax/applications/_shared/nexus_factory.py`, `orchestration_wiring.py`, `harness_host_runtime.py`.
 
+### 3.1 Application interaction scenarios (same Nexus path)
+
+Every scenario below uses **`UnifiedTaskRunner.run_task()`**. Differences are **host posture** (when tasks appear) and **profile orchestration** (how many agents, in what order).
+
+| Scenario | Host posture | Task creation | Orchestration config | Agent execution |
+|----------|--------------|---------------|----------------------|-----------------|
+| **S1 — Single reactive Q&A** | HTTP/MCP on demand | `POST …/run` builds `Task` with `capability` | `planner_kind=default`, 1 agent | One graph node → UAEP |
+| **S2 — Free-text chat** | Daemon + intake | Slack/HTTP; capability from adapter or classifier | `classifier_kind=rules` (ORCH-CONFIG.1) or COG-3 LLM when done | As S1 or pipeline |
+| **S3 — Multi-agent sequential** | On demand | `capability=*.pipeline` or orchestration token | `graph_spec` `DEPENDS_ON` chain | Nodes A→B→C sequentially |
+| **S4 — Multi-agent parallel** | On demand | One `Task`, graph with independent nodes | `max_parallel_nodes`, `merge_strategy` | Batch gather in `GraphExecutor` |
+| **S5 — Background batch** | Always-on worker | Queue/scheduler enqueues `Task` | `long_running_enabled`, checkpoints | Same graph rules; notify on complete |
+| **S6 — Hybrid daemon** | Always-on + workers | Interactive tasks + cron index jobs | Separate capabilities per job type | Independent Nexus runs per `Task` |
+| **S7 — HITL pause/resume** | Any | Agent `REQUEST_HUMAN` or planning gate | `require_human_approval`, critic L2 | `WAITING_FOR_HUMAN` → resume token → same path |
+
+**Harness proof (CFG-06 / S3):** `tests/integration/runtime/test_orchestration_cfg_simulation.py` · canon [`ORCHESTRATION.md`](ORCHESTRATION.md) §56.13.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Surface as Surface (HTTP / Slack / Queue)
+    participant Host as Tier-3 Host
+    participant UTR as UnifiedTaskRunner
+    participant NL as NexusLoop
+
+    Note over Host: Process always-on OR idle until work
+    User->>Surface: message / job / webhook
+    Surface->>Host: normalize payload
+    Host->>Host: build Task (capability, metadata)
+    Host->>UTR: run_task(Task)
+    UTR->>NL: handle_task
+    NL-->>UTR: TaskResult
+    UTR-->>Host: answer + state
+    Host-->>User: JSON / chat reply / notification
+```
+
+**Continuous vs reactive clarification:**
+
+| Component | Continuous? | Reactive? |
+|-----------|-------------|-----------|
+| Tier-3 host process (uvicorn, worker) | Can be always-on | Accepts work on demand |
+| `NexusLoop` | Loaded at bootstrap | Invoked per `Task` |
+| Tier-2 agent instances in registry | Registered at bootstrap | Executed per graph node |
+| Background index / queue consumer | Separate `Task` triggers | N/A |
+
+**Routing:** configuration cases **CFG-*** [`ORCHESTRATION.md`](ORCHESTRATION.md) §56.7 · Tier-3 summary [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23 · routing modes [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9.4.
+
+**Completion:** structural validation (`non_empty_summary`) is always applied; semantic completion (critic, HITL) is profile-driven — [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md).
+
 ---
 
 ## 4. Master sequence — happy path
@@ -650,6 +698,8 @@ resume restores plan/graph/UAEP cursor from SQLite
 | UC-8 HITL before run | **Yes** | Partial | `test_acceptance_04_human_approval_flow` | `HUMAN_APPROVAL_REQUESTED`, `WAITING_FOR_HUMAN` |
 | UC-9 Long-running | **Yes** | Partial (scheduler optional) | `test_acceptance_05_checkpoint_recovery`, `05b_mid_step_uaep_resume` | checkpoint events, `TASK_PROGRESS` |
 
+**Why Production-ready = Partial (2026-06-09 audit, synced):** harness runtime proves semantics; production claims additionally require (a) `execution_mode=strict` + critic profile on the deployment host, (b) operational SLO evidence (W-OPS), (c) product-specific validation beyond reference host presets. Reference hosts mount task control + async APIs (H-APP-WIRING **Done**); LKW hybrid daemon remains **Deferred** §6.3. UC-6 remains **No** until product research agents replace stubs (§6.3).
+
 **Additional cross-cutting acceptance:** `test_acceptance_03_parallel_multi_agent`, `06_retry_flow`, `07_partial_results`, `09_sandbox_tool_execution`, `10_shadow_workspace` — `tests/acceptance/agent_os/test_agent_os_scenarios.py`.
 
 ---
@@ -1021,7 +1071,8 @@ Honest deltas for plan scheduling. **Closeout phases (ORCH Done) wired bootstrap
 |----------|---------|----------|
 | **Runtime-core** | Blocks correct Harness semantics in production multi-agent | **Closed** (FLOW-1–6, 13–15) |
 | **Production-hardening** | Lab works; product needs richer merge/eval/policy | **Closed** (FLOW-7, 9, 11, 14) |
-| **Product-proof** | Needs Tier-2/Tier-3 product agents, not platform code | **Deferred** (FLOW-8 → §6.3) |
+| **Product-proof** | Harness CFG simulation Done; full Tier-3 product host deferred | **Done (harness)** / **Deferred (product)** §6.3 |
+| **Tier-3 wiring** | Runtime Done; reference hosts mount task control + async | **Closed** (H-APP-WIRING Done; FLOW-GAP-17–18 on reference hosts) |
 | **DX / documentation** | Authoring ergonomics or doc-only until ADR | **Closed** (FLOW-5, 10, 16, 17) |
 
 ### 23.2 Gap register
@@ -1037,15 +1088,19 @@ Honest deltas for plan scheduling. **Closeout phases (ORCH Done) wired bootstrap
 | FLOW-GAP-07 | `FinalResponseComposer` | **Closed (FLOW-7)** — `MergeStrategy` profile-driven merge | Production-hardening | Medium | §9 |
 | FLOW-GAP-08 | `WAITING_FOR_RESOURCES` / `EXPIRED` | **Closed (FLOW-10)** — [ADR-FLOW-002](adr/ADR-FLOW-002.md) reserved v1 semantics | DX / lifecycle | Low | §8 |
 | FLOW-GAP-09 | Pre-plan LLM policy hooks | **Closed (FLOW-11)** — `evaluate_pre_llm` at planning boundary | Production-hardening | Medium | §5 |
-| FLOW-GAP-10 | Product multi-agent proof | **Deferred (FLOW-8)** — §6.3 product gate | Product-proof | Product | §28 |
+| FLOW-GAP-10 | Product multi-agent proof | **Done (harness)** — `test_orchestration_cfg_simulation.py` (ORCH-CONFIG.5); Tier-3 §42.43 product host **Deferred** §6.3 | Product-proof | Product | §28 |
 | FLOW-GAP-11 | Evaluator / LLM-judge not mandatory on multi-agent fan-in | **Closed (FLOW-9)** — post-graph eval observation hook in `NexusLoop` | Production-hardening | Medium | §25 |
 | FLOW-GAP-12 | `max_inflight_nodes` not on `OrchestrationProfile` | **Closed (FLOW-13)** — profile field + `nexus_factory` wire | Runtime-core | Medium | §9 |
 | FLOW-GAP-13 | `SubtaskContract` not used in declarative graph | **Closed (FLOW-14)** — `graph_spec_to_plan` uses `SubtaskContract.to_delegation_spec()` | Runtime-core | Medium | §10 |
 | FLOW-GAP-14 | Subagent budget not delegated | **Closed (FLOW-15)** — `max_llm_calls`/`max_tool_calls` on delegation envelope | Production-hardening | Medium | §10 |
 | FLOW-GAP-15 | `MODIFY_PLAN` reserved / undocumented | **Closed (FLOW-16)** — [ADR-FLOW-003](adr/ADR-FLOW-003.md); `MODIFY_PLAN_NOT_SUPPORTED` without handoff | DX | Low | §9 |
 | FLOW-GAP-16 | `MULTI_AGENT` step order fragile | **Closed (FLOW-17)** — `multi_agent_order` on `OrchestrationProfile` | DX | Low | §9 |
+| FLOW-GAP-17 | Tier-3 task control HTTP (cancel/resume/autonomy) | **Closed (H-APP-WIRING)** — legal/research/poc_template + scaffold `INCLUDE_TASK_CONTROL` | Tier-3 wiring | Medium | §28, ORCH §59.2 |
+| FLOW-GAP-18 | Async `run_async` product exposure | **Closed** — reference hosts mount `/v1/tasks/run-async`; durable queue opt-in (`INCLUDE_QUEUE_WORKER`) | Tier-3 wiring | Medium | ORCH §57.5 |
+| FLOW-GAP-19 | Production strict multi-agent gate | **Closed (harness)** — CFG-20 sim + `with_reference_host_platform_defaults()` on reference hosts; E1+E3 product demo **Deferred** §6.3 | Product-proof | High | CFG-20, FLOW-8 |
+| FLOW-GAP-20 | Hybrid daemon E2E (S6 / CFG-14) | **Deferred** §6.3 — LKW product incomplete | Product-proof | Medium | §6.3, TIER3 §23.7 |
 
-**Status (2026-06-07):** Phase FLOW **Done** (17/18); `FLOW-GAP-01`…`09`, `11`…`16` **closed**; `FLOW-GAP-10` → FLOW-8 **Deferred** (§6.3). See [Phase FLOW](../plan/ORCHESTRATION.md).
+**Status (2026-06-09, synced):** Phase FLOW **Done** (18/18 harness); FLOW-8 harness **Done** (ORCH-CONFIG.5); product host **Deferred** §6.3. H-APP-WIRING **Done** — FLOW-GAP-17–19 closed on reference hosts. See [Phase ORCH-CONFIG](../plan/ORCHESTRATION.md#phase-orch-config--platform-interaction--multi-agent-configuration-band-2ar--closed).
 
 ---
 
@@ -1060,7 +1115,8 @@ Ideal Harness AI ([`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_A
 | Capability | Status |
 |------------|--------|
 | Deterministic `TaskPlanner` + classifier | **Done** — production-lab ready |
-| Declarative `graph_spec` | **Done** (ORCH-2) |
+| Rules + LLM classifier (`classifier_kind=rules|llm`) | **Done** (ORCH-CONFIG.1, COG-3.*) |
+| Declarative `graph_spec` + `trigger_capabilities` | **Done** (ORCH-2, ORCH-CONFIG.2, ADR-FLOW-004) |
 | LLM-backed Nexus planner (`planner_kind=engine`) | **Done** (FLOW-1) — `EngineBackedNexusPlanner` |
 | `DecisionRecord` universal per UAEP step | **Done** (FLOW-12) — `DECISION_EMITTED` + `decision_record` payload; gate regression test |
 | Engine planner modules (`engine_planner_orchestrator.py`) | **Bridged** via `nexus_llm_plan_builder.py` |
@@ -1071,7 +1127,7 @@ Harness MVP and new Tier-2 agents remain unblocked. LLM-backed dynamic decomposi
 
 ## 25. Plan traceability matrix
 
-**Status:** **Done** (2026-06-07) — canonical implementation in [`plan/NEXUS_EXECUTION_FLOW.md) [Phase FLOW](#phase-flow--nexus-execution-depth) · closed queue [§6.1aj](../plan/NEXUS_EXECUTION_FLOW.md#61aj-harness-implementation-queue--nexus-execution-depth-closed) · execution [§6.2aj](../plan/NEXUS_EXECUTION_FLOW.md#62aj-phase-flow-execution-order-band-2aj--active-2026-06-07) · traceability **Appendix N (FLOW)** · **FLOW-8 Deferred**.
+**Status:** **Done** (2026-06-09) — canonical implementation in [`plan/NEXUS_EXECUTION_FLOW.md`](../plan/NEXUS_EXECUTION_FLOW.md) Phase FLOW · **18/18 harness Done** (FLOW-8 harness ORCH-CONFIG.5); product host **Deferred** §6.3.
 
 ### 25.1 Implementation rows (Phase FLOW — Band 2aj)
 
@@ -1084,7 +1140,7 @@ Harness MVP and new Tier-2 agents remain unblocked. LLM-backed dynamic decomposi
 | FLOW-5 | FLOW-GAP-05 | Wire `AgentGraph.on_error` to `RetryPolicy` | Integration test | Low |
 | FLOW-6 | FLOW-GAP-06 | Strict cycle detection in `ExecutionGraph.batches()` | Cycle → plan error | Medium |
 | FLOW-7 | FLOW-GAP-07 | `MergePolicy` / `FinalResponseComposerProfile` | Profile-driven merge strategies | Medium |
-| FLOW-8 | FLOW-GAP-10 | Reference Tier-3 app implementing §42.43 | 3+ agent graph_spec demo | Product |
+| FLOW-8 | FLOW-GAP-10 | Harness CFG simulation (CFG-06/04/18) + optional Tier-3 §42.43 product host | `test_orchestration_cfg_simulation.py`; product **Deferred** §6.3 | **Done (harness)** / **Deferred (product)** |
 | FLOW-9 | FLOW-GAP-11 | Documented evaluator-node pattern + optional post-graph eval hook | Eval registry observation per multi-agent run | Medium |
 | FLOW-10 | FLOW-GAP-08 | Implement or remove reserved lifecycle states | ADR + runner sets state OR enum trim | Low |
 | FLOW-11 | FLOW-GAP-09 | Pre-plan / pre-LLM policy extension points | Hook tests + Appendix H cross-ref | Medium |
@@ -1159,5 +1215,96 @@ Pattern selection MUST be explicit and policy-aware (IDEAL §6.4, AUDIT_MAP §10
 **Code:** `runtime/architecture/multi_agent_coordination.py`, `multi_agent_acceptance.py`.
 
 Narrative flows: §12–§14 in this document. Critic depth: [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md).
+
+---
+
+## 28. Operation Lifecycle Control — Interrupt, Cancel, Resume
+
+Operators and users MUST be able to **stop work at any meaningful boundary** and **continue from the last durable checkpoint** without re-running completed units.
+
+### 28.1 Interrupt points (canonical)
+
+Execution is interruptible at every **UAEP phase transition** and **graph node boundary**:
+
+```text
+INTAKE → CLASSIFICATION → PLANNING → GRAPH_NODE_START → UAEP_STEP → TOOL_CALL → VALIDATION → GRAPH_NODE_END → COMPLETION
+         ↑ each arrow is a policy-checked interrupt/cancel checkpoint
+```
+
+| Boundary | Trigger sources | Handler |
+|----------|-----------------|---------|
+| Before / after task intake | Operator API, policy hook | `NexusIntakeRunner` — early exit or HITL |
+| After classification / planning | `INTERRUPT`, policy deny | Replan or `WAITING_FOR_HUMAN` |
+| Between graph nodes | Cancel coordinator, node failure policy | Skip or abort remaining nodes per graph policy |
+| Inside UAEP step | `AgentDecision.INTERRUPT`, `CANCEL`, `REQUEST_HUMAN` | `ExecutionInterruptHandler` + `PolicyEngine` |
+| Before / after tool call | Tool policy, autonomy level | `PolicyEngine.evaluate_tool_call` |
+| On blocking interrupt | `ExecutionInterrupt.blocking=true` | Pause + `PauseRecord` + checkpoint |
+
+**Non-blocking interrupts** MAY allow parallel graph branches to continue when `OrchestrationProfile` allows — UAEP §42.8.3.
+
+### 28.2 Cancellation semantics
+
+```text
+cancel(task_id, reason)
+    → CancellationCoordinator.request_cancel
+    → in-flight UAEP step: cooperative cancel at next await boundary
+    → graph: remaining nodes skipped; terminal state CANCELLED
+    → emit TASK_FAILED or CANCELLED per policy
+```
+
+| Scope | Behaviour |
+|-------|-----------|
+| Whole task | `AgentDecision.CANCEL` or operator API |
+| Single graph node | Node failure propagation; optional partial graph result |
+| In-flight tool | Best-effort abort; idempotent tools safe on retry |
+
+Agents MUST poll `RuntimeExecutionContext.should_cancel()` in long loops — no unbounded work after cancel requested.
+
+### 28.3 Resume semantics
+
+Resume is **checkpoint-driven**, not "guess where we were":
+
+```text
+pause (HITL | operator | blocking interrupt)
+    → RuntimeCheckpoint(plan, graph states, UAEP cursor, context refs)
+    → resume_token issued
+
+resume(task_id, resume_token, operator_input?)
+    → validate token + checkpoint integrity
+    → emit RESUMED
+    → GraphExecutor skips nodes marked completed in checkpoint
+    → UAEP continues from paused phase/step
+```
+
+| Resume type | Acceptance test | Granularity |
+|-------------|-----------------|-------------|
+| Pre-graph HITL | `test_acceptance_04_human_approval_flow` | Before first node |
+| Mid-graph checkpoint | `test_acceptance_05_checkpoint_recovery` | Between nodes |
+| Mid-UAEP step | `test_acceptance_05b_mid_step_uaep_resume` | Inside agent run |
+
+**Rules:** checkpoints MUST include plan snapshot, graph node states, UAEP cursor; agents MUST NOT hold exclusive external locks across pause (idempotent re-entry) — UAEP §42.9.4.
+
+### 28.4 Sync vs async interaction
+
+| Posture | Interrupt API | Resume API |
+|---------|---------------|------------|
+| Sync HTTP | Same connection may return `WAITING_FOR_HUMAN` + token | Subsequent `POST` with `resume_token` |
+| Async queue | Worker observes cancel flag | Scheduler / worker resume endpoint |
+| Long-running | Progress events + checkpoint store | `options.long_running.resume_token` |
+
+**Canon:** UAEP §42.8–§42.9 · reliability [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) §33.3, §34 · orchestration [`ORCHESTRATION.md`](ORCHESTRATION.md) §57.
+
+**Plan:** [`plan/NEXUS_EXECUTION_FLOW.md`](../plan/NEXUS_EXECUTION_FLOW.md) Phase FLOW-CTL.
+
+### 28.5 Implementation coverage (audit 2026-06-09)
+
+| Mechanism | Tier-1 runtime | HTTP operator API | Notes |
+|-----------|----------------|-------------------|-------|
+| Cooperative cancel (`should_cancel`) | ✅ UAEP + `ActiveTaskRegistry` | `POST /v1/tasks/{id}/cancel` — **lab only** | FLOW-CTL.1–2 |
+| Interrupt budget | ✅ `max_interrupts_per_run` | — | FLOW-CTL.3 |
+| Checkpoint resume | ✅ scheduler + `resume_planner` | `POST /v1/tasks/{id}/resume` — **lab only** | FLOW-CTL.4 |
+| Mid-run autonomy | ✅ `AutonomyGovernanceMiddleware` | `POST /v1/tasks/{id}/autonomy` — **lab only** | REL-ADV.4 |
+
+**Discrepancy closed here:** FLOW-CTL is **Done** for harness semantics; **Partial** for Tier-3 product surface parity — see [`ORCHESTRATION.md`](ORCHESTRATION.md) §59.2 · [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23.7.
 
 ---

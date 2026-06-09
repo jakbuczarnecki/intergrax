@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""ApplicationGraphSpec to NexusPlan conversion (Phase ORCH-2)."""
+"""ApplicationGraphSpec to NexusPlan conversion (Phase ORCH-2, ORCH-CONFIG.2)."""
 
 from __future__ import annotations
 
@@ -21,21 +21,50 @@ from intergrax.runtime.task.task import Task, TaskContext
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
-def _task() -> Task:
+def _task(*, capability: str = "echo.pipeline") -> Task:
     return Task(
         tenant_id="t1",
         user_id="u1",
         message="hello",
-        context=TaskContext(capability="echo.basic"),
+        context=TaskContext(capability=capability),
     )
 
 
-def test_should_seed_when_no_plan_id() -> None:
-    task = _task()
-    assert should_seed_plan_from_graph_spec(task) is True
+def _spec(*, triggers: list[str] | None = None) -> ApplicationGraphSpec:
+    return ApplicationGraphSpec(
+        nodes=[GraphNode(agent_id="AgentA"), GraphNode(agent_id="AgentB")],
+        edges=[
+            GraphEdge(
+                source_agent_id="AgentA",
+                target_agent_id="AgentB",
+                kind=GraphEdgeKind.DEPENDS_ON,
+            ),
+        ],
+        trigger_capabilities=triggers or [],
+    )
+
+
+def test_should_seed_when_no_plan_id_and_pipeline_capability() -> None:
+    task = _task(capability="echo.pipeline")
+    assert should_seed_plan_from_graph_spec(task, _spec()) is True
+
+
+def test_should_not_seed_for_non_pipeline_capability_without_triggers() -> None:
+    task = _task(capability="echo.basic")
+    assert should_seed_plan_from_graph_spec(task, _spec()) is False
+
+
+def test_should_seed_for_explicit_trigger_capabilities() -> None:
+    task = _task(capability="echo.basic")
+    spec = _spec(triggers=["echo.basic"])
+    assert should_seed_plan_from_graph_spec(task, spec) is True
+
+
+def test_should_not_seed_when_plan_id_present() -> None:
+    task = _task(capability="echo.pipeline")
     task.runtime.orchestration.plan_id = "plan_existing"
     task.sync_metadata()
-    assert should_seed_plan_from_graph_spec(task) is False
+    assert should_seed_plan_from_graph_spec(task, _spec()) is False
 
 
 def test_graph_spec_to_plan_topology() -> None:

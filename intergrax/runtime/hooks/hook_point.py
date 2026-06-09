@@ -45,3 +45,4 @@ class HookPoint(str, Enum):
     AFTER_TRACE_PERSIST = "after_trace_persist"
     BEFORE_MEMORY_WRITE = "before_memory_write"
     AFTER_MEMORY_WRITE = "after_memory_write"
+    BEFORE_CAPACITY_ACTION = "before_capacity_action"

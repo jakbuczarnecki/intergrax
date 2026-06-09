@@ -15,7 +15,9 @@ from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.resilience_policy import FailureClass, FailureResponse, ResiliencePolicy
 from intergrax.runtime.nexus.retry.retry_types import RetryDecision, RetryRecord
+from intergrax.runtime.resilience.policy_resolver import resolve_failure_action
 
 ExecuteFn = Callable[[Agent], Awaitable[AgentExecutionResult]]
 
@@ -57,6 +59,13 @@ class RetryEngine:
             return RetryDecision(should_retry=False, reason="retry_disabled")
 
         alternate = self._find_alternate_agent(task, excluded={agent_id})
+        resilience_policy = _resilience_policy_from_task(task)
+        if resilience_policy is not None:
+            return _retry_decision_from_resilience_policy(
+                policy=resilience_policy,
+                attempt=attempt,
+                alternate_agent_id=alternate,
+            )
         if alternate is None:
             return RetryDecision(should_retry=False, reason="no_alternate_agent")
 
@@ -145,3 +154,32 @@ class RetryEngine:
             if aid not in excluded:
                 return aid
         return None
+
+
+def _retry_decision_from_resilience_policy(
+    *,
+    policy: ResiliencePolicy,
+    attempt: int,
+    alternate_agent_id: str | None,
+) -> RetryDecision:
+    resolution = resolve_failure_action(
+        FailureClass.QUALITY_ERROR,
+        policy=policy,
+        attempt=attempt,
+    )
+    if resolution.response is FailureResponse.RETRY_ALTERNATE and alternate_agent_id:
+        return RetryDecision(
+            should_retry=True,
+            reason=resolution.reason,
+            alternate_agent_id=alternate_agent_id,
+        )
+    if resolution.response is FailureResponse.RETRY:
+        return RetryDecision(should_retry=True, reason=resolution.reason)
+    return RetryDecision(should_retry=False, reason=resolution.reason)
+
+
+def _resilience_policy_from_task(task: Task) -> ResiliencePolicy | None:
+    raw = task.metadata.get("resilience_policy.v1")
+    if isinstance(raw, dict):
+        return ResiliencePolicy.model_validate(raw)
+    return None

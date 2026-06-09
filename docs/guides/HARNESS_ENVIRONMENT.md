@@ -210,7 +210,7 @@ Governance, policy, and observability are **composable control-plane layers** �
 
 **Modularity:** swap observability backend via `IntegrationProfile.observability_backend`; add policy via YAML + EP handlers; enable V-SEC defenses via `ApplicationSecurityProfile` — without changing Tier-2 agent code.
 
-**Orchestration:** graph execution, delegation, handoff, hooks — [`guides/AGENT_CREATION_GUIDE.md` Appendix I](guides/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane). **End-to-end flow (diagrams, edge cases):** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md). Wired via `orchestration_wiring.py` + `graph_spec_to_plan.py` (Phase ORCH **Done**; Phase FLOW **Done** 17/18). Multi-agent quick start: [Appendix C](guides/AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs).
+**Orchestration:** graph execution, delegation, handoff, hooks — [`guides/AGENT_CREATION_GUIDE.md` Appendix I](guides/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane). **End-to-end flow (diagrams, edge cases):** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md). Wired via `orchestration_wiring.py` + `graph_spec_to_plan.py` (Phase ORCH **Done**; Phase FLOW **Done** 18/18 harness). Multi-agent quick start: [Appendix C](guides/AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs).
 
 ---
 
@@ -355,6 +355,47 @@ set LAB_STRICT_HARNESS=true
 set INTERGRAX_HARNESS_API_KEY=your-key
 uv run pytest tests/unit/applications/test_lab_strict_harness.py -m gate -q
 ```
+
+---
+
+## Elastic capacity reference policy (ECP-1.5)
+
+Lab hosts wire `ScalingProfile` via `wire_application_scaling()` — **no-op** when `scaling_profile.policy.enabled=false` (default). Enable for experiments:
+
+```json
+{
+  "enabled": true,
+  "max_actions_per_hour": 6,
+  "require_hitl_for_scale_up": true,
+  "rules": [
+    {
+      "rule_id": "celery_queue",
+      "target": "celery_pool",
+      "metric_name": "queue_depth",
+      "scale_up_threshold": 10,
+      "scale_down_threshold": 2,
+      "action_kind": "scale_celery_workers",
+      "delta": 1,
+      "cooldown_seconds": 120
+    }
+  ]
+}
+```
+
+Set on `ApplicationEnvironmentProfile.scaling_profile.policy` in a custom lab profile or manifest override.
+
+---
+
+## Orchestration resilience runbook (ORCH-5.5)
+
+| Signal | Where | Action |
+|--------|-------|--------|
+| `DECISION_EMITTED` (planning) | Runtime event store / debug UI | Verify planner source + fallback flag in payload |
+| `COORDINATION_PATTERN_ADVISORY` | `TASK_PROGRESS` during planning | Observe-only; does not override `coordination_pattern` on plan |
+| Swarm parallel cap deny | Graph executor / trace | Reduce `max_parallel_nodes` or switch coordination pattern |
+| Citation merge conflicts | `MergeStrategy.CITATION_PRESERVING` | Inspect composer output; fall back to `concat` in profile if needed |
+
+Link W-OPS SLO checks: `scripts/check_observability_gates.py` + `scripts/check_reasoning_gates.py` in CI.
 
 ---
 

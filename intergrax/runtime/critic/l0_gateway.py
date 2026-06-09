@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.runtime.critic.contracts import CriticLayer, CriticRequest, LayerVerdict
+from intergrax.runtime.critic.guardrail_l0 import merge_guardrail_l0
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 
 
@@ -37,10 +38,11 @@ class L0Gateway:
             capability=capability,
             plan_criteria=plan_criteria,
         )
-        return LayerVerdict(
+        verdict = LayerVerdict(
             layer=CriticLayer.L0_DETERMINISTIC,
             passed=result.valid,
             score=1.0 if result.valid else 0.0,
             errors=list(result.errors),
             warnings=list(result.warnings),
         )
+        return merge_guardrail_l0(verdict, context=request.context)

@@ -124,12 +124,20 @@ def execution_options_from_metadata(metadata: Dict[str, Any]) -> TaskExecutionOp
     if response_text and verdict is None:
         verdict = parse_human_response(str(response_text))
 
+    autonomy_raw = metadata.get("autonomy_level")
+    autonomy_level = None
+    if autonomy_raw:
+        from intergrax.contracts.autonomy_level import AutonomyLevel
+
+        autonomy_level = AutonomyLevel(str(autonomy_raw))
     governance = TaskGovernanceOptions(
         require_human_approval=_truthy(metadata.get(TaskMetadataKey.REQUIRE_HUMAN_APPROVAL)),
         require_human_on_critical=(
             metadata.get(TaskMetadataKey.REQUIRE_HUMAN_ON_CRITICAL, True) is not False
         ),
         high_risk=_truthy(metadata.get(TaskMetadataKey.HIGH_RISK)),
+        autonomy_level=autonomy_level,
+        max_interrupts_per_run=int(metadata.get("max_interrupts_per_run", 16)),
     )
     long_running = TaskLongRunningOptions(
         enabled=_truthy(metadata.get(TaskMetadataKey.LONG_RUNNING)),
@@ -196,11 +204,21 @@ def runtime_state_from_metadata(metadata: Dict[str, Any]) -> TaskRuntimeState:
             for step in chain_raw
         ],
     )
+    confidence_raw = metadata.get(TaskOrchestrationMetadataKey.CLASSIFICATION_CONFIDENCE)
+    confidence: float | None = None
+    if confidence_raw is not None:
+        try:
+            confidence = float(confidence_raw)
+        except (TypeError, ValueError):
+            confidence = None
     classification = TaskClassificationState(
         value=metadata.get(TaskOrchestrationMetadataKey.CLASSIFICATION),
         requested_capability=metadata.get(TaskOrchestrationMetadataKey.REQUESTED_CAPABILITY),
         unsupported_reason=metadata.get(TaskOrchestrationMetadataKey.UNSUPPORTED_REASON),
         risk_level=metadata.get(TaskOrchestrationMetadataKey.RISK_LEVEL),
+        confidence=confidence,
+        rationale=metadata.get(TaskOrchestrationMetadataKey.CLASSIFICATION_RATIONALE),
+        classifier_source=metadata.get(TaskOrchestrationMetadataKey.CLASSIFIER_SOURCE),
     )
     orchestration = TaskOrchestrationState(
         plan_id=metadata.get(TaskOrchestrationMetadataKey.PLAN_ID),
@@ -331,6 +349,18 @@ def sync_task_metadata(task: Task) -> None:
         meta[TaskOrchestrationMetadataKey.UNSUPPORTED_REASON] = cls.unsupported_reason
     if cls.risk_level is not None:
         meta[TaskOrchestrationMetadataKey.RISK_LEVEL] = cls.risk_level
+    if cls.confidence is not None:
+        meta[TaskOrchestrationMetadataKey.CLASSIFICATION_CONFIDENCE] = cls.confidence
+    else:
+        meta.pop(TaskOrchestrationMetadataKey.CLASSIFICATION_CONFIDENCE, None)
+    if cls.rationale is not None:
+        meta[TaskOrchestrationMetadataKey.CLASSIFICATION_RATIONALE] = cls.rationale
+    else:
+        meta.pop(TaskOrchestrationMetadataKey.CLASSIFICATION_RATIONALE, None)
+    if cls.classifier_source is not None:
+        meta[TaskOrchestrationMetadataKey.CLASSIFIER_SOURCE] = cls.classifier_source
+    else:
+        meta.pop(TaskOrchestrationMetadataKey.CLASSIFIER_SOURCE, None)
 
     if orch.plan_id is not None:
         meta[TaskOrchestrationMetadataKey.PLAN_ID] = orch.plan_id

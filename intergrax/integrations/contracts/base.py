@@ -47,6 +47,7 @@ class IntegrationCategory(str, Enum):
     ML_INFERENCE_HOST = "ml_inference_host"
     BILLING_METER = "billing_meter"
     CRM = "crm"
+    LLM_GUARDRAIL = "llm_guardrail"
 
 
 @dataclass(frozen=True)
@@ -159,6 +160,7 @@ PROFILE_FIELD_BY_CATEGORY: dict[str, str] = {
     IntegrationCategory.ML_INFERENCE_HOST.value: "ml_inference_host",
     IntegrationCategory.BILLING_METER.value: "billing_meter",
     IntegrationCategory.CRM.value: "crm",
+    IntegrationCategory.LLM_GUARDRAIL.value: "llm_guardrail",
 }
 
 

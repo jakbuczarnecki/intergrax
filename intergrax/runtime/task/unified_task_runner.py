@@ -3,12 +3,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Optional
 
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import Task, TaskResult
 from intergrax.llm_adapters.tracking.context import llm_tenant_scope
+from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.runtime.task.task_run_bridge import (
     new_run_id,
     runtime_request_with_run_id,
@@ -23,16 +25,28 @@ class UnifiedTaskRunner:
     Used by HTTP serving and eval paths; aligns task_id with run_id.
     """
 
-    def __init__(self, nexus_loop: NexusLoop) -> None:
+    def __init__(
+        self,
+        nexus_loop: NexusLoop,
+        *,
+        task_enricher: Callable[[Task], Task] | None = None,
+    ) -> None:
         self._nexus_loop = nexus_loop
+        self._task_enricher = task_enricher
 
     @property
     def nexus_loop(self) -> NexusLoop:
         return self._nexus_loop
 
     async def run_task(self, task: Task) -> TaskResult:
-        with llm_tenant_scope(task.tenant_id):
-            return await self._nexus_loop.handle_task(task)
+        if self._task_enricher is not None:
+            task = self._task_enricher(task)
+        await ActiveTaskRegistry.register(task)
+        try:
+            with llm_tenant_scope(task.tenant_id):
+                return await self._nexus_loop.handle_task(task)
+        finally:
+            await ActiveTaskRegistry.unregister(task.task_id)
 
     async def run_runtime_request(
         self,

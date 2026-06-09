@@ -28,7 +28,12 @@ from intergrax.runtime.long_running.runtime_checkpoint import (
     attach_runtime_checkpoint_to_metadata,
     runtime_checkpoint_from_metadata,
 )
+from intergrax.runtime.architecture.multi_agent_coordination import CoordinationPattern
 from intergrax.runtime.nexus.agent_router import AgentRouter
+from intergrax.runtime.nexus.orchestration.swarm_policy import (
+    SwarmCoordinationError,
+    validate_swarm_parallel_batch,
+)
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.context.metadata_keys import HANDOFF_STRUCTURED_OUTPUT_PREFIX
 from intergrax.runtime.nexus.handoff.coordinator import HandoffCoordinator
@@ -175,6 +180,19 @@ class GraphExecutor:
                     all_executions.append(extra_execution)
                     prior_outputs[node_id] = extra_execution
             else:
+                coordination_pattern = task.metadata.get("coordination_pattern")
+                if coordination_pattern == CoordinationPattern.SWARM.value:
+                    try:
+                        validate_swarm_parallel_batch(len(batch))
+                    except SwarmCoordinationError as exc:
+                        failed = AgentExecutionResult(
+                            agent_id="",
+                            run_id=task.task_id,
+                            status=AgentExecutionStatus.FAILED,
+                            summary="",
+                            errors=[str(exc)],
+                        )
+                        return [failed], [], graph, False
                 results = await self._execute_parallel_batch(
                     batch,
                     graph=graph,

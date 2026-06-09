@@ -48,7 +48,7 @@ def build_legal_environment_profile(settings: LegalBackendSettings) -> Applicati
         ):
             if tool_id not in tool_ids:
                 tool_ids.append(tool_id)
-    return ApplicationEnvironmentProfile.product_defaults(
+    profile = ApplicationEnvironmentProfile.product_defaults(
         profile_id="legal.product",
         skill_bundles=["legal"],
         tool_ids=tool_ids,
@@ -59,6 +59,25 @@ def build_legal_environment_profile(settings: LegalBackendSettings) -> Applicati
             "modality_profile": modality_profile,
         },
     ).with_harness_memory()
+    if settings.enable_llm_guardrails:
+        from intergrax.applications.contracts.environment_profile import GuardrailProfile
+        from intergrax.integrations.registry.presets import harness_guardrail_stack
+
+        profile = profile.model_copy(
+            update={
+                "integration_profile": harness_guardrail_stack(
+                    primary=settings.llm_guardrail_primary,
+                    semantic=settings.llm_guardrail_semantic,
+                ),
+                "guardrail_profile": GuardrailProfile(
+                    enabled=True,
+                    scan_input=True,
+                    scan_output=True,
+                    secondary_slug=settings.llm_guardrail_semantic,
+                ),
+            },
+        )
+    return profile.with_reference_host_platform_defaults()
 
 
 def build_legal_registry(settings: LegalBackendSettings) -> AgentRegistry:

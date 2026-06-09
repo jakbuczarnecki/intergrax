@@ -1683,6 +1683,10 @@ harness-author = [
     { name = "pyyaml", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "uvicorn", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
+integrations-guardrails = [
+    { name = "presidio-analyzer", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "presidio-anonymizer", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
 integrations-harness = [
     { name = "sentry-sdk", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
@@ -1818,6 +1822,8 @@ requires-dist = [
     { name = "pika", marker = "extra == 'dev'", specifier = ">=1.3.2" },
     { name = "pillow", specifier = ">=11.0" },
     { name = "pinecone", specifier = ">=3.0" },
+    { name = "presidio-analyzer", marker = "extra == 'integrations-guardrails'", specifier = ">=2.2" },
+    { name = "presidio-anonymizer", marker = "extra == 'integrations-guardrails'", specifier = ">=2.2" },
     { name = "psycopg", extras = ["binary"], marker = "extra == 'dev'", specifier = ">=3.1" },
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pymongo", marker = "extra == 'dev'", specifier = ">=4.6" },
@@ -1870,7 +1876,7 @@ requires-dist = [
     { name = "xlrd", specifier = ">=2.0" },
     { name = "yt-dlp", specifier = ">=2024.0" },
 ]
-provides-extras = ["harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "integrations-sentry", "integrations-harness"]
+provides-extras = ["harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "integrations-sentry", "integrations-harness", "integrations-guardrails"]
 
 [[package]]
 name = "invoke"
@@ -3042,6 +3048,15 @@ wheels = [
 ]
 
 [[package]]
+name = "phonenumbers"
+version = "9.0.32"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ef/11/ba7611cadc8c99b797416d0dada535c02890dc21b759dfef60a3751d2e20/phonenumbers-9.0.32.tar.gz", hash = "sha256:108ad0237202d2f6cf4b342fac411f22808d85187c3a366152a2af7ed3202a8e", size = 2306598, upload-time = "2026-06-05T05:48:38.909Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c6/e9/1ca526105e792b7ed752fd0ff5732ab01185f2deb719ae6f30183fb21143/phonenumbers-9.0.32-py2.py3-none-any.whl", hash = "sha256:fbcd40d3b11920ee77b1d34a54c3b64c6648a90b8e37222eb62e7fafb87db3e7", size = 2595438, upload-time = "2026-06-05T05:48:36.066Z" },
+]
+
+[[package]]
 name = "pika"
 version = "1.3.2"
 source = { registry = "https://pypi.org/simple" }
@@ -3182,6 +3197,33 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/3e/75/d7fff7f1fa3763619aa85d6ba70493a5d9c6e6ea7958a6e8c9d3e6e88bbe/preshed-3.0.12-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:5d0aaac9c5862f5471fddd0c931dc64d3af2efc5fe3eb48b50765adb571243b9", size = 900540, upload-time = "2025-11-17T12:59:41.384Z" },
     { url = "https://files.pythonhosted.org/packages/e4/12/a2285b78bd097a1e53fb90a1743bc8ce0d35e5b65b6853f3b3c47da398ca/preshed-3.0.12-cp312-cp312-win_amd64.whl", hash = "sha256:0eb8d411afcb1e3b12a0602fb6a0e33140342a732a795251a0ce452aba401dc0", size = 118298, upload-time = "2025-11-17T12:59:42.65Z" },
     { url = "https://files.pythonhosted.org/packages/0b/34/4e8443fe99206a2fcfc63659969a8f8c8ab184836533594a519f3899b1ad/preshed-3.0.12-cp312-cp312-win_arm64.whl", hash = "sha256:dcd3d12903c9f720a39a5c5f1339f7f46e3ab71279fb7a39776768fb840b6077", size = 104746, upload-time = "2025-11-17T12:59:43.934Z" },
+]
+
+[[package]]
+name = "presidio-analyzer"
+version = "2.2.362"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "phonenumbers", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "pydantic", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "pyyaml", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "regex", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "spacy", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "tldextract", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2f/8a/d6cf4bddbb11d9c78f5c9342bbbcde4f90fe4e3c7de114a836ec4ed8a6cf/presidio_analyzer-2.2.362-py3-none-any.whl", hash = "sha256:4c36438924b1fcb4df92ea5cf2d8dc57508808e116b10923c983b8732aa07d90", size = 201084, upload-time = "2026-03-15T12:40:43.801Z" },
+]
+
+[[package]]
+name = "presidio-anonymizer"
+version = "2.2.362"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cryptography", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/17/01/1c3404e8da63a979ae951b8822576bc0e52ca3a46a624ac9439786990c6d/presidio_anonymizer-2.2.362-py3-none-any.whl", hash = "sha256:b2d81542cb797360d18506a1aa73ea0dfacc44abca15248c81dd062f582e6b2b", size = 36603, upload-time = "2026-03-15T12:40:38.651Z" },
 ]
 
 [[package]]
@@ -3944,6 +3986,18 @@ wheels = [
 ]
 
 [[package]]
+name = "requests-file"
+version = "3.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3c/f8/5dc70102e4d337063452c82e1f0d95e39abfe67aa222ed8a5ddeb9df8de8/requests_file-3.0.1.tar.gz", hash = "sha256:f14243d7796c588f3521bd423c5dea2ee4cc730e54a3cac9574d78aca1272576", size = 6967, upload-time = "2025-10-20T18:56:42.279Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e1/d5/de8f089119205a09da657ed4784c584ede8381a0ce6821212a6d4ca47054/requests_file-3.0.1-py2.py3-none-any.whl", hash = "sha256:d0f5eb94353986d998f80ac63c7f146a307728be051d4d1cd390dbdb59c10fa2", size = 4514, upload-time = "2025-10-20T18:56:41.184Z" },
+]
+
+[[package]]
 name = "requests-oauthlib"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -4520,6 +4574,21 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/df/a1/5723b07a70c1841a80afc9ac572fdf53488306848d844cd70519391b0d26/tld-0.13.1.tar.gz", hash = "sha256:75ec00936cbcf564f67361c41713363440b6c4ef0f0c1592b5b0fbe72c17a350", size = 462000, upload-time = "2025-05-21T22:18:29.341Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/dc/70/b2f38360c3fc4bc9b5e8ef429e1fde63749144ac583c2dbdf7e21e27a9ad/tld-0.13.1-py2.py3-none-any.whl", hash = "sha256:a2d35109433ac83486ddf87e3c4539ab2c5c2478230e5d9c060a18af4b03aa7c", size = 274718, upload-time = "2025-05-21T22:18:25.811Z" },
+]
+
+[[package]]
+name = "tldextract"
+version = "5.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "filelock", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "idna", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "requests", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "requests-file", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/65/7b/644fbbb49564a6cb124a8582013315a41148dba2f72209bba14a84242bf0/tldextract-5.3.1.tar.gz", hash = "sha256:a72756ca170b2510315076383ea2993478f7da6f897eef1f4a5400735d5057fb", size = 126105, upload-time = "2025-12-28T23:58:05.532Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6d/42/0e49d6d0aac449ca71952ec5bae764af009754fcb2e76a5cc097543747b3/tldextract-5.3.1-py3-none-any.whl", hash = "sha256:6bfe36d518de569c572062b788e16a659ccaceffc486d243af0484e8ecf432d9", size = 105886, upload-time = "2025-12-28T23:58:04.071Z" },
 ]
 
 [[package]]

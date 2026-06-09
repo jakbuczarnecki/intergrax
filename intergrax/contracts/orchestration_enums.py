@@ -13,6 +13,7 @@ class MergeStrategy(str, Enum):
     CONCAT = "concat"
     LAST_WINS = "last_wins"
     STRUCTURED_JSON = "structured_json"
+    CITATION_PRESERVING = "citation_preserving"
 
 
 class MultiAgentOrder(str, Enum):

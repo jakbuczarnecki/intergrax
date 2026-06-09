@@ -150,5 +150,7 @@ def build_nexus_task_result(
     ):
         if key in task.metadata:
             result.metadata[key] = task.metadata[key]
+    if plan and plan.plan_metadata:
+        result.metadata.update(plan.plan_metadata)
     result.sync_metadata()
     return result

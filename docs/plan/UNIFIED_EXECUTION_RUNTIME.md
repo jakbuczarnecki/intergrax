@@ -278,10 +278,10 @@
 
 
 
-**Status:** **Done** (2026-06-07) — **17/18** deliverables Done (**FLOW-8 Deferred** §6.3) · source: [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §23–§25  
+**Status:** **Done** (2026-06-07) — **18/18 harness** deliverables Done (FLOW-8 harness **Done**; product host **Deferred** §6.3; product §6.3 §6.3) · source: [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §23–§25  
 **Prerequisites:** Phase ORCH **Done**; [ADR-FLOW-001](adr/ADR-FLOW-001.md) **Accepted** (delegation target semantics)  
 **Goal:** Close **all** orchestration depth gaps (`FLOW-GAP-01`…`16`) from flow reference — uplift AUDIT_MAP §5, §7, §8, §9, §10, §25 from L2/L3-partial to **L3+** operational maturity  
-**Priority ladder:** **Band 2aj** (§4.0) — **recommended next harness band** after §6.1 gate (before §6.3 product)  
+**Priority ladder:** **Band 2aj** (§4.0) — **maintenance only** — §6.1 gate (Band 3 §6.3 frozen)  
 **Execution order:** [§6.2aj](#62aj-phase-flow-execution-order-band-2aj--active) · queue: [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed)  
 **Traceability:** **Appendix N (FLOW)** — [`§Appendix N`](#appendix-n--nexus-execution-flow-traceability-phase-flow)
 
@@ -321,7 +321,7 @@
 | FLOW-15 | FLOW4 | FLOW-GAP-14 | **Subagent budget envelope** — optional `budget_envelope` on `SubtaskContract` / `DelegationSpec`; enforce in child `GraphExecutor` run via existing budget bridge | **Done** | Medium | `subtask_contract.py`, `delegation.py`, `graph_executor.py` | Child run exceeds envelope → fail with trace |
 | FLOW-16 | FLOW4 | FLOW-GAP-15 | **`MODIFY_PLAN` ADR** — [ADR-FLOW-003](adr/ADR-FLOW-003.md): document reserved semantics (policy-gated replan hook) **or** trim `AgentDecision` enum | **Done** | Low | `adr/ADR-FLOW-003.md`, `interrupts/handler.py` | ADR accepted; `MODIFY_PLAN_NOT_SUPPORTED` when no handoff |
 | FLOW-17 | FLOW4 | FLOW-GAP-16 | **`MULTI_AGENT` ordering policy** — `OrchestrationProfile.multi_agent_order` (`registry` \| `priority` \| `stable_alpha`); deterministic step order in `TaskPlanner` | **Done** | Low | `environment_profile.py`, `task_planner.py` | Gate test: two agents same capability → stable declared order |
-| FLOW-8 | FLOW5 | FLOW-GAP-10 | **§42.43 reference Tier-3 app** — 3+ agent `graph_spec` demo (PM/UX/Legal pattern) | **Deferred** | Product | `applications/` new host or lab extension | Acceptance multi-agent + HITL path · **§6.3 gate** |
+| FLOW-8 | FLOW5 | FLOW-GAP-10 | **Harness CFG simulation** (ORCH-CONFIG.5) + optional Tier-3 §42.43 product host | **Partial** | Harness + Product | `tests/integration/runtime/test_orchestration_cfg_simulation.py` · product §6.3 gate |
 | FLOW-DOC.2 | FLOW5 | — | **Phase closeout** — Appendix N (FLOW), flow reference §23 paydown (all gaps), maturity dashboard §0.5 | **Done** | Low | `docs/*` | All non-deferred FLOW rows **Done**; zero open `FLOW-GAP` in §23 |
 
 ### FLOW — Suggested PR order
@@ -340,7 +340,7 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 |------|---------|---------|
 | 2026-06-07 | — | Phase FLOW scheduled from `architecture/NEXUS_EXECUTION_FLOW.md` §25; queue §6.1aj; Appendix N (FLOW) |
 | 2026-06-07 | — | Audit gap closeout: FLOW-13–17 + FLOW-GAP-12–16 added; FLOW-12 narrowed to regression gate; **0/18** |
-| 2026-06-07 | FLOW-1–17, FLOW-DOC.* | Phase FLOW implementation complete: delegation expansion, graph hardening, profile wiring, ADR-FLOW-002/003; gate **906 passed**; **17/18** (**FLOW-8 Deferred**) |
+| 2026-06-07 | FLOW-1–17, FLOW-DOC.* | Phase FLOW implementation complete: delegation expansion, graph hardening, profile wiring, ADR-FLOW-002/003; gate **906 passed**; **18/18 harness** (FLOW-8 harness **Done**; product host **Deferred** §6.3; product §6.3) |
 
 **Phase FLOW complete when:** FLOW-1–7, FLOW-9, FLOW-11–17, FLOW-DOC.* **Done**; FLOW-8 **Deferred** or Done per product; §6.1aj closed; **zero open `FLOW-GAP-*`** in flow reference §23; AUDIT_MAP §5/§7/§9/§10/§25 at target maturity; gate green.
 
@@ -1044,6 +1044,39 @@ domain MUST be reflected in:
 - priority ladder (§4) and “what next” (§6) if it changes execution order.
 
 ---
+
+---
+
+## Phase GR-DOC — Guardrail catalog documentation
+
+**Status:** **Done** (2026-06-09) — documentation (GR-DOC.*) + implementation (GR-INT.*) via [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) Phase **M.12**.
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §5 (Policy), §23 (Security); IDEAL §3.3 guardrails vector.
+
+**ADR:** **No ADR needed** for documentation-only catalog. First shipped `llm_guardrail` slug (M.12) requires harness ADR (`docs/adr/`) for contract + middleware bridge.
+
+### GR-DOC — Master register
+
+| ID | Type | Deliverable | Status | Evidence |
+|----|------|-------------|--------|----------|
+| GR-DOC.1 | Docs | UAEP **§42.11.6** guardrail catalog (types → hooks → artifacts) | **Done** | `architecture/UNIFIED_EXECUTION_RUNTIME.md` |
+| GR-DOC.2 | Docs | Hub cross-index row + §42.37 governance layer 7 | **Done** | `intergrax_runtime_architecture.md` |
+| GR-DOC.3 | Docs | Harness term **Guardrails** in PLATFORM §5.3.1 | **Done** | `architecture/PLATFORM_FOUNDATION.md` |
+| GR-DOC.4 | Docs | Integration canon **§47** + vendor library matrix | **Done** | `architecture/INTEGRATIONS.md` |
+| GR-INT.1 | Code | `LlmGuardrailBackend` contract + M.12 slugs | **Done** | [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) M.12 |
+| GR-INT.2 | Code | `guardrail_runtime_bridge` → §42.42 middleware | **Done** | M.12-WIRE.1 |
+| GR-INT.3 | CI | `check_harness_guardrail_wiring.py` | **Done** | M.12-WIRE.3 |
+| GR-INT.4 | Code | CVL L0 ↔ guardrail scan composition | **Done** | `runtime/critic/guardrail_l0.py` |
+
+### GR-DOC — Paydown log
+
+| Date | ID | Summary |
+|------|-----|---------|
+| 2026-06-09 | GR-DOC.1–4 | Guardrail catalog canon + hub index + PLATFORM term + INTEGRATIONS §47 vendor matrix |
+| 2026-06-09 | GR-INT.1–3 | M.12 code: adapters, middleware, assembly, tests, CI |
+| 2026-06-09 | GR-INT.FU | Output hooks (AFTER_LLM_OUTPUT/FINALIZATION), chained backends, runtime bridge tests |
+| 2026-06-09 | GR-INT.4 | NeMo opens.py, HTTP smoke tests, CVL L0 merge, lab/legal guardrail toggles, USAGE.md |
+| 2026-06-09 | GR-INT.HARD | `GUARDRAIL_BLOCKED` runtime event, E2E Nexus guardrail gate, PLATFORM Band 2ay register |
 
 ---
 
