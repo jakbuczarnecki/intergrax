@@ -32,6 +32,7 @@
 | 15 | **FLOW-16** | Docs | **Done** | `MODIFY_PLAN` ADR (ADR-FLOW-003) | ADR accepted |
 | 16 | **FLOW-17** | Code | **Done** | `MULTI_AGENT` ordering policy | Stable order gate test |
 | 17 | **FLOW-DOC.*** | Docs | **Done** | Flow reference + Appendix N paydown | Zero open FLOW-GAP |
+| 18 | **FLOW-DOC.2** | Docs | **Done** | §3.1 interaction scenario table | Cross-ref TIER3 §23, ORCH §55 |
 | — | **FLOW-8** | Product | **Deferred** | §42.43 reference app | **§6.3** gate only |
 
 **Suggested PR order:** See [Phase FLOW — Suggested PR order](#flow--suggested-pr-order).

@@ -151,6 +151,52 @@ ApplicationManifest
 
 Key wiring: `intergrax/applications/_shared/nexus_factory.py`, `orchestration_wiring.py`, `harness_host_runtime.py`.
 
+### 3.1 Application interaction scenarios (same Nexus path)
+
+Every scenario below uses **`UnifiedTaskRunner.run_task()`**. Differences are **host posture** (when tasks appear) and **profile orchestration** (how many agents, in what order).
+
+| Scenario | Host posture | Task creation | Orchestration config | Agent execution |
+|----------|--------------|---------------|----------------------|-----------------|
+| **S1 — Single reactive Q&A** | HTTP/MCP on demand | `POST …/run` builds `Task` with `capability` | `planner_kind=default`, 1 agent | One graph node → UAEP |
+| **S2 — Free-text chat** | Daemon + intake | Slack/HTTP; capability from adapter or classifier (COG-3) | As S1 or pipeline | Same |
+| **S3 — Multi-agent sequential** | On demand | `capability=*.pipeline` or graph product route | `graph_spec` `DEPENDS_ON` chain | Nodes A→B→C sequentially |
+| **S4 — Multi-agent parallel** | On demand | One `Task`, graph with independent nodes | `max_parallel_nodes`, `merge_strategy` | Batch gather in `GraphExecutor` |
+| **S5 — Background batch** | Always-on worker | Queue/scheduler enqueues `Task` | `long_running_enabled`, checkpoints | Same graph rules; notify on complete |
+| **S6 — Hybrid daemon** | Always-on + workers | Interactive tasks + cron index jobs | Separate capabilities per job type | Independent Nexus runs per `Task` |
+| **S7 — HITL pause/resume** | Any | Agent `REQUEST_HUMAN` or planning gate | `require_human_approval`, critic L2 | `WAITING_FOR_HUMAN` → resume token → same path |
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Surface as Surface (HTTP / Slack / Queue)
+    participant Host as Tier-3 Host
+    participant UTR as UnifiedTaskRunner
+    participant NL as NexusLoop
+
+    Note over Host: Process always-on OR idle until work
+    User->>Surface: message / job / webhook
+    Surface->>Host: normalize payload
+    Host->>Host: build Task (capability, metadata)
+    Host->>UTR: run_task(Task)
+    UTR->>NL: handle_task
+    NL-->>UTR: TaskResult
+    UTR-->>Host: answer + state
+    Host-->>User: JSON / chat reply / notification
+```
+
+**Continuous vs reactive clarification:**
+
+| Component | Continuous? | Reactive? |
+|-----------|-------------|-----------|
+| Tier-3 host process (uvicorn, worker) | Can be always-on | Accepts work on demand |
+| `NexusLoop` | Loaded at bootstrap | Invoked per `Task` |
+| Tier-2 agent instances in registry | Registered at bootstrap | Executed per graph node |
+| Background index / queue consumer | Separate `Task` triggers | N/A |
+
+**Routing:** see [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23.3 · classification modes [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9.4 · pattern matrix [`ORCHESTRATION.md`](ORCHESTRATION.md) §55.
+
+**Completion:** structural validation (`non_empty_summary`) is always applied; semantic completion (critic, HITL) is profile-driven — [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md).
+
 ---
 
 ## 4. Master sequence — happy path

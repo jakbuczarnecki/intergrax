@@ -227,3 +227,22 @@ uv run pytest -m gate -q
 ```
 
 ---
+
+## Phase H-APP-DOC — Application interaction & orchestration authoring (Band 2ar — docs)
+
+**Status:** **Done** (2026-06-09) — architecture canon §23; cross-refs to ORCHESTRATION §55, REASONING §9.4, NEXUS_EXECUTION_FLOW §3.1  
+**Prerequisites:** Phase H-APP **Done** · Phase ORCH-STRAT **Done** · Phase COG-DOC **Done**  
+**Goal:** Close authoring gaps for flexible Tier-3 postures (daemon, reactive, background) and multi-agent configuration without runtime changes.
+
+**ADR:** **No ADR needed** — documentation and authoring conventions only; `trigger_capabilities` on `ApplicationGraphSpec` remains a planned contract (H-APP-DOC.2 implementation optional).
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| H-APP-DOC.1 | **Architecture §23** — posture catalog, routing matrix, scenario recipes | **Done** | **Critical** | `architecture/TIER3_APPLICATION_ENVIRONMENT.md` §23 |
+| H-APP-DOC.2 | **`ApplicationGraphSpec.trigger_capabilities`** — optional seed guard (code) | Planned | Medium | Field on `graph_spec.py`; `should_seed` respects list; unit test |
+| H-APP-DOC.3 | **`applications/USAGE.md` §** — link posture recipes + host checklist | Planned | Medium | Cross-link §23; scaffold doc note |
+| H-APP-DOC.4 | **Scaffold `new-application`** — document interaction intake optional wire | Planned | Low | README / factory comment; legal host as reference |
+
+**Explicitly out of scope:** Nexus runtime fork; new coordination patterns (ORCH-5); COG-3 classifier implementation.
+
+---

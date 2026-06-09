@@ -40,6 +40,7 @@
 | COG-DOC.3 | **Hub update** — 18 domain pairs; audit routing §7 → RCL pair | **Done** | High | `intergrax_runtime_architecture.md` | `check_docs_domain_pairs.py` OK |
 | COG-DOC.4 | **Cross-ref sync** — `ORCHESTRATION`, `NEXUS_EXECUTION_FLOW` §7–§8, §24; `AGENTS.md`; `INTEGRAX_HARNESS_AUDIT_MAP` §7 | **Done** | High | `docs/*` | No orphan §7 content |
 | COG-DOC.5 | **Gate script** — `python scripts/check_docs_domain_pairs.py` | **Done** | Medium | CI scripts | 18 pairs reported |
+| COG-DOC.6 | **Routing modes §9.4** — MULTI_AGENT vs pipeline graph vs engine planner | **Done** | High | `architecture/REASONING_AND_COGNITION.md` §9.4–§9.5 | Cross-ref TIER3 §23, ORCH §55 |
 
 ---
 
@@ -188,6 +189,7 @@ Work **one COG ID per PR** when Band 2am is activated.
 |----------------|--------|----------|
 | §5 Three planes | Plane boundaries | COG-DOC.* |
 | §9 Classification | Classifier extensions | COG-3.* |
+| §9.4 Routing modes | Authoring canon (docs) | COG-DOC.6 **Done** |
 | §10 Nexus planning | Planner unification | COG-1.* |
 | §10.4 LLM planner | Prompt Registry | COG-2.1 |
 | §12 Engine planner | Orchestrator bridge | COG-1.1 |

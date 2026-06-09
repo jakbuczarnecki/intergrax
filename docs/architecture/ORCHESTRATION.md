@@ -13,7 +13,7 @@
 
 | Document | Role |
 |----------|------|
-| **This file (`ORCHESTRATION.md`)** | Orchestration **manifest** + **execution strategy catalog** (§50–§54) |
+| **This file (`ORCHESTRATION.md`)** | Orchestration **manifest** + **execution strategy catalog** (§50–§55) |
 | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) | **Runtime narrative** — sequence diagrams, UC-*, edge cases, code paths |
 | [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) | Classification, planning, agent topology in plans |
 | [`guides/AGENT_CREATION_GUIDE.md` Appendix I](guides/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) | Author control plane (`OrchestrationProfile`, wiring) |
@@ -29,6 +29,7 @@
 | [§52](#52-resilience-in-orchestration) | Retry, checkpoint, failover, partial |
 | [§53](#53-specialization-and-agent-collaboration) | Capability routing, delegation, handoff |
 | [§54](#54-maturity-and-gap-register) | Maturity scorecard |
+| [§55](#55-interaction-posture--orchestration-matrix) | Posture × pattern configuration matrix |
 
 ---
 
@@ -662,9 +663,9 @@ Task.capability  →  TaskClassifier  →  CAPABILITY_ROUTED | MULTI_AGENT
               PlanStep.agent_id assignment
 ```
 
-**Multi-agent same capability:** sequential steps for all matching agents (`MULTI_AGENT`); order from `OrchestrationProfile.multi_agent_order` (FLOW-17).
+**Multi-agent same capability:** sequential steps for all matching agents (`MULTI_AGENT`); order from `OrchestrationProfile.multi_agent_order` (FLOW-17). This is **not** cross-role pipeline cooperation — see [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9.4.
 
-Planning depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9–§10.
+Planning depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9–§10 · posture matrix §55.
 
 ## 53.2 Three collaboration mechanisms
 
@@ -713,6 +714,77 @@ Planning depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9�
 
 ---
 
+# 55. Interaction Posture × Orchestration Matrix
+
+Authors configure **how the host receives work** (Tier-3 posture) separately from **how Nexus coordinates agents** (Tier-1 pattern). This section maps both dimensions so products can mix reactive chat, background workers, and multi-agent graphs without runtime forks.
+
+**Canonical posture catalog:** [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23.
+
+## 55.1 Two configuration dimensions
+
+| Dimension | Question | Configured on | Examples |
+|-----------|----------|---------------|----------|
+| **A — Interaction posture** | When does work enter the system? | Host wiring + `ReliabilityProfile` + queue | Reactive HTTP, always-on daemon, cron batch |
+| **B — Coordination pattern** | How do agents cooperate on one `Task`? | `graph_spec`, `planner_kind`, `OrchestrationProfile` | Sequential chain, parallel batch, hierarchical delegate |
+
+```text
+Dimension A (intake)     →  Task appears
+Dimension B (orchestration) →  NexusPlan → ExecutionGraph → agent nodes
+```
+
+Both dimensions apply to the **same** `NexusLoop.handle_task()` path.
+
+## 55.2 Pattern selection by agent count and dependency
+
+| Agents | Output dependency | Risk / HITL | Recommended pattern | Harness mapping |
+|--------|---------------------|-------------|---------------------|-----------------|
+| 1 | N/A | Low | Orchestrator–worker (single node) | `CAPABILITY_ROUTED`, 1 `PlanStep` |
+| 1 | N/A | High | Supervisor–worker | HITL hooks + critic before `COMPLETED` |
+| 2+ | **Yes** — B needs A's artifacts | Any | **Sequential** orchestrator–worker | `graph_spec` `DEPENDS_ON` chain or `*.pipeline` |
+| 2+ | **No** — independent subtasks | Low–medium | **Peer-to-peer** parallel | Same batch in `ExecutionGraph`; set `max_parallel_nodes` |
+| 2+ | Mixed | Medium | **Hierarchical** | Hub node + `DELEGATES_TO` children |
+| 2+ | Quality-sensitive output | High | **Evaluator-loop** | CVL + optional extra graph node |
+| N | Explore under budget | Medium | **Swarm** (partial runtime) | Parallel cap + cost envelope; ORCH-5.1 depth |
+
+**Rule:** sequential **cooperation** (different capabilities, handoff of context) MUST use `depends_on` or pipeline plan — **not** `MULTI_AGENT` classification alone.
+
+## 55.3 OrchestrationProfile field guide (multi-scenario)
+
+| Field | Single reactive agent | Multi-agent sequential | Multi-agent parallel | Background long job |
+|-------|----------------------|------------------------|--------------------|---------------------|
+| `planner_kind` | `default` or `engine` | `default` + `graph_spec` **or** `engine` | `default` + `graph_spec` | `default`; checkpoint-friendly |
+| `classifier_kind` | `default`; `engine` when COG-3 | `default` + explicit `*.pipeline` cap | same | often explicit capability per job type |
+| `merge_strategy` | `last_wins` | `concat` or `structured_json` | `structured_json` recommended | `structured_json` for ops |
+| `max_parallel_nodes` | `null` (unlimited batch) | `1` if strict ordering in batch | set cap (e.g. `4`) | tune for provider limits |
+| `max_inflight_nodes` | optional | optional | **recommended** | **recommended** under load |
+| `max_delegation_depth` | `4` default | raise if deep delegate trees | same | same |
+| `long_running_enabled` | false | true for large inputs | per task size | **true** |
+| `max_run_retries` | `0` | opt-in `1+` for validation retry | opt-in | opt-in for flaky integrations |
+
+## 55.4 Edge semantics quick reference
+
+| Edge / mechanism | Execution order | Data flow | Use when |
+|------------------|-------------------|-----------|----------|
+| `DEPENDS_ON` | Target after source | `ContextManager.record_node_output` → next node context | B needs A's summary/artifacts |
+| `DELEGATES_TO` | Child after parent | `DelegationSpec` + isolated tool policy on child | Subagent with bounded objective |
+| No edge between nodes | Same topological batch (parallel) | Merge via `FinalResponseComposer` | Independent shards |
+| `AgentDecision.HANDOFF` | Dynamic node inserted | `HandoffCoordinator` | Runtime-discovered next specialist |
+| UAEP multiple steps | Inside one graph node | `RuntimeExecutionContext` | Domain micro-loop (not graph replacement) |
+
+## 55.5 Anti-patterns (platform)
+
+| Anti-pattern | Why wrong | Correct approach |
+|--------------|-----------|------------------|
+| Tier-2 agent calls another agent import | Breaks tier boundaries | Nexus graph node or `HANDOFF` |
+| Expect `MULTI_AGENT` for docs→web→synthesis pipeline | Label means same-capability competition | `graph_spec` or `*.pipeline` |
+| Background thread in agent for scheduling | Bypasses queue/policy/trace | `queueing/` + host worker |
+| One host route without `capability` for production chat | Falls through to `SINGLE_AGENT_DEFAULT` | L1 explicit cap or L3 classifier (COG-3) |
+| Parallel nodes without merge strategy | User gets opaque multi-block text | Set `merge_strategy`; plan ORCH-5.4 semantic merge |
+
+**Plan:** [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md) ORCH-DOC.3 · posture recipes in H-APP-DOC.
+
+---
+
 ## Related documents
 
 | Document | Relationship |
@@ -726,6 +798,6 @@ Planning depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9�
 
 ---
 
-*End of Orchestration architecture canon (execution strategies §50–§54).*
+*End of Orchestration architecture canon (execution strategies §50–§55).*
 
 ---

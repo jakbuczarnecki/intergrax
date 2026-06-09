@@ -36,6 +36,14 @@
 
 **Runtime backlog:** [Phase ORCH-5](#phase-orch-5--orchestration-strategy-runtime-gaps-band-2aq--planned) — not started.
 
+### 6.1d Harness implementation queue — orchestration authoring docs (closed)
+
+**Purpose:** Phase **ORCH-DOC.3** (Band 2ar) — posture × pattern matrix for Tier-3 authors. **Closed 2026-06-09**.
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 1 | **ORCH-DOC.3** | Docs | **Done** | Architecture §55 + §53.1 cross-ref | ORCHESTRATION canon + REASONING §9.4 link |
+
 ### 6.1g Harness implementation queue — governance audit (closed)
 
 **Purpose:** Phase GOV-AUDIT documentation closeout — **closed 2026-06-05**.

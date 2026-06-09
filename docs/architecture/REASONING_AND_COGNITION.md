@@ -274,6 +274,54 @@ flowchart TD
 
 **Future (COG-3.*):** LLM-backed classifier, rules classifier, confidence scores on classification.
 
+### 9.4 Orchestration routing modes (do not confuse with `TaskClassification`)
+
+`TaskClassification` labels describe **how many agents match the requested capability**, not the **multi-agent collaboration topology**. Authors need a separate mental model:
+
+| Routing mode | How it is selected | Agent roles | Typical classification label |
+|--------------|-------------------|-------------|------------------------------|
+| **Single-agent routed** | One agent matches `task.context.capability` | One specialist | `CAPABILITY_ROUTED` |
+| **Same-capability multi-agent** | Multiple agents declare **identical** capability | Competing or sequential specialists with same skill tag | `MULTI_AGENT` |
+| **Pipeline graph** | `ApplicationGraphSpec` on profile + task without `plan_id` | Different capabilities in fixed order | `CAPABILITY_ROUTED` or `MULTI_AGENT` after graph seed |
+| **Pipeline capability** | `task.context.capability` ends with `.pipeline` (convention) | Planner emits known multi-step plan | Varies; often `CAPABILITY_ROUTED` |
+| **Engine-planned** | `planner_kind=engine` | LLM builds `NexusPlan` from registry + message | Underlying label preserved |
+| **Explicit agent** | `task.agent_id` set | Fixed agent regardless of capability | `SINGLE_AGENT_EXPLICIT` |
+
+```text
+WRONG:  "I have 2 agents (docs + web) → MULTI_AGENT will chain them"
+RIGHT:  "I have 2 agents → graph_spec DEPENDS_ON chain OR *.pipeline OR engine planner"
+```
+
+| Symptom | Misconfiguration | Fix |
+|---------|------------------|-----|
+| Only first agent runs | `CAPABILITY_ROUTED` with one matching capability | Add `graph_spec` or use `*.pipeline` |
+| All same-capability agents run in sequence | `MULTI_AGENT` triggered intentionally | Expected only for redundant specialists |
+| Graph ignored | Task carries pre-built `plan_id` | Clear `plan_id` for fresh graph seed |
+| Chat sends free text, wrong agent | No L1 capability; classifier not enabled | Host intent shim or enable COG-3 classifier |
+
+**Cross-ref:** posture and scenario recipes — [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23 · pattern matrix — [`ORCHESTRATION.md`](ORCHESTRATION.md) §55.
+
+### 9.5 Intake → classification → planning contract
+
+```mermaid
+flowchart TD
+    INT["Task intake (any surface)"] --> CAP{"capability set?"}
+    CAP -->|no + classifier off| DEF["SINGLE_AGENT_DEFAULT"]
+    CAP -->|no + classifier on| CLS["COG-3 infer capability"]
+    CAP -->|yes, 1 agent| CR["CAPABILITY_ROUTED"]
+    CAP -->|yes, N agents same cap| MA["MULTI_AGENT"]
+    CLS --> PLN["Planner"]
+    DEF --> PLN
+    CR --> GS{"graph_spec + no plan_id?"}
+    MA --> PLN
+    GS -->|yes| GP["GraphSpecSeedingPlanner"]
+    GS -->|no| PLN
+    GP --> PLAN["NexusPlan"]
+    PLN --> PLAN
+```
+
+**Ownership:** Tier-3 sets `capability` unless COG-3 classifier is enabled. Tier-1 never parses vendor-specific payload formats — adapters normalize first.
+
 ---
 
 ## 10. Nexus planning
@@ -321,6 +369,7 @@ class NexusPlan(BaseModel):
 | Default / single-agent classifications | 1 step |
 | `MULTI_AGENT` | N sequential steps with `depends_on` chain |
 | `research.pipeline` or `intent=research_summarize` | 2 steps: web_search → summarize |
+| `*.pipeline` (product convention) | Prefer `graph_spec` seed or registered planner rule — do not assume generic `TaskPlanner` knows every product |
 | `UNSUPPORTED` | 0 steps |
 
 **Ordering:** `OrchestrationProfile.multi_agent_order` — `registry` (default) or declared stable order (FLOW-17).
