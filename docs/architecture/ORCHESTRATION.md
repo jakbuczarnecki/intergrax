@@ -32,6 +32,8 @@
 | [§55](#55-interaction-posture--orchestration-matrix) | Posture × pattern quick matrix |
 | [§56](#56-platform-interaction--multi-agent-configuration-canon) | **Master configuration canon** — all cases, matrices, plan input |
 | [§56.13](#5613-orchestration-capability-tokens) | Orchestration tokens vs agent capabilities |
+| [§57](#57-synchronous-and-asynchronous-execution-postures) | Sync vs async dispatch, queue workers, agent contract |
+| [§58](#58-platform-runtime-capabilities-index) | Cross-cutting index: resilience, autonomy, MVP evolution |
 
 **Authoring rule:** Tier-3 host design starts at **§56**; runtime step-by-step truth remains in **NEXUS_EXECUTION_FLOW**; posture/host wiring summary in **TIER3 §23**.
 
@@ -1200,6 +1202,79 @@ Free text → IntentRoute → acceptance.harness.pipeline (token)
 
 ---
 
-*End of Orchestration architecture canon (execution strategies §50–§56). Platform configuration canon: §56.*
+# 57. Synchronous and Asynchronous Execution Postures
+
+Orchestration MUST support both **blocking (sync)** and **deferred (async)** execution without forking the Nexus loop. Same graph rules apply; only **dispatch surface** and **client wait semantics** differ.
+
+## 57.1 Posture catalog
+
+| Posture | Client waits? | Task creation | Harness path | Typical scenario |
+|---------|---------------|---------------|--------------|------------------|
+| **Sync interactive** | Yes — HTTP/MCP blocks until terminal state | `POST …/run` → `UnifiedTaskRunner.run_task()` | Inline asyncio in request handler | Chat, Q&A, short pipelines |
+| **Async deferred** | No — returns `task_id` / job handle | Queue enqueue or `message_bus.async_runner` | Worker invokes same `UnifiedTaskRunner` | Long reports, batch jobs |
+| **Async long-running** | Poll / webhook / notify | Scheduler + `long_running_enabled` | Checkpoints + `TASK_PROGRESS` events | Hours/days workflows |
+| **Hybrid host** | Mixed | Daemon accepts both sync routes and queue consumers | Separate capabilities per job type | S6 in [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §3.1 |
+
+```text
+Same Nexus path:
+  Task → NexusLoop.handle_task → plan → GraphExecutor → UAEP per node
+Difference:
+  sync  = caller awaits TaskResult in-process
+  async = caller receives handle; worker/scheduler completes run
+```
+
+## 57.2 Agent contract dispatch mode
+
+Tier-2 agents declare `AgentContract.execution_mode`:
+
+| Value | Meaning |
+|-------|---------|
+| `SYNC` | Agent expects inline completion within request/worker budget |
+| `ASYNC` | Agent may delegate to queue (`message_bus.enqueue`) and return pending handle |
+
+Nexus MUST NOT block the global event loop on agent-internal polling — async agents return structured pending state; completion flows through queue status APIs (`message_bus.get_status`, `get_result`).
+
+**Code:** `intergrax/contracts/agent_contract_meta.py` · `AgentExecutionMode`.
+
+## 57.3 Profile fields
+
+| Field | Sync posture | Async posture |
+|-------|--------------|---------------|
+| `long_running_enabled` | Usually `false` | `true` for checkpointed jobs |
+| `OrchestrationProfile` queue bindings | Optional | Required for worker transport |
+| Client API | Blocking `run` | `run_async` + status poll (product surface) |
+| Notifications | Inline response | `notify_channel` on completion / escalation |
+
+## 57.4 Orchestration strategy interaction
+
+| Strategy | Sync-friendly | Async-friendly | Notes |
+|----------|---------------|----------------|-------|
+| Sequential chain (D2) | Yes | Yes | Async preferred for long chains |
+| Parallel batch (D3) | Yes (within timeout) | Yes | Cap `max_parallel_nodes` |
+| Hierarchical delegate (D4) | Yes | Yes | Depth + budget limits |
+| Background batch (S5) | No | **Required** | Queue + scheduler |
+| HITL pause/resume (S7) | Yes | Yes | `resume_token` works in both |
+
+**Plan:** [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md) Phase ORCH-6.
+
+---
+
+# 58. Platform Runtime Capabilities Index
+
+Cross-cutting platform capabilities span multiple domain pairs. Use this index when designing products — implementation detail lives in the cited canon.
+
+| Capability | Primary owner | Supporting domains | Architecture § |
+|------------|---------------|-------------------|------------------|
+| **Fault tolerance / resilience policies** | Reliability | Orchestration §52, UAEP §42.8, ECP | [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) §34 |
+| **Orchestration strategies** (cooperation, parallel, sequence, scale, redundancy) | Orchestration | FLOW §27, Reasoning §9, ECP | §50–§53 |
+| **MVP → product evolution** | Experimentation / DX | Eval §42, AHI, Critic | [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) §44 |
+| **Autonomy slider** (manual / ask / autonomous) | Reliability + UAEP policy | HITL §32, §35 | REL §35, UAEP §42.10.2 |
+| **Sync / async postures** | Orchestration | Queueing §49, Agent contract | §57 |
+| **Interrupt anywhere** | UAEP + FLOW | Reliability, Orchestration cancel | FLOW §28, UAEP §42.8 |
+| **Resume from checkpoint** | UAEP + Reliability | Orchestration long-running | UAEP §42.9, REL §33.3 |
+
+---
+
+*End of Orchestration architecture canon (execution strategies §50–§58). Platform configuration canon: §56.*
 
 ---

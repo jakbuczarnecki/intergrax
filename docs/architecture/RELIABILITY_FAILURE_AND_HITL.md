@@ -144,3 +144,146 @@ Reliability is enforced at **graph**, **run**, and **integration** layers.
 **Plan:** [`plan/RELIABILITY_FAILURE_AND_HITL.md`](../plan/RELIABILITY_FAILURE_AND_HITL.md) Phase REL.
 
 ---
+
+# 34. Configurable Resilience Policy Framework
+
+Fault tolerance in Intergrax is **policy-driven and modular** — not hardcoded retry loops in agents or ad-hoc exception handlers in Tier-3 hosts.
+
+## 34.1 Design goals
+
+| Goal | Mechanism |
+|------|-----------|
+| **Continuity of work** | Retry, alternate agent, checkpoint resume, partial completion |
+| **Configurable per host** | `ReliabilityProfile`, `OrchestrationProfile`, `RuntimeConfig` |
+| **Composable policies** | Named `ResiliencePolicy` bundles resolved at assembly time |
+| **Observable** | `RETRY_*`, `CHECKPOINT_*`, `TASK_PROGRESS`, `GRAPH_BACKPRESSURE` events |
+| **Safe failure** | Circuit breakers, timeouts, stop conditions, escalation |
+
+## 34.2 Resilience policy modules
+
+Policies are **orthogonal modules** composed through profiles — authors enable only what the product needs.
+
+| Module | Scope | Key controls | Canon |
+|--------|-------|--------------|-------|
+| **Graph retry** | Nexus node after validation failure | `max_retries`, `retry_alternate_agent`, `RetryRecord` | §31.1, `RetryEngine` |
+| **Run retry** | UAEP step (LLM/tool transient) | `max_run_retries`, `retry_run_on` | §31.1, `RuntimeEngine` |
+| **Run-level graph retry** | Whole graph re-execution | `max_run_retries` on `OrchestrationProfile` | [`ORCHESTRATION.md`](ORCHESTRATION.md) §52.1 Layer C |
+| **Circuit breaker** | Integration / provider calls | Open/half-open thresholds via `ReliabilityProfile` | §33.2 |
+| **Idempotency** | Side-effectful tools | `idempotency_key` on `ToolRequest` | §33.1 |
+| **Checkpoint / resume** | Long-running and HITL tasks | `RuntimeCheckpoint`, `resume_token` | §33.3, UAEP §42.9 |
+| **Partial completion** | Multi-node graphs | `PARTIALLY_COMPLETED` when policy allows | [`ORCHESTRATION.md`](ORCHESTRATION.md) §52.2 |
+| **Failover (agent)** | Same logical role | Alternate `agent_id` on node retry | §31.1 Layer A |
+| **Redundancy (infra)** | Host availability | Nexus replicas, queue workers | [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) |
+| **Recovery reboot** | Corrupted / stuck run | `RUNTIME_RECOVERY_REQUIRED` interrupt → policy: retry graph, cold restart node, or escalate | UAEP §42.8, §34.4 |
+
+**Rule:** agents emit **intent** (`AgentDecision.RETRY`, `INTERRUPT`); Nexus + PolicyEngine **execute** policy — no agent-internal unbounded retry against adapters.
+
+## 34.3 ResiliencePolicy contract (target)
+
+```text
+ResiliencePolicy:
+    policy_id: str
+    version: str
+    on_dependency_error: RETRY | CIRCUIT_BREAK | FAIL | DEGRADE
+    on_quality_error: RETRY_ALTERNATE | RETRY_SAME | REQUEST_HUMAN | FAIL
+    on_timeout: RETRY | FAIL | PARTIAL
+    on_runtime_error: RETRY_RUN | RETRY_GRAPH | RECOVERY_REBOOT | ESCALATE
+    max_attempts: int
+    backoff: fixed | exponential | none
+    alternate_agent_ids: list[str] | null
+    allow_partial_result: bool
+    checkpoint_on_pause: bool
+    reboot_strategy: NONE | RE_EXECUTE_NODE | RE_EXECUTE_GRAPH | COLD_AGENT_RELOAD
+```
+
+**As-built (2026-06):** behaviour is distributed across `RetryPolicy`, `ReliabilityProfile`, `OrchestrationProfile`, and UAEP interrupt handling. Unified `ResiliencePolicy` model — Phase **REL-ADV** in plan.
+
+## 34.4 Recovery reboot semantics
+
+**Reboot** means **controlled re-execution** of a bounded unit — not OS process restart unless the host operator chooses infra recycle.
+
+| Strategy | When | Effect |
+|----------|------|--------|
+| `RE_EXECUTE_NODE` | Transient agent/tool failure | Same graph node from clean UAEP cursor |
+| `RE_EXECUTE_GRAPH` | Plan/graph corruption or run-level retry budget | `RetryCoordinator` full graph |
+| `COLD_AGENT_RELOAD` | Agent state suspected corrupt | Re-instantiate agent from registry; preserve checkpoint |
+| `ESCALATE` | Budget exhausted or policy deny | HITL queue or `FAILED` with audit |
+
+Reboot MUST preserve: `task_id`, trace lineage, idempotency keys for external side effects.
+
+## 34.5 Wiring map
+
+```text
+ApplicationEnvironmentProfile.reliability
+    → reliability_wiring.py
+    → ReliabilityProfile (circuit breaker, idempotency store)
+    → runtime_config_bridge (max_run_retries)
+OrchestrationProfile (max_run_retries, long_running, checkpoint)
+    → GraphExecutor + RetryEngine + long_running_bridge
+PolicyEngine
+    → maps failure class (§33.4) → ResiliencePolicy action
+```
+
+**Cross-ref:** orchestration resilience matrix [`ORCHESTRATION.md`](ORCHESTRATION.md) §52 · execution flow [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §14 · interrupt model UAEP §42.8.
+
+---
+
+# 35. Autonomy Control Model (Autonomy Slider)
+
+Users and operators MUST be able to **steer how much the system acts without asking** — at session, task, or step granularity. This is distinct from host **execution posture** (`ExecutionMode`: STRICT | BALANCED | EXPLORATORY) and agent **dispatch mode** (`AgentExecutionMode`: SYNC | ASYNC).
+
+## 35.1 Autonomy levels
+
+| Level | User experience | Harness behaviour |
+|-------|-----------------|-------------------|
+| **MANUAL** | User drives each meaningful action | Tools with side effects blocked unless explicitly approved; planner may suggest but not execute; HITL default-on for external writes |
+| **ASK** | Agent proposes; user confirms high-impact steps | Policy routes risky tools and low-confidence outputs to approval queue; auto-continue for read-only / safe tools per allowlist |
+| **AUTONOMOUS** | Agent executes within policy envelope | Full tool policy + cost caps; HITL only on policy triggers (risk class, confidence threshold, regulated pathways) |
+
+```text
+AutonomyLevel:
+    MANUAL
+    ASK
+    AUTONOMOUS
+```
+
+**Mid-run changes:** autonomy MAY change at any time via `TaskExecutionOptions.autonomy_level` or operator API — PolicyEngine re-evaluates **before the next UAEP step** and before each tool invocation (UAEP §42.11).
+
+## 35.2 Resolution order
+
+```text
+effective_autonomy = min(
+    user_requested_autonomy,      # slider / task option
+    tenant_policy_ceiling,        # org governance
+    execution_mode_ceiling,       # STRICT caps at ASK for destructive tools
+    agent_contract.risk_level     # high-risk agents never fully AUTONOMOUS without override
+)
+```
+
+| Host `execution_mode` | Typical autonomy ceiling |
+|-----------------------|--------------------------|
+| `EXPLORATORY` | Up to `AUTONOMOUS` (lab) |
+| `BALANCED` | Up to `ASK` for destructive tools; `AUTONOMOUS` for read-only |
+| `STRICT` | Default `ASK`; `AUTONOMOUS` only with explicit policy exception |
+
+## 35.3 Mapping to runtime primitives
+
+| Autonomy | Tool execution | Planning | HITL |
+|----------|----------------|----------|------|
+| MANUAL | `PolicyDecision.DENY` except allowlisted reads; `REQUEST_HUMAN` before writes | Plan visible; execute only after approval | Default for most steps |
+| ASK | Risk-scored: auto vs queue | Auto plan; confirm on `risk >= threshold` | Queue for gated tools |
+| AUTONOMOUS | Policy + budget only | Auto plan and execute | On interrupt types only (§42.8) |
+
+**Implementation anchors:** `PolicyEngine.evaluate_tool_call`, `AgentDecision.REQUEST_HUMAN`, `HumanDecisionStore`, `hitl.*` tools — UAEP §42.10.
+
+## 35.4 UX contract (platform)
+
+- Slider state MUST be **persisted** on `Task` / session metadata and echoed in trace (`AUTONOMY_LEVEL_SET`, `AUTONOMY_LEVEL_CHANGED`).
+- Downgrade (AUTONOMOUS → MANUAL) MUST be **immediate** for new steps; in-flight tool calls follow cancel-or-complete policy per `CancellationCoordinator`.
+- Upgrade (MANUAL → AUTONOMOUS) MUST NOT bypass unresolved HITL items.
+
+**As-built (2026-06):** HITL and policy gates exist; unified `AutonomyLevel` on task envelope and mid-run API — Phase **REL-ADV** in plan.
+
+**Plan:** [`plan/RELIABILITY_FAILURE_AND_HITL.md`](../plan/RELIABILITY_FAILURE_AND_HITL.md) Phase REL-ADV.
+
+---

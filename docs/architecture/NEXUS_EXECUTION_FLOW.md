@@ -1210,3 +1210,83 @@ Pattern selection MUST be explicit and policy-aware (IDEAL §6.4, AUDIT_MAP §10
 Narrative flows: §12–§14 in this document. Critic depth: [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md).
 
 ---
+
+## 28. Operation Lifecycle Control — Interrupt, Cancel, Resume
+
+Operators and users MUST be able to **stop work at any meaningful boundary** and **continue from the last durable checkpoint** without re-running completed units.
+
+### 28.1 Interrupt points (canonical)
+
+Execution is interruptible at every **UAEP phase transition** and **graph node boundary**:
+
+```text
+INTAKE → CLASSIFICATION → PLANNING → GRAPH_NODE_START → UAEP_STEP → TOOL_CALL → VALIDATION → GRAPH_NODE_END → COMPLETION
+         ↑ each arrow is a policy-checked interrupt/cancel checkpoint
+```
+
+| Boundary | Trigger sources | Handler |
+|----------|-----------------|---------|
+| Before / after task intake | Operator API, policy hook | `NexusIntakeRunner` — early exit or HITL |
+| After classification / planning | `INTERRUPT`, policy deny | Replan or `WAITING_FOR_HUMAN` |
+| Between graph nodes | Cancel coordinator, node failure policy | Skip or abort remaining nodes per graph policy |
+| Inside UAEP step | `AgentDecision.INTERRUPT`, `CANCEL`, `REQUEST_HUMAN` | `ExecutionInterruptHandler` + `PolicyEngine` |
+| Before / after tool call | Tool policy, autonomy level | `PolicyEngine.evaluate_tool_call` |
+| On blocking interrupt | `ExecutionInterrupt.blocking=true` | Pause + `PauseRecord` + checkpoint |
+
+**Non-blocking interrupts** MAY allow parallel graph branches to continue when `OrchestrationProfile` allows — UAEP §42.8.3.
+
+### 28.2 Cancellation semantics
+
+```text
+cancel(task_id, reason)
+    → CancellationCoordinator.request_cancel
+    → in-flight UAEP step: cooperative cancel at next await boundary
+    → graph: remaining nodes skipped; terminal state CANCELLED
+    → emit TASK_FAILED or CANCELLED per policy
+```
+
+| Scope | Behaviour |
+|-------|-----------|
+| Whole task | `AgentDecision.CANCEL` or operator API |
+| Single graph node | Node failure propagation; optional partial graph result |
+| In-flight tool | Best-effort abort; idempotent tools safe on retry |
+
+Agents MUST poll `RuntimeExecutionContext.should_cancel()` in long loops — no unbounded work after cancel requested.
+
+### 28.3 Resume semantics
+
+Resume is **checkpoint-driven**, not "guess where we were":
+
+```text
+pause (HITL | operator | blocking interrupt)
+    → RuntimeCheckpoint(plan, graph states, UAEP cursor, context refs)
+    → resume_token issued
+
+resume(task_id, resume_token, operator_input?)
+    → validate token + checkpoint integrity
+    → emit RESUMED
+    → GraphExecutor skips nodes marked completed in checkpoint
+    → UAEP continues from paused phase/step
+```
+
+| Resume type | Acceptance test | Granularity |
+|-------------|-----------------|-------------|
+| Pre-graph HITL | `test_acceptance_04_human_approval_flow` | Before first node |
+| Mid-graph checkpoint | `test_acceptance_05_checkpoint_recovery` | Between nodes |
+| Mid-UAEP step | `test_acceptance_05b_mid_step_uaep_resume` | Inside agent run |
+
+**Rules:** checkpoints MUST include plan snapshot, graph node states, UAEP cursor; agents MUST NOT hold exclusive external locks across pause (idempotent re-entry) — UAEP §42.9.4.
+
+### 28.4 Sync vs async interaction
+
+| Posture | Interrupt API | Resume API |
+|---------|---------------|------------|
+| Sync HTTP | Same connection may return `WAITING_FOR_HUMAN` + token | Subsequent `POST` with `resume_token` |
+| Async queue | Worker observes cancel flag | Scheduler / worker resume endpoint |
+| Long-running | Progress events + checkpoint store | `options.long_running.resume_token` |
+
+**Canon:** UAEP §42.8–§42.9 · reliability [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) §33.3, §34 · orchestration [`ORCHESTRATION.md`](ORCHESTRATION.md) §57.
+
+**Plan:** [`plan/NEXUS_EXECUTION_FLOW.md`](../plan/NEXUS_EXECUTION_FLOW.md) Phase FLOW-CTL.
+
+---

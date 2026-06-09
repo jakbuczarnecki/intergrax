@@ -1525,8 +1525,28 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | §52 | Resilience | FLOW §14, W-OPS, RELIABILITY |
 | §53 | Specialization | REASONING §9–§10, R-Delegate, FLOW §13 |
 | §54 | Gaps | ORCH-5.* backlog |
+| §57 | Sync/async postures | ORCH-6.* |
+| §58 | Platform capabilities index | Cross-domain (hub) |
 
 ---
+
+## Phase ORCH-6 — Synchronous and asynchronous execution postures (Band 2au — planned)
+
+**Status:** **Planned** (2026-06-09) — architecture canon §57 added; partial as-built (queue, long-running, `AgentExecutionMode`).
+
+**Goal:** Document and harden **sync vs async** dispatch as first-class host configuration — same Nexus graph, different client wait semantics.
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| ORCH-6-DOC.1 | Canon §57 + §58 index | **Done** | High | FLOW §3.1 cross-ref |
+| ORCH-6.1 | **`run_async` host helper** — enqueue + return handle from Tier-3 factory | Planned | High | Integration test with message_bus |
+| ORCH-6.2 | **Profile preset** — `async_batch_defaults()` on `OrchestrationProfile` | Planned | Medium | Scaffold template option |
+| ORCH-6.3 | **Agent async contract gate** — `execution_mode=ASYNC` agents return pending handle | Planned | Medium | Contract test in agent scaffold |
+| ORCH-6.4 | **Author appendix** — sync/async decision tree in AGENT_CREATION_GUIDE | Planned | Low | Appendix cross-ref §57 |
+
+**Prerequisites:** Queueing plane **Done**; `message_bus.async_runner` skill **Done**.
+
+**Explicitly excluded:** New queue transport; nested Nexus per async job.
 
 ---
 

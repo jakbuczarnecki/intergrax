@@ -548,6 +548,28 @@ HumanRequest:
     default_on_timeout: AgentDecisionType | null
 ```
 
+### 42.10.2 Autonomy level (user steering)
+
+Distinct from host `ExecutionMode` (STRICT | BALANCED | EXPLORATORY) and agent `AgentExecutionMode` (SYNC | ASYNC).
+
+```text
+AutonomyLevel:
+    MANUAL       # user approves meaningful actions
+    ASK          # agent proposes; policy gates risky steps
+    AUTONOMOUS   # execute within policy envelope
+```
+
+| Field | Location | Semantics |
+|-------|----------|-----------|
+| `TaskExecutionOptions.autonomy_level` | Task envelope | User/session slider value |
+| Effective level | `PolicyEngine` | `min(user, tenant ceiling, execution_mode ceiling, agent risk)` |
+
+**Mid-run changes:** operator or client MAY set autonomy before the next UAEP step; downgrade takes effect immediately for new tool calls; upgrade MUST NOT bypass unresolved HITL items.
+
+**Events:** `AUTONOMY_LEVEL_SET`, `AUTONOMY_LEVEL_CHANGED` on `ops:governance` channel.
+
+**Full model:** [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) §35.
+
 ---
 
 ## 42.11 Policy Engine

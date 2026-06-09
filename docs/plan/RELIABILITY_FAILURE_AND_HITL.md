@@ -66,6 +66,28 @@
 
 Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** §18 — see Phase G–H below.
 
+---
 
+## Phase REL-ADV — Resilience policies and autonomy slider (Band 2as — planned)
+
+**Status:** **Planned** (2026-06-09) — architecture canon §34–§35 added; runtime gaps below.
+
+**Goal:** Unify distributed retry/recovery behaviour under a composable `ResiliencePolicy` model and expose user-facing **AutonomyLevel** (manual / ask / autonomous) with mid-run changes.
+
+**Prerequisites:** Phase REL **Done**; UAEP §42.8–§42.10 **Done**; PolicyEngine wiring **Done**.
+
+| ID | Area | Deliverable | Status | Modules | Acceptance |
+|----|------|-------------|--------|---------|------------|
+| REL-ADV-DOC.1 | REL-ADV0 | Canon sync — architecture §34–§35, UAEP §42.10.2 | **Done** | `docs/architecture/RELIABILITY_FAILURE_AND_HITL.md` | Hub index + cross-refs |
+| REL-ADV.1 | REL-ADV1 | **`ResiliencePolicy`** Pydantic model + profile field on `ReliabilityProfile` | **Planned** | `applications/contracts/`, `reliability_wiring.py` | Assembly validation test |
+| REL-ADV.2 | REL-ADV2 | **Policy resolver** — map failure class → policy action (reboot strategies) | **Planned** | `runtime/nexus/retry/`, `PolicyEngine` | Unit + integration retry tests |
+| REL-ADV.3 | REL-ADV3 | **`AutonomyLevel`** on `TaskExecutionOptions` + effective level in `PolicyEngine` | **Planned** | `task/`, `runtime/policy/` | Tool gate tests per level |
+| REL-ADV.4 | REL-ADV4 | **Mid-run autonomy API** — set level on active task | **Planned** | `fastapi_core/`, HITL tools | Downgrade immediate; upgrade respects queue |
+| REL-ADV.5 | REL-ADV5 | **Trace events** — `AUTONOMY_LEVEL_*`, unified `RECOVERY_REBOOT` | **Planned** | observability spine | Gate observability script |
+| REL-ADV.6 | REL-ADV6 | **CI** — `check_harness_resilience_policy.py` | **Planned** | `scripts/` | CI workflow |
+
+**ADR policy:** REL-ADV.1 → ADR-REL-001 (resilience policy unification) when implementation starts; REL-ADV.3 → no ADR if enum-only on existing PolicyEngine path.
+
+**Explicitly excluded:** K.1/K.2 product policies; OS-level process supervisor (use ECP / host ops).
 
 ---
