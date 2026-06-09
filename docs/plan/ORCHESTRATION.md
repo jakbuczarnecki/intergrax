@@ -1474,7 +1474,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | ORCH-CONFIG.7 | CFG-16, CFG-20 | `strict` multi-agent preset on `ApplicationEnvironmentProfile` | **Done** | Medium | `strict_multi_agent_defaults()` · critic + merge bundled |
 | ORCH-CONFIG.8 | CFG-17 | Swarm runtime — extends ORCH-5.1 | **Done** | Medium | `swarm_policy.py` · `GraphExecutor` batch guard · CFG-17 sim |
 | ORCH-CONFIG.9 | All CFG | `check_orchestration_config_docs.py` — CFG IDs in tests/docs | **Done** | Low | `scripts/check_orchestration_config_docs.py` |
-| ORCH-CONFIG.10 | CFG-11 | COG-1.* engine planner production path | **Partial** | High | `nexus_plan_bridge.py` · gate tests; COG-1.4 replan boundary pending |
+| ORCH-CONFIG.10 | CFG-11 | COG-1.* engine planner production path | **Done** | High | `nexus_plan_bridge.py` · `test_cog_depth_residual_gate.py` |
 | ORCH-CONFIG.11 | §59 | **Audit canon** — §59 gaps/debt/discrepancies register | **Done** | Medium | Architecture §59 + hub index 2026-06-09 |
 
 **Execution order when Band 2ar activates:** ORCH-CONFIG.2 → ORCH-CONFIG.1 → ORCH-CONFIG.3 → ORCH-CONFIG.4 → ORCH-CONFIG.10 → ORCH-CONFIG.6 → ORCH-CONFIG.7 → ORCH-CONFIG.8 → ORCH-CONFIG.9; ORCH-CONFIG.5 remains §6.3 / FLOW-8.

@@ -8,7 +8,10 @@ import json
 import re
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.runtime.nexus.planning.nexus_plan_bridge import build_nexus_plan_unified
+from intergrax.runtime.nexus.planning.nexus_plan_bridge import (
+    build_nexus_plan_unified,
+    build_planner_build_debug,
+)
 from intergrax.runtime.nexus.planning.nexus_planner_prompts import nexus_task_planner_prompt
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, TaskPlanner
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -32,7 +35,7 @@ def build_nexus_plan_from_llm(
         capability=task.context.capability or "",
         classification=task.classification or "",
     )
-    plan, _debug = build_nexus_plan_unified(
+    plan, debug = build_nexus_plan_unified(
         task,
         registry,
         llm_adapter,
@@ -40,7 +43,16 @@ def build_nexus_plan_from_llm(
         prompt_text=prompt,
         planner_source="engine",
     )
-    return plan
+    metadata = dict(plan.plan_metadata)
+    metadata.update(
+        build_planner_build_debug(
+            planner_source=debug.planner_source,
+            used_fallback=debug.used_fallback,
+            failure_kind=debug.failure_kind,
+            raw_preview=debug.raw_preview,
+        )
+    )
+    return plan.model_copy(update={"plan_metadata": metadata})
 
 
 def _extract_json_object(raw: str) -> dict[str, object] | None:

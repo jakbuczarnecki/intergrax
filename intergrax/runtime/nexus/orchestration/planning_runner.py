@@ -21,6 +21,10 @@ from intergrax.runtime.nexus.orchestration.planning_coordination_advisory import
     build_coordination_advisory_event,
 )
 from intergrax.runtime.nexus.planning.nexus_planner_protocol import NexusTaskPlannerProtocol
+from intergrax.runtime.nexus.observability.planning_metrics import (
+    record_planning_failure,
+    record_planner_fallback,
+)
 from intergrax.runtime.nexus.planning.plan_validator import validate_nexus_plan
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.nexus.task_classifier_protocol import NexusTaskClassifierProtocol
@@ -55,6 +59,8 @@ class NexusPlanningRunner:
     maybe_checkpoint: CheckpointFn
     policy_engine: PolicyEngine | None = None
     emit_coordination_advisory: bool = False
+    denied_planner_model_ids: tuple[str, ...] = ()
+    planner_model_id: str | None = None
 
     async def run(
         self,
@@ -167,12 +173,14 @@ class NexusPlanningRunner:
                 context={
                     "phase": "nexus_planning",
                     "classification": classification,
+                    "planner_model_id": self.planner_model_id or "",
+                    "denied_planner_model_ids": self.denied_planner_model_ids,
                 },
             )
             if policy_decision.action is PolicyAction.DENY:
-                task.metadata["reasoning_failure_kind"] = (
-                    ReasoningFailureKind.PLANNER_POLICY_BLOCKED.value
-                )
+                failure_kind = ReasoningFailureKind.PLANNER_POLICY_BLOCKED
+                task.metadata["reasoning_failure_kind"] = failure_kind.value
+                record_planning_failure(kind=failure_kind.value)
                 task.sync_metadata()
                 lifecycle.transition(task, TaskState.FAILED)
                 return PlanningPhaseOutcome(
@@ -210,6 +218,12 @@ class NexusPlanningRunner:
                 classification=classification,
             )
 
+        if plan.plan_metadata.get("used_fallback") == "true":
+            record_planner_fallback()
+            failure_kind = plan.plan_metadata.get("failure_kind")
+            if failure_kind:
+                record_planning_failure(kind=failure_kind)
+
         task.runtime.orchestration.plan_id = plan.plan_id
         for key, value in plan.plan_metadata.items():
             task.metadata[key] = value
@@ -243,6 +257,7 @@ class NexusPlanningRunner:
                 "plan_id": plan.plan_id,
                 "step_count": str(len(plan.steps)),
                 "used_fallback": plan.plan_metadata.get("used_fallback", "false"),
+                "failure_kind": plan.plan_metadata.get("failure_kind", ""),
             },
         )
         await self.publish(

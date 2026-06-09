@@ -40,10 +40,12 @@ class CatalogToolPlanner(ToolPlannerTrackable):
         registry: ToolRegistry,
         prompt_registry: YamlPromptRegistry | None = None,
         prompt_catalog_path: str | None = None,
+        planner_prompt_id: str = "tools_agent_planner",
     ) -> CatalogToolPlanner:
         from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
 
         config = ToolPlanningConfig.default(
+            planner_prompt_id=planner_prompt_id,
             registry=prompt_registry,
             catalog_path=prompt_catalog_path,
         )

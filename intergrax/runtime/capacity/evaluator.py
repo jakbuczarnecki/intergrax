@@ -15,22 +15,33 @@ from intergrax.runtime.capacity.contracts import (
     ScalingPolicy,
     ScalingRule,
 )
+from intergrax.runtime.capacity.events import PublishFn, publish_scale_evaluated
 
 
 class ScalingEvaluator:
     """Rule matching with cooldown, hysteresis, and anti-flap guard (ECP-3, ECP-7.3)."""
 
-    def __init__(self, policy: ScalingPolicy) -> None:
+    def __init__(
+        self,
+        policy: ScalingPolicy,
+        *,
+        publish: PublishFn | None = None,
+    ) -> None:
         self._policy = policy
+        self._publish = publish
         self._last_action_at: dict[str, datetime] = {}
         self._action_timestamps: deque[datetime] = deque()
 
     def evaluate(self, signals: Sequence[CapacitySignal]) -> ScalingActionPlan:
         if not self._policy.enabled:
-            return ScalingActionPlan(evaluation_status="noop")
+            plan = ScalingActionPlan(evaluation_status="noop")
+            self._emit_evaluated(plan)
+            return plan
 
         if self._actions_in_last_hour() >= self._policy.max_actions_per_hour:
-            return ScalingActionPlan(evaluation_status="denied")
+            plan = ScalingActionPlan(evaluation_status="denied")
+            self._emit_evaluated(plan)
+            return plan
 
         by_metric = {s.metric_name: s for s in signals}
         actions: list[ScalingAction] = []
@@ -60,18 +71,28 @@ class ScalingEvaluator:
                 )
 
         if not actions:
-            return ScalingActionPlan(evaluation_status="noop")
+            plan = ScalingActionPlan(evaluation_status="noop")
+            self._emit_evaluated(plan)
+            return plan
 
         if self._policy.require_hitl_for_scale_up and any(a.delta > 0 for a in actions):
-            return ScalingActionPlan(
+            plan = ScalingActionPlan(
                 actions=tuple(actions),
                 evaluation_status="hitl_required",
             )
+            self._emit_evaluated(plan)
+            return plan
 
         for action in actions:
             self._record_action(action.action_id)
 
-        return ScalingActionPlan(actions=tuple(actions), evaluation_status="planned")
+        plan = ScalingActionPlan(actions=tuple(actions), evaluation_status="planned")
+        self._emit_evaluated(plan)
+        return plan
+
+    def _emit_evaluated(self, plan: ScalingActionPlan) -> None:
+        if self._publish is not None:
+            publish_scale_evaluated(self._publish, plan)
 
     def _in_cooldown(self, rule: ScalingRule) -> bool:
         last = self._last_action_at.get(rule.rule_id)

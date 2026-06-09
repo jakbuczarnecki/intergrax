@@ -131,7 +131,7 @@ Work **one COG ID per PR** when Band 2am is activated.
 | COG-1.1 | **`EngineBackedNexusPlanner` → `EnginePlannerOrchestrator` adapter** — shared parse/validate path for `NexusPlan` | **Done** | **Critical** | `nexus_plan_bridge.py`, `orchestration_wiring.py` | `test_nexus_plan_bridge.py` |
 | COG-1.2 | **Unified planner diagnostics** — single `planner_build_debug` surface on Nexus planning trace | **Done** | High | `nexus_plan_bridge.py` | `PLAN_CREATED` payload includes `planner_source` |
 | COG-1.3 | **Plan validation gate** — reject LLM plans with cycles/unknown agents before graph build | **Done** | High | `plan_validator.py` · `planning_runner.py` | Unknown agent/dep → FAILED before graph build |
-| COG-1.4 | **`allow_dynamic_replan` wire** — document + test engine replan boundary vs Nexus plan immutability | Planned | Medium | `plan_loop_controller.py`, ADR note | Integration test replan does not mutate committed NexusPlan |
+| COG-1.4 | **`allow_dynamic_replan` wire** — document + test engine replan boundary vs Nexus plan immutability | **Done** | Medium | `interrupts/handler.py`, ADR-FLOW-003 | `test_cog_depth_residual_gate.py` |
 | COG-1.5 | **Gate test** — `planner_kind=engine` regression suite with mock LLM | **Done** | High | `test_nexus_plan_bridge.py`, `test_engine_planner_orchestration_gate.py` | `-m gate` green |
 
 ### Wave COG2 — Prompt Registry on planners (P0)
@@ -139,9 +139,9 @@ Work **one COG ID per PR** when Band 2am is activated.
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
 | COG-2.1 | **`nexus.task_planner.v1` prompt id** — replace inline string in `nexus_llm_plan_builder.py` | **Done** | **Critical** | `prompts/nexus_task_planner/`, `nexus_planner_prompts.py` | `check_reasoning_gates.py` |
-| COG-2.2 | **Tool planner prompt ids** — ensure `ToolPlanningConfig` uses registry in all reference hosts | Planned | High | `tool_planning_config.py` | Lab host smoke |
-| COG-2.3 | **Engine planner `PlannerPromptConfig` registry binding** | Planned | High | `engine_plan_models.py` | Forced-plan replay uses registry |
-| COG-2.4 | **Author guide Appendix** — planner prompt authoring for Tier-3 | Planned | Medium | `guides/AGENT_CREATION_GUIDE.md` | TOC entry + cross-ref |
+| COG-2.2 | **Tool planner prompt ids** — ensure `ToolPlanningConfig` uses registry in all reference hosts | **Done** | High | `reasoning_wiring.py`, `tool_planning_config.py` | `test_cog_depth_residual_gate.py` |
+| COG-2.3 | **Engine planner `PlannerPromptConfig` registry binding** | **Done** | High | `reasoning_wiring.py` | `resolve_engine_planner_prompt_config()` |
+| COG-2.4 | **Author guide Appendix** — planner prompt authoring for Tier-3 | **Done** | Medium | `guides/AGENT_CREATION_GUIDE.md` | Appendix COG-2.4 |
 
 ### Wave COG3 — Classifier extensions (P1)
 
@@ -163,16 +163,16 @@ Work **one COG ID per PR** when Band 2am is activated.
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
 | COG-5.1 | **`ReasoningProfile` on `ApplicationEnvironmentProfile`** — planner LLM id, parse retries, prompt ids | **Done** | High | `contracts/reasoning_profile.py`, `environment_profile.py` | Profile on lab defaults |
-| COG-5.2 | **Wire ReasoningProfile → orchestration wiring** — optional separate adapter for planners | **Partial** | High | `orchestration_wiring.py` | `planner_prompt_id` wired; dedicated planner LLM adapter pending |
-| COG-5.3 | **Policy hook for planner model selection** — FAUDIT-LLM.1 partial close | Planned | Medium | `policy_engine.py` | Deny over-budget planner model |
+| COG-5.2 | **Wire ReasoningProfile → orchestration wiring** — optional separate adapter for planners | **Done** | High | `orchestration_wiring.py`, `nexus_factory.py` | `planner_prompt_id` + `planner_llm_profile_id` policy context |
+| COG-5.3 | **Policy hook for planner model selection** — FAUDIT-LLM.1 partial close | **Done** | Medium | `runtime_policy_engine.py`, `ReasoningProfile.denied_planner_model_ids` | Planning-phase deny gate |
 
 ### Wave COG6 — Reasoning failure taxonomy (P1)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
 | COG-6.1 | **`ReasoningFailureKind` enum** — §17 taxonomy as code | **Done** | High | `contracts/reasoning_failure.py` | Used in `nexus_plan_bridge` debug |
-| COG-6.2 | **Emit failure kind on planner fallback and policy block** | **Partial** | High | `nexus_plan_bridge.py`, `planning_runner.py` | Fallback kinds in bridge; policy block partial |
-| COG-6.3 | **Ops dashboard hints** — `ops:planning` failure counters | Planned | Medium | observability bridge | Metric names documented in OBS plan |
+| COG-6.2 | **Emit failure kind on planner fallback and policy block** | **Done** | High | `nexus_llm_plan_builder.py`, `planning_runner.py` | `failure_kind` in metadata + `DECISION_EMITTED` |
+| COG-6.3 | **Ops dashboard hints** — `ops:planning` failure counters | **Done** | Medium | `planning_metrics.py` | `ops_planning_failure_*_total` export |
 
 ### Wave COG7 — Planning observability (P2)
 

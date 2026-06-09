@@ -108,6 +108,9 @@ def build_nexus_loop_from_environment(
         run_budget=run_budget,
         critic_graph_hooks=critic_wiring.graph_hooks if critic_wiring else None,
         emit_coordination_advisory=orch.emit_coordination_advisory,
+        allow_dynamic_replan=runtime_settings.allow_dynamic_replan,
+        denied_planner_model_ids=tuple(env.reasoning_profile.denied_planner_model_ids),
+        planner_model_id=env.reasoning_profile.planner_llm_profile_id,
     )
     resolved_security = security_wiring or wire_application_security(env)
     apply_application_security_wiring(loop, resolved_security)

@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.runtime.capacity.action_gate import CapacityActionGate
 from intergrax.runtime.capacity.collector import CapacitySignalCollector
 from intergrax.runtime.capacity.evaluator import ScalingEvaluator
 from intergrax.runtime.capacity.provisioner import ScalingProvisioner
@@ -31,7 +32,7 @@ def wire_application_scaling(
         return ApplicationScalingWiring(None, None, None, None)
     collector = CapacitySignalCollector()
     evaluator = ScalingEvaluator(policy)
-    provisioner = ScalingProvisioner()
+    provisioner = ScalingProvisioner(action_gate=CapacityActionGate())
     scheduler = CapacityScheduler(
         collector=collector,
         evaluator=evaluator,

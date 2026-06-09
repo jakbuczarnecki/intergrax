@@ -1383,6 +1383,21 @@ Canon reference flow (PM → UX → Legal → Validator → Human): [§42.43](ar
 
 `OrchestrationProfile.planner_kind` / `classifier_kind` resolve via `orchestration_wiring.py` → `build_nexus_loop_from_environment` (ORCH-1 **Done**). Also wired (Phase FLOW): `retry_policy_name`, `long_running_enabled`, `max_parallel_nodes`, `max_inflight_nodes`, `max_delegation_depth`, `max_run_retries`, `merge_strategy`, `multi_agent_order`, `allow_dynamic_replan`. Planner kinds: `default` | `engine` (`engine` requires `llm_adapter` at factory; uses `build_nexus_plan_from_llm`). Unknown kinds fail fast at bootstrap.
 
+#### Appendix — planner prompt authoring (COG-2.4)
+
+| Plane | Profile field | Registry prompt id | Wiring helper |
+|-------|---------------|-------------------|---------------|
+| Nexus LLM planner | `ReasoningProfile.planner_prompt_id` | `prompts/nexus_task_planner/` | `EngineBackedNexusPlanner` via `orchestration_wiring.py` |
+| Tool catalog planner | `ReasoningProfile.tool_planner_prompt_id` | `tools_agent_planner` (default) | `resolve_tool_planning_config()` in `reasoning_wiring.py` |
+| Engine step planner | `ReasoningProfile.engine_planner_prompt_id` | `planner_default`, `planner_replan_default`, … | `resolve_engine_planner_prompt_config()` |
+
+Authoring rules:
+
+1. Add or version prompts under `intergrax/prompts/` — never inline hot-path strings (`check_reasoning_gates.py` CI).
+2. Set ids on `ApplicationEnvironmentProfile.reasoning_profile` in the host manifest or environment builder.
+3. `denied_planner_model_ids` blocks planning-phase LLM selection via policy (`COG-5.3`).
+4. `allow_dynamic_replan=True` enables engine-loop replan boundary only — committed `NexusPlan` on the task is not mutated mid-flight (`COG-1.4` / ADR-FLOW-003).
+
 ### I.5 Graph execution and merge
 
 | Mechanism | Behavior |

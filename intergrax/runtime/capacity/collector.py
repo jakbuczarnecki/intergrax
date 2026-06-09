@@ -7,11 +7,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 
 from intergrax.runtime.capacity.contracts import CapacitySignal, ScalingTarget
-from intergrax.contracts.execution_phase import ExecutionPhase
-from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-
-
-PublishFn = Callable[[RuntimeEvent], None]
+from intergrax.runtime.capacity.events import PublishFn, publish_capacity_signal_collected
 
 
 class CapacitySignalCollector:
@@ -55,19 +51,5 @@ class CapacitySignalCollector:
             )
         if self._publish is not None:
             for signal in signals:
-                self._publish(
-                    RuntimeEvent(
-                        event_type=RuntimeEventType.TASK_PROGRESS,
-                        tenant_id="harness",
-                        task_id=signal.signal_id,
-                        run_id=signal.signal_id,
-                        phase=ExecutionPhase.EXECUTION,
-                        payload={
-                            "event_kind": "CAPACITY_SIGNAL_COLLECTED",
-                            "target": signal.target.value,
-                            "metric_name": signal.metric_name,
-                            "value": signal.value,
-                        },
-                    )
-                )
+                publish_capacity_signal_collected(self._publish, signal)
         return signals

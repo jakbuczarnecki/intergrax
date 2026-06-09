@@ -18,11 +18,12 @@ def _resolve_registry(
 
 def planner_prompt(
     *,
+    prompt_id: str = "tools_agent_planner",
     registry: YamlPromptRegistry | None = None,
     catalog_path: str | None = None,
 ) -> str:
     reg = _resolve_registry(registry=registry, catalog_path=catalog_path)
-    return reg.resolve_localized("tools_agent_planner").system
+    return reg.resolve_localized(prompt_id).system
 
 
 def system_prompt(

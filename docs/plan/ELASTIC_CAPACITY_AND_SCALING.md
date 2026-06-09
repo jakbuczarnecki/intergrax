@@ -155,7 +155,7 @@ Total ECP-DEPTH: 28 (excluding ECP-DOC)
 | ECP-2.1 | **`CapacitySignalCollector`** — aggregate `GRAPH_BACKPRESSURE` rate | **Done** | **Critical** | `capacity/collector.py` | `test_ecp_depth_gate.py` |
 | ECP-2.2 | **Queue depth signal** — from `task_index` | **Done** | High | same | `queue_depth_provider` hook |
 | ECP-2.3 | **Prometheus SLI bridge** (optional profile) | **Done** | Medium | `capacity/prometheus_bridge.py` | Stub PromQL bridge |
-| ECP-2.4 | **Emit `CAPACITY_SIGNAL_COLLECTED`** events | **Partial** | High | collector | `TASK_PROGRESS` payload `event_kind` |
+| ECP-2.4 | **Emit `CAPACITY_SIGNAL_COLLECTED`** events | **Done** | High | `capacity/events.py`, collector | `RuntimeEventType.CAPACITY_SIGNAL_COLLECTED` |
 
 ### Wave ECP3 — Evaluator (P0)
 
@@ -164,7 +164,7 @@ Total ECP-DEPTH: 28 (excluding ECP-DOC)
 | ECP-3.1 | **`ScalingEvaluator`** — rule matching + cooldown | **Done** | **Critical** | `capacity/evaluator.py` | `test_ecp_depth_gate.py` |
 | ECP-3.2 | **Hysteresis** — separate up/down thresholds | **Done** | High | same | Flap scenario test |
 | ECP-3.3 | **`ScalingActionPlan`** output — ordered actions | **Done** | High | same | Immutable plan |
-| ECP-3.4 | **Emit `SCALE_EVALUATED`** | **Partial** | Medium | evaluator | Status on plan object; dedicated event pending |
+| ECP-3.4 | **Emit `SCALE_EVALUATED`** | **Done** | Medium | evaluator | `RuntimeEventType.SCALE_EVALUATED` |
 
 ### Wave ECP4 — Kubernetes provisioner (P1)
 
@@ -172,8 +172,8 @@ Total ECP-DEPTH: 28 (excluding ECP-DOC)
 |----|-------------|--------|----------|--------|------------|
 | ECP-4.1 | **Extend `kubernetes` contract** — `scale_workload`, `get_replicas` | **Done** | **Critical** | `integrations/_shared/p5/clients.py` | `test_ecp_depth_gate.py` |
 | ECP-4.2 | **`ScalingProvisioner`** — K8s backend | **Done** | **Critical** | `capacity/provisioner.py` | Integration with mock |
-| ECP-4.3 | **Emit `SCALE_APPLIED` / `SCALE_FAILED`** | **Partial** | High | provisioner | `applied`/`failures` lists; trace events pending |
-| ECP-4.4 | **INTEGRATIONS plan row** — cross-ref ECP-4 | Planned | Low | `plan/INTEGRATIONS.md` | Link resolves |
+| ECP-4.3 | **Emit `SCALE_APPLIED` / `SCALE_FAILED`** | **Done** | High | provisioner | Dedicated runtime event types |
+| ECP-4.4 | **INTEGRATIONS plan row** — cross-ref ECP-4 | **Done** | Low | `plan/INTEGRATIONS.md` M-P4.20 | Link resolves |
 
 ### Wave ECP5 — Celery / queue worker scale (P1)
 
@@ -181,20 +181,20 @@ Total ECP-DEPTH: 28 (excluding ECP-DOC)
 |----|-------------|--------|----------|--------|------------|
 | ECP-5.1 | **Celery worker scale action** — document + stub executor | **Done** | High | `capacity/provisioner.py` | Stub pass-through action |
 | ECP-5.2 | **Generalize W-OPS.12 pattern** — beyond modality only | **Done** | High | `scaling_wiring.py` | Lab host wiring |
-| ECP-5.3 | **Queue depth → worker scale rule** — reference policy | Planned | Medium | docs + test | Evaluator table test |
+| ECP-5.3 | **Queue depth → worker scale rule** — reference policy | **Done** | Medium | `HARNESS_ENVIRONMENT.md`, `test_capacity_events_gate.py` | Reference JSON policy |
 
 ### Wave ECP6 — nginx / ingress (P2)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| ECP-6.1 | **RFC: nginx vs ingress_controller slug** | Planned | Medium | ADR or plan appendix | Decision recorded |
-| ECP-6.2 | **Integration scaffold** (if accepted) | Planned | Low | `integrations/providers/` | Manifest + USAGE |
+| ECP-6.1 | **RFC: nginx vs ingress_controller slug** | **Done** | Medium | ADR-SCALE-002 | Defer slug; K8s deployment path canonical |
+| ECP-6.2 | **Integration scaffold** (if accepted) | **Cancelled** | Low | — | Superseded by ADR-SCALE-002 deferral |
 
 ### Wave ECP7 — Policy and HITL (P1)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| ECP-7.1 | **`BEFORE_CAPACITY_ACTION` hook** | **Partial** | High | `hook_point.py` | Hook point registered; deny path test pending |
+| ECP-7.1 | **`BEFORE_CAPACITY_ACTION` hook** | **Done** | High | `capacity/action_gate.py`, provisioner | `test_capacity_events_gate.py` deny path |
 | ECP-7.2 | **HITL gate for scale-up** when `require_hitl_for_scale_up` | **Done** | High | `capacity/governance.py`, evaluator | `hitl_required` plan status |
 | ECP-7.3 | **Anti-flapping guard** — max actions/hour | **Done** | High | evaluator | `max_actions_per_hour` |
 

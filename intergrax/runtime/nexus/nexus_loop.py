@@ -127,6 +127,9 @@ class NexusLoop:
         run_budget: RunBudget | None = None,
         critic_graph_hooks: Optional["CriticGraphHooks"] = None,
         emit_coordination_advisory: bool = False,
+        allow_dynamic_replan: bool = False,
+        denied_planner_model_ids: tuple[str, ...] = (),
+        planner_model_id: str | None = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -148,6 +151,7 @@ class NexusLoop:
         self._policy_engine = coerce_policy_engine(policy_engine)
         self._interrupt_handler = interrupt_handler or ExecutionInterruptHandler(
             policy_engine=self._policy_engine,
+            allow_dynamic_replan=allow_dynamic_replan,
         )
         self._shadow_manager = shadow_manager or ShadowWorkspaceManager()
         self._sandbox_manager = sandbox_manager or SandboxSessionManager()
@@ -252,6 +256,8 @@ class NexusLoop:
             maybe_checkpoint=self._maybe_checkpoint_long_running,
             policy_engine=self._policy_engine,
             emit_coordination_advisory=emit_coordination_advisory,
+            denied_planner_model_ids=denied_planner_model_ids,
+            planner_model_id=planner_model_id,
         )
 
     @property

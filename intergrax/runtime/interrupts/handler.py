@@ -52,7 +52,7 @@ class GovernanceResolution(BaseModel):
             from intergrax.contracts.agent_handoff import handoff_from_decision
 
             if handoff_from_decision(self.agent_decision) is None:
-                return True
+                return self.policy_decision.action is not PolicyAction.ALLOW
         return self.agent_decision.type in {
             AgentDecisionType.FAIL,
             AgentDecisionType.CANCEL,
@@ -65,10 +65,13 @@ class ExecutionInterruptHandler:
     def __init__(
         self,
         policy_engine: PolicyEngine | RuntimePolicyEngine | None = None,
+        *,
+        allow_dynamic_replan: bool = False,
     ) -> None:
         from intergrax.runtime.policy.policy_engine import coerce_policy_engine
 
         self._policy = coerce_policy_engine(policy_engine)
+        self._allow_dynamic_replan = allow_dynamic_replan
 
     @property
     def policy_engine(self) -> PolicyEngine:
@@ -106,12 +109,20 @@ class ExecutionInterruptHandler:
         elif decision.type is AgentDecisionType.MODIFY_PLAN:
             from intergrax.contracts.agent_handoff import handoff_from_decision
 
-            if handoff_from_decision(decision) is None:
-                policy = PolicyDecision(
-                    action=PolicyAction.DENY,
-                    reason="MODIFY_PLAN_NOT_SUPPORTED",
-                    policy_rule_id="modify_plan_not_supported",
-                )
+            handoff = handoff_from_decision(decision)
+            if handoff is None:
+                if self._allow_dynamic_replan and policy_ctx.get("engine_replan_boundary"):
+                    policy = PolicyDecision(
+                        action=PolicyAction.ALLOW,
+                        reason="engine_replan_allowed",
+                        policy_rule_id="orchestration.allow_dynamic_replan",
+                    )
+                else:
+                    policy = PolicyDecision(
+                        action=PolicyAction.DENY,
+                        reason="MODIFY_PLAN_NOT_SUPPORTED",
+                        policy_rule_id="modify_plan_not_supported",
+                    )
             else:
                 policy = self._policy.evaluate_decision(decision, context=policy_ctx)
         else:

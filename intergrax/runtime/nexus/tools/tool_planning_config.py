@@ -29,6 +29,7 @@ class ToolPlanningConfig:
     def default(
         cls,
         *,
+        planner_prompt_id: str = "tools_agent_planner",
         registry: YamlPromptRegistry | None = None,
         catalog_path: str | None = None,
     ) -> ToolPlanningConfig:
@@ -36,5 +37,8 @@ class ToolPlanningConfig:
         return cls(
             system_instructions=system_prompt(**prompt_kwargs),
             system_context_template=system_context_template(**prompt_kwargs),
-            planner_instructions=planner_prompt(**prompt_kwargs),
+            planner_instructions=planner_prompt(
+                prompt_id=planner_prompt_id,
+                **prompt_kwargs,
+            ),
         )
