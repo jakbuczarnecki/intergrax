@@ -198,6 +198,12 @@ integrations-sentry = ["sentry-sdk>=2.0"]
 integrations-harness = [
   "sentry-sdk>=2.0",
 ]
+# Optional vendor SDKs for M.12 — install manually when needed (heavy torch/transformers
+# conflict with pinned docling/torch). Runtime uses pattern fallback without these packages.
+integrations-guardrails = [
+  "presidio-analyzer>=2.2",
+  "presidio-anonymizer>=2.2",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "applications", "agents"]

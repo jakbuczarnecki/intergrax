@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.applications._shared.application_guardrail_middleware import LlmGuardrailMiddleware
 from intergrax.applications._shared.guardrail_runtime_bridge import (
     GuardrailWiringOptions,
     resolve_guardrail_backend,
@@ -13,6 +14,7 @@ from intergrax.applications._shared.guardrail_runtime_bridge import (
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.integrations.contracts.llm_guardrail import LlmGuardrailBackend
+from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 
 
@@ -29,10 +31,27 @@ def wire_application_guardrail(env: ApplicationEnvironmentProfile) -> Applicatio
     )
 
 
+def _attach_middleware(nexus: NexusLoop, middleware: LlmGuardrailMiddleware) -> None:
+    pipeline = nexus._middleware  # noqa: SLF001
+    if isinstance(pipeline, MiddlewarePipeline):
+        pipeline._middleware = sorted(  # noqa: SLF001
+            [middleware, *pipeline._middleware],
+            key=lambda item: item.priority,
+        )
+
+
 def apply_application_guardrail_wiring(
     nexus: NexusLoop,
     wiring: ApplicationGuardrailWiring,
+    env: ApplicationEnvironmentProfile,
 ) -> ApplicationGuardrailWiring:
-    """Return wiring for host middleware; NexusLoop stores backend via host closure."""
-    _ = nexus
+    """Attach vendor guardrail middleware when profile binding is present."""
+    if not wiring.options.enabled or wiring.backend is None:
+        return wiring
+    if not env.guardrail_profile.enabled:
+        return wiring
+    _attach_middleware(
+        nexus,
+        LlmGuardrailMiddleware(wiring.backend, env.guardrail_profile),
+    )
     return wiring

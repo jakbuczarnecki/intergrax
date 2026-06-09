@@ -16,7 +16,7 @@ Tier-3 hosts need vendor-agnostic LLM input/output scanning without duplicating 
 - Introduce `IntegrationCategory.LLM_GUARDRAIL` and `LlmGuardrailBackend` with `scan_input` / `scan_output` returning `GuardrailScanResult`.
 - Add `IntegrationProfile.llm_guardrail` binding resolved like other category slots.
 - Wire guardrail slug into `RuntimeConfig.metadata` via `security_runtime_bridge` and Tier-3 `guardrail_runtime_bridge` — **no** Nexus fork.
-- Ship harness **stub** providers for all catalog slugs via `register_all.py`; full vendor bundles are follow-up PRs per slug.
+- Ship catalog adapters for all slugs via `register_all.py` + `_factory.py` — vendor SDK in `_vendor_opens.py` with pattern fallback; HTTP adapters for cloud/gateway slugs.
 - Preset `harness_guardrail_stack(primary, semantic)` for lab/legal strict profiles.
 
 Rejected: per-agent guardrail SDK imports; duplicate scan paths outside security bridge.
@@ -30,8 +30,8 @@ Rejected: per-agent guardrail SDK imports; duplicate scan paths outside security
 
 ### Negative
 
-- Stub backends do not enforce production policies until vendor bundles land.
-- Pre/post-LLM middleware hook registration remains partial (M-P12-WIRE.1).
+- Vendor SDKs (`llm-guard`, `guardrails-ai`, `nemoguardrails`) are **manual install** — conflict with pinned docling/torch; harness uses pattern fallback in CI.
+- NeMo/Llama/Bedrock full vendor depth remains pattern/HTTP until dedicated bundles ship.
 
 ## Compliance
 
@@ -41,6 +41,7 @@ Rejected: per-agent guardrail SDK imports; duplicate scan paths outside security
 ## Implementation notes
 
 - `intergrax/integrations/contracts/llm_guardrail.py`
-- `intergrax/applications/_shared/guardrail_wiring.py`
+- `intergrax/integrations/providers/llm_guardrail/_factory.py`, `_adapters.py`, `_vendor_opens.py`
+- `intergrax/applications/_shared/application_guardrail_middleware.py`, `guardrail_wiring.py`, `guardrail_assembly_resolver.py`
 - `scripts/check_harness_guardrail_wiring.py`
-- `tests/unit/integrations/test_llm_guardrail_contract.py`
+- `tests/unit/integrations/test_llm_guardrail_contract.py`, `tests/unit/applications/test_harness_guardrail_wiring.py`

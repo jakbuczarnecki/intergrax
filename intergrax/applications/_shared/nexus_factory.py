@@ -11,6 +11,11 @@ from intergrax.applications._shared.critic_wiring import (
     ApplicationCriticWiring,
     apply_application_critic_wiring,
 )
+from intergrax.applications._shared.guardrail_wiring import (
+    ApplicationGuardrailWiring,
+    apply_application_guardrail_wiring,
+    wire_application_guardrail,
+)
 from intergrax.applications._shared.security_wiring import (
     ApplicationSecurityWiring,
     apply_application_security_wiring,
@@ -55,6 +60,7 @@ def build_nexus_loop_from_environment(
     runtime_event_bus: RuntimeEventBus | None = None,
     context_manager: ContextManager | None = None,
     security_wiring: ApplicationSecurityWiring | None = None,
+    guardrail_wiring: ApplicationGuardrailWiring | None = None,
     critic_wiring: ApplicationCriticWiring | None = None,
     adaptive_wiring: ApplicationAdaptiveWiring | None = None,
     run_budget: RunBudget | None = None,
@@ -105,6 +111,8 @@ def build_nexus_loop_from_environment(
     )
     resolved_security = security_wiring or wire_application_security(env)
     apply_application_security_wiring(loop, resolved_security)
+    resolved_guardrail = guardrail_wiring or wire_application_guardrail(env)
+    apply_application_guardrail_wiring(loop, resolved_guardrail, env)
     if critic_wiring is not None:
         apply_application_critic_wiring(loop, critic_wiring)
     return loop

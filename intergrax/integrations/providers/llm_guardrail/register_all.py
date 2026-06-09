@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationStatus
 from intergrax.integrations.core.manifest import IntegrationManifest
-from intergrax.integrations.providers.llm_guardrail._stub_backend import create_stub_guardrail
+from intergrax.integrations.providers.llm_guardrail._factory import create_guardrail_backend
 from intergrax.integrations.registry.plugin_register import register_from_manifest
 
 _GUARD_SLUGS: tuple[str, ...] = (
@@ -36,6 +36,6 @@ def register_llm_guardrail_integrations(*, override: bool = False) -> None:
     for slug in _GUARD_SLUGS:
         register_from_manifest(
             _manifest_for(slug),
-            lambda _slug=slug: create_stub_guardrail(_slug),
+            lambda _slug=slug: create_guardrail_backend(_slug),
             override=override,
         )

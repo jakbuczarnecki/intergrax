@@ -61,6 +61,17 @@ class ApplicationSecurityProfile(BaseModel):
     tenant_security_verify_enabled: bool = True
 
 
+class GuardrailProfile(BaseModel):
+    """Vendor LLM guardrail scanning toggles (M-P12-WIRE.1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = False
+    scan_input: bool = True
+    scan_output: bool = True
+    scan_tool_calls: bool = False
+
+
 class ContextDecisionProfile(BaseModel):
     """Unified memory vs context vs RAG assembly policy (Phase MEM-CTX.1)."""
 
@@ -298,6 +309,7 @@ class ApplicationEnvironmentProfile(BaseModel):
     security_profile: ApplicationSecurityProfile = Field(
         default_factory=ApplicationSecurityProfile
     )
+    guardrail_profile: GuardrailProfile = Field(default_factory=GuardrailProfile)
     policy_rules: PolicyRulesProfile | None = None
     execution_mode: ExecutionMode = ExecutionMode.BALANCED
     graph_spec: ApplicationGraphSpec | None = None

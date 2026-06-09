@@ -404,7 +404,7 @@ def harness_guardrail_stack(
         options[semantic] = {}
     return IntegrationProfile(
         relational_store=SQLITE,
-        observability_backend=LOG,
+        notification_channel=LOG,
         interaction_surface=LAB_JSON,
         llm_guardrail=primary,
         options=options,

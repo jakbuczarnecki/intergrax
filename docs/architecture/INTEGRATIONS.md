@@ -880,7 +880,7 @@ Third-party **guardrail engines** belong in the **Integration Library** — not 
 | **Defense in depth** | Fast deterministic scanners first (LLM Guard, native `prompt_security`); orchestration frameworks second (NeMo); semantic validators third (Guardrails AI Hub) |
 | **Not LLM adapters** | Guardrail engines are **not** `intergrax/llm_adapters/` — they scan or constrain calls, not replace the producer model |
 
-### 47.2 Category contract (planned M.12)
+### 47.2 Category contract (M-P12-CAT.1)
 
 ```text
 LlmGuardrailBackend:
@@ -899,7 +899,7 @@ GuardrailScanResult:
     audit_payload: dict
 ```
 
-`IntegrationProfile.llm_guardrail: IntegrationBinding | None` — resolved at Tier-3 startup; wired through `security_runtime_bridge` / `guardrail_runtime_bridge` (M.12).
+`IntegrationProfile.llm_guardrail: IntegrationBinding | None` — resolved at Tier-3 startup; wired through `security_runtime_bridge` + `guardrail_wiring` → `LlmGuardrailMiddleware` (M.12). Tier-3 `GuardrailProfile` toggles scan_input / scan_output / scan_tool_calls.
 
 ### 47.3 Recommended vendor libraries (2026)
 
