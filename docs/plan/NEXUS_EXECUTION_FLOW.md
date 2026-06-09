@@ -8,6 +8,23 @@
 
 ---
 
+## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
+
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §5, §6 · baseline **32/32 L3**  
+**Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
+**Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
+
+| ID | AUDIT § | Gap | Priority | Status |
+|----|---------|-----|----------|--------|
+| AUDIT-IDEAL-8.1 | §8 Runtime | Long-running workflow resume E2E on product hosts | P2 | Planned |
+| AUDIT-IDEAL-8.2 | §8 Runtime | Checkpoint introspection API for ops (beyond lab) | P2 | Planned |
+| AUDIT-IDEAL-10.1 | §10 Subagents | Evaluator-loop standard node in product graph specs | P2 | Planned |
+| AUDIT-IDEAL-10.2 | §10 Subagents | Budget delegation enforcement on all delegation paths | P2 | Planned |
+
+**Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+
+---
+
 ### 6.1aj Harness implementation queue — Nexus execution depth (closed)
 
 **Purpose:** Single ordered list for **Phase FLOW** (Band 2aj). **Closed 2026-06-09** — **18/18 harness Done** (FLOW-8 harness ORCH-CONFIG.5); product host **Deferred** §6.3. Ongoing: **§6.1** maintenance only.

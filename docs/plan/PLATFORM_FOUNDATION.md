@@ -85,9 +85,28 @@ Each **business environment** and each **business agent** maintains its own `ARC
 | Full architecture audit procedure (32 layers) | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) · prompt: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) |
 | **Full architecture audit closeout (32 layers, scope C)** | [Phase FAUDIT-32](plan/PLATFORM_FOUNDATION.md) · **§6.1ah** · Band **2ad** · **Appendix M** · source: audit 2026-06-06 (`scope: C`, `audit-and-fix`) |
 | **Ideal Harness L3 depth (32-layer uplift)** | [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md) · **§6.1at** · Band **2ax** |
+| **Ideal architecture gap closeout (post-L3 audit 2026-06-09)** | [Phase AUDIT-IDEAL](plan/AUDIT_IDEAL_2026.md) · **§6.1au** · Band **2az** · [`ARCHITECTURE_DEBT_REGISTER.md`](guides/ARCHITECTURE_DEBT_REGISTER.md) |
 | Infrastructure vs business scope split | **§4.0a** · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) (closed) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) (closed) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) (closed) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) (closed) · [§6.1g](#61g-harness-implementation-queue--governance-audit-closed) (closed) · [§6.3a](#63a-business-backlog-register-consolidated) |
 
 **Note on audit source documents:** Some historical audit narratives (e.g. `HARNESS_APPLICATION_LAYER_AUDIT.md`) may live outside the repo. **Task traceability in this plan is canonical** — H-APP (43 tasks), W-OPS, MEM, DX, AA registers below; do not re-derive scope from missing files.
+
+---
+
+## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
+
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §0, §21 · baseline **32/32 L3**  
+**Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2az** · queue **§6.1au**  
+**Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
+
+| ID | AUDIT § | Gap | Priority | Status |
+|----|---------|-----|----------|--------|
+| AUDIT-IDEAL-1.1 | §1 Strategic | Operationalize quarterly strategy review process | P2 | Planned |
+| AUDIT-IDEAL-1.2 | §1 Strategic | Architecture health metrics as live signals | P2 | Planned |
+| AUDIT-IDEAL-2.1 | §2 Tiers | Continuous tier-boundary gate maintenance | P3 | **Done** (gates exist) |
+| AUDIT-IDEAL-32.1 | §32 Doc gov | Living architecture debt burn-down tied to milestones | P2 | Planned |
+| AUDIT-IDEAL-32.2 | §32 Doc gov | Scorecard auto-sync on plan row change | P2 | Planned |
+
+**Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 
 ---
 
@@ -415,6 +434,7 @@ Appendices: [`plan/`](plan/)
 | **2aw — Tier-3 execution surface parity (H-APP-WIRING)** | Close FLOW-GAP-17–20 / ORCH §59 Tier-3 wiring debt — task control API, async exposure, reference host adoption — **no** Nexus fork | **Done** (2026-06-09) — **6/6** | [Phase H-APP-WIRING](plan/TIER3_APPLICATION_ENVIRONMENT.md) · [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §59 |
 | **2ay — LLM guardrail integrations (M.12 / GR-INT)** | `llm_guardrail` catalog + `LlmGuardrailMiddleware` + assembly/CI + E2E gate + `GUARDRAIL_BLOCKED` observability — **no** business agents | **Done** (2026-06-09) — **14/14 + M-P12.HARD** | [Phase M.12](plan/INTEGRATIONS.md) · [GR-DOC](plan/UNIFIED_EXECUTION_RUNTIME.md) · **§6.1an** · [ADR-GR-001](adr/ADR-GR-001.md) |
 | **2ax — Ideal Harness L3 depth (IDEAL-L3)** | L2→L3 uplift per 32-layer audit — identity, reliability, security, cost, prompts, gates — **no** business agents | **W2 Done** (2026-06-09) — **32/32 L3** | [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md) · **§6.1at** · Band **2ax** |
+| **2az — Ideal architecture gap (AUDIT-IDEAL)** | Post-L3 audit → full IDEAL architecture — memory org, ECP sync, registry durable, L4 evidence, DX HTTP — **no** business agents unless §6.3 | **Planned** (2026-06-09) — **1/78** (AUDIT-IDEAL-2.1 Done) | [Phase AUDIT-IDEAL](plan/AUDIT_IDEAL_2026.md) · **§6.1au** · Band **2az** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 · FLOW-8 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
@@ -1791,11 +1811,38 @@ Verify (every harness PR):
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
 
-### 6.1at Harness implementation queue — Ideal Harness L3 depth (active)
+### 6.1at Harness implementation queue — Ideal Harness L3 depth (closed)
 
-**Status:** **In progress** (W1 Done) — master register: [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md)  
-**Priority ladder:** **Band 2ax** (§4.0)  
-**Gate evidence:** `test_ideal_harness_l3_depth_gate.py` · `check_ideal_harness_l3_gates.py`
+**Status:** **Done** (W2 2026-06-09) — **32/32 L3** — master register: [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md)  
+**Priority ladder:** **Band 2ax** (§4.0) — **closed**  
+**Gate evidence:** `test_ideal_harness_l3_depth_gate.py` · `check_ideal_harness_l3_gates.py` · `harness_maturity_report.py`
+
+**Successor:** [§6.1au](#61au-harness-implementation-queue--audit-ideal-planned) (post-L3 ideal architecture gaps).
+
+### 6.1au Harness implementation queue — AUDIT-IDEAL (planned)
+
+**Status:** **Planned** (2026-06-09) — **1/78** rows — master register: [Phase AUDIT-IDEAL](plan/AUDIT_IDEAL_2026.md)  
+**Source:** Architecture audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) · baseline **32/32 L3**  
+**Priority ladder:** **Band 2az** (§4.0) — incremental after §6.1 gate maintenance  
+**Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](guides/ARCHITECTURE_DEBT_REGISTER.md)
+
+**Execution order (recommended):**
+
+```text
+Wave W1 P0:
+  AUDIT-IDEAL-15.1 (org memory) → AUDIT-IDEAL-30.1 (ECP arch sync) → AUDIT-IDEAL-19.1 (registry durable)
+
+Wave W2 P1:
+  AUDIT-IDEAL-7.1 → AUDIT-IDEAL-25.1 → AUDIT-IDEAL-27.2 → AUDIT-IDEAL-28.1 → AUDIT-IDEAL-AHI.1
+
+Wave W3 P2+:
+  Remaining Planned rows per domain plan Phase AUDIT-IDEAL tables
+
+Wave W4 Band 3 (§6.3 only):
+  AUDIT-IDEAL-28.3, 28.4, 5.3, 21.3 — explicit product prioritization required
+```
+
+**Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update master register + domain plan table → gate green.
 
 **Maintenance depth (2026-06-07):** **OBS-DEPTH.1 Done** — unified run journal. **T10-DEPTH.1 Done** — broker task index + PagerDuty acknowledge adapter. **T-EXPAND T11 Done** — 160 tools. **LEG-DEPTH.1–3 + O.5 depth Done** — planner schema uses `tool_ids`; legacy booleans accepted with deprecation trace; `from_legacy()` gated by `check_legacy_tool_plan_booleans.py`. **OBS-DEPTH.2 Done** — `check_trace_bridge_event_catalog.py` + gate test. **OBS live emit Done** — `RuntimeState.trace_event` → `runtime_event_bus`. **Celery purge_completed Done** — optional KV task index. **notify.dispatch_due Done** — Tier-0 dispatcher tool. **T-EXPAND T12 Done** — 170 tools (health slot probes + notify dispatcher). **T-EXPAND T13 Done** — 172 tools (`eval.judge`, `eval.trajectory` / CRIT-V). **L2→L3 §21 Done** — `test_observability_layer_depth_gate.py` regression gate.
 
@@ -3864,11 +3911,38 @@ Verify (every harness PR):
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
 
-### 6.1at Harness implementation queue — Ideal Harness L3 depth (active)
+### 6.1at Harness implementation queue — Ideal Harness L3 depth (closed)
 
-**Status:** **In progress** (W1 Done) — master register: [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md)  
-**Priority ladder:** **Band 2ax** (§4.0)  
-**Gate evidence:** `test_ideal_harness_l3_depth_gate.py` · `check_ideal_harness_l3_gates.py`
+**Status:** **Done** (W2 2026-06-09) — **32/32 L3** — master register: [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md)  
+**Priority ladder:** **Band 2ax** (§4.0) — **closed**  
+**Gate evidence:** `test_ideal_harness_l3_depth_gate.py` · `check_ideal_harness_l3_gates.py` · `harness_maturity_report.py`
+
+**Successor:** [§6.1au](#61au-harness-implementation-queue--audit-ideal-planned) (post-L3 ideal architecture gaps).
+
+### 6.1au Harness implementation queue — AUDIT-IDEAL (planned)
+
+**Status:** **Planned** (2026-06-09) — **1/78** rows — master register: [Phase AUDIT-IDEAL](plan/AUDIT_IDEAL_2026.md)  
+**Source:** Architecture audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) · baseline **32/32 L3**  
+**Priority ladder:** **Band 2az** (§4.0) — incremental after §6.1 gate maintenance  
+**Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](guides/ARCHITECTURE_DEBT_REGISTER.md)
+
+**Execution order (recommended):**
+
+```text
+Wave W1 P0:
+  AUDIT-IDEAL-15.1 (org memory) → AUDIT-IDEAL-30.1 (ECP arch sync) → AUDIT-IDEAL-19.1 (registry durable)
+
+Wave W2 P1:
+  AUDIT-IDEAL-7.1 → AUDIT-IDEAL-25.1 → AUDIT-IDEAL-27.2 → AUDIT-IDEAL-28.1 → AUDIT-IDEAL-AHI.1
+
+Wave W3 P2+:
+  Remaining Planned rows per domain plan Phase AUDIT-IDEAL tables
+
+Wave W4 Band 3 (§6.3 only):
+  AUDIT-IDEAL-28.3, 28.4, 5.3, 21.3 — explicit product prioritization required
+```
+
+**Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update master register + domain plan table → gate green.
 
 **Maintenance depth (2026-06-07):** **OBS-DEPTH.1 Done** — unified run journal. **T10-DEPTH.1 Done** — broker task index + PagerDuty acknowledge adapter. **T-EXPAND T11 Done** — 160 tools. **LEG-DEPTH.1–3 + O.5 depth Done** — planner schema uses `tool_ids`; legacy booleans accepted with deprecation trace; `from_legacy()` gated by `check_legacy_tool_plan_booleans.py`. **OBS-DEPTH.2 Done** — `check_trace_bridge_event_catalog.py` + gate test. **OBS live emit Done** — `RuntimeState.trace_event` → `runtime_event_bus`. **Celery purge_completed Done** — optional KV task index. **notify.dispatch_due Done** — Tier-0 dispatcher tool. **T-EXPAND T12 Done** — 170 tools (health slot probes + notify dispatcher). **T-EXPAND T13 Done** — 172 tools (`eval.judge`, `eval.trajectory` / CRIT-V). **L2→L3 §21 Done** — `test_observability_layer_depth_gate.py` regression gate.### 6.1ah Harness implementation queue — FAUDIT-32 remediation (closed)
 

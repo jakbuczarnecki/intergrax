@@ -8,6 +8,21 @@
 
 ---
 
+## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
+
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5.1 · baseline **32/32 L3**  
+**Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
+**Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
+
+| ID | AUDIT § | Gap | Priority | Status |
+|----|---------|-----|----------|--------|
+| AUDIT-IDEAL-29.1 | §29 Modality | Live Triton / HF Inference endpoints (replace placeholders) | P1 | Planned |
+| AUDIT-IDEAL-29.2 | §29 Modality | Plane C vision inference E2E on product worker pools | P2 | Planned |
+
+**Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+
+---
+
 ## Phase W-ML — Model & Modality Plane (Vision, Audio, Classical ML)
 
 **Status:** **Done** (2026-06-02) — docs + implementation waves W-ML.0–W-ML.8.  

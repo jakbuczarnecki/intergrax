@@ -8,6 +8,21 @@
 
 ---
 
+## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
+
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.8 · baseline **32/32 L3**  
+**Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
+**Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
+
+| ID | AUDIT § | Gap | Priority | Status |
+|----|---------|-----|----------|--------|
+| AUDIT-IDEAL-22.1 | §22 Reliability | Compensation flows on product side-effect paths | P1 | Planned |
+| AUDIT-IDEAL-22.2 | §22 Reliability | Partial results contract on all reference hosts | P2 | Planned |
+
+**Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+
+---
+
 ### 6.2bl Phase REL execution order (Band 2u — closed 2026-06-02)
 
 **Status:** **Done** · register: [Phase REL](../plan/RELIABILITY_FAILURE_AND_HITL.md) · queue: [§6.1o](#61o-harness-implementation-queue--reliability-closeout-closed)

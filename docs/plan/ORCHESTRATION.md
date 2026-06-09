@@ -8,6 +8,23 @@
 
 ---
 
+## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
+
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.4 · baseline **32/32 L3**  
+**Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
+**Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
+
+| ID | AUDIT § | Gap | Priority | Status |
+|----|---------|-----|----------|--------|
+| AUDIT-IDEAL-3.1 | §3 Intake | Canonical `TaskEnvelope` consolidation (`Task` + `RuntimeRequest`) | P1 | Planned |
+| AUDIT-IDEAL-9.1 | §9 Orchestration | Production queue adapter (beyond SQLite scaffold) | P1 | Planned |
+| AUDIT-IDEAL-9.2 | §9 Orchestration | Swarm + peer-to-peer coordination graph templates | P2 | Planned |
+| AUDIT-IDEAL-9.3 | §9 Orchestration | Dynamic execution strategy selection (L4 / AHI hook) | P2 | Planned |
+
+**Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+
+---
+
 ### 6.1b Harness implementation queue — orchestration closeout (closed)
 
 **Purpose:** Single ordered list for **Phase ORCH** (Band 2j). **Closed 2026-06-05** — all ORCH rows **Done**. Ongoing: **§6.1** maintenance only.

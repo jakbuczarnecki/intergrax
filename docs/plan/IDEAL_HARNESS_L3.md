@@ -188,3 +188,13 @@ Phase **IDEAL-L3** closes when:
 **Quarterly review (IDEAL-1.2):** operator reviews `docs/plan/IDEAL_HARNESS_L3.md` + `docs/guides/ARCHITECTURE_DEBT_REGISTER.md` each quarter; update scorecard rows when layer maturity shifts.
 
 **ADR policy:** No new ADR unless contract change — depth gates only; record **no ADR needed** on W2 close.
+
+---
+
+## Successor phase — AUDIT-IDEAL (post-L3 ideal gaps)
+
+**Status:** **Planned** (2026-06-09) — baseline **32/32 L3** achieved; next uplift toward full [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) vision.
+
+**Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2az** · queue **§6.1au** in [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md)
+
+**Waves:** W0 (register sync) → W1 P0 (org memory, ECP doc sync, registry durable) → W2 P1 (AHI evidence, reasoning, shadow eval, DX HTTP) → W3 P2 → W4 Band 3 product (§6.3 deferred).
