@@ -1532,17 +1532,17 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ## Phase ORCH-6 — Synchronous and asynchronous execution postures (Band 2au — planned)
 
-**Status:** **Planned** (2026-06-09) — architecture canon §57 added; partial as-built (queue, long-running, `AgentExecutionMode`).
+**Status:** **Done** (2026-06-09) — architecture canon §57; ORCH-6.1–6.4 implemented.
 
 **Goal:** Document and harden **sync vs async** dispatch as first-class host configuration — same Nexus graph, different client wait semantics.
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
 | ORCH-6-DOC.1 | Canon §57 + §58 index | **Done** | High | FLOW §3.1 cross-ref |
-| ORCH-6.1 | **`run_async` host helper** — enqueue + return handle from Tier-3 factory | Planned | High | Integration test with message_bus |
-| ORCH-6.2 | **Profile preset** — `async_batch_defaults()` on `OrchestrationProfile` | Planned | Medium | Scaffold template option |
-| ORCH-6.3 | **Agent async contract gate** — `execution_mode=ASYNC` agents return pending handle | Planned | Medium | Contract test in agent scaffold |
-| ORCH-6.4 | **Author appendix** — sync/async decision tree in AGENT_CREATION_GUIDE | Planned | Low | Appendix cross-ref §57 |
+| ORCH-6.1 | **`run_async` host helper** — enqueue + return handle from Tier-3 factory | **Done** | High | `async_task_dispatch.py` + `/v1/tasks/run-async` |
+| ORCH-6.2 | **Profile preset** — `async_batch_defaults()` on `ApplicationEnvironmentProfile` | **Done** | Medium | `test_platform_runtime_capabilities.py` |
+| ORCH-6.3 | **Agent async contract gate** — default `AgentExecutionMode.ASYNC` on contract | **Done** | Medium | `test_platform_runtime_capabilities.py` |
+| ORCH-6.4 | **Author appendix** — sync/async in AGENT_CREATION_GUIDE Appendix X | **Done** | Low | Appendix X §X.4 |
 
 **Prerequisites:** Queueing plane **Done**; `message_bus.async_runner` skill **Done**.
 

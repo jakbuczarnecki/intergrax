@@ -41,6 +41,8 @@ from intergrax.applications._shared.harness_auth import (
 from intergrax.runtime.adaptive.proposal_store import SQLiteProposalStore, default_proposal_store_path
 from intergrax.runtime.adaptive.signal_store import SQLiteSignalStore, default_signal_store_path
 from lab_application.serving.fastapi_router import mount_lab_routes
+from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
+from intergrax.applications._shared.reliability_wiring import apply_reliability_task_defaults
 
 
 def create_lab_application(
@@ -114,10 +116,16 @@ def create_lab_application(
         poll_interval_seconds=settings.scheduler_poll_seconds,
         enabled=settings.include_scheduler,
     )
-    task_enricher = make_lab_harness_task_enricher(
+    lab_notify_enricher = make_lab_harness_task_enricher(
         default_notify_channel=integrations.default_long_running_notify_channel,
         harness=settings.harness,
     )
+
+    def task_enricher(task):
+        task = apply_reliability_task_defaults(task, lab_env)
+        if lab_notify_enricher is not None:
+            task = lab_notify_enricher(task)
+        return task
     interaction_service = DebugInteractionIntakeService(
         nexus_loop=nexus_loop,
         adapter=integrations.interaction_adapter,
@@ -156,6 +164,12 @@ def create_lab_application(
         app,
         nexus_loop=nexus_loop,
         prefix=settings.route_prefix,
+        task_enricher=task_enricher,
+    )
+    mount_harness_task_routes(
+        app,
+        task_runner=task_runner,
+        checkpoint_store=integrations.checkpoint_store,
         task_enricher=task_enricher,
     )
     if settings.include_interaction_routes:

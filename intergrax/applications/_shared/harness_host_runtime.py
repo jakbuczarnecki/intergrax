@@ -173,6 +173,9 @@ def build_harness_host_runtime(
         run_budget=cost_wiring.run_budget,
     )
     assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)
+    from intergrax.applications._shared.reliability_wiring import apply_reliability_governance_wiring
+
+    apply_reliability_governance_wiring(nexus_loop, environment)
     _ = checkpoints_db_path
     return HarnessHostRuntime(
         manifest=resolved_manifest,

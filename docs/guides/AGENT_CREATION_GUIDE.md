@@ -49,7 +49,8 @@ Implementation status: [`intergrax_runtime_architecture.md`](intergrax_runtime_a
 33. [Appendix U — Evaluation control plane closeout](#appendix-u--evaluation-control-plane-closeout)
 34. [Appendix W — Critic & Verification control plane closeout](#appendix-w--critic--verification-control-plane-closeout)
 35. [Appendix V — Adaptive Harness control plane closeout](#appendix-v--adaptive-harness-control-plane-closeout)
-36. [Anti-patterns](#anti-patterns)
+36. [Appendix X — MVP-to-product evolution playbook](#appendix-x--mvp-to-product-evolution-playbook)
+37. [Anti-patterns](#anti-patterns)
 37. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
@@ -2528,6 +2529,45 @@ Runbooks: [`runbook/adaptive/`](../runbook/adaptive/) · architecture: [`archite
 
 ---
 
+## Appendix X — MVP-to-product evolution playbook
+
+**Audience:** product engineers shipping prototypes on Intergrax.  
+**Canon:** [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) §44.
+
+### X.1 Fast path
+
+1. `python -m intergrax.scaffold new-stack <name> --minimal`
+2. `uv run intergrax doctor`
+3. `uv run intergrax run` or lab `POST /v1/lab/run`
+4. Register offline eval baseline (`EvaluationProfile.offline_eval_runner_enabled`)
+5. Promote when G0–G2 pass: `python scripts/check_mvp_promotion_gates.py`
+
+### X.2 CLI tools
+
+| Command | Purpose |
+|---------|---------|
+| `uv run intergrax mvp simulate` | Orchestration CFG harness simulation (pytest) |
+| `uv run intergrax mvp replay --trace-db <db> --tenant-id … --run-id …` | Trace reconstruction for regression |
+
+### X.3 KPI and satisfaction
+
+- Product KPI definitions: `intergrax/runtime/architecture/product_kpi_registry.py`
+- User satisfaction → online eval: `intergrax/runtime/architecture/user_satisfaction.py`
+
+### X.4 Sync vs async and task control
+
+- Async dispatch helper: `intergrax/applications/_shared/async_task_dispatch.py` (`run_async`)
+- Harness routes: `POST /v1/tasks/run-async`, `POST /v1/tasks/{id}/cancel`, `POST /v1/tasks/{id}/autonomy`
+- Preset: `ApplicationEnvironmentProfile.async_batch_defaults()`
+
+### X.5 Autonomy and resilience
+
+- Set `ReliabilityProfile.default_autonomy_level` on environment
+- Per-task override: `TaskExecutionOptions.governance.autonomy_level`
+- Resilience policy: `ReliabilityProfile.resilience_policy` (`intergrax/contracts/resilience_policy.py`)
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
@@ -2562,6 +2602,8 @@ Run before opening a harness PR (see `scripts/`):
 | `check_harness_capability_graph_wiring.py` | Hosts materialize environment capability graph at wire time |
 | `check_harness_observability_wiring.py` | Hosts wire observability stores from `ObservabilityProfile` |
 | `check_harness_reliability_wiring.py` | Hosts wire reliability stores from `ReliabilityProfile` |
+| `check_harness_resilience_policy.py` | Resilience policy + autonomy middleware on lab host |
+| `check_mvp_promotion_gates.py` | MVP promotion gates G0–G2 (runnable, eval, policy) |
 | `check_harness_security_wiring.py` | Hosts wire V-SEC middleware from `ApplicationSecurityProfile` |
 | `check_harness_security_promote_gate.py` | Validates `harness_security_stack()` wiring (`trivy` + `semgrep`); optional live scan via `INTERGRAX_SECURITY_PROMOTE_RUN_SCAN=true`; release uses `INTERGRAX_SECURITY_PROMOTE_SCAN_BACKEND=cli` |
 | `check_p6_infra_health.py` | Optional P6 Docker stack probe (Keycloak :8088, Typesense :8108, Airflow :8086) when `INTERGRAX_P6_INFRA_E2E=true` |

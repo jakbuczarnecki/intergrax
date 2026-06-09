@@ -66,6 +66,9 @@ EVENT_PHASE_COVERAGE: dict[RuntimeEventType, ExecutionPhase] = {
     RuntimeEventType.LLM_CALL: ExecutionPhase.STEP_EXECUTION,
     RuntimeEventType.POLICY_DECISION: ExecutionPhase.STEP_EXECUTION,
     RuntimeEventType.GRAPH_BACKPRESSURE: ExecutionPhase.STEP_EXECUTION,
+    RuntimeEventType.AUTONOMY_LEVEL_SET: ExecutionPhase.INTAKE,
+    RuntimeEventType.AUTONOMY_LEVEL_CHANGED: ExecutionPhase.STEP_EXECUTION,
+    RuntimeEventType.RECOVERY_REBOOT: ExecutionPhase.RETRY_HANDLING,
 }
 
 EVENT_OPS_FILTER_HINTS: dict[RuntimeEventType, OpsFilterHint] = {
@@ -123,6 +126,9 @@ EVENT_OPS_FILTER_HINTS: dict[RuntimeEventType, OpsFilterHint] = {
     RuntimeEventType.LLM_CALL: "ops:llm_audit",
     RuntimeEventType.POLICY_DECISION: "ops:policy_audit",
     RuntimeEventType.GRAPH_BACKPRESSURE: "ops:backpressure",
+    RuntimeEventType.AUTONOMY_LEVEL_SET: "ops:governance",
+    RuntimeEventType.AUTONOMY_LEVEL_CHANGED: "ops:governance",
+    RuntimeEventType.RECOVERY_REBOOT: "ops:retry",
 }
 
 

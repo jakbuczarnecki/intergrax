@@ -70,7 +70,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ## Phase REL-ADV — Resilience policies and autonomy slider (Band 2as — planned)
 
-**Status:** **Planned** (2026-06-09) — architecture canon §34–§35 added; runtime gaps below.
+**Status:** **Done** (2026-06-09) — architecture canon §34–§35; runtime REL-ADV.1–6 implemented.
 
 **Goal:** Unify distributed retry/recovery behaviour under a composable `ResiliencePolicy` model and expose user-facing **AutonomyLevel** (manual / ask / autonomous) with mid-run changes.
 
@@ -79,12 +79,12 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 | ID | Area | Deliverable | Status | Modules | Acceptance |
 |----|------|-------------|--------|---------|------------|
 | REL-ADV-DOC.1 | REL-ADV0 | Canon sync — architecture §34–§35, UAEP §42.10.2 | **Done** | `docs/architecture/RELIABILITY_FAILURE_AND_HITL.md` | Hub index + cross-refs |
-| REL-ADV.1 | REL-ADV1 | **`ResiliencePolicy`** Pydantic model + profile field on `ReliabilityProfile` | **Planned** | `applications/contracts/`, `reliability_wiring.py` | Assembly validation test |
-| REL-ADV.2 | REL-ADV2 | **Policy resolver** — map failure class → policy action (reboot strategies) | **Planned** | `runtime/nexus/retry/`, `PolicyEngine` | Unit + integration retry tests |
-| REL-ADV.3 | REL-ADV3 | **`AutonomyLevel`** on `TaskExecutionOptions` + effective level in `PolicyEngine` | **Planned** | `task/`, `runtime/policy/` | Tool gate tests per level |
-| REL-ADV.4 | REL-ADV4 | **Mid-run autonomy API** — set level on active task | **Planned** | `fastapi_core/`, HITL tools | Downgrade immediate; upgrade respects queue |
-| REL-ADV.5 | REL-ADV5 | **Trace events** — `AUTONOMY_LEVEL_*`, unified `RECOVERY_REBOOT` | **Planned** | observability spine | Gate observability script |
-| REL-ADV.6 | REL-ADV6 | **CI** — `check_harness_resilience_policy.py` | **Planned** | `scripts/` | CI workflow |
+| REL-ADV.1 | REL-ADV1 | **`ResiliencePolicy`** Pydantic model + profile field on `ReliabilityProfile` | **Done** | `contracts/resilience_policy.py`, `environment_profile.py` | `test_policy_resolver.py` |
+| REL-ADV.2 | REL-ADV2 | **Policy resolver** — map failure class → policy action (reboot strategies) | **Done** | `runtime/resilience/policy_resolver.py`, `retry_engine.py` | `test_policy_resolver.py` |
+| REL-ADV.3 | REL-ADV3 | **`AutonomyLevel`** on `TaskExecutionOptions` + effective level middleware | **Done** | `autonomy_resolver.py`, `autonomy_middleware.py` | `test_autonomy_resolver.py` |
+| REL-ADV.4 | REL-ADV4 | **Mid-run autonomy API** — set level on active task | **Done** | `harness_task_routes.py`, `task_control.py` | `ActiveTaskRegistry` + HTTP route |
+| REL-ADV.5 | REL-ADV5 | **Trace events** — `AUTONOMY_LEVEL_*`, `RECOVERY_REBOOT` | **Done** | `runtime_event.py`, `phase_coverage.py` | `test_schema_registry_b07.py` |
+| REL-ADV.6 | REL-ADV6 | **CI** — `check_harness_resilience_policy.py` | **Done** | `scripts/` | lab host audit OK |
 
 **ADR policy:** REL-ADV.1 → ADR-REL-001 (resilience policy unification) when implementation starts; REL-ADV.3 → no ADR if enum-only on existing PolicyEngine path.
 

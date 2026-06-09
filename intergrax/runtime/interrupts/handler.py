@@ -18,11 +18,13 @@ from intergrax.contracts.agent_decision import (
     human_request_fields_from_payload,
 )
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt, InterruptType
-from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 
 if TYPE_CHECKING:
     from intergrax.runtime.policy.policy_engine import PolicyEngine
+
+INTERRUPT_COUNT_KEY = "interrupt_count"
 
 
 class GovernanceResolution(BaseModel):
@@ -86,16 +88,21 @@ class ExecutionInterruptHandler:
         policy_ctx = dict(context or {})
 
         if decision.type == AgentDecisionType.INTERRUPT:
-            interrupt = self._interrupt_from_decision(
-                decision,
-                task_id=task_id,
-                run_id=run_id,
-                agent_id=agent_id,
-                step_id=step_id,
-            )
-            policy = self._policy.evaluate_interrupt(interrupt)
-            if interrupt.blocking:
-                policy_ctx.setdefault("has_unresolved_critical_interrupt", True)
+            budget_decision = self._interrupt_budget_decision(policy_ctx)
+            if budget_decision is not None:
+                policy = budget_decision
+            else:
+                interrupt = self._interrupt_from_decision(
+                    decision,
+                    task_id=task_id,
+                    run_id=run_id,
+                    agent_id=agent_id,
+                    step_id=step_id,
+                )
+                policy = self._policy.evaluate_interrupt(interrupt)
+                self._increment_interrupt_count(policy_ctx)
+                if interrupt.blocking:
+                    policy_ctx.setdefault("has_unresolved_critical_interrupt", True)
         elif decision.type is AgentDecisionType.MODIFY_PLAN:
             from intergrax.contracts.agent_handoff import handoff_from_decision
 
@@ -130,8 +137,19 @@ class ExecutionInterruptHandler:
             human_request=human_request,
         )
 
-    def resolve_interrupt(self, interrupt: ExecutionInterrupt) -> GovernanceResolution:
-        policy = self._policy.evaluate_interrupt(interrupt)
+    def resolve_interrupt(
+        self,
+        interrupt: ExecutionInterrupt,
+        *,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> GovernanceResolution:
+        policy_ctx = dict(context or {})
+        budget_decision = self._interrupt_budget_decision(policy_ctx)
+        if budget_decision is not None:
+            policy = budget_decision
+        else:
+            policy = self._policy.evaluate_interrupt(interrupt)
+            self._increment_interrupt_count(policy_ctx)
         decision_type = interrupt.recommended_action
         human_request: Optional[HumanRequest] = None
         if policy.action == PolicyAction.REQUIRE_HUMAN:
@@ -146,6 +164,24 @@ class ExecutionInterruptHandler:
             interrupt=interrupt,
             human_request=human_request,
         )
+
+    @staticmethod
+    def _interrupt_budget_decision(policy_ctx: Dict[str, Any]) -> PolicyDecision | None:
+        count = int(policy_ctx.get(INTERRUPT_COUNT_KEY, 0))
+        max_interrupts = int(policy_ctx.get("max_interrupts_per_run", 16))
+        if count >= max_interrupts:
+            return PolicyDecision(
+                action=PolicyAction.ESCALATE,
+                reason="interrupt_budget_exceeded",
+                enforcement_level=EnforcementLevel.MANDATORY,
+                policy_rule_id="default.interrupt_budget",
+                audit_payload={"interrupt_count": count, "max_interrupts_per_run": max_interrupts},
+            )
+        return None
+
+    @staticmethod
+    def _increment_interrupt_count(policy_ctx: Dict[str, Any]) -> None:
+        policy_ctx[INTERRUPT_COUNT_KEY] = int(policy_ctx.get(INTERRUPT_COUNT_KEY, 0)) + 1
 
     @staticmethod
     def _human_request_for_interrupt(interrupt: ExecutionInterrupt) -> HumanRequest:

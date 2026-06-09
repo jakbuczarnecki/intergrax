@@ -71,6 +71,9 @@ class RuntimeEventType(str, Enum):
     LLM_CALL = "llm_call"
     POLICY_DECISION = "policy_decision"
     GRAPH_BACKPRESSURE = "graph_backpressure"
+    AUTONOMY_LEVEL_SET = "autonomy_level_set"
+    AUTONOMY_LEVEL_CHANGED = "autonomy_level_changed"
+    RECOVERY_REBOOT = "recovery_reboot"
 
 
 class RuntimeEvent(BaseModel):

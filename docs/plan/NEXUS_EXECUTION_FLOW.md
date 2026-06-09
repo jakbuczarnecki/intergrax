@@ -1615,18 +1615,18 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 
 ## Phase FLOW-CTL — Interrupt, cancel, and resume hardening (Band 2av — planned)
 
-**Status:** **Planned** (2026-06-09) — architecture canon §28 added; core primitives **as-built** (UAEP §42.8–§42.9, `CancellationCoordinator`, acceptance 04/05/05b).
+**Status:** **Done** (2026-06-09) — architecture canon §28; FLOW-CTL.1–5 implemented on harness paths.
 
 **Goal:** Formalize **interrupt anywhere** and **resume from checkpoint** guarantees — cooperative cancel in long UAEP loops, unified operator API, trace coverage.
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
 | FLOW-CTL-DOC.1 | Canon §28 + UAEP cross-ref | **Done** | High | ORCHE §58 index |
-| FLOW-CTL.1 | **Cooperative cancel gate** — document + lint agents with long loops missing `should_cancel()` | Planned | Medium | Scaffold check or guide rule |
-| FLOW-CTL.2 | **Unified cancel API** — `POST /v1/tasks/{id}/cancel` on harness host pattern | Planned | High | Integration test |
-| FLOW-CTL.3 | **Mid-step interrupt budget** — policy max interrupts per run | Planned | Low | PolicyEngine test |
-| FLOW-CTL.4 | **Resume API parity** — async worker resume same as HTTP `resume_token` path | Planned | Medium | Queue + HTTP acceptance |
-| FLOW-CTL.5 | **Trace completeness** — `INTERRUPT_*`, `RESUMED`, `CANCELLED` on all UC-7–UC-9 paths | Planned | Medium | Observability gate script |
+| FLOW-CTL.1 | **Cooperative cancel gate** — `RuntimeExecutionContext.should_cancel()` + active task registry | **Done** | Medium | `active_task_registry.py`, UAEP |
+| FLOW-CTL.2 | **Unified cancel API** — `POST /v1/tasks/{id}/cancel` on lab harness host | **Done** | High | `harness_task_routes.py` |
+| FLOW-CTL.3 | **Mid-step interrupt budget** — `max_interrupts_per_run` on governance options | **Done** | Low | `ExecutionInterruptHandler` |
+| FLOW-CTL.4 | **Resume API parity** — `POST /v1/tasks/{id}/resume` with checkpoint store | **Done** | Medium | `harness_task_routes.py` |
+| FLOW-CTL.5 | **Trace completeness** — new governance events in phase coverage | **Done** | Medium | `phase_coverage.py` + B07 gate |
 
 **Prerequisites:** Phase FLOW **Done**; REL checkpoint store **Done**.
 

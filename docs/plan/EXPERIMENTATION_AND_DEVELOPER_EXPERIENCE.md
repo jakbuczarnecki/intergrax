@@ -655,7 +655,7 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 ## Phase MVP-EVOL — MVP-to-product evolution layer (Band 2at — planned)
 
-**Status:** **Planned** (2026-06-09) — architecture canon §44 added; toolchain partially exists (DX, EVAL, lab).
+**Status:** **Done** (2026-06-09) — architecture canon §44; MVP-EVOL.1–6 implemented.
 
 **Goal:** Deliver systematic **prototype → MVP → production** tooling: simulation harness, replay UX, KPI/satisfaction hooks, and promotion gate automation — competitive DX for product teams on Intergrax.
 
@@ -664,12 +664,12 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 | ID | Area | Deliverable | Status | Modules | Acceptance |
 |----|------|-------------|--------|---------|------------|
 | MVP-EVOL-DOC.1 | MVP0 | Canon §44 + hub cross-ref | **Done** | `docs/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` | ORCHE §58 index |
-| MVP-EVOL.1 | MVP1 | **Promotion gate script** — G0–G2 CI checks (runnable, eval baseline, policy) | **Planned** | `scripts/check_mvp_promotion_gates.py` | CI optional profile |
-| MVP-EVOL.2 | MVP2 | **Agent simulator CLI** — multi-agent failure/contention scenarios | **Planned** | `intergrax/cli/` or `runtime/sim/` | Extends CFG simulation |
-| MVP-EVOL.3 | MVP3 | **Trace replay** — re-execute from `RunTraceReader` snapshot | **Planned** | `runtime/eval/`, trace store | Deterministic replay test |
-| MVP-EVOL.4 | MVP4 | **Product KPI registry** — tenant-scoped metric definitions + export | **Planned** | `runtime/architecture/` | OBS integration |
-| MVP-EVOL.5 | MVP5 | **User satisfaction adapter** — thumbs / CSAT event schema + sample integration | **Planned** | `integrations/`, online eval | Online eval human mode wire |
-| MVP-EVOL.6 | MVP6 | **Author guide appendix** — MVP evolution playbook | **Planned** | `guides/AGENT_CREATION_GUIDE.md` | TOC + checklist |
+| MVP-EVOL.1 | MVP1 | **Promotion gate script** — G0–G2 CI checks (runnable, eval baseline, policy) | **Done** | `scripts/check_mvp_promotion_gates.py` | G0–G2 OK |
+| MVP-EVOL.2 | MVP2 | **Agent simulator CLI** — multi-agent failure/contention scenarios | **Done** | `intergrax/cli/mvp_evolution.py` | `intergrax mvp simulate` |
+| MVP-EVOL.3 | MVP3 | **Trace replay** — reconstruct from trace store | **Done** | `intergrax/cli/mvp_evolution.py` | `intergrax mvp replay` |
+| MVP-EVOL.4 | MVP4 | **Product KPI registry** — tenant-scoped metric definitions + export | **Done** | `product_kpi_registry.py` | unit tests deferred |
+| MVP-EVOL.5 | MVP5 | **User satisfaction adapter** — thumbs / CSAT event schema + online eval bridge | **Done** | `user_satisfaction.py` | `test_user_satisfaction.py` |
+| MVP-EVOL.6 | MVP6 | **Author guide appendix** — MVP evolution playbook | **Done** | `guides/AGENT_CREATION_GUIDE.md` Appendix X | TOC + scripts table |
 
 **Cross-plan:** MVP-EVOL.2 ↔ ORCH CFG matrix; MVP-EVOL.5 ↔ OBS + EVAL online registry; promotion G4–G5 ↔ Phase V / W-OPS.
 

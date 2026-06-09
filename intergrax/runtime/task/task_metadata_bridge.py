@@ -124,12 +124,20 @@ def execution_options_from_metadata(metadata: Dict[str, Any]) -> TaskExecutionOp
     if response_text and verdict is None:
         verdict = parse_human_response(str(response_text))
 
+    autonomy_raw = metadata.get("autonomy_level")
+    autonomy_level = None
+    if autonomy_raw:
+        from intergrax.contracts.autonomy_level import AutonomyLevel
+
+        autonomy_level = AutonomyLevel(str(autonomy_raw))
     governance = TaskGovernanceOptions(
         require_human_approval=_truthy(metadata.get(TaskMetadataKey.REQUIRE_HUMAN_APPROVAL)),
         require_human_on_critical=(
             metadata.get(TaskMetadataKey.REQUIRE_HUMAN_ON_CRITICAL, True) is not False
         ),
         high_risk=_truthy(metadata.get(TaskMetadataKey.HIGH_RISK)),
+        autonomy_level=autonomy_level,
+        max_interrupts_per_run=int(metadata.get("max_interrupts_per_run", 16)),
     )
     long_running = TaskLongRunningOptions(
         enabled=_truthy(metadata.get(TaskMetadataKey.LONG_RUNNING)),

@@ -22,11 +22,13 @@ def build_parser() -> argparse.ArgumentParser:
     from intergrax.cli.doctor import register_parser as register_doctor
     from intergrax.cli.integrations_pick import register_parser as register_pick
     from intergrax.cli.init_project import register_parser as register_init
+    from intergrax.cli.mvp_evolution import register_parser as register_mvp
 
     register_run(sub)
     register_doctor(sub)
     register_pick(sub)
     register_init(sub)
+    register_mvp(sub)
     return parser
 
 
@@ -64,6 +66,10 @@ def main(argv: list[str] | None = None) -> int:
         from intergrax.cli.init_project import run_init
 
         return run_init(args)
+    if args.command == "mvp":
+        from intergrax.cli.mvp_evolution import run_mvp_command
+
+        return run_mvp_command(args)
     parser.error(f"Unknown command: {args.command}")
     return 2
 

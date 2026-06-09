@@ -10,6 +10,8 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.applications.contracts.execution_mode import ExecutionMode
+from intergrax.contracts.autonomy_level import AutonomyLevel
+from intergrax.contracts.resilience_policy import ResiliencePolicy, default_resilience_policy
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
 from intergrax.applications.contracts.intent_route import IntentRoute
 from intergrax.applications.contracts.application_host import ApplicationFeatures, ApplicationProfile
@@ -114,6 +116,9 @@ class ReliabilityProfile(BaseModel):
     circuit_breaker_failure_threshold: int = Field(default=5, ge=1)
     checkpoint_interval_steps: int = Field(default=1, ge=1)
     long_running_scheduler_enabled: bool = False
+    resilience_policy: ResiliencePolicy = Field(default_factory=default_resilience_policy)
+    default_autonomy_level: AutonomyLevel = AutonomyLevel.ASK
+    tenant_autonomy_ceiling: AutonomyLevel | None = None
 
 
 class ObservabilityProfile(BaseModel):
@@ -434,6 +439,30 @@ class ApplicationEnvironmentProfile(BaseModel):
                     online_registry_enabled=True,
                     offline_eval_runner_enabled=True,
                     require_baseline_for_release=True,
+                ),
+            }
+        )
+
+    @classmethod
+    def async_batch_defaults(
+        cls,
+        *,
+        profile_id: str = "async.batch",
+        max_parallel_nodes: int = 8,
+    ) -> ApplicationEnvironmentProfile:
+        """ORCH-6.2 — deferred execution via queue workers and long-running checkpoints."""
+        base = cls.lab_defaults(profile_id=profile_id)
+        return base.model_copy(
+            update={
+                "orchestration_profile": OrchestrationProfile(
+                    long_running_enabled=True,
+                    merge_strategy="structured_json",
+                    max_parallel_nodes=max_parallel_nodes,
+                    max_inflight_nodes=max_parallel_nodes,
+                ),
+                "reliability_profile": ReliabilityProfile(
+                    long_running_scheduler_enabled=True,
+                    checkpoint_interval_steps=1,
                 ),
             }
         )
