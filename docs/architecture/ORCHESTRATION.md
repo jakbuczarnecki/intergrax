@@ -708,16 +708,19 @@ Planning depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9�
 | Merge policies | L3 | §51.3 | FLOW-7 Done |
 | Backpressure | L3 | §51.2 | FLOW-13 Done |
 | Retry / alternate agent | L3 | §52.1 | FLOW §14 |
-| Checkpoint / long-running | L3 partial | §26, §52.2 | Scheduler optional |
-| Swarm pattern runtime | L2 | §50.1 | Catalog Done; depth ORCH-5.1 |
+| Checkpoint / long-running | L3 | §26, §52.2 | Runtime Done; scheduler optional per host (§59.2) |
+| Sync / async postures | L3 harness / L2 product | §57 | ORCH-6 Done; `run_async` HTTP only on lab (§59.2) |
+| Interrupt / cancel / resume API | L3 harness / L2 product | §58, FLOW §28 | FLOW-CTL Done; HTTP routes lab-only (§59.2) |
+| Resilience + autonomy slider | L3 harness / L2 product | §58, REL §34–§35 | REL-ADV Done; mid-run API lab-only (§59.2) |
+| Swarm pattern runtime | L2 | §50.1, D7 | Preset only; ORCH-5.1 runtime pending |
 | Active-active node redundancy | L0 | §52.1 | Not planned — use retry + ECP replicas |
 | Infra elastic scale | L1 | cross-ref ECP | Phase ECP-DEPTH |
-| Product multi-agent demos | L2 deferred | §42.43 | Phase K / FLOW-8 |
-| Platform configuration canon (all CFG cases) | L3 doc / L2 impl | §56 | ORCH-CONFIG **in progress** (8 Done, 2 Partial) |
+| Product multi-agent demos | L2 deferred | §42.43 | FLOW-8 harness sim Done; product host §6.3 |
+| Platform configuration canon (CFG-*) | L4 doc / L3 runtime / L2 Tier-3 | §56 | ORCH-CONFIG 8/10 Done, 2 Partial; Tier-3 wiring debt §59 |
 
-**Audit alignment:** AUDIT_MAP §9 (orchestration/graph) · §10 (subagents/multi-agent) — strategy rows consolidated in §50–§53; **configuration completeness §56**.
+**Audit alignment:** AUDIT_MAP §9 (orchestration/graph) · §10 (subagents/multi-agent) — strategy rows consolidated in §50–§53; **configuration completeness §56**; **execution-surface parity §59**.
 
-**Plan backlog:** [Phase ORCH-STRAT](plan/ORCHESTRATION.md) (docs Done) · [Phase ORCH-CONFIG](plan/ORCHESTRATION.md) (§56 gaps) · [Phase ORCH-5](plan/ORCHESTRATION.md) (runtime depth).
+**Plan backlog:** [Phase ORCH-STRAT](plan/ORCHESTRATION.md) (docs Done) · [Phase ORCH-CONFIG](plan/ORCHESTRATION.md) (§56 gaps) · [Phase ORCH-5](plan/ORCHESTRATION.md) (swarm depth) · [Phase H-APP-WIRING](plan/TIER3_APPLICATION_ENVIRONMENT.md) (Tier-3 surface parity).
 
 ---
 
@@ -981,7 +984,7 @@ Cells describe **valid** platform configuration. ✅ = harness-proven · ⚠️ 
 | `A3` | optional trigger | rare | notify-only common | ✅ required | ✅ |
 | `A4` | ✅ interactive | ✅ | ⚠️ | ✅ background | ✅ |
 
-**Platform gap (ORCH-CONFIG.4):** scaffold should optionally emit interaction intake + queue consumer wiring — today manual per host.
+**Platform gap (ORCH-CONFIG.4 / H-APP-WIRING):** scaffold emits optional interaction + scheduler flags (`INCLUDE_INTERACTIONS`, `INCLUDE_SCHEDULER`), but **host adoption is inconsistent** — see §59.2 host matrix. Queue consumer (`QueuedNexusExecutionAdapter`) is harness-tested, not default on product hosts.
 
 ## 56.7 Configuration case register (CFG-*)
 
@@ -1257,6 +1260,12 @@ Nexus MUST NOT block the global event loop on agent-internal polling — async a
 
 **Plan:** [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md) Phase ORCH-6.
 
+## 57.5 Implementation coverage note (sync/async)
+
+§57 catalog is **architecturally complete**. **Exposure gap:** only `lab_application` mounts `harness_task_routes` (`run-async`, task status). Other hosts use blocking `POST …/run` only unless they add a custom queue worker. **Durable async** requires `QueuedNexusExecutionAdapter` + external broker — see §59.2.
+
+**Plan:** [Phase ORCH-6](plan/ORCHESTRATION.md) (runtime Done) · [Phase H-APP-WIRING](plan/TIER3_APPLICATION_ENVIRONMENT.md) (product surfaces).
+
 ---
 
 # 58. Platform Runtime Capabilities Index
@@ -1273,8 +1282,92 @@ Cross-cutting platform capabilities span multiple domain pairs. Use this index w
 | **Interrupt anywhere** | UAEP + FLOW | Reliability, Orchestration cancel | FLOW §28, UAEP §42.8 |
 | **Resume from checkpoint** | UAEP + Reliability | Orchestration long-running | UAEP §42.9, REL §33.3 |
 
+**Tier-3 wiring debt:** runtime capabilities above are **harness-proven**; HTTP task-control and async dispatch surfaces are **lab-only** unless [Phase H-APP-WIRING](plan/TIER3_APPLICATION_ENVIRONMENT.md) is executed per host — §59.
+
 ---
 
-*End of Orchestration architecture canon (execution strategies §50–§58). Platform configuration canon: §56.*
+# 59. Platform Execution Audit — Gaps, Technical Debt, Discrepancies
+
+**Audit date:** 2026-06-09 · **Scope:** all agent launch and interaction postures (FLOW §3.1 S1–S7, ORCH §56 CFG-*, §57 postures, §58 cross-cutting).
+
+**Verdict:** Tier-1 Nexus **supports every documented scenario** through `UnifiedTaskRunner → NexusLoop`. Gaps are **Tier-3 wiring**, **production proof**, and **two runtime depths** (swarm, strict multi-agent E1+E3 gate).
+
+## 59.1 Scenario coverage (architecture vs runtime vs hosts)
+
+| Scenario | FLOW | Runtime (Tier-1) | Harness proof | Tier-3 default hosts |
+|----------|------|------------------|---------------|----------------------|
+| **S1** Single reactive Q&A | §3.1 | ✅ | acceptance 01 | ✅ all hosts with `/run` |
+| **S2** Free-text + classifier | §3.1 | ✅ | CFG-04 sim | ⚠️ needs `classifier_kind=rules` per host |
+| **S3** Sequential multi-agent | §3.1 | ✅ | acceptance 02, CFG-06/07 | ✅ via `graph_spec`; product config manual |
+| **S4** Parallel multi-agent | §3.1 | ✅ | acceptance 03, CFG-08 | ✅; cap `max_parallel_nodes` |
+| **S5** Background batch | §3.1 | ✅ | queue J3, scheduler J4 | ⚠️ scheduler: lab/poc/assistant only |
+| **S6** Hybrid daemon | §3.1 | ✅ partial | no product E2E | ⚠️ LKW §6.3 incomplete |
+| **S7** HITL pause/resume | §3.1 | ✅ | acceptance 04, 05, 05b | ✅ runtime; resume HTTP lab-only |
+
+## 59.2 Tier-3 host wiring matrix (as-built 2026-06-09)
+
+Honest surface parity across shipped `applications/*/host/factory.py`. ✅ = wired when flag/default on · ⚠️ = optional/off · ❌ = not mounted.
+
+| Host | Sync `/run` | `mount_harness_task_routes` (async/cancel/autonomy/resume) | Scheduler | Interactions | MCP | `apply_reliability_task_defaults` |
+|------|-------------|--------------------------------------------------------------|-----------|--------------|-----|-----------------------------------|
+| `lab_application` | ✅ | ✅ | ⚠️ `include_scheduler` | ⚠️ `include_interaction_routes` | ⚠️ | ✅ |
+| `legal_application` | ✅ | ✅ `INCLUDE_TASK_CONTROL` | ⚠️ `INCLUDE_SCHEDULER` | ⚠️ | ⚠️ | ✅ runner enricher |
+| `research_application` | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ✅ |
+| `poc_template_application` | ✅ | ✅ default | ⚠️ | ⚠️ | ⚠️ | ✅ |
+| `intergrax_assistant_application` | ✅ | ❌ | ⚠️ | ⚠️ | ⚠️ | ❌ |
+| `local_workspace_application` | ✅ | ❌ | ❌ | ❌ | ⚠️ | ❌ |
+| `dispute_sim_application` | ✅ | ❌ | ❌ | ❌ | ⚠️ | ❌ |
+
+**Discrepancy:** ORCH-6 and FLOW-CTL document platform async/cancel/resume APIs; **only `lab_application` mounts** `intergrax/applications/_shared/harness_task_routes.py`. Product hosts rely on sync `/run` + scheduler when enabled — not a runtime fork, but **authoring/docs must not claim parity**.
+
+**Async queue:** `QueuedNexusExecutionAdapter` + Celery path is integration-tested (`test_unified_execution_entry_j3.py`); not scaffold-default for product hosts. `run_async` uses `InMemoryAsyncTaskIndex` on lab — **not durable production queue**.
+
+## 59.3 CFG register — remaining gaps (honest)
+
+| CFG | Status | Gap / debt | Plan ID |
+|-----|--------|------------|---------|
+| CFG-03 | ⚠️ Partial | Interactions optional on LKW/dispute_sim; reference hosts wired | H-APP-WIRING.2 **Done** on legal/research |
+| CFG-11 | ⚠️ Partial | `EngineBackedNexusPlanner` bridged; COG-1.* product unification | ORCH-CONFIG.10, COG-1.* |
+| CFG-13 | ⚠️ Partial | Queue via `INCLUDE_QUEUE_WORKER` on legal; not all hosts | ORCH-6.5 **Done** on reference |
+| CFG-14 | ⚠️ Partial | LKW hybrid E2E deferred; scaffold flags exist | §6.3 · H-APP-WIRING.4 deferral doc |
+| CFG-16 | ⚠️ Partial | CVL hooks exist; semantic E1+E3 not mandatory on all paths | ORCH-CONFIG.7, CRIT-V ops |
+| CFG-17 | ⚠️ Partial | `swarm_policy.py` validates ≥3 roots; plan metadata set | ORCH-5.1 **Partial** |
+| CFG-20 | ⚠️ Partial | `strict_multi_agent_defaults()` preset; no full production gate | ORCH-CONFIG.5, FLOW-8 |
+
+CFG-01–02, 04–10, 12, 15, 18–19: **runtime Done** at harness level.
+
+## 59.4 Cross-cutting capabilities — implementation vs exposure
+
+| Capability | Runtime module | HTTP / operator surface | Debt |
+|------------|----------------|-------------------------|------|
+| `ResiliencePolicy` | `policy_resolver`, `retry_engine` | Profile-only on most hosts | Lab enricher only |
+| `AutonomyLevel` | `autonomy_middleware` | `POST …/tasks/{id}/autonomy` | **Lab only** |
+| Cooperative cancel | `ActiveTaskRegistry`, UAEP | `POST …/tasks/{id}/cancel` | **Lab only** |
+| Checkpoint resume | `resume_planner`, scheduler | `POST …/tasks/{id}/resume` | Lab HTTP; scheduler on subset |
+| `run_async` | `async_task_dispatch` | `POST …/tasks/run-async` | **Lab only**; in-memory index |
+| MVP promotion / replay | `mvp_evolution` CLI | CLI | No Tier-3 router |
+
+## 59.5 Documentation ↔ code discrepancies (resolved here)
+
+| Topic | Doc said | Code truth | Resolution |
+|-------|----------|------------|------------|
+| ORCH-CONFIG.4 | "scaffold should emit intake" | Scaffold **Done**; hosts uneven | §59.2 matrix; H-APP-WIRING |
+| ORCH-6 | "async first-class" | Runtime Done; HTTP lab-only | §57.5 + §59.2 |
+| FLOW-CTL | "unified cancel API" | Routes on lab host | §28.5 + §59.2 |
+| FLOW §12.1 Production-ready | "Partial" without cause | Missing strict profile + host wiring | §12.1 footnotes in FLOW |
+| §56.7 CFG-13/14 | ⚠️ | Mechanism exists; wiring debt | Unchanged status; §59.3 |
+
+## 59.6 Recommended paydown order (harness queue)
+
+1. **H-APP-WIRING** — scaffold flags `INCLUDE_TASK_CONTROL`, optional `QueuedNexusExecutionAdapter`; reference legal/research adoption.
+2. **ORCH-5.1** — swarm runtime under budget envelope.
+3. **ORCH-CONFIG.5 / FLOW-8** — strict multi-agent reference host or §6.3 product decision.
+4. **ORCH-CONFIG.10** — engine planner product path (COG-1.*).
+
+**Not default queue:** Band 3 product agents (K.1/K.2) — [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) §6.3.
+
+---
+
+*End of Orchestration architecture canon (execution strategies §50–§59). Platform configuration canon: §56.*
 
 ---

@@ -871,6 +871,8 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 
 **Frontend:** none new. **Backend:** host only.
 
+**Platform audit (2026-06-09):** CFG-14 hybrid daemon E2E remains **deferred** (Band 3 / §6.3). Harness reference for task control + scheduler: `poc_template_application`, `legal_application`, `research_application` with `INCLUDE_TASK_CONTROL` — see [`docs/architecture/ORCHESTRATION.md`](../../docs/architecture/ORCHESTRATION.md) §59.2 · Phase **H-APP-WIRING.4**.
+
 ---
 
 #### LKW.6b — Slack optional channel

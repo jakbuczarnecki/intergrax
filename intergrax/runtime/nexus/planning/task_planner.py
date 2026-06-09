@@ -37,6 +37,7 @@ class NexusPlan(BaseModel):
     steps: List[PlanStep] = Field(default_factory=list)
     validation_criteria: List[str] = Field(default_factory=list)
     graph_retry_on_error: int | None = None
+    plan_metadata: dict[str, str] = Field(default_factory=dict)
 
 
 class TaskPlanner:

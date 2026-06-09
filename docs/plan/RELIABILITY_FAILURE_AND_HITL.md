@@ -85,8 +85,11 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 | REL-ADV.4 | REL-ADV4 | **Mid-run autonomy API** — set level on active task | **Done** | `harness_task_routes.py`, `task_control.py` | `ActiveTaskRegistry` + HTTP route |
 | REL-ADV.5 | REL-ADV5 | **Trace events** — `AUTONOMY_LEVEL_*`, `RECOVERY_REBOOT` | **Done** | `runtime_event.py`, `phase_coverage.py` | `test_schema_registry_b07.py` |
 | REL-ADV.6 | REL-ADV6 | **CI** — `check_harness_resilience_policy.py` | **Done** | `scripts/` | lab host audit OK |
+| REL-ADV.7 | Tier-3 | **Product host parity** — reliability enricher + autonomy HTTP on scaffold-opt-in hosts | **Done** | H-APP-WIRING.1 **Done** | `UnifiedTaskRunner(task_enricher=…)` |
 
 **ADR policy:** REL-ADV.1 → ADR-REL-001 (resilience policy unification) when implementation starts; REL-ADV.3 → no ADR if enum-only on existing PolicyEngine path.
+
+**Audit note (2026-06-09):** REL-ADV.1–6 **Done** at runtime; REL-ADV.7 tracks lab-only HTTP exposure per [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §59.4.
 
 **Explicitly excluded:** K.1/K.2 product policies; OS-level process supervisor (use ECP / host ops).
 

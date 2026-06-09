@@ -250,9 +250,11 @@ Promotion between stages is **evidence-driven** — see §44.5 and [`ADAPTIVE_HA
 | **Agent Lab** (`lab_application`) | Compose and probe agents without product polish | **Done** |
 | **Evaluation subsystem** (§42) | Offline / online / shadow / human modes | **Done** — EVAL phase |
 | **Shadow workspace** | Compare candidate path without user impact | **Done** — REL Phase F |
-| **Replay environment** | Deterministic re-run from trace store | **Partial** — trace read APIs; full replay UX planned |
-| **Agent simulator** | Multi-agent contention and failure injection | **Partial** — `test_orchestration_cfg_simulation.py`; product simulator MVP-EVOL |
-| **Trace Explorer** | Decision / tool / context visibility | **Partial** — debug APIs; UI deferred |
+| **Replay environment** | Deterministic re-run from trace store | **Partial** — `intergrax mvp replay` CLI (MVP-EVOL.3); no Tier-3 HTTP router |
+| **Agent simulator** | Multi-agent contention and failure injection | **Partial** — `intergrax mvp simulate` CLI + `test_orchestration_cfg_simulation.py`; not wired to product hosts |
+| **Trace Explorer** | Decision / tool / context visibility | **Partial** — lab debug APIs; UI deferred (GOV-PROD.1 §6.3) |
+| **Promotion gates** | MVP → Beta evidence | **Done** — `scripts/check_mvp_promotion_gates.py` (MVP-EVOL.1) |
+| **Product KPI / satisfaction** | Tenant metrics + CSAT bridge | **Done** — `product_kpi_registry.py`, `user_satisfaction.py` (MVP-EVOL.4–5); export surfaces CLI-only |
 
 **IDEAL reference:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §22 (Developer Experience Layer).
 

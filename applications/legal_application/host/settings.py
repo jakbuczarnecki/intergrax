@@ -87,6 +87,11 @@ class LegalBackendSettings:
     interaction_route_prefix: str = "/v1/interactions"
     interaction_surface: str = "auto"
     interaction_execute_default: bool = True
+    include_task_control: bool = True
+    include_scheduler: bool = False
+    include_queue_worker: bool = False
+    task_control_route_prefix: str = "/v1/tasks"
+    scheduler_poll_seconds: float | None = None
     enable_rag: bool = False
     enable_rag_ingest: bool = False
     enable_websearch: bool = False
@@ -182,6 +187,14 @@ class LegalBackendSettings:
             os.environ.get("LEGAL_INTERACTION_SURFACE") or "auto"
         ).strip().lower() or "auto"
         interaction_execute = _env_bool("LEGAL_INTERACTION_EXECUTE_DEFAULT", default=True)
+        include_task_control = _env_bool("LEGAL_INCLUDE_TASK_CONTROL", default=True)
+        include_scheduler = _env_bool("LEGAL_INCLUDE_SCHEDULER", default=False)
+        include_queue_worker = _env_bool("LEGAL_INCLUDE_QUEUE_WORKER", default=False)
+        task_control_prefix = (
+            os.environ.get("LEGAL_TASK_CONTROL_ROUTE_PREFIX") or "/v1/tasks"
+        ).strip() or "/v1/tasks"
+        poll_raw = (os.environ.get("INTERGRAX_SCHEDULER_POLL_SECONDS") or "").strip()
+        scheduler_poll = float(poll_raw) if poll_raw else None
 
         enable_rag = _env_bool("LEGAL_ENABLE_RAG", default=False)
         enable_rag_ingest = _env_bool("LEGAL_ENABLE_RAG_INGEST", default=False)
@@ -219,6 +232,11 @@ class LegalBackendSettings:
             interaction_route_prefix=interaction_prefix,
             interaction_surface=interaction_surface,
             interaction_execute_default=interaction_execute,
+            include_task_control=include_task_control,
+            include_scheduler=include_scheduler,
+            include_queue_worker=include_queue_worker,
+            task_control_route_prefix=task_control_prefix,
+            scheduler_poll_seconds=scheduler_poll,
             enable_rag=enable_rag,
             enable_rag_ingest=enable_rag_ingest,
             enable_websearch=enable_websearch,

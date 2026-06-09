@@ -1627,10 +1627,13 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 | FLOW-CTL.3 | **Mid-step interrupt budget** — `max_interrupts_per_run` on governance options | **Done** | Low | `ExecutionInterruptHandler` |
 | FLOW-CTL.4 | **Resume API parity** — `POST /v1/tasks/{id}/resume` with checkpoint store | **Done** | Medium | `harness_task_routes.py` |
 | FLOW-CTL.5 | **Trace completeness** — new governance events in phase coverage | **Done** | Medium | `phase_coverage.py` + B07 gate |
+| FLOW-CTL.6 | **Product host parity** — task control routes on scaffold-opt-in hosts | **Done** | High | H-APP-WIRING.1 **Done**; closes FLOW-GAP-17 |
 
 **Prerequisites:** Phase FLOW **Done**; REL checkpoint store **Done**.
 
-**Cross-plan:** FLOW-CTL.2 ↔ REL-ADV autonomy downgrade; FLOW-CTL.4 ↔ ORCH-6 async posture.
+**Cross-plan:** FLOW-CTL.2 ↔ REL-ADV autonomy downgrade; FLOW-CTL.4 ↔ ORCH-6 async posture; FLOW-CTL.6 ↔ H-APP-WIRING.
+
+**Audit note (2026-06-09):** FLOW-CTL **Done** for Tier-1 semantics; FLOW-GAP-17–20 in architecture §23.2 track Tier-3 / product exposure.
 
 **Explicitly excluded:** Distributed transaction rollback across external systems (use idempotency + compensation patterns in REL §34).
 

@@ -1454,7 +1454,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ## Phase ORCH-CONFIG — Platform interaction & multi-agent configuration (Band 2ar — in progress)
 
-**Status:** **In progress** — **8/10 Done**, **2/10 Partial** (architecture **Done** 2026-06-09 — [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §56; Band 2ar implementation 2026-06-09)  
+**Status:** **In progress** — **9/11 Done**, **2/11 Partial** (architecture **Done** 2026-06-09 incl. §59 audit — [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §56–§59; Band 2ar implementation 2026-06-09)  
 **Prerequisites:** Phase ORCH-STRAT **Done** · Phase H-APP-DOC.1 **Done** · default queue = §6.1 until Band 2ar prioritized  
 **Goal:** Close every gap in §56.11 so **all CFG-* cases** marked ⚠️/❌ become ✅ without runtime forks  
 **Canonical input:** §56.7 case register + §56.11 plan table — do not duplicate elsewhere
@@ -1475,6 +1475,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | ORCH-CONFIG.8 | CFG-17 | Swarm runtime — extends ORCH-5.1 | **Partial** | Medium | `swarm_exploration_defaults()`; full ORCH-5.1 runtime pending |
 | ORCH-CONFIG.9 | All CFG | `check_orchestration_config_docs.py` — CFG IDs in tests/docs | **Done** | Low | `scripts/check_orchestration_config_docs.py` |
 | ORCH-CONFIG.10 | CFG-11 | COG-1.* engine planner production path | **Partial** | High | `test_engine_planner_orchestration_gate.py`; COG-1.1–1.5 pending |
+| ORCH-CONFIG.11 | §59 | **Audit canon** — §59 gaps/debt/discrepancies register | **Done** | Medium | Architecture §59 + hub index 2026-06-09 |
 
 **Execution order when Band 2ar activates:** ORCH-CONFIG.2 → ORCH-CONFIG.1 → ORCH-CONFIG.3 → ORCH-CONFIG.4 → ORCH-CONFIG.10 → ORCH-CONFIG.6 → ORCH-CONFIG.7 → ORCH-CONFIG.8 → ORCH-CONFIG.9; ORCH-CONFIG.5 remains §6.3 / FLOW-8.
 
@@ -1508,7 +1509,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| ORCH-5.1 | **Swarm runtime profile** — budget envelope + parallel cap for `CoordinationPattern.SWARM` | Planned | Medium | Gate test with 3+ parallel nodes |
+| ORCH-5.1 | **Swarm runtime profile** — budget envelope + parallel cap for `CoordinationPattern.SWARM` | **Partial** | Medium | `swarm_policy.py` + `coordination_pattern` on plan; full graph gate pending |
 | ORCH-5.2 | **`coordination_pattern` on `NexusPlan` metadata** — explicit pattern id for trace/audit | Planned | Medium | `PLAN_CREATED` payload includes pattern |
 | ORCH-5.3 | **Wire `select_coordination_pattern()` to lab hosts** — optional advisory in planning trace | Planned | Low | Observe-only event |
 | ORCH-5.4 | **Advanced merge strategies** — citation-preserving or structured conflict (IDEAL) | Planned | Low | Profile flag + composer |
@@ -1543,8 +1544,11 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | ORCH-6.2 | **Profile preset** — `async_batch_defaults()` on `ApplicationEnvironmentProfile` | **Done** | Medium | `test_platform_runtime_capabilities.py` |
 | ORCH-6.3 | **Agent async contract gate** — default `AgentExecutionMode.ASYNC` on contract | **Done** | Medium | `test_platform_runtime_capabilities.py` |
 | ORCH-6.4 | **Author appendix** — sync/async in AGENT_CREATION_GUIDE Appendix X | **Done** | Low | Appendix X §X.4 |
+| ORCH-6.5 | **Product host exposure** — `mount_harness_task_routes` + durable queue option beyond lab | **Done** | High | H-APP-WIRING **Done**; legal/research/poc_template |
 
 **Prerequisites:** Queueing plane **Done**; `message_bus.async_runner` skill **Done**.
+
+**Audit note (2026-06-09):** ORCH-6.1–6.4 close **runtime** posture; ORCH-6.5 tracks **Tier-3 surface debt** documented in architecture §57.5, §59.2.
 
 **Explicitly excluded:** New queue transport; nested Nexus per async job.
 

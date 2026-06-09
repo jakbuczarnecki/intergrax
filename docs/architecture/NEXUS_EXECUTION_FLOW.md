@@ -698,6 +698,8 @@ resume restores plan/graph/UAEP cursor from SQLite
 | UC-8 HITL before run | **Yes** | Partial | `test_acceptance_04_human_approval_flow` | `HUMAN_APPROVAL_REQUESTED`, `WAITING_FOR_HUMAN` |
 | UC-9 Long-running | **Yes** | Partial (scheduler optional) | `test_acceptance_05_checkpoint_recovery`, `05b_mid_step_uaep_resume` | checkpoint events, `TASK_PROGRESS` |
 
+**Why Production-ready = Partial (2026-06-09 audit):** harness runtime proves semantics; production claims additionally require (a) `execution_mode=strict` + critic profile on the deployment host, (b) operational SLO evidence (W-OPS), (c) Tier-3 surface parity per [`ORCHESTRATION.md`](ORCHESTRATION.md) §59.2 — task control and async APIs are **lab-only** today. UC-6 remains **No** until product research agents replace stubs (§6.3).
+
 **Additional cross-cutting acceptance:** `test_acceptance_03_parallel_multi_agent`, `06_retry_flow`, `07_partial_results`, `09_sandbox_tool_execution`, `10_shadow_workspace` — `tests/acceptance/agent_os/test_agent_os_scenarios.py`.
 
 ---
@@ -1070,6 +1072,7 @@ Honest deltas for plan scheduling. **Closeout phases (ORCH Done) wired bootstrap
 | **Runtime-core** | Blocks correct Harness semantics in production multi-agent | **Closed** (FLOW-1–6, 13–15) |
 | **Production-hardening** | Lab works; product needs richer merge/eval/policy | **Closed** (FLOW-7, 9, 11, 14) |
 | **Product-proof** | Harness CFG simulation Done; full Tier-3 product host deferred | **Partial** (ORCH-CONFIG.5 / FLOW-8 harness) · product §6.3 |
+| **Tier-3 wiring** | Runtime Done; HTTP/async surfaces lab-only | **Open** (FLOW-GAP-17–18) · H-APP-WIRING |
 | **DX / documentation** | Authoring ergonomics or doc-only until ADR | **Closed** (FLOW-5, 10, 16, 17) |
 
 ### 23.2 Gap register
@@ -1092,8 +1095,12 @@ Honest deltas for plan scheduling. **Closeout phases (ORCH Done) wired bootstrap
 | FLOW-GAP-14 | Subagent budget not delegated | **Closed (FLOW-15)** — `max_llm_calls`/`max_tool_calls` on delegation envelope | Production-hardening | Medium | §10 |
 | FLOW-GAP-15 | `MODIFY_PLAN` reserved / undocumented | **Closed (FLOW-16)** — [ADR-FLOW-003](adr/ADR-FLOW-003.md); `MODIFY_PLAN_NOT_SUPPORTED` without handoff | DX | Low | §9 |
 | FLOW-GAP-16 | `MULTI_AGENT` step order fragile | **Closed (FLOW-17)** — `multi_agent_order` on `OrchestrationProfile` | DX | Low | §9 |
+| FLOW-GAP-17 | Tier-3 task control HTTP (cancel/resume/autonomy) | **Closed (H-APP-WIRING)** — legal/research/poc_template + scaffold `INCLUDE_TASK_CONTROL` | Tier-3 wiring | Medium | §28, ORCH §59.2 |
+| FLOW-GAP-18 | Async `run_async` product exposure | **Partial** — reference hosts mount `/v1/tasks/run-async`; durable queue via `INCLUDE_QUEUE_WORKER` on legal | Tier-3 wiring | Medium | ORCH §57.5 |
+| FLOW-GAP-19 | Production strict multi-agent gate | **Open** — `strict_multi_agent_defaults()` preset; no E1+E3 enforcement gate on product host | Product-proof | High | CFG-20, FLOW-8 |
+| FLOW-GAP-20 | Hybrid daemon E2E (S6 / CFG-14) | **Open** — LKW product incomplete | Product-proof | Medium | §6.3, TIER3 §23.7 |
 
-**Status (2026-06-09):** Phase FLOW **Done** (17/18 harness); `FLOW-GAP-10` → FLOW-8 **Partial** (harness simulation ORCH-CONFIG.5; product host §6.3). See [Phase ORCH-CONFIG](../plan/ORCHESTRATION.md#phase-orch-config--platform-interaction--multi-agent-configuration-band-2ar--in-progress).
+**Status (2026-06-09):** Phase FLOW **Done** (17/18 harness); `FLOW-GAP-10` → FLOW-8 **Partial** (harness simulation ORCH-CONFIG.5; product host §6.3). **New Tier-3 wiring gaps** FLOW-GAP-17–20 tracked in [Phase H-APP-WIRING](../plan/TIER3_APPLICATION_ENVIRONMENT.md). See [Phase ORCH-CONFIG](../plan/ORCHESTRATION.md#phase-orch-config--platform-interaction--multi-agent-configuration-band-2ar--in-progress).
 
 ---
 
@@ -1288,5 +1295,16 @@ resume(task_id, resume_token, operator_input?)
 **Canon:** UAEP §42.8–§42.9 · reliability [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) §33.3, §34 · orchestration [`ORCHESTRATION.md`](ORCHESTRATION.md) §57.
 
 **Plan:** [`plan/NEXUS_EXECUTION_FLOW.md`](../plan/NEXUS_EXECUTION_FLOW.md) Phase FLOW-CTL.
+
+### 28.5 Implementation coverage (audit 2026-06-09)
+
+| Mechanism | Tier-1 runtime | HTTP operator API | Notes |
+|-----------|----------------|-------------------|-------|
+| Cooperative cancel (`should_cancel`) | ✅ UAEP + `ActiveTaskRegistry` | `POST /v1/tasks/{id}/cancel` — **lab only** | FLOW-CTL.1–2 |
+| Interrupt budget | ✅ `max_interrupts_per_run` | — | FLOW-CTL.3 |
+| Checkpoint resume | ✅ scheduler + `resume_planner` | `POST /v1/tasks/{id}/resume` — **lab only** | FLOW-CTL.4 |
+| Mid-run autonomy | ✅ `AutonomyGovernanceMiddleware` | `POST /v1/tasks/{id}/autonomy` — **lab only** | REL-ADV.4 |
+
+**Discrepancy closed here:** FLOW-CTL is **Done** for harness semantics; **Partial** for Tier-3 product surface parity — see [`ORCHESTRATION.md`](ORCHESTRATION.md) §59.2 · [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23.7.
 
 ---

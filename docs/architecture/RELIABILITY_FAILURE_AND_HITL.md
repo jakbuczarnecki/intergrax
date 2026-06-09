@@ -196,7 +196,7 @@ ResiliencePolicy:
     reboot_strategy: NONE | RE_EXECUTE_NODE | RE_EXECUTE_GRAPH | COLD_AGENT_RELOAD
 ```
 
-**As-built (2026-06):** behaviour is distributed across `RetryPolicy`, `ReliabilityProfile`, `OrchestrationProfile`, and UAEP interrupt handling. Unified `ResiliencePolicy` model — Phase **REL-ADV** in plan.
+**As-built (2026-06-09):** unified `ResiliencePolicy` on `ReliabilityProfile`; resolved via `policy_resolver` into `RetryEngine` and trace `RECOVERY_REBOOT`. **Tier-3 debt:** `apply_reliability_task_defaults` wired on **lab host only** — other hosts need profile enricher or H-APP-WIRING.1.
 
 ## 34.4 Recovery reboot semantics
 
@@ -282,8 +282,10 @@ effective_autonomy = min(
 - Downgrade (AUTONOMOUS → MANUAL) MUST be **immediate** for new steps; in-flight tool calls follow cancel-or-complete policy per `CancellationCoordinator`.
 - Upgrade (MANUAL → AUTONOMOUS) MUST NOT bypass unresolved HITL items.
 
-**As-built (2026-06):** HITL and policy gates exist; unified `AutonomyLevel` on task envelope and mid-run API — Phase **REL-ADV** in plan.
+**As-built (2026-06-09):** `AutonomyLevel` on `TaskExecutionOptions`; effective level via `autonomy_resolver` + `AutonomyGovernanceMiddleware`; trace events `AUTONOMY_LEVEL_SET` / `AUTONOMY_LEVEL_CHANGED`. **Mid-run HTTP API** (`POST …/tasks/{id}/autonomy`) mounted on **lab host only** — runtime downgrade/upgrade works on all paths when set on task envelope.
 
-**Plan:** [`plan/RELIABILITY_FAILURE_AND_HITL.md`](../plan/RELIABILITY_FAILURE_AND_HITL.md) Phase REL-ADV.
+**Tier-3 debt:** product hosts without `mount_harness_task_routes` require client to set `autonomy_level` on task create or resume payload.
+
+**Plan:** [`plan/RELIABILITY_FAILURE_AND_HITL.md`](../plan/RELIABILITY_FAILURE_AND_HITL.md) Phase REL-ADV (**Done**); surface parity → H-APP-WIRING.1.
 
 ---

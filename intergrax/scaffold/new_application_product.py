@@ -167,6 +167,9 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
             interaction_execute_default: bool = True
             include_scheduler: bool = False
             scheduler_poll_seconds: float | None = None
+            include_task_control: bool = True
+            include_queue_worker: bool = False
+            task_control_route_prefix: str = "/v1/tasks"
 
             @classmethod
             def from_env(cls) -> {pascal}BackendSettings:
@@ -254,6 +257,11 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
                 include_scheduler = _env_bool("{env_prefix_value}INCLUDE_SCHEDULER", default=False)
                 poll_raw = (os.getenv("INTERGRAX_SCHEDULER_POLL_SECONDS") or "").strip()
                 scheduler_poll = float(poll_raw) if poll_raw else None
+                include_task_control = _env_bool("{env_prefix_value}INCLUDE_TASK_CONTROL", default=True)
+                include_queue_worker = _env_bool("{env_prefix_value}INCLUDE_QUEUE_WORKER", default=False)
+                task_control_prefix = (
+                    os.getenv("{env_prefix_value}TASK_CONTROL_ROUTE_PREFIX") or "/v1/tasks"
+                ).strip() or "/v1/tasks"
 
                 return cls(
                     environment=environment,
@@ -274,6 +282,9 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
                     interaction_execute_default=interaction_execute,
                     include_scheduler=include_scheduler,
                     scheduler_poll_seconds=scheduler_poll,
+                    include_task_control=include_task_control,
+                    include_queue_worker=include_queue_worker,
+                    task_control_route_prefix=task_control_prefix,
                 )
         '''
     )
@@ -522,8 +533,13 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
         from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
         from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
         from intergrax.runtime.interactions.router import create_interaction_intake_router
+        from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
+        from intergrax.applications._shared.task_control_wiring import (
+            build_reliability_task_enricher,
+            build_task_runner_with_enricher,
+        )
+        from intergrax.debug.store import open_default_task_checkpoint_persistence
         from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
-        from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
         from {pkg}.host.settings import {pascal}BackendSettings
         from {pkg}.host.environment_profile import build_{short}_environment_profile
         from {pkg}.manifest import build_{short}_manifest
@@ -555,9 +571,11 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
                 nexus_loop,
                 trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
             )
-            task_runner = UnifiedTaskRunner(nexus_loop)
+            checkpoint_store = open_default_task_checkpoint_persistence()
+            task_enricher = build_reliability_task_enricher(env)
+            task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
             scheduler_wiring = wire_long_running_scheduler(
-                checkpoint_store=None,
+                checkpoint_store=checkpoint_store,
                 task_runner=task_runner,
                 notification_adapter=None,
                 poll_interval_seconds=settings.scheduler_poll_seconds,
@@ -566,6 +584,7 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
             interaction_service = wire_interaction_intake_service(
                 nexus_loop,
                 interaction_surface=settings.interaction_surface,
+                task_enricher=task_enricher,
             )
 
             api_cfg = ApiConfig(
@@ -601,6 +620,15 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
                 prefix=settings.route_prefix,
                 default_agent_id=settings.default_agent_id,
             )
+
+            if settings.include_task_control:
+                mount_harness_task_routes(
+                    app,
+                    task_runner=task_runner,
+                    checkpoint_store=checkpoint_store,
+                    prefix=settings.task_control_route_prefix,
+                    task_enricher=task_enricher,
+                )
 
             if settings.include_interaction_routes:
                 app.include_router(
@@ -843,6 +871,9 @@ def env_example(
         {env_prefix}INTERACTION_ROUTE_PREFIX=/v1/interactions
         {env_prefix}INTERACTION_SURFACE=auto
         {env_prefix}INCLUDE_SCHEDULER=false
+        {env_prefix}INCLUDE_TASK_CONTROL=true
+        {env_prefix}INCLUDE_QUEUE_WORKER=false
+        {env_prefix}TASK_CONTROL_ROUTE_PREFIX=/v1/tasks
         # Optional dev API key (prod requires keys or ALLOW_UNAUTHENTICATED=true):
         # {env_prefix}BACKEND_BOOTSTRAP_API_KEY=dev-key
         # {env_prefix}BACKEND_BOOTSTRAP_TENANT_ID=dev-tenant

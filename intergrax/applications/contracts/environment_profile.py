@@ -230,6 +230,7 @@ class OrchestrationProfile(BaseModel):
     multi_agent_order: str = "registry"
     allow_dynamic_replan: bool = False
     intent_routes: list[IntentRoute] = Field(default_factory=list)
+    coordination_pattern: str | None = None
 
 
 class ShadowWorkspaceProfile(BaseModel):
@@ -476,12 +477,15 @@ class ApplicationEnvironmentProfile(BaseModel):
     ) -> ApplicationEnvironmentProfile:
         """CFG-17 / D7 exploration preset — high parallel cap (ORCH-CONFIG.8 partial)."""
         base = cls.lab_defaults(profile_id=profile_id)
+        from intergrax.runtime.architecture.multi_agent_coordination import CoordinationPattern
+
         return base.model_copy(
             update={
                 "orchestration_profile": OrchestrationProfile(
                     merge_strategy="structured_json",
                     max_parallel_nodes=max_parallel_nodes,
                     max_inflight_nodes=max_parallel_nodes,
+                    coordination_pattern=CoordinationPattern.SWARM.value,
                 ),
             }
         )

@@ -341,7 +341,9 @@ Tier-3 hosts declare multi-agent topology and routing on `ApplicationEnvironment
 
 **Harness proof:** `tests/integration/runtime/test_orchestration_cfg_simulation.py` (CFG-04/06/07/08/18).
 
-**Scaffold:** lab profile emits interaction intake + scheduler flags by default; product profile supports `{ENV_PREFIX}INCLUDE_INTERACTIONS` and `{ENV_PREFIX}INCLUDE_SCHEDULER` (legal host reference).
+**Scaffold:** lab profile emits interaction intake + scheduler flags by default; product profile supports `{ENV_PREFIX}INCLUDE_INTERACTIONS`, `{ENV_PREFIX}INCLUDE_SCHEDULER`, `{ENV_PREFIX}INCLUDE_TASK_CONTROL`, and optional `{ENV_PREFIX}INCLUDE_QUEUE_WORKER` (legal / research / poc_template reference hosts).
+
+**Task control HTTP** (`/v1/tasks/run-async`, `cancel`, `autonomy`, `resume`): `intergrax/applications/_shared/task_control_wiring.py` · enabled when `INCLUDE_TASK_CONTROL=true` (default on reference hosts).
 
 Canon: [`docs/architecture/ORCHESTRATION.md`](../../docs/architecture/ORCHESTRATION.md) §56 · plan: [`docs/plan/ORCHESTRATION.md`](../../docs/plan/ORCHESTRATION.md) Phase ORCH-CONFIG.
 

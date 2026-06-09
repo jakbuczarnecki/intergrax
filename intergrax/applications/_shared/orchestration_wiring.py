@@ -106,17 +106,28 @@ class GraphSpecSeedingPlanner:
         self,
         inner: NexusTaskPlannerProtocol,
         graph_spec: ApplicationGraphSpec,
+        *,
+        coordination_pattern: str | None = None,
     ) -> None:
         self._inner = inner
         self._graph_spec = graph_spec
+        self._coordination_pattern = coordination_pattern
 
     def plan(self, task: Task, registry: AgentRegistry) -> NexusPlan:
         if should_seed_plan_from_graph_spec(task, self._graph_spec):
             classification = task.classification or ""
-            return application_graph_spec_to_nexus_plan(
+            from intergrax.runtime.nexus.orchestration.swarm_policy import (
+                annotate_plan_coordination_pattern,
+            )
+
+            plan = application_graph_spec_to_nexus_plan(
                 self._graph_spec,
                 task,
                 classification=classification,
+            )
+            return annotate_plan_coordination_pattern(
+                plan,
+                coordination_pattern=self._coordination_pattern,
             )
         return self._inner.plan(task, registry)
 
@@ -169,7 +180,11 @@ def resolve_nexus_task_planner(
 
     graph_spec = env.graph_spec
     if graph_spec is not None and graph_spec.nodes:
-        return GraphSpecSeedingPlanner(inner=inner, graph_spec=graph_spec)
+        return GraphSpecSeedingPlanner(
+            inner=inner,
+            graph_spec=graph_spec,
+            coordination_pattern=env.orchestration_profile.coordination_pattern,
+        )
     return inner
 
 

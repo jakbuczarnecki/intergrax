@@ -156,6 +156,9 @@ def _settings_py(names: ScaffoldApplicationNames) -> str:
             interaction_surface: str = "auto"
             include_mcp: bool = True
             mcp_mount_path: str = "/mcp"
+            include_task_control: bool = True
+            include_queue_worker: bool = False
+            task_control_route_prefix: str = "/v1/tasks"
 
             @classmethod
             def from_env(cls) -> {pascal}ApplicationSettings:
@@ -184,6 +187,15 @@ def _settings_py(names: ScaffoldApplicationNames) -> str:
                     "no",
                 }}
                 mcp_mount = (os.getenv("{env_prefix_value}MCP_MOUNT_PATH") or "/mcp").strip() or "/mcp"
+                include_task_control = (
+                    os.getenv("{env_prefix_value}INCLUDE_TASK_CONTROL") or "true"
+                ).strip().lower() not in {{"0", "false", "no"}}
+                include_queue_worker = (
+                    os.getenv("{env_prefix_value}INCLUDE_QUEUE_WORKER") or "false"
+                ).strip().lower() in {{"1", "true", "yes", "on"}}
+                task_control_prefix = (
+                    os.getenv("{env_prefix_value}TASK_CONTROL_ROUTE_PREFIX") or "/v1/tasks"
+                ).strip() or "/v1/tasks"
                 return cls(
                     environment=environment,
                     route_prefix=prefix,
@@ -196,6 +208,9 @@ def _settings_py(names: ScaffoldApplicationNames) -> str:
                     interaction_surface=interaction_surface,
                     include_mcp=include_mcp,
                     mcp_mount_path=mcp_mount,
+                    include_task_control=include_task_control,
+                    include_queue_worker=include_queue_worker,
+                    task_control_route_prefix=task_control_prefix,
                 )
         '''
     )
@@ -468,7 +483,11 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
         from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
         from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
         from intergrax.runtime.registry.agent_registry import AgentRegistry
-        from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+        from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
+        from intergrax.applications._shared.task_control_wiring import (
+            build_reliability_task_enricher,
+            build_task_runner_with_enricher,
+        )
         from {pkg}.host.settings import {pascal}ApplicationSettings
         from {pkg}.host.environment_profile import build_{short}_environment_profile
         from {pkg}.manifest import build_{short}_manifest
@@ -509,9 +528,11 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
                 nexus_loop,
                 trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
             )
-            task_runner = UnifiedTaskRunner(nexus_loop)
+            checkpoint_store = open_default_task_checkpoint_persistence(db_path=checkpoints_db_path)
+            task_enricher = build_reliability_task_enricher(env)
+            task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
             scheduler_wiring = wire_long_running_scheduler(
-                checkpoint_store=None,
+                checkpoint_store=checkpoint_store,
                 task_runner=task_runner,
                 notification_adapter=None,
                 poll_interval_seconds=settings.scheduler_poll_seconds,
@@ -520,8 +541,8 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
             interaction_service = wire_interaction_intake_service(
                 nexus_loop,
                 interaction_surface=settings.interaction_surface,
+                task_enricher=task_enricher,
             )
-            checkpoint_store = open_default_task_checkpoint_persistence(db_path=checkpoints_db_path)
             hitl_service = DebugHitlResumeService(
                 resolved_registry,
                 checkpoint_store=checkpoint_store,
@@ -541,6 +562,14 @@ def _factory_py(names: ScaffoldApplicationNames) -> str:
             )
             app.title = "{title}"
             mount_{short}_routes(app, nexus_loop=nexus_loop, prefix=settings.route_prefix)
+            if settings.include_task_control:
+                mount_harness_task_routes(
+                    app,
+                    task_runner=task_runner,
+                    checkpoint_store=checkpoint_store,
+                    prefix=settings.task_control_route_prefix,
+                    task_enricher=task_enricher,
+                )
             if settings.include_interaction_routes:
                 app.include_router(
                     create_interaction_intake_router(
@@ -828,6 +857,9 @@ def _env_example(env_prefix: str, route_prefix: str, port: int, specs: list[Scaf
         {env_prefix}INTERACTION_SURFACE=auto
         {env_prefix}INCLUDE_MCP=true
         {env_prefix}MCP_MOUNT_PATH=/mcp
+        {env_prefix}INCLUDE_TASK_CONTROL=true
+        {env_prefix}INCLUDE_QUEUE_WORKER=false
+        {env_prefix}TASK_CONTROL_ROUTE_PREFIX=/v1/tasks
         # Example run capability for POST {route_prefix}/run
         # DEFAULT_CAPABILITY={caps}
         '''

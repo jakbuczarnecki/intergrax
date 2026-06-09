@@ -300,4 +300,33 @@ Copy a row when designing a new Tier-3 host. Adjust profile fields; do not fork 
 
 **Plan:** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) Phase H-APP-DOC · platform cases **ORCH-CONFIG** in [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md).
 
+## 23.7 Tier-3 host wiring audit (as-built 2026-06-09)
+
+**Canonical full matrix:** [`ORCHESTRATION.md`](ORCHESTRATION.md) §59.2.
+
+Phase H-APP (**Done**) delivered unified `ApplicationEnvironmentProfile` and `wire_application_environment` — but **surface mounting** (task control API, scheduler, interactions, reliability enricher) is **per-host optional**. Only `lab_application` is the reference for full platform runtime capabilities (ORCH-6, FLOW-CTL, REL-ADV HTTP).
+
+| Gap ID | Symptom | Affected hosts | Plan |
+|--------|---------|----------------|------|
+| T3-GAP-01 | No `mount_harness_task_routes` | LKW, dispute_sim, assistant (opt-in) | **Closed** on lab/legal/research/poc · H-APP-WIRING.1 **Done** |
+| T3-GAP-02 | Reliability task enricher not in factory | LKW, dispute_sim, assistant | **Closed** on reference hosts · runner `task_enricher` |
+| T3-GAP-03 | Long-running scheduler not wired | LKW, dispute_sim (opt-in elsewhere) | **Partial** — `INCLUDE_SCHEDULER` on reference hosts |
+| T3-GAP-04 | Interaction intake not enabled | LKW, dispute_sim | **Partial** — legal/research default on |
+| T3-GAP-05 | Queue worker not scaffold-default | Most hosts | **Partial** — `INCLUDE_QUEUE_WORKER` on legal + scaffold |
+| T3-GAP-06 | Hybrid daemon (CFG-14) — LKW incomplete | `local_workspace_application` | **Deferred** §6.3 · doc in LKW `ARCHITECTURE.md` |
+
+**Authoring rule:** do not claim CFG-13/14/20 production-ready on a host until §23.7 gaps for that host are closed or explicitly documented in product `ARCHITECTURE.md`.
+
+## 23.8 Technical debt — docs vs implementation
+
+| Topic | Architecture says | Current code | Debt |
+|-------|-------------------|--------------|------|
+| Unified task control API | ORCH §57, FLOW §28, REL §35 | `harness_task_routes.py` mounted on lab only | Product hosts need opt-in or scaffold flag |
+| Async batch | ORCH-6 `run_async` | In-memory index on lab; Celery adapter separate | Durable queue not default |
+| Strict multi-agent | `strict_multi_agent_defaults()` | Preset exists; no reference product host | FLOW-8 / §6.3 |
+| Free-text routing | `classifier_kind=rules` | Per-host profile; not all products enable | CFG-04 host config |
+| Scaffold parity | H-APP-DOC.4 Done | `INCLUDE_INTERACTIONS` / `INCLUDE_SCHEDULER` optional | `INCLUDE_TASK_CONTROL` not yet in scaffold |
+
+**Paydown:** [Phase H-APP-WIRING](../plan/TIER3_APPLICATION_ENVIRONMENT.md) (Band 2aw) — recommended next harness band after §6.1 gate maintenance.
+
 ---
