@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Sequence
 
+from intergrax.skills.registry.catalog import catalog_snapshot
 from intergrax.skills.registry.plugin_register import register_skill_plugin
 from intergrax.skills.registry.shipped_plugins import SHIPPED_SKILL_BUNDLE_IDS, SHIPPED_SKILL_PLUGINS
 
@@ -27,11 +28,16 @@ def register_default_skills(
         if unknown:
             raise ValueError(f"Unknown skill bundle_id(s): {', '.join(sorted(unknown))}")
 
+    snap = catalog_snapshot()
     for plugin_type in SHIPPED_SKILL_PLUGINS:
         manifest = plugin_type.skill_bundle_manifest()
-        if allowed is not None and manifest.bundle_id not in allowed:
+        bundle_id = manifest.bundle_id
+        if allowed is not None and bundle_id not in allowed:
             continue
-        register_skill_plugin(plugin_type, override=override)
+        if bundle_id in snap and not override:
+            continue
+        register_skill_plugin(plugin_type, override=override or bundle_id in snap)
+        snap = catalog_snapshot()
 
     if bundle_ids is None:
         _BOOTSTRAPPED = True

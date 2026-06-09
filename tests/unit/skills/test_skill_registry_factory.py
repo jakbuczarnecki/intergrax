@@ -3,7 +3,7 @@
 import pytest
 
 from intergrax.skills.registry.bootstrap import register_default_skills, reset_default_skills_for_tests
-from intergrax.skills.registry.catalog import clear_skill_catalog
+from intergrax.skills.registry.catalog import catalog_snapshot, clear_skill_catalog
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.skills.registry import build_registry_from_profile
 
@@ -34,3 +34,18 @@ def test_register_default_skills_includes_legal_and_research() -> None:
     registry = build_registry_from_profile(SkillProfile())
     assert registry.has("legal.contract_review")
     assert registry.has("research.literature_scan")
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_register_default_skills_idempotent_after_partial_bootstrap() -> None:
+    """CI xdist: partial Tier-3 bootstrap then full register must not raise."""
+    from intergrax.core.catalog_bootstrap import bootstrap_catalogs
+
+    reset_default_skills_for_tests()
+    bootstrap_catalogs(register_shipped=True, skill_bundle_ids=["harness", "agent"])
+    register_default_skills()
+    snap = catalog_snapshot()
+    assert "harness" in snap
+    assert "agent" in snap
+    assert "legal" in snap
