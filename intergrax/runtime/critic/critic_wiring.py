@@ -282,6 +282,7 @@ def validate_uaep_step_with_critic_detail(
     step_id: str | None = None,
     rubric: RubricSpec | None = None,
     trace_emitter: CriticTraceEmitter | None = None,
+    extra_context: dict[str, object] | None = None,
 ) -> tuple[ValidationResult, CriticVerdict]:
     """Run partial critic verification after a UAEP step milestone."""
     resolved_rubric = rubric
@@ -290,6 +291,13 @@ def validate_uaep_step_with_critic_detail(
             rubric_id=hooks.config.default_rubric_ref,
             min_score=hooks.config.judge_threshold,
         )
+    context: dict[str, object] = {
+        "tenant_id": tenant_id,
+        "contract": contract,
+        "uaep_step_id": step_id,
+    }
+    if extra_context:
+        context.update(extra_context)
     request = build_critic_request(
         scope=CriticScope.UAEP_STEP,
         run_id=run_id,
@@ -297,11 +305,7 @@ def validate_uaep_step_with_critic_detail(
         enabled_layers=enabled_layers_for_scope(hooks.config, partial=True),
         execution=execution,
         rubric=resolved_rubric,
-        context={
-            "tenant_id": tenant_id,
-            "contract": contract,
-            "uaep_step_id": step_id,
-        },
+        context=context,
     )
     verdict = _finalize_critic_verdict(
         hooks.orchestrator.verify(request, contract=contract),

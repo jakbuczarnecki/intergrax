@@ -13,6 +13,7 @@ from intergrax.integrations.contracts.llm_guardrail import (
 )
 from intergrax.integrations.providers.llm_guardrail._pattern_scanner import scan_patterns
 from intergrax.integrations.providers.llm_guardrail.bundles._base import BaseGuardrailAdapter
+from intergrax.integrations.providers.llm_guardrail.nemo_guardrails.opens import nemo_scan_colang
 
 
 def _nemo_colang_path(options: GuardrailBackendOptions) -> str | None:
@@ -25,35 +26,29 @@ def _nemo_colang_path(options: GuardrailBackendOptions) -> str | None:
 def _nemo_scan(text: str, *, mode: str, colang_path: str | None) -> GuardrailScanResult | None:
     if not colang_path:
         return None
-    try:
-        from nemoguardrails import RailsConfig
-        from nemoguardrails.rails.llm.llmrails import LLMRails
-    except ImportError:
+    vendor = nemo_scan_colang(text, mode=mode, colang_path=colang_path)
+    if vendor is None:
         return None
-    try:
-        config = RailsConfig.from_path(colang_path)
-        rails = LLMRails(config)
-        messages = [{"role": "user", "content": text}]
-        blocked = not bool(rails.generate(messages=messages))
-    except Exception as exc:  # noqa: BLE001 — vendor boundary
+    if vendor.get("skipped"):
         return GuardrailScanResult(
             allowed=True,
-            detail=f"nemo_guardrails skipped: {exc}",
+            detail=str(vendor.get("detail", "nemo_guardrails skipped")),
             audit_payload={"engine": "nemo_guardrails", "colang_path": colang_path, "mode": mode},
         )
-    if blocked:
+    allowed = bool(vendor.get("allowed", True))
+    if not allowed:
         return GuardrailScanResult(
             allowed=False,
             risk_level=GuardrailRiskLevel.HIGH,
             categories=("nemo_guardrails",),
             matched_rules=("nemo_guardrails:colang",),
-            detail="nemo_guardrails Colang policy blocked",
-            audit_payload={"engine": "nemo_guardrails", "colang_path": colang_path},
+            detail=str(vendor.get("detail", "nemo_guardrails Colang policy blocked")),
+            audit_payload={"engine": "nemo_guardrails", "colang_path": colang_path, "mode": mode},
         )
     return GuardrailScanResult(
         allowed=True,
-        detail="nemo_guardrails pass",
-        audit_payload={"engine": "nemo_guardrails", "colang_path": colang_path},
+        detail=str(vendor.get("detail", "nemo_guardrails pass")),
+        audit_payload={"engine": "nemo_guardrails", "colang_path": colang_path, "mode": mode},
     )
 
 

@@ -35,10 +35,16 @@ def main() -> int:
         print(f"check_harness_guardrail_wiring: import failed: {exc}")
         return 1
 
+    from intergrax.integrations.providers.llm_guardrail._factory import create_chained_guardrail_backend
+
     register_llm_guardrail_integrations(override=True)
     backend = create_guardrail_backend("llm_guard")
     if not backend.health_check():
         print("check_harness_guardrail_wiring: backend health_check failed")
+        return 1
+    chained = create_chained_guardrail_backend("llm_guard", "presidio")
+    if not chained.health_check():
+        print("check_harness_guardrail_wiring: chained backend health_check failed")
         return 1
     print("check_harness_guardrail_wiring: OK")
     return 0

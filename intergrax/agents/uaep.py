@@ -267,7 +267,12 @@ class UAEPExecutor:
                 await self._middleware.run_after(HookPoint.AFTER_STEP, hook_step)
             )
             if step_result.output is not None:
-                await self._scan_step_output_hooks(hook_step, step_result.output, request)
+                await self._scan_step_output_hooks(
+                    hook_step,
+                    step_result.output,
+                    request,
+                    exec_ctx=exec_ctx,
+                )
 
             if step_result.output is not None:
                 last_output = step_result.output
@@ -280,6 +285,7 @@ class UAEPExecutor:
                 run_id=run_id,
                 task_id=task_id,
                 task_options=task_options,
+                exec_ctx=exec_ctx,
             )
             if critic_resolution is not None:
                 governance = critic_resolution
@@ -432,6 +438,7 @@ class UAEPExecutor:
         run_id: str,
         task_id: str,
         task_options: Any,
+        exec_ctx: RuntimeExecutionContext,
     ) -> GovernanceResolution | None:
         if not self._verify_uaep_step or self._critic_hooks is None or step_result.output is None:
             return None
@@ -447,6 +454,11 @@ class UAEPExecutor:
             structured_data=dict(step_result.output.data),
         )
         tenant_id = str(request.tenant_id or request.metadata.get("tenant_id") or "default")
+        critic_context: dict[str, object] = {}
+        guardrail_scan = exec_ctx.metadata.get("guardrail_scan")
+        if isinstance(guardrail_scan, dict):
+            critic_context["guardrail_scan"] = guardrail_scan
+
         validation, verdict = validate_uaep_step_with_critic_detail(
             execution,
             contract=contract,
@@ -454,6 +466,7 @@ class UAEPExecutor:
             run_id=run_id,
             tenant_id=tenant_id,
             step_id=step.step_id,
+            extra_context=critic_context or None,
         )
         if validation.valid:
             return None
@@ -774,6 +787,8 @@ class UAEPExecutor:
         hook_step: HookContext,
         step_output: StepOutput,
         request: RuntimeRequest,
+        *,
+        exec_ctx: RuntimeExecutionContext,
     ) -> None:
         output_text = step_output.summary or str(step_output.data.get("answer", ""))
         if not output_text:
@@ -790,9 +805,10 @@ class UAEPExecutor:
                 },
             },
         )
-        await self._guard_hook(
-            await self._middleware.run_after(HookPoint.AFTER_LLM_OUTPUT, ctx),
-        )
+        hook_result = await self._middleware.run_after(HookPoint.AFTER_LLM_OUTPUT, ctx)
+        if hook_result.modified_payload and "guardrail_scan" in hook_result.modified_payload:
+            exec_ctx.metadata["guardrail_scan"] = hook_result.modified_payload["guardrail_scan"]
+        await self._guard_hook(hook_result)
 
     @staticmethod
     async def _guard_hook(result: Any) -> None:

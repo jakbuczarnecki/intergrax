@@ -57,7 +57,7 @@ CVL closes these gaps **without** violating tier boundaries or creating a second
 ## 4. Design principles
 
 1. **Reuse before create** — extend `NexusValidationEngine`, `ValidationResult`, `OnlineEvaluationRegistry`, `EvaluationProfile`, `ReplayEngine`; no parallel eval store.
-2. **L0 before L1** — semantic judges run only after deterministic gates pass (cost + safety).
+2. **L0 before L1** — semantic judges run only after deterministic gates pass (cost + safety). Vendor **llm_guardrail** scans compose into L0 via `merge_guardrail_l0` when `guardrail_scan` is present in critic context ([`INTEGRATIONS.md`](INTEGRATIONS.md) §47).
 3. **Judge separation** — critic LLM profile MUST differ from producer agent profile (model, temperature, prompt registry id).
 4. **Opt-in by policy** — LLM-judge never mandatory on every run; `CriticProfile` + `EvaluationProfile` control activation.
 5. **Trace everything** — every critic invocation emits trace + optional `OnlineEvaluationObservation`.

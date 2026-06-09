@@ -93,4 +93,21 @@ def build_lab_environment_profile(
             }
         )
     env.adaptive_profile = env.adaptive_profile.model_copy(update=adaptive_updates)
+    if settings.enable_llm_guardrails:
+        from intergrax.applications.contracts.environment_profile import GuardrailProfile
+
+        env = env.model_copy(
+            update={
+                "integration_profile": presets.harness_guardrail_stack(
+                    primary="llm_guard",
+                    semantic="presidio",
+                ),
+                "guardrail_profile": GuardrailProfile(
+                    enabled=True,
+                    scan_input=True,
+                    scan_output=True,
+                    secondary_slug="presidio",
+                ),
+            },
+        )
     return env

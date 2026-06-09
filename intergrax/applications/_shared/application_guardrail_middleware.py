@@ -75,8 +75,25 @@ class LlmGuardrailMiddleware(RuntimeMiddleware):
             return HookResult(
                 action=HookAction.BLOCK,
                 reason=result.detail or f"guardrail output blocked ({self._backend.slug})",
+                modified_payload={
+                    "guardrail_scan": {
+                        **result.audit_payload,
+                        "allowed": False,
+                        "categories": list(result.categories),
+                        "detail": result.detail,
+                    },
+                },
             )
-        return HookResult()
+        return HookResult(
+            modified_payload={
+                "guardrail_scan": {
+                    **result.audit_payload,
+                    "allowed": True,
+                    "categories": list(result.categories),
+                    "detail": result.detail,
+                },
+            },
+        )
 
 
 def _guardrail_context(ctx: HookContext, point: HookPoint) -> GuardrailContext:

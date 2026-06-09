@@ -1066,6 +1066,7 @@ domain MUST be reflected in:
 | GR-INT.1 | Code | `LlmGuardrailBackend` contract + M.12 slugs | **Done** | [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) M.12 |
 | GR-INT.2 | Code | `guardrail_runtime_bridge` → §42.42 middleware | **Done** | M.12-WIRE.1 |
 | GR-INT.3 | CI | `check_harness_guardrail_wiring.py` | **Done** | M.12-WIRE.3 |
+| GR-INT.4 | Code | CVL L0 ↔ guardrail scan composition | **Done** | `runtime/critic/guardrail_l0.py` |
 
 ### GR-DOC — Paydown log
 
@@ -1074,6 +1075,7 @@ domain MUST be reflected in:
 | 2026-06-09 | GR-DOC.1–4 | Guardrail catalog canon + hub index + PLATFORM term + INTEGRATIONS §47 vendor matrix |
 | 2026-06-09 | GR-INT.1–3 | M.12 code: adapters, middleware, assembly, tests, CI |
 | 2026-06-09 | GR-INT.FU | Output hooks (AFTER_LLM_OUTPUT/FINALIZATION), chained backends, runtime bridge tests |
+| 2026-06-09 | GR-INT.4 | NeMo opens.py, HTTP smoke tests, CVL L0 merge, lab/legal guardrail toggles, USAGE.md |
 
 ---
 
