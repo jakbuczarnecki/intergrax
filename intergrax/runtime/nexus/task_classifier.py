@@ -107,8 +107,35 @@ class TaskClassifier:
 class ClassifyingTaskClassifier(TaskClassifier):
     """TaskClassifier with registry injected for capability checks."""
 
-    def __init__(self, registry: AgentRegistry) -> None:
+    def __init__(
+        self,
+        registry: AgentRegistry,
+        *,
+        orchestration_trigger_capabilities: frozenset[str] | None = None,
+        pipeline_capability_suffix: str = ".pipeline",
+    ) -> None:
         self._registry = registry
+        self._orchestration_triggers = orchestration_trigger_capabilities or frozenset()
+        self._pipeline_suffix = pipeline_capability_suffix
+
+    def _is_orchestration_capability(self, capability: str) -> bool:
+        from intergrax.runtime.nexus.orchestration_capabilities import is_orchestration_capability
+
+        return is_orchestration_capability(
+            capability,
+            trigger_capabilities=self._orchestration_triggers,
+            pipeline_capability_suffix=self._pipeline_suffix,
+        )
+
+    def _has_capability_support(self, task: Task, capability: str) -> bool:
+        if self._is_orchestration_capability(capability):
+            return True
+        return super()._has_capability_support(task, capability)
+
+    def _is_multi_agent_capability(self, task: Task, capability: str) -> bool:
+        if self._is_orchestration_capability(capability):
+            return False
+        return super()._is_multi_agent_capability(task, capability)
 
     def classify(self, task: Task) -> Task:
         task._registry = self._registry

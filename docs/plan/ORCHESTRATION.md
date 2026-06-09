@@ -1320,7 +1320,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 **Phase register:** [Phase FLOW](plan/ORCHESTRATION.md) · **Band 2aj** · queue [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed) · execution [§6.2aj](#62aj-phase-flow-execution-order-band-2aj--closed-2026-06-07)
 
-**Status:** **Done** (2026-06-07) · **17/18** deliverables Done (**FLOW-8 Deferred**)
+**Status:** **Done** (2026-06-07) · **17/18** deliverables Done (**FLOW-8 Partial** (harness); product §6.3)
 
 > **Note:** Distinct from `guides/AGENT_CREATION_GUIDE.md` Appendix N (agent assembly). This appendix maps **orchestration runtime depth** gaps only.
 
@@ -1337,7 +1337,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | FLOW-GAP-07 | Production-hardening | Medium | FLOW-7 | `MergePolicy` / composer profile | §9 |
 | FLOW-GAP-08 | DX / lifecycle | Low | FLOW-10 | Reserved lifecycle states ADR | §8 |
 | FLOW-GAP-09 | Production-hardening | Medium | FLOW-11 | Pre-plan policy hooks | §5 |
-| FLOW-GAP-10 | Product-proof | Product | FLOW-8 | §42.43 reference Tier-3 app (**Deferred**) | §28 |
+| FLOW-GAP-10 | Product-proof | Harness + Product | FLOW-8 | Harness: `test_orchestration_cfg_simulation.py` **Partial**; Tier-3 §42.43 product **Deferred** §6.3 | §28 |
 | FLOW-GAP-11 | Production-hardening | Medium | FLOW-9 | Multi-agent eval hooks | §25 |
 | FLOW-GAP-12 | Runtime-core | Medium | FLOW-13 | `max_inflight_nodes` profile + factory wire | §9 |
 | FLOW-GAP-13 | Runtime-core | Medium | FLOW-14 | `SubtaskContract` in delegation expansion | §10 |
@@ -1454,20 +1454,22 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ## Phase ORCH-CONFIG — Platform interaction & multi-agent configuration (Band 2ar — in progress)
 
-**Status:** **In progress** — **3/10 Done** (architecture **Done** 2026-06-09 — [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §56)  
+**Status:** **In progress** — **3/10 Done**, **2/10 Partial** (architecture **Done** 2026-06-09 — [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §56)  
 **Prerequisites:** Phase ORCH-STRAT **Done** · Phase H-APP-DOC.1 **Done** · default queue = §6.1 until Band 2ar prioritized  
 **Goal:** Close every gap in §56.11 so **all CFG-* cases** marked ⚠️/❌ become ✅ without runtime forks  
 **Canonical input:** §56.7 case register + §56.11 plan table — do not duplicate elsewhere
+
+**Harness-first rule (2026-06-09):** ORCH-CONFIG validates platform behaviour via **harness integration tests** (`tests/integration/runtime/test_orchestration_cfg_simulation.py`) with abstract stub agents — **not** by implementing Tier-3 business products. Tier-3 reference hosts (FLOW-8 / §6.3) remain product-gated.
 
 **ADR:** [`ADR-FLOW-004`](../adr/ADR-FLOW-004.md) (ORCH-CONFIG.2 seed guard); ORCH-CONFIG.3 → no ADR (suffix convention).
 
 | ID | CFG / scope | Deliverable | Status | Priority | Acceptance |
 |----|-------------|-------------|--------|----------|------------|
-| ORCH-CONFIG.1 | CFG-04 | Rules classifier + `IntentRoute`; LLM path via **COG-3.*** | **Partial** | **Critical** | `classifier_kind=rules`; free-text → capability; engine classifier pending |
-| ORCH-CONFIG.2 | CFG-18 | `ApplicationGraphSpec.trigger_capabilities` + `should_seed` guard | **Done** | **Critical** | ADR-FLOW-004 · unit + dispute_sim gate tests |
+| ORCH-CONFIG.1 | CFG-04 | Rules classifier + `IntentRoute` + orchestration tokens (§56.13) | **Partial** | **Critical** | `classifier_kind=rules`; `orchestration_capabilities.py`; COG-3.2 LLM pending |
+| ORCH-CONFIG.2 | CFG-18 | `ApplicationGraphSpec.trigger_capabilities` + `should_seed` guard | **Done** | **Critical** | ADR-FLOW-004 · `test_graph_spec_to_plan.py` |
 | ORCH-CONFIG.3 | CFG-05+ | Pipeline convention: `*.pipeline` → graph_spec seed (no per-product `TaskPlanner` fork) | **Done** | High | `pipeline_capability_suffix` default `.pipeline` |
 | ORCH-CONFIG.4 | CFG-03, CFG-14 | Scaffold optional interaction intake + queue consumer wiring | Planned | High | `new-application` emits flags; legal host reference |
-| ORCH-CONFIG.5 | CFG-06–08, CFG-20 | Reference Tier-3 3+ node `graph_spec` E2E (aligns FLOW-8) | Deferred | High | §6.3 product gate; gate acceptance |
+| ORCH-CONFIG.5 | CFG-06–08, CFG-20 | Harness CFG simulation + optional Tier-3 product host (FLOW-8) | **Partial** | High | `test_orchestration_cfg_simulation.py`; product host §6.3 |
 | ORCH-CONFIG.6 | CFG-13, CFG-19 | `long_running` profile → task defaults helper / host policy doc | Planned | Medium | Background jobs get checkpoint without per-route boilerplate |
 | ORCH-CONFIG.7 | CFG-16, CFG-20 | `strict` multi-agent preset on `ApplicationEnvironmentProfile` | Planned | Medium | Critic + merge defaults bundled |
 | ORCH-CONFIG.8 | CFG-17 | Swarm runtime — extends ORCH-5.1 | Planned | Medium | D7 pattern gate test |
@@ -1483,6 +1485,18 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | §56.3 dimensions A–E | ORCH-CONFIG.* acceptance criteria |
 | §56.7 CFG register | One ORCH-CONFIG row per ❌/⚠️ case |
 | §56.11 gap table | This phase master register |
+
+**Cross-domain ownership (do not duplicate registers):**
+
+| ORCH-CONFIG | Also in plan |
+|-------------|--------------|
+| ORCH-CONFIG.1 | `REASONING_AND_COGNITION.md` COG-3.1 (**Partial**) · COG-3.2–3.3 (LLM) |
+| ORCH-CONFIG.2 | `TIER3_APPLICATION_ENVIRONMENT.md` H-APP-DOC.2 **Done** |
+| ORCH-CONFIG.4 | `TIER3_APPLICATION_ENVIRONMENT.md` H-APP-DOC.4 |
+| ORCH-CONFIG.5 | `NEXUS_EXECUTION_FLOW.md` FLOW-8 **Partial** (harness sim) |
+| ORCH-CONFIG.8 | Phase ORCH-5.1 (swarm) |
+
+**Harness tests (canonical):** `tests/unit/applications/test_graph_spec_to_plan.py` · `tests/unit/runtime/nexus/test_orchestration_capabilities.py` · `tests/unit/runtime/nexus/test_intent_routing.py` · `tests/integration/runtime/test_orchestration_cfg_simulation.py`
 
 ---
 

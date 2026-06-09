@@ -62,7 +62,7 @@ Intergrax already implements substantial cognition mechanics, but until this dom
 | `EnginePlannerOrchestrator` bridged, not first-class Nexus path | Two planner stacks (`NexusPlan` vs `EnginePlan`) with incomplete unification |
 | Nexus-level decisions lack universal `DecisionRecord` | FAUDIT-COG.1 closed for UAEP steps only; planning phase rationale partial |
 | No explicit reasoning failure taxonomy | Planning parse errors, policy blocks, and runtime failures conflated in ops |
-| Classifier surface is `default` only | No LLM or rules-backed classification profile |
+| Classifier surface is `default` only | **Partial** — `classifier_kind=rules` + `IntentRoute` (ORCH-CONFIG.1); LLM classifier still COG-3.* |
 | Model routing for reasoning not policy-unified | FAUDIT-LLM.1 residual — planner LLM ≠ producer LLM discipline incomplete at Nexus boundary |
 
 RCL closes the **documentation and contract boundary** gap first; runtime depth uplift is tracked in [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_AND_COGNITION.md) Phase COG-DEPTH.
@@ -272,7 +272,7 @@ flowchart TD
 | Classification | lifecycle hook diagnostics | `ops:planning` |
 | | payload includes `classification` | |
 
-**Future (COG-3.*):** LLM-backed classifier, rules classifier, confidence scores on classification.
+**Partial (ORCH-CONFIG.1):** `classifier_kind=rules` + `IntentRoute` on `OrchestrationProfile`. **Future (COG-3.*):** LLM-backed classifier, confidence scores on classification.
 
 ### 9.4 Orchestration routing modes (do not confuse with `TaskClassification`)
 
@@ -297,7 +297,7 @@ RIGHT:  "I have 2 agents → graph_spec DEPENDS_ON chain OR *.pipeline OR engine
 | Only first agent runs | `CAPABILITY_ROUTED` with one matching capability | Add `graph_spec` or use `*.pipeline` |
 | All same-capability agents run in sequence | `MULTI_AGENT` triggered intentionally | Expected only for redundant specialists |
 | Graph ignored | Task carries pre-built `plan_id` | Clear `plan_id` for fresh graph seed |
-| Chat sends free text, wrong agent | No L1 capability; classifier not enabled | Host intent shim or enable COG-3 classifier |
+| Chat sends free text, wrong agent | No L1 capability; classifier not enabled | `classifier_kind=rules` + `IntentRoute`, or host `B1` shim |
 
 **Cross-ref:** full configuration canon (CFG-*, matrices, plan register) — [`ORCHESTRATION.md`](ORCHESTRATION.md) §56 · Tier-3 host summary — [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23.
 
@@ -697,7 +697,8 @@ sequenceDiagram
 | DecisionRecord on UAEP | L3 | Done | FLOW-12 |
 | DecisionRecord on Nexus planning | L1 | Gap | COG-4.* |
 | Prompt Registry on all planners | L2 | Partial | COG-2.* |
-| LLM classifier | L0 | Not started | COG-3.* |
+| Rules classifier (`classifier_kind=rules`) | L2 | **Partial** | ORCH-CONFIG.1 · COG-3.1 |
+| LLM classifier | L0 | Not started | COG-3.2–3.3 |
 | Reasoning failure taxonomy in trace | L1 | Gap | COG-6.* |
 | Model routing for reasoning | L2 | Partial | COG-5.*, FAUDIT-LLM.1 |
 | **Overall RCL (FAUDIT-32 §7)** | **L2** | Partial plan | Phase COG-DEPTH |

@@ -113,7 +113,7 @@ Work **one COG ID per PR** when Band 2am is activated.
 |------|-----|-------|--------|
 | COG1 | COG-1.1–COG-1.5 | 5 | **P0** — Engine planner ↔ Nexus unification |
 | COG2 | COG-2.1–COG-2.4 | 4 | **P0** — Prompt Registry planner prompts |
-| COG3 | COG-3.1–COG-3.3 | 3 | **P1** — Classifier extensions |
+| COG3 | COG-3.1–COG-3.3 | 3 | **P1** — Classifier extensions (**COG-3.1 Partial** via ORCH-CONFIG.1) |
 | COG4 | COG-4.1–COG-4.2 | 2 | **P1** — Planning-phase DecisionRecord |
 | COG5 | COG-5.1–COG-5.3 | 3 | **P1** — ReasoningProfile + routing |
 | COG6 | COG-6.1–COG-6.3 | 3 | **P1** — Failure taxonomy |
@@ -147,7 +147,7 @@ Work **one COG ID per PR** when Band 2am is activated.
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| COG-3.1 | **`classifier_kind` enum expansion** — document `rules` stub or LLM classifier protocol | Planned | Medium | `orchestration_wiring.py` | Wiring error on unknown kind preserved |
+| COG-3.1 | **`classifier_kind=rules`** — `RulesTaskClassifier`, `IntentRoute`, orchestration tokens (ORCH-CONFIG.1) | **Partial** | Medium | `orchestration_wiring.py`, `intent_routing.py` | `test_intent_routing.py`, `test_orchestration_cfg_simulation.py` |
 | COG-3.2 | **Optional LLM classifier** — capability + message → classification with fallback to deterministic | Planned | Medium | `task_classifier.py` | Unit tests; fallback on parse fail |
 | COG-3.3 | **Classification trace enrichment** — confidence + rationale fields on hook payload | Planned | Low | `planning_runner.py` | Trace payload schema test |
 
@@ -188,7 +188,7 @@ Work **one COG ID per PR** when Band 2am is activated.
 | Architecture § | Topic | Task IDs |
 |----------------|--------|----------|
 | §5 Three planes | Plane boundaries | COG-DOC.* |
-| §9 Classification | Classifier extensions | COG-3.* |
+| §9 Classification | Classifier extensions | COG-3.* · ORCH-CONFIG.1 (rules **Partial**) |
 | §9.4 Routing modes | Authoring canon (docs) | COG-DOC.6 **Done** |
 | §10 Nexus planning | Planner unification | COG-1.* |
 | §10.4 LLM planner | Prompt Registry | COG-2.1 |

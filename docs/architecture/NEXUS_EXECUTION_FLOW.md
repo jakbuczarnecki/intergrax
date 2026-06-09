@@ -158,12 +158,14 @@ Every scenario below uses **`UnifiedTaskRunner.run_task()`**. Differences are **
 | Scenario | Host posture | Task creation | Orchestration config | Agent execution |
 |----------|--------------|---------------|----------------------|-----------------|
 | **S1 — Single reactive Q&A** | HTTP/MCP on demand | `POST …/run` builds `Task` with `capability` | `planner_kind=default`, 1 agent | One graph node → UAEP |
-| **S2 — Free-text chat** | Daemon + intake | Slack/HTTP; capability from adapter or classifier (COG-3) | As S1 or pipeline | Same |
-| **S3 — Multi-agent sequential** | On demand | `capability=*.pipeline` or graph product route | `graph_spec` `DEPENDS_ON` chain | Nodes A→B→C sequentially |
+| **S2 — Free-text chat** | Daemon + intake | Slack/HTTP; capability from adapter or classifier | `classifier_kind=rules` (ORCH-CONFIG.1) or COG-3 LLM when done | As S1 or pipeline |
+| **S3 — Multi-agent sequential** | On demand | `capability=*.pipeline` or orchestration token | `graph_spec` `DEPENDS_ON` chain | Nodes A→B→C sequentially |
 | **S4 — Multi-agent parallel** | On demand | One `Task`, graph with independent nodes | `max_parallel_nodes`, `merge_strategy` | Batch gather in `GraphExecutor` |
 | **S5 — Background batch** | Always-on worker | Queue/scheduler enqueues `Task` | `long_running_enabled`, checkpoints | Same graph rules; notify on complete |
 | **S6 — Hybrid daemon** | Always-on + workers | Interactive tasks + cron index jobs | Separate capabilities per job type | Independent Nexus runs per `Task` |
 | **S7 — HITL pause/resume** | Any | Agent `REQUEST_HUMAN` or planning gate | `require_human_approval`, critic L2 | `WAITING_FOR_HUMAN` → resume token → same path |
+
+**Harness proof (CFG-06 / S3):** `tests/integration/runtime/test_orchestration_cfg_simulation.py` · canon [`ORCHESTRATION.md`](ORCHESTRATION.md) §56.13.
 
 ```mermaid
 sequenceDiagram
@@ -1067,7 +1069,7 @@ Honest deltas for plan scheduling. **Closeout phases (ORCH Done) wired bootstrap
 |----------|---------|----------|
 | **Runtime-core** | Blocks correct Harness semantics in production multi-agent | **Closed** (FLOW-1–6, 13–15) |
 | **Production-hardening** | Lab works; product needs richer merge/eval/policy | **Closed** (FLOW-7, 9, 11, 14) |
-| **Product-proof** | Needs Tier-2/Tier-3 product agents, not platform code | **Deferred** (FLOW-8 → §6.3) |
+| **Product-proof** | Harness CFG simulation Done; full Tier-3 product host deferred | **Partial** (ORCH-CONFIG.5 / FLOW-8 harness) · product §6.3 |
 | **DX / documentation** | Authoring ergonomics or doc-only until ADR | **Closed** (FLOW-5, 10, 16, 17) |
 
 ### 23.2 Gap register
@@ -1083,7 +1085,7 @@ Honest deltas for plan scheduling. **Closeout phases (ORCH Done) wired bootstrap
 | FLOW-GAP-07 | `FinalResponseComposer` | **Closed (FLOW-7)** — `MergeStrategy` profile-driven merge | Production-hardening | Medium | §9 |
 | FLOW-GAP-08 | `WAITING_FOR_RESOURCES` / `EXPIRED` | **Closed (FLOW-10)** — [ADR-FLOW-002](adr/ADR-FLOW-002.md) reserved v1 semantics | DX / lifecycle | Low | §8 |
 | FLOW-GAP-09 | Pre-plan LLM policy hooks | **Closed (FLOW-11)** — `evaluate_pre_llm` at planning boundary | Production-hardening | Medium | §5 |
-| FLOW-GAP-10 | Product multi-agent proof | **Deferred (FLOW-8)** — §6.3 product gate | Product-proof | Product | §28 |
+| FLOW-GAP-10 | Product multi-agent proof | **Partial (harness)** — `test_orchestration_cfg_simulation.py` (CFG-06/04/18); Tier-3 §42.43 product host **Deferred** §6.3 | Product-proof | Product | §28 |
 | FLOW-GAP-11 | Evaluator / LLM-judge not mandatory on multi-agent fan-in | **Closed (FLOW-9)** — post-graph eval observation hook in `NexusLoop` | Production-hardening | Medium | §25 |
 | FLOW-GAP-12 | `max_inflight_nodes` not on `OrchestrationProfile` | **Closed (FLOW-13)** — profile field + `nexus_factory` wire | Runtime-core | Medium | §9 |
 | FLOW-GAP-13 | `SubtaskContract` not used in declarative graph | **Closed (FLOW-14)** — `graph_spec_to_plan` uses `SubtaskContract.to_delegation_spec()` | Runtime-core | Medium | §10 |
@@ -1091,7 +1093,7 @@ Honest deltas for plan scheduling. **Closeout phases (ORCH Done) wired bootstrap
 | FLOW-GAP-15 | `MODIFY_PLAN` reserved / undocumented | **Closed (FLOW-16)** — [ADR-FLOW-003](adr/ADR-FLOW-003.md); `MODIFY_PLAN_NOT_SUPPORTED` without handoff | DX | Low | §9 |
 | FLOW-GAP-16 | `MULTI_AGENT` step order fragile | **Closed (FLOW-17)** — `multi_agent_order` on `OrchestrationProfile` | DX | Low | §9 |
 
-**Status (2026-06-07):** Phase FLOW **Done** (17/18); `FLOW-GAP-01`…`09`, `11`…`16` **closed**; `FLOW-GAP-10` → FLOW-8 **Deferred** (§6.3). See [Phase FLOW](../plan/ORCHESTRATION.md).
+**Status (2026-06-09):** Phase FLOW **Done** (17/18 harness); `FLOW-GAP-10` → FLOW-8 **Partial** (harness simulation ORCH-CONFIG.5; product host §6.3). See [Phase ORCH-CONFIG](../plan/ORCHESTRATION.md#phase-orch-config--platform-interaction--multi-agent-configuration-band-2ar--in-progress).
 
 ---
 
@@ -1106,7 +1108,8 @@ Ideal Harness AI ([`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_A
 | Capability | Status |
 |------------|--------|
 | Deterministic `TaskPlanner` + classifier | **Done** — production-lab ready |
-| Declarative `graph_spec` | **Done** (ORCH-2) |
+| Rules classifier (`classifier_kind=rules`) | **Partial** (ORCH-CONFIG.1) |
+| Declarative `graph_spec` + `trigger_capabilities` | **Done** (ORCH-2, ORCH-CONFIG.2, ADR-FLOW-004) |
 | LLM-backed Nexus planner (`planner_kind=engine`) | **Done** (FLOW-1) — `EngineBackedNexusPlanner` |
 | `DecisionRecord` universal per UAEP step | **Done** (FLOW-12) — `DECISION_EMITTED` + `decision_record` payload; gate regression test |
 | Engine planner modules (`engine_planner_orchestrator.py`) | **Bridged** via `nexus_llm_plan_builder.py` |
@@ -1117,7 +1120,7 @@ Harness MVP and new Tier-2 agents remain unblocked. LLM-backed dynamic decomposi
 
 ## 25. Plan traceability matrix
 
-**Status:** **Done** (2026-06-07) — canonical implementation in [`plan/NEXUS_EXECUTION_FLOW.md) [Phase FLOW](#phase-flow--nexus-execution-depth) · closed queue [§6.1aj](../plan/NEXUS_EXECUTION_FLOW.md#61aj-harness-implementation-queue--nexus-execution-depth-closed) · execution [§6.2aj](../plan/NEXUS_EXECUTION_FLOW.md#62aj-phase-flow-execution-order-band-2aj--active-2026-06-07) · traceability **Appendix N (FLOW)** · **FLOW-8 Deferred**.
+**Status:** **Done** (2026-06-09) — canonical implementation in [`plan/NEXUS_EXECUTION_FLOW.md`](../plan/NEXUS_EXECUTION_FLOW.md) Phase FLOW · **FLOW-8 Partial** (harness ORCH-CONFIG.5) · product §6.3 deferred.
 
 ### 25.1 Implementation rows (Phase FLOW — Band 2aj)
 
@@ -1130,7 +1133,7 @@ Harness MVP and new Tier-2 agents remain unblocked. LLM-backed dynamic decomposi
 | FLOW-5 | FLOW-GAP-05 | Wire `AgentGraph.on_error` to `RetryPolicy` | Integration test | Low |
 | FLOW-6 | FLOW-GAP-06 | Strict cycle detection in `ExecutionGraph.batches()` | Cycle → plan error | Medium |
 | FLOW-7 | FLOW-GAP-07 | `MergePolicy` / `FinalResponseComposerProfile` | Profile-driven merge strategies | Medium |
-| FLOW-8 | FLOW-GAP-10 | Reference Tier-3 app implementing §42.43 | 3+ agent graph_spec demo | Product |
+| FLOW-8 | FLOW-GAP-10 | Harness CFG simulation (CFG-06/04/18) + optional Tier-3 §42.43 product host | `test_orchestration_cfg_simulation.py`; product §6.3 | **Partial** |
 | FLOW-9 | FLOW-GAP-11 | Documented evaluator-node pattern + optional post-graph eval hook | Eval registry observation per multi-agent run | Medium |
 | FLOW-10 | FLOW-GAP-08 | Implement or remove reserved lifecycle states | ADR + runner sets state OR enum trim | Low |
 | FLOW-11 | FLOW-GAP-09 | Pre-plan / pre-LLM policy extension points | Hook tests + Appendix H cross-ref | Medium |

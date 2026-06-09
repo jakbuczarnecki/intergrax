@@ -18,7 +18,7 @@ Product teams need declarative control over **when** topology seeding applies wi
 1. Add **`ApplicationGraphSpec.trigger_capabilities: list[str]`** — when non-empty, graph seeding applies **only** when `task.context.capability` matches one of the listed values.
 2. When **`trigger_capabilities` is empty**, retain backward-compatible convention: seed only when capability ends with **`pipeline_capability_suffix`** (default `".pipeline"`).
 3. **`should_seed_plan_from_graph_spec(task, spec)`** is the single guard; `GraphSpecSeedingPlanner` delegates to it before calling `application_graph_spec_to_nexus_plan`.
-4. Orchestration capabilities (e.g. `dispute.pipeline`) are registered on manifest agent bindings for classifier support; graph steps still bind explicit `agent_id` values from the spec.
+3. Orchestration capabilities (``trigger_capabilities`` / ``*.pipeline`` suffix) are **routing tokens** — agents are selected by ``graph_spec`` node ``agent_id``; registry lookup by orchestration token is not required.
 
 **Not chosen:**
 
@@ -36,5 +36,5 @@ Product teams need declarative control over **when** topology seeding applies wi
 ## Compliance (ORCH-CONFIG.2 acceptance)
 
 - Unit tests: `tests/unit/applications/test_graph_spec_to_plan.py`
-- Integration: `applications/dispute_sim_application/dispute_sim_application_tests/test_dispute_sim_pipeline.py`
+- Integration: `tests/integration/runtime/test_orchestration_cfg_simulation.py`
 - Canon updated: `architecture/ORCHESTRATION.md` §56.11

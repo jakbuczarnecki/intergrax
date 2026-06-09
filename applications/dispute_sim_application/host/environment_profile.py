@@ -1,17 +1,12 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Build dispute_sim ApplicationEnvironmentProfile with ORCH-CONFIG wiring."""
+"""Tier-3 environment profile for dispute_sim_application (Phase H-APP.5.5, DX-5.5)."""
 
 from __future__ import annotations
 
-from intergrax.applications.contracts.environment_profile import (
-    ApplicationEnvironmentProfile,
-    OrchestrationProfile,
-)
-from intergrax.applications.contracts.intent_route import IntentRoute
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.integrations.core.binding import IntegrationBinding
 from intergrax.integrations.registry.catalog_manifests import OTEL
-from dispute_sim_application.host.graph_spec import DEFAULT_DISPUTE_SIM_GRAPH
 from dispute_sim_application.host.settings import DisputeSimBackendSettings
 
 
@@ -20,7 +15,7 @@ def build_dispute_sim_environment_profile(
 ) -> ApplicationEnvironmentProfile:
     _ = settings
     profile = ApplicationEnvironmentProfile.product_defaults(
-        skill_bundles=["harness", "legal"],
+        skill_bundles=["harness"],
         profile_id="dispute_sim.product",
     )
     profile.observability_profile.otel_enabled = True
@@ -32,35 +27,4 @@ def build_dispute_sim_environment_profile(
             "options": {**profile.integration_profile.options, OTEL.slug: {}},
         },
     )
-    profile.context_profile = profile.context_profile.model_copy(
-        update={"enable_rag": True, "enable_websearch": True},
-    )
-    profile.graph_spec = DEFAULT_DISPUTE_SIM_GRAPH
-    profile.orchestration_profile = OrchestrationProfile(
-        classifier_kind="rules",
-        merge_strategy="structured_json",
-        intent_routes=[
-            IntentRoute(
-                capability="dispute.pipeline",
-                keywords=[
-                    "podwykonaw",
-                    "pismo",
-                    "odpowied",
-                    "odpisa",
-                    "spór",
-                    "spor",
-                    "zapłat",
-                    "zaplata",
-                    "korespondenc",
-                    "subcontractor",
-                    "payment",
-                    "defect",
-                ],
-            ),
-            IntentRoute(
-                capability="dispute.intake",
-                keywords=["załącz", "zalacz", "index", "materiał", "material", "ingest"],
-            ),
-        ],
-    )
-    return profile.with_harness_memory()
+    return profile

@@ -199,7 +199,7 @@ Free-text user input does **not** implicitly select agents. Routing is explicit 
 |-------|-------|-------------|----------------|
 | **L1 — Client / API contract** | Tier-3 router or API schema | Client knows intent (`dispute.scenario`, `research.pipeline`) | `context.capability`, optional `agent_id` |
 | **L2 — Interaction adapter** | `InteractionIntakeService` + surface adapter | Slack slash command, structured lab JSON | `message` + mapped `capability` from command prefix |
-| **L3 — Tier-1 classifier** | `TaskClassifier` / future LLM classifier (`COG-3.*`) | Chat UX with raw user text; host enables `classifier_kind` | `classification` label; may infer `capability` (planned) |
+| **L3 — Tier-1 classifier** | `TaskClassifier` / `classifier_kind=rules` / future LLM (`COG-3.*`) | Chat UX with raw user text | `classification` + inferred `capability` when rules/LLM enabled |
 | **L4 — Declarative graph** | `ApplicationGraphSpec` + `GraphSpecSeedingPlanner` | Multi-agent product with fixed topology | Plan steps from `graph_spec`; task `capability` selects pipeline entry |
 
 ```mermaid
@@ -269,7 +269,7 @@ should_seed_plan_from_graph_spec(task) is True
 | `DELEGATES_TO` edges | Hierarchical delegation per [ADR-FLOW-001](../adr/ADR-FLOW-001.md) |
 | `merge_strategy` on profile | How parallel/sequential summaries compose for the user |
 
-**Planned (H-APP-DOC.2):** optional `ApplicationGraphSpec.trigger_capabilities: list[str]` — seed graph only when task capability matches (avoids graph override on single-agent API calls). Until implemented, authors use explicit `*.pipeline` capability or separate host routes.
+**Implemented (H-APP-DOC.2 / ORCH-CONFIG.2):** `ApplicationGraphSpec.trigger_capabilities` — seed graph only when task capability matches (avoids graph override on single-agent routes). See ADR-FLOW-004.
 
 ## 23.5 Scenario recipes (configuration templates)
 
@@ -278,9 +278,9 @@ Copy a row when designing a new Tier-3 host. Adjust profile fields; do not fork 
 | Product scenario | Posture | Agents | Coordination pattern | Key profile settings |
 |------------------|---------|--------|----------------------|----------------------|
 | Single Q&A agent | Reactive | 1 | Orchestrator–worker (1 node) | `planner_kind=default`, explicit `capability` on API |
-| Chat with raw user text | Reactive / daemon | 1+ | Classifier → single or pipeline | `classifier_kind` → `engine` when COG-3 done; interim: host maps intent |
+| Chat with raw user text | Reactive / daemon | 1+ | Classifier → single or pipeline | `classifier_kind=rules` + `intent_routes` (ORCH-CONFIG.1); `engine` when COG-3 done |
 | Research: search then summarize | Reactive | 2 | Sequential pipeline | `capability=research.pipeline` **or** `graph_spec` chain |
-| Dispute prep: intake → analyze → strategy → scenario | Reactive / hybrid | 4 | Sequential graph | `graph_spec` + `dispute.pipeline`; `long_running_enabled` for large cases |
+| Dispute prep: intake → analyze → strategy → scenario | Reactive / hybrid | 4 | Sequential graph | `graph_spec` + `*.pipeline` token · product example §6.3 (DSW) · harness: CFG-06 sim |
 | Parallel doc review shards | Background + reactive | N | Peer-to-peer (parallel batch) | `graph_spec` without inter-node `depends_on`; `max_parallel_nodes` |
 | PM delegates to specialists | Reactive | 3+ | Hierarchical | `DELEGATES_TO` edges + `max_delegation_depth` |
 | Quality gate before answer | Reactive | 2+ | Evaluator-loop | CVL hooks + `CoordinationPattern.EVALUATOR_LOOP` |

@@ -31,6 +31,7 @@
 | [§54](#54-maturity-and-gap-register) | Maturity scorecard |
 | [§55](#55-interaction-posture--orchestration-matrix) | Posture × pattern quick matrix |
 | [§56](#56-platform-interaction--multi-agent-configuration-canon) | **Master configuration canon** — all cases, matrices, plan input |
+| [§56.13](#5613-orchestration-capability-tokens) | Orchestration tokens vs agent capabilities |
 
 **Authoring rule:** Tier-3 host design starts at **§56**; runtime step-by-step truth remains in **NEXUS_EXECUTION_FLOW**; posture/host wiring summary in **TIER3 §23**.
 
@@ -710,7 +711,7 @@ Planning depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9�
 | Active-active node redundancy | L0 | §52.1 | Not planned — use retry + ECP replicas |
 | Infra elastic scale | L1 | cross-ref ECP | Phase ECP-DEPTH |
 | Product multi-agent demos | L2 deferred | §42.43 | Phase K / FLOW-8 |
-| Platform configuration canon (all CFG cases) | L3 doc / L2 impl | §56 | ORCH-CONFIG planned |
+| Platform configuration canon (all CFG cases) | L3 doc / L2 impl | §56 | ORCH-CONFIG **in progress** (3 Done, 2 Partial) |
 
 **Audit alignment:** AUDIT_MAP §9 (orchestration/graph) · §10 (subagents/multi-agent) — strategy rows consolidated in §50–§53; **configuration completeness §56**.
 
@@ -794,7 +795,7 @@ Both dimensions apply to the **same** `NexusLoop.handle_task()` path.
 **Status:** Canonical architecture (2026-06-09) — **single source of truth** for configurable platform behaviour across postures, routing layers, agent counts, and coordination strategies.  
 **Plan (1:1):** [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md) Phase **ORCH-CONFIG** · cross-domain: [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) H-APP-DOC.* · [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_AND_COGNITION.md) COG-3.*  
 **Runtime narrative:** [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §3.1 · **Host posture summary:** [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23  
-**ADR:** No new ADR for this section — consolidates existing FLOW/ORCH/ADR-FLOW-* contracts; implementation gaps scheduled in ORCH-CONFIG.
+**ADR:** [`ADR-FLOW-004`](../../adr/ADR-FLOW-004.md) for seed guard (ORCH-CONFIG.2); other gaps scheduled in ORCH-CONFIG.
 
 ## 56.1 Why this section lives in ORCHESTRATION (not a new doc)
 
@@ -816,7 +817,7 @@ Both dimensions apply to the **same** `NexusLoop.handle_task()` path.
 4. intergrax/ MUST NOT import agents/ or applications/
 5. Free-text user input does NOT imply capability unless L2/L3/B1 explicitly sets it
 6. MULTI_AGENT classification ≠ cross-role pipeline (see §56.4)
-7. graph_spec seeding today applies to ALL tasks when nodes non-empty (until ORCH-CONFIG.2)
+7. graph_spec seeding respects ``trigger_capabilities`` / ``*.pipeline`` suffix (ORCH-CONFIG.2 — ADR-FLOW-004)
 ```
 
 ```mermaid
@@ -870,7 +871,7 @@ Authors combine **one value per dimension** (where applicable). Dimensions are o
 |------|------|-------|-------|------------------|
 | `B1` | API contract | Tier-3 router / schema | Typed request | `context.capability`, optional `agent_id` |
 | `B2` | Interaction adapter | `InteractionIntakeService` | Slash command / vendor JSON | `message` + mapped `capability` |
-| `B3` | LLM/rules classifier | Tier-1 (`COG-3.*`) | Raw `message` | Inferred `capability` / classification (**planned**) |
+| `B3` | LLM/rules classifier | Tier-1 (`COG-3.*` + ORCH-CONFIG.1) | Raw `message` | Inferred `capability` via `IntentRoute` (**rules Partial**; LLM planned) |
 | `B4` | Declarative graph | `GraphSpecSeedingPlanner` | `graph_spec` on profile | `NexusPlan` steps from topology |
 
 **Minimum routing by UX:**
@@ -954,7 +955,7 @@ flowchart TD
 
 1. Cross-role pipeline → `C3` or `C4` or `C5` — **never** `C2` alone.
 2. `C2` only when multiple agents share one capability (load-sharing / ensemble).
-3. `B4` with `graph_spec.nodes` today seeds **every** task — use separate routes or wait for ORCH-CONFIG.2 `trigger_capabilities`.
+3. `B4` with `graph_spec.nodes` seeds only when capability matches ``trigger_capabilities`` or ``*.pipeline`` suffix (ORCH-CONFIG.2).
 
 ## 56.5 Master matrix — agent count × coordination pattern
 
@@ -991,7 +992,7 @@ Each case is a **canonical product configuration**. Implementation plan rows map
 | **CFG-03** | Slack slash → one agent | A1/A2 | B2 | C1 | D1 | E0 | ⚠️ Partial | `interaction_wiring` — not all hosts |
 | **CFG-04** | Free-text chat → auto route | A1/A2 | B3 | C1/C3/C5 | D1/D2 | E0 | ⚠️ Partial | `classifier_kind=rules` + `IntentRoute` (ORCH-CONFIG.1); LLM via COG-3.* pending |
 | **CFG-05** | Two-agent pipeline (research) | A1 | B1 | C4 | D2 | E0 | ✅ Done | `research.pipeline` in `TaskPlanner` |
-| **CFG-06** | Two-agent sequential graph | A1 | B1+B4 | C3 | D2 | E0 | ✅ Done | `dispute_sim_application` + `graph_spec` + gate tests |
+| **CFG-06** | Two-agent sequential graph | A1 | B1+B4 | C3 | D2 | E0 | ✅ Done | `graph_spec` + harness CFG simulation (`test_orchestration_cfg_simulation.py`) |
 | **CFG-07** | N-agent sequential graph | A1/A3 | B1+B4 | C3 | D2 | E0/E1 | ⚠️ Partial | `graph_spec_to_plan`, acceptance 02 |
 | **CFG-08** | N-agent parallel graph | A1 | B1+B4 | C3 | D3 | E0 | ⚠️ Partial | `ExecutionGraph.batches`, acceptance 03 |
 | **CFG-09** | Hierarchical delegation | A1 | B1+B4 | C3+C6 | D4 | E0 | ✅ Done | ADR-FLOW-001, `DELEGATES_TO` |
@@ -1024,13 +1025,16 @@ Request (B1):
   { "capability": "my_app.pipeline", "message": "...", "metadata": { "case_id": "…" } }
 
 Nexus path:
-  Classify → CAPABILITY_ROUTED (one cap) or MULTI_AGENT if misconfigured
+  Classify → CAPABILITY_ROUTED (orchestration token; not MULTI_AGENT ensemble)
   GraphSpecSeedingPlanner → 2 PlanSteps with depends_on
   GraphExecutor: node docs → ContextManager.record → node legal_web
   FinalResponseComposer → merged answer
-```
 
-**Until ORCH-CONFIG.2:** use dedicated route or `my_app.pipeline` capability so operators know graph seeded intentionally (CFG-18 avoidance).
+Orchestration capabilities (``trigger_capabilities`` / ``*.pipeline`` suffix) are routing tokens —
+they need not appear on agent contracts; ``GraphSpecSeedingPlanner`` binds ``agent_id`` from the graph.
+
+Harness proof: ``tests/integration/runtime/test_orchestration_cfg_simulation.py``.
+```
 
 ## 56.8 OrchestrationProfile + related fields — per case
 
@@ -1083,11 +1087,11 @@ Honest platform readiness derived from §56.7. **This table is the direct input 
 
 | Plan ID | CFG / gap | Deliverable | Priority | Status | Unblocks |
 |---------|-----------|-------------|----------|--------|----------|
-| **ORCH-CONFIG.1** | CFG-04 | Rules classifier + `IntentRoute` (`classifier_kind=rules`); LLM path via COG-3.* | **Critical** | **Partial** | Free-text → capability (rules); engine classifier pending |
+| **ORCH-CONFIG.1** | CFG-04 | Rules classifier + `IntentRoute` + orchestration tokens (§56.13) | **Critical** | **Partial** | `orchestration_capabilities.py`; rules path; LLM/COG-3 pending |
 | **ORCH-CONFIG.2** | CFG-18 | `ApplicationGraphSpec.trigger_capabilities` + seed guard | **Critical** | **Done** | ADR-FLOW-004 · `test_graph_spec_to_plan.py` |
 | **ORCH-CONFIG.3** | CFG-05 generalization | `*.pipeline` suffix → graph_spec seed (no `TaskPlanner` fork) | High | **Done** | `pipeline_capability_suffix` default `.pipeline` |
 | **ORCH-CONFIG.4** | CFG-03, CFG-14 | Scaffold: optional interaction intake + queue consumer templates | High | Planned | Consistent Tier-3 surfaces |
-| **ORCH-CONFIG.5** | CFG-06–08, CFG-20 | Reference Tier-3 host with 3+ node `graph_spec` + gate E2E (FLOW-8) | High | Deferred §6.3 | Product proof |
+| **ORCH-CONFIG.5** | CFG-06–08, CFG-20 | Reference Tier-3 host with 3+ node `graph_spec` + gate E2E (FLOW-8) | High | **Partial** | Harness simulation tests; full product host deferred §6.3 |
 | **ORCH-CONFIG.6** | CFG-13, CFG-19 | Document + helper: profile `long_running_enabled` → default task flag policy | Medium | Planned | Background job ergonomics |
 | **ORCH-CONFIG.7** | CFG-16, CFG-20 | `strict` profile preset: critic + merge defaults for multi-agent | Medium | Planned | Production semantic completion |
 | **ORCH-CONFIG.8** | CFG-17 | Swarm runtime (extends ORCH-5.1) | Medium | Planned | D7 pattern |
@@ -1148,11 +1152,34 @@ flowchart LR
     end
 ```
 
-## 56.13 Author checklist (before shipping a Tier-3 host)
+## 56.13 Orchestration capability tokens
+
+Orchestration capabilities are **routing labels** for graph seeding and rules classification — **not** domain capabilities on agent contracts.
+
+| Concept | Example | Registry lookup | Graph binding |
+|---------|---------|-----------------|---------------|
+| **Orchestration token** | `my_app.pipeline`, `acceptance.harness.pipeline` | **Not required** on agents | `GraphSpecSeedingPlanner` uses `graph_spec.nodes[].agent_id` |
+| **Agent capability** | `evidence.analyze`, `echo.basic` | Required for single-agent routing | `AgentRouter` / `TaskPlanner` default path |
+
+**Module:** `intergrax/runtime/nexus/orchestration_capabilities.py`  
+**Classifier:** `ClassifyingTaskClassifier` accepts tokens from `trigger_capabilities` and `pipeline_capability_suffix` without `registry.find_by_capability`.  
+**Profile:** `OrchestrationProfile.intent_routes` maps free text → orchestration token (rules path).
+
+```text
+Free text → IntentRoute → acceptance.harness.pipeline (token)
+         → classify: CAPABILITY_ROUTED (supported without agent registry hit)
+         → GraphSpecSeedingPlanner → PlanStep(agent_id=evidence_agent) → PlanStep(agent_id=response_agent)
+         → GraphExecutor routes by explicit agent_id on each node
+```
+
+**Harness proof:** `tests/integration/runtime/test_orchestration_cfg_simulation.py` (abstract stubs — no Tier-3 product).  
+**ADR:** seed guard — [`ADR-FLOW-004`](../adr/ADR-FLOW-004.md).
+
+## 56.14 Author checklist (before shipping a Tier-3 host)
 
 1. Pick **CFG ID** from §56.7 (or combine explicitly — document in product `ARCHITECTURE.md`).
 2. Set **Dimension A** posture — wire surfaces from §56.6.
-3. Set **Dimension B** routing — never ship free-text without `B1` shim or `B3`.
+3. Set **Dimension B** routing — never ship free-text without `B3` (`classifier_kind=rules` + `IntentRoute`) or explicit `B1` capability.
 4. For N>1: choose **C3/C4/C5** — not `C2` unless same-capability ensemble.
 5. Draw **graph_spec** for fixed topology; set `merge_strategy` for N>1.
 6. Apply **E*** governance for production (`strict` + critic for CFG-20 class).

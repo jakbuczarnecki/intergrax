@@ -12,7 +12,7 @@ class DisputeSimRunRequestV1(BaseModel):
     user_id: str = "default-user"
     session_id: Optional[str] = None
     message: str = Field(min_length=1)
-    capability: Optional[str] = None
+    capability: str = Field(min_length=1)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 

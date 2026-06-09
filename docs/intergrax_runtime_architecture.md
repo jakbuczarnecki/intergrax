@@ -88,3 +88,16 @@ Execution: [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EX
 Full audit procedure: [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md).
 
 Platform docs do not replace `agents/*/ARCHITECTURE.md` or `applications/*/ARCHITECTURE.md`.
+
+---
+
+## ADRs (harness — selected)
+
+| ADR | Topic |
+|-----|-------|
+| [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md) | Declarative delegation (`DELEGATES_TO`) |
+| [`adr/ADR-FLOW-002.md`](adr/ADR-FLOW-002.md) | Reserved lifecycle states |
+| [`adr/ADR-FLOW-003.md`](adr/ADR-FLOW-003.md) | `MODIFY_PLAN` semantics |
+| [`adr/ADR-FLOW-004.md`](adr/ADR-FLOW-004.md) | Graph spec seed guard (`trigger_capabilities`) |
+
+**Platform configuration canon (CFG-*):** [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §56 · implementation [`plan/ORCHESTRATION.md`](plan/ORCHESTRATION.md) Phase **ORCH-CONFIG**.

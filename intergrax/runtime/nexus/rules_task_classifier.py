@@ -23,8 +23,14 @@ class RulesTaskClassifier:
         registry: AgentRegistry,
         *,
         intent_routes: list[IntentRoute] | None = None,
+        orchestration_trigger_capabilities: frozenset[str] | None = None,
+        pipeline_capability_suffix: str = ".pipeline",
     ) -> None:
-        self._inner = ClassifyingTaskClassifier(registry)
+        self._inner = ClassifyingTaskClassifier(
+            registry,
+            orchestration_trigger_capabilities=orchestration_trigger_capabilities,
+            pipeline_capability_suffix=pipeline_capability_suffix,
+        )
         self._routes = list(intent_routes or [])
 
     def classify(self, task: Task) -> Task:

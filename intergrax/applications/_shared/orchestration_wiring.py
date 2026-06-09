@@ -15,6 +15,9 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
 from intergrax.contracts.orchestration_enums import MergeStrategy, MultiAgentOrder
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.runtime.nexus.orchestration_capabilities import (
+    orchestration_capabilities_from_graph_spec,
+)
 from intergrax.runtime.nexus.planning.nexus_llm_plan_builder import build_nexus_plan_from_llm
 from intergrax.runtime.nexus.planning.nexus_planner_protocol import NexusTaskPlannerProtocol
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, TaskPlanner
@@ -172,12 +175,24 @@ def resolve_nexus_task_classifier(
 ) -> NexusTaskClassifierProtocol:
     """Map ``OrchestrationProfile.classifier_kind`` to a classifier implementation."""
     kind = _normalize_classifier_kind(env.orchestration_profile.classifier_kind)
+    orch_triggers = orchestration_capabilities_from_graph_spec(env.graph_spec)
+    pipeline_suffix = (
+        env.graph_spec.pipeline_capability_suffix
+        if env.graph_spec is not None
+        else ".pipeline"
+    )
     if kind is NexusClassifierKind.DEFAULT:
-        return ClassifyingTaskClassifier(registry)
+        return ClassifyingTaskClassifier(
+            registry,
+            orchestration_trigger_capabilities=orch_triggers,
+            pipeline_capability_suffix=pipeline_suffix,
+        )
     if kind is NexusClassifierKind.RULES:
         return RulesTaskClassifier(
             registry,
             intent_routes=list(env.orchestration_profile.intent_routes),
+            orchestration_trigger_capabilities=orch_triggers,
+            pipeline_capability_suffix=pipeline_suffix,
         )
     raise OrchestrationWiringError(f"Unhandled classifier_kind: {kind.value}")
 
