@@ -2,9 +2,11 @@
 # Intergrax framework – proprietary and confidential.
 #
 # CI profiles:
-#   push (feature branches) — fast: tests/unit -m gate + governance scripts (~1 min)
-#   push (main), pull_request, workflow_dispatch — full: gate + harness + Phase V
+#   pull_request, workflow_dispatch (full) — gate tests + parallel governance + closeout + harness (~5–7 min)
+#   push (main only) — same full profile; W-OPS + catalog exports run on main only
+#   workflow_dispatch (fast) — unit gate + governance (~4 min)
 #
+# Feature-branch pushes do not trigger CI (avoids duplicate runs when a PR is open).
 # Gate marker (`-m gate`) selects deterministic, network-free regression tests.
 # Harness job runs only non-gate harness-depth tests (gate-covered paths omitted).
 #
@@ -14,6 +16,7 @@ name: Regression gate
 
 on:
   push:
+    branches: [main]
     paths-ignore:
       - "docs/**"
       - "**/*.md"
@@ -30,7 +33,7 @@ on:
 
 concurrency:
   group: regression-gate-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -40,14 +43,8 @@ env:
 jobs:
   fast-gate:
     if: >-
-      (
-        github.event_name == 'push' &&
-        github.ref != 'refs/heads/main'
-      ) ||
-      (
-        github.event_name == 'workflow_dispatch' &&
-        github.event.inputs.profile == 'fast'
-      )
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.profile == 'fast'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -67,7 +64,7 @@ jobs:
       - name: Unit regression gate
         run: uv run pytest tests/unit -m gate -n auto -q --tb=line
 
-      - name: Governance import audits
+      - name: Governance audits
         run: >-
           uv run python scripts/check_agents_vendor_imports.py
           && uv run python scripts/check_production_chat_agent_imports.py
@@ -89,8 +86,9 @@ jobs:
           && uv run python scripts/check_plugin_catalog.py
           && uv run python scripts/check_scaffold_harness_alignment.py
           && uv run python scripts/check_agents_no_tier3_imports.py
+          && uv run python scripts/check_docs_domain_pairs.py
 
-  gate:
+  gate-tests:
     if: >-
       github.event_name == 'pull_request' ||
       github.ref == 'refs/heads/main' ||
@@ -99,7 +97,7 @@ jobs:
         github.event.inputs.profile != 'fast'
       )
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -126,7 +124,31 @@ jobs:
           agents/signoff_probe
           -m gate -n auto -q --tb=line
 
-      - name: Governance import audits
+  gate-governance-tier:
+    if: >-
+      github.event_name == 'pull_request' ||
+      github.ref == 'refs/heads/main' ||
+      (
+        github.event_name == 'workflow_dispatch' &&
+        github.event.inputs.profile != 'fast'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install dependencies (CI minimal)
+        run: uv sync --extra dev-ci --frozen
+
+      - name: Tier boundary and registry audits
         run: >-
           uv run python scripts/check_agents_vendor_imports.py
           && uv run python scripts/check_production_chat_agent_imports.py
@@ -135,7 +157,41 @@ jobs:
           && uv run python scripts/check_legacy_modules_removed.py
           && uv run python scripts/check_agent_skill_resolution.py
           && uv run python scripts/check_harness_registry_resolution.py
-          && uv run python scripts/check_harness_capability_graph_wiring.py
+          && uv run python scripts/check_agent_registry_bypass.py
+          && uv run python scripts/check_langgraph_not_required.py
+          && uv run python scripts/check_agents_no_tier3_imports.py
+          && uv run python scripts/check_docs_domain_pairs.py
+          && uv run python scripts/check_scaffold_harness_alignment.py
+          && uv run python scripts/check_plugin_catalog.py
+          && uv run python scripts/check_legacy_tool_plan_booleans.py
+
+  gate-governance-wiring:
+    if: >-
+      github.event_name == 'pull_request' ||
+      github.ref == 'refs/heads/main' ||
+      (
+        github.event_name == 'workflow_dispatch' &&
+        github.event.inputs.profile != 'fast'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install dependencies (CI minimal)
+        run: uv sync --extra dev-ci --frozen
+
+      - name: Harness wiring and observability audits
+        run: >-
+          uv run python scripts/check_harness_capability_graph_wiring.py
           && uv run python scripts/check_harness_observability_wiring.py
           && uv run python scripts/check_observability_gates.py
           && uv run python scripts/check_harness_reliability_wiring.py
@@ -144,15 +200,40 @@ jobs:
           && uv run python scripts/check_harness_security_promote_gate.py
           && uv run python scripts/check_harness_cost_wiring.py
           && uv run python scripts/check_harness_evaluation_wiring.py
-          && uv run python scripts/check_legacy_tool_plan_booleans.py
-          && uv run python scripts/check_plugin_catalog.py
-          && uv run python scripts/check_agent_registry_bypass.py
-          && uv run python scripts/check_scaffold_harness_alignment.py
-          && uv run python scripts/check_langgraph_not_required.py
-          && uv run python scripts/check_agents_no_tier3_imports.py
           && uv run intergrax doctor --ci
-          && uv run python scripts/export_harness_spec_schemas.py
-          && uv run python scripts/export_capability_catalog_feed.py
+
+  gate-closeout:
+    needs:
+      - gate-tests
+      - gate-governance-tier
+      - gate-governance-wiring
+    if: >-
+      (
+        github.event_name == 'pull_request' ||
+        github.ref == 'refs/heads/main' ||
+        (
+          github.event_name == 'workflow_dispatch' &&
+          github.event.inputs.profile != 'fast'
+        )
+      ) &&
+      needs.gate-tests.result == 'success' &&
+      needs.gate-governance-tier.result == 'success' &&
+      needs.gate-governance-wiring.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install dependencies (CI minimal)
+        run: uv sync --extra dev-ci --frozen
 
       - name: Phase V architecture closeout gate
         run: uv run python scripts/phase_v_closeout_gate.py --enforce --enforce-l4
@@ -160,8 +241,17 @@ jobs:
       - name: Phase W-ADAPT runtime L4 closeout gate
         run: uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
 
-      - name: Phase W-OPS operational evidence (non-enforcing)
+      - name: Phase W-OPS operational evidence (main only, non-enforcing)
+        if: github.ref == 'refs/heads/main'
         run: uv run python scripts/phase_w_ops_evidence.py
+
+      - name: Export harness spec schemas (main only)
+        if: github.ref == 'refs/heads/main'
+        run: uv run python scripts/export_harness_spec_schemas.py
+
+      - name: Export capability catalog feed (main only)
+        if: github.ref == 'refs/heads/main'
+        run: uv run python scripts/export_capability_catalog_feed.py
 
   harness:
     if: >-
