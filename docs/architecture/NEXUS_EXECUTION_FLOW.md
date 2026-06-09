@@ -193,7 +193,7 @@ sequenceDiagram
 | Tier-2 agent instances in registry | Registered at bootstrap | Executed per graph node |
 | Background index / queue consumer | Separate `Task` triggers | N/A |
 
-**Routing:** see [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23.3 · classification modes [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9.4 · pattern matrix [`ORCHESTRATION.md`](ORCHESTRATION.md) §55.
+**Routing:** configuration cases **CFG-*** [`ORCHESTRATION.md`](ORCHESTRATION.md) §56.7 · Tier-3 summary [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23 · routing modes [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9.4.
 
 **Completion:** structural validation (`non_empty_summary`) is always applied; semantic completion (critic, HITL) is profile-driven — [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md).
 

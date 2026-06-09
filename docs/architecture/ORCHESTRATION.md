@@ -13,7 +13,7 @@
 
 | Document | Role |
 |----------|------|
-| **This file (`ORCHESTRATION.md`)** | Orchestration **manifest** + **execution strategy catalog** (§50–§55) |
+| **This file (`ORCHESTRATION.md`)** | Orchestration **manifest** + strategy catalog (§50–§55) + **platform configuration canon** (§56) |
 | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) | **Runtime narrative** — sequence diagrams, UC-*, edge cases, code paths |
 | [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) | Classification, planning, agent topology in plans |
 | [`guides/AGENT_CREATION_GUIDE.md` Appendix I](guides/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane) | Author control plane (`OrchestrationProfile`, wiring) |
@@ -29,7 +29,10 @@
 | [§52](#52-resilience-in-orchestration) | Retry, checkpoint, failover, partial |
 | [§53](#53-specialization-and-agent-collaboration) | Capability routing, delegation, handoff |
 | [§54](#54-maturity-and-gap-register) | Maturity scorecard |
-| [§55](#55-interaction-posture--orchestration-matrix) | Posture × pattern configuration matrix |
+| [§55](#55-interaction-posture--orchestration-matrix) | Posture × pattern quick matrix |
+| [§56](#56-platform-interaction--multi-agent-configuration-canon) | **Master configuration canon** — all cases, matrices, plan input |
+
+**Authoring rule:** Tier-3 host design starts at **§56**; runtime step-by-step truth remains in **NEXUS_EXECUTION_FLOW**; posture/host wiring summary in **TIER3 §23**.
 
 ---
 
@@ -707,10 +710,11 @@ Planning depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9�
 | Active-active node redundancy | L0 | §52.1 | Not planned — use retry + ECP replicas |
 | Infra elastic scale | L1 | cross-ref ECP | Phase ECP-DEPTH |
 | Product multi-agent demos | L2 deferred | §42.43 | Phase K / FLOW-8 |
+| Platform configuration canon (all CFG cases) | L3 doc / L2 impl | §56 | ORCH-CONFIG planned |
 
-**Audit alignment:** AUDIT_MAP §9 (orchestration/graph) · §10 (subagents/multi-agent) — strategy rows consolidated in §50–§53.
+**Audit alignment:** AUDIT_MAP §9 (orchestration/graph) · §10 (subagents/multi-agent) — strategy rows consolidated in §50–§53; **configuration completeness §56**.
 
-**Plan backlog:** [Phase ORCH-STRAT](plan/ORCHESTRATION.md) (docs Done) · [Phase ORCH-5](plan/ORCHESTRATION.md) (runtime gaps).
+**Plan backlog:** [Phase ORCH-STRAT](plan/ORCHESTRATION.md) (docs Done) · [Phase ORCH-CONFIG](plan/ORCHESTRATION.md) (§56 gaps) · [Phase ORCH-5](plan/ORCHESTRATION.md) (runtime depth).
 
 ---
 
@@ -781,7 +785,378 @@ Both dimensions apply to the **same** `NexusLoop.handle_task()` path.
 | One host route without `capability` for production chat | Falls through to `SINGLE_AGENT_DEFAULT` | L1 explicit cap or L3 classifier (COG-3) |
 | Parallel nodes without merge strategy | User gets opaque multi-block text | Set `merge_strategy`; plan ORCH-5.4 semantic merge |
 
-**Plan:** [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md) ORCH-DOC.3 · posture recipes in H-APP-DOC.
+**Plan:** [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md) ORCH-DOC.3 · full implementation register **Phase ORCH-CONFIG** (from §56.11).
+
+---
+
+# 56. Platform Interaction & Multi-Agent Configuration Canon
+
+**Status:** Canonical architecture (2026-06-09) — **single source of truth** for configurable platform behaviour across postures, routing layers, agent counts, and coordination strategies.  
+**Plan (1:1):** [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md) Phase **ORCH-CONFIG** · cross-domain: [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) H-APP-DOC.* · [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_AND_COGNITION.md) COG-3.*  
+**Runtime narrative:** [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §3.1 · **Host posture summary:** [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23  
+**ADR:** No new ADR for this section — consolidates existing FLOW/ORCH/ADR-FLOW-* contracts; implementation gaps scheduled in ORCH-CONFIG.
+
+## 56.1 Why this section lives in ORCHESTRATION (not a new doc)
+
+| Topic | Owner doc | Rationale |
+|-------|-----------|-----------|
+| **When** work enters (posture, intake) | Tier-3 host + §56 posture dimension | Surfaces normalize to `Task`; orchestration owns the lifecycle after intake |
+| **How** agents cooperate (pattern, graph) | **This section (ORCHESTRATION)** | Nexus graph, planner, classifier, merge — Tier-1 orchestration plane |
+| **Who** routes (capability, classifier) | §56 + [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9 | Classification constrains planner; routing modes documented in both |
+| **Step-by-step execution** | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) | Sequence diagrams, code paths — not duplicated here |
+
+**Do not create a parallel guide.** Product authors read **§56 first**, then Tier-3 §23 for host checklist, then FLOW for debugging.
+
+## 56.2 Platform invariants (never violate)
+
+```text
+1. Every unit of work → Task → UnifiedTaskRunner → NexusLoop.handle_task()
+2. Agents never call agents — collaboration via ExecutionGraph + SharedTaskContext
+3. Tier-3 composes profiles and surfaces; Tier-1 owns global loop; Tier-2 owns UAEP steps
+4. intergrax/ MUST NOT import agents/ or applications/
+5. Free-text user input does NOT imply capability unless L2/L3/B1 explicitly sets it
+6. MULTI_AGENT classification ≠ cross-role pipeline (see §56.4)
+7. graph_spec seeding today applies to ALL tasks when nodes non-empty (until ORCH-CONFIG.2)
+```
+
+```mermaid
+flowchart TB
+    subgraph Surfaces["Tier-3 surfaces (any posture)"]
+        HTTP["HTTP / MCP"]
+        INT["Slack / Teams intake"]
+        Q["Queue / scheduler"]
+    end
+    subgraph Normalize["Normalization"]
+        TE["TaskEnvelope → Task"]
+    end
+    subgraph T1["Tier-1 Nexus (same for all)"]
+        INTK["IntakeRunner"]
+        CLS["Classifier"]
+        PLN["Planner + graph_spec seed"]
+        GR["GraphExecutor"]
+        FIN["FinalResponseComposer"]
+    end
+    subgraph T2["Tier-2 agents (on demand)"]
+        A1["Agent nodes"]
+        A2["Agent nodes"]
+        AN["Agent nodes …"]
+    end
+    HTTP --> TE
+    INT --> TE
+    Q --> TE
+    TE --> INTK --> CLS --> PLN --> GR
+    GR --> A1
+    GR --> A2
+    GR --> AN
+    GR --> FIN
+```
+
+## 56.3 Configuration dimensions (complete catalog)
+
+Authors combine **one value per dimension** (where applicable). Dimensions are orthogonal.
+
+### Dimension A — Interaction posture (when)
+
+| Code | Name | Host process | Task trigger | Required host wiring |
+|------|------|--------------|--------------|----------------------|
+| `A1` | Reactive on-demand | Up on demand or idle daemon | Per user/API message | `POST …/run` or MCP tool |
+| `A2` | Always-on daemon | Continuous | Same as A1 + maintenance jobs | uvicorn/systemd + health |
+| `A3` | Scheduled / queued | Worker process | Cron, queue consumer, webhook enqueue | `queueing/` consumer + optional notify |
+| `A4` | Hybrid | Daemon + workers | Interactive + background `Task`s | A2 + A3 combined |
+
+### Dimension B — Routing layer (who picks capability/agent)
+
+| Code | Name | Owner | Input | Output on `Task` |
+|------|------|-------|-------|------------------|
+| `B1` | API contract | Tier-3 router / schema | Typed request | `context.capability`, optional `agent_id` |
+| `B2` | Interaction adapter | `InteractionIntakeService` | Slash command / vendor JSON | `message` + mapped `capability` |
+| `B3` | LLM/rules classifier | Tier-1 (`COG-3.*`) | Raw `message` | Inferred `capability` / classification (**planned**) |
+| `B4` | Declarative graph | `GraphSpecSeedingPlanner` | `graph_spec` on profile | `NexusPlan` steps from topology |
+
+**Minimum routing by UX:**
+
+| UX | Minimum B | Never rely on alone |
+|----|-----------|---------------------|
+| Typed REST | `B1` | Default agent |
+| Slash command | `B2` | `SINGLE_AGENT_DEFAULT` |
+| Free-text chat | `B3` (or host shim = `B1`) | Classifier off + no capability |
+| Fixed multi-agent product | `B1` `*.pipeline` + `B4` | `MULTI_AGENT` label |
+
+### Dimension C — Multi-agent composition mode
+
+| Code | Name | Mechanism | Agent roles |
+|------|------|-----------|-------------|
+| `C1` | Single-agent | 1 `PlanStep` | One specialist |
+| `C2` | Same-capability multi | `TaskClassification.MULTI_AGENT` | N agents, **identical** capability tag |
+| `C3` | Declarative graph | `ApplicationGraphSpec` | Distinct agents, edges define order |
+| `C4` | Registered pipeline | `TaskPlanner` rule for `*.pipeline` | Product-specific sequential steps |
+| `C5` | Engine-planned | `planner_kind=engine` | LLM emits steps from registry |
+| `C6` | Dynamic handoff | `AgentDecision.HANDOFF` | Runtime inserts graph node |
+
+### Dimension D — Coordination pattern (how nodes cooperate)
+
+| Code | Pattern | Graph shape | `CoordinationPattern` |
+|------|---------|-------------|------------------------|
+| `D1` | Orchestrator–worker | 1 node | — |
+| `D2` | Sequential cooperation | `DEPENDS_ON` chain A→B→…→N | ORCHESTRATOR_WORKER chain |
+| `D3` | Peer-to-peer parallel | N nodes, no inter-node `depends_on` | PEER_TO_PEER |
+| `D4` | Hierarchical delegate | `DELEGATES_TO` parent→child | HIERARCHICAL |
+| `D5` | Supervisor–worker | HITL + policy/critic gates | SUPERVISOR_WORKER |
+| `D6` | Evaluator-loop | CVL revise before finalize | EVALUATOR_LOOP |
+| `D7` | Swarm | Parallel under budget envelope | SWARM (**partial runtime**) |
+
+### Dimension E — Governance / completion (optional overlay)
+
+| Code | Policy | Profile / task flags |
+|------|--------|----------------------|
+| `E0` | Structural only | Default — `non_empty_summary` |
+| `E1` | Critic L1 on graph | `CriticProfile` node_partial / graph_final |
+| `E2` | HITL required | `require_human_approval`, agent `REQUEST_HUMAN` |
+| `E3` | Semantic completion required | `require_critic_on_completion=true` (**strict products**) |
+
+## 56.4 Decision tree — pick configuration in 60 seconds
+
+```mermaid
+flowchart TD
+    Start([New Tier-3 product requirement]) --> P{Process always running?}
+    P -->|no, call per request| A1[A1 Reactive]
+    P -->|yes, localhost/service| A2[A2 Daemon]
+    P -->|yes, mostly batch| A3[A3 Queued]
+    P -->|yes, both chat and batch| A4[A4 Hybrid]
+
+    A1 --> AG{How many agent roles?}
+    A2 --> AG
+    A3 --> AG
+    A4 --> AG
+
+    AG -->|1| C1[C1 Single]
+    AG -->|2+| DEP{Outputs depend on each other?}
+
+    DEP -->|yes, ordered| D2[D2 Sequential]
+    DEP -->|no, independent| D3[D3 Parallel]
+    DEP -->|parent delegates subtasks| D4[D4 Hierarchical]
+    DEP -->|quality loop| D6[D6 Evaluator]
+
+    D2 --> HOW{Topology fixed at design time?}
+    HOW -->|yes| C3[C3 graph_spec]
+    HOW -->|no, LLM plans| C5[C5 engine planner]
+    HOW -->|known 2-step product| C4[C4 pipeline cap]
+
+    C1 --> ROUTE{Client sends capability?}
+    ROUTE -->|yes| B1[B1 API]
+    ROUTE -->|slash command| B2[B2 adapter]
+    ROUTE -->|raw chat only| B3[B3 classifier or host shim]
+
+    C3 --> B1B4[B1 *.pipeline + B4 graph_spec]
+```
+
+**Hard rules from tree:**
+
+1. Cross-role pipeline → `C3` or `C4` or `C5` — **never** `C2` alone.
+2. `C2` only when multiple agents share one capability (load-sharing / ensemble).
+3. `B4` with `graph_spec.nodes` today seeds **every** task — use separate routes or wait for ORCH-CONFIG.2 `trigger_capabilities`.
+
+## 56.5 Master matrix — agent count × coordination pattern
+
+Cells describe **valid** platform configuration. ✅ = harness-proven · ⚠️ = mechanism exists, author wiring required · ❌ = not supported / planned.
+
+| Agents | D1 single | D2 sequential | D3 parallel | D4 hierarchical | D5 supervisor | D6 evaluator | D7 swarm |
+|--------|-----------|---------------|-------------|-----------------|---------------|--------------|----------|
+| **1** | ✅ `C1+B1` | — (use UAEP steps inside node) | — | — | ⚠️ `E2` HITL | ⚠️ CVL on node | — |
+| **2** | — | ✅ `C3` chain or `C4` research.pipeline | ✅ `C3` no edge | ✅ `DELEGATES_TO` | ⚠️ +HITL | ⚠️ CVL loop | ❌ ORCH-5.1 |
+| **3** | — | ✅ `C3` chain | ✅ batch of 3 | ✅ hub + 2 children | ⚠️ | ⚠️ | ❌ |
+| **N** | — | ✅ `C3` or `C5` | ✅ `C3` + `max_parallel_nodes` | ✅ tree | ⚠️ | ⚠️ | ❌ partial |
+
+**UAEP note:** multi-step work **inside** one agent (gather→analyze→answer) is not multi-agent — it is one graph node with multiple UAEP steps (`D1`).
+
+## 56.6 Master matrix — posture × intake surface
+
+| Posture | HTTP `POST /run` | MCP | Slack/Teams intake | Queue worker | Scheduler resume |
+|---------|------------------|-----|-------------------|--------------|------------------|
+| `A1` | ✅ primary | ✅ | ⚠️ host must wire | optional | optional |
+| `A2` | ✅ | ✅ | ⚠️ recommended | optional | optional |
+| `A3` | optional trigger | rare | notify-only common | ✅ required | ✅ |
+| `A4` | ✅ interactive | ✅ | ⚠️ | ✅ background | ✅ |
+
+**Platform gap (ORCH-CONFIG.4):** scaffold should optionally emit interaction intake + queue consumer wiring — today manual per host.
+
+## 56.7 Configuration case register (CFG-*)
+
+Each case is a **canonical product configuration**. Implementation plan rows map to `ORCH-CONFIG.*` / `H-APP-DOC.*` / `COG-3.*` in §56.11.
+
+| CFG ID | Name | A | B | C | D | E | Status | Primary modules |
+|--------|------|---|---|---|---|---|--------|-----------------|
+| **CFG-01** | Single reactive Q&A | A1 | B1 | C1 | D1 | E0 | ✅ Done | `fastapi_router`, `TaskPlanner` |
+| **CFG-02** | Daemon single agent | A2 | B1 | C1 | D1 | E0 | ✅ Done | host `main.py`, same Nexus path |
+| **CFG-03** | Slack slash → one agent | A1/A2 | B2 | C1 | D1 | E0 | ⚠️ Partial | `interaction_wiring` — not all hosts |
+| **CFG-04** | Free-text chat → auto route | A1/A2 | B3 | C1/C3/C5 | D1/D2 | E0 | ❌ Planned | COG-3.* classifier |
+| **CFG-05** | Two-agent pipeline (research) | A1 | B1 | C4 | D2 | E0 | ✅ Done | `research.pipeline` in `TaskPlanner` |
+| **CFG-06** | Two-agent sequential graph | A1 | B1+B4 | C3 | D2 | E0 | ⚠️ Partial | `graph_spec`, `GraphSpecSeedingPlanner` |
+| **CFG-07** | N-agent sequential graph | A1/A3 | B1+B4 | C3 | D2 | E0/E1 | ⚠️ Partial | `graph_spec_to_plan`, acceptance 02 |
+| **CFG-08** | N-agent parallel graph | A1 | B1+B4 | C3 | D3 | E0 | ⚠️ Partial | `ExecutionGraph.batches`, acceptance 03 |
+| **CFG-09** | Hierarchical delegation | A1 | B1+B4 | C3+C6 | D4 | E0 | ✅ Done | ADR-FLOW-001, `DELEGATES_TO` |
+| **CFG-10** | Runtime handoff insert | A1 | B1 | C6 | D4 | E0 | ✅ Done | `HandoffCoordinator` |
+| **CFG-11** | LLM dynamic plan N agents | A1 | B1/B3 | C5 | D2/D3 | E0 | ⚠️ Partial | `EngineBackedNexusPlanner`, COG-1.* |
+| **CFG-12** | Same-capability ensemble | A1 | B1 | C2 | D2 | E0 | ✅ Done | `MULTI_AGENT`, `multi_agent_order` |
+| **CFG-13** | Background single job | A3 | B1 | C1 | D1 | E0 | ⚠️ Partial | queue + `apply_long_running_enabled` |
+| **CFG-14** | Hybrid daemon + index | A4 | B1+B2 | C1 | D1 | E0 | ⚠️ Partial | LKW pattern — product incomplete |
+| **CFG-15** | High-risk + HITL | A1 | B1 | C1/C3 | D5 | E2 | ✅ Done | acceptance 04, `NexusHitlRunner` |
+| **CFG-16** | Critic before complete | A1 | B1 | C3 | D6 | E1/E3 | ⚠️ Partial | `CriticGraphHooks`, CVL |
+| **CFG-17** | Swarm exploration | A1 | B1 | C3/C5 | D7 | E0 | ❌ Planned | ORCH-5.1 |
+| **CFG-18** | Pipeline + single-route conflict | A1 | B1+B4 | C3 | D2 | E0 | ⚠️ Pitfall | Needs ORCH-CONFIG.2 `trigger_capabilities` |
+| **CFG-19** | Long-running + resume | A3/A1 | B1 | any | any | E0 | ✅ Done | acceptance 05/05b, checkpoint store |
+| **CFG-20** | Strict production multi-agent | A1 | B1+B4 | C3 | D2/D3 | E1+E3 | ⚠️ Partial | `execution_mode=strict` + critic + graph_spec |
+
+### CFG-06 walkthrough (reference — two agents, sequential)
+
+**Product example:** corporate docs agent → legal web agent.
+
+```text
+Profile:
+  graph_spec.nodes = [docs_agent, legal_web_agent]
+  graph_spec.edges = [DEPENDS_ON docs → legal_web]
+  orchestration.merge_strategy = "last_wins" | "structured_json"
+  context_profile.enable_rag = true
+  context_profile.enable_websearch = true
+
+Request (B1):
+  POST /v1/my_app/run
+  { "capability": "my_app.pipeline", "message": "...", "metadata": { "case_id": "…" } }
+
+Nexus path:
+  Classify → CAPABILITY_ROUTED (one cap) or MULTI_AGENT if misconfigured
+  GraphSpecSeedingPlanner → 2 PlanSteps with depends_on
+  GraphExecutor: node docs → ContextManager.record → node legal_web
+  FinalResponseComposer → merged answer
+```
+
+**Until ORCH-CONFIG.2:** use dedicated route or `my_app.pipeline` capability so operators know graph seeded intentionally (CFG-18 avoidance).
+
+## 56.8 OrchestrationProfile + related fields — per case
+
+| CFG family | `planner_kind` | `classifier_kind` | `graph_spec` | `merge_strategy` | `max_parallel_nodes` | `long_running_enabled` | `execution_mode` |
+|------------|----------------|-------------------|--------------|------------------|----------------------|------------------------|------------------|
+| CFG-01/02 | `default` | `default` | — | `last_wins` | null | false | balanced/strict |
+| CFG-05 | `default` | `default` | optional | `concat` | null | false | balanced |
+| CFG-06–08 | `default` | `default` | **required** | `structured_json` | cap for D3 | false | strict |
+| CFG-11 | `engine` | `default`/`engine` | optional | product choice | cap | false | strict |
+| CFG-13/19 | `default` | `default` | optional | `structured_json` | null | **true** + scheduler | balanced |
+| CFG-15/16/20 | `default`/`engine` | `default` | recommended | `structured_json` | cap | per job | **strict** |
+
+**Task-level flags (not profile):**
+
+| Need | Set on `Task` | Helper |
+|------|---------------|--------|
+| Long-running job | `options.long_running.enabled=true` | `apply_long_running_enabled()` |
+| Human approval | `options.governance.require_human_approval` | API / policy |
+| Resume | `options.long_running.resume_token` | scheduler / HITL resume |
+
+**Profile `long_running_enabled` alone does not mark every Task long-running** — it enables checkpoint infrastructure when combined with `ReliabilityProfile.long_running_scheduler_enabled`.
+
+## 56.9 Nexus phase contract (same for every CFG)
+
+| Phase | Module | Decision owner | CFG-sensitive behaviour |
+|-------|--------|----------------|-------------------------|
+| Bootstrap | `build_harness_host_runtime` | Tier-3 author | Profile selects planner, graph, critic |
+| Intake | `NexusIntakeRunner` | Nexus | Resume/checkpoint; same all CFG |
+| Classify | `TaskClassifier` | Nexus | `C2` vs `C1` — **not** pipeline topology |
+| Plan | `GraphSpecSeedingPlanner` / `TaskPlanner` / engine | Nexus | `C3`/`C4`/`C5` divergence |
+| Graph build | `plan_to_execution_graph` | Nexus | `D2`/`D3`/`D4` topology |
+| Execute | `GraphExecutor` | Nexus | Parallel batch vs sequential batches |
+| Per-node | `AgentEngine` + UAEP | Tier-2 agent | Tools/skills from profile |
+| Validate | `NexusValidationEngine` + CVL | Nexus | `E0`–`E3` |
+| Complete | `NexusGraphRunner` + lifecycle | Nexus | `COMPLETED` vs HITL pause |
+| Respond | `FinalResponseComposer` | Nexus | `merge_strategy` |
+
+## 56.10 Completion matrix
+
+| CFG | Default terminal state | Upgrade to semantic done |
+|-----|------------------------|---------------------------|
+| CFG-01–14 | `COMPLETED` if `non_empty_summary` | `E1` critic + `E3` on strict |
+| CFG-15 | `WAITING_FOR_HUMAN` → resume → `COMPLETED` | mandatory `E2` |
+| CFG-16 | CVL fail → retry or `FAILED` | `E1+E3` |
+| CFG-20 | Same as CFG-07/08 with strict gates | production baseline |
+
+## 56.11 Implementation status & plan register (ORCH-CONFIG)
+
+Honest platform readiness derived from §56.7. **This table is the direct input for implementation planning.**
+
+| Plan ID | CFG / gap | Deliverable | Priority | Status | Unblocks |
+|---------|-----------|-------------|----------|--------|----------|
+| **ORCH-CONFIG.1** | CFG-04 | LLM/rules classifier (`COG-3.*`) | **Critical** | Planned | Free-text chat products |
+| **ORCH-CONFIG.2** | CFG-18 | `ApplicationGraphSpec.trigger_capabilities` + seed guard | **Critical** | Planned | Safe graph_spec + single routes |
+| **ORCH-CONFIG.3** | CFG-05 generalization | `PipelineCapabilityRegistry` or document-only `*.pipeline` → graph_spec rule | High | Planned | Any product pipeline without forked `TaskPlanner` |
+| **ORCH-CONFIG.4** | CFG-03, CFG-14 | Scaffold: optional interaction intake + queue consumer templates | High | Planned | Consistent Tier-3 surfaces |
+| **ORCH-CONFIG.5** | CFG-06–08, CFG-20 | Reference Tier-3 host with 3+ node `graph_spec` + gate E2E (FLOW-8) | High | Deferred §6.3 | Product proof |
+| **ORCH-CONFIG.6** | CFG-13, CFG-19 | Document + helper: profile `long_running_enabled` → default task flag policy | Medium | Planned | Background job ergonomics |
+| **ORCH-CONFIG.7** | CFG-16, CFG-20 | `strict` profile preset: critic + merge defaults for multi-agent | Medium | Planned | Production semantic completion |
+| **ORCH-CONFIG.8** | CFG-17 | Swarm runtime (extends ORCH-5.1) | Medium | Planned | D7 pattern |
+| **ORCH-CONFIG.9** | All | `scripts/check_orchestration_config_docs.py` — CFG IDs referenced in tests | Low | Planned | Doc↔code drift guard |
+| **ORCH-CONFIG.10** | CFG-11 | COG-1.* planner unification + production engine defaults doc | High | Planned | `C5` maturity |
+
+**Cross-plan ownership:**
+
+| ORCH-CONFIG ID | Also tracked in |
+|----------------|-----------------|
+| ORCH-CONFIG.1 | `plan/REASONING_AND_COGNITION.md` COG-3.* |
+| ORCH-CONFIG.2 | `plan/TIER3_APPLICATION_ENVIRONMENT.md` H-APP-DOC.2 |
+| ORCH-CONFIG.4 | `plan/TIER3_APPLICATION_ENVIRONMENT.md` H-APP-DOC.4 |
+| ORCH-CONFIG.5 | `plan/NEXUS_EXECUTION_FLOW.md` FLOW-8 |
+| ORCH-CONFIG.8 | `plan/ORCHESTRATION.md` ORCH-5.1 |
+
+**ADR policy:** ORCH-CONFIG.2 (trigger_capabilities) → `docs/adr/` if seed semantics change; ORCH-CONFIG.3 → ADR only if new Tier-0 registry introduced.
+
+## 56.12 Extensibility — arbitrary agent count & strategy
+
+Platform supports **any N ≥ 1** agents and **any valid combination** of `D2`/`D3`/`D4`/`D6` through:
+
+```text
+ApplicationGraphSpec
+  nodes: [A1, A2, … AN]   # N distinct agent_ids on manifest roster
+  edges:
+    DEPENDS_ON   → acyclic sequential layers (D2)
+    (no edge)    → parallel within batch (D3)
+    DELEGATES_TO → hierarchical subtrees (D4)
+```
+
+**Constraints (platform-enforced):**
+
+| Constraint | Field / module |
+|------------|----------------|
+| Max delegation depth | `max_delegation_depth` |
+| Parallel cap | `max_parallel_nodes` |
+| Inflight cap | `max_inflight_nodes` |
+| Cycle forbidden | `ExecutionGraphCycleError` |
+| Unknown agent in plan | Planner validation / registry |
+| Cost / steps | `RunBudget`, UAEP limits, `DelegationSpec` envelope |
+
+**Dynamic N (runtime-discovered count):** use `C5` engine planner or `C6` HANDOFF chains — not unbounded agent loops in Tier-2.
+
+```mermaid
+flowchart LR
+    subgraph Sequential["D2 — N sequential"]
+        n1["node 1"] --> n2["node 2"] --> n3["node 3"] --> nN["node N"]
+    end
+    subgraph Parallel["D3 — N parallel"]
+        p1["node 1"]
+        p2["node 2"]
+        pN["node N"]
+    end
+    subgraph Hierarchical["D4 — hub + children"]
+        hub["hub"] --> c1["child 1"]
+        hub --> c2["child 2"]
+    end
+```
+
+## 56.13 Author checklist (before shipping a Tier-3 host)
+
+1. Pick **CFG ID** from §56.7 (or combine explicitly — document in product `ARCHITECTURE.md`).
+2. Set **Dimension A** posture — wire surfaces from §56.6.
+3. Set **Dimension B** routing — never ship free-text without `B1` shim or `B3`.
+4. For N>1: choose **C3/C4/C5** — not `C2` unless same-capability ensemble.
+5. Draw **graph_spec** for fixed topology; set `merge_strategy` for N>1.
+6. Apply **E*** governance for production (`strict` + critic for CFG-20 class).
+7. Verify against §56.11 — if Planned, do not claim product-ready multi-agent.
 
 ---
 
@@ -798,6 +1173,6 @@ Both dimensions apply to the **same** `NexusLoop.handle_task()` path.
 
 ---
 
-*End of Orchestration architecture canon (execution strategies §50–§55).*
+*End of Orchestration architecture canon (execution strategies §50–§56). Platform configuration canon: §56.*
 
 ---

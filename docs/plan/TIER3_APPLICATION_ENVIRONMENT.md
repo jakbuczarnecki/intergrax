@@ -243,6 +243,8 @@ uv run pytest -m gate -q
 | H-APP-DOC.3 | **`applications/USAGE.md` §** — link posture recipes + host checklist | Planned | Medium | Cross-link §23; scaffold doc note |
 | H-APP-DOC.4 | **Scaffold `new-application`** — document interaction intake optional wire | Planned | Low | README / factory comment; legal host as reference |
 
-**Explicitly out of scope:** Nexus runtime fork; new coordination patterns (ORCH-5); COG-3 classifier implementation.
+**Explicitly out of scope:** Nexus runtime fork; new coordination patterns (ORCH-5); COG-3 classifier implementation (tracked under ORCH-CONFIG.1 / COG-3.*).
+
+**Canonical platform cases:** [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §56 · implementation register [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md) Phase **ORCH-CONFIG**.
 
 ---

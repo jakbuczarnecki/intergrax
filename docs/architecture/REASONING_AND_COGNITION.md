@@ -299,7 +299,7 @@ RIGHT:  "I have 2 agents → graph_spec DEPENDS_ON chain OR *.pipeline OR engine
 | Graph ignored | Task carries pre-built `plan_id` | Clear `plan_id` for fresh graph seed |
 | Chat sends free text, wrong agent | No L1 capability; classifier not enabled | Host intent shim or enable COG-3 classifier |
 
-**Cross-ref:** posture and scenario recipes — [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23 · pattern matrix — [`ORCHESTRATION.md`](ORCHESTRATION.md) §55.
+**Cross-ref:** full configuration canon (CFG-*, matrices, plan register) — [`ORCHESTRATION.md`](ORCHESTRATION.md) §56 · Tier-3 host summary — [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23.
 
 ### 9.5 Intake → classification → planning contract
 

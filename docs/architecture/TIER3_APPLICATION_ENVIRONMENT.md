@@ -148,7 +148,9 @@ Every Tier-3 application MUST:
 
 Tier-3 hosts are **composition shells** around a long-lived Nexus runtime. The same platform mechanisms support different **interaction postures** — selected through `ApplicationEnvironmentProfile` and host wiring, not separate runtime forks.
 
-**Runtime narrative:** [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §3.1 · **Orchestration patterns:** [`ORCHESTRATION.md`](ORCHESTRATION.md) §50–§55 · **Classification / planning:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9–§11.
+> **Master configuration canon (all postures × agent counts × strategies × CFG cases):** [`ORCHESTRATION.md`](ORCHESTRATION.md) **§56** — start there for product design and implementation planning. This section is the **Tier-3 host summary** only.
+
+**Runtime narrative:** [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §3.1 · **Patterns:** [`ORCHESTRATION.md`](ORCHESTRATION.md) §50–§56 · **Routing modes:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9.4.
 
 ## 23.1 Posture catalog
 
@@ -296,6 +298,6 @@ Copy a row when designing a new Tier-3 host. Adjust profile fields; do not fork 
 5. Set `execution_mode=strict` in production; wire critic profile for high-risk capabilities.
 6. Do not implement business orchestration loops in Tier-2 — use Nexus graph + UAEP steps.
 
-**Plan:** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) Phase H-APP-DOC.
+**Plan:** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) Phase H-APP-DOC · platform cases **ORCH-CONFIG** in [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md).
 
 ---

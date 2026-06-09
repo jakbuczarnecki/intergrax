@@ -1452,6 +1452,40 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ---
 
+## Phase ORCH-CONFIG — Platform interaction & multi-agent configuration (Band 2ar — planned)
+
+**Status:** **Planned** — **0/10 Done** (architecture **Done** 2026-06-09 — [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §56)  
+**Prerequisites:** Phase ORCH-STRAT **Done** · Phase H-APP-DOC.1 **Done** · default queue = §6.1 until Band 2ar prioritized  
+**Goal:** Close every gap in §56.11 so **all CFG-* cases** marked ⚠️/❌ become ✅ without runtime forks  
+**Canonical input:** §56.7 case register + §56.11 plan table — do not duplicate elsewhere
+
+**ADR:** ORCH-CONFIG.2 → harness ADR if `trigger_capabilities` changes seed semantics; ORCH-CONFIG.3 → ADR only if new Tier-0 `PipelineCapabilityRegistry` is introduced.
+
+| ID | CFG / scope | Deliverable | Status | Priority | Acceptance |
+|----|-------------|-------------|--------|----------|------------|
+| ORCH-CONFIG.1 | CFG-04 | LLM/rules classifier — delegate to **COG-3.*** | Planned | **Critical** | `classifier_kind=engine` or `rules`; free-text → capability |
+| ORCH-CONFIG.2 | CFG-18 | `ApplicationGraphSpec.trigger_capabilities` + `should_seed` guard | Planned | **Critical** | Single-route + graph on same host; unit + gate test |
+| ORCH-CONFIG.3 | CFG-05+ | Pipeline convention: `*.pipeline` → graph_spec seed (no per-product `TaskPlanner` fork) | Planned | High | `dispute.pipeline`-style products without code change in `task_planner.py` |
+| ORCH-CONFIG.4 | CFG-03, CFG-14 | Scaffold optional interaction intake + queue consumer wiring | Planned | High | `new-application` emits flags; legal host reference |
+| ORCH-CONFIG.5 | CFG-06–08, CFG-20 | Reference Tier-3 3+ node `graph_spec` E2E (aligns FLOW-8) | Deferred | High | §6.3 product gate; gate acceptance |
+| ORCH-CONFIG.6 | CFG-13, CFG-19 | `long_running` profile → task defaults helper / host policy doc | Planned | Medium | Background jobs get checkpoint without per-route boilerplate |
+| ORCH-CONFIG.7 | CFG-16, CFG-20 | `strict` multi-agent preset on `ApplicationEnvironmentProfile` | Planned | Medium | Critic + merge defaults bundled |
+| ORCH-CONFIG.8 | CFG-17 | Swarm runtime — extends ORCH-5.1 | Planned | Medium | D7 pattern gate test |
+| ORCH-CONFIG.9 | All CFG | `check_orchestration_config_docs.py` — CFG IDs in tests/docs | Planned | Low | CI optional script |
+| ORCH-CONFIG.10 | CFG-11 | COG-1.* engine planner production path | Planned | High | `planner_kind=engine` regression + doc |
+
+**Execution order when Band 2ar activates:** ORCH-CONFIG.2 → ORCH-CONFIG.1 → ORCH-CONFIG.3 → ORCH-CONFIG.4 → ORCH-CONFIG.10 → ORCH-CONFIG.6 → ORCH-CONFIG.7 → ORCH-CONFIG.8 → ORCH-CONFIG.9; ORCH-CONFIG.5 remains §6.3 / FLOW-8.
+
+**Traceability:**
+
+| Architecture §56 | Plan rows |
+|------------------|-----------|
+| §56.3 dimensions A–E | ORCH-CONFIG.* acceptance criteria |
+| §56.7 CFG register | One ORCH-CONFIG row per ❌/⚠️ case |
+| §56.11 gap table | This phase master register |
+
+---
+
 ## Phase ORCH-5 — Orchestration strategy runtime gaps (Band 2aq — planned)
 
 **Status:** **Planned** — **0/5 Done**  
