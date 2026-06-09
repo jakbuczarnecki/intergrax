@@ -872,7 +872,7 @@ def env_example(
         {env_prefix}INTERACTION_SURFACE=auto
         {env_prefix}INCLUDE_SCHEDULER=false
         {env_prefix}INCLUDE_TASK_CONTROL=true
-        {env_prefix}INCLUDE_QUEUE_WORKER=false
+        {env_prefix}INCLUDE_QUEUE_WORKER=true
         {env_prefix}TASK_CONTROL_ROUTE_PREFIX=/v1/tasks
         # Optional dev API key (prod requires keys or ALLOW_UNAUTHENTICATED=true):
         # {env_prefix}BACKEND_BOOTSTRAP_API_KEY=dev-key

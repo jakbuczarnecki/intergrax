@@ -40,6 +40,8 @@ def main() -> int:
         contract: AgentContract = factory().get_contract()
         if not (contract.owner_team or "").strip():
             errors.append(f"{contract.id}: missing owner_team")
+        if contract.production_eligible and not (contract.on_call_contact or contract.owner_contact or "").strip():
+            errors.append(f"{contract.id}: missing on_call_contact for production_eligible agent")
         result = validate_agent_assembly(contract)
         if not result.valid:
             errors.extend(f"{contract.id}: {err}" for err in result.errors)

@@ -542,12 +542,13 @@ sequenceDiagram
 | Async queue plane | L3 | Done (queueing) |
 | Observability SLIs | L3 | Done (W-OPS) |
 | Infra integration adapters | L2 | K8s beta |
-| Harness elastic control loop | **L0** | Not implemented |
-| Declarative ScalingProfile | **L0** | Not implemented |
-| Load balancer integration | **L0** | No nginx slug |
-| **Overall ECP (audit §30 extension)** | **L1** | Canon only (ECP-DOC) |
+| Harness elastic control loop | **L3** | Done (ECP-DEPTH — `runtime/capacity/`) |
+| Declarative ScalingProfile | **L3** | Done (`ScalingProfile` + wiring) |
+| Load balancer integration | **L0** | Cancelled (ECP-6.2 / ADR-SCALE-002) |
+| Celery/K8s production adapters | L2 | Beta/stub — uplift AUDIT-IDEAL-30.4 |
+| **Overall ECP (audit §30 extension)** | **L3** | ECP-DEPTH **28/28 Done** (2026-06-09) |
 
-**FAUDIT-32 §30** (Operational Excellence) — SLOs exist; **closed-loop capacity** is the uplift path via Phase ECP-DEPTH.
+**FAUDIT-32 §30** (Operational Excellence) — SLOs exist; **closed-loop capacity** closed via Phase ECP-DEPTH. Residual: production-scale Celery/K8s adapters (AUDIT-IDEAL-30.4).
 
 All tasks: [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](../plan/ELASTIC_CAPACITY_AND_SCALING.md).
 

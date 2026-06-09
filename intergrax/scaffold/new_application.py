@@ -858,7 +858,7 @@ def _env_example(env_prefix: str, route_prefix: str, port: int, specs: list[Scaf
         {env_prefix}INCLUDE_MCP=true
         {env_prefix}MCP_MOUNT_PATH=/mcp
         {env_prefix}INCLUDE_TASK_CONTROL=true
-        {env_prefix}INCLUDE_QUEUE_WORKER=false
+        {env_prefix}INCLUDE_QUEUE_WORKER=true
         {env_prefix}TASK_CONTROL_ROUTE_PREFIX=/v1/tasks
         # Example run capability for POST {route_prefix}/run
         # DEFAULT_CAPABILITY={caps}

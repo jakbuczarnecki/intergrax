@@ -5,7 +5,8 @@
 **Audit map:** [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](../guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §8 (32 layers)  
 **Baseline:** **32/32 L3** (`scripts/harness_maturity_report.py`, IDEAL-L3 W2 Done)  
 **Hub:** [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) · Band **2az** · queue **§6.1au**  
-**Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](../guides/ARCHITECTURE_DEBT_REGISTER.md)
+**Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](../guides/ARCHITECTURE_DEBT_REGISTER.md)  
+**Status:** **W1 in progress** (2026-06-09) — **15/78 Done** · **4 Deferred §6.3** · **59 Planned**
 
 > **Scope:** Close gaps between **L3 Production Harness OS** and **full ideal architecture** (modular, elastic, complete). Harness infrastructure only unless row is explicitly **Deferred §6.3** (product).
 
@@ -36,16 +37,16 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-1.1 | Strategic Harness Model | 1 | Operationalize quarterly strategy review (IDEAL-1.2 process, not docs-only) | P2 | `PLATFORM_FOUNDATION` | Planned |
 | AUDIT-IDEAL-1.2 | Strategic Harness Model | 1 | Architecture health metrics as live signals (modularity, debt index) | P2 | `PLATFORM_FOUNDATION` | Planned |
 | AUDIT-IDEAL-2.1 | Tier boundaries | 2 | Continuous tier-boundary gate maintenance (no drift) | P3 | `PLATFORM_FOUNDATION` | **Done** (gates exist) |
-| AUDIT-IDEAL-3.1 | Task intake | 3 | Canonical `TaskEnvelope` type consolidation (`Task` + `RuntimeRequest` alias) | P1 | `ORCHESTRATION` · `TIER3` | Planned |
+| AUDIT-IDEAL-3.1 | Task intake | 3 | Canonical `TaskEnvelope` type consolidation (`Task` + `RuntimeRequest` alias) | P1 | `ORCHESTRATION` · `TIER3` | **Done** |
 | AUDIT-IDEAL-3.2 | Task intake | 3 | Product host intake parity (streaming + durable async index default) | P2 | `TIER3_APPLICATION_ENVIRONMENT` | Planned |
 | AUDIT-IDEAL-4.1 | Identity & trust | 4 | Cryptographic signing / audit-protect for critical actions | P2 | `UNIFIED_EXECUTION_RUNTIME` | Planned |
 | AUDIT-IDEAL-4.2 | Identity & trust | 4 | Hard tenant storage isolation (Postgres multi-tenant RFC → ship) | P1 | `UNIFIED_EXECUTION_RUNTIME` | Planned |
-| AUDIT-IDEAL-5.1 | Policy & governance | 5 | Pre-output policy hooks on all LLM response paths | P1 | `UNIFIED_EXECUTION_RUNTIME` | Planned |
+| AUDIT-IDEAL-5.1 | Policy & governance | 5 | Pre-output policy hooks on all LLM response paths | P1 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
 | AUDIT-IDEAL-5.2 | Policy & governance | 5 | Compliance profile templates per regulated domain class | P2 | `UNIFIED_EXECUTION_RUNTIME` | Planned |
 | AUDIT-IDEAL-5.3 | Policy & governance | 5 | Governance health dashboard (GOV-PROD.1) | P4 | `OBSERVABILITY` | **Deferred §6.3** |
 | AUDIT-IDEAL-6.1 | LLM adapters | 6 | Structured output validation on 100% reference + certified agent paths | P1 | `LLM_ADAPTERS` | Planned |
 | AUDIT-IDEAL-6.2 | LLM adapters | 6 | Live cost/latency/quality model routing (AHI integration prod path) | P2 | `LLM_ADAPTERS` · `ADAPTIVE_HARNESS_INTELLIGENCE` | Planned |
-| AUDIT-IDEAL-7.1 | Cognition | 7 | Ship `ReasoningProfile` contract + environment wire | P1 | `REASONING_AND_COGNITION` | Planned |
+| AUDIT-IDEAL-7.1 | Cognition | 7 | Ship `ReasoningProfile` contract + environment wire | P1 | `REASONING_AND_COGNITION` | **Done** |
 | AUDIT-IDEAL-7.2 | Cognition | 7 | Complete `allow_dynamic_replan` runtime path | P1 | `REASONING_AND_COGNITION` | Planned |
 | AUDIT-IDEAL-7.3 | Cognition | 7 | Reasoning failure taxonomy on all planner kinds | P2 | `REASONING_AND_COGNITION` | Planned |
 | AUDIT-IDEAL-8.1 | Execution runtime | 8 | Long-running workflow resume E2E on product hosts | P2 | `NEXUS_EXECUTION_FLOW` | Planned |
@@ -64,8 +65,8 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-13.2 | Integrations | 13 | Catalog hot-reload without host restart | P3 | `INTEGRATIONS` | Planned |
 | AUDIT-IDEAL-14.1 | RAG | 14 | Graph RAG as default production retrieval profile | P1 | `MEMORY` · `INTEGRATIONS` | Planned |
 | AUDIT-IDEAL-14.2 | RAG | 14 | Retrieval poisoning defense live on product hosts | P1 | `MEMORY` | Planned |
-| AUDIT-IDEAL-15.1 | Memory | 15 | Org memory 2.5 (organizational LTM scope) | **P0** | `MEMORY` | Planned |
-| AUDIT-IDEAL-15.2 | Memory | 15 | Episodic / semantic / procedural memory taxonomy (`MemoryKind` uplift) | P1 | `MEMORY` | Planned |
+| AUDIT-IDEAL-15.1 | Memory | 15 | Org memory 2.5 (organizational LTM scope) | **P0** | `MEMORY` | **Done** |
+| AUDIT-IDEAL-15.2 | Memory | 15 | Episodic / semantic / procedural memory taxonomy (`MemoryKind` uplift) | P1 | `MEMORY` | **Done** |
 | AUDIT-IDEAL-15.3 | Memory | 15 | Entity graph memory ship (beyond RFC — MEM-DEPTH-5.1) | P2 | `MEMORY` | Planned |
 | AUDIT-IDEAL-16.1 | Context | 16 | Online context drift monitoring + alerts | P1 | `MEMORY` | Planned |
 | AUDIT-IDEAL-16.2 | Context | 16 | Semantic compression strategy in production profiles | P2 | `MEMORY` | Planned |
@@ -73,9 +74,9 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-17.2 | Prompt registry | 17 | Prompt diff / compare API for all managed prompts | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | Planned |
 | AUDIT-IDEAL-18.1 | Agent assembly | 18 | `ModalityProfile` mandatory on certified agents | P1 | `AGENT_CONTRACTS_AND_ASSEMBLY` | Planned |
 | AUDIT-IDEAL-18.2 | Agent assembly | 18 | Cross-host agent reuse certification test suite | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | Planned |
-| AUDIT-IDEAL-19.1 | Registry | 19 | Durable cross-host registry snapshot store (DEBT-19-01) | **P0** | `AGENT_CONTRACTS_AND_ASSEMBLY` | Planned |
+| AUDIT-IDEAL-19.1 | Registry | 19 | Durable cross-host registry snapshot store (DEBT-19-01) | **P0** | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
 | AUDIT-IDEAL-19.2 | Registry | 19 | Capability negotiation at runtime resolve | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | Planned |
-| AUDIT-IDEAL-20.1 | Capability graph | 20 | Product CI blast-radius check on tool/skill changes | P1 | `AGENT_CONTRACTS_AND_ASSEMBLY` | Planned |
+| AUDIT-IDEAL-20.1 | Capability graph | 20 | Product CI blast-radius check on tool/skill changes | P1 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
 | AUDIT-IDEAL-20.2 | Capability graph | 20 | Policy change impact visualization CLI | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | Planned |
 | AUDIT-IDEAL-21.1 | Observability | 21 | Causal diagnostics beyond trace bridge (ops tooling) | P2 | `OBSERVABILITY` | Planned |
 | AUDIT-IDEAL-21.2 | Observability | 21 | Quality / governance / cost health dashboard contracts | P2 | `OBSERVABILITY` | Planned |
@@ -87,26 +88,26 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-24.1 | Cost | 24 | Cost forecasting from historical run patterns | P2 | `UNIFIED_EXECUTION_RUNTIME` | Planned |
 | AUDIT-IDEAL-24.2 | Cost | 24 | Automated cost optimization recommendations (AHI) | P2 | `UNIFIED_EXECUTION_RUNTIME` · `ADAPTIVE_HARNESS_INTELLIGENCE` | Planned |
 | AUDIT-IDEAL-24.3 | Cost | 24 | CPU/memory/concurrency quotas with tenant fairness | P2 | `UNIFIED_EXECUTION_RUNTIME` · `ELASTIC_CAPACITY_AND_SCALING` | Planned |
-| AUDIT-IDEAL-25.1 | Evaluation | 25 | Shadow eval path automation (DEBT-25-01) | P1 | `CRITIC_VERIFICATION` | Planned |
+| AUDIT-IDEAL-25.1 | Evaluation | 25 | Shadow eval path automation (DEBT-25-01) | P1 | `CRITIC_VERIFICATION` | **Done** |
 | AUDIT-IDEAL-25.2 | Evaluation | 25 | Human review sample queue (beyond CLI) | P2 | `CRITIC_VERIFICATION` | Planned |
-| AUDIT-IDEAL-25.3 | Evaluation | 25 | Context/RAG eval blocking product release CI | P1 | `CRITIC_VERIFICATION` | Planned |
+| AUDIT-IDEAL-25.3 | Evaluation | 25 | Context/RAG eval blocking product release CI | P1 | `CRITIC_VERIFICATION` | **Done** |
 | AUDIT-IDEAL-26.1 | CI / gates | 26 | Architecture-boundary chaos job in weekly CI | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | Planned |
 | AUDIT-IDEAL-26.2 | CI / gates | 26 | Simulation tests for multi-agent contention | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | Planned |
 | AUDIT-IDEAL-27.1 | DX | 27 | Trace Explorer interactive UI (beyond lab APIs) | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | Planned |
-| AUDIT-IDEAL-27.2 | DX | 27 | Replay environment HTTP API on product hosts | P1 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | Planned |
+| AUDIT-IDEAL-27.2 | DX | 27 | Replay environment HTTP API on product hosts | P1 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Done** |
 | AUDIT-IDEAL-27.3 | DX | 27 | Agent simulator on product hosts (not CLI-only) | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | Planned |
 | AUDIT-IDEAL-27.4 | DX | 27 | Visual builder / graph editor (Phase 2 UI) | P3 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | Planned |
 | AUDIT-IDEAL-28.1 | Tier-3 hosts | 28 | Durable async queue default beyond SQLite (DEBT-28-01) | P1 | `TIER3_APPLICATION_ENVIRONMENT` | Planned |
-| AUDIT-IDEAL-28.2 | Tier-3 hosts | 28 | Queue worker scaffold-default (`INCLUDE_QUEUE_WORKER`) | P1 | `TIER3_APPLICATION_ENVIRONMENT` | Planned |
+| AUDIT-IDEAL-28.2 | Tier-3 hosts | 28 | Queue worker scaffold-default (`INCLUDE_QUEUE_WORKER`) | P1 | `TIER3_APPLICATION_ENVIRONMENT` | **Done** |
 | AUDIT-IDEAL-28.3 | Tier-3 hosts | 28 | LKW hybrid daemon (CFG-14) | P4 | `TIER3_APPLICATION_ENVIRONMENT` | **Deferred §6.3** |
 | AUDIT-IDEAL-28.4 | Tier-3 hosts | 28 | Business agents K.1/K.2 certification + deploy | P4 | `TIER3_APPLICATION_ENVIRONMENT` | **Deferred §6.3** |
 | AUDIT-IDEAL-29.1 | Modality | 29 | Live Triton / HF Inference endpoints (replace placeholders) | P1 | `MODALITY` | Planned |
 | AUDIT-IDEAL-29.2 | Modality | 29 | Plane C vision inference E2E on product worker pools | P2 | `MODALITY` | Planned |
-| AUDIT-IDEAL-30.1 | Ops / SLO | 30 | Sync `architecture/ELASTIC_CAPACITY_AND_SCALING.md` §22 after ECP-DEPTH | **P0** | `ELASTIC_CAPACITY_AND_SCALING` | Planned |
+| AUDIT-IDEAL-30.1 | Ops / SLO | 30 | Sync `architecture/ELASTIC_CAPACITY_AND_SCALING.md` §22 after ECP-DEPTH | **P0** | `ELASTIC_CAPACITY_AND_SCALING` | **Done** |
 | AUDIT-IDEAL-30.2 | Ops / SLO | 30 | Real deploy SLO window evidence (`W_OPS_RELEASE_CYCLES>=2` prod) | P1 | `OBSERVABILITY` · `EXPERIMENTATION` | Planned |
 | AUDIT-IDEAL-30.3 | Ops / SLO | 30 | On-call ownership model for production components | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | Planned |
 | AUDIT-IDEAL-30.4 | Ops / SLO | 30 | Celery/K8s production-scale adapters (beyond stub/beta) | P2 | `ELASTIC_CAPACITY_AND_SCALING` | Planned |
-| AUDIT-IDEAL-31.1 | Agent lifecycle | 31 | Owner/on-call mandatory on all certified agents | P1 | `AGENT_CONTRACTS_AND_ASSEMBLY` | Planned |
+| AUDIT-IDEAL-31.1 | Agent lifecycle | 31 | Owner/on-call mandatory on all certified agents | P1 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
 | AUDIT-IDEAL-31.2 | Agent lifecycle | 31 | Evaluation results required before production promotion (enforce) | P1 | `AGENT_CONTRACTS_AND_ASSEMBLY` | Planned |
 | AUDIT-IDEAL-32.1 | Doc governance | 32 | Living architecture debt burn-down tied to milestones | P2 | `PLATFORM_FOUNDATION` | Planned |
 | AUDIT-IDEAL-32.2 | Doc governance | 32 | Scorecard auto-sync on plan row change (extend IDEAL-32.3) | P2 | `PLATFORM_FOUNDATION` | Planned |

@@ -134,6 +134,9 @@ def build_session_manager_from_environment(
 
     org_manager: Optional[OrganizationProfileManager] = None
     if memory_profile.enable_org_memory and wiring.organization_profile_store is not None:
+        from intergrax.memory.org_memory_scope import ORG_MEMORY_SCOPES
+
+        _ = ORG_MEMORY_SCOPES  # org memory 2.5 scope catalog (AUDIT-IDEAL-15.1)
         org_manager = OrganizationProfileManager(wiring.organization_profile_store)
 
     return SessionManager(
