@@ -63,6 +63,10 @@ class AgentContract(BaseModel):
     production_eligible: bool = False
     owner_team: Optional[str] = None
     owner_contact: Optional[str] = None
+    on_call_contact: Optional[str] = Field(
+        default=None,
+        description="On-call contact for certified/production agents (AUDIT-IDEAL-31.1).",
+    )
     runbook_ref: Optional[str] = None
     prompt_binding_id: Optional[str] = Field(
         default=None,

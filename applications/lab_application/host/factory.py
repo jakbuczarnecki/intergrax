@@ -44,6 +44,7 @@ from lab_application.serving.fastapi_router import mount_lab_routes
 from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
 from intergrax.applications._shared.reliability_wiring import apply_reliability_task_defaults
 from intergrax.applications._shared.mvp_evolution_routes import create_mvp_evolution_router
+from intergrax.applications._shared.replay_routes import create_replay_router
 from intergrax.applications._shared.scaling_wiring import wire_application_scaling
 
 
@@ -213,6 +214,11 @@ def create_lab_application(
     if settings.harness:
         app.include_router(
             create_mvp_evolution_router(enabled=True),
+            prefix="/v1",
+            dependencies=[Depends(require_harness_auth)],
+        )
+        app.include_router(
+            create_replay_router(enabled=True),
             prefix="/v1",
             dependencies=[Depends(require_harness_auth)],
         )

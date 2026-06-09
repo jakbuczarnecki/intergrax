@@ -1,6 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Canonical task intake envelope (FAUDIT-INTAKE.1)."""
+"""Canonical task intake envelope (FAUDIT-INTAKE.1 / AUDIT-IDEAL-3.1).
+
+``TaskEnvelope`` is the single normalized intake contract. ``Task`` and
+``RuntimeRequest`` round-trip via ``to_envelope`` / ``from_envelope``.
+"""
 
 from __future__ import annotations
 

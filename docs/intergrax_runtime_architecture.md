@@ -117,7 +117,7 @@ Platform docs do not replace `agents/*/ARCHITECTURE.md` or `applications/*/ARCHI
 | Depth bands | [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) §4.0 | MEM/COG/ECP/ORCH-CONFIG **Done** |
 | Default queue | [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) §6.1 | Gate maintenance + [Phase AUDIT-IDEAL](plan/AUDIT_IDEAL_2026.md) incremental |
 | Ideal L3 depth (Band 2ax) | [`plan/IDEAL_HARNESS_L3.md`](plan/IDEAL_HARNESS_L3.md) · §6.1at | **W2 Done** (2026-06-09) — **32/32 L3** |
-| Ideal architecture gaps (Band 2az) | [`plan/AUDIT_IDEAL_2026.md`](plan/AUDIT_IDEAL_2026.md) · §6.1au | **Planned** (2026-06-09) — **1/78** AUDIT-IDEAL rows |
+| Ideal architecture gaps (Band 2az) | [`plan/AUDIT_IDEAL_2026.md`](plan/AUDIT_IDEAL_2026.md) · §6.1au | **W1 in progress** (2026-06-09) — **15/78 Done** · **4 Deferred §6.3** |
 
 ---
 

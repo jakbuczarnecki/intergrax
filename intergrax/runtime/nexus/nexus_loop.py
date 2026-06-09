@@ -410,6 +410,12 @@ class NexusLoop:
                 graph_id=graph_id,
             )
 
+        from intergrax.runtime.policy.pre_output_policy_bridge import apply_pre_output_policy
+
+        answer, _pre_output_decision = apply_pre_output_policy(
+            self._policy_engine, task, answer=answer
+        )
+
         await self._publish_terminal_runtime_event(task)
         result = self._build_result(
             task,

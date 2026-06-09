@@ -162,6 +162,19 @@ class RuntimeRequest:
             metadata=dict(self.metadata),
         )
 
+    @classmethod
+    def from_envelope(cls, envelope: TaskEnvelope) -> RuntimeRequest:
+        """Materialize runtime request from canonical intake envelope (AUDIT-IDEAL-3.1)."""
+        return cls(
+            agent_id=envelope.agent_id or "",
+            user_id=envelope.user_id,
+            session_id=envelope.session_id or f"sess_{envelope.tenant_id}",
+            message=envelope.message,
+            workspace_id=envelope.workspace_id,
+            tenant_id=envelope.tenant_id,
+            metadata=dict(envelope.metadata),
+        )
+
     # User-provided instructions (ChatGPT/Gemini-style)
     instructions: Optional[str] = None
 

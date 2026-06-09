@@ -25,6 +25,8 @@ class MemoryKind(Enum):
     PREFERENCE = "preference"
     SESSION_SUMMARY = "session_summary"
     EPISODIC_EVENT = "episodic_event"
+    SEMANTIC = "semantic"
+    PROCEDURAL = "procedural"
     ORG_FACT = "org_fact"
     POLICY = "policy"
     OTHER = "other"
