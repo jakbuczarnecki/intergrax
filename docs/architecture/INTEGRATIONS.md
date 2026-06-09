@@ -379,6 +379,8 @@ trace_store = open_trace_store_from_profile(profile)
 | `graph_store` | `GraphStore` | Agent memory, tool dependency graphs |
 | `document_parser` | `DocumentParser` | Document/media parsing (Docling, PyMuPDF, Unstructured, python-docx, openpyxl, whisper, yt_dlp) |
 | `rerank_provider` | `RerankProvider` | Vendor reranking APIs (cohere_rerank, jina_rerank) — consumed by RAG `rerankers/` |
+| `security_scanner` | `SecurityScannerBackend` | SAST/dependency scans (trivy, snyk, semgrep) — CI and release gates |
+| `llm_guardrail` | `LlmGuardrailBackend` | LLM I/O safety scanners (LLM Guard, Guardrails AI, NeMo, OpenGuardrails) — §47 |
 | `cloud_platform` | `CloudPlatform` | Multi-service auth + category defaults |
 
 Contract modules: `intergrax/integrations/contracts/`.
@@ -858,6 +860,135 @@ All **185** shipped providers include an English usage guide at `intergrax/integ
 ```bash
 uv run python scripts/generate_integration_usage_docs.py
 ```
+
+---
+
+## 47. LLM guardrail integrations
+
+**Canon cross-refs:** UAEP guardrail catalog §42.11.6 · Policy bundle §42.11.4 · Middleware hooks §42.42 · Security defenses §42.45 · CVL [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md).
+
+Third-party **guardrail engines** belong in the **Integration Library** — not in Tier-2 agents and not as parallel Nexus modules. Intergrax composes **native harness defenses** (`prompt_security`, `tool_security`, `PolicyEngine`, CVL L0) with **optional vendor backends** selected per Tier-3 host.
+
+### 47.1 Design rules
+
+| Rule | Rationale |
+|------|-----------|
+| **Category `llm_guardrail`** | One contract (`LlmGuardrailBackend`) — swap NeMo / Guardrails AI / LLM Guard / OpenGuardrails without agent changes |
+| **Vendor imports only in `opens.py`** | Same boundary as §Design principles — `scripts/check_integration_vendor_imports.py` |
+| **Middleware invocation only** | Tier-1 `guardrail_runtime_bridge` (planned M.12) calls integration at §42.42 hooks — agents never import slugs |
+| **Policy consequences unified** | Scanner result → `GuardrailScanResult` → `PolicyEngine` / `ValidationResult` — no ad-hoc `raise` in adapters |
+| **Defense in depth** | Fast deterministic scanners first (LLM Guard, native `prompt_security`); orchestration frameworks second (NeMo); semantic validators third (Guardrails AI Hub) |
+| **Not LLM adapters** | Guardrail engines are **not** `intergrax/llm_adapters/` — they scan or constrain calls, not replace the producer model |
+
+### 47.2 Category contract (planned M.12)
+
+```text
+LlmGuardrailBackend:
+    slug: str
+    scan_input(text, *, context: GuardrailContext) -> GuardrailScanResult
+    scan_output(text, *, context: GuardrailContext) -> GuardrailScanResult
+    scan_tool_call(request: ToolRequest, *, context: GuardrailContext) -> GuardrailScanResult  # optional
+    health_check() -> bool
+
+GuardrailScanResult:
+    allowed: bool
+    risk_level: low | medium | high | critical
+    categories: list[str]          # e.g. prompt_injection, pii, toxicity
+    matched_rules: list[str]
+    sanitized_text: str | null     # when redaction/masking applied
+    audit_payload: dict
+```
+
+`IntegrationProfile.llm_guardrail: IntegrationBinding | None` — resolved at Tier-3 startup; wired through `security_runtime_bridge` / `guardrail_runtime_bridge` (M.12).
+
+### 47.3 Recommended vendor libraries (2026)
+
+Use this matrix to **pick engines by problem shape**, then register the matching catalog slug. Production stacks often **layer** multiple engines (fast scanner + programmable rails + output validator).
+
+| Library | PyPI / package | Primary strength | Typical hook | Latency class | Deploy posture |
+|---------|----------------|------------------|--------------|---------------|----------------|
+| **[LLM Guard](https://github.com/protectai/llm-guard)** | `llm-guard` | Fast I/O scanning — prompt injection, secrets, toxicity, anonymization | pre-LLM, post-LLM | **Low** (~&lt;50ms CPU) | On-prem, no GPU required |
+| **[Guardrails AI](https://github.com/guardrails-ai/guardrails)** | `guardrails-ai` | Composable validators, Hub validators, RAIL, structured-output re-ask | post-LLM, completion | Medium (20–200ms+) | On-prem; validators may call models |
+| **[NVIDIA NeMo Guardrails](https://github.com/NVIDIA-NeMo/Guardrails)** | `nemoguardrails` | Colang dialog flows, multi-rail pipelines, tool-call constraints | pre/post-LLM, multi-turn | Medium–high (150–500ms+) | GPU optional; strong for conversational agents |
+| **[OpenGuardrails](https://github.com/openguardrails/openguardrails)** | `openguardrails` | Enterprise gateway — DLP, masking, multi-tenant policy, OpenAI-compatible proxy | gateway or SDK scan | Medium (API / self-hosted) | SaaS, private cloud, or on-prem gateway |
+| **[Meta Llama Guard](https://huggingface.co/meta-llama/Llama-Guard-3-8B)** | via inference host / `llm_guardrail` wrapper | Content-safety classifier (input/output) | pre/post-LLM | Medium (model inference) | Self-hosted model; often composed inside NeMo or custom adapter |
+| **[Microsoft Presidio](https://github.com/microsoft/presidio)** | `presidio-analyzer`, `presidio-anonymizer` | PII detect/redact (deterministic + NER) | pre-LLM, post-LLM, logs | Low–medium | On-prem; pairs with LLM Guard |
+| **[Lakera Guard](https://www.lakera.ai/)** | REST API | Prompt injection / jailbreak API | pre-LLM | Low (~&lt;150ms API) | Managed API |
+| **Azure AI Content Safety** | `azure-ai-contentsafety` | Moderation categories, blocklists | pre/post-LLM | Medium (cloud API) | Azure tenants |
+| **AWS Bedrock Guardrails** | boto3 bedrock | Content, prompt attack, PII, contextual grounding | provider-side or pre-call | Variable | AWS Bedrock workloads |
+
+**Also worth tracking:** `open-guardrail` (deterministic multi-language guard pack, edge-friendly), **Rebuff** (prompt injection focus), **Patronus** / **Aporia** (managed eval+safety APIs) — add catalog slugs when a product host requires them; do not fork ad-hoc SDK calls in agents.
+
+### 47.4 Layering pattern (recommended)
+
+```text
+                    ┌─────────────────────────────────────┐
+  User input ──────►│ L1: LLM Guard / prompt_security     │ fast deny / redact
+                    └─────────────────┬───────────────────┘
+                                      ▼
+                    ┌─────────────────────────────────────┐
+                    │ L2: NeMo Guardrails (optional)      │ dialog / tool rails
+                    └─────────────────┬───────────────────┘
+                                      ▼
+                              Producer LLM (llm_adapters)
+                                      ▼
+                    ┌─────────────────────────────────────┐
+                    │ L3: Guardrails AI / L0 CVL          │ schema + validators
+                    └─────────────────┬───────────────────┘
+                                      ▼
+                    ┌─────────────────────────────────────┐
+                    │ PolicyEngine → HITL if REQUIRED     │
+                    └─────────────────────────────────────┘
+```
+
+### 47.5 Planned catalog slugs (Phase M.12)
+
+| Slug | Backend library | Priority | Notes |
+|------|-----------------|----------|-------|
+| `llm_guard` | Protect AI LLM Guard | **P0** | Default on-prem fast scanner; `scan_prompt` / `scan_output` wrappers |
+| `guardrails_ai` | Guardrails AI | **P0** | Hub validators; map to `GuardrailScanResult` |
+| `nemo_guardrails` | NVIDIA NeMo Guardrails | **P1** | Colang config path via Tier-3 `GuardrailProfile` |
+| `openguardrails` | OpenGuardrails SDK / gateway | **P1** | API key or self-hosted gateway URL |
+| `presidio` | Microsoft Presidio | **P1** | PII-only adapter; composable with `llm_guard` |
+| `llama_guard` | Llama Guard inference | **P2** | Requires `ml_inference_host` or Triton slug |
+| `lakera` | Lakera Guard API | **P2** | Managed API adapter |
+| `azure_content_safety` | Azure Content Safety | **P2** | Azure profile hosts |
+| `bedrock_guardrails` | AWS Bedrock Guardrails | **P2** | `aws` cloud_platform hosts |
+
+**Tier-3 preset (planned):** `harness_guardrail_stack(primary="llm_guard", semantic="guardrails_ai")` in `registry/presets.py`.
+
+### 47.6 Wiring sketch (target M.12)
+
+```python
+# Tier-3 host — applications/<product>/host/integration_wiring.py
+from intergrax.integrations.registry.presets import harness_guardrail_stack  # M.12
+
+profile = harness_guardrail_stack(
+    primary="llm_guard",
+    semantic="guardrails_ai",
+    enable_presidio_pii=True,
+)
+# profile.llm_guardrail resolved → guardrail_runtime_bridge on RuntimeConfig
+```
+
+```python
+# Tier-1 — planned guardrail_runtime_bridge.py (not shipped)
+# before_step / pre-LLM:
+result = backend.scan_input(prompt, context=ctx.guardrail_context())
+if not result.allowed:
+    return PolicyDecision(action=DENY, reason="guardrail_input", audit_payload=result.audit_payload)
+```
+
+**Verification (when M.12 ships):**
+
+```bash
+uv run pytest tests/unit/integrations/providers/llm_guardrail/ -m gate -q
+uv run pytest tests/unit/runtime/test_guardrail_runtime_bridge.py -m gate -q
+```
+
+**Implementation tracker:** [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) Phase **M.12** · UAEP doc Phase **GR-DOC**.
+
+---
 
 ## Adding a new provider
 

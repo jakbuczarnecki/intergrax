@@ -278,6 +278,7 @@ Wave H-INT-5 (enterprise):  M-P4.17 → M-P4.18 → M-P4.19 → M-P4.20 → M-P4
 | M.6 P5 | Harness integration depth (audit 2026-06-02) | **Done** (33/34) | Harden 25 STABLE + health · 8 greenfield · `trivy` → [M.6 P6](#m6-p6--harness-integration-expansion-planned) · [M.6 P5 register](#m6-p5--harness-integration-depth-done--3334) |
 | M.6 P6 | Harness integration expansion (audit 2026-06-02) | **Done** (32/32) | Security, sandbox, identity, GitOps CI, speech catalog, enterprise ops, data/workflow, modality reserve · [M.6 P6 register](#m6-p6--harness-integration-expansion-planned) · Band **2ac** |
 | M.7 P7 | Agent-developer integration expansion (audit 2026-06-08) | **Done** (18/18) | Research/RAG, chat bots, browser automation, workflow glue, serverless cache/queue, warehouse analytics · [M.7 P7 register](#m7-p7--agent-developer-integration-expansion-done--1818) · Band **2ad** |
+| M.12 | LLM guardrail vendor adapters | **Planned** | Category `llm_guardrail` · LLM Guard, Guardrails AI, NeMo, OpenGuardrails, Presidio + cloud · [M.12 register](#phase-m12--llm-guardrail-integrations-planned) |
 | M.7 | Agent Creation Guide § integrations | **Done** | Appendix E — capabilities/tools vs `IntegrationProfile` / `wire_lab_integrations()` |
 | M.8 | Lab `IntegrationProfile` example | **Done** | `applications/lab_application/` — `wire_lab_integrations()` + `log` provider |
 
@@ -704,6 +705,47 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 |------|-----|---------|
 | 2026-06-08 | M-P7.0 | Register 18 agent-developer slugs; §6.1z + Band **2ad** |
 | 2026-06-08 | M-P7.1–18 | `_shared/p8`, bootstrap, presets, tool auto-wiring, tests `test_p8_m7_p7_providers.py` |
+
+#### Phase M.12 — LLM guardrail integrations (Planned)
+
+**Canon:** [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) §47 · UAEP §42.11.6  
+**Goal:** Ship `llm_guardrail` integration category + Tier-1 `guardrail_runtime_bridge` so Tier-3 hosts can select NeMo Guardrails, Guardrails AI, LLM Guard, OpenGuardrails, and complementary scanners without agent SDK imports.
+
+**Status:** **Planned** — documentation **Done** (GR-DOC.4); code **0/14** deliverables.
+
+**Policy:** One slug per PR; P0 slugs (`llm_guard`, `guardrails_ai`) before P1 orchestration backends; optional cloud slugs only when product host requires.
+
+##### M.12 — Master register
+
+| ID | Wave | Slug / deliverable | Priority | Status | Package / module | Acceptance |
+|----|------|-------------------|----------|--------|------------------|------------|
+| M-P12-CAT.1 | CAT | `LlmGuardrailBackend` contract + `IntegrationCategory.LLM_GUARDRAIL` | **P0** | **Planned** | `integrations/contracts/llm_guardrail.py` | Conformance helper + unit tests |
+| M-P12-CAT.2 | CAT | `IntegrationProfile.llm_guardrail` field + resolver | **P0** | **Planned** | `registry/profile.py` | Profile resolve tests |
+| M-P12.1 | H-INT-GR-1 | `llm_guard` — Protect AI LLM Guard | **P0** | **Planned** | `providers/llm_guardrail/llm_guard/` | `scan_input` / `scan_output`; vendor only in `opens.py` |
+| M-P12.2 | H-INT-GR-2 | `guardrails_ai` — Guardrails AI Hub validators | **P0** | **Planned** | `providers/llm_guardrail/guardrails_ai/` | Map validator failures → `GuardrailScanResult` |
+| M-P12.3 | H-INT-GR-3 | `nemo_guardrails` — NVIDIA NeMo Guardrails | **P1** | **Planned** | `providers/llm_guardrail/nemo_guardrails/` | Colang config path; optional GPU note in USAGE |
+| M-P12.4 | H-INT-GR-4 | `openguardrails` — OpenGuardrails SDK / gateway | **P1** | **Planned** | `providers/llm_guardrail/openguardrails/` | API + self-hosted gateway modes |
+| M-P12.5 | H-INT-GR-5 | `presidio` — Microsoft Presidio PII | **P1** | **Planned** | `providers/llm_guardrail/presidio/` | Redact + audit categories |
+| M-P12.6 | H-INT-GR-6 | `llama_guard` — Meta Llama Guard classifier | **P2** | **Planned** | `providers/llm_guardrail/llama_guard/` | Requires inference host binding |
+| M-P12.7 | H-INT-GR-7 | `lakera` — Lakera Guard API | **P2** | **Planned** | `providers/llm_guardrail/lakera/` | REST adapter |
+| M-P12.8 | H-INT-GR-8 | `azure_content_safety` | **P2** | **Planned** | `providers/llm_guardrail/azure_content_safety/` | Azure profile integration |
+| M-P12.9 | H-INT-GR-9 | `bedrock_guardrails` | **P2** | **Planned** | `providers/llm_guardrail/bedrock_guardrails/` | AWS Bedrock policy IDs |
+| M-P12-PRE.1 | PRE | `harness_guardrail_stack()` preset | **P0** | **Planned** | `registry/presets.py` | Lab + legal strict profile examples |
+| M-P12-WIRE.1 | WIRE | `guardrail_runtime_bridge` + middleware registration | **P0** | **Planned** | `applications/_shared/guardrail_wiring.py`, `runtime/middleware/` | §42.42 pre/post-LLM hooks |
+| M-P12-WIRE.2 | WIRE | Extend `security_runtime_bridge` to compose native + vendor | **P1** | **Planned** | `security_runtime_bridge.py` | No duplicate scan paths |
+| M-P12-WIRE.3 | CI | `check_harness_guardrail_wiring.py` | **P1** | **Planned** | `scripts/` | CI gate for profile ↔ bridge |
+
+**Suggested PR order:** M-P12-CAT.1 → M-P12-CAT.2 → M-P12.1 → M-P12.2 → M-P12-WIRE.1 → M-P12-PRE.1 → remaining slugs.
+
+**Optional dependency group (planned):** `Intergrax-ai[integrations-guardrails]` — `llm-guard`, `guardrails-ai`, `nemoguardrails`, `presidio-analyzer`, `presidio-anonymizer`; heavy/GPU deps optional extras.
+
+**ADR:** Required on **M-P12-CAT.1** merge — harness contract for `LlmGuardrailBackend` + middleware bridge (topic: guardrail integration plane).
+
+##### M.12 — Paydown log
+
+| Date | ID | Summary |
+|------|-----|---------|
+| 2026-06-09 | M-P12-DOC.1 | Architecture §47 + plan register opened; UAEP GR-DOC cross-ref |
 
 ##### M.6 P6 — Post-catalog wiring closeout (Done — 2026-06-02)
 

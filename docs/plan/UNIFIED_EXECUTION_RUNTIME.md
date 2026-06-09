@@ -1047,6 +1047,34 @@ domain MUST be reflected in:
 
 ---
 
+## Phase GR-DOC — Guardrail catalog documentation
+
+**Status:** **Done** (2026-06-09) — documentation-only; vendor adapters tracked under [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) Phase **M.12**.
+
+**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §5 (Policy), §23 (Security); IDEAL §3.3 guardrails vector.
+
+**ADR:** **No ADR needed** for documentation-only catalog. First shipped `llm_guardrail` slug (M.12) requires harness ADR (`docs/adr/`) for contract + middleware bridge.
+
+### GR-DOC — Master register
+
+| ID | Type | Deliverable | Status | Evidence |
+|----|------|-------------|--------|----------|
+| GR-DOC.1 | Docs | UAEP **§42.11.6** guardrail catalog (types → hooks → artifacts) | **Done** | `architecture/UNIFIED_EXECUTION_RUNTIME.md` |
+| GR-DOC.2 | Docs | Hub cross-index row + §42.37 governance layer 7 | **Done** | `intergrax_runtime_architecture.md` |
+| GR-DOC.3 | Docs | Harness term **Guardrails** in PLATFORM §5.3.1 | **Done** | `architecture/PLATFORM_FOUNDATION.md` |
+| GR-DOC.4 | Docs | Integration canon **§47** + vendor library matrix | **Done** | `architecture/INTEGRATIONS.md` |
+| GR-INT.1 | Code | `LlmGuardrailBackend` contract + M.12 slugs | **Planned** | [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) M.12 |
+| GR-INT.2 | Code | `guardrail_runtime_bridge` → §42.42 middleware | **Planned** | M.12-WIRE.1 |
+| GR-INT.3 | CI | `check_harness_guardrail_wiring.py` | **Planned** | M.12-WIRE.3 |
+
+### GR-DOC — Paydown log
+
+| Date | ID | Summary |
+|------|-----|---------|
+| 2026-06-09 | GR-DOC.1–4 | Guardrail catalog canon + hub index + PLATFORM term + INTEGRATIONS §47 vendor matrix |
+
+---
+
 ## Appendix J
 
 
