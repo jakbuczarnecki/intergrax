@@ -19,7 +19,9 @@ from intergrax.applications.contracts.environment_profile import (
     OrchestrationProfile,
 )
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec, GraphNode
+from intergrax.applications.contracts.intent_route import IntentRoute
 from intergrax.runtime.nexus.planning.task_planner import TaskPlanner
+from intergrax.runtime.nexus.rules_task_classifier import RulesTaskClassifier
 from intergrax.runtime.nexus.task_classifier import ClassifyingTaskClassifier
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from echo.echo_agent import EchoAgent
@@ -92,3 +94,20 @@ def test_max_parallel_nodes_from_profile() -> None:
         }
     )
     assert resolve_max_parallel_nodes(env) == 2
+
+
+def test_rules_classifier_resolves_from_profile() -> None:
+    registry = AgentRegistry()
+    registry.register(EchoAgent())
+    env = ApplicationEnvironmentProfile.lab_defaults().model_copy(
+        update={
+            "orchestration_profile": OrchestrationProfile(
+                classifier_kind="rules",
+                intent_routes=[
+                    IntentRoute(capability="echo.pipeline", keywords=["pipeline"]),
+                ],
+            ),
+        }
+    )
+    classifier = resolve_nexus_task_classifier(registry, env)
+    assert isinstance(classifier, RulesTaskClassifier)

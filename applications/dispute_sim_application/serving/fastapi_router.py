@@ -32,13 +32,14 @@ class DisputeSimRunService:
 
     async def run_task(self, body: DisputeSimRunRequestV1) -> DisputeSimRunResponseV1:
         run_id = new_run_id()
+        capability = (body.capability or "").strip() or None
         task = Task(
             task_id=run_id,
             tenant_id=body.tenant_id,
             user_id=body.user_id,
             session_id=body.session_id,
             message=body.message,
-            context=TaskContext(capability=body.capability or "dispute.intake"),
+            context=TaskContext(capability=capability),
             metadata=dict(body.metadata),
         )
         result = await self.task_runner.run_task(task)

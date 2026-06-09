@@ -4,5 +4,6 @@
 """Capability ids exposed by the dispute_strategist agent."""
 
 CAPABILITIES: list[str] = [
-    'dispute.strategy'
+    "dispute.strategy",
+    "dispute.full_pipeline",
 ]

@@ -18,6 +18,7 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.planning.nexus_llm_plan_builder import build_nexus_plan_from_llm
 from intergrax.runtime.nexus.planning.nexus_planner_protocol import NexusTaskPlannerProtocol
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, TaskPlanner
+from intergrax.runtime.nexus.rules_task_classifier import RulesTaskClassifier
 from intergrax.runtime.nexus.task_classifier import ClassifyingTaskClassifier
 from intergrax.runtime.nexus.task_classifier_protocol import NexusTaskClassifierProtocol
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -35,6 +36,7 @@ class NexusPlannerKind(str, Enum):
 
 class NexusClassifierKind(str, Enum):
     DEFAULT = "default"
+    RULES = "rules"
 
 
 @dataclass(frozen=True)
@@ -104,7 +106,7 @@ class GraphSpecSeedingPlanner:
         self._graph_spec = graph_spec
 
     def plan(self, task: Task, registry: AgentRegistry) -> NexusPlan:
-        if should_seed_plan_from_graph_spec(task) and self._graph_spec.nodes:
+        if should_seed_plan_from_graph_spec(task, self._graph_spec):
             classification = task.classification or ""
             return application_graph_spec_to_nexus_plan(
                 self._graph_spec,
@@ -131,6 +133,8 @@ def _normalize_classifier_kind(raw: str | None) -> NexusClassifierKind:
     normalized = raw.strip().lower()
     if normalized == NexusClassifierKind.DEFAULT.value:
         return NexusClassifierKind.DEFAULT
+    if normalized == NexusClassifierKind.RULES.value:
+        return NexusClassifierKind.RULES
     raise OrchestrationWiringError(f"Unknown classifier_kind: {raw!r}")
 
 
@@ -170,6 +174,11 @@ def resolve_nexus_task_classifier(
     kind = _normalize_classifier_kind(env.orchestration_profile.classifier_kind)
     if kind is NexusClassifierKind.DEFAULT:
         return ClassifyingTaskClassifier(registry)
+    if kind is NexusClassifierKind.RULES:
+        return RulesTaskClassifier(
+            registry,
+            intent_routes=list(env.orchestration_profile.intent_routes),
+        )
     raise OrchestrationWiringError(f"Unhandled classifier_kind: {kind.value}")
 
 

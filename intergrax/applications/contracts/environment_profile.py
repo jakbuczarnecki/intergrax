@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
+from intergrax.applications.contracts.intent_route import IntentRoute
 from intergrax.applications.contracts.application_host import ApplicationFeatures, ApplicationProfile
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -223,6 +224,7 @@ class OrchestrationProfile(BaseModel):
     merge_strategy: str = "concat"
     multi_agent_order: str = "registry"
     allow_dynamic_replan: bool = False
+    intent_routes: list[IntentRoute] = Field(default_factory=list)
 
 
 class ShadowWorkspaceProfile(BaseModel):

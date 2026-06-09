@@ -1452,20 +1452,20 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ---
 
-## Phase ORCH-CONFIG — Platform interaction & multi-agent configuration (Band 2ar — planned)
+## Phase ORCH-CONFIG — Platform interaction & multi-agent configuration (Band 2ar — in progress)
 
-**Status:** **Planned** — **0/10 Done** (architecture **Done** 2026-06-09 — [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §56)  
+**Status:** **In progress** — **3/10 Done** (architecture **Done** 2026-06-09 — [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §56)  
 **Prerequisites:** Phase ORCH-STRAT **Done** · Phase H-APP-DOC.1 **Done** · default queue = §6.1 until Band 2ar prioritized  
 **Goal:** Close every gap in §56.11 so **all CFG-* cases** marked ⚠️/❌ become ✅ without runtime forks  
 **Canonical input:** §56.7 case register + §56.11 plan table — do not duplicate elsewhere
 
-**ADR:** ORCH-CONFIG.2 → harness ADR if `trigger_capabilities` changes seed semantics; ORCH-CONFIG.3 → ADR only if new Tier-0 `PipelineCapabilityRegistry` is introduced.
+**ADR:** [`ADR-FLOW-004`](../adr/ADR-FLOW-004.md) (ORCH-CONFIG.2 seed guard); ORCH-CONFIG.3 → no ADR (suffix convention).
 
 | ID | CFG / scope | Deliverable | Status | Priority | Acceptance |
 |----|-------------|-------------|--------|----------|------------|
-| ORCH-CONFIG.1 | CFG-04 | LLM/rules classifier — delegate to **COG-3.*** | Planned | **Critical** | `classifier_kind=engine` or `rules`; free-text → capability |
-| ORCH-CONFIG.2 | CFG-18 | `ApplicationGraphSpec.trigger_capabilities` + `should_seed` guard | Planned | **Critical** | Single-route + graph on same host; unit + gate test |
-| ORCH-CONFIG.3 | CFG-05+ | Pipeline convention: `*.pipeline` → graph_spec seed (no per-product `TaskPlanner` fork) | Planned | High | `dispute.pipeline`-style products without code change in `task_planner.py` |
+| ORCH-CONFIG.1 | CFG-04 | Rules classifier + `IntentRoute`; LLM path via **COG-3.*** | **Partial** | **Critical** | `classifier_kind=rules`; free-text → capability; engine classifier pending |
+| ORCH-CONFIG.2 | CFG-18 | `ApplicationGraphSpec.trigger_capabilities` + `should_seed` guard | **Done** | **Critical** | ADR-FLOW-004 · unit + dispute_sim gate tests |
+| ORCH-CONFIG.3 | CFG-05+ | Pipeline convention: `*.pipeline` → graph_spec seed (no per-product `TaskPlanner` fork) | **Done** | High | `pipeline_capability_suffix` default `.pipeline` |
 | ORCH-CONFIG.4 | CFG-03, CFG-14 | Scaffold optional interaction intake + queue consumer wiring | Planned | High | `new-application` emits flags; legal host reference |
 | ORCH-CONFIG.5 | CFG-06–08, CFG-20 | Reference Tier-3 3+ node `graph_spec` E2E (aligns FLOW-8) | Deferred | High | §6.3 product gate; gate acceptance |
 | ORCH-CONFIG.6 | CFG-13, CFG-19 | `long_running` profile → task defaults helper / host policy doc | Planned | Medium | Background jobs get checkpoint without per-route boilerplate |

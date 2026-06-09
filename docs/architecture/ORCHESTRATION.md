@@ -989,9 +989,9 @@ Each case is a **canonical product configuration**. Implementation plan rows map
 | **CFG-01** | Single reactive Q&A | A1 | B1 | C1 | D1 | E0 | ✅ Done | `fastapi_router`, `TaskPlanner` |
 | **CFG-02** | Daemon single agent | A2 | B1 | C1 | D1 | E0 | ✅ Done | host `main.py`, same Nexus path |
 | **CFG-03** | Slack slash → one agent | A1/A2 | B2 | C1 | D1 | E0 | ⚠️ Partial | `interaction_wiring` — not all hosts |
-| **CFG-04** | Free-text chat → auto route | A1/A2 | B3 | C1/C3/C5 | D1/D2 | E0 | ❌ Planned | COG-3.* classifier |
+| **CFG-04** | Free-text chat → auto route | A1/A2 | B3 | C1/C3/C5 | D1/D2 | E0 | ⚠️ Partial | `classifier_kind=rules` + `IntentRoute` (ORCH-CONFIG.1); LLM via COG-3.* pending |
 | **CFG-05** | Two-agent pipeline (research) | A1 | B1 | C4 | D2 | E0 | ✅ Done | `research.pipeline` in `TaskPlanner` |
-| **CFG-06** | Two-agent sequential graph | A1 | B1+B4 | C3 | D2 | E0 | ⚠️ Partial | `graph_spec`, `GraphSpecSeedingPlanner` |
+| **CFG-06** | Two-agent sequential graph | A1 | B1+B4 | C3 | D2 | E0 | ✅ Done | `dispute_sim_application` + `graph_spec` + gate tests |
 | **CFG-07** | N-agent sequential graph | A1/A3 | B1+B4 | C3 | D2 | E0/E1 | ⚠️ Partial | `graph_spec_to_plan`, acceptance 02 |
 | **CFG-08** | N-agent parallel graph | A1 | B1+B4 | C3 | D3 | E0 | ⚠️ Partial | `ExecutionGraph.batches`, acceptance 03 |
 | **CFG-09** | Hierarchical delegation | A1 | B1+B4 | C3+C6 | D4 | E0 | ✅ Done | ADR-FLOW-001, `DELEGATES_TO` |
@@ -1003,7 +1003,7 @@ Each case is a **canonical product configuration**. Implementation plan rows map
 | **CFG-15** | High-risk + HITL | A1 | B1 | C1/C3 | D5 | E2 | ✅ Done | acceptance 04, `NexusHitlRunner` |
 | **CFG-16** | Critic before complete | A1 | B1 | C3 | D6 | E1/E3 | ⚠️ Partial | `CriticGraphHooks`, CVL |
 | **CFG-17** | Swarm exploration | A1 | B1 | C3/C5 | D7 | E0 | ❌ Planned | ORCH-5.1 |
-| **CFG-18** | Pipeline + single-route conflict | A1 | B1+B4 | C3 | D2 | E0 | ⚠️ Pitfall | Needs ORCH-CONFIG.2 `trigger_capabilities` |
+| **CFG-18** | Pipeline + single-route conflict | A1 | B1+B4 | C3 | D2 | E0 | ✅ Done | `trigger_capabilities` + ADR-FLOW-004 |
 | **CFG-19** | Long-running + resume | A3/A1 | B1 | any | any | E0 | ✅ Done | acceptance 05/05b, checkpoint store |
 | **CFG-20** | Strict production multi-agent | A1 | B1+B4 | C3 | D2/D3 | E1+E3 | ⚠️ Partial | `execution_mode=strict` + critic + graph_spec |
 
@@ -1083,9 +1083,9 @@ Honest platform readiness derived from §56.7. **This table is the direct input 
 
 | Plan ID | CFG / gap | Deliverable | Priority | Status | Unblocks |
 |---------|-----------|-------------|----------|--------|----------|
-| **ORCH-CONFIG.1** | CFG-04 | LLM/rules classifier (`COG-3.*`) | **Critical** | Planned | Free-text chat products |
-| **ORCH-CONFIG.2** | CFG-18 | `ApplicationGraphSpec.trigger_capabilities` + seed guard | **Critical** | Planned | Safe graph_spec + single routes |
-| **ORCH-CONFIG.3** | CFG-05 generalization | `PipelineCapabilityRegistry` or document-only `*.pipeline` → graph_spec rule | High | Planned | Any product pipeline without forked `TaskPlanner` |
+| **ORCH-CONFIG.1** | CFG-04 | Rules classifier + `IntentRoute` (`classifier_kind=rules`); LLM path via COG-3.* | **Critical** | **Partial** | Free-text → capability (rules); engine classifier pending |
+| **ORCH-CONFIG.2** | CFG-18 | `ApplicationGraphSpec.trigger_capabilities` + seed guard | **Critical** | **Done** | ADR-FLOW-004 · `test_graph_spec_to_plan.py` |
+| **ORCH-CONFIG.3** | CFG-05 generalization | `*.pipeline` suffix → graph_spec seed (no `TaskPlanner` fork) | High | **Done** | `pipeline_capability_suffix` default `.pipeline` |
 | **ORCH-CONFIG.4** | CFG-03, CFG-14 | Scaffold: optional interaction intake + queue consumer templates | High | Planned | Consistent Tier-3 surfaces |
 | **ORCH-CONFIG.5** | CFG-06–08, CFG-20 | Reference Tier-3 host with 3+ node `graph_spec` + gate E2E (FLOW-8) | High | Deferred §6.3 | Product proof |
 | **ORCH-CONFIG.6** | CFG-13, CFG-19 | Document + helper: profile `long_running_enabled` → default task flag policy | Medium | Planned | Background job ergonomics |
@@ -1104,7 +1104,7 @@ Honest platform readiness derived from §56.7. **This table is the direct input 
 | ORCH-CONFIG.5 | `plan/NEXUS_EXECUTION_FLOW.md` FLOW-8 |
 | ORCH-CONFIG.8 | `plan/ORCHESTRATION.md` ORCH-5.1 |
 
-**ADR policy:** ORCH-CONFIG.2 (trigger_capabilities) → `docs/adr/` if seed semantics change; ORCH-CONFIG.3 → ADR only if new Tier-0 registry introduced.
+**ADR policy:** ORCH-CONFIG.2 → [`ADR-FLOW-004`](../../adr/ADR-FLOW-004.md); ORCH-CONFIG.3 → no ADR (suffix convention only).
 
 ## 56.12 Extensibility — arbitrary agent count & strategy
 

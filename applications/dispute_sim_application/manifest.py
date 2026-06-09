@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.fastapi_core.config import ApiEnvironment
 from intergrax.integrations.registry.profile import IntegrationProfile
 from dispute_analyst.dispute_analyst_agent import DisputeAnalystAgent
 from dispute_intake.dispute_intake_agent import DisputeIntakeAgent
@@ -17,24 +18,13 @@ from dispute_sim_application.host.agent_factories import (
     build_dispute_sim_dispute_scenario_from_context,
     build_dispute_sim_dispute_strategist_from_context,
 )
+from dispute_sim_application.host.environment_profile import build_dispute_sim_environment_profile
+from dispute_sim_application.host.settings import DisputeSimBackendSettings
 
 
 def _dispute_sim_environment() -> ApplicationEnvironmentProfile:
-    return (
-        ApplicationEnvironmentProfile.product_defaults(
-            profile_id="dispute_sim.product",
-            skill_bundles=["harness", "legal"],
-        )
-        .model_copy(
-            update={
-                "integration_profile": IntegrationProfile.legal_product(),
-                "context_profile": ApplicationEnvironmentProfile.product_defaults()
-                .context_profile.model_copy(
-                    update={"enable_rag": True, "enable_websearch": False}
-                ),
-            }
-        )
-        .with_harness_memory()
+    return build_dispute_sim_environment_profile(
+        DisputeSimBackendSettings(environment=ApiEnvironment.DEV),
     )
 
 
@@ -57,17 +47,17 @@ DISPUTE_SIM_APPLICATION_MANIFEST = ApplicationManifest.product(
         AgentBinding.mount(
             DisputeAnalystAgent,
             factory=build_dispute_sim_dispute_analyst_from_context,
-            capabilities=["dispute.analyze"],
+            capabilities=["dispute.analyze", "dispute.pipeline", "dispute.correspondence"],
         ),
         AgentBinding.mount(
             DisputeStrategistAgent,
             factory=build_dispute_sim_dispute_strategist_from_context,
-            capabilities=["dispute.strategy"],
+            capabilities=["dispute.strategy", "dispute.full_pipeline"],
         ),
         AgentBinding.mount(
             DisputeScenarioAgent,
             factory=build_dispute_sim_dispute_scenario_from_context,
-            capabilities=["dispute.scenario"],
+            capabilities=["dispute.scenario", "dispute.pipeline", "dispute.correspondence"],
         ),
     ],
     description="Dispute Simulation Workspace — multi-agent litigation prep and scenario host",
