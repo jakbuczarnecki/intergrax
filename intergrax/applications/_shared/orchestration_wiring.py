@@ -125,6 +125,9 @@ class GraphSpecSeedingPlanner:
                 task,
                 classification=classification,
             )
+            metadata = dict(plan.plan_metadata)
+            metadata["planner_source"] = "graph_spec"
+            plan = plan.model_copy(update={"plan_metadata": metadata})
             return annotate_plan_coordination_pattern(
                 plan,
                 coordination_pattern=self._coordination_pattern,

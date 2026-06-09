@@ -19,6 +19,8 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     OrchestrationProfile,
 )
+from intergrax.applications.contracts.execution_mode import ExecutionMode
+from intergrax.runtime.architecture.multi_agent_coordination import CoordinationPattern
 from intergrax.applications.contracts.graph_spec import (
     ApplicationGraphSpec,
     GraphEdge,
@@ -319,6 +321,118 @@ async def test_cfg08_three_agent_parallel_graph() -> None:
     agent_ids = result.metadata.get("agent_ids")
     assert agent_ids is not None
     assert set(agent_ids) == {"evidence_agent", "response_agent", "synthesis_agent"}
+
+
+def _swarm_parallel_environment() -> ApplicationEnvironmentProfile:
+    """CFG-17: swarm coordination with three parallel root agents."""
+    base = ApplicationEnvironmentProfile.swarm_exploration_defaults(max_parallel_nodes=3)
+    intent_routes = [
+        IntentRoute(
+            capability=_PIPELINE,
+            keywords=["podwykonaw", "pismo", "odpisa", "zapłat", "subcontractor"],
+        ),
+        IntentRoute(
+            capability=_SINGLE,
+            keywords=["index", "ingest", "załącz"],
+        ),
+    ]
+    return base.model_copy(
+        update={
+            "graph_spec": ApplicationGraphSpec(
+                nodes=[
+                    GraphNode(agent_id="evidence_agent"),
+                    GraphNode(agent_id="response_agent"),
+                    GraphNode(agent_id="synthesis_agent"),
+                ],
+                edges=[],
+                trigger_capabilities=[_PIPELINE],
+            ),
+            "orchestration_profile": base.orchestration_profile.model_copy(
+                update={
+                    "classifier_kind": "rules",
+                    "intent_routes": intent_routes,
+                },
+            ),
+        },
+    )
+
+
+def _strict_multi_agent_environment() -> ApplicationEnvironmentProfile:
+    """CFG-20: strict preset with two-agent sequential graph."""
+    base = ApplicationEnvironmentProfile.strict_multi_agent_defaults(
+        profile_id="harness.cfg.strict",
+    )
+    return base.model_copy(
+        update={
+            "graph_spec": ApplicationGraphSpec(
+                nodes=[
+                    GraphNode(agent_id="evidence_agent"),
+                    GraphNode(agent_id="response_agent"),
+                ],
+                edges=[
+                    GraphEdge(
+                        source_agent_id="evidence_agent",
+                        target_agent_id="response_agent",
+                        kind=GraphEdgeKind.DEPENDS_ON,
+                    ),
+                ],
+                trigger_capabilities=[_PIPELINE],
+            ),
+            "orchestration_profile": base.orchestration_profile.model_copy(
+                update={
+                    "classifier_kind": "rules",
+                    "intent_routes": [
+                        IntentRoute(
+                            capability=_PIPELINE,
+                            keywords=["podwykonaw", "pismo", "odpisa", "zapłat", "subcontractor"],
+                        ),
+                    ],
+                },
+            ),
+        },
+    )
+
+
+@pytest.mark.asyncio
+async def test_cfg17_swarm_parallel_graph() -> None:
+    """CFG-17: swarm-labelled profile executes three-agent parallel batch."""
+    loop = build_nexus_loop_from_environment(
+        _three_agent_registry(),
+        env=_swarm_parallel_environment(),
+    )
+    result = await loop.handle_task(
+        Task(
+            tenant_id="org-sim",
+            user_id="operator-1",
+            message="parallel swarm review",
+            context=TaskContext(capability=_PIPELINE),
+        ),
+    )
+    assert result.state == TaskState.COMPLETED
+    assert result.metadata.get("coordination_pattern") == CoordinationPattern.SWARM.value
+    agent_ids = result.metadata.get("agent_ids")
+    assert agent_ids is not None
+    assert set(agent_ids) == {"evidence_agent", "response_agent", "synthesis_agent"}
+
+
+@pytest.mark.asyncio
+async def test_cfg20_strict_multi_agent_pipeline() -> None:
+    """CFG-20: strict_multi_agent_defaults completes structured two-agent graph."""
+    env = _strict_multi_agent_environment()
+    assert env.execution_mode is ExecutionMode.STRICT
+    assert env.critic_profile.require_critic_on_completion is True
+    loop = build_nexus_loop_from_environment(_simulation_registry(), env=env)
+    result = await loop.handle_task(
+        Task(
+            tenant_id="org-sim",
+            user_id="operator-1",
+            message="strict multi-agent review",
+            context=TaskContext(capability=_PIPELINE),
+        ),
+    )
+    assert result.state == TaskState.COMPLETED
+    payload = json.loads(result.answer)
+    assert len(payload["agents"]) == 2
 
 
 @pytest.mark.asyncio

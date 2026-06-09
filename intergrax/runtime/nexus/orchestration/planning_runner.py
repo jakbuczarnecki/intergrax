@@ -16,6 +16,7 @@ from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
 from intergrax.runtime.nexus.planning.nexus_planner_protocol import NexusTaskPlannerProtocol
+from intergrax.runtime.nexus.planning.plan_validator import validate_nexus_plan
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.nexus.task_classifier_protocol import NexusTaskClassifierProtocol
 from intergrax.contracts.runtime_policy import PolicyAction
@@ -182,9 +183,34 @@ class NexusPlanningRunner:
                 )
 
         plan = self.planner.plan(task, self.registry)
+        plan_errors = validate_nexus_plan(plan, self.registry)
+        if plan_errors:
+            lifecycle.transition(task, TaskState.FAILED)
+            return PlanningPhaseOutcome(
+                early_result=await self.finish_task(
+                    task,
+                    trace_emitter,
+                    answer="",
+                    executions=[],
+                    validation=ValidationResult(valid=False, errors=plan_errors),
+                    plan=plan,
+                    retry_records=[],
+                    graph_id="",
+                ),
+                classification=classification,
+            )
+
         task.runtime.orchestration.plan_id = plan.plan_id
+        for key, value in plan.plan_metadata.items():
+            task.metadata[key] = value
         task.sync_metadata()
         lifecycle.transition(task, TaskState.PLANNED)
+        plan_payload: dict[str, object] = {
+            "plan_id": plan.plan_id,
+            "step_count": len(plan.steps),
+            "task_state": task.state.value,
+        }
+        plan_payload.update(plan.plan_metadata)
         await self.publish(
             runtime_event_from_task_state(
                 task, run_id=task.task_id, message="plan created"
@@ -192,11 +218,7 @@ class NexusPlanningRunner:
                 update={
                     "event_type": RuntimeEventType.PLAN_CREATED,
                     "phase": ExecutionPhase.PLANNING,
-                    "payload": {
-                        "plan_id": plan.plan_id,
-                        "step_count": len(plan.steps),
-                        "task_state": task.state.value,
-                    },
+                    "payload": plan_payload,
                 }
             )
         )

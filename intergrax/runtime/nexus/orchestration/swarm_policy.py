@@ -27,6 +27,18 @@ def annotate_plan_coordination_pattern(
     return annotated
 
 
+def validate_swarm_parallel_batch(
+    batch_size: int,
+    *,
+    min_nodes: int = 3,
+) -> None:
+    """Runtime guard for parallel batches under swarm coordination (ORCH-5.1)."""
+    if batch_size < min_nodes:
+        raise SwarmCoordinationError(
+            f"swarm parallel batch requires at least {min_nodes} nodes, got {batch_size}"
+        )
+
+
 def validate_swarm_plan(plan: NexusPlan, *, min_parallel_roots: int = 3) -> None:
     """
     Swarm (D7) requires at least ``min_parallel_roots`` root steps (no ``depends_on``).

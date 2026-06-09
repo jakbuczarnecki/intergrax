@@ -130,7 +130,7 @@ Work **one COG ID per PR** when Band 2am is activated.
 |----|-------------|--------|----------|--------|------------|
 | COG-1.1 | **`EngineBackedNexusPlanner` → `EnginePlannerOrchestrator` adapter** — shared parse/validate path for `NexusPlan` | Planned | **Critical** | `orchestration_wiring.py`, `nexus_llm_plan_builder.py` | Unit: same task → equivalent plan shape vs current bridge |
 | COG-1.2 | **Unified planner diagnostics** — single `planner_build_debug` surface on Nexus planning trace | Planned | High | `engine_planner_diagnostics.py` | `PLAN_CREATED` payload includes planner source |
-| COG-1.3 | **Plan validation gate** — reject LLM plans with cycles/unknown agents before graph build | Planned | High | `planning_runner.py` | Invalid plan → fallback or FAILED with `COG-PLAN-VALID` |
+| COG-1.3 | **Plan validation gate** — reject LLM plans with cycles/unknown agents before graph build | **Done** | High | `plan_validator.py` · `planning_runner.py` | Unknown agent/dep → FAILED before graph build |
 | COG-1.4 | **`allow_dynamic_replan` wire** — document + test engine replan boundary vs Nexus plan immutability | Planned | Medium | `plan_loop_controller.py`, ADR note | Integration test replan does not mutate committed NexusPlan |
 | COG-1.5 | **Gate test** — `planner_kind=engine` regression suite with mock LLM | Planned | High | `tests/unit/runtime/nexus/planning/` | `-m gate` green |
 

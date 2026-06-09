@@ -251,7 +251,7 @@ uv run pytest -m gate -q
 
 ## Phase H-APP-WIRING — Tier-3 execution surface parity (Band 2aw — planned)
 
-**Status:** **Done** (2026-06-09) — **5/5 Done**  
+**Status:** **Done** (2026-06-09) — **6/6 Done**  
 **Audit source:** [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §59 · [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../architecture/TIER3_APPLICATION_ENVIRONMENT.md) §23.7–§23.8 · FLOW-GAP-17–20  
 **Prerequisites:** Phase H-APP **Done** · ORCH-6 **Done** · FLOW-CTL **Done** · REL-ADV **Done**  
 **Goal:** Close **docs ↔ code discrepancies** where platform capabilities exist in Tier-1 but product hosts expose only sync `/run` — without Nexus forks.
@@ -264,6 +264,7 @@ uv run pytest -m gate -q
 | H-APP-WIRING.2 | T3-GAP-03, T3-GAP-04 | Adopt scheduler + task control on legal + research + poc_template reference hosts | **Done** | High | `legal_application` / `research_application` / `poc_template_application` factories |
 | H-APP-WIRING.3 | T3-GAP-05, FLOW-GAP-18 | Optional `QueuedNexusExecutionAdapter` via `queue_worker_wiring.py` + `INCLUDE_QUEUE_WORKER` | **Done** | High | Legal host; scaffold env flags |
 | H-APP-WIRING.4 | FLOW-GAP-20, CFG-14 | LKW hybrid daemon — explicit deferral in `local_workspace_application/ARCHITECTURE.md` | **Done** | Medium | §6.3 product backlog unchanged |
+| H-APP-WIRING.5 | T3-GAP-01–04 | Task control + enricher + scheduler on assistant + dispute_sim + LKW hosts | **Done** | High | `intergrax_assistant_application` / `dispute_sim_application` / `local_workspace_application` factories |
 | H-APP-WIRING-DOC.1 | — | Sync architecture §23.7–§23.8 + ORCH §59.2 host matrix | **Done** | Low | This phase closeout |
 
 **Explicitly out of scope:** Nexus runtime changes; K.1/K.2; new queue transport.

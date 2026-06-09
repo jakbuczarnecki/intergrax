@@ -1469,12 +1469,12 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | ORCH-CONFIG.2 | CFG-18 | `ApplicationGraphSpec.trigger_capabilities` + `should_seed` guard | **Done** | **Critical** | ADR-FLOW-004 · `test_graph_spec_to_plan.py` |
 | ORCH-CONFIG.3 | CFG-05+ | Pipeline convention: `*.pipeline` → graph_spec seed (no per-product `TaskPlanner` fork) | **Done** | High | `pipeline_capability_suffix` default `.pipeline` |
 | ORCH-CONFIG.4 | CFG-03, CFG-14 | Scaffold optional interaction intake + queue consumer wiring | **Done** | High | Product scaffold: `INCLUDE_INTERACTIONS` / `INCLUDE_SCHEDULER`; legal host reference |
-| ORCH-CONFIG.5 | CFG-06–08, CFG-20 | Harness CFG simulation + optional Tier-3 product host (FLOW-8) | **Partial** | High | Harness CFG-04/06/07/08/18; product host §6.3 gate |
+| ORCH-CONFIG.5 | CFG-06–08, CFG-17, CFG-20 | Harness CFG simulation + optional Tier-3 product host (FLOW-8) | **Done** (harness) | High | `test_orchestration_cfg_simulation.py` CFG-04/06/07/08/17/18/20 |
 | ORCH-CONFIG.6 | CFG-13, CFG-19 | `long_running` profile → task defaults helper / host policy doc | **Done** | Medium | `apply_long_running_from_profile` · `intergrax/applications/USAGE.md` |
 | ORCH-CONFIG.7 | CFG-16, CFG-20 | `strict` multi-agent preset on `ApplicationEnvironmentProfile` | **Done** | Medium | `strict_multi_agent_defaults()` · critic + merge bundled |
-| ORCH-CONFIG.8 | CFG-17 | Swarm runtime — extends ORCH-5.1 | **Partial** | Medium | `swarm_exploration_defaults()`; full ORCH-5.1 runtime pending |
+| ORCH-CONFIG.8 | CFG-17 | Swarm runtime — extends ORCH-5.1 | **Done** | Medium | `swarm_policy.py` · `GraphExecutor` batch guard · CFG-17 sim |
 | ORCH-CONFIG.9 | All CFG | `check_orchestration_config_docs.py` — CFG IDs in tests/docs | **Done** | Low | `scripts/check_orchestration_config_docs.py` |
-| ORCH-CONFIG.10 | CFG-11 | COG-1.* engine planner production path | **Partial** | High | `test_engine_planner_orchestration_gate.py`; COG-1.1–1.5 pending |
+| ORCH-CONFIG.10 | CFG-11 | COG-1.* engine planner production path | **Partial** | High | `plan_validator.py` · `test_engine_planner_orchestration_gate.py`; COG-1.1–1.2/1.4 pending |
 | ORCH-CONFIG.11 | §59 | **Audit canon** — §59 gaps/debt/discrepancies register | **Done** | Medium | Architecture §59 + hub index 2026-06-09 |
 
 **Execution order when Band 2ar activates:** ORCH-CONFIG.2 → ORCH-CONFIG.1 → ORCH-CONFIG.3 → ORCH-CONFIG.4 → ORCH-CONFIG.10 → ORCH-CONFIG.6 → ORCH-CONFIG.7 → ORCH-CONFIG.8 → ORCH-CONFIG.9; ORCH-CONFIG.5 remains §6.3 / FLOW-8.
@@ -1503,14 +1503,14 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ## Phase ORCH-5 — Orchestration strategy runtime gaps (Band 2aq — planned)
 
-**Status:** **Planned** — **0/5 Done**  
+**Status:** **Partial** — **2/5 Done**  
 **Prerequisites:** Phase ORCH-STRAT **Done** · default queue = §6.1 maintenance until Band 2aq prioritized  
 **Goal:** Close gaps in [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §54 — swarm depth, pattern metadata on plans, active redundancy policy
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| ORCH-5.1 | **Swarm runtime profile** — budget envelope + parallel cap for `CoordinationPattern.SWARM` | **Partial** | Medium | `swarm_policy.py` + `coordination_pattern` on plan; full graph gate pending |
-| ORCH-5.2 | **`coordination_pattern` on `NexusPlan` metadata** — explicit pattern id for trace/audit | Planned | Medium | `PLAN_CREATED` payload includes pattern |
+| ORCH-5.1 | **Swarm runtime profile** — budget envelope + parallel cap for `CoordinationPattern.SWARM` | **Done** | Medium | `validate_swarm_parallel_batch` in `GraphExecutor` · CFG-17 sim |
+| ORCH-5.2 | **`coordination_pattern` on `NexusPlan` metadata** — explicit pattern id for trace/audit | **Done** | Medium | `PLAN_CREATED` payload + task metadata |
 | ORCH-5.3 | **Wire `select_coordination_pattern()` to lab hosts** — optional advisory in planning trace | Planned | Low | Observe-only event |
 | ORCH-5.4 | **Advanced merge strategies** — citation-preserving or structured conflict (IDEAL) | Planned | Low | Profile flag + composer |
 | ORCH-5.5 | **Runbook: orchestration resilience** — link W-OPS SLO to §52 matrix | Planned | Low | `HARNESS_ENVIRONMENT.md` § |

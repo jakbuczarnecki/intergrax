@@ -76,6 +76,14 @@ class LocalWorkspaceBackendSettings:
     api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
     include_mcp: bool = True
     mcp_mount_path: str = "/mcp"
+    include_task_control: bool = True
+    include_scheduler: bool = False
+    include_interaction_routes: bool = False
+    interaction_route_prefix: str = "/v1/interactions"
+    interaction_surface: str = "auto"
+    interaction_execute_default: bool = True
+    task_control_route_prefix: str = "/v1/tasks"
+    scheduler_poll_seconds: float | None = None
 
     @property
     def enabled_tool_ids(self) -> list[str]:
@@ -164,6 +172,23 @@ class LocalWorkspaceBackendSettings:
 
         include_mcp = _env_bool("LOCAL_WORKSPACE_INCLUDE_MCP", default=True)
         mcp_mount = (os.getenv("LOCAL_WORKSPACE_MCP_MOUNT_PATH") or "/mcp").strip() or "/mcp"
+        include_task_control = _env_bool("LOCAL_WORKSPACE_INCLUDE_TASK_CONTROL", default=True)
+        include_scheduler = _env_bool("LOCAL_WORKSPACE_INCLUDE_SCHEDULER", default=False)
+        include_interactions = _env_bool("LOCAL_WORKSPACE_INCLUDE_INTERACTIONS", default=False)
+        interaction_prefix = (
+            os.getenv("LOCAL_WORKSPACE_INTERACTION_ROUTE_PREFIX") or "/v1/interactions"
+        ).strip() or "/v1/interactions"
+        interaction_surface = (
+            os.getenv("LOCAL_WORKSPACE_INTERACTION_SURFACE") or "auto"
+        ).strip().lower() or "auto"
+        interaction_execute = _env_bool(
+            "LOCAL_WORKSPACE_INTERACTION_EXECUTE_DEFAULT", default=True
+        )
+        task_control_prefix = (
+            os.getenv("LOCAL_WORKSPACE_TASK_CONTROL_ROUTE_PREFIX") or "/v1/tasks"
+        ).strip() or "/v1/tasks"
+        poll_raw = (os.getenv("INTERGRAX_SCHEDULER_POLL_SECONDS") or "").strip()
+        scheduler_poll = float(poll_raw) if poll_raw else None
 
         return cls(
             environment=environment,
@@ -178,6 +203,14 @@ class LocalWorkspaceBackendSettings:
             api_keys_map=keys,
             include_mcp=include_mcp,
             mcp_mount_path=mcp_mount,
+            include_task_control=include_task_control,
+            include_scheduler=include_scheduler,
+            include_interaction_routes=include_interactions,
+            interaction_route_prefix=interaction_prefix,
+            interaction_surface=interaction_surface,
+            interaction_execute_default=interaction_execute,
+            task_control_route_prefix=task_control_prefix,
+            scheduler_poll_seconds=scheduler_poll,
             enable_rag=enable_rag,
             enable_rag_ingest=enable_rag_ingest,
             allowed_read_roots=_env_csv_set("INTERGRAX_ALLOWED_READ_ROOTS"),

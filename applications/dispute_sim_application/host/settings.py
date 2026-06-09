@@ -72,6 +72,10 @@ class DisputeSimBackendSettings:
     api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
     include_mcp: bool = True
     mcp_mount_path: str = "/mcp"
+    include_task_control: bool = True
+    include_scheduler: bool = False
+    task_control_route_prefix: str = "/v1/tasks"
+    scheduler_poll_seconds: float | None = None
 
     @classmethod
     def from_env(cls) -> DisputeSimBackendSettings:
@@ -148,6 +152,13 @@ class DisputeSimBackendSettings:
 
         include_mcp = _env_bool("DISPUTE_SIM_INCLUDE_MCP", default=True)
         mcp_mount = (os.getenv("DISPUTE_SIM_MCP_MOUNT_PATH") or "/mcp").strip() or "/mcp"
+        include_task_control = _env_bool("DISPUTE_SIM_INCLUDE_TASK_CONTROL", default=True)
+        include_scheduler = _env_bool("DISPUTE_SIM_INCLUDE_SCHEDULER", default=False)
+        task_control_prefix = (
+            os.getenv("DISPUTE_SIM_TASK_CONTROL_ROUTE_PREFIX") or "/v1/tasks"
+        ).strip() or "/v1/tasks"
+        poll_raw = (os.getenv("INTERGRAX_SCHEDULER_POLL_SECONDS") or "").strip()
+        scheduler_poll = float(poll_raw) if poll_raw else None
 
         return cls(
             environment=environment,
@@ -162,4 +173,8 @@ class DisputeSimBackendSettings:
             api_keys_map=keys,
             include_mcp=include_mcp,
             mcp_mount_path=mcp_mount,
+            include_task_control=include_task_control,
+            include_scheduler=include_scheduler,
+            task_control_route_prefix=task_control_prefix,
+            scheduler_poll_seconds=scheduler_poll,
         )

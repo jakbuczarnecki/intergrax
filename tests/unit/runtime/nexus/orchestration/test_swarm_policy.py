@@ -6,6 +6,7 @@ from intergrax.runtime.architecture.multi_agent_coordination import Coordination
 from intergrax.runtime.nexus.orchestration.swarm_policy import (
     SwarmCoordinationError,
     annotate_plan_coordination_pattern,
+    validate_swarm_parallel_batch,
     validate_swarm_plan,
 )
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, PlanStep
@@ -41,3 +42,8 @@ def test_annotate_plan_coordination_pattern_swarm() -> None:
         coordination_pattern=CoordinationPattern.SWARM.value,
     )
     assert annotated.plan_metadata["coordination_pattern"] == CoordinationPattern.SWARM.value
+
+
+def test_validate_swarm_parallel_batch_requires_three_nodes() -> None:
+    with pytest.raises(SwarmCoordinationError):
+        validate_swarm_parallel_batch(2)

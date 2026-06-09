@@ -1008,10 +1008,10 @@ Each case is a **canonical product configuration**. Implementation plan rows map
 | **CFG-14** | Hybrid daemon + index | A4 | B1+B2 | C1 | D1 | E0 | ⚠️ Partial | scaffold scheduler flag; LKW product incomplete |
 | **CFG-15** | High-risk + HITL | A1 | B1 | C1/C3 | D5 | E2 | ✅ Done | acceptance 04, `NexusHitlRunner` |
 | **CFG-16** | Critic before complete | A1 | B1 | C3 | D6 | E1/E3 | ⚠️ Partial | `CriticGraphHooks`, CVL |
-| **CFG-17** | Swarm exploration | A1 | B1 | C3/C5 | D7 | E0 | ⚠️ Partial | `swarm_exploration_defaults()`; ORCH-5.1 runtime pending |
+| **CFG-17** | Swarm exploration | A1 | B1 | C3/C5 | D7 | E0 | ✅ Done (harness) | `swarm_policy.py` + runtime batch guard; CFG-17 sim |
 | **CFG-18** | Pipeline + single-route conflict | A1 | B1+B4 | C3 | D2 | E0 | ✅ Done | `trigger_capabilities` + ADR-FLOW-004 |
 | **CFG-19** | Long-running + resume | A3/A1 | B1 | any | any | E0 | ✅ Done | acceptance 05/05b, checkpoint store |
-| **CFG-20** | Strict production multi-agent | A1 | B1+B4 | C3 | D2/D3 | E1+E3 | ⚠️ Partial | `strict_multi_agent_defaults()` preset; full E1+E3 gate pending |
+| **CFG-20** | Strict production multi-agent | A1 | B1+B4 | C3 | D2/D3 | E1+E3 | ✅ Done (harness) | `strict_multi_agent_defaults()` + CFG-20 sim gate |
 
 ### CFG-06 walkthrough (reference — two agents, sequential)
 
@@ -1096,10 +1096,10 @@ Honest platform readiness derived from §56.7. **This table is the direct input 
 | **ORCH-CONFIG.2** | CFG-18 | `ApplicationGraphSpec.trigger_capabilities` + seed guard | **Critical** | **Done** | ADR-FLOW-004 · `test_graph_spec_to_plan.py` |
 | **ORCH-CONFIG.3** | CFG-05 generalization | `*.pipeline` suffix → graph_spec seed (no `TaskPlanner` fork) | High | **Done** | `pipeline_capability_suffix` default `.pipeline` |
 | **ORCH-CONFIG.4** | CFG-03, CFG-14 | Scaffold: optional interaction intake + queue consumer templates | High | **Done** | Product scaffold `INCLUDE_INTERACTIONS` / `INCLUDE_SCHEDULER` |
-| **ORCH-CONFIG.5** | CFG-06–08, CFG-20 | Reference Tier-3 host with 3+ node `graph_spec` + gate E2E (FLOW-8) | High | **Partial** | Harness CFG-04/06/07/08/18; product host §6.3 |
+| **ORCH-CONFIG.5** | CFG-06–08, CFG-17, CFG-20 | Harness CFG simulation + optional Tier-3 product host (FLOW-8) | High | **Done** (harness) | `test_orchestration_cfg_simulation.py` CFG-04/06/07/08/17/18/20 |
 | **ORCH-CONFIG.6** | CFG-13, CFG-19 | Document + helper: profile `long_running_enabled` → default task flag policy | Medium | **Done** | `apply_long_running_from_profile` |
 | **ORCH-CONFIG.7** | CFG-16, CFG-20 | `strict` profile preset: critic + merge defaults for multi-agent | Medium | **Done** | `strict_multi_agent_defaults()` |
-| **ORCH-CONFIG.8** | CFG-17 | Swarm runtime (extends ORCH-5.1) | Medium | **Partial** | `swarm_exploration_defaults()`; ORCH-5.1 pending |
+| **ORCH-CONFIG.8** | CFG-17 | Swarm runtime (extends ORCH-5.1) | Medium | **Done** | `GraphExecutor` batch guard · CFG-17 sim |
 | **ORCH-CONFIG.9** | All | `scripts/check_orchestration_config_docs.py` — CFG IDs referenced in tests | Low | **Done** | CI script |
 | **ORCH-CONFIG.10** | CFG-11 | COG-1.* planner unification + production engine defaults doc | High | **Partial** | Engine planner gate test; COG-1.1–1.5 pending |
 
@@ -1314,11 +1314,11 @@ Honest surface parity across shipped `applications/*/host/factory.py`. ✅ = wir
 | `legal_application` | ✅ | ✅ `INCLUDE_TASK_CONTROL` | ⚠️ `INCLUDE_SCHEDULER` | ⚠️ | ⚠️ | ✅ runner enricher |
 | `research_application` | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ✅ |
 | `poc_template_application` | ✅ | ✅ default | ⚠️ | ⚠️ | ⚠️ | ✅ |
-| `intergrax_assistant_application` | ✅ | ❌ | ⚠️ | ⚠️ | ⚠️ | ❌ |
-| `local_workspace_application` | ✅ | ❌ | ❌ | ❌ | ⚠️ | ❌ |
-| `dispute_sim_application` | ✅ | ❌ | ❌ | ❌ | ⚠️ | ❌ |
+| `intergrax_assistant_application` | ✅ | ✅ `INCLUDE_TASK_CONTROL` | ⚠️ | ⚠️ | ⚠️ | ✅ runner enricher |
+| `local_workspace_application` | ✅ | ✅ `INCLUDE_TASK_CONTROL` | ⚠️ `INCLUDE_SCHEDULER` | ⚠️ `INCLUDE_INTERACTIONS` | ⚠️ | ✅ runner enricher |
+| `dispute_sim_application` | ✅ | ✅ `INCLUDE_TASK_CONTROL` | ⚠️ `INCLUDE_SCHEDULER` | ❌ | ⚠️ | ✅ runner enricher |
 
-**Discrepancy:** ORCH-6 and FLOW-CTL document platform async/cancel/resume APIs; **only `lab_application` mounts** `intergrax/applications/_shared/harness_task_routes.py`. Product hosts rely on sync `/run` + scheduler when enabled — not a runtime fork, but **authoring/docs must not claim parity**.
+**Note:** `mount_harness_task_routes` (async/cancel/autonomy/resume) is opt-in per host via `INCLUDE_TASK_CONTROL` (default **on** on reference product hosts). Lab remains the full debug surface; product hosts may still use sync `/run` when task control is disabled.
 
 **Async queue:** `QueuedNexusExecutionAdapter` + Celery path is integration-tested (`test_unified_execution_entry_j3.py`); not scaffold-default for product hosts. `run_async` uses `InMemoryAsyncTaskIndex` on lab — **not durable production queue**.
 
@@ -1331,8 +1331,8 @@ Honest surface parity across shipped `applications/*/host/factory.py`. ✅ = wir
 | CFG-13 | ⚠️ Partial | Queue via `INCLUDE_QUEUE_WORKER` on legal; not all hosts | ORCH-6.5 **Done** on reference |
 | CFG-14 | ⚠️ Partial | LKW hybrid E2E deferred; scaffold flags exist | §6.3 · H-APP-WIRING.4 deferral doc |
 | CFG-16 | ⚠️ Partial | CVL hooks exist; semantic E1+E3 not mandatory on all paths | ORCH-CONFIG.7, CRIT-V ops |
-| CFG-17 | ⚠️ Partial | `swarm_policy.py` validates ≥3 roots; plan metadata set | ORCH-5.1 **Partial** |
-| CFG-20 | ⚠️ Partial | `strict_multi_agent_defaults()` preset; no full production gate | ORCH-CONFIG.5, FLOW-8 |
+| CFG-17 | ✅ Done (harness) | Plan + runtime parallel-batch guard; CFG-17 sim gate | ORCH-5.1 **Done** |
+| CFG-20 | ✅ Done (harness) | `strict_multi_agent_defaults()` + CFG-20 sim gate | ORCH-CONFIG.5 harness **Done** |
 
 CFG-01–02, 04–10, 12, 15, 18–19: **runtime Done** at harness level.
 
@@ -1341,10 +1341,10 @@ CFG-01–02, 04–10, 12, 15, 18–19: **runtime Done** at harness level.
 | Capability | Runtime module | HTTP / operator surface | Debt |
 |------------|----------------|-------------------------|------|
 | `ResiliencePolicy` | `policy_resolver`, `retry_engine` | Profile-only on most hosts | Lab enricher only |
-| `AutonomyLevel` | `autonomy_middleware` | `POST …/tasks/{id}/autonomy` | **Lab only** |
-| Cooperative cancel | `ActiveTaskRegistry`, UAEP | `POST …/tasks/{id}/cancel` | **Lab only** |
-| Checkpoint resume | `resume_planner`, scheduler | `POST …/tasks/{id}/resume` | Lab HTTP; scheduler on subset |
-| `run_async` | `async_task_dispatch` | `POST …/tasks/run-async` | **Lab only**; in-memory index |
+| `AutonomyLevel` | `autonomy_middleware` | `POST …/tasks/{id}/autonomy` | Lab + `INCLUDE_TASK_CONTROL` hosts |
+| Cooperative cancel | `ActiveTaskRegistry`, UAEP | `POST …/tasks/{id}/cancel` | Lab + `INCLUDE_TASK_CONTROL` hosts |
+| Checkpoint resume | `resume_planner`, scheduler | `POST …/tasks/{id}/resume` | Lab + task-control hosts; scheduler opt-in |
+| `run_async` | `async_task_dispatch` | `POST …/tasks/run-async` | Lab + task-control hosts; in-memory index |
 | MVP promotion / replay | `mvp_evolution` CLI | CLI | No Tier-3 router |
 
 ## 59.5 Documentation ↔ code discrepancies (resolved here)

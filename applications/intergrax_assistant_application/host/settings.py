@@ -24,6 +24,8 @@ class IntergraxAssistantApplicationSettings:
     include_interaction_routes: bool = True
     interaction_route_prefix: str = "/v1/interactions"
     include_scheduler: bool = True
+    include_task_control: bool = True
+    task_control_route_prefix: str = "/v1/harness/tasks"
     scheduler_poll_seconds: float | None = None
     interaction_surface: str = "auto"
     include_mcp: bool = True
@@ -45,6 +47,13 @@ class IntergraxAssistantApplicationSettings:
         port_raw = (os.getenv("INTERGRAX_ASSISTANT_BACKEND_PORT") or "8096").strip()
         include_interactions = _env_bool("INTERGRAX_ASSISTANT_INCLUDE_INTERACTIONS", default=True)
         include_scheduler = _env_bool("INTERGRAX_ASSISTANT_INCLUDE_SCHEDULER", default=True)
+        include_task_control = _env_bool(
+            "INTERGRAX_ASSISTANT_INCLUDE_TASK_CONTROL", default=True
+        )
+        task_control_prefix = (
+            os.getenv("INTERGRAX_ASSISTANT_TASK_CONTROL_ROUTE_PREFIX")
+            or "/v1/harness/tasks"
+        ).strip() or "/v1/harness/tasks"
         interaction_prefix = (
             os.getenv("INTERGRAX_ASSISTANT_INTERACTION_ROUTE_PREFIX") or "/v1/interactions"
         ).strip() or "/v1/interactions"
@@ -65,6 +74,8 @@ class IntergraxAssistantApplicationSettings:
             include_interaction_routes=include_interactions,
             interaction_route_prefix=interaction_prefix,
             include_scheduler=include_scheduler,
+            include_task_control=include_task_control,
+            task_control_route_prefix=task_control_prefix,
             scheduler_poll_seconds=scheduler_poll,
             interaction_surface=interaction_surface,
             include_mcp=include_mcp,
