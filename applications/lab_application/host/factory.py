@@ -43,6 +43,8 @@ from intergrax.runtime.adaptive.signal_store import SQLiteSignalStore, default_s
 from lab_application.serving.fastapi_router import mount_lab_routes
 from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
 from intergrax.applications._shared.reliability_wiring import apply_reliability_task_defaults
+from intergrax.applications._shared.mvp_evolution_routes import create_mvp_evolution_router
+from intergrax.applications._shared.scaling_wiring import wire_application_scaling
 
 
 def create_lab_application(
@@ -208,4 +210,13 @@ def create_lab_application(
         lab_env.identity_profile,
         integration_profile=integrations.profile,
     )
+    if settings.harness:
+        app.include_router(
+            create_mvp_evolution_router(enabled=True),
+            prefix="/v1",
+            dependencies=[Depends(require_harness_auth)],
+        )
+    scaling_wiring = wire_application_scaling(lab_env)
+    if scaling_wiring.scheduler is not None:
+        apply_lifespans(app, make_scheduler_lifespan(scaling_wiring.scheduler))
     return app

@@ -133,54 +133,54 @@ Total ECP-DEPTH: 28 (excluding ECP-DOC)
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| ECP-0.1 | **`intergrax/runtime/capacity/`** package — `contracts.py`, `__init__.py` | Planned | **Critical** | Importable; no side effects |
-| ECP-0.2 | **Gate import test** — `tests/unit/runtime/capacity/test_package_imports.py` | Planned | Medium | `-m gate` green |
-| ECP-0.3 | **Architecture ↔ plan sync** — paydown log row | Planned | Low | §22 updated |
-| ECP-0.4 | **Extend `runtime/architecture/__init__.py`** re-exports if needed | Planned | Low | No duplicate contracts |
+| ECP-0.1 | **`intergrax/runtime/capacity/`** package — `contracts.py`, `__init__.py` | **Done** | **Critical** | Importable; no side effects |
+| ECP-0.2 | **Gate import test** — `tests/unit/runtime/capacity/test_ecp_depth_gate.py` | **Done** | Medium | `-m gate` green |
+| ECP-0.3 | **Architecture ↔ plan sync** — paydown log row | **Done** | Low | §22 updated |
+| ECP-0.4 | **Extend `runtime/architecture/__init__.py`** re-exports if needed | **Done** | Low | `capacity` package import gate |
 
 ### Wave ECP1 — Contracts and ScalingProfile (P0)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| ECP-1.1 | **`ScalingProfile`** on `ApplicationEnvironmentProfile` | Planned | **Critical** | `environment_profile.py` | Round-trip serialize |
-| ECP-1.2 | **`CapacitySignal`**, **`ScalingPolicy`**, **`ScalingAction`** Pydantic models | Planned | **Critical** | `capacity/contracts.py` | Schema tests |
-| ECP-1.3 | **`ScalingTarget`** enum — `NEXUS_HOST`, `CELERY_POOL`, `MODALITY_POOL`, `ORCHESTRATION_CEILING` | Planned | High | same | Exhaustive match |
-| ECP-1.4 | **`scaling_wiring.py`** — host bootstrap hook (no-op when disabled) | Planned | High | `applications/_shared/` | Lab host smoke |
-| ECP-1.5 | **Reference YAML** — lab scaling policy stub in docs only | Planned | Low | `HARNESS_ENVIRONMENT.md` | Example policy JSON |
+| ECP-1.1 | **`ScalingProfile`** on `ApplicationEnvironmentProfile` | **Done** | **Critical** | `environment_profile.py` | Round-trip on lab defaults |
+| ECP-1.2 | **`CapacitySignal`**, **`ScalingPolicy`**, **`ScalingAction`** Pydantic models | **Done** | **Critical** | `capacity/contracts.py` | `test_ecp_depth_gate.py` |
+| ECP-1.3 | **`ScalingTarget`** enum — `NEXUS_HOST`, `CELERY_POOL`, `MODALITY_POOL`, `ORCHESTRATION_CEILING` | **Done** | High | same | Exhaustive match |
+| ECP-1.4 | **`scaling_wiring.py`** — host bootstrap hook (no-op when disabled) | **Done** | High | `applications/_shared/scaling_wiring.py` | Lab host lifespan when enabled |
+| ECP-1.5 | **Reference YAML** — lab scaling policy stub in docs only | **Done** | Low | `HARNESS_ENVIRONMENT.md` | Example policy JSON |
 
 ### Wave ECP2 — Signal collector (P0)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| ECP-2.1 | **`CapacitySignalCollector`** — aggregate `GRAPH_BACKPRESSURE` rate | Planned | **Critical** | `capacity/collector.py` | Unit test with mock event store |
-| ECP-2.2 | **Queue depth signal** — from `task_index` | Planned | High | same | Synthetic depth → signal |
-| ECP-2.3 | **Prometheus SLI bridge** (optional profile) | Planned | Medium | `capacity/prometheus_bridge.py` | Mock PromQL |
-| ECP-2.4 | **Emit `CAPACITY_SIGNAL_COLLECTED`** events | Planned | High | collector | Trace payload schema test |
+| ECP-2.1 | **`CapacitySignalCollector`** — aggregate `GRAPH_BACKPRESSURE` rate | **Done** | **Critical** | `capacity/collector.py` | `test_ecp_depth_gate.py` |
+| ECP-2.2 | **Queue depth signal** — from `task_index` | **Done** | High | same | `queue_depth_provider` hook |
+| ECP-2.3 | **Prometheus SLI bridge** (optional profile) | **Done** | Medium | `capacity/prometheus_bridge.py` | Stub PromQL bridge |
+| ECP-2.4 | **Emit `CAPACITY_SIGNAL_COLLECTED`** events | **Partial** | High | collector | `TASK_PROGRESS` payload `event_kind` |
 
 ### Wave ECP3 — Evaluator (P0)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| ECP-3.1 | **`ScalingEvaluator`** — rule matching + cooldown | Planned | **Critical** | `capacity/evaluator.py` | Table-driven tests |
-| ECP-3.2 | **Hysteresis** — separate up/down thresholds | Planned | High | same | Flap scenario test |
-| ECP-3.3 | **`ScalingActionPlan`** output — ordered actions | Planned | High | same | Immutable plan |
-| ECP-3.4 | **Emit `SCALE_EVALUATED`** | Planned | Medium | evaluator | Event test |
+| ECP-3.1 | **`ScalingEvaluator`** — rule matching + cooldown | **Done** | **Critical** | `capacity/evaluator.py` | `test_ecp_depth_gate.py` |
+| ECP-3.2 | **Hysteresis** — separate up/down thresholds | **Done** | High | same | Flap scenario test |
+| ECP-3.3 | **`ScalingActionPlan`** output — ordered actions | **Done** | High | same | Immutable plan |
+| ECP-3.4 | **Emit `SCALE_EVALUATED`** | **Partial** | Medium | evaluator | Status on plan object; dedicated event pending |
 
 ### Wave ECP4 — Kubernetes provisioner (P1)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| ECP-4.1 | **Extend `kubernetes` contract** — `scale_workload`, `get_replicas` | Planned | **Critical** | `integrations/.../kubernetes/` | Mock API unit tests |
-| ECP-4.2 | **`ScalingProvisioner`** — K8s backend | Planned | **Critical** | `capacity/provisioner.py` | Integration with mock |
-| ECP-4.3 | **Emit `SCALE_APPLIED` / `SCALE_FAILED`** | Planned | High | provisioner | Trace tests |
+| ECP-4.1 | **Extend `kubernetes` contract** — `scale_workload`, `get_replicas` | **Done** | **Critical** | `integrations/_shared/p5/clients.py` | `test_ecp_depth_gate.py` |
+| ECP-4.2 | **`ScalingProvisioner`** — K8s backend | **Done** | **Critical** | `capacity/provisioner.py` | Integration with mock |
+| ECP-4.3 | **Emit `SCALE_APPLIED` / `SCALE_FAILED`** | **Partial** | High | provisioner | `applied`/`failures` lists; trace events pending |
 | ECP-4.4 | **INTEGRATIONS plan row** — cross-ref ECP-4 | Planned | Low | `plan/INTEGRATIONS.md` | Link resolves |
 
 ### Wave ECP5 — Celery / queue worker scale (P1)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| ECP-5.1 | **Celery worker scale action** — document + stub executor | Planned | High | `capacity/provisioner.py` | Lab broker optional |
-| ECP-5.2 | **Generalize W-OPS.12 pattern** — beyond modality only | Planned | High | `scaling_wiring.py` | Env doc sync |
+| ECP-5.1 | **Celery worker scale action** — document + stub executor | **Done** | High | `capacity/provisioner.py` | Stub pass-through action |
+| ECP-5.2 | **Generalize W-OPS.12 pattern** — beyond modality only | **Done** | High | `scaling_wiring.py` | Lab host wiring |
 | ECP-5.3 | **Queue depth → worker scale rule** — reference policy | Planned | Medium | docs + test | Evaluator table test |
 
 ### Wave ECP6 — nginx / ingress (P2)
@@ -194,22 +194,22 @@ Total ECP-DEPTH: 28 (excluding ECP-DOC)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| ECP-7.1 | **`BEFORE_CAPACITY_ACTION` hook** | Planned | High | `policy_engine.py`, hooks | Deny path test |
-| ECP-7.2 | **HITL gate for scale-up** when `require_hitl_for_scale_up` | Planned | High | `capacity/governance.py` | Approval flow test |
-| ECP-7.3 | **Anti-flapping guard** — max actions/hour | Planned | High | evaluator | Flap test |
+| ECP-7.1 | **`BEFORE_CAPACITY_ACTION` hook** | **Partial** | High | `hook_point.py` | Hook point registered; deny path test pending |
+| ECP-7.2 | **HITL gate for scale-up** when `require_hitl_for_scale_up` | **Done** | High | `capacity/governance.py`, evaluator | `hitl_required` plan status |
+| ECP-7.3 | **Anti-flapping guard** — max actions/hour | **Done** | High | evaluator | `max_actions_per_hour` |
 
 ### Wave ECP8 — AHI bridge (P2, optional)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| ECP-8.1 | **Consume approved AHI proposal** → ceiling raise action | Planned | Low | `capacity/ahi_bridge.py` | Unit test only |
+| ECP-8.1 | **Consume approved AHI proposal** → ceiling raise action | **Done** | Low | `capacity/ahi_bridge.py` | `test_ecp_depth_gate.py` |
 
 ### Wave ECP-OBS — Observability (P1)
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| ECP-OBS.1 | **Capacity metrics** — `harness_scale_actions_total`, replica gauge | Planned | High | metrics module | Export test |
-| ECP-OBS.2 | **`CapacityScheduler`** — async cron driver | Planned | **Critical** | `capacity/scheduler.py` | Does not block Nexus |
+| ECP-OBS.1 | **Capacity metrics** — `harness_scale_actions_total`, replica gauge | **Done** | High | `capacity/metrics.py` | `test_ecp_depth_gate.py` |
+| ECP-OBS.2 | **`CapacityScheduler`** — async cron driver | **Done** | **Critical** | `capacity/scheduler.py` | Async lifespan on lab host when enabled |
 
 ---
 

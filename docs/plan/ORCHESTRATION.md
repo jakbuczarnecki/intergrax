@@ -1474,7 +1474,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | ORCH-CONFIG.7 | CFG-16, CFG-20 | `strict` multi-agent preset on `ApplicationEnvironmentProfile` | **Done** | Medium | `strict_multi_agent_defaults()` · critic + merge bundled |
 | ORCH-CONFIG.8 | CFG-17 | Swarm runtime — extends ORCH-5.1 | **Done** | Medium | `swarm_policy.py` · `GraphExecutor` batch guard · CFG-17 sim |
 | ORCH-CONFIG.9 | All CFG | `check_orchestration_config_docs.py` — CFG IDs in tests/docs | **Done** | Low | `scripts/check_orchestration_config_docs.py` |
-| ORCH-CONFIG.10 | CFG-11 | COG-1.* engine planner production path | **Partial** | High | `plan_validator.py` · `test_engine_planner_orchestration_gate.py`; COG-1.1–1.2/1.4 pending |
+| ORCH-CONFIG.10 | CFG-11 | COG-1.* engine planner production path | **Partial** | High | `nexus_plan_bridge.py` · gate tests; COG-1.4 replan boundary pending |
 | ORCH-CONFIG.11 | §59 | **Audit canon** — §59 gaps/debt/discrepancies register | **Done** | Medium | Architecture §59 + hub index 2026-06-09 |
 
 **Execution order when Band 2ar activates:** ORCH-CONFIG.2 → ORCH-CONFIG.1 → ORCH-CONFIG.3 → ORCH-CONFIG.4 → ORCH-CONFIG.10 → ORCH-CONFIG.6 → ORCH-CONFIG.7 → ORCH-CONFIG.8 → ORCH-CONFIG.9; ORCH-CONFIG.5 remains §6.3 / FLOW-8.
@@ -1511,9 +1511,9 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 |----|-------------|--------|----------|------------|
 | ORCH-5.1 | **Swarm runtime profile** — budget envelope + parallel cap for `CoordinationPattern.SWARM` | **Done** | Medium | `validate_swarm_parallel_batch` in `GraphExecutor` · CFG-17 sim |
 | ORCH-5.2 | **`coordination_pattern` on `NexusPlan` metadata** — explicit pattern id for trace/audit | **Done** | Medium | `PLAN_CREATED` payload + task metadata |
-| ORCH-5.3 | **Wire `select_coordination_pattern()` to lab hosts** — optional advisory in planning trace | Planned | Low | Observe-only event |
-| ORCH-5.4 | **Advanced merge strategies** — citation-preserving or structured conflict (IDEAL) | Planned | Low | Profile flag + composer |
-| ORCH-5.5 | **Runbook: orchestration resilience** — link W-OPS SLO to §52 matrix | Planned | Low | `HARNESS_ENVIRONMENT.md` § |
+| ORCH-5.3 | **Wire `select_coordination_pattern()` to lab hosts** — optional advisory in planning trace | **Done** | Low | `planning_coordination_advisory.py` · lab `emit_coordination_advisory` |
+| ORCH-5.4 | **Advanced merge strategies** — citation-preserving or structured conflict (IDEAL) | **Done** | Low | `MergeStrategy.CITATION_PRESERVING` · `final_response_composer.py` |
+| ORCH-5.5 | **Runbook: orchestration resilience** — link W-OPS SLO to §52 matrix | **Done** | Low | `HARNESS_ENVIRONMENT.md` § orchestration resilience |
 
 **Explicitly out of scope:** active-active duplicate graph nodes (use retry + ECP); K.1/K.2 product graphs (FLOW-8).
 

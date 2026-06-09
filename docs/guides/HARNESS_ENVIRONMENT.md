@@ -358,6 +358,47 @@ uv run pytest tests/unit/applications/test_lab_strict_harness.py -m gate -q
 
 ---
 
+## Elastic capacity reference policy (ECP-1.5)
+
+Lab hosts wire `ScalingProfile` via `wire_application_scaling()` — **no-op** when `scaling_profile.policy.enabled=false` (default). Enable for experiments:
+
+```json
+{
+  "enabled": true,
+  "max_actions_per_hour": 6,
+  "require_hitl_for_scale_up": true,
+  "rules": [
+    {
+      "rule_id": "celery_queue",
+      "target": "celery_pool",
+      "metric_name": "queue_depth",
+      "scale_up_threshold": 10,
+      "scale_down_threshold": 2,
+      "action_kind": "scale_celery_workers",
+      "delta": 1,
+      "cooldown_seconds": 120
+    }
+  ]
+}
+```
+
+Set on `ApplicationEnvironmentProfile.scaling_profile.policy` in a custom lab profile or manifest override.
+
+---
+
+## Orchestration resilience runbook (ORCH-5.5)
+
+| Signal | Where | Action |
+|--------|-------|--------|
+| `DECISION_EMITTED` (planning) | Runtime event store / debug UI | Verify planner source + fallback flag in payload |
+| `COORDINATION_PATTERN_ADVISORY` | `TASK_PROGRESS` during planning | Observe-only; does not override `coordination_pattern` on plan |
+| Swarm parallel cap deny | Graph executor / trace | Reduce `max_parallel_nodes` or switch coordination pattern |
+| Citation merge conflicts | `MergeStrategy.CITATION_PRESERVING` | Inspect composer output; fall back to `concat` in profile if needed |
+
+Link W-OPS SLO checks: `scripts/check_observability_gates.py` + `scripts/check_reasoning_gates.py` in CI.
+
+---
+
 ## Product agents and applications (end of plan — not default next)
 
 Business agents (K.1 Problem Radar, K.2 Vendor Discovery) and new Tier-3 **product** applications are **last** in the [implementation plan](intergrax_runtime_architecture.md) (§4.0 Band 3, **§6.3**). Harness work uses **§6.1 + §6.2 (Phase V)**. Product work starts only after an explicit prioritization decision — not because Phase U, §4.1, or initial Phase V waves are active.

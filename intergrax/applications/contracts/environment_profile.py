@@ -11,7 +11,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.contracts.autonomy_level import AutonomyLevel
+from intergrax.contracts.reasoning_profile import ReasoningProfile
 from intergrax.contracts.resilience_policy import ResiliencePolicy, default_resilience_policy
+from intergrax.runtime.capacity.contracts import ScalingPolicy
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
 from intergrax.applications.contracts.intent_route import IntentRoute
 from intergrax.applications.contracts.application_host import ApplicationFeatures, ApplicationProfile
@@ -213,6 +215,14 @@ class AdaptiveProfile(BaseModel):
     rollout_flag_key: str = "harness.adaptive.recommend"
 
 
+class ScalingProfile(BaseModel):
+    """Elastic capacity posture (ECP-1.1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    policy: ScalingPolicy = Field(default_factory=ScalingPolicy)
+
+
 class OrchestrationProfile(BaseModel):
     """Nexus loop composition overrides (Phase H-APP.3.1)."""
 
@@ -231,6 +241,7 @@ class OrchestrationProfile(BaseModel):
     allow_dynamic_replan: bool = False
     intent_routes: list[IntentRoute] = Field(default_factory=list)
     coordination_pattern: str | None = None
+    emit_coordination_advisory: bool = False
 
 
 class ShadowWorkspaceProfile(BaseModel):
@@ -281,6 +292,8 @@ class ApplicationEnvironmentProfile(BaseModel):
     critic_profile: CriticProfile = Field(default_factory=CriticProfile)
     adaptive_profile: AdaptiveProfile = Field(default_factory=AdaptiveProfile)
     orchestration_profile: OrchestrationProfile = Field(default_factory=OrchestrationProfile)
+    reasoning_profile: ReasoningProfile = Field(default_factory=ReasoningProfile)
+    scaling_profile: ScalingProfile = Field(default_factory=ScalingProfile)
     identity_profile: IdentityProfile = Field(default_factory=IdentityProfile)
     security_profile: ApplicationSecurityProfile = Field(
         default_factory=ApplicationSecurityProfile

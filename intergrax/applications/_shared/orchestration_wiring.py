@@ -84,11 +84,18 @@ def resolve_task_planner(env: ApplicationEnvironmentProfile) -> TaskPlanner:
 
 
 class EngineBackedNexusPlanner:
-    """Nexus planner registered under ``planner_kind=engine`` (Phase FLOW-1)."""
+    """Nexus planner registered under ``planner_kind=engine`` (Phase FLOW-1 / COG-1.1)."""
 
-    def __init__(self, llm_adapter: LLMAdapter, fallback: TaskPlanner) -> None:
+    def __init__(
+        self,
+        llm_adapter: LLMAdapter,
+        fallback: TaskPlanner,
+        *,
+        planner_prompt_id: str = "nexus_task_planner",
+    ) -> None:
         self._llm_adapter = llm_adapter
         self._fallback = fallback
+        self._planner_prompt_id = planner_prompt_id
 
     def plan(self, task: Task, registry: AgentRegistry) -> NexusPlan:
         return build_nexus_plan_from_llm(
@@ -96,6 +103,7 @@ class EngineBackedNexusPlanner:
             registry,
             self._llm_adapter,
             fallback=self._fallback,
+            planner_prompt_id=self._planner_prompt_id,
         )
 
 
@@ -174,9 +182,10 @@ def resolve_nexus_task_planner(
             raise OrchestrationWiringError(
                 "planner_kind='engine' requires OrchestrationWiringContext.llm_adapter"
             )
-        inner: NexusTaskPlannerProtocol = EngineBackedNexusPlanner(
+        inner = EngineBackedNexusPlanner(
             context.llm_adapter,
             fallback=fallback,
+            planner_prompt_id=env.reasoning_profile.planner_prompt_id,
         )
     else:
         inner = fallback

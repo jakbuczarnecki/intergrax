@@ -62,7 +62,12 @@ def build_lab_environment_profile(
     env.identity_profile.require_api_key = settings.requires_harness_api_key
     env.observability_profile.otel_enabled = settings.otel_enabled
     env.reliability_profile.long_running_scheduler_enabled = settings.include_scheduler
-    env.orchestration_profile.long_running_enabled = settings.include_scheduler
+    env.orchestration_profile = env.orchestration_profile.model_copy(
+        update={
+            "long_running_enabled": settings.include_scheduler,
+            "emit_coordination_advisory": settings.harness,
+        }
+    )
     env.features = env.features.model_copy(
         update={
             "debug_surface": True,

@@ -391,3 +391,21 @@ def harness_gitops_stack(
         document_parser=DOCLING,
         options=options,
     )
+
+
+def harness_guardrail_stack(
+    *,
+    primary: str = "llm_guard",
+    semantic: str | None = "guardrails_ai",
+) -> IntegrationProfile:
+    """LLM guardrail harness preset (M-P12-PRE.1)."""
+    options: dict[str, dict[str, object]] = {primary: {}}
+    if semantic:
+        options[semantic] = {}
+    return IntegrationProfile(
+        relational_store=SQLITE,
+        observability_backend=LOG,
+        interaction_surface=LAB_JSON,
+        llm_guardrail=primary,
+        options=options,
+    )

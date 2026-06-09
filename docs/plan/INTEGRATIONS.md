@@ -719,21 +719,21 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 
 | ID | Wave | Slug / deliverable | Priority | Status | Package / module | Acceptance |
 |----|------|-------------------|----------|--------|------------------|------------|
-| M-P12-CAT.1 | CAT | `LlmGuardrailBackend` contract + `IntegrationCategory.LLM_GUARDRAIL` | **P0** | **Planned** | `integrations/contracts/llm_guardrail.py` | Conformance helper + unit tests |
-| M-P12-CAT.2 | CAT | `IntegrationProfile.llm_guardrail` field + resolver | **P0** | **Planned** | `registry/profile.py` | Profile resolve tests |
-| M-P12.1 | H-INT-GR-1 | `llm_guard` — Protect AI LLM Guard | **P0** | **Planned** | `providers/llm_guardrail/llm_guard/` | `scan_input` / `scan_output`; vendor only in `opens.py` |
-| M-P12.2 | H-INT-GR-2 | `guardrails_ai` — Guardrails AI Hub validators | **P0** | **Planned** | `providers/llm_guardrail/guardrails_ai/` | Map validator failures → `GuardrailScanResult` |
-| M-P12.3 | H-INT-GR-3 | `nemo_guardrails` — NVIDIA NeMo Guardrails | **P1** | **Planned** | `providers/llm_guardrail/nemo_guardrails/` | Colang config path; optional GPU note in USAGE |
-| M-P12.4 | H-INT-GR-4 | `openguardrails` — OpenGuardrails SDK / gateway | **P1** | **Planned** | `providers/llm_guardrail/openguardrails/` | API + self-hosted gateway modes |
-| M-P12.5 | H-INT-GR-5 | `presidio` — Microsoft Presidio PII | **P1** | **Planned** | `providers/llm_guardrail/presidio/` | Redact + audit categories |
-| M-P12.6 | H-INT-GR-6 | `llama_guard` — Meta Llama Guard classifier | **P2** | **Planned** | `providers/llm_guardrail/llama_guard/` | Requires inference host binding |
-| M-P12.7 | H-INT-GR-7 | `lakera` — Lakera Guard API | **P2** | **Planned** | `providers/llm_guardrail/lakera/` | REST adapter |
-| M-P12.8 | H-INT-GR-8 | `azure_content_safety` | **P2** | **Planned** | `providers/llm_guardrail/azure_content_safety/` | Azure profile integration |
-| M-P12.9 | H-INT-GR-9 | `bedrock_guardrails` | **P2** | **Planned** | `providers/llm_guardrail/bedrock_guardrails/` | AWS Bedrock policy IDs |
-| M-P12-PRE.1 | PRE | `harness_guardrail_stack()` preset | **P0** | **Planned** | `registry/presets.py` | Lab + legal strict profile examples |
-| M-P12-WIRE.1 | WIRE | `guardrail_runtime_bridge` + middleware registration | **P0** | **Planned** | `applications/_shared/guardrail_wiring.py`, `runtime/middleware/` | §42.42 pre/post-LLM hooks |
-| M-P12-WIRE.2 | WIRE | Extend `security_runtime_bridge` to compose native + vendor | **P1** | **Planned** | `security_runtime_bridge.py` | No duplicate scan paths |
-| M-P12-WIRE.3 | CI | `check_harness_guardrail_wiring.py` | **P1** | **Planned** | `scripts/` | CI gate for profile ↔ bridge |
+| M-P12-CAT.1 | CAT | `LlmGuardrailBackend` contract + `IntegrationCategory.LLM_GUARDRAIL` | **P0** | **Done** | `integrations/contracts/llm_guardrail.py` | ADR-GR-001 · `test_llm_guardrail_contract.py` |
+| M-P12-CAT.2 | CAT | `IntegrationProfile.llm_guardrail` field + resolver | **P0** | **Done** | `registry/profile.py` | Binding accessor + resolve |
+| M-P12.1 | H-INT-GR-1 | `llm_guard` — Protect AI LLM Guard | **P0** | **Partial** | `providers/llm_guardrail/_stub_backend.py` | Harness stub; vendor bundle pending |
+| M-P12.2 | H-INT-GR-2 | `guardrails_ai` — Guardrails AI Hub validators | **P0** | **Partial** | `register_all.py` | Catalog stub registered |
+| M-P12.3 | H-INT-GR-3 | `nemo_guardrails` — NVIDIA NeMo Guardrails | **P1** | **Partial** | `register_all.py` | Catalog stub registered |
+| M-P12.4 | H-INT-GR-4 | `openguardrails` — OpenGuardrails SDK / gateway | **P1** | **Partial** | `register_all.py` | Catalog stub registered |
+| M-P12.5 | H-INT-GR-5 | `presidio` — Microsoft Presidio PII | **P1** | **Partial** | `register_all.py` | Catalog stub registered |
+| M-P12.6 | H-INT-GR-6 | `llama_guard` — Meta Llama Guard classifier | **P2** | **Partial** | `register_all.py` | Catalog stub registered |
+| M-P12.7 | H-INT-GR-7 | `lakera` — Lakera Guard API | **P2** | **Partial** | `register_all.py` | Catalog stub registered |
+| M-P12.8 | H-INT-GR-8 | `azure_content_safety` | **P2** | **Partial** | `register_all.py` | Catalog stub registered |
+| M-P12.9 | H-INT-GR-9 | `bedrock_guardrails` | **P2** | **Partial** | `register_all.py` | Catalog stub registered |
+| M-P12-PRE.1 | PRE | `harness_guardrail_stack()` preset | **P0** | **Done** | `registry/presets.py` | `harness_guardrail_stack()` |
+| M-P12-WIRE.1 | WIRE | `guardrail_runtime_bridge` + middleware registration | **P0** | **Partial** | `guardrail_wiring.py`, `guardrail_runtime_bridge.py` | Host wiring; middleware hook pending |
+| M-P12-WIRE.2 | WIRE | Extend `security_runtime_bridge` to compose native + vendor | **P1** | **Done** | `security_runtime_bridge.py` | Guardrail slug in `RuntimeConfig.metadata` |
+| M-P12-WIRE.3 | CI | `check_harness_guardrail_wiring.py` | **P1** | **Done** | `scripts/` | Import gate green |
 
 **Suggested PR order:** M-P12-CAT.1 → M-P12-CAT.2 → M-P12.1 → M-P12.2 → M-P12-WIRE.1 → M-P12-PRE.1 → remaining slugs.
 

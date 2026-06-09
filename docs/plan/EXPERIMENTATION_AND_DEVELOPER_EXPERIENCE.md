@@ -670,7 +670,7 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 | MVP-EVOL.4 | MVP4 | **Product KPI registry** — tenant-scoped metric definitions + export | **Done** | `product_kpi_registry.py` | unit tests deferred |
 | MVP-EVOL.5 | MVP5 | **User satisfaction adapter** — thumbs / CSAT event schema + online eval bridge | **Done** | `user_satisfaction.py` | `test_user_satisfaction.py` |
 | MVP-EVOL.6 | MVP6 | **Author guide appendix** — MVP evolution playbook | **Done** | `guides/AGENT_CREATION_GUIDE.md` Appendix X | TOC + scripts table |
-| MVP-EVOL.7 | Exposure | **Tier-3 router optional** — HTTP endpoints for simulate/replay/KPI export (or document CLI-only canon) | **Planned** | H-APP-WIRING backlog or explicit CLI-only ADR | Low priority |
+| MVP-EVOL.7 | Exposure | **Tier-3 router optional** — HTTP endpoints for simulate/replay/KPI export (or document CLI-only canon) | **Done** | `mvp_evolution_routes.py` · lab `/v1/mvp/*` when `LAB_HARNESS=true` | CLI remains canonical |
 
 **Cross-plan:** MVP-EVOL.2 ↔ ORCH CFG matrix; MVP-EVOL.5 ↔ OBS + EVAL online registry; promotion G4–G5 ↔ Phase V / W-OPS.
 

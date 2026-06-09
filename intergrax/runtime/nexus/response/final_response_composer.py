@@ -27,15 +27,22 @@ class FinalResponseComposer:
                 if summary:
                     return summary
             return ""
-        if self._merge_strategy is MergeStrategy.STRUCTURED_JSON:
-            payload = [
-                {
+        if self._merge_strategy in (
+            MergeStrategy.STRUCTURED_JSON,
+            MergeStrategy.CITATION_PRESERVING,
+        ):
+            payload = []
+            for result in results:
+                entry: dict[str, Any] = {
                     "agent_id": result.agent_id,
                     "status": result.status.value,
                     "summary": result.summary or "",
                 }
-                for result in results
-            ]
+                if self._merge_strategy is MergeStrategy.CITATION_PRESERVING:
+                    citations = result.structured_data.get("citations")
+                    if citations is not None:
+                        entry["citations"] = citations
+                payload.append(entry)
             return json.dumps({"agents": payload}, ensure_ascii=False)
         parts: List[str] = []
         for result in results:

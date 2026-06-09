@@ -101,6 +101,7 @@ def build_nexus_loop_from_environment(
         signal_collector=adaptive_wiring.signal_collector if adaptive_wiring else None,
         run_budget=run_budget,
         critic_graph_hooks=critic_wiring.graph_hooks if critic_wiring else None,
+        emit_coordination_advisory=orch.emit_coordination_advisory,
     )
     resolved_security = security_wiring or wire_application_security(env)
     apply_application_security_wiring(loop, resolved_security)

@@ -126,6 +126,7 @@ class NexusLoop:
         evaluation_registry: OnlineEvaluationRegistry | None = None,
         run_budget: RunBudget | None = None,
         critic_graph_hooks: Optional["CriticGraphHooks"] = None,
+        emit_coordination_advisory: bool = False,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -250,6 +251,7 @@ class NexusLoop:
             finish_task=self._finish_task,
             maybe_checkpoint=self._maybe_checkpoint_long_running,
             policy_engine=self._policy_engine,
+            emit_coordination_advisory=emit_coordination_advisory,
         )
 
     @property

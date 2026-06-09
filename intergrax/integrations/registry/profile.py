@@ -97,6 +97,7 @@ class IntegrationProfile(BaseModel):
     ml_inference_host: IntegrationBinding | None = None
     billing_meter: IntegrationBinding | None = None
     crm: IntegrationBinding | None = None
+    llm_guardrail: IntegrationBinding | None = None
 
     options: dict[str, dict[str, Any]] = Field(default_factory=dict)
 
@@ -363,4 +364,5 @@ IntegrationProfile._BINDING_ACCESSORS = {
     "ml_inference_host": lambda profile: profile.ml_inference_host,
     "billing_meter": lambda profile: profile.billing_meter,
     "crm": lambda profile: profile.crm,
+    "llm_guardrail": lambda profile: profile.llm_guardrail,
 }
