@@ -749,6 +749,7 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 | 2026-06-09 | M-P12.* | Full M.12 implementation: contract, 9 slugs, middleware, assembly, tests, CI |
 | 2026-06-09 | M-P12.FU | Follow-up: per-slug bundles, chained scanners, LLM hooks, legal host example, docs paydown |
 | 2026-06-09 | M-P12.FU2 | NeMo `opens.py`, HTTP smoke tests, `USAGE.md`, lab guardrail toggle |
+| 2026-06-09 | M-P12.HARD | E2E Nexus guardrail gate, `GUARDRAIL_BLOCKED` events, `UAEPBlockedError` → failed execution, PLATFORM Band 2ay |
 
 ##### M.6 P6 — Post-catalog wiring closeout (Done — 2026-06-02)
 

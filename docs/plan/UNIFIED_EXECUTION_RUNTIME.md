@@ -1076,6 +1076,7 @@ domain MUST be reflected in:
 | 2026-06-09 | GR-INT.1–3 | M.12 code: adapters, middleware, assembly, tests, CI |
 | 2026-06-09 | GR-INT.FU | Output hooks (AFTER_LLM_OUTPUT/FINALIZATION), chained backends, runtime bridge tests |
 | 2026-06-09 | GR-INT.4 | NeMo opens.py, HTTP smoke tests, CVL L0 merge, lab/legal guardrail toggles, USAGE.md |
+| 2026-06-09 | GR-INT.HARD | `GUARDRAIL_BLOCKED` runtime event, E2E Nexus guardrail gate, PLATFORM Band 2ay register |
 
 ---
 

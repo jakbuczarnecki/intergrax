@@ -4,11 +4,18 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from intergrax.applications.contracts.environment_profile import GuardrailProfile
+from intergrax.contracts.event_severity import EventSeverity
 from intergrax.integrations.contracts.llm_guardrail import GuardrailContext, LlmGuardrailBackend
+from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.base import RuntimeMiddleware
+
+if TYPE_CHECKING:
+    from intergrax.runtime.events.event_bus import RuntimeEventBus
 
 
 class LlmGuardrailMiddleware(RuntimeMiddleware):
@@ -21,9 +28,12 @@ class LlmGuardrailMiddleware(RuntimeMiddleware):
         self,
         backend: LlmGuardrailBackend,
         profile: GuardrailProfile,
+        *,
+        event_bus: RuntimeEventBus | None = None,
     ) -> None:
         self._backend = backend
         self._profile = profile
+        self._event_bus = event_bus
 
     async def before(self, point: HookPoint, ctx: HookContext) -> HookResult:
         if not self._profile.enabled:
@@ -35,9 +45,16 @@ class LlmGuardrailMiddleware(RuntimeMiddleware):
                 return HookResult()
             result = self._backend.scan_input(prompt, context=guard_ctx)
             if not result.allowed:
+                reason = result.detail or f"guardrail input blocked ({self._backend.slug})"
+                await self._emit_blocked(
+                    ctx,
+                    point=point,
+                    scan_kind="input",
+                    reason=reason,
+                )
                 return HookResult(
                     action=HookAction.BLOCK,
-                    reason=result.detail or f"guardrail input blocked ({self._backend.slug})",
+                    reason=reason,
                     modified_payload={"guardrail": result.audit_payload},
                 )
             if result.sanitized_text and result.sanitized_text != prompt:
@@ -51,9 +68,16 @@ class LlmGuardrailMiddleware(RuntimeMiddleware):
             arguments = _stringify_argument_map(ctx.runtime_state.get("arguments"))
             result = self._backend.scan_tool_call(tool_id, arguments, context=guard_ctx)
             if not result.allowed:
+                reason = result.detail or f"guardrail tool blocked ({self._backend.slug})"
+                await self._emit_blocked(
+                    ctx,
+                    point=point,
+                    scan_kind="tool",
+                    reason=reason,
+                )
                 return HookResult(
                     action=HookAction.BLOCK,
-                    reason=result.detail or f"guardrail tool blocked ({self._backend.slug})",
+                    reason=reason,
                 )
         return HookResult()
 
@@ -72,9 +96,16 @@ class LlmGuardrailMiddleware(RuntimeMiddleware):
             prompt=prompt or None,
         )
         if not result.allowed:
+            reason = result.detail or f"guardrail output blocked ({self._backend.slug})"
+            await self._emit_blocked(
+                ctx,
+                point=point,
+                scan_kind="output",
+                reason=reason,
+            )
             return HookResult(
                 action=HookAction.BLOCK,
-                reason=result.detail or f"guardrail output blocked ({self._backend.slug})",
+                reason=reason,
                 modified_payload={
                     "guardrail_scan": {
                         **result.audit_payload,
@@ -93,6 +124,37 @@ class LlmGuardrailMiddleware(RuntimeMiddleware):
                     "detail": result.detail,
                 },
             },
+        )
+
+    async def _emit_blocked(
+        self,
+        ctx: HookContext,
+        *,
+        point: HookPoint,
+        scan_kind: str,
+        reason: str,
+    ) -> None:
+        if self._event_bus is None:
+            return
+        await self._event_bus.publish(
+            RuntimeEvent(
+                tenant_id=str(ctx.runtime_state.get("tenant_id", "")) or None,
+                task_id=ctx.task_id,
+                run_id=ctx.run_id,
+                node_id=ctx.node_id,
+                agent_id=ctx.agent_id,
+                step_id=ctx.step_id,
+                event_type=RuntimeEventType.GUARDRAIL_BLOCKED,
+                phase=ctx.phase,
+                severity=EventSeverity.WARNING,
+                correlation_id=ctx.task_id,
+                payload={
+                    "scan_kind": scan_kind,
+                    "hook": point.value,
+                    "backend_slug": self._backend.slug,
+                    "reason": reason,
+                },
+            )
         )
 
 

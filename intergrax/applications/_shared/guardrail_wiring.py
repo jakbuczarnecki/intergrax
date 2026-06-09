@@ -52,6 +52,10 @@ def apply_application_guardrail_wiring(
         return wiring
     _attach_middleware(
         nexus,
-        LlmGuardrailMiddleware(wiring.backend, env.guardrail_profile),
+        LlmGuardrailMiddleware(
+            wiring.backend,
+            env.guardrail_profile,
+            event_bus=nexus.event_bus,
+        ),
     )
     return wiring

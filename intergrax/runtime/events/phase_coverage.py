@@ -73,6 +73,7 @@ EVENT_PHASE_COVERAGE: dict[RuntimeEventType, ExecutionPhase] = {
     RuntimeEventType.AUTONOMY_LEVEL_SET: ExecutionPhase.INTAKE,
     RuntimeEventType.AUTONOMY_LEVEL_CHANGED: ExecutionPhase.STEP_EXECUTION,
     RuntimeEventType.RECOVERY_REBOOT: ExecutionPhase.RETRY_HANDLING,
+    RuntimeEventType.GUARDRAIL_BLOCKED: ExecutionPhase.CONTEXT_BUILDING,
 }
 
 EVENT_OPS_FILTER_HINTS: dict[RuntimeEventType, OpsFilterHint] = {
@@ -137,6 +138,7 @@ EVENT_OPS_FILTER_HINTS: dict[RuntimeEventType, OpsFilterHint] = {
     RuntimeEventType.AUTONOMY_LEVEL_SET: "ops:governance",
     RuntimeEventType.AUTONOMY_LEVEL_CHANGED: "ops:governance",
     RuntimeEventType.RECOVERY_REBOOT: "ops:retry",
+    RuntimeEventType.GUARDRAIL_BLOCKED: "ops:alert",
 }
 
 

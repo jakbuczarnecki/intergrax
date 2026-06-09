@@ -78,6 +78,7 @@ class RuntimeEventType(str, Enum):
     AUTONOMY_LEVEL_SET = "autonomy_level_set"
     AUTONOMY_LEVEL_CHANGED = "autonomy_level_changed"
     RECOVERY_REBOOT = "recovery_reboot"
+    GUARDRAIL_BLOCKED = "guardrail_blocked"
 
 
 class RuntimeEvent(BaseModel):
