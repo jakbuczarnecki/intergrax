@@ -183,6 +183,10 @@ class UAEPExecutor:
             node_id=exec_ctx.node_id,
             agent_id=contract.id,
             phase=ExecutionPhase.CONTEXT_BUILDING,
+            runtime_state={
+                "prompt": request.message or "",
+                "tenant_id": request.tenant_id or "",
+            },
         )
         await self._guard_hook(
             await self._middleware.run_before(HookPoint.BEFORE_CONTEXT_BUILD, hook_base)
@@ -262,6 +266,8 @@ class UAEPExecutor:
             await self._guard_hook(
                 await self._middleware.run_after(HookPoint.AFTER_STEP, hook_step)
             )
+            if step_result.output is not None:
+                await self._scan_step_output_hooks(hook_step, step_result.output, request)
 
             if step_result.output is not None:
                 last_output = step_result.output
@@ -762,6 +768,31 @@ class UAEPExecutor:
             correlation_id=ctx.correlation_id or ctx.task_id,
         )
         await self._event_bus.publish(event)
+
+    async def _scan_step_output_hooks(
+        self,
+        hook_step: HookContext,
+        step_output: StepOutput,
+        request: RuntimeRequest,
+    ) -> None:
+        output_text = step_output.summary or str(step_output.data.get("answer", ""))
+        if not output_text:
+            output_text = str(step_output.data.get("text", ""))
+        if not output_text:
+            return
+        ctx = hook_step.model_copy(
+            update={
+                "runtime_state": {
+                    **hook_step.runtime_state,
+                    "prompt": request.message or "",
+                    "llm_output": output_text,
+                    "output": output_text,
+                },
+            },
+        )
+        await self._guard_hook(
+            await self._middleware.run_after(HookPoint.AFTER_LLM_OUTPUT, ctx),
+        )
 
     @staticmethod
     async def _guard_hook(result: Any) -> None:

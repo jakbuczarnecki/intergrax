@@ -36,6 +36,9 @@ from intergrax.applications._shared.evaluation_runtime_bridge import (
 )
 from intergrax.applications._shared.evaluation_wiring import wire_application_evaluation
 from intergrax.applications._shared.reliability_wiring import wire_application_reliability
+from intergrax.applications._shared.guardrail_runtime_bridge import (
+    apply_guardrail_profiles_to_runtime_config,
+)
 from intergrax.applications._shared.security_runtime_bridge import (
     apply_security_profiles_from_environment,
 )
@@ -132,6 +135,7 @@ def materialize_runtime_config(
     apply_prompt_profiles_from_environment(config, env)
     apply_observability_profiles_from_environment(config, env)
     apply_security_profiles_from_environment(config, env)
+    apply_guardrail_profiles_to_runtime_config(config, env)
     reliability_wiring = wire_application_reliability(env)
     apply_reliability_profiles_from_environment(
         config,

@@ -76,8 +76,9 @@ Tier-3 hosts are configured through **`ApplicationEnvironmentProfile`** — a ty
 | `IdentityProfile` | API key, tenant_required, service identities |
 | `PolicyRulesProfile` + `ExecutionMode` | Declarative rules + STRICT/BALANCED/EXPLORATORY |
 | `ApplicationSecurityProfile` | Per-app V-SEC toggles |
+| `GuardrailProfile` | Vendor LLM guardrail scan toggles (`enabled`, `scan_input/output/tool_calls`, Colang/Bedrock options) |
 | `ToolProfile` / `SkillProfile` | Allowed catalogs |
-| `IntegrationProfile` | Provider stack |
+| `IntegrationProfile` | Provider stack — includes optional `llm_guardrail` slug (§47) |
 | `LLMProfile` / `ModalityProfile` | Model and modality posture |
 | `ContextProfile` / `MemoryProfile` / `ContextDecisionProfile` | Assembly and stores |
 | `PromptProfile` | YAML prompt catalog path |
@@ -106,6 +107,7 @@ ApplicationManifest
 | `nexus_factory.py` | NexusLoop from profile |
 | `identity_wiring.py` | Host auth from `IdentityProfile` |
 | `shadow_wiring.py` / `sandbox_wiring.py` | Isolated execution |
+| `guardrail_wiring.py` / `guardrail_runtime_bridge.py` | `llm_guardrail` slug → `LlmGuardrailMiddleware` (M.12) |
 | `*_runtime_bridge.py` | Domain bridges (RAG, memory, policy, …) |
 
 ## 22.3 Interaction surfaces (intake)

@@ -15,6 +15,8 @@ from intergrax.runtime.nexus.tracing.adapters.core_llm_adapter_returned import C
 from intergrax.runtime.nexus.tracing.adapters.core_llm_call_recorded import CoreLLMCallRecordedDiagV1
 from intergrax.runtime.nexus.tracing.adapters.core_llm_used_tools_agent_answer import CoreLLMUsedToolsAgentAnswerDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+from intergrax.runtime.hooks.llm_hooks import LlmGuardrailBlockedError, llm_hook_context, run_llm_generation_hooks
+from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 
 
 class CoreLLMStep(RuntimeStep):
@@ -78,13 +80,41 @@ class CoreLLMStep(RuntimeStep):
                 )
 
 
-            completion = state.context.config.llm_adapter.generate_messages(
-                msgs,
-                run_id=state.run_id,
-                **generate_kwargs,
+            prompt_text = msgs[-1].content if msgs else ""
+            guardrail_middleware = state.context.config.metadata.get("guardrail_middleware")
+            pipeline = (
+                MiddlewarePipeline([guardrail_middleware])
+                if guardrail_middleware is not None
+                else None
             )
-            state.last_llm_adapter_response = completion
-            answer_text = completion.content
+            hook_ctx = llm_hook_context(
+                run_id=state.run_id,
+                prompt=prompt_text,
+                tenant_id=state.request.tenant_id or "",
+            )
+
+            def _generate_answer() -> str:
+                completion = state.context.config.llm_adapter.generate_messages(
+                    msgs,
+                    run_id=state.run_id,
+                    **generate_kwargs,
+                )
+                state.last_llm_adapter_response = completion
+                return completion.content
+
+            try:
+                answer_text = await run_llm_generation_hooks(
+                    pipeline,
+                    ctx=hook_ctx,
+                    prompt=prompt_text,
+                    generate=_generate_answer,
+                )
+            except LlmGuardrailBlockedError as exc:
+                state.raw_answer = f"[BLOCKED] {exc.reason}"
+                return
+            completion = state.last_llm_adapter_response
+            if completion is None:
+                return
 
             usage = completion.usage
             input_tokens = int(usage.input_tokens) if usage else 0

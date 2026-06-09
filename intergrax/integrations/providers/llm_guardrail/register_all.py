@@ -9,7 +9,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 from intergrax.integrations.providers.llm_guardrail._factory import create_guardrail_backend
 from intergrax.integrations.registry.plugin_register import register_from_manifest
 
-_GUARD_SLUGS: tuple[str, ...] = (
+GUARD_SLUGS: tuple[str, ...] = (
     "llm_guard",
     "guardrails_ai",
     "nemo_guardrails",
@@ -33,7 +33,7 @@ def _manifest_for(slug: str) -> IntegrationManifest:
 
 
 def register_llm_guardrail_integrations(*, override: bool = False) -> None:
-    for slug in _GUARD_SLUGS:
+    for slug in GUARD_SLUGS:
         register_from_manifest(
             _manifest_for(slug),
             lambda _slug=slug: create_guardrail_backend(_slug),

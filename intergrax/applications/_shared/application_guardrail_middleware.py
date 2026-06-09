@@ -29,7 +29,7 @@ class LlmGuardrailMiddleware(RuntimeMiddleware):
         if not self._profile.enabled:
             return HookResult()
         guard_ctx = _guardrail_context(ctx, point)
-        if point == HookPoint.BEFORE_CONTEXT_BUILD and self._profile.scan_input:
+        if point in {HookPoint.BEFORE_CONTEXT_BUILD, HookPoint.BEFORE_LLM_INFERENCE} and self._profile.scan_input:
             prompt = str(ctx.runtime_state.get("prompt", ""))
             if not prompt:
                 return HookResult()
@@ -45,7 +45,7 @@ class LlmGuardrailMiddleware(RuntimeMiddleware):
                     modified_payload={"prompt": result.sanitized_text},
                 )
         if point == HookPoint.BEFORE_TOOL_CALL and self._profile.scan_tool_calls:
-            tool_id = str(ctx.runtime_state.get("tool_id", ""))
+            tool_id = str(ctx.runtime_state.get("tool_id", ctx.runtime_state.get("tool_name", "")))
             if not tool_id:
                 return HookResult()
             arguments = _stringify_argument_map(ctx.runtime_state.get("arguments"))
@@ -60,7 +60,7 @@ class LlmGuardrailMiddleware(RuntimeMiddleware):
     async def after(self, point: HookPoint, ctx: HookContext) -> HookResult:
         if not self._profile.enabled or not self._profile.scan_output:
             return HookResult()
-        if point != HookPoint.AFTER_FINALIZATION:
+        if point not in {HookPoint.AFTER_LLM_OUTPUT, HookPoint.AFTER_FINALIZATION}:
             return HookResult()
         output = str(ctx.runtime_state.get("llm_output", ctx.runtime_state.get("output", "")))
         if not output:
@@ -84,7 +84,7 @@ def _guardrail_context(ctx: HookContext, point: HookPoint) -> GuardrailContext:
         tenant_id=str(ctx.runtime_state.get("tenant_id", "")),
         run_id=ctx.run_id,
         agent_id=ctx.agent_id or "",
-        step_id=ctx.node_id or "",
+        step_id=ctx.step_id or ctx.node_id or "",
         hook=point.value,
     )
 

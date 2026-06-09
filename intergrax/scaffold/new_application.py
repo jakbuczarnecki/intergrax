@@ -862,6 +862,11 @@ def _env_example(env_prefix: str, route_prefix: str, port: int, specs: list[Scaf
         {env_prefix}TASK_CONTROL_ROUTE_PREFIX=/v1/tasks
         # Example run capability for POST {route_prefix}/run
         # DEFAULT_CAPABILITY={caps}
+        # Optional LLM guardrails (M.12)
+        # {env_prefix}ENABLE_LLM_GUARDRAILS=false
+        # {env_prefix}LLM_GUARDRAIL_PRIMARY=llm_guard
+        # INTERGRAX_LAKERA_API_KEY=
+        # INTERGRAX_OPENGUARDRAILS_BASE_URL=
         '''
     )
 

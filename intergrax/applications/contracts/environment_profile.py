@@ -70,6 +70,10 @@ class GuardrailProfile(BaseModel):
     scan_input: bool = True
     scan_output: bool = True
     scan_tool_calls: bool = False
+    secondary_slug: str | None = None
+    colang_config_path: str | None = None
+    bedrock_guardrail_policy_id: str | None = None
+    inference_slug: str | None = None
 
 
 class ContextDecisionProfile(BaseModel):

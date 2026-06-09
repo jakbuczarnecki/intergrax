@@ -1191,6 +1191,8 @@ Intergrax is **policy-first** and **event-first**. Governance and observability 
 ```text
 ApplicationEnvironmentProfile (Tier-3 umbrella)
   ├── security_profile          → V-SEC toggles (prompt/tool/retrieval/tenant) → application_security_wiring.py
+  ├── guardrail_profile         → vendor LLM scan toggles (M.12) + `integration_profile.llm_guardrail` slug
+  ├── integration_profile.llm_guardrail → NeMo / LLM Guard / Presidio / … (Tier-0 catalog — agents never import SDKs)
   ├── policy_rules              → YAML declarative rules (lab: harness_lab.yaml) → policy_wiring.py
   ├── identity_profile          → API key, tenant_required, service identities
   ├── context_profile           → budget, RAG/web flags → RuntimeConfig + CONTEXT_* events

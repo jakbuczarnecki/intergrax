@@ -60,7 +60,7 @@ def test_wire_application_guardrail_with_preset() -> None:
     wiring = wire_application_guardrail(env)
     assert wiring.options.enabled is True
     assert wiring.backend is not None
-    assert wiring.backend.slug == "llm_guard"
+    assert "llm_guard" in wiring.backend.slug
 
 
 def test_apply_guardrail_wiring_attaches_middleware() -> None:

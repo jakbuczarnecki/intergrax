@@ -487,7 +487,9 @@ Nothing should execute without appropriate policy checks, permission checks and 
 Policy Enforcement Score: L0-L4
 ```
 
-**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix H](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) (control plane map, security profile, policy bundle read order); canon [§42.11](architecture/UNIFIED_EXECUTION_RUNTIME.md#4211-policy-engine); [`guides/EXTENSION_AUTHOR_GUIDE.md` §10](guides/EXTENSION_AUTHOR_GUIDE.md#10-policy-rule-handler-plugins-phase-dx-58) (`intergrax.policy_rules`). **Closeout:** [Phase GOV-AUDIT](plan/UNIFIED_EXECUTION_RUNTIME.md) **Done** (GOV-DOC.*).
+**Guardrails vector (M.12):** Vendor LLM scanners are **not** a separate tier — they extend Policy & Governance via `IntegrationProfile.llm_guardrail` + `GuardrailProfile` + `LlmGuardrailMiddleware`. Canon: UAEP [§42.11.6](architecture/UNIFIED_EXECUTION_RUNTIME.md) · Integration [§47](architecture/INTEGRATIONS.md) · [ADR-GR-001](adr/ADR-GR-001.md).
+
+**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix H](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) (control plane map, security profile, policy bundle read order); canon [§42.11](architecture/UNIFIED_EXECUTION_RUNTIME.md#4211-policy-engine); [`guides/EXTENSION_AUTHOR_GUIDE.md` §10](guides/EXTENSION_AUTHOR_GUIDE.md#10-policy-rule-handler-plugins-phase-dx-58) (`intergrax.policy_rules`). **Closeout:** [Phase GOV-AUDIT](plan/UNIFIED_EXECUTION_RUNTIME.md) **Done** (GOV-DOC.*) · [Phase M.12](plan/INTEGRATIONS.md) guardrails **Done**.
 
 ---
 
@@ -1271,7 +1273,9 @@ Verify that data and execution safety are first-class platform properties.
 Security and Data Governance Score: L0-L4
 ```
 
-**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix H §H.3](guides/AGENT_CREATION_GUIDE.md#h3-security-profile-per-application) (V-SEC toggles); [`guides/AGENT_CREATION_GUIDE.md` Appendix S](guides/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) (wire-time middleware bridge + assembly validation). **Closeout:** [Phase SEC](plan/UNIFIED_EXECUTION_RUNTIME.md) **Done** (SEC-DOC.*).
+**LLM guardrails (M.12):** Complements V-SEC native defenses — `GuardrailProfile` + `IntegrationProfile.llm_guardrail` → `LlmGuardrailMiddleware` (no vendor SDK in Tier-2). Canon: [`INTEGRATIONS.md` §47](architecture/INTEGRATIONS.md) · UAEP §42.11.6.
+
+**Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix H §H.3](guides/AGENT_CREATION_GUIDE.md#h3-security-profile-per-application) (V-SEC toggles); [`guides/AGENT_CREATION_GUIDE.md` Appendix S](guides/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) (wire-time middleware bridge + assembly validation). **Closeout:** [Phase SEC](plan/UNIFIED_EXECUTION_RUNTIME.md) **Done** (SEC-DOC.*) · [Phase M.12](plan/INTEGRATIONS.md) guardrails **Done**.
 
 ---
 

@@ -17,6 +17,17 @@ class GuardrailRiskLevel(str, Enum):
     CRITICAL = "critical"
 
 
+class GuardrailBackendOptions(BaseModel):
+    """Vendor-specific options resolved at Tier-3 wiring time."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    secondary_slug: str | None = None
+    colang_config_path: str | None = None
+    bedrock_guardrail_policy_id: str | None = None
+    inference_slug: str | None = None
+
+
 class GuardrailContext(BaseModel):
     """Runtime metadata passed to vendor scanners at hook time."""
 

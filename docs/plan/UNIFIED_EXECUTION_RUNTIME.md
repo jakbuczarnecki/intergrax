@@ -1073,6 +1073,7 @@ domain MUST be reflected in:
 |------|-----|---------|
 | 2026-06-09 | GR-DOC.1–4 | Guardrail catalog canon + hub index + PLATFORM term + INTEGRATIONS §47 vendor matrix |
 | 2026-06-09 | GR-INT.1–3 | M.12 code: adapters, middleware, assembly, tests, CI |
+| 2026-06-09 | GR-INT.FU | Output hooks (AFTER_LLM_OUTPUT/FINALIZATION), chained backends, runtime bridge tests |
 
 ---
 

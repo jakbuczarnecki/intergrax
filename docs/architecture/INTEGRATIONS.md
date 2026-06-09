@@ -817,7 +817,7 @@ All slugs from the 2026-05 harness recommendation (high / medium / low) are regi
 
 **Default notify channel:** `make_lab_harness_task_enricher()` + `apply_default_long_running_notify_channel()` inject profile default (`pagerduty` in harness) when `long_running.enabled` and `notify_channel` unset. Wired in `create_lab_application()` for `POST /v1/lab/run` (`long_running: true`) and interaction intake.
 
-**Next gaps (M.12+):** full adapters for remaining thin-p4 slugs (Helicone, PostHog, …), network smoke CI for harness integrations.
+**Next gaps (M.13+):** full adapters for remaining thin-p4 slugs (Helicone, PostHog, …), network smoke CI for non-guardrail harness integrations. **Guardrails (M.12):** Done — see §47.
 
 **CI:** `harness-smoke` job in `.github/workflows/unit-tests.yml` (`integrations-harness` extra).
 
@@ -941,7 +941,7 @@ Use this matrix to **pick engines by problem shape**, then register the matching
                     └─────────────────────────────────────┘
 ```
 
-### 47.5 Planned catalog slugs (Phase M.12)
+### 47.5 Shipped catalog slugs (Phase M.12 — Done)
 
 | Slug | Backend library | Priority | Notes |
 |------|-----------------|----------|-------|
@@ -955,9 +955,9 @@ Use this matrix to **pick engines by problem shape**, then register the matching
 | `azure_content_safety` | Azure Content Safety | **P2** | Azure profile hosts |
 | `bedrock_guardrails` | AWS Bedrock Guardrails | **P2** | `aws` cloud_platform hosts |
 
-**Tier-3 preset (planned):** `harness_guardrail_stack(primary="llm_guard", semantic="guardrails_ai")` in `registry/presets.py`.
+**Tier-3 preset (shipped):** `harness_guardrail_stack(primary="llm_guard", semantic="guardrails_ai")` in `registry/presets.py` — `semantic` becomes chained secondary scanner.
 
-### 47.6 Wiring sketch (target M.12)
+### 47.6 Wiring sketch (M.12 — Done)
 
 ```python
 # Tier-3 host — applications/<product>/host/integration_wiring.py
@@ -972,18 +972,18 @@ profile = harness_guardrail_stack(
 ```
 
 ```python
-# Tier-1 — planned guardrail_runtime_bridge.py (not shipped)
-# before_step / pre-LLM:
-result = backend.scan_input(prompt, context=ctx.guardrail_context())
-if not result.allowed:
-    return PolicyDecision(action=DENY, reason="guardrail_input", audit_payload=result.audit_payload)
+# Tier-3 — guardrail_runtime_bridge + LlmGuardrailMiddleware (priority 52)
+# Hooks: BEFORE_CONTEXT_BUILD, BEFORE_LLM_INFERENCE, BEFORE_TOOL_CALL,
+#        AFTER_LLM_OUTPUT, AFTER_FINALIZATION
 ```
 
-**Verification (when M.12 ships):**
+**Verification:**
 
 ```bash
 uv run pytest tests/unit/integrations/providers/llm_guardrail/ -m gate -q
 uv run pytest tests/unit/runtime/test_guardrail_runtime_bridge.py -m gate -q
+uv run pytest tests/unit/applications/test_guardrail_output_hooks.py -m gate -q
+python scripts/check_harness_guardrail_wiring.py
 ```
 
 **Implementation tracker:** [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) Phase **M.12** · UAEP doc Phase **GR-DOC**.

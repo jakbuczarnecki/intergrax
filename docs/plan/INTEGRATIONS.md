@@ -747,6 +747,7 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 |------|-----|---------|
 | 2026-06-09 | M-P12-DOC.1 | Architecture §47 + plan register opened; UAEP GR-DOC cross-ref |
 | 2026-06-09 | M-P12.* | Full M.12 implementation: contract, 9 slugs, middleware, assembly, tests, CI |
+| 2026-06-09 | M-P12.FU | Follow-up: per-slug bundles, chained scanners, LLM hooks, legal host example, docs paydown |
 
 ##### M.6 P6 — Post-catalog wiring closeout (Done — 2026-06-02)
 

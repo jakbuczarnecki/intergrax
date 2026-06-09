@@ -36,7 +36,8 @@ def validate_guardrail_wiring(
     if wiring.options.enabled and wiring.backend is None:
         errors.append("guardrail backend failed to resolve from integration profile")
     if wiring.options.enabled and wiring.backend is not None:
-        if wiring.backend.slug != (wiring.options.backend_slug or ""):
+        primary = wiring.options.backend_slug or ""
+        if primary and primary not in wiring.backend.slug.split("+"):
             errors.append("guardrail backend slug mismatch")
     if env.guardrail_profile.enabled and not wiring.options.enabled:
         errors.append("guardrail_profile.enabled requires integration_profile.llm_guardrail")

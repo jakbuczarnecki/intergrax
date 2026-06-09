@@ -25,6 +25,7 @@ Failure types:
 - missing data
 - low confidence
 - unsafe action
+- guardrail denial (`LlmGuardrailMiddleware` BLOCK at input/output/tool hooks — composes with HITL when policy escalates; see [`INTEGRATIONS.md`](INTEGRATIONS.md) §47)
 - human rejection
 - incomplete result
 

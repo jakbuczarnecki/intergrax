@@ -395,7 +395,7 @@ class NexusLoop:
                 HookPoint.BEFORE_FINALIZATION,
                 task,
                 phase=ExecutionPhase.COMPLETION,
-                extra={"task_state": task.state.value},
+                extra=_finalization_hook_extra(task, answer=answer),
             )
         except NexusLifecycleHookError as exc:
             await self._publish_terminal_runtime_event(task)
@@ -426,7 +426,7 @@ class NexusLoop:
                 HookPoint.AFTER_FINALIZATION,
                 task,
                 phase=ExecutionPhase.COMPLETION,
-                extra={"task_state": task.state.value},
+                extra=_finalization_hook_extra(task, answer=answer),
             )
         except NexusLifecycleHookError:
             pass
@@ -571,3 +571,13 @@ class NexusLoop:
             human_store=self._human_store,
             response_text=response_text,
         )
+
+
+def _finalization_hook_extra(task: Task, *, answer: str) -> dict[str, str]:
+    return {
+        "task_state": task.state.value,
+        "prompt": task.message,
+        "llm_output": answer,
+        "output": answer,
+        "tenant_id": task.tenant_id,
+    }
