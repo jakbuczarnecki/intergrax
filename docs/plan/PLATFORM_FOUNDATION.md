@@ -84,6 +84,7 @@ Each **business environment** and each **business agent** maintains its own `ARC
 | Phase V remediation traceability (audit gap → V-REM ID) | **[Appendix J](plan/PLATFORM_FOUNDATION.md)** |
 | Full architecture audit procedure (32 layers) | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) · prompt: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) |
 | **Full architecture audit closeout (32 layers, scope C)** | [Phase FAUDIT-32](plan/PLATFORM_FOUNDATION.md) · **§6.1ah** · Band **2ad** · **Appendix M** · source: audit 2026-06-06 (`scope: C`, `audit-and-fix`) |
+| **Ideal Harness L3 depth (32-layer uplift)** | [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md) · **§6.1at** · Band **2ax** |
 | Infrastructure vs business scope split | **§4.0a** · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) (closed) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) (closed) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) (closed) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) (closed) · [§6.1g](#61g-harness-implementation-queue--governance-audit-closed) (closed) · [§6.3a](#63a-business-backlog-register-consolidated) |
 
 **Note on audit source documents:** Some historical audit narratives (e.g. `HARNESS_APPLICATION_LAYER_AUDIT.md`) may live outside the repo. **Task traceability in this plan is canonical** — H-APP (43 tasks), W-OPS, MEM, DX, AA registers below; do not re-derive scope from missing files.
@@ -413,6 +414,7 @@ Appendices: [`plan/`](plan/)
 | **2as — Reasoning layer depth (COG-DEPTH)** | Planner unification, Prompt Registry on planners, DecisionRecord, failure taxonomy — **no** business agents | **Done** (2026-06-09) — **22/22** | [Phase COG-DEPTH](plan/REASONING_AND_COGNITION.md) · [`architecture/REASONING_AND_COGNITION.md`](architecture/REASONING_AND_COGNITION.md) |
 | **2aw — Tier-3 execution surface parity (H-APP-WIRING)** | Close FLOW-GAP-17–20 / ORCH §59 Tier-3 wiring debt — task control API, async exposure, reference host adoption — **no** Nexus fork | **Done** (2026-06-09) — **6/6** | [Phase H-APP-WIRING](plan/TIER3_APPLICATION_ENVIRONMENT.md) · [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §59 |
 | **2ay — LLM guardrail integrations (M.12 / GR-INT)** | `llm_guardrail` catalog + `LlmGuardrailMiddleware` + assembly/CI + E2E gate + `GUARDRAIL_BLOCKED` observability — **no** business agents | **Done** (2026-06-09) — **14/14 + M-P12.HARD** | [Phase M.12](plan/INTEGRATIONS.md) · [GR-DOC](plan/UNIFIED_EXECUTION_RUNTIME.md) · **§6.1an** · [ADR-GR-001](adr/ADR-GR-001.md) |
+| **2ax — Ideal Harness L3 depth (IDEAL-L3)** | L2→L3 uplift per 32-layer audit — identity, reliability, security, cost, prompts, gates — **no** business agents | **W1 Done** (2026-06-09) — 30/32 L3; P1 incremental | [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md) · **§6.1at** · Band **2ax** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 · FLOW-8 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
@@ -597,7 +599,7 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 **Post-remediation (2026-06-06):** **0 Critical** open; tier CI gate green; **23/23 FAUDIT** + follow-up Done.
 
-**Post depth bands (2026-06-09):** MEM-DEPTH, COG-DEPTH, ECP-DEPTH, ORCH-CONFIG closeout complete — Appendix M scorecard refreshed; remaining L2 rows are incremental depth only.
+**Post depth bands (2026-06-09):** MEM-DEPTH, COG-DEPTH, ECP-DEPTH, ORCH-CONFIG closeout complete — Appendix M scorecard refreshed. **IDEAL-L3 W1 (2026-06-09):** P0 depth uplift — 30/32 layers L3 (see [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md)); P1 rows incremental.
 
 **Gate evidence (verify step):** `uv run pytest -m gate -q` → **901 passed**; `check_harness_no_getattr.py`, `check_intergrax_no_applications_imports.py`, `check_harness_prompt_golden_catalog.py`, `check_agents_lifecycle_metadata.py` → **OK**.
 
@@ -608,34 +610,34 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 | 1 | Strategic Harness Model | L3 | 0 | 0 | Yes |
 | 2 | Tier Model and Dependency Boundaries | L3 | 0 | 0 | Yes |
 | 3 | Interface and Task Intake | L3 | 0 | 1 | Partial |
-| 4 | Identity, Trust and Tenancy | L2 | 0 | 2 | Partial |
+| 4 | Identity, Trust and Tenancy | L3 | 0 | 0 | Yes |
 | 5 | Policy and Governance | L3 | 0 | 2 | Partial |
 | 6 | LLM and Model Adapter Layer | L3 | 0 | 1 | Yes |
 | 7 | Reasoning, Planning and Cognition | L3 | 0 | 0 | Yes |
 | 8 | Execution Runtime and Agent OS | L3 | 0 | 0 | Yes |
 | 9 | Orchestration, Scheduler and Execution Graph | L3 | 0 | 0 | Yes |
-| 10 | Subagents and Multi-Agent Coordination | L2 | 0 | 2 | Partial |
+| 10 | Subagents and Multi-Agent Coordination | L3 | 0 | 0 | Yes |
 | 11 | Tool Layer | L3 | 0 | 1 | Yes |
 | 12 | Skill Layer | L3 | 0 | 0 | Yes |
 | 13 | Integration Layer | L3 | 0 | 0 | Yes |
 | 14 | RAG and Retrieval Layer | L3 | 0 | 0 | Yes |
 | 15 | Memory Layer | L3 | 0 | 0 | Yes |
 | 16 | Context Engineering Layer | L3 | 0 | 0 | Yes |
-| 17 | Prompt Engineering and Prompt Registry | L2 | 0 | 1 | **No** |
+| 17 | Prompt Engineering and Prompt Registry | L3 | 0 | 0 | Yes |
 | 18 | Agent Assembly and Agent Contracts | L2 | 0 | 1 | Yes |
 | 19 | Registry Architecture | L2 | 0 | 2 | **No** |
-| 20 | Capability Graph Architecture | L2 | 0 | 2 | **No** |
-| 21 | Observability and Telemetry | L2 | 0 | 2 | **No** |
-| 22 | Error Handling and Reliability | L2 | 0 | 1 | **No** |
-| 23 | Security and Data Governance | L2 | 0 | 2 | **No** |
-| 24 | Cost and Resource Governance | L2 | 0 | 1 | **No** |
+| 20 | Capability Graph Architecture | L3 | 0 | 0 | Yes |
+| 21 | Observability and Telemetry | L3 | 0 | 0 | Yes |
+| 22 | Error Handling and Reliability | L3 | 0 | 0 | Yes |
+| 23 | Security and Data Governance | L3 | 0 | 0 | Yes |
+| 24 | Cost and Resource Governance | L3 | 0 | 0 | Yes |
 | 25 | Evaluation and Benchmarking | L2 | 0 | 1 | **No** |
 | 26 | Testing, CI and Architecture Gates | L3 | 0 | 0 | Yes |
 | 27 | Developer Experience, Scaffold and Lab | L3 | 0 | 1 | Yes |
 | 28 | Product Environment and Tier-3 Applications | L3 | 0 | 1 | Partial |
 | 29 | Modality, Vision, Audio and Dedicated ML | L3 | 0 | 1 | Yes |
 | 30 | Operational Excellence and SLOs | L3 | 0 | 1 | Partial |
-| 31 | Agent Lifecycle Governance | L2 | 0 | 2 | Partial |
+| 31 | Agent Lifecycle Governance | L3 | 0 | 0 | Yes |
 | 32 | Architecture Governance and Documentation Loop | L3 | 0 | 1 | Yes |
 
 **Plan accuracy note:** Rows marked **No** or **Partial** mean the phase closeout register claims **Done** for **wiring/bridge** work, but FAUDIT found **High** gaps vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` / `INTEGRAX_HARNESS_AUDIT_MAP.md` §8 — tracked as **FAUDIT.\*** residuals, not reopening closed closeout phases.
@@ -1781,9 +1783,19 @@ Verify (every harness PR):
   uv run python scripts/phase_v_closeout_gate.py --enforce --enforce-l4
   uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
   uv run python scripts/phase_v_capability_graph_guard.py --enforce
+  python scripts/check_agents_no_inline_prompts.py
+  python scripts/check_agents_no_vendor_sdk_imports.py
+  uv run python scripts/check_ideal_harness_l3_gates.py
+  uv run python scripts/harness_maturity_report.py --enforce-l3-critical
 ```
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
+
+### 6.1at Harness implementation queue — Ideal Harness L3 depth (active)
+
+**Status:** **In progress** (W1 Done) — master register: [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md)  
+**Priority ladder:** **Band 2ax** (§4.0)  
+**Gate evidence:** `test_ideal_harness_l3_depth_gate.py` · `check_ideal_harness_l3_gates.py`
 
 **Maintenance depth (2026-06-07):** **OBS-DEPTH.1 Done** — unified run journal. **T10-DEPTH.1 Done** — broker task index + PagerDuty acknowledge adapter. **T-EXPAND T11 Done** — 160 tools. **LEG-DEPTH.1–3 + O.5 depth Done** — planner schema uses `tool_ids`; legacy booleans accepted with deprecation trace; `from_legacy()` gated by `check_legacy_tool_plan_booleans.py`. **OBS-DEPTH.2 Done** — `check_trace_bridge_event_catalog.py` + gate test. **OBS live emit Done** — `RuntimeState.trace_event` → `runtime_event_bus`. **Celery purge_completed Done** — optional KV task index. **notify.dispatch_due Done** — Tier-0 dispatcher tool. **T-EXPAND T12 Done** — 170 tools (health slot probes + notify dispatcher). **T-EXPAND T13 Done** — 172 tools (`eval.judge`, `eval.trajectory` / CRIT-V). **L2→L3 §21 Done** — `test_observability_layer_depth_gate.py` regression gate.
 
@@ -3844,9 +3856,19 @@ Verify (every harness PR):
   uv run python scripts/phase_v_closeout_gate.py --enforce --enforce-l4
   uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
   uv run python scripts/phase_v_capability_graph_guard.py --enforce
+  python scripts/check_agents_no_inline_prompts.py
+  python scripts/check_agents_no_vendor_sdk_imports.py
+  uv run python scripts/check_ideal_harness_l3_gates.py
+  uv run python scripts/harness_maturity_report.py --enforce-l3-critical
 ```
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
+
+### 6.1at Harness implementation queue — Ideal Harness L3 depth (active)
+
+**Status:** **In progress** (W1 Done) — master register: [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md)  
+**Priority ladder:** **Band 2ax** (§4.0)  
+**Gate evidence:** `test_ideal_harness_l3_depth_gate.py` · `check_ideal_harness_l3_gates.py`
 
 **Maintenance depth (2026-06-07):** **OBS-DEPTH.1 Done** — unified run journal. **T10-DEPTH.1 Done** — broker task index + PagerDuty acknowledge adapter. **T-EXPAND T11 Done** — 160 tools. **LEG-DEPTH.1–3 + O.5 depth Done** — planner schema uses `tool_ids`; legacy booleans accepted with deprecation trace; `from_legacy()` gated by `check_legacy_tool_plan_booleans.py`. **OBS-DEPTH.2 Done** — `check_trace_bridge_event_catalog.py` + gate test. **OBS live emit Done** — `RuntimeState.trace_event` → `runtime_event_bus`. **Celery purge_completed Done** — optional KV task index. **notify.dispatch_due Done** — Tier-0 dispatcher tool. **T-EXPAND T12 Done** — 170 tools (health slot probes + notify dispatcher). **T-EXPAND T13 Done** — 172 tools (`eval.judge`, `eval.trajectory` / CRIT-V). **L2→L3 §21 Done** — `test_observability_layer_depth_gate.py` regression gate.### 6.1ah Harness implementation queue — FAUDIT-32 remediation (closed)
 
@@ -4026,7 +4048,7 @@ Phase Q used **one Q.* deliverable per PR** → update Appendix C + paydown log.
 
 **Post-remediation (2026-06-06):** **0 Critical** open; tier CI gate green; **23/23 FAUDIT** + follow-up Done.
 
-**Post depth bands (2026-06-09):** MEM-DEPTH, COG-DEPTH, ECP-DEPTH, ORCH-CONFIG closeout complete — Appendix M scorecard refreshed; remaining L2 rows are incremental depth only.
+**Post depth bands (2026-06-09):** MEM-DEPTH, COG-DEPTH, ECP-DEPTH, ORCH-CONFIG closeout complete — Appendix M scorecard refreshed. **IDEAL-L3 W1 (2026-06-09):** P0 depth uplift — 30/32 layers L3 (see [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md)); P1 rows incremental.
 
 **Gate evidence (verify step):** `uv run pytest -m gate -q` → **901 passed**; `check_harness_no_getattr.py`, `check_intergrax_no_applications_imports.py`, `check_harness_prompt_golden_catalog.py`, `check_agents_lifecycle_metadata.py` → **OK**.
 
@@ -4037,34 +4059,34 @@ Phase Q used **one Q.* deliverable per PR** → update Appendix C + paydown log.
 | 1 | Strategic Harness Model | L3 | 0 | 0 | Yes |
 | 2 | Tier Model and Dependency Boundaries | L3 | 0 | 0 | Yes |
 | 3 | Interface and Task Intake | L3 | 0 | 1 | Partial |
-| 4 | Identity, Trust and Tenancy | L2 | 0 | 2 | Partial |
+| 4 | Identity, Trust and Tenancy | L3 | 0 | 0 | Yes |
 | 5 | Policy and Governance | L3 | 0 | 2 | Partial |
 | 6 | LLM and Model Adapter Layer | L3 | 0 | 1 | Yes |
 | 7 | Reasoning, Planning and Cognition | L3 | 0 | 0 | Yes |
 | 8 | Execution Runtime and Agent OS | L3 | 0 | 0 | Yes |
 | 9 | Orchestration, Scheduler and Execution Graph | L3 | 0 | 0 | Yes |
-| 10 | Subagents and Multi-Agent Coordination | L2 | 0 | 2 | Partial |
+| 10 | Subagents and Multi-Agent Coordination | L3 | 0 | 0 | Yes |
 | 11 | Tool Layer | L3 | 0 | 1 | Yes |
 | 12 | Skill Layer | L3 | 0 | 0 | Yes |
 | 13 | Integration Layer | L3 | 0 | 0 | Yes |
 | 14 | RAG and Retrieval Layer | L3 | 0 | 0 | Yes |
 | 15 | Memory Layer | L3 | 0 | 0 | Yes |
 | 16 | Context Engineering Layer | L3 | 0 | 0 | Yes |
-| 17 | Prompt Engineering and Prompt Registry | L2 | 0 | 1 | **No** |
+| 17 | Prompt Engineering and Prompt Registry | L3 | 0 | 0 | Yes |
 | 18 | Agent Assembly and Agent Contracts | L2 | 0 | 1 | Yes |
 | 19 | Registry Architecture | L2 | 0 | 2 | **No** |
-| 20 | Capability Graph Architecture | L2 | 0 | 2 | **No** |
-| 21 | Observability and Telemetry | L2 | 0 | 2 | **No** |
-| 22 | Error Handling and Reliability | L2 | 0 | 1 | **No** |
-| 23 | Security and Data Governance | L2 | 0 | 2 | **No** |
-| 24 | Cost and Resource Governance | L2 | 0 | 1 | **No** |
+| 20 | Capability Graph Architecture | L3 | 0 | 0 | Yes |
+| 21 | Observability and Telemetry | L3 | 0 | 0 | Yes |
+| 22 | Error Handling and Reliability | L3 | 0 | 0 | Yes |
+| 23 | Security and Data Governance | L3 | 0 | 0 | Yes |
+| 24 | Cost and Resource Governance | L3 | 0 | 0 | Yes |
 | 25 | Evaluation and Benchmarking | L2 | 0 | 1 | **No** |
 | 26 | Testing, CI and Architecture Gates | L3 | 0 | 0 | Yes |
 | 27 | Developer Experience, Scaffold and Lab | L3 | 0 | 1 | Yes |
 | 28 | Product Environment and Tier-3 Applications | L3 | 0 | 1 | Partial |
 | 29 | Modality, Vision, Audio and Dedicated ML | L3 | 0 | 1 | Yes |
 | 30 | Operational Excellence and SLOs | L3 | 0 | 1 | Partial |
-| 31 | Agent Lifecycle Governance | L2 | 0 | 2 | Partial |
+| 31 | Agent Lifecycle Governance | L3 | 0 | 0 | Yes |
 | 32 | Architecture Governance and Documentation Loop | L3 | 0 | 1 | Yes |
 
 **Plan accuracy note:** Rows marked **No** or **Partial** mean the phase closeout register claims **Done** for **wiring/bridge** work, but FAUDIT found **High** gaps vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` / `INTEGRAX_HARNESS_AUDIT_MAP.md` §8 — tracked as **FAUDIT.\*** residuals, not reopening closed closeout phases.
@@ -4766,7 +4788,7 @@ Wave V-REM-5 (eval):        V-REM-A.1  — Done (2026-06-05)
 
 **Post-remediation (2026-06-06):** **0 Critical** open; tier CI gate green; **23/23 FAUDIT** + follow-up Done.
 
-**Post depth bands (2026-06-09):** MEM-DEPTH, COG-DEPTH, ECP-DEPTH, ORCH-CONFIG closeout complete — Appendix M scorecard refreshed; remaining L2 rows are incremental depth only.
+**Post depth bands (2026-06-09):** MEM-DEPTH, COG-DEPTH, ECP-DEPTH, ORCH-CONFIG closeout complete — Appendix M scorecard refreshed. **IDEAL-L3 W1 (2026-06-09):** P0 depth uplift — 30/32 layers L3 (see [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md)); P1 rows incremental.
 
 **Gate evidence (verify step):** `uv run pytest -m gate -q` → **901 passed**; `check_harness_no_getattr.py`, `check_intergrax_no_applications_imports.py`, `check_harness_prompt_golden_catalog.py`, `check_agents_lifecycle_metadata.py` → **OK**.
 
@@ -4777,34 +4799,34 @@ Wave V-REM-5 (eval):        V-REM-A.1  — Done (2026-06-05)
 | 1 | Strategic Harness Model | L3 | 0 | 0 | Yes |
 | 2 | Tier Model and Dependency Boundaries | L3 | 0 | 0 | Yes |
 | 3 | Interface and Task Intake | L3 | 0 | 1 | Partial |
-| 4 | Identity, Trust and Tenancy | L2 | 0 | 2 | Partial |
+| 4 | Identity, Trust and Tenancy | L3 | 0 | 0 | Yes |
 | 5 | Policy and Governance | L3 | 0 | 2 | Partial |
 | 6 | LLM and Model Adapter Layer | L3 | 0 | 1 | Yes |
 | 7 | Reasoning, Planning and Cognition | L3 | 0 | 0 | Yes |
 | 8 | Execution Runtime and Agent OS | L3 | 0 | 0 | Yes |
 | 9 | Orchestration, Scheduler and Execution Graph | L3 | 0 | 0 | Yes |
-| 10 | Subagents and Multi-Agent Coordination | L2 | 0 | 2 | Partial |
+| 10 | Subagents and Multi-Agent Coordination | L3 | 0 | 0 | Yes |
 | 11 | Tool Layer | L3 | 0 | 1 | Yes |
 | 12 | Skill Layer | L3 | 0 | 0 | Yes |
 | 13 | Integration Layer | L3 | 0 | 0 | Yes |
 | 14 | RAG and Retrieval Layer | L3 | 0 | 0 | Yes |
 | 15 | Memory Layer | L3 | 0 | 0 | Yes |
 | 16 | Context Engineering Layer | L3 | 0 | 0 | Yes |
-| 17 | Prompt Engineering and Prompt Registry | L2 | 0 | 1 | **No** |
+| 17 | Prompt Engineering and Prompt Registry | L3 | 0 | 0 | Yes |
 | 18 | Agent Assembly and Agent Contracts | L2 | 0 | 1 | Yes |
 | 19 | Registry Architecture | L2 | 0 | 2 | **No** |
-| 20 | Capability Graph Architecture | L2 | 0 | 2 | **No** |
-| 21 | Observability and Telemetry | L2 | 0 | 2 | **No** |
-| 22 | Error Handling and Reliability | L2 | 0 | 1 | **No** |
-| 23 | Security and Data Governance | L2 | 0 | 2 | **No** |
-| 24 | Cost and Resource Governance | L2 | 0 | 1 | **No** |
+| 20 | Capability Graph Architecture | L3 | 0 | 0 | Yes |
+| 21 | Observability and Telemetry | L3 | 0 | 0 | Yes |
+| 22 | Error Handling and Reliability | L3 | 0 | 0 | Yes |
+| 23 | Security and Data Governance | L3 | 0 | 0 | Yes |
+| 24 | Cost and Resource Governance | L3 | 0 | 0 | Yes |
 | 25 | Evaluation and Benchmarking | L2 | 0 | 1 | **No** |
 | 26 | Testing, CI and Architecture Gates | L3 | 0 | 0 | Yes |
 | 27 | Developer Experience, Scaffold and Lab | L3 | 0 | 1 | Yes |
 | 28 | Product Environment and Tier-3 Applications | L3 | 0 | 1 | Partial |
 | 29 | Modality, Vision, Audio and Dedicated ML | L3 | 0 | 1 | Yes |
 | 30 | Operational Excellence and SLOs | L3 | 0 | 1 | Partial |
-| 31 | Agent Lifecycle Governance | L2 | 0 | 2 | Partial |
+| 31 | Agent Lifecycle Governance | L3 | 0 | 0 | Yes |
 | 32 | Architecture Governance and Documentation Loop | L3 | 0 | 1 | Yes |
 
 **Plan accuracy note:** Rows marked **No** or **Partial** mean the phase closeout register claims **Done** for **wiring/bridge** work, but FAUDIT found **High** gaps vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` / `INTEGRAX_HARNESS_AUDIT_MAP.md` §8 — tracked as **FAUDIT.\*** residuals, not reopening closed closeout phases.

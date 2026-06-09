@@ -257,6 +257,12 @@ class RuntimeContext:
         """
         config.validate()
 
+        from intergrax.runtime.nexus.budget.production_budget_policy import (
+            ensure_production_run_budget,
+        )
+
+        ensure_production_run_budget(config)
+
         if prompt_registry is None:
             from intergrax.prompts.registry.prompt_registry_resolver import (
                 resolve_yaml_prompt_registry,

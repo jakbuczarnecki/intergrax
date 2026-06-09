@@ -8,6 +8,18 @@
 
 ---
 
+## Phase IDEAL-L3 — Observability ops depth (Band 2ax)
+
+**Register:** [`plan/IDEAL_HARNESS_L3.md`](IDEAL_HARNESS_L3.md)
+
+| ID | Deliverable | Status |
+|----|-------------|--------|
+| IDEAL-21.1 | `harness_slos.py` SLO catalog types | **Done** |
+| IDEAL-21.2 | Runbook index (HARNESS_ENVIRONMENT ORCH-5.5) | **Done** |
+| IDEAL-21.3–21.6 | Cost dashboard, emission audit, OTLP all hosts | Planned (W2) |
+
+---
+
 ### 6.1n Harness implementation queue — observability closeout (closed)
 
 **Purpose:** Single ordered list for **Phase OBS** (Band 2t). **Closed 2026-06-02**.

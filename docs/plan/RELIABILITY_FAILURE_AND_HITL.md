@@ -94,3 +94,17 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 **Explicitly excluded:** K.1/K.2 product policies; OS-level process supervisor (use ECP / host ops).
 
 ---
+
+## Phase IDEAL-L3 — Reliability depth (Band 2ax)
+
+**Register:** [`plan/IDEAL_HARNESS_L3.md`](IDEAL_HARNESS_L3.md) · queue: [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) §6.1at
+
+| ID | Deliverable | Status |
+|----|-------------|--------|
+| IDEAL-22.1 | `harness_error_taxonomy.py` + expanded `ErrorClassifier` | **Done** |
+| IDEAL-22.2 | Quality vs dependency recovery paths | **Done** |
+| IDEAL-22.3–22.6 | Compensation, partial results, chaos, per-step retry | Planned (W2) |
+
+**Gate:** `tests/unit/runtime/architecture/test_ideal_harness_l3_depth_gate.py`
+
+---
