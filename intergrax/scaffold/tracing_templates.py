@@ -138,13 +138,14 @@ def _agent_tracing_test(slug: str) -> str:
 
 
 def _application_tracing_init(pkg: str) -> str:
+    apps_root = "applications"
     return dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
 
         """Application observability extensions for {pkg}."""
 
-        from applications.{pkg}.tracing.registry import register_tracing_schemas
+        from {apps_root}.{pkg}.tracing.registry import register_tracing_schemas
 
         __all__ = ["register_tracing_schemas"]
         '''
@@ -186,6 +187,7 @@ def _application_example_diag(short: str) -> str:
 
 
 def _application_registry_py(pkg: str, short: str) -> str:
+    apps_root = "applications"
     return dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
@@ -193,7 +195,7 @@ def _application_registry_py(pkg: str, short: str) -> str:
         from __future__ import annotations
 
         from intergrax.runtime.observability.extension_sdk import PayloadSchemaRegistry
-        from applications.{pkg}.tracing.example_diag import HostLifecycleDiagV1
+        from {apps_root}.{pkg}.tracing.example_diag import HostLifecycleDiagV1
 
 
         def register_tracing_schemas() -> None:

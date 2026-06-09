@@ -1,0 +1,21 @@
+{
+  "library_id": "harness.golden.v1",
+  "version": "1.0.0",
+  "scenarios": [
+    {
+      "scenario_id": "sync_intake_smoke",
+      "description": "Synchronous task intake smoke scenario",
+      "risk_tags": ["intake", "smoke"]
+    },
+    {
+      "scenario_id": "rag_retrieval_regression",
+      "description": "RAG golden retrieval regression",
+      "risk_tags": ["rag", "retrieval"]
+    },
+    {
+      "scenario_id": "context_assembly_regression",
+      "description": "Context golden assembly regression",
+      "risk_tags": ["context"]
+    }
+  ]
+}

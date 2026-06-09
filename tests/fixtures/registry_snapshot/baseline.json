@@ -1,0 +1,8 @@
+{
+  "tool_ids": [],
+  "skill_ids": [],
+  "prompt_ids": [],
+  "agent_contract_ids": [],
+  "evaluation_registry_ids": ["evaluation:runtime_quality"],
+  "prompt_bindings": {}
+}

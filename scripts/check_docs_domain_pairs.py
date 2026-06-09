@@ -27,6 +27,12 @@ FORBIDDEN = [
     PLAN / "appendices",
 ]
 
+# Cross-domain implementation registers (hub-linked; no 1:1 architecture pair).
+PLAN_ONLY_HUBS = {
+    "IDEAL_HARNESS_L3",
+    "AUDIT_IDEAL_2026",
+}
+
 
 def main() -> int:
     errors: list[str] = []
@@ -50,7 +56,7 @@ def main() -> int:
     plan_files = sorted(PLAN.glob("*.md"))
 
     arch_names = {p.stem for p in arch_files}
-    plan_names = {p.stem for p in plan_files}
+    plan_names = {p.stem for p in plan_files} - PLAN_ONLY_HUBS
 
     if arch_names != plan_names:
         only_arch = sorted(arch_names - plan_names)

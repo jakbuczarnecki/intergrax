@@ -19,6 +19,7 @@ class SubtaskContract(BaseModel):
     permission_scopes: tuple[str, ...] = Field(default_factory=tuple)
     isolated_memory_namespace: str = ""
     inherit_tool_policy: bool = False
+    allowed_tools: tuple[str, ...] = Field(default_factory=tuple)
     max_llm_calls: int | None = Field(default=None, ge=0)
     max_tool_calls: int | None = Field(default=None, ge=0)
 

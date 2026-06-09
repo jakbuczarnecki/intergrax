@@ -9,6 +9,9 @@ from typing import Sequence
 
 from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
+from intergrax.contracts.artifact_lifecycle_state import is_resolution_allowed
+from intergrax.runtime.registry.semver_compat import is_compatible_runtime
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry.profile import ToolProfile
 
@@ -73,6 +76,18 @@ def validate_registry_snapshot(
 
     if snapshot.integration_profile is None:
         errors.append("integration_profile must be present on harness registry snapshot")
+
+    if snapshot.agent_registry is not None:
+        for contract in snapshot.agent_registry.list_contracts():
+            if not is_resolution_allowed(contract.lifecycle_state):
+                errors.append(
+                    f"agent {contract.id} lifecycle {contract.lifecycle_state.value} blocks resolution"
+                )
+            compat = is_compatible_runtime("1.0.0", contract.version)
+            if not compat.compatible and contract.lifecycle_state is AgentLifecycleState.PRODUCTION:
+                errors.append(
+                    f"agent {contract.id} version {contract.version} incompatible with runtime baseline"
+                )
 
     return RegistryAssemblyValidationResult(valid=not errors, errors=tuple(errors))
 

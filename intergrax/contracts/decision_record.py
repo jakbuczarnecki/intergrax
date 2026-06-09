@@ -26,6 +26,9 @@ class DecisionRecord(BaseModel):
     decision_type: str = ""
     rationale: str = ""
     policy_action: str = ""
+    delegation_target: str = ""
+    delegation_rationale: str = ""
+    delegation_scopes: tuple[str, ...] = ()
     version: str = "decision_record.v1"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     metadata: dict[str, Any] = Field(default_factory=dict)

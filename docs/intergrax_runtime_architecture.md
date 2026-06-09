@@ -115,7 +115,9 @@ Platform docs do not replace `agents/*/ARCHITECTURE.md` or `applications/*/ARCHI
 | Host surface parity | [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §59.2 · [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](architecture/TIER3_APPLICATION_ENVIRONMENT.md) §23.7 | Reference hosts **Done**; LKW opt-in flags |
 | FLOW runtime gaps | [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §23.2 | FLOW-GAP-01–19 **Closed**; FLOW-GAP-20 **Deferred** §6.3 |
 | Depth bands | [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) §4.0 | MEM/COG/ECP/ORCH-CONFIG **Done** |
-| Default queue | [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) §6.1 | Gate maintenance only |
+| Default queue | [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) §6.1 | Gate maintenance + [Phase AUDIT-IDEAL](plan/AUDIT_IDEAL_2026.md) incremental |
+| Ideal L3 depth (Band 2ax) | [`plan/IDEAL_HARNESS_L3.md`](plan/IDEAL_HARNESS_L3.md) · §6.1at | **W2 Done** (2026-06-09) — **32/32 L3** |
+| Ideal architecture gaps (Band 2az) | [`plan/AUDIT_IDEAL_2026.md`](plan/AUDIT_IDEAL_2026.md) · §6.1au | **Planned** (2026-06-09) — **1/78** AUDIT-IDEAL rows |
 
 ---
 

@@ -8,6 +8,22 @@
 
 ---
 
+## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
+
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.6, §7.7 · baseline **32/32 L3**  
+**Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
+**Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
+
+| ID | AUDIT § | Gap | Priority | Status |
+|----|---------|-----|----------|--------|
+| AUDIT-IDEAL-13.1 | §13 Integrations | Integration marketplace catalog + trust scoring | P3 | Planned |
+| AUDIT-IDEAL-13.2 | §13 Integrations | Catalog hot-reload without host restart | P3 | Planned |
+| AUDIT-IDEAL-14.1 | §14 RAG | Graph RAG production profile (shared with MEMORY) | P1 | Planned |
+
+**Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+
+---
+
 ### 6.1e Harness implementation queue — RAG closeout (closed)
 
 **Purpose:** Single ordered list for **Phase RAG** (Band 2m). **Closed 2026-06-02**.

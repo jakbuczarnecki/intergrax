@@ -68,6 +68,16 @@ class HandoffPayloadV1(RuntimeEventPayload):
     artifact_ids: tuple[str, ...] = ()
 
 
+class DelegationGrantedPayloadV1(RuntimeEventPayload):
+    schema_id = "delegation_granted.v1"
+
+    parent_agent_id: str
+    child_agent_id: str
+    node_id: str
+    rationale: str = ""
+    permission_scopes: tuple[str, ...] = ()
+
+
 class AgentSelectionPayloadV1(RuntimeEventPayload):
     schema_id = "agent_selection.v1"
 

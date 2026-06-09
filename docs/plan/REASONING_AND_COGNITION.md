@@ -8,6 +8,22 @@
 
 ---
 
+## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
+
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5, §16 · baseline **32/32 L3**  
+**Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
+**Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
+
+| ID | AUDIT § | Gap | Priority | Status |
+|----|---------|-----|----------|--------|
+| AUDIT-IDEAL-7.1 | §7 Cognition | Ship `ReasoningProfile` contract + environment wire | P1 | Planned |
+| AUDIT-IDEAL-7.2 | §7 Cognition | Complete `allow_dynamic_replan` runtime path | P1 | Planned |
+| AUDIT-IDEAL-7.3 | §7 Cognition | Reasoning failure taxonomy on all planner kinds | P2 | Planned |
+
+**Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+
+---
+
 (Global)
 
 1. **Contract** — Pydantic / Protocol public API

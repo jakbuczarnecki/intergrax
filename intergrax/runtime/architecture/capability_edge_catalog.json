@@ -1,0 +1,120 @@
+{
+  "schema_version": "1.0.0",
+  "edges": [
+    {
+      "edge_type": "depends_on",
+      "source_type": "agent",
+      "target_type": "skill"
+    },
+    {
+      "edge_type": "depends_on",
+      "source_type": "agent",
+      "target_type": "tool"
+    },
+    {
+      "edge_type": "depends_on",
+      "source_type": "application",
+      "target_type": "agent"
+    },
+    {
+      "edge_type": "depends_on",
+      "source_type": "product",
+      "target_type": "application"
+    },
+    {
+      "edge_type": "depends_on",
+      "source_type": "prompt",
+      "target_type": "skill"
+    },
+    {
+      "edge_type": "depends_on",
+      "source_type": "skill",
+      "target_type": "tool"
+    },
+    {
+      "edge_type": "depends_on",
+      "source_type": "tool",
+      "target_type": "integration"
+    },
+    {
+      "edge_type": "constrained_by",
+      "source_type": "agent",
+      "target_type": "policy"
+    },
+    {
+      "edge_type": "constrained_by",
+      "source_type": "application",
+      "target_type": "policy"
+    },
+    {
+      "edge_type": "constrained_by",
+      "source_type": "skill",
+      "target_type": "policy"
+    },
+    {
+      "edge_type": "constrained_by",
+      "source_type": "tool",
+      "target_type": "policy"
+    },
+    {
+      "edge_type": "evaluates",
+      "source_type": "evaluation",
+      "target_type": "agent"
+    },
+    {
+      "edge_type": "evaluates",
+      "source_type": "evaluation",
+      "target_type": "application"
+    },
+    {
+      "edge_type": "evaluates",
+      "source_type": "evaluation",
+      "target_type": "skill"
+    },
+    {
+      "edge_type": "evaluates",
+      "source_type": "evaluation",
+      "target_type": "tool"
+    },
+    {
+      "edge_type": "supersedes",
+      "source_type": "agent",
+      "target_type": "agent"
+    },
+    {
+      "edge_type": "supersedes",
+      "source_type": "policy",
+      "target_type": "policy"
+    },
+    {
+      "edge_type": "supersedes",
+      "source_type": "skill",
+      "target_type": "skill"
+    },
+    {
+      "edge_type": "supersedes",
+      "source_type": "tool",
+      "target_type": "tool"
+    },
+    {
+      "edge_type": "compatible_with",
+      "source_type": "agent",
+      "target_type": "agent"
+    },
+    {
+      "edge_type": "compatible_with",
+      "source_type": "application",
+      "target_type": "application"
+    },
+    {
+      "edge_type": "compatible_with",
+      "source_type": "skill",
+      "target_type": "skill"
+    },
+    {
+      "edge_type": "compatible_with",
+      "source_type": "tool",
+      "target_type": "tool"
+    }
+  ]
+}

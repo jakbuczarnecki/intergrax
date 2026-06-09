@@ -25,6 +25,13 @@
 - [ ] docs/guides/AGENT_CREATION_GUIDE.md
 - [ ] Other: <!-- list -->
 
+## Harness layer checklist (IDEAL-32.1)
+
+<!-- Mark affected AUDIT_MAP layers (1–32); link IDEAL-* ID when applicable -->
+
+- [ ] Layer impact assessed (see `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md`)
+- [ ] Domain plan pair updated when contracts change (`docs/architecture/<DOMAIN>.md` + `docs/plan/<DOMAIN>.md`)
+
 ## Architecture compliance
 
 - [ ] Respects tier dependency boundaries (`intergrax/` ↛ `agents/`/`applications/`)

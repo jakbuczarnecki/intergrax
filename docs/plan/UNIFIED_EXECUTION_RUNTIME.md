@@ -8,6 +8,28 @@
 
 ---
 
+## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
+
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.2–3.3, §23–§24 · baseline **32/32 L3**  
+**Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
+**Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
+
+| ID | AUDIT § | Gap | Priority | Status |
+|----|---------|-----|----------|--------|
+| AUDIT-IDEAL-4.1 | §4 Identity | Cryptographic signing / audit-protect for critical actions | P2 | Planned |
+| AUDIT-IDEAL-4.2 | §4 Identity | Hard tenant storage isolation (Postgres multi-tenant RFC → ship) | P1 | Planned |
+| AUDIT-IDEAL-5.1 | §5 Policy | Pre-output policy hooks on all LLM response paths | P1 | Planned |
+| AUDIT-IDEAL-5.2 | §5 Policy | Compliance profile templates per regulated domain class | P2 | Planned |
+| AUDIT-IDEAL-23.1 | §23 Security | Immutable multi-region security audit trail | P2 | Planned |
+| AUDIT-IDEAL-23.2 | §23 Security | Retrieval poisoning + tool injection live on product hosts | P1 | Planned |
+| AUDIT-IDEAL-24.1 | §24 Cost | Cost forecasting from historical run patterns | P2 | Planned |
+| AUDIT-IDEAL-24.2 | §24 Cost | Automated cost optimization recommendations (AHI) | P2 | Planned |
+| AUDIT-IDEAL-24.3 | §24 Cost | CPU/memory/concurrency quotas with tenant fairness | P2 | Planned |
+
+**Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+
+---
+
 ### 6.1j Harness implementation queue — legacy module closeout (closed)
 
 **Purpose:** Single ordered list for **Phase CLEAN** (post-2p closeout). **Closed 2026-06-02**.
@@ -139,7 +161,7 @@
 
 **Audit verdict (2026-06-06, pre-remediation snapshot):** Harness **control-plane wiring closeouts** (ORCH, TS, INT, RAG, CTX, PE, AS, REG, CG, OBS, REL, SEC, COST, EVAL, W-ADAPT, M-LLM-R) are **Done** as documented — but **closeout ≠ full layer maturity**. Per-layer inspection at audit time showed **12/32 layers at L3+**, **19/32 at L2**, **1 Critical** tier-boundary violation, **~20 High** residuals — all routed to **FAUDIT.\*** and **closed** via [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-closed) + [§6.1ai](#61ai-harness-implementation-queue--faudit-32-follow-up-closed).
 
-**Post-remediation (2026-06-06):** **0 Critical** open; tier CI gate green; **23/23 FAUDIT** + follow-up Done. Layer maturity uplift (L2→L3 depth) remains incremental maintenance — see Appendix M.
+**Post-remediation (2026-06-06):** **0 Critical** open; tier CI gate green; **23/23 FAUDIT** + follow-up Done. **IDEAL-L3 W1 (2026-06-09):** identity, security, cost, reliability depth — see [Phase IDEAL-L3](IDEAL_HARNESS_L3.md).
 
 **Gate evidence (verify step):** `uv run pytest -m gate -q` → **901 passed**; `check_harness_no_getattr.py`, `check_intergrax_no_applications_imports.py`, `check_harness_prompt_golden_catalog.py`, `check_agents_lifecycle_metadata.py` → **OK**.
 

@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "name": "minimal_context",
+      "fragments": [
+        {"id": "f1", "text": "Harness context fragment for regression."}
+      ],
+      "expected_token_budget": 128
+    },
+    {
+      "name": "citation_chain",
+      "fragments": [
+        {"id": "f1", "text": "Source A excerpt.", "source_id": "src-a"}
+      ],
+      "expected_citation_count": 1
+    }
+  ]
+}

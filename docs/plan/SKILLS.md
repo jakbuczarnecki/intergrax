@@ -10,6 +10,21 @@
 
 ---
 
+## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
+
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.6 · baseline **32/32 L3**  
+**Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
+**Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
+
+| ID | AUDIT § | Gap | Priority | Status |
+|----|---------|-----|----------|--------|
+| AUDIT-IDEAL-12.1 | §12 Skills | LangGraph-compatible skill pack import path | P2 | Planned |
+| AUDIT-IDEAL-12.2 | §12 Skills | Dynamic skill selection L4 hook (AHI) | P2 | Planned |
+
+**Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+
+---
+
 ### 6.1ci Harness implementation queue — skill catalog expansion (closed)
 
 **Purpose:** Tier-0 skill packs for agent and Tier-3 authors. **Closed 2026-06-08** — SK-EXP + SK-EXP2 + SK-EXP3 + SK-PRESET.1/2/3 **Done**. Residual: **SK-BRIDGE.*** (prompt/policy runtime merge). **Not** Band 3 business agents (K.1/K.2).

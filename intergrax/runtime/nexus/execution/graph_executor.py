@@ -428,6 +428,15 @@ class GraphExecutor:
             selection_ctx.model_copy(update={"agent_id": contract.id}),
         )
 
+        if node.delegation is not None:
+            parent_agent_id = task.agent_id or node.agent_id or contract.id
+            await self._emit_delegation_granted(
+                task,
+                node,
+                parent_agent_id=parent_agent_id or "",
+                child_agent_id=contract.id,
+            )
+
         last_critic_verdict: Optional["CriticVerdict"] = None
 
         def validate_fn(
@@ -804,6 +813,37 @@ class GraphExecutor:
         extras: List[HandoffExtra] = [(handoff_node.node_id, handoff_execution)]
         extras.extend(nested_extras)
         return extras
+
+    async def _emit_delegation_granted(
+        self,
+        task: Task,
+        node: ExecutionNode,
+        *,
+        parent_agent_id: str,
+        child_agent_id: str,
+    ) -> None:
+        if self._event_bus is None or node.delegation is None:
+            return
+        delegation = node.delegation
+        await self._event_bus.publish(
+            RuntimeEvent(
+                tenant_id=task.tenant_id,
+                task_id=task.task_id,
+                run_id=task.task_id,
+                node_id=node.node_id,
+                agent_id=parent_agent_id,
+                event_type=RuntimeEventType.DELEGATION_GRANTED,
+                phase=ExecutionPhase.STEP_EXECUTION,
+                payload={
+                    "parent_agent_id": parent_agent_id,
+                    "child_agent_id": child_agent_id,
+                    "node_id": node.node_id,
+                    "rationale": delegation.objective,
+                    "permission_scopes": list(delegation.permission_scopes),
+                },
+                correlation_id=task.task_id,
+            )
+        )
 
     async def _emit_handoff_event(
         self,

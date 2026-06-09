@@ -8,6 +8,26 @@
 
 ---
 
+## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
+
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §7, §16 · baseline **32/32 L3**  
+**Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
+**Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
+
+| ID | AUDIT § | Gap | Priority | Status |
+|----|---------|-----|----------|--------|
+| AUDIT-IDEAL-14.1 | §14 RAG | Graph RAG as default production retrieval profile | P1 | Planned |
+| AUDIT-IDEAL-14.2 | §14 RAG | Retrieval poisoning defense live on product hosts | P1 | Planned |
+| AUDIT-IDEAL-15.1 | §15 Memory | Org memory 2.5 (organizational LTM scope) | **P0** | Planned |
+| AUDIT-IDEAL-15.2 | §15 Memory | Episodic / semantic / procedural taxonomy (`MemoryKind` uplift) | P1 | Planned |
+| AUDIT-IDEAL-15.3 | §15 Memory | Entity graph memory ship (MEM-DEPTH-5.1 beyond RFC) | P2 | Planned |
+| AUDIT-IDEAL-16.1 | §16 Context | Online context drift monitoring + alerts | P1 | Planned |
+| AUDIT-IDEAL-16.2 | §16 Context | Semantic compression in production profiles | P2 | Planned |
+
+**Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+
+---
+
 ### 6.2bf Phase CTX execution order (Band 2n — closed 2026-06-02)
 
 **Status:** **Done** · register: [Phase CTX](plan/MEMORY.md) · queue: [§6.1f](#61f-harness-implementation-queue--context-engineering-closeout-closed)

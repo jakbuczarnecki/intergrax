@@ -10,6 +10,7 @@ from uuid import uuid4
 from pydantic import BaseModel, Field, PrivateAttr, model_validator
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.contracts.partial_result_contract import PartialResultContract
 from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.runtime.task.task_contract import (
     TaskExecutionOptions,
@@ -82,6 +83,16 @@ class Task(BaseModel):
         sync_task_metadata(self)
 
     def to_envelope(self) -> TaskEnvelope:
+        from intergrax.contracts.task_envelope import TaskRiskTier, TaskSlaClass
+
+        sla_raw = self.metadata.get("sla_class", TaskSlaClass.INTERACTIVE.value)
+        risk_raw = self.metadata.get("risk_tier", TaskRiskTier.LOW.value)
+        constraints = self.metadata.get("constraints", {})
+        meta = {
+            k: v
+            for k, v in self.metadata.items()
+            if k not in {"workspace_id", "sla_class", "risk_tier", "constraints"}
+        }
         return TaskEnvelope(
             tenant_id=self.tenant_id,
             user_id=self.user_id,
@@ -89,18 +100,28 @@ class Task(BaseModel):
             session_id=self.session_id,
             agent_id=self.agent_id,
             workspace_id=self.metadata.get("workspace_id"),
-            metadata=dict(self.metadata),
+            sla_class=TaskSlaClass(sla_raw),
+            risk_tier=TaskRiskTier(risk_raw),
+            constraints=dict(constraints) if isinstance(constraints, dict) else {},
+            metadata=meta,
         )
 
     @classmethod
     def from_envelope(cls, envelope: TaskEnvelope) -> Task:
+        metadata = dict(envelope.metadata)
+        metadata["sla_class"] = envelope.sla_class.value
+        metadata["risk_tier"] = envelope.risk_tier.value
+        if envelope.constraints:
+            metadata["constraints"] = dict(envelope.constraints)
+        if envelope.workspace_id:
+            metadata["workspace_id"] = envelope.workspace_id
         return cls(
             tenant_id=envelope.tenant_id,
             user_id=envelope.user_id,
             message=envelope.message,
             session_id=envelope.session_id,
             agent_id=envelope.agent_id,
-            metadata=dict(envelope.metadata),
+            metadata=metadata,
         )
 
     def to_runtime_request(self) -> "RuntimeRequest":
@@ -132,6 +153,7 @@ class TaskResult(BaseModel):
     agent_id: Optional[str] = None
     execution_result: Optional[AgentExecutionResult] = None
     summary: TaskResultSummary = Field(default_factory=TaskResultSummary)
+    partial: PartialResultContract | None = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="before")
