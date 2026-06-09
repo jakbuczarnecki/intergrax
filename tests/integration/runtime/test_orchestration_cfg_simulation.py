@@ -205,6 +205,122 @@ async def test_cfg04_free_text_rules_route_to_pipeline() -> None:
     assert result.metadata.get("agent_ids") == ["evidence_agent", "response_agent"]
 
 
+def _three_agent_sequential_environment() -> ApplicationEnvironmentProfile:
+    """CFG-07: N=3 sequential graph."""
+    return _simulation_environment().model_copy(
+        update={
+            "graph_spec": ApplicationGraphSpec(
+                nodes=[
+                    GraphNode(agent_id="evidence_agent"),
+                    GraphNode(agent_id="response_agent"),
+                    GraphNode(agent_id="synthesis_agent"),
+                ],
+                edges=[
+                    GraphEdge(
+                        source_agent_id="evidence_agent",
+                        target_agent_id="response_agent",
+                        kind=GraphEdgeKind.DEPENDS_ON,
+                    ),
+                    GraphEdge(
+                        source_agent_id="response_agent",
+                        target_agent_id="synthesis_agent",
+                        kind=GraphEdgeKind.DEPENDS_ON,
+                    ),
+                ],
+                trigger_capabilities=[_PIPELINE],
+            ),
+        }
+    )
+
+
+def _three_agent_parallel_environment() -> ApplicationEnvironmentProfile:
+    """CFG-08: N=3 parallel batch (no DEPENDS_ON edges)."""
+    return _simulation_environment().model_copy(
+        update={
+            "graph_spec": ApplicationGraphSpec(
+                nodes=[
+                    GraphNode(agent_id="evidence_agent"),
+                    GraphNode(agent_id="response_agent"),
+                    GraphNode(agent_id="synthesis_agent"),
+                ],
+                edges=[],
+                trigger_capabilities=[_PIPELINE],
+            ),
+            "orchestration_profile": OrchestrationProfile(
+                classifier_kind="rules",
+                merge_strategy="structured_json",
+                max_parallel_nodes=3,
+                intent_routes=[
+                    IntentRoute(
+                        capability=_PIPELINE,
+                        keywords=["podwykonaw", "pismo", "odpisa", "zapłat", "subcontractor"],
+                    ),
+                    IntentRoute(
+                        capability=_SINGLE,
+                        keywords=["index", "ingest", "załącz"],
+                    ),
+                ],
+            ),
+        }
+    )
+
+
+def _three_agent_registry() -> AgentRegistry:
+    registry = _simulation_registry()
+    registry.register(
+        _HarnessStubAgent(
+            agent_id="synthesis_agent",
+            capability="synthesis.merge",
+            prefix="synthesis",
+        )
+    )
+    return registry
+
+
+@pytest.mark.asyncio
+async def test_cfg07_three_agent_sequential_graph() -> None:
+    """CFG-07: graph_spec with three DEPENDS_ON layers."""
+    loop = build_nexus_loop_from_environment(
+        _three_agent_registry(),
+        env=_three_agent_sequential_environment(),
+    )
+    result = await loop.handle_task(
+        Task(
+            tenant_id="org-sim",
+            user_id="operator-1",
+            message="sequential three-agent review",
+            context=TaskContext(capability=_PIPELINE),
+        ),
+    )
+    assert result.state == TaskState.COMPLETED
+    assert result.metadata.get("agent_ids") == [
+        "evidence_agent",
+        "response_agent",
+        "synthesis_agent",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_cfg08_three_agent_parallel_graph() -> None:
+    """CFG-08: parallel batch when graph has no DEPENDS_ON edges."""
+    loop = build_nexus_loop_from_environment(
+        _three_agent_registry(),
+        env=_three_agent_parallel_environment(),
+    )
+    result = await loop.handle_task(
+        Task(
+            tenant_id="org-sim",
+            user_id="operator-1",
+            message="parallel three-agent review",
+            context=TaskContext(capability=_PIPELINE),
+        ),
+    )
+    assert result.state == TaskState.COMPLETED
+    agent_ids = result.metadata.get("agent_ids")
+    assert agent_ids is not None
+    assert set(agent_ids) == {"evidence_agent", "response_agent", "synthesis_agent"}
+
+
 @pytest.mark.asyncio
 async def test_cfg18_single_route_not_replaced_by_graph() -> None:
     """CFG-18: intake capability must not trigger graph_spec seed."""

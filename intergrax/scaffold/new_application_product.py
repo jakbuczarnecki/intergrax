@@ -161,6 +161,12 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
             api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
             include_mcp: bool = True
             mcp_mount_path: str = "/mcp"
+            include_interaction_routes: bool = True
+            interaction_route_prefix: str = "/v1/interactions"
+            interaction_surface: str = "auto"
+            interaction_execute_default: bool = True
+            include_scheduler: bool = False
+            scheduler_poll_seconds: float | None = None
 
             @classmethod
             def from_env(cls) -> {pascal}BackendSettings:
@@ -237,6 +243,17 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
 
                 include_mcp = _env_bool("{env_prefix_value}INCLUDE_MCP", default=True)
                 mcp_mount = (os.getenv("{env_prefix_value}MCP_MOUNT_PATH") or "/mcp").strip() or "/mcp"
+                include_interactions = _env_bool("{env_prefix_value}INCLUDE_INTERACTIONS", default=True)
+                interaction_prefix = (
+                    os.getenv("{env_prefix_value}INTERACTION_ROUTE_PREFIX") or "/v1/interactions"
+                ).strip() or "/v1/interactions"
+                interaction_surface = (
+                    os.getenv("{env_prefix_value}INTERACTION_SURFACE") or "auto"
+                ).strip().lower() or "auto"
+                interaction_execute = _env_bool("{env_prefix_value}INTERACTION_EXECUTE_DEFAULT", default=True)
+                include_scheduler = _env_bool("{env_prefix_value}INCLUDE_SCHEDULER", default=False)
+                poll_raw = (os.getenv("INTERGRAX_SCHEDULER_POLL_SECONDS") or "").strip()
+                scheduler_poll = float(poll_raw) if poll_raw else None
 
                 return cls(
                     environment=environment,
@@ -251,6 +268,12 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
                     api_keys_map=keys,
                     include_mcp=include_mcp,
                     mcp_mount_path=mcp_mount,
+                    include_interaction_routes=include_interactions,
+                    interaction_route_prefix=interaction_prefix,
+                    interaction_surface=interaction_surface,
+                    interaction_execute_default=interaction_execute,
+                    include_scheduler=include_scheduler,
+                    scheduler_poll_seconds=scheduler_poll,
                 )
         '''
     )
@@ -486,13 +509,21 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
         from fastapi import FastAPI
         from starlette.middleware.cors import CORSMiddleware
 
-        from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
+        from intergrax.applications._shared.fastapi_mcp import (
+            apply_lifespans,
+            couple_fastapi_with_mcp,
+            make_scheduler_lifespan,
+        )
+        from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
         from intergrax.fastapi_core.app_factory import create_app
         from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
         from intergrax.fastapi_core.config import ApiConfig
         from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
         from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
         from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
+        from intergrax.runtime.interactions.router import create_interaction_intake_router
+        from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
+        from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
         from {pkg}.host.settings import {pascal}BackendSettings
         from {pkg}.host.environment_profile import build_{short}_environment_profile
         from {pkg}.manifest import build_{short}_manifest
@@ -523,6 +554,18 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
             platform = bootstrap_nexus_platform(
                 nexus_loop,
                 trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
+            )
+            task_runner = UnifiedTaskRunner(nexus_loop)
+            scheduler_wiring = wire_long_running_scheduler(
+                checkpoint_store=None,
+                task_runner=task_runner,
+                notification_adapter=None,
+                poll_interval_seconds=settings.scheduler_poll_seconds,
+                enabled=settings.include_scheduler,
+            )
+            interaction_service = wire_interaction_intake_service(
+                nexus_loop,
+                interaction_surface=settings.interaction_surface,
             )
 
             api_cfg = ApiConfig(
@@ -559,15 +602,33 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
                 default_agent_id=settings.default_agent_id,
             )
 
+            if settings.include_interaction_routes:
+                app.include_router(
+                    create_interaction_intake_router(
+                        interaction_service,
+                        execute_default=settings.interaction_execute_default,
+                    ),
+                    prefix=settings.interaction_route_prefix,
+                )
+
             app.title = "{title}" if settings.environment.value == "prod" else "{title} (dev)"
 
+            scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
             if settings.include_mcp:
                 mcp = build_{short}_mcp_server(
                     nexus_loop=nexus_loop,
                     route_prefix=settings.route_prefix,
                     tool_registry=runtime.env_wiring.tool_wiring.registry,
                 )
-                app = couple_fastapi_with_mcp(app, mcp, mount_path=settings.mcp_mount_path)
+                extra_lifespans = [make_scheduler_lifespan(scheduler)] if scheduler else []
+                app = couple_fastapi_with_mcp(
+                    app,
+                    mcp,
+                    mount_path=settings.mcp_mount_path,
+                    extra_lifespans=extra_lifespans,
+                )
+            elif scheduler is not None:
+                apply_lifespans(app, make_scheduler_lifespan(scheduler))
 
             attach_plugin_shutdown(app, platform.shutdown_callbacks)
             return app
@@ -778,6 +839,10 @@ def env_example(
         {env_prefix}IDENTITY_SOURCE=body_or_context
         {env_prefix}INCLUDE_MCP=true
         {env_prefix}MCP_MOUNT_PATH=/mcp
+        {env_prefix}INCLUDE_INTERACTIONS=true
+        {env_prefix}INTERACTION_ROUTE_PREFIX=/v1/interactions
+        {env_prefix}INTERACTION_SURFACE=auto
+        {env_prefix}INCLUDE_SCHEDULER=false
         # Optional dev API key (prod requires keys or ALLOW_UNAUTHENTICATED=true):
         # {env_prefix}BACKEND_BOOTSTRAP_API_KEY=dev-key
         # {env_prefix}BACKEND_BOOTSTRAP_TENANT_ID=dev-tenant

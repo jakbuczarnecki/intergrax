@@ -10,7 +10,7 @@ from typing import List
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from intergrax.llm.messages import ChatMessage, MessageRole
+from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, PlanStep, TaskPlanner
 from intergrax.runtime.nexus.task_classifier import TaskClassification
@@ -57,7 +57,7 @@ def build_nexus_plan_from_llm(
         f"Classification: {task.classification or ''}."
     )
     response = llm_adapter.generate_messages(
-        [ChatMessage(role=MessageRole.USER, content=prompt)],
+        [ChatMessage(role="user", content=prompt)],
         run_id=task.task_id,
     )
     raw = response.content.strip()

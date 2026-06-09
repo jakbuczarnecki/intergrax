@@ -196,11 +196,21 @@ def runtime_state_from_metadata(metadata: Dict[str, Any]) -> TaskRuntimeState:
             for step in chain_raw
         ],
     )
+    confidence_raw = metadata.get(TaskOrchestrationMetadataKey.CLASSIFICATION_CONFIDENCE)
+    confidence: float | None = None
+    if confidence_raw is not None:
+        try:
+            confidence = float(confidence_raw)
+        except (TypeError, ValueError):
+            confidence = None
     classification = TaskClassificationState(
         value=metadata.get(TaskOrchestrationMetadataKey.CLASSIFICATION),
         requested_capability=metadata.get(TaskOrchestrationMetadataKey.REQUESTED_CAPABILITY),
         unsupported_reason=metadata.get(TaskOrchestrationMetadataKey.UNSUPPORTED_REASON),
         risk_level=metadata.get(TaskOrchestrationMetadataKey.RISK_LEVEL),
+        confidence=confidence,
+        rationale=metadata.get(TaskOrchestrationMetadataKey.CLASSIFICATION_RATIONALE),
+        classifier_source=metadata.get(TaskOrchestrationMetadataKey.CLASSIFIER_SOURCE),
     )
     orchestration = TaskOrchestrationState(
         plan_id=metadata.get(TaskOrchestrationMetadataKey.PLAN_ID),
@@ -331,6 +341,18 @@ def sync_task_metadata(task: Task) -> None:
         meta[TaskOrchestrationMetadataKey.UNSUPPORTED_REASON] = cls.unsupported_reason
     if cls.risk_level is not None:
         meta[TaskOrchestrationMetadataKey.RISK_LEVEL] = cls.risk_level
+    if cls.confidence is not None:
+        meta[TaskOrchestrationMetadataKey.CLASSIFICATION_CONFIDENCE] = cls.confidence
+    else:
+        meta.pop(TaskOrchestrationMetadataKey.CLASSIFICATION_CONFIDENCE, None)
+    if cls.rationale is not None:
+        meta[TaskOrchestrationMetadataKey.CLASSIFICATION_RATIONALE] = cls.rationale
+    else:
+        meta.pop(TaskOrchestrationMetadataKey.CLASSIFICATION_RATIONALE, None)
+    if cls.classifier_source is not None:
+        meta[TaskOrchestrationMetadataKey.CLASSIFIER_SOURCE] = cls.classifier_source
+    else:
+        meta.pop(TaskOrchestrationMetadataKey.CLASSIFIER_SOURCE, None)
 
     if orch.plan_id is not None:
         meta[TaskOrchestrationMetadataKey.PLAN_ID] = orch.plan_id

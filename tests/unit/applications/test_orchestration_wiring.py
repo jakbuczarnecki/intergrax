@@ -21,6 +21,7 @@ from intergrax.applications.contracts.environment_profile import (
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec, GraphNode
 from intergrax.applications.contracts.intent_route import IntentRoute
 from intergrax.runtime.nexus.planning.task_planner import TaskPlanner
+from intergrax.runtime.nexus.llm_task_classifier import LlmTaskClassifier
 from intergrax.runtime.nexus.rules_task_classifier import RulesTaskClassifier
 from intergrax.runtime.nexus.task_classifier import ClassifyingTaskClassifier
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -111,3 +112,31 @@ def test_rules_classifier_resolves_from_profile() -> None:
     )
     classifier = resolve_nexus_task_classifier(registry, env)
     assert isinstance(classifier, RulesTaskClassifier)
+
+
+def test_llm_classifier_requires_llm_adapter() -> None:
+    registry = AgentRegistry()
+    registry.register(EchoAgent())
+    env = ApplicationEnvironmentProfile.lab_defaults().model_copy(
+        update={
+            "orchestration_profile": OrchestrationProfile(classifier_kind="llm"),
+        }
+    )
+    with pytest.raises(OrchestrationWiringError, match="llm_adapter"):
+        resolve_nexus_task_classifier(registry, env)
+
+
+def test_llm_classifier_resolves_with_llm_adapter() -> None:
+    registry = AgentRegistry()
+    registry.register(EchoAgent())
+    env = ApplicationEnvironmentProfile.lab_defaults().model_copy(
+        update={
+            "orchestration_profile": OrchestrationProfile(classifier_kind="llm"),
+        }
+    )
+    classifier = resolve_nexus_task_classifier(
+        registry,
+        env,
+        wiring_context=OrchestrationWiringContext(llm_adapter=_StubLLMAdapter()),  # type: ignore[arg-type]
+    )
+    assert isinstance(classifier, LlmTaskClassifier)

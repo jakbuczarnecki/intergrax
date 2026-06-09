@@ -711,7 +711,7 @@ Planning depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9�
 | Active-active node redundancy | L0 | §52.1 | Not planned — use retry + ECP replicas |
 | Infra elastic scale | L1 | cross-ref ECP | Phase ECP-DEPTH |
 | Product multi-agent demos | L2 deferred | §42.43 | Phase K / FLOW-8 |
-| Platform configuration canon (all CFG cases) | L3 doc / L2 impl | §56 | ORCH-CONFIG **in progress** (3 Done, 2 Partial) |
+| Platform configuration canon (all CFG cases) | L3 doc / L2 impl | §56 | ORCH-CONFIG **in progress** (8 Done, 2 Partial) |
 
 **Audit alignment:** AUDIT_MAP §9 (orchestration/graph) · §10 (subagents/multi-agent) — strategy rows consolidated in §50–§53; **configuration completeness §56**.
 
@@ -871,7 +871,7 @@ Authors combine **one value per dimension** (where applicable). Dimensions are o
 |------|------|-------|-------|------------------|
 | `B1` | API contract | Tier-3 router / schema | Typed request | `context.capability`, optional `agent_id` |
 | `B2` | Interaction adapter | `InteractionIntakeService` | Slash command / vendor JSON | `message` + mapped `capability` |
-| `B3` | LLM/rules classifier | Tier-1 (`COG-3.*` + ORCH-CONFIG.1) | Raw `message` | Inferred `capability` via `IntentRoute` (**rules Partial**; LLM planned) |
+| `B3` | LLM/rules classifier | Tier-1 (`COG-3.*` + ORCH-CONFIG.1) | Raw `message` | Inferred `capability` via `IntentRoute` (**Done** — `rules` + `llm`) |
 | `B4` | Declarative graph | `GraphSpecSeedingPlanner` | `graph_spec` on profile | `NexusPlan` steps from topology |
 
 **Minimum routing by UX:**
@@ -990,23 +990,23 @@ Each case is a **canonical product configuration**. Implementation plan rows map
 | **CFG-01** | Single reactive Q&A | A1 | B1 | C1 | D1 | E0 | ✅ Done | `fastapi_router`, `TaskPlanner` |
 | **CFG-02** | Daemon single agent | A2 | B1 | C1 | D1 | E0 | ✅ Done | host `main.py`, same Nexus path |
 | **CFG-03** | Slack slash → one agent | A1/A2 | B2 | C1 | D1 | E0 | ⚠️ Partial | `interaction_wiring` — not all hosts |
-| **CFG-04** | Free-text chat → auto route | A1/A2 | B3 | C1/C3/C5 | D1/D2 | E0 | ⚠️ Partial | `classifier_kind=rules` + `IntentRoute` (ORCH-CONFIG.1); LLM via COG-3.* pending |
+| **CFG-04** | Free-text chat → auto route | A1/A2 | B3 | C1/C3/C5 | D1/D2 | E0 | ✅ Done | `classifier_kind=rules|llm` + `IntentRoute` (ORCH-CONFIG.1) |
 | **CFG-05** | Two-agent pipeline (research) | A1 | B1 | C4 | D2 | E0 | ✅ Done | `research.pipeline` in `TaskPlanner` |
 | **CFG-06** | Two-agent sequential graph | A1 | B1+B4 | C3 | D2 | E0 | ✅ Done | `graph_spec` + harness CFG simulation (`test_orchestration_cfg_simulation.py`) |
-| **CFG-07** | N-agent sequential graph | A1/A3 | B1+B4 | C3 | D2 | E0/E1 | ⚠️ Partial | `graph_spec_to_plan`, acceptance 02 |
-| **CFG-08** | N-agent parallel graph | A1 | B1+B4 | C3 | D3 | E0 | ⚠️ Partial | `ExecutionGraph.batches`, acceptance 03 |
+| **CFG-07** | N-agent sequential graph | A1/A3 | B1+B4 | C3 | D2 | E0/E1 | ✅ Done | `graph_spec_to_plan`, harness CFG-07 test |
+| **CFG-08** | N-agent parallel graph | A1 | B1+B4 | C3 | D3 | E0 | ✅ Done | `ExecutionGraph.batches`, harness CFG-08 test |
 | **CFG-09** | Hierarchical delegation | A1 | B1+B4 | C3+C6 | D4 | E0 | ✅ Done | ADR-FLOW-001, `DELEGATES_TO` |
 | **CFG-10** | Runtime handoff insert | A1 | B1 | C6 | D4 | E0 | ✅ Done | `HandoffCoordinator` |
-| **CFG-11** | LLM dynamic plan N agents | A1 | B1/B3 | C5 | D2/D3 | E0 | ⚠️ Partial | `EngineBackedNexusPlanner`, COG-1.* |
+| **CFG-11** | LLM dynamic plan N agents | A1 | B1/B3 | C5 | D2/D3 | E0 | ⚠️ Partial | `EngineBackedNexusPlanner` gate test; COG-1.* unification pending |
 | **CFG-12** | Same-capability ensemble | A1 | B1 | C2 | D2 | E0 | ✅ Done | `MULTI_AGENT`, `multi_agent_order` |
-| **CFG-13** | Background single job | A3 | B1 | C1 | D1 | E0 | ⚠️ Partial | queue + `apply_long_running_enabled` |
-| **CFG-14** | Hybrid daemon + index | A4 | B1+B2 | C1 | D1 | E0 | ⚠️ Partial | LKW pattern — product incomplete |
+| **CFG-13** | Background single job | A3 | B1 | C1 | D1 | E0 | ⚠️ Partial | queue + `apply_long_running_from_profile` (ORCH-CONFIG.6) |
+| **CFG-14** | Hybrid daemon + index | A4 | B1+B2 | C1 | D1 | E0 | ⚠️ Partial | scaffold scheduler flag; LKW product incomplete |
 | **CFG-15** | High-risk + HITL | A1 | B1 | C1/C3 | D5 | E2 | ✅ Done | acceptance 04, `NexusHitlRunner` |
 | **CFG-16** | Critic before complete | A1 | B1 | C3 | D6 | E1/E3 | ⚠️ Partial | `CriticGraphHooks`, CVL |
-| **CFG-17** | Swarm exploration | A1 | B1 | C3/C5 | D7 | E0 | ❌ Planned | ORCH-5.1 |
+| **CFG-17** | Swarm exploration | A1 | B1 | C3/C5 | D7 | E0 | ⚠️ Partial | `swarm_exploration_defaults()`; ORCH-5.1 runtime pending |
 | **CFG-18** | Pipeline + single-route conflict | A1 | B1+B4 | C3 | D2 | E0 | ✅ Done | `trigger_capabilities` + ADR-FLOW-004 |
 | **CFG-19** | Long-running + resume | A3/A1 | B1 | any | any | E0 | ✅ Done | acceptance 05/05b, checkpoint store |
-| **CFG-20** | Strict production multi-agent | A1 | B1+B4 | C3 | D2/D3 | E1+E3 | ⚠️ Partial | `execution_mode=strict` + critic + graph_spec |
+| **CFG-20** | Strict production multi-agent | A1 | B1+B4 | C3 | D2/D3 | E1+E3 | ⚠️ Partial | `strict_multi_agent_defaults()` preset; full E1+E3 gate pending |
 
 ### CFG-06 walkthrough (reference — two agents, sequential)
 
@@ -1087,16 +1087,16 @@ Honest platform readiness derived from §56.7. **This table is the direct input 
 
 | Plan ID | CFG / gap | Deliverable | Priority | Status | Unblocks |
 |---------|-----------|-------------|----------|--------|----------|
-| **ORCH-CONFIG.1** | CFG-04 | Rules classifier + `IntentRoute` + orchestration tokens (§56.13) | **Critical** | **Partial** | `orchestration_capabilities.py`; rules path; LLM/COG-3 pending |
+| **ORCH-CONFIG.1** | CFG-04 | Rules classifier + `IntentRoute` + orchestration tokens (§56.13) | **Critical** | **Done** | `classifier_kind=rules|llm`; `LlmTaskClassifier`; classification trace |
 | **ORCH-CONFIG.2** | CFG-18 | `ApplicationGraphSpec.trigger_capabilities` + seed guard | **Critical** | **Done** | ADR-FLOW-004 · `test_graph_spec_to_plan.py` |
 | **ORCH-CONFIG.3** | CFG-05 generalization | `*.pipeline` suffix → graph_spec seed (no `TaskPlanner` fork) | High | **Done** | `pipeline_capability_suffix` default `.pipeline` |
-| **ORCH-CONFIG.4** | CFG-03, CFG-14 | Scaffold: optional interaction intake + queue consumer templates | High | Planned | Consistent Tier-3 surfaces |
-| **ORCH-CONFIG.5** | CFG-06–08, CFG-20 | Reference Tier-3 host with 3+ node `graph_spec` + gate E2E (FLOW-8) | High | **Partial** | Harness simulation tests; full product host deferred §6.3 |
-| **ORCH-CONFIG.6** | CFG-13, CFG-19 | Document + helper: profile `long_running_enabled` → default task flag policy | Medium | Planned | Background job ergonomics |
-| **ORCH-CONFIG.7** | CFG-16, CFG-20 | `strict` profile preset: critic + merge defaults for multi-agent | Medium | Planned | Production semantic completion |
-| **ORCH-CONFIG.8** | CFG-17 | Swarm runtime (extends ORCH-5.1) | Medium | Planned | D7 pattern |
-| **ORCH-CONFIG.9** | All | `scripts/check_orchestration_config_docs.py` — CFG IDs referenced in tests | Low | Planned | Doc↔code drift guard |
-| **ORCH-CONFIG.10** | CFG-11 | COG-1.* planner unification + production engine defaults doc | High | Planned | `C5` maturity |
+| **ORCH-CONFIG.4** | CFG-03, CFG-14 | Scaffold: optional interaction intake + queue consumer templates | High | **Done** | Product scaffold `INCLUDE_INTERACTIONS` / `INCLUDE_SCHEDULER` |
+| **ORCH-CONFIG.5** | CFG-06–08, CFG-20 | Reference Tier-3 host with 3+ node `graph_spec` + gate E2E (FLOW-8) | High | **Partial** | Harness CFG-04/06/07/08/18; product host §6.3 |
+| **ORCH-CONFIG.6** | CFG-13, CFG-19 | Document + helper: profile `long_running_enabled` → default task flag policy | Medium | **Done** | `apply_long_running_from_profile` |
+| **ORCH-CONFIG.7** | CFG-16, CFG-20 | `strict` profile preset: critic + merge defaults for multi-agent | Medium | **Done** | `strict_multi_agent_defaults()` |
+| **ORCH-CONFIG.8** | CFG-17 | Swarm runtime (extends ORCH-5.1) | Medium | **Partial** | `swarm_exploration_defaults()`; ORCH-5.1 pending |
+| **ORCH-CONFIG.9** | All | `scripts/check_orchestration_config_docs.py` — CFG IDs referenced in tests | Low | **Done** | CI script |
+| **ORCH-CONFIG.10** | CFG-11 | COG-1.* planner unification + production engine defaults doc | High | **Partial** | Engine planner gate test; COG-1.1–1.5 pending |
 
 **Cross-plan ownership:**
 
@@ -1163,7 +1163,7 @@ Orchestration capabilities are **routing labels** for graph seeding and rules cl
 
 **Module:** `intergrax/runtime/nexus/orchestration_capabilities.py`  
 **Classifier:** `ClassifyingTaskClassifier` accepts tokens from `trigger_capabilities` and `pipeline_capability_suffix` without `registry.find_by_capability`.  
-**Profile:** `OrchestrationProfile.intent_routes` maps free text → orchestration token (rules path).
+**Profile:** `OrchestrationProfile.intent_routes` maps free text → orchestration token (`classifier_kind=rules` or `llm` with rules fallback).
 
 ```text
 Free text → IntentRoute → acceptance.harness.pipeline (token)

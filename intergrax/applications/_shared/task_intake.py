@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from typing import Optional
 
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.task.task import Task
-from intergrax.runtime.task.task_contract import TaskLongRunningOptions
 
 
 def apply_orchestration_graph_id(task: Task, graph_id: Optional[str]) -> Task:
@@ -51,3 +51,35 @@ def apply_long_running_enabled(
     )
     updated.sync_metadata()
     return updated
+
+
+def apply_long_running_from_profile(
+    task: Task,
+    env: ApplicationEnvironmentProfile,
+    *,
+    enabled: bool | None = None,
+    checkpoint_on_pause: bool = True,
+) -> Task:
+    """
+    Enable long-running execution when the host profile opts in (ORCH-CONFIG.6).
+
+    ``enabled`` overrides profile when set; otherwise uses
+    ``orchestration_profile.long_running_enabled``.
+    """
+    profile_enabled = env.orchestration_profile.long_running_enabled
+    should_enable = profile_enabled if enabled is None else enabled
+    return apply_long_running_enabled(
+        task,
+        enabled=should_enable,
+        checkpoint_on_pause=checkpoint_on_pause,
+    )
+
+
+def apply_orchestration_task_defaults(
+    task: Task,
+    env: ApplicationEnvironmentProfile,
+    *,
+    long_running: bool | None = None,
+) -> Task:
+    """Apply Tier-3 orchestration intake defaults from ``ApplicationEnvironmentProfile``."""
+    return apply_long_running_from_profile(task, env, enabled=long_running)

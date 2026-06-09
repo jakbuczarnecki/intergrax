@@ -1454,7 +1454,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ## Phase ORCH-CONFIG — Platform interaction & multi-agent configuration (Band 2ar — in progress)
 
-**Status:** **In progress** — **3/10 Done**, **2/10 Partial** (architecture **Done** 2026-06-09 — [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §56)  
+**Status:** **In progress** — **8/10 Done**, **2/10 Partial** (architecture **Done** 2026-06-09 — [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §56; Band 2ar implementation 2026-06-09)  
 **Prerequisites:** Phase ORCH-STRAT **Done** · Phase H-APP-DOC.1 **Done** · default queue = §6.1 until Band 2ar prioritized  
 **Goal:** Close every gap in §56.11 so **all CFG-* cases** marked ⚠️/❌ become ✅ without runtime forks  
 **Canonical input:** §56.7 case register + §56.11 plan table — do not duplicate elsewhere
@@ -1465,16 +1465,16 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 | ID | CFG / scope | Deliverable | Status | Priority | Acceptance |
 |----|-------------|-------------|--------|----------|------------|
-| ORCH-CONFIG.1 | CFG-04 | Rules classifier + `IntentRoute` + orchestration tokens (§56.13) | **Partial** | **Critical** | `classifier_kind=rules`; `orchestration_capabilities.py`; COG-3.2 LLM pending |
+| ORCH-CONFIG.1 | CFG-04 | Rules classifier + `IntentRoute` + orchestration tokens (§56.13) | **Done** | **Critical** | `classifier_kind=rules|llm`; COG-3.2 `LlmTaskClassifier` · `test_llm_task_classifier.py` |
 | ORCH-CONFIG.2 | CFG-18 | `ApplicationGraphSpec.trigger_capabilities` + `should_seed` guard | **Done** | **Critical** | ADR-FLOW-004 · `test_graph_spec_to_plan.py` |
 | ORCH-CONFIG.3 | CFG-05+ | Pipeline convention: `*.pipeline` → graph_spec seed (no per-product `TaskPlanner` fork) | **Done** | High | `pipeline_capability_suffix` default `.pipeline` |
-| ORCH-CONFIG.4 | CFG-03, CFG-14 | Scaffold optional interaction intake + queue consumer wiring | Planned | High | `new-application` emits flags; legal host reference |
-| ORCH-CONFIG.5 | CFG-06–08, CFG-20 | Harness CFG simulation + optional Tier-3 product host (FLOW-8) | **Partial** | High | `test_orchestration_cfg_simulation.py`; product host §6.3 |
-| ORCH-CONFIG.6 | CFG-13, CFG-19 | `long_running` profile → task defaults helper / host policy doc | Planned | Medium | Background jobs get checkpoint without per-route boilerplate |
-| ORCH-CONFIG.7 | CFG-16, CFG-20 | `strict` multi-agent preset on `ApplicationEnvironmentProfile` | Planned | Medium | Critic + merge defaults bundled |
-| ORCH-CONFIG.8 | CFG-17 | Swarm runtime — extends ORCH-5.1 | Planned | Medium | D7 pattern gate test |
-| ORCH-CONFIG.9 | All CFG | `check_orchestration_config_docs.py` — CFG IDs in tests/docs | Planned | Low | CI optional script |
-| ORCH-CONFIG.10 | CFG-11 | COG-1.* engine planner production path | Planned | High | `planner_kind=engine` regression + doc |
+| ORCH-CONFIG.4 | CFG-03, CFG-14 | Scaffold optional interaction intake + queue consumer wiring | **Done** | High | Product scaffold: `INCLUDE_INTERACTIONS` / `INCLUDE_SCHEDULER`; legal host reference |
+| ORCH-CONFIG.5 | CFG-06–08, CFG-20 | Harness CFG simulation + optional Tier-3 product host (FLOW-8) | **Partial** | High | Harness CFG-04/06/07/08/18; product host §6.3 gate |
+| ORCH-CONFIG.6 | CFG-13, CFG-19 | `long_running` profile → task defaults helper / host policy doc | **Done** | Medium | `apply_long_running_from_profile` · `intergrax/applications/USAGE.md` |
+| ORCH-CONFIG.7 | CFG-16, CFG-20 | `strict` multi-agent preset on `ApplicationEnvironmentProfile` | **Done** | Medium | `strict_multi_agent_defaults()` · critic + merge bundled |
+| ORCH-CONFIG.8 | CFG-17 | Swarm runtime — extends ORCH-5.1 | **Partial** | Medium | `swarm_exploration_defaults()`; full ORCH-5.1 runtime pending |
+| ORCH-CONFIG.9 | All CFG | `check_orchestration_config_docs.py` — CFG IDs in tests/docs | **Done** | Low | `scripts/check_orchestration_config_docs.py` |
+| ORCH-CONFIG.10 | CFG-11 | COG-1.* engine planner production path | **Partial** | High | `test_engine_planner_orchestration_gate.py`; COG-1.1–1.5 pending |
 
 **Execution order when Band 2ar activates:** ORCH-CONFIG.2 → ORCH-CONFIG.1 → ORCH-CONFIG.3 → ORCH-CONFIG.4 → ORCH-CONFIG.10 → ORCH-CONFIG.6 → ORCH-CONFIG.7 → ORCH-CONFIG.8 → ORCH-CONFIG.9; ORCH-CONFIG.5 remains §6.3 / FLOW-8.
 
@@ -1496,7 +1496,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | ORCH-CONFIG.5 | `NEXUS_EXECUTION_FLOW.md` FLOW-8 **Partial** (harness sim) |
 | ORCH-CONFIG.8 | Phase ORCH-5.1 (swarm) |
 
-**Harness tests (canonical):** `tests/unit/applications/test_graph_spec_to_plan.py` · `tests/unit/runtime/nexus/test_orchestration_capabilities.py` · `tests/unit/runtime/nexus/test_intent_routing.py` · `tests/integration/runtime/test_orchestration_cfg_simulation.py`
+**Harness tests (canonical):** `tests/unit/applications/test_graph_spec_to_plan.py` · `tests/unit/runtime/nexus/test_orchestration_capabilities.py` · `tests/unit/runtime/nexus/test_intent_routing.py` · `tests/unit/runtime/nexus/test_llm_task_classifier.py` · `tests/integration/runtime/test_orchestration_cfg_simulation.py` · `tests/integration/runtime/test_engine_planner_orchestration_gate.py`
 
 ---
 

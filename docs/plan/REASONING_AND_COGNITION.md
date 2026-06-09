@@ -147,9 +147,9 @@ Work **one COG ID per PR** when Band 2am is activated.
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| COG-3.1 | **`classifier_kind=rules`** — `RulesTaskClassifier`, `IntentRoute`, orchestration tokens (ORCH-CONFIG.1) | **Partial** | Medium | `orchestration_wiring.py`, `intent_routing.py` | `test_intent_routing.py`, `test_orchestration_cfg_simulation.py` |
-| COG-3.2 | **Optional LLM classifier** — capability + message → classification with fallback to deterministic | Planned | Medium | `task_classifier.py` | Unit tests; fallback on parse fail |
-| COG-3.3 | **Classification trace enrichment** — confidence + rationale fields on hook payload | Planned | Low | `planning_runner.py` | Trace payload schema test |
+| COG-3.1 | **`classifier_kind=rules`** — `RulesTaskClassifier`, `IntentRoute`, orchestration tokens (ORCH-CONFIG.1) | **Done** | Medium | `orchestration_wiring.py`, `intent_routing.py` | `test_intent_routing.py`, `test_orchestration_cfg_simulation.py` |
+| COG-3.2 | **Optional LLM classifier** — capability + message → classification with fallback to deterministic | **Done** | Medium | `llm_task_classifier.py` | `test_llm_task_classifier.py`; fallback on parse fail |
+| COG-3.3 | **Classification trace enrichment** — confidence + rationale fields on hook payload | **Done** | Low | `task_contract.py`, `task_metadata_bridge.py` | `test_intent_routing.py`, `test_llm_task_classifier.py` |
 
 ### Wave COG4 — Planning-phase DecisionRecord (P1)
 

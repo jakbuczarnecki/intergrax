@@ -409,6 +409,55 @@ class ApplicationEnvironmentProfile(BaseModel):
         )
 
     @classmethod
+    def strict_multi_agent_defaults(
+        cls,
+        *,
+        profile_id: str = "strict.multi_agent",
+    ) -> ApplicationEnvironmentProfile:
+        """CFG-20 preset — strict execution, structured merge, critic on completion (ORCH-CONFIG.7)."""
+        base = cls.lab_defaults(profile_id=profile_id)
+        return base.model_copy(
+            update={
+                "execution_mode": ExecutionMode.STRICT,
+                "orchestration_profile": OrchestrationProfile(
+                    merge_strategy="structured_json",
+                    max_parallel_nodes=8,
+                    max_run_retries=1,
+                ),
+                "critic_profile": CriticProfile(
+                    semantic_judge_enabled=True,
+                    require_critic_on_completion=True,
+                    scopes=CriticVerificationScopes(graph_final=True),
+                ),
+                "evaluation_profile": EvaluationProfile(
+                    shadow_eval_enabled=True,
+                    online_registry_enabled=True,
+                    offline_eval_runner_enabled=True,
+                    require_baseline_for_release=True,
+                ),
+            }
+        )
+
+    @classmethod
+    def swarm_exploration_defaults(
+        cls,
+        *,
+        profile_id: str = "swarm.exploration",
+        max_parallel_nodes: int = 16,
+    ) -> ApplicationEnvironmentProfile:
+        """CFG-17 / D7 exploration preset — high parallel cap (ORCH-CONFIG.8 partial)."""
+        base = cls.lab_defaults(profile_id=profile_id)
+        return base.model_copy(
+            update={
+                "orchestration_profile": OrchestrationProfile(
+                    merge_strategy="structured_json",
+                    max_parallel_nodes=max_parallel_nodes,
+                    max_inflight_nodes=max_parallel_nodes,
+                ),
+            }
+        )
+
+    @classmethod
     def product_defaults(
         cls,
         *,

@@ -100,6 +100,9 @@ class TaskClassificationState(BaseModel):
     requested_capability: Optional[str] = None
     unsupported_reason: Optional[str] = None
     risk_level: Optional[str] = None
+    confidence: Optional[float] = None
+    rationale: Optional[str] = None
+    classifier_source: Optional[str] = None
 
 
 class TaskOrchestrationState(BaseModel):

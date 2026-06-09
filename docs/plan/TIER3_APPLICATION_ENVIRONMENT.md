@@ -240,8 +240,8 @@ uv run pytest -m gate -q
 |----|-------------|--------|----------|------------|
 | H-APP-DOC.1 | **Architecture §23** — posture catalog, routing matrix, scenario recipes | **Done** | **Critical** | `architecture/TIER3_APPLICATION_ENVIRONMENT.md` §23 |
 | H-APP-DOC.2 | **`ApplicationGraphSpec.trigger_capabilities`** — optional seed guard (code) | **Done** | Medium | ORCH-CONFIG.2 · ADR-FLOW-004 · `test_graph_spec_to_plan.py` |
-| H-APP-DOC.3 | **`applications/USAGE.md` §** — link posture recipes + host checklist + ORCHESTRATION §56.13 | Planned | Medium | Cross-link §23; orchestration tokens |
-| H-APP-DOC.4 | **Scaffold `new-application`** — document interaction intake optional wire | Planned | Low | README / factory comment; legal host as reference |
+| H-APP-DOC.3 | **`intergrax/applications/USAGE.md` §** — orchestration configuration (ORCH-CONFIG / §56.13) | **Done** | Medium | Posture presets + harness proof links |
+| H-APP-DOC.4 | **Scaffold `new-application` product** — interaction intake + scheduler optional wire | **Done** | Low | `INCLUDE_INTERACTIONS` / `INCLUDE_SCHEDULER`; legal host reference |
 
 **Explicitly out of scope:** Nexus runtime fork; new coordination patterns (ORCH-5); COG-3 classifier implementation (tracked under ORCH-CONFIG.1 / COG-3.*).
 

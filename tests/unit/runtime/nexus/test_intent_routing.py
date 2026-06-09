@@ -59,3 +59,5 @@ def test_rules_classifier_routes_orchestration_capability() -> None:
     classified = classifier.classify(task)
     assert classified.context.capability == _PIPELINE
     assert classified.classification == "capability_routed"
+    assert classified.runtime.classification.classifier_source == "rules"
+    assert classified.runtime.classification.confidence == 1.0

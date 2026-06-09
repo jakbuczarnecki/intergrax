@@ -68,7 +68,7 @@ def build_nexus_loop_from_environment(
 
     wiring_context = OrchestrationWiringContext(llm_adapter=llm_adapter)
     planner = resolve_nexus_task_planner(env, wiring_context=wiring_context)
-    classifier = resolve_nexus_task_classifier(registry, env)
+    classifier = resolve_nexus_task_classifier(registry, env, wiring_context=wiring_context)
     runtime_settings = resolve_orchestration_runtime_settings(env)
     resolved_context_manager = context_manager or resolve_context_manager_from_environment(
         env,

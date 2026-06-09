@@ -34,5 +34,14 @@ class RulesTaskClassifier:
         self._routes = list(intent_routes or [])
 
     def classify(self, task: Task) -> Task:
+        before = (task.context.capability or "").strip()
         routed = apply_intent_routes(task, self._routes)
-        return self._inner.classify(routed)
+        after = (routed.context.capability or "").strip()
+        if not before and after:
+            cls = routed.runtime.classification
+            cls.classifier_source = "rules"
+            cls.confidence = 1.0
+            cls.rationale = f"intent_route:{after}"
+        classified = self._inner.classify(routed)
+        classified.sync_metadata()
+        return classified
