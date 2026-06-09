@@ -44,12 +44,12 @@
 
 ---
 
-## Phase ECP-DEPTH — Elastic capacity runtime (Band 2ao — planned)
+## Phase ECP-DEPTH — Elastic capacity runtime (Band 2ao — closed)
 
-**Status:** **Planned** — **0/28 Done** · register: [ECP-DEPTH — Master deliverables register](#ecp-depth--master-deliverables-register-all-28-tasks)  
-**Prerequisites:** Phase ECP-DOC **Done** · default queue = §6.1 gate maintenance until Band 2ao prioritized  
+**Status:** **Done** (2026-06-09) — **28/28 Done** (ECP-6.2 **Cancelled**) · register: [ECP-DEPTH — Master deliverables register](#ecp-depth--master-deliverables-register-all-28-tasks)  
+**Prerequisites:** Phase ECP-DOC **Done**  
 **Goal:** Raise ECP from **L1 → L3+** — closed-loop Observe → Evaluate → Govern → Provision  
-**Priority ladder:** **Band 2ao** (§4.0) — **not active**; requires explicit operator reprioritization  
+**Priority ladder:** **Band 2ao** (§4.0) — **closed**; default queue = §6.1 maintenance  
 **Traceability:** [Appendix A](#appendix-a--elastic-capacity-traceability-phase-ecp-depth)
 
 **Delivery rule:** One **ECP-* ID per PR** → update master table + architecture §22 → `pytest -m gate` green.
@@ -247,7 +247,7 @@ Total ECP-DEPTH: 28 (excluding ECP-DOC)
 | SLIs → capacity action? | No | Documented §10 | ECP-2.* Done |
 | Closed-loop scale? | No | Canon §5 | ECP-3.*–4.* Done |
 | Runbooks for scale failure? | Partial | §19 taxonomy | ECP-7 + runbook |
-| **Ops excellence (capacity)** | **L1** | **L1** (plan accurate) | **L3+** |
+| **Ops excellence (capacity)** | **L1** | **L1** (plan accurate) | **L3** (ECP-DEPTH **Done**) |
 
 ---
 
@@ -258,6 +258,14 @@ Total ECP-DEPTH: 28 (excluding ECP-DOC)
 3. This plan — ECP-DEPTH when implementing
 4. [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §49 — queueing (not duplicate)
 5. [`guides/HARNESS_ENVIRONMENT.md`](../guides/HARNESS_ENVIRONMENT.md) — SLO + Celery env
+
+---
+
+### ECP-DEPTH — Paydown log
+
+| Date | ECP ID | Summary |
+|------|--------|---------|
+| 2026-06-09 | ECP-0.*–ECP-OBS.* | Phase ECP-DEPTH **28/28 Done** (ECP-6.2 Cancelled) |
 
 ---
 

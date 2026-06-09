@@ -712,11 +712,11 @@ Planning depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §9�
 | Sync / async postures | L3 harness / L2 product | §57 | ORCH-6 Done; `run_async` HTTP only on lab (§59.2) |
 | Interrupt / cancel / resume API | L3 harness / L2 product | §58, FLOW §28 | FLOW-CTL Done; HTTP routes lab-only (§59.2) |
 | Resilience + autonomy slider | L3 harness / L2 product | §58, REL §34–§35 | REL-ADV Done; mid-run API lab-only (§59.2) |
-| Swarm pattern runtime | L2 | §50.1, D7 | Preset only; ORCH-5.1 runtime pending |
+| Swarm pattern runtime | L3 | §50.1, D7 | ORCH-5.1 **Done**; CFG-17 sim |
 | Active-active node redundancy | L0 | §52.1 | Not planned — use retry + ECP replicas |
-| Infra elastic scale | L1 | cross-ref ECP | Phase ECP-DEPTH |
-| Product multi-agent demos | L2 deferred | §42.43 | FLOW-8 harness sim Done; product host §6.3 |
-| Platform configuration canon (CFG-*) | L4 doc / L3 runtime / L2 Tier-3 | §56 | ORCH-CONFIG 8/10 Done, 2 Partial; Tier-3 wiring debt §59 |
+| Infra elastic scale | L3 | cross-ref ECP | ECP-DEPTH **Done** (Band 2ao) |
+| Product multi-agent demos | L2 deferred | §42.43 | FLOW-8 harness sim **Done**; product host §6.3 |
+| Platform configuration canon (CFG-*) | L4 doc / L3 runtime / L3 Tier-3 | §56 | ORCH-CONFIG **11/11 Done**; reference host presets §59.2 |
 
 **Audit alignment:** AUDIT_MAP §9 (orchestration/graph) · §10 (subagents/multi-agent) — strategy rows consolidated in §50–§53; **configuration completeness §56**; **execution-surface parity §59**.
 
@@ -994,7 +994,7 @@ Each case is a **canonical product configuration**. Implementation plan rows map
 |--------|------|---|---|---|---|---|--------|-----------------|
 | **CFG-01** | Single reactive Q&A | A1 | B1 | C1 | D1 | E0 | ✅ Done | `fastapi_router`, `TaskPlanner` |
 | **CFG-02** | Daemon single agent | A2 | B1 | C1 | D1 | E0 | ✅ Done | host `main.py`, same Nexus path |
-| **CFG-03** | Slack slash → one agent | A1/A2 | B2 | C1 | D1 | E0 | ⚠️ Partial | `interaction_wiring` — not all hosts |
+| **CFG-03** | Slack slash → one agent | A1/A2 | B2 | C1 | D1 | E0 | ✅ Done | `interaction_wiring` on all reference hosts |
 | **CFG-04** | Free-text chat → auto route | A1/A2 | B3 | C1/C3/C5 | D1/D2 | E0 | ✅ Done | `classifier_kind=rules|llm` + `IntentRoute` (ORCH-CONFIG.1) |
 | **CFG-05** | Two-agent pipeline (research) | A1 | B1 | C4 | D2 | E0 | ✅ Done | `research.pipeline` in `TaskPlanner` |
 | **CFG-06** | Two-agent sequential graph | A1 | B1+B4 | C3 | D2 | E0 | ✅ Done | `graph_spec` + harness CFG simulation (`test_orchestration_cfg_simulation.py`) |
@@ -1002,12 +1002,12 @@ Each case is a **canonical product configuration**. Implementation plan rows map
 | **CFG-08** | N-agent parallel graph | A1 | B1+B4 | C3 | D3 | E0 | ✅ Done | `ExecutionGraph.batches`, harness CFG-08 test |
 | **CFG-09** | Hierarchical delegation | A1 | B1+B4 | C3+C6 | D4 | E0 | ✅ Done | ADR-FLOW-001, `DELEGATES_TO` |
 | **CFG-10** | Runtime handoff insert | A1 | B1 | C6 | D4 | E0 | ✅ Done | `HandoffCoordinator` |
-| **CFG-11** | LLM dynamic plan N agents | A1 | B1/B3 | C5 | D2/D3 | E0 | ⚠️ Partial | `EngineBackedNexusPlanner` gate test; COG-1.* unification pending |
+| **CFG-11** | LLM dynamic plan N agents | A1 | B1/B3 | C5 | D2/D3 | E0 | ✅ Done | `planner_kind=engine` on reference hosts; COG-1.* **Done** |
 | **CFG-12** | Same-capability ensemble | A1 | B1 | C2 | D2 | E0 | ✅ Done | `MULTI_AGENT`, `multi_agent_order` |
-| **CFG-13** | Background single job | A3 | B1 | C1 | D1 | E0 | ⚠️ Partial | queue + `apply_long_running_from_profile` (ORCH-CONFIG.6) |
+| **CFG-13** | Background single job | A3 | B1 | C1 | D1 | E0 | ✅ Done | scheduler default on reference hosts; optional `INCLUDE_QUEUE_WORKER` |
 | **CFG-14** | Hybrid daemon + index | A4 | B1+B2 | C1 | D1 | E0 | ⚠️ Partial | scaffold scheduler flag; LKW product incomplete |
 | **CFG-15** | High-risk + HITL | A1 | B1 | C1/C3 | D5 | E2 | ✅ Done | acceptance 04, `NexusHitlRunner` |
-| **CFG-16** | Critic before complete | A1 | B1 | C3 | D6 | E1/E3 | ⚠️ Partial | `CriticGraphHooks`, CVL |
+| **CFG-16** | Critic before complete | A1 | B1 | C3 | D6 | E1/E3 | ✅ Done | multi-agent reference hosts use `with_reference_host_platform_defaults(multi_agent_critic=True)` |
 | **CFG-17** | Swarm exploration | A1 | B1 | C3/C5 | D7 | E0 | ✅ Done (harness) | `swarm_policy.py` + runtime batch guard; CFG-17 sim |
 | **CFG-18** | Pipeline + single-route conflict | A1 | B1+B4 | C3 | D2 | E0 | ✅ Done | `trigger_capabilities` + ADR-FLOW-004 |
 | **CFG-19** | Long-running + resume | A3/A1 | B1 | any | any | E0 | ✅ Done | acceptance 05/05b, checkpoint store |
@@ -1101,7 +1101,7 @@ Honest platform readiness derived from §56.7. **This table is the direct input 
 | **ORCH-CONFIG.7** | CFG-16, CFG-20 | `strict` profile preset: critic + merge defaults for multi-agent | Medium | **Done** | `strict_multi_agent_defaults()` |
 | **ORCH-CONFIG.8** | CFG-17 | Swarm runtime (extends ORCH-5.1) | Medium | **Done** | `GraphExecutor` batch guard · CFG-17 sim |
 | **ORCH-CONFIG.9** | All | `scripts/check_orchestration_config_docs.py` — CFG IDs referenced in tests | Low | **Done** | CI script |
-| **ORCH-CONFIG.10** | CFG-11 | COG-1.* planner unification + production engine defaults doc | High | **Partial** | Engine planner gate test; COG-1.1–1.5 pending |
+| **ORCH-CONFIG.10** | CFG-11 | COG-1.* planner unification + production engine defaults doc | High | **Done** | `nexus_plan_bridge.py` · reference host `planner_kind=engine` |
 
 **Cross-plan ownership:**
 
@@ -1297,10 +1297,10 @@ Cross-cutting platform capabilities span multiple domain pairs. Use this index w
 | Scenario | FLOW | Runtime (Tier-1) | Harness proof | Tier-3 default hosts |
 |----------|------|------------------|---------------|----------------------|
 | **S1** Single reactive Q&A | §3.1 | ✅ | acceptance 01 | ✅ all hosts with `/run` |
-| **S2** Free-text + classifier | §3.1 | ✅ | CFG-04 sim | ⚠️ needs `classifier_kind=rules` per host |
+| **S2** Free-text + classifier | §3.1 | ✅ | CFG-04 sim | ✅ reference hosts `classifier_kind=rules` |
 | **S3** Sequential multi-agent | §3.1 | ✅ | acceptance 02, CFG-06/07 | ✅ via `graph_spec`; product config manual |
 | **S4** Parallel multi-agent | §3.1 | ✅ | acceptance 03, CFG-08 | ✅; cap `max_parallel_nodes` |
-| **S5** Background batch | §3.1 | ✅ | queue J3, scheduler J4 | ⚠️ scheduler: lab/poc/assistant only |
+| **S5** Background batch | §3.1 | ✅ | queue J3, scheduler J4 | ✅ scheduler default on reference hosts |
 | **S6** Hybrid daemon | §3.1 | ✅ partial | no product E2E | ⚠️ LKW §6.3 incomplete |
 | **S7** HITL pause/resume | §3.1 | ✅ | acceptance 04, 05, 05b | ✅ runtime; resume HTTP lab-only |
 
@@ -1310,13 +1310,13 @@ Honest surface parity across shipped `applications/*/host/factory.py`. ✅ = wir
 
 | Host | Sync `/run` | `mount_harness_task_routes` (async/cancel/autonomy/resume) | Scheduler | Interactions | MCP | `apply_reliability_task_defaults` |
 |------|-------------|--------------------------------------------------------------|-----------|--------------|-----|-----------------------------------|
-| `lab_application` | ✅ | ✅ | ⚠️ `include_scheduler` | ⚠️ `include_interaction_routes` | ⚠️ | ✅ |
-| `legal_application` | ✅ | ✅ `INCLUDE_TASK_CONTROL` | ⚠️ `INCLUDE_SCHEDULER` | ⚠️ | ⚠️ | ✅ runner enricher |
-| `research_application` | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ✅ |
-| `poc_template_application` | ✅ | ✅ default | ⚠️ | ⚠️ | ⚠️ | ✅ |
-| `intergrax_assistant_application` | ✅ | ✅ `INCLUDE_TASK_CONTROL` | ⚠️ | ⚠️ | ⚠️ | ✅ runner enricher |
-| `local_workspace_application` | ✅ | ✅ `INCLUDE_TASK_CONTROL` | ⚠️ `INCLUDE_SCHEDULER` | ⚠️ `INCLUDE_INTERACTIONS` | ⚠️ | ✅ runner enricher |
-| `dispute_sim_application` | ✅ | ✅ `INCLUDE_TASK_CONTROL` | ⚠️ `INCLUDE_SCHEDULER` | ❌ | ⚠️ | ✅ runner enricher |
+| `lab_application` | ✅ | ✅ | ✅ default | ✅ default | ⚠️ | ✅ |
+| `legal_application` | ✅ | ✅ `INCLUDE_TASK_CONTROL` | ✅ default | ✅ default | ⚠️ | ✅ runner enricher |
+| `research_application` | ✅ | ✅ | ✅ default | ✅ default | ⚠️ | ✅ |
+| `poc_template_application` | ✅ | ✅ default | ✅ default | ✅ default | ⚠️ | ✅ |
+| `intergrax_assistant_application` | ✅ | ✅ `INCLUDE_TASK_CONTROL` | ✅ default | ✅ default | ⚠️ | ✅ runner enricher |
+| `local_workspace_application` | ✅ | ✅ `INCLUDE_TASK_CONTROL` | ⚠️ opt-in | ⚠️ opt-in | ⚠️ | ✅ runner enricher |
+| `dispute_sim_application` | ✅ | ✅ `INCLUDE_TASK_CONTROL` | ✅ default | ✅ default | ⚠️ | ✅ runner enricher |
 
 **Note:** `mount_harness_task_routes` (async/cancel/autonomy/resume) is opt-in per host via `INCLUDE_TASK_CONTROL` (default **on** on reference product hosts). Lab remains the full debug surface; product hosts may still use sync `/run` when task control is disabled.
 
@@ -1326,15 +1326,11 @@ Honest surface parity across shipped `applications/*/host/factory.py`. ✅ = wir
 
 | CFG | Status | Gap / debt | Plan ID |
 |-----|--------|------------|---------|
-| CFG-03 | ⚠️ Partial | Interactions optional on LKW/dispute_sim; reference hosts wired | H-APP-WIRING.2 **Done** on legal/research |
-| CFG-11 | ⚠️ Partial | `EngineBackedNexusPlanner` bridged; COG-1.* product unification | ORCH-CONFIG.10, COG-1.* |
-| CFG-13 | ⚠️ Partial | Queue via `INCLUDE_QUEUE_WORKER` on legal; not all hosts | ORCH-6.5 **Done** on reference |
-| CFG-14 | ⚠️ Partial | LKW hybrid E2E deferred; scaffold flags exist | §6.3 · H-APP-WIRING.4 deferral doc |
-| CFG-16 | ⚠️ Partial | CVL hooks exist; semantic E1+E3 not mandatory on all paths | ORCH-CONFIG.7, CRIT-V ops |
-| CFG-17 | ✅ Done (harness) | Plan + runtime parallel-batch guard; CFG-17 sim gate | ORCH-5.1 **Done** |
-| CFG-20 | ✅ Done (harness) | `strict_multi_agent_defaults()` + CFG-20 sim gate | ORCH-CONFIG.5 harness **Done** |
+| CFG-14 | ⚠️ Partial | LKW hybrid E2E deferred (product §6.3) | H-APP-WIRING.4 deferral doc |
+| CFG-17 | ✅ Done (harness) | Swarm runtime + CFG-17 sim gate | ORCH-5.1 **Done** |
+| CFG-20 | ✅ Done (harness) | `strict_multi_agent_defaults()` + CFG-20 sim gate | ORCH-CONFIG.5 **Done** |
 
-CFG-01–02, 04–10, 12, 15, 18–19: **runtime Done** at harness level.
+CFG-01–13, 15–16, 18–19: **runtime Done** at harness + reference-host level (2026-06-09 closeout).
 
 ## 59.4 Cross-cutting capabilities — implementation vs exposure
 
@@ -1359,12 +1355,13 @@ CFG-01–02, 04–10, 12, 15, 18–19: **runtime Done** at harness level.
 
 ## 59.6 Recommended paydown order (harness queue)
 
-1. **H-APP-WIRING** — scaffold flags `INCLUDE_TASK_CONTROL`, optional `QueuedNexusExecutionAdapter`; reference legal/research adoption.
-2. **ORCH-5.1** — swarm runtime under budget envelope.
-3. **ORCH-CONFIG.5 / FLOW-8** — strict multi-agent reference host or §6.3 product decision.
-4. **ORCH-CONFIG.10** — engine planner product path (COG-1.*).
+**Closed (2026-06-09):** H-APP-WIRING · ORCH-5.* · ORCH-CONFIG.* (harness) · COG-DEPTH · reference host CFG presets.
 
-**Not default queue:** Band 3 product agents (K.1/K.2) — [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) §6.3.
+**Remaining harness-default queue:** §6.1 gate maintenance only.
+
+**Product-gated (§6.3):** FLOW-8 product host · CFG-14 LKW hybrid daemon · GOV-PROD.1 dashboard · new `applications/<product>/`.
+
+**Not default queue:** Band 3 business agents (K.1/K.2) — [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) §6.3.
 
 ---
 

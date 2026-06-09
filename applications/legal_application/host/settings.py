@@ -191,7 +191,7 @@ class LegalBackendSettings:
         ).strip().lower() or "auto"
         interaction_execute = _env_bool("LEGAL_INTERACTION_EXECUTE_DEFAULT", default=True)
         include_task_control = _env_bool("LEGAL_INCLUDE_TASK_CONTROL", default=True)
-        include_scheduler = _env_bool("LEGAL_INCLUDE_SCHEDULER", default=False)
+        include_scheduler = _env_bool("LEGAL_INCLUDE_SCHEDULER", default=True)
         include_queue_worker = _env_bool("LEGAL_INCLUDE_QUEUE_WORKER", default=False)
         task_control_prefix = (
             os.environ.get("LEGAL_TASK_CONTROL_ROUTE_PREFIX") or "/v1/tasks"

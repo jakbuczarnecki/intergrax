@@ -1454,7 +1454,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ## Phase ORCH-CONFIG — Platform interaction & multi-agent configuration (Band 2ar — in progress)
 
-**Status:** **In progress** — **9/11 Done**, **2/11 Partial** (architecture **Done** 2026-06-09 incl. §59 audit — [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §56–§59; Band 2ar implementation 2026-06-09)  
+**Status:** **Done** (2026-06-09) — **11/11 Done** (architecture **Done** incl. §59 audit — [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §56–§59; reference host CFG presets + harness simulation)  
 **Prerequisites:** Phase ORCH-STRAT **Done** · Phase H-APP-DOC.1 **Done** · default queue = §6.1 until Band 2ar prioritized  
 **Goal:** Close every gap in §56.11 so **all CFG-* cases** marked ⚠️/❌ become ✅ without runtime forks  
 **Canonical input:** §56.7 case register + §56.11 plan table — do not duplicate elsewhere
@@ -1491,10 +1491,10 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 | ORCH-CONFIG | Also in plan |
 |-------------|--------------|
-| ORCH-CONFIG.1 | `REASONING_AND_COGNITION.md` COG-3.1 (**Partial**) · COG-3.2–3.3 (LLM) |
+| ORCH-CONFIG.1 | `REASONING_AND_COGNITION.md` COG-3.* **Done** |
 | ORCH-CONFIG.2 | `TIER3_APPLICATION_ENVIRONMENT.md` H-APP-DOC.2 **Done** |
 | ORCH-CONFIG.4 | `TIER3_APPLICATION_ENVIRONMENT.md` H-APP-DOC.4 |
-| ORCH-CONFIG.5 | `NEXUS_EXECUTION_FLOW.md` FLOW-8 **Partial** (harness sim) |
+| ORCH-CONFIG.5 | `NEXUS_EXECUTION_FLOW.md` FLOW-8 harness sim **Done**; product host **Deferred** §6.3 |
 | ORCH-CONFIG.8 | Phase ORCH-5.1 (swarm) |
 
 **Harness tests (canonical):** `tests/unit/applications/test_graph_spec_to_plan.py` · `tests/unit/runtime/nexus/test_orchestration_capabilities.py` · `tests/unit/runtime/nexus/test_intent_routing.py` · `tests/unit/runtime/nexus/test_llm_task_classifier.py` · `tests/integration/runtime/test_orchestration_cfg_simulation.py` · `tests/integration/runtime/test_engine_planner_orchestration_gate.py`
@@ -1503,8 +1503,8 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ## Phase ORCH-5 — Orchestration strategy runtime gaps (Band 2aq — planned)
 
-**Status:** **Partial** — **2/5 Done**  
-**Prerequisites:** Phase ORCH-STRAT **Done** · default queue = §6.1 maintenance until Band 2aq prioritized  
+**Status:** **Done** (2026-06-09) — **5/5 Done**  
+**Prerequisites:** Phase ORCH-STRAT **Done** · default queue = §6.1 maintenance  
 **Goal:** Close gaps in [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §54 — swarm depth, pattern metadata on plans, active redundancy policy
 
 | ID | Deliverable | Status | Priority | Acceptance |

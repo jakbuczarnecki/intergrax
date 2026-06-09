@@ -27,4 +27,4 @@ def build_dispute_sim_environment_profile(
             "options": {**profile.integration_profile.options, OTEL.slug: {}},
         },
     )
-    return profile
+    return profile.with_reference_host_platform_defaults(multi_agent_critic=True)

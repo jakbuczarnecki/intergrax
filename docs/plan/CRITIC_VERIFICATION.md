@@ -1071,21 +1071,11 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 
 **Explicitly excluded:** Product dashboards (§6.3a); vendor-only APM as sole store.
 
-### 6.1am Harness implementation queue — Memory intelligence depth (active)
+### 6.1am Harness implementation queue — Memory intelligence depth (closed)
 
-**Purpose:** Single ordered list for **Phase MEM-DEPTH** (Band 2am). **Active** — canonical architecture **Done**; implementation **0/23 code tasks** (3/26 with doc rows). Parallel-safe with **§6.1** maintenance.
+**Purpose:** Single ordered list for **Phase MEM-DEPTH** (Band 2am). **Closed 2026-06-08** — **26/26 Done**. Canonical: [plan/MEMORY.md](plan/MEMORY.md).
 
-| Order | ID | Type | Status | Deliverable | Acceptance |
-|-------|-----|------|--------|-------------|------------|
-| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
-| 1 | **MEM-DEPTH-0.1–0.4** | Docs | **3/4 Done** | `architecture/MEMORY.md` + plan + cross-links | MEM-DEPTH-0.3 ADR pending |
-| 2 | **MEM-DEPTH-1.1–1.6** | Code/Test | **Planned** | Context Compiler + never-overflow | Long-session gate green |
-| 3 | **MEM-DEPTH-2.1–2.2** | Code/Test | **Planned** | Mongo session persistence | Integration round-trip |
-| 4 | **MEM-DEPTH-3.1–3.5** | Code | **Planned** | Lifecycle automation | Auto consolidate on lab profile |
-| 5 | **MEM-DEPTH-4.1–4.3** | Code | **Planned** | Explore delegation | Delegation gate + synthesis return |
-| 6 | **MEM-DEPTH-5.1–5.6** | Code/RFC | **Planned** | Entity intelligence (§6.3 gate for 5.1) | FAUDIT Memory L3+ |
-
-**Suggested PR order:** See [§6.2ab](#62ab-phase-mem-depth-execution-order-band-2am--active).
+**Suggested PR order:** See [§6.2ab](plan/MEMORY.md#62ab-phase-mem-depth-execution-order-band-2am--closed).
 
 **Explicitly excluded:** K.1/K.2, Mem0 SaaS, Redis session default — [§6.3a](#63a-business-backlog-register-consolidated).
 
@@ -1523,9 +1513,9 @@ Work **one FLOW ID per PR**; after each step update FLOW master table + §6.1aj 
 | 16 | FLOW-17 | `MULTI_AGENT` ordering policy | Low | — |
 | 17 | FLOW-DOC.* | Docs closeout | Low | FLOW-1–17 (except deferred FLOW-8) |
 
-### 6.2ak Phase CRIT-V execution order (Band 2ak — active)
+### 6.2ak Phase CRIT-V execution order (Band 2ak — closed)
 
-**Status:** **Active** · register: [Phase CRIT-V](#phase-crit-v--critic--verification-layer) · queue: [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-active)
+**Status:** **Done** (2026-06-08) · register: [Phase CRIT-V](#phase-crit-v--critic--verification-layer) · queue: [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-closed)
 
 Work **one CRIT-V ID per PR**; after each step update CRIT-V master table + §6.1ak; keep §6.1 scripts green.
 

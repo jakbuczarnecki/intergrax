@@ -473,6 +473,46 @@ class ApplicationEnvironmentProfile(BaseModel):
             }
         )
 
+    def with_reference_host_platform_defaults(
+        self,
+        *,
+        multi_agent_critic: bool = False,
+    ) -> ApplicationEnvironmentProfile:
+        """CFG-11/13/16 presets for reference Tier-3 hosts (ORCH-CONFIG closeout)."""
+        orchestration = self.orchestration_profile.model_copy(
+            update={
+                "planner_kind": self.orchestration_profile.planner_kind or "engine",
+                "classifier_kind": self.orchestration_profile.classifier_kind or "rules",
+                "long_running_enabled": True,
+            },
+        )
+        reliability = self.reliability_profile.model_copy(
+            update={"long_running_scheduler_enabled": True},
+        )
+        updates: dict[str, Any] = {
+            "orchestration_profile": orchestration,
+            "reliability_profile": reliability,
+        }
+        if multi_agent_critic:
+            strict = type(self).strict_multi_agent_defaults(profile_id=self.profile_id)
+            updates["execution_mode"] = strict.execution_mode
+            updates["critic_profile"] = strict.critic_profile.model_copy(
+                update={
+                    # CFG-16: require CVL on completion; L1 judge only when rubric is configured.
+                    "require_critic_on_completion": True,
+                    "semantic_judge_enabled": bool(strict.critic_profile.default_rubric_ref),
+                },
+            )
+            updates["evaluation_profile"] = strict.evaluation_profile
+            updates["orchestration_profile"] = orchestration.model_copy(
+                update={
+                    "merge_strategy": strict.orchestration_profile.merge_strategy,
+                    "max_run_retries": strict.orchestration_profile.max_run_retries,
+                    "max_parallel_nodes": strict.orchestration_profile.max_parallel_nodes,
+                },
+            )
+        return self.model_copy(update=updates)
+
     @classmethod
     def async_batch_defaults(
         cls,

@@ -35,6 +35,7 @@ def _dispute_sim_environment() -> ApplicationEnvironmentProfile:
             }
         )
         .with_harness_memory()
+        .with_reference_host_platform_defaults(multi_agent_critic=True)
     )
 
 

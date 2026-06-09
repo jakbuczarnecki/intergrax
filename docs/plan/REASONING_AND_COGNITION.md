@@ -44,12 +44,12 @@
 
 ---
 
-## Phase COG-DEPTH — Reasoning layer maturity uplift (Band 2am — planned)
+## Phase COG-DEPTH — Reasoning layer maturity uplift (Band 2as — closed)
 
-**Status:** **Planned** — **0/22 Done** · canonical register: [COG-DEPTH — Master deliverables register](#cog-depth--master-deliverables-register-all-22-tasks)  
-**Prerequisites:** Phase COG-DOC **Done** · Phase FLOW **Done** · default queue = §6.1 gate maintenance until Band 2am prioritized  
+**Status:** **Done** (2026-06-09) — **22/22 Done** · canonical register: [COG-DEPTH — Master deliverables register](#cog-depth--master-deliverables-register-all-22-tasks)  
+**Prerequisites:** Phase COG-DOC **Done** · Phase FLOW **Done**  
 **Goal:** Raise FAUDIT-32 §7 from **L2 → L3+** — unified planner stack, Prompt Registry on planners, Nexus `DecisionRecord`, reasoning failure taxonomy, optional `ReasoningProfile`  
-**Priority ladder:** **Band 2am** (§4.0) — **not active**; requires explicit operator reprioritization off §6.1 maintenance  
+**Priority ladder:** **Band 2as** (§4.0) — **closed**; default queue = §6.1 maintenance  
 **Traceability:** [Appendix A](#appendix-a--reasoning-and-cognition-traceability-phase-cog-depth)
 
 **Delivery rule:** One **COG-* ID per PR** → update master table + architecture gap register §21 → `pytest -m gate` green.
@@ -188,7 +188,7 @@ Work **one COG ID per PR** when Band 2am is activated.
 | Architecture § | Topic | Task IDs |
 |----------------|--------|----------|
 | §5 Three planes | Plane boundaries | COG-DOC.* |
-| §9 Classification | Classifier extensions | COG-3.* · ORCH-CONFIG.1 (rules **Partial**) |
+| §9 Classification | Classifier extensions | COG-3.* · ORCH-CONFIG.1 **Done** |
 | §9.4 Routing modes | Authoring canon (docs) | COG-DOC.6 **Done** |
 | §10 Nexus planning | Planner unification | COG-1.* |
 | §10.4 LLM planner | Prompt Registry | COG-2.1 |
@@ -226,7 +226,7 @@ These items implemented under FLOW/ORCH phases — **Done**; canon now owned by 
 | Planning strategies explicit? | Yes | Canon §10, Appendix B | Maintain |
 | Prompt compilation layered? | Partial | Cross-ref §15 | COG-2.* Done |
 | Reasoning failures classified? | No | Taxonomy §17 doc | COG-6.* code |
-| **Layer score** | **L2** | **L2** (plan accurate) | **L3+** |
+| **Layer score** | **L2** | **L2** (plan accurate) | **L3** (COG-DEPTH **Done**) |
 
 ---
 
@@ -236,6 +236,14 @@ These items implemented under FLOW/ORCH phases — **Done**; canon now owned by 
 2. This plan — COG-DEPTH register when implementing
 3. [`architecture/NEXUS_EXECUTION_FLOW.md`](../architecture/NEXUS_EXECUTION_FLOW.md) — end-to-end flow only
 4. [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix I §I.4 — host planner configuration
+
+---
+
+### COG-DEPTH — Paydown log
+
+| Date | COG ID | Summary |
+|------|--------|---------|
+| 2026-06-09 | COG-1.*–COG-OBS.* | Phase COG-DEPTH **22/22 Done**; reference host engine planner presets |
 
 ---
 

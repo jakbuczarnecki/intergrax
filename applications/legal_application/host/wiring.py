@@ -77,7 +77,7 @@ def build_legal_environment_profile(settings: LegalBackendSettings) -> Applicati
                 ),
             },
         )
-    return profile
+    return profile.with_reference_host_platform_defaults()
 
 
 def build_legal_registry(settings: LegalBackendSettings) -> AgentRegistry:

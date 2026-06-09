@@ -26,7 +26,7 @@ class ResearchBackendSettings:
     interaction_surface: str = "auto"
     interaction_execute_default: bool = True
     include_task_control: bool = True
-    include_scheduler: bool = False
+    include_scheduler: bool = True
     include_queue_worker: bool = False
     task_control_route_prefix: str = "/v1/tasks"
     scheduler_poll_seconds: float | None = None
@@ -66,7 +66,7 @@ class ResearchBackendSettings:
         ).strip().lower() or "auto"
         interaction_execute = _env_bool("RESEARCH_INTERACTION_EXECUTE_DEFAULT", default=True)
         include_task_control = _env_bool("RESEARCH_INCLUDE_TASK_CONTROL", default=True)
-        include_scheduler = _env_bool("RESEARCH_INCLUDE_SCHEDULER", default=False)
+        include_scheduler = _env_bool("RESEARCH_INCLUDE_SCHEDULER", default=True)
         include_queue_worker = _env_bool("RESEARCH_INCLUDE_QUEUE_WORKER", default=False)
         task_control_prefix = (
             os.environ.get("RESEARCH_TASK_CONTROL_ROUTE_PREFIX") or "/v1/tasks"

@@ -251,7 +251,7 @@ uv run pytest -m gate -q
 
 ## Phase H-APP-WIRING — Tier-3 execution surface parity (Band 2aw — planned)
 
-**Status:** **Done** (2026-06-09) — **6/6 Done**  
+**Status:** **Done** (2026-06-09) — **6/6 Done** · CFG host parity closeout (2026-06-09)  
 **Audit source:** [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §59 · [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../architecture/TIER3_APPLICATION_ENVIRONMENT.md) §23.7–§23.8 · FLOW-GAP-17–20  
 **Prerequisites:** Phase H-APP **Done** · ORCH-6 **Done** · FLOW-CTL **Done** · REL-ADV **Done**  
 **Goal:** Close **docs ↔ code discrepancies** where platform capabilities exist in Tier-1 but product hosts expose only sync `/run` — without Nexus forks.
