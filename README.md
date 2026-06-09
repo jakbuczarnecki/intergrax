@@ -10,7 +10,7 @@
 
 ---
 
-## TL;DR
+## Overview
 
 - **What:** Intergrax is a **Harness AI platform** — the durable runtime that runs many agents, not a single chatbot or domain bot.
 - **What it provides:** Nexus Agent OS, Tier-0 catalogs (**185** integrations · **190** tools · **149** skills in **41** bundles), LLM, RAG, memory, policy, trace, multi-agent graphs, and Tier-3 application hosts.
