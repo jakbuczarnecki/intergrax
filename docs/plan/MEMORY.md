@@ -27,7 +27,7 @@
 
 ---
 
-### 6.2aa Phase MEM execution order (Band 2h — active)
+### 6.2aa Phase MEM execution order (Band 2h — closed)
 
 **Status:** **Done** (2026-06-02) · **48/48 Done** · canonical register: [Phase MEM — Master deliverables register](#mem--master-deliverables-register-all-48-tasks).
 
@@ -73,8 +73,8 @@ Work **one MEM-DEPTH ID per PR**; after each step update the MEM-DEPTH master ta
 **Status:** **Done** (2026-06-02) — **48/48** deliverables; gate **571 passed**.  
 **Prerequisites:** Phases **I** (TaskMemory), **R-Context**, **H-APP** (profile models), **DX-5.7** (ops:memory hints) **Done**; **H-APP.4.3** closed via **MEM-1.***.  
 **Goal:** Close every gap from the **memory platform audit** — short-term session, user/org LTM, task KV, context compression, H-APP→runtime wiring, persistence, recovery, observability, developer hooks, and market-parity documentation — **without** Band 3 product agents (K.1/K.2) or Mem0-like SaaS product layer (MEM-8 deferred P3).  
-**Priority ladder:** **Band 2h** (§4.0) — **default implementation queue** after §6.1 maintenance.  
-**Execution order:** [§6.2aa](#62aa-phase-mem-execution-order-band-2h--active).  
+**Priority ladder:** **Band 2h** (§4.0) — **closed**; default queue = §6.1 maintenance.  
+**Execution order:** [§6.2aa](#62aa-phase-mem-execution-order-band-2h--closed).  
 **Canon refs:** §27 Memory model · §28.1 Context assembly · §42.35 MemoryView · Appendix G in [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md).
 
 **Delivery rule:** One `MEM-*` ID per PR → update status in tables below + paydown log → `pytest -m gate` + §6.1 audit scripts green.

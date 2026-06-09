@@ -105,16 +105,17 @@ Essential platform behaviours span multiple domain pairs — use this index befo
 
 Platform docs do not replace `agents/*/ARCHITECTURE.md` or `applications/*/ARCHITECTURE.md`.
 
-### Platform execution audit (2026-06-09)
+### Platform execution audit (2026-06-09, synced)
 
-**Verdict:** Tier-1 Nexus supports all documented launch/interaction scenarios (FLOW §3.1 S1–S7). Remaining gaps are **Tier-3 host wiring**, **production proof**, and **swarm runtime** (ORCH-5.1).
+**Verdict:** Tier-1 Nexus supports all documented launch/interaction scenarios (FLOW §3.1 S1–S7). Harness closeouts **Done**: ORCH-CONFIG, ORCH-5, H-APP-WIRING, MEM/COG/ECP-DEPTH, reference host CFG presets. **Remaining:** product-only items (§6.3) — FLOW-8 Tier-3 demo host, CFG-14 LKW daemon, GOV-PROD.1 dashboard.
 
 | Topic | Canonical register | Status |
 |-------|-------------------|--------|
-| CFG-* configuration cases | [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §56.7, §59.3 | 13/20 Done at harness; 7 Partial |
-| Host surface parity | [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §59.2 · [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](architecture/TIER3_APPLICATION_ENVIRONMENT.md) §23.7 | Lab reference only |
-| FLOW runtime gaps | [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §23.2 (FLOW-GAP-17–20 open) | Tier-3 / product |
-| Paydown queue | [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](plan/TIER3_APPLICATION_ENVIRONMENT.md) Phase **H-APP-WIRING** (Band 2aw) | **Done** (2026-06-09) |
+| CFG-* configuration cases | [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §56.7, §59.3 | **18/19 harness Done**; CFG-14 product **Deferred** §6.3 |
+| Host surface parity | [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §59.2 · [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](architecture/TIER3_APPLICATION_ENVIRONMENT.md) §23.7 | Reference hosts **Done**; LKW opt-in flags |
+| FLOW runtime gaps | [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §23.2 | FLOW-GAP-01–19 **Closed**; FLOW-GAP-20 **Deferred** §6.3 |
+| Depth bands | [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) §4.0 | MEM/COG/ECP/ORCH-CONFIG **Done** |
+| Default queue | [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) §6.1 | Gate maintenance only |
 
 ---
 

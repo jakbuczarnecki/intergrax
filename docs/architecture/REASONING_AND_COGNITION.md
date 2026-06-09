@@ -62,7 +62,7 @@ Intergrax already implements substantial cognition mechanics, but until this dom
 | `EnginePlannerOrchestrator` bridged, not first-class Nexus path | Two planner stacks (`NexusPlan` vs `EnginePlan`) with incomplete unification |
 | Nexus-level decisions lack universal `DecisionRecord` | FAUDIT-COG.1 closed for UAEP steps only; planning phase rationale partial |
 | No explicit reasoning failure taxonomy | Planning parse errors, policy blocks, and runtime failures conflated in ops |
-| Classifier surface is `default` only | **Partial** — `classifier_kind=rules` + `IntentRoute` (ORCH-CONFIG.1); LLM classifier still COG-3.* |
+| Classifier surface | **Done** — `classifier_kind=rules|llm` + `IntentRoute` (ORCH-CONFIG.1, COG-3.*) |
 | Model routing for reasoning not policy-unified | FAUDIT-LLM.1 residual — planner LLM ≠ producer LLM discipline incomplete at Nexus boundary |
 
 RCL closes the **documentation and contract boundary** gap first; runtime depth uplift is tracked in [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_AND_COGNITION.md) Phase COG-DEPTH.
@@ -692,18 +692,18 @@ sequenceDiagram
 | Task classification (deterministic) | L3 | Done | COG-DOC.* |
 | Deterministic TaskPlanner | L3 | Done | maintain |
 | Declarative graph_spec seeding | L3 | Done | ORCH-2 |
-| LLM Nexus planner (bridged) | L2 | Partial | COG-1.* |
-| Engine planner unification | L2 | Bridged | COG-1.* |
+| LLM Nexus planner (bridged) | L3 | **Done** | COG-1.* |
+| Engine planner unification | L3 | **Done** | COG-1.* |
 | DecisionRecord on UAEP | L3 | Done | FLOW-12 |
-| DecisionRecord on Nexus planning | L1 | Gap | COG-4.* |
-| Prompt Registry on all planners | L2 | Partial | COG-2.* |
-| Rules classifier (`classifier_kind=rules`) | L2 | **Partial** | ORCH-CONFIG.1 · COG-3.1 |
-| LLM classifier | L0 | Not started | COG-3.2–3.3 |
-| Reasoning failure taxonomy in trace | L1 | Gap | COG-6.* |
-| Model routing for reasoning | L2 | Partial | COG-5.*, FAUDIT-LLM.1 |
-| **Overall RCL (FAUDIT-32 §7)** | **L2** | Partial plan | Phase COG-DEPTH |
+| DecisionRecord on Nexus planning | L3 | **Done** | COG-4.* |
+| Prompt Registry on all planners | L3 | **Done** | COG-2.* |
+| Rules classifier (`classifier_kind=rules`) | L3 | **Done** | ORCH-CONFIG.1 · COG-3.1 |
+| LLM classifier (`classifier_kind=llm`) | L2 | **Done** | COG-3.2–3.3 |
+| Reasoning failure taxonomy in trace | L3 | **Done** | COG-6.* |
+| Model routing for reasoning | L3 | **Done** | COG-5.* |
+| **Overall RCL (FAUDIT-32 §7)** | **L3+** | **Done** | Phase COG-DEPTH (2026-06-09) |
 
-**Target:** L3+ on FAUDIT re-run after COG-DEPTH P0/P1 complete.
+**Post-COG-DEPTH:** P0/P1/P2 complete; incremental L4 depth remains maintenance-only.
 
 All implementation tasks: [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_AND_COGNITION.md).
 

@@ -105,15 +105,17 @@ Total COG-DEPTH: 22 (excluding COG-DOC)
 
 ---
 
-### 6.2am Phase COG-DEPTH execution order (Band 2am — planned)
+### 6.2as Phase COG-DEPTH execution order (Band 2as — closed)
 
-Work **one COG ID per PR** when Band 2am is activated.
+**Status:** **Done** (2026-06-09) · **22/22 Done** · canonical register: [COG-DEPTH — Master deliverables register](#cog-depth--master-deliverables-register-all-22-tasks).
+
+Work **one COG ID per PR** — phase **closed**; historical order below.
 
 | Wave | IDs | Count | Focus |
 |------|-----|-------|--------|
 | COG1 | COG-1.1–COG-1.5 | 5 | **P0** — Engine planner ↔ Nexus unification |
 | COG2 | COG-2.1–COG-2.4 | 4 | **P0** — Prompt Registry planner prompts |
-| COG3 | COG-3.1–COG-3.3 | 3 | **P1** — Classifier extensions (**COG-3.1 Partial** via ORCH-CONFIG.1) |
+| COG3 | COG-3.1–COG-3.3 | 3 | **P1** — Classifier extensions (**Done** — ORCH-CONFIG.1 + COG-3.*) |
 | COG4 | COG-4.1–COG-4.2 | 2 | **P1** — Planning-phase DecisionRecord |
 | COG5 | COG-5.1–COG-5.3 | 3 | **P1** — ReasoningProfile + routing |
 | COG6 | COG-6.1–COG-6.3 | 3 | **P1** — Failure taxonomy |

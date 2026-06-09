@@ -68,7 +68,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ---
 
-## Phase REL-ADV — Resilience policies and autonomy slider (Band 2as — planned)
+## Phase REL-ADV — Resilience policies and autonomy slider (closed)
 
 **Status:** **Done** (2026-06-09) — architecture canon §34–§35; runtime REL-ADV.1–6 implemented.
 
