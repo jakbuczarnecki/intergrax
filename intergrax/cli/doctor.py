@@ -45,6 +45,24 @@ def run_doctor(args: argparse.Namespace) -> int:
         ok, msg = _run_script(root / "scripts" / script_name, root)
         checks.append((name, ok, msg))
 
+    maturity_script = root / "scripts" / "harness_maturity_report.py"
+    if maturity_script.is_file():
+        proc = subprocess.run(
+            [sys.executable, str(maturity_script), "--json"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+        )
+        if proc.returncode == 0:
+            import json
+
+            report = json.loads(proc.stdout)
+            l3 = report.get("l3_layers", 0)
+            total = report.get("total_layers", 32)
+            checks.append(("harness_maturity_score", True, f"{l3}/{total} layers L3+"))
+        else:
+            checks.append(("harness_maturity_score", False, proc.stderr.strip() or "failed"))
+
     for name, passed, detail in checks:
         status = "PASS" if passed else "FAIL"
         print(f"[{status}] {name}: {detail}")

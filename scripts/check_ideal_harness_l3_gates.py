@@ -32,6 +32,13 @@ def main() -> int:
         ("check_agents_no_vendor_sdk_imports.py", ()),
         ("check_harness_prompt_golden_catalog.py", ()),
         ("check_agents_lifecycle_metadata.py", ()),
+        ("check_registry_snapshot_diff.py", ()),
+        ("check_context_golden.py", ()),
+        ("check_eval_scenario_library.py", ()),
+        ("check_capability_edge_catalog_sync.py", ()),
+        ("check_pre_context_policy_wiring.py", ()),
+        ("check_tool_injection_defense.py", ()),
+        ("check_architecture_debt_register.py", ()),
         ("harness_maturity_report.py", ("--enforce-l3-critical",)),
         ("phase_v_capability_graph_guard.py", ("--enforce",)),
     ]

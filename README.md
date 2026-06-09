@@ -1,6 +1,6 @@
 # Intergrax
 
-[![Regression gate](https://github.com/jakbuczarnecki/intergrax-ai/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/jakbuczarnecki/intergrax-ai/actions/workflows/unit-tests.yml)
+[![Regression gate](https://github.com/jakbuczarnecki/intergrax/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/jakbuczarnecki/intergrax/actions/workflows/unit-tests.yml)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![Harness AI](https://img.shields.io/badge/Harness%20AI-Agent%20OS-6c5ce7.svg)](#harness-ai--the-core-idea)
 [![Docs](https://img.shields.io/badge/docs-canonical-green.svg)](#documentation-index)
@@ -75,8 +75,8 @@ Python 3.12 · [`uv`](https://github.com/astral-sh/uv) · Git
 ### 1. Install
 
 ```bash
-git clone https://github.com/jakbuczarnecki/intergrax-ai.git
-cd intergrax-ai
+git clone https://github.com/jakbuczarnecki/intergrax.git
+cd intergrax
 uv sync --extra dev
 ```
 
@@ -109,10 +109,10 @@ curl -s "http://127.0.0.1:8090/debug/tasks/{task_id}/trace?include_runtime=true"
 
 | Command | Purpose |
 |---------|---------|
-| `python -m intergrax.scaffold new-agent <name> --capability domain.action` | Create Tier-2 agent skeleton |
-| `python -m intergrax.scaffold new-application <name> --profile lab` | Create Tier-3 host |
-| `python -m intergrax.scaffold new-stack <name>` | Agent + application bundle |
-| `uv run intergrax run <module>:app` | Launch any ASGI application host |
+| `python -m intergrax.scaffold new-agent {name} --capability domain.action` | Create Tier-2 agent skeleton |
+| `python -m intergrax.scaffold new-application {name} --profile lab` | Create Tier-3 host |
+| `python -m intergrax.scaffold new-stack {name}` | Agent + application bundle |
+| `uv run intergrax run {module}:app` | Launch any ASGI application host |
 | `python -m intergrax.debug` | Debug CLI |
 
 **Full workflow:** [Agent Creation Guide](docs/guides/AGENT_CREATION_GUIDE.md) · **Contributing setup:** [CONTRIBUTING.md](CONTRIBUTING.md)
@@ -178,7 +178,7 @@ Two modes on **one codebase**:
 
 | Mode | Purpose | Primary metric |
 |------|---------|----------------|
-| **Laboratory** | Fast hypothesis validation | Idea → first traced run **< 1 hour** |
+| **Laboratory** | Fast hypothesis validation | Idea → first traced run in under **1 hour** |
 | **Production harness** | Governed Agent OS at organizational scale | Stable integration paths + ops SLOs |
 
 New capabilities start in the lab (`lab_application`, pytest, debug API). Capabilities that ship to users graduate through maturity gates. Business agents (Phase K) require **explicit product prioritization** — default harness queue is [gate maintenance](docs/plan/PLATFORM_FOUNDATION.md#61-harness-platform-maintenance-default--band-1).
@@ -278,7 +278,7 @@ Skill        →  composable pack (tool_ids + prompts + policy fragment)
 |-------|--------------|--------|--------------|------|-------------------|
 | **Integrations** | **185** slugs · **30** contract categories (116 STABLE · 69 BETA) | [`intergrax/integrations/`](intergrax/integrations/) | [INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) | [plan/INTEGRATIONS.md](docs/plan/INTEGRATIONS.md) | Per-provider [USAGE.md](docs/architecture/INTEGRATIONS.md#implemented-providers-185) under `intergrax/integrations/providers/` |
 | **Tools** | **190** `tool_id`s · **48** bundles | [`intergrax/tools/`](intergrax/tools/) | [TOOLS.md](docs/architecture/TOOLS.md) | [plan/TOOLS.md](docs/plan/TOOLS.md) | [intergrax/tools/USAGE.md](intergrax/tools/USAGE.md) |
-| **Skills** | **149** `skill_id`s · **41** bundles | [`intergrax/skills/`](intergrax/skills/) | [SKILLS.md](docs/architecture/SKILLS.md) | [plan/SKILLS.md](docs/plan/SKILLS.md) | Per-skill `USAGE.md` under `intergrax/skills/providers/<bundle>/<skill_id>/` |
+| **Skills** | **149** `skill_id`s · **41** bundles | [`intergrax/skills/`](intergrax/skills/) | [SKILLS.md](docs/architecture/SKILLS.md) | [plan/SKILLS.md](docs/plan/SKILLS.md) | Per-skill `USAGE.md` under `intergrax/skills/providers/{bundle}/{skill_id}/` |
 
 **Control plane (profiles, wiring, resolver):** [AGENT_CREATION_GUIDE.md Appendix J](docs/guides/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) · **Extension plugins:** [EXTENSION_AUTHOR_GUIDE.md](docs/guides/EXTENSION_AUTHOR_GUIDE.md)
 
@@ -385,14 +385,14 @@ tests/ · scripts/       # Gate tests and harness CI checks
 
 **AI context:** [llms.txt](llms.txt) · [llms-full.txt](llms-full.txt) · [AGENTS.md](AGENTS.md) · [CONTRIBUTING.md](CONTRIBUTING.md)
 
-**One source of truth per topic.** Platform docs live in [`docs/`](docs/); product and agent docs live under `applications/<product>/` and `agents/<name>/`.
+**One source of truth per topic.** Platform docs live in [`docs/`](docs/); product and agent docs live under `applications/{product}/` and `agents/{name}/`.
 
 ### Canonical map
 
 | Area | Links |
 |------|-------|
 | **Strategy & hub** | [Strategy](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) · [Architecture hub](docs/intergrax_runtime_architecture.md) · [Ideal model](docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) |
-| **Domain canon (19 pairs)** | `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md` — indexed in [hub](docs/intergrax_runtime_architecture.md) |
+| **Domain canon (19 pairs)** | `docs/architecture/{DOMAIN}.md` ↔ `docs/plan/{DOMAIN}.md` — indexed in [hub](docs/intergrax_runtime_architecture.md) |
 | **Execution** | [UAEP / §42](docs/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [Nexus flow](docs/architecture/NEXUS_EXECUTION_FLOW.md) · [Orchestration](docs/architecture/ORCHESTRATION.md) |
 | **Authoring** | [Agent guide](docs/guides/AGENT_CREATION_GUIDE.md) · [Extension guide](docs/guides/EXTENSION_AUTHOR_GUIDE.md) · [applications/USAGE.md](applications/USAGE.md) |
 | **Operations** | [HARNESS_ENVIRONMENT.md](docs/guides/HARNESS_ENVIRONMENT.md) · [infra/README.md](infra/README.md) |
@@ -458,4 +458,4 @@ This repository is currently in private R&D stage. Commercial licensing and part
 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community standards |
 | [CITATION.cff](CITATION.cff) | Citation metadata |
 
-**Maintainer:** Artur Czarnecki · **Repository:** [Intergrax](https://github.com/jakbuczarnecki/intergrax-ai) · **Contact:** jakbu.czarnecki.83@gmail.com
+**Maintainer:** Artur Czarnecki · **Repository:** [Intergrax](https://github.com/jakbuczarnecki/intergrax) · **Contact:** jakbu.czarnecki.83@gmail.com

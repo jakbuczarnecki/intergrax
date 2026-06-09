@@ -414,7 +414,7 @@ Appendices: [`plan/`](plan/)
 | **2as — Reasoning layer depth (COG-DEPTH)** | Planner unification, Prompt Registry on planners, DecisionRecord, failure taxonomy — **no** business agents | **Done** (2026-06-09) — **22/22** | [Phase COG-DEPTH](plan/REASONING_AND_COGNITION.md) · [`architecture/REASONING_AND_COGNITION.md`](architecture/REASONING_AND_COGNITION.md) |
 | **2aw — Tier-3 execution surface parity (H-APP-WIRING)** | Close FLOW-GAP-17–20 / ORCH §59 Tier-3 wiring debt — task control API, async exposure, reference host adoption — **no** Nexus fork | **Done** (2026-06-09) — **6/6** | [Phase H-APP-WIRING](plan/TIER3_APPLICATION_ENVIRONMENT.md) · [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §59 |
 | **2ay — LLM guardrail integrations (M.12 / GR-INT)** | `llm_guardrail` catalog + `LlmGuardrailMiddleware` + assembly/CI + E2E gate + `GUARDRAIL_BLOCKED` observability — **no** business agents | **Done** (2026-06-09) — **14/14 + M-P12.HARD** | [Phase M.12](plan/INTEGRATIONS.md) · [GR-DOC](plan/UNIFIED_EXECUTION_RUNTIME.md) · **§6.1an** · [ADR-GR-001](adr/ADR-GR-001.md) |
-| **2ax — Ideal Harness L3 depth (IDEAL-L3)** | L2→L3 uplift per 32-layer audit — identity, reliability, security, cost, prompts, gates — **no** business agents | **W1 Done** (2026-06-09) — 30/32 L3; P1 incremental | [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md) · **§6.1at** · Band **2ax** |
+| **2ax — Ideal Harness L3 depth (IDEAL-L3)** | L2→L3 uplift per 32-layer audit — identity, reliability, security, cost, prompts, gates — **no** business agents | **W2 Done** (2026-06-09) — **32/32 L3** | [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md) · **§6.1at** · Band **2ax** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 · FLOW-8 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
@@ -599,7 +599,7 @@ Work **one ID per PR**; gate green after each step. Map fixes to Appendix G wher
 
 **Post-remediation (2026-06-06):** **0 Critical** open; tier CI gate green; **23/23 FAUDIT** + follow-up Done.
 
-**Post depth bands (2026-06-09):** MEM-DEPTH, COG-DEPTH, ECP-DEPTH, ORCH-CONFIG closeout complete — Appendix M scorecard refreshed. **IDEAL-L3 W1 (2026-06-09):** P0 depth uplift — 30/32 layers L3 (see [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md)); P1 rows incremental.
+**Post depth bands (2026-06-09):** MEM-DEPTH, COG-DEPTH, ECP-DEPTH, ORCH-CONFIG closeout complete — Appendix M scorecard refreshed. **IDEAL-L3 W2 (2026-06-09):** P0+P1 depth uplift — **32/32 layers L3** (see [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md)).
 
 **Gate evidence (verify step):** `uv run pytest -m gate -q` → **901 passed**; `check_harness_no_getattr.py`, `check_intergrax_no_applications_imports.py`, `check_harness_prompt_golden_catalog.py`, `check_agents_lifecycle_metadata.py` → **OK**.
 
@@ -4048,7 +4048,7 @@ Phase Q used **one Q.* deliverable per PR** → update Appendix C + paydown log.
 
 **Post-remediation (2026-06-06):** **0 Critical** open; tier CI gate green; **23/23 FAUDIT** + follow-up Done.
 
-**Post depth bands (2026-06-09):** MEM-DEPTH, COG-DEPTH, ECP-DEPTH, ORCH-CONFIG closeout complete — Appendix M scorecard refreshed. **IDEAL-L3 W1 (2026-06-09):** P0 depth uplift — 30/32 layers L3 (see [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md)); P1 rows incremental.
+**Post depth bands (2026-06-09):** MEM-DEPTH, COG-DEPTH, ECP-DEPTH, ORCH-CONFIG closeout complete — Appendix M scorecard refreshed. **IDEAL-L3 W2 (2026-06-09):** P0+P1 depth uplift — **32/32 layers L3** (see [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md)).
 
 **Gate evidence (verify step):** `uv run pytest -m gate -q` → **901 passed**; `check_harness_no_getattr.py`, `check_intergrax_no_applications_imports.py`, `check_harness_prompt_golden_catalog.py`, `check_agents_lifecycle_metadata.py` → **OK**.
 
@@ -4788,7 +4788,7 @@ Wave V-REM-5 (eval):        V-REM-A.1  — Done (2026-06-05)
 
 **Post-remediation (2026-06-06):** **0 Critical** open; tier CI gate green; **23/23 FAUDIT** + follow-up Done.
 
-**Post depth bands (2026-06-09):** MEM-DEPTH, COG-DEPTH, ECP-DEPTH, ORCH-CONFIG closeout complete — Appendix M scorecard refreshed. **IDEAL-L3 W1 (2026-06-09):** P0 depth uplift — 30/32 layers L3 (see [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md)); P1 rows incremental.
+**Post depth bands (2026-06-09):** MEM-DEPTH, COG-DEPTH, ECP-DEPTH, ORCH-CONFIG closeout complete — Appendix M scorecard refreshed. **IDEAL-L3 W2 (2026-06-09):** P0+P1 depth uplift — **32/32 layers L3** (see [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md)).
 
 **Gate evidence (verify step):** `uv run pytest -m gate -q` → **901 passed**; `check_harness_no_getattr.py`, `check_intergrax_no_applications_imports.py`, `check_harness_prompt_golden_catalog.py`, `check_agents_lifecycle_metadata.py` → **OK**.
 

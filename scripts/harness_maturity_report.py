@@ -32,13 +32,13 @@ LAYER_SCORECARD: list[dict[str, str | int]] = [
     {"layer": 16, "name": "Context Engineering Layer", "score": "L3"},
     {"layer": 17, "name": "Prompt Engineering and Prompt Registry", "score": "L3"},
     {"layer": 18, "name": "Agent Assembly and Agent Contracts", "score": "L3"},
-    {"layer": 19, "name": "Registry Architecture", "score": "L2"},
+    {"layer": 19, "name": "Registry Architecture", "score": "L3"},
     {"layer": 20, "name": "Capability Graph Architecture", "score": "L3"},
     {"layer": 21, "name": "Observability and Telemetry", "score": "L3"},
     {"layer": 22, "name": "Error Handling and Reliability", "score": "L3"},
     {"layer": 23, "name": "Security and Data Governance", "score": "L3"},
     {"layer": 24, "name": "Cost and Resource Governance", "score": "L3"},
-    {"layer": 25, "name": "Evaluation and Benchmarking", "score": "L2"},
+    {"layer": 25, "name": "Evaluation and Benchmarking", "score": "L3"},
     {"layer": 26, "name": "Testing, CI and Architecture Gates", "score": "L3"},
     {"layer": 27, "name": "Developer Experience, Scaffold and Lab", "score": "L3"},
     {"layer": 28, "name": "Product Environment and Tier-3 Applications", "score": "L3"},
@@ -67,7 +67,7 @@ def main() -> int:
         "layers": LAYER_SCORECARD,
         "l3_layers": _l3_count(),
         "total_layers": len(LAYER_SCORECARD),
-        "ideal_l3_phase": "IDEAL-L3-W1",
+        "ideal_l3_phase": "IDEAL-L3-W2",
     }
 
     if args.json:

@@ -27,6 +27,7 @@ class HarnessRegistrySnapshot:
     policy_bundle: RuntimePolicyBundle | None
     agent_registry: AgentRegistry | None = None
     evaluation_registry: OnlineEvaluationRegistry | None = None
+    explicit_prompt_bindings: dict[str, str] | None = None
 
     def tool_ids(self) -> tuple[str, ...]:
         if self.tool_registry is None:
@@ -52,6 +53,17 @@ class HarnessRegistrySnapshot:
         if self.evaluation_registry is None:
             return ()
         return ("evaluation:runtime_quality",)
+
+    def resolved_prompt_bindings(self) -> dict[str, str]:
+        if self.explicit_prompt_bindings is not None:
+            return dict(self.explicit_prompt_bindings)
+        if self.agent_registry is None:
+            return {}
+        bindings: dict[str, str] = {}
+        for contract in self.agent_registry.list_contracts():
+            if contract.prompt_binding_id:
+                bindings[contract.id] = contract.prompt_binding_id
+        return bindings
 
 
 def resolve_registry_snapshot(

@@ -64,5 +64,13 @@ class AgentContract(BaseModel):
     owner_team: Optional[str] = None
     owner_contact: Optional[str] = None
     runbook_ref: Optional[str] = None
+    prompt_binding_id: Optional[str] = Field(
+        default=None,
+        description="Primary prompt registry id bound to this agent (IDEAL-17.5).",
+    )
+    modality_profile_id: Optional[str] = Field(
+        default=None,
+        description="Optional modality profile id for media/tool plane filtering (IDEAL-18.2).",
+    )
     validation_rules: List[str] = Field(default_factory=list)
     failure_modes: List[str] = Field(default_factory=list)

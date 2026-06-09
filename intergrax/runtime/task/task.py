@@ -10,6 +10,7 @@ from uuid import uuid4
 from pydantic import BaseModel, Field, PrivateAttr, model_validator
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.contracts.partial_result_contract import PartialResultContract
 from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.runtime.task.task_contract import (
     TaskExecutionOptions,
@@ -152,6 +153,7 @@ class TaskResult(BaseModel):
     agent_id: Optional[str] = None
     execution_result: Optional[AgentExecutionResult] = None
     summary: TaskResultSummary = Field(default_factory=TaskResultSummary)
+    partial: PartialResultContract | None = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="before")

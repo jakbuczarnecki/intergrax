@@ -9,6 +9,7 @@ from intergrax.runtime.events.payloads.canonical import (
     ContextAssemblyPayloadV1,
     DecisionPayloadV1,
     GraphNodePayloadV1,
+    DelegationGrantedPayloadV1,
     HandoffPayloadV1,
     HumanPayloadV1,
     InterruptPayloadV1,
@@ -21,6 +22,7 @@ from intergrax.runtime.events.payloads.canonical import (
 )
 
 CANONICAL_PAYLOAD_TYPES: tuple[type[RuntimeEventPayload], ...] = (
+    DelegationGrantedPayloadV1,
     DecisionPayloadV1,
     ToolPayloadV1,
     ValidationPayloadV1,
@@ -42,6 +44,7 @@ __all__ = [
     "ContextAssemblyPayloadV1",
     "DecisionPayloadV1",
     "GraphNodePayloadV1",
+    "DelegationGrantedPayloadV1",
     "HandoffPayloadV1",
     "HumanPayloadV1",
     "InterruptPayloadV1",

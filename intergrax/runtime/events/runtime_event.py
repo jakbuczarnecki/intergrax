@@ -57,6 +57,7 @@ class RuntimeEventType(str, Enum):
     MEMORY_WRITE = "memory_write"
     HANDOFF_INITIATED = "handoff_initiated"
     HANDOFF_COMPLETED = "handoff_completed"
+    DELEGATION_GRANTED = "delegation_granted"
     TRACE_PERSISTED = "trace_persisted"
     TASK_PROGRESS = "task_progress"
     TASK_COMPLETED = "task_completed"
