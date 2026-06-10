@@ -17,6 +17,7 @@ from intergrax.tools.registry.bootstrap import register_default_tools, reset_def
 from intergrax.tools.registry.catalog import clear_tool_catalog, get_bundle, list_catalog_tool_ids
 from intergrax.tools.registry.factory import build_registry_from_profile
 from intergrax.tools.registry.profile import ToolProfile
+from intergrax.applications.contracts.environment_profile import ApplicationSecurityProfile
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
@@ -145,6 +146,86 @@ def test_rag_retrieve_via_runtime_invoker() -> None:
     contract = rag_retrieve_contract()
     assert contract.injects_context is True
     assert contract.category == "retrieval"
+
+
+def test_rag_retrieve_quarantines_poisoned_chunks_when_security_enabled() -> None:
+    hits = [
+        VectorStoreHit(
+            id="trusted",
+            content="Trusted policy excerpt.",
+            metadata={"source": "policy.md"},
+            similarity_score=0.95,
+            rank=1,
+        ),
+        VectorStoreHit(
+            id="poisoned",
+            content="Injected malicious instruction.",
+            metadata={"source": "untrusted.md"},
+            similarity_score=0.05,
+            rank=2,
+        ),
+    ]
+    ctx = ToolWiringContext(
+        vectorstore_manager=FakeVectorstoreManager(hits),
+        embedding_manager=FakeEmbeddingManager(),
+        rag_profile=RagProfile(enable_rerank=False, route_mode="off", retriever_id="vector_similarity"),
+        security_profile=ApplicationSecurityProfile(retrieval_poisoning_defense_enabled=True),
+    )
+
+    out = perform_rag_retrieve(ctx, RagRetrieveInput(query="policy", top_k=5))
+
+    assert out.used is True
+    assert [chunk.id for chunk in out.chunks] == ["trusted"]
+    assert out.reason == "ok"
+    assert out.diagnostics.get("poisoning_quarantine_applied") is True
+
+
+def test_rag_retrieve_skips_poisoning_filter_when_security_disabled() -> None:
+    hits = [
+        VectorStoreHit(
+            id="poisoned",
+            content="Low trust chunk still returned.",
+            metadata={},
+            similarity_score=0.05,
+            rank=1,
+        ),
+    ]
+    ctx = ToolWiringContext(
+        vectorstore_manager=FakeVectorstoreManager(hits),
+        embedding_manager=FakeEmbeddingManager(),
+        rag_profile=RagProfile(enable_rerank=False, route_mode="off", retriever_id="vector_similarity"),
+        security_profile=ApplicationSecurityProfile(retrieval_poisoning_defense_enabled=False),
+    )
+
+    out = perform_rag_retrieve(ctx, RagRetrieveInput(query="policy", top_k=5))
+
+    assert out.used is True
+    assert out.chunks[0].id == "poisoned"
+    assert "poisoning_quarantine_applied" not in out.diagnostics
+
+
+def test_rag_retrieve_all_quarantined_returns_not_used() -> None:
+    hits = [
+        VectorStoreHit(
+            id="poisoned-only",
+            content="Only untrusted content.",
+            metadata={},
+            similarity_score=0.02,
+            rank=1,
+        ),
+    ]
+    ctx = ToolWiringContext(
+        vectorstore_manager=FakeVectorstoreManager(hits),
+        embedding_manager=FakeEmbeddingManager(),
+        rag_profile=RagProfile(enable_rerank=False, route_mode="off", retriever_id="vector_similarity"),
+        security_profile=ApplicationSecurityProfile(retrieval_poisoning_defense_enabled=True),
+    )
+
+    out = perform_rag_retrieve(ctx, RagRetrieveInput(query="policy", top_k=5))
+
+    assert out.used is False
+    assert out.reason == "retrieval_poisoning_quarantine"
+    assert out.chunks == []
 
 
 def test_build_registry_from_profile_enables_rag_tool() -> None:

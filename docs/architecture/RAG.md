@@ -40,7 +40,7 @@ Tier-3 IntegrationProfile + RagProfile
 | Does it **auto-select** parsers, chunkers, retrievers per document? | **No** — Tier-3 policy + optional L4 AHI (deferred). |
 | Short / medium documents? | **Ready** with explicit `RagProfile`. |
 | Multi-GB corpora / book-scale without Tier-3 jobs? | **Not ready** — sync in-memory ingest; hierarchical path not default-wired. |
-| Untrusted surfaces via raw `rag.retrieve`? | **Not ready** — poisoning defense Nexus-only until M-RAG.25. |
+| Untrusted surfaces via raw `rag.retrieve`? | **Ready** when `security_profile.retrieval_poisoning_defense_enabled` on `ToolWiringContext` (M-RAG.25). |
 
 **Remediation:** every audit finding maps 1:1 to [`plan/RAG.md`](../plan/RAG.md) Phase M-RAG-DEPTH (GAP-RAG-01 … GAP-RAG-21 → M-RAG.23 … M-RAG.37).
 
@@ -57,7 +57,7 @@ Tier-3 IntegrationProfile + RagProfile
 | Ingest — very large corpora | **L1.5–L2** | Synchronous in-memory pipeline; no stream ingest or job orchestration in engine |
 | Resilience (retry, fallback, circuit breaker) | **L2** | Embedding retry=2; retriever retry=1; no fallback chain or circuit breaker |
 | Observability | **L2** | `RetrievalTrace`, parser trace, opt-in metrics; no OTel spans on retrieve/ingest hot path |
-| Security (poisoning) | **L2.5** | Enforced on Nexus `RagStep`; **not** on direct `rag.retrieve` tool path |
+| Security (poisoning) | **L3** | Nexus `RagStep` + catalog `rag.retrieve` when `security_profile` wired (M-RAG.25) |
 | Citations | **L2** | Metadata in chunks + composer; no formal `Citation` on `RetrievalResult` |
 | Vector backends (prod SLO) | **L2–L2.5** | Catalog **stable:** `qdrant`, `pgvector`, `chroma`, `weaviate`, `lancedb`, `typesense`; **beta:** `pinecone`, `milvus`, `vespa`, `inmemory`; no RAG soak gate (GAP-RAG-07, M-RAG.30) |
 | Multi-tenant isolation | **L2** | `MetadataFilter` + in-memory enforce; prod depends on backend namespace design |
@@ -78,7 +78,7 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-01 | niedoróbka | ~~`RagProfile.query_expansion` / `INTERGRAX_RAG_QUERY_EXPANSION` not wired~~ — **closed M-RAG.23**: `query_expander_from_profile()` in bootstrap; deep tier → `multiquery` when `query_expansion != off` | **P0** | M-RAG.23 **Done** | 14.3 |
 | GAP-RAG-02 | niedoróbka | `DualIndexStrategy` + `HierarchicalRetriever` implemented but `toc_vector_store` not passed in default bootstrap | **P1** | M-RAG.24 | 14.4 |
 | GAP-RAG-03 | niedoróbka | `IngestPipeline` bypasses `IndexingManager` / `DualIndexStrategy` — book-scale TOC index never built on default ingest | **P1** | M-RAG.24 | 14.4 |
-| GAP-RAG-04 | niegotowość | Retrieval poisoning defense only on Nexus `RagStep`; `perform_rag_retrieve` (catalog) has no filter | **P1** | M-RAG.25 | 14.5 |
+| GAP-RAG-04 | niegotowość | ~~Catalog `perform_rag_retrieve` had no poisoning filter~~ — **closed M-RAG.25**: mirrors `rag_step` when `security_profile.retrieval_poisoning_defense_enabled` | **P1** | M-RAG.25 **Done** | 14.5 |
 | GAP-RAG-05 | niegotowość | No stream / async ingest — `IngestPipeline` loads full parsed document into RAM before chunking | **P1** | M-RAG.26 | 14.6 |
 | GAP-RAG-06 | niegotowość | No Tier-0 job contract for multi-GB reindex (orchestrator slugs exist in integrations only) | **P1** | M-RAG.26 | 14.6 |
 | GAP-RAG-07 | niedoróbka | Vector-store catalog: `qdrant`/`pgvector`/`chroma`/`weaviate` promoted **stable** in manifests; `pinecone`/`milvus`/`vespa`/`inmemory` remain **beta**; no soak gate or ops runbook for prod SLO | **P1** | M-RAG.30 | — |
@@ -120,7 +120,7 @@ RETRIEVE (rag.retrieve / RetrievalService)
         → RetrieverEngine (registry) → optional RerankerManager
         → score_threshold filter → RetrievalResult + RetrievalTrace
         → format_rag_context_text (citations via chunk metadata: source, page, doc_id)
-        [GAP-RAG-04: poisoning filter Nexus-only until M-RAG.25]
+        [poisoning filter: Nexus RagStep + catalog when security_profile enabled — M-RAG.25]
 ```
 
 **Wiring entry:** `create_default_rag_stack()` → `RagStack` on `ToolWiringContext` / `RuntimeConfig` via `rag_runtime_bridge.py`.
@@ -247,7 +247,7 @@ Retrieve and ingest accept scope fields (`tenant_id`, `session_id`, `user_id`, `
 |---------|----------|-------|
 | Retrieval poisoning (trust score / quarantine) | `runtime/nexus/runtime_steps/rag_step.py` + `retrieval_security_wiring.py` | Nexus context build when `security_profile.retrieval_poisoning_defense_enabled` |
 | Tool policy / risk levels | `rag.purge_collection` = CRITICAL | Catalog governance |
-| Direct `rag.retrieve` | `tools/providers/rag/service.py` | **No poisoning filter** (GAP-RAG-04) — M-RAG.25 |
+| Direct `rag.retrieve` | `tools/providers/rag/service.py` | Poisoning filter when `ToolWiringContext.security_profile` enabled (M-RAG.25) |
 
 ---
 
@@ -293,7 +293,7 @@ Automatic tier routing (`QueryRouter`) covers **cost/latency tiers only**, not M
 1. **`IntegrationProfile`:** non-inmemory `vector_store`; `rerank_provider` when quality-critical; `graph_store=neo4j` if GraphRAG enabled.
 2. **`RagProfile`:** explicit chunking per corpus type; `route_mode=auto`; set `query_expansion=off` to use `deep_retriever_id` (e.g. `fusion`) instead of `multiquery`.
 3. **Ingest:** sync `IngestPipeline` only for files below Tier-3 size threshold; schedule async reindex via orchestrator after M-RAG.26.
-4. **Security:** route retrieval through Nexus `ContextBuilder` / `RagStep` with poisoning enabled; restrict raw `rag.retrieve` on untrusted surfaces.
+4. **Security:** enable `retrieval_poisoning_defense_enabled` on `ApplicationSecurityProfile` so Nexus `RagStep` and catalog `rag.retrieve` share the same filter.
 5. **Observability:** enable RAG metrics; adopt OTel spans after M-RAG.27.
 6. **Isolation:** validate tenant namespace per chosen vector backend (M-RAG.35).
 
@@ -333,7 +333,7 @@ Code-backed audit (`guides/audit/RAG.md`, mode `audit-only`). Key confirmations:
 | Golden + tools + bridge gate | **24 passed** | `test_golden_retrieval_gate.py`, `tests/unit/tools/providers/rag/`, `test_rag_runtime_bridge.py` |
 | `query_expansion` wired | **Closed M-RAG.23** | `effective_retriever(deep)` + `query_expander_from_profile()` in `retriever_bootstrap.py` |
 | DualIndex not on default ingest | **Confirmed open** | `ingest_pipeline.py` → `vectorstore.add_documents`; bootstrap omits `toc_vector_store` |
-| Catalog poisoning gap | **Confirmed open** | `perform_rag_retrieve` has no `filter_retrieved_chunks_for_poisoning` (Nexus path in `rag_step.py` only) |
+| Catalog poisoning filter | **Closed M-RAG.25** | `perform_rag_retrieve` calls `filter_retrieved_chunks_for_poisoning` when `security_profile` enabled |
 | Agents bypass vectorstore | **No violation** | No `vectorstore.query` in `agents/` |
 | Vector manifest stability | **Partial** | `integrations/providers/vector_store/*/manifest.py` — stable vs beta per GAP-RAG-07 row above |
 
