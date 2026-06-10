@@ -6,19 +6,98 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
+**Active queue (2026-06-10):** [§6.1e](#61e-harness-implementation-queue--tool-engine-active) · Phase **TOOL-ENG** — tool engine hardening from full-stack audit. Catalog expansion (Phase O / T-EXPAND) is **closed**; default harness work = **engine**, not new `tool_id` rows.
+
+---
+
+## Phase TOOL-ENG — Tool engine hardening (2026-06-10 audit)
+
+**Status:** **Active** — **0/10** deliverables Done  
+**Architecture canon:** [`architecture/TOOLS.md`](../architecture/TOOLS.md) — [Tool engine production posture](../architecture/TOOLS.md#tool-engine-production-posture-2026-06-10), [Engine gap register](../architecture/TOOLS.md#engine-gap-register-canon)  
+**Audit basis:** Full-stack tool layer audit 2026-06-10 (Tier-0 catalog + Tier-1 selection/invoke/verify)  
+**Priority ladder:** **Band 2ba** — supersedes ad-hoc tool engine fixes until TOOL-ENG P0 closed  
+**ADR:** **Required** for TOOL-ENG-1, TOOL-ENG-2, TOOL-ENG-6 before merge (§42.12 gateway + dispatch semantics)
+
+**Problem statement:** Tier-0 catalog is production-grade (190 tools, contracts, MCP). Tier-1 **agent tool engine** is MVP+: single-pass `ToolsStep`, partial §42.12 gateway, `tool_ids` plan without per-id dispatch, planner exports full registry without router, `tool_scope_policy` not wired to invoker.
+
+**Target:** Production-parity tool engine — correct dispatch, complete gateway, constrained selection at scale, optional ReAct loop, hard governance.
+
+### TOOL-ENG — Master register
+
+| ID | Area | Deliverable | Status | Priority | Modules | Acceptance |
+|----|------|-------------|--------|----------|---------|------------|
+| TOOL-ENG-1 | Dispatch | **Per-`tool_id` catalog dispatch** in `ToolRuntime.invoke` — invoke `RuntimeToolInvoker` for ids not handled by Rag/Websearch shims | **Planned** | **P0** | `tool_runtime.py`, `catalog_dispatch.py` (new) | `test_tool_runtime_catalog_dispatch.py`; `jira.*` in plan executes without `use_tools` |
+| TOOL-ENG-2 | Gateway | **Full-catalog `ToolRequest`** — `RuntimeToolGateway` routes any registered `tool_id` → invoker (not `unknown_capability_tool`) | **Planned** | **P0** | `tool_gateway.py`, `uaep_tool_gateway.py` | UAEP `ctx.invoke_tool(jira.get_issue)` integration test |
+| TOOL-ENG-3 | Policy | **Wire `tool_scope_policy`** from `RuntimeConfig` into `RuntimeToolInvoker` at `RuntimeContext.build()` | **Planned** | **P0** | `runtime_context.py` | `test_runtime_context_scope_policy_wiring.py`; denied tool raises on `ToolsStep` path |
+| TOOL-ENG-4 | Selection | **Plan constraints → planner** — pass `EnginePlan.tool_ids` / `ToolInvocationPlan.tool_ids` as allow-list to `ToolPlanningService` | **Planned** | P1 | `tools_step.py`, `tool_planning_service.py` | Planner schema ⊆ plan constraints; gate test |
+| TOOL-ENG-5 | Selection | **`ToolSelectionStrategy` protocol** — static allow-list \| skill-pack \| retrieval top-k \| full-catalog; default static | **Planned** | P1 | `tool_selection.py` (new), `tool_planning_service.py` | Protocol + static impl; lab host uses skill-pack strategy |
+| TOOL-ENG-6 | Loop | **Tool loop step** — `max_tool_iterations`, native `role=tool` messages, stop on empty `tool_calls` or budget | **Planned** | P1 | `tool_loop_step.py` (new), `tools_step.py` | Integration test: 2-iteration ReAct with mock LLM |
+| TOOL-ENG-7 | Verify | **Post-tool verify hook** — `risk_level >= HIGH` → critic middleware or HITL gate | **Planned** | P2 | `tool_verify_hooks.py`, `middleware` | HIGH tool blocked without approval in test profile |
+| TOOL-ENG-8 | Governance | **`tools_mode=required` hard fail** — raise `RunError` / fail run when zero tool calls | **Planned** | P2 | `tools_step.py` | `test_tools_mode_required_fails.py` |
+| TOOL-ENG-9 | Performance | **Parallel tool invoke** — concurrent execution for `side_effects=False` calls in one plan batch (bounded) | **Planned** | P2 | `tools_step.py`, `invoker.py` | Unit test: 3 read-only tools complete < sum(serial) |
+| TOOL-ENG-10 | AHI | **Dynamic tool subset hook** — adaptive harness selects planner schema subset | **Planned** | P3 | `ADAPTIVE_HARNESS_INTELLIGENCE` integration | Hook test with fixture profile |
+
+**Delivery rule:** One **TOOL-ENG-\*** ID per PR → update this table + [§6.1e](#61e-harness-implementation-queue--tool-engine-active) + architecture gap register → `pytest -m gate` + new acceptance tests green.
+
+**Suggested PR order:** TOOL-ENG-3 → TOOL-ENG-1 → TOOL-ENG-2 → TOOL-ENG-4 → TOOL-ENG-5 → TOOL-ENG-6 → TOOL-ENG-8 → TOOL-ENG-7 → TOOL-ENG-9 → TOOL-ENG-10.
+
+**Explicitly excluded:** New catalog bundles (§6.3), business agent tools (Phase K), replacing `ToolContract` / provider handlers.
+
+### TOOL-ENG — Production readiness targets
+
+| Metric | Baseline (2026-06-10) | TOOL-ENG closeout target |
+|--------|----------------------|--------------------------|
+| Arbitrary `tool_id` via `ToolRequest` | ~20 runtime-bound + capability | Any registered id |
+| `EnginePlan.tool_ids` execution | rag/web only | All listed ids |
+| Planner schema vs `allowed_tools` | Full registry | Filtered (strategy) |
+| Tool loop iterations | 1 | Configurable `max_tool_iterations` |
+| `tools_mode=required` | Warning trace | Run failure |
+| Invoker scope enforcement | Tests only | Production wiring |
+| E2E multi-tool loop test | None | `test_tool_loop_integration.py` |
+
+### TOOL-ENG — Paydown log
+
+| Date | ID | Summary |
+|------|-----|---------|
+| 2026-06-10 | TOOL-ENG (register) | Full-stack audit; architecture + plan pair updated; Band 2ba queue opened |
+
+---
+
+### 6.1e Harness implementation queue — tool engine (active)
+
+**Purpose:** Single ordered list for **Phase TOOL-ENG** (Band 2ba). **Opened 2026-06-10.**
+
+| Order | ID | Type | Status | Deliverable | Acceptance |
+|-------|-----|------|--------|-------------|------------|
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
+| 1 | **TOOL-ENG-3** | Code | **Planned** | `tool_scope_policy` → invoker wiring | scope deny on ToolsStep path |
+| 2 | **TOOL-ENG-1** | Code + ADR | **Planned** | Per-`tool_id` dispatch in `ToolRuntime` | catalog dispatch tests |
+| 3 | **TOOL-ENG-2** | Code + ADR | **Planned** | Full-catalog gateway | UAEP jira tool integration test |
+| 4 | **TOOL-ENG-4** | Code | **Planned** | Plan constraints → planner | constrained schema gate |
+| 5 | **TOOL-ENG-5** | Code | **Planned** | `ToolSelectionStrategy` | protocol + static impl |
+| 6 | **TOOL-ENG-6** | Code + ADR | **Planned** | Tool loop step | 2-iteration integration test |
+| 7 | **TOOL-ENG-8** | Code | **Planned** | `tools_mode=required` fail | unit test |
+| 8 | **TOOL-ENG-7** | Code | **Planned** | Post-tool verify HIGH+ | middleware test |
+| 9 | **TOOL-ENG-9** | Code | **Planned** | Parallel read-only invoke | unit test |
+| 10 | **TOOL-ENG-10** | Code | **Planned** | AHI tool subset hook | hook fixture test |
+
+**Explicitly excluded:** K.1, K.2, new product catalog tools — [§6.3 product backlog](../plan/PLATFORM_FOUNDATION.md).
+
 ---
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.6 · baseline **32/32 L3**  
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
-**Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
+**Status:** **Done** (catalog layer) — engine gaps tracked in **Phase TOOL-ENG** (2026-06-10)
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
 | AUDIT-IDEAL-11.1 | §11 Tools | Sandboxed execution for code / side-effectful tools | P1 | **Done** |
 | AUDIT-IDEAL-11.2 | §11 Tools | MCP / function-schema export for shipped tool catalog | P2 | **Done** |
 | AUDIT-IDEAL-11.3 | §11 Tools | Oversized-tool lint enforcement in CI (adoption sweep) | P2 | **Done** |
+
+**Follow-on (engine, not AUDIT-IDEAL id):** TOOL-ENG-1–10 — see [Phase TOOL-ENG](#phase-tool-eng--tool-engine-hardening-2026-06-10-audit).
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 
@@ -136,9 +215,10 @@
 
 | Pipeline phase | Canon section | Runtime modules |
 |----------------|---------------|-----------------|
-| Selection | TOOLS §Tool execution pipeline · FLOW §15 | `CatalogToolPlanner`, `ToolAccessPolicy`, `tool_policy_resolution.py` |
-| Invocation | TOOLS §Tool execution pipeline · UAEP §42.12 | `ToolRuntime`, `RuntimeToolInvoker`, `tool_gateway.py` |
+| Selection | TOOLS §Tool execution pipeline · [Tool selection](../architecture/TOOLS.md#tool-selection--strategies-and-layers) · FLOW §15 | `CatalogToolPlanner`, `ToolAccessPolicy`, `tool_policy_resolution.py` |
+| Invocation | TOOLS §Tool execution pipeline · [§42.12 gateway](../architecture/TOOLS.md#4212-gateway-surface-toolrequest) · [tool_ids dispatch](../architecture/TOOLS.md#tool_ids-dispatch-semantics-actual) | `ToolRuntime`, `RuntimeToolInvoker`, `tool_gateway.py` |
 | Logging | TOOLS §Tool execution pipeline · FLOW §17 · OBS | `trace_event`, `RuntimeEvent` `TOOL_*`, `ToolsStep` |
+| Engine gaps | TOOLS §[Engine gap register](../architecture/TOOLS.md#engine-gap-register-canon) | Phase **TOOL-ENG** master register |
 
 ### TOOL-ENG-DOC — Paydown log
 
@@ -489,31 +569,46 @@ Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · [`architecture/CRITIC_V
 Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergrax/tools/providers/{catalog,agent,skill_tool,ltm,context_tool,http}/`
 
 
-**Problem:** Two parallel mechanisms — boolean plan flags dispatching pipeline steps vs `ToolRegistry` for function tools.
+**Problem (Phase O):** Two parallel mechanisms — boolean plan flags dispatching pipeline steps vs `ToolRegistry` for function tools.
 
-**Target:** One registry, one invoker, one policy surface.
+**Phase O outcome:** Unified **contracts** (`tool_ids` on plans, catalog shims for rag/websearch). **Phase TOOL-ENG** closes runtime **dispatch** and **gateway** gaps.
+
+### Dispatch state — actual vs target
 
 ```text
-BEFORE (legacy):
-  plan.use_rag=True        → RagStep (direct)
-  plan.use_websearch=True  → WebsearchStep (direct)
-  plan.use_tools=True      → ToolsStep → ToolRegistry
+LEGACY (deprecated, still mapped):
+  plan.use_rag=True        → RagStep → catalog_context → rag.retrieve
+  plan.use_websearch=True  → WebsearchStep → catalog_context → websearch.query
+  plan.use_tools=True      → ToolsStep → ToolPlanningService → RuntimeToolInvoker
 
-AFTER (canonical):
-  plan.tool_ids=["rag.retrieve", "websearch.query", "jira.search_tasks"]
-      → ToolRuntime.invoke_request (per id)
-      → RuntimeToolInvoker → handler
-      → integration / RAG module
+ACTUAL (2026-06-10):
+  plan.tool_ids=["rag.retrieve", "websearch.query"]
+      → normalized() sets use_rag / use_websearch → pipeline steps
+
+  plan.tool_ids=["jira.search_tasks", "database.query"]
+      → stored on plan only — NOT executed unless use_tools=True
+      → use_tools=True → ToolsStep re-plans from user message (ignores tool_ids constraint)
+
+  ctx.invoke_tool(ToolRequest(tool_name="jira.get_issue"))
+      → BoundToolGateway → RuntimeToolGateway → unknown_capability_tool (FAILED)
+
+TARGET (Phase TOOL-ENG):
+  plan.tool_ids=[...]  → per-id RuntimeToolInvoker (TOOL-ENG-1)
+  ToolRequest(tool_name=<any registered tool_id>) → invoker (TOOL-ENG-2)
+  ToolsStep planner schema ⊆ allowed_tools + plan constraints (TOOL-ENG-4, TOOL-ENG-5)
+  Optional multi-iteration tool loop (TOOL-ENG-6)
 ```
 
-**Compatibility (O.5a):** `ToolInvocationPlan.from_legacy(use_rag=…)` maps booleans to default tool_ids. Emit deprecation trace when legacy fields used.
+**Compatibility (O.5a / LEG):** `ToolInvocationPlan.from_legacy(use_rag=…)` maps booleans to default tool_ids. Deprecation trace when legacy-only booleans used.
 
-**Context injection:** `rag.retrieve` and `websearch.query` set `injects_context=true`; invoker callback or Nexus hook merges bounded output into prompt assembly (§22.1).
+**Context injection:** `rag.retrieve` and `websearch.query` set `injects_context=true`; pipeline merges via `catalog_context` + `ToolsStep` system inject (§22.1).
 
-**Out of scope for Phase O:**
+**Configuration reference:** [`architecture/TOOLS.md`](../architecture/TOOLS.md) — [Runtime configuration reference](../architecture/TOOLS.md#runtime-configuration-reference), [Multi-tool execution](../architecture/TOOLS.md#multi-tool-execution-semantics), [§42.12 gateway](../architecture/TOOLS.md#4212-gateway-surface-toolrequest).
 
-- Domain-specific tools inside `agents/` (stay Tier-2; register via `ToolProvider` if reusable)
-- Replacing `ToolsAgent` planner — it remains the LLM loop over `ToolRegistry`
-- New integration categories (still Phase M / §5.2.4)
+**Out of scope (TOOL-ENG):**
+
+- Domain-specific tools inside `agents/` (Tier-2; register via `ToolProvider` if reusable)
+- New integration categories (Phase M)
+- Product-only tool packs (§6.3 / Phase K)
 
 ---
