@@ -82,8 +82,8 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-05 | niegotowość | ~~Sync ingest loads full document into RAM with no size guard~~ — **closed M-RAG.26**: `sync_ingest_max_bytes` rejects oversized sync path; stream shard ingest remains workflow worker | **P1** | M-RAG.26 **Done** | 14.6 |
 | GAP-RAG-06 | niegotowość | ~~No Tier-0 async ingest job contract~~ — **closed M-RAG.26**: `rag.schedule_ingest_job` + idempotent `workflow_orchestrator` trigger | **P1** | M-RAG.26 **Done** | 14.6 |
 | GAP-RAG-07 | niedoróbka | ~~No soak gate or ops runbook~~ — **closed M-RAG.30**: `prod_slo.py` soak contract; gate unit tests; integration soak `-m vectorstore_soak`; INTEGRATIONS runbook; `pinecone`/`milvus`/`vespa` remain **beta** until ops soak passes | **P1** | M-RAG.30 **Done** | — |
-| GAP-RAG-08 | niedoróbka | No OpenTelemetry spans on `RetrievalService.retrieve` / `IngestPipeline.run` hot path | **P2** | M-RAG.27 | 14.7 |
-| GAP-RAG-09 | niska jakość | RAG metrics opt-in only (`INTERGRAX_RAG_METRICS_ENABLED`); not on default observability spine | **P2** | M-RAG.27 | 14.7 |
+| GAP-RAG-08 | niedoróbka | ~~No OpenTelemetry spans on retrieve/ingest hot path~~ — **closed M-RAG.27**: `rag_spans.py` + `check_rag_otel_span_registry.py` | **P2** | M-RAG.27 **Done** | 14.7 |
+| GAP-RAG-09 | niska jakość | RAG aggregated metrics remain opt-in (`INTERGRAX_RAG_METRICS_ENABLED`); OTel spans on default spine (`INTERGRAX_RAG_OTEL_SPANS_ENABLED`, default on) — documented M-RAG.27 | **P2** | M-RAG.27 **Done** | 14.7 |
 | GAP-RAG-10 | niedoróbka | `RetrieverEngine` raises after 1 retry — no retriever fallback chain (`fusion` → `hybrid` → `vector`) | **P2** | M-RAG.28 | — |
 | GAP-RAG-11 | niska jakość | No structured retrieval error taxonomy (retryable vs fatal); no circuit breaker on vector backend query | **P2** | M-RAG.28 | — |
 | GAP-RAG-12 | niska jakość | Asymmetric resilience: `EmbeddingEngine` max_retries=2 vs `RetrieverEngine` max_retries=1 | **P2** | M-RAG.28 | — |
@@ -259,10 +259,12 @@ Retrieve and ingest accept scope fields (`tenant_id`, `session_id`, `user_id`, `
 | Tool diagnostics | `RagRetrieveOutput.diagnostics` | — |
 | Parser ingest | `parser_trace` metadata; export Langfuse/Sentry | — |
 | Nexus summary | `RagSummaryDiagV1` (PII-safe) | — |
-| Aggregated metrics | `INTERGRAX_RAG_METRICS_ENABLED` → collector + runtime plugin | Opt-in only (GAP-RAG-09) |
-| OpenTelemetry spans | — | Missing (GAP-RAG-08) — M-RAG.27 |
+| Aggregated metrics | `INTERGRAX_RAG_METRICS_ENABLED` → collector + runtime plugin | Opt-in by design (GAP-RAG-09 documented) |
+| OpenTelemetry spans | `tracking/rag_spans.py` on `RetrievalService` + `IngestPipeline` stages | Default on; disable `INTERGRAX_RAG_OTEL_SPANS_ENABLED=false` |
 
 Enable metrics: `INTERGRAX_RAG_METRICS_ENABLED=true` or `register_rag_observability_plugin(plugins)` from `tracking/observability_bridge.py`.
+
+OTel span names (tracer `intergrax.rag`): `rag.retrieve`, `rag.retrieve.single_pass`, `rag.ingest`, `rag.ingest.load`, `rag.ingest.chunk`, `rag.ingest.index`, `rag.ingest.graph_index`. Gate: `scripts/check_rag_otel_span_registry.py` (wired in `check_observability_gates.py`).
 
 ---
 
@@ -294,7 +296,7 @@ Automatic tier routing (`QueryRouter`) covers **cost/latency tiers only**, not M
 2. **`RagProfile`:** explicit chunking per corpus type; `route_mode=auto`; set `query_expansion=off` to use `deep_retriever_id` (e.g. `fusion`) instead of `multiquery`.
 3. **Ingest:** sync `rag.ingest_document` only below `sync_ingest_max_bytes`; oversized sources → `rag.schedule_ingest_job` with configured `async_ingest_workflow_id`.
 4. **Security:** enable `retrieval_poisoning_defense_enabled` on `ApplicationSecurityProfile` so Nexus `RagStep` and catalog `rag.retrieve` share the same filter.
-5. **Observability:** enable RAG metrics; adopt OTel spans after M-RAG.27.
+5. **Observability:** enable RAG metrics (`INTERGRAX_RAG_METRICS_ENABLED`); OTel spans on by default — disable only when needed.
 6. **Isolation:** run gate `test_vectorstore_cross_tenant_isolation.py`; validate tenant namespace per chosen vector backend in ops (M-RAG.35).
 
 ---

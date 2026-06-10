@@ -21,7 +21,7 @@
 | AUDIT-IDEAL-14.4 | §14 RAG | Dual-index + hierarchical retriever default bootstrap | P1 | **Done** | M-RAG.24 |
 | AUDIT-IDEAL-14.5 | §14 RAG | Retrieval poisoning defense on `rag.retrieve` catalog path | P1 | **Done** | M-RAG.25 |
 | AUDIT-IDEAL-14.6 | §14 RAG | Large-corpus async ingest (stream / job orchestration) | P1 | **Done** | M-RAG.26 |
-| AUDIT-IDEAL-14.7 | §14 RAG | OpenTelemetry spans on RAG retrieve + ingest hot path | P2 | **Planned** | M-RAG.27 |
+| AUDIT-IDEAL-14.7 | §14 RAG | OpenTelemetry spans on RAG retrieve + ingest hot path | P2 | **Done** | M-RAG.27 |
 
 **Note:** AUDIT-IDEAL-14.2 (retrieval poisoning on product hosts) is owned by [`plan/MEMORY.md`](MEMORY.md) + UAEP security wiring — Nexus `RagStep` path.
 
@@ -48,8 +48,8 @@ Every finding in [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth 
 | GAP-RAG-07 | niegotowość | M-RAG.30 | 2 |
 | GAP-RAG-18 | niegotowość | M-RAG.33 | 2 |
 | GAP-RAG-20 | niegotowość | M-RAG.35 | 2 |
-| GAP-RAG-08 | niedoróbka | M-RAG.27 | 3 |
-| GAP-RAG-09 | niska jakość | M-RAG.27 | 3 |
+| GAP-RAG-08 | niedoróbka | M-RAG.27 **Done** | 3 |
+| GAP-RAG-09 | niska jakość | M-RAG.27 **Done** (metrics opt-in documented; spans on spine) | 3 |
 | GAP-RAG-10 | niedoróbka | M-RAG.28 | 3 |
 | GAP-RAG-11 | niska jakość | M-RAG.28 | 3 |
 | GAP-RAG-12 | niska jakość | M-RAG.28 | 3 |
@@ -195,7 +195,7 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | 2 | M-RAG.24 | Bootstrap `DualIndexStrategy` + `HierarchicalRetriever` + ingest routing when profile selects hierarchical | **P1** | **Done** | 02, 03 | `test_hierarchical_dual_index_wiring.py`; AUDIT-IDEAL-14.4 |
 | 3 | M-RAG.25 | Optional poisoning filter on `perform_rag_retrieve` behind `security_profile` | **P1** | **Done** | 04 | Unit test mirrors `rag_step` filter; AUDIT-IDEAL-14.5 |
 | 4 | M-RAG.26 | Async ingest job contract — batch/stream shards via `workflow_orchestrator` | **P1** | **Done** | 05, 06 | `rag.schedule_ingest_job` + sync size guard; AUDIT-IDEAL-14.6 |
-| 5 | M-RAG.27 | OTel spans on `RetrievalService` + `IngestPipeline`; observability gate script | **P2** | **Planned** | 08, 09 | Span names in `check_observability_gates.py`; AUDIT-IDEAL-14.7 |
+| 5 | M-RAG.27 | OTel spans on `RetrievalService` + `IngestPipeline`; observability gate script | **P2** | **Done** | 08, 09 | `rag_spans.py` + `check_rag_otel_span_registry.py`; AUDIT-IDEAL-14.7 |
 | 6 | M-RAG.28 | Retriever fallback chain; structured errors; retry alignment; optional circuit breaker | **P2** | **Planned** | 10, 11, 12 | Degrade `fusion` → `hybrid` → `vector_similarity` with trace reason |
 | 7 | M-RAG.29 | Formal `Citation` model on `RetrievalResult` + `rag.retrieve` output | **P2** | **Planned** | 13 | Gate test extends citation preservation to engine output |
 | 8 | M-RAG.30 | Vector-store prod SLO — soak gate for stable slugs; promote `pinecone`/`milvus`/`vespa` from beta when soak passes | **P1** | **Done** | 07 | `test_vectorstore_prod_slo_soak.py` + integration soak; INTEGRATIONS runbook |
@@ -224,6 +224,7 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | 2026-06-10 | M-RAG.30 | Vector-store prod SLO soak contract + gate tests; INTEGRATIONS runbook; stable vs beta promotion policy |
 | 2026-06-10 | M-RAG.33 | `production_graph_rag_profile()` + product host wiring; harness `production_rag_profile()` documented in-memory only |
 | 2026-06-10 | M-RAG.35 | `tenant_isolation_contract.py`; gate tests for inmemory/pgvector/weaviate/qdrant |
+| 2026-06-10 | M-RAG.27 | `rag_spans.py` OTel on retrieve + ingest; `check_rag_otel_span_registry.py` in observability gates |
 
 ---
 
@@ -242,7 +243,7 @@ Ordered queue for RAG domain work. **Active:** M-RAG-DEPTH (15 items). **Closed:
 | 5 | **M-RAG.30** | 2 | **P1** | Vector-store soak gate + beta promotion (`pinecone`, `milvus`, `vespa`) | 07 | **Done** |
 | 6 | **M-RAG.33** | 2 | **P1** | `production_graph_rag_profile()` (neo4j required); harness preset documented | 18 | **Done** |
 | 7 | **M-RAG.35** | 2 | **P1** | Cross-backend tenant isolation contract tests | 20 | **Done** |
-| 8 | **M-RAG.27** | 3 | **P2** | OTel spans on retrieve + ingest; observability gate | 08, 09 | **Planned** |
+| 8 | **M-RAG.27** | 3 | **P2** | OTel spans on retrieve + ingest; observability gate | 08, 09 | **Done** |
 | 9 | **M-RAG.28** | 3 | **P2** | Retriever fallback chain; structured errors; retry alignment | 10, 11, 12 | **Planned** |
 | 10 | **M-RAG.29** | 3 | **P2** | Formal `Citation` on `RetrievalResult` + `rag.retrieve` output | 13 | **Planned** |
 | 11 | **M-RAG.31** | 3 | **P2** | `embedding_model_version` mismatch policy | 14 | **Planned** |
@@ -259,7 +260,7 @@ Ordered queue for RAG domain work. **Active:** M-RAG-DEPTH (15 items). **Closed:
 | AUDIT-IDEAL-14.4 | Dual-index + hierarchical bootstrap | P1 | M-RAG.24 | **Done** |
 | AUDIT-IDEAL-14.5 | Catalog poisoning defense | P1 | M-RAG.25 | **Done** |
 | AUDIT-IDEAL-14.6 | Large-corpus async ingest | P1 | M-RAG.26 | **Done** |
-| AUDIT-IDEAL-14.7 | OTel spans retrieve + ingest | P2 | M-RAG.27 | **Planned** |
+| AUDIT-IDEAL-14.7 | OTel spans retrieve + ingest | P2 | M-RAG.27 | **Done** |
 
 ### Closed — Phase M-RAG (M-RAG.1–22, except M-RAG.6 Partial)
 
@@ -310,4 +311,4 @@ Ordered queue for RAG domain work. **Active:** M-RAG-DEPTH (15 items). **Closed:
 
 ## Suggested first PR
 
-**M-RAG.27** (Wave 3) — OTel spans on RAG retrieve + ingest hot path.
+**M-RAG.28** (Wave 3) — retriever fallback chain + structured retrieval errors.
