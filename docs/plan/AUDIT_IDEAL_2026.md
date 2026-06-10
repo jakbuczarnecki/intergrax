@@ -6,7 +6,7 @@
 **Baseline:** **32/32 L3** (`scripts/harness_maturity_report.py`, IDEAL-L3 W2 Done)  
 **Hub:** [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) · Band **2az** · queue **§6.1au**  
 **Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](../guides/ARCHITECTURE_DEBT_REGISTER.md)  
-**Status:** **W3 P2 in progress** (2026-06-09) — **70/80 Done** · **4 Deferred §6.3** · **6 Planned**
+**Status:** **W3 P2 complete** (2026-06-09) — **72/80 Done** · **4 Deferred §6.3** · **4 Planned (P3)**
 
 > **Scope:** Close gaps between **L3 Production Harness OS** and **full ideal architecture** (modular, elastic, complete). Harness infrastructure only unless row is explicitly **Deferred §6.3** (product).
 
@@ -39,7 +39,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-2.1 | Tier boundaries | 2 | Continuous tier-boundary gate maintenance (no drift) | P3 | `PLATFORM_FOUNDATION` | **Done** (gates exist) |
 | AUDIT-IDEAL-3.1 | Task intake | 3 | Canonical `TaskEnvelope` type consolidation (`Task` + `RuntimeRequest` alias) | P1 | `ORCHESTRATION` · `TIER3` | **Done** |
 | AUDIT-IDEAL-3.2 | Task intake | 3 | Product host intake parity (streaming + durable async index default) | P2 | `TIER3_APPLICATION_ENVIRONMENT` | **Done** |
-| AUDIT-IDEAL-4.1 | Identity & trust | 4 | Cryptographic signing / audit-protect for critical actions | P2 | `UNIFIED_EXECUTION_RUNTIME` | Planned |
+| AUDIT-IDEAL-4.1 | Identity & trust | 4 | Cryptographic signing / audit-protect for critical actions | P2 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
 | AUDIT-IDEAL-4.2 | Identity & trust | 4 | Hard tenant storage isolation (Postgres multi-tenant RFC → ship) | P1 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
 | AUDIT-IDEAL-5.1 | Policy & governance | 5 | Pre-output policy hooks on all LLM response paths | P1 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
 | AUDIT-IDEAL-5.2 | Policy & governance | 5 | Compliance profile templates per regulated domain class | P2 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
@@ -83,7 +83,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-21.3 | Observability | 21 | Unified product observability dashboard | P4 | `OBSERVABILITY` | **Deferred §6.3** (GOV-PROD.1) |
 | AUDIT-IDEAL-22.1 | Reliability | 22 | Compensation flows on product side-effect paths | P1 | `RELIABILITY_FAILURE_AND_HITL` | **Done** |
 | AUDIT-IDEAL-22.2 | Reliability | 22 | Partial results contract on all reference hosts | P2 | `RELIABILITY_FAILURE_AND_HITL` | **Done** |
-| AUDIT-IDEAL-23.1 | Security | 23 | Immutable multi-region security audit trail | P2 | `UNIFIED_EXECUTION_RUNTIME` | Planned |
+| AUDIT-IDEAL-23.1 | Security | 23 | Immutable multi-region security audit trail | P2 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
 | AUDIT-IDEAL-23.2 | Security | 23 | Retrieval poisoning + tool injection live on product hosts | P1 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
 | AUDIT-IDEAL-24.1 | Cost | 24 | Cost forecasting from historical run patterns | P2 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
 | AUDIT-IDEAL-24.2 | Cost | 24 | Automated cost optimization recommendations (AHI) | P2 | `UNIFIED_EXECUTION_RUNTIME` · `ADAPTIVE_HARNESS_INTELLIGENCE` | **Done** |

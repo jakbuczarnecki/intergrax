@@ -594,6 +594,25 @@ def test_audit_ideal_30_4_production_capacity() -> None:
     assert wiring.probe_passed is True
 
 
+def test_audit_ideal_4_1_critical_action_signing() -> None:
+    from intergrax.applications._shared.critical_action_signing_wiring import (
+        resolve_critical_action_signing_wiring,
+    )
+
+    wiring = resolve_critical_action_signing_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+    assert wiring.bootstrap_signature is not None
+
+
+def test_audit_ideal_23_1_immutable_audit_trail() -> None:
+    from intergrax.applications._shared.security_audit_trail_wiring import resolve_security_audit_trail_wiring
+
+    wiring = resolve_security_audit_trail_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+    assert wiring.report is not None
+    assert len(wiring.report.regions) >= 2
+
+
 def test_audit_ideal_deferred_register() -> None:
     register = REPO_ROOT / "docs" / "plan" / "AUDIT_IDEAL_2026.md"
     text = register.read_text(encoding="utf-8")

@@ -40,6 +40,8 @@ class IdentityProfile(BaseModel):
     tenant_required: bool = False
     role_claims_header: str | None = None
     service_identities: dict[str, str] = Field(default_factory=dict)
+    critical_action_signing_enabled: bool = False
+    critical_action_signing_secret_env: str = "INTERGRAX_CRITICAL_ACTION_SIGNING_KEY"
 
 
 class PolicyRulesProfile(BaseModel):
@@ -60,6 +62,10 @@ class ApplicationSecurityProfile(BaseModel):
     tool_injection_defense_enabled: bool = True
     retrieval_poisoning_defense_enabled: bool = True
     tenant_security_verify_enabled: bool = True
+    immutable_audit_trail_enabled: bool = False
+    audit_trail_regions: list[str] = Field(
+        default_factory=lambda: ["eu-central-1", "us-east-1"],
+    )
 
 
 class GuardrailProfile(BaseModel):
@@ -679,6 +685,19 @@ class ApplicationEnvironmentProfile(BaseModel):
             scaling_profile=ScalingProfile(
                 policy=ScalingPolicy(enabled=True),
                 production_adapters_enabled=True,
+            ),
+            identity_profile=IdentityProfile(
+                require_api_key=True,
+                tenant_required=True,
+                critical_action_signing_enabled=True,
+            ),
+            security_profile=ApplicationSecurityProfile(
+                prompt_defense_enabled=True,
+                tool_injection_defense_enabled=True,
+                retrieval_poisoning_defense_enabled=True,
+                tenant_security_verify_enabled=True,
+                immutable_audit_trail_enabled=True,
+                audit_trail_regions=["eu-central-1", "us-east-1"],
             ),
             evaluation_profile=EvaluationProfile(
                 shadow_eval_enabled=False,

@@ -83,6 +83,8 @@ def main() -> int:
         ("check_quarterly_strategy_review.py", ()),
         ("check_architecture_health_metrics.py", ()),
         ("check_production_capacity_adapters.py", ()),
+        ("check_critical_action_signing.py", ()),
+        ("check_immutable_security_audit_trail.py", ()),
         ("check_pre_context_policy_wiring.py", ()),
         ("check_tool_injection_defense.py", ()),
         ("phase_v_capability_graph_guard.py", ("--enforce",)),
