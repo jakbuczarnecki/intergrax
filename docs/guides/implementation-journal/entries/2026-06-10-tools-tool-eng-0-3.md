@@ -1,9 +1,12 @@
 ---
 id: IJ-2026-06-10-003
 date: 2026-06-10
-tier: tier-1
+tiers:
+  - tier-1
 scope: TOOLS
-plan_ref: TOOL-ENG-0, TOOL-ENG-3
+plan_ref:
+  - TOOL-ENG-0
+  - TOOL-ENG-3
 status: completed
 commit: 87fb3841
 adr: none — wiring existing catalog planner into RuntimeContext.build

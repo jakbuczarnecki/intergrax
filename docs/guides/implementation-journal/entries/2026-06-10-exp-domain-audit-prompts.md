@@ -1,7 +1,8 @@
 ---
 id: IJ-2026-06-10-006
 date: 2026-06-10
-tier: tier-0
+tiers:
+  - tier-0
 scope: EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
 plan_ref:
   - FAUDIT-32

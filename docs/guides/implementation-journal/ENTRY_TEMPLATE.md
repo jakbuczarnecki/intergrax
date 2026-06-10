@@ -14,7 +14,7 @@ Copy [`entries/_TEMPLATE.md`](entries/_TEMPLATE.md) to `entries/YYYY-MM-DD-<scop
 | `date` | Completion date (`YYYY-MM-DD`) |
 | `tiers` | YAML list: one or more of `tier-0`, `tier-1`, `tier-2`, `tier-3` |
 | `scope` | Domain basename (`RAG`, `TOOLS`) or path (`agents/<slug>`, `applications/<pkg>`, `intergrax/applications/_shared`) |
-| `plan_ref` | YAML list of **formal IDs only** (e.g. `M-RAG.23`, `TOOL-ENG-4`, `AUDIT-IDEAL-14.3`, `K.1`) |
+| `plan_ref` | YAML list of formal IDs — row (`M-RAG.23`), `AUDIT-IDEAL-X.Y`, named phase (`FAUDIT-32`), or backlog slot (`K.1`) — see README §plan_ref grammar |
 | `status` | `completed` |
 | `commit` | Short git hash or `pending` |
 | `adr` | ADR path or `none — <rationale>` |

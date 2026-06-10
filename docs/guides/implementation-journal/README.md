@@ -63,6 +63,18 @@ Harness audit map layer — see [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HA
 - Link `plan_ref` / GAP / AUDIT-IDEAL IDs — do not copy plan tables.
 - State `adr: none` with rationale when no ADR was required.
 - Set `commit` after the operator commits, or `pending` until then.
+- Run `python scripts/check_implementation_journal.py` — INDEX rows must match entry files and required sections.
+
+### `plan_ref` grammar
+
+| Allowed | Examples |
+|---------|----------|
+| Plan row ID | `M-RAG.23`, `TOOL-ENG-4`, `OBS-BUS-6` |
+| AUDIT-IDEAL row | `AUDIT-IDEAL-14.3`, `AUDIT-IDEAL-28.4` |
+| Named plan phase | `FAUDIT-32`, `M-RAG-DEPTH`, `TOOL-ENG` (phase header in domain plan) |
+| Product backlog slot | `K.1`, `K.2` (when closing §6.3 items) |
+
+Not allowed: sentences, `Phase …` prefixes, or informal notes — put those in **Operator request** or **Summary**.
 
 ---
 

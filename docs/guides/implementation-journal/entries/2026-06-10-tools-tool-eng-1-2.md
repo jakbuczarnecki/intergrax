@@ -1,9 +1,12 @@
 ---
 id: IJ-2026-06-10-004
 date: 2026-06-10
-tier: tier-1
+tiers:
+  - tier-1
 scope: TOOLS
-plan_ref: TOOL-ENG-1, TOOL-ENG-2
+plan_ref:
+  - TOOL-ENG-1
+  - TOOL-ENG-2
 status: completed
 commit: aa0a3e61
 adr: docs/adr/ADR-TOOL-001.md

@@ -24,6 +24,7 @@ Write when iteration is **complete** per `intergrax-iteration.mdc` (including jo
 4. Fill all sections; Operator request = **paraphrase**, not verbatim transcript.
 5. **Prepend** row to [`INDEX.md`](docs/guides/implementation-journal/INDEX.md) (newest first).
 6. Chat iteration summary: **Journal entry:** `entries/<filename>.md`.
+7. After the operator commits: set `commit:` in the entry frontmatter to the short hash (replace `pending`).
 
 ## ID assignment
 
@@ -44,5 +45,6 @@ Multi-tier PR: `tiers: [tier-2, tier-3]` — one entry.
 ## Content rules
 
 - Link plan rows, GAP-*, AUDIT-IDEAL-*, ADRs — **no** plan table duplication.
-- `plan_ref`: formal IDs only (`M-RAG.23`, `TOOL-ENG-4`) — not free-text notes.
+- `plan_ref`: formal IDs only — row IDs (`M-RAG.23`, `TOOL-ENG-4`), `AUDIT-IDEAL-X.Y`, or named plan phases (`FAUDIT-32`, `M-RAG-DEPTH`); never free-text sentences.
 - `project impact` = capability gained, not file dump.
+- Run `python scripts/check_implementation_journal.py` before marking iteration complete.

@@ -1,9 +1,12 @@
 ---
 id: IJ-2026-06-10-005
 date: 2026-06-10
-tier: tier-1
+tiers:
+  - tier-1
 scope: TOOLS
-plan_ref: TOOL-ENG-4, TOOL-ENG-11
+plan_ref:
+  - TOOL-ENG-4
+  - TOOL-ENG-11
 status: completed
 commit: 79fd5e81
 adr: none — enforcement of existing step plan tool_ids contract

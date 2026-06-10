@@ -1,9 +1,12 @@
 ---
 id: IJ-2026-06-10-002
 date: 2026-06-10
-tier: tier-0
+tiers:
+  - tier-0
 scope: RAG
-plan_ref: M-RAG-DEPTH, Phase AUDIT-IDEAL-14
+plan_ref:
+  - M-RAG-DEPTH
+  - AUDIT-IDEAL-14
 status: completed
 commit: deeceff0
 adr: none — documentation and traceability register only

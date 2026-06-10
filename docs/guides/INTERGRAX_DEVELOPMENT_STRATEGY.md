@@ -80,7 +80,7 @@ ANALIZA
   → WNIOSKI (+ implementation journal entry when a deliverable closed)
 ```
 
-**WNIOSKI:** For completed implementations, append an English episode to [`guides/implementation-journal/`](implementation-journal/README.md) (operator intent, `plan_ref`, impact) — narrative layer only; plan rows remain the status source of truth.
+**WNIOSKI:** For completed implementations, record an English episode in [`guides/implementation-journal/`](implementation-journal/README.md) (prepend to `INDEX.md`; operator intent, `plan_ref`, impact) — narrative layer only; plan rows remain the status source of truth.
 
 Think as a **Harness AI architect** first, then as an engineer.
 
