@@ -9,6 +9,12 @@ from pathlib import Path
 import pytest
 
 from intergrax.applications._shared.async_task_index_resolver import resolve_async_task_index
+from intergrax.applications._shared.intake_wiring import resolve_product_intake_wiring
+from intergrax.applications._shared.modality_production_resolver import resolve_live_vision_profile
+from intergrax.applications._shared.tenant_storage_wiring import (
+    resolve_tenant_postgresql_config,
+    tenant_storage_isolation_ready,
+)
 from intergrax.applications._shared.compensation_wiring import resolve_compensation_flow
 from intergrax.applications._shared.production_queue_resolver import (
     ProductionQueueBackend,
@@ -27,6 +33,8 @@ from intergrax.runtime.architecture.agent_promotion import (
 )
 from intergrax.runtime.architecture.agent_certification import AgentCertificationEvaluation
 from intergrax.runtime.adaptive.l4_runtime_evidence import build_harness_baseline_l4_evidence
+from intergrax.runtime.architecture.release_cycle_tracker import resolve_release_cycle_count
+from intergrax.runtime.context.context_drift_monitor import ContextDriftSignal, evaluate_context_drift
 from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.runtime_policy import PolicyAction
@@ -169,6 +177,36 @@ def test_audit_ideal_ahi_1_l4_baseline_evidence() -> None:
     report = build_harness_baseline_l4_evidence()
     assert report.runtime_l4_closed_loop_passed is True
     assert report.scenarios_passed_count >= 3
+
+
+def test_audit_ideal_4_2_tenant_storage_isolation() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults()
+    assert tenant_storage_isolation_ready(env)
+    config = resolve_tenant_postgresql_config("acme")
+    assert config.tenant_schema == "acme"
+
+
+def test_audit_ideal_16_1_context_drift_monitor() -> None:
+    report = evaluate_context_drift(
+        ContextDriftSignal(token_estimate=1500, chunk_count=1, baseline_token_estimate=1000),
+    )
+    assert report.alert is True
+
+
+def test_audit_ideal_29_1_live_vision_profile() -> None:
+    profile = resolve_live_vision_profile()
+    assert profile.create_adapter().slug
+
+
+def test_audit_ideal_30_2_deploy_slo_evidence() -> None:
+    assert resolve_release_cycle_count(repo_root=REPO_ROOT) >= 2
+
+
+def test_audit_ideal_3_2_product_intake_parity() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults()
+    wiring = resolve_product_intake_wiring(env)
+    assert wiring.durable_async_index is True
+    assert wiring.streaming_intake_enabled is True
 
 
 def test_audit_ideal_deferred_register() -> None:

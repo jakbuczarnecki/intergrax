@@ -45,6 +45,10 @@ class ApplicationFeatures(BaseModel):
         default=False,
         description="Use SQLite async task index by default (AUDIT-IDEAL-28.1)",
     )
+    streaming_intake_enabled: bool = Field(
+        default=False,
+        description="Expose streaming/async intake parity on product hosts (AUDIT-IDEAL-3.2)",
+    )
 
     @classmethod
     def lab_defaults(cls) -> ApplicationFeatures:
@@ -65,4 +69,5 @@ class ApplicationFeatures(BaseModel):
             openapi=False,
             task_sandbox_default=False,
             durable_async_index_default=True,
+            streaming_intake_enabled=True,
         )

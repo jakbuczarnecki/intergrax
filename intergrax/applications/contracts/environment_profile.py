@@ -108,6 +108,8 @@ class ContextProfile(BaseModel):
     decision: ContextDecisionProfile = Field(default_factory=ContextDecisionProfile)
     enable_rag: bool = True
     enable_websearch: bool = True
+    drift_monitoring_enabled: bool = False
+    drift_alert_threshold: float = Field(default=0.35, ge=0.0, le=2.0)
 
 
 class MemoryProfile(BaseModel):
@@ -561,6 +563,15 @@ class ApplicationEnvironmentProfile(BaseModel):
         )
 
     @classmethod
+    def _product_integration_profile(cls) -> IntegrationProfile:
+        from intergrax.integrations.registry.presets import POSTGRESQL
+
+        return IntegrationProfile(
+            relational_store=POSTGRESQL,
+            options={"postgresql": {"tenant_schema": "tenant_default"}},
+        )
+
+    @classmethod
     def product_defaults(
         cls,
         *,
@@ -575,11 +586,15 @@ class ApplicationEnvironmentProfile(BaseModel):
         return cls(
             profile_id=profile_id,
             application_profile=ApplicationProfile.PRODUCT,
-            integration_profile=IntegrationProfile(),
+            integration_profile=cls._product_integration_profile(),
             tool_profile=ToolProfile(enabled=tools) if tools else ToolProfile(),
             skill_profile=SkillProfile(enabled_bundles=bundles) if bundles else SkillProfile(),
             llm_profile=None,
-            context_profile=ContextProfile(enable_rag=False, enable_websearch=False),
+            context_profile=ContextProfile(
+                enable_rag=False,
+                enable_websearch=False,
+                drift_monitoring_enabled=True,
+            ),
             reliability_profile=ReliabilityProfile(
                 long_running_scheduler_enabled=False,
                 compensation_enabled=True,

@@ -17,7 +17,7 @@
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
 | AUDIT-IDEAL-4.1 | §4 Identity | Cryptographic signing / audit-protect for critical actions | P2 | Planned |
-| AUDIT-IDEAL-4.2 | §4 Identity | Hard tenant storage isolation (Postgres multi-tenant RFC → ship) | P1 | Planned |
+| AUDIT-IDEAL-4.2 | §4 Identity | Hard tenant storage isolation (Postgres multi-tenant RFC → ship) | P1 | **Done** |
 | AUDIT-IDEAL-5.1 | §5 Policy | Pre-output policy hooks on all LLM response paths | P1 | Planned |
 | AUDIT-IDEAL-5.2 | §5 Policy | Compliance profile templates per regulated domain class | P2 | Planned |
 | AUDIT-IDEAL-23.1 | §23 Security | Immutable multi-region security audit trail | P2 | Planned |

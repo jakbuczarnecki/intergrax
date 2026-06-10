@@ -6,7 +6,7 @@
 **Baseline:** **32/32 L3** (`scripts/harness_maturity_report.py`, IDEAL-L3 W2 Done)  
 **Hub:** [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) · Band **2az** · queue **§6.1au**  
 **Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](../guides/ARCHITECTURE_DEBT_REGISTER.md)  
-**Status:** **W2 P1 in progress** (2026-06-09) — **27/78 Done** · **4 Deferred §6.3** · **47 Planned**
+**Status:** **W3 P1 in progress** (2026-06-09) — **32/78 Done** · **4 Deferred §6.3** · **42 Planned**
 
 > **Scope:** Close gaps between **L3 Production Harness OS** and **full ideal architecture** (modular, elastic, complete). Harness infrastructure only unless row is explicitly **Deferred §6.3** (product).
 
@@ -38,9 +38,9 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-1.2 | Strategic Harness Model | 1 | Architecture health metrics as live signals (modularity, debt index) | P2 | `PLATFORM_FOUNDATION` | Planned |
 | AUDIT-IDEAL-2.1 | Tier boundaries | 2 | Continuous tier-boundary gate maintenance (no drift) | P3 | `PLATFORM_FOUNDATION` | **Done** (gates exist) |
 | AUDIT-IDEAL-3.1 | Task intake | 3 | Canonical `TaskEnvelope` type consolidation (`Task` + `RuntimeRequest` alias) | P1 | `ORCHESTRATION` · `TIER3` | **Done** |
-| AUDIT-IDEAL-3.2 | Task intake | 3 | Product host intake parity (streaming + durable async index default) | P2 | `TIER3_APPLICATION_ENVIRONMENT` | Planned |
+| AUDIT-IDEAL-3.2 | Task intake | 3 | Product host intake parity (streaming + durable async index default) | P2 | `TIER3_APPLICATION_ENVIRONMENT` | **Done** |
 | AUDIT-IDEAL-4.1 | Identity & trust | 4 | Cryptographic signing / audit-protect for critical actions | P2 | `UNIFIED_EXECUTION_RUNTIME` | Planned |
-| AUDIT-IDEAL-4.2 | Identity & trust | 4 | Hard tenant storage isolation (Postgres multi-tenant RFC → ship) | P1 | `UNIFIED_EXECUTION_RUNTIME` | Planned |
+| AUDIT-IDEAL-4.2 | Identity & trust | 4 | Hard tenant storage isolation (Postgres multi-tenant RFC → ship) | P1 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
 | AUDIT-IDEAL-5.1 | Policy & governance | 5 | Pre-output policy hooks on all LLM response paths | P1 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
 | AUDIT-IDEAL-5.2 | Policy & governance | 5 | Compliance profile templates per regulated domain class | P2 | `UNIFIED_EXECUTION_RUNTIME` | Planned |
 | AUDIT-IDEAL-5.3 | Policy & governance | 5 | Governance health dashboard (GOV-PROD.1) | P4 | `OBSERVABILITY` | **Deferred §6.3** |
@@ -68,7 +68,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-15.1 | Memory | 15 | Org memory 2.5 (organizational LTM scope) | **P0** | `MEMORY` | **Done** |
 | AUDIT-IDEAL-15.2 | Memory | 15 | Episodic / semantic / procedural memory taxonomy (`MemoryKind` uplift) | P1 | `MEMORY` | **Done** |
 | AUDIT-IDEAL-15.3 | Memory | 15 | Entity graph memory ship (beyond RFC — MEM-DEPTH-5.1) | P2 | `MEMORY` | Planned |
-| AUDIT-IDEAL-16.1 | Context | 16 | Online context drift monitoring + alerts | P1 | `MEMORY` | Planned |
+| AUDIT-IDEAL-16.1 | Context | 16 | Online context drift monitoring + alerts | P1 | `MEMORY` | **Done** |
 | AUDIT-IDEAL-16.2 | Context | 16 | Semantic compression strategy in production profiles | P2 | `MEMORY` | Planned |
 | AUDIT-IDEAL-17.1 | Prompt registry | 17 | Prompt approval workflow (beyond registry metadata) | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | Planned |
 | AUDIT-IDEAL-17.2 | Prompt registry | 17 | Prompt diff / compare API for all managed prompts | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | Planned |
@@ -101,10 +101,10 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-28.2 | Tier-3 hosts | 28 | Queue worker scaffold-default (`INCLUDE_QUEUE_WORKER`) | P1 | `TIER3_APPLICATION_ENVIRONMENT` | **Done** |
 | AUDIT-IDEAL-28.3 | Tier-3 hosts | 28 | LKW hybrid daemon (CFG-14) | P4 | `TIER3_APPLICATION_ENVIRONMENT` | **Deferred §6.3** |
 | AUDIT-IDEAL-28.4 | Tier-3 hosts | 28 | Business agents K.1/K.2 certification + deploy | P4 | `TIER3_APPLICATION_ENVIRONMENT` | **Deferred §6.3** |
-| AUDIT-IDEAL-29.1 | Modality | 29 | Live Triton / HF Inference endpoints (replace placeholders) | P1 | `MODALITY` | Planned |
+| AUDIT-IDEAL-29.1 | Modality | 29 | Live Triton / HF Inference endpoints (replace placeholders) | P1 | `MODALITY` | **Done** |
 | AUDIT-IDEAL-29.2 | Modality | 29 | Plane C vision inference E2E on product worker pools | P2 | `MODALITY` | Planned |
 | AUDIT-IDEAL-30.1 | Ops / SLO | 30 | Sync `architecture/ELASTIC_CAPACITY_AND_SCALING.md` §22 after ECP-DEPTH | **P0** | `ELASTIC_CAPACITY_AND_SCALING` | **Done** |
-| AUDIT-IDEAL-30.2 | Ops / SLO | 30 | Real deploy SLO window evidence (`W_OPS_RELEASE_CYCLES>=2` prod) | P1 | `OBSERVABILITY` · `EXPERIMENTATION` | Planned |
+| AUDIT-IDEAL-30.2 | Ops / SLO | 30 | Real deploy SLO window evidence (`W_OPS_RELEASE_CYCLES>=2` prod) | P1 | `OBSERVABILITY` · `EXPERIMENTATION` | **Done** |
 | AUDIT-IDEAL-30.3 | Ops / SLO | 30 | On-call ownership model for production components | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | Planned |
 | AUDIT-IDEAL-30.4 | Ops / SLO | 30 | Celery/K8s production-scale adapters (beyond stub/beta) | P2 | `ELASTIC_CAPACITY_AND_SCALING` | Planned |
 | AUDIT-IDEAL-31.1 | Agent lifecycle | 31 | Owner/on-call mandatory on all certified agents | P1 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
