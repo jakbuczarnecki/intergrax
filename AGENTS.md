@@ -19,7 +19,7 @@ Tier-3  applications/        Deployable product environments
 **Strategic goal:** production-grade Harness AI aligned with modern Agent Engineering practice.  
 **Source:** [docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-**Documentation boundary:** `docs/intergrax_runtime_architecture.md` (sole file in `docs/` root) indexes **20 domain pairs**: `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md` (1:1 filenames). Strategy, ideal model, and audit live in `docs/guides/`. Each **business environment** (`applications/<product>/`) and **business agent** (`agents/<name>/`) has its own architecture and implementation plan — do not treat platform canon as the product deployment plan.
+**Documentation boundary:** `docs/intergrax_runtime_architecture.md` (sole file in `docs/` root) indexes **21 domain pairs**: `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md` (1:1 filenames). Strategy, ideal model, and audit live in `docs/guides/`. Each **business environment** (`applications/<product>/`) and **business agent** (`agents/<name>/`) has its own architecture and implementation plan — do not treat platform canon as the product deployment plan.
 
 **Per-iteration reading rule:** when implementing a harness layer, read **only** the matching architecture + plan pair (e.g. `MEMORY.md` in both folders) plus `docs/guides/` as needed — do not load unrelated domain docs.
 
@@ -83,6 +83,7 @@ applications/    MAY import from agents/ and intergrax/
 | Wire integrations | [INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) · [plan/INTEGRATIONS.md](docs/plan/INTEGRATIONS.md) |
 | RAG / retrieval engine | [RAG.md](docs/architecture/RAG.md) · [plan/RAG.md](docs/plan/RAG.md) |
 | Add or use tools | [TOOLS.md](docs/architecture/TOOLS.md) · [plan/TOOLS.md](docs/plan/TOOLS.md) · `intergrax/tools/USAGE.md` |
+| Ephemeral Code Craft (dynamic codegen) | [CODE_CRAFT.md](docs/architecture/CODE_CRAFT.md) · [plan/CODE_CRAFT.md](docs/plan/CODE_CRAFT.md) |
 | Add or use skills | [SKILLS.md](docs/architecture/SKILLS.md) · [plan/SKILLS.md](docs/plan/SKILLS.md) |
 | Configure LLM providers | [LLM_ADAPTERS.md](docs/architecture/LLM_ADAPTERS.md) · [plan/LLM_ADAPTERS.md](docs/plan/LLM_ADAPTERS.md) |
 | Memory / context / LTM | [MEMORY.md](docs/architecture/MEMORY.md) · [plan/MEMORY.md](docs/plan/MEMORY.md) |
@@ -163,9 +164,9 @@ Full local suite: `scripts\test.bat unit` (Windows) or equivalent `uv run pytest
 
 | Path | Contents |
 |------|----------|
-| `docs/intergrax_runtime_architecture.md` | Sole `docs/` root file — hub indexing 20 domain pairs |
-| `docs/architecture/` | Domain architecture canon (20 files) |
-| `docs/plan/` | Domain implementation plans (20 files, 1:1 with architecture) |
+| `docs/intergrax_runtime_architecture.md` | Sole `docs/` root file — hub indexing 21 domain pairs |
+| `docs/architecture/` | Domain architecture canon (21 files) |
+| `docs/plan/` | Domain implementation plans (21 files, 1:1 with architecture) |
 | `docs/guides/` | Strategy, ideal model, audit map, authoring guides |
 | `intergrax/runtime/nexus/` | Nexus Agent OS core |
 | `intergrax/runtime/nexus/orchestration/` | Intake, planning, graph, HITL runners |

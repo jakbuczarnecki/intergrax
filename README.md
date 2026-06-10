@@ -13,7 +13,7 @@
 ## Overview
 
 - **What:** Intergrax is a **Harness AI platform** — the durable runtime that runs many agents, not a single chatbot or domain bot.
-- **What it provides:** Nexus Agent OS, Tier-0 catalogs (**185** integrations · **190** tools · **149** skills in **41** bundles), LLM, RAG, memory, policy, trace, multi-agent graphs, and Tier-3 application hosts.
+- **What it provides:** Nexus Agent OS, Tier-0 catalogs (**185** integrations · **190** tools · **149** skills in **41** bundles), LLM, RAG, memory, **Ephemeral Code Craft** (planned), policy, trace, multi-agent graphs, and Tier-3 application hosts.
 - **Who it is for:** Teams building **governed multi-agent systems** — platform engineers, agent architects, Harness AI researchers, and product teams shipping agent-backed applications.
 - **Why it is different:** **The Harness is the product; agents are replaceable.** You compose capabilities from Integration → Tool → Skill → Agent, enforce policy at `ToolRuntime`, and graduate ideas from a fast **laboratory** to a governed **production harness** on one codebase.
 - **Problem it solves:** Stop rebuilding infrastructure for every new agent. Target: **idea → first traced Nexus run in under one hour.**
@@ -130,6 +130,7 @@ curl -s "http://127.0.0.1:8090/debug/tasks/{task_id}/trace?include_runtime=true"
 | **Run through Nexus** | Lab or product host → `NexusLoop` → `AgentEngine` → UAEP | [NEXUS_EXECUTION_FLOW.md](docs/architecture/NEXUS_EXECUTION_FLOW.md) |
 | **Inspect traces** | `/debug/tasks/{id}/trace`, `intergrax.debug` | [HARNESS_ENVIRONMENT.md](docs/guides/HARNESS_ENVIRONMENT.md) |
 | **Evaluate execution** | Evaluation profile, online registry, CVL hooks | [CRITIC_VERIFICATION.md](docs/architecture/CRITIC_VERIFICATION.md) |
+| **Ephemeral code craft** | Dynamic codegen loop in sandbox (architecture **Done**, impl ECC-1+) | [CODE_CRAFT.md](docs/architecture/CODE_CRAFT.md) |
 | **Extend via plugins** | `ToolPlugin`, `IntegrationPlugin`, `SkillPlugin` EPs | [EXTENSION_AUTHOR_GUIDE.md](docs/guides/EXTENSION_AUTHOR_GUIDE.md) |
 
 Reference hosts: [`applications/README.md`](applications/README.md) · Reference agents: [`agents/README.md`](agents/README.md)
@@ -297,6 +298,7 @@ Tier-0 building blocks — one canonical path per concern. Agents use these thro
 | **Skills** | **149** skills · **41** bundles · `intergrax/skills/` | [architecture/SKILLS.md](docs/architecture/SKILLS.md) · [plan](docs/plan/SKILLS.md) |
 | **LLM adapters** | 19 providers · typed `LLMAdapterResponse` | [architecture/LLM_ADAPTERS.md](docs/architecture/LLM_ADAPTERS.md) |
 | **RAG** | Retrieval, ingest, hybrid/graph/agentic, golden eval | [architecture/RAG.md](docs/architecture/RAG.md) · [plan](docs/plan/RAG.md) |
+| **Ephemeral Code Craft** | Dynamic codegen, test/fix loop, sandbox promotion (ECC-0 canon) | [architecture/CODE_CRAFT.md](docs/architecture/CODE_CRAFT.md) · [plan](docs/plan/CODE_CRAFT.md) |
 | **Memory** | STM/LTM, context compiler, Knowledge vs LTM boundary | [architecture/MEMORY.md](docs/architecture/MEMORY.md) · [plan](docs/plan/MEMORY.md) |
 | **Modality / ML** | Vision, speech, classical ML via catalog tools | [architecture/MODALITY.md](docs/architecture/MODALITY.md) |
 | **Governance & HITL** | Policy bundle, budgets, shadow workspace, sandbox | [UAEP §42.11](docs/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [Appendix H](docs/guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
@@ -352,13 +354,14 @@ intergrax/              # Tier-0 platform + Tier-1 Nexus
   skills/               # Skill Library
   llm_adapters/         # LLM providers
   rag/ · memory/        # Retrieval and memory
+  codecraft/            # Ephemeral Code Craft engine (planned ECC-1+)
   runtime/nexus/        # NexusLoop, AgentEngine, UAEP, orchestration
   runtime/adaptive/     # L4 Adaptive Control Plane
   applications/         # Tier-3 composition engine
   scaffold/             # new-agent, new-application, new-stack
 agents/                 # Tier-2 specialized agents
 applications/           # Tier-3 deployable hosts
-docs/                   # Architecture canon (20 domain pairs) + guides
+docs/                   # Architecture canon (21 domain pairs) + guides
 infra/                  # Local Docker compose for backends
 tests/ · scripts/       # Gate tests and harness CI checks
 ```
@@ -381,6 +384,7 @@ tests/ · scripts/       # Gate tests and harness CI checks
 | See catalog sizes (integrations / tools / skills) | [Tier-0 catalog summary](#tier-0-catalog-summary) |
 | Wire integrations / tools / skills | [INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) · [TOOLS.md](docs/architecture/TOOLS.md) · [SKILLS.md](docs/architecture/SKILLS.md) · [Appendix J](docs/guides/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) |
 | RAG engine / retrieval | [RAG.md](docs/architecture/RAG.md) · [plan/RAG.md](docs/plan/RAG.md) · [Appendix K §K.5](docs/guides/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) |
+| Ephemeral Code Craft | [CODE_CRAFT.md](docs/architecture/CODE_CRAFT.md) · [plan/CODE_CRAFT.md](docs/plan/CODE_CRAFT.md) |
 | All agents / applications | [agents/README.md](agents/README.md) · [applications/README.md](applications/README.md) |
 | Harness audit (32 layers) | [INTEGRAX_HARNESS_AUDIT_MAP.md](docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
 | Business backlog only | [plan/PLATFORM_FOUNDATION.md §6.3a](docs/plan/PLATFORM_FOUNDATION.md#63a-business-backlog-register-consolidated) |
@@ -394,7 +398,7 @@ tests/ · scripts/       # Gate tests and harness CI checks
 | Area | Links |
 |------|-------|
 | **Strategy & hub** | [Strategy](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) · [Architecture hub](docs/intergrax_runtime_architecture.md) · [Ideal model](docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) |
-| **Domain canon (19 pairs)** | `docs/architecture/{DOMAIN}.md` ↔ `docs/plan/{DOMAIN}.md` — indexed in [hub](docs/intergrax_runtime_architecture.md) |
+| **Domain canon (21 pairs)** | `docs/architecture/{DOMAIN}.md` ↔ `docs/plan/{DOMAIN}.md` — indexed in [hub](docs/intergrax_runtime_architecture.md) |
 | **Execution** | [UAEP / §42](docs/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [Nexus flow](docs/architecture/NEXUS_EXECUTION_FLOW.md) · [Orchestration](docs/architecture/ORCHESTRATION.md) |
 | **Authoring** | [Agent guide](docs/guides/AGENT_CREATION_GUIDE.md) · [Extension guide](docs/guides/EXTENSION_AUTHOR_GUIDE.md) · [applications/USAGE.md](applications/USAGE.md) |
 | **Operations** | [HARNESS_ENVIRONMENT.md](docs/guides/HARNESS_ENVIRONMENT.md) · [infra/README.md](infra/README.md) |
@@ -425,6 +429,7 @@ tests/ · scripts/       # Gate tests and harness CI checks
 | **Critic & Verification (PEV)** | [architecture/CRITIC_VERIFICATION.md](docs/architecture/CRITIC_VERIFICATION.md) |
 | **Reasoning & cognition** | [architecture/REASONING_AND_COGNITION.md](docs/architecture/REASONING_AND_COGNITION.md) |
 | **Elastic capacity** | [architecture/ELASTIC_CAPACITY_AND_SCALING.md](docs/architecture/ELASTIC_CAPACITY_AND_SCALING.md) |
+| **Ephemeral Code Craft** | [architecture/CODE_CRAFT.md](docs/architecture/CODE_CRAFT.md) · [ADR-CODECRAFT-001](docs/adr/ADR-CODECRAFT-001.md) |
 
 Full phase tracker: [plan/PLATFORM_FOUNDATION.md](docs/plan/PLATFORM_FOUNDATION.md) · [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md)
 

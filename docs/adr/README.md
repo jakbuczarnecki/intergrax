@@ -52,6 +52,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-MEM-001](ADR-MEM-001.md) | Context Compiler — global budget allocator and degradation ladder | Accepted |
 | [ADR-SCALE-001](ADR-SCALE-001.md) | Harness Elastic Capacity Plane — complement K8s HPA | Accepted |
 | [ADR-GR-001](ADR-GR-001.md) | LLM guardrail integration plane (M-P12) | Accepted |
+| [ADR-CODECRAFT-001](ADR-CODECRAFT-001.md) | Ephemeral Code Craft as separate Harness domain | Accepted |
 
 ---
 

@@ -235,6 +235,7 @@ The platform MUST maintain **one canonical path** per universal concern. All tie
 | Tracing (pipeline) | Nexus `trace_event()` / `RunTraceWriter` | Parallel untracked diagnostic streams |
 | Tools | `intergrax/tools/` (`ToolRegistry`, `ToolExecutor`, Tool Library §7.1.6) | Agent-local tool registries; boolean `use_rag` / `use_websearch` plan flags (deprecated §22.2) |
 | RAG | `intergrax/rag/` (`RagProfile`, `RetrievalService`, `IngestPipeline`) | Duplicate embedding/retrieval stacks; dense-only `vectorstore.query` bypass in agents/Nexus |
+| Ephemeral Code Craft | `intergrax/codecraft/` + `runtime/codecraft/` (`CodeCraftProfile`, `CodeCraftOrchestrator`) | Agent-local generate→exec loops; parallel sandbox runtimes; ephemeral tools in global ToolRegistry |
 | Web search | `intergrax/websearch/` | Custom HTTP search clients in agents |
 | Memory / session | `intergrax/memory/`, Nexus session storage | Direct Redis/PostgreSQL access from agents |
 | Queues | `intergrax/queueing/` | Ad-hoc background job systems |
@@ -703,6 +704,7 @@ Category contracts MUST be **backend-agnostic**: same method names and DTOs whet
 | **LLM providers** | `intergrax/llm_adapters/` (`LLMAdapter`, `LLMAdapterRegistry`, `LLMProfile`, metrics) | 19 slugs — [architecture/LLM_ADAPTERS.md](architecture/LLM_ADAPTERS.md) §5.2.2 |
 | **Tokenization** | `intergrax/tokenizers/` | Not an external integration slug |
 | **RAG pipeline** | `intergrax/rag/` | Vector stores + document parsers use **catalog bridges**; orchestration stays in `rag/` |
+| **Ephemeral Code Craft** | `intergrax/codecraft/` + `runtime/codecraft/` (planned ECC-1+) | Composes `runtime/sandbox/` + `codecraft.*` tools; not a second sandbox |
 | **Model & modality inference** | `intergrax/model_inference/` (planned), tools, optional integration hosts | Vision CV (YOLO, ONNX, …), classical ML, speech APIs — §7.1.9; **not** LLM slugs in Integration Library |
 
 #### RAG stack (Tier-0)
@@ -712,6 +714,10 @@ Category contracts MUST be **backend-agnostic**: same method names and DTOs whet
 Summary: one retrieval path (`rag.retrieve` + Nexus `RagStep`); vector stores and parsers via Integration Library catalog bridges; Knowledge vs user memory boundary in [`architecture/MEMORY.md`](MEMORY.md).
 
 Do **not** add an `llm_provider` category or LLM slugs to the Integration Catalog backlog.
+
+#### Ephemeral Code Craft (ECC)
+
+**Canonical domain pair:** [`architecture/CODE_CRAFT.md`](CODE_CRAFT.md) ↔ [`plan/CODE_CRAFT.md`](../plan/CODE_CRAFT.md) — harness-orchestrated dynamic codegen loop; `codecraft.*` catalog tools; `CodeCraftProfile`; execution substrate `runtime/sandbox/`. ADR: [`adr/ADR-CODECRAFT-001.md`](../adr/ADR-CODECRAFT-001.md).
 
 ### 7.1.3 Integration Catalog (Initial Backlog)
 
@@ -1009,6 +1015,7 @@ Agent / planner
 | `use_websearch` / `WebsearchStep` | `websearch.query` | `SearchProvider` via `IntegrationProfile.search_provider` |
 | `use_tools` / `ToolsStep` | *(explicit tool_ids)* | `ToolRegistry` entries |
 | Sandbox execution | `sandbox.exec` | `intergrax/runtime/sandbox/` (already a tool_id) |
+| Ephemeral Code Craft | `codecraft.*` (planned) | `intergrax/codecraft/` + `runtime/codecraft/` — see [`CODE_CRAFT.md`](CODE_CRAFT.md) |
 
 **Migration rules:**
 

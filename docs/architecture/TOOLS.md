@@ -625,6 +625,8 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 |---------|--------|-------------|----------|
 | `sandbox.exec` | **Done** | Execute allowlisted operation in runtime sandbox | `sandbox_session` via `ToolWiringContext`; optional `sandbox_host` integration → `HostedSandboxSession` bridge (M.6 P6) |
 
+**Orchestrated ephemeral codegen** (`codecraft.*`) is **not** owned by this catalog — see [`architecture/CODE_CRAFT.md`](CODE_CRAFT.md) ↔ [`plan/CODE_CRAFT.md`](../plan/CODE_CRAFT.md). Low-level primitives (`code.exec`, `script.run`, `sandbox.exec`) remain substrate for ECC and direct agent use.
+
 ### Security (M.6 P6)
 
 | tool_id | Status | Description | Composes |
