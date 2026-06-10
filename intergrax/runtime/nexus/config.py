@@ -168,6 +168,9 @@ class RuntimeConfig:
     #   - "required": runtime must use at least one tool.
     tools_mode: ToolChoiceMode = "auto"
 
+    # YamlPromptRegistry prompt id for catalog tool planner (ReasoningProfile bridge).
+    tool_planner_prompt_id: str = "tools_agent_planner"
+
     # Determines how much contextual information the tool planner receives:
     #
     #   - "current_message_only":

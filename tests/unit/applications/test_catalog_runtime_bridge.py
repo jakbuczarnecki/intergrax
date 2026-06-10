@@ -11,8 +11,10 @@ from intergrax.applications._shared.catalog_runtime_bridge import (
     apply_catalog_profiles_from_build_context,
     apply_catalog_profiles_from_environment,
     apply_skill_profile_to_runtime_config,
+    apply_tool_engine_settings_from_environment,
     apply_tool_profile_to_runtime_config,
 )
+from intergrax.contracts.reasoning_profile import ReasoningProfile
 from intergrax.applications._shared.environment_wiring import wire_application_environment
 from intergrax.applications._shared.runtime_config_bridge import materialize_runtime_config
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
@@ -110,6 +112,17 @@ def test_materialize_runtime_config_includes_catalog_profiles() -> None:
     assert config.tool_profile is not None
     assert config.skill_profile is not None
     assert config.tool_wiring_context is wiring.build_context.tool_wiring_context
+
+
+def test_apply_tool_engine_settings_from_environment() -> None:
+    env = ApplicationEnvironmentProfile.lab_defaults().model_copy(
+        update={"reasoning_profile": ReasoningProfile(tool_planner_prompt_id="tools_custom")}
+    )
+    config = RuntimeConfig(llm_adapter=FakeLLMAdapter(), production_mode=False)
+
+    apply_tool_engine_settings_from_environment(config, env)
+
+    assert config.tool_planner_prompt_id == "tools_custom"
 
 
 def test_materialize_runtime_config_lab_harness_uses_environment_catalogs() -> None:

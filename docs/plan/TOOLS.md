@@ -12,7 +12,7 @@
 
 ## Phase TOOL-ENG — Tool engine hardening (2026-06-10 audit)
 
-**Status:** **Active** — **0/13** deliverables Done (audit pass 2: +TOOL-ENG-0, -11, -12)  
+**Status:** **Active** — **2/13** deliverables Done (TOOL-ENG-0, TOOL-ENG-3 — 2026-06-10)  
 **Architecture canon:** [`architecture/TOOLS.md`](../architecture/TOOLS.md) — [Tool engine production posture](../architecture/TOOLS.md#tool-engine-production-posture-2026-06-10), [Engine gap register](../architecture/TOOLS.md#engine-gap-register-canon)  
 **Audit basis:** Full-stack tool layer audit 2026-06-10 (Tier-0 catalog + Tier-1 selection/invoke/verify)  
 **Priority ladder:** **Band 2ba** — supersedes ad-hoc tool engine fixes until TOOL-ENG P0 closed  
@@ -26,10 +26,10 @@
 
 | ID | Area | Deliverable | Status | Priority | Modules | Acceptance |
 |----|------|-------------|--------|----------|---------|------------|
-| TOOL-ENG-0 | Bootstrap | **Wire `CatalogToolPlanner`** in `materialize_runtime_config` / catalog bridge — `tool_planner` + `resolve_tool_planning_config` + LLM from env | **Planned** | **P0** | `runtime_config_bridge.py`, `catalog_runtime_bridge.py` | Host with `tools_mode=auto` runs ToolsStep; gate integration test |
+| TOOL-ENG-0 | Bootstrap | **Wire `CatalogToolPlanner`** in `RuntimeContext.build` / catalog bridge — `tool_planner` + `tool_planner_prompt_id` from env | **Done** | **P0** | `planner_bootstrap.py`, `runtime_context.py`, `catalog_runtime_bridge.py` | `test_tool_engine_bootstrap.py`; host with `tools_mode=auto` gets planner |
 | TOOL-ENG-1 | Dispatch | **Per-`tool_id` catalog dispatch** in `ToolRuntime.invoke` — invoke `RuntimeToolInvoker` for ids not handled by Rag/Websearch shims | **Planned** | **P0** | `tool_runtime.py`, `catalog_dispatch.py` (new) | `test_tool_runtime_catalog_dispatch.py`; `jira.*` in plan executes without `use_tools` |
 | TOOL-ENG-2 | Gateway | **Full-catalog `ToolRequest`** — `RuntimeToolGateway` routes any registered `tool_id` → invoker (not `unknown_capability_tool`) | **Planned** | **P0** | `tool_gateway.py`, `uaep_tool_gateway.py` | UAEP `ctx.invoke_tool(jira.get_issue)` integration test |
-| TOOL-ENG-3 | Policy | **Wire `tool_scope_policy`** from `RuntimeConfig` into `RuntimeToolInvoker` at `RuntimeContext.build()` | **Planned** | **P0** | `runtime_context.py` | `test_runtime_context_scope_policy_wiring.py`; denied tool raises on `ToolsStep` path |
+| TOOL-ENG-3 | Policy | **Wire `tool_scope_policy`** from `RuntimeConfig` into `RuntimeToolInvoker` at `RuntimeContext.build()` | **Done** | **P0** | `runtime_context.py` | `test_tool_engine_bootstrap.py`; denied tool raises `ToolScopeViolationError` on invoke path |
 | TOOL-ENG-4 | Selection | **Plan constraints → planner** — pass `EnginePlan.tool_ids` / `ToolInvocationPlan.tool_ids` as allow-list to `ToolPlanningService` | **Planned** | P1 | `tools_step.py`, `tool_planning_service.py` | Planner schema ⊆ plan constraints; gate test |
 | TOOL-ENG-5 | Selection | **`ToolSelectionStrategy` protocol** — static allow-list \| skill-pack \| retrieval top-k \| full-catalog; default static | **Planned** | P1 | `tool_selection.py` (new), `tool_planning_service.py` | Protocol + static impl; lab host uses skill-pack strategy |
 | TOOL-ENG-6 | Loop | **Tool loop step** — `max_tool_iterations`, native `role=tool` messages, stop on empty `tool_calls` or budget | **Planned** | P1 | `tool_loop_step.py` (new), `tools_step.py` | Integration test: 2-iteration ReAct with mock LLM |
@@ -50,14 +50,14 @@
 
 | Metric | Baseline (2026-06-10) | TOOL-ENG closeout target |
 |--------|----------------------|--------------------------|
-| `tool_planner` wired on default hosts | **Never** (`None`) | Auto from env + LLM |
+| `tool_planner` wired on default hosts | **Done** at `RuntimeContext.build` when `tools_mode≠off` | Auto from env + LLM |
 | Arbitrary `tool_id` via `ToolRequest` | 18 runtime-bound + capability | Any registered id |
 | `tools_context_scope` | Config dead field | All 3 scopes functional |
 | `EnginePlan.tool_ids` execution | rag/web only | All listed ids |
 | Planner schema vs `allowed_tools` | Full registry | Filtered (strategy) |
 | Tool loop iterations | 1 | Configurable `max_tool_iterations` |
 | `tools_mode=required` | Warning trace | Run failure |
-| Invoker scope enforcement | Tests only | Production wiring |
+| Invoker scope enforcement | **Done** (`RuntimeContext.build`) | Production wiring |
 | E2E multi-tool loop test | None | `test_tool_loop_integration.py` |
 
 ### TOOL-ENG — Paydown log
@@ -66,6 +66,8 @@
 |------|-----|---------|
 | 2026-06-10 | TOOL-ENG (register) | Full-stack audit; architecture + plan pair updated; Band 2ba queue opened |
 | 2026-06-10 | TOOL-ENG-0,11,12 | Audit pass 2: planner bootstrap gap, dead tools_context_scope, tool_choice unwired |
+| 2026-06-10 | TOOL-ENG-0 | `wire_catalog_tool_planner_if_enabled` in `RuntimeContext.build`; `tool_planner_prompt_id` via catalog bridge — **no ADR needed** (wiring only) |
+| 2026-06-10 | TOOL-ENG-3 | `tool_scope_policy` → `RuntimeToolInvoker` in `RuntimeContext.build` — **no ADR needed** (wiring only) |
 
 ---
 
@@ -76,8 +78,8 @@
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
 | 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
-| 1 | **TOOL-ENG-0** | Code | **Planned** | `CatalogToolPlanner` bootstrap in `materialize_runtime_config` | ToolsStep runs on lab host |
-| 2 | **TOOL-ENG-3** | Code | **Planned** | `tool_scope_policy` → invoker wiring | scope deny on ToolsStep path |
+| 1 | **TOOL-ENG-0** | Code | **Done** | `CatalogToolPlanner` bootstrap in `RuntimeContext.build` | `test_tool_engine_bootstrap.py` |
+| 2 | **TOOL-ENG-3** | Code | **Done** | `tool_scope_policy` → invoker wiring | scope deny on invoke path |
 | 3 | **TOOL-ENG-1** | Code + ADR | **Planned** | Per-`tool_id` dispatch in `ToolRuntime` | catalog dispatch tests |
 | 4 | **TOOL-ENG-2** | Code + ADR | **Planned** | Full-catalog gateway | UAEP jira tool integration test |
 | 5 | **TOOL-ENG-4** | Code | **Planned** | Plan constraints → planner | constrained schema gate |

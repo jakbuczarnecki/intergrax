@@ -29,6 +29,15 @@ def apply_skill_profile_to_runtime_config(
     return config
 
 
+def apply_tool_engine_settings_from_environment(
+    config: RuntimeConfig,
+    env: ApplicationEnvironmentProfile,
+) -> RuntimeConfig:
+    """Bridge reasoning/tool engine settings before ``RuntimeContext.build`` (TOOL-ENG-0)."""
+    config.tool_planner_prompt_id = env.reasoning_profile.tool_planner_prompt_id
+    return config
+
+
 def apply_catalog_profiles_from_environment(
     config: RuntimeConfig,
     env: ApplicationEnvironmentProfile,
@@ -36,6 +45,7 @@ def apply_catalog_profiles_from_environment(
     """Apply environment-declared tool and skill profiles."""
     apply_tool_profile_to_runtime_config(config, env.tool_profile)
     apply_skill_profile_to_runtime_config(config, env.skill_profile)
+    apply_tool_engine_settings_from_environment(config, env)
     return config
 
 

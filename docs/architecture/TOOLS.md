@@ -136,7 +136,7 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T14–T17 Done**
 | `IdempotentToolInvoker` | `intergrax/runtime/tools/idempotent_invoker.py` | **Done** — exactly-once for `side_effects` + `idempotency_key` |
 | `catalog_context` | `intergrax/runtime/nexus/tools/catalog_context.py` | **Done** — `rag.retrieve` / `websearch.query` shim from pipeline steps |
 | `ToolAccessPolicy` | `intergrax/runtime/nexus/tools/tool_access_policy.py` | **Done** — plan-level filter (`ToolInvocationPlan`); modality intersect |
-| `StaticToolScopePolicy` | `intergrax/runtime/tools/scope_policy.py` | **Partial** — invoker contract exists; **not wired** in `RuntimeContext.build()` ([gap TOOL-ENG-3](#engine-gap-register-canon)) |
+| `StaticToolScopePolicy` | `intergrax/runtime/tools/scope_policy.py` | **Done** — wired via `config.tool_scope_policy` in `RuntimeContext.build()` (TOOL-ENG-3) |
 | `resolve_allowed_tools_from_config` | `intergrax/runtime/policy/tool_policy_resolution.py` | **Done** — merges `RuntimePolicyBundle.tool_access` into `ToolRuntime` / gateway |
 | Legacy `ToolBase` | `intergrax/tools/tools_base.py` | **Deprecated** — use `ToolContract` (Phase O.7 Done) |
 
@@ -220,7 +220,7 @@ All successful catalog executions converge on **`RuntimeToolInvoker`** (optional
 | **L4 Modality** | `ModalityProfile` → `filter_tool_ids_by_modality_profile` | Media/ML plane tools | `ToolAccessPolicy.apply_modality_profile` |
 | **L5 Plan filter** | `ToolAccessPolicy.apply` on `ToolInvocationPlan` | `use_rag` / `use_websearch` / `tool_ids` / `use_tools` | `ToolRuntime.invoke` |
 | **L6 LLM planner** | `ToolPlanningService` → `to_openai_tools(registry)` | **None today** — full registry passed to LLM | `ToolsStep` |
-| **L7 Invoker scope** | `ToolScopePolicy.is_allowed` on `RuntimeToolInvoker` | Per-call deny | **Only if** `scope_policy` wired on invoker (gap **TOOL-ENG-3**) |
+| **L7 Invoker scope** | `ToolScopePolicy.is_allowed` on `RuntimeToolInvoker` | Per-call deny | **Done** — `scope_policy` from `RuntimeConfig` (TOOL-ENG-3) |
 
 See [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) — cognition Plane 3 (Tool): `ToolPlanDecision` ≠ `AgentDecision` (§42.7).
 
@@ -268,14 +268,14 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 |------|---------|-------|
 | **Tier-0 catalog** (`ToolContract`, plugins, 190 tools) | **Production** | Contracts, exporters, provider tests, integration composition |
 | **Single invoke** (`RuntimeToolInvoker`) | **Production** | Schema, timeout, retry, trace, idempotency wrapper |
-| **Pipeline tool step** (`ToolsStep`) | **Gap** | Implementation exists; **`tool_planner` not wired** in Tier-3 bootstrap → step no-ops in default hosts (**TOOL-ENG-0**) |
-| **Planner wiring** (`CatalogToolPlanner`) | **Gap** | Class **Done**; `materialize_runtime_config` never sets `config.tool_planner` (**TOOL-ENG-0**) |
+| **Pipeline tool step** (`ToolsStep`) | **Partial** | Planner wired at `RuntimeContext.build` when `tools_mode≠off` (TOOL-ENG-0); per-id dispatch still gap (TOOL-ENG-1) |
+| **Planner wiring** (`CatalogToolPlanner`) | **Done** | `wire_catalog_tool_planner_if_enabled` in `planner_bootstrap.py` (TOOL-ENG-0) |
 | **Multi-tool / ReAct loop** | **Gap** | No `max_iterations` tool loop; no native `role=tool` multi-turn chain in pipeline |
 | **Parallel tool execution** | **Gap** | `for call in tool_plan.calls` — always sequential |
 | **Large-catalog selection** | **Gap** | No Tool Router; planner sees full `ToolRegistry` |
 | **`tool_ids` plan dispatch** | **Gap** | `ToolRuntime.invoke` uses step flags, not per-id catalog dispatch |
 | **§42.12 gateway** | **Partial** | Capability + runtime-bound + sandbox; not arbitrary `tool_id` |
-| **`tool_scope_policy` wiring** | **Gap** | Config field exists; not passed to invoker in `RuntimeContext.build()` |
+| **`tool_scope_policy` wiring** | **Done** | Passed to `RuntimeToolInvoker` in `RuntimeContext.build()` (TOOL-ENG-3) |
 | **Post-tool verification** | **Partial** | Schema + middleware; critic tools (`eval.judge`) adjacent, not in default loop |
 | **Observability** | **Production** | Trace spine, budget ticks, `tool_traces` |
 
@@ -296,7 +296,8 @@ Tool-related fields on `RuntimeConfig` (`intergrax/runtime/nexus/config.py`). Ti
 | `tool_profile` | `ToolProfile \| None` | `None` | Host catalog subset |
 | `tool_wiring_context` | `ToolWiringContext \| None` | enriched at build | Integration slots for handlers |
 | `tool_providers` | `Sequence[ToolProvider]` | `()` | Extra registration after profile |
-| `tool_scope_policy` | `ToolScopePolicy \| None` | from `RuntimePolicyBundle` | Per-invoke allow-list (**wiring gap TOOL-ENG-3**) |
+| `tool_scope_policy` | `ToolScopePolicy \| None` | from `RuntimePolicyBundle` | Per-invoke allow-list (wired TOOL-ENG-3) |
+| `tool_planner_prompt_id` | `str` | `tools_agent_planner` | From `ReasoningProfile` via catalog bridge (TOOL-ENG-0) |
 | `idempotency_store` | `IdempotencyStore \| None` | `InMemoryIdempotencyStore` | Side-effect dedup |
 | `policy_bundle` | `RuntimePolicyBundle \| None` | Tier-3 | `tool_access`, budget, plan-loop |
 | `modality_profile` | `ModalityProfile \| None` | env profile | Tool plane filter |
@@ -339,12 +340,12 @@ Native vs fallback: `ToolPlanningService` probes `llm.supports_tools()` — nati
 
 | Step | Module | Sets `tool_planner`? |
 |------|--------|----------------------|
-| `materialize_runtime_config` | `runtime_config_bridge.py` | **No** |
-| `apply_catalog_profiles_from_environment` | `catalog_runtime_bridge.py` | profile only |
-| `resolve_tool_planning_config` | `reasoning_wiring.py` | helper only — **not called** from bootstrap |
-| `CatalogToolPlanner.from_profile` | `catalog_tool_planner.py` | **never invoked** in `applications/` or `intergrax/` prod paths (tests only) |
+| `apply_catalog_profiles_from_environment` | `catalog_runtime_bridge.py` | `tool_planner_prompt_id` from `ReasoningProfile` |
+| `RuntimeContext.build` | `runtime_context.py` + `planner_bootstrap.py` | **Yes** — `wire_catalog_tool_planner_if_enabled` when `tools_mode≠off`, LLM present, registry non-empty |
+| `resolve_tool_planning_config` | `reasoning_wiring.py` | helper only — optional for custom hosts |
+| `CatalogToolPlanner.from_profile` | `catalog_tool_planner.py` | tests / manual wiring only |
 
-**Implication:** `NoPlannerPipeline` includes `ToolsStep`, but with default host config the step returns immediately (`tool_planner is None`). RAG/websearch catalog shims still work via `RagStep`/`WebsearchStep`.
+**Implication:** Hosts with `tools_mode=off` (e.g. legal default) still skip `ToolsStep`. Hosts with `tools_mode=auto` and non-empty `tool_profile` get a live planner on the same registry as the invoker.
 
 Product defaults: e.g. `legal_application` — `LEGAL_TOOLS_MODE` default **`off`** (`settings.py`).
 
@@ -357,7 +358,7 @@ Distinct ways catalog capabilities reach a backend — not all equivalent.
 | Surface | Entry | Live invoke? | Policy / trace | Notes |
 |---------|-------|--------------|----------------|-------|
 | **A — Pipeline RAG/Web** | `RagStep` / `WebsearchStep` | **Yes** | invoker + trace | `catalog_context`; legacy ContextBuilder fallback in `RagStep` |
-| **B — Pipeline ToolsStep** | `ToolsStep` | **Only if** `tool_planner` set | invoker + budget | **Default hosts: no-op** (TOOL-ENG-0) |
+| **B — Pipeline ToolsStep** | `ToolsStep` | **Yes** when `tool_planner` set at build | invoker + budget | Wired on lab hosts (`tools_mode=auto`); legal default `off` |
 | **C — Capability gateway** | `ToolRequest` → `RuntimeToolGateway` | Partial | hooks + `ToolAccessPolicy` on plan | rag/web/tools capability aliases only |
 | **D — UAEP bound gateway** | `ctx.invoke_tool` | Partial | `allowed_tools` on gateway | sandbox + 18 runtime-bound ids + C |
 | **E — MCP catalog mount** | `mount_catalog_tools_on_mcp` | **Schema only** | N/A | `list_catalog_tools` / `describe_catalog_tool`; no default live handler |
@@ -420,7 +421,7 @@ Distinct ways catalog capabilities reach a backend — not all equivalent.
 4. **Skill packs** — `skill_ids` → `SkillResolver` → `tool_ids` on contract at bind time.
 5. **RAG/web catalog shims** — always-on when `enable_rag` / `enable_websearch` + tool registered.
 6. **LLM choice** — when `tool_planner` is manually wired: full registry schema export; model picks `tool_calls`.
-7. **Reasoning prompts** — `ReasoningProfile.tool_planner_prompt_id` (default `tools_agent_planner`) via `ToolPlanningConfig` — **only if** planner is constructed (**TOOL-ENG-0**).
+7. **Reasoning prompts** — `ReasoningProfile.tool_planner_prompt_id` (default `tools_agent_planner`) bridged via `apply_tool_engine_settings_from_environment` (TOOL-ENG-0).
 
 ### What is missing for 190-tool / multi-agent scale
 
@@ -520,7 +521,7 @@ Gap closure: **TOOL-ENG-1** (direct catalog dispatch), **TOOL-ENG-4** (pass plan
 |---------|--------|----------|
 | Plan allow-list | `ToolAccessPolicy` | `ToolInvocationPlan` only |
 | Modality filter | `ToolAccessPolicy.apply_modality_profile` | `tool_ids` in plan |
-| Invoker scope | `ToolScopePolicy` | Per `tool_id` when wired (**TOOL-ENG-3**) |
+| Invoker scope | `ToolScopePolicy` | Per `tool_id` (TOOL-ENG-3 **Done**) |
 | Guardrails | `LlmGuardrailMiddleware` `BEFORE_TOOL_CALL` | `ApplicationSecurityProfile.scan_tool_calls` |
 | Hooks | `run_tool_call_hooks` | Gateway path |
 | Budget | `BudgetEnforcer` | `max_tool_calls`, wall time, tokens |
@@ -547,10 +548,10 @@ Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary:
 
 | ID | Gap | Priority |
 |----|-----|----------|
-| TOOL-ENG-0 | Wire `CatalogToolPlanner` in Tier-3 `materialize_runtime_config` / catalog bridge | **P0** |
+| TOOL-ENG-0 | Wire `CatalogToolPlanner` in `RuntimeContext.build` / catalog bridge | **Done** |
 | TOOL-ENG-1 | Direct `tool_ids` catalog dispatch in `ToolRuntime.invoke` | P0 |
 | TOOL-ENG-2 | Full-catalog `ToolRequest` → `RuntimeToolInvoker` in gateway | P0 |
-| TOOL-ENG-3 | Wire `config.tool_scope_policy` → `RuntimeToolInvoker` | P0 |
+| TOOL-ENG-3 | Wire `config.tool_scope_policy` → `RuntimeToolInvoker` | **Done** |
 | TOOL-ENG-4 | Pass `EnginePlan.tool_ids` / plan constraints into `ToolsStep` planner | P1 |
 | TOOL-ENG-5 | `ToolSelectionStrategy` / router before `generate_with_tools` | P1 |
 | TOOL-ENG-6 | Tool loop (ReAct): `max_iterations`, native tool messages | P1 |
@@ -561,7 +562,7 @@ Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary:
 | TOOL-ENG-11 | Implement `tools_context_scope` in `ToolsStep` / planner message assembly | P1 |
 | TOOL-ENG-12 | Expose `tool_choice` from `tools_mode` / host profile to `plan_tools` | P2 |
 
-**ADR:** Phase **TOOL-ENG** P0/P1 items require ADR in `docs/adr/` before implementation (gateway + dispatch + bootstrap semantics).
+**ADR:** TOOL-ENG-1, TOOL-ENG-2, TOOL-ENG-6 require ADR before merge. TOOL-ENG-0/3 are wiring-only — **no ADR needed**.
 
 ### CI / gate scripts (catalog)
 

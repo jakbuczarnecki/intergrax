@@ -342,7 +342,19 @@ class RuntimeContext:
             )
 
         executor = RegistryToolExecutor(registry)
-        base_invoker = RuntimeToolInvoker(registry=registry, executor=executor)
+        base_invoker = RuntimeToolInvoker(
+            registry=registry,
+            executor=executor,
+            scope_policy=config.tool_scope_policy,
+        )
+
+        from intergrax.runtime.nexus.tools.planner_bootstrap import wire_catalog_tool_planner_if_enabled
+
+        wire_catalog_tool_planner_if_enabled(
+            config,
+            registry,
+            prompt_registry=prompt_registry,
+        )
 
         if config.idempotency_store is None:
             config.idempotency_store = InMemoryIdempotencyStore()
