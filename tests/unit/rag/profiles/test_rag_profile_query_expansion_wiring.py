@@ -17,6 +17,7 @@ from intergrax.rag.retrievers.providers.multiquery_retriever import MultiQueryRe
 from intergrax.rag.routing.query_router import QueryRouter
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
+from testing_support.builder import build_fake_embedding_manager
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -131,11 +132,10 @@ def test_bootstrap_injects_llm_query_expander_from_profile(monkeypatch: pytest.M
 
     llm = _FakeLlm(["expanded variant alpha", "expanded variant beta"])
     vs = CountingVectorManager()
-    from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_manager
 
     registry = create_default_retriever_registry(
         vector_store=vs,
-        embedding_manager=create_default_embedding_manager(),
+        embedding_manager=build_fake_embedding_manager(),
         profile=profile,
         llm_for_query_expansion=llm,  # type: ignore[arg-type]
     )

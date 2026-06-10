@@ -14,7 +14,6 @@ from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkM
 from intergrax.rag.document_splitters.strategies.parent_child_chunking_strategy import (
     ParentChildChunkingStrategy,
 )
-from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_manager
 from intergrax.rag.indexing.indexing_manager import IndexingManager
 from intergrax.rag.indexing.strategies.dual_index_strategy import DualIndexStrategy
 from intergrax.rag.ingest.ingest_pipeline import IngestPipeline, IngestRequest
@@ -25,6 +24,7 @@ from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_defaul
 from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
 from intergrax.rag.retrievers.providers.hierarchical_retriever import HierarchicalRetriever
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from testing_support.builder import build_fake_embedding_manager
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -72,7 +72,7 @@ def test_dual_index_ingest_and_hierarchical_retrieve_expands_parents(tmp_path) -
 
     chunks_store = VectorstoreManager(store=InMemoryVectorStore(tenant_id="book"))
     toc_store = VectorstoreManager(store=InMemoryVectorStore(tenant_id="book"))
-    embedding = create_default_embedding_manager()
+    embedding = build_fake_embedding_manager()
     strategy = ParentChildChunkingStrategy(parent_size=400, child_size=80, child_overlap=10)
 
     pipeline = IngestPipeline(
