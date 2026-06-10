@@ -13,3 +13,4 @@ Authoring guides, strategic context, and audit methodology.
 | [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) | Lab stack, OTLP, presets |
 | [HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) | Multi-layer / full-platform audit prompt |
 | [audit/README.md](audit/README.md) | **Per-domain audit instructions** (21 copy-paste prompts) |
+| [implementation-journal/README.md](implementation-journal/README.md) | **Implementation journal** — chronological episode log (Tier-0–3) |

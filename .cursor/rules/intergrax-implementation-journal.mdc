@@ -1,0 +1,52 @@
+---
+description: Persist completed implementation episodes to docs/guides/implementation-journal/
+alwaysApply: true
+---
+
+# Intergrax — Implementation Journal
+
+After every **completed implementation iteration** (full stack: Tier-0 `intergrax/`, Tier-1 `intergrax/runtime/`, Tier-2 `agents/`, Tier-3 `applications/`), append a journal entry. This is in addition to the chat iteration summary — not a replacement for plan or architecture updates.
+
+**Canon:** [`docs/guides/implementation-journal/README.md`](docs/guides/implementation-journal/README.md)  
+**Template:** [`docs/guides/implementation-journal/ENTRY_TEMPLATE.md`](docs/guides/implementation-journal/ENTRY_TEMPLATE.md)
+
+## When to write
+
+Write when the iteration is **complete** per `intergrax-iteration.mdc` (tests run, plan/architecture updated, ADR resolved).
+
+**Skip** for: brainstorming only, typos/formatting, audit-only with no delivery, or operator says **no journal**.
+
+## Required actions
+
+1. Create `docs/guides/implementation-journal/entries/YYYY-MM-DD-<scope>-<slug>.md` from the template.
+2. **English only** in the journal file (chat summary may use operator language).
+3. Set frontmatter: `id`, `date`, `tier`, `scope`, `plan_ref`, `status: completed`, `commit` (`pending` until committed), `adr`.
+4. Fill: Operator request, Summary, Project impact, Traceability, Changed artifacts, Verification, Risks and follow-ups.
+5. Prepend one row to [`INDEX.md`](docs/guides/implementation-journal/INDEX.md) (newest first).
+6. In the chat iteration summary, add: **Journal entry:** `entries/<filename>.md`.
+
+## Scope → traceability
+
+| Path prefix | `tier` | Link architecture + plan |
+|-------------|--------|--------------------------|
+| `intergrax/` (not `runtime/`) | `tier-0` | `docs/architecture/<DOMAIN>.md` + `docs/plan/<DOMAIN>.md` |
+| `intergrax/runtime/` | `tier-1` | Same domain pair |
+| `agents/<slug>/` | `tier-2` | `agents/<slug>/ARCHITECTURE.md` |
+| `applications/<pkg>/` | `tier-3` | `applications/<pkg>/ARCHITECTURE.md` |
+
+## Content rules
+
+- **Link** plan rows, GAP-*, AUDIT-IDEAL-*, ADRs — **do not** duplicate plan tables or architecture canon.
+- One entry per coherent iteration; multiple `plan_ref` values allowed in one entry.
+- `project_impact` = what the Harness or product gained — not a file dump.
+- Significant architecture change → ADR path in frontmatter; else `adr: none — <rationale>`.
+
+## ID convention
+
+`IJ-YYYY-MM-DD-NNN` — sequential `NNN` per calendar day in `INDEX.md`.
+
+## Example index row
+
+```markdown
+| IJ-2026-06-10-001 | 2026-06-10 | tier-0 RAG | M-RAG.23 | [query expansion wiring](entries/2026-06-10-rag-m-rag-23.md) | `94bea682` |
+```

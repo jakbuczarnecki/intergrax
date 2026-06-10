@@ -253,6 +253,7 @@ At the end of every iteration, provide:
 9. **Out-of-scope findings**
 10. **Suggested next step** aligned with the Intergrax Harness AI vision
 11. **One-line commit message** (English) — no commit unless the operator requests
+12. **Journal entry** — path under `docs/guides/implementation-journal/entries/` per [`intergrax-implementation-journal.mdc`](intergrax-implementation-journal.mdc) (English file; skip only when iteration did not complete a deliverable)
 
 ## Completion criteria
 
