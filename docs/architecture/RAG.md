@@ -96,7 +96,7 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-19 | niedoróbka | ~~No inter-iteration retriever switch or latency budget trace~~ — **closed M-RAG.34**: `agentic_iteration_retriever_ids`, `agentic_max_total_latency_ms`, per-iteration trace fields | **P2** | M-RAG.34 **Done** | — |
 | GAP-RAG-20 | niegotowość | ~~No cross-backend tenant isolation contract~~ — **closed M-RAG.35**: `tenant_isolation_contract.py` + gate tests per backend; live qdrant probe in integration soak | **P1** | M-RAG.35 **Done** | — |
 | GAP-RAG-21 | niegotowość | No RAG load/soak gate for production SLO (latency, recall regression under concurrency) | **P2** | M-RAG.36 | — |
-| GAP-RAG-22 | niska jakość | `semantic` chunking has O(n) embed cost per document — no ingest size guard or profile warning | **P2** | M-RAG.37 | — |
+| GAP-RAG-22 | niska jakość | ~~No semantic chunking ingest size guard~~ — **closed M-RAG.37**: `semantic_chunking_max_chars` + `semantic_chunking_size_exceeded` before chunk | **P2** | M-RAG.37 **Done** | — |
 | GAP-RAG-23 | niska jakość | ~~M-RAG.6 query expansion **Partial**~~ — **closed M-RAG.23**: M-RAG.6 **Done** | **P0** | M-RAG.23 **Done** | 14.3 |
 
 **Traceability rule:** no open GAP-RAG row without a **Planned** M-RAG.\* deliverable in [`plan/RAG.md`](../plan/RAG.md). GAP-RAG-15 is an explicit architectural boundary, not a harness defect.
@@ -192,7 +192,7 @@ RETRIEVE (rag.retrieve / RetrievalService)
 |----------------|---------------------|------------------|
 | Short text / small files | `langchain_recursive` (default), `recursive` | Single-pass ingest |
 | Structured office / PDF | `docling`, smart handlers | Parser trace in ingest metadata |
-| Semantic boundaries | `semantic` | Sentence-embedding boundaries — **O(n) embed cost** (M-RAG.37 guard) |
+| Semantic boundaries | `semantic` | Sentence-embedding boundaries — **O(n) embed cost**; reject when loaded text exceeds `semantic_chunking_max_chars` (env `INTERGRAX_RAG_SEMANTIC_CHUNKING_MAX_CHARS`, default 100k) with `semantic_chunking_size_exceeded` |
 | Hierarchical context | `parent_child` | Child chunks indexed; parent metadata for `parent_child` retriever |
 | Book-scale / TOC | `DualIndexStrategy` + `hierarchical` retriever | **Wired** when `hierarchical_index_enabled` or `retriever_id=hierarchical` (M-RAG.24) |
 

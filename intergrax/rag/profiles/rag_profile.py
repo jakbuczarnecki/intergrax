@@ -81,6 +81,7 @@ class RagProfile:
     chunking_strategy_id: str = "langchain_recursive"
     hierarchical_index_enabled: bool = False
     sync_ingest_max_bytes: int = 50_000_000
+    semantic_chunking_max_chars: int = 100_000
     async_ingest_workflow_id: str = "rag-ingest"
     document_parser_slug: Optional[str] = None
     contextual_enrich: ContextualEnrichMode = "off"
@@ -257,6 +258,9 @@ def rag_profile_from_env() -> RagProfile:
         or "langchain_recursive",
         hierarchical_index_enabled=_env_bool("INTERGRAX_RAG_HIERARCHICAL_INDEX", False),
         sync_ingest_max_bytes=_env_int("INTERGRAX_RAG_SYNC_INGEST_MAX_BYTES", 50_000_000),
+        semantic_chunking_max_chars=_env_int(
+            "INTERGRAX_RAG_SEMANTIC_CHUNKING_MAX_CHARS", 100_000
+        ),
         async_ingest_workflow_id=os.getenv("INTERGRAX_RAG_ASYNC_INGEST_WORKFLOW_ID", "rag-ingest").strip()
         or "rag-ingest",
         document_parser_slug=parser_slug,

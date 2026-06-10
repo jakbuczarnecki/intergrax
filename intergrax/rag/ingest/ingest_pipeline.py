@@ -20,7 +20,7 @@ from intergrax.rag.graph.contracts.graph_store import GraphStore
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.graph.indexer.graph_indexer_factory import resolve_graph_indexer
 from intergrax.rag.governance.embedding_version_policy import evaluate_ingest_embedding_version
-from intergrax.rag.ingest.ingest_policy import sync_ingest_allowed
+from intergrax.rag.ingest.ingest_policy import semantic_chunking_allowed, sync_ingest_allowed
 from intergrax.rag.indexing.indexing_manager import IndexingManager
 from intergrax.rag.indexing.strategies.dual_index_strategy import DualIndexStrategy
 from intergrax.rag.profiles.rag_profile import RagProfile
@@ -121,6 +121,20 @@ class IngestPipeline:
             if not docs:
                 return IngestResult(used=False, reason="no_documents_loaded")
 
+            strategy_id = request.chunking_strategy_id or self._profile.chunking_strategy_id
+            sem_allowed, sem_reason, _ = semantic_chunking_allowed(
+                docs=docs,
+                strategy_id=strategy_id,
+                profile=self._profile,
+            )
+            if not sem_allowed:
+                return IngestResult(
+                    used=False,
+                    reason=sem_reason,
+                    file_size_bytes=file_size,
+                    async_job_recommended=True,
+                )
+
             parser_trace: Dict[str, Any] = {}
             parser_id: Optional[str] = None
             first_meta = docs[0].metadata or {}
@@ -128,7 +142,6 @@ class IngestPipeline:
                 parser_trace = dict(first_meta.get(TRACE_METADATA_KEY) or {})
                 parser_id = parser_trace.get("parser_id") or first_meta.get("integration_parser_id")
 
-            strategy_id = request.chunking_strategy_id or self._profile.chunking_strategy_id
             with rag_span(
                 "rag.ingest.chunk",
                 attributes={"rag.ingest.chunking_strategy": strategy_id},

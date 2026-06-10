@@ -58,7 +58,7 @@ Every finding in [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth 
 | GAP-RAG-16 | niska jakość | M-RAG.32 **Done** | 3 |
 | GAP-RAG-19 | niedoróbka | M-RAG.34 **Done** | 3 |
 | GAP-RAG-21 | niegotowość | M-RAG.36 | 3 |
-| GAP-RAG-22 | niska jakość | M-RAG.37 | 3 |
+| GAP-RAG-22 | niska jakość | M-RAG.37 **Done** | 3 |
 | GAP-RAG-15 | ograniczenie | Tier-3 + AHI | — |
 
 **Coverage:** 22 actionable gaps + 1 architectural boundary — **100% mapped**.
@@ -205,7 +205,7 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | 12 | M-RAG.34 | Agentic loop — per-iteration retriever override + cost budget trace fields | **P2** | **Done** | 19 | `test_agentic_loop_iteration_trace.py` |
 | 13 | M-RAG.35 | Cross-backend tenant isolation contract tests | **P1** | **Done** | 20 | `tenant_isolation_contract.py` + gate tests per backend |
 | 14 | M-RAG.36 | RAG load/soak gate (concurrent retrieve SLO) | **P2** | **Planned** | 21 | Nightly or CI workflow with latency/recall budget |
-| 15 | M-RAG.37 | Semantic chunking ingest size guard + clear failure reason | **P2** | **Planned** | 22 | Unit test: oversized doc rejected before O(n) embed |
+| 15 | M-RAG.37 | Semantic chunking ingest size guard + clear failure reason | **P2** | **Done** | 22 | `test_semantic_chunking_size_guard.py` |
 
 **Audit maturity target after M-RAG-DEPTH closeout:** **L3 implementation** for Tier-3 reference hosts; L4 adaptive routing deferred to AHI domain (GAP-RAG-15).
 
@@ -230,6 +230,7 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | 2026-06-10 | M-RAG.31 | `embedding_version_policy.py` — ingest warn, retrieve filter, reindex hook |
 | 2026-06-10 | M-RAG.32 | `llm_tier_classifier.py` + `RagProfile.llm_route_enabled`; trace `route_classifier` |
 | 2026-06-10 | M-RAG.34 | `agentic_policy.py` — per-iteration retriever schedule + latency budget trace on `AgenticRetrievalLoop` |
+| 2026-06-10 | M-RAG.37 | `semantic_chunking_allowed()` — reject oversized docs before semantic O(n) embed |
 
 ---
 
@@ -255,7 +256,7 @@ Ordered queue for RAG domain work. **Active:** M-RAG-DEPTH (15 items). **Closed:
 | 12 | **M-RAG.32** | 3 | **P2** | Optional LLM `QueryRouter` (`llm_route_enabled`, default off) | 16 | **Done** |
 | 13 | **M-RAG.34** | 3 | **P2** | Agentic loop per-iteration retriever override + cost trace | 19 | **Done** |
 | 14 | **M-RAG.36** | 3 | **P2** | RAG load/soak gate (concurrent retrieve SLO) | 21 | **Planned** |
-| 15 | **M-RAG.37** | 3 | **P2** | Semantic chunking ingest size guard | 22 | **Planned** |
+| 15 | **M-RAG.37** | 3 | **P2** | Semantic chunking ingest size guard | 22 | **Done** |
 
 ### Active — AUDIT-IDEAL (RAG band)
 
@@ -316,4 +317,4 @@ Ordered queue for RAG domain work. **Active:** M-RAG-DEPTH (15 items). **Closed:
 
 ## Suggested first PR
 
-**M-RAG.37** (Wave 3) — semantic chunking ingest size guard (or **M-RAG.36** load/soak gate).
+**M-RAG.36** (Wave 3) — RAG load/soak gate (concurrent retrieve SLO).

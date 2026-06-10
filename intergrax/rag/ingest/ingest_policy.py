@@ -8,9 +8,15 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
+from typing import TYPE_CHECKING, Sequence
+
 from intergrax.rag.profiles.rag_profile import RagProfile
 
+if TYPE_CHECKING:
+    from langchain_core.documents import Document
+
 SYNC_INGEST_SIZE_EXCEEDED_REASON = "sync_ingest_size_exceeded"
+SEMANTIC_CHUNKING_SIZE_EXCEEDED_REASON = "semantic_chunking_size_exceeded"
 
 
 def source_file_size_bytes(path: Path) -> int:
@@ -32,6 +38,35 @@ def sync_ingest_allowed(*, path: Path, profile: RagProfile) -> tuple[bool, str, 
             size,
         )
     return True, "ok", size
+
+
+def semantic_chunking_allowed(
+    *,
+    docs: Sequence[Document],
+    strategy_id: str,
+    profile: RagProfile,
+) -> tuple[bool, str, int]:
+    """
+    Reject semantic chunking when loaded document text exceeds the profile char budget.
+
+    Avoids O(n) sentence embedding cost in ``SemanticChunkingStrategy`` for oversized
+    documents. Returns ``(allowed, reason, offending_char_count)``.
+    """
+    if strategy_id != "semantic":
+        return True, "ok", 0
+    max_chars = int(profile.semantic_chunking_max_chars)
+    if max_chars <= 0:
+        return True, "ok", 0
+    for doc in docs:
+        chars = len(doc.page_content or "")
+        if chars > max_chars:
+            return (
+                False,
+                f"{SEMANTIC_CHUNKING_SIZE_EXCEEDED_REASON}:{chars}>{max_chars}",
+                chars,
+            )
+    largest = max((len(doc.page_content or "") for doc in docs), default=0)
+    return True, "ok", largest
 
 
 def build_ingest_idempotency_key(
