@@ -12,13 +12,13 @@
 
 ## Phase TOOL-ENG — Tool engine hardening (2026-06-10 audit)
 
-**Status:** **Active** — **0/10** deliverables Done  
+**Status:** **Active** — **0/13** deliverables Done (audit pass 2: +TOOL-ENG-0, -11, -12)  
 **Architecture canon:** [`architecture/TOOLS.md`](../architecture/TOOLS.md) — [Tool engine production posture](../architecture/TOOLS.md#tool-engine-production-posture-2026-06-10), [Engine gap register](../architecture/TOOLS.md#engine-gap-register-canon)  
 **Audit basis:** Full-stack tool layer audit 2026-06-10 (Tier-0 catalog + Tier-1 selection/invoke/verify)  
 **Priority ladder:** **Band 2ba** — supersedes ad-hoc tool engine fixes until TOOL-ENG P0 closed  
 **ADR:** **Required** for TOOL-ENG-1, TOOL-ENG-2, TOOL-ENG-6 before merge (§42.12 gateway + dispatch semantics)
 
-**Problem statement:** Tier-0 catalog is production-grade (190 tools, contracts, MCP). Tier-1 **agent tool engine** is MVP+: single-pass `ToolsStep`, partial §42.12 gateway, `tool_ids` plan without per-id dispatch, planner exports full registry without router, `tool_scope_policy` not wired to invoker.
+**Problem statement:** Tier-0 catalog is production-grade (190 tools, contracts, MCP). Tier-1 **agent tool engine** is incomplete: **`CatalogToolPlanner` never wired** in Tier-3 bootstrap (ToolsStep no-op on default hosts), single-pass planner when wired, partial §42.12 gateway, `tool_ids` without per-id dispatch, `tools_context_scope` config unused, planner exports full registry without router, `tool_scope_policy` not wired to invoker.
 
 **Target:** Production-parity tool engine — correct dispatch, complete gateway, constrained selection at scale, optional ReAct loop, hard governance.
 
@@ -26,6 +26,7 @@
 
 | ID | Area | Deliverable | Status | Priority | Modules | Acceptance |
 |----|------|-------------|--------|----------|---------|------------|
+| TOOL-ENG-0 | Bootstrap | **Wire `CatalogToolPlanner`** in `materialize_runtime_config` / catalog bridge — `tool_planner` + `resolve_tool_planning_config` + LLM from env | **Planned** | **P0** | `runtime_config_bridge.py`, `catalog_runtime_bridge.py` | Host with `tools_mode=auto` runs ToolsStep; gate integration test |
 | TOOL-ENG-1 | Dispatch | **Per-`tool_id` catalog dispatch** in `ToolRuntime.invoke` — invoke `RuntimeToolInvoker` for ids not handled by Rag/Websearch shims | **Planned** | **P0** | `tool_runtime.py`, `catalog_dispatch.py` (new) | `test_tool_runtime_catalog_dispatch.py`; `jira.*` in plan executes without `use_tools` |
 | TOOL-ENG-2 | Gateway | **Full-catalog `ToolRequest`** — `RuntimeToolGateway` routes any registered `tool_id` → invoker (not `unknown_capability_tool`) | **Planned** | **P0** | `tool_gateway.py`, `uaep_tool_gateway.py` | UAEP `ctx.invoke_tool(jira.get_issue)` integration test |
 | TOOL-ENG-3 | Policy | **Wire `tool_scope_policy`** from `RuntimeConfig` into `RuntimeToolInvoker` at `RuntimeContext.build()` | **Planned** | **P0** | `runtime_context.py` | `test_runtime_context_scope_policy_wiring.py`; denied tool raises on `ToolsStep` path |
@@ -36,10 +37,12 @@
 | TOOL-ENG-8 | Governance | **`tools_mode=required` hard fail** — raise `RunError` / fail run when zero tool calls | **Planned** | P2 | `tools_step.py` | `test_tools_mode_required_fails.py` |
 | TOOL-ENG-9 | Performance | **Parallel tool invoke** — concurrent execution for `side_effects=False` calls in one plan batch (bounded) | **Planned** | P2 | `tools_step.py`, `invoker.py` | Unit test: 3 read-only tools complete < sum(serial) |
 | TOOL-ENG-10 | AHI | **Dynamic tool subset hook** — adaptive harness selects planner schema subset | **Planned** | P3 | `ADAPTIVE_HARNESS_INTELLIGENCE` integration | Hook test with fixture profile |
+| TOOL-ENG-11 | Config | **Implement `tools_context_scope`** — planner receives message per scope enum | **Planned** | P1 | `tools_step.py`, `tool_planning_service.py` | conversation/full scopes change planner input |
+| TOOL-ENG-12 | Config | **Wire `tool_choice`** from host/`tools_mode` to `plan_tools` | **Planned** | P2 | `tools_step.py`, `RuntimeConfig` | `required` maps to tool_choice required on native path |
 
 **Delivery rule:** One **TOOL-ENG-\*** ID per PR → update this table + [§6.1e](#61e-harness-implementation-queue--tool-engine-active) + architecture gap register → `pytest -m gate` + new acceptance tests green.
 
-**Suggested PR order:** TOOL-ENG-3 → TOOL-ENG-1 → TOOL-ENG-2 → TOOL-ENG-4 → TOOL-ENG-5 → TOOL-ENG-6 → TOOL-ENG-8 → TOOL-ENG-7 → TOOL-ENG-9 → TOOL-ENG-10.
+**Suggested PR order:** TOOL-ENG-0 → TOOL-ENG-3 → TOOL-ENG-1 → TOOL-ENG-2 → TOOL-ENG-4 → TOOL-ENG-11 → TOOL-ENG-5 → TOOL-ENG-6 → TOOL-ENG-12 → TOOL-ENG-8 → TOOL-ENG-7 → TOOL-ENG-9 → TOOL-ENG-10.
 
 **Explicitly excluded:** New catalog bundles (§6.3), business agent tools (Phase K), replacing `ToolContract` / provider handlers.
 
@@ -47,7 +50,9 @@
 
 | Metric | Baseline (2026-06-10) | TOOL-ENG closeout target |
 |--------|----------------------|--------------------------|
-| Arbitrary `tool_id` via `ToolRequest` | ~20 runtime-bound + capability | Any registered id |
+| `tool_planner` wired on default hosts | **Never** (`None`) | Auto from env + LLM |
+| Arbitrary `tool_id` via `ToolRequest` | 18 runtime-bound + capability | Any registered id |
+| `tools_context_scope` | Config dead field | All 3 scopes functional |
 | `EnginePlan.tool_ids` execution | rag/web only | All listed ids |
 | Planner schema vs `allowed_tools` | Full registry | Filtered (strategy) |
 | Tool loop iterations | 1 | Configurable `max_tool_iterations` |
@@ -60,6 +65,7 @@
 | Date | ID | Summary |
 |------|-----|---------|
 | 2026-06-10 | TOOL-ENG (register) | Full-stack audit; architecture + plan pair updated; Band 2ba queue opened |
+| 2026-06-10 | TOOL-ENG-0,11,12 | Audit pass 2: planner bootstrap gap, dead tools_context_scope, tool_choice unwired |
 
 ---
 
@@ -70,16 +76,19 @@
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
 | 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
-| 1 | **TOOL-ENG-3** | Code | **Planned** | `tool_scope_policy` → invoker wiring | scope deny on ToolsStep path |
-| 2 | **TOOL-ENG-1** | Code + ADR | **Planned** | Per-`tool_id` dispatch in `ToolRuntime` | catalog dispatch tests |
-| 3 | **TOOL-ENG-2** | Code + ADR | **Planned** | Full-catalog gateway | UAEP jira tool integration test |
-| 4 | **TOOL-ENG-4** | Code | **Planned** | Plan constraints → planner | constrained schema gate |
-| 5 | **TOOL-ENG-5** | Code | **Planned** | `ToolSelectionStrategy` | protocol + static impl |
-| 6 | **TOOL-ENG-6** | Code + ADR | **Planned** | Tool loop step | 2-iteration integration test |
-| 7 | **TOOL-ENG-8** | Code | **Planned** | `tools_mode=required` fail | unit test |
-| 8 | **TOOL-ENG-7** | Code | **Planned** | Post-tool verify HIGH+ | middleware test |
-| 9 | **TOOL-ENG-9** | Code | **Planned** | Parallel read-only invoke | unit test |
-| 10 | **TOOL-ENG-10** | Code | **Planned** | AHI tool subset hook | hook fixture test |
+| 1 | **TOOL-ENG-0** | Code | **Planned** | `CatalogToolPlanner` bootstrap in `materialize_runtime_config` | ToolsStep runs on lab host |
+| 2 | **TOOL-ENG-3** | Code | **Planned** | `tool_scope_policy` → invoker wiring | scope deny on ToolsStep path |
+| 3 | **TOOL-ENG-1** | Code + ADR | **Planned** | Per-`tool_id` dispatch in `ToolRuntime` | catalog dispatch tests |
+| 4 | **TOOL-ENG-2** | Code + ADR | **Planned** | Full-catalog gateway | UAEP jira tool integration test |
+| 5 | **TOOL-ENG-4** | Code | **Planned** | Plan constraints → planner | constrained schema gate |
+| 6 | **TOOL-ENG-11** | Code | **Planned** | `tools_context_scope` implementation | scope enum tests |
+| 7 | **TOOL-ENG-5** | Code | **Planned** | `ToolSelectionStrategy` | protocol + static impl |
+| 8 | **TOOL-ENG-6** | Code + ADR | **Planned** | Tool loop step | 2-iteration integration test |
+| 9 | **TOOL-ENG-12** | Code | **Planned** | `tool_choice` wiring | required mode test |
+| 10 | **TOOL-ENG-8** | Code | **Planned** | `tools_mode=required` fail | unit test |
+| 11 | **TOOL-ENG-7** | Code | **Planned** | Post-tool verify HIGH+ | middleware test |
+| 12 | **TOOL-ENG-9** | Code | **Planned** | Parallel read-only invoke | unit test |
+| 13 | **TOOL-ENG-10** | Code | **Planned** | AHI tool subset hook | hook fixture test |
 
 **Explicitly excluded:** K.1, K.2, new product catalog tools — [§6.3 product backlog](../plan/PLATFORM_FOUNDATION.md).
 
