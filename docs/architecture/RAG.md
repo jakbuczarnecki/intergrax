@@ -95,7 +95,7 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-18 | niegotowość | ~~No Tier-3 GraphRAG prod preset~~ — **closed M-RAG.33**: `production_graph_rag_profile()` requires `neo4j`; `production_rag_profile()` documented harness-only (in-memory graph) | **P1** | M-RAG.33 **Done** | — |
 | GAP-RAG-19 | niedoróbka | ~~No inter-iteration retriever switch or latency budget trace~~ — **closed M-RAG.34**: `agentic_iteration_retriever_ids`, `agentic_max_total_latency_ms`, per-iteration trace fields | **P2** | M-RAG.34 **Done** | — |
 | GAP-RAG-20 | niegotowość | ~~No cross-backend tenant isolation contract~~ — **closed M-RAG.35**: `tenant_isolation_contract.py` + gate tests per backend; live qdrant probe in integration soak | **P1** | M-RAG.35 **Done** | — |
-| GAP-RAG-21 | niegotowość | No RAG load/soak gate for production SLO (latency, recall regression under concurrency) | **P2** | M-RAG.36 | — |
+| GAP-RAG-21 | niegotowość | ~~No RAG load/soak gate~~ — **closed M-RAG.36**: `evaluation/load_soak.py` concurrent retrieve SLO + CI `rag-guard.yml` | **P2** | M-RAG.36 **Done** | — |
 | GAP-RAG-22 | niska jakość | ~~No semantic chunking ingest size guard~~ — **closed M-RAG.37**: `semantic_chunking_max_chars` + `semantic_chunking_size_exceeded` before chunk | **P2** | M-RAG.37 **Done** | — |
 | GAP-RAG-23 | niska jakość | ~~M-RAG.6 query expansion **Partial**~~ — **closed M-RAG.23**: M-RAG.6 **Done** | **P0** | M-RAG.23 **Done** | 14.3 |
 
@@ -276,7 +276,7 @@ OTel span names (tracer `intergrax.rag`): `rag.retrieve`, `rag.retrieve.single_p
 - Metrics: `recall@k`, MRR — `evaluation/metrics.py`
 - Golden harness: `tests/fixtures/rag_golden/retrieval_cases.json` — scenarios `retrieval`, `graph_rag`, `multi_hop`, `agentic`
 - CI: `.github/workflows/rag-guard.yml`
-- Load/soak SLO gate: **not present** (GAP-RAG-21) — M-RAG.36
+- Load/soak SLO gate: `run_retrieval_load_soak()` — concurrent workers, p95 latency budget, per-query recall regression (`test_rag_load_soak_gate.py`; CI `.github/workflows/rag-guard.yml`)
 - Citation preservation at **response composer** level; engine emits `RetrievalResult.citations` and `rag.retrieve` returns `RagCitationResult`
 
 ---
@@ -342,4 +342,4 @@ Code-backed audit (`guides/audit/RAG.md`, mode `audit-only`). Key confirmations:
 | Agents bypass vectorstore | **No violation** | No `vectorstore.query` in `agents/` |
 | Vector manifest stability | **Partial** | `integrations/providers/vector_store/*/manifest.py` — stable vs beta per GAP-RAG-07 row above |
 
-**Posture unchanged:** L2.5 implementation / L3 control plane. All GAP-RAG rows remain open except GAP-RAG-15 (architectural boundary). Closeout queue: M-RAG.23 … M-RAG.37 in [`plan/RAG.md`](../plan/RAG.md).
+**Posture:** L3 implementation target for Tier-3 reference hosts — **M-RAG-DEPTH complete** (2026-06-10). Actionable GAP-RAG rows closed; **GAP-RAG-15** remains an explicit architectural boundary (Tier-3 + AHI).
