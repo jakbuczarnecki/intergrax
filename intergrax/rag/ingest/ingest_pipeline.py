@@ -19,6 +19,7 @@ from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddi
 from intergrax.rag.graph.contracts.graph_store import GraphStore
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.graph.indexer.graph_indexer_factory import resolve_graph_indexer
+from intergrax.rag.governance.embedding_version_policy import evaluate_ingest_embedding_version
 from intergrax.rag.ingest.ingest_policy import sync_ingest_allowed
 from intergrax.rag.indexing.indexing_manager import IndexingManager
 from intergrax.rag.indexing.strategies.dual_index_strategy import DualIndexStrategy
@@ -44,6 +45,8 @@ class IngestResult:
     vector_ids: List[str] = field(default_factory=list)
     parser_id: Optional[str] = None
     parser_trace: Dict[str, Any] = field(default_factory=dict)
+    version_warnings: List[str] = field(default_factory=list)
+    reindex_recommended: bool = False
 
 
 class IngestPipeline:
@@ -95,6 +98,12 @@ class IngestPipeline:
                 )
 
             base_metadata = dict(request.base_metadata)
+            version_policy = evaluate_ingest_embedding_version(
+                profile=self._profile,
+                base_metadata=base_metadata,
+                source_path=str(path),
+                indexed_version_hint=base_metadata.get("indexed_embedding_model_version"),
+            )
             if self._profile.embedding_model_version:
                 base_metadata["embedding_model_version"] = self._profile.embedding_model_version
 
@@ -194,6 +203,8 @@ class IngestPipeline:
                 vector_ids=vector_ids,
                 parser_id=parser_id,
                 parser_trace=parser_trace,
+                version_warnings=list(version_policy.warnings),
+                reindex_recommended=version_policy.reindex_enqueued,
             )
 
     def _uses_dual_index(self) -> bool:

@@ -88,7 +88,7 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-11 | niska jakość | ~~No structured retrieval errors~~ — **closed M-RAG.28**: `RetrievalError` taxonomy + optional `RetrieverVectorCircuitBreaker` | **P2** | M-RAG.28 **Done** | — |
 | GAP-RAG-12 | niska jakość | ~~Asymmetric retry~~ — **closed M-RAG.28**: `RetrieverEngine.DEFAULT_MAX_RETRIES=2` | **P2** | M-RAG.28 **Done** | — |
 | GAP-RAG-13 | niedoróbka | ~~No formal `Citation` on engine output~~ — **closed M-RAG.29**: `retrieval/citation.py` + `RagCitationResult` | **P2** | M-RAG.29 **Done** | — |
-| GAP-RAG-14 | niedoróbka | `embedding_model_version` on profile/metadata with no mismatch warn, filter, or reindex queue policy | **P2** | M-RAG.31 | — |
+| GAP-RAG-14 | niedoróbka | ~~No embedding version policy~~ — **closed M-RAG.31**: warn on ingest, optional retrieve filter, reindex queue hook | **P2** | M-RAG.31 **Done** | — |
 | GAP-RAG-15 | ograniczenie | No autonomous MIME/size-based chunking or retriever selection — Tier-3 must define `RagProfile` | — | Tier-3 + AHI | — |
 | GAP-RAG-16 | niska jakość | `QueryRouter` tier selection is word-count heuristic only — no LLM intent / complexity classifier | **P2** | M-RAG.32 | — |
 | GAP-RAG-17 | niedoróbka | ~~`multiquery` not activated by `query_expansion`~~ — **closed M-RAG.23**: `effective_retriever(deep)` returns `multiquery` when expansion enabled | **P0** | M-RAG.23 **Done** | 14.3 |
@@ -138,6 +138,7 @@ RETRIEVE (rag.retrieve / RetrievalService)
 | Routing | `routing/query_router.py` | `fast` / `standard` / `deep` tiers (adaptive cost) |
 | Retrievers | `retrievers/` | Registry: vector, hybrid, fusion (RRF), MMR, parent–child, hierarchical, multi-query, graph_rag |
 | Resilience | `retrievers/resilience/`, `retrieval/retrieval_errors.py` | Fallback chain, `RetrievalError`, optional vector circuit breaker |
+| Governance | `governance/embedding_version_policy.py` | Embedding version warn/filter + reindex queue hooks |
 | Rerankers | `rerankers/` | Registry + integration slugs (`cohere_rerank`, `jina_rerank`) |
 | Chunking | `document_splitters/` | `recursive`, `langchain_recursive`, `semantic`, `parent_child`, `docling` |
 | Loaders | `document_loaders/` | Handler registry + `ParserPipeline`; parsers via Integration catalog |

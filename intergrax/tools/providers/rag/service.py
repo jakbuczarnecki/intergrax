@@ -88,7 +88,10 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
         "retrieval_latency_ms": result.trace.retrieval_latency_ms,
         "rerank_latency_ms": result.trace.rerank_latency_ms,
         "citation_count": len(citations),
+        "embedding_version_filtered_count": result.trace.embedding_version_filtered_count,
     }
+    if result.trace.embedding_version_warnings:
+        diagnostics["embedding_version_warnings"] = list(result.trace.embedding_version_warnings)
     if poisoning_warnings:
         diagnostics["poisoning_review_warnings"] = poisoning_warnings
     if poisoning_reason:

@@ -11,6 +11,7 @@ from typing import Any, List, Optional
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 
 from intergrax.rag.profiles.rag_profile import RagProfile
+from intergrax.rag.governance.embedding_version_policy import filter_chunks_by_embedding_version
 from intergrax.rag.retrieval.citation import citations_from_chunks
 from intergrax.rag.retrieval.retrieval_errors import RetrievalError
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
@@ -169,7 +170,21 @@ class RetrievalService:
             if threshold is not None:
                 chunks = [c for c in chunks if c.score >= float(threshold)]
 
+            chunks, filtered_count, version_warnings = filter_chunks_by_embedding_version(
+                chunks,
+                profile=self._profile,
+            )
+            trace.embedding_version_filtered_count = filtered_count
+            trace.embedding_version_warnings = list(version_warnings)
+
             if not chunks:
+                if filtered_count > 0:
+                    return RetrievalResult(
+                        chunks=[],
+                        used=False,
+                        reason="embedding_version_mismatch",
+                        trace=trace,
+                    )
                 return RetrievalResult(chunks=[], used=False, reason="below_score_threshold", trace=trace)
 
             result = RetrievalResult(

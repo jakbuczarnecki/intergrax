@@ -54,7 +54,7 @@ M-RAG.1–M-RAG.22 Done · **M-RAG-DEPTH active** (M-RAG.23–M-RAG.37 ← GAP-R
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-GAP-RAG-14 embedding version policy · GAP-RAG-16 LLM QueryRouter · GAP-RAG-19 agentic retriever override · GAP-RAG-21 no RAG load/soak gate · GAP-RAG-22 semantic chunking size guard · `pinecone`/`milvus`/`vespa` beta until ops soak
+GAP-RAG-16 LLM QueryRouter · GAP-RAG-19 agentic retriever override · GAP-RAG-21 no RAG load/soak gate · GAP-RAG-22 semantic chunking size guard · `pinecone`/`milvus`/`vespa` beta until ops soak
 
 ---
 

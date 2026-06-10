@@ -35,6 +35,8 @@ class RetrievalTrace:
     attempted_retriever_ids: List[str] = field(default_factory=list)
     fallback_applied: bool = False
     retrieval_error_kind: Optional[str] = None
+    embedding_version_filtered_count: int = 0
+    embedding_version_warnings: List[str] = field(default_factory=list)
 
 
 @dataclass

@@ -93,6 +93,8 @@ class RagProfile:
 
     # Governance / ops
     embedding_model_version: Optional[str] = None
+    embedding_version_warn_on_ingest: bool = True
+    embedding_version_filter_on_retrieve: bool = False
     max_context_chars: int = 4000
 
     extras: dict[str, str] = field(default_factory=dict)
@@ -240,6 +242,11 @@ def rag_profile_from_env() -> RagProfile:
         contextual_enrich=contextual,
         query_expansion=query_expansion,
         embedding_model_version=os.getenv("INTERGRAX_RAG_EMBEDDING_MODEL_VERSION", "").strip() or None,
+        embedding_version_warn_on_ingest=_env_bool("INTERGRAX_RAG_EMBEDDING_VERSION_WARN_INGEST", True),
+        embedding_version_filter_on_retrieve=_env_bool(
+            "INTERGRAX_RAG_EMBEDDING_VERSION_FILTER_RETRIEVE",
+            False,
+        ),
         max_context_chars=_env_int("INTERGRAX_RAG_MAX_CONTEXT_CHARS", 4000),
         agentic_enabled=_env_bool("INTERGRAX_RAG_AGENTIC_ENABLED", False),
         agentic_max_iterations=_env_int("INTERGRAX_RAG_AGENTIC_MAX_ITERATIONS", 3),
