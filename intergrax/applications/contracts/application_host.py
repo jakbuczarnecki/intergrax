@@ -65,6 +65,10 @@ class ApplicationFeatures(BaseModel):
         default=False,
         description="Expose read-only trace explorer HTTP routes on product hosts (AUDIT-IDEAL-27.1)",
     )
+    graph_editor_enabled: bool = Field(
+        default=False,
+        description="Expose graph editor / visualization HTTP routes (AUDIT-IDEAL-27.4)",
+    )
 
     @classmethod
     def lab_defaults(cls) -> ApplicationFeatures:
@@ -90,4 +94,5 @@ class ApplicationFeatures(BaseModel):
             modality_worker_pool_enabled=True,
             agent_simulator_enabled=True,
             trace_explorer_enabled=True,
+            graph_editor_enabled=True,
         )

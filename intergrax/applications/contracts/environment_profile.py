@@ -258,6 +258,7 @@ class AdaptiveProfile(BaseModel):
     feature_flag_slug: str | None = None
     rollout_flag_key: str = "harness.adaptive.recommend"
     live_model_routing_enabled: bool = False
+    capability_marketplace_enabled: bool = False
 
 
 class GovernanceProfile(BaseModel):
@@ -267,6 +268,15 @@ class GovernanceProfile(BaseModel):
 
     quarterly_strategy_review_enabled: bool = False
     architecture_health_metrics_enabled: bool = False
+
+
+class IntegrationGovernanceProfile(BaseModel):
+    """Integration marketplace and catalog governance (AUDIT-IDEAL-13.1 / 13.2)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    marketplace_catalog_enabled: bool = False
+    catalog_hot_reload_enabled: bool = False
 
 
 class ScalingProfile(BaseModel):
@@ -351,6 +361,9 @@ class ApplicationEnvironmentProfile(BaseModel):
     reasoning_profile: ReasoningProfile = Field(default_factory=ReasoningProfile)
     scaling_profile: ScalingProfile = Field(default_factory=ScalingProfile)
     governance_profile: GovernanceProfile = Field(default_factory=GovernanceProfile)
+    integration_governance_profile: IntegrationGovernanceProfile = Field(
+        default_factory=IntegrationGovernanceProfile
+    )
     identity_profile: IdentityProfile = Field(default_factory=IdentityProfile)
     security_profile: ApplicationSecurityProfile = Field(
         default_factory=ApplicationSecurityProfile
@@ -677,6 +690,11 @@ class ApplicationEnvironmentProfile(BaseModel):
                     AdaptiveLoopKind.ROUTING_TUNING,
                 ],
                 live_model_routing_enabled=True,
+                capability_marketplace_enabled=True,
+            ),
+            integration_governance_profile=IntegrationGovernanceProfile(
+                marketplace_catalog_enabled=True,
+                catalog_hot_reload_enabled=True,
             ),
             governance_profile=GovernanceProfile(
                 quarterly_strategy_review_enabled=True,

@@ -6,7 +6,7 @@
 **Baseline:** **32/32 L3** (`scripts/harness_maturity_report.py`, IDEAL-L3 W2 Done)  
 **Hub:** [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) · Band **2az** · queue **§6.1au**  
 **Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](../guides/ARCHITECTURE_DEBT_REGISTER.md)  
-**Status:** **W3 P2 complete** (2026-06-09) — **72/80 Done** · **4 Deferred §6.3** · **4 Planned (P3)**
+**Status:** **AUDIT-IDEAL harness complete** (2026-06-09) — **76/80 Done** · **4 Deferred §6.3** · **0 Planned**
 
 > **Scope:** Close gaps between **L3 Production Harness OS** and **full ideal architecture** (modular, elastic, complete). Harness infrastructure only unless row is explicitly **Deferred §6.3** (product).
 
@@ -61,8 +61,8 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-11.3 | Tools | 11 | Oversized-tool lint enforcement in CI (adoption sweep) | P2 | `TOOLS` | **Done** |
 | AUDIT-IDEAL-12.1 | Skills | 12 | LangGraph-compatible skill pack import path | P2 | `SKILLS` | **Done** |
 | AUDIT-IDEAL-12.2 | Skills | 12 | Dynamic skill selection L4 hook (AHI) | P2 | `SKILLS` · `ADAPTIVE_HARNESS_INTELLIGENCE` | **Done** |
-| AUDIT-IDEAL-13.1 | Integrations | 13 | Integration marketplace catalog + trust scoring | P3 | `INTEGRATIONS` | Planned |
-| AUDIT-IDEAL-13.2 | Integrations | 13 | Catalog hot-reload without host restart | P3 | `INTEGRATIONS` | Planned |
+| AUDIT-IDEAL-13.1 | Integrations | 13 | Integration marketplace catalog + trust scoring | P3 | `INTEGRATIONS` | **Done** |
+| AUDIT-IDEAL-13.2 | Integrations | 13 | Catalog hot-reload without host restart | P3 | `INTEGRATIONS` | **Done** |
 | AUDIT-IDEAL-14.1 | RAG | 14 | Graph RAG as default production retrieval profile | P1 | `MEMORY` · `INTEGRATIONS` | **Done** |
 | AUDIT-IDEAL-14.2 | RAG | 14 | Retrieval poisoning defense live on product hosts | P1 | `MEMORY` | **Done** |
 | AUDIT-IDEAL-15.1 | Memory | 15 | Org memory 2.5 (organizational LTM scope) | **P0** | `MEMORY` | **Done** |
@@ -96,7 +96,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-27.1 | DX | 27 | Trace Explorer interactive UI (beyond lab APIs) | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Done** |
 | AUDIT-IDEAL-27.2 | DX | 27 | Replay environment HTTP API on product hosts | P1 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Done** |
 | AUDIT-IDEAL-27.3 | DX | 27 | Agent simulator on product hosts (not CLI-only) | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Done** |
-| AUDIT-IDEAL-27.4 | DX | 27 | Visual builder / graph editor (Phase 2 UI) | P3 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | Planned |
+| AUDIT-IDEAL-27.4 | DX | 27 | Visual builder / graph editor (Phase 2 UI) | P3 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Done** |
 | AUDIT-IDEAL-28.1 | Tier-3 hosts | 28 | Durable async queue default beyond SQLite (DEBT-28-01) | P1 | `TIER3_APPLICATION_ENVIRONMENT` | **Done** |
 | AUDIT-IDEAL-28.2 | Tier-3 hosts | 28 | Queue worker scaffold-default (`INCLUDE_QUEUE_WORKER`) | P1 | `TIER3_APPLICATION_ENVIRONMENT` | **Done** |
 | AUDIT-IDEAL-28.3 | Tier-3 hosts | 28 | LKW hybrid daemon (CFG-14) | P4 | `TIER3_APPLICATION_ENVIRONMENT` | **Deferred §6.3** |
@@ -113,7 +113,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-32.2 | Doc governance | 32 | Scorecard auto-sync on plan row change (extend IDEAL-32.3) | P2 | `PLATFORM_FOUNDATION` | **Done** |
 | AUDIT-IDEAL-AHI.1 | Adaptive Harness L4 | 25 | 30-day L4 closed-loop evidence on ≥3 golden scenarios (real deploy) | P1 | `ADAPTIVE_HARNESS_INTELLIGENCE` | **Done** |
 | AUDIT-IDEAL-AHI.2 | Adaptive Harness L4 | 25 | Bounded policy learning without governance drift | P2 | `ADAPTIVE_HARNESS_INTELLIGENCE` | **Done** |
-| AUDIT-IDEAL-AHI.3 | Adaptive Harness L4 | 25 | Capability marketplace readiness (trust, certification, billing) | P3 | `ADAPTIVE_HARNESS_INTELLIGENCE` | Planned |
+| AUDIT-IDEAL-AHI.3 | Adaptive Harness L4 | 25 | Capability marketplace readiness (trust, certification, billing) | P3 | `ADAPTIVE_HARNESS_INTELLIGENCE` | **Done** |
 
 ---
 

@@ -613,6 +613,40 @@ def test_audit_ideal_23_1_immutable_audit_trail() -> None:
     assert len(wiring.report.regions) >= 2
 
 
+def test_audit_ideal_13_1_integration_marketplace() -> None:
+    from intergrax.applications._shared.integration_marketplace_wiring import (
+        resolve_integration_marketplace_wiring,
+    )
+
+    wiring = resolve_integration_marketplace_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+    assert wiring.catalog is not None
+
+
+def test_audit_ideal_13_2_catalog_hot_reload() -> None:
+    from intergrax.applications._shared.catalog_hot_reload_wiring import resolve_catalog_hot_reload_wiring
+
+    wiring = resolve_catalog_hot_reload_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+
+
+def test_audit_ideal_27_4_graph_editor() -> None:
+    from intergrax.applications._shared.graph_editor_wiring import resolve_graph_editor_wiring
+
+    wiring = resolve_graph_editor_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+
+
+def test_audit_ideal_ahi_3_capability_marketplace() -> None:
+    from intergrax.applications._shared.capability_marketplace_wiring import (
+        resolve_capability_marketplace_wiring,
+    )
+
+    wiring = resolve_capability_marketplace_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+    assert wiring.report is not None and wiring.report.ready is True
+
+
 def test_audit_ideal_deferred_register() -> None:
     register = REPO_ROOT / "docs" / "plan" / "AUDIT_IDEAL_2026.md"
     text = register.read_text(encoding="utf-8")
