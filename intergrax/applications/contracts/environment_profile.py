@@ -94,6 +94,7 @@ class PromptProfile(BaseModel):
 
     catalog_path: Path | None = None
     load_on_startup: bool = True
+    approval_required: bool = False
 
 
 class ContextProfile(BaseModel):
@@ -169,6 +170,7 @@ class CostProfile(BaseModel):
     max_planner_iterations: int | None = Field(default=None, ge=1)
     quota_degrade_threshold_ratio: float = Field(default=0.90, ge=0.0, le=1.0)
     forecasting_enabled: bool = False
+    optimization_recommendations_enabled: bool = False
 
 
 class EvaluationProfile(BaseModel):
@@ -627,7 +629,9 @@ class ApplicationEnvironmentProfile(BaseModel):
                 max_llm_calls=32,
                 max_tool_calls=64,
                 forecasting_enabled=True,
+                optimization_recommendations_enabled=True,
             ),
+            prompt_profile=PromptProfile(approval_required=True),
             modality_profile=cls._product_modality_profile(),
             adaptive_profile=AdaptiveProfile(
                 enabled=True,

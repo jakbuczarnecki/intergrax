@@ -414,6 +414,62 @@ def test_audit_ideal_30_3_on_call_ownership() -> None:
     assert registry.records[0].approved is True
 
 
+def test_audit_ideal_17_1_prompt_approval() -> None:
+    from intergrax.applications._shared.prompt_approval_wiring import resolve_prompt_approval_wiring
+
+    wiring = resolve_prompt_approval_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+
+
+def test_audit_ideal_17_2_prompt_compare() -> None:
+    from intergrax.applications._shared.prompt_diff_wiring import prompt_compare_enabled
+
+    assert prompt_compare_enabled(ApplicationEnvironmentProfile.product_defaults()) is True
+
+
+def test_audit_ideal_18_2_cross_host_certification() -> None:
+    from intergrax.applications._shared.cross_host_agent_certification import certify_agent_across_hosts
+    from intergrax.contracts.agent_contract_meta import AgentContract
+
+    contract = AgentContract(
+        id="echo",
+        name="echo",
+        description="d",
+        capabilities=["echo"],
+        production_eligible=True,
+        owner_team="t",
+        owner_contact="o@example.com",
+        runbook_ref="rb",
+        modality_profile_id="lab.default",
+    )
+    report = certify_agent_across_hosts(
+        contract,
+        environments=(
+            ApplicationEnvironmentProfile.lab_defaults(),
+            ApplicationEnvironmentProfile.product_defaults(),
+        ),
+    )
+    assert report.passed is True
+
+
+def test_audit_ideal_19_2_capability_negotiation() -> None:
+    from intergrax.applications._shared.capability_negotiation_wiring import negotiate_runtime_capabilities
+
+    result = negotiate_runtime_capabilities(
+        ("echo",),
+        available_capabilities=("echo",),
+        env=ApplicationEnvironmentProfile.lab_defaults(),
+    )
+    assert result.negotiated is True
+
+
+def test_audit_ideal_24_2_cost_optimization() -> None:
+    from intergrax.applications._shared.cost_optimization_wiring import resolve_cost_optimization_wiring
+
+    wiring = resolve_cost_optimization_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+
+
 def test_audit_ideal_deferred_register() -> None:
     register = REPO_ROOT / "docs" / "plan" / "AUDIT_IDEAL_2026.md"
     text = register.read_text(encoding="utf-8")

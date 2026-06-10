@@ -6,7 +6,7 @@
 **Baseline:** **32/32 L3** (`scripts/harness_maturity_report.py`, IDEAL-L3 W2 Done)  
 **Hub:** [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) · Band **2az** · queue **§6.1au**  
 **Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](../guides/ARCHITECTURE_DEBT_REGISTER.md)  
-**Status:** **W3 P2 in progress** (2026-06-09) — **51/78 Done** · **4 Deferred §6.3** · **23 Planned**
+**Status:** **W3 P2 in progress** (2026-06-09) — **56/78 Done** · **4 Deferred §6.3** · **18 Planned**
 
 > **Scope:** Close gaps between **L3 Production Harness OS** and **full ideal architecture** (modular, elastic, complete). Harness infrastructure only unless row is explicitly **Deferred §6.3** (product).
 
@@ -70,12 +70,12 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-15.3 | Memory | 15 | Entity graph memory ship (beyond RFC — MEM-DEPTH-5.1) | P2 | `MEMORY` | **Done** |
 | AUDIT-IDEAL-16.1 | Context | 16 | Online context drift monitoring + alerts | P1 | `MEMORY` | **Done** |
 | AUDIT-IDEAL-16.2 | Context | 16 | Semantic compression strategy in production profiles | P2 | `MEMORY` | **Done** |
-| AUDIT-IDEAL-17.1 | Prompt registry | 17 | Prompt approval workflow (beyond registry metadata) | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | Planned |
-| AUDIT-IDEAL-17.2 | Prompt registry | 17 | Prompt diff / compare API for all managed prompts | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | Planned |
+| AUDIT-IDEAL-17.1 | Prompt registry | 17 | Prompt approval workflow (beyond registry metadata) | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
+| AUDIT-IDEAL-17.2 | Prompt registry | 17 | Prompt diff / compare API for all managed prompts | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
 | AUDIT-IDEAL-18.1 | Agent assembly | 18 | `ModalityProfile` mandatory on certified agents | P1 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
-| AUDIT-IDEAL-18.2 | Agent assembly | 18 | Cross-host agent reuse certification test suite | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | Planned |
+| AUDIT-IDEAL-18.2 | Agent assembly | 18 | Cross-host agent reuse certification test suite | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
 | AUDIT-IDEAL-19.1 | Registry | 19 | Durable cross-host registry snapshot store (DEBT-19-01) | **P0** | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
-| AUDIT-IDEAL-19.2 | Registry | 19 | Capability negotiation at runtime resolve | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | Planned |
+| AUDIT-IDEAL-19.2 | Registry | 19 | Capability negotiation at runtime resolve | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
 | AUDIT-IDEAL-20.1 | Capability graph | 20 | Product CI blast-radius check on tool/skill changes | P1 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
 | AUDIT-IDEAL-20.2 | Capability graph | 20 | Policy change impact visualization CLI | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | Planned |
 | AUDIT-IDEAL-21.1 | Observability | 21 | Causal diagnostics beyond trace bridge (ops tooling) | P2 | `OBSERVABILITY` | Planned |
@@ -86,7 +86,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-23.1 | Security | 23 | Immutable multi-region security audit trail | P2 | `UNIFIED_EXECUTION_RUNTIME` | Planned |
 | AUDIT-IDEAL-23.2 | Security | 23 | Retrieval poisoning + tool injection live on product hosts | P1 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
 | AUDIT-IDEAL-24.1 | Cost | 24 | Cost forecasting from historical run patterns | P2 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
-| AUDIT-IDEAL-24.2 | Cost | 24 | Automated cost optimization recommendations (AHI) | P2 | `UNIFIED_EXECUTION_RUNTIME` · `ADAPTIVE_HARNESS_INTELLIGENCE` | Planned |
+| AUDIT-IDEAL-24.2 | Cost | 24 | Automated cost optimization recommendations (AHI) | P2 | `UNIFIED_EXECUTION_RUNTIME` · `ADAPTIVE_HARNESS_INTELLIGENCE` | **Done** |
 | AUDIT-IDEAL-24.3 | Cost | 24 | CPU/memory/concurrency quotas with tenant fairness | P2 | `UNIFIED_EXECUTION_RUNTIME` · `ELASTIC_CAPACITY_AND_SCALING` | Planned |
 | AUDIT-IDEAL-25.1 | Evaluation | 25 | Shadow eval path automation (DEBT-25-01) | P1 | `CRITIC_VERIFICATION` | **Done** |
 | AUDIT-IDEAL-25.2 | Evaluation | 25 | Human review sample queue (beyond CLI) | P2 | `CRITIC_VERIFICATION` | **Done** |
