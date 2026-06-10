@@ -19,6 +19,7 @@ from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddi
 from intergrax.rag.graph.contracts.graph_store import GraphStore
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.graph.indexer.graph_indexer_factory import resolve_graph_indexer
+from intergrax.rag.ingest.ingest_policy import sync_ingest_allowed
 from intergrax.rag.indexing.indexing_manager import IndexingManager
 from intergrax.rag.indexing.strategies.dual_index_strategy import DualIndexStrategy
 from intergrax.rag.profiles.rag_profile import RagProfile
@@ -36,6 +37,8 @@ class IngestRequest:
 class IngestResult:
     used: bool
     reason: str
+    file_size_bytes: int = 0
+    async_job_recommended: bool = False
     num_chunks: int = 0
     vector_ids: List[str] = field(default_factory=list)
     parser_id: Optional[str] = None
@@ -72,6 +75,15 @@ class IngestPipeline:
         path = Path(request.source_path)
         if not path.exists():
             return IngestResult(used=False, reason="source_not_found")
+
+        allowed, size_reason, file_size = sync_ingest_allowed(path=path, profile=self._profile)
+        if not allowed:
+            return IngestResult(
+                used=False,
+                reason=size_reason,
+                file_size_bytes=file_size,
+                async_job_recommended=True,
+            )
 
         base_metadata = dict(request.base_metadata)
         if self._profile.embedding_model_version:

@@ -39,7 +39,7 @@ Tier-3 IntegrationProfile + RagProfile
 | Is it a **solid Harness foundation** when Tier-3 defines profiles? | **Yes** — single path, typed contracts, broad retriever registry, CI golden gate. |
 | Does it **auto-select** parsers, chunkers, retrievers per document? | **No** — Tier-3 policy + optional L4 AHI (deferred). |
 | Short / medium documents? | **Ready** with explicit `RagProfile`. |
-| Multi-GB corpora / book-scale without Tier-3 jobs? | **Partial** — hierarchical + dual-index wired when profile enables it (M-RAG.24); sync ingest still blocks multi-GB (M-RAG.26). |
+| Multi-GB corpora / book-scale without Tier-3 jobs? | **Partial** — sync ingest rejected above `sync_ingest_max_bytes`; use `rag.schedule_ingest_job` + orchestrator worker (M-RAG.26). Streaming shard ingest remains Tier-3 workflow responsibility. |
 | Untrusted surfaces via raw `rag.retrieve`? | **Ready** when `security_profile.retrieval_poisoning_defense_enabled` on `ToolWiringContext` (M-RAG.25). |
 
 **Remediation:** every audit finding maps 1:1 to [`plan/RAG.md`](../plan/RAG.md) Phase M-RAG-DEPTH (GAP-RAG-01 … GAP-RAG-21 → M-RAG.23 … M-RAG.37).
@@ -54,7 +54,7 @@ Tier-3 IntegrationProfile + RagProfile
 | Retrieval mode breadth | **L2.5–L3** | hybrid, fusion, graph, agentic — graph **beta**; hierarchical + dual-index wired via profile (M-RAG.24) |
 | Strategy selection (autonomous) | **L1.5** | Tier/cost routing only; MIME/size/retriever auto-pick deferred to Tier-3 + AHI |
 | Ingest — short / medium documents | **L3** | Parser catalog, 5 chunking strategies, optional contextual enrich |
-| Ingest — very large corpora | **L1.5–L2** | Synchronous in-memory pipeline; no stream ingest or job orchestration in engine |
+| Ingest — very large corpora | **L2–L2.5** | Sync path size-guarded; `rag.schedule_ingest_job` triggers orchestrator with idempotent contract (M-RAG.26); shard/stream execution in workflow worker |
 | Resilience (retry, fallback, circuit breaker) | **L2** | Embedding retry=2; retriever retry=1; no fallback chain or circuit breaker |
 | Observability | **L2** | `RetrievalTrace`, parser trace, opt-in metrics; no OTel spans on retrieve/ingest hot path |
 | Security (poisoning) | **L3** | Nexus `RagStep` + catalog `rag.retrieve` when `security_profile` wired (M-RAG.25) |
@@ -79,8 +79,8 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-02 | niedoróbka | ~~`toc_vector_store` not passed in default bootstrap~~ — **closed M-RAG.24**: `hierarchical_bootstrap` + `RagStack.toc_vectorstore_manager` + retriever bootstrap | **P1** | M-RAG.24 **Done** | 14.4 |
 | GAP-RAG-03 | niedoróbka | ~~`IngestPipeline` bypasses `DualIndexStrategy`~~ — **closed M-RAG.24**: `IndexingManager` + `DualIndexStrategy` when `hierarchical_index_enabled` or `hierarchical` retriever | **P1** | M-RAG.24 **Done** | 14.4 |
 | GAP-RAG-04 | niegotowość | ~~Catalog `perform_rag_retrieve` had no poisoning filter~~ — **closed M-RAG.25**: mirrors `rag_step` when `security_profile.retrieval_poisoning_defense_enabled` | **P1** | M-RAG.25 **Done** | 14.5 |
-| GAP-RAG-05 | niegotowość | No stream / async ingest — `IngestPipeline` loads full parsed document into RAM before chunking | **P1** | M-RAG.26 | 14.6 |
-| GAP-RAG-06 | niegotowość | No Tier-0 job contract for multi-GB reindex (orchestrator slugs exist in integrations only) | **P1** | M-RAG.26 | 14.6 |
+| GAP-RAG-05 | niegotowość | ~~Sync ingest loads full document into RAM with no size guard~~ — **closed M-RAG.26**: `sync_ingest_max_bytes` rejects oversized sync path; stream shard ingest remains workflow worker | **P1** | M-RAG.26 **Done** | 14.6 |
+| GAP-RAG-06 | niegotowość | ~~No Tier-0 async ingest job contract~~ — **closed M-RAG.26**: `rag.schedule_ingest_job` + idempotent `workflow_orchestrator` trigger | **P1** | M-RAG.26 **Done** | 14.6 |
 | GAP-RAG-07 | niedoróbka | Vector-store catalog: `qdrant`/`pgvector`/`chroma`/`weaviate` promoted **stable** in manifests; `pinecone`/`milvus`/`vespa`/`inmemory` remain **beta**; no soak gate or ops runbook for prod SLO | **P1** | M-RAG.30 | — |
 | GAP-RAG-08 | niedoróbka | No OpenTelemetry spans on `RetrievalService.retrieve` / `IngestPipeline.run` hot path | **P2** | M-RAG.27 | 14.7 |
 | GAP-RAG-09 | niska jakość | RAG metrics opt-in only (`INTERGRAX_RAG_METRICS_ENABLED`); not on default observability spine | **P2** | M-RAG.27 | 14.7 |
@@ -193,7 +193,7 @@ RETRIEVE (rag.retrieve / RetrievalService)
 | Hierarchical context | `parent_child` | Child chunks indexed; parent metadata for `parent_child` retriever |
 | Book-scale / TOC | `DualIndexStrategy` + `hierarchical` retriever | **Wired** when `hierarchical_index_enabled` or `retriever_id=hierarchical` (M-RAG.24) |
 
-**Limitation:** ingest loads full parsed document into memory before chunking; no streaming shard ingest in Tier-0 engine (GAP-RAG-05, GAP-RAG-06). Very large corpora MUST use Tier-3 async jobs — M-RAG.26.
+**Limitation:** sync ingest loads full parsed document into memory before chunking; files above `RagProfile.sync_ingest_max_bytes` (env `INTERGRAX_RAG_SYNC_INGEST_MAX_BYTES`, default 50MB) are rejected with `sync_ingest_size_exceeded` and `async_job_recommended=true`. Schedule via `rag.schedule_ingest_job` (requires `workflow_orchestrator`). Shard/stream execution is workflow-worker responsibility.
 
 ---
 
@@ -229,7 +229,7 @@ RAG **consumes** Integration Library categories; it does not duplicate vendor ad
 | `document_parser` | Ingest parsing — `CatalogDocumentParser` + `INTERGRAX_RAG_DOCUMENT_PARSER_SLUG` |
 | `rerank_provider` | Vendor rerank APIs — `rerankers/` resolves via profile |
 | `graph_store` | GraphRAG backends — optional `INTERGRAX_RAG_GRAPH_STORE` |
-| `workflow_orchestrator` | Large-corpus reindex / async ingest (M-RAG.26) |
+| `workflow_orchestrator` | Large-corpus reindex / async ingest via `rag.schedule_ingest_job` (M-RAG.26) |
 
 Bootstrap: `create_vectorstore_manager()` in `vectorstore/bootstrap/` resolves via integration catalog when `vector_store` is configured on `IntegrationProfile`.
 
@@ -292,7 +292,7 @@ Automatic tier routing (`QueryRouter`) covers **cost/latency tiers only**, not M
 
 1. **`IntegrationProfile`:** non-inmemory `vector_store`; `rerank_provider` when quality-critical; `graph_store=neo4j` if GraphRAG enabled.
 2. **`RagProfile`:** explicit chunking per corpus type; `route_mode=auto`; set `query_expansion=off` to use `deep_retriever_id` (e.g. `fusion`) instead of `multiquery`.
-3. **Ingest:** sync `IngestPipeline` only for files below Tier-3 size threshold; schedule async reindex via orchestrator after M-RAG.26.
+3. **Ingest:** sync `rag.ingest_document` only below `sync_ingest_max_bytes`; oversized sources → `rag.schedule_ingest_job` with configured `async_ingest_workflow_id`.
 4. **Security:** enable `retrieval_poisoning_defense_enabled` on `ApplicationSecurityProfile` so Nexus `RagStep` and catalog `rag.retrieve` share the same filter.
 5. **Observability:** enable RAG metrics; adopt OTel spans after M-RAG.27.
 6. **Isolation:** validate tenant namespace per chosen vector backend (M-RAG.35).
@@ -303,7 +303,7 @@ Automatic tier routing (`QueryRouter`) covers **cost/latency tiers only**, not M
 
 Registered in `tools/providers/rag/bundle.py`:
 
-`rag.retrieve`, `rag.ingest_document`, `rag.rerank`, `rag.preview_retrieval`, `rag.list_collections`, `rag.describe_collection`, `rag.delete_documents`, `rag.purge_collection`, `rag.list_documents`, `rag.get_document`, `rag.check_index_status`, `rag.search_by_metadata`
+`rag.retrieve`, `rag.ingest_document`, `rag.schedule_ingest_job`, `rag.rerank`, `rag.preview_retrieval`, `rag.list_collections`, `rag.describe_collection`, `rag.delete_documents`, `rag.purge_collection`, `rag.list_documents`, `rag.get_document`, `rag.check_index_status`, `rag.search_by_metadata`
 
 Tool authoring: [`architecture/TOOLS.md`](TOOLS.md) · wiring: Appendix K §K.5.
 

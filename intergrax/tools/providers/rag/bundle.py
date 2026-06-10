@@ -8,8 +8,15 @@ from __future__ import annotations
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.providers.rag.contracts import RagRetrieveInput, RagRetrieveOutput
 from intergrax.tools.providers.rag.handler import RagRetrieveHandler
-from intergrax.tools.providers.rag.ingest_contracts import RagIngestInput, RagIngestOutput
+from intergrax.tools.providers.rag.ingest_contracts import (
+    RagIngestInput,
+    RagIngestOutput,
+    RagScheduleIngestJobInput,
+    RagScheduleIngestJobOutput,
+)
 from intergrax.tools.providers.rag.ingest_handler import RagIngestHandler
+from intergrax.tools.providers.rag.ingest_job_handler import RagScheduleIngestJobHandler
+from intergrax.tools.providers.rag.ingest_job_service import RAG_SCHEDULE_INGEST_JOB_TOOL_ID
 from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
 from intergrax.tools.providers.rag.list_collections_contracts import RagListCollectionsInput, RagListCollectionsOutput
 from intergrax.tools.providers.rag.list_collections_handler import RagListCollectionsHandler
@@ -64,6 +71,7 @@ RAG_BUNDLE_ID = "rag"
 RAG_TOOL_IDS: tuple[str, ...] = (
     RAG_TOOL_ID,
     RAG_INGEST_TOOL_ID,
+    RAG_SCHEDULE_INGEST_JOB_TOOL_ID,
     RAG_LIST_COLLECTIONS_TOOL_ID,
     RAG_DELETE_DOCUMENTS_TOOL_ID,
     RAG_DESCRIBE_COLLECTION_TOOL_ID,
@@ -95,6 +103,27 @@ def rag_retrieve_contract() -> ToolContract:
         category="retrieval",
         risk_level=ToolRiskLevel.LOW,
         tags=("rag", "retrieval", "context"),
+    )
+
+
+def rag_schedule_ingest_job_contract() -> ToolContract:
+    return ToolContract(
+        tool_id=RAG_SCHEDULE_INGEST_JOB_TOOL_ID,
+        name="rag.schedule_ingest_job",
+        description=(
+            "Schedule a large-document RAG ingest job through the configured workflow orchestrator. "
+            "Use when sync ingest is rejected for size or for multi-shard reindex workflows. "
+            "Idempotent per source path and tenant/workspace scope."
+        ),
+        description_short="Schedule async RAG ingest job.",
+        input_schema=RagScheduleIngestJobInput,
+        output_schema=RagScheduleIngestJobOutput,
+        error_mapping={},
+        side_effects=True,
+        injects_context=False,
+        category="retrieval",
+        risk_level=ToolRiskLevel.MEDIUM,
+        tags=("rag", "ingestion", "workflow", "async"),
     )
 
 
@@ -293,6 +322,7 @@ def rag_purge_collection_contract() -> ToolContract:
 def register_rag_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
     registry.register(rag_retrieve_contract(), RagRetrieveHandler(ctx))
     registry.register(rag_ingest_contract(), RagIngestHandler(ctx))
+    registry.register(rag_schedule_ingest_job_contract(), RagScheduleIngestJobHandler(ctx))
     registry.register(rag_list_collections_contract(), RagListCollectionsHandler(ctx))
     registry.register(rag_delete_documents_contract(), RagDeleteDocumentsHandler(ctx))
     registry.register(rag_describe_collection_contract(), RagDescribeCollectionHandler(ctx))

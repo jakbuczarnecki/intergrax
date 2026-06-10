@@ -20,7 +20,7 @@
 | AUDIT-IDEAL-14.3 | §14 RAG | Wire `RagProfile.query_expansion` to retrieval path | P0 | **Done** | M-RAG.23 |
 | AUDIT-IDEAL-14.4 | §14 RAG | Dual-index + hierarchical retriever default bootstrap | P1 | **Done** | M-RAG.24 |
 | AUDIT-IDEAL-14.5 | §14 RAG | Retrieval poisoning defense on `rag.retrieve` catalog path | P1 | **Done** | M-RAG.25 |
-| AUDIT-IDEAL-14.6 | §14 RAG | Large-corpus async ingest (stream / job orchestration) | P1 | **Planned** | M-RAG.26 |
+| AUDIT-IDEAL-14.6 | §14 RAG | Large-corpus async ingest (stream / job orchestration) | P1 | **Done** | M-RAG.26 |
 | AUDIT-IDEAL-14.7 | §14 RAG | OpenTelemetry spans on RAG retrieve + ingest hot path | P2 | **Planned** | M-RAG.27 |
 
 **Note:** AUDIT-IDEAL-14.2 (retrieval poisoning on product hosts) is owned by [`plan/MEMORY.md`](MEMORY.md) + UAEP security wiring — Nexus `RagStep` path.
@@ -83,7 +83,7 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 |------|-----|--------|--------|
 | 2.1 | **M-RAG.25** | Optional `filter_retrieved_chunks_for_poisoning` in `perform_rag_retrieve` when `security_profile.retrieval_poisoning_defense_enabled` | GAP-RAG-04; AUDIT-IDEAL-14.5 — **Done** (2026-06-10) |
 | 2.2 | **M-RAG.24** | Bootstrap second `toc_vector_store`; wire `HierarchicalRetriever`; route `IngestPipeline` through `DualIndexStrategy` when profile flag `hierarchical_index_enabled` or `hierarchical` retriever selected | GAP-RAG-02, 03; AUDIT-IDEAL-14.4 — **Done** (2026-06-10) |
-| 2.3 | **M-RAG.26** | Async ingest job contract — shard/stream ingest via `workflow_orchestrator`; idempotent job tool; document size threshold rejecting sync path | GAP-RAG-05, 06; AUDIT-IDEAL-14.6 |
+| 2.3 | **M-RAG.26** | Async ingest job contract — shard/stream ingest via `workflow_orchestrator`; idempotent job tool; document size threshold rejecting sync path | GAP-RAG-05, 06; AUDIT-IDEAL-14.6 — **Done** (2026-06-10) |
 | 2.4 | **M-RAG.30** | RAG vector-store prod SLO: soak gate in `test_vectorstore_real_backends.py` for stable slugs (`qdrant`, `pgvector`, `chroma`, `weaviate`); promote remaining **beta** slugs (`pinecone`, `milvus`, `vespa`) when soak passes; ops runbook row in [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) | GAP-RAG-07 |
 | 2.5 | **M-RAG.33** | Tier-3 GraphRAG prod contract — `production_rag_profile()` documents harness-only; add `production_graph_rag_profile()` requiring `neo4j`; integration test with durable graph | GAP-RAG-18 |
 | 2.6 | **M-RAG.35** | Cross-backend tenant isolation contract tests (`qdrant`, `weaviate`, `pgvector`, `inmemory`) — mismatch must not leak chunks | GAP-RAG-20 |
@@ -194,7 +194,7 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | 1 | M-RAG.23 | Wire `RagProfile.query_expansion` (`off` \| `deterministic` \| `llm`) to `MultiQueryRetriever` / deep-tier path; close M-RAG.6 | **P0** | **Done** | 01, 17, 23 | `test_rag_profile_query_expansion_wiring.py`; AUDIT-IDEAL-14.3 |
 | 2 | M-RAG.24 | Bootstrap `DualIndexStrategy` + `HierarchicalRetriever` + ingest routing when profile selects hierarchical | **P1** | **Done** | 02, 03 | `test_hierarchical_dual_index_wiring.py`; AUDIT-IDEAL-14.4 |
 | 3 | M-RAG.25 | Optional poisoning filter on `perform_rag_retrieve` behind `security_profile` | **P1** | **Done** | 04 | Unit test mirrors `rag_step` filter; AUDIT-IDEAL-14.5 |
-| 4 | M-RAG.26 | Async ingest job contract — batch/stream shards via `workflow_orchestrator` | **P1** | **Planned** | 05, 06 | Job tool or worker + ingest idempotency; AUDIT-IDEAL-14.6 |
+| 4 | M-RAG.26 | Async ingest job contract — batch/stream shards via `workflow_orchestrator` | **P1** | **Done** | 05, 06 | `rag.schedule_ingest_job` + sync size guard; AUDIT-IDEAL-14.6 |
 | 5 | M-RAG.27 | OTel spans on `RetrievalService` + `IngestPipeline`; observability gate script | **P2** | **Planned** | 08, 09 | Span names in `check_observability_gates.py`; AUDIT-IDEAL-14.7 |
 | 6 | M-RAG.28 | Retriever fallback chain; structured errors; retry alignment; optional circuit breaker | **P2** | **Planned** | 10, 11, 12 | Degrade `fusion` → `hybrid` → `vector_similarity` with trace reason |
 | 7 | M-RAG.29 | Formal `Citation` model on `RetrievalResult` + `rag.retrieve` output | **P2** | **Planned** | 13 | Gate test extends citation preservation to engine output |
@@ -220,6 +220,7 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | 2026-06-10 | M-RAG.23 | Wire `query_expansion` to bootstrap + deep-tier retrieval; `test_rag_profile_query_expansion_wiring.py` |
 | 2026-06-10 | M-RAG.25 | Catalog poisoning filter on `perform_rag_retrieve`; `security_profile` on `ToolWiringContext` |
 | 2026-06-10 | M-RAG.24 | `toc_vector_store` bootstrap + `DualIndexStrategy` ingest routing + `HierarchicalRetriever` wiring; `test_hierarchical_dual_index_wiring.py` |
+| 2026-06-10 | M-RAG.26 | `rag.schedule_ingest_job` + sync ingest size guard (`INTERGRAX_RAG_SYNC_INGEST_MAX_BYTES`); idempotent orchestrator trigger |
 
 ---
 
@@ -234,7 +235,7 @@ Ordered queue for RAG domain work. **Active:** M-RAG-DEPTH (15 items). **Closed:
 | 1 | **M-RAG.23** | 1 | **P0** | Wire `RagProfile.query_expansion` → `MultiQueryRetriever` / deep-tier; close M-RAG.6 | 01, 17, 23 | **Done** |
 | 2 | **M-RAG.25** | 2 | **P1** | Poisoning filter on `perform_rag_retrieve` behind `security_profile` | 04 | **Done** |
 | 3 | **M-RAG.24** | 2 | **P1** | `DualIndexStrategy` + `toc_vector_store` bootstrap + ingest routing | 02, 03 | **Done** |
-| 4 | **M-RAG.26** | 2 | **P1** | Async ingest job contract via `workflow_orchestrator` | 05, 06 | **Planned** |
+| 4 | **M-RAG.26** | 2 | **P1** | Async ingest job contract via `workflow_orchestrator` | 05, 06 | **Done** |
 | 5 | **M-RAG.30** | 2 | **P1** | Vector-store soak gate + beta promotion (`pinecone`, `milvus`, `vespa`) | 07 | **Planned** |
 | 6 | **M-RAG.33** | 2 | **P1** | `production_graph_rag_profile()` (neo4j required); harness preset documented | 18 | **Planned** |
 | 7 | **M-RAG.35** | 2 | **P1** | Cross-backend tenant isolation contract tests | 20 | **Planned** |
@@ -254,7 +255,7 @@ Ordered queue for RAG domain work. **Active:** M-RAG-DEPTH (15 items). **Closed:
 | AUDIT-IDEAL-14.3 | Wire `query_expansion` | P0 | M-RAG.23 | **Done** |
 | AUDIT-IDEAL-14.4 | Dual-index + hierarchical bootstrap | P1 | M-RAG.24 | **Done** |
 | AUDIT-IDEAL-14.5 | Catalog poisoning defense | P1 | M-RAG.25 | **Done** |
-| AUDIT-IDEAL-14.6 | Large-corpus async ingest | P1 | M-RAG.26 | **Planned** |
+| AUDIT-IDEAL-14.6 | Large-corpus async ingest | P1 | M-RAG.26 | **Done** |
 | AUDIT-IDEAL-14.7 | OTel spans retrieve + ingest | P2 | M-RAG.27 | **Planned** |
 
 ### Closed — Phase M-RAG (M-RAG.1–22, except M-RAG.6 Partial)
@@ -306,4 +307,4 @@ Ordered queue for RAG domain work. **Active:** M-RAG-DEPTH (15 items). **Closed:
 
 ## Suggested first PR
 
-**M-RAG.26** (Wave 2) — async ingest job contract for multi-GB corpora via `workflow_orchestrator`.
+**M-RAG.30** (Wave 2) — vector-store prod SLO soak gate for stable backend slugs.

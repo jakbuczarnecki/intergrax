@@ -59,6 +59,8 @@ class RagProfile:
     # Ingest (no fixed parser — optional integration slug)
     chunking_strategy_id: str = "langchain_recursive"
     hierarchical_index_enabled: bool = False
+    sync_ingest_max_bytes: int = 50_000_000
+    async_ingest_workflow_id: str = "rag-ingest"
     document_parser_slug: Optional[str] = None
     contextual_enrich: ContextualEnrichMode = "off"
     query_expansion: QueryExpansionMode = "deterministic"
@@ -177,6 +179,9 @@ def rag_profile_from_env() -> RagProfile:
         chunking_strategy_id=os.getenv("INTERGRAX_RAG_CHUNKING_STRATEGY", "langchain_recursive").strip()
         or "langchain_recursive",
         hierarchical_index_enabled=_env_bool("INTERGRAX_RAG_HIERARCHICAL_INDEX", False),
+        sync_ingest_max_bytes=_env_int("INTERGRAX_RAG_SYNC_INGEST_MAX_BYTES", 50_000_000),
+        async_ingest_workflow_id=os.getenv("INTERGRAX_RAG_ASYNC_INGEST_WORKFLOW_ID", "rag-ingest").strip()
+        or "rag-ingest",
         document_parser_slug=parser_slug,
         contextual_enrich=contextual,
         query_expansion=query_expansion,

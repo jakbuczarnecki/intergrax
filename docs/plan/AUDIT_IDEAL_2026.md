@@ -68,7 +68,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-14.3 | RAG | 14 | Wire `RagProfile.query_expansion` to retrieval path | P0 | `RAG` | **Planned** |
 | AUDIT-IDEAL-14.4 | RAG | 14 | Dual-index + hierarchical retriever default bootstrap | P1 | `RAG` | **Planned** |
 | AUDIT-IDEAL-14.5 | RAG | 14 | Retrieval poisoning defense on `rag.retrieve` catalog path | P1 | `RAG` · `UNIFIED_EXECUTION_RUNTIME` | **Planned** |
-| AUDIT-IDEAL-14.6 | RAG | 14 | Large-corpus async ingest (stream / job orchestration) | P1 | `RAG` | **Planned** |
+| AUDIT-IDEAL-14.6 | RAG | 14 | Large-corpus async ingest (stream / job orchestration) | P1 | `RAG` | **Done** |
 | AUDIT-IDEAL-14.7 | RAG | 14 | OpenTelemetry spans on RAG retrieve + ingest hot path | P2 | `RAG` · `OBSERVABILITY` | **Planned** |
 | AUDIT-IDEAL-15.1 | Memory | 15 | Org memory 2.5 (organizational LTM scope) | **P0** | `MEMORY` | **Done** |
 | AUDIT-IDEAL-15.2 | Memory | 15 | Episodic / semantic / procedural memory taxonomy (`MemoryKind` uplift) | P1 | `MEMORY` | **Done** |
