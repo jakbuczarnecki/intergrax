@@ -84,7 +84,7 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | 2.1 | **M-RAG.25** | Optional `filter_retrieved_chunks_for_poisoning` in `perform_rag_retrieve` when `security_profile.retrieval_poisoning_defense_enabled` | GAP-RAG-04; AUDIT-IDEAL-14.5 |
 | 2.2 | **M-RAG.24** | Bootstrap second `toc_vector_store`; wire `HierarchicalRetriever`; route `IngestPipeline` through `DualIndexStrategy` when profile flag `hierarchical_index_enabled` or `hierarchical` retriever selected | GAP-RAG-02, 03; AUDIT-IDEAL-14.4 |
 | 2.3 | **M-RAG.26** | Async ingest job contract — shard/stream ingest via `workflow_orchestrator`; idempotent job tool; document size threshold rejecting sync path | GAP-RAG-05, 06; AUDIT-IDEAL-14.6 |
-| 2.4 | **M-RAG.30** | Promote `qdrant` + `pgvector` catalog **beta → stable**; soak gate in `test_vectorstore_real_backends.py`; ops runbook row in [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) | GAP-RAG-07 |
+| 2.4 | **M-RAG.30** | RAG vector-store prod SLO: soak gate in `test_vectorstore_real_backends.py` for stable slugs (`qdrant`, `pgvector`, `chroma`, `weaviate`); promote remaining **beta** slugs (`pinecone`, `milvus`, `vespa`) when soak passes; ops runbook row in [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) | GAP-RAG-07 |
 | 2.5 | **M-RAG.33** | Tier-3 GraphRAG prod contract — `production_rag_profile()` documents harness-only; add `production_graph_rag_profile()` requiring `neo4j`; integration test with durable graph | GAP-RAG-18 |
 | 2.6 | **M-RAG.35** | Cross-backend tenant isolation contract tests (`qdrant`, `weaviate`, `pgvector`, `inmemory`) — mismatch must not leak chunks | GAP-RAG-20 |
 
@@ -142,6 +142,7 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | 2026-06-02 | RAG-1 | RAG runtime bridge + environment wire; gate **600** |
 | 2026-06-10 | RAG-DOC.2 | Dedicated domain pair `architecture/RAG.md` ↔ `plan/RAG.md`; migrated M-RAG canon from INTEGRATIONS |
 | 2026-06-10 | RAG-DOC.3 | Full engine depth audit register (GAP-RAG-01…23); M-RAG-DEPTH waves 1–3; traceability matrix |
+| 2026-06-10 | RAG-DOC.4 | Code-verified audit sync; GAP-RAG-07 manifest correction; full task register |
 
 **Phase RAG complete when:** RAG-1 + RAG-DOC.* **Done**; §6.1e queue closed. **Status: complete (2026-06-02).**  
 **Phase M-RAG-DEPTH complete when:** M-RAG.23 … M-RAG.37 all **Done**; zero open GAP-RAG rows (except GAP-RAG-15 boundary).
@@ -195,7 +196,7 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | 5 | M-RAG.27 | OTel spans on `RetrievalService` + `IngestPipeline`; observability gate script | **P2** | **Planned** | 08, 09 | Span names in `check_observability_gates.py`; AUDIT-IDEAL-14.7 |
 | 6 | M-RAG.28 | Retriever fallback chain; structured errors; retry alignment; optional circuit breaker | **P2** | **Planned** | 10, 11, 12 | Degrade `fusion` → `hybrid` → `vector_similarity` with trace reason |
 | 7 | M-RAG.29 | Formal `Citation` model on `RetrievalResult` + `rag.retrieve` output | **P2** | **Planned** | 13 | Gate test extends citation preservation to engine output |
-| 8 | M-RAG.30 | Vector store **beta → stable** — `qdrant` + `pgvector` soak gate first | **P1** | **Planned** | 07 | `test_vectorstore_real_backends.py` + INTEGRATIONS runbook |
+| 8 | M-RAG.30 | Vector-store prod SLO — soak gate for stable slugs; promote `pinecone`/`milvus`/`vespa` from beta when soak passes | **P1** | **Planned** | 07 | `test_vectorstore_real_backends.py` + INTEGRATIONS runbook |
 | 9 | M-RAG.31 | Embedding model version reindex policy (mismatch → warn / queue reindex) | **P2** | **Planned** | 14 | Unit test on ingest metadata + retrieve filter |
 | 10 | M-RAG.32 | Optional LLM `QueryRouter` tier classifier (`llm_route_enabled`, default off) | **P2** | **Planned** | 16 | Unit test: long ambiguous query routes to deep with LLM on |
 | 11 | M-RAG.33 | GraphRAG Tier-3 prod profile contract (neo4j required; harness preset documented) | **P1** | **Planned** | 18 | `production_graph_rag_profile()` + integration test |
@@ -213,6 +214,88 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | 2026-06-10 | AUDIT-RAG | Engine depth audit; M-RAG-DEPTH queue M-RAG.23–31 |
 | 2026-06-10 | RAG-DOC.2 | Dedicated `RAG.md` domain pair; migrated from INTEGRATIONS |
 | 2026-06-10 | RAG-DOC.3 | Full GAP-RAG register (23 rows); M-RAG.32–37; wave rollout; traceability matrix |
+| 2026-06-10 | RAG-DOC.4 | Code-verified audit sync: GAP-RAG-07 manifest correction; §Audit verification evidence; full task register |
+
+---
+
+## Full implementation task register
+
+Ordered queue for RAG domain work. **Active:** M-RAG-DEPTH (15 items). **Closed:** Phase RAG + M-RAG.1–22.
+
+### Active — Phase M-RAG-DEPTH (execute in wave order)
+
+| Order | ID | Wave | Priority | Deliverable | GAP-RAG | Status |
+|-------|-----|------|----------|-------------|---------|--------|
+| 1 | **M-RAG.23** | 1 | **P0** | Wire `RagProfile.query_expansion` → `MultiQueryRetriever` / deep-tier; close M-RAG.6 | 01, 17, 23 | **Planned** |
+| 2 | **M-RAG.25** | 2 | **P1** | Poisoning filter on `perform_rag_retrieve` behind `security_profile` | 04 | **Planned** |
+| 3 | **M-RAG.24** | 2 | **P1** | `DualIndexStrategy` + `toc_vector_store` bootstrap + ingest routing | 02, 03 | **Planned** |
+| 4 | **M-RAG.26** | 2 | **P1** | Async ingest job contract via `workflow_orchestrator` | 05, 06 | **Planned** |
+| 5 | **M-RAG.30** | 2 | **P1** | Vector-store soak gate + beta promotion (`pinecone`, `milvus`, `vespa`) | 07 | **Planned** |
+| 6 | **M-RAG.33** | 2 | **P1** | `production_graph_rag_profile()` (neo4j required); harness preset documented | 18 | **Planned** |
+| 7 | **M-RAG.35** | 2 | **P1** | Cross-backend tenant isolation contract tests | 20 | **Planned** |
+| 8 | **M-RAG.27** | 3 | **P2** | OTel spans on retrieve + ingest; observability gate | 08, 09 | **Planned** |
+| 9 | **M-RAG.28** | 3 | **P2** | Retriever fallback chain; structured errors; retry alignment | 10, 11, 12 | **Planned** |
+| 10 | **M-RAG.29** | 3 | **P2** | Formal `Citation` on `RetrievalResult` + `rag.retrieve` output | 13 | **Planned** |
+| 11 | **M-RAG.31** | 3 | **P2** | `embedding_model_version` mismatch policy | 14 | **Planned** |
+| 12 | **M-RAG.32** | 3 | **P2** | Optional LLM `QueryRouter` (`llm_route_enabled`, default off) | 16 | **Planned** |
+| 13 | **M-RAG.34** | 3 | **P2** | Agentic loop per-iteration retriever override + cost trace | 19 | **Planned** |
+| 14 | **M-RAG.36** | 3 | **P2** | RAG load/soak gate (concurrent retrieve SLO) | 21 | **Planned** |
+| 15 | **M-RAG.37** | 3 | **P2** | Semantic chunking ingest size guard | 22 | **Planned** |
+
+### Active — AUDIT-IDEAL (RAG band)
+
+| ID | Gap | Priority | M-RAG | Status |
+|----|-----|----------|-------|--------|
+| AUDIT-IDEAL-14.3 | Wire `query_expansion` | P0 | M-RAG.23 | **Planned** |
+| AUDIT-IDEAL-14.4 | Dual-index + hierarchical bootstrap | P1 | M-RAG.24 | **Planned** |
+| AUDIT-IDEAL-14.5 | Catalog poisoning defense | P1 | M-RAG.25 | **Planned** |
+| AUDIT-IDEAL-14.6 | Large-corpus async ingest | P1 | M-RAG.26 | **Planned** |
+| AUDIT-IDEAL-14.7 | OTel spans retrieve + ingest | P2 | M-RAG.27 | **Planned** |
+
+### Closed — Phase M-RAG (M-RAG.1–22, except M-RAG.6 Partial)
+
+| ID | Deliverable | Status |
+|----|-------------|--------|
+| M-RAG.1 | `RagProfile` + `INTERGRAX_RAG_*` | **Done** |
+| M-RAG.2 | `RetrievalService` | **Done** |
+| M-RAG.3 | `QueryRouter` (heuristic) | **Done** |
+| M-RAG.4 | `IngestPipeline` + chunking | **Done** |
+| M-RAG.5 | Contextual chunk enricher | **Done** |
+| M-RAG.6 | Query expansion | **Partial** → M-RAG.23 |
+| M-RAG.7 | Evaluation metrics | **Done** |
+| M-RAG.8 | `create_default_rag_stack()` | **Done** |
+| M-RAG.9 | Tool/Nexus wiring | **Done** |
+| M-RAG.10 | Native sparse / BM25 | **Done** |
+| M-RAG.11 | Golden CI gate | **Done** |
+| M-RAG.12 | GraphRAG (beta) | **Done** |
+| M-RAG.13 | Agentic retrieval loop | **Done** |
+| M-RAG.14 | Qdrant sparse + RRF | **Done** |
+| M-RAG.15 | Weaviate native hybrid | **Done** |
+| M-RAG.16 | LLM graph indexer | **Done** |
+| M-RAG.17 | LLM agentic query refine | **Done** |
+| M-RAG.18 | Neo4j GraphRAG backend | **Done** |
+| M-RAG.19 | SPLADE sparse encoder | **Done** |
+| M-RAG.20 | Weaviate prod hardening | **Done** |
+| M-RAG.21 | Extended golden datasets | **Done** |
+| M-RAG.22 | RAG observability metrics | **Done** |
+
+### Closed — Phase RAG (control plane)
+
+| ID | Deliverable | Status |
+|----|-------------|--------|
+| RAG-DOC.1 | Appendix K §K.5 + AUDIT_MAP §14 | **Done** |
+| RAG-1 | `rag_runtime_bridge` + environment wire | **Done** |
+| RAG-DOC.2 | Dedicated `architecture/RAG.md` ↔ `plan/RAG.md` pair | **Done** |
+| RAG-DOC.3 | GAP-RAG register + M-RAG-DEPTH waves | **Done** |
+| RAG-DOC.4 | Code-verified audit doc sync (2026-06-10) | **Done** |
+
+### Architectural boundary (not a harness defect)
+
+| ID | Note |
+|----|------|
+| GAP-RAG-15 | No autonomous MIME/size retriever/chunker selection — Tier-3 + AHI |
+
+**Phase M-RAG-DEPTH complete when:** M-RAG.23 … M-RAG.37 all **Done**; zero open GAP-RAG rows (except GAP-RAG-15).
 
 ---
 

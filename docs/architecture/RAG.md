@@ -8,7 +8,7 @@
 **Audit instruction:** [`guides/audit/RAG.md`](../guides/audit/RAG.md)  
 **Related:** [`architecture/INTEGRATIONS.md`](INTEGRATIONS.md) (vector_store, document_parser, rerank_provider slugs) · [`architecture/MEMORY.md`](MEMORY.md) (Knowledge store vs LTM) · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix K §K.5  
 **Implementation:** `intergrax/rag/`  
-**Last architecture audit:** 2026-06-10 (full engine depth vs production RAG systems)
+**Last architecture audit:** 2026-06-10 (full engine depth vs production RAG systems; code-verified — see §Audit verification evidence)
 
 ---
 
@@ -59,7 +59,7 @@ Tier-3 IntegrationProfile + RagProfile
 | Observability | **L2** | `RetrievalTrace`, parser trace, opt-in metrics; no OTel spans on retrieve/ingest hot path |
 | Security (poisoning) | **L2.5** | Enforced on Nexus `RagStep`; **not** on direct `rag.retrieve` tool path |
 | Citations | **L2** | Metadata in chunks + composer; no formal `Citation` on `RetrievalResult` |
-| Vector backends (prod SLO) | **L2** | Lab harness `qdrant` stable; catalog bridges mostly **beta**; no RAG soak gate |
+| Vector backends (prod SLO) | **L2–L2.5** | Catalog **stable:** `qdrant`, `pgvector`, `chroma`, `weaviate`, `lancedb`, `typesense`; **beta:** `pinecone`, `milvus`, `vespa`, `inmemory`; no RAG soak gate (GAP-RAG-07, M-RAG.30) |
 | Multi-tenant isolation | **L2** | `MetadataFilter` + in-memory enforce; prod depends on backend namespace design |
 | Evaluation depth | **L2.5** | Golden harness (lab scenarios); no load/soak SLO gate |
 
@@ -81,7 +81,7 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-04 | niegotowość | Retrieval poisoning defense only on Nexus `RagStep`; `perform_rag_retrieve` (catalog) has no filter | **P1** | M-RAG.25 | 14.5 |
 | GAP-RAG-05 | niegotowość | No stream / async ingest — `IngestPipeline` loads full parsed document into RAM before chunking | **P1** | M-RAG.26 | 14.6 |
 | GAP-RAG-06 | niegotowość | No Tier-0 job contract for multi-GB reindex (orchestrator slugs exist in integrations only) | **P1** | M-RAG.26 | 14.6 |
-| GAP-RAG-07 | niegotowość | Vector-store catalog bridges (`pinecone`, `qdrant`, `chroma`, …) remain **beta**; lab harness `qdrant` stable ≠ catalog promotion | **P1** | M-RAG.30 | — |
+| GAP-RAG-07 | niedoróbka | Vector-store catalog: `qdrant`/`pgvector`/`chroma`/`weaviate` promoted **stable** in manifests; `pinecone`/`milvus`/`vespa`/`inmemory` remain **beta**; no soak gate or ops runbook for prod SLO | **P1** | M-RAG.30 | — |
 | GAP-RAG-08 | niedoróbka | No OpenTelemetry spans on `RetrievalService.retrieve` / `IngestPipeline.run` hot path | **P2** | M-RAG.27 | 14.7 |
 | GAP-RAG-09 | niska jakość | RAG metrics opt-in only (`INTERGRAX_RAG_METRICS_ENABLED`); not on default observability spine | **P2** | M-RAG.27 | 14.7 |
 | GAP-RAG-10 | niedoróbka | `RetrieverEngine` raises after 1 retry — no retriever fallback chain (`fusion` → `hybrid` → `vector`) | **P2** | M-RAG.28 | — |
@@ -320,3 +320,21 @@ uv run pytest tests/unit/applications/test_rag_runtime_bridge.py -m gate -q
 Golden gate: `.github/workflows/rag-guard.yml` · fixtures: `tests/fixtures/rag_golden/`.
 
 Implementation plan and step-by-step rollout: [`plan/RAG.md`](../plan/RAG.md).
+
+---
+
+## Audit verification evidence (2026-06-10)
+
+Code-backed audit (`guides/audit/RAG.md`, mode `audit-only`). Key confirmations:
+
+| Check | Result | Evidence |
+|-------|--------|----------|
+| Unit RAG suite | **114 passed**, 1 skipped (`fastembed` optional) | `uv run pytest tests/unit/rag/ -q` |
+| Golden + tools + bridge gate | **24 passed** | `test_golden_retrieval_gate.py`, `tests/unit/tools/providers/rag/`, `test_rag_runtime_bridge.py` |
+| `query_expansion` unwired | **Confirmed open** | Field only in `rag_profile.py`; absent from `retrieval_service.py` / `retriever_bootstrap.py` |
+| DualIndex not on default ingest | **Confirmed open** | `ingest_pipeline.py` → `vectorstore.add_documents`; bootstrap omits `toc_vector_store` |
+| Catalog poisoning gap | **Confirmed open** | `perform_rag_retrieve` has no `filter_retrieved_chunks_for_poisoning` (Nexus path in `rag_step.py` only) |
+| Agents bypass vectorstore | **No violation** | No `vectorstore.query` in `agents/` |
+| Vector manifest stability | **Partial** | `integrations/providers/vector_store/*/manifest.py` — stable vs beta per GAP-RAG-07 row above |
+
+**Posture unchanged:** L2.5 implementation / L3 control plane. All GAP-RAG rows remain open except GAP-RAG-15 (architectural boundary). Closeout queue: M-RAG.23 … M-RAG.37 in [`plan/RAG.md`](../plan/RAG.md).
