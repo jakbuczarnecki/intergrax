@@ -85,11 +85,14 @@ class DualIndexStrategy(IndexStrategy):
         toc_docs: List[Document] = []
 
         for section_name, data in sections.items():
-
+            toc_meta = dict(data["metadata"])
+            parent_id = toc_meta.get(ChunkMetadataKey.PARENT_CHUNK_ID) or section_name
+            toc_meta[ChunkMetadataKey.PARENT_CHUNK_ID] = str(parent_id)
+            toc_meta[ChunkMetadataKey.SECTION] = section_name
             toc_docs.append(
                 Document(
                     page_content=section_name,
-                    metadata=data["metadata"],
+                    metadata=toc_meta,
                 )
             )
 
@@ -117,5 +120,4 @@ class DualIndexStrategy(IndexStrategy):
             vectorstore.add_documents(
                 documents=documents[i:j],
                 embeddings=embeddings[i:j],
-                batch_size=self.batch_size,
             )

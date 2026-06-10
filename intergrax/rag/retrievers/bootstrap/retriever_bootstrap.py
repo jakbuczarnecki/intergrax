@@ -126,6 +126,7 @@ def create_default_retriever_engine(
     graph_store: GraphStore | None = None,
     profile: RagProfile | None = None,
     llm_for_query_expansion: LLMAdapter | None = None,
+    toc_vector_store: BaseVectorstoreManager | None = None,
 ) -> RetrieverEngine:
     """
     Create RetrieverEngine with default retriever providers registered.
@@ -144,6 +145,7 @@ def create_default_retriever_engine(
             graph_store=graph_store,
             profile=profile,
             llm_for_query_expansion=llm_for_query_expansion,
+            toc_vector_store=toc_vector_store,
         )
 
     return RetrieverEngine(
@@ -159,6 +161,7 @@ def create_default_retriever_pipeline(
     graph_store: GraphStore | None = None,
     profile: RagProfile | None = None,
     llm_for_query_expansion: LLMAdapter | None = None,
+    toc_vector_store: BaseVectorstoreManager | None = None,
 ) -> RetrieverPipeline:
     """
     Create RetrieverPipeline using the default retriever engine.
@@ -174,6 +177,7 @@ def create_default_retriever_pipeline(
             graph_store=graph_store,
             profile=profile,
             llm_for_query_expansion=llm_for_query_expansion,
+            toc_vector_store=toc_vector_store,
         )
 
     engine = create_default_retriever_engine(
@@ -183,6 +187,7 @@ def create_default_retriever_pipeline(
         graph_store=graph_store,
         profile=profile,
         llm_for_query_expansion=llm_for_query_expansion,
+        toc_vector_store=toc_vector_store,
     )
 
     return RetrieverPipeline(
@@ -199,6 +204,7 @@ def create_default_retriever_manager(
     graph_store: GraphStore | None = None,
     profile: RagProfile | None = None,
     llm_for_query_expansion: LLMAdapter | None = None,
+    toc_vector_store: BaseVectorstoreManager | None = None,
 ) -> BaseRetrieverManager:
     """
     Create RetrieverManager using the default retriever pipeline.
@@ -217,6 +223,7 @@ def create_default_retriever_manager(
         graph_store=graph_store,
         profile=profile,
         llm_for_query_expansion=llm_for_query_expansion,
+        toc_vector_store=toc_vector_store,
     )
 
     return RetrieverManager(

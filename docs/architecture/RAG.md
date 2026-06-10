@@ -39,7 +39,7 @@ Tier-3 IntegrationProfile + RagProfile
 | Is it a **solid Harness foundation** when Tier-3 defines profiles? | **Yes** — single path, typed contracts, broad retriever registry, CI golden gate. |
 | Does it **auto-select** parsers, chunkers, retrievers per document? | **No** — Tier-3 policy + optional L4 AHI (deferred). |
 | Short / medium documents? | **Ready** with explicit `RagProfile`. |
-| Multi-GB corpora / book-scale without Tier-3 jobs? | **Not ready** — sync in-memory ingest; hierarchical path not default-wired. |
+| Multi-GB corpora / book-scale without Tier-3 jobs? | **Partial** — hierarchical + dual-index wired when profile enables it (M-RAG.24); sync ingest still blocks multi-GB (M-RAG.26). |
 | Untrusted surfaces via raw `rag.retrieve`? | **Ready** when `security_profile.retrieval_poisoning_defense_enabled` on `ToolWiringContext` (M-RAG.25). |
 
 **Remediation:** every audit finding maps 1:1 to [`plan/RAG.md`](../plan/RAG.md) Phase M-RAG-DEPTH (GAP-RAG-01 … GAP-RAG-21 → M-RAG.23 … M-RAG.37).
@@ -51,7 +51,7 @@ Tier-3 IntegrationProfile + RagProfile
 | Dimension | Score | Notes |
 |-----------|-------|-------|
 | Control-plane architecture (single path, typed contracts) | **L3** | `RetrievalService`, `RagProfile`, runtime bridges, 12 `rag.*` catalog tools |
-| Retrieval mode breadth | **L2.5–L3** | hybrid, fusion, graph, agentic — graph **beta**; hierarchical path not default-wired |
+| Retrieval mode breadth | **L2.5–L3** | hybrid, fusion, graph, agentic — graph **beta**; hierarchical + dual-index wired via profile (M-RAG.24) |
 | Strategy selection (autonomous) | **L1.5** | Tier/cost routing only; MIME/size/retriever auto-pick deferred to Tier-3 + AHI |
 | Ingest — short / medium documents | **L3** | Parser catalog, 5 chunking strategies, optional contextual enrich |
 | Ingest — very large corpora | **L1.5–L2** | Synchronous in-memory pipeline; no stream ingest or job orchestration in engine |
@@ -76,8 +76,8 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | ID | Category | Finding | Severity | Plan | AUDIT-IDEAL |
 |----|----------|---------|----------|------|-------------|
 | GAP-RAG-01 | niedoróbka | ~~`RagProfile.query_expansion` / `INTERGRAX_RAG_QUERY_EXPANSION` not wired~~ — **closed M-RAG.23**: `query_expander_from_profile()` in bootstrap; deep tier → `multiquery` when `query_expansion != off` | **P0** | M-RAG.23 **Done** | 14.3 |
-| GAP-RAG-02 | niedoróbka | `DualIndexStrategy` + `HierarchicalRetriever` implemented but `toc_vector_store` not passed in default bootstrap | **P1** | M-RAG.24 | 14.4 |
-| GAP-RAG-03 | niedoróbka | `IngestPipeline` bypasses `IndexingManager` / `DualIndexStrategy` — book-scale TOC index never built on default ingest | **P1** | M-RAG.24 | 14.4 |
+| GAP-RAG-02 | niedoróbka | ~~`toc_vector_store` not passed in default bootstrap~~ — **closed M-RAG.24**: `hierarchical_bootstrap` + `RagStack.toc_vectorstore_manager` + retriever bootstrap | **P1** | M-RAG.24 **Done** | 14.4 |
+| GAP-RAG-03 | niedoróbka | ~~`IngestPipeline` bypasses `DualIndexStrategy`~~ — **closed M-RAG.24**: `IndexingManager` + `DualIndexStrategy` when `hierarchical_index_enabled` or `hierarchical` retriever | **P1** | M-RAG.24 **Done** | 14.4 |
 | GAP-RAG-04 | niegotowość | ~~Catalog `perform_rag_retrieve` had no poisoning filter~~ — **closed M-RAG.25**: mirrors `rag_step` when `security_profile.retrieval_poisoning_defense_enabled` | **P1** | M-RAG.25 **Done** | 14.5 |
 | GAP-RAG-05 | niegotowość | No stream / async ingest — `IngestPipeline` loads full parsed document into RAM before chunking | **P1** | M-RAG.26 | 14.6 |
 | GAP-RAG-06 | niegotowość | No Tier-0 job contract for multi-GB reindex (orchestrator slugs exist in integrations only) | **P1** | M-RAG.26 | 14.6 |
@@ -111,7 +111,7 @@ INGEST (rag.ingest_document / IngestPipeline)
         → ChunkingEngine (strategy_id from RagProfile)
         → optional ContextualChunkEnricher (LLM)
         → EmbeddingManager (batched, retried)
-        → VectorstoreManager.add_documents          [GAP-RAG-03: DualIndexStrategy not on this path]
+        → IndexingManager (DualIndexStrategy when hierarchical profile) → VectorstoreManager
         → optional GraphIndexer (heuristic | llm | heuristic_then_llm)
 
 RETRIEVE (rag.retrieve / RetrievalService)
@@ -173,7 +173,7 @@ RETRIEVE (rag.retrieve / RetrievalService)
 | `mmr` | Maximal marginal relevance | Diversity-sensitive context |
 | `parent_child` | Child search + parent dedup | After `parent_child` chunking ingest |
 | `multiquery` | Query expansion + merge | Deep tier when `query_expansion != off` (M-RAG.23); or explicit `retriever_id` |
-| `hierarchical` | TOC index + chunk index | Large structured docs — **requires `toc_vector_store` wiring (M-RAG.24)** |
+| `hierarchical` | TOC index + chunk index | Large structured docs — `toc_vector_store` via `hierarchical_index_enabled` or `retriever_id=hierarchical` (M-RAG.24) |
 | `fusion` | RRF over vector + hybrid + parent_child | Deep tier default |
 | `graph_rag` | Vector seed + graph traversal | When `graph_rag_enabled` + `GraphStore` configured (**beta**) |
 
@@ -191,7 +191,7 @@ RETRIEVE (rag.retrieve / RetrievalService)
 | Structured office / PDF | `docling`, smart handlers | Parser trace in ingest metadata |
 | Semantic boundaries | `semantic` | Sentence-embedding boundaries — **O(n) embed cost** (M-RAG.37 guard) |
 | Hierarchical context | `parent_child` | Child chunks indexed; parent metadata for `parent_child` retriever |
-| Book-scale / TOC | `DualIndexStrategy` + `hierarchical` retriever | **Implemented but not default-wired** (GAP-RAG-02, GAP-RAG-03) |
+| Book-scale / TOC | `DualIndexStrategy` + `hierarchical` retriever | **Wired** when `hierarchical_index_enabled` or `retriever_id=hierarchical` (M-RAG.24) |
 
 **Limitation:** ingest loads full parsed document into memory before chunking; no streaming shard ingest in Tier-0 engine (GAP-RAG-05, GAP-RAG-06). Very large corpora MUST use Tier-3 async jobs — M-RAG.26.
 

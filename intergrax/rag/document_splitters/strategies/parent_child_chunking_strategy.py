@@ -73,6 +73,7 @@ class ParentChildChunkingStrategy(BaseChunkingStrategy):
 
                     child_metadata = dict(metadata)
                     child_metadata[ChunkMetadataKey.PARENT_CHUNK_ID] = parent_id
+                    child_metadata[ChunkMetadataKey.SECTION] = parent_id
                     child_metadata[ChunkMetadataKey.PARENT_CHUNK_INDEX] = parent_index
                     child_metadata[ChunkMetadataKey.CHUNK_SIZE] = len(text)
                     child_metadata[ChunkMetadataKey.CHUNK_INDEX] = child_index                

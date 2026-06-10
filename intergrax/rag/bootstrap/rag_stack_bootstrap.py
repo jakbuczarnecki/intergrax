@@ -10,6 +10,7 @@ from typing import Optional
 
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.rag.bootstrap.hierarchical_bootstrap import resolve_toc_vectorstore_for_profile
 from intergrax.rag.contextual.chunk_enricher import ContextualChunkEnricher
 from intergrax.rag.graph.bootstrap.graph_store_bootstrap import create_rag_graph_store
 from intergrax.rag.graph.contracts.graph_store import GraphStore
@@ -39,6 +40,7 @@ class RagStack:
     retrieval_service: RetrievalService
     contextual_enricher: Optional[ContextualChunkEnricher] = None
     graph_store: Optional[GraphStore] = None
+    toc_vectorstore_manager: Optional[BaseVectorstoreManager] = None
 
 
 def create_default_rag_stack(
@@ -59,12 +61,19 @@ def create_default_rag_stack(
     if graph_store is None and profile.graph_rag_enabled:
         graph_store = create_rag_graph_store(profile=profile)
 
+    toc_vectorstore_manager = resolve_toc_vectorstore_for_profile(
+        profile,
+        integration_profile=integration_profile,
+        chunks_store=vectorstore_manager,
+    )
+
     retriever_manager = create_default_retriever_manager(
         vector_store=vectorstore_manager,
         embedding_manager=embedding_manager,
         graph_store=graph_store,
         profile=profile,
         llm_for_query_expansion=llm_for_contextual,
+        toc_vector_store=toc_vectorstore_manager,
     )
     registry = create_default_reranker_registry(
         embedding_manager=embedding_manager,
@@ -97,4 +106,5 @@ def create_default_rag_stack(
         retrieval_service=retrieval_service,
         contextual_enricher=contextual,
         graph_store=graph_store,
+        toc_vectorstore_manager=toc_vectorstore_manager,
     )

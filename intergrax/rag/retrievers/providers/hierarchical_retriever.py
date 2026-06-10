@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
+from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
     RetrieverCandidate,
@@ -111,13 +112,15 @@ class HierarchicalRetriever(BaseRetriever):
 
             for parent in parents:
 
+                parent_filter: dict[str, object] = {
+                    ChunkMetadataKey.PARENT_CHUNK_ID: parent,
+                }
+                if query.metadata_filter is not None:
+                    parent_filter.update(query.metadata_filter.conditions)
                 local_hits = self._chunks.query(
                     query_embedding=q_vec,
                     top_k=self._k_chunks,
-                    metadata_filter={
-                        **(query.metadata_filter or {}),
-                        ChunkMetadataKey.PARENT_CHUNK_ID: parent,
-                    },
+                    metadata_filter=MetadataFilter(conditions=parent_filter),
                     include_embeddings=query.include_embeddings,
                 )
 

@@ -58,6 +58,7 @@ class RagProfile:
 
     # Ingest (no fixed parser — optional integration slug)
     chunking_strategy_id: str = "langchain_recursive"
+    hierarchical_index_enabled: bool = False
     document_parser_slug: Optional[str] = None
     contextual_enrich: ContextualEnrichMode = "off"
     query_expansion: QueryExpansionMode = "deterministic"
@@ -90,6 +91,16 @@ class RagProfile:
     max_context_chars: int = 4000
 
     extras: dict[str, str] = field(default_factory=dict)
+
+    def uses_hierarchical_index(self) -> bool:
+        if self.hierarchical_index_enabled:
+            return True
+        retriever_ids = {
+            self.retriever_id,
+            self.fast_retriever_id,
+            self.deep_retriever_id,
+        }
+        return "hierarchical" in retriever_ids
 
     def effective_retriever(self, *, route_tier: str) -> str:
         if route_tier == "fast":
@@ -165,6 +176,7 @@ def rag_profile_from_env() -> RagProfile:
         deep_query_min_words=_env_int("INTERGRAX_RAG_DEEP_QUERY_MIN_WORDS", 12),
         chunking_strategy_id=os.getenv("INTERGRAX_RAG_CHUNKING_STRATEGY", "langchain_recursive").strip()
         or "langchain_recursive",
+        hierarchical_index_enabled=_env_bool("INTERGRAX_RAG_HIERARCHICAL_INDEX", False),
         document_parser_slug=parser_slug,
         contextual_enrich=contextual,
         query_expansion=query_expansion,

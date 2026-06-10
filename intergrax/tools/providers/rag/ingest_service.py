@@ -43,6 +43,7 @@ def perform_rag_ingest(ctx: ToolWiringContext, params: RagIngestInput) -> RagIng
         splitter=splitter,
         embedding_manager=embedding_manager,
         vectorstore=vectorstore,
+        toc_vectorstore=ctx.toc_vectorstore_manager,
         profile=profile,
         contextual_enricher=ctx.extras.get("contextual_enricher"),
         graph_store=ctx.extras.get("graph_store"),

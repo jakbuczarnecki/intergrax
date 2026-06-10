@@ -93,6 +93,7 @@ class ToolWiringContext:
     reranker_manager: Any | None = None
     rag_profile: Any | None = None
     retrieval_service: Any | None = None
+    toc_vectorstore_manager: Any | None = None
     security_profile: Any | None = None
     websearch_executor: Any | None = None
     sandbox_session: Any | None = None

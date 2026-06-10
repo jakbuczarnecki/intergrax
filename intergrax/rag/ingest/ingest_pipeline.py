@@ -19,6 +19,8 @@ from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddi
 from intergrax.rag.graph.contracts.graph_store import GraphStore
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.graph.indexer.graph_indexer_factory import resolve_graph_indexer
+from intergrax.rag.indexing.indexing_manager import IndexingManager
+from intergrax.rag.indexing.strategies.dual_index_strategy import DualIndexStrategy
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 
@@ -48,6 +50,7 @@ class IngestPipeline:
         splitter: BaseDocumentsSplitter,
         embedding_manager: BaseEmbeddingManager,
         vectorstore: BaseVectorstoreManager,
+        toc_vectorstore: Optional[BaseVectorstoreManager] = None,
         profile: Optional[RagProfile] = None,
         contextual_enricher: Optional[ContextualChunkEnricher] = None,
         graph_store: Optional[GraphStore] = None,
@@ -58,6 +61,7 @@ class IngestPipeline:
         self._splitter = splitter
         self._embedding_manager = embedding_manager
         self._vectorstore = vectorstore
+        self._toc_vectorstore = toc_vectorstore
         self._profile = profile or RagProfile()
         self._contextual = contextual_enricher
         self._graph_store = graph_store
@@ -110,26 +114,36 @@ class IngestPipeline:
         if self._profile.contextual_enrich == "on" and self._contextual is not None:
             chunk_list = self._contextual.enrich(docs, chunk_list)
 
-        try:
-            embed_result = self._embedding_manager.embed_documents(chunk_list)
-            aligned_docs = embed_result.documents
-            embeddings = embed_result.embeddings
-        except AttributeError:
-            texts = [c.page_content for c in chunk_list]
-            embeddings = self._embedding_manager.embed_texts(texts)
-            aligned_docs = list(chunk_list)
-
+        aligned_docs = list(chunk_list)
         for doc in aligned_docs:
             doc.metadata = {**(doc.metadata or {}), **base_metadata}
 
         ids = [f"ingest-{path.stem}-{i}" for i in range(len(aligned_docs))]
-        stored_ids = self._vectorstore.add_documents(
-            documents=aligned_docs,
-            embeddings=embeddings,
-            ids=ids,
-            base_metadata=base_metadata,
-        )
-        vector_ids = list(stored_ids) if stored_ids is not None else ids
+
+        if self._uses_dual_index():
+            assert self._toc_vectorstore is not None
+            IndexingManager(
+                embed_manager=self._embedding_manager,
+                vectorstore=self._vectorstore,
+                strategy=DualIndexStrategy(toc_vectorstore=self._toc_vectorstore),
+            ).index_documents(aligned_docs)
+            vector_ids = ids
+        else:
+            try:
+                embed_result = self._embedding_manager.embed_documents(aligned_docs)
+                aligned_docs = list(embed_result.documents)
+                embeddings = embed_result.embeddings
+            except AttributeError:
+                texts = [c.page_content for c in aligned_docs]
+                embeddings = self._embedding_manager.embed_texts(texts)
+
+            stored_ids = self._vectorstore.add_documents(
+                documents=aligned_docs,
+                embeddings=embeddings,
+                ids=ids,
+                base_metadata=base_metadata,
+            )
+            vector_ids = list(stored_ids) if stored_ids is not None else ids
 
         if self._graph_store is not None and self._profile.graph_rag_enabled:
             indexer = resolve_graph_indexer(
@@ -147,3 +161,6 @@ class IngestPipeline:
             parser_id=parser_id,
             parser_trace=parser_trace,
         )
+
+    def _uses_dual_index(self) -> bool:
+        return self._profile.uses_hierarchical_index() and self._toc_vectorstore is not None
