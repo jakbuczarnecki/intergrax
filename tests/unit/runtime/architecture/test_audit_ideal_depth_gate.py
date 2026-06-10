@@ -470,6 +470,47 @@ def test_audit_ideal_24_2_cost_optimization() -> None:
     assert wiring.enabled is True
 
 
+def test_audit_ideal_20_2_policy_change_impact_cli() -> None:
+    from intergrax.runtime.architecture import build_capability_impact_report, build_catalog_capability_graph
+    from intergrax.runtime.architecture.policy_change_impact import render_policy_change_impact_visualization
+
+    report = build_capability_impact_report(build_catalog_capability_graph())
+    rendered = render_policy_change_impact_visualization(report, top_n=3)
+    assert "Policy change impact" in rendered
+
+
+def test_audit_ideal_21_1_causal_diagnostics() -> None:
+    from intergrax.applications._shared.causal_diagnostics_wiring import resolve_causal_diagnostics_wiring
+
+    wiring = resolve_causal_diagnostics_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+    assert wiring.chain is not None
+
+
+def test_audit_ideal_21_2_health_dashboard() -> None:
+    from intergrax.applications._shared.health_dashboard_wiring import resolve_health_dashboard_wiring
+
+    wiring = resolve_health_dashboard_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+    assert wiring.contract is not None
+
+
+def test_audit_ideal_27_3_agent_simulator() -> None:
+    from intergrax.applications._shared.agent_simulator_wiring import resolve_agent_simulator_wiring
+
+    wiring = resolve_agent_simulator_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+    assert wiring.router is not None
+
+
+def test_audit_ideal_32_1_debt_burn_down() -> None:
+    from intergrax.runtime.architecture.debt_burn_down import load_debt_burn_down_report
+
+    report = load_debt_burn_down_report(REPO_ROOT)
+    assert report.records
+    assert not report.unresolved_debt_ids
+
+
 def test_audit_ideal_deferred_register() -> None:
     register = REPO_ROOT / "docs" / "plan" / "AUDIT_IDEAL_2026.md"
     text = register.read_text(encoding="utf-8")

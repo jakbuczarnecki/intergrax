@@ -57,6 +57,10 @@ class ApplicationFeatures(BaseModel):
         default=False,
         description="Route Plane C vision inference through worker pools (AUDIT-IDEAL-29.2)",
     )
+    agent_simulator_enabled: bool = Field(
+        default=False,
+        description="Expose MVP evolution simulate/replay HTTP routes (AUDIT-IDEAL-27.3)",
+    )
 
     @classmethod
     def lab_defaults(cls) -> ApplicationFeatures:
@@ -80,4 +84,5 @@ class ApplicationFeatures(BaseModel):
             streaming_intake_enabled=True,
             checkpoint_introspection_enabled=True,
             modality_worker_pool_enabled=True,
+            agent_simulator_enabled=True,
         )

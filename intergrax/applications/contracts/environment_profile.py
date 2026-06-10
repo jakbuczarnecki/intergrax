@@ -155,6 +155,8 @@ class ObservabilityProfile(BaseModel):
     otel_enabled: bool = False
     metrics_plugins_enabled: bool = True
     debug_surface_override: bool | None = None
+    causal_diagnostics_enabled: bool = False
+    health_dashboard_enabled: bool = False
 
 
 class CostProfile(BaseModel):
@@ -622,6 +624,8 @@ class ApplicationEnvironmentProfile(BaseModel):
             observability_profile=ObservabilityProfile(
                 trace_sqlite_enabled=True,
                 debug_surface_override=False,
+                causal_diagnostics_enabled=True,
+                health_dashboard_enabled=True,
             ),
             sandbox=SandboxProfile(enable_exec_tool=True),
             cost_profile=CostProfile(

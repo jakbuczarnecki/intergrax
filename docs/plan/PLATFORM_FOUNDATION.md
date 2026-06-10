@@ -103,7 +103,7 @@ Each **business environment** and each **business agent** maintains its own `ARC
 | AUDIT-IDEAL-1.1 | §1 Strategic | Operationalize quarterly strategy review process | P2 | Planned |
 | AUDIT-IDEAL-1.2 | §1 Strategic | Architecture health metrics as live signals | P2 | Planned |
 | AUDIT-IDEAL-2.1 | §2 Tiers | Continuous tier-boundary gate maintenance | P3 | **Done** (gates exist) |
-| AUDIT-IDEAL-32.1 | §32 Doc gov | Living architecture debt burn-down tied to milestones | P2 | Planned |
+| AUDIT-IDEAL-32.1 | §32 Doc gov | Living architecture debt burn-down tied to milestones | P2 | **Done** |
 | AUDIT-IDEAL-32.2 | §32 Doc gov | Scorecard auto-sync on plan row change | P2 | Planned |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.

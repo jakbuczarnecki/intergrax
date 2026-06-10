@@ -6,7 +6,7 @@
 **Baseline:** **32/32 L3** (`scripts/harness_maturity_report.py`, IDEAL-L3 W2 Done)  
 **Hub:** [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) · Band **2az** · queue **§6.1au**  
 **Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](../guides/ARCHITECTURE_DEBT_REGISTER.md)  
-**Status:** **W3 P2 in progress** (2026-06-09) — **56/78 Done** · **4 Deferred §6.3** · **18 Planned**
+**Status:** **W3 P2 in progress** (2026-06-09) — **61/78 Done** · **4 Deferred §6.3** · **13 Planned**
 
 > **Scope:** Close gaps between **L3 Production Harness OS** and **full ideal architecture** (modular, elastic, complete). Harness infrastructure only unless row is explicitly **Deferred §6.3** (product).
 
@@ -77,9 +77,9 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-19.1 | Registry | 19 | Durable cross-host registry snapshot store (DEBT-19-01) | **P0** | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
 | AUDIT-IDEAL-19.2 | Registry | 19 | Capability negotiation at runtime resolve | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
 | AUDIT-IDEAL-20.1 | Capability graph | 20 | Product CI blast-radius check on tool/skill changes | P1 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
-| AUDIT-IDEAL-20.2 | Capability graph | 20 | Policy change impact visualization CLI | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | Planned |
-| AUDIT-IDEAL-21.1 | Observability | 21 | Causal diagnostics beyond trace bridge (ops tooling) | P2 | `OBSERVABILITY` | Planned |
-| AUDIT-IDEAL-21.2 | Observability | 21 | Quality / governance / cost health dashboard contracts | P2 | `OBSERVABILITY` | Planned |
+| AUDIT-IDEAL-20.2 | Capability graph | 20 | Policy change impact visualization CLI | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
+| AUDIT-IDEAL-21.1 | Observability | 21 | Causal diagnostics beyond trace bridge (ops tooling) | P2 | `OBSERVABILITY` | **Done** |
+| AUDIT-IDEAL-21.2 | Observability | 21 | Quality / governance / cost health dashboard contracts | P2 | `OBSERVABILITY` | **Done** |
 | AUDIT-IDEAL-21.3 | Observability | 21 | Unified product observability dashboard | P4 | `OBSERVABILITY` | **Deferred §6.3** (GOV-PROD.1) |
 | AUDIT-IDEAL-22.1 | Reliability | 22 | Compensation flows on product side-effect paths | P1 | `RELIABILITY_FAILURE_AND_HITL` | **Done** |
 | AUDIT-IDEAL-22.2 | Reliability | 22 | Partial results contract on all reference hosts | P2 | `RELIABILITY_FAILURE_AND_HITL` | **Done** |
@@ -95,7 +95,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-26.2 | CI / gates | 26 | Simulation tests for multi-agent contention | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | Planned |
 | AUDIT-IDEAL-27.1 | DX | 27 | Trace Explorer interactive UI (beyond lab APIs) | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | Planned |
 | AUDIT-IDEAL-27.2 | DX | 27 | Replay environment HTTP API on product hosts | P1 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Done** |
-| AUDIT-IDEAL-27.3 | DX | 27 | Agent simulator on product hosts (not CLI-only) | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | Planned |
+| AUDIT-IDEAL-27.3 | DX | 27 | Agent simulator on product hosts (not CLI-only) | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Done** |
 | AUDIT-IDEAL-27.4 | DX | 27 | Visual builder / graph editor (Phase 2 UI) | P3 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | Planned |
 | AUDIT-IDEAL-28.1 | Tier-3 hosts | 28 | Durable async queue default beyond SQLite (DEBT-28-01) | P1 | `TIER3_APPLICATION_ENVIRONMENT` | **Done** |
 | AUDIT-IDEAL-28.2 | Tier-3 hosts | 28 | Queue worker scaffold-default (`INCLUDE_QUEUE_WORKER`) | P1 | `TIER3_APPLICATION_ENVIRONMENT` | **Done** |
@@ -109,7 +109,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-30.4 | Ops / SLO | 30 | Celery/K8s production-scale adapters (beyond stub/beta) | P2 | `ELASTIC_CAPACITY_AND_SCALING` | Planned |
 | AUDIT-IDEAL-31.1 | Agent lifecycle | 31 | Owner/on-call mandatory on all certified agents | P1 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
 | AUDIT-IDEAL-31.2 | Agent lifecycle | 31 | Evaluation results required before production promotion (enforce) | P1 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
-| AUDIT-IDEAL-32.1 | Doc governance | 32 | Living architecture debt burn-down tied to milestones | P2 | `PLATFORM_FOUNDATION` | Planned |
+| AUDIT-IDEAL-32.1 | Doc governance | 32 | Living architecture debt burn-down tied to milestones | P2 | `PLATFORM_FOUNDATION` | **Done** |
 | AUDIT-IDEAL-32.2 | Doc governance | 32 | Scorecard auto-sync on plan row change (extend IDEAL-32.3) | P2 | `PLATFORM_FOUNDATION` | Planned |
 | AUDIT-IDEAL-AHI.1 | Adaptive Harness L4 | 25 | 30-day L4 closed-loop evidence on ≥3 golden scenarios (real deploy) | P1 | `ADAPTIVE_HARNESS_INTELLIGENCE` | **Done** |
 | AUDIT-IDEAL-AHI.2 | Adaptive Harness L4 | 25 | Bounded policy learning without governance drift | P2 | `ADAPTIVE_HARNESS_INTELLIGENCE` | **Done** |
