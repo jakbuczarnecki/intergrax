@@ -5,6 +5,7 @@
 **Plan (1:1):** [`plan/PLATFORM_FOUNDATION.md`](../plan/PLATFORM_FOUNDATION.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 1–2, 32  
+**Audit instruction:** [`guides/audit/PLATFORM_FOUNDATION.md`](../guides/audit/PLATFORM_FOUNDATION.md)  
 ---
 
 # 1.1 Documentation boundary (platform vs product)

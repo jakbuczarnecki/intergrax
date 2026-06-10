@@ -1,11 +1,24 @@
 # Harness Implementation Audit — Copy-Paste Prompt
 
 **Purpose:** repeatable LLM prompt for Intergrax Harness AI implementation audits.  
-**Procedure source:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md)
+**Procedure source:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md)  
+**Per-domain deep audits:** [`audit/README.md`](audit/README.md) — copy-paste prompts for each of the 21 domain pairs (RAG, Tools, Memory, …)
 
 ---
 
 ## How to use
+
+### Single domain (recommended for engine-depth audits)
+
+For one domain pair (e.g. RAG, Tools, Memory), use the dedicated prompt — **do not** rewrite ad-hoc instructions:
+
+1. Open [`audit/<DOMAIN>.md`](audit/README.md#domain-index-21-pairs) (e.g. [`audit/RAG.md`](audit/RAG.md)).
+2. Copy `---BEGIN PROMPT---` … `---END PROMPT---` into a new agent chat.
+3. Set `mode` in USER CONFIG.
+
+Domain prompts include shared observability/security/scale checklists plus domain-specific dimensions.
+
+### Multi-layer or full-platform audit
 
 ### What to copy
 

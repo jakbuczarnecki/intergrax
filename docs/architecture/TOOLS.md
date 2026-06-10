@@ -5,6 +5,7 @@
 **Plan (1:1):** [`plan/TOOLS.md`](../plan/TOOLS.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 11  
+**Audit instruction:** [`guides/audit/TOOLS.md`](../guides/audit/TOOLS.md)  
 ---
 
 ---
@@ -134,6 +135,7 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T14–T17 Done**
 | `CatalogToolPlanner` (LLM planner) | `intergrax/runtime/nexus/tools/catalog_tool_planner.py` | **Done** — OpenAI schema from registry via `ToolPlanningService` (single-pass planner; [§Multi-tool execution](#multi-tool-execution-semantics)) |
 | `ToolPlanningService` | `intergrax/runtime/nexus/tools/tool_planning_service.py` | **Done** — native `generate_with_tools` or JSON fallback; `allowed_tool_ids` filter (TOOL-ENG-4) |
 | `tool_planner_input` | `intergrax/runtime/nexus/tools/tool_planner_input.py` | **Done** — `tools_context_scope` assembly (TOOL-ENG-11) |
+| `tool_selection` | `intergrax/runtime/nexus/tools/tool_selection.py` | **Done** — `ToolSelectionStrategy` router (TOOL-ENG-5) |
 | `ToolsStep` | `intergrax/runtime/nexus/runtime_steps/tools_step.py` | **Done** — plan-once → sequential invoke → context inject; **no** ReAct loop |
 | `IdempotentToolInvoker` | `intergrax/runtime/tools/idempotent_invoker.py` | **Done** — exactly-once for `side_effects` + `idempotency_key` |
 | `catalog_context` | `intergrax/runtime/nexus/tools/catalog_context.py` | **Done** — `rag.retrieve` / `websearch.query` shim from pipeline steps |
@@ -274,7 +276,7 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 | **Planner wiring** (`CatalogToolPlanner`) | **Done** | `wire_catalog_tool_planner_if_enabled` in `planner_bootstrap.py` (TOOL-ENG-0) |
 | **Multi-tool / ReAct loop** | **Gap** | No `max_iterations` tool loop; no native `role=tool` multi-turn chain in pipeline |
 | **Parallel tool execution** | **Gap** | `for call in tool_plan.calls` — always sequential |
-| **Large-catalog selection** | **Partial** | Plan `tool_ids` constrain planner (TOOL-ENG-4); no `ToolSelectionStrategy` router (TOOL-ENG-5) |
+| **Large-catalog selection** | **Done** | `ToolSelectionStrategy` — static / skill-pack / retrieval top-k / full-catalog (TOOL-ENG-5) |
 | **`tool_ids` plan dispatch** | **Done** | `catalog_dispatch.invoke_catalog_tool_ids` after pipeline shims (TOOL-ENG-1) |
 | **§42.12 gateway** | **Partial** | Catalog `tool_id` → invoker (TOOL-ENG-2); runtime-bound + sandbox unchanged |
 | **`tool_scope_policy` wiring** | **Done** | Passed to `RuntimeToolInvoker` in `RuntimeContext.build()` (TOOL-ENG-3) |
@@ -300,6 +302,8 @@ Tool-related fields on `RuntimeConfig` (`intergrax/runtime/nexus/config.py`). Ti
 | `tool_providers` | `Sequence[ToolProvider]` | `()` | Extra registration after profile |
 | `tool_scope_policy` | `ToolScopePolicy \| None` | from `RuntimePolicyBundle` | Per-invoke allow-list (wired TOOL-ENG-3) |
 | `tool_planner_prompt_id` | `str` | `tools_agent_planner` | From `ReasoningProfile` via catalog bridge (TOOL-ENG-0) |
+| `tool_selection_mode` | `ToolSelectionMode` | `static` | Planner schema narrowing: `static` \| `skill_pack` \| `retrieval_top_k` \| `full_catalog` (TOOL-ENG-5) |
+| `tool_selection_top_k` | `int` | `20` | Top-k for `retrieval_top_k` mode |
 | `idempotency_store` | `IdempotencyStore \| None` | `InMemoryIdempotencyStore` | Side-effect dedup |
 | `policy_bundle` | `RuntimePolicyBundle \| None` | Tier-3 | `tool_access`, budget, plan-loop |
 | `modality_profile` | `ModalityProfile \| None` | env profile | Tool plane filter |
@@ -429,7 +433,7 @@ Distinct ways catalog capabilities reach a backend — not all equivalent.
 
 | Strategy | Status | Target module |
 |----------|--------|---------------|
-| **Tool Router** (embedding / tag / top-k before LLM) | Planned **TOOL-ENG-5** | `ToolPlanningService` or new `ToolSelectionStrategy` |
+| **Tool Router** (keyword top-k / skill-pack before LLM) | **Done** **TOOL-ENG-5** | `tool_selection.py` |
 | **Plan-constrained selection** (`EnginePlan.tool_ids` → planner allow-list) | Planned **TOOL-ENG-1** | `ToolsStep` / `ToolRuntime` |
 | **Risk-based routing** (`ToolRiskLevel` → HITL / critic) | Planned **TOOL-ENG-7** | invoker + middleware |
 | **AHI dynamic subset** | Planned **TOOL-ENG-10** | adaptive harness hook |
@@ -511,7 +515,7 @@ EnginePlan.tool_ids=["rag.retrieve"]          # use_rag → RagStep
 ToolInvocationPlan(use_tools=True)            # ToolsStep → fresh LLM plan
 ```
 
-Gap closure: **TOOL-ENG-5** (`ToolSelectionStrategy` for skill-pack / retrieval subsets).
+Gap closure: **TOOL-ENG-6** (multi-iteration ReAct tool loop).
 
 ---
 
@@ -555,7 +559,7 @@ Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary:
 | TOOL-ENG-2 | Full-catalog `ToolRequest` → `RuntimeToolInvoker` in gateway | **Done** |
 | TOOL-ENG-3 | Wire `config.tool_scope_policy` → `RuntimeToolInvoker` | **Done** |
 | TOOL-ENG-4 | Pass `EnginePlan.tool_ids` / plan constraints into `ToolsStep` planner | **Done** |
-| TOOL-ENG-5 | `ToolSelectionStrategy` / router before `generate_with_tools` | P1 |
+| TOOL-ENG-5 | `ToolSelectionStrategy` / router before `generate_with_tools` | **Done** |
 | TOOL-ENG-6 | Tool loop (ReAct): `max_iterations`, native tool messages | P1 |
 | TOOL-ENG-7 | Post-tool verify for `risk_level >= HIGH` | P2 |
 | TOOL-ENG-8 | `tools_mode=required` hard fail | P2 |

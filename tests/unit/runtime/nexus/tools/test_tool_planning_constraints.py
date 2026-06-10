@@ -157,13 +157,24 @@ def test_resolve_tool_planner_input_full() -> None:
 
 @pytest.mark.asyncio
 async def test_tools_step_passes_allowed_tool_ids_to_planner() -> None:
+    from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+    from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
+    from intergrax.tools.registry import ToolRegistry
+
+    registry = ToolRegistry()
+    contract = tools_agent_make_contract("alpha.tool", _InA, _Out)
+    registry.register(contract, _HandlerA())
+
     state = _runtime_state(scope=ToolsContextScope.CURRENT_MESSAGE_ONLY)
     state.tool_planner_allowed_tool_ids = ("alpha.tool",)
+    state.context.config.tool_invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=RegistryToolExecutor(registry),
+    )
 
     planner = MagicMock()
     planner.plan_tools = MagicMock(return_value=MagicMock(tool_plan=None))
 
-    state.context.config.tool_invoker = MagicMock()
     state.context.config.tool_planner = planner
     state.context.config.tools_mode = "auto"
 

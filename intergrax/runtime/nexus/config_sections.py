@@ -34,7 +34,7 @@ from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProto
 from intergrax.websearch.service.websearch_config import WebSearchConfig
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
-from intergrax.runtime.nexus.config_types import ToolChoiceMode, ToolsContextScope
+from intergrax.runtime.nexus.config_types import ToolChoiceMode, ToolSelectionMode, ToolsContextScope
 
 
 @dataclass
@@ -71,6 +71,8 @@ class ToolsRuntimeConfig:
     tool_planner: Optional[ToolPlannerProtocol] = None
     tools_mode: ToolChoiceMode = "auto"
     tools_context_scope: ToolsContextScope = ToolsContextScope.CURRENT_MESSAGE_ONLY
+    tool_selection_mode: ToolSelectionMode = ToolSelectionMode.STATIC
+    tool_selection_top_k: int = 20
     tool_invoker: Optional[RuntimeToolInvoker] = None
     idempotency_store: Optional[IdempotencyStore] = None
     tool_providers: tuple[ToolProvider, ...] = ()

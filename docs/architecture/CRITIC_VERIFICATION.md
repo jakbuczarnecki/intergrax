@@ -5,6 +5,7 @@
 **Plan (1:1):** [`plan/CRITIC_VERIFICATION.md`](../plan/CRITIC_VERIFICATION.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 25 (verify depth)  
+**Audit instruction:** [`guides/audit/CRITIC_VERIFICATION.md`](../guides/audit/CRITIC_VERIFICATION.md)  
 ---
 
 ## 1. Purpose

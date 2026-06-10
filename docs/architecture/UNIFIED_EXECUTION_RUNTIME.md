@@ -5,6 +5,7 @@
 **Plan (1:1):** [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../plan/UNIFIED_EXECUTION_RUNTIME.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 4–5, 8, 23–24  
+**Audit instruction:** [`guides/audit/UNIFIED_EXECUTION_RUNTIME.md`](../guides/audit/UNIFIED_EXECUTION_RUNTIME.md)  
 ---
 
 ## 42.1 Runtime Event Model

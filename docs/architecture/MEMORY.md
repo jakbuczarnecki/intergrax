@@ -5,6 +5,7 @@
 **Plan (1:1):** [`plan/MEMORY.md`](../plan/MEMORY.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 15–16  
+**Audit instruction:** [`guides/audit/MEMORY.md`](../guides/audit/MEMORY.md)  
 **Related:** [`architecture/RAG.md`](RAG.md) — Tier-0 retrieval engine; this doc covers memory stores, context assembly, and the **Knowledge vs LTM** boundary.  
 ---
 

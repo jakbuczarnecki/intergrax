@@ -67,6 +67,8 @@ This document solves that problem by dividing the platform into auditable Harnes
 
 # 3. Audit Philosophy
 
+**Per-domain copy-paste prompts:** For deep single-domain audits (RAG, Tools, Memory, UAEP, …), use [`audit/README.md`](audit/README.md) — 21 prompts aligned 1:1 with `architecture/<DOMAIN>.md` ↔ `plan/<DOMAIN>.md`. Use this document for layer map, scoring, and output format; use `audit/<DOMAIN>.md` for the runnable agent instruction.
+
 Do not audit the entire system at once.
 
 Audit one layer at a time.

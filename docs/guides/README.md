@@ -11,4 +11,5 @@ Authoring guides, strategic context, and audit methodology.
 | [AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) | Scaffold → register → run → evaluate |
 | [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md) | Tier-0 plugin catalogs |
 | [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) | Lab stack, OTLP, presets |
-| [HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) | Layer audit prompt for coding agents |
+| [HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) | Multi-layer / full-platform audit prompt |
+| [audit/README.md](audit/README.md) | **Per-domain audit instructions** (21 copy-paste prompts) |

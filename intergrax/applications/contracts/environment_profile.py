@@ -390,6 +390,8 @@ class ApplicationEnvironmentProfile(BaseModel):
     sandbox: SandboxProfile | None = None
     features: ApplicationFeatures = Field(default_factory=ApplicationFeatures.lab_defaults)
     domain_policy_fragments: dict[str, Any] = Field(default_factory=dict)
+    tool_selection_mode: str = "static"
+    tool_selection_top_k: int = Field(default=20, ge=1, le=100)
 
     @classmethod
     def harness_memory_profile(cls) -> MemoryProfile:
@@ -443,6 +445,7 @@ class ApplicationEnvironmentProfile(BaseModel):
             integration_profile=IntegrationProfile.lab_harness_preset(),
             tool_profile=ToolProfile(enabled=tool_enabled),
             skill_profile=lab_skill_profile(),
+            tool_selection_mode="skill_pack",
             modality_profile=lab_default_modality_profile(),
             llm_profile=LLMProfile.lab(),
             context_profile=ContextProfile(enable_rag=True, enable_websearch=True),

@@ -15,7 +15,12 @@ from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.tools.execution_models import ToolExecutionRequest
 
 from intergrax.runtime.nexus.budget.budget_ticks import enforce_tool_call_budget
+from intergrax.runtime.nexus.tools.catalog_dispatch import resolve_tool_registry
 from intergrax.runtime.nexus.tools.tool_planner_input import resolve_tool_planner_input
+from intergrax.runtime.nexus.tools.tool_selection import (
+    ToolSelectionContext,
+    resolve_planner_allowed_tool_ids,
+)
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState, ToolCallTrace
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
 from intergrax.runtime.nexus.tracing.tools.tools_summary import ToolsSummaryDiagV1
@@ -64,7 +69,20 @@ class ToolsStep(RuntimeStep):
         try:
             
             planner_input = resolve_tool_planner_input(state)
-            allowed_tool_ids = state.tool_planner_allowed_tool_ids
+            registry = resolve_tool_registry(invoker)
+            if registry is not None:
+                allowed_tool_ids = resolve_planner_allowed_tool_ids(
+                    state.context.config.tool_selection_mode,
+                    ToolSelectionContext(
+                        registry=registry,
+                        query=state.request.message or "",
+                        skill_profile=state.context.config.skill_profile,
+                        plan_allowed_tool_ids=state.tool_planner_allowed_tool_ids,
+                        top_k=state.context.config.tool_selection_top_k,
+                    ),
+                )
+            else:
+                allowed_tool_ids = state.tool_planner_allowed_tool_ids
 
             decision = tool_planner.plan_tools(
                 input_data=planner_input,

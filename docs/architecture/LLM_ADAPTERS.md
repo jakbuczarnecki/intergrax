@@ -5,6 +5,7 @@
 **Plan (1:1):** [`plan/LLM_ADAPTERS.md`](../plan/LLM_ADAPTERS.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 6  
+**Audit instruction:** [`guides/audit/LLM_ADAPTERS.md`](../guides/audit/LLM_ADAPTERS.md)  
 ---
 
 ## Response envelope (M-LLM-R)
