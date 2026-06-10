@@ -59,7 +59,7 @@ Tier-3 IntegrationProfile + RagProfile
 | Observability | **L2** | `RetrievalTrace`, parser trace, opt-in metrics; no OTel spans on retrieve/ingest hot path |
 | Security (poisoning) | **L3** | Nexus `RagStep` + catalog `rag.retrieve` when `security_profile` wired (M-RAG.25) |
 | Citations | **L2** | Metadata in chunks + composer; no formal `Citation` on `RetrievalResult` |
-| Vector backends (prod SLO) | **L2–L2.5** | Catalog **stable:** `qdrant`, `pgvector`, `chroma`, `weaviate`, `lancedb`, `typesense`; **beta:** `pinecone`, `milvus`, `vespa`, `inmemory`; no RAG soak gate (GAP-RAG-07, M-RAG.30) |
+| Vector backends (prod SLO) | **L2.5–L3** | Catalog **stable:** `qdrant`, `pgvector`, `chroma`, `weaviate`, `lancedb`, `typesense`; **beta:** `pinecone`, `milvus`, `vespa`, `inmemory`; soak gate `prod_slo.py` + gate tests (M-RAG.30) |
 | Multi-tenant isolation | **L2** | `MetadataFilter` + in-memory enforce; prod depends on backend namespace design |
 | Evaluation depth | **L2.5** | Golden harness (lab scenarios); no load/soak SLO gate |
 
@@ -81,7 +81,7 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-04 | niegotowość | ~~Catalog `perform_rag_retrieve` had no poisoning filter~~ — **closed M-RAG.25**: mirrors `rag_step` when `security_profile.retrieval_poisoning_defense_enabled` | **P1** | M-RAG.25 **Done** | 14.5 |
 | GAP-RAG-05 | niegotowość | ~~Sync ingest loads full document into RAM with no size guard~~ — **closed M-RAG.26**: `sync_ingest_max_bytes` rejects oversized sync path; stream shard ingest remains workflow worker | **P1** | M-RAG.26 **Done** | 14.6 |
 | GAP-RAG-06 | niegotowość | ~~No Tier-0 async ingest job contract~~ — **closed M-RAG.26**: `rag.schedule_ingest_job` + idempotent `workflow_orchestrator` trigger | **P1** | M-RAG.26 **Done** | 14.6 |
-| GAP-RAG-07 | niedoróbka | Vector-store catalog: `qdrant`/`pgvector`/`chroma`/`weaviate` promoted **stable** in manifests; `pinecone`/`milvus`/`vespa`/`inmemory` remain **beta**; no soak gate or ops runbook for prod SLO | **P1** | M-RAG.30 | — |
+| GAP-RAG-07 | niedoróbka | ~~No soak gate or ops runbook~~ — **closed M-RAG.30**: `prod_slo.py` soak contract; gate unit tests; integration soak `-m vectorstore_soak`; INTEGRATIONS runbook; `pinecone`/`milvus`/`vespa` remain **beta** until ops soak passes | **P1** | M-RAG.30 **Done** | — |
 | GAP-RAG-08 | niedoróbka | No OpenTelemetry spans on `RetrievalService.retrieve` / `IngestPipeline.run` hot path | **P2** | M-RAG.27 | 14.7 |
 | GAP-RAG-09 | niska jakość | RAG metrics opt-in only (`INTERGRAX_RAG_METRICS_ENABLED`); not on default observability spine | **P2** | M-RAG.27 | 14.7 |
 | GAP-RAG-10 | niedoróbka | `RetrieverEngine` raises after 1 retry — no retriever fallback chain (`fusion` → `hybrid` → `vector`) | **P2** | M-RAG.28 | — |

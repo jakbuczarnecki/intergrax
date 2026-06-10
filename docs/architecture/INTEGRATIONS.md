@@ -571,17 +571,32 @@ This catalog doc covers **integration slugs** consumed by RAG (`vector_store`, `
 
 Vector implementations remain in `intergrax/rag/vectorstore/`. Integration providers are **thin catalog bridges** — select backend via `IntegrationProfile.vector_store` or RAG bootstrap.
 
-| Slug | Status | Catalog factory | Env prefix | Notes |
-|------|--------|-----------------|------------|-------|
-| `pinecone` | beta | `create_pinecone_vector_store()` | `INTERGRAX_PINECONE` | Managed cloud index |
-| `qdrant` | beta | `create_qdrant_vector_store()` | `INTERGRAX_QDRANT` | Self-hosted or Qdrant Cloud |
-| `chroma` | beta | `create_chroma_vector_store()` | `INTERGRAX_CHROMA` | Embedded or HTTP Chroma |
+| Slug | Status | Catalog factory | Env prefix | Prod SLO soak (M-RAG.30) |
+|------|--------|-----------------|------------|--------------------------|
+| `qdrant` | **stable** | `create_qdrant_vector_store()` | `INTERGRAX_QDRANT` | Required — `test_vectorstore_real_backends.py` |
+| `pgvector` | **stable** | `create_pgvector_vector_store()` | `INTERGRAX_PGVECTOR` | Required — DSN optional (in-memory fallback for harness) |
+| `chroma` | **stable** | `create_chroma_vector_store()` | `INTERGRAX_CHROMA` | Required — HTTP mode default probe `localhost:8000` |
+| `weaviate` | **stable** | `create_weaviate_vector_store()` | `INTERGRAX_WEAVIATE` | Required — probe `INTERGRAX_WEAVIATE_URL` / `localhost:8080` |
+| `lancedb` | **stable** | `create_lancedb_vector_store()` | `INTERGRAX_LANCEDB` | Harness stable; soak gate optional per deployment |
+| `typesense` | **stable** | `create_typesense_vector_store()` | `INTERGRAX_TYPESENSE` | Harness stable; soak gate optional per deployment |
+| `pinecone` | beta | `create_pinecone_vector_store()` | `INTERGRAX_PINECONE` | Promote to stable after soak passes in ops environment |
+| `milvus` | beta | `create_milvus_vector_store()` | `INTERGRAX_MILVUS` | Promote to stable after soak passes in ops environment |
+| `vespa` | beta | `create_vespa_vector_store()` | `INTERGRAX_VESPA` | Promote to stable after soak passes in ops environment |
+| `inmemory` | beta | `create_inmemory_vector_store()` | `INTERGRAX_INMEMORY` | Harness/tests only — not for production |
+
+**Soak contract:** `intergrax/rag/vectorstore/soak/prod_slo.py` — ingest → query → metadata filter → delete; p95 query latency budget.
+
+**Gate (CI, no external services):** `uv run pytest tests/unit/rag/vectorstore/test_vectorstore_prod_slo_soak.py -m gate -q`
+
+**Ops / nightly (real backends):** `uv run pytest tests/integration/rag/vectorstore/test_vectorstore_real_backends.py -m vectorstore_soak -q` — tests skip when backend unreachable.
 
 | Provider | Usage guide |
 |----------|-------------|
 | `pinecone` | [USAGE.md](../intergrax/integrations/providers/vector_store/pinecone/USAGE.md) |
 | `qdrant` | [USAGE.md](../intergrax/integrations/providers/vector_store/qdrant/USAGE.md) |
 | `chroma` | [USAGE.md](../intergrax/integrations/providers/vector_store/chroma/USAGE.md) |
+| `pgvector` | [USAGE.md](../intergrax/integrations/providers/vector_store/pgvector/USAGE.md) |
+| `weaviate` | [USAGE.md](../intergrax/integrations/providers/vector_store/weaviate/USAGE.md) |
 
 RAG bootstrap: `create_default_vectorstore_manager()` in `intergrax/rag/vectorstore/bootstrap/` resolves via the integration catalog when `vector_store` is configured.
 
