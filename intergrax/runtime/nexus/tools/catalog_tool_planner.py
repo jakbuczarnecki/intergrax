@@ -5,9 +5,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
+from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
@@ -71,13 +73,15 @@ class CatalogToolPlanner(ToolPlannerTrackable):
 
     def plan_tools(
         self,
-        input_data: str,
+        input_data: Union[str, list[ChatMessage]],
         context: Optional[Any] = None,
         *,
         run_id: str,
+        allowed_tool_ids: Sequence[str] | None = None,
     ) -> ToolPlanDecision:
         return self._service.plan_tools(
             input_data=input_data,
             context=context,
             run_id=run_id,
+            allowed_tool_ids=allowed_tool_ids,
         )

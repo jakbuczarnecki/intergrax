@@ -19,6 +19,7 @@ from intergrax.runtime.nexus.planning.stepplan_models import (
 from intergrax.runtime.nexus.planning.step_planner.assembly import StepPlanAssembly
 from intergrax.runtime.nexus.planning.step_planner.config import StepPlannerConfig
 from intergrax.runtime.nexus.planning.step_planner.step_factory import StepPlanStepFactory
+from intergrax.runtime.nexus.tools.catalog_dispatch import catalog_tool_ids
 
 
 class StepPlanStrategies:
@@ -104,6 +105,7 @@ class StepPlanStrategies:
                     step_id=StepId.TOOLS,
                     depends_on=[],
                     tool_input={"query": msg, "intent": str(intent)},
+                    allowed_tool_ids=list(catalog_tool_ids(engine_plan.resolved_tool_ids())),
                     max_tool_calls=1,
                 )
             ]
@@ -163,6 +165,7 @@ class StepPlanStrategies:
             enable_ltm=bool(plan.use_user_longterm_memory),
             enable_rag=bool(plan.use_rag),
             enable_tools=bool(plan.use_tools),
+            planner_tool_ids=catalog_tool_ids(plan.resolved_tool_ids()),
             intent=plan.intent,
             intent_reason=(plan.reasoning_summary or None),
         )
@@ -250,6 +253,7 @@ class StepPlanStrategies:
                     step_id=StepId.TOOLS,
                     depends_on=[],
                     tool_input={"query": msg, "intent": str(PlanIntent.FRESHNESS)},
+                    allowed_tool_ids=list(hints.planner_tool_ids),
                     max_tool_calls=1,
                 )
             )
@@ -277,6 +281,7 @@ class StepPlanStrategies:
                     step_id=StepId.TOOLS,
                     depends_on=[],
                     tool_input={"query": msg, "intent": str(PlanIntent.GENERIC)},
+                    allowed_tool_ids=list(hints.planner_tool_ids),
                     max_tool_calls=1,
                 )
             )
@@ -319,6 +324,7 @@ class StepPlanStrategies:
                     step_id=StepId.TOOLS,
                     depends_on=[],
                     tool_input={"query": msg, "intent": str(PlanIntent.PROJECT_ARCHITECTURE)},
+                    allowed_tool_ids=list(hints.planner_tool_ids),
                     max_tool_calls=1,
                 )
             )

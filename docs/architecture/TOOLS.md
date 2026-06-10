@@ -132,7 +132,8 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T14–T17 Done**
 | `catalog_dispatch` | `intergrax/runtime/nexus/tools/catalog_dispatch.py` | **Done** — per-id plan dispatch + gateway invoke (TOOL-ENG-1/2) |
 | `BoundToolGateway` | `intergrax/runtime/nexus/tools/uaep_tool_gateway.py` | **Partial** — sandbox + runtime-bound subset + delegates capability to `RuntimeToolGateway` |
 | `CatalogToolPlanner` (LLM planner) | `intergrax/runtime/nexus/tools/catalog_tool_planner.py` | **Done** — OpenAI schema from registry via `ToolPlanningService` (single-pass planner; [§Multi-tool execution](#multi-tool-execution-semantics)) |
-| `ToolPlanningService` | `intergrax/runtime/nexus/tools/tool_planning_service.py` | **Done** — native `generate_with_tools` or JSON fallback; **no** `allowed_tools` pre-filter on schema export |
+| `ToolPlanningService` | `intergrax/runtime/nexus/tools/tool_planning_service.py` | **Done** — native `generate_with_tools` or JSON fallback; `allowed_tool_ids` filter (TOOL-ENG-4) |
+| `tool_planner_input` | `intergrax/runtime/nexus/tools/tool_planner_input.py` | **Done** — `tools_context_scope` assembly (TOOL-ENG-11) |
 | `ToolsStep` | `intergrax/runtime/nexus/runtime_steps/tools_step.py` | **Done** — plan-once → sequential invoke → context inject; **no** ReAct loop |
 | `IdempotentToolInvoker` | `intergrax/runtime/tools/idempotent_invoker.py` | **Done** — exactly-once for `side_effects` + `idempotency_key` |
 | `catalog_context` | `intergrax/runtime/nexus/tools/catalog_context.py` | **Done** — `rag.retrieve` / `websearch.query` shim from pipeline steps |
@@ -269,11 +270,11 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 |------|---------|-------|
 | **Tier-0 catalog** (`ToolContract`, plugins, 190 tools) | **Production** | Contracts, exporters, provider tests, integration composition |
 | **Single invoke** (`RuntimeToolInvoker`) | **Production** | Schema, timeout, retry, trace, idempotency wrapper |
-| **Pipeline tool step** (`ToolsStep`) | **Partial** | Planner wired (TOOL-ENG-0); explicit `tool_ids` dispatch via `catalog_dispatch` (TOOL-ENG-1); planner constraints gap (TOOL-ENG-4) |
+| **Pipeline tool step** (`ToolsStep`) | **Partial** | Planner wired (TOOL-ENG-0); plan allow-list (TOOL-ENG-4); context scope (TOOL-ENG-11); no ReAct loop (TOOL-ENG-6) |
 | **Planner wiring** (`CatalogToolPlanner`) | **Done** | `wire_catalog_tool_planner_if_enabled` in `planner_bootstrap.py` (TOOL-ENG-0) |
 | **Multi-tool / ReAct loop** | **Gap** | No `max_iterations` tool loop; no native `role=tool` multi-turn chain in pipeline |
 | **Parallel tool execution** | **Gap** | `for call in tool_plan.calls` — always sequential |
-| **Large-catalog selection** | **Gap** | No Tool Router; planner sees full `ToolRegistry` |
+| **Large-catalog selection** | **Partial** | Plan `tool_ids` constrain planner (TOOL-ENG-4); no `ToolSelectionStrategy` router (TOOL-ENG-5) |
 | **`tool_ids` plan dispatch** | **Done** | `catalog_dispatch.invoke_catalog_tool_ids` after pipeline shims (TOOL-ENG-1) |
 | **§42.12 gateway** | **Partial** | Catalog `tool_id` → invoker (TOOL-ENG-2); runtime-bound + sandbox unchanged |
 | **`tool_scope_policy` wiring** | **Done** | Passed to `RuntimeToolInvoker` in `RuntimeContext.build()` (TOOL-ENG-3) |
@@ -315,13 +316,13 @@ Tool-related fields on `RuntimeConfig` (`intergrax/runtime/nexus/config.py`). Ti
 
 ### `tools_context_scope`
 
-**Status (2026-06-10):** field exists on `RuntimeConfig` but is **not consumed** by `ToolsStep` or `ToolPlanningService` — always passes `state.request.message` string to `plan_tools`. Implement in **TOOL-ENG-11**.
+**Status (2026-06-10):** consumed by `ToolsStep` via `resolve_tool_planner_input` (**TOOL-ENG-11**).
 
 | Value | Intended planner input | Implemented |
 |-------|------------------------|-------------|
-| `current_message_only` | Latest user message | **de facto** (only path used) |
-| `conversation` | Full chat history | **No** |
-| `full` | Same context as synthesis LLM | **No** |
+| `current_message_only` | Latest user message | **Yes** |
+| `conversation` | `base_history` + current user message | **Yes** |
+| `full` | `state.messages_for_llm` | **Yes** |
 
 ### `ToolPlanningConfig`
 
@@ -502,7 +503,7 @@ All other **172+** catalog tools require **ToolsStep** (with wired planner), **T
 | `rag.retrieve` | sets `use_rag=True` | `RagStep` → `catalog_context` |
 | `websearch.query` | sets `use_websearch=True` | `WebsearchStep` → `catalog_context` |
 | Any other id (e.g. `jira.search_tasks`) | stored in `tool_ids` | **`catalog_dispatch`** → `RuntimeToolInvoker` (TOOL-ENG-1) |
-| `use_tools=True` | runs `ToolsStep` | LLM planner picks from **full registry** — ignores remaining `tool_ids` as constraints |
+| `use_tools=True` | runs `ToolsStep` | LLM planner schema ⊆ plan `tool_ids` when non-empty (**TOOL-ENG-4**) |
 
 ```text
 EnginePlan.tool_ids=["jira.search_tasks"]     # catalog dispatch (optional tool_inputs)
@@ -510,7 +511,7 @@ EnginePlan.tool_ids=["rag.retrieve"]          # use_rag → RagStep
 ToolInvocationPlan(use_tools=True)            # ToolsStep → fresh LLM plan
 ```
 
-Gap closure: **TOOL-ENG-1** (direct catalog dispatch), **TOOL-ENG-4** (pass plan constraints to planner).
+Gap closure: **TOOL-ENG-5** (`ToolSelectionStrategy` for skill-pack / retrieval subsets).
 
 ---
 
@@ -553,14 +554,14 @@ Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary:
 | TOOL-ENG-1 | Direct `tool_ids` catalog dispatch in `ToolRuntime.invoke` | **Done** |
 | TOOL-ENG-2 | Full-catalog `ToolRequest` → `RuntimeToolInvoker` in gateway | **Done** |
 | TOOL-ENG-3 | Wire `config.tool_scope_policy` → `RuntimeToolInvoker` | **Done** |
-| TOOL-ENG-4 | Pass `EnginePlan.tool_ids` / plan constraints into `ToolsStep` planner | P1 |
+| TOOL-ENG-4 | Pass `EnginePlan.tool_ids` / plan constraints into `ToolsStep` planner | **Done** |
 | TOOL-ENG-5 | `ToolSelectionStrategy` / router before `generate_with_tools` | P1 |
 | TOOL-ENG-6 | Tool loop (ReAct): `max_iterations`, native tool messages | P1 |
 | TOOL-ENG-7 | Post-tool verify for `risk_level >= HIGH` | P2 |
 | TOOL-ENG-8 | `tools_mode=required` hard fail | P2 |
 | TOOL-ENG-9 | Parallel invoke for independent read-only tools | P2 |
 | TOOL-ENG-10 | AHI dynamic tool subset hook | P3 |
-| TOOL-ENG-11 | Implement `tools_context_scope` in `ToolsStep` / planner message assembly | P1 |
+| TOOL-ENG-11 | Implement `tools_context_scope` in `ToolsStep` / planner message assembly | **Done** |
 | TOOL-ENG-12 | Expose `tool_choice` from `tools_mode` / host profile to `plan_tools` | P2 |
 
 **ADR:** [ADR-TOOL-001](../adr/ADR-TOOL-001.md) (TOOL-ENG-1/2). TOOL-ENG-6 still requires ADR before merge. TOOL-ENG-0/3 wiring-only — **no ADR needed**.

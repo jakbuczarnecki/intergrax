@@ -96,6 +96,7 @@ class RuntimeState(RuntimeStateContract):
 
     # Tools
     tool_planner_answer: Optional[str] = None
+    tool_planner_allowed_tool_ids: Optional[tuple[str, ...]] = None
 
     # Typed tool call traces (production runtime artifact).
     tool_traces: List[ToolCallTrace] = field(default_factory=list)

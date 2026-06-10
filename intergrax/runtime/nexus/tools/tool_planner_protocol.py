@@ -5,7 +5,10 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional, Protocol, runtime_checkable
+from collections.abc import Sequence
+from typing import Any, Optional, Protocol, Union, runtime_checkable
+
+from intergrax.llm.messages import ChatMessage
 
 from intergrax.tools.core.tool_plan_decision import ToolPlanDecision
 
@@ -16,9 +19,10 @@ class ToolPlannerProtocol(Protocol):
 
     def plan_tools(
         self,
-        input_data: str,
+        input_data: Union[str, list[ChatMessage]],
         context: Optional[Any] = None,
         *,
         run_id: str,
+        allowed_tool_ids: Sequence[str] | None = None,
     ) -> ToolPlanDecision:
         ...

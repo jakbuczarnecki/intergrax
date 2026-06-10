@@ -6,7 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Dict, Optional
 
-from intergrax.runtime.nexus.planning.stepplan_models import ExecutionStep, StepAction
+from intergrax.runtime.nexus.planning.stepplan_models import ExecutionStep, StepAction, ToolsParams
 from intergrax.runtime.nexus.planning.step_executor_models import (
     StepError,
     StepErrorCode,
@@ -103,6 +103,16 @@ def make_runtime_step_handler(*, action: StepAction, factory: Callable[[], Runti
         # Instantiate step (fresh instance to keep handlers stateless by default)
         runtime_step = factory()
 
+        previous_allowed: tuple[str, ...] | None = None
+        if action == StepAction.USE_TOOLS:
+            try:
+                params = ToolsParams.model_validate(step.params or {})
+            except Exception:
+                params = ToolsParams()
+            if params.allowed_tool_ids:
+                previous_allowed = ctx.state.tool_planner_allowed_tool_ids
+                ctx.state.tool_planner_allowed_tool_ids = tuple(params.allowed_tool_ids)
+
         # Run
         try:
             await runtime_step.run(ctx.state)
@@ -114,6 +124,9 @@ def make_runtime_step_handler(*, action: StepAction, factory: Callable[[], Runti
                 details={"step_id": step.step_id.value, "action": step.action.value},
                 attempts=1,
             )
+        finally:
+            if action == StepAction.USE_TOOLS and previous_allowed is not None:
+                ctx.state.tool_planner_allowed_tool_ids = previous_allowed
 
     return _handler
 

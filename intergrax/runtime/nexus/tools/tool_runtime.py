@@ -253,7 +253,16 @@ class ToolRuntime:
 
         if plan.use_tools:
             if cfg.tool_planner and cfg.tool_invoker and cfg.tools_mode != "off":
-                await ToolsStep().run(state)
+                from intergrax.runtime.nexus.tools.catalog_dispatch import catalog_tool_ids
+
+                planner_constraints = catalog_tool_ids(plan.tool_ids)
+                previous_constraints = state.tool_planner_allowed_tool_ids
+                if planner_constraints:
+                    state.tool_planner_allowed_tool_ids = planner_constraints
+                try:
+                    await ToolsStep().run(state)
+                finally:
+                    state.tool_planner_allowed_tool_ids = previous_constraints
             else:
                 state.trace_event(
                     component=TraceComponent.PIPELINE,
