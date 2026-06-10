@@ -21,7 +21,7 @@
 | `audit-only` | Report + maturity score. No file edits. |
 | `audit-and-fix` | Report + update `plan/<DOMAIN>.md` gap rows and architecture audit register if present. No code unless explicitly requested. |
 
-**Depth:** Every domain prompt requests **engine-depth** review — architecture canon, plan status, source code, tests, CI gates, and production-system comparison (not documentation-only survey).
+**Depth:** Every domain prompt includes **mission**, **key symbols**, **active plan phases**, **known gaps to re-validate**, **concrete code paths**, **15–18 audit dimensions**, **scale probes**, **domain CI commands**, **production baseline**, and **anti-patterns** — aligned with the current architecture canon (regenerate via `scripts/generate_domain_audit_prompts.py` after contract changes).
 
 ---
 

@@ -9,10 +9,13 @@
 
 ## How to use
 
-1. Open a new agent chat with repository access.
+1. Open a new agent chat with **full repository access**.
 2. Copy from `---BEGIN PROMPT---` through `---END PROMPT---`.
-3. Edit **USER CONFIG** only (`mode`, optional `focus`).
-4. Output must follow [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
+3. Edit **USER CONFIG** only (`mode`, optional `focus` slice).
+4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
+5. Output: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
+
+Regenerate after architecture/plan changes: `uv run python scripts/generate_domain_audit_prompts.py`
 
 ---
 
@@ -25,7 +28,7 @@ mode: audit-only
 focus:
 
 # mode: audit-only | audit-and-fix
-# focus: optional narrow slice, e.g. "ingest pipeline only" or "ToolRuntime policy path"
+# focus: optional narrow slice — e.g. "ingest only", "ToolRuntime policy path", "CFG-14 host wiring"
 
 # ═══ END USER CONFIG ═══
 
@@ -33,70 +36,94 @@ focus:
 
 You are an **implementation audit agent** for the Intergrax Harness AI platform.
 
-Perform a **rigorous, evidence-backed audit** of the **Modality (Vision, Audio, ML)** domain — architecture canon, implementation plan, source code, tests, and CI gates. Compare against production-grade systems in this problem space. Do **not** produce a shallow documentation survey.
+Perform a **rigorous, evidence-backed audit** of the **Modality (Vision, Audio, ML)** domain. You must inspect **architecture canon, implementation plan, source code, tests, and CI gates** and compare against **production-grade systems** in this problem space.
 
-**Mission:** Audit multimodal planes: vision, audio, dedicated ML — as Tier-0 capabilities consumed through policy and tools, not agent SDK bypass.
+**Do not** produce a shallow documentation survey. **Do not** declare the whole platform complete.
+
+## Mission
+
+Audit **three modality planes** (A: LLM multimodal, B: ingest, C: deterministic ML): ToolRuntime surfaces, ModalityProfile, Celery/worker execution, cost/observability — no agent SDK bypass.
+
+## Key symbols and contracts
+
+ModalityProfile · VisionInferenceAdapter · ModelInferenceAdapter · VisionModelProfile · ModalityExecutionMode (CELERY) · AttachmentRef · tool_ids vision.*, speech.*, ml.*
+
+## Active plan phases (verify status vs code reality)
+
+W-ML harness Done · W-ML remote Triton/HF incremental · Phase W-ML registry extensions
+
+## Known open gaps — re-validate every item (closed / still open / partial)
+
+model_inference/ partial · remote serving incremental · Plane A vs C boundary discipline · online training out of scope
 
 ---
 
 ## 1. Canonical reads (in order)
 
-1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state for this concern
-2. `docs/architecture/MODALITY.md` — current architecture canon
-3. `docs/plan/MODALITY.md` — implementation status and gap registers
+1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state
+2. `docs/architecture/MODALITY.md` — architecture canon (incl. audit registers if present)
+3. `docs/plan/MODALITY.md` — implementation plan and gap IDs
 4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 29
-5. `docs/guides/audit/README.md` — shared production Harness checklist (mandatory)
+5. `docs/guides/audit/README.md` — shared production Harness checklist (**mandatory**)
 
 ---
 
-## 2. Code and test paths (inspect concretely)
-
-Search and read — do not rely on memory:
+## 2. Code and test paths (inspect — search repo, do not assume)
 
 ```text
-intergrax/modality/, vision/audio adapters, modality tools
-tests/unit/ and tests/integration/ matching the above
-scripts/check_harness_*.py and scripts/check_* relevant to this domain
+intergrax/llm_adapters/ (Plane A attachments)
+intergrax/rag/document_loaders/ (Plane B ingest)
+intergrax/multimedia/ · intergrax/model_inference/
+intergrax/tools/providers/vision|speech|ml/
+integrations/providers/speech_provider/
+modality_celery_wiring.py · ThreadPoolModalityInferenceExecutor
+intergrax/runtime/observability/modality_counters.py
 ```
+
+Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 
 ## 3. Domain-specific audit dimensions
 
-Answer each with **Yes / Partial / No / Unknown** and **evidence** (file + symbol or test name):
+For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol` or `test_name`).
 
-1. Modality operations exposed as tools/skills — consistent with ToolRuntime.
-2. Adapter abstraction for vision/audio providers.
-3. Payload size limits, streaming where required, timeout handling.
-4. Policy classification for sensitive media.
-5. Trace and redaction for binary/media metadata.
-6. Integration with context assembly — not ad-hoc inline blobs in agents.
+1. Plane C operations via ToolRuntime tools — not agent importing torch/onnx directly.
+2. Plane A LLM vision attachments typed via AttachmentRef.
+3. require_deterministic_cv forces Plane C not LLM vision guess.
+4. Plane B ingest separate from Plane C inference (document_loaders vs model_inference).
+5. Speech via IntegrationSpeechAdapter slugs — not vendor SDK in agent.
+6. ModalityProfile caps: max_media_bytes, allowed_planes, vision_model_ids.
+7. Celery broker path (INTERGRAX_MODALITY_CELERY_BROKER_URL) with thread-pool fallback.
+8. Modality metrics on tool_invocation_end / TASK_COMPLETED.
+9. V-COST fields populated for modality tool calls.
+10. HF Hub not on hot path for production profile.
+11. tool_ids Done status matches actual handler implementation.
+12. Context budget policy caps media contribution to prompt.
 
 ---
 
 ## 4. Workload and scale probes
 
-Evaluate behaviour for:
+For each probe describe **actual code path**, limits, and failure mode:
 
-Large images, long audio, batch media processing.
-
-For each probe: describe actual code path, limits, and failure mode — not hypothetical design.
+- Large image batch via worker pool vs Celery.
+- Long audio transcription path.
+- YOLO/ONNX in-process vs remote Triton.
 
 ---
 
-## 5. Tier-3 and agent override surfaces
+## 5. Tier-3 / Tier-2 override surfaces
 
-Verify customization without forking Tier-0/Tier-1:
+Confirm overrides are **wired in code**, not documentation-only:
 
-Modality profiles, integration backends, Tier-3 enablement flags.
-
-Confirm overrides are **wired**, not documentation-only.
+ModalityProfile · ContextBudgetPolicy caps · integration speech_provider slugs · tts_voice_id
 
 ---
 
 ## 6. Cross-cutting checklist (mandatory)
 
-Apply every item in `docs/guides/audit/README.md` §Shared production Harness checklist:
+Apply **every** section in `docs/guides/audit/README.md` §Shared production Harness checklist:
 
 - Architecture & modularity
 - Configuration & strategy selection
@@ -110,53 +137,53 @@ Apply every item in `docs/guides/audit/README.md` §Shared production Harness ch
 
 ---
 
-## 7. Production comparison
+## 7. Production baseline comparison
 
-Compare the implementation to **production-grade systems** in this domain (commercial and open-source). State clearly:
+Compare against: **Triton/TorchServe/YOLO CV pipelines · Deepgram/ElevenLabs speech · ONNX edge · HF Inference Endpoints**
 
-- What Intergrax already matches at L3 production Harness OS level
-- What is L2 or below with specific gaps
-- What is intentionally deferred (design boundary) vs **niedoróbka** / missing wiring
+State explicitly:
 
----
-
-## 8. Maturity scoring
-
-Per `INTEGRAX_HARNESS_AUDIT_MAP.md` §5:
-
-```text
-L0 — Fragmented
-L1 — Operational MVP
-L2 — Scalable Harness
-L3 — Production Harness OS
-L4 — Adaptive Agent OS
-```
-
-Report **score before**, **target for current milestone**, evidence, and **remaining risks**.
+| Category | Your finding |
+|----------|--------------|
+| Matches L3 Production Harness OS | … |
+| L2 or below (name gaps with plan IDs) | … |
+| Intentional design boundary | … |
+| **niedoróbka** / missing wiring | … |
 
 ---
 
-## 9. Verification commands
+## 8. Anti-patterns (must not be present)
 
-Run applicable checks; cite results:
+- Agent imports cv2/torch directly · LLM vision for regulated CV when deterministic required · binary blobs inline in agent without AttachmentRef
+
+---
+
+## 9. Maturity scoring
+
+Per `INTEGRAX_HARNESS_AUDIT_MAP.md` §5 (L0–L4). Report **score before**, **target milestone**, **evidence**, **remaining risks**.
+
+If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile with code findings.
+
+---
+
+## 10. Verification — run and cite
 
 ```bash
-uv run pytest -m gate -q
-uv run pytest tests/unit/<relevant>/ -q
-python scripts/check_harness_no_getattr.py
-# plus domain-specific scripts discovered during inspection
+uv run pytest tests/unit/model_inference/ -q
+uv run pytest tests/unit/ -q -k modality
 ```
+
+Add any domain-specific scripts you discover. If a command fails, state why.
 
 ---
 
-## 10. Output and mode rules
+## 11. Output and mode rules
 
-- Follow output format in `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7 (Audit Result template).
+- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7 Audit Result template.
 - End with §8 Completion Summary.
-- `audit-only`: **no file edits**
-- `audit-and-fix`: update `docs/plan/MODALITY.md` gap rows and `docs/architecture/MODALITY.md` audit register if present; **no code changes** unless user requests separately
-- Never declare the whole platform complete
-- Record out-of-scope findings with suggested next domain
+- **`audit-only`:** no file edits.
+- **`audit-and-fix`:** update `docs/plan/MODALITY.md` gap rows + `docs/architecture/MODALITY.md` audit register; map findings to plan phase IDs; **no code** unless user requests separately.
+- Out-of-scope findings → suggest next `audit/<DOMAIN>.md`.
 
 Begin the audit now.
 

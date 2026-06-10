@@ -9,10 +9,13 @@
 
 ## How to use
 
-1. Open a new agent chat with repository access.
+1. Open a new agent chat with **full repository access**.
 2. Copy from `---BEGIN PROMPT---` through `---END PROMPT---`.
-3. Edit **USER CONFIG** only (`mode`, optional `focus`).
-4. Output must follow [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
+3. Edit **USER CONFIG** only (`mode`, optional `focus` slice).
+4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
+5. Output: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
+
+Regenerate after architecture/plan changes: `uv run python scripts/generate_domain_audit_prompts.py`
 
 ---
 
@@ -25,7 +28,7 @@ mode: audit-only
 focus:
 
 # mode: audit-only | audit-and-fix
-# focus: optional narrow slice, e.g. "ingest pipeline only" or "ToolRuntime policy path"
+# focus: optional narrow slice — e.g. "ingest only", "ToolRuntime policy path", "CFG-14 host wiring"
 
 # ═══ END USER CONFIG ═══
 
@@ -33,71 +36,95 @@ focus:
 
 You are an **implementation audit agent** for the Intergrax Harness AI platform.
 
-Perform a **rigorous, evidence-backed audit** of the **Ephemeral Code Craft** domain — architecture canon, implementation plan, source code, tests, and CI gates. Compare against production-grade systems in this problem space. Do **not** produce a shallow documentation survey.
+Perform a **rigorous, evidence-backed audit** of the **Ephemeral Code Craft** domain. You must inspect **architecture canon, implementation plan, source code, tests, and CI gates** and compare against **production-grade systems** in this problem space.
 
-**Mission:** Audit the dynamic code-generation loop: sandbox isolation, execution governance, observability, and safe failure for generated code paths.
+**Do not** produce a shallow documentation survey. **Do not** declare the whole platform complete.
+
+## Mission
+
+Audit **ephemeral code-generation loop** design and current sandbox/codecraft implementation: bounded iterations, sandbox tiers, policy gates, CVL integration, ephemeral tool registry hygiene — honest Planned vs Done status per ECC phase.
+
+## Key symbols and contracts
+
+CodeCraftProfile · CodeCraftOrchestrator · CodeCraftSession · CraftResult · IterationRecord · StaticCodeGate · craft modes (disabled|dry_run|assist_only|supervised|autonomous) · EphemeralToolRegistry
+
+## Active plan phases (verify status vs code reality)
+
+ECC-1+ (**implementation Planned** per canon) · ADR-CODECRAFT-001
+
+## Known open gaps — re-validate every item (closed / still open / partial)
+
+CodeCraftOrchestrator not implemented · sandbox.refactor_loop skill without executor · ephemeral tools could pollute ToolRegistry · local SandboxSession ≠ OS containment · AUDIT-IDEAL-11.1 false completeness risk
 
 ---
 
 ## 1. Canonical reads (in order)
 
-1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state for this concern
-2. `docs/architecture/CODE_CRAFT.md` — current architecture canon
-3. `docs/plan/CODE_CRAFT.md` — implementation status and gap registers
+1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state
+2. `docs/architecture/CODE_CRAFT.md` — architecture canon (incl. audit registers if present)
+3. `docs/plan/CODE_CRAFT.md` — implementation plan and gap IDs
 4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 11b
-5. `docs/guides/audit/README.md` — shared production Harness checklist (mandatory)
-6. `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix J (tool surfaces)** — control-plane wiring
+5. `docs/guides/audit/README.md` — shared production Harness checklist (**mandatory**)
+6. `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix J (tool surfaces)**
 
 ---
 
-## 2. Code and test paths (inspect concretely)
-
-Search and read — do not rely on memory:
+## 2. Code and test paths (inspect — search repo, do not assume)
 
 ```text
-intergrax/codecraft/, sandbox tools, codegen loop
-tests/unit/ and tests/integration/ matching the above
-scripts/check_harness_*.py and scripts/check_* relevant to this domain
+intergrax/codecraft/ (target) · intergrax/runtime/codecraft/ (target)
+intergrax/runtime/sandbox/
+intergrax/tools/providers/sandbox/ · intergrax/tools/providers/codecraft/
+intergrax/runtime/critic/ (CVL hooks)
+docs/architecture/CODE_CRAFT.md · docs/plan/CODE_CRAFT.md · ADR-CODECRAFT-001
 ```
+
+Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 
 ## 3. Domain-specific audit dimensions
 
-Answer each with **Yes / Partial / No / Unknown** and **evidence** (file + symbol or test name):
+For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol` or `test_name`).
 
-1. Codegen loop contract: plan → generate → execute → verify — bounded iterations.
-2. Sandbox tiers: local workspace vs container vs cloud — risk alignment.
-3. Policy and permission gates before code execution.
-4. Output validation and artifact handling.
-5. Trace of generated code, execution results, and failures.
-6. No arbitrary code execution bypassing ToolRuntime/policy.
+1. CodeCraft uses existing sandbox ToolRuntime path — no parallel execution stack.
+2. L0 StaticCodeGate before any execute (when ECC implemented).
+3. Codegen LLM separated from producer/judge LLM identity.
+4. Ephemeral tools do not persist in global ToolRegistry after session.
+5. CraftResult promotion typed — not stdout-only.
+6. Fail-closed when codecraft_profile missing or mode=disabled.
+7. CODECRAFT_* events correlated with trace_id/run_id.
+8. Tier-2 invokes only codecraft.* / sandbox.* catalog tools.
+9. Network egress policy enforced per sandbox tier.
+10. CVL L0/L1 integrated — not parallel verification stack.
+11. Modes table §6.3 respected (supervised vs autonomous).
+12. Resource disposal releases craft_id / sandbox session.
+13. cloud substrate (e2b/modal/daytona) via IntegrationProfile — not agent SDK.
+14. Document honest L0/L1 maturity — do not claim production ECC if Planned.
 
 ---
 
 ## 4. Workload and scale probes
 
-Evaluate behaviour for:
+For each probe describe **actual code path**, limits, and failure mode:
 
-Large generated artifacts, long-running sandbox jobs, concurrent codegen sessions.
-
-For each probe: describe actual code path, limits, and failure mode — not hypothetical design.
+- generate→gate→exec→test→CVL iteration within max_iterations.
+- max_code_bytes and max_total_exec_time_s enforcement.
+- Concurrent codegen sessions without registry pollution.
 
 ---
 
-## 5. Tier-3 and agent override surfaces
+## 5. Tier-3 / Tier-2 override surfaces
 
-Verify customization without forking Tier-0/Tier-1:
+Confirm overrides are **wired in code**, not documentation-only:
 
-Sandbox profile, execution backend via IntegrationProfile, Tier-3 risk posture.
-
-Confirm overrides are **wired**, not documentation-only.
+ApplicationEnvironmentProfile.codecraft_profile · Task.metadata.codecraft_mode · sandbox_host_slug · codegen_llm_profile_ref · require_hitl_before_exec
 
 ---
 
 ## 6. Cross-cutting checklist (mandatory)
 
-Apply every item in `docs/guides/audit/README.md` §Shared production Harness checklist:
+Apply **every** section in `docs/guides/audit/README.md` §Shared production Harness checklist:
 
 - Architecture & modularity
 - Configuration & strategy selection
@@ -111,53 +138,53 @@ Apply every item in `docs/guides/audit/README.md` §Shared production Harness ch
 
 ---
 
-## 7. Production comparison
+## 7. Production baseline comparison
 
-Compare the implementation to **production-grade systems** in this domain (commercial and open-source). State clearly:
+Compare against: **Cursor ephemeral codegen · E2B/Modal sandboxes · CI codegen with semgrep/trivy gates**
 
-- What Intergrax already matches at L3 production Harness OS level
-- What is L2 or below with specific gaps
-- What is intentionally deferred (design boundary) vs **niedoróbka** / missing wiring
+State explicitly:
 
----
-
-## 8. Maturity scoring
-
-Per `INTEGRAX_HARNESS_AUDIT_MAP.md` §5:
-
-```text
-L0 — Fragmented
-L1 — Operational MVP
-L2 — Scalable Harness
-L3 — Production Harness OS
-L4 — Adaptive Agent OS
-```
-
-Report **score before**, **target for current milestone**, evidence, and **remaining risks**.
+| Category | Your finding |
+|----------|--------------|
+| Matches L3 Production Harness OS | … |
+| L2 or below (name gaps with plan IDs) | … |
+| Intentional design boundary | … |
+| **niedoróbka** / missing wiring | … |
 
 ---
 
-## 9. Verification commands
+## 8. Anti-patterns (must not be present)
 
-Run applicable checks; cite results:
+- Claiming ECC Done when orchestrator missing · arbitrary exec bypassing ToolRuntime · global registry pollution · local workspace labeled as OS sandbox
+
+---
+
+## 9. Maturity scoring
+
+Per `INTEGRAX_HARNESS_AUDIT_MAP.md` §5 (L0–L4). Report **score before**, **target milestone**, **evidence**, **remaining risks**.
+
+If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile with code findings.
+
+---
+
+## 10. Verification — run and cite
 
 ```bash
-uv run pytest -m gate -q
-uv run pytest tests/unit/<relevant>/ -q
+uv run pytest tests/unit/runtime/sandbox/ -q
 python scripts/check_harness_no_getattr.py
-# plus domain-specific scripts discovered during inspection
 ```
+
+Add any domain-specific scripts you discover. If a command fails, state why.
 
 ---
 
-## 10. Output and mode rules
+## 11. Output and mode rules
 
-- Follow output format in `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7 (Audit Result template).
+- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7 Audit Result template.
 - End with §8 Completion Summary.
-- `audit-only`: **no file edits**
-- `audit-and-fix`: update `docs/plan/CODE_CRAFT.md` gap rows and `docs/architecture/CODE_CRAFT.md` audit register if present; **no code changes** unless user requests separately
-- Never declare the whole platform complete
-- Record out-of-scope findings with suggested next domain
+- **`audit-only`:** no file edits.
+- **`audit-and-fix`:** update `docs/plan/CODE_CRAFT.md` gap rows + `docs/architecture/CODE_CRAFT.md` audit register; map findings to plan phase IDs; **no code** unless user requests separately.
+- Out-of-scope findings → suggest next `audit/<DOMAIN>.md`.
 
 Begin the audit now.
 

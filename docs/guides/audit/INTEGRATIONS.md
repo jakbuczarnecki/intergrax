@@ -9,10 +9,13 @@
 
 ## How to use
 
-1. Open a new agent chat with repository access.
+1. Open a new agent chat with **full repository access**.
 2. Copy from `---BEGIN PROMPT---` through `---END PROMPT---`.
-3. Edit **USER CONFIG** only (`mode`, optional `focus`).
-4. Output must follow [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
+3. Edit **USER CONFIG** only (`mode`, optional `focus` slice).
+4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
+5. Output: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
+
+Regenerate after architecture/plan changes: `uv run python scripts/generate_domain_audit_prompts.py`
 
 ---
 
@@ -25,7 +28,7 @@ mode: audit-only
 focus:
 
 # mode: audit-only | audit-and-fix
-# focus: optional narrow slice, e.g. "ingest pipeline only" or "ToolRuntime policy path"
+# focus: optional narrow slice — e.g. "ingest only", "ToolRuntime policy path", "CFG-14 host wiring"
 
 # ═══ END USER CONFIG ═══
 
@@ -33,72 +36,99 @@ focus:
 
 You are an **implementation audit agent** for the Intergrax Harness AI platform.
 
-Perform a **rigorous, evidence-backed audit** of the **Integration Library** domain — architecture canon, implementation plan, source code, tests, and CI gates. Compare against production-grade systems in this problem space. Do **not** produce a shallow documentation survey.
+Perform a **rigorous, evidence-backed audit** of the **Integration Library** domain. You must inspect **architecture canon, implementation plan, source code, tests, and CI gates** and compare against **production-grade systems** in this problem space.
 
-**Mission:** Audit the Integration Library as the sole vendor boundary — adapters, health probes, profiles, and bridge wiring to tools/RAG/LLM.
+**Do not** produce a shallow documentation survey. **Do not** declare the whole platform complete.
+
+## Mission
+
+Audit the **Integration Library** as the sole vendor boundary: 185+ slugs, typed contracts, health probes, IntegrationProfile-driven backend selection, guardrail integrations, and CI-enforced import boundaries.
+
+## Key symbols and contracts
+
+IntegrationManifest · IntegrationProfile · IntegrationCategory · IntegrationPlugin · LlmGuardrailBackend · GuardrailScanResult · RelationalStore · VectorStore · MessageBus · SearchProvider
+
+## Active plan phases (verify status vs code reality)
+
+Phase M catalog · M.6 P5/P6/P7 Done · M.12 guardrails Done · M-P12-CAT.1 · GR-DOC
+
+## Known open gaps — re-validate every item (closed / still open / partial)
+
+Most slugs **beta** — stable vs beta must be honest · thin P4 shells · SaaS-only without local container · nginx/ingress slug missing (ECP cross-ref)
 
 ---
 
 ## 1. Canonical reads (in order)
 
-1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state for this concern
-2. `docs/architecture/INTEGRATIONS.md` — current architecture canon
-3. `docs/plan/INTEGRATIONS.md` — implementation status and gap registers
+1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state
+2. `docs/architecture/INTEGRATIONS.md` — architecture canon (incl. audit registers if present)
+3. `docs/plan/INTEGRATIONS.md` — implementation plan and gap IDs
 4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 13
-5. `docs/guides/audit/README.md` — shared production Harness checklist (mandatory)
-6. `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix K (integration control plane)** — control-plane wiring
+5. `docs/guides/audit/README.md` — shared production Harness checklist (**mandatory**)
+6. `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix K (integration control plane)**
 
 ---
 
-## 2. Code and test paths (inspect concretely)
-
-Search and read — do not rely on memory:
+## 2. Code and test paths (inspect — search repo, do not assume)
 
 ```text
-intergrax/integrations/, IntegrationProfile, integration_runtime_bridge
-tests/unit/ and tests/integration/ matching the above
-scripts/check_harness_*.py and scripts/check_* relevant to this domain
+intergrax/integrations/ (contracts/, registry/, providers/)
+intergrax/integrations/registry/harness_lab_stack.py · presets.py
+intergrax/integrations/_shared/p2|p3|p4|p5|p6|p7|p8/factories.py
+applications/_shared/integration_wiring.py · integration_runtime_bridge.py
+applications/_shared/guardrail_wiring.py
+scripts/check_integration_vendor_imports.py
+scripts/check_harness_guardrail_wiring.py · scripts/generate_integration_usage_docs.py
 ```
+
+Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 
 ## 3. Domain-specific audit dimensions
 
-Answer each with **Yes / Partial / No / Unknown** and **evidence** (file + symbol or test name):
+For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol` or `test_name`).
 
-1. No direct vendor SDK imports in agents or Nexus business logic.
-2. Integration slugs, contracts, and capability metadata complete per adapter family.
-3. IntegrationProfile drives backend selection at Tier-3 — wired through bridges.
-4. Health probes and circuit behaviour for external dependencies.
-5. Secrets and credentials via integration layer — not hardcoded.
-6. Guardrail integrations (llm_guardrail) as policy extension, not parallel tier.
-7. Test coverage and CI checks for vendor import boundaries.
+1. No vendor SDK imports in agents/ or Nexus business logic.
+2. Every slug in layout/registry with conformance tests where claimed stable.
+3. IntegrationProfile drives backend selection — wired through bridges, not getenv in agents.
+4. llm_guardrail via middleware + IntegrationProfile — not parallel tier or agent SDK.
+5. Health probes for external deps; circuit breaker registry used.
+6. Secrets via SecretsStore/integration options — not committed config.
+7. RAG vector stores via catalog bridges — not duplicate vector clients in agents.
+8. Guardrail layering L1→L4 documented and composed (ADR-GR-001).
+9. Slack/Teams/etc. are adapters — not orchestrators replacing Nexus.
+10. Cloud facades do not wrap LLM providers (LLM via llm_adapters/).
+11. bootstrap_application_integration_catalog() used by Tier-3 hosts.
+12. Harness lab stable stack smoke tests pass.
+13. New provider has USAGE.md and manifest conformance.
+14. Vendor imports only in allowed modules — CI check_integration_vendor_imports green.
+15. Tier-3 extend_tool_profile_for_integration() pattern followed.
 
 ---
 
 ## 4. Workload and scale probes
 
-Evaluate behaviour for:
+For each probe describe **actual code path**, limits, and failure mode:
 
-Many backends, failover between providers, rate limits, bulk operations.
-
-For each probe: describe actual code path, limits, and failure mode — not hypothetical design.
+- HARNESS_M6_P5/P6/P7 probe slugs and health endpoints.
+- Failover between providers (where documented).
+- Rate limits and bulk operations on message_bus/data slugs.
+- Compose profiles: lab_stack, harness_guardrail_stack, research_web_stack.
 
 ---
 
-## 5. Tier-3 and agent override surfaces
+## 5. Tier-3 / Tier-2 override surfaces
 
-Verify customization without forking Tier-0/Tier-1:
+Confirm overrides are **wired in code**, not documentation-only:
 
-IntegrationProfile per host, custom IntegrationAdapter plugins (EXTENSION_AUTHOR_GUIDE).
-
-Confirm overrides are **wired**, not documentation-only.
+IntegrationProfile + presets · per-slug options in profile · IntegrationPlugin (EXTENSION_AUTHOR_GUIDE) · wire_integration_tool_context()
 
 ---
 
 ## 6. Cross-cutting checklist (mandatory)
 
-Apply every item in `docs/guides/audit/README.md` §Shared production Harness checklist:
+Apply **every** section in `docs/guides/audit/README.md` §Shared production Harness checklist:
 
 - Architecture & modularity
 - Configuration & strategy selection
@@ -112,53 +142,55 @@ Apply every item in `docs/guides/audit/README.md` §Shared production Harness ch
 
 ---
 
-## 7. Production comparison
+## 7. Production baseline comparison
 
-Compare the implementation to **production-grade systems** in this domain (commercial and open-source). State clearly:
+Compare against: **Large integration catalogs (LangChain-style) · harness lab stable stack · NeMo/Guardrails AI/LLM Guard/Presidio (§47)**
 
-- What Intergrax already matches at L3 production Harness OS level
-- What is L2 or below with specific gaps
-- What is intentionally deferred (design boundary) vs **niedoróbka** / missing wiring
+State explicitly:
 
----
-
-## 8. Maturity scoring
-
-Per `INTEGRAX_HARNESS_AUDIT_MAP.md` §5:
-
-```text
-L0 — Fragmented
-L1 — Operational MVP
-L2 — Scalable Harness
-L3 — Production Harness OS
-L4 — Adaptive Agent OS
-```
-
-Report **score before**, **target for current milestone**, evidence, and **remaining risks**.
+| Category | Your finding |
+|----------|--------------|
+| Matches L3 Production Harness OS | … |
+| L2 or below (name gaps with plan IDs) | … |
+| Intentional design boundary | … |
+| **niedoróbka** / missing wiring | … |
 
 ---
 
-## 9. Verification commands
+## 8. Anti-patterns (must not be present)
 
-Run applicable checks; cite results:
+- Agent-imported vendor SDK · duplicate adapter per product · guardrail as agent code · stable label on beta-only slug
+
+---
+
+## 9. Maturity scoring
+
+Per `INTEGRAX_HARNESS_AUDIT_MAP.md` §5 (L0–L4). Report **score before**, **target milestone**, **evidence**, **remaining risks**.
+
+If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile with code findings.
+
+---
+
+## 10. Verification — run and cite
 
 ```bash
-uv run pytest -m gate -q
-uv run pytest tests/unit/<relevant>/ -q
-python scripts/check_harness_no_getattr.py
-# plus domain-specific scripts discovered during inspection
+python scripts/check_integration_vendor_imports.py
+uv run python scripts/check_harness_guardrail_wiring.py
+uv run pytest tests/unit/integrations/ -q
+uv run python scripts/generate_integration_usage_docs.py
 ```
+
+Add any domain-specific scripts you discover. If a command fails, state why.
 
 ---
 
-## 10. Output and mode rules
+## 11. Output and mode rules
 
-- Follow output format in `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7 (Audit Result template).
+- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7 Audit Result template.
 - End with §8 Completion Summary.
-- `audit-only`: **no file edits**
-- `audit-and-fix`: update `docs/plan/INTEGRATIONS.md` gap rows and `docs/architecture/INTEGRATIONS.md` audit register if present; **no code changes** unless user requests separately
-- Never declare the whole platform complete
-- Record out-of-scope findings with suggested next domain
+- **`audit-only`:** no file edits.
+- **`audit-and-fix`:** update `docs/plan/INTEGRATIONS.md` gap rows + `docs/architecture/INTEGRATIONS.md` audit register; map findings to plan phase IDs; **no code** unless user requests separately.
+- Out-of-scope findings → suggest next `audit/<DOMAIN>.md`.
 
 Begin the audit now.
 

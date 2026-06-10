@@ -1,4 +1,4 @@
-# Elastic Capacity and Platform Scaling — Domain Layer Audit Instruction
+# Elastic Capacity and Platform Scaling (ECP) — Domain Layer Audit Instruction
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
 **Domain pair:** [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../architecture/ELASTIC_CAPACITY_AND_SCALING.md) · [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](../plan/ELASTIC_CAPACITY_AND_SCALING.md)  
@@ -9,10 +9,13 @@
 
 ## How to use
 
-1. Open a new agent chat with repository access.
+1. Open a new agent chat with **full repository access**.
 2. Copy from `---BEGIN PROMPT---` through `---END PROMPT---`.
-3. Edit **USER CONFIG** only (`mode`, optional `focus`).
-4. Output must follow [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
+3. Edit **USER CONFIG** only (`mode`, optional `focus` slice).
+4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
+5. Output: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
+
+Regenerate after architecture/plan changes: `uv run python scripts/generate_domain_audit_prompts.py`
 
 ---
 
@@ -25,79 +28,107 @@ mode: audit-only
 focus:
 
 # mode: audit-only | audit-and-fix
-# focus: optional narrow slice, e.g. "ingest pipeline only" or "ToolRuntime policy path"
+# focus: optional narrow slice — e.g. "ingest only", "ToolRuntime policy path", "CFG-14 host wiring"
 
 # ═══ END USER CONFIG ═══
 
-# TASK: Deep production audit — Elastic Capacity and Platform Scaling (`ELASTIC_CAPACITY_AND_SCALING`)
+# TASK: Deep production audit — Elastic Capacity and Platform Scaling (ECP) (`ELASTIC_CAPACITY_AND_SCALING`)
 
 You are an **implementation audit agent** for the Intergrax Harness AI platform.
 
-Perform a **rigorous, evidence-backed audit** of the **Elastic Capacity and Platform Scaling** domain — architecture canon, implementation plan, source code, tests, and CI gates. Compare against production-grade systems in this problem space. Do **not** produce a shallow documentation survey.
+Perform a **rigorous, evidence-backed audit** of the **Elastic Capacity and Platform Scaling (ECP)** domain. You must inspect **architecture canon, implementation plan, source code, tests, and CI gates** and compare against **production-grade systems** in this problem space.
 
-**Mission:** Audit platform scaling: elastic capacity, backpressure, resource pools, contention handling, and SLO-oriented capacity governance.
+**Do not** produce a shallow documentation survey. **Do not** declare the whole platform complete.
+
+## Mission
+
+Audit **Elastic Capacity Plane**: signals, ScalingPolicy, backpressure vs autoscale distinction, queueing/workers, K8s integration path, ECP-DEPTH target modules — honest L0–L2 vs plan targets.
+
+## Key symbols and contracts
+
+ScalingProfile (target) · ScalingPolicy · ScalingAction · ScalingSignal · CapacitySignalCollector · ScalingProvisioner · SIG_QUEUE_DEPTH · GRAPH_BACKPRESSURE
+
+## Active plan phases (verify status vs code reality)
+
+ECP-DOC · ECP-DEPTH (ECP-1..8, ECP-OBS) · ADR-SCALE-001/002 · cross-ref W-OPS.4 SLIs · ORCH GRAPH_BACKPRESSURE
+
+## Known open gaps — re-validate every item (closed / still open / partial)
+
+No unified CapacitySignalCollector yet · ScalingProfile missing on ApplicationEnvironmentProfile · K8s scale API not in canon · nginx slug missing · ECP evaluate/govern layers target only
 
 ---
 
 ## 1. Canonical reads (in order)
 
-1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state for this concern
-2. `docs/architecture/ELASTIC_CAPACITY_AND_SCALING.md` — current architecture canon
-3. `docs/plan/ELASTIC_CAPACITY_AND_SCALING.md` — implementation status and gap registers
+1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state
+2. `docs/architecture/ELASTIC_CAPACITY_AND_SCALING.md` — architecture canon (incl. audit registers if present)
+3. `docs/plan/ELASTIC_CAPACITY_AND_SCALING.md` — implementation plan and gap IDs
 4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 30
-5. `docs/guides/audit/README.md` — shared production Harness checklist (mandatory)
-6. `docs/guides/AGENT_CREATION_GUIDE.md` **OBSERVABILITY (SLIs), ORCHESTRATION (backpressure)** — control-plane wiring
+5. `docs/guides/audit/README.md` — shared production Harness checklist (**mandatory**)
+6. `docs/guides/AGENT_CREATION_GUIDE.md` **N/A — cross-ref OBSERVABILITY (SLIs) and ORCHESTRATION (backpressure)**
 
 ---
 
-## 2. Code and test paths (inspect concretely)
-
-Search and read — do not rely on memory:
+## 2. Code and test paths (inspect — search repo, do not assume)
 
 ```text
-capacity simulation, backpressure, scaling hooks, ECP modules
-tests/unit/ and tests/integration/ matching the above
-scripts/check_harness_*.py and scripts/check_* relevant to this domain
+intergrax/queueing/ · intergrax/distributed/
+integrations/providers/cloud_platform/kubernetes/
+integrations/providers/message_bus/celery/
+intergrax/runtime/architecture/multi_agent_contention_simulation.py
+intergrax/runtime/observability/harness_slos.py
+target: intergrax/runtime/capacity/ (ECP-DEPTH ECP-1..8)
+docs/adr/ADR-SCALE-001.md · ADR-SCALE-002.md
 ```
+
+Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 
 ## 3. Domain-specific audit dimensions
 
-Answer each with **Yes / Partial / No / Unknown** and **evidence** (file + symbol or test name):
+For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol` or `test_name`).
 
-1. Backpressure signals from orchestration to intake.
-2. Concurrency and queue depth limits enforced.
-3. Capacity model or simulation aligned with architecture (ECP).
-4. Horizontal scaling assumptions documented — state externalization.
-5. Observability SLIs for saturation and queue latency.
-6. Cost/capacity coupling — scale without budget blowout.
+1. ECP control loop async outside Nexus hot path.
+2. Provisioning via integrations/tools — not Nexus importing K8s SDK.
+3. Backpressure (GRAPH_BACKPRESSURE) ≠ auto-scale — documented distinction.
+4. Hysteresis + cooldown on scaling rules (target ECP).
+5. Scale actions idempotent with NOTIFY_ONLY at max replicas.
+6. Tenant isolation on capacity signals.
+7. K8s HPA complementary — Intergrax rules orchestrate ceilings.
+8. Agent topology scaling (dimension B) separate from worker scaling.
+9. SCALE_* trace events when ECP implemented.
+10. Fail-safe on provisioner error — no runaway scale-up.
+11. Tier-3 owns deploy manifests (Helm/HPA in applications/*/docker/).
+12. PolicyEngine/HITL on scale-up when profile requires.
+13. Queue depth from intergrax/queueing/task_index.py as signal.
+14. Multi_agent_contention_simulation aligns with architecture claims.
+15. Honest: mark L0/L1 where ECP-DEPTH not yet implemented.
 
 ---
 
 ## 4. Workload and scale probes
 
-Evaluate behaviour for:
+For each probe describe **actual code path**, limits, and failure mode:
 
-Burst traffic, multi-tenant contention, regional failover.
-
-For each probe: describe actual code path, limits, and failure mode — not hypothetical design.
+- GRAPH_BACKPRESSURE rate under max_inflight_nodes.
+- Queue depth burst → worker autoscale (target ECP-5).
+- Modality Celery W-OPS.12 cross-ref.
+- Multi-replica Nexus vs in-process concurrency caps.
 
 ---
 
-## 5. Tier-3 and agent override surfaces
+## 5. Tier-3 / Tier-2 override surfaces
 
-Verify customization without forking Tier-0/Tier-1:
+Confirm overrides are **wired in code**, not documentation-only:
 
-Capacity profiles, queue tuning per deployment, elastic worker pools at Tier-3 infra.
-
-Confirm overrides are **wired**, not documentation-only.
+ScalingProfile on ApplicationEnvironmentProfile (target) · OrchestrationProfile.max_inflight_nodes ceiling · Helm/HPA per host
 
 ---
 
 ## 6. Cross-cutting checklist (mandatory)
 
-Apply every item in `docs/guides/audit/README.md` §Shared production Harness checklist:
+Apply **every** section in `docs/guides/audit/README.md` §Shared production Harness checklist:
 
 - Architecture & modularity
 - Configuration & strategy selection
@@ -111,53 +142,53 @@ Apply every item in `docs/guides/audit/README.md` §Shared production Harness ch
 
 ---
 
-## 7. Production comparison
+## 7. Production baseline comparison
 
-Compare the implementation to **production-grade systems** in this domain (commercial and open-source). State clearly:
+Compare against: **Kubernetes HPA/VPA · Celery autoscale · nginx upstream scaling · cloud autoscaler APIs · Prometheus SLI runbooks**
 
-- What Intergrax already matches at L3 production Harness OS level
-- What is L2 or below with specific gaps
-- What is intentionally deferred (design boundary) vs **niedoróbka** / missing wiring
+State explicitly:
 
----
-
-## 8. Maturity scoring
-
-Per `INTEGRAX_HARNESS_AUDIT_MAP.md` §5:
-
-```text
-L0 — Fragmented
-L1 — Operational MVP
-L2 — Scalable Harness
-L3 — Production Harness OS
-L4 — Adaptive Agent OS
-```
-
-Report **score before**, **target for current milestone**, evidence, and **remaining risks**.
+| Category | Your finding |
+|----------|--------------|
+| Matches L3 Production Harness OS | … |
+| L2 or below (name gaps with plan IDs) | … |
+| Intentional design boundary | … |
+| **niedoróbka** / missing wiring | … |
 
 ---
 
-## 9. Verification commands
+## 8. Anti-patterns (must not be present)
 
-Run applicable checks; cite results:
+- Nexus hot-path synchronous provisioning · conflating backpressure with autoscale · missing cooldown · scale without tenant bounds
+
+---
+
+## 9. Maturity scoring
+
+Per `INTEGRAX_HARNESS_AUDIT_MAP.md` §5 (L0–L4). Report **score before**, **target milestone**, **evidence**, **remaining risks**.
+
+If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile with code findings.
+
+---
+
+## 10. Verification — run and cite
 
 ```bash
-uv run pytest -m gate -q
-uv run pytest tests/unit/<relevant>/ -q
-python scripts/check_harness_no_getattr.py
-# plus domain-specific scripts discovered during inspection
+uv run pytest tests/unit/runtime/architecture/test_multi_agent_contention_simulation.py -q
+uv run pytest tests/unit/queueing/ -q
 ```
+
+Add any domain-specific scripts you discover. If a command fails, state why.
 
 ---
 
-## 10. Output and mode rules
+## 11. Output and mode rules
 
-- Follow output format in `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7 (Audit Result template).
+- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7 Audit Result template.
 - End with §8 Completion Summary.
-- `audit-only`: **no file edits**
-- `audit-and-fix`: update `docs/plan/ELASTIC_CAPACITY_AND_SCALING.md` gap rows and `docs/architecture/ELASTIC_CAPACITY_AND_SCALING.md` audit register if present; **no code changes** unless user requests separately
-- Never declare the whole platform complete
-- Record out-of-scope findings with suggested next domain
+- **`audit-only`:** no file edits.
+- **`audit-and-fix`:** update `docs/plan/ELASTIC_CAPACITY_AND_SCALING.md` gap rows + `docs/architecture/ELASTIC_CAPACITY_AND_SCALING.md` audit register; map findings to plan phase IDs; **no code** unless user requests separately.
+- Out-of-scope findings → suggest next `audit/<DOMAIN>.md`.
 
 Begin the audit now.
 

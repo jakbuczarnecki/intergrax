@@ -9,10 +9,13 @@
 
 ## How to use
 
-1. Open a new agent chat with repository access.
+1. Open a new agent chat with **full repository access**.
 2. Copy from `---BEGIN PROMPT---` through `---END PROMPT---`.
-3. Edit **USER CONFIG** only (`mode`, optional `focus`).
-4. Output must follow [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
+3. Edit **USER CONFIG** only (`mode`, optional `focus` slice).
+4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
+5. Output: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
+
+Regenerate after architecture/plan changes: `uv run python scripts/generate_domain_audit_prompts.py`
 
 ---
 
@@ -25,7 +28,7 @@ mode: audit-only
 focus:
 
 # mode: audit-only | audit-and-fix
-# focus: optional narrow slice, e.g. "ingest pipeline only" or "ToolRuntime policy path"
+# focus: optional narrow slice — e.g. "ingest only", "ToolRuntime policy path", "CFG-14 host wiring"
 
 # ═══ END USER CONFIG ═══
 
@@ -33,73 +36,102 @@ focus:
 
 You are an **implementation audit agent** for the Intergrax Harness AI platform.
 
-Perform a **rigorous, evidence-backed audit** of the **Unified Execution Runtime (UAEP)** domain — architecture canon, implementation plan, source code, tests, and CI gates. Compare against production-grade systems in this problem space. Do **not** produce a shallow documentation survey.
+Perform a **rigorous, evidence-backed audit** of the **Unified Execution Runtime (UAEP)** domain. You must inspect **architecture canon, implementation plan, source code, tests, and CI gates** and compare against **production-grade systems** in this problem space.
 
-**Mission:** Audit the Agent OS execution substrate: policy-first UAEP, identity/trust propagation, security and cost governance on every runtime path.
+**Do not** produce a shallow documentation survey. **Do not** declare the whole platform complete.
+
+## Mission
+
+Audit the **Agent OS execution substrate**: policy-first UAEP, typed runtime events, identity/trust propagation, security redaction, cost governance, checkpoint/pause/resume, and delegation — on **every** runtime path with no policy bypass.
+
+## Key symbols and contracts
+
+RuntimeEvent/RuntimeEventType · ExecutionPhase · HookPoint/HookContext · AgentDecision · ExecutionInterrupt · PauseRecord · RuntimeExecutionContext · RuntimePolicyBundle · PolicyDecision · ToolRequest/ToolResponse · AgentStep · ValidationResult · MemoryView · DelegationSpec · ApplicationSecurityProfile · GuardrailProfile
+
+## Active plan phases (verify status vs code reality)
+
+R-Policy Done · R-Delegate Done · V-REM-SEC · SEC · COST · GR-DOC · REL-ADV autonomy
+
+## Known open gaps — re-validate every item (closed / still open / partial)
+
+HTTP mid-run autonomy mostly lab-only · supervisor EscalationRouter future · middleware target layout partially evolved
 
 ---
 
 ## 1. Canonical reads (in order)
 
-1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state for this concern
-2. `docs/architecture/UNIFIED_EXECUTION_RUNTIME.md` — current architecture canon
-3. `docs/plan/UNIFIED_EXECUTION_RUNTIME.md` — implementation status and gap registers
+1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state
+2. `docs/architecture/UNIFIED_EXECUTION_RUNTIME.md` — architecture canon (incl. audit registers if present)
+3. `docs/plan/UNIFIED_EXECUTION_RUNTIME.md` — implementation plan and gap IDs
 4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 4–5, 8, 23–24
-5. `docs/guides/audit/README.md` — shared production Harness checklist (mandatory)
-6. `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix H (governance control plane)** — control-plane wiring
+5. `docs/guides/audit/README.md` — shared production Harness checklist (**mandatory**)
+6. `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix H (governance control plane)**
 
 ---
 
-## 2. Code and test paths (inspect concretely)
-
-Search and read — do not rely on memory:
+## 2. Code and test paths (inspect — search repo, do not assume)
 
 ```text
-intergrax/runtime/nexus/, intergrax/harness/, policy engine, UAEP steps, identity/cost hooks
-tests/unit/ and tests/integration/ matching the above
-scripts/check_harness_*.py and scripts/check_* relevant to this domain
+intergrax/runtime/nexus/nexus_loop.py · unified_task_runner.py
+intergrax/agents/agent_engine.py · intergrax/agents/uaep.py
+intergrax/runtime/nexus/tools/tool_runtime.py
+intergrax/runtime/policy/policy_engine.py
+intergrax/runtime/events/ (runtime_event.py, phase_coverage.py, unified_run_journal.py)
+intergrax/runtime/middleware/ · intergrax/runtime/architecture/ (prompt_security, tool_security, tenant_security, retrieval_security, cost_budget, cost_quota)
+intergrax/runtime/schema/registry.py
+applications/_shared/runtime_config_bridge.py · identity_wiring.py · guardrail_wiring.py
 ```
+
+Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 
 ## 3. Domain-specific audit dimensions
 
-Answer each with **Yes / Partial / No / Unknown** and **evidence** (file + symbol or test name):
+For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol` or `test_name`).
 
-1. Single canonical path: UnifiedTaskRunner → NexusLoop → AgentEngine → UAEP steps.
-2. PolicyEngine coverage: pre-run, pre-plan, pre-LLM, pre-tool, post-tool, pre-output, memory writes.
-3. RuntimePolicyBundle completeness — no bypass routes for catalog tools, RAG, memory, delegation.
-4. Identity, tenant, and permission context on every Run/Step/ToolInvocation.
-5. Security profile: data classification, redaction, guardrail middleware integration.
-6. Cost governance: token/cost metering, budgets, throttles, per-tenant accounting.
-7. Checkpoint, pause/resume, interrupt semantics — recoverable state.
-8. Forbidden patterns absent: agent-specific Nexus branches, duplicate policy engines.
+1. Single path: UnifiedTaskRunner → NexusLoop → AgentEngine → UAEP steps — no parallel legacy engines.
+2. Every AgentStep emits STEP_* events with trace_id/run_id/tenant_id.
+3. ToolRuntime.invoke emits TOOL_* events — all tool paths, including catalog dispatch.
+4. PolicyEngine: pre-run, pre-plan, pre-LLM, pre-tool, post-tool, pre-output, memory writes.
+5. RuntimePolicyBundle is the single policy composition object — no orphan policy dicts.
+6. AgentDecision emitted **before** Nexus acts on model output.
+7. Retry managed by runtime (RetryEngine) — not unbounded agent while-loops.
+8. MemoryView is the agent memory interface — no direct store access from Tier-2.
+9. Delegation uses DelegationSpec with scoped permissions — child cannot inherit all parent tools.
+10. tenant_id on events; secrets redacted in traces (ApplicationSecurityProfile).
+11. Guardrail middleware (llm_guardrail) composes via IntegrationProfile — not agent SDK.
+12. Checkpoint/pause/resume uses RuntimeCheckpoint — recoverable UAEP cursor.
+13. schema_version validated on runtime contracts.
+14. HITL via REQUEST_HUMAN / policy — not ad-hoc Slack in agent code.
+15. Cost budgets enforced (max_cost, token metering hooks).
+16. Hooks (HookRegistry) do not call vendor adapters directly.
+17. Forbidden: agent-specific Nexus branches; duplicate policy engines.
 
 ---
 
 ## 4. Workload and scale probes
 
-Evaluate behaviour for:
+For each probe describe **actual code path**, limits, and failure mode:
 
-Concurrent runs, budget exhaustion, policy denial storms, large delegation trees.
-
-For each probe: describe actual code path, limits, and failure mode — not hypothetical design.
+- PM→UX→Legal→Validator→Human multi-agent chain (§42.43).
+- Budget exhaustion mid-run (max_steps, max_cost).
+- Cooperative cancel at step boundaries.
+- Large delegation trees with permission scope audit.
 
 ---
 
-## 5. Tier-3 and agent override surfaces
+## 5. Tier-3 / Tier-2 override surfaces
 
-Verify customization without forking Tier-0/Tier-1:
+Confirm overrides are **wired in code**, not documentation-only:
 
-ApplicationEnvironmentProfile policy bundle, security profile, execution mode (strict/balanced/exploratory).
-
-Confirm overrides are **wired**, not documentation-only.
+RuntimePolicyBundle via runtime_config_bridge · ApplicationSecurityProfile · GuardrailProfile · HookRegistry · RuntimePlugin · TaskExecutionOptions.autonomy_level
 
 ---
 
 ## 6. Cross-cutting checklist (mandatory)
 
-Apply every item in `docs/guides/audit/README.md` §Shared production Harness checklist:
+Apply **every** section in `docs/guides/audit/README.md` §Shared production Harness checklist:
 
 - Architecture & modularity
 - Configuration & strategy selection
@@ -113,53 +145,55 @@ Apply every item in `docs/guides/audit/README.md` §Shared production Harness ch
 
 ---
 
-## 7. Production comparison
+## 7. Production baseline comparison
 
-Compare the implementation to **production-grade systems** in this domain (commercial and open-source). State clearly:
+Compare against: **UAEP-class agent runtimes · NeMo Guardrails / Guardrails AI / LLM Guard as integration backends (§42.11.6)**
 
-- What Intergrax already matches at L3 production Harness OS level
-- What is L2 or below with specific gaps
-- What is intentionally deferred (design boundary) vs **niedoróbka** / missing wiring
+State explicitly:
 
----
-
-## 8. Maturity scoring
-
-Per `INTEGRAX_HARNESS_AUDIT_MAP.md` §5:
-
-```text
-L0 — Fragmented
-L1 — Operational MVP
-L2 — Scalable Harness
-L3 — Production Harness OS
-L4 — Adaptive Agent OS
-```
-
-Report **score before**, **target for current milestone**, evidence, and **remaining risks**.
+| Category | Your finding |
+|----------|--------------|
+| Matches L3 Production Harness OS | … |
+| L2 or below (name gaps with plan IDs) | … |
+| Intentional design boundary | … |
+| **niedoróbka** / missing wiring | … |
 
 ---
 
-## 9. Verification commands
+## 8. Anti-patterns (must not be present)
 
-Run applicable checks; cite results:
+- Policy in docs only · LLM calls bypassing policy · context assembly bypass · untraced policy decisions
+
+---
+
+## 9. Maturity scoring
+
+Per `INTEGRAX_HARNESS_AUDIT_MAP.md` §5 (L0–L4). Report **score before**, **target milestone**, **evidence**, **remaining risks**.
+
+If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile with code findings.
+
+---
+
+## 10. Verification — run and cite
 
 ```bash
-uv run pytest -m gate -q
-uv run pytest tests/unit/<relevant>/ -q
+uv run pytest tests/unit/runtime/ -q
 python scripts/check_harness_no_getattr.py
-# plus domain-specific scripts discovered during inspection
+uv run python scripts/check_observability_gates.py
+uv run pytest -m gate -q
 ```
+
+Add any domain-specific scripts you discover. If a command fails, state why.
 
 ---
 
-## 10. Output and mode rules
+## 11. Output and mode rules
 
-- Follow output format in `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7 (Audit Result template).
+- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7 Audit Result template.
 - End with §8 Completion Summary.
-- `audit-only`: **no file edits**
-- `audit-and-fix`: update `docs/plan/UNIFIED_EXECUTION_RUNTIME.md` gap rows and `docs/architecture/UNIFIED_EXECUTION_RUNTIME.md` audit register if present; **no code changes** unless user requests separately
-- Never declare the whole platform complete
-- Record out-of-scope findings with suggested next domain
+- **`audit-only`:** no file edits.
+- **`audit-and-fix`:** update `docs/plan/UNIFIED_EXECUTION_RUNTIME.md` gap rows + `docs/architecture/UNIFIED_EXECUTION_RUNTIME.md` audit register; map findings to plan phase IDs; **no code** unless user requests separately.
+- Out-of-scope findings → suggest next `audit/<DOMAIN>.md`.
 
 Begin the audit now.
 

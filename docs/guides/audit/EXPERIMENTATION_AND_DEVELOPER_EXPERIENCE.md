@@ -9,10 +9,13 @@
 
 ## How to use
 
-1. Open a new agent chat with repository access.
+1. Open a new agent chat with **full repository access**.
 2. Copy from `---BEGIN PROMPT---` through `---END PROMPT---`.
-3. Edit **USER CONFIG** only (`mode`, optional `focus`).
-4. Output must follow [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
+3. Edit **USER CONFIG** only (`mode`, optional `focus` slice).
+4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
+5. Output: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
+
+Regenerate after architecture/plan changes: `uv run python scripts/generate_domain_audit_prompts.py`
 
 ---
 
@@ -25,7 +28,7 @@ mode: audit-only
 focus:
 
 # mode: audit-only | audit-and-fix
-# focus: optional narrow slice, e.g. "ingest pipeline only" or "ToolRuntime policy path"
+# focus: optional narrow slice — e.g. "ingest only", "ToolRuntime policy path", "CFG-14 host wiring"
 
 # ═══ END USER CONFIG ═══
 
@@ -33,71 +36,97 @@ focus:
 
 You are an **implementation audit agent** for the Intergrax Harness AI platform.
 
-Perform a **rigorous, evidence-backed audit** of the **Experimentation and Developer Experience** domain — architecture canon, implementation plan, source code, tests, and CI gates. Compare against production-grade systems in this problem space. Do **not** produce a shallow documentation survey.
+Perform a **rigorous, evidence-backed audit** of the **Experimentation and Developer Experience** domain. You must inspect **architecture canon, implementation plan, source code, tests, and CI gates** and compare against **production-grade systems** in this problem space.
 
-**Mission:** Audit DX: scaffold, eval, CI architecture gates, lab environment, and operational excellence hooks for developers and operators.
+**Do not** produce a shallow documentation survey. **Do not** declare the whole platform complete.
+
+## Mission
+
+Audit **DX and experimentation**: scaffold, eval harness, CI architecture gates, doctor CLI, lab environment, W-OPS evidence, TTFRun <1h goal, and gate maintenance discipline.
+
+## Key symbols and contracts
+
+EvaluationProfile · ExperimentSession · OnlineEvaluationRegistry · maturity gate evidence · TTFRun metric · shadow workspace bindings
+
+## Active plan phases (verify status vs code reality)
+
+EVAL · CRIT-V cross-ref · MVP-EVOL · DX · AA · W-OPS · Phase V G5 Production PRR
+
+## Known open gaps — re-validate every item (closed / still open / partial)
+
+GOV-PROD.1 dashboard deferred · polished SaaS UI non-goal · MVP promotion CLI not Tier-3 router
 
 ---
 
 ## 1. Canonical reads (in order)
 
-1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state for this concern
-2. `docs/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — current architecture canon
-3. `docs/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — implementation status and gap registers
+1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state
+2. `docs/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — architecture canon (incl. audit registers if present)
+3. `docs/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — implementation plan and gap IDs
 4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 25–27, 30
-5. `docs/guides/audit/README.md` — shared production Harness checklist (mandatory)
-6. `docs/guides/AGENT_CREATION_GUIDE.md` **EXTENSION_AUTHOR_GUIDE** — control-plane wiring
+5. `docs/guides/audit/README.md` — shared production Harness checklist (**mandatory**)
+6. `docs/guides/AGENT_CREATION_GUIDE.md` **EXTENSION_AUTHOR_GUIDE**
 
 ---
 
-## 2. Code and test paths (inspect concretely)
-
-Search and read — do not rely on memory:
+## 2. Code and test paths (inspect — search repo, do not assume)
 
 ```text
-intergrax/scaffold/, scripts/check_*.py, eval harness, doctor CLI
-tests/unit/ and tests/integration/ matching the above
-scripts/check_harness_*.py and scripts/check_* relevant to this domain
+intergrax/scaffold/
+intergrax/runtime/architecture/ (eval, maturity gates, online_evaluation_registry.py)
+intergrax/experiments/ · nexus_eval_runner.py
+scripts/check_*.py (harness gates) · scripts/test.bat
+scripts/phase_v_closeout_gate.py · phase_w_ops_evidence.py
+docs/guides/AGENT_CREATION_GUIDE.md · HARNESS_ENVIRONMENT.md
 ```
+
+Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 
 ## 3. Domain-specific audit dimensions
 
-Answer each with **Yes / Partial / No / Unknown** and **evidence** (file + symbol or test name):
+For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol` or `test_name`).
 
-1. Scaffold commands produce tier-correct artifacts (agent, app, tool bundle, skill).
-2. CI gates enforce boundaries (no getattr, vendor imports, doc pairs, observability).
-3. Eval/benchmark harness integrated with critic/RAG/tool quality loops.
-4. intergrax doctor and lab stack (HARNESS_ENVIRONMENT.md) accurate.
-5. W-OPS / release cycle documentation matches scripts.
-6. Developer time-to-first-run metric supported (<1h agent creation goal).
+1. Scaffold new-agent runnable through Nexus — not standalone script only.
+2. new-application emits profile+wiring+docker+ADR per Phase N.
+3. intergrax doctor diagnoses lab stack accurately.
+4. Gate scripts pass after harness change (mandatory verification set).
+5. check_docs_domain_pairs enforces 21 pairs.
+6. Eval registry trends before promotion (require_baseline_for_release).
+7. Shadow workspace observe-only compare path works.
+8. Acceptance agent_os suite covers OS claims.
+9. Extension author guide aligned with plugin entry points.
+10. Phase V PRR evidence for production readiness claims.
+11. Structured output required on agent contracts per guide.
+12. Trace on every decision per DX checklist.
+13. Tier-0 reused in scaffold — not duplicated stubs.
+14. W-OPS release cycle docs match scripts/build artifacts.
+15. Single plan pair per domain — no orphan implementation docs.
 
 ---
 
 ## 4. Workload and scale probes
 
-Evaluate behaviour for:
+For each probe describe **actual code path**, limits, and failure mode:
 
-Large monorepo CI time, many gates, parallel eval workloads.
-
-For each probe: describe actual code path, limits, and failure mode — not hypothetical design.
+- Full CI gate suite runtime on developer machine.
+- Parallel eval workloads in lab.
+- TTFRun: idea → first Nexus run timing evidence.
 
 ---
 
-## 5. Tier-3 and agent override surfaces
+## 5. Tier-3 / Tier-2 override surfaces
 
-Verify customization without forking Tier-0/Tier-1:
+Confirm overrides are **wired in code**, not documentation-only:
 
-Lab presets, local gate subsets, extension author workflows.
-
-Confirm overrides are **wired**, not documentation-only.
+Scaffold templates · EvaluationProfile.shadow_eval_enabled · lab vs strict production defaults
 
 ---
 
 ## 6. Cross-cutting checklist (mandatory)
 
-Apply every item in `docs/guides/audit/README.md` §Shared production Harness checklist:
+Apply **every** section in `docs/guides/audit/README.md` §Shared production Harness checklist:
 
 - Architecture & modularity
 - Configuration & strategy selection
@@ -111,53 +140,56 @@ Apply every item in `docs/guides/audit/README.md` §Shared production Harness ch
 
 ---
 
-## 7. Production comparison
+## 7. Production baseline comparison
 
-Compare the implementation to **production-grade systems** in this domain (commercial and open-source). State clearly:
+Compare against: **Cursor agent iteration UX · Braintrust/prompt regression CI · platform engineering PRR culture**
 
-- What Intergrax already matches at L3 production Harness OS level
-- What is L2 or below with specific gaps
-- What is intentionally deferred (design boundary) vs **niedoróbka** / missing wiring
+State explicitly:
 
----
-
-## 8. Maturity scoring
-
-Per `INTEGRAX_HARNESS_AUDIT_MAP.md` §5:
-
-```text
-L0 — Fragmented
-L1 — Operational MVP
-L2 — Scalable Harness
-L3 — Production Harness OS
-L4 — Adaptive Agent OS
-```
-
-Report **score before**, **target for current milestone**, evidence, and **remaining risks**.
+| Category | Your finding |
+|----------|--------------|
+| Matches L3 Production Harness OS | … |
+| L2 or below (name gaps with plan IDs) | … |
+| Intentional design boundary | … |
+| **niedoróbka** / missing wiring | … |
 
 ---
 
-## 9. Verification commands
+## 8. Anti-patterns (must not be present)
 
-Run applicable checks; cite results:
+- Skipping gates after harness change · duplicate DX docs · eval only in notebooks not registry · false PRR without evidence
+
+---
+
+## 9. Maturity scoring
+
+Per `INTEGRAX_HARNESS_AUDIT_MAP.md` §5 (L0–L4). Report **score before**, **target milestone**, **evidence**, **remaining risks**.
+
+If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile with code findings.
+
+---
+
+## 10. Verification — run and cite
 
 ```bash
 uv run pytest -m gate -q
-uv run pytest tests/unit/<relevant>/ -q
 python scripts/check_harness_no_getattr.py
-# plus domain-specific scripts discovered during inspection
+uv run python scripts/check_observability_gates.py
+uv run python scripts/check_docs_domain_pairs.py
+scripts/test.bat unit
 ```
+
+Add any domain-specific scripts you discover. If a command fails, state why.
 
 ---
 
-## 10. Output and mode rules
+## 11. Output and mode rules
 
-- Follow output format in `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7 (Audit Result template).
+- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7 Audit Result template.
 - End with §8 Completion Summary.
-- `audit-only`: **no file edits**
-- `audit-and-fix`: update `docs/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` gap rows and `docs/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` audit register if present; **no code changes** unless user requests separately
-- Never declare the whole platform complete
-- Record out-of-scope findings with suggested next domain
+- **`audit-only`:** no file edits.
+- **`audit-and-fix`:** update `docs/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` gap rows + `docs/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` audit register; map findings to plan phase IDs; **no code** unless user requests separately.
+- Out-of-scope findings → suggest next `audit/<DOMAIN>.md`.
 
 Begin the audit now.
 
