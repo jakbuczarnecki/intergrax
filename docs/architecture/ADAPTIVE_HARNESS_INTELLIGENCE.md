@@ -5,6 +5,7 @@
 **Plan (1:1):** [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../plan/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** L4 AHI  
+**Audit instruction:** [`guides/audit/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../guides/audit/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
 ---
 
 ## Table of contents

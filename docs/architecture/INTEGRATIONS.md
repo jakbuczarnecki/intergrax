@@ -5,6 +5,7 @@
 **Plan (1:1):** [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 13–14  
+**Audit instruction:** [`guides/audit/INTEGRATIONS.md`](../guides/audit/INTEGRATIONS.md)  
 ---
 
 # 18. Slack / Teams / Communication Integration Philosophy
@@ -79,7 +80,7 @@ Adapters should be generic and reusable.
 ## Catalog
 
 
-**Last updated:** 2026-06-08 (Phase M.7 P7 **Done** 18/18 · M.6 P6 **Done** 32/32)
+**Last updated:** 2026-06-10 (RAG domain pair split · M.7 P7 **Done** 18/18)
 
 The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. Agents and applications wire backends **by category**, not by vendor SDK, so the same agent code can run in a local lab, a customer VPC, or a multi-cloud deployment.
 
@@ -90,6 +91,7 @@ The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1 | Architecture canon — tiers, contracts, registry rules |
 | [plan/INTEGRATIONS.md) Phase M | Phase status, backlog, delivery workflow |
 | [guides/AGENT_CREATION_GUIDE.md](guides/AGENT_CREATION_GUIDE.md) Appendix E | How agents vs applications use integrations |
+| [architecture/RAG.md](RAG.md) | RAG retrieval engine (consumes integration slugs) |
 | [architecture/TOOLS.md](architecture/TOOLS.md) | Agent-facing tools that compose these integrations |
 | Per-provider guides | `intergrax/integrations/providers/<category>/<slug>/USAGE.md` |
 | [../infra/README.md](../infra/README.md) | **Local Docker infrastructure** — compose profiles, manage scripts |
@@ -557,21 +559,44 @@ None — all enum slugs in `FIELD_SLUGS` are registered except cloud-platform-on
 
 ---
 
+## RAG engine (cross-reference)
+
+**Canonical domain pair:** [`architecture/RAG.md`](RAG.md) ↔ [`plan/RAG.md`](../plan/RAG.md) — retrieval orchestration, ingest, eval, M-RAG register.
+
+This catalog doc covers **integration slugs** consumed by RAG (`vector_store`, `document_parser`, `rerank_provider`, `graph_store`). Do not duplicate engine canon here.
+
+---
+
 ### Vector store (RAG)
 
 Vector implementations remain in `intergrax/rag/vectorstore/`. Integration providers are **thin catalog bridges** — select backend via `IntegrationProfile.vector_store` or RAG bootstrap.
 
-| Slug | Status | Catalog factory | Env prefix | Notes |
-|------|--------|-----------------|------------|-------|
-| `pinecone` | beta | `create_pinecone_vector_store()` | `INTERGRAX_PINECONE` | Managed cloud index |
-| `qdrant` | beta | `create_qdrant_vector_store()` | `INTERGRAX_QDRANT` | Self-hosted or Qdrant Cloud |
-| `chroma` | beta | `create_chroma_vector_store()` | `INTERGRAX_CHROMA` | Embedded or HTTP Chroma |
+| Slug | Status | Catalog factory | Env prefix | Prod SLO soak (M-RAG.30) |
+|------|--------|-----------------|------------|--------------------------|
+| `qdrant` | **stable** | `create_qdrant_vector_store()` | `INTERGRAX_QDRANT` | Required — `test_vectorstore_real_backends.py` |
+| `pgvector` | **stable** | `create_pgvector_vector_store()` | `INTERGRAX_PGVECTOR` | Required — DSN optional (in-memory fallback for harness) |
+| `chroma` | **stable** | `create_chroma_vector_store()` | `INTERGRAX_CHROMA` | Required — HTTP mode default probe `localhost:8000` |
+| `weaviate` | **stable** | `create_weaviate_vector_store()` | `INTERGRAX_WEAVIATE` | Required — probe `INTERGRAX_WEAVIATE_URL` / `localhost:8080` |
+| `lancedb` | **stable** | `create_lancedb_vector_store()` | `INTERGRAX_LANCEDB` | Harness stable; soak gate optional per deployment |
+| `typesense` | **stable** | `create_typesense_vector_store()` | `INTERGRAX_TYPESENSE` | Harness stable; soak gate optional per deployment |
+| `pinecone` | beta | `create_pinecone_vector_store()` | `INTERGRAX_PINECONE` | Promote to stable after soak passes in ops environment |
+| `milvus` | beta | `create_milvus_vector_store()` | `INTERGRAX_MILVUS` | Promote to stable after soak passes in ops environment |
+| `vespa` | beta | `create_vespa_vector_store()` | `INTERGRAX_VESPA` | Promote to stable after soak passes in ops environment |
+| `inmemory` | beta | `create_inmemory_vector_store()` | `INTERGRAX_INMEMORY` | Harness/tests only — not for production |
+
+**Soak contract:** `intergrax/rag/vectorstore/soak/prod_slo.py` — ingest → query → metadata filter → delete; p95 query latency budget.
+
+**Gate (CI, no external services):** `uv run pytest tests/unit/rag/vectorstore/test_vectorstore_prod_slo_soak.py -m gate -q`
+
+**Ops / nightly (real backends):** `uv run pytest tests/integration/rag/vectorstore/test_vectorstore_real_backends.py -m vectorstore_soak -q` — tests skip when backend unreachable.
 
 | Provider | Usage guide |
 |----------|-------------|
 | `pinecone` | [USAGE.md](../intergrax/integrations/providers/vector_store/pinecone/USAGE.md) |
 | `qdrant` | [USAGE.md](../intergrax/integrations/providers/vector_store/qdrant/USAGE.md) |
 | `chroma` | [USAGE.md](../intergrax/integrations/providers/vector_store/chroma/USAGE.md) |
+| `pgvector` | [USAGE.md](../intergrax/integrations/providers/vector_store/pgvector/USAGE.md) |
+| `weaviate` | [USAGE.md](../intergrax/integrations/providers/vector_store/weaviate/USAGE.md) |
 
 RAG bootstrap: `create_default_vectorstore_manager()` in `intergrax/rag/vectorstore/bootstrap/` resolves via the integration catalog when `vector_store` is configured.
 

@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
+from intergrax.applications._shared.entity_graph_wiring import resolve_entity_graph_memory_store
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.providers.document_store.mongodb.bundle import (
@@ -39,6 +40,7 @@ class MemoryPlatformWiring:
     organization_profile_store: OrganizationProfileStore | None
     sqlite_bundle: SQLiteIntegrationBundle | None = None
     mongodb_bundle: MongoDBIntegrationBundle | None = None
+    entity_graph_store: object | None = None
 
 
 def _sqlite_enabled(profile: IntegrationProfile) -> bool:
@@ -85,6 +87,7 @@ def resolve_memory_platform_wiring(
     3. In-memory fallbacks for session and user LTM.
     """
     profile = integration_profile or env.integration_profile
+    entity_graph_store = resolve_entity_graph_memory_store(env)
     if _sqlite_enabled(profile):
         bundle = create_sqlite_integration(**_sqlite_integration_overrides(profile))
         return MemoryPlatformWiring(
@@ -93,6 +96,7 @@ def resolve_memory_platform_wiring(
             organization_profile_store=bundle.organization_profile_store,
             sqlite_bundle=bundle,
             mongodb_bundle=None,
+            entity_graph_store=entity_graph_store,
         )
 
     if _mongodb_enabled(profile):
@@ -104,6 +108,7 @@ def resolve_memory_platform_wiring(
             organization_profile_store=None,
             sqlite_bundle=None,
             mongodb_bundle=mongo_bundle,
+            entity_graph_store=entity_graph_store,
         )
 
     return MemoryPlatformWiring(
@@ -112,6 +117,7 @@ def resolve_memory_platform_wiring(
         organization_profile_store=None,
         sqlite_bundle=None,
         mongodb_bundle=None,
+        entity_graph_store=entity_graph_store,
     )
 
 

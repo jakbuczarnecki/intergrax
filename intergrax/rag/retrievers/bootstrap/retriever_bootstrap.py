@@ -4,8 +4,11 @@
 
 from __future__ import annotations
 
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_manager
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.profiles.rag_profile import RagProfile
+from intergrax.rag.query.query_expander import query_expander_from_profile
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
 from intergrax.rag.retrievers.engine.retriever_engine import RetrieverEngine
 from intergrax.rag.retrievers.providers.fusion_retriever import FusionRetriever
@@ -31,6 +34,8 @@ def create_default_retriever_registry(
     registry: RetrieverRegistry | None = None,    
     toc_vector_store: BaseVectorstoreManager | None = None,
     graph_store: GraphStore | None = None,
+    profile: RagProfile | None = None,
+    llm_for_query_expansion: LLMAdapter | None = None,
 ) -> RetrieverRegistry:
     """
     Create RetrieverRegistry with built-in retriever providers registered.
@@ -71,10 +76,17 @@ def create_default_retriever_registry(
                 embedding_manager=embedding_manager,
             )
         )
+        query_expander = None
+        if profile is not None:
+            query_expander = query_expander_from_profile(
+                mode=profile.query_expansion,
+                llm=llm_for_query_expansion,
+            )
         registry.register(
             MultiQueryRetriever(
                 vector_store=vector_store,
                 embedding_manager=embedding_manager,
+                query_expander=query_expander,
             )
         )
         registry.register(
@@ -112,6 +124,9 @@ def create_default_retriever_engine(
     embedding_manager: BaseEmbeddingManager | None = None,
     registry: RetrieverRegistry | None = None,
     graph_store: GraphStore | None = None,
+    profile: RagProfile | None = None,
+    llm_for_query_expansion: LLMAdapter | None = None,
+    toc_vector_store: BaseVectorstoreManager | None = None,
 ) -> RetrieverEngine:
     """
     Create RetrieverEngine with default retriever providers registered.
@@ -128,6 +143,9 @@ def create_default_retriever_engine(
             vector_store=vector_store,
             embedding_manager=embedding_manager,
             graph_store=graph_store,
+            profile=profile,
+            llm_for_query_expansion=llm_for_query_expansion,
+            toc_vector_store=toc_vector_store,
         )
 
     return RetrieverEngine(
@@ -141,6 +159,9 @@ def create_default_retriever_pipeline(
     embedding_manager: BaseEmbeddingManager | None = None,
     registry: RetrieverRegistry | None = None,
     graph_store: GraphStore | None = None,
+    profile: RagProfile | None = None,
+    llm_for_query_expansion: LLMAdapter | None = None,
+    toc_vector_store: BaseVectorstoreManager | None = None,
 ) -> RetrieverPipeline:
     """
     Create RetrieverPipeline using the default retriever engine.
@@ -154,6 +175,9 @@ def create_default_retriever_pipeline(
             vector_store=vector_store,
             embedding_manager=embedding_manager,
             graph_store=graph_store,
+            profile=profile,
+            llm_for_query_expansion=llm_for_query_expansion,
+            toc_vector_store=toc_vector_store,
         )
 
     engine = create_default_retriever_engine(
@@ -161,6 +185,9 @@ def create_default_retriever_pipeline(
         embedding_manager=embedding_manager,
         registry=registry,
         graph_store=graph_store,
+        profile=profile,
+        llm_for_query_expansion=llm_for_query_expansion,
+        toc_vector_store=toc_vector_store,
     )
 
     return RetrieverPipeline(
@@ -175,6 +202,9 @@ def create_default_retriever_manager(
     embedding_manager: BaseEmbeddingManager | None = None,
     registry: RetrieverRegistry | None = None,
     graph_store: GraphStore | None = None,
+    profile: RagProfile | None = None,
+    llm_for_query_expansion: LLMAdapter | None = None,
+    toc_vector_store: BaseVectorstoreManager | None = None,
 ) -> BaseRetrieverManager:
     """
     Create RetrieverManager using the default retriever pipeline.
@@ -191,6 +221,9 @@ def create_default_retriever_manager(
         embedding_manager=embedding_manager,
         registry=registry,
         graph_store=graph_store,
+        profile=profile,
+        llm_for_query_expansion=llm_for_query_expansion,
+        toc_vector_store=toc_vector_store,
     )
 
     return RetrieverManager(

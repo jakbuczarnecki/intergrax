@@ -1600,7 +1600,7 @@ Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/H
 **Audience:** Tier-3 application authors, extension authors, platform engineers.  
 **Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §13 (Integration), §14 (RAG); canon [§7.1](architecture/PLATFORM_FOUNDATION.md#71-integration-library)–[§7.1.5](architecture/PLATFORM_FOUNDATION.md#715-integration-profile); memory/RAG naming: [Appendix G](#appendix-g--memory--rag-naming-phase-q).
 
-Integrations are **backend/provider adapters** (Tier-0). RAG is a **full retrieval layer** composed from integration vector stores + embedding/rerank managers — not agent-local vector queries. Agents stay vendor-agnostic; Tier-3 selects providers via `IntegrationProfile`.
+Integrations are **backend/provider adapters** (Tier-0). RAG is a **full retrieval layer** ([`architecture/RAG.md`](architecture/RAG.md) ↔ [`plan/RAG.md`](plan/RAG.md)) composed from integration vector stores + embedding/rerank managers — not agent-local vector queries. Agents stay vendor-agnostic; Tier-3 selects providers via `IntegrationProfile`.
 
 ### K.1 Design principles (Harness audit)
 

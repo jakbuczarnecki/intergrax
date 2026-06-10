@@ -1,11 +1,24 @@
 # Harness Implementation Audit — Copy-Paste Prompt
 
 **Purpose:** repeatable LLM prompt for Intergrax Harness AI implementation audits.  
-**Procedure source:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md)
+**Procedure source:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md)  
+**Per-domain deep audits:** [`audit/README.md`](audit/README.md) — copy-paste prompts for each of the 21 domain pairs (RAG, Tools, Memory, …)
 
 ---
 
 ## How to use
+
+### Single domain (recommended for engine-depth audits)
+
+For one domain pair (e.g. RAG, Tools, Memory), use the dedicated prompt — **do not** rewrite ad-hoc instructions:
+
+1. Open [`audit/<DOMAIN>.md`](audit/README.md#domain-index-21-pairs) (e.g. [`audit/RAG.md`](audit/RAG.md)).
+2. Copy `---BEGIN PROMPT---` … `---END PROMPT---` into a new agent chat.
+3. Set `mode` in USER CONFIG.
+
+Domain prompts include shared observability/security/scale checklists plus domain-specific dimensions.
+
+### Multi-layer or full-platform audit
 
 ### What to copy
 
@@ -99,7 +112,7 @@ Harness → Runtime → Agents → Applications → Products
 | 5 | `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix H** | **Governance control plane (authoring)** | `ApplicationEnvironmentProfile` map, `RuntimePolicyBundle`, security profile, observability mandatory vs optional, verification commands — use when auditing §5 Policy and §21 Observability |
 | 6 | `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix I** | **Orchestration control plane (authoring)** | Nexus runners, `ExecutionGraph`, `DelegationSpec`, hooks, planning strategies, customization surfaces — use when auditing §7–§10; implementation closeout: plan **Phase ORCH** (**Done**) |
 | 7 | `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix J** | **Tools & skills control plane (authoring)** | `ToolProfile`, `SkillProfile`, `catalog_runtime_bridge`, `SkillResolverProtocol`, `ToolRuntime`, conformance checks — use when auditing §11–§12; implementation closeout: plan **Phase TS** (**Done**) |
-| 8 | `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix K** | **Integration & RAG control plane (authoring)** | `IntegrationProfile`, `integration_runtime_bridge`, `rag_runtime_bridge`, health probes, `RetrievalService` — use when auditing §13–§14; closeout: **Phase INT** + **Phase RAG** (**Done**) |
+| 8 | `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix K** | **Integration & RAG control plane (authoring)** | `IntegrationProfile`, `integration_runtime_bridge`, `rag_runtime_bridge`, health probes, `RetrievalService` — use when auditing §13–§14; canon: [`architecture/RAG.md`](architecture/RAG.md); closeout: **Phase INT** + **Phase RAG** (**Done**) |
 | 9 | `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix L** | **Context engineering control plane (authoring)** | `ContextProfile`, `context_runtime_bridge`, `context_wiring`, `ContextManager`, `ContextBudgetPolicy` — use when auditing §16; closeout: **Phase CTX** (**Done**) |
 | 10 | `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix M** | **Prompt registry control plane (authoring)** | `PromptProfile`, `prompt_runtime_bridge`, `prompt_wiring`, `YamlPromptRegistry`, `PromptRegistryProtocol` — use when auditing §17; closeout: **Phase PE** (**Done**) |
 

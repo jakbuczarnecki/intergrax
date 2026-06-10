@@ -503,6 +503,9 @@ class GraphExecutor:
                 if delegation.parent_node_id:
                     request.metadata[TaskMemoryMetadataKey.PARENT_NODE_ID] = delegation.parent_node_id
             CancellationCoordinator.propagate(task.metadata, request.metadata)
+            replan_policy = task.metadata.get("replan_policy.v1")
+            if isinstance(replan_policy, dict):
+                request.metadata["replan_policy.v1"] = replan_policy
             return await AgentEngine.run_agent_with_result(
                 current_agent,
                 request,

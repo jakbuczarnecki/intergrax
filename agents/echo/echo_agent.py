@@ -98,7 +98,11 @@ class EchoAgent(HarnessReferenceAgent):
             production_eligible=True,
             owner_team="platform",
             owner_contact="harness@intergrax",
+            on_call_contact="harness@intergrax",
             runbook_ref="docs/intergrax_runtime_architecture.md",
+            modality_profile_id="lab.default",
+            output_schema={"type": "object", "properties": {"answer": {"type": "string"}}},
+            validation_rules=["structured_output"],
             max_steps=5,
         )
 

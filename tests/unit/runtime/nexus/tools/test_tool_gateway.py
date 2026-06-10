@@ -6,14 +6,26 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from pydantic import BaseModel
+
 from intergrax.contracts.tool_request import ToolRequest, ToolResponseStatus
+from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
 from intergrax.runtime.nexus.tools.tool_gateway import (
     NEXUS_CAPABILITY_PLAN,
     NEXUS_RAG,
     RuntimeToolGateway,
 )
 from intergrax.runtime.nexus.tools.tool_runtime import ToolRuntime, ToolRuntimeResult
+from intergrax.tools.execution_models import ToolExecutionRequest
+from intergrax.tools.registry import ToolRegistry
+from intergrax.tools.tool_executor import ToolHandler
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID
+from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager, tools_agent_make_contract
 
 
 @pytest.mark.asyncio
@@ -139,3 +151,73 @@ async def test_tool_gateway_capability_plan_prefers_tool_ids_without_legacy_flag
     assert plan.use_websearch is True
     assert RAG_RETRIEVE_TOOL_ID in plan.tool_ids
     assert plan.uses_legacy_booleans_only() is False
+
+
+class _GatewayIn(BaseModel):
+    query: str = "default"
+
+
+class _GatewayOut(BaseModel):
+    hits: int = 0
+
+
+class _GatewayHandler(ToolHandler[_GatewayIn, _GatewayOut]):
+    def execute(self, request: ToolExecutionRequest[_GatewayIn]) -> _GatewayOut:
+        return _GatewayOut(hits=len(request.input.query))
+
+
+GATEWAY_CATALOG_TOOL = "jira.get_issue"
+
+
+def _state_with_catalog_invoker() -> RuntimeState:
+    registry = ToolRegistry()
+    contract = tools_agent_make_contract(GATEWAY_CATALOG_TOOL, _GatewayIn, _GatewayOut)
+    registry.register(contract, _GatewayHandler())
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=RegistryToolExecutor(registry),
+    )
+    config = RuntimeConfig(
+        llm_adapter=FakeLLMAdapter(),
+        production_mode=False,
+        enable_rag=False,
+        enable_websearch=False,
+        tool_invoker=invoker,
+    )
+    ctx = RuntimeContext(
+        config=config,
+        session_manager=build_in_memory_session_manager(),
+        prompt_registry=MagicMock(),
+    )
+    return RuntimeState(
+        context=ctx,
+        request=RuntimeRequest(
+            agent_id="agent-1",
+            user_id="user-1",
+            session_id="session-1",
+            tenant_id="tenant-1",
+            message="issue",
+        ),
+        run_id="run-gw-catalog",
+        tool_traces=[],
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_tool_gateway_invokes_registered_catalog_tool():
+    state = _state_with_catalog_invoker()
+    gateway = RuntimeToolGateway.for_state(state, allowed_tools=[GATEWAY_CATALOG_TOOL])
+    response = await gateway.invoke(
+        ToolRequest(
+            tool_name=GATEWAY_CATALOG_TOOL,
+            agent_id="agent-1",
+            step_id="s1",
+            input={"query": "PROJ-1"},
+        )
+    )
+
+    assert response.status == ToolResponseStatus.SUCCESS
+    assert response.output is not None
+    assert response.output["hits"] == 6

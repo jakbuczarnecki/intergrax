@@ -320,18 +320,22 @@ class UAEPExecutor:
                 HookPoint.AFTER_DECISION,
                 decision_ctx,
             )
+            decision_context: dict[str, object] = {
+                "require_human_on_critical": task_options.governance.require_human_on_critical,
+                "has_unresolved_critical_interrupt": exec_ctx.metadata.get(
+                    "has_unresolved_critical_interrupt", False
+                ),
+            }
+            replan_policy = request.metadata.get("replan_policy.v1")
+            if isinstance(replan_policy, dict):
+                decision_context.update(replan_policy)
             resolution = self._interrupt_handler.resolve_decision(
                 decision,
                 task_id=task_id,
                 run_id=run_id,
                 agent_id=contract.id,
                 step_id=step.step_id,
-                context={
-                    "require_human_on_critical": task_options.governance.require_human_on_critical,
-                    "has_unresolved_critical_interrupt": exec_ctx.metadata.get(
-                        "has_unresolved_critical_interrupt", False
-                    ),
-                },
+                context=decision_context,
             )
             if resolution.interrupt is not None:
                 interrupt_ctx = hook_context_for_task(

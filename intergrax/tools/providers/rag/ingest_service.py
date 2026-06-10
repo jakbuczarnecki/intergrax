@@ -43,6 +43,7 @@ def perform_rag_ingest(ctx: ToolWiringContext, params: RagIngestInput) -> RagIng
         splitter=splitter,
         embedding_manager=embedding_manager,
         vectorstore=vectorstore,
+        toc_vectorstore=ctx.toc_vectorstore_manager,
         profile=profile,
         contextual_enricher=ctx.extras.get("contextual_enricher"),
         graph_store=ctx.extras.get("graph_store"),
@@ -75,6 +76,8 @@ def perform_rag_ingest(ctx: ToolWiringContext, params: RagIngestInput) -> RagIng
             reason=result.reason,
             parser_id=result.parser_id,
             parser_trace=result.parser_trace,
+            file_size_bytes=result.file_size_bytes,
+            async_job_recommended=result.async_job_recommended,
         )
 
     return RagIngestOutput(
@@ -84,4 +87,6 @@ def perform_rag_ingest(ctx: ToolWiringContext, params: RagIngestInput) -> RagIng
         reason=result.reason,
         parser_id=result.parser_id,
         parser_trace=result.parser_trace,
+        file_size_bytes=result.file_size_bytes,
+        async_job_recommended=result.async_job_recommended,
     )

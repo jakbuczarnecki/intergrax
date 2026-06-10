@@ -8,8 +8,8 @@ from typing import List, Optional
 
 from langchain_core.documents import Document
 
-from intergrax.rag.embedding.embedding_manager import EmbeddingManager
-from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 
 from intergrax.rag.indexing.contracts.index_strategy import IndexStrategy
 from intergrax.rag.indexing.pipeline.indexing_pipeline import IndexingPipeline
@@ -27,8 +27,8 @@ class IndexingManager:
     def __init__(
         self,
         *,
-        embed_manager: EmbeddingManager,
-        vectorstore: VectorstoreManager,
+        embed_manager: BaseEmbeddingManager,
+        vectorstore: BaseVectorstoreManager,
         strategy: Optional[IndexStrategy] = None,
     ) -> None:
 

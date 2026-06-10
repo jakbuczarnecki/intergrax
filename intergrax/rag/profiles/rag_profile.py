@@ -20,6 +20,9 @@ ContextualEnrichMode = Literal["off", "on"]
 GraphIndexerMode = Literal["heuristic", "llm", "heuristic_then_llm"]
 AgenticQueryMode = Literal["deterministic", "llm"]
 
+HARNESS_GRAPH_STORE_BACKEND = "inmemory"
+PRODUCTION_GRAPH_STORE_BACKEND = "neo4j"
+
 
 def _env_bool(name: str, default: bool = False) -> bool:
     raw = os.getenv(name, "").strip().lower()
@@ -36,6 +39,23 @@ def _env_int(name: str, default: int) -> int:
         return int(raw)
     except ValueError:
         return default
+
+
+def _env_csv_tuple(name: str) -> tuple[str, ...]:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return ()
+    return tuple(part.strip() for part in raw.split(",") if part.strip())
+
+
+def _env_optional_float(name: str) -> Optional[float]:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return None
+    try:
+        return float(raw)
+    except ValueError:
+        return None
 
 
 @dataclass(frozen=True)
@@ -55,9 +75,14 @@ class RagProfile:
     # Adaptive routing (fast / standard / deep)
     route_mode: RouteMode = "auto"
     deep_query_min_words: int = 12
+    llm_route_enabled: bool = False
 
     # Ingest (no fixed parser — optional integration slug)
     chunking_strategy_id: str = "langchain_recursive"
+    hierarchical_index_enabled: bool = False
+    sync_ingest_max_bytes: int = 50_000_000
+    semantic_chunking_max_chars: int = 100_000
+    async_ingest_workflow_id: str = "rag-ingest"
     document_parser_slug: Optional[str] = None
     contextual_enrich: ContextualEnrichMode = "off"
     query_expansion: QueryExpansionMode = "deterministic"
@@ -68,6 +93,8 @@ class RagProfile:
     agentic_min_chunks: int = 2
     agentic_min_score: float = 0.35
     agentic_query_mode: AgenticQueryMode = "deterministic"
+    agentic_iteration_retriever_ids: tuple[str, ...] = ()
+    agentic_max_total_latency_ms: Optional[float] = None
 
     # Native hybrid (BM25 + dense via store)
     native_hybrid_enabled: bool = True
@@ -87,9 +114,21 @@ class RagProfile:
 
     # Governance / ops
     embedding_model_version: Optional[str] = None
+    embedding_version_warn_on_ingest: bool = True
+    embedding_version_filter_on_retrieve: bool = False
     max_context_chars: int = 4000
 
     extras: dict[str, str] = field(default_factory=dict)
+
+    def uses_hierarchical_index(self) -> bool:
+        if self.hierarchical_index_enabled:
+            return True
+        retriever_ids = {
+            self.retriever_id,
+            self.fast_retriever_id,
+            self.deep_retriever_id,
+        }
+        return "hierarchical" in retriever_ids
 
     def effective_retriever(self, *, route_tier: str) -> str:
         if route_tier == "fast":
@@ -97,8 +136,75 @@ class RagProfile:
         if route_tier == "deep":
             if self.graph_rag_enabled:
                 return "graph_rag"
+            if self.query_expansion != "off":
+                return "multiquery"
             return self.deep_retriever_id
         return self.retriever_id
+
+
+def production_rag_profile() -> RagProfile:
+    """
+    Harness / lab GraphRAG preset (AUDIT-IDEAL-14.1).
+
+    Uses **in-memory** graph store — suitable for gate tests and lab hosts only.
+    Tier-3 product hosts MUST use ``production_graph_rag_profile()`` with
+    ``IntegrationProfile.graph_store=neo4j`` (M-RAG.33).
+    """
+    return RagProfile(
+        retriever_id="hybrid",
+        deep_retriever_id="fusion",
+        graph_rag_enabled=True,
+        graph_rag_hops=1,
+        graph_indexer_mode="heuristic",
+        graph_store_backend=HARNESS_GRAPH_STORE_BACKEND,
+        enable_rerank=True,
+        route_mode="auto",
+    )
+
+
+def production_graph_rag_profile() -> RagProfile:
+    """
+    Tier-3 GraphRAG production preset — durable ``neo4j`` graph backend required.
+
+    Pair with ``IntegrationProfile.graph_store`` slug ``neo4j`` and
+    ``create_rag_graph_store(profile=..., integration_graph_store=...)``.
+    """
+    return RagProfile(
+        retriever_id="hybrid",
+        deep_retriever_id="fusion",
+        graph_rag_enabled=True,
+        graph_rag_hops=1,
+        graph_indexer_mode="heuristic",
+        graph_store_backend=PRODUCTION_GRAPH_STORE_BACKEND,
+        enable_rerank=True,
+        route_mode="auto",
+    )
+
+
+def is_harness_graph_rag_profile(profile: RagProfile) -> bool:
+    return (
+        profile.graph_rag_enabled
+        and profile.graph_store_backend == HARNESS_GRAPH_STORE_BACKEND
+    )
+
+
+def validate_graph_rag_production_wiring(
+    profile: RagProfile,
+    *,
+    graph_store_slug: str | None,
+) -> str | None:
+    """
+    Return an error reason when GraphRAG is enabled on a product host without neo4j.
+
+    ``None`` means wiring is valid or GraphRAG is disabled.
+    """
+    if not profile.graph_rag_enabled:
+        return None
+    if profile.graph_store_backend != PRODUCTION_GRAPH_STORE_BACKEND:
+        return "graph_store_backend_must_be_neo4j"
+    if graph_store_slug is not None and graph_store_slug != PRODUCTION_GRAPH_STORE_BACKEND:
+        return f"integration_graph_store_must_be_neo4j:{graph_store_slug}"
+    return None
 
 
 def rag_profile_from_env() -> RagProfile:
@@ -147,12 +253,25 @@ def rag_profile_from_env() -> RagProfile:
         score_threshold=score_threshold,
         route_mode=route_mode,
         deep_query_min_words=_env_int("INTERGRAX_RAG_DEEP_QUERY_MIN_WORDS", 12),
+        llm_route_enabled=_env_bool("INTERGRAX_RAG_LLM_ROUTE_ENABLED", False),
         chunking_strategy_id=os.getenv("INTERGRAX_RAG_CHUNKING_STRATEGY", "langchain_recursive").strip()
         or "langchain_recursive",
+        hierarchical_index_enabled=_env_bool("INTERGRAX_RAG_HIERARCHICAL_INDEX", False),
+        sync_ingest_max_bytes=_env_int("INTERGRAX_RAG_SYNC_INGEST_MAX_BYTES", 50_000_000),
+        semantic_chunking_max_chars=_env_int(
+            "INTERGRAX_RAG_SEMANTIC_CHUNKING_MAX_CHARS", 100_000
+        ),
+        async_ingest_workflow_id=os.getenv("INTERGRAX_RAG_ASYNC_INGEST_WORKFLOW_ID", "rag-ingest").strip()
+        or "rag-ingest",
         document_parser_slug=parser_slug,
         contextual_enrich=contextual,
         query_expansion=query_expansion,
         embedding_model_version=os.getenv("INTERGRAX_RAG_EMBEDDING_MODEL_VERSION", "").strip() or None,
+        embedding_version_warn_on_ingest=_env_bool("INTERGRAX_RAG_EMBEDDING_VERSION_WARN_INGEST", True),
+        embedding_version_filter_on_retrieve=_env_bool(
+            "INTERGRAX_RAG_EMBEDDING_VERSION_FILTER_RETRIEVE",
+            False,
+        ),
         max_context_chars=_env_int("INTERGRAX_RAG_MAX_CONTEXT_CHARS", 4000),
         agentic_enabled=_env_bool("INTERGRAX_RAG_AGENTIC_ENABLED", False),
         agentic_max_iterations=_env_int("INTERGRAX_RAG_AGENTIC_MAX_ITERATIONS", 3),
@@ -168,6 +287,10 @@ def rag_profile_from_env() -> RagProfile:
         sparse_encoder=os.getenv("INTERGRAX_RAG_SPARSE_ENCODER", "bm25_hash").strip().lower()
         or "bm25_hash",
         agentic_query_mode=agentic_query_mode,
+        agentic_iteration_retriever_ids=_env_csv_tuple("INTERGRAX_RAG_AGENTIC_ITERATION_RETRIEVERS"),
+        agentic_max_total_latency_ms=_env_optional_float(
+            "INTERGRAX_RAG_AGENTIC_MAX_TOTAL_LATENCY_MS"
+        ),
         weaviate_native_hybrid=_env_bool("INTERGRAX_RAG_WEAVIATE_NATIVE_HYBRID", True),
         extras={
             "metrics_enabled": "true"

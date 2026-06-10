@@ -36,7 +36,9 @@ def build_application_tool_wiring(
     reranker_manager: Any | None = None,
     rag_profile: Any | None = None,
     retrieval_service: Any | None = None,
+    toc_vectorstore_manager: Any | None = None,
     sandbox_session: Any | None = None,
+    security_profile: Any | None = None,
     extras: dict[str, Any] | None = None,
 ) -> ApplicationToolWiring:
     """
@@ -103,6 +105,8 @@ def build_application_tool_wiring(
         reranker_manager=ctx.reranker_manager or reranker_manager,
         rag_profile=ctx.rag_profile or rag_profile,
         retrieval_service=ctx.retrieval_service or retrieval_service,
+        toc_vectorstore_manager=toc_vectorstore_manager or ctx.toc_vectorstore_manager,
+        security_profile=security_profile or ctx.security_profile,
         websearch_executor=ctx.websearch_executor or websearch_executor,
         sandbox_session=ctx.sandbox_session or sandbox_session,
         security_scanner=ctx.security_scanner,

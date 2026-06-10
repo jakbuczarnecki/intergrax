@@ -5,6 +5,7 @@
 **Plan (1:1):** [`plan/MODALITY.md`](../plan/MODALITY.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 29  
+**Audit instruction:** [`guides/audit/MODALITY.md`](../guides/audit/MODALITY.md)  
 ---
 
 ## Why this document exists

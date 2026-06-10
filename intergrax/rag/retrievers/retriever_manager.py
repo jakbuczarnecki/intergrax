@@ -11,6 +11,7 @@ from intergrax.rag.retrievers.contracts.base_retriever import (
     RetrieverQuery,
 )
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
+from intergrax.rag.retrievers.engine.retriever_execution import RetrieverExecutionMetadata
 from intergrax.rag.retrievers.pipeline.retriever_pipeline import RetrieverPipeline
 
 
@@ -30,6 +31,10 @@ class RetrieverManager(BaseRetrieverManager):
     ) -> None:
 
         self._pipeline = pipeline
+
+    @property
+    def last_execution(self) -> RetrieverExecutionMetadata | None:
+        return self._pipeline.last_execution
 
     def retrieve(
         self,

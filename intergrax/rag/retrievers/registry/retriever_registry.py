@@ -57,3 +57,6 @@ class RetrieverRegistry:
             raise RuntimeError("No retrievers registered.")
 
         return next(iter(self._retrievers.keys()))
+
+    def list_names(self) -> list[str]:
+        return list(self._retrievers.keys())

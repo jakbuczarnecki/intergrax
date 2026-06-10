@@ -38,6 +38,14 @@ BUILTIN_AGENTS: dict[str, tuple[ScaffoldAgentSpec, ...]] = {
             ("problem_radar.scan",),
         ),
     ),
+    "vendor_discovery": (
+        ScaffoldAgentSpec(
+            "vendor_discovery",
+            "vendor_discovery.vendor_discovery_agent",
+            "VendorDiscoveryAgent",
+            ("vendor_discovery.search",),
+        ),
+    ),
 }
 
 

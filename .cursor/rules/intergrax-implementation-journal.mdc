@@ -1,0 +1,50 @@
+---
+description: Persist completed implementation episodes to docs/guides/implementation-journal/
+alwaysApply: true
+---
+
+# Intergrax — Implementation Journal
+
+After every **completed implementation iteration** (Tier-0 `intergrax/`, Tier-1 `intergrax/runtime/`, Tier-2 `agents/`, Tier-3 `applications/`, shared `intergrax/applications/_shared/`), create a journal entry. Addition to chat summary — not a replacement for plan or architecture updates.
+
+**Canon:** [`docs/guides/implementation-journal/README.md`](docs/guides/implementation-journal/README.md)  
+**Scaffold:** [`docs/guides/implementation-journal/entries/_TEMPLATE.md`](docs/guides/implementation-journal/entries/_TEMPLATE.md)
+
+## When to write
+
+Write when iteration is **complete** per `intergrax-iteration.mdc` (including journal in Completion criteria).
+
+**Skip:** brainstorming only, typos/formatting, audit-only with no delivery, operator says **no journal** (state skip rationale in chat).
+
+## Required actions
+
+1. Copy `_TEMPLATE.md` → `entries/YYYY-MM-DD-<scope>-<slug>.md`.
+2. **English only** in the journal file.
+3. Frontmatter: `id`, `date`, `tiers` (YAML list), `scope`, `plan_ref` (YAML list of formal IDs), `status: completed`, `commit`, `adr`.
+4. Fill all sections; Operator request = **paraphrase**, not verbatim transcript.
+5. **Prepend** row to [`INDEX.md`](docs/guides/implementation-journal/INDEX.md) (newest first).
+6. Chat iteration summary: **Journal entry:** `entries/<filename>.md`.
+7. After the operator commits: set `commit:` in the entry frontmatter to the short hash (replace `pending`).
+
+## ID assignment
+
+`IJ-YYYY-MM-DD-NNN` — `NNN` = max suffix for that date in INDEX + 1 (zero-padded, e.g. `008`).
+
+## Scope → traceability
+
+| Path prefix | `tiers` | Link |
+|-------------|---------|------|
+| `intergrax/` (not `runtime/`) | `tier-0` | `docs/architecture/<DOMAIN>.md` + `docs/plan/<DOMAIN>.md` |
+| `intergrax/runtime/` | `tier-1` | Same domain pair |
+| `agents/<slug>/` | `tier-2` | `agents/<slug>/ARCHITECTURE.md`; `agents/<slug>/adr/` if ADR |
+| `applications/<pkg>/` | `tier-3` | `applications/<pkg>/ARCHITECTURE.md` |
+| `intergrax/applications/_shared/` | `tier-3` | Link shared module + consuming host(s) |
+
+Multi-tier PR: `tiers: [tier-2, tier-3]` — one entry.
+
+## Content rules
+
+- Link plan rows, GAP-*, AUDIT-IDEAL-*, ADRs — **no** plan table duplication.
+- `plan_ref`: formal IDs only — row IDs (`M-RAG.23`, `TOOL-ENG-4`), `AUDIT-IDEAL-X.Y`, or named plan phases (`FAUDIT-32`, `M-RAG-DEPTH`); never free-text sentences.
+- `project impact` = capability gained, not file dump.
+- Run `python scripts/check_implementation_journal.py` before marking iteration complete.

@@ -132,8 +132,10 @@ def wire_application_environment(
         reranker_manager=rag_stack.reranker_manager if rag_stack is not None else None,
         rag_profile=rag_stack.profile if rag_stack is not None else None,
         retrieval_service=rag_stack.retrieval_service if rag_stack is not None else None,
+        toc_vectorstore_manager=rag_stack.toc_vectorstore_manager if rag_stack is not None else None,
         sandbox_session=sandbox_session or hosted_session,
         websearch_executor=websearch_executor,
+        security_profile=env.security_profile,
     )
     skill_wiring = build_application_skill_wiring(env.skill_profile)
     policy_bundle = wire_policy_bundle(env)

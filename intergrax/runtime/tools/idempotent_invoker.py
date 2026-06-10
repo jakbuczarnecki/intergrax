@@ -16,6 +16,7 @@ from intergrax.contracts.idempotency_store import (
     InvocationStatus,
 )
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.execution_models import (
     ToolExecutionRequest,
     ToolExecutionResult,
@@ -37,6 +38,10 @@ class IdempotentToolInvoker:
     ) -> None:
         self._base_invoker = base_invoker
         self._store = idempotency_store
+
+    @property
+    def registry(self) -> ToolRegistry:
+        return self._base_invoker.registry
 
     def invoke(
         self,

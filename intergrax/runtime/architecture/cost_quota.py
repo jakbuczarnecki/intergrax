@@ -13,6 +13,9 @@ class QuotaResourceType(str, Enum):
     TOKENS = "tokens"
     TOOL_CALLS = "tool_calls"
     RUNTIME_SECONDS = "runtime_seconds"
+    CPU_SECONDS = "cpu_seconds"
+    MEMORY_MB = "memory_mb"
+    CONCURRENT_RUNS = "concurrent_runs"
 
 
 class QuotaEnforcementAction(str, Enum):

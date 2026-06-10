@@ -5,6 +5,7 @@
 **Plan (1:1):** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 28  
+**Audit instruction:** [`guides/audit/TIER3_APPLICATION_ENVIRONMENT.md`](../guides/audit/TIER3_APPLICATION_ENVIRONMENT.md)  
 ---
 
 ---

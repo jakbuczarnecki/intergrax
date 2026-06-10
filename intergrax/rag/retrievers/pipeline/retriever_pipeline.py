@@ -12,6 +12,7 @@ from intergrax.rag.retrievers.contracts.base_retriever import (
     RetrieverQuery,
 )
 from intergrax.rag.retrievers.engine.retriever_engine import RetrieverEngine
+from intergrax.rag.retrievers.engine.retriever_execution import RetrieverExecutionMetadata
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 
 
@@ -34,6 +35,10 @@ class RetrieverPipeline:
     ) -> None:
         self._engine = engine
         self._embedding_manager = embedding_manager
+
+    @property
+    def last_execution(self) -> RetrieverExecutionMetadata | None:
+        return self._engine.last_execution
 
     def retrieve(
         self,

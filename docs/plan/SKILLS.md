@@ -18,8 +18,8 @@
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
-| AUDIT-IDEAL-12.1 | §12 Skills | LangGraph-compatible skill pack import path | P2 | Planned |
-| AUDIT-IDEAL-12.2 | §12 Skills | Dynamic skill selection L4 hook (AHI) | P2 | Planned |
+| AUDIT-IDEAL-12.1 | §12 Skills | LangGraph-compatible skill pack import path | P2 | **Done** |
+| AUDIT-IDEAL-12.2 | §12 Skills | Dynamic skill selection L4 hook (AHI) | P2 | **Done** |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 

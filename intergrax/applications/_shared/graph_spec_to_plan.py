@@ -7,6 +7,10 @@ from __future__ import annotations
 from collections import defaultdict
 from uuid import uuid4
 
+from intergrax.applications._shared.delegation_budget_wiring import (
+    DelegationBudgetPolicy,
+    apply_delegation_budget_to_subtask,
+)
 from intergrax.applications.contracts.graph_spec import (
     ApplicationGraphSpec,
     GraphEdgeKind,
@@ -26,6 +30,7 @@ def application_graph_spec_to_nexus_plan(
     task: Task,
     *,
     classification: str,
+    delegation_budget: DelegationBudgetPolicy | None = None,
 ) -> NexusPlan:
     """
     Map declarative application topology to a ``NexusPlan``.
@@ -50,11 +55,14 @@ def application_graph_spec_to_nexus_plan(
         elif edge.kind is GraphEdgeKind.DELEGATES_TO:
             if source_step not in depends_on[target_step]:
                 depends_on[target_step].append(source_step)
-            child_delegations[target_step] = SubtaskContract(
+            contract = SubtaskContract(
                 child_agent_id=edge.target_agent_id,
                 objective=f"delegated subtask from {edge.source_agent_id}",
                 inherit_tool_policy=False,
             )
+            if delegation_budget is not None:
+                contract = apply_delegation_budget_to_subtask(contract, delegation_budget)
+            child_delegations[target_step] = contract
 
     steps: list[PlanStep] = []
     for node in spec.nodes:
@@ -80,6 +88,10 @@ def application_graph_spec_to_nexus_plan(
     if task.context.capability:
         criteria.append(f"capability:{task.context.capability}")
 
+    plan_metadata: dict[str, str] = {}
+    if spec.evaluator_loop is not None:
+        plan_metadata["evaluator_loop.v1"] = spec.evaluator_loop.model_dump_json()
+
     return NexusPlan(
         plan_id=f"graph_plan_{uuid4().hex}",
         task_id=task.task_id,
@@ -87,6 +99,7 @@ def application_graph_spec_to_nexus_plan(
         steps=steps,
         validation_criteria=criteria,
         graph_retry_on_error=spec.retry_on_error,
+        plan_metadata=plan_metadata,
     )
 
 

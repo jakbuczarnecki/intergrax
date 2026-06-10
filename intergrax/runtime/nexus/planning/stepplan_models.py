@@ -205,6 +205,7 @@ class ToolsParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     input: Dict[str, Any] = Field(default_factory=dict)
+    allowed_tool_ids: List[str] = Field(default_factory=list)
 
 
 class SynthesizeDraftParams(BaseModel):
@@ -412,6 +413,7 @@ class EngineHints:
     enable_ltm: bool = False
     enable_rag: bool = False
     enable_tools: bool = False
+    planner_tool_ids: tuple[str, ...] = ()
 
     # Routing decision from EnginePlanner
     intent: Optional[PlanIntent] = None

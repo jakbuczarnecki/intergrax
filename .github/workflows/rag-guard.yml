@@ -31,9 +31,10 @@ jobs:
 
       - run: uv sync --extra dev-ci --frozen
 
-      - name: RAG unit + golden regression
+      - name: RAG unit + golden regression + load/soak SLO
         run: >-
           uv run pytest
           tests/unit/rag/
           tests/unit/tools/providers/rag/
+          -m gate
           -q --tb=line

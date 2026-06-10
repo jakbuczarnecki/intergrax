@@ -16,14 +16,14 @@
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
-| AUDIT-IDEAL-26.1 | §26 CI | Architecture-boundary chaos job in weekly CI | P2 | Planned |
-| AUDIT-IDEAL-26.2 | §26 CI | Simulation tests for multi-agent contention | P2 | Planned |
-| AUDIT-IDEAL-27.1 | §27 DX | Trace Explorer interactive UI (beyond lab APIs) | P2 | Planned |
+| AUDIT-IDEAL-26.1 | §26 CI | Architecture-boundary chaos job in weekly CI | P2 | **Done** |
+| AUDIT-IDEAL-26.2 | §26 CI | Simulation tests for multi-agent contention | P2 | **Done** |
+| AUDIT-IDEAL-27.1 | §27 DX | Trace Explorer interactive UI (beyond lab APIs) | P2 | **Done** |
 | AUDIT-IDEAL-27.2 | §27 DX | Replay environment HTTP API on product hosts | P1 | Planned |
-| AUDIT-IDEAL-27.3 | §27 DX | Agent simulator on product hosts (not CLI-only) | P2 | Planned |
-| AUDIT-IDEAL-27.4 | §27 DX | Visual builder / graph editor (Phase 2 UI) | P3 | Planned |
-| AUDIT-IDEAL-30.2 | §30 Ops | Real deploy SLO window evidence (shared OBSERVABILITY) | P1 | Planned |
-| AUDIT-IDEAL-30.3 | §30 Ops | On-call ownership model for production components | P2 | Planned |
+| AUDIT-IDEAL-27.3 | §27 DX | Agent simulator on product hosts (not CLI-only) | P2 | **Done** |
+| AUDIT-IDEAL-27.4 | §27 DX | Visual builder / graph editor (Phase 2 UI) | P3 | **Done** |
+| AUDIT-IDEAL-30.2 | §30 Ops | Real deploy SLO window evidence (shared OBSERVABILITY) | P1 | **Done** |
+| AUDIT-IDEAL-30.3 | §30 Ops | On-call ownership model for production components | P2 | **Done** |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 
@@ -476,7 +476,7 @@ Paydown Wave P3 (optional polish):
 | **2j — Orchestration closeout (ORCH)** | Wire `planner_kind`/`classifier_kind`, `ApplicationGraphSpec`→plan, graph concurrency cap — **no** business agents | **Done** (2026-06-05) | [Phase ORCH](#phase-orch--orchestration-control-plane-closeout) · **§6.1b** · **§6.2bb** |
 | **2k — Tools/skills closeout (TS)** | Catalog→`RuntimeConfig` bridge, harness LLM wiring, `SkillResolverProtocol`, Appendix J — **no** business agents | **Done** (2026-06-02) | [Phase TS](#phase-ts--tools--skills-control-plane-closeout) · **§6.1c** · **§6.2bc** |
 | **2l — Integration closeout (INT)** | `integration_runtime_bridge`, bootstrap health probes, Appendix K — **no** business agents | **Done** (2026-06-02) | [Phase INT](#phase-int--integration-control-plane-closeout) · **§6.1d** · **§6.2bd** |
-| **2m — RAG closeout (RAG)** | `rag_runtime_bridge`, RAG stack on environment wire — **no** business agents | **Done** (2026-06-02) | [Phase RAG](#phase-rag--rag-retrieval-control-plane-closeout) · **§6.1e** · **§6.2be** |
+| **2m — RAG closeout (RAG)** | `rag_runtime_bridge`, RAG stack on environment wire — **no** business agents | **Done** (2026-06-02) | [Phase RAG](plan/RAG.md) · **§6.1e** · **§6.2be** |
 | **2n — Context engineering closeout (CTX)** | `context_runtime_bridge`, `context_wiring`, Nexus `ContextManager` wire — **no** business agents | **Done** (2026-06-02) | [Phase CTX](#phase-ctx--context-engineering-control-plane-closeout) · **§6.1f** · **§6.2bf** |
 | **2o — Legacy tool plan closeout (LEG)** | `tool_ids` canonical path; gateway/engine planner migration — **no** business agents | **Done** (2026-06-02) | [Phase LEG](#phase-leg--legacy-tool-plan-boolean-closeout) · **§6.1h** |
 | **2p — Prompt registry closeout (PE)** | `PromptProfile`, `prompt_runtime_bridge`, `prompt_wiring`, Appendix M — **no** business agents | **Done** (2026-06-02) | [Phase PE](#phase-pe--prompt-registry-control-plane-closeout) · **§6.1i** |

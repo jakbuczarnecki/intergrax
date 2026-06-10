@@ -69,6 +69,7 @@ from intergrax.tools.providers.platform.service import (
     PLATFORM_LIST_WORKFLOW_RUNS_TOOL_ID,
     PLATFORM_PUT_SECRET_TOOL_ID,
 )
+from intergrax.tools.providers.rag.ingest_job_service import RAG_SCHEDULE_INGEST_JOB_TOOL_ID
 from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
 from intergrax.tools.providers.rag.rerank_service import RAG_RERANK_TOOL_ID
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID
@@ -117,6 +118,7 @@ _CATEGORY_TOOL_IDS: dict[IntegrationCategory, tuple[str, ...]] = {
         WORKFLOW_FETCH_LOGS_TOOL_ID,
         WORKFLOW_LIST_RUNS_TOOL_ID,
         WORKFLOW_CANCEL_RUN_TOOL_ID,
+        RAG_SCHEDULE_INGEST_JOB_TOOL_ID,
     ),
     IntegrationCategory.WIKI_KNOWLEDGE: (
         KNOWLEDGE_GET_PAGE_TOOL_ID,

@@ -77,8 +77,10 @@ ANALIZA
   → AKTUALIZACJA DOKUMENTACJI (strategia → kanon → plan)
   → IMPLEMENTACJA
   → WERYFIKACJA (gate + getattr audit where harness touched)
-  → WNIOSKI
+  → WNIOSKI (+ implementation journal entry when a deliverable closed)
 ```
+
+**WNIOSKI:** For completed implementations, record an English episode in [`guides/implementation-journal/`](implementation-journal/README.md) (prepend to `INDEX.md`; operator intent, `plan_ref`, impact) — narrative layer only; plan rows remain the status source of truth.
 
 Think as a **Harness AI architect** first, then as an engineer.
 
@@ -108,7 +110,7 @@ Implementation is not the goal. Correct architecture is not the goal.
 | Tiers, Nexus, UAEP, Harness terms | `intergrax_runtime_architecture.md` (hub) + `architecture/` (§5.3 Harness terms = `architecture/PLATFORM_FOUNDATION.md`) |
 | Phase status, deliverables, gates | `intergrax_runtime_architecture.md` |
 | Agent author workflow | `guides/AGENT_CREATION_GUIDE.md` |
-| Integration / tool / skill catalogs | `architecture/INTEGRATIONS.md` / `architecture/TOOLS.md` / `architecture/SKILLS.md` |
+| Integration / RAG / tool / skill catalogs | `architecture/INTEGRATIONS.md` / `architecture/RAG.md` / `architecture/TOOLS.md` / `architecture/SKILLS.md` |
 
 After each merged harness PR: `uv run pytest -m gate -q` green; `python scripts/check_harness_no_getattr.py`; sync plan §0.5 gate count.
 

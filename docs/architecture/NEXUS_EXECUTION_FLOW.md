@@ -5,6 +5,7 @@
 **Plan (1:1):** [`plan/NEXUS_EXECUTION_FLOW.md`](../plan/NEXUS_EXECUTION_FLOW.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 8, 9, 10 (flow narrative) · cognition depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §7–§10  
+**Audit instruction:** [`guides/audit/NEXUS_EXECUTION_FLOW.md`](../guides/audit/NEXUS_EXECUTION_FLOW.md)  
 ---
 
 ## 1. Purpose and boundaries

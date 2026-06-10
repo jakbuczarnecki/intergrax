@@ -223,6 +223,7 @@ class StepPlanStepFactory:
         self,
         *,
         tool_input: Dict[str, Any],
+        allowed_tool_ids: Optional[List[str]] = None,
         step_id: StepId = StepId.TOOLS,
         depends_on: Optional[List[StepId]] = None,
         max_tool_calls: int = 1,
@@ -250,6 +251,7 @@ class StepPlanStepFactory:
             params={
                 # Keep schema stable: executor/tool planner will interpret this payload.
                 "input": tool_input or {},
+                "allowed_tool_ids": list(allowed_tool_ids or []),
             },
             expected_output_type=ExpectedOutputType.TOOLS_RESULTS,
             rationale_type=RationaleType.RETRIEVE_TOOLS,

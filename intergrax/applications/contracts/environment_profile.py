@@ -27,6 +27,7 @@ from intergrax.tools.registry.profile import ToolProfile
 from intergrax.applications.contracts.business_outcome_webhook import BusinessOutcomeWebhookConfig
 from intergrax.runtime.adaptive.contracts import UtilityWeights
 from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
+from intergrax.runtime.policy.compliance_profiles import ComplianceDomainClass
 
 
 class IdentityProfile(BaseModel):
@@ -39,6 +40,8 @@ class IdentityProfile(BaseModel):
     tenant_required: bool = False
     role_claims_header: str | None = None
     service_identities: dict[str, str] = Field(default_factory=dict)
+    critical_action_signing_enabled: bool = False
+    critical_action_signing_secret_env: str = "INTERGRAX_CRITICAL_ACTION_SIGNING_KEY"
 
 
 class PolicyRulesProfile(BaseModel):
@@ -59,6 +62,10 @@ class ApplicationSecurityProfile(BaseModel):
     tool_injection_defense_enabled: bool = True
     retrieval_poisoning_defense_enabled: bool = True
     tenant_security_verify_enabled: bool = True
+    immutable_audit_trail_enabled: bool = False
+    audit_trail_regions: list[str] = Field(
+        default_factory=lambda: ["eu-central-1", "us-east-1"],
+    )
 
 
 class GuardrailProfile(BaseModel):
@@ -94,6 +101,7 @@ class PromptProfile(BaseModel):
 
     catalog_path: Path | None = None
     load_on_startup: bool = True
+    approval_required: bool = False
 
 
 class ContextProfile(BaseModel):
@@ -108,6 +116,10 @@ class ContextProfile(BaseModel):
     decision: ContextDecisionProfile = Field(default_factory=ContextDecisionProfile)
     enable_rag: bool = True
     enable_websearch: bool = True
+    drift_monitoring_enabled: bool = False
+    drift_alert_threshold: float = Field(default=0.35, ge=0.0, le=2.0)
+    semantic_compression_enabled: bool = False
+    default_history_compression: Literal["truncate_oldest", "summarize_oldest", "hybrid"] = "truncate_oldest"
 
 
 class MemoryProfile(BaseModel):
@@ -122,6 +134,7 @@ class MemoryProfile(BaseModel):
     retention_days: int | None = Field(default=None, ge=1)
     scope_boundary: str = "tenant"
     consolidation_mode: Literal["manual", "scheduled", "auto"] = "manual"
+    enable_entity_graph_memory: bool = False
 
 
 class ReliabilityProfile(BaseModel):
@@ -136,6 +149,8 @@ class ReliabilityProfile(BaseModel):
     resilience_policy: ResiliencePolicy = Field(default_factory=default_resilience_policy)
     default_autonomy_level: AutonomyLevel = AutonomyLevel.ASK
     tenant_autonomy_ceiling: AutonomyLevel | None = None
+    compensation_enabled: bool = False
+    partial_results_enabled: bool = False
 
 
 class ObservabilityProfile(BaseModel):
@@ -147,6 +162,9 @@ class ObservabilityProfile(BaseModel):
     otel_enabled: bool = False
     metrics_plugins_enabled: bool = True
     debug_surface_override: bool | None = None
+    causal_diagnostics_enabled: bool = False
+    health_dashboard_enabled: bool = False
+    unified_observability_dashboard_enabled: bool = False
 
 
 class CostProfile(BaseModel):
@@ -161,6 +179,18 @@ class CostProfile(BaseModel):
     max_tool_calls: int | None = Field(default=None, ge=1)
     max_planner_iterations: int | None = Field(default=None, ge=1)
     quota_degrade_threshold_ratio: float = Field(default=0.90, ge=0.0, le=1.0)
+    forecasting_enabled: bool = False
+    optimization_recommendations_enabled: bool = False
+    tenant_fairness_quotas_enabled: bool = False
+
+
+class ComplianceProfile(BaseModel):
+    """Regulated-domain compliance template selection (AUDIT-IDEAL-5.2)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = False
+    domain_class: ComplianceDomainClass = ComplianceDomainClass.REGULATED
 
 
 class EvaluationProfile(BaseModel):
@@ -228,6 +258,27 @@ class AdaptiveProfile(BaseModel):
     business_outcome_webhook: BusinessOutcomeWebhookConfig | None = None
     feature_flag_slug: str | None = None
     rollout_flag_key: str = "harness.adaptive.recommend"
+    live_model_routing_enabled: bool = False
+    capability_marketplace_enabled: bool = False
+
+
+class GovernanceProfile(BaseModel):
+    """Platform governance cadence for Tier-3 hosts (AUDIT-IDEAL-1.1 / 1.2)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    quarterly_strategy_review_enabled: bool = False
+    architecture_health_metrics_enabled: bool = False
+    governance_dashboard_enabled: bool = False
+
+
+class IntegrationGovernanceProfile(BaseModel):
+    """Integration marketplace and catalog governance (AUDIT-IDEAL-13.1 / 13.2)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    marketplace_catalog_enabled: bool = False
+    catalog_hot_reload_enabled: bool = False
 
 
 class ScalingProfile(BaseModel):
@@ -236,6 +287,18 @@ class ScalingProfile(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     policy: ScalingPolicy = Field(default_factory=ScalingPolicy)
+    production_adapters_enabled: bool = False
+
+
+class HostDeploymentProfile(BaseModel):
+    """Product host deployment modes (AUDIT-IDEAL-28.3 / 28.4)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    lkw_hybrid_daemon_enabled: bool = False
+    lkw_daemon_bind_host: str = "127.0.0.1"
+    lkw_daemon_port: int = Field(default=8020, ge=1, le=65535)
+    business_agents_deploy_enabled: bool = False
 
 
 class OrchestrationProfile(BaseModel):
@@ -303,12 +366,18 @@ class ApplicationEnvironmentProfile(BaseModel):
     reliability_profile: ReliabilityProfile = Field(default_factory=ReliabilityProfile)
     observability_profile: ObservabilityProfile = Field(default_factory=ObservabilityProfile)
     cost_profile: CostProfile = Field(default_factory=CostProfile)
+    compliance_profile: ComplianceProfile = Field(default_factory=ComplianceProfile)
     evaluation_profile: EvaluationProfile = Field(default_factory=EvaluationProfile)
     critic_profile: CriticProfile = Field(default_factory=CriticProfile)
     adaptive_profile: AdaptiveProfile = Field(default_factory=AdaptiveProfile)
     orchestration_profile: OrchestrationProfile = Field(default_factory=OrchestrationProfile)
     reasoning_profile: ReasoningProfile = Field(default_factory=ReasoningProfile)
     scaling_profile: ScalingProfile = Field(default_factory=ScalingProfile)
+    governance_profile: GovernanceProfile = Field(default_factory=GovernanceProfile)
+    host_deployment_profile: HostDeploymentProfile = Field(default_factory=HostDeploymentProfile)
+    integration_governance_profile: IntegrationGovernanceProfile = Field(
+        default_factory=IntegrationGovernanceProfile
+    )
     identity_profile: IdentityProfile = Field(default_factory=IdentityProfile)
     security_profile: ApplicationSecurityProfile = Field(
         default_factory=ApplicationSecurityProfile
@@ -321,6 +390,8 @@ class ApplicationEnvironmentProfile(BaseModel):
     sandbox: SandboxProfile | None = None
     features: ApplicationFeatures = Field(default_factory=ApplicationFeatures.lab_defaults)
     domain_policy_fragments: dict[str, Any] = Field(default_factory=dict)
+    tool_selection_mode: str = "static"
+    tool_selection_top_k: int = Field(default=20, ge=1, le=100)
 
     @classmethod
     def harness_memory_profile(cls) -> MemoryProfile:
@@ -374,6 +445,7 @@ class ApplicationEnvironmentProfile(BaseModel):
             integration_profile=IntegrationProfile.lab_harness_preset(),
             tool_profile=ToolProfile(enabled=tool_enabled),
             skill_profile=lab_skill_profile(),
+            tool_selection_mode="skill_pack",
             modality_profile=lab_default_modality_profile(),
             llm_profile=LLMProfile.lab(),
             context_profile=ContextProfile(enable_rag=True, enable_websearch=True),
@@ -381,6 +453,7 @@ class ApplicationEnvironmentProfile(BaseModel):
             reliability_profile=ReliabilityProfile(
                 long_running_scheduler_enabled=True,
                 idempotency_enabled=True,
+                partial_results_enabled=True,
             ),
             observability_profile=ObservabilityProfile(
                 trace_sqlite_enabled=True,
@@ -560,6 +633,23 @@ class ApplicationEnvironmentProfile(BaseModel):
         )
 
     @classmethod
+    def _product_integration_profile(cls) -> IntegrationProfile:
+        from intergrax.integrations.registry.presets import POSTGRESQL
+
+        return IntegrationProfile(
+            relational_store=POSTGRESQL,
+            options={"postgresql": {"tenant_schema": "tenant_default"}},
+        )
+
+    @classmethod
+    def _product_modality_profile(cls) -> ModalityProfile:
+        from intergrax.applications._shared.modality_product_worker_wiring import (
+            production_plane_c_modality_profile,
+        )
+
+        return production_plane_c_modality_profile()
+
+    @classmethod
     def product_defaults(
         cls,
         *,
@@ -574,17 +664,81 @@ class ApplicationEnvironmentProfile(BaseModel):
         return cls(
             profile_id=profile_id,
             application_profile=ApplicationProfile.PRODUCT,
-            integration_profile=IntegrationProfile(),
+            integration_profile=cls._product_integration_profile(),
             tool_profile=ToolProfile(enabled=tools) if tools else ToolProfile(),
             skill_profile=SkillProfile(enabled_bundles=bundles) if bundles else SkillProfile(),
             llm_profile=None,
-            context_profile=ContextProfile(enable_rag=False, enable_websearch=False),
-            reliability_profile=ReliabilityProfile(long_running_scheduler_enabled=False),
+            context_profile=ContextProfile(
+                enable_rag=False,
+                enable_websearch=False,
+                drift_monitoring_enabled=True,
+                semantic_compression_enabled=True,
+                default_history_compression="summarize_oldest",
+            ),
+            memory_profile=MemoryProfile(enable_entity_graph_memory=True),
+            reliability_profile=ReliabilityProfile(
+                long_running_scheduler_enabled=True,
+                compensation_enabled=True,
+                partial_results_enabled=True,
+            ),
             observability_profile=ObservabilityProfile(
                 trace_sqlite_enabled=True,
                 debug_surface_override=False,
+                causal_diagnostics_enabled=True,
+                health_dashboard_enabled=True,
+                unified_observability_dashboard_enabled=True,
             ),
-            cost_profile=CostProfile(max_total_tokens=32_000),
+            sandbox=SandboxProfile(enable_exec_tool=True),
+            cost_profile=CostProfile(
+                max_total_tokens=32_000,
+                max_llm_calls=32,
+                max_tool_calls=64,
+                forecasting_enabled=True,
+                optimization_recommendations_enabled=True,
+                tenant_fairness_quotas_enabled=True,
+            ),
+            compliance_profile=ComplianceProfile(enabled=True),
+            prompt_profile=PromptProfile(approval_required=True),
+            modality_profile=cls._product_modality_profile(),
+            adaptive_profile=AdaptiveProfile(
+                enabled=True,
+                mode="recommend",
+                enabled_loops=[
+                    AdaptiveLoopKind.EXECUTION_STRATEGY_TUNING,
+                    AdaptiveLoopKind.ROUTING_TUNING,
+                ],
+                live_model_routing_enabled=True,
+                capability_marketplace_enabled=True,
+            ),
+            integration_governance_profile=IntegrationGovernanceProfile(
+                marketplace_catalog_enabled=True,
+                catalog_hot_reload_enabled=True,
+            ),
+            governance_profile=GovernanceProfile(
+                quarterly_strategy_review_enabled=True,
+                architecture_health_metrics_enabled=True,
+                governance_dashboard_enabled=True,
+            ),
+            host_deployment_profile=HostDeploymentProfile(
+                business_agents_deploy_enabled=True,
+            ),
+            scaling_profile=ScalingProfile(
+                policy=ScalingPolicy(enabled=True),
+                production_adapters_enabled=True,
+            ),
+            identity_profile=IdentityProfile(
+                require_api_key=True,
+                tenant_required=True,
+                critical_action_signing_enabled=True,
+            ),
+            security_profile=ApplicationSecurityProfile(
+                prompt_defense_enabled=True,
+                tool_injection_defense_enabled=True,
+                retrieval_poisoning_defense_enabled=True,
+                tenant_security_verify_enabled=True,
+                immutable_audit_trail_enabled=True,
+                audit_trail_regions=["eu-central-1", "us-east-1"],
+            ),
             evaluation_profile=EvaluationProfile(
                 shadow_eval_enabled=False,
                 online_registry_enabled=True,

@@ -1,0 +1,83 @@
+# © Artur Czarnecki. All rights reserved.
+
+from __future__ import annotations
+
+import pytest
+
+from intergrax.applications._shared.rag_runtime_bridge import resolve_rag_profile_for_environment
+from intergrax.applications.contracts.application_host import ApplicationProfile
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+    ContextProfile,
+)
+from intergrax.integrations.core.binding import IntegrationBinding
+from intergrax.integrations.registry.bootstrap import register_default_integrations
+from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.rag.profiles.rag_profile import (
+    HARNESS_GRAPH_STORE_BACKEND,
+    PRODUCTION_GRAPH_STORE_BACKEND,
+    is_harness_graph_rag_profile,
+    production_graph_rag_profile,
+    production_rag_profile,
+    validate_graph_rag_production_wiring,
+)
+
+pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+
+@pytest.fixture(autouse=True)
+def _register_integrations() -> None:
+    register_default_integrations()
+
+
+def test_production_rag_profile_is_harness_inmemory_graph() -> None:
+    profile = production_rag_profile()
+    assert is_harness_graph_rag_profile(profile) is True
+    assert profile.graph_store_backend == HARNESS_GRAPH_STORE_BACKEND
+
+
+def test_production_graph_rag_profile_requires_neo4j_backend() -> None:
+    profile = production_graph_rag_profile()
+    assert profile.graph_rag_enabled is True
+    assert profile.graph_store_backend == PRODUCTION_GRAPH_STORE_BACKEND
+    assert is_harness_graph_rag_profile(profile) is False
+
+
+def test_validate_graph_rag_production_wiring_accepts_neo4j() -> None:
+    profile = production_graph_rag_profile()
+    assert validate_graph_rag_production_wiring(profile, graph_store_slug="neo4j") is None
+
+
+def test_validate_graph_rag_production_wiring_rejects_inmemory_backend() -> None:
+    profile = production_rag_profile()
+    reason = validate_graph_rag_production_wiring(profile, graph_store_slug="neo4j")
+    assert reason == "graph_store_backend_must_be_neo4j"
+
+
+def test_product_environment_resolves_neo4j_graph_rag_profile() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults().model_copy(
+        update={"context_profile": ContextProfile(enable_rag=True)},
+    )
+    assert env.application_profile is ApplicationProfile.PRODUCT
+
+    profile = resolve_rag_profile_for_environment(
+        env,
+        integration_profile=IntegrationProfile(
+            graph_store=IntegrationBinding.from_slug("neo4j"),
+        ),
+    )
+    assert profile is not None
+    assert profile.graph_store_backend == PRODUCTION_GRAPH_STORE_BACKEND
+
+
+def test_product_environment_rejects_mismatched_graph_store_slug() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults().model_copy(
+        update={"context_profile": ContextProfile(enable_rag=True)},
+    )
+    with pytest.raises(ValueError, match="integration_graph_store_must_be_neo4j"):
+        resolve_rag_profile_for_environment(
+            env,
+            integration_profile=IntegrationProfile(
+                graph_store=IntegrationBinding.from_slug("falkordb"),
+            ),
+        )

@@ -70,11 +70,17 @@ class ToolAccessPolicy:
                 message="Tool invocation denied: agent allowed_tools is empty.",
             )
 
+        filtered_inputs = {
+            tool_id: dict(inputs)
+            for tool_id, inputs in normalized.tool_inputs.items()
+            if tool_id in filtered_ids
+        }
         return ToolInvocationPlan(
             tool_ids=filtered_ids,
             use_rag=use_rag,
             use_websearch=use_websearch,
             use_tools=use_tools,
+            tool_inputs=filtered_inputs,
         )
 
     @staticmethod
@@ -86,11 +92,17 @@ class ToolAccessPolicy:
         """Intersect tool plan with modality plane policy (Phase W-ML.6)."""
         normalized = plan.normalized()
         filtered = filter_tool_ids_by_modality_profile(normalized.tool_ids, profile)
+        filtered_inputs = {
+            tool_id: dict(inputs)
+            for tool_id, inputs in normalized.tool_inputs.items()
+            if tool_id in filtered
+        }
         return ToolInvocationPlan(
             tool_ids=filtered,
             use_rag=normalized.use_rag and any(tool_id.startswith("rag.") for tool_id in filtered),
             use_websearch=normalized.use_websearch,
             use_tools=bool(filtered),
+            tool_inputs=filtered_inputs,
         )
 
     @staticmethod

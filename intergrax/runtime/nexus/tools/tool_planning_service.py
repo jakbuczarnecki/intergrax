@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from typing import Any, Dict, List, Optional, Union
 
 from intergrax.llm.messages import ChatMessage
@@ -14,12 +15,27 @@ from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
 from intergrax.tools.exporters.openai import to_openai_tools
 from intergrax.tools.exporters.schema import pydantic_parameters_schema
 from intergrax.tools.registry import ToolRegistry
+from intergrax.tools.registry.runtime import RegisteredTool
 from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
 from intergrax.tools.core.tool_plan_decision import ToolPlanDecision
 
 
-def _build_openai_tools_schema(tools: ToolRegistry) -> List[Dict[str, Any]]:
-    return to_openai_tools(tools)
+def _registered_tools_for_planning(
+    registry: ToolRegistry,
+    allowed_tool_ids: Sequence[str] | None,
+) -> list[RegisteredTool]:
+    if allowed_tool_ids is None:
+        return list(registry.list())
+    allowed = frozenset(allowed_tool_ids)
+    return [item for item in registry.list() if item.contract.tool_id in allowed]
+
+
+def _build_openai_tools_schema(
+    registry: ToolRegistry,
+    *,
+    allowed_tool_ids: Sequence[str] | None = None,
+) -> List[Dict[str, Any]]:
+    return to_openai_tools(_registered_tools_for_planning(registry, allowed_tool_ids))
 
 
 def _prune_messages_for_openai(messages: List[ChatMessage]) -> List[ChatMessage]:
@@ -71,6 +87,7 @@ class ToolPlanningService:
         *,
         context: Optional[str] = None,
         tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        allowed_tool_ids: Sequence[str] | None = None,
         run_id: Optional[str] = None,
     ) -> ToolPlanDecision:
         if isinstance(input_data, list):
@@ -105,8 +122,13 @@ class ToolPlanningService:
 
         calls: List[PlannedToolCall] = []
 
+        allowed = frozenset(allowed_tool_ids) if allowed_tool_ids is not None else None
+
         if self._native_tools:
-            tools_schema = _build_openai_tools_schema(self.tools)
+            tools_schema = _build_openai_tools_schema(
+                self.tools,
+                allowed_tool_ids=allowed_tool_ids,
+            )
             messages = _prune_messages_for_openai(messages)
             effective_tool_choice = tool_choice if tool_choice is not None else "auto"
 
@@ -121,6 +143,8 @@ class ToolPlanningService:
 
             for tc in result.tool_calls:
                 name = tc.name
+                if allowed is not None and name not in allowed:
+                    continue
                 args_json = tc.arguments_json or "{}"
 
                 try:
@@ -152,7 +176,7 @@ class ToolPlanningService:
                 "description": rt.contract.description,
                 "parameters": pydantic_parameters_schema(rt.contract.input_schema),
             }
-            for rt in self.tools._tools.values()
+            for rt in _registered_tools_for_planning(self.tools, allowed_tool_ids)
         ]
 
         plan_intro = ChatMessage(
@@ -186,6 +210,12 @@ class ToolPlanningService:
         if plan_obj and "call_tool" in plan_obj:
             call = plan_obj["call_tool"]
             name = call.get("name")
+            if allowed is not None and name not in allowed:
+                return ToolPlanDecision(
+                    final_answer=None,
+                    tool_plan=ToolCallPlan(calls=calls),
+                    messages=[],
+                )
             args = call.get("arguments", {}) or {}
 
             registered = self.tools.get(name)

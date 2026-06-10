@@ -7,7 +7,7 @@ from typing import Any, Dict, FrozenSet, Optional, Sequence, TYPE_CHECKING
 
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
-from intergrax.runtime.nexus.config_types import ToolChoiceMode, ToolsContextScope
+from intergrax.runtime.nexus.config_types import ToolChoiceMode, ToolSelectionMode, ToolsContextScope
 
 if TYPE_CHECKING:
     from intergrax.integrations.registry.profile import IntegrationProfile
@@ -167,6 +167,13 @@ class RuntimeConfig:
     #   - "auto": runtime may call tools if useful.
     #   - "required": runtime must use at least one tool.
     tools_mode: ToolChoiceMode = "auto"
+
+    # YamlPromptRegistry prompt id for catalog tool planner (ReasoningProfile bridge).
+    tool_planner_prompt_id: str = "tools_agent_planner"
+
+    # Planner schema narrowing before LLM tool selection (TOOL-ENG-5).
+    tool_selection_mode: ToolSelectionMode = ToolSelectionMode.STATIC
+    tool_selection_top_k: int = 20
 
     # Determines how much contextual information the tool planner receives:
     #
@@ -351,6 +358,8 @@ class RuntimeConfig:
             tool_planner=self.tool_planner,
             tools_mode=self.tools_mode,
             tools_context_scope=self.tools_context_scope,
+            tool_selection_mode=self.tool_selection_mode,
+            tool_selection_top_k=self.tool_selection_top_k,
             tool_invoker=self.tool_invoker,
             idempotency_store=self.idempotency_store,
             tool_providers=tuple(self.tool_providers),

@@ -38,7 +38,7 @@ Each **business environment** and each **business agent** maintains its own `ARC
 | Orchestration audit closeout (runtime wiring) | [Phase ORCH](plan/ORCHESTRATION.md) · **§6.1b** · Band **2j** |
 | Tools / skills audit closeout (runtime bridge) | [Phase TS](plan/TOOLS.md) · **§6.1c** · Band **2k** · `guides/AGENT_CREATION_GUIDE.md` **Appendix J** |
 | Integration audit closeout (runtime bridge + health) | [Phase INT](plan/INTEGRATIONS.md) · **§6.1d** · Band **2l** · **Appendix K** |
-| RAG audit closeout (runtime bridge) | [Phase RAG](plan/MEMORY.md) · **§6.1e** · Band **2m** · **Appendix K** §K.5 |
+| RAG audit closeout (runtime bridge) | [Phase RAG](plan/RAG.md) · **§6.1e** · Band **2m** · **Appendix K** §K.5 |
 | Context engineering closeout (runtime + Nexus wiring) | [Phase CTX](plan/MEMORY.md) · **§6.1f** · Band **2n** · **Appendix L** |
 | Prompt registry closeout (runtime + environment wiring) | [Phase PE](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) · **§6.1i** · Band **2p** · **Appendix M** |
 | Legacy module closeout (chat_router, tools_agent, chains) | [Phase CLEAN](plan/ORCHESTRATION.md) · **§6.1j** |
@@ -100,11 +100,11 @@ Each **business environment** and each **business agent** maintains its own `ARC
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
-| AUDIT-IDEAL-1.1 | §1 Strategic | Operationalize quarterly strategy review process | P2 | Planned |
-| AUDIT-IDEAL-1.2 | §1 Strategic | Architecture health metrics as live signals | P2 | Planned |
+| AUDIT-IDEAL-1.1 | §1 Strategic | Operationalize quarterly strategy review process | P2 | **Done** |
+| AUDIT-IDEAL-1.2 | §1 Strategic | Architecture health metrics as live signals | P2 | **Done** |
 | AUDIT-IDEAL-2.1 | §2 Tiers | Continuous tier-boundary gate maintenance | P3 | **Done** (gates exist) |
-| AUDIT-IDEAL-32.1 | §32 Doc gov | Living architecture debt burn-down tied to milestones | P2 | Planned |
-| AUDIT-IDEAL-32.2 | §32 Doc gov | Scorecard auto-sync on plan row change | P2 | Planned |
+| AUDIT-IDEAL-32.1 | §32 Doc gov | Living architecture debt burn-down tied to milestones | P2 | **Done** |
+| AUDIT-IDEAL-32.2 | §32 Doc gov | Scorecard auto-sync on plan row change | P2 | **Done** |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 
@@ -294,7 +294,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | **Orchestration closeout (Phase ORCH)** | **Done** (2026-06-05) | [Phase ORCH](plan/ORCHESTRATION.md) · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) |
 | **Tools/skills closeout (Phase TS)** | **Done** (2026-06-02) | [Phase TS](plan/TOOLS.md) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) |
 | **Integration closeout (Phase INT)** | **Done** (2026-06-02) | [Phase INT](plan/INTEGRATIONS.md) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) |
-| **RAG closeout (Phase RAG)** | **Done** (2026-06-02) | [Phase RAG](plan/MEMORY.md) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) |
+| **RAG closeout (Phase RAG)** | **Done** (2026-06-02) | [Phase RAG](plan/RAG.md) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) |
 | Product agents (Phase K) | **Deferred** | K.1/K.2 — end of priority list |
 | Tier-3 product applications | **Deferred** | New apps / product routes — after harness backlog |
 
@@ -374,7 +374,8 @@ Historical phase registers (A–V) and closeout phases are decomposed under [`pl
 | Integrations | [`plan/INTEGRATIONS.md`](plan/INTEGRATIONS.md) |
 | Tools & skills | [`plan/TOOLS.md`](plan/TOOLS.md) |
 | LLM & modality | [`plan/LLM_ADAPTERS.md`](plan/LLM_ADAPTERS.md) |
-| RAG, context, memory | [`plan/MEMORY.md`](plan/MEMORY.md) |
+| RAG engine | [`plan/RAG.md`](plan/RAG.md) |
+| Context, memory | [`plan/MEMORY.md`](plan/MEMORY.md) |
 | Governance & security | [`plan/UNIFIED_EXECUTION_RUNTIME.md`](plan/UNIFIED_EXECUTION_RUNTIME.md) |
 | Observability & reliability | [`plan/OBSERVABILITY.md`](plan/OBSERVABILITY.md) |
 | Registry & capability graph | [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) |
@@ -404,7 +405,7 @@ Appendices: [`plan/`](plan/)
 | **2j — Orchestration closeout (ORCH)** | Wire `planner_kind`/`classifier_kind`, `ApplicationGraphSpec`→plan, graph concurrency cap — **no** business agents | **Done** (2026-06-05) | [Phase ORCH](plan/ORCHESTRATION.md) · **§6.1b** · **§6.2bb** |
 | **2k — Tools/skills closeout (TS)** | Catalog→`RuntimeConfig` bridge, harness LLM wiring, `SkillResolverProtocol`, Appendix J — **no** business agents | **Done** (2026-06-02) | [Phase TS](plan/TOOLS.md) · **§6.1c** · **§6.2bc** |
 | **2l — Integration closeout (INT)** | `integration_runtime_bridge`, bootstrap health probes, Appendix K — **no** business agents | **Done** (2026-06-02) | [Phase INT](plan/INTEGRATIONS.md) · **§6.1d** · **§6.2bd** |
-| **2m — RAG closeout (RAG)** | `rag_runtime_bridge`, RAG stack on environment wire — **no** business agents | **Done** (2026-06-02) | [Phase RAG](plan/MEMORY.md) · **§6.1e** · **§6.2be** |
+| **2m — RAG closeout (RAG)** | `rag_runtime_bridge`, RAG stack on environment wire — **no** business agents | **Done** (2026-06-02) | [Phase RAG](plan/RAG.md) · **§6.1e** · **§6.2be** |
 | **2n — Context engineering closeout (CTX)** | `context_runtime_bridge`, `context_wiring`, Nexus `ContextManager` wire — **no** business agents | **Done** (2026-06-02) | [Phase CTX](plan/MEMORY.md) · **§6.1f** · **§6.2bf** |
 | **2o — Legacy tool plan closeout (LEG)** | `tool_ids` canonical path; gateway/engine planner migration — **no** business agents | **Done** (2026-06-02) | [Phase LEG](plan/TOOLS.md) · **§6.1h** |
 | **2p — Prompt registry closeout (PE)** | `PromptProfile`, `prompt_runtime_bridge`, `prompt_wiring`, Appendix M — **no** business agents | **Done** (2026-06-02) | [Phase PE](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) · **§6.1i** |
@@ -2023,7 +2024,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2be Phase RAG execution order (Band 2m — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase RAG](plan/MEMORY.md) · queue: [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed)
+**Status:** **Done** · register: [Phase RAG](plan/RAG.md) · queue: [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|

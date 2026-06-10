@@ -7,20 +7,19 @@ from __future__ import annotations
 import pytest
 from langchain_core.documents import Document
 
-from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_manager
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
 from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_manager
-from intergrax.rag.vectorstore.bootstrap.vectorstore_bootstrap import create_default_vectorstore_manager
+from testing_support.builder import build_fake_embedding_manager, build_in_memory_vectorstore_manager
 
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
 
 def test_retrieval_service_hybrid_path_without_answers_stack() -> None:
-    vectorstore_manager = create_default_vectorstore_manager()
-    embedding_manager = create_default_embedding_manager()
+    vectorstore_manager = build_in_memory_vectorstore_manager()
+    embedding_manager = build_fake_embedding_manager()
 
     documents = [
         Document(page_content="Paris is the capital of France.", metadata={}),

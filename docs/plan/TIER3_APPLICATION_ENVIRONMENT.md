@@ -12,15 +12,15 @@
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §26 · baseline **32/32 L3**  
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
-**Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
+**Status:** **Done** (2026-06-09) — AUDIT-IDEAL Tier-3 rows closed
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
-| AUDIT-IDEAL-3.2 | §3 Intake | Product host intake parity (streaming + durable async default) | P2 | Planned |
-| AUDIT-IDEAL-28.1 | §28 Tier-3 | Durable async queue default beyond SQLite (DEBT-28-01) | P1 | Planned |
-| AUDIT-IDEAL-28.2 | §28 Tier-3 | Queue worker scaffold-default (`INCLUDE_QUEUE_WORKER`) | P1 | Planned |
-| AUDIT-IDEAL-28.3 | §28 Tier-3 | LKW hybrid daemon (CFG-14) | P4 | **Deferred §6.3** |
-| AUDIT-IDEAL-28.4 | §28 Tier-3 | Business agents K.1/K.2 certification + deploy | P4 | **Deferred §6.3** |
+| AUDIT-IDEAL-3.2 | §3 Intake | Product host intake parity (streaming + durable async default) | P2 | **Done** |
+| AUDIT-IDEAL-28.1 | §28 Tier-3 | Durable async queue default beyond SQLite (DEBT-28-01) | P1 | **Done** |
+| AUDIT-IDEAL-28.2 | §28 Tier-3 | Queue worker scaffold-default (`INCLUDE_QUEUE_WORKER`) | P1 | **Done** |
+| AUDIT-IDEAL-28.3 | §28 Tier-3 | LKW hybrid daemon (CFG-14) | P4 | **Done** |
+| AUDIT-IDEAL-28.4 | §28 Tier-3 | Business agents K.1/K.2 certification + deploy | P4 | **Done** |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 
