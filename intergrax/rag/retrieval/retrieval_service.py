@@ -11,6 +11,7 @@ from typing import Any, List, Optional
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 
 from intergrax.rag.profiles.rag_profile import RagProfile
+from intergrax.rag.retrieval.citation import citations_from_chunks
 from intergrax.rag.retrieval.retrieval_errors import RetrievalError
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_result import RetrievalChunk, RetrievalResult, RetrievalTrace
@@ -171,7 +172,13 @@ class RetrievalService:
             if not chunks:
                 return RetrievalResult(chunks=[], used=False, reason="below_score_threshold", trace=trace)
 
-            result = RetrievalResult(chunks=chunks, used=True, reason="ok", trace=trace)
+            result = RetrievalResult(
+                chunks=chunks,
+                used=True,
+                reason="ok",
+                trace=trace,
+                citations=citations_from_chunks(chunks),
+            )
             _record_retrieval_metrics(
                 request=request,
                 trace=trace,

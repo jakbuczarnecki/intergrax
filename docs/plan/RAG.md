@@ -53,7 +53,7 @@ Every finding in [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth 
 | GAP-RAG-10 | niedoróbka | M-RAG.28 **Done** | 3 |
 | GAP-RAG-11 | niska jakość | M-RAG.28 **Done** | 3 |
 | GAP-RAG-12 | niska jakość | M-RAG.28 **Done** | 3 |
-| GAP-RAG-13 | niedoróbka | M-RAG.29 | 3 |
+| GAP-RAG-13 | niedoróbka | M-RAG.29 **Done** | 3 |
 | GAP-RAG-14 | niedoróbka | M-RAG.31 | 3 |
 | GAP-RAG-16 | niska jakość | M-RAG.32 | 3 |
 | GAP-RAG-19 | niedoróbka | M-RAG.34 | 3 |
@@ -197,7 +197,7 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | 4 | M-RAG.26 | Async ingest job contract — batch/stream shards via `workflow_orchestrator` | **P1** | **Done** | 05, 06 | `rag.schedule_ingest_job` + sync size guard; AUDIT-IDEAL-14.6 |
 | 5 | M-RAG.27 | OTel spans on `RetrievalService` + `IngestPipeline`; observability gate script | **P2** | **Done** | 08, 09 | `rag_spans.py` + `check_rag_otel_span_registry.py`; AUDIT-IDEAL-14.7 |
 | 6 | M-RAG.28 | Retriever fallback chain; structured errors; retry alignment; optional circuit breaker | **P2** | **Done** | 10, 11, 12 | `test_retriever_engine_resilience.py`; trace `fallback_applied` |
-| 7 | M-RAG.29 | Formal `Citation` model on `RetrievalResult` + `rag.retrieve` output | **P2** | **Planned** | 13 | Gate test extends citation preservation to engine output |
+| 7 | M-RAG.29 | Formal `Citation` model on `RetrievalResult` + `rag.retrieve` output | **P2** | **Done** | 13 | `test_rag_citation_engine_gate.py` |
 | 8 | M-RAG.30 | Vector-store prod SLO — soak gate for stable slugs; promote `pinecone`/`milvus`/`vespa` from beta when soak passes | **P1** | **Done** | 07 | `test_vectorstore_prod_slo_soak.py` + integration soak; INTEGRATIONS runbook |
 | 9 | M-RAG.31 | Embedding model version reindex policy (mismatch → warn / queue reindex) | **P2** | **Planned** | 14 | Unit test on ingest metadata + retrieve filter |
 | 10 | M-RAG.32 | Optional LLM `QueryRouter` tier classifier (`llm_route_enabled`, default off) | **P2** | **Planned** | 16 | Unit test: long ambiguous query routes to deep with LLM on |
@@ -226,6 +226,7 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | 2026-06-10 | M-RAG.35 | `tenant_isolation_contract.py`; gate tests for inmemory/pgvector/weaviate/qdrant |
 | 2026-06-10 | M-RAG.27 | `rag_spans.py` OTel on retrieve + ingest; `check_rag_otel_span_registry.py` in observability gates |
 | 2026-06-10 | M-RAG.28 | `RetrievalError` taxonomy; retriever fallback chain; retry=2; optional vector circuit breaker |
+| 2026-06-10 | M-RAG.29 | `Citation` model on `RetrievalResult` + `RagCitationResult` on `rag.retrieve` |
 
 ---
 
@@ -246,7 +247,7 @@ Ordered queue for RAG domain work. **Active:** M-RAG-DEPTH (15 items). **Closed:
 | 7 | **M-RAG.35** | 2 | **P1** | Cross-backend tenant isolation contract tests | 20 | **Done** |
 | 8 | **M-RAG.27** | 3 | **P2** | OTel spans on retrieve + ingest; observability gate | 08, 09 | **Done** |
 | 9 | **M-RAG.28** | 3 | **P2** | Retriever fallback chain; structured errors; retry alignment | 10, 11, 12 | **Done** |
-| 10 | **M-RAG.29** | 3 | **P2** | Formal `Citation` on `RetrievalResult` + `rag.retrieve` output | 13 | **Planned** |
+| 10 | **M-RAG.29** | 3 | **P2** | Formal `Citation` on `RetrievalResult` + `rag.retrieve` output | 13 | **Done** |
 | 11 | **M-RAG.31** | 3 | **P2** | `embedding_model_version` mismatch policy | 14 | **Planned** |
 | 12 | **M-RAG.32** | 3 | **P2** | Optional LLM `QueryRouter` (`llm_route_enabled`, default off) | 16 | **Planned** |
 | 13 | **M-RAG.34** | 3 | **P2** | Agentic loop per-iteration retriever override + cost trace | 19 | **Planned** |
@@ -312,4 +313,4 @@ Ordered queue for RAG domain work. **Active:** M-RAG-DEPTH (15 items). **Closed:
 
 ## Suggested first PR
 
-**M-RAG.29** (Wave 3) — formal `Citation` model on `RetrievalResult` + `rag.retrieve` output.
+**M-RAG.31** (Wave 3) — `embedding_model_version` mismatch policy on ingest/retrieve.

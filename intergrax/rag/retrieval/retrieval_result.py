@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from intergrax.rag.retrieval.citation import Citation
 
 
 @dataclass(frozen=True)
@@ -40,3 +43,4 @@ class RetrievalResult:
     used: bool
     reason: str
     trace: RetrievalTrace = field(default_factory=RetrievalTrace)
+    citations: List["Citation"] = field(default_factory=list)

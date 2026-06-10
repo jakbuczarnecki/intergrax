@@ -89,6 +89,9 @@ def test_rag_retrieve_returns_chunks() -> None:
     assert out.used is True
     assert len(out.chunks) == 1
     assert out.chunks[0].id == "doc-1"
+    assert len(out.citations) == 1
+    assert out.citations[0].chunk_id == "doc-1"
+    assert out.citations[0].source_label == "readme.md"
     assert "Intergrax" in out.context_text
     assert out.reason == "ok"
 
@@ -176,6 +179,7 @@ def test_rag_retrieve_quarantines_poisoned_chunks_when_security_enabled() -> Non
 
     assert out.used is True
     assert [chunk.id for chunk in out.chunks] == ["trusted"]
+    assert [citation.chunk_id for citation in out.citations] == ["trusted"]
     assert out.reason == "ok"
     assert out.diagnostics.get("poisoning_quarantine_applied") is True
 

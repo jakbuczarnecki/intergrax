@@ -58,7 +58,7 @@ Tier-3 IntegrationProfile + RagProfile
 | Resilience (retry, fallback, circuit breaker) | **L2.5** | Retriever retry=2 aligned with embedding; fallback `fusion`→`hybrid`→`vector_similarity`; optional vector circuit breaker |
 | Observability | **L2** | `RetrievalTrace`, parser trace, opt-in metrics; no OTel spans on retrieve/ingest hot path |
 | Security (poisoning) | **L3** | Nexus `RagStep` + catalog `rag.retrieve` when `security_profile` wired (M-RAG.25) |
-| Citations | **L2** | Metadata in chunks + composer; no formal `Citation` on `RetrievalResult` |
+| Citations | **L3** | Formal `Citation` on `RetrievalResult` + `RagRetrieveOutput.citations` (M-RAG.29) |
 | Vector backends (prod SLO) | **L2.5–L3** | Catalog **stable:** `qdrant`, `pgvector`, `chroma`, `weaviate`, `lancedb`, `typesense`; **beta:** `pinecone`, `milvus`, `vespa`, `inmemory`; soak gate `prod_slo.py` + gate tests (M-RAG.30) |
 | Multi-tenant isolation | **L2.5–L3** | Cross-backend contract tests for `inmemory`/`pgvector`/`weaviate`/`qdrant` (M-RAG.35); prod namespace design still required per backend |
 | Evaluation depth | **L2.5** | Golden harness (lab scenarios); no load/soak SLO gate |
@@ -87,7 +87,7 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-10 | niedoróbka | ~~No retriever fallback chain~~ — **closed M-RAG.28**: `retriever_fallback_chain()` in `RetrieverEngine` | **P2** | M-RAG.28 **Done** | — |
 | GAP-RAG-11 | niska jakość | ~~No structured retrieval errors~~ — **closed M-RAG.28**: `RetrievalError` taxonomy + optional `RetrieverVectorCircuitBreaker` | **P2** | M-RAG.28 **Done** | — |
 | GAP-RAG-12 | niska jakość | ~~Asymmetric retry~~ — **closed M-RAG.28**: `RetrieverEngine.DEFAULT_MAX_RETRIES=2` | **P2** | M-RAG.28 **Done** | — |
-| GAP-RAG-13 | niedoróbka | No formal `Citation` model on `RetrievalResult`; citations only via chunk metadata + `FinalResponseComposer` | **P2** | M-RAG.29 | — |
+| GAP-RAG-13 | niedoróbka | ~~No formal `Citation` on engine output~~ — **closed M-RAG.29**: `retrieval/citation.py` + `RagCitationResult` | **P2** | M-RAG.29 **Done** | — |
 | GAP-RAG-14 | niedoróbka | `embedding_model_version` on profile/metadata with no mismatch warn, filter, or reindex queue policy | **P2** | M-RAG.31 | — |
 | GAP-RAG-15 | ograniczenie | No autonomous MIME/size-based chunking or retriever selection — Tier-3 must define `RagProfile` | — | Tier-3 + AHI | — |
 | GAP-RAG-16 | niska jakość | `QueryRouter` tier selection is word-count heuristic only — no LLM intent / complexity classifier | **P2** | M-RAG.32 | — |
@@ -119,7 +119,7 @@ RETRIEVE (rag.retrieve / RetrievalService)
         → optional AgenticRetrievalLoop (deep tier, opt-in)
         → RetrieverEngine (registry) → optional RerankerManager
         → score_threshold filter → RetrievalResult + RetrievalTrace
-        → format_rag_context_text (citations via chunk metadata: source, page, doc_id)
+        → `Citation` list + format_rag_context_text (source, page, doc_id)
         [poisoning filter: Nexus RagStep + catalog when security_profile enabled — M-RAG.25]
 ```
 
@@ -157,7 +157,8 @@ RETRIEVE (rag.retrieve / RetrievalService)
 |----------|--------|------|
 | `RagProfile` | `profiles/rag_profile.py` | Platform defaults for retrieval, rerank, ingest, routing |
 | `RetrievalService` | `retrieval/retrieval_service.py` | Canonical retrieval orchestration |
-| `RetrievalRequest` / `RetrievalResult` | `retrieval/` | I/O + `RetrievalTrace` |
+| `RetrievalRequest` / `RetrievalResult` | `retrieval/` | I/O + `RetrievalTrace` + `Citation` list |
+| `Citation` | `retrieval/citation.py` | Structured provenance from chunk metadata |
 | `IngestPipeline` | `ingest/ingest_pipeline.py` | Configurable ingest |
 | `RagStack` | `bootstrap/rag_stack_bootstrap.py` | Composed managers + `RetrievalService` |
 
@@ -275,7 +276,7 @@ OTel span names (tracer `intergrax.rag`): `rag.retrieve`, `rag.retrieve.single_p
 - Golden harness: `tests/fixtures/rag_golden/retrieval_cases.json` — scenarios `retrieval`, `graph_rag`, `multi_hop`, `agentic`
 - CI: `.github/workflows/rag-guard.yml`
 - Load/soak SLO gate: **not present** (GAP-RAG-21) — M-RAG.36
-- Citation preservation at **response composer** level; formal engine citations: M-RAG.29
+- Citation preservation at **response composer** level; engine emits `RetrievalResult.citations` and `rag.retrieve` returns `RagCitationResult`
 
 ---
 

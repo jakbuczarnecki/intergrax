@@ -34,9 +34,24 @@ class RagChunkResult(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class RagCitationResult(BaseModel):
+    """Structured provenance for a retrieved chunk (M-RAG.29)."""
+
+    chunk_id: str
+    source_id: str
+    source_type: str = "vectorstore"
+    source_label: Optional[str] = None
+    url: Optional[str] = None
+    page: Optional[int] = None
+    score: Optional[float] = None
+    excerpt: Optional[str] = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
 class RagRetrieveOutput(BaseModel):
     used: bool
     chunks: list[RagChunkResult] = Field(default_factory=list)
+    citations: list[RagCitationResult] = Field(default_factory=list)
     context_text: str = ""
     reason: str = ""
     diagnostics: dict[str, Any] = Field(

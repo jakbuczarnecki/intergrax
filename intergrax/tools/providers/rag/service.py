@@ -12,7 +12,13 @@ from intergrax.rag.retrieval.resolve import resolve_retrieval_service
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_result import RetrievalChunk
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
-from intergrax.tools.providers.rag.contracts import RagChunkResult, RagRetrieveInput, RagRetrieveOutput
+from intergrax.rag.retrieval.citation import Citation
+from intergrax.tools.providers.rag.contracts import (
+    RagChunkResult,
+    RagCitationResult,
+    RagRetrieveInput,
+    RagRetrieveOutput,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 RAG_TOOL_ID = "rag.retrieve"
@@ -59,7 +65,12 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
         return RagRetrieveOutput(used=False, reason=result.reason)
 
     chunks = [_to_rag_chunk(c) for c in result.chunks]
-    chunks, poisoning_reason, poisoning_warnings = _apply_retrieval_poisoning_filter(ctx, chunks)
+    citations = [_to_rag_citation(c) for c in result.citations]
+    chunks, citations, poisoning_reason, poisoning_warnings = _apply_retrieval_poisoning_filter(
+        ctx,
+        chunks,
+        citations,
+    )
     if not chunks:
         return RagRetrieveOutput(
             used=False,
@@ -76,6 +87,7 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
         "rerank_enabled": result.trace.rerank_enabled,
         "retrieval_latency_ms": result.trace.retrieval_latency_ms,
         "rerank_latency_ms": result.trace.rerank_latency_ms,
+        "citation_count": len(citations),
     }
     if poisoning_warnings:
         diagnostics["poisoning_review_warnings"] = poisoning_warnings
@@ -84,6 +96,7 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
     return RagRetrieveOutput(
         used=True,
         chunks=chunks,
+        citations=citations,
         context_text=context_text,
         reason=poisoning_reason or "ok",
         diagnostics=diagnostics,
@@ -103,9 +116,10 @@ def _retrieval_poisoning_defense_enabled(ctx: ToolWiringContext) -> bool:
 def _apply_retrieval_poisoning_filter(
     ctx: ToolWiringContext,
     chunks: List[RagChunkResult],
-) -> tuple[List[RagChunkResult], str, List[str]]:
+    citations: List[RagCitationResult],
+) -> tuple[List[RagChunkResult], List[RagCitationResult], str, List[str]]:
     if not chunks or not _retrieval_poisoning_defense_enabled(ctx):
-        return chunks, "", []
+        return chunks, citations, "", []
 
     from intergrax.runtime.architecture.retrieval_security_wiring import (
         filter_retrieved_chunks_for_poisoning,
@@ -123,12 +137,13 @@ def _apply_retrieval_poisoning_filter(
     ]
     filtered, warnings = filter_retrieved_chunks_for_poisoning(retrieved)
     if len(filtered) == len(retrieved):
-        return chunks, "", warnings
+        return chunks, citations, "", warnings
 
     allowed_ids = {chunk.id for chunk in filtered}
     filtered_chunks = [chunk for chunk in chunks if chunk.id in allowed_ids]
+    filtered_citations = [citation for citation in citations if citation.chunk_id in allowed_ids]
     reason = "retrieval_poisoning_quarantine" if not filtered_chunks else "ok"
-    return filtered_chunks, reason, warnings
+    return filtered_chunks, filtered_citations, reason, warnings
 
 
 def _to_rag_chunk(c: RetrievalChunk) -> RagChunkResult:
@@ -137,6 +152,20 @@ def _to_rag_chunk(c: RetrievalChunk) -> RagChunkResult:
         text=c.text,
         score=c.score,
         metadata=dict(c.metadata or {}),
+    )
+
+
+def _to_rag_citation(citation: Citation) -> RagCitationResult:
+    return RagCitationResult(
+        chunk_id=citation.chunk_id,
+        source_id=citation.source_id,
+        source_type=citation.source_type,
+        source_label=citation.source_label,
+        url=citation.url,
+        page=citation.page,
+        score=citation.score,
+        excerpt=citation.excerpt,
+        metadata=dict(citation.metadata or {}),
     )
 
 
