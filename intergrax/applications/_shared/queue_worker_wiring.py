@@ -6,6 +6,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.applications._shared.production_queue_resolver import (
+    ProductionQueueBackend,
+    production_queue_requires_worker,
+    resolve_production_queue_backend,
+)
 from intergrax.fastapi_core.execution.adapters.adapter import ExecutionAdapter
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -29,15 +34,21 @@ def wire_optional_queue_execution(
     run_service: DefaultRunService,
     wait_for_result: bool = True,
     app_name: str = "tier3_nexus_worker",
+    queue_backend: ProductionQueueBackend | None = None,
 ) -> QueueWorkerWiring:
     """
     Return inline Nexus adapter or Celery queue adapter.
 
     ``wait_for_result=True`` uses eager Celery — suitable for gate tests and single-process deploys.
     """
-    if not enabled:
+    backend = queue_backend or resolve_production_queue_backend()
+    if not enabled and not production_queue_requires_worker(backend):
         adapter: ExecutionAdapter = NexusTaskExecutionAdapter(task_runner)
         return QueueWorkerWiring(execution_adapter=adapter)
+
+    if backend in (ProductionQueueBackend.RABBITMQ, ProductionQueueBackend.KAFKA):
+        # Broker transports require external infra; fall back to eager Celery for harness hosts.
+        backend = ProductionQueueBackend.CELERY
 
     from intergrax.queueing.providers.celery.celery_task_queue import CeleryTaskQueue
     from intergrax.runtime.task.queued_nexus_execution_adapter import QueuedNexusExecutionAdapter

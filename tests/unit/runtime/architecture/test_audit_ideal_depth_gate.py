@@ -8,7 +8,28 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.applications._shared.async_task_index_resolver import resolve_async_task_index
+from intergrax.applications._shared.compensation_wiring import resolve_compensation_flow
+from intergrax.applications._shared.production_queue_resolver import (
+    ProductionQueueBackend,
+    resolve_production_queue_backend,
+)
+from intergrax.applications._shared.reasoning_wiring import resolve_replan_policy_context
 from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot
+from intergrax.applications._shared.sandbox_wiring import product_requires_sandbox
+from intergrax.applications._shared.sqlite_async_task_index import SqliteAsyncTaskIndex
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.rag.profiles.rag_profile import production_rag_profile
+from intergrax.runtime.architecture.agent_promotion import (
+    PromotionEvidenceBundle,
+    PromotionStage,
+    evaluate_agent_promotion,
+)
+from intergrax.runtime.architecture.agent_certification import AgentCertificationEvaluation
+from intergrax.runtime.adaptive.l4_runtime_evidence import build_harness_baseline_l4_evidence
+from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler
+from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
+from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.applications._shared.registry_snapshot_store import persist_registry_snapshot
 from intergrax.applications._shared.replay_routes import create_replay_router
 from intergrax.contracts.reasoning_profile import ReasoningProfile
@@ -76,6 +97,78 @@ def test_audit_ideal_30_1_ecp_architecture_synced() -> None:
     text = arch.read_text(encoding="utf-8")
     assert "Harness elastic control loop" in text
     assert "L3" in text
+
+
+def test_audit_ideal_7_2_replan_policy_context() -> None:
+    env = ApplicationEnvironmentProfile.lab_defaults().model_copy(
+        update={
+            "orchestration_profile": ApplicationEnvironmentProfile.lab_defaults()
+            .orchestration_profile.model_copy(update={"allow_dynamic_replan": True})
+        }
+    )
+    ctx = resolve_replan_policy_context(env)
+    assert ctx.get("engine_replan_boundary") is True
+    handler = ExecutionInterruptHandler(allow_dynamic_replan=True)
+    resolution = handler.resolve_decision(
+        AgentDecision(type=AgentDecisionType.MODIFY_PLAN, reason="replan"),
+        task_id="t",
+        run_id="r",
+        agent_id="echo",
+        context=ctx,
+    )
+    assert resolution.policy_decision.action is PolicyAction.ALLOW
+
+
+def test_audit_ideal_9_1_production_queue_backend() -> None:
+    assert resolve_production_queue_backend(env_value="celery") is ProductionQueueBackend.CELERY
+
+
+def test_audit_ideal_11_1_sandbox_product_requirement() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults(tool_ids=["sandbox.exec"])
+    assert product_requires_sandbox(env) is True
+
+
+def test_audit_ideal_14_1_graph_rag_production_profile() -> None:
+    profile = production_rag_profile()
+    assert profile.graph_rag_enabled is True
+
+
+def test_audit_ideal_22_1_compensation_flow() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults()
+    flow = resolve_compensation_flow(env)
+    assert flow is not None
+    assert flow.handlers
+
+
+def test_audit_ideal_28_1_durable_async_index(tmp_path: Path) -> None:
+    env = ApplicationEnvironmentProfile.product_defaults()
+    index = resolve_async_task_index(env, db_path=tmp_path / "audit_ideal_async.db")
+    assert isinstance(index, SqliteAsyncTaskIndex)
+
+
+def test_audit_ideal_31_2_promotion_requires_eval() -> None:
+    bundle = PromotionEvidenceBundle(
+        agent_id="echo",
+        agent_version="1.0.0",
+        source_stage=PromotionStage.STAGING,
+        target_stage=PromotionStage.PRODUCTION,
+        certification=AgentCertificationEvaluation(
+            agent_id="echo",
+            agent_version="1.0.0",
+            eligible=True,
+            reasons=[],
+        ),
+        evaluation_report_refs=[],
+        rollback_plan_ref="rb",
+        change_ticket_ref="chg",
+    )
+    assert evaluate_agent_promotion(bundle).approved is False
+
+
+def test_audit_ideal_ahi_1_l4_baseline_evidence() -> None:
+    report = build_harness_baseline_l4_evidence()
+    assert report.runtime_l4_closed_loop_passed is True
+    assert report.scenarios_passed_count >= 3
 
 
 def test_audit_ideal_deferred_register() -> None:

@@ -7,7 +7,9 @@ from __future__ import annotations
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.rag.bootstrap.rag_stack_bootstrap import RagStack, create_default_rag_stack
+from intergrax.rag.profiles.rag_profile import RagProfile, production_rag_profile
 from intergrax.rag.profiles.runtime_rag_sync import sync_rag_profile_from_runtime_config
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.tools.registry.wiring import ToolWiringContext
@@ -50,6 +52,28 @@ def apply_rag_from_tool_wiring_context(
     return config
 
 
+def resolve_rag_profile_for_environment(
+    env: ApplicationEnvironmentProfile,
+    *,
+    base: RagProfile | None = None,
+) -> RagProfile | None:
+    """Apply production Graph RAG defaults when RAG is enabled on product hosts."""
+    if not env.context_profile.enable_rag:
+        return None
+    profile = base or production_rag_profile()
+    if env.application_profile is ApplicationProfile.PRODUCT:
+        prod = production_rag_profile()
+        return profile.model_copy(
+            update={
+                "graph_rag_enabled": prod.graph_rag_enabled,
+                "graph_rag_hops": prod.graph_rag_hops,
+                "graph_indexer_mode": prod.graph_indexer_mode,
+                "graph_store_backend": prod.graph_store_backend,
+            }
+        )
+    return profile
+
+
 def resolve_rag_stack_for_environment(
     env: ApplicationEnvironmentProfile,
     *,
@@ -60,9 +84,11 @@ def resolve_rag_stack_for_environment(
     if not env.context_profile.enable_rag:
         return None
     profile = integration_profile or env.integration_profile
+    rag_profile = resolve_rag_profile_for_environment(env)
     return create_default_rag_stack(
         integration_profile=profile,
         llm_for_contextual=llm_adapter,
+        profile=rag_profile,
     )
 
 

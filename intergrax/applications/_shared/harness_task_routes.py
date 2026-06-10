@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
 
 from intergrax.applications._shared.async_task_dispatch import get_async_status, run_async
+from intergrax.applications._shared.async_task_index_protocol import AsyncTaskIndexProtocol
 from intergrax.applications._shared.harness_auth import require_harness_api_key
 from intergrax.applications._shared.task_control import (
     cancel_active_task,
@@ -56,6 +57,7 @@ def mount_harness_task_routes(
     prefix: str = "/v1/tasks",
     checkpoint_store: TaskCheckpointPersistence | None = None,
     task_enricher: Callable[[Task], Task] | None = None,
+    async_index: AsyncTaskIndexProtocol | None = None,
 ) -> APIRouter:
     router = APIRouter(
         prefix=prefix,
@@ -76,11 +78,11 @@ def mount_harness_task_routes(
         )
         if task_enricher is not None:
             task = task_enricher(task)
-        return await run_async(task_runner, task)
+        return await run_async(task_runner, task, index=async_index)
 
     @router.get("/{task_id}/status")
     async def task_status(task_id: str) -> dict[str, Any]:
-        return await get_async_status(task_id)
+        return await get_async_status(task_id, index=async_index)
 
     @router.post("/{task_id}/cancel", response_model=HarnessTaskControlResponse)
     async def cancel_task(task_id: str) -> HarnessTaskControlResponse:

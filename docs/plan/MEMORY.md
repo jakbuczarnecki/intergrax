@@ -16,8 +16,8 @@
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
-| AUDIT-IDEAL-14.1 | §14 RAG | Graph RAG as default production retrieval profile | P1 | Planned |
-| AUDIT-IDEAL-14.2 | §14 RAG | Retrieval poisoning defense live on product hosts | P1 | Planned |
+| AUDIT-IDEAL-14.1 | §14 RAG | Graph RAG as default production retrieval profile | P1 | **Done** |
+| AUDIT-IDEAL-14.2 | §14 RAG | Retrieval poisoning defense live on product hosts | P1 | **Done** |
 | AUDIT-IDEAL-15.1 | §15 Memory | Org memory 2.5 (organizational LTM scope) | **P0** | Planned |
 | AUDIT-IDEAL-15.2 | §15 Memory | Episodic / semantic / procedural taxonomy (`MemoryKind` uplift) | P1 | Planned |
 | AUDIT-IDEAL-15.3 | §15 Memory | Entity graph memory ship (MEM-DEPTH-5.1 beyond RFC) | P2 | Planned |

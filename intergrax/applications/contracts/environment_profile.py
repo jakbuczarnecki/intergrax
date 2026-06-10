@@ -136,6 +136,7 @@ class ReliabilityProfile(BaseModel):
     resilience_policy: ResiliencePolicy = Field(default_factory=default_resilience_policy)
     default_autonomy_level: AutonomyLevel = AutonomyLevel.ASK
     tenant_autonomy_ceiling: AutonomyLevel | None = None
+    compensation_enabled: bool = False
 
 
 class ObservabilityProfile(BaseModel):
@@ -579,11 +580,15 @@ class ApplicationEnvironmentProfile(BaseModel):
             skill_profile=SkillProfile(enabled_bundles=bundles) if bundles else SkillProfile(),
             llm_profile=None,
             context_profile=ContextProfile(enable_rag=False, enable_websearch=False),
-            reliability_profile=ReliabilityProfile(long_running_scheduler_enabled=False),
+            reliability_profile=ReliabilityProfile(
+                long_running_scheduler_enabled=False,
+                compensation_enabled=True,
+            ),
             observability_profile=ObservabilityProfile(
                 trace_sqlite_enabled=True,
                 debug_surface_override=False,
             ),
+            sandbox=SandboxProfile(enable_exec_tool=True),
             cost_profile=CostProfile(max_total_tokens=32_000),
             evaluation_profile=EvaluationProfile(
                 shadow_eval_enabled=False,

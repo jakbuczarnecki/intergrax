@@ -6,7 +6,10 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from intergrax.applications._shared.async_task_index_protocol import AsyncTaskIndexProtocol
 
 from intergrax.runtime.task.task import Task, TaskResult
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
@@ -67,7 +70,7 @@ async def run_async(
     runner: UnifiedTaskRunner,
     task: Task,
     *,
-    index: InMemoryAsyncTaskIndex | None = None,
+    index: "AsyncTaskIndexProtocol | InMemoryAsyncTaskIndex | None" = None,
 ) -> dict[str, Any]:
     """Enqueue a Nexus task without blocking the caller."""
     store = index or _DEFAULT_INDEX
@@ -82,7 +85,7 @@ async def run_async(
 async def get_async_status(
     task_id: str,
     *,
-    index: InMemoryAsyncTaskIndex | None = None,
+    index: "AsyncTaskIndexProtocol | InMemoryAsyncTaskIndex | None" = None,
 ) -> dict[str, Any]:
     store = index or _DEFAULT_INDEX
     handle = store.get(task_id)

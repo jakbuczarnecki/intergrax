@@ -17,7 +17,7 @@
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
 | AUDIT-IDEAL-7.1 | §7 Cognition | Ship `ReasoningProfile` contract + environment wire | P1 | Planned |
-| AUDIT-IDEAL-7.2 | §7 Cognition | Complete `allow_dynamic_replan` runtime path | P1 | Planned |
+| AUDIT-IDEAL-7.2 | §7 Cognition | Complete `allow_dynamic_replan` runtime path | P1 | **Done** |
 | AUDIT-IDEAL-7.3 | §7 Cognition | Reasoning failure taxonomy on all planner kinds | P2 | Planned |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.

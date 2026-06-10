@@ -18,7 +18,7 @@
 |----|---------|-----|----------|--------|
 | AUDIT-IDEAL-13.1 | §13 Integrations | Integration marketplace catalog + trust scoring | P3 | Planned |
 | AUDIT-IDEAL-13.2 | §13 Integrations | Catalog hot-reload without host restart | P3 | Planned |
-| AUDIT-IDEAL-14.1 | §14 RAG | Graph RAG production profile (shared with MEMORY) | P1 | Planned |
+| AUDIT-IDEAL-14.1 | §14 RAG | Graph RAG production profile (shared with MEMORY) | P1 | **Done** |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 

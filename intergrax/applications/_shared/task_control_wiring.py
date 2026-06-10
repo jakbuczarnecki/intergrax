@@ -9,6 +9,7 @@ from typing import Any
 
 from fastapi import FastAPI
 
+from intergrax.applications._shared.async_task_index_resolver import resolve_async_task_index
 from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
 from intergrax.applications._shared.reliability_wiring import apply_reliability_task_defaults
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
@@ -52,12 +53,14 @@ def wire_harness_task_control(
     """
     enricher = build_reliability_task_enricher(env, extra=extra_enricher)
     if enabled:
+        async_index = resolve_async_task_index(env)
         mount_harness_task_routes(
             app,
             task_runner=task_runner,
             checkpoint_store=checkpoint_store,
             prefix=task_route_prefix,
             task_enricher=enricher,
+            async_index=async_index,
         )
     return enricher
 

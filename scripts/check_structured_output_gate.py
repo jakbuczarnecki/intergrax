@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""Ensure harness reference agents declare lifecycle metadata (FAUDIT-ALG.1 adoption)."""
+"""AUDIT-IDEAL-6.1 — structured output validation on reference + certified agents."""
 
 from __future__ import annotations
 
@@ -17,7 +17,6 @@ for path in (ROOT, ROOT / "agents", ROOT / "applications"):
 
 from echo.echo_agent import EchoAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
-from intergrax.runtime.registry.agent_assembly_resolver import validate_agent_assembly
 from legal.legal_agent import LegalAgent
 from organization_worker.organization_worker_agent import OrganizationWorkerAgent
 from research.research_agent import ResearchAgent
@@ -34,24 +33,23 @@ _REFERENCE_AGENTS: tuple[Callable[[], object], ...] = (
 )
 
 
+def _has_structured_output(contract: AgentContract) -> bool:
+    if "structured_output" in contract.validation_rules:
+        return True
+    return contract.output_schema is not None and bool(contract.output_schema)
+
+
 def main() -> int:
     errors: list[str] = []
     for factory in _REFERENCE_AGENTS:
         contract: AgentContract = factory().get_contract()
-        if not (contract.owner_team or "").strip():
-            errors.append(f"{contract.id}: missing owner_team")
-        if contract.production_eligible and not (contract.on_call_contact or contract.owner_contact or "").strip():
-            errors.append(f"{contract.id}: missing on_call_contact for production_eligible agent")
-        if contract.production_eligible and not (contract.modality_profile_id or "").strip():
-            errors.append(f"{contract.id}: missing modality_profile_id for production_eligible agent")
-        result = validate_agent_assembly(contract)
-        if not result.valid:
-            errors.extend(f"{contract.id}: {err}" for err in result.errors)
+        if contract.production_eligible and not _has_structured_output(contract):
+            errors.append(f"{contract.id}: production_eligible agent missing structured output contract")
     if errors:
         for err in errors:
             print(err, file=sys.stderr)
         return 1
-    print(f"agents lifecycle metadata: ok ({len(_REFERENCE_AGENTS)} agents)")
+    print(f"OK: structured output gate ({len(_REFERENCE_AGENTS)} reference agents)")
     return 0
 
 

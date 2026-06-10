@@ -41,6 +41,10 @@ class ApplicationFeatures(BaseModel):
         default=False,
         description="Default Task metadata sandbox flag (Tier-1 isolation, not this host)",
     )
+    durable_async_index_default: bool = Field(
+        default=False,
+        description="Use SQLite async task index by default (AUDIT-IDEAL-28.1)",
+    )
 
     @classmethod
     def lab_defaults(cls) -> ApplicationFeatures:
@@ -60,4 +64,5 @@ class ApplicationFeatures(BaseModel):
             long_running_scheduler=False,
             openapi=False,
             task_sandbox_default=False,
+            durable_async_index_default=True,
         )

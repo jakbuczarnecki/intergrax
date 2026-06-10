@@ -101,6 +101,20 @@ class RagProfile:
         return self.retriever_id
 
 
+def production_rag_profile() -> RagProfile:
+    """AUDIT-IDEAL-14.1 — Graph RAG enabled for production retrieval tier."""
+    return RagProfile(
+        retriever_id="hybrid",
+        deep_retriever_id="fusion",
+        graph_rag_enabled=True,
+        graph_rag_hops=1,
+        graph_indexer_mode="heuristic",
+        graph_store_backend="inmemory",
+        enable_rerank=True,
+        route_mode="auto",
+    )
+
+
 def rag_profile_from_env() -> RagProfile:
     """Build profile from ``INTERGRAX_RAG_*`` environment variables."""
     threshold_raw = os.getenv("INTERGRAX_RAG_SCORE_THRESHOLD", "").strip()

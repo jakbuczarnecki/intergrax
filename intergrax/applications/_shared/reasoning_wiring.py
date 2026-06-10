@@ -30,6 +30,15 @@ def resolve_tool_planning_config(
     )
 
 
+def resolve_replan_policy_context(
+    env: ApplicationEnvironmentProfile,
+) -> dict[str, bool]:
+    """AUDIT-IDEAL-7.2 — policy context for engine-boundary dynamic replan."""
+    if not env.orchestration_profile.allow_dynamic_replan:
+        return {}
+    return {"engine_replan_boundary": True}
+
+
 def resolve_engine_planner_prompt_config(
     env: ApplicationEnvironmentProfile,
     *,
