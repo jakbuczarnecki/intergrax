@@ -31,6 +31,10 @@ class RetrievalTrace:
     agentic_iteration: Optional[int] = None
     agentic_stopped: Optional[str] = None
     agentic_total_latency_ms: Optional[float] = None
+    agentic_per_iteration_retriever_ids: List[str] = field(default_factory=list)
+    agentic_per_iteration_latency_ms: List[float] = field(default_factory=list)
+    agentic_refine_calls: int = 0
+    agentic_latency_budget_ms: Optional[float] = None
     hybrid_used: bool = False
     recall_at_k: Optional[float] = None
     attempted_retriever_ids: List[str] = field(default_factory=list)

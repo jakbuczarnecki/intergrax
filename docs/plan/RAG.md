@@ -56,7 +56,7 @@ Every finding in [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth 
 | GAP-RAG-13 | niedoróbka | M-RAG.29 **Done** | 3 |
 | GAP-RAG-14 | niedoróbka | M-RAG.31 **Done** | 3 |
 | GAP-RAG-16 | niska jakość | M-RAG.32 **Done** | 3 |
-| GAP-RAG-19 | niedoróbka | M-RAG.34 | 3 |
+| GAP-RAG-19 | niedoróbka | M-RAG.34 **Done** | 3 |
 | GAP-RAG-21 | niegotowość | M-RAG.36 | 3 |
 | GAP-RAG-22 | niska jakość | M-RAG.37 | 3 |
 | GAP-RAG-15 | ograniczenie | Tier-3 + AHI | — |
@@ -170,7 +170,7 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | M-RAG.10 | Native sparse / BM25 in vector backends | **Done** | `LexicalHybridSupport` + `query_hybrid` on InMemory/Qdrant/Weaviate; RRF fusion |
 | M-RAG.11 | RAG eval CI gate + golden datasets | **Done** | `tests/fixtures/rag_golden/`, `golden_harness.py`, `rag-guard.yml` |
 | M-RAG.12 | GraphRAG (`GraphStore` contract) | **Done** (beta) | `graph/` + `graph_rag` retriever; prod contract: M-RAG.33 |
-| M-RAG.13 | Platform agentic retrieval loop (budgeted) | **Done** | `AgenticRetrievalLoop`; enhancements: M-RAG.34 |
+| M-RAG.13 | Platform agentic retrieval loop (budgeted) | **Done** | `AgenticRetrievalLoop` + M-RAG.34 iteration schedule / latency budget trace |
 | M-RAG.14 | Qdrant native sparse vectors + RRF fusion | **Done** | `INTERGRAX_RAG_QDRANT_SPARSE`, `bm25_sparse_encoder.py` |
 | M-RAG.15 | Weaviate native `query.hybrid` | **Done** | Live client + `INTERGRAX_RAG_WEAVIATE_NATIVE_HYBRID`; fallback to in-memory |
 | M-RAG.16 | LLM graph indexer (optional adapter) | **Done** | `INTERGRAX_RAG_GRAPH_INDEXER_MODE=llm\|heuristic_then_llm` |
@@ -202,7 +202,7 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | 9 | M-RAG.31 | Embedding model version reindex policy (mismatch → warn / queue reindex) | **P2** | **Done** | 14 | `test_embedding_version_policy.py` + ingest/retrieve gate tests |
 | 10 | M-RAG.32 | Optional LLM `QueryRouter` tier classifier (`llm_route_enabled`, default off) | **P2** | **Done** | 16 | `test_query_router_llm_tier.py` |
 | 11 | M-RAG.33 | GraphRAG Tier-3 prod profile contract (neo4j required; harness preset documented) | **P1** | **Done** | 18 | `test_production_graph_rag_profile.py` + `test_graph_rag_neo4j_prod_contract.py` |
-| 12 | M-RAG.34 | Agentic loop — per-iteration retriever override + cost budget trace fields | **P2** | **Planned** | 19 | Unit test on iteration trace |
+| 12 | M-RAG.34 | Agentic loop — per-iteration retriever override + cost budget trace fields | **P2** | **Done** | 19 | `test_agentic_loop_iteration_trace.py` |
 | 13 | M-RAG.35 | Cross-backend tenant isolation contract tests | **P1** | **Done** | 20 | `tenant_isolation_contract.py` + gate tests per backend |
 | 14 | M-RAG.36 | RAG load/soak gate (concurrent retrieve SLO) | **P2** | **Planned** | 21 | Nightly or CI workflow with latency/recall budget |
 | 15 | M-RAG.37 | Semantic chunking ingest size guard + clear failure reason | **P2** | **Planned** | 22 | Unit test: oversized doc rejected before O(n) embed |
@@ -229,6 +229,7 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | 2026-06-10 | M-RAG.29 | `Citation` model on `RetrievalResult` + `RagCitationResult` on `rag.retrieve` |
 | 2026-06-10 | M-RAG.31 | `embedding_version_policy.py` — ingest warn, retrieve filter, reindex hook |
 | 2026-06-10 | M-RAG.32 | `llm_tier_classifier.py` + `RagProfile.llm_route_enabled`; trace `route_classifier` |
+| 2026-06-10 | M-RAG.34 | `agentic_policy.py` — per-iteration retriever schedule + latency budget trace on `AgenticRetrievalLoop` |
 
 ---
 
@@ -252,7 +253,7 @@ Ordered queue for RAG domain work. **Active:** M-RAG-DEPTH (15 items). **Closed:
 | 10 | **M-RAG.29** | 3 | **P2** | Formal `Citation` on `RetrievalResult` + `rag.retrieve` output | 13 | **Done** |
 | 11 | **M-RAG.31** | 3 | **P2** | `embedding_model_version` mismatch policy | 14 | **Done** |
 | 12 | **M-RAG.32** | 3 | **P2** | Optional LLM `QueryRouter` (`llm_route_enabled`, default off) | 16 | **Done** |
-| 13 | **M-RAG.34** | 3 | **P2** | Agentic loop per-iteration retriever override + cost trace | 19 | **Planned** |
+| 13 | **M-RAG.34** | 3 | **P2** | Agentic loop per-iteration retriever override + cost trace | 19 | **Done** |
 | 14 | **M-RAG.36** | 3 | **P2** | RAG load/soak gate (concurrent retrieve SLO) | 21 | **Planned** |
 | 15 | **M-RAG.37** | 3 | **P2** | Semantic chunking ingest size guard | 22 | **Planned** |
 
@@ -315,4 +316,4 @@ Ordered queue for RAG domain work. **Active:** M-RAG-DEPTH (15 items). **Closed:
 
 ## Suggested first PR
 
-**M-RAG.34** (Wave 3) — agentic loop per-iteration retriever override + cost trace.
+**M-RAG.37** (Wave 3) — semantic chunking ingest size guard (or **M-RAG.36** load/soak gate).

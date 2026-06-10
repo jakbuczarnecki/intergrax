@@ -41,6 +41,23 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 
+def _env_csv_tuple(name: str) -> tuple[str, ...]:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return ()
+    return tuple(part.strip() for part in raw.split(",") if part.strip())
+
+
+def _env_optional_float(name: str) -> Optional[float]:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return None
+    try:
+        return float(raw)
+    except ValueError:
+        return None
+
+
 @dataclass(frozen=True)
 class RagProfile:
     """Platform defaults for retrieval, rerank, ingest, and routing."""
@@ -75,6 +92,8 @@ class RagProfile:
     agentic_min_chunks: int = 2
     agentic_min_score: float = 0.35
     agentic_query_mode: AgenticQueryMode = "deterministic"
+    agentic_iteration_retriever_ids: tuple[str, ...] = ()
+    agentic_max_total_latency_ms: Optional[float] = None
 
     # Native hybrid (BM25 + dense via store)
     native_hybrid_enabled: bool = True
@@ -264,6 +283,10 @@ def rag_profile_from_env() -> RagProfile:
         sparse_encoder=os.getenv("INTERGRAX_RAG_SPARSE_ENCODER", "bm25_hash").strip().lower()
         or "bm25_hash",
         agentic_query_mode=agentic_query_mode,
+        agentic_iteration_retriever_ids=_env_csv_tuple("INTERGRAX_RAG_AGENTIC_ITERATION_RETRIEVERS"),
+        agentic_max_total_latency_ms=_env_optional_float(
+            "INTERGRAX_RAG_AGENTIC_MAX_TOTAL_LATENCY_MS"
+        ),
         weaviate_native_hybrid=_env_bool("INTERGRAX_RAG_WEAVIATE_NATIVE_HYBRID", True),
         extras={
             "metrics_enabled": "true"
