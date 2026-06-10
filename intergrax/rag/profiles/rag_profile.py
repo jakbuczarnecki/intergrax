@@ -20,6 +20,9 @@ ContextualEnrichMode = Literal["off", "on"]
 GraphIndexerMode = Literal["heuristic", "llm", "heuristic_then_llm"]
 AgenticQueryMode = Literal["deterministic", "llm"]
 
+HARNESS_GRAPH_STORE_BACKEND = "inmemory"
+PRODUCTION_GRAPH_STORE_BACKEND = "neo4j"
+
 
 def _env_bool(name: str, default: bool = False) -> bool:
     raw = os.getenv(name, "").strip().lower()
@@ -117,17 +120,68 @@ class RagProfile:
 
 
 def production_rag_profile() -> RagProfile:
-    """AUDIT-IDEAL-14.1 — Graph RAG enabled for production retrieval tier."""
+    """
+    Harness / lab GraphRAG preset (AUDIT-IDEAL-14.1).
+
+    Uses **in-memory** graph store — suitable for gate tests and lab hosts only.
+    Tier-3 product hosts MUST use ``production_graph_rag_profile()`` with
+    ``IntegrationProfile.graph_store=neo4j`` (M-RAG.33).
+    """
     return RagProfile(
         retriever_id="hybrid",
         deep_retriever_id="fusion",
         graph_rag_enabled=True,
         graph_rag_hops=1,
         graph_indexer_mode="heuristic",
-        graph_store_backend="inmemory",
+        graph_store_backend=HARNESS_GRAPH_STORE_BACKEND,
         enable_rerank=True,
         route_mode="auto",
     )
+
+
+def production_graph_rag_profile() -> RagProfile:
+    """
+    Tier-3 GraphRAG production preset — durable ``neo4j`` graph backend required.
+
+    Pair with ``IntegrationProfile.graph_store`` slug ``neo4j`` and
+    ``create_rag_graph_store(profile=..., integration_graph_store=...)``.
+    """
+    return RagProfile(
+        retriever_id="hybrid",
+        deep_retriever_id="fusion",
+        graph_rag_enabled=True,
+        graph_rag_hops=1,
+        graph_indexer_mode="heuristic",
+        graph_store_backend=PRODUCTION_GRAPH_STORE_BACKEND,
+        enable_rerank=True,
+        route_mode="auto",
+    )
+
+
+def is_harness_graph_rag_profile(profile: RagProfile) -> bool:
+    return (
+        profile.graph_rag_enabled
+        and profile.graph_store_backend == HARNESS_GRAPH_STORE_BACKEND
+    )
+
+
+def validate_graph_rag_production_wiring(
+    profile: RagProfile,
+    *,
+    graph_store_slug: str | None,
+) -> str | None:
+    """
+    Return an error reason when GraphRAG is enabled on a product host without neo4j.
+
+    ``None`` means wiring is valid or GraphRAG is disabled.
+    """
+    if not profile.graph_rag_enabled:
+        return None
+    if profile.graph_store_backend != PRODUCTION_GRAPH_STORE_BACKEND:
+        return "graph_store_backend_must_be_neo4j"
+    if graph_store_slug is not None and graph_store_slug != PRODUCTION_GRAPH_STORE_BACKEND:
+        return f"integration_graph_store_must_be_neo4j:{graph_store_slug}"
+    return None
 
 
 def rag_profile_from_env() -> RagProfile:

@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
+from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.bootstrap.hierarchical_bootstrap import resolve_toc_vectorstore_for_profile
@@ -59,7 +60,15 @@ def create_default_rag_stack(
         embedding_manager = create_default_embedding_manager()
 
     if graph_store is None and profile.graph_rag_enabled:
-        graph_store = create_rag_graph_store(profile=profile)
+        integration_graph_store = None
+        if integration_profile is not None:
+            integration_graph_store = integration_profile.instance_for_category(
+                IntegrationCategory.GRAPH_STORE
+            )
+        graph_store = create_rag_graph_store(
+            profile=profile,
+            integration_graph_store=integration_graph_store,
+        )
 
     toc_vectorstore_manager = resolve_toc_vectorstore_for_profile(
         profile,

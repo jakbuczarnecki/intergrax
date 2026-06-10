@@ -92,7 +92,7 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-15 | ograniczenie | No autonomous MIME/size-based chunking or retriever selection — Tier-3 must define `RagProfile` | — | Tier-3 + AHI | — |
 | GAP-RAG-16 | niska jakość | `QueryRouter` tier selection is word-count heuristic only — no LLM intent / complexity classifier | **P2** | M-RAG.32 | — |
 | GAP-RAG-17 | niedoróbka | ~~`multiquery` not activated by `query_expansion`~~ — **closed M-RAG.23**: `effective_retriever(deep)` returns `multiquery` when expansion enabled | **P0** | M-RAG.23 **Done** | 14.3 |
-| GAP-RAG-18 | niegotowość | GraphRAG retriever **beta**; `production_rag_profile()` uses in-memory graph store (harness preset, not multi-tenant prod) | **P1** | M-RAG.33 | — |
+| GAP-RAG-18 | niegotowość | ~~No Tier-3 GraphRAG prod preset~~ — **closed M-RAG.33**: `production_graph_rag_profile()` requires `neo4j`; `production_rag_profile()` documented harness-only (in-memory graph) | **P1** | M-RAG.33 **Done** | — |
 | GAP-RAG-19 | niedoróbka | `AgenticRetrievalLoop` cannot switch retriever between iterations; no RAG-level token/cost budget in trace | **P2** | M-RAG.34 | — |
 | GAP-RAG-20 | niegotowość | Tenant isolation not uniformly enforced — production depends on per-backend namespace (only `InMemoryVectorStore` hard-fails mismatch) | **P1** | M-RAG.35 | — |
 | GAP-RAG-21 | niegotowość | No RAG load/soak gate for production SLO (latency, recall regression under concurrency) | **P2** | M-RAG.36 | — |
@@ -213,7 +213,7 @@ Vector-store catalog slugs and env prefixes: [`architecture/INTEGRATIONS.md`](IN
 - Contract: `graph/contracts/graph_store.py`
 - Backends: `inmemory` (lab default), `neo4j` (`INTERGRAX_RAG_GRAPH_STORE=neo4j`)
 - Indexer modes: `heuristic`, `llm`, `heuristic_then_llm`
-- Retriever: `graph_rag` — **beta** (GAP-RAG-18); Tier-3 prod MUST use durable graph backend — M-RAG.33
+- Retriever: `graph_rag` — **beta** retriever flag; Tier-3 prod uses `production_graph_rag_profile()` + `graph_store=neo4j` (M-RAG.33)
 
 **Boundary:** Document knowledge graphs are retrieval infrastructure — not user entity / episodic memory. See [`architecture/MEMORY.md`](MEMORY.md) §Graph RAG ≠ agent memory.
 
@@ -282,7 +282,7 @@ The engine exposes **registries and profiles**, not a fully autonomous algorithm
 
 1. `IntegrationProfile` — `vector_store`, `document_parser`, `rerank_provider`, optional `graph_store`
 2. `RagProfile` — retriever per tier, chunking strategy, agentic/graph toggles
-3. Optional presets — e.g. `production_rag_profile()` (harness only until M-RAG.33)
+3. Optional presets — `production_rag_profile()` (harness/lab, in-memory graph) or `production_graph_rag_profile()` (Tier-3 prod, neo4j)
 
 Automatic tier routing (`QueryRouter`) covers **cost/latency tiers only**, not MIME-based chunking or retriever auto-selection. L4 adaptive retriever selection is deferred to [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md).
 
