@@ -6,7 +6,7 @@
 **Baseline:** **32/32 L3** (`scripts/harness_maturity_report.py`, IDEAL-L3 W2 Done)  
 **Hub:** [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) · Band **2az** · queue **§6.1au**  
 **Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](../guides/ARCHITECTURE_DEBT_REGISTER.md)  
-**Status:** **W3 P2 in progress** (2026-06-09) — **65/80 Done** · **4 Deferred §6.3** · **11 Planned**
+**Status:** **W3 P2 in progress** (2026-06-09) — **70/80 Done** · **4 Deferred §6.3** · **6 Planned**
 
 > **Scope:** Close gaps between **L3 Production Harness OS** and **full ideal architecture** (modular, elastic, complete). Harness infrastructure only unless row is explicitly **Deferred §6.3** (product).
 
@@ -34,8 +34,8 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 
 | ID | Layer | AUDIT § | Gap (vs IDEAL) | Priority | Domain plan | Status |
 |----|-------|---------|----------------|----------|-------------|--------|
-| AUDIT-IDEAL-1.1 | Strategic Harness Model | 1 | Operationalize quarterly strategy review (IDEAL-1.2 process, not docs-only) | P2 | `PLATFORM_FOUNDATION` | Planned |
-| AUDIT-IDEAL-1.2 | Strategic Harness Model | 1 | Architecture health metrics as live signals (modularity, debt index) | P2 | `PLATFORM_FOUNDATION` | Planned |
+| AUDIT-IDEAL-1.1 | Strategic Harness Model | 1 | Operationalize quarterly strategy review (IDEAL-1.2 process, not docs-only) | P2 | `PLATFORM_FOUNDATION` | **Done** |
+| AUDIT-IDEAL-1.2 | Strategic Harness Model | 1 | Architecture health metrics as live signals (modularity, debt index) | P2 | `PLATFORM_FOUNDATION` | **Done** |
 | AUDIT-IDEAL-2.1 | Tier boundaries | 2 | Continuous tier-boundary gate maintenance (no drift) | P3 | `PLATFORM_FOUNDATION` | **Done** (gates exist) |
 | AUDIT-IDEAL-3.1 | Task intake | 3 | Canonical `TaskEnvelope` type consolidation (`Task` + `RuntimeRequest` alias) | P1 | `ORCHESTRATION` · `TIER3` | **Done** |
 | AUDIT-IDEAL-3.2 | Task intake | 3 | Product host intake parity (streaming + durable async index default) | P2 | `TIER3_APPLICATION_ENVIRONMENT` | **Done** |
@@ -92,8 +92,8 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-25.2 | Evaluation | 25 | Human review sample queue (beyond CLI) | P2 | `CRITIC_VERIFICATION` | **Done** |
 | AUDIT-IDEAL-25.3 | Evaluation | 25 | Context/RAG eval blocking product release CI | P1 | `CRITIC_VERIFICATION` | **Done** |
 | AUDIT-IDEAL-26.1 | CI / gates | 26 | Architecture-boundary chaos job in weekly CI | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Done** |
-| AUDIT-IDEAL-26.2 | CI / gates | 26 | Simulation tests for multi-agent contention | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | Planned |
-| AUDIT-IDEAL-27.1 | DX | 27 | Trace Explorer interactive UI (beyond lab APIs) | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | Planned |
+| AUDIT-IDEAL-26.2 | CI / gates | 26 | Simulation tests for multi-agent contention | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Done** |
+| AUDIT-IDEAL-27.1 | DX | 27 | Trace Explorer interactive UI (beyond lab APIs) | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Done** |
 | AUDIT-IDEAL-27.2 | DX | 27 | Replay environment HTTP API on product hosts | P1 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Done** |
 | AUDIT-IDEAL-27.3 | DX | 27 | Agent simulator on product hosts (not CLI-only) | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Done** |
 | AUDIT-IDEAL-27.4 | DX | 27 | Visual builder / graph editor (Phase 2 UI) | P3 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | Planned |
@@ -106,7 +106,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-30.1 | Ops / SLO | 30 | Sync `architecture/ELASTIC_CAPACITY_AND_SCALING.md` §22 after ECP-DEPTH | **P0** | `ELASTIC_CAPACITY_AND_SCALING` | **Done** |
 | AUDIT-IDEAL-30.2 | Ops / SLO | 30 | Real deploy SLO window evidence (`W_OPS_RELEASE_CYCLES>=2` prod) | P1 | `OBSERVABILITY` · `EXPERIMENTATION` | **Done** |
 | AUDIT-IDEAL-30.3 | Ops / SLO | 30 | On-call ownership model for production components | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Done** |
-| AUDIT-IDEAL-30.4 | Ops / SLO | 30 | Celery/K8s production-scale adapters (beyond stub/beta) | P2 | `ELASTIC_CAPACITY_AND_SCALING` | Planned |
+| AUDIT-IDEAL-30.4 | Ops / SLO | 30 | Celery/K8s production-scale adapters (beyond stub/beta) | P2 | `ELASTIC_CAPACITY_AND_SCALING` | **Done** |
 | AUDIT-IDEAL-31.1 | Agent lifecycle | 31 | Owner/on-call mandatory on all certified agents | P1 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
 | AUDIT-IDEAL-31.2 | Agent lifecycle | 31 | Evaluation results required before production promotion (enforce) | P1 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
 | AUDIT-IDEAL-32.1 | Doc governance | 32 | Living architecture debt burn-down tied to milestones | P2 | `PLATFORM_FOUNDATION` | **Done** |

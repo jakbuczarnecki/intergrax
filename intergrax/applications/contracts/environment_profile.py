@@ -254,12 +254,22 @@ class AdaptiveProfile(BaseModel):
     live_model_routing_enabled: bool = False
 
 
+class GovernanceProfile(BaseModel):
+    """Platform governance cadence for Tier-3 hosts (AUDIT-IDEAL-1.1 / 1.2)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    quarterly_strategy_review_enabled: bool = False
+    architecture_health_metrics_enabled: bool = False
+
+
 class ScalingProfile(BaseModel):
     """Elastic capacity posture (ECP-1.1)."""
 
     model_config = ConfigDict(extra="forbid")
 
     policy: ScalingPolicy = Field(default_factory=ScalingPolicy)
+    production_adapters_enabled: bool = False
 
 
 class OrchestrationProfile(BaseModel):
@@ -334,6 +344,7 @@ class ApplicationEnvironmentProfile(BaseModel):
     orchestration_profile: OrchestrationProfile = Field(default_factory=OrchestrationProfile)
     reasoning_profile: ReasoningProfile = Field(default_factory=ReasoningProfile)
     scaling_profile: ScalingProfile = Field(default_factory=ScalingProfile)
+    governance_profile: GovernanceProfile = Field(default_factory=GovernanceProfile)
     identity_profile: IdentityProfile = Field(default_factory=IdentityProfile)
     security_profile: ApplicationSecurityProfile = Field(
         default_factory=ApplicationSecurityProfile
@@ -660,6 +671,14 @@ class ApplicationEnvironmentProfile(BaseModel):
                     AdaptiveLoopKind.ROUTING_TUNING,
                 ],
                 live_model_routing_enabled=True,
+            ),
+            governance_profile=GovernanceProfile(
+                quarterly_strategy_review_enabled=True,
+                architecture_health_metrics_enabled=True,
+            ),
+            scaling_profile=ScalingProfile(
+                policy=ScalingPolicy(enabled=True),
+                production_adapters_enabled=True,
             ),
             evaluation_profile=EvaluationProfile(
                 shadow_eval_enabled=False,

@@ -19,7 +19,7 @@
 |----|---------|-----|----------|--------|
 | AUDIT-IDEAL-24.3 | §24 Cost | CPU/memory/concurrency quotas with tenant fairness (shared UAEP) | P2 | **Done** |
 | AUDIT-IDEAL-30.1 | §30 Ops | Sync `architecture/ELASTIC_CAPACITY_AND_SCALING.md` §22 after ECP-DEPTH | **P0** | Planned |
-| AUDIT-IDEAL-30.4 | §30 Ops | Celery/K8s production-scale adapters (beyond stub/beta) | P2 | Planned |
+| AUDIT-IDEAL-30.4 | §30 Ops | Celery/K8s production-scale adapters (beyond stub/beta) | P2 | **Done** |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 

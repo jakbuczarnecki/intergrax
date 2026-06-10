@@ -17,8 +17,8 @@
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
 | AUDIT-IDEAL-26.1 | §26 CI | Architecture-boundary chaos job in weekly CI | P2 | **Done** |
-| AUDIT-IDEAL-26.2 | §26 CI | Simulation tests for multi-agent contention | P2 | Planned |
-| AUDIT-IDEAL-27.1 | §27 DX | Trace Explorer interactive UI (beyond lab APIs) | P2 | Planned |
+| AUDIT-IDEAL-26.2 | §26 CI | Simulation tests for multi-agent contention | P2 | **Done** |
+| AUDIT-IDEAL-27.1 | §27 DX | Trace Explorer interactive UI (beyond lab APIs) | P2 | **Done** |
 | AUDIT-IDEAL-27.2 | §27 DX | Replay environment HTTP API on product hosts | P1 | Planned |
 | AUDIT-IDEAL-27.3 | §27 DX | Agent simulator on product hosts (not CLI-only) | P2 | **Done** |
 | AUDIT-IDEAL-27.4 | §27 DX | Visual builder / graph editor (Phase 2 UI) | P3 | Planned |

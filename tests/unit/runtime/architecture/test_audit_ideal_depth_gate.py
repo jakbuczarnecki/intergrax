@@ -542,6 +542,58 @@ def test_audit_ideal_32_2_plan_scorecard_sync() -> None:
     assert sync.harness_l3_layers == 32
 
 
+def test_audit_ideal_26_2_multi_agent_contention() -> None:
+    from intergrax.runtime.architecture.multi_agent_contention_simulation import (
+        ContentionAgentRequest,
+        simulate_multi_agent_contention,
+    )
+
+    report = simulate_multi_agent_contention(
+        pool_size=3,
+        requests=[
+            ContentionAgentRequest(agent_id="a1", requested_slots=1),
+            ContentionAgentRequest(agent_id="a2", requested_slots=1),
+            ContentionAgentRequest(agent_id="a3", requested_slots=1),
+        ],
+    )
+    assert report.deadlock_free is True
+    assert report.acceptance_passed is True
+
+
+def test_audit_ideal_27_1_trace_explorer() -> None:
+    from intergrax.applications._shared.trace_explorer_wiring import resolve_trace_explorer_wiring
+
+    wiring = resolve_trace_explorer_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+
+
+def test_audit_ideal_1_1_strategy_review() -> None:
+    from intergrax.applications._shared.strategy_review_wiring import resolve_strategy_review_wiring
+
+    wiring = resolve_strategy_review_wiring(
+        ApplicationEnvironmentProfile.product_defaults(),
+        repo_root=REPO_ROOT,
+    )
+    assert wiring.enabled is True
+    assert wiring.report is not None and wiring.report.ready is True
+
+
+def test_audit_ideal_1_2_architecture_health() -> None:
+    from intergrax.applications._shared.architecture_health_wiring import resolve_architecture_health_wiring
+
+    wiring = resolve_architecture_health_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+    assert wiring.pipeline_report is not None
+
+
+def test_audit_ideal_30_4_production_capacity() -> None:
+    from intergrax.applications._shared.production_capacity_wiring import resolve_production_capacity_wiring
+
+    wiring = resolve_production_capacity_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+    assert wiring.probe_passed is True
+
+
 def test_audit_ideal_deferred_register() -> None:
     register = REPO_ROOT / "docs" / "plan" / "AUDIT_IDEAL_2026.md"
     text = register.read_text(encoding="utf-8")

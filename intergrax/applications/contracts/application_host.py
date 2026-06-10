@@ -61,6 +61,10 @@ class ApplicationFeatures(BaseModel):
         default=False,
         description="Expose MVP evolution simulate/replay HTTP routes (AUDIT-IDEAL-27.3)",
     )
+    trace_explorer_enabled: bool = Field(
+        default=False,
+        description="Expose read-only trace explorer HTTP routes on product hosts (AUDIT-IDEAL-27.1)",
+    )
 
     @classmethod
     def lab_defaults(cls) -> ApplicationFeatures:
@@ -85,4 +89,5 @@ class ApplicationFeatures(BaseModel):
             checkpoint_introspection_enabled=True,
             modality_worker_pool_enabled=True,
             agent_simulator_enabled=True,
+            trace_explorer_enabled=True,
         )
