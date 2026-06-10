@@ -29,7 +29,8 @@ applications/      →  deployable environments that compose agents
 | **DisputeScenarioAgent** | `dispute.scenario` | staging | `dispute_sim_application` | [`dispute_scenario/`](dispute_scenario/) |
 | **OrganizationWorkerAgent** | `org.vendor_report` | development | `lab_application` (optional flag) | [`organization_worker/`](organization_worker/) |
 | **IntergraxAssistantAgent** | `platform.assist` | development | `intergrax_assistant_application` | [`intergrax_assistant/`](intergrax_assistant/) |
-| **ProblemRadarAgent** | `problem_radar.scan` | frozen | — (Phase K.1 deferred) | [`problem_radar/`](problem_radar/) |
+| **ProblemRadarAgent** | `problem_radar.scan` | experimental | certified K.1 deploy path | [`problem_radar/`](problem_radar/) |
+| **VendorDiscoveryAgent** | `vendor_discovery.search` | experimental | certified K.2 deploy path | [`vendor_discovery/`](vendor_discovery/) |
 | **Lab mock agents** | harness fixtures | — | `lab_application` tests | [`lab/mock_agents.py`](lab/mock_agents.py) |
 
 ---

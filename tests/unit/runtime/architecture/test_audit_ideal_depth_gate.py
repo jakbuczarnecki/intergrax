@@ -647,9 +647,72 @@ def test_audit_ideal_ahi_3_capability_marketplace() -> None:
     assert wiring.report is not None and wiring.report.ready is True
 
 
-def test_audit_ideal_deferred_register() -> None:
-    register = REPO_ROOT / "docs" / "plan" / "AUDIT_IDEAL_2026.md"
-    text = register.read_text(encoding="utf-8")
-    for task_id in ("28.3", "28.4", "5.3", "21.3"):
-        assert f"AUDIT-IDEAL-{task_id}" in text
-        assert "Deferred" in text
+def test_audit_ideal_5_3_governance_dashboard() -> None:
+    from intergrax.applications._shared.product_observability_dashboard_wiring import (
+        resolve_product_observability_dashboard_wiring,
+    )
+
+    wiring = resolve_product_observability_dashboard_wiring(
+        ApplicationEnvironmentProfile.product_defaults(),
+        repo_root=REPO_ROOT,
+    )
+    assert wiring.enabled is True
+    assert wiring.dashboard is not None
+    assert wiring.dashboard.governance.compliance_profile_enabled is True
+
+
+def test_audit_ideal_21_3_unified_dashboard() -> None:
+    from intergrax.applications._shared.product_observability_dashboard_wiring import (
+        resolve_product_observability_dashboard_wiring,
+    )
+
+    wiring = resolve_product_observability_dashboard_wiring(
+        ApplicationEnvironmentProfile.product_defaults(),
+        repo_root=REPO_ROOT,
+    )
+    assert wiring.enabled is True
+    assert wiring.router is not None
+
+
+def test_audit_ideal_28_3_lkw_hybrid_daemon() -> None:
+    from intergrax.applications._shared.lkw_hybrid_daemon_wiring import resolve_lkw_hybrid_daemon_wiring
+    from intergrax.applications.contracts.environment_profile import HostDeploymentProfile
+
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="local_workspace.product").model_copy(
+        update={
+            "host_deployment_profile": HostDeploymentProfile(lkw_hybrid_daemon_enabled=True),
+        }
+    )
+    wiring = resolve_lkw_hybrid_daemon_wiring(env, repo_root=REPO_ROOT)
+    assert wiring.enabled is True
+    assert wiring.spec is not None
+
+
+def test_audit_ideal_28_4_business_agent_deploy() -> None:
+    import sys
+
+    agents_root = REPO_ROOT / "agents"
+    if str(agents_root) not in sys.path:
+        sys.path.insert(0, str(agents_root))
+    from problem_radar.problem_radar_agent import ProblemRadarAgent
+    from vendor_discovery.vendor_discovery_agent import VendorDiscoveryAgent
+
+    from intergrax.applications._shared.business_agent_deploy_wiring import (
+        resolve_business_agent_deploy_wiring,
+    )
+
+    wiring = resolve_business_agent_deploy_wiring(
+        ApplicationEnvironmentProfile.product_defaults(),
+        agent_factories=(ProblemRadarAgent, VendorDiscoveryAgent),
+    )
+    assert wiring.enabled is True
+    assert wiring.report is not None and wiring.report.deploy_ready is True
+
+
+def test_audit_ideal_register_complete() -> None:
+    from intergrax.runtime.architecture.plan_scorecard_sync import load_scorecard_sync
+
+    sync = load_scorecard_sync(REPO_ROOT)
+    assert sync.done_count == sync.total_tasks
+    assert sync.deferred_count == 0
+    assert sync.planned_count == 0

@@ -164,6 +164,7 @@ class ObservabilityProfile(BaseModel):
     debug_surface_override: bool | None = None
     causal_diagnostics_enabled: bool = False
     health_dashboard_enabled: bool = False
+    unified_observability_dashboard_enabled: bool = False
 
 
 class CostProfile(BaseModel):
@@ -268,6 +269,7 @@ class GovernanceProfile(BaseModel):
 
     quarterly_strategy_review_enabled: bool = False
     architecture_health_metrics_enabled: bool = False
+    governance_dashboard_enabled: bool = False
 
 
 class IntegrationGovernanceProfile(BaseModel):
@@ -286,6 +288,17 @@ class ScalingProfile(BaseModel):
 
     policy: ScalingPolicy = Field(default_factory=ScalingPolicy)
     production_adapters_enabled: bool = False
+
+
+class HostDeploymentProfile(BaseModel):
+    """Product host deployment modes (AUDIT-IDEAL-28.3 / 28.4)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    lkw_hybrid_daemon_enabled: bool = False
+    lkw_daemon_bind_host: str = "127.0.0.1"
+    lkw_daemon_port: int = Field(default=8020, ge=1, le=65535)
+    business_agents_deploy_enabled: bool = False
 
 
 class OrchestrationProfile(BaseModel):
@@ -361,6 +374,7 @@ class ApplicationEnvironmentProfile(BaseModel):
     reasoning_profile: ReasoningProfile = Field(default_factory=ReasoningProfile)
     scaling_profile: ScalingProfile = Field(default_factory=ScalingProfile)
     governance_profile: GovernanceProfile = Field(default_factory=GovernanceProfile)
+    host_deployment_profile: HostDeploymentProfile = Field(default_factory=HostDeploymentProfile)
     integration_governance_profile: IntegrationGovernanceProfile = Field(
         default_factory=IntegrationGovernanceProfile
     )
@@ -669,6 +683,7 @@ class ApplicationEnvironmentProfile(BaseModel):
                 debug_surface_override=False,
                 causal_diagnostics_enabled=True,
                 health_dashboard_enabled=True,
+                unified_observability_dashboard_enabled=True,
             ),
             sandbox=SandboxProfile(enable_exec_tool=True),
             cost_profile=CostProfile(
@@ -699,6 +714,10 @@ class ApplicationEnvironmentProfile(BaseModel):
             governance_profile=GovernanceProfile(
                 quarterly_strategy_review_enabled=True,
                 architecture_health_metrics_enabled=True,
+                governance_dashboard_enabled=True,
+            ),
+            host_deployment_profile=HostDeploymentProfile(
+                business_agents_deploy_enabled=True,
             ),
             scaling_profile=ScalingProfile(
                 policy=ScalingPolicy(enabled=True),

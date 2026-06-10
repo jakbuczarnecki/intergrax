@@ -6,7 +6,7 @@
 **Baseline:** **32/32 L3** (`scripts/harness_maturity_report.py`, IDEAL-L3 W2 Done)  
 **Hub:** [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) · Band **2az** · queue **§6.1au**  
 **Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](../guides/ARCHITECTURE_DEBT_REGISTER.md)  
-**Status:** **AUDIT-IDEAL harness complete** (2026-06-09) — **76/80 Done** · **4 Deferred §6.3** · **0 Planned**
+**Status:** **AUDIT-IDEAL complete** (2026-06-09) — **80/80 Done** · **0 Deferred §6.3** · **0 Planned**
 
 > **Scope:** Close gaps between **L3 Production Harness OS** and **full ideal architecture** (modular, elastic, complete). Harness infrastructure only unless row is explicitly **Deferred §6.3** (product).
 
@@ -26,7 +26,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | **W1** | P0 harness depth (memory org, ECP doc sync, registry durable) | P0 |
 | **W2** | P1 L4 + elasticity (AHI evidence, reasoning, shadow eval, DX HTTP) | P1 |
 | **W3** | P2 completeness (modality live, cost forecast, prompt UI, swarm templates) | P2 |
-| **W4** | Band 3 product (Tier-3 daemon, dashboard, K.1/K.2) | **Deferred §6.3** |
+| **W4** | Band 3 product (Tier-3 daemon, dashboard, K.1/K.2) | **Done** |
 
 ---
 
@@ -43,7 +43,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-4.2 | Identity & trust | 4 | Hard tenant storage isolation (Postgres multi-tenant RFC → ship) | P1 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
 | AUDIT-IDEAL-5.1 | Policy & governance | 5 | Pre-output policy hooks on all LLM response paths | P1 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
 | AUDIT-IDEAL-5.2 | Policy & governance | 5 | Compliance profile templates per regulated domain class | P2 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
-| AUDIT-IDEAL-5.3 | Policy & governance | 5 | Governance health dashboard (GOV-PROD.1) | P4 | `OBSERVABILITY` | **Deferred §6.3** |
+| AUDIT-IDEAL-5.3 | Policy & governance | 5 | Governance health dashboard (GOV-PROD.1) | P4 | `OBSERVABILITY` | **Done** |
 | AUDIT-IDEAL-6.1 | LLM adapters | 6 | Structured output validation on 100% reference + certified agent paths | P1 | `LLM_ADAPTERS` | **Done** |
 | AUDIT-IDEAL-6.2 | LLM adapters | 6 | Live cost/latency/quality model routing (AHI integration prod path) | P2 | `LLM_ADAPTERS` · `ADAPTIVE_HARNESS_INTELLIGENCE` | **Done** |
 | AUDIT-IDEAL-7.1 | Cognition | 7 | Ship `ReasoningProfile` contract + environment wire | P1 | `REASONING_AND_COGNITION` | **Done** |
@@ -80,7 +80,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-20.2 | Capability graph | 20 | Policy change impact visualization CLI | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
 | AUDIT-IDEAL-21.1 | Observability | 21 | Causal diagnostics beyond trace bridge (ops tooling) | P2 | `OBSERVABILITY` | **Done** |
 | AUDIT-IDEAL-21.2 | Observability | 21 | Quality / governance / cost health dashboard contracts | P2 | `OBSERVABILITY` | **Done** |
-| AUDIT-IDEAL-21.3 | Observability | 21 | Unified product observability dashboard | P4 | `OBSERVABILITY` | **Deferred §6.3** (GOV-PROD.1) |
+| AUDIT-IDEAL-21.3 | Observability | 21 | Unified product observability dashboard | P4 | `OBSERVABILITY` | **Done** |
 | AUDIT-IDEAL-22.1 | Reliability | 22 | Compensation flows on product side-effect paths | P1 | `RELIABILITY_FAILURE_AND_HITL` | **Done** |
 | AUDIT-IDEAL-22.2 | Reliability | 22 | Partial results contract on all reference hosts | P2 | `RELIABILITY_FAILURE_AND_HITL` | **Done** |
 | AUDIT-IDEAL-23.1 | Security | 23 | Immutable multi-region security audit trail | P2 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
@@ -99,8 +99,8 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-27.4 | DX | 27 | Visual builder / graph editor (Phase 2 UI) | P3 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Done** |
 | AUDIT-IDEAL-28.1 | Tier-3 hosts | 28 | Durable async queue default beyond SQLite (DEBT-28-01) | P1 | `TIER3_APPLICATION_ENVIRONMENT` | **Done** |
 | AUDIT-IDEAL-28.2 | Tier-3 hosts | 28 | Queue worker scaffold-default (`INCLUDE_QUEUE_WORKER`) | P1 | `TIER3_APPLICATION_ENVIRONMENT` | **Done** |
-| AUDIT-IDEAL-28.3 | Tier-3 hosts | 28 | LKW hybrid daemon (CFG-14) | P4 | `TIER3_APPLICATION_ENVIRONMENT` | **Deferred §6.3** |
-| AUDIT-IDEAL-28.4 | Tier-3 hosts | 28 | Business agents K.1/K.2 certification + deploy | P4 | `TIER3_APPLICATION_ENVIRONMENT` | **Deferred §6.3** |
+| AUDIT-IDEAL-28.3 | Tier-3 hosts | 28 | LKW hybrid daemon (CFG-14) | P4 | `TIER3_APPLICATION_ENVIRONMENT` | **Done** |
+| AUDIT-IDEAL-28.4 | Tier-3 hosts | 28 | Business agents K.1/K.2 certification + deploy | P4 | `TIER3_APPLICATION_ENVIRONMENT` | **Done** |
 | AUDIT-IDEAL-29.1 | Modality | 29 | Live Triton / HF Inference endpoints (replace placeholders) | P1 | `MODALITY` | **Done** |
 | AUDIT-IDEAL-29.2 | Modality | 29 | Plane C vision inference E2E on product worker pools | P2 | `MODALITY` | **Done** |
 | AUDIT-IDEAL-30.1 | Ops / SLO | 30 | Sync `architecture/ELASTIC_CAPACITY_AND_SCALING.md` §22 after ECP-DEPTH | **P0** | `ELASTIC_CAPACITY_AND_SCALING` | **Done** |
