@@ -33,6 +33,7 @@ def resolve_retrieval_service(
         retriever_manager = create_default_retriever_manager(
             vector_store=vectorstore_manager,
             embedding_manager=embedding_manager,
+            profile=profile,
         )
     if reranker_manager is None and profile.enable_rerank:
         registry = create_default_reranker_registry(embedding_manager=embedding_manager)

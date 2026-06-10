@@ -97,6 +97,8 @@ class RagProfile:
         if route_tier == "deep":
             if self.graph_rag_enabled:
                 return "graph_rag"
+            if self.query_expansion != "off":
+                return "multiquery"
             return self.deep_retriever_id
         return self.retriever_id
 

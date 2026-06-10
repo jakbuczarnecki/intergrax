@@ -63,6 +63,8 @@ def create_default_rag_stack(
         vector_store=vectorstore_manager,
         embedding_manager=embedding_manager,
         graph_store=graph_store,
+        profile=profile,
+        llm_for_query_expansion=llm_for_contextual,
     )
     registry = create_default_reranker_registry(
         embedding_manager=embedding_manager,

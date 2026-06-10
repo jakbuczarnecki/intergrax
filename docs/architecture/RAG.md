@@ -75,7 +75,7 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 
 | ID | Category | Finding | Severity | Plan | AUDIT-IDEAL |
 |----|----------|---------|----------|------|-------------|
-| GAP-RAG-01 | niedoróbka | `RagProfile.query_expansion` / `INTERGRAX_RAG_QUERY_EXPANSION` not wired to `RetrievalService` or `MultiQueryRetriever` bootstrap — env/profile lie about behaviour | **P0** | M-RAG.23 | 14.3 |
+| GAP-RAG-01 | niedoróbka | ~~`RagProfile.query_expansion` / `INTERGRAX_RAG_QUERY_EXPANSION` not wired~~ — **closed M-RAG.23**: `query_expander_from_profile()` in bootstrap; deep tier → `multiquery` when `query_expansion != off` | **P0** | M-RAG.23 **Done** | 14.3 |
 | GAP-RAG-02 | niedoróbka | `DualIndexStrategy` + `HierarchicalRetriever` implemented but `toc_vector_store` not passed in default bootstrap | **P1** | M-RAG.24 | 14.4 |
 | GAP-RAG-03 | niedoróbka | `IngestPipeline` bypasses `IndexingManager` / `DualIndexStrategy` — book-scale TOC index never built on default ingest | **P1** | M-RAG.24 | 14.4 |
 | GAP-RAG-04 | niegotowość | Retrieval poisoning defense only on Nexus `RagStep`; `perform_rag_retrieve` (catalog) has no filter | **P1** | M-RAG.25 | 14.5 |
@@ -91,13 +91,13 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-14 | niedoróbka | `embedding_model_version` on profile/metadata with no mismatch warn, filter, or reindex queue policy | **P2** | M-RAG.31 | — |
 | GAP-RAG-15 | ograniczenie | No autonomous MIME/size-based chunking or retriever selection — Tier-3 must define `RagProfile` | — | Tier-3 + AHI | — |
 | GAP-RAG-16 | niska jakość | `QueryRouter` tier selection is word-count heuristic only — no LLM intent / complexity classifier | **P2** | M-RAG.32 | — |
-| GAP-RAG-17 | niedoróbka | `multiquery` retriever requires manual `retriever_id`; not activated by `query_expansion` profile field | **P0** | M-RAG.23 | 14.3 |
+| GAP-RAG-17 | niedoróbka | ~~`multiquery` not activated by `query_expansion`~~ — **closed M-RAG.23**: `effective_retriever(deep)` returns `multiquery` when expansion enabled | **P0** | M-RAG.23 **Done** | 14.3 |
 | GAP-RAG-18 | niegotowość | GraphRAG retriever **beta**; `production_rag_profile()` uses in-memory graph store (harness preset, not multi-tenant prod) | **P1** | M-RAG.33 | — |
 | GAP-RAG-19 | niedoróbka | `AgenticRetrievalLoop` cannot switch retriever between iterations; no RAG-level token/cost budget in trace | **P2** | M-RAG.34 | — |
 | GAP-RAG-20 | niegotowość | Tenant isolation not uniformly enforced — production depends on per-backend namespace (only `InMemoryVectorStore` hard-fails mismatch) | **P1** | M-RAG.35 | — |
 | GAP-RAG-21 | niegotowość | No RAG load/soak gate for production SLO (latency, recall regression under concurrency) | **P2** | M-RAG.36 | — |
 | GAP-RAG-22 | niska jakość | `semantic` chunking has O(n) embed cost per document — no ingest size guard or profile warning | **P2** | M-RAG.37 | — |
-| GAP-RAG-23 | niska jakość | M-RAG.6 query expansion marked **Partial** — profile surface implies feature completeness | **P0** | M-RAG.23 | 14.3 |
+| GAP-RAG-23 | niska jakość | ~~M-RAG.6 query expansion **Partial**~~ — **closed M-RAG.23**: M-RAG.6 **Done** | **P0** | M-RAG.23 **Done** | 14.3 |
 
 **Traceability rule:** no open GAP-RAG row without a **Planned** M-RAG.\* deliverable in [`plan/RAG.md`](../plan/RAG.md). GAP-RAG-15 is an explicit architectural boundary, not a harness defect.
 
@@ -172,7 +172,7 @@ RETRIEVE (rag.retrieve / RetrievalService)
 | `hybrid` | Dense + lexical (`query_hybrid` or in-process alpha blend) | Default standard tier |
 | `mmr` | Maximal marginal relevance | Diversity-sensitive context |
 | `parent_child` | Child search + parent dedup | After `parent_child` chunking ingest |
-| `multiquery` | Query expansion + merge | Multi-aspect queries — **requires `retriever_id` or M-RAG.23 wiring** |
+| `multiquery` | Query expansion + merge | Deep tier when `query_expansion != off` (M-RAG.23); or explicit `retriever_id` |
 | `hierarchical` | TOC index + chunk index | Large structured docs — **requires `toc_vector_store` wiring (M-RAG.24)** |
 | `fusion` | RRF over vector + hybrid + parent_child | Deep tier default |
 | `graph_rag` | Vector seed + graph traversal | When `graph_rag_enabled` + `GraphStore` configured (**beta**) |
@@ -291,7 +291,7 @@ Automatic tier routing (`QueryRouter`) covers **cost/latency tiers only**, not M
 ## Tier-3 production checklist (minimum)
 
 1. **`IntegrationProfile`:** non-inmemory `vector_store`; `rerank_provider` when quality-critical; `graph_store=neo4j` if GraphRAG enabled.
-2. **`RagProfile`:** explicit chunking per corpus type; `route_mode=auto`; do not rely on default `query_expansion` until M-RAG.23 ships.
+2. **`RagProfile`:** explicit chunking per corpus type; `route_mode=auto`; set `query_expansion=off` to use `deep_retriever_id` (e.g. `fusion`) instead of `multiquery`.
 3. **Ingest:** sync `IngestPipeline` only for files below Tier-3 size threshold; schedule async reindex via orchestrator after M-RAG.26.
 4. **Security:** route retrieval through Nexus `ContextBuilder` / `RagStep` with poisoning enabled; restrict raw `rag.retrieve` on untrusted surfaces.
 5. **Observability:** enable RAG metrics; adopt OTel spans after M-RAG.27.
@@ -331,7 +331,7 @@ Code-backed audit (`guides/audit/RAG.md`, mode `audit-only`). Key confirmations:
 |-------|--------|----------|
 | Unit RAG suite | **114 passed**, 1 skipped (`fastembed` optional) | `uv run pytest tests/unit/rag/ -q` |
 | Golden + tools + bridge gate | **24 passed** | `test_golden_retrieval_gate.py`, `tests/unit/tools/providers/rag/`, `test_rag_runtime_bridge.py` |
-| `query_expansion` unwired | **Confirmed open** | Field only in `rag_profile.py`; absent from `retrieval_service.py` / `retriever_bootstrap.py` |
+| `query_expansion` wired | **Closed M-RAG.23** | `effective_retriever(deep)` + `query_expander_from_profile()` in `retriever_bootstrap.py` |
 | DualIndex not on default ingest | **Confirmed open** | `ingest_pipeline.py` → `vectorstore.add_documents`; bootstrap omits `toc_vector_store` |
 | Catalog poisoning gap | **Confirmed open** | `perform_rag_retrieve` has no `filter_retrieved_chunks_for_poisoning` (Nexus path in `rag_step.py` only) |
 | Agents bypass vectorstore | **No violation** | No `vectorstore.query` in `agents/` |

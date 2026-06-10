@@ -154,6 +154,7 @@ def _build_service(
         vector_store=manager,
         embedding_manager=_FakeEmbedder(),
         graph_store=graph_store,
+        profile=profile,
     )
     service = RetrievalService(
         retriever_manager=retriever_manager,
