@@ -820,7 +820,8 @@ Integration Layer Score: L0-L4
 
 ## 14. RAG and Retrieval Layer
 
-**Authoring map (control plane):** `guides/AGENT_CREATION_GUIDE.md` **Appendix K** §K.5 · implementation closeout: plan **Phase RAG** (**Done**).
+**Canonical architecture:** [`architecture/RAG.md`](architecture/RAG.md) · implementation: [`plan/RAG.md`](plan/RAG.md) (**Phase M-RAG** **Done** · **M-RAG-DEPTH** planned)  
+**Authoring map (control plane):** `guides/AGENT_CREATION_GUIDE.md` **Appendix K** §K.5 · runtime bridge closeout: plan **Phase RAG** (**Done**)
 
 ### Purpose
 

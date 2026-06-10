@@ -36,14 +36,9 @@
 |------|-----|-------------|----------|
 | 1 | CTX-1 | `context_runtime_bridge` | Critical |
 | 2 | CTX-2 | `context_wiring` + Nexus factory wire | High |
-| 3 | CTX-DOC.1–2 | Appendix L + plan sync | Low |### 6.2be Phase RAG execution order (Band 2m — closed 2026-06-02)
+| 3 | CTX-DOC.1–2 | Appendix L + plan sync | Low |
 
-**Status:** **Done** · register: [Phase RAG](plan/MEMORY.md) · queue: [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed)
-
-| Step | ID | Deliverable | Priority |
-|------|-----|-------------|----------|
-| 1 | RAG-1 | `rag_runtime_bridge` + environment wire | Critical |
-| 2 | RAG-DOC.1 | Appendix K §K.5 + plan sync | Low |
+**RAG closeout (Band 2m):** canonical register in [`plan/RAG.md`](plan/RAG.md).
 
 ---
 

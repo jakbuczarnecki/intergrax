@@ -32,6 +32,7 @@ Execution: [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EX
 | [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) | [`plan/NEXUS_EXECUTION_FLOW.md`](plan/NEXUS_EXECUTION_FLOW.md) |
 | [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) | [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) |
 | [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) | [`plan/INTEGRATIONS.md`](plan/INTEGRATIONS.md) |
+| [`architecture/RAG.md`](architecture/RAG.md) | [`plan/RAG.md`](plan/RAG.md) |
 | [`architecture/TOOLS.md`](architecture/TOOLS.md) | [`plan/TOOLS.md`](plan/TOOLS.md) |
 | [`architecture/SKILLS.md`](architecture/SKILLS.md) | [`plan/SKILLS.md`](plan/SKILLS.md) |
 | [`architecture/LLM_ADAPTERS.md`](architecture/LLM_ADAPTERS.md) | [`plan/LLM_ADAPTERS.md`](plan/LLM_ADAPTERS.md) |
@@ -72,7 +73,7 @@ Execution: [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EX
 | 9 Orchestration / graph / scheduler | `ORCHESTRATION` + `NEXUS_EXECUTION_FLOW` |
 | 10 Subagents | `NEXUS_EXECUTION_FLOW` §27 |
 | 11–13 Tools / skills / integrations | `TOOLS` · `SKILLS` · `INTEGRATIONS` |
-| 14 RAG | `INTEGRATIONS` + `MEMORY` §20 |
+| 14 RAG | `RAG` (+ `MEMORY` for Knowledge vs LTM boundary) |
 | 15–16 Memory / context | `MEMORY` |
 | 17–20 Prompt / assembly / registry / capability graph | `AGENT_CONTRACTS_AND_ASSEMBLY` |
 | 21 Observability | `OBSERVABILITY` |
@@ -102,6 +103,7 @@ Essential platform behaviours span multiple domain pairs — use this index befo
 | Sync / async execution postures | [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §57 | ORCH-6 |
 | Interrupt anywhere / resume from checkpoint | [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §28 + UAEP §42.8–§42.9 | FLOW-CTL |
 | Guardrails / policy enforcement (catalog) | [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.11.6 · §42.37 · vendor backends [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) §47 | GR-DOC · M.12 |
+| RAG / retrieval engine | [`architecture/RAG.md`](architecture/RAG.md) · integration slugs [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) | M-RAG · M-RAG-DEPTH |
 
 Platform docs do not replace `agents/*/ARCHITECTURE.md` or `applications/*/ARCHITECTURE.md`.
 

@@ -6,6 +6,8 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
+**RAG engine (layer 14):** [`architecture/RAG.md`](../architecture/RAG.md) ↔ [`plan/RAG.md`](RAG.md) — M-RAG, M-RAG-DEPTH, Phase RAG closeout. This plan covers **integration catalog** slugs only.
+
 ---
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
@@ -18,21 +20,12 @@
 |----|---------|-----|----------|--------|
 | AUDIT-IDEAL-13.1 | §13 Integrations | Integration marketplace catalog + trust scoring | P3 | **Done** |
 | AUDIT-IDEAL-13.2 | §13 Integrations | Catalog hot-reload without host restart | P3 | **Done** |
-| AUDIT-IDEAL-14.1 | §14 RAG | Graph RAG production profile (shared with MEMORY) | P1 | **Done** |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 
 ---
 
-### 6.1e Harness implementation queue — RAG closeout (closed)
-
-**Purpose:** Single ordered list for **Phase RAG** (Band 2m). **Closed 2026-06-02**.
-
-| Order | ID | Type | Status | Deliverable | Acceptance |
-|-------|-----|------|--------|-------------|------------|
-| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts | `pytest -m gate` green |
-| 1 | **RAG-DOC.1** | Docs | **Done** | Appendix K §K.5 + AUDIT_MAP §14 | Author map complete |
-| 2 | **RAG-1** | Code | **Done** | `rag_runtime_bridge` + environment wire | `test_rag_runtime_bridge.py` |### 6.1d Harness implementation queue — integration closeout (closed)
+### 6.1d Harness implementation queue — integration closeout (closed)
 
 **Purpose:** Single ordered list for **Phase INT** (Band 2l). **Closed 2026-06-02**.
 
@@ -190,38 +183,6 @@ Wave H-INT-5 (enterprise):  M-P4.17 → M-P4.18 → M-P4.19 → M-P4.20 → M-P4
 
 ---
 
----
-
-## Phase RAG — RAG retrieval control plane closeout
-
-**Status:** **Done** (2026-06-02) — **3/3** deliverables Done (RAG-DOC.* + RAG-1); gate **612 passed**
-
-**Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §14; author map: **Appendix K** §K.5.
-
-**Priority ladder:** **Band 2m** (§4.0) — closed; default queue = **§6.1** maintenance.
-
-**Execution order:** [§6.2be](#62be-phase-rag-execution-order-band-2m--closed) · queue: [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed)
-
-### RAG — Master register
-
-| ID | Area | Deliverable | Status | Priority | Modules | Acceptance |
-|----|------|-------------|--------|----------|---------|------------|
-| RAG-DOC.1 | RAG0 | **Appendix K** §K.5 + AUDIT_MAP §14 cross-ref | **Done** | High | `docs/*` | RAG bridge documented |
-| RAG-1 | RAG1 | **`rag_runtime_bridge.py`** + RAG stack on `wire_application_environment` | **Done** | **Critical** | `rag_runtime_bridge.py`, `environment_wiring.py`, `runtime_config_bridge.py` | `test_rag_runtime_bridge.py` |
-
-### RAG — Paydown log
-
-| Date | RAG ID | Summary |
-|------|--------|---------|
-| 2026-06-02 | RAG-DOC.1 | Appendix K §K.5 + plan sync |
-| 2026-06-02 | RAG-1 | RAG runtime bridge + environment wire; gate **600** |
-
-**Phase RAG complete when:** RAG-1 + RAG-DOC.* **Done**; §6.1e queue closed. **Status: complete (2026-06-02).**
-
----
-
----
-
 ### Phase H — Interaction Surfaces (§18)
 
 | # | Deliverable | Status | Canon | Notes |
@@ -246,39 +207,7 @@ Wave H-INT-5 (enterprise):  M-P4.17 → M-P4.18 → M-P4.19 → M-P4.20 → M-P4
 
 **Catalog (2026-06-08):** **185** slugs in `layout.py` · **12** core / **185** full preset · timeline: pre-P4 **99** → M.6 P4 **127** (+28) → M.6 P5 **135** (+8 greenfield, 25 hardened) → M.6 P6 **167** (+32) → M.7 P7 **185** (+18).
 
-**Out of scope:** `intergrax/llm_adapters/` — LLM providers are **not** part of the Integration Library (§7.1.2).
-
----
-
-### Phase M-RAG — RAG Engine (Tier-0)
-
-**Canon:** §5.2.2 · **Architecture:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) (RAG stack)  
-**Goal:** One configurable retrieval path for `rag.retrieve`, Nexus `ContextBuilder`, and ingest — no duplicate dense-only shortcuts; parsers/chunkers/rerankers selected via profile and Integration Library slugs (never hardcoded to a single vendor).
-
-| # | Deliverable | Status | Notes |
-|---|-------------|--------|-------|
-| M-RAG.1 | `RagProfile` + env (`INTERGRAX_RAG_*`) | **Done** | `intergrax/rag/profiles/rag_profile.py` |
-| M-RAG.2 | `RetrievalService` (route → retrieve → rerank) | **Done** | `intergrax/rag/retrieval/`; wired to `rag.retrieve` + Nexus |
-| M-RAG.3 | Adaptive `QueryRouter` (fast / standard / deep) | **Done** | `intergrax/rag/routing/query_router.py` |
-| M-RAG.4 | `IngestPipeline` + configurable chunking strategy | **Done** | `intergrax/rag/ingest/`; `rag.ingest_document` |
-| M-RAG.5 | Contextual chunk enricher (optional LLM) | **Done** | `INTERGRAX_RAG_CONTEXTUAL_ENRICH`; injected `LLMAdapter` |
-| M-RAG.6 | Query expansion (`deterministic` / `llm`) | **Done** | `MultiQueryRetriever` + `query_expander.py` |
-| M-RAG.7 | Evaluation metrics (`recall@k`, MRR) | **Done** | `intergrax/rag/evaluation/metrics.py` |
-| M-RAG.8 | `create_default_rag_stack()` bootstrap | **Done** | `intergrax/rag/bootstrap/rag_stack_bootstrap.py` |
-| M-RAG.9 | Tool/Nexus wiring (`retrieval_service`, profile on `ToolWiringContext`) | **Done** | `RuntimeConfig.retrieval_service` |
-| M-RAG.10 | Native sparse / BM25 in vector backends | **Done** | `LexicalHybridSupport` + `query_hybrid` on InMemory/Qdrant/Weaviate; RRF fusion |
-| M-RAG.11 | RAG eval CI gate + golden datasets | **Done** | `tests/fixtures/rag_golden/`, `golden_harness.py`, `rag-guard.yml` |
-| M-RAG.12 | GraphRAG (`GraphStore` contract) | **Done** (beta) | `graph/` + `graph_rag` retriever + heuristic indexer |
-| M-RAG.13 | Platform agentic retrieval loop (budgeted) | **Done** | `AgenticRetrievalLoop` on deep tier + `INTERGRAX_RAG_AGENTIC_*` |
-| M-RAG.14 | Qdrant native sparse vectors + RRF fusion | **Done** | `INTERGRAX_RAG_QDRANT_SPARSE`, `bm25_sparse_encoder.py` |
-| M-RAG.15 | Weaviate native `query.hybrid` | **Done** | Live client + `INTERGRAX_RAG_WEAVIATE_NATIVE_HYBRID`; fallback to in-memory |
-| M-RAG.16 | LLM graph indexer (optional adapter) | **Done** | `INTERGRAX_RAG_GRAPH_INDEXER_MODE=llm\|heuristic_then_llm` |
-| M-RAG.17 | LLM agentic query refinement | **Done** | `INTERGRAX_RAG_AGENTIC_QUERY_MODE=llm` + injected `LLMAdapter` |
-| M-RAG.18 | Neo4j GraphRAG backend | **Done** | `Neo4jRagGraphStore` + `INTERGRAX_RAG_GRAPH_STORE=neo4j` |
-| M-RAG.19 | SPLADE / learned sparse encoder | **Done** | `sparse_encoder.py`; `INTERGRAX_RAG_SPARSE_ENCODER=splade` (optional `fastembed`) |
-| M-RAG.20 | Weaviate prod hardening | **Done** | `schema.py` — migration, multi-tenant, metadata filters |
-| M-RAG.21 | Extended golden datasets | **Done** | graph_rag, multi_hop, agentic scenarios in `retrieval_cases.json` |
-| M-RAG.22 | RAG observability metrics | **Done** | `INTERGRAX_RAG_METRICS_ENABLED`, runtime plugin on `TASK_COMPLETED` |
+**Out of scope:** `intergrax/llm_adapters/` — LLM providers are **not** part of the Integration Library (§7.1.2). RAG retrieval orchestration (`intergrax/rag/`) — [`plan/RAG.md`](RAG.md).
 
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|

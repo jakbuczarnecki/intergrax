@@ -63,8 +63,13 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-12.2 | Skills | 12 | Dynamic skill selection L4 hook (AHI) | P2 | `SKILLS` · `ADAPTIVE_HARNESS_INTELLIGENCE` | **Done** |
 | AUDIT-IDEAL-13.1 | Integrations | 13 | Integration marketplace catalog + trust scoring | P3 | `INTEGRATIONS` | **Done** |
 | AUDIT-IDEAL-13.2 | Integrations | 13 | Catalog hot-reload without host restart | P3 | `INTEGRATIONS` | **Done** |
-| AUDIT-IDEAL-14.1 | RAG | 14 | Graph RAG as default production retrieval profile | P1 | `MEMORY` · `INTEGRATIONS` | **Done** |
+| AUDIT-IDEAL-14.1 | RAG | 14 | Graph RAG as default production retrieval profile | P1 | `RAG` · `MEMORY` | **Done** |
 | AUDIT-IDEAL-14.2 | RAG | 14 | Retrieval poisoning defense live on product hosts | P1 | `MEMORY` | **Done** |
+| AUDIT-IDEAL-14.3 | RAG | 14 | Wire `RagProfile.query_expansion` to retrieval path | P0 | `RAG` | **Planned** |
+| AUDIT-IDEAL-14.4 | RAG | 14 | Dual-index + hierarchical retriever default bootstrap | P1 | `RAG` | **Planned** |
+| AUDIT-IDEAL-14.5 | RAG | 14 | Retrieval poisoning defense on `rag.retrieve` catalog path | P1 | `RAG` · `UNIFIED_EXECUTION_RUNTIME` | **Planned** |
+| AUDIT-IDEAL-14.6 | RAG | 14 | Large-corpus async ingest (stream / job orchestration) | P1 | `RAG` | **Planned** |
+| AUDIT-IDEAL-14.7 | RAG | 14 | OpenTelemetry spans on RAG retrieve + ingest hot path | P2 | `RAG` · `OBSERVABILITY` | **Planned** |
 | AUDIT-IDEAL-15.1 | Memory | 15 | Org memory 2.5 (organizational LTM scope) | **P0** | `MEMORY` | **Done** |
 | AUDIT-IDEAL-15.2 | Memory | 15 | Episodic / semantic / procedural memory taxonomy (`MemoryKind` uplift) | P1 | `MEMORY` | **Done** |
 | AUDIT-IDEAL-15.3 | Memory | 15 | Entity graph memory ship (beyond RFC — MEM-DEPTH-5.1) | P2 | `MEMORY` | **Done** |
@@ -129,7 +134,8 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) | 8.1, 8.2, 10.1, 10.2 |
 | [`TOOLS.md`](TOOLS.md) | 11.1, 11.2, 11.3 |
 | [`SKILLS.md`](SKILLS.md) | 12.1, 12.2 |
-| [`INTEGRATIONS.md`](INTEGRATIONS.md) | 13.1, 13.2, 14.1 (shared) |
+| [`INTEGRATIONS.md`](INTEGRATIONS.md) | 13.1, 13.2 |
+| [`RAG.md`](RAG.md) | 14.1 (shared), 14.3–14.7 |
 | [`MEMORY.md`](MEMORY.md) | 14.1, 14.2, 15.1, 15.2, 15.3, 16.1, 16.2 |
 | [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) | 17.1, 17.2, 18.1, 18.2, 19.1, 19.2, 20.1, 20.2, 31.1, 31.2 |
 | [`OBSERVABILITY.md`](OBSERVABILITY.md) | 5.3, 21.1, 21.2, 21.3, 30.2 |

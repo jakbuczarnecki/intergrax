@@ -43,7 +43,7 @@ docs/
 ├── architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md
 ├── architecture/CRITIC_VERIFICATION.md
 ├── architecture/NEXUS_EXECUTION_FLOW.md
-├── architecture/INTEGRATIONS.md · architecture/TOOLS.md · architecture/SKILLS.md · architecture/LLM_ADAPTERS.md · architecture/MODALITY.md
+├── architecture/INTEGRATIONS.md · architecture/RAG.md · architecture/TOOLS.md · architecture/SKILLS.md · architecture/LLM_ADAPTERS.md · architecture/MODALITY.md
 └── guides/AGENT_CREATION_GUIDE.md · guides/EXTENSION_AUTHOR_GUIDE.md · INTEGRAX_HARNESS_AUDIT_MAP.md
 ```
 
@@ -76,6 +76,7 @@ applications/    MAY import from agents/ and intergrax/
 | UAEP / §42 | docs/architecture/UNIFIED_EXECUTION_RUNTIME.md |
 | Tiers & principles | docs/architecture/PLATFORM_FOUNDATION.md |
 | Orchestration | docs/architecture/ORCHESTRATION.md |
+| RAG / retrieval | docs/architecture/RAG.md |
 | Memory | docs/architecture/MEMORY.md |
 | Observability | docs/architecture/OBSERVABILITY.md |
 | Target model | docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md |

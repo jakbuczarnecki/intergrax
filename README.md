@@ -296,7 +296,8 @@ Tier-0 building blocks — one canonical path per concern. Agents use these thro
 | **Tools** | **190** catalog tools · **48** bundles · `intergrax/tools/` | [architecture/TOOLS.md](docs/architecture/TOOLS.md) · [plan](docs/plan/TOOLS.md) · [USAGE](intergrax/tools/USAGE.md) |
 | **Skills** | **149** skills · **41** bundles · `intergrax/skills/` | [architecture/SKILLS.md](docs/architecture/SKILLS.md) · [plan](docs/plan/SKILLS.md) |
 | **LLM adapters** | 19 providers · typed `LLMAdapterResponse` | [architecture/LLM_ADAPTERS.md](docs/architecture/LLM_ADAPTERS.md) |
-| **RAG & memory** | Retrieval, ingest, STM/LTM, context compiler | [architecture/MEMORY.md](docs/architecture/MEMORY.md) |
+| **RAG** | Retrieval, ingest, hybrid/graph/agentic, golden eval | [architecture/RAG.md](docs/architecture/RAG.md) · [plan](docs/plan/RAG.md) |
+| **Memory** | STM/LTM, context compiler, Knowledge vs LTM boundary | [architecture/MEMORY.md](docs/architecture/MEMORY.md) · [plan](docs/plan/MEMORY.md) |
 | **Modality / ML** | Vision, speech, classical ML via catalog tools | [architecture/MODALITY.md](docs/architecture/MODALITY.md) |
 | **Governance & HITL** | Policy bundle, budgets, shadow workspace, sandbox | [UAEP §42.11](docs/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [Appendix H](docs/guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
 | **LLM guardrails** | Vendor scanners via Integration `llm_guardrail` (M.12) | [INTEGRATIONS §47](docs/architecture/INTEGRATIONS.md) · [UAEP §42.11.6](docs/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [ADR-GR-001](docs/adr/ADR-GR-001.md) |
@@ -357,7 +358,7 @@ intergrax/              # Tier-0 platform + Tier-1 Nexus
   scaffold/             # new-agent, new-application, new-stack
 agents/                 # Tier-2 specialized agents
 applications/           # Tier-3 deployable hosts
-docs/                   # Architecture canon (19 domain pairs) + guides
+docs/                   # Architecture canon (20 domain pairs) + guides
 infra/                  # Local Docker compose for backends
 tests/ · scripts/       # Gate tests and harness CI checks
 ```
@@ -379,6 +380,7 @@ tests/ · scripts/       # Gate tests and harness CI checks
 | Full Nexus execution flow | [NEXUS_EXECUTION_FLOW.md](docs/architecture/NEXUS_EXECUTION_FLOW.md) |
 | See catalog sizes (integrations / tools / skills) | [Tier-0 catalog summary](#tier-0-catalog-summary) |
 | Wire integrations / tools / skills | [INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) · [TOOLS.md](docs/architecture/TOOLS.md) · [SKILLS.md](docs/architecture/SKILLS.md) · [Appendix J](docs/guides/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) |
+| RAG engine / retrieval | [RAG.md](docs/architecture/RAG.md) · [plan/RAG.md](docs/plan/RAG.md) · [Appendix K §K.5](docs/guides/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) |
 | All agents / applications | [agents/README.md](agents/README.md) · [applications/README.md](applications/README.md) |
 | Harness audit (32 layers) | [INTEGRAX_HARNESS_AUDIT_MAP.md](docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
 | Business backlog only | [plan/PLATFORM_FOUNDATION.md §6.3a](docs/plan/PLATFORM_FOUNDATION.md#63a-business-backlog-register-consolidated) |

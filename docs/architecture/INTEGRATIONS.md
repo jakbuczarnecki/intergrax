@@ -79,7 +79,7 @@ Adapters should be generic and reusable.
 ## Catalog
 
 
-**Last updated:** 2026-06-08 (Phase M.7 P7 **Done** 18/18 · M.6 P6 **Done** 32/32)
+**Last updated:** 2026-06-10 (RAG domain pair split · M.7 P7 **Done** 18/18)
 
 The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. Agents and applications wire backends **by category**, not by vendor SDK, so the same agent code can run in a local lab, a customer VPC, or a multi-cloud deployment.
 
@@ -90,6 +90,7 @@ The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1 | Architecture canon — tiers, contracts, registry rules |
 | [plan/INTEGRATIONS.md) Phase M | Phase status, backlog, delivery workflow |
 | [guides/AGENT_CREATION_GUIDE.md](guides/AGENT_CREATION_GUIDE.md) Appendix E | How agents vs applications use integrations |
+| [architecture/RAG.md](RAG.md) | RAG retrieval engine (consumes integration slugs) |
 | [architecture/TOOLS.md](architecture/TOOLS.md) | Agent-facing tools that compose these integrations |
 | Per-provider guides | `intergrax/integrations/providers/<category>/<slug>/USAGE.md` |
 | [../infra/README.md](../infra/README.md) | **Local Docker infrastructure** — compose profiles, manage scripts |
@@ -554,6 +555,14 @@ None — all enum slugs in `FIELD_SLUGS` are registered except cloud-platform-on
 | `s3` | [USAGE.md](../intergrax/integrations/providers/object_storage/s3/USAGE.md) |
 | `azure_blob` | [USAGE.md](../intergrax/integrations/providers/object_storage/azure_blob/USAGE.md) |
 | `gcs` | [USAGE.md](../intergrax/integrations/providers/object_storage/gcs/USAGE.md) |
+
+---
+
+## RAG engine (cross-reference)
+
+**Canonical domain pair:** [`architecture/RAG.md`](RAG.md) ↔ [`plan/RAG.md`](../plan/RAG.md) — retrieval orchestration, ingest, eval, M-RAG register.
+
+This catalog doc covers **integration slugs** consumed by RAG (`vector_store`, `document_parser`, `rerank_provider`, `graph_store`). Do not duplicate engine canon here.
 
 ---
 

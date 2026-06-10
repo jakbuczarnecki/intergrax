@@ -705,39 +705,11 @@ Category contracts MUST be **backend-agnostic**: same method names and DTOs whet
 | **RAG pipeline** | `intergrax/rag/` | Vector stores + document parsers use **catalog bridges**; orchestration stays in `rag/` |
 | **Model & modality inference** | `intergrax/model_inference/` (planned), tools, optional integration hosts | Vision CV (YOLO, ONNX, …), classical ML, speech APIs — §7.1.9; **not** LLM slugs in Integration Library |
 
-#### RAG stack (Tier-0, Phase M-RAG)
+#### RAG stack (Tier-0)
 
-Modular layers — all strategy IDs and integration slugs are **configurable** via `RagProfile` / env (`INTERGRAX_RAG_*`), never hardcoded to a single parser (e.g. Docling) or vector backend:
+**Canonical domain pair:** [`architecture/RAG.md`](RAG.md) ↔ [`plan/RAG.md`](../plan/RAG.md) — `RetrievalService`, `IngestPipeline`, `RagProfile`, M-RAG register, golden harness, integration boundaries.
 
-| Layer | Module | Role |
-|-------|--------|------|
-| Profile | `rag/profiles/rag_profile.py` | Retriever, reranker, routing, chunking, contextual enrich, query expansion |
-| Ingest | `rag/ingest/ingest_pipeline.py` | Loader → chunk (strategy id) → optional contextual enrich → embed → index |
-| Retrieval | `rag/retrieval/retrieval_service.py` | **Single entry** for `rag.retrieve`, Nexus `ContextBuilder`, diagnostics |
-| Routing | `rag/routing/query_router.py` | `fast` / `standard` / `deep` tiers (adaptive cost) |
-| Retrievers | `rag/retrievers/` | Registry: vector, hybrid, fusion (RRF), MMR, parent–child, hierarchical, multi-query |
-| Rerankers | `rag/rerankers/` | Registry + integration slugs (`cohere_rerank`, `jina_rerank`) |
-| Evaluation | `rag/evaluation/metrics.py`, `golden_harness.py` | Offline `recall@k`, MRR; golden regression (`tests/fixtures/rag_golden/`) — scenarios: retrieval, graph_rag, multi_hop, agentic |
-| Hybrid (BM25+dense) | `rag/vectorstore/hybrid/`, `sparse/lexical_index.py`, `sparse/sparse_encoder.py` | `query_hybrid` on InMemory/Qdrant/Weaviate; encoders: `bm25_hash` (default) or optional `splade` (`INTERGRAX_RAG_SPARSE_ENCODER`) |
-| GraphRAG | `rag/graph/`, retriever `graph_rag` | `GraphStore` contract; backends: `inmemory` (default), `neo4j` (`INTERGRAX_RAG_GRAPH_STORE`); heuristic/LLM indexer |
-| Agentic deep tier | `rag/retrieval/agentic_loop.py`, `query_refiner.py` | Budgeted loop; `agentic_query_mode=deterministic\|llm`; trace exports `agentic_total_latency_ms` |
-| Qdrant sparse | `integrations/.../qdrant/rag_store.py` | Optional native sparse + RRF (`INTERGRAX_RAG_QDRANT_SPARSE`); pluggable sparse encoder |
-| Weaviate hybrid | `integrations/.../weaviate/rag_store.py`, `schema.py` | Native `query.hybrid`; schema migration; native multi-tenancy; metadata filter translation |
-| Observability | `rag/tracking/metrics.py`, `observability_bridge.py` | See **RAG observability** below |
-| Graph indexer | `rag/graph/indexer/` | `heuristic`, `llm`, or `heuristic_then_llm` via `INTERGRAX_RAG_GRAPH_INDEXER_MODE` |
-| Bootstrap | `rag/bootstrap/rag_stack_bootstrap.py` | `create_default_rag_stack()` for Tier-3 `ToolWiringContext` |
-
-**RAG observability:** Enable with `INTERGRAX_RAG_METRICS_ENABLED=true`. `bootstrap_nexus_platform()` in `applications/_shared/platform_wiring.py` registers LLM + RAG metrics plugins (lab default). Manual: `register_rag_observability_plugin(plugins)` from `rag/tracking/observability_bridge.py`.
-
-Per `(tenant_id, retriever_id, route_tier)`: `calls`, `retrieval_latency_ms`, `rerank_latency_ms`, `hybrid_calls`, `agentic_iterations`, `recall_at_k_avg` (golden harness). `RetrievalResult.trace` exports `hybrid_used`, `agentic_total_latency_ms`, `recall_at_k`, route tier, stop reason. Exported on `TASK_COMPLETED` via structured log field `rag_metrics` (same bus hook as LLM).
-
-**Metrics HTTP (decision Q+-O.3 — Won't fix default route):** RAG counters use the same structured-log + optional Pushgateway path as LLM (`TASK_COMPLETED` payload field `rag_metrics`). Intergrax does **not** ship `register_rag_metrics_routes` / `GET /metrics/rag` in core — Tier-3 may register a custom route or scrape unified `/metrics` when the host exposes Prometheus text from the observability plugin bundle.
-
-**Parser trace:** `parser_trace_flush` / `parser_trace_exporter` may write directly to Phoenix/Langfuse without `ObservabilityBackend` (document-ingest latency). Env: `INTERGRAX_PARSER_TRACE_*` — [../infra/README.md](../infra/README.md). Nexus run traces stay on SQLite / configured trace store (§33.1).
-
-**Golden regression:** `tests/fixtures/rag_golden/retrieval_cases.json` — scenarios `retrieval`, `graph_rag`, `multi_hop`, `agentic`; workflow `.github/workflows/rag-guard.yml`.
-
-**Wiring rule:** `ToolWiringContext` and `RuntimeConfig` expose `retrieval_service`, `rag_profile`, `retriever_manager`, `reranker_manager`. Document parsers resolve via `IntegrationProfile` + `INTERGRAX_RAG_DOCUMENT_PARSER_SLUG` (optional); default loader uses handler registry (smart parsers + catalog fallback).
+Summary: one retrieval path (`rag.retrieve` + Nexus `RagStep`); vector stores and parsers via Integration Library catalog bridges; Knowledge vs user memory boundary in [`architecture/MEMORY.md`](MEMORY.md).
 
 Do **not** add an `llm_provider` category or LLM slugs to the Integration Catalog backlog.
 

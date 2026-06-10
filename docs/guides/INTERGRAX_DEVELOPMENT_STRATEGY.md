@@ -108,7 +108,7 @@ Implementation is not the goal. Correct architecture is not the goal.
 | Tiers, Nexus, UAEP, Harness terms | `intergrax_runtime_architecture.md` (hub) + `architecture/` (§5.3 Harness terms = `architecture/PLATFORM_FOUNDATION.md`) |
 | Phase status, deliverables, gates | `intergrax_runtime_architecture.md` |
 | Agent author workflow | `guides/AGENT_CREATION_GUIDE.md` |
-| Integration / tool / skill catalogs | `architecture/INTEGRATIONS.md` / `architecture/TOOLS.md` / `architecture/SKILLS.md` |
+| Integration / RAG / tool / skill catalogs | `architecture/INTEGRATIONS.md` / `architecture/RAG.md` / `architecture/TOOLS.md` / `architecture/SKILLS.md` |
 
 After each merged harness PR: `uv run pytest -m gate -q` green; `python scripts/check_harness_no_getattr.py`; sync plan §0.5 gate count.
 

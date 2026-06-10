@@ -19,7 +19,7 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 
 | Document | Purpose |
 |----------|---------|
-| Phase **M-RAG** | [`plan/TOOLS.md`](../plan/TOOLS.md) — RAG engine phases M-RAG.1–M-RAG.17 |
+| Phase **M-RAG** | [`plan/RAG.md`](../plan/RAG.md) — RAG engine phases M-RAG.1–M-RAG.22 |
 | RAG stack canon | [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) — Tier-0 retrieval architecture |
 | [guides/EXTENSION_AUTHOR_GUIDE.md](../guides/EXTENSION_AUTHOR_GUIDE.md) | **External tool plugins** — `ToolPlugin`, entry points, MCP export |
 | [intergrax/tools/USAGE.md](../../intergrax/tools/USAGE.md) | **Operational guide** — wire tools in Tier-3 apps and invoke from agents |
