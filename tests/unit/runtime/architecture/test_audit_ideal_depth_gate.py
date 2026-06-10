@@ -511,6 +511,37 @@ def test_audit_ideal_32_1_debt_burn_down() -> None:
     assert not report.unresolved_debt_ids
 
 
+def test_audit_ideal_5_2_compliance_profile() -> None:
+    from intergrax.applications._shared.compliance_profile_wiring import resolve_compliance_profile_wiring
+
+    wiring = resolve_compliance_profile_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+
+
+def test_audit_ideal_6_2_live_model_routing() -> None:
+    from intergrax.applications._shared.llm_routing_wiring import resolve_live_model_routing_wiring
+
+    wiring = resolve_live_model_routing_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+    assert wiring.routing_decision is not None
+
+
+def test_audit_ideal_24_3_tenant_fairness_quotas() -> None:
+    from intergrax.applications._shared.tenant_quota_wiring import resolve_tenant_quota_wiring
+
+    wiring = resolve_tenant_quota_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+    assert wiring.plan is not None
+
+
+def test_audit_ideal_32_2_plan_scorecard_sync() -> None:
+    from intergrax.runtime.architecture.plan_scorecard_sync import load_scorecard_sync
+
+    sync = load_scorecard_sync(REPO_ROOT)
+    assert sync.in_sync is True
+    assert sync.harness_l3_layers == 32
+
+
 def test_audit_ideal_deferred_register() -> None:
     register = REPO_ROOT / "docs" / "plan" / "AUDIT_IDEAL_2026.md"
     text = register.read_text(encoding="utf-8")

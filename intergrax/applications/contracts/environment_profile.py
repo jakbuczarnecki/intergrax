@@ -27,6 +27,7 @@ from intergrax.tools.registry.profile import ToolProfile
 from intergrax.applications.contracts.business_outcome_webhook import BusinessOutcomeWebhookConfig
 from intergrax.runtime.adaptive.contracts import UtilityWeights
 from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
+from intergrax.runtime.policy.compliance_profiles import ComplianceDomainClass
 
 
 class IdentityProfile(BaseModel):
@@ -173,6 +174,16 @@ class CostProfile(BaseModel):
     quota_degrade_threshold_ratio: float = Field(default=0.90, ge=0.0, le=1.0)
     forecasting_enabled: bool = False
     optimization_recommendations_enabled: bool = False
+    tenant_fairness_quotas_enabled: bool = False
+
+
+class ComplianceProfile(BaseModel):
+    """Regulated-domain compliance template selection (AUDIT-IDEAL-5.2)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = False
+    domain_class: ComplianceDomainClass = ComplianceDomainClass.REGULATED
 
 
 class EvaluationProfile(BaseModel):
@@ -240,6 +251,7 @@ class AdaptiveProfile(BaseModel):
     business_outcome_webhook: BusinessOutcomeWebhookConfig | None = None
     feature_flag_slug: str | None = None
     rollout_flag_key: str = "harness.adaptive.recommend"
+    live_model_routing_enabled: bool = False
 
 
 class ScalingProfile(BaseModel):
@@ -315,6 +327,7 @@ class ApplicationEnvironmentProfile(BaseModel):
     reliability_profile: ReliabilityProfile = Field(default_factory=ReliabilityProfile)
     observability_profile: ObservabilityProfile = Field(default_factory=ObservabilityProfile)
     cost_profile: CostProfile = Field(default_factory=CostProfile)
+    compliance_profile: ComplianceProfile = Field(default_factory=ComplianceProfile)
     evaluation_profile: EvaluationProfile = Field(default_factory=EvaluationProfile)
     critic_profile: CriticProfile = Field(default_factory=CriticProfile)
     adaptive_profile: AdaptiveProfile = Field(default_factory=AdaptiveProfile)
@@ -634,7 +647,9 @@ class ApplicationEnvironmentProfile(BaseModel):
                 max_tool_calls=64,
                 forecasting_enabled=True,
                 optimization_recommendations_enabled=True,
+                tenant_fairness_quotas_enabled=True,
             ),
+            compliance_profile=ComplianceProfile(enabled=True),
             prompt_profile=PromptProfile(approval_required=True),
             modality_profile=cls._product_modality_profile(),
             adaptive_profile=AdaptiveProfile(
@@ -644,6 +659,7 @@ class ApplicationEnvironmentProfile(BaseModel):
                     AdaptiveLoopKind.EXECUTION_STRATEGY_TUNING,
                     AdaptiveLoopKind.ROUTING_TUNING,
                 ],
+                live_model_routing_enabled=True,
             ),
             evaluation_profile=EvaluationProfile(
                 shadow_eval_enabled=False,
