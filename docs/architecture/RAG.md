@@ -60,7 +60,7 @@ Tier-3 IntegrationProfile + RagProfile
 | Security (poisoning) | **L3** | Nexus `RagStep` + catalog `rag.retrieve` when `security_profile` wired (M-RAG.25) |
 | Citations | **L2** | Metadata in chunks + composer; no formal `Citation` on `RetrievalResult` |
 | Vector backends (prod SLO) | **L2.5–L3** | Catalog **stable:** `qdrant`, `pgvector`, `chroma`, `weaviate`, `lancedb`, `typesense`; **beta:** `pinecone`, `milvus`, `vespa`, `inmemory`; soak gate `prod_slo.py` + gate tests (M-RAG.30) |
-| Multi-tenant isolation | **L2** | `MetadataFilter` + in-memory enforce; prod depends on backend namespace design |
+| Multi-tenant isolation | **L2.5–L3** | Cross-backend contract tests for `inmemory`/`pgvector`/`weaviate`/`qdrant` (M-RAG.35); prod namespace design still required per backend |
 | Evaluation depth | **L2.5** | Golden harness (lab scenarios); no load/soak SLO gate |
 
 **Overall engine posture:** **L2.5 implementation / L3 control plane** — production-ready as a **Harness foundation** when Tier-3 defines explicit profiles; not drop-in for multi-GB corpora, untrusted catalog retrieve, or autonomous algorithm selection without M-RAG-DEPTH closeout.
@@ -94,7 +94,7 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-17 | niedoróbka | ~~`multiquery` not activated by `query_expansion`~~ — **closed M-RAG.23**: `effective_retriever(deep)` returns `multiquery` when expansion enabled | **P0** | M-RAG.23 **Done** | 14.3 |
 | GAP-RAG-18 | niegotowość | ~~No Tier-3 GraphRAG prod preset~~ — **closed M-RAG.33**: `production_graph_rag_profile()` requires `neo4j`; `production_rag_profile()` documented harness-only (in-memory graph) | **P1** | M-RAG.33 **Done** | — |
 | GAP-RAG-19 | niedoróbka | `AgenticRetrievalLoop` cannot switch retriever between iterations; no RAG-level token/cost budget in trace | **P2** | M-RAG.34 | — |
-| GAP-RAG-20 | niegotowość | Tenant isolation not uniformly enforced — production depends on per-backend namespace (only `InMemoryVectorStore` hard-fails mismatch) | **P1** | M-RAG.35 | — |
+| GAP-RAG-20 | niegotowość | ~~No cross-backend tenant isolation contract~~ — **closed M-RAG.35**: `tenant_isolation_contract.py` + gate tests per backend; live qdrant probe in integration soak | **P1** | M-RAG.35 **Done** | — |
 | GAP-RAG-21 | niegotowość | No RAG load/soak gate for production SLO (latency, recall regression under concurrency) | **P2** | M-RAG.36 | — |
 | GAP-RAG-22 | niska jakość | `semantic` chunking has O(n) embed cost per document — no ingest size guard or profile warning | **P2** | M-RAG.37 | — |
 | GAP-RAG-23 | niska jakość | ~~M-RAG.6 query expansion **Partial**~~ — **closed M-RAG.23**: M-RAG.6 **Done** | **P0** | M-RAG.23 **Done** | 14.3 |
@@ -237,7 +237,7 @@ Bootstrap: `create_vectorstore_manager()` in `vectorstore/bootstrap/` resolves v
 
 ## Tenant scope and metadata
 
-Retrieve and ingest accept scope fields (`tenant_id`, `session_id`, `user_id`, `workspace_id`) → `MetadataFilter` on vector query. `InMemoryVectorStore` enforces `tenant_id` mismatch as `ValueError`. Production isolation depends on vector backend namespace design (Weaviate multi-tenant schema supported) — contract tests: M-RAG.35.
+Retrieve and ingest accept scope fields (`tenant_id`, `session_id`, `user_id`, `workspace_id`) → `MetadataFilter` on vector query. `InMemoryVectorStore` enforces `tenant_id` mismatch as `ValueError`. Cross-backend contract: `intergrax/rag/vectorstore/tenant/tenant_isolation_contract.py` — gate tests for `inmemory`, `pgvector`, `weaviate`, `qdrant` (M-RAG.35).
 
 ---
 
@@ -295,7 +295,7 @@ Automatic tier routing (`QueryRouter`) covers **cost/latency tiers only**, not M
 3. **Ingest:** sync `rag.ingest_document` only below `sync_ingest_max_bytes`; oversized sources → `rag.schedule_ingest_job` with configured `async_ingest_workflow_id`.
 4. **Security:** enable `retrieval_poisoning_defense_enabled` on `ApplicationSecurityProfile` so Nexus `RagStep` and catalog `rag.retrieve` share the same filter.
 5. **Observability:** enable RAG metrics; adopt OTel spans after M-RAG.27.
-6. **Isolation:** validate tenant namespace per chosen vector backend (M-RAG.35).
+6. **Isolation:** run gate `test_vectorstore_cross_tenant_isolation.py`; validate tenant namespace per chosen vector backend in ops (M-RAG.35).
 
 ---
 

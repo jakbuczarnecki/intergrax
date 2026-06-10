@@ -19,6 +19,7 @@ from intergrax.rag.vectorstore.soak.prod_slo import (
     run_vectorstore_soak,
     unique_soak_collection,
 )
+from intergrax.rag.vectorstore.tenant.tenant_isolation_contract import run_tenant_isolation_contract
 
 pytestmark = [pytest.mark.integration, pytest.mark.vectorstore_soak]
 
@@ -115,25 +116,28 @@ def test_metadata_filter(store: VectorStore) -> None:
     assert all(hit.metadata["group"] == 1 for hit in hits)
 
 
-def test_tenant_isolation() -> None:
+def test_tenant_isolation_qdrant_live() -> None:
     name = _unique_name("tenant_test")
 
+    def _qdrant_factory(tenant_id: str, collection_name: str):
+        return create_qdrant_vector_store(collection_name=collection_name, tenant_id=tenant_id)
+
     try:
-        store_a = create_qdrant_vector_store(collection_name=name, tenant_id="A")
-        store_b = create_qdrant_vector_store(collection_name=name, tenant_id="B")
+        result = run_tenant_isolation_contract(
+            _qdrant_factory,
+            slug="qdrant",
+            collection_name=name,
+            tenant_a="tenant_A",
+            tenant_b="tenant_B",
+        )
     except Exception as exc:
         pytest.skip(f"qdrant backend unavailable: {exc}")
 
-    docs = _docs(5)
-    embs = _emb(5)
+    if not result.cross_query_isolated and result.reason.startswith("tenant_a_ingest_failed"):
+        pytest.skip(f"qdrant tenant probe failed: {result.reason}")
 
-    try:
-        store_a.add_documents(docs, embs)
-    except Exception as exc:
-        pytest.skip(f"qdrant tenant probe failed: {exc}")
-
-    assert store_a.count() == 5
-    assert store_b.count() == 0
+    assert result.cross_query_isolated is True, result.reason
+    assert result.ingest_mismatch_rejected is True, result.reason
 
 
 @pytest.mark.parametrize("slug", list(STABLE_PROD_SLO_SLUGS))
