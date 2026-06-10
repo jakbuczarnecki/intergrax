@@ -53,6 +53,10 @@ class ApplicationFeatures(BaseModel):
         default=False,
         description="Expose checkpoint introspection HTTP API for ops (AUDIT-IDEAL-8.2)",
     )
+    modality_worker_pool_enabled: bool = Field(
+        default=False,
+        description="Route Plane C vision inference through worker pools (AUDIT-IDEAL-29.2)",
+    )
 
     @classmethod
     def lab_defaults(cls) -> ApplicationFeatures:
@@ -75,4 +79,5 @@ class ApplicationFeatures(BaseModel):
             durable_async_index_default=True,
             streaming_intake_enabled=True,
             checkpoint_introspection_enabled=True,
+            modality_worker_pool_enabled=True,
         )

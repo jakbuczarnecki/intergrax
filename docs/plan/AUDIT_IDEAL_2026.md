@@ -6,7 +6,7 @@
 **Baseline:** **32/32 L3** (`scripts/harness_maturity_report.py`, IDEAL-L3 W2 Done)  
 **Hub:** [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) · Band **2az** · queue **§6.1au**  
 **Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](../guides/ARCHITECTURE_DEBT_REGISTER.md)  
-**Status:** **W3 P2 in progress** (2026-06-09) — **46/78 Done** · **4 Deferred §6.3** · **28 Planned**
+**Status:** **W3 P2 in progress** (2026-06-09) — **51/78 Done** · **4 Deferred §6.3** · **23 Planned**
 
 > **Scope:** Close gaps between **L3 Production Harness OS** and **full ideal architecture** (modular, elastic, complete). Harness infrastructure only unless row is explicitly **Deferred §6.3** (product).
 
@@ -59,8 +59,8 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-11.1 | Tools | 11 | Sandboxed execution for code / side-effectful tools | P1 | `TOOLS` | **Done** |
 | AUDIT-IDEAL-11.2 | Tools | 11 | MCP / function-schema export for shipped tool catalog | P2 | `TOOLS` | **Done** |
 | AUDIT-IDEAL-11.3 | Tools | 11 | Oversized-tool lint enforcement in CI (adoption sweep) | P2 | `TOOLS` | **Done** |
-| AUDIT-IDEAL-12.1 | Skills | 12 | LangGraph-compatible skill pack import path | P2 | `SKILLS` | Planned |
-| AUDIT-IDEAL-12.2 | Skills | 12 | Dynamic skill selection L4 hook (AHI) | P2 | `SKILLS` · `ADAPTIVE_HARNESS_INTELLIGENCE` | Planned |
+| AUDIT-IDEAL-12.1 | Skills | 12 | LangGraph-compatible skill pack import path | P2 | `SKILLS` | **Done** |
+| AUDIT-IDEAL-12.2 | Skills | 12 | Dynamic skill selection L4 hook (AHI) | P2 | `SKILLS` · `ADAPTIVE_HARNESS_INTELLIGENCE` | **Done** |
 | AUDIT-IDEAL-13.1 | Integrations | 13 | Integration marketplace catalog + trust scoring | P3 | `INTEGRATIONS` | Planned |
 | AUDIT-IDEAL-13.2 | Integrations | 13 | Catalog hot-reload without host restart | P3 | `INTEGRATIONS` | Planned |
 | AUDIT-IDEAL-14.1 | RAG | 14 | Graph RAG as default production retrieval profile | P1 | `MEMORY` · `INTEGRATIONS` | **Done** |
@@ -85,7 +85,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-22.2 | Reliability | 22 | Partial results contract on all reference hosts | P2 | `RELIABILITY_FAILURE_AND_HITL` | **Done** |
 | AUDIT-IDEAL-23.1 | Security | 23 | Immutable multi-region security audit trail | P2 | `UNIFIED_EXECUTION_RUNTIME` | Planned |
 | AUDIT-IDEAL-23.2 | Security | 23 | Retrieval poisoning + tool injection live on product hosts | P1 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
-| AUDIT-IDEAL-24.1 | Cost | 24 | Cost forecasting from historical run patterns | P2 | `UNIFIED_EXECUTION_RUNTIME` | Planned |
+| AUDIT-IDEAL-24.1 | Cost | 24 | Cost forecasting from historical run patterns | P2 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
 | AUDIT-IDEAL-24.2 | Cost | 24 | Automated cost optimization recommendations (AHI) | P2 | `UNIFIED_EXECUTION_RUNTIME` · `ADAPTIVE_HARNESS_INTELLIGENCE` | Planned |
 | AUDIT-IDEAL-24.3 | Cost | 24 | CPU/memory/concurrency quotas with tenant fairness | P2 | `UNIFIED_EXECUTION_RUNTIME` · `ELASTIC_CAPACITY_AND_SCALING` | Planned |
 | AUDIT-IDEAL-25.1 | Evaluation | 25 | Shadow eval path automation (DEBT-25-01) | P1 | `CRITIC_VERIFICATION` | **Done** |
@@ -102,10 +102,10 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-28.3 | Tier-3 hosts | 28 | LKW hybrid daemon (CFG-14) | P4 | `TIER3_APPLICATION_ENVIRONMENT` | **Deferred §6.3** |
 | AUDIT-IDEAL-28.4 | Tier-3 hosts | 28 | Business agents K.1/K.2 certification + deploy | P4 | `TIER3_APPLICATION_ENVIRONMENT` | **Deferred §6.3** |
 | AUDIT-IDEAL-29.1 | Modality | 29 | Live Triton / HF Inference endpoints (replace placeholders) | P1 | `MODALITY` | **Done** |
-| AUDIT-IDEAL-29.2 | Modality | 29 | Plane C vision inference E2E on product worker pools | P2 | `MODALITY` | Planned |
+| AUDIT-IDEAL-29.2 | Modality | 29 | Plane C vision inference E2E on product worker pools | P2 | `MODALITY` | **Done** |
 | AUDIT-IDEAL-30.1 | Ops / SLO | 30 | Sync `architecture/ELASTIC_CAPACITY_AND_SCALING.md` §22 after ECP-DEPTH | **P0** | `ELASTIC_CAPACITY_AND_SCALING` | **Done** |
 | AUDIT-IDEAL-30.2 | Ops / SLO | 30 | Real deploy SLO window evidence (`W_OPS_RELEASE_CYCLES>=2` prod) | P1 | `OBSERVABILITY` · `EXPERIMENTATION` | **Done** |
-| AUDIT-IDEAL-30.3 | Ops / SLO | 30 | On-call ownership model for production components | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | Planned |
+| AUDIT-IDEAL-30.3 | Ops / SLO | 30 | On-call ownership model for production components | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Done** |
 | AUDIT-IDEAL-30.4 | Ops / SLO | 30 | Celery/K8s production-scale adapters (beyond stub/beta) | P2 | `ELASTIC_CAPACITY_AND_SCALING` | Planned |
 | AUDIT-IDEAL-31.1 | Agent lifecycle | 31 | Owner/on-call mandatory on all certified agents | P1 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
 | AUDIT-IDEAL-31.2 | Agent lifecycle | 31 | Evaluation results required before production promotion (enforce) | P1 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |

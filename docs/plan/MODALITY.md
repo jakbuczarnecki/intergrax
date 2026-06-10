@@ -17,7 +17,7 @@
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
 | AUDIT-IDEAL-29.1 | §29 Modality | Live Triton / HF Inference endpoints (replace placeholders) | P1 | **Done** |
-| AUDIT-IDEAL-29.2 | §29 Modality | Plane C vision inference E2E on product worker pools | P2 | Planned |
+| AUDIT-IDEAL-29.2 | §29 Modality | Plane C vision inference E2E on product worker pools | P2 | **Done** |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 

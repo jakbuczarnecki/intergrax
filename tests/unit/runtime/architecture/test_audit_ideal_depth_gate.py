@@ -355,6 +355,65 @@ def test_audit_ideal_11_3_oversized_tool_lint() -> None:
     assert not lint_tool_contract(rag_retrieve_contract())
 
 
+def test_audit_ideal_12_1_langgraph_skill_import() -> None:
+    from intergrax.skills.importers.langgraph_skill_pack import LangGraphSkillPackImporter
+
+    manifest = LangGraphSkillPackImporter().import_payload(
+        {
+            "skill_id": "demo.langgraph",
+            "description": "demo",
+            "graph": {"nodes": [{"id": "a"}], "edges": []},
+        }
+    )
+    assert "langgraph_pack" in manifest.tags
+
+
+def test_audit_ideal_12_2_skill_selection_hook() -> None:
+    from intergrax.applications._shared.skill_selection_wiring import resolve_skill_selection_hook
+
+    hook = resolve_skill_selection_hook(ApplicationEnvironmentProfile.product_defaults())
+    assert hook.enabled is True
+
+
+def test_audit_ideal_24_1_cost_forecast() -> None:
+    from intergrax.applications._shared.cost_forecast_wiring import resolve_cost_forecast_wiring
+
+    wiring = resolve_cost_forecast_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+    assert wiring.report is not None
+
+
+def test_audit_ideal_29_2_modality_worker_pool() -> None:
+    from intergrax.applications._shared.modality_product_worker_wiring import (
+        resolve_modality_product_worker_wiring,
+    )
+
+    wiring = resolve_modality_product_worker_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+
+
+def test_audit_ideal_30_3_on_call_ownership() -> None:
+    from intergrax.applications._shared.on_call_ownership_wiring import resolve_on_call_ownership_registry
+    from intergrax.contracts.agent_contract_meta import AgentContract
+
+    contract = AgentContract(
+        id="demo",
+        name="demo",
+        description="d",
+        capabilities=["demo.cap"],
+        owner_team="team",
+        owner_contact="owner@example.com",
+        on_call_contact="oncall@example.com",
+        production_eligible=True,
+        runbook_ref="runbooks/demo.md",
+    )
+    registry = resolve_on_call_ownership_registry(
+        ApplicationEnvironmentProfile.product_defaults(),
+        contracts=(contract,),
+    )
+    assert registry.records[0].approved is True
+
+
 def test_audit_ideal_deferred_register() -> None:
     register = REPO_ROOT / "docs" / "plan" / "AUDIT_IDEAL_2026.md"
     text = register.read_text(encoding="utf-8")

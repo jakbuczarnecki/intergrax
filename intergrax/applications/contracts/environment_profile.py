@@ -168,6 +168,7 @@ class CostProfile(BaseModel):
     max_tool_calls: int | None = Field(default=None, ge=1)
     max_planner_iterations: int | None = Field(default=None, ge=1)
     quota_degrade_threshold_ratio: float = Field(default=0.90, ge=0.0, le=1.0)
+    forecasting_enabled: bool = False
 
 
 class EvaluationProfile(BaseModel):
@@ -577,6 +578,14 @@ class ApplicationEnvironmentProfile(BaseModel):
         )
 
     @classmethod
+    def _product_modality_profile(cls) -> ModalityProfile:
+        from intergrax.applications._shared.modality_product_worker_wiring import (
+            production_plane_c_modality_profile,
+        )
+
+        return production_plane_c_modality_profile()
+
+    @classmethod
     def product_defaults(
         cls,
         *,
@@ -617,11 +626,16 @@ class ApplicationEnvironmentProfile(BaseModel):
                 max_total_tokens=32_000,
                 max_llm_calls=32,
                 max_tool_calls=64,
+                forecasting_enabled=True,
             ),
+            modality_profile=cls._product_modality_profile(),
             adaptive_profile=AdaptiveProfile(
                 enabled=True,
                 mode="recommend",
-                enabled_loops=[AdaptiveLoopKind.EXECUTION_STRATEGY_TUNING],
+                enabled_loops=[
+                    AdaptiveLoopKind.EXECUTION_STRATEGY_TUNING,
+                    AdaptiveLoopKind.ROUTING_TUNING,
+                ],
             ),
             evaluation_profile=EvaluationProfile(
                 shadow_eval_enabled=False,
