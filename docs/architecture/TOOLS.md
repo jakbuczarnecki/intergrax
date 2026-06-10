@@ -128,7 +128,8 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T14–T17 Done**
 | `runtime_bound_catalog` | `intergrax/runtime/nexus/tools/runtime_bound_catalog.py` | **Done** — UAEP dispatch for `workspace.*` / `memory.*` / `harness.*` (incl. compare/export) · §42.12 |
 | `register_default_tools()` / `build_registry_from_profile()` | `intergrax/tools/registry/bootstrap.py`, `factory.py` | **Done** |
 | `RuntimeToolInvoker` | `intergrax/runtime/nexus/tools/invoker.py` | **Done** — validation, trace, error mapping |
-| `RuntimeToolGateway` | `intergrax/runtime/nexus/tools/tool_gateway.py` | **Partial** — §42.12 capability aliases + policy; **not** full-catalog `tool_id` dispatch ([§42.12 gateway surface](#4212-gateway-surface-toolrequest)) |
+| `RuntimeToolGateway` | `intergrax/runtime/nexus/tools/tool_gateway.py` | **Done** — capability aliases + registered catalog `tool_id` via `catalog_dispatch` (TOOL-ENG-2) |
+| `catalog_dispatch` | `intergrax/runtime/nexus/tools/catalog_dispatch.py` | **Done** — per-id plan dispatch + gateway invoke (TOOL-ENG-1/2) |
 | `BoundToolGateway` | `intergrax/runtime/nexus/tools/uaep_tool_gateway.py` | **Partial** — sandbox + runtime-bound subset + delegates capability to `RuntimeToolGateway` |
 | `CatalogToolPlanner` (LLM planner) | `intergrax/runtime/nexus/tools/catalog_tool_planner.py` | **Done** — OpenAI schema from registry via `ToolPlanningService` (single-pass planner; [§Multi-tool execution](#multi-tool-execution-semantics)) |
 | `ToolPlanningService` | `intergrax/runtime/nexus/tools/tool_planning_service.py` | **Done** — native `generate_with_tools` or JSON fallback; **no** `allowed_tools` pre-filter on schema export |
@@ -268,13 +269,13 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 |------|---------|-------|
 | **Tier-0 catalog** (`ToolContract`, plugins, 190 tools) | **Production** | Contracts, exporters, provider tests, integration composition |
 | **Single invoke** (`RuntimeToolInvoker`) | **Production** | Schema, timeout, retry, trace, idempotency wrapper |
-| **Pipeline tool step** (`ToolsStep`) | **Partial** | Planner wired at `RuntimeContext.build` when `tools_mode≠off` (TOOL-ENG-0); per-id dispatch still gap (TOOL-ENG-1) |
+| **Pipeline tool step** (`ToolsStep`) | **Partial** | Planner wired (TOOL-ENG-0); explicit `tool_ids` dispatch via `catalog_dispatch` (TOOL-ENG-1); planner constraints gap (TOOL-ENG-4) |
 | **Planner wiring** (`CatalogToolPlanner`) | **Done** | `wire_catalog_tool_planner_if_enabled` in `planner_bootstrap.py` (TOOL-ENG-0) |
 | **Multi-tool / ReAct loop** | **Gap** | No `max_iterations` tool loop; no native `role=tool` multi-turn chain in pipeline |
 | **Parallel tool execution** | **Gap** | `for call in tool_plan.calls` — always sequential |
 | **Large-catalog selection** | **Gap** | No Tool Router; planner sees full `ToolRegistry` |
-| **`tool_ids` plan dispatch** | **Gap** | `ToolRuntime.invoke` uses step flags, not per-id catalog dispatch |
-| **§42.12 gateway** | **Partial** | Capability + runtime-bound + sandbox; not arbitrary `tool_id` |
+| **`tool_ids` plan dispatch** | **Done** | `catalog_dispatch.invoke_catalog_tool_ids` after pipeline shims (TOOL-ENG-1) |
+| **§42.12 gateway** | **Partial** | Catalog `tool_id` → invoker (TOOL-ENG-2); runtime-bound + sandbox unchanged |
 | **`tool_scope_policy` wiring** | **Done** | Passed to `RuntimeToolInvoker` in `RuntimeContext.build()` (TOOL-ENG-3) |
 | **Post-tool verification** | **Partial** | Schema + middleware; critic tools (`eval.judge`) adjacent, not in default loop |
 | **Observability** | **Production** | Trace spine, budget ticks, `tool_traces` |
@@ -500,11 +501,11 @@ All other **172+** catalog tools require **ToolsStep** (with wired planner), **T
 |-------------------|-----------------------------------|-------------|
 | `rag.retrieve` | sets `use_rag=True` | `RagStep` → `catalog_context` |
 | `websearch.query` | sets `use_websearch=True` | `WebsearchStep` → `catalog_context` |
-| Any other id (e.g. `jira.search_tasks`) | stored in `tool_ids` only | **Nothing** unless `use_tools=True` → `ToolsStep` re-plans from user message |
+| Any other id (e.g. `jira.search_tasks`) | stored in `tool_ids` | **`catalog_dispatch`** → `RuntimeToolInvoker` (TOOL-ENG-1) |
 | `use_tools=True` | runs `ToolsStep` | LLM planner picks from **full registry** — ignores remaining `tool_ids` as constraints |
 
 ```text
-EnginePlan.tool_ids=["jira.search_tasks"]     # without use_tools → NOT executed
+EnginePlan.tool_ids=["jira.search_tasks"]     # catalog dispatch (optional tool_inputs)
 EnginePlan.tool_ids=["rag.retrieve"]          # use_rag → RagStep
 ToolInvocationPlan(use_tools=True)            # ToolsStep → fresh LLM plan
 ```
@@ -549,8 +550,8 @@ Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary:
 | ID | Gap | Priority |
 |----|-----|----------|
 | TOOL-ENG-0 | Wire `CatalogToolPlanner` in `RuntimeContext.build` / catalog bridge | **Done** |
-| TOOL-ENG-1 | Direct `tool_ids` catalog dispatch in `ToolRuntime.invoke` | P0 |
-| TOOL-ENG-2 | Full-catalog `ToolRequest` → `RuntimeToolInvoker` in gateway | P0 |
+| TOOL-ENG-1 | Direct `tool_ids` catalog dispatch in `ToolRuntime.invoke` | **Done** |
+| TOOL-ENG-2 | Full-catalog `ToolRequest` → `RuntimeToolInvoker` in gateway | **Done** |
 | TOOL-ENG-3 | Wire `config.tool_scope_policy` → `RuntimeToolInvoker` | **Done** |
 | TOOL-ENG-4 | Pass `EnginePlan.tool_ids` / plan constraints into `ToolsStep` planner | P1 |
 | TOOL-ENG-5 | `ToolSelectionStrategy` / router before `generate_with_tools` | P1 |
@@ -562,7 +563,7 @@ Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary:
 | TOOL-ENG-11 | Implement `tools_context_scope` in `ToolsStep` / planner message assembly | P1 |
 | TOOL-ENG-12 | Expose `tool_choice` from `tools_mode` / host profile to `plan_tools` | P2 |
 
-**ADR:** TOOL-ENG-1, TOOL-ENG-2, TOOL-ENG-6 require ADR before merge. TOOL-ENG-0/3 are wiring-only — **no ADR needed**.
+**ADR:** [ADR-TOOL-001](../adr/ADR-TOOL-001.md) (TOOL-ENG-1/2). TOOL-ENG-6 still requires ADR before merge. TOOL-ENG-0/3 wiring-only — **no ADR needed**.
 
 ### CI / gate scripts (catalog)
 

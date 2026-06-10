@@ -12,7 +12,7 @@
 
 ## Phase TOOL-ENG — Tool engine hardening (2026-06-10 audit)
 
-**Status:** **Active** — **2/13** deliverables Done (TOOL-ENG-0, TOOL-ENG-3 — 2026-06-10)  
+**Status:** **Active** — **4/13** deliverables Done (TOOL-ENG-0,1,2,3 — 2026-06-10)  
 **Architecture canon:** [`architecture/TOOLS.md`](../architecture/TOOLS.md) — [Tool engine production posture](../architecture/TOOLS.md#tool-engine-production-posture-2026-06-10), [Engine gap register](../architecture/TOOLS.md#engine-gap-register-canon)  
 **Audit basis:** Full-stack tool layer audit 2026-06-10 (Tier-0 catalog + Tier-1 selection/invoke/verify)  
 **Priority ladder:** **Band 2ba** — supersedes ad-hoc tool engine fixes until TOOL-ENG P0 closed  
@@ -27,8 +27,8 @@
 | ID | Area | Deliverable | Status | Priority | Modules | Acceptance |
 |----|------|-------------|--------|----------|---------|------------|
 | TOOL-ENG-0 | Bootstrap | **Wire `CatalogToolPlanner`** in `RuntimeContext.build` / catalog bridge — `tool_planner` + `tool_planner_prompt_id` from env | **Done** | **P0** | `planner_bootstrap.py`, `runtime_context.py`, `catalog_runtime_bridge.py` | `test_tool_engine_bootstrap.py`; host with `tools_mode=auto` gets planner |
-| TOOL-ENG-1 | Dispatch | **Per-`tool_id` catalog dispatch** in `ToolRuntime.invoke` — invoke `RuntimeToolInvoker` for ids not handled by Rag/Websearch shims | **Planned** | **P0** | `tool_runtime.py`, `catalog_dispatch.py` (new) | `test_tool_runtime_catalog_dispatch.py`; `jira.*` in plan executes without `use_tools` |
-| TOOL-ENG-2 | Gateway | **Full-catalog `ToolRequest`** — `RuntimeToolGateway` routes any registered `tool_id` → invoker (not `unknown_capability_tool`) | **Planned** | **P0** | `tool_gateway.py`, `uaep_tool_gateway.py` | UAEP `ctx.invoke_tool(jira.get_issue)` integration test |
+| TOOL-ENG-1 | Dispatch | **Per-`tool_id` catalog dispatch** in `ToolRuntime.invoke` — invoke `RuntimeToolInvoker` for ids not handled by Rag/Websearch shims | **Done** | **P0** | `catalog_dispatch.py`, `tool_runtime.py` | `test_tool_runtime_catalog_dispatch.py`; ADR-TOOL-001 |
+| TOOL-ENG-2 | Gateway | **Full-catalog `ToolRequest`** — `RuntimeToolGateway` routes any registered `tool_id` → invoker (not `unknown_capability_tool`) | **Done** | **P0** | `tool_gateway.py`, `catalog_dispatch.py` | `test_tool_gateway.py` catalog tool path; ADR-TOOL-001 |
 | TOOL-ENG-3 | Policy | **Wire `tool_scope_policy`** from `RuntimeConfig` into `RuntimeToolInvoker` at `RuntimeContext.build()` | **Done** | **P0** | `runtime_context.py` | `test_tool_engine_bootstrap.py`; denied tool raises `ToolScopeViolationError` on invoke path |
 | TOOL-ENG-4 | Selection | **Plan constraints → planner** — pass `EnginePlan.tool_ids` / `ToolInvocationPlan.tool_ids` as allow-list to `ToolPlanningService` | **Planned** | P1 | `tools_step.py`, `tool_planning_service.py` | Planner schema ⊆ plan constraints; gate test |
 | TOOL-ENG-5 | Selection | **`ToolSelectionStrategy` protocol** — static allow-list \| skill-pack \| retrieval top-k \| full-catalog; default static | **Planned** | P1 | `tool_selection.py` (new), `tool_planning_service.py` | Protocol + static impl; lab host uses skill-pack strategy |
@@ -51,9 +51,9 @@
 | Metric | Baseline (2026-06-10) | TOOL-ENG closeout target |
 |--------|----------------------|--------------------------|
 | `tool_planner` wired on default hosts | **Done** at `RuntimeContext.build` when `tools_mode≠off` | Auto from env + LLM |
-| Arbitrary `tool_id` via `ToolRequest` | 18 runtime-bound + capability | Any registered id |
+| Arbitrary `tool_id` via `ToolRequest` | **Done** (catalog gateway path) | Any registered id |
 | `tools_context_scope` | Config dead field | All 3 scopes functional |
-| `EnginePlan.tool_ids` execution | rag/web only | All listed ids |
+| `EnginePlan.tool_ids` execution | **Done** (catalog dispatch) | All listed ids |
 | Planner schema vs `allowed_tools` | Full registry | Filtered (strategy) |
 | Tool loop iterations | 1 | Configurable `max_tool_iterations` |
 | `tools_mode=required` | Warning trace | Run failure |
@@ -68,6 +68,7 @@
 | 2026-06-10 | TOOL-ENG-0,11,12 | Audit pass 2: planner bootstrap gap, dead tools_context_scope, tool_choice unwired |
 | 2026-06-10 | TOOL-ENG-0 | `wire_catalog_tool_planner_if_enabled` in `RuntimeContext.build`; `tool_planner_prompt_id` via catalog bridge — **no ADR needed** (wiring only) |
 | 2026-06-10 | TOOL-ENG-3 | `tool_scope_policy` → `RuntimeToolInvoker` in `RuntimeContext.build` — **no ADR needed** (wiring only) |
+| 2026-06-10 | TOOL-ENG-1,2 | `catalog_dispatch.py` — plan per-id invoke + full-catalog gateway; ADR-TOOL-001 |
 
 ---
 
@@ -80,8 +81,8 @@
 | 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
 | 1 | **TOOL-ENG-0** | Code | **Done** | `CatalogToolPlanner` bootstrap in `RuntimeContext.build` | `test_tool_engine_bootstrap.py` |
 | 2 | **TOOL-ENG-3** | Code | **Done** | `tool_scope_policy` → invoker wiring | scope deny on invoke path |
-| 3 | **TOOL-ENG-1** | Code + ADR | **Planned** | Per-`tool_id` dispatch in `ToolRuntime` | catalog dispatch tests |
-| 4 | **TOOL-ENG-2** | Code + ADR | **Planned** | Full-catalog gateway | UAEP jira tool integration test |
+| 3 | **TOOL-ENG-1** | Code + ADR | **Done** | Per-`tool_id` dispatch in `ToolRuntime` | `test_tool_runtime_catalog_dispatch.py` |
+| 4 | **TOOL-ENG-2** | Code + ADR | **Done** | Full-catalog gateway | `test_tool_gateway.py` catalog path |
 | 5 | **TOOL-ENG-4** | Code | **Planned** | Plan constraints → planner | constrained schema gate |
 | 6 | **TOOL-ENG-11** | Code | **Planned** | `tools_context_scope` implementation | scope enum tests |
 | 7 | **TOOL-ENG-5** | Code | **Planned** | `ToolSelectionStrategy` | protocol + static impl |
@@ -597,15 +598,13 @@ ACTUAL (2026-06-10):
       → normalized() sets use_rag / use_websearch → pipeline steps
 
   plan.tool_ids=["jira.search_tasks", "database.query"]
-      → stored on plan only — NOT executed unless use_tools=True
-      → use_tools=True → ToolsStep re-plans from user message (ignores tool_ids constraint)
+      → catalog_dispatch → RuntimeToolInvoker (TOOL-ENG-1 **Done**)
+      → use_tools=True still runs ToolsStep (planner ignores tool_ids until TOOL-ENG-4)
 
   ctx.invoke_tool(ToolRequest(tool_name="jira.get_issue"))
-      → BoundToolGateway → RuntimeToolGateway → unknown_capability_tool (FAILED)
+      → catalog_dispatch via RuntimeToolGateway (TOOL-ENG-2 **Done**)
 
-TARGET (Phase TOOL-ENG):
-  plan.tool_ids=[...]  → per-id RuntimeToolInvoker (TOOL-ENG-1)
-  ToolRequest(tool_name=<any registered tool_id>) → invoker (TOOL-ENG-2)
+TARGET (remaining TOOL-ENG):
   ToolsStep planner schema ⊆ allowed_tools + plan constraints (TOOL-ENG-4, TOOL-ENG-5)
   Optional multi-iteration tool loop (TOOL-ENG-6)
 ```

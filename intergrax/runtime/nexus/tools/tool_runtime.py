@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Optional, Protocol, Sequence, runtime_checkable
 
 from intergrax.runtime.nexus.planning.engine_plan_models import EnginePlan
@@ -31,6 +31,7 @@ class ToolInvocationPlan:
     use_rag: bool = False
     use_websearch: bool = False
     use_tools: bool = False
+    tool_inputs: Mapping[str, Mapping[str, Any]] = field(default_factory=dict)
 
     def normalized(self) -> ToolInvocationPlan:
         ids = list(self.tool_ids)
@@ -53,6 +54,7 @@ class ToolInvocationPlan:
             use_rag=use_rag,
             use_websearch=use_websearch,
             use_tools=self.use_tools,
+            tool_inputs=dict(self.tool_inputs),
         )
 
     @classmethod
@@ -117,11 +119,32 @@ def capability_payload_to_tool_ids(payload: Mapping[str, Any]) -> tuple[str, ...
     return tuple(dict.fromkeys(ids))
 
 
+def _tool_inputs_from_payload(payload: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
+    raw = payload.get("tool_inputs")
+    if not isinstance(raw, Mapping):
+        return {}
+    parsed: dict[str, dict[str, Any]] = {}
+    for tool_id, tool_input in raw.items():
+        if isinstance(tool_input, Mapping):
+            parsed[str(tool_id)] = dict(tool_input)
+    return parsed
+
+
 def tool_invocation_plan_from_capability_payload(payload: Mapping[str, Any]) -> ToolInvocationPlan:
     """Build a normalized plan from gateway/capability payload without ``from_legacy``."""
-    return ToolInvocationPlan.from_tool_ids(
+    plan = ToolInvocationPlan.from_tool_ids(
         capability_payload_to_tool_ids(payload),
         use_tools=bool(payload.get("use_tools", False)),
+    )
+    tool_inputs = _tool_inputs_from_payload(payload)
+    if not tool_inputs:
+        return plan
+    return ToolInvocationPlan(
+        tool_ids=plan.tool_ids,
+        use_rag=plan.use_rag,
+        use_websearch=plan.use_websearch,
+        use_tools=plan.use_tools,
+        tool_inputs=tool_inputs,
     )
 
 
@@ -238,6 +261,20 @@ class ToolRuntime:
                     message="Plan requested tools but tools are off or not configured; skipping.",
                     level=TraceLevel.WARNING,
                 )
+
+        from intergrax.runtime.nexus.tools.catalog_dispatch import (
+            catalog_tool_ids,
+            invoke_catalog_tool_ids,
+        )
+
+        direct_catalog_ids = catalog_tool_ids(plan.tool_ids)
+        if direct_catalog_ids:
+            invoke_catalog_tool_ids(
+                state=state,
+                tool_ids=direct_catalog_ids,
+                tool_inputs=plan.tool_inputs,
+                trace_step=trace_step,
+            )
 
         return ToolRuntimeResult(
             used_rag=state.used_rag,

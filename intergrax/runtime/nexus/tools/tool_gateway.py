@@ -11,6 +11,11 @@ from typing import TYPE_CHECKING, Optional, Sequence
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
 from intergrax.runtime.hooks.tool_hooks import run_tool_call_hooks, tool_hook_context
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
+from intergrax.runtime.nexus.tools.catalog_dispatch import (
+    invoke_catalog_tool_request,
+    is_registered_catalog_tool,
+    resolve_tool_registry,
+)
 from intergrax.runtime.nexus.tools.tool_access_policy import ToolAccessPolicy
 from intergrax.runtime.nexus.tools.tool_runtime import (
     ToolInvocationPlan,
@@ -86,6 +91,13 @@ class RuntimeToolGateway:
                     status=ToolResponseStatus.DENIED,
                     error=f"tool_not_allowed:{request.tool_name}",
                     duration_ms=int((time.perf_counter() - started) * 1000),
+                )
+            registry = resolve_tool_registry(self._state.context.config.tool_invoker)
+            if registry is not None and is_registered_catalog_tool(registry, request.tool_name):
+                return invoke_catalog_tool_request(
+                    state=self._state,
+                    request=request,
+                    trace_step=self._trace_step,
                 )
             return ToolResponse(
                 request_id=request.request_id,
