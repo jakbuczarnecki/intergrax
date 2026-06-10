@@ -11,6 +11,7 @@ from typing import Any, List, Optional
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 
 from intergrax.rag.profiles.rag_profile import RagProfile
+from intergrax.rag.retrieval.retrieval_errors import RetrievalError
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_result import RetrievalChunk, RetrievalResult, RetrievalTrace
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
@@ -98,14 +99,26 @@ class RetrievalService:
             prefetch_k = request.resolved_prefetch_k(self._profile.prefetch_top_k, final_k)
 
             t0 = time.perf_counter()
-            candidates = self._retriever_manager.retrieve(
-                query,
-                retriever_id=retriever_id,
-                top_k=prefetch_k,
-                metadata_filter=request.metadata_filter,
-                include_embeddings=False,
-            )
+            try:
+                candidates = self._retriever_manager.retrieve(
+                    query,
+                    retriever_id=retriever_id,
+                    top_k=prefetch_k,
+                    metadata_filter=request.metadata_filter,
+                    include_embeddings=False,
+                )
+            except RetrievalError as exc:
+                trace.retrieval_error_kind = exc.kind.value
+                trace.attempted_retriever_ids = list(exc.attempted_retriever_ids)
+                trace.retrieval_latency_ms = (time.perf_counter() - t0) * 1000.0
+                return RetrievalResult(
+                    chunks=[],
+                    used=False,
+                    reason="retriever_failed",
+                    trace=trace,
+                )
             trace.retrieval_latency_ms = (time.perf_counter() - t0) * 1000.0
+            _apply_retriever_execution_trace(self._retriever_manager, trace)
             trace.candidates_before_rerank = len(candidates)
 
             if not candidates:
@@ -166,6 +179,22 @@ class RetrievalService:
                 tenant_id=getattr(request, "tenant_id", None),
             )
             return result
+
+
+def _apply_retriever_execution_trace(
+    retriever_manager: BaseRetrieverManager,
+    trace: RetrievalTrace,
+) -> None:
+    execution = getattr(retriever_manager, "last_execution", None)
+    if execution is None:
+        return
+    trace.retriever_id = execution.used_retriever_id
+    trace.attempted_retriever_ids = list(execution.attempted_retriever_ids)
+    trace.fallback_applied = execution.fallback_applied
+    trace.hybrid_used = (
+        execution.used_retriever_id in ("hybrid", "graph_rag")
+        or trace.hybrid_used
+    )
 
 
 def _record_retrieval_metrics(

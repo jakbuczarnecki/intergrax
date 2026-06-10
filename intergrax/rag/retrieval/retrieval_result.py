@@ -29,6 +29,9 @@ class RetrievalTrace:
     agentic_total_latency_ms: Optional[float] = None
     hybrid_used: bool = False
     recall_at_k: Optional[float] = None
+    attempted_retriever_ids: List[str] = field(default_factory=list)
+    fallback_applied: bool = False
+    retrieval_error_kind: Optional[str] = None
 
 
 @dataclass

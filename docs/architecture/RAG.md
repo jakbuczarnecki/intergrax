@@ -55,7 +55,7 @@ Tier-3 IntegrationProfile + RagProfile
 | Strategy selection (autonomous) | **L1.5** | Tier/cost routing only; MIME/size/retriever auto-pick deferred to Tier-3 + AHI |
 | Ingest — short / medium documents | **L3** | Parser catalog, 5 chunking strategies, optional contextual enrich |
 | Ingest — very large corpora | **L2–L2.5** | Sync path size-guarded; `rag.schedule_ingest_job` triggers orchestrator with idempotent contract (M-RAG.26); shard/stream execution in workflow worker |
-| Resilience (retry, fallback, circuit breaker) | **L2** | Embedding retry=2; retriever retry=1; no fallback chain or circuit breaker |
+| Resilience (retry, fallback, circuit breaker) | **L2.5** | Retriever retry=2 aligned with embedding; fallback `fusion`→`hybrid`→`vector_similarity`; optional vector circuit breaker |
 | Observability | **L2** | `RetrievalTrace`, parser trace, opt-in metrics; no OTel spans on retrieve/ingest hot path |
 | Security (poisoning) | **L3** | Nexus `RagStep` + catalog `rag.retrieve` when `security_profile` wired (M-RAG.25) |
 | Citations | **L2** | Metadata in chunks + composer; no formal `Citation` on `RetrievalResult` |
@@ -84,9 +84,9 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-07 | niedoróbka | ~~No soak gate or ops runbook~~ — **closed M-RAG.30**: `prod_slo.py` soak contract; gate unit tests; integration soak `-m vectorstore_soak`; INTEGRATIONS runbook; `pinecone`/`milvus`/`vespa` remain **beta** until ops soak passes | **P1** | M-RAG.30 **Done** | — |
 | GAP-RAG-08 | niedoróbka | ~~No OpenTelemetry spans on retrieve/ingest hot path~~ — **closed M-RAG.27**: `rag_spans.py` + `check_rag_otel_span_registry.py` | **P2** | M-RAG.27 **Done** | 14.7 |
 | GAP-RAG-09 | niska jakość | RAG aggregated metrics remain opt-in (`INTERGRAX_RAG_METRICS_ENABLED`); OTel spans on default spine (`INTERGRAX_RAG_OTEL_SPANS_ENABLED`, default on) — documented M-RAG.27 | **P2** | M-RAG.27 **Done** | 14.7 |
-| GAP-RAG-10 | niedoróbka | `RetrieverEngine` raises after 1 retry — no retriever fallback chain (`fusion` → `hybrid` → `vector`) | **P2** | M-RAG.28 | — |
-| GAP-RAG-11 | niska jakość | No structured retrieval error taxonomy (retryable vs fatal); no circuit breaker on vector backend query | **P2** | M-RAG.28 | — |
-| GAP-RAG-12 | niska jakość | Asymmetric resilience: `EmbeddingEngine` max_retries=2 vs `RetrieverEngine` max_retries=1 | **P2** | M-RAG.28 | — |
+| GAP-RAG-10 | niedoróbka | ~~No retriever fallback chain~~ — **closed M-RAG.28**: `retriever_fallback_chain()` in `RetrieverEngine` | **P2** | M-RAG.28 **Done** | — |
+| GAP-RAG-11 | niska jakość | ~~No structured retrieval errors~~ — **closed M-RAG.28**: `RetrievalError` taxonomy + optional `RetrieverVectorCircuitBreaker` | **P2** | M-RAG.28 **Done** | — |
+| GAP-RAG-12 | niska jakość | ~~Asymmetric retry~~ — **closed M-RAG.28**: `RetrieverEngine.DEFAULT_MAX_RETRIES=2` | **P2** | M-RAG.28 **Done** | — |
 | GAP-RAG-13 | niedoróbka | No formal `Citation` model on `RetrievalResult`; citations only via chunk metadata + `FinalResponseComposer` | **P2** | M-RAG.29 | — |
 | GAP-RAG-14 | niedoróbka | `embedding_model_version` on profile/metadata with no mismatch warn, filter, or reindex queue policy | **P2** | M-RAG.31 | — |
 | GAP-RAG-15 | ograniczenie | No autonomous MIME/size-based chunking or retriever selection — Tier-3 must define `RagProfile` | — | Tier-3 + AHI | — |
@@ -137,6 +137,7 @@ RETRIEVE (rag.retrieve / RetrievalService)
 | Retrieval | `retrieval/retrieval_service.py` | **Single retrieve entry** — route → retrieve → rerank → filter |
 | Routing | `routing/query_router.py` | `fast` / `standard` / `deep` tiers (adaptive cost) |
 | Retrievers | `retrievers/` | Registry: vector, hybrid, fusion (RRF), MMR, parent–child, hierarchical, multi-query, graph_rag |
+| Resilience | `retrievers/resilience/`, `retrieval/retrieval_errors.py` | Fallback chain, `RetrievalError`, optional vector circuit breaker |
 | Rerankers | `rerankers/` | Registry + integration slugs (`cohere_rerank`, `jina_rerank`) |
 | Chunking | `document_splitters/` | `recursive`, `langchain_recursive`, `semantic`, `parent_child`, `docling` |
 | Loaders | `document_loaders/` | Handler registry + `ParserPipeline`; parsers via Integration catalog |
