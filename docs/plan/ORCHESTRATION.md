@@ -19,7 +19,7 @@
 | AUDIT-IDEAL-3.1 | §3 Intake | Canonical `TaskEnvelope` consolidation (`Task` + `RuntimeRequest`) | P1 | Planned |
 | AUDIT-IDEAL-9.1 | §9 Orchestration | Production queue adapter (beyond SQLite scaffold) | P1 | **Done** |
 | AUDIT-IDEAL-9.2 | §9 Orchestration | Swarm + peer-to-peer coordination graph templates | P2 | **Done** |
-| AUDIT-IDEAL-9.3 | §9 Orchestration | Dynamic execution strategy selection (L4 / AHI hook) | P2 | Planned |
+| AUDIT-IDEAL-9.3 | §9 Orchestration | Dynamic execution strategy selection (L4 / AHI hook) | P2 | **Done** |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 

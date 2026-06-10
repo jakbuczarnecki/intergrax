@@ -311,6 +311,50 @@ def test_audit_ideal_ahi_2_bounded_policy_learning() -> None:
     assert evaluate_bounded_policy_learning(package).bounded is True
 
 
+def test_audit_ideal_8_2_checkpoint_introspection() -> None:
+    from intergrax.applications._shared.checkpoint_introspection_wiring import (
+        resolve_checkpoint_introspection_wiring,
+    )
+
+    wiring = resolve_checkpoint_introspection_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.enabled is True
+
+
+def test_audit_ideal_9_3_execution_strategy_hook() -> None:
+    from intergrax.applications._shared.execution_strategy_wiring import resolve_execution_strategy_hook
+
+    hook = resolve_execution_strategy_hook(ApplicationEnvironmentProfile.product_defaults())
+    assert hook.enabled is True
+
+
+def test_audit_ideal_10_1_evaluator_loop_template() -> None:
+    from intergrax.applications._shared.evaluator_loop_graph_templates import (
+        evaluator_loop_graph_template,
+    )
+
+    graph = evaluator_loop_graph_template(
+        producer_agent_id="p",
+        evaluator_agent_id="e",
+        revise_agent_id="r",
+    )
+    assert graph.evaluator_loop is not None
+
+
+def test_audit_ideal_10_2_delegation_budget() -> None:
+    from intergrax.applications._shared.delegation_budget_wiring import resolve_delegation_budget_policy
+
+    policy = resolve_delegation_budget_policy(ApplicationEnvironmentProfile.product_defaults())
+    assert policy.enforcement_enabled is True
+    assert policy.max_llm_calls is not None
+
+
+def test_audit_ideal_11_3_oversized_tool_lint() -> None:
+    from intergrax.tools.lint.oversized_tool_lint import lint_tool_contract
+    from intergrax.tools.providers.rag.bundle import rag_retrieve_contract
+
+    assert not lint_tool_contract(rag_retrieve_contract())
+
+
 def test_audit_ideal_deferred_register() -> None:
     register = REPO_ROOT / "docs" / "plan" / "AUDIT_IDEAL_2026.md"
     text = register.read_text(encoding="utf-8")

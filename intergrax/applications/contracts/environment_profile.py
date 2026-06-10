@@ -613,7 +613,16 @@ class ApplicationEnvironmentProfile(BaseModel):
                 debug_surface_override=False,
             ),
             sandbox=SandboxProfile(enable_exec_tool=True),
-            cost_profile=CostProfile(max_total_tokens=32_000),
+            cost_profile=CostProfile(
+                max_total_tokens=32_000,
+                max_llm_calls=32,
+                max_tool_calls=64,
+            ),
+            adaptive_profile=AdaptiveProfile(
+                enabled=True,
+                mode="recommend",
+                enabled_loops=[AdaptiveLoopKind.EXECUTION_STRATEGY_TUNING],
+            ),
             evaluation_profile=EvaluationProfile(
                 shadow_eval_enabled=False,
                 online_registry_enabled=True,

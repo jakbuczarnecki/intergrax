@@ -6,7 +6,7 @@
 **Baseline:** **32/32 L3** (`scripts/harness_maturity_report.py`, IDEAL-L3 W2 Done)  
 **Hub:** [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) · Band **2az** · queue **§6.1au**  
 **Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](../guides/ARCHITECTURE_DEBT_REGISTER.md)  
-**Status:** **W3 P2 in progress** (2026-06-09) — **41/78 Done** · **4 Deferred §6.3** · **33 Planned**
+**Status:** **W3 P2 in progress** (2026-06-09) — **46/78 Done** · **4 Deferred §6.3** · **28 Planned**
 
 > **Scope:** Close gaps between **L3 Production Harness OS** and **full ideal architecture** (modular, elastic, complete). Harness infrastructure only unless row is explicitly **Deferred §6.3** (product).
 
@@ -50,15 +50,15 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-7.2 | Cognition | 7 | Complete `allow_dynamic_replan` runtime path | P1 | `REASONING_AND_COGNITION` | **Done** |
 | AUDIT-IDEAL-7.3 | Cognition | 7 | Reasoning failure taxonomy on all planner kinds | P2 | `REASONING_AND_COGNITION` | **Done** |
 | AUDIT-IDEAL-8.1 | Execution runtime | 8 | Long-running workflow resume E2E on product hosts | P2 | `NEXUS_EXECUTION_FLOW` | **Done** |
-| AUDIT-IDEAL-8.2 | Execution runtime | 8 | Checkpoint introspection API for ops (beyond lab) | P2 | `NEXUS_EXECUTION_FLOW` | Planned |
+| AUDIT-IDEAL-8.2 | Execution runtime | 8 | Checkpoint introspection API for ops (beyond lab) | P2 | `NEXUS_EXECUTION_FLOW` | **Done** |
 | AUDIT-IDEAL-9.1 | Orchestration | 9 | Production queue adapter (beyond SQLite scaffold) | P1 | `ORCHESTRATION` | **Done** |
 | AUDIT-IDEAL-9.2 | Orchestration | 9 | Swarm + peer-to-peer coordination graph templates | P2 | `ORCHESTRATION` | **Done** |
-| AUDIT-IDEAL-9.3 | Orchestration | 9 | Dynamic execution strategy selection (L4 hook) | P2 | `ORCHESTRATION` · `ADAPTIVE_HARNESS_INTELLIGENCE` | Planned |
-| AUDIT-IDEAL-10.1 | Subagents | 10 | Evaluator-loop standard node in product graph specs | P2 | `NEXUS_EXECUTION_FLOW` | Planned |
-| AUDIT-IDEAL-10.2 | Subagents | 10 | Budget delegation enforcement on all delegation paths | P2 | `NEXUS_EXECUTION_FLOW` | Planned |
+| AUDIT-IDEAL-9.3 | Orchestration | 9 | Dynamic execution strategy selection (L4 hook) | P2 | `ORCHESTRATION` · `ADAPTIVE_HARNESS_INTELLIGENCE` | **Done** |
+| AUDIT-IDEAL-10.1 | Subagents | 10 | Evaluator-loop standard node in product graph specs | P2 | `NEXUS_EXECUTION_FLOW` | **Done** |
+| AUDIT-IDEAL-10.2 | Subagents | 10 | Budget delegation enforcement on all delegation paths | P2 | `NEXUS_EXECUTION_FLOW` | **Done** |
 | AUDIT-IDEAL-11.1 | Tools | 11 | Sandboxed execution for code / side-effectful tools | P1 | `TOOLS` | **Done** |
 | AUDIT-IDEAL-11.2 | Tools | 11 | MCP / function-schema export for shipped tool catalog | P2 | `TOOLS` | **Done** |
-| AUDIT-IDEAL-11.3 | Tools | 11 | Oversized-tool lint enforcement in CI (adoption sweep) | P2 | `TOOLS` | Planned |
+| AUDIT-IDEAL-11.3 | Tools | 11 | Oversized-tool lint enforcement in CI (adoption sweep) | P2 | `TOOLS` | **Done** |
 | AUDIT-IDEAL-12.1 | Skills | 12 | LangGraph-compatible skill pack import path | P2 | `SKILLS` | Planned |
 | AUDIT-IDEAL-12.2 | Skills | 12 | Dynamic skill selection L4 hook (AHI) | P2 | `SKILLS` · `ADAPTIVE_HARNESS_INTELLIGENCE` | Planned |
 | AUDIT-IDEAL-13.1 | Integrations | 13 | Integration marketplace catalog + trust scoring | P3 | `INTEGRATIONS` | Planned |

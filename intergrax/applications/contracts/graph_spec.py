@@ -8,6 +8,8 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from intergrax.runtime.critic.evaluator_loop_spec import EvaluatorLoopSpec
+
 class GraphEdgeKind(str, Enum):
     DEPENDS_ON = "depends_on"
     DELEGATES_TO = "delegates_to"
@@ -26,6 +28,17 @@ class GraphNode(BaseModel):
 
     agent_id: str
     contract_id: str | None = None
+
+
+class EvaluatorLoopGraphBinding(BaseModel):
+    """Standard evaluator-loop topology for product graph specs (AUDIT-IDEAL-10.1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    producer_agent_id: str
+    evaluator_agent_id: str
+    revise_agent_id: str
+    spec: EvaluatorLoopSpec
 
 
 class ApplicationGraphSpec(BaseModel):
@@ -52,6 +65,7 @@ class ApplicationGraphSpec(BaseModel):
         min_length=1,
         description="Capability suffix that triggers graph seed when trigger_capabilities is empty.",
     )
+    evaluator_loop: EvaluatorLoopGraphBinding | None = None
 
     def roster_agent_ids(self) -> frozenset[str]:
         return frozenset(node.agent_id for node in self.nodes)

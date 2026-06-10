@@ -7,6 +7,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
+from intergrax.applications._shared.delegation_budget_wiring import (
+    DelegationBudgetPolicy,
+    resolve_delegation_budget_policy,
+)
 from intergrax.applications._shared.graph_spec_to_plan import (
     application_graph_spec_to_nexus_plan,
     should_seed_plan_from_graph_spec,
@@ -116,10 +120,12 @@ class GraphSpecSeedingPlanner:
         graph_spec: ApplicationGraphSpec,
         *,
         coordination_pattern: str | None = None,
+        delegation_budget: DelegationBudgetPolicy | None = None,
     ) -> None:
         self._inner = inner
         self._graph_spec = graph_spec
         self._coordination_pattern = coordination_pattern
+        self._delegation_budget = delegation_budget
 
     def plan(self, task: Task, registry: AgentRegistry) -> NexusPlan:
         if should_seed_plan_from_graph_spec(task, self._graph_spec):
@@ -132,6 +138,7 @@ class GraphSpecSeedingPlanner:
                 self._graph_spec,
                 task,
                 classification=classification,
+                delegation_budget=self._delegation_budget,
             )
             metadata = dict(plan.plan_metadata)
             metadata["planner_source"] = "graph_spec"
@@ -196,6 +203,7 @@ def resolve_nexus_task_planner(
             inner=inner,
             graph_spec=graph_spec,
             coordination_pattern=env.orchestration_profile.coordination_pattern,
+            delegation_budget=resolve_delegation_budget_policy(env),
         )
     return inner
 
