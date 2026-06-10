@@ -209,6 +209,108 @@ def test_audit_ideal_3_2_product_intake_parity() -> None:
     assert wiring.streaming_intake_enabled is True
 
 
+def test_audit_ideal_7_3_reasoning_failure_taxonomy() -> None:
+    from intergrax.applications._shared.reasoning_failure_wiring import reasoning_failure_taxonomy_complete
+
+    env = ApplicationEnvironmentProfile.lab_defaults()
+    assert reasoning_failure_taxonomy_complete(env)
+
+
+def test_audit_ideal_8_1_product_long_running() -> None:
+    from intergrax.applications._shared.product_long_running_wiring import resolve_product_long_running_wiring
+
+    wiring = resolve_product_long_running_wiring(ApplicationEnvironmentProfile.product_defaults())
+    assert wiring.scheduler_enabled is True
+
+
+def test_audit_ideal_9_2_swarm_templates() -> None:
+    from intergrax.applications._shared.swarm_graph_templates import swarm_exploration_graph_template
+
+    graph = swarm_exploration_graph_template(
+        worker_agent_ids=("w1", "w2"),
+        aggregator_agent_id="agg",
+    )
+    assert len(graph.edges) == 2
+
+
+def test_audit_ideal_15_3_entity_graph_memory() -> None:
+    from intergrax.applications._shared.entity_graph_wiring import resolve_entity_graph_memory_store
+
+    env = ApplicationEnvironmentProfile.product_defaults()
+    assert resolve_entity_graph_memory_store(env) is not None
+
+
+def test_audit_ideal_16_2_semantic_compression() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults()
+    assert env.context_profile.semantic_compression_enabled is True
+
+
+def test_audit_ideal_22_2_partial_results_contract() -> None:
+    from intergrax.applications._shared.reliability_wiring import apply_reliability_task_defaults
+
+    task = apply_reliability_task_defaults(
+        Task(tenant_id="t", user_id="u", message="m"),
+        ApplicationEnvironmentProfile.lab_defaults(),
+    )
+    assert "partial_result_contract.v1" in task.metadata
+
+
+def test_audit_ideal_25_2_human_review_queue() -> None:
+    from intergrax.runtime.evaluation.human_review_sample_queue import HumanReviewSampleQueue
+
+    queue = HumanReviewSampleQueue()
+    sample = queue.enqueue(run_id="r", agent_id="echo", scenario_id="s", reason="borderline")
+    assert queue.mark_reviewed(sample.sample_id, reviewer_id="ops") is not None
+
+
+def test_audit_ideal_ahi_2_bounded_policy_learning() -> None:
+    from intergrax.runtime.adaptive.bounded_policy_learning import evaluate_bounded_policy_learning
+    from intergrax.runtime.architecture.adaptive_governance import (
+        AdaptiveAuthorityLevel,
+        AdaptiveLoopEnvelope,
+        AdaptiveLoopKind,
+    )
+    from intergrax.runtime.adaptive.adaptation_models import (
+        AdaptationProposalCandidate,
+        AdaptationProposalPackage,
+        ProfileVersionDraft,
+    )
+    from intergrax.runtime.adaptive.contracts import ProfileArtifactType
+    from intergrax.runtime.architecture.adaptive_governance import (
+        AdaptiveLoopGateResult,
+        AdaptiveLoopProposal,
+    )
+
+    envelope = AdaptiveLoopEnvelope(
+        loop_id="pl-test",
+        kind=AdaptiveLoopKind.POLICY_LEARNING,
+        max_iterations=2,
+        max_delta_percent=5.0,
+        authority=AdaptiveAuthorityLevel.AUTO_WITH_HUMAN_GATE,
+        requires_human_approval=True,
+    )
+    package = AdaptationProposalPackage(
+        proposal_id="p1",
+        candidate=AdaptationProposalCandidate(
+            loop_id=envelope.loop_id,
+            source_engine="policy_learning",
+            proposal=AdaptiveLoopProposal(
+                envelope=envelope,
+                proposed_change_summary="test",
+                human_approver_id="owner:ops",
+            ),
+            profile_draft=ProfileVersionDraft(
+                version_id="v1",
+                artifact_type=ProfileArtifactType.POLICY_FRAGMENT,
+                artifact_payload={},
+            ),
+        ),
+        envelope_gate=AdaptiveLoopGateResult(loop_id=envelope.loop_id, passed=True),
+        passed_all_gates=True,
+    )
+    assert evaluate_bounded_policy_learning(package).bounded is True
+
+
 def test_audit_ideal_deferred_register() -> None:
     register = REPO_ROOT / "docs" / "plan" / "AUDIT_IDEAL_2026.md"
     text = register.read_text(encoding="utf-8")

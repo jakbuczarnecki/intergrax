@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from intergrax.applications._shared.compensation_wiring import resolve_compensation_flow
+from intergrax.applications._shared.partial_results_wiring import apply_partial_results_task_defaults
 from intergrax.applications._shared.reasoning_wiring import resolve_replan_policy_context
 from intergrax.applications._shared.reliability_runtime_bridge import (
     ReliabilityWiringOptions,
@@ -78,6 +79,7 @@ def apply_reliability_task_defaults(task: Task, env: ApplicationEnvironmentProfi
             "step_count": len(compensation.steps),
             "handler_ids": sorted(compensation.handlers.keys()),
         }
+    task = apply_partial_results_task_defaults(task, env)
     task.sync_metadata()
     return task
 

@@ -16,7 +16,7 @@
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
-| AUDIT-IDEAL-8.1 | §8 Runtime | Long-running workflow resume E2E on product hosts | P2 | Planned |
+| AUDIT-IDEAL-8.1 | §8 Runtime | Long-running workflow resume E2E on product hosts | P2 | **Done** |
 | AUDIT-IDEAL-8.2 | §8 Runtime | Checkpoint introspection API for ops (beyond lab) | P2 | Planned |
 | AUDIT-IDEAL-10.1 | §10 Subagents | Evaluator-loop standard node in product graph specs | P2 | Planned |
 | AUDIT-IDEAL-10.2 | §10 Subagents | Budget delegation enforcement on all delegation paths | P2 | Planned |

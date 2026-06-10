@@ -110,6 +110,8 @@ class ContextProfile(BaseModel):
     enable_websearch: bool = True
     drift_monitoring_enabled: bool = False
     drift_alert_threshold: float = Field(default=0.35, ge=0.0, le=2.0)
+    semantic_compression_enabled: bool = False
+    default_history_compression: Literal["truncate_oldest", "summarize_oldest", "hybrid"] = "truncate_oldest"
 
 
 class MemoryProfile(BaseModel):
@@ -124,6 +126,7 @@ class MemoryProfile(BaseModel):
     retention_days: int | None = Field(default=None, ge=1)
     scope_boundary: str = "tenant"
     consolidation_mode: Literal["manual", "scheduled", "auto"] = "manual"
+    enable_entity_graph_memory: bool = False
 
 
 class ReliabilityProfile(BaseModel):
@@ -139,6 +142,7 @@ class ReliabilityProfile(BaseModel):
     default_autonomy_level: AutonomyLevel = AutonomyLevel.ASK
     tenant_autonomy_ceiling: AutonomyLevel | None = None
     compensation_enabled: bool = False
+    partial_results_enabled: bool = False
 
 
 class ObservabilityProfile(BaseModel):
@@ -384,6 +388,7 @@ class ApplicationEnvironmentProfile(BaseModel):
             reliability_profile=ReliabilityProfile(
                 long_running_scheduler_enabled=True,
                 idempotency_enabled=True,
+                partial_results_enabled=True,
             ),
             observability_profile=ObservabilityProfile(
                 trace_sqlite_enabled=True,
@@ -594,10 +599,14 @@ class ApplicationEnvironmentProfile(BaseModel):
                 enable_rag=False,
                 enable_websearch=False,
                 drift_monitoring_enabled=True,
+                semantic_compression_enabled=True,
+                default_history_compression="summarize_oldest",
             ),
+            memory_profile=MemoryProfile(enable_entity_graph_memory=True),
             reliability_profile=ReliabilityProfile(
-                long_running_scheduler_enabled=False,
+                long_running_scheduler_enabled=True,
                 compensation_enabled=True,
+                partial_results_enabled=True,
             ),
             observability_profile=ObservabilityProfile(
                 trace_sqlite_enabled=True,

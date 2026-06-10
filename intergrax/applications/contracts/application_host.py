@@ -65,7 +65,7 @@ class ApplicationFeatures(BaseModel):
         return cls(
             debug_surface=False,
             interaction_routes=False,
-            long_running_scheduler=False,
+            long_running_scheduler=True,
             openapi=False,
             task_sandbox_default=False,
             durable_async_index_default=True,

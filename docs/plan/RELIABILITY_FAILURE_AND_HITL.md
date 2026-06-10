@@ -17,7 +17,7 @@
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
 | AUDIT-IDEAL-22.1 | §22 Reliability | Compensation flows on product side-effect paths | P1 | **Done** |
-| AUDIT-IDEAL-22.2 | §22 Reliability | Partial results contract on all reference hosts | P2 | Planned |
+| AUDIT-IDEAL-22.2 | §22 Reliability | Partial results contract on all reference hosts | P2 | **Done** |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 

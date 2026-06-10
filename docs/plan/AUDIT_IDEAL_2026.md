@@ -6,7 +6,7 @@
 **Baseline:** **32/32 L3** (`scripts/harness_maturity_report.py`, IDEAL-L3 W2 Done)  
 **Hub:** [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) · Band **2az** · queue **§6.1au**  
 **Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](../guides/ARCHITECTURE_DEBT_REGISTER.md)  
-**Status:** **W3 P1 in progress** (2026-06-09) — **32/78 Done** · **4 Deferred §6.3** · **42 Planned**
+**Status:** **W3 P2 in progress** (2026-06-09) — **41/78 Done** · **4 Deferred §6.3** · **33 Planned**
 
 > **Scope:** Close gaps between **L3 Production Harness OS** and **full ideal architecture** (modular, elastic, complete). Harness infrastructure only unless row is explicitly **Deferred §6.3** (product).
 
@@ -48,16 +48,16 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-6.2 | LLM adapters | 6 | Live cost/latency/quality model routing (AHI integration prod path) | P2 | `LLM_ADAPTERS` · `ADAPTIVE_HARNESS_INTELLIGENCE` | Planned |
 | AUDIT-IDEAL-7.1 | Cognition | 7 | Ship `ReasoningProfile` contract + environment wire | P1 | `REASONING_AND_COGNITION` | **Done** |
 | AUDIT-IDEAL-7.2 | Cognition | 7 | Complete `allow_dynamic_replan` runtime path | P1 | `REASONING_AND_COGNITION` | **Done** |
-| AUDIT-IDEAL-7.3 | Cognition | 7 | Reasoning failure taxonomy on all planner kinds | P2 | `REASONING_AND_COGNITION` | Planned |
-| AUDIT-IDEAL-8.1 | Execution runtime | 8 | Long-running workflow resume E2E on product hosts | P2 | `NEXUS_EXECUTION_FLOW` | Planned |
+| AUDIT-IDEAL-7.3 | Cognition | 7 | Reasoning failure taxonomy on all planner kinds | P2 | `REASONING_AND_COGNITION` | **Done** |
+| AUDIT-IDEAL-8.1 | Execution runtime | 8 | Long-running workflow resume E2E on product hosts | P2 | `NEXUS_EXECUTION_FLOW` | **Done** |
 | AUDIT-IDEAL-8.2 | Execution runtime | 8 | Checkpoint introspection API for ops (beyond lab) | P2 | `NEXUS_EXECUTION_FLOW` | Planned |
 | AUDIT-IDEAL-9.1 | Orchestration | 9 | Production queue adapter (beyond SQLite scaffold) | P1 | `ORCHESTRATION` | **Done** |
-| AUDIT-IDEAL-9.2 | Orchestration | 9 | Swarm + peer-to-peer coordination graph templates | P2 | `ORCHESTRATION` | Planned |
+| AUDIT-IDEAL-9.2 | Orchestration | 9 | Swarm + peer-to-peer coordination graph templates | P2 | `ORCHESTRATION` | **Done** |
 | AUDIT-IDEAL-9.3 | Orchestration | 9 | Dynamic execution strategy selection (L4 hook) | P2 | `ORCHESTRATION` · `ADAPTIVE_HARNESS_INTELLIGENCE` | Planned |
 | AUDIT-IDEAL-10.1 | Subagents | 10 | Evaluator-loop standard node in product graph specs | P2 | `NEXUS_EXECUTION_FLOW` | Planned |
 | AUDIT-IDEAL-10.2 | Subagents | 10 | Budget delegation enforcement on all delegation paths | P2 | `NEXUS_EXECUTION_FLOW` | Planned |
 | AUDIT-IDEAL-11.1 | Tools | 11 | Sandboxed execution for code / side-effectful tools | P1 | `TOOLS` | **Done** |
-| AUDIT-IDEAL-11.2 | Tools | 11 | MCP / function-schema export for shipped tool catalog | P2 | `TOOLS` | Planned |
+| AUDIT-IDEAL-11.2 | Tools | 11 | MCP / function-schema export for shipped tool catalog | P2 | `TOOLS` | **Done** |
 | AUDIT-IDEAL-11.3 | Tools | 11 | Oversized-tool lint enforcement in CI (adoption sweep) | P2 | `TOOLS` | Planned |
 | AUDIT-IDEAL-12.1 | Skills | 12 | LangGraph-compatible skill pack import path | P2 | `SKILLS` | Planned |
 | AUDIT-IDEAL-12.2 | Skills | 12 | Dynamic skill selection L4 hook (AHI) | P2 | `SKILLS` · `ADAPTIVE_HARNESS_INTELLIGENCE` | Planned |
@@ -67,9 +67,9 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-14.2 | RAG | 14 | Retrieval poisoning defense live on product hosts | P1 | `MEMORY` | **Done** |
 | AUDIT-IDEAL-15.1 | Memory | 15 | Org memory 2.5 (organizational LTM scope) | **P0** | `MEMORY` | **Done** |
 | AUDIT-IDEAL-15.2 | Memory | 15 | Episodic / semantic / procedural memory taxonomy (`MemoryKind` uplift) | P1 | `MEMORY` | **Done** |
-| AUDIT-IDEAL-15.3 | Memory | 15 | Entity graph memory ship (beyond RFC — MEM-DEPTH-5.1) | P2 | `MEMORY` | Planned |
+| AUDIT-IDEAL-15.3 | Memory | 15 | Entity graph memory ship (beyond RFC — MEM-DEPTH-5.1) | P2 | `MEMORY` | **Done** |
 | AUDIT-IDEAL-16.1 | Context | 16 | Online context drift monitoring + alerts | P1 | `MEMORY` | **Done** |
-| AUDIT-IDEAL-16.2 | Context | 16 | Semantic compression strategy in production profiles | P2 | `MEMORY` | Planned |
+| AUDIT-IDEAL-16.2 | Context | 16 | Semantic compression strategy in production profiles | P2 | `MEMORY` | **Done** |
 | AUDIT-IDEAL-17.1 | Prompt registry | 17 | Prompt approval workflow (beyond registry metadata) | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | Planned |
 | AUDIT-IDEAL-17.2 | Prompt registry | 17 | Prompt diff / compare API for all managed prompts | P2 | `AGENT_CONTRACTS_AND_ASSEMBLY` | Planned |
 | AUDIT-IDEAL-18.1 | Agent assembly | 18 | `ModalityProfile` mandatory on certified agents | P1 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
@@ -82,14 +82,14 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-21.2 | Observability | 21 | Quality / governance / cost health dashboard contracts | P2 | `OBSERVABILITY` | Planned |
 | AUDIT-IDEAL-21.3 | Observability | 21 | Unified product observability dashboard | P4 | `OBSERVABILITY` | **Deferred §6.3** (GOV-PROD.1) |
 | AUDIT-IDEAL-22.1 | Reliability | 22 | Compensation flows on product side-effect paths | P1 | `RELIABILITY_FAILURE_AND_HITL` | **Done** |
-| AUDIT-IDEAL-22.2 | Reliability | 22 | Partial results contract on all reference hosts | P2 | `RELIABILITY_FAILURE_AND_HITL` | Planned |
+| AUDIT-IDEAL-22.2 | Reliability | 22 | Partial results contract on all reference hosts | P2 | `RELIABILITY_FAILURE_AND_HITL` | **Done** |
 | AUDIT-IDEAL-23.1 | Security | 23 | Immutable multi-region security audit trail | P2 | `UNIFIED_EXECUTION_RUNTIME` | Planned |
 | AUDIT-IDEAL-23.2 | Security | 23 | Retrieval poisoning + tool injection live on product hosts | P1 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
 | AUDIT-IDEAL-24.1 | Cost | 24 | Cost forecasting from historical run patterns | P2 | `UNIFIED_EXECUTION_RUNTIME` | Planned |
 | AUDIT-IDEAL-24.2 | Cost | 24 | Automated cost optimization recommendations (AHI) | P2 | `UNIFIED_EXECUTION_RUNTIME` · `ADAPTIVE_HARNESS_INTELLIGENCE` | Planned |
 | AUDIT-IDEAL-24.3 | Cost | 24 | CPU/memory/concurrency quotas with tenant fairness | P2 | `UNIFIED_EXECUTION_RUNTIME` · `ELASTIC_CAPACITY_AND_SCALING` | Planned |
 | AUDIT-IDEAL-25.1 | Evaluation | 25 | Shadow eval path automation (DEBT-25-01) | P1 | `CRITIC_VERIFICATION` | **Done** |
-| AUDIT-IDEAL-25.2 | Evaluation | 25 | Human review sample queue (beyond CLI) | P2 | `CRITIC_VERIFICATION` | Planned |
+| AUDIT-IDEAL-25.2 | Evaluation | 25 | Human review sample queue (beyond CLI) | P2 | `CRITIC_VERIFICATION` | **Done** |
 | AUDIT-IDEAL-25.3 | Evaluation | 25 | Context/RAG eval blocking product release CI | P1 | `CRITIC_VERIFICATION` | **Done** |
 | AUDIT-IDEAL-26.1 | CI / gates | 26 | Architecture-boundary chaos job in weekly CI | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | Planned |
 | AUDIT-IDEAL-26.2 | CI / gates | 26 | Simulation tests for multi-agent contention | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | Planned |
@@ -112,7 +112,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-32.1 | Doc governance | 32 | Living architecture debt burn-down tied to milestones | P2 | `PLATFORM_FOUNDATION` | Planned |
 | AUDIT-IDEAL-32.2 | Doc governance | 32 | Scorecard auto-sync on plan row change (extend IDEAL-32.3) | P2 | `PLATFORM_FOUNDATION` | Planned |
 | AUDIT-IDEAL-AHI.1 | Adaptive Harness L4 | 25 | 30-day L4 closed-loop evidence on ≥3 golden scenarios (real deploy) | P1 | `ADAPTIVE_HARNESS_INTELLIGENCE` | **Done** |
-| AUDIT-IDEAL-AHI.2 | Adaptive Harness L4 | 25 | Bounded policy learning without governance drift | P2 | `ADAPTIVE_HARNESS_INTELLIGENCE` | Planned |
+| AUDIT-IDEAL-AHI.2 | Adaptive Harness L4 | 25 | Bounded policy learning without governance drift | P2 | `ADAPTIVE_HARNESS_INTELLIGENCE` | **Done** |
 | AUDIT-IDEAL-AHI.3 | Adaptive Harness L4 | 25 | Capability marketplace readiness (trust, certification, billing) | P3 | `ADAPTIVE_HARNESS_INTELLIGENCE` | Planned |
 
 ---

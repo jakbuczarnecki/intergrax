@@ -27,6 +27,11 @@ def apply_context_profile_to_runtime_config(
             "enabled": True,
             "alert_threshold": context.drift_alert_threshold,
         }
+    if context.semantic_compression_enabled:
+        config.metadata["semantic_compression.v1"] = {
+            "enabled": True,
+            "strategy": context.default_history_compression,
+        }
     if context.decision.max_memory_entries_in_context != config.max_longterm_entries_per_query:
         config.max_longterm_entries_per_query = context.decision.max_memory_entries_in_context
     derive_run_budget_from_context_policy(config)
