@@ -20,6 +20,7 @@ class RetrievalChunk:
 @dataclass
 class RetrievalTrace:
     route_tier: str = "standard"
+    route_classifier: Optional[str] = None
     retriever_id: str = ""
     reranker_id: Optional[str] = None
     rerank_enabled: bool = False

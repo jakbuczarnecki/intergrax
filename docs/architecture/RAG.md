@@ -90,7 +90,7 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-13 | niedoróbka | ~~No formal `Citation` on engine output~~ — **closed M-RAG.29**: `retrieval/citation.py` + `RagCitationResult` | **P2** | M-RAG.29 **Done** | — |
 | GAP-RAG-14 | niedoróbka | ~~No embedding version policy~~ — **closed M-RAG.31**: warn on ingest, optional retrieve filter, reindex queue hook | **P2** | M-RAG.31 **Done** | — |
 | GAP-RAG-15 | ograniczenie | No autonomous MIME/size-based chunking or retriever selection — Tier-3 must define `RagProfile` | — | Tier-3 + AHI | — |
-| GAP-RAG-16 | niska jakość | `QueryRouter` tier selection is word-count heuristic only — no LLM intent / complexity classifier | **P2** | M-RAG.32 | — |
+| GAP-RAG-16 | niska jakość | ~~Heuristic-only tier routing~~ — **closed M-RAG.32**: optional `llm_route_enabled` + `llm_tier_classifier.py` with heuristic fallback | **P2** | M-RAG.32 **Done** | — |
 | GAP-RAG-17 | niedoróbka | ~~`multiquery` not activated by `query_expansion`~~ — **closed M-RAG.23**: `effective_retriever(deep)` returns `multiquery` when expansion enabled | **P0** | M-RAG.23 **Done** | 14.3 |
 | GAP-RAG-18 | niegotowość | ~~No Tier-3 GraphRAG prod preset~~ — **closed M-RAG.33**: `production_graph_rag_profile()` requires `neo4j`; `production_rag_profile()` documented harness-only (in-memory graph) | **P1** | M-RAG.33 **Done** | — |
 | GAP-RAG-19 | niedoróbka | `AgenticRetrievalLoop` cannot switch retriever between iterations; no RAG-level token/cost budget in trace | **P2** | M-RAG.34 | — |
@@ -180,7 +180,7 @@ RETRIEVE (rag.retrieve / RetrievalService)
 | `fusion` | RRF over vector + hybrid + parent_child | Deep tier default |
 | `graph_rag` | Vector seed + graph traversal | When `graph_rag_enabled` + `GraphStore` configured (**beta**) |
 
-**Adaptive routing:** `QueryRouter` classifies by word count and simple heuristics (no LLM). Tier-3 maps tiers via `RagProfile.fast_retriever_id`, `retriever_id`, `deep_retriever_id`, `effective_retriever()`. LLM tier routing: M-RAG.32.
+**Adaptive routing:** `QueryRouter` classifies by word-count heuristics; optional LLM classifier when `llm_route_enabled` (default off, env `INTERGRAX_RAG_LLM_ROUTE_ENABLED`). Trace field `route_classifier` = `heuristic` \| `llm`.
 
 **Agentic deep tier:** `AgenticRetrievalLoop` — budgeted iterations, query refine (`deterministic` \| `llm`), stop on `agentic_min_chunks` / `agentic_min_score`. **Default:** `agentic_enabled=false`. Inter-iteration retriever switch: M-RAG.34.
 

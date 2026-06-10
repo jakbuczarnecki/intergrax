@@ -58,6 +58,7 @@ class RagProfile:
     # Adaptive routing (fast / standard / deep)
     route_mode: RouteMode = "auto"
     deep_query_min_words: int = 12
+    llm_route_enabled: bool = False
 
     # Ingest (no fixed parser — optional integration slug)
     chunking_strategy_id: str = "langchain_recursive"
@@ -232,6 +233,7 @@ def rag_profile_from_env() -> RagProfile:
         score_threshold=score_threshold,
         route_mode=route_mode,
         deep_query_min_words=_env_int("INTERGRAX_RAG_DEEP_QUERY_MIN_WORDS", 12),
+        llm_route_enabled=_env_bool("INTERGRAX_RAG_LLM_ROUTE_ENABLED", False),
         chunking_strategy_id=os.getenv("INTERGRAX_RAG_CHUNKING_STRATEGY", "langchain_recursive").strip()
         or "langchain_recursive",
         hierarchical_index_enabled=_env_bool("INTERGRAX_RAG_HIERARCHICAL_INDEX", False),

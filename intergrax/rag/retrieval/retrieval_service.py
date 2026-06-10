@@ -39,11 +39,13 @@ class RetrievalService:
         profile: Optional[RagProfile] = None,
         query_router: Optional[QueryRouter] = None,
         llm_for_agentic: Optional[LLMAdapter] = None,
+        llm_for_routing: Optional[LLMAdapter] = None,
     ) -> None:
         self._retriever_manager = retriever_manager
         self._reranker_manager = reranker_manager
         self._profile = profile or RagProfile()
-        self._router = query_router or QueryRouter(self._profile)
+        router_llm = llm_for_routing or llm_for_agentic
+        self._router = query_router or QueryRouter(self._profile, llm=router_llm)
         self._llm_for_agentic = llm_for_agentic
 
     @property
@@ -92,6 +94,7 @@ class RetrievalService:
 
             tier = route_tier or request.route_tier_override or self._router.route(query)
             trace.route_tier = str(tier)
+            trace.route_classifier = self._router.last_route_classifier
 
             retriever_id = request.retriever_id or self._profile.effective_retriever(route_tier=str(tier))
             trace.retriever_id = retriever_id

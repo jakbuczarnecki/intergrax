@@ -87,6 +87,7 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
         "rerank_enabled": result.trace.rerank_enabled,
         "retrieval_latency_ms": result.trace.retrieval_latency_ms,
         "rerank_latency_ms": result.trace.rerank_latency_ms,
+        "route_classifier": result.trace.route_classifier,
         "citation_count": len(citations),
         "embedding_version_filtered_count": result.trace.embedding_version_filtered_count,
     }

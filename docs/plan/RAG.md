@@ -55,7 +55,7 @@ Every finding in [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth 
 | GAP-RAG-12 | niska jakość | M-RAG.28 **Done** | 3 |
 | GAP-RAG-13 | niedoróbka | M-RAG.29 **Done** | 3 |
 | GAP-RAG-14 | niedoróbka | M-RAG.31 **Done** | 3 |
-| GAP-RAG-16 | niska jakość | M-RAG.32 | 3 |
+| GAP-RAG-16 | niska jakość | M-RAG.32 **Done** | 3 |
 | GAP-RAG-19 | niedoróbka | M-RAG.34 | 3 |
 | GAP-RAG-21 | niegotowość | M-RAG.36 | 3 |
 | GAP-RAG-22 | niska jakość | M-RAG.37 | 3 |
@@ -200,7 +200,7 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | 7 | M-RAG.29 | Formal `Citation` model on `RetrievalResult` + `rag.retrieve` output | **P2** | **Done** | 13 | `test_rag_citation_engine_gate.py` |
 | 8 | M-RAG.30 | Vector-store prod SLO — soak gate for stable slugs; promote `pinecone`/`milvus`/`vespa` from beta when soak passes | **P1** | **Done** | 07 | `test_vectorstore_prod_slo_soak.py` + integration soak; INTEGRATIONS runbook |
 | 9 | M-RAG.31 | Embedding model version reindex policy (mismatch → warn / queue reindex) | **P2** | **Done** | 14 | `test_embedding_version_policy.py` + ingest/retrieve gate tests |
-| 10 | M-RAG.32 | Optional LLM `QueryRouter` tier classifier (`llm_route_enabled`, default off) | **P2** | **Planned** | 16 | Unit test: long ambiguous query routes to deep with LLM on |
+| 10 | M-RAG.32 | Optional LLM `QueryRouter` tier classifier (`llm_route_enabled`, default off) | **P2** | **Done** | 16 | `test_query_router_llm_tier.py` |
 | 11 | M-RAG.33 | GraphRAG Tier-3 prod profile contract (neo4j required; harness preset documented) | **P1** | **Done** | 18 | `test_production_graph_rag_profile.py` + `test_graph_rag_neo4j_prod_contract.py` |
 | 12 | M-RAG.34 | Agentic loop — per-iteration retriever override + cost budget trace fields | **P2** | **Planned** | 19 | Unit test on iteration trace |
 | 13 | M-RAG.35 | Cross-backend tenant isolation contract tests | **P1** | **Done** | 20 | `tenant_isolation_contract.py` + gate tests per backend |
@@ -228,6 +228,7 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | 2026-06-10 | M-RAG.28 | `RetrievalError` taxonomy; retriever fallback chain; retry=2; optional vector circuit breaker |
 | 2026-06-10 | M-RAG.29 | `Citation` model on `RetrievalResult` + `RagCitationResult` on `rag.retrieve` |
 | 2026-06-10 | M-RAG.31 | `embedding_version_policy.py` — ingest warn, retrieve filter, reindex hook |
+| 2026-06-10 | M-RAG.32 | `llm_tier_classifier.py` + `RagProfile.llm_route_enabled`; trace `route_classifier` |
 
 ---
 
@@ -250,7 +251,7 @@ Ordered queue for RAG domain work. **Active:** M-RAG-DEPTH (15 items). **Closed:
 | 9 | **M-RAG.28** | 3 | **P2** | Retriever fallback chain; structured errors; retry alignment | 10, 11, 12 | **Done** |
 | 10 | **M-RAG.29** | 3 | **P2** | Formal `Citation` on `RetrievalResult` + `rag.retrieve` output | 13 | **Done** |
 | 11 | **M-RAG.31** | 3 | **P2** | `embedding_model_version` mismatch policy | 14 | **Done** |
-| 12 | **M-RAG.32** | 3 | **P2** | Optional LLM `QueryRouter` (`llm_route_enabled`, default off) | 16 | **Planned** |
+| 12 | **M-RAG.32** | 3 | **P2** | Optional LLM `QueryRouter` (`llm_route_enabled`, default off) | 16 | **Done** |
 | 13 | **M-RAG.34** | 3 | **P2** | Agentic loop per-iteration retriever override + cost trace | 19 | **Planned** |
 | 14 | **M-RAG.36** | 3 | **P2** | RAG load/soak gate (concurrent retrieve SLO) | 21 | **Planned** |
 | 15 | **M-RAG.37** | 3 | **P2** | Semantic chunking ingest size guard | 22 | **Planned** |
@@ -314,4 +315,4 @@ Ordered queue for RAG domain work. **Active:** M-RAG-DEPTH (15 items). **Closed:
 
 ## Suggested first PR
 
-**M-RAG.32** (Wave 3) — optional LLM `QueryRouter` tier classifier (`llm_route_enabled`).
+**M-RAG.34** (Wave 3) — agentic loop per-iteration retriever override + cost trace.
