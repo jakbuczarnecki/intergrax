@@ -3,7 +3,7 @@
 **Hub only** — domain architecture and implementation are paired 1:1 under `architecture/` and `plan/`.
 **Target:** [`guides/IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
-**Audit:** [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) · **Domain audit prompts:** [`guides/audit/README.md`](guides/audit/README.md)
+**Audit:** [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) · **Domain audit prompts:** [`guides/audit/`](guides/audit/) · **Implementation journal:** [`guides/implementation-journal/`](guides/implementation-journal/README.md)
 **Authoring:** [`guides/`](guides/)
 
 ---
@@ -89,7 +89,7 @@ Execution: [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EX
 | 31 Agent lifecycle | `AGENT_CONTRACTS_AND_ASSEMBLY` §20 |
 | 32 Doc governance loop | `PLATFORM_FOUNDATION` + `guides/` |
 
-Full audit procedure: [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md). **Copy-paste domain prompts:** [`guides/audit/README.md`](guides/audit/README.md).
+Full audit procedure: [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md). **Domain audit prompts:** [`guides/audit/`](guides/audit/). **Completed implementation episodes:** [`guides/implementation-journal/INDEX.md`](guides/implementation-journal/INDEX.md).
 
 ---
 

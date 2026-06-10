@@ -77,8 +77,10 @@ ANALIZA
   → AKTUALIZACJA DOKUMENTACJI (strategia → kanon → plan)
   → IMPLEMENTACJA
   → WERYFIKACJA (gate + getattr audit where harness touched)
-  → WNIOSKI
+  → WNIOSKI (+ implementation journal entry when a deliverable closed)
 ```
+
+**WNIOSKI:** For completed implementations, append an English episode to [`guides/implementation-journal/`](implementation-journal/README.md) (operator intent, `plan_ref`, impact) — narrative layer only; plan rows remain the status source of truth.
 
 Think as a **Harness AI architect** first, then as an engineer.
 

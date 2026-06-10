@@ -5,48 +5,44 @@ alwaysApply: true
 
 # Intergrax — Implementation Journal
 
-After every **completed implementation iteration** (full stack: Tier-0 `intergrax/`, Tier-1 `intergrax/runtime/`, Tier-2 `agents/`, Tier-3 `applications/`), append a journal entry. This is in addition to the chat iteration summary — not a replacement for plan or architecture updates.
+After every **completed implementation iteration** (Tier-0 `intergrax/`, Tier-1 `intergrax/runtime/`, Tier-2 `agents/`, Tier-3 `applications/`, shared `intergrax/applications/_shared/`), create a journal entry. Addition to chat summary — not a replacement for plan or architecture updates.
 
 **Canon:** [`docs/guides/implementation-journal/README.md`](docs/guides/implementation-journal/README.md)  
-**Template:** [`docs/guides/implementation-journal/ENTRY_TEMPLATE.md`](docs/guides/implementation-journal/ENTRY_TEMPLATE.md)
+**Scaffold:** [`docs/guides/implementation-journal/entries/_TEMPLATE.md`](docs/guides/implementation-journal/entries/_TEMPLATE.md)
 
 ## When to write
 
-Write when the iteration is **complete** per `intergrax-iteration.mdc` (tests run, plan/architecture updated, ADR resolved).
+Write when iteration is **complete** per `intergrax-iteration.mdc` (including journal in Completion criteria).
 
-**Skip** for: brainstorming only, typos/formatting, audit-only with no delivery, or operator says **no journal**.
+**Skip:** brainstorming only, typos/formatting, audit-only with no delivery, operator says **no journal** (state skip rationale in chat).
 
 ## Required actions
 
-1. Create `docs/guides/implementation-journal/entries/YYYY-MM-DD-<scope>-<slug>.md` from the template.
-2. **English only** in the journal file (chat summary may use operator language).
-3. Set frontmatter: `id`, `date`, `tier`, `scope`, `plan_ref`, `status: completed`, `commit` (`pending` until committed), `adr`.
-4. Fill: Operator request, Summary, Project impact, Traceability, Changed artifacts, Verification, Risks and follow-ups.
-5. Prepend one row to [`INDEX.md`](docs/guides/implementation-journal/INDEX.md) (newest first).
-6. In the chat iteration summary, add: **Journal entry:** `entries/<filename>.md`.
+1. Copy `_TEMPLATE.md` → `entries/YYYY-MM-DD-<scope>-<slug>.md`.
+2. **English only** in the journal file.
+3. Frontmatter: `id`, `date`, `tiers` (YAML list), `scope`, `plan_ref` (YAML list of formal IDs), `status: completed`, `commit`, `adr`.
+4. Fill all sections; Operator request = **paraphrase**, not verbatim transcript.
+5. **Prepend** row to [`INDEX.md`](docs/guides/implementation-journal/INDEX.md) (newest first).
+6. Chat iteration summary: **Journal entry:** `entries/<filename>.md`.
+
+## ID assignment
+
+`IJ-YYYY-MM-DD-NNN` — `NNN` = max suffix for that date in INDEX + 1 (zero-padded, e.g. `008`).
 
 ## Scope → traceability
 
-| Path prefix | `tier` | Link architecture + plan |
-|-------------|--------|--------------------------|
+| Path prefix | `tiers` | Link |
+|-------------|---------|------|
 | `intergrax/` (not `runtime/`) | `tier-0` | `docs/architecture/<DOMAIN>.md` + `docs/plan/<DOMAIN>.md` |
 | `intergrax/runtime/` | `tier-1` | Same domain pair |
-| `agents/<slug>/` | `tier-2` | `agents/<slug>/ARCHITECTURE.md` |
+| `agents/<slug>/` | `tier-2` | `agents/<slug>/ARCHITECTURE.md`; `agents/<slug>/adr/` if ADR |
 | `applications/<pkg>/` | `tier-3` | `applications/<pkg>/ARCHITECTURE.md` |
+| `intergrax/applications/_shared/` | `tier-3` | Link shared module + consuming host(s) |
+
+Multi-tier PR: `tiers: [tier-2, tier-3]` — one entry.
 
 ## Content rules
 
-- **Link** plan rows, GAP-*, AUDIT-IDEAL-*, ADRs — **do not** duplicate plan tables or architecture canon.
-- One entry per coherent iteration; multiple `plan_ref` values allowed in one entry.
-- `project_impact` = what the Harness or product gained — not a file dump.
-- Significant architecture change → ADR path in frontmatter; else `adr: none — <rationale>`.
-
-## ID convention
-
-`IJ-YYYY-MM-DD-NNN` — sequential `NNN` per calendar day in `INDEX.md`.
-
-## Example index row
-
-```markdown
-| IJ-2026-06-10-001 | 2026-06-10 | tier-0 RAG | M-RAG.23 | [query expansion wiring](entries/2026-06-10-rag-m-rag-23.md) | `94bea682` |
-```
+- Link plan rows, GAP-*, AUDIT-IDEAL-*, ADRs — **no** plan table duplication.
+- `plan_ref`: formal IDs only (`M-RAG.23`, `TOOL-ENG-4`) — not free-text notes.
+- `project impact` = capability gained, not file dump.

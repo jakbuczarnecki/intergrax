@@ -3,7 +3,8 @@ id: IJ-2026-06-10-006
 date: 2026-06-10
 tier: tier-0
 scope: EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-plan_ref: FAUDIT-32, audit operator tooling
+plan_ref:
+  - FAUDIT-32
 status: completed
 commit: 69d7adce
 adr: none — operator prompts; no runtime contract change
@@ -17,7 +18,7 @@ Replace ad-hoc per-iteration audit instructions with reusable, domain-scoped aud
 
 ## Summary
 
-Created `docs/guides/audit/<DOMAIN>.md` for all 21 domains with copy-paste prompt blocks, shared checklist in audit README, and `scripts/generate_domain_audit_prompts.py` for regeneration after canon changes. Linked from architecture hub and guides index.
+Created `docs/guides/audit/<DOMAIN>.md` for all 21 domains with copy-paste prompt blocks and `scripts/generate_domain_audit_prompts.py` for regeneration after canon changes. Linked from architecture hub and guides index.
 
 ## Project impact
 
@@ -34,7 +35,6 @@ Domain audits become repeatable and comparable — operators paste one prompt pe
 ## Changed artifacts
 
 - `docs/guides/audit/*.md` — 21 domain prompts
-- `docs/guides/audit/README.md` — procedure and shared checklist
 - `scripts/generate_domain_audit_prompts.py` — generator
 
 ## Verification
@@ -48,3 +48,4 @@ Result: pass.
 ## Risks and follow-ups
 
 - Prompts drift if canon changes without regenerating — run generator after domain contract updates.
+- `audit/README.md` index was added in this commit but later removed; domain prompt files remain self-contained.

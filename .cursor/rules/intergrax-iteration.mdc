@@ -264,7 +264,8 @@ Do not consider an implementation item complete unless:
 - relevant tests pass,
 - affected domain pair documentation is updated,
 - no unnecessary Tier-0 duplication was introduced,
-- significant architecture decisions have an ADR (or explicit "no ADR needed") in the correct domain.
+- significant architecture decisions have an ADR (or explicit "no ADR needed") in the correct domain,
+- an implementation journal entry exists under `docs/guides/implementation-journal/entries/` with a row in `INDEX.md`, per [`intergrax-implementation-journal.mdc`](intergrax-implementation-journal.mdc), **or** the operator explicitly skipped the journal (state rationale in chat).
 
 Never claim that the whole platform is complete.
 Only report completion for the currently implemented scope.

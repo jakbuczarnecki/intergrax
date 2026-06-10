@@ -1,9 +1,15 @@
 ---
 id: IJ-2026-06-10-007
 date: 2026-06-10
-tier: tier-2, tier-3
-scope: agents/vendor_discovery, applications/local_workspace_application
-plan_ref: AUDIT-IDEAL Band 3, K.1, K.2, GOV-PROD.1
+tiers:
+  - tier-2
+  - tier-3
+scope: agents/vendor_discovery, applications/local_workspace_application, intergrax/applications/_shared
+plan_ref:
+  - AUDIT-IDEAL-28.4
+  - AUDIT-IDEAL-5.3
+  - K.1
+  - K.2
 status: completed
 commit: d07e4d62
 adr: none — product certification wiring; platform contracts unchanged

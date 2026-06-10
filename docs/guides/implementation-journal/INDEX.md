@@ -5,7 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-10-007 | 2026-06-10 | tier-2/3 LKW, vendor_discovery | K.1, K.2, GOV-PROD.1 | [LKW hybrid daemon and business agent certification](entries/2026-06-10-tier3-lkw-k-certification.md) | `d07e4d62` |
+| IJ-2026-06-10-007 | 2026-06-10 | tier-2/3 LKW, vendor_discovery | AUDIT-IDEAL-28.4, K.1, K.2 | [LKW hybrid daemon and business agent certification](entries/2026-06-10-tier3-lkw-k-certification.md) | `d07e4d62` |
 | IJ-2026-06-10-006 | 2026-06-10 | tier-0 EXP/DX | FAUDIT-32 | [Per-domain Harness audit prompts](entries/2026-06-10-exp-domain-audit-prompts.md) | `69d7adce` |
 | IJ-2026-06-10-005 | 2026-06-10 | tier-1 TOOLS | TOOL-ENG-4, TOOL-ENG-11 | [Tool planner tool_ids constraints](entries/2026-06-10-tools-tool-eng-4.md) | `79fd5e81` |
 | IJ-2026-06-10-004 | 2026-06-10 | tier-1 TOOLS | TOOL-ENG-1, TOOL-ENG-2 | [Catalog dispatch and full-gateway routing](entries/2026-06-10-tools-tool-eng-1-2.md) | `aa0a3e61` |
