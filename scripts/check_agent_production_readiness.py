@@ -22,6 +22,7 @@ TYPED_STATE_ALLOWLIST = REPO_ROOT / "scripts" / "check_agent_typed_state.py"
 from intergrax.agents.readiness.scoreboard import (  # noqa: E402
     build_roster_readiness_report,
     load_fleet_inventory,
+    mutating_checkpoint_idempotency_at_100,
 )
 from intergrax.contracts.agent_readiness import AgentReadinessDimension  # noqa: E402
 
@@ -41,6 +42,11 @@ def main() -> int:
         help="ACP-LEG-2: legacy_count=0 and Runtime 100%% roster-wide",
     )
     parser.add_argument("--fail-on-blockers", action="store_true", help="Fail when any dimension has blockers")
+    parser.add_argument(
+        "--require-mutating-checkpoint-idempotency-100",
+        action="store_true",
+        help="ACP-CLOSE-PROD-8: mutating agents must score 100%% on checkpointing and idempotency",
+    )
     parser.add_argument("--regenerate", action="store_true", help="Regenerate scoreboard before check")
     args = parser.parse_args()
 
@@ -79,6 +85,13 @@ def main() -> int:
 
     if args.require_fleet_migration_closure and not roster.fleet_migration_complete:
         violations.append("fleet_migration_complete=false in scoreboard")
+
+    if args.require_mutating_checkpoint_idempotency_100 and not mutating_checkpoint_idempotency_at_100(
+        roster
+    ):
+        violations.append(
+            "mutating agents must score 100% on checkpointing and idempotency (ACP-CLOSE-PROD-8)"
+        )
 
     for agent_report in roster.agents:
         runtime = agent_report.dimension_score(AgentReadinessDimension.RUNTIME)

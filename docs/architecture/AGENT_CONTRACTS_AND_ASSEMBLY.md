@@ -2327,7 +2327,7 @@ Acceptance: integration test routes by `research.web_search` with two implementa
 | DX / readability | 9/10 (§32.0) | **9/10** — factories + typed-state CI |
 | Typed author surface | Required §32.0 | **Done** — UAEP internal bridge only (LEG closeout open) |
 
-**Audit gate (2026-06-11):** conceptual architecture **9/10**; implementation **8.5/10**; **mutating production_mode** blocked until ACP-CLOSE P0 rows + §40.12 checklist.
+**Audit gate (2026-06-11):** conceptual architecture **9/10**; implementation **8.5/10**; **mutating production_mode** — §40.12 reference checklist green (ACP-CLOSE-PROD-7); scoreboard mutating checkpoint/idempotency **100%** (ACP-CLOSE-PROD-8); remaining blockers: policy/security STRICT per-agent · compensation queue depth.
 
 **Recommended decision (accepted):** keep Nexus as Agent OS; implement `run()` + `on_next_step()` + typed contracts — do **not** merge Nexus into agent class (ADR-AGENT-001..003). **`NexusLoop` MUST NOT become the agent plan brain** — see §38.
 
@@ -3135,7 +3135,7 @@ Waivers require ADR + operator sign-off — not silent skip.
 | Conceptual architecture | **9/10** ✓ |
 | Platform implementation (ACP waves 0–8) | **8.5/10** ✓ |
 | Architecture ↔ code doc sync | **9/10** ✓ (after ACP-CLOSE-DOC-2/3) |
-| Mutating agents production-ready | **Blocked** until ACP-CLOSE-PROD P0 + §40.12 + scoreboard thresholds |
+| Mutating agents production-ready | **Partial** — §40.12 reference + mutating checkpoint/idempotency scoreboard **Done**; policy/security STRICT depth + compensation queue open |
 
 ### 40.13.1 Audit acceptance (2026-06)
 

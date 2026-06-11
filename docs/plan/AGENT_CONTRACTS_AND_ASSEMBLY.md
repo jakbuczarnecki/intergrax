@@ -285,8 +285,8 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-CLOSE-PROD-4 | PROD | Nexus **E2E** acceptance — catalog declarative invoker (not callable mock) | **Done** | §27 · §40.12 | `test_acp_nexus_catalog_declarative_resume.py` | `build_harness_host_runtime` + `NexusLoop` resume green |
 | ACP-CLOSE-PROD-5 | PROD | **Durable compensation queue** for `enqueued` requests | Planned | §40.3.3 | `compensation_enqueue.py` + worker/store | Policy deny after commit → persisted job |
 | ACP-CLOSE-PROD-6 | PROD | `ReliabilityProfile.idempotency_store` ↔ ledger replay §40.2.2 | Planned | §40.2 | `reliability_wiring.py`, kernel replay | Cross-run dedupe integration test |
-| ACP-CLOSE-PROD-7 | PROD | §40.12 checklist **green** — reference mutating agent artifact | Planned | §40.12 | scoreboard + acceptance | Documented checklist pass |
-| ACP-CLOSE-PROD-8 | PROD | Scoreboard mutating agents **100%** checkpoint + idempotency dimensions | Planned | §40.15 | `readiness/scoreboard.py` | No blockers in `agent_production_readiness.json` |
+| ACP-CLOSE-PROD-7 | PROD | §40.12 checklist **green** — reference mutating agent artifact | **Done** | §40.12 | `section_40_12_checklist.py`, `check_acp_section_40_12_checklist.py` | `build/acp_section_40_12_reference.json` |
+| ACP-CLOSE-PROD-8 | PROD | Scoreboard mutating agents **100%** checkpoint + idempotency dimensions | **Done** | §40.15 | `readiness/scoreboard.py` | `--require-mutating-checkpoint-idempotency-100` green |
 | ACP-CLOSE-PAT-1 | PAT | ReAct ↔ **TOOL-ENG-6** unified tool loop + budget keys | Planned | §26.3 · §25.2 | `patterns/react.py`, `tool_loop_step.py` | 2-iteration integration; DEBT-ACP-18 **Closed** |
 | ACP-CLOSE-PAT-2 | PAT | `ReflectionAgent` → CVL critic hooks (gateway only) | Planned | §26.6 | `patterns/reflection.py`, host critic wiring | No critic SDK in Tier-2; `plan/CRITIC_VERIFICATION.md` |
 | ACP-CLOSE-PAT-3 | PAT | Author terminology — single canonical §29 entry | Planned | §28.3 GAP-07 | `AGENT_CREATION_GUIDE.md` | No scattered UAEP-first mental model |
@@ -598,7 +598,7 @@ AgentReadinessDimensionScore:
 | Profile | `overall_pct` | Per-dimension floor | Extra |
 |---------|---------------|---------------------|-------|
 | **Read-only staging** | ≥70% | Runtime ≥80% | Checkpointing/Idempotency may be `not_applicable` |
-| **Mutating staging** | ≥80% | Checkpointing + Idempotency ≥80% | ACP-PROD-1..3 code Done |
+| **Mutating staging** | ≥80% | Checkpointing + Idempotency **100%** | ACP-CLOSE-PROD-1..4 · §40.12 reference |
 | **Production roster** | **≥90%** | **No dimension below 80%** (except N/A) | ACP-PROD-9..10 green · §40.12 checklist |
 | **Waiver** | — | — | ADR + operator sign-off only |
 
@@ -658,8 +658,8 @@ ACP-CLOSE:  DOC-2..4 → LEG-1 → LEG-2 → LEG-3 → PROD-1 → PROD-2 → PRO
 | 13 | ACP-CLOSE-PROD-6 | P1 | §40.2.2 | Planned |
 | 14 | ACP-CLOSE-PAT-1 + TOOL-ENG-6 | P1 | §26.3 | Planned |
 | 15 | ACP-CLOSE-ORG-1 | P1 | §39.4 | Planned |
-| 16 | ACP-CLOSE-PROD-7 | **P0** | §40.12 | Planned |
-| 17 | ACP-CLOSE-PROD-8 | **P0** | §40.15 | Planned |
+| 16 | ACP-CLOSE-PROD-7 | **P0** | §40.12 | **Done** |
+| 17 | ACP-CLOSE-PROD-8 | **P0** | §40.15 | **Done** |
 | 18 | ACP-CLOSE-PAT-2 | P2 | §26.6 | Planned |
 | 19 | ACP-CLOSE-PAT-3 | P2 | §28.3 | Planned |
 | 20 | ACP-CLOSE-ORG-2 | P2 | §39.5 | Planned |

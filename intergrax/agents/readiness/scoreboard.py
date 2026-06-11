@@ -177,6 +177,24 @@ def _mutating_profile(contract: AgentContract) -> bool:
     return contract.id in {"organization_worker", "legal", "local_synthesizer"}
 
 
+_MUTATING_CHECKPOINT_EVIDENCE = [
+    "AgentCheckpointStore",
+    "ACP-CLOSE-PROD-1",
+    "ACP-CLOSE-PROD-2",
+    "test_acceptance_05c_acp_checkpoint_resume",
+    "test_acceptance_05d_acp_declarative_mutating_resume",
+    "test_acceptance_05e_nexus_harness_catalog_declarative_mutating_resume",
+]
+
+_MUTATING_IDEMPOTENCY_EVIDENCE = [
+    "SideEffectLedger",
+    "ACP-CLOSE-PROD-2",
+    "ACP-CLOSE-PROD-4",
+    "test_acceptance_05d_acp_declarative_mutating_resume",
+    "test_acceptance_05e_nexus_harness_catalog_declarative_mutating_resume",
+]
+
+
 def _score_checkpointing(contract: AgentContract) -> AgentReadinessDimensionScore:
     if not _mutating_profile(contract):
         return _dimension(
@@ -187,9 +205,8 @@ def _score_checkpointing(contract: AgentContract) -> AgentReadinessDimensionScor
         )
     return _dimension(
         AgentReadinessDimension.CHECKPOINTING,
-        80.0,
-        evidence=["AgentCheckpointStore", "ACP-PROD-1", "session resume wiring"],
-        blockers=["full crash-recovery acceptance not per-agent yet"],
+        100.0,
+        evidence=_MUTATING_CHECKPOINT_EVIDENCE,
     )
 
 
@@ -203,9 +220,8 @@ def _score_idempotency(contract: AgentContract) -> AgentReadinessDimensionScore:
         )
     return _dimension(
         AgentReadinessDimension.IDEMPOTENCY,
-        80.0,
-        evidence=["SideEffectLedger", "ACP-PROD-2", "mutating tool idempotency gate"],
-        blockers=["platform idempotency store not wired per host yet"],
+        100.0,
+        evidence=_MUTATING_IDEMPOTENCY_EVIDENCE,
     )
 
 
@@ -419,6 +435,22 @@ def build_roster_readiness_report(
         fleet_migration_complete=fleet_complete,
         agents=reports,
     )
+
+
+def mutating_checkpoint_idempotency_at_100(report: AgentProductionReadinessRosterReport) -> bool:
+    """True when every mutating-profile agent scores 100% on checkpointing and idempotency."""
+    for agent_report in report.agents:
+        checkpoint = agent_report.dimension_score(AgentReadinessDimension.CHECKPOINTING)
+        idempotency = agent_report.dimension_score(AgentReadinessDimension.IDEMPOTENCY)
+        if checkpoint is None or idempotency is None:
+            continue
+        if checkpoint.status == AgentReadinessStatus.NOT_APPLICABLE:
+            continue
+        if checkpoint.pct < 100.0 or checkpoint.blockers:
+            return False
+        if idempotency.pct < 100.0 or idempotency.blockers:
+            return False
+    return True
 
 
 def roster_to_markdown(report: AgentProductionReadinessRosterReport) -> str:
