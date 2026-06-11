@@ -26,16 +26,60 @@ def render_agent_architecture_doc(
     class_name: str,
     capabilities: list[str],
     reference: bool = False,
+    pattern: str | None = None,
 ) -> str:
     caps = ", ".join(f"`{c}`" for c in capabilities)
     agent_base = f"`{class_name}`"
-    runtime_line = (
-        "- `HarnessReferenceAgent` + single UAEP pipeline step\n"
-        "- Optional `LabHarnessContext` injected by Tier-3 host builders"
-        if reference
-        else "- `Agent` + single UAEP pipeline step\n"
-        "- Stub LLM adapter in `steps/pipeline.py` for offline smoke tests"
-    )
+    if pattern is not None:
+        runtime_line = (
+            f"- Typed **{pattern}** cognitive pattern (`CognitiveAgent` / `on_next_step`)\n"
+            "- Stub LLM adapter in `{slug}_agent.py` for offline smoke tests"
+        )
+        purpose = (
+            f"Tier-2 typed **{pattern}** agent scaffold for `{slug}`. "
+            "Implement domain logic in `perceive` / `reason` / `act` / `evaluate`."
+        )
+        layout_rows = (
+            f"| `{slug}_agent.py` | {agent_base} — cognitive pattern hooks |\n"
+            "| `contract.py` | `AgentContract` + `cognitive_pattern` |\n"
+            "| `capabilities.py` | Capability ids |\n"
+            "| `prompts/system.md` | Prompt assets |\n"
+            "| `schemas/` | I/O models |\n"
+            "| `tests/` | Agent smoke tests |\n"
+            "| `adr/` | Architecture decision records — [`adr/README.md`](adr/README.md) |"
+        )
+    elif reference:
+        runtime_line = (
+            "- `HarnessReferenceAgent` + single UAEP pipeline step\n"
+            "- Optional `LabHarnessContext` injected by Tier-3 host builders"
+        )
+        purpose = f"Tier-2 harness reference agent scaffold for `{slug}`."
+        layout_rows = (
+            f"| `{slug}_agent.py` | {agent_base} — UAEP entry |\n"
+            "| `contract.py` | `AgentContract` |\n"
+            "| `capabilities.py` | Capability ids |\n"
+            "| `steps/pipeline.py` | Domain execution |\n"
+            "| `prompts/system.md` | Prompt assets |\n"
+            "| `schemas/` | I/O models |\n"
+            "| `tests/` | Agent smoke tests |\n"
+            "| `adr/` | Architecture decision records — [`adr/README.md`](adr/README.md) |"
+        )
+    else:
+        runtime_line = (
+            "- `Agent` + single UAEP pipeline step\n"
+            "- Stub LLM adapter in `steps/pipeline.py` for offline smoke tests"
+        )
+        purpose = f"Tier-2 UAEP agent scaffold for `{slug}`. Replace domain logic in `steps/` and `prompts/`."
+        layout_rows = (
+            f"| `{slug}_agent.py` | {agent_base} — UAEP entry |\n"
+            "| `contract.py` | `AgentContract` |\n"
+            "| `capabilities.py` | Capability ids |\n"
+            "| `steps/pipeline.py` | Domain execution |\n"
+            "| `prompts/system.md` | Prompt assets |\n"
+            "| `schemas/` | I/O models |\n"
+            "| `tests/` | Agent smoke tests |\n"
+            "| `adr/` | Architecture decision records — [`adr/README.md`](adr/README.md) |"
+        )
     return dedent(
         f"""\
         # {slug} agent — architecture
@@ -48,7 +92,7 @@ def render_agent_architecture_doc(
 
         ## Purpose
 
-        Tier-2 UAEP agent scaffold for `{slug}`. Replace domain logic in `steps/` and `prompts/`.
+        {purpose}
 
         ## Capabilities
 
@@ -58,14 +102,7 @@ def render_agent_architecture_doc(
 
         | Path | Role |
         |------|------|
-        | `{slug}_agent.py` | {agent_base} — UAEP entry |
-        | `contract.py` | `AgentContract` |
-        | `capabilities.py` | Capability ids |
-        | `steps/pipeline.py` | Domain execution |
-        | `prompts/system.md` | Prompt assets |
-        | `schemas/` | I/O models |
-        | `tests/` | Agent smoke tests |
-        | `adr/` | Architecture decision records — [`adr/README.md`](adr/README.md) |
+        {layout_rows}
 
         ## Runtime
 
@@ -91,6 +128,7 @@ def render_agent_implementation_plan(
     class_name: str,
     capabilities: list[str],
     reference: bool = False,
+    pattern: str | None = None,
 ) -> str:
     prefix = _cap_prefix(slug)
     primary = capabilities[0] if capabilities else f"{slug}.basic"
@@ -99,6 +137,15 @@ def render_agent_implementation_plan(
         if reference
         else ""
     )
+    if pattern is not None:
+        domain_task = (
+            f"| {prefix}-1 | Implement domain hooks in `{slug}_agent.py` "
+            f"(perceive/reason/act/evaluate) | Planned | High | {pattern} pattern |"
+        )
+    else:
+        domain_task = (
+            f"| {prefix}-1 | Replace scaffold stub in `steps/pipeline.py` | Planned | High | One PR per domain step |"
+        )
     return dedent(
         f"""\
         # {slug} agent — Implementation Plan
@@ -145,7 +192,7 @@ def render_agent_implementation_plan(
 
         | ID | Task | Status | Priority | Notes |
         |----|------|--------|----------|-------|
-        | {prefix}-1 | Replace scaffold stub in `steps/pipeline.py` | Planned | High | One PR per domain step |
+        {domain_task}
         | {prefix}-2 | Extend `prompts/system.md` for domain | Planned | Medium | Keep prompts versioned here |
         | {prefix}-3 | Register skills/tools on `contract.py` | Planned | Medium | See `docs/architecture/SKILLS.md` |
         | {prefix}-4 | Agent smoke test green | Done | High | `tests/test_{slug}_agent.py` |

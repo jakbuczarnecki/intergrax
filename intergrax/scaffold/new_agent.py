@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Agent scaffold CLI — UAEP-first capability modules under ``agents/`` (Phase L.1)."""
+"""Agent scaffold CLI — typed cognitive-pattern agents under ``agents/`` (ACP default)."""
 
 from __future__ import annotations
 
@@ -755,27 +755,29 @@ def create_acp_pattern_agent(
     )
     _write(target / "prompts" / "system.md", _prompts_system_md(slug), force=force)
     _write(target / "schemas" / "__init__.py", _schemas_init(), force=force)
+    _write(
+        target / "ARCHITECTURE.md",
+        render_agent_architecture_doc(
+            slug=slug,
+            class_name=class_name,
+            capabilities=capabilities,
+            reference=False,
+            pattern=normalized,
+        ),
+        force=force,
+    )
+    _write(
+        target / "IMPLEMENTATION_PLAN.md",
+        render_agent_implementation_plan(
+            slug=slug,
+            class_name=class_name,
+            capabilities=capabilities,
+            reference=False,
+            pattern=normalized,
+        ),
+        force=force,
+    )
     if not minimal:
-        _write(
-            target / "ARCHITECTURE.md",
-            render_agent_architecture_doc(
-                slug=slug,
-                class_name=class_name,
-                capabilities=capabilities,
-                reference=False,
-            ),
-            force=force,
-        )
-        _write(
-            target / "IMPLEMENTATION_PLAN.md",
-            render_agent_implementation_plan(
-                slug=slug,
-                class_name=class_name,
-                capabilities=capabilities,
-                reference=False,
-            ),
-            force=force,
-        )
         _write(
             target / "README.md",
             dedent(
@@ -804,7 +806,7 @@ def create_acp_pattern_agent(
     return target
 
 
-def create_agent(
+def create_uaep_agent(
     *,
     name: str,
     capabilities: list[str],
@@ -812,17 +814,8 @@ def create_agent(
     force: bool = False,
     reference: bool = False,
     minimal: bool = False,
-    pattern: str | None = None,
 ) -> Path:
-    if pattern is not None:
-        return create_acp_pattern_agent(
-            name=name,
-            capabilities=capabilities,
-            root=root,
-            pattern=pattern,
-            force=force,
-            minimal=minimal,
-        )
+    """Legacy UAEP scaffold — use typed ``create_acp_pattern_agent`` for new agents (DEBT-ACP-05)."""
     slug = _slug(name)
     class_name = _class_name(slug)
     if not capabilities:
@@ -891,6 +884,38 @@ def create_agent(
     write_agent_tracing_scaffold(target=target, slug=slug, force=force)
 
     return target
+
+
+def create_agent(
+    *,
+    name: str,
+    capabilities: list[str],
+    root: Path,
+    force: bool = False,
+    reference: bool = False,
+    minimal: bool = False,
+    pattern: str | None = None,
+    uaep: bool = False,
+) -> Path:
+    if reference or uaep:
+        return create_uaep_agent(
+            name=name,
+            capabilities=capabilities,
+            root=root,
+            force=force,
+            reference=reference,
+            minimal=minimal,
+        )
+    effective_pattern = _normalize_pattern(pattern or "reflex")
+    assert effective_pattern is not None
+    return create_acp_pattern_agent(
+        name=name,
+        capabilities=capabilities,
+        root=root,
+        pattern=effective_pattern,
+        force=force,
+        minimal=minimal,
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:

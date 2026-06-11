@@ -32,7 +32,10 @@ from intergrax.scaffold.expand_application import run_expand
 def register_scaffold_commands(sub: argparse._SubParsersAction) -> None:
     """Register scaffold subcommands on a parent parser."""
 
-    new_agent = sub.add_parser("new-agent", help="Create agents/<name>/ from UAEP template")
+    new_agent = sub.add_parser(
+        "new-agent",
+        help="Create agents/<name>/ (default: typed reflex cognitive pattern)",
+    )
     new_agent.add_argument("name", help="Agent slug (e.g. document_automation)")
     new_agent.add_argument(
         "--capability",
@@ -57,7 +60,12 @@ def register_scaffold_commands(sub: argparse._SubParsersAction) -> None:
         "--pattern",
         choices=sorted(SCAFFOLD_PATTERNS),
         default=None,
-        help="Cognitive pattern scaffold (typed on_next_step; no UAEP boilerplate)",
+        help="Cognitive pattern (default: reflex when --uaep not set)",
+    )
+    new_agent.add_argument(
+        "--uaep",
+        action="store_true",
+        help="Legacy UAEP scaffold with steps/pipeline.py (deprecated)",
     )
 
     register_application_parser(sub)
@@ -91,16 +99,18 @@ def main(argv: list[str] | None = None) -> int:
                 force=args.force,
                 reference=args.reference,
                 pattern=args.pattern,
+                uaep=args.uaep,
             )
         except (ValueError, FileExistsError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
         slug = agent_slug(args.name)
         class_name = _class_name(slug)
-        if args.pattern:
-            print(f"Created ACP pattern ({args.pattern}) agent scaffold at {path}")
-        else:
+        if args.uaep or args.reference:
             print(f"Created UAEP agent scaffold at {path}")
+        else:
+            pattern_label = args.pattern or "reflex"
+            print(f"Created ACP pattern ({pattern_label}) agent scaffold at {path}")
         print(f"  Register: from {slug}.{slug}_agent import {class_name}")
         print(f"  Test:     uv run pytest {path / 'tests'} -q")
         print(f"  Guide:    docs/guides/AGENT_CREATION_GUIDE.md")

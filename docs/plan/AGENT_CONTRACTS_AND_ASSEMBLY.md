@@ -101,7 +101,7 @@
 | DEBT-ACP-02 | `RuntimeRequest` + opaque `metadata` for run I/O | `AgentRunRequest` / `RequestIdentity` §30.9 | Wave 0 | ACP-DX-1 |
 | DEBT-ACP-03 | `ctx.metadata["acp.state.v1"]` raw dict in agents | `AcpSessionState` + `load_session_state` §32.0 | Wave 0 | ACP-0 · ACP-DX-6 |
 | DEBT-ACP-04 | `decide_after_step` + `AgentDecision` stringly control | `StepOutcome` factories + enums §32.0.4 | **Bridge only** — primary author API closed ACP-7 | ACP-DX-6 · ACP-STEP-1 · ACP-7 |
-| DEBT-ACP-05 | `get_steps` / `run_step` as **primary** author API | `on_next_step` primary; `@step` maps to loop §32.5 | **Bridge Wave 4** — removal Wave 5+ | ACP-STEP-3 · ACP-8 |
+| DEBT-ACP-05 | `get_steps` / `run_step` as **primary** author API | `on_next_step` primary; `@step` maps to loop §32.5 | **Closed** — default scaffold typed reflex; `--uaep` legacy only | ACP-STEP-3 · ACP-8 |
 | DEBT-ACP-06 | `RuntimeEngine.run` fallback in `AgentEngine` | `advance_step` + kernel only | **Deprecated Wave 4** | ACP-LEG-1 |
 | DEBT-ACP-07 | `build_context` duplicating `RuntimeConfig` per agent | Profile injection via `merge_environment` §30 | Wave 2 | ACP-DX-2 · ACP-CFG |
 | DEBT-ACP-08 | ~~No `AgentRunTrace` on result~~ | Plane B journal §31 | **Closed Wave 3** | ACP-OBS-1 |
@@ -398,7 +398,7 @@ HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
 | 5.7 | ACP-9..10 | `pattern_reference_*.py`, tests package | One harness reference per pattern | Lab wiring smoke | — |
 | 5.8 | ACP-11..13 | CI scripts | UAEP-only gate; pattern conformance; extend `agent_os` | CI green | DX |
 
-**Wave 5 DoD:** **Met** — `new-agent --pattern react` emits `ReActAgent` subclass with typed hooks; pattern library + probes + CI scripts; DEBT-ACP-15 closed. Default scaffold without `--pattern` remains UAEP (fleet migration Wave 8).
+**Wave 5 DoD:** **Met** — `new-agent` defaults to typed `reflex`; `--pattern` selects other patterns; `--uaep` legacy only; pattern library + probes + CI scripts; DEBT-ACP-05/15 closed.
 
 **Prerequisite for Wave 8:** Waves 0–5 Done (typed loop, `run()`, patterns, scaffold target exist).
 
