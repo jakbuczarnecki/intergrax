@@ -2321,7 +2321,7 @@ Acceptance: integration test routes by `research.web_search` with two implementa
 | Observability spec | 9/10 | partial runtime events |
 | Production readiness | 9/10 target | **6.5/10 until §40 + ACP-PROD ship** |
 | DX / readability | **9/10 target** (§32.0 typed READ/UPDATE/DECIDE) | code catches up ACP-DX-6 |
-| Typed author surface | **Required** §32.0 | legacy `dict` UAEP bridge only until ACP-STEP-3 |
+| Typed author surface | **Required** §32.0 | UAEP bridge routes through kernel (ACP-STEP-3 **Done**) |
 
 **Audit gate (2026-06):** conceptual architecture **8.5/10**; pre-implementation spec **7.5/10** after §37–§39; **production coding without further decisions blocked** until §40 implemented (ACP-PROD-*).
 

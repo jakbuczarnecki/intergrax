@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import Any, Dict, Optional, Union
 
 from intergrax.agents.agent_contract import Agent
@@ -199,6 +200,12 @@ class AgentEngine:
             answer, validation, context, governance = await uaep_executor.execute(agent, request)
             return answer, validation, context, governance, {}
 
+        warnings.warn(
+            "AgentEngine RuntimeEngine fallback is deprecated; use on_next_step + "
+            "Agent.run(AgentRunRequest) or UAEP bridge (ACP-LEG-1).",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         context = agent.build_context(request)
         runtime = RuntimeEngine(context)
         answer = await runtime.run(request)

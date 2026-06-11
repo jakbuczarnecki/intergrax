@@ -101,8 +101,8 @@
 | DEBT-ACP-02 | `RuntimeRequest` + opaque `metadata` for run I/O | `AgentRunRequest` / `RequestIdentity` §30.9 | Wave 0 | ACP-DX-1 |
 | DEBT-ACP-03 | `ctx.metadata["acp.state.v1"]` raw dict in agents | `AcpSessionState` + `load_session_state` §32.0 | Wave 0 | ACP-0 · ACP-DX-6 |
 | DEBT-ACP-04 | `decide_after_step` + `AgentDecision` stringly control | `StepOutcome` factories + enums §32.0.4 | Wave 0–1 | ACP-DX-6 · ACP-STEP-1 |
-| DEBT-ACP-05 | `get_steps` / `run_step` as **primary** author API | `on_next_step` primary; `@step` maps to loop §32.5 | Wave 4 | ACP-STEP-3 · ACP-8 |
-| DEBT-ACP-06 | `RuntimeEngine.run` fallback in `AgentEngine` | `advance_step` + kernel only | Wave 4 | ACP-LEG-1 |
+| DEBT-ACP-05 | `get_steps` / `run_step` as **primary** author API | `on_next_step` primary; `@step` maps to loop §32.5 | **Bridge Wave 4** — removal Wave 5+ | ACP-STEP-3 · ACP-8 |
+| DEBT-ACP-06 | `RuntimeEngine.run` fallback in `AgentEngine` | `advance_step` + kernel only | **Deprecated Wave 4** | ACP-LEG-1 |
 | DEBT-ACP-07 | `build_context` duplicating `RuntimeConfig` per agent | Profile injection via `merge_environment` §30 | Wave 2 | ACP-DX-2 · ACP-CFG |
 | DEBT-ACP-08 | ~~No `AgentRunTrace` on result~~ | Plane B journal §31 | **Closed Wave 3** | ACP-OBS-1 |
 | DEBT-ACP-09 | ~~Task events only — no `ApplicationRunSummary`~~ | Plane A orchestration §31 | **Closed Wave 3** | ACP-OBS-2 |
@@ -193,7 +193,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-STEP-2 | ACP-STEP | **`AgentRuntime.advance_step`** — glue only: `on_next_step` → `HarnessKernel.execute_step`; **no policy/trace/state logic** | **Done** | `intergrax/agents/authoring/step_loop.py` | Unit: advance_step contains no policy imports; delegates 100% to kernel |
 | ACP-STEP-2b | ACP-STEP | **`HarnessKernel.execute_step`** — L1 harness cycle: policy pre/post, state merge §37.2, gateways, budgets §32.6, trace/`AgentStepRecord`, declarative actions §32.8 | **Done** | `intergrax/runtime/kernel/step_kernel.py` | Integration: policy deny + trace record + budget exceeded from kernel only |
 | ACP-CON-4 | ACP-CON | **§12 full contract gate at register** — `input_schema`, `output_schema`, `risk_level`, `validation_rules`, `failure_modes`, budgets; reject incomplete contracts | **Done** | `agent_assembly_resolver.py` | Register with stub contract → `AgentAssemblyError`; roster agents pass |
-| ACP-STEP-3 | ACP-STEP | **UAEP legacy bridge** — `run_step` → advance_step + kernel | Planned | `intergrax/agents/uaep.py` | Existing UAEP agents pass without rewrite |
+| ACP-STEP-3 | ACP-STEP | **UAEP legacy bridge** — `run_step` → advance_step + kernel | **Done** | `uaep_step_bridge.py`, `uaep.py` | UAEP unit tests green; kernel trace on session |
 | ACP-OBS-1 | ACP-OBS | **`AgentRunTrace` / `AgentStepRecord`** on `AgentRunResult` | **Done** | `intergrax/contracts/agent_run_trace.py` | `test_acp_wave3_trace`: `steps[0].llm_calls` populated |
 | ACP-OBS-2 | ACP-OBS | **`ApplicationRunSummary`** from Nexus task completion | **Done** | `application_run_summary_builder.py`, `task_finisher.py` | `test_application_run_summary_builder` multi-agent |
 | ACP-LLM-1 | ACP-LLM | **`StepLLMRouter`** on step context | **Done** | `intergrax/agents/authoring/llm_router.py` | Per-step model hint + trace record |
@@ -239,7 +239,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-12 | ACP5 | **Acceptance: pattern agent in agent_os suite** | Planned | `tests/acceptance/agent_os/` | One test per pattern (mock LLM) |
 | ACP-13 | ACP5 | **`check_agent_pattern_conformance.py`** — contract pattern vs class MRO | Planned | `scripts/` | CI workflow step |
 | ACP-CFG | ACP6 | **`build_context` profile injection** — reduce per-agent `RuntimeConfig` duplication | **Done** | `intergrax/agents/reference_harness.py` | `build_lab_agent_runtime_config_from_merged` |
-| ACP-LEG-1 | ACP-LEG | **Deprecate RuntimeEngine path** — `DeprecationWarning` in `AgentEngine` fallback | Planned | `intergrax/agents/agent_engine.py` | Warning in tests |
+| ACP-LEG-1 | ACP-LEG | **Deprecate RuntimeEngine path** — `DeprecationWarning` in `AgentEngine` fallback | **Done** | `intergrax/agents/agent_engine.py` | `test_agent_engine_legacy_deprecation` |
 | ACP-LEG-2 | ACP-LEG | **Fleet migration complete** — superseded by **Wave 8** `ACP-MIG-*` program (not ad-hoc per-agent) | Planned | `agents/*` | Scoreboard Runtime ≥100% roster-wide; typed-state CI allowlist empty |
 | ACP-MIG-1 | ACP-MIG | **Fleet inventory auditor** — legacy surface per agent (`uaep`/`runtime_engine`/`dict state`) | Planned | `scripts/audit_agent_fleet_legacy.py` | JSON report for all `agents/*` packages |
 | ACP-MIG-2 | ACP-MIG | **Migration tiers + batch order** — harness → staging read-only → staging mutating → prod-eligible | Planned | plan §6.1aw Wave 8 · `agents/README.md` | Documented tiers match roster table |
@@ -249,7 +249,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-MIG-6 | ACP-MIG | **Fleet migration CI gate** — `check_agent_fleet_migration.py` blocks regression | Planned | `scripts/` | CI fails if migrated agent reintroduces legacy surface |
 | ACP-MIG-7 | ACP-MIG | **Per-host binding verification** after each batch | Planned | `applications/*/manifest.py` tests | AgentBinding slices + capability routing per host |
 | ACP-PROD-12 | ACP-PROD | **`AgentProductionReadinessReport`** scoreboard — 10 dimensions 0–100% per agent | Planned | `intergrax/contracts/agent_readiness.py`, `scripts/report_agent_production_readiness.py` | Report generated for roster; prod promotion uses thresholds §6.1az |
-| ACP-LEG-3 | ACP-LEG | **Document RuntimeEngine internal-only** | Planned | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §28 | No public API docs |
+| ACP-LEG-3 | ACP-LEG | **Document RuntimeEngine internal-only** | **Done** | `runtime.py` module docstring + architecture §13 | INTERNAL ONLY banner |
 | ACP-LEG-4 | ACP-LEG | **Remove author UAEP from scaffold default** — `on_next_step` + typed state only | Planned | `intergrax/scaffold/new_agent.py` | New agents have no `get_steps` boilerplate |
 | ACP-DOC.11 | ACP0 | **Detailed implementation waves §6.1aw** + debt/coupling matrix | **Done** | `plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §6.1aw |
 | ACP-DOC.12 | ACP0 | **Plan correction** — §12–§20 scope map, runtime/kernel split, ACP-CON-4 | **Done** | `plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` | Wave 1 + scope mapping |
@@ -379,7 +379,7 @@ HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
 | 4.2 | ACP-LEG-1 | `agent_engine.py` | `DeprecationWarning` on `RuntimeEngine` fallback path | Warning in test | DEBT-ACP-06 |
 | 4.3 | ACP-LEG-3 | docs + `runtime.py` docstring | Mark `RuntimeEngine` internal-only in canon | No author guide references | — |
 
-**Wave 4 DoD:** All `agent_os` acceptance green via **bridge**; legacy path emits deprecation; no **new** UAEP-only agents. **Fleet body migration = Wave 8**, not this wave.
+**Wave 4 DoD:** **Met** — UAEP steps route through `HarnessKernel` (`uaep_step_bridge`); `DeprecationWarning` on `RuntimeEngine` fallback; `RuntimeEngine` marked internal-only. Fleet body migration = Wave 8.
 
 ---
 

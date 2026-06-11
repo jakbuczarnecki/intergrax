@@ -3,6 +3,11 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 """
+**INTERNAL ONLY** — Tier-1 Nexus pipeline; not an author-facing API (ACP-LEG-3).
+
+Authors MUST use ``IntergraxAgent.on_next_step`` + ``Agent.run(AgentRunRequest)``
+or the UAEP compatibility bridge. Do not import ``RuntimeEngine`` from Tier-2 agents.
+
 Core runtime engine for nexus Mode.
 
 This module defines the `RuntimeEngine` class, which:
