@@ -9,7 +9,12 @@ from intergrax.contracts.agent_run_enums import (
     TerminalReason,
 )
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
-from intergrax.tools.tool_execution_profile import build_profile_map
+from intergrax.tools.tool_execution_profile import (
+    ToolExecutionProfile,
+    ToolMutability,
+    ToolReversibility,
+    build_profile_map,
+)
 from pydantic import BaseModel
 
 
@@ -295,6 +300,67 @@ async def test_kernel_replay_skips_declarative_invoke_on_resume() -> None:
     assert execution is not None
     assert execution[0]["status"] == "replay_skipped"
     assert execution[0]["external_ref"] == "msg-existing"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_kernel_compensates_after_policy_post_denies_committed_tools() -> None:
+    ledger = SideEffectLedger()
+    key = build_default_idempotency_key(
+        run_id="run-comp",
+        step_index=0,
+        kind=SideEffectKind.TOOL,
+        target="email.send",
+        args={"to": "x"},
+    )
+    invoked: list[str] = []
+
+    async def _invoke(**kwargs):  # type: ignore[no-untyped-def]
+        invoked.append(kwargs["tool_id"])
+        return DeclarativeToolInvokeResult(
+            status="success",
+            external_ref=f"ref-{kwargs['tool_id']}",
+        )
+
+    profiles = {
+        "email.send": ToolExecutionProfile(
+            tool_id="email.send",
+            mutability=ToolMutability.MUTATING,
+            reversibility=ToolReversibility.COMPENSATABLE,
+            requires_idempotency_key=True,
+            compensation_tool_id="email.recall",
+        ),
+    }
+    step_ctx = AgentStepContext(
+        step_index=0,
+        side_effect_mode=SideEffectMode.DECLARATIVE,
+    )
+    kernel_ctx = StepKernelContext(
+        agent_id="demo",
+        run_id="run-comp",
+        side_effect_mode=SideEffectMode.DECLARATIVE,
+        policy_engine=PolicyEngine(),
+        tool_profiles=profiles,
+        side_effect_ledger=ledger,
+        declarative_tool_invoker=CallableDeclarativeToolInvoker(_invoke),
+    )
+    outcome = StepOutcome.complete("", terminal_reason=TerminalReason.GOAL_MET)
+    outcome = outcome.model_copy(
+        update={
+            "requested_actions": [
+                {"tool_id": "email.send", "idempotency_key": key, "args": {"to": "x"}},
+            ],
+        },
+    )
+    record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
+    assert record.error_code == AgentRunErrorCode.POLICY_DENIED
+    assert invoked == ["email.send", "email.recall"]
+    assert ledger.records()[0].status == SideEffectStatus.COMPENSATED
+    assert record.step_record is not None
+    compensation = record.step_record.diagnostics.get("compensation_enqueue")
+    assert compensation is not None
+    assert compensation[0]["status"] == "compensated"
+    assert len(kernel_ctx.compensation_requests) == 1
 
 
 @pytest.mark.unit

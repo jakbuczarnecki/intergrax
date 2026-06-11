@@ -29,10 +29,14 @@ from intergrax.contracts.agent_run_trace import (
 )
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.agents.persistence.compensation_enqueue import (
+    enqueue_compensations_for_step_failure,
+)
 from intergrax.agents.persistence.declarative_tool_executor import (
     DeclarativeToolInvoker,
     execute_declarative_actions,
 )
+from intergrax.contracts.side_effect import CompensationRequest
 from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
 from intergrax.agents.persistence.tool_action_validation import (
     ToolActionValidationError,
@@ -73,6 +77,7 @@ class StepKernelContext:
     organizational: OrganizationalPolicyContext | None = None
     side_effect_ledger: SideEffectLedger | None = None
     declarative_tool_invoker: DeclarativeToolInvoker | None = None
+    compensation_requests: list[CompensationRequest] = field(default_factory=list)
     tool_profiles: dict[str, ToolExecutionProfile] = field(default_factory=dict)
     reliability: AgentSessionReliability | None = None
     emit_event: EventEmitter | None = None
@@ -199,6 +204,7 @@ class HarnessKernel:
         step_ctx.state_snapshot = merge_result.state
         state_version = int(extract_acp_state_blob(merge_result.state).get("_version", 0))
         tool_execution_diagnostics: dict[str, Any] | None = None
+        step_action_args: dict[str, dict[str, Any]] = {}
 
         if outcome.requested_actions:
             try:
@@ -235,6 +241,13 @@ class HarnessKernel:
                 )
                 await HarnessKernel._append_trace(kernel_ctx, record)
                 return record
+            step_action_args = {
+                str(action["tool_id"]): (
+                    action.get("args") if isinstance(action.get("args"), dict) else {}
+                )
+                for action in normalized_actions
+                if isinstance(action.get("tool_id"), str)
+            }
             if (
                 kernel_ctx.side_effect_mode == SideEffectMode.DECLARATIVE
                 and normalized_actions
@@ -324,6 +337,19 @@ class HarnessKernel:
         policy_post = HarnessKernel._policy_post_check(outcome, step_ctx, kernel_ctx)
         trace_events += await HarnessKernel._emit_policy(kernel_ctx, policy_post, phase="post")
         if policy_post.action == PolicyAction.DENY:
+            compensation_diagnostics, compensation_events = (
+                await HarnessKernel._enqueue_step_failure_compensations(
+                    kernel_ctx=kernel_ctx,
+                    step_ctx=step_ctx,
+                    action_args=step_action_args or None,
+                )
+            )
+            trace_events += compensation_events
+            failure_diagnostics: dict[str, Any] = {}
+            if tool_execution_diagnostics:
+                failure_diagnostics.update(tool_execution_diagnostics)
+            if compensation_diagnostics:
+                failure_diagnostics.update(compensation_diagnostics)
             record = StepExecutionRecord(
                 step_index=step_ctx.step_index,
                 outcome_applied=False,
@@ -341,6 +367,7 @@ class HarnessKernel:
                     error_code=AgentRunErrorCode.POLICY_DENIED,
                     terminal_reason=TerminalReason.POLICY_DENIED,
                     next_action=StepNextAction.FAIL,
+                    diagnostics=failure_diagnostics or None,
                     finished_at=_utc_now(),
                 ),
             )
@@ -562,6 +589,73 @@ class HarnessKernel:
         if kernel_ctx.max_steps is None:
             return False
         return (step_ctx.step_index + 1) > kernel_ctx.max_steps
+
+    @staticmethod
+    async def _enqueue_step_failure_compensations(
+        *,
+        kernel_ctx: StepKernelContext,
+        step_ctx: AgentStepContext,
+        action_args: dict[str, dict[str, Any]] | None,
+    ) -> tuple[dict[str, Any] | None, int]:
+        enqueue_result = await enqueue_compensations_for_step_failure(
+            ledger=kernel_ctx.side_effect_ledger,
+            tool_profiles=kernel_ctx.tool_profiles,
+            step_index=step_ctx.step_index,
+            invoker=kernel_ctx.declarative_tool_invoker,
+            action_args=action_args,
+        )
+        if not enqueue_result.actions:
+            return None, 0
+        for item in enqueue_result.actions:
+            kernel_ctx.compensation_requests.append(item.request)
+        trace_events = 0
+        for item in enqueue_result.actions:
+            if item.status == "manual_required":
+                trace_events += await HarnessKernel._emit(
+                    kernel_ctx,
+                    RuntimeEventType.HUMAN_APPROVAL_REQUESTED,
+                    {
+                        "reason": "manual_compensation_required",
+                        "original_side_effect_id": item.request.original_side_effect_id,
+                        "tool_id": item.request.compensation_tool_id,
+                    },
+                )
+                continue
+            if item.status in ("enqueued", "compensated", "failed", "skipped"):
+                trace_events += await HarnessKernel._emit(
+                    kernel_ctx,
+                    RuntimeEventType.TOOL_REQUESTED,
+                    {
+                        "mode": "compensation",
+                        "tool_name": item.request.compensation_tool_id,
+                        "status": item.status,
+                        "original_side_effect_id": item.request.original_side_effect_id,
+                        "idempotency_key": item.request.idempotency_key,
+                    },
+                )
+                if item.status == "compensated":
+                    trace_events += await HarnessKernel._emit(
+                        kernel_ctx,
+                        RuntimeEventType.TOOL_COMPLETED,
+                        {
+                            "mode": "compensation",
+                            "tool_name": item.request.compensation_tool_id,
+                            "status": "success",
+                            "original_side_effect_id": item.request.original_side_effect_id,
+                        },
+                    )
+                elif item.status == "failed":
+                    trace_events += await HarnessKernel._emit(
+                        kernel_ctx,
+                        RuntimeEventType.TOOL_FAILED,
+                        {
+                            "mode": "compensation",
+                            "tool_name": item.request.compensation_tool_id,
+                            "status": "failed",
+                            "error": item.error,
+                        },
+                    )
+        return enqueue_result.diagnostics(), trace_events
 
     @staticmethod
     async def _emit(

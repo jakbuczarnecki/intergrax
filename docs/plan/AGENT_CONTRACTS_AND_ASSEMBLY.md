@@ -214,7 +214,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-DOC.9 | ACP0 | **Architecture §40** — production reliability, safety, persistence, release gates | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §40 canon **audit accepted** — implement ACP-PROD next |
 | ACP-PROD-1 | ACP-PROD | **Checkpoint / resume / replay** — step store + crash recovery | **Done** | `intergrax/agents/persistence/checkpoint_store.py` | Resume smoke; no double mutating tool |
 | ACP-PROD-2 | ACP-PROD | **Side-effect idempotency ledger** — dedupe + declarative execute/commit in kernel | **Done** | `side_effect_ledger.py`, `declarative_tool_executor.py`, `step_kernel.py` | Resume replay skip + commit on invoke |
-| ACP-PROD-3 | ACP-PROD | **ToolExecutionProfile + compensation** | **Done** | `intergrax/tools/tool_execution_profile.py` + kernel | Mutating tool gate |
+| ACP-PROD-3 | ACP-PROD | **ToolExecutionProfile + compensation enqueue** | **Done** | `tool_execution_profile.py`, `compensation_enqueue.py`, `step_kernel.py` | Policy deny after commit triggers recall |
 | ACP-PROD-4 | ACP-PROD | **ReliabilityProfile in HarnessKernel** — retry/CB/timeout | **Done** | `intergrax/runtime/kernel/session_reliability.py` | REL profile wired |
 | ACP-PROD-5 | ACP-PROD | **SharedContextView CAS + conflict policy** | **Done** | `intergrax/contracts/shared_context.py` | Parallel graph conflict test |
 | ACP-PROD-6 | ACP-PROD | **`ArtifactRef` contract** on result/step | **Done** | `intergrax/contracts/artifact_ref.py` | Typed artifacts in test |
@@ -490,7 +490,7 @@ HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
 |------|-----|-------------------------|------------|--------------|
 | 7.1 | ACP-PROD-1 | Checkpoint / resume / replay | **Done** — store + host wiring + `test_acceptance_05c` resume smoke | RELIABILITY |
 | 7.2 | ACP-PROD-2 | Idempotency ledger | **Done** — ledger dedupe + replay skip + kernel declarative execute/commit | TOOLS |
-| 7.3 | ACP-PROD-3 | `ToolExecutionProfile` + compensation | **Done** — mutating tool validation gate | TOOLS |
+| 7.3 | ACP-PROD-3 | `ToolExecutionProfile` + compensation | **Done** — mutating tool gate + step-failure compensation enqueue | TOOLS |
 | 7.4 | ACP-PROD-4 | ReliabilityProfile in kernel | **Done** — circuit breaker + checkpoint interval | RELIABILITY |
 | 7.5 | ACP-PROD-5 | SharedContext CAS | **Done** — per-key publish/CAS + graph test | ORCHESTRATION |
 | 7.6 | ACP-PROD-6 | `ArtifactRef` | **Done** — `artifact_refs` on `AgentRunResult` | OBSERVABILITY |

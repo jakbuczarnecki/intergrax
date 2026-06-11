@@ -2820,7 +2820,7 @@ CompensationRequest:
     idempotency_key: str                # distinct key derived from original
 ```
 
-Compensation runs through same gateways; recorded in trace. **Plan:** ACP-PROD-3 (**Done** — `ToolExecutionProfile` + kernel gate); compensation enqueue follow-up.
+Compensation runs through same gateways; recorded in trace. **Plan:** ACP-PROD-3 (**Done** — `ToolExecutionProfile`, `compensation_enqueue.py`, kernel step-failure path).
 
 ---
 

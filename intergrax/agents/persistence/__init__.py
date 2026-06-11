@@ -11,6 +11,12 @@ from intergrax.agents.persistence.checkpoint_wiring import (
     open_agent_checkpoint_store,
     wire_acp_run_request,
 )
+from intergrax.agents.persistence.compensation_enqueue import (
+    CompensationActionResult,
+    CompensationEnqueueResult,
+    build_compensation_idempotency_key,
+    enqueue_compensations_for_step_failure,
+)
 from intergrax.agents.persistence.declarative_tool_executor import (
     CallableDeclarativeToolInvoker,
     DeclarativeActionExecution,
@@ -25,12 +31,16 @@ __all__ = [
     "AgentCheckpointStore",
     "InMemoryAgentCheckpointStore",
     "SQLiteAgentCheckpointStore",
+    "CompensationActionResult",
+    "CompensationEnqueueResult",
     "CallableDeclarativeToolInvoker",
     "DeclarativeActionExecution",
     "DeclarativeExecutionResult",
     "DeclarativeToolInvokeResult",
     "DeclarativeToolInvoker",
     "SideEffectLedger",
+    "build_compensation_idempotency_key",
+    "enqueue_compensations_for_step_failure",
     "execute_declarative_actions",
     "attach_checkpoint_wiring",
     "inject_acp_checkpoint_metadata",

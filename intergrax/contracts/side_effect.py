@@ -48,6 +48,18 @@ class SideEffectRecord(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class CompensationRequest(BaseModel):
+    """Compensation invoke for a committed side effect (architecture §40.3.3 · ACP-PROD-3)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["compensation_request.v1"] = "compensation_request.v1"
+    original_side_effect_id: str
+    compensation_tool_id: str
+    args: dict[str, Any] = Field(default_factory=dict)
+    idempotency_key: str
+
+
 class AgentRunCheckpoint(BaseModel):
     """Durable step checkpoint for ACP session resume (architecture §40.1 · ACP-PROD-1)."""
 

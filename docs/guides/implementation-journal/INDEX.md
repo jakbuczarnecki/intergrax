@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-10-030 | 2026-06-10 | tier-0/1 AGENT_CONTRACTS | ACP-PROD-3 | [ACP-PROD-3 compensation enqueue on step failure](entries/2026-06-10-acp-prod-3-compensation-enqueue.md) | pending |
 | IJ-2026-06-10-029 | 2026-06-10 | tier-0/1 AGENT_CONTRACTS | ACP-PROD-2 | [ACP-PROD-2 declarative tool executor in kernel](entries/2026-06-10-acp-prod-2-declarative-tool-executor.md) | pending |
 | IJ-2026-06-10-028 | 2026-06-10 | tier-0/1/3 AGENT_CONTRACTS | ACP-PROD-1 | [ACP-PROD-1 checkpoint host wiring and resume acceptance](entries/2026-06-10-acp-prod-1-checkpoint-host-wiring.md) | pending |
 | IJ-2026-06-10-027 | 2026-06-10 | tier-0 AGENT_CONTRACTS | DEBT-ACP-05 | [DEBT-ACP-05 default typed agent scaffold](entries/2026-06-10-debt-acp-05-scaffold-default.md) | pending |

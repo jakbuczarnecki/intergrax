@@ -86,3 +86,30 @@ class SideEffectLedger:
 
     def should_skip_replay(self, idempotency_key: str) -> bool:
         return self.is_committed(idempotency_key)
+
+    def committed_for_step(self, step_index: int) -> list[SideEffectRecord]:
+        return [
+            record
+            for record in self._records
+            if record.step_index == step_index and record.status == SideEffectStatus.COMMITTED
+        ]
+
+    def mark_failed(self, idempotency_key: str) -> SideEffectRecord | None:
+        for index, record in enumerate(self._records):
+            if record.idempotency_key != idempotency_key:
+                continue
+            updated = record.model_copy(update={"status": SideEffectStatus.FAILED})
+            self._records[index] = updated
+            self._committed_keys.discard(idempotency_key)
+            return updated
+        return None
+
+    def mark_compensated(self, idempotency_key: str) -> SideEffectRecord | None:
+        for index, record in enumerate(self._records):
+            if record.idempotency_key != idempotency_key:
+                continue
+            updated = record.model_copy(update={"status": SideEffectStatus.COMPENSATED})
+            self._records[index] = updated
+            self._committed_keys.discard(idempotency_key)
+            return updated
+        return None
