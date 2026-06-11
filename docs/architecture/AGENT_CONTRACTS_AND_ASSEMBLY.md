@@ -3136,7 +3136,7 @@ Waivers require ADR + operator sign-off — not silent skip.
 | Conceptual architecture | **9/10** ✓ |
 | Platform implementation (ACP waves 0–8) | **8.5/10** ✓ |
 | Architecture ↔ code doc sync | **9/10** ✓ (after ACP-CLOSE-DOC-2/3) |
-| Mutating agents production-ready | **Partial** — §40.12 + mutating checkpoint/idempotency + STRICT configure_run deny + compensation queue + CI-1/3 **Done**; PAT/ORG-2/CI-2 remain |
+| Mutating agents production-ready | **Partial** — §40.12 + mutating checkpoint/idempotency + STRICT configure_run deny + compensation queue + CI-1/3 + UC-11 product golden **Done**; PAT/CI-2 remain |
 
 ### 40.13.1 Audit acceptance (2026-06)
 

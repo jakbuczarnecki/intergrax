@@ -417,12 +417,20 @@ class ApplicationEnvironmentProfile(BaseModel):
         """UC-11 reference host — strict organizational envelope (ACP-ORG-5)."""
         from intergrax.applications.contracts.org_policy import lab_strict_org_envelope
 
-        base = cls.lab_defaults(profile_id=profile_id)
-        return base.model_copy(
+        return cls.lab_defaults(profile_id=profile_id).with_uc11_organizational_policy(
+            lab_strict_org_envelope(),
+        )
+
+    def with_uc11_organizational_policy(
+        self,
+        envelope: OrganizationalPolicyEnvelope,
+    ) -> ApplicationEnvironmentProfile:
+        """Attach org envelope and STRICT execution for UC-11 product hosts."""
+        return self.model_copy(
             update={
                 "execution_mode": ExecutionMode.STRICT,
-                "organizational_policy": lab_strict_org_envelope(),
-            }
+                "organizational_policy": envelope,
+            },
         )
 
     @classmethod

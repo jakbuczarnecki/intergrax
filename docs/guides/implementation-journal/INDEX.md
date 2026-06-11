@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-11-012 | 2026-06-11 | tier-3 AGENT_CONTRACTS | ACP-CLOSE-ORG-2 | [ACP-CLOSE ORG-2 UC-11 product golden](entries/2026-06-11-acp-close-org-2-uc11-product-golden.md) | pending |
 | IJ-2026-06-11-011 | 2026-06-11 | tier-0/2 AGENT_CONTRACTS | ACP-CLOSE-CI-1, ACP-CLOSE-CI-3 | [ACP-CLOSE CI-1/3 gate workflow](entries/2026-06-11-acp-close-ci-1-3-gate-workflow.md) | pending |
 | IJ-2026-06-11-010 | 2026-06-11 | tier-0/2 AGENT_CONTRACTS | ACP-CLOSE-ORG-1 | [ACP-CLOSE ORG-1 configure_run STRICT widen deny](entries/2026-06-11-acp-close-org-1-configure-run-strict.md) | pending |
 | IJ-2026-06-11-009 | 2026-06-11 | tier-0/1/3 AGENT_CONTRACTS | ACP-CLOSE-PROD-6 | [ACP-CLOSE PROD-6 idempotency store cross-run dedupe](entries/2026-06-11/acp-close-prod-6-idempotency-store.md) | pending |

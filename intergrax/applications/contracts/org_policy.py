@@ -99,6 +99,44 @@ class OrganizationalPolicyContext(BaseModel):
     domain_fragments: dict[str, Any] = Field(default_factory=dict)
 
 
+def product_host_org_envelope(
+    *,
+    product_id: str,
+    display_name: str | None = None,
+    primary_capability: str | None = None,
+) -> OrganizationalPolicyEnvelope:
+    """UC-11 org envelope for Tier-3 product hosts (ACP-CLOSE-ORG-2)."""
+    scenario_bindings: list[ScenarioBinding] = []
+    if primary_capability:
+        scenario_bindings.append(
+            ScenarioBinding(
+                scenario_id=f"{product_id}_primary",
+                trigger=primary_capability,
+                required_playbook_id=f"sop.{product_id}.primary",
+            ),
+        )
+    return OrganizationalPolicyEnvelope(
+        organization_id=f"{product_id}.org",
+        display_name=display_name or f"{product_id.replace('_', ' ').title()} Organization",
+        execution_mode=ExecutionMode.STRICT,
+        channel_policy=ChannelPolicy(
+            allowed_channels=["chat", "ticket", "email"],
+            denied_channels=["phone", "sms"],
+            default_channel="chat",
+        ),
+        tool_policy_overlay=ToolPolicyOverlay(
+            deny_patterns=["phone.*", "sms.*"],
+        ),
+        communication_rules=CommunicationRules(
+            required_disclosures=[f"org.disclosure.{product_id}"],
+            tone="formal",
+        ),
+        scenario_bindings=scenario_bindings,
+        compliance_profile_id=f"{product_id}.org.compliance.v1",
+        observability_labels={"org": product_id, "host": "product"},
+    )
+
+
 def lab_strict_org_envelope(
     *,
     organization_id: str = "lab.virtual_org",

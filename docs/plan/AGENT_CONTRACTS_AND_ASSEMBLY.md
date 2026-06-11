@@ -291,7 +291,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-CLOSE-PAT-2 | PAT | `ReflectionAgent` → CVL critic hooks (gateway only) | Planned | §26.6 | `patterns/reflection.py`, host critic wiring | No critic SDK in Tier-2; `plan/CRITIC_VERIFICATION.md` |
 | ACP-CLOSE-PAT-3 | PAT | Author terminology — single canonical §29 entry | Planned | §28.3 GAP-07 | `AGENT_CREATION_GUIDE.md` | No scattered UAEP-first mental model |
 | ACP-CLOSE-ORG-1 | ORG | STRICT **configure_run widen deny** per-agent | **Done** | §39.4 | `configure_run_strict.py`, `merge_environment`, `acp_run` | `test_configure_run_strict.py` |
-| ACP-CLOSE-ORG-2 | ORG | UC-11 compliance golden per **product host** | Planned | §39.5 | `applications/*/manifest.py` tests | Beyond lab fixture only |
+| ACP-CLOSE-ORG-2 | ORG | UC-11 compliance golden per **product host** | **Done** | §39.5 | `product_host_org_envelope`, `uc11_compliance_golden.py` | `test_uc11_product_host_compliance.py` (6 hosts) |
 | ACP-CLOSE-CI-1 | CI | Post-LEG grep + fleet migration gate — zero Tier-2 `RuntimeEngine` | **Done** | §40.10 CI-04 | `check_agent_fleet_migration.py`, `check_agent_acp_close_ci.py` | `.github/workflows/unit-tests.yml` |
 | ACP-CLOSE-CI-2 | CI | Anti-pattern ACP-AP-02 after TOOL-ENG-6 | Planned | §28.4 | tools + agent tests | Nexus does not schedule tool iterations |
 | ACP-CLOSE-CI-3 | CI | `check_agent_production_readiness.py --fail-on-blockers` in gate workflow | **Done** | §40.15 | `check_agent_acp_close_ci.py` | CI-16 + gate workflow |
@@ -662,7 +662,7 @@ ACP-CLOSE:  DOC-2..4 → LEG-1 → LEG-2 → LEG-3 → PROD-1 → PROD-2 → PRO
 | 17 | ACP-CLOSE-PROD-8 | **P0** | §40.15 | **Done** |
 | 18 | ACP-CLOSE-PAT-2 | P2 | §26.6 | Planned |
 | 19 | ACP-CLOSE-PAT-3 | P2 | §28.3 | Planned |
-| 20 | ACP-CLOSE-ORG-2 | P2 | §39.5 | Planned |
+| 20 | ACP-CLOSE-ORG-2 | P2 | §39.5 | **Done** |
 | 21 | ACP-CLOSE-CI-1 | P1 | §40.10 | **Done** |
 | 22 | ACP-CLOSE-CI-2 | P2 | §28.4 | Planned |
 | 23 | ACP-CLOSE-CI-3 | P1 | §40.15 | **Done** |
