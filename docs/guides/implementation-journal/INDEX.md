@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-10-026 | 2026-06-10 | tier-0/1 AGENT_CONTRACTS | ACP-12 | [ACP-12 cognitive pattern agent_os acceptance](entries/2026-06-10-acp-12-pattern-agent-os.md) | pending |
 | IJ-2026-06-10-025 | 2026-06-10 | tier-0 AGENT_CONTRACTS | ACP-10 | [ACP-10 cognitive pattern unit test package](entries/2026-06-10-acp-10-pattern-unit-tests.md) | pending |
 | IJ-2026-06-10-024 | 2026-06-10 | tier-0 AGENT_CONTRACTS | ACP-7 | [ACP-7 typed decision helpers and UAEP deprecation bridge](entries/2026-06-10-acp-7-decision-helpers.md) | pending |
 | IJ-2026-06-10-023 | 2026-06-10 | tier-0 AGENT_CONTRACTS | ACP-PROD-6..11 | [ACP Wave 7 artifact refs and production CI gates](entries/2026-06-10-acp-wave-7-prod-gates.md) | pending |

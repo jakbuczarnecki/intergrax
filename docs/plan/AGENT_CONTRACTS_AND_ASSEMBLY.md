@@ -237,8 +237,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-10 | ACP4 | **Unit test package** `tests/unit/agents/authoring/patterns/` | **Done** | tests | 32 gate tests — one probe run per pattern + contracts + phase machines |
 | ACP-11 | ACP5 | **Gate: ACP pattern scaffold** — no UAEP boilerplate | **Done** | `scripts/check_scaffold_acp_pattern.py` | Scaffold smoke script |
 | ACP-13 | ACP5 | **Pattern conformance** — contract vs class | **Done** | `scripts/check_agent_pattern_conformance.py` | AST check on `agents/*/contract.py` |
-| ACP-12 | ACP5 | **Acceptance: pattern agent in agent_os suite** | Planned | `tests/acceptance/agent_os/` | One test per pattern (mock LLM) |
-| ACP-13 | ACP5 | **`check_agent_pattern_conformance.py`** — contract pattern vs class MRO | Planned | `scripts/` | CI workflow step |
+| ACP-12 | ACP5 | **Acceptance: pattern agent in agent_os suite** | **Done** | `tests/acceptance/agent_os/test_acp_pattern_agents.py` | NexusLoop + `acp.session.v1` per pattern (mock LLM) |
 | ACP-CFG | ACP6 | **`build_context` profile injection** — reduce per-agent `RuntimeConfig` duplication | **Done** | `intergrax/agents/reference_harness.py` | `build_lab_agent_runtime_config_from_merged` |
 | ACP-LEG-1 | ACP-LEG | **Deprecate RuntimeEngine path** — `DeprecationWarning` in `AgentEngine` fallback | **Done** | `intergrax/agents/agent_engine.py` | `test_agent_engine_legacy_deprecation` |
 | ACP-LEG-2 | ACP-LEG | **Fleet migration complete** — superseded by **Wave 8** `ACP-MIG-*` program (not ad-hoc per-agent) | **Done** | `agents/*` | Scoreboard Runtime ≥100% roster-wide; typed-state CI allowlist empty |
