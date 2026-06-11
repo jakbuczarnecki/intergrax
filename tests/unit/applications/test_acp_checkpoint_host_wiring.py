@@ -72,3 +72,25 @@ def test_build_reliability_task_enricher_injects_checkpoint_store() -> None:
     )
     enriched = enricher(task)
     assert enriched.metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is runtime.agent_checkpoint_store
+
+
+def test_build_reliability_task_enricher_injects_idempotency_store() -> None:
+    settings = LabApplicationSettings.from_env()
+    manifest = build_lab_manifest(settings)
+    env = manifest.environment
+    assert env is not None
+    runtime = build_harness_host_runtime(manifest, env, settings=settings)
+    enricher = build_reliability_task_enricher(
+        env,
+        idempotency_store=runtime.reliability.idempotency_store,
+    )
+    task = Task(
+        task_id="task-acp-idem-1",
+        tenant_id="tenant-a",
+        user_id="user-1",
+        agent_id="echo",
+        message="hello",
+        metadata={AcpMetadataKey.SESSION_ENABLED: True},
+    )
+    enriched = enricher(task)
+    assert enriched.metadata.get(AcpMetadataKey.IDEMPOTENCY_STORE) is runtime.reliability.idempotency_store

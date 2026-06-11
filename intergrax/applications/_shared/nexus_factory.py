@@ -38,6 +38,7 @@ from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
+from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
@@ -55,6 +56,7 @@ def build_nexus_loop_from_environment(
     checkpoint_store: SQLiteTaskCheckpointStore | None = None,
     agent_checkpoint_store: AgentCheckpointStore | None = None,
     compensation_queue_store: CompensationQueueStore | None = None,
+    idempotency_store: IdempotencyStore | None = None,
     declarative_tool_invoker: DeclarativeToolInvoker | None = None,
     notification_adapter: NotificationAdapter | None = None,
     runtime_events_db_path: Path | None = None,
@@ -107,6 +109,7 @@ def build_nexus_loop_from_environment(
         else None,
         agent_checkpoint_store=agent_checkpoint_store,
         compensation_queue_store=compensation_queue_store,
+        idempotency_store=idempotency_store,
         declarative_tool_invoker=declarative_tool_invoker,
         notification_adapter=notification_adapter,
         runtime_events_db_path=runtime_events_db_path,

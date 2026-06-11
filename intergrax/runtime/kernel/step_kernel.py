@@ -39,6 +39,7 @@ from intergrax.agents.persistence.declarative_tool_executor import (
 from intergrax.contracts.side_effect import CompensationRequest
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
+from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.agents.persistence.tool_action_validation import (
     ToolActionValidationError,
     validate_requested_actions,
@@ -79,6 +80,7 @@ class StepKernelContext:
     side_effect_ledger: SideEffectLedger | None = None
     declarative_tool_invoker: DeclarativeToolInvoker | None = None
     compensation_queue: CompensationQueueStore | None = None
+    idempotency_store: IdempotencyStore | None = None
     compensation_requests: list[CompensationRequest] = field(default_factory=list)
     tool_profiles: dict[str, ToolExecutionProfile] = field(default_factory=dict)
     reliability: AgentSessionReliability | None = None
@@ -217,6 +219,8 @@ class HarnessKernel:
                     run_id=kernel_ctx.run_id,
                     step_index=step_ctx.step_index,
                     ledger=kernel_ctx.side_effect_ledger,
+                    idempotency_store=kernel_ctx.idempotency_store,
+                    tenant_id=kernel_ctx.tenant_id,
                 )
             except ToolActionValidationError as exc:
                 record = StepExecutionRecord(
@@ -269,6 +273,8 @@ class HarnessKernel:
                     actions=normalized_actions,
                     ledger=kernel_ctx.side_effect_ledger,
                     invoker=kernel_ctx.declarative_tool_invoker,
+                    idempotency_store=kernel_ctx.idempotency_store,
+                    tenant_id=kernel_ctx.tenant_id,
                 )
                 tool_execution_diagnostics = {
                     "declarative_tool_execution": [

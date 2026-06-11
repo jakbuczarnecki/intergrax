@@ -284,7 +284,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-CLOSE-PROD-3 | PROD | `CatalogDeclarativeToolInvoker` — real execution context (no `MagicMock` shim) | **Done** | §32.8 · §40.3 | `catalog_declarative_invoker.py` | `_CatalogDispatchLLMStub` + direct `RuntimeContext`; preserves host invoker |
 | ACP-CLOSE-PROD-4 | PROD | Nexus **E2E** acceptance — catalog declarative invoker (not callable mock) | **Done** | §27 · §40.12 | `test_acp_nexus_catalog_declarative_resume.py` | `build_harness_host_runtime` + `NexusLoop` resume green |
 | ACP-CLOSE-PROD-5 | PROD | **Durable compensation queue** for `enqueued` requests | **Done** | §40.3.3 | `compensation_queue_store.py`, `compensation_queue_worker.py` | Host + kernel persist `enqueued` jobs |
-| ACP-CLOSE-PROD-6 | PROD | `ReliabilityProfile.idempotency_store` ↔ ledger replay §40.2.2 | Planned | §40.2 | `reliability_wiring.py`, kernel replay | Cross-run dedupe integration test |
+| ACP-CLOSE-PROD-6 | PROD | `ReliabilityProfile.idempotency_store` ↔ ledger replay §40.2.2 | **Done** | §40.2 | `idempotency_ledger_bridge.py`, `idempotency_store_wiring.py`, kernel replay | `test_acp_declarative_mutating_cross_run_dedupe.py` |
 | ACP-CLOSE-PROD-7 | PROD | §40.12 checklist **green** — reference mutating agent artifact | **Done** | §40.12 | `section_40_12_checklist.py`, `check_acp_section_40_12_checklist.py` | `build/acp_section_40_12_reference.json` |
 | ACP-CLOSE-PROD-8 | PROD | Scoreboard mutating agents **100%** checkpoint + idempotency dimensions | **Done** | §40.15 | `readiness/scoreboard.py` | `--require-mutating-checkpoint-idempotency-100` green |
 | ACP-CLOSE-PAT-1 | PAT | ReAct ↔ **TOOL-ENG-6** unified tool loop + budget keys | Planned | §26.3 · §25.2 | `patterns/react.py`, `tool_loop_step.py` | 2-iteration integration; DEBT-ACP-18 **Closed** |
@@ -655,7 +655,7 @@ ACP-CLOSE:  DOC-2..4 → LEG-1 → LEG-2 → LEG-3 → PROD-1 → PROD-2 → PRO
 | 10 | ACP-CLOSE-PROD-3 | P1 | §32.8 | **Done** |
 | 11 | ACP-CLOSE-PROD-4 | **P0** | §27 · §40.12 | **Done** |
 | 12 | ACP-CLOSE-PROD-5 | P1 | §40.3.3 | **Done** |
-| 13 | ACP-CLOSE-PROD-6 | P1 | §40.2.2 | Planned |
+| 13 | ACP-CLOSE-PROD-6 | P1 | §40.2.2 | **Done** |
 | 14 | ACP-CLOSE-PAT-1 + TOOL-ENG-6 | P1 | §26.3 | Planned |
 | 15 | ACP-CLOSE-ORG-1 | P1 | §39.4 | Planned |
 | 16 | ACP-CLOSE-PROD-7 | **P0** | §40.12 | **Done** |

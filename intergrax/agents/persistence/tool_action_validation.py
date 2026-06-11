@@ -7,7 +7,9 @@ from __future__ import annotations
 from typing import Any
 
 from intergrax.agents.persistence.idempotency_keys import build_default_idempotency_key
+from intergrax.agents.persistence.idempotency_ledger_bridge import should_skip_side_effect_replay
 from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
+from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.contracts.agent_run_enums import SideEffectMode
 from intergrax.contracts.side_effect import SideEffectKind
 from intergrax.tools.tool_execution_profile import ToolExecutionProfile, ToolMutability
@@ -29,6 +31,8 @@ def validate_requested_actions(
     run_id: str,
     step_index: int,
     ledger: SideEffectLedger | None,
+    idempotency_store: IdempotencyStore | None = None,
+    tenant_id: str = "default",
 ) -> list[dict[str, Any]]:
     """
     Validate declarative actions and return normalized actions.
@@ -60,7 +64,12 @@ def validate_requested_actions(
                     tool_id=tool_id,
                     code="acp.tool.idempotency_required",
                 )
-            if ledger is not None and ledger.should_skip_replay(idempotency_key):
+            if should_skip_side_effect_replay(
+                idempotency_key=idempotency_key,
+                ledger=ledger,
+                idempotency_store=idempotency_store,
+                tenant_id=tenant_id,
+            ):
                 normalized.append({**action, "replay_skipped": True})
                 continue
         elif not idempotency_key and profile.mutability == ToolMutability.MUTATING:

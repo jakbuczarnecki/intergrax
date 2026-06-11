@@ -28,6 +28,9 @@ from intergrax.agents.persistence.session_persistence import (
 from intergrax.agents.persistence.compensation_queue_wiring import (
     resolve_compensation_queue_from_metadata,
 )
+from intergrax.agents.persistence.idempotency_store_wiring import (
+    resolve_idempotency_store_from_metadata,
+)
 from intergrax.agents.persistence.tool_invoker_wiring import (
     resolve_declarative_tool_invoker_from_metadata,
 )
@@ -149,6 +152,7 @@ async def run_acp_session(
         side_effect_ledger=persistence.side_effect_ledger,
         declarative_tool_invoker=declarative_invoker,
         compensation_queue=resolve_compensation_queue_from_metadata(request.metadata),
+        idempotency_store=resolve_idempotency_store_from_metadata(request.metadata),
         tool_profiles=build_profile_map(list(contract.extra_tools)),
         reliability=reliability,
         state_root=state_root,

@@ -9,7 +9,12 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol, runtime_checkable
 
+from intergrax.agents.persistence.idempotency_ledger_bridge import (
+    record_side_effect_commit,
+    resolve_external_ref_from_store,
+)
 from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
+from intergrax.contracts.idempotency_store import IdempotencyStore
 
 DeclarativeToolStatus = Literal[
     "success",
@@ -81,6 +86,8 @@ async def execute_declarative_actions(
     actions: list[dict[str, Any]],
     ledger: SideEffectLedger | None,
     invoker: DeclarativeToolInvoker | None,
+    idempotency_store: IdempotencyStore | None = None,
+    tenant_id: str = "default",
 ) -> DeclarativeExecutionResult:
     """
     Execute validated declarative tool actions.
@@ -96,7 +103,15 @@ async def execute_declarative_actions(
         args = action.get("args") if isinstance(action.get("args"), dict) else {}
 
         if action.get("replay_skipped"):
-            external_ref = _ledger_external_ref(ledger, key) if ledger is not None and key else None
+            external_ref = None
+            if key:
+                external_ref = _ledger_external_ref(ledger, key) if ledger is not None else None
+                if external_ref is None:
+                    external_ref = resolve_external_ref_from_store(
+                        idempotency_store=idempotency_store,
+                        tenant_id=tenant_id,
+                        idempotency_key=key,
+                    )
             result.results.append(
                 DeclarativeActionExecution(
                     tool_id=tool_id,
@@ -129,6 +144,14 @@ async def execute_declarative_actions(
         if invoke_result.status == "success":
             if ledger is not None and key:
                 ledger.commit(key, external_ref=invoke_result.external_ref)
+            if key:
+                record_side_effect_commit(
+                    idempotency_store=idempotency_store,
+                    tenant_id=tenant_id,
+                    idempotency_key=key,
+                    tool_id=tool_id,
+                    external_ref=invoke_result.external_ref,
+                )
             result.results.append(
                 DeclarativeActionExecution(
                     tool_id=tool_id,

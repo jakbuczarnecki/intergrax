@@ -191,6 +191,7 @@ def build_harness_host_runtime(
         checkpoint_store=checkpoint_store,
         agent_checkpoint_store=resolved_agent_checkpoint_store,
         compensation_queue_store=resolved_compensation_queue_store,
+        idempotency_store=reliability_wiring.idempotency_store,
         declarative_tool_invoker=declarative_tool_invoker,
         notification_adapter=notification_adapter,
         runtime_events_db_path=observability.runtime_events_db_path,

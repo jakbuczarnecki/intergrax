@@ -70,6 +70,7 @@ def create_dispute_sim_backend_app(
         env,
         agent_checkpoint_store=runtime.agent_checkpoint_store,
         compensation_queue_store=runtime.compensation_queue_store,
+        idempotency_store=runtime.reliability.idempotency_store,
     )
     task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
     run_store = InMemoryRunStore()
