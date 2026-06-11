@@ -1559,9 +1559,10 @@ build_harness_host_runtime()
 | **Sandbox / shadow** | `tool_profile_with_sandbox()` + `wire_sandbox_sessions()` at bootstrap |
 | **Plugin catalogs** | `ToolPlugin` / `SkillPlugin` entry points (Phase P-Ext **Done**) |
 | **Agent contract** | `skills: list[SkillManifest]` + `extra_tools` — merged at registry bind time |
+| **Tool selection mode** | `ApplicationEnvironmentProfile.tool_selection_mode` → `RuntimeConfig` — standard (`full_catalog`), keyword top-k (`retrieval_top_k`), `skill_pack`; semantic / hierarchical planned (TOOL-ENG-13/14) — [`architecture/TOOLS.md`](architecture/TOOLS.md#tool-selection-modes-production-strategies) |
 | **Conformance** | `EnvironmentSkillToolConsistencyCheck` — roster tools/skills ⊆ environment |
 
-Agent-local tool orchestration: `RuntimeConfig.tool_planner` (`CatalogToolPlanner`) + `tools_mode` — still through `ToolRuntime`, separate from Nexus graph planning (Appendix I).
+Agent-local tool orchestration: `RuntimeConfig.tool_planner` (`CatalogToolPlanner`) + `tools_mode` + `tool_selection_mode` — `ToolSelectionStrategy` narrows the planner schema before LLM tool choice; execution still through `ToolRuntime`, separate from Nexus graph planning (Appendix I).
 
 ### J.5 Runtime bridge (TS-1 — Done)
 

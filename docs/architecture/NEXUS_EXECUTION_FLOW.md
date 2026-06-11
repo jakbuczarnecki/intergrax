@@ -787,7 +787,8 @@ flowchart TD
 
 ## 15. Tool selection flow
 
-> **Canonical tool engine manifest:** [`TOOLS.md`](TOOLS.md#tool-execution-pipeline) — full select → invoke → log pipeline and component roles. This section covers the **selection** subgraph; §16–§17 cover governance hooks and telemetry.
+> **Canonical tool engine manifest:** [`TOOLS.md`](TOOLS.md#tool-execution-pipeline) — full select → invoke → log pipeline and component roles.  
+> **Production selection modes:** [`TOOLS.md` §Tool selection modes](TOOLS.md#tool-selection-modes-production-strategies) — standard / semantic / hierarchical. This section covers the **selection** subgraph; §16–§17 cover governance hooks and telemetry.
 
 ```mermaid
 flowchart TD
@@ -795,6 +796,7 @@ flowchart TD
         TP[ToolProfile enabled tool_ids]
         SP[SkillProfile bundles]
         PB[RuntimePolicyBundle.tool_access]
+        TSM[tool_selection_mode on RuntimeConfig]
     end
 
     subgraph AgentRun["Per agent run"]
@@ -804,26 +806,31 @@ flowchart TD
         AT[request.metadata allowed_tools]
     end
 
-    subgraph StepLoop["UAEP step with LLM"]
-        CTP[CatalogToolPlanner]
+    subgraph StepLoop["ToolsStep — L6 + L6b"]
+        TSS[ToolSelectionStrategy resolve_planner_allowed_tool_ids]
+        CTP[CatalogToolPlanner / ToolPlanningService]
         LLM[LLM adapter tool_calls or text plan]
-        TR[ToolRuntime.invoke]
+        RTI[RuntimeToolInvoker]
     end
 
-    TP --> TR
+    TP --> TSS
     SP --> SK --> AC
     PB --> INT --> AT
-    AT --> CTP
+    AT --> TSS
+    TSM --> TSS
+    TSS --> CTP
     CTP --> LLM
-    LLM --> TR
+    LLM --> RTI
 ```
 
 | Stage | Enforces |
 |-------|----------|
-| Bootstrap | Which tools exist in registry for this host |
-| Contract + skills | Agent-level allow-list |
-| Policy bundle | Org/tenant restrictions |
-| `ToolRuntime` | Per-call policy, trace, idempotency |
+| Bootstrap (L0) | Which tools exist in registry for this host |
+| Contract + skills (L1–L2) | Agent-level allow-list |
+| Policy bundle (L3–L5) | Org/tenant / plan restrictions |
+| **Selection mode (L6)** | Schema narrowing — standard (`full_catalog`), keyword top-k (`retrieval_top_k`), skill pack; **semantic** / **hierarchical** planned (TOOL-ENG-13/14) — see [`TOOLS.md`](TOOLS.md#tool-selection-modes-production-strategies) |
+| **LLM planner (L6b)** | `CatalogToolPlanner` → `tool_calls` from narrowed schema |
+| `RuntimeToolInvoker` (L7) | Per-call scope, trace, idempotency |
 | Security middleware | `BEFORE_TOOL_CALL` injection defense |
 
 **Agents must not** import vendor SDKs or call integrations directly (canon §42.12, §42.41).

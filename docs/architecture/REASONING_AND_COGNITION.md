@@ -464,10 +464,13 @@ Separate from Nexus task planning, **`EnginePlannerOrchestrator`** serves the Ru
 
 Tool cognition selects **which tools** the LLM calls inside a step loop.
 
+**Selection modes (production strategies):** before `ToolPlanningService` runs, `ToolSelectionStrategy` may narrow the planner schema — standard (full catalog), keyword top-k, skill pack today; semantic index and hierarchical traversal planned (TOOL-ENG-13/14). Canon: [`TOOLS.md`](TOOLS.md#tool-selection-modes-production-strategies).
+
 | Module | Role |
 |--------|------|
+| `tool_selection.py` | L6 schema narrowing — `ToolSelectionStrategy`, `resolve_planner_allowed_tool_ids` (TOOL-ENG-5) |
 | `catalog_tool_planner.py` | Tier-1 `ToolPlannerProtocol` implementation |
-| `tool_planning_service.py` | LLM + registry orchestration |
+| `tool_planning_service.py` | L6b LLM + registry orchestration (`to_openai_tools` on allow-list) |
 | `tool_plan_decision.py` | `ToolPlanDecision` output model |
 | `tool_planner_protocol.py` | Planner interface |
 
