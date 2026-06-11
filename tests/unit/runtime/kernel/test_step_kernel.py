@@ -37,6 +37,13 @@ from intergrax.applications.contracts.org_policy import (
 )
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_policy import PolicyAction
+from intergrax.agents.persistence.declarative_tool_executor import (
+    CallableDeclarativeToolInvoker,
+    DeclarativeToolInvokeResult,
+)
+from intergrax.agents.persistence.idempotency_keys import build_default_idempotency_key
+from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
+from intergrax.contracts.side_effect import SideEffectKind, SideEffectStatus
 from intergrax.runtime.kernel.step_kernel import HarnessKernel, StepKernelContext
 from intergrax.runtime.policy.policy_engine import PolicyEngine
 
@@ -183,6 +190,111 @@ async def test_kernel_rejects_mutating_tool_without_idempotency_key() -> None:
     assert record.error_code == AgentRunErrorCode.VALIDATION_FAILED
     assert record.step_record is not None
     assert record.step_record.diagnostics.get("tool_validation") == "acp.tool.idempotency_required"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_kernel_executes_declarative_actions_and_commits_ledger() -> None:
+    ledger = SideEffectLedger()
+    key = build_default_idempotency_key(
+        run_id="run-decl",
+        step_index=0,
+        kind=SideEffectKind.TOOL,
+        target="email.send",
+        args={"to": "x"},
+    )
+    invoke_count = 0
+
+    async def _invoke(**kwargs):  # type: ignore[no-untyped-def]
+        nonlocal invoke_count
+        invoke_count += 1
+        return DeclarativeToolInvokeResult(status="success", external_ref="msg-kernel")
+
+    step_ctx = AgentStepContext(
+        step_index=0,
+        side_effect_mode=SideEffectMode.DECLARATIVE,
+    )
+    kernel_ctx = StepKernelContext(
+        agent_id="demo",
+        run_id="run-decl",
+        side_effect_mode=SideEffectMode.DECLARATIVE,
+        policy_engine=PolicyEngine(),
+        tool_profiles=build_profile_map([_MUTATING_TOOL]),
+        side_effect_ledger=ledger,
+        declarative_tool_invoker=CallableDeclarativeToolInvoker(_invoke),
+    )
+    outcome = StepOutcome.continue_with({"phase": "send"})
+    outcome = outcome.model_copy(
+        update={
+            "requested_actions": [
+                {"tool_id": "email.send", "idempotency_key": key, "args": {"to": "x"}},
+            ],
+        },
+    )
+    record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
+    assert record.error_code is None
+    assert invoke_count == 1
+    assert ledger.records()[0].status == SideEffectStatus.COMMITTED
+    assert record.step_record is not None
+    execution = record.step_record.diagnostics.get("declarative_tool_execution")
+    assert execution is not None
+    assert execution[0]["status"] == "success"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_kernel_replay_skips_declarative_invoke_on_resume() -> None:
+    ledger = SideEffectLedger()
+    key = build_default_idempotency_key(
+        run_id="run-resume",
+        step_index=0,
+        kind=SideEffectKind.TOOL,
+        target="email.send",
+        args={"to": "x"},
+    )
+    ledger.register(
+        idempotency_key=key,
+        run_id="run-resume",
+        step_index=0,
+        target="email.send",
+    )
+    ledger.commit(key, external_ref="msg-existing")
+    invoke_count = 0
+
+    async def _invoke(**kwargs):  # type: ignore[no-untyped-def]
+        nonlocal invoke_count
+        invoke_count += 1
+        return DeclarativeToolInvokeResult(status="success")
+
+    step_ctx = AgentStepContext(
+        step_index=0,
+        side_effect_mode=SideEffectMode.DECLARATIVE,
+    )
+    kernel_ctx = StepKernelContext(
+        agent_id="demo",
+        run_id="run-resume",
+        side_effect_mode=SideEffectMode.DECLARATIVE,
+        policy_engine=PolicyEngine(),
+        tool_profiles=build_profile_map([_MUTATING_TOOL]),
+        side_effect_ledger=ledger,
+        declarative_tool_invoker=CallableDeclarativeToolInvoker(_invoke),
+    )
+    outcome = StepOutcome.continue_with({"phase": "send"})
+    outcome = outcome.model_copy(
+        update={
+            "requested_actions": [
+                {"tool_id": "email.send", "idempotency_key": key, "args": {"to": "x"}},
+            ],
+        },
+    )
+    record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
+    assert record.error_code is None
+    assert invoke_count == 0
+    assert record.step_record is not None
+    execution = record.step_record.diagnostics.get("declarative_tool_execution")
+    assert execution is not None
+    assert execution[0]["status"] == "replay_skipped"
+    assert execution[0]["external_ref"] == "msg-existing"
 
 
 @pytest.mark.unit

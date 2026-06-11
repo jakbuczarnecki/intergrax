@@ -29,6 +29,10 @@ from intergrax.contracts.agent_run_trace import (
 )
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.agents.persistence.declarative_tool_executor import (
+    DeclarativeToolInvoker,
+    execute_declarative_actions,
+)
 from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
 from intergrax.agents.persistence.tool_action_validation import (
     ToolActionValidationError,
@@ -68,6 +72,7 @@ class StepKernelContext:
     policy_engine: PolicyEngine | None = None
     organizational: OrganizationalPolicyContext | None = None
     side_effect_ledger: SideEffectLedger | None = None
+    declarative_tool_invoker: DeclarativeToolInvoker | None = None
     tool_profiles: dict[str, ToolExecutionProfile] = field(default_factory=dict)
     reliability: AgentSessionReliability | None = None
     emit_event: EventEmitter | None = None
@@ -193,6 +198,7 @@ class HarnessKernel:
         kernel_ctx.state_root = merge_result.state
         step_ctx.state_snapshot = merge_result.state
         state_version = int(extract_acp_state_blob(merge_result.state).get("_version", 0))
+        tool_execution_diagnostics: dict[str, Any] | None = None
 
         if outcome.requested_actions:
             try:
@@ -244,6 +250,76 @@ class HarnessKernel:
                         ),
                     },
                 )
+                execution = await execute_declarative_actions(
+                    actions=normalized_actions,
+                    ledger=kernel_ctx.side_effect_ledger,
+                    invoker=kernel_ctx.declarative_tool_invoker,
+                )
+                tool_execution_diagnostics = {
+                    "declarative_tool_execution": [
+                        {
+                            "tool_id": item.tool_id,
+                            "status": item.status,
+                            "idempotency_key": item.idempotency_key,
+                            "replay_skipped": item.replay_skipped,
+                            "external_ref": item.external_ref,
+                            "error": item.error,
+                        }
+                        for item in execution.results
+                    ],
+                }
+                for item in execution.results:
+                    if item.status == "replay_skipped":
+                        event_type = RuntimeEventType.TOOL_COMPLETED
+                        status = "replay_skipped"
+                    elif item.status == "success":
+                        event_type = RuntimeEventType.TOOL_COMPLETED
+                        status = "success"
+                    elif item.status == "denied":
+                        event_type = RuntimeEventType.TOOL_DENIED
+                        status = "denied"
+                    elif item.status in ("failed",):
+                        event_type = RuntimeEventType.TOOL_FAILED
+                        status = "failed"
+                    else:
+                        continue
+                    trace_events += await HarnessKernel._emit(
+                        kernel_ctx,
+                        event_type,
+                        {
+                            "tool_name": item.tool_id,
+                            "status": status,
+                            "duration_ms": item.duration_ms,
+                            "idempotency_key": item.idempotency_key,
+                            "replay_skipped": item.replay_skipped,
+                        },
+                    )
+                failed_tool_id = execution.failed_tool_id
+                if failed_tool_id is not None:
+                    record = StepExecutionRecord(
+                        step_index=step_ctx.step_index,
+                        outcome_applied=False,
+                        policy_pre=policy_pre,
+                        state_version=state_version,
+                        error_code=AgentRunErrorCode.TOOL_FAILED,
+                        trace_event_count=trace_events,
+                        step_record=HarnessKernel._build_step_record(
+                            step_ctx=step_ctx,
+                            outcome=outcome,
+                            state_version=state_version,
+                            policy_pre=policy_pre,
+                            error_code=AgentRunErrorCode.TOOL_FAILED,
+                            terminal_reason=TerminalReason.ERROR,
+                            next_action=StepNextAction.FAIL,
+                            diagnostics={
+                                **(tool_execution_diagnostics or {}),
+                                "tool_id": failed_tool_id,
+                            },
+                            finished_at=_utc_now(),
+                        ),
+                    )
+                    await HarnessKernel._append_trace(kernel_ctx, record)
+                    return record
 
         policy_post = HarnessKernel._policy_post_check(outcome, step_ctx, kernel_ctx)
         trace_events += await HarnessKernel._emit_policy(kernel_ctx, policy_post, phase="post")
@@ -343,6 +419,7 @@ class HarnessKernel:
                 state_version=state_version,
                 policy_pre=policy_pre,
                 policy_post=policy_post,
+                diagnostics=tool_execution_diagnostics,
                 finished_at=_utc_now(),
             ),
         )
