@@ -77,7 +77,7 @@ When you create an agent you work **only** on Tier-2:
 |---------------|----------------------------------------|
 | decisions, rules, workflows | orchestration |
 | prompts, tools, outputs | lifecycle, tracing, memory |
-| `AgentContract`, UAEP steps | checkpointing, retries, HITL, graphs |
+| `AgentContract`, `on_next_step` + typed state | checkpointing, retries, HITL, graphs |
 
 **Registration rule:** a new agent integrates through `AgentRegistry.register()` — never by editing `NexusLoop`, `GraphExecutor`, or task lifecycle code.
 
@@ -163,7 +163,7 @@ uv run python -m intergrax.scaffold new-stack my_lab --profile lab --capability 
 
 ```text
 agents/document_automation/
-    document_automation_agent.py   # Agent class (UAEP entry point)
+    document_automation_agent.py   # Agent class (ACP entry — run / on_next_step)
     contract.py                    # AgentContract builder
     capabilities.py                # capability id list
     steps/pipeline.py              # domain execution (start here)
@@ -174,9 +174,9 @@ agents/document_automation/
     README.md
 ```
 
-**Target (ACP — after Wave 5):** scaffold emits **`on_next_step` + typed `AcpSessionState` subclass** — see architecture §32.0 and plan Wave 5 (`ACP-8`).
+**Canonical (ACP — shipped):** scaffold emits **`on_next_step` + typed `AcpSessionState` subclass** via `--pattern` (architecture §32.0 · ACP-8 · ACP-LEG-4). Structure domain logic as **READ → UPDATE → DECIDE** (Appendix AC.3b).
 
-**Bridge (today):** scaffold is **UAEP-first** (`get_steps` / `run_step` / `decide_after_step`) until `ACP-STEP-3` + `ACP-8` ship. New agents SHOULD still structure domain logic as **READ → UPDATE → DECIDE** (Appendix AC.3b) even on the bridge.
+**UAEP is harness-internal only:** `get_steps` / `run_step` / `decide_after_step` exist as a **framework bridge** inside Tier-0/Tier-1 (`uaep_linear_bridge.py`, pattern bases). **Authors do not implement or document UAEP as a primary path** — use `on_next_step` or a cognitive pattern base (Appendix AC).
 
 **Important:** scaffold creates files only. It does **not** register the agent globally or in any application.
 
@@ -674,7 +674,7 @@ uv run pytest tests/ -m gate -q
 
 - [ ] Capability id defined in `capabilities.py`
 - [ ] `AgentContract` complete (description, tools, risk, max_steps)
-- [ ] UAEP steps implemented
+- [ ] `on_next_step` (or pattern base) with typed `AcpSessionState` implemented
 - [ ] Registered in chosen context (test / lab / product wiring)
 - [ ] **Zero** changes to `intergrax/runtime/`
 - [ ] Smoke test passes
@@ -709,7 +709,7 @@ Decision: GO Phase K / HOLD
 
 ## Appendix A — Human-in-the-loop
 
-Agents return `AgentDecision.REQUEST_HUMAN` during UAEP. Nexus pauses in `WAITING_FOR_HUMAN`.
+Agents return `StepOutcome.pause_hitl(...)` from `on_next_step` (or pattern base). Nexus pauses in `WAITING_FOR_HUMAN`.
 
 Resume via task metadata:
 
@@ -736,7 +736,7 @@ Or HTTP: `POST /debug/human-response`.
 Task(..., metadata={"shadow_workspace": True})
 ```
 
-Inside `run_step`: `workspace = ctx.metadata.get("shadow_workspace")`.
+Inside `on_next_step`: `workspace = step_ctx.metadata.get("shadow_workspace")`.
 
 **Sandbox** — permission-controlled tool execution:
 
@@ -835,7 +835,7 @@ AgentContract(
 | `allowed_tools` | Tool gateway allow-list — which `ToolRequest.tool_name` values are permitted |
 | `required_adapters` | Optional documentation hint for operators (not auto-wired today) |
 
-When the agent needs external data or side effects, call tools via UAEP — do not open Redis, Postgres, or Slack clients inside `agents/`:
+When the agent needs external data or side effects, call tools via **`step_ctx.invoke_tool`** (ToolRuntime policy) — do not open Redis, Postgres, or Slack clients inside `agents/`:
 
 ```python
 response = await ctx.invoke_tool(
@@ -1076,7 +1076,7 @@ Canon §27 defines five memory **types**; runtime implements **four operational 
 | Canon type | Runtime store | Module |
 |------------|---------------|--------|
 | Task memory | Task KV (`TaskMemory` + `MemoryView`) | `runtime/task_memory/` |
-| Agent local memory | Same task KV namespaces (UAEP) | `PolicyScopedMemoryView` |
+| Agent local memory | Same task KV namespaces (per-step session) | `PolicyScopedMemoryView` |
 | User / org memory | `UserProfileManager` + `OrganizationProfileManager` | `intergrax/memory/`, `runtime/organization/` |
 | Long-term knowledge | RAG vectorstore (not agent-mutable memory) | `rag/` |
 | Execution trace | `RunTraceWriter` / `RuntimeEvent` (immutable) | `runtime/nexus/tracing/` |
@@ -1090,10 +1090,10 @@ Short-term session history uses `SessionManager` + `SessionStorage` (SQLite when
 | Concept | Intergrax | Persists when |
 |---------|-----------|---------------|
 | Thread / session | `SessionManager` + `session_id` | `INTERGRAX_SESSION_DB` / sqlite bundle |
-| Checkpointer | `SQLiteTaskCheckpointStore` (long-running UAEP) | `INTERGRAX_TASK_CHECKPOINTS_DB` |
+| Checkpointer | `SQLiteTaskCheckpointStore` (long-running ACP sessions) | `INTERGRAX_TASK_CHECKPOINTS_DB` |
 | Scoped KV / store | `TaskMemory` + `MemoryView` namespaces | `INTERGRAX_TASK_MEMORY_DB` |
 
-Use **session** for turn-by-turn chat; **task KV** for per-run agent scratch state; **checkpoints** for resumable UAEP loops — do not mix them.
+Use **session** for turn-by-turn chat; **task KV** for per-run agent scratch state; **checkpoints** for resumable `on_next_step` loops — do not mix them.
 
 ### Persistence backends (Appendix G matrix)
 
@@ -1137,7 +1137,7 @@ Organization memory in Intergrax is **profile + instructions** (`OrganizationPro
 | Task KV | `tenant_id` + `task_id` + namespace | Yes |
 | Session | `session_id` | Yes |
 | User LTM | `tenant_id` + `user_id` | Yes (sqlite bundle) |
-| Checkpoint | `task_id` + UAEP cursor | Yes |
+| Checkpoint | `task_id` + step cursor | Yes |
 
 ### Four memory stores (legacy table)
 
@@ -1145,7 +1145,7 @@ Organization memory in Intergrax is **profile + instructions** (`OrganizationPro
 |-------|--------|-------------|
 | Session history | `SessionManager` / `HistoryStep` | Turn-by-turn chat in one session |
 | User LTM | `UserProfileManager` + vector index | Stable user facts across sessions |
-| Task KV | `TaskMemory` (`INTERGRAX_TASK_MEMORY_DB`) | Per-task scratch state, UAEP steps |
+| Task KV | `TaskMemory` (`INTERGRAX_TASK_MEMORY_DB`) | Per-task scratch state, ACP step session |
 | Shared graph context | `shared_task_context` metadata | Multi-agent handoff on one Nexus task |
 
 Enable SQLite task memory in Tier-3 via `wire_task_memory_from_profile` and `memory_wiring` (Phase MEM). Lab, `poc_template`, `legal_application`, and `research_application` reference hosts call `ApplicationEnvironmentProfile.with_harness_memory()` (or `lab_defaults`) so `MemoryProfile` drives `RuntimeConfig`.
@@ -1315,13 +1315,13 @@ Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/H
 
 **Full execution flow (diagrams, data flow, edge cases, evaluation hooks, plan traceability):** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) — read this for end-to-end narrative; Appendix I is the **configuration control plane** map. Delegation target semantics: [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md).
 
-Intergrax orchestration is **centralized in Tier-1 (Nexus)** — agents own **local** UAEP steps only. Planning, scheduling, graph execution, handoff, retry, HITL, and trace are **composable runtime responsibilities** with typed contracts and hook extension points.
+Intergrax orchestration is **centralized in Tier-1 (Nexus)** — agents own **local** `on_next_step` iterations only. Planning, scheduling, graph execution, handoff, retry, HITL, and trace are **composable runtime responsibilities** with typed contracts and hook extension points.
 
 ### I.1 Design principles (Harness audit)
 
 | Principle | Meaning in Intergrax |
 |-----------|----------------------|
-| Single execution stack | `NexusLoop` → `GraphExecutor` → `AgentEngine` → UAEP — no parallel OS per agent |
+| Single execution stack | `NexusLoop` → `GraphExecutor` → `AgentEngine` → `acp_run` (UAEP shim internal) — no parallel OS per agent |
 | Policy-first orchestration | Graph steps still pass `ToolRuntime`, `PolicyEngine`, security middleware |
 | Composable-by-default | Inject planners, classifiers, retry policy, middleware via Nexus/bootstrap — not agent code |
 | Graph-native delegation | Subagents = `ExecutionGraph` nodes + `DelegationSpec` — not nested harness instances |
@@ -1340,7 +1340,7 @@ Task intake
                                 ├── ContextManager (SharedTaskContext · assembly options)
                                 ├── HandoffCoordinator (§42.15 — graph mutation)
                                 ├── RetryEngine + RetryCoordinator
-                                └── AgentEngine → UAEPExecutor | RuntimeEngine pipeline
+                                └── AgentEngine → `acp_run` / UAEPExecutor (internal) | RuntimeEngine pipeline
 
 ApplicationEnvironmentProfile (Tier-3)
   ├── orchestration_profile     planner_kind · classifier_kind · retry_policy_name · max_parallel_nodes · max_inflight_nodes
@@ -1465,10 +1465,10 @@ Agent-local tool orchestration: `RuntimeConfig.tool_planner` (`ToolPlannerProtoc
 
 | Do not | Do instead |
 |--------|------------|
-| Call another agent directly | Emit `AgentDecision` / handoff; let Nexus route |
+| Call another agent directly | Return `StepOutcome` with handoff metadata; let Nexus route |
 | Build private execution graphs | Declare `capabilities`; let `TaskPlanner` + registry route |
-| Implement retry loops over adapters | Return `AgentDecision.RETRY`; runtime `RetryEngine` executes |
-| Own global task lifecycle | UAEP steps only; Nexus owns `TaskLifecycle` |
+| Implement retry loops over adapters | Let runtime `RetryEngine` execute; avoid private retry loops |
+| Own global task lifecycle | `on_next_step` iterations only; Nexus owns `TaskLifecycle` |
 | Spawn nested Nexus / harness | Use `DelegationSpec` on graph node |
 
 ### I.10 Verification (audit evidence)
@@ -1580,7 +1580,7 @@ Wired `ApplicationBuildContext` profiles **override** raw environment defaults (
 |--------|------------|
 | Import vendor SDKs in `agents/` | Declare `allowed_tools`; wire integration in Tier-3 |
 | Register tools inside agent package | Add `ToolPlugin` or catalog bundle; enable in `tool_profile` |
-| Model workflows as one giant tool | Create **Skill** pack + UAEP steps |
+| Model workflows as one giant tool | Create **Skill** pack + `on_next_step` workflow |
 | Copy prompt + tool lists per agent | Reuse `skill_ids` from [Skill Library](architecture/SKILLS.md) |
 | Bypass `ToolRuntime` | Return `ToolRequest`; runtime invokes with policy + trace |
 | Use `use_rag` / `use_websearch` booleans | Pass explicit `tool_ids` (`rag.retrieve`, `websearch.query`) |
@@ -1885,7 +1885,7 @@ Agents are **composable capability units** — not monolithic orchestrators. Ass
 | Contract-first | `AgentContract` carries id, capabilities, skills, lifecycle — no runtime edits |
 | Skill composition | Authors declare `skills` (`SkillManifest`) + optional `extra_tools` (`ToolContract`) |
 | Registry resolution | `AgentRegistry.register` merges skills → `allowed_tools`; authors keep `allowed_tools=[]` |
-| Bounded local loop | UAEP steps on agent; Nexus owns global orchestration |
+| Bounded local loop | `on_next_step` on agent; Nexus owns global orchestration |
 | Lifecycle governance | `AgentLifecycleState` + `evaluate_agent_routing` gate production selection |
 | Register-time validation | `agent_assembly_resolver` fails fast on incomplete contracts |
 
@@ -2686,7 +2686,7 @@ Every step iteration MUST make three operations **visible in source**:
 | `@step` | Linear pipelines — framework drives sequential `on_next_step` |
 | `on_run_start` / `on_run_end` | Non-blocking diagnostics only |
 
-Do **not** override `run()`, **`AgentRuntime.advance_step`**, **`HarnessKernel.execute_step`**, `get_steps`, or `run_step` unless maintaining framework code. **Do not** use `nexus.run()` for agent logic — `NexusLoop` is Task orchestration only (§38).
+Do **not** override `run()`, **`AgentRuntime.advance_step`**, or **`HarnessKernel.execute_step`** unless maintaining framework code. Do **not** implement author `get_steps` / `run_step` / `decide_after_step` — UAEP is harness-internal (§13.3). **Do not** use `nexus.run()` for agent logic — `NexusLoop` is Task orchestration only (§38).
 
 ### AC.5 Pattern selection
 
@@ -2694,11 +2694,11 @@ Do **not** override `run()`, **`AgentRuntime.advance_step`**, **`HarnessKernel.e
 |---------|---------------------------|-----------|
 | **Reflex** | `--pattern reflex` | `perceive` → `act` → `COMPLETE` |
 | **ReAct** | `--pattern react` | reason → `ctx.invoke_tool` loop with budget |
-| **Plan-execute** | `--pattern plan_execute` | `@step` chain or phased `get_steps` |
+| **Plan-execute** | `--pattern plan_execute` | `@step` chain or phased plan in typed state |
 | **Decomposition** | `--pattern decomposition` | sub-question queue in `acp.state.v1` |
 | **Reflection** | `--pattern reflection` | draft → CVL critic → revise |
 
-Until scaffold ships: inherit the planned base from `intergrax/agents/authoring/patterns/` or use `IntergraxAgent` + `@step` for linear pipelines.
+For custom agents without `--pattern`: inherit a base from `intergrax/agents/authoring/patterns/` or use `IntergraxAgent` + `@step` for linear pipelines.
 
 ### AC.6 Author checklist
 
@@ -2817,8 +2817,8 @@ python scripts/check_agents_vendor_imports.py
 
 | Do not | Do instead |
 |--------|------------|
-| Absorb Nexus into agent base class | UAEP + pattern library; Nexus stays Agent OS (ADR-AGENT-001) |
-| Multi-agent workflow entirely in `run_step` | Nexus `graph_spec` + Appendix C |
+| Absorb Nexus into agent base class | ACP pattern library + `on_next_step`; Nexus stays Agent OS (ADR-AGENT-001) |
+| Multi-agent workflow entirely in `on_next_step` private graph | Nexus `graph_spec` + Appendix C |
 | Import `intergrax.chat_agent` / `ChatAgent` | Nexus `RuntimeEngine` / `NoPlannerPipeline` |
 | Import `intergrax.rag.answers` from runtime | `RetrievalService` |
 | Put agent logic in `applications/` | Logic in `agents/`, wiring in application |
@@ -2828,7 +2828,7 @@ python scripts/check_agents_vendor_imports.py
 | Duplicate LLM/trace/queue stacks | Extend Tier-0 platform |
 | Import `integrations/providers/` from `agents/` | Declare `allowed_tools`; wire slugs in Tier-3 `factory.py` |
 | Hardcode Slack/Postgres/Redis in agent steps | `ToolRequest` + application `IntegrationProfile` |
-| Model a business workflow as one giant `ToolContract` | **Skill** pack (tool_ids + prompts) + UAEP steps on agent |
+| Model a business workflow as one giant `ToolContract` | **Skill** pack (tool_ids + prompts) + `on_next_step` on agent |
 | Copy prompt + tool lists into every new agent | Reuse `skill_ids` from [Skill Library](architecture/SKILLS.md) |
 | Tie agent to one product | Reusable capability in `agents/` |
 | Document this workflow in multiple files | Update **this guide only** |
@@ -2839,7 +2839,7 @@ python scripts/check_agents_vendor_imports.py
 | Mutate `step_ctx.state` in place | `StepOutcome.continue_with(state_delta=...)` only |
 | Free-text `terminal_reason` or unstructured errors | `TerminalReason` + `AgentRunError` enums §37.4–§37.5 |
 | God-method `on_next_step` without phase helpers | Delegate to `_step_*`; keep ≤ ~40 lines control flow §32.0.5 |
-| New agents on legacy UAEP only after Wave 5 | `on_next_step` + typed state per plan §6.1aw |
+| Implement author `get_steps` / `run_step` / `decide_after_step` | `on_next_step` + typed `AcpSessionState` (§32.0 · ACP-CLOSE-LEG-4) |
 
 ### CI and import gates (§5.2 reuse)
 

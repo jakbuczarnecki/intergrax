@@ -295,9 +295,9 @@ Before implementing a new agent, answer:
 8. What is the maximum acceptable cost/time?
 9. How will success be evaluated?
 10. How will Nexus route tasks to this agent?
-11. Which AgentSteps does the agent declare (§42.6)?
-12. Which AgentDecision types can the agent emit (§42.7)?
-13. Does the agent conform to UAEP via AgentEngine (§42.5)?
+11. Is **`on_next_step`** (or a cognitive pattern base delegating to it) the sole author control loop — §32.5?
+12. Are **`StepOutcome`** factories the only control-flow returns — no author `decide_after_step` (§32.0.4 · §13.3)?
+13. Is **UAEP** (`get_steps` / `run_step` / `AgentDecision`) absent from Tier-2 author code — framework-internal bridge only (§13.3–§13.5)?
 14. Are all tool calls routed through ToolRuntime (§42.12)?
 15. Are forbidden runtime patterns avoided (§42.41)?
 16. Which **cognitive pattern** applies (§26.1): reflex, react, plan_execute, decomposition, reflection?

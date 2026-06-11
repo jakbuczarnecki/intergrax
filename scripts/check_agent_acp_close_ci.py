@@ -34,6 +34,11 @@ def main() -> int:
     if _run("check_agent_fleet_migration.py") != 0:
         violations.append("check_agent_fleet_migration.py failed (ACP-CLOSE-CI-1)")
 
+    if _run("check_agent_creation_guide_acp_canon.py") != 0:
+        violations.append(
+            "check_agent_creation_guide_acp_canon.py failed (ACP-CLOSE-LEG-4)"
+        )
+
     if (
         _run(
             "check_agent_production_readiness.py",
