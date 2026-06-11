@@ -1,6 +1,6 @@
 # Tier-3 Application Environment, Sandbox, and Shadow Workspace
 
-**Status:** Canonical architecture (domain pair 1:1) · **Application authoring gate:** §24–§49 + APP-CON-* / APP-EVOL-* (host environments)  
+**Status:** Canonical architecture (domain pair 1:1) · **Application authoring gate:** §24–§50 + APP-CON-* / APP-EVOL-* / APP-OPS-* (host environments)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Plan (1:1):** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §26  
@@ -44,6 +44,8 @@
 | [§47](#47-developer-mental-model) | **Developer mental model** (recipes) |
 | [§48](#48-application-artifacts) | **Application artifacts** |
 | [§49](#49-runtime-evolution-and-governance) | **Runtime evolution and governance** |
+| [§50](#50-platform-operations-canon) | **Platform operations canon** (capability graph, registry, ownership, health) |
+| [§51](#51-cross-document-consistency-freeze) | **Cross-document consistency** (freeze audit) |
 
 ---
 
@@ -164,7 +166,7 @@ Tier-3 hosts are configured through **`ApplicationEnvironmentProfile`** — a ty
 | `ReasoningProfile` | Planner/classifier LLM ids, denied models |
 | `OrchestrationProfile` | Planner/classifier kinds, delegation depth, long-running |
 | `ScalingProfile` / `HostDeploymentProfile` | ECP cross-ref, deploy posture |
-| `GovernanceProfile` / `IntegrationGovernanceProfile` | Lifecycle and integration governance |
+| `GovernanceProfile` / `IntegrationGovernanceProfile` | Platform cadence + marketplace **feature flags** (not ownership — see §51) |
 | `ApplicationGraphSpec` | Declarative multi-agent topology |
 | `OrganizationalPolicyEnvelope` | Virtual org / workforce simulation (§39) |
 | `ShadowWorkspaceProfile` / `SandboxProfile` | Isolated workspaces (§20–§21) |
@@ -1627,8 +1629,10 @@ A Tier-3 host MAY be labeled **production-ready** only when **all** mandatory ro
 | Architecture completeness | 10/10 | **10/10** — APP-CON §24–§48 + evolution §49 |
 | Hook runtime wiring | 10/10 | **9/10** — APP-CON-1 Done; §32.6 normative; intake auto-seed optional |
 | Budget / prod gates | 10/10 | **7/10** — APP-PROD-1 Done; ACP-TOK-2/3, APP-PROD-6..8 open |
-| Evolution / governance | 10/10 | **8/10** — §49 normative; APP-EVOL-1..7 Planned |
-| **Overall production readiness** | — | **~8.5/10** lab/reference; **~7.5/10** mutating STRICT until ACP-TOK-2/3 + APP-EVOL-1 |
+| Evolution / governance | 10/10 | **9/10** — §49 + typed migrations §49.2.4 |
+| Platform operations | 10/10 | **8.5/10** — §50 normative; graph **Partial**; APP-OPS Planned |
+| **Overall production readiness** | — | **~9/10** reference canon; **~7.5/10** mutating STRICT until ACP-TOK-2/3 |
+| **Architecture freeze readiness** | — | **Ready** — structural canon complete §24–§50; implementation APP-* remains |
 
 ---
 
@@ -1855,7 +1859,43 @@ MigrationStep:
 
 **Anti-pattern EVOL-AP-01:** Editing production YAML without version bump — breaks audit and replay.
 
-**Status:** per-file host checklist **Done** (H-APP.5.4); typed `ApplicationMigration` **Planned** APP-EVOL-2.
+### 49.2.4 Typed migration primitives (target)
+
+`ApplicationMigration` orchestrates **typed** sub-migrations — one schema per primitive, composable in CI:
+
+```text
+ProfileMigration:
+    migration_id: str
+    from_spec_version: str
+    to_spec_version: str
+    field_transforms: list[FieldTransform]
+    default_injection: dict              # new fields with safe defaults
+    breaking: bool
+
+GraphSpecMigration:
+    migration_id: str
+    from_graph_version: semver
+    to_graph_version: semver
+    node_renames: dict[str, str]
+    edge_rewrites: list[EdgeRewrite]
+    removed_nodes_policy: fail | orphan_audit
+
+OrgEnvelopeMigration:
+    migration_id: str
+    from_envelope_version: semver
+    to_envelope_version: semver
+    playbook_id_map: dict[str, str]
+    tool_deny_additions: list[str]
+    tool_deny_removals: list[str]
+```
+
+**Rules:**
+
+- Each primitive migration MUST have a **golden replay** or eval scenario when `breaking=true`.
+- `ProfileMigration` runs before `GraphSpecMigration` before `OrgEnvelopeMigration` (dependency order).
+- Partial migrations are forbidden in STRICT — all three digests must match target snapshot (§49.1.2).
+
+**Status:** typed sub-migrations **Planned** APP-EVOL-2b (extends APP-EVOL-2).
 
 ---
 
@@ -2112,6 +2152,333 @@ graph_spec nodes            → roster capabilities satisfied
 
 ---
 
-**Plan:** Phase **H-APP-CON** · **H-APP-EVOL** — [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md)
+# 50. Platform Operations Canon
+
+Final freeze-ready layer for **reference platform architecture** — connects Tier-3 environments to harness-wide **capability graph**, **operational ownership**, **health scoring**, and **registry** surfaces. Does not alter Nexus, `ApplicationHost`, profile/graph/envelope primitives, or hook semantics (§32).
+
+**Symmetry with ACP:** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) describes the **executing unit** (agent); this document describes the **executing environment** (application). Together they form two peer pillars:
+
+```text
+Agent (ACP)          → how one unit thinks, acts, certifies, deprecates
+Application (TIER3)  → how the environment composes, constrains, evolves, operates
+```
+
+---
+
+## 50.1 Capability Graph (environment-scoped)
+
+> **Canonical graph model:** ACP §19 — this section covers **Tier-3 environment view and ops** only; do not fork graph taxonomy here.
+
+`ApplicationPackage.dependencies` (§49.7) lists **direct** refs. **CapabilityGraph** models the full **transitive** harness chain from IDEAL §19.4:
+
+```text
+Integration → Tool → Skill → Policy → Agent → Application → Product
+```
+
+### 50.1.1 Harness graph (Tier-0/1)
+
+**Code:** `intergrax/runtime/architecture/capability_graph.py`
+
+```text
+CapabilityGraph:
+    nodes: list[CapabilityNode]           # CapabilityNodeType enum
+    edges: list[CapabilityEdge]           # DEPENDS_ON, CONSTRAINED_BY, SUPERSEDES, ...
+
+CapabilityLineageReport:                 # V-CG.2
+    records: upstream / downstream per node_id
+
+CapabilityImpactReport:                  # V-CG.3
+    impacts: blast_radius_node_ids per changed node
+```
+
+### 50.1.2 Environment graph view (Tier-3)
+
+**Code:** `intergrax/applications/_shared/capability_graph_wiring.py` · `EnvironmentCapabilityGraphView`
+
+Builds an **application-scoped subgraph** from:
+
+- `ApplicationManifest` + `AgentBinding` roster
+- `HarnessRegistrySnapshot` (tools, skills, prompts enabled by profile)
+- Catalog graph seed via `build_catalog_capability_graph()`
+
+```text
+wire_environment_capability_graph(manifest, env, snapshot)
+    → EnvironmentCapabilityGraphView
+    → subset of global CapabilityGraph reachable from application node
+```
+
+### 50.1.3 Operations the graph enables
+
+| Operation | API / report | Question answered |
+|-----------|--------------|-------------------|
+| **Lineage** | `build_capability_lineage_report(graph)` | What upstream integrations/tools feed this agent? |
+| **Blast radius** | `build_capability_impact_report(graph)` | If tool X changes, what else breaks? |
+| **Impact preview** | `policy_change_impact.py` | Policy deny addition — affected nodes |
+| **Deprecation** | `SUPERSEDES` edge + §49.3 alias | Safe sunset window for `research.pipeline` |
+| **Deploy review** | env graph diff vs previous snapshot | Unexpected new dependencies? |
+
+### 50.1.4 Tier-3 rules
+
+| Rule | Rationale |
+|------|-----------|
+| Every product host SHOULD expose graph view in ops/debug (read-only) | Impact analysis before profile edits |
+| STRICT deploy CI SHOULD fail when blast radius includes uncertified agent | Governance §49.4 |
+| Graph is **derived** from manifest + profile — not hand-edited parallel truth | Single source of composition |
+| `ApplicationDependency` MUST resolve to graph node ids | Package ↔ graph linkage |
+
+**Gap vs package-only model:** `ApplicationPackage` knows **what** depends on **what**; `CapabilityGraph` knows **impact**, **lineage**, and **blast radius** — required for platform-scale change management.
+
+**Status:** harness graph + lineage/impact **Done** (V-CG.1–3); Tier-3 `EnvironmentCapabilityGraphView` **Partial**; APP-OPS-1 gate (graph validation on STRICT deploy) **Planned**.
+
+---
+
+## 50.2 Application ownership and operational responsibility
+
+Agents have production ownership (V-ALG.4 · `production_ownership.py` · `OnCallOwnershipRegistry` for roster). **Applications** need the same operational contract at environment level.
+
+### 50.2.1 ApplicationOperationalOwnership (target)
+
+```text
+ApplicationOperationalOwnership:
+    app_id: str
+    owner: ApplicationOwner              # business/accountable party
+    maintainer: ApplicationMaintainer     # engineering team shipping host
+    escalation: ApplicationEscalationContact
+    on_call_rotation: str | null         # PagerDuty/Slack handle
+    runbook_ref: str
+    architecture_ref: str                # product ARCHITECTURE.md path
+    status_page_component: str | null
+```
+
+```text
+ApplicationOwner:
+    name: str
+    team: str
+    contact: str
+
+ApplicationMaintainer:
+    team: str
+    primary_contact: str
+    repo_path: str                        # applications/<app>/
+
+ApplicationEscalationContact:
+    channel: slack | email | pagerduty | webhook
+    target: str
+    severity_routing: dict[str, str]      # sev1 → ..., sev3 → ...
+```
+
+### 50.2.2 Where it lives
+
+| Surface | Field | Status |
+|---------|-------|--------|
+| `ApplicationManifest` | `ownership: ApplicationOperationalOwnership \| null` | **Planned** APP-OPS-2 |
+| Product `ARCHITECTURE.md` frontmatter | owner, maintainer, on-call | **Required today** (informal) |
+| `ApplicationEnvironmentProfile` | inherit from manifest | target |
+| APP-PROD gate | product hosts must declare ownership | **Planned** APP-OPS-2 |
+
+### 50.2.3 Enforcement
+
+| Posture | Rule |
+|---------|------|
+| **PRODUCT profile** | `evaluate_application_ownership()` must pass before deploy tag |
+| **Incident** | `ApplicationRunSummary` + ownership → escalation routing |
+| **HITL / budget exceed** | `ApplicationEscalationContact` used by §43 notify reactions |
+
+**Symmetric agent rule:** roster agents still require `ProductionOwnerMetadata` per contract (V-ALG.4); application ownership covers **host / environment**, not per-agent substitution.
+
+**Status:** agent ownership **Done**; application ownership schema **Planned** APP-OPS-2.
+
+---
+
+## 50.3 Architecture health model
+
+APP-PROD and APP-EVOL gates are **boolean pass/fail**. At platform scale, operators need a **continuous health score** per application and per deployed environment.
+
+### 50.3.1 EnvironmentHealthScore (target)
+
+```text
+EnvironmentHealthScore:
+    app_id: str
+    snapshot_id: str | null
+    scored_at: datetime
+    overall: float                         # 0.0 – 1.0
+    dimensions: list[HealthDimensionScore]
+    blockers: list[str]                    # hard failures
+    warnings: list[str]
+```
+
+```text
+HealthDimensionScore:
+    dimension: HealthDimension
+    score: float
+    evidence_refs: list[str]
+    stale_after: datetime | null
+```
+
+```text
+HealthDimension (enum):
+    deprecated_capabilities
+    stale_agents                         # lifecycle < PRODUCTION in STRICT roster
+    failed_migrations
+    policy_coverage                      # org envelope eval golden pass rate
+    test_coverage                        # §44 scenario matrix completeness
+    ownership_complete
+    capability_graph_valid
+    budget_governance_configured
+    recovery_contract_documented
+```
+
+### 50.3.2 ApplicationHealthScore
+
+Rollup across **all registered environments** for one `app_id`:
+
+```text
+ApplicationHealthScore:
+    app_id: str
+    environments: list[EnvironmentHealthScore]
+    worst_environment: str | null
+    production_ready: bool                 # all prod envs ≥ threshold
+```
+
+### 50.3.3 Scoring rules (normative targets)
+
+| Dimension | Green (≥0.9) | Red trigger |
+|-----------|--------------|-------------|
+| `deprecated_capabilities` | zero deprecated caps in roster | any deprecated cap in STRICT |
+| `stale_agents` | all roster agents PRODUCTION | STAGING agent in prod host |
+| `failed_migrations` | last migration CI green | breaking bump without migration |
+| `policy_coverage` | UC-A7 golden pass | POLICY_DENIED on happy path |
+| `test_coverage` | §44 rows pass for posture | missing scenario test |
+| `capability_graph_valid` | no orphan nodes in env graph | unreachable agent node |
+
+**CLI target:** `intergrax doctor health-app <app_id>` · CI publishes score artifact on release.
+
+**Relation to §42:** `EnvironmentHealthStatus` on `ApplicationEnvironmentState` is **runtime task-scoped**; `EnvironmentHealthScore` is **ops platform-scoped** — complementary, not duplicate.
+
+**Status:** **Planned** APP-OPS-3.
+
+---
+
+## 50.4 Application and environment registry
+
+Platform engineering surface — **inventory** of what exists, where it runs, at which version. Distinct from runtime Nexus registry (agent instances).
+
+### 50.4.1 ApplicationRegistry (target)
+
+```text
+ApplicationRegistry:
+    entries: list[ApplicationRegistryEntry]
+
+ApplicationRegistryEntry:
+    app_id: str
+    name: str
+    current_version: semver
+    package_ref: ApplicationPackage | null
+    ownership: ApplicationOperationalOwnership
+    health: ApplicationHealthScore | null
+    registered_at: datetime
+    source: git | manual | marketplace
+```
+
+**Operations:**
+
+- `list_applications()` — all Tier-3 packages in monorepo + external
+- `get_application(app_id)` — manifest + latest health
+- `register_application(package)` — on scaffold / CI publish
+
+### 50.4.2 EnvironmentRegistry (target)
+
+A **deployed instance** of an application (lab, staging, prod, tenant-specific):
+
+```text
+EnvironmentRegistry:
+    entries: list[EnvironmentRegistryEntry]
+
+EnvironmentRegistryEntry:
+    environment_id: str                    # e.g. research-prod-eu1
+    app_id: str
+    app_version: semver
+    profile_id: str
+    execution_mode: ExecutionMode
+    deployment: EnvironmentDeployment
+    snapshot_id: str | null               # last known EnvironmentSnapshot
+    health: EnvironmentHealthScore | null
+```
+
+```text
+EnvironmentDeployment:
+    channel: local | docker | k8s | serverless
+    region: str | null
+    image_tag: str | null
+    endpoint: str | null
+    deployed_at: datetime
+    deployed_by: str
+```
+
+### 50.4.3 Registry operations
+
+| Command (target) | Returns |
+|------------------|---------|
+| `intergrax apps list` | All applications |
+| `intergrax apps show <app_id>` | Versions, ownership, health |
+| `intergrax envs list [--app <id>]` | All environments |
+| `intergrax envs show <env_id>` | Deployment, snapshot, graph summary |
+
+**Storage:** file-based registry in monorepo (`build/application_registry.json`) for dev; pluggable store for multi-tenant ops (APP-OPS-4).
+
+**Status:** `applications/README.md` index **Partial**; typed registries **Planned** APP-OPS-4.
+
+---
+
+## 50.5 Implementation register (APP-OPS)
+
+| ID | Deliverable | Status | Acceptance |
+|----|-------------|--------|------------|
+| APP-OPS-1 | STRICT deploy gate: `EnvironmentCapabilityGraphView` + blast radius check | Planned | CI fails on uncertified node in radius |
+| APP-OPS-2 | `ApplicationOperationalOwnership` on manifest + APP-PROD gate | Planned | product hosts require owner/maintainer/escalation |
+| APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | Planned | score artifact on release tag |
+| APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | Planned | `apps list` / `envs list` |
+| APP-EVOL-2b | `ProfileMigration` / `GraphSpecMigration` / `OrgEnvelopeMigration` | Planned | typed validators in CI |
+
+**Architecture freeze boundary:** after APP-OPS-1..4 **Done**, Tier-3 canon is **feature-complete** for reference platform; remaining work is implementation, not structural redesign.
+
+---
+
+# 51. Cross-Document Consistency (Freeze)
+
+Pre-freeze **semantic audit** — overlap between Tier-3, ACP, UAEP, and IDEAL. Full evidence: [`guides/GOVERNANCE_CONSISTENCY_AUDIT.md`](../guides/GOVERNANCE_CONSISTENCY_AUDIT.md).
+
+## 51.1 Verdict (2026-06-11)
+
+| Question | Result |
+|----------|--------|
+| Two definitions of capability? | **No** — routing (`CapabilityDescriptor` / `AgentRegistry`) vs structure (`CapabilityGraph`) are layered |
+| Two registries for the same thing? | **No** — runtime `AgentRegistry` ≠ ops `ApplicationRegistry` / `EnvironmentRegistry` |
+| Ownership duplicates lifecycle? | **No** — lifecycle = state; ownership = on-call contacts (agent vs application scopes) |
+| Health score duplicates APP-PROD? | **No** — gates = boolean blockers; score = continuous rollup |
+| §50 vs IDEAL conflict? | **No** |
+
+## 51.2 Naming risks (glossary discipline)
+
+| Do not introduce | Use instead |
+|------------------|-------------|
+| `CapabilityRegistry` | `AgentRegistry` (routing) + `CapabilityGraph` (dependencies) |
+| `GovernanceProfile` as ownership | `ApplicationOperationalOwnership` (§50.2) or `ProductionOwnerMetadata` (ACP §20) |
+| `applications/README.md` as ops registry | `ApplicationRegistry` when APP-OPS-4 ships |
+
+## 51.3 Canonical split (two pillars)
+
+```text
+ACP §12–§45   → executing unit (agent): contract, cognition, lifecycle, certification
+TIER3 §24–§50 → executing environment (application): profile, hooks, evolution, ops
+Shared        → CapabilityGraph (ACP §19), routing (UAEP §42.27), registries (ACP §18)
+```
+
+**Freeze status:** Tier-3 structural architecture **approved** with glossary rules above.
+
+---
+
+**Plan:** Phase **H-APP-CON** · **H-APP-EVOL** · **H-APP-OPS** — [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md)  
+**Consistency audit:** [`guides/GOVERNANCE_CONSISTENCY_AUDIT.md`](../guides/GOVERNANCE_CONSISTENCY_AUDIT.md)
 
 ---

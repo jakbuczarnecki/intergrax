@@ -5,6 +5,8 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-11-023 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | H-APP-FREEZE-1, H-APP-FREEZE-2, H-APP-FREEZE-3 | [Cross-document governance consistency freeze audit](entries/2026-06-11/tier3-governance-consistency-freeze-audit.md) | pending |
+| IJ-2026-06-11-022 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | H-APP-OPS-DOC.1, H-APP-OPS-DOC.2 | [TIER3 §50 platform ops canon — freeze tranche](entries/2026-06-11/tier3-app-ops-platform-canon.md) | pending |
 | IJ-2026-06-11-021 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | H-APP-EVOL-DOC.1 | [TIER3 §49 evolution and governance canon](entries/2026-06-11/tier3-app-evol-governance-canon.md) | pending |
 | IJ-2026-06-11-020 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | H-APP-CON-DOC.1, APP-CON-2, APP-CON-4, APP-PROD-1 | [TIER3 APP-CON runtime depth](entries/2026-06-11/tier3-app-con-runtime-depth.md) | pending |
 | IJ-2026-06-11-019 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-CON-1, APP-CON-2 | [APP-CON-1 ApplicationHost Nexus wiring](entries/2026-06-11/tier3-app-con-host-wiring.md) | pending |

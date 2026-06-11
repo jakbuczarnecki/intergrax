@@ -391,6 +391,8 @@ Snapshots and conformance CI validate registry shape before release (`scripts/ch
 
 # 19. Capability Graph Architecture
 
+> **Tier-3 consumption:** environment-scoped graph view, blast-radius deploy gates, and ops health dimensions — [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §50.1 · §51. **Do not duplicate** graph taxonomy in Tier-3; extend via `EnvironmentCapabilityGraphView` only.
+
 Registries and capability layers MUST be represented as a typed dependency graph:
 
 ```text

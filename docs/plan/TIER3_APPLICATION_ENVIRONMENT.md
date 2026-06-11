@@ -8,7 +8,7 @@
 
 **Cross-plan — Agent layer (ACP):** Tier-3 hosts supply `ApplicationEnvironmentProfile`, `AgentBinding`, intake `RequestIdentity`, and org envelope — consumed by agent `merge_environment` (architecture ACP §30 · TIER3 §39). Implementation synced in [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 2** (`ACP-DX-2`, `ACP-DX-5`) and **Wave 6** (`ACP-ORG-1..2`). Host PRs that change profile merge order MUST update agent plan acceptance tests.
 
-**Application authoring canon (APP-CON):** architecture §24–§48 — symmetric to ACP §12–§45 for Tier-3 environments. **Evolution canon (APP-EVOL):** architecture §49. Phases **H-APP-CON** · **H-APP-EVOL** below.
+**Application authoring canon (APP-CON):** architecture §24–§48 — symmetric to ACP §12–§45 for Tier-3 environments. **Evolution canon (APP-EVOL):** architecture §49. **Operations canon (APP-OPS):** architecture §50. Phases **H-APP-CON** · **H-APP-EVOL** · **H-APP-OPS** below.
 
 ---
 
@@ -343,5 +343,40 @@ uv run pytest -m gate -q
 | APP-EVOL-7 | `ApplicationPackage` + dependency resolver | Planned | Medium | `new-stack` emits package manifest |
 
 **Explicitly out of scope:** marketplace UI; Nexus fork; Tier-3 cognition loop.
+
+---
+
+## Phase H-APP-OPS — Platform operations canon (APP-OPS) — freeze tranche
+
+**Status:** **Done** (2026-06-11) — architecture §50 documented; APP-OPS-1..4 **Planned**  
+**Prerequisites:** H-APP-EVOL §49 **Done** · V-CG.1–3 capability graph **Done**  
+**Goal:** Close reference-platform gaps — capability graph at environment scope, application ownership, health scoring, application/environment registry — **without** changing frozen primitives (Nexus, ApplicationHost, profile, graph spec, envelope, hooks).
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| H-APP-OPS-DOC.1 | Architecture §50 Platform Operations Canon | **Done** | **Critical** | `architecture/TIER3_APPLICATION_ENVIRONMENT.md` |
+| H-APP-OPS-DOC.2 | §49.2.4 typed migrations (Profile/Graph/Envelope) | **Done** | High | sub-migration schemas in §49 |
+| APP-OPS-1 | Env capability graph + blast radius STRICT gate | Planned | **Critical** | CI impact check on deploy |
+| APP-OPS-2 | `ApplicationOperationalOwnership` + APP-PROD | Planned | High | manifest ownership required |
+| APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | Planned | High | release score artifact |
+| APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | Planned | Medium | `apps list` / `envs list` |
+| APP-EVOL-2b | Typed migration validators | Planned | High | CI per primitive |
+
+**Freeze declaration:** Tier-3 **structural architecture** is complete at §51. Further work is APP-* implementation only — no new composition primitives without ADR.
+
+---
+
+## Phase H-APP-FREEZE — Cross-document governance consistency audit
+
+**Status:** **Done** (2026-06-11)  
+**Goal:** Verify semantic alignment between Tier-3, ACP, UAEP, IDEAL — no duplicate capability/registry/ownership/health definitions before architecture freeze.
+
+| ID | Deliverable | Status | Acceptance |
+|----|-------------|--------|------------|
+| H-APP-FREEZE-1 | `guides/GOVERNANCE_CONSISTENCY_AUDIT.md` | **Done** | Five audit questions answered |
+| H-APP-FREEZE-2 | TIER3 §51 + ACP §19 cross-refs | **Done** | Canonical ownership matrix |
+| H-APP-FREEZE-3 | §22 GovernanceProfile description fix | **Done** | Flags ≠ ownership |
+
+**Outcome:** No structural conflicts. Glossary bans `CapabilityRegistry`. Architecture freeze **approved**.
 
 ---
