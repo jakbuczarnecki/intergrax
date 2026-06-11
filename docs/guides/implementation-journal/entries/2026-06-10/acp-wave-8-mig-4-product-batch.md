@@ -31,7 +31,7 @@ Twelve of fifteen roster agents now run typed `on_next_step` while remaining UAE
 - Plan: `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` §6.1aw step 8.4 (ACP-MIG-4)
 - Architecture: `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §40.15
 
-## Changed areas
+## Changed artifacts
 
 - `intergrax/agents/authoring/acp_stub_reflex.py`
 - `agents/legal`, `agents/research/summary_agent.py`, LKW trio, DSW quartet
@@ -45,7 +45,7 @@ Twelve of fifteen roster agents now run typed `on_next_step` while remaining UAE
 - `uv run python scripts/check_agent_fleet_migration.py`
 - `uv run pytest tests/unit/agents/fleet/ tests/integration/agents/test_agent_engine_uaep_legal.py tests/integration/agents/test_agent_engine_uaep_research.py -q`
 
-## Risks / follow-ups
+## Risks and follow-ups
 
 - MIG-5 (org_worker, assistant, K-path agents) and MIG-7 host binding verification remain.
 - ACP-PROD-12 scoreboard not yet generated for Runtime % column.

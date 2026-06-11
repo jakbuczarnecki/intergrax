@@ -31,7 +31,7 @@ Operators have a single artifact for roster promotion decisions. Fleet migration
 - Plan: §6.1az · steps 7.9 · 8.8
 - Architecture: §40.15
 
-## Changed areas
+## Changed artifacts
 
 - `intergrax/contracts/agent_readiness.py`
 - `intergrax/agents/readiness/scoreboard.py`
@@ -46,7 +46,7 @@ Operators have a single artifact for roster promotion decisions. Fleet migration
 - `uv run python scripts/check_agent_production_readiness.py --require-fleet-migration-closure --regenerate`
 - `uv run pytest tests/unit/agents/readiness/ -q`
 
-## Risks / follow-ups
+## Risks and follow-ups
 
 - Policy, checkpointing, idempotency dimensions score partial until Wave 6–7 ACP-PROD/ACP-ORG items land.
 - `production_eligible_recommendation` remains false for most agents until overall ≥90% and per-dimension floors met.

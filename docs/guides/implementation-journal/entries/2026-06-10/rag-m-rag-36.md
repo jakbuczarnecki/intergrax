@@ -1,5 +1,5 @@
 ---
-id: IJ-2026-06-10-015
+id: IJ-2026-06-10-045
 date: 2026-06-10
 tiers:
   - tier-0
@@ -8,6 +8,7 @@ plan_ref:
   - M-RAG.36
   - GAP-RAG-21
 status: completed
+commit: pending
 adr: none — soak contract on existing RetrievalService; mirrors M-RAG.30 vector-store pattern
 ---
 
@@ -24,6 +25,23 @@ Execute final M-RAG-DEPTH item: RAG load/soak gate with concurrent retrieve SLO.
 - Gate tests: `test_rag_load_soak_gate.py` (pass + latency budget failure)
 - CI: `.github/workflows/rag-guard.yml` runs `pytest -m gate` on RAG paths
 
+## Project impact
+
+Concurrent retrieve load and recall SLOs are machine-verifiable in CI, closing GAP-RAG-21 and completing the M-RAG-DEPTH load/soak pillar.
+
+## Traceability
+
+| Link | Target |
+|------|--------|
+| Architecture | `docs/architecture/RAG.md` GAP-RAG-21 closed |
+| Plan | `docs/plan/RAG.md` M-RAG.36 **Done** |
+
+## Changed artifacts
+
+- `intergrax/rag/evaluation/load_soak.py` — `run_retrieval_load_soak()` and golden corpus merge
+- `tests/unit/rag/evaluation/test_rag_load_soak_gate.py` — pass and failure scenarios
+- `.github/workflows/rag-guard.yml` — RAG gate CI workflow
+
 ## Verification
 
 ```bash
@@ -31,6 +49,7 @@ uv run pytest tests/unit/rag/evaluation/test_rag_load_soak_gate.py -m gate -q
 uv run pytest tests/unit/rag/ -m gate -q
 ```
 
-## Milestone
+## Risks and follow-ups
 
-**Phase M-RAG-DEPTH complete** (M-RAG.23–M-RAG.37 all Done).
+- Golden corpus coverage must expand as new retrieval profiles ship to avoid false-green soak results.
+- **Milestone:** Phase M-RAG-DEPTH complete (M-RAG.23–M-RAG.37 all Done).

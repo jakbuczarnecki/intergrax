@@ -1,5 +1,5 @@
 ---
-id: IJ-2026-06-10-008
+id: IJ-2026-06-10-036
 date: 2026-06-10
 tiers:
   - tier-0
@@ -10,6 +10,7 @@ plan_ref:
   - GAP-RAG-09
   - AUDIT-IDEAL-14.7
 status: completed
+commit: pending
 adr: none — wires existing OpenTelemetry API on Tier-0 hot paths; no contract change
 ---
 
@@ -25,6 +26,24 @@ Added `intergrax/rag/tracking/rag_spans.py` with canonical span registry, `rag_s
 
 Aggregated RAG metrics remain opt-in via `INTERGRAX_RAG_METRICS_ENABLED`; spans are on the default observability spine unless explicitly disabled.
 
+## Project impact
+
+RAG retrieve and ingest hot paths emit canonical OTel spans by default, aligning Tier-0 RAG with the platform observability spine and closing GAP-RAG-08/09 audit findings.
+
+## Traceability
+
+| Link | Target |
+|------|--------|
+| Architecture | `docs/architecture/RAG.md` GAP-RAG-08, GAP-RAG-09 closed |
+| Plan | `docs/plan/RAG.md` M-RAG.27 **Done** |
+| Audit | AUDIT-IDEAL-14.7 |
+
+## Changed artifacts
+
+- `intergrax/rag/tracking/rag_spans.py` — span registry and `rag_span()` helper
+- `intergrax/rag/retrieval/retrieval_service.py`, `intergrax/rag/ingest/ingest_pipeline.py` — span wiring
+- `scripts/check_rag_otel_span_registry.py` — observability gate registration
+
 ## Verification
 
 ```bash
@@ -33,6 +52,7 @@ uv run python scripts/check_rag_otel_span_registry.py
 uv run python scripts/check_observability_gates.py
 ```
 
-## Next step
+## Risks and follow-ups
 
-**M-RAG.28** — completed in IJ-2026-06-10-009.
+- Span volume on high-throughput ingest may require sampling tuning in production deployments.
+- Next Wave 3 item: **M-RAG.28** retriever fallback chain.

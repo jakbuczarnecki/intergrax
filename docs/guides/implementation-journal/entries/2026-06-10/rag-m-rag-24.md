@@ -1,5 +1,5 @@
 ---
-id: IJ-2026-06-10-003
+id: IJ-2026-06-10-033
 date: 2026-06-10
 tiers:
   - tier-0
@@ -11,6 +11,7 @@ plan_ref:
   - GAP-RAG-02
   - GAP-RAG-03
 status: completed
+commit: pending
 adr: none — wires existing DualIndexStrategy + HierarchicalRetriever; no new contracts
 ---
 

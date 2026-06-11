@@ -14,6 +14,20 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 | IJ-2026-06-11-003 | 2026-06-11 | tier-0 AGENT_CONTRACTS | ACP-CLOSE-LEG-1, ACP-CLOSE-LEG-2 | [ACP-CLOSE LEG-1/2 legacy removal](entries/2026-06-11/acp-close-leg-1-2-legacy-removal.md) | pending |
 | IJ-2026-06-11-002 | 2026-06-11 | tier-0 AGENT_CONTRACTS | ACP-CLOSE-DOC-2, ACP-CLOSE-DOC-3, ACP-CLOSE-DOC-4 | [ACP-CLOSE sprint 1 architecture and audit doc sync](entries/2026-06-11/acp-close-doc-arch-sync.md) | pending |
 | IJ-2026-06-10-032 | 2026-06-10 | tier-0 AGENT_CONTRACTS | ACP-PROD-1, ACP-PROD-2 | [ACP acceptance 05d declarative mutating resume](entries/2026-06-10/acp-acceptance-05d-declarative-resume.md) | pending |
+| IJ-2026-06-10-046 | 2026-06-10 | tier-0 RAG | M-RAG.37 | [Semantic chunking ingest size guard](entries/2026-06-10/rag-m-rag-37.md) | pending |
+| IJ-2026-06-10-045 | 2026-06-10 | tier-0 RAG | M-RAG.36 | [RAG concurrent retrieve load/soak gate](entries/2026-06-10/rag-m-rag-36.md) | pending |
+| IJ-2026-06-10-044 | 2026-06-10 | tier-0 RAG | M-RAG.35 | [Cross-backend tenant isolation contract tests](entries/2026-06-10/rag-m-rag-35.md) | pending |
+| IJ-2026-06-10-043 | 2026-06-10 | tier-0 RAG | M-RAG.34 | [Agentic loop retriever override and latency budget](entries/2026-06-10/rag-m-rag-34.md) | pending |
+| IJ-2026-06-10-042 | 2026-06-10 | tier-0/3 RAG | M-RAG.33 | [GraphRAG Tier-3 production profile contract](entries/2026-06-10/rag-m-rag-33.md) | pending |
+| IJ-2026-06-10-041 | 2026-06-10 | tier-0 RAG | M-RAG.32 | [Optional LLM QueryRouter tier classifier](entries/2026-06-10/rag-m-rag-32.md) | pending |
+| IJ-2026-06-10-040 | 2026-06-10 | tier-0 RAG | M-RAG.31 | [Embedding model version mismatch policy](entries/2026-06-10/rag-m-rag-31.md) | pending |
+| IJ-2026-06-10-039 | 2026-06-10 | tier-0 RAG | M-RAG.30 | [Vector-store prod SLO soak gate](entries/2026-06-10/rag-m-rag-30.md) | pending |
+| IJ-2026-06-10-038 | 2026-06-10 | tier-0 RAG | M-RAG.29 | [Formal Citation model on retrieval engine](entries/2026-06-10/rag-m-rag-29.md) | pending |
+| IJ-2026-06-10-037 | 2026-06-10 | tier-0 RAG | M-RAG.28 | [Retriever fallback chain + structured retrieval errors](entries/2026-06-10/rag-m-rag-28.md) | pending |
+| IJ-2026-06-10-036 | 2026-06-10 | tier-0 RAG | M-RAG.27 | [OpenTelemetry spans on RAG retrieve + ingest](entries/2026-06-10/rag-m-rag-27.md) | pending |
+| IJ-2026-06-10-035 | 2026-06-10 | tier-0/3 RAG | M-RAG.26 | [Async ingest job contract + sync size guard](entries/2026-06-10/rag-m-rag-26.md) | pending |
+| IJ-2026-06-10-034 | 2026-06-10 | tier-0/3 RAG | M-RAG.25 | [Catalog retrieval poisoning defense on rag.retrieve](entries/2026-06-10/rag-m-rag-25.md) | pending |
+| IJ-2026-06-10-033 | 2026-06-10 | tier-0/3 RAG | M-RAG.24 | [Dual-index bootstrap + hierarchical ingest routing](entries/2026-06-10/rag-m-rag-24.md) | pending |
 | IJ-2026-06-11-001 | 2026-06-11 | tier-0/1 TOOLS | TOOL-ENG-DOC.4, TOOL-ENG-13..15 | [Tool selection modes canon — standard, semantic, hierarchical](entries/2026-06-11/tools-tool-eng-doc-4-selection-modes.md) | pending |
 | IJ-2026-06-10-031 | 2026-06-10 | tier-0/1/3 AGENT_CONTRACTS | ACP-PROD-2, TOOL-ENG-6 | [ACP declarative catalog tool invoker host wiring](entries/2026-06-10/acp-prod-2-host-tool-invoker-wiring.md) | pending |
 | IJ-2026-06-10-030 | 2026-06-10 | tier-0/1 AGENT_CONTRACTS | ACP-PROD-3 | [ACP-PROD-3 compensation enqueue on step failure](entries/2026-06-10/acp-prod-3-compensation-enqueue.md) | pending |

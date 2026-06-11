@@ -32,7 +32,7 @@ Full Tier-2 roster (excluding lab mock fixtures) runs typed cognitive hooks with
 - Plan: `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` §6.1aw steps 8.5, 8.7
 - Architecture: `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §40.15
 
-## Changed areas
+## Changed artifacts
 
 - `agents/organization_worker`, `intergrax_assistant`, `problem_radar`, `vendor_discovery`
 - Contract files + `scripts/audit_agent_fleet_legacy.py` migrated set
@@ -45,7 +45,7 @@ Full Tier-2 roster (excluding lab mock fixtures) runs typed cognitive hooks with
 - `uv run python scripts/check_agent_fleet_migration.py`
 - `uv run pytest tests/unit/agents/fleet/ -q`
 
-## Risks / follow-ups
+## Risks and follow-ups
 
 - ACP-LEG-2 fleet closure and ACP-PROD-12 scoreboard remain open.
 - Lab `mock_agents` intentionally outside roster inventory.

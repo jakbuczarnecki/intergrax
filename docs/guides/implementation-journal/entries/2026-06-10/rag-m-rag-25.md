@@ -1,5 +1,5 @@
 ---
-id: IJ-2026-06-10-002
+id: IJ-2026-06-10-034
 date: 2026-06-10
 tiers:
   - tier-0
@@ -10,6 +10,7 @@ plan_ref:
   - AUDIT-IDEAL-14.5
   - GAP-RAG-04
 status: completed
+commit: pending
 adr: none — reuses existing `filter_retrieved_chunks_for_poisoning` from V-REM-SEC.2
 ---
 

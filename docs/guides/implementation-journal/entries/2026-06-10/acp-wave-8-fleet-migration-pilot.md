@@ -34,7 +34,7 @@ Three roster agents now use typed cognitive hooks end-to-end while remaining UAE
 - Plan: `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` §6.1aw Wave 8, ACP-MIG-1/2/3/6
 - Architecture: `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §40.15 fleet migration
 
-## Changed areas
+## Changed artifacts
 
 - `intergrax/agents/authoring/acp_uaep_shim.py`, `patterns/base.py`, `acp_run.py`
 - `intergrax/contracts/acp_metadata_keys.py` (`AcpRunContextKey`)
@@ -48,7 +48,7 @@ Three roster agents now use typed cognitive hooks end-to-end while remaining UAE
 - `uv run python scripts/check_agent_fleet_migration.py`
 - `uv run pytest tests/unit/agents/fleet/test_pilot_migration.py agents/signoff_probe/tests/ tests/integration/agents/test_agent_engine_uaep_echo.py -q`
 
-## Risks / follow-ups
+## Risks and follow-ups
 
 - ACP-LEG-2 and MIG-4/5/7 remain open for the rest of the roster.
 - ACP-PROD-12 scoreboard not yet generated for Runtime % column in tracker.

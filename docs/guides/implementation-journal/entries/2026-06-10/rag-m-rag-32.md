@@ -1,5 +1,5 @@
 ---
-id: IJ-2026-06-10-012
+id: IJ-2026-06-10-041
 date: 2026-06-10
 tiers:
   - tier-0
@@ -8,6 +8,7 @@ plan_ref:
   - M-RAG.32
   - GAP-RAG-16
 status: completed
+commit: pending
 adr: none — optional LLM routing behind profile flag; heuristic fallback preserved
 ---
 
@@ -24,6 +25,23 @@ Execute first remaining Wave 3 item: LLM tier routing for `QueryRouter`.
 - `QueryRouter` accepts optional `LLMAdapter`; `RetrievalService` passes `llm_for_routing` (or `llm_for_agentic`)
 - `RetrievalTrace.route_classifier` + `rag.retrieve` diagnostics `route_classifier`
 
+## Project impact
+
+Operators can opt into LLM-assisted query routing while preserving heuristic fallback, improving deep-tier retrieval without breaking default profiles.
+
+## Traceability
+
+| Link | Target |
+|------|--------|
+| Architecture | `docs/architecture/RAG.md` GAP-RAG-16 closed |
+| Plan | `docs/plan/RAG.md` M-RAG.32 **Done** |
+
+## Changed artifacts
+
+- `intergrax/rag/routing/llm_tier_classifier.py` — LLM tier classifier with fallback
+- `intergrax/rag/routing/query_router.py` — optional `LLMAdapter` integration
+- `intergrax/rag/profiles/rag_profile.py` — `llm_route_enabled` profile flag
+
 ## Verification
 
 ```bash
@@ -31,6 +49,7 @@ uv run pytest tests/unit/rag/routing/test_query_router_llm_tier.py -m gate -q
 uv run pytest tests/unit/rag/ -m gate -q
 ```
 
-## Next step
+## Risks and follow-ups
 
-**M-RAG.34** — agentic loop per-iteration retriever override.
+- LLM routing adds latency and cost when enabled; remains off by default.
+- Next item: **M-RAG.34** agentic loop per-iteration retriever override.

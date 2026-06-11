@@ -1,5 +1,5 @@
 ---
-id: IJ-2026-06-10-004
+id: IJ-2026-06-10-035
 date: 2026-06-10
 tiers:
   - tier-0
@@ -11,6 +11,7 @@ plan_ref:
   - GAP-RAG-05
   - GAP-RAG-06
 status: completed
+commit: pending
 adr: none — composes existing `workflow_orchestrator` + `IngestPipeline` policy gate
 ---
 

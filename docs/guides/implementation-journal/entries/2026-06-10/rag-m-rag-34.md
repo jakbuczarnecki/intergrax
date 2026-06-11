@@ -1,5 +1,5 @@
 ---
-id: IJ-2026-06-10-013
+id: IJ-2026-06-10-043
 date: 2026-06-10
 tiers:
   - tier-0
@@ -8,6 +8,7 @@ plan_ref:
   - M-RAG.34
   - GAP-RAG-19
 status: completed
+commit: pending
 adr: none — schedule and latency budget are profile/trace extensions on existing agentic loop
 ---
 
@@ -25,6 +26,23 @@ Execute next M-RAG-DEPTH item after M-RAG.32.
 - `AgenticRetrievalLoop` records per-iteration retriever/latency, refine call count, budget metadata on `RetrievalTrace`
 - Stop reason `latency_budget` when cumulative loop latency exceeds profile budget
 
+## Project impact
+
+Agentic retrieval loops expose per-iteration retriever selection and cumulative latency budgets in `RetrievalTrace`, enabling operators to tune multi-hop RAG without silent overrun.
+
+## Traceability
+
+| Link | Target |
+|------|--------|
+| Architecture | `docs/architecture/RAG.md` GAP-RAG-19 closed |
+| Plan | `docs/plan/RAG.md` M-RAG.34 **Done** |
+
+## Changed artifacts
+
+- `intergrax/rag/retrieval/agentic_policy.py` — schedule resolution and budget check
+- `intergrax/rag/retrieval/agentic_retrieval_loop.py` — per-iteration trace metadata
+- `intergrax/rag/profiles/rag_profile.py` — agentic retriever and latency profile fields
+
 ## Verification
 
 ```bash
@@ -32,6 +50,7 @@ uv run pytest tests/unit/rag/retrieval/test_agentic_loop_iteration_trace.py -m g
 uv run pytest tests/unit/rag/ -m gate -q
 ```
 
-## Next step
+## Risks and follow-ups
 
-**M-RAG.37** — semantic chunking ingest size guard (or **M-RAG.36** RAG load/soak gate).
+- Aggressive latency budgets may truncate agentic loops before recall stabilizes; tune per product profile.
+- Next items: **M-RAG.37** semantic chunking guard, **M-RAG.36** load/soak gate.
