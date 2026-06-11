@@ -8,6 +8,29 @@ from intergrax.contracts.agent_run_enums import (
     SideEffectMode,
     TerminalReason,
 )
+from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
+from intergrax.tools.tool_execution_profile import build_profile_map
+from pydantic import BaseModel
+
+
+class _In(BaseModel):
+    pass
+
+
+class _Out(BaseModel):
+    pass
+
+
+_MUTATING_TOOL = ToolContract(
+    tool_id="email.send",
+    name="email.send",
+    description="send",
+    input_schema=_In,
+    output_schema=_Out,
+    error_mapping={},
+    side_effects=True,
+    risk_level=ToolRiskLevel.HIGH,
+)
 from intergrax.applications.contracts.org_policy import (
     ChannelPolicy,
     OrganizationalPolicyContext,
@@ -136,6 +159,30 @@ async def test_kernel_org_policy_allows_happy_path_channel() -> None:
         and v.action == PolicyAction.DENY
         for v in record.step_record.policy_verdicts
     )
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_kernel_rejects_mutating_tool_without_idempotency_key() -> None:
+    step_ctx = AgentStepContext(
+        step_index=0,
+        side_effect_mode=SideEffectMode.DECLARATIVE,
+    )
+    kernel_ctx = StepKernelContext(
+        agent_id="demo",
+        run_id="run-mutating",
+        side_effect_mode=SideEffectMode.DECLARATIVE,
+        policy_engine=PolicyEngine(),
+        tool_profiles=build_profile_map([_MUTATING_TOOL]),
+    )
+    outcome = StepOutcome.continue_with({"phase": "send"})
+    outcome = outcome.model_copy(
+        update={"requested_actions": [{"tool_id": "email.send", "args": {"to": "x"}}]},
+    )
+    record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
+    assert record.error_code == AgentRunErrorCode.VALIDATION_FAILED
+    assert record.step_record is not None
+    assert record.step_record.diagnostics.get("tool_validation") == "acp.tool.idempotency_required"
 
 
 @pytest.mark.unit

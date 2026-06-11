@@ -12,6 +12,8 @@ class AcpMetadataKey(StrEnum):
 
     SESSION_ENABLED = "acp.session.v1"
     HOST_CONTEXT = "acp.host.v1"
+    CHECKPOINT_STORE = "acp.checkpoint_store.v1"
+    RESUME_FROM_CHECKPOINT = "acp.resume_from_checkpoint.v1"
     APPLICATION_RUN_SUMMARY = "application_run_summary.v1"
 
 

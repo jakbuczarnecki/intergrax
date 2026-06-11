@@ -16,7 +16,12 @@ from intergrax.agents.authoring.llm_router import StepLLMRouter
 from intergrax.agents.authoring.shared_context_bridge import load_view, persist_view, view_from_task_metadata
 from intergrax.agents.authoring.step_loop import AgentRuntime
 from intergrax.agents.compliance_summary import build_compliance_summary
+from intergrax.agents.persistence.session_persistence import (
+    make_checkpoint_hook,
+    resolve_session_persistence,
+)
 from intergrax.agents.run_environment import EffectiveAgentRunEnvironment, merge_environment
+from intergrax.tools.tool_execution_profile import build_profile_map
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey, AcpRunContextKey, AcpStructuredDataKey
 from intergrax.contracts.acp_state import ACP_STATE_KEY
 from intergrax.contracts.agent_run import AgentRunError, AgentRunRequest, AgentRunResult
@@ -86,7 +91,19 @@ async def run_acp_session(
 
     await agent.on_run_start(merged)
 
+    persistence, resume = resolve_session_persistence(
+        request,
+        run_id=run_id,
+        tenant_id=merged.tenant_id,
+    )
+    state_root = _initial_state_root(request)
+    start_step_index = 0
+    if resume is not None:
+        state_root = resume.state_root
+        start_step_index = resume.start_step_index
+
     task_id = str(request.metadata.get("task_id") or run_id)
+    run_trace = AgentRunTrace(run_id=run_id)
     kernel_ctx = StepKernelContext(
         agent_id=merged.agent_id,
         run_id=run_id,
@@ -97,8 +114,17 @@ async def run_acp_session(
         checkpoint_every_step=merged.checkpoint_every_step,
         policy_engine=PolicyEngine(),
         organizational=merged.organizational,
-        state_root=_initial_state_root(request),
-        run_trace=AgentRunTrace(run_id=run_id),
+        side_effect_ledger=persistence.side_effect_ledger,
+        tool_profiles=build_profile_map(list(contract.extra_tools)),
+        state_root=state_root,
+        run_trace=run_trace,
+    )
+    kernel_ctx.checkpoint_hook = make_checkpoint_hook(
+        persistence=persistence,
+        run_id=run_id,
+        tenant_id=merged.tenant_id,
+        agent_id=merged.agent_id,
+        trace_step_count_fn=lambda: len(kernel_ctx.run_trace.steps),
     )
 
     llm_router = StepLLMRouter(
@@ -111,7 +137,7 @@ async def run_acp_session(
     )
 
     step_ctx = AgentStepContext(
-        step_index=0,
+        step_index=start_step_index,
         run_id=run_id,
         agent_id=merged.agent_id,
         contract_id=merged.contract_id,

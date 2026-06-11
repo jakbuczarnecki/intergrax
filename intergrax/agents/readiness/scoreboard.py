@@ -187,9 +187,9 @@ def _score_checkpointing(contract: AgentContract) -> AgentReadinessDimensionScor
         )
     return _dimension(
         AgentReadinessDimension.CHECKPOINTING,
-        35.0,
-        evidence=["ACP-PROD-1 planned"],
-        blockers=["checkpoint resume smoke not registered for agent"],
+        80.0,
+        evidence=["AgentCheckpointStore", "ACP-PROD-1", "session resume wiring"],
+        blockers=["full crash-recovery acceptance not per-agent yet"],
     )
 
 
@@ -203,9 +203,9 @@ def _score_idempotency(contract: AgentContract) -> AgentReadinessDimensionScore:
         )
     return _dimension(
         AgentReadinessDimension.IDEMPOTENCY,
-        35.0,
-        evidence=["ACP-PROD-2 planned"],
-        blockers=["idempotency ledger not registered for agent"],
+        80.0,
+        evidence=["SideEffectLedger", "ACP-PROD-2", "mutating tool idempotency gate"],
+        blockers=["platform idempotency store not wired per host yet"],
     )
 
 

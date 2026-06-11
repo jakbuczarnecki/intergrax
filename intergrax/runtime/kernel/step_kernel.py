@@ -28,8 +28,14 @@ from intergrax.contracts.agent_run_trace import (
 )
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
+from intergrax.agents.persistence.tool_action_validation import (
+    ToolActionValidationError,
+    validate_requested_actions,
+)
 from intergrax.applications.contracts.org_policy import OrganizationalPolicyContext
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.tools.tool_execution_profile import ToolExecutionProfile
 from intergrax.runtime.policy.org_enforcement import (
     evaluate_org_policy_pre,
     extract_requested_tool_ids,
@@ -59,6 +65,8 @@ class StepKernelContext:
     checkpoint_every_step: bool = True
     policy_engine: PolicyEngine | None = None
     organizational: OrganizationalPolicyContext | None = None
+    side_effect_ledger: SideEffectLedger | None = None
+    tool_profiles: dict[str, ToolExecutionProfile] = field(default_factory=dict)
     emit_event: EventEmitter | None = None
     checkpoint_hook: CheckpointHook | None = None
     state_root: dict[str, Any] = field(default_factory=dict)
@@ -159,15 +167,56 @@ class HarnessKernel:
         step_ctx.state_snapshot = merge_result.state
         state_version = int(extract_acp_state_blob(merge_result.state).get("_version", 0))
 
-        if (
-            kernel_ctx.side_effect_mode == SideEffectMode.DECLARATIVE
-            and outcome.requested_actions
-        ):
-            trace_events += await HarnessKernel._emit(
-                kernel_ctx,
-                RuntimeEventType.TOOL_REQUESTED,
-                {"mode": "declarative", "action_count": len(outcome.requested_actions)},
-            )
+        if outcome.requested_actions:
+            try:
+                normalized_actions = validate_requested_actions(
+                    requested_actions=outcome.requested_actions,
+                    side_effect_mode=kernel_ctx.side_effect_mode,
+                    tool_profiles=kernel_ctx.tool_profiles,
+                    run_id=kernel_ctx.run_id,
+                    step_index=step_ctx.step_index,
+                    ledger=kernel_ctx.side_effect_ledger,
+                )
+            except ToolActionValidationError as exc:
+                record = StepExecutionRecord(
+                    step_index=step_ctx.step_index,
+                    outcome_applied=False,
+                    policy_pre=policy_pre,
+                    error_code=AgentRunErrorCode.VALIDATION_FAILED,
+                    trace_event_count=trace_events,
+                    step_record=HarnessKernel._build_step_record(
+                        step_ctx=step_ctx,
+                        outcome=outcome,
+                        state_version=state_version,
+                        policy_pre=policy_pre,
+                        error_code=AgentRunErrorCode.VALIDATION_FAILED,
+                        terminal_reason=TerminalReason.VALIDATION_FAILED,
+                        next_action=StepNextAction.FAIL,
+                        diagnostics={
+                            "tool_validation": exc.code,
+                            "tool_id": exc.tool_id,
+                            "message": exc.message,
+                        },
+                        finished_at=_utc_now(),
+                    ),
+                )
+                await HarnessKernel._append_trace(kernel_ctx, record)
+                return record
+            if (
+                kernel_ctx.side_effect_mode == SideEffectMode.DECLARATIVE
+                and normalized_actions
+            ):
+                trace_events += await HarnessKernel._emit(
+                    kernel_ctx,
+                    RuntimeEventType.TOOL_REQUESTED,
+                    {
+                        "mode": "declarative",
+                        "action_count": len(normalized_actions),
+                        "replay_skipped": sum(
+                            1 for action in normalized_actions if action.get("replay_skipped")
+                        ),
+                    },
+                )
 
         policy_post = HarnessKernel._policy_post_check(outcome, step_ctx, kernel_ctx)
         trace_events += await HarnessKernel._emit_policy(kernel_ctx, policy_post, phase="post")

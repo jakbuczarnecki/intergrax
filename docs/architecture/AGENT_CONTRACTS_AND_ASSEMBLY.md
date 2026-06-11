@@ -2718,7 +2718,7 @@ Override: long steps may set checkpoint_every_step=false only for read-only step
 | **Deterministic replay** | Lab only; mock gateways; same inputs → compare StepOutcome |
 | **Production replay** | **Forbidden** for mutating tools without explicit `dry_run` + new run_id |
 
-**Plan:** ACP-PROD-1 — `intergrax/agents/persistence/checkpoint_store.py`, integration with `ReliabilityProfile`.
+**Plan:** ACP-PROD-1 — `intergrax/agents/persistence/checkpoint_store.py` (**Done**); `ReliabilityProfile` host wiring remains follow-up.
 
 ---
 
@@ -2774,7 +2774,7 @@ SideEffectRetryPolicy:
     non_retriable: POLICY_DENIED, VALIDATION_FAILED
 ```
 
-Retries MUST reuse same `idempotency_key`. **Plan:** ACP-PROD-2.
+Retries MUST reuse same `idempotency_key`. **Plan:** ACP-PROD-2 (**Done** — `SideEffectLedger`).
 
 ---
 
@@ -2820,7 +2820,7 @@ CompensationRequest:
     idempotency_key: str                # distinct key derived from original
 ```
 
-Compensation runs through same gateways; recorded in trace. **Plan:** ACP-PROD-3 — align with [`TOOLS.md`](TOOLS.md) tool metadata register.
+Compensation runs through same gateways; recorded in trace. **Plan:** ACP-PROD-3 (**Done** — `ToolExecutionProfile` + kernel gate); compensation enqueue follow-up.
 
 ---
 

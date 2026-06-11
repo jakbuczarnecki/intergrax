@@ -212,9 +212,9 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-ORG-4 | ACP-ORG | **`PolicyVerdictRecord` + compliance_summary** on trace/result | **Done** | `intergrax/contracts/agent_run_trace.py` | Step trace assertion |
 | ACP-ORG-5 | ACP-ORG | **Reference org fixture + golden compliance eval** | **Done** | `lab_org_virtual_workforce_defaults` + gate tests | Zero POLICY_DENIED on happy path |
 | ACP-DOC.9 | ACP0 | **Architecture §40** — production reliability, safety, persistence, release gates | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §40 canon **audit accepted** — implement ACP-PROD next |
-| ACP-PROD-1 | ACP-PROD | **Checkpoint / resume / replay** — step store + crash recovery | Planned | `intergrax/agents/persistence/checkpoint_store.py` | Resume smoke; no double mutating tool |
-| ACP-PROD-2 | ACP-PROD | **Side-effect idempotency ledger** — dedupe + SideEffectRecord | Planned | `intergrax/agents/persistence/side_effect_ledger.py` | Idempotency key test |
-| ACP-PROD-3 | ACP-PROD | **ToolExecutionProfile + compensation** | Planned | `intergrax/tools/` metadata + kernel | Mutating tool gate |
+| ACP-PROD-1 | ACP-PROD | **Checkpoint / resume / replay** — step store + crash recovery | **Done** | `intergrax/agents/persistence/checkpoint_store.py` | Resume smoke; no double mutating tool |
+| ACP-PROD-2 | ACP-PROD | **Side-effect idempotency ledger** — dedupe + SideEffectRecord | **Done** | `intergrax/agents/persistence/side_effect_ledger.py` | Idempotency key test |
+| ACP-PROD-3 | ACP-PROD | **ToolExecutionProfile + compensation** | **Done** | `intergrax/tools/tool_execution_profile.py` + kernel | Mutating tool gate |
 | ACP-PROD-4 | ACP-PROD | **ReliabilityProfile in HarnessKernel** — retry/CB/timeout | Planned | `intergrax/runtime/kernel/step_kernel.py` | REL profile wired |
 | ACP-PROD-5 | ACP-PROD | **SharedContextView CAS + conflict policy** | Planned | `intergrax/contracts/shared_context.py` | Parallel graph conflict test |
 | ACP-PROD-6 | ACP-PROD | **`ArtifactRef` contract** on result/step | Planned | `intergrax/contracts/artifact_ref.py` | Typed artifacts in test |
@@ -489,9 +489,9 @@ HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
 
 | Step | ID | Delivers §40 capability | Acceptance | Cross-domain |
 |------|-----|-------------------------|------------|--------------|
-| 7.1 | ACP-PROD-1 | Checkpoint / resume / replay | Acceptance 05 + resume smoke | RELIABILITY |
-| 7.2 | ACP-PROD-2 | Idempotency ledger | No double mutating tool on replay | TOOLS |
-| 7.3 | ACP-PROD-3 | `ToolExecutionProfile` + compensation | Mutating tool gate | TOOLS |
+| 7.1 | ACP-PROD-1 | Checkpoint / resume / replay | **Done** — store + session resume wiring | RELIABILITY |
+| 7.2 | ACP-PROD-2 | Idempotency ledger | **Done** — ledger dedupe + replay skip | TOOLS |
+| 7.3 | ACP-PROD-3 | `ToolExecutionProfile` + compensation | **Done** — mutating tool validation gate | TOOLS |
 | 7.4 | ACP-PROD-4 | ReliabilityProfile in kernel | Retry/CB wired | RELIABILITY |
 | 7.5 | ACP-PROD-5 | SharedContext CAS | Parallel graph conflict | ORCHESTRATION |
 | 7.6 | ACP-PROD-6 | `ArtifactRef` | Typed artifacts on result | OBSERVABILITY |
