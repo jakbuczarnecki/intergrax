@@ -9,10 +9,19 @@ from collections.abc import Callable
 from types import FunctionType
 from typing import ClassVar, List
 
+from intergrax.agents.authoring.decisions import complete
+from intergrax.agents.authoring.state_access import load_session_state, session_state_delta
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.agents.uaep_protocol import UAEPAgentWithDecide
-from intergrax.agents.authoring.decisions import complete
+from intergrax.contracts.acp_state import AcpSessionState
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.contracts.agent_contract_section12 import (
+    DEFAULT_FAILURE_MODES,
+    DEFAULT_INPUT_SCHEMA,
+    DEFAULT_OUTPUT_SCHEMA,
+    DEFAULT_VALIDATION_RULES,
+)
+from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -52,6 +61,7 @@ class IntergraxAgent(HarnessReferenceAgent, UAEPAgentWithDecide, ABC):
     risk_level: ClassVar[AgentRiskLevel] = AgentRiskLevel.LOW
     skill_ids: ClassVar[tuple[str, ...]] = ()
     extra_tool_ids: ClassVar[tuple[str, ...]] = ()
+    session_state_type: ClassVar[type[AcpSessionState]] = AcpSessionState
 
     def get_contract(self) -> AgentContract:
         return AgentContract(
@@ -62,8 +72,30 @@ class IntergraxAgent(HarnessReferenceAgent, UAEPAgentWithDecide, ABC):
             capabilities=list(self.capabilities),
             skills=list(self.skill_ids),
             extra_tools=list(self.extra_tool_ids),
+            input_schema=dict(DEFAULT_INPUT_SCHEMA),
+            output_schema=dict(DEFAULT_OUTPUT_SCHEMA),
+            validation_rules=list(DEFAULT_VALIDATION_RULES),
+            failure_modes=list(DEFAULT_FAILURE_MODES),
             risk_level=self.risk_level,
             max_steps=self.max_steps,
+        )
+
+    def load_session_state(self, step_ctx: AgentStepContext) -> AcpSessionState:
+        return load_session_state(step_ctx, state_type=self.session_state_type)
+
+    def session_state_delta(
+        self,
+        model: AcpSessionState,
+        *,
+        include: set[str] | None = None,
+        exclude: set[str] | None = None,
+        exclude_none: bool = True,
+    ) -> dict[str, object]:
+        return session_state_delta(
+            model,
+            include=include,
+            exclude=exclude,
+            exclude_none=exclude_none,
         )
 
     def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:

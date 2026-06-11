@@ -60,6 +60,34 @@ def validate_contract_metadata(contract: AgentContract) -> AgentAssemblyValidati
             "skills or extra_tools are declared; resolution happens in AgentRegistry.register"
         )
 
+    if not isinstance(contract.input_schema, dict) or not contract.input_schema:
+        errors.append("AgentContract.input_schema must be a non-empty object schema")
+
+    if not isinstance(contract.output_schema, dict) or not contract.output_schema:
+        errors.append("AgentContract.output_schema must be a non-empty object schema")
+
+    validation_rules = [item.strip() for item in contract.validation_rules if item.strip()]
+    if not validation_rules:
+        errors.append("AgentContract.validation_rules must declare at least one rule id")
+
+    failure_modes = [item.strip() for item in contract.failure_modes if item.strip()]
+    if not failure_modes:
+        errors.append("AgentContract.failure_modes must declare at least one failure mode id")
+
+    has_budget = any(
+        value is not None
+        for value in (
+            contract.max_steps,
+            contract.max_duration_seconds,
+            contract.max_cost,
+        )
+    )
+    if not has_budget:
+        errors.append(
+            "AgentContract must declare at least one budget bound "
+            "(max_steps, max_duration_seconds, or max_cost)"
+        )
+
     return AgentAssemblyValidationResult(valid=not errors, errors=tuple(errors))
 
 

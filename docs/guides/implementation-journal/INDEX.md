@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-10-009 | 2026-06-10 | tier-0 AGENT_CONTRACTS | ACP-DX-1, ACP-CON-1, ACP-CON-4, ACP-0, ACP-DX-6, ACP-CON-2 | [ACP Wave 0 typed contracts](entries/2026-06-10-acp-wave-0-typed-contracts.md) | pending |
 | IJ-2026-06-10-008 | 2026-06-10 | tier-0 AGENT_CONTRACTS | ACP-DOC.5, ACP-ADR.3 | [Agent architecture §31–§36 and ADR-AGENT-003](entries/2026-06-10-acp-doc-5-agent-architecture.md) | pending |
 | IJ-2026-06-10-007 | 2026-06-10 | tier-2/3 LKW, vendor_discovery | AUDIT-IDEAL-28.4, K.1, K.2 | [LKW hybrid daemon and business agent certification](entries/2026-06-10-tier3-lkw-k-certification.md) | `d07e4d62` |
 | IJ-2026-06-10-006 | 2026-06-10 | tier-0 EXP/DX | FAUDIT-32 | [Per-domain Harness audit prompts](entries/2026-06-10-exp-domain-audit-prompts.md) | `69d7adce` |

@@ -8,6 +8,12 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from intergrax.contracts.agent_contract_section12 import (
+    DEFAULT_FAILURE_MODES,
+    DEFAULT_INPUT_SCHEMA,
+    DEFAULT_OUTPUT_SCHEMA,
+    DEFAULT_VALIDATION_RULES,
+)
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.skills.core.contracts import SkillManifest
 from intergrax.tools.core.contracts import ToolContract
@@ -39,8 +45,8 @@ class AgentContract(BaseModel):
     description: str
     version: str = "1.0.0"
     capabilities: List[str] = Field(default_factory=list)
-    input_schema: Optional[Dict[str, Any]] = None
-    output_schema: Optional[Dict[str, Any]] = None
+    input_schema: Dict[str, Any] = Field(default_factory=lambda: dict(DEFAULT_INPUT_SCHEMA))
+    output_schema: Dict[str, Any] = Field(default_factory=lambda: dict(DEFAULT_OUTPUT_SCHEMA))
     skills: List[SkillManifest] = Field(
         default_factory=list,
         description="Composable skill packs from the skill catalog (§7.1.8).",
@@ -76,5 +82,9 @@ class AgentContract(BaseModel):
         default=None,
         description="Optional modality profile id for media/tool plane filtering (IDEAL-18.2).",
     )
-    validation_rules: List[str] = Field(default_factory=list)
-    failure_modes: List[str] = Field(default_factory=list)
+    validation_rules: List[str] = Field(
+        default_factory=lambda: list(DEFAULT_VALIDATION_RULES),
+    )
+    failure_modes: List[str] = Field(
+        default_factory=lambda: list(DEFAULT_FAILURE_MODES),
+    )

@@ -51,6 +51,7 @@ def _valid_contract(**updates: object) -> AgentContract:
         capabilities=["demo.cap"],
         skills=[_SKILL],
         extra_tools=[_TOOL],
+        max_steps=10,
     )
     return base.model_copy(update=updates)
 
@@ -61,6 +62,26 @@ def test_validate_contract_metadata_requires_capability_ids() -> None:
     result = validate_contract_metadata(_valid_contract(capabilities=[]))
     assert not result.valid
     assert any("capabilities" in error for error in result.errors)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_validate_contract_metadata_requires_section12_fields() -> None:
+    result = validate_contract_metadata(
+        _valid_contract(
+            input_schema={},
+            validation_rules=[],
+            failure_modes=[],
+            max_steps=None,
+            max_duration_seconds=None,
+            max_cost=None,
+        ),
+    )
+    assert not result.valid
+    assert any("input_schema" in error for error in result.errors)
+    assert any("validation_rules" in error for error in result.errors)
+    assert any("failure_modes" in error for error in result.errors)
+    assert any("budget bound" in error for error in result.errors)
 
 
 @pytest.mark.unit
