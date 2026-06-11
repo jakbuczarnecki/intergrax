@@ -35,6 +35,16 @@ def _migrated_agent_ids() -> frozenset[str]:
 def main() -> int:
     migrated = _migrated_agent_ids()
     violations: list[str] = []
+
+    if (REPO_ROOT / "intergrax" / "agents" / "uaep_pipeline.py").is_file():
+        violations.append(
+            "intergrax/agents/uaep_pipeline.py must be retired — use authoring/uaep_pipeline_bridge.py (ACP-CLOSE-LEG-3)"
+        )
+    for agent_py in sorted((REPO_ROOT / "agents").rglob("*.py")):
+        if "RuntimeEngine" not in agent_py.read_text(encoding="utf-8"):
+            continue
+        rel = agent_py.relative_to(REPO_ROOT).as_posix()
+        violations.append(f"{rel}: RuntimeEngine must not appear in Tier-2 agents/ (ACP-CLOSE-LEG-3)")
     module_paths: list[Path] = []
     if INVENTORY_PATH.is_file():
         payload = json.loads(INVENTORY_PATH.read_text(encoding="utf-8"))

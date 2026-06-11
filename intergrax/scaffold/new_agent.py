@@ -88,7 +88,7 @@ def _agent_py(slug: str, class_name: str, primary_capability: str) -> str:
         from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
         from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
         from intergrax.runtime.nexus.session.session_manager import SessionManager
-        from intergrax.agents.uaep_pipeline import pipeline_agent_steps, pipeline_step_complete
+        from intergrax.agents.authoring.uaep_pipeline_bridge import pipeline_agent_steps, pipeline_step_complete
 
 
         class {class_name}(Agent):
@@ -172,7 +172,7 @@ def _reference_agent_py(slug: str, class_name: str, primary_capability: str) -> 
         from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
         from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
         from intergrax.runtime.task.task import TaskContext
-        from intergrax.agents.uaep_pipeline import pipeline_agent_steps, pipeline_step_complete
+        from intergrax.agents.authoring.uaep_pipeline_bridge import pipeline_agent_steps, pipeline_step_complete
 
 
         class {class_name}(HarnessReferenceAgent):
@@ -486,7 +486,7 @@ def _steps_pipeline_py(slug: str, primary_capability: str) -> str:
         from dataclasses import dataclass
         from typing import Optional, Sequence
 
-        from intergrax.agents.uaep_pipeline import run_pipeline_step
+        from intergrax.agents.authoring.uaep_pipeline_bridge import run_pipeline_step
         from intergrax.contracts.agent_step import AgentStep, StepOutput
         from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
         from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response

@@ -1,7 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
 
-"""Shared UAEP helpers for pipeline-backed Tier-2 agents (§42.32)."""
+"""INTERNAL ONLY — UAEP RuntimeEngine bridge for legacy pipeline-backed agents (ACP-CLOSE-LEG-3).
+
+Tier-2 authors MUST NOT import this module. Use ``IntergraxAgent.on_next_step`` (ACP) or
+domain ``run_domain_step`` without reaching for ``RuntimeEngine`` directly.
+"""
 
 from __future__ import annotations
 
@@ -35,7 +38,7 @@ async def run_pipeline_step(
     step: AgentStep,
     ctx: RuntimeExecutionContext,
 ) -> StepOutput:
-    """Run the agent pipeline via ``RuntimeEngine`` inside a UAEP step boundary."""
+    """Run a Nexus pipeline inside a UAEP step boundary (framework internal)."""
     request = ctx.request
     runtime_context = ctx.domain_context
     if request is None or runtime_context is None:

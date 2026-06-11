@@ -277,7 +277,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-CLOSE-DOC-4 | DOC | Regenerate domain audit prompt | **Done** | audit | `guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` | `generate_domain_audit_prompts.py` |
 | ACP-CLOSE-LEG-1 | LEG | **Remove** `RuntimeEngine` fallback from `AgentEngine` | **Done** | §13.5 · §38 | `agent_engine.py` | `ValueError` on non-UAEP/non-ACP agents; DEBT-ACP-06 **Closed** |
 | ACP-CLOSE-LEG-2 | LEG | **Remove** author-visible UAEP (`decide_after_step` on `IntergraxAgent`) | **Done** | §13.3–13.4 | `uaep_linear_bridge.py`, `uaep.py` | `linear_agent_decide_after_step`; DEBT-ACP-04 **Closed** for linear agents |
-| ACP-CLOSE-LEG-3 | LEG | Retire `uaep_pipeline.py` → `RuntimeEngine` | Planned | §13.5 | `uaep_pipeline.py` | grep `RuntimeEngine` in `agents/` = framework bridge only |
+| ACP-CLOSE-LEG-3 | LEG | Retire `uaep_pipeline.py` → `RuntimeEngine` | **Done** | §13.5 | `uaep_pipeline_bridge.py` | Public module removed; `RuntimeEngine` internal-only in bridge |
 | ACP-CLOSE-LEG-4 | LEG | §45 checklist — UAEP internal-only wording | Planned | §45 | `AGENT_CREATION_GUIDE.md` | No author UAEP-first path |
 | ACP-CLOSE-PROD-1 | PROD | `AgentCheckpointStore` on **all mutating product hosts** | **Done** | §40.1 | `acp_checkpoint_host_wiring.py`, `harness_host_runtime.py` | Auto-resolve store on harness hosts; exposed on `HarnessHostRuntime` |
 | ACP-CLOSE-PROD-2 | PROD | `acp_checkpoint_task_enricher` on product hosts (lab pattern) | **Done** | §40.1.4 | `task_control_wiring.py`, `applications/*/host/factory.py` | `build_reliability_task_enricher(..., agent_checkpoint_store=)` |
@@ -648,7 +648,7 @@ ACP-CLOSE:  DOC-2..4 → LEG-1 → LEG-2 → LEG-3 → PROD-1 → PROD-2 → PRO
 | 3 | ACP-CLOSE-DOC-4 | P1 | audit | **Done** |
 | 4 | ACP-CLOSE-LEG-1 | **P0** | §13.5 | **Done** |
 | 5 | ACP-CLOSE-LEG-2 | **P0** | §13.4 | **Done** |
-| 6 | ACP-CLOSE-LEG-3 | P1 | §13.5 | Planned |
+| 6 | ACP-CLOSE-LEG-3 | P1 | §13.5 | **Done** |
 | 7 | ACP-CLOSE-LEG-4 | P2 | §45 | Planned |
 | 8 | ACP-CLOSE-PROD-1 | **P0** | §40.1 | **Done** |
 | 9 | ACP-CLOSE-PROD-2 | **P0** | §40.1.4 | **Done** |

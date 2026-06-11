@@ -1013,7 +1013,7 @@ Developer code path:
 | `CognitiveAgent` base | **Done** ACP-1 | `intergrax/agents/authoring/patterns/base.py` |
 | Pattern classes | **Done** ACP-2–6 | `intergrax/agents/authoring/patterns/*.py` |
 | Reference pattern probes | **Done** ACP-9 | `intergrax/agents/authoring/patterns/reference.py` |
-| Legacy `RuntimeEngine` author fallback | **Removed** from `AgentEngine` (LEG-1 Done) | `uaep_pipeline.py` still uses internal path (LEG-3) |
+| Legacy `RuntimeEngine` author fallback | **Removed** from `AgentEngine` (LEG-1 Done) | `uaep_pipeline_bridge.py` internal-only (LEG-3 Done) |
 | `AgentRunRequest` / `Result` | **Done** ACP-DX-1 | `intergrax/contracts/agent_run.py` |
 | `merge_environment` | **Done** ACP-DX-2 | `intergrax/agents/run_environment.py` |
 | Scaffold `--pattern` | **Done** ACP-8 | `intergrax/scaffold/new_agent.py` |
@@ -1038,7 +1038,7 @@ Developer code path:
 |----|-----|----------|----------|--------|
 | GAP-ACP-01 | No `CognitiveAgent` base | P0 | ACP-1 | **Closed** |
 | GAP-ACP-02 | No pattern classes | P0 | ACP-2–6 | **Closed** |
-| GAP-ACP-03 | Dual UAEP / RuntimeEngine path | P0 | ACP-CLOSE-LEG-1..3 | **Partial** — AgentEngine fallback removed; `uaep_pipeline` open |
+| GAP-ACP-03 | Dual UAEP / RuntimeEngine path | P0 | ACP-CLOSE-LEG-1..3 | **Closed** |
 | GAP-ACP-04 | ReAct at tool layer only | P1 | ACP-CLOSE-PAT-1 · TOOL-ENG-6 | **Open** |
 | GAP-ACP-05 | `build_context` duplicates profile | P1 | ACP-CFG | **Closed** |
 | GAP-ACP-06 | No scaffold `--pattern` | P1 | ACP-8 | **Closed** |

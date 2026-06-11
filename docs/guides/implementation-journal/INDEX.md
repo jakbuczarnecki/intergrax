@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-11-007 | 2026-06-11 | tier-0/2 AGENT_CONTRACTS | ACP-CLOSE-LEG-3 | [ACP-CLOSE LEG-3 uaep pipeline bridge](entries/2026-06-11-acp-close-leg-3-pipeline-bridge.md) | pending |
 | IJ-2026-06-11-006 | 2026-06-11 | tier-0 AGENT_CONTRACTS | ACP-CLOSE-PROD-7, ACP-CLOSE-PROD-8 | [ACP-CLOSE PROD-7/8 readiness gates](entries/2026-06-11-acp-close-prod-7-8-readiness-gates.md) | pending |
 | IJ-2026-06-11-005 | 2026-06-11 | tier-0/3 AGENT_CONTRACTS | ACP-CLOSE-PROD-3, ACP-CLOSE-PROD-4 | [ACP-CLOSE PROD-3/4 catalog invoker E2E](entries/2026-06-11-acp-close-prod-3-4-catalog-invoker-e2e.md) | pending |
 | IJ-2026-06-11-004 | 2026-06-11 | tier-3 AGENT_CONTRACTS | ACP-CLOSE-PROD-1, ACP-CLOSE-PROD-2 | [ACP-CLOSE PROD-1/2 checkpoint host wiring](entries/2026-06-11-acp-close-prod-1-2-checkpoint-hosts.md) | pending |
