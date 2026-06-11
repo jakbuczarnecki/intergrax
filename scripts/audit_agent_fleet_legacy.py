@@ -34,7 +34,22 @@ MIGRATION_TIERS: dict[str, str] = {
     "vendor_discovery": "T4",
 }
 
-MIGRATED_AGENTS: frozenset[str] = frozenset({"echo", "signoff_probe", "research"})
+MIGRATED_AGENTS: frozenset[str] = frozenset(
+    {
+        "echo",
+        "signoff_probe",
+        "research",
+        "summary",
+        "legal",
+        "local_search",
+        "local_indexer",
+        "local_synthesizer",
+        "dispute_intake",
+        "dispute_analyst",
+        "dispute_strategist",
+        "dispute_scenario",
+    }
+)
 
 LEGACY_MARKERS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\bRuntimeEngine\b"), "runtime_engine"),
@@ -62,17 +77,17 @@ class AgentInventoryRow:
     typed_acp: bool
 
 
-def _agent_packages() -> list[Path]:
-    packages: list[Path] = []
-    for path in sorted(AGENTS_ROOT.iterdir()):
-        if not path.is_dir():
+def _agent_modules() -> list[tuple[str, Path]]:
+    modules: list[tuple[str, Path]] = []
+    for package in sorted(AGENTS_ROOT.iterdir()):
+        if not package.is_dir():
             continue
-        if path.name.startswith("_") or path.name == "lab":
+        if package.name.startswith("_") or package.name == "lab":
             continue
-        agent_py = path / f"{path.name}_agent.py"
-        if agent_py.exists():
-            packages.append(path)
-    return packages
+        for agent_py in sorted(package.glob("*_agent.py")):
+            agent_id = agent_py.stem.removesuffix("_agent")
+            modules.append((agent_id, agent_py))
+    return modules
 
 
 def _scan_file(path: Path, markers: tuple[tuple[re.Pattern[str], str], ...]) -> list[str]:
@@ -86,9 +101,7 @@ def _scan_file(path: Path, markers: tuple[tuple[re.Pattern[str], str], ...]) -> 
 
 def build_inventory() -> dict[str, object]:
     rows: list[AgentInventoryRow] = []
-    for package in _agent_packages():
-        agent_id = package.name
-        agent_py = package / f"{agent_id}_agent.py"
+    for agent_id, agent_py in _agent_modules():
         legacy_flags = _scan_file(agent_py, LEGACY_MARKERS)
         acp_flags = _scan_file(agent_py, ACP_MARKERS)
         uses_runtime = "runtime_engine" in legacy_flags
@@ -104,7 +117,7 @@ def build_inventory() -> dict[str, object]:
             AgentInventoryRow(
                 agent_id=agent_id,
                 tier=MIGRATION_TIERS.get(agent_id, "T3"),
-                agent_module=f"agents.{agent_id}.{agent_id}_agent",
+                agent_module=f"agents.{agent_py.parent.name}.{agent_py.stem}",
                 migration_status=migration_status,
                 legacy_flags=legacy_flags,
                 acp_flags=acp_flags,

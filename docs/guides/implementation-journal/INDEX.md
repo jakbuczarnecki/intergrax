@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-10-016 | 2026-06-10 | tier-0/2 AGENT_CONTRACTS | ACP-MIG-4 | [ACP Wave 8 MIG-4 product batch migration](entries/2026-06-10-acp-wave-8-mig-4-product-batch.md) | pending |
 | IJ-2026-06-10-015 | 2026-06-10 | tier-0/2 AGENT_CONTRACTS | ACP-MIG-1, ACP-MIG-2, ACP-MIG-3, ACP-MIG-6 | [ACP Wave 8 fleet migration pilot](entries/2026-06-10-acp-wave-8-fleet-migration-pilot.md) | pending |
 | IJ-2026-06-10-014 | 2026-06-10 | tier-0/2 AGENT_CONTRACTS | ACP-0b, ACP-1..6, ACP-8, ACP-9, ACP-11, ACP-13, ACP-LEG-4 | [ACP Wave 5 cognitive patterns and scaffold](entries/2026-06-10-acp-wave-5-cognitive-patterns.md) | pending |
 | IJ-2026-06-10-013 | 2026-06-10 | tier-0/1 AGENT_CONTRACTS | ACP-STEP-3, ACP-LEG-1, ACP-LEG-3 | [ACP Wave 4 UAEP bridge and deprecation](entries/2026-06-10-acp-wave-4-uaep-bridge.md) | pending |

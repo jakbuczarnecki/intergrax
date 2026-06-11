@@ -35,8 +35,20 @@ def _migrated_agent_ids() -> frozenset[str]:
 def main() -> int:
     migrated = _migrated_agent_ids()
     violations: list[str] = []
-    for agent_id in sorted(migrated):
-        agent_py = REPO_ROOT / "agents" / agent_id / f"{agent_id}_agent.py"
+    module_paths: list[Path] = []
+    if INVENTORY_PATH.is_file():
+        payload = json.loads(INVENTORY_PATH.read_text(encoding="utf-8"))
+        for row in payload.get("agents", []):
+            if row.get("migration_status") == "migrated":
+                rel = row.get("agent_module", "").replace(".", "/") + ".py"
+                if rel.endswith(".py"):
+                    module_paths.append(REPO_ROOT / rel)
+    if not module_paths:
+        for agent_id in sorted(migrated):
+            module_paths.append(REPO_ROOT / "agents" / agent_id / f"{agent_id}_agent.py")
+        module_paths.append(REPO_ROOT / "agents" / "research" / "summary_agent.py")
+
+    for agent_py in sorted(set(module_paths)):
         if not agent_py.is_file():
             violations.append(f"missing migrated agent module: {agent_py.relative_to(REPO_ROOT)}")
             continue
@@ -54,7 +66,7 @@ def main() -> int:
         print("\n".join(violations))
         return 1
 
-    print(f"Fleet migration gate: OK ({len(migrated)} migrated agents)")
+    print(f"Fleet migration gate: OK ({len(set(module_paths))} migrated agent modules)")
     return 0
 
 

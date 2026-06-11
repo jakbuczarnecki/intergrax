@@ -245,7 +245,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-MIG-1 | ACP-MIG | **Fleet inventory auditor** — legacy surface per agent (`uaep`/`runtime_engine`/`dict state`) | **Done** | `scripts/audit_agent_fleet_legacy.py` | JSON report for all `agents/*` packages |
 | ACP-MIG-2 | ACP-MIG | **Migration tiers + batch order** — harness → staging read-only → staging mutating → prod-eligible | **Done** | plan §6.1aw Wave 8 · `agents/README.md` | Documented tiers match roster table |
 | ACP-MIG-3 | ACP-MIG | **Pilot batch (3 agents)** — echo, signoff_probe, research → typed `on_next_step` | **Done** | `agents/echo`, `signoff_probe`, `research` | Direct `run()` + agent_os green per agent |
-| ACP-MIG-4 | ACP-MIG | **Product batch** — legal, summary, LKW trio, DSW quartet | Planned | product `agents/*` | Host wiring tests unchanged; scoreboard Runtime ≥80% each |
+| ACP-MIG-4 | ACP-MIG | **Product batch** — legal, summary, LKW trio, DSW quartet | **Done** | product `agents/*` | Host wiring tests unchanged; scoreboard Runtime ≥80% each |
 | ACP-MIG-5 | ACP-MIG | **Remaining roster** — org_worker, assistant, dispute leftovers, mocks policy | Planned | `agents/*` | Zero UAEP-only new code; bridge allowlist shrinking |
 | ACP-MIG-6 | ACP-MIG | **Fleet migration CI gate** — `check_agent_fleet_migration.py` blocks regression | **Done** | `scripts/` | CI fails if migrated agent reintroduces legacy surface |
 | ACP-MIG-7 | ACP-MIG | **Per-host binding verification** after each batch | Planned | `applications/*/manifest.py` tests | AgentBinding slices + capability routing per host |
@@ -454,12 +454,12 @@ HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
 | echo | T0/T3 | lab, poc | **Done** | MIG-3 | — | — |
 | signoff_probe | T0 | lab | **Done** | MIG-3 | — | — |
 | research | T1 | research, lab | **Done** | MIG-3 | — | — |
-| summary | T1 | research | Planned | MIG-4 | — | — |
-| legal | T2 | legal, lab | Planned | MIG-4 | — | — |
-| local_indexer | T2 | LKW | Planned | MIG-4 | — | — |
-| local_search | T1 | LKW | Planned | MIG-4 | — | — |
-| local_synthesizer | T2 | LKW | Planned | MIG-4 | — | — |
-| dispute_* (×4) | T2 | DSW | Planned | MIG-4 | — | — |
+| summary | T1 | research | **Done** | MIG-4 | — | — |
+| legal | T2 | legal, lab | **Done** | MIG-4 | — | — |
+| local_indexer | T2 | LKW | **Done** | MIG-4 | — | — |
+| local_search | T1 | LKW | **Done** | MIG-4 | — | — |
+| local_synthesizer | T2 | LKW | **Done** | MIG-4 | — | — |
+| dispute_* (×4) | T2 | DSW | **Done** | MIG-4 | — | — |
 | organization_worker | T4 | lab | Planned | MIG-5 | — | — |
 | intergrax_assistant | T4 | assistant | Planned | MIG-5 | — | — |
 | problem_radar | T4 | K.1 path | Planned | MIG-5 | — | — |
