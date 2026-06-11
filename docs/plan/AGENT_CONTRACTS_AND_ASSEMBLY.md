@@ -33,22 +33,24 @@
 
 ## Phase ACP — Agent Cognitive Patterns (ACP)
 
-**Status:** **In progress** (2026-06-10) — architecture **decision-complete** §13–§40; **Wave 0–2 Done** (typed contracts + step loop + run facade)  
+**Status:** **Done** (2026-06-11) — Waves **0–8** delivered; master register **80/80** ACP-* rows **Done**; fleet migration **100%** Runtime dimension  
 **Architecture:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 (incl. **§32.0** readability & typed-only contracts)  
 **ADR:** [ADR-AGENT-001](../adr/ADR-AGENT-001.md) · [ADR-AGENT-002](../adr/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/ADR-AGENT-003.md)  
 **Author guide:** [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix AC (sync with §32.0)  
-**Audit:** [`guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
-**Priority ladder:** **Band 2aw** · queue **§6.1av** · detailed waves **§6.1aw**
+**Audit:** [`guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md) · domain audit **2026-06-11**  
+**Priority ladder:** **Band 2aw** — **closed** · historical waves **§6.1aw** · **active follow-up:** [Phase ACP-CLOSE](#phase-acp-close--architecture-compliance-closeout)
 
-**Strategic outcome:** Tier-2 authors use **`agent.run(AgentRunRequest)`** + typed **`on_next_step` → `StepOutcome`**; environment merges per-agent memory/tools/RAG/LLM from Tier-3 profile; Nexus remains `Task` entry for multi-agent prod; **legacy UAEP / RuntimeEngine author paths removed** after bridge period.
+**Strategic outcome (delivered):** Tier-2 authors use **`agent.run(AgentRunRequest)`** + typed **`on_next_step` → `StepOutcome`**; environment merges per-agent memory/tools/RAG/LLM from Tier-3 profile; Nexus remains `Task` entry for multi-agent prod.
+
+**Remaining (ACP-CLOSE):** **legacy UAEP / RuntimeEngine author paths removed** (DEBT-ACP-04/06); §40 **depth** on product hosts; architecture ↔ plan doc sync; cross-domain **TOOL-ENG-6** + CVL hooks.
 
 **Explicitly excluded:** Nexus refactor; moving `GraphExecutor`/`PolicyEngine` into agents; Phase K business agents; new Tier-0 execution engine.
 
-**Explicit production gate:** mutating / customer-facing agents MUST NOT ship until **ACP-PROD-1..3** Done + **ACP-PROD-9..10** green — architecture §40.12.
+**Explicit production gate:** mutating / customer-facing agents MUST NOT ship until **ACP-PROD-1..3** Done (code **Done**) + **ACP-PROD-9..10** green + **ACP-CLOSE-PROD-*** depth rows Done + §40.12 checklist — architecture §40.12.
 
-**Doc canon status (audit 2026-06):** architecture §13–§40 **accepted**. Gap register = **code debt**. Delivery = **implementation waves** below — each wave closes specific architecture sections and named legacy surfaces.
+**Doc canon status (audit 2026-06-11):** architecture §13–§40 **accepted**; implementation **core delivered**; gap register in architecture §28.3 **requires sync** (ACP-CLOSE-DOC-*).
 
-**Full-domain scope:** Phase **ACP** (§13–§40) is the **active implementation queue**, but **§12–§20 remain normative and in scope** — not background. See [§12–§20 scope mapping](#acp-scope-mapping-12-20-vs-acp-waves) before every PR.
+**Full-domain scope:** Phase **ACP** (§13–§40) **implemented** at platform level; **§12–§20** normative — maintain via gate + **AUDIT-IDEAL** residuals. See [§12–§20 scope mapping](#acp-scope-mapping-12-20-vs-acp-waves).
 
 ---
 
@@ -56,19 +58,19 @@
 
 **Purpose:** Prevent treating registry, contract, prompt, and lifecycle canon as “closed trivia” while only shipping ACP runtime. Every new agent MUST satisfy **§12 contract** *and* **§13+ runtime** after Wave 0–2.
 
-| Arch § | Topic | Baseline in code | **Active** plan rows (not archival) | Verified by |
-|--------|-------|------------------|--------------------------------------|-------------|
-| **§12** | Agent contract (capabilities, schemas, tools, risk, validation, failure modes) | Partial — AS-1 checks id/capabilities only | **ACP-CON-4** (extend §12 gate) · ACP-0b · ACP-DX-5 | `test_agent_assembly_resolver.py` + register rejection |
-| **§14** | Agent execution result | Legacy `AgentResult` paths | **ACP-DX-1** · **ACP-OBS-1** | Typed `AgentRunResult` + trace |
-| **§15** | Agent registry | **Done** (REG-*) | **ACP-CON-6** (capability routing) · maintain REG CI | `check_harness_registry_resolution.py` |
-| **§16** | Capability model | **Done** (CG-*) | **ACP-CON-6** · roster uses capability tokens | Capability routing integration test |
-| **§17** | Prompt registry | **Done** (PE-*) | `prompt_binding_id` on contract; agents use host profile | PE wiring tests |
-| **§18** | Registry architecture | **Done** (REG-*) | Snapshot at wire time — no regression | `test_registry_wiring.py` |
-| **§19** | Capability graph | **Done** (CG-*) | Graph nodes match manifest roster | `check_harness_capability_graph_wiring.py` |
-| **§20** | Lifecycle governance | **Done** (V-ALG, AS-2) | **ACP-PROD-9** release gates · production_eligible rules | `check_agents_lifecycle_metadata.py` |
-| **§13–§40** | ACP runtime (run, step loop, env, prod) | **Not started** | ACP waves 0–7 | Per-wave DoD below |
+| Arch § | Topic | Baseline in code | Plan status | Verified by |
+|--------|-------|------------------|-------------|-------------|
+| **§12** | Agent contract (capabilities, schemas, tools, risk, validation, failure modes) | **Done** — ACP-CON-4 register gate | ACP-CON-4 · ACP-0b · ACP-DX-5 **Done** | `test_agent_assembly_resolver.py` + register rejection |
+| **§14** | Agent execution result | **Done** — typed `AgentRunResult` + trace | ACP-DX-1 · ACP-OBS-1 **Done** | Typed `AgentRunResult` + trace |
+| **§15** | Agent registry | **Done** (REG-*) | ACP-CON-6 **Done** · AUDIT-IDEAL-19.1 open | `check_harness_registry_resolution.py` |
+| **§16** | Capability model | **Done** (CG-*) | ACP-CON-6 **Done** | Capability routing integration test |
+| **§17** | Prompt registry | **Done** (PE-*) | PE-* **Done** | PE wiring tests |
+| **§18** | Registry architecture | **Done** (REG-*) | REG-* **Done** | `test_registry_wiring.py` |
+| **§19** | Capability graph | **Done** (CG-*) | CG-* **Done** · AUDIT-IDEAL-20.1 open | `check_harness_capability_graph_wiring.py` |
+| **§20** | Lifecycle governance | **Done** (V-ALG, AS-2) | ACP-PROD-9 **Done** · AUDIT-IDEAL-31.1 open | `check_agents_lifecycle_metadata.py` |
+| **§13–§40** | ACP runtime (run, step loop, env, prod) | **Done** (core) · **depth partial** | ACP waves 0–8 **Done** · [ACP-CLOSE](#phase-acp-close--architecture-compliance-closeout) | Per-wave DoD + scoreboard |
 
-**Rule:** An ACP PR that adds or changes a Tier-2 agent MUST pass **both** §12 assembly validation (**ACP-CON-4**) and the wave acceptance for its runtime features.
+**Rule:** An agent PR MUST pass **§12 assembly validation** (**ACP-CON-4**) and applicable **ACP-CLOSE** rows when touching mutating prod paths or legacy surfaces.
 
 ---
 
@@ -82,7 +84,7 @@
 | P4 | **One engine, two entries** | §29 · §38 | Direct `run()` and `Task→Nexus` share `AgentRunRequest` merge + step loop — no divergent code paths |
 | P5 | **Harness executes, agent decides** | §38 | Domain planning in `on_next_step`; `HarnessKernel` owns policy/trace/budget/state — no planning in kernel |
 | P5b | **Runtime is glue only** | §38 · §32.4 | `AgentRuntime.advance_step` calls `on_next_step` then `HarnessKernel.execute_step` — **no** policy logic, trace append, or state merge in runtime |
-| P6 | **Legacy removal is deliverable** | §13.5 · ACP-LEG | Each wave lists **removed** surfaces; bridge period max until Wave 4 closeout |
+| P6 | **Legacy removal is deliverable** | §13.5 · ACP-CLOSE-LEG | DEBT register → zero; no new author-visible UAEP/RuntimeEngine after ACP-CLOSE |
 | P9 | **§12 contract is not optional** | §12 · §45 | Register-time gate: schemas, risk, validation_rules, failure_modes — **ACP-CON-4** |
 | P10 | **Fleet migration is a program** | Wave 8 · §40.15 | Tiered batches `ACP-MIG-*`; not one-off ACP-LEG-2 PR |
 | P11 | **Prod decision = scoreboard** | §40.15 · ACP-PROD-12 | Single report; thresholds binding for roster promotion |
@@ -93,30 +95,30 @@
 
 ### ACP legacy & technical debt register (must shrink to zero)
 
-**Current code reality (pre-ACP):** dual execution paths, untyped metadata state, UAEP as primary author mental model. **Target:** single typed loop; UAEP internal bridge only; then UAEP author API **removed**.
+**Audit 2026-06-11:** **15/18 Closed** in code · **3 Open** — tracked in [Phase ACP-CLOSE](#phase-acp-close--architecture-compliance-closeout).
 
-| Debt ID | Legacy surface today | Architecture replacement | Removal wave | Plan row |
-|---------|---------------------|--------------------------|--------------|----------|
-| DEBT-ACP-01 | `Agent.run()` → `AgentEngine` without `AgentRunRequest` | §29 `run(AgentRunRequest)→AgentRunResult` | Wave 2 | ACP-DX-3 |
-| DEBT-ACP-02 | `RuntimeRequest` + opaque `metadata` for run I/O | `AgentRunRequest` / `RequestIdentity` §30.9 | Wave 0 | ACP-DX-1 |
-| DEBT-ACP-03 | `ctx.metadata["acp.state.v1"]` raw dict in agents | `AcpSessionState` + `load_session_state` §32.0 | Wave 0 | ACP-0 · ACP-DX-6 |
-| DEBT-ACP-04 | `decide_after_step` + `AgentDecision` stringly control | `StepOutcome` factories + enums §32.0.4 | **Bridge only** — primary author API closed ACP-7 | ACP-DX-6 · ACP-STEP-1 · ACP-7 |
-| DEBT-ACP-05 | `get_steps` / `run_step` as **primary** author API | `on_next_step` primary; `@step` maps to loop §32.5 | **Closed** — default scaffold typed reflex; `--uaep` legacy only | ACP-STEP-3 · ACP-8 |
-| DEBT-ACP-06 | `RuntimeEngine.run` fallback in `AgentEngine` | `advance_step` + kernel only | **Deprecated Wave 4** | ACP-LEG-1 |
-| DEBT-ACP-07 | `build_context` duplicating `RuntimeConfig` per agent | Profile injection via `merge_environment` §30 | Wave 2 | ACP-DX-2 · ACP-CFG |
-| DEBT-ACP-08 | ~~No `AgentRunTrace` on result~~ | Plane B journal §31 | **Closed Wave 3** | ACP-OBS-1 |
-| DEBT-ACP-09 | ~~Task events only — no `ApplicationRunSummary`~~ | Plane A orchestration §31 | **Closed Wave 3** | ACP-OBS-2 |
-| DEBT-ACP-10 | ~~Single LLM model per run~~ | `StepLLMRouter` per step §33 | **Closed Wave 3** | ACP-LLM-1 |
-| DEBT-ACP-11 | ~~Ad-hoc graph handoff via metadata~~ | `SharedContextView` §34 | **Closed Wave 3** | ACP-STATE-1 |
-| DEBT-ACP-12 | Capability routing by class name in some paths | Registry token routing §37.6 | Wave 6 | ACP-CON-6 |
-| DEBT-ACP-13 | Free-text errors / terminal reasons | `AgentRunErrorCode` · `TerminalReason` §37.4–§37.5 | Wave 0 | ACP-CON-1 |
-| DEBT-ACP-14 | Full state replace / in-place mutation | `state_delta` merge-patch §37.2 | Wave 0 | ACP-CON-2 |
-| DEBT-ACP-15 | ~~Scaffold emits UAEP-first only~~ | Typed `on_next_step` + state subclass §32.0 | **Closed Wave 5** (`--pattern`) | ACP-8 |
-| DEBT-ACP-16 | `agents/*` roster on legacy patterns | Migrate to typed loop | Wave 4–5 | ACP-LEG-2 |
-| DEBT-ACP-17 | No prod checkpoint / idempotency | §40 persistence | Wave 7 | ACP-PROD-1..3 |
-| DEBT-ACP-18 | `ReActAgent` tool loop split from TOOL-ENG-6 | Unified budget keys §25.2 | Wave 5 | ACP-3 + TOOL-ENG-6 |
+| Debt ID | Legacy surface | Replacement | Status | Closed by / Open row |
+|---------|----------------|-------------|--------|----------------------|
+| DEBT-ACP-01 | `Agent.run()` without `AgentRunRequest` | §29 typed `run()` | **Closed** | ACP-DX-3 |
+| DEBT-ACP-02 | `RuntimeRequest` opaque metadata I/O | `AgentRunRequest` §30.9 | **Closed** | ACP-DX-1 |
+| DEBT-ACP-03 | Raw `dict` agent state | `AcpSessionState` §32.0 | **Closed** | ACP-0 · ACP-DX-6 |
+| DEBT-ACP-04 | `decide_after_step` + `AgentDecision` author API | `StepOutcome` factories §32.0.4 | **Open** — bridge | **ACP-CLOSE-LEG-2** |
+| DEBT-ACP-05 | `get_steps` / `run_step` as primary author API | `on_next_step` §32.5 | **Closed** | ACP-STEP-3 · ACP-8 |
+| DEBT-ACP-06 | `RuntimeEngine.run` fallback in `AgentEngine` | `advance_step` + kernel only | **Open** — deprecated | **ACP-CLOSE-LEG-1** |
+| DEBT-ACP-07 | `build_context` duplicating `RuntimeConfig` | `merge_environment` §30 | **Closed** | ACP-DX-2 · ACP-CFG |
+| DEBT-ACP-08 | No `AgentRunTrace` on result | Plane B §31 | **Closed** | ACP-OBS-1 |
+| DEBT-ACP-09 | No `ApplicationRunSummary` | Plane A §31 | **Closed** | ACP-OBS-2 |
+| DEBT-ACP-10 | Single LLM model per run | `StepLLMRouter` §33 | **Closed** | ACP-LLM-1 |
+| DEBT-ACP-11 | Ad-hoc graph handoff via metadata | `SharedContextView` §34 | **Closed** | ACP-STATE-1 |
+| DEBT-ACP-12 | Capability routing by class name | Registry token §37.6 | **Closed** | ACP-CON-6 |
+| DEBT-ACP-13 | Free-text errors / terminal reasons | Enums §37.4–§37.5 | **Closed** | ACP-CON-1 |
+| DEBT-ACP-14 | Full state replace / in-place mutation | `state_delta` §37.2 | **Closed** | ACP-CON-2 |
+| DEBT-ACP-15 | Scaffold UAEP-first only | Typed scaffold `--pattern` | **Closed** | ACP-8 |
+| DEBT-ACP-16 | Roster on legacy patterns | Typed loop fleet-wide | **Closed** | ACP-MIG-* · ACP-LEG-2 |
+| DEBT-ACP-17 | No prod checkpoint / idempotency (platform) | §40 persistence modules | **Closed** (platform) · **depth open** | ACP-PROD-1..3 · **ACP-CLOSE-PROD-*** |
+| DEBT-ACP-18 | ReAct loop split from TOOL-ENG-6 | Unified budget §25.2 | **Open** | **ACP-CLOSE-PAT-1** + **TOOL-ENG-6** |
 
-**Removal policy:** Wave 4 ends **author-visible** legacy. Wave 5 ends **scaffold default** legacy. Wave 7 blocks **prod mutating** agents until persistence gates pass. Do not add new DEBT items — extend bridge only via ADR.
+**Removal policy:** ACP waves **closed**. **ACP-CLOSE** removes remaining author-visible legacy (DEBT-04/06) and delivers §40 host depth. Do not add new DEBT items — extend bridge only via ADR.
 
 ---
 
@@ -166,7 +168,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | §37 | Operational contracts | ACP-CON-* | Merge, enums, routing, security CI |
 | §38 | NexusLoop vs HarnessKernel split | ACP-STEP-2 · ACP-STEP-2b | Runtime glue-only test; kernel owns policy/trace/budget/state |
 | §39 | Org policy envelope | ACP-ORG-* | UC-11 fixture |
-| §40 | Production reliability + scoreboard | ACP-PROD-* · **ACP-PROD-12** §6.1az | Report per agent; prod thresholds |
+| §40 | Production reliability + scoreboard | ACP-PROD-* **Done** · **ACP-CLOSE-PROD-*** depth | Scoreboard + §40.12 per mutating agent |
 | §45 | New agent checklist | ACP-8 · ACP-11..13 | Scaffold + conformance CI |
 | **Fleet** | Roster migration | **ACP-MIG-*** Wave 8 | Tracker 100% Runtime dimension |
 
@@ -211,7 +213,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-ORG-3 | ACP-ORG | **Kernel org enforcement** — channel/tool/playbook overlays | **Done** | `intergrax/runtime/kernel/step_kernel.py` | Block denied channel tool |
 | ACP-ORG-4 | ACP-ORG | **`PolicyVerdictRecord` + compliance_summary** on trace/result | **Done** | `intergrax/contracts/agent_run_trace.py` | Step trace assertion |
 | ACP-ORG-5 | ACP-ORG | **Reference org fixture + golden compliance eval** | **Done** | `lab_org_virtual_workforce_defaults` + gate tests | Zero POLICY_DENIED on happy path |
-| ACP-DOC.9 | ACP0 | **Architecture §40** — production reliability, safety, persistence, release gates | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §40 canon **audit accepted** — implement ACP-PROD next |
+| ACP-DOC.9 | ACP0 | **Architecture §40** — production reliability, safety, persistence, release gates | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §40 canon accepted; ACP-PROD delivered; depth = ACP-CLOSE |
 | ACP-PROD-1 | ACP-PROD | **Checkpoint / resume / replay** — step store + crash recovery | **Done** | `checkpoint_store.py`, acceptance `05c`/`05d` | Resume smoke; no double mutating tool |
 | ACP-PROD-2 | ACP-PROD | **Side-effect idempotency ledger** — dedupe + declarative execute/commit in kernel | **Done** | `side_effect_ledger.py`, `declarative_tool_executor.py`, `step_kernel.py` | Resume replay skip + commit on invoke |
 | ACP-PROD-3 | ACP-PROD | **ToolExecutionProfile + compensation enqueue** | **Done** | `tool_execution_profile.py`, `compensation_enqueue.py`, `step_kernel.py` | Policy deny after commit triggers recall |
@@ -257,25 +259,77 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 
 ---
 
-### 6.1av Harness implementation queue — Agent Cognitive Patterns (ACP)
+## Phase ACP-CLOSE — Architecture compliance closeout
 
-**Purpose:** High-level wave order (Band 2aw). **Detailed steps:** [§6.1aw](#61aw-acp-detailed-implementation-waves).
+**Status:** **Active** (2026-06-11) — post-ACP domain audit · **Band 2bb** · queue **[§6.1bb](#61bb-harness-implementation-queue--acp-close-active)**  
+**Source:** Architecture ↔ plan ↔ code audit (2026-06-11)  
+**Goal:** **DEBT-ACP register → zero**; §40 **depth** on product hosts; architecture §28.3 gap register synced; §40.12 checklist evidenced for mutating agents.
+
+**Explicitly excluded:** Nexus graph/orchestration refactor; Phase K agents; new Tier-0 engines.
+
+### ACP-CLOSE — Master register
+
+| ID | Area | Deliverable | Status | Arch § | Modules / scripts | Acceptance |
+|----|------|-------------|--------|--------|-------------------|------------|
+| ACP-CLOSE-DOC-1 | DOC | Plan Phase ACP header + scope map sync | **Done** | plan | `plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` | This update |
+| ACP-CLOSE-DOC-2 | DOC | Architecture §28.3 GAP register — Closed/Open truth table | **Done** | §28.3 | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | 32 Closed · 3 Open (03/04/07) |
+| ACP-CLOSE-DOC-3 | DOC | Architecture §36.4 · §40.13 · implementation status tables | **Done** | §36.4 · §40.13 | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | Code maps Done; §40 platform implemented |
+| ACP-CLOSE-DOC-4 | DOC | Regenerate domain audit prompt | **Done** | audit | `guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` | `generate_domain_audit_prompts.py` |
+| ACP-CLOSE-LEG-1 | LEG | **Remove** `RuntimeEngine` fallback from `AgentEngine` | Planned | §13.5 · §38 | `agent_engine.py` | No fallback path; DEBT-ACP-06 **Closed** |
+| ACP-CLOSE-LEG-2 | LEG | **Remove** author-visible UAEP (`get_steps`/`decide_after_step` on public base) | Planned | §13.3–13.4 | `base.py`, `uaep.py` | Bridge only in `uaep_step_bridge.py`; DEBT-ACP-04 **Closed** |
+| ACP-CLOSE-LEG-3 | LEG | Retire `uaep_pipeline.py` → `RuntimeEngine` | Planned | §13.5 | `uaep_pipeline.py` | grep `RuntimeEngine` in `agents/` = framework bridge only |
+| ACP-CLOSE-LEG-4 | LEG | §45 checklist — UAEP internal-only wording | Planned | §45 | `AGENT_CREATION_GUIDE.md` | No author UAEP-first path |
+| ACP-CLOSE-PROD-1 | PROD | `AgentCheckpointStore` on **all mutating product hosts** | Planned | §40.1 | `applications/*/host/factory.py`, `harness_host_runtime.py` | legal/research/DSW/assistant pass `agent_checkpoint_store` |
+| ACP-CLOSE-PROD-2 | PROD | `acp_checkpoint_task_enricher` on product hosts (lab pattern) | Planned | §40.1.4 | `acp_checkpoint_task_enricher.py` | Nexus Task resume wiring test per host |
+| ACP-CLOSE-PROD-3 | PROD | `CatalogDeclarativeToolInvoker` — real execution context (no `MagicMock` shim) | Planned | §32.8 · §40.3 | `catalog_declarative_invoker.py` | Unit + integration without mock adapters |
+| ACP-CLOSE-PROD-4 | PROD | Nexus **E2E** acceptance — catalog declarative invoker (not callable mock) | Planned | §27 · §40.12 | `test_acp_declarative_mutating_resume.py` | `NexusLoop` + `build_harness_host_runtime` path green |
+| ACP-CLOSE-PROD-5 | PROD | **Durable compensation queue** for `enqueued` requests | Planned | §40.3.3 | `compensation_enqueue.py` + worker/store | Policy deny after commit → persisted job |
+| ACP-CLOSE-PROD-6 | PROD | `ReliabilityProfile.idempotency_store` ↔ ledger replay §40.2.2 | Planned | §40.2 | `reliability_wiring.py`, kernel replay | Cross-run dedupe integration test |
+| ACP-CLOSE-PROD-7 | PROD | §40.12 checklist **green** — reference mutating agent artifact | Planned | §40.12 | scoreboard + acceptance | Documented checklist pass |
+| ACP-CLOSE-PROD-8 | PROD | Scoreboard mutating agents **100%** checkpoint + idempotency dimensions | Planned | §40.15 | `readiness/scoreboard.py` | No blockers in `agent_production_readiness.json` |
+| ACP-CLOSE-PAT-1 | PAT | ReAct ↔ **TOOL-ENG-6** unified tool loop + budget keys | Planned | §26.3 · §25.2 | `patterns/react.py`, `tool_loop_step.py` | 2-iteration integration; DEBT-ACP-18 **Closed** |
+| ACP-CLOSE-PAT-2 | PAT | `ReflectionAgent` → CVL critic hooks (gateway only) | Planned | §26.6 | `patterns/reflection.py`, host critic wiring | No critic SDK in Tier-2; `plan/CRITIC_VERIFICATION.md` |
+| ACP-CLOSE-PAT-3 | PAT | Author terminology — single canonical §29 entry | Planned | §28.3 GAP-07 | `AGENT_CREATION_GUIDE.md` | No scattered UAEP-first mental model |
+| ACP-CLOSE-ORG-1 | ORG | STRICT **configure_run widen deny** per-agent | Planned | §39.4 | kernel + merge | Scoreboard policy/security blockers cleared |
+| ACP-CLOSE-ORG-2 | ORG | UC-11 compliance golden per **product host** | Planned | §39.5 | `applications/*/manifest.py` tests | Beyond lab fixture only |
+| ACP-CLOSE-CI-1 | CI | Post-LEG grep + fleet migration gate — zero Tier-2 `RuntimeEngine` | Planned | §40.10 CI-04 | `check_agent_fleet_migration.py` | CI green after LEG rows |
+| ACP-CLOSE-CI-2 | CI | Anti-pattern ACP-AP-02 after TOOL-ENG-6 | Planned | §28.4 | tools + agent tests | Nexus does not schedule tool iterations |
+| ACP-CLOSE-CI-3 | CI | `check_agent_production_readiness.py --fail-on-blockers` in gate workflow | Planned | §40.15 | `scripts/` | CI-16 consumes scoreboard |
+
+**Cross-plan (not ACP-CLOSE IDs — deliver in owning domain):**
+
+| ID | Domain plan | Deliverable | Status |
+|----|-------------|-------------|--------|
+| AUDIT-IDEAL-19.1 | this file §AUDIT-IDEAL | Durable cross-host registry snapshot | Planned |
+| AUDIT-IDEAL-20.1 | this file §AUDIT-IDEAL | Product CI blast-radius on tool/skill changes | Planned |
+| AUDIT-IDEAL-31.1 | this file §AUDIT-IDEAL | Owner/on-call mandatory on certified agents | Planned |
+| TOOL-ENG-6 | `plan/TOOLS.md` | Tool loop step — sync with ACP-CLOSE-PAT-1 | Planned |
+
+**ACP-CLOSE DoD:** DEBT-ACP **3/3 Open → Closed**; architecture §28.3 synced; mutating scoreboard dimensions **≥100%**; §40.12 evidenced; `pytest -m gate` green.
+
+**Delivery rule:** One **ACP-CLOSE-\*** ID per PR → update this register → journal on phase completion.
+
+---
+
+### 6.1av Harness implementation queue — Agent Cognitive Patterns (ACP) — closed
+
+**Status:** **Done** (2026-06-11) · **Active queue:** [§6.1bb ACP-CLOSE](#61bb-harness-implementation-queue--acp-close-active)
+
+**Purpose:** Historical wave order (Band 2aw). **Detailed steps:** [§6.1aw](#61aw-acp-detailed-implementation-waves).
 
 | Wave | IDs | Closes architecture | Legacy removed |
 |------|-----|---------------------|----------------|
-| **0** | ACP-DX-1 · ACP-CON-1 · ACP-CON-4 · ACP-0 · ACP-DX-6 · ACP-CON-2 | **§12** gate · §29 · §37.1–§37.2 · **§32.0** types | DEBT-ACP-02/03/13/14 |
-| **1** | ACP-STEP-1 · ACP-STEP-2 · ACP-STEP-2b · ACP-CON-3 | §32 · §38 · §32.8 | DEBT-ACP-04 (partial) |
-| **2** | ACP-DX-2 · ACP-DX-3 · ACP-DX-4 · ACP-DX-5 · ACP-CFG | §29–§30 · §36 | DEBT-ACP-01/07 |
-| **3** | ACP-OBS-1 · ACP-OBS-2 · ACP-LLM-1 · ACP-STATE-1 | §31–§34 | DEBT-ACP-08..11 |
-| **4** | ACP-STEP-3 · ACP-LEG-1 · ACP-LEG-3 | §13.4 UAEP **bridge** (compat only) | DEBT-ACP-05/06 paths |
-| **5** | ACP-0b · ACP-1..13 · ACP-8 · ACP-LEG-4 | §21–§28 patterns + scaffold target | DEBT-ACP-15 |
-| **8** | **ACP-MIG-1..7** · **ACP-LEG-2** | **Fleet migration program** — full roster → typed runtime | DEBT-ACP-16 |
-| **6** | ACP-CON-6 · ACP-CON-7 · ACP-ORG-1..5 | §37.6–§37.7 · §39 | DEBT-ACP-12 |
-| **7** | ACP-PROD-1..12 | §40 production + **readiness scoreboard** | DEBT-ACP-17 |
+| **0** | ACP-DX-1 · ACP-CON-1 · ACP-CON-4 · ACP-0 · ACP-DX-6 · ACP-CON-2 | **§12** gate · §29 · §37.1–§37.2 · **§32.0** types | DEBT-ACP-02/03/13/14 ✓ |
+| **1** | ACP-STEP-1 · ACP-STEP-2 · ACP-STEP-2b · ACP-CON-3 | §32 · §38 · §32.8 | DEBT-ACP-04 partial → **ACP-CLOSE-LEG-2** |
+| **2** | ACP-DX-2 · ACP-DX-3 · ACP-DX-4 · ACP-DX-5 · ACP-CFG | §29–§30 · §36 | DEBT-ACP-01/07 ✓ |
+| **3** | ACP-OBS-1 · ACP-OBS-2 · ACP-LLM-1 · ACP-STATE-1 | §31–§34 | DEBT-ACP-08..11 ✓ |
+| **4** | ACP-STEP-3 · ACP-LEG-1 · ACP-LEG-3 | §13.4 UAEP bridge | DEBT-ACP-05 ✓ · 06 → **ACP-CLOSE-LEG-1** |
+| **5** | ACP-0b · ACP-1..13 · ACP-8 · ACP-LEG-4 | §21–§28 patterns + scaffold | DEBT-ACP-15 ✓ · 18 → **ACP-CLOSE-PAT-1** |
+| **8** | **ACP-MIG-1..7** · **ACP-LEG-2** | Fleet migration | DEBT-ACP-16 ✓ |
+| **6** | ACP-CON-6 · ACP-CON-7 · ACP-ORG-1..5 | §37.6–§37.7 · §39 | DEBT-ACP-12 ✓ |
+| **7** | ACP-PROD-1..12 | §40 platform + scoreboard | DEBT-ACP-17 platform ✓ · depth → **ACP-CLOSE-PROD-*** |
 
 **Continuous:** §6.1 gate maintenance · `pytest -m gate` green every PR.
-
-**One primary ACP-* ID per PR** → update master register → gate green → journal on wave completion.
 
 ---
 
@@ -574,11 +628,48 @@ Wave 5:  ACP-0b → ACP-1 → … → ACP-13 → ACP-8+LEG-4
 Wave 8:  ACP-MIG-1 → ACP-MIG-2 → ACP-MIG-3 → ACP-MIG-4 → ACP-MIG-5 → ACP-MIG-6 → ACP-MIG-7 → ACP-LEG-2
 Wave 6:  ACP-CON-6 → ACP-CON-7 → ACP-ORG-1 → … → ACP-ORG-5
 Wave 7:  ACP-PROD-1 → … → ACP-PROD-11 → ACP-PROD-12
+ACP-CLOSE:  DOC-2..4 → LEG-1 → LEG-2 → LEG-3 → PROD-1 → PROD-2 → PROD-3 → PROD-4 → PROD-5 → PROD-6 → PAT-1 (+ TOOL-ENG-6) → ORG-1 → PROD-7 → PROD-8 → PAT-2 → CI-1..3
 ```
 
-**Note:** Wave **8** may overlap Wave **6** after MIG-3 pilot; Wave **7** blocks **prod mutating** only — fleet migration (8) should complete for staging roster before prod promotion.
+**Note:** ACP waves **complete**. **ACP-CLOSE** blocks **production_mode** promotion for mutating agents until PROD-7/8 + LEG rows Done.
 
-**Journal:** one entry per **wave** completion (Waves 4, 8, 7 recommended), per [`implementation-journal/README.md`](../guides/implementation-journal/README.md).
+**Journal:** ACP waves journaled; one entry on **ACP-CLOSE** phase completion, per [`implementation-journal/README.md`](../guides/implementation-journal/README.md).
+
+---
+
+### 6.1bb Harness implementation queue — ACP-CLOSE (active)
+
+**Purpose:** Single ordered backlog for **full architecture ↔ implementation compliance** after ACP waves. **Band 2bb**.
+
+| Order | ID | Priority | Arch § | Status |
+|-------|-----|----------|--------|--------|
+| 1 | ACP-CLOSE-DOC-2 | P0 | §28.3 | **Done** |
+| 2 | ACP-CLOSE-DOC-3 | P0 | §36.4 · §40.13 | **Done** |
+| 3 | ACP-CLOSE-DOC-4 | P1 | audit | **Done** |
+| 4 | ACP-CLOSE-LEG-1 | **P0** | §13.5 | Planned |
+| 5 | ACP-CLOSE-LEG-2 | **P0** | §13.4 | Planned |
+| 6 | ACP-CLOSE-LEG-3 | P1 | §13.5 | Planned |
+| 7 | ACP-CLOSE-LEG-4 | P2 | §45 | Planned |
+| 8 | ACP-CLOSE-PROD-1 | **P0** | §40.1 | Planned |
+| 9 | ACP-CLOSE-PROD-2 | **P0** | §40.1.4 | Planned |
+| 10 | ACP-CLOSE-PROD-3 | P1 | §32.8 | Planned |
+| 11 | ACP-CLOSE-PROD-4 | **P0** | §27 · §40.12 | Planned |
+| 12 | ACP-CLOSE-PROD-5 | P1 | §40.3.3 | Planned |
+| 13 | ACP-CLOSE-PROD-6 | P1 | §40.2.2 | Planned |
+| 14 | ACP-CLOSE-PAT-1 + TOOL-ENG-6 | P1 | §26.3 | Planned |
+| 15 | ACP-CLOSE-ORG-1 | P1 | §39.4 | Planned |
+| 16 | ACP-CLOSE-PROD-7 | **P0** | §40.12 | Planned |
+| 17 | ACP-CLOSE-PROD-8 | **P0** | §40.15 | Planned |
+| 18 | ACP-CLOSE-PAT-2 | P2 | §26.6 | Planned |
+| 19 | ACP-CLOSE-PAT-3 | P2 | §28.3 | Planned |
+| 20 | ACP-CLOSE-ORG-2 | P2 | §39.5 | Planned |
+| 21 | ACP-CLOSE-CI-1 | P1 | §40.10 | Planned |
+| 22 | ACP-CLOSE-CI-2 | P2 | §28.4 | Planned |
+| 23 | ACP-CLOSE-CI-3 | P1 | §40.15 | Planned |
+
+**Parallel (owning plan):** AUDIT-IDEAL-19.1 · 20.1 · 31.1 — see [Phase AUDIT-IDEAL](#phase-audit-ideal--ideal-architecture-gap-register-2026-06-09).
+
+**Minimum viable close (P0 only):** ~~DOC-2 · DOC-3~~ **Done** · LEG-1 · LEG-2 · PROD-1 · PROD-2 · PROD-4 · PROD-7 · PROD-8 → **7 tasks** remaining (+ DOC-1..4 Done).
 
 ---
 

@@ -246,8 +246,9 @@ tests/acceptance/agent_os/""",
         "code": """intergrax/contracts/agent_contract_meta.py · runtime_execution_context.py
 intergrax/agents/agent_engine.py · uaep.py · uaep_protocol.py · authoring/
 intergrax/agents/authoring/patterns/  [ACP]
-intergrax/agents/authoring/step_loop.py  [ACP-STEP planned]
-intergrax/contracts/agent_run_trace.py · shared_context.py  [ACP-OBS/STATE planned]
+intergrax/agents/authoring/step_loop.py · acp_run.py  [ACP-STEP Done]
+intergrax/contracts/agent_run_trace.py · shared_context.py  [ACP-OBS/STATE Done]
+intergrax/agents/persistence/  [ACP-PROD checkpoint · declarative tools]
 intergrax/runtime/registry/agent_registry.py
 intergrax/prompts/registry/ (YamlPromptRegistry)
 intergrax/runtime/architecture/capability_graph*.py · agent_lifecycle_governance.py
@@ -255,8 +256,8 @@ intergrax/runtime/nexus/engine/runtime.py  [legacy ACP-LEG]
 agents/ (Tier-2 roster) · applications/_shared/prompt_wiring.py
 scripts/check_agents_lifecycle_metadata.py · check_agents_vendor_imports.py""",
         "key_symbols": "AgentContract · UAEPAgent · RuntimeExecutionContext · AgentDecision · CognitiveAgent · acp.state.v1 · IntergraxAgent · PromptMeta · AgentStepContext · StepOutcome · AgentRunTrace · ApplicationRunSummary",
-        "active_phases": "ACP (Agent Cognitive Patterns) · PE/REG/CG/AS closed · AUDIT-IDEAL residuals",
-        "known_gaps": "ACP-DX-1..5 · ACP-STEP-1..3/2b · ACP-OBS · ACP-LLM · ACP-STATE · ACP-ORG-1..5 · ACP-PROD-1..11 §40 production readiness · ACP-CON · ACP-LEG · TOOL-ENG-6 · AUDIT-IDEAL-19.1/31.1",
+        "active_phases": "ACP Done (2026-06-11) · ACP-CLOSE active §6.1bb · PE/REG/CG/AS closed · AUDIT-IDEAL residuals",
+        "known_gaps": "GAP-ACP-03/04/07 Open · ACP-CLOSE-LEG-1..3 · ACP-CLOSE-PROD-1..8 · ACP-CLOSE-PAT-1..2 · TOOL-ENG-6 · AUDIT-IDEAL-19.1/20.1/31.1",
         "dimensions": [
             "AgentContract has required fields per §12 — capabilities, allowed_tools, risk metadata.",
             "UAEPAgent: get_steps/run_step — AgentEngine path, not private HTTP bypass.",

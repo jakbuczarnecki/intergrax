@@ -50,11 +50,11 @@ ToolContract · ToolRegistry · ToolProfile · ToolWiringContext · ToolRequest/
 
 ## Active plan phases (verify status vs code reality)
 
-Phase O/T-EXPAND Done · **TOOL-ENG active** (0–5,11, DOC.4 Done; 6–10,12–15 open) · Phase V V-SEC/V-COST/V-EVAL
+Phase O/T-EXPAND Done · **TOOL-ENG active** (0–5,11 Done; 6–10,12 open) · Phase V V-SEC/V-COST/V-EVAL
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-TOOL-ENG-6 ReAct loop missing · TOOL-ENG-7 post-tool verify HIGH risk · TOOL-ENG-8 tools_mode=required hard fail · TOOL-ENG-9 parallel read-only · TOOL-ENG-10 AHI dynamic selection mode · TOOL-ENG-12 tool_choice exposure · **TOOL-ENG-13 semantic tool vector index** · **TOOL-ENG-14 hierarchical category traversal** · TOOL-ENG-15 `retrieval_top_k` naming (`keyword_top_k` alias) · `retrieval_top_k` is keyword overlap not embedding search
+TOOL-ENG-6 ReAct loop missing · TOOL-ENG-7 post-tool verify HIGH risk · TOOL-ENG-8 tools_mode=required hard fail · TOOL-ENG-9 parallel read-only · TOOL-ENG-10 AHI subset selection · TOOL-ENG-12 tool_choice exposure · 172+ tools need ToolsStep/gateway path consistency
 
 ---
 
@@ -109,7 +109,6 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 16. HIGH-risk tools: post-tool verification (ENG-7 gap status).
 17. ReAct / iterative tool loop bounded (ENG-6 gap status).
 18. EnvironmentProfile tool_selection fields wired (recent catalog_runtime_bridge work).
-19. Production selection modes documented and mapped: **standard** (`full_catalog`) **Done** · **semantic** TOOL-ENG-13 **open** · **hierarchical** TOOL-ENG-14 **open** — [`TOOLS.md` §modes](../../architecture/TOOLS.md#tool-selection-modes-production-strategies).
 
 ---
 

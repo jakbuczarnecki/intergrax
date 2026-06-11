@@ -51,11 +51,11 @@ AgentContract · UAEPAgent · RuntimeExecutionContext · AgentDecision · Cognit
 
 ## Active plan phases (verify status vs code reality)
 
-ACP (Agent Cognitive Patterns) · PE/REG/CG/AS closed · AUDIT-IDEAL residuals
+ACP Done (2026-06-11) · ACP-CLOSE active §6.1bb · PE/REG/CG/AS closed · AUDIT-IDEAL residuals
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-ACP-DX-1..6 · ACP-STEP-1..3/2b · ACP-OBS · ACP-MIG-1..7 Wave 8 fleet · ACP-PROD-1..12 scoreboard §6.1az · ACP-CON-1..4 · ACP-LEG · §12–§20 scope · runtime/kernel split · §32.0 · DEBT-ACP-* · plan §6.1aw · TOOL-ENG-6 · AUDIT-IDEAL-19.1/31.1
+GAP-ACP-03/04/07 Open · ACP-CLOSE-LEG-1..3 · ACP-CLOSE-PROD-1..8 · ACP-CLOSE-PAT-1..2 · TOOL-ENG-6 · AUDIT-IDEAL-19.1/20.1/31.1
 
 ---
 
@@ -76,8 +76,9 @@ ACP-DX-1..6 · ACP-STEP-1..3/2b · ACP-OBS · ACP-MIG-1..7 Wave 8 fleet · ACP-P
 intergrax/contracts/agent_contract_meta.py · runtime_execution_context.py
 intergrax/agents/agent_engine.py · uaep.py · uaep_protocol.py · authoring/
 intergrax/agents/authoring/patterns/  [ACP]
-intergrax/agents/authoring/step_loop.py  [ACP-STEP planned]
-intergrax/contracts/agent_run_trace.py · shared_context.py  [ACP-OBS/STATE planned]
+intergrax/agents/authoring/step_loop.py · acp_run.py  [ACP-STEP Done]
+intergrax/contracts/agent_run_trace.py · shared_context.py  [ACP-OBS/STATE Done]
+intergrax/agents/persistence/  [ACP-PROD checkpoint · declarative tools]
 intergrax/runtime/registry/agent_registry.py
 intergrax/prompts/registry/ (YamlPromptRegistry)
 intergrax/runtime/architecture/capability_graph*.py · agent_lifecycle_governance.py
@@ -123,31 +124,31 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 27. Application metadata → environment_overrides wired in hosts.
 28. on_next_step / StepOutcome author API per §32 (ACP-STEP-1).
 29. execute_next_step harness-only — authors cannot override (ACP-STEP-2).
-30. AgentRuntime.advance_step is glue only — no policy/trace/state-merge logic inside (ACP-STEP-2; plan Wave 1 invariant).
-31. HarnessKernel.execute_step owns policy pre/post, state merge, budgets, trace append — no agent planning §38 (ACP-STEP-2b).
-32. NexusLoop vs HarnessKernel separation §38 — not nexus.run() as agent brain.
-33. AgentRunTrace on AgentRunResult with tool/RAG/LLM step records §31 (ACP-OBS-1).
-34. ApplicationRunSummary for Task orchestration §31 (ACP-OBS-2).
-35. StepLLMRouter per-step model within LLMProfile §33 (ACP-LLM-1).
-36. SharedContextView for multi-agent handoffs §34 (ACP-STATE-1).
-37. Use-case catalog UC-1..10 supported without agent rewrite §35.
-38. AgentRunErrorCode and TerminalReason enums per §37.4–§37.5 (ACP-CON-1).
-39. state_delta JSON merge-patch + _version + resume conflict §37.2 (ACP-CON-2).
-40. Side-effect mode immediate vs declarative — no mix per step §32.8 (ACP-CON-3).
-41. §12 full contract gate at register — schemas, risk, validation_rules, failure_modes (ACP-CON-4).
-42. Capability routing by token not class name §37.6 (ACP-CON-6).
-43. Security guards STRICT tool/memory/RAG §37.7 (ACP-CON-7).
-44. OrganizationalPolicyEnvelope constrains agents without code fork §39 (ACP-ORG).
-45. PolicyVerdictRecord on steps for compliance measurement §39.5 (ACP-ORG-4).
-46. Plan §12–§20 scope mapping active — not archival-only (ACP-DOC.12).
-47. §32.0 readability — final `return StepOutcome.*` expresses continue/complete/fail without harness (ACP-DX-6).
-48. Typed session state only — no raw dict keys in `agents/` (ACP-0 · ACP-DX-6 · check_agent_typed_state).
-49. READ/UPDATE/DECIDE visible — no in-place state mutation (ACP-AP-12).
-50. StepOutcome factories set consistent enums — not manual `is_terminal` + string reason (ACP-DX-6).
-51. Plan §6.1aw wave order — Wave 0 types + §12 gate before Wave 1 loop wiring.
-52. Cross-domain matrix — TOOL-ENG-6 synced with ACP-3; merge_environment with MEMORY/TIER3.
-53. Wave 8 fleet migration program — tiered batches, tracker, ACP-MIG-6 regression CI.
-54. Agent Production Readiness Scoreboard — 10 dimensions, prod thresholds §6.1az (ACP-PROD-12).
+30. HarnessKernel.execute_step deterministic primitive — no agent planning §38 (ACP-STEP-2b).
+31. NexusLoop vs HarnessKernel separation §38 — not nexus.run() as agent brain.
+32. AgentRunTrace on AgentRunResult with tool/RAG/LLM step records §31 (ACP-OBS-1).
+33. ApplicationRunSummary for Task orchestration §31 (ACP-OBS-2).
+34. StepLLMRouter per-step model within LLMProfile §33 (ACP-LLM-1).
+35. SharedContextView for multi-agent handoffs §34 (ACP-STATE-1).
+36. Use-case catalog UC-1..10 supported without agent rewrite §35.
+37. AgentRunErrorCode and TerminalReason enums per §37.4–§37.5 (ACP-CON-1).
+38. state_delta JSON merge-patch + _version + resume conflict §37.2 (ACP-CON-2).
+39. Side-effect mode immediate vs declarative — no mix per step §32.8 (ACP-CON-3).
+40. Capability routing by token not class name §37.6 (ACP-CON-6).
+41. Security guards STRICT tool/memory/RAG §37.7 (ACP-CON-7).
+42. OrganizationalPolicyEnvelope constrains agents without code fork §39 (ACP-ORG).
+43. PolicyVerdictRecord on steps for compliance measurement §39.5 (ACP-ORG-4).
+44. Checkpoint/resume/replay semantics §40.1 (ACP-PROD-1).
+45. Side-effect idempotency keys and dedupe §40.2 (ACP-PROD-2).
+46. ToolExecutionProfile mutability/compensation §40.3 (ACP-PROD-3).
+47. SharedContextView CAS concurrency §40.5 (ACP-PROD-5).
+48. ArtifactRef typed contract §40.6 (ACP-PROD-6).
+49. Agent threat model mitigations §40.7 (ACP-PROD-7).
+50. Privacy/redaction on trace/memory §40.8 (ACP-PROD-8).
+51. Release eval gates before production_mode §40.9 (ACP-PROD-9).
+52. CI conformance matrix §40.10 (ACP-PROD-10).
+53. Contract schema_version migration §40.11 (ACP-PROD-11).
+54. RequestIdentity tenant_id/user_id and memory_scope user vs org §30.9 (ACP-DX-1/2).
 
 ---
 

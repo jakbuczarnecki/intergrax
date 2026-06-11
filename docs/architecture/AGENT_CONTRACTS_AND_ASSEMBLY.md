@@ -183,7 +183,7 @@ Legacy UAEP names (implementation today):
 | Facade | Module | Use when |
 |--------|--------|----------|
 | `IntergraxAgent` | `intergrax/agents/authoring/base.py` | `@step` linear agents; inherits `run()` + default `on_next_step` |
-| `CognitiveAgent` + patterns §26 | `intergrax/agents/authoring/patterns/` *(planned)* | ReAct, decomposition, reflection — patterns implement `on_next_step` |
+| `CognitiveAgent` + patterns §26 | `intergrax/agents/authoring/patterns/` | ReAct, decomposition, reflection — patterns implement `on_next_step` |
 | `HarnessReferenceAgent` | `harness_reference_agent.py` | Low-level UAEP ABC (framework/tests) |
 
 **Guide:** [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix AC · **Plan:** Phase **ACP** + **ACP-DX** + **ACP-STEP** rows.
@@ -438,9 +438,9 @@ Runtime MUST reject or reroute retired/deprecated agents in production mode (V-R
 
 # 21. Agent Cognitive Architecture (ACP)
 
-**Status:** Canonical architecture (pre-implementation spec)  
+**Status:** Canonical architecture — **platform delivered** (Phase ACP Done); **closeout** Phase **ACP-CLOSE** active  
 **ADR:** [ADR-AGENT-001](../adr/ADR-AGENT-001.md)  
-**Plan:** Phase **ACP** in [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
+**Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) — ACP Done · **ACP-CLOSE** §6.1bb  
 **Cross-domain:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) (planes 1–3) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) (narrative) · [`TOOLS.md`](TOOLS.md) TOOL-ENG-6 (tool loop) · [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) (reflection)
 
 ## 21.1 Purpose
@@ -1010,65 +1010,67 @@ Developer code path:
 | `AgentEngine` | **Done** | `intergrax/agents/agent_engine.py` |
 | `IntergraxAgent` + `@step` | **Done** | `intergrax/agents/authoring/` |
 | `HarnessReferenceAgent` | **Done** | `intergrax/agents/harness_reference_agent.py` |
-| `CognitiveAgent` base | **Planned** ACP-1 | `intergrax/agents/authoring/patterns/base.py` |
-| Pattern classes | **Planned** ACP-2–6 | `intergrax/agents/authoring/patterns/*.py` |
-| Reference pattern agents | **Planned** ACP-9 | `intergrax/agents/pattern_reference_*.py` |
-| Legacy `RuntimeEngine` | **Deprecated** author path | `intergrax/runtime/nexus/engine/runtime.py` |
-| `AgentRunRequest` / `Result` | **Planned** ACP-DX-1 | `intergrax/contracts/agent_run.py` |
-| `merge_environment` | **Planned** ACP-DX-2 | `intergrax/agents/run_environment.py` |
-| Scaffold `--pattern` | **Planned** ACP-8 | `intergrax/scaffold/new_agent.py` |
+| `CognitiveAgent` base | **Done** ACP-1 | `intergrax/agents/authoring/patterns/base.py` |
+| Pattern classes | **Done** ACP-2–6 | `intergrax/agents/authoring/patterns/*.py` |
+| Reference pattern probes | **Done** ACP-9 | `intergrax/agents/authoring/patterns/reference.py` |
+| Legacy `RuntimeEngine` | **Deprecated** — remove ACP-CLOSE-LEG-1 | `intergrax/runtime/nexus/engine/runtime.py` |
+| `AgentRunRequest` / `Result` | **Done** ACP-DX-1 | `intergrax/contracts/agent_run.py` |
+| `merge_environment` | **Done** ACP-DX-2 | `intergrax/agents/run_environment.py` |
+| Scaffold `--pattern` | **Done** ACP-8 | `intergrax/scaffold/new_agent.py` |
 
 ## 28.2 Maturity scorecard (ACP)
 
-| Capability | Before ACP | Target after ACP |
-|------------|------------|------------------|
-| UAEP-first authoring | L3 | L3 |
-| Pattern library | L0 (ad hoc) | L3 |
-| Mental model clarity | L1–L2 | L3 |
-| Legacy path removal | L2 (dual path) | L3 |
-| ReAct + tool loop unity | L1 (TOOL-ENG-6 open) | L3 |
-| Decomposition agent DX | L0 | L3 |
-| Reflection + CVL wiring | L2 (hooks exist) | L3 |
+| Capability | Before ACP | After ACP (2026-06-11) | Target |
+|------------|------------|------------------------|--------|
+| UAEP-first authoring | L3 | L3 (bridge internal) | L3 internal-only |
+| Pattern library | L0 (ad hoc) | **L3** | L3 |
+| Mental model clarity | L1–L2 | **L3** | L3 |
+| Legacy path removal | L2 (dual path) | **L2** (DEBT-04/06 open) | L3 — ACP-CLOSE-LEG |
+| ReAct + tool loop unity | L1 | **L1** (TOOL-ENG-6 open) | L3 — ACP-CLOSE-PAT-1 |
+| Decomposition agent DX | L0 | **L3** | L3 |
+| Reflection + CVL wiring | L2 | **L2** (no CVL hook) | L3 — ACP-CLOSE-PAT-2 |
 
 ## 28.3 Gap register (ACP)
 
-| ID | Gap | Priority | Plan row |
-|----|-----|----------|----------|
-| GAP-ACP-01 | No `CognitiveAgent` base | P0 | ACP-1 |
-| GAP-ACP-02 | No pattern classes | P0 | ACP-2–6 |
-| GAP-ACP-03 | Dual UAEP / RuntimeEngine path | P0 | ACP-LEG |
-| GAP-ACP-04 | ReAct at tool layer only | P1 | ACP-3 + TOOL-ENG-6 |
-| GAP-ACP-05 | `build_context` duplicates profile | P1 | ACP-CFG |
-| GAP-ACP-06 | No scaffold `--pattern` | P1 | ACP-8 |
-| GAP-ACP-07 | Terminology docs scattered | P1 | ACP-DOC.* |
-| GAP-ACP-08 | `acp.state.v1` / `AcpSessionState` not in contracts — author `dict` surface today | **P0** | ACP-0 + ACP-DX-6 |
-| GAP-ACP-35 | No `StepOutcome` factories — authors cannot express decisions readably | **P0** | ACP-DX-6 |
-| GAP-ACP-09 | No typed `AgentRunRequest`/`Result` | P0 | ACP-DX-1 |
-| GAP-ACP-10 | No `merge_environment` / per-agent binding | P0 | ACP-DX-2 |
-| GAP-ACP-11 | Author docs still expose UAEP first | P1 | ACP-DOC.4 Done |
-| GAP-ACP-12 | No typed `on_next_step` / `StepOutcome` | P0 | ACP-STEP-1 |
-| GAP-ACP-13 | No `AgentRunTrace` on `AgentRunResult` | P0 | ACP-OBS-1 |
-| GAP-ACP-14 | No `ApplicationRunSummary` orchestration journal | P1 | ACP-OBS-2 |
-| GAP-ACP-15 | No per-step LLM router on step context | P1 | ACP-LLM-1 |
-| GAP-ACP-16 | Shared state visibility not typed (`SharedContextView`) | P2 | ACP-STATE-1 |
-| GAP-ACP-17 | §31–§36 canon not in implementation | P0 | ACP-DOC.5 Done |
-| GAP-ACP-18 | No hard AgentRunError / TerminalReason enums | P0 | ACP-CON-1 |
-| GAP-ACP-19 | state_delta merge semantics not in contracts | P0 | ACP-CON-2 |
-| GAP-ACP-20 | Side-effect mode (immediate vs declarative) unspecified in code | P1 | ACP-CON-3 |
-| GAP-ACP-21 | Capability routing by class name in some paths | P1 | ACP-CON-6 |
-| GAP-ACP-22 | Security guards not CI-enforced for agent gateways | P1 | ACP-CON-7 |
-| GAP-ACP-23 | No organizational policy envelope on agent merge | P1 | ACP-ORG-1..3 |
-| GAP-ACP-24 | No compliance metrics on policy verdicts in trace | P2 | ACP-ORG-4 |
-| GAP-ACP-25 | No checkpoint/resume/replay spec beyond state_delta sketch | P0 | ACP-PROD-1 |
-| GAP-ACP-26 | No side-effect idempotency / dedupe model | P0 | ACP-PROD-2 |
-| GAP-ACP-27 | No tool transaction / compensation contract | P0 | ACP-PROD-3 |
-| GAP-ACP-28 | No formal agent threat model section | P1 | ACP-PROD-7 |
-| GAP-ACP-29 | No data governance / privacy contract for trace/memory | P1 | ACP-PROD-8 |
-| GAP-ACP-30 | No schema migration policy for run/trace contracts | P1 | ACP-PROD-11 |
-| GAP-ACP-31 | SharedContextView concurrency rules unspecified | P1 | ACP-PROD-5 |
-| GAP-ACP-32 | Artifact contract missing (loose string list) | P1 | ACP-PROD-6 |
-| GAP-ACP-33 | Release gates / CI matrix not normative for agents | P1 | ACP-PROD-9..10 — **doc Done §40; code Planned** |
-| GAP-ACP-34 | `RequestIdentity` + memory_scope not in contracts | P0 | ACP-DX-1 + ACP-DX-2 §30.9 |
+**Audit sync (2026-06-11):** **32 Closed** · **3 Open** · depth follow-ups tracked in plan **ACP-CLOSE-PROD-*** (not separate GAP IDs).
+
+| ID | Gap | Priority | Plan row | Status |
+|----|-----|----------|----------|--------|
+| GAP-ACP-01 | No `CognitiveAgent` base | P0 | ACP-1 | **Closed** |
+| GAP-ACP-02 | No pattern classes | P0 | ACP-2–6 | **Closed** |
+| GAP-ACP-03 | Dual UAEP / RuntimeEngine path | P0 | ACP-CLOSE-LEG-1..3 | **Open** |
+| GAP-ACP-04 | ReAct at tool layer only | P1 | ACP-CLOSE-PAT-1 · TOOL-ENG-6 | **Open** |
+| GAP-ACP-05 | `build_context` duplicates profile | P1 | ACP-CFG | **Closed** |
+| GAP-ACP-06 | No scaffold `--pattern` | P1 | ACP-8 | **Closed** |
+| GAP-ACP-07 | Terminology docs scattered | P1 | ACP-CLOSE-PAT-3 | **Open** |
+| GAP-ACP-08 | `acp.state.v1` / `AcpSessionState` not in contracts | **P0** | ACP-0 + ACP-DX-6 | **Closed** |
+| GAP-ACP-35 | No `StepOutcome` factories | **P0** | ACP-DX-6 | **Closed** |
+| GAP-ACP-09 | No typed `AgentRunRequest`/`Result` | P0 | ACP-DX-1 | **Closed** |
+| GAP-ACP-10 | No `merge_environment` / per-agent binding | P0 | ACP-DX-2 | **Closed** |
+| GAP-ACP-11 | Author docs still expose UAEP first | P1 | ACP-DOC.4 | **Closed** (Appendix AC); PAT-3 for residual |
+| GAP-ACP-12 | No typed `on_next_step` / `StepOutcome` | P0 | ACP-STEP-1 | **Closed** |
+| GAP-ACP-13 | No `AgentRunTrace` on `AgentRunResult` | P0 | ACP-OBS-1 | **Closed** |
+| GAP-ACP-14 | No `ApplicationRunSummary` orchestration journal | P1 | ACP-OBS-2 | **Closed** |
+| GAP-ACP-15 | No per-step LLM router on step context | P1 | ACP-LLM-1 | **Closed** |
+| GAP-ACP-16 | Shared state visibility not typed (`SharedContextView`) | P2 | ACP-STATE-1 | **Closed** |
+| GAP-ACP-17 | §31–§36 canon not in implementation | P0 | ACP-DOC.5 | **Closed** |
+| GAP-ACP-18 | No hard AgentRunError / TerminalReason enums | P0 | ACP-CON-1 | **Closed** |
+| GAP-ACP-19 | state_delta merge semantics not in contracts | P0 | ACP-CON-2 | **Closed** |
+| GAP-ACP-20 | Side-effect mode unspecified in code | P1 | ACP-CON-3 | **Closed** |
+| GAP-ACP-21 | Capability routing by class name in some paths | P1 | ACP-CON-6 | **Closed** |
+| GAP-ACP-22 | Security guards not CI-enforced for agent gateways | P1 | ACP-CON-7 | **Closed** |
+| GAP-ACP-23 | No organizational policy envelope on agent merge | P1 | ACP-ORG-1..3 | **Closed** |
+| GAP-ACP-24 | No compliance metrics on policy verdicts in trace | P2 | ACP-ORG-4 | **Closed** |
+| GAP-ACP-25 | No checkpoint/resume/replay beyond sketch | P0 | ACP-PROD-1 · ACP-CLOSE-PROD-1..2 | **Closed** (platform) · host depth open |
+| GAP-ACP-26 | No side-effect idempotency / dedupe model | P0 | ACP-PROD-2 · ACP-CLOSE-PROD-6 | **Closed** (ledger) · store depth open |
+| GAP-ACP-27 | No tool transaction / compensation contract | P0 | ACP-PROD-3 · ACP-CLOSE-PROD-5 | **Closed** (enqueue) · durable queue open |
+| GAP-ACP-28 | No formal agent threat model section | P1 | ACP-PROD-7 | **Closed** |
+| GAP-ACP-29 | No data governance / privacy contract for trace/memory | P1 | ACP-PROD-8 | **Closed** |
+| GAP-ACP-30 | No schema migration policy for run/trace contracts | P1 | ACP-PROD-11 | **Closed** |
+| GAP-ACP-31 | SharedContextView concurrency rules unspecified | P1 | ACP-PROD-5 | **Closed** |
+| GAP-ACP-32 | Artifact contract missing (loose string list) | P1 | ACP-PROD-6 | **Closed** |
+| GAP-ACP-33 | Release gates / CI matrix not normative for agents | P1 | ACP-PROD-9..10 | **Closed** |
+| GAP-ACP-34 | `RequestIdentity` + memory_scope not in contracts | P0 | ACP-DX-1 + ACP-DX-2 §30.9 | **Closed** |
 
 ## 28.4 Anti-patterns (ACP)
 
@@ -1104,7 +1106,7 @@ Developer code path:
 | [`plan/TOOLS.md`](../plan/TOOLS.md) TOOL-ENG-6 | Tool loop for ReActAgent |
 | [`plan/CRITIC_VERIFICATION.md`](../plan/CRITIC_VERIFICATION.md) | ReflectionAgent critic hooks |
 
-**Implementation:** ACP documentation complete (ADR-AGENT-001/002). Code per plan Phase **ACP** + **ACP-DX**.
+**Implementation:** Phase **ACP** **Done** (2026-06-11). Active closeout: plan **ACP-CLOSE** §6.1bb. ADR-AGENT-001/002/003 accepted.
 
 ---
 
@@ -1141,7 +1143,7 @@ Developer code path:
 
 ## 29.2 `AgentRunRequest` contract (normative target)
 
-Planned types (`intergrax/contracts/agent_run.py` — **ACP-DX-1**). Until shipped, map from `RuntimeRequest`.
+**Shipped** (`intergrax/contracts/agent_run.py` — **ACP-DX-1 Done**). Nexus bridge maps legacy `RuntimeRequest` when needed.
 
 ```text
 AgentRunRequest:
@@ -1494,21 +1496,21 @@ Agent uses **multiple tools** bound to different integration slugs (`postgres.le
 | Component | Status | Path |
 |-----------|--------|------|
 | `Agent.run` delegate | **Done** | `intergrax/agents/agent_contract.py` |
-| `AgentRunRequest` / `Result` | Planned ACP-DX-1 | `intergrax/contracts/agent_run.py` |
-| `AgentEnvironmentOverrides` | Planned ACP-DX-1 | `intergrax/contracts/agent_run.py` |
-| `merge_environment` | Planned ACP-DX-2 | `intergrax/agents/run_environment.py` |
-| `EffectiveAgentRunEnvironment` | Planned ACP-DX-2 | `intergrax/agents/run_environment.py` |
-| `on_next_step` / `StepOutcome` | Planned ACP-STEP-1 | `intergrax/agents/authoring/step_loop.py` |
-| `AgentRuntime.advance_step` | Planned ACP-STEP-2 | `intergrax/agents/authoring/step_loop.py` |
-| `HarnessKernel.execute_step` | Planned ACP-STEP-2b | `intergrax/runtime/kernel/step_kernel.py` |
+| `AgentRunRequest` / `Result` | **Done** ACP-DX-1 | `intergrax/contracts/agent_run.py` |
+| `AgentEnvironmentOverrides` | **Done** ACP-DX-1 | `intergrax/contracts/agent_run.py` |
+| `merge_environment` | **Done** ACP-DX-2 | `intergrax/agents/run_environment.py` |
+| `EffectiveAgentRunEnvironment` | **Done** ACP-DX-2 | `intergrax/agents/run_environment.py` |
+| `on_next_step` / `StepOutcome` | **Done** ACP-STEP-1 | `intergrax/agents/authoring/step_loop.py` |
+| `AgentRuntime.advance_step` | **Done** ACP-STEP-2 | `intergrax/agents/authoring/step_loop.py` |
+| `HarnessKernel.execute_step` | **Done** ACP-STEP-2b | `intergrax/runtime/kernel/step_kernel.py` |
 | `execute_next_step` (alias) | Deprecated | same as `advance_step` |
-| `AgentRunTrace` | Planned ACP-OBS-1 | `intergrax/contracts/agent_run_trace.py` |
-| `StepLLMRouter` | Planned ACP-LLM-1 | `intergrax/agents/authoring/llm_router.py` |
-| `SharedContextView` | Planned ACP-STATE-1 | `intergrax/contracts/shared_context.py` |
-| `OrganizationalPolicyEnvelope` | ACP-ORG-1 | `intergrax/applications/contracts/org_policy.py` |
-| `OrganizationalPolicyContext` | ACP-ORG-2 | `intergrax/agents/run_environment.py` |
-| Per-agent binding on manifest | Partial | `intergrax/applications/contracts/` |
-| Reference merge in lab | Planned ACP-CFG | `intergrax/agents/reference_harness.py` |
+| `AgentRunTrace` | **Done** ACP-OBS-1 | `intergrax/contracts/agent_run_trace.py` |
+| `StepLLMRouter` | **Done** ACP-LLM-1 | `intergrax/agents/authoring/llm_router.py` |
+| `SharedContextView` | **Done** ACP-STATE-1 | `intergrax/contracts/shared_context.py` |
+| `OrganizationalPolicyEnvelope` | **Done** ACP-ORG-1 | `intergrax/applications/contracts/org_policy.py` |
+| `OrganizationalPolicyContext` | **Done** ACP-ORG-2 | `intergrax/agents/run_environment.py` |
+| Per-agent binding on manifest | **Done** ACP-DX-5 | `intergrax/applications/contracts/` |
+| Reference merge in lab | **Done** ACP-CFG | `intergrax/agents/reference_harness.py` |
 
 **Cross-domain:** [`MEMORY.md`](MEMORY.md) §5 user LTM + org profile · [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) `IdentityProfile` · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) identity.
 
@@ -1652,7 +1654,7 @@ metadata.matter_id from intake
 
 ## 31.2 `AgentRunTrace` contract (target — ACP-OBS-1)
 
-Planned: `intergrax/contracts/agent_run_trace.py`.
+**Shipped:** `intergrax/contracts/agent_run_trace.py` (**ACP-OBS-1 Done**).
 
 ```text
 AgentRunTrace:
@@ -2191,17 +2193,19 @@ Canonical scenarios — all supported by **same** agent class + environment merg
 | **Virtual employees** | `AgentBinding.org_role_id` + shared envelope |
 | **Compliance measurable** | `PolicyVerdictRecord` + eval suites §39.5 |
 
-## 36.4 Implementation alignment (current → target)
+## 36.4 Implementation alignment (2026-06-11 audit)
 
-| Component | Today | Target |
-|-----------|-------|--------|
-| Session entry | `Agent.run` → `AgentEngine` | + typed `AgentRunRequest`/`Result` |
-| Step loop | `UAEPExecutor` + `run_step` | + `execute_next_step` / `on_next_step` facade |
-| Trace on result | Partial via runtime events | `AgentRunTrace` on result |
-| App orchestration log | Nexus task events | + typed `ApplicationRunSummary` |
-| Per-step LLM | Single model per run common | `StepLLMRouter` |
-| Environment merge | Partial profile injection | `merge_environment` + binding slices |
-| Production reliability | Spec §40; code Planned | ACP-PROD-1..11 |
+| Component | Status | Remaining (ACP-CLOSE) |
+|-----------|--------|------------------------|
+| Session entry | **Done** — `AgentRunRequest`/`Result` via `acp_run.py` | — |
+| Step loop | **Done** — `on_next_step` → `advance_step` → `HarnessKernel` | Remove UAEP author surface (LEG-2) |
+| Trace on result | **Done** — `AgentRunTrace` on `AgentRunResult` | — |
+| App orchestration log | **Done** — `ApplicationRunSummary` | — |
+| Per-step LLM | **Done** — `StepLLMRouter` | — |
+| Environment merge | **Done** — `merge_environment` + binding slices | — |
+| Production reliability | **Done** (platform modules ACP-PROD-1..12) | Host depth §40.1–§40.3 · §40.12 evidence |
+| Legacy paths | **Partial** — RuntimeEngine fallback + UAEP on base | ACP-CLOSE-LEG-1..3 |
+| ReAct + tools | **Partial** — pattern loop in agent | TOOL-ENG-6 · ACP-CLOSE-PAT-1 |
 
 ## 36.5 Related ADRs and plan
 
@@ -2314,16 +2318,16 @@ Acceptance: integration test routes by `research.web_search` with two implementa
 
 ## 37.8 Maturity note (external audit alignment)
 
-| Dimension | Canon (post §37) | Code (pre ACP-CON/DX) |
-|-----------|------------------|------------------------|
-| Mental model clarity | 9/10 | — |
-| Agent flexibility | 9/10 | — |
-| Observability spec | 9/10 | partial runtime events |
-| Production readiness | 9/10 target | **6.5/10 until §40 + ACP-PROD ship** |
-| DX / readability | **9/10 target** (§32.0 typed READ/UPDATE/DECIDE) | code catches up ACP-DX-6 |
-| Typed author surface | **Required** §32.0 | UAEP bridge routes through kernel (ACP-STEP-3 **Done**) |
+| Dimension | Canon | Code (2026-06-11) |
+|-----------|-------|-------------------|
+| Mental model clarity | 9/10 | **9/10** — typed loop shipped |
+| Agent flexibility | 9/10 | **9/10** — patterns + scaffold |
+| Observability spec | 9/10 | **9/10** — dual planes on result |
+| Production readiness | 9/10 target | **7.5/10** — platform Done; mutating prod blocked until ACP-CLOSE-PROD-* |
+| DX / readability | 9/10 (§32.0) | **9/10** — factories + typed-state CI |
+| Typed author surface | Required §32.0 | **Done** — UAEP internal bridge only (LEG closeout open) |
 
-**Audit gate (2026-06):** conceptual architecture **8.5/10**; pre-implementation spec **7.5/10** after §37–§39; **production coding without further decisions blocked** until §40 implemented (ACP-PROD-*).
+**Audit gate (2026-06-11):** conceptual architecture **9/10**; implementation **8.5/10**; **mutating production_mode** blocked until ACP-CLOSE P0 rows + §40.12 checklist.
 
 **Recommended decision (accepted):** keep Nexus as Agent OS; implement `run()` + `on_next_step()` + typed contracts — do **not** merge Nexus into agent class (ADR-AGENT-001..003). **`NexusLoop` MUST NOT become the agent plan brain** — see §38.
 
@@ -2659,7 +2663,7 @@ See [`OBSERVABILITY.md`](OBSERVABILITY.md) — extend spine with `policy.verdict
 
 **Cross-domain:** [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) · [`OBSERVABILITY.md`](OBSERVABILITY.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.12 tools · [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) eval gates · §20 lifecycle governance
 
-**Status:** Normative target spec — **pre-implementation** (ACP-PROD-* Planned).
+**Status:** Normative spec — **platform implemented** (ACP-PROD-1..12 **Done**); **host depth + prod evidence** = plan **ACP-CLOSE-PROD-***.
 
 ---
 
@@ -3124,14 +3128,14 @@ Waivers require ADR + operator sign-off — not silent skip.
 | **Production coding** | + §40 implemented (ACP-PROD) | Mutating prod agents, org simulation prod |
 | **Roster production_mode** | + §40.9 gates green | Customer-facing deployment |
 
-**Audit scores (target after §40 doc + ACP-PROD implementation):**
+**Audit scores (2026-06-11 — post ACP waves):**
 
-| Dimension | Target |
+| Dimension | Score |
 |-----------|--------|
-| Conceptual architecture | **9/10** ✓ (canon accepted) |
-| Spec before implementation | **8.8–9/10** ✓ (canon accepted) |
-| Ready to start agent/runtime coding | **8.5/10** ✓ |
-| Mutating agents production-ready | **Blocked** until ACP-PROD-1..11 Done + §40.10 CI green |
+| Conceptual architecture | **9/10** ✓ |
+| Platform implementation (ACP waves 0–8) | **8.5/10** ✓ |
+| Architecture ↔ code doc sync | **9/10** ✓ (after ACP-CLOSE-DOC-2/3) |
+| Mutating agents production-ready | **Blocked** until ACP-CLOSE-PROD P0 + §40.12 + scoreboard thresholds |
 
 ### 40.13.1 Audit acceptance (2026-06)
 
@@ -3139,15 +3143,15 @@ Waivers require ADR + operator sign-off — not silent skip.
 
 | Decision | Verdict |
 |----------|---------|
-| Adopt §13–§39 execution model (`run` / `on_next_step` / `advance_step` / `HarnessKernel` / `NexusLoop`) | **Yes** |
+| Adopt §13–§39 execution model (`run` / `on_next_step` / `advance_step` / `HarnessKernel` / `NexusLoop`) | **Yes** — **delivered** |
 | Adopt §40 production gate for mutating / customer-facing agents | **Yes** |
-| Update implementation plan from this canon | **Yes** |
-| Start agent + runtime coding (ACP-DX, ACP-STEP, ACP-CON, lab agents) | **Yes** |
-| Declare platform or mutating agents **production-ready** | **No** — until ACP-PROD-1..11 in code + tests |
+| Update implementation plan from this canon | **Yes** — Phase ACP **Done**; **ACP-CLOSE** active |
+| Platform ACP modules (ACP-DX through ACP-PROD-12) | **Done** (2026-06-11) |
+| Declare mutating agents **production-ready** | **No** — until **ACP-CLOSE-PROD-*** + §40.12 checklist |
 
-**Clarification (2026-06):** §32.0 readability; §32.4/§38 **runtime glue vs kernel harness** split (policy/trace/budget/state in `HarnessKernel` only). **Full plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) §6.1aw · §12–§20 scope map · **ACP-CON-4** §12 register gate.
+**Clarification (2026-06):** §32.0 readability; §38 runtime glue vs kernel split. **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) §6.1bb **ACP-CLOSE** · DEBT register 3 open items.
 
-**Next work:** execute plan waves 0–8 + 6–7 (fleet migration Wave 8; scoreboard ACP-PROD-12) — further architecture edits only via ADR when implementation discovers a new gap.
+**Next work (2026-06-11):** Phase **ACP-CLOSE** — LEG-1/2 · PROD host depth · architecture doc maintenance via ADR only for new gaps.
 
 ---
 
