@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-10-028 | 2026-06-10 | tier-0/1/3 AGENT_CONTRACTS | ACP-PROD-1 | [ACP-PROD-1 checkpoint host wiring and resume acceptance](entries/2026-06-10-acp-prod-1-checkpoint-host-wiring.md) | pending |
 | IJ-2026-06-10-027 | 2026-06-10 | tier-0 AGENT_CONTRACTS | DEBT-ACP-05 | [DEBT-ACP-05 default typed agent scaffold](entries/2026-06-10-debt-acp-05-scaffold-default.md) | pending |
 | IJ-2026-06-10-026 | 2026-06-10 | tier-0/1 AGENT_CONTRACTS | ACP-12 | [ACP-12 cognitive pattern agent_os acceptance](entries/2026-06-10-acp-12-pattern-agent-os.md) | pending |
 | IJ-2026-06-10-025 | 2026-06-10 | tier-0 AGENT_CONTRACTS | ACP-10 | [ACP-10 cognitive pattern unit test package](entries/2026-06-10-acp-10-pattern-unit-tests.md) | pending |

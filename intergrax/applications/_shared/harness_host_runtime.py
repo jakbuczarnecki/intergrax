@@ -19,6 +19,7 @@ from intergrax.applications._shared.wiring import build_application_registry
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.applications._shared.observability_assembly_resolver import (
     assert_observability_assembly_valid,
@@ -103,6 +104,7 @@ def build_harness_host_runtime(
     builders: dict[type, Any] | None = None,
     registry: AgentRegistry | None = None,
     checkpoint_store: TaskCheckpointPersistence | None = None,
+    agent_checkpoint_store: AgentCheckpointStore | None = None,
     notification_adapter: NotificationAdapter | None = None,
 ) -> HarnessHostRuntime:
     """
@@ -169,6 +171,7 @@ def build_harness_host_runtime(
         env=environment,
         trace_store=observability.trace_store,
         checkpoint_store=checkpoint_store,
+        agent_checkpoint_store=agent_checkpoint_store,
         notification_adapter=notification_adapter,
         runtime_events_db_path=observability.runtime_events_db_path,
         task_memory_store=task_memory.store,

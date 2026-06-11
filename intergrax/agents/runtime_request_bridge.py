@@ -11,6 +11,7 @@ from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
 from intergrax.contracts.acp_state import ACP_STATE_KEY
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_run import (
+    AgentExecutionOptions,
     AgentRunRequest,
     AgentRunResult,
     RequestIdentity,
@@ -31,7 +32,7 @@ def runtime_request_to_agent_run(
 ) -> AgentRunRequest:
     """Map Nexus ``RuntimeRequest`` into typed ``AgentRunRequest``."""
     tenant_id = str(request.tenant_id or request.metadata.get("tenant_id") or "default")
-    user_id = request.metadata.get("user_id")
+    user_id = request.metadata.get("user_id") or request.user_id
     user_id_str = str(user_id) if user_id else None
     principal_raw = str(request.metadata.get("principal_type") or "user")
     try:
@@ -44,6 +45,11 @@ def runtime_request_to_agent_run(
         input_payload = request.message
     else:
         input_payload = {"metadata": dict(request.metadata)}
+
+    execution_options: AgentExecutionOptions | None = None
+    raw_options = request.metadata.get("acp.execution_options.v1")
+    if isinstance(raw_options, dict):
+        execution_options = AgentExecutionOptions.model_validate(raw_options)
 
     return AgentRunRequest(
         input=input_payload,
@@ -62,6 +68,7 @@ def runtime_request_to_agent_run(
             if isinstance(request.metadata.get(ACP_STATE_KEY), dict)
             else None
         ),
+        execution_options=execution_options,
     )
 
 

@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING, Awaitable, Callable, Dict, List, Optional, Uni
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.agent_engine import AgentEngine
+from intergrax.agents.persistence.checkpoint_wiring import inject_acp_checkpoint_metadata
+from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.contracts.agent_handoff import AgentHandoff, resolve_handoff_from_execution
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.execution_phase import ExecutionPhase
@@ -92,8 +94,10 @@ class GraphExecutor:
         max_inflight_nodes: int | None = None,
         max_delegation_depth: int | None = None,
         critic_graph_hooks: Optional["CriticGraphHooks"] = None,
+        agent_checkpoint_store: AgentCheckpointStore | None = None,
     ) -> None:
         self._registry = registry
+        self._agent_checkpoint_store = agent_checkpoint_store
         self._max_parallel_nodes = max_parallel_nodes
         self._max_inflight_nodes = max_inflight_nodes
         self._max_delegation_depth = max_delegation_depth
@@ -475,6 +479,12 @@ class GraphExecutor:
 
         async def execute_fn(current_agent: Agent) -> AgentExecutionResult:
             request = node_task.to_runtime_request()
+            inject_acp_checkpoint_metadata(
+                request.metadata,
+                store=self._agent_checkpoint_store,
+                run_id=task.task_id,
+                tenant_id=task.tenant_id,
+            )
             request.metadata["allowed_tools"] = list(current_agent.get_contract().allowed_tools)
             request.metadata["graph_node_id"] = node.node_id
             request.metadata["graph_id"] = graph.graph_id

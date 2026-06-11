@@ -488,7 +488,7 @@ HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
 
 | Step | ID | Delivers §40 capability | Acceptance | Cross-domain |
 |------|-----|-------------------------|------------|--------------|
-| 7.1 | ACP-PROD-1 | Checkpoint / resume / replay | **Done** — store + session resume wiring | RELIABILITY |
+| 7.1 | ACP-PROD-1 | Checkpoint / resume / replay | **Done** — store + host wiring + `test_acceptance_05c` resume smoke | RELIABILITY |
 | 7.2 | ACP-PROD-2 | Idempotency ledger | **Done** — ledger dedupe + replay skip | TOOLS |
 | 7.3 | ACP-PROD-3 | `ToolExecutionProfile` + compensation | **Done** — mutating tool validation gate | TOOLS |
 | 7.4 | ACP-PROD-4 | ReliabilityProfile in kernel | **Done** — circuit breaker + checkpoint interval | RELIABILITY |
