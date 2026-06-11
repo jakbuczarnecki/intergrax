@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-10-012 | 2026-06-10 | tier-0/1 AGENT_CONTRACTS | ACP-OBS-1, ACP-OBS-2, ACP-LLM-1, ACP-STATE-1 | [ACP Wave 3 observability and routing](entries/2026-06-10-acp-wave-3-observability.md) | pending |
 | IJ-2026-06-10-011 | 2026-06-10 | tier-0/3 AGENT_CONTRACTS | ACP-DX-2, ACP-DX-3, ACP-DX-4, ACP-DX-5, ACP-CFG | [ACP Wave 2 run facade and merge](entries/2026-06-10-acp-wave-2-run-facade.md) | pending |
 | IJ-2026-06-10-010 | 2026-06-10 | tier-0/1 AGENT_CONTRACTS | ACP-STEP-1, ACP-STEP-2, ACP-STEP-2b, ACP-CON-3 | [ACP Wave 1 step loop and HarnessKernel](entries/2026-06-10-acp-wave-1-step-loop-kernel.md) | pending |
 | IJ-2026-06-10-009 | 2026-06-10 | tier-0 AGENT_CONTRACTS | ACP-DX-1, ACP-CON-1, ACP-CON-4, ACP-0, ACP-DX-6, ACP-CON-2 | [ACP Wave 0 typed contracts](entries/2026-06-10-acp-wave-0-typed-contracts.md) | pending |

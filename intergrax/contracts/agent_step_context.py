@@ -9,12 +9,13 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.contracts.agent_run_enums import SideEffectMode
+from intergrax.contracts.shared_context import SharedContextView
 
 
 class AgentStepContext(BaseModel):
     """Author-facing step context snapshot (architecture §32.2 target)."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     step_index: int = Field(default=0, ge=0)
     run_id: str = ""
@@ -23,3 +24,5 @@ class AgentStepContext(BaseModel):
     side_effect_mode: SideEffectMode = SideEffectMode.IMMEDIATE
     state_snapshot: dict[str, Any] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    llm_router: object | None = Field(default=None, exclude=True, repr=False)
+    shared_context: SharedContextView | None = None

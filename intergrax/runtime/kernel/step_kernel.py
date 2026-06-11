@@ -7,28 +7,38 @@ from __future__ import annotations
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any
 
 from intergrax.agents.authoring.side_effect_validation import validate_side_effect_mode
 from intergrax.agents.authoring.state_merge import extract_acp_state_blob, merge_session_state
 from intergrax.agents.authoring.step_outcome import StepOutcome
-from intergrax.contracts.agent_run import AgentRunError
 from intergrax.contracts.agent_run_enums import (
     AgentRunErrorCode,
     SideEffectMode,
     StepNextAction,
     TerminalReason,
 )
-from intergrax.contracts.agent_run import AgentRunTrace
+from intergrax.contracts.agent_run_trace import (
+    AgentRunTrace,
+    AgentStepRecord,
+    AgentStepStatus,
+    PolicyCheckPhase,
+    PolicyVerdictRecord,
+)
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
-from intergrax.contracts.step_execution import AgentStepRecord, StepExecutionRecord
+from intergrax.contracts.step_execution import StepExecutionRecord
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.policy.policy_engine import PolicyEngine
 
 EventEmitter = Callable[[RuntimeEvent], Awaitable[None]]
 CheckpointHook = Callable[[dict[str, Any], int], Awaitable[None]]
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 @dataclass
@@ -69,13 +79,17 @@ class HarnessKernel:
                 outcome_applied=False,
                 side_effect_mode_violation=True,
                 error_code=AgentRunErrorCode.VALIDATION_FAILED,
-                step_record=AgentStepRecord(
-                    step_index=step_ctx.step_index,
-                    next_action=outcome.next_action.value,
-                    is_terminal=True,
-                    terminal_reason=TerminalReason.VALIDATION_FAILED.value,
+                step_record=HarnessKernel._build_step_record(
+                    step_ctx=step_ctx,
+                    outcome=outcome,
+                    state_version=int(
+                        extract_acp_state_blob(kernel_ctx.state_root).get("_version", 0)
+                    ),
                     error_code=AgentRunErrorCode.VALIDATION_FAILED,
+                    terminal_reason=TerminalReason.VALIDATION_FAILED,
+                    next_action=StepNextAction.FAIL,
                     diagnostics={"side_effect_mode": mode_error},
+                    finished_at=_utc_now(),
                 ),
             )
             await HarnessKernel._append_trace(kernel_ctx, record)
@@ -90,13 +104,17 @@ class HarnessKernel:
                 policy_pre=policy_pre,
                 error_code=AgentRunErrorCode.POLICY_DENIED,
                 trace_event_count=trace_events,
-                step_record=AgentStepRecord(
-                    step_index=step_ctx.step_index,
-                    next_action=StepNextAction.FAIL.value,
-                    is_terminal=True,
-                    terminal_reason=TerminalReason.POLICY_DENIED.value,
+                step_record=HarnessKernel._build_step_record(
+                    step_ctx=step_ctx,
+                    outcome=outcome,
+                    state_version=int(
+                        extract_acp_state_blob(kernel_ctx.state_root).get("_version", 0)
+                    ),
                     policy_pre=policy_pre,
                     error_code=AgentRunErrorCode.POLICY_DENIED,
+                    terminal_reason=TerminalReason.POLICY_DENIED,
+                    next_action=StepNextAction.FAIL,
+                    finished_at=_utc_now(),
                 ),
             )
             await HarnessKernel._append_trace(kernel_ctx, record)
@@ -114,13 +132,18 @@ class HarnessKernel:
                 policy_pre=policy_pre,
                 error_code=merge_result.error_code,
                 trace_event_count=trace_events,
-                step_record=AgentStepRecord(
-                    step_index=step_ctx.step_index,
-                    next_action=StepNextAction.FAIL.value,
-                    is_terminal=True,
-                    terminal_reason=TerminalReason.VALIDATION_FAILED.value,
+                step_record=HarnessKernel._build_step_record(
+                    step_ctx=step_ctx,
+                    outcome=outcome,
+                    state_version=int(
+                        extract_acp_state_blob(kernel_ctx.state_root).get("_version", 0)
+                    ),
+                    policy_pre=policy_pre,
                     error_code=merge_result.error_code,
+                    terminal_reason=TerminalReason.VALIDATION_FAILED,
+                    next_action=StepNextAction.FAIL,
                     diagnostics={"merge_error": merge_result.error_message},
+                    finished_at=_utc_now(),
                 ),
             )
             await HarnessKernel._append_trace(kernel_ctx, record)
@@ -151,15 +174,16 @@ class HarnessKernel:
                 state_version=state_version,
                 error_code=AgentRunErrorCode.POLICY_DENIED,
                 trace_event_count=trace_events,
-                step_record=AgentStepRecord(
-                    step_index=step_ctx.step_index,
-                    next_action=StepNextAction.FAIL.value,
-                    is_terminal=True,
-                    terminal_reason=TerminalReason.POLICY_DENIED.value,
+                step_record=HarnessKernel._build_step_record(
+                    step_ctx=step_ctx,
+                    outcome=outcome,
+                    state_version=state_version,
                     policy_pre=policy_pre,
                     policy_post=policy_post,
-                    state_version=state_version,
                     error_code=AgentRunErrorCode.POLICY_DENIED,
+                    terminal_reason=TerminalReason.POLICY_DENIED,
+                    next_action=StepNextAction.FAIL,
+                    finished_at=_utc_now(),
                 ),
             )
             await HarnessKernel._append_trace(kernel_ctx, record)
@@ -185,15 +209,16 @@ class HarnessKernel:
                 error_code=AgentRunErrorCode.MAX_STEPS_EXCEEDED,
                 budget_exceeded=True,
                 trace_event_count=trace_events,
-                step_record=AgentStepRecord(
-                    step_index=step_ctx.step_index,
-                    next_action=StepNextAction.FAIL.value,
-                    is_terminal=True,
-                    terminal_reason=TerminalReason.MAX_STEPS_EXCEEDED.value,
+                step_record=HarnessKernel._build_step_record(
+                    step_ctx=step_ctx,
+                    outcome=outcome,
+                    state_version=state_version,
                     policy_pre=policy_pre,
                     policy_post=policy_post,
-                    state_version=state_version,
                     error_code=AgentRunErrorCode.MAX_STEPS_EXCEEDED,
+                    terminal_reason=TerminalReason.MAX_STEPS_EXCEEDED,
+                    next_action=StepNextAction.FAIL,
+                    finished_at=_utc_now(),
                 ),
             )
             await HarnessKernel._append_trace(kernel_ctx, record)
@@ -222,21 +247,85 @@ class HarnessKernel:
             policy_post=policy_post,
             state_version=state_version,
             trace_event_count=trace_events,
-            step_record=AgentStepRecord(
-                step_index=step_ctx.step_index,
-                next_action=outcome.next_action.value,
-                is_terminal=outcome.is_terminal,
-                terminal_reason=(
-                    outcome.terminal_reason.value if outcome.terminal_reason else None
-                ),
+            step_record=HarnessKernel._build_step_record(
+                step_ctx=step_ctx,
+                outcome=outcome,
+                state_version=state_version,
                 policy_pre=policy_pre,
                 policy_post=policy_post,
-                state_version=state_version,
-                diagnostics=outcome.diagnostics,
+                finished_at=_utc_now(),
             ),
         )
         await HarnessKernel._append_trace(kernel_ctx, record)
         return record
+
+    @staticmethod
+    def _build_step_record(
+        *,
+        step_ctx: AgentStepContext,
+        outcome: StepOutcome,
+        state_version: int,
+        policy_pre: PolicyDecision | None = None,
+        policy_post: PolicyDecision | None = None,
+        error_code: AgentRunErrorCode | None = None,
+        terminal_reason: TerminalReason | None = None,
+        next_action: StepNextAction | None = None,
+        diagnostics: dict[str, Any] | None = None,
+        finished_at: datetime | None = None,
+    ) -> AgentStepRecord:
+        resolved_action = next_action or outcome.next_action
+        if error_code is not None and next_action is None:
+            resolved_action = StepNextAction.FAIL
+
+        if error_code is not None:
+            status = AgentStepStatus.FAILED
+        elif resolved_action == StepNextAction.PAUSE_HITL:
+            status = AgentStepStatus.PAUSED
+        else:
+            status = AgentStepStatus.SUCCEEDED
+
+        resolved_terminal = terminal_reason or outcome.terminal_reason
+        verdicts: list[PolicyVerdictRecord] = []
+        if policy_pre is not None:
+            verdicts.append(
+                PolicyVerdictRecord(
+                    phase=PolicyCheckPhase.PRE,
+                    action=policy_pre.action,
+                    reason=policy_pre.reason,
+                    policy_rule_id=policy_pre.policy_rule_id,
+                )
+            )
+        if policy_post is not None:
+            verdicts.append(
+                PolicyVerdictRecord(
+                    phase=PolicyCheckPhase.POST,
+                    action=policy_post.action,
+                    reason=policy_post.reason,
+                    policy_rule_id=policy_post.policy_rule_id,
+                )
+            )
+
+        llm_calls = []
+        if step_ctx.llm_router is not None:
+            llm_calls = step_ctx.llm_router.drain_pending_calls()
+
+        merged_diagnostics = dict(outcome.diagnostics or {})
+        if diagnostics:
+            merged_diagnostics.update(diagnostics)
+
+        return AgentStepRecord(
+            step_id=f"step-{step_ctx.step_index:04d}",
+            step_index=step_ctx.step_index,
+            finished_at=finished_at,
+            status=status,
+            next_action=resolved_action,
+            terminal_reason=resolved_terminal,
+            state_version=state_version,
+            llm_calls=llm_calls,
+            policy_verdicts=verdicts,
+            diagnostics=merged_diagnostics,
+            error_code=error_code,
+        )
 
     @staticmethod
     def _policy_pre_check(
@@ -343,5 +432,12 @@ class HarnessKernel:
         kernel_ctx: StepKernelContext,
         record: StepExecutionRecord,
     ) -> None:
-        if record.step_record is not None:
-            kernel_ctx.run_trace.steps.append(record.step_record.model_dump(mode="json"))
+        if record.step_record is None:
+            return
+        kernel_ctx.run_trace.steps.append(record.step_record)
+        kernel_ctx.run_trace.total_steps = len(kernel_ctx.run_trace.steps)
+        kernel_ctx.run_trace.total_llm_tokens += sum(
+            call.tokens_in + call.tokens_out for call in record.step_record.llm_calls
+        )
+        kernel_ctx.run_trace.total_tool_calls += len(record.step_record.tool_calls)
+        kernel_ctx.run_trace.total_rag_calls += len(record.step_record.rag_calls)

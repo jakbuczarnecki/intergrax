@@ -8,8 +8,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding
+from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
 
-ACP_HOST_CONTEXT_KEY = "acp.host.v1"
+ACP_HOST_CONTEXT_KEY = AcpMetadataKey.HOST_CONTEXT
 
 
 class ACPSessionHostContext(BaseModel):

@@ -104,10 +104,10 @@
 | DEBT-ACP-05 | `get_steps` / `run_step` as **primary** author API | `on_next_step` primary; `@step` maps to loop §32.5 | Wave 4 | ACP-STEP-3 · ACP-8 |
 | DEBT-ACP-06 | `RuntimeEngine.run` fallback in `AgentEngine` | `advance_step` + kernel only | Wave 4 | ACP-LEG-1 |
 | DEBT-ACP-07 | `build_context` duplicating `RuntimeConfig` per agent | Profile injection via `merge_environment` §30 | Wave 2 | ACP-DX-2 · ACP-CFG |
-| DEBT-ACP-08 | No `AgentRunTrace` on result | Plane B journal §31 | Wave 3 | ACP-OBS-1 |
-| DEBT-ACP-09 | Task events only — no `ApplicationRunSummary` | Plane A orchestration §31 | Wave 3 | ACP-OBS-2 |
-| DEBT-ACP-10 | Single LLM model per run | `StepLLMRouter` per step §33 | Wave 3 | ACP-LLM-1 |
-| DEBT-ACP-11 | Ad-hoc graph handoff via metadata | `SharedContextView` §34 | Wave 3 | ACP-STATE-1 |
+| DEBT-ACP-08 | ~~No `AgentRunTrace` on result~~ | Plane B journal §31 | **Closed Wave 3** | ACP-OBS-1 |
+| DEBT-ACP-09 | ~~Task events only — no `ApplicationRunSummary`~~ | Plane A orchestration §31 | **Closed Wave 3** | ACP-OBS-2 |
+| DEBT-ACP-10 | ~~Single LLM model per run~~ | `StepLLMRouter` per step §33 | **Closed Wave 3** | ACP-LLM-1 |
+| DEBT-ACP-11 | ~~Ad-hoc graph handoff via metadata~~ | `SharedContextView` §34 | **Closed Wave 3** | ACP-STATE-1 |
 | DEBT-ACP-12 | Capability routing by class name in some paths | Registry token routing §37.6 | Wave 6 | ACP-CON-6 |
 | DEBT-ACP-13 | Free-text errors / terminal reasons | `AgentRunErrorCode` · `TerminalReason` §37.4–§37.5 | Wave 0 | ACP-CON-1 |
 | DEBT-ACP-14 | Full state replace / in-place mutation | `state_delta` merge-patch §37.2 | Wave 0 | ACP-CON-2 |
@@ -194,10 +194,10 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-STEP-2b | ACP-STEP | **`HarnessKernel.execute_step`** — L1 harness cycle: policy pre/post, state merge §37.2, gateways, budgets §32.6, trace/`AgentStepRecord`, declarative actions §32.8 | **Done** | `intergrax/runtime/kernel/step_kernel.py` | Integration: policy deny + trace record + budget exceeded from kernel only |
 | ACP-CON-4 | ACP-CON | **§12 full contract gate at register** — `input_schema`, `output_schema`, `risk_level`, `validation_rules`, `failure_modes`, budgets; reject incomplete contracts | **Done** | `agent_assembly_resolver.py` | Register with stub contract → `AgentAssemblyError`; roster agents pass |
 | ACP-STEP-3 | ACP-STEP | **UAEP legacy bridge** — `run_step` → advance_step + kernel | Planned | `intergrax/agents/uaep.py` | Existing UAEP agents pass without rewrite |
-| ACP-OBS-1 | ACP-OBS | **`AgentRunTrace` / `AgentStepRecord`** on `AgentRunResult` | Planned | `intergrax/contracts/agent_run_trace.py` | Assert tool/RAG/LLM records in test |
-| ACP-OBS-2 | ACP-OBS | **`ApplicationRunSummary`** from Nexus task completion | Planned | `intergrax/runtime/task/` or app host | Multi-agent acceptance test |
-| ACP-LLM-1 | ACP-LLM | **`StepLLMRouter`** on step context | Planned | `intergrax/agents/authoring/llm_router.py` | Per-step model hint within profile |
-| ACP-STATE-1 | ACP-STATE | **`SharedContextView`** for graph handoffs | Planned | `intergrax/contracts/shared_context.py` | Two-agent graph handoff test |
+| ACP-OBS-1 | ACP-OBS | **`AgentRunTrace` / `AgentStepRecord`** on `AgentRunResult` | **Done** | `intergrax/contracts/agent_run_trace.py` | `test_acp_wave3_trace`: `steps[0].llm_calls` populated |
+| ACP-OBS-2 | ACP-OBS | **`ApplicationRunSummary`** from Nexus task completion | **Done** | `application_run_summary_builder.py`, `task_finisher.py` | `test_application_run_summary_builder` multi-agent |
+| ACP-LLM-1 | ACP-LLM | **`StepLLMRouter`** on step context | **Done** | `intergrax/agents/authoring/llm_router.py` | Per-step model hint + trace record |
+| ACP-STATE-1 | ACP-STATE | **`SharedContextView`** for graph handoffs | **Done** | `intergrax/contracts/shared_context.py`, `shared_context_bridge.py` | Two-node handoff unit test |
 | ACP-CON-1 | ACP-CON | **`AgentRunErrorCode` / `TerminalReason` enums** + Pydantic on run contracts | **Done** | `intergrax/contracts/agent_run.py`, `agent_run_enums.py` | extra=forbid; enum round-trip |
 | ACP-CON-2 | ACP-CON | **`state_delta` merge-patch** + `_version` + checkpoint/resume | **Done** | `intergrax/agents/authoring/state_merge.py` | Unit: merge, delete null, conflict |
 | ACP-CON-3 | ACP-CON | **Side-effect mode** immediate vs declarative enforcement | **Done** | `intergrax/agents/authoring/side_effect_validation.py` | Reject mixed mode per step |
@@ -365,7 +365,7 @@ HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
 | 3.3 | ACP-STATE-1 | `intergrax/contracts/shared_context.py` | `SharedContextView` read/write for graph handoffs | Two-node handoff unit test | ORCHESTRATION |
 | 3.4 | ACP-OBS-2 | Nexus task completion path | `ApplicationRunSummary` on Task terminal; `trace_id` join | `agent_os` 02 multi-agent | OBSERVABILITY |
 
-**Wave 3 DoD:** `result.trace.steps[0].llm_calls` populated; multi-agent acceptance produces Plane A summary.
+**Wave 3 DoD:** **Met** — `result.trace.steps[0].llm_calls` populated (`test_acp_wave3_trace`); `ApplicationRunSummary` on `TaskResult.metadata` via `build_nexus_task_result` + builder unit test.
 
 ---
 

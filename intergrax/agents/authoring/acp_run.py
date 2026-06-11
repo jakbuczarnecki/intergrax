@@ -12,10 +12,14 @@ from intergrax.agents.authoring.acp_session_host import (
     ACP_HOST_CONTEXT_KEY,
     ACPSessionHostContext,
 )
+from intergrax.agents.authoring.llm_router import StepLLMRouter
+from intergrax.agents.authoring.shared_context_bridge import load_view, persist_view, view_from_task_metadata
 from intergrax.agents.authoring.step_loop import AgentRuntime
 from intergrax.agents.run_environment import EffectiveAgentRunEnvironment, merge_environment
+from intergrax.contracts.acp_metadata_keys import AcpMetadataKey, AcpStructuredDataKey
 from intergrax.contracts.acp_state import ACP_STATE_KEY
-from intergrax.contracts.agent_run import AgentRunError, AgentRunRequest, AgentRunResult, AgentRunTrace
+from intergrax.contracts.agent_run import AgentRunError, AgentRunRequest, AgentRunResult
+from intergrax.contracts.agent_run_trace import AgentRunTrace
 from intergrax.contracts.agent_run_enums import (
     AgentRunErrorCode,
     AgentRunStatus,
@@ -81,10 +85,11 @@ async def run_acp_session(
 
     await agent.on_run_start(merged)
 
+    task_id = str(request.metadata.get("task_id") or run_id)
     kernel_ctx = StepKernelContext(
         agent_id=merged.agent_id,
         run_id=run_id,
-        task_id=str(request.metadata.get("task_id") or run_id),
+        task_id=task_id,
         tenant_id=merged.tenant_id,
         side_effect_mode=merged.side_effect_mode,
         max_steps=merged.max_steps,
@@ -92,6 +97,15 @@ async def run_acp_session(
         policy_engine=PolicyEngine(),
         state_root=_initial_state_root(request),
         run_trace=AgentRunTrace(run_id=run_id),
+    )
+
+    llm_router = StepLLMRouter(
+        allowed_models=tuple(merged.allowed_llm_models),
+        default_model=merged.default_llm_model,
+    )
+    shared_context = load_view(request.metadata) or view_from_task_metadata(
+        request.metadata,
+        task_id=task_id,
     )
 
     step_ctx = AgentStepContext(
@@ -107,6 +121,8 @@ async def run_acp_session(
             "memory_scope": merged.memory_scope.value,
             "allowed_tools": list(merged.allowed_tools),
         },
+        llm_router=llm_router,
+        shared_context=shared_context,
     )
 
     max_iterations = merged.max_steps or contract.max_steps or 32
@@ -167,6 +183,9 @@ async def run_acp_session(
         status = AgentRunStatus.FAILED
         terminal_reason = TerminalReason.MAX_STEPS_EXCEEDED
 
+    if step_ctx.shared_context is not None:
+        persist_view(request.metadata, step_ctx.shared_context)
+
     result = AgentRunResult(
         status=status,
         output=last_outcome.output or "",
@@ -177,6 +196,12 @@ async def run_acp_session(
         trace=kernel_ctx.run_trace,
         terminal_reason=terminal_reason,
         duration_ms=duration_ms,
+        structured_data={
+            AcpStructuredDataKey.TRACE_SUMMARY: _trace_summary_payload(
+                kernel_ctx.run_trace,
+                terminal_reason=terminal_reason,
+            ),
+        },
     )
     validation = agent.validate_output(result)
     if not validation.valid:
@@ -198,6 +223,20 @@ async def run_acp_session(
 
     await agent.on_run_end(result)
     return result
+
+
+def _trace_summary_payload(
+    trace: AgentRunTrace,
+    *,
+    terminal_reason: TerminalReason,
+) -> dict[str, object]:
+    return {
+        "total_steps": trace.total_steps,
+        "total_llm_tokens": trace.total_llm_tokens,
+        "total_tool_calls": trace.total_tool_calls,
+        "total_rag_calls": trace.total_rag_calls,
+        "terminal_reason": terminal_reason.value,
+    }
 
 
 def _failed_result(

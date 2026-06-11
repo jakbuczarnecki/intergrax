@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.authoring.base import IntergraxAgent
@@ -125,7 +125,7 @@ class AgentEngine:
         event_bus: Optional[RuntimeEventBus] = None,
     ) -> RuntimeAnswer:
         executor = AgentEngine._resolve_static_executor(uaep_executor, event_bus)
-        answer, _validation, _context, _governance = await AgentEngine._execute_agent_impl(
+        answer, _validation, _context, _governance, _structured = await AgentEngine._execute_agent_impl(
             agent,
             request,
             executor,
@@ -144,10 +144,12 @@ class AgentEngine:
         contract = agent.get_contract()
         run_id = str(request.metadata.get("run_id") or request.metadata.get("task_id") or "")
         try:
-            answer, validation, _context, governance = await AgentEngine._execute_agent_impl(
-                agent,
-                request,
-                executor,
+            answer, validation, _context, governance, structured_data = (
+                await AgentEngine._execute_agent_impl(
+                    agent,
+                    request,
+                    executor,
+                )
             )
         except UAEPBlockedError as exc:
             return AgentExecutionResult(
@@ -157,20 +159,29 @@ class AgentEngine:
                 summary="",
                 errors=[str(exc)],
             )
-        return runtime_answer_to_agent_result(
+        execution = runtime_answer_to_agent_result(
             answer,
             agent_id=contract.id,
             valid=validation.valid,
             validation_errors=validation.errors,
             governance=governance,
         )
+        if structured_data:
+            execution.structured_data.update(structured_data)
+        return execution
 
     @staticmethod
     async def _execute_agent_impl(
         agent: Agent,
         request: RuntimeRequest,
         uaep_executor: UAEPExecutor,
-    ) -> tuple[RuntimeAnswer, ValidationResult, RuntimeContext, Optional[GovernanceResolution]]:
+    ) -> tuple[
+        RuntimeAnswer,
+        ValidationResult,
+        RuntimeContext,
+        Optional[GovernanceResolution],
+        dict[str, Any],
+    ]:
         if isinstance(agent, IntergraxAgent) and acp_session_enabled(request):
             contract = agent.get_contract()
             agent_run = runtime_request_to_agent_run(request, contract=contract)
@@ -182,10 +193,11 @@ class AgentEngine:
                 valid=result.status.value == "succeeded",
                 errors=[error.message for error in result.errors],
             )
-            return answer, validation, agent.build_context(request), None
+            return answer, validation, agent.build_context(request), None, dict(result.structured_data)
 
         if supports_uaep(agent):
-            return await uaep_executor.execute(agent, request)
+            answer, validation, context, governance = await uaep_executor.execute(agent, request)
+            return answer, validation, context, governance, {}
 
         context = agent.build_context(request)
         runtime = RuntimeEngine(context)
@@ -194,4 +206,4 @@ class AgentEngine:
         if not validation.valid and validation.errors:
             if answer.route is not None:
                 answer.route.extra.setdefault("agent_validation_errors", validation.errors)
-        return answer, validation, context, None
+        return answer, validation, context, None, {}

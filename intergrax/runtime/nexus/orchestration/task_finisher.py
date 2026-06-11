@@ -13,6 +13,9 @@ from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.human.request_contract import human_request_event_payload
+from intergrax.runtime.nexus.orchestration.application_run_summary_builder import (
+    build_application_run_summary,
+)
 from intergrax.runtime.nexus.orchestration.workspace_cleanup import (
     cleanup_sandbox_for_task,
     cleanup_shadow_for_task,
@@ -31,7 +34,7 @@ from intergrax.runtime.task.task_contract import (
     TaskRetryRecord,
     TaskValidationSummary,
 )
-from intergrax.runtime.task.task_metadata_keys import TaskMetadataKey
+from intergrax.runtime.task.task_metadata_keys import TaskMetadataKey, TaskResultMetadataKey
 from intergrax.runtime.task.task_trace import TaskTraceEmitter
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.runtime.workspace.shadow_workspace import SHADOW_WORKSPACE_ID_KEY
@@ -152,5 +155,13 @@ def build_nexus_task_result(
             result.metadata[key] = task.metadata[key]
     if plan and plan.plan_metadata:
         result.metadata.update(plan.plan_metadata)
+    app_summary = build_application_run_summary(
+        task_id=task.task_id,
+        graph_id=graph_id,
+        executions=executions,
+    )
+    result.metadata[TaskResultMetadataKey.APPLICATION_RUN_SUMMARY] = app_summary.model_dump(
+        mode="json"
+    )
     result.sync_metadata()
     return result

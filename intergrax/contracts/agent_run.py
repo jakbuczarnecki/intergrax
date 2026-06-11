@@ -16,6 +16,7 @@ from intergrax.contracts.agent_run_enums import (
     SideEffectMode,
     TerminalReason,
 )
+from intergrax.contracts.agent_run_trace import AgentRunTrace
 from intergrax.contracts.memory_scope import MemoryScope
 
 
@@ -100,16 +101,6 @@ class GovernanceSnapshot(BaseModel):
     pause_cause: str | None = None
     approver: str | None = None
     resume_token: str | None = None
-
-
-class AgentRunTrace(BaseModel):
-    """Plane B journal stub — expanded in ACP-OBS-1."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    schema_version: Literal["agent_run_trace.v1"] = "agent_run_trace.v1"
-    run_id: str = ""
-    steps: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class AgentRunRequest(BaseModel):

@@ -39,6 +39,8 @@ class EffectiveAgentRunEnvironment(BaseModel):
     allowed_tools: list[str] = Field(default_factory=list)
     rag_collection_ids: list[str] = Field(default_factory=list)
     llm_profile_id: str | None = None
+    allowed_llm_models: list[str] = Field(default_factory=lambda: ["balanced"])
+    default_llm_model: str = "balanced"
     enable_rag: bool = True
     enable_websearch: bool = True
     side_effect_mode: SideEffectMode = SideEffectMode.IMMEDIATE

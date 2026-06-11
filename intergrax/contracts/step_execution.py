@@ -9,23 +9,8 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.contracts.agent_run_enums import AgentRunErrorCode
+from intergrax.contracts.agent_run_trace import AgentStepRecord
 from intergrax.contracts.runtime_policy import PolicyDecision
-
-
-class AgentStepRecord(BaseModel):
-    """Plane B step journal entry stub — expanded in ACP-OBS-1."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    step_index: int = Field(default=0, ge=0)
-    next_action: str = ""
-    is_terminal: bool = False
-    terminal_reason: str | None = None
-    policy_pre: PolicyDecision | None = None
-    policy_post: PolicyDecision | None = None
-    state_version: int | None = None
-    error_code: AgentRunErrorCode | None = None
-    diagnostics: dict[str, Any] | None = None
 
 
 class StepExecutionRecord(BaseModel):

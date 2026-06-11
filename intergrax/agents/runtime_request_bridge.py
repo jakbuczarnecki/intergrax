@@ -7,6 +7,8 @@ from __future__ import annotations
 from typing import Any
 from uuid import uuid4
 
+from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
+from intergrax.contracts.acp_state import ACP_STATE_KEY
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_run import (
     AgentRunRequest,
@@ -56,8 +58,8 @@ def runtime_request_to_agent_run(
         agent_id=contract.id,
         metadata=dict(request.metadata),
         state=(
-            dict(request.metadata["acp.state.v1"])
-            if isinstance(request.metadata.get("acp.state.v1"), dict)
+            dict(request.metadata[ACP_STATE_KEY])
+            if isinstance(request.metadata.get(ACP_STATE_KEY), dict)
             else None
         ),
     )
@@ -79,5 +81,5 @@ def agent_run_result_to_runtime_answer(result: AgentRunResult) -> RuntimeAnswer:
 
 def acp_session_enabled(request: RuntimeRequest) -> bool:
     """Whether Nexus should route through the typed ACP session loop."""
-    flag = request.metadata.get("acp.session.v1")
+    flag = request.metadata.get(AcpMetadataKey.SESSION_ENABLED)
     return flag is True or flag == "true" or flag == "1"
