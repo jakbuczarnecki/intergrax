@@ -95,7 +95,7 @@
 
 ### ACP legacy & technical debt register (must shrink to zero)
 
-**Audit 2026-06-11:** **18/18 Closed** in code — DEBT register fully closed; remaining ACP-CLOSE: CI-2.
+**Audit 2026-06-11:** **18/18 Closed** in code — DEBT register fully closed; **ACP-CLOSE complete** (CI-2 Done).
 
 | Debt ID | Legacy surface | Replacement | Status | Closed by / Open row |
 |---------|----------------|-------------|--------|----------------------|
@@ -293,7 +293,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-CLOSE-ORG-1 | ORG | STRICT **configure_run widen deny** per-agent | **Done** | §39.4 | `configure_run_strict.py`, `merge_environment`, `acp_run` | `test_configure_run_strict.py` |
 | ACP-CLOSE-ORG-2 | ORG | UC-11 compliance golden per **product host** | **Done** | §39.5 | `product_host_org_envelope`, `uc11_compliance_golden.py` | `test_uc11_product_host_compliance.py` (6 hosts) |
 | ACP-CLOSE-CI-1 | CI | Post-LEG grep + fleet migration gate — zero Tier-2 `RuntimeEngine` | **Done** | §40.10 CI-04 | `check_agent_fleet_migration.py`, `check_agent_acp_close_ci.py` | `.github/workflows/unit-tests.yml` |
-| ACP-CLOSE-CI-2 | CI | Anti-pattern ACP-AP-02 after TOOL-ENG-6 | Planned | §28.4 | tools + agent tests | Nexus does not schedule tool iterations |
+| ACP-CLOSE-CI-2 | CI | Anti-pattern ACP-AP-02 after TOOL-ENG-6 | **Done** | §28.4 | `check_agent_acp_ap02_tool_loop_boundary.py` | CI-17 · Nexus does not schedule tool iterations |
 | ACP-CLOSE-CI-3 | CI | `check_agent_production_readiness.py --fail-on-blockers` in gate workflow | **Done** | §40.15 | `check_agent_acp_close_ci.py` | CI-16 + gate workflow |
 
 **Cross-plan (not ACP-CLOSE IDs — deliver in owning domain):**
@@ -664,12 +664,12 @@ ACP-CLOSE:  DOC-2..4 → LEG-1 → LEG-2 → LEG-3 → PROD-1 → PROD-2 → PRO
 | 19 | ACP-CLOSE-PAT-3 | P2 | §28.3 | **Done** |
 | 20 | ACP-CLOSE-ORG-2 | P2 | §39.5 | **Done** |
 | 21 | ACP-CLOSE-CI-1 | P1 | §40.10 | **Done** |
-| 22 | ACP-CLOSE-CI-2 | P2 | §28.4 | Planned |
+| 22 | ACP-CLOSE-CI-2 | P2 | §28.4 | **Done** |
 | 23 | ACP-CLOSE-CI-3 | P1 | §40.15 | **Done** |
 
 **Parallel (owning plan):** AUDIT-IDEAL-19.1 · 20.1 · 31.1 — see [Phase AUDIT-IDEAL](#phase-audit-ideal--ideal-architecture-gap-register-2026-06-09).
 
-**Minimum viable close (P0 only):** DOC-1..4 · LEG-1 · LEG-2 **Done** · PROD-1 · PROD-2 · PROD-4 · PROD-7 · PROD-8 → **5 tasks** remaining.
+**Minimum viable close (P0 only):** DOC-1..4 · LEG-1 · LEG-2 · PROD-1 · PROD-2 · PROD-4 · PROD-7 · PROD-8 · CI-2 → **Done** — ACP-CLOSE wave complete.
 
 ---
 

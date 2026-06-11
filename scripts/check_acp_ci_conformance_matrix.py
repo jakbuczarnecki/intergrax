@@ -27,6 +27,11 @@ MATRIX: tuple[tuple[str, str, str | None], ...] = (
     ("CI-14", "check_agent_production_readiness.py", "tests/unit/agents/persistence/test_acp_prod_persistence.py"),
     ("CI-15", "report_agent_production_readiness.py", None),
     ("CI-16", "check_agent_acp_close_ci.py", "tests/unit/scripts/test_check_agent_acp_close_ci.py"),
+    (
+        "CI-17",
+        "check_agent_acp_ap02_tool_loop_boundary.py",
+        "tests/unit/scripts/test_check_agent_acp_ap02_tool_loop_boundary.py",
+    ),
 )
 
 

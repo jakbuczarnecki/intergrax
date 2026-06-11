@@ -39,6 +39,11 @@ def main() -> int:
             "check_agent_creation_guide_acp_canon.py failed (ACP-CLOSE-LEG-4)"
         )
 
+    if _run("check_agent_acp_ap02_tool_loop_boundary.py") != 0:
+        violations.append(
+            "check_agent_acp_ap02_tool_loop_boundary.py failed (ACP-CLOSE-CI-2)"
+        )
+
     if (
         _run(
             "check_agent_production_readiness.py",

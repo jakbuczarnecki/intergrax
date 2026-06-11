@@ -438,7 +438,7 @@ Runtime MUST reject or reroute retired/deprecated agents in production mode (V-R
 
 # 21. Agent Cognitive Architecture (ACP)
 
-**Status:** Canonical architecture — **platform delivered** (Phase ACP Done); **closeout** Phase **ACP-CLOSE** active  
+**Status:** Canonical architecture — **platform delivered** (Phase ACP Done); **closeout** Phase **ACP-CLOSE** **Done** (2026-06-11)  
 **ADR:** [ADR-AGENT-001](../adr/ADR-AGENT-001.md)  
 **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) — ACP Done · **ACP-CLOSE** §6.1bb  
 **Cross-domain:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) (planes 1–3) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) (narrative) · [`TOOLS.md`](TOOLS.md) TOOL-ENG-6 (tool loop) · [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) (reflection)
@@ -1030,7 +1030,7 @@ Developer code path:
 
 ## 28.3 Gap register (ACP)
 
-**Audit sync (2026-06-11):** **34 Closed** · **1 Open** · depth follow-ups tracked in plan **ACP-CLOSE-PROD-*** (not separate GAP IDs).
+**Audit sync (2026-06-11):** **35 Closed** · **0 Open** · ACP-CLOSE wave complete; depth follow-ups tracked in plan **ACP-CLOSE-PROD-*** (not separate GAP IDs).
 
 | ID | Gap | Priority | Plan row | Status |
 |----|-----|----------|----------|--------|
@@ -2215,7 +2215,7 @@ Canonical scenarios — all supported by **same** agent class + environment merg
 | Environment merge | **Done** — `merge_environment` + binding slices | — |
 | Production reliability | **Done** (platform modules ACP-PROD-1..12) | Host depth §40.1–§40.3 · §40.12 evidence |
 | Legacy paths | **Done** — LEG-1..3; UAEP author surface removed | — |
-| ReAct + tools | **Done** — `tool_loop_step` + `react_budget` | — |
+| ReAct + tools | **Done** — `tool_loop_step` + `react_budget` | CI-17 ACP-AP-02 gate **Done** |
 
 ## 36.5 Related ADRs and plan
 
@@ -3047,6 +3047,7 @@ Normative CI checks before merge to agent roster (extends §45).
 | CI-14 | Checkpoint resume smoke | ACP-PROD-1 test |
 | CI-15 | Release eval suites | ACP-PROD-9 |
 | CI-16 | Production readiness scoreboard blockers | `check_agent_acp_close_ci.py` |
+| CI-17 | ACP-AP-02 — no tool loops in graph orchestration | `check_agent_acp_ap02_tool_loop_boundary.py` |
 
 **Rule:** new agent PR MUST declare which CI rows apply; all applicable rows green.
 
