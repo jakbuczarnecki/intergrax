@@ -1063,7 +1063,7 @@ Developer code path:
 | GAP-ACP-24 | No compliance metrics on policy verdicts in trace | P2 | ACP-ORG-4 | **Closed** |
 | GAP-ACP-25 | No checkpoint/resume/replay beyond sketch | P0 | ACP-PROD-1 · ACP-CLOSE-PROD-1..2 | **Closed** |
 | GAP-ACP-26 | No side-effect idempotency / dedupe model | P0 | ACP-PROD-2 · ACP-CLOSE-PROD-6 | **Closed** (ledger) · store depth open |
-| GAP-ACP-27 | No tool transaction / compensation contract | P0 | ACP-PROD-3 · ACP-CLOSE-PROD-5 | **Closed** (enqueue) · durable queue open |
+| GAP-ACP-27 | No tool transaction / compensation contract | P0 | ACP-PROD-3 · ACP-CLOSE-PROD-5 | **Closed** |
 | GAP-ACP-28 | No formal agent threat model section | P1 | ACP-PROD-7 | **Closed** |
 | GAP-ACP-29 | No data governance / privacy contract for trace/memory | P1 | ACP-PROD-8 | **Closed** |
 | GAP-ACP-30 | No schema migration policy for run/trace contracts | P1 | ACP-PROD-11 | **Closed** |
@@ -2824,7 +2824,7 @@ CompensationRequest:
     idempotency_key: str                # distinct key derived from original
 ```
 
-Compensation runs through same gateways; recorded in trace. **Plan:** ACP-PROD-3 (**Done** — `ToolExecutionProfile`, `compensation_enqueue.py`, kernel step-failure path).
+Compensation runs through same gateways; recorded in trace. **Plan:** ACP-PROD-3 + ACP-CLOSE-PROD-5 (**Done** — enqueue, durable `CompensationQueueStore`, `drain_pending_compensation_jobs`).
 
 ---
 

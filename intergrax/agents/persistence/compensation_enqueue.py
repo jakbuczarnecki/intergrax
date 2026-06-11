@@ -7,6 +7,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
+from intergrax.agents.persistence.compensation_queue_store import (
+    CompensationJob,
+    CompensationQueueStore,
+)
 from intergrax.agents.persistence.declarative_tool_executor import (
     DeclarativeToolInvoker,
     DeclarativeToolInvokeResult,
@@ -65,6 +69,28 @@ def _compensation_args(
     return payload
 
 
+def _persist_enqueued_compensation(
+    *,
+    compensation_queue: CompensationQueueStore,
+    request: CompensationRequest,
+    run_id: str,
+    tenant_id: str,
+    agent_id: str,
+    step_index: int,
+) -> None:
+    if compensation_queue.get_by_idempotency_key(tenant_id, request.idempotency_key) is not None:
+        return
+    compensation_queue.enqueue(
+        CompensationJob(
+            run_id=run_id,
+            tenant_id=tenant_id,
+            agent_id=agent_id,
+            step_index=step_index,
+            request=request,
+        ),
+    )
+
+
 async def enqueue_compensations_for_step_failure(
     *,
     ledger: SideEffectLedger | None,
@@ -72,6 +98,10 @@ async def enqueue_compensations_for_step_failure(
     step_index: int,
     invoker: DeclarativeToolInvoker | None = None,
     action_args: dict[str, dict[str, Any]] | None = None,
+    compensation_queue: CompensationQueueStore | None = None,
+    run_id: str = "",
+    tenant_id: str = "default",
+    agent_id: str = "",
 ) -> CompensationEnqueueResult:
     """
     Apply §40.3.2 compensation policy for committed effects in ``step_index``.
@@ -133,6 +163,15 @@ async def enqueue_compensations_for_step_failure(
         )
 
         if invoker is None:
+            if compensation_queue is not None:
+                _persist_enqueued_compensation(
+                    compensation_queue=compensation_queue,
+                    request=request,
+                    run_id=run_id,
+                    tenant_id=tenant_id,
+                    agent_id=agent_id,
+                    step_index=step_index,
+                )
             result.actions.append(
                 CompensationActionResult(request=request, status="enqueued"),
             )

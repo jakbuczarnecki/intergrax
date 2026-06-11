@@ -6,6 +6,7 @@ from intergrax.agents.persistence.compensation_enqueue import (
     build_compensation_idempotency_key,
     enqueue_compensations_for_step_failure,
 )
+from intergrax.agents.persistence.compensation_queue_store import InMemoryCompensationQueueStore
 from intergrax.agents.persistence.declarative_tool_executor import (
     CallableDeclarativeToolInvoker,
     DeclarativeToolInvokeResult,
@@ -99,6 +100,35 @@ async def test_compensation_enqueue_manual_marks_failed() -> None:
     )
     assert result.actions[0].status == "manual_required"
     assert ledger.records()[0].status == SideEffectStatus.FAILED
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_compensation_enqueue_persists_when_queue_configured_without_invoker() -> None:
+    ledger, key = _committed_ledger()
+    queue = InMemoryCompensationQueueStore()
+    profiles = {
+        "email.send": ToolExecutionProfile(
+            tool_id="email.send",
+            mutability=ToolMutability.MUTATING,
+            reversibility=ToolReversibility.COMPENSATABLE,
+            requires_idempotency_key=True,
+            compensation_tool_id="email.recall",
+        ),
+    }
+    result = await enqueue_compensations_for_step_failure(
+        ledger=ledger,
+        tool_profiles=profiles,
+        step_index=0,
+        compensation_queue=queue,
+        run_id="run-1",
+        tenant_id="tenant-a",
+        agent_id="agent-a",
+    )
+    assert result.actions[0].status == "enqueued"
+    pending = queue.list_pending("tenant-a")
+    assert len(pending) == 1
+    assert pending[0].request.idempotency_key == build_compensation_idempotency_key(key)
 
 
 @pytest.mark.unit

@@ -37,6 +37,7 @@ from intergrax.agents.persistence.declarative_tool_executor import (
     execute_declarative_actions,
 )
 from intergrax.contracts.side_effect import CompensationRequest
+from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
 from intergrax.agents.persistence.tool_action_validation import (
     ToolActionValidationError,
@@ -77,6 +78,7 @@ class StepKernelContext:
     organizational: OrganizationalPolicyContext | None = None
     side_effect_ledger: SideEffectLedger | None = None
     declarative_tool_invoker: DeclarativeToolInvoker | None = None
+    compensation_queue: CompensationQueueStore | None = None
     compensation_requests: list[CompensationRequest] = field(default_factory=list)
     tool_profiles: dict[str, ToolExecutionProfile] = field(default_factory=dict)
     reliability: AgentSessionReliability | None = None
@@ -603,6 +605,10 @@ class HarnessKernel:
             step_index=step_ctx.step_index,
             invoker=kernel_ctx.declarative_tool_invoker,
             action_args=action_args,
+            compensation_queue=kernel_ctx.compensation_queue,
+            run_id=kernel_ctx.run_id,
+            tenant_id=kernel_ctx.tenant_id,
+            agent_id=kernel_ctx.agent_id,
         )
         if not enqueue_result.actions:
             return None, 0

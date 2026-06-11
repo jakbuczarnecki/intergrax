@@ -20,8 +20,10 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
+from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.applications._shared.acp_checkpoint_host_wiring import (
     resolve_host_agent_checkpoint_store,
+    resolve_host_compensation_queue_store,
 )
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_from_tool_wiring,
@@ -96,6 +98,7 @@ class HarnessHostRuntime:
     critic: ApplicationCriticWiring
     nexus_loop: NexusLoop
     agent_checkpoint_store: AgentCheckpointStore
+    compensation_queue_store: CompensationQueueStore
 
 
 def build_harness_host_runtime(
@@ -178,12 +181,16 @@ def build_harness_host_runtime(
         agent_checkpoint_store=agent_checkpoint_store,
         checkpoints_db_path=checkpoints_db_path,
     )
+    resolved_compensation_queue_store = resolve_host_compensation_queue_store(
+        checkpoints_db_path=checkpoints_db_path,
+    )
     nexus_loop = build_nexus_loop_from_environment(
         resolved_registry,
         env=environment,
         trace_store=observability.trace_store,
         checkpoint_store=checkpoint_store,
         agent_checkpoint_store=resolved_agent_checkpoint_store,
+        compensation_queue_store=resolved_compensation_queue_store,
         declarative_tool_invoker=declarative_tool_invoker,
         notification_adapter=notification_adapter,
         runtime_events_db_path=observability.runtime_events_db_path,
@@ -217,4 +224,5 @@ def build_harness_host_runtime(
         critic=critic_wiring,
         nexus_loop=nexus_loop,
         agent_checkpoint_store=resolved_agent_checkpoint_store,
+        compensation_queue_store=resolved_compensation_queue_store,
     )
