@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from intergrax.contracts.memory_scope import MemoryScope
 from intergrax.contracts.agent_contract_section12 import (
     DEFAULT_FAILURE_MODES,
     DEFAULT_INPUT_SCHEMA,
@@ -74,6 +75,18 @@ class AgentContract(BaseModel):
         description="On-call contact for certified/production agents (AUDIT-IDEAL-31.1).",
     )
     runbook_ref: Optional[str] = None
+    memory_scope: MemoryScope = Field(
+        default=MemoryScope.USER,
+        description="Default memory namespace scope (architecture §30.9).",
+    )
+    memory_namespace_template: Optional[str] = Field(
+        default=None,
+        description="Template for custom scope; placeholders §30.9.",
+    )
+    default_rag_collection: Optional[str] = Field(
+        default=None,
+        description="Default RAG collection id for this agent.",
+    )
     prompt_binding_id: Optional[str] = Field(
         default=None,
         description="Primary prompt registry id bound to this agent (IDEAL-17.5).",

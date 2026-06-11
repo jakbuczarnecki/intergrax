@@ -7,8 +7,16 @@ from __future__ import annotations
 from typing import Dict, Optional, Union
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.authoring.base import IntergraxAgent
+from intergrax.agents.runtime_request_bridge import (
+    acp_session_enabled,
+    agent_run_result_to_runtime_answer,
+    runtime_request_to_agent_run,
+)
 from intergrax.agents.uaep import UAEPBlockedError, UAEPExecutor
 from intergrax.agents.uaep_protocol import supports_uaep
+from intergrax.contracts.agent_run import AgentRunResult
+from intergrax.contracts.validation import ValidationResult
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.runtime_mapping import runtime_answer_to_agent_result
 from intergrax.contracts.validation import ValidationResult
@@ -163,6 +171,19 @@ class AgentEngine:
         request: RuntimeRequest,
         uaep_executor: UAEPExecutor,
     ) -> tuple[RuntimeAnswer, ValidationResult, RuntimeContext, Optional[GovernanceResolution]]:
+        if isinstance(agent, IntergraxAgent) and acp_session_enabled(request):
+            contract = agent.get_contract()
+            agent_run = runtime_request_to_agent_run(request, contract=contract)
+            result = await agent.run(agent_run)
+            if not isinstance(result, AgentRunResult):
+                raise TypeError("IntergraxAgent.run must return AgentRunResult for ACP session")
+            answer = agent_run_result_to_runtime_answer(result)
+            validation = ValidationResult(
+                valid=result.status.value == "succeeded",
+                errors=[error.message for error in result.errors],
+            )
+            return answer, validation, agent.build_context(request), None
+
         if supports_uaep(agent):
             return await uaep_executor.execute(agent, request)
 

@@ -33,7 +33,7 @@
 
 ## Phase ACP — Agent Cognitive Patterns (ACP)
 
-**Status:** **In progress** (2026-06-10) — architecture **decision-complete** §13–§40; **Wave 0–1 Done** (typed contracts + step loop/kernel)  
+**Status:** **In progress** (2026-06-10) — architecture **decision-complete** §13–§40; **Wave 0–2 Done** (typed contracts + step loop + run facade)  
 **Architecture:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 (incl. **§32.0** readability & typed-only contracts)  
 **ADR:** [ADR-AGENT-001](../adr/ADR-AGENT-001.md) · [ADR-AGENT-002](../adr/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/ADR-AGENT-003.md)  
 **Author guide:** [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix AC (sync with §32.0)  
@@ -183,10 +183,10 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-DOC.5 | ACP0 | **Architecture §31–§36** — dual observability, step loop, LLM routing, UC catalog | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §31–§36 + ADR-AGENT-003 |
 | ACP-ADR.3 | ACP0 | **ADR-AGENT-003** accepted — `on_next_step` + dual observability | **Done** | `docs/adr/ADR-AGENT-003.md` | Linked from architecture §31–§32 |
 | ACP-DX-1 | ACP-DX | **`AgentRunRequest` / `AgentRunResult` / `RequestIdentity` / `AgentEnvironmentOverrides`** Pydantic contracts | **Done** | `intergrax/contracts/agent_run.py` | Round-trip + user_id required when memory_scope=user |
-| ACP-DX-2 | ACP-DX | **`merge_environment`** + `EffectiveAgentRunEnvironment` + **memory_scope resolution** §30.9 | Planned | `intergrax/agents/run_environment.py` | Unit test merge order + user vs org namespace |
-| ACP-DX-3 | ACP-DX | **`IntergraxAgent.run` upgrade** — uses merge + typed result; hooks `configure_run`, `on_run_start/end` | Planned | `intergrax/agents/authoring/base.py` | Test direct run without Nexus |
-| ACP-DX-4 | ACP-DX | **Nexus node bridge** — Task metadata → AgentRunRequest same merge path | Planned | `AgentEngine` / graph executor bridge | agent_os single-agent parity |
-| ACP-DX-5 | ACP-DX | **`AgentBinding` profile slices** — tool/memory/integration per roster entry | Planned | `applications/contracts/` | Legal + research host test |
+| ACP-DX-2 | ACP-DX | **`merge_environment`** + `EffectiveAgentRunEnvironment` + **memory_scope resolution** §30.9 | **Done** | `intergrax/agents/run_environment.py` | Unit test merge order + user vs org namespace |
+| ACP-DX-3 | ACP-DX | **`IntergraxAgent.run` upgrade** — uses merge + typed result; hooks `configure_run`, `on_run_start/end` | **Done** | `intergrax/agents/authoring/base.py`, `acp_run.py` | Test direct run without Nexus |
+| ACP-DX-4 | ACP-DX | **Nexus node bridge** — Task metadata → AgentRunRequest same merge path | **Done** | `runtime_request_bridge.py`, `agent_engine.py` | Bridge behind `acp.session.v1` metadata |
+| ACP-DX-5 | ACP-DX | **`AgentBinding` profile slices** — tool/memory/integration per roster entry | **Done** | `applications/contracts/manifest.py` | Binding slice merge tests |
 | ACP-DX-6 | ACP-DX | **Author readability kit** — `StepOutcome` factories, `load_session_state` / `session_state_delta`, `check_agent_typed_state.py` | **Done** | `intergrax/agents/authoring/step_outcome.py`, `state_access.py`, `scripts/` | Factories set consistent enums; CI fails raw dict state in agents |
 | ACP-DOC.10 | ACP0 | **Architecture §32.0** — author readability & typed-only contracts (READ/UPDATE/DECIDE) | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §32.0 + ACP-AP-11..15 + checklist §45 |
 | ACP-STEP-1 | ACP-STEP | **`AgentStepContext` / `StepOutcome` / author `on_next_step`** on `IntergraxAgent` | **Done** | `intergrax/agents/authoring/step_loop.py`, `agent_step_context.py`, `base.py` | Unit: terminal + continue via factories §32.0; no dict author surface |
@@ -238,7 +238,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-11 | ACP5 | **Gate: new agents UAEP-only** — CI check or scaffold default | Planned | `scripts/check_new_agents_uaep_only.py` | Fails on new non-UAEP agents |
 | ACP-12 | ACP5 | **Acceptance: pattern agent in agent_os suite** | Planned | `tests/acceptance/agent_os/` | One test per pattern (mock LLM) |
 | ACP-13 | ACP5 | **`check_agent_pattern_conformance.py`** — contract pattern vs class MRO | Planned | `scripts/` | CI workflow step |
-| ACP-CFG | ACP6 | **`build_context` profile injection** — reduce per-agent `RuntimeConfig` duplication | Planned | `intergrax/agents/reference_harness.py`, legal/research migration doc | Reference agents use harness injection only |
+| ACP-CFG | ACP6 | **`build_context` profile injection** — reduce per-agent `RuntimeConfig` duplication | **Done** | `intergrax/agents/reference_harness.py` | `build_lab_agent_runtime_config_from_merged` |
 | ACP-LEG-1 | ACP-LEG | **Deprecate RuntimeEngine path** — `DeprecationWarning` in `AgentEngine` fallback | Planned | `intergrax/agents/agent_engine.py` | Warning in tests |
 | ACP-LEG-2 | ACP-LEG | **Fleet migration complete** — superseded by **Wave 8** `ACP-MIG-*` program (not ad-hoc per-agent) | Planned | `agents/*` | Scoreboard Runtime ≥100% roster-wide; typed-state CI allowlist empty |
 | ACP-MIG-1 | ACP-MIG | **Fleet inventory auditor** — legacy surface per agent (`uaep`/`runtime_engine`/`dict state`) | Planned | `scripts/audit_agent_fleet_legacy.py` | JSON report for all `agents/*` packages |

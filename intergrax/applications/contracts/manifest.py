@@ -22,6 +22,7 @@ from intergrax.applications.contracts.application_host import (
     ApplicationFeatures,
     ApplicationProfile,
 )
+from intergrax.contracts.memory_scope import MemoryScope
 from intergrax.integrations.registry.profile import IntegrationProfile
 
 _APP_ID_RE = re.compile(r"^[a-z][a-z0-9_]*$")
@@ -98,6 +99,22 @@ class AgentBinding(BaseModel):
         default=False,
         description="When true, used as default agent for product-style routes",
     )
+    memory_scope_override: MemoryScope | None = Field(
+        default=None,
+        description="Per-roster memory scope override (architecture §30.9).",
+    )
+    rag_collection_override: str | None = Field(
+        default=None,
+        description="Per-roster RAG collection binding.",
+    )
+    tool_allowlist_extra: list[str] = Field(
+        default_factory=list,
+        description="Additional tool ids allowed for this roster entry.",
+    )
+    tool_denylist: list[str] = Field(
+        default_factory=list,
+        description="Tool ids denied for this roster entry.",
+    )
 
     @classmethod
     def mount(
@@ -112,6 +129,10 @@ class AgentBinding(BaseModel):
         enabled: bool = True,
         default: bool = False,
         requires_uaep: bool = False,
+        memory_scope_override: MemoryScope | None = None,
+        rag_collection_override: str | None = None,
+        tool_allowlist_extra: list[str] | None = None,
+        tool_denylist: list[str] | None = None,
     ) -> AgentBinding:
         """
         Strongly-typed roster entry — pass the agent **class** and optional **factory**.
@@ -136,6 +157,10 @@ class AgentBinding(BaseModel):
             enabled=enabled,
             default=default,
             requires_uaep=requires_uaep,
+            memory_scope_override=memory_scope_override,
+            rag_collection_override=rag_collection_override,
+            tool_allowlist_extra=list(tool_allowlist_extra or []),
+            tool_denylist=list(tool_denylist or []),
         )
 
     @classmethod
@@ -145,12 +170,20 @@ class AgentBinding(BaseModel):
         *,
         enabled: bool = True,
         capabilities: list[str] | None = None,
+        memory_scope_override: MemoryScope | None = None,
+        rag_collection_override: str | None = None,
+        tool_allowlist_extra: list[str] | None = None,
+        tool_denylist: list[str] | None = None,
     ) -> AgentBinding:
         """Contract-id-only binding for harness reference catalogs (no agent import)."""
         return cls(
             contract_id=contract_id,
             capabilities=capabilities or [],
             enabled=enabled,
+            memory_scope_override=memory_scope_override,
+            rag_collection_override=rag_collection_override,
+            tool_allowlist_extra=list(tool_allowlist_extra or []),
+            tool_denylist=list(tool_denylist or []),
         )
 
     @classmethod

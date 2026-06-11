@@ -9,9 +9,11 @@ from collections.abc import Callable
 from types import FunctionType
 from typing import ClassVar, List
 
+from intergrax.agents.authoring.acp_run import run_acp_session
 from intergrax.agents.authoring.decisions import complete
 from intergrax.agents.authoring.state_access import load_session_state, session_state_delta
 from intergrax.agents.authoring.step_outcome import StepOutcome
+from intergrax.agents.run_environment import EffectiveAgentRunEnvironment
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.agents.uaep_protocol import UAEPAgentWithDecide
 from intergrax.contracts.acp_state import AcpSessionState
@@ -23,13 +25,15 @@ from intergrax.contracts.agent_contract_section12 import (
     DEFAULT_VALIDATION_RULES,
 )
 from intergrax.contracts.agent_step_context import AgentStepContext
-from intergrax.contracts.agent_run import AgentRunError
-from intergrax.contracts.agent_run_enums import AgentRunErrorCode, TerminalReason
+from intergrax.contracts.agent_run import AgentRunError, AgentRunRequest, AgentRunResult
+from intergrax.contracts.agent_run_enums import AgentRunErrorCode, AgentRunStatus, TerminalReason
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.task.task import TaskContext
 
 
@@ -65,6 +69,31 @@ class IntergraxAgent(HarnessReferenceAgent, UAEPAgentWithDecide, ABC):
     skill_ids: ClassVar[tuple[str, ...]] = ()
     extra_tool_ids: ClassVar[tuple[str, ...]] = ()
     session_state_type: ClassVar[type[AcpSessionState]] = AcpSessionState
+
+    async def run(self, request: AgentRunRequest | RuntimeRequest) -> AgentRunResult | RuntimeAnswer:
+        if isinstance(request, AgentRunRequest):
+            return await run_acp_session(self, request)
+        from intergrax.agents.agent_engine import AgentEngine
+
+        return await AgentEngine.run_agent(self, request)
+
+    def configure_run(self, merged: EffectiveAgentRunEnvironment) -> dict[str, object]:
+        """Per-run domain overlay merged into session metadata (§29.5)."""
+        _ = merged
+        return {}
+
+    async def on_run_start(self, merged: EffectiveAgentRunEnvironment) -> None:
+        _ = merged
+
+    async def on_run_end(self, result: AgentRunResult) -> None:
+        _ = result
+
+    def validate_output(self, result: AgentRunResult) -> ValidationResult:
+        if result.status == AgentRunStatus.FAILED:
+            return ValidationResult(valid=False, errors=[error.message for error in result.errors])
+        if result.output in ("", None, {}):
+            return ValidationResult(valid=False, errors=["empty output"])
+        return ValidationResult(valid=True)
 
     def get_contract(self) -> AgentContract:
         return AgentContract(

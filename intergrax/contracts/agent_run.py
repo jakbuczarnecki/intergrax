@@ -16,6 +16,7 @@ from intergrax.contracts.agent_run_enums import (
     SideEffectMode,
     TerminalReason,
 )
+from intergrax.contracts.memory_scope import MemoryScope
 
 
 class RequestIdentity(BaseModel):
@@ -43,9 +44,14 @@ class AgentEnvironmentOverrides(BaseModel):
 
     tool_allowlist_add: list[str] = Field(default_factory=list)
     tool_allowlist_remove: list[str] = Field(default_factory=list)
+    skill_ids_override: list[str] = Field(default_factory=list)
     memory_namespace: str | None = None
+    memory_scope: MemoryScope | None = None
+    rag_collection: str | None = None
     rag_collection_ids: list[str] = Field(default_factory=list)
     llm_profile_id: str | None = None
+    llm_profile_slug: str | None = None
+    metadata_patch: dict[str, Any] = Field(default_factory=dict)
 
 
 class AgentExecutionOptions(BaseModel):
