@@ -14,6 +14,7 @@ class AcpMetadataKey(StrEnum):
     HOST_CONTEXT = "acp.host.v1"
     CHECKPOINT_STORE = "acp.checkpoint_store.v1"
     RESUME_FROM_CHECKPOINT = "acp.resume_from_checkpoint.v1"
+    DECLARATIVE_TOOL_INVOKER = "acp.declarative_tool_invoker.v1"
     APPLICATION_RUN_SUMMARY = "application_run_summary.v1"
 
 

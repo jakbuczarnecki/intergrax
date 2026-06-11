@@ -20,6 +20,9 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
+from intergrax.applications._shared.declarative_tool_wiring import (
+    build_declarative_invoker_from_tool_wiring,
+)
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.applications._shared.observability_assembly_resolver import (
     assert_observability_assembly_valid,
@@ -166,12 +169,14 @@ def build_harness_host_runtime(
     critic_wiring = wire_application_critic(environment, l1_client=l1_client)
     assert_critic_assembly_valid(critic_wiring, environment, l1_client=l1_client)
     task_memory = wire_task_memory_from_profile(environment)
+    declarative_tool_invoker = build_declarative_invoker_from_tool_wiring(env_wiring.tool_wiring)
     nexus_loop = build_nexus_loop_from_environment(
         resolved_registry,
         env=environment,
         trace_store=observability.trace_store,
         checkpoint_store=checkpoint_store,
         agent_checkpoint_store=agent_checkpoint_store,
+        declarative_tool_invoker=declarative_tool_invoker,
         notification_adapter=notification_adapter,
         runtime_events_db_path=observability.runtime_events_db_path,
         task_memory_store=task_memory.store,

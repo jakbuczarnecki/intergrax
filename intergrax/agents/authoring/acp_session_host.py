@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from typing import Any
+
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
@@ -20,3 +22,4 @@ class ACPSessionHostContext(BaseModel):
 
     app_profile: ApplicationEnvironmentProfile | None = None
     binding: AgentBinding | None = Field(default=None, exclude=True)
+    declarative_tool_invoker: Any = Field(default=None, exclude=True)

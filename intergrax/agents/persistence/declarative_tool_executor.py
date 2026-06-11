@@ -7,7 +7,7 @@ from __future__ import annotations
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any, Literal, Protocol
+from typing import Any, Literal, Protocol, runtime_checkable
 
 from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
 
@@ -29,6 +29,7 @@ class DeclarativeToolInvokeResult:
     duration_ms: int = 0
 
 
+@runtime_checkable
 class DeclarativeToolInvoker(Protocol):
     async def invoke(
         self,

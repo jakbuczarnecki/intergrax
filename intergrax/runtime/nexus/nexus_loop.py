@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, List, Optional
 
 from intergrax.agents.agent_engine import AgentEngine
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
+from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
 from intergrax.contracts.agent_execution_result import (
     AgentExecutionResult,
     AgentExecutionStatus,
@@ -117,6 +118,7 @@ class NexusLoop:
         escalation_router: Optional[EscalationRouter] = None,
         checkpoint_store: Optional[SQLiteTaskCheckpointStore] = None,
         agent_checkpoint_store: AgentCheckpointStore | None = None,
+        declarative_tool_invoker: DeclarativeToolInvoker | None = None,
         notification_adapter: Optional[NotificationAdapter] = None,
         middleware: Optional[MiddlewarePipeline] = None,
         production_mode: bool = False,
@@ -161,6 +163,7 @@ class NexusLoop:
         self._escalation_router = escalation_router or EscalationRouter()
         self._checkpoint_store = checkpoint_store
         self._agent_checkpoint_store = agent_checkpoint_store
+        self._declarative_tool_invoker = declarative_tool_invoker
         self._notification_adapter = notification_adapter
         self._engine = AgentEngine(
             registry,
@@ -204,6 +207,7 @@ class NexusLoop:
             max_delegation_depth=max_delegation_depth,
             critic_graph_hooks=critic_graph_hooks,
             agent_checkpoint_store=agent_checkpoint_store,
+            declarative_tool_invoker=declarative_tool_invoker,
         )
         self._composer = FinalResponseComposer(merge_strategy=merge_strategy)
         self._lifecycle = lifecycle

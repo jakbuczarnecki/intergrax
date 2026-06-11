@@ -37,6 +37,7 @@ from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
+from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
@@ -52,6 +53,7 @@ def build_nexus_loop_from_environment(
     trace_store: RunTraceWriter | None = None,
     checkpoint_store: SQLiteTaskCheckpointStore | None = None,
     agent_checkpoint_store: AgentCheckpointStore | None = None,
+    declarative_tool_invoker: DeclarativeToolInvoker | None = None,
     notification_adapter: NotificationAdapter | None = None,
     runtime_events_db_path: Path | None = None,
     task_memory_store: Any | None = None,
@@ -102,6 +104,7 @@ def build_nexus_loop_from_environment(
         if reliability.long_running_scheduler_enabled
         else None,
         agent_checkpoint_store=agent_checkpoint_store,
+        declarative_tool_invoker=declarative_tool_invoker,
         notification_adapter=notification_adapter,
         runtime_events_db_path=runtime_events_db_path,
         task_memory_store=task_memory_store,

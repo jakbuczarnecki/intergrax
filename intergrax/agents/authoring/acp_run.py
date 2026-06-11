@@ -18,9 +18,15 @@ from intergrax.agents.authoring.step_loop import AgentRuntime
 from intergrax.applications._shared.reliability_runtime_bridge import resolve_reliability_wiring_options
 from intergrax.agents.authoring.artifact_refs import artifact_refs_from_payloads
 from intergrax.agents.compliance_summary import build_compliance_summary
+from intergrax.agents.persistence.catalog_declarative_invoker import (
+    CatalogDeclarativeToolInvoker,
+)
 from intergrax.agents.persistence.session_persistence import (
     make_checkpoint_hook,
     resolve_session_persistence,
+)
+from intergrax.agents.persistence.tool_invoker_wiring import (
+    resolve_declarative_tool_invoker_from_metadata,
 )
 from intergrax.agents.run_environment import EffectiveAgentRunEnvironment, merge_environment
 from intergrax.tools.tool_execution_profile import build_profile_map
@@ -112,6 +118,21 @@ async def run_acp_session(
         reliability = AgentSessionReliability.from_wiring_options(
             resolve_reliability_wiring_options(host.app_profile.reliability_profile)
         )
+    declarative_invoker = None
+    if host is not None and host.declarative_tool_invoker is not None:
+        declarative_invoker = resolve_declarative_tool_invoker_from_metadata(
+            {AcpMetadataKey.DECLARATIVE_TOOL_INVOKER: host.declarative_tool_invoker},
+        )
+    if declarative_invoker is None:
+        declarative_invoker = resolve_declarative_tool_invoker_from_metadata(request.metadata)
+    if isinstance(declarative_invoker, CatalogDeclarativeToolInvoker):
+        declarative_invoker.bind_run(
+            run_id=run_id,
+            agent_id=merged.agent_id,
+            tenant_id=merged.tenant_id,
+            user_id=str(request.identity.user_id or ""),
+        )
+
     kernel_ctx = StepKernelContext(
         agent_id=merged.agent_id,
         run_id=run_id,
@@ -123,6 +144,7 @@ async def run_acp_session(
         policy_engine=PolicyEngine(),
         organizational=merged.organizational,
         side_effect_ledger=persistence.side_effect_ledger,
+        declarative_tool_invoker=declarative_invoker,
         tool_profiles=build_profile_map(list(contract.extra_tools)),
         reliability=reliability,
         state_root=state_root,
