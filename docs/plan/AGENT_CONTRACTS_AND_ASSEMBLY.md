@@ -95,16 +95,16 @@
 
 ### ACP legacy & technical debt register (must shrink to zero)
 
-**Audit 2026-06-11:** **15/18 Closed** in code · **3 Open** — tracked in [Phase ACP-CLOSE](#phase-acp-close--architecture-compliance-closeout).
+**Audit 2026-06-11:** **17/18 Closed** in code · **1 Open** (DEBT-ACP-18) — tracked in [Phase ACP-CLOSE](#phase-acp-close--architecture-compliance-closeout).
 
 | Debt ID | Legacy surface | Replacement | Status | Closed by / Open row |
 |---------|----------------|-------------|--------|----------------------|
 | DEBT-ACP-01 | `Agent.run()` without `AgentRunRequest` | §29 typed `run()` | **Closed** | ACP-DX-3 |
 | DEBT-ACP-02 | `RuntimeRequest` opaque metadata I/O | `AgentRunRequest` §30.9 | **Closed** | ACP-DX-1 |
 | DEBT-ACP-03 | Raw `dict` agent state | `AcpSessionState` §32.0 | **Closed** | ACP-0 · ACP-DX-6 |
-| DEBT-ACP-04 | `decide_after_step` + `AgentDecision` author API | `StepOutcome` factories §32.0.4 | **Open** — bridge | **ACP-CLOSE-LEG-2** |
+| DEBT-ACP-04 | `decide_after_step` + `AgentDecision` author API | `StepOutcome` factories §32.0.4 | **Closed** | ACP-CLOSE-LEG-2 · CognitiveAgent UAEP shim only |
 | DEBT-ACP-05 | `get_steps` / `run_step` as primary author API | `on_next_step` §32.5 | **Closed** | ACP-STEP-3 · ACP-8 |
-| DEBT-ACP-06 | `RuntimeEngine.run` fallback in `AgentEngine` | `advance_step` + kernel only | **Open** — deprecated | **ACP-CLOSE-LEG-1** |
+| DEBT-ACP-06 | `RuntimeEngine.run` fallback in `AgentEngine` | `advance_step` + kernel only | **Closed** | ACP-CLOSE-LEG-1 |
 | DEBT-ACP-07 | `build_context` duplicating `RuntimeConfig` | `merge_environment` §30 | **Closed** | ACP-DX-2 · ACP-CFG |
 | DEBT-ACP-08 | No `AgentRunTrace` on result | Plane B §31 | **Closed** | ACP-OBS-1 |
 | DEBT-ACP-09 | No `ApplicationRunSummary` | Plane A §31 | **Closed** | ACP-OBS-2 |
@@ -275,8 +275,8 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-CLOSE-DOC-2 | DOC | Architecture §28.3 GAP register — Closed/Open truth table | **Done** | §28.3 | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | 32 Closed · 3 Open (03/04/07) |
 | ACP-CLOSE-DOC-3 | DOC | Architecture §36.4 · §40.13 · implementation status tables | **Done** | §36.4 · §40.13 | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | Code maps Done; §40 platform implemented |
 | ACP-CLOSE-DOC-4 | DOC | Regenerate domain audit prompt | **Done** | audit | `guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` | `generate_domain_audit_prompts.py` |
-| ACP-CLOSE-LEG-1 | LEG | **Remove** `RuntimeEngine` fallback from `AgentEngine` | Planned | §13.5 · §38 | `agent_engine.py` | No fallback path; DEBT-ACP-06 **Closed** |
-| ACP-CLOSE-LEG-2 | LEG | **Remove** author-visible UAEP (`get_steps`/`decide_after_step` on public base) | Planned | §13.3–13.4 | `base.py`, `uaep.py` | Bridge only in `uaep_step_bridge.py`; DEBT-ACP-04 **Closed** |
+| ACP-CLOSE-LEG-1 | LEG | **Remove** `RuntimeEngine` fallback from `AgentEngine` | **Done** | §13.5 · §38 | `agent_engine.py` | `ValueError` on non-UAEP/non-ACP agents; DEBT-ACP-06 **Closed** |
+| ACP-CLOSE-LEG-2 | LEG | **Remove** author-visible UAEP (`decide_after_step` on `IntergraxAgent`) | **Done** | §13.3–13.4 | `uaep_linear_bridge.py`, `uaep.py` | `linear_agent_decide_after_step`; DEBT-ACP-04 **Closed** for linear agents |
 | ACP-CLOSE-LEG-3 | LEG | Retire `uaep_pipeline.py` → `RuntimeEngine` | Planned | §13.5 | `uaep_pipeline.py` | grep `RuntimeEngine` in `agents/` = framework bridge only |
 | ACP-CLOSE-LEG-4 | LEG | §45 checklist — UAEP internal-only wording | Planned | §45 | `AGENT_CREATION_GUIDE.md` | No author UAEP-first path |
 | ACP-CLOSE-PROD-1 | PROD | `AgentCheckpointStore` on **all mutating product hosts** | Planned | §40.1 | `applications/*/host/factory.py`, `harness_host_runtime.py` | legal/research/DSW/assistant pass `agent_checkpoint_store` |
@@ -646,8 +646,8 @@ ACP-CLOSE:  DOC-2..4 → LEG-1 → LEG-2 → LEG-3 → PROD-1 → PROD-2 → PRO
 | 1 | ACP-CLOSE-DOC-2 | P0 | §28.3 | **Done** |
 | 2 | ACP-CLOSE-DOC-3 | P0 | §36.4 · §40.13 | **Done** |
 | 3 | ACP-CLOSE-DOC-4 | P1 | audit | **Done** |
-| 4 | ACP-CLOSE-LEG-1 | **P0** | §13.5 | Planned |
-| 5 | ACP-CLOSE-LEG-2 | **P0** | §13.4 | Planned |
+| 4 | ACP-CLOSE-LEG-1 | **P0** | §13.5 | **Done** |
+| 5 | ACP-CLOSE-LEG-2 | **P0** | §13.4 | **Done** |
 | 6 | ACP-CLOSE-LEG-3 | P1 | §13.5 | Planned |
 | 7 | ACP-CLOSE-LEG-4 | P2 | §45 | Planned |
 | 8 | ACP-CLOSE-PROD-1 | **P0** | §40.1 | Planned |
@@ -669,7 +669,7 @@ ACP-CLOSE:  DOC-2..4 → LEG-1 → LEG-2 → LEG-3 → PROD-1 → PROD-2 → PRO
 
 **Parallel (owning plan):** AUDIT-IDEAL-19.1 · 20.1 · 31.1 — see [Phase AUDIT-IDEAL](#phase-audit-ideal--ideal-architecture-gap-register-2026-06-09).
 
-**Minimum viable close (P0 only):** ~~DOC-2 · DOC-3~~ **Done** · LEG-1 · LEG-2 · PROD-1 · PROD-2 · PROD-4 · PROD-7 · PROD-8 → **7 tasks** remaining (+ DOC-1..4 Done).
+**Minimum viable close (P0 only):** DOC-1..4 · LEG-1 · LEG-2 **Done** · PROD-1 · PROD-2 · PROD-4 · PROD-7 · PROD-8 → **5 tasks** remaining.
 
 ---
 

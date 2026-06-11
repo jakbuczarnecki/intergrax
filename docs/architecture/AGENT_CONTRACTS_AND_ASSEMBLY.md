@@ -1013,7 +1013,7 @@ Developer code path:
 | `CognitiveAgent` base | **Done** ACP-1 | `intergrax/agents/authoring/patterns/base.py` |
 | Pattern classes | **Done** ACP-2–6 | `intergrax/agents/authoring/patterns/*.py` |
 | Reference pattern probes | **Done** ACP-9 | `intergrax/agents/authoring/patterns/reference.py` |
-| Legacy `RuntimeEngine` | **Deprecated** — remove ACP-CLOSE-LEG-1 | `intergrax/runtime/nexus/engine/runtime.py` |
+| Legacy `RuntimeEngine` author fallback | **Removed** from `AgentEngine` (LEG-1 Done) | `uaep_pipeline.py` still uses internal path (LEG-3) |
 | `AgentRunRequest` / `Result` | **Done** ACP-DX-1 | `intergrax/contracts/agent_run.py` |
 | `merge_environment` | **Done** ACP-DX-2 | `intergrax/agents/run_environment.py` |
 | Scaffold `--pattern` | **Done** ACP-8 | `intergrax/scaffold/new_agent.py` |
@@ -1025,7 +1025,7 @@ Developer code path:
 | UAEP-first authoring | L3 | L3 (bridge internal) | L3 internal-only |
 | Pattern library | L0 (ad hoc) | **L3** | L3 |
 | Mental model clarity | L1–L2 | **L3** | L3 |
-| Legacy path removal | L2 (dual path) | **L2** (DEBT-04/06 open) | L3 — ACP-CLOSE-LEG |
+| Legacy path removal | L2 (dual path) | **L2.5** (AgentEngine clean; pipeline agents open) | L3 — ACP-CLOSE-LEG-3 |
 | ReAct + tool loop unity | L1 | **L1** (TOOL-ENG-6 open) | L3 — ACP-CLOSE-PAT-1 |
 | Decomposition agent DX | L0 | **L3** | L3 |
 | Reflection + CVL wiring | L2 | **L2** (no CVL hook) | L3 — ACP-CLOSE-PAT-2 |
@@ -1038,7 +1038,7 @@ Developer code path:
 |----|-----|----------|----------|--------|
 | GAP-ACP-01 | No `CognitiveAgent` base | P0 | ACP-1 | **Closed** |
 | GAP-ACP-02 | No pattern classes | P0 | ACP-2–6 | **Closed** |
-| GAP-ACP-03 | Dual UAEP / RuntimeEngine path | P0 | ACP-CLOSE-LEG-1..3 | **Open** |
+| GAP-ACP-03 | Dual UAEP / RuntimeEngine path | P0 | ACP-CLOSE-LEG-1..3 | **Partial** — AgentEngine fallback removed; `uaep_pipeline` open |
 | GAP-ACP-04 | ReAct at tool layer only | P1 | ACP-CLOSE-PAT-1 · TOOL-ENG-6 | **Open** |
 | GAP-ACP-05 | `build_context` duplicates profile | P1 | ACP-CFG | **Closed** |
 | GAP-ACP-06 | No scaffold `--pattern` | P1 | ACP-8 | **Closed** |

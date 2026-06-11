@@ -45,7 +45,7 @@ class NoPipelineAgent(Agent):
 # TEST
 # ----------------------------------------
 @pytest.mark.asyncio
-async def test_agent_engine_without_pipeline_uses_default_pipeline():
+async def test_agent_engine_without_pipeline_rejects_legacy_path():
     agent = NoPipelineAgent()
     engine = AgentEngine({"test": agent})
 
@@ -57,8 +57,5 @@ async def test_agent_engine_without_pipeline_uses_default_pipeline():
         message="hello"
     )
 
-    response = await engine.run(request)
-
-    # We expect runtime fallback (NoPlannerPipeline)
-    assert response is not None
-    assert response.answer is not None
+    with pytest.raises(ValueError, match="ACP-CLOSE-LEG-1"):
+        await engine.run(request)

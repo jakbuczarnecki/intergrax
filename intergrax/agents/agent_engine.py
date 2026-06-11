@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import warnings
 from typing import Any, Dict, Optional, Union
 
 from intergrax.agents.agent_contract import Agent
@@ -23,7 +22,6 @@ from intergrax.contracts.runtime_mapping import runtime_answer_to_agent_result
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
-from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.policy.policy_engine import PolicyEngine, coerce_policy_engine
@@ -41,8 +39,8 @@ class AgentEngine:
     """
     Tier-2 → Tier-1 bridge (§42.19, §42.44).
 
-    Resolves agents and executes via UAEP when ``get_steps`` / ``run_step`` are
-    implemented; otherwise falls back to the legacy ``RuntimeEngine`` pipeline path.
+    Resolves agents and executes via typed ACP session or UAEP bridge.
+    Legacy ``RuntimeEngine`` pipeline fallback removed (ACP-CLOSE-LEG-1).
     """
 
     def __init__(
@@ -200,17 +198,8 @@ class AgentEngine:
             answer, validation, context, governance = await uaep_executor.execute(agent, request)
             return answer, validation, context, governance, {}
 
-        warnings.warn(
-            "AgentEngine RuntimeEngine fallback is deprecated; use on_next_step + "
-            "Agent.run(AgentRunRequest) or UAEP bridge (ACP-LEG-1).",
-            DeprecationWarning,
-            stacklevel=2,
+        raise ValueError(
+            f"{type(agent).__name__} is not executable: set acp.session.v1 metadata for "
+            "IntergraxAgent ACP runs, implement UAEPAgent (get_steps/run_step), or migrate "
+            "off RuntimeEngine pipeline (ACP-CLOSE-LEG-1)."
         )
-        context = agent.build_context(request)
-        runtime = RuntimeEngine(context)
-        answer = await runtime.run(request)
-        validation = agent.validate(answer, context=context)
-        if not validation.valid and validation.errors:
-            if answer.route is not None:
-                answer.route.extra.setdefault("agent_validation_errors", validation.errors)
-        return answer, validation, context, None, {}

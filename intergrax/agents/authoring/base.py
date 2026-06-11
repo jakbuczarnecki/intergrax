@@ -10,12 +10,16 @@ from types import FunctionType
 from typing import ClassVar, List
 
 from intergrax.agents.authoring.acp_run import run_acp_session
-from intergrax.agents.authoring.decisions import complete
 from intergrax.agents.authoring.state_access import load_session_state, session_state_delta
 from intergrax.agents.authoring.step_outcome import StepOutcome
 from intergrax.agents.run_environment import EffectiveAgentRunEnvironment
+from intergrax.agents.authoring.uaep_linear_bridge import (
+    linear_agent_decide_after_step,
+    linear_agent_get_steps,
+    linear_ordered_step_ids,
+    linear_step_methods,
+)
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
-from intergrax.agents.uaep_protocol import UAEPAgentWithDecide
 from intergrax.contracts.acp_state import AcpSessionState
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_contract_section12 import (
@@ -27,7 +31,6 @@ from intergrax.contracts.agent_contract_section12 import (
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.agent_run import AgentRunError, AgentRunRequest, AgentRunResult
 from intergrax.contracts.agent_run_enums import AgentRunErrorCode, AgentRunStatus, TerminalReason
-from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
@@ -52,7 +55,7 @@ def _trace_label_on_callable(value: object, step_id: str) -> str:
     return step_id
 
 
-class IntergraxAgent(HarnessReferenceAgent, UAEPAgentWithDecide, ABC):
+class IntergraxAgent(HarnessReferenceAgent, ABC):
     """
     Authoring base: declare ``contract_id``, ``capabilities``, implement ``@step`` methods.
 
@@ -190,44 +193,14 @@ class IntergraxAgent(HarnessReferenceAgent, UAEPAgentWithDecide, ABC):
         return CapabilityMatchResult(matched=False, rationale="capability not supported")
 
     def _step_methods(self) -> list[tuple[str, Callable[..., object]]]:
-        methods: list[tuple[str, Callable[..., object]]] = []
-        for cls in type(self).mro():
-            if cls is IntergraxAgent or cls is object:
-                continue
-            for name, value in cls.__dict__.items():
-                if not callable(value):
-                    continue
-                if _step_id_on_callable(value) is not None:
-                    methods.append((name, value))
-        methods.sort(key=lambda item: _step_id_on_callable(item[1]) or "")
-        return methods
+        return linear_step_methods(self)
 
     def _ordered_step_ids(self) -> list[str]:
-        ids: list[str] = []
-        for _name, method in self._step_methods():
-            step_id = _step_id_on_callable(method)
-            if step_id is not None:
-                ids.append(step_id)
-        return ids
+        return linear_ordered_step_ids(self)
 
     def get_steps(self, context: RuntimeContext) -> List[AgentStep]:
-        _ = context
-        contract = self.get_contract()
-        steps: list[AgentStep] = []
-        for index, (method_name, method) in enumerate(self._step_methods()):
-            step_id = _step_id_on_callable(method)
-            if step_id is None:
-                continue
-            steps.append(
-                AgentStep(
-                    step_id=step_id,
-                    step_name=method_name,
-                    step_index=index,
-                    trace_label=_trace_label_on_callable(method, step_id),
-                    allowed_tools=list(contract.allowed_tools),
-                )
-            )
-        return steps
+        """UAEP internal — authors use ``@step`` + ``on_next_step``, not override."""
+        return linear_agent_get_steps(self, context)
 
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         for _name, method in self._step_methods():
@@ -245,20 +218,3 @@ class IntergraxAgent(HarnessReferenceAgent, UAEPAgentWithDecide, ABC):
                 )
             return StepOutput(step_id=step.step_id, summary=str(result))
         raise KeyError(f"Unknown step_id: {step.step_id}")
-
-    def decide_after_step(
-        self,
-        step: AgentStep,
-        output: StepOutput | None,
-        ctx: RuntimeExecutionContext,
-    ) -> AgentDecision:
-        _ = output, ctx
-        step_ids = self._ordered_step_ids()
-        if not step_ids or step.step_id == step_ids[-1]:
-            return complete(reason=f"{step.step_id} finished")
-        index = step_ids.index(step.step_id)
-        return AgentDecision(
-            type=AgentDecisionType.CONTINUE,
-            next_step_id=step_ids[index + 1],
-            reason="next authored step",
-        )

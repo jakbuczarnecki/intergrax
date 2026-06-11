@@ -59,7 +59,7 @@ class FakeAgent(Agent):
 @pytest.mark.asyncio
 @pytest.mark.integration
 @pytest.mark.gate
-async def test_agent_engine_runs_pipeline():
+async def test_agent_engine_rejects_pipeline_only_agent():
     agent = FakeAgent()
     engine = AgentEngine({"test": agent})
 
@@ -71,6 +71,5 @@ async def test_agent_engine_runs_pipeline():
         message="hello"
     )
 
-    response = await engine.run(request)
-
-    assert response.answer == "OK"
+    with pytest.raises(ValueError, match="ACP-CLOSE-LEG-1"):
+        await engine.run(request)

@@ -662,6 +662,11 @@ class UAEPExecutor:
     ) -> AgentDecision:
         if isinstance(agent, UAEPAgentWithDecide):
             return agent.decide_after_step(step, output, ctx)
+        from intergrax.agents.authoring.base import IntergraxAgent
+        from intergrax.agents.authoring.uaep_linear_bridge import linear_agent_decide_after_step
+
+        if isinstance(agent, IntergraxAgent):
+            return linear_agent_decide_after_step(agent, step, output, ctx)
         return AgentDecision(type=AgentDecisionType.CONTINUE)
 
     @staticmethod
