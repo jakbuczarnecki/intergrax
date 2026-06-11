@@ -100,7 +100,7 @@
 | DEBT-ACP-01 | `Agent.run()` → `AgentEngine` without `AgentRunRequest` | §29 `run(AgentRunRequest)→AgentRunResult` | Wave 2 | ACP-DX-3 |
 | DEBT-ACP-02 | `RuntimeRequest` + opaque `metadata` for run I/O | `AgentRunRequest` / `RequestIdentity` §30.9 | Wave 0 | ACP-DX-1 |
 | DEBT-ACP-03 | `ctx.metadata["acp.state.v1"]` raw dict in agents | `AcpSessionState` + `load_session_state` §32.0 | Wave 0 | ACP-0 · ACP-DX-6 |
-| DEBT-ACP-04 | `decide_after_step` + `AgentDecision` stringly control | `StepOutcome` factories + enums §32.0.4 | Wave 0–1 | ACP-DX-6 · ACP-STEP-1 |
+| DEBT-ACP-04 | `decide_after_step` + `AgentDecision` stringly control | `StepOutcome` factories + enums §32.0.4 | **Bridge only** — primary author API closed ACP-7 | ACP-DX-6 · ACP-STEP-1 · ACP-7 |
 | DEBT-ACP-05 | `get_steps` / `run_step` as **primary** author API | `on_next_step` primary; `@step` maps to loop §32.5 | **Bridge Wave 4** — removal Wave 5+ | ACP-STEP-3 · ACP-8 |
 | DEBT-ACP-06 | `RuntimeEngine.run` fallback in `AgentEngine` | `advance_step` + kernel only | **Deprecated Wave 4** | ACP-LEG-1 |
 | DEBT-ACP-07 | `build_context` duplicating `RuntimeConfig` per agent | Profile injection via `merge_environment` §30 | Wave 2 | ACP-DX-2 · ACP-CFG |
@@ -231,7 +231,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-4 | ACP2 | **`PlanExecuteAgent`** — multi-step + phase machine | **Done** | `patterns/plan_execute.py` | `PatternPlanExecuteProbe` |
 | ACP-5 | ACP2 | **`DecompositionAgent`** — sub-question queue + convergence | **Done** | `patterns/decomposition.py` | `PatternDecompositionProbe` |
 | ACP-6 | ACP2 | **`ReflectionAgent`** — draft/critique/revise phases | **Done** | `patterns/reflection.py` | `PatternReflectionProbe` (CVL hook Wave 6+) |
-| ACP-7 | ACP3 | **Decision helpers** — legacy UAEP bridge; new code uses `StepOutcome` factories §32.0 (ACP-DX-6) | Planned | `intergrax/agents/authoring/decisions.py` | Deprecation path to ACP-DX-6 factories |
+| ACP-7 | ACP3 | **Decision helpers** — legacy UAEP bridge; new code uses `StepOutcome` factories §32.0 (ACP-DX-6) | **Done** | `intergrax/agents/authoring/decisions.py` | Primary `finish`/`continue_with`/…; UAEP helpers deprecated; `to_step_outcome` bridge |
 | ACP-8 | ACP3 | **Scaffold `--pattern`** flag on `new-agent` | **Done** | `scaffold/new_agent.py`, `scaffold/cli.py` | `test_acp_pattern_scaffold` |
 | ACP-9 | ACP4 | **Harness reference probes** — one per pattern | **Done** | `patterns/reference.py` | Pattern probe unit tests |
 | ACP-10 | ACP4 | **Unit test package** `tests/unit/agents/authoring/patterns/` | Planned | tests | `pytest` green, no network |

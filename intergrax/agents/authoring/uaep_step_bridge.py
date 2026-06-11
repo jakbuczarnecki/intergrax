@@ -61,7 +61,11 @@ def agent_decision_to_step_outcome(
     run_output = step_output_to_run_output(output) if output is not None else None
 
     if decision.type == AgentDecisionType.CONTINUE:
-        return StepOutcome.continue_with(state_delta, diagnostics={"uaep_decision": decision.type.value})
+        diagnostics: dict[str, Any] = {"uaep_decision": decision.type.value}
+        next_step_id = decision.payload.get("next_step_id")
+        if isinstance(next_step_id, str) and next_step_id:
+            diagnostics["next_step_id"] = next_step_id
+        return StepOutcome.continue_with(state_delta, diagnostics=diagnostics)
 
     if decision.type == AgentDecisionType.COMPLETE:
         return StepOutcome.complete(
@@ -75,7 +79,14 @@ def agent_decision_to_step_outcome(
         return StepOutcome.pause_hitl(decision.reason or "human_required", state_delta=state_delta)
 
     if decision.type == AgentDecisionType.MODIFY_PLAN:
-        return StepOutcome.replan(state_delta, diagnostics={"uaep_decision": decision.type.value})
+        diagnostics: dict[str, Any] = {"uaep_decision": decision.type.value}
+        if decision.handoff is not None:
+            diagnostics["handoff"] = decision.handoff.model_dump(mode="json")
+        if decision.suggested_plan_delta is not None:
+            diagnostics["suggested_plan_delta"] = decision.suggested_plan_delta.model_dump(
+                mode="json"
+            )
+        return StepOutcome.replan(state_delta, diagnostics=diagnostics)
 
     if decision.type == AgentDecisionType.FAIL:
         return StepOutcome.fail(

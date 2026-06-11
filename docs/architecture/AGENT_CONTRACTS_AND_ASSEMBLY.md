@@ -660,7 +660,7 @@ class CognitiveAgent(HarnessReferenceAgent):
 | `should_request_human(state)` | `evaluate()` → `REQUEST_HUMAN` with `human_request` payload |
 | Incremental state | `ctx.metadata["acp.state.v1"]` (see §25) |
 
-**Decision helpers (existing):** `intergrax/agents/authoring/decisions.py` — `complete()`, `continue_to()`.
+**Decision helpers (ACP-7):** `intergrax/agents/authoring/decisions.py` — primary `finish()`, `continue_with()`, `pause_for_human()`, `request_replan()`, `delegate_handoff()` → `StepOutcome` factories §32.0.4; legacy UAEP `complete()` / `continue_to()` / `delegate_to()` deprecated; `to_step_outcome()` bridges `AgentDecision` for UAEP shim only.
 
 ## 24.4 Single UAEP step vs internal micro-loop
 

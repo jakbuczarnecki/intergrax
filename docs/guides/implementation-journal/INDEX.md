@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-10-024 | 2026-06-10 | tier-0 AGENT_CONTRACTS | ACP-7 | [ACP-7 typed decision helpers and UAEP deprecation bridge](entries/2026-06-10-acp-7-decision-helpers.md) | pending |
 | IJ-2026-06-10-023 | 2026-06-10 | tier-0 AGENT_CONTRACTS | ACP-PROD-6..11 | [ACP Wave 7 artifact refs and production CI gates](entries/2026-06-10-acp-wave-7-prod-gates.md) | pending |
 | IJ-2026-06-10-022 | 2026-06-10 | tier-0/1 AGENT_CONTRACTS | ACP-PROD-4, ACP-PROD-5 | [ACP Wave 7 reliability and shared context CAS](entries/2026-06-10-acp-wave-7-reliability-shared-context.md) | pending |
 | IJ-2026-06-10-021 | 2026-06-10 | tier-0/1 AGENT_CONTRACTS | ACP-PROD-1..3 | [ACP Wave 7 checkpoint and idempotency](entries/2026-06-10-acp-wave-7-prod-persistence.md) | pending |
