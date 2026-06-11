@@ -6,7 +6,7 @@
 **Baseline:** **32/32 L3** (`scripts/harness_maturity_report.py`, IDEAL-L3 W2 Done)  
 **Hub:** [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) · Band **2az** · queue **§6.1au**  
 **Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](../guides/ARCHITECTURE_DEBT_REGISTER.md)  
-**Status:** **AUDIT-IDEAL complete** (2026-06-09) — **80/80 Done** · **0 Deferred §6.3** · **0 Planned**
+**Status:** **AUDIT-IDEAL in progress** (RAG depth wave) — **83/85 Done** · **0 Deferred §6.3** · **2 Planned**
 
 > **Scope:** Close gaps between **L3 Production Harness OS** and **full ideal architecture** (modular, elastic, complete). Harness infrastructure only unless row is explicitly **Deferred §6.3** (product).
 
@@ -65,7 +65,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-13.2 | Integrations | 13 | Catalog hot-reload without host restart | P3 | `INTEGRATIONS` | **Done** |
 | AUDIT-IDEAL-14.1 | RAG | 14 | Graph RAG as default production retrieval profile | P1 | `RAG` · `MEMORY` | **Done** |
 | AUDIT-IDEAL-14.2 | RAG | 14 | Retrieval poisoning defense live on product hosts | P1 | `MEMORY` | **Done** |
-| AUDIT-IDEAL-14.3 | RAG | 14 | Wire `RagProfile.query_expansion` to retrieval path | P0 | `RAG` | **Planned** |
+| AUDIT-IDEAL-14.3 | RAG | 14 | Wire `RagProfile.query_expansion` to retrieval path | P0 | `RAG` | **Done** |
 | AUDIT-IDEAL-14.4 | RAG | 14 | Dual-index + hierarchical retriever default bootstrap | P1 | `RAG` | **Planned** |
 | AUDIT-IDEAL-14.5 | RAG | 14 | Retrieval poisoning defense on `rag.retrieve` catalog path | P1 | `RAG` · `UNIFIED_EXECUTION_RUNTIME` | **Planned** |
 | AUDIT-IDEAL-14.6 | RAG | 14 | Large-corpus async ingest (stream / job orchestration) | P1 | `RAG` | **Done** |

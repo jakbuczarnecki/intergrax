@@ -1,8 +1,12 @@
 # Tier-2 agents (`agents/`)
 
-**Role:** Reusable domain capabilities — UAEP steps, contracts, prompts.  
+**Role:** Reusable domain capabilities — contracts, typed step loop (`on_next_step`), prompts.  
 **Hosts:** Tier-3 applications under `applications/` mount agents via `AgentBinding.mount(...)`.  
-**Workflow:** [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.md)
+**Workflow:** [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.md) · Appendix AC  
+**Architecture:** [`docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 · **§32.0** readability  
+**Implementation plan:** [`docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase **ACP** — waves §6.1aw  
+
+**Migration (2026):** full fleet program — plan **Wave 8** (`ACP-MIG-*`). Bridge compat in Wave 4; **body migration** per-agent via tiered batches (T0→T4). Tracker: [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) fleet migration tracker. New agents: **READ → UPDATE → DECIDE** + scoreboard (`ACP-PROD-12`).
 
 ```text
 agents/<slug>/     →  capability modules (no applications/ imports)

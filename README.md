@@ -6,7 +6,7 @@
 [![Docs](https://img.shields.io/badge/docs-canonical-green.svg)](#documentation-index)
 [![LLM context](https://img.shields.io/badge/llms.txt-available-orange.svg)](llms.txt)
 
-**Agent OS and Harness AI runtime** for building, orchestrating, experimenting with, and validating specialized AI agents.
+**Agent OS and Harness AI runtime** for building, orchestrating, experimenting with, and validating specialized AI agents — with a **clear separation between who decides, who executes, and who orchestrates.**
 
 ---
 
@@ -15,36 +15,82 @@
 - **What:** Intergrax is a **Harness AI platform** — the durable runtime that runs many agents, not a single chatbot or domain bot.
 - **What it provides:** Nexus Agent OS, Tier-0 catalogs (**185** integrations · **190** tools · **149** skills in **41** bundles), LLM, RAG, memory, **Ephemeral Code Craft** (planned), policy, trace, multi-agent graphs, and Tier-3 application hosts.
 - **Who it is for:** Teams building **governed multi-agent systems** — platform engineers, agent architects, Harness AI researchers, and product teams shipping agent-backed applications.
-- **Why it is different:** **The Harness is the product; agents are replaceable.** You compose capabilities from Integration → Tool → Skill → Agent, enforce policy at `ToolRuntime`, and graduate ideas from a fast **laboratory** to a governed **production harness** on one codebase.
-- **Problem it solves:** Stop rebuilding infrastructure for every new agent. Target: **idea → first traced Nexus run in under one hour.**
+- **Why it is different:** **The Harness is the product; agents are replaceable.** Agents own **domain decisions** inside a typed session loop; the harness owns **policy, trace, and execution**; Nexus owns **multi-agent orchestration**; applications own **environment, identity, and production gates** — without collapsing these into one mega-class.
+- **Problem it solves:** Stop rebuilding infrastructure for every new agent. Target: **idea → first traced Nexus run in under one hour**, then **same agent class** from lab notebook to governed production roster.
 
 ```text
-                Intergrax
+                    Intergrax — Harness AI
 
-          ┌──────────────────┐
-          │    Harness AI    │
-          └────────┬─────────┘
-                   │
-              Nexus Runtime
-                   │
-         ┌─────────┴─────────┐
-         │                   │
-      Agents            Applications
-         │                   │
-         └─────────┬─────────┘
-                   │
-              AI Products
+              ┌─────────────────────────────┐
+              │  Application environment     │  identity · profiles · org policy
+              │  (Tier-3)                    │  AgentBinding · production scoreboard
+              └──────────────┬──────────────┘
+                             │ Task
+              ┌──────────────▼──────────────┐
+              │  NexusLoop (Agent OS)        │  graphs · capability routing · HITL
+              │  (Tier-1)                    │
+              └──────────────┬──────────────┘
+                             │ one agent node → Agent.run()
+              ┌──────────────▼──────────────┐
+              │  Agent session (Tier-2)      │  on_next_step → domain decides
+              │  HarnessKernel               │  policy · trace · state · budgets
+              └──────────────┬──────────────┘
+                             │
+         Integration → Tool → Skill → LLM · RAG · Memory (Tier-0)
 ```
 
-Strategic direction: [Development Strategy](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) · Ideal target: [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+Strategic direction: [Development Strategy](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) · Ideal target: [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) · **Agent model canon:** [AGENT_CONTRACTS_AND_ASSEMBLY.md](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40
+
+---
+
+## The agent model — why architects choose Intergrax
+
+Most agent frameworks mix **planning, policy, tool I/O, and multi-agent routing** into a single author-facing class. That works for demos; it breaks for **governed products** — opaque control flow, untyped state, and agents that secretly become mini operating systems.
+
+Intergrax treats the **agent as a domain decision unit** running inside a **rich, typed environment**. Four roles stay explicit:
+
+| Layer | Responsibility | Answers |
+|-------|----------------|---------|
+| **Application (Tier-3)** | Environment & product wiring | *Who is the tenant? Which tools/memory/RAG profile? Org policy? Production gates?* |
+| **NexusLoop (Tier-1)** | Multi-agent orchestration | *Which agents run on this Task? Graph, HITL, checkpoints at task level?* |
+| **Agent (Tier-2)** | Domain cognition per session | *What is the next move? Plan valid? Terminal? Pause for human?* — via **`on_next_step` → `StepOutcome`** |
+| **HarnessKernel** | Deterministic harness cycle | *Policy allowed? State merged safely? Trace recorded? Budgets enforced?* |
+
+**Author mental model (one session, many steps):**
+
+```text
+result = await agent.run(AgentRunRequest(...))     # once per graph node (or direct in lab)
+
+inside run():
+    loop:
+        state = load_session_state(step_ctx)       # READ  — typed AcpSessionState
+        outcome = await on_next_step(step_ctx)     # DECIDE — StepOutcome factories
+        HarnessKernel.execute_step(outcome, ...)   # EXECUTE — policy, trace, merge
+```
+
+**What you get as a platform owner:**
+
+- **Readable agent code** — reviewers see *continue / complete / fail / HITL* from the final `return StepOutcome.*`, not scattered flags in dicts.
+- **Same agent, many deployments** — lab vs legal vs research host = different `ApplicationEnvironmentProfile`, **zero agent forks**.
+- **Virtual workforce ready** — organizational policy envelope on the host, not `if customer == acme` in agent source.
+- **Production is measurable** — [Agent Production Readiness Scoreboard](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md#4015-agent-production-readiness-scoreboard) (contract, runtime, policy, observability, checkpointing, idempotency, security, evaluation, lifecycle, routing).
+- **Agents are swappable** — capability-based routing (`research.web_search`), not hardcoded class names in Nexus.
+
+**Canonical decisions:** [ADR-AGENT-001](docs/adr/ADR-AGENT-001.md) (Nexus stays Agent OS) · [ADR-AGENT-002](docs/adr/ADR-AGENT-002.md) (`Agent.run()` facade) · [ADR-AGENT-003](docs/adr/ADR-AGENT-003.md) (step loop + dual observability).
+
+**Implementation status:** architecture **decision-complete** (§13–§40); delivery via plan [Phase ACP](docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) (typed contracts → step loop → fleet migration → prod gates). Today: UAEP bridge + Nexus path; target: typed `on_next_step` on all roster agents.
+
+**Deep dive:** [Agent Creation Guide — Appendix AC](docs/guides/AGENT_CREATION_GUIDE.md#appendix-ac--agent-run-cognitive-patterns-and-environment-acp) · [Architecture hub — agent in environment](docs/intergrax_runtime_architecture.md#agent-in-the-harness-environment)
 
 ---
 
 ## Why another AI framework?
 
-Most AI projects build individual agents.
+Most AI projects ship **one agent class that secretly is the whole stack** — planner, executor, policy, and orchestrator in one file.
 
-**Intergrax builds the runtime that allows many governed agents and applications to coexist on one platform.**
+**Intergrax ships the Harness** — a governed Agent OS where **agents decide domain steps**, the **kernel executes under policy**, and **Nexus orchestrates graphs** — so you can field dozens of specialized agents and Tier-3 products on one platform without architectural collapse.
+
+If you evaluate GitHub projects by *“does the architecture scale beyond the demo?”* — this separation is the answer.
 
 ---
 
@@ -54,8 +100,8 @@ This repository is for you if you are:
 
 | Role | Why Intergrax |
 |------|----------------|
-| **AI systems architect** | Four-tier Harness AI model, policy-first execution, evidence-driven maturity (L0–L4) |
-| **Agent platform engineer** | Nexus Agent OS, UAEP, `ToolRuntime`, orchestration graphs, observability spine |
+| **AI systems architect** | Four-tier Harness AI model; **agent / kernel / Nexus split**; policy-first execution; L0–L4 maturity |
+| **Agent platform engineer** | Typed `Agent.run()` + `on_next_step`, `HarnessKernel`, `ToolRuntime`, dual observability planes |
 | **Multi-agent runtime developer** | Delegation, subagents, parallel graphs, HITL — without nested OS forks |
 | **Harness AI researcher** | Lab workflow, trace inspection, evaluation hooks, adaptive harness (L4) |
 | **Product team shipping agents** | Tier-3 application shells — isolated deployable hosts composing Tier-2 agents |
@@ -127,7 +173,7 @@ curl -s "http://127.0.0.1:8090/debug/tasks/{task_id}/trace?include_runtime=true"
 | **Build a Tier-3 application** | `new-application` / `new-stack` | [applications/USAGE.md](applications/USAGE.md) |
 | **Connect integrations** | `IntegrationProfile` + Tier-3 wiring | [architecture/INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) |
 | **Attach tools and skills** | `ToolProfile`, `SkillProfile`, `skill_ids` on contract | [architecture/TOOLS.md](docs/architecture/TOOLS.md) · [architecture/SKILLS.md](docs/architecture/SKILLS.md) |
-| **Run through Nexus** | Lab or product host → `NexusLoop` → `AgentEngine` → UAEP | [NEXUS_EXECUTION_FLOW.md](docs/architecture/NEXUS_EXECUTION_FLOW.md) |
+| **Run through Nexus** | Lab or product host → `NexusLoop` → `Agent.run()` / `AgentEngine` | [NEXUS_EXECUTION_FLOW.md](docs/architecture/NEXUS_EXECUTION_FLOW.md) · [Agent model](#the-agent-model--why-architects-choose-intergrax) |
 | **Inspect traces** | `/debug/tasks/{id}/trace`, `intergrax.debug` | [HARNESS_ENVIRONMENT.md](docs/guides/HARNESS_ENVIRONMENT.md) |
 | **Evaluate execution** | Evaluation profile, online registry, CVL hooks | [CRITIC_VERIFICATION.md](docs/architecture/CRITIC_VERIFICATION.md) |
 | **Ephemeral code craft** | Dynamic codegen loop in sandbox (architecture **Done**, impl ECC-1+) | [CODE_CRAFT.md](docs/architecture/CODE_CRAFT.md) |
@@ -160,13 +206,12 @@ Harness  →  Runtime (Nexus)  →  Agents  →  Applications  →  Products
 **Agent composition flow:**
 
 ```text
-Harness (Nexus + app wiring)
-    → runs Tier-2 Agent
-        → composes SkillManifest(s)  →  resolves tool_ids, prompts, policy
-        → AgentEngine / UAEP steps
-        → ToolRuntime.invoke(tool_id)  →  Integration adapters
-        → LLM adapters (per step / planner)
-        → Modality tools (vision, speech, ML)
+Application profile (Tier-3)  →  merge_environment  →  Agent.run(AgentRunRequest)
+    → NexusLoop (multi-agent) or direct run (lab)
+        → Agent.on_next_step  →  StepOutcome  (domain decides)
+        → HarnessKernel       →  policy · trace · state merge (harness executes)
+        → SkillManifest(s) · ToolRuntime.invoke  →  Integration adapters
+        → LLM / RAG / memory gateways (per-step, policy-bound)
 ```
 
 **Vocabulary canon:** [architecture/PLATFORM_FOUNDATION.md §5.3](docs/architecture/PLATFORM_FOUNDATION.md) · **Target model:** [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
@@ -225,7 +270,7 @@ Canon: [architecture/PLATFORM_FOUNDATION.md §5.2](docs/architecture/PLATFORM_FO
 | **Integration** | Swappable backend contract | No | PostgreSQL, Bing, Jira REST |
 | **Tool** | Single atomic operation | **Yes** | `rag.retrieve`, `jira.search_tasks` |
 | **Skill** | Reusable pack: `tool_ids` + prompts + policy | **No** | `legal.contract_review`, `harness.tool_smoke` |
-| **Agent** | Domain module: UAEP steps, `skill_ids[]` | — | `LegalAgent` in `agents/legal/` |
+| **Agent** | Domain module: contract + `on_next_step` / cognitive pattern, `skill_ids[]` | — | `LegalAgent` in `agents/legal/` |
 
 ```text
 Integration  →  Tool  →  Skill  →  Agent  →  Nexus (Harness)  →  Application wiring
@@ -237,31 +282,40 @@ Catalogs: [INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) · [TOOLS.md](doc
 
 ---
 
-## Nexus runtime and UAEP
+## Nexus runtime and agent execution
 
-**Nexus** (Tier-1) is the Agent Operating System. Agents **run inside** Nexus; they do not replace it.
+**Nexus** (Tier-1) is the Agent Operating System. It **orchestrates Tasks and graphs** — it is **not** the agent’s reasoning engine.
 
 | Component | Role |
 |-----------|------|
-| **NexusLoop** | Task intake, classification, planning, lifecycle |
-| **AgentRegistry** | Registration, capability routing, skill/tool resolution |
-| **AgentEngine** | Bridge Nexus → agent UAEP loop |
+| **NexusLoop** | Task intake, multi-agent graph, capability routing, HITL, application orchestration log |
+| **AgentRegistry** | Registration, capability tokens, skill/tool resolution, lifecycle gates |
+| **AgentEngine** | Bridge graph node → `Agent.run()` / session loop |
+| **HarnessKernel** | Per-step harness cycle — policy, trace, state merge, budgets (not domain planning) |
 | **ExecutionGraph** | Multi-agent workflows, delegation, parallel cap |
 | **ToolRuntime** | Unified tool gateway — policy, trace, idempotency (§42.12) |
-| **PolicyEngine** | Pre/post tool governance, budgets, HITL |
+| **PolicyEngine** | Governance on tool/LLM/RAG/memory paths |
 | **ContextManager** | Context assembly, budget trimming, memory views |
 
-### UAEP — Unified Agent Execution Protocol
+### Target author API (ACP — canonical)
 
 ```text
-get_steps  →  run_step  →  decide_after_step
+Agent.run(AgentRunRequest)  →  loop: on_next_step → StepOutcome  →  HarnessKernel.execute_step
 ```
 
-Orchestrated by `AgentEngine` inside `NexusLoop`. All agents conform to the **Unified Execution Runtime Specification** (§42): events, hooks, `AgentDecision`, interrupts, policy.
+- **One `run()`** per graph node — **many `on_next_step`** inside the session.
+- **Typed state** (`AcpSessionState`) and **typed outcomes** — readability at code-review time.
+- **Dual observability:** `AgentRunTrace` (agent plane) + `ApplicationRunSummary` (orchestration plane).
 
-**Registration rule:** integrate through `AgentRegistry.register()` — never edit `NexusLoop` for one agent.
+### UAEP (bridge today)
 
-Deep dive: [UNIFIED_EXECUTION_RUNTIME.md](docs/architecture/UNIFIED_EXECUTION_RUNTIME.md) · **End-to-end flow:** [NEXUS_EXECUTION_FLOW.md](docs/architecture/NEXUS_EXECUTION_FLOW.md) · **Orchestration strategies:** [ORCHESTRATION.md §50–§54](docs/architecture/ORCHESTRATION.md) · **Tool engine pipeline:** [TOOLS.md#tool-execution-pipeline](docs/architecture/TOOLS.md#tool-execution-pipeline)
+```text
+get_steps  →  run_step  →  decide_after_step   # maps to on_next_step + kernel during migration
+```
+
+All agents conform to the **Unified Execution Runtime Specification** (§42). **Registration:** `AgentRegistry.register()` — never fork `NexusLoop` for one agent.
+
+Canon: [AGENT_CONTRACTS_AND_ASSEMBLY.md](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · Plan: [Phase ACP](docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [UNIFIED_EXECUTION_RUNTIME.md](docs/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [NEXUS_EXECUTION_FLOW.md](docs/architecture/NEXUS_EXECUTION_FLOW.md) · [ORCHESTRATION.md §50–§54](docs/architecture/ORCHESTRATION.md)
 
 ---
 
@@ -336,9 +390,10 @@ Full index: [`applications/README.md`](applications/README.md) · Composition en
 ## Experimentation workflow
 
 ```text
-new idea  →  scaffold agent  →  implement domain logic  →  register
-  →  wire tools/skills/integrations  →  run via NexusLoop  →  inspect trace
-  →  keep · improve · pause · delete
+new idea  →  scaffold agent  →  contract + on_next_step (READ/UPDATE/DECIDE)
+  →  register  →  wire host profile / AgentBinding
+  →  agent.run() in pytest  →  Nexus graph in prod  →  inspect AgentRunTrace
+  →  production readiness scoreboard  →  promote roster
 ```
 
 Regression gate: `uv run pytest -m gate -q`
@@ -378,8 +433,9 @@ tests/ · scripts/       # Gate tests and harness CI checks
 |------------|------|
 | Understand strategic direction | [INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) |
 | Understand the platform | [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) → pick a domain pair |
-| See implementation status | [plan/PLATFORM_FOUNDATION.md](docs/plan/PLATFORM_FOUNDATION.md) |
-| Create a new agent | [AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md) |
+| **Understand the agent model** | [The agent model](#the-agent-model--why-architects-choose-intergrax) · [AGENT_CONTRACTS §13–§40](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [ADR-AGENT-001..003](docs/adr/ADR-AGENT-001.md) |
+| See implementation status | [plan/PLATFORM_FOUNDATION.md](docs/plan/PLATFORM_FOUNDATION.md) · [plan ACP](docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) |
+| Create a new agent | [AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md) · [Appendix AC](docs/guides/AGENT_CREATION_GUIDE.md#appendix-ac--agent-run-cognitive-patterns-and-environment-acp) |
 | Full Nexus execution flow | [NEXUS_EXECUTION_FLOW.md](docs/architecture/NEXUS_EXECUTION_FLOW.md) |
 | See catalog sizes (integrations / tools / skills) | [Tier-0 catalog summary](#tier-0-catalog-summary) |
 | Wire integrations / tools / skills | [INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) · [TOOLS.md](docs/architecture/TOOLS.md) · [SKILLS.md](docs/architecture/SKILLS.md) · [Appendix J](docs/guides/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) |

@@ -50,7 +50,8 @@ Implementation status: [`intergrax_runtime_architecture.md`](intergrax_runtime_a
 34. [Appendix W — Critic & Verification control plane closeout](#appendix-w--critic--verification-control-plane-closeout)
 35. [Appendix V — Adaptive Harness control plane closeout](#appendix-v--adaptive-harness-control-plane-closeout)
 36. [Appendix X — MVP-to-product evolution playbook](#appendix-x--mvp-to-product-evolution-playbook)
-37. [Anti-patterns](#anti-patterns)
+37. [Appendix AC — Agent `run()`, patterns, environment (ACP)](#appendix-ac--agent-run-cognitive-patterns-and-environment-acp)
+38. [Anti-patterns](#anti-patterns)
 37. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
 
 ---
@@ -173,7 +174,9 @@ agents/document_automation/
     README.md
 ```
 
-The scaffold is **UAEP-first**: every agent implements `get_steps` / `run_step` / `decide_after_step`.
+**Target (ACP — after Wave 5):** scaffold emits **`on_next_step` + typed `AcpSessionState` subclass** — see architecture §32.0 and plan Wave 5 (`ACP-8`).
+
+**Bridge (today):** scaffold is **UAEP-first** (`get_steps` / `run_step` / `decide_after_step`) until `ACP-STEP-3` + `ACP-8` ship. New agents SHOULD still structure domain logic as **READ → UPDATE → DECIDE** (Appendix AC.3b) even on the bridge.
 
 **Important:** scaffold creates files only. It does **not** register the agent globally or in any application.
 
@@ -185,13 +188,16 @@ The scaffold is **UAEP-first**: every agent implements `get_steps` / `run_step` 
 |------|----------------|
 | `capabilities.py` | Public capability ids |
 | `contract.py` | `AgentContract` — id, description, tools, risk, max_steps |
-| `steps/` | Business logic — prompts, rules, tool calls |
+| `state.py` (target) | **Typed** `AcpSessionState` subclass — `extra=forbid` §32.0 |
+| `steps/` or `on_next_step` | Domain logic — **READ → UPDATE → DECIDE** per step (Appendix AC.3b) |
 | `prompts/` | System/user prompt templates |
 | `schemas/` | Request/response models |
 
+**Canonical implementation path (ACP):** override **`on_next_step`** → return **`StepOutcome`** factories; use **`load_session_state`** and **`state_delta`** only — never mutate state in place. Full wave plan: [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) §6.1aw.
+
 **Reuse Tier-0** (LLM adapters, tools, RAG helpers). Do not duplicate platform infrastructure inside the agent folder. For **which database, cache, or Slack backend** the host uses, see [Appendix E — Integrations](#appendix-e--integrations-and-tier-0-wiring) — agents declare **tools and capabilities**, applications wire **integration slugs**.
 
-**Tool access under UAEP:**
+**Tool access (gateways — immediate mode §32.8):**
 
 ```python
 from intergrax.contracts.tool_request import ToolRequest
@@ -2585,10 +2591,233 @@ Runbooks: [`runbook/adaptive/`](../runbook/adaptive/) · architecture: [`archite
 
 ---
 
+## Appendix AC — Agent `run()`, cognitive patterns, and environment (ACP)
+
+**Canon:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13 · §21–§40 · **§32.0** (readability & typed-only) · **ADR:** [ADR-AGENT-001](../adr/ADR-AGENT-001.md) · [ADR-AGENT-002](../adr/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/ADR-AGENT-003.md) · **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase **ACP** — waves §6.1aw
+
+### AC.1 Mental model — one `run()`, many `on_next_step`, two entries
+
+```text
+YOU IMPLEMENT:  on_next_step(step_ctx) → StepOutcome   # primary domain hook
+                OR pattern hooks / @step (framework maps to on_next_step)
+
+YOU CALL:       result = await agent.run(AgentRunRequest(...))
+
+INSIDE run():   agent decision loop (§38):
+                  advance_step → on_next_step (decide) → HarnessKernel.execute_step (execute)
+                merge environment, trace, policy — NOT NexusLoop planning your agent
+
+PROD MULTI-AGENT:  Application uses Task → Nexus — same agent class, same run() inside graph node
+                   ApplicationRunSummary logs orchestration separately §31
+```
+
+| Layer | Your responsibility |
+|-------|---------------------|
+| Tier-3 application | Profiles, roster, pass `metadata` / overrides per request |
+| Tier-2 agent | Contract, **`on_next_step`** / pattern hooks — **not** harness plumbing |
+| Framework `run()` + `AgentRuntime.advance_step` + `HarnessKernel` | Harness execution — do not override except in tests |
+
+### AC.2 `AgentRunRequest` — external parameters from application
+
+```python
+# Target API (ACP-DX-1) — until then use RuntimeRequest with same fields in metadata
+request = AgentRunRequest(
+    input="Review clause 14.2",
+    identity=RequestIdentity(
+        tenant_id="acme",
+        user_id="user-42",              # from authenticated intake — required for memory_scope=user
+        principal_type="user",
+    ),
+    session_id="chat-42",
+    metadata={
+        "matter_id": "M-100",           # from HTTP / Slack / queue
+        "locale": "pl",
+        "document_ids": ["d1", "d2"],
+    },
+    environment_overrides={
+        "memory_namespace": "legal/acme/M-100",
+        "rag_collection": "legal_clauses",
+    },
+    state=prior_state,                  # resume multi-turn
+)
+result = await legal_agent.run(request)
+assert result.trace.steps  # full step journal when ACP-OBS-1 shipped
+```
+
+Application maps surface payload → `metadata` + optional `environment_overrides`. Agent reads them in `perceive` / `merge_environment` — never `os.environ`.
+
+### AC.3 Per-agent memory, tools, knowledge — and org policy
+
+Declare on **`AgentContract`** (defaults); narrow per host via **`AgentBinding`**; org-wide rules via **`OrganizationalPolicyEnvelope`** §39 (channels, SOP, conduct — not in agent code).
+
+Declare on **`AgentContract`** (defaults); narrow per host via **`AgentBinding`**; override per run via request.
+
+| Resource | Declare | Runtime access |
+|----------|---------|----------------|
+| Tools / skills | `skill_ids`, `extra_tools` on contract | `await ctx.invoke_tool(...)` |
+| Memory | `memory_namespace_template` + **`memory_scope`** on contract | `ctx.memory_view` — **user-scoped by default** §30.9; org agents use `memory_scope=org` |
+| RAG / knowledge | `default_rag_collection` + tool `rag.retrieve` | collection in tool args / metadata |
+| LLM | Host `LLMProfile`; per-step hint via `StepLLMRouter` §33 | `ctx.llm_router.set_hint(...)` in `on_next_step` |
+| Database | `required_integration_slugs` + tools | integration tools only |
+
+Same agent in **lab** vs **prod**: different Tier-3 profile — **no code fork**.
+
+### AC.3b READ → UPDATE → DECIDE (normative — architecture §32.0)
+
+Every step iteration MUST make three operations **visible in source**:
+
+| Step | Author action | Forbidden |
+|------|---------------|-----------|
+| **READ** | `state = ResearchAgentState.model_validate(self.load_session_state(step_ctx))` | `state.get("plan_cursor")`, `step_ctx.state["x"]` |
+| **UPDATE** | `StepOutcome.continue_with(state_delta={"plan_cursor": n})` from typed fields | In-place `state.plan_cursor += 1` without delta return |
+| **DECIDE** | Final line: `return StepOutcome.complete(...)` / `.fail(...)` / `.continue_with(...)` | Implicit continue; free-text `terminal_reason` |
+
+**Reviewer rule:** read only the **final `return StepOutcome.*`** to know if the environment continues, succeeds, fails, pauses for HITL, or requests replan.
+
+### AC.4 Subclass flexibility hooks
+
+| Hook | When to override |
+|------|------------------|
+| **`on_next_step`** | **Primary** — one reasoning/action iteration; return `StepOutcome` |
+| `perceive` / `reason` / `act` / `evaluate` | Pattern decomposition (often called from `on_next_step`) |
+| `merge_environment(base, request)` | Custom namespace / collection per `matter_id`, etc. |
+| `configure_run(merged_env)` | Thresholds, prompt id selection |
+| `@step` | Linear pipelines — framework drives sequential `on_next_step` |
+| `on_run_start` / `on_run_end` | Non-blocking diagnostics only |
+
+Do **not** override `run()`, **`AgentRuntime.advance_step`**, **`HarnessKernel.execute_step`**, `get_steps`, or `run_step` unless maintaining framework code. **Do not** use `nexus.run()` for agent logic — `NexusLoop` is Task orchestration only (§38).
+
+### AC.5 Pattern selection
+
+| Pattern | Scaffold (when ACP-8 Done) | Implement |
+|---------|---------------------------|-----------|
+| **Reflex** | `--pattern reflex` | `perceive` → `act` → `COMPLETE` |
+| **ReAct** | `--pattern react` | reason → `ctx.invoke_tool` loop with budget |
+| **Plan-execute** | `--pattern plan_execute` | `@step` chain or phased `get_steps` |
+| **Decomposition** | `--pattern decomposition` | sub-question queue in `acp.state.v1` |
+| **Reflection** | `--pattern reflection` | draft → CVL critic → revise |
+
+Until scaffold ships: inherit the planned base from `intergrax/agents/authoring/patterns/` or use `IntergraxAgent` + `@step` for linear pipelines.
+
+### AC.6 Author checklist
+
+1. Pick pattern or **`on_next_step`** style per architecture §26.1 / §32.
+2. Declare contract: capabilities, `skill_ids`, memory/RAG templates, optional `state_schema`.
+3. Define **typed state subclass** (`extra=forbid`) — §32.0.2.
+4. Implement **`on_next_step`**: READ → domain work → UPDATE (`state_delta`) → DECIDE (`StepOutcome` factory).
+5. Call **`await self.run(AgentRunRequest(...))`** from tests — not raw `NexusLoop` unless testing graph.
+6. Tools/memory/RAG/LLM only through step context gateways — no vendor SDK.
+7. Multi-agent → `graph_spec` + `SharedContextView` (Appendix C/I), not nested external `run()` per step.
+8. Host passes `identity` + `metadata` / `environment_overrides` — agents do not invent `tenant_id`.
+9. Inspect **`result.trace`**; prod ops uses `ApplicationRunSummary` §31.
+10. Org rules → **host envelope** §39 — not customer branches in agent code.
+11. Follow implementation waves in plan §6.1aw — do not skip typed contracts for “speed”.
+12. **`AgentContract` complete at register** — `input_schema`, `output_schema`, `risk_level`, `validation_rules`, `failure_modes` (§12 · **ACP-CON-4**).
+
+### AC.7 Minimal `on_next_step` skeleton (target API — §32.0)
+
+```python
+from intergrax.agents.authoring.base import IntergraxAgent
+from intergrax.contracts.agent_run import AgentRunRequest, AgentRunError
+from intergrax.contracts.agent_run import AgentRunErrorCode, TerminalReason
+from intergrax.agents.authoring.step_outcome import StepOutcome  # ACP-DX-6
+
+class AnalystState(AcpSessionState):  # ACP-0 — extra=forbid
+    plan_steps: list[str] = []
+    plan_cursor: int = 0
+    root_question: str | None = None
+
+class AnalystAgent(IntergraxAgent):
+    contract_id = "analyst"
+    capabilities = ("research.deep",)
+
+    async def on_next_step(self, step_ctx):
+        state = AnalystState.model_validate(self.load_session_state(step_ctx))
+
+        if not state.root_question:
+            return StepOutcome.fail(
+                errors=[AgentRunError(code=AgentRunErrorCode.VALIDATION_FAILED, message="missing query")],
+                terminal_reason=TerminalReason.VALIDATION_FAILED,
+            )
+
+        if step_ctx.step_index == 0:
+            steps = await self._build_plan(step_ctx, state)
+            return StepOutcome.continue_with(
+                state_delta={"phase": "execute", "plan_steps": steps, "plan_cursor": 0},
+            )
+
+        if state.plan_cursor >= len(state.plan_steps):
+            return StepOutcome.complete(
+                output=await self._synthesize(step_ctx, state),
+                terminal_reason=TerminalReason.GOAL_MET,
+            )
+
+        result = await self._run_plan_item(step_ctx, state)
+        if result.policy_denied:
+            return StepOutcome.fail(
+                errors=[result.error],
+                terminal_reason=TerminalReason.POLICY_DENIED,
+            )
+
+        return StepOutcome.continue_with(
+            state_delta={"plan_cursor": state.plan_cursor + 1},
+        )
+```
+
+### AC.7b Pattern-based skeleton (DecompositionAgent)
+
+```python
+from intergrax.agents.authoring.patterns.decomposition import DecompositionAgent
+
+class AnalystAgent(DecompositionAgent):
+    contract_id = "analyst"
+    capabilities = ("research.deep",)
+
+    async def perceive(self, ctx):
+        return {"question": ctx.request.metadata.get("query", "")}
+
+    async def reason(self, ctx, observation):
+        # LLM: split question / answer sub-question — domain logic here
+        ...
+
+    async def act(self, ctx, reasoning):
+        # optional: await ctx.invoke_tool(...)
+        ...
+
+    def evaluate(self, ctx, output):
+        # return AgentEvaluation → maps to AgentDecision in base class
+        ...
+```
+
+### AC.8 Step loop vs session (do not confuse)
+
+| Call | When | Count |
+|------|------|-------|
+| `agent.run(request)` | Session start (test or graph node) | **Once** per node |
+| `on_next_step(ctx)` | Inside `run()` loop | **Many** until terminal |
+
+**Anti-pattern:** application calling `run()` repeatedly for each internal reasoning step — use `on_next_step` inside one `run()` instead.
+
+### AC.9 Use-case quick map
+
+See architecture §35: UC-1 chat · UC-2 multi-agent graph · UC-3 super-agent · UC-5 HITL · UC-6 per-step LLM · **UC-11 simulated organization / virtual employees** §39.
+
+### AC.10 Verification
+
+```bash
+uv run pytest agents/<slug>/tests -q
+uv run pytest tests/acceptance/agent_os -m agent_os -q
+python scripts/check_agents_vendor_imports.py
+```
+
+---
+
 ## Anti-patterns
 
 | Do not | Do instead |
 |--------|------------|
+| Absorb Nexus into agent base class | UAEP + pattern library; Nexus stays Agent OS (ADR-AGENT-001) |
+| Multi-agent workflow entirely in `run_step` | Nexus `graph_spec` + Appendix C |
 | Import `intergrax.chat_agent` / `ChatAgent` | Nexus `RuntimeEngine` / `NoPlannerPipeline` |
 | Import `intergrax.rag.answers` from runtime | `RetrievalService` |
 | Put agent logic in `applications/` | Logic in `agents/`, wiring in application |
@@ -2605,6 +2834,11 @@ Runbooks: [`runbook/adaptive/`](../runbook/adaptive/) · architecture: [`archite
 | Use `getattr` / `setattr` on harness paths (`runtime/nexus/`, `agents/`) | Explicit `Protocol` / typed fields; CI `scripts/check_harness_no_getattr.py` |
 | Import legacy `tools_agent` or `chat_router` modules | `CatalogToolPlanner` + `ToolRuntime` + `allowed_tools` on contract |
 | Rely on flat `Task.metadata` keys for options | Typed `Task.options` / `Task.runtime`; opt-in hydrate via `metadata_needs_hydration` |
+| Raw `dict` session state in `on_next_step` (`state["key"]`) | Typed `AcpSessionState` subclass + `load_session_state` §32.0 |
+| Mutate `step_ctx.state` in place | `StepOutcome.continue_with(state_delta=...)` only |
+| Free-text `terminal_reason` or unstructured errors | `TerminalReason` + `AgentRunError` enums §37.4–§37.5 |
+| God-method `on_next_step` without phase helpers | Delegate to `_step_*`; keep ≤ ~40 lines control flow §32.0.5 |
+| New agents on legacy UAEP only after Wave 5 | `on_next_step` + typed state per plan §6.1aw |
 
 ### CI and import gates (§5.2 reuse)
 
@@ -2615,6 +2849,9 @@ Run before opening a harness PR (see `scripts/`):
 | `check_harness_no_getattr.py` | No new `getattr`/`setattr` under `runtime/nexus/` and `agents/` |
 | `check_legacy_modules_removed.py` | Removed modules (`tools_agent`, `chat_router`, `chains`) stay absent; no production imports |
 | `check_agent_skill_resolution.py` | Tier-2 agents do not pre-populate `allowed_tools`; skills resolve at register |
+| `check_agent_typed_state.py` (ACP-DX-6) | No raw dict state access in `agents/` — typed session only §32.0 |
+| `check_agent_step_security.py` (ACP-CON-7) | Gateway-only I/O; STRICT profile widen deny |
+| `check_agent_pattern_conformance.py` (ACP-13) | Contract `cognitive_pattern` matches class MRO |
 | `check_harness_registry_resolution.py` | Tier-3 hosts wire catalogs via `wire_application_environment` / `build_harness_host_runtime` |
 | `check_harness_capability_graph_wiring.py` | Hosts materialize environment capability graph at wire time |
 | `check_harness_observability_wiring.py` | Hosts wire observability stores from `ObservabilityProfile` |
@@ -2660,4 +2897,5 @@ When asked to create a new Intergrax agent:
 20. For cost governance wiring and budget assembly, read [Appendix T](#appendix-t--cost-governance-control-plane-closeout) — configure `CostProfile`, not ad-hoc `BudgetPolicy` in hosts.
 21. For evaluation wiring and shadow/online registry assembly, read [Appendix U](#appendix-u--evaluation-control-plane-closeout) — configure `EvaluationProfile`, not ad-hoc `OnlineEvaluationRegistry` in hosts.
 22. For critic / PEV verify wiring, read [Appendix W](#appendix-w--critic--verification-control-plane-closeout) — configure `CriticProfile`, not ad-hoc `CriticOrchestrator` in hosts.
-23. Do **not** create duplicate workflow documentation — update this file if the process changes.
+23. For `agent.run()`, **`on_next_step`**, cognitive patterns, trace, and per-agent environment binding, read [Appendix AC](#appendix-ac--agent-run-cognitive-patterns-and-environment-acp) — hooks only; Nexus stays for `Task` orchestration.
+24. Do **not** create duplicate workflow documentation — update this file if the process changes.

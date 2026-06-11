@@ -236,55 +236,104 @@ tests/acceptance/agent_os/""",
     {
         "id": "AGENT_CONTRACTS_AND_ASSEMBLY",
         "title": "Agent Contracts and Assembly",
-        "layers": "17–20, 31",
+        "layers": "17–20, 31 · ACP §21",
         "mission": (
             "Audit **AgentContract**, registry resolution, **Prompt Registry**, capability graph, "
-            "agent lifecycle governance, and assembly paths — Tier-2 as composable workers with "
-            "no vendor SDKs and full registry/traceability discipline."
+            "agent lifecycle governance, **ACP cognitive patterns**, **author run() facade** "
+            "(ADR-AGENT-001/002), **step loop on_next_step** and **dual observability** "
+            "(ADR-AGENT-003) — Tier-2 hooks + environment merge; Nexus remains Agent OS for Task."
         ),
-        "code": """intergrax/contracts/agent_contract_meta.py
+        "code": """intergrax/contracts/agent_contract_meta.py · runtime_execution_context.py
+intergrax/agents/agent_engine.py · uaep.py · uaep_protocol.py · authoring/
+intergrax/agents/authoring/patterns/  [ACP]
+intergrax/agents/authoring/step_loop.py  [ACP-STEP planned]
+intergrax/contracts/agent_run_trace.py · shared_context.py  [ACP-OBS/STATE planned]
 intergrax/runtime/registry/agent_registry.py
 intergrax/prompts/registry/ (YamlPromptRegistry)
-intergrax/runtime/architecture/prompt_registry_governance.py · prompt_composition.py · prompt_policy_overlay.py
-intergrax/runtime/architecture/capability_graph*.py
-intergrax/runtime/architecture/agent_lifecycle_governance.py · agent_certification.py
+intergrax/runtime/architecture/capability_graph*.py · agent_lifecycle_governance.py
+intergrax/runtime/nexus/engine/runtime.py  [legacy ACP-LEG]
 agents/ (Tier-2 roster) · applications/_shared/prompt_wiring.py
-scripts/check_agents_lifecycle_metadata.py · scripts/phase_v_capability_graph_guard.py""",
-        "key_symbols": "AgentContract · Agent (interface) · AgentExecutionResult · CapabilityDescriptor · CapabilityMatchResult · PromptMeta · YamlPromptRegistry · AgentExecutionMode",
-        "active_phases": "PE (Prompt Registry) · REG (Registry) · CG (Capability Graph) · AS + V-REM-ALG (Agent Lifecycle)",
-        "known_gaps": "prompt_instruction_ids bridge to ContextManager (SK-BRIDGE.1 cross-domain) · procedural memory store minimal · retired agents filter in production_mode",
+scripts/check_agents_lifecycle_metadata.py · check_agents_vendor_imports.py""",
+        "key_symbols": "AgentContract · UAEPAgent · RuntimeExecutionContext · AgentDecision · CognitiveAgent · acp.state.v1 · IntergraxAgent · PromptMeta · AgentStepContext · StepOutcome · AgentRunTrace · ApplicationRunSummary",
+        "active_phases": "ACP (Agent Cognitive Patterns) · PE/REG/CG/AS closed · AUDIT-IDEAL residuals",
+        "known_gaps": "ACP-DX-1..5 · ACP-STEP-1..3/2b · ACP-OBS · ACP-LLM · ACP-STATE · ACP-ORG-1..5 · ACP-PROD-1..11 §40 production readiness · ACP-CON · ACP-LEG · TOOL-ENG-6 · AUDIT-IDEAL-19.1/31.1",
         "dimensions": [
             "AgentContract has required fields per §12 — capabilities, allowed_tools, risk metadata.",
-            "execute() delegates to AgentEngine — not standalone HTTP/script bypass.",
+            "UAEPAgent: get_steps/run_step — AgentEngine path, not private HTTP bypass.",
+            "decide_after_step returns typed AgentDecision — not ad-hoc control flow.",
             "Nexus routes by capability token — not Python class name.",
-            "Prompt templates have ownership, version, layered compilation (system/task/policy/context).",
+            "ADR-AGENT-001 Accepted; architecture §21–§36 ACP + run/step canon present.",
+            "Three cognition planes (§23) — no private multi-agent graph inside run_step (ACP-AP-01).",
+            "Tool calls via RuntimeExecutionContext.invoke_tool / ToolRuntime only.",
+            "Agents do not call RuntimeEngine.run() from Tier-2 (ACP-LEG).",
+            "CognitiveAgent base exists or gap ACP-1 recorded.",
+            "Pattern classes Reflex/ReAct/PlanExecute/Decomposition/Reflection vs ACP-2..6.",
+            "acp.state.v1 schema and cognitive_pattern on contract (ACP-0/0b).",
+            "ReActAgent iteration budget aligns with TOOL-ENG-6 when both Done.",
+            "ReflectionAgent uses CVL critic hooks — no critic SDK in Tier-2.",
+            "Config split: Tier-3 profile vs agent domain — not all config in agent class (ACP-AP-03).",
+            "Prompt templates have ownership, version, layered compilation.",
             "Capability graph edges reflect manifest roster with lineage.",
-            "Deprecated/retired agents rejected in strict production_mode.",
             "Registry snapshot conformance tests pass CI.",
-            "Agent creation checklist §45 satisfied for reference agents.",
-            "Evaluation registry wired for promotion evidence.",
-            "AgentExecutionResult is structured — not bare str.",
+            "Deprecated/retired agents rejected in strict production_mode.",
+            "Agent checklist §45 + ACP pattern selection (§26.1).",
             "Forbidden §42.41 patterns absent (vendor SDK, direct integrations).",
-            "Certification gates documented before production roster add.",
-            "skill_ids → allowed_tools resolution audited (check_agent_skill_resolution if present).",
-            "Host registry resolution CI green (check_harness_registry_resolution).",
-            "Capability graph wiring CI green (check_harness_capability_graph_wiring).",
+            "skill_ids → allowed_tools resolution audited.",
+            "scaffold --pattern when ACP-8 Done.",
+            "check_agent_pattern_conformance.py when ACP-13 Done.",
+            "acceptance agent_os covers UAEP path for reference agents.",
+            "AgentRunRequest/Result and merge_environment per §29–§30 (ACP-DX).",
+            "Per-agent memory_namespace and rag_collection — not global store.",
+            "Application metadata → environment_overrides wired in hosts.",
+            "on_next_step / StepOutcome author API per §32 (ACP-STEP-1).",
+            "execute_next_step harness-only — authors cannot override (ACP-STEP-2).",
+            "HarnessKernel.execute_step deterministic primitive — no agent planning §38 (ACP-STEP-2b).",
+            "NexusLoop vs HarnessKernel separation §38 — not nexus.run() as agent brain.",
+            "AgentRunTrace on AgentRunResult with tool/RAG/LLM step records §31 (ACP-OBS-1).",
+            "ApplicationRunSummary for Task orchestration §31 (ACP-OBS-2).",
+            "StepLLMRouter per-step model within LLMProfile §33 (ACP-LLM-1).",
+            "SharedContextView for multi-agent handoffs §34 (ACP-STATE-1).",
+            "Use-case catalog UC-1..10 supported without agent rewrite §35.",
+            "AgentRunErrorCode and TerminalReason enums per §37.4–§37.5 (ACP-CON-1).",
+            "state_delta JSON merge-patch + _version + resume conflict §37.2 (ACP-CON-2).",
+            "Side-effect mode immediate vs declarative — no mix per step §32.8 (ACP-CON-3).",
+            "Capability routing by token not class name §37.6 (ACP-CON-6).",
+            "Security guards STRICT tool/memory/RAG §37.7 (ACP-CON-7).",
+            "OrganizationalPolicyEnvelope constrains agents without code fork §39 (ACP-ORG).",
+            "PolicyVerdictRecord on steps for compliance measurement §39.5 (ACP-ORG-4).",
+            "Checkpoint/resume/replay semantics §40.1 (ACP-PROD-1).",
+            "Side-effect idempotency keys and dedupe §40.2 (ACP-PROD-2).",
+            "ToolExecutionProfile mutability/compensation §40.3 (ACP-PROD-3).",
+            "SharedContextView CAS concurrency §40.5 (ACP-PROD-5).",
+            "ArtifactRef typed contract §40.6 (ACP-PROD-6).",
+            "Agent threat model mitigations §40.7 (ACP-PROD-7).",
+            "Privacy/redaction on trace/memory §40.8 (ACP-PROD-8).",
+            "Release eval gates before production_mode §40.9 (ACP-PROD-9).",
+            "CI conformance matrix §40.10 (ACP-PROD-10).",
+            "Contract schema_version migration §40.11 (ACP-PROD-11).",
+            "RequestIdentity tenant_id/user_id and memory_scope user vs org §30.9 (ACP-DX-1/2).",
         ],
         "scale_probes": [
             "Large agent roster with capability-based routing.",
             "Registry snapshot at bootstrap vs runtime mutation.",
             "Promotion dev→staging→prod evidence chain.",
+            "ReActAgent at max_react_iterations — FAIL vs REQUEST_HUMAN behavior.",
+            "DecompositionAgent deep sub-question tree — budget + acp.state.v1 checkpoint.",
+            "Same agent class in two Tier-3 hosts with different ToolProfile/LLMProfile.",
         ],
-        "overrides": "PromptProfile · AgentRegistry.register(skill_registry, tool_registry) · Tier-3 manifest roster · wire_application_environment · external SkillImporter / Cursor SKILL.md",
+        "overrides": "PromptProfile · ToolProfile · LLMProfile · OrchestrationProfile · ApplicationGraphSpec · cognitive_pattern/pattern_config (ACP-0b) · AgentRegistry.register · wire_application_environment · scaffold --pattern (ACP-8)",
         "ci_scripts": [
             "uv run python scripts/check_agents_lifecycle_metadata.py",
             "uv run python scripts/phase_v_capability_graph_guard.py",
             "uv run python scripts/check_agents_vendor_imports.py",
-            "uv run pytest agents/ -q --co -q 2>/dev/null | head",
+            "uv run pytest tests/acceptance/agent_os -m agent_os -q",
+            "uv run pytest tests/unit/agents/ -q",
+            "uv run pytest tests/unit/agents/authoring/patterns/ -q",
         ],
-        "production_baseline": "Enterprise agent registries · prompt governance (versioned templates) · capability-based routing (service-mesh analogy)",
-        "anti_patterns": "Hardcoded agent class routing · vendor SDK in Tier-2 · orphan prompts without registry · skipping lifecycle metadata",
-        "appendix": "Appendix M (prompt) · Appendix N/O/P (assembly, registry, capability graph)",
+        "production_baseline": "Enterprise agent registries · LangGraph/ADK pattern libraries · Cursor-style decomposition · prompt governance · capability routing (service-mesh analogy)",
+        "anti_patterns": "Hardcoded agent class routing · vendor SDK in Tier-2 · orphan prompts · skipping lifecycle · ACP-AP-01..07 (fat agent absorbs Nexus, multi-agent in run_step, secrets in agent source)",
+        "appendix": "ADR-AGENT-001 · ADR-AGENT-002 · ADR-AGENT-003 · Appendix M/N/O/P · Appendix AC",
+        "adr": "ADR-AGENT-001 · ADR-AGENT-002 · ADR-AGENT-003",
     },
     {
         "id": "INTEGRATIONS",
@@ -1114,10 +1163,19 @@ def render(domain: dict) -> str:
     baseline = domain["production_baseline"]
     anti = domain["anti_patterns"]
     appendix = domain["appendix"]
+    adr = domain.get("adr")
 
     appendix_block = ""
     if appendix != "N/A":
         appendix_block = f"6. `docs/guides/AGENT_CREATION_GUIDE.md` **{appendix}**\n"
+
+    adr_block = ""
+    if adr:
+        adr_parts = [p.strip() for p in adr.split("·") if p.strip()]
+        adr_links = " · ".join(
+            f"[`{part}`](../../adr/{part}.md)" for part in adr_parts
+        )
+        adr_block = f"**ADR:** {adr_links}  \n"
 
     ci_block = "\n".join(ci)
 
@@ -1126,7 +1184,7 @@ def render(domain: dict) -> str:
 **Status:** Audit control prompt (copy-paste for LLM agents)  
 **Domain pair:** [`architecture/{did}.md`](../architecture/{did}.md) · [`plan/{did}.md`](../plan/{did}.md)  
 **Audit map layers:** {layers} · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HARNESS_AUDIT_MAP.md)  
-**Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
+{adr_block}**Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
 

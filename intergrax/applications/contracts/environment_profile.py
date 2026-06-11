@@ -745,6 +745,7 @@ class ApplicationEnvironmentProfile(BaseModel):
                 offline_eval_runner_enabled=False,
                 require_baseline_for_release=True,
             ),
+            orchestration_profile=OrchestrationProfile(long_running_enabled=True),
             features=ApplicationFeatures.product_defaults(),
             execution_mode=ExecutionMode.STRICT,
             domain_policy_fragments=dict(domain_fragments or {}),

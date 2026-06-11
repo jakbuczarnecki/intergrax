@@ -52,9 +52,13 @@ def test_legal_backend_exposes_health_and_openapi(dev_settings: LegalBackendSett
 
 
 @pytest.mark.gate
-def test_legal_backend_chat_with_unified_task_runner(dev_settings: LegalBackendSettings) -> None:
+def test_legal_backend_chat_with_unified_task_runner(
+    dev_settings: LegalBackendSettings,
+    product_harness_api_key: str,
+    harness_auth_headers: dict[str, str],
+) -> None:
     app = create_legal_backend_app(settings=dev_settings)
-    client = TestClient(app)
+    client = TestClient(app, headers=harness_auth_headers)
     task_result = TaskResult(
         task_id="run-nexus-host",
         run_id="run-nexus-host",

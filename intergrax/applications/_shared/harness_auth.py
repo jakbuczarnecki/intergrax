@@ -20,6 +20,7 @@ class HarnessAuthState:
     """Typed FastAPI app state for harness authentication."""
 
     identity_provider: IdentityProviderBackend | None = None
+    require_api_key: bool = False
 
 
 def resolve_harness_api_key() -> str | None:
@@ -119,10 +120,17 @@ def require_harness_auth(
     )
 
 
+_HARNESS_AUTH_EXEMPT_PATHS = frozenset(
+    {"/health", "/openapi.json", "/docs", "/redoc", "/favicon.ico"},
+)
+
+
 class HarnessApiKeyMiddleware(BaseHTTPMiddleware):
     """ASGI middleware for lab/MCP wrapper apps (covers mounted sub-apps)."""
 
     async def dispatch(self, request: Request, call_next):
+        if request.url.path in _HARNESS_AUTH_EXEMPT_PATHS:
+            return await call_next(request)
         if is_harness_api_key_valid(
             x_api_key=request.headers.get("X-Api-Key"),
             authorization=request.headers.get("Authorization"),
@@ -142,8 +150,10 @@ class HarnessApiKeyMiddleware(BaseHTTPMiddleware):
         )
 
 
-def apply_harness_auth_middleware(app) -> None:
-    """Attach harness auth middleware when API key or identity provider is configured."""
+def apply_harness_auth_middleware(app, *, require_auth: bool = False) -> None:
+    """Attach harness auth middleware when the host profile requires authenticated access."""
+    if not require_auth:
+        return
     state = app.state.harness_auth if hasattr(app.state, "harness_auth") else None
     identity_configured = isinstance(state, HarnessAuthState) and state.identity_provider is not None
     if resolve_harness_api_key() is not None or identity_configured:

@@ -1,5 +1,7 @@
 # Intergrax — Agent OS / Harness AI
 
+**Positioning:** Harness AI platform — agents decide domain steps (`on_next_step` → `StepOutcome`); HarnessKernel executes policy/trace/state; NexusLoop orchestrates multi-agent Tasks; Tier-3 applications supply identity, profiles, and production gates. Nexus is not the agent. Canon: docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md §13–§40 · ADR-AGENT-001..003.
+
 **Hub (sole docs/ root file):** docs/intergrax_runtime_architecture.md  
 **Domain pairs (1:1):** docs/architecture/<DOMAIN>.md ↔ docs/plan/<DOMAIN>.md  
 **Guides (strategy, ideal, audit):** docs/guides/
