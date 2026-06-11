@@ -15,6 +15,7 @@ from intergrax.agents.authoring.acp_session_host import (
 from intergrax.agents.authoring.llm_router import StepLLMRouter
 from intergrax.agents.authoring.shared_context_bridge import load_view, persist_view, view_from_task_metadata
 from intergrax.agents.authoring.step_loop import AgentRuntime
+from intergrax.applications._shared.reliability_runtime_bridge import resolve_reliability_wiring_options
 from intergrax.agents.compliance_summary import build_compliance_summary
 from intergrax.agents.persistence.session_persistence import (
     make_checkpoint_hook,
@@ -34,6 +35,7 @@ from intergrax.contracts.agent_run_enums import (
 )
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.validation import ValidationResult
+from intergrax.runtime.kernel.session_reliability import AgentSessionReliability
 from intergrax.runtime.kernel.step_kernel import HarnessKernel, StepKernelContext
 from intergrax.runtime.policy.policy_engine import PolicyEngine
 
@@ -104,6 +106,11 @@ async def run_acp_session(
 
     task_id = str(request.metadata.get("task_id") or run_id)
     run_trace = AgentRunTrace(run_id=run_id)
+    reliability: AgentSessionReliability | None = None
+    if host is not None and host.app_profile is not None:
+        reliability = AgentSessionReliability.from_wiring_options(
+            resolve_reliability_wiring_options(host.app_profile.reliability_profile)
+        )
     kernel_ctx = StepKernelContext(
         agent_id=merged.agent_id,
         run_id=run_id,
@@ -116,6 +123,7 @@ async def run_acp_session(
         organizational=merged.organizational,
         side_effect_ledger=persistence.side_effect_ledger,
         tool_profiles=build_profile_map(list(contract.extra_tools)),
+        reliability=reliability,
         state_root=state_root,
         run_trace=run_trace,
     )

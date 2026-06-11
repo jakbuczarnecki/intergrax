@@ -36,6 +36,7 @@ from intergrax.agents.persistence.tool_action_validation import (
 from intergrax.applications.contracts.org_policy import OrganizationalPolicyContext
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.tools.tool_execution_profile import ToolExecutionProfile
+from intergrax.runtime.kernel.session_reliability import AgentSessionReliability
 from intergrax.runtime.policy.org_enforcement import (
     evaluate_org_policy_pre,
     extract_requested_tool_ids,
@@ -67,6 +68,7 @@ class StepKernelContext:
     organizational: OrganizationalPolicyContext | None = None
     side_effect_ledger: SideEffectLedger | None = None
     tool_profiles: dict[str, ToolExecutionProfile] = field(default_factory=dict)
+    reliability: AgentSessionReliability | None = None
     emit_event: EventEmitter | None = None
     checkpoint_hook: CheckpointHook | None = None
     state_root: dict[str, Any] = field(default_factory=dict)
@@ -85,6 +87,27 @@ class HarnessKernel:
     ) -> StepExecutionRecord:
         started = time.perf_counter()
         trace_events = 0
+
+        if kernel_ctx.reliability is not None and kernel_ctx.reliability.circuit_open:
+            record = StepExecutionRecord(
+                step_index=step_ctx.step_index,
+                outcome_applied=False,
+                error_code=AgentRunErrorCode.INTERNAL_ERROR,
+                step_record=HarnessKernel._build_step_record(
+                    step_ctx=step_ctx,
+                    outcome=outcome,
+                    state_version=int(
+                        extract_acp_state_blob(kernel_ctx.state_root).get("_version", 0)
+                    ),
+                    error_code=AgentRunErrorCode.INTERNAL_ERROR,
+                    terminal_reason=TerminalReason.ERROR,
+                    next_action=StepNextAction.FAIL,
+                    diagnostics={"circuit_breaker": "open"},
+                    finished_at=_utc_now(),
+                ),
+            )
+            await HarnessKernel._append_trace(kernel_ctx, record)
+            return record
 
         mode_error = validate_side_effect_mode(outcome, kernel_ctx.side_effect_mode)
         if mode_error is not None:
@@ -111,6 +134,9 @@ class HarnessKernel:
 
         policy_pre = HarnessKernel._policy_pre_check(outcome, step_ctx, kernel_ctx)
         trace_events += await HarnessKernel._emit_policy(kernel_ctx, policy_pre, phase="pre")
+        if outcome.errors and kernel_ctx.reliability is not None:
+            for error in outcome.errors:
+                kernel_ctx.reliability.record_failure(error.code)
         if policy_pre.action == PolicyAction.DENY:
             record = StepExecutionRecord(
                 step_index=step_ctx.step_index,
@@ -289,8 +315,16 @@ class HarnessKernel:
             },
         )
 
-        if kernel_ctx.checkpoint_every_step and kernel_ctx.checkpoint_hook is not None:
+        should_checkpoint = kernel_ctx.checkpoint_every_step
+        if kernel_ctx.reliability is not None:
+            should_checkpoint = should_checkpoint and kernel_ctx.reliability.should_checkpoint(
+                step_ctx.step_index
+            )
+        if should_checkpoint and kernel_ctx.checkpoint_hook is not None:
             await kernel_ctx.checkpoint_hook(kernel_ctx.state_root, step_ctx.step_index)
+
+        if kernel_ctx.reliability is not None:
+            kernel_ctx.reliability.record_success()
 
         duration_ms = int((time.perf_counter() - started) * 1000)
         _ = duration_ms

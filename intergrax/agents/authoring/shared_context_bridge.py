@@ -39,6 +39,8 @@ def view_from_backing(backing: SharedTaskContext) -> SharedContextView:
         memory_namespace=backing.memory_namespace,
         artifacts={key: _artifact_to_ref(entry) for key, entry in backing.artifacts.items()},
         structured_outputs=dict(backing.structured_outputs),
+        entry_versions=dict(backing.entry_versions),
+        updated_by=dict(backing.updated_by),
     )
 
 
@@ -61,5 +63,7 @@ def persist_view(task_or_metadata: Any, view: SharedContextView) -> None:
         memory_namespace=view.memory_namespace,
         artifacts={key: _ref_to_entry(ref) for key, ref in view.artifacts.items()},
         structured_outputs=dict(view.structured_outputs),
+        entry_versions=dict(view.entry_versions),
+        updated_by=dict(view.updated_by),
     )
     save_shared_task_context(task_or_metadata, backing)

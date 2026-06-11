@@ -2838,7 +2838,7 @@ Agent session inherits **`ReliabilityProfile`** from host (circuit breaker, time
 
 **Rule:** agent MUST NOT implement private retry loops for tools — use harness retry + idempotency.
 
-**Plan:** ACP-PROD-4 — wire `ReliabilityProfile` into `HarnessKernel.execute_step`.
+**Plan:** ACP-PROD-4 — `AgentSessionReliability` in `HarnessKernel.execute_step` (**Done**).
 
 ---
 
@@ -2885,7 +2885,7 @@ SharedContextView:
 | **Optimistic lock + replan** | Default BALANCED |
 | **HITL on conflict** | STRICT prod shared mutable keys |
 
-**Plan:** ACP-PROD-5.
+**Plan:** ACP-PROD-5 (**Done** — per-key `publish` / `compare_and_swap` on `SharedContextView`).
 
 ---
 

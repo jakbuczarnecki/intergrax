@@ -34,3 +34,24 @@ def test_shared_context_cas_conflict() -> None:
     )
     with pytest.raises(SharedContextConflictError):
         view.put_structured_output("k", {"x": 1}, expected_version=0)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_shared_context_parallel_graph_cas_conflict() -> None:
+    metadata: dict[str, object] = {}
+    node_a = view_from_task_metadata(metadata, task_id="task-parallel")
+    node_a.publish("handoff", {"score": 1}, updated_by="node-a")
+    persist_view(metadata, node_a)
+
+    node_b = view_from_task_metadata(metadata, task_id="task-parallel")
+    value, version = node_b.get("handoff")
+    assert value == {"score": 1}
+    assert version == 1
+    assert node_b.compare_and_swap("handoff", version, {"score": 2}, updated_by="node-b")
+    persist_view(metadata, node_b)
+
+    node_c = view_from_task_metadata(metadata, task_id="task-parallel")
+    with pytest.raises(SharedContextConflictError):
+        node_c.publish("handoff", {"score": 99}, expected_version=0)
+    assert node_c.compare_and_swap("handoff", 0, {"score": 99}) is False
