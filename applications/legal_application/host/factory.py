@@ -80,7 +80,10 @@ def create_legal_backend_app(
         trace_store=observability.trace_store,  # type: ignore[arg-type]
     )
     checkpoint_store = open_default_task_checkpoint_persistence()
-    task_enricher = build_reliability_task_enricher(env)
+    task_enricher = build_reliability_task_enricher(
+        env,
+        agent_checkpoint_store=runtime.agent_checkpoint_store,
+    )
     task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
     scheduler_wiring = wire_long_running_scheduler(
         checkpoint_store=checkpoint_store,

@@ -66,7 +66,10 @@ def create_dispute_sim_backend_app(
     )
 
     checkpoint_store = open_default_task_checkpoint_persistence()
-    task_enricher = build_reliability_task_enricher(env)
+    task_enricher = build_reliability_task_enricher(
+        env,
+        agent_checkpoint_store=runtime.agent_checkpoint_store,
+    )
     task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
     run_store = InMemoryRunStore()
     inline_adapter = NexusTaskExecutionAdapter(task_runner)

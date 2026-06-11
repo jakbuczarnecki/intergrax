@@ -115,7 +115,7 @@
 | DEBT-ACP-14 | Full state replace / in-place mutation | `state_delta` §37.2 | **Closed** | ACP-CON-2 |
 | DEBT-ACP-15 | Scaffold UAEP-first only | Typed scaffold `--pattern` | **Closed** | ACP-8 |
 | DEBT-ACP-16 | Roster on legacy patterns | Typed loop fleet-wide | **Closed** | ACP-MIG-* · ACP-LEG-2 |
-| DEBT-ACP-17 | No prod checkpoint / idempotency (platform) | §40 persistence modules | **Closed** (platform) · **depth open** | ACP-PROD-1..3 · **ACP-CLOSE-PROD-*** |
+| DEBT-ACP-17 | No prod checkpoint / idempotency (platform) | §40 persistence modules | **Closed** (platform) · checkpoint host **Done** · idempotency/compensation depth open | ACP-PROD-1..3 · **ACP-CLOSE-PROD-*** |
 | DEBT-ACP-18 | ReAct loop split from TOOL-ENG-6 | Unified budget §25.2 | **Open** | **ACP-CLOSE-PAT-1** + **TOOL-ENG-6** |
 
 **Removal policy:** ACP waves **closed**. **ACP-CLOSE** removes remaining author-visible legacy (DEBT-04/06) and delivers §40 host depth. Do not add new DEBT items — extend bridge only via ADR.
@@ -279,8 +279,8 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-CLOSE-LEG-2 | LEG | **Remove** author-visible UAEP (`decide_after_step` on `IntergraxAgent`) | **Done** | §13.3–13.4 | `uaep_linear_bridge.py`, `uaep.py` | `linear_agent_decide_after_step`; DEBT-ACP-04 **Closed** for linear agents |
 | ACP-CLOSE-LEG-3 | LEG | Retire `uaep_pipeline.py` → `RuntimeEngine` | Planned | §13.5 | `uaep_pipeline.py` | grep `RuntimeEngine` in `agents/` = framework bridge only |
 | ACP-CLOSE-LEG-4 | LEG | §45 checklist — UAEP internal-only wording | Planned | §45 | `AGENT_CREATION_GUIDE.md` | No author UAEP-first path |
-| ACP-CLOSE-PROD-1 | PROD | `AgentCheckpointStore` on **all mutating product hosts** | Planned | §40.1 | `applications/*/host/factory.py`, `harness_host_runtime.py` | legal/research/DSW/assistant pass `agent_checkpoint_store` |
-| ACP-CLOSE-PROD-2 | PROD | `acp_checkpoint_task_enricher` on product hosts (lab pattern) | Planned | §40.1.4 | `acp_checkpoint_task_enricher.py` | Nexus Task resume wiring test per host |
+| ACP-CLOSE-PROD-1 | PROD | `AgentCheckpointStore` on **all mutating product hosts** | **Done** | §40.1 | `acp_checkpoint_host_wiring.py`, `harness_host_runtime.py` | Auto-resolve store on harness hosts; exposed on `HarnessHostRuntime` |
+| ACP-CLOSE-PROD-2 | PROD | `acp_checkpoint_task_enricher` on product hosts (lab pattern) | **Done** | §40.1.4 | `task_control_wiring.py`, `applications/*/host/factory.py` | `build_reliability_task_enricher(..., agent_checkpoint_store=)` |
 | ACP-CLOSE-PROD-3 | PROD | `CatalogDeclarativeToolInvoker` — real execution context (no `MagicMock` shim) | Planned | §32.8 · §40.3 | `catalog_declarative_invoker.py` | Unit + integration without mock adapters |
 | ACP-CLOSE-PROD-4 | PROD | Nexus **E2E** acceptance — catalog declarative invoker (not callable mock) | Planned | §27 · §40.12 | `test_acp_declarative_mutating_resume.py` | `NexusLoop` + `build_harness_host_runtime` path green |
 | ACP-CLOSE-PROD-5 | PROD | **Durable compensation queue** for `enqueued` requests | Planned | §40.3.3 | `compensation_enqueue.py` + worker/store | Policy deny after commit → persisted job |
@@ -650,8 +650,8 @@ ACP-CLOSE:  DOC-2..4 → LEG-1 → LEG-2 → LEG-3 → PROD-1 → PROD-2 → PRO
 | 5 | ACP-CLOSE-LEG-2 | **P0** | §13.4 | **Done** |
 | 6 | ACP-CLOSE-LEG-3 | P1 | §13.5 | Planned |
 | 7 | ACP-CLOSE-LEG-4 | P2 | §45 | Planned |
-| 8 | ACP-CLOSE-PROD-1 | **P0** | §40.1 | Planned |
-| 9 | ACP-CLOSE-PROD-2 | **P0** | §40.1.4 | Planned |
+| 8 | ACP-CLOSE-PROD-1 | **P0** | §40.1 | **Done** |
+| 9 | ACP-CLOSE-PROD-2 | **P0** | §40.1.4 | **Done** |
 | 10 | ACP-CLOSE-PROD-3 | P1 | §32.8 | Planned |
 | 11 | ACP-CLOSE-PROD-4 | **P0** | §27 · §40.12 | Planned |
 | 12 | ACP-CLOSE-PROD-5 | P1 | §40.3.3 | Planned |
