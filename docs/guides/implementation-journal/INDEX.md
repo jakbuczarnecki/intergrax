@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-11-005 | 2026-06-11 | tier-0/3 AGENT_CONTRACTS | ACP-CLOSE-PROD-3, ACP-CLOSE-PROD-4 | [ACP-CLOSE PROD-3/4 catalog invoker E2E](entries/2026-06-11-acp-close-prod-3-4-catalog-invoker-e2e.md) | pending |
 | IJ-2026-06-11-004 | 2026-06-11 | tier-3 AGENT_CONTRACTS | ACP-CLOSE-PROD-1, ACP-CLOSE-PROD-2 | [ACP-CLOSE PROD-1/2 checkpoint host wiring](entries/2026-06-11-acp-close-prod-1-2-checkpoint-hosts.md) | pending |
 | IJ-2026-06-11-003 | 2026-06-11 | tier-0 AGENT_CONTRACTS | ACP-CLOSE-LEG-1, ACP-CLOSE-LEG-2 | [ACP-CLOSE LEG-1/2 legacy removal](entries/2026-06-11-acp-close-leg-1-2-legacy-removal.md) | pending |
 | IJ-2026-06-11-002 | 2026-06-11 | tier-0 AGENT_CONTRACTS | ACP-CLOSE-DOC-2, ACP-CLOSE-DOC-3, ACP-CLOSE-DOC-4 | [ACP-CLOSE sprint 1 architecture and audit doc sync](entries/2026-06-11-acp-close-doc-arch-sync.md) | pending |

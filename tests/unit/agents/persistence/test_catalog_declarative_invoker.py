@@ -7,6 +7,8 @@ from intergrax.agents.persistence.catalog_declarative_invoker import (
     CatalogDeclarativeToolInvoker,
     build_catalog_declarative_invoker_from_registry,
 )
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.tool_executor import ToolHandler
@@ -50,6 +52,15 @@ async def test_catalog_declarative_invoker_routes_through_catalog() -> None:
     )
     assert result.status == "success"
     assert result.output == {"result": 5}
+
+
+def test_catalog_declarative_invoker_builds_real_runtime_context() -> None:
+    registry = _registry_with_tool()
+    invoker = build_catalog_declarative_invoker_from_registry(registry)
+    invoker.bind_run(run_id="run-ctx", agent_id="agent-a", tenant_id="tenant-1")
+    state = invoker._runtime_state()  # noqa: SLF001 — wiring verification
+    assert isinstance(state.context.session_manager, SessionManager)
+    assert isinstance(state.context.config.llm_adapter, LLMAdapter)
 
 
 @pytest.mark.asyncio

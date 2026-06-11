@@ -281,8 +281,8 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-CLOSE-LEG-4 | LEG | §45 checklist — UAEP internal-only wording | Planned | §45 | `AGENT_CREATION_GUIDE.md` | No author UAEP-first path |
 | ACP-CLOSE-PROD-1 | PROD | `AgentCheckpointStore` on **all mutating product hosts** | **Done** | §40.1 | `acp_checkpoint_host_wiring.py`, `harness_host_runtime.py` | Auto-resolve store on harness hosts; exposed on `HarnessHostRuntime` |
 | ACP-CLOSE-PROD-2 | PROD | `acp_checkpoint_task_enricher` on product hosts (lab pattern) | **Done** | §40.1.4 | `task_control_wiring.py`, `applications/*/host/factory.py` | `build_reliability_task_enricher(..., agent_checkpoint_store=)` |
-| ACP-CLOSE-PROD-3 | PROD | `CatalogDeclarativeToolInvoker` — real execution context (no `MagicMock` shim) | Planned | §32.8 · §40.3 | `catalog_declarative_invoker.py` | Unit + integration without mock adapters |
-| ACP-CLOSE-PROD-4 | PROD | Nexus **E2E** acceptance — catalog declarative invoker (not callable mock) | Planned | §27 · §40.12 | `test_acp_declarative_mutating_resume.py` | `NexusLoop` + `build_harness_host_runtime` path green |
+| ACP-CLOSE-PROD-3 | PROD | `CatalogDeclarativeToolInvoker` — real execution context (no `MagicMock` shim) | **Done** | §32.8 · §40.3 | `catalog_declarative_invoker.py` | `_CatalogDispatchLLMStub` + direct `RuntimeContext`; preserves host invoker |
+| ACP-CLOSE-PROD-4 | PROD | Nexus **E2E** acceptance — catalog declarative invoker (not callable mock) | **Done** | §27 · §40.12 | `test_acp_nexus_catalog_declarative_resume.py` | `build_harness_host_runtime` + `NexusLoop` resume green |
 | ACP-CLOSE-PROD-5 | PROD | **Durable compensation queue** for `enqueued` requests | Planned | §40.3.3 | `compensation_enqueue.py` + worker/store | Policy deny after commit → persisted job |
 | ACP-CLOSE-PROD-6 | PROD | `ReliabilityProfile.idempotency_store` ↔ ledger replay §40.2.2 | Planned | §40.2 | `reliability_wiring.py`, kernel replay | Cross-run dedupe integration test |
 | ACP-CLOSE-PROD-7 | PROD | §40.12 checklist **green** — reference mutating agent artifact | Planned | §40.12 | scoreboard + acceptance | Documented checklist pass |
@@ -652,8 +652,8 @@ ACP-CLOSE:  DOC-2..4 → LEG-1 → LEG-2 → LEG-3 → PROD-1 → PROD-2 → PRO
 | 7 | ACP-CLOSE-LEG-4 | P2 | §45 | Planned |
 | 8 | ACP-CLOSE-PROD-1 | **P0** | §40.1 | **Done** |
 | 9 | ACP-CLOSE-PROD-2 | **P0** | §40.1.4 | **Done** |
-| 10 | ACP-CLOSE-PROD-3 | P1 | §32.8 | Planned |
-| 11 | ACP-CLOSE-PROD-4 | **P0** | §27 · §40.12 | Planned |
+| 10 | ACP-CLOSE-PROD-3 | P1 | §32.8 | **Done** |
+| 11 | ACP-CLOSE-PROD-4 | **P0** | §27 · §40.12 | **Done** |
 | 12 | ACP-CLOSE-PROD-5 | P1 | §40.3.3 | Planned |
 | 13 | ACP-CLOSE-PROD-6 | P1 | §40.2.2 | Planned |
 | 14 | ACP-CLOSE-PAT-1 + TOOL-ENG-6 | P1 | §26.3 | Planned |
