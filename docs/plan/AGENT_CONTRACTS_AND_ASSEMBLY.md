@@ -246,9 +246,9 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-MIG-2 | ACP-MIG | **Migration tiers + batch order** — harness → staging read-only → staging mutating → prod-eligible | **Done** | plan §6.1aw Wave 8 · `agents/README.md` | Documented tiers match roster table |
 | ACP-MIG-3 | ACP-MIG | **Pilot batch (3 agents)** — echo, signoff_probe, research → typed `on_next_step` | **Done** | `agents/echo`, `signoff_probe`, `research` | Direct `run()` + agent_os green per agent |
 | ACP-MIG-4 | ACP-MIG | **Product batch** — legal, summary, LKW trio, DSW quartet | **Done** | product `agents/*` | Host wiring tests unchanged; scoreboard Runtime ≥80% each |
-| ACP-MIG-5 | ACP-MIG | **Remaining roster** — org_worker, assistant, dispute leftovers, mocks policy | Planned | `agents/*` | Zero UAEP-only new code; bridge allowlist shrinking |
+| ACP-MIG-5 | ACP-MIG | **Remaining roster** — org_worker, assistant, K-path agents; lab mocks excluded | **Done** | `agents/*` | Zero UAEP-only new code; bridge allowlist shrinking |
 | ACP-MIG-6 | ACP-MIG | **Fleet migration CI gate** — `check_agent_fleet_migration.py` blocks regression | **Done** | `scripts/` | CI fails if migrated agent reintroduces legacy surface |
-| ACP-MIG-7 | ACP-MIG | **Per-host binding verification** after each batch | Planned | `applications/*/manifest.py` tests | AgentBinding slices + capability routing per host |
+| ACP-MIG-7 | ACP-MIG | **Per-host binding verification** after each batch | **Done** | `applications/*/manifest.py` tests | AgentBinding slices + capability routing per host |
 | ACP-PROD-12 | ACP-PROD | **`AgentProductionReadinessReport`** scoreboard — 10 dimensions 0–100% per agent | Planned | `intergrax/contracts/agent_readiness.py`, `scripts/report_agent_production_readiness.py` | Report generated for roster; prod promotion uses thresholds §6.1az |
 | ACP-LEG-3 | ACP-LEG | **Document RuntimeEngine internal-only** | **Done** | `runtime.py` module docstring + architecture §13 | INTERNAL ONLY banner |
 | ACP-LEG-4 | ACP-LEG | **Remove author UAEP from `--pattern` scaffold** — typed hooks only | **Done** | `scaffold/new_agent.py` | `--pattern` agents have no `get_steps` |
@@ -460,10 +460,10 @@ HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
 | local_search | T1 | LKW | **Done** | MIG-4 | — | — |
 | local_synthesizer | T2 | LKW | **Done** | MIG-4 | — | — |
 | dispute_* (×4) | T2 | DSW | **Done** | MIG-4 | — | — |
-| organization_worker | T4 | lab | Planned | MIG-5 | — | — |
-| intergrax_assistant | T4 | assistant | Planned | MIG-5 | — | — |
-| problem_radar | T4 | K.1 path | Planned | MIG-5 | — | — |
-| vendor_discovery | T4 | K.2 path | Planned | MIG-5 | — | — |
+| organization_worker | T4 | lab | **Done** | MIG-5 | — | — |
+| intergrax_assistant | T4 | assistant | **Done** | MIG-5 | — | — |
+| problem_radar | T4 | K.1 path | **Done** | MIG-5 | — | — |
+| vendor_discovery | T4 | K.2 path | **Done** | MIG-5 | — | — |
 
 *Update **Status** → In progress / Done per PR; **Runtime %** from ACP-PROD-12 report.*
 

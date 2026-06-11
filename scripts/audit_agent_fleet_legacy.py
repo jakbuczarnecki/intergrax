@@ -48,6 +48,10 @@ MIGRATED_AGENTS: frozenset[str] = frozenset(
         "dispute_analyst",
         "dispute_strategist",
         "dispute_scenario",
+        "organization_worker",
+        "intergrax_assistant",
+        "problem_radar",
+        "vendor_discovery",
     }
 )
 

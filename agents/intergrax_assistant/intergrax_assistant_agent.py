@@ -5,23 +5,30 @@ from __future__ import annotations
 
 from intergrax_assistant.capabilities import CAPABILITIES
 from intergrax_assistant.contract import build_agent_contract
-from intergrax_assistant.steps.pipeline import build_pipeline, run_domain_step
-from intergrax.agents.agent_contract import Agent
-from intergrax.contracts.agent_decision import AgentDecision
-from intergrax.contracts.agent_step import AgentStep, StepOutput
+from intergrax_assistant.steps.pipeline import build_pipeline
+from intergrax.agents.authoring.acp_stub_reflex import (
+    build_pipeline_runtime_context,
+    evaluate_complete,
+    perceive_run_input,
+    prefixed_act_output,
+    reason_passthrough,
+)
+from intergrax.agents.authoring.patterns.reflex import ReflexAgent
+from intergrax.contracts.agent_run_enums import CognitivePattern
+from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
-from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.task.task import TaskContext
-from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
-from intergrax.runtime.nexus.session.session_manager import SessionManager
-from intergrax.agents.uaep_pipeline import pipeline_agent_steps, pipeline_step_complete
 
 
-class IntergraxAssistantAgent(Agent):
-    """UAEP-first scaffolded agent — replace domain logic in ``steps/`` and ``prompts/``."""
+class IntergraxAssistantAgent(ReflexAgent):
+    """Harness chat hub — typed Reflex pattern (ACP-MIG-5)."""
+
+    contract_id = "intergrax_assistant"
+    capabilities = tuple(CAPABILITIES)
+    cognitive_pattern = CognitivePattern.REFLEX
+    main_step_id = "intergrax_assistant_step"
 
     def get_contract(self):
         return build_agent_contract()
@@ -40,36 +47,20 @@ class IntergraxAssistantAgent(Agent):
         return CapabilityMatchResult(matched=False, rationale="capability not supported")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        from intergrax.agents.defaults import harness_production_mode
+        return build_pipeline_runtime_context(request, build_pipeline)
 
-        config = RuntimeConfig(
-            llm_adapter=build_pipeline().llm_adapter,
-            enable_rag=False,
-            production_mode=harness_production_mode(),
-            tenant_id=request.tenant_id,
-        )
-        config.pipeline = build_pipeline().pipeline
-        session_manager = SessionManager(storage=InMemorySessionStorage())
-        return RuntimeContext.build(config=config, session_manager=session_manager)
+    async def perceive(self, step_ctx: AgentStepContext):
+        return perceive_run_input(step_ctx, self)
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
-        _ = context
-        contract = self.get_contract()
-        return pipeline_agent_steps(
-            step_id="intergrax_assistant_step",
-            step_name="intergrax_assistant_step",
-            trace_label="platform.assist",
-            allowed_tools=list(contract.allowed_tools),
+    async def reason(self, step_ctx: AgentStepContext, observation):
+        return reason_passthrough(step_ctx, observation)
+
+    async def act(self, step_ctx: AgentStepContext, reasoning):
+        return prefixed_act_output(
+            prefix="intergrax_assistant",
+            step_ctx=step_ctx,
+            reasoning=reasoning,
         )
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
-        return await run_domain_step(step, ctx)
-
-    def decide_after_step(
-        self,
-        step: AgentStep,
-        output: StepOutput | None,
-        ctx: RuntimeExecutionContext,
-    ) -> AgentDecision:
-        _ = step, output, ctx
-        return pipeline_step_complete(reason="intergrax_assistant step finished")
+    def evaluate(self, step_ctx: AgentStepContext, output: dict[str, object]):
+        return evaluate_complete(step_ctx, output, reason="intergrax_assistant_goal_met")
