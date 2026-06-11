@@ -34,6 +34,7 @@ from intergrax.agents.persistence.idempotency_store_wiring import (
 from intergrax.agents.persistence.tool_invoker_wiring import (
     resolve_declarative_tool_invoker_from_metadata,
 )
+from intergrax.agents.configure_run_strict import ConfigureRunStrictViolation
 from intergrax.agents.run_environment import EffectiveAgentRunEnvironment, merge_environment
 from intergrax.tools.tool_execution_profile import build_profile_map
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey, AcpRunContextKey, AcpStructuredDataKey
@@ -93,13 +94,32 @@ async def run_acp_session(
         binding=host.binding if host else None,
     )
     overlay = agent.configure_run(base_merged)
-    merged = merge_environment(
-        contract=contract,
-        request=request,
-        app_profile=host.app_profile if host else None,
-        binding=host.binding if host else None,
-        configure_run_overlay=overlay,
-    )
+    try:
+        merged = merge_environment(
+            contract=contract,
+            request=request,
+            app_profile=host.app_profile if host else None,
+            binding=host.binding if host else None,
+            configure_run_overlay=overlay,
+        )
+    except ConfigureRunStrictViolation as exc:
+        run_id = str(request.metadata.get("run_id") or request.correlation_id or f"run_{uuid4().hex}")
+        trace_id = str(request.metadata.get("trace_id") or run_id)
+        return AgentRunResult(
+            run_id=run_id,
+            trace_id=trace_id,
+            status=AgentRunStatus.FAILED,
+            terminal_reason=TerminalReason.POLICY_DENIED,
+            errors=[
+                AgentRunError(
+                    code=AgentRunErrorCode.POLICY_DENIED,
+                    message="; ".join(exc.violations),
+                    details={"violations": exc.violations},
+                ),
+            ],
+            trace=AgentRunTrace(run_id=run_id),
+            duration_ms=int((time.perf_counter() - started) * 1000),
+        )
 
     run_id = str(request.metadata.get("run_id") or request.correlation_id or f"run_{uuid4().hex}")
     trace_id = str(request.metadata.get("trace_id") or run_id)

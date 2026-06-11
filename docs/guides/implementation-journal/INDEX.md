@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-11-010 | 2026-06-11 | tier-0/2 AGENT_CONTRACTS | ACP-CLOSE-ORG-1 | [ACP-CLOSE ORG-1 configure_run STRICT widen deny](entries/2026-06-11-acp-close-org-1-configure-run-strict.md) | pending |
 | IJ-2026-06-11-009 | 2026-06-11 | tier-0/1/3 AGENT_CONTRACTS | ACP-CLOSE-PROD-6 | [ACP-CLOSE PROD-6 idempotency store cross-run dedupe](entries/2026-06-11/acp-close-prod-6-idempotency-store.md) | pending |
 | IJ-2026-06-11-008 | 2026-06-11 | tier-0/1/3 AGENT_CONTRACTS | ACP-CLOSE-PROD-5 | [ACP-CLOSE PROD-5 compensation queue](entries/2026-06-11/acp-close-prod-5-compensation-queue.md) | pending |
 | IJ-2026-06-11-007 | 2026-06-11 | tier-0/2 AGENT_CONTRACTS | ACP-CLOSE-LEG-3 | [ACP-CLOSE LEG-3 uaep pipeline bridge](entries/2026-06-11/acp-close-leg-3-pipeline-bridge.md) | pending |

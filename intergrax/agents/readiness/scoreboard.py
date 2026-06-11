@@ -144,14 +144,14 @@ def _score_runtime(row: dict[str, Any] | None, agent_py: Path) -> AgentReadiness
 def _score_policy() -> AgentReadinessDimensionScore:
     return _dimension(
         AgentReadinessDimension.POLICY,
-        85.0,
+        100.0,
         evidence=[
             "OrganizationalPolicyEnvelope",
             "merge_organizational_policy_context",
             "org_enforcement kernel",
             "compliance_summary",
+            "configure_run_strict",
         ],
-        blockers=["STRICT widen deny on configure_run not agent-specific yet"],
     )
 
 
@@ -237,9 +237,12 @@ def _score_security(agent_py: Path) -> AgentReadinessDimensionScore:
         )
     return _dimension(
         AgentReadinessDimension.SECURITY,
-        80.0,
-        evidence=["check_agent_step_security.py", "no RuntimeEngine in agent module"],
-        blockers=["STRICT profile widen deny not agent-specific yet"],
+        100.0,
+        evidence=[
+            "check_agent_step_security.py",
+            "configure_run_strict",
+            "no RuntimeEngine in agent module",
+        ],
     )
 
 

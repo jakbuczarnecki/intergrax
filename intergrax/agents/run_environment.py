@@ -9,6 +9,10 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from intergrax.agents.configure_run_strict import (
+    clamp_environment_overrides_strict,
+    resolve_effective_execution_mode,
+)
 from intergrax.agents.org_policy_merge import merge_organizational_policy_context
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding
@@ -203,8 +207,29 @@ def merge_environment(
         binding=binding,
     )
 
-    overrides = request.environment_overrides
     options = request.execution_options
+    ceiling_tools = set(
+        merge_allowed_tools(
+            contract=contract,
+            binding=binding,
+            overrides=None,
+        ),
+    )
+    organizational_for_mode = merge_organizational_policy_context(
+        envelope=app_profile.organizational_policy if app_profile is not None else None,
+        binding=binding,
+        metadata=dict(request.metadata),
+        capability=contract.capabilities[0] if contract.capabilities else None,
+    )
+    execution_mode = resolve_effective_execution_mode(
+        app_execution_mode=app_profile.execution_mode if app_profile is not None else None,
+        organizational=organizational_for_mode,
+    )
+    overrides = clamp_environment_overrides_strict(
+        request.environment_overrides,
+        execution_mode=execution_mode,
+        ceiling_tools=ceiling_tools,
+    )
 
     enable_rag = True
     enable_websearch = True
@@ -228,8 +253,6 @@ def merge_environment(
     merged_metadata = dict(request.metadata)
     if overrides is not None and overrides.metadata_patch:
         merged_metadata.update(overrides.metadata_patch)
-    if configure_run_overlay:
-        merged_metadata.update(configure_run_overlay)
 
     max_steps = contract.max_steps
     if options is not None and options.max_steps is not None:
@@ -243,6 +266,24 @@ def merge_environment(
         metadata=merged_metadata,
         capability=capability,
     )
+    if configure_run_overlay:
+        from intergrax.agents.configure_run_strict import sanitize_configure_run_overlay_strict
+
+        sanitized_overlay = sanitize_configure_run_overlay_strict(
+            configure_run_overlay,
+            execution_mode=resolve_effective_execution_mode(
+                app_execution_mode=app_profile.execution_mode if app_profile is not None else None,
+                organizational=organizational,
+            ),
+            organizational=organizational,
+        )
+        merged_metadata.update(sanitized_overlay)
+        organizational = merge_organizational_policy_context(
+            envelope=org_envelope,
+            binding=binding,
+            metadata=merged_metadata,
+            capability=capability,
+        )
 
     return EffectiveAgentRunEnvironment(
         agent_id=contract.id,
