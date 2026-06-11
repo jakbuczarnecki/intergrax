@@ -34,6 +34,7 @@ class SideEffectRecord(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    schema_version: Literal["side_effect.v1"] = "side_effect.v1"
     side_effect_id: str
     idempotency_key: str
     run_id: str

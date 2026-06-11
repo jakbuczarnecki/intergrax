@@ -17,6 +17,7 @@ from intergrax.contracts.agent_run_enums import (
     TerminalReason,
 )
 from intergrax.contracts.agent_run_trace import AgentRunTrace
+from intergrax.contracts.artifact_ref import ArtifactRef
 from intergrax.contracts.memory_scope import MemoryScope
 
 
@@ -140,6 +141,7 @@ class AgentRunResult(BaseModel):
     output: str | dict[str, Any] = ""
     state: dict[str, Any] = Field(default_factory=dict)
     artifacts: list[dict[str, Any]] = Field(default_factory=list)
+    artifact_refs: list[ArtifactRef] = Field(default_factory=list)
     structured_data: dict[str, Any] = Field(default_factory=dict)
     confidence: float | None = None
     errors: list[AgentRunError] = Field(default_factory=list)

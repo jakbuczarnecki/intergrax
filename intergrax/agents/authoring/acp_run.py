@@ -16,6 +16,7 @@ from intergrax.agents.authoring.llm_router import StepLLMRouter
 from intergrax.agents.authoring.shared_context_bridge import load_view, persist_view, view_from_task_metadata
 from intergrax.agents.authoring.step_loop import AgentRuntime
 from intergrax.applications._shared.reliability_runtime_bridge import resolve_reliability_wiring_options
+from intergrax.agents.authoring.artifact_refs import artifact_refs_from_payloads
 from intergrax.agents.compliance_summary import build_compliance_summary
 from intergrax.agents.persistence.session_persistence import (
     make_checkpoint_hook,
@@ -228,10 +229,19 @@ async def run_acp_session(
     if step_ctx.shared_context is not None:
         persist_view(request.metadata, step_ctx.shared_context)
 
+    artifact_refs = artifact_refs_from_payloads(
+        list(last_outcome.artifacts),
+        run_id=run_id,
+        trace_id=trace_id,
+        agent_id=merged.agent_id,
+        step_index=step_ctx.step_index,
+    )
     result = AgentRunResult(
         status=status,
         output=last_outcome.output or "",
         state=dict(kernel_ctx.state_root),
+        artifacts=list(last_outcome.artifacts),
+        artifact_refs=artifact_refs,
         errors=list(last_outcome.errors),
         trace_id=trace_id,
         run_id=run_id,

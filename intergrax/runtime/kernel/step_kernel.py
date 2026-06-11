@@ -19,6 +19,7 @@ from intergrax.contracts.agent_run_enums import (
     StepNextAction,
     TerminalReason,
 )
+from intergrax.contracts.privacy_redaction import redact_pii_text
 from intergrax.contracts.agent_run_trace import (
     AgentRunTrace,
     AgentStepRecord,
@@ -380,7 +381,7 @@ class HarnessKernel:
                 PolicyVerdictRecord(
                     phase=PolicyCheckPhase.PRE,
                     action=policy_pre.action,
-                    reason=policy_pre.reason,
+                    reason=redact_pii_text(policy_pre.reason),
                     policy_rule_id=policy_pre.policy_rule_id,
                 )
             )
@@ -389,7 +390,7 @@ class HarnessKernel:
                 PolicyVerdictRecord(
                     phase=PolicyCheckPhase.POST,
                     action=policy_post.action,
-                    reason=policy_post.reason,
+                    reason=redact_pii_text(policy_post.reason),
                     policy_rule_id=policy_post.policy_rule_id,
                 )
             )

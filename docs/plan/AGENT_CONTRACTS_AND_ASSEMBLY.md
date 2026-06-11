@@ -217,12 +217,12 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-PROD-3 | ACP-PROD | **ToolExecutionProfile + compensation** | **Done** | `intergrax/tools/tool_execution_profile.py` + kernel | Mutating tool gate |
 | ACP-PROD-4 | ACP-PROD | **ReliabilityProfile in HarnessKernel** — retry/CB/timeout | **Done** | `intergrax/runtime/kernel/session_reliability.py` | REL profile wired |
 | ACP-PROD-5 | ACP-PROD | **SharedContextView CAS + conflict policy** | **Done** | `intergrax/contracts/shared_context.py` | Parallel graph conflict test |
-| ACP-PROD-6 | ACP-PROD | **`ArtifactRef` contract** on result/step | Planned | `intergrax/contracts/artifact_ref.py` | Typed artifacts in test |
-| ACP-PROD-7 | ACP-PROD | **Agent threat model CI** — matrix §40.7 | Planned | scripts + tests | CI-02..03 + threat cases |
-| ACP-PROD-8 | ACP-PROD | **Privacy/redaction on trace/memory** | Planned | observability + memory bridges | PII redaction test |
-| ACP-PROD-9 | ACP-PROD | **Release eval gates** — golden/regression/policy suites | Planned | `scripts/check_agent_release_gates.py` | Staging gate green |
-| ACP-PROD-10 | ACP-PROD | **CI conformance matrix §40.10** | Planned | CI workflow aggregate | CI-01..15 applicable rows |
-| ACP-PROD-11 | ACP-PROD | **Schema version registry + migration adapters** | Planned | `intergrax/contracts/migrations/` | check_contract_schema_versions |
+| ACP-PROD-6 | ACP-PROD | **`ArtifactRef` contract** on result/step | **Done** | `intergrax/contracts/artifact_ref.py` | Typed artifacts in test |
+| ACP-PROD-7 | ACP-PROD | **Agent threat model CI** — matrix §40.7 | **Done** | `scripts/check_agent_threat_model.py` | CI-02..03 + threat cases |
+| ACP-PROD-8 | ACP-PROD | **Privacy/redaction on trace/memory** | **Done** | `intergrax/contracts/privacy_redaction.py` | PII redaction test |
+| ACP-PROD-9 | ACP-PROD | **Release eval gates** — golden/regression/policy suites | **Done** | `scripts/check_agent_release_gates.py` | Staging gate green |
+| ACP-PROD-10 | ACP-PROD | **CI conformance matrix §40.10** | **Done** | `scripts/check_acp_ci_conformance_matrix.py` | CI-01..16 applicable rows |
+| ACP-PROD-11 | ACP-PROD | **Schema version registry + migration adapters** | **Done** | `intergrax/contracts/migrations/` | check_contract_schema_versions |
 | ACP-0 | ACP1 | **`AcpSessionState` / `acp.state.v1` schema** — Pydantic envelope + agent subclass pattern §32.0 | **Done** | `intergrax/contracts/acp_state.py` | Unit test round-trip; extra=forbid |
 | ACP-0b | ACP1 | **`cognitive_pattern` on AgentContract** — optional field + validation | **Done** | `agent_contract_meta.py`, `agent_assembly_resolver.py` | `test_cognitive_patterns` validation |
 | ACP-1 | ACP1 | **`CognitiveAgent` ABC** — perceive/reason/act/evaluate + `on_next_step` | **Done** | `patterns/base.py` | Pattern probe runs |
@@ -494,9 +494,9 @@ HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
 | 7.3 | ACP-PROD-3 | `ToolExecutionProfile` + compensation | **Done** — mutating tool validation gate | TOOLS |
 | 7.4 | ACP-PROD-4 | ReliabilityProfile in kernel | **Done** — circuit breaker + checkpoint interval | RELIABILITY |
 | 7.5 | ACP-PROD-5 | SharedContext CAS | **Done** — per-key publish/CAS + graph test | ORCHESTRATION |
-| 7.6 | ACP-PROD-6 | `ArtifactRef` | Typed artifacts on result | OBSERVABILITY |
-| 7.7 | ACP-PROD-7..8 | Threat CI + privacy redaction | §40.7 matrix | OBSERVABILITY · MEMORY |
-| 7.8 | ACP-PROD-9..11 | Release gates + CI matrix + schema registry | §40.12 checklist | DX |
+| 7.6 | ACP-PROD-6 | `ArtifactRef` | **Done** — `artifact_refs` on `AgentRunResult` | OBSERVABILITY |
+| 7.7 | ACP-PROD-7..8 | Threat CI + privacy redaction | **Done** — threat gate + PII redaction | OBSERVABILITY · MEMORY |
+| 7.8 | ACP-PROD-9..11 | Release gates + CI matrix + schema registry | **Done** — aggregate CI scripts | DX |
 | 7.9 | ACP-PROD-12 | Production readiness scoreboard — aggregate §6.1az gates into one report | **Done** — `report_agent_production_readiness.py` · `check_agent_production_readiness.py` | DX · V-EVAL |
 
 **Wave 7 DoD:** §40.12 checklist green for reference mutating agent; scoreboard emitted for roster; architecture §40 maturity gate **unblocks** prod roster promotion via scoreboard thresholds.

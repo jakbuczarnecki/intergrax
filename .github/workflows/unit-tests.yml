@@ -69,6 +69,9 @@ jobs:
           uv run python scripts/check_agents_vendor_imports.py
           && uv run python scripts/check_capability_routing.py
           && uv run python scripts/check_agent_step_security.py
+          && uv run python scripts/check_agent_threat_model.py
+          && uv run python scripts/check_contract_schema_versions.py
+          && uv run python scripts/check_acp_ci_conformance_matrix.py --scripts-only
           && uv run python scripts/check_agent_typed_state.py
           && uv run python scripts/check_production_chat_agent_imports.py
           && uv run python scripts/check_integration_vendor_imports.py
@@ -156,6 +159,9 @@ jobs:
           uv run python scripts/check_agents_vendor_imports.py
           && uv run python scripts/check_capability_routing.py
           && uv run python scripts/check_agent_step_security.py
+          && uv run python scripts/check_agent_threat_model.py
+          && uv run python scripts/check_contract_schema_versions.py
+          && uv run python scripts/check_acp_ci_conformance_matrix.py --scripts-only
           && uv run python scripts/check_agent_typed_state.py
           && uv run python scripts/check_production_chat_agent_imports.py
           && uv run python scripts/check_integration_vendor_imports.py

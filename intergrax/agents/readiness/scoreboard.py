@@ -250,12 +250,16 @@ def _score_evaluation(agent_id: str, contract_id: str) -> AgentReadinessDimensio
     if _has_eval_tests(agent_id, contract_id):
         return _dimension(
             AgentReadinessDimension.EVALUATION,
-            85.0,
-            evidence=["tests/ or agents/*/tests reference agent"],
+            90.0,
+            evidence=[
+                "tests/ or agents/*/tests reference agent",
+                "check_agent_release_gates.py",
+            ],
         )
     return _dimension(
         AgentReadinessDimension.EVALUATION,
-        40.0,
+        50.0,
+        evidence=["check_agent_release_gates.py baseline"],
         blockers=["no dedicated test reference found for agent"],
     )
 

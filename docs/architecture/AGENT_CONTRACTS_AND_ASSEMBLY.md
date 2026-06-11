@@ -2920,7 +2920,7 @@ ArtifactProvenance:
 
 - Harness registers artifacts when tools return artifact payloads or `StepOutcome.artifacts` lists ids.
 - Two agents publishing same logical artifact → distinct `artifact_id`; dedupe via `checksum` optional at app layer.
-- **Plan:** ACP-PROD-6.
+- **Plan:** ACP-PROD-6 (**Done** — `intergrax/contracts/artifact_ref.py`, `AgentRunResult.artifact_refs`).
 
 ---
 
@@ -2942,7 +2942,7 @@ Formal requirements — enforcement via policy, gateways, CI (§40.10).
 | **SDK bypass** | Direct vendor import in Tier-2 | tier boundary, `check_agents_vendor_imports.py` | CI |
 | **Org rule bypass** | configure_run widen in STRICT | §39.4 STRICT deny | ACP-ORG-3 |
 
-**Plan:** ACP-PROD-7 — `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` threat register + link from [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) guardrails.
+**Plan:** ACP-PROD-7 (**Done** — `scripts/check_agent_threat_model.py`).
 
 ---
 
@@ -2977,7 +2977,7 @@ Host **`ObservabilityProfile`** + **`MemoryProfile`** declare default classifica
 - `AgentStepRecord.state_snapshot` — redacted view of `acp.state.v1`.
 - `PolicyVerdictRecord.message` — no raw user content.
 
-**Plan:** ACP-PROD-8 — align with [`MEMORY.md`](MEMORY.md) retention + [`OBSERVABILITY.md`](OBSERVABILITY.md) redaction spine.
+**Plan:** ACP-PROD-8 (**Done** — `privacy_redaction.py` on policy verdict reasons).
 
 ---
 
@@ -3007,7 +3007,7 @@ Register in **Evaluation registry**; wired via Tier-3 host before roster `produc
 dev → eval suites green → staging shadow → certification §20 → production_mode
 ```
 
-**Plan:** ACP-PROD-9 — `scripts/check_agent_release_gates.py` + manifest `eval_profile_id`.
+**Plan:** ACP-PROD-9 (**Done** — `scripts/check_agent_release_gates.py`).
 
 ---
 
@@ -3035,7 +3035,7 @@ Normative CI checks before merge to agent roster (extends §45).
 
 **Rule:** new agent PR MUST declare which CI rows apply; all applicable rows green.
 
-**Plan:** ACP-PROD-10 — document matrix in [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) + aggregate workflow step.
+**Plan:** ACP-PROD-10 (**Done** — `scripts/check_acp_ci_conformance_matrix.py`).
 
 ---
 
@@ -3060,7 +3060,7 @@ All runtime contracts carry **`schema_version`**. Breaking changes require ADR +
 2. Semantic change — new schema_version; adapter layer for one release (`intergrax/contracts/migrations/agent_run_v1_to_v2.py`).
 3. Deprecation — `DeprecationWarning` in harness one release; remove with ADR.
 
-**Plan:** ACP-PROD-11 — `check_contract_schema_versions.py` in CI.
+**Plan:** ACP-PROD-11 (**Done** — `intergrax/contracts/migrations/registry.py` + `check_contract_schema_versions.py`).
 
 ---
 
