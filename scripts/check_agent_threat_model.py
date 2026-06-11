@@ -16,7 +16,7 @@ THREAT_GATES: tuple[tuple[str, str], ...] = (
     ("Capability routing", "check_capability_routing.py"),
     ("Tier-3 import boundary", "check_agents_no_tier3_imports.py"),
     ("Fleet migration", "check_agent_fleet_migration.py"),
-    ("Production readiness", "check_agent_production_readiness.py"),
+    ("ACP-CLOSE CI", "check_agent_acp_close_ci.py"),
 )
 
 REQUIRED_TESTS: tuple[str, ...] = (

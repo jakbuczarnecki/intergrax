@@ -24,7 +24,7 @@ applications/      →  deployable environments that compose agents
 | **T4** long-running | MIG-5 | `organization_worker`, `intergrax_assistant`, K-path agents | **Done** |
 
 Inventory: `uv run python scripts/audit_agent_fleet_legacy.py` → `build/agent_fleet_inventory.json`.  
-CI gate: `uv run python scripts/check_agent_fleet_migration.py` (blocks legacy surface on migrated agents).  
+CI gate: `uv run python scripts/check_agent_acp_close_ci.py` (fleet migration + scoreboard blockers; ACP-CLOSE-CI-1/3).  
 Scoreboard (ACP-PROD-12): `uv run python scripts/report_agent_production_readiness.py --roster` → `build/agent_production_readiness.json`.  
 Fleet closure (ACP-LEG-2): `uv run python scripts/check_agent_production_readiness.py --require-fleet-migration-closure --regenerate`.
 

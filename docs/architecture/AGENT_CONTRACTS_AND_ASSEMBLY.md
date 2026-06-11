@@ -2327,7 +2327,7 @@ Acceptance: integration test routes by `research.web_search` with two implementa
 | DX / readability | 9/10 (§32.0) | **9/10** — factories + typed-state CI |
 | Typed author surface | Required §32.0 | **Done** — UAEP internal bridge only (LEG closeout open) |
 
-**Audit gate (2026-06-11):** conceptual architecture **9/10**; implementation **8.5/10**; **mutating production_mode** — §40.12 reference checklist green (ACP-CLOSE-PROD-7); scoreboard mutating checkpoint/idempotency **100%** (ACP-CLOSE-PROD-8); STRICT configure_run widen deny per-agent **Done** (ACP-CLOSE-ORG-1); compensation queue **Done** (ACP-CLOSE-PROD-5).
+**Audit gate (2026-06-11):** conceptual architecture **9/10**; implementation **8.5/10**; **mutating production_mode** — §40.12 reference checklist green (ACP-CLOSE-PROD-7); scoreboard mutating checkpoint/idempotency **100%** (ACP-CLOSE-PROD-8); STRICT configure_run widen deny per-agent **Done** (ACP-CLOSE-ORG-1); compensation queue **Done** (ACP-CLOSE-PROD-5); ACP-CLOSE CI-1/3 wired in regression gate workflow.
 
 **Recommended decision (accepted):** keep Nexus as Agent OS; implement `run()` + `on_next_step()` + typed contracts — do **not** merge Nexus into agent class (ADR-AGENT-001..003). **`NexusLoop` MUST NOT become the agent plan brain** — see §38.
 
@@ -3024,7 +3024,7 @@ Normative CI checks before merge to agent roster (extends §45).
 | CI-01 | Agent contract fields complete | `check_agents_lifecycle_metadata.py` |
 | CI-02 | No vendor SDK in Tier-2 | `check_agents_vendor_imports.py` |
 | CI-03 | No `os.environ` in agents | lint / dedicated script |
-| CI-04 | UAEP / run path | `pytest agents/<slug>/` |
+| CI-04 | UAEP / run path — post-LEG fleet migration | `check_agent_fleet_migration.py` · `check_agent_acp_close_ci.py` |
 | CI-05 | Capability declared matches class | `check_agent_pattern_conformance.py` (ACP-13) |
 | CI-06 | Capability routing integration | ACP-CON-6 test |
 | CI-07 | state_delta merge unit | ACP-CON-2 test |
@@ -3036,6 +3036,7 @@ Normative CI checks before merge to agent roster (extends §45).
 | CI-13 | Idempotency key on mutating tool fixtures | ACP-PROD-2 test |
 | CI-14 | Checkpoint resume smoke | ACP-PROD-1 test |
 | CI-15 | Release eval suites | ACP-PROD-9 |
+| CI-16 | Production readiness scoreboard blockers | `check_agent_acp_close_ci.py` |
 
 **Rule:** new agent PR MUST declare which CI rows apply; all applicable rows green.
 
@@ -3135,7 +3136,7 @@ Waivers require ADR + operator sign-off — not silent skip.
 | Conceptual architecture | **9/10** ✓ |
 | Platform implementation (ACP waves 0–8) | **8.5/10** ✓ |
 | Architecture ↔ code doc sync | **9/10** ✓ (after ACP-CLOSE-DOC-2/3) |
-| Mutating agents production-ready | **Partial** — §40.12 + mutating checkpoint/idempotency + STRICT configure_run deny + compensation queue **Done**; CI gate closure (ACP-CLOSE-CI-*) open |
+| Mutating agents production-ready | **Partial** — §40.12 + mutating checkpoint/idempotency + STRICT configure_run deny + compensation queue + CI-1/3 **Done**; PAT/ORG-2/CI-2 remain |
 
 ### 40.13.1 Audit acceptance (2026-06)
 

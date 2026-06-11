@@ -16,6 +16,7 @@ PYTHON = sys.executable
 MATRIX: tuple[tuple[str, str, str | None], ...] = (
     ("CI-01", "check_agents_lifecycle_metadata.py", None),
     ("CI-02", "check_agents_vendor_imports.py", None),
+    ("CI-04", "check_agent_fleet_migration.py", "tests/unit/scripts/test_check_agent_acp_close_ci.py"),
     ("CI-05", "check_agent_pattern_conformance.py", None),
     ("CI-06", "check_capability_routing.py", "tests/unit/runtime/registry/test_capability_routing_acp_con6.py"),
     ("CI-07", "check_agent_typed_state.py", None),
@@ -25,7 +26,7 @@ MATRIX: tuple[tuple[str, str, str | None], ...] = (
     ("CI-13", "check_agent_step_security.py", "tests/unit/agents/persistence/test_acp_prod_persistence.py"),
     ("CI-14", "check_agent_production_readiness.py", "tests/unit/agents/persistence/test_acp_prod_persistence.py"),
     ("CI-15", "report_agent_production_readiness.py", None),
-    ("CI-16", "check_agent_production_readiness.py", None),
+    ("CI-16", "check_agent_acp_close_ci.py", "tests/unit/scripts/test_check_agent_acp_close_ci.py"),
 )
 
 

@@ -28,8 +28,8 @@ def _run(script: str, *args: str) -> int:
 def main() -> int:
     violations: list[str] = []
 
-    if _run("check_agent_production_readiness.py", "--regenerate") != 0:
-        violations.append("check_agent_production_readiness.py failed")
+    if _run("check_agent_acp_close_ci.py") != 0:
+        violations.append("check_agent_acp_close_ci.py failed")
 
     if _run("check_agent_threat_model.py") != 0:
         violations.append("check_agent_threat_model.py failed")
