@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-10-032 | 2026-06-10 | tier-0 AGENT_CONTRACTS | ACP-PROD-1, ACP-PROD-2 | [ACP acceptance 05d declarative mutating resume](entries/2026-06-10-acp-acceptance-05d-declarative-resume.md) | pending |
 | IJ-2026-06-11-001 | 2026-06-11 | tier-0/1 TOOLS | TOOL-ENG-DOC.4, TOOL-ENG-13..15 | [Tool selection modes canon — standard, semantic, hierarchical](entries/2026-06-11-tools-tool-eng-doc-4-selection-modes.md) | pending |
 | IJ-2026-06-10-031 | 2026-06-10 | tier-0/1/3 AGENT_CONTRACTS | ACP-PROD-2, TOOL-ENG-6 | [ACP declarative catalog tool invoker host wiring](entries/2026-06-10-acp-prod-2-host-tool-invoker-wiring.md) | pending |
 | IJ-2026-06-10-030 | 2026-06-10 | tier-0/1 AGENT_CONTRACTS | ACP-PROD-3 | [ACP-PROD-3 compensation enqueue on step failure](entries/2026-06-10-acp-prod-3-compensation-enqueue.md) | pending |

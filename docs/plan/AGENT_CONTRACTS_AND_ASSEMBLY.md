@@ -212,7 +212,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-ORG-4 | ACP-ORG | **`PolicyVerdictRecord` + compliance_summary** on trace/result | **Done** | `intergrax/contracts/agent_run_trace.py` | Step trace assertion |
 | ACP-ORG-5 | ACP-ORG | **Reference org fixture + golden compliance eval** | **Done** | `lab_org_virtual_workforce_defaults` + gate tests | Zero POLICY_DENIED on happy path |
 | ACP-DOC.9 | ACP0 | **Architecture §40** — production reliability, safety, persistence, release gates | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §40 canon **audit accepted** — implement ACP-PROD next |
-| ACP-PROD-1 | ACP-PROD | **Checkpoint / resume / replay** — step store + crash recovery | **Done** | `intergrax/agents/persistence/checkpoint_store.py` | Resume smoke; no double mutating tool |
+| ACP-PROD-1 | ACP-PROD | **Checkpoint / resume / replay** — step store + crash recovery | **Done** | `checkpoint_store.py`, acceptance `05c`/`05d` | Resume smoke; no double mutating tool |
 | ACP-PROD-2 | ACP-PROD | **Side-effect idempotency ledger** — dedupe + declarative execute/commit in kernel | **Done** | `side_effect_ledger.py`, `declarative_tool_executor.py`, `step_kernel.py` | Resume replay skip + commit on invoke |
 | ACP-PROD-3 | ACP-PROD | **ToolExecutionProfile + compensation enqueue** | **Done** | `tool_execution_profile.py`, `compensation_enqueue.py`, `step_kernel.py` | Policy deny after commit triggers recall |
 | ACP-PROD-4 | ACP-PROD | **ReliabilityProfile in HarnessKernel** — retry/CB/timeout | **Done** | `intergrax/runtime/kernel/session_reliability.py` | REL profile wired |
@@ -488,7 +488,7 @@ HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
 
 | Step | ID | Delivers §40 capability | Acceptance | Cross-domain |
 |------|-----|-------------------------|------------|--------------|
-| 7.1 | ACP-PROD-1 | Checkpoint / resume / replay | **Done** — store + host wiring + `test_acceptance_05c` resume smoke | RELIABILITY |
+| 7.1 | ACP-PROD-1 | Checkpoint / resume / replay | **Done** — store + host wiring + `test_acceptance_05c`/`05d` resume smoke | RELIABILITY |
 | 7.2 | ACP-PROD-2 | Idempotency ledger | **Done** — ledger dedupe + replay skip + kernel execute/commit + host catalog invoker wiring | TOOLS |
 | 7.3 | ACP-PROD-3 | `ToolExecutionProfile` + compensation | **Done** — mutating tool gate + step-failure compensation enqueue | TOOLS |
 | 7.4 | ACP-PROD-4 | ReliabilityProfile in kernel | **Done** — circuit breaker + checkpoint interval | RELIABILITY |
@@ -776,7 +776,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | 2 | Sequential multi-agent | `test_acceptance_02_sequential_multi_agent` |
 | 3 | Parallel multi-agent | `test_acceptance_03_parallel_multi_agent` |
 | 4 | HITL approve/resume | `test_acceptance_04_human_approval_flow` |
-| 5 | Checkpoint recovery | `test_acceptance_05_checkpoint_recovery` |
+| 5 | Checkpoint recovery | `test_acceptance_05_checkpoint_recovery` · `test_acceptance_05c` · `test_acceptance_05d` |
 | 6 | Retry / alternate agent | `test_acceptance_06_retry_flow` |
 | 7 | Partial results | `test_acceptance_07_partial_results` |
 | 8 | Memory / shared context | `test_acceptance_08_memory_handoff` |
