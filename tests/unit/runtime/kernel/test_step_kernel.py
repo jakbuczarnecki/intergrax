@@ -8,6 +8,10 @@ from intergrax.contracts.agent_run_enums import (
     SideEffectMode,
     TerminalReason,
 )
+from intergrax.applications.contracts.org_policy import (
+    ChannelPolicy,
+    OrganizationalPolicyContext,
+)
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.runtime.kernel.step_kernel import HarnessKernel, StepKernelContext
@@ -79,6 +83,59 @@ async def test_kernel_rejects_mixed_side_effect_mode() -> None:
     record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
     assert record.side_effect_mode_violation is True
     assert record.error_code == AgentRunErrorCode.VALIDATION_FAILED
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_kernel_org_policy_denies_channel() -> None:
+    org = OrganizationalPolicyContext(
+        organization_id="lab.virtual_org",
+        channel_policy=ChannelPolicy(
+            allowed_channels=["chat"],
+            denied_channels=["phone"],
+        ),
+    )
+    step_ctx = AgentStepContext(step_index=0, metadata={"channel": "phone"})
+    kernel_ctx = StepKernelContext(
+        agent_id="demo",
+        run_id="run-org",
+        policy_engine=PolicyEngine(),
+        organizational=org,
+    )
+    outcome = StepOutcome.continue_with({"phase": "plan"})
+    record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
+    assert record.error_code == AgentRunErrorCode.POLICY_DENIED
+    assert record.policy_pre is not None
+    assert record.policy_pre.policy_rule_id == "org.channel.denied"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_kernel_org_policy_allows_happy_path_channel() -> None:
+    org = OrganizationalPolicyContext(
+        organization_id="lab.virtual_org",
+        channel_policy=ChannelPolicy(
+            allowed_channels=["chat", "ticket"],
+            denied_channels=["phone"],
+        ),
+    )
+    step_ctx = AgentStepContext(step_index=0, metadata={"channel": "chat"})
+    kernel_ctx = StepKernelContext(
+        agent_id="demo",
+        run_id="run-org-ok",
+        policy_engine=PolicyEngine(),
+        organizational=org,
+    )
+    outcome = StepOutcome.continue_with({"phase": "plan"})
+    record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
+    assert record.error_code is None
+    assert record.outcome_applied is True
+    assert record.step_record is not None
+    assert not any(
+        v.policy_rule_id.startswith("org.")
+        and v.action == PolicyAction.DENY
+        for v in record.step_record.policy_verdicts
+    )
 
 
 @pytest.mark.unit

@@ -144,9 +144,14 @@ def _score_runtime(row: dict[str, Any] | None, agent_py: Path) -> AgentReadiness
 def _score_policy() -> AgentReadinessDimensionScore:
     return _dimension(
         AgentReadinessDimension.POLICY,
-        40.0,
-        evidence=["ACP-ORG planned"],
-        blockers=["ACP-ORG-1..5 organizational policy envelope not yet demonstrated"],
+        85.0,
+        evidence=[
+            "OrganizationalPolicyEnvelope",
+            "merge_organizational_policy_context",
+            "org_enforcement kernel",
+            "compliance_summary",
+        ],
+        blockers=["STRICT widen deny on configure_run not agent-specific yet"],
     )
 
 

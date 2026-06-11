@@ -384,6 +384,7 @@ class ApplicationEnvironmentProfile(BaseModel):
     )
     guardrail_profile: GuardrailProfile = Field(default_factory=GuardrailProfile)
     policy_rules: PolicyRulesProfile | None = None
+    organizational_policy: "OrganizationalPolicyEnvelope | None" = None
     execution_mode: ExecutionMode = ExecutionMode.BALANCED
     graph_spec: ApplicationGraphSpec | None = None
     shadow_workspace: ShadowWorkspaceProfile | None = None
@@ -406,6 +407,23 @@ class ApplicationEnvironmentProfile(BaseModel):
     def with_harness_memory(self) -> ApplicationEnvironmentProfile:
         """Return a copy with harness memory flags enabled (sqlite-backed hosts)."""
         return self.model_copy(update={"memory_profile": self.harness_memory_profile()})
+
+    @classmethod
+    def lab_org_virtual_workforce_defaults(
+        cls,
+        *,
+        profile_id: str = "lab.org.virtual_workforce",
+    ) -> ApplicationEnvironmentProfile:
+        """UC-11 reference host — strict organizational envelope (ACP-ORG-5)."""
+        from intergrax.applications.contracts.org_policy import lab_strict_org_envelope
+
+        base = cls.lab_defaults(profile_id=profile_id)
+        return base.model_copy(
+            update={
+                "execution_mode": ExecutionMode.STRICT,
+                "organizational_policy": lab_strict_org_envelope(),
+            }
+        )
 
     @classmethod
     def lab_defaults(
@@ -750,3 +768,8 @@ class ApplicationEnvironmentProfile(BaseModel):
             execution_mode=ExecutionMode.STRICT,
             domain_policy_fragments=dict(domain_fragments or {}),
         )
+
+
+from intergrax.applications.contracts.org_policy import OrganizationalPolicyEnvelope  # noqa: E402
+
+ApplicationEnvironmentProfile.model_rebuild()

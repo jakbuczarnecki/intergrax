@@ -1505,8 +1505,8 @@ Agent uses **multiple tools** bound to different integration slugs (`postgres.le
 | `AgentRunTrace` | Planned ACP-OBS-1 | `intergrax/contracts/agent_run_trace.py` |
 | `StepLLMRouter` | Planned ACP-LLM-1 | `intergrax/agents/authoring/llm_router.py` |
 | `SharedContextView` | Planned ACP-STATE-1 | `intergrax/contracts/shared_context.py` |
-| `OrganizationalPolicyEnvelope` | Planned ACP-ORG-1 | `intergrax/applications/contracts/org_policy.py` |
-| `OrganizationalPolicyContext` | Planned ACP-ORG-2 | `intergrax/agents/run_environment.py` |
+| `OrganizationalPolicyEnvelope` | ACP-ORG-1 | `intergrax/applications/contracts/org_policy.py` |
+| `OrganizationalPolicyContext` | ACP-ORG-2 | `intergrax/agents/run_environment.py` |
 | Per-agent binding on manifest | Partial | `intergrax/applications/contracts/` |
 | Reference merge in lab | Planned ACP-CFG | `intergrax/agents/reference_harness.py` |
 
@@ -2477,7 +2477,7 @@ NexusLoop merges node output → next graph edge or Task complete
 
 ## 39.2 `OrganizationalPolicyEnvelope` (Tier-3 contract — ACP-ORG-1)
 
-Planned: `intergrax/applications/contracts/org_policy.py`. Attached to `ApplicationEnvironmentProfile` or referenced by id.
+`intergrax/applications/contracts/org_policy.py`. Attached to `ApplicationEnvironmentProfile.organizational_policy`.
 
 ```text
 OrganizationalPolicyEnvelope:

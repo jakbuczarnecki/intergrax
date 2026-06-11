@@ -28,7 +28,12 @@ from intergrax.contracts.agent_run_trace import (
 )
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.applications.contracts.org_policy import OrganizationalPolicyContext
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.runtime.policy.org_enforcement import (
+    evaluate_org_policy_pre,
+    extract_requested_tool_ids,
+)
 from intergrax.contracts.step_execution import StepExecutionRecord
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.policy.policy_engine import PolicyEngine
@@ -53,6 +58,7 @@ class StepKernelContext:
     max_steps: int | None = None
     checkpoint_every_step: bool = True
     policy_engine: PolicyEngine | None = None
+    organizational: OrganizationalPolicyContext | None = None
     emit_event: EventEmitter | None = None
     checkpoint_hook: CheckpointHook | None = None
     state_root: dict[str, Any] = field(default_factory=dict)
@@ -345,6 +351,13 @@ class HarnessKernel:
                 reason="test_policy_pre_deny",
                 policy_rule_id="test.pre_deny",
             )
+        org_decision = evaluate_org_policy_pre(
+            org=kernel_ctx.organizational,
+            channel=step_ctx.metadata.get("channel"),
+            requested_tool_ids=extract_requested_tool_ids(outcome.requested_actions),
+        )
+        if org_decision is not None:
+            return org_decision
         if outcome.errors:
             return PolicyDecision(
                 action=PolicyAction.DENY,

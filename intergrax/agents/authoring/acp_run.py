@@ -15,6 +15,7 @@ from intergrax.agents.authoring.acp_session_host import (
 from intergrax.agents.authoring.llm_router import StepLLMRouter
 from intergrax.agents.authoring.shared_context_bridge import load_view, persist_view, view_from_task_metadata
 from intergrax.agents.authoring.step_loop import AgentRuntime
+from intergrax.agents.compliance_summary import build_compliance_summary
 from intergrax.agents.run_environment import EffectiveAgentRunEnvironment, merge_environment
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey, AcpRunContextKey, AcpStructuredDataKey
 from intergrax.contracts.acp_state import ACP_STATE_KEY
@@ -95,6 +96,7 @@ async def run_acp_session(
         max_steps=merged.max_steps,
         checkpoint_every_step=merged.checkpoint_every_step,
         policy_engine=PolicyEngine(),
+        organizational=merged.organizational,
         state_root=_initial_state_root(request),
         run_trace=AgentRunTrace(run_id=run_id),
     )
@@ -121,6 +123,11 @@ async def run_acp_session(
             "memory_namespace": merged.memory_namespace,
             "memory_scope": merged.memory_scope.value,
             "allowed_tools": list(merged.allowed_tools),
+            AcpRunContextKey.ORGANIZATIONAL: (
+                merged.organizational.model_dump(mode="json")
+                if merged.organizational is not None
+                else None
+            ),
         },
         llm_router=llm_router,
         shared_context=shared_context,
@@ -197,6 +204,7 @@ async def run_acp_session(
         trace=kernel_ctx.run_trace,
         terminal_reason=terminal_reason,
         duration_ms=duration_ms,
+        compliance_summary=build_compliance_summary(kernel_ctx.run_trace),
         structured_data={
             AcpStructuredDataKey.TRACE_SUMMARY: _trace_summary_payload(
                 kernel_ctx.run_trace,

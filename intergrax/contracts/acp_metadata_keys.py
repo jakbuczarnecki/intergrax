@@ -26,3 +26,4 @@ class AcpRunContextKey(StrEnum):
 
     RUN_INPUT = "acp.run_input.v1"
     LAST_OUTCOME = "acp.last_outcome.v1"
+    ORGANIZATIONAL = "acp.organizational.v1"

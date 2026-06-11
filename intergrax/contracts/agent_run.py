@@ -80,6 +80,16 @@ class AgentRunError(BaseModel):
     details: dict[str, Any] | None = None
 
 
+class ComplianceSummary(BaseModel):
+    """Org + platform policy rollup on AgentRunResult (architecture §39.5 · ACP-ORG-4)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    deny_count: int = 0
+    warn_count: int = 0
+    rules_triggered: list[str] = Field(default_factory=list)
+
+
 class AgentRunCost(BaseModel):
     """Cost rollup attached to AgentRunResult."""
 
@@ -142,6 +152,7 @@ class AgentRunResult(BaseModel):
     duration_ms: int = 0
     terminal_reason: TerminalReason | None = None
     governance: GovernanceSnapshot | None = None
+    compliance_summary: ComplianceSummary | None = None
 
     @model_validator(mode="after")
     def _terminal_reason_required_for_terminal_status(self) -> AgentRunResult:

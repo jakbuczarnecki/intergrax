@@ -206,11 +206,11 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-DOC.6 | ACP0 | **Architecture §37** — pre-implementation operational contracts | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | Audit gaps A–G closed in canon |
 | ACP-DOC.7 | ACP0 | **Architecture §38** — NexusLoop vs HarnessKernel execution stack | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §38 + ACP-INV-11 |
 | ACP-DOC.8 | ACP0 | **Architecture §39** — organizational policy envelope & virtual workforce | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §39 + UC-11 |
-| ACP-ORG-1 | ACP-ORG | **`OrganizationalPolicyEnvelope`** on ApplicationEnvironmentProfile | Planned | `intergrax/applications/contracts/org_policy.py` | Pydantic extra=forbid |
-| ACP-ORG-2 | ACP-ORG | **`OrganizationalPolicyContext`** in merge_environment | Planned | `intergrax/agents/run_environment.py` | Role + envelope merge test |
-| ACP-ORG-3 | ACP-ORG | **Kernel org enforcement** — channel/tool/playbook overlays | Planned | `intergrax/runtime/kernel/step_kernel.py` | Block denied channel tool |
-| ACP-ORG-4 | ACP-ORG | **`PolicyVerdictRecord` + compliance_summary** on trace/result | Planned | `intergrax/contracts/agent_run_trace.py` | Step trace assertion |
-| ACP-ORG-5 | ACP-ORG | **Reference org fixture + golden compliance eval** | Planned | `applications/lab_application/` or test host | Zero POLICY_DENIED on happy path |
+| ACP-ORG-1 | ACP-ORG | **`OrganizationalPolicyEnvelope`** on ApplicationEnvironmentProfile | **Done** | `intergrax/applications/contracts/org_policy.py` | Pydantic extra=forbid |
+| ACP-ORG-2 | ACP-ORG | **`OrganizationalPolicyContext`** in merge_environment | **Done** | `intergrax/agents/run_environment.py` | Role + envelope merge test |
+| ACP-ORG-3 | ACP-ORG | **Kernel org enforcement** — channel/tool/playbook overlays | **Done** | `intergrax/runtime/kernel/step_kernel.py` | Block denied channel tool |
+| ACP-ORG-4 | ACP-ORG | **`PolicyVerdictRecord` + compliance_summary** on trace/result | **Done** | `intergrax/contracts/agent_run_trace.py` | Step trace assertion |
+| ACP-ORG-5 | ACP-ORG | **Reference org fixture + golden compliance eval** | **Done** | `lab_org_virtual_workforce_defaults` + gate tests | Zero POLICY_DENIED on happy path |
 | ACP-DOC.9 | ACP0 | **Architecture §40** — production reliability, safety, persistence, release gates | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §40 canon **audit accepted** — implement ACP-PROD next |
 | ACP-PROD-1 | ACP-PROD | **Checkpoint / resume / replay** — step store + crash recovery | Planned | `intergrax/agents/persistence/checkpoint_store.py` | Resume smoke; no double mutating tool |
 | ACP-PROD-2 | ACP-PROD | **Side-effect idempotency ledger** — dedupe + SideEffectRecord | Planned | `intergrax/agents/persistence/side_effect_ledger.py` | Idempotency key test |
@@ -475,9 +475,9 @@ HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
 |------|-----|-------|------------|--------------|
 | 6.1 | ACP-CON-6 | Nexus resolves `required_capability` → registry token; ban class name in task payload | **Done** — `capability_routing.py` + gate test | ORCHESTRATION · REG |
 | 6.2 | ACP-CON-7 | `check_agent_step_security.py` — gateway-only I/O, STRICT widen deny | **Done** — static roster gate | UNIFIED_EXECUTION_RUNTIME |
-| 6.3 | ACP-ORG-1..2 | `OrganizationalPolicyEnvelope` + merge context | Host profile test | TIER3 |
-| 6.4 | ACP-ORG-3..4 | Kernel org overlays; `PolicyVerdictRecord` on trace | Denied channel blocked | UAEP policy |
-| 6.5 | ACP-ORG-5 | Lab org fixture + compliance eval | Happy path zero deny | V-EVAL |
+| 6.3 | ACP-ORG-1..2 | `OrganizationalPolicyEnvelope` + merge context | **Done** — merge + host profile preset | TIER3 |
+| 6.4 | ACP-ORG-3..4 | Kernel org overlays; `PolicyVerdictRecord` on trace | **Done** — channel deny + compliance_summary | UAEP policy |
+| 6.5 | ACP-ORG-5 | Lab org fixture + compliance eval | **Done** — happy-path kernel gate | V-EVAL |
 
 **Wave 6 DoD:** UC-11 path demonstrable; capability routing test passes.
 

@@ -115,6 +115,10 @@ class AgentBinding(BaseModel):
         default_factory=list,
         description="Tool ids denied for this roster entry.",
     )
+    org_role_id: str | None = Field(
+        default=None,
+        description="Virtual workforce role id for organizational policy merge (§39).",
+    )
 
     @classmethod
     def mount(
@@ -133,6 +137,7 @@ class AgentBinding(BaseModel):
         rag_collection_override: str | None = None,
         tool_allowlist_extra: list[str] | None = None,
         tool_denylist: list[str] | None = None,
+        org_role_id: str | None = None,
     ) -> AgentBinding:
         """
         Strongly-typed roster entry — pass the agent **class** and optional **factory**.
@@ -161,6 +166,7 @@ class AgentBinding(BaseModel):
             rag_collection_override=rag_collection_override,
             tool_allowlist_extra=list(tool_allowlist_extra or []),
             tool_denylist=list(tool_denylist or []),
+            org_role_id=org_role_id,
         )
 
     @classmethod
@@ -174,6 +180,7 @@ class AgentBinding(BaseModel):
         rag_collection_override: str | None = None,
         tool_allowlist_extra: list[str] | None = None,
         tool_denylist: list[str] | None = None,
+        org_role_id: str | None = None,
     ) -> AgentBinding:
         """Contract-id-only binding for harness reference catalogs (no agent import)."""
         return cls(
@@ -184,6 +191,7 @@ class AgentBinding(BaseModel):
             rag_collection_override=rag_collection_override,
             tool_allowlist_extra=list(tool_allowlist_extra or []),
             tool_denylist=list(tool_denylist or []),
+            org_role_id=org_role_id,
         )
 
     @classmethod

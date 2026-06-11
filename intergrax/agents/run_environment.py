@@ -9,8 +9,10 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from intergrax.agents.org_policy_merge import merge_organizational_policy_context
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding
+from intergrax.applications.contracts.org_policy import OrganizationalPolicyContext
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_run import (
     AgentEnvironmentOverrides,
@@ -49,6 +51,7 @@ class EffectiveAgentRunEnvironment(BaseModel):
     autonomy_level: AgentRunAutonomyLevel = AgentRunAutonomyLevel.BALANCED
     merged_metadata: dict[str, Any] = Field(default_factory=dict)
     profile_id: str | None = None
+    organizational: OrganizationalPolicyContext | None = None
 
 
 def render_namespace_template(
@@ -232,6 +235,15 @@ def merge_environment(
     if options is not None and options.max_steps is not None:
         max_steps = options.max_steps
 
+    org_envelope = app_profile.organizational_policy if app_profile is not None else None
+    capability = contract.capabilities[0] if contract.capabilities else None
+    organizational = merge_organizational_policy_context(
+        envelope=org_envelope,
+        binding=binding,
+        metadata=merged_metadata,
+        capability=capability,
+    )
+
     return EffectiveAgentRunEnvironment(
         agent_id=contract.id,
         contract_id=contract.id,
@@ -267,4 +279,5 @@ def merge_environment(
         ),
         merged_metadata=merged_metadata,
         profile_id=profile_id,
+        organizational=organizational,
     )
