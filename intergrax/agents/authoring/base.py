@@ -11,6 +11,7 @@ from typing import ClassVar, List
 
 from intergrax.agents.authoring.decisions import complete
 from intergrax.agents.authoring.state_access import load_session_state, session_state_delta
+from intergrax.agents.authoring.step_outcome import StepOutcome
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.agents.uaep_protocol import UAEPAgentWithDecide
 from intergrax.contracts.acp_state import AcpSessionState
@@ -22,6 +23,8 @@ from intergrax.contracts.agent_contract_section12 import (
     DEFAULT_VALIDATION_RULES,
 )
 from intergrax.contracts.agent_step_context import AgentStepContext
+from intergrax.contracts.agent_run import AgentRunError
+from intergrax.contracts.agent_run_enums import AgentRunErrorCode, TerminalReason
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -96,6 +99,52 @@ class IntergraxAgent(HarnessReferenceAgent, UAEPAgentWithDecide, ABC):
             include=include,
             exclude=exclude,
             exclude_none=exclude_none,
+        )
+
+    async def on_next_step(self, step_ctx: AgentStepContext) -> StepOutcome:
+        """
+        Primary cognitive hook — override for custom loops.
+
+        Default drives authored ``@step`` methods when ``uaep_exec_ctx`` is present
+        in ``step_ctx.metadata`` (internal bridge until ACP-STEP-3).
+        """
+        step_ids = self._ordered_step_ids()
+        if not step_ids:
+            return StepOutcome.fail(
+                [
+                    AgentRunError(
+                        code=AgentRunErrorCode.VALIDATION_FAILED,
+                        message="no authored steps registered",
+                    )
+                ],
+                terminal_reason=TerminalReason.VALIDATION_FAILED,
+            )
+        if step_ctx.step_index >= len(step_ids):
+            return StepOutcome.complete(
+                output={"status": "complete"},
+                terminal_reason=TerminalReason.GOAL_MET,
+            )
+
+        exec_ctx = step_ctx.metadata.get("uaep_exec_ctx")
+        if not isinstance(exec_ctx, RuntimeExecutionContext):
+            return StepOutcome.continue_with(
+                state_delta={"iteration": step_ctx.step_index + 1},
+            )
+
+        step_id = step_ids[step_ctx.step_index]
+        step = AgentStep(
+            step_id=step_id,
+            step_name=step_id,
+            step_index=step_ctx.step_index,
+        )
+        output = await self.run_step(step, exec_ctx)
+        if step_ctx.step_index >= len(step_ids) - 1:
+            return StepOutcome.complete(
+                output=output.model_dump(),
+                terminal_reason=TerminalReason.GOAL_MET,
+            )
+        return StepOutcome.continue_with(
+            state_delta={"iteration": step_ctx.step_index + 1},
         )
 
     def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:

@@ -33,7 +33,7 @@
 
 ## Phase ACP — Agent Cognitive Patterns (ACP)
 
-**Status:** **In progress** (2026-06-10) — architecture **decision-complete** §13–§40; **Wave 0 Done** (typed contracts foundation)  
+**Status:** **In progress** (2026-06-10) — architecture **decision-complete** §13–§40; **Wave 0–1 Done** (typed contracts + step loop/kernel)  
 **Architecture:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 (incl. **§32.0** readability & typed-only contracts)  
 **ADR:** [ADR-AGENT-001](../adr/ADR-AGENT-001.md) · [ADR-AGENT-002](../adr/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/ADR-AGENT-003.md)  
 **Author guide:** [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix AC (sync with §32.0)  
@@ -189,9 +189,9 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-DX-5 | ACP-DX | **`AgentBinding` profile slices** — tool/memory/integration per roster entry | Planned | `applications/contracts/` | Legal + research host test |
 | ACP-DX-6 | ACP-DX | **Author readability kit** — `StepOutcome` factories, `load_session_state` / `session_state_delta`, `check_agent_typed_state.py` | **Done** | `intergrax/agents/authoring/step_outcome.py`, `state_access.py`, `scripts/` | Factories set consistent enums; CI fails raw dict state in agents |
 | ACP-DOC.10 | ACP0 | **Architecture §32.0** — author readability & typed-only contracts (READ/UPDATE/DECIDE) | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §32.0 + ACP-AP-11..15 + checklist §45 |
-| ACP-STEP-1 | ACP-STEP | **`AgentStepContext` / `StepOutcome` / author `on_next_step`** on `IntergraxAgent` | Planned | `intergrax/agents/authoring/step_loop.py` | Unit: terminal + continue via factories §32.0; no dict author surface |
-| ACP-STEP-2 | ACP-STEP | **`AgentRuntime.advance_step`** — glue only: `on_next_step` → `HarnessKernel.execute_step`; **no policy/trace/state logic** | Planned | `intergrax/agents/authoring/step_loop.py` | Unit: advance_step contains no policy imports; delegates 100% to kernel |
-| ACP-STEP-2b | ACP-STEP | **`HarnessKernel.execute_step`** — L1 harness cycle: policy pre/post, state merge §37.2, gateways, budgets §32.6, trace/`AgentStepRecord`, declarative actions §32.8 | Planned | `intergrax/runtime/kernel/step_kernel.py` | Integration: policy deny + trace record + budget exceeded from kernel only |
+| ACP-STEP-1 | ACP-STEP | **`AgentStepContext` / `StepOutcome` / author `on_next_step`** on `IntergraxAgent` | **Done** | `intergrax/agents/authoring/step_loop.py`, `agent_step_context.py`, `base.py` | Unit: terminal + continue via factories §32.0; no dict author surface |
+| ACP-STEP-2 | ACP-STEP | **`AgentRuntime.advance_step`** — glue only: `on_next_step` → `HarnessKernel.execute_step`; **no policy/trace/state logic** | **Done** | `intergrax/agents/authoring/step_loop.py` | Unit: advance_step contains no policy imports; delegates 100% to kernel |
+| ACP-STEP-2b | ACP-STEP | **`HarnessKernel.execute_step`** — L1 harness cycle: policy pre/post, state merge §37.2, gateways, budgets §32.6, trace/`AgentStepRecord`, declarative actions §32.8 | **Done** | `intergrax/runtime/kernel/step_kernel.py` | Integration: policy deny + trace record + budget exceeded from kernel only |
 | ACP-CON-4 | ACP-CON | **§12 full contract gate at register** — `input_schema`, `output_schema`, `risk_level`, `validation_rules`, `failure_modes`, budgets; reject incomplete contracts | **Done** | `agent_assembly_resolver.py` | Register with stub contract → `AgentAssemblyError`; roster agents pass |
 | ACP-STEP-3 | ACP-STEP | **UAEP legacy bridge** — `run_step` → advance_step + kernel | Planned | `intergrax/agents/uaep.py` | Existing UAEP agents pass without rewrite |
 | ACP-OBS-1 | ACP-OBS | **`AgentRunTrace` / `AgentStepRecord`** on `AgentRunResult` | Planned | `intergrax/contracts/agent_run_trace.py` | Assert tool/RAG/LLM records in test |
@@ -200,7 +200,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-STATE-1 | ACP-STATE | **`SharedContextView`** for graph handoffs | Planned | `intergrax/contracts/shared_context.py` | Two-agent graph handoff test |
 | ACP-CON-1 | ACP-CON | **`AgentRunErrorCode` / `TerminalReason` enums** + Pydantic on run contracts | **Done** | `intergrax/contracts/agent_run.py`, `agent_run_enums.py` | extra=forbid; enum round-trip |
 | ACP-CON-2 | ACP-CON | **`state_delta` merge-patch** + `_version` + checkpoint/resume | **Done** | `intergrax/agents/authoring/state_merge.py` | Unit: merge, delete null, conflict |
-| ACP-CON-3 | ACP-CON | **Side-effect mode** immediate vs declarative enforcement | Planned | `intergrax/agents/authoring/step_loop.py` | Reject mixed mode per step |
+| ACP-CON-3 | ACP-CON | **Side-effect mode** immediate vs declarative enforcement | **Done** | `intergrax/agents/authoring/side_effect_validation.py` | Reject mixed mode per step |
 | ACP-CON-6 | ACP-CON | **Capability routing** — registry query by token not class | Planned | Nexus selection path + test | Integration: two impls same capability |
 | ACP-CON-7 | ACP-CON | **Security CI guards** — gateway-only I/O, STRICT widen deny | Planned | `scripts/check_agent_step_security.py` | CI green on roster |
 | ACP-DOC.6 | ACP0 | **Architecture §37** — pre-implementation operational contracts | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | Audit gaps A–G closed in canon |
