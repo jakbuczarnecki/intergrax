@@ -84,11 +84,12 @@ def main() -> int:
                 errors.append(f"entries/{rel_path} missing section {section}")
 
     indexed_files = {rel for _, _, rel in rows}
-    for path in sorted(ENTRIES.glob("*.md")):
+    for path in sorted(ENTRIES.rglob("*.md")):
         if path.name.startswith("_"):
             continue
-        if path.name not in indexed_files:
-            errors.append(f"entry not in INDEX: entries/{path.name}")
+        rel = path.relative_to(ENTRIES).as_posix()
+        if rel not in indexed_files:
+            errors.append(f"entry not in INDEX: entries/{rel}")
 
     _report(errors)
     return 1 if errors else 0

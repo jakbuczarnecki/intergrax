@@ -17,6 +17,7 @@ from intergrax.runtime.capacity.contracts import ScalingPolicy
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
 from intergrax.applications.contracts.intent_route import IntentRoute
 from intergrax.applications.contracts.application_host import ApplicationFeatures, ApplicationProfile
+from intergrax.contracts.agent_budget import BudgetReactionProfile
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.registry.profile import LLMProfile
@@ -174,6 +175,7 @@ class CostProfile(BaseModel):
 
     budget_enforcement_enabled: bool = True
     enforcement_mode: Literal["abort", "hitl"] = "abort"
+    budget_reaction: BudgetReactionProfile | None = None
     max_total_tokens: int | None = Field(default=None, ge=1)
     max_llm_calls: int | None = Field(default=None, ge=1)
     max_tool_calls: int | None = Field(default=None, ge=1)
@@ -384,6 +386,7 @@ class ApplicationEnvironmentProfile(BaseModel):
     )
     guardrail_profile: GuardrailProfile = Field(default_factory=GuardrailProfile)
     policy_rules: PolicyRulesProfile | None = None
+    organizational_policy: "OrganizationalPolicyEnvelope | None" = None
     execution_mode: ExecutionMode = ExecutionMode.BALANCED
     graph_spec: ApplicationGraphSpec | None = None
     shadow_workspace: ShadowWorkspaceProfile | None = None
@@ -406,6 +409,31 @@ class ApplicationEnvironmentProfile(BaseModel):
     def with_harness_memory(self) -> ApplicationEnvironmentProfile:
         """Return a copy with harness memory flags enabled (sqlite-backed hosts)."""
         return self.model_copy(update={"memory_profile": self.harness_memory_profile()})
+
+    @classmethod
+    def lab_org_virtual_workforce_defaults(
+        cls,
+        *,
+        profile_id: str = "lab.org.virtual_workforce",
+    ) -> ApplicationEnvironmentProfile:
+        """UC-11 reference host — strict organizational envelope (ACP-ORG-5)."""
+        from intergrax.applications.contracts.org_policy import lab_strict_org_envelope
+
+        return cls.lab_defaults(profile_id=profile_id).with_uc11_organizational_policy(
+            lab_strict_org_envelope(),
+        )
+
+    def with_uc11_organizational_policy(
+        self,
+        envelope: OrganizationalPolicyEnvelope,
+    ) -> ApplicationEnvironmentProfile:
+        """Attach org envelope and STRICT execution for UC-11 product hosts."""
+        return self.model_copy(
+            update={
+                "execution_mode": ExecutionMode.STRICT,
+                "organizational_policy": envelope,
+            },
+        )
 
     @classmethod
     def lab_defaults(
@@ -745,7 +773,13 @@ class ApplicationEnvironmentProfile(BaseModel):
                 offline_eval_runner_enabled=False,
                 require_baseline_for_release=True,
             ),
+            orchestration_profile=OrchestrationProfile(long_running_enabled=True),
             features=ApplicationFeatures.product_defaults(),
             execution_mode=ExecutionMode.STRICT,
             domain_policy_fragments=dict(domain_fragments or {}),
         )
+
+
+from intergrax.applications.contracts.org_policy import OrganizationalPolicyEnvelope  # noqa: E402
+
+ApplicationEnvironmentProfile.model_rebuild()

@@ -1,26 +1,24 @@
 # © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
-# Use, modification, or distribution without written permission is prohibited.
+
+"""Repository-wide pytest fixtures (tests/, applications/, agents/)."""
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
+import os
+
+import pytest
+
+GATE_HARNESS_API_KEY = "gate-test-harness-key"
 
 
-def pytest_configure(config) -> None:
-    """Put product and agent roots on ``sys.path`` for Tier-2 imports.
+@pytest.fixture
+def harness_auth_headers() -> dict[str, str]:
+    """Headers for product hosts with harness API-key middleware enabled."""
+    return {"X-Api-Key": os.environ.get("INTERGRAX_HARNESS_API_KEY", GATE_HARNESS_API_KEY)}
 
-    - ``applications/`` — execution environments (``legal_application``, ``research_application``)
-    - ``agents/`` — reusable capability modules (``legal``, ``echo``)
-    """
-    root = Path(__file__).resolve().parent
-    (root / "build").mkdir(parents=True, exist_ok=True)
 
-    for subdir in ("applications", "agents"):
-        path_root = root / subdir
-        if not path_root.is_dir():
-            continue
-        path = str(path_root.resolve())
-        if path not in sys.path:
-            sys.path.insert(0, path)
+@pytest.fixture
+def product_harness_api_key(monkeypatch: pytest.MonkeyPatch) -> str:
+    """Set harness API key for product Tier-3 host startup (identity_profile.require_api_key)."""
+    monkeypatch.setenv("INTERGRAX_HARNESS_API_KEY", GATE_HARNESS_API_KEY)
+    return GATE_HARNESS_API_KEY

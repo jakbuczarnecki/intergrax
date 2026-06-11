@@ -1,0 +1,36 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""Typed metadata keys for ACP session and orchestration planes."""
+
+from __future__ import annotations
+
+from enum import StrEnum
+
+
+class AcpMetadataKey(StrEnum):
+    """ACP-related Task / RuntimeRequest metadata keys — no ad-hoc strings."""
+
+    SESSION_ENABLED = "acp.session.v1"
+    HOST_CONTEXT = "acp.host.v1"
+    CHECKPOINT_STORE = "acp.checkpoint_store.v1"
+    RESUME_FROM_CHECKPOINT = "acp.resume_from_checkpoint.v1"
+    DECLARATIVE_TOOL_INVOKER = "acp.declarative_tool_invoker.v1"
+    COMPENSATION_QUEUE_STORE = "acp.compensation_queue.v1"
+    IDEMPOTENCY_STORE = "acp.idempotency_store.v1"
+    APPLICATION_RUN_SUMMARY = "application_run_summary.v1"
+
+
+class AcpStructuredDataKey(StrEnum):
+    """Keys inside ``AgentExecutionResult.structured_data`` for ACP payloads."""
+
+    TRACE_SUMMARY = "acp.trace.v1"
+
+
+class AcpRunContextKey(StrEnum):
+    """Keys on ``AgentStepContext.metadata`` during ACP / UAEP shim runs."""
+
+    RUN_INPUT = "acp.run_input.v1"
+    LAST_OUTCOME = "acp.last_outcome.v1"
+    ORGANIZATIONAL = "acp.organizational.v1"
+    CRITIC_HOOKS = "acp.critic_hooks.v1"
+    TENANT_ID = "acp.tenant_id.v1"

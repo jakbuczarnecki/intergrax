@@ -51,7 +51,10 @@ def wire_application_identity(
                 f"{profile.api_key_env} is required when identity_profile.require_api_key=true "
                 "and no identity_provider integration is configured"
             )
-    state = HarnessAuthState(identity_provider=resolve_identity_provider_backend(integration_profile))
+    state = HarnessAuthState(
+        identity_provider=resolve_identity_provider_backend(integration_profile),
+        require_api_key=profile.require_api_key,
+    )
     app.state.harness_auth = state
-    apply_harness_auth_middleware(app)
+    apply_harness_auth_middleware(app, require_auth=profile.require_api_key)
     return state

@@ -2,27 +2,36 @@
 
 from __future__ import annotations
 
-from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
-from intergrax.agents.uaep_pipeline import pipeline_agent_steps, pipeline_step_complete
+from problem_radar.capabilities import CAPABILITIES
+from problem_radar.contract import build_agent_contract
+from problem_radar.steps.domain import build_stub_problem_radar_output
+from problem_radar.steps.pipeline import build_pipeline
+from intergrax.agents.authoring.acp_stub_reflex import (
+    evaluate_complete,
+    perceive_run_input,
+    reason_passthrough,
+)
+from intergrax.agents.authoring.patterns.reflex import ReflexAgent
 from intergrax.agents.reference_harness import (
     LabHarnessContext,
     build_lab_agent_runtime_context,
     default_reference_harness,
 )
-from intergrax.contracts.agent_decision import AgentDecision
-from intergrax.contracts.agent_step import AgentStep, StepOutput
+from intergrax.contracts.agent_run_enums import CognitivePattern
+from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
-from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import TaskContext
-from problem_radar.capabilities import CAPABILITIES
-from problem_radar.contract import build_agent_contract
-from problem_radar.steps.pipeline import build_pipeline, run_domain_step
 
 
-class ProblemRadarAgent(HarnessReferenceAgent):
-    """Phase K.1 prototype — stub clustering with typed ``ProblemRadarOutput``."""
+class ProblemRadarAgent(ReflexAgent):
+    """Phase K.1 prototype — typed Reflex pattern (ACP-MIG-5)."""
+
+    contract_id = "problem_radar"
+    capabilities = tuple(CAPABILITIES)
+    cognitive_pattern = CognitivePattern.REFLEX
+    main_step_id = "problem_radar_step"
 
     def __init__(self, harness: LabHarnessContext | None = None) -> None:
         self._harness = harness or default_reference_harness()
@@ -53,24 +62,16 @@ class ProblemRadarAgent(HarnessReferenceAgent):
             enable_websearch=True,
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
-        _ = context
-        contract = self.get_contract()
-        return pipeline_agent_steps(
-            step_id="problem_radar_step",
-            step_name="problem_radar_step",
-            trace_label="problem_radar.scan",
-            allowed_tools=list(contract.allowed_tools),
-        )
+    async def perceive(self, step_ctx: AgentStepContext):
+        return perceive_run_input(step_ctx, self)
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
-        return await run_domain_step(step, ctx)
+    async def reason(self, step_ctx: AgentStepContext, observation):
+        return reason_passthrough(step_ctx, observation)
 
-    def decide_after_step(
-        self,
-        step: AgentStep,
-        output: StepOutput | None,
-        ctx: RuntimeExecutionContext,
-    ) -> AgentDecision:
-        _ = step, output, ctx
-        return pipeline_step_complete(reason="problem_radar scan finished")
+    async def act(self, step_ctx: AgentStepContext, reasoning):
+        query = (reasoning.thought or "").strip()
+        payload = build_stub_problem_radar_output(query).model_dump_json(indent=2)
+        return {"summary": payload, "answer": payload, "run_id": step_ctx.run_id}
+
+    def evaluate(self, step_ctx: AgentStepContext, output: dict[str, object]):
+        return evaluate_complete(step_ctx, output, reason="problem_radar_goal_met")

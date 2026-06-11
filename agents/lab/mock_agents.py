@@ -17,7 +17,7 @@ from intergrax.agents.reference_harness import (
     build_lab_agent_runtime_context,
     default_reference_harness,
 )
-from intergrax.agents.uaep_pipeline import (
+from intergrax.agents.authoring.uaep_pipeline_bridge import (
     pipeline_agent_steps,
     pipeline_step_complete,
     run_pipeline_step,

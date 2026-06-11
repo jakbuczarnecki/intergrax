@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
-from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
-from intergrax.agents.uaep_pipeline import pipeline_agent_steps, pipeline_step_complete
+from intergrax.agents.authoring.patterns.reflex import ReflexAgent
+from intergrax.agents.authoring.patterns.types import (
+    AgentEvaluation,
+    CognitiveEvaluation,
+    Observation,
+    ReasoningResult,
+)
 from intergrax.agents.reference_harness import (
     LabHarnessContext,
     build_lab_agent_runtime_context,
@@ -11,20 +16,24 @@ from intergrax.agents.reference_harness import (
 )
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
-from intergrax.skills.providers.research.manifests import RESEARCH_LITERATURE_SCAN
-from intergrax.contracts.agent_decision import AgentDecision
-from intergrax.contracts.agent_step import AgentStep, StepOutput
+from intergrax.contracts.agent_run_enums import CognitivePattern
+from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
-from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import TaskContext
 from intergrax.agents.tool_enablement import ToolEnablementProfile, ToolWiringContextLike
-from research.steps.pipeline import build_pipeline, run_domain_step
+from intergrax.skills.providers.research.manifests import RESEARCH_LITERATURE_SCAN
+from research.steps.pipeline import build_pipeline
 
 
-class ResearchAgent(HarnessReferenceAgent):
-    """Prototype research agent — stub pipeline with optional catalog websearch."""
+class ResearchAgent(ReflexAgent):
+    """Prototype research agent — typed Reflex pattern (ACP-MIG-3)."""
+
+    contract_id = "research"
+    capabilities = ("research.web_search", "research.pipeline")
+    cognitive_pattern = CognitivePattern.REFLEX
+    main_step_id = "research_pipeline"
 
     def __init__(
         self,
@@ -53,6 +62,8 @@ class ResearchAgent(HarnessReferenceAgent):
             owner_team="platform",
             max_steps=10,
             validation_rules=["non_empty_summary"],
+            cognitive_pattern=self.cognitive_pattern,
+            pattern_version=self.pattern_version,
         )
 
     def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
@@ -86,24 +97,35 @@ class ResearchAgent(HarnessReferenceAgent):
         runtime_context.config.tool_wiring_context = self._tool_wiring_context
         return runtime_context
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
-        _ = context
-        contract = self.get_contract()
-        return pipeline_agent_steps(
-            step_id="research_pipeline",
-            step_name="research_pipeline",
-            trace_label="research.web_search",
-            allowed_tools=list(contract.allowed_tools),
-        )
+    async def perceive(self, step_ctx: AgentStepContext) -> Observation:
+        query = self.read_run_input(step_ctx)
+        return Observation(summary=query or "(empty)")
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
-        return await run_domain_step(step, ctx)
-
-    def decide_after_step(
+    async def reason(
         self,
-        step: AgentStep,
-        output: StepOutput | None,
-        ctx: RuntimeExecutionContext,
-    ) -> AgentDecision:
-        _ = step, output, ctx
-        return pipeline_step_complete(reason="research pipeline finished")
+        step_ctx: AgentStepContext,
+        observation: Observation,
+    ) -> ReasoningResult:
+        _ = step_ctx
+        return ReasoningResult(thought=observation.summary)
+
+    async def act(
+        self,
+        step_ctx: AgentStepContext,
+        reasoning: ReasoningResult,
+    ) -> dict[str, object]:
+        query = reasoning.thought
+        findings = (
+            f"research findings for '{query[:120]}': "
+            "[stub: source A — relevant snippet], "
+            "[stub: source B — supporting detail]"
+        )
+        return {"summary": findings, "answer": findings, "run_id": step_ctx.run_id}
+
+    def evaluate(
+        self,
+        step_ctx: AgentStepContext,
+        output: dict[str, object],
+    ) -> AgentEvaluation:
+        _ = step_ctx, output
+        return AgentEvaluation(verdict=CognitiveEvaluation.COMPLETE, reason="research_goal_met")

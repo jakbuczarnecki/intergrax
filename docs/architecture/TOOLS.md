@@ -12,7 +12,7 @@
 
 # Intergrax Tool Library
 
-**Last updated:** 2026-06-10 (audit pass 2) — **48 bundles** · **190 catalog tools** · engine audit: [§Production posture](#tool-engine-production-posture-2026-06-10) · [§Execution surfaces](#execution-surfaces-matrix)
+**Last updated:** 2026-06-11 — **48 bundles** · **190 catalog tools** · selection modes: [§Production strategies](#tool-selection-modes-production-strategies) · engine audit: [§Production posture](#tool-engine-production-posture-2026-06-10) · [§Execution surfaces](#execution-surfaces-matrix)
 
 The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](architecture/INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
 
@@ -223,7 +223,8 @@ All successful catalog executions converge on **`RuntimeToolInvoker`** (optional
 | **L3 Policy bundle** | `RuntimePolicyBundle.tool_access` (`StaticToolScopePolicy`) | Tier-3 static scope | `resolve_allowed_tools_from_config` |
 | **L4 Modality** | `ModalityProfile` → `filter_tool_ids_by_modality_profile` | Media/ML plane tools | `ToolAccessPolicy.apply_modality_profile` |
 | **L5 Plan filter** | `ToolAccessPolicy.apply` on `ToolInvocationPlan` | `use_rag` / `use_websearch` / `tool_ids` / `use_tools` | `ToolRuntime.invoke` |
-| **L6 LLM planner** | `ToolPlanningService` → `to_openai_tools(registry)` | **None today** — full registry passed to LLM | `ToolsStep` |
+| **L6 Schema narrowing** | `ToolSelectionStrategy` → `resolve_planner_allowed_tool_ids` | Subset passed to `ToolPlanningService` / `to_openai_tools` (see [§Production strategies](#tool-selection-modes-production-strategies)) | `ToolsStep` (TOOL-ENG-5) |
+| **L6b LLM planner** | `ToolPlanningService` → `generate_with_tools` | Model picks `tool_calls` from narrowed schema | `CatalogToolPlanner` |
 | **L7 Invoker scope** | `ToolScopePolicy.is_allowed` on `RuntimeToolInvoker` | Per-call deny | **Done** — `scope_policy` from `RuntimeConfig` (TOOL-ENG-3) |
 
 See [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) — cognition Plane 3 (Tool): `ToolPlanDecision` ≠ `AgentDecision` (§42.7).
@@ -272,11 +273,14 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 |------|---------|-------|
 | **Tier-0 catalog** (`ToolContract`, plugins, 190 tools) | **Production** | Contracts, exporters, provider tests, integration composition |
 | **Single invoke** (`RuntimeToolInvoker`) | **Production** | Schema, timeout, retry, trace, idempotency wrapper |
-| **Pipeline tool step** (`ToolsStep`) | **Partial** | Planner wired (TOOL-ENG-0); plan allow-list (TOOL-ENG-4); context scope (TOOL-ENG-11); no ReAct loop (TOOL-ENG-6) |
+| **Pipeline tool step** (`ToolsStep`) | **Done** | Planner wired; bounded loop via `tool_loop_step` (TOOL-ENG-6 · ADR-TOOL-002) |
 | **Planner wiring** (`CatalogToolPlanner`) | **Done** | `wire_catalog_tool_planner_if_enabled` in `planner_bootstrap.py` (TOOL-ENG-0) |
-| **Multi-tool / ReAct loop** | **Gap** | No `max_iterations` tool loop; no native `role=tool` multi-turn chain in pipeline |
+| **Multi-tool / ReAct loop** | **Done** | `max_tool_iterations` + native `role=tool` chain (TOOL-ENG-6) |
 | **Parallel tool execution** | **Gap** | `for call in tool_plan.calls` — always sequential |
-| **Large-catalog selection** | **Done** | `ToolSelectionStrategy` — static / skill-pack / retrieval top-k / full-catalog (TOOL-ENG-5) |
+| **Standard selection** (full schema → LLM) | **Production** | `FullCatalogSelectionStrategy` + `ToolPlanningService` (TOOL-ENG-0/4/5) |
+| **Pre-filter selection** (keyword / skill / static) | **Partial** | `ToolSelectionStrategy` — static, `skill_pack`, `retrieval_top_k` (keyword overlap, not embeddings) |
+| **Semantic tool index** | **Gap** | Planned **TOOL-ENG-13** — vector index of `ToolContract` descriptions |
+| **Hierarchical tool selection** | **Gap** | Planned **TOOL-ENG-14** — category-tree traversal before final LLM pick |
 | **`tool_ids` plan dispatch** | **Done** | `catalog_dispatch.invoke_catalog_tool_ids` after pipeline shims (TOOL-ENG-1) |
 | **§42.12 gateway** | **Partial** | Catalog `tool_id` → invoker (TOOL-ENG-2); runtime-bound + sandbox unchanged |
 | **`tool_scope_policy` wiring** | **Done** | Passed to `RuntimeToolInvoker` in `RuntimeContext.build()` (TOOL-ENG-3) |
@@ -296,14 +300,14 @@ Tool-related fields on `RuntimeConfig` (`intergrax/runtime/nexus/config.py`). Ti
 | `tool_planner` | `ToolPlannerProtocol \| None` | `None` | `CatalogToolPlanner` / custom; **required** for `ToolsStep` |
 | `tool_invoker` | `RuntimeToolInvoker \| IdempotentToolInvoker \| None` | built in `RuntimeContext.build()` | Execution enforcement |
 | `tools_mode` | `"off" \| "auto" \| "required"` | `"auto"` | See [§tools_mode](#tools_mode) |
-| `tools_context_scope` | `ToolsContextScope` | `CURRENT_MESSAGE_ONLY` | **Config only — not read by runtime** ([§tools_context_scope](#tools_context_scope)) |
+| `tools_context_scope` | `ToolsContextScope` | `CURRENT_MESSAGE_ONLY` | Planner input assembly ([§tools_context_scope](#tools_context_scope); TOOL-ENG-11) |
 | `tool_profile` | `ToolProfile \| None` | `None` | Host catalog subset |
 | `tool_wiring_context` | `ToolWiringContext \| None` | enriched at build | Integration slots for handlers |
 | `tool_providers` | `Sequence[ToolProvider]` | `()` | Extra registration after profile |
 | `tool_scope_policy` | `ToolScopePolicy \| None` | from `RuntimePolicyBundle` | Per-invoke allow-list (wired TOOL-ENG-3) |
 | `tool_planner_prompt_id` | `str` | `tools_agent_planner` | From `ReasoningProfile` via catalog bridge (TOOL-ENG-0) |
-| `tool_selection_mode` | `ToolSelectionMode` | `static` | Planner schema narrowing: `static` \| `skill_pack` \| `retrieval_top_k` \| `full_catalog` (TOOL-ENG-5) |
-| `tool_selection_top_k` | `int` | `20` | Top-k for `retrieval_top_k` mode |
+| `tool_selection_mode` | `ToolSelectionMode` | `static` | L6 schema narrowing — see [§Production strategies](#tool-selection-modes-production-strategies) and mapping table below |
+| `tool_selection_top_k` | `int` | `20` | Top-k for `retrieval_top_k` (keyword overlap; not semantic embedding search) |
 | `idempotency_store` | `IdempotencyStore \| None` | `InMemoryIdempotencyStore` | Side-effect dedup |
 | `policy_bundle` | `RuntimePolicyBundle \| None` | Tier-3 | `tool_access`, budget, plan-loop |
 | `modality_profile` | `ModalityProfile \| None` | env profile | Tool plane filter |
@@ -419,25 +423,131 @@ Distinct ways catalog capabilities reach a backend — not all equivalent.
 
 ## Tool selection — strategies and layers
 
-### What works today (hosts with 10–30 tools)
+Two orthogonal concepts — do not conflate them:
 
-1. **Profile narrowing** — `ToolProfile.enabled` / `enabled_bundles` at bootstrap (`build_application_tool_wiring`).
-2. **Integration auto-enable** — `extend_tool_profile_for_integration()` appends `tool_id`s when `IntegrationProfile` slots are set (`integration_tool_profile.py`); ingest-only slots (e.g. `document_parser`) excluded.
-3. **Agent `allowed_tools`** — declarative; enforced on **capability plan** via `ToolAccessPolicy`, not on planner schema or invoker (until TOOL-ENG-3).
-4. **Skill packs** — `skill_ids` → `SkillResolver` → `tool_ids` on contract at bind time.
-5. **RAG/web catalog shims** — always-on when `enable_rag` / `enable_websearch` + tool registered.
-6. **LLM choice** — when `tool_planner` is manually wired: full registry schema export; model picks `tool_calls`.
-7. **Reasoning prompts** — `ReasoningProfile.tool_planner_prompt_id` (default `tools_agent_planner`) bridged via `apply_tool_engine_settings_from_environment` (TOOL-ENG-0).
+| Concept | Question | Mechanism |
+|---------|----------|-----------|
+| **Selection layers (L0–L7)** | Which tools *may* this run use? | Policy, profile, skills, modality, plan filter, invoker scope — [§Selection detail](#selection-detail-layers) |
+| **Selection modes (production strategies)** | How is the planner schema *narrowed* before the LLM chooses? | `ToolSelectionStrategy` + `ToolSelectionMode` — [§Production strategies](#tool-selection-modes-production-strategies) |
 
-### What is missing for 190-tool / multi-agent scale
+Layers run **before and around** modes: e.g. `ToolProfile` may leave 80 tools in the registry; `tool_selection_mode=retrieval_top_k` may pass only 20 to the LLM.
 
-| Strategy | Status | Target module |
-|----------|--------|---------------|
-| **Tool Router** (keyword top-k / skill-pack before LLM) | **Done** **TOOL-ENG-5** | `tool_selection.py` |
-| **Plan-constrained selection** (`EnginePlan.tool_ids` → planner allow-list) | Planned **TOOL-ENG-1** | `ToolsStep` / `ToolRuntime` |
-| **Risk-based routing** (`ToolRiskLevel` → HITL / critic) | Planned **TOOL-ENG-7** | invoker + middleware |
-| **AHI dynamic subset** | Planned **TOOL-ENG-10** | adaptive harness hook |
-| **Compact descriptions** | **Done** | `description_short`, `compact_description` in exporters |
+---
+
+## Tool selection modes (production strategies)
+
+Production agent systems typically use one of three strategies to cope with large tool catalogs. Intergrax canon names them **standard**, **semantic**, and **hierarchical**. All three converge on the same invoke path after the LLM returns `tool_calls`.
+
+```mermaid
+flowchart LR
+    subgraph Layers["L0–L5 allow-lists"]
+        REG[ToolRegistry subset]
+    end
+
+    subgraph Mode["Selection mode (L6)"]
+        STD[Standard — full schema]
+        SEM[Semantic — vector top-k]
+        HIE[Hierarchical — category passes]
+    end
+
+    subgraph LLM["L6b planner"]
+        TPS[ToolPlanningService]
+        TC[tool_calls]
+    end
+
+    REG --> STD & SEM & HIE
+    STD & SEM & HIE --> TPS --> TC
+```
+
+### Mode comparison
+
+| Mode | When to use | Pre-LLM mechanism | Typical catalog size | Failure modes |
+|------|-------------|-------------------|----------------------|---------------|
+| **Standard** | Small, stable allow-list; low token budget pressure | Export full narrowed registry → `generate_with_tools` | ~10–30 tools (degrades above ~50: confusion, latency, cost) | Wrong tool among many; context overflow |
+| **Semantic** | Large diverse catalog; intent-driven queries | Embed `ToolContract` text → vector index → query top-k → LLM on subset | 50–500+ tools | Stale index; embedding drift; missed synonyms |
+| **Hierarchical** | Natural clusters (bundle / category); interpretable routing | Multi-pass: LLM picks category → sub-schema → final tool pick | 100+ tools in deep catalogs | Extra LLM round-trips; weak taxonomy |
+
+### Standard mode
+
+**Definition:** Every tool in the L0–L5 allow-list is exported to the LLM (OpenAI function schema or JSON fallback). The model **alone** decides which `tool_calls` to emit.
+
+**Implementation today:**
+
+```text
+ToolsStep → resolve_planner_allowed_tool_ids(FULL_CATALOG | STATIC with no plan ids)
+         → ToolPlanningService.plan_tools(allowed_tool_ids=None | plan subset)
+         → to_openai_tools(registry) → generate_with_tools
+```
+
+| `ToolSelectionMode` | Maps to standard? | Notes |
+|---------------------|-------------------|-------|
+| `full_catalog` | **Yes** — explicit standard | No L6 filter; full runtime registry |
+| `static` | **Yes** when no `plan_allowed_tool_ids` | Returns `None` → full registry at planner |
+
+**Mitigations without changing mode:** `ToolProfile.enabled_bundles`, `description_short` in exporters, host-level catalog subset.
+
+### Semantic mode
+
+**Definition:** Build a **vector index** of tool metadata (`tool_id`, `description`, `description_short`, `tags`, `category`). On each planner request, embed the user query (or planner input text), retrieve top-k similar tools, export **only that subset** to the LLM.
+
+**Implementation today:** **Not shipped.** `ToolSelectionMode.RETRIEVAL_TOP_K` is **not** semantic mode — it ranks by **keyword token overlap** in `RetrievalTopKSelectionStrategy` (`tool_selection.py`), with no embedding manager or vector store.
+
+**Target (TOOL-ENG-13):**
+
+```text
+bootstrap / catalog change → ToolCatalogEmbedder → tool_vector_index
+ToolsStep query → embed → similarity search → top-k tool_ids → ToolPlanningService
+```
+
+Reuse Tier-0 RAG primitives (`embedding_manager`, dedicated collection e.g. `__harness_tool_catalog__`) — distinct from `rag.retrieve` document index.
+
+**Observability target:** trace `tool_selection_mode`, candidate `tool_id`s, scores; `ops:tool_selection` hint.
+
+### Hierarchical mode
+
+**Definition:** Tools are organized in a **tree** (bundle → `category` → `tool_id`). The LLM traverses the tree in bounded passes: e.g. (1) pick `category=issue_tracker`, (2) receive schema for `jira.*` + `issues.*` only, (3) emit final `tool_call`.
+
+**Implementation today:** **Not shipped.** `ToolContract.category` and bundle membership exist as metadata; `catalog.list_tools` supports category filter for **introspection**, not planner traversal. `skill_pack` mode is **declarative grouping**, not LLM-driven hierarchy.
+
+**Target (TOOL-ENG-14):** `HierarchicalToolSelectionStrategy`, config `tool_selection_max_hierarchy_passes`, category tree from bundle + `category` fields (or host-defined taxonomy).
+
+### `ToolSelectionMode` → production mode mapping
+
+| `ToolSelectionMode` | Production mode | Implementation | Status |
+|---------------------|-----------------|----------------|--------|
+| `full_catalog` | **Standard** | `FullCatalogSelectionStrategy` | **Done** (TOOL-ENG-5) |
+| `static` | **Standard** (+ plan constraint) | `StaticAllowListSelectionStrategy` | **Done** (TOOL-ENG-4/5) |
+| `skill_pack` | *Auxiliary narrowing* (not a production mode) | `SkillPackSelectionStrategy` — skill → `tool_ids` | **Done** (TOOL-ENG-5) |
+| `retrieval_top_k` | *Keyword pre-filter* (semantic **analog only**) | `RetrievalTopKSelectionStrategy` — token overlap | **Done** (TOOL-ENG-5); rename clarity **TOOL-ENG-15** |
+| *(planned)* `semantic` | **Semantic** | `SemanticToolIndexSelectionStrategy` | **Planned** TOOL-ENG-13 |
+| *(planned)* `hierarchical` | **Hierarchical** | `HierarchicalToolSelectionStrategy` | **Planned** TOOL-ENG-14 |
+
+**Config:** `RuntimeConfig.tool_selection_mode`, `tool_selection_top_k`; bridged from `ApplicationEnvironmentProfile` via `catalog_runtime_bridge.py`.
+
+**Adaptive mode pick:** TOOL-ENG-10 (AHI) may select standard vs semantic vs hierarchical per run — depends on TOOL-ENG-13/14.
+
+### Selection layer checklist (L0–L5, orthogonal to mode)
+
+1. **Profile narrowing** — `ToolProfile.enabled` / `enabled_bundles` at bootstrap.
+2. **Integration auto-enable** — `extend_tool_profile_for_integration()` when `IntegrationProfile` slots are set.
+3. **Agent `allowed_tools`** — `ToolAccessPolicy` on capability plan; invoker scope via `tool_scope_policy` (TOOL-ENG-3 **Done**).
+4. **Skill packs** — `SkillResolver` at bind; optional `skill_pack` selection mode.
+5. **RAG/web shims** — `rag.retrieve` / `websearch.query` when enabled.
+6. **Plan constraints** — `EnginePlan.tool_ids` intersected with strategy (TOOL-ENG-4 **Done**).
+7. **Reasoning prompts** — `tool_planner_prompt_id` via catalog bridge (TOOL-ENG-0 **Done**).
+
+### Scale roadmap (190-tool catalog)
+
+| Capability | Status | Plan ID |
+|------------|--------|---------|
+| Keyword / skill pre-filter before LLM | **Done** | TOOL-ENG-5 |
+| Plan-constrained planner allow-list | **Done** | TOOL-ENG-4 |
+| Compact descriptions (`description_short`) | **Done** | Phase O |
+| Semantic tool vector index | **Planned** | TOOL-ENG-13 |
+| Hierarchical category traversal | **Planned** | TOOL-ENG-14 |
+| `retrieval_top_k` naming clarity (`keyword_top_k` alias) | **Planned** | TOOL-ENG-15 |
+| Risk-based routing (`ToolRiskLevel` → HITL) | **Planned** | TOOL-ENG-7 |
+| AHI dynamic mode / subset | **Planned** | TOOL-ENG-10 |
 
 ### Introspection tools (builder DX)
 
@@ -515,7 +625,7 @@ EnginePlan.tool_ids=["rag.retrieve"]          # use_rag → RagStep
 ToolInvocationPlan(use_tools=True)            # ToolsStep → fresh LLM plan
 ```
 
-Gap closure: **TOOL-ENG-6** (multi-iteration ReAct tool loop).
+**TOOL-ENG-6 Done:** `run_bounded_tool_loop` — multi-iteration native tool messages when `max_tool_iterations > 1`.
 
 ---
 
@@ -559,7 +669,11 @@ Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary:
 | TOOL-ENG-2 | Full-catalog `ToolRequest` → `RuntimeToolInvoker` in gateway | **Done** |
 | TOOL-ENG-3 | Wire `config.tool_scope_policy` → `RuntimeToolInvoker` | **Done** |
 | TOOL-ENG-4 | Pass `EnginePlan.tool_ids` / plan constraints into `ToolsStep` planner | **Done** |
-| TOOL-ENG-5 | `ToolSelectionStrategy` / router before `generate_with_tools` | **Done** |
+| TOOL-ENG-5 | `ToolSelectionStrategy` / keyword + skill pre-filter before `generate_with_tools` | **Done** |
+| TOOL-ENG-DOC.4 | Canon: standard / semantic / hierarchical selection modes | **Done** |
+| TOOL-ENG-13 | Semantic tool index (`ToolCatalogEmbedder`, vector top-k) | P1 |
+| TOOL-ENG-14 | Hierarchical tool selection (category-tree multi-pass) | P2 |
+| TOOL-ENG-15 | Clarify `retrieval_top_k` as keyword overlap; optional `keyword_top_k` alias | P2 |
 | TOOL-ENG-6 | Tool loop (ReAct): `max_iterations`, native tool messages | P1 |
 | TOOL-ENG-7 | Post-tool verify for `risk_level >= HIGH` | P2 |
 | TOOL-ENG-8 | `tools_mode=required` hard fail | P2 |
@@ -568,7 +682,7 @@ Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary:
 | TOOL-ENG-11 | Implement `tools_context_scope` in `ToolsStep` / planner message assembly | **Done** |
 | TOOL-ENG-12 | Expose `tool_choice` from `tools_mode` / host profile to `plan_tools` | P2 |
 
-**ADR:** [ADR-TOOL-001](../adr/ADR-TOOL-001.md) (TOOL-ENG-1/2). TOOL-ENG-6 still requires ADR before merge. TOOL-ENG-0/3 wiring-only — **no ADR needed**.
+**ADR:** [ADR-TOOL-001](../adr/ADR-TOOL-001.md) (TOOL-ENG-1/2) · [ADR-TOOL-002](../adr/ADR-TOOL-002.md) (TOOL-ENG-6). TOOL-ENG-0/3 wiring-only — **no ADR needed**.
 
 ### CI / gate scripts (catalog)
 

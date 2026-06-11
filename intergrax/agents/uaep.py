@@ -10,6 +10,11 @@ from typing import Any, List, Optional
 from uuid import uuid4
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.authoring.uaep_step_bridge import (
+    build_kernel_session,
+    execute_uaep_step_via_kernel,
+    trace_summary_from_kernel,
+)
 from intergrax.agents.uaep_protocol import (
     UAEPAgent,
     UAEPAgentWithDecide,
@@ -17,7 +22,9 @@ from intergrax.agents.uaep_protocol import (
     is_uaep_agent,
     supports_uaep,
 )
+from intergrax.contracts.acp_metadata_keys import AcpStructuredDataKey
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
+from intergrax.contracts.uaep_bridge_keys import UaepBridgeMetadataKey
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.agent_step import AgentStep, StepExecutionResult, StepOutput
 from intergrax.contracts.execution_phase import ExecutionPhase
@@ -108,6 +115,7 @@ class UAEPExecutor:
         verify_uaep_step: bool = False,
     ) -> None:
         resolved_policy = coerce_policy_engine(policy_engine)
+        self._policy_engine = resolved_policy
         self._event_bus = event_bus
         self._interrupt_handler = interrupt_handler or ExecutionInterruptHandler(
             policy_engine=resolved_policy,
@@ -176,6 +184,17 @@ class UAEPExecutor:
         self._attach_sandbox_session(exec_ctx, request, task_id=task_id)
         self._attach_shared_context(exec_ctx, request)
         self._attach_memory_view(exec_ctx, request, task_id=task_id)
+
+        kernel_ctx = build_kernel_session(
+            agent_id=contract.id,
+            run_id=run_id,
+            task_id=task_id,
+            tenant_id=str(request.tenant_id or request.metadata.get("tenant_id") or "default"),
+            max_steps=contract.max_steps,
+            policy_engine=self._interrupt_handler.policy_engine,
+            request=request,
+        )
+        exec_ctx.metadata[UaepBridgeMetadataKey.KERNEL_SESSION] = kernel_ctx
 
         hook_base = HookContext(
             task_id=task_id,
@@ -399,6 +418,13 @@ class UAEPExecutor:
                 break
 
         answer = self._build_answer(exec_ctx, last_output, run_id)
+        bridged_kernel = exec_ctx.metadata.get(UaepBridgeMetadataKey.KERNEL_SESSION)
+        if bridged_kernel is not None:
+            if answer.route is None:
+                answer.route = RouteInfo(extra={})
+            answer.route.extra[AcpStructuredDataKey.TRACE_SUMMARY] = trace_summary_from_kernel(
+                bridged_kernel
+            )
         runtime_snapshot = exec_ctx.metadata.get(RUNTIME_CHECKPOINT_KEY)
         if isinstance(runtime_snapshot, RuntimeCheckpoint):
             if answer.route is None:
@@ -607,6 +633,9 @@ class UAEPExecutor:
             raise TypeError(
                 f"execute_step requires UAEPAgent, got {type(agent).__name__}"
             )
+        kernel_ctx = ctx.metadata.get(UaepBridgeMetadataKey.KERNEL_SESSION)
+        if kernel_ctx is not None:
+            return await execute_uaep_step_via_kernel(agent, step, ctx, kernel_ctx)
         output = await agent.run_step(step, ctx)
         return StepExecutionResult(output=output)
 
@@ -633,6 +662,11 @@ class UAEPExecutor:
     ) -> AgentDecision:
         if isinstance(agent, UAEPAgentWithDecide):
             return agent.decide_after_step(step, output, ctx)
+        from intergrax.agents.authoring.base import IntergraxAgent
+        from intergrax.agents.authoring.uaep_linear_bridge import linear_agent_decide_after_step
+
+        if isinstance(agent, IntergraxAgent):
+            return linear_agent_decide_after_step(agent, step, output, ctx)
         return AgentDecision(type=AgentDecisionType.CONTINUE)
 
     @staticmethod

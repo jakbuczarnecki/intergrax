@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
-from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
-from intergrax.agents.uaep_pipeline import pipeline_agent_steps, pipeline_step_complete
+from intergrax.agents.authoring.acp_stub_reflex import (
+    evaluate_complete,
+    perceive_run_input,
+    reason_passthrough,
+    summary_act_output,
+)
+from intergrax.agents.authoring.patterns.reflex import ReflexAgent
 from intergrax.agents.reference_harness import (
     LabHarnessContext,
     build_lab_agent_runtime_context,
@@ -11,18 +16,22 @@ from intergrax.agents.reference_harness import (
 )
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
-from intergrax.contracts.agent_decision import AgentDecision
-from intergrax.contracts.agent_step import AgentStep, StepOutput
+from intergrax.contracts.agent_run_enums import CognitivePattern
+from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
-from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import TaskContext
-from research.summary_steps.pipeline import build_summary_pipeline, run_summary_domain_step
+from research.summary_steps.pipeline import build_summary_pipeline
 
 
-class SummaryAgent(HarnessReferenceAgent):
-    """Summarizes prior agent outputs in a multi-agent research flow."""
+class SummaryAgent(ReflexAgent):
+    """Summarizes prior agent outputs — typed Reflex pattern (ACP-MIG-4)."""
+
+    contract_id = "research-summary"
+    capabilities = ("research.summarize",)
+    cognitive_pattern = CognitivePattern.REFLEX
+    main_step_id = "summary_pipeline"
 
     def __init__(self, harness: LabHarnessContext | None = None) -> None:
         self._harness = harness or default_reference_harness()
@@ -41,6 +50,8 @@ class SummaryAgent(HarnessReferenceAgent):
             owner_team="platform",
             max_steps=5,
             validation_rules=["non_empty_summary"],
+            cognitive_pattern=self.cognitive_pattern,
+            pattern_version=self.pattern_version,
         )
 
     def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
@@ -64,24 +75,14 @@ class SummaryAgent(HarnessReferenceAgent):
             pipeline=built.pipeline,
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
-        _ = context
-        contract = self.get_contract()
-        return pipeline_agent_steps(
-            step_id="summary_pipeline",
-            step_name="summary_pipeline",
-            trace_label="research.summarize",
-            allowed_tools=list(contract.allowed_tools),
-        )
+    async def perceive(self, step_ctx: AgentStepContext):
+        return perceive_run_input(step_ctx, self)
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
-        return await run_summary_domain_step(step, ctx)
+    async def reason(self, step_ctx: AgentStepContext, observation):
+        return reason_passthrough(step_ctx, observation)
 
-    def decide_after_step(
-        self,
-        step: AgentStep,
-        output: StepOutput | None,
-        ctx: RuntimeExecutionContext,
-    ) -> AgentDecision:
-        _ = step, output, ctx
-        return pipeline_step_complete(reason="summary pipeline finished")
+    async def act(self, step_ctx: AgentStepContext, reasoning):
+        return summary_act_output(step_ctx, reasoning)
+
+    def evaluate(self, step_ctx: AgentStepContext, output: dict[str, object]):
+        return evaluate_complete(step_ctx, output, reason="summary_goal_met")

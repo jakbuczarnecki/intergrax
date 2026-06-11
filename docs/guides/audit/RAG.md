@@ -54,7 +54,7 @@ M-RAG.1–M-RAG.22 Done · **M-RAG-DEPTH active** (M-RAG.23–M-RAG.37 ← GAP-R
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-`pinecone`/`milvus`/`vespa` beta until ops soak
+GAP-RAG-01/17/23 query_expansion unwired (P0) · GAP-RAG-02/03 DualIndex not default ingest · GAP-RAG-04 poisoning Nexus-only not catalog rag.retrieve · GAP-RAG-05/06 no stream/async ingest · GAP-RAG-07 vector bridges beta · GAP-RAG-08/09 OTel/metrics opt-in · GAP-RAG-10–12 no fallback chain · GAP-RAG-18 GraphRAG beta · GAP-RAG-20 tenant isolation partial · GAP-RAG-21 no load/soak gate
 
 ---
 

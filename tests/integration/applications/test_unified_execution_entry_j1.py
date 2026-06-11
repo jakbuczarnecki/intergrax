@@ -15,10 +15,13 @@ pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
 
 @pytest.fixture
-def research_client() -> TestClient:
+def research_client(
+    product_harness_api_key: str,
+    harness_auth_headers: dict[str, str],
+) -> TestClient:
     settings = ResearchBackendSettings(use_nexus_loop=True)
     app = create_research_backend_app(settings=settings)
-    return TestClient(app)
+    return TestClient(app, headers=harness_auth_headers)
 
 
 def test_research_settings_default_nexus_loop(monkeypatch: pytest.MonkeyPatch) -> None:

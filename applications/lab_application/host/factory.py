@@ -29,6 +29,7 @@ from lab_application.host.wiring import bootstrap_lab_integration_wiring, build_
 from lab_application.mcp.server import build_lab_mcp_server
 from intergrax.applications._shared.task_defaults import make_lab_harness_task_enricher
 from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
+from intergrax.applications._shared.acp_checkpoint_task_enricher import make_acp_checkpoint_task_enricher
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
 from lab_application.manifest import build_lab_manifest
@@ -104,6 +105,7 @@ def create_lab_application(
         checkpoints_db_path=integrations.checkpoints_db_path,
         registry=resolved_registry,
         checkpoint_store=integrations.checkpoint_store,
+        agent_checkpoint_store=integrations.agent_checkpoint_store,
         notification_adapter=integrations.notification_adapter,
     )
     nexus_loop = runtime.nexus_loop
@@ -124,8 +126,12 @@ def create_lab_application(
         harness=settings.harness,
     )
 
+    acp_checkpoint_enricher = make_acp_checkpoint_task_enricher(integrations.agent_checkpoint_store)
+
     def task_enricher(task):
         task = apply_reliability_task_defaults(task, lab_env)
+        if acp_checkpoint_enricher is not None:
+            task = acp_checkpoint_enricher(task)
         if lab_notify_enricher is not None:
             task = lab_notify_enricher(task)
         return task

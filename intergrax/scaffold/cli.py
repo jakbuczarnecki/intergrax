@@ -9,7 +9,12 @@ import argparse
 import sys
 from pathlib import Path
 
-from intergrax.scaffold.new_agent import create_agent, _slug as agent_slug, _class_name
+from intergrax.scaffold.new_agent import (
+    SCAFFOLD_PATTERNS,
+    create_agent,
+    _slug as agent_slug,
+    _class_name,
+)
 from intergrax.scaffold.new_application import register_parser as register_application_parser
 from intergrax.scaffold.new_application import run_new_application
 from intergrax.scaffold.new_integration import register_parser as register_new_integration_parser
@@ -27,7 +32,10 @@ from intergrax.scaffold.expand_application import run_expand
 def register_scaffold_commands(sub: argparse._SubParsersAction) -> None:
     """Register scaffold subcommands on a parent parser."""
 
-    new_agent = sub.add_parser("new-agent", help="Create agents/<name>/ from UAEP template")
+    new_agent = sub.add_parser(
+        "new-agent",
+        help="Create agents/<name>/ (default: typed reflex cognitive pattern)",
+    )
     new_agent.add_argument("name", help="Agent slug (e.g. document_automation)")
     new_agent.add_argument(
         "--capability",
@@ -47,6 +55,17 @@ def register_scaffold_commands(sub: argparse._SubParsersAction) -> None:
         "--reference",
         action="store_true",
         help="Use HarnessReferenceAgent template (lab/product hosts inject LabHarnessContext)",
+    )
+    new_agent.add_argument(
+        "--pattern",
+        choices=sorted(SCAFFOLD_PATTERNS),
+        default=None,
+        help="Cognitive pattern (default: reflex when --uaep not set)",
+    )
+    new_agent.add_argument(
+        "--uaep",
+        action="store_true",
+        help="Legacy UAEP scaffold with steps/pipeline.py (deprecated)",
     )
 
     register_application_parser(sub)
@@ -79,13 +98,19 @@ def main(argv: list[str] | None = None) -> int:
                 root=args.root.resolve(),
                 force=args.force,
                 reference=args.reference,
+                pattern=args.pattern,
+                uaep=args.uaep,
             )
         except (ValueError, FileExistsError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
         slug = agent_slug(args.name)
         class_name = _class_name(slug)
-        print(f"Created UAEP agent scaffold at {path}")
+        if args.uaep or args.reference:
+            print(f"Created UAEP agent scaffold at {path}")
+        else:
+            pattern_label = args.pattern or "reflex"
+            print(f"Created ACP pattern ({pattern_label}) agent scaffold at {path}")
         print(f"  Register: from {slug}.{slug}_agent import {class_name}")
         print(f"  Test:     uv run pytest {path / 'tests'} -q")
         print(f"  Guide:    docs/guides/AGENT_CREATION_GUIDE.md")

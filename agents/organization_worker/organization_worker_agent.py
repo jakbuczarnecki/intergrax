@@ -12,7 +12,9 @@ from __future__ import annotations
 
 from typing import Optional, Sequence
 
-from intergrax.agents.agent_contract import Agent
+from intergrax.agents.authoring.acp_stub_reflex import perceive_run_input, reason_passthrough
+from intergrax.agents.authoring.patterns.reflex import ReflexAgent
+from intergrax.agents.authoring.patterns.types import AgentEvaluation, CognitiveEvaluation
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.agent_decision import (
@@ -21,6 +23,7 @@ from intergrax.contracts.agent_decision import (
     HumanRequest,
     HumanRequestUrgency,
 )
+from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
@@ -34,11 +37,10 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.contracts.agent_step_context import AgentStepContext
 
 
 class _StubLLMAdapter(LLMAdapter):
-    """In-agent stub for lab runs without external providers."""
-
     provider = "org_worker"
     model = "stub"
 
@@ -60,11 +62,17 @@ class _StubLLMAdapter(LLMAdapter):
         _ = messages, temperature, max_tokens, run_id
         return build_adapter_response(content=self._text)
 
+
 ORG_VENDOR_REPORT_CAPABILITY = "org.vendor_report"
 
 
-class OrganizationWorkerAgent(Agent):
-    """Prepares vendor reports and requests human approval before delivery."""
+class OrganizationWorkerAgent(ReflexAgent):
+    """Prepares vendor reports and requests human approval before delivery (ACP-MIG-5)."""
+
+    contract_id = "organization_worker"
+    capabilities = (ORG_VENDOR_REPORT_CAPABILITY,)
+    cognitive_pattern = CognitivePattern.REFLEX
+    main_step_id = "prepare_vendor_report"
 
     def get_contract(self) -> AgentContract:
         return AgentContract(
@@ -81,6 +89,8 @@ class OrganizationWorkerAgent(Agent):
             lifecycle_state=AgentLifecycleState.STAGING,
             owner_team="platform",
             max_steps=3,
+            cognitive_pattern=self.cognitive_pattern,
+            pattern_version=self.pattern_version,
         )
 
     def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
@@ -107,35 +117,39 @@ class OrganizationWorkerAgent(Agent):
             session_manager=SessionManager(storage=InMemorySessionStorage()),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
-        _ = context
-        return [
-            AgentStep(
-                step_id="prepare_vendor_report",
-                step_name="prepare_vendor_report",
-                step_index=0,
-                trace_label=ORG_VENDOR_REPORT_CAPABILITY,
-            )
-        ]
+    async def perceive(self, step_ctx: AgentStepContext):
+        return perceive_run_input(step_ctx, self)
 
-    async def run_step(
-        self,
-        step: AgentStep,
-        ctx: RuntimeExecutionContext,
-    ) -> StepOutput:
-        _ = step
-        subject = (ctx.request.message if ctx.request else "") or "unspecified vendor"
+    async def reason(self, step_ctx: AgentStepContext, observation):
+        return reason_passthrough(step_ctx, observation)
+
+    async def act(self, step_ctx: AgentStepContext, reasoning):
+        subject = (reasoning.thought or "").strip() or "unspecified vendor"
         draft = (
-            f"Draft vendor report prepared for: {subject.strip()}. "
+            f"Draft vendor report prepared for: {subject}. "
             "Pending manager approval before distribution."
         )
-        return StepOutput(
-            step_id=step.step_id,
-            summary=draft,
-            data={
-                "report_status": "draft",
-                "subject": subject.strip(),
-            },
+        return {
+            "summary": draft,
+            "answer": draft,
+            "report_status": "draft",
+            "subject": subject,
+            "run_id": step_ctx.run_id,
+        }
+
+    def evaluate(self, step_ctx: AgentStepContext, output: dict[str, object]) -> AgentEvaluation:
+        _ = output
+        exec_ctx = step_ctx.metadata.get("uaep_exec_ctx")
+        if isinstance(exec_ctx, RuntimeExecutionContext):
+            request = exec_ctx.request
+            if request and request.metadata.get("human_approved"):
+                return AgentEvaluation(
+                    verdict=CognitiveEvaluation.COMPLETE,
+                    reason="vendor report approved and sent",
+                )
+        return AgentEvaluation(
+            verdict=CognitiveEvaluation.HUMAN,
+            reason="manager approval required before sending vendor report",
         )
 
     def decide_after_step(
@@ -150,12 +164,18 @@ class OrganizationWorkerAgent(Agent):
             if output and isinstance(output.data, dict) and output.data.get("subject"):
                 subject = str(output.data["subject"])
             final = f"Vendor report for {subject.strip()} delivered to finance channel."
-            ctx.metadata["runtime_answer"] = RuntimeAnswer(run_id=ctx.run_id, answer=final)
+            ctx.metadata["runtime_answer"] = RuntimeAnswer(
+                run_id=ctx.run_id,
+                answer=final,
+            )
             return AgentDecision(
                 type=AgentDecisionType.COMPLETE,
                 reason="vendor report approved and sent",
-                summary=final,
-                data={"report_status": "sent", "subject": subject.strip()},
+                payload={
+                    "summary": final,
+                    "report_status": "sent",
+                    "subject": subject.strip(),
+                },
             )
 
         subject = (ctx.request.message if ctx.request else "") or "this vendor report"

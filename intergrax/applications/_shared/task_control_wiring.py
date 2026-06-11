@@ -11,6 +11,18 @@ from fastapi import FastAPI
 
 from intergrax.applications._shared.async_task_index_resolver import resolve_async_task_index
 from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
+from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
+from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
+from intergrax.agents.persistence.compensation_queue_wiring import (
+    make_acp_compensation_queue_task_enricher,
+)
+from intergrax.agents.persistence.idempotency_store_wiring import (
+    make_acp_idempotency_store_task_enricher,
+)
+from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.applications._shared.acp_checkpoint_task_enricher import (
+    make_acp_checkpoint_task_enricher,
+)
 from intergrax.applications._shared.reliability_wiring import apply_reliability_task_defaults
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
@@ -23,12 +35,24 @@ TaskEnricher = Callable[[Task], Task]
 def build_reliability_task_enricher(
     env: ApplicationEnvironmentProfile,
     *,
+    agent_checkpoint_store: AgentCheckpointStore | None = None,
+    compensation_queue_store: CompensationQueueStore | None = None,
+    idempotency_store: IdempotencyStore | None = None,
     extra: TaskEnricher | None = None,
 ) -> TaskEnricher:
-    """Apply REL-ADV defaults on every task before Nexus execution."""
+    """Apply REL-ADV + optional ACP persistence wiring on every task before Nexus execution."""
+    acp_enricher = make_acp_checkpoint_task_enricher(agent_checkpoint_store)
+    compensation_enricher = make_acp_compensation_queue_task_enricher(compensation_queue_store)
+    idempotency_enricher = make_acp_idempotency_store_task_enricher(idempotency_store)
 
     def enricher(task: Task) -> Task:
         enriched = apply_reliability_task_defaults(task, env)
+        if acp_enricher is not None:
+            enriched = acp_enricher(enriched)
+        if compensation_enricher is not None:
+            enriched = compensation_enricher(enriched)
+        if idempotency_enricher is not None:
+            enriched = idempotency_enricher(enriched)
         if extra is not None:
             enriched = extra(enriched)
         return enriched

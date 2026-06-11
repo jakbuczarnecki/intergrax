@@ -41,6 +41,8 @@ class SharedTaskContext(BaseModel):
     task_id: str
     artifacts: Dict[str, SharedArtifactEntry] = Field(default_factory=dict)
     structured_outputs: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    entry_versions: Dict[str, int] = Field(default_factory=dict)
+    updated_by: Dict[str, str] = Field(default_factory=dict)
     memory_namespace: str = DEFAULT_SHARED_MEMORY_NAMESPACE
     version: int = 1
     schema_version: str = "shared_task_context.v1"

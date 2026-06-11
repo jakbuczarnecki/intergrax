@@ -4,17 +4,24 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.authoring.base import IntergraxAgent
+from intergrax.agents.runtime_request_bridge import (
+    acp_session_enabled,
+    agent_run_result_to_runtime_answer,
+    runtime_request_to_agent_run,
+)
 from intergrax.agents.uaep import UAEPBlockedError, UAEPExecutor
 from intergrax.agents.uaep_protocol import supports_uaep
+from intergrax.contracts.agent_run import AgentRunResult
+from intergrax.contracts.validation import ValidationResult
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.runtime_mapping import runtime_answer_to_agent_result
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
-from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.policy.policy_engine import PolicyEngine, coerce_policy_engine
@@ -32,8 +39,8 @@ class AgentEngine:
     """
     Tier-2 → Tier-1 bridge (§42.19, §42.44).
 
-    Resolves agents and executes via UAEP when ``get_steps`` / ``run_step`` are
-    implemented; otherwise falls back to the legacy ``RuntimeEngine`` pipeline path.
+    Resolves agents and executes via typed ACP session or UAEP bridge.
+    Legacy ``RuntimeEngine`` pipeline fallback removed (ACP-CLOSE-LEG-1).
     """
 
     def __init__(
@@ -117,7 +124,7 @@ class AgentEngine:
         event_bus: Optional[RuntimeEventBus] = None,
     ) -> RuntimeAnswer:
         executor = AgentEngine._resolve_static_executor(uaep_executor, event_bus)
-        answer, _validation, _context, _governance = await AgentEngine._execute_agent_impl(
+        answer, _validation, _context, _governance, _structured = await AgentEngine._execute_agent_impl(
             agent,
             request,
             executor,
@@ -136,10 +143,12 @@ class AgentEngine:
         contract = agent.get_contract()
         run_id = str(request.metadata.get("run_id") or request.metadata.get("task_id") or "")
         try:
-            answer, validation, _context, governance = await AgentEngine._execute_agent_impl(
-                agent,
-                request,
-                executor,
+            answer, validation, _context, governance, structured_data = (
+                await AgentEngine._execute_agent_impl(
+                    agent,
+                    request,
+                    executor,
+                )
             )
         except UAEPBlockedError as exc:
             return AgentExecutionResult(
@@ -149,28 +158,48 @@ class AgentEngine:
                 summary="",
                 errors=[str(exc)],
             )
-        return runtime_answer_to_agent_result(
+        execution = runtime_answer_to_agent_result(
             answer,
             agent_id=contract.id,
             valid=validation.valid,
             validation_errors=validation.errors,
             governance=governance,
         )
+        if structured_data:
+            execution.structured_data.update(structured_data)
+        return execution
 
     @staticmethod
     async def _execute_agent_impl(
         agent: Agent,
         request: RuntimeRequest,
         uaep_executor: UAEPExecutor,
-    ) -> tuple[RuntimeAnswer, ValidationResult, RuntimeContext, Optional[GovernanceResolution]]:
-        if supports_uaep(agent):
-            return await uaep_executor.execute(agent, request)
+    ) -> tuple[
+        RuntimeAnswer,
+        ValidationResult,
+        RuntimeContext,
+        Optional[GovernanceResolution],
+        dict[str, Any],
+    ]:
+        if isinstance(agent, IntergraxAgent) and acp_session_enabled(request):
+            contract = agent.get_contract()
+            agent_run = runtime_request_to_agent_run(request, contract=contract)
+            result = await agent.run(agent_run)
+            if not isinstance(result, AgentRunResult):
+                raise TypeError("IntergraxAgent.run must return AgentRunResult for ACP session")
+            answer = agent_run_result_to_runtime_answer(result)
+            validation = ValidationResult(
+                valid=result.status.value == "succeeded",
+                errors=[error.message for error in result.errors],
+            )
+            return answer, validation, agent.build_context(request), None, dict(result.structured_data)
 
-        context = agent.build_context(request)
-        runtime = RuntimeEngine(context)
-        answer = await runtime.run(request)
-        validation = agent.validate(answer, context=context)
-        if not validation.valid and validation.errors:
-            if answer.route is not None:
-                answer.route.extra.setdefault("agent_validation_errors", validation.errors)
-        return answer, validation, context, None
+        if supports_uaep(agent):
+            answer, validation, context, governance = await uaep_executor.execute(agent, request)
+            return answer, validation, context, governance, {}
+
+        raise ValueError(
+            f"{type(agent).__name__} is not executable: set acp.session.v1 metadata for "
+            "IntergraxAgent ACP runs, implement UAEPAgent (get_steps/run_step), or migrate "
+            "off RuntimeEngine pipeline (ACP-CLOSE-LEG-1)."
+        )

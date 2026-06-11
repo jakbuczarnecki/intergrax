@@ -1,7 +1,9 @@
 # © Artur Czarnecki. All rights reserved.
 
+from intergrax.agents.authoring.patterns.base import PATTERN_VERSION
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
+from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.skills.providers.research.manifests import RESEARCH_LITERATURE_SCAN
 from problem_radar.capabilities import CAPABILITIES
 
@@ -23,4 +25,6 @@ def build_agent_contract() -> AgentContract:
         owner_team="platform",
         max_steps=12,
         validation_rules=["structured_output"],
+        cognitive_pattern=CognitivePattern.REFLEX,
+        pattern_version=PATTERN_VERSION,
     )

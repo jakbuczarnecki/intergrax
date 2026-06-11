@@ -63,7 +63,12 @@ def create_intergrax_assistant_application(
         trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
     )
     checkpoint_store = open_default_task_checkpoint_persistence(db_path=checkpoints_db_path)
-    task_enricher = build_reliability_task_enricher(env)
+    task_enricher = build_reliability_task_enricher(
+        env,
+        agent_checkpoint_store=runtime.agent_checkpoint_store,
+        compensation_queue_store=runtime.compensation_queue_store,
+        idempotency_store=runtime.reliability.idempotency_store,
+    )
     task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
     scheduler_wiring = wire_long_running_scheduler(
         checkpoint_store=checkpoint_store,

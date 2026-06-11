@@ -22,6 +22,101 @@ Execution: [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EX
 
 ---
 
+## Agent in the harness environment
+
+**Hub summary for architects, researchers, and AI crawlers** — full canon in [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 · plan [Phase ACP](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md).
+
+Intergrax is **not** “one Python class that is also the OS.” The **agent** is a **domain decision unit** inside a **typed, governed environment**. Responsibility is split by design:
+
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│ L4  Application + NexusLoop.handle_task()                                 │
+│     Environment: profiles, AgentBinding, RequestIdentity, org envelope  │
+│     Orchestration: Task graph, capability routing, HITL, Plane A log    │
+│     DOES NOT: plan inside one agent's cognitive loop                      │
+└───────────────────────────────┬─────────────────────────────────────────┘
+                                │ graph node → one Agent.run() per role
+┌───────────────────────────────▼─────────────────────────────────────────┐
+│ L3  Agent.run() — session decision loop (many steps, one user-facing run) │
+└───────────────────────────────┬─────────────────────────────────────────┘
+                                │ each iteration
+┌───────────────────────────────▼─────────────────────────────────────────┐
+│ L2  Agent.on_next_step() — author domain hook                             │
+│     READ typed state · UPDATE state_delta · DECIDE StepOutcome §32.0      │
+└───────────────────────────────┬─────────────────────────────────────────┘
+                                │ StepOutcome
+┌───────────────────────────────▼─────────────────────────────────────────┐
+│ L1  HarnessKernel.execute_step() — deterministic harness primitive        │
+│     policy · gateways · trace · budgets · state merge · checkpoint hook   │
+│     DOES NOT: domain replan · choose next graph agent                     │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+| Question | Owner | Canon |
+|----------|-------|-------|
+| Who acts (tenant, user, org agent)? | Application intake → `RequestIdentity` | §30.9 |
+| Which agents run on this Task? | **NexusLoop** + capability registry | §37.6 |
+| What is the next domain move? | **`on_next_step`** → `StepOutcome` | §32 · §32.0 |
+| Is policy/trace/state safe? | **`HarnessKernel`** | §38 |
+| Lab vs prod same agent code? | `merge_environment` + `AgentBinding` | §30 |
+| Can this agent ship to production? | Production Readiness Scoreboard | §40.15 · ACP-PROD-12 |
+
+**Strategic invariants (ADR-AGENT-001..003):**
+
+- **Nexus is not the agent** — it orchestrates; it does not replace `on_next_step`.
+- **HarnessKernel does not plan** — it executes one harness cycle per step.
+- **AgentRuntime.advance_step is glue only** — `on_next_step` then kernel; no policy logic in runtime.
+- **Agents are replaceable; the harness is the product.**
+
+**Author entry points:** [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) Appendix AC · roster [`agents/README.md`](../agents/README.md).
+
+**Implementation:** architecture **decision-complete**; code delivery [ACP waves](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md#61aw-acp-detailed-implementation-waves) (typed contracts → step loop → fleet migration Wave 8 → prod gates). UAEP remains a **bridge** until fleet migration completes.
+
+---
+
+## Application in the harness environment
+
+**Hub summary** — full canon in [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](architecture/TIER3_APPLICATION_ENVIRONMENT.md) §24–§45 (APP-CON) · plan [Phase H-APP-CON](plan/TIER3_APPLICATION_ENVIRONMENT.md#phase-h-app-con--application-environment-architecture-canon-app-con).
+
+The **application** is a **deployable composition shell** — not a cognitive agent. It normalizes intake → `Task`, declares roster and harness profiles, and returns product output. Tier-3 authors control environment through **three modes** (§30): declarative profile, rules envelope, imperative `ApplicationHost` hooks.
+
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│ L4  Application host (Tier-3)                                           │
+│     ApplicationManifest · ApplicationEnvironmentProfile · surfaces      │
+│     ApplicationHost.on_hook (optional) · ApplicationRunSummary (Plane A) │
+│     DOES NOT: on_next_step · domain tool loops · private Nexus fork     │
+└───────────────────────────────┬─────────────────────────────────────────┘
+                                │ UnifiedTaskRunner.run_task()
+┌───────────────────────────────▼─────────────────────────────────────────┐
+│ L3  NexusLoop.handle_task() — Agent OS (Tier-1)                         │
+└───────────────────────────────┬─────────────────────────────────────────┘
+                                │ graph node → Agent.run() — see Agent section above
+```
+
+| Question | Owner | Canon |
+|----------|-------|-------|
+| What agents are active in this product? | **`ApplicationManifest`** roster | §24 · §27 |
+| What harness slices are enabled? | **`ApplicationEnvironmentProfile`** | §22 |
+| Reactive vs daemon vs batch? | Posture + host factory | §23 |
+| Who sets routing capability? | L1–L4 matrix | §23.3 |
+| Virtual org / simulation rules? | **`OrganizationalPolicyEnvelope`** | §39 |
+| Dynamic block at intake / selection? | **`ApplicationHost`** + `HookPoint` | §32 |
+| Multi-agent orchestration summary? | **`ApplicationRunSummary`** | §26 · §33 |
+
+**Strategic invariants (APP-CON §28.1):**
+
+- **Applications compose; they do not cognate** — business logic stays in Tier-2 agents.
+- **One Task lifecycle** — all surfaces converge on `UnifiedTaskRunner` → `NexusLoop`.
+- **Profile is the composition root** — no ad-hoc `getattr` wiring in hosts.
+- **Hooks are boundaries, not step loops** — no `Application.on_next_orchestration_step()`.
+
+**Author entry points:** [`applications/USAGE.md`](../applications/USAGE.md) · `HarnessApplication` (`intergrax/harness/app.py`) · scaffold `new-application` · [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md) §0.
+
+**Implementation:** H-APP profile/wiring **Done**; APP-CON code gaps (`ApplicationHost` pipeline mount) — [H-APP-CON](plan/TIER3_APPLICATION_ENVIRONMENT.md#phase-h-app-con--application-environment-architecture-canon-app-con).
+
+---
+
 ## Domain documents (architecture ↔ implementation 1:1)
 
 | Architecture | Implementation plan |
@@ -52,11 +147,13 @@ Execution: [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EX
 
 ## Reading order
 
-1. This hub → [`architecture/PLATFORM_FOUNDATION.md`](architecture/PLATFORM_FOUNDATION.md) + [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md)
-2. [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) + matching plan
-3. [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) + matching plan
-4. Your domain pair from the table above
-5. [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) when building agents
+1. This hub → [Agent in the harness environment](#agent-in-the-harness-environment) (above)
+2. [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) + [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) — **agent model & ACP**
+3. [`architecture/PLATFORM_FOUNDATION.md`](architecture/PLATFORM_FOUNDATION.md) + [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md)
+4. [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) + matching plan
+5. [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) + matching plan
+6. Your other domain pair from the table below
+7. [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) when building agents
 
 **Per-iteration rule:** pick one domain — read only its architecture + plan pair; do not load unrelated domains.
 
@@ -99,6 +196,9 @@ Essential platform behaviours span multiple domain pairs — use this index befo
 
 | Capability | Primary architecture | Plan phase |
 |------------|---------------------|------------|
+| **Agent session loop** (`run`, `on_next_step`, `HarnessKernel`, typed state) | [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 | **ACP** (active) |
+| **Agent production readiness scoreboard** | [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §40.15 | ACP-PROD-12 |
+| **Fleet migration** (roster → typed runtime) | [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Wave 8 | ACP-MIG |
 | Resilience policies (retry, reboot, circuit breaker) | [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](architecture/RELIABILITY_FAILURE_AND_HITL.md) §34 | REL-ADV |
 | Orchestration strategies (parallel, sequence, cooperation, scale, redundancy) | [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §50–§53, §58 | ORCH-5, ORCH-6 |
 | MVP → product evolution (eval, KPI, simulation, promotion) | [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) §44 | MVP-EVOL |
@@ -136,5 +236,8 @@ Platform docs do not replace `agents/*/ARCHITECTURE.md` or `applications/*/ARCHI
 | [`adr/ADR-FLOW-003.md`](adr/ADR-FLOW-003.md) | `MODIFY_PLAN` semantics |
 | [`adr/ADR-FLOW-004.md`](adr/ADR-FLOW-004.md) | Graph spec seed guard (`trigger_capabilities`) |
 | [`adr/ADR-CODECRAFT-001.md`](adr/ADR-CODECRAFT-001.md) | Ephemeral Code Craft as separate Harness domain |
+| [`adr/ADR-AGENT-001.md`](adr/ADR-AGENT-001.md) | Agent cognitive patterns (ACP) — Tier-2 library, Nexus stays Agent OS |
+| [`adr/ADR-AGENT-002.md`](adr/ADR-AGENT-002.md) | Author `Agent.run()` facade + per-agent environment binding |
+| [`adr/ADR-AGENT-003.md`](adr/ADR-AGENT-003.md) | `on_next_step` step loop + dual observability (agent trace vs app orchestration) |
 
 **Platform configuration canon (CFG-*):** [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §56 · implementation [`plan/ORCHESTRATION.md`](plan/ORCHESTRATION.md) Phase **ORCH-CONFIG**.

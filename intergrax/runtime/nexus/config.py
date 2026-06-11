@@ -191,6 +191,9 @@ class RuntimeConfig:
     #
     tools_context_scope: ToolsContextScope = ToolsContextScope.CURRENT_MESSAGE_ONLY
 
+    # Bounded planner→invoke→observe loop inside ToolsStep (TOOL-ENG-6). Default 1 preserves legacy single-pass.
+    max_tool_iterations: int = 1
+
     tool_invoker: Optional[RuntimeToolInvoker] = None
 
     idempotency_store: Optional[IdempotencyStore] = None

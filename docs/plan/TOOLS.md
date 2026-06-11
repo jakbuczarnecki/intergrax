@@ -6,13 +6,13 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**Active queue (2026-06-10):** [§6.1e](#61e-harness-implementation-queue--tool-engine-active) · Phase **TOOL-ENG** — tool engine hardening from full-stack audit. Catalog expansion (Phase O / T-EXPAND) is **closed**; default harness work = **engine**, not new `tool_id` rows.
+**Active queue (2026-06-11):** [§6.1e](#61e-harness-implementation-queue--tool-engine-active) · Phase **TOOL-ENG** — tool engine hardening + **selection modes** (standard / semantic / hierarchical). Catalog expansion (Phase O / T-EXPAND) is **closed**; default harness work = **engine**, not new `tool_id` rows.
 
 ---
 
 ## Phase TOOL-ENG — Tool engine hardening (2026-06-10 audit)
 
-**Status:** **Active** — **7/13** deliverables Done (TOOL-ENG-0–5,11 — 2026-06-10)  
+**Status:** **Active** — **8/17** deliverables Done (TOOL-ENG-0–5,11, TOOL-ENG-DOC.4 — 2026-06-11)  
 **Architecture canon:** [`architecture/TOOLS.md`](../architecture/TOOLS.md) — [Tool engine production posture](../architecture/TOOLS.md#tool-engine-production-posture-2026-06-10), [Engine gap register](../architecture/TOOLS.md#engine-gap-register-canon)  
 **Audit basis:** Full-stack tool layer audit 2026-06-10 (Tier-0 catalog + Tier-1 selection/invoke/verify)  
 **Priority ladder:** **Band 2ba** — supersedes ad-hoc tool engine fixes until TOOL-ENG P0 closed  
@@ -31,18 +31,22 @@
 | TOOL-ENG-2 | Gateway | **Full-catalog `ToolRequest`** — `RuntimeToolGateway` routes any registered `tool_id` → invoker (not `unknown_capability_tool`) | **Done** | **P0** | `tool_gateway.py`, `catalog_dispatch.py` | `test_tool_gateway.py` catalog tool path; ADR-TOOL-001 |
 | TOOL-ENG-3 | Policy | **Wire `tool_scope_policy`** from `RuntimeConfig` into `RuntimeToolInvoker` at `RuntimeContext.build()` | **Done** | **P0** | `runtime_context.py` | `test_tool_engine_bootstrap.py`; denied tool raises `ToolScopeViolationError` on invoke path |
 | TOOL-ENG-4 | Selection | **Plan constraints → planner** — pass `EnginePlan.tool_ids` / `ToolInvocationPlan.tool_ids` as allow-list to `ToolPlanningService` | **Done** | P1 | `tools_step.py`, `tool_planning_service.py`, `strategies.py` | `test_tool_planning_constraints.py` |
-| TOOL-ENG-5 | Selection | **`ToolSelectionStrategy` protocol** — static allow-list \| skill-pack \| retrieval top-k \| full-catalog; default static | **Done** | P1 | `tool_selection.py`, `tools_step.py` | `test_tool_selection_strategy.py`; lab `tool_selection_mode=skill_pack` |
-| TOOL-ENG-6 | Loop | **Tool loop step** — `max_tool_iterations`, native `role=tool` messages, stop on empty `tool_calls` or budget | **Planned** | P1 | `tool_loop_step.py` (new), `tools_step.py` | Integration test: 2-iteration ReAct with mock LLM |
+| TOOL-ENG-5 | Selection | **`ToolSelectionStrategy` protocol** — static \| skill-pack \| keyword top-k (`retrieval_top_k`) \| full-catalog; default static | **Done** | P1 | `tool_selection.py`, `tools_step.py` | `test_tool_selection_strategy.py`; lab `tool_selection_mode=skill_pack` |
+| TOOL-ENG-DOC.4 | Docs | **Selection modes canon** — standard / semantic / hierarchical production strategies; L6 vs L0–L5 distinction; `retrieval_top_k` ≠ semantic | **Done** | P1 | `architecture/TOOLS.md`, FLOW §15, audit prompt, Appendix J | Architecture §[Tool selection modes](../architecture/TOOLS.md#tool-selection-modes-production-strategies) |
+| TOOL-ENG-13 | Selection | **Semantic tool index** — embed `ToolContract` metadata; dedicated vector collection; `SemanticToolIndexSelectionStrategy`; reindex on catalog/plugin change | **Planned** | P1 | `tool_catalog_embedder.py` (new), `tool_selection.py`, RAG `embedding_manager` | Gate test: 190-tool catalog query ranks correct `tool_id` without keyword overlap; trace candidates/scores · **ADR required** |
+| TOOL-ENG-14 | Selection | **Hierarchical tool selection** — bundle/category tree; multi-pass LLM (`tool_selection_max_hierarchy_passes`); final schema ⊆ one branch | **Planned** | P2 | `tool_selection.py`, `hierarchical_tool_selector.py` (new), prompts | Integration test: category pass → tool pass; bounded passes · **ADR required** |
+| TOOL-ENG-15 | Selection | **Naming clarity** — document `retrieval_top_k` as keyword overlap; optional `keyword_top_k` enum alias + env migration | **Planned** | P2 | `config_types.py`, `environment_profile.py`, docs | No behavior change; alias accepted in bridge |
+| TOOL-ENG-6 | Loop | **Tool loop step** — `max_tool_iterations`, native `role=tool` messages, stop on empty `tool_calls` or budget | **Done** | P1 | `tool_loop_step.py`, `tools_step.py`, ADR-TOOL-002 | `test_tool_loop_integration.py` · ACP-CLOSE-PAT-1 budget sync |
 | TOOL-ENG-7 | Verify | **Post-tool verify hook** — `risk_level >= HIGH` → critic middleware or HITL gate | **Planned** | P2 | `tool_verify_hooks.py`, `middleware` | HIGH tool blocked without approval in test profile |
 | TOOL-ENG-8 | Governance | **`tools_mode=required` hard fail** — raise `RunError` / fail run when zero tool calls | **Planned** | P2 | `tools_step.py` | `test_tools_mode_required_fails.py` |
 | TOOL-ENG-9 | Performance | **Parallel tool invoke** — concurrent execution for `side_effects=False` calls in one plan batch (bounded) | **Planned** | P2 | `tools_step.py`, `invoker.py` | Unit test: 3 read-only tools complete < sum(serial) |
-| TOOL-ENG-10 | AHI | **Dynamic tool subset hook** — adaptive harness selects planner schema subset | **Planned** | P3 | `ADAPTIVE_HARNESS_INTELLIGENCE` integration | Hook test with fixture profile |
+| TOOL-ENG-10 | AHI | **Dynamic selection mode hook** — adaptive harness picks standard / semantic / hierarchical (or subset) per run | **Planned** | P3 | `ADAPTIVE_HARNESS_INTELLIGENCE` integration | Hook test with fixture profile; **after TOOL-ENG-13/14** |
 | TOOL-ENG-11 | Config | **Implement `tools_context_scope`** — planner receives message per scope enum | **Done** | P1 | `tool_planner_input.py`, `tools_step.py` | `test_tool_planning_constraints.py` scope tests |
 | TOOL-ENG-12 | Config | **Wire `tool_choice`** from host/`tools_mode` to `plan_tools` | **Planned** | P2 | `tools_step.py`, `RuntimeConfig` | `required` maps to tool_choice required on native path |
 
 **Delivery rule:** One **TOOL-ENG-\*** ID per PR → update this table + [§6.1e](#61e-harness-implementation-queue--tool-engine-active) + architecture gap register → `pytest -m gate` + new acceptance tests green.
 
-**Suggested PR order:** TOOL-ENG-0 → TOOL-ENG-3 → TOOL-ENG-1 → TOOL-ENG-2 → TOOL-ENG-4 → TOOL-ENG-11 → TOOL-ENG-5 → TOOL-ENG-6 → TOOL-ENG-12 → TOOL-ENG-8 → TOOL-ENG-7 → TOOL-ENG-9 → TOOL-ENG-10.
+**Suggested PR order:** TOOL-ENG-0 → TOOL-ENG-3 → TOOL-ENG-1 → TOOL-ENG-2 → TOOL-ENG-4 → TOOL-ENG-11 → TOOL-ENG-5 → **TOOL-ENG-DOC.4** → **TOOL-ENG-13** → **TOOL-ENG-14** → TOOL-ENG-15 → TOOL-ENG-6 → TOOL-ENG-12 → TOOL-ENG-8 → TOOL-ENG-7 → TOOL-ENG-9 → TOOL-ENG-10.
 
 **Explicitly excluded:** New catalog bundles (§6.3), business agent tools (Phase K), replacing `ToolContract` / provider handlers.
 
@@ -55,6 +59,9 @@
 | `tools_context_scope` | **Done** (TOOL-ENG-11) | All 3 scopes functional |
 | `EnginePlan.tool_ids` execution | **Done** (catalog dispatch) | All listed ids |
 | Planner schema vs `allowed_tools` | **Done** (`ToolSelectionStrategy` + plan intersection) | Filtered |
+| Standard / semantic / hierarchical canon documented | **Done** (TOOL-ENG-DOC.4) | Architecture + plan pair |
+| Semantic tool index at 190-tool scale | Keyword overlap only | Vector top-k (TOOL-ENG-13) |
+| Hierarchical category traversal | Metadata only | Multi-pass planner (TOOL-ENG-14) |
 | Tool loop iterations | 1 | Configurable `max_tool_iterations` |
 | `tools_mode=required` | Warning trace | Run failure |
 | Invoker scope enforcement | **Done** (`RuntimeContext.build`) | Production wiring |
@@ -72,6 +79,7 @@
 | 2026-06-10 | TOOL-ENG-4 | `allowed_tool_ids` on `ToolPlanningService`; state + step params wiring — **no ADR needed** |
 | 2026-06-10 | TOOL-ENG-11 | `resolve_tool_planner_input` for `tools_context_scope` — **no ADR needed** |
 | 2026-06-10 | TOOL-ENG-5 | `ToolSelectionStrategy` + lab `skill_pack` mode — **no ADR needed** |
+| 2026-06-11 | TOOL-ENG-DOC.4 | Selection modes audit — standard / semantic / hierarchical canon in architecture pair; TOOL-ENG-13/14/15 registered |
 
 ---
 
@@ -89,12 +97,16 @@
 | 5 | **TOOL-ENG-4** | Code | **Done** | Plan constraints → planner | `test_tool_planning_constraints.py` |
 | 6 | **TOOL-ENG-11** | Code | **Done** | `tools_context_scope` implementation | scope enum tests |
 | 7 | **TOOL-ENG-5** | Code | **Done** | `ToolSelectionStrategy` | `test_tool_selection_strategy.py` |
-| 8 | **TOOL-ENG-6** | Code + ADR | **Planned** | Tool loop step | 2-iteration integration test |
-| 9 | **TOOL-ENG-12** | Code | **Planned** | `tool_choice` wiring | required mode test |
-| 10 | **TOOL-ENG-8** | Code | **Planned** | `tools_mode=required` fail | unit test |
-| 11 | **TOOL-ENG-7** | Code | **Planned** | Post-tool verify HIGH+ | middleware test |
-| 12 | **TOOL-ENG-9** | Code | **Planned** | Parallel read-only invoke | unit test |
-| 13 | **TOOL-ENG-10** | Code | **Planned** | AHI tool subset hook | hook fixture test |
+| 8 | **TOOL-ENG-DOC.4** | Docs | **Done** | Selection modes canon (standard / semantic / hierarchical) | architecture §modes |
+| 9 | **TOOL-ENG-13** | Code + ADR | **Planned** | Semantic tool vector index | embedding rank gate test |
+| 10 | **TOOL-ENG-14** | Code + ADR | **Planned** | Hierarchical category traversal | 2-pass integration test |
+| 11 | **TOOL-ENG-15** | Code + Docs | **Planned** | `keyword_top_k` alias / naming clarity | alias in bridge |
+| 12 | **TOOL-ENG-6** | Code + ADR | **Done** | Tool loop step | `test_tool_loop_integration.py` |
+| 13 | **TOOL-ENG-12** | Code | **Planned** | `tool_choice` wiring | required mode test |
+| 14 | **TOOL-ENG-8** | Code | **Planned** | `tools_mode=required` fail | unit test |
+| 15 | **TOOL-ENG-7** | Code | **Planned** | Post-tool verify HIGH+ | middleware test |
+| 16 | **TOOL-ENG-9** | Code | **Planned** | Parallel read-only invoke | unit test |
+| 17 | **TOOL-ENG-10** | Code | **Planned** | AHI dynamic selection mode hook | hook fixture test |
 
 **Explicitly excluded:** K.1, K.2, new product catalog tools — [§6.3 product backlog](../plan/PLATFORM_FOUNDATION.md).
 
@@ -214,23 +226,24 @@
 
 ## Phase TOOL-ENG-DOC — Tool execution pipeline canon (Band 2ar)
 
-**Status:** **Done** (2026-06-08) — end-to-end tool engine documented in architecture pair  
+**Status:** **Active** (DOC.4 open 2026-06-11) — pipeline canon **Done**; selection modes canon **Done** (TOOL-ENG-DOC.4)  
 **Prerequisites:** Phase TS **Done** · Phase O **Done** · Phase LEG **Done**  
-**Goal:** Consolidate **selection → invocation → logging** for the Tier-1 tool engine in [`architecture/TOOLS.md`](../architecture/TOOLS.md) — close audit gap “engine spread across FLOW / UAEP only”  
-**Priority ladder:** **Band 2ar** — **closed** on doc merge  
-**ADR:** **No ADR needed** — documentation consolidation; runtime contracts unchanged
+**Goal:** Consolidate **selection → invocation → logging** and **production selection modes** in [`architecture/TOOLS.md`](../architecture/TOOLS.md)  
+**Priority ladder:** **Band 2ar** (pipeline) **closed** · **Band 2bb** (selection modes doc) **closed** 2026-06-11  
+**ADR:** **No ADR needed** for DOC rows — documentation only; TOOL-ENG-13/14 require ADR at implementation
 
 | ID | Deliverable | Status | Priority | Module / doc | Acceptance |
 |----|-------------|--------|----------|--------------|------------|
 | TOOL-ENG-DOC.1 | **`Tool execution pipeline`** section — diagram + phase table + entry paths | **Done** | **Critical** | `architecture/TOOLS.md` | Covers select, invoke, log |
 | TOOL-ENG-DOC.2 | **Component naming note** — Tool engine vs `ToolRuntime` facade | **Done** | High | same | Linked from §Tool engine table |
 | TOOL-ENG-DOC.3 | **Cross-ref sync** — FLOW §15, AUDIT_MAP §11, Appendix J | **Done** | Medium | `docs/*` | Links resolve |
+| TOOL-ENG-DOC.4 | **Selection modes canon** — standard / semantic / hierarchical; L6 vs layers; `retrieval_top_k` clarification | **Done** | **Critical** | `architecture/TOOLS.md`, `plan/TOOLS.md`, FLOW §15, audit/TOOLS | §[Tool selection modes](../architecture/TOOLS.md#tool-selection-modes-production-strategies) |
 
 ### TOOL-ENG-DOC traceability
 
 | Pipeline phase | Canon section | Runtime modules |
 |----------------|---------------|-----------------|
-| Selection | TOOLS §Tool execution pipeline · [Tool selection](../architecture/TOOLS.md#tool-selection--strategies-and-layers) · FLOW §15 | `CatalogToolPlanner`, `ToolAccessPolicy`, `tool_policy_resolution.py` |
+| Selection | TOOLS §[Tool selection modes](../architecture/TOOLS.md#tool-selection-modes-production-strategies) · [layers](../architecture/TOOLS.md#tool-selection--strategies-and-layers) · FLOW §15 | `ToolSelectionStrategy`, `CatalogToolPlanner`, `ToolAccessPolicy` |
 | Invocation | TOOLS §Tool execution pipeline · [§42.12 gateway](../architecture/TOOLS.md#4212-gateway-surface-toolrequest) · [tool_ids dispatch](../architecture/TOOLS.md#tool_ids-dispatch-semantics-actual) | `ToolRuntime`, `RuntimeToolInvoker`, `tool_gateway.py` |
 | Logging | TOOLS §Tool execution pipeline · FLOW §17 · OBS | `trace_event`, `RuntimeEvent` `TOOL_*`, `ToolsStep` |
 | Engine gaps | TOOLS §[Engine gap register](../architecture/TOOLS.md#engine-gap-register-canon) | Phase **TOOL-ENG** master register |
@@ -240,6 +253,7 @@
 | Date | ID | Summary |
 |------|-----|---------|
 | 2026-06-08 | TOOL-ENG-DOC.1–3 | Tool execution pipeline § in architecture; AUDIT_MAP §11 + Appendix J + FLOW §15 cross-refs |
+| 2026-06-11 | TOOL-ENG-DOC.4 | Production selection modes (standard / semantic / hierarchical); TOOL-ENG-13/14/15 plan rows |
 
 ---
 

@@ -52,7 +52,7 @@ Harness audit map layer — see [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HA
 ## Workflow (agent)
 
 1. Complete implementation per iteration rules (tests, plan/architecture updates, ADR if needed).
-2. Copy [`entries/_TEMPLATE.md`](entries/_TEMPLATE.md) → `entries/YYYY-MM-DD-<scope>-<slug>.md`.
+2. Create `entries/YYYY-MM-DD/` if needed; copy [`entries/_TEMPLATE.md`](entries/_TEMPLATE.md) → `entries/YYYY-MM-DD/<scope>-<slug>.md`.
 3. Assign `id` per [`ENTRY_TEMPLATE.md`](ENTRY_TEMPLATE.md) §ID assignment.
 4. Fill frontmatter and sections in **English**; `plan_ref` = formal IDs only (YAML list).
 5. **Prepend** one row to [`INDEX.md`](INDEX.md) (newest first — do not append).
@@ -87,7 +87,8 @@ docs/guides/implementation-journal/
   INDEX.md            ← chronological index (newest first)
   entries/
     _TEMPLATE.md      ← copy scaffold (not indexed)
-    YYYY-MM-DD-*.md   ← completed episodes
+    YYYY-MM-DD/       ← one folder per calendar day
+      <scope>-<slug>.md
 ```
 
 ---

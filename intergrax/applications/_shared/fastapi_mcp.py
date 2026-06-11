@@ -83,9 +83,11 @@ def couple_fastapi_with_mcp(
     )
     wrapper.mount(mcp_mount, mcp_app)
     wrapper.mount("/", fastapi_app)
+    require_auth = False
     if hasattr(fastapi_app.state, "harness_auth"):
         inner_auth = fastapi_app.state.harness_auth
         if isinstance(inner_auth, HarnessAuthState):
             wrapper.state.harness_auth = inner_auth
-    apply_harness_auth_middleware(wrapper)
+            require_auth = inner_auth.require_api_key
+    apply_harness_auth_middleware(wrapper, require_auth=require_auth)
     return wrapper

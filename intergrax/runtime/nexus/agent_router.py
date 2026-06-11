@@ -15,6 +15,10 @@ from intergrax.runtime.events.payload_registry import runtime_event_with_payload
 from intergrax.runtime.events.payloads import AgentSelectionPayloadV1
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.capability_routing import (
+    select_best_capability_match,
+    validate_task_for_capability_routing,
+)
 from intergrax.runtime.task.task import Task, TaskContext
 
 
@@ -51,6 +55,7 @@ class AgentRouter:
         run_id: str | None = None,
         node_id: str | None = None,
     ) -> Agent:
+        validate_task_for_capability_routing(task)
         requested = task.agent_id or ""
         capability = task.context.capability or ""
         selection: AgentRouteSelection
@@ -71,18 +76,24 @@ class AgentRouter:
                 selection_reason="explicit_agent_id",
             )
         elif task.context.capability:
-            matches = self._registry.find_by_capability(
+            route = select_best_capability_match(
+                self._registry,
+                task,
                 task.context.capability,
                 production_mode=self._production_mode,
             )
-            if matches:
-                agent, score = self._best_capability_match(task.context, matches)
+            if route.selected is not None:
+                agent = route.selected
+                score: float | None = None
+                match = agent.can_handle(task.context)
+                if match.matched:
+                    score = match.score
                 selection = AgentRouteSelection(
                     requested_agent_id=requested,
                     selected_agent_id=agent.get_contract().id,
                     capability=capability,
                     match_score=score,
-                    selection_reason="capability_match",
+                    selection_reason=route.selection_reason,
                 )
             else:
                 agent, selection = self._route_best_or_fallback(task, requested, capability)

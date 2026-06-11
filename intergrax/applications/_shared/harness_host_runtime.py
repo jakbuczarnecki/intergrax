@@ -19,6 +19,15 @@ from intergrax.applications._shared.wiring import build_application_registry
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
+from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
+from intergrax.applications._shared.acp_checkpoint_host_wiring import (
+    resolve_host_agent_checkpoint_store,
+    resolve_host_compensation_queue_store,
+)
+from intergrax.applications._shared.declarative_tool_wiring import (
+    build_declarative_invoker_from_tool_wiring,
+)
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.applications._shared.observability_assembly_resolver import (
     assert_observability_assembly_valid,
@@ -88,6 +97,8 @@ class HarnessHostRuntime:
     evaluation: ApplicationEvaluationWiring
     critic: ApplicationCriticWiring
     nexus_loop: NexusLoop
+    agent_checkpoint_store: AgentCheckpointStore
+    compensation_queue_store: CompensationQueueStore
 
 
 def build_harness_host_runtime(
@@ -103,6 +114,7 @@ def build_harness_host_runtime(
     builders: dict[type, Any] | None = None,
     registry: AgentRegistry | None = None,
     checkpoint_store: TaskCheckpointPersistence | None = None,
+    agent_checkpoint_store: AgentCheckpointStore | None = None,
     notification_adapter: NotificationAdapter | None = None,
 ) -> HarnessHostRuntime:
     """
@@ -164,11 +176,23 @@ def build_harness_host_runtime(
     critic_wiring = wire_application_critic(environment, l1_client=l1_client)
     assert_critic_assembly_valid(critic_wiring, environment, l1_client=l1_client)
     task_memory = wire_task_memory_from_profile(environment)
+    declarative_tool_invoker = build_declarative_invoker_from_tool_wiring(env_wiring.tool_wiring)
+    resolved_agent_checkpoint_store = resolve_host_agent_checkpoint_store(
+        agent_checkpoint_store=agent_checkpoint_store,
+        checkpoints_db_path=checkpoints_db_path,
+    )
+    resolved_compensation_queue_store = resolve_host_compensation_queue_store(
+        checkpoints_db_path=checkpoints_db_path,
+    )
     nexus_loop = build_nexus_loop_from_environment(
         resolved_registry,
         env=environment,
         trace_store=observability.trace_store,
         checkpoint_store=checkpoint_store,
+        agent_checkpoint_store=resolved_agent_checkpoint_store,
+        compensation_queue_store=resolved_compensation_queue_store,
+        idempotency_store=reliability_wiring.idempotency_store,
+        declarative_tool_invoker=declarative_tool_invoker,
         notification_adapter=notification_adapter,
         runtime_events_db_path=observability.runtime_events_db_path,
         task_memory_store=task_memory.store,
@@ -187,7 +211,6 @@ def build_harness_host_runtime(
     from intergrax.applications._shared.reliability_wiring import apply_reliability_governance_wiring
 
     apply_reliability_governance_wiring(nexus_loop, environment)
-    _ = checkpoints_db_path
     return HarnessHostRuntime(
         manifest=resolved_manifest,
         environment=environment,
@@ -201,4 +224,6 @@ def build_harness_host_runtime(
         evaluation=evaluation_wiring,
         critic=critic_wiring,
         nexus_loop=nexus_loop,
+        agent_checkpoint_store=resolved_agent_checkpoint_store,
+        compensation_queue_store=resolved_compensation_queue_store,
     )

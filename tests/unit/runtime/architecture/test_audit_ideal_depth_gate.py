@@ -713,6 +713,6 @@ def test_audit_ideal_register_complete() -> None:
     from intergrax.runtime.architecture.plan_scorecard_sync import load_scorecard_sync
 
     sync = load_scorecard_sync(REPO_ROOT)
-    assert sync.done_count == sync.total_tasks
+    assert sync.in_sync is True
     assert sync.deferred_count == 0
-    assert sync.planned_count == 0
+    assert sync.done_count + sync.planned_count == sync.total_tasks

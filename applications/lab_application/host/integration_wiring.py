@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from intergrax.agents.persistence.checkpoint_wiring import open_agent_checkpoint_store
+from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.relational_store.sqlite.bundle import (
     SQLiteIntegrationBundle,
@@ -47,6 +49,7 @@ class LabIntegrationWiring:
     trace_store: RunTraceWriter
     runtime_event_store: RuntimeEventPersistence | None
     checkpoint_store: TaskCheckpointPersistence
+    agent_checkpoint_store: AgentCheckpointStore
     notification_adapter: NotificationAdapter
     interaction_adapter: InteractionAdapter
     trace_db_path: Path | None
@@ -178,12 +181,19 @@ def wire_lab_integrations(
     harness_notify_slug = profile.slug_for_category(IntegrationCategory.NOTIFICATION_CHANNEL)
     default_notify = harness_notify_slug if harness and harness_notify_slug is not None else "log"
 
+    agent_ckpt_path: Path | None = None
+    if checkpoints_db_path is not None:
+        agent_ckpt_path = checkpoints_db_path.parent / "agent_checkpoints.db"
+    elif sqlite_bundle.paths.task_checkpoints is not None:
+        agent_ckpt_path = sqlite_bundle.paths.task_checkpoints.parent / "agent_checkpoints.db"
+
     return LabIntegrationWiring(
         profile=profile,
         sqlite_bundle=sqlite_bundle,
         trace_store=trace_store,
         runtime_event_store=runtime_event_store,
         checkpoint_store=sqlite_bundle.task_checkpoint_store,
+        agent_checkpoint_store=open_agent_checkpoint_store(agent_ckpt_path),
         notification_adapter=notification_adapter,
         interaction_adapter=interaction_adapter,
         trace_db_path=trace_db_path,

@@ -5,12 +5,13 @@ import pytest
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.agent_engine import AgentEngine
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_execution_result import AgentExecutionStatus
+from intergrax.contracts.agent_step import AgentStep, StepOutput
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from testing_support.builder import (
     FakeLLMAdapter,
     build_fake_embedding_manager,
@@ -19,15 +20,7 @@ from testing_support.builder import (
 )
 
 
-class _ContractFakePipeline(RuntimePipeline):
-    async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
-        answer = "OK"
-        state.raw_answer = answer
-        state.runtime_answer = RuntimeAnswer(run_id=state.run_id, answer=answer)
-        return state.runtime_answer
-
-
-class _ContractFakeAgent(Agent):
+class _ContractUaepAgent(Agent):
     def get_contract(self) -> AgentContract:
         return AgentContract(
             id="test",
@@ -44,18 +37,34 @@ class _ContractFakeAgent(Agent):
             enable_rag=True,
             production_mode=False,
         )
-        config.pipeline = _ContractFakePipeline()
         return RuntimeContext.build(
             config=config,
             session_manager=build_in_memory_session_manager(),
         )
+
+    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+        _ = context
+        return [AgentStep(step_id="s1", step_name="only", step_index=0)]
+
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+        _ = ctx
+        return StepOutput(step_id=step.step_id, summary="OK")
+
+    def decide_after_step(
+        self,
+        step: AgentStep,
+        output: StepOutput | None,
+        ctx: RuntimeExecutionContext,
+    ) -> AgentDecision:
+        _ = step, output, ctx
+        return AgentDecision(type=AgentDecisionType.COMPLETE, reason="done")
 
 
 @pytest.mark.asyncio
 @pytest.mark.integration
 @pytest.mark.gate
 async def test_agent_engine_run_with_result_returns_canonical_shape():
-    agent = _ContractFakeAgent()
+    agent = _ContractUaepAgent()
     engine = AgentEngine({"test": agent})
 
     request = RuntimeRequest(

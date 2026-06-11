@@ -26,11 +26,11 @@ def _master_register_section(register_text: str) -> str:
 
 
 def _row_status(line: str) -> str | None:
-    if "| **Deferred" in line:
+    if "**Deferred" in line:
         return "deferred"
-    if "| **Done**" in line or "| **Done** " in line:
+    if "**Done**" in line:
         return "done"
-    if "| Planned |" in line:
+    if "**Planned**" in line or "| Planned |" in line:
         return "planned"
     return None
 

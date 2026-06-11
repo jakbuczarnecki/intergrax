@@ -8,6 +8,14 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from intergrax.contracts.agent_run_enums import CognitivePattern
+from intergrax.contracts.memory_scope import MemoryScope
+from intergrax.contracts.agent_contract_section12 import (
+    DEFAULT_FAILURE_MODES,
+    DEFAULT_INPUT_SCHEMA,
+    DEFAULT_OUTPUT_SCHEMA,
+    DEFAULT_VALIDATION_RULES,
+)
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.skills.core.contracts import SkillManifest
 from intergrax.tools.core.contracts import ToolContract
@@ -39,8 +47,8 @@ class AgentContract(BaseModel):
     description: str
     version: str = "1.0.0"
     capabilities: List[str] = Field(default_factory=list)
-    input_schema: Optional[Dict[str, Any]] = None
-    output_schema: Optional[Dict[str, Any]] = None
+    input_schema: Dict[str, Any] = Field(default_factory=lambda: dict(DEFAULT_INPUT_SCHEMA))
+    output_schema: Dict[str, Any] = Field(default_factory=lambda: dict(DEFAULT_OUTPUT_SCHEMA))
     skills: List[SkillManifest] = Field(
         default_factory=list,
         description="Composable skill packs from the skill catalog (§7.1.8).",
@@ -68,6 +76,18 @@ class AgentContract(BaseModel):
         description="On-call contact for certified/production agents (AUDIT-IDEAL-31.1).",
     )
     runbook_ref: Optional[str] = None
+    memory_scope: MemoryScope = Field(
+        default=MemoryScope.USER,
+        description="Default memory namespace scope (architecture §30.9).",
+    )
+    memory_namespace_template: Optional[str] = Field(
+        default=None,
+        description="Template for custom scope; placeholders §30.9.",
+    )
+    default_rag_collection: Optional[str] = Field(
+        default=None,
+        description="Default RAG collection id for this agent.",
+    )
     prompt_binding_id: Optional[str] = Field(
         default=None,
         description="Primary prompt registry id bound to this agent (IDEAL-17.5).",
@@ -76,5 +96,21 @@ class AgentContract(BaseModel):
         default=None,
         description="Optional modality profile id for media/tool plane filtering (IDEAL-18.2).",
     )
-    validation_rules: List[str] = Field(default_factory=list)
-    failure_modes: List[str] = Field(default_factory=list)
+    validation_rules: List[str] = Field(
+        default_factory=lambda: list(DEFAULT_VALIDATION_RULES),
+    )
+    failure_modes: List[str] = Field(
+        default_factory=lambda: list(DEFAULT_FAILURE_MODES),
+    )
+    cognitive_pattern: CognitivePattern | None = Field(
+        default=None,
+        description="ACP cognitive pattern id (architecture §24 · ACP-0b).",
+    )
+    pattern_version: str | None = Field(
+        default=None,
+        description="Pattern implementation version, e.g. acp.v1.",
+    )
+    pattern_config: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Pattern-specific configuration (max_react_iterations, etc.).",
+    )

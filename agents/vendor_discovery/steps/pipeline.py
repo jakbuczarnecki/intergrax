@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, Sequence
 
-from intergrax.agents.uaep_pipeline import run_pipeline_step
+from intergrax.agents.authoring.uaep_pipeline_bridge import run_pipeline_step
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.llm_adapters._shared.adapter_response_builders import (

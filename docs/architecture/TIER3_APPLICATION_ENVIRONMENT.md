@@ -1,15 +1,45 @@
 # Tier-3 Application Environment, Sandbox, and Shadow Workspace
 
-**Status:** Canonical architecture (domain pair 1:1)  
+**Status:** Canonical architecture (domain pair 1:1) · **Application authoring gate:** §24–§45 + APP-CON-* (host environments)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Plan (1:1):** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
-**Audit layers:** 28  
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §26  
+**Audit layers:** 3, 28  
 **Audit instruction:** [`guides/audit/TIER3_APPLICATION_ENVIRONMENT.md`](../guides/audit/TIER3_APPLICATION_ENVIRONMENT.md)  
----
+**Agent cooperation:** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §30 · §35–§39 · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix H · AC  
 
 ---
 
+## Table of contents
+
+| § | Topic |
+|---|--------|
+| [§20](#20-shadow-workspace-model) | Shadow workspace model |
+| [§21](#21-sandbox-model) | Sandbox model |
+| [§22](#22-application-environment-profile-canonical) | **ApplicationEnvironmentProfile** (composition root) |
+| [§23](#23-application-interaction-postures-canonical) | Interaction postures, routing, scenarios |
+| [§24](#24-application-contract) | **Application contract** (`ApplicationManifest`) |
+| [§25](#25-application-interface-run_task-facade-harnessapplication-and-applicationhost) | **Application interface:** `run_task()`, `HarnessApplication`, `ApplicationHost` |
+| [§26](#26-application-execution-result) | **Application execution result** (Plane A) |
+| [§27](#27-application-roster-and-registry-assembly) | Roster and registry assembly |
+| [§28](#28-application-environment-architecture-app) | **Application Environment Architecture (APP)** |
+| [§29](#29-tier-and-terminology-canon-application) | Tier and terminology canon (application) |
+| [§30](#30-three-environment-control-modes) | Three environment control modes |
+| [§31](#31-author-facing-harnessapplication-facade) | Author-facing `HarnessApplication` facade |
+| [§32](#32-applicationhost-hook-surface) | **ApplicationHost hook surface** |
+| [§33](#33-dual-observability-application-and-agent-planes) | Dual observability planes |
+| [§34](#34-per-agent-binding-from-the-application) | Per-agent binding from application |
+| [§35](#35-use-case-catalog-application--environment) | Use-case catalog |
+| [§36](#36-final-architecture-application--agent--harness-cooperation) | Final architecture synthesis |
+| [§37](#37-pre-implementation-operational-contracts-app-con) | Pre-implementation operational contracts |
+| [§38](#38-execution-responsibility-stack-l4-application) | Execution stack: L4 application |
+| [§39](#39-organizational-policy-envelope--virtual-workforce) | Organizational policy envelope |
+| [§40](#40-production-reliability-safety-and-release-gates-tier-3) | Production reliability and release gates |
+| [§45](#45-checklist-for-new-application-implementation) | New application checklist |
+
+---
+
+---
 # 20. Shadow Workspace Model
 
 A Shadow Workspace is an isolated temporary workspace used to perform work without directly modifying the main environment.
@@ -85,8 +115,17 @@ Tier-3 hosts are configured through **`ApplicationEnvironmentProfile`** — a ty
 | `PromptProfile` | YAML prompt catalog path |
 | `ReliabilityProfile` | Idempotency, circuit breaker, checkpoint |
 | `ObservabilityProfile` | Trace, OTEL, metrics plugins |
-| `OrchestrationProfile` | Planner/classifier kinds, delegation depth |
+| `CostProfile` / `ComplianceProfile` | Budgets, reactions, compliance domain class |
+| `EvaluationProfile` / `CriticProfile` / `AdaptiveProfile` | Eval, PEV, L4 adaptive loop (when enabled) |
+| `ReasoningProfile` | Planner/classifier LLM ids, denied models |
+| `OrchestrationProfile` | Planner/classifier kinds, delegation depth, long-running |
+| `ScalingProfile` / `HostDeploymentProfile` | ECP cross-ref, deploy posture |
+| `GovernanceProfile` / `IntegrationGovernanceProfile` | Lifecycle and integration governance |
 | `ApplicationGraphSpec` | Declarative multi-agent topology |
+| `OrganizationalPolicyEnvelope` | Virtual org / workforce simulation (§39) |
+| `ShadowWorkspaceProfile` / `SandboxProfile` | Isolated workspaces (§20–§21) |
+| `ApplicationFeatures` | Lab vs product surface toggles |
+| `domain_policy_fragments` | Product-specific `RuntimePolicyBundle` slices |
 
 **Contract:** `intergrax/applications/contracts/environment_profile.py`
 
@@ -331,5 +370,891 @@ Phase H-APP (**Done**) delivered unified `ApplicationEnvironmentProfile` and `wi
 | Scaffold parity | H-APP-DOC.4 + H-APP-WIRING Done | Scaffold defaults: `INCLUDE_TASK_CONTROL`, interactions, scheduler | Queue worker still opt-in |
 
 **Paydown:** [Phase H-APP-WIRING](../plan/TIER3_APPLICATION_ENVIRONMENT.md) (Band 2aw) **Done** (2026-06-09). Default queue: §6.1 gate maintenance only.
+
+---
+
+# 24. Application Contract
+
+Every deployable Tier-3 environment MUST declare a clear **application contract** via **`ApplicationManifest`**.
+
+The contract MUST be easy for humans and LLMs to understand — symmetric to **`AgentContract`** (ACP §12).
+
+## 24.1 Minimum required fields
+
+```text
+ApplicationManifest:
+    app_id                    # stable slug, e.g. legal_application
+    name
+    description
+    version
+    profile                   # LAB | PRODUCT
+    route_prefix              # HTTP API prefix, e.g. /v1/legal
+    env_prefix                # MY_APP_* environment variables
+    default_host / default_port
+    default_capability        # optional API default routing token
+    agents: list[AgentBinding]
+    integration_profile       # default IntegrationProfile when environment omits
+    features: ApplicationFeatures
+    environment: ApplicationEnvironmentProfile | null
+```
+
+**Contract module:** `intergrax/applications/contracts/manifest.py`
+
+## 24.2 AgentBinding (roster entry contract)
+
+Each roster entry binds a **capability** to a **concrete Tier-2 implementation**:
+
+```text
+AgentBinding:
+    agent_type | import_path          # Tier-2 class (prefer AgentBinding.mount)
+    factory | factory_path             # Tier-3 factory for configured agents
+    capabilities: list[str]            # routing tokens (normative for Nexus)
+    contract_id: str | null
+    enabled / default / requires_uaep
+    memory_scope_override
+    rag_collection_override
+    tool_allowlist_extra / tool_denylist
+    org_role_id                        # virtual workforce role (§39)
+    budget_slice                       # per-agent limits (ACP §25.5 · §34)
+    config: dict                       # lightweight factory options — not secrets
+```
+
+**Routing invariant (normative — §37.4):** Nexus selects agents by **`capabilities[]`** match on `Task.required_capability` — **not** by Python class name in the task payload. Class name appears **only** in `AgentBinding` for wiring.
+
+## 24.3 Application vs product vs agent
+
+| Artifact | Tier | Contract | Lives in |
+|----------|------|----------|----------|
+| **Agent** | 2 | `AgentContract` | `agents/<slug>/` |
+| **Application environment** | 3 | `ApplicationManifest` + `ApplicationEnvironmentProfile` | `applications/<app>/` |
+| **Product** | — | Business offering | product `ARCHITECTURE.md` + Tier-3 host |
+
+**Rule:** business logic and cognitive steps live in Tier-2 agents. Tier-3 hosts **compose** harness capabilities — they do not implement domain `on_next_step` loops (ACP §38).
+
+---
+
+# 25. Application Interface: `run_task()` Facade, `HarnessApplication`, and `ApplicationHost`
+
+Symmetric to ACP §13 — application authors have **one task entry** and **optional hook surface** for dynamic behavior.
+
+## 25.1 Primary author API — `UnifiedTaskRunner.run_task()`
+
+**Authors SHOULD route all surfaces through one task lifecycle:**
+
+```text
+result = await task_runner.run_task(task: Task) -> TaskResult
+```
+
+**Internal engine:** surface adapter → normalize `Task` → `NexusLoop.handle_task()` → graph execution → `TaskResult` + `ApplicationRunSummary` (§26). Authors MUST NOT reimplement Nexus orchestration in host `factory.py`.
+
+| Responsibility | Owner |
+|----------------|-------|
+| HTTP/MCP/Slack intake, auth, tenant | **Tier-3 host** |
+| `Task` construction (`capability`, metadata, identity) | **Tier-3 host** |
+| Classifier, planner, graph execution | **NexusLoop** (Tier-1) |
+| Agent cognitive steps | **Tier-2** (`Agent.run()` / `on_next_step`) |
+| Policy, trace, budgets on agent steps | **HarnessKernel** (ACP §38) |
+| Dynamic environment reactions at Nexus boundaries | **ApplicationHost** hooks (§32) |
+
+## 25.2 Fluent builder — `HarnessApplication`
+
+**Authors MAY use the lab/product fluent facade** (DX-2.1):
+
+```text
+app = (
+    HarnessApplication("my_lab")
+    .agents(EchoAgent, ResearchAgent)
+    .integrations(IntegrationProfile.lab_stack())
+    .environment(ApplicationEnvironmentProfile.lab_defaults())
+    .graph(AgentGraph()...)
+    .mode(ExecutionMode.BALANCED)
+    .hooks(MyApplicationHost())
+    .build_fastapi()
+)
+```
+
+| Method | Role |
+|--------|------|
+| `.agents(*types)` | Roster via `AgentBinding.mount` |
+| `.environment(profile)` | Full `ApplicationEnvironmentProfile` |
+| `.graph(AgentGraph)` | Declarative topology → `graph_spec` |
+| `.hooks(ApplicationHost)` | Imperative Nexus hook overrides (§32) |
+| `.from_files(env_path, agents_path)` | YAML round-trip (DX-5.3) |
+| `.build_runtime()` / `.build_fastapi()` | `HarnessHostRuntime` assembly |
+
+**Module:** `intergrax/harness/app.py`
+
+## 25.3 Imperative API — `ApplicationHost.on_hook()`
+
+**Authors SHOULD implement dynamic environment behavior through typed hooks** — not private orchestration loops:
+
+```text
+class MyApplicationHost:
+    def on_hook(self, point: HookPoint, context: HookContext) -> HookResult | None:
+        ...
+```
+
+Return **`None`** to defer to default Nexus/harness behavior. Return **`HookResult`** to allow, block, modify, or escalate (§32).
+
+**Protocol:** `intergrax/harness/application_host.py`  
+**Bridge:** `intergrax/harness/hooks.py` → `ApplicationHostMiddleware`
+
+> **Implementation note (APP-GAP-01):** `HarnessApplication.build_runtime()` and `build_harness_host_runtime()` MUST mount `ApplicationHost` into the Nexus middleware pipeline via `merge_host_into_pipeline`. Until wired, hooks are documentation-only — tracked in [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) Phase **H-APP-CON**.
+
+## 25.4 Framework surface (Tier-3 vs author visibility)
+
+| Surface | Who implements | Author visibility |
+|---------|----------------|-------------------|
+| `ApplicationManifest` / `build_*_manifest()` | Product author | **Public — composition contract** |
+| `ApplicationEnvironmentProfile` | Product author | **Public — governance envelope** |
+| `wire_application_environment()` | Framework | **Public — call once at bootstrap** |
+| `build_harness_host_runtime()` | Framework | **Public — preferred factory path** |
+| `HarnessApplication` | Framework facade | **Public — lab/quickstart** |
+| `ApplicationHost.on_hook` | Subclass / Protocol impl | **Public — environment reactions** |
+| `host/factory.py` FastAPI lifespan | Product author | **Public — surface mounting only** |
+| `NexusLoop.handle_task` | Tier-1 | **Internal — do not call from product business code** |
+| `Agent.run` / `on_next_step` | Tier-2 | **Internal to application** — invoked by Nexus per graph node |
+
+## 25.5 Legacy and forbidden paths
+
+| Path | Status |
+|------|--------|
+| Ad-hoc `NexusLoop(...)` construction in every host | **Deprecated** — use `build_nexus_loop_from_environment` |
+| `getattr(manifest, "field")` in wiring | **Forbidden** — typed manifest access (H-APP.0.3) |
+| Business orchestration `while` loops in Tier-3 | **Forbidden** — use `graph_spec` + Nexus |
+| Import `agents.*` business rules into `factory.py` | **Forbidden** — roster + profile only |
+| `Application.on_next_orchestration_step()` as public API | **Rejected** — duplicates NexusLoop (APP-INV-03) |
+
+**Guide:** [`applications/USAGE.md`](../../applications/USAGE.md) · [`guides/EXTENSION_AUTHOR_GUIDE.md`](../guides/EXTENSION_AUTHOR_GUIDE.md) §0 · **Plan:** Phase **H-APP** + **H-APP-CON**.
+
+---
+
+# 26. Application Execution Result
+
+Every completed `Task` SHOULD expose a structured **application-level** result for operators and product UIs.
+
+## 26.1 Plane A — `ApplicationRunSummary`
+
+**Canonical type:** `intergrax/contracts/application_run_summary.py`
+
+```text
+ApplicationRunSummary:
+    schema_version: application_run_summary.v1
+    task_id
+    graph_id
+    terminal_status
+    agent_invocations: list[AgentInvocationSummary]
+    total_agents / total_steps / total_llm_tokens
+    completed_at
+```
+
+Populated by `build_application_run_summary()` on Nexus task completion (ACP-OBS-2). Attached to `TaskResult.metadata` under `application_run_summary.v1`.
+
+## 26.2 Plane B — per-agent traces
+
+Each graph node produces **`AgentRunResult`** + **`AgentRunTrace`** (ACP §31). Application authors inspect Plane B in pytest via direct `agent.run()` or from task metadata when wired.
+
+| Plane | Audience | Primary type |
+|-------|----------|--------------|
+| **A — Application** | Ops, product dashboards, multi-agent UX | `ApplicationRunSummary` |
+| **B — Agent** | Agent authors, eval, debug | `AgentRunTrace` |
+
+**Rule:** Tier-3 hosts MUST NOT parse raw trace DB tables for product UX when `ApplicationRunSummary` is available on `TaskResult`.
+
+## 26.3 TaskResult contract (host-facing)
+
+```text
+TaskResult:
+    task_id
+    status
+    output / structured_output
+    metadata:
+        application_run_summary.v1  → ApplicationRunSummary
+        trace_id / graph_id         → join keys for observability spine
+```
+
+---
+
+# 27. Application Roster and Registry Assembly
+
+Nexus discovers agents through **`AgentRegistry`** built at host bootstrap — symmetric to ACP §15.
+
+## 27.1 Bootstrap pipeline
+
+```text
+ApplicationManifest
+    → ApplicationBuildContext.for_manifest(...)
+    → build_application_registry(manifest, ctx, builders=...)
+    → AgentRegistry (enabled bindings only)
+    → NexusLoop(registry, ...)
+```
+
+**Module:** `intergrax/applications/_shared/wiring.py`
+
+## 27.2 Factory resolution order
+
+For each `AgentBinding`, instance creation order (normative):
+
+```text
+1. binding.factory(ctx, binding)     # typed callable
+2. builders[agent_type]              # type-keyed map
+3. factory_path import               # scaffold/YAML only
+4. agent_type()                      # zero-arg constructor
+```
+
+## 27.3 Conformance checks
+
+| Check | Module | When |
+|-------|--------|------|
+| Manifest round-trip | `test_manifest_conformance.py` | CI gate |
+| Tool/skill ⊆ environment | `EnvironmentSkillToolConsistencyCheck` | `wire_application_environment` |
+| Capability routing | `check_capability_routing.py` | CI gate (ACP-CON-6) |
+| Agent registry bypass | `check_agent_registry_bypass.py` | Tier-2 must not import integrations directly |
+
+## 27.4 Registry anti-patterns
+
+| ID | Anti-pattern | Correct |
+|----|--------------|---------|
+| REG-AP-01 | Hardcoded agent class in NexusLoop subclass | `AgentBinding` + capability token |
+| REG-AP-02 | Dynamic `importlib` roster without manifest | `ApplicationManifest` + typed builders |
+| REG-AP-03 | Disabled agent still in routing defaults | `enabled=False` on binding |
+| REG-AP-04 | Same capability on two defaults | Exactly one `default=True` per capability class |
+
+---
+
+# 28. Application Environment Architecture (APP)
+
+Define the **Application Environment Architecture (APP)** — how Tier-3 environments are authored, how they bind Tier-2 agents, and how **environment control** (declarative, rules, hooks) interacts with Nexus **without** collapsing the harness into application classes.
+
+APP answers:
+
+> **How does a developer build a production-grade application environment quickly — business app, lab, virtual organization, or simulation — while staying inside harness governance?**
+
+APP does **not** replace Nexus, redefine tiers, or introduce a second agent execution engine.
+
+## 28.1 Design invariants
+
+| ID | Invariant |
+|----|-----------|
+| **APP-INV-01** | Nexus remains Agent OS — global orchestration, policy, HITL, multi-agent graph (ACP-INV-01) |
+| **APP-INV-02** | All work normalizes to **`Task` → `UnifiedTaskRunner` → `NexusLoop`** — no surface-specific runtime forks |
+| **APP-INV-03** | Business logic lives in **Tier-2 agents** — Tier-3 hosts MUST NOT implement domain cognitive loops |
+| **APP-INV-04** | Configuration: **manifest + profile in Tier-3**; **contract + `on_next_step` in Tier-2** (ACP-INV-06) |
+| **APP-INV-05** | Side effects at environment boundary via **hooks, policy, webhooks** — never ad-hoc vendor SDKs in `factory.py` |
+| **APP-INV-06** | **`ApplicationEnvironmentProfile`** is the single composition root for harness slices (IDEAL §17) |
+| **APP-INV-07** | Imperative control via **`ApplicationHost` + `HookPoint`** — not duplicate `NexusLoop` subclasses |
+| **APP-INV-08** | Organizational policy is **Tier-3 data** — agents consume merged context; hosts declare envelope (§39) |
+| **APP-INV-09** | **`run_task()` / HTTP `/run`** is the application entry; **`Agent.run()`** is the agent entry (ACP-INV-09) |
+| **APP-INV-10** | Every enabled profile slice MUST wire through `*_runtime_bridge.py` — no orphan Pydantic fields |
+
+## 28.2 Rejected architecture (audit outcome)
+
+```text
+REJECTED: Application class with on_next_orchestration_step() mirroring Agent.on_next_step
+REJECTED: Tier-3 host implementing multi-agent pipelines in factory.py while-loops
+REJECTED: Application owns AgentRegistry, PolicyEngine, or GraphExecutor directly
+REJECTED: Separate runtime fork per product posture (reactive vs daemon vs batch)
+REJECTED: Embedding org compliance rules only in agent source (§39 · ACP-INV-12)
+REJECTED: New 22nd domain pair duplicating ORCHESTRATION + UAEP inside "Application Contracts"
+```
+
+**Rationale:** The harness is the product; applications are **replaceable compositions** — same as agents (ACP §21.3).
+
+---
+
+# 29. Tier and Terminology Canon (Application)
+
+Complements ACP §22 — application author vocabulary.
+
+## 29.1 Four tiers — application lens
+
+| Term | Tier | One-sentence definition |
+|------|------|-------------------------|
+| **Application** | 3 | Deployable **environment**: manifest, profile, roster, surfaces, deploy artifacts |
+| **Application host** | 3 | Running process: `factory.py` + FastAPI/MCP + `HarnessHostRuntime` |
+| **HarnessApplication** | 3 | Fluent builder facade for lab/quickstart (DX-2) |
+| **ApplicationEnvironmentProfile** | 3 | Typed umbrella of all harness control-plane slices |
+| **Agent** | 2 | Domain worker invoked **per graph node** — not a host OS process |
+| **Nexus** | 1 | Agent OS executing `Task` graphs |
+| **Harness (practical)** | 0+1+3 | Platform catalogs + Nexus + application wiring |
+
+## 29.2 Runnable application instance
+
+A **single host process** materializes:
+
+```text
+ApplicationManifest + ApplicationEnvironmentProfile
+    → wire_application_environment()
+    → build_application_registry()
+    → build_harness_host_runtime()
+        → NexusLoop + UnifiedTaskRunner + observability/reliability wiring
+    → mount HTTP / MCP / intake / scheduler surfaces
+```
+
+Per **unit of work**:
+
+```text
+Surface → Task → UnifiedTaskRunner.run_task() → NexusLoop.handle_task()
+    → graph node → Agent.run() → on_next_step loop (ACP §38)
+    → ApplicationRunSummary on completion
+```
+
+## 29.3 Responsibility matrix (application author)
+
+| Concern | Tier-3 Application | Tier-1 Nexus | Tier-2 Agent |
+|---------|-------------------|--------------|--------------|
+| User intake / chat API | **owner** | — | — |
+| `Task` construction | **owner** | consumes | — |
+| Capability on `Task` | **owner** (L1–L4 §23.3) | routes | declares |
+| `ApplicationGraphSpec` | **owner** | seeds plan | — |
+| `OrganizationalPolicyEnvelope` | **owner** | enforces | consumes §39 |
+| Multi-agent orchestration | configures | **owner** | participates |
+| Domain reasoning | — | — | **owner** (`on_next_step`) |
+| Tool/skill catalogs enabled | **owner** (profiles) | executes | uses via gateways |
+| HTTP auth / tenant | **owner** (`IdentityProfile`) | — | — |
+| Trace / cost dashboards | **owner** (profiles) | emits | Plane B trace |
+
+---
+
+# 30. Three Environment Control Modes
+
+Symmetric to ACP §23 (three cognition planes) — applications choose **how** environment behavior is expressed.
+
+```mermaid
+flowchart TB
+    subgraph M1["Mode 1 — Declarative profile"]
+        AEP[ApplicationEnvironmentProfile]
+        GS[ApplicationGraphSpec]
+        AEP --> GS
+    end
+
+    subgraph M2["Mode 2 — Rules envelope"]
+        PR[PolicyRulesProfile]
+        ORG[OrganizationalPolicyEnvelope]
+        PR --> ORG
+    end
+
+    subgraph M3["Mode 3 — Imperative hooks"]
+        AH[ApplicationHost.on_hook]
+        HP[HookPoint]
+        AH --> HP
+    end
+
+  M1 --> NL[NexusLoop.handle_task]
+  M2 --> NL
+  M3 --> NL
+```
+
+| Mode | Question | Primary types | When to use |
+|------|----------|---------------|-------------|
+| **1 — Declarative** | What catalogs, graph, posture, execution mode? | `ApplicationEnvironmentProfile`, `ApplicationGraphSpec` | Default — 80% of products |
+| **2 — Rules** | What org/regulatory constraints apply to all agents? | `PolicyRulesProfile`, `OrganizationalPolicyEnvelope` | Compliance, virtual workforce, simulation |
+| **3 — Imperative hooks** | What dynamic reaction at Nexus boundary? | `ApplicationHost`, `HookResult`, `HookPoint` | Budget exceed, custom intake, block agent selection |
+
+**Anti-pattern APP-AP-01:** Implementing Mode 1 topology inside Mode 3 hooks — use `graph_spec` instead.
+
+**Anti-pattern APP-AP-02:** Encoding Mode 2 rules only in agent `if org == "acme"` — use envelope (§39).
+
+**Canon:** posture and routing detail — §23; agent consumption — ACP §30.
+
+---
+
+# 31. Author-facing `HarnessApplication` Facade
+
+Symmetric to ACP §29 (author-facing `run()` facade).
+
+## 31.1 Target author workflow
+
+```text
+1. Scaffold: python -m intergrax.scaffold new-application <slug> [--profile lab|product]
+2. Declare ApplicationManifest + ApplicationEnvironmentProfile (manifest.py, environment_profile.py)
+3. Register AgentBinding roster with factories
+4. Optional: subclass ApplicationHost for HookPoint reactions
+5. Wire factory.py via build_harness_host_runtime() — mount surfaces
+6. Test: pytest applications/<app>/ tests + Task → ApplicationRunSummary assertion
+7. Prod: same profile, different organizational envelope per tenant (UC-11)
+```
+
+## 31.2 Progressive disclosure (DX-0.4)
+
+| Stage | Command | Delivers |
+|-------|---------|----------|
+| Minimal | `new-stack --minimal` | Harness-only factory |
+| Standard | `new-application` / `new-stack` | Docker, MCP, deploy doc |
+| Promote | `scaffold expand <slug>` | Upgrade minimal → standard |
+
+## 31.3 Host factory responsibilities (normative)
+
+`applications/<app>/host/factory.py` MAY:
+
+- load settings from env (`Settings.from_env()`)
+- call `build_harness_host_runtime(manifest, environment, ...)`
+- mount HTTP routes, MCP, interaction intake, task control, scheduler
+- attach product-specific middleware **only** when profile-driven wiring insufficient
+
+`factory.py` MUST NOT:
+
+- implement agent business steps
+- construct `NexusLoop` with ad-hoc kwargs bypassing profile
+- import vendor SDKs for domain operations
+
+---
+
+# 32. ApplicationHost Hook Surface
+
+Symmetric to ACP §32 (`on_next_step`) — **event-driven** environment control, not a cognitive step loop.
+
+## 32.0 Author readability and typed contracts (normative)
+
+Application hook authors MUST be able to answer from code alone:
+
+1. At which **HookPoint** does this reaction run?
+2. What **HookAction** can be returned (`allow` | `block` | `modify` | `escalate`)?
+3. Does the hook defer to default behavior (`return None`)?
+
+Untyped dict mutation of Nexus internals from Tier-3 is **not supported** — use `HookResult.modified_payload` only where documented for the hook point.
+
+## 32.1 Hook catalog (authoring map)
+
+| HookPoint group | Typical application use |
+|-----------------|-------------------------|
+| `BEFORE_TASK_INTAKE` / `AFTER_TASK_INTAKE` | Normalize metadata, attach org_id, reject intake |
+| `BEFORE_CLASSIFICATION` / `AFTER_CLASSIFICATION` | Override classifier hints, audit routing |
+| `BEFORE_PLANNING` / `AFTER_PLANNING` | Inject plan constraints, validate graph seed |
+| `BEFORE_AGENT_SELECTION` / `AFTER_AGENT_SELECTION` | Block agent, force capability swap |
+| `BEFORE_HUMAN_APPROVAL` / `AFTER_HUMAN_APPROVAL` | Custom HITL messaging hooks |
+| `BEFORE_FINALIZATION` / `AFTER_FINALIZATION` | Product webhooks, business outcome emit |
+| `BEFORE_TRACE_PERSIST` | Redaction labels (prefer OBS profile) |
+
+Full enum: `intergrax/runtime/hooks/hook_point.py`
+
+## 32.2 HookResult contract
+
+```text
+HookResult:
+    action: allow | block | modify | escalate
+    modified_payload: dict | null
+    reason: str | null
+```
+
+## 32.3 Example — block agent on policy
+
+```python
+from intergrax.harness.application_host import ApplicationHost
+from intergrax.runtime.hooks.hook_context import HookContext, HookResult, HookAction
+from intergrax.runtime.hooks.hook_point import HookPoint
+
+
+class StrictOrgHost:
+    def on_hook(self, point: HookPoint, context: HookContext) -> HookResult | None:
+        if point != HookPoint.BEFORE_AGENT_SELECTION:
+            return None
+        denied = context.runtime_state.get("org_denied_agents", [])
+        if context.agent_id in denied:
+            return HookResult(action=HookAction.BLOCK, reason="org_policy_denied")
+        return None
+```
+
+## 32.4 ApplicationHost vs Agent.on_next_step
+
+| Dimension | `ApplicationHost.on_hook` | `Agent.on_next_step` |
+|-----------|---------------------------|----------------------|
+| Layer | L4 environment boundary | L2 domain cognition |
+| Frequency | Nexus lifecycle events | Every agent iteration |
+| May invoke tools? | **No** — use agents | **Yes** via gateways |
+| May select next graph agent? | **Indirect** — block/modify selection | **No** — use `StepOutcome` handoff/delegate |
+| Replaces NexusLoop? | **No** | **No** |
+
+## 32.5 Code map
+
+| Component | Status | Path |
+|-----------|--------|------|
+| `ApplicationHost` Protocol | **Done** DX-5.1 | `intergrax/harness/application_host.py` |
+| `ApplicationHostMiddleware` | **Done** DX-5.2 | `intergrax/harness/hooks.py` |
+| Pipeline merge helper | **Done** DX-5.2 | `merge_host_into_pipeline` |
+| Wired in `build_harness_host_runtime` | **Gap** APP-CON-1 | plan H-APP-CON |
+| `HarnessApplication.hooks()` | **Partial** — stored not mounted | `intergrax/harness/app.py` |
+
+---
+
+# 33. Dual Observability: Application and Agent Planes
+
+Symmetric to ACP §31 — application authors operate primarily on **Plane A**.
+
+## 33.1 Plane definitions
+
+| Plane | Name | Primary consumer | Canonical type |
+|-------|------|------------------|----------------|
+| **A** | Application orchestration | Tier-3 ops, product UX | `ApplicationRunSummary` |
+| **B** | Agent session | Tier-2 authors, eval | `AgentRunTrace` |
+
+## 33.2 Join keys
+
+```text
+TaskResult.metadata["application_run_summary.v1"]  →  Plane A rollup
+TaskResult.metadata["trace_id"]                    →  OBS spine
+AgentRunResult.trace                               →  Plane B per node
+```
+
+## 33.3 Application observability profile
+
+Configure via `ObservabilityProfile` on environment — wired by `wire_application_observability()`:
+
+- trace DB path / in-memory lab mode
+- runtime events store
+- optional product debug surface (`ApplicationFeatures.debug_surface`)
+- OTEL / metrics plugins when enabled
+
+**Rule:** Tier-3 MUST NOT fork parallel trace pipelines — use harness spine ([`OBSERVABILITY.md`](OBSERVABILITY.md)).
+
+## 33.4 Compliance rollups (org environments)
+
+When `OrganizationalPolicyEnvelope` is set, Plane A dashboards SHOULD include policy verdict rollups from Plane B steps (ACP §39.5 · ACP-ORG-4).
+
+---
+
+# 34. Per-Agent Binding from the Application
+
+Application-side canon for ACP §30 — what Tier-3 declares so agents receive merged environment at `Agent.run()`.
+
+## 34.1 Merge pipeline (agent run time)
+
+```text
+ApplicationEnvironmentProfile
+    + AgentBinding slices (tools, memory, RAG, budget, org_role_id)
+    + Task metadata (tenant, user, matter_id, scenario hints)
+        → merge_environment() → EffectiveAgentRunEnvironment
+            → AgentStepContext.merged_environment
+```
+
+**Agent-side detail:** ACP §30 · `intergrax/agents/run_environment.py`
+
+## 34.2 Binding slices (normative)
+
+| Slice field | Affects at run time |
+|-------------|---------------------|
+| `tool_allowlist_extra` / `tool_denylist` | Merged tool policy |
+| `memory_scope_override` | Namespace on `memory_view` |
+| `rag_collection_override` | RAG gateway collection |
+| `org_role_id` | `OrganizationalPolicyContext` overlay §39 |
+| `budget_slice` | Per-agent token/cost caps §25.5 |
+
+## 34.3 Application token budgets
+
+| Tier | Owns |
+|------|------|
+| **Tier-3** | `CostProfile`, `AgentBinding.budget_slice`, `BudgetReactionProfile`, notification slugs |
+| **Tier-1** | Metering, hard caps, `BUDGET_*` events |
+| **Tier-2** | Read usage; soft strategy only |
+
+**Cross-plan:** ACP-TOK-2 (Planned) — kernel enforcement + host reaction hooks.
+
+## 34.4 Anti-patterns (application binding)
+
+| ID | Anti-pattern | Correct |
+|----|--------------|---------|
+| BIND-AP-01 | Secrets in `AgentBinding.config` | Integration profile + secret store |
+| BIND-AP-02 | Per-agent env vars read in agent code | `merge_environment` + metadata |
+| BIND-AP-03 | Different roster per surface without manifest | Single manifest; feature flags on binding `enabled` |
+| BIND-AP-04 | Org rules in agent `if` statements | `OrganizationalPolicyEnvelope` §39 |
+
+---
+
+# 35. Use-Case Catalog (Application + Environment)
+
+Canonical scenarios — all supported by the **same** harness path; differ in profile + roster + postures.
+
+| ID | Scenario | Entry | Environment pattern | Agent pattern |
+|----|----------|-------|---------------------|---------------|
+| **UC-A1** | Single-agent Q&A API | HTTP `POST …/run` | Reactive, explicit `capability` | One agent, one node |
+| **UC-A2** | Multi-agent pipeline | `Task` + `*.pipeline` or `graph_spec` | `ApplicationGraphSpec` chain | One class per role |
+| **UC-A3** | Always-on lab daemon | `HarnessApplication.serve()` | Daemon + debug surface | Passive until scheduled |
+| **UC-A4** | Slack / Teams product | Interaction intake | `wire_interaction_intake_service` | L2 routing §23.3 |
+| **UC-A5** | Background batch / index | Queue worker | Hybrid + `ReliabilityProfile` | Single or sharded agents |
+| **UC-A6** | Legal / research prod host | Product manifest | `ExecutionMode.STRICT` + critic | Contract-declared capabilities |
+| **UC-A7** | Virtual organization / workforce | `Task` + org profile | `OrganizationalPolicyEnvelope` + `org_role_id` | Same agent classes, different envelope |
+| **UC-A8** | Business simulation | `dispute_sim` / scenario graph | `graph_spec` + scenario bindings | Multi-role pipeline |
+| **UC-A9** | Eval / CI harness host | Batch `run_task` | Fixture `ApplicationEnvironmentProfile` | Assert `ApplicationRunSummary` |
+| **UC-A10** | YAML-driven lab | `HarnessApplication.from_files()` | DX-5.3 env.yaml | Roster from agents.yaml |
+
+**Flexibility rule:** UC-A2 and UC-A7 stack — graph topology + org envelope are independent dimensions.
+
+**Scenario recipes (concrete):** §23.5.
+
+---
+
+# 36. Final Architecture: Application + Agent + Harness Cooperation
+
+Synthesis of §24–§35 and ACP §36.
+
+## 36.1 Responsibility split (final)
+
+| Layer | Delivers to author | Delivers to ops |
+|-------|-------------------|-----------------|
+| **Tier-3 Application** | Manifest, profile, roster, hooks, surfaces | `ApplicationRunSummary`, deploy artifacts |
+| **Tier-2 Agent** | `on_next_step`, cognitive patterns | `AgentRunResult` + `AgentRunTrace` |
+| **Tier-1 Nexus** | Transparent when using `Task` | Task orchestration, checkpoints |
+| **Tier-0 Harness** | Catalogs via profiles | Policy, observability spine |
+
+## 36.2 Speed + flexibility guarantees
+
+| Guarantee | Mechanism |
+|-----------|-----------|
+| Fast new product host | `scaffold new-application` + `HarnessApplication` |
+| No policy in agent source | `ApplicationEnvironmentProfile` + envelope §39 |
+| Same agents, multiple products | Different manifests; shared `agents/` |
+| Multi-agent without host code | `ApplicationGraphSpec` |
+| Dynamic environment rules | `ApplicationHost` hooks §32 |
+| Virtual org without agent forks | `OrganizationalPolicyEnvelope` §39 |
+| Prod strictness | `ExecutionMode.STRICT` + APP-PROD gates §40 |
+
+## 36.3 Implementation alignment (2026-06-11)
+
+| Component | Status | Remaining (H-APP-CON) |
+|-----------|--------|------------------------|
+| `ApplicationEnvironmentProfile` | **Done** H-APP | — |
+| Unified wiring | **Done** H-APP | — |
+| `HarnessApplication` facade | **Done** DX-2 | Mount hooks APP-CON-1 |
+| `ApplicationHost` Protocol | **Done** DX-5.1 | Wire to Nexus APP-CON-1 |
+| `ApplicationRunSummary` | **Done** ACP-OBS-2 | — |
+| Org envelope | **Done** ACP-ORG-1..2 | Enforcement depth ACP-ORG-3 |
+| Budget reactions | **Partial** | ACP-TOK-2 |
+| APP production scoreboard | **Planned** | APP-PROD-* §40 |
+
+---
+
+# 37. Pre-Implementation Operational Contracts (APP-CON)
+
+Normative before shipping new Tier-3 hosts.
+
+## 37.1 Hard task contract
+
+Hosts MUST normalize all surfaces to **`Task`** with:
+
+```text
+Task:
+    task_id
+    message / structured input
+    context.capability          # routing token when known (§23.3)
+    metadata                    # tenant, user, org, scenario, product fields
+    runtime identity fields     # from IdentityProfile resolution
+```
+
+Pydantic models for manifest and profile: **`extra=forbid`**.
+
+## 37.2 Capability routing (enforcement)
+
+```text
+Task.required_capability / context.capability
+    → Nexus classifier/planner
+    → AgentRegistry.query(capabilities)
+    → AgentBinding selects implementation class
+```
+
+CI: `check_capability_routing.py` (shared with ACP-CON-6).
+
+## 37.3 Identity and tenant (summary)
+
+Full canon: ACP §30.9 · `IdentityProfile`
+
+- Interactive tasks: `tenant_id` + `user_id` required when `tenant_required=True`
+- Org background jobs: `principal_type=org_system`, `memory_scope=org`
+- Host MUST wire `wire_application_identity()` before run endpoints
+
+## 37.4 Host security model
+
+| Guard | STRICT behavior |
+|-------|-----------------|
+| Tool catalog | Intersection of `ToolProfile` + binding slices |
+| Integration access | `IntegrationProfile` only — agents use tools |
+| Secrets | Never in manifest `config` or committed `.env` |
+| Auth on `/run` | `IdentityProfile.require_api_key` or product auth middleware |
+
+## 37.5 Terminal status vocabulary
+
+Application-level outcomes SHOULD map to controlled task statuses — align with `AgentRunStatus` and Nexus task finisher enums. Free-text terminal reasons on product APIs SHOULD be mapped to enums at the HTTP boundary.
+
+---
+
+# 38. Execution Responsibility Stack (L4 Application)
+
+Symmetric to ACP §38 — **application author mental model**.
+
+## 38.1 Four layers (normative)
+
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│ L4  Application host + surfaces                                         │
+│     • intake → Task • manifest/profile • hooks • auth • deploy          │
+│     • ApplicationRunSummary (Plane A)                                     │
+│     DOES NOT: agent on_next_step • tool gateway • cognitive planning     │
+└───────────────────────────────┬─────────────────────────────────────────┘
+                                │ UnifiedTaskRunner.run_task()
+┌───────────────────────────────▼─────────────────────────────────────────┐
+│ L3  NexusLoop.handle_task() — Agent OS orchestration                    │
+│     • classifier • planner • graph • HITL • task checkpoints            │
+│     DOES NOT: replace agent cognitive loop                                │
+└───────────────────────────────┬─────────────────────────────────────────┘
+                                │ per graph node
+┌───────────────────────────────▼─────────────────────────────────────────┐
+│ L2  Agent.run() + on_next_step() — see ACP §38                          │
+└───────────────────────────────┬─────────────────────────────────────────┘
+                                │
+┌───────────────────────────────▼─────────────────────────────────────────┐
+│ L1  HarnessKernel.execute_step() — see ACP §38                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+## 38.2 Decision ownership (application author)
+
+| Question | Owner |
+|----------|-------|
+| Which surfaces does this product expose? | **Tier-3 host** |
+| What is on the manifest roster? | **Tier-3 author** |
+| What harness slices are enabled? | **`ApplicationEnvironmentProfile`** |
+| Which agent handles this capability? | **Nexus** + registry (Tier-3 declares roster) |
+| What is the multi-agent topology? | **`graph_spec`** or planner (Tier-3 config) |
+| What org rules apply? | **`OrganizationalPolicyEnvelope`** §39 |
+| Dynamic block/modify at intake? | **`ApplicationHost`** hook §32 |
+| What does the agent think next? | **Agent `on_next_step`** — not Tier-3 |
+
+---
+
+# 39. Organizational Policy Envelope & Virtual Workforce
+
+**Canonical home (Tier-3).** Agent consumption and kernel enforcement: ACP §39.
+
+**Goal:** Tier-3 environment simulates an **organization** — procedures, channels, playbooks — constraining virtual employee agents **without** forking agent code.
+
+## 39.1 Concept
+
+```text
+OrganizationalPolicyEnvelope (Tier-3)
+    → merge_environment() → OrganizationalPolicyContext
+        → all agents in roster during run
+            → HarnessKernel policy phases enforce channel/tool/scenario rules
+```
+
+## 39.2 Contract
+
+`intergrax/applications/contracts/org_policy.py`:
+
+```text
+OrganizationalPolicyEnvelope:
+    organization_id, display_name, execution_mode
+    policy_rules, guardrails
+    sop_catalog_path, scenario_bindings, rag_playbook_collection
+    channel_policy, tool_policy_overlay, communication_rules
+    compliance_profile_id, observability_labels
+```
+
+Attach via `ApplicationEnvironmentProfile.organizational_policy`.
+
+## 39.3 Virtual workforce roster
+
+```text
+AgentBinding(
+    agent_id="cs_agent",
+    org_role_id="customer_service_rep",
+    capabilities=["support.respond"],
+)
+```
+
+Same agent class across bank / retail / lab — **different envelope per deployment**.
+
+## 39.4 Enforcement stack
+
+| Phase | Owner |
+|-------|-------|
+| Intake metadata (org, scenario) | Tier-3 host |
+| `merge_environment` | Harness |
+| `on_next_step` domain intent | Agent |
+| Policy pre/post, tool deny, guardrails | `HarnessKernel` |
+
+## 39.5 Measurement
+
+`PolicyVerdictRecord` on agent steps → roll up to `ApplicationRunSummary` compliance fields (ACP §39.5 · ACP-ORG-4).
+
+## 39.6 Anti-patterns
+
+| ID | Anti-pattern | Correct |
+|----|--------------|---------|
+| ORG-AP-01 | `if org == "acme"` in agent | `ChannelPolicy` on envelope |
+| ORG-AP-02 | Rules only in system prompt | `PolicyRulesProfile` + verdicts |
+| ORG-AP-03 | Per-agent duplicate compliance | Shared envelope |
+
+**Preset:** `ApplicationEnvironmentProfile.lab_org_virtual_workforce_defaults()`.
+
+---
+
+# 40. Production Reliability, Safety, and Release Gates (Tier-3)
+
+Symmetric to ACP §40 — **host environments** that run mutating workloads.
+
+## 40.1 Host readiness dimensions
+
+| Dimension | Requirement |
+|-----------|-------------|
+| Wiring | `build_harness_host_runtime` — no ad-hoc Nexus |
+| Identity | `IdentityProfile` enforced on prod routes |
+| Execution mode | `STRICT` in production |
+| Reliability | `ReliabilityProfile` + task checkpoints when long-running |
+| Observability | `ObservabilityProfile` + trace persistence |
+| Roster | `EnvironmentSkillToolConsistencyCheck` passes |
+| Org / compliance | Envelope + eval golden scenarios when UC-A7 |
+| Deploy triad | Docker + `BUILD_AND_DEPLOY.md` + gate test |
+
+## 40.2 APP-PROD gate register (target)
+
+| ID | Deliverable | Status |
+|----|-------------|--------|
+| APP-PROD-1 | `check_application_host_wiring.py` — no direct NexusLoop in factories | Planned |
+| APP-PROD-2 | Reference hosts use `build_harness_host_runtime` exclusively | **Done** (H-APP-WIRING) |
+| APP-PROD-3 | `ApplicationHost` mounted when `hooks()` provided | Planned (APP-CON-1) |
+| APP-PROD-4 | Prod manifest conformance in gate CI | **Done** H-APP.0.5 |
+| APP-PROD-5 | Deploy triad gate | **Done** AA phase |
+
+## 40.3 Mutating product checklist
+
+Before claiming production-ready for mutating hosts:
+
+1. `execution_mode=strict`
+2. `ReliabilityProfile` idempotency + checkpoints enabled
+3. `CriticProfile` for high-risk capabilities
+4. `mount_harness_task_routes` when HITL/long-running required
+5. Product `ARCHITECTURE.md` documents §23.7 gaps closed or deferred
+
+---
+
+# 45. Checklist For New Application Implementation
+
+Before implementing a new Tier-3 environment, answer:
+
+```text
+ 1. What product hypothesis does this environment test?
+ 2. What is app_id and deployment posture (§23.1)?
+ 3. Which agents are on the roster — AgentBinding.mount for each?
+ 4. What capabilities route tasks — explicit L1 or classifier L3?
+ 5. Single-agent or multi-agent — graph_spec vs pipeline token (§23.4)?
+ 6. Full ApplicationEnvironmentProfile declared — no orphan slices?
+ 7. wire_application_environment() — no getattr on manifest?
+ 8. build_harness_host_runtime() — not ad-hoc NexusLoop?
+ 9. All surfaces → UnifiedTaskRunner.run_task()?
+10. IdentityProfile matches auth story (tenant/user)?
+11. ExecutionMode STRICT for prod?
+12. ObservabilityProfile + ApplicationRunSummary on Task completion?
+13. Business logic only in Tier-2 agents?
+14. Org simulation needed — OrganizationalPolicyEnvelope (§39)?
+15. Dynamic reactions — ApplicationHost hooks (§32) vs profile-only?
+16. Deploy triad present (Docker, BUILD_AND_DEPLOY, .env.example)?
+17. pytest smoke for manifest + host factory?
+18. Cross-ref product ARCHITECTURE.md — not duplicated in platform plan?
+```
+
+If these questions cannot be answered, do not ship the host. **Guides:** [`applications/USAGE.md`](../../applications/USAGE.md) · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Step 4E · Appendix H.
+
+---
+
+**Plan:** Phase **H-APP-CON** — [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md)
 
 ---

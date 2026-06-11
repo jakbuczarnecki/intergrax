@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
+from intergrax.agents.run_environment import EffectiveAgentRunEnvironment
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.governance.service import GovernanceService
@@ -36,6 +37,58 @@ class LabHarnessContext:
 def default_reference_harness() -> LabHarnessContext:
     """Minimal harness defaults when no Tier-3 host injects a bundle."""
     return LabHarnessContext(policy_bundle=RuntimePolicyBundle())
+
+
+def build_lab_agent_runtime_config_from_merged(
+    *,
+    request: RuntimeRequest,
+    llm_adapter: LLMAdapter,
+    harness: LabHarnessContext,
+    merged: EffectiveAgentRunEnvironment,
+    pipeline: RuntimePipeline | None = None,
+) -> RuntimeConfig:
+    """ACP-CFG — compose RuntimeConfig from merged environment slices."""
+    return build_lab_agent_runtime_config(
+        request=request,
+        llm_adapter=llm_adapter,
+        harness=harness,
+        pipeline=pipeline,
+        enable_rag=merged.enable_rag,
+        enable_websearch=merged.enable_websearch,
+    )
+
+
+def build_lab_agent_runtime_context_from_merged(
+    *,
+    request: RuntimeRequest,
+    llm_adapter: LLMAdapter,
+    harness: LabHarnessContext,
+    merged: EffectiveAgentRunEnvironment,
+    pipeline: RuntimePipeline | None = None,
+) -> RuntimeContext:
+    """ACP-CFG — build RuntimeContext using merged profile flags."""
+    config = build_lab_agent_runtime_config_from_merged(
+        request=request,
+        llm_adapter=llm_adapter,
+        harness=harness,
+        merged=merged,
+        pipeline=pipeline,
+    )
+    governance: GovernanceService | None = None
+    if harness.strict_harness:
+        from intergrax.applications._shared.harness_governance import (
+            create_lab_allow_governance_service,
+        )
+
+        governance = cast(
+            GovernanceService,
+            create_lab_allow_governance_service(),
+        )
+    return RuntimeContext.build(
+        config=config,
+        session_manager=SessionManager(storage=InMemorySessionStorage()),
+        governance_service=governance,
+    )
 
 
 def build_lab_agent_runtime_config(
