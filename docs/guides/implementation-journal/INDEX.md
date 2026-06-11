@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-11-018 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | H-APP-CON-DOC.1 | [TIER3 APP-CON architecture canon §24–§45](entries/2026-06-11/tier3-app-con-architecture-canon.md) | pending |
 | IJ-2026-06-11-017 | 2026-06-11 | tier-0/1 AGENT_CONTRACTS | ACP-CLOSE-CI-2 | [ACP-CLOSE CI-2 ACP-AP-02 tool loop boundary](entries/2026-06-11-acp-close-ci-2-ap02-tool-loop-boundary.md) | pending |
 | IJ-2026-06-11-016 | 2026-06-11 | tier-0/2/3 AGENT_CONTRACTS, CRITIC | ACP-CLOSE-PAT-2 | [ACP-CLOSE PAT-2 reflection CVL gateway](entries/2026-06-11-acp-close-pat-2-reflection-cvl.md) | pending |
 | IJ-2026-06-11-015 | 2026-06-11 | tier-0/1/2 AGENT_CONTRACTS, TOOLS | ACP-CLOSE-PAT-1, TOOL-ENG-6 | [ACP-CLOSE PAT-1 + TOOL-ENG-6 tool loop](entries/2026-06-11-acp-close-pat-1-tool-eng-6-loop.md) | pending |

@@ -74,6 +74,49 @@ Intergrax is **not** “one Python class that is also the OS.” The **agent** i
 
 ---
 
+## Application in the harness environment
+
+**Hub summary** — full canon in [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](architecture/TIER3_APPLICATION_ENVIRONMENT.md) §24–§45 (APP-CON) · plan [Phase H-APP-CON](plan/TIER3_APPLICATION_ENVIRONMENT.md#phase-h-app-con--application-environment-architecture-canon-app-con).
+
+The **application** is a **deployable composition shell** — not a cognitive agent. It normalizes intake → `Task`, declares roster and harness profiles, and returns product output. Tier-3 authors control environment through **three modes** (§30): declarative profile, rules envelope, imperative `ApplicationHost` hooks.
+
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│ L4  Application host (Tier-3)                                           │
+│     ApplicationManifest · ApplicationEnvironmentProfile · surfaces      │
+│     ApplicationHost.on_hook (optional) · ApplicationRunSummary (Plane A) │
+│     DOES NOT: on_next_step · domain tool loops · private Nexus fork     │
+└───────────────────────────────┬─────────────────────────────────────────┘
+                                │ UnifiedTaskRunner.run_task()
+┌───────────────────────────────▼─────────────────────────────────────────┐
+│ L3  NexusLoop.handle_task() — Agent OS (Tier-1)                         │
+└───────────────────────────────┬─────────────────────────────────────────┘
+                                │ graph node → Agent.run() — see Agent section above
+```
+
+| Question | Owner | Canon |
+|----------|-------|-------|
+| What agents are active in this product? | **`ApplicationManifest`** roster | §24 · §27 |
+| What harness slices are enabled? | **`ApplicationEnvironmentProfile`** | §22 |
+| Reactive vs daemon vs batch? | Posture + host factory | §23 |
+| Who sets routing capability? | L1–L4 matrix | §23.3 |
+| Virtual org / simulation rules? | **`OrganizationalPolicyEnvelope`** | §39 |
+| Dynamic block at intake / selection? | **`ApplicationHost`** + `HookPoint` | §32 |
+| Multi-agent orchestration summary? | **`ApplicationRunSummary`** | §26 · §33 |
+
+**Strategic invariants (APP-CON §28.1):**
+
+- **Applications compose; they do not cognate** — business logic stays in Tier-2 agents.
+- **One Task lifecycle** — all surfaces converge on `UnifiedTaskRunner` → `NexusLoop`.
+- **Profile is the composition root** — no ad-hoc `getattr` wiring in hosts.
+- **Hooks are boundaries, not step loops** — no `Application.on_next_orchestration_step()`.
+
+**Author entry points:** [`applications/USAGE.md`](../applications/USAGE.md) · `HarnessApplication` (`intergrax/harness/app.py`) · scaffold `new-application` · [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md) §0.
+
+**Implementation:** H-APP profile/wiring **Done**; APP-CON code gaps (`ApplicationHost` pipeline mount) — [H-APP-CON](plan/TIER3_APPLICATION_ENVIRONMENT.md#phase-h-app-con--application-environment-architecture-canon-app-con).
+
+---
+
 ## Domain documents (architecture ↔ implementation 1:1)
 
 | Architecture | Implementation plan |

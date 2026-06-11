@@ -6,7 +6,9 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**Cross-plan — Agent layer (ACP):** Tier-3 hosts supply `ApplicationEnvironmentProfile`, `AgentBinding`, intake `RequestIdentity`, and org envelope — consumed by agent `merge_environment` (architecture §30 · §39). Implementation synced in [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 2** (`ACP-DX-2`, `ACP-DX-5`) and **Wave 6** (`ACP-ORG-1..2`). Host PRs that change profile merge order MUST update agent plan acceptance tests.
+**Cross-plan — Agent layer (ACP):** Tier-3 hosts supply `ApplicationEnvironmentProfile`, `AgentBinding`, intake `RequestIdentity`, and org envelope — consumed by agent `merge_environment` (architecture ACP §30 · TIER3 §39). Implementation synced in [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 2** (`ACP-DX-2`, `ACP-DX-5`) and **Wave 6** (`ACP-ORG-1..2`). Host PRs that change profile merge order MUST update agent plan acceptance tests.
+
+**Application authoring canon (APP-CON):** architecture §24–§45 — symmetric to ACP §12–§45 for Tier-3 environments. Phase **H-APP-CON** below.
 
 ---
 
@@ -290,5 +292,30 @@ uv run pytest -m gate -q
 **Explicitly out of scope:** Nexus runtime changes; K.1/K.2; new queue transport.
 
 **Cross-plan:** H-APP-WIRING.1 ↔ ORCH-6.5 · FLOW-CTL.6 · REL-ADV.7.
+
+---
+
+## Phase H-APP-CON — Application Environment Architecture canon (APP-CON)
+
+**Status:** **In progress** (2026-06-11) — architecture §24–§45 documented; code gaps APP-CON-1..3 open  
+**Prerequisites:** Phase H-APP **Done** · H-APP-DOC **Done** · H-APP-WIRING **Done**  
+**Goal:** Deliver **symmetric authoring canon** to ACP for Tier-3 — contracts, facades, hooks, checklists — without a new domain pair or Nexus fork.
+
+**ADR:** no ADR needed for documentation-only tranche; **ADR-APP-001** recommended when mounting `ApplicationHost` into production pipeline (APP-CON-1).
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| H-APP-CON-DOC.1 | Architecture §24–§45 (APP-CON) + TOC | **Done** | **Critical** | `architecture/TIER3_APPLICATION_ENVIRONMENT.md` |
+| H-APP-CON-DOC.2 | Hub § Application in harness environment | **Done** | High | `intergrax_runtime_architecture.md` |
+| H-APP-CON-DOC.3 | Cross-ref ACP §39 → TIER3 §39 canonical home | Planned | Low | One-line pointer in ACP §39.8 |
+| APP-CON-1 | Wire `ApplicationHost` in `build_harness_host_runtime` + `HarnessApplication.build_runtime` | Planned | **Critical** | Integration test: hook blocks at `BEFORE_AGENT_SELECTION` |
+| APP-CON-2 | `check_application_host_wiring.py` gate — factories use `build_harness_host_runtime` | Planned | High | CI gate |
+| APP-CON-3 | APP-PROD-1..5 scoreboard rows + reference host evidence | Planned | Medium | §40.2 green on lab/legal |
+| APP-CON-DX.1 | Appendix APP in `AGENT_CREATION_GUIDE.md` or `APPLICATION_CREATION_GUIDE.md` | Planned | Medium | Author workflow §31.1 |
+| APP-CON-DX.2 | Audit prompt `guides/audit/TIER3_APPLICATION_ENVIRONMENT.md` — APP-CON dimensions | Planned | Low | Regenerate via `generate_domain_audit_prompts.py` |
+
+**Explicitly out of scope:** `Application.on_next_orchestration_step()`; new domain pair; Nexus runtime changes for product-specific orchestration.
+
+**Rejected (documented in architecture §28.2):** cloning ACP step loop at Tier-3.
 
 ---

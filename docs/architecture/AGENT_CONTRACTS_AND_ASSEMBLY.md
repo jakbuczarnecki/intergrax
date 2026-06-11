@@ -2901,6 +2901,7 @@ See [`OBSERVABILITY.md`](OBSERVABILITY.md) — extend spine with `policy.verdict
 
 | Document | Relationship |
 |----------|--------------|
+| [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §39 | **Canonical home** — org envelope, virtual workforce, APP-CON |
 | [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §22 | `PolicyRulesProfile`, `GuardrailProfile`, profile wiring |
 | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.11 | `RuntimePolicyBundle`, guardrails |
 | [`OBSERVABILITY.md`](OBSERVABILITY.md) | Trace spine + compliance metrics |
