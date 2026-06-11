@@ -8,7 +8,177 @@
 
 **Cross-plan — Agent layer (ACP):** Tier-3 hosts supply `ApplicationEnvironmentProfile`, `AgentBinding`, intake `RequestIdentity`, and org envelope — consumed by agent `merge_environment` (architecture ACP §30 · TIER3 §39). Implementation synced in [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 2** (`ACP-DX-2`, `ACP-DX-5`) and **Wave 6** (`ACP-ORG-1..2`). Host PRs that change profile merge order MUST update agent plan acceptance tests.
 
-**Application authoring canon (APP-CON):** architecture §24–§48 — symmetric to ACP §12–§45 for Tier-3 environments. **Evolution canon (APP-EVOL):** architecture §49. **Operations canon (APP-OPS):** architecture §50. Phases **H-APP-CON** · **H-APP-EVOL** · **H-APP-OPS** below.
+**Application authoring canon (APP-CON):** architecture §24–§51 — symmetric to ACP §12–§45 for Tier-3 environments. **Evolution canon (APP-EVOL):** architecture §49. **Operations canon (APP-OPS):** architecture §50. **Freeze audit:** [`guides/GOVERNANCE_CONSISTENCY_AUDIT.md`](../guides/GOVERNANCE_CONSISTENCY_AUDIT.md). Phases **H-APP-CON** · **H-APP-EVOL** · **H-APP-OPS** · **H-APP-FREEZE** below.
+
+**Fidelity rule:** Every architecture §20–§51 normative row MUST map to a plan ID in [§Architecture fidelity matrix](#architecture-fidelity-matrix--20-51) and a verification artifact in [§Fidelity verification gates](#fidelity-verification-gates). Completing the **open APP-\*** backlog is sufficient for implementation to match frozen architecture — no new primitives without ADR.
+
+---
+
+## Architecture fidelity matrix — §20–§51
+
+Maps each architecture section to **plan phase**, **implementation status**, **code anchor**, and **acceptance test**. **Done** = architecture row is implemented and gated unless marked *doc-only*.
+
+| Arch § | Topic | Plan IDs | Status | Code / test anchor |
+|--------|-------|----------|--------|-------------------|
+| §20 | Shadow workspace lifecycle | H-APP.3.4 · APP-CON-8 · APP-PROD-8 | **Partial** | `shadow_wiring.py` · lifecycle doc §20 · cleanup gate open |
+| §21 | Sandbox lifecycle | H-APP.3.5 · APP-CON-8 · APP-PROD-8 | **Partial** | `sandbox_wiring.py` · artifact capture open |
+| §22 | `ApplicationEnvironmentProfile` | H-APP.1.* | **Done** | `environment_profile.py` · `test_environment_profile.py` |
+| §23 | Interaction postures | H-APP-DOC.* · H-APP-WIRING.* | **Done** | §23.7 matrix closed on reference hosts |
+| §24 | `ApplicationManifest` / `AgentBinding` | N.1 · H-APP.1.2 | **Done** | `manifest.py` · `test_manifest_conformance.py` |
+| §25 | `run_task` / `HarnessApplication` / `ApplicationHost` | APP-CON-1 · N.* | **Done** | `harness/app.py` · `test_application_host_wiring.py` |
+| §26 | `ApplicationRunSummary` (Plane A) | ACP-OBS-2 · APP-CON-6 | **Partial** | `application_run_summary_builder.py` · artifact bundle open |
+| §27 | Roster / registry assembly | N.2.1 · H-APP.1.4 | **Done** | `registry_assembly_resolver.py` |
+| §28 | APP invariants (no app cognition loop) | H-APP-CON-DOC.* | **Done** | *doc-only* · rejected `on_next_orchestration_step` |
+| §29–§31 | Terminology · control modes · facade | H-APP.0.* · APP-CON-DX.1 | **Partial** | DX appendix open |
+| §32 | `ApplicationHost` hook surface | APP-CON-1 | **Done** | `application_host.py` · `hooks.py` |
+| §32.6 | Hook ordering · conflicts · determinism | APP-CON-5 | Planned | §32.6 normative · timeout/error open |
+| §33 | Dual observability planes | ACP-OBS-* · H-APP.4.8 | **Done** | `test_application_run_summary_builder.py` |
+| §34 | Per-agent `AgentBinding` / budget slice | H-APP.* · ACP §30 | **Done** | `merge_environment` · ACP plan Wave 2 |
+| §35 | Use-case catalog UC-A* | APP-CON-7 | Planned | §44 matrix tests |
+| §36 | Architecture synthesis | H-APP-CON-DOC.* | **Done** | *doc-only* |
+| §37 | Pre-implementation APP-CON contracts | H-APP-CON-DOC.* | **Done** | *doc-only* |
+| §38 | L4 execution stack | H-APP.3.3 · H-APP-WIRING | **Done** | `nexus_factory.py` · `build_harness_host_runtime` |
+| §39 | `OrganizationalPolicyEnvelope` | ACP-ORG-* | **Done** | `org_policy.py` · `test_uc11_product_host_compliance.py` |
+| §40 | APP-PROD gates | APP-PROD-1..9 | **Partial** | see [APP-PROD master](#app-prod--release-gates-master) |
+| §41 | Composition primitive separation | H-APP-CON-DOC.* | **Done** | *doc-only* |
+| §42 | `ApplicationEnvironmentState` v2 | APP-CON-2 · APP-CON-3 | **Partial** | `environment_state.py` · auto-sync open |
+| §43 | Budget / token governance | ACP-TOK-* · APP-CON-3 | **Partial** | see [Cross-plan §43](#cross-plan--43-budget--token-governance) |
+| §44 | Scenario test matrix | APP-CON-7 | Planned | `tests/unit/applications/` bundle |
+| §45 | New application checklist | APP-CON-DX.1 · N.* | **Partial** | scaffold + guide |
+| §46 | Production readiness criteria | APP-PROD-* · ACP-PROD-* | **Partial** | §46 + agent gates |
+| §47 | Developer mental model | APP-CON-DX.1 | **Partial** | *doc-only* in arch |
+| §48 | Application artifacts | APP-CON-4 · APP-CON-6 | **Partial** | `application_artifacts.py` · summary attach open |
+| §49 | Runtime evolution | APP-EVOL-1..7 · APP-EVOL-2b | Planned | §49.8 register |
+| §50 | Platform operations | APP-OPS-1..4 | **Partial** | `capability_graph_wiring.py` partial |
+| §51 | Cross-doc consistency | H-APP-FREEZE-* | **Done** | `GOVERNANCE_CONSISTENCY_AUDIT.md` |
+
+---
+
+## Master implementation backlog (APP-* unified)
+
+Single register for all open architecture rows. **Execution order:** [§6.2y](#62y-phase-app-backlog-execution-order-post-freeze).
+
+### APP-CON — host contracts (architecture §25–§32 · §42 · §48)
+
+| ID | Arch § | Deliverable | Status | Acceptance |
+|----|--------|-------------|--------|------------|
+| APP-CON-1 | §25 · §32 | `ApplicationHost` in `build_harness_host_runtime` | **Done** | `test_application_host_wiring.py` |
+| APP-CON-2 | §42 | `ApplicationEnvironmentState` v2 | **Done** | `test_environment_state_and_artifacts.py` |
+| APP-CON-3 | §42 · §43 | Nexus lifecycle updates `app_env_state.v1` (phase, budget, HITL) | Planned | hook context fields change per phase in integration test |
+| APP-CON-4 | §48 | Artifact ref models | **Done** | `application_artifacts.py` |
+| APP-CON-5 | §32.6 | Hook timeout · error→BLOCK · audit events | Planned | middleware enforces wall time; trace on `hook_error` |
+| APP-CON-6 | §26 · §48 | `RunArtifactBundle` on `ApplicationRunSummary.metadata` | Planned | `run_artifact_bundle.v1` key in finisher test |
+| APP-CON-7 | §35 · §44 | Scenario matrix gate — UC-A* minimum per posture | Planned | `test_tier3_scenario_matrix.py` or tagged `-m tier3_scenario` |
+| APP-CON-8 | §20–§21 | Shadow/sandbox refs in env state + lifespan cleanup | Planned | `APP-PROD-8` integration |
+| APP-CON-DX.1 | §31 · §45 · §47 | Author guide APP appendix (mental model + checklist) | Planned | `AGENT_CREATION_GUIDE.md` or `APPLICATION_CREATION_GUIDE.md` |
+| APP-CON-DX.2 | §37 | Regenerate domain audit prompt for §24–§51 | Planned | `generate_domain_audit_prompts.py` |
+
+### APP-PROD — release gates (architecture §40 · §46)
+
+| ID | Arch § | Deliverable | Status | Acceptance |
+|----|--------|-------------|--------|------------|
+| APP-PROD-1 | §40.2 | `check_application_production_gates.py` | **Done** | script exits 0 |
+| APP-PROD-2 | §40.2 | Reference hosts use `build_harness_host_runtime` | **Done** | H-APP-WIRING |
+| APP-PROD-3 | §40.2 | `ApplicationHost` mounted when provided | **Done** | `test_application_host_wiring.py` |
+| APP-PROD-4 | §40.2 | Manifest conformance | **Done** | `test_manifest_conformance.py` |
+| APP-PROD-5 | §40.2 | Deploy triad | **Done** | `test_application_deploy_triad.py` |
+| APP-PROD-6 | §40.2 | `check_environment_state_usage` lint | Planned | CI script; hooks use typed state |
+| APP-PROD-7 | §40.2 · §43 | `check_budget_enforcement` on STRICT product hosts | Planned | blocked until ACP-TOK-2 |
+| APP-PROD-8 | §20–§21 | `check_workspace_cleanup` lifespan hooks | Planned | factory teardown integration test |
+| APP-PROD-9 | §40.2 | Wire APP-PROD-1 into `pytest -m gate` / CI | Planned | gate workflow invokes script |
+
+### APP-EVOL — evolution (architecture §49)
+
+| ID | Deliverable | Status | Acceptance |
+|----|-------------|--------|------------|
+| APP-EVOL-1 | `EnvironmentSnapshot` + intake `profile_snapshot_id` | Planned | STRICT tasks carry snapshot id |
+| APP-EVOL-2 | `ApplicationMigration` schema + CI validator | Planned | breaking bump requires migration ref |
+| APP-EVOL-2b | `ProfileMigration` / `GraphSpecMigration` / `OrgEnvelopeMigration` | Planned | typed validators per §49.2.4 |
+| APP-EVOL-3 | `CapabilityAlias` + deprecation routing | Planned | UAEP §42.27 + alias window test |
+| APP-EVOL-4 | `AgentCertification` + STRICT roster gate | Planned | non-PRODUCTION blocked in product hosts |
+| APP-EVOL-5 | `ApplicationRecoveryContract` on `ReliabilityProfile` | Planned | product ARCHITECTURE template + test |
+| APP-EVOL-6 | `ApplicationEnvironmentDiff` + `doctor diff-app` | Planned | pre-deploy CI diff |
+| APP-EVOL-7 | `ApplicationPackage` + dependency resolver | Planned | `new-stack` emits package manifest |
+
+### APP-OPS — platform operations (architecture §50)
+
+| ID | Deliverable | Status | Acceptance |
+|----|-------------|--------|------------|
+| APP-OPS-1 | Env capability graph + blast radius STRICT gate | Planned | extends `capability_graph_wiring.py` · CI impact check |
+| APP-OPS-2 | `ApplicationOperationalOwnership` on manifest | Planned | APP-PROD gate · product hosts |
+| APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | Planned | release score artifact |
+| APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | Planned | `intergrax apps list` / `envs list` |
+
+---
+
+## Cross-plan — §43 budget / token governance
+
+Architecture §43 is **implemented jointly** with ACP §25.4–§25.5. Tier-3 configures; harness enforces; agents read.
+
+| Arch §43 row | Owner plan | ID | Status |
+|--------------|------------|-----|--------|
+| `CostProfile` / `budget_reaction` config | TIER3 (this file) | H-APP.1.1 `CostProfile` | **Done** |
+| `AgentBinding.budget_slice` | TIER3 + ACP | H-APP.1.2 · ACP §34 | **Done** |
+| Token metering rollups | ACP | **ACP-TOK-1** | Planned |
+| Kernel hard cap + block LLM | ACP | **ACP-TOK-2** | Planned |
+| Host notify / HITL / `custom_hook` | ACP + TIER3 | **ACP-TOK-3** · APP-CON-3 | Planned |
+| CI gate | ACP | **ACP-TOK-CI** | Planned |
+| APP-PROD-7 host gate | TIER3 | **APP-PROD-7** | Planned (after ACP-TOK-2) |
+
+**Fidelity rule:** do not mark §43 **Done** in architecture until ACP-TOK-2 **Done** and APP-CON-3 seeds `ActiveBudgetState` on hooks.
+
+---
+
+## Fidelity verification gates
+
+Run after any Tier-3 PR touching hosts, contracts, or wiring:
+
+```bash
+# Tier-3 unit + host contracts
+uv run pytest tests/unit/applications/ -q
+
+# APP-PROD-1 (wire to gate via APP-PROD-9)
+python scripts/check_application_production_gates.py
+
+# Harness tier boundaries
+python scripts/check_harness_no_getattr.py
+python scripts/check_agent_registry_bypass.py
+
+# Domain pair + journal
+python scripts/check_docs_domain_pairs.py
+python scripts/check_implementation_journal.py
+
+# Full gate (includes agent + platform)
+uv run pytest -m gate -q
+```
+
+**Architecture-complete Tier-3 DoD (target):** all rows in [Master backlog](#master-implementation-backlog-app-unified) **Done** · fidelity matrix all **Done** · `GOVERNANCE_CONSISTENCY_AUDIT.md` glossary respected · no §51 naming violations.
+
+---
+
+## §6.2y Phase APP backlog execution order (post-freeze)
+
+Recommended PR sequence — one APP ID per PR:
+
+```text
+1.  APP-PROD-9      wire production gates to CI
+2.  APP-CON-3       env state lifecycle sync on hooks
+3.  ACP-TOK-1..3    (agent plan) budget enforcement — unblocks §43
+4.  APP-PROD-7      budget gate on STRICT hosts
+5.  APP-CON-5       hook timeout / error handling
+6.  APP-CON-6       artifact bundle on ApplicationRunSummary
+7.  APP-CON-8       shadow/sandbox cleanup + APP-PROD-8
+8.  APP-EVOL-1      EnvironmentSnapshot on intake
+9.  APP-OPS-1       capability graph STRICT deploy gate
+10. APP-OPS-2       application ownership on manifest
+11. APP-CON-7       scenario matrix tests
+12. APP-EVOL-2/2b   migrations
+13. APP-EVOL-3..7   evolution + packaging
+14. APP-OPS-3/4     health score + registries
+15. APP-CON-DX.*    author guide + audit prompt
+```
+
+**Cross-plan:** steps 3–4 require [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **ACP-FINISH** / **ACP-TOK-***.
 
 ---
 
@@ -297,25 +467,20 @@ uv run pytest -m gate -q
 
 ## Phase H-APP-CON — Application Environment Architecture canon (APP-CON)
 
-**Status:** **In progress** (2026-06-11) — architecture §24–§48 documented; APP-CON-1/2/4 **Done**; APP-PROD-1 **Done**; ACP-TOK-2/3 open  
+**Status:** **In progress** (2026-06-11) — architecture §24–§51 frozen; implementation **3/10 APP-CON** + **5/9 APP-PROD** Done — see [Master backlog](#master-implementation-backlog-app-unified)  
 **Prerequisites:** Phase H-APP **Done** · H-APP-DOC **Done** · H-APP-WIRING **Done**  
 **Goal:** Deliver **symmetric authoring canon** to ACP for Tier-3 — contracts, facades, hooks, checklists — without a new domain pair or Nexus fork.
 
-**ADR:** no ADR needed for documentation-only tranche; **ADR-APP-001** recommended when mounting `ApplicationHost` into production pipeline (APP-CON-1).
+**ADR:** no ADR needed for documentation-only tranche; **ADR-APP-001** recommended when mounting `ApplicationHost` into production pipeline (APP-CON-1 **Done**).
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| H-APP-CON-DOC.1 | Architecture §24–§48 (APP-CON) + TOC | **Done** | **Critical** | `architecture/TIER3_APPLICATION_ENVIRONMENT.md` |
+| H-APP-CON-DOC.1 | Architecture §24–§51 + TOC + fidelity matrix (this plan) | **Done** | **Critical** | `architecture/TIER3_APPLICATION_ENVIRONMENT.md` + §Architecture fidelity matrix |
 | H-APP-CON-DOC.2 | Hub § Application in harness environment | **Done** | High | `intergrax_runtime_architecture.md` |
 | H-APP-CON-DOC.3 | Cross-ref ACP §39 → TIER3 §39 canonical home | **Done** | Low | ACP §39.8 pointer |
-| APP-CON-1 | Wire `ApplicationHost` in `build_harness_host_runtime` + `HarnessApplication.build_runtime` | **Done** | **Critical** | `test_application_host_wiring.py` |
-| APP-CON-2 | `ApplicationEnvironmentState` v2 typed host state | **Done** | High | `environment_state.py` + unit tests |
-| APP-CON-3 | Nexus lifecycle auto-updates `app_env_state.v1` on hooks | Planned | High | intake + phase/budget sync |
-| APP-CON-4 | `ApplicationArtifactRef` models + architecture §48 | **Done** | High | `application_artifacts.py` |
-| APP-PROD-1 | `check_application_production_gates.py` | **Done** | High | `python scripts/check_application_production_gates.py` |
-| APP-PROD-6..8 | environment_state usage, budget, workspace cleanup gates | Planned | Medium | §40.2 |
-| APP-CON-DX.1 | Appendix APP in `AGENT_CREATION_GUIDE.md` or `APPLICATION_CREATION_GUIDE.md` | Planned | Medium | Author workflow §31.1 |
-| APP-CON-DX.2 | Audit prompt `guides/audit/TIER3_APPLICATION_ENVIRONMENT.md` — APP-CON dimensions | Planned | Low | Regenerate via `generate_domain_audit_prompts.py` |
+| APP-CON-1..8 | Host contracts — see [APP-CON master](#app-con--host-contracts-architecture-25-32--42--48) | **Partial** | **Critical** | 1,2,4 Done |
+| APP-PROD-1..9 | Release gates — see [APP-PROD master](#app-prod--release-gates-architecture-40--46) | **Partial** | High | 1–5 Done |
+| APP-CON-DX.* | Author + audit DX | Planned | Medium | §31 · §45 · §47 |
 
 **Explicitly out of scope:** `Application.on_next_orchestration_step()`; new domain pair; Nexus runtime changes for product-specific orchestration.
 

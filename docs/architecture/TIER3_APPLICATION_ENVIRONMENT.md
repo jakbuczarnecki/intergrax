@@ -218,7 +218,7 @@ Every Tier-3 application MUST:
 2. wire through `wire_application_environment` (no ad-hoc `getattr` profile access),
 3. keep business logic in Tier-2 agents — hosts only compose harness.
 
-**Plan:** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) Phase H-APP (43 tasks, Done).
+**Plan:** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) — Phase H-APP **Done** · [Architecture fidelity matrix](../plan/TIER3_APPLICATION_ENVIRONMENT.md#architecture-fidelity-matrix--20-51) for §20–§51 implementation status.
 
 ## 22.5 Related documents
 
@@ -2478,7 +2478,7 @@ Shared        → CapabilityGraph (ACP §19), routing (UAEP §42.27), registries
 
 ---
 
-**Plan:** Phase **H-APP-CON** · **H-APP-EVOL** · **H-APP-OPS** — [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md)  
+**Plan:** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) — [fidelity matrix](../plan/TIER3_APPLICATION_ENVIRONMENT.md#architecture-fidelity-matrix--20-51) · [APP-* master backlog](../plan/TIER3_APPLICATION_ENVIRONMENT.md#master-implementation-backlog-app-unified) · phases H-APP-CON · H-APP-EVOL · H-APP-OPS · H-APP-FREEZE  
 **Consistency audit:** [`guides/GOVERNANCE_CONSISTENCY_AUDIT.md`](../guides/GOVERNANCE_CONSISTENCY_AUDIT.md)
 
 ---
