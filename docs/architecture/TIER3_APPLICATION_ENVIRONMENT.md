@@ -1,6 +1,6 @@
 # Tier-3 Application Environment, Sandbox, and Shadow Workspace
 
-**Status:** Canonical architecture (domain pair 1:1) · **Application authoring gate:** §24–§45 + APP-CON-* (host environments)  
+**Status:** Canonical architecture (domain pair 1:1) · **Application authoring gate:** §24–§49 + APP-CON-* / APP-EVOL-* (host environments)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Plan (1:1):** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §26  
@@ -41,34 +41,58 @@
 | [§44](#44-scenario-test-matrix-tier-3) | Scenario test matrix |
 | [§45](#45-checklist-for-new-application-implementation) | New application checklist |
 | [§46](#46-production-readiness-acceptance-criteria) | Production readiness acceptance criteria |
+| [§47](#47-developer-mental-model) | **Developer mental model** (recipes) |
+| [§48](#48-application-artifacts) | **Application artifacts** |
+| [§49](#49-runtime-evolution-and-governance) | **Runtime evolution and governance** |
 
 ---
 
 ---
 # 20. Shadow Workspace Model
 
-A Shadow Workspace is an isolated temporary workspace used to perform work without directly modifying the main environment.
+An isolated temporary filesystem workspace for work **without mutating the main product environment** — Cursor-like experiments, document drafts, simulated workflows.
 
-Inspired by Cursor-like execution environments.
+**Code:** `intergrax/runtime/workspace/shadow_workspace.py` · `ShadowWorkspaceManager` · wired via `wire_shadow_workspace()` · profile `ShadowWorkspaceProfile`.
 
-Shadow Workspaces may be used for:
+## 20.1 Lifecycle (normative)
 
-- code experiments
-- document analysis
-- temporary data transformations
-- simulated business workflows
-- vendor research sessions
-- legal document review sessions
-- onboarding simulations
+```text
+1. CREATE     ShadowWorkspaceManager.open_or_create(tenant_id, task_id)
+              → ShadowWorkspace.create under profile.root (default build/shadow_workspaces)
+2. MOUNT      Task metadata: shadow_workspace_id, shadow_workspace=true
+              Agent/tool paths resolve under workspace.root (policy-bound)
+3. EXECUTE    write/read, list artifacts, optional snapshots
+4. CAPTURE    list_artifacts() → ShadowArtifact[]; manifest → WorkspaceArtifactRef (§48)
+5. ROLLBACK   snapshot restore when author requests undo path
+6. CLEANUP    cleanup_for_task(tenant_id, task_id) or cleanup(workspace_id)
+7. RETENTION  ShadowWorkspaceProfile.retention_hours; ops job may purge stale dirs
+8. AUDIT      artifacts in trace + RunArtifactBundle on ApplicationRunSummary
+```
 
-A Shadow Workspace should provide:
+## 20.2 Isolation and permissions
 
-- isolation
-- temporary storage
-- reproducibility
-- rollback safety
-- inspectable artifacts
-- cleanup
+| Concern | Mechanism |
+|---------|-----------|
+| Tenant boundary | Path: `{root}/{tenant_id}/{task_id}/{workspace_id}/` |
+| Tool access | Only via harness tools with shadow path policy — no raw host FS in agents |
+| Execution mode | STRICT hosts deny writes outside workspace root |
+| Provenance | `tenant_id`, `task_id`, `workspace_id` on every artifact |
+
+## 20.3 Integration with application state
+
+When active, `ApplicationEnvironmentState.shadow_workspace` (§42) carries `workspace_id`, paths — updated by host hooks on `AFTER_TASK_INTAKE` or framework seed (APP-CON-3 planned).
+
+## 20.4 Use cases
+
+Code experiments · document analysis · temporary transforms · simulated business workflows · vendor research · legal review drafts · onboarding simulations.
+
+## 20.5 Anti-patterns
+
+| ID | Anti-pattern | Correct |
+|----|--------------|---------|
+| SHW-AP-01 | Product writes directly to repo working tree | Shadow workspace + capture |
+| SHW-AP-02 | No cleanup after task | `cleanup_for_task` in factory lifespan / finalization hook |
+| SHW-AP-03 | Secrets in workspace without classification | `ArtifactSecurityClass` §48 |
 
 ---
 
@@ -77,25 +101,40 @@ A Shadow Workspace should provide:
 
 # 21. Sandbox Model
 
-A sandbox is a controlled execution environment.
+A **controlled execution environment** for risky computation — code exec, browser automation, generated scripts.
 
-Use sandboxes for:
+**Code:** `intergrax/runtime/sandbox/session.py` · `SandboxSessionManager` · `wire_sandbox_sessions()` · `SandboxProfile.enable_exec_tool` adds `sandbox.exec` to tool profile.
 
-- code execution
-- browser automation
-- file manipulation
-- risky tool use
-- external data extraction
-- generated script execution
+## 21.1 Lifecycle (normative)
 
-Sandbox execution should be:
+```text
+1. CREATE     SandboxSessionManager.open_or_create(tenant_id, task_id)
+2. MOUNT      sandbox session id on Task metadata; ToolRuntime routes sandbox.exec here
+3. EXECUTE    isolated subprocess/container per session implementation
+4. CAPTURE    stdout/files → SandboxArtifactRef (§48)
+5. ROLLBACK   dispose session without promoting outputs (failed validation)
+6. CLEANUP    cleanup_for_task / cleanup(session_id) — mandatory on task terminal
+7. RETENTION  shorter than shadow (default delete_on_task_complete=true, 24h max)
+8. AUDIT      tool trace + sandbox artifact bundle on Plane A
+```
 
-- isolated
-- observable
-- permission-controlled
-- interruptible
-- disposable
-- reproducible when possible
+## 21.2 Isolation levels
+
+| Level | Description | When |
+|-------|-------------|------|
+| **L1 — FS session** | Directory-isolated session root | Default lab/product |
+| **L2 — Tool gateway** | Policy + injection defense on args | STRICT + `ApplicationSecurityProfile` |
+| **L3 — Product required** | `product_requires_sandbox()` true | Product hosts with side-effect tool prefixes |
+
+## 21.3 Permissions and observability
+
+- Interruptible via Nexus task cancel + session dispose
+- Observable: tool events, session id in trace, optional `BEFORE_TOOL_CALL` hook audit
+- Permission-controlled: `ToolProfile` + policy — agents never open shell directly
+
+## 21.4 Integration with ApplicationRunSummary
+
+`RunArtifactBundle.sandbox[]` linked from task metadata key `run_artifact_bundle.v1` (§48) — rollup for operators.
 
 ---
 
@@ -914,6 +953,61 @@ class StrictOrgHost:
 | `ApplicationEnvironmentState` | **Done** APP-CON-2 | `applications/contracts/environment_state.py` |
 | `merge_host_into_pipeline` | **Done** DX-5.2 | alternative composition helper |
 
+## 32.6 Hook runtime contract — ordering, conflicts, determinism
+
+Normative execution semantics for **all** middleware + `ApplicationHost` hooks on `MiddlewarePipeline`.
+
+### 32.6.1 Invocation order
+
+```text
+run_before(HookPoint):
+  1. Middleware sorted by priority ASC (lower runs first)
+  2. First non-ALLOW short-circuits the chain
+  3. HookRegistry handlers for the point (if middleware all ALLOW)
+
+run_after(HookPoint):
+  1. HookRegistry first
+  2. Middleware priority DESC
+  3. First non-ALLOW short-circuits
+```
+
+**Default priorities (reference):** `TraceEmittingMiddleware` < V-SEC middleware (50) ≈ `ApplicationHostMiddleware` (50). When priorities tie, registration order applies — **product hosts SHOULD use distinct priorities** for multiple custom middleware (APP-CON-3).
+
+### 32.6.2 Multiple ApplicationHost implementations
+
+Tier-3 exposes **one** `ApplicationHost` per process. Multiple concerns (org policy, billing, intake) SHOULD be composed **inside** a single class (delegation pattern) — not multiple competing hosts.
+
+### 32.6.3 Conflict resolution
+
+| Situation | Rule |
+|-----------|------|
+| **BLOCK** vs MODIFY | **BLOCK wins** — pipeline stops; MODIFY not applied |
+| Two MODIFY payloads | Shallow merge in order; later middleware wins on key collision |
+| BLOCK + reason | Propagated to task/agent failure surface; audited in trace |
+| ESCALATE | Routes to HITL coordinator when wired; else treated as BLOCK (safe default) |
+
+### 32.6.4 MODIFY merge semantics
+
+- Merge target: `HookContext.runtime_state` only — **not** Task body, graph, or agent state
+- Model: shallow `dict.update` per hook registry (`hook_registry.py`)
+- Authors MUST namespace under `app_env_state.v1` for typed state (§42)
+- Forbidden: MODIFY of `capability`, `agent_id` unless hook point documents it (agent selection only)
+
+### 32.6.5 Sync vs async, timeout, retry, idempotency
+
+| Topic | Normative target | Status |
+|-------|------------------|--------|
+| **Sync vs async** | `on_hook` is **sync** today; MAY return coroutine in APP-CON-3 — until then no `await` in host | **Done** sync |
+| **Timeout** | Host hook max wall time (e.g. 250ms prod) — exceed → `INTERNAL_ERROR` + trace | **Planned** APP-CON-3 |
+| **Retry** | Hooks are **not** retried — side effects must be idempotent | **Normative** |
+| **Idempotency** | Same `HookPoint` + same `task_id` + same phase: host MUST tolerate duplicate calls | **Author responsibility** |
+| **Error handling** | Uncaught exception → BLOCK with `hook_error`; task fails closed in STRICT | **Planned** APP-CON-3 |
+| **Audit events** | Every non-ALLOW emits `RuntimeEvent` with `hook_name`, `point`, `action`, `reason` | **Partial** trace middleware |
+
+### 32.6.6 Determinism rule
+
+Hooks MAY influence **whether** and **how** work proceeds — they MUST NOT replace Nexus planning or agent cognition. Deterministic replay (lab) requires hooks be pure functions of `(HookPoint, HookContext)` or record decisions in `app_env_state.v1`.
+
 ---
 
 # 33. Dual Observability: Application and Agent Planes
@@ -1244,15 +1338,18 @@ Symmetric to ACP §40 — **host environments** that run mutating workloads.
 | Org / compliance | Envelope + eval golden scenarios when UC-A7 |
 | Deploy triad | Docker + `BUILD_AND_DEPLOY.md` + gate test |
 
-## 40.2 APP-PROD gate register (target)
+## 40.2 APP-PROD gate register
 
-| ID | Deliverable | Status |
-|----|-------------|--------|
-| APP-PROD-1 | `check_application_host_wiring.py` — no direct NexusLoop in factories | Planned |
-| APP-PROD-2 | Reference hosts use `build_harness_host_runtime` exclusively | **Done** (H-APP-WIRING) |
-| APP-PROD-3 | `ApplicationHost` mounted when `hooks()` provided | **Done** APP-CON-1 |
-| APP-PROD-4 | Prod manifest conformance in gate CI | **Done** H-APP.0.5 |
-| APP-PROD-5 | Deploy triad gate | **Done** AA phase |
+| ID | Deliverable | Status | Command / test |
+|----|-------------|--------|----------------|
+| APP-PROD-1 | `check_application_production_gates.py` — no ad-hoc Nexus, harness runtime | **Done** | `python scripts/check_application_production_gates.py` |
+| APP-PROD-2 | Reference hosts use `build_harness_host_runtime` exclusively | **Done** | H-APP-WIRING |
+| APP-PROD-3 | `ApplicationHost` mounted when provided | **Done** | `test_application_host_wiring` |
+| APP-PROD-4 | Manifest conformance | **Done** | `test_manifest_conformance` |
+| APP-PROD-5 | Deploy triad | **Done** | `test_application_deploy_triad` |
+| APP-PROD-6 | `check_environment_state_usage` — hooks use `app_env_state.v1` | Planned | CI lint |
+| APP-PROD-7 | `check_budget_enforcement` — COST profile on STRICT product hosts | Planned | ACP-TOK-2 |
+| APP-PROD-8 | `check_workspace_cleanup` — factory lifespan cleanup hooks | Planned | integration |
 
 ## 40.3 Mutating product checklist
 
@@ -1293,89 +1390,145 @@ Cognition    → Agent.on_next_step() ONLY
 
 # 42. ApplicationEnvironmentState (Typed Host State)
 
-**Contract:** `intergrax/applications/contracts/environment_state.py`
+**Contract:** `intergrax/applications/contracts/environment_state.py` · schema **`app_env_state.v2`** on wire key **`app_env_state.v1`**.
 
-Hooks today receive `HookContext.runtime_state: dict`. Application authors SHOULD use typed state under key **`app_env_state.v1`**:
+Hooks receive `HookContext.runtime_state: dict`. Application authors MUST use the typed model — not ad-hoc keys.
+
+## 42.1 Core fields
 
 ```text
 ApplicationEnvironmentState:
-    schema_version: app_env_state.v1
-    app_id
-    profile_id
+    schema_version: app_env_state.v2
+    app_id, profile_id, profile_snapshot_id
     execution_mode
+    task_id, run_id, graph_id | null
+    phase: EnvironmentTaskPhase
+    health: EnvironmentHealthStatus
     organization_id | null
-    active_scenario_id | null
-    budget_warn_emitted: bool
-    budget_exceeded: bool
-    custom: dict                          # product extensions — keep small
+    policy_overlays: PolicyOverlayState
+    hitl: HitlEscalationState
+    budget: ActiveBudgetState
+    shadow_workspace: WorkspaceIsolationRef | null
+    sandbox_session: SandboxIsolationRef | null
+    pending_notifications: list[PendingNotification]
+    custom: dict                              # small product extensions only
 ```
 
-**Helpers:**
+## 42.2 Nested models
 
-- `seed_application_environment_state(...)` — bootstrap on intake hooks
-- `ApplicationEnvironmentState.from_runtime_state(ctx.runtime_state)` — read
-- `state.patch_runtime_state()` — `HookResult.modified_payload` for MODIFY
+| Model | Purpose |
+|-------|---------|
+| `PolicyOverlayState` | Org id, role, scenario, playbook ids, tool denies, prompt overlays |
+| `HitlEscalationState` | `pending`, `ticket_id`, `escalation_reason`, `awaiting_role` |
+| `ActiveBudgetState` | Agent/env token totals, limits, warn/emitted/exceeded, `last_reaction` |
+| `WorkspaceIsolationRef` / `SandboxIsolationRef` | Active isolation handles + paths |
+| `PendingNotification` | Queued notify channel + template for host reactions |
 
-**Rules:**
+## 42.3 Persistence rules
 
-- Host state is **task-scoped** unless explicitly persisted via Tier-0 stores — not a second agent session state.
-- Do not store secrets or large blobs in `custom`.
-- Agent-private cognition remains `acp.state.v1` (ACP §37.2) — separate from `app_env_state.v1`.
+| State class | Scope | Persistence |
+|-------------|-------|-------------|
+| `app_env_state.v1` | Single **Task** lifecycle | MODIFY merges across hooks; cleared on new task |
+| Agent cognition `acp.state.v1` | Agent run | ACP checkpoint — separate plane |
+| Artifacts §48 | Task + retention policy | Filesystem / object store |
+| Trace / summary | Ops | OBS spine + `ApplicationRunSummary` |
+
+**Rules:** no secrets in `custom`; no unbounded lists; cross-task workflow state → task memory or external store.
+
+## 42.4 Helpers
+
+- `seed_application_environment_state(...)` — intake bootstrap
+- `ApplicationEnvironmentState.from_runtime_state(ctx.runtime_state)`
+- `state.patch_runtime_state()` → `HookResult.modified_payload`
+
+**Planned APP-CON-3:** Nexus lifecycle auto-updates `phase`, `budget`, HITL fields on hook context.
 
 ---
 
 # 43. Budget Reactions and Token Governance
 
-Symmetric to ACP §25.5 — **application configures**, **harness enforces**, **agents read**.
+Symmetric to ACP §25.5 — **application configures**, **harness enforces**, **agents read**. Full agent-side detail: ACP §25.4–§25.5.
 
-## 43.1 Configuration surfaces (Tier-3)
+## 43.1 End-to-end runtime flow
+
+```text
+Tier-3 config (CostProfile + AgentBinding.budget_slice + budget_reaction)
+    → materialize_runtime_config / merge_environment
+    → ResolvedBudgetLimits on AgentStepContext (ACP-TOK-1)
+    → each LLM call meters tokens (LLM adapters + §25.4 rollups)
+    → HarnessKernel pre-LLM check (ACP-TOK-2 target):
+         if tokens_total >= limit * warn_threshold_ratio → BUDGET_THRESHOLD event + notify
+         if hard limit exceeded → apply BudgetExceededReaction
+    → ApplicationEnvironmentState.budget updated (APP-CON-3)
+    → host notify / custom_hook / HITL / abort / degrade_model (ACP-TOK-3)
+    → Plane A ApplicationRunSummary totals + Plane B step records
+```
+
+## 43.2 Configuration surfaces (Tier-3)
 
 | Surface | Field | Scope |
 |---------|-------|-------|
-| Environment ceiling | `CostProfile.max_total_tokens` | Whole task / graph |
+| Environment ceiling | `CostProfile.max_total_tokens` | Whole task / graph (`RunBudget` Nexus) |
 | Per-agent cap | `AgentBinding.budget_slice` | Single agent run |
-| Reactions | `CostProfile.budget_reaction` → `BudgetReactionProfile` | Threshold + exceed behavior |
+| Reactions | `CostProfile.budget_reaction` | Threshold + exceed behavior |
 | Enforcement | `AgentBudgetSlice.enforcement` | `hard` \| `advisory` |
 
-**Module:** `intergrax/contracts/agent_budget.py`
+**Merge order:** platform default → `cost_profile` → `budget_slice` → request overrides (STRICT denies widen).
 
-## 43.2 BudgetReactionProfile (normative)
+## 43.3 BudgetReactionProfile (normative)
 
 ```text
 BudgetReactionProfile:
     on_agent_limit_exceeded: abort | hitl | degrade_model | notify_only | custom_hook
-    on_environment_limit_exceeded: abort | hitl | degrade_model | notify_only | custom_hook
+    on_environment_limit_exceeded: abort | hitl | degrade_model | notify_only | custom_hook | pause_graph
     notify_channels: list[in_app | webhook | slack | email | trace_only]
-    warn_threshold_ratio: float          # soft threshold — default 0.80
+    warn_threshold_ratio: float = 0.80
     custom_hook_id: str | null
     user_message_template: str | null
 ```
 
-## 43.3 Soft vs hard caps
+## 43.4 Soft vs hard caps
 
-| Kind | Detection | Harness behavior | Application configures |
-|------|-----------|------------------|------------------------|
-| **Soft (advisory)** | `tokens_total` ≥ `limit * warn_threshold_ratio` | Emit `BUDGET_THRESHOLD` event; optional notify | `warn_threshold_ratio`, `notify_channels` |
-| **Hard** | `tokens_total` ≥ limit with `enforcement=hard` | Block next LLM; apply `on_*_limit_exceeded` | `budget_slice`, `max_total_tokens`, reaction enum |
+| Kind | Detection | Kernel (target) | Host (Tier-3) |
+|------|-----------|-----------------|---------------|
+| **Soft** | usage ≥ limit × ratio | `BUDGET_THRESHOLD` event | `notify_channels`; update `budget.warn_emitted` |
+| **Hard agent** | agent scope ≥ limit, `enforcement=hard` | Block LLM; `on_agent_limit_exceeded` | HITL ticket / webhook / `custom_hook_id` |
+| **Hard environment** | env scope ≥ limit | Block graph LLM; `on_environment_limit_exceeded` | May `pause_graph` + operator alert |
+| **Advisory** | limit set, `enforcement=advisory` | Meter only | Agent soft strategy in `on_next_step` |
 
-## 43.4 Reaction semantics
+## 43.5 Reaction semantics (kernel + host)
 
-| Reaction | Effect |
-|----------|--------|
-| **`abort`** | Terminal task/agent run with `BUDGET_EXCEEDED` |
-| **`hitl`** | Pause for human approval — resume governance |
-| **`degrade_model`** | Router switches to cheaper allowed model (within `LLMProfile`) |
-| **`notify_only`** | Emit events + optional webhook — run may continue if advisory |
-| **`custom_hook`** | Invoke registered host hook id — product paging / billing |
+| Reaction | Kernel effect | Host / operator surface |
+|----------|---------------|-------------------------|
+| **`abort`** | `BUDGET_EXCEEDED`, terminal `budget_exceeded` | Error + `user_message_template` |
+| **`hitl`** | `pause_hitl` / Nexus HITL runner | `HitlEscalationState` §42 |
+| **`degrade_model`** | `StepLLMRouter` cheapest allowed model | Trace warning |
+| **`notify_only`** | Continue if advisory; always emit events | Slack/webhook/in_app via integration slugs |
+| **`custom_hook`** | Emit payload to host registry | Billing, paging, CRM — **no vendor SDK in Tier-2** |
+| **`pause_graph`** | Environment exceed only — freeze graph | Task status + summary |
 
-## 43.5 Implementation status
+## 43.6 Acceptance tests (target gates)
+
+| Test | Asserts | Gate |
+|------|---------|------|
+| `test_budget_threshold_event` | Soft warn at 80% | ACP-TOK-2 |
+| `test_hard_cap_blocks_llm` | No LLM after exceed | ACP-TOK-2 |
+| `test_budget_reaction_hitl` | HITL pause on agent exceed | ACP-TOK-3 |
+| `test_budget_custom_hook` | Host callback invoked | ACP-TOK-3 |
+| `test_environment_cap_pause_graph` | Graph stops on env exceed | ACP-TOK-3 |
+| `check_application_production_gates` | Host wiring + manifest | APP-PROD-1 |
+
+## 43.7 Implementation status (honest)
 
 | ID | Deliverable | Status |
 |----|-------------|--------|
-| Contracts `BudgetReactionProfile` | Pydantic model | **Done** |
-| `ResolvedBudgetLimits` on step context | Read surface for agents | **Partial** ACP-TOK-1 |
-| Kernel hard cap + reactions | `HarnessKernel` enforcement | **Planned** ACP-TOK-2 |
-| Host notify + custom_hook wiring | Tier-3 integration | **Planned** ACP-TOK-3 |
+| Contracts | `BudgetReactionProfile`, `AgentBudgetSlice` | **Done** |
+| Metering | `invocation_usage` rollups | **Partial** ACP-TOK-1 |
+| Kernel enforce + reactions | `HarnessKernel` pre-LLM | **Planned** ACP-TOK-2 |
+| Host notify + hooks | Tier-3 wiring | **Planned** ACP-TOK-3 |
+| Nexus `RunBudget` | Environment cap | **Partial** COST-1 |
+
+**Production claim:** mutating STRICT hosts MUST NOT ship until ACP-TOK-2 **Done** unless explicit ADR waiver.
 
 **Anti-pattern BUD-AP-01:** Hardcoded limits in `on_next_step`. **Correct:** `budget_slice` + `budget_reaction`.
 
@@ -1471,13 +1624,494 @@ A Tier-3 host MAY be labeled **production-ready** only when **all** mandatory ro
 
 | Dimension | Target | Current (2026-06-11) |
 |-----------|--------|----------------------|
-| Architecture completeness | 9/10 | **9/10** — APP-CON canon §24–§46 |
-| Hook runtime wiring | 10/10 | **9/10** — APP-CON-1 Done; intake state seed optional |
-| Budget / prod gates | 10/10 | **6/10** — ACP-TOK-2/3, APP-PROD-1 open |
-| **Overall production readiness** | — | **~7.5/10** — safe for lab/reference; mutating prod needs TOK + PROD gates |
+| Architecture completeness | 10/10 | **10/10** — APP-CON §24–§48 + evolution §49 |
+| Hook runtime wiring | 10/10 | **9/10** — APP-CON-1 Done; §32.6 normative; intake auto-seed optional |
+| Budget / prod gates | 10/10 | **7/10** — APP-PROD-1 Done; ACP-TOK-2/3, APP-PROD-6..8 open |
+| Evolution / governance | 10/10 | **8/10** — §49 normative; APP-EVOL-1..7 Planned |
+| **Overall production readiness** | — | **~8.5/10** lab/reference; **~7.5/10** mutating STRICT until ACP-TOK-2/3 + APP-EVOL-1 |
 
 ---
 
-**Plan:** Phase **H-APP-CON** — [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md)
+# 47. Developer Mental Model
+
+**“What do I implement for environment type X?”** — five recipes. Cognition stays in agents only.
+
+## 47.1 Minimal lab application
+
+| Implement | Do not implement |
+|-----------|------------------|
+| `manifest.py` + `ApplicationEnvironmentProfile.lab_defaults()` | Nexus subclass |
+| `host/factory.py` → `build_harness_host_runtime` | `on_next_step` in host |
+| `AgentBinding.mount(EchoAgent)` | Business rules in factory |
+| Optional `HarnessApplication` for quick test | Org envelope |
+
+**Files:** `manifest.py`, `host/environment_profile.py`, `host/factory.py`, `host/main.py`, `.env.example`
+
+## 47.2 Product application (single/multi agent)
+
+| Implement | Do not implement |
+|-----------|------------------|
+| Full `ApplicationEnvironmentProfile` (STRICT, OBS, REL) | Ad-hoc `NexusLoop(` |
+| Roster + factories per agent | Multi-agent loops in Tier-3 |
+| `graph_spec` **or** explicit API capabilities | Hidden agent routing |
+| HTTP/MCP routes → `UnifiedTaskRunner` | Direct `agent.run()` from routers |
+| Deploy triad | |
+
+**Files:** above + `serving/fastapi_router.py`, `docker/`, `BUILD_AND_DEPLOY.md`, product `ARCHITECTURE.md`
+
+## 47.3 Virtual organization
+
+| Implement | Do not implement |
+|-----------|------------------|
+| `OrganizationalPolicyEnvelope` on profile | `if org ==` in agents |
+| `AgentBinding.org_role_id` per role | Duplicate compliance in Tier-2 |
+| Policy YAML under `host/policy/rules/` | |
+| Eval golden scenarios (UC-A7) | |
+
+## 47.4 Simulation / scenario host
+
+| Implement | Do not implement |
+|-----------|------------------|
+| `ApplicationGraphSpec` + `scenario_bindings` | Custom orchestration loop |
+| `capability=*.pipeline` on API | |
+| `dispute_sim`-style reference patterns | |
+
+## 47.5 Mutating production host
+
+| Implement | Do not implement |
+|-----------|------------------|
+| Everything in §47.2 + §46.1 mandatory | Ship without ACP-TOK-2 when mutating |
+| `ReliabilityProfile` idempotency + checkpoints | |
+| `CriticProfile` for high-risk caps | |
+| `budget_reaction` when cost-sensitive | |
+| `mount_harness_task_routes` for HITL | |
+| Pass `check_application_production_gates.py` | |
+
+**Rule of thumb:** if it **thinks**, it belongs in **`agents/`**. If it **composes, constrains, or reacts**, it belongs in **`applications/`** profile/manifest/hooks.
+
+---
+
+# 48. Application Artifacts
+
+**Contract:** `intergrax/applications/contracts/application_artifacts.py`
+
+Artifacts are **first-class outputs** of application environments — linked to `task_id`, `run_id`, `graph_id`, with provenance and retention.
+
+## 48.1 Reference types
+
+| Type | Model | Typical source |
+|------|-------|----------------|
+| Application | `ApplicationArtifactRef` | Business outcome webhooks, exports |
+| Shadow workspace | `WorkspaceArtifactRef` | `ShadowWorkspace.list_artifacts()` |
+| Sandbox | `SandboxArtifactRef` | `sandbox.exec` outputs |
+| Rollup | `RunArtifactBundle` | Attached to `ApplicationRunSummary` metadata |
+
+## 48.2 Common fields
+
+```text
+artifact_id, uri, size_bytes, sha256
+task_id, run_id?, graph_id?
+owner_app_id, tenant_id
+security_class: public | internal | confidential | restricted
+visibility: task_only | application | tenant | operator
+retention: retain_hours, delete_on_task_complete, archive_to_object_store
+provenance: application | shadow_workspace | sandbox | tool
+```
+
+## 48.3 Metadata keys
+
+| Key | Content |
+|-----|---------|
+| `application_run_summary.v1` | Plane A rollup §26 |
+| `run_artifact_bundle.v1` | `RunArtifactBundle` §48 |
+
+## 48.4 Lifecycle
+
+```text
+produce → classify → attach to task metadata → expose in summary → retain/purge per policy
+```
+
+**Rule:** operators discover artifacts via summary + bundle — not by scanning host filesystem ad hoc.
+
+---
+
+# 49. Runtime Evolution and Governance
+
+Operational lifecycle for Tier-3 environments at scale — **versioning, migration, capability sunset, agent promotion, recovery, diff, packaging**. This chapter does **not** introduce a new cognition loop or Nexus fork; it defines how **declarative** application artifacts evolve and how **hosts** react when reality diverges from config.
+
+**Design principle:** configuration is immutable-at-a-point-in-time; **snapshots** + **migrations** make change auditable. Runtime always executes against a **resolved snapshot**, not “latest YAML on disk” in STRICT production.
+
+```text
+Author edits manifest / profile / graph / envelope
+    → version bump + migration script (when breaking)
+    → EnvironmentSnapshot materialized at deploy / task intake
+    → Nexus executes against snapshot
+    → Recovery / diff / audit use same snapshot ids
+```
+
+**Cross-domain:** agent cognition versioning → ACP §25 · capability semver → UAEP §42.27 · checkpoint/resume → [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) §33.3 · agent lifecycle evaluator → `intergrax/runtime/architecture/agent_lifecycle_governance.py`.
+
+---
+
+## 49.1 Environment Versioning
+
+### 49.1.1 Version surfaces (normative)
+
+| Artifact | Version field | Semantics |
+|----------|---------------|-----------|
+| **`ApplicationManifest`** | `version: semver` | Deployable application package release |
+| **`ApplicationEnvironmentProfile`** | `spec_version: str` | Serialized profile shape for UI round-trip (DX-7.2) |
+| **`ApplicationGraphSpec`** | `graph_version: semver` (target) | Topology breaking changes bump major |
+| **`OrganizationalPolicyEnvelope`** | `envelope_version: semver` (target) | Org rules breaking changes bump major |
+| **`ApplicationEnvironmentState`** | `profile_snapshot_id` | Active resolved profile fingerprint for a Task |
+| **Wire contracts** | `schema_version` | e.g. `app_env_state.v2`, `run_artifact_bundle.v1` |
+
+### 49.1.2 EnvironmentSnapshot (target contract)
+
+Immutable materialization of everything Nexus needs for one deploy or one Task intake:
+
+```text
+EnvironmentSnapshot:
+    snapshot_id: str                    # stable hash or uuid
+    app_id: str
+    app_version: semver
+    profile_snapshot_id: str
+    manifest_digest: sha256
+    graph_spec_digest: sha256 | null
+    org_envelope_digest: sha256 | null
+    roster_digest: sha256               # AgentBinding[] resolved
+    captured_at: datetime
+    captured_by: deploy | intake | manual_export
+```
+
+**Rules:**
+
+- STRICT production Tasks SHOULD record `profile_snapshot_id` on `ApplicationEnvironmentState` (§42).
+- Lab MAY run without snapshot persistence — product hosts MUST NOT.
+- Snapshot is the **unit of replay** for simulation and post-incident audit.
+
+### 49.1.3 ApplicationVersion
+
+Logical release of a Tier-3 host — ties together manifest semver, container image tag, and optional changelog:
+
+```text
+ApplicationVersion:
+    app_id: str
+    version: semver
+    git_ref: str | null
+    image_tag: str | null
+    changelog_ref: str | null
+    compatible_runtime: str            # harness baseline, e.g. "1.0.0"
+```
+
+**Status:** `ApplicationManifest.version` **Done**; `EnvironmentSnapshot` / `ApplicationVersion` registry **Planned** APP-EVOL-1.
+
+---
+
+## 49.2 Environment Migration
+
+### 49.2.1 ApplicationMigration
+
+Declarative description of how to move from snapshot A → B:
+
+```text
+ApplicationMigration:
+    migration_id: str
+    from_app_version: semver_range
+    to_app_version: semver
+    steps: list[MigrationStep]
+    rollback_supported: bool
+```
+
+```text
+MigrationStep:
+    target: profile | graph_spec | org_envelope | roster | hooks
+    action: transform | replace | validate_only
+    script_ref: str                      # e.g. migrations/2026_06_profile_v2.py
+    breaking: bool
+```
+
+### 49.2.2 What migrates (by primitive)
+
+| Primitive | Typical change | Migration strategy |
+|-----------|----------------|-------------------|
+| **`ApplicationEnvironmentProfile`** | New sub-profile field, default change | Transform script + `spec_version` bump |
+| **`ApplicationGraphSpec`** | Node rename, edge change | Graph migration + golden trace replay |
+| **`OrganizationalPolicyEnvelope`** | Playbook/tool deny change | Envelope version + eval golden refresh |
+| **`AgentBinding`** | Capability rename, agent swap | Roster migration + alias period (§49.3) |
+| **Hooks** | New HookPoint behavior | Host code deploy — not data migration |
+
+### 49.2.3 EnvironmentUpgrade flow (runtime)
+
+```text
+1. Operator bumps ApplicationManifest.version
+2. CI runs migration validators + scenario matrix §44
+3. Deploy new image → factory builds with new profile
+4. On first Task intake after deploy:
+     capture EnvironmentSnapshot
+     seed app_env_state with profile_snapshot_id
+5. In-flight Tasks: finish on intake snapshot OR policy-driven drain (product choice)
+```
+
+**Anti-pattern EVOL-AP-01:** Editing production YAML without version bump — breaks audit and replay.
+
+**Status:** per-file host checklist **Done** (H-APP.5.4); typed `ApplicationMigration` **Planned** APP-EVOL-2.
+
+---
+
+## 49.3 Capability Governance
+
+Tier-3 routes work via **capability tokens** on `Task` and `AgentBinding.capabilities[]` (§24.2, §37.4). At scale, capabilities need a **lifecycle** independent of agent class names.
+
+### 49.3.1 Capability registry model (normative target)
+
+```text
+CapabilityDescriptor:                    # UAEP §42.27 — harness-wide
+    capability: str                       # e.g. research.pipeline
+    version: semver
+    agent_id: str
+    contract_version: str
+    deprecated: bool
+    superseded_by: str | null
+
+CapabilityAlias:                         # APP-EVOL-3 target
+    alias: str                            # research.pipeline (legacy)
+    canonical: str                         # research.orchestrate
+    sunset_at: datetime | null
+
+CapabilityDeprecation:
+    capability: str
+    version: semver
+    notice_ref: str
+    migration_guide_ref: str
+    block_routing_after: datetime
+```
+
+### 49.3.2 Tier-3 binding rules
+
+| Rule | Enforcement |
+|------|-------------|
+| Manifest roster lists **canonical** capabilities only | `EnvironmentSkillToolConsistencyCheck` |
+| Deprecated capability in STRICT | Nexus routing policy blocks or warns (V-REM-ALG.1) |
+| Breaking capability change | Major semver bump; alias window ≥ 14 days |
+| `research.pipeline` retired | Remove from `AgentBinding`; keep alias redirect in registry until sunset |
+
+**Example:** `research.pipeline` superseded by `research.orchestrate` — Tier-3 manifest updates bindings; harness registry serves alias during migration window.
+
+**Status:** UAEP `CapabilityDescriptor` **documented**; runtime alias registry **Planned** APP-EVOL-3; retired-agent routing filter **Done** (V-REM-ALG.1).
+
+---
+
+## 49.4 Agent Lifecycle Governance
+
+Today: `Application → AgentBinding → Agent`. At 500 agents, **which agents may run in production** must be explicit.
+
+### 49.4.1 AgentLifecycle states
+
+**Code:** `intergrax/contracts/agent_lifecycle_state.py` · `AgentLifecycleState`
+
+```text
+experimental → development → candidate → staging → production → deprecated → retired
+```
+
+Each Tier-2 agent contract carries `lifecycle_state` (ACP). Tier-3 **`AgentBinding`** references agents that MUST satisfy host policy.
+
+### 49.4.2 Governance policies (target)
+
+```text
+AgentApprovalPolicy:
+    allowed_states_for_strict: list[AgentLifecycleState]   # default: [production]
+    allow_staging_in_balanced: bool
+
+AgentPromotionPolicy:
+    required_gates: list[str]              # e.g. ACP-PROD-1, eval golden id
+    min_eval_pass_rate: float | null
+
+AgentCertification:
+    agent_id: str
+    agent_version: semver
+    certified_at: datetime
+    certified_by: str
+    evidence_refs: list[str]               # test run ids, ADR links
+```
+
+### 49.4.3 Tier-3 enforcement
+
+| Posture | Rule |
+|---------|------|
+| **STRICT production** | `registry_assembly_resolver` rejects non-`PRODUCTION` agents unless explicit waiver in product ARCHITECTURE |
+| **STAGING host** | `STAGING` + `PRODUCTION` allowed |
+| **Lab** | All states except `RETIRED` (retired blocked — V-REM-ALG.1) |
+| **Deprecation** | `evaluate_agent_lifecycle_transition()` — migration window + guide refs required |
+
+**Promotion flow:** agent passes ACP-PROD gates → lifecycle `STAGING` → product host eval → `PRODUCTION` → added to `ApplicationManifest.agents`.
+
+**Status:** lifecycle enum + transition evaluator **Done** (V-ALG.3); `AgentCertification` store + APP-EVOL-4 host gate **Planned**.
+
+---
+
+## 49.5 Runtime Recovery
+
+Reliability primitives exist (`ReliabilityProfile`, checkpoints, idempotency, compensation). Tier-3 needs an explicit **Application Recovery Contract** — what the **host** guarantees after failure.
+
+### 49.5.1 Failure scenarios
+
+| Scenario | Detection | Tier-3 host responsibility |
+|----------|-----------|----------------------------|
+| **Host process crash** | K8s / supervisor restart | Factory idempotent bootstrap; scheduler resumes pending tasks |
+| **Container restart** | Lifespan hook | `wire_long_running_scheduler` + checkpoint store |
+| **Partial graph execution** | Graph node failure | Nexus retry policy; `ApplicationRunSummary` partial status |
+| **Node failure (single agent)** | Agent run FAILED | Orchestration retry / alternate binding (graph policy) |
+| **HITL pause** | `HitlEscalationState` §42 | `mount_harness_task_routes` resume endpoint |
+| **Budget hard exceed** | §43 | Terminal or HITL per `BudgetReactionProfile` |
+
+### 49.5.2 Recovery actions (normative)
+
+```text
+ApplicationRecoveryContract:
+    on_host_restart: resume_scheduler | cold_start_only
+    on_task_interrupted: resume | restart | escalate_hitl
+    on_graph_node_failure: retry_node | skip_with_audit | abort_graph
+    on_corrupt_checkpoint: replay_from_snapshot | abort_with_incident
+    max_resume_attempts: int
+    preserve_snapshot_id: bool = true
+```
+
+| Action | When | Harness mechanism |
+|--------|------|-------------------|
+| **`resume`** | Checkpoint exists, same snapshot | `resume_token` + task checkpoint store |
+| **`restart`** | Idempotent task, no partial side effects | New `task_id`, same payload + idempotency key |
+| **`rollback`** | Mutating tool failure | Compensation queue (ACP-PROD-5) |
+| **`replay`** | Lab / simulation | `EnvironmentSnapshot` + trace replay |
+
+### 49.5.3 Product host checklist
+
+Mutating STRICT hosts MUST document in product `ARCHITECTURE.md`:
+
+1. Checkpoint store path and retention
+2. Scheduler enabled for async/long-running
+3. Recovery action per scenario above
+4. Whether in-flight tasks drain on deploy or abort
+
+**Cross-ref:** [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) §33.3, §34.4 · ACP checkpoint host wiring.
+
+**Status:** platform checkpoint/resume **Partial**; typed `ApplicationRecoveryContract` on profile **Planned** APP-EVOL-5.
+
+---
+
+## 49.6 Environment Diff and Audit
+
+Large agent environments require **diff**, not eyeballing YAML.
+
+### 49.6.1 ApplicationEnvironmentDiff (target)
+
+```text
+ApplicationEnvironmentDiff:
+    left_snapshot_id: str
+    right_snapshot_id: str
+    profile_diff: StructuredDiff
+    graph_diff: StructuredDiff | null
+    envelope_diff: StructuredDiff | null
+    roster_diff: list[RosterEntryChange]
+    risk_level: low | medium | high
+    breaking_changes: list[str]
+```
+
+### 49.6.2 Diff operations
+
+| Function | Input | Output |
+|----------|-------|--------|
+| `diff_profile(a, b)` | Two `ApplicationEnvironmentProfile` | Field-level changes, execution_mode delta |
+| `diff_graph(a, b)` | Two `ApplicationGraphSpec` | Added/removed nodes, edge changes |
+| `diff_envelope(a, b)` | Two `OrganizationalPolicyEnvelope` | Tool denies, playbook, channel changes |
+| `diff_roster(a, b)` | Two `AgentBinding[]` | Capability/agent swaps |
+
+### 49.6.3 Audit use cases
+
+- **Pre-deploy review:** `diff(snapshot_prod, snapshot_candidate)` in CI
+- **Incident:** compare `profile_snapshot_id` on failed Task vs current deploy
+- **Org simulation:** diff envelope before enabling new playbook
+
+**CLI target:** `intergrax doctor diff-app --left v1.2.0 --right v1.3.0-rc1` (APP-EVOL-6).
+
+**Status:** **Planned** APP-EVOL-6.
+
+---
+
+## 49.7 Application Packaging and Distribution
+
+Intergrax composes **Applications + Agents + Skills + Tools + Profiles**. A formal **package** model enables marketplace-style distribution without forking the harness.
+
+### 49.7.1 ApplicationPackage (target)
+
+```text
+ApplicationPackage:
+    package_id: str                        # e.g. com.intergrax.research
+    app_id: str
+    version: semver
+    manifest: ApplicationManifest          # frozen
+    dependencies: list[ApplicationDependency]
+    distribution: ApplicationDistribution
+```
+
+```text
+ApplicationDependency:
+    kind: agent | skill | tool | integration | profile_fragment
+    ref: str                               # slug or version pin
+    version_constraint: str                # semver range
+    optional: bool = false
+```
+
+```text
+ApplicationDistribution:
+    channel: local | git | registry | marketplace
+    artifact_uri: str | null
+    checksum: sha256
+    signature_ref: str | null
+```
+
+### 49.7.2 Dependency closure
+
+At `wire_application_environment()` time, resolver MUST verify:
+
+```text
+manifest.agents[]           → agent packages present in registry
+environment tool/skill ids  → subset of catalogs (existing conformance)
+integration_profile         → providers available
+graph_spec nodes            → roster capabilities satisfied
+```
+
+**Scaffold today:** `new-stack` bundles agent + application; `agent_catalog.py` resolves specs — precursor to full `ApplicationPackage`.
+
+### 49.7.3 Distribution rules
+
+| Rule | Rationale |
+|------|-----------|
+| Package is **immutable** at a version | Reproducible deploys |
+| Dependencies pinned in STRICT | No surprise catalog drift |
+| Secrets never in package | `.env.example` only |
+| Business logic stays Tier-2 | Package wires, does not embed cognition |
+
+**Status:** scaffold bundle **Partial**; `ApplicationPackage` schema + resolver **Planned** APP-EVOL-7.
+
+---
+
+## 49.8 Implementation register (APP-EVOL)
+
+| ID | Deliverable | Status | Acceptance |
+|----|-------------|--------|------------|
+| APP-EVOL-1 | `EnvironmentSnapshot` + snapshot capture on intake | Planned | `profile_snapshot_id` on every STRICT task |
+| APP-EVOL-2 | `ApplicationMigration` schema + validator CLI | Planned | CI fails on breaking change without migration |
+| APP-EVOL-3 | `CapabilityAlias` registry + sunset routing | Planned | deprecated capability redirect test |
+| APP-EVOL-4 | `AgentCertification` + STRICT roster gate | Planned | non-PRODUCTION blocked in product hosts |
+| APP-EVOL-5 | `ApplicationRecoveryContract` on `ReliabilityProfile` | Planned | documented + integration test |
+| APP-EVOL-6 | `ApplicationEnvironmentDiff` + `doctor diff-app` | Planned | pre-deploy CI diff |
+| APP-EVOL-7 | `ApplicationPackage` + dependency resolver | Planned | `new-stack` emits package manifest |
+
+**Explicitly out of scope:** marketplace UI (H-APP deferred); Nexus fork; Tier-3 cognition loop.
+
+---
+
+**Plan:** Phase **H-APP-CON** · **H-APP-EVOL** — [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md)
 
 ---

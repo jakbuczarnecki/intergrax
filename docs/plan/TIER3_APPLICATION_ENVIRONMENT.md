@@ -8,7 +8,7 @@
 
 **Cross-plan — Agent layer (ACP):** Tier-3 hosts supply `ApplicationEnvironmentProfile`, `AgentBinding`, intake `RequestIdentity`, and org envelope — consumed by agent `merge_environment` (architecture ACP §30 · TIER3 §39). Implementation synced in [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 2** (`ACP-DX-2`, `ACP-DX-5`) and **Wave 6** (`ACP-ORG-1..2`). Host PRs that change profile merge order MUST update agent plan acceptance tests.
 
-**Application authoring canon (APP-CON):** architecture §24–§45 — symmetric to ACP §12–§45 for Tier-3 environments. Phase **H-APP-CON** below.
+**Application authoring canon (APP-CON):** architecture §24–§48 — symmetric to ACP §12–§45 for Tier-3 environments. **Evolution canon (APP-EVOL):** architecture §49. Phases **H-APP-CON** · **H-APP-EVOL** below.
 
 ---
 
@@ -297,7 +297,7 @@ uv run pytest -m gate -q
 
 ## Phase H-APP-CON — Application Environment Architecture canon (APP-CON)
 
-**Status:** **In progress** (2026-06-11) — architecture §24–§46 documented; APP-CON-1/2 **Done**; TOK/PROD gates open  
+**Status:** **In progress** (2026-06-11) — architecture §24–§48 documented; APP-CON-1/2/4 **Done**; APP-PROD-1 **Done**; ACP-TOK-2/3 open  
 **Prerequisites:** Phase H-APP **Done** · H-APP-DOC **Done** · H-APP-WIRING **Done**  
 **Goal:** Deliver **symmetric authoring canon** to ACP for Tier-3 — contracts, facades, hooks, checklists — without a new domain pair or Nexus fork.
 
@@ -305,18 +305,43 @@ uv run pytest -m gate -q
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| H-APP-CON-DOC.1 | Architecture §24–§45 (APP-CON) + TOC | **Done** | **Critical** | `architecture/TIER3_APPLICATION_ENVIRONMENT.md` |
+| H-APP-CON-DOC.1 | Architecture §24–§48 (APP-CON) + TOC | **Done** | **Critical** | `architecture/TIER3_APPLICATION_ENVIRONMENT.md` |
 | H-APP-CON-DOC.2 | Hub § Application in harness environment | **Done** | High | `intergrax_runtime_architecture.md` |
-| H-APP-CON-DOC.3 | Cross-ref ACP §39 → TIER3 §39 canonical home | Planned | Low | One-line pointer in ACP §39.8 |
+| H-APP-CON-DOC.3 | Cross-ref ACP §39 → TIER3 §39 canonical home | **Done** | Low | ACP §39.8 pointer |
 | APP-CON-1 | Wire `ApplicationHost` in `build_harness_host_runtime` + `HarnessApplication.build_runtime` | **Done** | **Critical** | `test_application_host_wiring.py` |
-| APP-CON-2 | `ApplicationEnvironmentState` typed host state contract | **Done** | High | `environment_state.py` |
-| APP-CON-2 | `check_application_host_wiring.py` gate — factories use `build_harness_host_runtime` | Planned | High | CI gate |
-| APP-CON-3 | APP-PROD-1..5 scoreboard rows + reference host evidence | Planned | Medium | §40.2 green on lab/legal |
+| APP-CON-2 | `ApplicationEnvironmentState` v2 typed host state | **Done** | High | `environment_state.py` + unit tests |
+| APP-CON-3 | Nexus lifecycle auto-updates `app_env_state.v1` on hooks | Planned | High | intake + phase/budget sync |
+| APP-CON-4 | `ApplicationArtifactRef` models + architecture §48 | **Done** | High | `application_artifacts.py` |
+| APP-PROD-1 | `check_application_production_gates.py` | **Done** | High | `python scripts/check_application_production_gates.py` |
+| APP-PROD-6..8 | environment_state usage, budget, workspace cleanup gates | Planned | Medium | §40.2 |
 | APP-CON-DX.1 | Appendix APP in `AGENT_CREATION_GUIDE.md` or `APPLICATION_CREATION_GUIDE.md` | Planned | Medium | Author workflow §31.1 |
 | APP-CON-DX.2 | Audit prompt `guides/audit/TIER3_APPLICATION_ENVIRONMENT.md` — APP-CON dimensions | Planned | Low | Regenerate via `generate_domain_audit_prompts.py` |
 
 **Explicitly out of scope:** `Application.on_next_orchestration_step()`; new domain pair; Nexus runtime changes for product-specific orchestration.
 
 **Rejected (documented in architecture §28.2):** cloning ACP step loop at Tier-3.
+
+---
+
+## Phase H-APP-EVOL — Runtime evolution and governance (APP-EVOL)
+
+**Status:** **In progress** (2026-06-11) — architecture §49 documented; implementation APP-EVOL-1..7 **Planned**  
+**Prerequisites:** H-APP-CON architecture **Done** · V-ALG.3 agent lifecycle **Done**  
+**Goal:** Close operational gaps for large-scale Tier-3 — versioning, migration, capability sunset, agent certification, recovery contract, environment diff, application packaging — without Nexus or profile primitive changes.
+
+**ADR:** no ADR needed for §49 documentation tranche; **ADR-APP-002** recommended when `EnvironmentSnapshot` becomes mandatory on STRICT intake (APP-EVOL-1).
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| H-APP-EVOL-DOC.1 | Architecture §49 Runtime Evolution and Governance | **Done** | **Critical** | `architecture/TIER3_APPLICATION_ENVIRONMENT.md` |
+| APP-EVOL-1 | `EnvironmentSnapshot` + intake `profile_snapshot_id` | Planned | **Critical** | STRICT tasks carry snapshot id |
+| APP-EVOL-2 | `ApplicationMigration` schema + CI validator | Planned | High | breaking bump requires migration ref |
+| APP-EVOL-3 | `CapabilityAlias` + deprecation routing | Planned | High | UAEP §42.27 + alias window test |
+| APP-EVOL-4 | `AgentCertification` + STRICT roster gate | Planned | High | non-PRODUCTION blocked |
+| APP-EVOL-5 | `ApplicationRecoveryContract` on profile | Planned | High | product ARCHITECTURE template |
+| APP-EVOL-6 | `ApplicationEnvironmentDiff` + `doctor diff-app` | Planned | Medium | pre-deploy CI diff |
+| APP-EVOL-7 | `ApplicationPackage` + dependency resolver | Planned | Medium | `new-stack` emits package manifest |
+
+**Explicitly out of scope:** marketplace UI; Nexus fork; Tier-3 cognition loop.
 
 ---
