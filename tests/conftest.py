@@ -47,6 +47,18 @@ def _install_catalog_fixture_package() -> None:
 def catalog_fixture_installed() -> None:
     """Install catalog entry-point fixture package for pytest (Phase P-Ext.0.5)."""
     _install_catalog_fixture_package()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _ensure_agent_fleet_inventory() -> None:
+    """Generate fleet inventory when gate tests run without prior governance scripts."""
+    inventory_path = _REPO_ROOT / "build" / "agent_fleet_inventory.json"
+    if inventory_path.is_file():
+        return
+    subprocess.check_call(
+        [sys.executable, str(_REPO_ROOT / "scripts" / "audit_agent_fleet_legacy.py")],
+        cwd=str(_REPO_ROOT),
+    )
 from intergrax.runtime.nexus.planning.plan_sources import PlanSpec
 
 @pytest.fixture

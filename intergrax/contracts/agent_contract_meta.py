@@ -63,7 +63,7 @@ class AgentContract(BaseModel):
     )
     required_adapters: List[str] = Field(default_factory=list)
     execution_mode: AgentExecutionMode = AgentExecutionMode.ASYNC
-    max_steps: Optional[int] = None
+    max_steps: Optional[int] = 10
     max_duration_seconds: Optional[float] = None
     max_cost: Optional[float] = None
     risk_level: AgentRiskLevel = AgentRiskLevel.MEDIUM

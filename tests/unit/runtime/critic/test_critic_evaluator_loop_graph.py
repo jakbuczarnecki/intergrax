@@ -7,9 +7,17 @@ from __future__ import annotations
 import pytest
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.authoring.uaep_pipeline_bridge import (
+    pipeline_agent_steps,
+    pipeline_step_complete,
+    run_pipeline_step,
+)
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_decision import AgentDecision
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.critic.critic_wiring import (
     CriticHookConfig,
@@ -77,6 +85,26 @@ class _StubAgent(Agent):
             config=config,
             session_manager=build_in_memory_session_manager(),
         )
+
+    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+        _ = context
+        return pipeline_agent_steps(
+            step_id=f"{self._agent_id}_pipeline",
+            step_name=f"{self._agent_id}_pipeline",
+            trace_label=self._capability,
+        )
+
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+        return await run_pipeline_step(step, ctx)
+
+    def decide_after_step(
+        self,
+        step: AgentStep,
+        output: StepOutput | None,
+        ctx: RuntimeExecutionContext,
+    ) -> AgentDecision:
+        _ = step, output, ctx
+        return pipeline_step_complete(reason=f"{self._agent_id} evaluator loop stub finished")
 
 
 class _FailUntilRevisedValidation(NexusValidationEngine):

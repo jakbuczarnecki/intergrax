@@ -15,65 +15,13 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode, ExecutionNodeStatus
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
-from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, PlanStep, TaskPlanner
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
-
-
-class _AnswerPipeline(RuntimePipeline):
-    def __init__(self, prefix: str) -> None:
-        self._prefix = prefix
-
-    async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
-        answer = f"{self._prefix}: {state.request.message}"
-        state.raw_answer = answer
-        state.runtime_answer = RuntimeAnswer(run_id=state.run_id, answer=answer)
-        return state.runtime_answer
-
-
-class _SequentialStubAgent(Agent):
-    run_count = 0
-
-    def __init__(self, *, agent_id: str, prefix: str) -> None:
-        self._agent_id = agent_id
-        self._prefix = prefix
-
-    def get_contract(self) -> AgentContract:
-        return AgentContract(
-            id=self._agent_id,
-            name=self._agent_id,
-            description="graph cancel stub",
-            capabilities=["graph.cancel"],
-        )
-
-    def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
-        if capability == "graph.cancel":
-            return CapabilityMatchResult(
-                matched=True,
-                agent_id=self._agent_id,
-                matched_capabilities=["graph.cancel"],
-                score=1.0,
-            )
-        return CapabilityMatchResult(matched=False)
-
-    def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        _SequentialStubAgent.run_count += 1
-        config = RuntimeConfig(
-            llm_adapter=FakeLLMAdapter(fixed_text=f"{self._prefix}: {request.message}"),
-            enable_rag=False,
-            production_mode=False,
-            tenant_id=request.tenant_id,
-        )
-        config.pipeline = _AnswerPipeline(self._prefix)
-        return RuntimeContext.build(
-            config=config,
-            session_manager=build_in_memory_session_manager(),
-        )
+from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
 
 class _CancellingGraphExecutor(GraphExecutor):
@@ -178,10 +126,14 @@ def test_cancellation_coordinator_request_and_clear():
 @pytest.mark.integration
 @pytest.mark.gate
 async def test_graph_executor_cancels_before_second_node():
-    _SequentialStubAgent.run_count = 0
+    UaepPipelineStubAgent.run_count = 0
     registry = AgentRegistry()
-    registry.register(_SequentialStubAgent(agent_id="agent_a", prefix="A"))
-    registry.register(_SequentialStubAgent(agent_id="agent_b", prefix="B"))
+    registry.register(
+        UaepPipelineStubAgent(agent_id="agent_a", capability="graph.cancel", prefix="A")
+    )
+    registry.register(
+        UaepPipelineStubAgent(agent_id="agent_b", capability="graph.cancel", prefix="B")
+    )
 
     task = Task(
         tenant_id="t1",
@@ -209,7 +161,7 @@ async def test_graph_executor_cancels_before_second_node():
 
     assert cancelled is True
     assert len(executions) == 1
-    assert _SequentialStubAgent.run_count == 1
+    assert UaepPipelineStubAgent.run_count == 1
     assert graph.node_by_id("n1").status == ExecutionNodeStatus.COMPLETED
     assert graph.node_by_id("n2").status == ExecutionNodeStatus.SKIPPED
     assert graph.node_by_id("n2").metadata.get("cancelled") is True
@@ -219,10 +171,14 @@ async def test_graph_executor_cancels_before_second_node():
 @pytest.mark.integration
 @pytest.mark.gate
 async def test_nexus_loop_graph_cancellation():
-    _SequentialStubAgent.run_count = 0
+    UaepPipelineStubAgent.run_count = 0
     registry = AgentRegistry()
-    registry.register(_SequentialStubAgent(agent_id="agent_a", prefix="A"))
-    registry.register(_SequentialStubAgent(agent_id="agent_b", prefix="B"))
+    registry.register(
+        UaepPipelineStubAgent(agent_id="agent_a", capability="graph.cancel", prefix="A")
+    )
+    registry.register(
+        UaepPipelineStubAgent(agent_id="agent_b", capability="graph.cancel", prefix="B")
+    )
 
     loop = NexusLoop(
         registry,
@@ -239,7 +195,7 @@ async def test_nexus_loop_graph_cancellation():
     )
 
     assert result.state == TaskState.CANCELLED
-    assert _SequentialStubAgent.run_count == 1
+    assert UaepPipelineStubAgent.run_count == 1
     assert any(
         event.event_type == RuntimeEventType.CANCELLED for event in loop.event_bus.history
     )
