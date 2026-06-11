@@ -273,9 +273,9 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 |------|---------|-------|
 | **Tier-0 catalog** (`ToolContract`, plugins, 190 tools) | **Production** | Contracts, exporters, provider tests, integration composition |
 | **Single invoke** (`RuntimeToolInvoker`) | **Production** | Schema, timeout, retry, trace, idempotency wrapper |
-| **Pipeline tool step** (`ToolsStep`) | **Partial** | Planner wired (TOOL-ENG-0); plan allow-list (TOOL-ENG-4); context scope (TOOL-ENG-11); no ReAct loop (TOOL-ENG-6) |
+| **Pipeline tool step** (`ToolsStep`) | **Done** | Planner wired; bounded loop via `tool_loop_step` (TOOL-ENG-6 · ADR-TOOL-002) |
 | **Planner wiring** (`CatalogToolPlanner`) | **Done** | `wire_catalog_tool_planner_if_enabled` in `planner_bootstrap.py` (TOOL-ENG-0) |
-| **Multi-tool / ReAct loop** | **Gap** | No `max_iterations` tool loop; no native `role=tool` multi-turn chain in pipeline |
+| **Multi-tool / ReAct loop** | **Done** | `max_tool_iterations` + native `role=tool` chain (TOOL-ENG-6) |
 | **Parallel tool execution** | **Gap** | `for call in tool_plan.calls` — always sequential |
 | **Standard selection** (full schema → LLM) | **Production** | `FullCatalogSelectionStrategy` + `ToolPlanningService` (TOOL-ENG-0/4/5) |
 | **Pre-filter selection** (keyword / skill / static) | **Partial** | `ToolSelectionStrategy` — static, `skill_pack`, `retrieval_top_k` (keyword overlap, not embeddings) |
@@ -625,7 +625,7 @@ EnginePlan.tool_ids=["rag.retrieve"]          # use_rag → RagStep
 ToolInvocationPlan(use_tools=True)            # ToolsStep → fresh LLM plan
 ```
 
-Gap closure: **TOOL-ENG-6** (multi-iteration ReAct tool loop).
+**TOOL-ENG-6 Done:** `run_bounded_tool_loop` — multi-iteration native tool messages when `max_tool_iterations > 1`.
 
 ---
 
@@ -682,7 +682,7 @@ Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary:
 | TOOL-ENG-11 | Implement `tools_context_scope` in `ToolsStep` / planner message assembly | **Done** |
 | TOOL-ENG-12 | Expose `tool_choice` from `tools_mode` / host profile to `plan_tools` | P2 |
 
-**ADR:** [ADR-TOOL-001](../adr/ADR-TOOL-001.md) (TOOL-ENG-1/2). TOOL-ENG-6 still requires ADR before merge. TOOL-ENG-0/3 wiring-only — **no ADR needed**.
+**ADR:** [ADR-TOOL-001](../adr/ADR-TOOL-001.md) (TOOL-ENG-1/2) · [ADR-TOOL-002](../adr/ADR-TOOL-002.md) (TOOL-ENG-6). TOOL-ENG-0/3 wiring-only — **no ADR needed**.
 
 ### CI / gate scripts (catalog)
 

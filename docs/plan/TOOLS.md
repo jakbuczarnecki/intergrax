@@ -36,7 +36,7 @@
 | TOOL-ENG-13 | Selection | **Semantic tool index** — embed `ToolContract` metadata; dedicated vector collection; `SemanticToolIndexSelectionStrategy`; reindex on catalog/plugin change | **Planned** | P1 | `tool_catalog_embedder.py` (new), `tool_selection.py`, RAG `embedding_manager` | Gate test: 190-tool catalog query ranks correct `tool_id` without keyword overlap; trace candidates/scores · **ADR required** |
 | TOOL-ENG-14 | Selection | **Hierarchical tool selection** — bundle/category tree; multi-pass LLM (`tool_selection_max_hierarchy_passes`); final schema ⊆ one branch | **Planned** | P2 | `tool_selection.py`, `hierarchical_tool_selector.py` (new), prompts | Integration test: category pass → tool pass; bounded passes · **ADR required** |
 | TOOL-ENG-15 | Selection | **Naming clarity** — document `retrieval_top_k` as keyword overlap; optional `keyword_top_k` enum alias + env migration | **Planned** | P2 | `config_types.py`, `environment_profile.py`, docs | No behavior change; alias accepted in bridge |
-| TOOL-ENG-6 | Loop | **Tool loop step** — `max_tool_iterations`, native `role=tool` messages, stop on empty `tool_calls` or budget | **Planned** | P1 | `tool_loop_step.py` (new), `tools_step.py` | Integration test: 2-iteration ReAct with mock LLM · **sync with ACP-3** (`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` Wave 5 — shared `AcpBudgetState` keys §25.2) |
+| TOOL-ENG-6 | Loop | **Tool loop step** — `max_tool_iterations`, native `role=tool` messages, stop on empty `tool_calls` or budget | **Done** | P1 | `tool_loop_step.py`, `tools_step.py`, ADR-TOOL-002 | `test_tool_loop_integration.py` · ACP-CLOSE-PAT-1 budget sync |
 | TOOL-ENG-7 | Verify | **Post-tool verify hook** — `risk_level >= HIGH` → critic middleware or HITL gate | **Planned** | P2 | `tool_verify_hooks.py`, `middleware` | HIGH tool blocked without approval in test profile |
 | TOOL-ENG-8 | Governance | **`tools_mode=required` hard fail** — raise `RunError` / fail run when zero tool calls | **Planned** | P2 | `tools_step.py` | `test_tools_mode_required_fails.py` |
 | TOOL-ENG-9 | Performance | **Parallel tool invoke** — concurrent execution for `side_effects=False` calls in one plan batch (bounded) | **Planned** | P2 | `tools_step.py`, `invoker.py` | Unit test: 3 read-only tools complete < sum(serial) |
@@ -101,7 +101,7 @@
 | 9 | **TOOL-ENG-13** | Code + ADR | **Planned** | Semantic tool vector index | embedding rank gate test |
 | 10 | **TOOL-ENG-14** | Code + ADR | **Planned** | Hierarchical category traversal | 2-pass integration test |
 | 11 | **TOOL-ENG-15** | Code + Docs | **Planned** | `keyword_top_k` alias / naming clarity | alias in bridge |
-| 12 | **TOOL-ENG-6** | Code + ADR | **Planned** | Tool loop step | 2-iteration integration test |
+| 12 | **TOOL-ENG-6** | Code + ADR | **Done** | Tool loop step | `test_tool_loop_integration.py` |
 | 13 | **TOOL-ENG-12** | Code | **Planned** | `tool_choice` wiring | required mode test |
 | 14 | **TOOL-ENG-8** | Code | **Planned** | `tools_mode=required` fail | unit test |
 | 15 | **TOOL-ENG-7** | Code | **Planned** | Post-tool verify HIGH+ | middleware test |

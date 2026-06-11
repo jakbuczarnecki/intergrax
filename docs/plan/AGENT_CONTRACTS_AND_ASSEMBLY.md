@@ -95,7 +95,7 @@
 
 ### ACP legacy & technical debt register (must shrink to zero)
 
-**Audit 2026-06-11:** **17/18 Closed** in code · **1 Open** (DEBT-ACP-18) — tracked in [Phase ACP-CLOSE](#phase-acp-close--architecture-compliance-closeout).
+**Audit 2026-06-11:** **18/18 Closed** in code — DEBT register fully closed; remaining ACP-CLOSE: PAT-2 · CI-2.
 
 | Debt ID | Legacy surface | Replacement | Status | Closed by / Open row |
 |---------|----------------|-------------|--------|----------------------|
@@ -116,7 +116,7 @@
 | DEBT-ACP-15 | Scaffold UAEP-first only | Typed scaffold `--pattern` | **Closed** | ACP-8 |
 | DEBT-ACP-16 | Roster on legacy patterns | Typed loop fleet-wide | **Closed** | ACP-MIG-* · ACP-LEG-2 |
 | DEBT-ACP-17 | No prod checkpoint / idempotency (platform) | §40 persistence modules | **Closed** (platform) · checkpoint host **Done** · idempotency/compensation depth open | ACP-PROD-1..3 · **ACP-CLOSE-PROD-*** |
-| DEBT-ACP-18 | ReAct loop split from TOOL-ENG-6 | Unified budget §25.2 | **Open** | **ACP-CLOSE-PAT-1** + **TOOL-ENG-6** |
+| DEBT-ACP-18 | ReAct loop split from TOOL-ENG-6 | Unified budget §25.2 | **Closed** | **ACP-CLOSE-PAT-1** + **TOOL-ENG-6** |
 
 **Removal policy:** ACP waves **closed**. **ACP-CLOSE** removes remaining author-visible legacy (DEBT-04/06) and delivers §40 host depth. Do not add new DEBT items — extend bridge only via ADR.
 
@@ -287,7 +287,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-CLOSE-PROD-6 | PROD | `ReliabilityProfile.idempotency_store` ↔ ledger replay §40.2.2 | **Done** | §40.2 | `idempotency_ledger_bridge.py`, `idempotency_store_wiring.py`, kernel replay | `test_acp_declarative_mutating_cross_run_dedupe.py` |
 | ACP-CLOSE-PROD-7 | PROD | §40.12 checklist **green** — reference mutating agent artifact | **Done** | §40.12 | `section_40_12_checklist.py`, `check_acp_section_40_12_checklist.py` | `build/acp_section_40_12_reference.json` |
 | ACP-CLOSE-PROD-8 | PROD | Scoreboard mutating agents **100%** checkpoint + idempotency dimensions | **Done** | §40.15 | `readiness/scoreboard.py` | `--require-mutating-checkpoint-idempotency-100` green |
-| ACP-CLOSE-PAT-1 | PAT | ReAct ↔ **TOOL-ENG-6** unified tool loop + budget keys | Planned | §26.3 · §25.2 | `patterns/react.py`, `tool_loop_step.py` | 2-iteration integration; DEBT-ACP-18 **Closed** |
+| ACP-CLOSE-PAT-1 | PAT | ReAct ↔ **TOOL-ENG-6** unified tool loop + budget keys | **Done** | §26.3 · §25.2 | `patterns/react.py`, `react_budget.py`, `tool_loop_step.py` | 2-iteration integration; DEBT-ACP-18 **Closed** |
 | ACP-CLOSE-PAT-2 | PAT | `ReflectionAgent` → CVL critic hooks (gateway only) | Planned | §26.6 | `patterns/reflection.py`, host critic wiring | No critic SDK in Tier-2; `plan/CRITIC_VERIFICATION.md` |
 | ACP-CLOSE-PAT-3 | PAT | Author terminology — single canonical §29 entry | **Done** | §28.3 GAP-07 · §29.0 | `AGENT_CREATION_GUIDE.md`, architecture §22–§23 · §27 | §29 single entry; GAP-ACP-07 **Closed** |
 | ACP-CLOSE-ORG-1 | ORG | STRICT **configure_run widen deny** per-agent | **Done** | §39.4 | `configure_run_strict.py`, `merge_environment`, `acp_run` | `test_configure_run_strict.py` |
@@ -303,7 +303,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | AUDIT-IDEAL-19.1 | this file §AUDIT-IDEAL | Durable cross-host registry snapshot | Planned |
 | AUDIT-IDEAL-20.1 | this file §AUDIT-IDEAL | Product CI blast-radius on tool/skill changes | Planned |
 | AUDIT-IDEAL-31.1 | this file §AUDIT-IDEAL | Owner/on-call mandatory on certified agents | Planned |
-| TOOL-ENG-6 | `plan/TOOLS.md` | Tool loop step — sync with ACP-CLOSE-PAT-1 | Planned |
+| TOOL-ENG-6 | `plan/TOOLS.md` | Tool loop step — sync with ACP-CLOSE-PAT-1 | **Done** |
 
 **ACP-CLOSE DoD:** DEBT-ACP **3/3 Open → Closed**; architecture §28.3 synced; mutating scoreboard dimensions **≥100%**; §40.12 evidenced; `pytest -m gate` green.
 
@@ -656,7 +656,7 @@ ACP-CLOSE:  DOC-2..4 → LEG-1 → LEG-2 → LEG-3 → PROD-1 → PROD-2 → PRO
 | 11 | ACP-CLOSE-PROD-4 | **P0** | §27 · §40.12 | **Done** |
 | 12 | ACP-CLOSE-PROD-5 | P1 | §40.3.3 | **Done** |
 | 13 | ACP-CLOSE-PROD-6 | P1 | §40.2.2 | **Done** |
-| 14 | ACP-CLOSE-PAT-1 + TOOL-ENG-6 | P1 | §26.3 | Planned |
+| 14 | ACP-CLOSE-PAT-1 + TOOL-ENG-6 | P1 | §26.3 | **Done** |
 | 15 | ACP-CLOSE-ORG-1 | P1 | §39.4 | **Done** |
 | 16 | ACP-CLOSE-PROD-7 | **P0** | §40.12 | **Done** |
 | 17 | ACP-CLOSE-PROD-8 | **P0** | §40.15 | **Done** |

@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from typing import Any, Dict, List, Optional, Union
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
 from intergrax.tools.exporters.openai import to_openai_tools
@@ -125,48 +126,16 @@ class ToolPlanningService:
         allowed = frozenset(allowed_tool_ids) if allowed_tool_ids is not None else None
 
         if self._native_tools:
-            tools_schema = _build_openai_tools_schema(
-                self.tools,
-                allowed_tool_ids=allowed_tool_ids,
-            )
-            messages = _prune_messages_for_openai(messages)
-            effective_tool_choice = tool_choice if tool_choice is not None else "auto"
-
-            result = self.llm.generate_with_tools(
+            llm_result, tool_plan = self.plan_native_round(
                 messages,
-                tools_schema,
-                temperature=self.cfg.temperature,
-                max_tokens=self.cfg.max_answer_tokens,
-                tool_choice=effective_tool_choice,
+                allowed_tool_ids=allowed_tool_ids,
                 run_id=run_id,
+                tool_choice=tool_choice,
             )
-
-            for tc in result.tool_calls:
-                name = tc.name
-                if allowed is not None and name not in allowed:
-                    continue
-                args_json = tc.arguments_json or "{}"
-
-                try:
-                    args = json.loads(args_json)
-                except Exception:
-                    args = {}
-
-                registered = self.tools.get(name)
-                contract = registered.contract
-                validated = contract.input_schema.model_validate(args)
-
-                calls.append(
-                    PlannedToolCall(
-                        step_id="tool",
-                        tool_id=name,
-                        input=validated,
-                    )
-                )
-
+            _ = llm_result
             return ToolPlanDecision(
                 final_answer=None,
-                tool_plan=ToolCallPlan(calls=calls),
+                tool_plan=tool_plan,
                 messages=[],
             )
 
@@ -235,3 +204,55 @@ class ToolPlanningService:
             tool_plan=ToolCallPlan(calls=calls),
             messages=[],
         )
+
+    def plan_native_round(
+        self,
+        messages: List[ChatMessage],
+        *,
+        allowed_tool_ids: Sequence[str] | None = None,
+        run_id: Optional[str] = None,
+        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+    ) -> tuple[LLMAdapterResponse, ToolCallPlan]:
+        """One native LLM tool round — used by TOOL-ENG-6 multi-iteration loop."""
+        if not self._native_tools:
+            raise ValueError("plan_native_round requires an LLM adapter with native tool support")
+
+        allowed = frozenset(allowed_tool_ids) if allowed_tool_ids is not None else None
+        tools_schema = _build_openai_tools_schema(
+            self.tools,
+            allowed_tool_ids=allowed_tool_ids,
+        )
+        pruned = _prune_messages_for_openai(list(messages))
+        effective_tool_choice = tool_choice if tool_choice is not None else "auto"
+
+        result = self.llm.generate_with_tools(
+            pruned,
+            tools_schema,
+            temperature=self.cfg.temperature,
+            max_tokens=self.cfg.max_answer_tokens,
+            tool_choice=effective_tool_choice,
+            run_id=run_id,
+        )
+
+        calls: List[PlannedToolCall] = []
+        for tc in result.tool_calls:
+            name = tc.name
+            if allowed is not None and name not in allowed:
+                continue
+            args_json = tc.arguments_json or "{}"
+            try:
+                args = json.loads(args_json)
+            except Exception:
+                args = {}
+            registered = self.tools.get(name)
+            contract = registered.contract
+            validated = contract.input_schema.model_validate(args)
+            calls.append(
+                PlannedToolCall(
+                    step_id="tool",
+                    tool_id=name,
+                    input=validated,
+                )
+            )
+
+        return result, ToolCallPlan(calls=calls)

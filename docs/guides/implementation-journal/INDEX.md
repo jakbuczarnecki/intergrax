@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-11-015 | 2026-06-11 | tier-0/1/2 AGENT_CONTRACTS, TOOLS | ACP-CLOSE-PAT-1, TOOL-ENG-6 | [ACP-CLOSE PAT-1 + TOOL-ENG-6 tool loop](entries/2026-06-11-acp-close-pat-1-tool-eng-6-loop.md) | pending |
 | IJ-2026-06-11-014 | 2026-06-11 | tier-0/2 AGENT_CONTRACTS | ACP-CLOSE-PAT-3 | [ACP-CLOSE PAT-3 §29 terminology canon](entries/2026-06-11-acp-close-pat-3-terminology-canon.md) | pending |
 | IJ-2026-06-11-013 | 2026-06-11 | tier-0 AGENT_CONTRACTS | ACP-CLOSE-LEG-4 | [ACP-CLOSE LEG-4 author guide ACP canon](entries/2026-06-11-acp-close-leg-4-guide-acp-canon.md) | pending |
 | IJ-2026-06-11-012 | 2026-06-11 | tier-3 AGENT_CONTRACTS | ACP-CLOSE-ORG-2 | [ACP-CLOSE ORG-2 UC-11 product golden](entries/2026-06-11-acp-close-org-2-uc11-product-golden.md) | pending |

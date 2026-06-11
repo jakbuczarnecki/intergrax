@@ -15,7 +15,7 @@ ACP_STATE_SCHEMA_VERSION: Literal["acp.state.v1"] = "acp.state.v1"
 
 
 class AcpBudgetState(BaseModel):
-    """Budget counters tracked inside session state."""
+    """Budget counters tracked inside session state (architecture §25.2 · TOOL-ENG-6)."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -23,6 +23,8 @@ class AcpBudgetState(BaseModel):
     tool_calls: int = 0
     llm_calls: int = 0
     cost_usd: float = 0.0
+    react_iterations_used: int = Field(default=0, ge=0)
+    react_iterations_max: int = Field(default=0, ge=0)
 
 
 class AcpSessionState(BaseModel):

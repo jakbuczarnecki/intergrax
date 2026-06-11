@@ -1024,20 +1024,20 @@ Developer code path:
 | Pattern library | L0 (ad hoc) | **L3** | L3 |
 | Mental model clarity | L1–L2 | **L3** (§29 single entry · PAT-3) | L3 |
 | Legacy path removal | L2 (dual path) | **L2.5** (AgentEngine clean; pipeline agents open) | L3 — ACP-CLOSE-LEG-3 |
-| ReAct + tool loop unity | L1 | **L1** (TOOL-ENG-6 open) | L3 — ACP-CLOSE-PAT-1 |
+| ReAct + tool loop unity | L1 | **L3** (TOOL-ENG-6 · PAT-1 Done) | L3 |
 | Decomposition agent DX | L0 | **L3** | L3 |
 | Reflection + CVL wiring | L2 | **L2** (no CVL hook) | L3 — ACP-CLOSE-PAT-2 |
 
 ## 28.3 Gap register (ACP)
 
-**Audit sync (2026-06-11):** **33 Closed** · **2 Open** · depth follow-ups tracked in plan **ACP-CLOSE-PROD-*** (not separate GAP IDs).
+**Audit sync (2026-06-11):** **34 Closed** · **1 Open** · depth follow-ups tracked in plan **ACP-CLOSE-PROD-*** (not separate GAP IDs).
 
 | ID | Gap | Priority | Plan row | Status |
 |----|-----|----------|----------|--------|
 | GAP-ACP-01 | No `CognitiveAgent` base | P0 | ACP-1 | **Closed** |
 | GAP-ACP-02 | No pattern classes | P0 | ACP-2–6 | **Closed** |
 | GAP-ACP-03 | Dual UAEP / RuntimeEngine path | P0 | ACP-CLOSE-LEG-1..3 | **Closed** |
-| GAP-ACP-04 | ReAct at tool layer only | P1 | ACP-CLOSE-PAT-1 · TOOL-ENG-6 | **Open** |
+| GAP-ACP-04 | ReAct at tool layer only | P1 | ACP-CLOSE-PAT-1 · TOOL-ENG-6 | **Closed** |
 | GAP-ACP-05 | `build_context` duplicates profile | P1 | ACP-CFG | **Closed** |
 | GAP-ACP-06 | No scaffold `--pattern` | P1 | ACP-8 | **Closed** |
 | GAP-ACP-07 | Terminology docs scattered | P1 | ACP-CLOSE-PAT-3 | **Closed** |
@@ -2215,7 +2215,7 @@ Canonical scenarios — all supported by **same** agent class + environment merg
 | Environment merge | **Done** — `merge_environment` + binding slices | — |
 | Production reliability | **Done** (platform modules ACP-PROD-1..12) | Host depth §40.1–§40.3 · §40.12 evidence |
 | Legacy paths | **Done** — LEG-1..3; UAEP author surface removed | — |
-| ReAct + tools | **Partial** — pattern loop in agent | TOOL-ENG-6 · ACP-CLOSE-PAT-1 |
+| ReAct + tools | **Done** — `tool_loop_step` + `react_budget` | — |
 
 ## 36.5 Related ADRs and plan
 

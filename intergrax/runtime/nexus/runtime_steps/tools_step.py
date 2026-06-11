@@ -4,25 +4,23 @@
 
 from __future__ import annotations
 
-import json
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Optional
 
-from intergrax.llm.messages import ChatMessage
 from intergrax.prompts.registry.prompt_registry_resolver import resolve_yaml_prompt_registry
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.policies.runtime_policies import ExecutionKind
-from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.tools.execution_models import ToolExecutionRequest
-
-from intergrax.runtime.nexus.budget.budget_ticks import enforce_tool_call_budget
 from intergrax.runtime.nexus.tools.catalog_dispatch import resolve_tool_registry
 from intergrax.runtime.nexus.tools.tool_planner_input import resolve_tool_planner_input
 from intergrax.runtime.nexus.tools.tool_selection import (
     ToolSelectionContext,
     resolve_planner_allowed_tool_ids,
 )
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState, ToolCallTrace
+from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.planning.runtime_step_handlers import RuntimeStep
+from intergrax.runtime.nexus.runtime_steps.tool_loop_step import (
+    inject_tool_traces_system_context,
+    run_bounded_tool_loop,
+)
 from intergrax.runtime.nexus.tracing.tools.tools_summary import ToolsSummaryDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
@@ -30,7 +28,7 @@ from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLe
 class ToolsStep(RuntimeStep):
     def execution_kind(self) -> ExecutionKind | None:
         return ExecutionKind.TOOL
-    
+
     @staticmethod
     def _resolve_prompt_registry(state: RuntimeState) -> YamlPromptRegistry:
         return resolve_yaml_prompt_registry(
@@ -65,9 +63,8 @@ class ToolsStep(RuntimeStep):
         warning: Optional[str] = None
         error_type: Optional[str] = None
         error_message: Optional[str] = None
-        
+
         try:
-            
             planner_input = resolve_tool_planner_input(state)
             registry = resolve_tool_registry(invoker)
             if registry is not None:
@@ -84,90 +81,30 @@ class ToolsStep(RuntimeStep):
             else:
                 allowed_tool_ids = state.tool_planner_allowed_tool_ids
 
-            decision = tool_planner.plan_tools(
-                input_data=planner_input,
-                context=None,
-                run_id=state.run_id,
+            loop_result = run_bounded_tool_loop(
+                state=state,
+                invoker=invoker,
+                tool_planner=tool_planner,
+                planner_input=planner_input,
                 allowed_tool_ids=allowed_tool_ids,
+                max_iterations=state.context.config.max_tool_iterations,
             )
 
-            tool_plan = decision.tool_plan
-            
-            if tool_plan is None or not tool_plan.calls:
+            if not loop_result.tool_traces:
                 if tools_mode == "required":
                     warning = "tools_mode='required' but no tools were planned."
             else:
-                for call in tool_plan.calls:
-                    req = ToolExecutionRequest(
-                        run_id=state.run_id,
-                        step_id=call.step_id,
-                        tool_id=call.tool_id,
-                        input=call.input,
-                        idempotency_key=f"{state.run_id}:{call.step_id}",
-                    )
+                state.used_tools = True
+                state.tool_traces = list(loop_result.tool_traces)
 
-                    result = invoker.invoke(state=state, request=req, agent_id=state.request.agent_id)
-
-                    state.used_tools = True
-
-                    if result.success:
-                        output_preview = result.output.model_dump_json()[:400]
-                        error_msg = None
-                    else:
-                        output_preview = None
-                        error_msg = result.error.error_message
-
-                    state.tool_traces.append(
-                        ToolCallTrace(
-                            tool_name=call.tool_id,
-                            arguments=call.input.model_dump(),
-                            output_preview=output_preview,
-                            success=result.success,
-                            error_message=error_msg,
-                            raw_trace={},
-                        )
-                    )
-                    enforce_tool_call_budget(state)
-
-            # Inject tool execution results into LLM context
-            if state.tool_traces:
-                tool_lines: List[str] = []
-
-                for t in state.tool_traces:
-                    tool_lines.append(f"Tool '{t.tool_name}' was called.")
-
-                    if t.arguments:
-                        try:
-                            args_str = json.dumps(t.arguments, ensure_ascii=False)
-                        except Exception:
-                            args_str = str(t.arguments)
-                        tool_lines.append(f"Arguments: {args_str}")
-
-                    if t.output_preview:
-                        tool_lines.append("Output:")
-                        tool_lines.append(t.output_preview)
-
-                    if t.error_message:
-                        tool_lines.append("Error:")
-                        tool_lines.append(t.error_message)
-
-                    tool_lines.append("")
-
-                tools_context_for_llm = "\n".join(tool_lines).strip()
-                if tools_context_for_llm:
-                    insert_at = len(state.messages_for_llm) - 1
-
-                    runtime_prompt = self.tools_runtime_context_prompt(state).format(
-                        context=tools_context_for_llm
-                    )
-
-                    state.messages_for_llm.insert(
-                        insert_at,
-                        ChatMessage(
-                            role="system",
-                            content=runtime_prompt,
-                        ),
-                    )
+            if loop_result.used_native_tool_messages and loop_result.appended_messages:
+                state.messages_for_llm.extend(loop_result.appended_messages)
+            elif state.tool_traces:
+                inject_tool_traces_system_context(
+                    state,
+                    state.tool_traces,
+                    runtime_context_prompt=self.tools_runtime_context_prompt(state),
+                )
 
         except Exception as e:
             print(e)
