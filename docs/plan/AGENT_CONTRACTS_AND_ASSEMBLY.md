@@ -201,8 +201,8 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-CON-1 | ACP-CON | **`AgentRunErrorCode` / `TerminalReason` enums** + Pydantic on run contracts | **Done** | `intergrax/contracts/agent_run.py`, `agent_run_enums.py` | extra=forbid; enum round-trip |
 | ACP-CON-2 | ACP-CON | **`state_delta` merge-patch** + `_version` + checkpoint/resume | **Done** | `intergrax/agents/authoring/state_merge.py` | Unit: merge, delete null, conflict |
 | ACP-CON-3 | ACP-CON | **Side-effect mode** immediate vs declarative enforcement | **Done** | `intergrax/agents/authoring/side_effect_validation.py` | Reject mixed mode per step |
-| ACP-CON-6 | ACP-CON | **Capability routing** — registry query by token not class | Planned | Nexus selection path + test | Integration: two impls same capability |
-| ACP-CON-7 | ACP-CON | **Security CI guards** — gateway-only I/O, STRICT widen deny | Planned | `scripts/check_agent_step_security.py` | CI green on roster |
+| ACP-CON-6 | ACP-CON | **Capability routing** — registry query by token not class | **Done** | Nexus selection path + test | Integration: two impls same capability |
+| ACP-CON-7 | ACP-CON | **Security CI guards** — gateway-only I/O, STRICT widen deny | **Done** | `scripts/check_agent_step_security.py` | CI green on roster |
 | ACP-DOC.6 | ACP0 | **Architecture §37** — pre-implementation operational contracts | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | Audit gaps A–G closed in canon |
 | ACP-DOC.7 | ACP0 | **Architecture §38** — NexusLoop vs HarnessKernel execution stack | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §38 + ACP-INV-11 |
 | ACP-DOC.8 | ACP0 | **Architecture §39** — organizational policy envelope & virtual workforce | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §39 + UC-11 |
@@ -473,8 +473,8 @@ HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
 
 | Step | ID | Tasks | Acceptance | Cross-domain |
 |------|-----|-------|------------|--------------|
-| 6.1 | ACP-CON-6 | Nexus resolves `required_capability` → registry token; ban class name in task payload | Integration: two impls, same capability | ORCHESTRATION · REG |
-| 6.2 | ACP-CON-7 | `check_agent_step_security.py` — gateway-only I/O, STRICT widen deny | CI on roster | UNIFIED_EXECUTION_RUNTIME |
+| 6.1 | ACP-CON-6 | Nexus resolves `required_capability` → registry token; ban class name in task payload | **Done** — `capability_routing.py` + gate test | ORCHESTRATION · REG |
+| 6.2 | ACP-CON-7 | `check_agent_step_security.py` — gateway-only I/O, STRICT widen deny | **Done** — static roster gate | UNIFIED_EXECUTION_RUNTIME |
 | 6.3 | ACP-ORG-1..2 | `OrganizationalPolicyEnvelope` + merge context | Host profile test | TIER3 |
 | 6.4 | ACP-ORG-3..4 | Kernel org overlays; `PolicyVerdictRecord` on trace | Denied channel blocked | UAEP policy |
 | 6.5 | ACP-ORG-5 | Lab org fixture + compliance eval | Happy path zero deny | V-EVAL |

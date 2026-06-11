@@ -216,9 +216,9 @@ def _score_security(agent_py: Path) -> AgentReadinessDimensionScore:
         )
     return _dimension(
         AgentReadinessDimension.SECURITY,
-        70.0,
-        evidence=["no RuntimeEngine in agent module", "ACP-CON-7 planned"],
-        blockers=["gateway-only I/O CI not agent-specific yet"],
+        80.0,
+        evidence=["check_agent_step_security.py", "no RuntimeEngine in agent module"],
+        blockers=["STRICT profile widen deny not agent-specific yet"],
     )
 
 
@@ -293,7 +293,12 @@ def _score_capability_routing(agent: Any, contract: AgentContract) -> AgentReadi
     return _dimension(
         AgentReadinessDimension.CAPABILITY_ROUTING,
         100.0,
-        evidence=["capabilities declared", "can_handle implemented", "ACP-CON-6 baseline"],
+        evidence=[
+            "capabilities declared",
+            "can_handle implemented",
+            "check_capability_routing.py",
+            "ACP-CON-6",
+        ],
     )
 
 

@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-10-019 | 2026-06-10 | tier-0/1 AGENT_CONTRACTS | ACP-CON-6, ACP-CON-7 | [ACP Wave 6 routing and security gates](entries/2026-06-10-acp-wave-6-routing-security.md) | pending |
 | IJ-2026-06-10-018 | 2026-06-10 | tier-0 AGENT_CONTRACTS | ACP-PROD-12, ACP-LEG-2 | [ACP scoreboard and fleet migration closure](entries/2026-06-10-acp-prod-12-leg-2-scoreboard.md) | pending |
 | IJ-2026-06-10-017 | 2026-06-10 | tier-0/2 AGENT_CONTRACTS | ACP-MIG-5, ACP-MIG-7 | [ACP Wave 8 MIG-5/7 fleet closure](entries/2026-06-10-acp-wave-8-mig-5-7-fleet-closure.md) | pending |
 | IJ-2026-06-10-016 | 2026-06-10 | tier-0/2 AGENT_CONTRACTS | ACP-MIG-4 | [ACP Wave 8 MIG-4 product batch migration](entries/2026-06-10-acp-wave-8-mig-4-product-batch.md) | pending |
