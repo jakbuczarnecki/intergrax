@@ -22,6 +22,7 @@ from intergrax.applications.contracts.application_host import (
     ApplicationFeatures,
     ApplicationProfile,
 )
+from intergrax.contracts.agent_budget import AgentBudgetSlice
 from intergrax.contracts.memory_scope import MemoryScope
 from intergrax.integrations.registry.profile import IntegrationProfile
 
@@ -119,6 +120,10 @@ class AgentBinding(BaseModel):
         default=None,
         description="Virtual workforce role id for organizational policy merge (§39).",
     )
+    budget_slice: AgentBudgetSlice | None = Field(
+        default=None,
+        description="Per-agent token/LLM budget from application manifest (architecture §25.5).",
+    )
 
     @classmethod
     def mount(
@@ -138,6 +143,7 @@ class AgentBinding(BaseModel):
         tool_allowlist_extra: list[str] | None = None,
         tool_denylist: list[str] | None = None,
         org_role_id: str | None = None,
+        budget_slice: AgentBudgetSlice | None = None,
     ) -> AgentBinding:
         """
         Strongly-typed roster entry — pass the agent **class** and optional **factory**.
@@ -167,6 +173,7 @@ class AgentBinding(BaseModel):
             tool_allowlist_extra=list(tool_allowlist_extra or []),
             tool_denylist=list(tool_denylist or []),
             org_role_id=org_role_id,
+            budget_slice=budget_slice,
         )
 
     @classmethod

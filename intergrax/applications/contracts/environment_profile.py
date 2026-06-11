@@ -17,6 +17,7 @@ from intergrax.runtime.capacity.contracts import ScalingPolicy
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
 from intergrax.applications.contracts.intent_route import IntentRoute
 from intergrax.applications.contracts.application_host import ApplicationFeatures, ApplicationProfile
+from intergrax.contracts.agent_budget import BudgetReactionProfile
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.registry.profile import LLMProfile
@@ -174,6 +175,7 @@ class CostProfile(BaseModel):
 
     budget_enforcement_enabled: bool = True
     enforcement_mode: Literal["abort", "hitl"] = "abort"
+    budget_reaction: BudgetReactionProfile | None = None
     max_total_tokens: int | None = Field(default=None, ge=1)
     max_llm_calls: int | None = Field(default=None, ge=1)
     max_tool_calls: int | None = Field(default=None, ge=1)

@@ -28,6 +28,8 @@
 | [§23](#23-three-cognition-planes) | Three cognition planes |
 | [§24](#24-agent-class-hierarchy) | Agent class hierarchy |
 | [§25](#25-runtime-execution-context-state-model) | Runtime execution context / state |
+| [§25.4](#254-invocation-time-token-usage-agent-vs-environment) | Invocation-time token usage (agent vs environment) |
+| [§25.5](#255-token-budget-limits-enforcement-and-application-reactions) | Token budget limits, enforcement, application reactions |
 | [§26](#26-cognitive-pattern-catalog) | Cognitive pattern catalog |
 | [§27](#27-end-to-end-execution-flows) | End-to-end execution flows |
 | [§28](#28-acp-code-map-maturity-and-gaps) | ACP code map, maturity, gaps |
@@ -716,7 +718,11 @@ Stored in `ctx.metadata["acp.state.v1"]` — JSON-serializable dict for checkpoi
   "budget": {
     "react_iterations_used": 2,
     "react_iterations_max": 8,
-    "tokens_used": 1200
+    "llm_calls": 5,
+    "tokens_in": 900,
+    "tokens_out": 300,
+    "tokens_total": 1200,
+    "cost_usd": 0.04
   }
 }
 ```
@@ -727,6 +733,7 @@ Stored in `ctx.metadata["acp.state.v1"]` — JSON-serializable dict for checkpoi
 - Checkpoint resume: `UAEPAgentWithResume` + `RUNTIME_CHECKPOINT_KEY` in metadata ([`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.8).
 - Nexus-owned checkpoint cursor: `UAEP_STEP_CURSOR_KEY` — do not conflate with ACP inner iteration.
 - **Author code (normative — §32.0):** MUST NOT read or write `acp.state.v1` via ad-hoc `dict` keys. Use **`AcpSessionState`** (platform envelope) plus optional **agent-specific Pydantic subclass** with `extra=forbid`. Harness serializes to/from JSON at checkpoint boundaries only.
+- **Budget counters (including tokens):** harness-owned — authors **read** via `load_session_state().budget`; MUST NOT increment counters in `state_delta` (ACP-AP-13).
 
 ## 25.3 Configuration injection path
 
@@ -755,6 +762,181 @@ sequenceDiagram
 | `max_steps`, `risk_level` | Tier-2 contract | enforced by UAEP + policy |
 
 **Anti-pattern ACP-AP-03:** Hardcoding `tenant_id`, API keys, or model names in agent source — use profile injection.
+
+## 25.4 Invocation-time token usage (agent vs environment)
+
+**Goal:** At every `on_next_step`, the agent can see **how many LLM tokens this agent run has consumed** and **how many the whole application environment has consumed** — to drive adaptive decisions (e.g. downgrade `model_hint` to a cheaper model, early-complete, or request HITL before budget exhaustion).
+
+### 25.4.1 Scopes
+
+| Scope | Meaning | Typical source | Author access |
+|-------|---------|----------------|---------------|
+| **Agent** | Cumulative tokens for **this** `agent.run()` session (all steps, including tool-loop LLM rounds) | `HarnessKernel` after each `llm_router.complete` / declarative `llm` action | `state.budget.tokens_*` on `AcpSessionState` |
+| **Environment** | Cumulative tokens for the **host task / Nexus graph** (all agents + orchestration LLM if any) | Task-level aggregator → `ApplicationRunSummary.total_llm_tokens` + in-flight step | `step_ctx.invocation_usage.environment` |
+
+**Single-agent direct `run()`:** when no multi-agent graph is active, `environment.tokens_total >= agent.tokens_total` (environment MAY include non-agent harness overhead; agent MUST NOT assume equality).
+
+**Multi-agent Nexus graph:** environment rollup is **strictly greater or equal** to any single agent's counters — agents use environment scope for **global** budget policy and agent scope for **local** phase decisions.
+
+### 25.4.2 Contracts
+
+```text
+AcpTokenUsage:                              # intergrax/contracts/acp_state.py
+    tokens_in: int
+    tokens_out: int
+    tokens_total: int                        # harness-maintained: in + out (or adapter-reported total)
+    llm_calls: int
+    cost_usd: float
+
+AcpBudgetState:                             # nested under acp.state.v1.budget
+    steps_used, tool_calls, llm_calls
+    tokens_in, tokens_out, tokens_total, cost_usd
+    react_iterations_used, react_iterations_max
+
+AcpInvocationUsageView:                     # read-only on AgentStepContext
+    agent: AcpTokenUsage                     # mirror of budget token fields at step boundary
+    environment: AcpTokenUsage               # task/application rollup
+```
+
+**Harness update rule (normative):** after each LLM call recorded on `AgentStepRecord.llm_calls`, the kernel MUST:
+
+1. Increment `acp.state.v1.budget` token fields (**agent scope**).
+2. Refresh `step_ctx.invocation_usage` before the **next** `on_next_step` (**both scopes**).
+3. Persist environment rollup under task metadata key **`acp.usage.v1`** for checkpoint/trace correlation (authors do not write this key).
+
+**Cross-domain:** token metering originates in [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) (`LLMUsageTracker`, `LLMMetricsCollector`); budget envelopes in [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) (`cost_budget`, `BudgetEnvelope`). ACP exposes **author-readable rollups** only — Tier-2 MUST NOT import vendor metrics SDKs.
+
+**Plan:** ACP-TOK-1 (**Planned** — kernel population + acceptance).
+
+## 25.5 Token budget limits, enforcement, and application reactions
+
+**Goal:** Tier-3 applications assign **optional** per-agent and environment token limits. When a limit is set, the **engine** enforces it (hard stop before the next LLM call). When no limit is set, usage rollups still flow to agent state so developers implement **soft** reactions (model downgrade, early complete). **How** the environment reacts to threshold breach or hard exceed — abort, HITL, notify user, custom hook — is **fully configurable** on the application host.
+
+### 25.5.1 Limit assignment (application → agent)
+
+Limits are declared in Tier-3; merged into `EffectiveAgentRunEnvironment` at `run()` (§30). **None** means *no hard cap* — not zero.
+
+| Source | Field | Scope | Typical use |
+|--------|-------|-------|-------------|
+| **Application environment** | `ApplicationEnvironmentProfile.cost_profile.max_total_tokens` | Task / graph (environment) | Global cap for one Nexus run |
+| **Application roster** | `AgentBinding.budget_slice.max_total_tokens` | Single agent node | Per-role cap (legal vs research) |
+| **Per-run request** | `AgentRunRequest.execution_options.max_total_tokens` | Single `agent.run()` | One-off tighten for intake |
+| **Per-run override** | `environment_overrides` budget patch (policy-bound) | Agent or environment | Operator `configure_run` |
+
+**Merge order (most specific wins for agent scope; environment uses min of active caps):**
+
+```text
+platform default (none)
+  → cost_profile (environment)
+  → AgentBinding.budget_slice (agent)
+  → execution_options / environment_overrides (request)
+  → policy deny on widen (STRICT hosts)
+```
+
+```text
+AgentBudgetSlice:                           # intergrax/contracts/agent_budget.py
+    max_total_tokens: int | null
+    max_llm_calls: int | null
+    enforcement: hard | advisory            # default hard when limit set
+    warn_threshold_ratio: float | null        # overrides env default for this agent
+```
+
+**`advisory` enforcement:** limit is visible in state (`tokens_limit`, `tokens_remaining`) but harness does **not** block — author must react in `on_next_step`. **`hard` enforcement:** harness blocks the next LLM invocation and applies reaction policy (below).
+
+### 25.5.2 Engine enforcement vs author soft control
+
+| Posture | Limit assigned? | Engine behavior | Author behavior |
+|---------|-----------------|-----------------|-----------------|
+| **Hard enforced** | `max_total_tokens` non-null + `enforcement=hard` | Pre-LLM check in `HarnessKernel`; exceed → reaction policy; no further tokens for that scope | Read `tokens_remaining`; optional proactive downgrade **before** hard stop |
+| **Advisory only** | limit set + `enforcement=advisory` | Meters usage; emits warn events at threshold; does not block | Implement downgrade / complete / `pause_hitl` in `on_next_step` |
+| **No limit** | all null | Meters usage only (§25.4) | Optional soft strategy from raw `tokens_total` |
+
+**Invariant:** metering (§25.4) is **always on** when LLM adapters report tokens — independent of whether a limit exists.
+
+**Author-visible limit fields (read-only, harness-maintained):**
+
+```text
+AcpBudgetState / AcpTokenUsage:
+    tokens_limit: int | null
+    tokens_remaining: int | null              # limit - tokens_total when limit set
+
+AcpInvocationUsageView:
+    agent.*     — per-agent scope limits + usage
+    environment.* — environment scope limits + usage
+```
+
+### 25.5.3 Environment reaction policies (Tier-3 configurable)
+
+Applications configure **what happens** when a threshold is crossed or a hard limit is hit. Declared on `CostProfile.budget_reaction` ([`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) · partial **COST-1** today).
+
+```text
+BudgetReactionProfile:
+    on_agent_limit_exceeded: abort | hitl | degrade_model | notify_only | custom_hook
+    on_environment_limit_exceeded: abort | hitl | pause_graph | notify_only | custom_hook
+    notify_channels: list[in_app | webhook | slack | email | trace_only]
+    warn_threshold_ratio: float = 0.80        # emit BUDGET_THRESHOLD before hard exceed
+    custom_hook_id: str | null                # host-registered callback id
+    user_message_template: str | null         # surfaced to end user when notify_channels includes in_app
+```
+
+| Reaction | Engine effect | User / operator surface |
+|----------|---------------|---------------------------|
+| **abort** | `StepOutcome.fail` / run `status=failed`, `terminal_reason=budget_exceeded`, `AgentRunError(BUDGET_EXCEEDED)` | Error payload + trace; optional `user_message_template` |
+| **hitl** | `StepOutcome.pause_hitl` / Nexus HITL runner; resume after approval | HITL ticket + governance snapshot §29 |
+| **degrade_model** | Force `StepLLMRouter` to cheapest allowed model for subsequent steps | Trace warning; agent may observe lower `model_id` |
+| **notify_only** | Run continues (advisory exceed) or soft-stop per binding; notifications fired | Webhook/Slack/email via integration slugs |
+| **custom_hook** | Host invokes registered `BudgetReactionHook` with structured payload | Application-defined (dashboard, billing, paging) |
+| **pause_graph** | Nexus pauses graph execution (environment exceed only) | ApplicationRunSummary + task status |
+
+**Notification wiring:** channels reference **integration slugs** on the host (`notification_channel`, webhook tools) — not vendor SDKs in Tier-2. See `notify_tool_wiring` pattern on Tier-3 hosts.
+
+**Events (normative):** harness emits `RuntimeEvent` payloads:
+
+- `BUDGET_THRESHOLD` — `tokens_total / tokens_limit >= warn_threshold_ratio`
+- `BUDGET_EXCEEDED` — hard limit crossed (includes scope: `agent` | `environment`, limit source, counters)
+
+Subscribers: observability spine, application hooks, FastAPI SSE/WebSocket bridges — configured per host.
+
+### 25.5.4 Application configuration example
+
+```python
+# applications/my_product/manifest.py
+AgentBinding.mount(
+    LegalAgent,
+    factory=build_legal_agent,
+    budget_slice=AgentBudgetSlice(
+        max_total_tokens=32_000,
+        enforcement=BudgetLimitEnforcement.HARD,
+        warn_threshold_ratio=0.75,
+    ),
+)
+
+# host environment_profile.py
+CostProfile(
+    budget_enforcement_enabled=True,
+    max_total_tokens=120_000,              # environment cap
+    budget_reaction=BudgetReactionProfile(
+        on_agent_limit_exceeded=BudgetExceededReaction.HITL,
+        on_environment_limit_exceeded=BudgetExceededReaction.ABORT,
+        notify_channels=[BudgetNotifyChannel.SLACK, BudgetNotifyChannel.IN_APP],
+        warn_threshold_ratio=0.80,
+        user_message_template="Token budget reached for this session.",
+    ),
+)
+```
+
+### 25.5.5 Cross-domain alignment
+
+| Layer | Role |
+|-------|------|
+| [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) | `CostProfile`, `AgentBinding.budget_slice`, host hook registration |
+| [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) | `RunBudget`, `BudgetPolicy`, `BudgetEnforcer` (Nexus pipeline — environment scope) |
+| [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) | Token metering source |
+| ACP §25.4 / §32.6 / §33.4 | Author read surface + adaptive downgrade |
+
+**Implementation status:** environment `CostProfile` + Nexus `RunBudget` **partial** (COST-1); per-agent `AgentBinding.budget_slice` + ACP kernel enforcement + reaction hooks = **ACP-TOK-2** (**Planned**).
+
+**Plan:** ACP-TOK-1 (metering) · **ACP-TOK-2** (limits + reactions).
 
 ---
 
@@ -1030,7 +1212,7 @@ Developer code path:
 
 ## 28.3 Gap register (ACP)
 
-**Audit sync (2026-06-11):** **35 Closed** · **0 Open** · ACP-CLOSE wave complete; depth follow-ups tracked in plan **ACP-CLOSE-PROD-*** (not separate GAP IDs).
+**Audit sync (2026-06-11):** **35 Closed** · **2 Open** (GAP-ACP-36, GAP-ACP-37) · ACP-CLOSE complete; token depth = **ACP-TOK-1** · **ACP-TOK-2**.
 
 | ID | Gap | Priority | Plan row | Status |
 |----|-----|----------|----------|--------|
@@ -1069,6 +1251,8 @@ Developer code path:
 | GAP-ACP-32 | Artifact contract missing (loose string list) | P1 | ACP-PROD-6 | **Closed** |
 | GAP-ACP-33 | Release gates / CI matrix not normative for agents | P1 | ACP-PROD-9..10 | **Closed** |
 | GAP-ACP-34 | `RequestIdentity` + memory_scope not in contracts | P0 | ACP-DX-1 + ACP-DX-2 §30.9 | **Closed** |
+| GAP-ACP-36 | No agent + environment token rollups in invocation state | P1 | ACP-TOK-1 §25.4 | **Open** |
+| GAP-ACP-37 | No per-agent limits + configurable exceed reactions from application | P1 | ACP-TOK-2 §25.5 | **Open** |
 
 ## 28.4 Anti-patterns (ACP)
 
@@ -1086,6 +1270,8 @@ Developer code path:
 | ACP-AP-10 | Mixed immediate + declarative side effects in one step | Pick one mode per step §32.8 |
 | ACP-AP-11 | Raw `dict` state access (`state["plan_cursor"]`) in `on_next_step` | Typed `AcpSessionState` / agent subclass §32.0 |
 | ACP-AP-12 | In-place mutation of `step_ctx.state` | Return `StepOutcome.continue_with(state_delta=…)` only §32.0.2 |
+| ACP-AP-13 | Agent-maintained token/cost counters in subclass state | Read `budget` + `invocation_usage` §25.4; harness owns increments |
+| ACP-AP-14 | Hardcoded token limits or exceed handling in agent | `AgentBinding.budget_slice` + `BudgetReactionProfile` §25.5 |
 | ACP-AP-13 | Implicit continue — empty outcome or missing `next_action` | Explicit `StepOutcome.continue_with()` or terminal factory §32.0.3 |
 | ACP-AP-14 | God-method `on_next_step` (> ~40 lines without delegation) | Phase helpers `_step_plan`, `_step_execute` §32.0.4 |
 | ACP-AP-15 | Free-text `terminal_reason` or ad-hoc error strings | `TerminalReason` + `AgentRunError` enums §37.4–§37.5 |
@@ -1228,6 +1414,7 @@ AgentRunResult:
 ```text
 AgentExecutionOptions:
     max_steps: int | null
+    max_total_tokens: int | null                      # §25.5 per-run agent cap (policy-bound)
     max_cost_usd: float | null
     max_wall_ms: int | null
     autonomy_level: strict | balanced | exploratory   # maps to policy profile
@@ -1405,6 +1592,7 @@ AgentContract (per agent defaults):
 AgentBinding (manifest roster entry):
     agent_id, factory, mount policy
     org_role_id: str | null                    # §39 virtual employee role
+    budget_slice: AgentBudgetSlice | null     # §25.5 per-agent token/LLM limits
     memory_scope_override: user | org | task | custom | null   # §30.9
     tool_profile_slice: ToolProfile | null    # optional narrowing per agent
     memory_profile_slice: MemoryProfile | null
@@ -1499,6 +1687,27 @@ Agent uses **multiple tools** bound to different integration slugs (`postgres.le
 | ENV-AP-04 | Application passes secrets in metadata | Secret store + integration slug |
 | ENV-AP-05 | Each agent duplicates `build_context` RuntimeConfig | `merge_environment` + harness injection ACP-CFG |
 | ENV-AP-06 | Org rules encoded in agent `if` statements | `OrganizationalPolicyEnvelope` + policy rules §39 |
+| ENV-AP-07 | Hardcoded token limits in agent source | `AgentBinding.budget_slice` + `CostProfile` §25.5 |
+
+## 30.8 Application token budgets and reaction wiring
+
+**Responsibility split:**
+
+| Tier | Owns |
+|------|------|
+| **Tier-3 application** | `CostProfile`, `AgentBinding.budget_slice`, `BudgetReactionProfile`, notification integration slugs, custom hook registration on host runtime |
+| **Tier-1 harness** | Merge limits, meter usage (§25.4), enforce hard caps, emit `BUDGET_*` events, apply reaction policy |
+| **Tier-2 agent** | Read usage/limits; optional soft strategy; MUST NOT enforce platform caps in agent code |
+
+**Host wiring checklist:**
+
+1. Set `cost_profile.max_total_tokens` when the whole task/graph needs a ceiling.
+2. Set `AgentBinding.budget_slice` per roster entry when roles differ (e.g. cheap triage vs expensive analysis).
+3. Configure `cost_profile.budget_reaction` for exceed/threshold behavior and user notification.
+4. Register `BudgetReactionHook` on `HarnessHostRuntime` when `custom_hook` is used.
+5. Leave limits **unset** for lab agents that should only use advisory metering — authors implement reactions in code.
+
+**Cross-plan:** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) COST-1 extension · ACP-TOK-2.
 | ENV-AP-07 | Compliance checked only post-hoc in app code | `PolicyVerdictRecord` on every step §39.5 |
 
 ## 30.8 Code map (target)
@@ -1797,7 +2006,7 @@ AcpSessionState:                          # platform envelope — ACP-0
     pattern: CognitivePattern | null
     phase: str | null                       # author-defined phase id (enum in subclass preferred)
     iteration: int = 0
-    budget: AcpBudgetState | null
+    budget: AcpBudgetState | null              # harness-owned counters incl. tokens_in/out/total §25.4
     # … pattern-specific fields in agent subclass only
 
 Agent-specific (recommended):
@@ -1901,7 +2110,7 @@ Domain narrative belongs in `diagnostics` (typed `StepDiagnostics` model) — op
 
 | Module | Responsibility |
 |--------|----------------|
-| `intergrax/contracts/acp_state.py` | `AcpSessionState`, `AcpBudgetState` (ACP-0) |
+| `intergrax/contracts/acp_state.py` | `AcpSessionState`, `AcpBudgetState`, `AcpTokenUsage`, `AcpInvocationUsageView` (ACP-0 · ACP-TOK-1) |
 | `intergrax/contracts/agent_run.py` | `StepOutcome`, enums, `AgentStepContext` (ACP-DX-1, ACP-STEP-1) |
 | `intergrax/agents/authoring/step_outcome.py` | Factories + validation (ACP-DX-6) |
 | `intergrax/agents/authoring/state_access.py` | `load_session_state`, `session_state_delta` (ACP-DX-6) |
@@ -1933,6 +2142,7 @@ AgentStepContext:
     tool_gateway: ToolGateway                 # policy-bound invoke
     rag_gateway: RagGateway | null
     llm_router: StepLLMRouter                 # §33
+    invocation_usage: AcpInvocationUsageView | null   # §25.4 — read-only agent + environment tokens
     shared_context: SharedContextView | null  # §34 — multi-agent only
     metadata: dict                            # request.metadata passthrough
     trace_sink: StepTraceSink                 # harness-only append helpers
@@ -2018,9 +2228,16 @@ async def HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
 | Guard | Source |
 |-------|--------|
 | `max_steps` | contract + `execution_options` |
-| token/cost budget | policy + `StepLLMRouter` |
+| token/cost budget | policy + `StepLLMRouter` + §25.4 usage rollups |
 | time budget | harness timer on `run()` |
 | HITL | `StepOutcome.next_action=pause_hitl` → Nexus HITL runner |
+
+**Author visibility (normative):** before choosing `model_hint`, tool depth, or early termination, agents SHOULD read:
+
+- **Agent scope:** `load_session_state(step_ctx).budget.tokens_total` (and `cost_usd`)
+- **Environment scope:** `step_ctx.invocation_usage.environment.tokens_total` when present
+
+When `max_total_tokens` is assigned with **hard** enforcement (§25.5), `HarnessKernel` blocks before the next LLM call and applies `BudgetReactionProfile`. When **no** limit is assigned, only metering applies — authors use `tokens_total`, `tokens_remaining`, and `warn_threshold_ratio` for soft strategy (e.g. switch to `local.fast` at 80% of an advisory cap).
 
 ## 32.7 Super-agent vs multi-agent graph (risk guard)
 
@@ -2096,6 +2313,37 @@ Merge order resolves default model; per-step hint overrides for **that step only
 ```text
 host LLMProfile → AgentBinding.llm_slice → configure_run → StepLLMRouter.set_hint
 ```
+
+## 33.4 Token-aware model selection (adaptive downgrade)
+
+Authors MAY change `model_hint` per step based on §25.4 usage — without importing cost SDKs or reading Nexus internals.
+
+```python
+async def on_next_step(self, step_ctx: AgentStepContext) -> StepOutcome:
+    state = self.load_session_state(step_ctx)
+    budget = state.budget
+    env = (
+        step_ctx.invocation_usage.environment
+        if step_ctx.invocation_usage is not None
+        else None
+    )
+    agent_tokens = budget.tokens_total if budget is not None else 0
+    env_tokens = env.tokens_total if env is not None else agent_tokens
+
+    # Example: downgrade when environment burn is high but agent still has work
+    model_hint = "frontier.reasoning"
+    if env_tokens > 40_000 or (budget is not None and budget.cost_usd > 0.50):
+        model_hint = "local.fast"
+
+    result = await step_ctx.llm_router.complete(prompt, model_hint=model_hint)
+    ...
+```
+
+**Rules:**
+
+- Downgrade MUST stay within `LLMProfile.allowed_models` — router resolves hints; policy denies unknown models on STRICT hosts.
+- Agents MUST NOT maintain parallel token counters in agent state subclasses — use harness rollups only (ACP-AP-13).
+- `AgentRunResult.cost` remains the **final** agent-run rollup; `invocation_usage` is the **in-flight** decision surface.
 
 ---
 
@@ -2216,6 +2464,8 @@ Canonical scenarios — all supported by **same** agent class + environment merg
 | Production reliability | **Done** (platform modules ACP-PROD-1..12) | Host depth §40.1–§40.3 · §40.12 evidence |
 | Legacy paths | **Done** — LEG-1..3; UAEP author surface removed | — |
 | ReAct + tools | **Done** — `tool_loop_step` + `react_budget` | CI-17 ACP-AP-02 gate **Done** |
+| Token usage in invocation state | **Partial** — contracts §25.4 | **ACP-TOK-1** — kernel population |
+| Per-agent limits + exceed reactions | **Partial** — contracts §25.5 | **ACP-TOK-2** — kernel + host hooks |
 
 ## 36.5 Related ADRs and plan
 

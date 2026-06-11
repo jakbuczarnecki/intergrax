@@ -8,6 +8,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from intergrax.contracts.acp_state import AcpInvocationUsageView
 from intergrax.contracts.agent_run_enums import SideEffectMode
 from intergrax.contracts.shared_context import SharedContextView
 
@@ -25,4 +26,5 @@ class AgentStepContext(BaseModel):
     state_snapshot: dict[str, Any] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
     llm_router: object | None = Field(default=None, exclude=True, repr=False)
+    invocation_usage: AcpInvocationUsageView | None = None
     shared_context: SharedContextView | None = None

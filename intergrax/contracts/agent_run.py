@@ -62,6 +62,7 @@ class AgentExecutionOptions(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     max_steps: int | None = Field(default=None, ge=1)
+    max_total_tokens: int | None = Field(default=None, ge=1)
     max_cost_usd: float | None = Field(default=None, ge=0.0)
     max_wall_ms: int | None = Field(default=None, ge=1)
     autonomy_level: AgentRunAutonomyLevel = AgentRunAutonomyLevel.BALANCED
