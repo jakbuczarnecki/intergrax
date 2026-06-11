@@ -18,12 +18,12 @@ Write when iteration is **complete** per `intergrax-iteration.mdc` (including jo
 
 ## Required actions
 
-1. Copy `_TEMPLATE.md` → `entries/YYYY-MM-DD-<scope>-<slug>.md`.
+1. Create day directory `entries/YYYY-MM-DD/` if missing; copy `_TEMPLATE.md` → `entries/YYYY-MM-DD/<scope>-<slug>.md` (date in folder only — not repeated in filename).
 2. **English only** in the journal file.
 3. Frontmatter: `id`, `date`, `tiers` (YAML list), `scope`, `plan_ref` (YAML list of formal IDs), `status: completed`, `commit`, `adr`.
 4. Fill all sections; Operator request = **paraphrase**, not verbatim transcript.
-5. **Prepend** row to [`INDEX.md`](docs/guides/implementation-journal/INDEX.md) (newest first).
-6. Chat iteration summary: **Journal entry:** `entries/<filename>.md`.
+5. **Prepend** row to [`INDEX.md`](docs/guides/implementation-journal/INDEX.md) (newest first); link path `entries/YYYY-MM-DD/<scope>-<slug>.md`.
+6. Chat iteration summary: **Journal entry:** `entries/YYYY-MM-DD/<scope>-<slug>.md`.
 7. After the operator commits: set `commit:` in the entry frontmatter to the short hash (replace `pending`).
 
 ## ID assignment

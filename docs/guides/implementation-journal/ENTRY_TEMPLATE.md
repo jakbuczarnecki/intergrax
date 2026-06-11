@@ -1,6 +1,6 @@
 # Implementation Journal Entry Template
 
-Copy [`entries/_TEMPLATE.md`](entries/_TEMPLATE.md) to `entries/YYYY-MM-DD-<scope>-<slug>.md` and fill every section.
+Create `entries/YYYY-MM-DD/` if needed; copy [`entries/_TEMPLATE.md`](entries/_TEMPLATE.md) to `entries/YYYY-MM-DD/<scope>-<slug>.md` and fill every section.
 
 **Language:** English only. **Do not** duplicate plan tables or architecture canon — link instead.
 
@@ -35,10 +35,10 @@ Use a **single** `tier` key only for backward compatibility with older entries; 
 ## Filename convention
 
 ```text
-entries/YYYY-MM-DD-<scope>-<slug>.md
+entries/YYYY-MM-DD/<scope>-<slug>.md
 ```
 
-Examples: `2026-06-10-rag-m-rag-23.md`, `2026-06-10-tools-tool-eng-4.md`, `2026-06-10-agents-vendor-discovery-k1.md`
+Examples: `entries/2026-06-10/rag-m-rag-23.md`, `entries/2026-06-10/tools-tool-eng-4.md`, `entries/2026-06-10/agents-vendor-discovery-k1.md`
 
 ---
 
@@ -47,7 +47,7 @@ Examples: `2026-06-10-rag-m-rag-23.md`, `2026-06-10-tools-tool-eng-4.md`, `2026-
 Insert **below** the table header row in [`INDEX.md`](INDEX.md):
 
 ```markdown
-| IJ-YYYY-MM-DD-NNN | YYYY-MM-DD | tier-0 RAG | M-RAG.23 | [query expansion wiring](entries/2026-06-10-rag-m-rag-23.md) | `94bea682` |
+| IJ-YYYY-MM-DD-NNN | YYYY-MM-DD | tier-0 RAG | M-RAG.23 | [query expansion wiring](entries/2026-06-10/rag-m-rag-23.md) | `94bea682` |
 ```
 
 Do **not** append at the bottom — the index is reverse-chronological.
