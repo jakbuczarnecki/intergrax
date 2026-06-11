@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.memory_scope import MemoryScope
 from intergrax.contracts.agent_contract_section12 import (
     DEFAULT_FAILURE_MODES,
@@ -100,4 +101,16 @@ class AgentContract(BaseModel):
     )
     failure_modes: List[str] = Field(
         default_factory=lambda: list(DEFAULT_FAILURE_MODES),
+    )
+    cognitive_pattern: CognitivePattern | None = Field(
+        default=None,
+        description="ACP cognitive pattern id (architecture §24 · ACP-0b).",
+    )
+    pattern_version: str | None = Field(
+        default=None,
+        description="Pattern implementation version, e.g. acp.v1.",
+    )
+    pattern_config: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Pattern-specific configuration (max_react_iterations, etc.).",
     )

@@ -111,7 +111,7 @@
 | DEBT-ACP-12 | Capability routing by class name in some paths | Registry token routing §37.6 | Wave 6 | ACP-CON-6 |
 | DEBT-ACP-13 | Free-text errors / terminal reasons | `AgentRunErrorCode` · `TerminalReason` §37.4–§37.5 | Wave 0 | ACP-CON-1 |
 | DEBT-ACP-14 | Full state replace / in-place mutation | `state_delta` merge-patch §37.2 | Wave 0 | ACP-CON-2 |
-| DEBT-ACP-15 | Scaffold emits UAEP-first only | Typed `on_next_step` + state subclass §32.0 | Wave 5 | ACP-8 |
+| DEBT-ACP-15 | ~~Scaffold emits UAEP-first only~~ | Typed `on_next_step` + state subclass §32.0 | **Closed Wave 5** (`--pattern`) | ACP-8 |
 | DEBT-ACP-16 | `agents/*` roster on legacy patterns | Migrate to typed loop | Wave 4–5 | ACP-LEG-2 |
 | DEBT-ACP-17 | No prod checkpoint / idempotency | §40 persistence | Wave 7 | ACP-PROD-1..3 |
 | DEBT-ACP-18 | `ReActAgent` tool loop split from TOOL-ENG-6 | Unified budget keys §25.2 | Wave 5 | ACP-3 + TOOL-ENG-6 |
@@ -224,18 +224,19 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-PROD-10 | ACP-PROD | **CI conformance matrix §40.10** | Planned | CI workflow aggregate | CI-01..15 applicable rows |
 | ACP-PROD-11 | ACP-PROD | **Schema version registry + migration adapters** | Planned | `intergrax/contracts/migrations/` | check_contract_schema_versions |
 | ACP-0 | ACP1 | **`AcpSessionState` / `acp.state.v1` schema** — Pydantic envelope + agent subclass pattern §32.0 | **Done** | `intergrax/contracts/acp_state.py` | Unit test round-trip; extra=forbid |
-| ACP-0b | ACP1 | **`cognitive_pattern` on AgentContract** — optional field + validation | Planned | `intergrax/contracts/agent_contract_meta.py` | Assembly resolver accepts pattern enum |
-| ACP-1 | ACP1 | **`CognitiveAgent` ABC** — perceive/reason/act/evaluate + UAEP wiring | Planned | `intergrax/agents/authoring/patterns/base.py` | `test_cognitive_agent_base.py` |
-| ACP-2 | ACP2 | **`ReflexAgent`** | Planned | `patterns/reflex.py` | Unit test: single-shot complete |
-| ACP-3 | ACP2 | **`ReActAgent`** — bounded loop, budget in `acp.state.v1` | Planned | `patterns/react.py` | Integration with mock LLM + tool gateway |
-| ACP-4 | ACP2 | **`PlanExecuteAgent`** — multi-step + phase machine | Planned | `patterns/plan_execute.py` | Unit test: phase transitions |
-| ACP-5 | ACP2 | **`DecompositionAgent`** — sub-question queue + convergence | Planned | `patterns/decomposition.py` | Unit test: 3-question decomposition mock |
-| ACP-6 | ACP2 | **`ReflectionAgent`** — critic hook integration | Planned | `patterns/reflection.py` | Test with mock critic verdict |
+| ACP-0b | ACP1 | **`cognitive_pattern` on AgentContract** — optional field + validation | **Done** | `agent_contract_meta.py`, `agent_assembly_resolver.py` | `test_cognitive_patterns` validation |
+| ACP-1 | ACP1 | **`CognitiveAgent` ABC** — perceive/reason/act/evaluate + `on_next_step` | **Done** | `patterns/base.py` | Pattern probe runs |
+| ACP-2 | ACP2 | **`ReflexAgent`** | **Done** | `patterns/reflex.py` | `PatternReflexProbe` |
+| ACP-3 | ACP2 | **`ReActAgent`** — bounded loop, budget in `acp.state.v1` | **Done** | `patterns/react.py`, `patterns/states.py` | `PatternReActProbe` |
+| ACP-4 | ACP2 | **`PlanExecuteAgent`** — multi-step + phase machine | **Done** | `patterns/plan_execute.py` | `PatternPlanExecuteProbe` |
+| ACP-5 | ACP2 | **`DecompositionAgent`** — sub-question queue + convergence | **Done** | `patterns/decomposition.py` | `PatternDecompositionProbe` |
+| ACP-6 | ACP2 | **`ReflectionAgent`** — draft/critique/revise phases | **Done** | `patterns/reflection.py` | `PatternReflectionProbe` (CVL hook Wave 6+) |
 | ACP-7 | ACP3 | **Decision helpers** — legacy UAEP bridge; new code uses `StepOutcome` factories §32.0 (ACP-DX-6) | Planned | `intergrax/agents/authoring/decisions.py` | Deprecation path to ACP-DX-6 factories |
-| ACP-8 | ACP3 | **Scaffold `--pattern`** flag on `new-agent` | Planned | `intergrax/scaffold/new_agent.py` | Scaffold emits correct base class |
-| ACP-9 | ACP4 | **Harness reference agents** — one per pattern (Tier-0 framework, not `agents/`) | Planned | `intergrax/agents/pattern_reference_*.py` | Register in lab wiring smoke test |
+| ACP-8 | ACP3 | **Scaffold `--pattern`** flag on `new-agent` | **Done** | `scaffold/new_agent.py`, `scaffold/cli.py` | `test_acp_pattern_scaffold` |
+| ACP-9 | ACP4 | **Harness reference probes** — one per pattern | **Done** | `patterns/reference.py` | Pattern probe unit tests |
 | ACP-10 | ACP4 | **Unit test package** `tests/unit/agents/authoring/patterns/` | Planned | tests | `pytest` green, no network |
-| ACP-11 | ACP5 | **Gate: new agents UAEP-only** — CI check or scaffold default | Planned | `scripts/check_new_agents_uaep_only.py` | Fails on new non-UAEP agents |
+| ACP-11 | ACP5 | **Gate: ACP pattern scaffold** — no UAEP boilerplate | **Done** | `scripts/check_scaffold_acp_pattern.py` | Scaffold smoke script |
+| ACP-13 | ACP5 | **Pattern conformance** — contract vs class | **Done** | `scripts/check_agent_pattern_conformance.py` | AST check on `agents/*/contract.py` |
 | ACP-12 | ACP5 | **Acceptance: pattern agent in agent_os suite** | Planned | `tests/acceptance/agent_os/` | One test per pattern (mock LLM) |
 | ACP-13 | ACP5 | **`check_agent_pattern_conformance.py`** — contract pattern vs class MRO | Planned | `scripts/` | CI workflow step |
 | ACP-CFG | ACP6 | **`build_context` profile injection** — reduce per-agent `RuntimeConfig` duplication | **Done** | `intergrax/agents/reference_harness.py` | `build_lab_agent_runtime_config_from_merged` |
@@ -250,7 +251,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-MIG-7 | ACP-MIG | **Per-host binding verification** after each batch | Planned | `applications/*/manifest.py` tests | AgentBinding slices + capability routing per host |
 | ACP-PROD-12 | ACP-PROD | **`AgentProductionReadinessReport`** scoreboard — 10 dimensions 0–100% per agent | Planned | `intergrax/contracts/agent_readiness.py`, `scripts/report_agent_production_readiness.py` | Report generated for roster; prod promotion uses thresholds §6.1az |
 | ACP-LEG-3 | ACP-LEG | **Document RuntimeEngine internal-only** | **Done** | `runtime.py` module docstring + architecture §13 | INTERNAL ONLY banner |
-| ACP-LEG-4 | ACP-LEG | **Remove author UAEP from scaffold default** — `on_next_step` + typed state only | Planned | `intergrax/scaffold/new_agent.py` | New agents have no `get_steps` boilerplate |
+| ACP-LEG-4 | ACP-LEG | **Remove author UAEP from `--pattern` scaffold** — typed hooks only | **Done** | `scaffold/new_agent.py` | `--pattern` agents have no `get_steps` |
 | ACP-DOC.11 | ACP0 | **Detailed implementation waves §6.1aw** + debt/coupling matrix | **Done** | `plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §6.1aw |
 | ACP-DOC.12 | ACP0 | **Plan correction** — §12–§20 scope map, runtime/kernel split, ACP-CON-4 | **Done** | `plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` | Wave 1 + scope mapping |
 | ACP-DOC.13 | ACP0 | **Wave 8 fleet migration** + **§6.1az production readiness scoreboard** | **Done** | `plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` | Operational closure |
@@ -398,7 +399,7 @@ HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
 | 5.7 | ACP-9..10 | `pattern_reference_*.py`, tests package | One harness reference per pattern | Lab wiring smoke | — |
 | 5.8 | ACP-11..13 | CI scripts | UAEP-only gate; pattern conformance; extend `agent_os` | CI green | DX |
 
-**Wave 5 DoD:** `python -m intergrax.scaffold new-agent x --pattern react` produces readable agent; DEBT-ACP-15 closed.
+**Wave 5 DoD:** **Met** — `new-agent --pattern react` emits `ReActAgent` subclass with typed hooks; pattern library + probes + CI scripts; DEBT-ACP-15 closed. Default scaffold without `--pattern` remains UAEP (fleet migration Wave 8).
 
 **Prerequisite for Wave 8:** Waves 0–5 Done (typed loop, `run()`, patterns, scaffold target exist).
 

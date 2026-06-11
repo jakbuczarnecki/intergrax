@@ -10,6 +10,7 @@ from typing import Sequence
 
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
+from intergrax.contracts.agent_run_enums import CognitivePattern
 
 _AGENT_ID_PATTERN = re.compile(r"^[a-z][a-z0-9_-]*$")
 
@@ -106,11 +107,36 @@ def validate_lifecycle_metadata(contract: AgentContract) -> AgentAssemblyValidat
     return AgentAssemblyValidationResult(valid=not errors, errors=tuple(errors))
 
 
+def validate_cognitive_pattern_metadata(
+    contract: AgentContract,
+) -> AgentAssemblyValidationResult:
+    """Validate cognitive pattern fields when declared (ACP-0b)."""
+    errors: list[str] = []
+    if contract.cognitive_pattern is None:
+        return AgentAssemblyValidationResult(valid=True)
+
+    if not isinstance(contract.cognitive_pattern, CognitivePattern):
+        errors.append(f"AgentContract.cognitive_pattern is invalid: {contract.cognitive_pattern!r}")
+
+    if not (contract.pattern_version or "").strip():
+        errors.append(
+            "AgentContract.pattern_version is required when cognitive_pattern is set"
+        )
+
+    if contract.cognitive_pattern == CognitivePattern.CUSTOM and not contract.pattern_config:
+        errors.append(
+            "AgentContract.pattern_config must be non-empty when cognitive_pattern is custom"
+        )
+
+    return AgentAssemblyValidationResult(valid=not errors, errors=tuple(errors))
+
+
 def validate_agent_assembly(contract: AgentContract) -> AgentAssemblyValidationResult:
     """Run full agent assembly validation."""
     metadata = validate_contract_metadata(contract)
     lifecycle = validate_lifecycle_metadata(contract)
-    errors = (*metadata.errors, *lifecycle.errors)
+    pattern = validate_cognitive_pattern_metadata(contract)
+    errors = (*metadata.errors, *lifecycle.errors, *pattern.errors)
     return AgentAssemblyValidationResult(valid=not errors, errors=errors)
 
 
