@@ -35,7 +35,12 @@
 | [§38](#38-execution-responsibility-stack-l4-application) | Execution stack: L4 application |
 | [§39](#39-organizational-policy-envelope--virtual-workforce) | Organizational policy envelope |
 | [§40](#40-production-reliability-safety-and-release-gates-tier-3) | Production reliability and release gates |
+| [§41](#41-composition-primitives-separation-matrix) | Composition primitives separation |
+| [§42](#42-applicationenvironmentstate-typed-host-state) | **ApplicationEnvironmentState** |
+| [§43](#43-budget-reactions-and-token-governance) | Budget reactions and token governance |
+| [§44](#44-scenario-test-matrix-tier-3) | Scenario test matrix |
 | [§45](#45-checklist-for-new-application-implementation) | New application checklist |
+| [§46](#46-production-readiness-acceptance-criteria) | Production readiness acceptance criteria |
 
 ---
 
@@ -497,9 +502,23 @@ class MyApplicationHost:
 Return **`None`** to defer to default Nexus/harness behavior. Return **`HookResult`** to allow, block, modify, or escalate (§32).
 
 **Protocol:** `intergrax/harness/application_host.py`  
-**Bridge:** `intergrax/harness/hooks.py` → `ApplicationHostMiddleware`
+**Bridge:** `intergrax/harness/hooks.py` → `ApplicationHostMiddleware`  
+**Wiring:** `apply_application_host_wiring(nexus, host)` in `applications/_shared/application_host_wiring.py` (**Done** APP-CON-1)
 
-> **Implementation note (APP-GAP-01):** `HarnessApplication.build_runtime()` and `build_harness_host_runtime()` MUST mount `ApplicationHost` into the Nexus middleware pipeline via `merge_host_into_pipeline`. Until wired, hooks are documentation-only — tracked in [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) Phase **H-APP-CON**.
+### 25.3.1 Hooks are event reactions — not a cognitive loop (normative)
+
+Tier-3 applications **do not** receive `on_next_orchestration_step()` or any session step loop analogous to `Agent.on_next_step()`. That would duplicate **NexusLoop** (L3/L4 confusion) and bypass graph policy, parallel caps, and Plane A trace.
+
+| Mechanism | What it controls | Loop? |
+|-----------|------------------|-------|
+| **`ApplicationEnvironmentProfile`** | Catalogs, modes, orchestration knobs | No — declarative |
+| **`ApplicationGraphSpec`** | Multi-agent **topology** (who runs in what order) | No — declarative plan seed |
+| **`OrganizationalPolicyEnvelope`** | Org-wide **rules** and channels | No — declarative + policy engine |
+| **`AgentBinding`** | Per-agent runtime **slices** at merge | No — declarative |
+| **`ApplicationHost.on_hook`** | **Event reactions** at Nexus boundaries | No — callback per `HookPoint` |
+| **`Agent.on_next_step`** | Domain **cognition** per agent iteration | Yes — agent-only (ACP §32) |
+
+**Full environment customization** combines: profile + graph spec + policy envelope + roster + hooks + shadow/sandbox — **never** a private orchestration `while` loop in Tier-3.
 
 ## 25.4 Framework surface (Tier-3 vs author visibility)
 
@@ -814,17 +833,35 @@ Application hook authors MUST be able to answer from code alone:
 
 Untyped dict mutation of Nexus internals from Tier-3 is **not supported** — use `HookResult.modified_payload` only where documented for the hook point.
 
-## 32.1 Hook catalog (authoring map)
+## 32.1 Hook lifecycle matrix — allowed actions per HookPoint
 
-| HookPoint group | Typical application use |
-|-----------------|-------------------------|
-| `BEFORE_TASK_INTAKE` / `AFTER_TASK_INTAKE` | Normalize metadata, attach org_id, reject intake |
-| `BEFORE_CLASSIFICATION` / `AFTER_CLASSIFICATION` | Override classifier hints, audit routing |
-| `BEFORE_PLANNING` / `AFTER_PLANNING` | Inject plan constraints, validate graph seed |
-| `BEFORE_AGENT_SELECTION` / `AFTER_AGENT_SELECTION` | Block agent, force capability swap |
-| `BEFORE_HUMAN_APPROVAL` / `AFTER_HUMAN_APPROVAL` | Custom HITL messaging hooks |
-| `BEFORE_FINALIZATION` / `AFTER_FINALIZATION` | Product webhooks, business outcome emit |
-| `BEFORE_TRACE_PERSIST` | Redaction labels (prefer OBS profile) |
+Normative for application authors. **`BLOCK`** stops the pipeline at that boundary. **`MODIFY`** shallow-merges `modified_payload` into `HookContext.runtime_state` (see `HookRegistry`). **`ESCALATE`** routes to HITL / escalation coordinator where wired. **`ALLOW`** / `None` defers to harness defaults.
+
+| HookPoint | BLOCK | MODIFY | ESCALATE | Typical application use |
+|-----------|-------|--------|----------|-------------------------|
+| `BEFORE_TASK_INTAKE` | Yes | Yes — metadata keys | Rare | Reject intake, seed `app_env_state.v1` |
+| `AFTER_TASK_INTAKE` | No | Yes | No | Audit labels, attach org/scenario ids |
+| `BEFORE_CLASSIFICATION` | Yes | Yes — classifier hints in `runtime_state` | No | Force capability hint |
+| `AFTER_CLASSIFICATION` | No | Yes | No | Log routing decision |
+| `BEFORE_PLANNING` | Yes | Yes | No | Block disallowed planner kinds |
+| `AFTER_PLANNING` | No | Yes | No | Validate plan against product policy |
+| `BEFORE_AGENT_SELECTION` | **Yes** | Limited | No | Deny agent id / org role mismatch |
+| `AFTER_AGENT_SELECTION` | No | Yes | No | Trace roster resolution |
+| `BEFORE_CONTEXT_BUILD` | Yes | Yes | No | Strip forbidden metadata |
+| `BEFORE_LLM_INFERENCE` / `AFTER_*` | Yes | Yes — guardrail payloads | Rare | Product-specific LLM gates (prefer profile) |
+| `BEFORE_TOOL_CALL` / `AFTER_TOOL_CALL` | Yes | Rare | No | Prefer `ToolProfile` + policy rules |
+| `BEFORE_HUMAN_APPROVAL` | Yes | Yes | **Yes** | Custom HITL templates |
+| `AFTER_HUMAN_APPROVAL` | No | Yes | No | Resume notifications |
+| `BEFORE_FINALIZATION` | Yes | Yes | No | Business outcome webhook prep |
+| `AFTER_FINALIZATION` | No | Yes | No | Product analytics emit |
+| `BEFORE_TRACE_PERSIST` | Yes | Yes — redaction labels | No | Prefer `ObservabilityProfile` |
+| `BEFORE_MEMORY_WRITE` | Yes | Yes | No | Tenant scope enforcement backup |
+
+**Rules:**
+
+- ApplicationHost hooks MUST NOT invoke tools or LLM directly — schedule work by returning `BLOCK` / `ESCALATE` or by setting hints for Nexus/agents.
+- Prefer **Mode 1–2** (profile, envelope) over hooks when behavior is static across tasks.
+- `MODIFY` is **not** a substitute for `ApplicationGraphSpec` topology changes mid-flight.
 
 Full enum: `intergrax/runtime/hooks/hook_point.py`
 
@@ -871,9 +908,11 @@ class StrictOrgHost:
 |-----------|--------|------|
 | `ApplicationHost` Protocol | **Done** DX-5.1 | `intergrax/harness/application_host.py` |
 | `ApplicationHostMiddleware` | **Done** DX-5.2 | `intergrax/harness/hooks.py` |
-| Pipeline merge helper | **Done** DX-5.2 | `merge_host_into_pipeline` |
-| Wired in `build_harness_host_runtime` | **Gap** APP-CON-1 | plan H-APP-CON |
-| `HarnessApplication.hooks()` | **Partial** — stored not mounted | `intergrax/harness/app.py` |
+| `apply_application_host_wiring` | **Done** APP-CON-1 | `applications/_shared/application_host_wiring.py` |
+| Wired in `build_harness_host_runtime` | **Done** APP-CON-1 | `application_host=` parameter |
+| `HarnessApplication.hooks()` | **Done** APP-CON-1 | passes host to `build_harness_host_runtime` |
+| `ApplicationEnvironmentState` | **Done** APP-CON-2 | `applications/contracts/environment_state.py` |
+| `merge_host_into_pipeline` | **Done** DX-5.2 | alternative composition helper |
 
 ---
 
@@ -1010,16 +1049,17 @@ Synthesis of §24–§35 and ACP §36.
 
 ## 36.3 Implementation alignment (2026-06-11)
 
-| Component | Status | Remaining (H-APP-CON) |
-|-----------|--------|------------------------|
+| Component | Status | Remaining |
+|-----------|--------|-----------|
 | `ApplicationEnvironmentProfile` | **Done** H-APP | — |
 | Unified wiring | **Done** H-APP | — |
-| `HarnessApplication` facade | **Done** DX-2 | Mount hooks APP-CON-1 |
-| `ApplicationHost` Protocol | **Done** DX-5.1 | Wire to Nexus APP-CON-1 |
+| `HarnessApplication` facade | **Done** DX-2 | — |
+| `ApplicationHost` → Nexus pipeline | **Done** APP-CON-1 | — |
+| `ApplicationEnvironmentState` | **Done** APP-CON-2 | Kernel seeding on intake (optional) |
 | `ApplicationRunSummary` | **Done** ACP-OBS-2 | — |
 | Org envelope | **Done** ACP-ORG-1..2 | Enforcement depth ACP-ORG-3 |
-| Budget reactions | **Partial** | ACP-TOK-2 |
-| APP production scoreboard | **Planned** | APP-PROD-* §40 |
+| Budget reactions (hard cap + notify) | **Partial** | ACP-TOK-2 · ACP-TOK-3 §43 |
+| APP production scoreboard | **Partial** | APP-PROD-1 §46 |
 
 ---
 
@@ -1210,7 +1250,7 @@ Symmetric to ACP §40 — **host environments** that run mutating workloads.
 |----|-------------|--------|
 | APP-PROD-1 | `check_application_host_wiring.py` — no direct NexusLoop in factories | Planned |
 | APP-PROD-2 | Reference hosts use `build_harness_host_runtime` exclusively | **Done** (H-APP-WIRING) |
-| APP-PROD-3 | `ApplicationHost` mounted when `hooks()` provided | Planned (APP-CON-1) |
+| APP-PROD-3 | `ApplicationHost` mounted when `hooks()` provided | **Done** APP-CON-1 |
 | APP-PROD-4 | Prod manifest conformance in gate CI | **Done** H-APP.0.5 |
 | APP-PROD-5 | Deploy triad gate | **Done** AA phase |
 
@@ -1223,6 +1263,147 @@ Before claiming production-ready for mutating hosts:
 3. `CriticProfile` for high-risk capabilities
 4. `mount_harness_task_routes` when HITL/long-running required
 5. Product `ARCHITECTURE.md` documents §23.7 gaps closed or deferred
+
+---
+
+# 41. Composition Primitives — Separation Matrix
+
+Normative mapping — **do not conflate** these primitives:
+
+| Primitive | Layer | Answers | Does NOT |
+|-----------|-------|---------|----------|
+| **`ApplicationGraphSpec`** | Declarative topology | Which agents, in what order/parallelism, edges | Domain reasoning; per-step tool calls |
+| **`ApplicationHost`** | Imperative reactions | Dynamic block/modify/escalate at Nexus events | Replace graph; cognitive loop |
+| **`OrganizationalPolicyEnvelope`** | Rules / simulation | Org-wide channels, playbooks, tool denies | Per-agent factory logic |
+| **`AgentBinding`** | Per-agent wiring | Implementation class, capability, slices, `org_role_id` | Orchestration topology |
+| **`ApplicationEnvironmentProfile`** | Harness slices | Catalogs, modes, observability, cost, reliability | Business rules in code |
+| **`ShadowWorkspaceProfile` / `SandboxProfile`** | Isolation | Safe experiments / code exec | Agent selection |
+| **`NexusLoop`** | Tier-1 OS | Execute Task graph with policy | Product-specific forks |
+
+```text
+Topology     → ApplicationGraphSpec (+ OrchestrationProfile)
+Rules        → OrganizationalPolicyEnvelope + PolicyRulesProfile
+Per-agent    → AgentBinding → merge_environment()
+Reactions    → ApplicationHost.on_hook()
+Catalogs     → ApplicationEnvironmentProfile sub-profiles
+Cognition    → Agent.on_next_step() ONLY
+```
+
+---
+
+# 42. ApplicationEnvironmentState (Typed Host State)
+
+**Contract:** `intergrax/applications/contracts/environment_state.py`
+
+Hooks today receive `HookContext.runtime_state: dict`. Application authors SHOULD use typed state under key **`app_env_state.v1`**:
+
+```text
+ApplicationEnvironmentState:
+    schema_version: app_env_state.v1
+    app_id
+    profile_id
+    execution_mode
+    organization_id | null
+    active_scenario_id | null
+    budget_warn_emitted: bool
+    budget_exceeded: bool
+    custom: dict                          # product extensions — keep small
+```
+
+**Helpers:**
+
+- `seed_application_environment_state(...)` — bootstrap on intake hooks
+- `ApplicationEnvironmentState.from_runtime_state(ctx.runtime_state)` — read
+- `state.patch_runtime_state()` — `HookResult.modified_payload` for MODIFY
+
+**Rules:**
+
+- Host state is **task-scoped** unless explicitly persisted via Tier-0 stores — not a second agent session state.
+- Do not store secrets or large blobs in `custom`.
+- Agent-private cognition remains `acp.state.v1` (ACP §37.2) — separate from `app_env_state.v1`.
+
+---
+
+# 43. Budget Reactions and Token Governance
+
+Symmetric to ACP §25.5 — **application configures**, **harness enforces**, **agents read**.
+
+## 43.1 Configuration surfaces (Tier-3)
+
+| Surface | Field | Scope |
+|---------|-------|-------|
+| Environment ceiling | `CostProfile.max_total_tokens` | Whole task / graph |
+| Per-agent cap | `AgentBinding.budget_slice` | Single agent run |
+| Reactions | `CostProfile.budget_reaction` → `BudgetReactionProfile` | Threshold + exceed behavior |
+| Enforcement | `AgentBudgetSlice.enforcement` | `hard` \| `advisory` |
+
+**Module:** `intergrax/contracts/agent_budget.py`
+
+## 43.2 BudgetReactionProfile (normative)
+
+```text
+BudgetReactionProfile:
+    on_agent_limit_exceeded: abort | hitl | degrade_model | notify_only | custom_hook
+    on_environment_limit_exceeded: abort | hitl | degrade_model | notify_only | custom_hook
+    notify_channels: list[in_app | webhook | slack | email | trace_only]
+    warn_threshold_ratio: float          # soft threshold — default 0.80
+    custom_hook_id: str | null
+    user_message_template: str | null
+```
+
+## 43.3 Soft vs hard caps
+
+| Kind | Detection | Harness behavior | Application configures |
+|------|-----------|------------------|------------------------|
+| **Soft (advisory)** | `tokens_total` ≥ `limit * warn_threshold_ratio` | Emit `BUDGET_THRESHOLD` event; optional notify | `warn_threshold_ratio`, `notify_channels` |
+| **Hard** | `tokens_total` ≥ limit with `enforcement=hard` | Block next LLM; apply `on_*_limit_exceeded` | `budget_slice`, `max_total_tokens`, reaction enum |
+
+## 43.4 Reaction semantics
+
+| Reaction | Effect |
+|----------|--------|
+| **`abort`** | Terminal task/agent run with `BUDGET_EXCEEDED` |
+| **`hitl`** | Pause for human approval — resume governance |
+| **`degrade_model`** | Router switches to cheaper allowed model (within `LLMProfile`) |
+| **`notify_only`** | Emit events + optional webhook — run may continue if advisory |
+| **`custom_hook`** | Invoke registered host hook id — product paging / billing |
+
+## 43.5 Implementation status
+
+| ID | Deliverable | Status |
+|----|-------------|--------|
+| Contracts `BudgetReactionProfile` | Pydantic model | **Done** |
+| `ResolvedBudgetLimits` on step context | Read surface for agents | **Partial** ACP-TOK-1 |
+| Kernel hard cap + reactions | `HarnessKernel` enforcement | **Planned** ACP-TOK-2 |
+| Host notify + custom_hook wiring | Tier-3 integration | **Planned** ACP-TOK-3 |
+
+**Anti-pattern BUD-AP-01:** Hardcoded limits in `on_next_step`. **Correct:** `budget_slice` + `budget_reaction`.
+
+---
+
+# 44. Scenario Test Matrix (Tier-3)
+
+Minimum verification before claiming host maturity. Map to §23.5 recipes and §35 UC-A*.
+
+| Scenario | Posture | Required tests | Key assertions |
+|----------|---------|----------------|----------------|
+| **Reactive single-agent** | HTTP `/run` | Unit: manifest conformance; integration: `run_task` | `TaskResult` completed; Plane A summary |
+| **Always-on daemon** | `serve()` / factory lifespan | Smoke: health + `/run` | Process boots; scheduler if enabled |
+| **Scheduled / queue** | `INCLUDE_QUEUE_WORKER` | Integration: enqueue → worker | Async completion notification |
+| **Hybrid** | daemon + queue | Product ARCHITECTURE + integration | Background + interactive paths |
+| **Multi-agent graph** | `graph_spec` | `test_lab_graph_spec` pattern | Node order / parallel batches in trace |
+| **Virtual org** | `organizational_policy` | UC-11 golden (ACP-ORG-5) | `PolicyVerdictRecord`; denied tools blocked |
+| **Simulation** | dispute_sim / scenario bindings | Graph + scenario metadata | Scenario playbook overlay applied |
+| **Mutating prod** | STRICT + reliability | ACP-PROD + APP-PROD §46 | Idempotency + checkpoint on host |
+| **ApplicationHost hook** | any | `test_application_host_wiring` | Middleware mounted; BLOCK works |
+| **Budget exceed** | cost_profile | Planned ACP-TOK-2 gate | `BUDGET_EXCEEDED` + reaction path |
+
+**Gate commands:**
+
+```bash
+uv run pytest tests/unit/applications/ -q
+uv run pytest -m gate -q
+```
 
 ---
 
@@ -1252,6 +1433,48 @@ Before implementing a new Tier-3 environment, answer:
 ```
 
 If these questions cannot be answered, do not ship the host. **Guides:** [`applications/USAGE.md`](../../applications/USAGE.md) · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Step 4E · Appendix H.
+
+---
+
+# 46. Production Readiness Acceptance Criteria
+
+A Tier-3 host MAY be labeled **production-ready** only when **all** mandatory rows pass for its posture class.
+
+## 46.1 Mandatory (every product host)
+
+| # | Criterion | Evidence |
+|---|-----------|----------|
+| P1 | `ApplicationManifest` + full `ApplicationEnvironmentProfile` on manifest | `test_manifest_conformance` |
+| P2 | `build_harness_host_runtime()` — no ad-hoc `NexusLoop(...)` | Code review / APP-PROD-1 |
+| P3 | `wire_application_environment()` — no `getattr` on manifest | `check_harness_no_getattr` |
+| P4 | All surfaces → `UnifiedTaskRunner.run_task()` | Factory + router review |
+| P5 | `execution_mode=strict` in production profile | `environment_profile.py` |
+| P6 | `IdentityProfile` matches deployed auth | Integration test or manual runbook |
+| P7 | `EnvironmentSkillToolConsistencyCheck` passes | Wiring logs / unit test |
+| P8 | Deploy triad (Docker, `BUILD_AND_DEPLOY.md`, `.env.example`) | `test_application_deploy_triad` |
+| P9 | Business logic only in Tier-2 agents | `check_agent_registry_bypass` |
+| P10 | §23.7 host gaps closed **or** documented in product `ARCHITECTURE.md` | Doc link |
+
+## 46.2 Required when capability applies
+
+| Capability | Additional criteria |
+|------------|---------------------|
+| Long-running / HITL | `ReliabilityProfile` + `mount_harness_task_routes` + checkpoint store |
+| Multi-agent | `graph_spec` or documented pipeline token + `ApplicationRunSummary` test |
+| Interaction intake | `wire_interaction_intake_service` + signature tests |
+| Virtual org (UC-A7) | `OrganizationalPolicyEnvelope` + eval golden zero `POLICY_DENIED` on happy path |
+| `ApplicationHost` hooks | APP-CON-1 middleware mounted + hook unit test |
+| Mutating tools in STRICT | ACP-PROD gates on agents + host idempotency store |
+| Budget-sensitive | `budget_reaction` configured + ACP-TOK-2/3 when implemented |
+
+## 46.3 Maturity score (architecture audit)
+
+| Dimension | Target | Current (2026-06-11) |
+|-----------|--------|----------------------|
+| Architecture completeness | 9/10 | **9/10** — APP-CON canon §24–§46 |
+| Hook runtime wiring | 10/10 | **9/10** — APP-CON-1 Done; intake state seed optional |
+| Budget / prod gates | 10/10 | **6/10** — ACP-TOK-2/3, APP-PROD-1 open |
+| **Overall production readiness** | — | **~7.5/10** — safe for lab/reference; mutating prod needs TOK + PROD gates |
 
 ---
 

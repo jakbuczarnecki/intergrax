@@ -47,7 +47,7 @@ def resolve_external_ref_from_store(
     output = completed.output
     if isinstance(output, SideEffectCommitPayload):
         return output.external_ref
-    external_ref = getattr(output, "external_ref", None)
+    external_ref = output.model_dump().get("external_ref")
     return external_ref if isinstance(external_ref, str) else None
 
 

@@ -14,7 +14,11 @@ from intergrax.contracts.agent_run_enums import StepNextAction, TerminalReason
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeStats
+from intergrax.runtime.nexus.responses.response_schema import (
+    RuntimeAnswer,
+    RuntimeRequest,
+    RuntimeStats,
+)
 
 if TYPE_CHECKING:
     from intergrax.agents.authoring.patterns.base import CognitiveAgent
@@ -24,13 +28,18 @@ def _run_input_from_request(exec_ctx: RuntimeExecutionContext) -> str | dict[str
     request = exec_ctx.request
     if request is None:
         return ""
-    message = getattr(request, "message", None)
-    if isinstance(message, str) and message.strip():
-        return message
-    metadata = getattr(request, "metadata", None)
-    if isinstance(metadata, dict) and metadata.get("message"):
+    if isinstance(request, RuntimeRequest):
+        message = request.message
+        if message.strip():
+            return message
+        metadata = request.metadata
+        if metadata.get("message"):
+            return str(metadata["message"])
+        return message or ""
+    metadata = request.metadata
+    if metadata.get("message"):
         return str(metadata["message"])
-    return message or ""
+    return ""
 
 
 def build_step_context_from_uaep(

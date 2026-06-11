@@ -58,7 +58,10 @@ def _load_agent_instance(agent_module: str, agent_py: Path) -> Any:
     class_name = _agent_class_name(agent_py)
     if class_name is None:
         raise RuntimeError(f"No Agent class in {agent_py}")
-    agent_cls = getattr(module, class_name)
+    try:
+        agent_cls = module.__dict__[class_name]
+    except KeyError as exc:
+        raise RuntimeError(f"Agent class {class_name!r} not found in {agent_module}") from exc
     return agent_cls()
 
 
@@ -311,7 +314,10 @@ def _score_capability_routing(agent: Any, contract: AgentContract) -> AgentReadi
             0.0,
             blockers=["no capabilities on contract"],
         )
-    can_handle = getattr(agent, "can_handle", None)
+    try:
+        can_handle = agent.can_handle
+    except AttributeError:
+        can_handle = None
     if not callable(can_handle):
         return _dimension(
             AgentReadinessDimension.CAPABILITY_ROUTING,

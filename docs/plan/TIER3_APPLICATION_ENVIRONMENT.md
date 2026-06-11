@@ -297,7 +297,7 @@ uv run pytest -m gate -q
 
 ## Phase H-APP-CON — Application Environment Architecture canon (APP-CON)
 
-**Status:** **In progress** (2026-06-11) — architecture §24–§45 documented; code gaps APP-CON-1..3 open  
+**Status:** **In progress** (2026-06-11) — architecture §24–§46 documented; APP-CON-1/2 **Done**; TOK/PROD gates open  
 **Prerequisites:** Phase H-APP **Done** · H-APP-DOC **Done** · H-APP-WIRING **Done**  
 **Goal:** Deliver **symmetric authoring canon** to ACP for Tier-3 — contracts, facades, hooks, checklists — without a new domain pair or Nexus fork.
 
@@ -308,7 +308,8 @@ uv run pytest -m gate -q
 | H-APP-CON-DOC.1 | Architecture §24–§45 (APP-CON) + TOC | **Done** | **Critical** | `architecture/TIER3_APPLICATION_ENVIRONMENT.md` |
 | H-APP-CON-DOC.2 | Hub § Application in harness environment | **Done** | High | `intergrax_runtime_architecture.md` |
 | H-APP-CON-DOC.3 | Cross-ref ACP §39 → TIER3 §39 canonical home | Planned | Low | One-line pointer in ACP §39.8 |
-| APP-CON-1 | Wire `ApplicationHost` in `build_harness_host_runtime` + `HarnessApplication.build_runtime` | Planned | **Critical** | Integration test: hook blocks at `BEFORE_AGENT_SELECTION` |
+| APP-CON-1 | Wire `ApplicationHost` in `build_harness_host_runtime` + `HarnessApplication.build_runtime` | **Done** | **Critical** | `test_application_host_wiring.py` |
+| APP-CON-2 | `ApplicationEnvironmentState` typed host state contract | **Done** | High | `environment_state.py` |
 | APP-CON-2 | `check_application_host_wiring.py` gate — factories use `build_harness_host_runtime` | Planned | High | CI gate |
 | APP-CON-3 | APP-PROD-1..5 scoreboard rows + reference host evidence | Planned | Medium | §40.2 green on lab/legal |
 | APP-CON-DX.1 | Appendix APP in `AGENT_CREATION_GUIDE.md` or `APPLICATION_CREATION_GUIDE.md` | Planned | Medium | Author workflow §31.1 |
