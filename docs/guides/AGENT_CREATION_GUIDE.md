@@ -81,6 +81,19 @@ When you create an agent you work **only** on Tier-2:
 
 **Registration rule:** a new agent integrates through `AgentRegistry.register()` — never by editing `NexusLoop`, `GraphExecutor`, or task lifecycle code.
 
+### Author terminology canon (single entry — ACP-CLOSE-PAT-3)
+
+**Normative definitions** for session/run/step vocabulary live in architecture [**§29 — Author-facing `run()` facade**](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md#29-author-facing-run-facade) (through §29.6). This guide **links** to §29; Appendix AC adds worked examples only — **do not** treat appendices as alternate definitions. Tier/plane terms: architecture §22–§23.
+
+| Author term | Canon (§29) | Not this |
+|-------------|-------------|----------|
+| `await agent.run(AgentRunRequest(...))` | One **session** per graph node or pytest | Many external `run()` calls per internal reasoning step |
+| `on_next_step(step_ctx) → StepOutcome` | One **domain iteration**; primary hook | Author `get_steps` / `run_step` / `decide_after_step` (UAEP — harness-internal §13.3) |
+| `AgentRuntime.advance_step` | Inside framework `run()` loop | Author override |
+| `HarnessKernel.execute_step` | Policy, trace, gateways after decision | Domain logic |
+| `Task` → `NexusLoop` | Production multi-agent posture | Agent-internal orchestration graph |
+| UAEP | Framework bridge for pattern bases | Author implementation path |
+
 ---
 
 ## 2. End-to-end workflow
@@ -2596,20 +2609,15 @@ Runbooks: [`runbook/adaptive/`](../runbook/adaptive/) · architecture: [`archite
 
 **Canon:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13 · §21–§40 · **§32.0** (readability & typed-only) · **ADR:** [ADR-AGENT-001](../adr/ADR-AGENT-001.md) · [ADR-AGENT-002](../adr/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/ADR-AGENT-003.md) · **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase **ACP** — waves §6.1aw
 
-### AC.1 Mental model — one `run()`, many `on_next_step`, two entries
+### AC.1 Mental model — canonical §29 (do not duplicate)
+
+**Normative vocabulary:** architecture [**§29**](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md#29-author-facing-run-facade) · rejected alternatives [**§29.6**](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md#296-mapping-author-mental-model--rejected-alternatives). Guide §1 terminology table links here.
 
 ```text
-YOU IMPLEMENT:  on_next_step(step_ctx) → StepOutcome   # primary domain hook
-                OR pattern hooks / @step (framework maps to on_next_step)
-
-YOU CALL:       result = await agent.run(AgentRunRequest(...))
-
-INSIDE run():   agent decision loop (§38):
-                  advance_step → on_next_step (decide) → HarnessKernel.execute_step (execute)
-                merge environment, trace, policy — NOT NexusLoop planning your agent
-
-PROD MULTI-AGENT:  Application uses Task → Nexus — same agent class, same run() inside graph node
-                   ApplicationRunSummary logs orchestration separately §31
+YOU IMPLEMENT:  on_next_step → StepOutcome   (or pattern base / @step — maps to on_next_step)
+YOU CALL:       result = await agent.run(AgentRunRequest(...))     # §29.3 two postures
+INSIDE run():   advance_step → on_next_step → HarnessKernel.execute_step   # §38 — not your code
+PROD:           Task → Nexus graph node → same agent.run() inside node
 ```
 
 | Layer | Your responsibility |
@@ -2621,7 +2629,7 @@ PROD MULTI-AGENT:  Application uses Task → Nexus — same agent class, same ru
 ### AC.2 `AgentRunRequest` — external parameters from application
 
 ```python
-# Target API (ACP-DX-1) — until then use RuntimeRequest with same fields in metadata
+# Shipped API (ACP-DX-1) — see architecture §29.2
 request = AgentRunRequest(
     input="Review clause 14.2",
     identity=RequestIdentity(
@@ -2642,16 +2650,14 @@ request = AgentRunRequest(
     state=prior_state,                  # resume multi-turn
 )
 result = await legal_agent.run(request)
-assert result.trace.steps  # full step journal when ACP-OBS-1 shipped
+assert result.trace.steps  # AgentRunTrace on result (ACP-OBS-1)
 ```
 
-Application maps surface payload → `metadata` + optional `environment_overrides`. Agent reads them in `perceive` / `merge_environment` — never `os.environ`.
+Application maps surface payload → `metadata` + optional `environment_overrides`. Agent reads them in `merge_environment` / `on_next_step` — never `os.environ`.
 
 ### AC.3 Per-agent memory, tools, knowledge — and org policy
 
-Declare on **`AgentContract`** (defaults); narrow per host via **`AgentBinding`**; org-wide rules via **`OrganizationalPolicyEnvelope`** §39 (channels, SOP, conduct — not in agent code).
-
-Declare on **`AgentContract`** (defaults); narrow per host via **`AgentBinding`**; override per run via request.
+Declare on **`AgentContract`** (defaults); narrow per host via **`AgentBinding`**; org-wide rules via **`OrganizationalPolicyEnvelope`** §39 (channels, SOP, conduct — not in agent code). Override per run via `AgentRunRequest.environment_overrides` §29.2.
 
 | Resource | Declare | Runtime access |
 |----------|---------|----------------|
@@ -2786,7 +2792,7 @@ class AnalystAgent(DecompositionAgent):
         ...
 
     def evaluate(self, ctx, output):
-        # return AgentEvaluation → maps to AgentDecision in base class
+        # return AgentEvaluation → pattern base maps to StepOutcome
         ...
 ```
 

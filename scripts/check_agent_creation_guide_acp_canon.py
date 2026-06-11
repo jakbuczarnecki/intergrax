@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""ACP-CLOSE-LEG-4 — author guide must not advertise UAEP-first paths."""
+"""ACP-CLOSE-LEG-4 + PAT-3 — author guide ACP canon and §29 terminology entry."""
 
 from __future__ import annotations
 
@@ -25,12 +25,16 @@ FORBIDDEN_SUBSTRINGS: tuple[str, ...] = (
     "phased `get_steps`",
     "+ UAEP steps",
     "Target (ACP — after Wave 5)",
+    "until then use RuntimeRequest",
 )
 
 REQUIRED_MARKERS: tuple[str, ...] = (
     "UAEP is harness-internal only",
     "on_next_step",
     "ACP-CLOSE-LEG-4",
+    "Author terminology canon",
+    "#29-author-facing-run-facade",
+    "ACP-CLOSE-PAT-3",
 )
 
 
@@ -55,7 +59,7 @@ def main() -> int:
         print("\n".join(violations))
         return 1
 
-    print("AGENT_CREATION_GUIDE ACP canon: OK (ACP-CLOSE-LEG-4)")
+    print("AGENT_CREATION_GUIDE ACP canon: OK (ACP-CLOSE-LEG-4 · PAT-3)")
     return 0
 
 

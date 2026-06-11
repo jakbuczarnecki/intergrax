@@ -3,6 +3,7 @@
 **Role:** Reusable domain capabilities — contracts, typed step loop (`on_next_step`), prompts.  
 **Hosts:** Tier-3 applications under `applications/` mount agents via `AgentBinding.mount(...)`.  
 **Workflow:** [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.md) · Appendix AC  
+**Terminology (canonical):** [`docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §29](../docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md#29-author-facing-run-facade) — session/run/step vocabulary  
 **Architecture:** [`docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 · **§32.0** readability  
 **Implementation plan:** [`docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase **ACP** — waves §6.1aw  
 

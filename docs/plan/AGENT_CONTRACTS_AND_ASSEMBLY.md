@@ -289,7 +289,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-CLOSE-PROD-8 | PROD | Scoreboard mutating agents **100%** checkpoint + idempotency dimensions | **Done** | §40.15 | `readiness/scoreboard.py` | `--require-mutating-checkpoint-idempotency-100` green |
 | ACP-CLOSE-PAT-1 | PAT | ReAct ↔ **TOOL-ENG-6** unified tool loop + budget keys | Planned | §26.3 · §25.2 | `patterns/react.py`, `tool_loop_step.py` | 2-iteration integration; DEBT-ACP-18 **Closed** |
 | ACP-CLOSE-PAT-2 | PAT | `ReflectionAgent` → CVL critic hooks (gateway only) | Planned | §26.6 | `patterns/reflection.py`, host critic wiring | No critic SDK in Tier-2; `plan/CRITIC_VERIFICATION.md` |
-| ACP-CLOSE-PAT-3 | PAT | Author terminology — single canonical §29 entry | Planned | §28.3 GAP-07 | `AGENT_CREATION_GUIDE.md` | No scattered UAEP-first mental model |
+| ACP-CLOSE-PAT-3 | PAT | Author terminology — single canonical §29 entry | **Done** | §28.3 GAP-07 · §29.0 | `AGENT_CREATION_GUIDE.md`, architecture §22–§23 · §27 | §29 single entry; GAP-ACP-07 **Closed** |
 | ACP-CLOSE-ORG-1 | ORG | STRICT **configure_run widen deny** per-agent | **Done** | §39.4 | `configure_run_strict.py`, `merge_environment`, `acp_run` | `test_configure_run_strict.py` |
 | ACP-CLOSE-ORG-2 | ORG | UC-11 compliance golden per **product host** | **Done** | §39.5 | `product_host_org_envelope`, `uc11_compliance_golden.py` | `test_uc11_product_host_compliance.py` (6 hosts) |
 | ACP-CLOSE-CI-1 | CI | Post-LEG grep + fleet migration gate — zero Tier-2 `RuntimeEngine` | **Done** | §40.10 CI-04 | `check_agent_fleet_migration.py`, `check_agent_acp_close_ci.py` | `.github/workflows/unit-tests.yml` |
@@ -661,7 +661,7 @@ ACP-CLOSE:  DOC-2..4 → LEG-1 → LEG-2 → LEG-3 → PROD-1 → PROD-2 → PRO
 | 16 | ACP-CLOSE-PROD-7 | **P0** | §40.12 | **Done** |
 | 17 | ACP-CLOSE-PROD-8 | **P0** | §40.15 | **Done** |
 | 18 | ACP-CLOSE-PAT-2 | P2 | §26.6 | Planned |
-| 19 | ACP-CLOSE-PAT-3 | P2 | §28.3 | Planned |
+| 19 | ACP-CLOSE-PAT-3 | P2 | §28.3 | **Done** |
 | 20 | ACP-CLOSE-ORG-2 | P2 | §39.5 | **Done** |
 | 21 | ACP-CLOSE-CI-1 | P1 | §40.10 | **Done** |
 | 22 | ACP-CLOSE-CI-2 | P2 | §28.4 | Planned |

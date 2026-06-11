@@ -495,7 +495,7 @@ REJECTED: Nexus "run" naming for agent session step executor — blurs Agent OS 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ Tier-3  APPLICATION     Product host: intake, profiles, roster, deploy │
-│ Tier-2  AGENT           Domain worker: contract, pattern, UAEP steps   │
+│ Tier-2  AGENT           Domain worker: contract, pattern, on_next_step   │
 │ Tier-1  NEXUS           Agent OS: graph, policy, lifecycle, trace      │
 │ Tier-0  PLATFORM          Catalogs: LLM, tools, skills, RAG, memory    │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -521,11 +521,11 @@ ApplicationEnvironmentProfile (Tier-3)
     + AgentRegistry entry (Tier-2 class + contract)
     + Resolved LLMProfile, ToolProfile, MemoryProfile, PolicyRules
     + Task (capability, metadata, tenant_id)
-        → UnifiedTaskRunner → NexusLoop → AgentEngine → UAEPExecutor
-            → agent.run_step(step, RuntimeExecutionContext)
+        → UnifiedTaskRunner → NexusLoop → AgentEngine → acp_run
+            → agent.run(AgentRunRequest) → on_next_step loop (§29 · §38)
 ```
 
-The agent **class** is registered at bootstrap; it is **invoked per graph node**, not a long-lived OS process.
+The agent **class** is registered at bootstrap; it is **invoked per graph node**, not a long-lived OS process. Internal UAEP shim details: §13.3 — not author vocabulary.
 
 ## 22.3 Responsibility matrix (detailed)
 
@@ -535,12 +535,12 @@ The agent **class** is registered at bootstrap; it is **invoked per graph node**
 | `Task` construction | — | consumes | — | **owner** |
 | Capability routing | — | **owner** (`AgentRouter`) | declares capabilities | roster + hints |
 | Multi-agent topology | — | **owner** (`GraphExecutor`) | — | `ApplicationGraphSpec` |
-| UAEP step loop | — | **owner** (`UAEPExecutor`) | step content | — |
-| Tool invocation policy | `ToolRegistry` | `ToolRuntime` | via `ctx.invoke_tool` | `ToolProfile` |
-| LLM calls | `LLMAdapter` | tenant scope, budgets | inside `run_step` / pattern | `LLMProfile` |
-| Memory read/write | stores | `MemoryView` policy | via `ctx.memory_view` | `MemoryProfile` |
+| Agent session loop (`acp_run`) | — | **owner** (`AgentEngine` + kernel) | `on_next_step` content | — |
+| Tool invocation policy | `ToolRegistry` | `ToolRuntime` | via `step_ctx.invoke_tool` | `ToolProfile` |
+| LLM calls | `LLMAdapter` | tenant scope, budgets | inside `on_next_step` / pattern | `LLMProfile` |
+| Memory read/write | stores | `MemoryView` policy | via `step_ctx.memory_view` | `MemoryProfile` |
 | Prompt assets | `YamlPromptRegistry` | injection | prompt ids in agent | `PromptProfile` |
-| HITL / interrupt | — | **owner** | `REQUEST_HUMAN` decision | flags on profile |
+| HITL / interrupt | — | **owner** | `StepOutcome.pause_hitl` | flags on profile |
 | Trace / metrics | backends | event bus, hooks | emits via runtime | `ObservabilityProfile` |
 | Cognitive pattern (ReAct, etc.) | — | — | **owner** (ACP library) | — |
 | Domain business rules | — | — | **owner** | — |
@@ -562,12 +562,10 @@ flowchart TB
         TC --> TP --> NP
     end
 
-    subgraph P2["Plane 2 — UAEP step cognition (ACP)"]
-        GS[get_steps]
-        RS[run_step]
-        DA[decide_after_step]
-        AD[AgentDecision]
-        GS --> RS --> DA --> AD
+    subgraph P2["Plane 2 — ACP agent cognition"]
+        ONS[on_next_step]
+        SO[StepOutcome]
+        ONS --> SO
     end
 
     subgraph P3["Plane 3 — Tool cognition"]
@@ -578,18 +576,20 @@ flowchart TB
     end
 
     NP --> GE[GraphExecutor]
-    GE --> GS
-    RS --> CTP
-    RS --> TR
+    GE --> ONS
+    ONS --> CTP
+    ONS --> TR
 ```
 
 | Plane | Question | Primary types | ACP role |
 |-------|----------|---------------|----------|
-| **1 — Nexus** | Which agents, what order, parallelism? | `NexusPlan`, `PlanStep` | Agent emits `MODIFY_PLAN` / `DELEGATE` only via contract |
-| **2 — UAEP** | What does this agent do in one node? | `AgentStep`, `StepOutput`, `AgentDecision` | **Primary ACP surface** |
-| **3 — Tool** | Which tools this LLM iteration? | `ToolPlanDecision` | `ReActAgent` triggers via `ctx.invoke_tool` or tool loop service |
+| **1 — Nexus** | Which agents, what order, parallelism? | `NexusPlan`, `PlanStep` | Agent emits replan/handoff via `StepOutcome` + contract |
+| **2 — ACP** | What does this agent do in one node? | `StepOutcome`, `AcpSessionState`, `AgentRunTrace` | **Primary author surface** (`on_next_step` §29) |
+| **3 — Tool** | Which tools this LLM iteration? | `ToolPlanDecision` | `ReActAgent` triggers via `step_ctx.invoke_tool` or tool loop service |
 
-**Anti-pattern ACP-AP-01:** Implementing multi-agent sequential workflows entirely inside one agent's `run_step` without Nexus graph — bypasses merge policy, parallel caps, and per-node trace.
+**Internal bridge:** `UAEPExecutor` / `get_steps` may still execute under `HarnessKernel` — authors do not implement them (§13.3 · ACP-CLOSE-LEG-4).
+
+**Anti-pattern ACP-AP-01:** Implementing multi-agent sequential workflows entirely inside one agent's `on_next_step` private graph without Nexus — bypasses merge policy, parallel caps, and per-node trace.
 
 **Anti-pattern ACP-AP-02:** Nexus micromanaging tool-level ReAct loops inside `GraphExecutor` — belongs to Plane 3 or `ReActAgent` inside Plane 2.
 
@@ -919,7 +919,7 @@ sequenceDiagram
     participant App as Tier-3 App
     participant NL as NexusLoop
     participant AE as AgentEngine
-    participant UAEP as UAEPExecutor
+    participant ACP as acp_run
     participant Ag as DecompositionAgent
 
     User->>App: chat message
@@ -927,14 +927,13 @@ sequenceDiagram
     App->>NL: handle_task
     NL->>NL: classify → plan (1 node)
     NL->>AE: execute node
-    AE->>UAEP: execute(agent, request)
-    UAEP->>Ag: build_context
-    UAEP->>Ag: get_steps → run_step → decide_after_step
-    loop ACP inner iterations
-        Ag->>Ag: perceive → reason → act → evaluate
-        Ag->>Ag: ctx.invoke_tool / memory_view
+    AE->>ACP: run(AgentRunRequest)
+    loop on_next_step iterations (§29)
+        ACP->>Ag: on_next_step → StepOutcome
+        Ag->>Ag: perceive → reason → act → evaluate (pattern)
+        Ag->>Ag: step_ctx.invoke_tool / memory_view
     end
-    UAEP->>UAEP: validate → AgentExecutionResult
+    ACP->>ACP: AgentRunResult + trace
     NL->>NL: finalize TaskResult
     App->>User: reply
 ```
@@ -949,9 +948,9 @@ sequenceDiagram
     participant B as SynthesizerAgent
 
     NL->>G: NexusPlan node A
-    G->>A: UAEP run (Plane 2)
-    A-->>G: COMPLETE + artifacts in SharedTaskContext
-    G->>B: UAEP run with shared memory
+    G->>A: agent.run (Plane 2 / §29)
+    A-->>G: terminal StepOutcome + artifacts in SharedTaskContext
+    G->>B: agent.run with shared memory
     B-->>G: COMPLETE
     G->>NL: merge → TaskResult
 ```
@@ -961,11 +960,10 @@ sequenceDiagram
 ## 27.3 Flow C — Agent requests human (S7)
 
 ```text
-evaluate() → REQUEST_HUMAN
-decide_after_step → AgentDecision(REQUEST_HUMAN)
-UAEPExecutor → INTERRUPT / HITL queue
+on_next_step → StepOutcome.pause_hitl(...)
+HarnessKernel → INTERRUPT / HITL queue
 Task → WAITING_FOR_HUMAN
-(resume token) → same UAEP path with human_approved metadata
+(resume token) → same agent.run path with human_approved metadata
 ```
 
 Agent MUST NOT block the event loop waiting for operator input.
@@ -1024,7 +1022,7 @@ Developer code path:
 |------------|------------|------------------------|--------|
 | UAEP-first authoring | L3 | L3 (bridge internal) | L3 internal-only |
 | Pattern library | L0 (ad hoc) | **L3** | L3 |
-| Mental model clarity | L1–L2 | **L3** | L3 |
+| Mental model clarity | L1–L2 | **L3** (§29 single entry · PAT-3) | L3 |
 | Legacy path removal | L2 (dual path) | **L2.5** (AgentEngine clean; pipeline agents open) | L3 — ACP-CLOSE-LEG-3 |
 | ReAct + tool loop unity | L1 | **L1** (TOOL-ENG-6 open) | L3 — ACP-CLOSE-PAT-1 |
 | Decomposition agent DX | L0 | **L3** | L3 |
@@ -1032,7 +1030,7 @@ Developer code path:
 
 ## 28.3 Gap register (ACP)
 
-**Audit sync (2026-06-11):** **32 Closed** · **3 Open** · depth follow-ups tracked in plan **ACP-CLOSE-PROD-*** (not separate GAP IDs).
+**Audit sync (2026-06-11):** **33 Closed** · **2 Open** · depth follow-ups tracked in plan **ACP-CLOSE-PROD-*** (not separate GAP IDs).
 
 | ID | Gap | Priority | Plan row | Status |
 |----|-----|----------|----------|--------|
@@ -1042,7 +1040,7 @@ Developer code path:
 | GAP-ACP-04 | ReAct at tool layer only | P1 | ACP-CLOSE-PAT-1 · TOOL-ENG-6 | **Open** |
 | GAP-ACP-05 | `build_context` duplicates profile | P1 | ACP-CFG | **Closed** |
 | GAP-ACP-06 | No scaffold `--pattern` | P1 | ACP-8 | **Closed** |
-| GAP-ACP-07 | Terminology docs scattered | P1 | ACP-CLOSE-PAT-3 | **Open** |
+| GAP-ACP-07 | Terminology docs scattered | P1 | ACP-CLOSE-PAT-3 | **Closed** |
 | GAP-ACP-08 | `acp.state.v1` / `AcpSessionState` not in contracts | **P0** | ACP-0 + ACP-DX-6 | **Closed** |
 | GAP-ACP-35 | No `StepOutcome` factories | **P0** | ACP-DX-6 | **Closed** |
 | GAP-ACP-09 | No typed `AgentRunRequest`/`Result` | P0 | ACP-DX-1 | **Closed** |
@@ -1114,6 +1112,18 @@ Developer code path:
 
 **ADR:** [ADR-AGENT-002](../adr/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/ADR-AGENT-003.md)  
 **Goal:** One obvious session API for Tier-2 authors; **`on_next_step`** for domain iterations; Nexus + UAEP remain implementation details.
+
+## 29.0 Author terminology — single canonical entry (ACP-CLOSE-PAT-3)
+
+**Normative vocabulary** for Tier-2 session/run/step terms lives **in §29 through §29.6**. [`AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) §1 and Appendix AC **link here** — they MUST NOT redefine terms. Internal runtime names (`UAEPExecutor`, `get_steps`, `RuntimeEngine`) are for platform engineers only (§13 · §38).
+
+| Term | Where defined |
+|------|----------------|
+| Session entry `run(AgentRunRequest)` | §29.1–§29.3 |
+| Request/result field matrix | §29.2 · §29.2.1 |
+| `on_next_step` / `StepOutcome` | §32.0 · §32.5 (execution); §29.4 loop |
+| Rejected mental-model alternatives | §29.6 |
+| Tier / plane vocabulary | §22–§23 |
 
 ## 29.1 Design principle — one agent, two entries, one engine
 
@@ -2198,13 +2208,13 @@ Canonical scenarios — all supported by **same** agent class + environment merg
 | Component | Status | Remaining (ACP-CLOSE) |
 |-----------|--------|------------------------|
 | Session entry | **Done** — `AgentRunRequest`/`Result` via `acp_run.py` | — |
-| Step loop | **Done** — `on_next_step` → `advance_step` → `HarnessKernel` | Remove UAEP author surface (LEG-2) |
+| Step loop | **Done** — `on_next_step` → `advance_step` → `HarnessKernel` | — |
 | Trace on result | **Done** — `AgentRunTrace` on `AgentRunResult` | — |
 | App orchestration log | **Done** — `ApplicationRunSummary` | — |
 | Per-step LLM | **Done** — `StepLLMRouter` | — |
 | Environment merge | **Done** — `merge_environment` + binding slices | — |
 | Production reliability | **Done** (platform modules ACP-PROD-1..12) | Host depth §40.1–§40.3 · §40.12 evidence |
-| Legacy paths | **Partial** — RuntimeEngine fallback + UAEP on base | ACP-CLOSE-LEG-1..3 |
+| Legacy paths | **Done** — LEG-1..3; UAEP author surface removed | — |
 | ReAct + tools | **Partial** — pattern loop in agent | TOOL-ENG-6 · ACP-CLOSE-PAT-1 |
 
 ## 36.5 Related ADRs and plan
