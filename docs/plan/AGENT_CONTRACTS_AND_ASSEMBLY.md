@@ -241,7 +241,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-13 | ACP5 | **`check_agent_pattern_conformance.py`** — contract pattern vs class MRO | Planned | `scripts/` | CI workflow step |
 | ACP-CFG | ACP6 | **`build_context` profile injection** — reduce per-agent `RuntimeConfig` duplication | **Done** | `intergrax/agents/reference_harness.py` | `build_lab_agent_runtime_config_from_merged` |
 | ACP-LEG-1 | ACP-LEG | **Deprecate RuntimeEngine path** — `DeprecationWarning` in `AgentEngine` fallback | **Done** | `intergrax/agents/agent_engine.py` | `test_agent_engine_legacy_deprecation` |
-| ACP-LEG-2 | ACP-LEG | **Fleet migration complete** — superseded by **Wave 8** `ACP-MIG-*` program (not ad-hoc per-agent) | Planned | `agents/*` | Scoreboard Runtime ≥100% roster-wide; typed-state CI allowlist empty |
+| ACP-LEG-2 | ACP-LEG | **Fleet migration complete** — superseded by **Wave 8** `ACP-MIG-*` program (not ad-hoc per-agent) | **Done** | `agents/*` | Scoreboard Runtime ≥100% roster-wide; typed-state CI allowlist empty |
 | ACP-MIG-1 | ACP-MIG | **Fleet inventory auditor** — legacy surface per agent (`uaep`/`runtime_engine`/`dict state`) | **Done** | `scripts/audit_agent_fleet_legacy.py` | JSON report for all `agents/*` packages |
 | ACP-MIG-2 | ACP-MIG | **Migration tiers + batch order** — harness → staging read-only → staging mutating → prod-eligible | **Done** | plan §6.1aw Wave 8 · `agents/README.md` | Documented tiers match roster table |
 | ACP-MIG-3 | ACP-MIG | **Pilot batch (3 agents)** — echo, signoff_probe, research → typed `on_next_step` | **Done** | `agents/echo`, `signoff_probe`, `research` | Direct `run()` + agent_os green per agent |
@@ -249,7 +249,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-MIG-5 | ACP-MIG | **Remaining roster** — org_worker, assistant, K-path agents; lab mocks excluded | **Done** | `agents/*` | Zero UAEP-only new code; bridge allowlist shrinking |
 | ACP-MIG-6 | ACP-MIG | **Fleet migration CI gate** — `check_agent_fleet_migration.py` blocks regression | **Done** | `scripts/` | CI fails if migrated agent reintroduces legacy surface |
 | ACP-MIG-7 | ACP-MIG | **Per-host binding verification** after each batch | **Done** | `applications/*/manifest.py` tests | AgentBinding slices + capability routing per host |
-| ACP-PROD-12 | ACP-PROD | **`AgentProductionReadinessReport`** scoreboard — 10 dimensions 0–100% per agent | Planned | `intergrax/contracts/agent_readiness.py`, `scripts/report_agent_production_readiness.py` | Report generated for roster; prod promotion uses thresholds §6.1az |
+| ACP-PROD-12 | ACP-PROD | **`AgentProductionReadinessReport`** scoreboard — 10 dimensions 0–100% per agent | **Done** | `intergrax/contracts/agent_readiness.py`, `scripts/report_agent_production_readiness.py` | Report generated for roster; prod promotion uses thresholds §6.1az |
 | ACP-LEG-3 | ACP-LEG | **Document RuntimeEngine internal-only** | **Done** | `runtime.py` module docstring + architecture §13 | INTERNAL ONLY banner |
 | ACP-LEG-4 | ACP-LEG | **Remove author UAEP from `--pattern` scaffold** — typed hooks only | **Done** | `scaffold/new_agent.py` | `--pattern` agents have no `get_steps` |
 | ACP-DOC.11 | ACP0 | **Detailed implementation waves §6.1aw** + debt/coupling matrix | **Done** | `plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §6.1aw |
@@ -441,7 +441,7 @@ HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
 | 8.5 | ACP-MIG-5 | Remaining agents + shrink typed-state allowlist to zero | `check_agent_typed_state.py` full roster |
 | 8.6 | ACP-MIG-6 | CI regression gate on fleet | Re-introducing `get_steps`-only agent fails CI |
 | 8.7 | ACP-MIG-7 | Post-batch host binding verification | legal + research + lab smoke per batch |
-| 8.8 | ACP-LEG-2 | Close fleet migration — DEBT-ACP-16 | **100%** roster Runtime dimension; bridge allowlist empty |
+| 8.8 | ACP-LEG-2 | Close fleet migration — DEBT-ACP-16 | **Done** — 100% roster Runtime; `check_agent_production_readiness.py --require-fleet-migration-closure` |
 
 **Wave 8 DoD:** No production agent on UAEP-only author path; fleet inventory clean; **ACP-LEG-2 Done**; scoreboard generated for every roster agent.
 
@@ -497,7 +497,7 @@ HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
 | 7.6 | ACP-PROD-6 | `ArtifactRef` | Typed artifacts on result | OBSERVABILITY |
 | 7.7 | ACP-PROD-7..8 | Threat CI + privacy redaction | §40.7 matrix | OBSERVABILITY · MEMORY |
 | 7.8 | ACP-PROD-9..11 | Release gates + CI matrix + schema registry | §40.12 checklist | DX |
-| 7.9 | ACP-PROD-12 | Production readiness scoreboard — aggregate §6.1az gates into one report | `report_agent_production_readiness.py` on roster | DX · V-EVAL |
+| 7.9 | ACP-PROD-12 | Production readiness scoreboard — aggregate §6.1az gates into one report | **Done** — `report_agent_production_readiness.py` · `check_agent_production_readiness.py` | DX · V-EVAL |
 
 **Wave 7 DoD:** §40.12 checklist green for reference mutating agent; scoreboard emitted for roster; architecture §40 maturity gate **unblocks** prod roster promotion via scoreboard thresholds.
 
