@@ -16,7 +16,7 @@ from intergrax.agents.authoring.llm_router import StepLLMRouter
 from intergrax.agents.authoring.shared_context_bridge import load_view, persist_view, view_from_task_metadata
 from intergrax.agents.authoring.step_loop import AgentRuntime
 from intergrax.agents.run_environment import EffectiveAgentRunEnvironment, merge_environment
-from intergrax.contracts.acp_metadata_keys import AcpMetadataKey, AcpStructuredDataKey
+from intergrax.contracts.acp_metadata_keys import AcpMetadataKey, AcpRunContextKey, AcpStructuredDataKey
 from intergrax.contracts.acp_state import ACP_STATE_KEY
 from intergrax.contracts.agent_run import AgentRunError, AgentRunRequest, AgentRunResult
 from intergrax.contracts.agent_run_trace import AgentRunTrace
@@ -117,6 +117,7 @@ async def run_acp_session(
         state_snapshot=dict(kernel_ctx.state_root),
         metadata={
             **merged.merged_metadata,
+            AcpRunContextKey.RUN_INPUT: request.input,
             "memory_namespace": merged.memory_namespace,
             "memory_scope": merged.memory_scope.value,
             "allowed_tools": list(merged.allowed_tools),

@@ -13,6 +13,19 @@ agents/<slug>/     →  capability modules (no applications/ imports)
 applications/      →  deployable environments that compose agents
 ```
 
+### ACP fleet migration (Wave 8)
+
+| Tier | Batch | Agents | Status |
+|------|-------|--------|--------|
+| **T0** harness | MIG-3 pilot | `echo`, `signoff_probe` | **Done** — typed `ReflexAgent` + UAEP shim |
+| **T1** staging read | MIG-3 pilot | `research` | **Done** |
+| **T1** staging read | MIG-4 | `summary`, `local_search` | Planned |
+| **T2** staging mutating | MIG-4 | `legal`, LKW trio, DSW quartet | Planned |
+| **T4** long-running | MIG-5 | `organization_worker`, `intergrax_assistant`, K-path agents | Planned |
+
+Inventory: `python scripts/audit_agent_fleet_legacy.py` → `build/agent_fleet_inventory.json`.  
+CI gate: `python scripts/check_agent_fleet_migration.py` (blocks legacy surface on migrated agents).
+
 ---
 
 ## Agent roster

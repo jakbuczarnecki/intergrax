@@ -19,3 +19,10 @@ class AcpStructuredDataKey(StrEnum):
     """Keys inside ``AgentExecutionResult.structured_data`` for ACP payloads."""
 
     TRACE_SUMMARY = "acp.trace.v1"
+
+
+class AcpRunContextKey(StrEnum):
+    """Keys on ``AgentStepContext.metadata`` during ACP / UAEP shim runs."""
+
+    RUN_INPUT = "acp.run_input.v1"
+    LAST_OUTCOME = "acp.last_outcome.v1"

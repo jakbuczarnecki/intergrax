@@ -22,8 +22,13 @@ from intergrax.contracts.agent_run_enums import (
     CognitivePattern,
     TerminalReason,
 )
-from intergrax.contracts.agent_step_context import AgentStepContext
+from intergrax.contracts.acp_metadata_keys import AcpRunContextKey
 from intergrax.contracts.acp_state import AcpSessionState
+from intergrax.contracts.agent_decision import AgentDecision
+from intergrax.contracts.agent_step import AgentStep, StepOutput
+from intergrax.contracts.agent_step_context import AgentStepContext
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 
 PATTERN_VERSION: str = "acp.v1"
 
@@ -113,3 +118,43 @@ class CognitiveAgent(IntergraxAgent, ABC):
 
     def _ordered_step_ids(self) -> list[str]:
         return [self.main_step_id]
+
+    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+        _ = context
+        contract = self.get_contract()
+        return [
+            AgentStep(
+                step_id=self.main_step_id,
+                step_name=self.main_step_id,
+                step_index=0,
+                trace_label=self.cognitive_pattern.value,
+                allowed_tools=list(contract.allowed_tools),
+            )
+        ]
+
+    async def run_step(
+        self,
+        step: AgentStep,
+        ctx: RuntimeExecutionContext,
+    ) -> StepOutput:
+        from intergrax.agents.authoring.acp_uaep_shim import execute_cognitive_step_via_acp
+
+        return await execute_cognitive_step_via_acp(self, step, ctx)
+
+    def decide_after_step(
+        self,
+        step: AgentStep,
+        output: StepOutput | None,
+        ctx: RuntimeExecutionContext,
+    ) -> AgentDecision:
+        _ = step, output
+        from intergrax.agents.authoring.acp_uaep_shim import decide_after_cognitive_step
+
+        return decide_after_cognitive_step(ctx, default_reason=f"{self.cognitive_pattern.value} step finished")
+
+    @staticmethod
+    def read_run_input(step_ctx: AgentStepContext) -> str:
+        raw = step_ctx.metadata.get(AcpRunContextKey.RUN_INPUT, "")
+        if isinstance(raw, dict):
+            return str(raw.get("message") or raw.get("summary") or raw)
+        return str(raw or "").strip()

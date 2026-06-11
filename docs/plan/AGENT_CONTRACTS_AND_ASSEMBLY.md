@@ -242,12 +242,12 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-CFG | ACP6 | **`build_context` profile injection** — reduce per-agent `RuntimeConfig` duplication | **Done** | `intergrax/agents/reference_harness.py` | `build_lab_agent_runtime_config_from_merged` |
 | ACP-LEG-1 | ACP-LEG | **Deprecate RuntimeEngine path** — `DeprecationWarning` in `AgentEngine` fallback | **Done** | `intergrax/agents/agent_engine.py` | `test_agent_engine_legacy_deprecation` |
 | ACP-LEG-2 | ACP-LEG | **Fleet migration complete** — superseded by **Wave 8** `ACP-MIG-*` program (not ad-hoc per-agent) | Planned | `agents/*` | Scoreboard Runtime ≥100% roster-wide; typed-state CI allowlist empty |
-| ACP-MIG-1 | ACP-MIG | **Fleet inventory auditor** — legacy surface per agent (`uaep`/`runtime_engine`/`dict state`) | Planned | `scripts/audit_agent_fleet_legacy.py` | JSON report for all `agents/*` packages |
-| ACP-MIG-2 | ACP-MIG | **Migration tiers + batch order** — harness → staging read-only → staging mutating → prod-eligible | Planned | plan §6.1aw Wave 8 · `agents/README.md` | Documented tiers match roster table |
-| ACP-MIG-3 | ACP-MIG | **Pilot batch (3 agents)** — echo, signoff_probe, research → typed `on_next_step` | Planned | `agents/echo`, `signoff_probe`, `research` | Direct `run()` + agent_os green per agent |
+| ACP-MIG-1 | ACP-MIG | **Fleet inventory auditor** — legacy surface per agent (`uaep`/`runtime_engine`/`dict state`) | **Done** | `scripts/audit_agent_fleet_legacy.py` | JSON report for all `agents/*` packages |
+| ACP-MIG-2 | ACP-MIG | **Migration tiers + batch order** — harness → staging read-only → staging mutating → prod-eligible | **Done** | plan §6.1aw Wave 8 · `agents/README.md` | Documented tiers match roster table |
+| ACP-MIG-3 | ACP-MIG | **Pilot batch (3 agents)** — echo, signoff_probe, research → typed `on_next_step` | **Done** | `agents/echo`, `signoff_probe`, `research` | Direct `run()` + agent_os green per agent |
 | ACP-MIG-4 | ACP-MIG | **Product batch** — legal, summary, LKW trio, DSW quartet | Planned | product `agents/*` | Host wiring tests unchanged; scoreboard Runtime ≥80% each |
 | ACP-MIG-5 | ACP-MIG | **Remaining roster** — org_worker, assistant, dispute leftovers, mocks policy | Planned | `agents/*` | Zero UAEP-only new code; bridge allowlist shrinking |
-| ACP-MIG-6 | ACP-MIG | **Fleet migration CI gate** — `check_agent_fleet_migration.py` blocks regression | Planned | `scripts/` | CI fails if migrated agent reintroduces legacy surface |
+| ACP-MIG-6 | ACP-MIG | **Fleet migration CI gate** — `check_agent_fleet_migration.py` blocks regression | **Done** | `scripts/` | CI fails if migrated agent reintroduces legacy surface |
 | ACP-MIG-7 | ACP-MIG | **Per-host binding verification** after each batch | Planned | `applications/*/manifest.py` tests | AgentBinding slices + capability routing per host |
 | ACP-PROD-12 | ACP-PROD | **`AgentProductionReadinessReport`** scoreboard — 10 dimensions 0–100% per agent | Planned | `intergrax/contracts/agent_readiness.py`, `scripts/report_agent_production_readiness.py` | Report generated for roster; prod promotion uses thresholds §6.1az |
 | ACP-LEG-3 | ACP-LEG | **Document RuntimeEngine internal-only** | **Done** | `runtime.py` module docstring + architecture §13 | INTERNAL ONLY banner |
@@ -451,9 +451,9 @@ HarnessKernel.execute_step(outcome, step_ctx) -> StepExecutionRecord:
 
 | Agent | Tier | Host(s) | Status | Batch | Runtime % | Blocker |
 |-------|------|---------|--------|-------|-----------|---------|
-| echo | T0/T3 | lab, poc | Planned | MIG-3 | — | — |
-| signoff_probe | T0 | lab | Planned | MIG-3 | — | — |
-| research | T1 | research, lab | Planned | MIG-3 | — | — |
+| echo | T0/T3 | lab, poc | **Done** | MIG-3 | — | — |
+| signoff_probe | T0 | lab | **Done** | MIG-3 | — | — |
+| research | T1 | research, lab | **Done** | MIG-3 | — | — |
 | summary | T1 | research | Planned | MIG-4 | — | — |
 | legal | T2 | legal, lab | Planned | MIG-4 | — | — |
 | local_indexer | T2 | LKW | Planned | MIG-4 | — | — |

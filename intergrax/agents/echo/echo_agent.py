@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-from typing import Optional, Sequence
-
 from intergrax.agents.authoring.patterns.reflex import ReflexAgent
 from intergrax.agents.authoring.patterns.types import (
     AgentEvaluation,
@@ -25,12 +23,14 @@ from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm.messages import ChatMessage
+from intergrax.memory.conversational_memory import ChatMessage
 from intergrax.runtime.task.task import TaskContext
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
+from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.skills.providers.harness.manifests import HARNESS_TOOL_SMOKE
+from typing import Optional, Sequence
 
 
 class _EchoLLMAdapter(LLMAdapter):
@@ -57,13 +57,6 @@ class _EchoLLMAdapter(LLMAdapter):
         return build_adapter_response(content="echo: (empty)")
 
 
-class _EchoHarnessPipeline(RuntimePipeline):
-    """Lab harness pipeline shell — domain logic lives in Reflex hooks."""
-
-    async def _inner_run(self, state):  # type: ignore[no-untyped-def]
-        raise RuntimeError("EchoAgent uses ACP Reflex hooks; pipeline is harness-only.")
-
-
 class EchoAgent(ReflexAgent):
     """Harness echo agent — typed Reflex pattern (ACP-MIG-3)."""
 
@@ -75,7 +68,6 @@ class EchoAgent(ReflexAgent):
     risk_level = AgentRiskLevel.LOW
     max_steps = 5
     cognitive_pattern = CognitivePattern.REFLEX
-    main_step_id = "echo_pipeline"
 
     def __init__(self, harness: LabHarnessContext | None = None) -> None:
         self._harness = harness or default_reference_harness()
@@ -117,11 +109,22 @@ class EchoAgent(ReflexAgent):
         return CapabilityMatchResult(matched=False, rationale="capability not supported")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
+        from intergrax.agents.defaults import harness_production_mode
+        from intergrax.runtime.nexus.config import RuntimeConfig
+
+        config = RuntimeConfig(
+            llm_adapter=_EchoLLMAdapter(),
+            enable_rag=False,
+            production_mode=harness_production_mode(),
+            tenant_id=request.tenant_id,
+        )
+        session_manager = SessionManager(storage=InMemorySessionStorage())
         return build_lab_agent_runtime_context(
             request=request,
             llm_adapter=_EchoLLMAdapter(),
             harness=self._harness,
-            pipeline=_EchoHarnessPipeline(),
+            pipeline=None,
+            runtime_context=RuntimeContext.build(config=config, session_manager=session_manager),
         )
 
     async def perceive(self, step_ctx: AgentStepContext) -> Observation:
