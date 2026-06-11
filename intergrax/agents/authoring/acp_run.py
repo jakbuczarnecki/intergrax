@@ -205,6 +205,7 @@ async def run_acp_session(
         metadata={
             **merged.merged_metadata,
             AcpRunContextKey.RUN_INPUT: request.input,
+            AcpRunContextKey.TENANT_ID: merged.tenant_id,
             "memory_namespace": merged.memory_namespace,
             "memory_scope": merged.memory_scope.value,
             "allowed_tools": list(merged.allowed_tools),
@@ -212,6 +213,11 @@ async def run_acp_session(
                 merged.organizational.model_dump(mode="json")
                 if merged.organizational is not None
                 else None
+            ),
+            **(
+                {AcpRunContextKey.CRITIC_HOOKS: host.critic_graph_hooks}
+                if host is not None and host.critic_graph_hooks is not None
+                else {}
             ),
         },
         llm_router=llm_router,

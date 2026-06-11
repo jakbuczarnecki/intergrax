@@ -32,3 +32,5 @@ class AcpRunContextKey(StrEnum):
     RUN_INPUT = "acp.run_input.v1"
     LAST_OUTCOME = "acp.last_outcome.v1"
     ORGANIZATIONAL = "acp.organizational.v1"
+    CRITIC_HOOKS = "acp.critic_hooks.v1"
+    TENANT_ID = "acp.tenant_id.v1"

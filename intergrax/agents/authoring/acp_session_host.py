@@ -23,3 +23,4 @@ class ACPSessionHostContext(BaseModel):
     app_profile: ApplicationEnvironmentProfile | None = None
     binding: AgentBinding | None = Field(default=None, exclude=True)
     declarative_tool_invoker: Any = Field(default=None, exclude=True)
+    critic_graph_hooks: Any = Field(default=None, exclude=True)

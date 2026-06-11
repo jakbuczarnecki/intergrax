@@ -42,3 +42,5 @@ class ReflectionSessionState(AcpSessionState):
     phase: str = "draft"
     draft: str | None = None
     critique: str | None = None
+    max_reflection_rounds: int = Field(default=3, ge=1)
+    reflection_rounds_used: int = Field(default=0, ge=0)

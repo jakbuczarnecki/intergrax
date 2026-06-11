@@ -892,7 +892,7 @@ run_step:
     if verdict.escalate: REQUEST_HUMAN / INTERRUPT
 ```
 
-**Integration:** `UAEPExecutor.set_critic_hooks` — ReflectionAgent MUST NOT call critic SDKs directly; use harness critic hooks.
+**Integration:** `critic_gateway.verify_reflection_draft` — reads `CriticGraphHooks` from `step_ctx.metadata` (`AcpRunContextKey.CRITIC_HOOKS`). Tier-3 attaches hooks via `build_acp_session_host_from_harness` / `ACPSessionHostContext.critic_graph_hooks`. ReflectionAgent MUST NOT import critic orchestrator SDKs directly.
 
 **Use cases:** legal/clinical/financial outputs, contract generation, compliance summaries.
 
@@ -1026,7 +1026,7 @@ Developer code path:
 | Legacy path removal | L2 (dual path) | **L2.5** (AgentEngine clean; pipeline agents open) | L3 — ACP-CLOSE-LEG-3 |
 | ReAct + tool loop unity | L1 | **L3** (TOOL-ENG-6 · PAT-1 Done) | L3 |
 | Decomposition agent DX | L0 | **L3** | L3 |
-| Reflection + CVL wiring | L2 | **L2** (no CVL hook) | L3 — ACP-CLOSE-PAT-2 |
+| Reflection + CVL wiring | L2 | **L3** (ACP-CLOSE-PAT-2 Done) | L3 |
 
 ## 28.3 Gap register (ACP)
 

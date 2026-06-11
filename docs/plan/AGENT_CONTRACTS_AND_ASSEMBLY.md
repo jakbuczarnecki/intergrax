@@ -95,7 +95,7 @@
 
 ### ACP legacy & technical debt register (must shrink to zero)
 
-**Audit 2026-06-11:** **18/18 Closed** in code — DEBT register fully closed; remaining ACP-CLOSE: PAT-2 · CI-2.
+**Audit 2026-06-11:** **18/18 Closed** in code — DEBT register fully closed; remaining ACP-CLOSE: CI-2.
 
 | Debt ID | Legacy surface | Replacement | Status | Closed by / Open row |
 |---------|----------------|-------------|--------|----------------------|
@@ -288,7 +288,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-CLOSE-PROD-7 | PROD | §40.12 checklist **green** — reference mutating agent artifact | **Done** | §40.12 | `section_40_12_checklist.py`, `check_acp_section_40_12_checklist.py` | `build/acp_section_40_12_reference.json` |
 | ACP-CLOSE-PROD-8 | PROD | Scoreboard mutating agents **100%** checkpoint + idempotency dimensions | **Done** | §40.15 | `readiness/scoreboard.py` | `--require-mutating-checkpoint-idempotency-100` green |
 | ACP-CLOSE-PAT-1 | PAT | ReAct ↔ **TOOL-ENG-6** unified tool loop + budget keys | **Done** | §26.3 · §25.2 | `patterns/react.py`, `react_budget.py`, `tool_loop_step.py` | 2-iteration integration; DEBT-ACP-18 **Closed** |
-| ACP-CLOSE-PAT-2 | PAT | `ReflectionAgent` → CVL critic hooks (gateway only) | Planned | §26.6 | `patterns/reflection.py`, host critic wiring | No critic SDK in Tier-2; `plan/CRITIC_VERIFICATION.md` |
+| ACP-CLOSE-PAT-2 | PAT | `ReflectionAgent` → CVL critic hooks (gateway only) | **Done** | §26.6 | `critic_gateway.py`, `patterns/reflection.py`, `acp_session_host_wiring.py` | Gateway-only CVL; host `critic_graph_hooks` on ACP run |
 | ACP-CLOSE-PAT-3 | PAT | Author terminology — single canonical §29 entry | **Done** | §28.3 GAP-07 · §29.0 | `AGENT_CREATION_GUIDE.md`, architecture §22–§23 · §27 | §29 single entry; GAP-ACP-07 **Closed** |
 | ACP-CLOSE-ORG-1 | ORG | STRICT **configure_run widen deny** per-agent | **Done** | §39.4 | `configure_run_strict.py`, `merge_environment`, `acp_run` | `test_configure_run_strict.py` |
 | ACP-CLOSE-ORG-2 | ORG | UC-11 compliance golden per **product host** | **Done** | §39.5 | `product_host_org_envelope`, `uc11_compliance_golden.py` | `test_uc11_product_host_compliance.py` (6 hosts) |
@@ -660,7 +660,7 @@ ACP-CLOSE:  DOC-2..4 → LEG-1 → LEG-2 → LEG-3 → PROD-1 → PROD-2 → PRO
 | 15 | ACP-CLOSE-ORG-1 | P1 | §39.4 | **Done** |
 | 16 | ACP-CLOSE-PROD-7 | **P0** | §40.12 | **Done** |
 | 17 | ACP-CLOSE-PROD-8 | **P0** | §40.15 | **Done** |
-| 18 | ACP-CLOSE-PAT-2 | P2 | §26.6 | Planned |
+| 18 | ACP-CLOSE-PAT-2 | P2 | §26.6 | **Done** |
 | 19 | ACP-CLOSE-PAT-3 | P2 | §28.3 | **Done** |
 | 20 | ACP-CLOSE-ORG-2 | P2 | §39.5 | **Done** |
 | 21 | ACP-CLOSE-CI-1 | P1 | §40.10 | **Done** |
