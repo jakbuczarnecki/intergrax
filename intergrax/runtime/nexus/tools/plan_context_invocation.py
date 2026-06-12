@@ -30,6 +30,7 @@ from intergrax.runtime.nexus.tools.tool_loop import (
     run_bounded_tool_loop,
 )
 from intergrax.runtime.nexus.tools.tool_planner_input import resolve_tool_planner_input
+from intergrax.runtime.nexus.tools.adaptive_tool_mode_resolver import recommend_tool_modes
 from intergrax.runtime.nexus.tools.tool_selection import (
     SemanticToolIndexSelectionStrategy,
     ToolSelectionContext,
@@ -349,11 +350,22 @@ async def run_tools_context(state: RuntimeState) -> None:
     error_message: Optional[str] = None
     loop_pattern_id: Optional[str] = None
     loop_stop_reason: Optional[str] = None
+    tool_selection_mode = state.context.config.tool_selection_mode
+    tool_invocation_mode = state.context.config.tool_invocation_mode
 
     try:
         planner_input = resolve_tool_planner_input(state)
         registry = resolve_tool_registry(invoker)
         if registry is not None:
+            hook = state.context.config.tool_engine_hook
+            if hook is not None and hook.enabled:
+                recommendation = recommend_tool_modes(
+                    registry=registry,
+                    query=state.request.message or "",
+                )
+                tool_selection_mode = recommendation.tool_selection_mode
+                if recommendation.tool_invocation_mode is not None:
+                    tool_invocation_mode = recommendation.tool_invocation_mode
             selection_ctx = ToolSelectionContext(
                 registry=registry,
                 query=state.request.message or "",
@@ -364,13 +376,13 @@ async def run_tools_context(state: RuntimeState) -> None:
                 embedding_manager=state.context.config.embedding_manager,
             )
             selection_strategy = resolve_selection_strategy(
-                state.context.config.tool_selection_mode,
+                tool_selection_mode,
                 selection_ctx,
                 strategy_override=state.context.config.tool_selection_strategy,
                 entry_point_strategy_id=state.context.config.tool_selection_strategy_id,
             )
             allowed_tool_ids = resolve_planner_allowed_tool_ids(
-                state.context.config.tool_selection_mode,
+                tool_selection_mode,
                 selection_ctx,
                 strategy_override=selection_strategy,
             )
@@ -383,7 +395,7 @@ async def run_tools_context(state: RuntimeState) -> None:
                 level=TraceLevel.INFO,
                 payload=ToolSelectionDiagV1(
                     strategy_id=strategy_trace_id(selection_strategy),
-                    selection_mode=state.context.config.tool_selection_mode.value,
+                    selection_mode=tool_selection_mode.value,
                     candidate_tool_ids=list(candidate_ids),
                     candidates=candidates,
                 ),
@@ -398,7 +410,7 @@ async def run_tools_context(state: RuntimeState) -> None:
             planner_input=planner_input,
             allowed_tool_ids=allowed_tool_ids,
             max_iterations=state.context.config.max_tool_iterations,
-            invocation_mode=state.context.config.tool_invocation_mode,
+            invocation_mode=tool_invocation_mode,
         )
         loop_pattern_id = loop_result.pattern_id or None
         loop_stop_reason = loop_result.stop_reason or None

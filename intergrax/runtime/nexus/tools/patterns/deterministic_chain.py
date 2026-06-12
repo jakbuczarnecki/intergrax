@@ -15,7 +15,7 @@ from intergrax.runtime.nexus.tools.tool_chain_mapper import build_chain_step_inp
 from intergrax.runtime.nexus.tools.tool_invocation_aggregate import ToolInvocationAggregate
 from intergrax.runtime.nexus.tools.tool_invocation_pattern import ToolInvocationResult
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
-from intergrax.runtime.nexus.tools.tool_verify_hooks import emit_high_risk_tool_verify_signal
+from intergrax.runtime.nexus.tools.tool_verify_hooks import run_post_tool_verify
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
 from intergrax.tools.execution_models import ToolExecutionRequest
 
@@ -84,7 +84,7 @@ class DeterministicChainPattern:
                 raw_trace={},
             )
             traces.append(trace)
-            emit_high_risk_tool_verify_signal(state=state, invoker=invoker, trace=trace)
+            run_post_tool_verify(state=state, invoker=invoker, trace=trace)
             if not result.success:
                 break
 

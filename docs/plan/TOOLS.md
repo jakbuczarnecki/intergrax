@@ -51,7 +51,7 @@
 | Semantic parallel composite | **Done** | TOOL-ENG-25 | S5 |
 | Selection strategy plugins | **Done** | TOOL-ENG-26/31 | S6 — instance override + EP loader |
 | Selection telemetry | **Done** | TOOL-ENG-32 | S6 — `ToolSelectionDiagV1` |
-| Post-tool verify HIGH+ | **Partial** | TOOL-ENG-7 | Trace signal shipped; CVL approval gate open |
+| Post-tool verify HIGH+ | **Done** | TOOL-ENG-7 | Trace + enforce block; approval via `high_risk_tool_approvals` |
 | `tools_mode=required` hard fail | **Done** | TOOL-ENG-8 | `ToolsRequiredError` |
 | `tool_choice` wiring | **Done** | TOOL-ENG-12 | `tool_planning_policy.py` |
 | Invoker unit tests | **Done** | TOOL-ENG-TEST.1 | S0 — `FakeRegistry` + `test_tool_selection_strategy.py` |
@@ -87,7 +87,7 @@ Sprints close **Phase TOOL-ENG** remaining rows. One sprint ≈ one PR; update p
 | **S7** | TOOL-ENG-20,24,27,28,30 | Chain pattern + entry points + CI + lab DX | `check_tool_invocation_patterns.py` green | `patterns/deterministic_chain.py`, `applications/lab_application/` |
 | **S8** | TOOL-ENG-7,8,12,10 | Governance closeout | Required-mode fail + HIGH verify | `tools_step.py`, `tool_verify_hooks.py` |
 
-**Current execution:** S0–S7 **Done** (2026-06-12) · S8 **partial** (7/8/12 Done, 10 open) · layer closeout remaining TOOL-ENG-10 + CVL verify gate.
+**Current execution:** S0–S8 **Done** (2026-06-12) · Phase TOOL-ENG **closed** (36/36 deliverables).
 
 ### S5 implementation spec (2026-06-12)
 
@@ -137,6 +137,22 @@ Sprints close **Phase TOOL-ENG** remaining rows. One sprint ≈ one PR; update p
 
 **Acceptance:** `test_deterministic_chain_pattern.py` · `test_tool_invocation_registry.py` · `test_lab_tool_invocation_mode.py`
 
+### S8 implementation spec (2026-06-12)
+
+**Scope:** TOOL-ENG-7,8,12,10 — governance and adaptive tool engine closeout.
+
+| Deliverable | Contract |
+|-------------|----------|
+| `run_post_tool_verify` | Trace + `ToolVerificationRequiredError` when `enforce_high_risk_tool_verify` |
+| `high_risk_tool_approvals` | `RuntimeState` bypass set for approved `tool_id`s |
+| `ToolsRequiredError` | `tools_mode=required` with zero traces |
+| `tool_choice_for_mode` | Maps `tools_mode` → planner `tool_choice` |
+| `ToolEngineHook` + `recommend_tool_modes` | AHI routing hook picks L6/L2a per run |
+
+**ADR:** no ADR needed — extends existing governance and AHI routing patterns.
+
+**Acceptance:** `test_tool_verify_enforcement.py` · `test_adaptive_tool_mode_resolver.py` · `check_tool_engine_ahi_hook.py`
+
 ### S4 implementation spec (2026-06-12)
 
 **Scope:** TOOL-ENG-29 + TOOL-ENG-9 — parallel read-only batch invoke + canonical aggregate.
@@ -157,7 +173,7 @@ Sprints close **Phase TOOL-ENG** remaining rows. One sprint ≈ one PR; update p
 
 ## Phase TOOL-ENG — Tool engine hardening (2026-06-10 audit · extended 2026-06-12)
 
-**Status:** **Active** — **36/37** deliverables Done (all TOOL-ENG rows except TOOL-ENG-10 P3 and TOOL-ENG-7 CVL block — 2026-06-12)  
+**Status:** **Closed** (2026-06-12) — **36/36** TOOL-ENG deliverables Done  
 **Architecture canon:** [`architecture/TOOLS.md`](../architecture/TOOLS.md) — [Tool engine production posture](../architecture/TOOLS.md#tool-engine-production-posture-2026-06-10), [Invocation patterns](../architecture/TOOLS.md#tool-invocation-patterns-production-orchestration), [Engine gap register](../architecture/TOOLS.md#engine-gap-register-canon)  
 **Audit basis:** Full-stack tool layer audit 2026-06-10 (Tier-0 catalog + Tier-1 selection/invoke/verify) · **Invocation-pattern audit 2026-06-12** (single / parallel / chain / graph + plugin contract)  
 **Priority ladder:** **Band 2ba** — supersedes ad-hoc tool engine fixes until TOOL-ENG P0 closed  
@@ -228,10 +244,10 @@ Sprints close **Phase TOOL-ENG** remaining rows. One sprint ≈ one PR; update p
 | ID | Area | Deliverable | Status | Priority | Modules | Acceptance |
 |----|------|-------------|--------|----------|---------|------------|
 | TOOL-ENG-6 | Loop | **Bounded tool loop** — `max_tool_iterations`, native `role=tool` (interim impl before TOOL-ENG-18) | **Done** | P1 | `tool_loop_step.py`, ADR-TOOL-002 | `test_tool_loop_integration.py` |
-| TOOL-ENG-7 | Verify | **Post-tool verify** — `risk_level >= HIGH` → critic / HITL | **Partial** | P2 | `tool_verify_hooks.py`, `tool_loop.py` | Trace signal + `test_tool_verify_hooks.py`; CVL block deferred |
+| TOOL-ENG-7 | Verify | **Post-tool verify** — `risk_level >= HIGH` → trace + enforce block | **Done** | P2 | `tool_verify_hooks.py`, `tool_loop.py` | `test_tool_verify_enforcement.py` |
 | TOOL-ENG-8 | Governance | **`tools_mode=required` hard fail** | **Done** | P2 | `plan_context_invocation.py` | `ToolsRequiredError` when zero traces |
 | TOOL-ENG-12 | Config | **`tool_choice` wiring** from host / `tools_mode` | **Done** | P2 | `tool_planning_policy.py`, patterns | `required` → tool_choice required |
-| TOOL-ENG-10 | AHI | **Dynamic selection + invocation mode** — AHI picks L6 mode and 2a pattern per run | **Planned** | P3 | `ADAPTIVE_HARNESS_INTELLIGENCE` | After TOOL-ENG-13/14/21 |
+| TOOL-ENG-10 | AHI | **Dynamic selection + invocation mode** — AHI hook + per-run resolver | **Done** | P3 | `tool_engine_wiring.py`, `adaptive_tool_mode_resolver.py` | `test_adaptive_tool_mode_resolver.py` · `check_tool_engine_ahi_hook.py` |
 
 #### Documentation
 

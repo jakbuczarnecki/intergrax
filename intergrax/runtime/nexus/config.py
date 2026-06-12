@@ -54,6 +54,7 @@ from intergrax.tools.core.provider import ToolProvider
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry import ToolProfile, ToolRegistry, ToolWiringContext, build_registry_from_profile
 from intergrax.runtime.nexus.tools.tool_chain_spec import ToolChainSpec
+from intergrax.runtime.nexus.tools.tool_engine_hook import ToolEngineHook
 from intergrax.runtime.nexus.tools.tool_invocation_pattern import ToolInvocationPattern
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.runtime.nexus.tools.tool_selection import ToolSelectionStrategy
@@ -211,6 +212,12 @@ class RuntimeConfig:
 
     # Fixed pipeline when tool_invocation_mode=deterministic_chain (TOOL-ENG-20).
     tool_chain_spec: Optional[ToolChainSpec] = None
+
+    # Block HIGH/CRITICAL tool traces without explicit approval (TOOL-ENG-7). None → production_mode.
+    enforce_high_risk_tool_verify: Optional[bool] = None
+
+    # Per-run adaptive tool mode hook (TOOL-ENG-10).
+    tool_engine_hook: Optional[ToolEngineHook] = None
 
     # Max concurrent read-only tool invocations per batch (TOOL-ENG-9). 1 = always serial.
     max_parallel_tool_calls: int = 8

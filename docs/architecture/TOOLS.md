@@ -785,8 +785,8 @@ Reuse Tier-0 `embedding_manager` — distinct from `rag.retrieve` document index
 | `retrieval_top_k` naming clarity (`keyword_top_k` alias) | **Planned** | TOOL-ENG-15 |
 | Selection strategy plugin registry | **Planned** | TOOL-ENG-26 |
 | Direct strategy instance on `RuntimeConfig` | **Planned** | TOOL-ENG-31 |
-| Risk-based routing (`ToolRiskLevel` → HITL) | **Planned** | TOOL-ENG-7 |
-| AHI dynamic mode / subset | **Planned** | TOOL-ENG-10 |
+| Risk-based routing (`ToolRiskLevel` → HITL) | **Done** | TOOL-ENG-7 — trace + enforce block |
+| AHI dynamic mode / subset | **Done** | TOOL-ENG-10 — `ToolEngineHook` + `recommend_tool_modes` |
 
 ---
 
@@ -1060,12 +1060,13 @@ ToolInvocationPlan(use_tools=True)            # ToolsStep → fresh LLM plan
 | Output schema | `RuntimeToolInvoker._validate_output` | All invoker paths |
 | Trace + preview | `ToolInvocationEndDiagV1` | 300-char output preview |
 | Middleware after | `AFTER_TOOL_CALL` | Gateway |
-| Semantic verify | `eval.judge`, `eval.trajectory` | **Critic L1** — not default in `run_bounded_tool_loop` / `ctx.invoke_tool` (**TOOL-ENG-7**) |
+| HIGH+ verify gate | `run_post_tool_verify` | **Done** — trace + optional enforce block (**TOOL-ENG-7**) |
+| Semantic verify (L1 critic) | `eval.judge`, `eval.trajectory` | Adjacent CVL path — optional via `CriticProfile` |
 | Agent validate | `agent.validate` | UAEP final answer — not per-tool |
 
 ### `tools_mode=required`
 
-Emits `ToolsSummaryDiagV1.warning` only — does not raise or set `RunError` (**TOOL-ENG-8**).
+Raises `ToolsRequiredError` when no tool traces (**TOOL-ENG-8** **Done**).
 
 ---
 
@@ -1122,10 +1123,10 @@ Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary (upda
 | ID | Gap | Priority |
 |----|-----|----------|
 | TOOL-ENG-6 | Tool loop (ReAct): `max_iterations`, native tool messages | **Done** |
-| TOOL-ENG-7 | Post-tool verify for `risk_level >= HIGH` | P2 |
-| TOOL-ENG-8 | `tools_mode=required` hard fail | P2 |
-| TOOL-ENG-12 | Expose `tool_choice` from `tools_mode` / host profile to `plan_tools` | P2 |
-| TOOL-ENG-10 | AHI dynamic selection + invocation mode hook | P3 |
+| TOOL-ENG-7 | Post-tool verify for `risk_level >= HIGH` | **Done** |
+| TOOL-ENG-8 | `tools_mode=required` hard fail | **Done** |
+| TOOL-ENG-12 | Expose `tool_choice` from `tools_mode` / host profile to `plan_tools` | **Done** |
+| TOOL-ENG-10 | AHI dynamic selection + invocation mode hook | **Done** |
 
 ### Documentation
 

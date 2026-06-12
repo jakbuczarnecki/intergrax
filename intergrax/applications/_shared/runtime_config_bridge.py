@@ -160,6 +160,11 @@ def materialize_runtime_config(
     )
     apply_integration_profiles_from_environment(config, env)
     apply_catalog_profiles_from_environment(config, env)
+    from intergrax.applications._shared.tool_engine_wiring import (
+        apply_tool_engine_hook_to_runtime_config,
+    )
+
+    apply_tool_engine_hook_to_runtime_config(config, env)
     if isinstance(harness_ctx, ApplicationBuildContext):
         apply_integration_profiles_from_build_context(config, harness_ctx)
         apply_catalog_profiles_from_build_context(config, harness_ctx)
