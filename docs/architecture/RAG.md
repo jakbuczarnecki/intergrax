@@ -103,15 +103,15 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-25 | niedoróbka | ~~memgraph/falkordb not wired~~ — **closed M-RAG.39**: `CypherRagGraphStore` + registry factories | **P1** | M-RAG.39 **Done** | — |
 | GAP-RAG-26 | niegotowość | ~~No graph lifecycle sync~~ — **closed M-RAG.40**: `unlink_chunks` / `purge_graph` + catalog delete/purge hooks | **P1** | M-RAG.40 **Done** | — |
 | GAP-RAG-27 | niegotowość | ~~No graph tenant isolation~~ — **closed M-RAG.41**: `graph/tenant/graph_isolation_contract.py` + tenant scope on stores | **P1** | M-RAG.41 **Done** | — |
-| GAP-RAG-28 | niska jakość | `graph_rag` retriever **beta** — substring label match, fixed seed heuristics, no structured entity seed from chunk metadata | **P1** | M-RAG.42 **Planned** | — |
-| GAP-RAG-29 | niedoróbka | `runtime/architecture/hybrid_retrieval.py` reference path not fused into `GraphRagRetriever` / `fusion` retrieval | **P2** | M-RAG.43 **Planned** | — |
-| GAP-RAG-30 | niedoróbka | `graph_provenance` contracts exist but are not surfaced on `RetrievalTrace` in the graph retrieval hot path | **P2** | M-RAG.44 **Planned** | — |
+| GAP-RAG-28 | niska jakość | ~~`graph_rag` retriever beta~~ — **closed M-RAG.42**: metadata/chunk-linked entity seeds; **stable** | **P1** | M-RAG.42 **Done** | — |
+| GAP-RAG-29 | niedoróbka | ~~hybrid channel not fused~~ — **closed M-RAG.43**: `graph_channel_fusion.py` + `channel_contributions` trace | **P2** | M-RAG.43 **Done** | — |
+| GAP-RAG-30 | niedoróbka | ~~graph provenance not on trace~~ — **closed M-RAG.44**: `RetrievalTrace.graph_*` fields | **P2** | M-RAG.44 **Done** | — |
 | GAP-RAG-31 | niegotowość | No graph maintenance job contract (orphan cleanup, stale-edge prune, incremental reindex) | **P2** | M-RAG.45 **Planned** | — |
 | GAP-RAG-32 | niedoróbka | No `GraphIndexer` plugin registry — custom indexers require manual `resolve_graph_indexer` wiring | **P2** | M-RAG.46 **Planned** | — |
 | GAP-RAG-33 | gap | `graph_store` catalog lacks Neptune, OrientDB, ArangoDB, TigerGraph, JanusGraph | **P3** | M-RAG.49–M-RAG.51 **Planned** | — |
 | GAP-RAG-34 | ograniczenie | No coupling to Microsoft GraphRAG library — harness ships a native indexer/retriever pipeline; optional community-report mode is harness-owned (M-RAG.47) | — | M-RAG.47 **Planned** | — |
-| GAP-RAG-35 | niedoróbka | `production_graph_rag_profile()` / `validate_graph_rag_production_wiring` accept only `neo4j` slug — blocks lab-soaked Bolt backends (`memgraph`) | **P2** | M-RAG.48 **Planned** | — |
-| GAP-RAG-36 | niska jakość | Golden harness `graph_rag` scenario covers happy-path only — no multi-hop, delete-sync, or tenant-leak regression cases | **P2** | M-RAG.52 **Planned** | — |
+| GAP-RAG-35 | niedoróbka | ~~prod slug list neo4j-only~~ — **closed M-RAG.48**: `APPROVED_PRODUCTION_GRAPH_STORE_SLUGS` (`neo4j`, `memgraph`) | **P2** | M-RAG.48 **Done** | — |
+| GAP-RAG-36 | niska jakość | ~~golden harness shallow~~ — **closed M-RAG.52**: post-delete empty expansion scenario + multi_hop retained | **P2** | M-RAG.52 **Done** | — |
 
 **Traceability rule:** no open GAP-RAG row without a **Planned** M-RAG.\* deliverable in [`plan/RAG.md`](../plan/RAG.md). **GAP-RAG-15** and **GAP-RAG-34** are explicit architectural boundaries, not harness defects.
 
@@ -192,7 +192,7 @@ RETRIEVE (rag.retrieve / RetrievalService)
 | `multiquery` | Query expansion + merge | Deep tier when `query_expansion != off` (M-RAG.23); or explicit `retriever_id` |
 | `hierarchical` | TOC index + chunk index | Large structured docs — `toc_vector_store` via `hierarchical_index_enabled` or `retriever_id=hierarchical` (M-RAG.24) |
 | `fusion` | RRF over vector + hybrid + parent_child | Deep tier default |
-| `graph_rag` | Vector seed + graph traversal | When `graph_rag_enabled` + `GraphStore` configured (**beta**) |
+| `graph_rag` | Vector seed + graph traversal + channel fusion | When `graph_rag_enabled` + `GraphStore` configured (**stable**) |
 
 **Adaptive routing:** `QueryRouter` classifies by word-count heuristics; optional LLM classifier when `llm_route_enabled` (default off, env `INTERGRAX_RAG_LLM_ROUTE_ENABLED`). Trace field `route_classifier` = `heuristic` \| `llm`.
 

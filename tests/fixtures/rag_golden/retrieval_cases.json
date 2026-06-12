@@ -97,6 +97,27 @@
       "min_recall": 0.5
     },
     {
+      "name": "graph_post_delete_empty_expansion",
+      "scenario": "graph_rag",
+      "profile": {
+        "graph_rag_enabled": true,
+        "retriever_id": "graph_rag",
+        "route_mode": "off"
+      },
+      "documents": [
+        {
+          "id": "chunk-delete-me",
+          "text": "Pioneer Systems signed with Intergrax Harness."
+        }
+      ],
+      "pre_delete_chunk_ids": ["chunk-delete-me"],
+      "query": "Pioneer Systems",
+      "relevant_ids": [],
+      "k": 2,
+      "min_recall": 0.0,
+      "expect_empty": true
+    },
+    {
       "name": "agentic_deep_refinement",
       "scenario": "agentic",
       "deep_query_min_words": 2,

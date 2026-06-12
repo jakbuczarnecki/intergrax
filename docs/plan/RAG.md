@@ -347,11 +347,11 @@ Ordered queue for RAG domain work. **Active:** M-RAG-GRAPH (15 items). **Closed:
 | 2 | **M-RAG.39** | G1 | **P1** | Memgraph + FalkorDB RAG adapters; fix bootstrap env options | 25 | **Done** |
 | 3 | **M-RAG.40** | G1 | **P1** | Graph delete/purge lifecycle sync with vector index | 26 | **Done** |
 | 4 | **M-RAG.41** | G1 | **P1** | Graph tenant isolation contract + gate tests | 27 | **Done** |
-| 5 | **M-RAG.42** | G2 | **P1** | `GraphRagRetriever` hardening; promote stable | 28 | **Planned** |
-| 6 | **M-RAG.43** | G2 | **P2** | Hybrid retrieval graph channel fusion | 29 | **Planned** |
-| 7 | **M-RAG.44** | G2 | **P2** | Graph provenance on `RetrievalTrace` | 30 | **Planned** |
-| 8 | **M-RAG.48** | G2 | **P2** | Approved prod graph_store slug list (neo4j + soaked Bolt backends) | 35 | **Planned** |
-| 9 | **M-RAG.52** | G2 | **P2** | Extended golden harness graph scenarios | 36 | **Planned** |
+| 5 | **M-RAG.42** | G2 | **P1** | `GraphRagRetriever` hardening; promote stable | 28 | **Done** |
+| 6 | **M-RAG.43** | G2 | **P2** | Hybrid retrieval graph channel fusion | 29 | **Done** |
+| 7 | **M-RAG.44** | G2 | **P2** | Graph provenance on `RetrievalTrace` | 30 | **Done** |
+| 8 | **M-RAG.48** | G2 | **P2** | Approved prod graph_store slug list (neo4j + soaked Bolt backends) | 35 | **Done** |
+| 9 | **M-RAG.52** | G2 | **P2** | Extended golden harness graph scenarios | 36 | **Done** |
 | 10 | **M-RAG.45** | G3 | **P2** | `rag.schedule_graph_maintenance_job` workflow contract | 31 | **Planned** |
 | 11 | **M-RAG.46** | G3 | **P2** | `GraphIndexer` plugin registry + author guide | 32 | **Planned** |
 | 12 | **M-RAG.47** | G3 | **P2** | Optional `community_report` indexer mode (harness-native) | 34 | **Planned** |

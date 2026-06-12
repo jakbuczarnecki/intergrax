@@ -60,6 +60,11 @@ class GraphStore(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def node_ids_for_chunks(self, chunk_ids: Set[str]) -> Set[str]:
+        """Map chunk/document ids to linked graph entity node ids."""
+        raise NotImplementedError
+
+    @abstractmethod
     def unlink_chunks(self, chunk_ids: Sequence[str]) -> int:
         """Remove HAS_CHUNK links for chunk ids and prune orphan entities (M-RAG.40)."""
         raise NotImplementedError

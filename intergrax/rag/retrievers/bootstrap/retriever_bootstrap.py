@@ -107,11 +107,15 @@ def create_default_retriever_registry(
             )
         )
         if graph_store is not None:
+            hops = profile.graph_rag_hops if profile is not None else 1
+            seed_top_k = profile.graph_rag_seed_top_k if profile is not None else 5
             registry.register(
                 GraphRagRetriever(
                     vector_store=vector_store,
                     embedding_manager=embedding_manager,
                     graph_store=graph_store,
+                    graph_hops=hops,
+                    seed_top_k=seed_top_k,
                 )
             )
 

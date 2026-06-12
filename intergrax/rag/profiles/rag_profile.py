@@ -22,6 +22,7 @@ AgenticQueryMode = Literal["deterministic", "llm"]
 
 HARNESS_GRAPH_STORE_BACKEND = "inmemory"
 PRODUCTION_GRAPH_STORE_BACKEND = "neo4j"
+APPROVED_PRODUCTION_GRAPH_STORE_SLUGS: tuple[str, ...] = ("neo4j", "memgraph")
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -103,6 +104,7 @@ class RagProfile:
     # GraphRAG
     graph_rag_enabled: bool = False
     graph_rag_hops: int = 1
+    graph_rag_seed_top_k: int = 5
     graph_indexer_mode: GraphIndexerMode = "heuristic"
     graph_store_backend: str = "inmemory"
 
@@ -200,10 +202,10 @@ def validate_graph_rag_production_wiring(
     """
     if not profile.graph_rag_enabled:
         return None
-    if profile.graph_store_backend != PRODUCTION_GRAPH_STORE_BACKEND:
-        return "graph_store_backend_must_be_neo4j"
-    if graph_store_slug is not None and graph_store_slug != PRODUCTION_GRAPH_STORE_BACKEND:
-        return f"integration_graph_store_must_be_neo4j:{graph_store_slug}"
+    if profile.graph_store_backend not in APPROVED_PRODUCTION_GRAPH_STORE_SLUGS:
+        return "graph_store_backend_not_approved_for_production"
+    if graph_store_slug is not None and graph_store_slug not in APPROVED_PRODUCTION_GRAPH_STORE_SLUGS:
+        return f"integration_graph_store_not_approved:{graph_store_slug}"
     return None
 
 

@@ -78,26 +78,39 @@ def _profile_for_case(case: Dict[str, Any], profile: RagProfile | None) -> RagPr
 
 
 def _run_retrieval_case(case: Dict[str, Any], *, profile: RagProfile) -> GoldenCaseResult:
-    service, _graph = _build_service(case, profile=profile, graph_store=None)
+    service, _graph, _manager = _build_service(case, profile=profile, graph_store=None)
     return _evaluate_case(case, service, scenario="retrieval")
 
 
 def _run_graph_case(case: Dict[str, Any], *, profile: RagProfile) -> GoldenCaseResult:
-    graph = InMemoryGraphStore()
-    service, _ = _build_service(case, profile=profile, graph_store=graph)
+    tenant_id = str(case.get("tenant_id", "golden"))
+    graph = InMemoryGraphStore(tenant_id=tenant_id)
+    service, built_graph, manager = _build_service(
+        case, profile=profile, graph_store=graph, tenant_id=tenant_id
+    )
     if case.get("graph_index", True):
         docs = [
-            Document(page_content=item["text"], metadata={"doc_id": item["id"]})
+            Document(
+                page_content=item["text"],
+                metadata={
+                    "doc_id": item["id"],
+                    "tenant_id": str(item.get("tenant_id", tenant_id)),
+                },
+            )
             for item in case["documents"]
         ]
         ids = [item["id"] for item in case["documents"]]
-        HeuristicGraphIndexer(graph).index_documents(docs, chunk_ids=ids)
+        HeuristicGraphIndexer(built_graph).index_documents(docs, chunk_ids=ids)
+    pre_delete = [str(chunk_id) for chunk_id in case.get("pre_delete_chunk_ids", [])]
+    if pre_delete:
+        built_graph.unlink_chunks(pre_delete)
+        manager.delete(pre_delete)
     return _evaluate_case(case, service, scenario="graph_rag")
 
 
 def _run_multi_hop_case(case: Dict[str, Any], *, profile: RagProfile) -> GoldenCaseResult:
     graph = InMemoryGraphStore()
-    service, _ = _build_service(case, profile=profile, graph_store=graph)
+    service, _, _manager = _build_service(case, profile=profile, graph_store=graph)
     docs = [
         Document(page_content=item["text"], metadata={"doc_id": item["id"]})
         for item in case["documents"]
@@ -127,7 +140,7 @@ def _run_agentic_case(case: Dict[str, Any], *, profile: RagProfile) -> GoldenCas
             "deep_query_min_words": int(case.get("deep_query_min_words", 3)),
         }
     )
-    service, _ = _build_service(case, profile=agentic_profile, graph_store=None)
+    service, _, _manager = _build_service(case, profile=agentic_profile, graph_store=None)
     return _evaluate_case(case, service, scenario="agentic")
 
 
@@ -136,17 +149,22 @@ def _build_service(
     *,
     profile: RagProfile,
     graph_store: InMemoryGraphStore | None,
+    tenant_id: str = "golden",
 ):
-    store = InMemoryVectorStore(tenant_id="golden")
+    store = InMemoryVectorStore(tenant_id=tenant_id)
     manager = VectorstoreManager(store=store)
     docs = [
-        Document(page_content=item["text"], metadata={"doc_id": item["id"]})
+        Document(
+            page_content=item["text"],
+            metadata={
+                "doc_id": item["id"],
+                "tenant_id": str(item.get("tenant_id", tenant_id)),
+            },
+        )
         for item in case["documents"]
     ]
     texts = [d.page_content for d in docs]
     embeddings = [[0.1, 0.2, 0.3] for _ in texts]
-    for d in docs:
-        d.metadata["tenant_id"] = "golden"
     ids = [item["id"] for item in case["documents"]]
     manager.add_documents(docs, embeddings, ids=ids)
 
@@ -161,7 +179,7 @@ def _build_service(
         reranker_manager=None,
         profile=profile,
     )
-    return service, graph_store
+    return service, graph_store, manager
 
 
 def _evaluate_case(
@@ -179,12 +197,16 @@ def _evaluate_case(
     min_recall = float(case.get("min_recall", 1.0))
     rec = recall_at_k(retrieved_ids, relevant, k)
     response.trace.recall_at_k = rec
+    if case.get("expect_empty"):
+        passed = len(retrieved_ids) == 0
+    else:
+        passed = rec >= min_recall
     return GoldenCaseResult(
         name=str(case.get("name", "case")),
         scenario=scenario,
         recall=rec,
         min_recall=min_recall,
-        passed=rec >= min_recall,
+        passed=passed,
         retrieved_ids=retrieved_ids,
     )
 

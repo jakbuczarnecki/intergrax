@@ -99,11 +99,21 @@ class RetrieverEngine:
                 )
                 continue
 
+            graph_trace = getattr(retriever, "last_graph_trace", None)
             self._last_execution = RetrieverExecutionMetadata(
                 requested_retriever_id=retriever_id,
                 used_retriever_id=candidate_id,
                 attempted_retriever_ids=list(attempted),
                 fallback_applied=candidate_id != retriever_id,
+                channel_contributions=(
+                    dict(graph_trace.channel_contributions) if graph_trace is not None else None
+                ),
+                graph_expanded_node_ids=(
+                    list(graph_trace.expanded_node_ids) if graph_trace is not None else None
+                ),
+                graph_provenance_summary=(
+                    graph_trace.graph_provenance_summary if graph_trace is not None else None
+                ),
             )
             return candidates
 

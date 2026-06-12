@@ -147,6 +147,22 @@ class CypherRagGraphStore(GraphStore):
         )
         return [str(row["chunk_id"]) for row in rows if row.get("chunk_id")]
 
+    def node_ids_for_chunks(self, chunk_ids: Set[str]) -> Set[str]:
+        ids = [cid.strip() for cid in chunk_ids if cid.strip()]
+        if not ids:
+            return set()
+        params: Dict[str, Any] = {"chunk_ids": ids, **self._tenant_params()}
+        tenant = self._tenant_clause("n")
+        rows = self._run(
+            f"""
+            MATCH (n:{_ENTITY_LABEL})-[:HAS_CHUNK]->(c:{_CHUNK_LABEL})
+            WHERE c.id IN $chunk_ids{tenant}
+            RETURN DISTINCT n.id AS node_id
+            """,
+            params,
+        )
+        return {str(row["node_id"]) for row in rows if row.get("node_id")}
+
     def unlink_chunks(self, chunk_ids: Sequence[str]) -> int:
         ids = [cid.strip() for cid in chunk_ids if cid.strip()]
         if not ids:

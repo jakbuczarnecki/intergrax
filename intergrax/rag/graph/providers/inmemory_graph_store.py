@@ -91,6 +91,19 @@ class InMemoryGraphStore(GraphStore):
             ids.extend(sorted(self._chunk_by_node.get(nid, ())))
         return ids
 
+    def node_ids_for_chunks(self, chunk_ids: Set[str]) -> Set[str]:
+        targets = {cid.strip() for cid in chunk_ids if cid.strip()}
+        if not targets:
+            return set()
+        found: Set[str] = set()
+        for node_id, linked in self._chunk_by_node.items():
+            if not linked & targets:
+                continue
+            node = self._nodes.get(node_id)
+            if node is not None and self._tenant_matches(node):
+                found.add(node_id)
+        return found
+
     def unlink_chunks(self, chunk_ids: Sequence[str]) -> int:
         target = {cid.strip() for cid in chunk_ids if cid.strip()}
         if not target:
