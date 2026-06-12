@@ -42,6 +42,7 @@ class UnknownPayloadSchemaError(RuntimeEventPayloadError):
 EVENT_TYPE_PREFERRED_SCHEMA: dict[RuntimeEventType, str] = {
     RuntimeEventType.AGENT_SELECTED: AgentSelectionPayloadV1.schema_id,
     RuntimeEventType.CONTEXT_ASSEMBLED: ContextAssemblyPayloadV1.schema_id,
+    RuntimeEventType.CONTEXT_BUILT: ContextAssemblyPayloadV1.schema_id,
     RuntimeEventType.CONTEXT_TRIMMED: ContextAssemblyPayloadV1.schema_id,
     RuntimeEventType.DECISION_EMITTED: DecisionPayloadV1.schema_id,
     RuntimeEventType.DELEGATION_GRANTED: DelegationGrantedPayloadV1.schema_id,

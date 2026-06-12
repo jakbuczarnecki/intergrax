@@ -76,12 +76,14 @@ def record_context_assembly(
     agent_id: Optional[str],
     trim: ContextTrimResult,
     metadata: Mapping[str, Any],
+    engine_id: str = "",
 ) -> None:
     base_payload: dict[str, Any] = {
         "node_id": node_id,
         "summary_tier": metadata.get("summary_tier"),
         "context_original_chars": trim.original_chars,
         "context_final_chars": trim.final_chars,
+        "engine_id": engine_id,
     }
     bus.record(
         runtime_event_with_payload(
@@ -103,6 +105,7 @@ def record_context_assembly(
                 context_original_chars=trim.original_chars,
                 context_final_chars=trim.final_chars,
                 trimmed=False,
+                engine_id=engine_id,
             ),
             promote_fields=base_payload,
         )
@@ -127,6 +130,7 @@ def record_context_assembly(
                     context_original_chars=trim.original_chars,
                     context_final_chars=trim.final_chars,
                     trimmed=True,
+                    engine_id=engine_id,
                 ),
                 promote_fields={**base_payload, "trimmed": True},
             )

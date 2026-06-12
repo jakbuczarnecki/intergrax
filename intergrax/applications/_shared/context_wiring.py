@@ -110,14 +110,18 @@ def resolve_context_manager_from_environment(
     env: ApplicationEnvironmentProfile,
     *,
     event_bus: RuntimeEventBus | None = None,
+    llm_adapter: object | None = None,
 ) -> ContextManager:
     """Build ``ContextManager`` with environment assembly and budget policies."""
     assembly = env.context_profile.assembly_options
+    engine = resolve_context_engine_from_environment(env)
     return ContextManager(
         max_prior_chars=assembly.max_prior_chars,
         default_policy=assembly,
         budget_policy=resolve_context_budget_policy(env),
         event_bus=event_bus,
+        context_engine=engine,
+        llm_adapter=llm_adapter,  # type: ignore[arg-type]
     )
 
 

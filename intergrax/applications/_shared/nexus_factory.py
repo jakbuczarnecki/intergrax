@@ -87,6 +87,7 @@ def build_nexus_loop_from_environment(
     resolved_context_manager = context_manager or resolve_context_manager_from_environment(
         env,
         event_bus=runtime_event_bus,
+        llm_adapter=llm_adapter,
     )
 
     loop = NexusLoop(

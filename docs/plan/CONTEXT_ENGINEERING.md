@@ -111,14 +111,14 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 | **CE-3.1** | `DefaultNexusContextEngine` in `context_engine.py` implementing `ContextEngine` | P0 | **Done** | Delegates to existing steps + compiler |
 | **CE-3.2** | Adapter: `ContextCandidate` ↔ `ContextFragment` bridge | P0 | **Done** | Round-trip tests |
 | **CE-3.3** | `resolve_context_engine_from_environment()` in `context_wiring.py` | P0 | **Done** | Preset `default` returns engine instance |
-| **CE-3.4** | Injectable `ContextEngine` / `ContextBudgetAllocator` on assembly path (replaces legacy `CompileContextStep`) | P0 | Planned | Closes GAP-CTX-03 |
+| **CE-3.4** | Injectable `ContextEngine` / `ContextBudgetAllocator` on assembly path (replaces legacy `CompileContextStep`) | P0 | **Done** | Closes GAP-CTX-03 |
 | **CE-3.5** | `NexusLoop` + `nexus_factory` accept `context_engine` param | P1 | Planned | Back-compat: `context_manager` still works |
 | **CE-3.6** | Document rename: `ContextBuilder` → `SessionRagContextBuilder` (alias deprecated one release) | P3 | Planned | Closes GAP-CTX-11 |
-| **CE-3.7** | Graph path: `ContextManager.build_agent_context` calls `ContextEngine.assemble(scope=graph_node)` | P0 | Planned | Single code path; closes GAP-CTX-02 |
-| **CE-3.8** | Integration test: ACP + graph produce `CONTEXT_ASSEMBLED` with `engine_id=default` | P0 | Planned | `tests/integration/runtime/test_context_engine_paths.py` |
+| **CE-3.7** | Graph path: `ContextManager.build_agent_context` calls `ContextEngine.assemble(scope=graph_node)` | P0 | **Done** | Single code path; closes GAP-CTX-02 |
+| **CE-3.8** | Integration test: ACP + graph produce `CONTEXT_ASSEMBLED` with `engine_id=default` | P0 | **Done** | `tests/integration/runtime/test_context_engine_paths.py` |
 | **CE-3.9** | Wire `ContextCompiler.compile()` + degradation ladder to ACP `on_next_step` / UAEP before LLM | **P0 Critical** | **Done** | Closes GAP-CTX-13; acceptance never-overflow on prod path |
 | **CE-3.10** | `ContextValidator` → `verify_context_preflight()` inside `DefaultNexusContextEngine.validate` | P0 | **Done** | Gate: preflight before every engine-assembled LLM call |
-| **CE-3.11** | Unify UAEP `CONTEXT_BUILT` → `CONTEXT_ASSEMBLED` (+ trim events); deprecate or alias `CONTEXT_BUILT` | P1 | Planned | Closes GAP-CTX-14; `payload_registry.py` + gate |
+| **CE-3.11** | Unify UAEP `CONTEXT_BUILT` → `CONTEXT_ASSEMBLED` (+ trim events); deprecate or alias `CONTEXT_BUILT` | P1 | **Done** | Closes GAP-CTX-14; `payload_registry.py` + gate |
 
 **Wave 2 exit:** `ContextCompiler` on production hot path; graph + ACP/UAEP unified under `DefaultNexusContextEngine`.
 
@@ -217,14 +217,14 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 | CE-3.1 | 2 | **Done** |
 | CE-3.2 | 2 | **Done** |
 | CE-3.3 | 2 | **Done** |
-| CE-3.4 | 2 | Planned |
+| CE-3.4 | 2 | **Done** |
 | CE-3.5 | 2 | Planned |
 | CE-3.6 | 2 | Planned |
-| CE-3.7 | 2 | Planned |
-| CE-3.8 | 2 | Planned |
+| CE-3.7 | 2 | **Done** |
+| CE-3.8 | 2 | **Done** |
 | CE-3.9 | 2 | **Done** |
 | CE-3.10 | 2 | **Done** |
-| CE-3.11 | 2 | Planned |
+| CE-3.11 | 2 | **Done** |
 | CE-4.1 | 3 | Planned |
 | CE-4.2 | 3 | Planned |
 | CE-4.3 | 3 | Planned |
@@ -346,7 +346,7 @@ Operator-facing sprint plan. One sprint = one coherent PR batch (1–5 CE IDs). 
 | **S1** | Tier-0 contracts + profile fields | CE-2.6, CE-1.1–CE-1.4, CE-1.6 | `intergrax/context/contracts.py` exists; `ContextProfile` preset fields; gate import boundary | **Done** (2026-06-12) |
 | **S2** | Plugin catalog bootstrap | CE-2.1–CE-2.5, CE-1.5 | `register_context_plugin()`, `BuiltinContextPlugin` ≥10 providers; `pytest tests/unit/context/` green | **Done** (2026-06-12) |
 | **S3** | Engine skeleton + hot-path compiler | CE-3.1, CE-3.2, CE-3.9, CE-3.10 | `DefaultNexusContextEngine`; `ContextCompiler` on ACP/UAEP before LLM; acceptance never-overflow on prod path | **Done** (2026-06-12) |
-| **S4** | Path unification + events | CE-3.3, CE-3.4, CE-3.7, CE-3.11, CE-3.8 | Graph + ACP share `assemble()`; unified `CONTEXT_ASSEMBLED`; integration test green | S3 |
+| **S4** | Path unification + events | CE-3.3, CE-3.4, CE-3.7, CE-3.11, CE-3.8 | Graph + ACP share `assemble()`; unified `CONTEXT_ASSEMBLED`; integration test green | **Done** (2026-06-12) |
 | **S5** | Step-aware assembly | CE-4.1–CE-4.6, CE-4.7, CE-5.1 | `step_kind` in payload v2; policy audit in `assemble()`; optional contract `context_hints` | S4 |
 | **S6** | Episodic vector recall | CE-VEC-1 | `SESSION_HISTORY_SEMANTIC` fragments when `MemoryProfile.enable_session_vector_index` | S4 + MEM-VEC-2.1 |
 | **S7** | Codebase preset | CE-7.1–CE-7.5 | Lab host `engine_preset=codebase`; 1k-file workspace under budget | S4 |

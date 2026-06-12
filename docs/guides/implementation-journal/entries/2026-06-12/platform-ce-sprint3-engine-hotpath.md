@@ -12,7 +12,7 @@ plan_ref:
   - CE-3.9
   - CE-3.10
 status: completed
-commit: pending
+commit: 228ebff0
 adr: no ADR needed — wires existing ContextCompiler library to ACP hot path per CE-3 plan
 ---
 

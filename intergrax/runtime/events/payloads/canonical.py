@@ -142,6 +142,7 @@ class ContextAssemblyPayloadV1(RuntimeEventPayload):
     context_original_chars: int
     context_final_chars: int
     trimmed: bool = False
+    engine_id: str = ""
 
 
 class TaskLifecyclePayloadV1(RuntimeEventPayload):
