@@ -19,7 +19,8 @@
 | **CE-DOC** | Domain split + architecture + plan + FAUDIT refresh | **Done** (CE-DOC.7 closes 2026-06-12 audit) |
 | **CE-EXT** | Plugin engine + hot-path compiler + step-aware + codebase preset | **Done** (S0–S12, 2026-06-12) |
 | **CE-DOC.8** | Architecture ↔ implementation sync post CE-EXT | **Done** (2026-06-12) |
-| **CE-ALIGN** | Post-audit implementation alignment (GAP-CTX-15..19) | **In progress** — see [CE-ALIGN sprints](#sprints-ce-align) |
+| **CE-ALIGN** | Post-audit implementation alignment (GAP-CTX-15..19) | **Done** (A0–A6, 2026-06-12) |
+| **CE-DOC.10** | CE-ALIGN closeout audit + architecture sync | **Done** (2026-06-12) |
 | **CE-DOC.9** | FAUDIT 2026-06-12 deep audit — GAP-CTX-15..19 + CE-ALIGN sprint register | **Done** (2026-06-12) |
 
 **As-built maturity:** L3 control plane · L2.5–L3 engine spine (hybrid paths) — target L3+ unified pipeline after CE-ALIGN; see architecture §3.
@@ -74,7 +75,7 @@
 
 ## Phase CE-ALIGN — Architecture ↔ implementation alignment
 
-**Status:** **In progress** (2026-06-12)  
+**Status:** **Done** (2026-06-12)  
 **Goal:** Close GAP-CTX-15..19 discovered in post-CE-EXT FAUDIT — unified `collect → format → budget` spine on production paths.  
 **Prerequisites:** CE-EXT Done · CE-DOC.9 Done  
 **Success gate:** `DefaultNexusContextEngine` merges provider fragments into LLM window; codebase orchestrator on graph path; custom `engine_ref` resolves; preset engines behave per §8.5; final FAUDIT layer 16 green.
@@ -89,8 +90,8 @@
 | **CE-REGISTRY-FMT** | Engine uses registry `formatter` when plugin sets it (`BuiltinContextPlugin`) | P2 | **Done** |
 | **CE-PROV-CTX** | Graph `provider_ctx` handles: `workspace_files`, session vector flags from task/env | P1 | **Done** |
 | **CE-7.5b** | Integration test: 1k-file workspace → assemble under token budget with fragment in window | P1 | **Done** |
-| **CE-UAEP-ASM** | UAEP session turn optional `ContextEngine.assemble()` when engine wired | P2 | Planned |
-| **CE-HOOKS-GRAPH** | `BEFORE_CONTEXT_BUILD` / `AFTER_CONTEXT_BUILD` on graph engine assemble | P2 | Planned |
+| **CE-UAEP-ASM** | UAEP session turn optional `ContextEngine.assemble()` when engine wired | P2 | **Done** |
+| **CE-HOOKS-GRAPH** | `BEFORE_CONTEXT_BUILD` / `AFTER_CONTEXT_BUILD` on graph engine assemble | P2 | **Done** |
 
 **Deferred (unchanged):** CE-9.5, CE-9.6, CE-10.3–10.5, CE-12.1–12.3 · GAP-CTX-08 · GAP-CTX-12.
 
@@ -409,8 +410,8 @@ Post-audit alignment sprints. One sprint = one commit.
 | **A2** | Orchestrator hot path | CE-8.2b, CE-PROV-CTX | Codebase graph assemble uses orchestrator; workspace handles on provider_ctx | **Done** |
 | **A3** | Custom engine + presets | CE-ENG-REF, CE-PRESET-ENG | `engine_ref` resolves; regulated_minimal / explore_child engines | **Done** |
 | **A4** | Registry + e2e test | CE-REGISTRY-FMT, CE-7.5b | Registry formatter used; 1k workspace assemble gate test | **Done** |
-| **A5** | UAEP + graph hooks | CE-UAEP-ASM, CE-HOOKS-GRAPH | Optional UAEP assemble; hooks on graph engine path |
-| **A6** | Closeout audit | CE-DOC.10 | Re-audit; GAP-CTX-15..19 Closed or deferred; journal |
+| **A5** | UAEP + graph hooks | CE-UAEP-ASM, CE-HOOKS-GRAPH | Optional UAEP assemble; hooks on graph engine path | **Done** |
+| **A6** | Closeout audit | CE-DOC.10 | Re-audit; GAP-CTX-15..19 Closed; journal | **Done** |
 
 ---
 

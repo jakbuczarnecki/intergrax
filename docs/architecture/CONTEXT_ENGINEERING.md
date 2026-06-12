@@ -9,7 +9,7 @@
 **ADR:** [`ADR-CTX-001`](../adr/entries/2026-06-12/ADR-CTX-001.md) · [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler budget semantics)  
 **Related:** [`architecture/MEMORY.md`](MEMORY.md) (stores + lifecycle) · [`architecture/RAG.md`](RAG.md) (retrieval) · [`architecture/TOOLS.md`](TOOLS.md) (tool outputs) · [`architecture/NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) (turn narrative) · [`architecture/OBSERVABILITY.md`](OBSERVABILITY.md) (event spine) · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix L  
 **Implementation (as-built):** `intergrax/context/` · `intergrax/runtime/nexus/context/` · `intergrax/runtime/architecture/context_engineering.py` · `intergrax/contracts/context_assembly.py` · `applications/_shared/context_*`  
-**Last architecture pass:** 2026-06-12 (CE-DOC.9 — post-CE-EXT FAUDIT + CE-ALIGN register)
+**Last architecture pass:** 2026-06-12 (CE-DOC.10 — CE-ALIGN complete)
 
 ---
 
@@ -49,15 +49,15 @@ Tier-3 ContextProfile + ContextEnginePreset + context_plugins[]
 
 | Question | Answer |
 |----------|--------|
-| Is CE **production-ready** as a **budgeted assembly spine**? | **Yes on default preset — L3+ engine / L3 control plane** (hybrid paths remain; see §8.3) |
+| Is CE **production-ready** as a **budgeted assembly spine**? | **Yes — L3+ engine / L3 control plane** (UAEP/ACP hybrid compile paths remain; see §8.3) |
 | Is **`ContextCompiler` on the production hot path**? | **Yes (ACP)** — `StepLLMRouter` + `compile_service` before LLM; **Yes (graph)** when `ContextEngine` + `llm_adapter` wired; **Partial (UAEP)** — session `build_context` not yet full `assemble()` |
 | Is there a **unified plugin catalog**? | **Yes** — `intergrax/context/` + `bootstrap_context_catalog()` + `BuiltinContextPlugin` (13 providers) |
 | Is **step-aware** assembly implemented? | **Yes (ACP/graph events)** — `step_kind` / `step_index` on `ContextAssemblyRequest` + `context_assembly.v2`; ranker boosts by step |
-| Is **workspace/codebase** context production-grade? | **Partial** — providers live; fragment→window merge **CE-FMT-1 (GAP-CTX-15)**; orchestrator hot path **CE-8.2b** |
+| Is **workspace/codebase** context production-grade? | **Yes (MVP)** — workspace provider + FORMAT merge + orchestrator on graph codebase preset |
 | Observability on assembly path? | **L3** — unified `CONTEXT_ASSEMBLED` v2 (CE-3.11); `CONTEXT_CANDIDATE_*` on engine assemble when `event_bus` wired (CE-9.1); OTel span shim + `check_context_otel_span_registry.py` |
 | Can authors register custom providers without forking Nexus? | **Yes** — `register_context_plugin()` + `context_plugin_ids` on `ContextProfile` |
 
-**Remaining:** **GAP-CTX-08**, **GAP-CTX-15..19** (CE-ALIGN), deferred CE-9.5/9.6, CE-10.3–10.5, CE-12.1–12.3 — see §16.
+**Remaining:** **GAP-CTX-08**, builtin stub provider legacy wiring (follow-up), deferred CE-9.5/9.6, CE-10.3–10.5, CE-12.1–12.3 — see §16.
 
 ---
 
@@ -69,7 +69,7 @@ Tier-3 ContextProfile + ContextEnginePreset + context_plugins[]
 | Global budget / never-overflow | **L3** | `ContextCompiler` on ACP LLM path + graph engine assemble; UAEP session path hybrid |
 | Provenance + assembly events | **L3** | `CONTEXT_ASSEMBLED` v2 with `engine_id` + `step_kind`; graph + UAEP aligned (CE-3.11) |
 | Quality scoring (relevance/freshness/confidence) | **L3** | `DefaultContextRanker` + `evaluate_context_engineering()` gate (CE-10.1) |
-| Plugin extensibility | **L2.5** | Catalog shipped; FORMAT merge + stub wiring in CE-ALIGN (GAP-CTX-15) |
+| Plugin extensibility | **L3** | Catalog + FORMAT merge; 11 builtin `collect()` stubs await legacy wiring |
 | Step-aware selection | **L3** | ACP `AgentStepContext` + ranker table; graph uses `node.capability` as `step_kind` |
 | Codebase-scale preset | **L3** | `CodebaseContextEngine` + workspace provider; 1k-file gate test |
 | Interactive multi-hop context loop | **L2** | `ContextOrchestrator` on codebase preset only (CE-8) |
@@ -696,9 +696,9 @@ profile = ApplicationEnvironmentProfile(
 | GAP-CTX-14 | **Closed** | `CONTEXT_BUILT` vs `CONTEXT_ASSEMBLED` split | CE-3.11 unified v2 |
 | GAP-CTX-15 | **Closed** | Provider `collect()` fragments not merged into LLM window | CE-FMT-1 `formatter.py` + engine merge |
 | GAP-CTX-16 | **Closed** | `ContextOrchestrator` not on Nexus graph hot path | CE-8.2b `ContextManager` + wiring |
-| GAP-CTX-17 | **Open** | `engine_ref=custom` not resolved | CE-ENG-REF (CE-ALIGN A3) |
-| GAP-CTX-18 | **Open** | Preset engines lack §8.5 behavior | CE-PRESET-ENG (CE-ALIGN A3) |
-| GAP-CTX-19 | **Open** | Registry formatter/allocator unused | CE-REGISTRY-FMT (CE-ALIGN A4) |
+| GAP-CTX-17 | **Closed** | `engine_ref=custom` not resolved | `context_engine_resolver.load_context_engine` |
+| GAP-CTX-18 | **Closed** | Preset engines lack §8.5 behavior | `preset_engines.py` |
+| GAP-CTX-19 | **Closed** | Registry formatter unused | `BuiltinContextPlugin` sets `DefaultContextFormatter` |
 
 **Traceability:** [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md) master register · phase **CE-ALIGN**.
 

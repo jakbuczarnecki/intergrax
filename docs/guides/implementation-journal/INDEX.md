@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-12-015 | 2026-06-12 | tier-0, tier-1 CONTEXT_ENGINEERING | CE-ALIGN · CE-DOC.10 | [CE-ALIGN closeout — architecture ↔ implementation alignment](entries/2026-06-12/platform-ce-align-closeout.md) | pending |
 | IJ-2026-06-12-014 | 2026-06-12 | tier-0 CONTEXT_ENGINEERING | CE-DOC.9 | [CE-DOC.9 — Post-CE-EXT FAUDIT register and CE-ALIGN sprint plan](entries/2026-06-12/platform-ce-doc9-align-audit-register.md) | pending |
 | IJ-2026-06-12-013 | 2026-06-12 | tier-1 CONTEXT_ENGINEERING | CE-9.1 · GAP-CTX-10 | [CE-9.1 — CONTEXT_CANDIDATE_* bus emission on engine assemble](entries/2026-06-12/platform-ce-9-1-candidate-bus-emission.md) | pending |
 | IJ-2026-06-12-012 | 2026-06-12 | tier-0 CONTEXT_ENGINEERING | CE-DOC.8 | [CE-DOC.8 — Architecture canon sync post CE-EXT S0–S12](entries/2026-06-12/platform-ce-doc8-architecture-sync.md) | pending |
