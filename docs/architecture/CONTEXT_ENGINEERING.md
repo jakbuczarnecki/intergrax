@@ -54,10 +54,10 @@ Tier-3 ContextProfile + ContextEnginePreset + context_plugins[]
 | Is there a **unified plugin catalog**? | **Yes** — `intergrax/context/` + `bootstrap_context_catalog()` + `BuiltinContextPlugin` (13 providers) |
 | Is **step-aware** assembly implemented? | **Yes (ACP/graph events)** — `step_kind` / `step_index` on `ContextAssemblyRequest` + `context_assembly.v2`; ranker boosts by step |
 | Is **workspace/codebase** context production-grade? | **Yes (MVP)** — `WorkspaceContextProvider` + `CodebaseContextEngine` preset; builtin provider stubs still delegate legacy collectors |
-| Observability on assembly path? | **Partial** — unified `CONTEXT_ASSEMBLED` v2 (CE-3.11); OTel span shim + `check_context_otel_span_registry.py`; candidate bus emission follow-up (GAP-CTX-10) |
+| Observability on assembly path? | **L3** — unified `CONTEXT_ASSEMBLED` v2 (CE-3.11); `CONTEXT_CANDIDATE_*` on engine assemble when `event_bus` wired (CE-9.1); OTel span shim + `check_context_otel_span_registry.py` |
 | Can authors register custom providers without forking Nexus? | **Yes** — `register_context_plugin()` + `context_plugin_ids` on `ContextProfile` |
 
-**Remaining:** **GAP-CTX-08**, **GAP-CTX-10** (partial), deferred CE-9.5/9.6, CE-10.3–10.5, CE-12.1–12.3 — see §16.
+**Remaining:** **GAP-CTX-08**, deferred CE-9.5/9.6, CE-10.3–10.5, CE-12.1–12.3 — see §16.
 
 ---
 
@@ -543,9 +543,9 @@ Registered in `hook_registry.py` parity map · UAEP `run_before` / `run_after`.
 | `CONTEXT_ASSEMBLED` | `CONTEXT_BUILDING` | `context_assembly.v2` (preferred) | TraceStore | Graph + UAEP (CE-3.11, CE-4.5) |
 | `CONTEXT_TRIMMED` | `CONTEXT_BUILDING` | `context_assembly.v2` | TraceStore | Graph |
 | `CONTEXT_BUILT` | `CONTEXT_BUILDING` | `context_assembly.v1` (alias registry) | TraceStore | **Deprecated** — use `CONTEXT_ASSEMBLED` |
-| `CONTEXT_CANDIDATE_COLLECTED` | `CONTEXT_BUILDING` | `context_candidate.v1` | TraceStore | Enum + payload registered; bus emission follow-up |
-| `CONTEXT_CANDIDATE_DROPPED` | `CONTEXT_BUILDING` | `context_candidate.v1` | TraceStore | Counters in `context_counters.py` today |
-| `CONTEXT_VALIDATION_FAILED` | `CONTEXT_BUILDING` | `validation.v1` / engine raise | TraceStore | Preflight failures raise from `assemble()` |
+| `CONTEXT_CANDIDATE_COLLECTED` | `CONTEXT_BUILDING` | `context_candidate.v1` | TraceStore | `DefaultNexusContextEngine` when `event_bus` in provider handles (CE-9.1) |
+| `CONTEXT_CANDIDATE_DROPPED` | `CONTEXT_BUILDING` | `context_candidate.v1` | TraceStore | Dedup phase + counters (`context_counters.py`) |
+| `CONTEXT_VALIDATION_FAILED` | `CONTEXT_BUILDING` | `validation.v1` | TraceStore | Policy/validator failures before `assemble()` raises |
 
 Payload fields (assembled):
 
@@ -689,7 +689,7 @@ profile = ApplicationEnvironmentProfile(
 | GAP-CTX-07 | **Closed** | No `ContextOrchestrator` | CE-8 codebase preset |
 | GAP-CTX-08 | **Open** | `classify_candidates` string heuristics | CE-10.3 deferred |
 | GAP-CTX-09 | **Closed** | No OTel spans on hot path | CE-9.2 span registry + shim |
-| GAP-CTX-10 | **Partial** | No `CONTEXT_CANDIDATE_*` bus events | CE-9.1 enum/payload; emission follow-up |
+| GAP-CTX-10 | **Closed** | No `CONTEXT_CANDIDATE_*` bus events | CE-9.1 engine emission via `context_skill_recording` |
 | GAP-CTX-11 | **Closed** | `ContextBuilder` name collision | CE-3.6 `SessionRagContextBuilder` alias |
 | GAP-CTX-12 | **Deferred** | L4 adaptive ranking | AHI plan |
 | GAP-CTX-13 | **Closed** | `ContextCompiler` not on hot path | CE-3.9 ACP + graph engine |

@@ -91,7 +91,7 @@ class ContextValidator(Protocol):
 
 @runtime_checkable
 class ContextEngine(Protocol):
-    """Unified context assembly entry (target CE-3)."""
+    """Unified context assembly entry (CE-3)."""
 
     @property
     def engine_id(self) -> str: ...

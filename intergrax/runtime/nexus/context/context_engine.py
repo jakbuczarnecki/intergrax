@@ -17,6 +17,7 @@ from intergrax.context.dedup import dedup_fragments_by_hash
 from intergrax.context.ranker import DefaultContextRanker
 from intergrax.context.registry import ContextPluginRegistry
 from intergrax.context.tracking.context_spans import context_span
+from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.observability.context_counters import get_context_counters
 from intergrax.runtime.policy.context_assembly_policy import run_pre_context_policy_gate
 
@@ -33,7 +34,7 @@ if TYPE_CHECKING:
 
 
 class DefaultNexusContextEngine:
-    """Shipped CE engine — provider collect stub + ContextCompiler budget (CE-3)."""
+    """Shipped CE engine — provider collect + rank + ContextCompiler budget (CE-3)."""
 
     def __init__(
         self,
@@ -89,8 +90,12 @@ class DefaultNexusContextEngine:
         if runtime_config is None:
             raise ValueError("ContextProviderContext.handles must include runtime_config")
 
+        event_bus = _event_bus_from_handles(ctx)
+        event_ctx = _assembly_event_context(request, ctx)
+
         pre_gate = run_pre_context_policy_gate(request)
         if not pre_gate.allowed:
+            _record_validation_failed(event_bus, event_ctx, pre_gate.errors, stage="pre_context_policy")
             raise ValueError("; ".join(pre_gate.errors))
 
         collected_fragments: list = []
@@ -101,16 +106,42 @@ class DefaultNexusContextEngine:
                     counters = get_context_counters()
                     counters.candidate_collected_total += len(fragments)
                     collected_fragments.extend(fragments)
+                    if event_bus is not None:
+                        from intergrax.runtime.events.context_skill_recording import (
+                            record_context_candidate_collected,
+                        )
+
+                        record_context_candidate_collected(
+                            event_bus,
+                            provider_id=provider.provider_id,
+                            fragment_count=len(fragments),
+                            engine_id=self._engine_id,
+                            **event_ctx,
+                        )
 
         unique, dropped = dedup_fragments_by_hash(collected_fragments)
         collected_fragments = unique
         if dropped:
             counters = get_context_counters()
             counters.candidate_dropped_total += len(dropped)
+            if event_bus is not None:
+                from intergrax.runtime.events.context_skill_recording import (
+                    record_context_candidate_dropped,
+                )
+
+                for fragment, reason in dropped:
+                    record_context_candidate_dropped(
+                        event_bus,
+                        provider_id=fragment.source_id or "dedup",
+                        drop_reason=reason,
+                        engine_id=self._engine_id,
+                        **event_ctx,
+                    )
 
         post_gate = run_pre_context_policy_gate(request, collected=tuple(collected_fragments))
         if not post_gate.allowed:
             get_context_counters().validation_failed_total += 1
+            _record_validation_failed(event_bus, event_ctx, post_gate.errors, stage="post_collect_policy")
             raise ValueError("; ".join(post_gate.errors))
 
         if collected_fragments:
@@ -161,6 +192,51 @@ class DefaultNexusContextEngine:
             max_output_tokens=max_output_tokens,
         )
         if not validation.valid:
+            get_context_counters().validation_failed_total += 1
+            _record_validation_failed(event_bus, event_ctx, validation.errors, stage="assembled_validation")
             raise ValueError("; ".join(validation.errors))
 
         return assembled
+
+
+def _event_bus_from_handles(ctx: ContextProviderContext) -> RuntimeEventBus | None:
+    bus = ctx.handles.get("event_bus")
+    if isinstance(bus, RuntimeEventBus):
+        return bus
+    return None
+
+
+def _assembly_event_context(
+    request: ContextAssemblyRequest,
+    ctx: ContextProviderContext,
+) -> dict[str, str | None]:
+    node_id = ctx.handles.get("node_id")
+    agent_id = ctx.handles.get("agent_id")
+    return {
+        "task_id": request.task_id,
+        "run_id": request.run_id,
+        "node_id": node_id if isinstance(node_id, str) else (request.graph_node_id or ""),
+        "agent_id": agent_id if isinstance(agent_id, str) else None,
+        "correlation_id": request.trace_id or request.task_id,
+    }
+
+
+def _record_validation_failed(
+    event_bus: RuntimeEventBus | None,
+    event_ctx: dict[str, str | None],
+    errors: tuple[str, ...] | list[str],
+    *,
+    stage: str,
+) -> None:
+    if event_bus is None or not errors:
+        return
+    from intergrax.runtime.events.context_skill_recording import (
+        record_context_validation_failed,
+    )
+
+    record_context_validation_failed(
+        event_bus,
+        errors=tuple(errors),
+        stage=stage,
+        **event_ctx,
+    )

@@ -151,6 +151,7 @@ class ContextCandidatePayloadV1(RuntimeEventPayload):
     provider_id: str
     fragment_count: int = 0
     engine_id: str = ""
+    drop_reason: str = ""
 
 
 class ContextAssemblyPayloadV2(RuntimeEventPayload):

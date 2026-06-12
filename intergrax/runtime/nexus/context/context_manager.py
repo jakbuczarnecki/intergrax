@@ -165,6 +165,9 @@ class ContextManager:
             handles={
                 "runtime_config": runtime_config,
                 "messages": graph_messages_from_text(bundle.message),
+                "event_bus": self._event_bus,
+                "node_id": node.node_id,
+                "agent_id": node.agent_id,
             },
         )
         assembled = await engine.assemble(request, provider_ctx=provider_ctx)

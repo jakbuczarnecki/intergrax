@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Shipped builtin context providers — stubs delegating to Nexus as-built (CE-2.3)."""
+"""Shipped builtin context providers — catalog placeholders + live workspace/session (CE-2.3)."""
 
 from __future__ import annotations
 
@@ -73,7 +73,7 @@ def _make_stub_provider(
 
 
 class BuiltinContextPlugin:
-    """Registers all architecture §8.4 builtin providers (stub collect until CE-3)."""
+    """Registers all architecture §8.4 builtin providers (live + no-op catalog stubs)."""
 
     @classmethod
     def plugin_id(cls) -> str:

@@ -31,6 +31,22 @@ Shipped `bootstrap_context_catalog()`, `BuiltinContextPlugin` with 12 stub provi
 
 Hosts bootstrap context plugins alongside integrations/tools/skills; authors can register third-party `ContextPlugin` classes via entry points.
 
+## Traceability
+
+| Link | Target |
+|------|--------|
+| Architecture | `docs/architecture/CONTEXT_ENGINEERING.md` §8.4 |
+| Plan | `docs/plan/CONTEXT_ENGINEERING.md` — S2 Done; CE-1.5, CE-2.1–CE-2.5 |
+| ADR | `docs/adr/entries/2026-06-12/ADR-CTX-001.md` (no new ADR) |
+
+## Changed artifacts
+
+- `intergrax/context/providers/builtin.py` — `BuiltinContextPlugin` + stub providers
+- `intergrax/context/catalog.py` — `bootstrap_context_catalog()`
+- `intergrax/context/quality.py` — moved from runtime (CE-1.5)
+- `applications/_shared/context_wiring.py` — plugin id validation
+- `tests/unit/context/test_context_catalog.py` — catalog bootstrap gate tests
+
 ## Verification
 
 ```bash
@@ -39,3 +55,8 @@ python scripts/check_context_tier0_import_boundary.py
 ```
 
 Result: 19 passed (context suite).
+
+## Risks and follow-ups
+
+- Builtin provider `collect()` stubs are catalog placeholders; live collect ships in CE-7 (workspace) and CE-VEC-1 (session semantic).
+- Sprint S3 wires `DefaultNexusContextEngine` on the compiler hot path.

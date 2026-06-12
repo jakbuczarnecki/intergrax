@@ -39,7 +39,7 @@
 | GAP-CTX-07 | CE-8 | 4 | **Closed** |
 | GAP-CTX-08 | CE-10.3 | 5 | **Open** (deferred) |
 | GAP-CTX-09 | CE-9.2 | 5 | **Closed** |
-| GAP-CTX-10 | CE-9.1 | 5 | **Partial** (enum; bus emission follow-up) |
+| GAP-CTX-10 | CE-9.1 | 5 | **Closed** |
 | GAP-CTX-11 | CE-3.6 | 2 | **Closed** |
 | GAP-CTX-12 | AHI | — | **Deferred** |
 | GAP-CTX-13 | CE-3.9, CE-3.10 | 2 | **Closed** |
@@ -70,7 +70,7 @@
 **Goal:** Close **GAP-CTX-\*** rows — production-grade plugin engine integrated with Harness observability, policy, and Tier-3 presets.  
 **Prerequisites:** CE-DOC Done · MEM-DEPTH-1 Done · CTX Done · OBS event spine Done  
 **Success gate:** L3+ engine on FAUDIT layer 16 · `codebase` preset shipped · `check_context_engine_wiring.py` green  
-**Deferred follow-up:** CE-9.5, CE-9.6, CE-10.3–10.5, CE-12.1–12.3 · GAP-CTX-08 · GAP-CTX-10 bus emission
+**Deferred follow-up:** CE-9.5, CE-9.6, CE-10.3–10.5, CE-12.1–12.3 · GAP-CTX-08
 
 ### Execution order (waves)
 
@@ -99,7 +99,7 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 | **CE-1.6** | Architecture gate: `intergrax/context/` MUST NOT import `agents/` or `applications/` | P0 | **Done** | `scripts/check_context_tier0_import_boundary.py` |
 | **CE-2.1** | `register_context_plugin()` + `intergrax.context` entry point group in `pyproject.toml` | P0 | **Done** | `pyproject.toml` EP + `register_context_plugin()` |
 | **CE-2.2** | `bootstrap_context_catalog()` in `intergrax/context/bootstrap.py` | P0 | **Done** | `wire_application_environment` calls bootstrap |
-| **CE-2.3** | Shipped `BuiltinContextPlugin` registering all §8.4 providers (stubs delegating to as-built steps) | P0 | **Done** | 12 builtin providers |
+| **CE-2.3** | Shipped `BuiltinContextPlugin` registering all §8.4 providers (catalog stubs + live workspace/session) | P0 | **Done** | 13 builtin provider ids |
 | **CE-2.4** | `ContextProfile.context_plugin_ids` + validation against registry | P1 | **Done** | `validate_context_plugin_ids` — lab fail / strict warn |
 | **CE-2.5** | Unit tests `tests/unit/context/test_context_plugin_registry.py` | P0 | **Done** | catalog + wiring tests `-m gate` |
 | **CE-2.6** | Extend `ContextProfile` with `engine_preset`, `engine_ref`, `context_plugin_ids` | P0 | **Done** | `environment_profile.py`; `context_runtime_bridge.py` metadata |
@@ -167,7 +167,7 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 
 | ID | Deliverable | Priority | Status | Acceptance |
 |----|-------------|----------|--------|------------|
-| **CE-9.1** | Runtime events `CONTEXT_CANDIDATE_COLLECTED`, `CONTEXT_CANDIDATE_DROPPED`, `CONTEXT_VALIDATION_FAILED` | P2 | **Done** | Enum + `ContextCandidatePayloadV1` registered |
+| **CE-9.1** | Runtime events `CONTEXT_CANDIDATE_COLLECTED`, `CONTEXT_CANDIDATE_DROPPED`, `CONTEXT_VALIDATION_FAILED` | P2 | **Done** | Enum + payload + engine bus emission on graph assemble |
 | **CE-9.2** | OTel spans: `context.engine.assemble`, `context.provider.collect`, `context.budget.allocate` | P2 | **Done** | `check_context_otel_span_registry.py` |
 | **CE-9.3** | Structured logging `intergrax.context.engine` — no content at INFO | P2 | **Done** | Engine assemble logs scope metadata only |
 | **CE-9.4** | Metrics counters in `runtime/observability/context_counters.py` | P2 | **Done** | `INTERGRAX_CONTEXT_METRICS` opt-in |
