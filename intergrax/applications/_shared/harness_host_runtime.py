@@ -28,7 +28,10 @@ from intergrax.applications._shared.acp_checkpoint_host_wiring import (
     resolve_host_agent_checkpoint_store,
     resolve_host_compensation_queue_store,
 )
-from intergrax.applications._shared.application_host_wiring import apply_application_host_wiring
+from intergrax.applications._shared.application_host_wiring import (
+    apply_application_environment_state_wiring,
+    apply_application_host_wiring,
+)
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_from_tool_wiring,
 )
@@ -214,6 +217,12 @@ def build_harness_host_runtime(
     )
     assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)
     assert_guardrail_assembly_valid(guardrail_wiring, environment, nexus=nexus_loop)
+    apply_application_environment_state_wiring(
+        nexus_loop,
+        manifest=resolved_manifest,
+        environment=environment,
+        run_budget=cost_wiring.run_budget,
+    )
     apply_application_host_wiring(nexus_loop, application_host)
     from intergrax.applications._shared.reliability_wiring import apply_reliability_governance_wiring
 

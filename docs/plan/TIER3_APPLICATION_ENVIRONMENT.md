@@ -41,7 +41,7 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 | §39 | `OrganizationalPolicyEnvelope` | ACP-ORG-* | **Done** | `org_policy.py` · `test_uc11_product_host_compliance.py` |
 | §40 | APP-PROD gates | APP-PROD-1..9 | **Partial** | APP-PROD-9 **Done** · 6–8 open |
 | §41 | Composition primitive separation | H-APP-CON-DOC.* | **Done** | *doc-only* |
-| §42 | `ApplicationEnvironmentState` v2 | APP-CON-2 · APP-CON-3 | **Partial** | `environment_state.py` · auto-sync open |
+| §42 | `ApplicationEnvironmentState` v2 | APP-CON-2 · APP-CON-3 | **Done** | `environment_state.py` · lifecycle middleware |
 | §43 | Budget / token governance | ACP-TOK-* · APP-CON-3 | **Partial** | see [Cross-plan §43](#cross-plan--43-budget--token-governance) |
 | §44 | Scenario test matrix | APP-CON-7 | Planned | `tests/unit/applications/` bundle |
 | §45 | New application checklist | APP-CON-DX.1 · N.* | **Partial** | scaffold + guide |
@@ -64,7 +64,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 |----|--------|-------------|--------|------------|
 | APP-CON-1 | §25 · §32 | `ApplicationHost` in `build_harness_host_runtime` | **Done** | `test_application_host_wiring.py` |
 | APP-CON-2 | §42 | `ApplicationEnvironmentState` v2 | **Done** | `test_environment_state_and_artifacts.py` |
-| APP-CON-3 | §42 · §43 | Nexus lifecycle updates `app_env_state.v1` (phase, budget, HITL) | Planned | hook context fields change per phase in integration test |
+| APP-CON-3 | §42 · §43 | Nexus lifecycle updates `app_env_state.v1` (phase, budget, HITL) | **Done** | `test_application_environment_state_lifecycle.py` |
 | APP-CON-4 | §48 | Artifact ref models | **Done** | `application_artifacts.py` |
 | APP-CON-5 | §32.6 | Hook timeout · error→BLOCK · audit events | Planned | middleware enforces wall time; trace on `hook_error` |
 | APP-CON-6 | §26 · §48 | `RunArtifactBundle` on `ApplicationRunSummary.metadata` | Planned | `run_artifact_bundle.v1` key in finisher test |
@@ -121,7 +121,7 @@ Architecture §43 is **implemented jointly** with ACP §25.4–§25.5. Tier-3 co
 | `AgentBinding.budget_slice` | TIER3 + ACP | H-APP.1.2 · ACP §34 | **Done** |
 | Token metering rollups | ACP | **ACP-TOK-1** | Planned |
 | Kernel hard cap + block LLM | ACP | **ACP-TOK-2** | Planned |
-| Host notify / HITL / `custom_hook` | ACP + TIER3 | **ACP-TOK-3** · APP-CON-3 | Planned |
+| Host notify / HITL / `custom_hook` | ACP + TIER3 | **ACP-TOK-3** · APP-CON-3 | **Partial** (APP-CON-3 **Done** · ACP-TOK-3 open) |
 | CI gate | ACP | **ACP-TOK-CI** | Planned |
 | APP-PROD-7 host gate | TIER3 | **APP-PROD-7** | Planned (after ACP-TOK-2) |
 
@@ -162,7 +162,7 @@ Recommended PR sequence — one APP ID per PR:
 
 ```text
 1.  APP-PROD-9      wire production gates to CI
-2.  APP-CON-3       env state lifecycle sync on hooks
+2.  APP-CON-3       env state lifecycle sync on hooks — **Done**
 3.  ACP-TOK-1..3    (agent plan) budget enforcement — unblocks §43
 4.  APP-PROD-7      budget gate on STRICT hosts
 5.  APP-CON-5       hook timeout / error handling

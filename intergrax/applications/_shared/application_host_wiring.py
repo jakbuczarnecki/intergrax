@@ -10,6 +10,9 @@ from intergrax.runtime.middleware.base import RuntimeMiddleware
 
 if TYPE_CHECKING:
     from intergrax.harness.application_host import ApplicationHost
+    from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+    from intergrax.applications.contracts.manifest import ApplicationManifest
+    from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 
@@ -24,6 +27,28 @@ def _attach_middleware(nexus: NexusLoop, middleware: RuntimeMiddleware) -> None:
     pipeline._middleware = sorted(  # noqa: SLF001
         [*existing, middleware],
         key=lambda item: item.priority,
+    )
+
+
+def apply_application_environment_state_wiring(
+    nexus: NexusLoop,
+    *,
+    manifest: ApplicationManifest,
+    environment: ApplicationEnvironmentProfile,
+    run_budget: RunBudget | None = None,
+) -> None:
+    """Attach lifecycle sync middleware for ``ApplicationEnvironmentState`` (APP-CON-3)."""
+    from intergrax.applications._shared.application_environment_state_middleware import (
+        ApplicationEnvironmentStateMiddleware,
+    )
+
+    _attach_middleware(
+        nexus,
+        ApplicationEnvironmentStateMiddleware(
+            manifest=manifest,
+            environment=environment,
+            run_budget=run_budget,
+        ),
     )
 
 

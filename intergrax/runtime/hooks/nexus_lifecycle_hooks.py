@@ -14,6 +14,8 @@ from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.security.task_security_context import resource_tenant_id_for_task
 from intergrax.runtime.task.task import Task
 
+APP_ENV_STATE_RUNTIME_KEY = "app_env_state.v1"
+
 
 class NexusLifecycleHookError(RuntimeError):
     """Raised when a lifecycle middleware hook blocks execution."""
@@ -62,7 +64,9 @@ class NexusLifecycleHookCoordinator:
         extra: Optional[dict[str, Any]] = None,
     ) -> None:
         ctx = nexus_lifecycle_hook_context(task, phase=phase, extra=extra)
+        _merge_task_env_state(task, ctx)
         result = await self._pipeline.run_before(point, ctx)
+        _persist_task_env_state(task, ctx)
         _guard(result, point)
 
     async def after(
@@ -74,8 +78,23 @@ class NexusLifecycleHookCoordinator:
         extra: Optional[dict[str, Any]] = None,
     ) -> None:
         ctx = nexus_lifecycle_hook_context(task, phase=phase, extra=extra)
+        _merge_task_env_state(task, ctx)
         result = await self._pipeline.run_after(point, ctx)
+        _persist_task_env_state(task, ctx)
         _guard(result, point)
+
+
+def _merge_task_env_state(task: Task, ctx: HookContext) -> None:
+    persisted = task.metadata.get(APP_ENV_STATE_RUNTIME_KEY)
+    if isinstance(persisted, dict):
+        ctx.runtime_state[APP_ENV_STATE_RUNTIME_KEY] = persisted
+
+
+def _persist_task_env_state(task: Task, ctx: HookContext) -> None:
+    updated = ctx.runtime_state.get(APP_ENV_STATE_RUNTIME_KEY)
+    if isinstance(updated, dict):
+        task.metadata[APP_ENV_STATE_RUNTIME_KEY] = updated
+        task.sync_metadata()
 
 
 def _guard(result: HookResult, point: HookPoint) -> None:

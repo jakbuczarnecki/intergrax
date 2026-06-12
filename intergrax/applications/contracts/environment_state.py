@@ -11,6 +11,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 
+APP_ENV_STATE_RUNTIME_KEY = "app_env_state.v1"
+
 
 class EnvironmentTaskPhase(StrEnum):
     """High-level Nexus task phase for host-visible state."""
@@ -148,7 +150,7 @@ class ApplicationEnvironmentState(BaseModel):
 
     @classmethod
     def from_runtime_state(cls, runtime_state: dict[str, Any]) -> ApplicationEnvironmentState | None:
-        raw = runtime_state.get("app_env_state.v1")
+        raw = runtime_state.get(APP_ENV_STATE_RUNTIME_KEY)
         if raw is None:
             return None
         if isinstance(raw, ApplicationEnvironmentState):
@@ -159,12 +161,12 @@ class ApplicationEnvironmentState(BaseModel):
 
     def apply_to_runtime_state(self, runtime_state: dict[str, Any]) -> dict[str, Any]:
         merged = dict(runtime_state)
-        merged["app_env_state.v1"] = self.model_dump(mode="json")
+        merged[APP_ENV_STATE_RUNTIME_KEY] = self.model_dump(mode="json")
         return merged
 
     def patch_runtime_state(self) -> dict[str, Any]:
         """Payload for ``HookResult.modified_payload`` when updating host state."""
-        return {"app_env_state.v1": self.model_dump(mode="json")}
+        return {APP_ENV_STATE_RUNTIME_KEY: self.model_dump(mode="json")}
 
 
 def seed_application_environment_state(
