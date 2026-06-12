@@ -48,8 +48,8 @@
 | GAP-CTX-14 | CE-3.11 | 2 | **Closed** |
 | GAP-CTX-15 | CE-FMT-1, CE-FMT-2 | CE-ALIGN | **Closed** |
 | GAP-CTX-16 | CE-8.2b, CE-PROV-CTX | CE-ALIGN | **Closed** |
-| GAP-CTX-17 | CE-ENG-REF | CE-ALIGN | **Open** — `engine_ref=custom` raises at resolve time |
-| GAP-CTX-18 | CE-PRESET-ENG | CE-ALIGN | **Open** — `regulated_minimal` / `explore_child` lack dedicated engine behavior |
+| GAP-CTX-17 | CE-ENG-REF | CE-ALIGN | **Closed** |
+| GAP-CTX-18 | CE-PRESET-ENG | CE-ALIGN | **Closed** |
 | GAP-CTX-19 | CE-REGISTRY-FMT | CE-ALIGN | **Open** — `ContextFormatter` / `ContextBudgetAllocator` registry unused in engine |
 
 ---
@@ -84,8 +84,8 @@
 | **CE-FMT-1** | `DefaultContextFormatter` — ranked `ContextFragment[]` → `ChatMessage[]` merge before `ContextCompiler` | P0 | **Done** |
 | **CE-FMT-2** | `fragments_excluded` populated from ranker quality gate + dedup reasons | P1 | **Done** |
 | **CE-8.2b** | Wire `ContextOrchestrator.assemble_with_hops` on graph `codebase` preset | P1 | **Done** |
-| **CE-ENG-REF** | Resolve `ContextProfile.engine_ref` custom class via dotted import | P1 | Planned |
-| **CE-PRESET-ENG** | `RegulatedMinimalContextEngine` + `ExploreChildContextEngine` ranker/threshold behavior | P2 | Planned |
+| **CE-ENG-REF** | Resolve `ContextProfile.engine_ref` custom class via dotted import | P1 | **Done** |
+| **CE-PRESET-ENG** | `RegulatedMinimalContextEngine` + `ExploreChildContextEngine` ranker/threshold behavior | P2 | **Done** |
 | **CE-REGISTRY-FMT** | Engine uses registry `formatter` / `allocator` when plugin sets them | P2 | Planned |
 | **CE-PROV-CTX** | Graph `provider_ctx` handles: `workspace_files`, session vector flags from task/env | P1 | **Done** |
 | **CE-7.5b** | Integration test: 1k-file workspace → assemble under token budget with fragment in window | P1 | Planned |
@@ -407,7 +407,7 @@ Post-audit alignment sprints. One sprint = one commit.
 | **A0** | Audit documentation | CE-DOC.9 | GAP-CTX-15..19 in architecture §16 + this register | **Done** |
 | **A1** | Fragment format merge | CE-FMT-1, CE-FMT-2 | Ranked fragments injected into messages before compile; excluded tuple populated | **Done** |
 | **A2** | Orchestrator hot path | CE-8.2b, CE-PROV-CTX | Codebase graph assemble uses orchestrator; workspace handles on provider_ctx | **Done** |
-| **A3** | Custom engine + presets | CE-ENG-REF, CE-PRESET-ENG | `engine_ref` resolves; regulated_minimal / explore_child engines |
+| **A3** | Custom engine + presets | CE-ENG-REF, CE-PRESET-ENG | `engine_ref` resolves; regulated_minimal / explore_child engines | **Done** |
 | **A4** | Registry + e2e test | CE-REGISTRY-FMT, CE-7.5b | Registry formatter used; 1k workspace assemble gate test |
 | **A5** | UAEP + graph hooks | CE-UAEP-ASM, CE-HOOKS-GRAPH | Optional UAEP assemble; hooks on graph engine path |
 | **A6** | Closeout audit | CE-DOC.10 | Re-audit; GAP-CTX-15..19 Closed or deferred; journal |

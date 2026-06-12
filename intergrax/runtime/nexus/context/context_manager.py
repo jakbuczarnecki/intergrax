@@ -135,12 +135,9 @@ class ContextManager:
             and node.delegation is not None
             and engine.engine_id != "explore_child"
         ):
-            from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
+            from intergrax.runtime.nexus.context.preset_engines import ExploreChildContextEngine
 
-            engine = DefaultNexusContextEngine(
-                engine_id="explore_child",
-                registry=engine.registry,
-            )
+            engine = ExploreChildContextEngine(registry=engine.registry)
 
         use_engine = engine is not None and self._llm_adapter is not None
         bundle = self._build_agent_context_core(

@@ -97,13 +97,21 @@ def resolve_context_engine_from_environment(
     engine_ref = env.context_profile.engine_ref
     preset = env.context_profile.engine_preset
     if preset == "custom" and engine_ref:
-        raise ValueError(
-            f"Custom context engine_ref is not wired yet: {engine_ref!r} (use preset=default)"
-        )
+        from intergrax.applications._shared.context_engine_resolver import load_context_engine
+
+        return load_context_engine(engine_ref, registry=registry)
     if preset == "codebase":
         from intergrax.runtime.nexus.context.codebase_engine import CodebaseContextEngine
 
         return CodebaseContextEngine(registry=registry)
+    if preset == "regulated_minimal":
+        from intergrax.runtime.nexus.context.preset_engines import RegulatedMinimalContextEngine
+
+        return RegulatedMinimalContextEngine(registry=registry)
+    if preset == "explore_child":
+        from intergrax.runtime.nexus.context.preset_engines import ExploreChildContextEngine
+
+        return ExploreChildContextEngine(registry=registry)
     return DefaultNexusContextEngine(engine_id=preset, registry=registry)
 
 
@@ -127,7 +135,9 @@ def resolve_context_engine_for_graph_node(
     """Delegation children use ``explore_child`` preset automatically (CE-8.3)."""
     if has_delegation:
         registry = resolve_context_plugin_registry_from_environment(env)
-        return DefaultNexusContextEngine(engine_id="explore_child", registry=registry)
+        from intergrax.runtime.nexus.context.preset_engines import ExploreChildContextEngine
+
+        return ExploreChildContextEngine(registry=registry)
     return resolve_context_engine_from_environment(env)
 
 

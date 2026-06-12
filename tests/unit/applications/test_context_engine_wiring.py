@@ -12,7 +12,12 @@ from intergrax.applications.contracts.environment_profile import (
     ContextProfile,
 )
 from intergrax.context.bootstrap import reset_context_catalog_bootstrap_for_tests
+from intergrax.runtime.nexus.context.codebase_engine import CodebaseContextEngine
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
+from intergrax.runtime.nexus.context.preset_engines import (
+    ExploreChildContextEngine,
+    RegulatedMinimalContextEngine,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -32,8 +37,19 @@ def test_resolve_context_engine_default_preset() -> None:
     assert len(engine.registry.list_providers()) >= 10
 
 
-def test_resolve_custom_engine_ref_raises() -> None:
+def test_resolve_preset_engines() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="ce.engine")
-    env.context_profile = ContextProfile(engine_preset="custom", engine_ref="pkg.Engine")
-    with pytest.raises(ValueError, match="not wired"):
-        resolve_context_engine_from_environment(env)
+    env.context_profile = ContextProfile(engine_preset="regulated_minimal")
+    assert isinstance(resolve_context_engine_from_environment(env), RegulatedMinimalContextEngine)
+    env.context_profile = ContextProfile(engine_preset="explore_child")
+    assert isinstance(resolve_context_engine_from_environment(env), ExploreChildContextEngine)
+
+
+def test_resolve_custom_engine_ref() -> None:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="ce.engine")
+    env.context_profile = ContextProfile(
+        engine_preset="custom",
+        engine_ref="intergrax.runtime.nexus.context.codebase_engine.CodebaseContextEngine",
+    )
+    engine = resolve_context_engine_from_environment(env)
+    assert isinstance(engine, CodebaseContextEngine)
