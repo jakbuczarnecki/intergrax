@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-12-006 | 2026-06-12 | tier-0, tier-3 CONTEXT_ENGINEERING | CE-1.1 · CE-1.2 · CE-1.3 · CE-1.4 · CE-1.6 · CE-2.6 | [CE Sprint 1 — Tier-0 contracts and ContextProfile engine fields](entries/2026-06-12/platform-ce-sprint1-contracts-profile.md) | pending |
 | IJ-2026-06-11-049 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-PROD-6 | [Sprint 24 APP-PROD-6 environment state usage gate](entries/2026-06-11/tier3-sprint24-app-prod-6-env-state-usage-gate.md) | pending |
 | IJ-2026-06-11-048 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-CON-DX.1 · APP-CON-DX.2 | [Sprint 23 APP-CON-DX author guide and audit](entries/2026-06-11/tier3-sprint23-app-con-dx-author-audit.md) | pending |
 | IJ-2026-06-11-047 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-OPS-4 | [Sprint 22 APP-OPS-4 registry CLI](entries/2026-06-11/tier3-sprint22-app-ops-4-registry-cli.md) | pending |

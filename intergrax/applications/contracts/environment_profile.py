@@ -7,7 +7,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.contracts.autonomy_level import AutonomyLevel
@@ -90,6 +90,11 @@ class GuardrailProfile(BaseModel):
     inference_slug: str | None = None
 
 
+ContextEnginePreset = Literal[
+    "default", "codebase", "regulated_minimal", "explore_child", "custom"
+]
+
+
 class ContextDecisionProfile(BaseModel):
     """Unified memory vs context vs RAG assembly policy (Phase MEM-CTX.1)."""
 
@@ -112,7 +117,7 @@ class PromptProfile(BaseModel):
 
 
 class ContextProfile(BaseModel):
-    """Context assembly defaults for Nexus (Phase H-APP.4.1)."""
+    """Context assembly defaults for Nexus (Phase H-APP.4.1, CE-2.6)."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -121,12 +126,28 @@ class ContextProfile(BaseModel):
     )
     budget_policy: ContextBudgetPolicy | None = None
     decision: ContextDecisionProfile = Field(default_factory=ContextDecisionProfile)
+    engine_preset: ContextEnginePreset = "default"
+    engine_ref: str | None = None
+    context_plugin_ids: list[str] = Field(default_factory=list)
     enable_rag: bool = True
     enable_websearch: bool = True
     drift_monitoring_enabled: bool = False
     drift_alert_threshold: float = Field(default=0.35, ge=0.0, le=2.0)
     semantic_compression_enabled: bool = False
     default_history_compression: Literal["truncate_oldest", "summarize_oldest", "hybrid"] = "truncate_oldest"
+
+    @field_validator("context_plugin_ids")
+    @classmethod
+    def _normalize_plugin_ids(cls, value: list[str]) -> list[str]:
+        return [item.strip().lower() for item in value if item.strip()]
+
+    @field_validator("engine_ref")
+    @classmethod
+    def _strip_engine_ref(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        return stripped or None
 
 
 class MemoryProfile(BaseModel):

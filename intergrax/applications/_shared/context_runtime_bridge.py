@@ -10,6 +10,8 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.runtime.nexus.config import RuntimeConfig
 
+CONTEXT_ENGINE_PROFILE_METADATA_KEY = "context_engine_profile.v1"
+
 
 def apply_context_profile_to_runtime_config(
     config: RuntimeConfig,
@@ -34,6 +36,11 @@ def apply_context_profile_to_runtime_config(
         }
     if context.decision.max_memory_entries_in_context != config.max_longterm_entries_per_query:
         config.max_longterm_entries_per_query = context.decision.max_memory_entries_in_context
+    config.metadata[CONTEXT_ENGINE_PROFILE_METADATA_KEY] = {
+        "engine_preset": context.engine_preset,
+        "engine_ref": context.engine_ref,
+        "context_plugin_ids": list(context.context_plugin_ids),
+    }
     derive_run_budget_from_context_policy(config)
     return config
 

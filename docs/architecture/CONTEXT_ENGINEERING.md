@@ -229,8 +229,9 @@ class AssembledContext:
 | `AgentContextBundle` | `context_manager.py` | **Shipped** — graph path |
 | `ContextProvenance` | `context_models.py` | **Shipped** |
 | `ContextChunkSignal` | `context_engineering.py` | **Shipped** — quality eval only |
-| `ContextAssemblyRequest` | — | **Planned CE-4** |
-| `ContextFragment` | — | **Planned CE-1** |
+| `ContextAssemblyRequest` | `intergrax/context/contracts.py` | **Shipped** (CE-1.2) — step fields populated in CE-4 |
+| `ContextFragment` | `intergrax/context/contracts.py` | **Shipped** (CE-1.1) |
+| `ContextPluginRegistry` | `intergrax/context/registry.py` | **Shipped** (CE-1.4) |
 
 ---
 
@@ -718,7 +719,10 @@ profile = ApplicationEnvironmentProfile(
 | `intergrax/applications/_shared/context_runtime_bridge.py` | 3 | Profile → RuntimeConfig |
 | `intergrax/applications/_shared/context_wiring.py` | 3 | Profile → Nexus |
 | `intergrax/agents/uaep.py` | 2 bridge | UAEP `BEFORE_CONTEXT_BUILD` + `CONTEXT_BUILT` |
-| `intergrax/context/` | 0 | **Target** — contracts + plugin registry (CE-1) |
+| `intergrax/context/contracts.py` | 0 | Tier-0 contracts (CE-1.1–1.2) **Shipped** |
+| `intergrax/context/protocols.py` | 0 | Plugin protocols (CE-1.3) **Shipped** |
+| `intergrax/context/registry.py` | 0 | Plugin catalog (CE-1.4) **Shipped** |
+| `intergrax/context/plugin.py` | 0 | `register_context_plugin()` (CE-1.4) **Shipped** |
 
 ---
 
