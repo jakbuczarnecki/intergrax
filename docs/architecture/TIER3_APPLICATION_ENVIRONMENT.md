@@ -1903,7 +1903,7 @@ OrgEnvelopeMigration:
 - `ProfileMigration` runs before `GraphSpecMigration` before `OrgEnvelopeMigration` (dependency order).
 - Partial migrations are forbidden in STRICT — all three digests must match target snapshot (§49.1.2).
 
-**Status:** typed sub-migrations **Planned** APP-EVOL-2b (extends APP-EVOL-2).
+**Status:** `ApplicationMigration` + typed sub-migrations **Done** (`APP-EVOL-2` · `APP-EVOL-2b` · `application_migration.py` · `check_application_migrations.py`).
 
 ---
 
@@ -2149,7 +2149,7 @@ graph_spec nodes            → roster capabilities satisfied
 | ID | Deliverable | Status | Acceptance |
 |----|-------------|--------|------------|
 | APP-EVOL-1 | `EnvironmentSnapshot` + snapshot capture on intake | **Done** | `test_environment_snapshot_wiring.py` · ADR-APP-002 |
-| APP-EVOL-2 | `ApplicationMigration` schema + validator CLI | Planned | CI fails on breaking change without migration |
+| APP-EVOL-2 | `ApplicationMigration` schema + validator CLI | **Done** | `check_application_migrations.py` |
 | APP-EVOL-3 | `CapabilityAlias` registry + sunset routing | Planned | deprecated capability redirect test |
 | APP-EVOL-4 | `AgentCertification` + STRICT roster gate | Planned | non-PRODUCTION blocked in product hosts |
 | APP-EVOL-5 | `ApplicationRecoveryContract` on `ReliabilityProfile` | Planned | documented + integration test |
@@ -2446,7 +2446,7 @@ EnvironmentDeployment:
 | APP-OPS-2 | `ApplicationOperationalOwnership` on manifest + APP-PROD gate | **Done** | `check_application_ownership.py` |
 | APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | Planned | score artifact on release tag |
 | APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | Planned | `apps list` / `envs list` |
-| APP-EVOL-2b | `ProfileMigration` / `GraphSpecMigration` / `OrgEnvelopeMigration` | Planned | typed validators in CI |
+| APP-EVOL-2b | `ProfileMigration` / `GraphSpecMigration` / `OrgEnvelopeMigration` | **Done** | `migration_wiring.py` typed validators |
 
 **Architecture freeze boundary:** after APP-OPS-1..4 **Done**, Tier-3 canon is **feature-complete** for reference platform; remaining work is implementation, not structural redesign.
 

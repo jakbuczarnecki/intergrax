@@ -48,7 +48,7 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 | §46 | Production readiness criteria | APP-PROD-* · ACP-PROD-* | **Partial** | §46 + agent gates |
 | §47 | Developer mental model | APP-CON-DX.1 | **Partial** | *doc-only* in arch |
 | §48 | Application artifacts | APP-CON-4 · APP-CON-6 | **Done** | `application_artifacts.py` · `run_artifact_bundle.v1` on summary |
-| §49 | Runtime evolution | APP-EVOL-1..7 · APP-EVOL-2b | **Partial** | APP-EVOL-1 **Done** · §49.8 register |
+| §49 | Runtime evolution | APP-EVOL-1..7 · APP-EVOL-2b | **Partial** | APP-EVOL-1/2/2b **Done** · §49.8 register |
 | §50 | Platform operations | APP-OPS-1..4 | **Partial** | APP-OPS-1 **Done** · `capability_graph_deploy_gate.py` |
 | §51 | Cross-doc consistency | H-APP-FREEZE-* | **Done** | `GOVERNANCE_CONSISTENCY_AUDIT.md` |
 
@@ -92,8 +92,8 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 | ID | Deliverable | Status | Acceptance |
 |----|-------------|--------|------------|
 | APP-EVOL-1 | `EnvironmentSnapshot` + intake `profile_snapshot_id` | **Done** | `test_environment_snapshot_wiring.py` · ADR-APP-002 |
-| APP-EVOL-2 | `ApplicationMigration` schema + CI validator | Planned | breaking bump requires migration ref |
-| APP-EVOL-2b | `ProfileMigration` / `GraphSpecMigration` / `OrgEnvelopeMigration` | Planned | typed validators per §49.2.4 |
+| APP-EVOL-2 | `ApplicationMigration` schema + CI validator | **Done** | `application_migration.py` · `check_application_migrations.py` |
+| APP-EVOL-2b | `ProfileMigration` / `GraphSpecMigration` / `OrgEnvelopeMigration` | **Done** | `migration_wiring.py` typed validators per §49.2.4 |
 | APP-EVOL-3 | `CapabilityAlias` + deprecation routing | Planned | UAEP §42.27 + alias window test |
 | APP-EVOL-4 | `AgentCertification` + STRICT roster gate | Planned | non-PRODUCTION blocked in product hosts |
 | APP-EVOL-5 | `ApplicationRecoveryContract` on `ReliabilityProfile` | Planned | product ARCHITECTURE template + test |
@@ -172,7 +172,7 @@ Recommended PR sequence — one APP ID per PR:
 9.  APP-OPS-1       capability graph STRICT deploy gate — **Done**
 10. APP-OPS-2       application ownership on manifest — **Done**
 11. APP-CON-7       scenario matrix tests — **Done**
-12. APP-EVOL-2/2b   migrations
+12. APP-EVOL-2/2b   migrations — **Done**
 13. APP-EVOL-3..7   evolution + packaging
 14. APP-OPS-3/4     health score + registries
 15. APP-CON-DX.*    author guide + audit prompt
@@ -500,7 +500,7 @@ uv run pytest -m gate -q
 |----|-------------|--------|----------|------------|
 | H-APP-EVOL-DOC.1 | Architecture §49 Runtime Evolution and Governance | **Done** | **Critical** | `architecture/TIER3_APPLICATION_ENVIRONMENT.md` |
 | APP-EVOL-1 | `EnvironmentSnapshot` + intake `profile_snapshot_id` | **Done** | **Critical** | `test_environment_snapshot_wiring.py` |
-| APP-EVOL-2 | `ApplicationMigration` schema + CI validator | Planned | High | breaking bump requires migration ref |
+| APP-EVOL-2 | `ApplicationMigration` schema + CI validator | **Done** | High | `check_application_migrations.py` |
 | APP-EVOL-3 | `CapabilityAlias` + deprecation routing | Planned | High | UAEP §42.27 + alias window test |
 | APP-EVOL-4 | `AgentCertification` + STRICT roster gate | Planned | High | non-PRODUCTION blocked |
 | APP-EVOL-5 | `ApplicationRecoveryContract` on profile | Planned | High | product ARCHITECTURE template |
@@ -525,7 +525,7 @@ uv run pytest -m gate -q
 | APP-OPS-2 | `ApplicationOperationalOwnership` + APP-PROD | **Done** | High | `check_application_ownership.py` |
 | APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | Planned | High | release score artifact |
 | APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | Planned | Medium | `apps list` / `envs list` |
-| APP-EVOL-2b | Typed migration validators | Planned | High | CI per primitive |
+| APP-EVOL-2b | Typed migration validators | **Done** | High | `migration_wiring.py` per primitive |
 
 **Freeze declaration:** Tier-3 **structural architecture** is complete at §51. Further work is APP-* implementation only — no new composition primitives without ADR.
 
