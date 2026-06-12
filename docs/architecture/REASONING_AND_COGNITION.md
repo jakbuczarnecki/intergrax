@@ -56,17 +56,19 @@ RCL completes the **Think → Plan → Decide** path that precedes orchestrated 
 
 Intergrax already implements substantial cognition mechanics, but until this domain pair they were **documented only as fragments** across orchestration flow, UAEP, LLM adapters, and prompt registry docs. Gaps vs production-grade Harness AI and FAUDIT-32 §7:
 
-| Gap | Impact |
+| Gap (pre-RCL) | Status after COG-DEPTH / COG-PROD |
 |-----|--------|
-| No single canon for cognition plane | Authors cannot find planner / classifier / decision contracts in one place |
-| `planner_kind=engine` uses ad-hoc LLM prompt | Not routed through Prompt Registry; weak governance |
-| `EnginePlannerOrchestrator` bridged, not first-class Nexus path | Two planner stacks (`NexusPlan` vs `EnginePlan`) with incomplete unification |
-| Nexus-level decisions lack universal `DecisionRecord` | FAUDIT-COG.1 closed for UAEP steps only; planning phase rationale partial |
-| No explicit reasoning failure taxonomy | Planning parse errors, policy blocks, and runtime failures conflated in ops |
+| No single canon for cognition plane | **Closed** — this domain pair (COG-DOC) |
+| `planner_kind=engine` ad-hoc LLM prompt | **Closed** — `nexus_task_planner` registry id (COG-2.1); user context via template (COG-PROD.2) |
+| Dual planner stacks (`NexusPlan` vs `EnginePlan`) | **Closed** — `EnginePlan` retired (ACP-CLOSE-LEG-5); `NexusPlan` is sole task contract; legacy trace types only |
+| Nexus-level `DecisionRecord` | **Closed** — `PLAN_CREATED` + `DECISION_EMITTED` at planning boundary (COG-4.*); enriched metadata (COG-PROD.3) |
+| Reasoning failure taxonomy | **Closed** — `ReasoningFailureKind` enum + trace metadata (COG-6.*) |
 | Classifier surface | **Done** — `classifier_kind=rules|llm` + `IntentRoute` (ORCH-CONFIG.1, COG-3.*) |
-| Model routing for reasoning not policy-unified | FAUDIT-LLM.1 residual — planner LLM ≠ producer LLM discipline incomplete at Nexus boundary |
+| Model routing for reasoning | **Partial → COG-PROD** — deny gate shipped (COG-5.3); separate planner adapter via `ReasoningProfile.planner_llm_profile` (COG-PROD.1) |
+| `planner_parse_retries` on profile | **COG-PROD.2** — wired on unified LLM parse path |
+| `resolve_engine_planner_prompt_config()` | **COG-PROD.3** — agent-level engine prompt binding |
 
-RCL closes the **documentation and contract boundary** gap first; runtime depth uplift is tracked in [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_AND_COGNITION.md) Phase COG-DEPTH.
+Runtime depth uplift: Phase **COG-DEPTH** (closed 2026-06-09) · production hardening: Phase **COG-PROD** in [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_AND_COGNITION.md).
 
 ---
 
@@ -224,7 +226,7 @@ Classification is the **first cognition decision** on every Nexus task. It const
 
 **Module:** `intergrax/runtime/nexus/task_classifier.py`  
 **Runner integration:** `NexusPlanningRunner.run()` after intake hooks  
-**Wiring:** `OrchestrationProfile.classifier_kind` → `default` only (`orchestration_wiring.py`)
+**Wiring:** `OrchestrationProfile.classifier_kind` → `default` | `rules` | `llm` (`orchestration_wiring.py` · ORCH-CONFIG.1 · COG-3.*)
 
 ### 9.1 Classification labels
 
@@ -273,7 +275,7 @@ flowchart TD
 | Classification | lifecycle hook diagnostics | `ops:planning` |
 | | payload includes `classification` | |
 
-**Partial (ORCH-CONFIG.1):** `classifier_kind=rules` + `IntentRoute` on `OrchestrationProfile`. **Future (COG-3.*):** LLM-backed classifier, confidence scores on classification.
+**Done (ORCH-CONFIG.1 · COG-3.*):** `classifier_kind=rules|llm` + `IntentRoute` on `OrchestrationProfile`; LLM classifier falls back to deterministic rules on parse failure; classification trace includes confidence + rationale when available.
 
 ### 9.4 Orchestration routing modes (do not confuse with `TaskClassification`)
 
@@ -379,12 +381,10 @@ class NexusPlan(BaseModel):
 
 `EngineBackedNexusPlanner` (`orchestration_wiring.py`) delegates to `build_nexus_plan_from_llm()`:
 
-1. Build prompt listing routable `agent_id` values and task metadata
-2. Call `LLMAdapter.generate_messages`
-3. Parse JSON `{"steps":[{"agent_id","description","depends_on"}]}`
-4. On any validation failure → `TaskPlanner.plan()` fallback
-
-**Technical debt:** prompt is inline string — target: Prompt Registry id `nexus.task_planner.v1` (COG-2.1).
+1. Resolve prompt via `nexus_planner_prompts.nexus_task_planner_prompt()` — registry id `nexus_task_planner` (system + `user_template` variables)
+2. Call planner `LLMAdapter.generate_messages` (producer-separated when `ReasoningProfile.planner_llm_profile` set — §16)
+3. Parse JSON `{"steps":[{"agent_id","description","depends_on"}]}` with optional `planner_parse_retries` (COG-PROD.2)
+4. On any validation failure → `TaskPlanner.plan()` fallback; annotate `ReasoningFailureKind` on metadata
 
 ### 10.5 Planning phase runner
 
@@ -530,7 +530,7 @@ class DecisionRecord(BaseModel):
 
 **Agent loop:** `on_next_step` owns intra-run cognition (tools, replan, HITL). **Nexus loop:** owns multi-agent graphs, capability routing, merge policy. Do not implement private multi-agent graphs inside `on_next_step` (ACP-AP-01).
 
-**Gap (COG-4.*):** Nexus planning phase does not yet emit `DecisionRecord` for classification/planner choice — only governed agent steps.
+**Planning phase (COG-4.* · COG-PROD.3):** `NexusPlanningRunner` emits `DECISION_EMITTED` with `decision_type=nexus_planning` after `PLAN_CREATED` — includes `classification`, `planner_source`, `used_fallback`, `failure_kind`, and `policy_action` when policy evaluated.
 
 ---
 
@@ -548,7 +548,7 @@ Cognition quality depends on layered prompt assembly. Prompt **assets** are gove
 
 **Requirements (audit §7):**
 
-- No ad-hoc string assembly for production planners (target)
+- Nexus/tool/engine planner prompts resolve from Prompt Registry ids on `ReasoningProfile` — CI: `check_reasoning_gates.py`
 - Golden catalog regression — `check_harness_prompt_golden_catalog.py`
 - Tier-3 `PromptProfile` selects catalog path per host
 
@@ -560,12 +560,12 @@ Cognition quality depends on layered prompt assembly. Prompt **assets** are gove
 
 Reasoning MAY use a different LLM profile than the producing agent — especially for planners and tool loops.
 
-| Surface | Today | Target |
-|---------|-------|--------|
-| Nexus LLM planner | Same adapter as wiring context | Optional dedicated planner model via `ReasoningProfile` (COG-5.*) |
-| Tool planner | Service-bound `LLMAdapter` | Profile-driven |
+| Surface | Production path | Profile / policy |
+|---------|-----------------|------------------|
+| Nexus LLM planner | `resolve_planner_llm_adapter()` — separate adapter when `ReasoningProfile.planner_llm_profile` set; else producer adapter (COG-PROD.1) | `planner_llm_profile_id` for deny-list policy (COG-5.3) |
+| Tool planner | `resolve_tool_planning_config()` from `tool_planner_prompt_id` | `ToolPlanningConfig` + registry |
 | UAEP agent steps | Agent `LLMProfile` | Unchanged |
-| CVL judge | Separate critic profile | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
+| CVL judge | `resolve_critic_llm_adapter()` | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
 
 **Related:** FAUDIT-LLM.1 policy-driven routing — [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md), [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md) routing proposals.
 
@@ -589,7 +589,7 @@ Classify failures **before** orchestration retry logic conflates them:
 | **Tool plan failure** | `COG-TOOL-PLAN` | Tool planner error | Step retry / fail | Tool registry / prompt |
 | **Decision record missing** | `COG-DECISION-GATE` | UAEP path skipped emit | Gate test fail | Fix AgentEngine path |
 
-**Target (COG-6.*):** explicit `ReasoningFailureKind` enum on trace events — today inferred from lifecycle + hook payloads.
+**Shipped (COG-6.*):** `ReasoningFailureKind` enum on `plan_metadata`, task metadata, and `DECISION_EMITTED` payloads when planners fall back or policy blocks.
 
 ---
 
@@ -601,7 +601,8 @@ Classify failures **before** orchestration retry logic conflates them:
 | Classification | hook diagnostics | `ops:planning` | `classification` |
 | Planning | `PLAN_CREATED` | `ops:planning` | `plan_id`, `step_count` |
 | UAEP step | `STEP_STARTED` / `STEP_COMPLETED` | `trace:step` | step index |
-| UAEP decision | `DECISION_EMITTED` | `ops:planning` | `decision_record` |
+| Planning decision | `DECISION_EMITTED` | `ops:planning` | `decision_record` (phase: planning) |
+| UAEP decision | `DECISION_EMITTED` | `trace:decision` | `decision_record` (phase: step_execution) |
 | Tool plan | tool planner traces | `ops:tools` | tool ids selected |
 
 **SLO hooks:** planning latency, planner fallback rate, LLM parse error rate — Phase COG-OBS.* in plan.
@@ -697,10 +698,12 @@ sequenceDiagram
 | Rules classifier (`classifier_kind=rules`) | L3 | **Done** | ORCH-CONFIG.1 · COG-3.1 |
 | LLM classifier (`classifier_kind=llm`) | L2 | **Done** | COG-3.2–3.3 |
 | Reasoning failure taxonomy in trace | L3 | **Done** | COG-6.* |
-| Model routing for reasoning | L3 | **Done** | COG-5.* |
-| **Overall RCL (FAUDIT-32 §7)** | **L3+** | **Done** | Phase COG-DEPTH (2026-06-09) |
+| Model routing for reasoning | L3 | **Done** | COG-5.* · COG-PROD.1 |
+| Planner parse retry budget | L3 | **Done** | COG-PROD.2 |
+| Engine planner prompt binding | L3 | **Done** | COG-PROD.3 |
+| **Overall RCL (FAUDIT-32 §7)** | **L3+** | **Done** | COG-DEPTH + COG-PROD |
 
-**Post-COG-DEPTH:** P0/P1/P2 complete; incremental L4 depth remains maintenance-only.
+**Post-COG-PROD:** Typed reasoning plane production-ready at L3+; L4 adaptive planner selection remains AHI scope (observe-only default).
 
 All implementation tasks: [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_AND_COGNITION.md).
 
@@ -733,10 +736,13 @@ All implementation tasks: [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_
 | `runtime/nexus/task_classifier.py` | 1 | 1 | Task classification |
 | `runtime/nexus/orchestration/planning_runner.py` | 1 | 1 | Planning phase orchestration |
 | `runtime/nexus/planning/task_planner.py` | 1 | 1 | `NexusPlan`, `TaskPlanner` |
-| `runtime/nexus/planning/nexus_llm_plan_builder.py` | 1 | 1 | LLM → `NexusPlan` bridge |
+| `runtime/nexus/planning/nexus_llm_plan_builder.py` | 1 | 1 | LLM → `NexusPlan` entry (`planner_kind=engine`) |
+| `runtime/nexus/planning/nexus_plan_bridge.py` | 1 | 1 | Unified parse/validate + `PlannerBuildDebug` |
+| `runtime/nexus/planning/nexus_planner_prompts.py` | 1 | 1 | Registry-backed planner prompt resolution |
 | `runtime/nexus/planning/nexus_planner_protocol.py` | 1 | 1 | Planner protocol |
-| `runtime/nexus/planning/nexus_llm_plan_builder.py` | 1 | 2 | Nexus `planner_kind=engine` JSON bridge |
-| *(retired)* `nexus_llm_plan_builder.py` | — | — | Removed ACP-CLOSE-LEG-5 |
+| `applications/_shared/reasoning_wiring.py` | 3 | 1 | `ReasoningProfile` → tool/engine/planner LLM wiring |
+| `contracts/reasoning_profile.py` | 0 | — | `ReasoningProfile` contract |
+| `contracts/reasoning_failure.py` | 0 | — | `ReasoningFailureKind` taxonomy |
 | `runtime/nexus/planning/step_planner/` | 1 | 2 | Step plan strategies |
 | `runtime/nexus/tools/catalog_tool_planner.py` | 1 | 3 | Tool planning |
 | `runtime/nexus/tools/tool_planning_service.py` | 1 | 3 | Tool plan LLM service |
@@ -759,12 +765,22 @@ From `ApplicationEnvironmentProfile.orchestration_profile`:
 | Field | Type | Cognition effect |
 |-------|------|------------------|
 | `planner_kind` | `str \| null` | `default` → `TaskPlanner`; `engine` → LLM planner |
-| `classifier_kind` | `str \| null` | `default` → `TaskClassifier` |
+| `classifier_kind` | `str \| null` | `default` \| `rules` \| `llm` |
 | `multi_agent_order` | `str` | Agent ordering in MULTI_AGENT plans |
-| `allow_dynamic_replan` | `bool` | Engine replan loops (partial) |
+| `allow_dynamic_replan` | `bool` | Agent `on_next_step` replan boundary (AUDIT-IDEAL-7.2) |
 | `merge_strategy` | `str` | **Orchestration** — post-execution merge, not planning |
 
-**Future `ReasoningProfile` (COG-5.1):** dedicated planner LLM id, parse retry budget, prompt registry ids, classification mode — proposed Tier-3 profile; not shipped.
+### ReasoningProfile (`ApplicationEnvironmentProfile.reasoning_profile`)
+
+| Field | Cognition effect |
+|-------|------------------|
+| `planner_llm_profile` | Optional separate `LLMProfile` for Nexus/tool planners (COG-PROD.1) |
+| `planner_llm_profile_id` | Policy deny-list key + observability label |
+| `planner_prompt_id` | Nexus LLM planner registry id (default `nexus_task_planner`) |
+| `planner_parse_retries` | LLM JSON parse retry budget on unified bridge (COG-PROD.2) |
+| `tool_planner_prompt_id` | Tool catalog planner prompt id |
+| `engine_planner_prompt_id` | Agent-level engine step planner id (`planner_default`, …) |
+| `denied_planner_model_ids` | Planning-phase model deny via `PolicyEngine` (COG-5.3) |
 
 ### Authoring patterns
 
