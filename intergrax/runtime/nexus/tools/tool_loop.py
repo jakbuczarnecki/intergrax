@@ -5,7 +5,9 @@
 from __future__ import annotations
 
 import json
+import threading
 from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING
 
 from intergrax.llm.messages import ChatMessage
@@ -14,6 +16,7 @@ from intergrax.runtime.nexus.budget.budget_ticks import enforce_tool_call_budget
 from intergrax.runtime.nexus.config_types import ToolInvocationMode
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState, ToolCallTrace
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.runtime.nexus.tools.tool_invocation_aggregate import ToolInvocationAggregate
 from intergrax.runtime.nexus.tools.tool_invocation_pattern import (
     ToolInvocationPattern,
     ToolInvocationResult,
@@ -49,42 +52,109 @@ def _tool_call_openai_dict(tool_call: LLMToolCall) -> dict[str, object]:
     }
 
 
+def _invoke_planned_call(
+    *,
+    state: RuntimeState,
+    invoker: RuntimeToolInvoker,
+    call: PlannedToolCall,
+    index: int,
+    idempotency_prefix: str,
+    invoke_lock: threading.Lock | None = None,
+) -> ToolCallTrace:
+    req = ToolExecutionRequest(
+        run_id=state.run_id,
+        step_id=call.step_id or f"tool-{index}",
+        tool_id=call.tool_id,
+        input=call.input,
+        idempotency_key=f"{idempotency_prefix}:{call.tool_id}:{index}",
+    )
+    result = invoker.invoke(state=state, request=req, agent_id=state.request.agent_id)
+    trace = _trace_from_result(call, result)
+    if invoke_lock is not None:
+        with invoke_lock:
+            enforce_tool_call_budget(state)
+    else:
+        enforce_tool_call_budget(state)
+    return trace
+
+
+def _trace_from_result(call: PlannedToolCall, result: object) -> ToolCallTrace:
+    if result.success:
+        output_preview = result.output.model_dump_json()[:400]
+        error_msg = None
+    else:
+        output_preview = None
+        error_msg = result.error.error_message
+    return ToolCallTrace(
+        tool_name=call.tool_id,
+        arguments=call.input.model_dump(),
+        output_preview=output_preview,
+        success=result.success,
+        error_message=error_msg,
+        raw_trace={},
+    )
+
+
+def _call_has_side_effects(invoker: RuntimeToolInvoker, call: PlannedToolCall) -> bool:
+    return invoker.registry.get(call.tool_id).contract.side_effects
+
+
 def execute_planned_tool_calls(
     *,
     state: RuntimeState,
     invoker: RuntimeToolInvoker,
     calls: Sequence[PlannedToolCall],
     idempotency_prefix: str,
+    max_parallel_read_only: int = 1,
 ) -> list[ToolCallTrace]:
-    traces: list[ToolCallTrace] = []
-    for index, call in enumerate(calls):
-        req = ToolExecutionRequest(
-            run_id=state.run_id,
-            step_id=call.step_id or f"tool-{index}",
-            tool_id=call.tool_id,
-            input=call.input,
-            idempotency_key=f"{idempotency_prefix}:{call.tool_id}:{index}",
-        )
-        result = invoker.invoke(state=state, request=req, agent_id=state.request.agent_id)
-        if result.success:
-            output_preview = result.output.model_dump_json()[:400]
-            error_msg = None
-        else:
-            output_preview = None
-            error_msg = result.error.error_message
-
-        traces.append(
-            ToolCallTrace(
-                tool_name=call.tool_id,
-                arguments=call.input.model_dump(),
-                output_preview=output_preview,
-                success=result.success,
-                error_message=error_msg,
-                raw_trace={},
+    if not calls:
+        return []
+    if max_parallel_read_only <= 1:
+        return [
+            _invoke_planned_call(
+                state=state,
+                invoker=invoker,
+                call=call,
+                index=index,
+                idempotency_prefix=idempotency_prefix,
             )
+            for index, call in enumerate(calls)
+        ]
+
+    indexed = list(enumerate(calls))
+    results: dict[int, ToolCallTrace] = {}
+    read_only = [(index, call) for index, call in indexed if not _call_has_side_effects(invoker, call)]
+    mutating = [(index, call) for index, call in indexed if _call_has_side_effects(invoker, call)]
+
+    if read_only:
+        invoke_lock = threading.Lock()
+        workers = min(max_parallel_read_only, len(read_only))
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = {
+                pool.submit(
+                    _invoke_planned_call,
+                    state=state,
+                    invoker=invoker,
+                    call=call,
+                    index=index,
+                    idempotency_prefix=idempotency_prefix,
+                    invoke_lock=invoke_lock,
+                ): index
+                for index, call in read_only
+            }
+            for future in as_completed(futures):
+                results[futures[future]] = future.result()
+
+    for index, call in mutating:
+        results[index] = _invoke_planned_call(
+            state=state,
+            invoker=invoker,
+            call=call,
+            index=index,
+            idempotency_prefix=idempotency_prefix,
         )
-        enforce_tool_call_budget(state)
-    return traces
+
+    return [results[index] for index in range(len(calls))]
 
 
 def append_native_tool_messages(
@@ -169,27 +239,14 @@ def inject_tool_traces_system_context(
     traces: Sequence[ToolCallTrace],
     *,
     runtime_context_prompt: str,
+    aggregate: ToolInvocationAggregate | None = None,
 ) -> None:
-    if not traces:
+    if aggregate is not None:
+        tools_context_for_llm = aggregate.combined_context
+    elif traces:
+        tools_context_for_llm = ToolInvocationAggregate.from_traces(traces).combined_context
+    else:
         return
-    tool_lines: list[str] = []
-    for trace in traces:
-        tool_lines.append(f"Tool '{trace.tool_name}' was called.")
-        if trace.arguments:
-            try:
-                args_str = json.dumps(trace.arguments, ensure_ascii=False)
-            except Exception:
-                args_str = str(trace.arguments)
-            tool_lines.append(f"Arguments: {args_str}")
-        if trace.output_preview:
-            tool_lines.append("Output:")
-            tool_lines.append(trace.output_preview)
-        if trace.error_message:
-            tool_lines.append("Error:")
-            tool_lines.append(trace.error_message)
-        tool_lines.append("")
-
-    tools_context_for_llm = "\n".join(tool_lines).strip()
     if not tools_context_for_llm:
         return
     insert_at = len(state.messages_for_llm) - 1

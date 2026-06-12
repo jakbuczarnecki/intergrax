@@ -195,6 +195,9 @@ class RuntimeConfig:
     # Orchestration pattern for multi-call batches (TOOL-ENG-21). None → infer from max_tool_iterations.
     tool_invocation_mode: Optional[ToolInvocationMode] = None
 
+    # Max concurrent read-only tool invocations per batch (TOOL-ENG-9). 1 = always serial.
+    max_parallel_tool_calls: int = 8
+
     tool_invoker: Optional[RuntimeToolInvoker] = None
 
     idempotency_store: Optional[IdempotencyStore] = None

@@ -29,6 +29,14 @@ def test_bridge_maps_tool_invocation_mode() -> None:
     assert config.tool_invocation_mode == ToolInvocationMode.BOUNDED_REACT
 
 
+def test_bridge_maps_max_parallel_tool_calls() -> None:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="lab.test").model_copy(
+        update={"max_parallel_tool_calls": 4},
+    )
+    config = apply_tool_engine_settings_from_environment(_config(), env)
+    assert config.max_parallel_tool_calls == 4
+
+
 def test_bridge_falls_back_on_invalid_invocation_mode() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="lab.test").model_copy(
         update={"tool_invocation_mode": "not_a_real_mode"},

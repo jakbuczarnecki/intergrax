@@ -46,6 +46,7 @@ def apply_tool_engine_settings_from_environment(
         config.tool_invocation_mode = ToolInvocationMode(env.tool_invocation_mode)
     except ValueError:
         config.tool_invocation_mode = ToolInvocationMode.SINGLE_PASS
+    config.max_parallel_tool_calls = env.max_parallel_tool_calls
     return config
 
 

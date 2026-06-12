@@ -44,7 +44,7 @@
 | `tools_context_scope` | **Done** | TOOL-ENG-11 | `tool_planner_input.py` |
 | `ToolInvocationPattern` plugin | **Done** | TOOL-ENG-16 | S1 — ADR-TOOL-003 |
 | Shipped patterns (single / ReAct) | **Done** | TOOL-ENG-17–18,21–23 | S2–S3 |
-| Parallel batch + aggregate | **In progress** | TOOL-ENG-9,29 | S4 |
+| Parallel batch + aggregate | **Done** | TOOL-ENG-9,29 | S4 |
 | Chain / semantic composite | **Gap** | TOOL-ENG-20,25 | S5–S7 |
 | Semantic / hierarchical selection | **Gap** | TOOL-ENG-13/14 | L6 at scale |
 | Selection strategy plugins | **Gap** | TOOL-ENG-26/31 | Entry points + config inject |
@@ -84,7 +84,7 @@ Sprints close **Phase TOOL-ENG** remaining rows. One sprint ≈ one PR; update p
 | **S7** | TOOL-ENG-20,24,27,28,30 | Chain pattern + entry points + CI + lab DX | `check_tool_invocation_patterns.py` green | `patterns/deterministic_chain.py`, `applications/lab_application/` |
 | **S8** | TOOL-ENG-7,8,12,10 | Governance closeout | Required-mode fail + HIGH verify | `tools_step.py`, `tool_verify_hooks.py` |
 
-**Current execution:** S0–S3 **Done** (2026-06-12) · **S4 in progress** (TOOL-ENG-29,9).
+**Current execution:** S0–S4 **Done** (2026-06-12) · next **S5** (TOOL-ENG-13,25).
 
 ### S4 implementation spec (2026-06-12)
 
@@ -106,7 +106,7 @@ Sprints close **Phase TOOL-ENG** remaining rows. One sprint ≈ one PR; update p
 
 ## Phase TOOL-ENG — Tool engine hardening (2026-06-10 audit · extended 2026-06-12)
 
-**Status:** **Active** — **19/36** deliverables Done (TOOL-ENG-0–6,11,16–18,21–23, TOOL-ENG-TEST.1, TOOL-ENG-DOC.4–7 — 2026-06-12)  
+**Status:** **Active** — **21/36** deliverables Done (TOOL-ENG-0–6,9,11,16–18,21–23,29, TOOL-ENG-TEST.1, TOOL-ENG-DOC.4–7 — 2026-06-12)  
 **Architecture canon:** [`architecture/TOOLS.md`](../architecture/TOOLS.md) — [Tool engine production posture](../architecture/TOOLS.md#tool-engine-production-posture-2026-06-10), [Invocation patterns](../architecture/TOOLS.md#tool-invocation-patterns-production-orchestration), [Engine gap register](../architecture/TOOLS.md#engine-gap-register-canon)  
 **Audit basis:** Full-stack tool layer audit 2026-06-10 (Tier-0 catalog + Tier-1 selection/invoke/verify) · **Invocation-pattern audit 2026-06-12** (single / parallel / chain / graph + plugin contract)  
 **Priority ladder:** **Band 2ba** — supersedes ad-hoc tool engine fixes until TOOL-ENG P0 closed  
@@ -160,10 +160,10 @@ Sprints close **Phase TOOL-ENG** remaining rows. One sprint ≈ one PR; update p
 | TOOL-ENG-16 | Orchestration | **`ToolInvocationPattern` Protocol** + `ToolInvocationContext` + `ToolInvocationResult` | **Done** | **P0** | `tool_invocation_pattern.py` (new), `contracts/` | `test_tool_invocation_pattern.py`; ADR-TOOL-003 |
 | TOOL-ENG-17 | Orchestration | **`SinglePassPattern`** — extract `max_iterations==1` path from `tool_loop_step` | **Done** | P1 | `patterns/single_pass.py`, `tool_loop_step.py` | Behaviour parity with pre-refactor single-pass; unit test |
 | TOOL-ENG-18 | Orchestration | **`BoundedReactPattern`** — refactor multi-iter `run_bounded_tool_loop` into pattern class | **Done** | P1 | `patterns/bounded_react.py`, `tool_loop_step.py` | `test_tool_loop_integration.py` unchanged green |
-| TOOL-ENG-9 | Orchestration | **`ParallelBatchPattern`** — concurrent invoke for `side_effects=False` in one batch; `max_parallel_tool_calls` cap | **Planned** | P1 | `patterns/parallel_batch.py`, `tool_loop_step.py` | Unit: 3 read-only tools wall time < sum(serial); mutating calls stay serial |
+| TOOL-ENG-9 | Orchestration | **`ParallelBatchPattern`** — concurrent invoke for `side_effects=False` in one batch; `max_parallel_tool_calls` cap | **Done** | P1 | `patterns/parallel_batch.py`, `tool_loop.py` | `test_parallel_batch_pattern.py` |
 | TOOL-ENG-20 | Orchestration | **`DeterministicChainPattern`** + `ToolChainSpec` / `ChainStep` / `FieldRef` output→input mapping | **Planned** | P2 | `patterns/deterministic_chain.py`, `tool_chain_spec.py` | Integration: rag → websearch chain with validated field map |
 | TOOL-ENG-25 | Orchestration | **`ParallelSemanticBatchPattern`** — semantic top-k selection + parallel invoke + aggregate (composite) | **Planned** | P1 | `patterns/parallel_semantic_batch.py`, `tool_selection.py` | Depends TOOL-ENG-13+9+29; integration test with fixture index |
-| TOOL-ENG-29 | Orchestration | **`ToolInvocationAggregate`** — canonical batch result merge before LLM context inject | **Planned** | P1 | `tool_invocation_aggregate.py`, `tool_loop_step.py` | Unit: N traces → single aggregate payload; used by parallel patterns |
+| TOOL-ENG-29 | Orchestration | **`ToolInvocationAggregate`** — canonical batch result merge before LLM context inject | **Done** | P1 | `tool_invocation_aggregate.py`, `tool_loop.py` | `test_tool_invocation_aggregate.py` |
 | TOOL-ENG-21 | Config | **`RuntimeConfig.tool_invocation_pattern`** + `ToolInvocationMode` enum + `pattern_for_mode()` factory | **Done** | P1 | `config.py`, `config_types.py`, `tool_invocation_pattern.py` | Default `single_pass`; factory returns correct pattern class |
 | TOOL-ENG-22 | Wiring | **`run_bounded_tool_loop` / `ctx.invoke_tool` delegates to `ToolInvocationPattern`** — remove direct `run_bounded_tool_loop` call | **Done** | P1 | `tools_step.py`, `runtime_context.py` | Inject pattern at `RuntimeContext.build()`; existing tests green |
 | TOOL-ENG-23 | Wiring | **Host profile bridge** — `ApplicationEnvironmentProfile.tool_invocation_mode` → `RuntimeConfig` | **Done** | P1 | `environment_profile.py`, `catalog_runtime_bridge.py` | `test_catalog_runtime_bridge_tool_invocation.py` |
@@ -226,7 +226,7 @@ TOOL-ENG-12 → 8 → 7 → 10
 | Selection modes canon | Missing | **Done** (DOC.4) | Architecture + plan pair |
 | Invocation patterns canon | Missing | **Done** (DOC.5) | §patterns + plan register |
 | `ToolInvocationPattern` plugin | N/A | **Partial** | Protocol + single/ReAct shipped (TOOL-ENG-16–18); parallel/chain/semantic batch open |
-| Parallel read-only invoke | Sequential only | **Gap** | `ParallelBatchPattern` (TOOL-ENG-9) |
+| Parallel read-only invoke | **Done** | **Done** | `ParallelBatchPattern` (TOOL-ENG-9) |
 | Deterministic tool chains | Agent code only | **Gap** | `ToolChainSpec` (TOOL-ENG-20) |
 | Semantic tool index | Keyword overlap | **Gap** | Vector top-k (TOOL-ENG-13) |
 | Hierarchical category traversal | Metadata only | **Gap** | Multi-pass (TOOL-ENG-14) |
@@ -252,6 +252,7 @@ TOOL-ENG-12 → 8 → 7 → 10
 | 2026-06-11 | TOOL-ENG-DOC.4 | Selection modes audit — standard / semantic / hierarchical canon in architecture pair; TOOL-ENG-13/14/15 registered |
 | 2026-06-12 | TOOL-ENG-DOC.5,6 | Invocation-pattern audit — §patterns canon; ORCHESTRATION §50.4 + FLOW §15.1 boundary; TOOL-ENG-16–30,26,29 registered |
 | 2026-06-12 | TOOL-ENG-16–18,21–23, TEST.1 | Layer completion S0–S3 — `ToolInvocationPattern` protocol, shipped patterns, config/bridge; ADR-TOOL-003 |
+| 2026-06-12 | TOOL-ENG-9,29 | Layer completion S4 — `ParallelBatchPattern`, `ToolInvocationAggregate`, `max_parallel_tool_calls` |
 
 ---
 
@@ -278,8 +279,8 @@ TOOL-ENG-12 → 8 → 7 → 10
 | 14 | **TOOL-ENG-21** | Code | **Done** | `tool_invocation_pattern` config + factory | factory unit test |
 | 15 | **TOOL-ENG-22** | Code | **Done** | `run_bounded_tool_loop` / `ctx.invoke_tool` → pattern delegation | existing tests green |
 | 16 | **TOOL-ENG-23** | Code | **Done** | Host profile bridge | `test_catalog_runtime_bridge_tool_invocation.py` |
-| 17 | **TOOL-ENG-29** | Code | **Planned** | `ToolInvocationAggregate` | aggregate unit test |
-| 18 | **TOOL-ENG-9** | Code | **Planned** | `ParallelBatchPattern` | parallel < serial wall time |
+| 17 | **TOOL-ENG-29** | Code | **Done** | `ToolInvocationAggregate` | aggregate unit test |
+| 18 | **TOOL-ENG-9** | Code | **Done** | `ParallelBatchPattern` | `test_parallel_batch_pattern.py` |
 | 19 | **TOOL-ENG-13** | Code + ADR | **Planned** | Semantic tool vector index | embedding rank gate |
 | 20 | **TOOL-ENG-25** | Code | **Planned** | `ParallelSemanticBatchPattern` | composite integration test |
 | 21 | **TOOL-ENG-14** | Code + ADR | **Planned** | Hierarchical selection | 2-pass integration |

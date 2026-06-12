@@ -432,6 +432,7 @@ class ApplicationEnvironmentProfile(BaseModel):
     tool_selection_mode: str = "static"
     tool_selection_top_k: int = Field(default=20, ge=1, le=100)
     tool_invocation_mode: str = "single_pass"
+    max_parallel_tool_calls: int = Field(default=8, ge=1, le=32)
 
     @classmethod
     def harness_memory_profile(cls) -> MemoryProfile:

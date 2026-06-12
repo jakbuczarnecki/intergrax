@@ -56,9 +56,10 @@ def test_pattern_for_mode_returns_shipped_classes() -> None:
     assert isinstance(pattern_for_mode(ToolInvocationMode.BOUNDED_REACT), BoundedReactPattern)
 
 
-def test_pattern_for_mode_parallel_not_shipped() -> None:
-    with pytest.raises(NotImplementedError):
-        pattern_for_mode(ToolInvocationMode.PARALLEL_BATCH)
+def test_pattern_for_mode_parallel_batch_shipped() -> None:
+    from intergrax.runtime.nexus.tools.patterns.parallel_batch import ParallelBatchPattern
+
+    assert isinstance(pattern_for_mode(ToolInvocationMode.PARALLEL_BATCH), ParallelBatchPattern)
 
 
 def test_resolve_infers_bounded_react_when_max_iterations_gt_one() -> None:

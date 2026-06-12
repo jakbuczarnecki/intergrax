@@ -12,6 +12,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.config_types import ToolInvocationMode
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState, ToolCallTrace
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.runtime.nexus.tools.tool_invocation_aggregate import ToolInvocationAggregate
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.tools.core.tool_plan import ToolCallPlan
 
@@ -33,6 +34,7 @@ class ToolInvocationResult:
     stop_reason: ToolInvocationStopReason = "legacy_single_pass"
     appended_messages: list[ChatMessage] = field(default_factory=list)
     used_native_tool_messages: bool = False
+    aggregate: ToolInvocationAggregate | None = None
 
 
 @runtime_checkable
@@ -65,13 +67,16 @@ def pattern_for_mode(mode: ToolInvocationMode) -> ToolInvocationPattern:
 
     if mode == ToolInvocationMode.BOUNDED_REACT:
         return BoundedReactPattern()
+    if mode == ToolInvocationMode.PARALLEL_BATCH:
+        from intergrax.runtime.nexus.tools.patterns.parallel_batch import ParallelBatchPattern
+
+        return ParallelBatchPattern()
     if mode in (
-        ToolInvocationMode.PARALLEL_BATCH,
         ToolInvocationMode.DETERMINISTIC_CHAIN,
         ToolInvocationMode.PARALLEL_SEMANTIC_BATCH,
     ):
         raise NotImplementedError(
             f"ToolInvocationMode.{mode.value} is registered but not yet shipped; "
-            "see TOOL-ENG-9/20/25."
+            "see TOOL-ENG-20/25."
         )
     return SinglePassPattern()

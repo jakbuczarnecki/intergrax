@@ -374,6 +374,7 @@ async def run_tools_context(state: RuntimeState) -> None:
                 state,
                 state.tool_traces,
                 runtime_context_prompt=localized.system,
+                aggregate=loop_result.aggregate,
             )
     except Exception as exc:
         error_type = type(exc).__name__
