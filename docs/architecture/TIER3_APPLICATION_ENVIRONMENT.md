@@ -1561,9 +1561,12 @@ Minimum verification before claiming host maturity. Map to §23.5 recipes and §
 **Gate commands:**
 
 ```bash
-uv run pytest tests/unit/applications/ -q
+python scripts/check_tier3_scenario_matrix.py
+uv run pytest tests/unit/applications/test_tier3_scenario_matrix.py -m tier3_scenario -q
 uv run pytest -m gate -q
 ```
+
+**Registry:** `intergrax/applications/_shared/tier3_scenario_matrix_wiring.py` maps each reference host package to minimum §44 scenarios and UC-A* evidence paths under `tests/unit/applications/`.
 
 ---
 

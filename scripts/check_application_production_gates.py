@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""Tier-3 application production gate checks (APP-PROD-1..8 · APP-OPS-1..2)."""
+"""Tier-3 application production gate checks (APP-PROD-1..8 · APP-OPS-1..2 · APP-CON-7)."""
 
 from __future__ import annotations
 
@@ -116,6 +116,14 @@ def check_capability_graph_strict_deploy() -> list[str]:
     return violations
 
 
+def check_tier3_scenario_matrix() -> list[str]:
+    from intergrax.applications._shared.tier3_scenario_matrix_wiring import (
+        check_tier3_scenario_matrix as _check,
+    )
+
+    return _check(REPO_ROOT)
+
+
 def check_budget_enforcement() -> list[str]:
     from intergrax.applications._shared.budget_wiring import check_manifest_budget_enforcement
     from intergrax.applications._shared.product_manifest_registry import (
@@ -137,6 +145,7 @@ def main() -> int:
         ("workspace_cleanup", check_workspace_cleanup),
         ("capability_graph_strict_deploy", check_capability_graph_strict_deploy),
         ("application_ownership", check_application_ownership),
+        ("tier3_scenario_matrix", check_tier3_scenario_matrix),
     )
     violations: list[str] = []
     for _name, fn in checks:

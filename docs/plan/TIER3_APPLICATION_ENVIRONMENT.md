@@ -34,7 +34,7 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 | §32.6 | Hook ordering · conflicts · determinism | APP-CON-5 | **Done** | `hook_runtime_guard.py` · `middleware_hook_timeout_seconds` |
 | §33 | Dual observability planes | ACP-OBS-* · H-APP.4.8 | **Done** | `test_application_run_summary_builder.py` |
 | §34 | Per-agent `AgentBinding` / budget slice | H-APP.* · ACP §30 | **Done** | `merge_environment` · ACP plan Wave 2 |
-| §35 | Use-case catalog UC-A* | APP-CON-7 | Planned | §44 matrix tests |
+| §35 | Use-case catalog UC-A* | APP-CON-7 | **Done** | `tier3_scenario_matrix_wiring.py` · `test_tier3_scenario_matrix.py` |
 | §36 | Architecture synthesis | H-APP-CON-DOC.* | **Done** | *doc-only* |
 | §37 | Pre-implementation APP-CON contracts | H-APP-CON-DOC.* | **Done** | *doc-only* |
 | §38 | L4 execution stack | H-APP.3.3 · H-APP-WIRING | **Done** | `nexus_factory.py` · `build_harness_host_runtime` |
@@ -43,7 +43,7 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 | §41 | Composition primitive separation | H-APP-CON-DOC.* | **Done** | *doc-only* |
 | §42 | `ApplicationEnvironmentState` v2 | APP-CON-2 · APP-CON-3 | **Done** | `environment_state.py` · lifecycle middleware |
 | §43 | Budget / token governance | ACP-TOK-* · APP-CON-3 · APP-PROD-7 | **Done** | see [Cross-plan §43](#cross-plan--43-budget--token-governance) |
-| §44 | Scenario test matrix | APP-CON-7 | Planned | `tests/unit/applications/` bundle |
+| §44 | Scenario test matrix | APP-CON-7 | **Done** | `check_tier3_scenario_matrix.py` · `-m tier3_scenario` |
 | §45 | New application checklist | APP-CON-DX.1 · N.* | **Partial** | scaffold + guide |
 | §46 | Production readiness criteria | APP-PROD-* · ACP-PROD-* | **Partial** | §46 + agent gates |
 | §47 | Developer mental model | APP-CON-DX.1 | **Partial** | *doc-only* in arch |
@@ -68,7 +68,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 | APP-CON-4 | §48 | Artifact ref models | **Done** | `application_artifacts.py` |
 | APP-CON-5 | §32.6 | Hook timeout · error→BLOCK · audit events | **Done** | `test_hook_runtime_guard.py` · product 250ms timeout |
 | APP-CON-6 | §26 · §48 | `RunArtifactBundle` on `ApplicationRunSummary.metadata` | **Done** | `test_task_finisher_artifact_bundle.py` |
-| APP-CON-7 | §35 · §44 | Scenario matrix gate — UC-A* minimum per posture | Planned | `test_tier3_scenario_matrix.py` or tagged `-m tier3_scenario` |
+| APP-CON-7 | §35 · §44 | Scenario matrix gate — UC-A* minimum per posture | **Done** | `tier3_scenario_matrix_wiring.py` · `check_tier3_scenario_matrix.py` · `-m tier3_scenario` |
 | APP-CON-8 | §20–§21 | Shadow/sandbox refs in env state + lifespan cleanup | **Done** | `workspace_cleanup_wiring.py` · `test_workspace_cleanup_wiring.py` |
 | APP-CON-DX.1 | §31 · §45 · §47 | Author guide APP appendix (mental model + checklist) | Planned | `AGENT_CREATION_GUIDE.md` or `APPLICATION_CREATION_GUIDE.md` |
 | APP-CON-DX.2 | §37 | Regenerate domain audit prompt for §24–§51 | Planned | `generate_domain_audit_prompts.py` |
@@ -171,7 +171,7 @@ Recommended PR sequence — one APP ID per PR:
 8.  APP-EVOL-1      EnvironmentSnapshot on intake — **Done**
 9.  APP-OPS-1       capability graph STRICT deploy gate — **Done**
 10. APP-OPS-2       application ownership on manifest — **Done**
-11. APP-CON-7       scenario matrix tests
+11. APP-CON-7       scenario matrix tests — **Done**
 12. APP-EVOL-2/2b   migrations
 13. APP-EVOL-3..7   evolution + packaging
 14. APP-OPS-3/4     health score + registries

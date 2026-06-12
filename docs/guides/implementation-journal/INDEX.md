@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-11-039 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-CON-7 | [Sprint 14 APP-CON-7 scenario matrix gate](entries/2026-06-11/tier3-sprint14-app-con-7-scenario-matrix.md) | pending |
 | IJ-2026-06-12-005 | 2026-06-12 | tier-0 docs/adr | P-Ext.5.1 | [Harness ADR date-partitioned entries layout](entries/2026-06-12/dx-harness-adr-date-entries.md) | pending |
 | IJ-2026-06-12-004 | 2026-06-12 | tier-1, tier-2, tier-3 AGENT_CONTRACTS_AND_ASSEMBLY | ACP-CLOSE-LEG-5 | [Retire Tier-1 AgentEngine pipeline stack](entries/2026-06-12/acp-close-leg-5-pipeline-retirement.md) | pending |
 | IJ-2026-06-12-003 | 2026-06-12 | tier-0 MEMORY | MEM-VEC-0.1 | [Memory vector recall — three-domain catalog and MEM-VEC plan](entries/2026-06-12/platform-memory-vector-recall-canon.md) | pending |
