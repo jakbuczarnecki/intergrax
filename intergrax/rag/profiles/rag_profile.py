@@ -17,7 +17,7 @@ from typing import Literal, Optional
 RouteMode = Literal["off", "auto"]
 QueryExpansionMode = Literal["off", "deterministic", "llm"]
 ContextualEnrichMode = Literal["off", "on"]
-GraphIndexerMode = Literal["heuristic", "llm", "heuristic_then_llm"]
+GraphIndexerMode = Literal["heuristic", "llm", "heuristic_then_llm", "community_report"]
 AgenticQueryMode = Literal["deterministic", "llm"]
 
 HARNESS_GRAPH_STORE_BACKEND = "inmemory"
@@ -84,6 +84,8 @@ class RagProfile:
     sync_ingest_max_bytes: int = 50_000_000
     semantic_chunking_max_chars: int = 100_000
     async_ingest_workflow_id: str = "rag-ingest"
+    graph_maintenance_workflow_id: str = "rag-graph-maintenance"
+    graph_indexer_plugin_id: str = ""
     document_parser_slug: Optional[str] = None
     contextual_enrich: ContextualEnrichMode = "off"
     query_expansion: QueryExpansionMode = "deterministic"
@@ -265,6 +267,11 @@ def rag_profile_from_env() -> RagProfile:
         ),
         async_ingest_workflow_id=os.getenv("INTERGRAX_RAG_ASYNC_INGEST_WORKFLOW_ID", "rag-ingest").strip()
         or "rag-ingest",
+        graph_maintenance_workflow_id=os.getenv(
+            "INTERGRAX_RAG_GRAPH_MAINTENANCE_WORKFLOW_ID", "rag-graph-maintenance"
+        ).strip()
+        or "rag-graph-maintenance",
+        graph_indexer_plugin_id=os.getenv("INTERGRAX_RAG_GRAPH_INDEXER_PLUGIN", "").strip(),
         document_parser_slug=parser_slug,
         contextual_enrich=contextual,
         query_expansion=query_expansion,

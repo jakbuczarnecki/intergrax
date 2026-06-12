@@ -51,8 +51,8 @@ Tier-3 IntegrationProfile + RagProfile
 | Dimension | Score | Notes |
 |-----------|-------|-------|
 | Control-plane architecture (single path, typed contracts) | **L3** | `RetrievalService`, `RagProfile`, runtime bridges, 12 `rag.*` catalog tools |
-| Retrieval mode breadth | **L2.5–L3** | hybrid, fusion, agentic — **L3**; graph_rag **L2 beta** (M-RAG-GRAPH target: M-RAG.42); hierarchical + dual-index wired via profile (M-RAG.24) |
-| GraphRAG platform (build / maintain / retrieve) | **L2** | Contracts + neo4j prod path (M-RAG.33); no backend registry, lifecycle sync, or graph tenant isolation — Phase M-RAG-GRAPH |
+| Retrieval mode breadth | **L3** | hybrid, fusion, agentic, graph_rag **stable**; hierarchical + dual-index wired via profile (M-RAG.24) |
+| GraphRAG platform (build / maintain / retrieve) | **L3** | Backend registry, lifecycle sync, tenant isolation, stable retriever, maintenance jobs (M-RAG-GRAPH G1–G3) |
 | Strategy selection (autonomous) | **L1.5** | Tier/cost routing only; MIME/size/retriever auto-pick deferred to Tier-3 + AHI |
 | Ingest — short / medium documents | **L3** | Parser catalog, 5 chunking strategies, optional contextual enrich |
 | Ingest — very large corpora | **L2–L2.5** | Sync path size-guarded; `rag.schedule_ingest_job` triggers orchestrator with idempotent contract (M-RAG.26); shard/stream execution in workflow worker |
@@ -106,10 +106,10 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-28 | niska jakość | ~~`graph_rag` retriever beta~~ — **closed M-RAG.42**: metadata/chunk-linked entity seeds; **stable** | **P1** | M-RAG.42 **Done** | — |
 | GAP-RAG-29 | niedoróbka | ~~hybrid channel not fused~~ — **closed M-RAG.43**: `graph_channel_fusion.py` + `channel_contributions` trace | **P2** | M-RAG.43 **Done** | — |
 | GAP-RAG-30 | niedoróbka | ~~graph provenance not on trace~~ — **closed M-RAG.44**: `RetrievalTrace.graph_*` fields | **P2** | M-RAG.44 **Done** | — |
-| GAP-RAG-31 | niegotowość | No graph maintenance job contract (orphan cleanup, stale-edge prune, incremental reindex) | **P2** | M-RAG.45 **Planned** | — |
-| GAP-RAG-32 | niedoróbka | No `GraphIndexer` plugin registry — custom indexers require manual `resolve_graph_indexer` wiring | **P2** | M-RAG.46 **Planned** | — |
+| GAP-RAG-31 | niegotowość | ~~No graph maintenance job~~ — **closed M-RAG.45**: `rag.schedule_graph_maintenance_job` + workflow contract | **P2** | M-RAG.45 **Done** | — |
+| GAP-RAG-32 | niedoróbka | ~~No GraphIndexer plugin registry~~ — **closed M-RAG.46**: `register_graph_indexer_plugin()` | **P2** | M-RAG.46 **Done** | — |
 | GAP-RAG-33 | gap | `graph_store` catalog lacks Neptune, OrientDB, ArangoDB, TigerGraph, JanusGraph | **P3** | M-RAG.49–M-RAG.51 **Planned** | — |
-| GAP-RAG-34 | ograniczenie | No coupling to Microsoft GraphRAG library — harness ships a native indexer/retriever pipeline; optional community-report mode is harness-owned (M-RAG.47) | — | M-RAG.47 **Planned** | — |
+| GAP-RAG-34 | ograniczenie | No Microsoft GraphRAG vendoring — optional harness-native `community_report` indexer (M-RAG.47 **Done**, default off) | — | M-RAG.47 **Done** | — |
 | GAP-RAG-35 | niedoróbka | ~~prod slug list neo4j-only~~ — **closed M-RAG.48**: `APPROVED_PRODUCTION_GRAPH_STORE_SLUGS` (`neo4j`, `memgraph`) | **P2** | M-RAG.48 **Done** | — |
 | GAP-RAG-36 | niska jakość | ~~golden harness shallow~~ — **closed M-RAG.52**: post-delete empty expansion scenario + multi_hop retained | **P2** | M-RAG.52 **Done** | — |
 
@@ -229,7 +229,7 @@ Vector-store catalog slugs and env prefixes: [`architecture/INTEGRATIONS.md`](IN
 
 GraphRAG indexes **document knowledge** (entity–relation graphs linked to retrieval chunks). It is **not** user episodic / entity memory — see [`architecture/MEMORY.md`](MEMORY.md) §Graph RAG ≠ agent memory and [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.7.1.
 
-**Posture (audit 2026-06-12):** **L2 platform** — typed contracts, ingest hook, neo4j prod preset (M-RAG.33), beta retriever. **Not** a drop-in Microsoft GraphRAG replacement. Target: **L3 universal GraphRAG component** via Phase **M-RAG-GRAPH** in [`plan/RAG.md`](../plan/RAG.md).
+**Posture (audit 2026-06-12, closeout G1–G3):** **L3 platform** — backend registry, lifecycle sync, tenant isolation, stable `graph_rag` retriever, maintenance jobs, indexer plugins. **Not** a Microsoft GraphRAG vendored replacement. Optional G4 vendor adapters (Neptune/OrientDB/ArangoDB) remain **Planned** pending H-INT integrations.
 
 ### Three-layer contract model
 
@@ -291,7 +291,7 @@ Runtime architecture (Tier-1 contracts)
 |-------|-------------------|-----|------|
 | **Build** | `IngestPipeline` → optional `resolve_graph_indexer()` after vector index | Indexer quality heuristic/LLM only | M-RAG.46, M-RAG.47 |
 | **Update** | Re-ingest upsert + `rag.delete_documents` graph unlink (M-RAG.40) | — | — |
-| **Maintain** | `purge_graph` on `rag.purge_collection` (M-RAG.40) | Scheduled jobs | M-RAG.45 |
+| **Maintain** | `purge_graph` on `rag.purge_collection` (M-RAG.40); `rag.schedule_graph_maintenance_job` (M-RAG.45) | — | — |
 | **Use** | `GraphRagRetriever`: vector seed + label substring + 1-hop | Beta; no hybrid channel fusion; weak provenance trace | M-RAG.42–M-RAG.44 |
 | **Isolate** | Vector tenant contract (M-RAG.35) + graph tenant contract (M-RAG.41) | — | — |
 
@@ -306,7 +306,7 @@ USE (retrieve)
 
 UPDATE / MAINTAIN (planned)
   rag.delete_documents → unlink/remove graph artifacts (M-RAG.40)
-  rag.schedule_graph_maintenance_job → workflow worker prune/reindex (M-RAG.45)
+  rag.schedule_graph_maintenance_job → workflow worker prune/reindex (**Done** M-RAG.45)
 ```
 
 ### Consumption surfaces (beyond RAG engine)
@@ -419,7 +419,7 @@ Automatic tier routing (`QueryRouter`) covers **cost/latency tiers only**, not M
 
 Registered in `tools/providers/rag/bundle.py`:
 
-`rag.retrieve`, `rag.ingest_document`, `rag.schedule_ingest_job`, `rag.rerank`, `rag.preview_retrieval`, `rag.list_collections`, `rag.describe_collection`, `rag.delete_documents`, `rag.purge_collection`, `rag.list_documents`, `rag.get_document`, `rag.check_index_status`, `rag.search_by_metadata`
+`rag.retrieve`, `rag.ingest_document`, `rag.schedule_ingest_job`, `rag.schedule_graph_maintenance_job`, `rag.rerank`, `rag.preview_retrieval`, `rag.list_collections`, `rag.describe_collection`, `rag.delete_documents`, `rag.purge_collection`, `rag.list_documents`, `rag.get_document`, `rag.check_index_status`, `rag.search_by_metadata`
 
 Tool authoring: [`architecture/TOOLS.md`](TOOLS.md) · wiring: Appendix K §K.5.
 
