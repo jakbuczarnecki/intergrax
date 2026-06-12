@@ -107,7 +107,16 @@ def test_scaffold_product_profile_runtime_e2e(tmp_path) -> None:
         include_mcp=False,
     )
     create_app = factory_callable(factory_mod, short, product=True)
-    client = TestClient(create_app(settings=settings))
+    data_dir = target / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    client = TestClient(
+        create_app(
+            settings=settings,
+            trace_db_path=data_dir / "trace.db",
+            runtime_events_db_path=data_dir / "events.db",
+            checkpoints_db_path=data_dir / "checkpoints.db",
+        )
+    )
 
     assert client.get("/health").status_code == 200
 

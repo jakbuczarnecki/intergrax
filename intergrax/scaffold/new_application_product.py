@@ -401,6 +401,7 @@ def environment_profile_py(names: ScaffoldApplicationNames) -> str:
         from __future__ import annotations
 
         from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+        from intergrax.fastapi_core.config import ApiEnvironment
         from intergrax.integrations.core.binding import IntegrationBinding
         from intergrax.integrations.registry.catalog_manifests import OTEL
         from {pkg}.host.settings import {pascal}BackendSettings
@@ -409,7 +410,6 @@ def environment_profile_py(names: ScaffoldApplicationNames) -> str:
         def build_{short}_environment_profile(
             settings: {pascal}BackendSettings,
         ) -> ApplicationEnvironmentProfile:
-            _ = settings
             profile = ApplicationEnvironmentProfile.product_defaults(
                 skill_bundles=["harness"],
                 profile_id="{short}.product",
@@ -423,6 +423,14 @@ def environment_profile_py(names: ScaffoldApplicationNames) -> str:
                     "options": {{**profile.integration_profile.options, OTEL.slug: {{}}}},
                 }},
             )
+            if settings.environment == ApiEnvironment.DEV:
+                profile = profile.model_copy(
+                    update={{
+                        "reliability_profile": profile.reliability_profile.model_copy(
+                            update={{"middleware_hook_timeout_seconds": 2.0}},
+                        ),
+                    }},
+                )
             return profile.with_reference_host_platform_defaults()
         '''
     )
@@ -552,6 +560,7 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
             settings: Optional[{pascal}BackendSettings] = None,
             trace_db_path: Path | None = None,
             runtime_events_db_path: Path | None = None,
+            checkpoints_db_path: Path | None = None,
         ) -> FastAPI:
             settings = settings or {pascal}BackendSettings.from_env()
             api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
@@ -564,6 +573,8 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
                 settings=settings,
                 trace_db_path=trace_db_path,
                 runtime_events_db_path=runtime_events_db_path,
+                checkpoints_db_path=checkpoints_db_path,
+                use_in_memory_trace=trace_db_path is None,
             )
             nexus_loop = runtime.nexus_loop
             registry = runtime.registry
@@ -571,7 +582,7 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
                 nexus_loop,
                 trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
             )
-            checkpoint_store = open_default_task_checkpoint_persistence()
+            checkpoint_store = open_default_task_checkpoint_persistence(db_path=checkpoints_db_path)
             task_enricher = build_reliability_task_enricher(env)
             task_runner = build_task_runner_with_enricher(nexus_loop, task_enricher)
             scheduler_wiring = wire_long_running_scheduler(

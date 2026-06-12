@@ -56,3 +56,8 @@ def test_scaffold_product_profile_creates_fastapi_core_tree(tmp_path):
     env_example = (target / ".env.example").read_text(encoding="utf-8")
     assert "DEMO_PRODUCT_BACKEND_ENV=dev" in env_example
     assert "DEMO_PRODUCT_DEFAULT_AGENT_ID=echo" in env_example
+
+    env_profile = (target / "host" / "environment_profile.py").read_text(encoding="utf-8")
+    assert "ApiEnvironment.DEV" in env_profile
+    assert "middleware_hook_timeout_seconds" in env_profile
+    assert "use_in_memory_trace=trace_db_path is None" in factory
