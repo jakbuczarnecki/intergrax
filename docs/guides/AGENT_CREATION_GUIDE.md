@@ -1050,6 +1050,8 @@ Each provider under `intergrax/integrations/providers/<slug>/` includes an Engli
 
 When an agent needs a **dedicated host** (env, Docker, stable HTTP API) — not only the shared lab — use the Tier-3 stack under `applications/<app>/`.
 
+**Canonical application guide:** [`APPLICATION_CREATION_GUIDE.md`](APPLICATION_CREATION_GUIDE.md) — mental model (§47), author workflow (§31), new-application checklist (§45), ops CLI.
+
 **Primary workflow:** [Step 4E — Dedicated application (scaffold)](#e--dedicated-application-scaffold) (CLI, three-command quickstart, Docker scripts).
 
 | Topic | Document |

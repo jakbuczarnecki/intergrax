@@ -29,7 +29,7 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 | §26 | `ApplicationRunSummary` (Plane A) | ACP-OBS-2 · APP-CON-6 | **Done** | `application_run_summary_builder.py` · `run_artifact_bundle_builder.py` |
 | §27 | Roster / registry assembly | N.2.1 · H-APP.1.4 | **Done** | `registry_assembly_resolver.py` |
 | §28 | APP invariants (no app cognition loop) | H-APP-CON-DOC.* | **Done** | *doc-only* · rejected `on_next_orchestration_step` |
-| §29–§31 | Terminology · control modes · facade | H-APP.0.* · APP-CON-DX.1 | **Partial** | DX appendix open |
+| §29–§31 | Terminology · control modes · facade | H-APP.0.* · APP-CON-DX.1 | **Done** | `APPLICATION_CREATION_GUIDE.md` |
 | §32 | `ApplicationHost` hook surface | APP-CON-1 | **Done** | `application_host.py` · `hooks.py` |
 | §32.6 | Hook ordering · conflicts · determinism | APP-CON-5 | **Done** | `hook_runtime_guard.py` · `middleware_hook_timeout_seconds` |
 | §33 | Dual observability planes | ACP-OBS-* · H-APP.4.8 | **Done** | `test_application_run_summary_builder.py` |
@@ -44,9 +44,9 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 | §42 | `ApplicationEnvironmentState` v2 | APP-CON-2 · APP-CON-3 | **Done** | `environment_state.py` · lifecycle middleware |
 | §43 | Budget / token governance | ACP-TOK-* · APP-CON-3 · APP-PROD-7 | **Done** | see [Cross-plan §43](#cross-plan--43-budget--token-governance) |
 | §44 | Scenario test matrix | APP-CON-7 | **Done** | `check_tier3_scenario_matrix.py` · `-m tier3_scenario` |
-| §45 | New application checklist | APP-CON-DX.1 · N.* | **Partial** | scaffold + guide |
+| §45 | New application checklist | APP-CON-DX.1 · N.* | **Done** | `APPLICATION_CREATION_GUIDE.md` §3 |
 | §46 | Production readiness criteria | APP-PROD-* · ACP-PROD-* | **Partial** | §46 + agent gates |
-| §47 | Developer mental model | APP-CON-DX.1 | **Partial** | *doc-only* in arch |
+| §47 | Developer mental model | APP-CON-DX.1 | **Done** | `APPLICATION_CREATION_GUIDE.md` §1 |
 | §48 | Application artifacts | APP-CON-4 · APP-CON-6 | **Done** | `application_artifacts.py` · `run_artifact_bundle.v1` on summary |
 | §49 | Runtime evolution | APP-EVOL-1..7 · APP-EVOL-2b | **Partial** | APP-EVOL-1..5 **Done** · §49.8 register |
 | §50 | Platform operations | APP-OPS-1..4 | **Partial** | APP-OPS-1 **Done** · `capability_graph_deploy_gate.py` |
@@ -70,8 +70,8 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 | APP-CON-6 | §26 · §48 | `RunArtifactBundle` on `ApplicationRunSummary.metadata` | **Done** | `test_task_finisher_artifact_bundle.py` |
 | APP-CON-7 | §35 · §44 | Scenario matrix gate — UC-A* minimum per posture | **Done** | `tier3_scenario_matrix_wiring.py` · `check_tier3_scenario_matrix.py` · `-m tier3_scenario` |
 | APP-CON-8 | §20–§21 | Shadow/sandbox refs in env state + lifespan cleanup | **Done** | `workspace_cleanup_wiring.py` · `test_workspace_cleanup_wiring.py` |
-| APP-CON-DX.1 | §31 · §45 · §47 | Author guide APP appendix (mental model + checklist) | Planned | `AGENT_CREATION_GUIDE.md` or `APPLICATION_CREATION_GUIDE.md` |
-| APP-CON-DX.2 | §37 | Regenerate domain audit prompt for §24–§51 | Planned | `generate_domain_audit_prompts.py` |
+| APP-CON-DX.1 | §31 · §45 · §47 | Author guide APP appendix (mental model + checklist) | **Done** | `APPLICATION_CREATION_GUIDE.md` |
+| APP-CON-DX.2 | §37 | Regenerate domain audit prompt for §24–§51 | **Done** | `check_tier3_audit_prompt.py` |
 
 ### APP-PROD — release gates (architecture §40 · §46)
 
@@ -175,7 +175,7 @@ Recommended PR sequence — one APP ID per PR:
 12. APP-EVOL-2/2b   migrations — **Done**
 13. APP-EVOL-3..7   evolution + packaging — **Done**
 14. APP-OPS-3/4     health score + registries — **Done**
-15. APP-CON-DX.*    author guide + audit prompt
+15. APP-CON-DX.*    author guide + audit prompt — **Done**
 ```
 
 **Cross-plan:** steps 3–4 require [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **ACP-FINISH** / **ACP-TOK-***.
@@ -480,7 +480,7 @@ uv run pytest -m gate -q
 | H-APP-CON-DOC.3 | Cross-ref ACP §39 → TIER3 §39 canonical home | **Done** | Low | ACP §39.8 pointer |
 | APP-CON-1..8 | Host contracts — see [APP-CON master](#app-con--host-contracts-architecture-25-32--42--48) | **Partial** | **Critical** | 1,2,4 Done |
 | APP-PROD-1..9 | Release gates — see [APP-PROD master](#app-prod--release-gates-architecture-40--46) | **Partial** | High | 1–5 Done |
-| APP-CON-DX.* | Author + audit DX | Planned | Medium | §31 · §45 · §47 |
+| APP-CON-DX.* | Author + audit DX | **Done** | Medium | `APPLICATION_CREATION_GUIDE.md` · `check_tier3_audit_prompt.py` |
 
 **Explicitly out of scope:** `Application.on_next_orchestration_step()`; new domain pair; Nexus runtime changes for product-specific orchestration.
 

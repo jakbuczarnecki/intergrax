@@ -1595,7 +1595,7 @@ Before implementing a new Tier-3 environment, answer:
 18. Cross-ref product ARCHITECTURE.md — not duplicated in platform plan?
 ```
 
-If these questions cannot be answered, do not ship the host. **Guides:** [`applications/USAGE.md`](../../applications/USAGE.md) · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Step 4E · Appendix H.
+If these questions cannot be answered, do not ship the host. **Guides:** [`guides/APPLICATION_CREATION_GUIDE.md`](../guides/APPLICATION_CREATION_GUIDE.md) · [`applications/USAGE.md`](../../applications/USAGE.md) · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Step 4E · Appendix H.
 
 ---
 

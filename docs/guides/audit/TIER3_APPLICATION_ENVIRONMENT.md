@@ -42,19 +42,19 @@ Perform a **rigorous, evidence-backed audit** of the **Tier-3 Application Enviro
 
 ## Mission
 
-Audit **deployable application hosts**: ApplicationEnvironmentProfile as composition root, all runtime bridges, catalog bootstrap, host matrix honesty, and product wiring without Nexus business logic.
+Audit **deployable application hosts** (architecture §24–§51): ApplicationEnvironmentProfile as composition root, host contracts §25–§32, environment state §42, production gates §40/§46, evolution §49, platform ops §50, and author DX — without Nexus business logic or duplicate registries.
 
 ## Key symbols and contracts
 
-ApplicationEnvironmentProfile · ApplicationManifest · ApplicationBuildContext · IdentityProfile · ExecutionMode · ShadowWorkspaceProfile · SandboxProfile · ScalingProfile (ECP cross-ref) · full §22.1 sub-profiles table
+ApplicationEnvironmentProfile · ApplicationManifest · ApplicationHost · ApplicationEnvironmentState · EnvironmentSnapshot · ApplicationPackage · ApplicationRegistry · EnvironmentHealthScore · ApplicationOperationalOwnership · ApplicationRecoveryContract · AgentCertification · CapabilityGovernanceProfile · OrganizationalPolicyEnvelope · ExecutionMode
 
 ## Active plan phases (verify status vs code reality)
 
-H-APP 43 tasks Done · H-APP-WIRING · H-APP-DOC.* · CFG-* cross-ref ORCH-CONFIG
+H-APP Done · APP-CON-1..8 Done · APP-PROD-1..9 Done · APP-EVOL-1..7 Done · APP-OPS-1..4 Done · APP-CON-DX Done
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-CFG-14 LKW hybrid incomplete · MCP optional uneven · queue worker not scaffold-default · INCLUDE_INTERACTIONS/SCHEDULER adoption uneven
+CFG-14 LKW hybrid incomplete · MCP optional uneven · queue worker not scaffold-default · policy_coverage health proxy (UC-A7 golden deferred) · multi-tenant registry store deferred
 
 ---
 
@@ -65,7 +65,8 @@ CFG-14 LKW hybrid incomplete · MCP optional uneven · queue worker not scaffold
 3. `docs/plan/TIER3_APPLICATION_ENVIRONMENT.md` — implementation plan and gap IDs
 4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 3, 28
 5. `docs/guides/audit/README.md` — shared production Harness checklist (**mandatory**)
-6. `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix H (full profile map)**
+6. `docs/guides/APPLICATION_CREATION_GUIDE.md`
+7. `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix F · Appendix H**
 
 ---
 
@@ -73,10 +74,12 @@ CFG-14 LKW hybrid incomplete · MCP optional uneven · queue worker not scaffold
 
 ```text
 applications/*/host/factory.py
-intergrax/applications/contracts/environment_profile.py
-applications/_shared/environment_wiring.py · nexus_factory.py · harness_host_runtime.py
-applications/_shared/*_wiring.py (identity, shadow, sandbox, interaction, catalog_runtime_bridge, …)
-applications/reference hosts: lab, legal, research, poc_template, LKW, …
+intergrax/applications/contracts/environment_profile.py · application_registry.py · environment_health_score.py
+intergrax/applications/_shared/environment_wiring.py · harness_host_runtime.py · registry_ops_wiring.py
+intergrax/applications/_shared/*_wiring.py (snapshot, migration, package, health_score, recovery, certification, …)
+scripts/check_application_production_gates.py · check_application_registry.py · check_application_health_score.py
+intergrax/cli/apps.py · envs.py · doctor_health_app.py · doctor_diff_app.py
+docs/guides/APPLICATION_CREATION_GUIDE.md
 ```
 
 Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
@@ -87,21 +90,31 @@ Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this doma
 
 For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol` or `test_name`).
 
-1. ApplicationManifest declares environment_id and roster.
-2. wire_application_environment() without getattr reflection.
-3. Business logic only in Tier-2 agents — not Tier-3 host factory.
-4. Free-text intake has classifier or explicit capability routing.
-5. Posture (S1–S7) matches profile knobs §23.2.
-6. All *Profile sections wired through bridges — no orphan fields.
-7. bootstrap_catalogs + ToolProfile/SkillProfile/IntegrationProfile coherent.
-8. Roster ⊆ skill/tool profiles (EnvironmentSkillToolConsistencyCheck).
-9. IdentityProfile enforces tenant on runs.
-10. Guardrail slug wired when security profile requires.
-11. Task control routes mounted when INCLUDE_TASK_CONTROL.
-12. Shadow/sandbox scoped per task — no global leak.
-13. Docker/deploy artifacts from scaffold Phase N where claimed.
-14. Host matrix §59.2 honest vs architecture claims.
-15. graph_spec and OrchestrationProfile aligned per CFG case.
+1. ApplicationManifest + full profile on product hosts (§45 checklist).
+2. wire_application_environment() without getattr; package closure when conformance_check.
+3. Business logic only in Tier-2 agents — not Tier-3 host factory (§28).
+4. Capability routing via capabilities[] not class names (§37.4).
+5. ApplicationHost hooks: timeout, BLOCK on error, audit events (APP-CON-5).
+6. ApplicationEnvironmentState lifecycle sync on Nexus hooks (APP-CON-3).
+7. RunArtifactBundle on ApplicationRunSummary (APP-CON-6).
+8. Tier-3 scenario matrix / UC-A* evidence per reference host (APP-CON-7).
+9. Workspace shadow/sandbox cleanup on lifespan (APP-CON-8).
+10. EnvironmentSnapshot on intake + profile_snapshot_id (APP-EVOL-1).
+11. ApplicationMigration CI + typed sub-migrations (APP-EVOL-2/2b).
+12. CapabilityAlias sunset routing in STRICT (APP-EVOL-3).
+13. AgentCertification on STRICT roster (APP-EVOL-4).
+14. ApplicationRecoveryContract + ARCHITECTURE recovery docs (APP-EVOL-5).
+15. ApplicationEnvironmentDiff + doctor diff-app (APP-EVOL-6).
+16. ApplicationPackage + package.json from scaffold (APP-EVOL-7).
+17. STRICT capability graph deploy gate + blast radius (APP-OPS-1).
+18. ApplicationOperationalOwnership on product manifests (APP-OPS-2).
+19. EnvironmentHealthScore + doctor health-app (APP-OPS-3).
+20. ApplicationRegistry + EnvironmentRegistry + apps/envs CLI (APP-OPS-4).
+21. check_application_production_gates.py aggregates APP-PROD + APP-CON + APP-EVOL + APP-OPS.
+22. Roster ⊆ skill/tool profiles (EnvironmentSkillToolConsistencyCheck).
+23. IdentityProfile + budget enforcement on STRICT product hosts.
+24. Deploy triad present on scaffolded standard hosts.
+25. APPLICATION_CREATION_GUIDE.md aligns with §31 · §45 · §47.
 
 ---
 
@@ -109,8 +122,9 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 
 For each probe describe **actual code path**, limits, and failure mode:
 
-- Cold start bootstrap all catalogs.
-- Multi-host fleet profile variant drift.
+- Cold start bootstrap all catalogs across four product hosts.
+- Registry sync + health score for full STRICT fleet.
+- Pre-deploy diff between manifest versions.
 - strict_multi_agent_defaults() on legal/finance hosts.
 
 ---
@@ -119,7 +133,7 @@ For each probe describe **actual code path**, limits, and failure mode:
 
 Confirm overrides are **wired in code**, not documentation-only:
 
-Full ApplicationEnvironmentProfile — this layer IS the primary override surface for the platform
+Full ApplicationEnvironmentProfile · ApplicationManifest · OrganizationalPolicyEnvelope per tenant · registry artifacts in build/
 
 ---
 
@@ -141,7 +155,7 @@ Apply **every** section in `docs/guides/audit/README.md` §Shared production Har
 
 ## 7. Production baseline comparison
 
-Compare against: **Reference hosts (legal_application, research_application, lab_application) · Viktor worker-in-Slack · enterprise FastAPI agent host patterns**
+Compare against: **Reference hosts (legal, research, dispute_sim, local_workspace) · enterprise FastAPI agent host · ops registry + health score on release**
 
 State explicitly:
 
@@ -156,7 +170,7 @@ State explicitly:
 
 ## 8. Anti-patterns (must not be present)
 
-- Business pipeline in applications/host · orphan profile fields · getattr wiring · Nexus fork per product
+- Business pipeline in applications/host · README as ops registry · getattr wiring · Nexus fork per product · skipping production gates
 
 ---
 
@@ -172,7 +186,9 @@ If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile 
 
 ```bash
 uv run pytest tests/unit/applications/ -q
-uv run pytest tests/ -q -k orchestration_wiring
+uv run python scripts/check_application_production_gates.py
+uv run python scripts/check_application_registry.py
+uv run python scripts/check_application_health_score.py
 python scripts/check_harness_no_getattr.py
 ```
 

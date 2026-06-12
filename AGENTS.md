@@ -89,7 +89,7 @@ applications/    MAY import from agents/ and intergrax/
 | Configure LLM providers | [LLM_ADAPTERS.md](docs/architecture/LLM_ADAPTERS.md) · [plan/LLM_ADAPTERS.md](docs/plan/LLM_ADAPTERS.md) |
 | Memory / LTM stores | [MEMORY.md](docs/architecture/MEMORY.md) · [plan/MEMORY.md](docs/plan/MEMORY.md) |
 | Context engineering engine | [CONTEXT_ENGINEERING.md](docs/architecture/CONTEXT_ENGINEERING.md) · [plan/CONTEXT_ENGINEERING.md](docs/plan/CONTEXT_ENGINEERING.md) |
-| New application (Tier-3) | [TIER3_APPLICATION_ENVIRONMENT.md](docs/architecture/TIER3_APPLICATION_ENVIRONMENT.md) · [plan/TIER3_APPLICATION_ENVIRONMENT.md](docs/plan/TIER3_APPLICATION_ENVIRONMENT.md) |
+| New application (Tier-3) | [APPLICATION_CREATION_GUIDE.md](docs/guides/APPLICATION_CREATION_GUIDE.md) · [TIER3_APPLICATION_ENVIRONMENT.md](docs/architecture/TIER3_APPLICATION_ENVIRONMENT.md) |
 | Plugin / extension | [EXTENSION_AUTHOR_GUIDE.md](docs/guides/EXTENSION_AUTHOR_GUIDE.md) · [plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md](docs/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
 | Governance / policy / UAEP | [UNIFIED_EXECUTION_RUNTIME.md](docs/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [plan/UNIFIED_EXECUTION_RUNTIME.md](docs/plan/UNIFIED_EXECUTION_RUNTIME.md) |
 | Orchestration / graphs | [ORCHESTRATION.md](docs/architecture/ORCHESTRATION.md) · [plan/ORCHESTRATION.md](docs/plan/ORCHESTRATION.md) |

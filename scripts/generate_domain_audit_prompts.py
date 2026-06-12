@@ -899,48 +899,65 @@ tests/acceptance/agent_os/ (04, 05, 05b HITL/checkpoint)""",
         "title": "Tier-3 Application Environment",
         "layers": "3, 28",
         "mission": (
-            "Audit **deployable application hosts**: ApplicationEnvironmentProfile as composition root, "
-            "all runtime bridges, catalog bootstrap, host matrix honesty, and product wiring without Nexus business logic."
+            "Audit **deployable application hosts** (architecture §24–§51): "
+            "ApplicationEnvironmentProfile as composition root, host contracts §25–§32, "
+            "environment state §42, production gates §40/§46, evolution §49, platform ops §50, "
+            "and author DX — without Nexus business logic or duplicate registries."
         ),
         "code": """applications/*/host/factory.py
-intergrax/applications/contracts/environment_profile.py
-applications/_shared/environment_wiring.py · nexus_factory.py · harness_host_runtime.py
-applications/_shared/*_wiring.py (identity, shadow, sandbox, interaction, catalog_runtime_bridge, …)
-applications/reference hosts: lab, legal, research, poc_template, LKW, …""",
-        "key_symbols": "ApplicationEnvironmentProfile · ApplicationManifest · ApplicationBuildContext · IdentityProfile · ExecutionMode · ShadowWorkspaceProfile · SandboxProfile · ScalingProfile (ECP cross-ref) · full §22.1 sub-profiles table",
-        "active_phases": "H-APP 43 tasks Done · H-APP-WIRING · H-APP-DOC.* · CFG-* cross-ref ORCH-CONFIG",
-        "known_gaps": "CFG-14 LKW hybrid incomplete · MCP optional uneven · queue worker not scaffold-default · INCLUDE_INTERACTIONS/SCHEDULER adoption uneven",
+intergrax/applications/contracts/environment_profile.py · application_registry.py · environment_health_score.py
+intergrax/applications/_shared/environment_wiring.py · harness_host_runtime.py · registry_ops_wiring.py
+intergrax/applications/_shared/*_wiring.py (snapshot, migration, package, health_score, recovery, certification, …)
+scripts/check_application_production_gates.py · check_application_registry.py · check_application_health_score.py
+intergrax/cli/apps.py · envs.py · doctor_health_app.py · doctor_diff_app.py
+docs/guides/APPLICATION_CREATION_GUIDE.md""",
+        "key_symbols": "ApplicationEnvironmentProfile · ApplicationManifest · ApplicationHost · ApplicationEnvironmentState · EnvironmentSnapshot · ApplicationPackage · ApplicationRegistry · EnvironmentHealthScore · ApplicationOperationalOwnership · ApplicationRecoveryContract · AgentCertification · CapabilityGovernanceProfile · OrganizationalPolicyEnvelope · ExecutionMode",
+        "active_phases": "H-APP Done · APP-CON-1..8 Done · APP-PROD-1..9 Done · APP-EVOL-1..7 Done · APP-OPS-1..4 Done · APP-CON-DX Done",
+        "known_gaps": "CFG-14 LKW hybrid incomplete · MCP optional uneven · queue worker not scaffold-default · policy_coverage health proxy (UC-A7 golden deferred) · multi-tenant registry store deferred",
         "dimensions": [
-            "ApplicationManifest declares environment_id and roster.",
-            "wire_application_environment() without getattr reflection.",
-            "Business logic only in Tier-2 agents — not Tier-3 host factory.",
-            "Free-text intake has classifier or explicit capability routing.",
-            "Posture (S1–S7) matches profile knobs §23.2.",
-            "All *Profile sections wired through bridges — no orphan fields.",
-            "bootstrap_catalogs + ToolProfile/SkillProfile/IntegrationProfile coherent.",
+            "ApplicationManifest + full profile on product hosts (§45 checklist).",
+            "wire_application_environment() without getattr; package closure when conformance_check.",
+            "Business logic only in Tier-2 agents — not Tier-3 host factory (§28).",
+            "Capability routing via capabilities[] not class names (§37.4).",
+            "ApplicationHost hooks: timeout, BLOCK on error, audit events (APP-CON-5).",
+            "ApplicationEnvironmentState lifecycle sync on Nexus hooks (APP-CON-3).",
+            "RunArtifactBundle on ApplicationRunSummary (APP-CON-6).",
+            "Tier-3 scenario matrix / UC-A* evidence per reference host (APP-CON-7).",
+            "Workspace shadow/sandbox cleanup on lifespan (APP-CON-8).",
+            "EnvironmentSnapshot on intake + profile_snapshot_id (APP-EVOL-1).",
+            "ApplicationMigration CI + typed sub-migrations (APP-EVOL-2/2b).",
+            "CapabilityAlias sunset routing in STRICT (APP-EVOL-3).",
+            "AgentCertification on STRICT roster (APP-EVOL-4).",
+            "ApplicationRecoveryContract + ARCHITECTURE recovery docs (APP-EVOL-5).",
+            "ApplicationEnvironmentDiff + doctor diff-app (APP-EVOL-6).",
+            "ApplicationPackage + package.json from scaffold (APP-EVOL-7).",
+            "STRICT capability graph deploy gate + blast radius (APP-OPS-1).",
+            "ApplicationOperationalOwnership on product manifests (APP-OPS-2).",
+            "EnvironmentHealthScore + doctor health-app (APP-OPS-3).",
+            "ApplicationRegistry + EnvironmentRegistry + apps/envs CLI (APP-OPS-4).",
+            "check_application_production_gates.py aggregates APP-PROD + APP-CON + APP-EVOL + APP-OPS.",
             "Roster ⊆ skill/tool profiles (EnvironmentSkillToolConsistencyCheck).",
-            "IdentityProfile enforces tenant on runs.",
-            "Guardrail slug wired when security profile requires.",
-            "Task control routes mounted when INCLUDE_TASK_CONTROL.",
-            "Shadow/sandbox scoped per task — no global leak.",
-            "Docker/deploy artifacts from scaffold Phase N where claimed.",
-            "Host matrix §59.2 honest vs architecture claims.",
-            "graph_spec and OrchestrationProfile aligned per CFG case.",
+            "IdentityProfile + budget enforcement on STRICT product hosts.",
+            "Deploy triad present on scaffolded standard hosts.",
+            "APPLICATION_CREATION_GUIDE.md aligns with §31 · §45 · §47.",
         ],
         "scale_probes": [
-            "Cold start bootstrap all catalogs.",
-            "Multi-host fleet profile variant drift.",
+            "Cold start bootstrap all catalogs across four product hosts.",
+            "Registry sync + health score for full STRICT fleet.",
+            "Pre-deploy diff between manifest versions.",
             "strict_multi_agent_defaults() on legal/finance hosts.",
         ],
-        "overrides": "Full ApplicationEnvironmentProfile — this layer IS the primary override surface for the platform",
+        "overrides": "Full ApplicationEnvironmentProfile · ApplicationManifest · OrganizationalPolicyEnvelope per tenant · registry artifacts in build/",
         "ci_scripts": [
             "uv run pytest tests/unit/applications/ -q",
-            "uv run pytest tests/ -q -k orchestration_wiring",
+            "uv run python scripts/check_application_production_gates.py",
+            "uv run python scripts/check_application_registry.py",
+            "uv run python scripts/check_application_health_score.py",
             "python scripts/check_harness_no_getattr.py",
         ],
-        "production_baseline": "Reference hosts (legal_application, research_application, lab_application) · Viktor worker-in-Slack · enterprise FastAPI agent host patterns",
-        "anti_patterns": "Business pipeline in applications/host · orphan profile fields · getattr wiring · Nexus fork per product",
-        "appendix": "Appendix H (full profile map)",
+        "production_baseline": "Reference hosts (legal, research, dispute_sim, local_workspace) · enterprise FastAPI agent host · ops registry + health score on release",
+        "anti_patterns": "Business pipeline in applications/host · README as ops registry · getattr wiring · Nexus fork per product · skipping production gates",
+        "appendix": "APPLICATION_CREATION_GUIDE.md · Appendix F · Appendix H",
     },
     {
         "id": "EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE",
@@ -1216,7 +1233,13 @@ def render(domain: dict) -> str:
 
     appendix_block = ""
     if appendix != "N/A":
-        appendix_block = f"6. `docs/guides/AGENT_CREATION_GUIDE.md` **{appendix}**\n"
+        if "APPLICATION_CREATION_GUIDE" in appendix:
+            appendix_block = (
+                "6. `docs/guides/APPLICATION_CREATION_GUIDE.md`\n"
+                "7. `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix F · Appendix H**\n"
+            )
+        else:
+            appendix_block = f"6. `docs/guides/AGENT_CREATION_GUIDE.md` **{appendix}**\n"
 
     adr_block = ""
     if adr:
