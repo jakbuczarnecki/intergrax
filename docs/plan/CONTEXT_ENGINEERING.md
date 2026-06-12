@@ -46,7 +46,7 @@
 | GAP-CTX-12 | AHI | — | **Deferred** |
 | GAP-CTX-13 | CE-3.9, CE-3.10 | 2 | **Closed** |
 | GAP-CTX-14 | CE-3.11 | 2 | **Closed** |
-| GAP-CTX-15 | CE-FMT-1 | CE-ALIGN | **Open** — provider fragments not merged into `ChatMessage[]` |
+| GAP-CTX-15 | CE-FMT-1, CE-FMT-2 | CE-ALIGN | **Closed** |
 | GAP-CTX-16 | CE-8.2b | CE-ALIGN | **Open** — `ContextOrchestrator` resolve only; not on Nexus hot path |
 | GAP-CTX-17 | CE-ENG-REF | CE-ALIGN | **Open** — `engine_ref=custom` raises at resolve time |
 | GAP-CTX-18 | CE-PRESET-ENG | CE-ALIGN | **Open** — `regulated_minimal` / `explore_child` lack dedicated engine behavior |
@@ -81,8 +81,8 @@
 
 | ID | Deliverable | Priority | Status |
 |----|-------------|----------|--------|
-| **CE-FMT-1** | `DefaultContextFormatter` — ranked `ContextFragment[]` → `ChatMessage[]` merge before `ContextCompiler` | P0 | Planned |
-| **CE-FMT-2** | `fragments_excluded` populated from ranker quality gate + budget exclude reasons | P1 | Planned |
+| **CE-FMT-1** | `DefaultContextFormatter` — ranked `ContextFragment[]` → `ChatMessage[]` merge before `ContextCompiler` | P0 | **Done** |
+| **CE-FMT-2** | `fragments_excluded` populated from ranker quality gate + dedup reasons | P1 | **Done** |
 | **CE-8.2b** | Wire `ContextOrchestrator.assemble_with_hops` on graph `codebase` preset | P1 | Planned |
 | **CE-ENG-REF** | Resolve `ContextProfile.engine_ref` custom class via dotted import | P1 | Planned |
 | **CE-PRESET-ENG** | `RegulatedMinimalContextEngine` + `ExploreChildContextEngine` ranker/threshold behavior | P2 | Planned |
@@ -405,7 +405,7 @@ Post-audit alignment sprints. One sprint = one commit.
 | Sprint | Goal | CE IDs | Exit criteria |
 |--------|------|--------|---------------|
 | **A0** | Audit documentation | CE-DOC.9 | GAP-CTX-15..19 in architecture §16 + this register | **Done** |
-| **A1** | Fragment format merge | CE-FMT-1, CE-FMT-2 | Ranked fragments injected into messages before compile; excluded tuple populated |
+| **A1** | Fragment format merge | CE-FMT-1, CE-FMT-2 | Ranked fragments injected into messages before compile; excluded tuple populated | **Done** |
 | **A2** | Orchestrator hot path | CE-8.2b, CE-PROV-CTX | Codebase graph assemble uses orchestrator; workspace handles on provider_ctx |
 | **A3** | Custom engine + presets | CE-ENG-REF, CE-PRESET-ENG | `engine_ref` resolves; regulated_minimal / explore_child engines |
 | **A4** | Registry + e2e test | CE-REGISTRY-FMT, CE-7.5b | Registry formatter used; 1k workspace assemble gate test |

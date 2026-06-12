@@ -150,8 +150,46 @@ async def test_engine_emits_candidate_bus_events() -> None:
         },
     )
 
-    await engine.assemble(request, provider_ctx=provider_ctx)
+    assembled = await engine.assemble(request, provider_ctx=provider_ctx)
 
     types = [event.event_type for event in bus.history]
     assert RuntimeEventType.CONTEXT_CANDIDATE_COLLECTED in types
     assert RuntimeEventType.CONTEXT_CANDIDATE_DROPPED in types
+    assert len(assembled.fragments_included) == 1
+    assert assembled.fragments_excluded
+
+
+@pytest.mark.asyncio
+async def test_engine_merges_workspace_fragments_into_window() -> None:
+    adapter = _SmallWindowAdapter(window=4096)
+    config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
+    registry = ContextPluginRegistry()
+    from intergrax.context.providers.workspace import WorkspaceContextProvider
+
+    registry.add_provider(WorkspaceContextProvider())
+    engine = DefaultNexusContextEngine(engine_id="codebase", registry=registry)
+    request = ContextAssemblyRequest(
+        trace_id="t1",
+        run_id="r1",
+        task_id="task1",
+        tenant_id="tenant1",
+        assembly_scope="graph_node",
+        objective="fix bug",
+        decision_profile=ContextDecisionSnapshot(),
+        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=500),
+        assembly_options=TaskContextAssemblyOptions(),
+    )
+    provider_ctx = ContextProviderContext(
+        engine_id="codebase",
+        handles={
+            "runtime_config": config,
+            "messages": [ChatMessage(role="user", content="fix the handler")],
+            "workspace_files": {"handler.py": "def handle():\n    return 42\n"},
+            "workspace_max_chunks": 4,
+        },
+    )
+
+    assembled = await engine.assemble(request, provider_ctx=provider_ctx)
+
+    assert assembled.fragments_included
+    assert any("handler.py" in (msg.content or "") for msg in assembled.messages)

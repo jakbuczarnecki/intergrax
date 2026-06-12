@@ -11,9 +11,11 @@ from intergrax.context.contracts import (
     AssembledContext,
     ContextAssemblyProvenance,
     ContextAssemblyRequest,
+    ContextFragment,
     ContextProviderContext,
 )
 from intergrax.context.dedup import dedup_fragments_by_hash
+from intergrax.context.formatter import DefaultContextFormatter, merge_fragment_messages
 from intergrax.context.ranker import DefaultContextRanker
 from intergrax.context.registry import ContextPluginRegistry
 from intergrax.context.tracking.context_spans import context_span
@@ -44,12 +46,14 @@ class DefaultNexusContextEngine:
         compiler: ContextCompiler | None = None,
         validator: DefaultContextValidator | None = None,
         ranker: DefaultContextRanker | None = None,
+        formatter: DefaultContextFormatter | None = None,
     ) -> None:
         self._engine_id = engine_id
         self._registry = registry or ContextPluginRegistry()
         self._compiler = compiler or ContextCompiler()
         self._validator = validator or DefaultContextValidator()
         self._ranker = ranker or DefaultContextRanker()
+        self._formatter = formatter or DefaultContextFormatter()
 
     @property
     def engine_id(self) -> str:
@@ -99,6 +103,7 @@ class DefaultNexusContextEngine:
             raise ValueError("; ".join(pre_gate.errors))
 
         collected_fragments: list = []
+        fragments_excluded: list[tuple[ContextFragment, str]] = []
         with context_span("context.provider.collect"):
             for provider in self._registry.list_providers():
                 fragments = await provider.collect(request, ctx)
@@ -121,6 +126,7 @@ class DefaultNexusContextEngine:
 
         unique, dropped = dedup_fragments_by_hash(collected_fragments)
         collected_fragments = unique
+        fragments_excluded.extend(dropped)
         if dropped:
             counters = get_context_counters()
             counters.candidate_dropped_total += len(dropped)
@@ -144,12 +150,34 @@ class DefaultNexusContextEngine:
             _record_validation_failed(event_bus, event_ctx, post_gate.errors, stage="post_collect_policy")
             raise ValueError("; ".join(post_gate.errors))
 
+        ranked_fragments: list[ContextFragment] = []
         if collected_fragments:
             with context_span("context.budget.allocate"):
-                collected_fragments = self._ranker.rank(collected_fragments, request)
+                ranked_fragments, quality_excluded = self._ranker.rank_with_exclusions(
+                    collected_fragments,
+                    request,
+                )
+                fragments_excluded.extend(quality_excluded)
+                if quality_excluded and event_bus is not None:
+                    from intergrax.runtime.events.context_skill_recording import (
+                        record_context_candidate_dropped,
+                    )
+
+                    for fragment, reason in quality_excluded:
+                        record_context_candidate_dropped(
+                            event_bus,
+                            provider_id=fragment.source_id or fragment.source.value,
+                            drop_reason=reason,
+                            engine_id=self._engine_id,
+                            **event_ctx,
+                        )
+
+        formatter = self._registry.formatter or self._formatter
+        fragment_messages = formatter.format(ranked_fragments, request)
+        messages_for_compile = merge_fragment_messages(raw_messages, fragment_messages)
 
         compile_result = compile_chat_messages(
-            raw_messages,
+            messages_for_compile,
             runtime_config,
             compiler=self._compiler,
             max_output_tokens=max_output_tokens,
@@ -161,11 +189,14 @@ class DefaultNexusContextEngine:
             list(messages),
             count_tokens=self._compiler._count_tokens,  # noqa: SLF001
         )
-        fragments_included = tuple(
-            fragment_from_candidate(candidate, messages[candidate.message_index])
-            for candidate in candidates
-            if candidate.message_index < len(messages)
-        )
+        if ranked_fragments:
+            fragments_included = tuple(ranked_fragments)
+        else:
+            fragments_included = tuple(
+                fragment_from_candidate(candidate, messages[candidate.message_index])
+                for candidate in candidates
+                if candidate.message_index < len(messages)
+            )
         provenance = tuple(
             ContextAssemblyProvenance(
                 source_type=fragment.source.value,
@@ -178,7 +209,7 @@ class DefaultNexusContextEngine:
         assembled = AssembledContext(
             messages=messages,
             fragments_included=fragments_included,
-            fragments_excluded=(),
+            fragments_excluded=tuple(fragments_excluded),
             provenance=provenance,
             total_tokens=compile_result.total_tokens,
             budget_tokens=compile_result.budget_tokens,

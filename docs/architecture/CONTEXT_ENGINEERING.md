@@ -694,7 +694,7 @@ profile = ApplicationEnvironmentProfile(
 | GAP-CTX-12 | **Deferred** | L4 adaptive ranking | AHI plan |
 | GAP-CTX-13 | **Closed** | `ContextCompiler` not on hot path | CE-3.9 ACP + graph engine |
 | GAP-CTX-14 | **Closed** | `CONTEXT_BUILT` vs `CONTEXT_ASSEMBLED` split | CE-3.11 unified v2 |
-| GAP-CTX-15 | **Open** | Provider `collect()` fragments not merged into LLM window | CE-FMT-1 (CE-ALIGN A1) |
+| GAP-CTX-15 | **Closed** | Provider `collect()` fragments not merged into LLM window | CE-FMT-1 `formatter.py` + engine merge |
 | GAP-CTX-16 | **Open** | `ContextOrchestrator` not on Nexus graph hot path | CE-8.2b (CE-ALIGN A2) |
 | GAP-CTX-17 | **Open** | `engine_ref=custom` not resolved | CE-ENG-REF (CE-ALIGN A3) |
 | GAP-CTX-18 | **Open** | Preset engines lack §8.5 behavior | CE-PRESET-ENG (CE-ALIGN A3) |

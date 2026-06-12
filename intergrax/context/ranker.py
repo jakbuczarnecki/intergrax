@@ -27,14 +27,22 @@ class DefaultContextRanker:
         fragments: list[ContextFragment],
         request: ContextAssemblyRequest,
     ) -> list[ContextFragment]:
+        ranked, _ = self.rank_with_exclusions(fragments, request)
+        return ranked
+
+    def rank_with_exclusions(
+        self,
+        fragments: list[ContextFragment],
+        request: ContextAssemblyRequest,
+    ) -> tuple[list[ContextFragment], list[tuple[ContextFragment, str]]]:
         if not fragments or not request.step_kind:
-            return self._apply_quality_gate(
+            return self._partition_quality_gate(
                 sorted(fragments, key=lambda item: item.relevance_score, reverse=True)
             )
 
         boosted_sources = STEP_KIND_SOURCE_BOOSTS.get(request.step_kind, frozenset())
         if not boosted_sources:
-            return self._apply_quality_gate(
+            return self._partition_quality_gate(
                 sorted(fragments, key=lambda item: item.relevance_score, reverse=True)
             )
 
@@ -59,13 +67,16 @@ class DefaultContextRanker:
                 )
             else:
                 ranked.append(fragment)
-        return self._apply_quality_gate(
+        return self._partition_quality_gate(
             sorted(ranked, key=lambda item: item.relevance_score, reverse=True)
         )
 
-    def _apply_quality_gate(self, fragments: list[ContextFragment]) -> list[ContextFragment]:
+    def _partition_quality_gate(
+        self,
+        fragments: list[ContextFragment],
+    ) -> tuple[list[ContextFragment], list[tuple[ContextFragment, str]]]:
         if not fragments:
-            return fragments
+            return fragments, []
         signals = [
             ContextChunkSignal(
                 chunk_id=fragment.fragment_id,
@@ -78,4 +89,14 @@ class DefaultContextRanker:
         ]
         report = evaluate_context_engineering(chunks=signals)
         passed_ids = {record.chunk_id for record in report.records if record.passed}
-        return [fragment for fragment in fragments if fragment.fragment_id in passed_ids]
+        included = [fragment for fragment in fragments if fragment.fragment_id in passed_ids]
+        excluded = [
+            (fragment, "quality_threshold")
+            for fragment in fragments
+            if fragment.fragment_id not in passed_ids
+        ]
+        return included, excluded
+
+    def _apply_quality_gate(self, fragments: list[ContextFragment]) -> list[ContextFragment]:
+        included, _ = self._partition_quality_gate(fragments)
+        return included
