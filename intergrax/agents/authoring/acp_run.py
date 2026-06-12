@@ -185,7 +185,11 @@ async def run_acp_session(
         state_root=state_root,
         run_trace=run_trace,
         resolved_budget_limits=merged.resolved_budget_limits,
+        budget_reaction=merged.budget_reaction,
+        notification_adapter=host.notification_adapter if host is not None else None,
+        budget_reaction_hook=host.budget_reaction_hook if host is not None else None,
     )
+    kernel_ctx_holder: list[StepKernelContext] = [kernel_ctx]
     kernel_ctx.checkpoint_hook = make_checkpoint_hook(
         persistence=persistence,
         run_id=run_id,
@@ -205,6 +209,7 @@ async def run_acp_session(
         usage_provider=lambda: (
             step_ctx_holder[0].invocation_usage if step_ctx_holder else None
         ),
+        degrade_provider=lambda: kernel_ctx_holder[0].budget_degrade_active,
     )
     shared_context = load_view(request.metadata) or view_from_task_metadata(
         request.metadata,
@@ -347,6 +352,10 @@ async def run_acp_session(
             ),
         },
     )
+    if status == AgentRunStatus.PAUSED:
+        await agent.on_run_end(result)
+        return result
+
     validation = agent.validate_output(result)
     if not validation.valid:
         return _failed_result(

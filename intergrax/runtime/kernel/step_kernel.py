@@ -98,6 +98,11 @@ class StepKernelContext:
     resolved_budget_limits: ResolvedBudgetLimits = field(
         default_factory=ResolvedBudgetLimits
     )
+    budget_reaction: Any = None
+    notification_adapter: Any = None
+    budget_reaction_hook: Any = None
+    budget_threshold_emitted: set[str] = field(default_factory=set)
+    budget_degrade_active: bool = False
 
 
 class HarnessKernel:
@@ -714,6 +719,14 @@ class HarnessKernel:
         return enqueue_result.diagnostics(), trace_events
 
     @staticmethod
+    async def emit_runtime_event(
+        kernel_ctx: StepKernelContext,
+        event_type: RuntimeEventType,
+        payload: dict[str, Any],
+    ) -> int:
+        return await HarnessKernel._emit(kernel_ctx, event_type, payload)
+
+    @staticmethod
     async def _emit(
         kernel_ctx: StepKernelContext,
         event_type: RuntimeEventType,
@@ -768,6 +781,9 @@ class HarnessKernel:
         kernel_ctx.state_root = updated_root
         step_ctx.state_snapshot = updated_root
         step_ctx.invocation_usage = usage_view
+        from intergrax.agents.acp_budget_reactions import maybe_emit_budget_threshold
+
+        await maybe_emit_budget_threshold(step_ctx, kernel_ctx)
         kernel_ctx.run_trace.steps.append(record.step_record)
         kernel_ctx.run_trace.total_steps = len(kernel_ctx.run_trace.steps)
         kernel_ctx.run_trace.total_llm_tokens += sum(

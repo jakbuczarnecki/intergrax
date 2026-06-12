@@ -121,8 +121,8 @@ Architecture §43 is **implemented jointly** with ACP §25.4–§25.5. Tier-3 co
 | `AgentBinding.budget_slice` | TIER3 + ACP | H-APP.1.2 · ACP §34 | **Done** |
 | Token metering rollups | ACP | **ACP-TOK-1** | **Done** |
 | Kernel hard cap + block LLM | ACP | **ACP-TOK-2** | **Done** |
-| Host notify / HITL / `custom_hook` | ACP + TIER3 | **ACP-TOK-3** · APP-CON-3 | **Partial** (APP-CON-3 **Done** · ACP-TOK-3 open) |
-| CI gate | ACP | **ACP-TOK-CI** | Planned |
+| Host notify / HITL / `custom_hook` | ACP + TIER3 | **ACP-TOK-3** · APP-CON-3 | **Done** |
+| CI gate | ACP | **ACP-TOK-CI** | **Done** |
 | APP-PROD-7 host gate | TIER3 | **APP-PROD-7** | Planned (after ACP-TOK-2) |
 
 **Fidelity rule:** do not mark §43 **Done** in architecture until ACP-TOK-2 **Done** and APP-CON-3 seeds `ActiveBudgetState` on hooks.

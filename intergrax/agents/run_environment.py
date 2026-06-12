@@ -25,7 +25,7 @@ from intergrax.contracts.agent_run import (
     require_user_id_for_user_memory_scope,
 )
 from intergrax.agents.acp_budget_resolution import resolve_budget_limits
-from intergrax.contracts.agent_budget import ResolvedBudgetLimits
+from intergrax.contracts.agent_budget import BudgetReactionProfile, ResolvedBudgetLimits
 from intergrax.contracts.agent_run_enums import AgentRunAutonomyLevel, SideEffectMode
 from intergrax.contracts.memory_scope import MemoryScope
 
@@ -59,6 +59,7 @@ class EffectiveAgentRunEnvironment(BaseModel):
     profile_id: str | None = None
     organizational: OrganizationalPolicyContext | None = None
     resolved_budget_limits: ResolvedBudgetLimits = Field(default_factory=ResolvedBudgetLimits)
+    budget_reaction: BudgetReactionProfile | None = None
 
 
 def render_namespace_template(
@@ -293,6 +294,9 @@ def merge_environment(
         binding=binding,
         execution_options=options,
     )
+    budget_reaction = (
+        app_profile.cost_profile.budget_reaction if app_profile is not None else None
+    )
 
     return EffectiveAgentRunEnvironment(
         agent_id=contract.id,
@@ -331,4 +335,5 @@ def merge_environment(
         profile_id=profile_id,
         organizational=organizational,
         resolved_budget_limits=resolved_limits,
+        budget_reaction=budget_reaction,
     )

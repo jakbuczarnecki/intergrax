@@ -3301,6 +3301,7 @@ Normative CI checks before merge to agent roster (extends §45).
 | CI-15 | Release eval suites | ACP-PROD-9 |
 | CI-16 | Production readiness scoreboard blockers | `check_agent_acp_close_ci.py` |
 | CI-17 | ACP-AP-02 — no tool loops in graph orchestration | `check_agent_acp_ap02_tool_loop_boundary.py` |
+| CI-18 | Token budget contract — kernel metering + no agent budget `state_delta` | `check_agent_token_budget_contract.py` |
 
 **Rule:** new agent PR MUST declare which CI rows apply; all applicable rows green.
 

@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
 
 from intergrax.agents.acp_budget_enforcement_bridge import AcpBudgetExceededError
 from intergrax.agents.authoring.llm_router import LlmStepResult, StepLLMRouter
@@ -23,6 +22,7 @@ class BudgetEnforcingLLMRouter:
     _inner: StepLLMRouter
     _limits: ResolvedBudgetLimits
     _usage_provider: Callable[[], AcpInvocationUsageView | None]
+    _degrade_provider: Callable[[], bool] | None = None
 
     def list_allowed_models(self) -> list[str]:
         return self._inner.list_allowed_models()
@@ -48,7 +48,12 @@ class BudgetEnforcingLLMRouter:
         )
         if violation is not None:
             raise AcpBudgetExceededError(violation)
-        return await self._inner.complete(prompt, model_hint=model_hint)
+        effective_hint = model_hint
+        if self._degrade_provider is not None and self._degrade_provider():
+            allowed = self._inner.list_allowed_models()
+            if allowed:
+                effective_hint = allowed[-1]
+        return await self._inner.complete(prompt, model_hint=effective_hint)
 
 
 def wrap_budget_enforcing_router(
@@ -56,14 +61,11 @@ def wrap_budget_enforcing_router(
     *,
     limits: ResolvedBudgetLimits,
     usage_provider: Callable[[], AcpInvocationUsageView | None],
+    degrade_provider: Callable[[], bool] | None = None,
 ) -> BudgetEnforcingLLMRouter:
     return BudgetEnforcingLLMRouter(
         _inner=router,
         _limits=limits,
         _usage_provider=usage_provider,
+        _degrade_provider=degrade_provider,
     )
-
-
-def as_router_delegate(router: BudgetEnforcingLLMRouter | StepLLMRouter) -> Any:
-    """Return an object compatible with ``AgentStepContext.llm_router``."""
-    return router

@@ -9,9 +9,9 @@ from typing import Protocol, runtime_checkable
 
 from intergrax.agents.acp_budget_enforcement_bridge import (
     AcpBudgetExceededError,
-    budget_exceeded_outcome,
     check_step_boundary_budget,
 )
+from intergrax.agents.acp_budget_reactions import handle_hard_budget_violation
 from intergrax.agents.authoring.step_outcome import StepOutcome
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.step_execution import StepExecutionRecord
@@ -41,13 +41,17 @@ class AgentRuntime:
             kernel_ctx.resolved_budget_limits,
         )
         if violation is not None:
-            outcome = budget_exceeded_outcome(violation)
+            outcome = await handle_hard_budget_violation(violation, step_ctx, kernel_ctx)
             record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
             return outcome, record
         try:
             outcome = await agent.on_next_step(step_ctx)
         except AcpBudgetExceededError as exc:
-            outcome = budget_exceeded_outcome(exc.violation)
+            outcome = await handle_hard_budget_violation(
+                exc.violation,
+                step_ctx,
+                kernel_ctx,
+            )
             record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
             return outcome, record
         record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
