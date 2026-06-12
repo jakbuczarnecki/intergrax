@@ -79,7 +79,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-CTX-001](entries/2026-06-12/ADR-CTX-001.md) | Context Engineering as first-class domain and plugin engine | Accepted |
 | [ADR-FLOW-005](entries/2026-06-12/ADR-FLOW-005.md) | Retire Tier-1 AgentEngine pipeline stack (ACP-CLOSE-LEG-5) | Accepted |
 | [ADR-TOOL-003](entries/2026-06-12/ADR-TOOL-003.md) | `ToolInvocationPattern` protocol and orchestration plugin model (TOOL-ENG-16) | Accepted |
-| ADR-TOOL-004 | `ToolSelectionStrategy` plugin registry; semantic index vs RAG; hierarchical passes (TOOL-ENG-13/14/26) | **Proposed** — write before TOOL-ENG-26 merge |
+| [ADR-TOOL-004](entries/2026-06-12/ADR-TOOL-004.md) | Semantic tool catalog index vs RAG; selection boundary (TOOL-ENG-13) | Accepted |
 
 ---
 

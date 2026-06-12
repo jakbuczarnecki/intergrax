@@ -46,7 +46,9 @@
 | Shipped patterns (single / ReAct) | **Done** | TOOL-ENG-17–18,21–23 | S2–S3 |
 | Parallel batch + aggregate | **Done** | TOOL-ENG-9,29 | S4 |
 | Chain / semantic composite | **Gap** | TOOL-ENG-20,25 | S5–S7 |
-| Semantic / hierarchical selection | **Gap** | TOOL-ENG-13/14 | L6 at scale |
+| Semantic selection | **In progress** | TOOL-ENG-13 | S5 |
+| Hierarchical selection | **Gap** | TOOL-ENG-14 | S6 |
+| Semantic parallel composite | **In progress** | TOOL-ENG-25 | S5 |
 | Selection strategy plugins | **Gap** | TOOL-ENG-26/31 | Entry points + config inject |
 | Post-tool verify HIGH+ | **Gap** | TOOL-ENG-7 | CVL integration |
 | `tools_mode=required` hard fail | **Gap** | TOOL-ENG-8 | Warning only today |
@@ -84,7 +86,23 @@ Sprints close **Phase TOOL-ENG** remaining rows. One sprint ≈ one PR; update p
 | **S7** | TOOL-ENG-20,24,27,28,30 | Chain pattern + entry points + CI + lab DX | `check_tool_invocation_patterns.py` green | `patterns/deterministic_chain.py`, `applications/lab_application/` |
 | **S8** | TOOL-ENG-7,8,12,10 | Governance closeout | Required-mode fail + HIGH verify | `tools_step.py`, `tool_verify_hooks.py` |
 
-**Current execution:** S0–S4 **Done** (2026-06-12) · next **S5** (TOOL-ENG-13,25).
+**Current execution:** S0–S4 **Done** (2026-06-12) · **S5 in progress** (TOOL-ENG-13,25).
+
+### S5 implementation spec (2026-06-12)
+
+**Scope:** TOOL-ENG-13 + TOOL-ENG-25 — semantic tool index + composite parallel batch.
+
+| Deliverable | Contract |
+|-------------|----------|
+| `ToolCatalogEmbedder` | `index_for_registry(registry)` → `ToolCatalogIndex`; embed via `BaseEmbeddingManager` |
+| `ToolCatalogIndex.search_query` | Cosine top-k over registry subset; returns `(tool_id, score)` |
+| `ToolSelectionMode.SEMANTIC` | `SemanticToolIndexSelectionStrategy`; requires `embedding_manager` on context |
+| `ParallelSemanticBatchPattern` | Semantic top-k → auto `PlannedToolCall` → parallel invoke → aggregate |
+| `pattern_for_mode(PARALLEL_SEMANTIC_BATCH)` | Returns `ParallelSemanticBatchPattern` |
+
+**ADR:** [ADR-TOOL-004](../adr/entries/2026-06-12/ADR-TOOL-004.md)
+
+**Acceptance:** `test_tool_catalog_embedder.py` rank gate · `test_parallel_semantic_batch_pattern.py`
 
 ### S4 implementation spec (2026-06-12)
 
