@@ -47,6 +47,7 @@ def resolve_budget_limits(
 
     if execution_options is not None and execution_options.max_total_tokens is not None:
         agent_limit = execution_options.max_total_tokens
+        agent_enforcement = BudgetLimitEnforcement.HARD
         limit_source = "request"
 
     return ResolvedBudgetLimits(

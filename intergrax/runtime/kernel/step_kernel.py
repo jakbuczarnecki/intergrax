@@ -28,6 +28,10 @@ from intergrax.contracts.agent_run_trace import (
     PolicyVerdictRecord,
 )
 from intergrax.agents.acp_token_metering_bridge import apply_llm_metering_after_step
+from intergrax.contracts.acp_budget_enforcement import (
+    evaluate_hard_budget_violation,
+    is_budget_exceeded_outcome,
+)
 from intergrax.contracts.agent_budget import ResolvedBudgetLimits
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.execution_phase import ExecutionPhase
@@ -154,6 +158,28 @@ class HarnessKernel:
 
         policy_pre = HarnessKernel._policy_pre_check(outcome, step_ctx, kernel_ctx)
         trace_events += await HarnessKernel._emit_policy(kernel_ctx, policy_pre, phase="pre")
+        if is_budget_exceeded_outcome(outcome):
+            record = StepExecutionRecord(
+                step_index=step_ctx.step_index,
+                outcome_applied=False,
+                policy_pre=policy_pre,
+                error_code=AgentRunErrorCode.BUDGET_EXCEEDED,
+                trace_event_count=trace_events,
+                step_record=HarnessKernel._build_step_record(
+                    step_ctx=step_ctx,
+                    outcome=outcome,
+                    state_version=int(
+                        extract_acp_state_blob(kernel_ctx.state_root).get("_version", 0)
+                    ),
+                    policy_pre=policy_pre,
+                    error_code=AgentRunErrorCode.BUDGET_EXCEEDED,
+                    terminal_reason=TerminalReason.BUDGET_EXCEEDED,
+                    next_action=StepNextAction.FAIL,
+                    finished_at=_utc_now(),
+                ),
+            )
+            await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
+            return record
         if outcome.errors and kernel_ctx.reliability is not None:
             for error in outcome.errors:
                 kernel_ctx.reliability.record_failure(error.code)
@@ -559,7 +585,7 @@ class HarnessKernel:
         )
         if org_decision is not None:
             return org_decision
-        if outcome.errors:
+        if outcome.errors and not is_budget_exceeded_outcome(outcome):
             return PolicyDecision(
                 action=PolicyAction.DENY,
                 reason="step_errors_present",
@@ -595,6 +621,19 @@ class HarnessKernel:
             action=PolicyAction.ALLOW,
             reason="non_terminal_step",
             policy_rule_id="kernel.post_allow",
+        )
+
+    @staticmethod
+    def check_hard_budget_before_llm(
+        step_ctx: AgentStepContext,
+        kernel_ctx: StepKernelContext,
+        *,
+        pending_agent_tokens: int = 0,
+    ):
+        return evaluate_hard_budget_violation(
+            step_ctx.invocation_usage,
+            kernel_ctx.resolved_budget_limits,
+            pending_agent_tokens=pending_agent_tokens,
         )
 
     @staticmethod

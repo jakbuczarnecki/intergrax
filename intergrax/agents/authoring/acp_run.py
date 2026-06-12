@@ -12,6 +12,7 @@ from intergrax.agents.authoring.acp_session_host import (
     ACP_HOST_CONTEXT_KEY,
     ACPSessionHostContext,
 )
+from intergrax.agents.authoring.budget_enforcing_llm_router import wrap_budget_enforcing_router
 from intergrax.agents.authoring.llm_router import StepLLMRouter
 from intergrax.agents.authoring.shared_context_bridge import load_view, persist_view, view_from_task_metadata
 from intergrax.agents.authoring.step_loop import AgentRuntime
@@ -193,9 +194,17 @@ async def run_acp_session(
         trace_step_count_fn=lambda: len(kernel_ctx.run_trace.steps),
     )
 
-    llm_router = StepLLMRouter(
+    base_llm_router = StepLLMRouter(
         allowed_models=tuple(merged.allowed_llm_models),
         default_model=merged.default_llm_model,
+    )
+    step_ctx_holder: list[AgentStepContext] = []
+    llm_router = wrap_budget_enforcing_router(
+        base_llm_router,
+        limits=merged.resolved_budget_limits,
+        usage_provider=lambda: (
+            step_ctx_holder[0].invocation_usage if step_ctx_holder else None
+        ),
     )
     shared_context = load_view(request.metadata) or view_from_task_metadata(
         request.metadata,
@@ -236,6 +245,7 @@ async def run_acp_session(
             merged.resolved_budget_limits,
         ),
     )
+    step_ctx_holder.append(step_ctx)
 
     max_iterations = merged.max_steps or contract.max_steps or 32
     last_outcome = None
@@ -248,6 +258,11 @@ async def run_acp_session(
         if record.error_code == AgentRunErrorCode.MAX_STEPS_EXCEEDED:
             break
         if record.error_code is not None and not record.outcome_applied:
+            fail_terminal = (
+                TerminalReason.BUDGET_EXCEEDED
+                if record.error_code == AgentRunErrorCode.BUDGET_EXCEEDED
+                else TerminalReason.ERROR
+            )
             return _failed_result(
                 run_id=run_id,
                 trace_id=trace_id,
@@ -261,7 +276,7 @@ async def run_acp_session(
                     )
                 ],
                 duration_ms=int((time.perf_counter() - started) * 1000),
-                terminal_reason=TerminalReason.ERROR,
+                terminal_reason=fail_terminal,
             )
         if outcome.is_terminal or outcome.next_action == StepNextAction.PAUSE_HITL:
             break
@@ -272,6 +287,7 @@ async def run_acp_session(
                 "invocation_usage": step_ctx.invocation_usage,
             },
         )
+        step_ctx_holder[0] = step_ctx
 
     if last_outcome is None or last_record is None:
         return _failed_result(
@@ -292,7 +308,10 @@ async def run_acp_session(
     duration_ms = int((time.perf_counter() - started) * 1000)
     status = _terminal_status(last_outcome.is_terminal, last_outcome.next_action)
     terminal_reason = last_outcome.terminal_reason or TerminalReason.GOAL_MET
-    if last_record.budget_exceeded:
+    if last_record.error_code == AgentRunErrorCode.BUDGET_EXCEEDED:
+        status = AgentRunStatus.FAILED
+        terminal_reason = TerminalReason.BUDGET_EXCEEDED
+    elif last_record.budget_exceeded:
         status = AgentRunStatus.FAILED
         terminal_reason = TerminalReason.MAX_STEPS_EXCEEDED
 
