@@ -107,7 +107,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 | APP-OPS-1 | Env capability graph + blast radius STRICT gate | **Done** | `check_capability_graph_strict_deploy.py` · `test_capability_graph_deploy_gate.py` |
 | APP-OPS-2 | `ApplicationOperationalOwnership` on manifest | **Done** | `check_application_ownership.py` · `test_operational_ownership_gate.py` |
 | APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | **Done** | `check_application_health_score.py` |
-| APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | Planned | `intergrax apps list` / `envs list` |
+| APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | **Done** | `check_application_registry.py` |
 
 ---
 
@@ -174,7 +174,7 @@ Recommended PR sequence — one APP ID per PR:
 11. APP-CON-7       scenario matrix tests — **Done**
 12. APP-EVOL-2/2b   migrations — **Done**
 13. APP-EVOL-3..7   evolution + packaging — **Done**
-14. APP-OPS-3/4     health score + registries — **3 Done** · 4 open
+14. APP-OPS-3/4     health score + registries — **Done**
 15. APP-CON-DX.*    author guide + audit prompt
 ```
 
@@ -524,7 +524,7 @@ uv run pytest -m gate -q
 | APP-OPS-1 | Env capability graph + blast radius STRICT gate | **Done** | **Critical** | `check_capability_graph_strict_deploy.py` |
 | APP-OPS-2 | `ApplicationOperationalOwnership` + APP-PROD | **Done** | High | `check_application_ownership.py` |
 | APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | **Done** | High | `check_application_health_score.py` |
-| APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | Planned | Medium | `apps list` / `envs list` |
+| APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | **Done** | Medium | `check_application_registry.py` |
 | APP-EVOL-2b | Typed migration validators | **Done** | High | `migration_wiring.py` per primitive |
 
 **Freeze declaration:** Tier-3 **structural architecture** is complete at §51. Further work is APP-* implementation only — no new composition primitives without ADR.

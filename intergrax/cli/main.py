@@ -23,9 +23,13 @@ def build_parser() -> argparse.ArgumentParser:
     from intergrax.cli.integrations_pick import register_parser as register_pick
     from intergrax.cli.init_project import register_parser as register_init
     from intergrax.cli.mvp_evolution import register_parser as register_mvp
+    from intergrax.cli.apps import register_parser as register_apps
+    from intergrax.cli.envs import register_parser as register_envs
 
     register_run(sub)
     register_doctor(sub)
+    register_apps(sub)
+    register_envs(sub)
     register_pick(sub)
     register_init(sub)
     register_mvp(sub)
@@ -58,6 +62,14 @@ def main(argv: list[str] | None = None) -> int:
         from intergrax.cli.doctor import run_doctor
 
         return run_doctor(args)
+    if args.command == "apps":
+        from intergrax.cli.apps import run_apps
+
+        return run_apps(args)
+    if args.command == "envs":
+        from intergrax.cli.envs import run_envs
+
+        return run_envs(args)
     if args.command == "integrations-pick":
         from intergrax.cli.integrations_pick import run_pick
 

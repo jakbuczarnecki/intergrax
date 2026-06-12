@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-11-047 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-OPS-4 | [Sprint 22 APP-OPS-4 registry CLI](entries/2026-06-11/tier3-sprint22-app-ops-4-registry-cli.md) | pending |
 | IJ-2026-06-11-046 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-OPS-3 | [Sprint 21 APP-OPS-3 environment health score](entries/2026-06-11/tier3-sprint21-app-ops-3-health-score.md) | pending |
 | IJ-2026-06-11-045 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-7 | [Sprint 20 APP-EVOL-7 application package](entries/2026-06-11/tier3-sprint20-app-evol-7-application-package.md) | pending |
 | IJ-2026-06-11-044 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-6 | [Sprint 19 APP-EVOL-6 environment diff](entries/2026-06-11/tier3-sprint19-app-evol-6-environment-diff.md) | pending |

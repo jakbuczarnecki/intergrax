@@ -217,6 +217,12 @@ def check_tier3_scenario_matrix() -> list[str]:
     return _check(REPO_ROOT)
 
 
+def check_application_registry() -> list[str]:
+    from intergrax.applications._shared.registry_ops_wiring import check_platform_registries
+
+    return check_platform_registries(REPO_ROOT)
+
+
 def check_application_health_score() -> list[str]:
     from intergrax.applications._shared.health_score_wiring import check_strict_product_health_scores
 
@@ -320,6 +326,7 @@ def main() -> int:
         ("application_environment_diff", check_application_environment_diff),
         ("application_package", check_application_package),
         ("application_health_score", check_application_health_score),
+        ("application_registry", check_application_registry),
     )
     violations: list[str] = []
     for _name, fn in checks:

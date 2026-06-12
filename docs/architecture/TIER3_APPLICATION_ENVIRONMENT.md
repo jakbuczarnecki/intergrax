@@ -2432,9 +2432,11 @@ EnvironmentDeployment:
 | `intergrax envs list [--app <id>]` | All environments |
 | `intergrax envs show <env_id>` | Deployment, snapshot, graph summary |
 
-**Storage:** file-based registry in monorepo (`build/application_registry.json`) for dev; pluggable store for multi-tenant ops (APP-OPS-4).
+**Storage:** file-based registry in monorepo (`build/application_registry.json`, `build/environment_registry.json`).
 
-**Status:** `applications/README.md` index **Partial**; typed registries **Planned** APP-OPS-4.
+**CLI:** `intergrax apps list|show|sync` · `intergrax envs list|show`.
+
+**Status:** **Done** (`application_registry.py` · `registry_ops_wiring.py` · `check_application_registry.py` · APP-OPS-4). Ops automation should prefer registry artifacts over `applications/README.md`.
 
 ---
 
@@ -2445,10 +2447,10 @@ EnvironmentDeployment:
 | APP-OPS-1 | STRICT deploy gate: `EnvironmentCapabilityGraphView` + blast radius check | **Done** | `check_capability_graph_strict_deploy.py` |
 | APP-OPS-2 | `ApplicationOperationalOwnership` on manifest + APP-PROD gate | **Done** | `check_application_ownership.py` |
 | APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | **Done** | `check_application_health_score.py` |
-| APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | Planned | `apps list` / `envs list` |
+| APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | **Done** | `check_application_registry.py` |
 | APP-EVOL-2b | `ProfileMigration` / `GraphSpecMigration` / `OrgEnvelopeMigration` | **Done** | `migration_wiring.py` typed validators |
 
-**Architecture freeze boundary:** after APP-OPS-1..4 **Done**, Tier-3 canon is **feature-complete** for reference platform; remaining work is implementation, not structural redesign.
+**Architecture freeze boundary:** APP-OPS-1..4 **Done** — Tier-3 canon is **feature-complete** for reference platform; remaining work is implementation, not structural redesign.
 
 ---
 
