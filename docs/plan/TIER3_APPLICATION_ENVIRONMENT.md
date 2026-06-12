@@ -98,7 +98,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 | APP-EVOL-4 | `AgentCertification` + STRICT roster gate | **Done** | `agent_certification_wiring.py` · `check_agent_certification_roster.py` |
 | APP-EVOL-5 | `ApplicationRecoveryContract` on `ReliabilityProfile` | **Done** | `application_recovery_contract.py` · `check_application_recovery_contract.py` |
 | APP-EVOL-6 | `ApplicationEnvironmentDiff` + `doctor diff-app` | **Done** | `check_application_environment_diff.py` |
-| APP-EVOL-7 | `ApplicationPackage` + dependency resolver | Planned | `new-stack` emits package manifest |
+| APP-EVOL-7 | `ApplicationPackage` + dependency resolver | **Done** | `check_application_package.py` |
 
 ### APP-OPS — platform operations (architecture §50)
 
@@ -173,7 +173,7 @@ Recommended PR sequence — one APP ID per PR:
 10. APP-OPS-2       application ownership on manifest — **Done**
 11. APP-CON-7       scenario matrix tests — **Done**
 12. APP-EVOL-2/2b   migrations — **Done**
-13. APP-EVOL-3..7   evolution + packaging — **3–6 Done** · 7 open
+13. APP-EVOL-3..7   evolution + packaging — **Done**
 14. APP-OPS-3/4     health score + registries
 15. APP-CON-DX.*    author guide + audit prompt
 ```
@@ -505,7 +505,7 @@ uv run pytest -m gate -q
 | APP-EVOL-4 | `AgentCertification` + STRICT roster gate | **Done** | High | `test_agent_certification_gate.py` |
 | APP-EVOL-5 | `ApplicationRecoveryContract` on profile | **Done** | High | `test_recovery_contract_wiring.py` |
 | APP-EVOL-6 | `ApplicationEnvironmentDiff` + `doctor diff-app` | **Done** | Medium | `check_application_environment_diff.py` |
-| APP-EVOL-7 | `ApplicationPackage` + dependency resolver | Planned | Medium | `new-stack` emits package manifest |
+| APP-EVOL-7 | `ApplicationPackage` + dependency resolver | **Done** | Medium | `check_application_package.py` |
 
 **Explicitly out of scope:** marketplace UI; Nexus fork; Tier-3 cognition loop.
 

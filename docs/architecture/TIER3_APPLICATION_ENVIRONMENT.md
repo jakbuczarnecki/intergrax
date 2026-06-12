@@ -2140,7 +2140,7 @@ graph_spec nodes            → roster capabilities satisfied
 | Secrets never in package | `.env.example` only |
 | Business logic stays Tier-2 | Package wires, does not embed cognition |
 
-**Status:** scaffold bundle **Partial**; `ApplicationPackage` schema + resolver **Planned** APP-EVOL-7.
+**Status:** **Done** (`application_package.py` · `package_wiring.py` · `package_emit.py` · `check_application_package.py` · APP-EVOL-7).
 
 ---
 
@@ -2154,7 +2154,7 @@ graph_spec nodes            → roster capabilities satisfied
 | APP-EVOL-4 | `AgentCertification` + STRICT roster gate | **Done** | `check_agent_certification_roster.py` |
 | APP-EVOL-5 | `ApplicationRecoveryContract` on `ReliabilityProfile` | **Done** | `check_application_recovery_contract.py` |
 | APP-EVOL-6 | `ApplicationEnvironmentDiff` + `doctor diff-app` | **Done** | `check_application_environment_diff.py` |
-| APP-EVOL-7 | `ApplicationPackage` + dependency resolver | Planned | `new-stack` emits package manifest |
+| APP-EVOL-7 | `ApplicationPackage` + dependency resolver | **Done** | `check_application_package.py` · `package.json` from scaffold |
 
 **Explicitly out of scope:** marketplace UI (H-APP deferred); Nexus fork; Tier-3 cognition loop.
 

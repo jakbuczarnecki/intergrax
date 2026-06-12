@@ -217,6 +217,38 @@ def check_tier3_scenario_matrix() -> list[str]:
     return _check(REPO_ROOT)
 
 
+def check_application_package() -> list[str]:
+    from intergrax.applications._shared.environment_wiring import wire_application_environment
+    from intergrax.applications._shared.package_wiring import (
+        build_application_package,
+        package_gate_environment,
+        validate_application_package_closure,
+    )
+    from intergrax.applications._shared.product_manifest_registry import (
+        iter_strict_product_manifests,
+    )
+
+    violations: list[str] = []
+    for product_id, manifest in iter_strict_product_manifests():
+        gate_env = package_gate_environment(manifest.resolved_environment())
+        try:
+            wiring = wire_application_environment(manifest, gate_env, conformance_check=False)
+        except Exception as exc:
+            violations.append(f"{product_id}: wire failed: {exc}")
+            continue
+        package = build_application_package(manifest, gate_env)
+        violations.extend(
+            validate_application_package_closure(
+                package,
+                manifest,
+                gate_env,
+                wiring.registry_snapshot,
+                capability_graph=wiring.capability_graph,
+            ),
+        )
+    return violations
+
+
 def check_application_environment_diff() -> list[str]:
     from intergrax.applications._shared.environment_diff_wiring import (
         build_application_environment_diff,
@@ -280,6 +312,7 @@ def main() -> int:
         ("agent_certification_roster", check_agent_certification_roster),
         ("application_recovery_contract", check_application_recovery_contract),
         ("application_environment_diff", check_application_environment_diff),
+        ("application_package", check_application_package),
     )
     violations: list[str] = []
     for _name, fn in checks:
