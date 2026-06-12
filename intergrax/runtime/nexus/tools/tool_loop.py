@@ -1,39 +1,35 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Bounded multi-iteration tool loop (TOOL-ENG-6 · ACP-CLOSE-PAT-1)."""
+"""Bounded multi-iteration tool loop (TOOL-ENG-6 · TOOL-ENG-22)."""
 
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
-from typing import Literal, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.runtime.nexus.budget.budget_ticks import enforce_tool_call_budget
+from intergrax.runtime.nexus.config_types import ToolInvocationMode
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState, ToolCallTrace
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
+from intergrax.runtime.nexus.tools.tool_invocation_pattern import (
+    ToolInvocationPattern,
+    ToolInvocationResult,
+    ToolInvocationStopReason,
+    pattern_for_mode,
+)
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
-from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
+from intergrax.tools.core.tool_plan import PlannedToolCall
 from intergrax.tools.execution_models import ToolExecutionRequest
 
-ToolLoopStopReason = Literal[
-    "empty_tool_calls",
-    "max_iterations",
-    "budget_exceeded",
-    "planner_final_answer",
-    "legacy_single_pass",
-]
+if TYPE_CHECKING:
+    pass
 
-
-@dataclass(slots=True)
-class BoundedToolLoopResult:
-    tool_traces: list[ToolCallTrace] = field(default_factory=list)
-    loop_iterations: int = 0
-    stop_reason: ToolLoopStopReason = "legacy_single_pass"
-    appended_messages: list[ChatMessage] = field(default_factory=list)
-    used_native_tool_messages: bool = False
+# Backward-compatible aliases (TOOL-ENG-6 consumers).
+BoundedToolLoopResult = ToolInvocationResult
+ToolLoopStopReason = ToolInvocationStopReason
 
 
 def _coerce_messages(planner_input: str | list[ChatMessage]) -> list[ChatMessage]:
@@ -119,6 +115,23 @@ def append_native_tool_messages(
         )
 
 
+def resolve_tool_invocation_pattern(
+    *,
+    invocation_mode: ToolInvocationMode | None,
+    max_iterations: int,
+    pattern: ToolInvocationPattern | None = None,
+) -> ToolInvocationPattern:
+    if pattern is not None:
+        return pattern
+    if invocation_mode is not None:
+        return pattern_for_mode(invocation_mode)
+    if max_iterations > 1:
+        from intergrax.runtime.nexus.tools.patterns.bounded_react import BoundedReactPattern
+
+        return BoundedReactPattern()
+    return pattern_for_mode(ToolInvocationMode.SINGLE_PASS)
+
+
 def run_bounded_tool_loop(
     *,
     state: RuntimeState,
@@ -127,83 +140,27 @@ def run_bounded_tool_loop(
     planner_input: str | list[ChatMessage],
     allowed_tool_ids: Sequence[str] | None,
     max_iterations: int,
-) -> BoundedToolLoopResult:
+    invocation_mode: ToolInvocationMode | None = None,
+    pattern: ToolInvocationPattern | None = None,
+) -> ToolInvocationResult:
     """
-    Plan → invoke → observe loop.
+    Plan → invoke → observe via injected ``ToolInvocationPattern``.
 
-    ``max_iterations == 1`` preserves legacy single-pass semantics.
-    Multi-iteration loops require native ``ToolPlanningService`` with ``role=tool`` messages.
+    ``max_iterations > 1`` without explicit mode preserves TOOL-ENG-6 bounded ReAct.
     """
-    max_iters = max(1, int(max_iterations))
-    if max_iters == 1 or not isinstance(tool_planner, ToolPlanningService):
-        decision = tool_planner.plan_tools(
-            input_data=planner_input,
-            context=None,
-            run_id=state.run_id,
-            allowed_tool_ids=allowed_tool_ids,
-        )
-        tool_plan = decision.tool_plan
-        if tool_plan is None or not tool_plan.calls:
-            return BoundedToolLoopResult(stop_reason="empty_tool_calls")
-        traces = execute_planned_tool_calls(
-            state=state,
-            invoker=invoker,
-            calls=tool_plan.calls,
-            idempotency_prefix=state.run_id,
-        )
-        return BoundedToolLoopResult(
-            tool_traces=traces,
-            loop_iterations=1,
-            stop_reason="legacy_single_pass",
-        )
-
-    messages = _coerce_messages(planner_input)
-    appended: list[ChatMessage] = []
-    all_traces: list[ToolCallTrace] = []
-    iterations = 0
-    stop_reason: ToolLoopStopReason = "max_iterations"
-
-    while iterations < max_iters:
-        iterations += 1
-        try:
-            llm_result, tool_plan = tool_planner.plan_native_round(
-                messages,
-                allowed_tool_ids=allowed_tool_ids,
-                run_id=state.run_id,
-            )
-        except Exception:
-            break
-
-        if llm_result.content and not tool_plan.calls:
-            stop_reason = "planner_final_answer"
-            break
-
-        if not tool_plan.calls:
-            stop_reason = "empty_tool_calls"
-            break
-
-        round_traces = execute_planned_tool_calls(
-            state=state,
-            invoker=invoker,
-            calls=tool_plan.calls,
-            idempotency_prefix=f"{state.run_id}:loop{iterations}",
-        )
-        all_traces.extend(round_traces)
-        before = len(messages)
-        append_native_tool_messages(
-            messages,
-            assistant_content=llm_result.content,
-            tool_calls=llm_result.tool_calls,
-            traces=round_traces,
-        )
-        appended.extend(messages[before:])
-
-    return BoundedToolLoopResult(
-        tool_traces=all_traces,
-        loop_iterations=iterations,
-        stop_reason=stop_reason,
-        appended_messages=appended,
-        used_native_tool_messages=True,
+    resolved = resolve_tool_invocation_pattern(
+        invocation_mode=invocation_mode,
+        max_iterations=max_iterations,
+        pattern=pattern,
+    )
+    return resolved.execute(
+        state=state,
+        invoker=invoker,
+        planner=tool_planner,
+        plan=None,
+        allowed_tool_ids=allowed_tool_ids,
+        max_iterations=max_iterations,
+        planner_input=planner_input,
     )
 
 

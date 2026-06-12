@@ -7,7 +7,12 @@ from typing import Any, Dict, FrozenSet, Optional, Sequence, TYPE_CHECKING
 
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
-from intergrax.runtime.nexus.config_types import ToolChoiceMode, ToolSelectionMode, ToolsContextScope
+from intergrax.runtime.nexus.config_types import (
+    ToolChoiceMode,
+    ToolInvocationMode,
+    ToolSelectionMode,
+    ToolsContextScope,
+)
 
 if TYPE_CHECKING:
     from intergrax.integrations.registry.profile import IntegrationProfile
@@ -186,6 +191,9 @@ class RuntimeConfig:
 
     # Bounded planner→invoke→observe loop inside ToolsStep (TOOL-ENG-6). Default 1 preserves legacy single-pass.
     max_tool_iterations: int = 1
+
+    # Orchestration pattern for multi-call batches (TOOL-ENG-21). None → infer from max_tool_iterations.
+    tool_invocation_mode: Optional[ToolInvocationMode] = None
 
     tool_invoker: Optional[RuntimeToolInvoker] = None
 

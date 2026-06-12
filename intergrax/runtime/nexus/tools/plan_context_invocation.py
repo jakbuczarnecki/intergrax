@@ -352,6 +352,7 @@ async def run_tools_context(state: RuntimeState) -> None:
             planner_input=planner_input,
             allowed_tool_ids=allowed_tool_ids,
             max_iterations=state.context.config.max_tool_iterations,
+            invocation_mode=state.context.config.tool_invocation_mode,
         )
 
         if not loop_result.tool_traces:

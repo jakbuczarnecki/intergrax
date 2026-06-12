@@ -28,16 +28,7 @@ class FakeExecutor:
         return OutputModel(result=request.input.value + 1)
 
 
-class FakeRegistry:
-    def __init__(self, contract: ToolContract):
-        self._contract = contract
-
-    def get(self, tool_id: str):
-        class _Reg:
-            def __init__(self, contract):
-                self.contract = contract
-
-        return _Reg(self._contract)
+from tests.unit.runtime.nexus.tools.conftest import FakeRegistry
 
 
 class AllowAllScopePolicy:

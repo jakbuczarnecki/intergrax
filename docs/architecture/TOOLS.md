@@ -136,9 +136,10 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T14–T17 Done**
 | `ToolPlanningService` | `intergrax/runtime/nexus/tools/tool_planning_service.py` | **Done** — native `generate_with_tools` or JSON fallback; `allowed_tool_ids` filter (TOOL-ENG-4) |
 | `tool_planner_input` | `intergrax/runtime/nexus/tools/tool_planner_input.py` | **Done** — `tools_context_scope` assembly (TOOL-ENG-11) |
 | `tool_selection` | `intergrax/runtime/nexus/tools/tool_selection.py` | **Done** — `ToolSelectionStrategy` router (TOOL-ENG-5); entry-point plugins **Planned** (TOOL-ENG-26) |
-| `tool_loop` | `intergrax/runtime/nexus/tools/tool_loop.py` | **Done** — `run_bounded_tool_loop` (TOOL-ENG-6); **to refactor** into `ToolInvocationPattern` (TOOL-ENG-16–18,22) |
+| `tool_loop` | `intergrax/runtime/nexus/tools/tool_loop.py` | **Done** — delegates to `ToolInvocationPattern` (TOOL-ENG-6,22) |
 | `plan_context_invocation` | `intergrax/runtime/nexus/tools/plan_context_invocation.py` | **Done** — RAG/websearch/tools context for `ToolRuntime` (replaces retired pipeline steps) |
-| `ToolInvocationPattern` | *(planned)* `intergrax/runtime/nexus/tools/tool_invocation_pattern.py` | **Planned** — plugin orchestration of multi-call execution (TOOL-ENG-16) |
+| `ToolInvocationPattern` | `intergrax/runtime/nexus/tools/tool_invocation_pattern.py` | **Done** — protocol + `pattern_for_mode()` (TOOL-ENG-16,21) · ADR-TOOL-003 |
+| `SinglePassPattern` / `BoundedReactPattern` | `intergrax/runtime/nexus/tools/patterns/` | **Done** — shipped orchestration (TOOL-ENG-17,18) |
 | `IdempotentToolInvoker` | `intergrax/runtime/tools/idempotent_invoker.py` | **Done** — exactly-once for `side_effects` + `idempotency_key` |
 | `catalog_context` | `intergrax/runtime/nexus/tools/catalog_context.py` | **Done** — `rag.retrieve` / `websearch.query` dispatch via `plan_context_invocation` |
 | `ToolAccessPolicy` | `intergrax/runtime/nexus/tools/tool_access_policy.py` | **Done** — plan-level filter (`ToolInvocationPlan`); modality intersect |
@@ -287,8 +288,8 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 | **Pipeline tool step** (`run_bounded_tool_loop` / `ctx.invoke_tool`) | **Done** | Planner wired; bounded loop via `tool_loop_step` (TOOL-ENG-6 · ADR-TOOL-002) |
 | **Planner wiring** (`CatalogToolPlanner`) | **Done** | `wire_catalog_tool_planner_if_enabled` in `planner_bootstrap.py` (TOOL-ENG-0) |
 | **Multi-tool / ReAct loop** | **Done** | `max_tool_iterations` + native `role=tool` chain (TOOL-ENG-6) |
-| **Invocation pattern plugin** (`ToolInvocationPattern`) | **In progress** | S1–S3 layer completion — TOOL-ENG-16–18,21–23; interim `run_bounded_tool_loop` until S2 closes |
-| **Invoker test regression** (`modality_tool_trace`) | **Gap** | `FakeRegistry` mocks missing `handler` — TOOL-ENG-TEST.1 (S0) |
+| **Invocation pattern plugin** (`ToolInvocationPattern`) | **Partial** | Protocol + single/ReAct shipped (S1–S3); parallel/chain/semantic — S4–S7 |
+| **Invoker test regression** (`modality_tool_trace`) | **Done** | TOOL-ENG-TEST.1 (S0) |
 | **Deterministic tool chains** (output→input) | **Gap** | No `ToolChainSpec` — TOOL-ENG-20 |
 | **Parallel tool execution** | **Gap** | `execute_planned_tool_calls` — always sequential (TOOL-ENG-9) |
 | **Parallel semantic batch** | **Gap** | Semantic index + parallel invoke + aggregate — TOOL-ENG-25 |
@@ -588,7 +589,7 @@ ToolInvocationPattern → orchestrates tool calls within one agent step (Plane 3
 
 ### Extensibility — `ToolInvocationPattern` plugin contract
 
-**Status:** **Planned** (TOOL-ENG-16). Precedents: `ToolSelectionStrategy`, `ToolPlannerProtocol`, `ToolPlugin`.
+**Status:** **Done** (TOOL-ENG-16 · ADR-TOOL-003). Precedents: `ToolSelectionStrategy`, `ToolPlannerProtocol`, `ToolPlugin`.
 
 **Target protocol:**
 
@@ -643,7 +644,7 @@ ToolInvocationResult:
 | Catalog tools (`ToolPlugin`) | **Yes** | **Yes** | **Yes** | **Yes** |
 | Tool selection (`ToolSelectionStrategy`) | **Yes** | `strategy_for_mode()` — **hardcoded** | **No** | **Yes** |
 | Tool planning (`ToolPlannerProtocol`) | **Yes** | inject via config | N/A | **Yes** |
-| Invocation orchestration (`ToolInvocationPattern`) | **No** | **No** | **No** | **No** |
+| Invocation orchestration (`ToolInvocationPattern`) | **Yes** | `pattern_for_mode()` | **No** | **Yes** |
 
 ### Pattern vs selection mode mapping
 
@@ -1102,15 +1103,15 @@ Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary (upda
 | ID | Gap | Priority |
 |----|-----|----------|
 | TOOL-ENG-DOC.5 | Canon: four invocation patterns + `ToolInvocationPattern` target contract | **Done** |
-| TOOL-ENG-16 | `ToolInvocationPattern` Protocol + `ToolInvocationResult` models | **P0** |
-| TOOL-ENG-17 | `SinglePassPattern` — extract current single-iteration path | P1 |
-| TOOL-ENG-18 | `BoundedReactPattern` — refactor `run_bounded_tool_loop` | P1 |
+| TOOL-ENG-16 | `ToolInvocationPattern` Protocol + `ToolInvocationResult` models | **Done** |
+| TOOL-ENG-17 | `SinglePassPattern` — extract current single-iteration path | **Done** |
+| TOOL-ENG-18 | `BoundedReactPattern` — refactor `run_bounded_tool_loop` | **Done** |
 | TOOL-ENG-9 | `ParallelBatchPattern` — concurrent read-only batch invoke | P1 |
 | TOOL-ENG-20 | `DeterministicChainPattern` + `ToolChainSpec` field mapping | P2 |
 | TOOL-ENG-25 | `ParallelSemanticBatchPattern` — semantic top-k + parallel + aggregate | P1 |
-| TOOL-ENG-21 | `RuntimeConfig.tool_invocation_pattern` + `pattern_for_mode()` factory | P1 |
-| TOOL-ENG-22 | `run_bounded_tool_loop` / `ctx.invoke_tool` delegates to injected pattern (remove hardcoded loop) | P1 |
-| TOOL-ENG-23 | `ApplicationEnvironmentProfile` + `catalog_runtime_bridge` wiring | P1 |
+| TOOL-ENG-21 | `RuntimeConfig.tool_invocation_pattern` + `pattern_for_mode()` factory | **Done** |
+| TOOL-ENG-22 | `run_bounded_tool_loop` / `ctx.invoke_tool` delegates to injected pattern (remove hardcoded loop) | **Done** |
+| TOOL-ENG-23 | `ApplicationEnvironmentProfile` + `catalog_runtime_bridge` wiring | **Done** |
 | TOOL-ENG-24 | Entry-point registry `intergrax.tool_invocation_patterns` | P2 |
 | TOOL-ENG-29 | `ToolInvocationAggregate` — batch result merge contract | P1 |
 | TOOL-ENG-27 | Trace telemetry: `ops:tool_invocation_pattern`, pattern_id in diag | P2 |
@@ -1135,7 +1136,7 @@ Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary (upda
 | TOOL-ENG-DOC.5 | Canon: invocation patterns + plugin contract | **Done** |
 | TOOL-ENG-DOC.6 | ORCHESTRATION §50.4 + FLOW §15.1 cross-refs for graph vs tool-pattern boundary | **Done** |
 
-**ADR:** [ADR-TOOL-001](../adr/entries/2026-06-10/ADR-TOOL-001.md) (TOOL-ENG-1/2) · [ADR-TOOL-002](../adr/entries/2026-06-11/ADR-TOOL-002.md) (TOOL-ENG-6) · **ADR-TOOL-003** *(required before TOOL-ENG-16 merge)* — `ToolInvocationPattern` protocol and graph boundary.
+**ADR:** [ADR-TOOL-001](../adr/entries/2026-06-10/ADR-TOOL-001.md) (TOOL-ENG-1/2) · [ADR-TOOL-002](../adr/entries/2026-06-11/ADR-TOOL-002.md) (TOOL-ENG-6) · [ADR-TOOL-003](../adr/entries/2026-06-12/ADR-TOOL-003.md) (TOOL-ENG-16) · **ADR-TOOL-004** *(required before TOOL-ENG-26 merge)*
 
 ### CI / gate scripts (catalog)
 
