@@ -191,7 +191,10 @@ def create_lab_application(
             dependencies=[Depends(require_harness_auth)],
         )
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
-    scaling_wiring = wire_application_scaling(lab_env)
+    scaling_wiring = wire_application_scaling(
+        lab_env,
+        event_bus=runtime.nexus_loop.event_bus,
+    )
     factory_schedulers = [s for s in (scheduler, scaling_wiring.scheduler) if s is not None]
     if settings.include_mcp:
         tool_wiring = wire_lab_tools(

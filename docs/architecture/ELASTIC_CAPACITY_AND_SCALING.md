@@ -563,8 +563,8 @@ sequenceDiagram
 
 | ID | Gap | Priority |
 |----|-----|----------|
-| ECP-PROD.1 | Wire `GRAPH_BACKPRESSURE` + `task_index` depth → `CapacitySignalCollector` on hosts | P0 |
-| ECP-PROD.2 | `CapacityScheduler` must not apply actions when `hitl_required` / `denied` | P0 |
+| ECP-PROD.1 | Wire `GRAPH_BACKPRESSURE` + `task_index` depth → `CapacitySignalCollector` on hosts | **Done** (backpressure bus; queue depth optional hook) |
+| ECP-PROD.2 | `CapacityScheduler` must not apply actions when `hitl_required` / `denied` | **Done** |
 | ECP-PROD.3 | K8s default factory: REST `scale` subresource (not health-only stub) | P0 |
 | ECP-PROD.4 | Celery provisioner: real worker scale via integration adapter | P1 |
 | ECP-PROD.5 | `RAISE_ORCHESTRATION_CEILING` applies bounded profile patch | P1 |

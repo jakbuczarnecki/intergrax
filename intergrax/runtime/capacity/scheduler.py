@@ -35,6 +35,8 @@ class CapacityScheduler:
     async def tick(self) -> None:
         signals = self._collector.collect()
         plan = self._evaluator.evaluate(signals)
+        if plan.evaluation_status != "planned":
+            return
         for action in plan.actions:
             self._provisioner.apply(action)
 

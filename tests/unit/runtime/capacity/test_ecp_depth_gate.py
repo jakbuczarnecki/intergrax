@@ -95,6 +95,72 @@ def test_kubernetes_provisioner_scale() -> None:
 def test_scaling_wiring_noop_when_disabled() -> None:
     wiring = wire_application_scaling(ApplicationEnvironmentProfile.lab_defaults())
     assert wiring.scheduler is None
+    assert wiring.event_bridge is None
+
+
+async def _publish_backpressure(bus, event) -> None:
+    await bus.publish(event)
+
+
+def test_capacity_event_bridge_records_backpressure() -> None:
+    import asyncio
+
+    from intergrax.contracts.execution_phase import ExecutionPhase
+    from intergrax.runtime.capacity.event_bridge import CapacityEventBridge
+    from intergrax.runtime.events.event_bus import RuntimeEventBus
+    from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+
+    collector = CapacitySignalCollector()
+    bus = RuntimeEventBus(record_history=False)
+    bridge = CapacityEventBridge(collector, bus)
+    bridge.attach()
+    asyncio.run(
+        _publish_backpressure(
+            bus,
+            RuntimeEvent(
+                event_type=RuntimeEventType.GRAPH_BACKPRESSURE,
+                tenant_id="t1",
+                task_id="task-1",
+                run_id="run-1",
+                phase=ExecutionPhase.STEP_EXECUTION,
+            ),
+        )
+    )
+    signals = collector.collect()
+    assert signals[0].value >= 1.0
+    bridge.detach()
+
+
+def test_scheduler_skips_hitl_required_plan() -> None:
+    import asyncio
+
+    from intergrax.runtime.capacity.scheduler import CapacityScheduler
+
+    policy = ScalingPolicy(
+        enabled=True,
+        require_hitl_for_scale_up=True,
+        rules=[
+            ScalingRule(
+                rule_id="bp",
+                target=ScalingTarget.NEXUS_HOST,
+                metric_name="graph_backpressure_rate",
+                scale_up_threshold=1.0,
+                scale_down_threshold=0.0,
+                action_kind=ScalingActionKind.SCALE_K8S_DEPLOYMENT,
+            )
+        ],
+    )
+    collector = CapacitySignalCollector()
+    evaluator = ScalingEvaluator(policy)
+    provisioner = ScalingProvisioner()
+    scheduler = CapacityScheduler(
+        collector=collector,
+        evaluator=evaluator,
+        provisioner=provisioner,
+    )
+    collector.record_backpressure()
+    asyncio.run(scheduler.tick())
+    assert not provisioner.applied
 
 
 def test_ahi_bridge_action() -> None:
