@@ -22,6 +22,7 @@ REQUIRED_SECTIONS = (
     "## Risks and follow-ups",
 )
 ID_RE = re.compile(r"^IJ-\d{4}-\d{2}-\d{2}-\d{3}$")
+DATE_DIR_RE = re.compile(r"^\d{4}-\d{2}-\d{2}/")
 ROW_RE = re.compile(
     r"^\|\s*(IJ-\d{4}-\d{2}-\d{2}-\d{3})\s*\|"
     r"[^|]*\|[^|]*\|[^|]*\|"
@@ -67,6 +68,11 @@ def main() -> int:
         seen_ids.add(entry_id)
         if not ID_RE.match(entry_id):
             errors.append(f"invalid id format: {entry_id}")
+        if not DATE_DIR_RE.match(rel_path):
+            errors.append(
+                "INDEX link must be entries/YYYY-MM-DD/<slug>.md "
+                f"(not flat or date-prefixed filename): entries/{rel_path}"
+            )
 
         entry_path = ENTRIES / rel_path
         if not entry_path.is_file():
@@ -88,6 +94,16 @@ def main() -> int:
         if path.name.startswith("_"):
             continue
         rel = path.relative_to(ENTRIES).as_posix()
+        if "/" not in rel:
+            errors.append(
+                "journal entry must live under entries/YYYY-MM-DD/ "
+                f"(only _TEMPLATE.md may sit in entries/ root): entries/{rel}"
+            )
+            continue
+        if not DATE_DIR_RE.match(rel):
+            errors.append(
+                f"journal entry path must start with YYYY-MM-DD/: entries/{rel}"
+            )
         if rel not in indexed_files:
             errors.append(f"entry not in INDEX: entries/{rel}")
 

@@ -56,6 +56,7 @@ def run_doctor(args: argparse.Namespace) -> int:
         ("scaffold_harness_alignment", "check_scaffold_harness_alignment.py"),
         ("harness_no_getattr", "check_harness_no_getattr.py"),
         ("harness_guardrail_wiring", "check_harness_guardrail_wiring.py"),
+        ("context_engine_wiring", "check_context_engine_wiring.py"),
     ]
     for name, script_name in scripts:
         ok, msg = _run_script(root / "scripts" / script_name, root)

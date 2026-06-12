@@ -1157,7 +1157,7 @@ Synthesis of §24–§35 and ACP §36.
 | `ApplicationRunSummary` | **Done** ACP-OBS-2 | — |
 | Org envelope | **Done** ACP-ORG-1..2 | Enforcement depth ACP-ORG-3 |
 | Budget reactions (hard cap + notify) | **Done** | ACP-TOK-* · APP-PROD-7 §43 |
-| APP production scoreboard | **Partial** | APP-PROD-1 §46 |
+| APP production scoreboard | **Done** | APP-PROD-1..9 · `check_application_production_gates.py` |
 
 ---
 
@@ -1351,7 +1351,7 @@ Symmetric to ACP §40 — **host environments** that run mutating workloads.
 | APP-PROD-3 | `ApplicationHost` mounted when provided | **Done** | `test_application_host_wiring` |
 | APP-PROD-4 | Manifest conformance | **Done** | `test_manifest_conformance` |
 | APP-PROD-5 | Deploy triad | **Done** | `test_application_deploy_triad` |
-| APP-PROD-6 | `check_environment_state_usage` — hooks use `app_env_state.v1` | Planned | CI lint |
+| APP-PROD-6 | `check_environment_state_usage` — hooks use `app_env_state.v1` | **Done** | `check_environment_state_usage.py` · `environment_state_usage_wiring.py` |
 | APP-PROD-7 | `check_budget_enforcement` — COST profile on STRICT product hosts | **Done** | `check_budget_enforcement.py` |
 | APP-PROD-8 | `check_workspace_cleanup` — factory lifespan cleanup hooks | **Done** | `check_workspace_cleanup.py` · `build_factory_lifespans` |
 | APP-PROD-9 | Gate test + CI `gate-governance-tier` | **Done** | `test_check_application_production_gates.py` |
@@ -1446,7 +1446,7 @@ ApplicationEnvironmentState:
 - `ApplicationEnvironmentState.from_runtime_state(ctx.runtime_state)`
 - `state.patch_runtime_state()` → `HookResult.modified_payload`
 
-**Planned APP-CON-3:** Nexus lifecycle auto-updates `phase`, `budget`, HITL fields on hook context.
+**Done APP-CON-3:** `ApplicationEnvironmentStateMiddleware` auto-updates `phase`, `budget`, HITL fields on hook context (`application_environment_state_middleware.py`).
 
 ---
 
@@ -1636,11 +1636,11 @@ A Tier-3 host MAY be labeled **production-ready** only when **all** mandatory ro
 |-----------|--------|----------------------|
 | Architecture completeness | 10/10 | **10/10** — APP-CON §24–§48 + evolution §49 |
 | Hook runtime wiring | 10/10 | **10/10** — APP-CON-1 · APP-CON-5 Done |
-| Budget / prod gates | 10/10 | **7/10** — APP-PROD-1 Done; ACP-TOK-2/3, APP-PROD-6..8 open |
-| Evolution / governance | 10/10 | **9/10** — §49 + typed migrations §49.2.4 |
-| Platform operations | 10/10 | **8.5/10** — §50 normative; graph **Partial**; APP-OPS Planned |
-| **Overall production readiness** | — | **~9/10** reference canon; **~7.5/10** mutating STRICT until ACP-TOK-2/3 |
-| **Architecture freeze readiness** | — | **Ready** — structural canon complete §24–§50; implementation APP-* remains |
+| Budget / prod gates | 10/10 | **9/10** — APP-PROD-1..9 **Done**; ACP-TOK-2/3 cross-plan open |
+| Evolution / governance | 10/10 | **10/10** — APP-EVOL-1..7 **Done** · §49.2.4 typed migrations |
+| Platform operations | 10/10 | **10/10** — APP-OPS-1..4 **Done** · health score · registry CLI |
+| **Overall production readiness** | — | **~9.5/10** reference canon; **~8/10** mutating STRICT until ACP-TOK-2/3 |
+| **Architecture freeze readiness** | — | **Ready** — structural canon §24–§51; platform APP-* implementation **Done** |
 
 ---
 
@@ -1816,7 +1816,7 @@ ApplicationVersion:
     compatible_runtime: str            # harness baseline, e.g. "1.0.0"
 ```
 
-**Status:** `ApplicationManifest.version` **Done**; `EnvironmentSnapshot` **Done** (`APP-EVOL-1` · ADR-APP-002); `ApplicationVersion` registry **Planned** APP-EVOL-7.
+**Status:** `ApplicationManifest.version` **Done**; `EnvironmentSnapshot` **Done** (`APP-EVOL-1` · ADR-APP-002); `ApplicationPackage` closure **Done** (`APP-EVOL-7` · `package_wiring.py`).
 
 ---
 

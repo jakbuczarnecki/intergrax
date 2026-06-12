@@ -36,7 +36,7 @@ focus:
 
 You are an **implementation audit agent** for the Intergrax Harness AI platform.
 
-Perform a **rigorous, evidence-backed audit** of the **Tool Library and ToolRuntime** domain. You must inspect **architecture canon, implementation plan, source code, tests, and CI gates** and compare against **production-grade systems** in this problem space.
+Perform a **rigorous, evidence-backed audit** of the **Tool Library** (190+ catalog tools) and **ToolRuntime** execution engine: selection/planning strategies, policy enforcement, idempotency, MCP export, catalog dispatch, and TOOL-ENG hardening queue — vs production tool-governance systems.
 
 **Do not** produce a shallow documentation survey. **Do not** declare the whole platform complete.
 
@@ -46,15 +46,21 @@ Audit the **Tool Library** (190+ catalog tools) and **ToolRuntime** execution en
 
 ## Key symbols and contracts
 
-ToolContract · ToolRegistry · ToolProfile · ToolWiringContext · ToolRequest/ToolResponse · ToolAccessPolicy · ToolSelectionStrategy · ToolPlanDecision · ToolRiskLevel · tools_mode · tools_context_scope
+ToolContract · ToolRegistry · ToolProfile · ToolWiringContext · ToolRequest/ToolResponse · ToolAccessPolicy · ToolSelectionStrategy · ToolPlanDecision · ToolRiskLevel · tools_mode · tools_context_scope · ToolInvocationPattern · ToolChainSpec
 
 ## Active plan phases (verify status vs code reality)
 
-Phase O/T-EXPAND Done · **TOOL-ENG active** (0–5,11 Done; 6–10,12 open) · Phase V V-SEC/V-COST/V-EVAL
+Phase O/T-EXPAND **Done** · Phase **TOOL-ENG Closed** (2026-06-12, 36/36, layer completion S0–S8) · Phase V V-SEC/V-COST/V-EVAL
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-TOOL-ENG-16 ToolInvocationPattern plugin · TOOL-ENG-7 post-tool verify HIGH risk · TOOL-ENG-8 tools_mode=required hard fail · TOOL-ENG-9 parallel read-only · TOOL-ENG-10 AHI subset selection · TOOL-ENG-12 tool_choice exposure · 172+ tools need ACP invoke_tool/gateway path consistency
+**Layer completion closed 2026-06-12.** Re-validate deferred items only:
+
+- Hierarchical **LLM category pass** (ADR-TOOL-005 v1 deferred — deterministic rank shipped)
+- Optional **L1 critic** (`eval.judge`) on per-tool output (CVL scope — not default tool loop)
+- **ACP invoke_tool/gateway path consistency** across 190+ tools (cross-domain AGENT_CONTRACTS)
+
+All TOOL-ENG-0–32 rows except above deferrals: expect **Closed**.
 
 ---
 
@@ -75,12 +81,14 @@ TOOL-ENG-16 ToolInvocationPattern plugin · TOOL-ENG-7 post-tool verify HIGH ris
 intergrax/tools/core/contracts.py · intergrax/tools/registry/
 intergrax/runtime/nexus/tools/tool_runtime.py · invoker.py · catalog_dispatch.py
 intergrax/runtime/nexus/tools/tool_planning_service.py · catalog_tool_planner.py
-intergrax/runtime/nexus/tools/tool_selection.py
-intergrax/runtime/nexus/tools/tool_loop.py
+intergrax/runtime/nexus/tools/tool_selection.py · tool_catalog_embedder.py
+intergrax/runtime/nexus/tools/tool_loop.py · patterns/
+intergrax/runtime/nexus/tools/tool_verify_hooks.py · adaptive_tool_mode_resolver.py
 intergrax/runtime/tools/idempotent_invoker.py · runtime_bound_catalog.py
-applications/_shared/catalog_runtime_bridge.py · tool wiring
+applications/_shared/catalog_runtime_bridge.py · tool_engine_wiring.py
 scripts/check_legacy_tool_plan_booleans.py · check_tool_mcp_schema_export.py
 scripts/check_tool_injection_defense.py · check_agent_registry_bypass.py
+scripts/check_tool_invocation_patterns.py · check_tool_engine_ahi_hook.py
 ```
 
 Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
@@ -99,16 +107,18 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 6. Catalog tool_id dispatch (ENG-1/2) — capability alias vs catalog id consistent.
 7. Idempotency keys on side-effect tools (idempotent_invoker).
 8. Concurrency, timeout, retry on invocation path.
-9. ops:tool_audit and TOOL_* trace events emitted.
+9. ops:tool_selection / ops:tool_invocation_pattern trace events emitted.
 10. MCP export schema parity with OpenAI function schema — CI green.
 11. Legacy boolean flags (use_rag, tool_gateway) deprecated — check_legacy_tool_plan_booleans green.
 12. Injection defense middleware active.
 13. Agents cannot bypass registry — check_agent_registry_bypass green.
 14. Plugin model: ToolPlugin + entry points + bootstrap_catalogs.
 15. Skills merge into tool allow-list correctly at resolution time.
-16. HIGH-risk tools: post-tool verification (ENG-7 gap status).
-17. ReAct / iterative tool loop bounded (ENG-6 gap status).
-18. EnvironmentProfile tool_selection fields wired (recent catalog_runtime_bridge work).
+16. HIGH-risk tools: post-tool verify + enforce block (ENG-7).
+17. ReAct / iterative tool loop bounded (ENG-6).
+18. EnvironmentProfile tool_selection / tool_invocation fields wired (catalog_runtime_bridge).
+19. All five ToolInvocationMode patterns registered (ENG-28 gate).
+20. AHI tool engine hook when adaptive routing enabled (ENG-10 gate).
 
 ---
 
@@ -118,7 +128,8 @@ For each probe describe **actual code path**, limits, and failure mode:
 
 - 190 tools / 48 bundles registration at bootstrap.
 - RunBudget.max_tool_calls (128 prod default) enforcement.
-- Parallel read-only tool invocations (ENG-9 target).
+- Parallel read-only tool invocations (ENG-9).
+- Semantic index at 190-tool scale (ENG-13).
 - Large allow-list filtering performance.
 
 ---
@@ -127,7 +138,7 @@ For each probe describe **actual code path**, limits, and failure mode:
 
 Confirm overrides are **wired in code**, not documentation-only:
 
-ToolProfile.enabled/enabled_bundles · ReasoningProfile.tool_planner_prompt_id · tool_selection_mode on EnvironmentProfile · RuntimePolicyBundle.tool_access · tools_mode on engine plan · external ToolPlugin
+ToolProfile.enabled/enabled_bundles · ReasoningProfile.tool_planner_prompt_id · tool_selection_mode · tool_invocation_mode on EnvironmentProfile · RuntimePolicyBundle.tool_access · tools_mode on engine plan · external ToolPlugin · LAB_TOOL_INVOCATION_MODE
 
 ---
 
@@ -164,7 +175,7 @@ State explicitly:
 
 ## 8. Anti-patterns (must not be present)
 
-- Direct handler invoke bypassing ToolRuntime · boolean use_* flags parallel to tools · vendor SDK in tool handlers ·unbounded tool loops in agents
+- Direct handler invoke bypassing ToolRuntime · boolean use_* flags parallel to tools · vendor SDK in tool handlers · unbounded tool loops in agents
 
 ---
 
@@ -172,7 +183,7 @@ State explicitly:
 
 Per `INTEGRAX_HARNESS_AUDIT_MAP.md` §5 (L0–L4). Report **score before**, **target milestone**, **evidence**, **remaining risks**.
 
-If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile with code findings.
+Layer completion baseline (2026-06-12): **L3** catalog + engine.
 
 ---
 
@@ -180,9 +191,11 @@ If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile 
 
 ```bash
 python scripts/check_legacy_tool_plan_booleans.py
-python scripts/check_tool_mcp_schema_export.py
+uv run python scripts/check_tool_mcp_schema_export.py
 python scripts/check_tool_injection_defense.py
 python scripts/check_agent_registry_bypass.py
+uv run python scripts/check_tool_invocation_patterns.py
+uv run python scripts/check_tool_engine_ahi_hook.py
 uv run pytest tests/unit/runtime/nexus/tools/ -q
 ```
 

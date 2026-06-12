@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -36,6 +36,9 @@ from intergrax.runtime.nexus.context.shared_task_context import (
     load_shared_task_context,
     save_shared_task_context,
 )
+from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.runtime.hooks.hook_context import HookContext
+from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionNode
 from intergrax.runtime.events.context_skill_recording import record_context_assembly
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -44,7 +47,19 @@ from intergrax.runtime.nexus.context.context_budget import (
     ContextTrimResult,
     trim_message_to_budget,
 )
+from intergrax.runtime.nexus.context.graph_assembly import (
+    build_graph_assembly_request,
+    graph_messages_from_text,
+    text_from_assembled_messages,
+)
 from intergrax.runtime.task.task import Task
+
+if TYPE_CHECKING:
+    from intergrax.context.orchestrator import ContextOrchestrator
+    from intergrax.context.protocols import ContextEngine
+    from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+    from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
+    from intergrax.runtime.nexus.config import RuntimeConfig
 
 
 class AgentContextBundle(BaseModel):
@@ -76,6 +91,10 @@ class ContextManager:
         default_policy: Optional[TaskContextAssemblyOptions] = None,
         budget_policy: Optional[ContextBudgetPolicy] = None,
         event_bus: Optional[RuntimeEventBus] = None,
+        context_engine: Optional["ContextEngine"] = None,
+        context_orchestrator: Optional["ContextOrchestrator"] = None,
+        llm_adapter: Optional["LLMAdapter"] = None,
+        middleware: Optional["MiddlewarePipeline"] = None,
     ) -> None:
         self._default_policy = default_policy or TaskContextAssemblyOptions(
             max_prior_chars=max_prior_chars,
@@ -84,6 +103,22 @@ class ContextManager:
             max_chars=max(max_prior_chars, 4000),
         )
         self._event_bus = event_bus
+        self._context_engine = context_engine
+        self._context_orchestrator = context_orchestrator
+        self._llm_adapter = llm_adapter
+        self._middleware = middleware
+
+    def bind_middleware(self, middleware: "MiddlewarePipeline") -> None:
+        """Attach hook pipeline for graph context assembly (CE-HOOKS-GRAPH)."""
+        self._middleware = middleware
+
+    @property
+    def context_engine(self) -> Optional["ContextEngine"]:
+        return self._context_engine
+
+    @property
+    def llm_adapter(self) -> Optional["LLMAdapter"]:
+        return self._llm_adapter
 
     def get_shared_context(self, task: Task) -> Optional[SharedTaskContext]:
         return load_shared_task_context(task)
@@ -103,6 +138,127 @@ class ContextManager:
             return policy.model_copy(update={"max_prior_chars": self._default_policy.max_prior_chars})
         return policy
 
+    async def build_agent_context_async(
+        self,
+        task: Task,
+        node: ExecutionNode,
+        prior_outputs: Dict[str, AgentExecutionResult],
+        *,
+        policy: Optional[TaskContextAssemblyOptions] = None,
+    ) -> AgentContextBundle:
+        """Graph context assembly — uses ``ContextEngine.assemble`` when wired (CE-3.7)."""
+        engine = self._context_engine
+        if (
+            engine is not None
+            and node.delegation is not None
+            and engine.engine_id != "explore_child"
+        ):
+            from intergrax.runtime.nexus.context.preset_engines import ExploreChildContextEngine
+
+            engine = ExploreChildContextEngine(registry=engine.registry)
+
+        use_engine = engine is not None and self._llm_adapter is not None
+        bundle = self._build_agent_context_core(
+            task,
+            node,
+            prior_outputs,
+            policy=policy,
+            emit_events=not use_engine,
+        )
+        if not use_engine:
+            return bundle
+
+        hook_base = HookContext(
+            task_id=task.task_id,
+            run_id=task.task_id,
+            node_id=node.node_id,
+            agent_id=node.agent_id,
+            phase=ExecutionPhase.CONTEXT_BUILDING,
+            runtime_state={"message": task.message, "capability": node.capability or ""},
+        )
+        if self._middleware is not None:
+            await self._middleware.run_before(HookPoint.BEFORE_CONTEXT_BUILD, hook_base)
+
+        from intergrax.context.contracts import ContextProviderContext
+        from intergrax.runtime.nexus.config import RuntimeConfig
+        from intergrax.runtime.nexus.context.provider_handles import build_graph_provider_handles
+
+        resolved_policy = policy or self.resolve_policy(task)
+        shared = self.ensure_shared_context(task)
+        prior_records, _, _ = collect_dependency_records(
+            node,
+            prior_outputs,
+            policy=resolved_policy,
+            shared_version=shared.version,
+        )
+        request = build_graph_assembly_request(
+            task,
+            node,
+            policy=resolved_policy,
+            budget_policy=self._budget_policy,
+        )
+        runtime_config = RuntimeConfig(llm_adapter=self._llm_adapter, production_mode=False)
+        provider_ctx = ContextProviderContext(
+            engine_id=engine.engine_id,
+            handles=build_graph_provider_handles(
+                task,
+                runtime_config=runtime_config,
+                messages=graph_messages_from_text(task.message or ""),
+                event_bus=self._event_bus,
+                node_id=node.node_id,
+                agent_id=node.agent_id,
+                engine_id=engine.engine_id,
+                prior_output_records=prior_records,
+            ),
+        )
+        if self._context_orchestrator is not None and engine.engine_id == "codebase":
+            assembled = await self._context_orchestrator.assemble_with_hops(
+                request,
+                provider_ctx=provider_ctx,
+            )
+        else:
+            assembled = await engine.assemble(request, provider_ctx=provider_ctx)
+        final_message = text_from_assembled_messages(assembled.messages)
+        original_chars = len(bundle.message)
+        final_chars = len(final_message)
+        trim = ContextTrimResult(
+            message=final_message,
+            trimmed=final_chars < original_chars or bool(assembled.degradation_steps),
+            original_chars=original_chars,
+            final_chars=final_chars,
+        )
+        bundle_metadata = dict(bundle.metadata)
+        bundle_metadata.update(
+            {
+                "context_trimmed": trim.trimmed,
+                "context_original_chars": trim.original_chars,
+                "context_final_chars": trim.final_chars,
+                "engine_id": engine.engine_id,
+                "degradation_steps": list(assembled.degradation_steps),
+            }
+        )
+        if self._event_bus is not None:
+            record_context_assembly(
+                self._event_bus,
+                task_id=task.task_id,
+                run_id=task.task_id,
+                node_id=node.node_id,
+                agent_id=node.agent_id,
+                trim=trim,
+                metadata={
+                    **bundle_metadata,
+                    "tenant_id": task.tenant_id,
+                },
+                engine_id=engine.engine_id,
+                step_kind=node.capability,
+            )
+        if self._middleware is not None:
+            await self._middleware.run_after(
+                HookPoint.AFTER_CONTEXT_BUILD,
+                hook_base.model_copy(update={"phase": ExecutionPhase.CONTEXT_BUILDING}),
+            )
+        return bundle.model_copy(update={"message": trim.message, "metadata": bundle_metadata})
+
     def build_agent_context(
         self,
         task: Task,
@@ -110,6 +266,18 @@ class ContextManager:
         prior_outputs: Dict[str, AgentExecutionResult],
         *,
         policy: Optional[TaskContextAssemblyOptions] = None,
+    ) -> AgentContextBundle:
+        """Sync graph context assembly (legacy trim path when engine is not wired)."""
+        return self._build_agent_context_core(task, node, prior_outputs, policy=policy)
+
+    def _build_agent_context_core(
+        self,
+        task: Task,
+        node: ExecutionNode,
+        prior_outputs: Dict[str, AgentExecutionResult],
+        *,
+        policy: Optional[TaskContextAssemblyOptions] = None,
+        emit_events: bool = True,
     ) -> AgentContextBundle:
         shared = self.ensure_shared_context(task)
         resolved_policy = policy or self.resolve_policy(task)
@@ -164,7 +332,7 @@ class ContextManager:
                 node_id=node.node_id,
             )
 
-        if self._event_bus is not None:
+        if emit_events and self._event_bus is not None:
             record_context_assembly(
                 self._event_bus,
                 task_id=task.task_id,
@@ -176,6 +344,7 @@ class ContextManager:
                     **bundle_metadata,
                     "tenant_id": task.tenant_id,
                 },
+                step_kind=node.capability,
             )
 
         return AgentContextBundle(

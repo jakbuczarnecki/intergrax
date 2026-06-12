@@ -75,6 +75,18 @@ def build_planner_build_debug(
     return payload
 
 
+def _attempt_llm_plan_parse(
+    raw: str,
+) -> _LlmNexusPlanPayload | None:
+    payload = _extract_json_object(raw)
+    if payload is None:
+        return None
+    try:
+        return _LlmNexusPlanPayload.model_validate(payload)
+    except Exception:
+        return None
+
+
 def build_nexus_plan_unified(
     task: Task,
     registry: AgentRegistry,
@@ -83,6 +95,7 @@ def build_nexus_plan_unified(
     fallback: TaskPlanner,
     prompt_text: str,
     planner_source: str = "engine",
+    planner_parse_retries: int = 0,
 ) -> tuple[NexusPlan, PlannerBuildDebug]:
     """Parse LLM JSON via shared extractor; annotate metadata for trace."""
     agent_ids = registry.list_routable_agent_ids(production_mode=False)
@@ -90,13 +103,20 @@ def build_nexus_plan_unified(
         plan = fallback.plan(task, registry)
         return plan, PlannerBuildDebug(planner_source=planner_source, used_fallback=True)
 
-    response = llm_adapter.generate_messages(
-        [ChatMessage(role="user", content=prompt_text)],
-        run_id=task.task_id,
-    )
-    raw = response.content.strip()
-    payload = _extract_json_object(raw)
-    if payload is None:
+    max_attempts = 1 + max(0, planner_parse_retries)
+    raw = ""
+    parsed: _LlmNexusPlanPayload | None = None
+    for _ in range(max_attempts):
+        response = llm_adapter.generate_messages(
+            [ChatMessage(role="user", content=prompt_text)],
+            run_id=task.task_id,
+        )
+        raw = response.content.strip()
+        parsed = _attempt_llm_plan_parse(raw)
+        if parsed is not None:
+            break
+
+    if parsed is None:
         plan = fallback.plan(task, registry)
         debug = PlannerBuildDebug(
             planner_source=planner_source,
@@ -105,17 +125,6 @@ def build_nexus_plan_unified(
             raw_preview=raw,
         )
         return plan, debug
-
-    try:
-        parsed = _LlmNexusPlanPayload.model_validate(payload)
-    except Exception:
-        plan = fallback.plan(task, registry)
-        return plan, PlannerBuildDebug(
-            planner_source=planner_source,
-            used_fallback=True,
-            failure_kind=ReasoningFailureKind.PLANNER_PARSE_FAILED,
-            raw_preview=raw,
-        )
 
     if not parsed.steps:
         plan = fallback.plan(task, registry)

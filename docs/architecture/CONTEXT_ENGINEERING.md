@@ -8,8 +8,8 @@
 **Audit instruction:** [`guides/audit/CONTEXT_ENGINEERING.md`](../guides/audit/CONTEXT_ENGINEERING.md)  
 **ADR:** [`ADR-CTX-001`](../adr/entries/2026-06-12/ADR-CTX-001.md) · [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler budget semantics)  
 **Related:** [`architecture/MEMORY.md`](MEMORY.md) (stores + lifecycle) · [`architecture/RAG.md`](RAG.md) (retrieval) · [`architecture/TOOLS.md`](TOOLS.md) (tool outputs) · [`architecture/NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) (turn narrative) · [`architecture/OBSERVABILITY.md`](OBSERVABILITY.md) (event spine) · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix L  
-**Implementation (as-built):** `intergrax/runtime/nexus/context/` · `intergrax/runtime/architecture/context_engineering.py` · `intergrax/contracts/context_assembly.py` · `applications/_shared/context_*`  
-**Last architecture pass:** 2026-06-12 (domain split + plugin engine target state)
+**Implementation (as-built):** `intergrax/context/` · `intergrax/runtime/nexus/context/` · `intergrax/runtime/architecture/context_engineering.py` · `intergrax/contracts/context_assembly.py` · `applications/_shared/context_*`  
+**Last architecture pass:** 2026-06-12 (CE-PROV-WIRE B1 — legacy bridge + graph core providers)
 
 ---
 
@@ -45,18 +45,19 @@ Tier-3 ContextProfile + ContextEnginePreset + context_plugins[]
 
 ---
 
-## 2. Production readiness verdict (2026-06-12)
+## 2. Production readiness verdict (2026-06-12, post CE-EXT)
 
 | Question | Answer |
 |----------|--------|
-| Is CE **production-ready** as a **budgeted assembly spine**? | **Partial — L3 control plane / L2.5 engine depth** |
-| Is there a **unified plugin catalog**? | **No** — target Phase CE-2/CE-3 ([`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md)) |
-| Is **step-aware** assembly implemented? | **No** — turn-level + graph-node level only |
-| Is **workspace/codebase** context production-grade? | **No** — RFC spike only (`workspace_index_spike.py`) |
-| Observability on assembly path? | **Partial** — `CONTEXT_ASSEMBLED` / `CONTEXT_TRIMMED`; OTel spans planned CE-9 |
-| Can authors register custom providers without forking Nexus? | **No** — inject `ContextManager` only; no `register_context_plugin()` |
+| Is CE **production-ready** as a **budgeted assembly spine**? | **Yes — L3+ engine / L3 control plane** (UAEP/ACP hybrid compile paths remain; see §8.3) |
+| Is **`ContextCompiler` on the production hot path**? | **Yes (ACP)** — `StepLLMRouter` + `compile_service` before LLM; **Yes (graph)** when `ContextEngine` + `llm_adapter` wired; **Partial (UAEP)** — session `build_context` not yet full `assemble()` |
+| Is there a **unified plugin catalog**? | **Yes** — `intergrax/context/` + `bootstrap_context_catalog()` + `BuiltinContextPlugin` (13 providers) |
+| Is **step-aware** assembly implemented? | **Yes (ACP/graph events)** — `step_kind` / `step_index` on `ContextAssemblyRequest` + `context_assembly.v2`; ranker boosts by step |
+| Is **workspace/codebase** context production-grade? | **Yes (MVP)** — workspace provider + FORMAT merge + orchestrator on graph codebase preset |
+| Observability on assembly path? | **L3** — unified `CONTEXT_ASSEMBLED` v2 (CE-3.11); `CONTEXT_CANDIDATE_*` on engine assemble when `event_bus` wired (CE-9.1); OTel span shim + `check_context_otel_span_registry.py` |
+| Can authors register custom providers without forking Nexus? | **Yes** — `register_context_plugin()` + `context_plugin_ids` on `ContextProfile` |
 
-**Remediation:** every gap maps to **GAP-CTX-\*** → **CE-\*** in the implementation plan.
+**Remaining:** **GAP-CTX-20** (CE-PROV-WIRE), **GAP-CTX-08**, deferred CE-9.5/9.6, CE-10.3–10.5, CE-12.1–12.3 — see §16.
 
 ---
 
@@ -64,20 +65,18 @@ Tier-3 ContextProfile + ContextEnginePreset + context_plugins[]
 
 | Dimension | Score | Notes |
 |-----------|-------|-------|
-| Control plane (`ContextProfile`, bridges, wiring) | **L3** | Phase CTX Done |
-| Global budget / never-overflow | **L3** | `ContextCompiler` + `DegradationLadder` (MEM-DEPTH) |
-| Provenance + assembly events | **L3** | `AgentContextBundle`, `CONTEXT_ASSEMBLED` |
-| Quality scoring (relevance/freshness/confidence) | **L2** | `context_engineering.py`; not wired in hot path |
-| Plugin extensibility | **L1** | Profiles + hooks; no catalog |
-| Step-aware selection | **L1** | No `ContextAssemblyRequest.step_kind` |
-| Codebase-scale preset | **L1** | Spike only |
-| Interactive multi-hop context loop | **L1** | Tools/RAG/delegation partial |
-| OTel on compile hot path | **L1.5** | Events yes; spans CE-9 |
-| Regression / drift gates | **L2.5** | `context_regression_benchmark.py` |
+| Control plane (`ContextProfile`, bridges, wiring) | **L3** | CTX + `context_presets.py` + `check_context_engine_wiring.py` |
+| Global budget / never-overflow | **L3** | `ContextCompiler` on ACP LLM path + graph engine assemble; UAEP session path hybrid |
+| Provenance + assembly events | **L3** | `CONTEXT_ASSEMBLED` v2 with `engine_id` + `step_kind`; graph + UAEP aligned (CE-3.11) |
+| Quality scoring (relevance/freshness/confidence) | **L3** | `DefaultContextRanker` + `evaluate_context_engineering()` gate (CE-10.1) |
+| Plugin extensibility | **L3−** | Catalog + FORMAT merge shipped; **GAP-CTX-20** — stub `collect()` → legacy wiring (**CE-PROV-WIRE**) |
+| Step-aware selection | **L3** | ACP `AgentStepContext` + ranker table; graph uses `node.capability` as `step_kind` |
+| Codebase-scale preset | **L3** | `CodebaseContextEngine` + workspace provider; 1k-file gate test |
+| Interactive multi-hop context loop | **L2** | `ContextOrchestrator` on codebase preset only (CE-8) |
+| OTel on compile hot path | **L2.5** | Span registry + engine shim; full OTel SDK wiring optional |
+| Regression / drift gates | **L2.5** | `context_regression_benchmark.py`; preset baselines deferred (CE-10.4) |
 
-**Overall:** **L2.5 implementation / L3 control plane** — solid Harness foundation for bounded assembly; **not** complete for Cursor-class plugin engine until Phase CE-EXT closeout.
-
-**Target after CE-EXT:** **L3+ engine** · **L4** with AHI adaptive ranking (deferred to [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md)).
+**Overall:** **L3+ engine / L3 control plane** — CE-EXT S0–S12 complete; **L4** adaptive ranking deferred to [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md).
 
 ---
 
@@ -87,7 +86,7 @@ Tier-3 ContextProfile + ContextEnginePreset + context_plugins[]
 |-----------|----------------------|
 | **Compiler, not concatenation** | CE runs a deterministic pipeline with recorded stages — not string joins in agent code |
 | **Budget-first** | Global input token budget derived from `llm_adapter.context_window_tokens` minus output reserve |
-| **Step-scoped** | Assembly is keyed by **execution step** (UAEP step index or graph node + phase) — target CE-4 |
+| **Step-scoped** | Assembly is keyed by **execution step** (UAEP step index or graph node + phase) — **Done** (CE-4) |
 | **Source-agnostic plugins** | Each fragment has a `ContextSourceProvider`; Memory is one provider among many |
 | **Provenance everywhere** | Every included/excluded fragment traceable to `source_id`, `source_type`, `degradation_step` |
 | **Policy-governed** | `BEFORE_CONTEXT_BUILD` hooks + `pre_context_policy_audit` — no silent policy bypass |
@@ -117,16 +116,17 @@ Tier-3 ContextProfile + ContextEnginePreset + context_plugins[]
 ## 6. Tier placement
 
 ```text
-Tier-0  intergrax/context/              (target CE-1) shared contracts + scoring utils — importable without Nexus
-Tier-1  intergrax/runtime/nexus/context/  execution engine, CompileContextStep, ContextManager
-Tier-3  applications/_shared/context_*      profile bridges and wiring
+Tier-0  intergrax/context/              contracts, plugins, ranker, dedup, orchestrator (CE-1 — shipped)
+Tier-1  intergrax/runtime/nexus/context/  DefaultNexusContextEngine, ContextManager, ContextCompiler
+Tier-3  applications/_shared/context_*      profile bridges, presets, wiring
 ```
 
 | Component | Tier | Rationale |
 |-----------|------|-----------|
-| `ContextEngine`, `CompileContextStep` | 1 | Nexus turn-critical |
-| `ContextSourceProvider` Protocol | 0 contracts / 1 runtime | Plugins may ship in apps or `intergrax/context/providers/` |
-| `context_engineering.py` (scoring) | 1 architecture helpers | Move shared types to Tier-0 in CE-1 |
+| `ContextEngine`, `DefaultNexusContextEngine`, `CodebaseContextEngine` | 1 | Nexus turn-critical (CE-3 — shipped) |
+| `ContextCompiler`, `DegradationLadder` | 1 | Budget allocator on ACP + engine assemble paths |
+| `ContextSourceProvider` Protocol | 0 / providers | `intergrax/context/providers/` + app entry points |
+| `context/quality.py` (scoring) | 0 | Shared types; shim in `context_engineering.py` |
 | `ContextProfile` | 3 contract | Environment composition root |
 
 ---
@@ -149,10 +149,10 @@ ContextAssemblyRequest
   → EMIT      (events, spans, trace records)
 ```
 
-### 7.2 Primary types (target contracts — CE-1)
+### 7.2 Primary types (Tier-0 contracts — CE-1 shipped)
 
 ```python
-# intergrax/context/contracts.py (target Tier-0)
+# intergrax/context/contracts.py
 
 class ContextFragmentSource(str, Enum):
     TASK_MESSAGE = "task_message"
@@ -227,8 +227,10 @@ class AssembledContext:
 | `AgentContextBundle` | `context_manager.py` | **Shipped** — graph path |
 | `ContextProvenance` | `context_models.py` | **Shipped** |
 | `ContextChunkSignal` | `context_engineering.py` | **Shipped** — quality eval only |
-| `ContextAssemblyRequest` | — | **Planned CE-4** |
-| `ContextFragment` | — | **Planned CE-1** |
+| `ContextAssemblyRequest` | `intergrax/context/contracts.py` | **Shipped** — step fields populated on ACP/graph (CE-4) |
+| `ContextFragment` | `intergrax/context/contracts.py` | **Shipped** |
+| `ContextPluginRegistry` | `intergrax/context/registry.py` | **Shipped** |
+| `AgentContextHints` | `intergrax/contracts/agent_context_hints.py` | **Shipped** (CE-5.1) |
 
 ---
 
@@ -236,7 +238,7 @@ class AssembledContext:
 
 CE follows the same **catalog pattern** as Integration / Tool / Skill libraries ([`EXTENSION_AUTHOR_GUIDE.md`](../guides/EXTENSION_AUTHOR_GUIDE.md)).
 
-### 8.1 Catalog surface (target)
+### 8.1 Catalog surface (shipped)
 
 | Layer | Entry point group | Protocol | Register |
 |-------|-------------------|----------|----------|
@@ -313,34 +315,38 @@ bootstrap_context_catalog(
 )
 ```
 
-### 8.3 Shipped default engine
+### 8.3 Default engine — as-built (post CE-EXT S12, 2026-06-12)
 
-**`DefaultNexusContextEngine`** (target CE-3) wraps as-built:
+Legacy `runtime_steps` pipeline (`HistoryLayer` → `CompileContextStep`) was **removed** by ACP-CLOSE-LEG.
 
-| Stage | As-built implementation |
-|-------|-------------------------|
-| Collect (turn) | `InstructionsStep`, `UserLongtermMemoryStep`, `rag.retrieve` (catalog), `HistoryStep`, websearch |
-| Collect (graph) | `ContextManager.build_agent_context()` |
-| Budget | `ContextCompiler.compile()` via `CompileContextStep` |
-| Format | `compose_agent_message()` / chat message list |
-| Validate | `verify_context_preflight()` |
+| Path | Collect | Budget / validate | Format | Events | Engine integration |
+|------|---------|-------------------|--------|--------|-------------------|
+| **Graph** | `compose_agent_message()` + optional provider `collect()` | `ContextEngine.assemble()` when `llm_adapter` wired; else `trim_message_to_budget` | bundle message | `CONTEXT_ASSEMBLED` v2 + `engine_id` | **Hybrid** — CE-3.7 |
+| **UAEP** | `build_context` + optional `assemble_uaep_session_prompt` | engine merge when wired | `ContextCompiler` when engine wired | `CONTEXT_ASSEMBLED` v2 | **Hybrid** — assemble wired (CE-UAEP-ASM); stub collect until CE-PROV-WIRE |
+| **ACP** | catalog tools in `on_next_step` + provider stubs in engine | `compile_prompt_text()` / `ContextCompiler` before each LLM call | step prompt | step trace + assembly v2 when graph-wired | **Hybrid** — CE-3.9 compiler hot path |
+| **Engine unit/integration** | `DefaultNexusContextEngine.assemble()` | collect → dedup → rank → `ContextCompiler` → `verify_context_preflight()` | `ChatMessage[]` | via `ContextManager` when wired | **Reference spine** |
+
+**Unification status:** graph + UAEP use `assemble()` when engine wired (**CE-ALIGN**). **CE-PROV-WIRE** closes §7.1 provider collect for all §8.4 builtins (GAP-CTX-20). ACP step path remains hybrid (catalog tools + compiler) until optional per-step `assemble()` follow-up.
 
 ### 8.4 Built-in provider registry (normative)
 
-| provider_id | Source(s) | Module (target) |
-|-------------|-----------|-----------------|
-| `builtin.task_message` | TASK_MESSAGE | graph + intake |
-| `builtin.system_instructions` | SYSTEM_INSTRUCTIONS | user/org profile |
-| `builtin.session_history` | SESSION_HISTORY | `HistoryLayer` |
-| `builtin.longterm_memory` | LONGTERM_MEMORY | `UserLongtermMemoryStep` |
-| `builtin.rag` | RAG | `rag.retrieve` (catalog) / `RagContextProvider` |
-| `builtin.websearch` | WEBSEARCH | websearch step |
-| `builtin.tool_output` | TOOL_OUTPUT | tool injection blocks |
-| `builtin.graph_prior` | GRAPH_PRIOR | `ContextManager` |
-| `builtin.shared_context` | SHARED_CONTEXT | `SharedTaskContext` |
-| `builtin.attachments` | ATTACHMENT | modality attachments |
-| `builtin.policy_overlay` | POLICY_OVERLAY | policy bundles |
-| `builtin.workspace` | WORKSPACE | CE-7 (from spike) |
+| provider_id | Source(s) | Module | collect status | CE-PROV-WIRE |
+|-------------|-----------|--------|----------------|--------------|
+| `builtin.task_message` | TASK_MESSAGE | `builtin.py` + `legacy_bridge.py` | **live** (objective / messages handle) | CE-PROV-01 **Done** |
+| `builtin.system_instructions` | SYSTEM_INSTRUCTIONS | `builtin.py` stub | **stub** | CE-PROV-02 — `runtime_config` / prompt registry handle |
+| `builtin.session_history` | SESSION_HISTORY | `builtin.py` + `legacy_bridge.py` | **live** (`session_history_messages` handle) | CE-PROV-03 **Done** |
+| `builtin.session_history_semantic` | SESSION_HISTORY_SEMANTIC | `session_semantic_recall.py` | **live** (vector index + hits handle) | — (CE-VEC-1) |
+| `builtin.longterm_memory` | LONGTERM_MEMORY | `builtin.py` stub | **stub** | CE-PROV-04 — LTM search / `memory_view` handle |
+| `builtin.rag` | RAG | `builtin.py` stub | **stub** | CE-PROV-05 — `rag_chunks` / retrieve snapshot handle |
+| `builtin.websearch` | WEBSEARCH | `builtin.py` stub | **stub** | CE-PROV-06 — websearch blocks handle |
+| `builtin.tool_output` | TOOL_OUTPUT | `builtin.py` stub | **stub** | CE-PROV-07 — tool step blocks handle |
+| `builtin.graph_prior` | GRAPH_PRIOR | `builtin.py` + `legacy_bridge.py` | **live** (`prior_output_records` handle) | CE-PROV-08 **Done** |
+| `builtin.shared_context` | SHARED_CONTEXT | `builtin.py` stub | **stub** | CE-PROV-09 — `SharedTaskContext` on task metadata |
+| `builtin.attachments` | ATTACHMENT | `builtin.py` stub | **stub** | CE-PROV-10 — attachment summary handle |
+| `builtin.policy_overlay` | POLICY_OVERLAY | `builtin.py` stub | **stub** | CE-PROV-11 — policy overlay handle |
+| `builtin.workspace` | WORKSPACE | `workspace.py` | **live** (`workspace_files` handle) | — (CE-7.2) |
+
+**Plan:** [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md) phase **CE-PROV-WIRE** · sprints B1–B4.
 
 ### 8.5 Engine presets (Tier-3)
 
@@ -353,7 +359,7 @@ bootstrap_context_catalog(
 | `custom` | `ContextProfile.engine_ref` | author-registered `ContextEngine` subclass |
 
 ```python
-# ApplicationEnvironmentProfile (existing + target fields)
+# ApplicationEnvironmentProfile — as-built ContextProfile fields (CTX + CE-EXT)
 class ContextProfile(BaseModel):
     assembly_options: TaskContextAssemblyOptions
     budget_policy: ContextBudgetPolicy | None
@@ -370,34 +376,51 @@ class ContextProfile(BaseModel):
 
 ## 9. Execution paths
 
-### 9.1 UAEP session turn (single-agent chat)
+### 9.1 As-built — UAEP session turn
 
 ```mermaid
 sequenceDiagram
     participant Client
-    participant Engine as AgentEngine
+    participant UAEP as UAEPExecutor
     participant Hook as BEFORE_CONTEXT_BUILD
-    participant Steps as Runtime Steps
-    participant CE as ContextEngine
-    participant Policy as PolicyEngine
-    participant LLM as CoreLLMStep
+    participant Agent
     participant Bus as RuntimeEventBus
 
-    Client->>Engine: RuntimeRequest
-    Engine->>Steps: build_base_history (HistoryLayer)
-    Steps->>Steps: Instructions / LTM / RAG / History inject
-    Steps->>Hook: hook middleware
-    Hook-->>Steps: allow | modify state
-    Steps->>CE: assemble(ContextAssemblyRequest)
-    CE->>CE: collect → rank → budget → format → validate
+    Client->>UAEP: RuntimeRequest
+    UAEP->>Hook: run_before (CONTEXT_BUILDING)
+    Hook-->>UAEP: allow | block
+    UAEP->>Agent: build_context(request)
+    UAEP->>Hook: run_after AFTER_CONTEXT_BUILD
+    UAEP->>Bus: CONTEXT_ASSEMBLED (v2, engine_id=default)
+    UAEP->>Agent: UAEP steps / tool gateway
+```
+
+When `context_engine` + `llm_adapter` are wired on `UAEPExecutor`, **`assemble_uaep_session_prompt`** runs after `build_context` (**CE-UAEP-ASM**). Provider collect on UAEP is **stub until CE-PROV-WIRE** (GAP-CTX-20).
+
+### 9.1.1 Engine assembly spine (CE-3 + CE-3.9 — shipped on ACP/graph)
+
+```mermaid
+sequenceDiagram
+    participant Executor as UAEP / ACP step loop
+    participant Hook as BEFORE_CONTEXT_BUILD
+    participant CE as DefaultNexusContextEngine
+    participant Policy as pre_context_policy_audit
+    participant LLM as LLM adapter
+    participant Bus as RuntimeEventBus
+
+    Executor->>Hook: run_before
+    Executor->>CE: assemble(ContextAssemblyRequest)
+    CE->>CE: providers collect → rank → ContextCompiler budget
+    CE->>Policy: audit assembled fragments
+    CE->>CE: verify_context_preflight
     CE->>Bus: CONTEXT_ASSEMBLED
     alt over budget
-        CE->>Bus: CONTEXT_TRIMMED (degradation_step)
+        CE->>Bus: CONTEXT_TRIMMED
     end
-    CE->>Policy: pre_context_policy_audit
-    CE->>LLM: messages_for_llm
-    LLM->>Bus: LLM_* events
+    Executor->>LLM: messages_for_llm
 ```
+
+ACP path: `ContextAssemblyRequest.step_kind` from `AgentStepContext` / `StepOutcome` (CE-4).
 
 ### 9.2 Nexus graph node (multi-agent)
 
@@ -417,7 +440,7 @@ sequenceDiagram
     GE->>CM: record_node_output → shared context
 ```
 
-**Unification target (CE-3):** both paths call **`ContextEngine.assemble()`** with different `assembly_scope`.
+**Graph path (CE-3.7):** `ContextManager.build_agent_context_async()` calls **`ContextEngine.assemble(scope=graph_node)`** when engine + `llm_adapter` are wired.
 
 ### 9.3 Delegation / explore child
 
@@ -430,7 +453,7 @@ sequenceDiagram
 
 ### 9.4 ACP direct run (Tier-2)
 
-`run_acp_session` uses UAEP path; CE-4 wires `step_kind` from `StepOutcome` / contract metadata into `ContextAssemblyRequest`.
+ACP agents still collect context inside `on_next_step` via catalog context tools (`rag.retrieve`, memory skills). **CE-3.9** wires `ContextCompiler` before each LLM call via `StepLLMRouter` + `compile_service`. **CE-4** populates `step_kind` from `AgentStepContext` / `AgentContract.context_hints` (CE-5.1). Optional full `assemble()` per step is follow-up.
 
 ---
 
@@ -457,14 +480,14 @@ Each step **MUST** emit diagnostics: `degradation_step`, `bytes_removed`, `fragm
 
 | Control | Mechanism | Status |
 |---------|-----------|--------|
-| Relevance / freshness / confidence | `ContextChunkSignal` + thresholds | **Partial** — not in compile hot path |
-| Dedup | `content_hash` / `deduplicate_context_chunks()` | **Partial** |
+| Relevance / freshness / confidence | `ContextChunkSignal` + thresholds | **Done** — `DefaultContextRanker._apply_quality_gate()` (CE-10.1) |
+| Dedup | `content_hash` / `dedup_fragments_by_hash()` | **Done** — engine collect merge (CE-10.2) |
 | Drift monitoring | `ContextProfile.drift_monitoring_enabled` | **Done** |
 | Semantic compression | `semantic_compression_enabled` | **Done** (profile flag) |
 | Regression benchmark | `context_regression_benchmark.py` | **Done** |
 | Retrieval effectiveness | `retrieval_effectiveness.py` | **Done** (RAG boundary) |
 
-**CE-10** wires quality scoring into `ContextRanker` default implementation.
+**CE-10.3** (provider metadata for `classify_candidates`) remains deferred — engine still uses message-index heuristics for compiler candidates.
 
 ---
 
@@ -490,10 +513,11 @@ materialize_runtime_config()
 wire_application_environment()
   └── context_wiring.py
         → resolve_context_manager_from_environment()
-        → (target) resolve_context_engine_from_environment()
+        → resolve_context_engine_from_environment()
+        → resolve_context_orchestrator_from_environment()  # codebase preset only
 
 build_nexus_loop_from_environment()
-  └── NexusLoop(context_manager=..., context_engine=...)
+  └── NexusLoop(context_manager=...)  # optional context_engine override (CE-3.5)
 ```
 
 ### 12.2 Hooks
@@ -509,19 +533,21 @@ Registered in `hook_registry.py` parity map · UAEP `run_before` / `run_after`.
 
 | Check | Module |
 |-------|--------|
-| Pre-context policy audit | `pre_context_policy_audit.py` |
+| Pre-context policy gate | `runtime/policy/context_assembly_policy.py` (`run_pre_context_policy_gate`) |
+| Static wiring audit | `pre_context_policy_audit.py` (CI marker scan) |
 | Retrieval poisoning | RAG security profile — fragments filtered before inject |
 | Secret redaction | `ApplicationSecurityProfile` on trace payloads |
 
 ### 12.4 Runtime events
 
-| Event | Phase | Payload schema | Storage |
-|-------|-------|----------------|---------|
-| `CONTEXT_ASSEMBLED` | `CONTEXT_BUILDING` | `context_assembly.v1` | TraceStore |
-| `CONTEXT_TRIMMED` | `CONTEXT_BUILDING` | `context_assembly.v1` | TraceStore |
-| `CONTEXT_CANDIDATE_COLLECTED` | `CONTEXT_BUILDING` | `context_candidate.v1` (CE-9) | TraceStore |
-| `CONTEXT_CANDIDATE_DROPPED` | `CONTEXT_BUILDING` | `context_candidate.v1` (CE-9) | TraceStore |
-| `CONTEXT_VALIDATION_FAILED` | `CONTEXT_BUILDING` | `context_validation.v1` (CE-9) | TraceStore |
+| Event | Phase | Payload schema | Storage | Path |
+|-------|-------|----------------|---------|------|
+| `CONTEXT_ASSEMBLED` | `CONTEXT_BUILDING` | `context_assembly.v2` (preferred) | TraceStore | Graph + UAEP (CE-3.11, CE-4.5) |
+| `CONTEXT_TRIMMED` | `CONTEXT_BUILDING` | `context_assembly.v2` | TraceStore | Graph |
+| `CONTEXT_BUILT` | `CONTEXT_BUILDING` | `context_assembly.v1` (alias registry) | TraceStore | **Deprecated** — use `CONTEXT_ASSEMBLED` |
+| `CONTEXT_CANDIDATE_COLLECTED` | `CONTEXT_BUILDING` | `context_candidate.v1` | TraceStore | `DefaultNexusContextEngine` when `event_bus` in provider handles (CE-9.1) |
+| `CONTEXT_CANDIDATE_DROPPED` | `CONTEXT_BUILDING` | `context_candidate.v1` | TraceStore | Dedup phase + counters (`context_counters.py`) |
+| `CONTEXT_VALIDATION_FAILED` | `CONTEXT_BUILDING` | `validation.v1` | TraceStore | Policy/validator failures before `assemble()` raises |
 
 Payload fields (assembled):
 
@@ -549,22 +575,22 @@ Structured logger namespace: `intergrax.context.engine`
 
 ### 12.6 Observability / tracing
 
-| Signal | Target |
+| Signal | Status |
 |--------|--------|
-| OTel spans | `context.engine.assemble`, `context.provider.collect`, `context.budget.allocate` (CE-9) |
-| Metrics | `context_assembly_duration_ms`, `context_fragments_included`, `context_tokens_used`, `context_degradation_step` |
-| Gate script | `check_observability_gates.py` registry rows (CE-9) |
-| Dashboards | Link from OBS product dashboard — assembly SLO panel (CE-9) |
+| OTel spans | **Shipped (shim)** — `context/tracking/context_spans.py`; gate: `check_context_otel_span_registry.py` |
+| Metrics | **Opt-in** — `runtime/observability/context_counters.py` (`INTERGRAX_CONTEXT_METRICS`) |
+| Gate scripts | `check_context_otel_span_registry.py`, `check_context_engine_wiring.py`, `intergrax doctor` |
+| Dashboards | Deferred (CE-9.6) — link when OBS product dashboard slice ships |
 
 ### 12.7 Cost attribution
 
-Context assembly CPU time and optional LLM summarization calls **MUST** attribute to `run_id` / `task_id` via V-COST hooks when semantic compression invokes LLM (CE-9).
+Context assembly CPU time and optional LLM summarization calls **MUST** attribute to `run_id` / `task_id` via V-COST hooks when semantic compression invokes LLM — **deferred** until semantic compression hot path (CE-9.5).
 
 ---
 
 ## 13. Interactive / multi-hop assembly (codebase-scale)
 
-For Cursor-class behaviour, CE supports an **optional orchestration loop** inside the engine (CE-8):
+For Cursor-class behaviour, CE ships an **optional orchestration loop** (CE-8 — codebase preset):
 
 ```text
 ContextOrchestrator (max_hops=3, latency_budget_ms)
@@ -575,7 +601,7 @@ ContextOrchestrator (max_hops=3, latency_budget_ms)
 
 | Component | Role |
 |-----------|------|
-| `WorkspaceIndexProvider` | Merkle + AST chunks (from `workspace_index_spike.py`) |
+| `WorkspaceContextProvider` | Merkle + chunks (`context/providers/workspace_index.py`) |
 | `rag.retrieve` | Semantic fallback |
 | `explore` delegation | Wide search child agent |
 | `ContextOrchestrator` | Bounded loop — not unbounded agent while-true |
@@ -608,7 +634,7 @@ ContextOrchestrator (max_hops=3, latency_budget_ms)
 - Graph priors with `SUMMARY_ONLY` tier
 - Preset `regulated_minimal`
 
-### 14.5 Codebase feature implementation (target)
+### 14.5 Codebase feature implementation
 
 - Preset `codebase`
 - Plugins: workspace + graph_prior + tool_output
@@ -624,7 +650,7 @@ ContextOrchestrator (max_hops=3, latency_budget_ms)
 
 ## 15. Author extension guide (summary)
 
-Full detail: [`EXTENSION_AUTHOR_GUIDE.md`](../guides/EXTENSION_AUTHOR_GUIDE.md) §Context (CE-11) · Appendix L.
+Full detail: [`EXTENSION_AUTHOR_GUIDE.md`](../guides/EXTENSION_AUTHOR_GUIDE.md) §Context (CE-12.1 deferred) · [`AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix L · `intergrax/context/plugin.py`.
 
 ```python
 class MyCodebaseContextPlugin:
@@ -652,24 +678,32 @@ profile = ApplicationEnvironmentProfile(
 
 ---
 
-## 16. Engine depth audit register (2026-06-12)
+## 16. Engine depth audit register (2026-06-12, post CE-EXT)
 
-| ID | Category | Finding | Severity | Plan |
-|----|----------|---------|----------|------|
-| GAP-CTX-01 | niegotowość | No `ContextSourceProvider` Protocol + registry | **P0** | CE-1, CE-2 |
-| GAP-CTX-02 | niegotowość | No unified `ContextEngine.assemble()` — dual paths | **P0** | CE-3 |
-| GAP-CTX-03 | niegotowość | `CompileContextStep` hardcodes `ContextCompiler()` | **P1** | CE-3 |
-| GAP-CTX-04 | niegotowość | No `ContextAssemblyRequest` step-aware fields | **P1** | CE-4 |
-| GAP-CTX-05 | niegotowość | Quality scoring not in compile hot path | **P1** | CE-10 |
-| GAP-CTX-06 | niegotowość | Workspace index spike not production provider | **P1** | CE-7 |
-| GAP-CTX-07 | niegotowość | No interactive `ContextOrchestrator` | **P2** | CE-8 |
-| GAP-CTX-08 | niedoróbka | `classify_candidates` uses string heuristics | **P2** | CE-10 |
-| GAP-CTX-09 | niedoróbka | No OTel spans on context hot path | **P2** | CE-9 |
-| GAP-CTX-10 | niedoróbka | No `CONTEXT_CANDIDATE_*` events | **P2** | CE-9 |
-| GAP-CTX-11 | niska jakość | `ContextBuilder` name collides with CE engine | **P3** | CE-3 (rename doc) |
-| GAP-CTX-12 | ograniczenie | L4 adaptive ranking deferred to AHI | — | AHI plan |
+| ID | Status | Finding (original) | Resolution |
+|----|--------|-------------------|------------|
+| GAP-CTX-01 | **Closed** | No `ContextSourceProvider` Protocol + registry | CE-1, CE-2 shipped |
+| GAP-CTX-02 | **Closed** | No unified `ContextEngine.assemble()` | CE-3.7 graph engine path; hybrid UAEP/ACP remain |
+| GAP-CTX-03 | **Closed** | No injectable `ContextEngine` on assembly path | CE-3.4, CE-3.5 |
+| GAP-CTX-04 | **Closed** | No step-aware `ContextAssemblyRequest` | CE-4, CE-5.1 |
+| GAP-CTX-05 | **Closed** | Quality scoring not in hot path | CE-10.1 ranker gate |
+| GAP-CTX-06 | **Closed** | Workspace spike only | CE-7 workspace provider |
+| GAP-CTX-07 | **Closed** | No `ContextOrchestrator` | CE-8 codebase preset |
+| GAP-CTX-08 | **Open** | `classify_candidates` string heuristics | CE-10.3 deferred |
+| GAP-CTX-09 | **Closed** | No OTel spans on hot path | CE-9.2 span registry + shim |
+| GAP-CTX-10 | **Closed** | No `CONTEXT_CANDIDATE_*` bus events | CE-9.1 engine emission via `context_skill_recording` |
+| GAP-CTX-11 | **Closed** | `ContextBuilder` name collision | CE-3.6 `SessionRagContextBuilder` alias |
+| GAP-CTX-12 | **Deferred** | L4 adaptive ranking | AHI plan |
+| GAP-CTX-13 | **Closed** | `ContextCompiler` not on hot path | CE-3.9 ACP + graph engine |
+| GAP-CTX-14 | **Closed** | `CONTEXT_BUILT` vs `CONTEXT_ASSEMBLED` split | CE-3.11 unified v2 |
+| GAP-CTX-15 | **Closed** | Provider `collect()` fragments not merged into LLM window | CE-FMT-1 `formatter.py` + engine merge |
+| GAP-CTX-16 | **Closed** | `ContextOrchestrator` not on Nexus graph hot path | CE-8.2b `ContextManager` + wiring |
+| GAP-CTX-17 | **Closed** | `engine_ref=custom` not resolved | `context_engine_resolver.load_context_engine` |
+| GAP-CTX-18 | **Closed** | Preset engines lack §8.5 behavior | `preset_engines.py` |
+| GAP-CTX-19 | **Closed** | Registry formatter unused | `BuiltinContextPlugin` sets `DefaultContextFormatter` |
+| GAP-CTX-20 | **Open** (partial) | 8 builtin stub `collect()` still return `[]` on engine path (B1 closed task/graph/session) | **CE-PROV-WIRE** sprints B2–B4 |
 
-**Traceability:** 100% mapped in [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md).
+**Traceability:** [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md) · **CE-ALIGN** Done · **CE-PROV-WIRE** Planned.
 
 ---
 
@@ -677,17 +711,47 @@ profile = ApplicationEnvironmentProfile(
 
 | Module | Tier | Role |
 |--------|------|------|
-| `intergrax/runtime/nexus/context/context_engine.py` | 1 | **Target** — `DefaultNexusContextEngine` |
-| `intergrax/runtime/nexus/context/context_compiler.py` | 1 | Budget allocator (shipped) |
-| `intergrax/runtime/nexus/context/context_manager.py` | 1 | Graph assembly (shipped) |
-| `intergrax/runtime/nexus/context/context_builder.py` | 1 | Session RAG helper (shipped — rename planned) |
-| `intergrax/runtime/nexus/tools/` | 1 | CE pipeline step |
-| `intergrax/runtime/architecture/context_engineering.py` | 1 | Quality scoring |
+| `intergrax/context/contracts.py` | 0 | `ContextFragment`, `ContextAssemblyRequest`, `AssembledContext` |
+| `intergrax/context/protocols.py` | 0 | Provider / ranker / engine protocols |
+| `intergrax/context/registry.py` | 0 | `ContextPluginRegistry` |
+| `intergrax/context/plugin.py` | 0 | `register_context_plugin()` |
+| `intergrax/context/bootstrap.py` | 0 | `bootstrap_context_catalog()` |
+| `intergrax/context/ranker.py` | 0 | `DefaultContextRanker` (step + quality gate) |
+| `intergrax/context/dedup.py` | 0 | `dedup_fragments_by_hash()` |
+| `intergrax/context/orchestrator.py` | 0 | `ContextOrchestrator` (codebase preset) |
+| `intergrax/context/quality.py` | 0 | `evaluate_context_engineering()` |
+| `intergrax/context/providers/builtin.py` | 0 | `BuiltinContextPlugin` (B1 live: task/graph/session; remaining stubs — CE-PROV-WIRE) |
+| `intergrax/context/providers/legacy_bridge.py` | 0 | Legacy collector adapters (**CE-PROV-BRIDGE** — B1 shipped) |
+| `intergrax/context/providers/workspace.py` | 0 | `WorkspaceContextProvider` |
+| `intergrax/context/providers/workspace_index.py` | 0 | Merkle workspace index |
+| `intergrax/context/providers/session_semantic_recall.py` | 0 | Episodic vector recall provider |
+| `intergrax/context/tracking/context_spans.py` | 0 | CE OTel span names + shim |
+| `intergrax/runtime/nexus/context/context_engine.py` | 1 | `DefaultNexusContextEngine` |
+| `intergrax/runtime/nexus/context/codebase_engine.py` | 1 | `CodebaseContextEngine` preset |
+| `intergrax/runtime/nexus/context/compile_service.py` | 1 | ACP compiler hot-path helpers |
+| `intergrax/runtime/nexus/context/context_validator.py` | 1 | `DefaultContextValidator` + preflight |
+| `intergrax/runtime/nexus/context/fragment_bridge.py` | 1 | `ContextCandidate` ↔ `ContextFragment` |
+| `intergrax/runtime/nexus/context/graph_assembly.py` | 1 | Graph `ContextAssemblyRequest` builder |
+| `intergrax/runtime/nexus/context/context_compiler.py` | 1 | Budget allocator + degradation |
+| `intergrax/runtime/nexus/context/context_preflight.py` | 1 | Never-overflow preflight |
+| `intergrax/runtime/nexus/context/context_manager.py` | 1 | Graph assembly + async engine path |
+| `intergrax/runtime/nexus/context/context_assembler.py` | 1 | Graph message compose helpers |
+| `intergrax/runtime/nexus/context/context_builder.py` | 1 | Session RAG; `SessionRagContextBuilder` alias |
+| `intergrax/runtime/policy/context_assembly_policy.py` | 1 | `run_pre_context_policy_gate()` |
+| `intergrax/runtime/observability/context_counters.py` | 1 | Opt-in assembly metrics |
+| `intergrax/runtime/nexus/tools/plan_context_invocation.py` | 1 | ACP catalog context injection |
+| `intergrax/runtime/architecture/context_engineering.py` | 1 | Quality scoring shim |
 | `intergrax/runtime/architecture/context_regression_benchmark.py` | 1 | Regression harness |
+| `intergrax/memory/workspace_index_spike.py` | 0 | Legacy RFC — superseded by `context/providers/workspace_index.py` |
 | `intergrax/contracts/context_assembly.py` | 0 | `TaskContextAssemblyOptions` |
+| `intergrax/contracts/agent_context_hints.py` | 0 | `AgentContextHints` (CE-5.1) |
+| `intergrax/applications/_shared/context_presets.py` | 3 | Tier-3 preset helpers |
 | `intergrax/applications/_shared/context_runtime_bridge.py` | 3 | Profile → RuntimeConfig |
-| `intergrax/applications/_shared/context_wiring.py` | 3 | Profile → Nexus |
-| `intergrax/context/` | 0 | **Target** — contracts + plugin registry (CE-1) |
+| `intergrax/applications/_shared/context_wiring.py` | 3 | Engine + manager resolution |
+| `intergrax/agents/authoring/context_assembly_bridge.py` | 2 | ACP `ContextAssemblyRequest` builder |
+| `intergrax/agents/uaep.py` | 2 bridge | UAEP hooks + `CONTEXT_ASSEMBLED` v2 |
+| `scripts/check_context_engine_wiring.py` | — | CI preset resolution gate |
+| `scripts/check_context_otel_span_registry.py` | — | CI span wiring gate |
 
 ---
 

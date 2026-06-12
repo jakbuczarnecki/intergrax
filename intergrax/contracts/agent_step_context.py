@@ -20,6 +20,10 @@ class AgentStepContext(BaseModel):
 
     step_index: int = Field(default=0, ge=0)
     run_id: str = ""
+    task_id: str = ""
+    tenant_id: str = "default"
+    message: str = ""
+    step_kind: str | None = None
     agent_id: str = ""
     contract_id: str = ""
     side_effect_mode: SideEffectMode = SideEffectMode.IMMEDIATE

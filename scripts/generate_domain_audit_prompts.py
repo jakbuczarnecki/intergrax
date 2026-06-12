@@ -470,8 +470,8 @@ applications/_shared/catalog_runtime_bridge.py · tool wiring
 scripts/check_legacy_tool_plan_booleans.py · check_tool_mcp_schema_export.py
 scripts/check_tool_injection_defense.py · check_agent_registry_bypass.py""",
         "key_symbols": "ToolContract · ToolRegistry · ToolProfile · ToolWiringContext · ToolRequest/ToolResponse · ToolAccessPolicy · ToolSelectionStrategy · ToolPlanDecision · ToolRiskLevel · tools_mode · tools_context_scope",
-        "active_phases": "Phase O/T-EXPAND Done · **TOOL-ENG active** (0–5,11 Done; 6–10,12 open) · Phase V V-SEC/V-COST/V-EVAL",
-        "known_gaps": "TOOL-ENG-16 ToolInvocationPattern plugin · TOOL-ENG-7 post-tool verify HIGH risk · TOOL-ENG-8 tools_mode=required hard fail · TOOL-ENG-9 parallel read-only · TOOL-ENG-10 AHI subset selection · TOOL-ENG-12 tool_choice exposure · 172+ tools need ACP invoke_tool/gateway path consistency",
+        "active_phases": "Phase O/T-EXPAND Done · **TOOL-ENG Closed** (2026-06-12, 36/36, S0–S8) · Phase V V-SEC/V-COST/V-EVAL",
+        "known_gaps": "Deferred: hierarchical LLM category pass (ADR-TOOL-005 v1) · optional L1 critic per-tool output (CVL) · ACP invoke_tool/gateway consistency across 190 tools (cross-domain). TOOL-ENG register closed.",
         "dimensions": [
             "All invocations via ToolRuntime → policy → RuntimeToolInvoker — no bypass.",
             "Every tool: tool_id, input/output schema, risk level, description for LLM selection.",
@@ -1171,7 +1171,7 @@ target: intergrax/runtime/capacity/ (ECP-DEPTH ECP-1..8)
 docs/adr/entries/2026-06-08/ADR-SCALE-001.md · ADR-SCALE-002.md""",
         "key_symbols": "ScalingProfile (target) · ScalingPolicy · ScalingAction · ScalingSignal · CapacitySignalCollector · ScalingProvisioner · SIG_QUEUE_DEPTH · GRAPH_BACKPRESSURE",
         "active_phases": "ECP-DOC · ECP-DEPTH (ECP-1..8, ECP-OBS) · ADR-SCALE-001/002 · cross-ref W-OPS.4 SLIs · ORCH GRAPH_BACKPRESSURE",
-        "known_gaps": "No unified CapacitySignalCollector yet · ScalingProfile missing on ApplicationEnvironmentProfile · K8s scale API not in canon · nginx slug missing · ECP evaluate/govern layers target only",
+        "known_gaps": "ECP-DEPTH scaffold not production autoscaling · Collector not wired to live GRAPH_BACKPRESSURE · K8s default factory health-only · Celery provisioner stub · Scheduler HITL bypass risk · AUDIT-IDEAL-30.4 in-memory probes · ECP-PROD backlog",
         "dimensions": [
             "ECP control loop async outside Nexus hot path.",
             "Provisioning via integrations/tools — not Nexus importing K8s SDK.",

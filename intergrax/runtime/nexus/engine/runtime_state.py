@@ -100,6 +100,7 @@ class RuntimeState(RuntimeStateContract):
 
     # Typed tool call traces (production runtime artifact).
     tool_traces: List[ToolCallTrace] = field(default_factory=list)
+    high_risk_tool_approvals: frozenset[str] = field(default_factory=frozenset)
 
     # RunBudget mid-run enforcement (RagStep / WebsearchStep entry counts).
     rag_step_invocation_count: int = 0

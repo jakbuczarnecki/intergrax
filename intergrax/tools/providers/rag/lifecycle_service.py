@@ -9,6 +9,7 @@ from intergrax.tools.providers.rag.lifecycle_contracts import (
     RagDescribeCollectionInput,
     RagDescribeCollectionOutput,
 )
+from intergrax.rag.graph.lifecycle.graph_lifecycle_sync import sync_graph_delete_documents
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 RAG_DELETE_DOCUMENTS_TOOL_ID = "rag.delete_documents"
@@ -35,7 +36,9 @@ def perform_rag_delete_documents(
             reason=f"delete_error:{exc.__class__.__name__}",
         )
 
-    return RagDeleteDocumentsOutput(used=True, deleted_count=len(ids), reason="ok")
+    graph_removed = sync_graph_delete_documents(ctx.rag_graph_store, ids)
+    reason = "ok" if graph_removed == 0 else f"ok:graph_unlinked={graph_removed}"
+    return RagDeleteDocumentsOutput(used=True, deleted_count=len(ids), reason=reason)
 
 
 def perform_rag_describe_collection(

@@ -220,6 +220,12 @@ def _apply_retriever_execution_trace(
         execution.used_retriever_id in ("hybrid", "graph_rag")
         or trace.hybrid_used
     )
+    if execution.channel_contributions:
+        trace.channel_contributions = dict(execution.channel_contributions)
+    if execution.graph_expanded_node_ids:
+        trace.graph_expanded_node_ids = list(execution.graph_expanded_node_ids)
+    if execution.graph_provenance_summary:
+        trace.graph_provenance_summary = execution.graph_provenance_summary
 
 
 def _record_retrieval_metrics(

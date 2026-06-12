@@ -171,6 +171,7 @@ class NexusLoop:
         self._idempotency_store = idempotency_store
         self._declarative_tool_invoker = declarative_tool_invoker
         self._notification_adapter = notification_adapter
+        self._context_manager = context_manager or ContextManager(event_bus=self._event_bus)
         self._engine = AgentEngine(
             registry,
             production_mode=production_mode,
@@ -183,6 +184,8 @@ class NexusLoop:
                 sandbox_manager=self._sandbox_manager,
                 middleware=self._middleware,
                 task_memory_store=self._task_memory_store,
+                context_engine=self._context_manager.context_engine,
+                llm_adapter=self._context_manager.llm_adapter,
             ),
         )
         self._classifier = classifier or ClassifyingTaskClassifier(registry)
@@ -198,7 +201,7 @@ class NexusLoop:
             production_mode=production_mode,
             event_bus=self._event_bus,
         )
-        self._context_manager = context_manager or ContextManager()
+        self._context_manager.bind_middleware(self._middleware)
         self._graph_executor = graph_executor or GraphExecutor(
             registry,
             engine=self._engine,

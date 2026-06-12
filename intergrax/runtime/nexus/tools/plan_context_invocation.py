@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import replace
 from typing import Optional
 
@@ -29,16 +30,36 @@ from intergrax.runtime.nexus.tools.tool_loop import (
     run_bounded_tool_loop,
 )
 from intergrax.runtime.nexus.tools.tool_planner_input import resolve_tool_planner_input
+from intergrax.runtime.nexus.tools.adaptive_tool_mode_resolver import recommend_tool_modes
 from intergrax.runtime.nexus.tools.tool_selection import (
+    SemanticToolIndexSelectionStrategy,
     ToolSelectionContext,
     resolve_planner_allowed_tool_ids,
+    resolve_selection_strategy,
+    strategy_trace_id,
 )
 from intergrax.runtime.nexus.tracing.rag.rag_summary import RagSummaryDiagV1
+from intergrax.runtime.nexus.tracing.tools.tool_selection import (
+    ToolSelectionCandidateDiagV1,
+    ToolSelectionDiagV1,
+)
 from intergrax.runtime.nexus.tracing.tools.tools_summary import ToolsSummaryDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.runtime.nexus.tracing.websearch.websearch_summary import WebsearchSummaryDiagV1
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID
 from intergrax.websearch.schemas.web_search_result import WebSearchResult
+
+
+def _selection_candidates(
+    strategy: object,
+    candidate_ids: Sequence[str],
+) -> list[ToolSelectionCandidateDiagV1]:
+    if isinstance(strategy, SemanticToolIndexSelectionStrategy) and strategy.last_ranks:
+        return [
+            ToolSelectionCandidateDiagV1(tool_id=tool_id, score=score)
+            for tool_id, score in strategy.last_ranks
+        ]
+    return [ToolSelectionCandidateDiagV1(tool_id=tool_id) for tool_id in candidate_ids]
 
 
 async def run_rag_context(state: RuntimeState) -> None:
@@ -327,19 +348,56 @@ async def run_tools_context(state: RuntimeState) -> None:
     warning: Optional[str] = None
     error_type: Optional[str] = None
     error_message: Optional[str] = None
+    loop_pattern_id: Optional[str] = None
+    loop_stop_reason: Optional[str] = None
+    tool_selection_mode = state.context.config.tool_selection_mode
+    tool_invocation_mode = state.context.config.tool_invocation_mode
 
     try:
         planner_input = resolve_tool_planner_input(state)
         registry = resolve_tool_registry(invoker)
         if registry is not None:
-            allowed_tool_ids = resolve_planner_allowed_tool_ids(
-                state.context.config.tool_selection_mode,
-                ToolSelectionContext(
+            hook = state.context.config.tool_engine_hook
+            if hook is not None and hook.enabled:
+                recommendation = recommend_tool_modes(
                     registry=registry,
                     query=state.request.message or "",
-                    skill_profile=state.context.config.skill_profile,
-                    plan_allowed_tool_ids=state.tool_planner_allowed_tool_ids,
-                    top_k=state.context.config.tool_selection_top_k,
+                )
+                tool_selection_mode = recommendation.tool_selection_mode
+                if recommendation.tool_invocation_mode is not None:
+                    tool_invocation_mode = recommendation.tool_invocation_mode
+            selection_ctx = ToolSelectionContext(
+                registry=registry,
+                query=state.request.message or "",
+                skill_profile=state.context.config.skill_profile,
+                plan_allowed_tool_ids=state.tool_planner_allowed_tool_ids,
+                top_k=state.context.config.tool_selection_top_k,
+                max_hierarchy_passes=state.context.config.tool_selection_max_hierarchy_passes,
+                embedding_manager=state.context.config.embedding_manager,
+            )
+            selection_strategy = resolve_selection_strategy(
+                tool_selection_mode,
+                selection_ctx,
+                strategy_override=state.context.config.tool_selection_strategy,
+                entry_point_strategy_id=state.context.config.tool_selection_strategy_id,
+            )
+            allowed_tool_ids = resolve_planner_allowed_tool_ids(
+                tool_selection_mode,
+                selection_ctx,
+                strategy_override=selection_strategy,
+            )
+            candidate_ids = tuple(allowed_tool_ids or ())
+            candidates = list(_selection_candidates(selection_strategy, candidate_ids))
+            state.trace_event(
+                component=TraceComponent.TOOLS,
+                step="tool_selection",
+                message="Tool selection strategy resolved planner allow-list.",
+                level=TraceLevel.INFO,
+                payload=ToolSelectionDiagV1(
+                    strategy_id=strategy_trace_id(selection_strategy),
+                    selection_mode=tool_selection_mode.value,
+                    candidate_tool_ids=list(candidate_ids),
+                    candidates=candidates,
                 ),
             )
         else:
@@ -352,11 +410,16 @@ async def run_tools_context(state: RuntimeState) -> None:
             planner_input=planner_input,
             allowed_tool_ids=allowed_tool_ids,
             max_iterations=state.context.config.max_tool_iterations,
+            invocation_mode=tool_invocation_mode,
         )
+        loop_pattern_id = loop_result.pattern_id or None
+        loop_stop_reason = loop_result.stop_reason or None
 
         if not loop_result.tool_traces:
             if tools_mode == "required":
-                warning = "tools_mode='required' but no tools were planned."
+                from intergrax.runtime.nexus.errors.tools_required_error import ToolsRequiredError
+
+                raise ToolsRequiredError(run_id=state.run_id)
         else:
             state.used_tools = True
             state.tool_traces = list(loop_result.tool_traces)
@@ -373,6 +436,7 @@ async def run_tools_context(state: RuntimeState) -> None:
                 state,
                 state.tool_traces,
                 runtime_context_prompt=localized.system,
+                aggregate=loop_result.aggregate,
             )
     except Exception as exc:
         error_type = type(exc).__name__
@@ -392,5 +456,7 @@ async def run_tools_context(state: RuntimeState) -> None:
             warning=warning,
             error_type=error_type,
             error_message=error_message,
+            pattern_id=loop_pattern_id,
+            stop_reason=loop_stop_reason,
         ),
     )

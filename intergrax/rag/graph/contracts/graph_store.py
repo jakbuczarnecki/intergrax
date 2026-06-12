@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Sequence, Set
 
 
 @dataclass(frozen=True)
@@ -28,6 +28,11 @@ class GraphEdge:
 
 
 class GraphStore(ABC):
+    @property
+    def tenant_id(self) -> str | None:
+        """Optional tenant namespace for graph isolation (M-RAG.41)."""
+        return None
+
     @abstractmethod
     def upsert_node(self, node: GraphNode) -> None:
         raise NotImplementedError
@@ -52,4 +57,19 @@ class GraphStore(ABC):
     @abstractmethod
     def chunk_ids_for_nodes(self, node_ids: Set[str]) -> List[str]:
         """Map graph nodes back to source chunk/document ids."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def node_ids_for_chunks(self, chunk_ids: Set[str]) -> Set[str]:
+        """Map chunk/document ids to linked graph entity node ids."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def unlink_chunks(self, chunk_ids: Sequence[str]) -> int:
+        """Remove HAS_CHUNK links for chunk ids and prune orphan entities (M-RAG.40)."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def purge_graph(self, *, tenant_id: str | None = None) -> int:
+        """Remove all RAG graph artifacts, optionally scoped to a tenant (M-RAG.40)."""
         raise NotImplementedError

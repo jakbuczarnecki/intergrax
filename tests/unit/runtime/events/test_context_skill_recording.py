@@ -4,6 +4,9 @@ import pytest
 
 from intergrax.runtime.events.context_skill_recording import (
     record_context_assembly,
+    record_context_candidate_collected,
+    record_context_candidate_dropped,
+    record_context_validation_failed,
     record_skill_resolved,
 )
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -41,3 +44,39 @@ def test_record_context_assembly_and_trim() -> None:
     types = [event.event_type for event in bus.history]
     assert RuntimeEventType.CONTEXT_ASSEMBLED in types
     assert RuntimeEventType.CONTEXT_TRIMMED in types
+
+
+@pytest.mark.unit
+def test_record_context_candidate_events() -> None:
+    bus = RuntimeEventBus(record_history=True)
+    record_context_candidate_collected(
+        bus,
+        task_id="t1",
+        run_id="r1",
+        node_id="n1",
+        agent_id="a1",
+        provider_id="builtin.workspace",
+        fragment_count=2,
+        engine_id="default",
+    )
+    record_context_candidate_dropped(
+        bus,
+        task_id="t1",
+        run_id="r1",
+        provider_id="dup-1",
+        drop_reason="duplicate_content_hash",
+        engine_id="default",
+    )
+    record_context_validation_failed(
+        bus,
+        task_id="t1",
+        run_id="r1",
+        errors=("budget exceeded",),
+        stage="assembled_validation",
+    )
+    types = [event.event_type for event in bus.history]
+    assert RuntimeEventType.CONTEXT_CANDIDATE_COLLECTED in types
+    assert RuntimeEventType.CONTEXT_CANDIDATE_DROPPED in types
+    assert RuntimeEventType.CONTEXT_VALIDATION_FAILED in types
+    assert bus.history[0].payload["provider_id"] == "builtin.workspace"
+    assert bus.history[1].payload["drop_reason"] == "duplicate_content_hash"

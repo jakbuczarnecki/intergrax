@@ -6,13 +6,215 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**Active queue (2026-06-12):** [§6.1e](#61e-harness-implementation-queue--tool-engine-active) · Phase **TOOL-ENG** — tool engine hardening + **selection modes** (standard / semantic / hierarchical) + **invocation patterns** (single / parallel / ReAct / chain / graph boundary). Catalog expansion (Phase O / T-EXPAND) is **closed**; default harness work = **engine**, not new `tool_id` rows.
+**Queue status (2026-06-12):** Phase **TOOL-ENG** **closed** (36/36) · [§Layer completion final audit](#layer-completion-final-audit-2026-06-12). Catalog expansion (Phase O / T-EXPAND) **closed**. Default harness queue → **gate maintenance** in [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md).
+
+**Layer completion mode (2026-06-12):** [§Layer completion audit](#layer-completion-audit-2026-06-12) · [§Layer completion sprints](#layer-completion-sprints-2026-06-12) · [§Final audit](#layer-completion-final-audit-2026-06-12)
+
+---
+
+## Layer completion audit (2026-06-12)
+
+**Scope:** Tier-0 `intergrax/tools/` catalog + Tier-1 tool engine (`intergrax/runtime/nexus/tools/`, `intergrax/runtime/tools/`). Direct dependencies: INTEGRATIONS (compose only), SKILLS (selection), UNIFIED_EXECUTION_RUNTIME §42.12 (`ToolRuntime`), NEXUS_EXECUTION_FLOW §15–17.
+
+**Maturity (audit map §11):** **L3** catalog · **L3** engine orchestration (2a) · **L3** atomic invoke (2b) · **L3** selection at scale · **L3** governance (HIGH+ verify, required-mode).
+
+### Tier-0 — Tool Library (catalog)
+
+| Area | Status | Evidence |
+|------|--------|----------|
+| `ToolContract` / `ToolRegistry` / `ToolPlugin` | **Done** | 190 tools · 48 bundles · `shipped_plugins.py` |
+| MCP + OpenAI export | **Done** | `check_tool_mcp_schema_export.py` (via `uv run`) |
+| Oversized-tool lint | **Done** | `check_oversized_tool_lint.py` |
+| Legacy `ToolBase` | **Deprecated** | Phase O.7 Done |
+| Injection defense wiring | **Done** | `check_tool_injection_defense.py` |
+| Agent registry bypass | **Done** | `check_agent_registry_bypass.py` |
+
+**Tier-0 verdict:** Production-ready catalog. No architectural gaps blocking hosts.
+
+### Tier-1 — Tool engine
+
+| Area | Status | Gap ID | Notes |
+|------|--------|--------|-------|
+| Planner bootstrap | **Done** | TOOL-ENG-0 | `planner_bootstrap.py` |
+| Catalog dispatch + gateway | **Done** | TOOL-ENG-1/2 | ADR-TOOL-001 |
+| Scope policy wiring | **Done** | TOOL-ENG-3 | `RuntimeContext.build()` |
+| Plan constraints → planner | **Done** | TOOL-ENG-4 | `allowed_tool_ids` filter |
+| `ToolSelectionStrategy` | **Done** | TOOL-ENG-5 | `strategy_for_mode()` · `test_tool_selection_strategy.py` |
+| Bounded tool loop (interim) | **Done** | TOOL-ENG-6 | ADR-TOOL-002 · `tool_loop.py` |
+| `tools_context_scope` | **Done** | TOOL-ENG-11 | `tool_planner_input.py` |
+| `ToolInvocationPattern` plugin | **Done** | TOOL-ENG-16 | S1 — ADR-TOOL-003 |
+| Shipped patterns (single / ReAct) | **Done** | TOOL-ENG-17–18,21–23 | S2–S3 |
+| Parallel batch + aggregate | **Done** | TOOL-ENG-9,29 | S4 |
+| Chain pattern | **Done** | TOOL-ENG-20 | S7 |
+| Semantic selection | **Done** | TOOL-ENG-13 | S5 |
+| Hierarchical selection | **Done** | TOOL-ENG-14 | S6 — v1 deterministic; LLM category pass deferred |
+| Semantic parallel composite | **Done** | TOOL-ENG-25 | S5 |
+| Selection strategy plugins | **Done** | TOOL-ENG-26/31 | S6 — instance override + EP loader |
+| Selection telemetry | **Done** | TOOL-ENG-32 | S6 — `ToolSelectionDiagV1` |
+| Post-tool verify HIGH+ | **Done** | TOOL-ENG-7 | Trace + enforce block; approval via `high_risk_tool_approvals` |
+| `tools_mode=required` hard fail | **Done** | TOOL-ENG-8 | `ToolsRequiredError` |
+| `tool_choice` wiring | **Done** | TOOL-ENG-12 | `tool_planning_policy.py` |
+| Invoker unit tests | **Done** | TOOL-ENG-TEST.1 | S0 — `FakeRegistry` + `test_tool_selection_strategy.py` |
+
+### Documentation alignment
+
+| Item | Status |
+|------|--------|
+| TOOL-ENG-DOC.1–7 | **Done** |
+| Engine gap register ↔ plan register | **Aligned** |
+| Audit prompt `known_gaps` | **Aligned** — 2026-06-12 final audit |
+| CI gates `check_tool_invocation_patterns` / `check_tool_engine_ahi_hook` | **Done** |
+
+### Architecture violations
+
+None detected in Tier-0 catalog handlers (no vendor SDK bypass). Tier-1 invoke path routes through `RuntimeToolInvoker`. Graph vs tool-pattern boundary documented (DOC.6).
+
+---
+
+## Layer completion final audit (2026-06-12)
+
+**Krok 5 — audyt końcowy** po S0–S8. Weryfikacja: dokumentacja ↔ implementacja ↔ plan ↔ CI.
+
+### Wynik
+
+| Obszar | Werdykt |
+|--------|---------|
+| TOOL-ENG register (36/36) | **Closed** |
+| Tier-0 catalog (190 tools) | **L3 Production** |
+| Tier-1 selection L6 | **L3** — standard, keyword, semantic, hierarchical, plugins |
+| Tier-1 orchestration 2a | **L3** — 5 shipped patterns + chain + EP registry |
+| Tier-1 atomic invoke 2b | **L3** — dispatch, gateway, scope, idempotency |
+| Governance | **L3** — required-mode, HIGH+ block, tool_choice |
+| Dokumentacja architecture/plan | **Aligned** (post-final-audit sync) |
+| Testy + CI | **Green** — see verification block below |
+
+### Świadomie odroczone (nie blokują zamknięcia warstwy)
+
+| Item | Uzasadnienie |
+|------|--------------|
+| Hierarchical LLM category pass | ADR-TOOL-005 v1 — deterministic rank wystarcza na L3 |
+| L1 critic (`eval.judge`) per tool output | Osobny zakres CVL — opcjonalny via `CriticProfile` |
+| Pusta grupa EP w `pyproject.toml` | Loadery gotowe; host pakiety rejestrują strategie/wzorce |
+
+### Weryfikacja (2026-06-12)
+
+```bash
+uv run pytest tests/unit/runtime/nexus/tools/ -q                    # 58 passed
+uv run python scripts/check_tool_invocation_patterns.py            # OK
+uv run python scripts/check_tool_engine_ahi_hook.py                # OK
+python scripts/check_legacy_tool_plan_booleans.py                  # OK
+uv run python scripts/check_tool_mcp_schema_export.py              # OK
+python scripts/check_tool_injection_defense.py                     # OK
+python scripts/check_agent_registry_bypass.py                      # OK
+```
+
+**Warstwa Tools:** **ukończona** wg Layer Completion Mode.
+
+---
+
+## Layer completion sprints (2026-06-12)
+
+Sprints close **Phase TOOL-ENG** remaining rows. One sprint ≈ one PR; update plan + architecture gap register after each.
+
+| Sprint | IDs | Goal | Done when | Primary files |
+|--------|-----|------|-----------|---------------|
+| **S0** | TOOL-ENG-TEST.1 | Test hygiene | Invoker + selection unit tests green | `test_runtime_tool_invoker_*.py`, `test_tool_selection_strategy.py` |
+| **S1** | TOOL-ENG-16, ADR-TOOL-003 | `ToolInvocationPattern` protocol | Conformance test + ADR Accepted | `tool_invocation_pattern.py`, `docs/adr/entries/2026-06-12/ADR-TOOL-003.md` |
+| **S2** | TOOL-ENG-17,18,21,22 | Shipped single + ReAct patterns; config factory; loop delegation | `test_tool_loop_integration.py` green; factory unit test | `patterns/single_pass.py`, `patterns/bounded_react.py`, `tool_loop.py`, `config.py`, `config_types.py` |
+| **S3** | TOOL-ENG-23 | Host profile bridge | `test_catalog_runtime_bridge.py` pattern field | `environment_profile.py`, `catalog_runtime_bridge.py` |
+| **S4** | TOOL-ENG-29,9 | Parallel batch + aggregate | Wall-time test < serial sum | `patterns/parallel_batch.py`, `tool_invocation_aggregate.py` |
+| **S5** | TOOL-ENG-13,25 | Semantic index + composite batch | Rank gate + integration test | `tool_catalog_embedder.py`, `patterns/parallel_semantic_batch.py` |
+| **S6** | TOOL-ENG-14,15,31,26,32 | Hierarchical selection + plugins + telemetry | ADR-TOOL-004 · custom EP test | `hierarchical_tool_selector.py`, `tool_selection.py` |
+| **S7** | TOOL-ENG-20,24,27,28,30 | Chain pattern + entry points + CI + lab DX | `check_tool_invocation_patterns.py` green | `patterns/deterministic_chain.py`, `applications/lab_application/` |
+| **S8** | TOOL-ENG-7,8,12,10 | Governance closeout | Required-mode fail + HIGH verify | `tools_step.py`, `tool_verify_hooks.py` |
+
+**Current execution:** S0–S8 **Done** (2026-06-12) · Phase TOOL-ENG **closed** (36/36 deliverables).
+
+### S5 implementation spec (2026-06-12)
+
+**Scope:** TOOL-ENG-13 + TOOL-ENG-25 — semantic tool index + composite parallel batch.
+
+| Deliverable | Contract |
+|-------------|----------|
+| `ToolCatalogEmbedder` | `index_for_registry(registry)` → `ToolCatalogIndex`; embed via `BaseEmbeddingManager` |
+| `ToolCatalogIndex.search_query` | Cosine top-k over registry subset; returns `(tool_id, score)` |
+| `ToolSelectionMode.SEMANTIC` | `SemanticToolIndexSelectionStrategy`; requires `embedding_manager` on context |
+| `ParallelSemanticBatchPattern` | Semantic top-k → auto `PlannedToolCall` → parallel invoke → aggregate |
+| `pattern_for_mode(PARALLEL_SEMANTIC_BATCH)` | Returns `ParallelSemanticBatchPattern` |
+
+**ADR:** [ADR-TOOL-004](../adr/entries/2026-06-12/ADR-TOOL-004.md)
+
+**Acceptance:** `test_tool_catalog_embedder.py` rank gate · `test_parallel_semantic_batch_pattern.py`
+
+### S6 implementation spec (2026-06-12)
+
+**Scope:** TOOL-ENG-14,15,26,31,32 — hierarchical selection + plugin surfaces + telemetry.
+
+| Deliverable | Contract |
+|-------------|----------|
+| `HierarchicalToolSelectionStrategy` | Category rank → tool rank; `ToolSelectionMode.HIERARCHICAL` |
+| `tool_selection_max_hierarchy_passes` | Bounds category branches contributing tools |
+| `tool_selection_strategy` / `tool_selection_strategy_id` | Instance override (A) and entry-point load (B) |
+| `ToolSelectionDiagV1` | `ops:tool_selection` trace on planner allow-list resolve |
+
+**ADR:** [ADR-TOOL-005](../adr/entries/2026-06-12/ADR-TOOL-005.md)
+
+**Acceptance:** `test_hierarchical_tool_selector.py` · `test_tool_selection_registry.py` · `test_tool_selection_telemetry.py`
+
+### S7 implementation spec (2026-06-12)
+
+**Scope:** TOOL-ENG-20,24,27,28,30 — deterministic chain + invocation plugins + telemetry + CI + lab DX.
+
+| Deliverable | Contract |
+|-------------|----------|
+| `ToolChainSpec` / `FieldRef` | Ordered steps with `input_mappings` |
+| `DeterministicChainPattern` | Sequential invoke; no LLM between steps |
+| `tool_invocation_registry.py` | `intergrax.tool_invocation_patterns` entry-point loader |
+| `ToolsSummaryDiagV1` | `pattern_id`, `stop_reason`, `ops:tool_invocation_pattern` |
+| `check_tool_invocation_patterns.py` | All `ToolInvocationMode` values ship via factory |
+| `LAB_TOOL_INVOCATION_MODE` | Lab host env bridge to `ApplicationEnvironmentProfile` |
+
+**ADR:** no ADR needed — extends ADR-TOOL-003 plugin model.
+
+**Acceptance:** `test_deterministic_chain_pattern.py` · `test_tool_invocation_registry.py` · `test_lab_tool_invocation_mode.py`
+
+### S8 implementation spec (2026-06-12)
+
+**Scope:** TOOL-ENG-7,8,12,10 — governance and adaptive tool engine closeout.
+
+| Deliverable | Contract |
+|-------------|----------|
+| `run_post_tool_verify` | Trace + `ToolVerificationRequiredError` when `enforce_high_risk_tool_verify` |
+| `high_risk_tool_approvals` | `RuntimeState` bypass set for approved `tool_id`s |
+| `ToolsRequiredError` | `tools_mode=required` with zero traces |
+| `tool_choice_for_mode` | Maps `tools_mode` → planner `tool_choice` |
+| `ToolEngineHook` + `recommend_tool_modes` | AHI routing hook picks L6/L2a per run |
+
+**ADR:** no ADR needed — extends existing governance and AHI routing patterns.
+
+**Acceptance:** `test_tool_verify_enforcement.py` · `test_adaptive_tool_mode_resolver.py` · `check_tool_engine_ahi_hook.py`
+
+### S4 implementation spec (2026-06-12)
+
+**Scope:** TOOL-ENG-29 + TOOL-ENG-9 — parallel read-only batch invoke + canonical aggregate.
+
+| Deliverable | Contract |
+|-------------|----------|
+| `ToolInvocationAggregate` | `from_traces(traces) -> combined_context: str`, `success_count`, `failure_count`; stable merge order = planner call order |
+| `execute_planned_tool_calls` | New `max_parallel_read_only: int` (default `1` = serial); partition by `ToolContract.side_effects` |
+| `ParallelBatchPattern` | `pattern_id=parallel_batch`; planner single-pass → parallel read-only invoke → aggregate on `ToolInvocationResult` |
+| `RuntimeConfig.max_parallel_tool_calls` | Default **8**; bridged from `ApplicationEnvironmentProfile` |
+| `pattern_for_mode(PARALLEL_BATCH)` | Returns `ParallelBatchPattern` (no longer `NotImplementedError`) |
+
+**Acceptance:** `test_tool_invocation_aggregate.py` · `test_parallel_batch_pattern.py` (3 read-only tools wall time < serial sum; mutating stays serial).
+
+**ADR:** no ADR needed — extends ADR-TOOL-003 plugin model; no new Tier boundary.
 
 ---
 
 ## Phase TOOL-ENG — Tool engine hardening (2026-06-10 audit · extended 2026-06-12)
 
-**Status:** **Active** — **12/35** deliverables Done (TOOL-ENG-0–6,11, TOOL-ENG-DOC.4–7 — 2026-06-12)  
+**Status:** **Closed** (2026-06-12) — **36/36** TOOL-ENG deliverables Done  
 **Architecture canon:** [`architecture/TOOLS.md`](../architecture/TOOLS.md) — [Tool engine production posture](../architecture/TOOLS.md#tool-engine-production-posture-2026-06-10), [Invocation patterns](../architecture/TOOLS.md#tool-invocation-patterns-production-orchestration), [Engine gap register](../architecture/TOOLS.md#engine-gap-register-canon)  
 **Audit basis:** Full-stack tool layer audit 2026-06-10 (Tier-0 catalog + Tier-1 selection/invoke/verify) · **Invocation-pattern audit 2026-06-12** (single / parallel / chain / graph + plugin contract)  
 **Priority ladder:** **Band 2ba** — supersedes ad-hoc tool engine fixes until TOOL-ENG P0 closed  
@@ -42,12 +244,12 @@
 | TOOL-ENG-4 | Selection | **Plan constraints → planner** — `EnginePlan.tool_ids` allow-list | **Done** | P1 | `tools_step.py`, `tool_planning_service.py` | `test_tool_planning_constraints.py` |
 | TOOL-ENG-5 | Selection | **`ToolSelectionStrategy` protocol** — static \| skill_pack \| retrieval_top_k \| full_catalog | **Done** | P1 | `tool_selection.py`, `tools_step.py` | `test_tool_selection_strategy.py` |
 | TOOL-ENG-11 | Config | **`tools_context_scope`** — planner input per scope enum | **Done** | P1 | `tool_planner_input.py`, `tools_step.py` | scope enum tests |
-| TOOL-ENG-13 | Selection | **Semantic tool index** — `ToolCatalogEmbedder`, `SemanticToolIndexSelectionStrategy`, reindex on catalog change | **Planned** | P1 | `tool_catalog_embedder.py`, `tool_selection.py`, RAG `embedding_manager` | Gate: 190-tool query ranks correct `tool_id`; trace scores · **ADR required** |
-| TOOL-ENG-14 | Selection | **Hierarchical tool selection** — category-tree multi-pass LLM | **Planned** | P2 | `hierarchical_tool_selector.py`, `tool_selection.py`, prompts | Integration: category pass → tool pass · **ADR required** |
-| TOOL-ENG-15 | Selection | **`retrieval_top_k` naming** — keyword overlap clarity; optional `keyword_top_k` alias | **Planned** | P2 | `config_types.py`, `environment_profile.py`, docs | Alias accepted in bridge; no behavior change |
-| TOOL-ENG-26 | Selection | **`ToolSelectionStrategy` entry-point plugins** — `intergrax.tool_selection_strategies` registry beyond `strategy_for_mode()` | **Planned** | P2 | `tool_selection.py`, `pyproject.toml` entry points | Custom strategy loadable from host profile · **ADR-TOOL-004** |
-| TOOL-ENG-31 | Selection | **`RuntimeConfig.tool_selection_strategy` instance override** — inject custom strategy at bootstrap; overrides `tool_selection_mode` enum | **Planned** | P1 | `config.py`, `runtime_context.py`, `tools_step.py` | Unit: injected strategy used instead of `strategy_for_mode` |
-| TOOL-ENG-32 | Selection | **Selection trace telemetry** — `strategy_id`, candidate `tool_id`s, scores in diag/trace | **Planned** | P2 | `tools_step.py`, trace models | `ops:tool_selection` on ToolsStep payload |
+| TOOL-ENG-13 | Selection | **Semantic tool index** — `ToolCatalogEmbedder`, `SemanticToolIndexSelectionStrategy`, reindex on catalog change | **Done** | P1 | `tool_catalog_embedder.py`, `tool_selection.py`, RAG `embedding_manager` | Gate: 190-tool query ranks correct `tool_id`; trace scores · **ADR required** |
+| TOOL-ENG-14 | Selection | **Hierarchical tool selection** — category-tree multi-pass (v1 deterministic) | **Done** | P2 | `hierarchical_tool_selector.py`, `tool_selection.py` | `test_hierarchical_tool_selector.py` · **ADR-TOOL-005** |
+| TOOL-ENG-15 | Selection | **`retrieval_top_k` naming** — keyword overlap clarity; optional `keyword_top_k` alias | **Done** | P2 | `config_types.py`, `catalog_runtime_bridge.py` | Alias accepted in bridge; enum alias test |
+| TOOL-ENG-26 | Selection | **`ToolSelectionStrategy` entry-point plugins** — `intergrax.tool_selection_strategies` registry beyond `strategy_for_mode()` | **Done** | P2 | `tool_selection_registry.py` | `test_tool_selection_registry.py` · **ADR-TOOL-005** |
+| TOOL-ENG-31 | Selection | **`RuntimeConfig.tool_selection_strategy` instance override** — inject custom strategy at bootstrap; overrides `tool_selection_mode` enum | **Done** | P1 | `config.py`, `plan_context_invocation.py` | Instance override test in registry suite |
+| TOOL-ENG-32 | Selection | **Selection trace telemetry** — `strategy_id`, candidate `tool_id`s, scores in diag/trace | **Done** | P2 | `plan_context_invocation.py`, `tracing/tools/tool_selection.py` | `ops:tool_selection` on selection step |
 | TOOL-ENG-DOC.7 | Docs | **Selection plugin model canon** — L6 protocol, shipped strategies, custom surfaces A/B/C | **Done** | P1 | `architecture/TOOLS.md` §selection plugin | §[Tool selection plugin model](../architecture/TOOLS.md#tool-selection-plugin-model-l6-extensibility) |
 
 #### Dispatch & atomic invoke (2b)
@@ -63,30 +265,30 @@
 | ID | Area | Deliverable | Status | Priority | Modules | Acceptance |
 |----|------|-------------|--------|----------|---------|------------|
 | TOOL-ENG-DOC.5 | Docs | **Invocation patterns canon** — single / parallel / ReAct / chain / graph boundary + target `ToolInvocationPattern` contract | **Done** | P1 | `architecture/TOOLS.md`, FLOW §15.1, Appendix J, audit prompt | Architecture §[Invocation patterns](../architecture/TOOLS.md#tool-invocation-patterns-production-orchestration) |
-| TOOL-ENG-16 | Orchestration | **`ToolInvocationPattern` Protocol** + `ToolInvocationContext` + `ToolInvocationResult` | **Planned** | **P0** | `tool_invocation_pattern.py` (new), `contracts/` | Protocol conformance test; **ADR-TOOL-003 required** |
-| TOOL-ENG-17 | Orchestration | **`SinglePassPattern`** — extract `max_iterations==1` path from `tool_loop_step` | **Planned** | P1 | `patterns/single_pass.py`, `tool_loop_step.py` | Behaviour parity with pre-refactor single-pass; unit test |
-| TOOL-ENG-18 | Orchestration | **`BoundedReactPattern`** — refactor multi-iter `run_bounded_tool_loop` into pattern class | **Planned** | P1 | `patterns/bounded_react.py`, `tool_loop_step.py` | `test_tool_loop_integration.py` unchanged green |
-| TOOL-ENG-9 | Orchestration | **`ParallelBatchPattern`** — concurrent invoke for `side_effects=False` in one batch; `max_parallel_tool_calls` cap | **Planned** | P1 | `patterns/parallel_batch.py`, `tool_loop_step.py` | Unit: 3 read-only tools wall time < sum(serial); mutating calls stay serial |
-| TOOL-ENG-20 | Orchestration | **`DeterministicChainPattern`** + `ToolChainSpec` / `ChainStep` / `FieldRef` output→input mapping | **Planned** | P2 | `patterns/deterministic_chain.py`, `tool_chain_spec.py` | Integration: rag → websearch chain with validated field map |
-| TOOL-ENG-25 | Orchestration | **`ParallelSemanticBatchPattern`** — semantic top-k selection + parallel invoke + aggregate (composite) | **Planned** | P1 | `patterns/parallel_semantic_batch.py`, `tool_selection.py` | Depends TOOL-ENG-13+9+29; integration test with fixture index |
-| TOOL-ENG-29 | Orchestration | **`ToolInvocationAggregate`** — canonical batch result merge before LLM context inject | **Planned** | P1 | `tool_invocation_aggregate.py`, `tool_loop_step.py` | Unit: N traces → single aggregate payload; used by parallel patterns |
-| TOOL-ENG-21 | Config | **`RuntimeConfig.tool_invocation_pattern`** + `ToolInvocationMode` enum + `pattern_for_mode()` factory | **Planned** | P1 | `config.py`, `config_types.py`, `tool_invocation_pattern.py` | Default `single_pass`; factory returns correct pattern class |
-| TOOL-ENG-22 | Wiring | **`run_bounded_tool_loop` / `ctx.invoke_tool` delegates to `ToolInvocationPattern`** — remove direct `run_bounded_tool_loop` call | **Planned** | P1 | `tools_step.py`, `runtime_context.py` | Inject pattern at `RuntimeContext.build()`; existing tests green |
-| TOOL-ENG-23 | Wiring | **Host profile bridge** — `ApplicationEnvironmentProfile.tool_invocation_mode` → `RuntimeConfig` | **Planned** | P1 | `environment_profile.py`, `catalog_runtime_bridge.py` | `test_catalog_runtime_bridge.py` pattern field |
-| TOOL-ENG-24 | Plugins | **Entry-point registry `intergrax.tool_invocation_patterns`** — custom host/agent patterns | **Planned** | P2 | `tool_invocation_registry.py`, `pyproject.toml` | Reference custom pattern in test fixture loads via EP |
-| TOOL-ENG-27 | Observability | **Pattern trace** — `pattern_id`, `stop_reason`, `ops:tool_invocation_pattern` in `ToolsSummaryDiagV1` | **Planned** | P2 | `tools_step.py`, trace models | Trace payload includes pattern_id on every ToolsStep |
-| TOOL-ENG-28 | CI | **`check_tool_invocation_patterns.py`** — shipped patterns registered; `run_bounded_tool_loop` / `ctx.invoke_tool` uses factory not hardcoded import | **Planned** | P2 | `scripts/` | Gate script green in CI |
-| TOOL-ENG-30 | DX | **`lab_application` reference wiring** — env flags for each shipped `ToolInvocationMode` | **Planned** | P2 | `applications/lab_application/` | Doc example + smoke test per mode |
+| TOOL-ENG-16 | Orchestration | **`ToolInvocationPattern` Protocol** + `ToolInvocationContext` + `ToolInvocationResult` | **Done** | **P0** | `tool_invocation_pattern.py` (new), `contracts/` | `test_tool_invocation_pattern.py`; ADR-TOOL-003 |
+| TOOL-ENG-17 | Orchestration | **`SinglePassPattern`** — extract `max_iterations==1` path from `tool_loop_step` | **Done** | P1 | `patterns/single_pass.py`, `tool_loop_step.py` | Behaviour parity with pre-refactor single-pass; unit test |
+| TOOL-ENG-18 | Orchestration | **`BoundedReactPattern`** — refactor multi-iter `run_bounded_tool_loop` into pattern class | **Done** | P1 | `patterns/bounded_react.py`, `tool_loop_step.py` | `test_tool_loop_integration.py` unchanged green |
+| TOOL-ENG-9 | Orchestration | **`ParallelBatchPattern`** — concurrent invoke for `side_effects=False` in one batch; `max_parallel_tool_calls` cap | **Done** | P1 | `patterns/parallel_batch.py`, `tool_loop.py` | `test_parallel_batch_pattern.py` |
+| TOOL-ENG-20 | Orchestration | **`DeterministicChainPattern`** + `ToolChainSpec` / `ChainStep` / `FieldRef` output→input mapping | **Done** | P2 | `patterns/deterministic_chain.py`, `tool_chain_spec.py` | `test_deterministic_chain_pattern.py` |
+| TOOL-ENG-25 | Orchestration | **`ParallelSemanticBatchPattern`** — semantic top-k selection + parallel invoke + aggregate (composite) | **Done** | P1 | `patterns/parallel_semantic_batch.py`, `tool_selection.py` | Depends TOOL-ENG-13+9+29; integration test with fixture index |
+| TOOL-ENG-29 | Orchestration | **`ToolInvocationAggregate`** — canonical batch result merge before LLM context inject | **Done** | P1 | `tool_invocation_aggregate.py`, `tool_loop.py` | `test_tool_invocation_aggregate.py` |
+| TOOL-ENG-21 | Config | **`RuntimeConfig.tool_invocation_pattern`** + `ToolInvocationMode` enum + `pattern_for_mode()` factory | **Done** | P1 | `config.py`, `config_types.py`, `tool_invocation_pattern.py` | Default `single_pass`; factory returns correct pattern class |
+| TOOL-ENG-22 | Wiring | **`run_bounded_tool_loop` / `ctx.invoke_tool` delegates to `ToolInvocationPattern`** — remove direct `run_bounded_tool_loop` call | **Done** | P1 | `tools_step.py`, `runtime_context.py` | Inject pattern at `RuntimeContext.build()`; existing tests green |
+| TOOL-ENG-23 | Wiring | **Host profile bridge** — `ApplicationEnvironmentProfile.tool_invocation_mode` → `RuntimeConfig` | **Done** | P1 | `environment_profile.py`, `catalog_runtime_bridge.py` | `test_catalog_runtime_bridge_tool_invocation.py` |
+| TOOL-ENG-24 | Plugins | **Entry-point registry `intergrax.tool_invocation_patterns`** — custom host/agent patterns | **Done** | P2 | `tool_invocation_registry.py`, `config.py` | `test_tool_invocation_registry.py` |
+| TOOL-ENG-27 | Observability | **Pattern trace** — `pattern_id`, `stop_reason`, `ops:tool_invocation_pattern` in `ToolsSummaryDiagV1` | **Done** | P2 | `plan_context_invocation.py`, `tools_summary.py` | `test_tools_pattern_telemetry.py` |
+| TOOL-ENG-28 | CI | **`check_tool_invocation_patterns.py`** — shipped patterns registered; factory delegation | **Done** | P2 | `scripts/check_tool_invocation_patterns.py` | Gate script green |
+| TOOL-ENG-30 | DX | **`lab_application` reference wiring** — `LAB_TOOL_INVOCATION_MODE` for each shipped mode | **Done** | P2 | `lab_application/host/settings.py` | `test_lab_tool_invocation_mode.py` |
 
 #### Loop, governance, adaptive
 
 | ID | Area | Deliverable | Status | Priority | Modules | Acceptance |
 |----|------|-------------|--------|----------|---------|------------|
 | TOOL-ENG-6 | Loop | **Bounded tool loop** — `max_tool_iterations`, native `role=tool` (interim impl before TOOL-ENG-18) | **Done** | P1 | `tool_loop_step.py`, ADR-TOOL-002 | `test_tool_loop_integration.py` |
-| TOOL-ENG-7 | Verify | **Post-tool verify** — `risk_level >= HIGH` → critic / HITL | **Planned** | P2 | `tool_verify_hooks.py`, middleware | HIGH blocked without approval |
-| TOOL-ENG-8 | Governance | **`tools_mode=required` hard fail** | **Planned** | P2 | `tools_step.py` | `test_tools_mode_required_fails.py` |
-| TOOL-ENG-12 | Config | **`tool_choice` wiring** from host / `tools_mode` | **Planned** | P2 | `tools_step.py`, `RuntimeConfig` | `required` → tool_choice required |
-| TOOL-ENG-10 | AHI | **Dynamic selection + invocation mode** — AHI picks L6 mode and 2a pattern per run | **Planned** | P3 | `ADAPTIVE_HARNESS_INTELLIGENCE` | After TOOL-ENG-13/14/21 |
+| TOOL-ENG-7 | Verify | **Post-tool verify** — `risk_level >= HIGH` → trace + enforce block | **Done** | P2 | `tool_verify_hooks.py`, `tool_loop.py` | `test_tool_verify_enforcement.py` |
+| TOOL-ENG-8 | Governance | **`tools_mode=required` hard fail** | **Done** | P2 | `plan_context_invocation.py` | `ToolsRequiredError` when zero traces |
+| TOOL-ENG-12 | Config | **`tool_choice` wiring** from host / `tools_mode` | **Done** | P2 | `tool_planning_policy.py`, patterns | `required` → tool_choice required |
+| TOOL-ENG-10 | AHI | **Dynamic selection + invocation mode** — AHI hook + per-run resolver | **Done** | P3 | `tool_engine_wiring.py`, `adaptive_tool_mode_resolver.py` | `test_adaptive_tool_mode_resolver.py` · `check_tool_engine_ahi_hook.py` |
 
 #### Documentation
 
@@ -131,8 +333,8 @@ TOOL-ENG-12 → 8 → 7 → 10
 | Planner schema vs `allowed_tools` | Full registry leak | **Done** | Filtered |
 | Selection modes canon | Missing | **Done** (DOC.4) | Architecture + plan pair |
 | Invocation patterns canon | Missing | **Done** (DOC.5) | §patterns + plan register |
-| `ToolInvocationPattern` plugin | N/A | **Gap** | Protocol + 5 shipped patterns (TOOL-ENG-16–18,9,20,25) |
-| Parallel read-only invoke | Sequential only | **Gap** | `ParallelBatchPattern` (TOOL-ENG-9) |
+| `ToolInvocationPattern` plugin | N/A | **Partial** | Protocol + single/ReAct shipped (TOOL-ENG-16–18); parallel/chain/semantic batch open |
+| Parallel read-only invoke | **Done** | **Done** | `ParallelBatchPattern` (TOOL-ENG-9) |
 | Deterministic tool chains | Agent code only | **Gap** | `ToolChainSpec` (TOOL-ENG-20) |
 | Semantic tool index | Keyword overlap | **Gap** | Vector top-k (TOOL-ENG-13) |
 | Hierarchical category traversal | Metadata only | **Gap** | Multi-pass (TOOL-ENG-14) |
@@ -157,6 +359,8 @@ TOOL-ENG-12 → 8 → 7 → 10
 | 2026-06-10 | TOOL-ENG-5 | `ToolSelectionStrategy` + lab `skill_pack` mode — **no ADR needed** |
 | 2026-06-11 | TOOL-ENG-DOC.4 | Selection modes audit — standard / semantic / hierarchical canon in architecture pair; TOOL-ENG-13/14/15 registered |
 | 2026-06-12 | TOOL-ENG-DOC.5,6 | Invocation-pattern audit — §patterns canon; ORCHESTRATION §50.4 + FLOW §15.1 boundary; TOOL-ENG-16–30,26,29 registered |
+| 2026-06-12 | TOOL-ENG-16–18,21–23, TEST.1 | Layer completion S0–S3 — `ToolInvocationPattern` protocol, shipped patterns, config/bridge; ADR-TOOL-003 |
+| 2026-06-12 | TOOL-ENG-9,29 | Layer completion S4 — `ParallelBatchPattern`, `ToolInvocationAggregate`, `max_parallel_tool_calls` |
 
 ---
 
@@ -177,14 +381,14 @@ TOOL-ENG-12 → 8 → 7 → 10
 | 8 | **TOOL-ENG-DOC.4** | Docs | **Done** | Selection modes canon | architecture §modes |
 | 9 | **TOOL-ENG-6** | Code + ADR | **Done** | Bounded tool loop (interim) | `test_tool_loop_integration.py` |
 | 10 | **TOOL-ENG-DOC.5** | Docs | **Done** | Invocation patterns canon | architecture §patterns |
-| 11 | **TOOL-ENG-16** | Code + ADR | **Planned** | `ToolInvocationPattern` Protocol | ADR-TOOL-003 · conformance test |
-| 12 | **TOOL-ENG-17** | Code | **Planned** | `SinglePassPattern` | single-pass parity test |
-| 13 | **TOOL-ENG-18** | Code | **Planned** | `BoundedReactPattern` refactor | loop integration green |
-| 14 | **TOOL-ENG-21** | Code | **Planned** | `tool_invocation_pattern` config + factory | factory unit test |
-| 15 | **TOOL-ENG-22** | Code | **Planned** | `run_bounded_tool_loop` / `ctx.invoke_tool` → pattern delegation | existing tests green |
-| 16 | **TOOL-ENG-23** | Code | **Planned** | Host profile bridge | `test_catalog_runtime_bridge.py` |
-| 17 | **TOOL-ENG-29** | Code | **Planned** | `ToolInvocationAggregate` | aggregate unit test |
-| 18 | **TOOL-ENG-9** | Code | **Planned** | `ParallelBatchPattern` | parallel < serial wall time |
+| 11 | **TOOL-ENG-16** | Code + ADR | **Done** | `ToolInvocationPattern` Protocol | ADR-TOOL-003 · conformance test |
+| 12 | **TOOL-ENG-17** | Code | **Done** | `SinglePassPattern` | single-pass parity test |
+| 13 | **TOOL-ENG-18** | Code | **Done** | `BoundedReactPattern` refactor | loop integration green |
+| 14 | **TOOL-ENG-21** | Code | **Done** | `tool_invocation_pattern` config + factory | factory unit test |
+| 15 | **TOOL-ENG-22** | Code | **Done** | `run_bounded_tool_loop` / `ctx.invoke_tool` → pattern delegation | existing tests green |
+| 16 | **TOOL-ENG-23** | Code | **Done** | Host profile bridge | `test_catalog_runtime_bridge_tool_invocation.py` |
+| 17 | **TOOL-ENG-29** | Code | **Done** | `ToolInvocationAggregate` | aggregate unit test |
+| 18 | **TOOL-ENG-9** | Code | **Done** | `ParallelBatchPattern` | `test_parallel_batch_pattern.py` |
 | 19 | **TOOL-ENG-13** | Code + ADR | **Planned** | Semantic tool vector index | embedding rank gate |
 | 20 | **TOOL-ENG-25** | Code | **Planned** | `ParallelSemanticBatchPattern` | composite integration test |
 | 21 | **TOOL-ENG-14** | Code + ADR | **Planned** | Hierarchical selection | 2-pass integration |

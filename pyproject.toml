@@ -133,6 +133,9 @@ torch = { index = "pytorch-cpu" }
 [project.scripts]
 intergrax = "intergrax.cli.main:main"
 
+[project.entry-points."intergrax.context"]
+builtin = "intergrax.context.providers.builtin:BuiltinContextPlugin"
+
 [project.optional-dependencies]
 harness-author = [
   "fastapi>=0.115",

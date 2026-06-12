@@ -130,3 +130,24 @@ class ToolInvocationErrorDiagV1(DiagnosticPayload):
             "error_code": self.error_code.value,
             "error_message": self.error_message,
         }
+
+
+@dataclass(frozen=True)
+class ToolVerifyRequiredDiagV1(DiagnosticPayload):
+    tool_id: str
+    risk_level: str
+    ops: str = "tool_verify"
+
+    def redact(self) -> ToolVerifyRequiredDiagV1:
+        return self
+
+    @classmethod
+    def schema_id(cls) -> str:
+        return "intergrax.diag.tools.verify_required"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "tool_id": self.tool_id,
+            "risk_level": self.risk_level,
+            "ops": self.ops,
+        }

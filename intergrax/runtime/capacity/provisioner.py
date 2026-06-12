@@ -13,8 +13,17 @@ from intergrax.runtime.capacity.metrics import record_scale_action
 
 
 class KubernetesScaler(Protocol):
-  def scale_workload(self, *, deployment: str, replicas: int) -> int: ...
-  def get_replicas(self, *, deployment: str) -> int: ...
+    def scale_workload(self, *, deployment: str, replicas: int) -> int: ...
+
+    def get_replicas(self, *, deployment: str) -> int: ...
+
+
+class CeleryScaler(Protocol):
+    def scale_workers(self, *, delta: int) -> int: ...
+
+
+class OrchestrationCeilingPatcher(Protocol):
+    def raise_ceiling(self, *, delta: int) -> int: ...
 
 
 class ScalingProvisioner:
@@ -24,10 +33,14 @@ class ScalingProvisioner:
         self,
         *,
         kubernetes: KubernetesScaler | None = None,
+        celery: CeleryScaler | None = None,
+        ceiling_patcher: OrchestrationCeilingPatcher | None = None,
         action_gate: CapacityActionGate | None = None,
         publish: PublishFn | None = None,
     ) -> None:
         self._kubernetes = kubernetes
+        self._celery = celery
+        self._ceiling_patcher = ceiling_patcher
         self._action_gate = action_gate or CapacityActionGate()
         self._publish = publish
         self.applied: list[ScalingAction] = []
@@ -54,10 +67,21 @@ class ScalingProvisioner:
                     replicas=max(0, current + action.delta),
                 )
             elif action.kind is ScalingActionKind.SCALE_CELERY_WORKERS:
-                # ECP-5.1 stub — lab documents broker autoscale separately
-                pass
+                if self._celery is None:
+                    reason = "celery backend not configured"
+                    self.failures.append(reason)
+                    if self._publish is not None:
+                        publish_scale_failed(self._publish, action, reason=reason)
+                    return False
+                self._celery.scale_workers(delta=action.delta)
             elif action.kind is ScalingActionKind.RAISE_ORCHESTRATION_CEILING:
-                pass
+                if self._ceiling_patcher is None:
+                    reason = "orchestration ceiling patcher not configured"
+                    self.failures.append(reason)
+                    if self._publish is not None:
+                        publish_scale_failed(self._publish, action, reason=reason)
+                    return False
+                self._ceiling_patcher.raise_ceiling(delta=action.delta)
             elif action.kind is ScalingActionKind.REQUEST_HITL:
                 return False
             self.applied.append(action)

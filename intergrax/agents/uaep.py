@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import time
+from dataclasses import replace
 from typing import Any, List, Optional
 from uuid import uuid4
 
@@ -31,6 +32,8 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.events.payload_registry import runtime_event_with_payload
+from intergrax.runtime.events.payloads.canonical import ContextAssemblyPayloadV1
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.hooks.governance_hooks import hook_context_for_task, run_hook_pair
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext
@@ -111,6 +114,8 @@ class UAEPExecutor:
         memory_limits: Optional[TaskMemoryLimits] = None,
         critic_hooks: Any = None,
         verify_uaep_step: bool = False,
+        context_engine: Any = None,
+        llm_adapter: Any = None,
     ) -> None:
         resolved_policy = coerce_policy_engine(policy_engine)
         self._policy_engine = resolved_policy
@@ -124,6 +129,8 @@ class UAEPExecutor:
         self._memory_limits = memory_limits or TaskMemoryLimits()
         self._critic_hooks = critic_hooks
         self._verify_uaep_step = verify_uaep_step
+        self._context_engine = context_engine
+        self._llm_adapter = llm_adapter
         if middleware is not None:
             self._middleware = middleware
         elif event_bus is not None:
@@ -210,6 +217,18 @@ class UAEPExecutor:
         )
 
         runtime_context = agent.build_context(request)
+        if self._context_engine is not None and self._llm_adapter is not None:
+            from intergrax.runtime.nexus.context.uaep_assemble import assemble_uaep_session_prompt
+
+            assembled_prompt = await assemble_uaep_session_prompt(
+                request,
+                agent_id=contract.id,
+                engine=self._context_engine,
+                llm_adapter=self._llm_adapter,
+                event_bus=self._event_bus,
+            )
+            if assembled_prompt and assembled_prompt != (request.message or ""):
+                request = replace(request, message=assembled_prompt)
         exec_ctx.domain_context = runtime_context
         exec_ctx.tool_gateway = BoundToolGateway(
             exec_ctx,
@@ -223,11 +242,15 @@ class UAEPExecutor:
                 hook_base.model_copy(update={"phase": ExecutionPhase.CONTEXT_BUILDING}),
             )
         )
-        await self._emit(
+        prompt_text = str(request.message or "")
+        context_chars = len(prompt_text)
+        await self._emit_context_assembled(
             exec_ctx,
-            RuntimeEventType.CONTEXT_BUILT,
-            ExecutionPhase.CONTEXT_BUILDING,
-            {"agent_id": contract.id},
+            node_id=exec_ctx.node_id or contract.id,
+            agent_id=contract.id,
+            context_original_chars=context_chars,
+            context_final_chars=context_chars,
+            engine_id="default",
         )
 
         steps = self._resolve_steps(agent, runtime_context, contract.max_steps)
@@ -796,6 +819,45 @@ class UAEPExecutor:
         session = exec_ctx.metadata.get("sandbox_session")
         if session is not None:
             answer.route.extra["sandbox_operation_count"] = len(session.audit_log)
+
+    async def _emit_context_assembled(
+        self,
+        ctx: RuntimeExecutionContext,
+        *,
+        node_id: str,
+        agent_id: str,
+        context_original_chars: int,
+        context_final_chars: int,
+        engine_id: str = "default",
+    ) -> None:
+        if self._event_bus is None:
+            return
+        typed = ContextAssemblyPayloadV1(
+            node_id=node_id,
+            context_original_chars=context_original_chars,
+            context_final_chars=context_final_chars,
+            trimmed=False,
+            engine_id=engine_id,
+        )
+        event = runtime_event_with_payload(
+            RuntimeEvent(
+                task_id=ctx.task_id,
+                run_id=ctx.run_id,
+                node_id=ctx.node_id,
+                agent_id=agent_id,
+                event_type=RuntimeEventType.CONTEXT_ASSEMBLED,
+                phase=ExecutionPhase.CONTEXT_BUILDING,
+                correlation_id=ctx.correlation_id or ctx.task_id,
+            ),
+            typed,
+            promote_fields={
+                "node_id": node_id,
+                "engine_id": engine_id,
+                "context_original_chars": context_original_chars,
+                "context_final_chars": context_final_chars,
+            },
+        )
+        await self._event_bus.publish(event)
 
     async def _emit(
         self,

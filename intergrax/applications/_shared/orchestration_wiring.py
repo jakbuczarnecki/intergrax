@@ -53,6 +53,8 @@ class OrchestrationWiringContext:
     """Optional runtime inputs required by specific planner kinds."""
 
     llm_adapter: LLMAdapter | None = None
+    planner_llm_adapter: LLMAdapter | None = None
+    planner_parse_retries: int = 0
 
 
 @dataclass(frozen=True)
@@ -96,10 +98,12 @@ class EngineBackedNexusPlanner:
         fallback: TaskPlanner,
         *,
         planner_prompt_id: str = "nexus_task_planner",
+        planner_parse_retries: int = 0,
     ) -> None:
         self._llm_adapter = llm_adapter
         self._fallback = fallback
         self._planner_prompt_id = planner_prompt_id
+        self._planner_parse_retries = planner_parse_retries
 
     def plan(self, task: Task, registry: AgentRegistry) -> NexusPlan:
         return build_nexus_plan_from_llm(
@@ -108,6 +112,7 @@ class EngineBackedNexusPlanner:
             self._llm_adapter,
             fallback=self._fallback,
             planner_prompt_id=self._planner_prompt_id,
+            planner_parse_retries=self._planner_parse_retries,
         )
 
 
@@ -189,10 +194,12 @@ def resolve_nexus_task_planner(
             raise OrchestrationWiringError(
                 "planner_kind='engine' requires OrchestrationWiringContext.llm_adapter"
             )
+        planner_llm = context.planner_llm_adapter or context.llm_adapter
         inner = EngineBackedNexusPlanner(
-            context.llm_adapter,
+            planner_llm,
             fallback=fallback,
             planner_prompt_id=env.reasoning_profile.planner_prompt_id,
+            planner_parse_retries=env.reasoning_profile.planner_parse_retries,
         )
     else:
         inner = fallback

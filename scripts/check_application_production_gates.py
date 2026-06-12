@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""Tier-3 application production gate checks (APP-PROD-1..8 · APP-OPS-1..2 · APP-CON-7 · APP-EVOL-2..5)."""
+"""Tier-3 application production gate checks (APP-PROD-1..9 · APP-OPS-1..4 · APP-CON-7 · APP-EVOL-2..7)."""
 
 from __future__ import annotations
 
@@ -86,6 +86,14 @@ def check_workspace_cleanup() -> list[str]:
     )
 
     return check_all_factory_workspace_cleanup(APPLICATIONS_ROOT)
+
+
+def check_environment_state_usage() -> list[str]:
+    from intergrax.applications._shared.environment_state_usage_wiring import (
+        check_environment_state_usage as _check,
+    )
+
+    return _check(REPO_ROOT)
 
 
 def check_application_ownership() -> list[str]:
@@ -330,6 +338,7 @@ def main() -> int:
         ("manifest_profile_consistency", check_manifest_profile_on_manifest),
         ("environment_wiring", check_environment_wiring_entry),
         ("budget_enforcement", check_budget_enforcement),
+        ("environment_state_usage", check_environment_state_usage),
         ("workspace_cleanup", check_workspace_cleanup),
         ("capability_graph_strict_deploy", check_capability_graph_strict_deploy),
         ("application_ownership", check_application_ownership),

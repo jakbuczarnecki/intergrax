@@ -1,39 +1,40 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Bounded multi-iteration tool loop (TOOL-ENG-6 · ACP-CLOSE-PAT-1)."""
+"""Bounded multi-iteration tool loop (TOOL-ENG-6 · TOOL-ENG-22)."""
 
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
-from typing import Literal, Sequence
+import threading
+from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import replace
+from typing import TYPE_CHECKING
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.runtime.nexus.budget.budget_ticks import enforce_tool_call_budget
+from intergrax.runtime.nexus.config_types import ToolInvocationMode
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState, ToolCallTrace
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
+from intergrax.runtime.nexus.tools.tool_invocation_aggregate import ToolInvocationAggregate
+from intergrax.runtime.nexus.tools.tool_verify_hooks import run_post_tool_verify
+from intergrax.runtime.nexus.tools.tool_invocation_pattern import (
+    ToolInvocationPattern,
+    ToolInvocationResult,
+    ToolInvocationStopReason,
+    resolve_invocation_pattern,
+)
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
-from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
+from intergrax.tools.core.tool_plan import PlannedToolCall
 from intergrax.tools.execution_models import ToolExecutionRequest
 
-ToolLoopStopReason = Literal[
-    "empty_tool_calls",
-    "max_iterations",
-    "budget_exceeded",
-    "planner_final_answer",
-    "legacy_single_pass",
-]
+if TYPE_CHECKING:
+    pass
 
-
-@dataclass(slots=True)
-class BoundedToolLoopResult:
-    tool_traces: list[ToolCallTrace] = field(default_factory=list)
-    loop_iterations: int = 0
-    stop_reason: ToolLoopStopReason = "legacy_single_pass"
-    appended_messages: list[ChatMessage] = field(default_factory=list)
-    used_native_tool_messages: bool = False
+# Backward-compatible aliases (TOOL-ENG-6 consumers).
+BoundedToolLoopResult = ToolInvocationResult
+ToolLoopStopReason = ToolInvocationStopReason
 
 
 def _coerce_messages(planner_input: str | list[ChatMessage]) -> list[ChatMessage]:
@@ -53,42 +54,110 @@ def _tool_call_openai_dict(tool_call: LLMToolCall) -> dict[str, object]:
     }
 
 
+def _invoke_planned_call(
+    *,
+    state: RuntimeState,
+    invoker: RuntimeToolInvoker,
+    call: PlannedToolCall,
+    index: int,
+    idempotency_prefix: str,
+    invoke_lock: threading.Lock | None = None,
+) -> ToolCallTrace:
+    req = ToolExecutionRequest(
+        run_id=state.run_id,
+        step_id=call.step_id or f"tool-{index}",
+        tool_id=call.tool_id,
+        input=call.input,
+        idempotency_key=f"{idempotency_prefix}:{call.tool_id}:{index}",
+    )
+    result = invoker.invoke(state=state, request=req, agent_id=state.request.agent_id)
+    trace = _trace_from_result(call, result)
+    run_post_tool_verify(state=state, invoker=invoker, trace=trace)
+    if invoke_lock is not None:
+        with invoke_lock:
+            enforce_tool_call_budget(state)
+    else:
+        enforce_tool_call_budget(state)
+    return trace
+
+
+def _trace_from_result(call: PlannedToolCall, result: object) -> ToolCallTrace:
+    if result.success:
+        output_preview = result.output.model_dump_json()[:400]
+        error_msg = None
+    else:
+        output_preview = None
+        error_msg = result.error.error_message
+    return ToolCallTrace(
+        tool_name=call.tool_id,
+        arguments=call.input.model_dump(),
+        output_preview=output_preview,
+        success=result.success,
+        error_message=error_msg,
+        raw_trace={},
+    )
+
+
+def _call_has_side_effects(invoker: RuntimeToolInvoker, call: PlannedToolCall) -> bool:
+    return invoker.registry.get(call.tool_id).contract.side_effects
+
+
 def execute_planned_tool_calls(
     *,
     state: RuntimeState,
     invoker: RuntimeToolInvoker,
     calls: Sequence[PlannedToolCall],
     idempotency_prefix: str,
+    max_parallel_read_only: int = 1,
 ) -> list[ToolCallTrace]:
-    traces: list[ToolCallTrace] = []
-    for index, call in enumerate(calls):
-        req = ToolExecutionRequest(
-            run_id=state.run_id,
-            step_id=call.step_id or f"tool-{index}",
-            tool_id=call.tool_id,
-            input=call.input,
-            idempotency_key=f"{idempotency_prefix}:{call.tool_id}:{index}",
-        )
-        result = invoker.invoke(state=state, request=req, agent_id=state.request.agent_id)
-        if result.success:
-            output_preview = result.output.model_dump_json()[:400]
-            error_msg = None
-        else:
-            output_preview = None
-            error_msg = result.error.error_message
-
-        traces.append(
-            ToolCallTrace(
-                tool_name=call.tool_id,
-                arguments=call.input.model_dump(),
-                output_preview=output_preview,
-                success=result.success,
-                error_message=error_msg,
-                raw_trace={},
+    if not calls:
+        return []
+    if max_parallel_read_only <= 1:
+        return [
+            _invoke_planned_call(
+                state=state,
+                invoker=invoker,
+                call=call,
+                index=index,
+                idempotency_prefix=idempotency_prefix,
             )
+            for index, call in enumerate(calls)
+        ]
+
+    indexed = list(enumerate(calls))
+    results: dict[int, ToolCallTrace] = {}
+    read_only = [(index, call) for index, call in indexed if not _call_has_side_effects(invoker, call)]
+    mutating = [(index, call) for index, call in indexed if _call_has_side_effects(invoker, call)]
+
+    if read_only:
+        invoke_lock = threading.Lock()
+        workers = min(max_parallel_read_only, len(read_only))
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = {
+                pool.submit(
+                    _invoke_planned_call,
+                    state=state,
+                    invoker=invoker,
+                    call=call,
+                    index=index,
+                    idempotency_prefix=idempotency_prefix,
+                    invoke_lock=invoke_lock,
+                ): index
+                for index, call in read_only
+            }
+            for future in as_completed(futures):
+                results[futures[future]] = future.result()
+
+    for index, call in mutating:
+        results[index] = _invoke_planned_call(
+            state=state,
+            invoker=invoker,
+            call=call,
+            index=index,
+            idempotency_prefix=idempotency_prefix,
         )
-        enforce_tool_call_budget(state)
-    return traces
+
+    return [results[index] for index in range(len(calls))]
 
 
 def append_native_tool_messages(
@@ -119,6 +188,21 @@ def append_native_tool_messages(
         )
 
 
+def resolve_tool_invocation_pattern(
+    *,
+    invocation_mode: ToolInvocationMode | None,
+    max_iterations: int,
+    pattern: ToolInvocationPattern | None = None,
+    entry_point_pattern_id: str | None = None,
+) -> ToolInvocationPattern:
+    return resolve_invocation_pattern(
+        mode=invocation_mode,
+        max_iterations=max_iterations,
+        pattern_override=pattern,
+        entry_point_pattern_id=entry_point_pattern_id,
+    )
+
+
 def run_bounded_tool_loop(
     *,
     state: RuntimeState,
@@ -127,84 +211,33 @@ def run_bounded_tool_loop(
     planner_input: str | list[ChatMessage],
     allowed_tool_ids: Sequence[str] | None,
     max_iterations: int,
-) -> BoundedToolLoopResult:
+    invocation_mode: ToolInvocationMode | None = None,
+    pattern: ToolInvocationPattern | None = None,
+) -> ToolInvocationResult:
     """
-    Plan → invoke → observe loop.
+    Plan → invoke → observe via injected ``ToolInvocationPattern``.
 
-    ``max_iterations == 1`` preserves legacy single-pass semantics.
-    Multi-iteration loops require native ``ToolPlanningService`` with ``role=tool`` messages.
+    ``max_iterations > 1`` without explicit mode preserves TOOL-ENG-6 bounded ReAct.
     """
-    max_iters = max(1, int(max_iterations))
-    if max_iters == 1 or not isinstance(tool_planner, ToolPlanningService):
-        decision = tool_planner.plan_tools(
-            input_data=planner_input,
-            context=None,
-            run_id=state.run_id,
-            allowed_tool_ids=allowed_tool_ids,
-        )
-        tool_plan = decision.tool_plan
-        if tool_plan is None or not tool_plan.calls:
-            return BoundedToolLoopResult(stop_reason="empty_tool_calls")
-        traces = execute_planned_tool_calls(
-            state=state,
-            invoker=invoker,
-            calls=tool_plan.calls,
-            idempotency_prefix=state.run_id,
-        )
-        return BoundedToolLoopResult(
-            tool_traces=traces,
-            loop_iterations=1,
-            stop_reason="legacy_single_pass",
-        )
-
-    messages = _coerce_messages(planner_input)
-    appended: list[ChatMessage] = []
-    all_traces: list[ToolCallTrace] = []
-    iterations = 0
-    stop_reason: ToolLoopStopReason = "max_iterations"
-
-    while iterations < max_iters:
-        iterations += 1
-        try:
-            llm_result, tool_plan = tool_planner.plan_native_round(
-                messages,
-                allowed_tool_ids=allowed_tool_ids,
-                run_id=state.run_id,
-            )
-        except Exception:
-            break
-
-        if llm_result.content and not tool_plan.calls:
-            stop_reason = "planner_final_answer"
-            break
-
-        if not tool_plan.calls:
-            stop_reason = "empty_tool_calls"
-            break
-
-        round_traces = execute_planned_tool_calls(
-            state=state,
-            invoker=invoker,
-            calls=tool_plan.calls,
-            idempotency_prefix=f"{state.run_id}:loop{iterations}",
-        )
-        all_traces.extend(round_traces)
-        before = len(messages)
-        append_native_tool_messages(
-            messages,
-            assistant_content=llm_result.content,
-            tool_calls=llm_result.tool_calls,
-            traces=round_traces,
-        )
-        appended.extend(messages[before:])
-
-    return BoundedToolLoopResult(
-        tool_traces=all_traces,
-        loop_iterations=iterations,
-        stop_reason=stop_reason,
-        appended_messages=appended,
-        used_native_tool_messages=True,
+    resolved = resolve_tool_invocation_pattern(
+        invocation_mode=invocation_mode,
+        max_iterations=max_iterations,
+        pattern=pattern or state.context.config.tool_invocation_pattern,
+        entry_point_pattern_id=state.context.config.tool_invocation_pattern_id,
     )
+    result = resolved.execute(
+        state=state,
+        invoker=invoker,
+        planner=tool_planner,
+        plan=None,
+        allowed_tool_ids=allowed_tool_ids,
+        max_iterations=max_iterations,
+        planner_input=planner_input,
+    )
+    pattern_id = resolved.pattern_id
+    if not result.pattern_id:
+        return replace(result, pattern_id=pattern_id)
+    return result
 
 
 def inject_tool_traces_system_context(
@@ -212,27 +245,14 @@ def inject_tool_traces_system_context(
     traces: Sequence[ToolCallTrace],
     *,
     runtime_context_prompt: str,
+    aggregate: ToolInvocationAggregate | None = None,
 ) -> None:
-    if not traces:
+    if aggregate is not None:
+        tools_context_for_llm = aggregate.combined_context
+    elif traces:
+        tools_context_for_llm = ToolInvocationAggregate.from_traces(traces).combined_context
+    else:
         return
-    tool_lines: list[str] = []
-    for trace in traces:
-        tool_lines.append(f"Tool '{trace.tool_name}' was called.")
-        if trace.arguments:
-            try:
-                args_str = json.dumps(trace.arguments, ensure_ascii=False)
-            except Exception:
-                args_str = str(trace.arguments)
-            tool_lines.append(f"Arguments: {args_str}")
-        if trace.output_preview:
-            tool_lines.append("Output:")
-            tool_lines.append(trace.output_preview)
-        if trace.error_message:
-            tool_lines.append("Error:")
-            tool_lines.append(trace.error_message)
-        tool_lines.append("")
-
-    tools_context_for_llm = "\n".join(tool_lines).strip()
     if not tools_context_for_llm:
         return
     insert_at = len(state.messages_for_llm) - 1

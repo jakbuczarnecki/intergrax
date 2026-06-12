@@ -397,7 +397,9 @@ class GraphExecutor:
                 on_node_complete(node)
             return failed, [], True, False, []
 
-        bundle = self._context_manager.build_agent_context(task, node, prior_outputs)
+        bundle = await self._context_manager.build_agent_context_async(
+            task, node, prior_outputs
+        )
         node_task = self._context_manager.apply_to_task(task, bundle)
         if node.agent_id:
             node_task = node_task.model_copy(update={"agent_id": node.agent_id})

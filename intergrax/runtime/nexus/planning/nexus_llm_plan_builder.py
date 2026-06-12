@@ -25,6 +25,7 @@ def build_nexus_plan_from_llm(
     *,
     fallback: TaskPlanner,
     planner_prompt_id: str = "nexus_task_planner",
+    planner_parse_retries: int = 0,
 ) -> NexusPlan:
     """Ask the configured LLM for a structured multi-step Nexus plan."""
     agent_ids = registry.list_routable_agent_ids(production_mode=False)
@@ -42,6 +43,7 @@ def build_nexus_plan_from_llm(
         fallback=fallback,
         prompt_text=prompt,
         planner_source="engine",
+        planner_parse_retries=planner_parse_retries,
     )
     metadata = dict(plan.plan_metadata)
     metadata.update(

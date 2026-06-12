@@ -34,14 +34,22 @@ def apply_tool_engine_settings_from_environment(
     env: ApplicationEnvironmentProfile,
 ) -> RuntimeConfig:
     """Bridge reasoning/tool engine settings before ``RuntimeContext.build`` (TOOL-ENG-0)."""
-    from intergrax.runtime.nexus.config_types import ToolSelectionMode
+    from intergrax.runtime.nexus.config_types import ToolInvocationMode, ToolSelectionMode
 
     config.tool_planner_prompt_id = env.reasoning_profile.tool_planner_prompt_id
+    mode_value = env.tool_selection_mode
+    if mode_value == "keyword_top_k":
+        mode_value = "retrieval_top_k"
     try:
-        config.tool_selection_mode = ToolSelectionMode(env.tool_selection_mode)
+        config.tool_selection_mode = ToolSelectionMode(mode_value)
     except ValueError:
         config.tool_selection_mode = ToolSelectionMode.STATIC
     config.tool_selection_top_k = env.tool_selection_top_k
+    try:
+        config.tool_invocation_mode = ToolInvocationMode(env.tool_invocation_mode)
+    except ValueError:
+        config.tool_invocation_mode = ToolInvocationMode.SINGLE_PASS
+    config.max_parallel_tool_calls = env.max_parallel_tool_calls
     return config
 
 

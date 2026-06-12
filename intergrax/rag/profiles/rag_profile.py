@@ -17,11 +17,12 @@ from typing import Literal, Optional
 RouteMode = Literal["off", "auto"]
 QueryExpansionMode = Literal["off", "deterministic", "llm"]
 ContextualEnrichMode = Literal["off", "on"]
-GraphIndexerMode = Literal["heuristic", "llm", "heuristic_then_llm"]
+GraphIndexerMode = Literal["heuristic", "llm", "heuristic_then_llm", "community_report"]
 AgenticQueryMode = Literal["deterministic", "llm"]
 
 HARNESS_GRAPH_STORE_BACKEND = "inmemory"
 PRODUCTION_GRAPH_STORE_BACKEND = "neo4j"
+APPROVED_PRODUCTION_GRAPH_STORE_SLUGS: tuple[str, ...] = ("neo4j", "memgraph")
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -83,6 +84,8 @@ class RagProfile:
     sync_ingest_max_bytes: int = 50_000_000
     semantic_chunking_max_chars: int = 100_000
     async_ingest_workflow_id: str = "rag-ingest"
+    graph_maintenance_workflow_id: str = "rag-graph-maintenance"
+    graph_indexer_plugin_id: str = ""
     document_parser_slug: Optional[str] = None
     contextual_enrich: ContextualEnrichMode = "off"
     query_expansion: QueryExpansionMode = "deterministic"
@@ -103,6 +106,7 @@ class RagProfile:
     # GraphRAG
     graph_rag_enabled: bool = False
     graph_rag_hops: int = 1
+    graph_rag_seed_top_k: int = 5
     graph_indexer_mode: GraphIndexerMode = "heuristic"
     graph_store_backend: str = "inmemory"
 
@@ -200,10 +204,10 @@ def validate_graph_rag_production_wiring(
     """
     if not profile.graph_rag_enabled:
         return None
-    if profile.graph_store_backend != PRODUCTION_GRAPH_STORE_BACKEND:
-        return "graph_store_backend_must_be_neo4j"
-    if graph_store_slug is not None and graph_store_slug != PRODUCTION_GRAPH_STORE_BACKEND:
-        return f"integration_graph_store_must_be_neo4j:{graph_store_slug}"
+    if profile.graph_store_backend not in APPROVED_PRODUCTION_GRAPH_STORE_SLUGS:
+        return "graph_store_backend_not_approved_for_production"
+    if graph_store_slug is not None and graph_store_slug not in APPROVED_PRODUCTION_GRAPH_STORE_SLUGS:
+        return f"integration_graph_store_not_approved:{graph_store_slug}"
     return None
 
 
@@ -263,6 +267,11 @@ def rag_profile_from_env() -> RagProfile:
         ),
         async_ingest_workflow_id=os.getenv("INTERGRAX_RAG_ASYNC_INGEST_WORKFLOW_ID", "rag-ingest").strip()
         or "rag-ingest",
+        graph_maintenance_workflow_id=os.getenv(
+            "INTERGRAX_RAG_GRAPH_MAINTENANCE_WORKFLOW_ID", "rag-graph-maintenance"
+        ).strip()
+        or "rag-graph-maintenance",
+        graph_indexer_plugin_id=os.getenv("INTERGRAX_RAG_GRAPH_INDEXER_PLUGIN", "").strip(),
         document_parser_slug=parser_slug,
         contextual_enrich=contextual,
         query_expansion=query_expansion,

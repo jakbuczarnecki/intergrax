@@ -9,8 +9,14 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.runtime.nexus.config_types import ToolSelectionMode
 from intergrax.runtime.nexus.tools.catalog_dispatch import catalog_tool_ids
+from intergrax.runtime.nexus.tools.hierarchical_tool_selector import (
+    rank_categories,
+    select_tools_hierarchical,
+)
+from intergrax.runtime.nexus.tools.tool_catalog_embedder import ToolCatalogEmbedder
 from intergrax.skills.registry import SkillProfile, build_registry_from_profile, enabled_skill_ids_for_profile
 from intergrax.skills.resolver import SkillResolver
 from intergrax.tools.core.contracts import ToolContract
@@ -26,6 +32,8 @@ class ToolSelectionContext:
     skill_profile: SkillProfile | None = None
     plan_allowed_tool_ids: Sequence[str] | None = None
     top_k: int = 20
+    max_hierarchy_passes: int = 2
+    embedding_manager: BaseEmbeddingManager | None = None
 
 
 @runtime_checkable
@@ -93,19 +101,114 @@ class RetrievalTopKSelectionStrategy:
         return tuple(rt.contract.tool_id for rt in scored[: ctx.top_k])
 
 
+class HierarchicalToolSelectionStrategy:
+    """Category-tree two-pass narrowing (TOOL-ENG-14)."""
+
+    def __init__(self, *, max_category_passes: int = 2) -> None:
+        self._max_category_passes = max_category_passes
+        self.last_categories: tuple[str, ...] = ()
+        self.last_tool_ids: tuple[str, ...] = ()
+
+    @property
+    def strategy_id(self) -> str:
+        return "hierarchical"
+
+    def select_tool_ids(self, ctx: ToolSelectionContext) -> Sequence[str] | None:
+        ranks = rank_categories(
+            ctx.registry,
+            ctx.query,
+            allowed_tool_ids=ctx.plan_allowed_tool_ids,
+        )
+        self.last_categories = tuple(rank.category for rank in ranks[: ctx.max_hierarchy_passes])
+        selected = select_tools_hierarchical(
+            ctx.registry,
+            ctx.query,
+            top_k=ctx.top_k,
+            max_category_passes=ctx.max_hierarchy_passes,
+            allowed_tool_ids=ctx.plan_allowed_tool_ids,
+        )
+        self.last_tool_ids = selected
+        return selected
+
+
+class SemanticToolIndexSelectionStrategy:
+    """Vector similarity top-k over tool metadata (TOOL-ENG-13)."""
+
+    def __init__(self, embedding_manager: BaseEmbeddingManager | None) -> None:
+        self._embedding_manager = embedding_manager
+        self.last_ranks: tuple[tuple[str, float], ...] = ()
+
+    @property
+    def strategy_id(self) -> str:
+        return "semantic"
+
+    def select_tool_ids(self, ctx: ToolSelectionContext) -> Sequence[str] | None:
+        if self._embedding_manager is None:
+            return ()
+        embedder = ToolCatalogEmbedder(self._embedding_manager)
+        ranks = embedder.search_registry(
+            ctx.registry,
+            ctx.query,
+            top_k=ctx.top_k,
+            allowed_tool_ids=ctx.plan_allowed_tool_ids,
+        )
+        self.last_ranks = tuple((rank.tool_id, rank.score) for rank in ranks)
+        return tuple(rank.tool_id for rank in ranks)
+
+
 def strategy_for_mode(mode: ToolSelectionMode) -> ToolSelectionStrategy:
     if mode == ToolSelectionMode.SKILL_PACK:
         return SkillPackSelectionStrategy()
-    if mode == ToolSelectionMode.RETRIEVAL_TOP_K:
+    if mode in (ToolSelectionMode.RETRIEVAL_TOP_K, ToolSelectionMode.KEYWORD_TOP_K):
         return RetrievalTopKSelectionStrategy()
     if mode == ToolSelectionMode.FULL_CATALOG:
         return FullCatalogSelectionStrategy()
+    if mode == ToolSelectionMode.SEMANTIC:
+        return SemanticToolIndexSelectionStrategy(None)
+    if mode == ToolSelectionMode.HIERARCHICAL:
+        return HierarchicalToolSelectionStrategy()
     return StaticAllowListSelectionStrategy()
+
+
+def resolve_selection_strategy(
+    mode: ToolSelectionMode,
+    ctx: ToolSelectionContext,
+    *,
+    strategy_override: ToolSelectionStrategy | None = None,
+    entry_point_strategy_id: str | None = None,
+) -> ToolSelectionStrategy:
+    if strategy_override is not None:
+        return strategy_override
+    if entry_point_strategy_id:
+        from intergrax.runtime.nexus.tools.tool_selection_registry import (
+            load_tool_selection_strategy,
+        )
+
+        loaded = load_tool_selection_strategy(entry_point_strategy_id)
+        if loaded is not None:
+            return loaded
+    if mode == ToolSelectionMode.SEMANTIC:
+        return SemanticToolIndexSelectionStrategy(ctx.embedding_manager)
+    if mode == ToolSelectionMode.HIERARCHICAL:
+        return HierarchicalToolSelectionStrategy(max_category_passes=ctx.max_hierarchy_passes)
+    return strategy_for_mode(mode)
+
+
+def strategy_trace_id(strategy: ToolSelectionStrategy) -> str:
+    descriptor = type(strategy).__dict__.get("strategy_id")
+    if isinstance(descriptor, property):
+        value = descriptor.fget(strategy)  # type: ignore[misc]
+        if isinstance(value, str):
+            return value
+    return type(strategy).__name__
 
 
 def resolve_planner_allowed_tool_ids(
     mode: ToolSelectionMode,
     ctx: ToolSelectionContext,
+    *,
+    strategy_override: ToolSelectionStrategy | None = None,
+    entry_point_strategy_id: str | None = None,
 ) -> Sequence[str] | None:
     """
     Combine selection strategy with optional plan constraints.
@@ -113,7 +216,13 @@ def resolve_planner_allowed_tool_ids(
     When both strategy and plan provide ids, returns their intersection.
     Empty intersection → empty tuple (planner schema has no tools).
     """
-    strategy_ids = strategy_for_mode(mode).select_tool_ids(ctx)
+    strategy = resolve_selection_strategy(
+        mode,
+        ctx,
+        strategy_override=strategy_override,
+        entry_point_strategy_id=entry_point_strategy_id,
+    )
+    strategy_ids = strategy.select_tool_ids(ctx)
     plan_ids = tuple(catalog_tool_ids(ctx.plan_allowed_tool_ids or ()))
 
     if plan_ids and strategy_ids is not None:

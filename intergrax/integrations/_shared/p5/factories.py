@@ -845,6 +845,18 @@ def create_kubernetes_cloud_platform(
     namespace = config.org or "default"
 
     def _open() -> Any:
+        if config.base_url.strip():
+            from intergrax.integrations.providers.cloud_platform.kubernetes.rest_client import (
+                KubernetesDeploymentScaleClient,
+            )
+
+            return KubernetesDeploymentScaleClient(
+                base_url=config.base_url.strip(),
+                namespace=namespace,
+                token=config.token or config.api_key,
+                timeout_seconds=float(config.timeout_seconds),
+            )
+
         class _Client:
             def health(self) -> bool:
                 return True

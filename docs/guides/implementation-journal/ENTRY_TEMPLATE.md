@@ -40,6 +40,12 @@ entries/YYYY-MM-DD/<scope>-<slug>.md
 
 Examples: `entries/2026-06-10/rag-m-rag-23.md`, `entries/2026-06-10/tools-tool-eng-4.md`, `entries/2026-06-10/agents-vendor-discovery-k1.md`
 
+**Anti-patterns** (rejected by `scripts/check_implementation_journal.py`):
+
+- `entries/2026-06-11-acp-close-pat-2.md` — date in filename; use folder `entries/2026-06-11/`
+- `entries/acp-close-pat-2.md` — missing date folder
+- Only `entries/_TEMPLATE.md` may sit directly under `entries/`
+
 ---
 
 ## INDEX row (prepend — newest first)

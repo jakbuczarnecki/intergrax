@@ -7,7 +7,12 @@ from typing import Any, Dict, FrozenSet, Optional, Sequence, TYPE_CHECKING
 
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
-from intergrax.runtime.nexus.config_types import ToolChoiceMode, ToolSelectionMode, ToolsContextScope
+from intergrax.runtime.nexus.config_types import (
+    ToolChoiceMode,
+    ToolInvocationMode,
+    ToolSelectionMode,
+    ToolsContextScope,
+)
 
 if TYPE_CHECKING:
     from intergrax.integrations.registry.profile import IntegrationProfile
@@ -48,7 +53,11 @@ from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.provider import ToolProvider
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry import ToolProfile, ToolRegistry, ToolWiringContext, build_registry_from_profile
+from intergrax.runtime.nexus.tools.tool_chain_spec import ToolChainSpec
+from intergrax.runtime.nexus.tools.tool_engine_hook import ToolEngineHook
+from intergrax.runtime.nexus.tools.tool_invocation_pattern import ToolInvocationPattern
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
+from intergrax.runtime.nexus.tools.tool_selection import ToolSelectionStrategy
 from intergrax.websearch.service.websearch_config import WebSearchConfig
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
@@ -167,6 +176,11 @@ class RuntimeConfig:
     # Planner schema narrowing before LLM tool selection (TOOL-ENG-5).
     tool_selection_mode: ToolSelectionMode = ToolSelectionMode.STATIC
     tool_selection_top_k: int = 20
+    tool_selection_max_hierarchy_passes: int = 2
+    # Instance override — takes precedence over tool_selection_mode (TOOL-ENG-31).
+    tool_selection_strategy: Optional[ToolSelectionStrategy] = None
+    # Entry-point plugin id from intergrax.tool_selection_strategies (TOOL-ENG-26).
+    tool_selection_strategy_id: Optional[str] = None
 
     # Determines how much contextual information the tool planner receives:
     #
@@ -186,6 +200,27 @@ class RuntimeConfig:
 
     # Bounded planner→invoke→observe loop inside ToolsStep (TOOL-ENG-6). Default 1 preserves legacy single-pass.
     max_tool_iterations: int = 1
+
+    # Orchestration pattern for multi-call batches (TOOL-ENG-21). None → infer from max_tool_iterations.
+    tool_invocation_mode: Optional[ToolInvocationMode] = None
+
+    # Instance override — takes precedence over tool_invocation_mode (TOOL-ENG-24).
+    tool_invocation_pattern: Optional[ToolInvocationPattern] = None
+
+    # Entry-point plugin id from intergrax.tool_invocation_patterns (TOOL-ENG-24).
+    tool_invocation_pattern_id: Optional[str] = None
+
+    # Fixed pipeline when tool_invocation_mode=deterministic_chain (TOOL-ENG-20).
+    tool_chain_spec: Optional[ToolChainSpec] = None
+
+    # Block HIGH/CRITICAL tool traces without explicit approval (TOOL-ENG-7). None → production_mode.
+    enforce_high_risk_tool_verify: Optional[bool] = None
+
+    # Per-run adaptive tool mode hook (TOOL-ENG-10).
+    tool_engine_hook: Optional[ToolEngineHook] = None
+
+    # Max concurrent read-only tool invocations per batch (TOOL-ENG-9). 1 = always serial.
+    max_parallel_tool_calls: int = 8
 
     tool_invoker: Optional[RuntimeToolInvoker] = None
 

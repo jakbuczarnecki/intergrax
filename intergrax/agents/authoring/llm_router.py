@@ -48,6 +48,7 @@ class StepLLMRouter:
     default_model: str
     provider: str = "stub"
     llm_port: LlmCompletePort | None = None
+    runtime_config: object | None = None
     _pending_calls: list[LlmCallRecord] = field(default_factory=list, init=False, repr=False)
     _last_effective_model: str = field(default="", init=False, repr=False)
 
@@ -75,6 +76,10 @@ class StepLLMRouter:
 
     async def complete(self, prompt: str, *, model_hint: str | None = None) -> LlmStepResult:
         model_id = self.resolve_model(model_hint)
+        if self.runtime_config is not None:
+            from intergrax.runtime.nexus.context.compile_service import compile_prompt_text
+
+            prompt = compile_prompt_text(prompt, self.runtime_config)  # type: ignore[arg-type]
         started = time.perf_counter()
         if self.llm_port is not None:
             text, tokens_in, tokens_out = await self.llm_port.complete(

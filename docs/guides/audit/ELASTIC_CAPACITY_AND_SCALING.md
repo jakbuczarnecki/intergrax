@@ -54,7 +54,7 @@ ECP-DOC · ECP-DEPTH (ECP-1..8, ECP-OBS) · ADR-SCALE-001/002 · cross-ref W-OPS
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-No unified CapacitySignalCollector yet · ScalingProfile missing on ApplicationEnvironmentProfile · K8s scale API not in canon · nginx slug missing · ECP evaluate/govern layers target only
+ECP-PROD Done — enable ScalingProfile on host · K8s live when INTERGRAX_KUBERNETES_URL · HITL via CapacityApprovalQueue · queue depth when kv_store wired · complements (not replaces) K8s HPA · nginx cancelled (ADR-SCALE-002)
 
 ---
 

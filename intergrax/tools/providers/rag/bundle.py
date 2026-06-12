@@ -15,6 +15,12 @@ from intergrax.tools.providers.rag.ingest_contracts import (
     RagScheduleIngestJobOutput,
 )
 from intergrax.tools.providers.rag.ingest_handler import RagIngestHandler
+from intergrax.tools.providers.rag.graph_maintenance_contracts import (
+    RagScheduleGraphMaintenanceJobInput,
+    RagScheduleGraphMaintenanceJobOutput,
+)
+from intergrax.tools.providers.rag.graph_maintenance_handler import RagScheduleGraphMaintenanceJobHandler
+from intergrax.tools.providers.rag.graph_maintenance_service import RAG_SCHEDULE_GRAPH_MAINTENANCE_JOB_TOOL_ID
 from intergrax.tools.providers.rag.ingest_job_handler import RagScheduleIngestJobHandler
 from intergrax.tools.providers.rag.ingest_job_service import RAG_SCHEDULE_INGEST_JOB_TOOL_ID
 from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
@@ -303,6 +309,26 @@ def rag_preview_retrieval_contract() -> ToolContract:
     )
 
 
+def rag_schedule_graph_maintenance_job_contract() -> ToolContract:
+    return ToolContract(
+        tool_id=RAG_SCHEDULE_GRAPH_MAINTENANCE_JOB_TOOL_ID,
+        name="rag.schedule_graph_maintenance_job",
+        description=(
+            "Schedule graph maintenance (orphan prune, stale-edge prune, optional full reindex) "
+            "through the configured workflow orchestrator. Idempotent per mode and tenant scope."
+        ),
+        description_short="Schedule GraphRAG maintenance job.",
+        input_schema=RagScheduleGraphMaintenanceJobInput,
+        output_schema=RagScheduleGraphMaintenanceJobOutput,
+        error_mapping={},
+        side_effects=True,
+        injects_context=False,
+        category="retrieval",
+        risk_level=ToolRiskLevel.MEDIUM,
+        tags=("rag", "graph", "workflow", "maintenance"),
+    )
+
+
 def rag_purge_collection_contract() -> ToolContract:
     return ToolContract(
         tool_id=RAG_PURGE_COLLECTION_TOOL_ID,
@@ -323,6 +349,10 @@ def register_rag_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
     registry.register(rag_retrieve_contract(), RagRetrieveHandler(ctx))
     registry.register(rag_ingest_contract(), RagIngestHandler(ctx))
     registry.register(rag_schedule_ingest_job_contract(), RagScheduleIngestJobHandler(ctx))
+    registry.register(
+        rag_schedule_graph_maintenance_job_contract(),
+        RagScheduleGraphMaintenanceJobHandler(ctx),
+    )
     registry.register(rag_list_collections_contract(), RagListCollectionsHandler(ctx))
     registry.register(rag_delete_documents_contract(), RagDeleteDocumentsHandler(ctx))
     registry.register(rag_describe_collection_contract(), RagDescribeCollectionHandler(ctx))

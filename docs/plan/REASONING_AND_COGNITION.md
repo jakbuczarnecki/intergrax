@@ -16,7 +16,7 @@
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
-| AUDIT-IDEAL-7.1 | §7 Cognition | Ship `ReasoningProfile` contract + environment wire | P1 | Planned |
+| AUDIT-IDEAL-7.1 | §7 Cognition | Ship `ReasoningProfile` contract + environment wire | P1 | **Done** (COG-5.1 · COG-PROD.1) |
 | AUDIT-IDEAL-7.2 | §7 Cognition | Complete `allow_dynamic_replan` runtime path | P1 | **Done** |
 | AUDIT-IDEAL-7.3 | §7 Cognition | Reasoning failure taxonomy on all planner kinds | P2 | **Done** |
 
@@ -262,6 +262,34 @@ These items implemented under FLOW/ORCH phases — **Done**; canon now owned by 
 | Date | COG ID | Summary |
 |------|--------|---------|
 | 2026-06-09 | COG-1.*–COG-OBS.* | Phase COG-DEPTH **22/22 Done**; reference host engine planner presets |
+
+---
+
+## Phase COG-PROD — Production reasoning plane hardening (Band 2au)
+
+**Status:** **Done** (2026-06-12) — doc↔code drift closed; production wiring complete  
+**Prerequisites:** Phase COG-DEPTH **Done**  
+**Goal:** L3+ reasoning plane with honest production wiring — planner LLM separation, parse retries, full prompt template binding, planning `DecisionRecord` enrichment, missing wiring helpers  
+**Priority ladder:** Band 2au (maintenance queue after COG-DEPTH)
+
+**Delivery rule:** One **COG-PROD.\*** ID per PR → update architecture §21 + this register → gate green.
+
+| ID | Deliverable | Status | Priority | Module | Acceptance |
+|----|-------------|--------|----------|--------|------------|
+| COG-PROD.1 | **`resolve_planner_llm_adapter()`** — producer/planner separation (mirror critic) | **Done** | **Critical** | `reasoning_wiring.py`, `orchestration_wiring.py`, `nexus_factory.py` | Separate adapter when `planner_llm_profile` set |
+| COG-PROD.2 | **`planner_parse_retries` wire** + `nexus_task_planner` `user_template` | **Done** | High | `nexus_plan_bridge.py`, `nexus_planner_prompts.py`, `prompts/nexus_task_planner/` | Retries exercised in unit test |
+| COG-PROD.3 | **Planning `DecisionRecord` enrichment** + `resolve_engine_planner_prompt_config()` | **Done** | High | `planning_runner.py`, `reasoning_wiring.py` | Gate test asserts classification + policy fields |
+| COG-PROD.4 | **Doc reconciliation** — architecture stale gaps removed | **Done** | High | `architecture/REASONING_AND_COGNITION.md` | No §2/§14 contradictions vs §21 |
+| COG-PROD.5 | **`check_reasoning_gates.py` uplift** — registry-only planner prompts | **Done** | Medium | `scripts/check_reasoning_gates.py` | CI script green |
+
+### COG-PROD — Sprint execution order
+
+| Sprint | IDs | Files (primary) |
+|--------|-----|-----------------|
+| S1 Doc | COG-PROD.4 | `docs/architecture/REASONING_AND_COGNITION.md`, `docs/plan/REASONING_AND_COGNITION.md` |
+| S2 Planner LLM | COG-PROD.1 | `reasoning_wiring.py`, `orchestration_wiring.py`, `nexus_factory.py`, `contracts/reasoning_profile.py` |
+| S3 Parse + prompt | COG-PROD.2 | `nexus_plan_bridge.py`, `nexus_planner_prompts.py`, `prompts/nexus_task_planner/1.yaml` |
+| S4 Decision + engine prompt | COG-PROD.3, COG-PROD.5 | `planning_runner.py`, `reasoning_wiring.py`, `scripts/check_reasoning_gates.py`, tests |
 
 ---
 

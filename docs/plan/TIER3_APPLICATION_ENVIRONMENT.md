@@ -39,17 +39,17 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 | §37 | Pre-implementation APP-CON contracts | H-APP-CON-DOC.* | **Done** | *doc-only* |
 | §38 | L4 execution stack | H-APP.3.3 · H-APP-WIRING | **Done** | `nexus_factory.py` · `build_harness_host_runtime` |
 | §39 | `OrganizationalPolicyEnvelope` | ACP-ORG-* | **Done** | `org_policy.py` · `test_uc11_product_host_compliance.py` |
-| §40 | APP-PROD gates | APP-PROD-1..9 | **Partial** | APP-PROD-7 · APP-PROD-9 **Done** · 6 · 8 open |
+| §40 | APP-PROD gates | APP-PROD-1..9 | **Done** | `check_application_production_gates.py` · APP-PROD-6 `check_environment_state_usage.py` |
 | §41 | Composition primitive separation | H-APP-CON-DOC.* | **Done** | *doc-only* |
 | §42 | `ApplicationEnvironmentState` v2 | APP-CON-2 · APP-CON-3 | **Done** | `environment_state.py` · lifecycle middleware |
 | §43 | Budget / token governance | ACP-TOK-* · APP-CON-3 · APP-PROD-7 | **Done** | see [Cross-plan §43](#cross-plan--43-budget--token-governance) |
 | §44 | Scenario test matrix | APP-CON-7 | **Done** | `check_tier3_scenario_matrix.py` · `-m tier3_scenario` |
 | §45 | New application checklist | APP-CON-DX.1 · N.* | **Done** | `APPLICATION_CREATION_GUIDE.md` §3 |
-| §46 | Production readiness criteria | APP-PROD-* · ACP-PROD-* | **Partial** | §46 + agent gates |
+| §46 | Production readiness criteria | APP-PROD-* · ACP-PROD-* | **Done** | APP-PROD-* **Done** · ACP-TOK-2/3 cross-plan open |
 | §47 | Developer mental model | APP-CON-DX.1 | **Done** | `APPLICATION_CREATION_GUIDE.md` §1 |
 | §48 | Application artifacts | APP-CON-4 · APP-CON-6 | **Done** | `application_artifacts.py` · `run_artifact_bundle.v1` on summary |
-| §49 | Runtime evolution | APP-EVOL-1..7 · APP-EVOL-2b | **Partial** | APP-EVOL-1..5 **Done** · §49.8 register |
-| §50 | Platform operations | APP-OPS-1..4 | **Partial** | APP-OPS-1 **Done** · `capability_graph_deploy_gate.py` |
+| §49 | Runtime evolution | APP-EVOL-1..7 · APP-EVOL-2b | **Done** | `environment_diff_wiring.py` · `package_wiring.py` · §49.8 register |
+| §50 | Platform operations | APP-OPS-1..4 | **Done** | `health_score_wiring.py` · `registry_ops_wiring.py` · `intergrax apps/envs` |
 | §51 | Cross-doc consistency | H-APP-FREEZE-* | **Done** | `GOVERNANCE_CONSISTENCY_AUDIT.md` |
 
 ---
@@ -82,7 +82,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 | APP-PROD-3 | §40.2 | `ApplicationHost` mounted when provided | **Done** | `test_application_host_wiring.py` |
 | APP-PROD-4 | §40.2 | Manifest conformance | **Done** | `test_manifest_conformance.py` |
 | APP-PROD-5 | §40.2 | Deploy triad | **Done** | `test_application_deploy_triad.py` |
-| APP-PROD-6 | §40.2 | `check_environment_state_usage` lint | Planned | CI script; hooks use typed state |
+| APP-PROD-6 | §40.2 | `check_environment_state_usage` lint | **Done** | `environment_state_usage_wiring.py` · `check_environment_state_usage.py` |
 | APP-PROD-7 | §40.2 · §43 | `check_budget_enforcement` on STRICT product hosts | **Done** | `check_budget_enforcement.py` · product manifests `budget_slice` |
 | APP-PROD-8 | §20–§21 | `check_workspace_cleanup` lifespan hooks | **Done** | `check_workspace_cleanup.py` · `test_check_workspace_cleanup.py` |
 | APP-PROD-9 | §40.2 | Wire APP-PROD-1 into `pytest -m gate` / CI | **Done** | `test_check_application_production_gates.py` · CI `gate-governance-tier` |
@@ -139,6 +139,9 @@ uv run pytest tests/unit/applications/ -q
 
 # APP-PROD-1 (wire to gate via APP-PROD-9)
 python scripts/check_application_production_gates.py
+
+# APP-PROD-6 typed env state on hooks
+python scripts/check_environment_state_usage.py
 
 # Harness tier boundaries
 python scripts/check_harness_no_getattr.py
@@ -467,7 +470,7 @@ uv run pytest -m gate -q
 
 ## Phase H-APP-CON — Application Environment Architecture canon (APP-CON)
 
-**Status:** **In progress** (2026-06-11) — architecture §24–§51 frozen; implementation **3/10 APP-CON** + **5/9 APP-PROD** Done — see [Master backlog](#master-implementation-backlog-app-unified)  
+**Status:** **Done** (2026-06-11) — architecture §24–§51 frozen; APP-CON · APP-PROD master registers **Done** — see [Master backlog](#master-implementation-backlog-app-unified)  
 **Prerequisites:** Phase H-APP **Done** · H-APP-DOC **Done** · H-APP-WIRING **Done**  
 **Goal:** Deliver **symmetric authoring canon** to ACP for Tier-3 — contracts, facades, hooks, checklists — without a new domain pair or Nexus fork.
 
@@ -478,8 +481,8 @@ uv run pytest -m gate -q
 | H-APP-CON-DOC.1 | Architecture §24–§51 + TOC + fidelity matrix (this plan) | **Done** | **Critical** | `architecture/TIER3_APPLICATION_ENVIRONMENT.md` + §Architecture fidelity matrix |
 | H-APP-CON-DOC.2 | Hub § Application in harness environment | **Done** | High | `intergrax_runtime_architecture.md` |
 | H-APP-CON-DOC.3 | Cross-ref ACP §39 → TIER3 §39 canonical home | **Done** | Low | ACP §39.8 pointer |
-| APP-CON-1..8 | Host contracts — see [APP-CON master](#app-con--host-contracts-architecture-25-32--42--48) | **Partial** | **Critical** | 1,2,4 Done |
-| APP-PROD-1..9 | Release gates — see [APP-PROD master](#app-prod--release-gates-architecture-40--46) | **Partial** | High | 1–5 Done |
+| APP-CON-1..8 | Host contracts — see [APP-CON master](#app-con--host-contracts-architecture-25-32--42--48) | **Done** | **Critical** | middleware · env state · hooks · artifacts |
+| APP-PROD-1..9 | Release gates — see [APP-PROD master](#app-prod--release-gates-architecture-40--46) | **Done** | High | `check_application_production_gates.py` |
 | APP-CON-DX.* | Author + audit DX | **Done** | Medium | `APPLICATION_CREATION_GUIDE.md` · `check_tier3_audit_prompt.py` |
 
 **Explicitly out of scope:** `Application.on_next_orchestration_step()`; new domain pair; Nexus runtime changes for product-specific orchestration.
@@ -490,7 +493,7 @@ uv run pytest -m gate -q
 
 ## Phase H-APP-EVOL — Runtime evolution and governance (APP-EVOL)
 
-**Status:** **In progress** (2026-06-11) — architecture §49 documented; implementation APP-EVOL-1..7 **Planned**  
+**Status:** **Done** (2026-06-11) — architecture §49 documented; APP-EVOL-1..7 **Done**  
 **Prerequisites:** H-APP-CON architecture **Done** · V-ALG.3 agent lifecycle **Done**  
 **Goal:** Close operational gaps for large-scale Tier-3 — versioning, migration, capability sunset, agent certification, recovery contract, environment diff, application packaging — without Nexus or profile primitive changes.
 
@@ -513,7 +516,7 @@ uv run pytest -m gate -q
 
 ## Phase H-APP-OPS — Platform operations canon (APP-OPS) — freeze tranche
 
-**Status:** **Done** (2026-06-11) — architecture §50 documented; APP-OPS-1..4 **Planned**  
+**Status:** **Done** (2026-06-11) — architecture §50 documented; APP-OPS-1..4 **Done**  
 **Prerequisites:** H-APP-EVOL §49 **Done** · V-CG.1–3 capability graph **Done**  
 **Goal:** Close reference-platform gaps — capability graph at environment scope, application ownership, health scoring, application/environment registry — **without** changing frozen primitives (Nexus, ApplicationHost, profile, graph spec, envelope, hooks).
 

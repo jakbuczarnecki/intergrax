@@ -22,7 +22,7 @@
 | AUDIT-IDEAL-14.5 | §14 RAG | Retrieval poisoning defense on `rag.retrieve` catalog path | P1 | **Done** | M-RAG.25 |
 | AUDIT-IDEAL-14.6 | §14 RAG | Large-corpus async ingest (stream / job orchestration) | P1 | **Done** | M-RAG.26 |
 | AUDIT-IDEAL-14.7 | §14 RAG | OpenTelemetry spans on RAG retrieve + ingest hot path | P2 | **Done** | M-RAG.27 |
-| AUDIT-IDEAL-14.8 | §14 RAG · §3.7.1 | Universal GraphRAG platform — backend registry, lifecycle, retrieval hardening | P1 | **Planned** | M-RAG-GRAPH (M-RAG.38–M-RAG.52) |
+| AUDIT-IDEAL-14.8 | §14 RAG · §3.7.1 | Universal GraphRAG platform — backend registry, lifecycle, retrieval hardening | P1 | **Done** (G1–G3; G4 optional) | M-RAG-GRAPH (M-RAG.38–M-RAG.47, M-RAG.48, M-RAG.52) |
 
 **Note:** AUDIT-IDEAL-14.2 (retrieval poisoning on product hosts) is owned by [`plan/MEMORY.md`](MEMORY.md) + UAEP security wiring — Nexus `rag.retrieve` (catalog) path.
 
@@ -225,7 +225,7 @@ Requires new Integration catalog slugs first (H-INT in INTEGRATIONS plan).
 **Phase RAG complete when:** RAG-1 + RAG-DOC.* **Done**; §6.1e queue closed. **Status: complete (2026-06-02).**  
 **Phase M-RAG-DEPTH:** **Complete** (2026-06-10) — M-RAG.23 … M-RAG.37 **Done**.
 
-**Phase M-RAG-GRAPH:** **Active** (2026-06-12) — M-RAG.38 … M-RAG.52 **Planned**; GAP-RAG-24 … GAP-RAG-36 open; boundaries: GAP-RAG-15, GAP-RAG-34.
+**Phase M-RAG-GRAPH:** **Mostly complete** (2026-06-12) — M-RAG.38 … M-RAG.48, M-RAG.52 **Done**; M-RAG.49–51 **Planned** (H-INT blocked); boundaries: GAP-RAG-15, GAP-RAG-34 (community_report delivered).
 
 ---
 
@@ -311,6 +311,8 @@ Requires new Integration catalog slugs first (H-INT in INTEGRATIONS plan).
 | 2026-06-10 | M-RAG.37 | `semantic_chunking_allowed()` — reject oversized docs before semantic O(n) embed |
 | 2026-06-10 | M-RAG.36 | `load_soak.py` concurrent retrieve SLO; `rag-guard.yml` gate marker |
 | 2026-06-12 | RAG-DOC.5 | GraphRAG architecture audit; GAP-RAG-24–36; Phase M-RAG-GRAPH waves G1–G4; architecture §GraphRAG architecture |
+| 2026-06-12 | M-RAG.38–41 | Graph store backend registry; memgraph/falkordb adapters; delete/purge lifecycle sync; graph tenant isolation contract |
+| 2026-06-12 | M-RAG.42–52 | GraphRAG retrieval hardening, prod slug list, golden scenarios, maintenance job, indexer plugins, community_report mode |
 
 ---
 
@@ -342,18 +344,18 @@ Ordered queue for RAG domain work. **Active:** M-RAG-GRAPH (15 items). **Closed:
 
 | Order | ID | Wave | Priority | Deliverable | GAP-RAG | Status |
 |-------|-----|------|----------|-------------|---------|--------|
-| 1 | **M-RAG.38** | G1 | **P0** | `RagGraphStoreBackend` registry; refactor `create_rag_graph_store` | 24 | **Planned** |
-| 2 | **M-RAG.39** | G1 | **P1** | Memgraph + FalkorDB RAG adapters; fix bootstrap env options | 25 | **Planned** |
-| 3 | **M-RAG.40** | G1 | **P1** | Graph delete/purge lifecycle sync with vector index | 26 | **Planned** |
-| 4 | **M-RAG.41** | G1 | **P1** | Graph tenant isolation contract + gate tests | 27 | **Planned** |
-| 5 | **M-RAG.42** | G2 | **P1** | `GraphRagRetriever` hardening; promote stable | 28 | **Planned** |
-| 6 | **M-RAG.43** | G2 | **P2** | Hybrid retrieval graph channel fusion | 29 | **Planned** |
-| 7 | **M-RAG.44** | G2 | **P2** | Graph provenance on `RetrievalTrace` | 30 | **Planned** |
-| 8 | **M-RAG.48** | G2 | **P2** | Approved prod graph_store slug list (neo4j + soaked Bolt backends) | 35 | **Planned** |
-| 9 | **M-RAG.52** | G2 | **P2** | Extended golden harness graph scenarios | 36 | **Planned** |
-| 10 | **M-RAG.45** | G3 | **P2** | `rag.schedule_graph_maintenance_job` workflow contract | 31 | **Planned** |
-| 11 | **M-RAG.46** | G3 | **P2** | `GraphIndexer` plugin registry + author guide | 32 | **Planned** |
-| 12 | **M-RAG.47** | G3 | **P2** | Optional `community_report` indexer mode (harness-native) | 34 | **Planned** |
+| 1 | **M-RAG.38** | G1 | **P0** | `RagGraphStoreBackend` registry; refactor `create_rag_graph_store` | 24 | **Done** |
+| 2 | **M-RAG.39** | G1 | **P1** | Memgraph + FalkorDB RAG adapters; fix bootstrap env options | 25 | **Done** |
+| 3 | **M-RAG.40** | G1 | **P1** | Graph delete/purge lifecycle sync with vector index | 26 | **Done** |
+| 4 | **M-RAG.41** | G1 | **P1** | Graph tenant isolation contract + gate tests | 27 | **Done** |
+| 5 | **M-RAG.42** | G2 | **P1** | `GraphRagRetriever` hardening; promote stable | 28 | **Done** |
+| 6 | **M-RAG.43** | G2 | **P2** | Hybrid retrieval graph channel fusion | 29 | **Done** |
+| 7 | **M-RAG.44** | G2 | **P2** | Graph provenance on `RetrievalTrace` | 30 | **Done** |
+| 8 | **M-RAG.48** | G2 | **P2** | Approved prod graph_store slug list (neo4j + soaked Bolt backends) | 35 | **Done** |
+| 9 | **M-RAG.52** | G2 | **P2** | Extended golden harness graph scenarios | 36 | **Done** |
+| 10 | **M-RAG.45** | G3 | **P2** | `rag.schedule_graph_maintenance_job` workflow contract | 31 | **Done** |
+| 11 | **M-RAG.46** | G3 | **P2** | `GraphIndexer` plugin registry + author guide | 32 | **Done** |
+| 12 | **M-RAG.47** | G3 | **P2** | Optional `community_report` indexer mode (harness-native) | 34 | **Done** |
 | 13 | **M-RAG.49** | G4 | **P3** | Neptune integration + RAG adapter (H-INT dependency) | 33 | **Planned** |
 | 14 | **M-RAG.50** | G4 | **P3** | OrientDB integration + RAG adapter (H-INT dependency) | 33 | **Planned** |
 | 15 | **M-RAG.51** | G4 | **P3** | ArangoDB integration + RAG adapter (H-INT dependency) | 33 | **Planned** |
@@ -416,6 +418,49 @@ Ordered queue for RAG domain work. **Active:** M-RAG-GRAPH (15 items). **Closed:
 **Phase M-RAG-DEPTH complete when:** M-RAG.23 … M-RAG.37 all **Done**; zero open GAP-RAG-01 … GAP-RAG-23 rows (except GAP-RAG-15).
 
 **Phase M-RAG-GRAPH complete when:** M-RAG.38 … M-RAG.52 all **Done** (M-RAG.49–51 optional per product); zero open GAP-RAG-24 … GAP-RAG-36 rows (except GAP-RAG-34 boundary).
+
+---
+
+## Layer Completion — sprint execution plan (2026-06-12)
+
+Execute after documentation sync. One sprint = one commit unless operator splits PRs.
+
+### Sprint G1 — Backend registry and graph lifecycle (M-RAG.38–M-RAG.41)
+
+| Item | Scope | Files |
+|------|-------|-------|
+| M-RAG.38 | `RagGraphStoreBackend` registry; refactor bootstrap | `graph/bootstrap/backend_registry.py`, `graph/bootstrap/graph_store_bootstrap.py`, `tests/unit/rag/graph/test_rag_graph_store_backend_registry.py` |
+| M-RAG.39 | Memgraph + FalkorDB Cypher adapters | `graph/providers/cypher_rag_graph_store.py`, `graph/bootstrap/graph_store_bootstrap.py`, `tests/unit/rag/graph/test_graph_rag_memgraph_adapter.py`, `test_graph_rag_falkordb_adapter.py` |
+| M-RAG.40 | Delete/purge graph lifecycle sync | `graph/contracts/graph_store.py`, providers, `tools/providers/rag/lifecycle_service.py`, `index_lifecycle_service.py`, `tools/registry/wiring.py`, `applications/_shared/environment_wiring.py`, `tests/unit/rag/graph/test_graph_lifecycle_delete_sync.py` |
+| M-RAG.41 | Graph tenant isolation contract | `graph/tenant/graph_isolation_contract.py`, graph providers (tenant scope), `tests/unit/rag/graph/test_graph_tenant_isolation.py` |
+
+**DoD:** registry gate green; delete/purge removes graph artifacts; tenant mismatch returns empty on graph path.
+
+### Sprint G2 — Retrieval hardening (M-RAG.42–M-RAG.44, M-RAG.48, M-RAG.52)
+
+| Item | Scope | Files |
+|------|-------|-------|
+| M-RAG.42 | Harden `GraphRagRetriever`; promote stable | `retrievers/providers/graph_rag_retriever.py`, `tests/unit/rag/graph/test_graph_rag_retriever_hardening.py` |
+| M-RAG.43 | Hybrid channel fusion | `retrievers/providers/graph_rag_retriever.py`, `runtime/architecture/hybrid_retrieval.py`, `tests/unit/rag/graph/test_hybrid_retrieval_graph_channel.py` |
+| M-RAG.44 | Graph provenance on `RetrievalTrace` | `retrieval/retrieval_result.py`, `graph_rag_retriever.py`, `tests/unit/rag/graph/test_graph_provenance_retrieval_trace.py` |
+| M-RAG.48 | Approved prod graph_store slugs | `profiles/rag_profile.py`, `applications/_shared/rag_runtime_bridge.py`, `tests/unit/rag/profiles/test_production_graph_rag_profile.py` |
+| M-RAG.52 | Extended golden harness scenarios | `tests/fixtures/rag_golden/retrieval_cases.json`, `evaluation/golden_harness.py` |
+
+**DoD:** graph_rag stable; `channel_contributions` on trace; prod validation accepts soaked Bolt backends; golden gate covers lifecycle + isolation.
+
+### Sprint G3 — Maintenance and indexer plugins (M-RAG.45–M-RAG.47)
+
+| Item | Scope | Files |
+|------|-------|-------|
+| M-RAG.45 | `rag.schedule_graph_maintenance_job` | `tools/providers/rag/graph_maintenance_*.py`, `bundle.py`, `profiles/rag_profile.py`, `tests/unit/tools/providers/rag/test_graph_maintenance_job.py` |
+| M-RAG.46 | `GraphIndexer` plugin registry | `graph/indexer/plugin_registry.py`, `graph_indexer_factory.py`, `docs/guides/EXTENSION_AUTHOR_GUIDE.md` |
+| M-RAG.47 | Optional `community_report` indexer | `graph/indexer/community_report_graph_indexer.py`, `rag_profile.py`, `tests/unit/rag/graph/test_community_report_graph_indexer.py` |
+
+**DoD:** maintenance job idempotent; third-party indexer registers via plugin; community mode opt-in only.
+
+### Sprint G4 — Additional integrations (M-RAG.49–M-RAG.51) — blocked on H-INT
+
+Requires Integration catalog slugs (Neptune, OrientDB, ArangoDB) per [`plan/INTEGRATIONS.md`](INTEGRATIONS.md). RAG delivers adapters only after H-INT rows land.
 
 ---
 

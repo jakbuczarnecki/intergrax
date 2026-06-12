@@ -7,6 +7,7 @@ from __future__ import annotations
 import pytest
 
 from intergrax.applications._shared.context_runtime_bridge import (
+    CONTEXT_ENGINE_PROFILE_METADATA_KEY,
     apply_context_profile_to_runtime_config,
     apply_context_profiles_from_environment,
     derive_run_budget_from_context_policy,
@@ -62,6 +63,22 @@ def test_derive_run_budget_from_context_policy() -> None:
 
     assert config.run_budget is not None
     assert config.run_budget.max_total_tokens == 3_500
+
+
+def test_apply_context_profile_maps_engine_preset_fields() -> None:
+    config = RuntimeConfig(llm_adapter=FakeLLMAdapter(), production_mode=False)
+    context = ContextProfile(
+        engine_preset="codebase",
+        engine_ref="lab.context.CodebaseContextEngine",
+        context_plugin_ids=["Acme.Codebase", "  "],
+    )
+
+    apply_context_profile_to_runtime_config(config, context)
+
+    payload = config.metadata[CONTEXT_ENGINE_PROFILE_METADATA_KEY]
+    assert payload["engine_preset"] == "codebase"
+    assert payload["engine_ref"] == "lab.context.CodebaseContextEngine"
+    assert payload["context_plugin_ids"] == ["acme.codebase"]
 
 
 def test_apply_context_profiles_from_environment() -> None:

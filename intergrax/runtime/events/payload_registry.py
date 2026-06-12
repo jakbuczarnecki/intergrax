@@ -11,6 +11,8 @@ from intergrax.runtime.events.payloads import CANONICAL_PAYLOAD_TYPES, RuntimeEv
 from intergrax.runtime.events.payloads.canonical import (
     AgentSelectionPayloadV1,
     ContextAssemblyPayloadV1,
+    ContextAssemblyPayloadV2,
+    ContextCandidatePayloadV1,
     DecisionPayloadV1,
     GraphNodePayloadV1,
     DelegationGrantedPayloadV1,
@@ -41,8 +43,12 @@ class UnknownPayloadSchemaError(RuntimeEventPayloadError):
 
 EVENT_TYPE_PREFERRED_SCHEMA: dict[RuntimeEventType, str] = {
     RuntimeEventType.AGENT_SELECTED: AgentSelectionPayloadV1.schema_id,
-    RuntimeEventType.CONTEXT_ASSEMBLED: ContextAssemblyPayloadV1.schema_id,
-    RuntimeEventType.CONTEXT_TRIMMED: ContextAssemblyPayloadV1.schema_id,
+    RuntimeEventType.CONTEXT_ASSEMBLED: ContextAssemblyPayloadV2.schema_id,
+    RuntimeEventType.CONTEXT_BUILT: ContextAssemblyPayloadV1.schema_id,
+    RuntimeEventType.CONTEXT_CANDIDATE_COLLECTED: ContextCandidatePayloadV1.schema_id,
+    RuntimeEventType.CONTEXT_CANDIDATE_DROPPED: ContextCandidatePayloadV1.schema_id,
+    RuntimeEventType.CONTEXT_TRIMMED: ContextAssemblyPayloadV2.schema_id,
+    RuntimeEventType.CONTEXT_VALIDATION_FAILED: ValidationPayloadV1.schema_id,
     RuntimeEventType.DECISION_EMITTED: DecisionPayloadV1.schema_id,
     RuntimeEventType.DELEGATION_GRANTED: DelegationGrantedPayloadV1.schema_id,
     RuntimeEventType.HANDOFF_COMPLETED: HandoffPayloadV1.schema_id,

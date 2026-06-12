@@ -42,6 +42,9 @@ class RetrievalTrace:
     retrieval_error_kind: Optional[str] = None
     embedding_version_filtered_count: int = 0
     embedding_version_warnings: List[str] = field(default_factory=list)
+    channel_contributions: Dict[str, List[str]] = field(default_factory=dict)
+    graph_expanded_node_ids: List[str] = field(default_factory=list)
+    graph_provenance_summary: str = ""
 
 
 @dataclass

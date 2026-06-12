@@ -35,6 +35,7 @@ class LabApplicationSettings:
     adaptive_feature_flag_slug: str | None = None
     secrets_backend_slug: str | None = None
     enable_llm_guardrails: bool = False
+    tool_invocation_mode: str = "single_pass"
 
     @property
     def requires_harness_api_key(self) -> bool:
@@ -139,6 +140,9 @@ class LabApplicationSettings:
             "true",
             "yes",
         }
+        tool_invocation_mode = (
+            os.getenv("LAB_TOOL_INVOCATION_MODE") or "single_pass"
+        ).strip().lower() or "single_pass"
         return cls(
             environment=environment,
             route_prefix=prefix,
@@ -162,4 +166,5 @@ class LabApplicationSettings:
             adaptive_feature_flag_slug=adaptive_feature_flag,
             secrets_backend_slug=secrets_backend,
             enable_llm_guardrails=enable_llm_guardrails,
+            tool_invocation_mode=tool_invocation_mode,
         )

@@ -165,6 +165,7 @@ class NexusPlanningRunner:
         if hook_failure is not None:
             return PlanningPhaseOutcome(early_result=hook_failure)
 
+        planning_policy_action = PolicyAction.ALLOW.value
         if self.policy_engine is not None:
             policy_decision = self.policy_engine.evaluate_pre_llm(
                 tenant_id=task.tenant_id,
@@ -177,6 +178,7 @@ class NexusPlanningRunner:
                     "denied_planner_model_ids": self.denied_planner_model_ids,
                 },
             )
+            planning_policy_action = policy_decision.action.value
             if policy_decision.action is PolicyAction.DENY:
                 failure_kind = ReasoningFailureKind.PLANNER_POLICY_BLOCKED
                 task.metadata["reasoning_failure_kind"] = failure_kind.value
@@ -246,16 +248,24 @@ class NexusPlanningRunner:
                 }
             )
         )
+        planner_source = str(plan.plan_metadata.get("planner_source", "default"))
         decision = DecisionRecord(
             trace_id=task.task_id,
             run_id=task.task_id,
             tenant_id=task.tenant_id,
             task_id=task.task_id,
             decision_type="nexus_planning",
-            rationale=f"classification={classification}; planner_source={plan.plan_metadata.get('planner_source', 'default')}",
+            rationale=(
+                f"classification={classification}; planner_source={planner_source}; "
+                f"planner_model_id={self.planner_model_id or ''}"
+            ),
+            policy_action=planning_policy_action,
             metadata={
+                "classification": classification,
                 "plan_id": plan.plan_id,
                 "step_count": str(len(plan.steps)),
+                "planner_source": planner_source,
+                "planner_model_id": self.planner_model_id or "",
                 "used_fallback": plan.plan_metadata.get("used_fallback", "false"),
                 "failure_kind": plan.plan_metadata.get("failure_kind", ""),
             },

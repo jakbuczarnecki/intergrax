@@ -93,6 +93,20 @@ def build_lab_environment_profile(
             }
         )
     env.adaptive_profile = env.adaptive_profile.model_copy(update=adaptive_updates)
+    from intergrax.applications._shared.context_presets import production_context_profile
+
+    env = env.model_copy(
+        update={
+            "context_profile": production_context_profile().model_copy(
+                update={"context_plugin_ids": ["intergrax.builtin"]}
+            )
+        }
+    )
+    env = env.model_copy(
+        update={
+            "tool_invocation_mode": settings.tool_invocation_mode,
+        }
+    )
     if settings.enable_llm_guardrails:
         from intergrax.applications.contracts.environment_profile import GuardrailProfile
 
