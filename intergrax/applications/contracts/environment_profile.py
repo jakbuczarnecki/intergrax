@@ -15,6 +15,10 @@ from intergrax.contracts.reasoning_profile import ReasoningProfile
 from intergrax.contracts.resilience_policy import ResiliencePolicy, default_resilience_policy
 from intergrax.runtime.capacity.contracts import ScalingPolicy
 from intergrax.applications.contracts.agent_governance import AgentGovernanceProfile
+from intergrax.applications.contracts.application_recovery_contract import (
+    ApplicationRecoveryContract,
+    standard_strict_product_recovery_contract,
+)
 from intergrax.applications.contracts.capability_alias import CapabilityGovernanceProfile
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
 from intergrax.applications.contracts.intent_route import IntentRoute
@@ -155,6 +159,7 @@ class ReliabilityProfile(BaseModel):
     compensation_enabled: bool = False
     partial_results_enabled: bool = False
     middleware_hook_timeout_seconds: float = Field(default=2.0, ge=0.01, le=60.0)
+    recovery_contract: ApplicationRecoveryContract | None = None
 
 
 class ObservabilityProfile(BaseModel):
@@ -724,6 +729,7 @@ class ApplicationEnvironmentProfile(BaseModel):
                 compensation_enabled=True,
                 partial_results_enabled=True,
                 middleware_hook_timeout_seconds=0.25,
+                recovery_contract=standard_strict_product_recovery_contract(),
             ),
             observability_profile=ObservabilityProfile(
                 trace_sqlite_enabled=True,

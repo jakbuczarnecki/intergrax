@@ -2043,7 +2043,7 @@ Mutating STRICT hosts MUST document in product `ARCHITECTURE.md`:
 
 **Cross-ref:** [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) §33.3, §34.4 · ACP checkpoint host wiring.
 
-**Status:** platform checkpoint/resume **Partial**; typed `ApplicationRecoveryContract` on profile **Planned** APP-EVOL-5.
+**Status:** typed `ApplicationRecoveryContract` on `ReliabilityProfile` **Done** (`application_recovery_contract.py` · `recovery_contract_wiring.py` · APP-EVOL-5).
 
 ---
 
@@ -2152,7 +2152,7 @@ graph_spec nodes            → roster capabilities satisfied
 | APP-EVOL-2 | `ApplicationMigration` schema + validator CLI | **Done** | `check_application_migrations.py` |
 | APP-EVOL-3 | `CapabilityAlias` registry + sunset routing | **Done** | `check_capability_alias_registry.py` |
 | APP-EVOL-4 | `AgentCertification` + STRICT roster gate | **Done** | `check_agent_certification_roster.py` |
-| APP-EVOL-5 | `ApplicationRecoveryContract` on `ReliabilityProfile` | Planned | documented + integration test |
+| APP-EVOL-5 | `ApplicationRecoveryContract` on `ReliabilityProfile` | **Done** | `check_application_recovery_contract.py` |
 | APP-EVOL-6 | `ApplicationEnvironmentDiff` + `doctor diff-app` | Planned | pre-deploy CI diff |
 | APP-EVOL-7 | `ApplicationPackage` + dependency resolver | Planned | `new-stack` emits package manifest |
 
