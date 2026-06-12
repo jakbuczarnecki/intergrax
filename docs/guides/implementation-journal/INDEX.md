@@ -5,7 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-12-022 | 2026-06-12 | tier-1 TOOLS | TOOL-ENG-7, TOOL-ENG-10 | [TOOLS S8 closeout — HIGH+ verify and AHI tool mode hook](entries/2026-06-12/tools-layer-s8-governance-closeout.md) | pending |
+| IJ-2026-06-12-022 | 2026-06-12 | tier-1 TOOLS | TOOL-ENG-7, TOOL-ENG-10 | [TOOLS S8 closeout — HIGH+ verify and AHI tool mode hook](entries/2026-06-12/tools-layer-s8-governance-closeout.md) | c63dd381 |
 | IJ-2026-06-12-021 | 2026-06-12 | tier-1, tier-3 TOOLS | TOOL-ENG-20,24,27,28,30 | [TOOLS S7 — deterministic chain and invocation plugin closeout](entries/2026-06-12/tools-layer-s7-chain-patterns.md) | c7ef461e |
 | IJ-2026-06-12-020 | 2026-06-12 | tier-1 TOOLS | TOOL-ENG-14,15,26,31,32,7,8,12 | [TOOLS S6 + S8 partial — hierarchical selection and governance hooks](entries/2026-06-12/tools-layer-s6-hierarchical-selection.md) | 818bd174 |
 | IJ-2026-06-12-019 | 2026-06-12 | tier-1 TOOLS | TOOL-ENG-13, TOOL-ENG-25 | [TOOLS S5 — semantic catalog index and parallel semantic batch](entries/2026-06-12/tools-layer-s5-semantic-index.md) | 818bd174 |

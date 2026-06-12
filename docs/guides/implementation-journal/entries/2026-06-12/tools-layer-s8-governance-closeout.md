@@ -8,7 +8,7 @@ plan_ref:
   - TOOL-ENG-7
   - TOOL-ENG-10
 status: completed
-commit: pending
+commit: c63dd381
 adr: none — extends existing governance and AHI routing patterns
 ---
 
