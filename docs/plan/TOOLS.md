@@ -42,8 +42,10 @@
 | `ToolSelectionStrategy` | **Done** | TOOL-ENG-5 | `strategy_for_mode()` — **missing acceptance test file** (doc claims `test_tool_selection_strategy.py`) |
 | Bounded tool loop (interim) | **Done** | TOOL-ENG-6 | ADR-TOOL-002 · `tool_loop.py` |
 | `tools_context_scope` | **Done** | TOOL-ENG-11 | `tool_planner_input.py` |
-| `ToolInvocationPattern` plugin | **Gap** | TOOL-ENG-16 | P0 — hardcoded `run_bounded_tool_loop` |
-| Shipped patterns (single / ReAct / parallel / chain) | **Gap** | TOOL-ENG-17–20,25 | Orchestration 2a |
+| `ToolInvocationPattern` plugin | **Done** | TOOL-ENG-16 | S1 — ADR-TOOL-003 |
+| Shipped patterns (single / ReAct) | **Done** | TOOL-ENG-17–18,21–23 | S2–S3 |
+| Parallel batch + aggregate | **In progress** | TOOL-ENG-9,29 | S4 |
+| Chain / semantic composite | **Gap** | TOOL-ENG-20,25 | S5–S7 |
 | Semantic / hierarchical selection | **Gap** | TOOL-ENG-13/14 | L6 at scale |
 | Selection strategy plugins | **Gap** | TOOL-ENG-26/31 | Entry points + config inject |
 | Post-tool verify HIGH+ | **Gap** | TOOL-ENG-7 | CVL integration |
@@ -58,7 +60,7 @@
 | TOOL-ENG-DOC.1–7 | **Done** |
 | Engine gap register ↔ plan register | **Aligned** |
 | Audit prompt `known_gaps` | **Stale** — updated 2026-06-12 layer completion pass |
-| Plan acceptance `test_tool_selection_strategy.py` | **Doc drift** — file not present |
+| Plan acceptance `test_tool_selection_strategy.py` | **Done** (S0) |
 
 ### Architecture violations
 
@@ -82,7 +84,23 @@ Sprints close **Phase TOOL-ENG** remaining rows. One sprint ≈ one PR; update p
 | **S7** | TOOL-ENG-20,24,27,28,30 | Chain pattern + entry points + CI + lab DX | `check_tool_invocation_patterns.py` green | `patterns/deterministic_chain.py`, `applications/lab_application/` |
 | **S8** | TOOL-ENG-7,8,12,10 | Governance closeout | Required-mode fail + HIGH verify | `tools_step.py`, `tool_verify_hooks.py` |
 
-**Current execution:** S0–S3 **Done** (2026-06-12) · next **S4** (TOOL-ENG-29,9).
+**Current execution:** S0–S3 **Done** (2026-06-12) · **S4 in progress** (TOOL-ENG-29,9).
+
+### S4 implementation spec (2026-06-12)
+
+**Scope:** TOOL-ENG-29 + TOOL-ENG-9 — parallel read-only batch invoke + canonical aggregate.
+
+| Deliverable | Contract |
+|-------------|----------|
+| `ToolInvocationAggregate` | `from_traces(traces) -> combined_context: str`, `success_count`, `failure_count`; stable merge order = planner call order |
+| `execute_planned_tool_calls` | New `max_parallel_read_only: int` (default `1` = serial); partition by `ToolContract.side_effects` |
+| `ParallelBatchPattern` | `pattern_id=parallel_batch`; planner single-pass → parallel read-only invoke → aggregate on `ToolInvocationResult` |
+| `RuntimeConfig.max_parallel_tool_calls` | Default **8**; bridged from `ApplicationEnvironmentProfile` |
+| `pattern_for_mode(PARALLEL_BATCH)` | Returns `ParallelBatchPattern` (no longer `NotImplementedError`) |
+
+**Acceptance:** `test_tool_invocation_aggregate.py` · `test_parallel_batch_pattern.py` (3 read-only tools wall time < serial sum; mutating stays serial).
+
+**ADR:** no ADR needed — extends ADR-TOOL-003 plugin model; no new Tier boundary.
 
 ---
 

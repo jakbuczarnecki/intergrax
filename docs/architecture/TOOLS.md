@@ -510,7 +510,7 @@ flowchart TD
 | Catalog + schema export | **Done** |
 | `ToolSelectionMode.full_catalog` / `static` | **Done** |
 | Multi-call in one planner response | **Done** |
-| Shipped as named pattern class | **Planned** — `SinglePassPattern` (TOOL-ENG-17) |
+| Shipped as named pattern class | **Done** — `SinglePassPattern` (TOOL-ENG-17) |
 
 ### Pattern 2 — Parallel batch (fan-out gather)
 
@@ -522,8 +522,8 @@ flowchart TD
 |----------------|--------|---------|
 | Keyword pre-filter (`retrieval_top_k`) | **Done** — not semantic | TOOL-ENG-5 |
 | Semantic vector index for tools | **Planned** | TOOL-ENG-13 |
-| Concurrent read-only invoke | **Planned** | TOOL-ENG-9 |
-| Result aggregation contract | **Planned** | TOOL-ENG-29 |
+| Concurrent read-only invoke | **In progress** (S4) | TOOL-ENG-9 |
+| Result aggregation contract | **In progress** (S4) | TOOL-ENG-29 |
 | Composite parallel-semantic batch pattern | **Planned** | TOOL-ENG-25 |
 
 **Target flow (TOOL-ENG-25):**
@@ -544,7 +544,7 @@ query → SemanticToolIndexSelectionStrategy (or keyword) → top-k tool_ids
 |-----------|--------|
 | Native `role=tool` messages | **Done** |
 | Budget sync (`react_iterations_used`) | **Done** — ACP-CLOSE-PAT-1 |
-| Refactor to `BoundedReactPattern` | **Planned** | TOOL-ENG-18 |
+| Refactor to `BoundedReactPattern` | **Done** | TOOL-ENG-18 |
 | GraphExecutor scheduling tool iterations | **Rejected** — ADR-TOOL-002 |
 
 ### Pattern 4 — Deterministic chain (tool pipeline)
