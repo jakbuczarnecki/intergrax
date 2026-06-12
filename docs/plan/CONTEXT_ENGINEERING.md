@@ -19,8 +19,10 @@
 | **CE-DOC** | Domain split + architecture + plan + FAUDIT refresh | **Done** (CE-DOC.7 closes 2026-06-12 audit) |
 | **CE-EXT** | Plugin engine + hot-path compiler + step-aware + codebase preset | **Done** (S0–S12, 2026-06-12) |
 | **CE-DOC.8** | Architecture ↔ implementation sync post CE-EXT | **Done** (2026-06-12) |
+| **CE-ALIGN** | Post-audit implementation alignment (GAP-CTX-15..19) | **In progress** — see [CE-ALIGN sprints](#sprints-ce-align) |
+| **CE-DOC.9** | FAUDIT 2026-06-12 deep audit — GAP-CTX-15..19 + CE-ALIGN sprint register | **Done** (2026-06-12) |
 
-**As-built maturity:** L3+ engine / L3 control plane — see architecture §3.
+**As-built maturity:** L3 control plane · L2.5–L3 engine spine (hybrid paths) — target L3+ unified pipeline after CE-ALIGN; see architecture §3.
 
 **Delivery rule:** One **CE-\*** ID per PR → update master table + gap register → `pytest -m gate` + domain CI scripts green.
 
@@ -44,6 +46,11 @@
 | GAP-CTX-12 | AHI | — | **Deferred** |
 | GAP-CTX-13 | CE-3.9, CE-3.10 | 2 | **Closed** |
 | GAP-CTX-14 | CE-3.11 | 2 | **Closed** |
+| GAP-CTX-15 | CE-FMT-1 | CE-ALIGN | **Open** — provider fragments not merged into `ChatMessage[]` |
+| GAP-CTX-16 | CE-8.2b | CE-ALIGN | **Open** — `ContextOrchestrator` resolve only; not on Nexus hot path |
+| GAP-CTX-17 | CE-ENG-REF | CE-ALIGN | **Open** — `engine_ref=custom` raises at resolve time |
+| GAP-CTX-18 | CE-PRESET-ENG | CE-ALIGN | **Open** — `regulated_minimal` / `explore_child` lack dedicated engine behavior |
+| GAP-CTX-19 | CE-REGISTRY-FMT | CE-ALIGN | **Open** — `ContextFormatter` / `ContextBudgetAllocator` registry unused in engine |
 
 ---
 
@@ -61,6 +68,31 @@
 | CE-DOC.6 | `generate_domain_audit_prompts.py` MEMORY/CE split | **Done** |
 | CE-DOC.7 | FAUDIT layer 16 refresh — post-ACP as-built paths, GAP-CTX-13/14, module inventory, sprint register | **Done** (2026-06-12) |
 | CE-DOC.8 | Architecture canon sync with CE-EXT S0–S12 implementation (§2–§3, §8.3, §16–§17) | **Done** (2026-06-12) |
+| CE-DOC.9 | Deep audit register GAP-CTX-15..19 + CE-ALIGN sprint plan | **Done** (2026-06-12) |
+
+---
+
+## Phase CE-ALIGN — Architecture ↔ implementation alignment
+
+**Status:** **In progress** (2026-06-12)  
+**Goal:** Close GAP-CTX-15..19 discovered in post-CE-EXT FAUDIT — unified `collect → format → budget` spine on production paths.  
+**Prerequisites:** CE-EXT Done · CE-DOC.9 Done  
+**Success gate:** `DefaultNexusContextEngine` merges provider fragments into LLM window; codebase orchestrator on graph path; custom `engine_ref` resolves; preset engines behave per §8.5; final FAUDIT layer 16 green.
+
+| ID | Deliverable | Priority | Status |
+|----|-------------|----------|--------|
+| **CE-FMT-1** | `DefaultContextFormatter` — ranked `ContextFragment[]` → `ChatMessage[]` merge before `ContextCompiler` | P0 | Planned |
+| **CE-FMT-2** | `fragments_excluded` populated from ranker quality gate + budget exclude reasons | P1 | Planned |
+| **CE-8.2b** | Wire `ContextOrchestrator.assemble_with_hops` on graph `codebase` preset | P1 | Planned |
+| **CE-ENG-REF** | Resolve `ContextProfile.engine_ref` custom class via dotted import | P1 | Planned |
+| **CE-PRESET-ENG** | `RegulatedMinimalContextEngine` + `ExploreChildContextEngine` ranker/threshold behavior | P2 | Planned |
+| **CE-REGISTRY-FMT** | Engine uses registry `formatter` / `allocator` when plugin sets them | P2 | Planned |
+| **CE-PROV-CTX** | Graph `provider_ctx` handles: `workspace_files`, session vector flags from task/env | P1 | Planned |
+| **CE-7.5b** | Integration test: 1k-file workspace → assemble under token budget with fragment in window | P1 | Planned |
+| **CE-UAEP-ASM** | UAEP session turn optional `ContextEngine.assemble()` when engine wired | P2 | Planned |
+| **CE-HOOKS-GRAPH** | `BEFORE_CONTEXT_BUILD` / `AFTER_CONTEXT_BUILD` on graph engine assemble | P2 | Planned |
+
+**Deferred (unchanged):** CE-9.5, CE-9.6, CE-10.3–10.5, CE-12.1–12.3 · GAP-CTX-08 · GAP-CTX-12.
 
 ---
 
@@ -353,8 +385,8 @@ Operator-facing sprint plan. One sprint = one coherent PR batch (1–5 CE IDs). 
 | **S4** | Path unification + events | CE-3.3, CE-3.4, CE-3.7, CE-3.11, CE-3.8 | Graph + ACP share `assemble()`; unified `CONTEXT_ASSEMBLED`; integration test green | **Done** (2026-06-12) |
 | **S5** | Step-aware assembly | CE-4.1–CE-4.6, CE-4.7, CE-5.1 | `step_kind` in payload v2; policy audit in `assemble()`; optional contract `context_hints` | **Done** (2026-06-12) |
 | **S6** | Episodic vector recall | CE-VEC-1 | `SESSION_HISTORY_SEMANTIC` fragments when `MemoryProfile.enable_session_vector_index` | **Done** (2026-06-12) |
-| **S7** | Codebase preset | CE-7.1–CE-7.5 | Lab host `engine_preset=codebase`; 1k-file workspace under budget | **Done** (2026-06-12) |
-| **S8** | Multi-hop orchestrator | CE-8.1–CE-8.3, CE-11.4 | `ContextOrchestrator` on codebase preset only; `explore_child` delegation preset | **Done** (2026-06-12) |
+| **S7** | Codebase preset | CE-7.1–CE-7.5 | Provider + index modules; **e2e assemble under budget = CE-7.5b (CE-ALIGN)** | **Partial** (2026-06-12) |
+| **S8** | Multi-hop orchestrator | CE-8.1–CE-8.3, CE-11.4 | `ContextOrchestrator` class + resolve helper; **hot-path wiring = CE-8.2b (CE-ALIGN)** | **Partial** (2026-06-12) |
 | **S9** | Observability spine | CE-9.1–CE-9.6 | `CONTEXT_CANDIDATE_*` events; OTel spans in OBS gates; assembly SLO panel doc link | **Done** (2026-06-12; CE-9.5/9.6 deferred) |
 | **S10** | Quality in hot path | CE-10.1–CE-10.5 | `DefaultContextRanker` + dedup; regression baselines per preset; no string-heuristic `classify_candidates` | **Done** (2026-06-12; CE-10.3–10.5 deferred) |
 | **S11** | Tier-3 presets + DX | CE-11.1–CE-11.4, CE-12.1–CE-12.6, CE-3.5–CE-3.6 | Reference hosts wired; extension guide §Context; `check_context_engine_wiring.py`; FAUDIT L3+ evidence | **Done** (2026-06-12; CE-12.1–12.3 deferred) |
@@ -363,6 +395,22 @@ Operator-facing sprint plan. One sprint = one coherent PR batch (1–5 CE IDs). 
 **Critical path:** S1 → S2 → **S3** (hot-path compiler) → S4 → S5. S6 parallel after MEM-VEC. S7–S8 optional product slice.
 
 **Minimum viable CE (MVP):** S0–S4 closes GAP-CTX-01, 02, 03, 13, 14 — L3 engine on default preset.
+
+---
+
+## Sprints (CE-ALIGN delivery)
+
+Post-audit alignment sprints. One sprint = one commit.
+
+| Sprint | Goal | CE IDs | Exit criteria |
+|--------|------|--------|---------------|
+| **A0** | Audit documentation | CE-DOC.9 | GAP-CTX-15..19 in architecture §16 + this register | **Done** |
+| **A1** | Fragment format merge | CE-FMT-1, CE-FMT-2 | Ranked fragments injected into messages before compile; excluded tuple populated |
+| **A2** | Orchestrator hot path | CE-8.2b, CE-PROV-CTX | Codebase graph assemble uses orchestrator; workspace handles on provider_ctx |
+| **A3** | Custom engine + presets | CE-ENG-REF, CE-PRESET-ENG | `engine_ref` resolves; regulated_minimal / explore_child engines |
+| **A4** | Registry + e2e test | CE-REGISTRY-FMT, CE-7.5b | Registry formatter used; 1k workspace assemble gate test |
+| **A5** | UAEP + graph hooks | CE-UAEP-ASM, CE-HOOKS-GRAPH | Optional UAEP assemble; hooks on graph engine path |
+| **A6** | Closeout audit | CE-DOC.10 | Re-audit; GAP-CTX-15..19 Closed or deferred; journal |
 
 ---
 

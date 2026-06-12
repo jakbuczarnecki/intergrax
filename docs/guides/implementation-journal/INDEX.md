@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-12-014 | 2026-06-12 | tier-0 CONTEXT_ENGINEERING | CE-DOC.9 | [CE-DOC.9 — Post-CE-EXT FAUDIT register and CE-ALIGN sprint plan](entries/2026-06-12/platform-ce-doc9-align-audit-register.md) | pending |
 | IJ-2026-06-12-013 | 2026-06-12 | tier-1 CONTEXT_ENGINEERING | CE-9.1 · GAP-CTX-10 | [CE-9.1 — CONTEXT_CANDIDATE_* bus emission on engine assemble](entries/2026-06-12/platform-ce-9-1-candidate-bus-emission.md) | pending |
 | IJ-2026-06-12-012 | 2026-06-12 | tier-0 CONTEXT_ENGINEERING | CE-DOC.8 | [CE-DOC.8 — Architecture canon sync post CE-EXT S0–S12](entries/2026-06-12/platform-ce-doc8-architecture-sync.md) | pending |
 | IJ-2026-06-12-011 | 2026-06-12 | tier-0, tier-1, tier-3 CONTEXT_ENGINEERING | CE-VEC-1 · CE-7.1 · CE-8.3 · CE-9.2 · CE-10.1 · CE-11.1 · CE-12.4 · CE-12.6 | [CE Sprints 6–12 — providers, observability, DX closeout](entries/2026-06-12/platform-ce-sprint6-12-closeout.md) | pending |

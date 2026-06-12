@@ -50,11 +50,11 @@ ContextEngine · ContextSourceProvider · ContextFragment · ContextAssemblyRequ
 
 ## Active plan phases (verify status vs code reality)
 
-CTX Done · CE-DOC Done · CE-EXT **Done** (S0–S12; CE-9.5/9.6, CE-10.3–10.5, CE-12.1–12.3 deferred)
+CTX Done · CE-DOC Done · CE-EXT **Done** (S0–S12) · **CE-ALIGN in progress** (GAP-CTX-15..19)
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-GAP-CTX-01/02/03/04/05/06/07/09/10/11/13/14 **Closed** · GAP-CTX-08 **Open** (CE-10.3) · GAP-CTX-12 **Deferred** (AHI) — canon: architecture §16
+GAP-CTX-01–14 (excl. 08/12) **Closed** · GAP-CTX-08 **Open** · GAP-CTX-15..19 **Open** (CE-ALIGN) · GAP-CTX-12 **Deferred** (AHI) — architecture §16
 
 ---
 
