@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-11-041 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-3 | [Sprint 16 APP-EVOL-3 capability alias routing](entries/2026-06-11/tier3-sprint16-app-evol-3-capability-alias.md) | pending |
 | IJ-2026-06-11-040 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-2 · APP-EVOL-2b | [Sprint 15 APP-EVOL-2 application migrations](entries/2026-06-11/tier3-sprint15-app-evol-2-migrations.md) | pending |
 | IJ-2026-06-11-039 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-CON-7 | [Sprint 14 APP-CON-7 scenario matrix gate](entries/2026-06-11/tier3-sprint14-app-con-7-scenario-matrix.md) | pending |
 | IJ-2026-06-12-005 | 2026-06-12 | tier-0 docs/adr | P-Ext.5.1 | [Harness ADR date-partitioned entries layout](entries/2026-06-12/dx-harness-adr-date-entries.md) | pending |

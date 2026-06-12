@@ -17,6 +17,7 @@ from intergrax.runtime.task.task_metadata_keys import TaskMetadataKey
 
 APP_ENV_STATE_RUNTIME_KEY = TaskMetadataKey.APP_ENV_STATE
 ENV_SNAPSHOT_RUNTIME_KEY = TaskMetadataKey.ENVIRONMENT_SNAPSHOT
+CAPABILITY_ALIAS_REDIRECT_KEY = TaskMetadataKey.CAPABILITY_ALIAS_REDIRECT
 
 
 class NexusLifecycleHookError(RuntimeError):
@@ -69,6 +70,7 @@ class NexusLifecycleHookCoordinator:
         _merge_task_env_state(task, ctx)
         _merge_task_snapshot(task, ctx)
         result = await self._pipeline.run_before(point, ctx)
+        _persist_intake_capability(task, ctx, point=point)
         _persist_task_snapshot(task, ctx)
         _persist_task_env_state(task, ctx)
         _guard(result, point)
@@ -116,6 +118,20 @@ def _persist_task_env_state(task: Task, ctx: HookContext) -> None:
     updated = ctx.runtime_state.get(APP_ENV_STATE_RUNTIME_KEY)
     if isinstance(updated, dict):
         task.metadata[APP_ENV_STATE_RUNTIME_KEY] = updated
+        task.sync_metadata()
+
+
+def _persist_intake_capability(task: Task, ctx: HookContext, *, point: HookPoint) -> None:
+    if point != HookPoint.BEFORE_TASK_INTAKE:
+        return
+    updated_capability = ctx.runtime_state.get("capability")
+    if isinstance(updated_capability, str):
+        resolved = updated_capability.strip()
+        if resolved and resolved != (task.context.capability or ""):
+            task.context = task.context.model_copy(update={"capability": resolved})
+    redirect = ctx.runtime_state.get(CAPABILITY_ALIAS_REDIRECT_KEY)
+    if isinstance(redirect, dict):
+        task.metadata[CAPABILITY_ALIAS_REDIRECT_KEY] = redirect
         task.sync_metadata()
 
 

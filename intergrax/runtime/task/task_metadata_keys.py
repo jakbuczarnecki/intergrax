@@ -44,6 +44,7 @@ class TaskMetadataKey(StrEnum):
 
     APP_ENV_STATE = "app_env_state.v1"
     ENVIRONMENT_SNAPSHOT = "environment_snapshot.v1"
+    CAPABILITY_ALIAS_REDIRECT = "capability_alias_redirect.v1"
 
 
 class TaskOrchestrationMetadataKey(StrEnum):

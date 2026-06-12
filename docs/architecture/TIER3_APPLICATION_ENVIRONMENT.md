@@ -1946,7 +1946,7 @@ CapabilityDeprecation:
 
 **Example:** `research.pipeline` superseded by `research.orchestrate` — Tier-3 manifest updates bindings; harness registry serves alias during migration window.
 
-**Status:** UAEP `CapabilityDescriptor` **documented**; runtime alias registry **Planned** APP-EVOL-3; retired-agent routing filter **Done** (V-REM-ALG.1).
+**Status:** `CapabilityDescriptor` + `CapabilityAlias` **Done** (`capability_alias.py` · `capability_alias_wiring.py` · intake middleware APP-EVOL-3); retired-agent routing filter **Done** (V-REM-ALG.1).
 
 ---
 
@@ -2150,7 +2150,7 @@ graph_spec nodes            → roster capabilities satisfied
 |----|-------------|--------|------------|
 | APP-EVOL-1 | `EnvironmentSnapshot` + snapshot capture on intake | **Done** | `test_environment_snapshot_wiring.py` · ADR-APP-002 |
 | APP-EVOL-2 | `ApplicationMigration` schema + validator CLI | **Done** | `check_application_migrations.py` |
-| APP-EVOL-3 | `CapabilityAlias` registry + sunset routing | Planned | deprecated capability redirect test |
+| APP-EVOL-3 | `CapabilityAlias` registry + sunset routing | **Done** | `check_capability_alias_registry.py` |
 | APP-EVOL-4 | `AgentCertification` + STRICT roster gate | Planned | non-PRODUCTION blocked in product hosts |
 | APP-EVOL-5 | `ApplicationRecoveryContract` on `ReliabilityProfile` | Planned | documented + integration test |
 | APP-EVOL-6 | `ApplicationEnvironmentDiff` + `doctor diff-app` | Planned | pre-deploy CI diff |

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""Tier-3 application production gate checks (APP-PROD-1..8 · APP-OPS-1..2 · APP-CON-7 · APP-EVOL-2)."""
+"""Tier-3 application production gate checks (APP-PROD-1..8 · APP-OPS-1..2 · APP-CON-7 · APP-EVOL-2/3)."""
 
 from __future__ import annotations
 
@@ -116,6 +116,63 @@ def check_capability_graph_strict_deploy() -> list[str]:
     return violations
 
 
+def check_capability_alias_registry() -> list[str]:
+    import importlib
+    import inspect
+
+    from intergrax.applications._shared.capability_alias_wiring import (
+        check_environment_capability_aliases,
+    )
+    from intergrax.applications.contracts.manifest import ApplicationManifest
+
+    violations: list[str] = []
+    for package_dir in sorted(APPLICATIONS_ROOT.glob("*_application")):
+        try:
+            module = importlib.import_module(f"{package_dir.name}.manifest")
+        except ImportError:
+            continue
+        manifest: ApplicationManifest | None = None
+        for value in module.__dict__.values():
+            if isinstance(value, ApplicationManifest):
+                manifest = value
+                break
+        if manifest is None:
+            for name in dir(module):
+                if not (name.startswith("build_") and "manifest" in name.lower()):
+                    continue
+                builder = getattr(module, name, None)
+                if not callable(builder) or inspect.isclass(builder):
+                    continue
+                try:
+                    signature = inspect.signature(builder)
+                except (TypeError, ValueError):
+                    continue
+                required = [
+                    param
+                    for param in signature.parameters.values()
+                    if param.default is inspect.Parameter.empty
+                    and param.kind
+                    in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+                ]
+                if required:
+                    continue
+                candidate = builder()
+                if isinstance(candidate, ApplicationManifest):
+                    manifest = candidate
+                    break
+        if manifest is None:
+            continue
+        env = manifest.resolved_environment()
+        violations.extend(
+            check_environment_capability_aliases(
+                package_dir.name,
+                manifest,
+                env.capability_governance_profile,
+            ),
+        )
+    return violations
+
+
 def check_application_migrations() -> list[str]:
     from intergrax.applications._shared.migration_wiring import check_application_migrations as _check
 
@@ -153,6 +210,7 @@ def main() -> int:
         ("application_ownership", check_application_ownership),
         ("tier3_scenario_matrix", check_tier3_scenario_matrix),
         ("application_migrations", check_application_migrations),
+        ("capability_alias_registry", check_capability_alias_registry),
     )
     violations: list[str] = []
     for _name, fn in checks:

@@ -265,12 +265,25 @@ def _load_manifest_for_package(package: str) -> ApplicationManifest | None:
         if isinstance(value, ApplicationManifest):
             return value
 
-    for value in module.__dict__.values():
-        if not callable(value) or inspect.isclass(value):
+    for name in dir(module):
+        if not (name.startswith("build_") and "manifest" in name.lower()):
             continue
-        if not value.__name__.startswith("build_"):
+        builder = getattr(module, name, None)
+        if not callable(builder) or inspect.isclass(builder):
             continue
-        manifest = value()
+        try:
+            signature = inspect.signature(builder)
+        except (TypeError, ValueError):
+            continue
+        required = [
+            param
+            for param in signature.parameters.values()
+            if param.default is inspect.Parameter.empty
+            and param.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+        ]
+        if required:
+            continue
+        manifest = builder()
         if isinstance(manifest, ApplicationManifest):
             return manifest
     return None
