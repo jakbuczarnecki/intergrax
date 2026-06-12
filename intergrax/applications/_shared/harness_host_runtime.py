@@ -31,6 +31,7 @@ from intergrax.applications._shared.acp_checkpoint_host_wiring import (
 from intergrax.applications._shared.application_host_wiring import (
     apply_application_environment_state_wiring,
     apply_application_host_wiring,
+    apply_hook_runtime_guard_wiring,
 )
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_from_tool_wiring,
@@ -224,6 +225,7 @@ def build_harness_host_runtime(
         run_budget=cost_wiring.run_budget,
     )
     apply_application_host_wiring(nexus_loop, application_host)
+    apply_hook_runtime_guard_wiring(nexus_loop, environment)
     from intergrax.applications._shared.reliability_wiring import apply_reliability_governance_wiring
 
     apply_reliability_governance_wiring(nexus_loop, environment)

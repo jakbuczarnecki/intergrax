@@ -1000,11 +1000,11 @@ Tier-3 exposes **one** `ApplicationHost` per process. Multiple concerns (org pol
 | Topic | Normative target | Status |
 |-------|------------------|--------|
 | **Sync vs async** | `on_hook` is **sync** today; MAY return coroutine in APP-CON-3 — until then no `await` in host | **Done** sync |
-| **Timeout** | Host hook max wall time (e.g. 250ms prod) — exceed → `INTERNAL_ERROR` + trace | **Planned** APP-CON-3 |
+| **Timeout** | Host hook max wall time (e.g. 250ms prod) — exceed → `hook_timeout` + trace | **Done** APP-CON-5 |
 | **Retry** | Hooks are **not** retried — side effects must be idempotent | **Normative** |
 | **Idempotency** | Same `HookPoint` + same `task_id` + same phase: host MUST tolerate duplicate calls | **Author responsibility** |
-| **Error handling** | Uncaught exception → BLOCK with `hook_error`; task fails closed in STRICT | **Planned** APP-CON-3 |
-| **Audit events** | Every non-ALLOW emits `RuntimeEvent` with `hook_name`, `point`, `action`, `reason` | **Partial** trace middleware |
+| **Error handling** | Uncaught exception → BLOCK with `hook_error`; task fails closed in STRICT | **Done** APP-CON-5 |
+| **Audit events** | Every non-ALLOW emits `RuntimeEvent` with `hook_name`, `point`, `action`, `reason` | **Done** APP-CON-5 |
 
 ### 32.6.6 Determinism rule
 
@@ -1630,7 +1630,7 @@ A Tier-3 host MAY be labeled **production-ready** only when **all** mandatory ro
 | Dimension | Target | Current (2026-06-11) |
 |-----------|--------|----------------------|
 | Architecture completeness | 10/10 | **10/10** — APP-CON §24–§48 + evolution §49 |
-| Hook runtime wiring | 10/10 | **9/10** — APP-CON-1 Done; §32.6 normative; intake auto-seed optional |
+| Hook runtime wiring | 10/10 | **10/10** — APP-CON-1 · APP-CON-5 Done |
 | Budget / prod gates | 10/10 | **7/10** — APP-PROD-1 Done; ACP-TOK-2/3, APP-PROD-6..8 open |
 | Evolution / governance | 10/10 | **9/10** — §49 + typed migrations §49.2.4 |
 | Platform operations | 10/10 | **8.5/10** — §50 normative; graph **Partial**; APP-OPS Planned |

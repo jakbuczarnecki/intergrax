@@ -62,3 +62,17 @@ def apply_application_host_wiring(
     from intergrax.harness.hooks import ApplicationHostMiddleware
 
     _attach_middleware(nexus, ApplicationHostMiddleware(host))
+
+
+def apply_hook_runtime_guard_wiring(
+    nexus: NexusLoop,
+    environment: ApplicationEnvironmentProfile,
+) -> None:
+    """Configure middleware hook timeout and audit bus (APP-CON-5 · §32.6.5)."""
+    pipeline = nexus._middleware  # noqa: SLF001 — Tier-3 composition hook
+    if not isinstance(pipeline, MiddlewarePipeline):
+        return
+    pipeline.configure_hook_runtime(
+        hook_timeout_seconds=environment.reliability_profile.middleware_hook_timeout_seconds,
+        event_bus=nexus.event_bus,
+    )

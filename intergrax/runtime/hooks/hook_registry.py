@@ -74,7 +74,7 @@ class HookRegistry:
                 result = await raw if hasattr(raw, "__await__") else raw
             except Exception:
                 logger.exception("Hook %s failed at %s", reg.name, point.value)
-                return HookResult(action=HookAction.BLOCK, reason=f"hook_failed:{reg.name}")
+                return HookResult(action=HookAction.BLOCK, reason=f"hook_error:{reg.name}")
             if result.action == HookAction.BLOCK:
                 return result
             if result.action == HookAction.ESCALATE:

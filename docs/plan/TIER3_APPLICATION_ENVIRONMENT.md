@@ -31,7 +31,7 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 | §28 | APP invariants (no app cognition loop) | H-APP-CON-DOC.* | **Done** | *doc-only* · rejected `on_next_orchestration_step` |
 | §29–§31 | Terminology · control modes · facade | H-APP.0.* · APP-CON-DX.1 | **Partial** | DX appendix open |
 | §32 | `ApplicationHost` hook surface | APP-CON-1 | **Done** | `application_host.py` · `hooks.py` |
-| §32.6 | Hook ordering · conflicts · determinism | APP-CON-5 | Planned | §32.6 normative · timeout/error open |
+| §32.6 | Hook ordering · conflicts · determinism | APP-CON-5 | **Done** | `hook_runtime_guard.py` · `middleware_hook_timeout_seconds` |
 | §33 | Dual observability planes | ACP-OBS-* · H-APP.4.8 | **Done** | `test_application_run_summary_builder.py` |
 | §34 | Per-agent `AgentBinding` / budget slice | H-APP.* · ACP §30 | **Done** | `merge_environment` · ACP plan Wave 2 |
 | §35 | Use-case catalog UC-A* | APP-CON-7 | Planned | §44 matrix tests |
@@ -66,7 +66,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 | APP-CON-2 | §42 | `ApplicationEnvironmentState` v2 | **Done** | `test_environment_state_and_artifacts.py` |
 | APP-CON-3 | §42 · §43 | Nexus lifecycle updates `app_env_state.v1` (phase, budget, HITL) | **Done** | `test_application_environment_state_lifecycle.py` |
 | APP-CON-4 | §48 | Artifact ref models | **Done** | `application_artifacts.py` |
-| APP-CON-5 | §32.6 | Hook timeout · error→BLOCK · audit events | Planned | middleware enforces wall time; trace on `hook_error` |
+| APP-CON-5 | §32.6 | Hook timeout · error→BLOCK · audit events | **Done** | `test_hook_runtime_guard.py` · product 250ms timeout |
 | APP-CON-6 | §26 · §48 | `RunArtifactBundle` on `ApplicationRunSummary.metadata` | Planned | `run_artifact_bundle.v1` key in finisher test |
 | APP-CON-7 | §35 · §44 | Scenario matrix gate — UC-A* minimum per posture | Planned | `test_tier3_scenario_matrix.py` or tagged `-m tier3_scenario` |
 | APP-CON-8 | §20–§21 | Shadow/sandbox refs in env state + lifespan cleanup | Planned | `APP-PROD-8` integration |

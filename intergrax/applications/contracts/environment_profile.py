@@ -152,6 +152,7 @@ class ReliabilityProfile(BaseModel):
     tenant_autonomy_ceiling: AutonomyLevel | None = None
     compensation_enabled: bool = False
     partial_results_enabled: bool = False
+    middleware_hook_timeout_seconds: float = Field(default=2.0, ge=0.01, le=60.0)
 
 
 class ObservabilityProfile(BaseModel):
@@ -714,6 +715,7 @@ class ApplicationEnvironmentProfile(BaseModel):
                 long_running_scheduler_enabled=True,
                 compensation_enabled=True,
                 partial_results_enabled=True,
+                middleware_hook_timeout_seconds=0.25,
             ),
             observability_profile=ObservabilityProfile(
                 trace_sqlite_enabled=True,

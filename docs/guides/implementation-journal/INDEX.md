@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-11-033 | 2026-06-11 | tier-1, tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-CON-5 | [Sprint 8 APP-CON-5 hook runtime guard](entries/2026-06-11/tier3-sprint8-app-con-5-hook-runtime.md) | pending |
 | IJ-2026-06-11-032 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-PROD-7 | [Sprint 7 APP-PROD-7 budget enforcement gate](entries/2026-06-11/tier3-sprint7-app-prod-7-budget-gate.md) | pending |
 | IJ-2026-06-11-031 | 2026-06-11 | tier-0, tier-2 AGENT_CONTRACTS_AND_ASSEMBLY | ACP-TOK-CI | [Sprint 6 ACP-TOK-CI budget contract CI gate](entries/2026-06-11/acp-sprint6-tok-ci-budget-gate.md) | pending |
 | IJ-2026-06-11-030 | 2026-06-11 | tier-0, tier-2 AGENT_CONTRACTS_AND_ASSEMBLY | ACP-TOK-3 | [Sprint 5 ACP-TOK-3 budget reaction policies](entries/2026-06-11/acp-sprint5-tok-3-budget-reactions.md) | pending |
