@@ -18,8 +18,8 @@
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
 | AUDIT-IDEAL-24.3 | §24 Cost | CPU/memory/concurrency quotas with tenant fairness (shared UAEP) | P2 | **Done** |
-| AUDIT-IDEAL-30.1 | §30 Ops | Sync `architecture/ELASTIC_CAPACITY_AND_SCALING.md` §22 after ECP-DEPTH | **P0** | Planned |
-| AUDIT-IDEAL-30.4 | §30 Ops | Celery/K8s production-scale adapters (beyond stub/beta) | P2 | **Done** |
+| AUDIT-IDEAL-30.1 | §30 Ops | Honest §22 maturity — ECP is architecture, not production autoscaling | **P0** | **Done** (2026-06-12) |
+| AUDIT-IDEAL-30.4 | §30 Ops | Celery/K8s production-scale adapters (beyond stub/beta) | P2 | **Partial** — in-memory gate probe only; ECP-PROD.3–4 |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 
@@ -60,12 +60,14 @@
 
 ---
 
-## Phase ECP-DEPTH — Elastic capacity runtime (Band 2ao — closed)
+## Phase ECP-DEPTH — Elastic capacity runtime scaffold (Band 2ao — closed)
 
-**Status:** **Done** (2026-06-09) — **28/28 Done** (ECP-6.2 **Cancelled**) · register: [ECP-DEPTH — Master deliverables register](#ecp-depth--master-deliverables-register-all-28-tasks)  
+**Status:** **Done** (2026-06-09) — **28/28 scaffold Done** (ECP-6.2 **Cancelled**)  
+**Honest outcome:** Contracts, `runtime/capacity/`, gate tests, disabled-by-default host wiring — **not** production fleet autoscaling.  
 **Prerequisites:** Phase ECP-DOC **Done**  
-**Goal:** Raise ECP from **L1 → L3+** — closed-loop Observe → Evaluate → Govern → Provision  
-**Priority ladder:** **Band 2ao** (§4.0) — **closed**; default queue = §6.1 maintenance  
+**Goal (achieved):** Harness **L2** — typed control plane scaffold + CI evidence  
+**Production elasticity:** Phase **ECP-PROD** (below)  
+**Priority ladder:** **Band 2ao** — **closed** on scaffold; active queue = **ECP-PROD**  
 **Traceability:** [Appendix A](#appendix-a--elastic-capacity-traceability-phase-ecp-depth)
 
 **Delivery rule:** One **ECP-* ID per PR** → update master table + architecture §22 → `pytest -m gate` green.
@@ -88,7 +90,9 @@
 | AHI ↔ ECP bridge | L0 | L2 optional | ECP-8.* |
 | Capacity observability | L1 | L3 | ECP-OBS.* |
 
-**Success gate:** P0 + P1 **Done**; integration tests with mock K8s; `GRAPH_BACKPRESSURE` → scale action in lab profile; FAUDIT §30 extension **L3+**.
+**Success gate (scaffold — met):** P0 + P1 contract tasks **Done**; unit/gate tests with mock K8s; `ScalingProfile` on environment profile.
+
+**Not met (deferred to ECP-PROD):** live `GRAPH_BACKPRESSURE` → scale on hosts; production K8s/Celery adapters; FAUDIT §30 **production elasticity L3+**.
 
 ```text
 Wave ECP0 — Package scaffold (4 tasks)
@@ -257,13 +261,13 @@ Total ECP-DEPTH: 28 (excluding ECP-DOC)
 
 ## Appendix B — FAUDIT-32 §30 extension scorecard
 
-| Audit question | Pre-ECP | Post ECP-DOC | Post ECP-DEPTH target |
-|----------------|---------|--------------|----------------------|
-| SLOs defined? | Yes (W-OPS) | Yes | Maintain |
-| SLIs → capacity action? | No | Documented §10 | ECP-2.* Done |
-| Closed-loop scale? | No | Canon §5 | ECP-3.*–4.* Done |
-| Runbooks for scale failure? | Partial | §19 taxonomy | ECP-7 + runbook |
-| **Ops excellence (capacity)** | **L1** | **L1** (plan accurate) | **L3** (ECP-DEPTH **Done**) |
+| Audit question | Pre-ECP | Post ECP-DOC | Post ECP-DEPTH scaffold | Post ECP-PROD target |
+|----------------|---------|--------------|-------------------------|---------------------|
+| SLOs defined? | Yes (W-OPS) | Yes | Yes | Maintain |
+| SLIs → capacity action? | No | Documented §10 | Gate tests only | ECP-PROD.1 live |
+| Closed-loop scale? | No | Canon §5 | Mock/stub path | ECP-PROD.7 E2E |
+| Runbooks for scale failure? | Partial | §19 taxonomy | §19 taxonomy | ECP-7 + runbook |
+| **Ops excellence (capacity)** | **L1** | **L1** | **L2** (honest) | **L3+** |
 
 ---
 
@@ -281,7 +285,37 @@ Total ECP-DEPTH: 28 (excluding ECP-DOC)
 
 | Date | ECP ID | Summary |
 |------|--------|---------|
-| 2026-06-09 | ECP-0.*–ECP-OBS.* | Phase ECP-DEPTH **28/28 Done** (ECP-6.2 Cancelled) |
+| 2026-06-09 | ECP-0.*–ECP-OBS.* | Phase ECP-DEPTH **28/28 scaffold Done** (ECP-6.2 Cancelled) |
+| 2026-06-12 | AUDIT-IDEAL-30.1 | Honest maturity: ECP-DEPTH ≠ production autoscaling; §22 gap register |
+
+---
+
+## Phase ECP-PROD — Production elasticity (Band 2aú — active)
+
+**Status:** **Planned** (2026-06-12)  
+**Prerequisites:** ECP-DEPTH scaffold **Done**  
+**Goal:** Close architecture §22 gap register — **L2 → L3+** production closed-loop capacity  
+**Priority:** **P0** (ECP-PROD.1–3) · **P1** (ECP-PROD.4–7)
+
+| ID | Deliverable | Status | Priority | Module | Acceptance |
+|----|-------------|--------|----------|--------|------------|
+| ECP-PROD.1 | **Live signal bridge** — `GRAPH_BACKPRESSURE` bus → collector; optional `task_index` depth | Planned | **Critical** | `capacity/event_bridge.py`, `scaling_wiring.py` | Integration test |
+| ECP-PROD.2 | **Scheduler governance** — skip apply on `hitl_required` / `denied` | Planned | **Critical** | `capacity/scheduler.py` | Unit test flap + HITL |
+| ECP-PROD.3 | **K8s REST scale** — default factory scales Deployment via API | Planned | **Critical** | `integrations/.../kubernetes/`, `p5/clients.py` | Gate test + mock HTTP |
+| ECP-PROD.4 | **Celery worker scale** — provisioner calls adapter (not `pass`) | Planned | High | `capacity/provisioner.py`, celery integration | Gate test |
+| ECP-PROD.5 | **Ceiling raise** — bounded `max_inflight_nodes` patch | Planned | High | `capacity/provisioner.py`, profile hook | Unit test |
+| ECP-PROD.6 | **HITL approval path** — scale-up waits for operator | Planned | High | `capacity/governance.py` | Integration stub |
+| ECP-PROD.7 | **E2E gate** — backpressure → evaluate → K8s scale (mock) | Planned | High | `tests/integration/runtime/` | `-m gate` |
+| AUDIT-IDEAL-30.4 | **Re-close** with real adapter contracts (not InMemory-only) | Partial | P2 | `production_adapters.py` | `check_production_capacity_adapters.py` |
+
+### ECP-PROD — Sprint plan
+
+| Sprint | Scope | Done when |
+|--------|-------|-----------|
+| **S1** | ECP-PROD.1–2 — signal bridge + scheduler HITL | Tests green; architecture §22 rows updated |
+| **S2** | ECP-PROD.3 — K8s REST scale factory | Mock HTTP gate; no live cluster in CI |
+| **S3** | ECP-PROD.4–5 — Celery + ceiling provisioner | Provisioner no longer no-op for shipped kinds |
+| **S4** | ECP-PROD.6–7 + AUDIT-IDEAL-30.4 | E2E integration; production adapter gate honest |
 
 ---
 

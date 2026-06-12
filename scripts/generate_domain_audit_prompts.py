@@ -1171,7 +1171,7 @@ target: intergrax/runtime/capacity/ (ECP-DEPTH ECP-1..8)
 docs/adr/entries/2026-06-08/ADR-SCALE-001.md · ADR-SCALE-002.md""",
         "key_symbols": "ScalingProfile (target) · ScalingPolicy · ScalingAction · ScalingSignal · CapacitySignalCollector · ScalingProvisioner · SIG_QUEUE_DEPTH · GRAPH_BACKPRESSURE",
         "active_phases": "ECP-DOC · ECP-DEPTH (ECP-1..8, ECP-OBS) · ADR-SCALE-001/002 · cross-ref W-OPS.4 SLIs · ORCH GRAPH_BACKPRESSURE",
-        "known_gaps": "No unified CapacitySignalCollector yet · ScalingProfile missing on ApplicationEnvironmentProfile · K8s scale API not in canon · nginx slug missing · ECP evaluate/govern layers target only",
+        "known_gaps": "ECP-DEPTH scaffold not production autoscaling · Collector not wired to live GRAPH_BACKPRESSURE · K8s default factory health-only · Celery provisioner stub · Scheduler HITL bypass risk · AUDIT-IDEAL-30.4 in-memory probes · ECP-PROD backlog",
         "dimensions": [
             "ECP control loop async outside Nexus hot path.",
             "Provisioning via integrations/tools — not Nexus importing K8s SDK.",

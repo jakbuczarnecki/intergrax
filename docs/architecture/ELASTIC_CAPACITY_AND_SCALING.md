@@ -52,6 +52,25 @@ ECP completes the **Observe → Evaluate → Provision** loop for **compute and 
 
 **Core invariant:** Capacity mutations MUST flow through **typed `ScalingAction` contracts** and **Integration Library / ToolRuntime** — never ad-hoc SDK calls from `NexusLoop` or agents.
 
+### 1.1 Production positioning (honest)
+
+| Claim | Accurate today? |
+|-------|-----------------|
+| ECP is the **canonical architecture** for Harness elastic capacity | **Yes** |
+| ECP delivers **production autoscaling** comparable to K8s HPA + Celery autoscale | **No** |
+| Backpressure (`GRAPH_BACKPRESSURE`) **throttles** within fixed capacity | **Yes** — primary as-built behavior |
+| Closed-loop **Observe → Evaluate → Govern → Provision** runs in production | **Partial** — scaffold + gate tests; not live fleet control |
+
+**Phase split:**
+
+| Phase | Delivers | Maturity |
+|-------|----------|----------|
+| **ECP-DOC** | Domain pair, ADR-SCALE-001, tier boundaries | **Done** |
+| **ECP-DEPTH** | Contracts, `runtime/capacity/` scaffold, gate tests, disabled-by-default wiring | **Done** (harness **L2** — architecture + scaffold) |
+| **ECP-PROD** | Live signal bridge, real K8s/Celery adapters, closed-loop on product hosts | **Planned** (target **L3+** production elasticity) |
+
+Do **not** market ECP-DEPTH as a finished production autoscaling system. Operators should continue to rely on **K8s HPA**, **Celery autoscale**, and manual runbooks until **ECP-PROD** closes the gap register in §22.
+
 ---
 
 ## 2. Problem statement
@@ -66,10 +85,11 @@ Intergrax today scales **within** fixed capacity and scales **data planes** — 
 | W-OPS SLO catalog (Done) | SLIs measured; not wired to provisioning actions |
 | AHI `ExecutionStrategyEngine` | Proposes profile deltas; does not provision replicas |
 | No nginx / ingress integration slug | Load-balancer scaling outside catalog |
-| No `ScalingProfile` on `ApplicationEnvironmentProfile` | Capacity rules not declarative per host |
-| Documentation scattered across ORCH, OBS, MODALITY, INTEGRATIONS | Authors cannot find scaling canon |
+| `ScalingProfile` exists but **disabled by default**; collector not wired to live `GRAPH_BACKPRESSURE` stream | Rules declarative; loop not closed in production |
+| Documentation scattered across ORCH, OBS, MODALITY, INTEGRATIONS | **Resolved** by ECP-DOC domain pair |
+| Plan claimed **L3 Done** while §21 still listed components as Missing | **Resolved** (2026-06-12) — honest maturity in §22 |
 
-ECP closes the **architecture and contract** gap first (Phase ECP-DOC); runtime controller is Phase ECP-DEPTH.
+ECP-DOC closed the **canon** gap; ECP-DEPTH closed the **contract + scaffold** gap; **ECP-PROD** closes **production elasticity**.
 
 ---
 
@@ -136,12 +156,12 @@ ECP closes the **architecture and contract** gap first (Phase ECP-DOC); runtime 
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-| Layer | Phase | Status |
-|-------|-------|--------|
-| **A — Signals** | Partial | `GRAPH_BACKPRESSURE`, W-OPS SLIs, queue index — not unified collector |
-| **B — Evaluate** | Target | Phase ECP-2.* |
-| **C — Govern** | Target | Phase ECP-7.* |
-| **D — Provision** | Partial | K8s beta; Celery workers manual |
+| Layer | Phase | Status (as-built 2026-06-12) |
+|-------|-------|------------------------------|
+| **A — Signals** | ECP-DEPTH scaffold | `CapacitySignalCollector` in gate tests; **not** subscribed to live `GRAPH_BACKPRESSURE` / `task_index` on hosts |
+| **B — Evaluate** | ECP-DEPTH scaffold | `ScalingEvaluator` + rules — unit/gate only |
+| **C — Govern** | ECP-DEPTH scaffold | `CapacityActionGate`, HITL status — **scheduler may apply actions when `hitl_required`** (ECP-PROD.2) |
+| **D — Provision** | ECP-DEPTH scaffold | K8s path works with **injected mock client**; default factory is health-only; Celery action is **no-op stub** |
 
 ---
 
@@ -239,22 +259,20 @@ TIER3_APPLICATION_ENVIRONMENT →  deploy package, ScalingProfile host wiring
 
 [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md) `HarnessOutcomeSignal` may include step/retry/parallel efficiency — ECP MAY consume as **secondary** signal; AHI does not provision infrastructure by default.
 
-### 10.3 Signal contract (target)
+### 10.3 Signal contract
+
+**As-built** (`intergrax/runtime/capacity/contracts.py` — ECP-1.2):
 
 ```python
-# Target: intergrax/runtime/capacity/contracts.py (Phase ECP-1)
-
 class CapacitySignal(BaseModel):
     signal_id: str
-    tenant_id: str
-    source: str
-    name: str
+    target: ScalingTarget
+    metric_name: str
     value: float
-    unit: str
-    window_seconds: int
     collected_at: datetime
-    metadata: dict[str, Any]
 ```
+
+**Target enrichment (ECP-PROD.1):** `tenant_id`, `source`, `unit`, `window_seconds`, `metadata` for multi-tenant fairness and PromQL windows.
 
 ---
 
@@ -302,17 +320,17 @@ ScalingRule:
 
 ## 12. Scaling actions and integration surface
 
-### 12.1 Action types (target)
+### 12.1 Action types
 
-| Action | Integration path | Status |
-|--------|------------------|--------|
-| `SCALE_K8S_DEPLOYMENT` | `kubernetes` cloud_platform → workload replicas | Planned ECP-4.* |
-| `SCALE_CELERY_WORKERS` | `celery` message_bus → worker count / autoscale pool | Planned ECP-5.* |
-| `RAISE_ORCHESTRATION_CEILING` | Patch `OrchestrationProfile.max_inflight_nodes` via profile store | Planned ECP-2.* |
-| `SCALE_MODALITY_POOL` | `ModalityExecutionProfile` thread pool / Celery | Partial (manual env) |
-| `NGINX_UPSTREAM_ADJUST` | Future `nginx` or `ingress_controller` slug | Planned ECP-6.* |
-| `NOTIFY_ONLY` | `notification_channel` (PagerDuty, Slack) | Reuse W-OPS |
-| `REQUEST_HITL` | HITL queue for operator approval | Planned ECP-7.* |
+| Action | Integration path | Status (as-built) |
+|--------|------------------|-------------------|
+| `SCALE_K8S_DEPLOYMENT` | `kubernetes` cloud_platform → workload replicas | **Scaffold** — works with injected client; default factory has no scale API (ECP-PROD.3) |
+| `SCALE_CELERY_WORKERS` | `celery` message_bus → worker pool | **Stub** — `pass` in provisioner (ECP-PROD.4) |
+| `RAISE_ORCHESTRATION_CEILING` | Patch `OrchestrationProfile.max_inflight_nodes` | **Stub** — not applied (ECP-PROD.5) |
+| `SCALE_MODALITY_POOL` | `ModalityExecutionProfile` / W-OPS.12 Celery env | **Manual** — operator env; not ECP loop |
+| `NGINX_UPSTREAM_ADJUST` | — | **Cancelled** (ADR-SCALE-002) |
+| `NOTIFY_ONLY` | `notification_channel` | **Not wired** in ECP evaluator |
+| `REQUEST_HITL` | HITL queue | **Partial** — `hitl_required` plan status; no approval queue (ECP-PROD.6) |
 
 ### 12.2 Tool surface (target Tier-0)
 
@@ -331,8 +349,8 @@ Agents **MUST NOT** invoke high-risk scale tools by default — ECP control plan
 | Category | `cloud_platform` |
 | Status | Beta |
 | Module | `integrations/providers/cloud_platform/kubernetes/` |
-| Today | `create_kubernetes_cloud_platform()` — health/deploy facade |
-| Target | `scale_workload(name, replicas)`, `get_workload_status()` on contract |
+| Today | `create_kubernetes_cloud_platform()` — **health-only default client**; `KubernetesCloudPlatform.scale_workload` / `get_replicas` delegate to **injected** client |
+| Target (ECP-PROD.3) | REST scale subresource on default factory when `INTERGRAX_KUBERNETES_*` configured |
 
 **Plan reference:** [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) H-INT-5 M-P4.20 — extend for scale API (ECP-4.* cross-ref).
 
@@ -409,28 +427,19 @@ Workers consume logical tasks via `register_dispatcher_task` — **fixed pool** 
 
 ## 16. ScalingProfile (Tier-3)
 
-Target profile on `ApplicationEnvironmentProfile` (Phase ECP-1.1):
+**As-built** on `ApplicationEnvironmentProfile` (ECP-1.1 — `environment_profile.py`):
 
 ```python
-# Target shape — not shipped until ECP-1.*
-
 class ScalingProfile(BaseModel):
-    enabled: bool = False
-    policy_id: str = "default"
-    min_replicas: int = 1
-    max_replicas: int = 8
-    scale_up_cooldown_seconds: int = 300
-    scale_down_cooldown_seconds: int = 600
-    require_hitl_for_scale_up: bool = True
-    signal_window_seconds: int = 300
-    targets: list[str] = Field(default_factory=lambda: ["nexus_host"])
-    orchestration_ceiling_auto_raise: bool = False
-    max_ceiling_raise_percent: int = 15
+    policy: ScalingPolicy = Field(default_factory=ScalingPolicy)  # enabled=False by default
+    production_adapters_enabled: bool = False  # gates InMemory probe adapters
 ```
 
-**Wiring target:** `applications/_shared/scaling_wiring.py` → async capacity scheduler at host bootstrap (mirrors `wire_modality_extras` pattern).
+`ScalingPolicy` holds `rules`, `require_hitl_for_scale_up`, `max_actions_per_hour`. Replica min/max and ceiling deltas remain **Tier-3 Helm/HPA** until ECP-PROD adds profile fields.
 
-**Today:** capacity rules live in external K8s HPA / manual ops — not in Harness profile.
+**Wiring:** `applications/_shared/scaling_wiring.py` → `CapacityScheduler` when `policy.enabled=true`; lab host attaches scheduler to factory lifespans (`lab_application/host/factory.py`). **Default:** disabled — external K8s HPA / Celery autoscale remain operator path.
+
+**Production adapters:** `production_capacity_wiring.py` exercises **in-memory** K8s/Celery probes for AUDIT-IDEAL-30.4 gate — not live cluster APIs (see ECP-PROD.3–4).
 
 ---
 
@@ -519,19 +528,20 @@ sequenceDiagram
 
 ## 21. As-built vs target
 
-| Capability | As-built | Target phase |
-|------------|----------|--------------|
-| In-process backpressure | **Done** — `max_inflight_nodes`, `GRAPH_BACKPRESSURE` | Maintain |
-| Queue workers | **Done** — Celery/Kafka/RabbitMQ | ECP-5 worker autoscale |
-| K8s integration | **Beta** — health facade | ECP-4 scale API |
-| Modality Celery scale-out | **Done** — W-OPS.12 env flag | Generalize ECP-5 |
-| SLO catalog | **Done** — W-OPS.4 | ECP-2 signal wire |
-| ScalingProfile | **Missing** | ECP-1 |
-| CapacitySignalCollector | **Missing** | ECP-2 |
-| ScalingEvaluator | **Missing** | ECP-3 |
-| ScalingProvisioner | **Missing** | ECP-4–6 |
-| nginx integration | **Missing** | ECP-6 |
-| Trace events | Partial (`GRAPH_BACKPRESSURE`) | ECP-OBS |
+| Capability | As-built (2026-06-12) | Target phase |
+|------------|----------------------|--------------|
+| In-process backpressure | **Production** — `max_inflight_nodes`, `GRAPH_BACKPRESSURE` | Maintain |
+| Queue workers | **Production** — fixed pool; Celery/Kafka/RabbitMQ | ECP-PROD.4 autoscale |
+| K8s integration | **Beta** — health default; scale via injected client only | ECP-PROD.3 REST scale |
+| Modality Celery scale-out | **Manual** — W-OPS.12 env | ECP-PROD.4 |
+| SLO catalog | **Done** — W-OPS.4 | ECP-PROD.1 Prom bridge |
+| ScalingProfile | **Shipped** — disabled default | ECP-PROD enablement |
+| CapacitySignalCollector | **Scaffold** — gate tests; no live event bus wire | ECP-PROD.1 |
+| ScalingEvaluator | **Scaffold** — unit/gate | ECP-PROD.2 HITL-safe scheduler |
+| ScalingProvisioner | **Scaffold** — K8s mock path; Celery/ceiling stub | ECP-PROD.3–5 |
+| nginx integration | **Cancelled** | — |
+| Trace events | **Partial** — `SCALE_*` in tests; `GRAPH_BACKPRESSURE` live | ECP-PROD.7 prod emit |
+| Production autoscaling | **Not shipped** | **ECP-PROD** |
 
 ---
 
@@ -539,17 +549,30 @@ sequenceDiagram
 
 | Area | Score (L0–L4) | Status |
 |------|---------------|--------|
-| In-process concurrency limits | L3 | Done (ORCH/FLOW) |
-| Async queue plane | L3 | Done (queueing) |
-| Observability SLIs | L3 | Done (W-OPS) |
-| Infra integration adapters | L2 | K8s beta |
-| Harness elastic control loop | **L3** | Done (ECP-DEPTH — `runtime/capacity/`) |
-| Declarative ScalingProfile | **L3** | Done (`ScalingProfile` + wiring) |
-| Load balancer integration | **L0** | Cancelled (ECP-6.2 / ADR-SCALE-002) |
-| Celery/K8s production adapters | L2 | Beta/stub — uplift AUDIT-IDEAL-30.4 |
-| **Overall ECP (audit §30 extension)** | **L3** | ECP-DEPTH **28/28 Done** (2026-06-09) |
+| In-process concurrency limits | L3 | **Production** (ORCH/FLOW backpressure) |
+| Async queue plane | L3 | **Production** (fixed worker pools) |
+| Observability SLIs | L3 | **Production** (W-OPS) |
+| ECP architecture & contracts | L3 | **Done** (ECP-DOC + ECP-DEPTH scaffold) |
+| Declarative ScalingProfile | L2 | Shipped; **disabled** default; not driving fleet |
+| Harness elastic control loop (live) | **L1** | Scaffold + gate tests only |
+| Infra scale adapters (K8s/Celery) | **L1** | Mock/injected; default K8s factory health-only |
+| Load balancer integration | L0 | Cancelled (ADR-SCALE-002) |
+| **Overall ECP production elasticity** | **L2** | Architecture complete; **not** production autoscaling |
 
-**FAUDIT-32 §30** (Operational Excellence) — SLOs exist; **closed-loop capacity** closed via Phase ECP-DEPTH. Residual: production-scale Celery/K8s adapters (AUDIT-IDEAL-30.4).
+### 22.1 Open gap register (ECP-PROD)
+
+| ID | Gap | Priority |
+|----|-----|----------|
+| ECP-PROD.1 | Wire `GRAPH_BACKPRESSURE` + `task_index` depth → `CapacitySignalCollector` on hosts | P0 |
+| ECP-PROD.2 | `CapacityScheduler` must not apply actions when `hitl_required` / `denied` | P0 |
+| ECP-PROD.3 | K8s default factory: REST `scale` subresource (not health-only stub) | P0 |
+| ECP-PROD.4 | Celery provisioner: real worker scale via integration adapter | P1 |
+| ECP-PROD.5 | `RAISE_ORCHESTRATION_CEILING` applies bounded profile patch | P1 |
+| ECP-PROD.6 | HITL approval queue for scale-up (not status-only) | P1 |
+| ECP-PROD.7 | Integration test: sustained backpressure → scale action (mock K8s) | P1 |
+| AUDIT-IDEAL-30.4 | Reopen — production adapters were in-memory probes | P2 |
+
+**FAUDIT-32 §30** (Operational Excellence) — SLOs **production**; **elastic closed-loop** remains **L2** until ECP-PROD.
 
 All tasks: [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](../plan/ELASTIC_CAPACITY_AND_SCALING.md).
 
@@ -582,17 +605,19 @@ All tasks: [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](../plan/ELASTIC_CAPACITY_AND
 | `queueing/` | 0 | **Done** | Async task workers |
 | `queueing/task_index.py` | 0 | **Done** | Queue depth (signal source) |
 | `distributed/` | 0 | **Done** | Rate limit, locks |
-| `integrations/.../kubernetes/` | 0 | **Beta** | Cloud platform adapter |
-| `integrations/providers/celery/` | 0 | **Done** | Worker app factory |
+| `integrations/.../kubernetes/` | 0 | **Beta** | Health default; scale needs injected client or ECP-PROD.3 |
+| `integrations/providers/celery/` | 0 | **Done** | Worker app factory (not ECP-autoscaled) |
 | `runtime/adaptive/` | 1 | **Done** | AHI signals (optional input) |
-| `runtime/capacity/` | 1 | **Target** | ECP package (ECP-0.3) |
-| `runtime/capacity/contracts.py` | 1 | **Target** | Signals, policies, actions |
-| `runtime/capacity/collector.py` | 1 | **Target** | CapacitySignalCollector |
-| `runtime/capacity/evaluator.py` | 1 | **Target** | ScalingEvaluator |
-| `runtime/capacity/provisioner.py` | 1 | **Target** | ScalingProvisioner |
-| `runtime/capacity/scheduler.py` | 1 | **Target** | CapacityScheduler |
-| `applications/_shared/scaling_wiring.py` | 3 | **Target** | Host bootstrap |
-| `tools/providers/capacity/` | 0 | **Target** | Optional diagnostic tools |
+| `runtime/capacity/` | 1 | **Scaffold** | ECP package (ECP-DEPTH) |
+| `runtime/capacity/contracts.py` | 1 | **Done** | Signals, policies, actions |
+| `runtime/capacity/collector.py` | 1 | **Scaffold** | Not wired to live events (ECP-PROD.1) |
+| `runtime/capacity/evaluator.py` | 1 | **Scaffold** | Gate tests |
+| `runtime/capacity/provisioner.py` | 1 | **Scaffold** | K8s mock path; Celery stub |
+| `runtime/capacity/scheduler.py` | 1 | **Scaffold** | HITL bypass risk (ECP-PROD.2) |
+| `runtime/capacity/production_adapters.py` | 1 | **Gate probe** | InMemory only — not production |
+| `applications/_shared/scaling_wiring.py` | 3 | **Done** | Disabled default; lab lifespan |
+| `applications/_shared/production_capacity_wiring.py` | 3 | **Gate probe** | InMemory adapters |
+| `tools/providers/capacity/` | 0 | **Not started** | Optional diagnostic tools |
 
 ---
 
