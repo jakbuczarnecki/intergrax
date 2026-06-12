@@ -99,10 +99,10 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-21 | niegotowość | ~~No RAG load/soak gate~~ — **closed M-RAG.36**: `evaluation/load_soak.py` concurrent retrieve SLO + CI `rag-guard.yml` | **P2** | M-RAG.36 **Done** | — |
 | GAP-RAG-22 | niska jakość | ~~No semantic chunking ingest size guard~~ — **closed M-RAG.37**: `semantic_chunking_max_chars` + `semantic_chunking_size_exceeded` before chunk | **P2** | M-RAG.37 **Done** | — |
 | GAP-RAG-23 | niska jakość | ~~M-RAG.6 query expansion **Partial**~~ — **closed M-RAG.23**: M-RAG.6 **Done** | **P0** | M-RAG.23 **Done** | 14.3 |
-| GAP-RAG-24 | niedoróbka | `create_rag_graph_store` hardcodes `inmemory` / `neo4j` — no `RagGraphStoreBackend` registry (unlike vectorstore bridges) | **P0** | M-RAG.38 **Planned** | — |
-| GAP-RAG-25 | niedoróbka | Integration slugs `memgraph` / `falkordb` exist but are not selectable RAG graph backends; INTEGRATIONS plan drift on `INTERGRAX_RAG_GRAPH_STORE` | **P1** | M-RAG.39 **Planned** | — |
-| GAP-RAG-26 | niegotowość | No graph lifecycle sync — `rag.delete_documents` / `purge_collection` do not unlink graph nodes or `HAS_CHUNK` edges | **P1** | M-RAG.40 **Planned** | — |
-| GAP-RAG-27 | niegotowość | No cross-backend tenant isolation contract for document knowledge graph (vector isolation: M-RAG.35 only) | **P1** | M-RAG.41 **Planned** | — |
+| GAP-RAG-24 | niedoróbka | ~~`create_rag_graph_store` hardcodes backends~~ — **closed M-RAG.38**: `RagGraphStoreBackend` registry in `graph/bootstrap/backend_registry.py` | **P0** | M-RAG.38 **Done** | — |
+| GAP-RAG-25 | niedoróbka | ~~memgraph/falkordb not wired~~ — **closed M-RAG.39**: `CypherRagGraphStore` + registry factories | **P1** | M-RAG.39 **Done** | — |
+| GAP-RAG-26 | niegotowość | ~~No graph lifecycle sync~~ — **closed M-RAG.40**: `unlink_chunks` / `purge_graph` + catalog delete/purge hooks | **P1** | M-RAG.40 **Done** | — |
+| GAP-RAG-27 | niegotowość | ~~No graph tenant isolation~~ — **closed M-RAG.41**: `graph/tenant/graph_isolation_contract.py` + tenant scope on stores | **P1** | M-RAG.41 **Done** | — |
 | GAP-RAG-28 | niska jakość | `graph_rag` retriever **beta** — substring label match, fixed seed heuristics, no structured entity seed from chunk metadata | **P1** | M-RAG.42 **Planned** | — |
 | GAP-RAG-29 | niedoróbka | `runtime/architecture/hybrid_retrieval.py` reference path not fused into `GraphRagRetriever` / `fusion` retrieval | **P2** | M-RAG.43 **Planned** | — |
 | GAP-RAG-30 | niedoróbka | `graph_provenance` contracts exist but are not surfaced on `RetrievalTrace` in the graph retrieval hot path | **P2** | M-RAG.44 **Planned** | — |
@@ -266,8 +266,8 @@ Runtime architecture (Tier-1 contracts)
 |---------|------------------|---------------------|------------------------|------|
 | In-memory | — | **Default** (`inmemory`) | Harness / lab only | — |
 | Neo4j | `neo4j` | **`neo4j`** via `Neo4jRagGraphStore` | **Required** today | Harden (M-RAG.38) |
-| Memgraph | `memgraph` | **Not wired** (Bolt-compatible) | Blocked by slug validation | M-RAG.39, M-RAG.48 |
-| FalkorDB | `falkordb` | **Not wired** | Blocked | M-RAG.39 |
+| Memgraph | `memgraph` | **`memgraph`** via `CypherRagGraphStore` | Pending soak (M-RAG.48) | M-RAG.48 |
+| FalkorDB | `falkordb` | **`falkordb`** via `CypherRagGraphStore` | Pending soak (M-RAG.48) | M-RAG.48 |
 | Amazon Neptune | — | **Absent** | — | M-RAG.49 (+ H-INT) |
 | OrientDB | — | **Absent** | — | M-RAG.50 (+ H-INT) |
 | ArangoDB | — | **Absent** | — | M-RAG.51 (+ H-INT) |
@@ -277,7 +277,7 @@ Runtime architecture (Tier-1 contracts)
 | Knob | Role |
 |------|------|
 | `INTERGRAX_RAG_GRAPH_ENABLED` | Register `graph_rag` retriever + ingest graph indexing |
-| `INTERGRAX_RAG_GRAPH_STORE` | Backend id — today: `inmemory` \| `neo4j` only (**GAP-RAG-24**) |
+| `INTERGRAX_RAG_GRAPH_STORE` | Backend id — `inmemory` \| `neo4j` \| `memgraph` \| `falkordb` (registry: M-RAG.38) |
 | `INTERGRAX_RAG_GRAPH_INDEXER_MODE` | `heuristic` \| `llm` \| `heuristic_then_llm` |
 | `RagProfile.graph_rag_hops` | Max hops for `GraphRagRetriever` (default 1) |
 | `production_graph_rag_profile()` | Tier-3 prod preset — neo4j backend + validation (M-RAG.33) |
@@ -290,10 +290,10 @@ Runtime architecture (Tier-1 contracts)
 | Phase | Current behaviour | Gap | Plan |
 |-------|-------------------|-----|------|
 | **Build** | `IngestPipeline` → optional `resolve_graph_indexer()` after vector index | Indexer quality heuristic/LLM only | M-RAG.46, M-RAG.47 |
-| **Update** | Upsert on re-ingest only | No delete/unlink when chunks removed | M-RAG.40 |
-| **Maintain** | None | Orphan nodes, stale edges, no scheduled jobs | M-RAG.45 |
+| **Update** | Re-ingest upsert + `rag.delete_documents` graph unlink (M-RAG.40) | — | — |
+| **Maintain** | `purge_graph` on `rag.purge_collection` (M-RAG.40) | Scheduled jobs | M-RAG.45 |
 | **Use** | `GraphRagRetriever`: vector seed + label substring + 1-hop | Beta; no hybrid channel fusion; weak provenance trace | M-RAG.42–M-RAG.44 |
-| **Isolate** | Vector tenant contract (M-RAG.35) | Graph has no tenant namespace contract | M-RAG.41 |
+| **Isolate** | Vector tenant contract (M-RAG.35) + graph tenant contract (M-RAG.41) | — | — |
 
 ```text
 BUILD (ingest)
@@ -350,7 +350,7 @@ Bootstrap: `create_vectorstore_manager()` in `vectorstore/bootstrap/` resolves v
 
 Retrieve and ingest accept scope fields (`tenant_id`, `session_id`, `user_id`, `workspace_id`) → `MetadataFilter` on vector query. `InMemoryVectorStore` enforces `tenant_id` mismatch as `ValueError`. Cross-backend contract: `intergrax/rag/vectorstore/tenant/tenant_isolation_contract.py` — gate tests for `inmemory`, `pgvector`, `weaviate`, `qdrant` (M-RAG.35).
 
-**Graph store:** tenant namespace on document knowledge graphs is **not** enforced today — **GAP-RAG-27**; planned `graph/tenant/` contract (M-RAG.41).
+**Graph store:** tenant namespace enforced via `GraphStore.tenant_id` + `graph/tenant/graph_isolation_contract.py` gate tests (M-RAG.41).
 
 ---
 

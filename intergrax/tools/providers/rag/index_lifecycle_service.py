@@ -17,6 +17,7 @@ from intergrax.tools.providers.rag.index_lifecycle_contracts import (
     RagSearchByMetadataInput,
     RagSearchByMetadataOutput,
 )
+from intergrax.rag.graph.lifecycle.graph_lifecycle_sync import sync_graph_purge_collection
 from intergrax.tools.registry.runtime_bindings import VectorstoreIndexLifecycleBinding
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -221,11 +222,18 @@ def perform_rag_purge_collection(
 
     would_delete = int(result.get("would_delete") or 0)
     deleted = int(result.get("deleted") or 0)
+    graph_purged = 0
+    if not params.dry_run:
+        graph_purged = sync_graph_purge_collection(
+            ctx.rag_graph_store,
+            tenant_id=params.tenant_id.strip() or None,
+        )
+    reason = "ok" if graph_purged == 0 else f"ok:graph_purged={graph_purged}"
     return RagPurgeCollectionOutput(
         used=True,
         dry_run=bool(result.get("dry_run", params.dry_run)),
         would_delete=would_delete,
         deleted=deleted,
         tenant_id=str(result.get("tenant_id") or params.tenant_id.strip()),
-        reason="ok",
+        reason=reason,
     )
