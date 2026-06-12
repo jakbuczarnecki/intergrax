@@ -12,7 +12,7 @@
 
 # Intergrax Tool Library
 
-**Last updated:** 2026-06-12 — **48 bundles** · **190 catalog tools** · selection modes: [§Production strategies](#tool-selection-modes-production-strategies) · invocation patterns: [§Invocation patterns](#tool-invocation-patterns-production-orchestration) · engine audit: [§Production posture](#tool-engine-production-posture-2026-06-10) · [§Execution surfaces](#execution-surfaces-matrix)
+**Last updated:** 2026-06-12 (layer completion audit) — **48 bundles** · **190 catalog tools** · selection modes: [§Production strategies](#tool-selection-modes-production-strategies) · invocation patterns: [§Invocation patterns](#tool-invocation-patterns-production-orchestration) · engine audit: [§Production posture](#tool-engine-production-posture-2026-06-10) · [§Execution surfaces](#execution-surfaces-matrix) · completion sprints: [`plan/TOOLS.md`](../plan/TOOLS.md#layer-completion-sprints-2026-06-12)
 
 The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](architecture/INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
 
@@ -287,7 +287,8 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 | **Pipeline tool step** (`run_bounded_tool_loop` / `ctx.invoke_tool`) | **Done** | Planner wired; bounded loop via `tool_loop_step` (TOOL-ENG-6 · ADR-TOOL-002) |
 | **Planner wiring** (`CatalogToolPlanner`) | **Done** | `wire_catalog_tool_planner_if_enabled` in `planner_bootstrap.py` (TOOL-ENG-0) |
 | **Multi-tool / ReAct loop** | **Done** | `max_tool_iterations` + native `role=tool` chain (TOOL-ENG-6) |
-| **Invocation pattern plugin** (`ToolInvocationPattern`) | **Gap** | Hardcoded `run_bounded_tool_loop` in `run_bounded_tool_loop` / `ctx.invoke_tool` — TOOL-ENG-16–18,22 |
+| **Invocation pattern plugin** (`ToolInvocationPattern`) | **In progress** | S1–S3 layer completion — TOOL-ENG-16–18,21–23; interim `run_bounded_tool_loop` until S2 closes |
+| **Invoker test regression** (`modality_tool_trace`) | **Gap** | `FakeRegistry` mocks missing `handler` — TOOL-ENG-TEST.1 (S0) |
 | **Deterministic tool chains** (output→input) | **Gap** | No `ToolChainSpec` — TOOL-ENG-20 |
 | **Parallel tool execution** | **Gap** | `execute_planned_tool_calls` — always sequential (TOOL-ENG-9) |
 | **Parallel semantic batch** | **Gap** | Semantic index + parallel invoke + aggregate — TOOL-ENG-25 |

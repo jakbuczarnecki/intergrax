@@ -50,11 +50,11 @@ ToolContract · ToolRegistry · ToolProfile · ToolWiringContext · ToolRequest/
 
 ## Active plan phases (verify status vs code reality)
 
-Phase O/T-EXPAND Done · **TOOL-ENG active** (0–5,11 Done; 6–10,12 open) · Phase V V-SEC/V-COST/V-EVAL
+Phase O/T-EXPAND Done · **TOOL-ENG active** (12/35 Done: 0–6,11, DOC.4–7; S0–S8 layer-completion sprints) · Phase V V-SEC/V-COST/V-EVAL
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-TOOL-ENG-16 ToolInvocationPattern plugin · TOOL-ENG-7 post-tool verify HIGH risk · TOOL-ENG-8 tools_mode=required hard fail · TOOL-ENG-9 parallel read-only · TOOL-ENG-10 AHI subset selection · TOOL-ENG-12 tool_choice exposure · 172+ tools need ACP invoke_tool/gateway path consistency
+TOOL-ENG-16 ToolInvocationPattern plugin (S1 in progress) · TOOL-ENG-17–18,21–23 patterns+wiring (S2–S3) · TOOL-ENG-9 parallel read-only · TOOL-ENG-13/14 semantic+hierarchical selection · TOOL-ENG-7 post-tool verify HIGH · TOOL-ENG-8 tools_mode=required hard fail · TOOL-ENG-12 tool_choice · TOOL-ENG-TEST.1 invoker FakeRegistry handler regression · missing test_tool_selection_strategy.py (doc drift)
 
 ---
 
