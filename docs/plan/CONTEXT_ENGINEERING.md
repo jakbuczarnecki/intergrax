@@ -70,6 +70,7 @@
 | CE-DOC.7 | FAUDIT layer 16 refresh — post-ACP as-built paths, GAP-CTX-13/14, module inventory, sprint register | **Done** (2026-06-12) |
 | CE-DOC.8 | Architecture canon sync with CE-EXT S0–S12 implementation (§2–§3, §8.3, §16–§17) | **Done** (2026-06-12) |
 | CE-DOC.9 | Deep audit register GAP-CTX-15..19 + CE-ALIGN sprint plan | **Done** (2026-06-12) |
+| CE-DOC.10 | CE-ALIGN closeout — architecture §2/§16 sync post A1–A6 | **Done** (2026-06-12) |
 
 ---
 
