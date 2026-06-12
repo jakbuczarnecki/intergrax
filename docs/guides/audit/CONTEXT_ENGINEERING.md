@@ -54,7 +54,7 @@ CTX Done · CE-DOC Done · CE-EXT **Done** (S0–S12; CE-9.5/9.6, CE-10.3–10.5
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-GAP-CTX-01 **Closed** (CE-2) · GAP-CTX-02/03/13/14 **Closed** (CE-3/4) · GAP-CTX-04 **Closed** (CE-4) · GAP-CTX-05 **Closed** (CE-10.1) · GAP-CTX-06 **Closed** (CE-7) · GAP-CTX-08 **Open** (CE-10.3 deferred) · GAP-CTX-09 **Closed** (CE-9.2) · GAP-CTX-10 **Partial** (CE-9.1 enum; bus emission follow-up)
+GAP-CTX-01/02/03/04/05/06/07/09/11/13/14 **Closed** · GAP-CTX-08 **Open** (CE-10.3) · GAP-CTX-10 **Partial** · GAP-CTX-12 **Deferred** (AHI) — canon: architecture §16
 
 ---
 
@@ -72,13 +72,16 @@ GAP-CTX-01 **Closed** (CE-2) · GAP-CTX-02/03/13/14 **Closed** (CE-3/4) · GAP-C
 ## 2. Code and test paths (inspect — search repo, do not assume)
 
 ```text
-intergrax/runtime/nexus/context/ (context_engine.py target, context_compiler.py, context_manager.py)
-intergrax/context_engineering/ (ContextEngine · providers)
+intergrax/context/ (contracts, providers, ranker, dedup, orchestrator, tracking)
+intergrax/runtime/nexus/context/ (context_engine.py, codebase_engine.py, context_manager.py, compile_service.py)
+intergrax/runtime/policy/context_assembly_policy.py
+intergrax/runtime/observability/context_counters.py
 intergrax/runtime/architecture/context_engineering.py · context_regression_benchmark.py
-intergrax/contracts/context_assembly.py
-intergrax/context/ (target contracts + plugin registry)
-applications/_shared/context_runtime_bridge.py · context_wiring.py
-intergrax/runtime/events/context_skill_recording.py · payloads/canonical.py
+intergrax/contracts/context_assembly.py · agent_context_hints.py
+applications/_shared/context_presets.py · context_runtime_bridge.py · context_wiring.py
+intergrax/runtime/events/context_skill_recording.py · payloads/canonical.py (context_assembly.v2)
+scripts/check_context_engine_wiring.py · check_context_otel_span_registry.py
+tests/unit/context/ · tests/integration/runtime/test_context_engine_paths.py
 ```
 
 Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.

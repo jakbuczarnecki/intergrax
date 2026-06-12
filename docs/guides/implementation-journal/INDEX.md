@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-12-012 | 2026-06-12 | tier-0 CONTEXT_ENGINEERING | CE-DOC.8 | [CE-DOC.8 — Architecture canon sync post CE-EXT S0–S12](entries/2026-06-12/platform-ce-doc8-architecture-sync.md) | pending |
 | IJ-2026-06-12-011 | 2026-06-12 | tier-0, tier-1, tier-3 CONTEXT_ENGINEERING | CE-VEC-1 · CE-7.1 · CE-8.3 · CE-9.2 · CE-10.1 · CE-11.1 · CE-12.4 · CE-12.6 | [CE Sprints 6–12 — providers, observability, DX closeout](entries/2026-06-12/platform-ce-sprint6-12-closeout.md) | pending |
 | IJ-2026-06-12-010 | 2026-06-12 | tier-0, tier-1, tier-2 CONTEXT_ENGINEERING | CE-4.1 · CE-4.2 · CE-4.3 · CE-4.4 · CE-4.5 · CE-4.6 · CE-4.7 · CE-5.1 | [CE Sprint 5 — Step-aware context assembly](entries/2026-06-12/platform-ce-sprint5-step-aware.md) | 269d64c4 |
 | IJ-2026-06-12-009 | 2026-06-12 | tier-1, tier-3 CONTEXT_ENGINEERING | CE-3.3 · CE-3.4 · CE-3.7 · CE-3.8 · CE-3.11 | [CE Sprint 4 — Path unification and CONTEXT_ASSEMBLED events](entries/2026-06-12/platform-ce-sprint4-path-unification.md) | 096efe25 |

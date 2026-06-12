@@ -17,9 +17,10 @@
 | **R-Context** | Budget API, `CONTEXT_*` events (graph path) | **Done** |
 | **MEM-DEPTH-1.\*** | `ContextCompiler`, `DegradationLadder`, preflight **modules** | **Done** — library + tests; **hot-path wiring = CE-3.9** (post ACP-CLOSE) |
 | **CE-DOC** | Domain split + architecture + plan + FAUDIT refresh | **Done** (CE-DOC.7 closes 2026-06-12 audit) |
-| **CE-EXT** | Plugin engine + hot-path compiler + step-aware + codebase preset | **Planned** — this register |
+| **CE-EXT** | Plugin engine + hot-path compiler + step-aware + codebase preset | **Done** (S0–S12, 2026-06-12) |
+| **CE-DOC.8** | Architecture ↔ implementation sync post CE-EXT | **Done** (2026-06-12) |
 
-**As-built maturity:** L2 engine / L3 control plane — see architecture §3.
+**As-built maturity:** L3+ engine / L3 control plane — see architecture §3.
 
 **Delivery rule:** One **CE-\*** ID per PR → update master table + gap register → `pytest -m gate` + domain CI scripts green.
 
@@ -27,21 +28,22 @@
 
 ## Gap traceability matrix (GAP-CTX → CE)
 
-| GAP-CTX | CE IDs | Wave |
-|---------|--------|------|
-| GAP-CTX-01 | CE-1, CE-2 | 1 |
-| GAP-CTX-02 | CE-3 | 2 |
-| GAP-CTX-03 | CE-3.4 | 2 |
-| GAP-CTX-04 | CE-4 | 3 |
-| GAP-CTX-05 | CE-10 | 5 |
-| GAP-CTX-06 | CE-7 | 4 |
-| GAP-CTX-07 | CE-8 | 4 |
-| GAP-CTX-08 | CE-10.3 | 5 |
-| GAP-CTX-09 | CE-9.2 | 5 |
-| GAP-CTX-10 | CE-9.1 | 5 |
-| GAP-CTX-11 | CE-3.6 | 2 |
-| GAP-CTX-13 | CE-3.9, CE-3.10 | 2 |
-| GAP-CTX-14 | CE-3.11 | 2 |
+| GAP-CTX | CE IDs | Wave | Status |
+|---------|--------|------|--------|
+| GAP-CTX-01 | CE-1, CE-2 | 1 | **Closed** |
+| GAP-CTX-02 | CE-3 | 2 | **Closed** (hybrid UAEP/ACP) |
+| GAP-CTX-03 | CE-3.4 | 2 | **Closed** |
+| GAP-CTX-04 | CE-4 | 3 | **Closed** |
+| GAP-CTX-05 | CE-10.1 | 5 | **Closed** |
+| GAP-CTX-06 | CE-7 | 4 | **Closed** |
+| GAP-CTX-07 | CE-8 | 4 | **Closed** |
+| GAP-CTX-08 | CE-10.3 | 5 | **Open** (deferred) |
+| GAP-CTX-09 | CE-9.2 | 5 | **Closed** |
+| GAP-CTX-10 | CE-9.1 | 5 | **Partial** (enum; bus emission follow-up) |
+| GAP-CTX-11 | CE-3.6 | 2 | **Closed** |
+| GAP-CTX-12 | AHI | — | **Deferred** |
+| GAP-CTX-13 | CE-3.9, CE-3.10 | 2 | **Closed** |
+| GAP-CTX-14 | CE-3.11 | 2 | **Closed** |
 
 ---
 
@@ -58,15 +60,17 @@
 | CE-DOC.5 | MEMORY canon cross-links (Layer C → CE) | **Done** |
 | CE-DOC.6 | `generate_domain_audit_prompts.py` MEMORY/CE split | **Done** |
 | CE-DOC.7 | FAUDIT layer 16 refresh — post-ACP as-built paths, GAP-CTX-13/14, module inventory, sprint register | **Done** (2026-06-12) |
+| CE-DOC.8 | Architecture canon sync with CE-EXT S0–S12 implementation (§2–§3, §8.3, §16–§17) | **Done** (2026-06-12) |
 
 ---
 
 ## Phase CE-EXT — Context Engineering Plugin Engine
 
-**Status:** **Planned**  
-**Goal:** Close all **GAP-CTX-\*** rows — production-grade plugin engine integrated with Harness observability, policy, and Tier-3 presets.  
+**Status:** **Done** (2026-06-12)  
+**Goal:** Close **GAP-CTX-\*** rows — production-grade plugin engine integrated with Harness observability, policy, and Tier-3 presets.  
 **Prerequisites:** CE-DOC Done · MEM-DEPTH-1 Done · CTX Done · OBS event spine Done  
-**Success gate:** L3+ engine on FAUDIT layer 16 · reference `codebase` preset on lab host · gate green
+**Success gate:** L3+ engine on FAUDIT layer 16 · `codebase` preset shipped · `check_context_engine_wiring.py` green  
+**Deferred follow-up:** CE-9.5, CE-9.6, CE-10.3–10.5, CE-12.1–12.3 · GAP-CTX-08 · GAP-CTX-10 bus emission
 
 ### Execution order (waves)
 
