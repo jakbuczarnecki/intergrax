@@ -20,10 +20,12 @@
 | **CE-EXT** | Plugin engine + hot-path compiler + step-aware + codebase preset | **Done** (S0–S12, 2026-06-12) |
 | **CE-DOC.8** | Architecture ↔ implementation sync post CE-EXT | **Done** (2026-06-12) |
 | **CE-ALIGN** | Post-audit implementation alignment (GAP-CTX-15..19) | **Done** (A0–A6, 2026-06-12) |
-| **CE-DOC.10** | CE-ALIGN closeout audit + architecture sync | **Done** (2026-06-12) |
+| **CE-PROV-WIRE** | Builtin stub providers → legacy collectors on `assemble()` path | **Planned** — see [Phase CE-PROV-WIRE](#phase-ce-prov-wire) |
 | **CE-DOC.9** | FAUDIT 2026-06-12 deep audit — GAP-CTX-15..19 + CE-ALIGN sprint register | **Done** (2026-06-12) |
+| **CE-DOC.10** | CE-ALIGN closeout audit + architecture sync | **Done** (2026-06-12) |
+| **CE-DOC.11** | CE-PROV-WIRE phase + GAP-CTX-20 register; architecture §8.4 sync | **Done** (2026-06-12) |
 
-**As-built maturity:** L3 control plane · L2.5–L3 engine spine (hybrid paths) — target L3+ unified pipeline after CE-ALIGN; see architecture §3.
+**As-built maturity:** L3+ engine spine (FORMAT merge + graph/UAEP assemble) · **L3− plugin collect** until CE-PROV-WIRE closes GAP-CTX-20; see architecture §3.
 
 **Delivery rule:** One **CE-\*** ID per PR → update master table + gap register → `pytest -m gate` + domain CI scripts green.
 
@@ -52,6 +54,7 @@
 | GAP-CTX-17 | CE-ENG-REF | CE-ALIGN | **Closed** |
 | GAP-CTX-18 | CE-PRESET-ENG | CE-ALIGN | **Closed** |
 | GAP-CTX-19 | CE-REGISTRY-FMT | CE-ALIGN | **Closed** (formatter via catalog; allocator = ContextCompiler) |
+| GAP-CTX-20 | CE-PROV-WIRE | CE-PROV-WIRE | **Open** — 11 builtin `collect()` stubs; live: workspace + session_semantic only |
 
 ---
 
@@ -71,6 +74,39 @@
 | CE-DOC.8 | Architecture canon sync with CE-EXT S0–S12 implementation (§2–§3, §8.3, §16–§17) | **Done** (2026-06-12) |
 | CE-DOC.9 | Deep audit register GAP-CTX-15..19 + CE-ALIGN sprint plan | **Done** (2026-06-12) |
 | CE-DOC.10 | CE-ALIGN closeout — architecture §2/§16 sync post A1–A6 | **Done** (2026-06-12) |
+| CE-DOC.11 | CE-PROV-WIRE phase register + GAP-CTX-20; architecture §8.4/§16 sync | **Done** (2026-06-12) |
+
+---
+
+## Phase CE-PROV-WIRE — Builtin provider legacy collector wiring
+
+**Status:** **Planned** (2026-06-12)  
+**Goal:** Close **GAP-CTX-20** — every §8.4 builtin stub `collect()` delegates to the existing Nexus/Tier-0 collector for its source domain so `DefaultNexusContextEngine.assemble()` satisfies §7.1 on graph + UAEP paths (not only workspace/session_semantic).  
+**Prerequisites:** CE-ALIGN Done (CE-FMT-1, CE-PROV-CTX handles) · CE-2.3 catalog  
+**Success gate:** All 11 stub providers emit `ContextFragment[]` when handles populated; gate test per provider family; architecture §8.4 `collect status` = **live** or **live (handle-gated)**.
+
+**Distinction:** **CE-PROV-CTX** (Done) passes handles into `ContextProviderContext`; **CE-PROV-WIRE** implements `collect()` body for each builtin stub.
+
+| ID | Deliverable | Priority | Status | Legacy source (as-built) |
+|----|-------------|----------|--------|--------------------------|
+| **CE-PROV-BRIDGE** | `intergrax/context/providers/legacy_bridge.py` — shared adapters + handle key contract doc | P0 | Planned | `provider_handles.py` extension |
+| **CE-PROV-01** | `builtin.task_message` — objective + user turn from `messages` / request | P0 | Planned | `graph_assembly` / `ContextAssemblyRequest.objective` |
+| **CE-PROV-02** | `builtin.system_instructions` — system prompt slices from `runtime_config` / prompt registry handles | P1 | Planned | `RuntimeConfig` + agent contract prompt assets |
+| **CE-PROV-03** | `builtin.session_history` — chronological session turns | P0 | Planned | `engine_history_layer.py` / session memory view |
+| **CE-PROV-04** | `builtin.longterm_memory` — LTM search hits | P1 | Planned | MEMORY LTM step / `memory_view` handles |
+| **CE-PROV-05** | `builtin.rag` — retrieved chunks + citations | P0 | Planned | `ContextBuilder` / `rag_chunks` handle / catalog retrieve snapshot |
+| **CE-PROV-06** | `builtin.websearch` — websearch result blocks | P2 | Planned | websearch step output handle |
+| **CE-PROV-07** | `builtin.tool_output` — tool result blocks from step | P1 | Planned | `tool_context_helpers.py` / step tool blocks handle |
+| **CE-PROV-08** | `builtin.graph_prior` — prior node outputs on graph path | P0 | Planned | `context_assembler.collect_dependency_records` / `prior_outputs` handle |
+| **CE-PROV-09** | `builtin.shared_context` — `SharedTaskContext` KV reads | P1 | Planned | `shared_task_context.py` via task metadata |
+| **CE-PROV-10** | `builtin.attachments` — attachment summaries | P2 | Planned | `AttachmentRef` / ingestion summaries handle |
+| **CE-PROV-11** | `builtin.policy_overlay` — policy fragment bundles | P2 | Planned | `prompt_policy_overlay.py` / policy handles |
+| **CE-PROV-GATE** | `scripts/check_context_builtin_providers.py` — no empty stub for wired provider ids | P1 | Planned | CI gate |
+| **CE-PROV-INT** | Integration tests: graph assemble with RAG + graph_prior fragments in LLM window | P1 | Planned | `tests/integration/runtime/test_context_provider_wiring.py` |
+
+**CE-2.3 completion note:** catalog registration is **Done**; **live collect** for all §8.4 rows completes when CE-PROV-WIRE is **Done**.
+
+**Deferred with CE-PROV-WIRE:** CE-10.3 (provider metadata replaces `classify_candidates` heuristics) — run after CE-PROV-05/08 validate fragment metadata shape.
 
 ---
 
@@ -133,7 +169,7 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 | **CE-1.6** | Architecture gate: `intergrax/context/` MUST NOT import `agents/` or `applications/` | P0 | **Done** | `scripts/check_context_tier0_import_boundary.py` |
 | **CE-2.1** | `register_context_plugin()` + `intergrax.context` entry point group in `pyproject.toml` | P0 | **Done** | `pyproject.toml` EP + `register_context_plugin()` |
 | **CE-2.2** | `bootstrap_context_catalog()` in `intergrax/context/bootstrap.py` | P0 | **Done** | `wire_application_environment` calls bootstrap |
-| **CE-2.3** | Shipped `BuiltinContextPlugin` registering all §8.4 providers (catalog stubs + live workspace/session) | P0 | **Done** | 13 builtin provider ids |
+| **CE-2.3** | Shipped `BuiltinContextPlugin` registering all §8.4 providers (catalog stubs + live workspace/session) | P0 | **Done** (collect live → **CE-PROV-WIRE**) | 13 builtin provider ids |
 | **CE-2.4** | `ContextProfile.context_plugin_ids` + validation against registry | P1 | **Done** | `validate_context_plugin_ids` — lab fail / strict warn |
 | **CE-2.5** | Unit tests `tests/unit/context/test_context_plugin_registry.py` | P0 | **Done** | catalog + wiring tests `-m gate` |
 | **CE-2.6** | Extend `ContextProfile` with `engine_preset`, `engine_ref`, `context_plugin_ids` | P0 | **Done** | `environment_profile.py`; `context_runtime_bridge.py` metadata |
@@ -413,6 +449,22 @@ Post-audit alignment sprints. One sprint = one commit.
 | **A4** | Registry + e2e test | CE-REGISTRY-FMT, CE-7.5b | Registry formatter used; 1k workspace assemble gate test | **Done** |
 | **A5** | UAEP + graph hooks | CE-UAEP-ASM, CE-HOOKS-GRAPH | Optional UAEP assemble; hooks on graph engine path | **Done** |
 | **A6** | Closeout audit | CE-DOC.10 | Re-audit; GAP-CTX-15..19 Closed; journal | **Done** |
+
+---
+
+## Sprints (CE-PROV-WIRE delivery)
+
+One sprint = one coherent provider family or gate. One commit per sprint.
+
+| Sprint | Goal | CE IDs | Exit criteria |
+|--------|------|--------|---------------|
+| **B0** | Plan + architecture register | CE-DOC.11 | GAP-CTX-20 + phase CE-PROV-WIRE in plan/architecture §16 | **Done** |
+| **B1** | Legacy bridge + graph core | CE-PROV-BRIDGE, CE-PROV-01, CE-PROV-08, CE-PROV-03 | Graph path: task_message, graph_prior, session_history fragments in assembled window |
+| **B2** | Memory + RAG | CE-PROV-04, CE-PROV-05, CE-PROV-06 | RAG/LTM/websearch fragments when handles set; gate unit tests |
+| **B3** | Shared + tools + policy | CE-PROV-09, CE-PROV-07, CE-PROV-02, CE-PROV-11 | shared_context + tool_output + system/policy overlays |
+| **B4** | Attachments + integration | CE-PROV-10, CE-PROV-INT, CE-PROV-GATE | Attachment summaries; integration test; `check_context_builtin_providers.py` green |
+
+**Critical path:** B1 → B2 (unblocks CE-10.3 metadata follow-up).
 
 ---
 
