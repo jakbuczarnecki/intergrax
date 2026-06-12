@@ -5,7 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-12-026 | 2026-06-12 | tier-0, tier-1, tier-3 REASONING_AND_COGNITION | COG-PROD.1–5 · AUDIT-IDEAL-7.1 | [COG-PROD — Reasoning plane production hardening](entries/2026-06-12/platform-cog-prod-layer-closeout.md) | pending |
+| IJ-2026-06-12-026 | 2026-06-12 | tier-0, tier-1, tier-3 REASONING_AND_COGNITION | COG-PROD.1–5 · AUDIT-IDEAL-7.1 | [COG-PROD — Reasoning plane production hardening](entries/2026-06-12/platform-cog-prod-layer-closeout.md) | 218fd286 |
 | IJ-2026-06-12-025 | 2026-06-12 | tier-0 RAG | M-RAG.38–M-RAG.48 · M-RAG.52 · AUDIT-IDEAL-14.8 | [M-RAG-GRAPH closeout — universal GraphRAG platform (G1–G3)](entries/2026-06-12/rag-m-rag-graph-closeout.md) | pending |
 | IJ-2026-06-12-024 | 2026-06-12 | tier-0, tier-1 CONTEXT_ENGINEERING | CE-PROV-BRIDGE · CE-PROV-01 · CE-PROV-03 · CE-PROV-08 | [CE-PROV-WIRE B1 — legacy bridge and graph core builtin providers](entries/2026-06-12/platform-ce-prov-wire-b1-graph-core.md) | pending |
 | IJ-2026-06-12-023 | 2026-06-12 | tier-0, tier-1 TOOLS | TOOL-ENG-DOC | [TOOLS layer completion — final audit and doc closeout](entries/2026-06-12/tools-layer-final-audit-closeout.md) | 0e0da6ce |

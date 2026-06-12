@@ -14,7 +14,7 @@ plan_ref:
   - COG-PROD.5
   - AUDIT-IDEAL-7.1
 status: completed
-commit: pending
+commit: 218fd286
 adr: none — extends existing ReasoningProfile and DECISION_EMITTED contracts; no new Tier-0 mechanism
 ---
 
