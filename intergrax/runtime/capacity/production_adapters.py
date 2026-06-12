@@ -46,7 +46,7 @@ def build_production_capacity_adapters() -> ProductionCapacityAdapters:
     """Wire production Celery/K8s adapters behind the scaling provisioner."""
     kubernetes = InMemoryKubernetesScaler(replicas_by_deployment={"nexus-host": 2})
     celery = CeleryProductionAdapter(worker_count=2)
-    provisioner = ScalingProvisioner(kubernetes=kubernetes)
+    provisioner = ScalingProvisioner(kubernetes=kubernetes, celery=celery)
     return ProductionCapacityAdapters(
         kubernetes=kubernetes,
         celery=celery,
@@ -73,5 +73,9 @@ def apply_production_scale_probe(adapters: ProductionCapacityAdapters) -> bool:
             reason="audit-ideal-30.4 probe",
         )
     )
-    adapters.celery.scale_workers(delta=1)
-    return k8s_ok and celery_ok and adapters.kubernetes.get_replicas(deployment="nexus-host") >= 2
+    return (
+        k8s_ok
+        and celery_ok
+        and adapters.kubernetes.get_replicas(deployment="nexus-host") >= 2
+        and adapters.celery.worker_count >= 3
+    )

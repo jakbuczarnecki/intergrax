@@ -8,6 +8,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications._shared.orchestration_wiring import resolve_max_inflight_nodes
+from intergrax.runtime.capacity.ceiling_patcher import BoundedOrchestrationCeilingPatcher
 from intergrax.runtime.capacity.action_gate import CapacityActionGate
 from intergrax.runtime.capacity.collector import CapacitySignalCollector
 from intergrax.runtime.capacity.evaluator import ScalingEvaluator
@@ -44,7 +46,13 @@ def wire_application_scaling(
         queue_depth_provider=queue_depth_provider,
     )
     evaluator = ScalingEvaluator(policy, publish=publish)
-    provisioner = ScalingProvisioner(action_gate=CapacityActionGate())
+    ceiling_patcher = BoundedOrchestrationCeilingPatcher(
+        max_inflight_nodes=resolve_max_inflight_nodes(env) or 8,
+    )
+    provisioner = ScalingProvisioner(
+        action_gate=CapacityActionGate(),
+        ceiling_patcher=ceiling_patcher,
+    )
     scheduler = CapacityScheduler(
         collector=collector,
         evaluator=evaluator,

@@ -163,6 +163,38 @@ def test_scheduler_skips_hitl_required_plan() -> None:
     assert not provisioner.applied
 
 
+def test_celery_provisioner_scale() -> None:
+    from intergrax.runtime.capacity.production_adapters import CeleryProductionAdapter
+
+    celery = CeleryProductionAdapter(worker_count=2)
+    provisioner = ScalingProvisioner(celery=celery)
+    ok = provisioner.apply(
+        ScalingAction(
+            kind=ScalingActionKind.SCALE_CELERY_WORKERS,
+            target=ScalingTarget.CELERY_POOL,
+            delta=1,
+        )
+    )
+    assert ok is True
+    assert celery.worker_count == 3
+
+
+def test_ceiling_provisioner_raise() -> None:
+    from intergrax.runtime.capacity.ceiling_patcher import BoundedOrchestrationCeilingPatcher
+
+    patcher = BoundedOrchestrationCeilingPatcher(max_inflight_nodes=10, max_raise_percent=20)
+    provisioner = ScalingProvisioner(ceiling_patcher=patcher)
+    ok = provisioner.apply(
+        ScalingAction(
+            kind=ScalingActionKind.RAISE_ORCHESTRATION_CEILING,
+            target=ScalingTarget.ORCHESTRATION_CEILING,
+            delta=1,
+        )
+    )
+    assert ok is True
+    assert patcher.max_inflight_nodes == 11
+
+
 def test_ahi_bridge_action() -> None:
     action = scaling_action_from_ahi_proposal(ceiling_delta=2, reason="approved")
     assert action.delta == 2
