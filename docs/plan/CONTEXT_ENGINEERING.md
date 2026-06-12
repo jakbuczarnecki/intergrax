@@ -91,13 +91,13 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 | **CE-1.2** | `ContextAssemblyRequest` + `ContextProviderContext` (runtime handles via typed ctx object) | P0 | **Done** | Schema version field; no secrets in repr |
 | **CE-1.3** | Protocols: `ContextSourceProvider`, `ContextRanker`, `ContextBudgetAllocator`, `ContextFormatter`, `ContextValidator`, `ContextEngine` | P0 | **Done** | `typing.Protocol` + docstrings; gate import boundary test |
 | **CE-1.4** | `ContextPlugin` dataclass + `ContextPluginRegistry` | P0 | **Done** | Register/list/unregister providers |
-| **CE-1.5** | Move shared scoring types from `context_engineering.py` → `intergrax/context/quality.py` (re-export shim) | P1 | Planned | No breaking imports in one release — deprecation event |
+| **CE-1.5** | Move shared scoring types from `context_engineering.py` → `intergrax/context/quality.py` (re-export shim) | P1 | **Done** | Re-export shim in `context_engineering.py` |
 | **CE-1.6** | Architecture gate: `intergrax/context/` MUST NOT import `agents/` or `applications/` | P0 | **Done** | `scripts/check_context_tier0_import_boundary.py` |
-| **CE-2.1** | `register_context_plugin()` + `intergrax.context` entry point group in `pyproject.toml` | P0 | Planned | Third-party plugin discoverable |
-| **CE-2.2** | `bootstrap_context_catalog()` in `intergrax/core/catalog_bootstrap.py` | P0 | Planned | Called from `wire_application_environment` behind flag |
-| **CE-2.3** | Shipped `BuiltinContextPlugin` registering all §8.4 providers (stubs delegating to as-built steps) | P0 | Planned | Integration test: registry lists ≥10 providers |
-| **CE-2.4** | `ContextProfile.context_plugin_ids` + validation against registry | P1 | Planned | Unknown id → fail at wire time (lab) / warn (prod) |
-| **CE-2.5** | Unit tests `tests/unit/context/test_context_plugin_registry.py` | P0 | Planned | `-m gate` |
+| **CE-2.1** | `register_context_plugin()` + `intergrax.context` entry point group in `pyproject.toml` | P0 | **Done** | `pyproject.toml` EP + `register_context_plugin()` |
+| **CE-2.2** | `bootstrap_context_catalog()` in `intergrax/context/bootstrap.py` | P0 | **Done** | `wire_application_environment` calls bootstrap |
+| **CE-2.3** | Shipped `BuiltinContextPlugin` registering all §8.4 providers (stubs delegating to as-built steps) | P0 | **Done** | 12 builtin providers |
+| **CE-2.4** | `ContextProfile.context_plugin_ids` + validation against registry | P1 | **Done** | `validate_context_plugin_ids` — lab fail / strict warn |
+| **CE-2.5** | Unit tests `tests/unit/context/test_context_plugin_registry.py` | P0 | **Done** | catalog + wiring tests `-m gate` |
 | **CE-2.6** | Extend `ContextProfile` with `engine_preset`, `engine_ref`, `context_plugin_ids` | P0 | **Done** | `environment_profile.py`; `context_runtime_bridge.py` metadata |
 
 **Wave 1 exit:** `uv run pytest tests/unit/context/ -m gate -q` green.
@@ -206,13 +206,13 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 | CE-1.2 | 1 | **Done** |
 | CE-1.3 | 1 | **Done** |
 | CE-1.4 | 1 | **Done** |
-| CE-1.5 | 1 | Planned |
+| CE-1.5 | 1 | **Done** |
 | CE-1.6 | 1 | **Done** |
-| CE-2.1 | 1 | Planned |
-| CE-2.2 | 1 | Planned |
-| CE-2.3 | 1 | Planned |
-| CE-2.4 | 1 | Planned |
-| CE-2.5 | 1 | Planned |
+| CE-2.1 | 1 | **Done** |
+| CE-2.2 | 1 | **Done** |
+| CE-2.3 | 1 | **Done** |
+| CE-2.4 | 1 | **Done** |
+| CE-2.5 | 1 | **Done** |
 | CE-2.6 | 1 | **Done** |
 | CE-3.1 | 2 | Planned |
 | CE-3.2 | 2 | Planned |
@@ -344,7 +344,7 @@ Operator-facing sprint plan. One sprint = one coherent PR batch (1–5 CE IDs). 
 |--------|------|--------|---------------|------------|
 | **S0** | Documentation + audit alignment | CE-DOC.7 | Architecture §2–§17 reflect post-ACP as-built; GAP-CTX-13/14 registered | — |
 | **S1** | Tier-0 contracts + profile fields | CE-2.6, CE-1.1–CE-1.4, CE-1.6 | `intergrax/context/contracts.py` exists; `ContextProfile` preset fields; gate import boundary | **Done** (2026-06-12) |
-| **S2** | Plugin catalog bootstrap | CE-2.1–CE-2.5, CE-1.5 | `register_context_plugin()`, `BuiltinContextPlugin` ≥10 providers; `pytest tests/unit/context/` green | S1 |
+| **S2** | Plugin catalog bootstrap | CE-2.1–CE-2.5, CE-1.5 | `register_context_plugin()`, `BuiltinContextPlugin` ≥10 providers; `pytest tests/unit/context/` green | **Done** (2026-06-12) |
 | **S3** | Engine skeleton + hot-path compiler | CE-3.1, CE-3.2, CE-3.9, CE-3.10 | `DefaultNexusContextEngine`; `ContextCompiler` on ACP/UAEP before LLM; acceptance never-overflow on prod path | S2 |
 | **S4** | Path unification + events | CE-3.3, CE-3.4, CE-3.7, CE-3.11, CE-3.8 | Graph + ACP share `assemble()`; unified `CONTEXT_ASSEMBLED`; integration test green | S3 |
 | **S5** | Step-aware assembly | CE-4.1–CE-4.6, CE-4.7, CE-5.1 | `step_kind` in payload v2; policy audit in `assemble()`; optional contract `context_hints` | S4 |

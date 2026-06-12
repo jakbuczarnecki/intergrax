@@ -12,6 +12,7 @@ from intergrax.applications._shared.environment_conformance import (
     EnvironmentSkillToolConsistencyCheck,
 )
 from intergrax.applications._shared.integration_health_wiring import probe_integration_profile_health
+from intergrax.applications._shared.context_wiring import bootstrap_application_context_catalog
 from intergrax.applications._shared.integration_wiring import bootstrap_application_integration_catalog
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 from intergrax.applications._shared.rag_runtime_bridge import resolve_rag_stack_for_environment
@@ -84,6 +85,7 @@ def wire_application_environment(
     Replaces scattered per-host wiring sequences (lab/legal/research/poc).
     """
     bootstrap_application_integration_catalog()
+    bootstrap_application_context_catalog()
     resolved_integration = integration_profile or env.integration_profile or manifest.integration_profile
     reliability_wiring = wire_application_reliability(env)
     integration_health = probe_integration_profile_health(

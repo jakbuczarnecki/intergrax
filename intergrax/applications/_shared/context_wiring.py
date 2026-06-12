@@ -1,15 +1,82 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Tier-3 context engineering wiring (Phase CTX-2)."""
+"""Tier-3 context engineering wiring (Phase CTX-2, CE-2.4)."""
 
 from __future__ import annotations
 
+import logging
+
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.context.bootstrap import bootstrap_context_catalog, materialize_context_plugin_registry
+from intergrax.context.registry import ContextPluginRegistry, UnknownContextPluginError
+from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.task.task_contract import TaskExecutionOptions
+
+logger = logging.getLogger(__name__)
+
+
+def _is_production_environment(env: ApplicationEnvironmentProfile) -> bool:
+    """Lab / dev profiles fail closed on unknown plugin ids; prod hosts warn."""
+    from intergrax.applications.contracts.execution_mode import ExecutionMode
+
+    return env.execution_mode == ExecutionMode.STRICT
+
+
+def bootstrap_application_context_catalog(
+    *,
+    discover_entry_points: bool | None = None,
+) -> None:
+    """Register shipped context catalog (and optional entry-point plugins)."""
+    discover = discover_plugins_enabled() if discover_entry_points is None else discover_entry_points
+    bootstrap_context_catalog(discover_entry_points=discover)
+
+
+def validate_context_plugin_ids(
+    env: ApplicationEnvironmentProfile,
+    *,
+    production_mode: bool = True,
+) -> list[str]:
+    """
+    Validate ``ContextProfile.context_plugin_ids`` against the catalog.
+
+    Lab hosts (``production_mode=False``) fail closed; production warns.
+    """
+    plugin_ids = list(env.context_profile.context_plugin_ids)
+    if not plugin_ids:
+        return []
+
+    bootstrap_application_context_catalog()
+    unknown: list[str] = []
+    from intergrax.context.registry import get_context_plugin
+
+    for plugin_id in plugin_ids:
+        try:
+            get_context_plugin(plugin_id)
+        except UnknownContextPluginError:
+            unknown.append(plugin_id)
+
+    if not unknown:
+        return []
+
+    message = f"Unknown context plugin id(s): {', '.join(sorted(unknown))}"
+    if production_mode:
+        logger.warning("%s", message)
+        return unknown
+    raise ValueError(message)
+
+
+def resolve_context_plugin_registry_from_environment(
+    env: ApplicationEnvironmentProfile,
+) -> ContextPluginRegistry:
+    """Materialize enabled context plugins for the environment profile."""
+    bootstrap_application_context_catalog()
+    validate_context_plugin_ids(env, production_mode=_is_production_environment(env))
+    plugin_ids = env.context_profile.context_plugin_ids or ["intergrax.builtin"]
+    return materialize_context_plugin_registry(plugin_ids)
 
 
 def resolve_context_budget_policy(env: ApplicationEnvironmentProfile) -> ContextBudgetPolicy:

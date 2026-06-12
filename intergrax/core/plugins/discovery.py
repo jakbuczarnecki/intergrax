@@ -20,6 +20,7 @@ EP_INTEGRATIONS = "intergrax.integrations"
 EP_TOOLS = "intergrax.tools"
 EP_SKILLS = "intergrax.skills"
 EP_MEMORY_STORES = "intergrax.memory_stores"
+EP_CONTEXT = "intergrax.context"
 
 T = TypeVar("T")
 
