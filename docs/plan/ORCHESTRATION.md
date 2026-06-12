@@ -619,7 +619,7 @@ Decision:       L1 certified — GO Phase S (harness environment), then Phase K 
 | N-04 | `PolicyEngine` \| `RuntimePolicyEngine` union | Q-N.4 | Done |
 | N-05 | Hooks NOT_WIRED: decision, interrupt, retry | Q-N.5 | Done |
 | N-06 | Hooks PARTIAL: trace persist | Q-N.6 | Done |
-| N-07 | `runtime_steps/tools.py` misleading name | Q-N.7 | Done |
+| N-07 | `nexus/context/tool_context_helpers.py` misleading name | Q-N.7 | Done |
 | N-08 | `RuntimeConfig` monolith | Q-N.8 | Done |
 | N-09 | `integration_profile: object` | Q-N.9 | Done |
 | N-10 | `production_mode` default in lab | Q-N.10 | Done |
@@ -652,7 +652,7 @@ Decision:       L1 certified — GO Phase S (harness environment), then Phase K 
 | R-01 | Dead `_build_backend_where` / `_map_hits_to_chunks` | Q-R.1 | Done |
 | R-02 | Four parallel retrieval paths | Q-R.2 | Done |
 | R-03 | `enable_rag` vs `use_rag` in ContextBuilder | Q-R.3 | Done |
-| R-04 | `NoPlannerPipeline` always `RagStep` | Q-R.4 | Done |
+| R-04 | Pipeline `rag_step` always `rag.retrieve` (retired — tool_ids in `on_next_step`) | Q-R.4 | Done |
 | R-05 | `top_k` collapses prefetch | Q-R.5 | Done |
 | R-06 | `RuntimeConfig` vs `RagProfile` dual config | Q-R.6 | Done |
 | R-07 | Unused `RagProfile.extras` | Q-R.7 | Done |
@@ -1252,7 +1252,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 | Area | Modules | Task |
 |------|---------|------|
-| Nexus core LLM | `core_llm_step.py` | M-LLM-R.4.1 |
+| Nexus core LLM | `context_preflight.py + on_next_step` | M-LLM-R.4.1 |
 | Tool planning | `tool_planning_service.py` | M-LLM-R.4.2 |
 | Planning / history | `plan_sources.py`, `engine_history_layer.py` | M-LLM-R.4.3 |
 | Profile services | `user_profile/*`, `organization/*`, `session_memory_consolidation_service.py` | M-LLM-R.4.4 |
@@ -1260,7 +1260,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | RAG | `query_refiner.py`, `query_expander.py`, `chunk_enricher.py`, `llm_graph_indexer.py` | M-LLM-R.5.1 |
 | Websearch | `websearch_context_generator.py`, `websearch_answerer.py` | M-LLM-R.5.2 |
 | Legacy RAG | `legacy/rag_answers/pipeline/answer_pipeline.py` | M-LLM-R.5.3 |
-| Agents (Tier-2) | `agents/*/steps/pipeline.py`, `mock_agents.py` | M-LLM-R.6.1 |
+| Agents (Tier-2) | `agent cognitive patterns (`on_next_step`)`, `mock_agents.py` | M-LLM-R.6.1 |
 | Scaffold / tests | `scaffold/new_agent.py`, `testing_support/builder.py` | M-LLM-R.6.2–6.3 |
 | All providers | `llm_adapters/providers/*` | M-LLM-R.3.* |
 

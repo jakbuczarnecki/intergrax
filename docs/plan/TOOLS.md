@@ -20,7 +20,7 @@
 
 **Problem statement (2026-06-10, partially closed):** Tier-0 catalog is production-grade (190 tools, contracts, MCP). Tier-1 gaps on bootstrap, dispatch, gateway, selection — **closed** TOOL-ENG-0–6,11.
 
-**Problem statement (2026-06-12 — invocation patterns):** Tier-1 **orchestration of multi-call plans** is hardcoded in `ToolsStep` → `run_bounded_tool_loop` → sequential `execute_planned_tool_calls`. Missing:
+**Problem statement (2026-06-12 — invocation patterns):** Tier-1 **orchestration of multi-call plans** is hardcoded in `run_bounded_tool_loop` / `ctx.invoke_tool` → `run_bounded_tool_loop` → sequential `execute_planned_tool_calls`. Missing:
 
 - `ToolInvocationPattern` plugin protocol (precedent: `ToolSelectionStrategy`, `ToolPlannerProtocol`)
 - Named shipped patterns: single-pass, parallel batch, bounded ReAct, deterministic chain
@@ -71,11 +71,11 @@
 | TOOL-ENG-25 | Orchestration | **`ParallelSemanticBatchPattern`** — semantic top-k selection + parallel invoke + aggregate (composite) | **Planned** | P1 | `patterns/parallel_semantic_batch.py`, `tool_selection.py` | Depends TOOL-ENG-13+9+29; integration test with fixture index |
 | TOOL-ENG-29 | Orchestration | **`ToolInvocationAggregate`** — canonical batch result merge before LLM context inject | **Planned** | P1 | `tool_invocation_aggregate.py`, `tool_loop_step.py` | Unit: N traces → single aggregate payload; used by parallel patterns |
 | TOOL-ENG-21 | Config | **`RuntimeConfig.tool_invocation_pattern`** + `ToolInvocationMode` enum + `pattern_for_mode()` factory | **Planned** | P1 | `config.py`, `config_types.py`, `tool_invocation_pattern.py` | Default `single_pass`; factory returns correct pattern class |
-| TOOL-ENG-22 | Wiring | **`ToolsStep` delegates to `ToolInvocationPattern`** — remove direct `run_bounded_tool_loop` call | **Planned** | P1 | `tools_step.py`, `runtime_context.py` | Inject pattern at `RuntimeContext.build()`; existing tests green |
+| TOOL-ENG-22 | Wiring | **`run_bounded_tool_loop` / `ctx.invoke_tool` delegates to `ToolInvocationPattern`** — remove direct `run_bounded_tool_loop` call | **Planned** | P1 | `tools_step.py`, `runtime_context.py` | Inject pattern at `RuntimeContext.build()`; existing tests green |
 | TOOL-ENG-23 | Wiring | **Host profile bridge** — `ApplicationEnvironmentProfile.tool_invocation_mode` → `RuntimeConfig` | **Planned** | P1 | `environment_profile.py`, `catalog_runtime_bridge.py` | `test_catalog_runtime_bridge.py` pattern field |
 | TOOL-ENG-24 | Plugins | **Entry-point registry `intergrax.tool_invocation_patterns`** — custom host/agent patterns | **Planned** | P2 | `tool_invocation_registry.py`, `pyproject.toml` | Reference custom pattern in test fixture loads via EP |
 | TOOL-ENG-27 | Observability | **Pattern trace** — `pattern_id`, `stop_reason`, `ops:tool_invocation_pattern` in `ToolsSummaryDiagV1` | **Planned** | P2 | `tools_step.py`, trace models | Trace payload includes pattern_id on every ToolsStep |
-| TOOL-ENG-28 | CI | **`check_tool_invocation_patterns.py`** — shipped patterns registered; `ToolsStep` uses factory not hardcoded import | **Planned** | P2 | `scripts/` | Gate script green in CI |
+| TOOL-ENG-28 | CI | **`check_tool_invocation_patterns.py`** — shipped patterns registered; `run_bounded_tool_loop` / `ctx.invoke_tool` uses factory not hardcoded import | **Planned** | P2 | `scripts/` | Gate script green in CI |
 | TOOL-ENG-30 | DX | **`lab_application` reference wiring** — env flags for each shipped `ToolInvocationMode` | **Planned** | P2 | `applications/lab_application/` | Doc example + smoke test per mode |
 
 #### Loop, governance, adaptive
@@ -181,7 +181,7 @@ TOOL-ENG-12 → 8 → 7 → 10
 | 12 | **TOOL-ENG-17** | Code | **Planned** | `SinglePassPattern` | single-pass parity test |
 | 13 | **TOOL-ENG-18** | Code | **Planned** | `BoundedReactPattern` refactor | loop integration green |
 | 14 | **TOOL-ENG-21** | Code | **Planned** | `tool_invocation_pattern` config + factory | factory unit test |
-| 15 | **TOOL-ENG-22** | Code | **Planned** | `ToolsStep` → pattern delegation | existing tests green |
+| 15 | **TOOL-ENG-22** | Code | **Planned** | `run_bounded_tool_loop` / `ctx.invoke_tool` → pattern delegation | existing tests green |
 | 16 | **TOOL-ENG-23** | Code | **Planned** | Host profile bridge | `test_catalog_runtime_bridge.py` |
 | 17 | **TOOL-ENG-29** | Code | **Planned** | `ToolInvocationAggregate` | aggregate unit test |
 | 18 | **TOOL-ENG-9** | Code | **Planned** | `ParallelBatchPattern` | parallel < serial wall time |
@@ -276,7 +276,7 @@ TOOL-ENG-12 → 8 → 7 → 10
 | ID | Area | Deliverable | Status | Modules | Acceptance |
 |----|------|-------------|--------|---------|------------|
 | LEG-1 | LEG1 | **`tool_invocation_plan_from_capability_payload`** — gateway maps booleans → `tool_ids` without `from_legacy` | **Done** | `tool_runtime.py`, `tool_gateway.py` | `test_capability_payload_tool_plan.py` |
-| LEG-2 | LEG2 | **Engine planner `tool_ids`** — parser populates `EnginePlan.tool_ids`; schema optional `tool_ids` | **Done** | `engine_planner_parse.py`, `engine_planner_messages.py` | `test_engine_plan_json_parser.py` |
+| LEG-2 | LEG2 | **Engine planner `tool_ids`** — parser populates `EnginePlan.tool_ids`; schema optional `tool_ids` | **Done** | `engine_planner_parse.py`, `nexus_llm_plan_builder.py` | `test_engine_plan_json_parser.py` |
 | LEG-3 | LEG3 | **`plan_from_like` canonical path** — `from_tool_ids` only; `tool_gateway` removed from audit grandfather | **Done** | `tool_runtime.py`, `check_legacy_tool_plan_booleans.py` | audit script green |
 
 **Residual:** `ToolInvocationPlan.from_legacy()` retained in `tool_runtime.py` for explicit deprecation tests only; `EnginePlan.use_rag`/`use_websearch` remain on LLM schema for backward-compatible planner output.
@@ -345,7 +345,7 @@ TOOL-ENG-12 → 8 → 7 → 10
 | Planning L6b | §Multi-tool execution · §patterns | `ToolPlanningService`, `ToolPlannerProtocol` |
 | Orchestration 2a | §[Invocation patterns](../architecture/TOOLS.md#tool-invocation-patterns-production-orchestration) · FLOW §15.1 | `ToolInvocationPattern` *(planned)*, `run_bounded_tool_loop` |
 | Atomic invoke 2b | §pipeline · §42.12 gateway | `RuntimeToolInvoker`, `ToolRuntime` |
-| Logging | §pipeline · FLOW §17 · OBS | `trace_event`, `TOOL_*`, `ToolsStep` |
+| Logging | §pipeline · FLOW §17 · OBS | `trace_event`, `TOOL_*`, `run_bounded_tool_loop` / `ctx.invoke_tool` |
 | Gaps | §[Engine gap register](../architecture/TOOLS.md#engine-gap-register-canon) | Phase **TOOL-ENG** master register |
 
 ### TOOL-ENG-DOC — Paydown log
@@ -411,7 +411,7 @@ Execute **strictly in order** for foundation (O.1–O.4); O.5–O.10 may overlap
 | 4 | O.4 | Implement `providers/jira/` bundle (3 tools) | **Done** — conformance tests with mocked `IssueTracker` |
 | 4b | O.4b | Implement remaining catalog bundles (`confluence`, `notify`, `observability`, `sandbox`) | **Done** — all tool_ids in `register_default_tools()` |
 | 5 | O.5a | Add `tool_ids` to plan models; map legacy booleans → tool_ids | **Done** — `ToolInvocationPlan`, `LegalToolPlan` |
-| 6 | O.5b | `RagStep` / `WebsearchStep` delegate to catalog tools | **Done** — `catalog_context.py` shim |
+| 6 | O.5b | `rag.retrieve` (catalog) / `websearch.query` (catalog) delegate to catalog tools | **Done** — `catalog_context.py` shim |
 | 7 | O.5c | Update `LegalToolPlan` / engine plans to tool list | **Done** — bridge passes `tool_ids` |
 | 8 | O.6 | MCP + OpenAI exporters from single catalog | **Done** — `tools/exporters/` |
 | 9 | O.7 | Remove `ToolBase` usage from production paths | **Done** — `ChatAgent` uses registry `ToolRegistry` |
@@ -729,7 +729,7 @@ TARGET (remaining TOOL-ENG):
 
 **Compatibility (O.5a / LEG):** `ToolInvocationPlan.from_legacy(use_rag=…)` maps booleans to default tool_ids. Deprecation trace when legacy-only booleans used.
 
-**Context injection:** `rag.retrieve` and `websearch.query` set `injects_context=true`; pipeline merges via `catalog_context` + `ToolsStep` system inject (§22.1).
+**Context injection:** `rag.retrieve` and `websearch.query` set `injects_context=true`; pipeline merges via `catalog_context` + `run_bounded_tool_loop` / `ctx.invoke_tool` system inject (§22.1).
 
 **Configuration reference:** [`architecture/TOOLS.md`](../architecture/TOOLS.md) — [Runtime configuration reference](../architecture/TOOLS.md#runtime-configuration-reference), [Multi-tool execution](../architecture/TOOLS.md#multi-tool-execution-semantics), [§42.12 gateway](../architecture/TOOLS.md#4212-gateway-surface-toolrequest).
 

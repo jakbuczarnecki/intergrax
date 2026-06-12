@@ -112,7 +112,7 @@ Total: 70 deliverables
 | W-ADAPT-1.8 | **`compute_utility()`** — AHIA §10.2 formula + default weights | **Done** | **Critical** | Unit tests for weight boundaries |
 | W-ADAPT-1.9 | **`SignalCollector`** — HITL intervention counters from task/HITL runtime | **Done** | Medium | `hitl_interventions` |
 | W-ADAPT-1.10 | **Nexus hook** — emit signal on task completion (`task_finisher` / lifecycle bridge) | **Done** | **Critical** | ≥1 signal per completed Nexus task in integration test |
-| W-ADAPT-1.11 | **RuntimeEngine hook** — optional signal path for non-Nexus runs (parity with W-OPS shadow) | **Done** | Medium | Lab runtime records signal |
+| W-ADAPT-1.11 | **AgentEngine hook** — optional signal path for non-Nexus runs (parity with W-OPS shadow) | **Done** | Medium | Lab runtime records signal |
 | W-ADAPT-1.12 | **`scripts/phase_w_adapt_report.py`** — signal trends + utility histograms | **Done** | High | JSON under `build/adaptive_harness/signal_trends.json` |
 
 #### Wave W-ADAPT-2 — Recommend (L4-R)

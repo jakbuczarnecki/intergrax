@@ -303,7 +303,7 @@ protocol UnifiedAgentExecution:
 
 - No agent MAY bypass steps 3–8.
 - `execute()` on `Agent` interface (§13) MUST delegate to UAEP via `AgentEngine`.
-- Direct `RuntimeEngine.run()` from agent code is **forbidden** outside AgentEngine (§42.41).
+- Direct `Agent.run()` from agent code is **forbidden** outside AgentEngine (§42.41).
 
 ---
 
@@ -1537,7 +1537,7 @@ The following are **explicitly forbidden** in Tier-2 agents and discouraged ever
 | **Hidden side effects** | Slack/email/DB writes outside contract |
 | **Direct global state mutation** | Breaks reproducibility |
 | **Uncontrolled background tasks** | `asyncio.create_task` without runtime registration |
-| **Runtime bypassing** | Calling `RuntimeEngine` outside AgentEngine |
+| **Runtime bypassing** | Calling `AgentEngine` outside AgentEngine |
 | **Unmanaged async execution** | Fire-and-forget coroutines in agents |
 | **Untraceable execution paths** | Logic without STEP/TOOL events |
 | **Custom retry loops in agents** | Duplicates RetryEngine, causes cost runaway |

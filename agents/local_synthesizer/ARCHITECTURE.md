@@ -50,7 +50,7 @@ Transform retrieved evidence into user-requested deliverables — emails, report
 ## UAEP pipeline
 
 ```text
-steps/pipeline.py
+`on_next_step` / cognitive pattern hooks
   1. load_evidence         → memory / graph context
   2. select_template
   3. llm_synthesize

@@ -9,7 +9,7 @@
 
 ## Context
 
-Tier-2 agent authoring in Intergrax is UAEP-first (`get_steps`, `run_step`, `decide_after_step`) but lacks a **first-class cognitive pattern library** (reflex, ReAct, plan-execute, decomposition, reflection). Authors reimplement these loops inside `run_step` or fall back to the legacy `RuntimeEngine` pipeline path, which creates:
+Tier-2 agent authoring in Intergrax is UAEP-first (`get_steps`, `run_step`, `decide_after_step`) but lacks a **first-class cognitive pattern library** (reflex, ReAct, plan-execute, decomposition, reflection). Authors reimplement these loops inside `run_step` or fall back to the legacy `AgentEngine` pipeline path, which creates:
 
 - inconsistent observability and decision semantics,
 - confusion about what belongs in Nexus vs the agent class,
@@ -25,7 +25,7 @@ Production harness requirements (multi-agent graphs, HITL, policy, checkpoints, 
 2. **Introduce Agent Cognitive Architecture (ACP)** as a **Tier-2 authoring library** under `intergrax/agents/authoring/patterns/`, built on existing UAEP and `RuntimeExecutionContext`.
 3. **Cognitive patterns** (`ReflexAgent`, `ReActAgent`, `PlanExecuteAgent`, `DecompositionAgent`, `ReflectionAgent`) implement domain hooks (`perceive`, `reason`, `act`, `evaluate`) **inside** `run_step` / `decide_after_step` — not a parallel execution engine.
 4. **Configuration split preserved:** governance and environment profiles remain Tier-3 `ApplicationEnvironmentProfile`; agents declare contract + cognitive pattern + domain logic; `build_context` consumes injected profile metadata from the host.
-5. **Legacy `RuntimeEngine` path** is deprecated for new agents; Phase **ACP-LEG** tracks migration to UAEP-only.
+5. **Legacy `AgentEngine` path** is deprecated for new agents; Phase **ACP-LEG** tracks migration to UAEP-only.
 6. **Author-facing `run()` facade** — see [ADR-AGENT-002](ADR-AGENT-002.md); complements this ADR without moving Nexus into agents.
 
 **Rejected:**
@@ -50,7 +50,7 @@ Production harness requirements (multi-agent graphs, HITL, policy, checkpoints, 
 
 - Authors must learn **three cognition planes** (Nexus graph / UAEP steps / tool loop) — documented in §21.4.
 - Pattern library maintenance cost (5 base classes + tests + CVL/ReAct cross-domain sync).
-- Short-term coexistence of UAEP patterns and legacy `RuntimeEngine` until ACP-LEG completes.
+- Short-term coexistence of UAEP patterns and legacy `AgentEngine` until ACP-LEG completes.
 
 ## Compliance
 

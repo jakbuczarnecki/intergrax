@@ -747,7 +747,7 @@ Accepted and implemented: [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md) (FLOW-2, 
 | Layer | Component | Trigger | Scope | Who decides | Default |
 |-------|-----------|---------|-------|-------------|---------|
 | **A — Graph node** | `RetryEngine` | `NexusValidationEngine` fails node result | Same graph node; may switch agent | Runtime (`decide()` alternate agent) | `max_retries=1`; factory sets 3 or 1 (`strict`) |
-| **B — UAEP / agent run** | `RuntimeEngine`, `AgentDecision.RETRY` | LLM/tool transient, agent requests retry | **Inside one node** — UAEP steps or legacy pipeline | Runtime policy (`max_run_retries` on `RuntimeConfig`) | Per agent host |
+| **B — ACP / agent run** | `AgentEngine`, `HarnessKernel`, `AgentDecision.RETRY` | LLM/tool transient, agent requests retry via `StepOutcome` | **Inside one node** — `on_next_step` loop | Runtime policy (`max_run_retries` on `RuntimeConfig`) | Per agent host |
 | **C — Whole run** | `RetryCoordinator` in `NexusGraphRunner` | Re-execute entire graph after failure | Full plan / all nodes | Runtime coordinator | **`max_run_retries=0` — disabled** |
 
 ```mermaid
@@ -757,9 +757,9 @@ flowchart TD
         RE -->|alternate agent| R1[Re-execute node]
         RE -->|max exceeded| F1[Node FAILED]
     end
-    subgraph LayerB["Layer B — UAEP / run retry"]
-        AD[AgentDecision.RETRY or LLM/TOOL_ERROR] --> UAEP[RuntimeEngine / UAEP policy]
-        UAEP --> STEP[Re-run step or short pipeline]
+    subgraph LayerB["Layer B — ACP agent run retry"]
+        AD[StepOutcome.retry or AgentDecision.RETRY] --> AE[AgentEngine / HarnessKernel policy]
+        AE --> STEP[Re-run on_next_step iteration]
     end
     subgraph LayerC["Layer C — Whole run retry"]
         GR[Graph failure] --> RC[RetryCoordinator]
@@ -863,9 +863,9 @@ flowchart LR
 | **Tool invocation pattern** | Multi-call plan within one step | `ToolInvocationPattern` *(TOOL-ENG-16)* | **Yes** — `bounded_react`, `parallel_batch`, etc. |
 | **Atomic invoke** | Single `tool_id` call | `RuntimeToolInvoker` | N/A |
 
-**Flow today (interim):** `ToolsStep` → `run_bounded_tool_loop` → `execute_planned_tool_calls` (sequential) → `RuntimeToolInvoker`.
+**Flow today (interim):** `run_bounded_tool_loop` / `ctx.invoke_tool` → `run_bounded_tool_loop` → `execute_planned_tool_calls` (sequential) → `RuntimeToolInvoker`.
 
-**Flow target:** `ToolsStep` → `pattern_for_mode(config.tool_invocation_pattern)` → shipped or custom `ToolInvocationPattern` → `RuntimeToolInvoker`.
+**Flow target:** `run_bounded_tool_loop` / `ctx.invoke_tool` → `pattern_for_mode(config.tool_invocation_pattern)` → shipped or custom `ToolInvocationPattern` → `RuntimeToolInvoker`.
 
 ---
 
@@ -1159,7 +1159,7 @@ Ideal Harness AI ([`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_A
 | Declarative `graph_spec` + `trigger_capabilities` | **Done** (ORCH-2, ORCH-CONFIG.2, ADR-FLOW-004) |
 | LLM-backed Nexus planner (`planner_kind=engine`) | **Done** (FLOW-1) — `EngineBackedNexusPlanner` |
 | `DecisionRecord` universal per UAEP step | **Done** (FLOW-12) — `DECISION_EMITTED` + `decision_record` payload; gate regression test |
-| Engine planner modules (`engine_planner_orchestrator.py`) | **Bridged** via `nexus_llm_plan_builder.py` |
+| Engine planner modules (`nexus_llm_plan_builder.py`) | **Bridged** via `nexus_llm_plan_builder.py` |
 
 Harness MVP and new Tier-2 agents remain unblocked. LLM-backed dynamic decomposition is **available** when `planner_kind=engine`; product parity claims still require operational validation per deployment profile.
 

@@ -54,7 +54,7 @@ Call lifecycle helper (M-LLM-R.2.6): `LLMCallLifecycle` in `intergrax/llm_adapte
 
 ### Trace and replay bridge (M-LLM-R.7.2)
 
-`CoreLLMStep` emits `CoreLLMCallRecordedDiagV1` on each successful LLM call. Persisted Nexus traces map to replay DTOs via:
+agent LLM step (`on_next_step`) emits `CoreLLMCallRecordedDiagV1` on each successful LLM call. Persisted Nexus traces map to replay DTOs via:
 
 - `intergrax/runtime/replay/trace_replay_bridge.py` — `serialized_trace_events_to_replay_dtos`
 - `intergrax/runtime/replay/persisted_trace_event_store.py` — `PersistedRunTraceEventStore` (`TraceEventStore` over `RunTraceReader`)

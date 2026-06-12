@@ -188,7 +188,8 @@ scripts/check_orchestration_config_docs.py""",
         ),
         "code": """intergrax/runtime/task/unified_task_runner.py
 intergrax/runtime/nexus/nexus_loop.py
-intergrax/runtime/nexus/runtime_steps/ (tools_step, rag_step, context_step, …)
+intergrax/runtime/nexus/tools/tool_loop.py · plan_context_invocation.py
+intergrax/agents/agent_engine.py · authoring/acp_run.py · HarnessKernel
 intergrax/runtime/nexus/agent_router.py
 intergrax/runtime/nexus/context/context_manager.py
 intergrax/runtime/nexus/handoff/coordinator.py
@@ -200,7 +201,7 @@ tests/acceptance/agent_os/""",
         "active_phases": "FLOW 18/18 Done · FLOW-CTL · FLOW-8 harness Done/product Deferred · H-APP-WIRING · COG-DEPTH cross-ref",
         "known_gaps": "FLOW-GAP-20 hybrid daemon LKW · UC-6 research stubs · WAITING_FOR_RESOURCES/EXPIRED reserved v1 · production-ready = Partial without strict profile + W-OPS",
         "dimensions": [
-            "Three planning planes distinguished: Nexus planner / UAEP engine planner / tool planner.",
+            "Three planning planes distinguished: Nexus planner / agent on_next_step / tool planner.",
             "TaskClassifier does not mutate Task.state directly.",
             "AgentRouter respects production_mode and registry constraints.",
             "Handoff uses HandoffCoordinator — traced lineage.",
@@ -209,7 +210,7 @@ tests/acceptance/agent_os/""",
             "Cancel is cooperative at step boundaries.",
             "Trace reconstructs full 'why did run stop' narrative.",
             "DECISION_EMITTED on UAEP steps before side effects.",
-            "RagStep poisoning defense active (cross-check RAG domain for catalog gap).",
+            "RAG poisoning defense active on catalog rag.retrieve path (cross-check RAG domain).",
             "Reserved lifecycle states not used in production hosts.",
             "Engine planner requires llm_adapter at bootstrap — fail-fast if missing.",
             "Partial completion policy explicit when PARTIALLY_COMPLETED allowed.",
@@ -252,12 +253,12 @@ intergrax/agents/persistence/  [ACP-PROD checkpoint · declarative tools]
 intergrax/runtime/registry/agent_registry.py
 intergrax/prompts/registry/ (YamlPromptRegistry)
 intergrax/runtime/architecture/capability_graph*.py · agent_lifecycle_governance.py
-intergrax/runtime/nexus/engine/runtime.py  [legacy ACP-LEG]
+intergrax/runtime/nexus/tools/tool_loop.py  [ACP tool loop]
 agents/ (Tier-2 roster) · applications/_shared/prompt_wiring.py
 scripts/check_agents_lifecycle_metadata.py · check_agents_vendor_imports.py""",
         "key_symbols": "AgentContract · UAEPAgent · RuntimeExecutionContext · AgentDecision · CognitiveAgent · acp.state.v1 · IntergraxAgent · PromptMeta · AgentStepContext · StepOutcome · AgentRunTrace · ApplicationRunSummary",
         "active_phases": "ACP Done (2026-06-11) · ACP-CLOSE active §6.1bb · PE/REG/CG/AS closed · AUDIT-IDEAL residuals",
-        "known_gaps": "GAP-ACP-03/04/07 Open · ACP-CLOSE-LEG-1..3 · ACP-CLOSE-PROD-1..8 · ACP-CLOSE-PAT-1..2 · TOOL-ENG-6 · AUDIT-IDEAL-19.1/20.1/31.1",
+        "known_gaps": "GAP-ACP-03/04/07 Open · ACP-CLOSE-LEG-5 Done · ACP-CLOSE-PROD-1..8 · ACP-CLOSE-PAT-1..2 · TOOL-ENG-16 pattern plugin · AUDIT-IDEAL-19.1/20.1/31.1",
         "dimensions": [
             "AgentContract has required fields per §12 — capabilities, allowed_tools, risk metadata.",
             "UAEPAgent: get_steps/run_step — AgentEngine path, not private HTTP bypass.",
@@ -266,7 +267,7 @@ scripts/check_agents_lifecycle_metadata.py · check_agents_vendor_imports.py""",
             "ADR-AGENT-001 Accepted; architecture §21–§36 ACP + run/step canon present.",
             "Three cognition planes (§23) — no private multi-agent graph inside run_step (ACP-AP-01).",
             "Tool calls via RuntimeExecutionContext.invoke_tool / ToolRuntime only.",
-            "Agents do not call RuntimeEngine.run() from Tier-2 (ACP-LEG).",
+            "Agents control loop via on_next_step only — no Tier-2 RuntimeEngine/pipeline (ACP-CLOSE-LEG-5).",
             "CognitiveAgent base exists or gap ACP-1 recorded.",
             "Pattern classes Reflex/ReAct/PlanExecute/Decomposition/Reflection vs ACP-2..6.",
             "acp.state.v1 schema and cognitive_pattern on contract (ACP-0/0b).",
@@ -407,14 +408,14 @@ intergrax/rag/rerankers/ · intergrax/rag/vectorstore/
 intergrax/rag/evaluation/golden_harness.py
 intergrax/rag/tracking/ (RetrievalTrace, metrics)
 applications/_shared/rag_runtime_bridge.py
-intergrax/runtime/nexus/runtime_steps/rag_step.py
+intergrax/runtime/nexus/tools/plan_context_invocation.py
 intergrax/tools/providers/rag/
 .github/workflows/rag-guard.yml · tests/fixtures/rag_golden/""",
         "key_symbols": "RagProfile · RagStack · RetrievalService · RetrievalRequest/RetrievalResult · RetrievalTrace · IngestPipeline · QueryRouter · MetadataFilter · DualIndexStrategy · HierarchicalRetriever",
         "active_phases": "M-RAG.1–M-RAG.22 Done · **M-RAG-DEPTH active** (M-RAG.23–M-RAG.37 ← GAP-RAG-01..23)",
         "known_gaps": "GAP-RAG-01/17/23 query_expansion unwired (P0) · GAP-RAG-02/03 DualIndex not default ingest · GAP-RAG-04 poisoning Nexus-only not catalog rag.retrieve · GAP-RAG-05/06 no stream/async ingest · GAP-RAG-07 vector bridges beta · GAP-RAG-08/09 OTel/metrics opt-in · GAP-RAG-10–12 no fallback chain · GAP-RAG-18 GraphRAG beta · GAP-RAG-20 tenant isolation partial · GAP-RAG-21 no load/soak gate",
         "dimensions": [
-            "Single canonical path: RagProfile → RetrievalService → rag.* tools / Nexus RagStep.",
+            "Single canonical path: RagProfile → RetrievalService → rag.retrieve catalog tool.",
             "Agents do not call vectorstore.query or vendor SDKs directly.",
             "RagProfile fields wired — flag dead config (especially query_expansion, INTERGRAX_RAG_* env).",
             "ParserPipeline + chunking strategies (5+) used on ingest — not raw text shortcut.",
@@ -463,14 +464,14 @@ intergrax/tools/providers/rag/
 intergrax/runtime/nexus/tools/tool_runtime.py · invoker.py · catalog_dispatch.py
 intergrax/runtime/nexus/tools/tool_planning_service.py · catalog_tool_planner.py
 intergrax/runtime/nexus/tools/tool_selection.py
-intergrax/runtime/nexus/runtime_steps/tools_step.py
+intergrax/runtime/nexus/tools/tool_loop.py
 intergrax/runtime/tools/idempotent_invoker.py · runtime_bound_catalog.py
 applications/_shared/catalog_runtime_bridge.py · tool wiring
 scripts/check_legacy_tool_plan_booleans.py · check_tool_mcp_schema_export.py
 scripts/check_tool_injection_defense.py · check_agent_registry_bypass.py""",
         "key_symbols": "ToolContract · ToolRegistry · ToolProfile · ToolWiringContext · ToolRequest/ToolResponse · ToolAccessPolicy · ToolSelectionStrategy · ToolPlanDecision · ToolRiskLevel · tools_mode · tools_context_scope",
         "active_phases": "Phase O/T-EXPAND Done · **TOOL-ENG active** (0–5,11 Done; 6–10,12 open) · Phase V V-SEC/V-COST/V-EVAL",
-        "known_gaps": "TOOL-ENG-6 ReAct loop missing · TOOL-ENG-7 post-tool verify HIGH risk · TOOL-ENG-8 tools_mode=required hard fail · TOOL-ENG-9 parallel read-only · TOOL-ENG-10 AHI subset selection · TOOL-ENG-12 tool_choice exposure · 172+ tools need ToolsStep/gateway path consistency",
+        "known_gaps": "TOOL-ENG-16 ToolInvocationPattern plugin · TOOL-ENG-7 post-tool verify HIGH risk · TOOL-ENG-8 tools_mode=required hard fail · TOOL-ENG-9 parallel read-only · TOOL-ENG-10 AHI subset selection · TOOL-ENG-12 tool_choice exposure · 172+ tools need ACP invoke_tool/gateway path consistency",
         "dimensions": [
             "All invocations via ToolRuntime → policy → RuntimeToolInvoker — no bypass.",
             "Every tool: tool_id, input/output schema, risk level, description for LLM selection.",
@@ -709,7 +710,7 @@ EntityGraphMemoryStore · workspace_index_spike.py (RFC — CE owns production w
             "provenance, quality scoring, observability, and Tier-3 ContextProfile control plane — integrated with Harness."
         ),
         "code": """intergrax/runtime/nexus/context/ (context_engine.py target, context_compiler.py, context_manager.py)
-intergrax/runtime/nexus/runtime_steps/compile_context_step.py
+intergrax/context_engineering/ (ContextEngine · providers)
 intergrax/runtime/architecture/context_engineering.py · context_regression_benchmark.py
 intergrax/contracts/context_assembly.py
 intergrax/context/ (target contracts + plugin registry)
@@ -1090,22 +1091,22 @@ eval/nexus_eval_runner.py""",
         "title": "Reasoning and Cognition",
         "layers": "7",
         "mission": (
-            "Audit **three cognition planes** (Nexus planning, UAEP engine, tool planning): "
+            "Audit **three cognition planes** (Nexus planning, agent on_next_step, tool planning): "
             "TaskClassifier, typed plans, DecisionRecord, planner strategies, reasoning failure taxonomy."
         ),
         "code": """intergrax/runtime/nexus/task_classifier.py
 intergrax/runtime/nexus/planning/task_planner.py · EngineBackedNexusPlanner · nexus_llm_plan_builder.py
 applications/_shared/graph_spec_to_plan.py
 intergrax/runtime/nexus/tools/catalog_tool_planner.py · tool_planning_service.py · tool_selection.py
-intergrax/runtime/nexus/planning/engine_planner_orchestrator.py
+intergrax/agents/authoring/patterns/ (ReAct, plan_execute, …)
 intergrax/contracts/decision_record.py
 intergrax/prompts/registry/ (planner prompt ids)""",
-        "key_symbols": "TaskClassification · NexusPlan/PlanStep · EnginePlan · ToolPlanDecision · DecisionRecord (decision_record.v1) · IntentRoute · ReasoningProfile · OrchestrationProfile.planner_kind/classifier_kind",
+        "key_symbols": "TaskClassification · NexusPlan/PlanStep · StepOutcome · ToolPlanDecision · DecisionRecord (decision_record.v1) · IntentRoute · ReasoningProfile · OrchestrationProfile.planner_kind/classifier_kind",
         "active_phases": "COG-DEPTH Done · COG-1..6 · COG-3.* classifier · ORCH-CONFIG.1 · COG-OBS residuals",
-        "known_gaps": "ReasoningFailureKind enum on trace (COG-6 target) · allow_dynamic_replan partial · engine vs Nexus planner bridge debt documented",
+        "known_gaps": "ReasoningFailureKind enum on trace (COG-6 target) · allow_dynamic_replan partial · retired RuntimeEngine engine planner (ACP-CLOSE-LEG-5)",
         "dimensions": [
             "Classification precedes side-effectful execution.",
-            "Plans are typed (NexusPlan/EnginePlan) — not free-text-only.",
+            "Plans are typed (NexusPlan) — not free-text-only.",
             "LLM planner falls back to TaskPlanner on parse failure.",
             "DecisionRecord on UAEP steps (decision_record.v1 schema).",
             "Nexus planning emits decision records (COG-4).",

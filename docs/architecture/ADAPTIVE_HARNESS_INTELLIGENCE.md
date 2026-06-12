@@ -765,7 +765,7 @@ Surface **hidden operational paths** — recurring sequences of tools, agents, a
 | Integration point | Change |
 |-------------------|--------|
 | Task completion hook | Call `SignalCollector.emit()` |
-| `RuntimeEngine.run()` | Read active profile version IDs from context |
+| `Agent.run()` | Read active profile version IDs from context |
 | Metadata `harness_shadow_eval` | Extend with `candidate_profile_version_id` |
 
 ### 14.2 PolicyEngine

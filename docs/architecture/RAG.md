@@ -14,7 +14,7 @@
 
 ## Purpose
 
-RAG is a **full Tier-0 retrieval layer**, not a vector-search shortcut. One canonical path serves catalog tools (`rag.retrieve`), Nexus `ContextBuilder` / `RagStep`, and diagnostics.
+RAG is a **full Tier-0 retrieval layer**, not a vector-search shortcut. One canonical path serves catalog tools (`rag.retrieve`), Nexus `ContextBuilder` / `rag.retrieve` (catalog), and diagnostics.
 
 **Rules:**
 
@@ -57,7 +57,7 @@ Tier-3 IntegrationProfile + RagProfile
 | Ingest — very large corpora | **L2–L2.5** | Sync path size-guarded; `rag.schedule_ingest_job` triggers orchestrator with idempotent contract (M-RAG.26); shard/stream execution in workflow worker |
 | Resilience (retry, fallback, circuit breaker) | **L2.5** | Retriever retry=2 aligned with embedding; fallback `fusion`→`hybrid`→`vector_similarity`; optional vector circuit breaker |
 | Observability | **L2** | `RetrievalTrace`, parser trace, opt-in metrics; no OTel spans on retrieve/ingest hot path |
-| Security (poisoning) | **L3** | Nexus `RagStep` + catalog `rag.retrieve` when `security_profile` wired (M-RAG.25) |
+| Security (poisoning) | **L3** | Nexus `rag.retrieve` (catalog) + catalog `rag.retrieve` when `security_profile` wired (M-RAG.25) |
 | Citations | **L3** | Formal `Citation` on `RetrievalResult` + `RagRetrieveOutput.citations` (M-RAG.29) |
 | Vector backends (prod SLO) | **L2.5–L3** | Catalog **stable:** `qdrant`, `pgvector`, `chroma`, `weaviate`, `lancedb`, `typesense`; **beta:** `pinecone`, `milvus`, `vespa`, `inmemory`; soak gate `prod_slo.py` + gate tests (M-RAG.30) |
 | Multi-tenant isolation | **L2.5–L3** | Cross-backend contract tests for `inmemory`/`pgvector`/`weaviate`/`qdrant` (M-RAG.35); prod namespace design still required per backend |
@@ -248,7 +248,7 @@ Retrieve and ingest accept scope fields (`tenant_id`, `session_id`, `user_id`, `
 
 | Control | Location | Scope |
 |---------|----------|-------|
-| Retrieval poisoning (trust score / quarantine) | `runtime/nexus/runtime_steps/rag_step.py` + `retrieval_security_wiring.py` | Nexus context build when `security_profile.retrieval_poisoning_defense_enabled` |
+| Retrieval poisoning (trust score / quarantine) | `plan_context_invocation.run_rag_context` + `retrieval_security_wiring.py` | Catalog `rag.retrieve` when `security_profile.retrieval_poisoning_defense_enabled` |
 | Tool policy / risk levels | `rag.purge_collection` = CRITICAL | Catalog governance |
 | Direct `rag.retrieve` | `tools/providers/rag/service.py` | Poisoning filter when `ToolWiringContext.security_profile` enabled (M-RAG.25) |
 
@@ -298,7 +298,7 @@ Automatic tier routing (`QueryRouter`) covers **cost/latency tiers only**, not M
 1. **`IntegrationProfile`:** non-inmemory `vector_store`; `rerank_provider` when quality-critical; `graph_store=neo4j` if GraphRAG enabled.
 2. **`RagProfile`:** explicit chunking per corpus type; `route_mode=auto`; set `query_expansion=off` to use `deep_retriever_id` (e.g. `fusion`) instead of `multiquery`.
 3. **Ingest:** sync `rag.ingest_document` only below `sync_ingest_max_bytes`; oversized sources → `rag.schedule_ingest_job` with configured `async_ingest_workflow_id`.
-4. **Security:** enable `retrieval_poisoning_defense_enabled` on `ApplicationSecurityProfile` so Nexus `RagStep` and catalog `rag.retrieve` share the same filter.
+4. **Security:** enable `retrieval_poisoning_defense_enabled` on `ApplicationSecurityProfile` so Nexus `rag.retrieve` (catalog) and catalog `rag.retrieve` share the same filter.
 5. **Observability:** enable RAG metrics (`INTERGRAX_RAG_METRICS_ENABLED`); OTel spans on by default — disable only when needed.
 6. **Isolation:** run gate `test_vectorstore_cross_tenant_isolation.py`; validate tenant namespace per chosen vector backend in ops (M-RAG.35).
 

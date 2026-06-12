@@ -81,7 +81,7 @@ intergrax/rag/rerankers/ · intergrax/rag/vectorstore/
 intergrax/rag/evaluation/golden_harness.py
 intergrax/rag/tracking/ (RetrievalTrace, metrics)
 applications/_shared/rag_runtime_bridge.py
-intergrax/runtime/nexus/runtime_steps/rag_step.py
+intergrax/runtime/nexus/tools/plan_context_invocation.py
 intergrax/tools/providers/rag/
 .github/workflows/rag-guard.yml · tests/fixtures/rag_golden/
 ```
@@ -94,7 +94,7 @@ Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this doma
 
 For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol` or `test_name`).
 
-1. Single canonical path: RagProfile → RetrievalService → rag.* tools / Nexus RagStep.
+1. Single canonical path: RagProfile → RetrievalService → rag.retrieve catalog tool.
 2. Agents do not call vectorstore.query or vendor SDKs directly.
 3. RagProfile fields wired — flag dead config (especially query_expansion, INTERGRAX_RAG_* env).
 4. ParserPipeline + chunking strategies (5+) used on ingest — not raw text shortcut.

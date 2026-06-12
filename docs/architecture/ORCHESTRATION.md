@@ -606,7 +606,7 @@ Full rules: §25 above. Runtime implementation: [`NEXUS_EXECUTION_FLOW.md`](NEXU
 |---------|---------------|--------|
 | Parallel within batch | `max_parallel_nodes` | Semaphore on concurrent nodes in one topological batch |
 | Global inflight cap | `max_inflight_nodes` | Semaphore across graph; emits `GRAPH_BACKPRESSURE` |
-| Tenant cap | `RuntimeEngine.max_parallel_per_tenant` | Cross-task fairness (UAEP bridge) |
+| Tenant cap | `AgentEngine` / host runtime concurrency policy | Cross-task fairness via harness host |
 | Delegation depth | `max_delegation_depth` | Limits nested subagent expansion |
 
 ```text
@@ -643,7 +643,7 @@ Orchestration resilience spans **three retry layers**, **checkpoints**, **altern
 | Layer | Component | Scope | Default |
 |-------|-----------|-------|---------|
 | **A — Graph node** | `RetryEngine` | Same node; may switch `agent_id` | `max_retries` per factory profile |
-| **B — UAEP / run** | `RuntimeEngine`, `AgentDecision.RETRY` | Inside one graph node | Per host `max_run_retries` |
+| **B — ACP agent run** | `AgentEngine`, `StepOutcome.retry` | Inside one graph node | Per host `max_run_retries` |
 | **C — Whole run** | `RetryCoordinator` | Re-execute full graph | `max_run_retries=0` (opt-in) |
 
 **Failover (agent level):** closest harness primitive is **alternate agent** on node retry (Layer A) — not active-active duplicate nodes.

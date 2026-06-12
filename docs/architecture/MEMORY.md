@@ -107,7 +107,7 @@ Canon §27 type              Runtime implementation
 | **User LTM** | `tenant_id` + `user_id` | `intergrax/memory/` | Nexus `UserLongtermMemoryStep` | SQLite bundle / Mongo document_store |
 | **Org profile** | `org_id` | `runtime/organization/` | Nexus profile steps | SQLite bundle |
 | **Shared handoff** | `task_id` | `SharedTaskContext` | `ContextManager` | Task metadata + KV bridge |
-| **Knowledge (RAG)** | collection + metadata filters | `intergrax/rag/` | `rag.retrieve` tool / `RagStep` | Vector store per integration profile |
+| **Knowledge (RAG)** | collection + metadata filters | `intergrax/rag/` | `rag.retrieve` tool / `rag.retrieve` (catalog) | Vector store per integration profile |
 | **Session episodic index** | `tenant_id` + `session_id` (+ `user_id`) | `intergrax/memory/` (target MEM-VEC-2.*) | Nexus `SessionSemanticRecallStep` (target) | Vector store — **index over session turns**, not a replacement for `SessionStorage` |
 | **Trace** | `run_id` | `runtime/nexus/tracing/` | Read-only debug APIs | SQLite |
 
@@ -268,7 +268,7 @@ Consolidation (`SessionMemoryConsolidationService`) remains the path for **cross
 ```mermaid
 sequenceDiagram
     participant Client
-    participant Engine as RuntimeEngine
+    participant Engine as AgentEngine
     participant HL as HistoryLayer
     participant Steps as Runtime Steps
     participant LLM
@@ -291,7 +291,7 @@ sequenceDiagram
 | `InstructionsStep` | User/org `system_instructions` | System messages |
 | `UserLongtermMemoryStep` | `UserProfileManager.search_longterm_memory` — **`ltm`** index | Context block before last user |
 | `SessionSemanticRecallStep` | Session turn index semantic search — **`episodic`** index (target MEM-VEC-2.3) | Relevant past turns / snippets before `HistoryStep` |
-| `RagStep` | `RetrievalService` / `rag.retrieve` — **`knowledge`** index | Evidence chunks |
+| `rag.retrieve` (catalog) | `RetrievalService` / `rag.retrieve` — **`knowledge`** index | Evidence chunks |
 | `HistoryStep` | `state.base_history` — chronological session store | Conversation turns (recent tail; may be trimmed when episodic recall covers older turns) |
 | Websearch | `websearch.query` | Evidence (when enabled) |
 
@@ -306,7 +306,7 @@ sequenceDiagram
 
 **Context Engineering contract:** semantic recall hits MUST enter assembly as attributable fragments (`ContextFragmentSource.SESSION_HISTORY_SEMANTIC` or `LONGTERM_MEMORY`) with `source_id` = `entry_id` — see [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §7.2, §14.2. `HistoryLayer` remains the chronological fallback; CE degradation ladder drops lowest-scored optional fragments before mandatory user turn.
 
-**Target pipeline order:** `UserLongtermMemoryStep` → `SessionSemanticRecallStep` → `RagStep` → `HistoryStep` → `CompileContextStep`.
+**Target pipeline order:** `UserLongtermMemoryStep` → `SessionSemanticRecallStep` → `rag.retrieve` (catalog) → `HistoryStep` → `CompileContextStep`.
 
 ### 7.2 Graph node context (`ContextManager`)
 
@@ -329,7 +329,7 @@ Today each layer applies **local** limits:
 | `ContextBudgetPolicy` | `max_chars` + token estimate; char-cut fallback |
 | `TaskContextAssemblyOptions` | `max_prior_chars`, summary tiers |
 
-**Unified allocator:** `ContextCompiler` + `CompileContextStep` before `CoreLLMStep`; see [`ADR-MEM-001`](../adr/ADR-MEM-001.md).
+**Unified allocator:** `ContextCompiler` + `CompileContextStep` before agent LLM step (`on_next_step`); see [`ADR-MEM-001`](../adr/ADR-MEM-001.md).
 
 ---
 

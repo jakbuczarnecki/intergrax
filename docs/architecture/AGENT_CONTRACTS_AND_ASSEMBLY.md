@@ -164,21 +164,30 @@ Legacy UAEP names (implementation today):
 **Rules:**
 
 - Agents MUST NOT implement private OS lifecycles (HTTP servers, global schedulers, direct vendor SDK calls).
-- Agents MUST NOT call `RuntimeEngine.run()` directly — **deprecated** author path (ACP-LEG).
+- Agents MUST NOT bypass `Agent.run()` / `on_next_step` with Tier-1 execution shortcuts (ACP-CLOSE-LEG-5).
 - Control flow via **`StepOutcome`** / **`AgentDecision`** (§42.7).
 - Optional: `UAEPAgentWithResume.resume_step` for checkpointed long steps.
 
-## 13.5 Legacy paths (deprecated for authors)
+## 13.5 Removed legacy paths (ACP-CLOSE-LEG-5)
 
 | Path | Status |
 |------|--------|
+| `RuntimeEngine` / `RuntimePipeline` / `runtime_steps/` | **Removed** — [ADR-FLOW-005](../adr/ADR-FLOW-005.md) |
+| `agents/*/steps/pipeline.py` / `uaep_pipeline_bridge.py` | **Removed** — use `on_next_step` + cognitive patterns |
 | `execute()` pseudocode | Replaced by `run()` + `on_next_step` |
-| `RuntimeEngine.run` from Tier-2 | **Deprecated** — ACP-LEG |
-| `run_pipeline_step` → `RuntimeEngine` | **Deprecated** — migrate to `on_next_step` + `ctx.invoke_tool` |
 | Override `execute_next_step` / `advance_step` | **Forbidden** — bypasses policy/trace |
 | `nexus.run()` as agent session API | **Forbidden** — use `Agent.run()`; NexusLoop for Task only §38 |
 
-`RuntimePipeline` / `RuntimeStep` remain **Tier-1 internal** building blocks — not the author mental model.
+**Author loop control (normative):** every domain iteration is decided in **`on_next_step`** (or a cognitive pattern delegating to it). The harness runs **`HarnessKernel.execute_step`** — policy, trace, gateways, budgets — without choosing tools, models, or termination. UAEP (`get_steps` / `run_step`) remains a **framework-internal test shim** only; product agents MUST NOT implement it.
+
+```text
+Agent.run(AgentRunRequest)
+  └─ loop: AgentRuntime.advance_step()
+        ├─ agent.on_next_step(step_ctx) → StepOutcome   ← AUTHOR owns plan/tools/HITL/complete
+        └─ HarnessKernel.execute_step(outcome)          ← HARNESS owns policy/trace/gateways only
+```
+
+No Tier-1 code path may inject fixed step order (retired `RuntimePipeline` / `runtime_steps/`). Tool loops (ReAct) run **inside** `on_next_step` via `run_bounded_tool_loop` + `ctx.invoke_tool`, not via Nexus graph scheduling (ADR-TOOL-002).
 
 ## 13.6 Authoring facades
 
@@ -305,7 +314,7 @@ Before implementing a new agent, answer:
 16. Which **cognitive pattern** applies (§26.1): reflex, react, plan_execute, decomposition, reflection?
 17. Does the agent respect **three cognition planes** (§23) — no private multi-agent graph in `run_step`?
 18. Is incremental state stored in `RuntimeExecutionContext.metadata` / `acp.state.v1` — not globals?
-19. Is author entry **`run(AgentRunRequest)`** — not private `RuntimeEngine.run` (§29)?
+19. Is author entry **`run(AgentRunRequest)`** — not private `AgentEngine.run` (§29)?
 20. Are per-agent memory/tools/RAG declared on contract + binding, with host overrides via `metadata` (§30)?
 21. Is domain logic in **`on_next_step`** — not in `HarnessKernel` or `NexusLoop` (§32 · §38)?
 22. Does `AgentRunResult.trace` capture steps, tools, RAG, LLM, decisions (§31)?
@@ -616,7 +625,7 @@ Agent (ABC)                          intergrax/agents/agent_contract.py
 │       ├── PlanExecuteAgent         patterns/plan_execute.py                   [ACP-4]
 │       ├── DecompositionAgent       patterns/decomposition.py                [ACP-5]
 │       └── ReflectionAgent          patterns/reflection.py                     [ACP-6]
-└── (legacy non-UAEP Agent)          deprecated — RuntimeEngine fallback        [ACP-LEG]
+└── (legacy non-UAEP Agent)          deprecated — AgentEngine fallback        [ACP-LEG]
 ```
 
 ## 24.2 Class responsibilities
@@ -1195,7 +1204,7 @@ Developer code path:
 | `CognitiveAgent` base | **Done** ACP-1 | `intergrax/agents/authoring/patterns/base.py` |
 | Pattern classes | **Done** ACP-2–6 | `intergrax/agents/authoring/patterns/*.py` |
 | Reference pattern probes | **Done** ACP-9 | `intergrax/agents/authoring/patterns/reference.py` |
-| Legacy `RuntimeEngine` author fallback | **Removed** from `AgentEngine` (LEG-1 Done) | `uaep_pipeline_bridge.py` internal-only (LEG-3 Done) |
+| Legacy pipeline bridge | **Removed** (LEG-3 · LEG-5 Done) | ADR-FLOW-005 — ACP-only execution |
 | `AgentRunRequest` / `Result` | **Done** ACP-DX-1 | `intergrax/contracts/agent_run.py` |
 | `merge_environment` | **Done** ACP-DX-2 | `intergrax/agents/run_environment.py` |
 | Scaffold `--pattern` | **Done** ACP-8 | `intergrax/scaffold/new_agent.py` |
@@ -1207,7 +1216,7 @@ Developer code path:
 | UAEP-first authoring | L3 | L3 (bridge internal) | L3 internal-only |
 | Pattern library | L0 (ad hoc) | **L3** | L3 |
 | Mental model clarity | L1–L2 | **L3** (§29 single entry · PAT-3) | L3 |
-| Legacy path removal | L2 (dual path) | **L2.5** (AgentEngine clean; pipeline agents open) | L3 — ACP-CLOSE-LEG-3 |
+| Legacy path removal | L2 (dual path) | **L3** (ACP-CLOSE-LEG-5 — pipeline stack deleted) | L3 |
 | ReAct + tool loop unity | L1 | **L3** (TOOL-ENG-6 · PAT-1 Done) | L3 |
 | Decomposition agent DX | L0 | **L3** | L3 |
 | Reflection + CVL wiring | L2 | **L3** (ACP-CLOSE-PAT-2 Done) | L3 |
@@ -1220,7 +1229,7 @@ Developer code path:
 |----|-----|----------|----------|--------|
 | GAP-ACP-01 | No `CognitiveAgent` base | P0 | ACP-1 | **Closed** |
 | GAP-ACP-02 | No pattern classes | P0 | ACP-2–6 | **Closed** |
-| GAP-ACP-03 | Dual UAEP / RuntimeEngine path | P0 | ACP-CLOSE-LEG-1..3 | **Closed** |
+| GAP-ACP-03 | Dual UAEP / AgentEngine path | P0 | ACP-CLOSE-LEG-1..3 | **Closed** |
 | GAP-ACP-04 | ReAct at tool layer only | P1 | ACP-CLOSE-PAT-1 · TOOL-ENG-6 | **Closed** |
 | GAP-ACP-05 | `build_context` duplicates profile | P1 | ACP-CFG | **Closed** |
 | GAP-ACP-06 | No scaffold `--pattern` | P1 | ACP-8 | **Closed** |
@@ -1303,7 +1312,7 @@ Developer code path:
 
 ## 29.0 Author terminology — single canonical entry (ACP-CLOSE-PAT-3)
 
-**Normative vocabulary** for Tier-2 session/run/step terms lives **in §29 through §29.6**. [`AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) §1 and Appendix AC **link here** — they MUST NOT redefine terms. Internal runtime names (`UAEPExecutor`, `get_steps`, `RuntimeEngine`) are for platform engineers only (§13 · §38).
+**Normative vocabulary** for Tier-2 session/run/step terms lives **in §29 through §29.6**. [`AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) §1 and Appendix AC **link here** — they MUST NOT redefine terms. Internal runtime names (`UAEPExecutor`, `get_steps`, `AgentEngine`) are for platform engineers only (§13 · §38).
 
 | Term | Where defined |
 |------|----------------|
@@ -3339,7 +3348,7 @@ All runtime contracts carry **`schema_version`**. Breaking changes require ADR +
 Before **`production_mode`** on roster entry — all MUST be true:
 
 ```text
-□ §29–§32 run/on_next_step/advance_step/kernel path used — not legacy RuntimeEngine-only
+□ §29–§32 run/on_next_step/advance_step/kernel path used — not legacy AgentEngine-only
 □ §37 enums for errors and terminal_reason
 □ §40.1 checkpoint + resume tested for mutating agent
 □ §40.2 idempotency keys on all mutating tools in agent tests

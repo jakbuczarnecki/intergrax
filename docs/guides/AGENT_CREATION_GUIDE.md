@@ -179,7 +179,7 @@ agents/document_automation/
     document_automation_agent.py   # Agent class (ACP entry — run / on_next_step)
     contract.py                    # AgentContract builder
     capabilities.py                # capability id list
-    steps/pipeline.py              # domain execution (start here)
+    `on_next_step` / cognitive pattern hooks              # domain execution (start here)
     schemas/                       # Pydantic I/O models
     prompts/system.md              # prompt assets
     tests/test_document_automation_agent.py   # smoke test (includes registration)
@@ -1353,7 +1353,7 @@ Task intake
                                 ├── ContextManager (SharedTaskContext · assembly options)
                                 ├── HandoffCoordinator (§42.15 — graph mutation)
                                 ├── RetryEngine + RetryCoordinator
-                                └── AgentEngine → `acp_run` / UAEPExecutor (internal) | RuntimeEngine pipeline
+                                └── AgentEngine → `acp_run` / UAEPExecutor (internal) | AgentEngine pipeline
 
 ApplicationEnvironmentProfile (Tier-3)
   ├── orchestration_profile     planner_kind · classifier_kind · retry_policy_name · max_parallel_nodes · max_inflight_nodes
@@ -1432,7 +1432,7 @@ Authoring rules:
 | Checkpoint skip | `apply_runtime_checkpoint_to_graph` — resume long runs |
 | Cancel | `CancellationCoordinator` — marks pending nodes cancelled |
 
-**Concurrency:** `OrchestrationProfile.max_parallel_nodes` caps parallel nodes per graph batch; `max_inflight_nodes` caps total in-flight executions (`GRAPH_BACKPRESSURE` event when saturated). Tenant-level cap remains on `RuntimeEngine` (`max_parallel_per_tenant`).
+**Concurrency:** `OrchestrationProfile.max_parallel_nodes` caps parallel nodes per graph batch; `max_inflight_nodes` caps total in-flight executions (`GRAPH_BACKPRESSURE` event when saturated). Tenant-level cap remains on `AgentEngine` (`max_parallel_per_tenant`).
 
 ### I.6 Subagent / delegation semantics (R-Delegate — Done)
 
@@ -1879,7 +1879,7 @@ Nexus prompt builders (Tier-1)
 |---------|----------------|
 | Prompt runtime bridge | `pytest tests/unit/applications/test_prompt_runtime_bridge.py -m gate` |
 | Prompt wiring | `pytest tests/unit/applications/test_prompt_wiring.py -m gate` |
-| Nexus registry injection | `pytest tests/unit/runtime/nexus/runtime_steps/test_tools_step_prompt_registry.py -m gate` |
+| Nexus registry injection | `pytest tests/unit/applications/test_prompt_wiring.py -m gate` |
 | PromptMeta governance | `pytest tests/unit/prompts/test_prompt_governance_meta.py -m gate` |
 | Full gate | `uv run pytest -m gate -q` |
 
@@ -2398,7 +2398,7 @@ Tier-3 hosts must materialize online evaluation registry, governance bridge, and
 ```text
 ApplicationEnvironmentProfile (Tier-3)
   └── evaluation_profile
-        ├── shadow_eval_enabled           → RuntimeEngine shadow metadata path
+        ├── shadow_eval_enabled           → AgentEngine shadow metadata path
         ├── online_registry_enabled       → OnlineEvaluationRegistry
         ├── offline_eval_runner_enabled   → NexusEvalRunner (host runtime)
         └── trend_comparison_enabled      → registry trend reports
@@ -2828,7 +2828,7 @@ python scripts/check_agents_vendor_imports.py
 |--------|------------|
 | Absorb Nexus into agent base class | ACP pattern library + `on_next_step`; Nexus stays Agent OS (ADR-AGENT-001) |
 | Multi-agent workflow entirely in `on_next_step` private graph | Nexus `graph_spec` + Appendix C |
-| Import `intergrax.chat_agent` / `ChatAgent` | Nexus `RuntimeEngine` / `NoPlannerPipeline` |
+| Import `intergrax.chat_agent` / `ChatAgent` | Nexus `AgentEngine` / `on_next_step` |
 | Import `intergrax.rag.answers` from runtime | `RetrievalService` |
 | Put agent logic in `applications/` | Logic in `agents/`, wiring in application |
 | Modify `NexusLoop` for one agent | `registry.register()` + contract/metadata |

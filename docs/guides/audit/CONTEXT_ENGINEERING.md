@@ -73,7 +73,7 @@ No plugin catalog (GAP-CTX-01) · dual assembly paths (GAP-CTX-02) · not step-a
 
 ```text
 intergrax/runtime/nexus/context/ (context_engine.py target, context_compiler.py, context_manager.py)
-intergrax/runtime/nexus/runtime_steps/compile_context_step.py
+intergrax/context_engineering/ (ContextEngine · providers)
 intergrax/runtime/architecture/context_engineering.py · context_regression_benchmark.py
 intergrax/contracts/context_assembly.py
 intergrax/context/ (target contracts + plugin registry)

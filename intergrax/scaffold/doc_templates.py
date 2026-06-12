@@ -50,15 +50,14 @@ def render_agent_architecture_doc(
         )
     elif reference:
         runtime_line = (
-            "- `HarnessReferenceAgent` + single UAEP pipeline step\n"
+            "- `HarnessReferenceAgent` + `on_next_step` (ACP reference probe)\n"
             "- Optional `LabHarnessContext` injected by Tier-3 host builders"
         )
         purpose = f"Tier-2 harness reference agent scaffold for `{slug}`."
         layout_rows = (
-            f"| `{slug}_agent.py` | {agent_base} — UAEP entry |\n"
+            f"| `{slug}_agent.py` | {agent_base} — `on_next_step` entry |\n"
             "| `contract.py` | `AgentContract` |\n"
             "| `capabilities.py` | Capability ids |\n"
-            "| `steps/pipeline.py` | Domain execution |\n"
             "| `prompts/system.md` | Prompt assets |\n"
             "| `schemas/` | I/O models |\n"
             "| `tests/` | Agent smoke tests |\n"
@@ -66,15 +65,17 @@ def render_agent_architecture_doc(
         )
     else:
         runtime_line = (
-            "- `Agent` + single UAEP pipeline step\n"
-            "- Stub LLM adapter in `steps/pipeline.py` for offline smoke tests"
+            "- Typed **reflex** cognitive pattern (`CognitiveAgent` / `on_next_step`)\n"
+            "- Stub LLM adapter in `{slug}_agent.py` for offline smoke tests"
         )
-        purpose = f"Tier-2 UAEP agent scaffold for `{slug}`. Replace domain logic in `steps/` and `prompts/`."
+        purpose = (
+            f"Tier-2 typed agent scaffold for `{slug}`. "
+            "Implement domain logic in `perceive` / `reason` / `act` / `evaluate`."
+        )
         layout_rows = (
-            f"| `{slug}_agent.py` | {agent_base} — UAEP entry |\n"
-            "| `contract.py` | `AgentContract` |\n"
+            f"| `{slug}_agent.py` | {agent_base} — cognitive pattern hooks |\n"
+            "| `contract.py` | `AgentContract` + `cognitive_pattern` |\n"
             "| `capabilities.py` | Capability ids |\n"
-            "| `steps/pipeline.py` | Domain execution |\n"
             "| `prompts/system.md` | Prompt assets |\n"
             "| `schemas/` | I/O models |\n"
             "| `tests/` | Agent smoke tests |\n"
@@ -144,7 +145,8 @@ def render_agent_implementation_plan(
         )
     else:
         domain_task = (
-            f"| {prefix}-1 | Replace scaffold stub in `steps/pipeline.py` | Planned | High | One PR per domain step |"
+            f"| {prefix}-1 | Implement domain hooks in `{slug}_agent.py` "
+            f"(perceive/reason/act/evaluate) | Planned | High | ACP pattern |"
         )
     return dedent(
         f"""\

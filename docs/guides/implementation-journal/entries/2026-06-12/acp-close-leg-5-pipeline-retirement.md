@@ -21,7 +21,7 @@ Remove all legacy Tier-1 pipeline machinery (`RuntimeEngine`, `pipelines/`, `run
 
 ## Summary
 
-Deleted the full RuntimeEngine pipeline stack and migrated surviving utilities (bounded tool loop, RAG/websearch/tools context invocation, context helpers) to `nexus/tools/` and `nexus/context/`. Removed `uaep_pipeline_bridge`, agent `steps/pipeline.py` files, pipeline-related `RuntimeConfig` fields, and legacy UAEP scaffold paths. Updated fleet agents, gate stubs, tests, and ACP-only scaffold (`--uaep` rejected). Added ADR-FLOW-005 and plan row ACP-CLOSE-LEG-5.
+Deleted the full RuntimeEngine pipeline stack and migrated surviving utilities (bounded tool loop, RAG/websearch/tools context invocation, context helpers) to `nexus/tools/` and `nexus/context/`. Removed `uaep_pipeline_bridge`, agent `steps/pipeline.py` files, pipeline-related `RuntimeConfig` fields, and legacy UAEP scaffold paths. Updated fleet agents, gate stubs, tests, and ACP-only scaffold (`--uaep` rejected). Regenerated domain audit prompts; scrubbed architecture/plan/guides/agent docs of pipeline references. Canon now states exclusive author loop control via `on_next_step` + `HarnessKernel`. Added ADR-FLOW-005 and plan row ACP-CLOSE-LEG-5.
 
 ## Project impact
 
@@ -59,5 +59,5 @@ Result: **1776 passed** (gate); domain pairs OK.
 
 ## Risks and follow-ups
 
-- Domain audit prompts and some architecture prose still mention `runtime_steps/` — refresh in doc tranche.
 - `check_harness_no_getattr.py` reports one grandfathered getattr in `acp_budget_reactions.py` (pre-existing).
+- Historical plan register rows retain retired path names only in audit-ID cross-reference tables (superseded by ADR-FLOW-005).

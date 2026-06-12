@@ -9,13 +9,13 @@
 
 ## Context
 
-Phase MEM closed platform memory stores (task KV, session, user LTM, wiring, hooks, observability). Context assembly remained **fragmented**: `HistoryLayer`, `UserLongtermMemoryStep`, `RagStep`, and `ContextBudgetPolicy` each apply **local** limits without a single global token budget or ordered degradation trace.
+Phase MEM closed platform memory stores (task KV, session, user LTM, wiring, hooks, observability). Context assembly remained **fragmented**: `HistoryLayer`, `UserLongtermMemoryStep`, `rag.retrieve` (catalog), and `ContextBudgetPolicy` each apply **local** limits without a single global token budget or ordered degradation trace.
 
 Alternatives considered:
 
 1. **Per-step budget only** — status quo; cannot guarantee never-overflow invariant.
 2. **LLM-side truncation** — provider-dependent; no Harness audit trail.
-3. **Unified Context Compiler (chosen)** — single compile pass before `CoreLLMStep` with degradation ladder and pre-flight invariant.
+3. **Unified Context Compiler (chosen)** — single compile pass before agent LLM step (`on_next_step`) with degradation ladder and pre-flight invariant.
 
 ## Decision
 
@@ -55,6 +55,6 @@ Introduce **`ContextCompiler`** in Tier-1 (`runtime/nexus/context/`) that:
 ## Implementation notes
 
 - `runtime/nexus/context/context_compiler.py`, `degradation_ladder.py`, `context_preflight.py`
-- `runtime/nexus/runtime_steps/compile_context_step.py` — before `CoreLLMStep`
+- Context assembly via CE providers + `context_preflight.py` before LLM calls in `on_next_step`
 - `context_budget.py` — tokenizer-aware trim helper
 - Verification: `pytest -m gate -q`; `tests/unit/runtime/nexus/context/test_context_compiler.py`

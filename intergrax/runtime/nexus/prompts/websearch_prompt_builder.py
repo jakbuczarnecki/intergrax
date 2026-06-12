@@ -34,7 +34,7 @@ class WebSearchPromptBuilder(Protocol):
     Strategy interface for building the web search part of the prompt.
 
     You can provide a custom implementation and pass it to
-    RuntimeEngine to fully control:
+    AgentEngine / context assembly to fully control:
 
     - how web documents are summarized,
     - how many results are injected,

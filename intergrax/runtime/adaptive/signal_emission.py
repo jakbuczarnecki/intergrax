@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Emit adaptive signals from Nexus and RuntimeEngine paths (Phase W-ADAPT-1.10–1.11)."""
+"""Emit adaptive signals from Nexus and AgentEngine paths (Phase W-ADAPT-1.10–1.11)."""
 
 from __future__ import annotations
 
@@ -104,7 +104,7 @@ def record_runtime_engine_outcome_signal(
     evaluation_registry: OnlineEvaluationRegistry | None = None,
     last_llm_call: LLMCallSummary | None = None,
 ) -> HarnessOutcomeSignal:
-    """Persist a signal for a non-Nexus RuntimeEngine run."""
+    """Persist a signal for a non-Nexus AgentEngine run."""
     observation = _latest_evaluation_for_run(evaluation_registry, run_id)
     metrics = RunMetricsExport(
         run_id=run_id,

@@ -43,7 +43,7 @@ See architecture §3–§4.
 
 | ID | Task | Module | Owner |
 |----|------|--------|-------|
-| DSW.1.1 | Intake step: `case_id` + `source_paths` validation | `agents/dispute_intake/steps/pipeline.py` | Tier-2 |
+| DSW.1.1 | Intake step: `case_id` + `source_paths` validation | `agents/dispute_intake/`on_next_step` / cognitive pattern hooks` | Tier-2 |
 | DSW.1.2 | Document type classifier stub (rule + LLM) | `agents/dispute_intake/steps/` | Tier-2 |
 | DSW.1.3 | Chronology builder → `case_timeline.json` shadow artifact | `agents/dispute_intake/steps/` | Tier-2 |
 | DSW.1.4 | RAG ingest loop scoped by `case_id` collection | Tier-3 tool profile + intake agent | Tier-2/3 |

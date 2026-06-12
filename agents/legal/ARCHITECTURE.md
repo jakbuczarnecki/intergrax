@@ -14,7 +14,7 @@ Tier-2 contract review capability (`legal.review`) composed into `legal_applicat
 |------|------|
 | `legal_agent.py` | `Agent` + UAEP steps |
 | `contract.py` | `AgentContract` + `LEGAL_CONTRACT_REVIEW` skill |
-| `steps/pipeline.py` | Domain stub pipeline |
+| ``on_next_step` / cognitive pattern hooks` | Domain stub pipeline |
 | `SPEC_FROM_LEGACY.md` | Requirements extracted from pre-reset code |
 
 ## Configuration

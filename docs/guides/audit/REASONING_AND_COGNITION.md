@@ -42,11 +42,11 @@ Perform a **rigorous, evidence-backed audit** of the **Reasoning and Cognition**
 
 ## Mission
 
-Audit **three cognition planes** (Nexus planning, UAEP engine, tool planning): TaskClassifier, typed plans, DecisionRecord, planner strategies, reasoning failure taxonomy.
+Audit **three cognition planes** (Nexus planning, agent on_next_step, tool planning): TaskClassifier, typed plans, DecisionRecord, planner strategies, reasoning failure taxonomy.
 
 ## Key symbols and contracts
 
-TaskClassification · NexusPlan/PlanStep · EnginePlan · ToolPlanDecision · DecisionRecord (decision_record.v1) · IntentRoute · ReasoningProfile · OrchestrationProfile.planner_kind/classifier_kind
+TaskClassification · NexusPlan/PlanStep · StepOutcome · ToolPlanDecision · DecisionRecord (decision_record.v1) · IntentRoute · ReasoningProfile · OrchestrationProfile.planner_kind/classifier_kind
 
 ## Active plan phases (verify status vs code reality)
 
@@ -54,7 +54,7 @@ COG-DEPTH Done · COG-1..6 · COG-3.* classifier · ORCH-CONFIG.1 · COG-OBS res
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-ReasoningFailureKind enum on trace (COG-6 target) · allow_dynamic_replan partial · engine vs Nexus planner bridge debt documented
+ReasoningFailureKind enum on trace (COG-6 target) · allow_dynamic_replan partial · retired RuntimeEngine engine planner (ACP-CLOSE-LEG-5)
 
 ---
 
@@ -76,7 +76,7 @@ intergrax/runtime/nexus/task_classifier.py
 intergrax/runtime/nexus/planning/task_planner.py · EngineBackedNexusPlanner · nexus_llm_plan_builder.py
 applications/_shared/graph_spec_to_plan.py
 intergrax/runtime/nexus/tools/catalog_tool_planner.py · tool_planning_service.py · tool_selection.py
-intergrax/runtime/nexus/planning/engine_planner_orchestrator.py
+intergrax/agents/authoring/patterns/ (ReAct, plan_execute, …)
 intergrax/contracts/decision_record.py
 intergrax/prompts/registry/ (planner prompt ids)
 ```
@@ -90,7 +90,7 @@ Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this doma
 For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol` or `test_name`).
 
 1. Classification precedes side-effectful execution.
-2. Plans are typed (NexusPlan/EnginePlan) — not free-text-only.
+2. Plans are typed (NexusPlan) — not free-text-only.
 3. LLM planner falls back to TaskPlanner on parse failure.
 4. DecisionRecord on UAEP steps (decision_record.v1 schema).
 5. Nexus planning emits decision records (COG-4).

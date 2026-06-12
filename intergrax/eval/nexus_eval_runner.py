@@ -23,7 +23,7 @@ class NexusEvalRunner:
     """
     Evaluation runner via NexusLoop + AgentExecutionResult (Phase A.4).
 
-    Complements legacy EvalRunner (RuntimeEngine-only path).
+    Complements legacy EvalRunner (pre-ACP evaluation harness).
     """
 
     def __init__(

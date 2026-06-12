@@ -136,11 +136,11 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T14–T17 Done**
 | `ToolPlanningService` | `intergrax/runtime/nexus/tools/tool_planning_service.py` | **Done** — native `generate_with_tools` or JSON fallback; `allowed_tool_ids` filter (TOOL-ENG-4) |
 | `tool_planner_input` | `intergrax/runtime/nexus/tools/tool_planner_input.py` | **Done** — `tools_context_scope` assembly (TOOL-ENG-11) |
 | `tool_selection` | `intergrax/runtime/nexus/tools/tool_selection.py` | **Done** — `ToolSelectionStrategy` router (TOOL-ENG-5); entry-point plugins **Planned** (TOOL-ENG-26) |
-| `tool_loop_step` | `intergrax/runtime/nexus/runtime_steps/tool_loop_step.py` | **Done** — `run_bounded_tool_loop` (TOOL-ENG-6); **to refactor** into `ToolInvocationPattern` (TOOL-ENG-16–18,22) |
-| `ToolsStep` | `intergrax/runtime/nexus/runtime_steps/tools_step.py` | **Done** — delegates to `run_bounded_tool_loop`; **hardcoded** orchestration — **Planned** pattern injection (TOOL-ENG-22) |
+| `tool_loop` | `intergrax/runtime/nexus/tools/tool_loop.py` | **Done** — `run_bounded_tool_loop` (TOOL-ENG-6); **to refactor** into `ToolInvocationPattern` (TOOL-ENG-16–18,22) |
+| `plan_context_invocation` | `intergrax/runtime/nexus/tools/plan_context_invocation.py` | **Done** — RAG/websearch/tools context for `ToolRuntime` (replaces retired pipeline steps) |
 | `ToolInvocationPattern` | *(planned)* `intergrax/runtime/nexus/tools/tool_invocation_pattern.py` | **Planned** — plugin orchestration of multi-call execution (TOOL-ENG-16) |
 | `IdempotentToolInvoker` | `intergrax/runtime/tools/idempotent_invoker.py` | **Done** — exactly-once for `side_effects` + `idempotency_key` |
-| `catalog_context` | `intergrax/runtime/nexus/tools/catalog_context.py` | **Done** — `rag.retrieve` / `websearch.query` shim from pipeline steps |
+| `catalog_context` | `intergrax/runtime/nexus/tools/catalog_context.py` | **Done** — `rag.retrieve` / `websearch.query` dispatch via `plan_context_invocation` |
 | `ToolAccessPolicy` | `intergrax/runtime/nexus/tools/tool_access_policy.py` | **Done** — plan-level filter (`ToolInvocationPlan`); modality intersect |
 | `StaticToolScopePolicy` | `intergrax/runtime/tools/scope_policy.py` | **Done** — wired via `config.tool_scope_policy` in `RuntimeContext.build()` (TOOL-ENG-3) |
 | `resolve_allowed_tools_from_config` | `intergrax/runtime/policy/tool_policy_resolution.py` | **Done** — merges `RuntimePolicyBundle.tool_access` into `ToolRuntime` / gateway |
@@ -185,7 +185,7 @@ flowchart TD
         TE[Nexus trace_event TraceComponent.TOOLS]
         EVT[RuntimeEventBus TOOL_REQUESTED / TOOL_*]
         MW[Middleware BEFORE/AFTER_TOOL_CALL]
-        TRW[RunTraceWriter · ToolsStep.tool_traces]
+        TRW[RunTraceWriter · tool trace payloads]
     end
 
     TP --> TR
@@ -207,16 +207,17 @@ flowchart TD
 | **1 — Selection** | Which tools exist and which may this run use? | `ToolProfile`, `SkillResolver`, `resolve_allowed_tools_from_config`, `ToolSelectionStrategy`, `CatalogToolPlanner`, `ToolPlanningService`, `ToolAccessPolicy` | Tier-3 bootstrap + Tier-1 |
 | **2a — Orchestration** | How is a **plan batch** executed (single / parallel / chain / ReAct)? | `ToolInvocationPattern` *(planned)* · interim: `run_bounded_tool_loop`, `execute_planned_tool_calls` | Tier-1 |
 | **2b — Atomic invoke** | How is **one** tool call executed safely? | `ToolRuntime`, `RuntimeToolGateway`, `RuntimeToolInvoker`, `ToolExecutor`, `runtime_bound_catalog` | Tier-1 |
-| **3 — Logging** | What happened, for audit and debug? | `trace_event`, `RuntimeEvent` (`TOOL_*`), security middleware, `RunTraceWriter`, `ToolsStep.tool_traces` | Tier-1 + observability |
+| **3 — Logging** | What happened, for audit and debug? | `trace_event`, `RuntimeEvent` (`TOOL_*`), security middleware, `RunTraceWriter`, agent/tool trace metadata | Tier-1 + observability |
 
 ### Entry paths — convergence on invoker
 
 | Path | When used | Dispatch module | Reaches `RuntimeToolInvoker`? |
 |------|-----------|-----------------|-------------------------------|
-| **Pipeline `ToolsStep`** | `NoPlannerPipeline`, `StepAction.USE_TOOLS`, `ToolRuntime.invoke(use_tools=True)` | `ToolsStep` → planner → sequential invoke | **Yes** — per planned `tool_id` |
-| **Pipeline `RagStep` / `WebsearchStep`** | `use_rag` / `use_websearch` or `tool_ids` containing `rag.retrieve` / `websearch.query` | `catalog_context.invoke_catalog_context_tool` when registered | **Yes** — catalog shim |
-| **Capability `ToolRuntime.invoke`** | `ToolInvocationPlan` from engine/gateway | **Step flags only** — not per-arbitrary `tool_id` ([§tool_ids dispatch](#tool_ids-dispatch-semantics-actual)) | Indirect |
-| **UAEP `ctx.invoke_tool`** | Agent `run_step` | `BoundToolGateway` | **Partial** — see [§42.12 gateway](#4212-gateway-surface-toolrequest) |
+| **ACP `ctx.invoke_tool`** | Agent `on_next_step` / cognitive patterns (ReAct, etc.) | `BoundToolGateway` → `RuntimeToolGateway` | **Yes** — per `tool_id` on allow-list |
+| **ToolRuntime catalog context** | `enable_rag` / `enable_websearch` or explicit `tool_ids` | `plan_context_invocation` + `catalog_context` | **Yes** — `rag.retrieve` / `websearch.query` |
+| **Bounded tool loop** | ReAct / pattern with `max_tool_iterations > 1` | `tool_loop.run_bounded_tool_loop` | **Yes** — native tool-call rounds |
+| **Capability `ToolRuntime.invoke`** | Legacy capability aliases (`use_rag`, `use_tools`) | `ToolRuntime` plan dispatch | **Partial** — prefer explicit `tool_ids` |
+| **Engine plan tool_ids** | Nexus `EngineBackedNexusPlanner` node metadata | `ToolRuntime` via graph/agent host | **Yes** — when host wires planner output |
 | **Tests / internal** | Unit tests, provider conformance | Direct `RuntimeToolInvoker.invoke` | **Yes** |
 
 All successful catalog executions converge on **`RuntimeToolInvoker`** (optionally wrapped by **`IdempotentToolInvoker`**) — registry lookup, input/output schema validation, optional `ToolScopePolicy`, timeout/retry, error mapping, trace start/end.
@@ -233,7 +234,7 @@ Multi-call batches route through **`run_bounded_tool_loop`** today; target archi
 | **L3 Policy bundle** | `RuntimePolicyBundle.tool_access` (`StaticToolScopePolicy`) | Tier-3 static scope | `resolve_allowed_tools_from_config` |
 | **L4 Modality** | `ModalityProfile` → `filter_tool_ids_by_modality_profile` | Media/ML plane tools | `ToolAccessPolicy.apply_modality_profile` |
 | **L5 Plan filter** | `ToolAccessPolicy.apply` on `ToolInvocationPlan` | `use_rag` / `use_websearch` / `tool_ids` / `use_tools` | `ToolRuntime.invoke` |
-| **L6 Schema narrowing** | `ToolSelectionStrategy` → `resolve_planner_allowed_tool_ids` | Subset passed to `ToolPlanningService` / `to_openai_tools` (see [§Production strategies](#tool-selection-modes-production-strategies)) | `ToolsStep` (TOOL-ENG-5) |
+| **L6 Schema narrowing** | `ToolSelectionStrategy` → `resolve_planner_allowed_tool_ids` | Subset passed to `ToolPlanningService` / `to_openai_tools` (see [§Production strategies](#tool-selection-modes-production-strategies)) | `run_bounded_tool_loop` / `ctx.invoke_tool` (TOOL-ENG-5) |
 | **L6b LLM planner** | `ToolPlanningService` → `generate_with_tools` | Model picks `tool_calls` from narrowed schema | `CatalogToolPlanner` |
 | **L7 Invoker scope** | `ToolScopePolicy.is_allowed` on `RuntimeToolInvoker` | Per-call deny | **Done** — `scope_policy` from `RuntimeConfig` (TOOL-ENG-3) |
 
@@ -264,7 +265,7 @@ ToolExecutionRequest(run_id, step_id, tool_id, input, idempotency_key)
 | Idempotency | `idempotency_cache_hit` trace step | Deduped side-effect replay |
 | Runtime events | `TOOL_REQUESTED`, `TOOL_COMPLETED` / `TOOL_FAILED` / `TOOL_DENIED` | §42.12 |
 | Ops filter | `ops:tool_audit` hint on tool events | [`OBSERVABILITY.md`](OBSERVABILITY.md) |
-| Agent loop summary | `ToolsStep` → `state.tool_traces` (`ToolCallTrace`) | Single-pass planner |
+| Agent loop summary | `run_bounded_tool_loop` / `ctx.invoke_tool` → `state.tool_traces` (`ToolCallTrace`) | Single-pass planner |
 | Budget | `enforce_tool_call_budget` → `BudgetEnforcer.check_tool_calls` | After each tool trace |
 | Security | `MiddlewarePipeline` `BEFORE/AFTER_TOOL_CALL` | Guardrails / injection scan |
 | Persisted run | `RunTraceWriter` / lab trace API | Post-mortem |
@@ -283,10 +284,10 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 |------|---------|-------|
 | **Tier-0 catalog** (`ToolContract`, plugins, 190 tools) | **Production** | Contracts, exporters, provider tests, integration composition |
 | **Single invoke** (`RuntimeToolInvoker`) | **Production** | Schema, timeout, retry, trace, idempotency wrapper |
-| **Pipeline tool step** (`ToolsStep`) | **Done** | Planner wired; bounded loop via `tool_loop_step` (TOOL-ENG-6 · ADR-TOOL-002) |
+| **Pipeline tool step** (`run_bounded_tool_loop` / `ctx.invoke_tool`) | **Done** | Planner wired; bounded loop via `tool_loop_step` (TOOL-ENG-6 · ADR-TOOL-002) |
 | **Planner wiring** (`CatalogToolPlanner`) | **Done** | `wire_catalog_tool_planner_if_enabled` in `planner_bootstrap.py` (TOOL-ENG-0) |
 | **Multi-tool / ReAct loop** | **Done** | `max_tool_iterations` + native `role=tool` chain (TOOL-ENG-6) |
-| **Invocation pattern plugin** (`ToolInvocationPattern`) | **Gap** | Hardcoded `run_bounded_tool_loop` in `ToolsStep` — TOOL-ENG-16–18,22 |
+| **Invocation pattern plugin** (`ToolInvocationPattern`) | **Gap** | Hardcoded `run_bounded_tool_loop` in `run_bounded_tool_loop` / `ctx.invoke_tool` — TOOL-ENG-16–18,22 |
 | **Deterministic tool chains** (output→input) | **Gap** | No `ToolChainSpec` — TOOL-ENG-20 |
 | **Parallel tool execution** | **Gap** | `execute_planned_tool_calls` — always sequential (TOOL-ENG-9) |
 | **Parallel semantic batch** | **Gap** | Semantic index + parallel invoke + aggregate — TOOL-ENG-25 |
@@ -310,7 +311,7 @@ Tool-related fields on `RuntimeConfig` (`intergrax/runtime/nexus/config.py`). Ti
 
 | Field | Type | Default | Role |
 |-------|------|---------|------|
-| `tool_planner` | `ToolPlannerProtocol \| None` | `None` | `CatalogToolPlanner` / custom; **required** for `ToolsStep` |
+| `tool_planner` | `ToolPlannerProtocol \| None` | `None` | `CatalogToolPlanner` / custom; **required** for `run_bounded_tool_loop` / `ctx.invoke_tool` |
 | `tool_invoker` | `RuntimeToolInvoker \| IdempotentToolInvoker \| None` | built in `RuntimeContext.build()` | Execution enforcement |
 | `tools_mode` | `"off" \| "auto" \| "required"` | `"auto"` | See [§tools_mode](#tools_mode) |
 | `tools_context_scope` | `ToolsContextScope` | `CURRENT_MESSAGE_ONLY` | Planner input assembly ([§tools_context_scope](#tools_context_scope); TOOL-ENG-11) |
@@ -324,20 +325,20 @@ Tool-related fields on `RuntimeConfig` (`intergrax/runtime/nexus/config.py`). Ti
 | `idempotency_store` | `IdempotencyStore \| None` | `InMemoryIdempotencyStore` | Side-effect dedup |
 | `policy_bundle` | `RuntimePolicyBundle \| None` | Tier-3 | `tool_access`, budget, plan-loop |
 | `modality_profile` | `ModalityProfile \| None` | env profile | Tool plane filter |
-| `enable_rag` / `enable_websearch` | `bool` | host-specific | Gate `RagStep` / `WebsearchStep` |
+| `enable_rag` / `enable_websearch` | `bool` | host-specific | Gate `rag.retrieve` (catalog) / `websearch.query` (catalog) |
 | `run_budget` + `budget_policy` | `RunBudget`, `BudgetPolicy` | optional | `max_tool_calls` enforcement |
 
 ### `tools_mode`
 
 | Value | Behavior |
 |-------|----------|
-| `off` | `ToolsStep` no-op; `cap_tools_available=False` |
+| `off` | `run_bounded_tool_loop` / `ctx.invoke_tool` no-op; `cap_tools_available=False` |
 | `auto` | Planner runs; zero tool calls is OK |
 | `required` | If planner returns no calls → **warning trace only** (does not fail run today; **TOOL-ENG-8**) |
 
 ### `tools_context_scope`
 
-**Status (2026-06-10):** consumed by `ToolsStep` via `resolve_tool_planner_input` (**TOOL-ENG-11**).
+**Status (2026-06-10):** consumed by `run_bounded_tool_loop` / `ctx.invoke_tool` via `resolve_tool_planner_input` (**TOOL-ENG-11**).
 
 | Value | Intended planner input | Implemented |
 |-------|------------------------|-------------|
@@ -357,7 +358,7 @@ Native vs fallback: `ToolPlanningService` probes `llm.supports_tools()` — nati
 
 ### `tool_choice` (planner API)
 
-`ToolPlanningService.plan_tools(..., tool_choice=...)` supports OpenAI-style `tool_choice` (`"auto"`, `"required"`, `{"type":"function","function":{"name":...}}`). **`ToolsStep` never passes `tool_choice`** — always defaults to `"auto"`. Hosts may use a custom `ToolPlannerProtocol` to force specific tools.
+`ToolPlanningService.plan_tools(..., tool_choice=...)` supports OpenAI-style `tool_choice` (`"auto"`, `"required"`, `{"type":"function","function":{"name":...}}`). **`run_bounded_tool_loop` / `ctx.invoke_tool` never passes `tool_choice`** — always defaults to `"auto"`. Hosts may use a custom `ToolPlannerProtocol` to force specific tools.
 
 ### Tier-3 planner bootstrap (actual)
 
@@ -368,7 +369,7 @@ Native vs fallback: `ToolPlanningService` probes `llm.supports_tools()` — nati
 | `resolve_tool_planning_config` | `reasoning_wiring.py` | helper only — optional for custom hosts |
 | `CatalogToolPlanner.from_profile` | `catalog_tool_planner.py` | tests / manual wiring only |
 
-**Implication:** Hosts with `tools_mode=off` (e.g. legal default) still skip `ToolsStep`. Hosts with `tools_mode=auto` and non-empty `tool_profile` get a live planner on the same registry as the invoker.
+**Implication:** Hosts with `tools_mode=off` (e.g. legal default) still skip `run_bounded_tool_loop` / `ctx.invoke_tool`. Hosts with `tools_mode=auto` and non-empty `tool_profile` get a live planner on the same registry as the invoker.
 
 Product defaults: e.g. `legal_application` — `LEGAL_TOOLS_MODE` default **`off`** (`settings.py`).
 
@@ -380,34 +381,31 @@ Distinct ways catalog capabilities reach a backend — not all equivalent.
 
 | Surface | Entry | Live invoke? | Policy / trace | Notes |
 |---------|-------|--------------|----------------|-------|
-| **A — Pipeline RAG/Web** | `RagStep` / `WebsearchStep` | **Yes** | invoker + trace | `catalog_context`; legacy ContextBuilder fallback in `RagStep` |
-| **B — Pipeline ToolsStep** | `ToolsStep` | **Yes** when `tool_planner` set at build | invoker + budget | Wired on lab hosts (`tools_mode=auto`); legal default `off` |
-| **C — Capability gateway** | `ToolRequest` → `RuntimeToolGateway` | Partial | hooks + `ToolAccessPolicy` on plan | rag/web/tools capability aliases only |
-| **D — UAEP bound gateway** | `ctx.invoke_tool` | Partial | `allowed_tools` on gateway | sandbox + 18 runtime-bound ids + C |
-| **E — MCP catalog mount** | `mount_catalog_tools_on_mcp` | **Schema only** | N/A | `list_catalog_tools` / `describe_catalog_tool`; no default live handler |
-| **F — Direct invoker** | tests, future gateway | **Yes** | full invoker stack | conformance path for providers |
-| **G — Critic L1 client** | `CriticEvalToolClient` | **Yes** | eval tools | `eval.judge` / `eval.trajectory`; parallel to agent loop |
-| **H — Engine step planner** | `StepAction.USE_TOOLS` | Same as B | plan loop budgets | `max_tool_calls` on `StepBudgets` — separate from `RunBudget` |
+| **A — ACP agent step** | `on_next_step` → `ctx.invoke_tool` | **Yes** | invoker + gateway + trace | Primary author path; ReAct uses `run_bounded_tool_loop` |
+| **B — Catalog context** | `plan_context_invocation` | **Yes** | invoker + trace | `rag.retrieve` / `websearch.query` when profile enables RAG/web |
+| **C — Capability gateway** | `ToolRequest` → `RuntimeToolGateway` | Partial | hooks + `ToolAccessPolicy` on plan | legacy capability aliases; prefer explicit `tool_ids` |
+| **D — MCP catalog mount** | `mount_catalog_tools_on_mcp` | **Schema only** | N/A | `list_catalog_tools` / `describe_catalog_tool`; no default live handler |
+| **E — Direct invoker** | tests, conformance | **Yes** | full invoker stack | provider validation path |
+| **F — Critic L1 client** | `CriticEvalToolClient` | **Yes** | eval tools | `eval.judge` / `eval.trajectory`; parallel to agent loop |
 
 ---
 
-## Pipeline variants
+## Agent-run tool orchestration (ACP)
 
-| Pipeline | Tool behavior |
-|----------|---------------|
-| **`NoPlannerPipeline`** | Fixed order: optional `RagStep` → `WebsearchStep` → **`ToolsStep`** → `CompileContextStep` → `CoreLLMStep` |
-| **`PlannerStaticPipeline`** | `PlanLoopController` + `StepAction.USE_TOOLS` → `ToolsStep` |
-| **`PlannerDynamicPipeline`** | Engine planner loop; `USE_TOOLS` step same `ToolsStep` |
-| **UAEP agent** | Per-step `ctx.invoke_tool` via `BoundToolGateway` (not full catalog) |
-| **Graph executor** | Passes `allowed_tools` in node metadata; tool loop is agent/pipeline specific |
+| Execution context | Tool behavior |
+|-------------------|---------------|
+| **Reflex / single-shot** | Author calls `ctx.invoke_tool` or declarative actions in `StepOutcome` |
+| **ReAct / bounded loop** | `run_bounded_tool_loop` in `tool_loop.py` — plan→invoke→observe rounds inside `on_next_step` |
+| **Plan-execute pattern** | Sub-plans as agent state; tool batches via pattern helpers, not Tier-1 pipeline |
+| **Graph executor node** | One `Agent.run()` per node; `allowed_tools` from binding/metadata — loop inside agent |
 
-`ToolRuntime.invoke(plan)` is used by capability gateway — **not** the default path for every agent run.
+`ToolRuntime.invoke(plan)` serves capability-gateway aliases — **not** the default path for ACP agents (prefer `ctx.invoke_tool` + catalog `tool_ids`).
 
 ---
 
 ## Multi-tool execution semantics
 
-**Scope:** behaviour of `ToolsStep` **today** (interim implementation). Target orchestration model: [§Invocation patterns](#tool-invocation-patterns-production-orchestration).
+**Scope:** behaviour of `run_bounded_tool_loop` **today** (interim implementation). Target orchestration model: [§Invocation patterns](#tool-invocation-patterns-production-orchestration).
 
 ### Single-pass path (`max_tool_iterations == 1`)
 
@@ -418,7 +416,7 @@ Distinct ways catalog capabilities reach a backend — not all equivalent.
 5. Results appended to `state.tool_traces`.
 6. **Context injection:**
    - Native path with `max_tool_iterations == 1`: merged into **system** message via `tools_runtime_context` prompt.
-   - Not OpenAI `role=tool` chain on single-pass pipeline synthesis path.
+   - Not OpenAI `role=tool` chain on single-pass synthesis path.
 
 ### Bounded ReAct path (`max_tool_iterations > 1`, TOOL-ENG-6)
 
@@ -437,7 +435,7 @@ Distinct ways catalog capabilities reach a backend — not all equivalent.
 
 ### After tools
 
-- `CoreLLMStep` generates final answer using injected tool context (single-pass).
+- Agent pattern / LLM adapter generates final answer using injected tool context (single-pass).
 - Multi-iteration: appended messages already in `messages_for_llm`.
 - If `state.tool_planner_answer` set → used as final answer (bypass LLM).
 
@@ -583,7 +581,7 @@ ExecutionGraph     → orchestrates agents / UAEP nodes / delegation
 ToolInvocationPattern → orchestrates tool calls within one agent step (Plane 3)
 ```
 
-- Each graph node MAY run an agent whose pipeline includes `ToolsStep` with a configured `tool_invocation_pattern`.
+- Each graph node MAY run an agent whose pipeline includes `run_bounded_tool_loop` / `ctx.invoke_tool` with a configured `tool_invocation_pattern`.
 - `GraphExecutor` MUST NOT implement tool-level ReAct loops (ADR-TOOL-002).
 - Cross-ref: [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §15.1.
 
@@ -635,7 +633,7 @@ ToolInvocationResult:
 | `ApplicationEnvironmentProfile` | `tool_invocation_mode` | bridged via `catalog_runtime_bridge.py` |
 | Entry point group | `intergrax.tool_invocation_patterns` | optional custom patterns |
 
-**Wiring target:** `ToolsStep` resolves pattern from `RuntimeConfig` — no hardcoded `run_bounded_tool_loop` call (TOOL-ENG-22).
+**Wiring target:** `run_bounded_tool_loop` / `ctx.invoke_tool` resolves pattern from `RuntimeConfig` — no hardcoded `run_bounded_tool_loop` call (TOOL-ENG-22).
 
 ### Plugin maturity matrix (2026-06-12 audit)
 
@@ -803,7 +801,7 @@ Layer **L6** narrows which `tool_id` values reach the LLM planner **before** `To
 | Principle | Meaning |
 |-----------|---------|
 | **Protocol-first** | Every selection algorithm implements `ToolSelectionStrategy` — one method, typed context |
-| **Shipped defaults** | Standard, semantic, hierarchical ship as named strategy classes — not runtime branches in `ToolsStep` |
+| **Shipped defaults** | Standard, semantic, hierarchical ship as named strategy classes — not runtime branches in `run_bounded_tool_loop` / `ctx.invoke_tool` |
 | **Host override** | Tier-3 MAY inject a custom strategy instance or register via entry point |
 | **Compose with policy** | Strategy output is always intersected with L0–L5 allow-lists and plan `tool_ids` (TOOL-ENG-4) |
 | **Observable** | Trace `tool_selection_mode`, `strategy_id`, candidate ids, scores |
@@ -989,9 +987,9 @@ ToolRequest.tool_name
 | `tool_name` | Maps to |
 |-------------|---------|
 | `nexus.capability_plan`, `capability_plan` | `ToolInvocationPlan` from payload `tool_ids` / legacy flags |
-| `nexus.rag`, `rag`, `rag.retrieve` | `use_rag` → `RagStep` |
-| `nexus.websearch`, `websearch`, `websearch.query` | `use_websearch` → `WebsearchStep` |
-| `nexus.tools`, `tools` | `use_tools` → `ToolsStep` |
+| `nexus.rag`, `rag`, `rag.retrieve` | `use_rag` → `rag.retrieve` (catalog) |
+| `nexus.websearch`, `websearch`, `websearch.query` | `use_websearch` → `websearch.query` (catalog) |
+| `nexus.tools`, `tools` | `use_tools` → `run_bounded_tool_loop` / `ctx.invoke_tool` |
 | **Any other catalog `tool_id`** | `catalog_dispatch` → `RuntimeToolInvoker` (TOOL-ENG-2 **Done**) |
 
 ### Runtime-bound catalog (`RUNTIME_BOUND_TOOL_IDS`) — **18 tools**
@@ -1026,10 +1024,10 @@ All other **172+** catalog tools require **ToolsStep** (with wired planner), **c
 
 | `tool_id` in plan | `ToolInvocationPlan.normalized()` | Executed by |
 |-------------------|-----------------------------------|-------------|
-| `rag.retrieve` | sets `use_rag=True` | `RagStep` → `catalog_context` |
-| `websearch.query` | sets `use_websearch=True` | `WebsearchStep` → `catalog_context` |
+| `rag.retrieve` | sets `use_rag=True` | `rag.retrieve` (catalog) → `catalog_context` |
+| `websearch.query` | sets `use_websearch=True` | `websearch.query` (catalog) → `catalog_context` |
 | Any other id (e.g. `jira.search_tasks`) | stored in `tool_ids` | **`catalog_dispatch`** → `RuntimeToolInvoker` (TOOL-ENG-1) |
-| `use_tools=True` | runs `ToolsStep` | LLM planner schema ⊆ plan `tool_ids` when non-empty (**TOOL-ENG-4**) |
+| `use_tools=True` | runs `run_bounded_tool_loop` / `ctx.invoke_tool` | LLM planner schema ⊆ plan `tool_ids` when non-empty (**TOOL-ENG-4**) |
 
 ```text
 EnginePlan.tool_ids=["jira.search_tasks"]     # catalog dispatch (optional tool_inputs)
@@ -1061,7 +1059,7 @@ ToolInvocationPlan(use_tools=True)            # ToolsStep → fresh LLM plan
 | Output schema | `RuntimeToolInvoker._validate_output` | All invoker paths |
 | Trace + preview | `ToolInvocationEndDiagV1` | 300-char output preview |
 | Middleware after | `AFTER_TOOL_CALL` | Gateway |
-| Semantic verify | `eval.judge`, `eval.trajectory` | **Critic L1** — not default in `ToolsStep` (**TOOL-ENG-7**) |
+| Semantic verify | `eval.judge`, `eval.trajectory` | **Critic L1** — not default in `run_bounded_tool_loop` / `ctx.invoke_tool` (**TOOL-ENG-7**) |
 | Agent validate | `agent.validate` | UAEP final answer — not per-tool |
 
 ### `tools_mode=required`
@@ -1079,9 +1077,9 @@ Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary (upda
 | ID | Gap | Priority |
 |----|-----|----------|
 | TOOL-ENG-0 | Wire `CatalogToolPlanner` in `RuntimeContext.build` / catalog bridge | **Done** |
-| TOOL-ENG-4 | Pass `EnginePlan.tool_ids` / plan constraints into `ToolsStep` planner | **Done** |
+| TOOL-ENG-4 | Pass `EnginePlan.tool_ids` / plan constraints into `run_bounded_tool_loop` / `ctx.invoke_tool` planner | **Done** |
 | TOOL-ENG-5 | `ToolSelectionStrategy` / keyword + skill pre-filter before `generate_with_tools` | **Done** |
-| TOOL-ENG-11 | Implement `tools_context_scope` in `ToolsStep` / planner message assembly | **Done** |
+| TOOL-ENG-11 | Implement `tools_context_scope` in `run_bounded_tool_loop` / `ctx.invoke_tool` / planner message assembly | **Done** |
 | TOOL-ENG-13 | Semantic tool index (`ToolCatalogEmbedder`, vector top-k) | P1 |
 | TOOL-ENG-14 | Hierarchical tool selection (category-tree multi-pass) | P2 |
 | TOOL-ENG-15 | Clarify `retrieval_top_k` as keyword overlap; optional `keyword_top_k` alias | P2 |
@@ -1110,7 +1108,7 @@ Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary (upda
 | TOOL-ENG-20 | `DeterministicChainPattern` + `ToolChainSpec` field mapping | P2 |
 | TOOL-ENG-25 | `ParallelSemanticBatchPattern` — semantic top-k + parallel + aggregate | P1 |
 | TOOL-ENG-21 | `RuntimeConfig.tool_invocation_pattern` + `pattern_for_mode()` factory | P1 |
-| TOOL-ENG-22 | `ToolsStep` delegates to injected pattern (remove hardcoded loop) | P1 |
+| TOOL-ENG-22 | `run_bounded_tool_loop` / `ctx.invoke_tool` delegates to injected pattern (remove hardcoded loop) | P1 |
 | TOOL-ENG-23 | `ApplicationEnvironmentProfile` + `catalog_runtime_bridge` wiring | P1 |
 | TOOL-ENG-24 | Entry-point registry `intergrax.tool_invocation_patterns` | P2 |
 | TOOL-ENG-29 | `ToolInvocationAggregate` — batch result merge contract | P1 |

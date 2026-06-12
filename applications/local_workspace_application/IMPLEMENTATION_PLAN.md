@@ -45,9 +45,9 @@ See architecture §4.
 
 | ID | Task | Module | Owner |
 |----|------|--------|-------|
-| LKW.1.1 | Indexer steps: path validation + `rag.ingest_document` loop | `agents/local_indexer/steps/pipeline.py` | Tier-2 |
-| LKW.1.2 | Search steps: `rag.retrieve` + evidence formatting | `agents/local_search/steps/pipeline.py` | Tier-2 |
-| LKW.1.3 | Synthesizer stub: shadow `workspace.write_file` | `agents/local_synthesizer/steps/pipeline.py` | Tier-2 |
+| LKW.1.1 | Indexer steps: path validation + `rag.ingest_document` loop | `agents/local_indexer/`on_next_step` / cognitive pattern hooks` | Tier-2 |
+| LKW.1.2 | Search steps: `rag.retrieve` + evidence formatting | `agents/local_search/`on_next_step` / cognitive pattern hooks` | Tier-2 |
+| LKW.1.3 | Synthesizer stub: shadow `workspace.write_file` | `agents/local_synthesizer/`on_next_step` / cognitive pattern hooks` | Tier-2 |
 | LKW.1.4 | Acceptance test: fixture doc ingest → search cites source | `applications/.../tests/` or `tests/acceptance/` | Tier-3 |
 
 ### Acceptance criteria

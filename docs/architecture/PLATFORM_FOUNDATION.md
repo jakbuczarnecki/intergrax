@@ -258,7 +258,7 @@ This table is illustrative, not exhaustive. The rule is general:
 
 - `RuntimeEvent` MUST integrate with — not replace — existing trace/logging infrastructure.
 - `ToolRuntime` MUST delegate to existing `ToolRegistry` / tool steps — not a parallel tool system.
-- `AgentEngine` MUST use existing `RuntimeEngine` / pipeline — not a second execution engine.
+- `AgentEngine` MUST use existing `AgentEngine` / pipeline — not a second execution engine.
 
 When §42 scaffold modules are wired (Phase P4+), they MUST **wrap and unify** existing mechanisms, not fork them.
 
@@ -712,7 +712,7 @@ Category contracts MUST be **backend-agnostic**: same method names and DTOs whet
 
 **Canonical domain pair:** [`architecture/RAG.md`](RAG.md) ↔ [`plan/RAG.md`](../plan/RAG.md) — `RetrievalService`, `IngestPipeline`, `RagProfile`, M-RAG register, golden harness, integration boundaries.
 
-Summary: one retrieval path (`rag.retrieve` + Nexus `RagStep`); vector stores and parsers via Integration Library catalog bridges; Knowledge vs user memory boundary in [`architecture/MEMORY.md`](MEMORY.md).
+Summary: one retrieval path (`rag.retrieve` + Nexus `rag.retrieve` (catalog)); vector stores and parsers via Integration Library catalog bridges; Knowledge vs user memory boundary in [`architecture/MEMORY.md`](MEMORY.md).
 
 Do **not** add an `llm_provider` category or LLM slugs to the Integration Catalog backlog.
 
@@ -998,7 +998,7 @@ Single source of truth: `ToolContract` in the catalog — not parallel schema de
 
 **Target architecture (Phase O.5+):** All agent-invokable platform capabilities — including today’s pipeline flags `use_rag`, `use_websearch`, and registered function tools — converge on **one mechanism**: named tools in `ToolRegistry`, invoked through `ToolRuntime`.
 
-**Current state (transitional):** Nexus still uses `ToolInvocationPlan` with boolean flags (`use_rag`, `use_websearch`, `use_tools`) that dispatch to dedicated pipeline steps (`RagStep`, `WebsearchStep`, `ToolsStep`). This is **legacy dual-path** and MUST be migrated.
+**Current state (transitional):** Nexus still uses `ToolInvocationPlan` with boolean flags (`use_rag`, `use_websearch`, `use_tools`) that dispatch to dedicated pipeline steps (`rag.retrieve` (catalog), `websearch.query` (catalog), `run_bounded_tool_loop` / `ctx.invoke_tool`). This is **legacy dual-path** and MUST be migrated.
 
 **Target state:**
 
@@ -1012,9 +1012,9 @@ Agent / planner
 
 | Legacy flag / step | Target catalog tool_id | Underlying integration / module |
 |--------------------|------------------------|----------------------------------|
-| `use_rag` / `RagStep` | `rag.retrieve` | `intergrax/rag/` + `IntegrationProfile.vector_store` |
-| `use_websearch` / `WebsearchStep` | `websearch.query` | `SearchProvider` via `IntegrationProfile.search_provider` |
-| `use_tools` / `ToolsStep` | *(explicit tool_ids)* | `ToolRegistry` entries |
+| `use_rag` / `rag.retrieve` (catalog) | `rag.retrieve` | `intergrax/rag/` + `IntegrationProfile.vector_store` |
+| `use_websearch` / `websearch.query` (catalog) | `websearch.query` | `SearchProvider` via `IntegrationProfile.search_provider` |
+| `use_tools` / `run_bounded_tool_loop` / `ctx.invoke_tool` | *(explicit tool_ids)* | `ToolRegistry` entries |
 | Sandbox execution | `sandbox.exec` | `intergrax/runtime/sandbox/` (already a tool_id) |
 | Ephemeral Code Craft | `codecraft.*` (planned) | `intergrax/codecraft/` + `runtime/codecraft/` — see [`CODE_CRAFT.md`](CODE_CRAFT.md) |
 
@@ -1022,7 +1022,7 @@ Agent / planner
 
 1. **No new boolean capability flags** — new platform capabilities MUST ship as catalog tools with `ToolContract`.
 2. **`ToolInvocationPlan`** evolves to `planned_tools: Sequence[str]` (tool_ids) — boolean flags become deprecated aliases during transition.
-3. **`RagStep` / `WebsearchStep`** become thin **compatibility shims** that delegate to `rag.retrieve` / `websearch.query` handlers until all callers migrate.
+3. **`rag.retrieve` (catalog) / `websearch.query` (catalog)** become thin **compatibility shims** that delegate to `rag.retrieve` / `websearch.query` handlers until all callers migrate.
 4. **`LegalToolPlan` / engine plan models** replace `use_rag` / `use_websearch` with `tools: list[str]` (or structured `PlannedToolCall`).
 5. **Context injection tools:** `rag.retrieve` and `websearch.query` MAY declare `injects_context: true` so Nexus knows to merge results into LLM prompt context (replaces implicit step behavior) — see §22.1.
 
@@ -1037,7 +1037,7 @@ Agent / planner
 
 - Adding new `use_*` booleans to plan models for platform capabilities.
 - Agent code branching on `use_rag` instead of invoking `rag.retrieve` or listing it in `allowed_tools`.
-- Direct `RagStep` / `WebsearchStep` invocation from Tier-2 agents (must use `ToolRequest`).
+- Direct `rag.retrieve` (catalog) / `websearch.query` (catalog) invocation from Tier-2 agents (must use `ToolRequest`).
 
 ### 7.1.8 Skill Library — Composable Capability Packs
 
@@ -1828,7 +1828,7 @@ client = AsyncOpenAI(...)
 response = await client.chat.completions.create(...)
 
 # REQUIRED — canonical path
-from intergrax.llm_adapters...  # via RuntimeEngine / configured adapter
+from intergrax.llm_adapters...  # via AgentEngine / configured adapter
 ```
 
 ---

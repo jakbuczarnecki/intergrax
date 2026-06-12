@@ -146,7 +146,7 @@ Operational L3 evidence is separate from `phase_v_closeout_gate` (contract CI). 
 
 **Lab debug API:** when `LAB_HARNESS=true`, lab host mounts `GET /debug/integrations/health?stack=lab|m6_p4|m6_p5|m6_p6|all` (circuit-breaker catalog probes for operators).
 
-**Shadow evaluation (W-OPS.11):** set `RuntimeRequest.metadata["harness_shadow_eval"]` to `{"scenario_id": "...", "passed": true, "score": 1.0}`; `RuntimeEngine` records `HarnessShadowEvalRecordedDiagV1` trace step and appends to `build/architecture_hardening/online_evaluation_observations.json`. After a release, export trends: `uv run python scripts/export_harness_shadow_eval_trend.py --release-id <id>` → `shadow_evaluation_trend_report.json` (snapshots in `evaluation_release_snapshots.json`).
+**Shadow evaluation (W-OPS.11):** set `RuntimeRequest.metadata["harness_shadow_eval"]` to `{"scenario_id": "...", "passed": true, "score": 1.0}`; `AgentEngine` records `HarnessShadowEvalRecordedDiagV1` trace step and appends to `build/architecture_hardening/online_evaluation_observations.json`. After a release, export trends: `uv run python scripts/export_harness_shadow_eval_trend.py --release-id <id>` → `shadow_evaluation_trend_report.json` (snapshots in `evaluation_release_snapshots.json`).
 
 **Release cycles (W-OPS.5):** after a gate-green harness release, run `uv run python scripts/record_harness_release_cycle.py --cycle-id <id> [--verify-gate]`. Evidence script reads `build/architecture_hardening/release_cycles.json` (or `W_OPS_RELEASE_CYCLES`).
 

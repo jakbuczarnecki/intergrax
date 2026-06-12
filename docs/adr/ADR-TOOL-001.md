@@ -9,7 +9,7 @@
 
 ## Context
 
-Phase O unified `tool_ids` on plans, but `ToolRuntime.invoke` only executed pipeline shims (`rag.retrieve`, `websearch.query`) and the LLM `ToolsStep` flag (`use_tools`). Arbitrary catalog ids (e.g. `jira.search_tasks`) were stored on the plan but never invoked. The §42.12 gateway rejected any `ToolRequest` not in a fixed capability alias set with `unknown_capability_tool`.
+Phase O unified `tool_ids` on plans, but `ToolRuntime.invoke` only executed pipeline shims (`rag.retrieve`, `websearch.query`) and the LLM `run_bounded_tool_loop` / `ctx.invoke_tool` flag (`use_tools`). Arbitrary catalog ids (e.g. `jira.search_tasks`) were stored on the plan but never invoked. The §42.12 gateway rejected any `ToolRequest` not in a fixed capability alias set with `unknown_capability_tool`.
 
 Agents and engine plans need two equivalent paths to catalog tools:
 
@@ -19,12 +19,12 @@ Agents and engine plans need two equivalent paths to catalog tools:
 ## Decision
 
 1. Introduce `catalog_dispatch.py` as the single Tier-1 module for direct catalog invocation (input coercion, trace, budget ticks).
-2. **`ToolRuntime.invoke`** dispatches non-shim `tool_ids` through `RuntimeToolInvoker` after RAG/websearch steps and before/alongside `ToolsStep` when `use_tools=True`.
+2. **`ToolRuntime.invoke`** dispatches non-shim `tool_ids` through `RuntimeToolInvoker` after RAG/websearch steps and before/alongside `run_bounded_tool_loop` / `ctx.invoke_tool` when `use_tools=True`.
 3. **`RuntimeToolGateway`** routes any registered `tool_id` (not in the capability alias set) to the invoker when `runtime_state` is bound; runtime-bound and sandbox tools keep existing paths in `BoundToolGateway`.
 4. **`ToolInvocationPlan`** gains optional `tool_inputs: Mapping[str, Mapping[str, Any]]` for per-id payloads (also accepted on `nexus.capability_plan` payloads).
 5. Input coercion uses `contract.input_schema.model_validate(dict(raw or {}))` — same as runtime-bound tools.
 
-**Rejected:** Re-planning catalog ids through `ToolsStep` only (loses deterministic plan semantics). Duplicating invoke logic inside the gateway (violates single invoker enforcement).
+**Rejected:** Re-planning catalog ids through `run_bounded_tool_loop` / `ctx.invoke_tool` only (loses deterministic plan semantics). Duplicating invoke logic inside the gateway (violates single invoker enforcement).
 
 ## Consequences
 

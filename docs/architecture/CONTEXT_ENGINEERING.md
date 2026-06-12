@@ -319,7 +319,7 @@ bootstrap_context_catalog(
 
 | Stage | As-built implementation |
 |-------|-------------------------|
-| Collect (turn) | `InstructionsStep`, `UserLongtermMemoryStep`, `RagStep`, `HistoryStep`, websearch |
+| Collect (turn) | `InstructionsStep`, `UserLongtermMemoryStep`, `rag.retrieve` (catalog), `HistoryStep`, websearch |
 | Collect (graph) | `ContextManager.build_agent_context()` |
 | Budget | `ContextCompiler.compile()` via `CompileContextStep` |
 | Format | `compose_agent_message()` / chat message list |
@@ -333,7 +333,7 @@ bootstrap_context_catalog(
 | `builtin.system_instructions` | SYSTEM_INSTRUCTIONS | user/org profile |
 | `builtin.session_history` | SESSION_HISTORY | `HistoryLayer` |
 | `builtin.longterm_memory` | LONGTERM_MEMORY | `UserLongtermMemoryStep` |
-| `builtin.rag` | RAG | `RagStep` / `RagContextProvider` |
+| `builtin.rag` | RAG | `rag.retrieve` (catalog) / `RagContextProvider` |
 | `builtin.websearch` | WEBSEARCH | websearch step |
 | `builtin.tool_output` | TOOL_OUTPUT | tool injection blocks |
 | `builtin.graph_prior` | GRAPH_PRIOR | `ContextManager` |
@@ -375,7 +375,7 @@ class ContextProfile(BaseModel):
 ```mermaid
 sequenceDiagram
     participant Client
-    participant Engine as RuntimeEngine
+    participant Engine as AgentEngine
     participant Hook as BEFORE_CONTEXT_BUILD
     participant Steps as Runtime Steps
     participant CE as ContextEngine
@@ -681,7 +681,7 @@ profile = ApplicationEnvironmentProfile(
 | `intergrax/runtime/nexus/context/context_compiler.py` | 1 | Budget allocator (shipped) |
 | `intergrax/runtime/nexus/context/context_manager.py` | 1 | Graph assembly (shipped) |
 | `intergrax/runtime/nexus/context/context_builder.py` | 1 | Session RAG helper (shipped — rename planned) |
-| `intergrax/runtime/nexus/runtime_steps/compile_context_step.py` | 1 | CE pipeline step |
+| `intergrax/runtime/nexus/tools/` | 1 | CE pipeline step |
 | `intergrax/runtime/architecture/context_engineering.py` | 1 | Quality scoring |
 | `intergrax/runtime/architecture/context_regression_benchmark.py` | 1 | Regression harness |
 | `intergrax/contracts/context_assembly.py` | 0 | `TaskContextAssemblyOptions` |

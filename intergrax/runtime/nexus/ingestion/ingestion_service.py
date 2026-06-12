@@ -79,7 +79,7 @@ class AttachmentIngestionService:
       - manage ChatSession objects,
       - perform retrieval or answering.
 
-    It is intended to be called from RuntimeEngine or other
+    It is intended to be called from AgentEngine / host intake or other
     orchestration layers when new attachments are added to a session.
     """
 

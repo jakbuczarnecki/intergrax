@@ -34,7 +34,7 @@ Agent execution is exclusively:
 ### Negative
 
 - External forks importing `RuntimeEngine` or `runtime_steps` break; migration path is ACP patterns + `ToolRuntime`.
-- Documentation and audit prompts still reference old paths until domain doc refresh tranches land.
+- Documentation and audit prompts updated in the same release (ACP-CLOSE-LEG-5 doc scrub).
 
 ## Compliance
 

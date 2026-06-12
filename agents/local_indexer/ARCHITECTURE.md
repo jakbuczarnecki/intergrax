@@ -50,7 +50,7 @@ Ingest user-local documents into the Intergrax RAG vector index so downstream ag
 ## UAEP pipeline
 
 ```text
-steps/pipeline.py
+`on_next_step` / cognitive pattern hooks
   1. validate_source_paths
   2. ingest_documents      → rag.ingest_document per path
   3. summarize_index_job   → structured StepOutput

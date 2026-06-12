@@ -16,7 +16,7 @@ At the same time, production hosts require **Nexus** (`Task → NexusLoop`) for 
 Today:
 
 - `Agent.run()` exists but delegates opaquely to `AgentEngine`.
-- Authors also see UAEP (`get_steps`, `run_step`), legacy `RuntimeEngine.run`, and `run_pipeline_step` bridges.
+- Authors also see UAEP (`get_steps`, `run_step`), legacy `AgentEngine.run`, and `on_next_step` bridges.
 - Applications pass profile slices via Tier-3 wiring, but per-agent binding (memory namespace, tool allowlist, RAG backend) is not documented as a cohesive author model.
 
 ADR-AGENT-001 rejected **removing Nexus** or **absorbing Agent OS into agent classes**. This ADR adds the **author-facing facade** without reversing ADR-AGENT-001.
@@ -30,7 +30,7 @@ ADR-AGENT-001 rejected **removing Nexus** or **absorbing Agent OS into agent cla
 3. **UAEP remains the internal execution protocol** — `get_steps` / `run_step` / `decide_after_step` are framework-wired; authors override **hooks** (`perceive`, `reason`, `act`, `evaluate`) or `@step` methods, not the harness loop.
 4. **Nexus remains the application entry** for `Task` lifecycle and multi-agent orchestration; graph nodes invoke the **same** agent `run` / UAEP path.
 5. **Per-agent resource binding** — memory namespaces, tool/skill allowlists, RAG/knowledge backends — is declared on `AgentContract` + `AgentBinding` and **materialized at run time** from Tier-3 profile + request metadata overrides (§30).
-6. **Legacy author paths deprecated:** direct `RuntimeEngine.run` from Tier-2, `run_pipeline_step` bridge (ACP-LEG).
+6. **Legacy author paths deprecated:** direct `AgentEngine.run` from Tier-2, `on_next_step` bridge (ACP-LEG).
 
 **Rejected:**
 

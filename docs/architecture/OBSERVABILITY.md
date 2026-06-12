@@ -159,7 +159,7 @@ sequenceDiagram
     participant User
     participant App as Tier-3 Host
     participant Nexus as NexusLoop
-    participant Engine as AgentEngine / RuntimeEngine
+    participant Engine as AgentEngine / AgentEngine
     participant Bus as RuntimeEventBus
     participant Trace as RunTraceWriter
     participant Journal as Unified Journal

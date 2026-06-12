@@ -29,7 +29,7 @@ uv run pytest agents/local_indexer/tests -q
 
 ## Authoring
 
-1. Implement domain logic in `steps/pipeline.py`
+1. Implement domain logic in ``on_next_step` / cognitive pattern hooks`
 2. Adjust [`prompts/system.md`](prompts/system.md)
 3. Register tools on contract — see [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md)
 

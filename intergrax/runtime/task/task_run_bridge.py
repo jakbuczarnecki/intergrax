@@ -97,7 +97,7 @@ def task_result_to_payload(result: TaskResult) -> Dict[str, Any]:
 
 
 def runtime_request_with_run_id(request: RuntimeRequest, run_id: str) -> RuntimeRequest:
-    """Attach unified run_id to RuntimeRequest metadata for RuntimeEngine."""
+    """Attach unified run_id to RuntimeRequest metadata for AgentEngine runs."""
     meta = dict(request.metadata)
     meta["run_id"] = run_id
     return RuntimeRequest(

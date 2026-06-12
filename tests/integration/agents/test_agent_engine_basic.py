@@ -45,5 +45,5 @@ async def test_agent_engine_rejects_pipeline_only_agent():
         message="hello"
     )
 
-    with pytest.raises(ValueError, match="ACP-CLOSE-LEG-1"):
+    with pytest.raises(ValueError, match="ACP-CLOSE-LEG-5"):
         await engine.run(request)
