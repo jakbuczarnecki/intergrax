@@ -39,7 +39,7 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 | §37 | Pre-implementation APP-CON contracts | H-APP-CON-DOC.* | **Done** | *doc-only* |
 | §38 | L4 execution stack | H-APP.3.3 · H-APP-WIRING | **Done** | `nexus_factory.py` · `build_harness_host_runtime` |
 | §39 | `OrganizationalPolicyEnvelope` | ACP-ORG-* | **Done** | `org_policy.py` · `test_uc11_product_host_compliance.py` |
-| §40 | APP-PROD gates | APP-PROD-1..9 | **Partial** | see [APP-PROD master](#app-prod--release-gates-master) |
+| §40 | APP-PROD gates | APP-PROD-1..9 | **Partial** | APP-PROD-9 **Done** · 6–8 open |
 | §41 | Composition primitive separation | H-APP-CON-DOC.* | **Done** | *doc-only* |
 | §42 | `ApplicationEnvironmentState` v2 | APP-CON-2 · APP-CON-3 | **Partial** | `environment_state.py` · auto-sync open |
 | §43 | Budget / token governance | ACP-TOK-* · APP-CON-3 | **Partial** | see [Cross-plan §43](#cross-plan--43-budget--token-governance) |
@@ -85,7 +85,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 | APP-PROD-6 | §40.2 | `check_environment_state_usage` lint | Planned | CI script; hooks use typed state |
 | APP-PROD-7 | §40.2 · §43 | `check_budget_enforcement` on STRICT product hosts | Planned | blocked until ACP-TOK-2 |
 | APP-PROD-8 | §20–§21 | `check_workspace_cleanup` lifespan hooks | Planned | factory teardown integration test |
-| APP-PROD-9 | §40.2 | Wire APP-PROD-1 into `pytest -m gate` / CI | Planned | gate workflow invokes script |
+| APP-PROD-9 | §40.2 | Wire APP-PROD-1 into `pytest -m gate` / CI | **Done** | `test_check_application_production_gates.py` · CI `gate-governance-tier` |
 
 ### APP-EVOL — evolution (architecture §49)
 

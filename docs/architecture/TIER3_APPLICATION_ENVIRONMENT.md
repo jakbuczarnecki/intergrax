@@ -1352,6 +1352,7 @@ Symmetric to ACP §40 — **host environments** that run mutating workloads.
 | APP-PROD-6 | `check_environment_state_usage` — hooks use `app_env_state.v1` | Planned | CI lint |
 | APP-PROD-7 | `check_budget_enforcement` — COST profile on STRICT product hosts | Planned | ACP-TOK-2 |
 | APP-PROD-8 | `check_workspace_cleanup` — factory lifespan cleanup hooks | Planned | integration |
+| APP-PROD-9 | Gate test + CI `gate-governance-tier` | **Done** | `test_check_application_production_gates.py` |
 
 ## 40.3 Mutating product checklist
 

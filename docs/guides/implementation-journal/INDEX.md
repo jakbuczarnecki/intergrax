@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-11-026 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-PROD-9 | [Sprint 1 APP-PROD-9 gate CI wiring](entries/2026-06-11/tier3-sprint1-app-prod-9-gate-ci.md) | pending |
 | IJ-2026-06-11-025 | 2026-06-11 | tier-0, tier-1 AGENT_CONTRACTS_AND_ASSEMBLY | ACP-CON-4 | [ACP gate CI — budget default, fleet inventory fixture, UAEP test stubs](entries/2026-06-11/platform-acp-gate-ci-fixes.md) | pending |
 | IJ-2026-06-11-024 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | H-APP-CON-DOC.1 | [Tier-3 plan architecture fidelity matrix](entries/2026-06-11/tier3-plan-architecture-fidelity.md) | pending |
 | IJ-2026-06-11-023 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | H-APP-FREEZE-1, H-APP-FREEZE-2, H-APP-FREEZE-3 | [Cross-document governance consistency freeze audit](entries/2026-06-11/tier3-governance-consistency-freeze-audit.md) | pending |

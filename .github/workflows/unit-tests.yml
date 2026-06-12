@@ -168,6 +168,7 @@ jobs:
           && uv run python scripts/check_production_chat_agent_imports.py
           && uv run python scripts/check_integration_vendor_imports.py
           && uv run python scripts/check_harness_no_getattr.py
+          && uv run python scripts/check_application_production_gates.py
           && uv run python scripts/check_legacy_modules_removed.py
           && uv run python scripts/check_agent_skill_resolution.py
           && uv run python scripts/check_harness_registry_resolution.py
