@@ -217,6 +217,42 @@ def check_tier3_scenario_matrix() -> list[str]:
     return _check(REPO_ROOT)
 
 
+def check_application_environment_diff() -> list[str]:
+    from intergrax.applications._shared.environment_diff_wiring import (
+        build_application_environment_diff,
+    )
+    from intergrax.applications._shared.product_manifest_registry import (
+        iter_strict_product_manifests,
+    )
+    from intergrax.applications.contracts.application_environment_diff import DiffRiskLevel
+    from intergrax.applications.contracts.execution_mode import ExecutionMode
+
+    violations: list[str] = []
+    manifests = list(iter_strict_product_manifests())
+    if len(manifests) < 2:
+        violations.append("need at least two STRICT product manifests for environment diff smoke")
+        return violations
+
+    for product_id, manifest in manifests:
+        env = manifest.resolved_environment()
+        self_diff = build_application_environment_diff(manifest, env, manifest, env)
+        if self_diff.risk_level is not DiffRiskLevel.LOW:
+            violations.append(f"{product_id}: self-diff risk {self_diff.risk_level.value}")
+        if self_diff.breaking_changes:
+            violations.append(f"{product_id}: self-diff must not report breaking changes")
+
+    sample_manifest, sample_env = manifests[0][1], manifests[0][1].resolved_environment()
+    mode_diff = build_application_environment_diff(
+        sample_manifest,
+        sample_env.model_copy(update={"execution_mode": ExecutionMode.BALANCED}),
+        sample_manifest,
+        sample_env.model_copy(update={"execution_mode": ExecutionMode.STRICT}),
+    )
+    if mode_diff.risk_level is not DiffRiskLevel.HIGH:
+        violations.append("execution_mode delta must classify as high risk")
+    return violations
+
+
 def check_budget_enforcement() -> list[str]:
     from intergrax.applications._shared.budget_wiring import check_manifest_budget_enforcement
     from intergrax.applications._shared.product_manifest_registry import (
@@ -243,6 +279,7 @@ def main() -> int:
         ("capability_alias_registry", check_capability_alias_registry),
         ("agent_certification_roster", check_agent_certification_roster),
         ("application_recovery_contract", check_application_recovery_contract),
+        ("application_environment_diff", check_application_environment_diff),
     )
     violations: list[str] = []
     for _name, fn in checks:

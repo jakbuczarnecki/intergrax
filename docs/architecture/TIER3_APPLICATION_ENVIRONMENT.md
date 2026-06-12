@@ -2080,9 +2080,9 @@ ApplicationEnvironmentDiff:
 - **Incident:** compare `profile_snapshot_id` on failed Task vs current deploy
 - **Org simulation:** diff envelope before enabling new playbook
 
-**CLI target:** `intergrax doctor diff-app --left v1.2.0 --right v1.3.0-rc1` (APP-EVOL-6).
+**CLI:** `intergrax doctor diff-app --app legal --left 0.1.0 --right 0.2.0` (`doctor_diff_app.py` · `--json` · `--fail-on-high`).
 
-**Status:** **Planned** APP-EVOL-6.
+**Status:** **Done** (`application_environment_diff.py` · `environment_diff_wiring.py` · `check_application_environment_diff.py` · APP-EVOL-6).
 
 ---
 
@@ -2153,7 +2153,7 @@ graph_spec nodes            → roster capabilities satisfied
 | APP-EVOL-3 | `CapabilityAlias` registry + sunset routing | **Done** | `check_capability_alias_registry.py` |
 | APP-EVOL-4 | `AgentCertification` + STRICT roster gate | **Done** | `check_agent_certification_roster.py` |
 | APP-EVOL-5 | `ApplicationRecoveryContract` on `ReliabilityProfile` | **Done** | `check_application_recovery_contract.py` |
-| APP-EVOL-6 | `ApplicationEnvironmentDiff` + `doctor diff-app` | Planned | pre-deploy CI diff |
+| APP-EVOL-6 | `ApplicationEnvironmentDiff` + `doctor diff-app` | **Done** | `check_application_environment_diff.py` |
 | APP-EVOL-7 | `ApplicationPackage` + dependency resolver | Planned | `new-stack` emits package manifest |
 
 **Explicitly out of scope:** marketplace UI (H-APP deferred); Nexus fork; Tier-3 cognition loop.

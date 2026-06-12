@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-11-044 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-6 | [Sprint 19 APP-EVOL-6 environment diff](entries/2026-06-11/tier3-sprint19-app-evol-6-environment-diff.md) | pending |
 | IJ-2026-06-11-043 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-5 | [Sprint 18 APP-EVOL-5 recovery contract](entries/2026-06-11/tier3-sprint18-app-evol-5-recovery-contract.md) | pending |
 | IJ-2026-06-11-042 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-4 | [Sprint 17 APP-EVOL-4 agent certification gate](entries/2026-06-11/tier3-sprint17-app-evol-4-agent-certification.md) | pending |
 | IJ-2026-06-11-041 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-3 | [Sprint 16 APP-EVOL-3 capability alias routing](entries/2026-06-11/tier3-sprint16-app-evol-3-capability-alias.md) | pending |
