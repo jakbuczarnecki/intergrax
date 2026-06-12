@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Invoke catalog context-injection tools from Nexus pipeline steps (Phase O.5b)."""
+"""Invoke catalog context-injection tools from ToolRuntime / on_next_step (Phase O.5b)."""
 
 from __future__ import annotations
 

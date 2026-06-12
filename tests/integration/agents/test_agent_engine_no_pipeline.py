@@ -57,5 +57,5 @@ async def test_agent_engine_without_pipeline_rejects_legacy_path():
         message="hello"
     )
 
-    with pytest.raises(ValueError, match="ACP-CLOSE-LEG-1"):
+    with pytest.raises(ValueError, match="ACP-CLOSE-LEG-5"):
         await engine.run(request)

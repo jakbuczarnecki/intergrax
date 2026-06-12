@@ -1,5 +1,10 @@
 # Intergrax — Project Structure Overview
 
+> **Historical snapshot (test fixture only).** Generated before ACP-CLOSE-LEG-5 (2026-06-12).
+> Sections referencing `RuntimeEngine`, `runtime_steps/`, `pipelines/`, or `NoPlannerPipeline` describe
+> **removed** Tier-1 machinery. Current agent execution: `on_next_step` + `HarnessKernel` ([ADR-FLOW-005](../../../../docs/adr/entries/2026-06-12/ADR-FLOW-005.md)).
+> Do not use this file as implementation canon — see `docs/intergrax_runtime_architecture.md`.
+
 This document was generated automatically by the Intergrax Project Structure Document Generator.
 
 ## Purpose

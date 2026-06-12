@@ -3,7 +3,7 @@
 **Status:** Audit control prompt (copy-paste for LLM agents)  
 **Domain pair:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
 **Audit map layers:** 17–20, 31 · ACP §21 · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HARNESS_AUDIT_MAP.md)  
-**ADR:** [`ADR-AGENT-001`](../../adr/entries/2026-06-11/ADR-AGENT-001.md) · [`ADR-AGENT-002`](../../adr/entries/2026-06-11/ADR-AGENT-002.md) · [`ADR-AGENT-003`](../../adr/entries/2026-06-11/ADR-AGENT-003.md)  
+**ADR:** [`ADR-AGENT-001`](../../adr/ADR-AGENT-001.md) · [`ADR-AGENT-002`](../../adr/ADR-AGENT-002.md) · [`ADR-AGENT-003`](../../adr/ADR-AGENT-003.md)  
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---

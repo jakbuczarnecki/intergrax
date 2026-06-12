@@ -178,13 +178,26 @@ Legacy UAEP names (implementation today):
 | Override `execute_next_step` / `advance_step` | **Forbidden** — bypasses policy/trace |
 | `nexus.run()` as agent session API | **Forbidden** — use `Agent.run()`; NexusLoop for Task only §38 |
 
-**Author loop control (normative):** every domain iteration is decided in **`on_next_step`** (or a cognitive pattern delegating to it). The harness runs **`HarnessKernel.execute_step`** — policy, trace, gateways, budgets — without choosing tools, models, or termination. UAEP (`get_steps` / `run_step`) remains a **framework-internal test shim** only; product agents MUST NOT implement it.
+**Author loop control (normative):** every domain iteration is decided in **`on_next_step`** (or a cognitive pattern delegating to it). The harness runs **`HarnessKernel.execute_step`** — policy, trace, gateways, budgets — without choosing tools, models, or termination.
+
+**Execution entry (two paths, same author hook):**
+
+| Path | When | Outer loop | Cognition |
+|------|------|------------|-----------|
+| **ACP session** | `metadata["acp.session.v1"]` (Tier-3 harness task enricher sets by default) | `run_acp_session` → `AgentRuntime.advance_step` (multi-iteration) | `on_next_step` each iteration |
+| **UAEP bridge (Nexus default)** | `CognitiveAgent` / fleet agents | `UAEPExecutor` over `get_steps()` (typically **one** cognitive step) | `run_step` → `acp_uaep_shim` → **`on_next_step`**; ReAct/plan-execute loop **inside** `on_next_step` |
+
+`UaepPipelineStubAgent` in `testing_support/` is **test-only**. Product agents MUST NOT author custom `get_steps`/`run_step` beyond `CognitiveAgent` defaults — implement domain logic in `on_next_step` / pattern hooks.
 
 ```text
+# ACP session (opt-in via acp.session.v1)
 Agent.run(AgentRunRequest)
-  └─ loop: AgentRuntime.advance_step()
-        ├─ agent.on_next_step(step_ctx) → StepOutcome   ← AUTHOR owns plan/tools/HITL/complete
-        └─ HarnessKernel.execute_step(outcome)          ← HARNESS owns policy/trace/gateways only
+  └─ run_acp_session: for max_iterations
+        ├─ agent.on_next_step(step_ctx) → StepOutcome   ← AUTHOR
+        └─ HarnessKernel.execute_step(outcome)          ← HARNESS
+
+# Nexus production default (fleet CognitiveAgent)
+AgentEngine → UAEPExecutor → run_step → on_next_step → HarnessKernel (via uaep_step_bridge)
 ```
 
 No Tier-1 code path may inject fixed step order (retired `RuntimePipeline` / `runtime_steps/`). Tool loops (ReAct) run **inside** `on_next_step` via `run_bounded_tool_loop` + `ctx.invoke_tool`, not via Nexus graph scheduling (ADR-TOOL-002).
