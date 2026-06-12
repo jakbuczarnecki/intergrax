@@ -198,9 +198,27 @@ async def run_acp_session(
         trace_step_count_fn=lambda: len(kernel_ctx.run_trace.steps),
     )
 
+    router_runtime_config = None
+    if host is not None and host.app_profile is not None:
+        from intergrax.applications._shared.context_runtime_bridge import (
+            apply_context_profile_to_runtime_config,
+        )
+        from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+        from intergrax.runtime.nexus.config import RuntimeConfig
+
+        router_runtime_config = RuntimeConfig(
+            llm_adapter=resolve_llm_adapter(host.app_profile),
+            production_mode=host.app_profile.execution_mode.value == "strict",
+        )
+        apply_context_profile_to_runtime_config(
+            router_runtime_config,
+            host.app_profile.context_profile,
+        )
+
     base_llm_router = StepLLMRouter(
         allowed_models=tuple(merged.allowed_llm_models),
         default_model=merged.default_llm_model,
+        runtime_config=router_runtime_config,
     )
     step_ctx_holder: list[AgentStepContext] = []
     llm_router = wrap_budget_enforcing_router(

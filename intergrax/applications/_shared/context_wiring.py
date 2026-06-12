@@ -8,6 +8,7 @@ import logging
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.context.bootstrap import bootstrap_context_catalog, materialize_context_plugin_registry
+from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
 from intergrax.context.registry import ContextPluginRegistry, UnknownContextPluginError
 from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
@@ -86,6 +87,23 @@ def resolve_context_budget_policy(env: ApplicationEnvironmentProfile) -> Context
         return budget
     assembly = env.context_profile.assembly_options
     return ContextBudgetPolicy(max_chars=max(assembly.max_prior_chars, 4000))
+
+
+def resolve_context_engine_from_environment(
+    env: ApplicationEnvironmentProfile,
+) -> DefaultNexusContextEngine:
+    """Resolve ``DefaultNexusContextEngine`` for the environment preset."""
+    registry = resolve_context_plugin_registry_from_environment(env)
+    engine_ref = env.context_profile.engine_ref
+    if env.context_profile.engine_preset == "custom" and engine_ref:
+        # CE-3.3: dotted import deferred to CE-7 custom engines
+        raise ValueError(
+            f"Custom context engine_ref is not wired yet: {engine_ref!r} (use preset=default)"
+        )
+    return DefaultNexusContextEngine(
+        engine_id=env.context_profile.engine_preset,
+        registry=registry,
+    )
 
 
 def resolve_context_manager_from_environment(
