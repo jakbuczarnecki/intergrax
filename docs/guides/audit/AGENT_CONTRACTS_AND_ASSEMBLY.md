@@ -55,7 +55,7 @@ ACP Done (2026-06-11) · ACP-CLOSE active §6.1bb · PE/REG/CG/AS closed · AUDI
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-GAP-ACP-03/04/07 Open · ACP-CLOSE-LEG-1..3 · ACP-CLOSE-PROD-1..8 · ACP-CLOSE-PAT-1..2 · TOOL-ENG-6 · AUDIT-IDEAL-19.1/20.1/31.1
+GAP-ACP-03/04/07 Open · ACP-CLOSE-LEG-5 Done · ACP-CLOSE-PROD-1..8 · ACP-CLOSE-PAT-1..2 · TOOL-ENG-16 pattern plugin · AUDIT-IDEAL-19.1/20.1/31.1
 
 ---
 
@@ -82,7 +82,7 @@ intergrax/agents/persistence/  [ACP-PROD checkpoint · declarative tools]
 intergrax/runtime/registry/agent_registry.py
 intergrax/prompts/registry/ (YamlPromptRegistry)
 intergrax/runtime/architecture/capability_graph*.py · agent_lifecycle_governance.py
-intergrax/runtime/nexus/engine/runtime.py  [legacy ACP-LEG]
+intergrax/runtime/nexus/tools/tool_loop.py  [ACP tool loop]
 agents/ (Tier-2 roster) · applications/_shared/prompt_wiring.py
 scripts/check_agents_lifecycle_metadata.py · check_agents_vendor_imports.py
 ```
@@ -102,7 +102,7 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 5. ADR-AGENT-001 Accepted; architecture §21–§36 ACP + run/step canon present.
 6. Three cognition planes (§23) — no private multi-agent graph inside run_step (ACP-AP-01).
 7. Tool calls via RuntimeExecutionContext.invoke_tool / ToolRuntime only.
-8. Agents do not call RuntimeEngine.run() from Tier-2 (ACP-LEG).
+8. Agents control loop via on_next_step only — no Tier-2 RuntimeEngine/pipeline (ACP-CLOSE-LEG-5).
 9. CognitiveAgent base exists or gap ACP-1 recorded.
 10. Pattern classes Reflex/ReAct/PlanExecute/Decomposition/Reflection vs ACP-2..6.
 11. acp.state.v1 schema and cognitive_pattern on contract (ACP-0/0b).

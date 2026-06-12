@@ -6,7 +6,7 @@
 Request and response data models for the nexus Mode runtime.
 
 These dataclasses define the high-level contract between applications
-(FastAPI, Streamlit, CLI, MCP, etc.) and the RuntimeEngine.
+(FastAPI, Streamlit, CLI, MCP, etc.) and AgentEngine.
 
 They intentionally hide low-level implementation details while keeping
 enough structure to expose citations, routing information, tool calls,
@@ -131,7 +131,7 @@ class RuntimeRequest:
     High-level request structure for the nexus runtime.
 
     This object is built by the application layer and passed into the
-    RuntimeEngine. It can be created directly or via helper
+    AgentEngine. It can be created directly or via helper
     functions/wrappers in web frameworks.
     """
 

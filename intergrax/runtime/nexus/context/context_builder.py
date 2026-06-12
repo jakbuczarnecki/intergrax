@@ -5,7 +5,7 @@
 """
 Nexus session RAG context builder (Tier-1).
 
-Retrieval for the LLM pipeline is performed in ``RagStep`` / ``rag.retrieve`` when
+Retrieval for the LLM context is performed via ``rag.retrieve`` (catalog) in ``on_next_step`` when
 ``perform_retrieval=False`` (default for ``HistoryStep``). See Phase Q-R.2.
 """
 

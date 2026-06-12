@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from signoff_probe.capabilities import CAPABILITIES
 from signoff_probe.contract import build_agent_contract
-from signoff_probe.steps.pipeline import build_pipeline
+from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
 from intergrax.agents.authoring.patterns.reflex import ReflexAgent
 from intergrax.agents.authoring.patterns.types import (
     AgentEvaluation,
@@ -54,12 +54,10 @@ class SignoffProbeAgent(ReflexAgent):
         return CapabilityMatchResult(matched=False, rationale="capability not supported")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        built = build_pipeline()
         return build_lab_agent_runtime_context(
             request=request,
-            llm_adapter=built.llm_adapter,
+            llm_adapter=PrefixStubLLMAdapter(prefix="signoff_probe"),
             harness=self._harness,
-            pipeline=built.pipeline,
         )
 
     async def perceive(self, step_ctx: AgentStepContext) -> Observation:

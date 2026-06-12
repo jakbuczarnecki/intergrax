@@ -3,7 +3,7 @@
 **Architecture (1:1):** [`architecture/CODE_CRAFT.md`](../architecture/CODE_CRAFT.md)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)  
-**ADR:** [`adr/ADR-CODECRAFT-001.md`](../adr/ADR-CODECRAFT-001.md)
+**ADR:** [`adr/entries/2026-06-10/ADR-CODECRAFT-001.md`](../adr/entries/2026-06-10/ADR-CODECRAFT-001.md)
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 

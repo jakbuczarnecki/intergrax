@@ -67,7 +67,7 @@ Intergrax has **two independent retry layers**. Configure each explicitly; avoid
 | Layer | Location | Scope | Policy |
 |-------|----------|-------|--------|
 | **Graph / validation** | `RetryEngine` (`runtime/nexus/retry/retry_engine.py`) | Nexus execution graph after agent step validation fails | `RetryPolicy` (`max_retries`, `retry_alternate_agent`); may switch agent via `AgentRegistry`; `RetryRecord` on task result; hooks `BEFORE_RETRY` / `AFTER_RETRY` when middleware wired |
-| **Run-level** | `RuntimeEngine` / `runtime_steps` | Transient LLM or tool failures inside one agent run (`RuntimeErrorCode.LLM_ERROR`, `TOOL_ERROR`, …) | `RuntimeConfig.max_run_retries`, `retry_run_on`; re-executes pipeline step; does not change Nexus agent selection |
+| **Run-level** | `AgentEngine` / `HarnessKernel` | Transient LLM or tool failures inside one agent run (`RuntimeErrorCode.LLM_ERROR`, `TOOL_ERROR`, …) | `RuntimeConfig.max_run_retries`, `retry_run_on`; re-runs `on_next_step` iteration; does not change Nexus agent selection |
 
 A future `RetryCoordinator` may delegate to both with explicit `RETRY_SCHEDULED` / `RETRY_STARTED` events (§42.34). Until then, agents emit **intent** (`AgentDecision.RETRY`); runtime executes policy — no agent-internal `for attempt in range(n)` against adapters.
 
@@ -168,7 +168,7 @@ Policies are **orthogonal modules** composed through profiles — authors enable
 | Module | Scope | Key controls | Canon |
 |--------|-------|--------------|-------|
 | **Graph retry** | Nexus node after validation failure | `max_retries`, `retry_alternate_agent`, `RetryRecord` | §31.1, `RetryEngine` |
-| **Run retry** | UAEP step (LLM/tool transient) | `max_run_retries`, `retry_run_on` | §31.1, `RuntimeEngine` |
+| **Run retry** | UAEP step (LLM/tool transient) | `max_run_retries`, `retry_run_on` | §31.1, `AgentEngine` |
 | **Run-level graph retry** | Whole graph re-execution | `max_run_retries` on `OrchestrationProfile` | [`ORCHESTRATION.md`](ORCHESTRATION.md) §52.1 Layer C |
 | **Circuit breaker** | Integration / provider calls | Open/half-open thresholds via `ReliabilityProfile` | §33.2 |
 | **Idempotency** | Side-effectful tools | `idempotency_key` on `ToolRequest` | §33.1 |

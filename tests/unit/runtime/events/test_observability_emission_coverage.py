@@ -51,6 +51,7 @@ def _contract(**updates: object) -> AgentContract:
         name="Demo",
         description="demo",
         capabilities=["demo.basic"],
+        max_steps=1,
     ).model_copy(update=updates)
 
 

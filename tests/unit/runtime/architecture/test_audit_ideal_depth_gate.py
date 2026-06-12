@@ -115,7 +115,7 @@ def test_audit_ideal_7_2_replan_policy_context() -> None:
         }
     )
     ctx = resolve_replan_policy_context(env)
-    assert ctx.get("engine_replan_boundary") is True
+    assert ctx.get("nexus_replan_boundary") is True
     handler = ExecutionInterruptHandler(allow_dynamic_replan=True)
     resolution = handler.resolve_decision(
         AgentDecision(type=AgentDecisionType.MODIFY_PLAN, reason="replan"),

@@ -92,8 +92,6 @@ EXTRA_BUNDLES: Dict[str, str] = {
 
     "INTERGRAX_FULL": r"intergrax",
     
-    "NOTEBOOKS": r"notebooks",
-
     "TESTS_FULL": r"tests",
     "TESTS_UNITS": r"tests\unit",
 
@@ -109,7 +107,8 @@ EXTRA_BUNDLES: Dict[str, str] = {
     "RUNTIME_USER_PROFILE": r"intergrax\runtime\user_profile",
     "RUNTIME_NEXUS": r"intergrax\runtime\nexus",
     "RUNTIME_NEXUS_TRACING": r"intergrax\runtime\nexus\tracing",
-    "RUNTIME_NEXUS_NEXUS_RUNTIME_STEPS": r"intergrax\runtime\nexus\runtime_steps",
+    "RUNTIME_NEXUS_TOOLS": r"intergrax\runtime\nexus\tools",
+    "RUNTIME_NEXUS_CONTEXT": r"intergrax\runtime\nexus\context",
 
 
     "FASTAPI_CORE": r"intergrax\fastapi_core",
@@ -136,7 +135,7 @@ class CodeObjectMeta:
 class FileMeta:
     rel_path: str
     module_name: str
-    module_group: str  # first segment after "intergrax/" or a known top folder like "notebooks"
+    module_group: str  # first segment after "intergrax/" or a known top folder like "tests"
     sha256: str
     lines: int
     chars: int
@@ -349,7 +348,7 @@ def module_group_from_rel(rel_path: str) -> str:
             return parts[1] or "root"
         return "root"
 
-    if top in {"notebooks", "tests"}:
+    if top in {"tests"}:
         return top
 
     return top or "root"

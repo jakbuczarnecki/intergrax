@@ -6,7 +6,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from intergrax.harness.application_host import ApplicationHost
 
 from intergrax.applications._shared.environment_wiring import (
     ApplicationEnvironmentWiring,
@@ -24,6 +27,11 @@ from intergrax.agents.persistence.compensation_queue_store import CompensationQu
 from intergrax.applications._shared.acp_checkpoint_host_wiring import (
     resolve_host_agent_checkpoint_store,
     resolve_host_compensation_queue_store,
+)
+from intergrax.applications._shared.application_host_wiring import (
+    apply_application_environment_state_wiring,
+    apply_application_host_wiring,
+    apply_hook_runtime_guard_wiring,
 )
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_from_tool_wiring,
@@ -97,6 +105,7 @@ class HarnessHostRuntime:
     evaluation: ApplicationEvaluationWiring
     critic: ApplicationCriticWiring
     nexus_loop: NexusLoop
+    application_host: ApplicationHost | None
     agent_checkpoint_store: AgentCheckpointStore
     compensation_queue_store: CompensationQueueStore
 
@@ -116,6 +125,7 @@ def build_harness_host_runtime(
     checkpoint_store: TaskCheckpointPersistence | None = None,
     agent_checkpoint_store: AgentCheckpointStore | None = None,
     notification_adapter: NotificationAdapter | None = None,
+    application_host: ApplicationHost | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment wiring → registry → observability → NexusLoop.
@@ -208,6 +218,28 @@ def build_harness_host_runtime(
     )
     assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)
     assert_guardrail_assembly_valid(guardrail_wiring, environment, nexus=nexus_loop)
+    from intergrax.applications._shared.capability_alias_intake_wiring import (
+        apply_capability_alias_wiring,
+    )
+    from intergrax.applications._shared.environment_snapshot_wiring import (
+        apply_environment_snapshot_wiring,
+    )
+
+    apply_capability_alias_wiring(nexus_loop, environment=environment)
+    apply_environment_snapshot_wiring(
+        nexus_loop,
+        manifest=resolved_manifest,
+        environment=environment,
+        registry_snapshot=env_wiring.registry_snapshot,
+    )
+    apply_application_environment_state_wiring(
+        nexus_loop,
+        manifest=resolved_manifest,
+        environment=environment,
+        run_budget=cost_wiring.run_budget,
+    )
+    apply_application_host_wiring(nexus_loop, application_host)
+    apply_hook_runtime_guard_wiring(nexus_loop, environment)
     from intergrax.applications._shared.reliability_wiring import apply_reliability_governance_wiring
 
     apply_reliability_governance_wiring(nexus_loop, environment)
@@ -224,6 +256,7 @@ def build_harness_host_runtime(
         evaluation=evaluation_wiring,
         critic=critic_wiring,
         nexus_loop=nexus_loop,
+        application_host=application_host,
         agent_checkpoint_store=resolved_agent_checkpoint_store,
         compensation_queue_store=resolved_compensation_queue_store,
     )

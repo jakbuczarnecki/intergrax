@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.agent_certification_wiring import apply_roster_agent_governance
+from intergrax.applications._shared.budget_wiring import product_agent_budget_slice
+from intergrax.applications._shared.ownership_wiring import standard_product_operational_ownership
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -19,8 +22,37 @@ from dispute_sim_application.host.agent_factories import (
 )
 
 
+_DISPUTE_SIM_AGENTS = [
+    AgentBinding.mount(
+        DisputeIntakeAgent,
+        factory=build_dispute_sim_dispute_intake_from_context,
+        capabilities=["dispute.intake"],
+        default=True,
+        budget_slice=product_agent_budget_slice(),
+    ),
+    AgentBinding.mount(
+        DisputeAnalystAgent,
+        factory=build_dispute_sim_dispute_analyst_from_context,
+        capabilities=["dispute.analyze"],
+        budget_slice=product_agent_budget_slice(),
+    ),
+    AgentBinding.mount(
+        DisputeStrategistAgent,
+        factory=build_dispute_sim_dispute_strategist_from_context,
+        capabilities=["dispute.strategy"],
+        budget_slice=product_agent_budget_slice(),
+    ),
+    AgentBinding.mount(
+        DisputeScenarioAgent,
+        factory=build_dispute_sim_dispute_scenario_from_context,
+        capabilities=["dispute.scenario"],
+        budget_slice=product_agent_budget_slice(),
+    ),
+]
+
+
 def _dispute_sim_environment() -> ApplicationEnvironmentProfile:
-    return (
+    base = (
         ApplicationEnvironmentProfile.product_defaults(
             profile_id="dispute_sim.product",
             skill_bundles=["harness", "legal"],
@@ -37,6 +69,7 @@ def _dispute_sim_environment() -> ApplicationEnvironmentProfile:
         .with_harness_memory()
         .with_reference_host_platform_defaults(multi_agent_critic=True)
     )
+    return apply_roster_agent_governance(base, agents=_DISPUTE_SIM_AGENTS, app_id="dispute_sim")
 
 
 DISPUTE_SIM_APPLICATION_MANIFEST = ApplicationManifest.product(
@@ -48,30 +81,9 @@ DISPUTE_SIM_APPLICATION_MANIFEST = ApplicationManifest.product(
     default_capability="dispute.intake",
     integration_profile=IntegrationProfile.legal_product(),
     environment=_dispute_sim_environment(),
-    agents=[
-        AgentBinding.mount(
-            DisputeIntakeAgent,
-            factory=build_dispute_sim_dispute_intake_from_context,
-            capabilities=["dispute.intake"],
-            default=True,
-        ),
-        AgentBinding.mount(
-            DisputeAnalystAgent,
-            factory=build_dispute_sim_dispute_analyst_from_context,
-            capabilities=["dispute.analyze"],
-        ),
-        AgentBinding.mount(
-            DisputeStrategistAgent,
-            factory=build_dispute_sim_dispute_strategist_from_context,
-            capabilities=["dispute.strategy"],
-        ),
-        AgentBinding.mount(
-            DisputeScenarioAgent,
-            factory=build_dispute_sim_dispute_scenario_from_context,
-            capabilities=["dispute.scenario"],
-        ),
-    ],
+    agents=list(_DISPUTE_SIM_AGENTS),
     description="Dispute Simulation Workspace — multi-agent litigation prep and scenario host",
+    ownership=standard_product_operational_ownership("dispute_sim"),
 )
 
 # Backward-compatible alias for scaffold-generated imports.

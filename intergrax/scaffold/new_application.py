@@ -26,6 +26,7 @@ from intergrax.scaffold.application_names import (
     pascal_case,
     short_id,
 )
+from intergrax.scaffold.package_emit import write_scaffold_package_json
 
 _PROFILES = ("lab", "product")
 
@@ -1097,6 +1098,7 @@ def _create_lab_application(
         short=names.short,
         force=force,
     )
+    write_scaffold_package_json(target, names, specs, profile, force=force)
 
 
 def _create_product_application(
@@ -1208,6 +1210,7 @@ def _create_product_application(
         short=names.short,
         force=force,
     )
+    write_scaffold_package_json(target, names, specs, profile, force=force)
 
 
 def create_application(

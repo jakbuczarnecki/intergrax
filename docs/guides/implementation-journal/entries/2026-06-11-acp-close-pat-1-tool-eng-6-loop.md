@@ -34,7 +34,7 @@ Pipeline and ReAct patterns share one bounded tool-loop implementation and budge
 |------|--------|
 | Architecture | `AGENT_CONTRACTS_AND_ASSEMBLY` §25.2 · §26.3; `TOOLS` multi-tool semantics |
 | Plan | `ACP-CLOSE-PAT-1`, `TOOL-ENG-6` |
-| ADR | `docs/adr/ADR-TOOL-002.md` |
+| ADR | `docs/adr/entries/2026-06-11/ADR-TOOL-002.md` |
 
 ## Changed artifacts
 

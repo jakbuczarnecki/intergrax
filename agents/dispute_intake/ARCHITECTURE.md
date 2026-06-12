@@ -32,7 +32,7 @@ When a legal ops user delivers dispute materials, this agent validates sources, 
 |------|------|
 | `dispute_intake_agent.py` | UAEP entry |
 | `contract.py` | `AgentContract` |
-| `steps/pipeline.py` | Domain execution (stub → DSW.1) |
+| ``on_next_step` / cognitive pattern hooks` | Domain execution (stub → DSW.1) |
 | `schemas/` | Case intake I/O models (DSW.1) |
 
 ## Runtime

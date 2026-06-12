@@ -5,7 +5,7 @@ from __future__ import annotations
 from vendor_discovery.capabilities import CAPABILITIES
 from vendor_discovery.contract import build_agent_contract
 from vendor_discovery.steps.domain import build_stub_vendor_discovery_output
-from vendor_discovery.steps.pipeline import build_pipeline
+from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
 from intergrax.agents.authoring.acp_stub_reflex import (
     evaluate_complete,
     perceive_run_input,
@@ -55,12 +55,10 @@ class VendorDiscoveryAgent(ReflexAgent):
         )
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        built = build_pipeline()
         return build_lab_agent_runtime_context(
             request=request,
-            llm_adapter=built.llm_adapter,
+            llm_adapter=PrefixStubLLMAdapter(prefix="vendor_discovery"),
             harness=self._harness,
-            pipeline=built.pipeline,
             enable_websearch=True,
         )
 

@@ -65,7 +65,7 @@ def register_scaffold_commands(sub: argparse._SubParsersAction) -> None:
     new_agent.add_argument(
         "--uaep",
         action="store_true",
-        help="Legacy UAEP scaffold with steps/pipeline.py (deprecated)",
+        help="Removed — raises error; use default ACP pattern scaffold",
     )
 
     register_application_parser(sub)

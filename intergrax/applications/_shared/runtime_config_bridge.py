@@ -54,7 +54,6 @@ from intergrax.applications.contracts.execution_mode import runtime_policies_for
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
@@ -70,8 +69,6 @@ def apply_policy_bundle_to_runtime_config(
     config.policy_bundle = bundle
     if bundle.budget is not None and config.budget_policy is None:
         config.budget_policy = bundle.budget
-    if bundle.plan_loop is not None and config.plan_loop_policy is None:
-        config.plan_loop_policy = bundle.plan_loop
     if bundle.tool_access is not None and config.tool_scope_policy is None:
         if isinstance(bundle.tool_access, ToolScopePolicy):
             config.tool_scope_policy = bundle.tool_access
@@ -84,7 +81,6 @@ def materialize_runtime_config(
     env: ApplicationEnvironmentProfile,
     *,
     llm_adapter: LLMAdapter | None = None,
-    pipeline: RuntimePipeline | None = None,
 ) -> RuntimeConfig:
     """
     Map ``ApplicationEnvironmentProfile`` → ``RuntimeConfig`` (H-APP.1.5, MEM-1).
@@ -129,8 +125,6 @@ def materialize_runtime_config(
         runtime_policies=runtime_policies_for_execution_mode(env.execution_mode),
         integration_profile=integration_profile,
     )
-    if pipeline is not None:
-        config.pipeline = pipeline
     apply_memory_profile_to_runtime_config(config, env.memory_profile)
     apply_prompt_profiles_from_environment(config, env)
     apply_observability_profiles_from_environment(config, env)
@@ -182,7 +176,6 @@ def build_runtime_context_from_environment(
     env: ApplicationEnvironmentProfile,
     *,
     llm_adapter: LLMAdapter | None = None,
-    pipeline: RuntimePipeline | None = None,
 ) -> RuntimeContext:
     """Build ``RuntimeContext`` from environment profile with resolved memory backends."""
     config = materialize_runtime_config(
@@ -190,7 +183,6 @@ def build_runtime_context_from_environment(
         harness_ctx,
         env,
         llm_adapter=llm_adapter,
-        pipeline=pipeline,
     )
     integration_profile = config.integration_profile or env.integration_profile
     memory_wiring = resolve_memory_platform_wiring(

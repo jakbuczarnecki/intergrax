@@ -765,7 +765,7 @@ Surface **hidden operational paths** — recurring sequences of tools, agents, a
 | Integration point | Change |
 |-------------------|--------|
 | Task completion hook | Call `SignalCollector.emit()` |
-| `RuntimeEngine.run()` | Read active profile version IDs from context |
+| `Agent.run()` | Read active profile version IDs from context |
 | Metadata `harness_shadow_eval` | Extend with `candidate_profile_version_id` |
 
 ### 14.2 PolicyEngine
@@ -1225,7 +1225,7 @@ All must pass:
 | R3 | Implement W-ADAPT-1 before any auto-apply code | P0 | **Done** |
 | R4 | Rename outward-facing term: **Adaptive Harness Intelligence**, not "RL" | P1 | **Done** |
 | R5 | Extend `phase_v_closeout_gate.py` to distinguish governance-L4 vs runtime-L4 | P1 | **Done** (W-ADAPT-5.8) |
-| R6 | Author ADR-ADAPT-001 from Appendix C | P1 | **Done** — [`docs/adr/ADR-ADAPT-001.md`](adr/ADR-ADAPT-001.md) |
+| R6 | Author ADR-ADAPT-001 from Appendix C | P1 | **Done** — [`docs/adr/entries/2026-06-05/ADR-ADAPT-001.md`](adr/entries/2026-06-05/ADR-ADAPT-001.md) |
 | R7 | Defer ProcessPatternMiner until W-ADAPT-5 verifies core loop | P2 | **Done** (W-ADAPT-6 after W-ADAPT-5) |
 | R8 | Enforce `--enforce-l4-runtime` in CI and release pipeline | P1 | **Done** — `unit-tests.yml` + `harness-release.yml` |
 
@@ -1274,7 +1274,7 @@ See plan: Phase W-ADAPT master register (W-ADAPT-0.1 … W-ADAPT-7.7) · Appendi
 
 ## Appendix C — ADR decision record
 
-**Canonical ADR:** [`docs/adr/ADR-ADAPT-001.md`](adr/ADR-ADAPT-001.md)
+**Canonical ADR:** [`docs/adr/entries/2026-06-05/ADR-ADAPT-001.md`](adr/entries/2026-06-05/ADR-ADAPT-001.md)
 
 **ADR-ADAPT-001: Adaptive Harness Intelligence over classical RL**
 

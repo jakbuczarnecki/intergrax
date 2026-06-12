@@ -22,7 +22,7 @@ def test_apply_policy_bundle_sets_runtime_config_fields() -> None:
     updated = apply_policy_bundle_to_runtime_config(config, bundle)
     assert updated.policy_bundle is bundle
     assert updated.budget_policy is budget
-    assert updated.plan_loop_policy is plan_loop
+    assert updated.policy_bundle.plan_loop is plan_loop
 
 
 def test_apply_policy_bundle_sets_tool_scope_when_present() -> None:

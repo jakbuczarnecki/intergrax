@@ -489,7 +489,7 @@ Nothing should execute without appropriate policy checks, permission checks and 
 Policy Enforcement Score: L0-L4
 ```
 
-**Guardrails vector (M.12):** Vendor LLM scanners are **not** a separate tier — they extend Policy & Governance via `IntegrationProfile.llm_guardrail` + `GuardrailProfile` + `LlmGuardrailMiddleware`. Canon: UAEP [§42.11.6](architecture/UNIFIED_EXECUTION_RUNTIME.md) · Integration [§47](architecture/INTEGRATIONS.md) · [ADR-GR-001](adr/ADR-GR-001.md).
+**Guardrails vector (M.12):** Vendor LLM scanners are **not** a separate tier — they extend Policy & Governance via `IntegrationProfile.llm_guardrail` + `GuardrailProfile` + `LlmGuardrailMiddleware`. Canon: UAEP [§42.11.6](architecture/UNIFIED_EXECUTION_RUNTIME.md) · Integration [§47](architecture/INTEGRATIONS.md) · [ADR-GR-001](adr/entries/2026-06-09/ADR-GR-001.md).
 
 **Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix H](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) (control plane map, security profile, policy bundle read order); canon [§42.11](architecture/UNIFIED_EXECUTION_RUNTIME.md#4211-policy-engine); [`guides/EXTENSION_AUTHOR_GUIDE.md` §10](guides/EXTENSION_AUTHOR_GUIDE.md#10-policy-rule-handler-plugins-phase-dx-58) (`intergrax.policy_rules`). **Closeout:** [Phase GOV-AUDIT](plan/UNIFIED_EXECUTION_RUNTIME.md) **Done** (GOV-DOC.*) · [Phase M.12](plan/INTEGRATIONS.md) guardrails **Done**.
 
@@ -735,7 +735,7 @@ Verify that tools are atomic, policy-governed, observable operations.
 Tool Layer Score: L0-L4
 ```
 
-**Authoring reference:** [`architecture/TOOLS.md`](architecture/TOOLS.md) — [Tool execution pipeline](architecture/TOOLS.md#tool-execution-pipeline) (select → invoke → log) + [Tool engine component map](architecture/TOOLS.md#tool-engine-implemented-today); runtime narrative [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §15–§17; enforcement [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.12; author control plane [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) Appendix J. **Closeout:** [Phase TOOL-ENG-DOC](plan/TOOLS.md) — **Done**.
+**Authoring reference:** [`architecture/TOOLS.md`](architecture/TOOLS.md) — [Tool execution pipeline](architecture/TOOLS.md#tool-execution-pipeline) (select → orchestrate → invoke → log) + [Invocation patterns](architecture/TOOLS.md#tool-invocation-patterns-production-orchestration) + [Tool engine component map](architecture/TOOLS.md#tool-engine-implemented-today); runtime narrative [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §15–§17; enforcement [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.12; author control plane [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) Appendix J. **Active:** [Phase TOOL-ENG](plan/TOOLS.md) — invocation pattern queue TOOL-ENG-16–30.
 
 ---
 
@@ -915,7 +915,8 @@ Memory Architecture Score: L0-L4
 
 ## 16. Context Engineering Layer
 
-**Authoring map (control plane):** `guides/AGENT_CREATION_GUIDE.md` **Appendix L** · implementation closeout: plan **Phase CTX** (**Done**).
+**Domain pair:** [`architecture/CONTEXT_ENGINEERING.md`](../architecture/CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md) · **ADR-CTX-001**  
+**Authoring map (control plane):** `guides/AGENT_CREATION_GUIDE.md` **Appendix L** · CTX control plane **Done** · plugin engine **CE-EXT Planned**
 
 ### Purpose
 
@@ -1556,7 +1557,7 @@ Verify that the system can be operated as a production platform.
 Operational Excellence Score: L0-L4
 ```
 
-**Domain pair (canon):** [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](architecture/ELASTIC_CAPACITY_AND_SCALING.md) ↔ [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](plan/ELASTIC_CAPACITY_AND_SCALING.md) · [ADR-SCALE-001](adr/ADR-SCALE-001.md) — closed-loop **elastic capacity** (Harness ECP) extends this layer; SLO/runbook baseline: Phase W-OPS **Done**.
+**Domain pair (canon):** [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](architecture/ELASTIC_CAPACITY_AND_SCALING.md) ↔ [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](plan/ELASTIC_CAPACITY_AND_SCALING.md) · [ADR-SCALE-001](adr/entries/2026-06-08/ADR-SCALE-001.md) — closed-loop **elastic capacity** (Harness ECP) extends this layer; SLO/runbook baseline: Phase W-OPS **Done**.
 
 ---
 

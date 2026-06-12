@@ -8,8 +8,11 @@ import pytest
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.critic.critic_wiring import (
     CriticHookConfig,
@@ -21,26 +24,13 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode, ExecutionNodeStatus
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
-from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest, RouteInfo
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
-
-
-class _StubPipeline(RuntimePipeline):
-    async def _inner_run(self, state):
-        feedback = (state.request.metadata or {}).get("critic_feedback")
-        if feedback:
-            answer = "revised:ok"
-        else:
-            answer = "draft:needs work"
-        state.raw_answer = answer
-        state.runtime_answer = RuntimeAnswer(run_id=state.run_id, answer=answer, route=RouteInfo())
-        return state.runtime_answer
 
 
 class _StubAgent(Agent):
@@ -72,11 +62,35 @@ class _StubAgent(Agent):
             enable_rag=False,
             production_mode=False,
         )
-        config.pipeline = _StubPipeline()
         return RuntimeContext.build(
             config=config,
             session_manager=build_in_memory_session_manager(),
         )
+
+    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+        _ = context
+        return [
+            AgentStep(
+                step_id=f"{self._agent_id}_step",
+                step_name=f"{self._agent_id}_step",
+                step_index=0,
+                trace_label=self._capability,
+            )
+        ]
+
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+        feedback = (ctx.request.metadata or {}).get("critic_feedback") if ctx.request else None
+        answer = "revised:ok" if feedback else "draft:needs work"
+        return StepOutput(step_id=step.step_id, summary=answer, data={"answer": answer})
+
+    def decide_after_step(
+        self,
+        step: AgentStep,
+        output: StepOutput | None,
+        ctx: RuntimeExecutionContext,
+    ) -> AgentDecision:
+        _ = step, output, ctx
+        return AgentDecision(type=AgentDecisionType.COMPLETE, reason=f"{self._agent_id} evaluator loop stub finished")
 
 
 class _FailUntilRevisedValidation(NexusValidationEngine):

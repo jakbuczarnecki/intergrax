@@ -179,7 +179,7 @@ agents/document_automation/
     document_automation_agent.py   # Agent class (ACP entry — run / on_next_step)
     contract.py                    # AgentContract builder
     capabilities.py                # capability id list
-    steps/pipeline.py              # domain execution (start here)
+    `on_next_step` / cognitive pattern hooks              # domain execution (start here)
     schemas/                       # Pydantic I/O models
     prompts/system.md              # prompt assets
     tests/test_document_automation_agent.py   # smoke test (includes registration)
@@ -1050,6 +1050,8 @@ Each provider under `intergrax/integrations/providers/<slug>/` includes an Engli
 
 When an agent needs a **dedicated host** (env, Docker, stable HTTP API) — not only the shared lab — use the Tier-3 stack under `applications/<app>/`.
 
+**Canonical application guide:** [`APPLICATION_CREATION_GUIDE.md`](APPLICATION_CREATION_GUIDE.md) — mental model (§47), author workflow (§31), new-application checklist (§45), ops CLI.
+
 **Primary workflow:** [Step 4E — Dedicated application (scaffold)](#e--dedicated-application-scaffold) (CLI, three-command quickstart, Docker scripts).
 
 | Topic | Document |
@@ -1326,7 +1328,7 @@ Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/H
 **Audience:** Tier-3 application authors, platform engineers, operators.  
 **Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §7 (Reasoning/planning), §8 (Agent OS), §9 (Orchestration/graph), §10 (Subagents); canon [§42.3](architecture/UNIFIED_EXECUTION_RUNTIME.md#423-hook-system)–[§42.15](architecture/UNIFIED_EXECUTION_RUNTIME.md#4215-agent-handoff-contracts), [§42.43](architecture/UNIFIED_EXECUTION_RUNTIME.md#4243-multi-agent-collaboration-flow-reference).
 
-**Full execution flow (diagrams, data flow, edge cases, evaluation hooks, plan traceability):** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) — read this for end-to-end narrative; Appendix I is the **configuration control plane** map. Delegation target semantics: [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md).
+**Full execution flow (diagrams, data flow, edge cases, evaluation hooks, plan traceability):** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) — read this for end-to-end narrative; Appendix I is the **configuration control plane** map. Delegation target semantics: [`adr/entries/2026-06-07/ADR-FLOW-001.md`](adr/entries/2026-06-07/ADR-FLOW-001.md).
 
 Intergrax orchestration is **centralized in Tier-1 (Nexus)** — agents own **local** `on_next_step` iterations only. Planning, scheduling, graph execution, handoff, retry, HITL, and trace are **composable runtime responsibilities** with typed contracts and hook extension points.
 
@@ -1353,7 +1355,7 @@ Task intake
                                 ├── ContextManager (SharedTaskContext · assembly options)
                                 ├── HandoffCoordinator (§42.15 — graph mutation)
                                 ├── RetryEngine + RetryCoordinator
-                                └── AgentEngine → `acp_run` / UAEPExecutor (internal) | RuntimeEngine pipeline
+                                └── AgentEngine → `acp_run` / UAEPExecutor (internal) | AgentEngine pipeline
 
 ApplicationEnvironmentProfile (Tier-3)
   ├── orchestration_profile     planner_kind · classifier_kind · retry_policy_name · max_parallel_nodes · max_inflight_nodes
@@ -1386,7 +1388,7 @@ Coordination patterns (Phase V-MA)
 | `AgentHandoff` | `contracts/agent_handoff.py` | Nexus-mediated transfer (never direct agent calls) |
 | `TaskContextAssemblyOptions` | `contracts/context_assembly.py` | Bounded child context (FULL / SUMMARY_ONLY / …) |
 | `AgentExecutionResult` | `contracts/agent_execution_result.py` | Status, decision, artifacts for merge |
-| `AgentDecision` | `contracts/agent_decision.py` | COMPLETE · RETRY · INTERRUPT · MODIFY_PLAN · HANDOFF (`MODIFY_PLAN` without handoff → `MODIFY_PLAN_NOT_SUPPORTED` per [ADR-FLOW-003](adr/ADR-FLOW-003.md)) |
+| `AgentDecision` | `contracts/agent_decision.py` | COMPLETE · RETRY · INTERRUPT · MODIFY_PLAN · HANDOFF (`MODIFY_PLAN` without handoff → `MODIFY_PLAN_NOT_SUPPORTED` per [ADR-FLOW-003](adr/entries/2026-06-07/ADR-FLOW-003.md)) |
 | `ValidationResult` | `contracts/validation.py` | Step/node/task validation gates |
 | `ApplicationGraphSpec` | `applications/contracts/graph_spec.py` | Declarative multi-agent topology on manifest roster |
 
@@ -1432,7 +1434,7 @@ Authoring rules:
 | Checkpoint skip | `apply_runtime_checkpoint_to_graph` — resume long runs |
 | Cancel | `CancellationCoordinator` — marks pending nodes cancelled |
 
-**Concurrency:** `OrchestrationProfile.max_parallel_nodes` caps parallel nodes per graph batch; `max_inflight_nodes` caps total in-flight executions (`GRAPH_BACKPRESSURE` event when saturated). Tenant-level cap remains on `RuntimeEngine` (`max_parallel_per_tenant`).
+**Concurrency:** `OrchestrationProfile.max_parallel_nodes` caps parallel nodes per graph batch; `max_inflight_nodes` caps total in-flight executions (`GRAPH_BACKPRESSURE` event when saturated). Tenant-level cap remains on `AgentEngine` (`max_parallel_per_tenant`).
 
 ### I.6 Subagent / delegation semantics (R-Delegate — Done)
 
@@ -1546,7 +1548,7 @@ build_harness_host_runtime()
 
 **Rule:** register tools/skills in Tier-0 catalogs and enable them on `ApplicationEnvironmentProfile` — **never** create agent-local tool registries.
 
-**Runtime pipeline (select → invoke → log):** [`architecture/TOOLS.md`](architecture/TOOLS.md#tool-execution-pipeline) · enforcement [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.12 · flow narrative [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §15–§17.
+**Runtime pipeline (select → orchestrate → invoke → log):** [`architecture/TOOLS.md`](architecture/TOOLS.md#tool-execution-pipeline) · invocation patterns [`architecture/TOOLS.md`](architecture/TOOLS.md#tool-invocation-patterns-production-orchestration) · enforcement [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.12 · flow narrative [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §15–§17.
 
 ### J.3 Core contracts (typed, inspectable)
 
@@ -1556,6 +1558,7 @@ build_harness_host_runtime()
 | `ToolProfile` | `tools/registry/profile.py` | Enabled tools/bundles for a host |
 | `ToolWiringContext` | `tools/registry/wiring.py` | Integration slug → provider wiring |
 | `ToolPlannerProtocol` | `runtime/nexus/tools/tool_planner_protocol.py` | Agent-local tool loop planning |
+| `ToolInvocationPattern` *(planned)* | `runtime/nexus/tools/tool_invocation_pattern.py` | Multi-call orchestration plugin (TOOL-ENG-16) |
 | `SkillManifest` | `skills/core/contracts.py` | skill_id, tool_ids, prompts, policy fragment |
 | `SkillProfile` | `skills/registry/profile.py` | Enabled skill bundles for a host |
 | `SkillResolverProtocol` | `skills/resolver.py` | Resolve skill_ids → `ResolvedSkillPack` |
@@ -1572,10 +1575,12 @@ build_harness_host_runtime()
 | **Sandbox / shadow** | `tool_profile_with_sandbox()` + `wire_sandbox_sessions()` at bootstrap |
 | **Plugin catalogs** | `ToolPlugin` / `SkillPlugin` entry points (Phase P-Ext **Done**) |
 | **Agent contract** | `skills: list[SkillManifest]` + `extra_tools` — merged at registry bind time |
-| **Tool selection mode** | `ApplicationEnvironmentProfile.tool_selection_mode` → `RuntimeConfig` — standard (`full_catalog`), keyword top-k (`retrieval_top_k`), `skill_pack`; semantic / hierarchical planned (TOOL-ENG-13/14) — [`architecture/TOOLS.md`](architecture/TOOLS.md#tool-selection-modes-production-strategies) |
+| **Tool selection mode** | `ApplicationEnvironmentProfile.tool_selection_mode` → `RuntimeConfig` — standard (`full_catalog`), keyword top-k (`retrieval_top_k`), `skill_pack`; semantic / hierarchical planned (TOOL-ENG-13/14) — [`architecture/TOOLS.md`](architecture/TOOLS.md#tool-selection-modes-production-strategies) · plugin model [`§selection plugin`](architecture/TOOLS.md#tool-selection-plugin-model-l6-extensibility) |
+| **Custom selection strategy** *(planned TOOL-ENG-31/26)* | Implement `ToolSelectionStrategy`; inject via `RuntimeConfig.tool_selection_strategy` or entry point `intergrax.tool_selection_strategies` — alternative: custom `ToolPlannerProtocol` (full L6+L6b) |
+| **Tool invocation pattern** *(planned TOOL-ENG-21/23)* | `ApplicationEnvironmentProfile.tool_invocation_mode` → `RuntimeConfig.tool_invocation_pattern` — `single_pass`, `parallel_batch`, `bounded_react`, `deterministic_chain`, `parallel_semantic_batch`; custom via entry point `intergrax.tool_invocation_patterns` (TOOL-ENG-24) — [`architecture/TOOLS.md`](architecture/TOOLS.md#tool-invocation-patterns-production-orchestration) |
 | **Conformance** | `EnvironmentSkillToolConsistencyCheck` — roster tools/skills ⊆ environment |
 
-Agent-local tool orchestration: `RuntimeConfig.tool_planner` (`CatalogToolPlanner`) + `tools_mode` + `tool_selection_mode` — `ToolSelectionStrategy` narrows the planner schema before LLM tool choice; execution still through `ToolRuntime`, separate from Nexus graph planning (Appendix I).
+Agent-local tool orchestration: `RuntimeConfig.tool_planner` (`CatalogToolPlanner`) + `tools_mode` + `tool_selection_mode` + `tool_invocation_pattern` — `ToolSelectionStrategy` narrows the planner schema (L6); `ToolInvocationPattern` orchestrates multi-call execution (2a); atomic calls still through `RuntimeToolInvoker` / `ToolRuntime`. Separate from Nexus agent graph planning (Appendix I · [`ORCHESTRATION.md`](architecture/ORCHESTRATION.md)).
 
 ### J.5 Runtime bridge (TS-1 — Done)
 
@@ -1726,7 +1731,7 @@ Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/H
 ## Appendix L — Context engineering control plane
 
 **Audience:** Tier-3 application authors, platform engineers.  
-**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §16; canon [`architecture/MEMORY.md`](../architecture/MEMORY.md); memory/RAG naming: [Appendix G](#appendix-g--memory--rag-naming-phase-q).
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §16; canon [`architecture/CONTEXT_ENGINEERING.md`](../architecture/CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md); memory stores: [Appendix G](#appendix-g--memory--rag-naming-phase-q).
 
 Context engineering is a **first-class Nexus concern** — budgeted assembly, provenance, trimming telemetry, and deterministic pipelines. Agents do not hand-build prompts; `ContextManager` + `ContextBuilder` assemble bounded context from task, memory, RAG, tools, and graph outputs.
 
@@ -1876,7 +1881,7 @@ Nexus prompt builders (Tier-1)
 |---------|----------------|
 | Prompt runtime bridge | `pytest tests/unit/applications/test_prompt_runtime_bridge.py -m gate` |
 | Prompt wiring | `pytest tests/unit/applications/test_prompt_wiring.py -m gate` |
-| Nexus registry injection | `pytest tests/unit/runtime/nexus/runtime_steps/test_tools_step_prompt_registry.py -m gate` |
+| Nexus registry injection | `pytest tests/unit/applications/test_prompt_wiring.py -m gate` |
 | PromptMeta governance | `pytest tests/unit/prompts/test_prompt_governance_meta.py -m gate` |
 | Full gate | `uv run pytest -m gate -q` |
 
@@ -2395,7 +2400,7 @@ Tier-3 hosts must materialize online evaluation registry, governance bridge, and
 ```text
 ApplicationEnvironmentProfile (Tier-3)
   └── evaluation_profile
-        ├── shadow_eval_enabled           → RuntimeEngine shadow metadata path
+        ├── shadow_eval_enabled           → AgentEngine shadow metadata path
         ├── online_registry_enabled       → OnlineEvaluationRegistry
         ├── offline_eval_runner_enabled   → NexusEvalRunner (host runtime)
         └── trend_comparison_enabled      → registry trend reports
@@ -2607,7 +2612,7 @@ Runbooks: [`runbook/adaptive/`](../runbook/adaptive/) · architecture: [`archite
 
 ## Appendix AC — Agent `run()`, cognitive patterns, and environment (ACP)
 
-**Canon:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13 · §21–§40 · **§32.0** (readability & typed-only) · **ADR:** [ADR-AGENT-001](../adr/ADR-AGENT-001.md) · [ADR-AGENT-002](../adr/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/ADR-AGENT-003.md) · **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase **ACP** — waves §6.1aw
+**Canon:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13 · §21–§40 · **§32.0** (readability & typed-only) · **ADR:** [ADR-AGENT-001](../adr/entries/2026-06-11/ADR-AGENT-001.md) · [ADR-AGENT-002](../adr/entries/2026-06-11/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/entries/2026-06-11/ADR-AGENT-003.md) · **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase **ACP** — waves §6.1aw
 
 ### AC.1 Mental model — canonical §29 (do not duplicate)
 
@@ -2825,7 +2830,7 @@ python scripts/check_agents_vendor_imports.py
 |--------|------------|
 | Absorb Nexus into agent base class | ACP pattern library + `on_next_step`; Nexus stays Agent OS (ADR-AGENT-001) |
 | Multi-agent workflow entirely in `on_next_step` private graph | Nexus `graph_spec` + Appendix C |
-| Import `intergrax.chat_agent` / `ChatAgent` | Nexus `RuntimeEngine` / `NoPlannerPipeline` |
+| Import `intergrax.chat_agent` / `ChatAgent` | Nexus `AgentEngine` / `on_next_step` |
 | Import `intergrax.rag.answers` from runtime | `RetrievalService` |
 | Put agent logic in `applications/` | Logic in `agents/`, wiring in application |
 | Modify `NexusLoop` for one agent | `registry.register()` + contract/metadata |

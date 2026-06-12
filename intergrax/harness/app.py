@@ -154,8 +154,8 @@ class HarnessApplication:
             trace_db_path=trace_db_path,
             runtime_events_db_path=runtime_events_db_path,
             use_in_memory_trace=use_in_memory_trace,
+            application_host=self._host,
         )
-        _ = self._host
         return self._runtime
 
     def registry(self) -> AgentRegistry:

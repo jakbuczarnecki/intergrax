@@ -17,14 +17,9 @@ from intergrax.agents.reference_harness import (
     build_lab_agent_runtime_context,
     default_reference_harness,
 )
-from intergrax.agents.authoring.uaep_pipeline_bridge import (
-    pipeline_agent_steps,
-    pipeline_step_complete,
-    run_pipeline_step,
-)
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
-from intergrax.contracts.agent_decision import AgentDecision
+from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
@@ -33,12 +28,7 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.memory.conversational_memory import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
-from intergrax.runtime.nexus.runtime_steps.contract import RuntimeStepRunner
-from intergrax.runtime.nexus.runtime_steps.persist_and_build_answer_step import PersistAndBuildAnswerStep
-from intergrax.runtime.nexus.runtime_steps.setup_steps_tool import SETUP_STEPS
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import TaskContext
 
 
@@ -47,6 +37,7 @@ class _StubLLM(LLMAdapter):
         super().__init__()
         self.provider = provider
         self.model = f"{provider}-stub"
+        self._prefix = prefix
 
     @property
     def context_window_tokens(self) -> int:
@@ -65,32 +56,14 @@ class _StubLLM(LLMAdapter):
             for msg in reversed(messages):
                 content = msg.content or ""
                 if content:
-                    return build_adapter_response(content=f"{self.provider}: {content[:120]}")
-            return build_adapter_response(content=f"{self.provider}: (empty)")
+                    return build_adapter_response(content=f"{self._prefix}: {content[:120]}")
+            return build_adapter_response(content=f"{self._prefix}: (empty)")
         finally:
             self.usage.end_call(call, input_tokens=0, output_tokens=1, success=True)
 
 
-class _MockPipeline(RuntimePipeline):
-    def __init__(self, *, prefix: str) -> None:
-        self._prefix = prefix
-
-    async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
-        await RuntimeStepRunner.execute_pipeline(
-            [*SETUP_STEPS, PersistAndBuildAnswerStep()],
-            state,
-        )
-        message = (state.request.message or "").strip()
-        answer = f"{self._prefix}: {message}"
-        if state.runtime_answer is not None:
-            state.runtime_answer.answer = answer
-        if state.runtime_answer is None:
-            raise RuntimeError(f"{self._prefix} pipeline did not produce runtime_answer.")
-        return state.runtime_answer
-
-
 class _MockAgentBase(HarnessReferenceAgent):
-    """UAEP pipeline-backed mock agent."""
+    """UAEP mock agent with deterministic stub step output."""
 
     def __init__(
         self,
@@ -141,21 +114,31 @@ class _MockAgentBase(HarnessReferenceAgent):
             request=request,
             llm_adapter=_StubLLM(provider=self._provider, prefix=self._prefix),
             harness=self._harness,
-            pipeline=_MockPipeline(prefix=self._prefix),
         )
 
     def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
         _ = context
         contract = self.get_contract()
-        return pipeline_agent_steps(
-            step_id=f"{self._agent_id}_pipeline",
-            step_name=f"{self._agent_id}_pipeline",
-            trace_label=self._capability,
-            allowed_tools=list(contract.allowed_tools),
-        )
+        return [
+            AgentStep(
+                step_id=f"{self._agent_id}_step",
+                step_name=f"{self._agent_id}_step",
+                step_index=0,
+                trace_label=self._capability,
+                allowed_tools=list(contract.allowed_tools),
+            )
+        ]
 
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
-        return await run_pipeline_step(step, ctx)
+        message = ""
+        if ctx.request is not None:
+            message = (ctx.request.message or "").strip()
+        answer = f"{self._prefix}: {message}"
+        return StepOutput(
+            step_id=step.step_id,
+            summary=answer,
+            data={"run_id": ctx.run_id, "answer": answer},
+        )
 
     def decide_after_step(
         self,
@@ -164,7 +147,7 @@ class _MockAgentBase(HarnessReferenceAgent):
         ctx: RuntimeExecutionContext,
     ) -> AgentDecision:
         _ = step, output, ctx
-        return pipeline_step_complete(reason=f"{self._agent_id} mock finished")
+        return AgentDecision(type=AgentDecisionType.COMPLETE, reason=f"{self._agent_id} mock finished")
 
 
 class ResearchMockAgent(_MockAgentBase):

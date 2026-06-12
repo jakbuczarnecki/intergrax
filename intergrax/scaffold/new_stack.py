@@ -121,6 +121,7 @@ def run_new_stack(args: argparse.Namespace) -> int:
         print(f"  Test:   uv run pytest {agent_path / 'tests'} -q")
     if app_path is not None:
         print(f"  App:    {app_path}")
+        print(f"  Package: {app_path / 'package.json'}")
         print(f"  Test:   uv run pytest {app_path / names.tests_pkg} -q")
         print(f"  Start:  uv run uvicorn {names.pkg}.host.main:app --host 127.0.0.1 --port {port}")
         print(f"  Docker: applications/{names.pkg}/docker/build-docker.sh")

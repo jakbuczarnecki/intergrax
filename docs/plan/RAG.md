@@ -22,8 +22,9 @@
 | AUDIT-IDEAL-14.5 | §14 RAG | Retrieval poisoning defense on `rag.retrieve` catalog path | P1 | **Done** | M-RAG.25 |
 | AUDIT-IDEAL-14.6 | §14 RAG | Large-corpus async ingest (stream / job orchestration) | P1 | **Done** | M-RAG.26 |
 | AUDIT-IDEAL-14.7 | §14 RAG | OpenTelemetry spans on RAG retrieve + ingest hot path | P2 | **Done** | M-RAG.27 |
+| AUDIT-IDEAL-14.8 | §14 RAG · §3.7.1 | Universal GraphRAG platform — backend registry, lifecycle, retrieval hardening | P1 | **Planned** | M-RAG-GRAPH (M-RAG.38–M-RAG.52) |
 
-**Note:** AUDIT-IDEAL-14.2 (retrieval poisoning on product hosts) is owned by [`plan/MEMORY.md`](MEMORY.md) + UAEP security wiring — Nexus `RagStep` path.
+**Note:** AUDIT-IDEAL-14.2 (retrieval poisoning on product hosts) is owned by [`plan/MEMORY.md`](MEMORY.md) + UAEP security wiring — Nexus `rag.retrieve` (catalog) path.
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR (when applicable) → update this table + master register → gate green. Additional GAP-RAG rows without AUDIT-IDEAL IDs use M-RAG.\* only.
 
@@ -60,8 +61,23 @@ Every finding in [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth 
 | GAP-RAG-21 | niegotowość | M-RAG.36 **Done** | 3 |
 | GAP-RAG-22 | niska jakość | M-RAG.37 **Done** | 3 |
 | GAP-RAG-15 | ograniczenie | Tier-3 + AHI | — |
+| GAP-RAG-24 | niedoróbka | M-RAG.38 | G1 |
+| GAP-RAG-25 | niedoróbka | M-RAG.39 | G1 |
+| GAP-RAG-26 | niegotowość | M-RAG.40 | G1 |
+| GAP-RAG-27 | niegotowość | M-RAG.41 | G1 |
+| GAP-RAG-28 | niska jakość | M-RAG.42 | G2 |
+| GAP-RAG-29 | niedoróbka | M-RAG.43 | G2 |
+| GAP-RAG-30 | niedoróbka | M-RAG.44 | G2 |
+| GAP-RAG-31 | niegotowość | M-RAG.45 | G3 |
+| GAP-RAG-32 | niedoróbka | M-RAG.46 | G3 |
+| GAP-RAG-33 | gap | M-RAG.49–M-RAG.51 | G4 |
+| GAP-RAG-34 | ograniczenie | M-RAG.47 | G3 |
+| GAP-RAG-35 | niedoróbka | M-RAG.48 | G2 |
+| GAP-RAG-36 | niska jakość | M-RAG.52 | G2 |
 
-**Coverage:** 22 actionable gaps + 1 architectural boundary — **100% mapped**.
+**Coverage (M-RAG-DEPTH):** 22 actionable gaps + 1 architectural boundary — **100% mapped** (complete 2026-06-10).
+
+**Coverage (M-RAG-GRAPH):** 13 actionable gaps + 1 boundary (**GAP-RAG-34**) — **100% mapped** (opened 2026-06-12 GraphRAG audit).
 
 ---
 
@@ -107,6 +123,66 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 
 ---
 
+## Step-by-step rollout — Phase M-RAG-GRAPH
+
+**Purpose:** Universal GraphRAG platform — plugin backend registry, lifecycle sync, retrieval hardening, maintenance jobs, optional advanced indexer modes.  
+**Source:** GraphRAG architecture audit 2026-06-12 · [`architecture/RAG.md`](../architecture/RAG.md) §GraphRAG architecture · GAP-RAG-24 … GAP-RAG-36.  
+**Prerequisite:** M-RAG-DEPTH **complete** (M-RAG.23 … M-RAG.37).  
+**Cross-domain:** new `graph_store` vendor slugs (Neptune, OrientDB, ArangoDB) coordinate with [`plan/INTEGRATIONS.md`](INTEGRATIONS.md) H-INT rows — RAG delivers adapters only after integration slug exists.
+
+Execute in wave order unless operator reprioritizes within the same wave. One M-RAG.\* ID per PR (or one cohesive harden wave ≤3 IDs from the same wave).
+
+### Wave G1 — Backend registry and graph lifecycle (P0–P1)
+
+| Step | ID | Action | Closes |
+|------|-----|--------|--------|
+| G1.1 | **M-RAG.38** | Introduce `RagGraphStoreBackend` registry in `graph/bootstrap/` (mirror `vectorstore/bootstrap` bridges). Refactor `create_rag_graph_store` to resolve backend id → factory. Register shipped backends: `inmemory`, `neo4j`. Document author extension: implement ABC or register backend factory. Gate: `test_rag_graph_store_backend_registry.py` | GAP-RAG-24 |
+| G1.2 | **M-RAG.39** | Add RAG adapters `MemgraphRagGraphStore` / `FalkorDbRagGraphStore` (reuse Cypher/Bolt path from integration clients). Register in backend registry. Fix INTEGRATIONS plan drift — `INTERGRAX_RAG_GRAPH_STORE` accepts `memgraph` \| `falkordb` when integration instance provided. Gate: `test_graph_rag_memgraph_adapter.py`, `test_graph_rag_falkordb_adapter.py` | GAP-RAG-25 |
+| G1.3 | **M-RAG.40** | Graph lifecycle sync — on `rag.delete_documents` and `rag.purge_collection`, unlink `HAS_CHUNK` edges and prune orphan `RagEntity` nodes (backend-specific Cypher in adapters). Hook re-ingest to refresh graph for same chunk ids. Gate: `test_graph_lifecycle_delete_sync.py` | GAP-RAG-26 |
+| G1.4 | **M-RAG.41** | Graph tenant isolation — `graph/tenant/graph_isolation_contract.py`; scope `tenant_id` / `workspace_id` on nodes and queries; gate tests for `inmemory` + `neo4j` (and memgraph when M-RAG.39 done). Document ops namespace pattern in architecture §Tenant scope | GAP-RAG-27 |
+
+**Exit criteria:** Backend registry gate green; delete/purge removes graph artifacts in integration test; tenant mismatch raises or returns empty on graph path.
+
+### Wave G2 — Retrieval hardening and prod validation (P1–P2)
+
+| Step | ID | Action | Closes |
+|------|-----|--------|--------|
+| G2.1 | **M-RAG.42** | Harden `GraphRagRetriever` — entity seed from chunk metadata (not label substring only); respect `graph_rag_hops`; configurable seed `top_k`; promote retriever from **beta** to **stable** in manifests when gate passes. Gate: `test_graph_rag_retriever_hardening.py` + golden `graph_rag` scenario update | GAP-RAG-28 |
+| G2.2 | **M-RAG.43** | Wire `execute_hybrid_retrieval` into graph path — merge graph channel hits with vector/keyword scores in `GraphRagRetriever` or extended `fusion` schedule when `graph_rag_enabled`. Trace field `channel_contributions`. Gate: `test_hybrid_retrieval_graph_channel.py` | GAP-RAG-29 |
+| G2.3 | **M-RAG.44** | Surface `GraphTraceFieldBundle` on `RetrievalTrace` when graph expansion applied (`graph_provenance` + expanded node ids). Gate: `test_graph_provenance_retrieval_trace.py` | GAP-RAG-30 |
+| G2.4 | **M-RAG.48** | Extend `validate_graph_rag_production_wiring` with `APPROVED_PRODUCTION_GRAPH_STORE_SLUGS` (`neo4j` default; add `memgraph` after soak). Update `production_graph_rag_profile` docs + `rag_runtime_bridge` validation. Gate: extend `test_production_graph_rag_profile.py` | GAP-RAG-35 |
+| G2.5 | **M-RAG.52** | Golden harness — add `graph_rag` scenarios: multi-hop, post-delete empty expansion, graph tenant leak negative case. Wire in `rag-guard.yml` | GAP-RAG-36 |
+
+**Exit criteria:** GraphRAG retriever stable; hybrid channel trace visible; prod validation accepts soaked Bolt backends; golden gate covers lifecycle + isolation.
+
+### Wave G3 — Maintenance, indexer plugins, advanced modes (P2)
+
+| Step | ID | Action | Closes |
+|------|-----|--------|--------|
+| G3.1 | **M-RAG.45** | Graph maintenance job — `rag.schedule_graph_maintenance_job` catalog tool + workflow contract (`orphan_prune`, `stale_edge_prune`, optional full reindex). Idempotent like M-RAG.26 ingest jobs. Gate: `test_graph_maintenance_job.py` | GAP-RAG-31 |
+| G3.2 | **M-RAG.46** | `GraphIndexer` plugin registry — `register_graph_indexer_plugin()`; resolve from `RagProfile.graph_indexer_mode` or explicit plugin id; document in [`EXTENSION_AUTHOR_GUIDE.md`](../guides/EXTENSION_AUTHOR_GUIDE.md) §GraphRAG. Example: `integrations/examples/` or `rag/graph/examples/` | GAP-RAG-32 |
+| G3.3 | **M-RAG.47** | Optional harness-native **community-report** indexer mode (`graph_indexer_mode=community_report`) — LLM entity graph + community summaries stored as graph nodes (not Microsoft GraphRAG vendoring). Behind profile flag; default off. Gate: `test_community_report_graph_indexer.py` | GAP-RAG-34 (optional capability) |
+
+**Exit criteria:** Maintenance job triggers workflow; third-party indexer registers via plugin; community mode opt-in only.
+
+### Wave G4 — Additional graph_store integrations (P3)
+
+Requires new Integration catalog slugs first (H-INT in INTEGRATIONS plan).
+
+| Step | ID | Action | Closes |
+|------|-----|--------|--------|
+| G4.1 | **M-RAG.49** | Amazon Neptune — integration `graph_store` slug + RAG adapter (OpenCypher or configured query dialect). Soak + gate. **Depends:** H-INT Neptune row | GAP-RAG-33 (partial) |
+| G4.2 | **M-RAG.50** | OrientDB — integration slug + RAG adapter. **Depends:** H-INT OrientDB row | GAP-RAG-33 (partial) |
+| G4.3 | **M-RAG.51** | ArangoDB — integration slug + RAG adapter (AQL bridge). **Depends:** H-INT ArangoDB row | GAP-RAG-33 (partial) |
+
+**Exit criteria:** Each slug registered in integration catalog + RAG backend registry + at least one gate test per adapter.
+
+**Phase M-RAG-GRAPH complete when:** M-RAG.38 … M-RAG.52 **Done** (M-RAG.49–51 optional per product demand); zero open GAP-RAG-24 … GAP-RAG-36 rows.
+
+**Target maturity after closeout:** GraphRAG platform **L3** for Tier-3 reference hosts with durable graph backend.
+
+---
+
 ### 6.1e Harness implementation queue — RAG closeout (closed)
 
 **Purpose:** Single ordered list for **Phase RAG** (Band 2m). **Closed 2026-06-02**.
@@ -147,7 +223,9 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | 2026-06-10 | M-RAG.25 | Catalog poisoning filter on `perform_rag_retrieve`; closes GAP-RAG-04, AUDIT-IDEAL-14.5 |
 
 **Phase RAG complete when:** RAG-1 + RAG-DOC.* **Done**; §6.1e queue closed. **Status: complete (2026-06-02).**  
-**Phase M-RAG-DEPTH:** **Complete** (2026-06-10) — M-RAG.23 … M-RAG.37 **Done**; open GAP-RAG rows: GAP-RAG-15 boundary only.
+**Phase M-RAG-DEPTH:** **Complete** (2026-06-10) — M-RAG.23 … M-RAG.37 **Done**.
+
+**Phase M-RAG-GRAPH:** **Active** (2026-06-12) — M-RAG.38 … M-RAG.52 **Planned**; GAP-RAG-24 … GAP-RAG-36 open; boundaries: GAP-RAG-15, GAP-RAG-34.
 
 ---
 
@@ -232,14 +310,15 @@ Execute in order unless operator reprioritizes within the same wave. One M-RAG.\
 | 2026-06-10 | M-RAG.34 | `agentic_policy.py` — per-iteration retriever schedule + latency budget trace on `AgenticRetrievalLoop` |
 | 2026-06-10 | M-RAG.37 | `semantic_chunking_allowed()` — reject oversized docs before semantic O(n) embed |
 | 2026-06-10 | M-RAG.36 | `load_soak.py` concurrent retrieve SLO; `rag-guard.yml` gate marker |
+| 2026-06-12 | RAG-DOC.5 | GraphRAG architecture audit; GAP-RAG-24–36; Phase M-RAG-GRAPH waves G1–G4; architecture §GraphRAG architecture |
 
 ---
 
 ## Full implementation task register
 
-Ordered queue for RAG domain work. **Active:** M-RAG-DEPTH (15 items). **Closed:** Phase RAG + M-RAG.1–22.
+Ordered queue for RAG domain work. **Active:** M-RAG-GRAPH (15 items). **Closed:** M-RAG-DEPTH + Phase RAG + M-RAG.1–22.
 
-### Active — Phase M-RAG-DEPTH (execute in wave order)
+### Closed — Phase M-RAG-DEPTH (2026-06-10)
 
 | Order | ID | Wave | Priority | Deliverable | GAP-RAG | Status |
 |-------|-----|------|----------|-------------|---------|--------|
@@ -258,6 +337,26 @@ Ordered queue for RAG domain work. **Active:** M-RAG-DEPTH (15 items). **Closed:
 | 13 | **M-RAG.34** | 3 | **P2** | Agentic loop per-iteration retriever override + cost trace | 19 | **Done** |
 | 14 | **M-RAG.36** | 3 | **P2** | RAG load/soak gate (concurrent retrieve SLO) | 21 | **Done** |
 | 15 | **M-RAG.37** | 3 | **P2** | Semantic chunking ingest size guard | 22 | **Done** |
+
+### Active — Phase M-RAG-GRAPH (execute in wave G1 → G4)
+
+| Order | ID | Wave | Priority | Deliverable | GAP-RAG | Status |
+|-------|-----|------|----------|-------------|---------|--------|
+| 1 | **M-RAG.38** | G1 | **P0** | `RagGraphStoreBackend` registry; refactor `create_rag_graph_store` | 24 | **Planned** |
+| 2 | **M-RAG.39** | G1 | **P1** | Memgraph + FalkorDB RAG adapters; fix bootstrap env options | 25 | **Planned** |
+| 3 | **M-RAG.40** | G1 | **P1** | Graph delete/purge lifecycle sync with vector index | 26 | **Planned** |
+| 4 | **M-RAG.41** | G1 | **P1** | Graph tenant isolation contract + gate tests | 27 | **Planned** |
+| 5 | **M-RAG.42** | G2 | **P1** | `GraphRagRetriever` hardening; promote stable | 28 | **Planned** |
+| 6 | **M-RAG.43** | G2 | **P2** | Hybrid retrieval graph channel fusion | 29 | **Planned** |
+| 7 | **M-RAG.44** | G2 | **P2** | Graph provenance on `RetrievalTrace` | 30 | **Planned** |
+| 8 | **M-RAG.48** | G2 | **P2** | Approved prod graph_store slug list (neo4j + soaked Bolt backends) | 35 | **Planned** |
+| 9 | **M-RAG.52** | G2 | **P2** | Extended golden harness graph scenarios | 36 | **Planned** |
+| 10 | **M-RAG.45** | G3 | **P2** | `rag.schedule_graph_maintenance_job` workflow contract | 31 | **Planned** |
+| 11 | **M-RAG.46** | G3 | **P2** | `GraphIndexer` plugin registry + author guide | 32 | **Planned** |
+| 12 | **M-RAG.47** | G3 | **P2** | Optional `community_report` indexer mode (harness-native) | 34 | **Planned** |
+| 13 | **M-RAG.49** | G4 | **P3** | Neptune integration + RAG adapter (H-INT dependency) | 33 | **Planned** |
+| 14 | **M-RAG.50** | G4 | **P3** | OrientDB integration + RAG adapter (H-INT dependency) | 33 | **Planned** |
+| 15 | **M-RAG.51** | G4 | **P3** | ArangoDB integration + RAG adapter (H-INT dependency) | 33 | **Planned** |
 
 ### Active — AUDIT-IDEAL (RAG band)
 
@@ -305,17 +404,21 @@ Ordered queue for RAG domain work. **Active:** M-RAG-DEPTH (15 items). **Closed:
 | RAG-DOC.2 | Dedicated `architecture/RAG.md` ↔ `plan/RAG.md` pair | **Done** |
 | RAG-DOC.3 | GAP-RAG register + M-RAG-DEPTH waves | **Done** |
 | RAG-DOC.4 | Code-verified audit doc sync (2026-06-10) | **Done** |
+| RAG-DOC.5 | GraphRAG architecture audit; GAP-RAG-24–36; Phase M-RAG-GRAPH | **Done** |
 
 ### Architectural boundary (not a harness defect)
 
 | ID | Note |
 |----|------|
 | GAP-RAG-15 | No autonomous MIME/size retriever/chunker selection — Tier-3 + AHI |
+| GAP-RAG-34 | No Microsoft GraphRAG library vendoring — optional harness-native community-report mode (M-RAG.47) only |
 
-**Phase M-RAG-DEPTH complete when:** M-RAG.23 … M-RAG.37 all **Done**; zero open GAP-RAG rows (except GAP-RAG-15).
+**Phase M-RAG-DEPTH complete when:** M-RAG.23 … M-RAG.37 all **Done**; zero open GAP-RAG-01 … GAP-RAG-23 rows (except GAP-RAG-15).
+
+**Phase M-RAG-GRAPH complete when:** M-RAG.38 … M-RAG.52 all **Done** (M-RAG.49–51 optional per product); zero open GAP-RAG-24 … GAP-RAG-36 rows (except GAP-RAG-34 boundary).
 
 ---
 
 ## Suggested first PR
 
-**M-RAG-DEPTH complete** — all 15 items Done; next work from product backlog §6.3 or other domain plans.
+**M-RAG.38** — `RagGraphStoreBackend` registry + refactor `create_rag_graph_store` (Wave G1.1; closes GAP-RAG-24). Unblocks M-RAG.39 and all subsequent GraphRAG backend work.

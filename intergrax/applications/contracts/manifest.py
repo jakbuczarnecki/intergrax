@@ -22,6 +22,9 @@ from intergrax.applications.contracts.application_host import (
     ApplicationFeatures,
     ApplicationProfile,
 )
+from intergrax.applications.contracts.operational_ownership import (
+    ApplicationOperationalOwnership,
+)
 from intergrax.contracts.agent_budget import AgentBudgetSlice
 from intergrax.contracts.memory_scope import MemoryScope
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -336,6 +339,10 @@ class ApplicationManifest(BaseModel):
     environment: "ApplicationEnvironmentProfile | None" = Field(
         default=None,
         description="Optional IDEAL §17 environment umbrella (Phase H-APP.1.2)",
+    )
+    ownership: ApplicationOperationalOwnership | None = Field(
+        default=None,
+        description="Operational owner/maintainer/escalation metadata (APP-OPS-2)",
     )
 
     @field_validator("app_id")

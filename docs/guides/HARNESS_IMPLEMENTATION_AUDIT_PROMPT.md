@@ -2,7 +2,7 @@
 
 **Purpose:** repeatable LLM prompt for Intergrax Harness AI implementation audits.  
 **Procedure source:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md)  
-**Per-domain deep audits:** [`audit/README.md`](audit/README.md) — copy-paste prompts for each of the 21 domain pairs (RAG, Tools, Memory, …)
+**Per-domain deep audits:** [`audit/README.md`](audit/README.md) — copy-paste prompts for each of the 22 domain pairs (RAG, Tools, Memory, Context Engineering, …)
 
 ---
 

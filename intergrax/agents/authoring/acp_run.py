@@ -12,6 +12,7 @@ from intergrax.agents.authoring.acp_session_host import (
     ACP_HOST_CONTEXT_KEY,
     ACPSessionHostContext,
 )
+from intergrax.agents.authoring.budget_enforcing_llm_router import wrap_budget_enforcing_router
 from intergrax.agents.authoring.llm_router import StepLLMRouter
 from intergrax.agents.authoring.shared_context_bridge import load_view, persist_view, view_from_task_metadata
 from intergrax.agents.authoring.step_loop import AgentRuntime
@@ -38,7 +39,11 @@ from intergrax.agents.configure_run_strict import ConfigureRunStrictViolation
 from intergrax.agents.run_environment import EffectiveAgentRunEnvironment, merge_environment
 from intergrax.tools.tool_execution_profile import build_profile_map
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey, AcpRunContextKey, AcpStructuredDataKey
-from intergrax.contracts.acp_state import ACP_STATE_KEY
+from intergrax.agents.acp_token_metering_bridge import (
+    initial_invocation_usage,
+    seed_state_root_budget_limits,
+)
+from intergrax.contracts.acp_state import ACP_STATE_KEY, ACP_USAGE_KEY
 from intergrax.contracts.agent_run import AgentRunError, AgentRunRequest, AgentRunResult
 from intergrax.contracts.agent_run_trace import AgentRunTrace
 from intergrax.contracts.agent_run_enums import (
@@ -136,6 +141,8 @@ async def run_acp_session(
     if resume is not None:
         state_root = resume.state_root
         start_step_index = resume.start_step_index
+    else:
+        state_root = seed_state_root_budget_limits(state_root, merged.resolved_budget_limits)
 
     task_id = str(request.metadata.get("task_id") or run_id)
     run_trace = AgentRunTrace(run_id=run_id)
@@ -177,7 +184,12 @@ async def run_acp_session(
         reliability=reliability,
         state_root=state_root,
         run_trace=run_trace,
+        resolved_budget_limits=merged.resolved_budget_limits,
+        budget_reaction=merged.budget_reaction,
+        notification_adapter=host.notification_adapter if host is not None else None,
+        budget_reaction_hook=host.budget_reaction_hook if host is not None else None,
     )
+    kernel_ctx_holder: list[StepKernelContext] = [kernel_ctx]
     kernel_ctx.checkpoint_hook = make_checkpoint_hook(
         persistence=persistence,
         run_id=run_id,
@@ -186,15 +198,42 @@ async def run_acp_session(
         trace_step_count_fn=lambda: len(kernel_ctx.run_trace.steps),
     )
 
-    llm_router = StepLLMRouter(
+    base_llm_router = StepLLMRouter(
         allowed_models=tuple(merged.allowed_llm_models),
         default_model=merged.default_llm_model,
+    )
+    step_ctx_holder: list[AgentStepContext] = []
+    llm_router = wrap_budget_enforcing_router(
+        base_llm_router,
+        limits=merged.resolved_budget_limits,
+        usage_provider=lambda: (
+            step_ctx_holder[0].invocation_usage if step_ctx_holder else None
+        ),
+        degrade_provider=lambda: kernel_ctx_holder[0].budget_degrade_active,
     )
     shared_context = load_view(request.metadata) or view_from_task_metadata(
         request.metadata,
         task_id=task_id,
     )
 
+    step_metadata = {
+        **merged.merged_metadata,
+        AcpRunContextKey.RUN_INPUT: request.input,
+        AcpRunContextKey.TENANT_ID: merged.tenant_id,
+        "memory_namespace": merged.memory_namespace,
+        "memory_scope": merged.memory_scope.value,
+        "allowed_tools": list(merged.allowed_tools),
+        AcpRunContextKey.ORGANIZATIONAL: (
+            merged.organizational.model_dump(mode="json")
+            if merged.organizational is not None
+            else None
+        ),
+        **(
+            {AcpRunContextKey.CRITIC_HOOKS: host.critic_graph_hooks}
+            if host is not None and host.critic_graph_hooks is not None
+            else {}
+        ),
+    }
     step_ctx = AgentStepContext(
         step_index=start_step_index,
         run_id=run_id,
@@ -202,27 +241,16 @@ async def run_acp_session(
         contract_id=merged.contract_id,
         side_effect_mode=merged.side_effect_mode,
         state_snapshot=dict(kernel_ctx.state_root),
-        metadata={
-            **merged.merged_metadata,
-            AcpRunContextKey.RUN_INPUT: request.input,
-            AcpRunContextKey.TENANT_ID: merged.tenant_id,
-            "memory_namespace": merged.memory_namespace,
-            "memory_scope": merged.memory_scope.value,
-            "allowed_tools": list(merged.allowed_tools),
-            AcpRunContextKey.ORGANIZATIONAL: (
-                merged.organizational.model_dump(mode="json")
-                if merged.organizational is not None
-                else None
-            ),
-            **(
-                {AcpRunContextKey.CRITIC_HOOKS: host.critic_graph_hooks}
-                if host is not None and host.critic_graph_hooks is not None
-                else {}
-            ),
-        },
+        metadata=step_metadata,
         llm_router=llm_router,
         shared_context=shared_context,
+        invocation_usage=initial_invocation_usage(
+            kernel_ctx.state_root,
+            step_metadata,
+            merged.resolved_budget_limits,
+        ),
     )
+    step_ctx_holder.append(step_ctx)
 
     max_iterations = merged.max_steps or contract.max_steps or 32
     last_outcome = None
@@ -235,6 +263,11 @@ async def run_acp_session(
         if record.error_code == AgentRunErrorCode.MAX_STEPS_EXCEEDED:
             break
         if record.error_code is not None and not record.outcome_applied:
+            fail_terminal = (
+                TerminalReason.BUDGET_EXCEEDED
+                if record.error_code == AgentRunErrorCode.BUDGET_EXCEEDED
+                else TerminalReason.ERROR
+            )
             return _failed_result(
                 run_id=run_id,
                 trace_id=trace_id,
@@ -248,7 +281,7 @@ async def run_acp_session(
                     )
                 ],
                 duration_ms=int((time.perf_counter() - started) * 1000),
-                terminal_reason=TerminalReason.ERROR,
+                terminal_reason=fail_terminal,
             )
         if outcome.is_terminal or outcome.next_action == StepNextAction.PAUSE_HITL:
             break
@@ -256,8 +289,10 @@ async def run_acp_session(
             update={
                 "step_index": step_ctx.step_index + 1,
                 "state_snapshot": dict(kernel_ctx.state_root),
+                "invocation_usage": step_ctx.invocation_usage,
             },
         )
+        step_ctx_holder[0] = step_ctx
 
     if last_outcome is None or last_record is None:
         return _failed_result(
@@ -278,12 +313,17 @@ async def run_acp_session(
     duration_ms = int((time.perf_counter() - started) * 1000)
     status = _terminal_status(last_outcome.is_terminal, last_outcome.next_action)
     terminal_reason = last_outcome.terminal_reason or TerminalReason.GOAL_MET
-    if last_record.budget_exceeded:
+    if last_record.error_code == AgentRunErrorCode.BUDGET_EXCEEDED:
+        status = AgentRunStatus.FAILED
+        terminal_reason = TerminalReason.BUDGET_EXCEEDED
+    elif last_record.budget_exceeded:
         status = AgentRunStatus.FAILED
         terminal_reason = TerminalReason.MAX_STEPS_EXCEEDED
 
     if step_ctx.shared_context is not None:
         persist_view(request.metadata, step_ctx.shared_context)
+    if ACP_USAGE_KEY in step_ctx.metadata:
+        request.metadata[ACP_USAGE_KEY] = step_ctx.metadata[ACP_USAGE_KEY]
 
     artifact_refs = artifact_refs_from_payloads(
         list(last_outcome.artifacts),
@@ -312,6 +352,10 @@ async def run_acp_session(
             ),
         },
     )
+    if status == AgentRunStatus.PAUSED:
+        await agent.on_run_end(result)
+        return result
+
     validation = agent.validate_output(result)
     if not validation.valid:
         return _failed_result(

@@ -24,7 +24,7 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import TaskContext
 from intergrax.agents.tool_enablement import ToolEnablementProfile, ToolWiringContextLike
 from intergrax.skills.providers.research.manifests import RESEARCH_LITERATURE_SCAN
-from research.steps.pipeline import build_pipeline
+from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
 
 
 class ResearchAgent(ReflexAgent):
@@ -80,7 +80,6 @@ class ResearchAgent(ReflexAgent):
         return CapabilityMatchResult(matched=False, rationale="not a research capability")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        built = build_pipeline()
         has_web = bool(
             self._enable_websearch
             and self._tool_profile
@@ -88,9 +87,8 @@ class ResearchAgent(ReflexAgent):
         )
         runtime_context = build_lab_agent_runtime_context(
             request=request,
-            llm_adapter=built.llm_adapter,
+            llm_adapter=PrefixStubLLMAdapter(prefix="research"),
             harness=self._harness,
-            pipeline=built.pipeline,
             enable_websearch=has_web,
         )
         runtime_context.config.tool_profile = self._tool_profile

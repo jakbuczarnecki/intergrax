@@ -22,7 +22,7 @@ from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import TaskContext
-from research.summary_steps.pipeline import build_summary_pipeline
+from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
 
 
 class SummaryAgent(ReflexAgent):
@@ -67,12 +67,10 @@ class SummaryAgent(ReflexAgent):
         return CapabilityMatchResult(matched=False, rationale="not summary capability")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        built = build_summary_pipeline()
         return build_lab_agent_runtime_context(
             request=request,
-            llm_adapter=built.llm_adapter,
+            llm_adapter=PrefixStubLLMAdapter(prefix="summary"),
             harness=self._harness,
-            pipeline=built.pipeline,
         )
 
     async def perceive(self, step_ctx: AgentStepContext):

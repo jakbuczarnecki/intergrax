@@ -70,6 +70,8 @@ def test_harness_adr_scaffold_present() -> None:
     _assert_adr_scaffold(REPO / "docs" / "adr", label="docs/adr")
     readme = (REPO / "docs" / "adr" / ADR_README).read_text(encoding="utf-8")
     assert "ADR-FLOW-001" in readme
+    assert "entries/" in readme
+    assert (REPO / "docs" / "adr" / "entries").is_dir()
 
 
 def test_agent_scaffold_emits_adr_directory() -> None:

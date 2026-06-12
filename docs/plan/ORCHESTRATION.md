@@ -155,21 +155,16 @@ python -m intergrax.debug experiments list --decision pending
 
 HTTP: `GET/POST /debug/experiments`, `POST /debug/experiments/{id}/decision`, `POST /debug/experiments/{id}/runs/{run_id}`.
 
-### D.4 Notebook templates (Done)
+### D.4 Experiment workflow API (Done)
 
-Interactive §35 workflow under `notebooks/experiments/`:
-
-| File | Purpose |
-|------|---------|
-| `00_experiment_template.ipynb` | Blank template — copy for new capabilities |
-| `01_echo_experiment.ipynb` | Deterministic Echo smoke test |
-
-Shared API: `intergrax.experiments.workflow.ExperimentSession`.
+Platform-level `notebooks/` was **removed** (2026-06-12). §35 workflow: `intergrax.experiments.workflow.ExperimentSession`; tests in `tests/unit/experiments/`.
 
 ```python
+from pathlib import Path
 from intergrax.experiments.workflow import ExperimentSession, ensure_repo_root_on_path
+
 ensure_repo_root_on_path()
-session = ExperimentSession(trace_db=Path("build/notebooks/trace.db"))
+session = ExperimentSession(trace_db=Path("build/experiments/trace.db"))
 ```
 
 ### D.5 Cost in trace (Done)
@@ -624,7 +619,7 @@ Decision:       L1 certified — GO Phase S (harness environment), then Phase K 
 | N-04 | `PolicyEngine` \| `RuntimePolicyEngine` union | Q-N.4 | Done |
 | N-05 | Hooks NOT_WIRED: decision, interrupt, retry | Q-N.5 | Done |
 | N-06 | Hooks PARTIAL: trace persist | Q-N.6 | Done |
-| N-07 | `runtime_steps/tools.py` misleading name | Q-N.7 | Done |
+| N-07 | `nexus/context/tool_context_helpers.py` misleading name | Q-N.7 | Done |
 | N-08 | `RuntimeConfig` monolith | Q-N.8 | Done |
 | N-09 | `integration_profile: object` | Q-N.9 | Done |
 | N-10 | `production_mode` default in lab | Q-N.10 | Done |
@@ -657,7 +652,7 @@ Decision:       L1 certified — GO Phase S (harness environment), then Phase K 
 | R-01 | Dead `_build_backend_where` / `_map_hits_to_chunks` | Q-R.1 | Done |
 | R-02 | Four parallel retrieval paths | Q-R.2 | Done |
 | R-03 | `enable_rag` vs `use_rag` in ContextBuilder | Q-R.3 | Done |
-| R-04 | `NoPlannerPipeline` always `RagStep` | Q-R.4 | Done |
+| R-04 | Pipeline `rag_step` always `rag.retrieve` (retired — tool_ids in `on_next_step`) | Q-R.4 | Done |
 | R-05 | `top_k` collapses prefetch | Q-R.5 | Done |
 | R-06 | `RuntimeConfig` vs `RagProfile` dual config | Q-R.6 | Done |
 | R-07 | Unused `RagProfile.extras` | Q-R.7 | Done |
@@ -1257,7 +1252,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 | Area | Modules | Task |
 |------|---------|------|
-| Nexus core LLM | `core_llm_step.py` | M-LLM-R.4.1 |
+| Nexus core LLM | `context_preflight.py + on_next_step` | M-LLM-R.4.1 |
 | Tool planning | `tool_planning_service.py` | M-LLM-R.4.2 |
 | Planning / history | `plan_sources.py`, `engine_history_layer.py` | M-LLM-R.4.3 |
 | Profile services | `user_profile/*`, `organization/*`, `session_memory_consolidation_service.py` | M-LLM-R.4.4 |
@@ -1265,7 +1260,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | RAG | `query_refiner.py`, `query_expander.py`, `chunk_enricher.py`, `llm_graph_indexer.py` | M-LLM-R.5.1 |
 | Websearch | `websearch_context_generator.py`, `websearch_answerer.py` | M-LLM-R.5.2 |
 | Legacy RAG | `legacy/rag_answers/pipeline/answer_pipeline.py` | M-LLM-R.5.3 |
-| Agents (Tier-2) | `agents/*/steps/pipeline.py`, `mock_agents.py` | M-LLM-R.6.1 |
+| Agents (Tier-2) | `agent cognitive patterns (`on_next_step`)`, `mock_agents.py` | M-LLM-R.6.1 |
 | Scaffold / tests | `scaffold/new_agent.py`, `testing_support/builder.py` | M-LLM-R.6.2–6.3 |
 | All providers | `llm_adapters/providers/*` | M-LLM-R.3.* |
 
@@ -1333,7 +1328,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 
 
-**Source:** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §23–§25 · [ADR-FLOW-001](adr/ADR-FLOW-001.md)
+**Source:** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §23–§25 · [ADR-FLOW-001](adr/entries/2026-06-07/ADR-FLOW-001.md)
 
 **Phase register:** [Phase FLOW](plan/ORCHESTRATION.md) · **Band 2aj** · queue [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed) · execution [§6.2aj](#62aj-phase-flow-execution-order-band-2aj--closed-2026-06-07)
 
@@ -1478,7 +1473,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 **Harness-first rule (2026-06-09):** ORCH-CONFIG validates platform behaviour via **harness integration tests** (`tests/integration/runtime/test_orchestration_cfg_simulation.py`) with abstract stub agents — **not** by implementing Tier-3 business products. Tier-3 reference hosts (FLOW-8 / §6.3) remain product-gated.
 
-**ADR:** [`ADR-FLOW-004`](../adr/ADR-FLOW-004.md) (ORCH-CONFIG.2 seed guard); ORCH-CONFIG.3 → no ADR (suffix convention).
+**ADR:** [`ADR-FLOW-004`](../adr/entries/2026-06-09/ADR-FLOW-004.md) (ORCH-CONFIG.2 seed guard); ORCH-CONFIG.3 → no ADR (suffix convention).
 
 | ID | CFG / scope | Deliverable | Status | Priority | Acceptance |
 |----|-------------|-------------|--------|----------|------------|

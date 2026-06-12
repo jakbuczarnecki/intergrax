@@ -32,7 +32,7 @@
 |------|------|
 | `intergrax_assistant_agent.py` | `IntergraxAssistantAgent` — UAEP entry |
 | `contract.py` | `AgentContract` — tools, skills, risk, max_steps |
-| `steps/pipeline.py` | Domain pipeline (replace scaffold stub) |
+| ``on_next_step` / cognitive pattern hooks` | Domain pipeline (replace scaffold stub) |
 | `prompts/system.md` | System instructions for concierge tone |
 
 ---

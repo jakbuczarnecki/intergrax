@@ -44,5 +44,5 @@ async def test_agent_engine_rejects_runtime_engine_fallback() -> None:
         agent_id="legacy-pipeline",
         message="hello",
     )
-    with pytest.raises(ValueError, match="ACP-CLOSE-LEG-1"):
+    with pytest.raises(ValueError, match="ACP-CLOSE-LEG-5"):
         await AgentEngine.run_agent(agent, request)

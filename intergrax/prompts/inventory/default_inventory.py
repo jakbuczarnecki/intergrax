@@ -22,25 +22,25 @@ def build_default_inventory() -> PromptInstructionInventory:
 
     b.add(
         kind=PromptInstructionKind.SYSTEM_BEHAVIOR,
-        module="intergrax.runtime.nexus.runtime_steps.instructions_step",
-        symbol="InstructionsStep",
-        description="Primary system behavior instructions defining how model should respond to user and context.",
+        module="intergrax.prompts.registry.yaml_registry",
+        symbol="YamlPromptRegistry",
+        description="Primary system behavior prompts resolved per agent/host profile (ACP).",
     )
 
     # === PLANNING & SUPERVISOR ===
 
     b.add(
         kind=PromptInstructionKind.PLANNER,
-        module="intergrax.runtime.nexus.planning.engine_planner",
-        symbol="EnginePlanner",
-        description="LLM instructions for planning next steps and selecting pipeline actions.",
+        module="intergrax.runtime.nexus.planning.nexus_llm_plan_builder",
+        symbol="build_nexus_plan_from_llm",
+        description="LLM instructions for Nexus multi-agent plan generation (graph nodes).",
     )
 
     b.add(
         kind=PromptInstructionKind.SUPERVISOR,
-        module="intergrax.runtime.nexus.planning.step_planner",
-        symbol="StepPlanner",
-        description="Instructions controlling execution plan generation and validation.",
+        module="intergrax.runtime.nexus.planning.task_planner",
+        symbol="TaskPlanner",
+        description="Default Nexus task planner and plan validation.",
     )
 
     # === RAG & CONTEXT USAGE ===

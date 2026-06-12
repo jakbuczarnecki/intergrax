@@ -5,6 +5,41 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-11-048 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-CON-DX.1 · APP-CON-DX.2 | [Sprint 23 APP-CON-DX author guide and audit](entries/2026-06-11/tier3-sprint23-app-con-dx-author-audit.md) | pending |
+| IJ-2026-06-11-047 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-OPS-4 | [Sprint 22 APP-OPS-4 registry CLI](entries/2026-06-11/tier3-sprint22-app-ops-4-registry-cli.md) | pending |
+| IJ-2026-06-11-046 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-OPS-3 | [Sprint 21 APP-OPS-3 environment health score](entries/2026-06-11/tier3-sprint21-app-ops-3-health-score.md) | pending |
+| IJ-2026-06-11-045 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-7 | [Sprint 20 APP-EVOL-7 application package](entries/2026-06-11/tier3-sprint20-app-evol-7-application-package.md) | pending |
+| IJ-2026-06-11-044 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-6 | [Sprint 19 APP-EVOL-6 environment diff](entries/2026-06-11/tier3-sprint19-app-evol-6-environment-diff.md) | pending |
+| IJ-2026-06-11-043 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-5 | [Sprint 18 APP-EVOL-5 recovery contract](entries/2026-06-11/tier3-sprint18-app-evol-5-recovery-contract.md) | pending |
+| IJ-2026-06-11-042 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-4 | [Sprint 17 APP-EVOL-4 agent certification gate](entries/2026-06-11/tier3-sprint17-app-evol-4-agent-certification.md) | pending |
+| IJ-2026-06-11-041 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-3 | [Sprint 16 APP-EVOL-3 capability alias routing](entries/2026-06-11/tier3-sprint16-app-evol-3-capability-alias.md) | pending |
+| IJ-2026-06-11-040 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-2 · APP-EVOL-2b | [Sprint 15 APP-EVOL-2 application migrations](entries/2026-06-11/tier3-sprint15-app-evol-2-migrations.md) | pending |
+| IJ-2026-06-11-039 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-CON-7 | [Sprint 14 APP-CON-7 scenario matrix gate](entries/2026-06-11/tier3-sprint14-app-con-7-scenario-matrix.md) | pending |
+| IJ-2026-06-12-005 | 2026-06-12 | tier-0 docs/adr | P-Ext.5.1 | [Harness ADR date-partitioned entries layout](entries/2026-06-12/dx-harness-adr-date-entries.md) | pending |
+| IJ-2026-06-12-004 | 2026-06-12 | tier-1, tier-2, tier-3 AGENT_CONTRACTS_AND_ASSEMBLY | ACP-CLOSE-LEG-5 | [Retire Tier-1 AgentEngine pipeline stack](entries/2026-06-12/acp-close-leg-5-pipeline-retirement.md) | pending |
+| IJ-2026-06-12-003 | 2026-06-12 | tier-0 MEMORY | MEM-VEC-0.1 | [Memory vector recall — three-domain catalog and MEM-VEC plan](entries/2026-06-12/platform-memory-vector-recall-canon.md) | pending |
+| IJ-2026-06-11-038 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-OPS-2 | [Sprint 13 APP-OPS-2 operational ownership](entries/2026-06-11/tier3-sprint13-app-ops-2-operational-ownership.md) | pending |
+| IJ-2026-06-11-037 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-OPS-1 | [Sprint 12 APP-OPS-1 capability graph STRICT gate](entries/2026-06-11/tier3-sprint12-app-ops-1-capability-graph-gate.md) | pending |
+| IJ-2026-06-11-036 | 2026-06-11 | tier-1, tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-1 | [Sprint 11 APP-EVOL-1 environment snapshot intake](entries/2026-06-11/tier3-sprint11-app-evol-1-environment-snapshot.md) | pending |
+| IJ-2026-06-11-035 | 2026-06-11 | tier-1, tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-CON-8 | [Sprint 10 APP-CON-8 workspace cleanup lifespan](entries/2026-06-11/tier3-sprint10-app-con-8-workspace-cleanup.md) | pending |
+| IJ-2026-06-12-002 | 2026-06-12 | tier-1 CONTEXT_ENGINEERING | CE-DOC | [Context Engineering — 22nd domain pair and plugin engine canon](entries/2026-06-12/platform-context-engineering-domain-canon.md) | pending |
+| IJ-2026-06-11-034 | 2026-06-11 | tier-1, tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-CON-6 | [Sprint 9 APP-CON-6 artifact bundle rollup](entries/2026-06-11/tier3-sprint9-app-con-6-artifact-bundle.md) | pending |
+| IJ-2026-06-11-033 | 2026-06-11 | tier-1, tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-CON-5 | [Sprint 8 APP-CON-5 hook runtime guard](entries/2026-06-11/tier3-sprint8-app-con-5-hook-runtime.md) | pending |
+| IJ-2026-06-11-032 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-PROD-7 | [Sprint 7 APP-PROD-7 budget enforcement gate](entries/2026-06-11/tier3-sprint7-app-prod-7-budget-gate.md) | pending |
+| IJ-2026-06-11-031 | 2026-06-11 | tier-0, tier-2 AGENT_CONTRACTS_AND_ASSEMBLY | ACP-TOK-CI | [Sprint 6 ACP-TOK-CI budget contract CI gate](entries/2026-06-11/acp-sprint6-tok-ci-budget-gate.md) | pending |
+| IJ-2026-06-11-030 | 2026-06-11 | tier-0, tier-2 AGENT_CONTRACTS_AND_ASSEMBLY | ACP-TOK-3 | [Sprint 5 ACP-TOK-3 budget reaction policies](entries/2026-06-11/acp-sprint5-tok-3-budget-reactions.md) | pending |
+| IJ-2026-06-12-001 | 2026-06-12 | tier-0 EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE | D.4 | [Remove platform notebooks directory](entries/2026-06-12/dx-remove-platform-notebooks.md) | pending |
+| IJ-2026-06-11-029 | 2026-06-11 | tier-0, tier-2 AGENT_CONTRACTS_AND_ASSEMBLY | ACP-TOK-2 | [Sprint 4 ACP-TOK-2 budget enforcement](entries/2026-06-11/acp-sprint4-tok-2-budget-enforcement.md) | pending |
+| IJ-2026-06-11-028 | 2026-06-11 | tier-0, tier-2 AGENT_CONTRACTS_AND_ASSEMBLY | ACP-TOK-1 | [Sprint 3 ACP-TOK-1 token metering rollups](entries/2026-06-11/acp-sprint3-tok-1-token-metering.md) | pending |
+| IJ-2026-06-11-027 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-CON-3 | [Sprint 2 APP-CON-3 env state lifecycle sync](entries/2026-06-11/tier3-sprint2-app-con-3-env-state-lifecycle.md) | pending |
+| IJ-2026-06-11-026 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-PROD-9 | [Sprint 1 APP-PROD-9 gate CI wiring](entries/2026-06-11/tier3-sprint1-app-prod-9-gate-ci.md) | pending |
+| IJ-2026-06-11-025 | 2026-06-11 | tier-0, tier-1 AGENT_CONTRACTS_AND_ASSEMBLY | ACP-CON-4 | [ACP gate CI — budget default, fleet inventory fixture, UAEP test stubs](entries/2026-06-11/platform-acp-gate-ci-fixes.md) | pending |
+| IJ-2026-06-11-024 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | H-APP-CON-DOC.1 | [Tier-3 plan architecture fidelity matrix](entries/2026-06-11/tier3-plan-architecture-fidelity.md) | pending |
+| IJ-2026-06-11-023 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | H-APP-FREEZE-1, H-APP-FREEZE-2, H-APP-FREEZE-3 | [Cross-document governance consistency freeze audit](entries/2026-06-11/tier3-governance-consistency-freeze-audit.md) | pending |
+| IJ-2026-06-11-022 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | H-APP-OPS-DOC.1, H-APP-OPS-DOC.2 | [TIER3 §50 platform ops canon — freeze tranche](entries/2026-06-11/tier3-app-ops-platform-canon.md) | pending |
+| IJ-2026-06-11-021 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | H-APP-EVOL-DOC.1 | [TIER3 §49 evolution and governance canon](entries/2026-06-11/tier3-app-evol-governance-canon.md) | pending |
+| IJ-2026-06-11-020 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | H-APP-CON-DOC.1, APP-CON-2, APP-CON-4, APP-PROD-1 | [TIER3 APP-CON runtime depth](entries/2026-06-11/tier3-app-con-runtime-depth.md) | pending |
+| IJ-2026-06-11-019 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-CON-1, APP-CON-2 | [APP-CON-1 ApplicationHost Nexus wiring](entries/2026-06-11/tier3-app-con-host-wiring.md) | pending |
 | IJ-2026-06-11-018 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | H-APP-CON-DOC.1 | [TIER3 APP-CON architecture canon §24–§45](entries/2026-06-11/tier3-app-con-architecture-canon.md) | pending |
 | IJ-2026-06-11-017 | 2026-06-11 | tier-0/1 AGENT_CONTRACTS | ACP-CLOSE-CI-2 | [ACP-CLOSE CI-2 ACP-AP-02 tool loop boundary](entries/2026-06-11-acp-close-ci-2-ap02-tool-loop-boundary.md) | pending |
 | IJ-2026-06-11-016 | 2026-06-11 | tier-0/2/3 AGENT_CONTRACTS, CRITIC | ACP-CLOSE-PAT-2 | [ACP-CLOSE PAT-2 reflection CVL gateway](entries/2026-06-11-acp-close-pat-2-reflection-cvl.md) | pending |

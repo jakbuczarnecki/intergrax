@@ -9,6 +9,8 @@ from datetime import date
 from pathlib import Path
 from textwrap import dedent
 
+from intergrax.scaffold.harness_adr import harness_adr_entry_relpath
+
 ADR_README = "README.md"
 ADR_TEMPLATE = "TEMPLATE.md"
 
@@ -40,6 +42,8 @@ def render_adr_template(*, prefix: str, title_hint: str, related_hint: str) -> s
         | **Date** | YYYY-MM-DD |
         | **Deciders** | Team / role |
         | **Related** | {related_hint} |
+
+        > **Path:** place accepted harness ADRs under `docs/adr/entries/YYYY-MM-DD/` (see [`README.md`](../README.md)).
 
         ## Context
 
@@ -107,22 +111,33 @@ def render_harness_adr_readme() -> str:
 
         Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 
+        ## Layout
+
+        ```text
+        docs/adr/entries/YYYY-MM-DD/ADR-{{AREA}}-{{NNN}}.md
+        ```
+
+        Day folders group ADRs by creation date (same convention as the implementation journal).
+
         ## Process
 
-        1. Copy [`TEMPLATE.md`](TEMPLATE.md) to the next sequential id for your area tag.
-        2. Fill **Context**, **Decision**, **Consequences**, and **Compliance**.
-        3. Link from canon (`intergrax_runtime_architecture.md`) and/or `intergrax_runtime_architecture.md`.
-        4. Set **Status** to `Accepted` when implemented; `Superseded` when replaced.
+        1. Create `entries/YYYY-MM-DD/` if needed (use today's date).
+        2. Copy [`TEMPLATE.md`](TEMPLATE.md) to `entries/YYYY-MM-DD/ADR-{{AREA}}-{{NNN}}.md`.
+        3. Fill **Context**, **Decision**, **Consequences**, and **Compliance**.
+        4. Add a row to the **Index** below.
+        5. Link from canon (`intergrax_runtime_architecture.md`) and/or the relevant domain plan.
+        6. Set **Status** to `Accepted` when implemented; `Superseded` when replaced.
+        7. Run `python scripts/check_harness_adr.py`.
 
         ## Index
 
         | ADR | Title | Status |
         |-----|-------|--------|
-        | [ADR-FLOW-001](ADR-FLOW-001.md) | Declarative delegation (`DELEGATES_TO`) expansion | Accepted · implemented |
-        | [ADR-FLOW-002](ADR-FLOW-002.md) | Reserved lifecycle states | Accepted |
-        | [ADR-FLOW-003](ADR-FLOW-003.md) | `MODIFY_PLAN` decision semantics | Accepted |
-        | [ADR-ADAPT-001](ADR-ADAPT-001.md) | Adaptive Harness Intelligence over classical RL | Accepted |
-        | [ADR-LLM-001](ADR-LLM-001.md) | Typed LLM adapter response envelope | Accepted |
+        | [ADR-FLOW-001]({harness_adr_entry_relpath("ADR-FLOW-001.md", day=date(2026, 6, 7))}) | Declarative delegation (`DELEGATES_TO`) expansion | Accepted · implemented |
+        | [ADR-FLOW-002]({harness_adr_entry_relpath("ADR-FLOW-002.md", day=date(2026, 6, 7))}) | Reserved lifecycle states | Accepted |
+        | [ADR-FLOW-003]({harness_adr_entry_relpath("ADR-FLOW-003.md", day=date(2026, 6, 7))}) | `MODIFY_PLAN` decision semantics | Accepted |
+        | [ADR-ADAPT-001]({harness_adr_entry_relpath("ADR-ADAPT-001.md", day=date(2026, 6, 5))}) | Adaptive Harness Intelligence over classical RL | Accepted |
+        | [ADR-LLM-001]({harness_adr_entry_relpath("ADR-LLM-001.md", day=date(2026, 6, 6))}) | Typed LLM adapter response envelope | Accepted |
 
         ---
 
@@ -245,7 +260,7 @@ def write_harness_adr_scaffold(*, root: Path, force: bool = False) -> Path:
         render_adr_template(
             prefix="AREA",
             title_hint="Short decision title",
-            related_hint="[`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · plan row",
+            related_hint="[`intergrax_runtime_architecture.md`](../../intergrax_runtime_architecture.md) · plan row",
         ),
         force=force,
     )

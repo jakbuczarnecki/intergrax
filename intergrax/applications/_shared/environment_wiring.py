@@ -172,6 +172,14 @@ def wire_application_environment(
             manifest.agents,
             env,
         )
+        from intergrax.applications._shared.package_wiring import assert_manifest_package_closure
+
+        assert_manifest_package_closure(
+            manifest,
+            env,
+            registry_snapshot,
+            capability_graph=capability_graph,
+        )
 
     return ApplicationEnvironmentWiring(
         profile=env,

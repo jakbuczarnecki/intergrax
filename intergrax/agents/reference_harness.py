@@ -15,7 +15,6 @@ from intergrax.runtime.governance.service import GovernanceService
 from intergrax.runtime.modality.modality_profile import ModalityProfile, lab_default_modality_profile
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
@@ -45,14 +44,12 @@ def build_lab_agent_runtime_config_from_merged(
     llm_adapter: LLMAdapter,
     harness: LabHarnessContext,
     merged: EffectiveAgentRunEnvironment,
-    pipeline: RuntimePipeline | None = None,
 ) -> RuntimeConfig:
     """ACP-CFG — compose RuntimeConfig from merged environment slices."""
     return build_lab_agent_runtime_config(
         request=request,
         llm_adapter=llm_adapter,
         harness=harness,
-        pipeline=pipeline,
         enable_rag=merged.enable_rag,
         enable_websearch=merged.enable_websearch,
     )
@@ -64,7 +61,6 @@ def build_lab_agent_runtime_context_from_merged(
     llm_adapter: LLMAdapter,
     harness: LabHarnessContext,
     merged: EffectiveAgentRunEnvironment,
-    pipeline: RuntimePipeline | None = None,
 ) -> RuntimeContext:
     """ACP-CFG — build RuntimeContext using merged profile flags."""
     config = build_lab_agent_runtime_config_from_merged(
@@ -72,7 +68,6 @@ def build_lab_agent_runtime_context_from_merged(
         llm_adapter=llm_adapter,
         harness=harness,
         merged=merged,
-        pipeline=pipeline,
     )
     governance: GovernanceService | None = None
     if harness.strict_harness:
@@ -96,7 +91,6 @@ def build_lab_agent_runtime_config(
     request: RuntimeRequest,
     llm_adapter: LLMAdapter,
     harness: LabHarnessContext,
-    pipeline: RuntimePipeline | None = None,
     enable_rag: bool = False,
     enable_websearch: bool = False,
 ) -> RuntimeConfig:
@@ -119,7 +113,6 @@ def build_lab_agent_runtime_config(
             harness,
             env,
             llm_adapter=llm_adapter,
-            pipeline=pipeline,
         )
 
     config = RuntimeConfig(
@@ -132,8 +125,6 @@ def build_lab_agent_runtime_config(
         modality_profile=harness.modality_profile,
         tool_wiring_context=harness.tool_wiring_context,
     )
-    if pipeline is not None:
-        config.pipeline = pipeline
     return apply_policy_bundle_to_runtime_config(config, harness.policy_bundle)
 
 
@@ -142,7 +133,6 @@ def build_lab_agent_runtime_context(
     request: RuntimeRequest,
     llm_adapter: LLMAdapter,
     harness: LabHarnessContext,
-    pipeline: RuntimePipeline | None = None,
     enable_rag: bool = False,
     enable_websearch: bool = False,
 ) -> RuntimeContext:
@@ -151,7 +141,6 @@ def build_lab_agent_runtime_context(
         request=request,
         llm_adapter=llm_adapter,
         harness=harness,
-        pipeline=pipeline,
         enable_rag=enable_rag,
         enable_websearch=enable_websearch,
     )
@@ -165,12 +154,15 @@ def build_lab_agent_runtime_context(
             GovernanceService,
             create_lab_allow_governance_service(),
         )
-
     return RuntimeContext.build(
         config=config,
         session_manager=SessionManager(storage=InMemorySessionStorage()),
         governance_service=governance,
     )
+
+
+def default_lab_modality_profile() -> ModalityProfile:
+    return lab_default_modality_profile()
 
 
 def lab_harness_context_from_modality_tooling(

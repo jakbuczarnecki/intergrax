@@ -3,7 +3,7 @@
 **Architecture (1:1):** [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../architecture/ELASTIC_CAPACITY_AND_SCALING.md)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)  
-**ADR:** [`adr/ADR-SCALE-001.md`](../adr/ADR-SCALE-001.md)
+**ADR:** [`adr/entries/2026-06-08/ADR-SCALE-001.md`](../adr/entries/2026-06-08/ADR-SCALE-001.md)
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
@@ -53,7 +53,7 @@
 |----|-------------|--------|----------|--------------|------------|
 | ECP-DOC.1 | **`architecture/ELASTIC_CAPACITY_AND_SCALING.md`** — full ECP canon | **Done** | **Critical** | `docs/architecture/` | Hub links; audit §30 extension |
 | ECP-DOC.2 | **`plan/ELASTIC_CAPACITY_AND_SCALING.md`** — this file; ECP-DEPTH register | **Done** | **Critical** | `docs/plan/` | 1:1 pair check green |
-| ECP-DOC.3 | **`docs/adr/ADR-SCALE-001.md`** — ECP vs K8s HPA; tier separation | **Done** | High | `docs/adr/` | Linked from architecture + adr README |
+| ECP-DOC.3 | **`docs/adr/entries/2026-06-08/ADR-SCALE-001.md`** — ECP vs K8s HPA; tier separation | **Done** | High | `docs/adr/` | Linked from architecture + adr README |
 | ECP-DOC.4 | **Hub update** — 19 domain pairs; audit routing for capacity | **Done** | High | `intergrax_runtime_architecture.md` | `check_docs_domain_pairs.py` OK |
 | ECP-DOC.5 | **Cross-ref sync** — ORCHESTRATION §49, OBS §9.3, INTEGRATIONS k8s, AGENTS.md, audit map §30 | **Done** | High | `docs/*` | No orphan scaling narrative |
 | ECP-DOC.6 | **Gate script** — `python scripts/check_docs_domain_pairs.py` | **Done** | Medium | CI scripts | 19 pairs reported |
@@ -270,7 +270,7 @@ Total ECP-DEPTH: 28 (excluding ECP-DOC)
 ## Appendix C — Operator reading order
 
 1. [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../architecture/ELASTIC_CAPACITY_AND_SCALING.md) — ECP canon
-2. [`adr/ADR-SCALE-001.md`](../adr/ADR-SCALE-001.md) — decision vs K8s HPA
+2. [`adr/entries/2026-06-08/ADR-SCALE-001.md`](../adr/entries/2026-06-08/ADR-SCALE-001.md) — decision vs K8s HPA
 3. This plan — ECP-DEPTH when implementing
 4. [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §49 — queueing (not duplicate)
 5. [`guides/HARNESS_ENVIRONMENT.md`](../guides/HARNESS_ENVIRONMENT.md) — SLO + Celery env

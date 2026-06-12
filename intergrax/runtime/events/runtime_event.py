@@ -80,6 +80,11 @@ class RuntimeEventType(str, Enum):
     AUTONOMY_LEVEL_CHANGED = "autonomy_level_changed"
     RECOVERY_REBOOT = "recovery_reboot"
     GUARDRAIL_BLOCKED = "guardrail_blocked"
+    BUDGET_THRESHOLD = "budget_threshold"
+    BUDGET_EXCEEDED = "budget_exceeded"
+    HOOK_BLOCKED = "hook_blocked"
+    HOOK_ERROR = "hook_error"
+    HOOK_TIMEOUT = "hook_timeout"
 
 
 class RuntimeEvent(BaseModel):

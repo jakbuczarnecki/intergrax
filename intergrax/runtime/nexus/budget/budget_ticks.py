@@ -3,12 +3,11 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 """
-Mid-run :class:`RunBudget` enforcement for runtime pipeline steps (RAG, websearch, tools).
+Mid-run :class:`RunBudget` enforcement for tool-context invocations (RAG, websearch, tools).
 
-Called from :class:`~intergrax.runtime.nexus.runtime_steps.rag_step.RagStep`,
-:class:`~intergrax.runtime.nexus.runtime_steps.websearch_step.WebsearchStep`, and
-:class:`~intergrax.runtime.nexus.runtime_steps.tools_step.ToolsStep` so usage-based
-limits apply before the pipeline finishes.
+Called from :mod:`intergrax.runtime.nexus.tools.plan_context_invocation` and
+:mod:`intergrax.runtime.nexus.tools.tool_runtime` so usage-based limits apply
+before tool loops finish.
 """
 
 from __future__ import annotations

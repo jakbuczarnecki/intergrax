@@ -434,7 +434,7 @@ All providers below are registered in `register_default_integrations()`.
 | `rerank_provider` | 2 | `cohere_rerank`, `jina_rerank` |
 | `browser_automation` | 5 | `playwright`, `firecrawl`, `selenium`, `browserbase`, `apify` |
 | `secrets_store` | 5 | `vault`, `aws_secrets_manager`, `azure_key_vault`, `gcp_secret_manager`, `doppler` |
-| `graph_store` | 3 | `neo4j`, `memgraph`, `falkordb` |
+| `graph_store` | 3 (+3 planned) | **Shipped:** `neo4j`, `memgraph`, `falkordb` · **Planned (M-RAG.49–51 / H-INT-GRAPH):** `neptune`, `orientdb`, `arangodb` — see [`plan/RAG.md`](../plan/RAG.md) Phase M-RAG-GRAPH |
 | `cloud_platform` | 4 | `aws`, `azure`, `gcp`, `kubernetes` |
 | `feature_flag` | 2 | `unleash`, `launchdarkly` |
 | `ci_cd` | 1 | `github_actions` |

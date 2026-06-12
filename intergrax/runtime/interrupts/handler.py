@@ -111,10 +111,13 @@ class ExecutionInterruptHandler:
 
             handoff = handoff_from_decision(decision)
             if handoff is None:
-                if self._allow_dynamic_replan and policy_ctx.get("engine_replan_boundary"):
+                if self._allow_dynamic_replan and (
+                    policy_ctx.get("nexus_replan_boundary")
+                    or policy_ctx.get("engine_replan_boundary")
+                ):
                     policy = PolicyDecision(
                         action=PolicyAction.ALLOW,
-                        reason="engine_replan_allowed",
+                        reason="nexus_replan_allowed",
                         policy_rule_id="orchestration.allow_dynamic_replan",
                     )
                 else:

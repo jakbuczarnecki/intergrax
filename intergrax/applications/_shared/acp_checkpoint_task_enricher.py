@@ -35,8 +35,7 @@ def make_acp_checkpoint_task_enricher(
             tenant_id=task.tenant_id,
         )
         wired = attach_checkpoint_wiring(metadata, store, resume=resume)
-        if wired.get(AcpMetadataKey.SESSION_ENABLED) in {True, "true", "1", 1}:
-            return task.model_copy(update={"metadata": wired})
+        wired[AcpMetadataKey.SESSION_ENABLED] = True
         return task.model_copy(update={"metadata": wired})
 
     return enricher

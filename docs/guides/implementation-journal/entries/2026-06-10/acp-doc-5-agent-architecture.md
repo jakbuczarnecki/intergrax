@@ -9,7 +9,7 @@ plan_ref:
   - ACP-ADR.3
 status: completed
 commit: pending
-adr: docs/adr/ADR-AGENT-003.md
+adr: docs/adr/entries/2026-06-11/ADR-AGENT-003.md
 ---
 
 # Agent layer architecture canon §31–§36 and ADR-AGENT-003
@@ -32,14 +32,14 @@ Authors and auditors now have a single normative target: one `run()` per session
 |------|--------|
 | Architecture | `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §13, §29–§36 |
 | Plan | `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` ACP-DOC.5, ACP-STEP-*, ACP-OBS-* |
-| ADR | `docs/adr/ADR-AGENT-003.md` |
+| ADR | `docs/adr/entries/2026-06-11/ADR-AGENT-003.md` |
 | Audit / gap | GAP-ACP-12..17 closed in docs; implementation rows remain Planned |
 
 ## Changed artifacts
 
 - `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` — §31–§36 + §13/§29/§28/§45 updates
 - `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` — ACP-DOC.5, ACP-ADR.3, step/obs/llm/state rows
-- `docs/adr/ADR-AGENT-003.md` — new ADR
+- `docs/adr/entries/2026-06-11/ADR-AGENT-003.md` — new ADR
 - `docs/adr/README.md`, `docs/intergrax_runtime_architecture.md` — ADR-003 links
 - `docs/guides/AGENT_CREATION_GUIDE.md` — Appendix AC step loop + trace
 - `docs/guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` — audit dimensions 28–34

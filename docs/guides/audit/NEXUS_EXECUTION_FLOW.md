@@ -74,7 +74,8 @@ FLOW-GAP-20 hybrid daemon LKW · UC-6 research stubs · WAITING_FOR_RESOURCES/EX
 ```text
 intergrax/runtime/task/unified_task_runner.py
 intergrax/runtime/nexus/nexus_loop.py
-intergrax/runtime/nexus/runtime_steps/ (tools_step, rag_step, context_step, …)
+intergrax/runtime/nexus/tools/tool_loop.py · plan_context_invocation.py
+intergrax/agents/agent_engine.py · authoring/acp_run.py · HarnessKernel
 intergrax/runtime/nexus/agent_router.py
 intergrax/runtime/nexus/context/context_manager.py
 intergrax/runtime/nexus/handoff/coordinator.py
@@ -92,7 +93,7 @@ Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this doma
 
 For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol` or `test_name`).
 
-1. Three planning planes distinguished: Nexus planner / UAEP engine planner / tool planner.
+1. Three planning planes distinguished: Nexus planner / agent on_next_step / tool planner.
 2. TaskClassifier does not mutate Task.state directly.
 3. AgentRouter respects production_mode and registry constraints.
 4. Handoff uses HandoffCoordinator — traced lineage.
@@ -101,7 +102,7 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 7. Cancel is cooperative at step boundaries.
 8. Trace reconstructs full 'why did run stop' narrative.
 9. DECISION_EMITTED on UAEP steps before side effects.
-10. RagStep poisoning defense active (cross-check RAG domain for catalog gap).
+10. RAG poisoning defense active on catalog rag.retrieve path (cross-check RAG domain).
 11. Reserved lifecycle states not used in production hosts.
 12. Engine planner requires llm_adapter at bootstrap — fail-fast if missing.
 13. Partial completion policy explicit when PARTIALLY_COMPLETED allowed.

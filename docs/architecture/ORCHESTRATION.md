@@ -531,7 +531,7 @@ Canonical enum: `CoordinationPattern` in `intergrax/runtime/architecture/multi_a
 
 | Pattern | When to use | Harness mapping | Runtime depth |
 |---------|-------------|-----------------|---------------|
-| **Hierarchical** | Top-down plan; planner delegates to specialized executors | `graph_spec` + `DELEGATES_TO` ([ADR-FLOW-001](adr/ADR-FLOW-001.md)) | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §13 |
+| **Hierarchical** | Top-down plan; planner delegates to specialized executors | `graph_spec` + `DELEGATES_TO` ([ADR-FLOW-001](adr/entries/2026-06-07/ADR-FLOW-001.md)) | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §13 |
 | **Orchestrator–worker** | Central Nexus plan; workers are graph nodes with capabilities | `TaskPlanner` / `graph_spec` → sequential or batched nodes | §12 UC-4, §42.43 |
 | **Supervisor–worker** | Quality/policy supervision over workers; re-plan on failure | HITL + `AgentDecision.INTERRUPT` + policy hooks | UAEP §42.8, FLOW §11 |
 | **Peer-to-peer** | Independent subtasks; parallel decomposition | Topological **batches** + `MergePolicy` | §51 below |
@@ -563,6 +563,30 @@ Agents MUST NOT call each other directly — all collaboration via **SharedTaskC
 - Swarm without budget envelope (`max_delegation_depth`, cost profile).
 - Pattern name in docs but undeclared in host `graph_spec` or plan metadata.
 
+## 50.4 Tool invocation vs agent graph (boundary)
+
+> **Tool patterns canon:** [`TOOLS.md`](TOOLS.md#tool-invocation-patterns-production-orchestration) · **Flow:** [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §15.1 · **ADR:** [ADR-TOOL-002](adr/entries/2026-06-11/ADR-TOOL-002.md) (no tool ReAct from `GraphExecutor`).
+
+| Layer | Domain doc | Orchestrates | Examples |
+|-------|------------|--------------|----------|
+| **Agent graph** | This file §50–§56 | Agents, delegation, merge, parallel **nodes** | `ExecutionGraph`, `GraphExecutor`, `MergePolicy` |
+| **Tool invocation pattern** | [`TOOLS.md`](TOOLS.md) | Multi-call **tool** batches within one agent step | `ToolInvocationPattern` *(TOOL-ENG-16)* — single-pass, parallel batch, bounded ReAct, deterministic chain |
+| **Atomic tool invoke** | [`TOOLS.md`](TOOLS.md) §42.12 | One `tool_id` call | `RuntimeToolInvoker` |
+
+```text
+ExecutionGraph node (agent A)
+    └── UAEP / pipeline
+            └── ToolsStep
+                    └── ToolInvocationPattern  ← Plane 3 tool orchestration
+                            └── RuntimeToolInvoker (per call)
+```
+
+**Rules:**
+
+1. `GraphExecutor` MUST NOT schedule tool-plan iterations — that belongs to `ToolInvocationPattern` inside the node's agent run ([ADR-TOOL-002](adr/entries/2026-06-11/ADR-TOOL-002.md)).
+2. Each graph node MAY configure `tool_invocation_pattern` on the host `RuntimeConfig` (TOOL-ENG-21/23).
+3. LangGraph-style branching at **agent** granularity = `graph_spec` edges + conditions; at **tool** granularity = invocation pattern + planner loop — do not merge the two models.
+
 ---
 
 # 51. Parallelism, Merge, and Backpressure
@@ -582,7 +606,7 @@ Full rules: §25 above. Runtime implementation: [`NEXUS_EXECUTION_FLOW.md`](NEXU
 |---------|---------------|--------|
 | Parallel within batch | `max_parallel_nodes` | Semaphore on concurrent nodes in one topological batch |
 | Global inflight cap | `max_inflight_nodes` | Semaphore across graph; emits `GRAPH_BACKPRESSURE` |
-| Tenant cap | `RuntimeEngine.max_parallel_per_tenant` | Cross-task fairness (UAEP bridge) |
+| Tenant cap | `AgentEngine` / host runtime concurrency policy | Cross-task fairness via harness host |
 | Delegation depth | `max_delegation_depth` | Limits nested subagent expansion |
 
 ```text
@@ -619,7 +643,7 @@ Orchestration resilience spans **three retry layers**, **checkpoints**, **altern
 | Layer | Component | Scope | Default |
 |-------|-----------|-------|---------|
 | **A — Graph node** | `RetryEngine` | Same node; may switch `agent_id` | `max_retries` per factory profile |
-| **B — UAEP / run** | `RuntimeEngine`, `AgentDecision.RETRY` | Inside one graph node | Per host `max_run_retries` |
+| **B — ACP agent run** | `AgentEngine`, `StepOutcome.retry` | Inside one graph node | Per host `max_run_retries` |
 | **C — Whole run** | `RetryCoordinator` | Re-execute full graph | `max_run_retries=0` (opt-in) |
 
 **Failover (agent level):** closest harness primitive is **alternate agent** on node retry (Layer A) — not active-active duplicate nodes.
@@ -801,7 +825,7 @@ Both dimensions apply to the **same** `NexusLoop.handle_task()` path.
 **Status:** Canonical architecture (2026-06-09) — **single source of truth** for configurable platform behaviour across postures, routing layers, agent counts, and coordination strategies.  
 **Plan (1:1):** [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md) Phase **ORCH-CONFIG** · cross-domain: [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) H-APP-DOC.* · [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_AND_COGNITION.md) COG-3.*  
 **Runtime narrative:** [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §3.1 · **Host posture summary:** [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23  
-**ADR:** [`ADR-FLOW-004`](../../adr/ADR-FLOW-004.md) for seed guard (ORCH-CONFIG.2); other gaps scheduled in ORCH-CONFIG.
+**ADR:** [`ADR-FLOW-004`](../../adr/entries/2026-06-09/ADR-FLOW-004.md) for seed guard (ORCH-CONFIG.2); other gaps scheduled in ORCH-CONFIG.
 
 ## 56.1 Why this section lives in ORCHESTRATION (not a new doc)
 
@@ -1114,7 +1138,7 @@ Honest platform readiness derived from §56.7. **This table is the direct input 
 | ORCH-CONFIG.5 | `plan/NEXUS_EXECUTION_FLOW.md` FLOW-8 |
 | ORCH-CONFIG.8 | `plan/ORCHESTRATION.md` ORCH-5.1 |
 
-**ADR policy:** ORCH-CONFIG.2 → [`ADR-FLOW-004`](../../adr/ADR-FLOW-004.md); ORCH-CONFIG.3 → no ADR (suffix convention only).
+**ADR policy:** ORCH-CONFIG.2 → [`ADR-FLOW-004`](../../adr/entries/2026-06-09/ADR-FLOW-004.md); ORCH-CONFIG.3 → no ADR (suffix convention only).
 
 ## 56.12 Extensibility — arbitrary agent count & strategy
 
@@ -1179,7 +1203,7 @@ Free text → IntentRoute → acceptance.harness.pipeline (token)
 ```
 
 **Harness proof:** `tests/integration/runtime/test_orchestration_cfg_simulation.py` (abstract stubs — no Tier-3 product).  
-**ADR:** seed guard — [`ADR-FLOW-004`](../adr/ADR-FLOW-004.md).
+**ADR:** seed guard — [`ADR-FLOW-004`](../adr/entries/2026-06-09/ADR-FLOW-004.md).
 
 ## 56.14 Author checklist (before shipping a Tier-3 host)
 

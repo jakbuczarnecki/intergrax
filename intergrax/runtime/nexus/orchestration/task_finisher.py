@@ -13,12 +13,15 @@ from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.human.request_contract import human_request_event_payload
+from intergrax.applications._shared.run_artifact_bundle_builder import build_run_artifact_bundle
+from intergrax.applications.contracts.application_artifacts import RUN_ARTIFACT_BUNDLE_METADATA_KEY
 from intergrax.runtime.nexus.orchestration.application_run_summary_builder import (
     build_application_run_summary,
 )
 from intergrax.runtime.nexus.orchestration.workspace_cleanup import (
     cleanup_sandbox_for_task,
     cleanup_shadow_for_task,
+    clear_isolation_refs_in_task_env_state,
 )
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.nexus.response.final_response_composer import FinalResponseComposer
@@ -132,8 +135,18 @@ def build_nexus_task_result(
         progress_message=task.runtime.orchestration.progress_message,
     )
 
+    artifact_bundle = build_run_artifact_bundle(
+        task=task,
+        graph_id=graph_id,
+        executions=executions,
+        shadow_manager=shadow_manager,
+        sandbox_manager=sandbox_manager,
+    )
+    bundle_payload = artifact_bundle.model_dump(mode="json")
+
     cleanup_shadow_for_task(task, executions, shadow_manager=shadow_manager)
     cleanup_sandbox_for_task(task, executions, sandbox_manager=sandbox_manager)
+    clear_isolation_refs_in_task_env_state(task)
 
     task.sync_metadata()
     result = TaskResult(
@@ -160,8 +173,10 @@ def build_nexus_task_result(
         graph_id=graph_id,
         executions=executions,
     )
+    app_summary.metadata[RUN_ARTIFACT_BUNDLE_METADATA_KEY] = bundle_payload
     result.metadata[TaskResultMetadataKey.APPLICATION_RUN_SUMMARY] = app_summary.model_dump(
         mode="json"
     )
+    result.metadata[TaskResultMetadataKey.RUN_ARTIFACT_BUNDLE] = bundle_payload
     result.sync_metadata()
     return result

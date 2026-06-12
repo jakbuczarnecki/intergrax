@@ -21,10 +21,10 @@ from intergrax.applications._shared.harness_host_runtime import build_harness_ho
 from intergrax.runtime.task.nexus_task_execution_adapter import NexusTaskExecutionAdapter
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
-from intergrax.applications._shared.fastapi_mcp import (
-    apply_lifespans,
-    couple_fastapi_with_mcp,
-    make_scheduler_lifespan,
+from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
+from intergrax.applications._shared.workspace_cleanup_wiring import (
+    apply_factory_lifespans,
+    build_factory_lifespans,
 )
 from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
 from intergrax.applications._shared.identity_wiring import wire_application_identity
@@ -183,15 +183,18 @@ def create_legal_backend_app(
             route_prefix=settings.legal_route_prefix,
             tool_registry=runtime.env_wiring.tool_wiring.registry,
         )
-        extra_lifespans = [make_scheduler_lifespan(scheduler)] if scheduler else []
+        extra_lifespans = build_factory_lifespans(
+            runtime,
+            schedulers=[scheduler] if scheduler else None,
+        )
         app = couple_fastapi_with_mcp(
             app,
             mcp,
             mount_path=settings.mcp_mount_path,
             extra_lifespans=extra_lifespans,
         )
-    elif scheduler is not None:
-        apply_lifespans(app, make_scheduler_lifespan(scheduler))
+    else:
+        apply_factory_lifespans(app, runtime, schedulers=[scheduler] if scheduler else None)
 
     wire_application_identity(
         app,

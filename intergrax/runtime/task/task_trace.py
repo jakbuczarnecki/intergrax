@@ -3,9 +3,10 @@
 
 from __future__ import annotations
 
-from typing import Callable, List, Optional
+from typing import TYPE_CHECKING, Callable, List, Optional
 
-from intergrax.runtime.events.event_bus import RuntimeEventBus
+if TYPE_CHECKING:
+    from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.nexus.tracing.trace_models import (
     DiagnosticPayload,
     TraceComponent,

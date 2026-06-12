@@ -2,7 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 
 """
-Experiment workflow helpers for notebooks and scripts (Phase D.4, §35).
+Experiment workflow helpers for scripts and agent-local notebooks (Phase D.4, §35).
 
 Wraps experiment registry + NexusLoop + trace persistence into a single session API.
 """

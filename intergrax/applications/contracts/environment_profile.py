@@ -14,6 +14,12 @@ from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.contracts.reasoning_profile import ReasoningProfile
 from intergrax.contracts.resilience_policy import ResiliencePolicy, default_resilience_policy
 from intergrax.runtime.capacity.contracts import ScalingPolicy
+from intergrax.applications.contracts.agent_governance import AgentGovernanceProfile
+from intergrax.applications.contracts.application_recovery_contract import (
+    ApplicationRecoveryContract,
+    standard_strict_product_recovery_contract,
+)
+from intergrax.applications.contracts.capability_alias import CapabilityGovernanceProfile
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
 from intergrax.applications.contracts.intent_route import IntentRoute
 from intergrax.applications.contracts.application_host import ApplicationFeatures, ApplicationProfile
@@ -152,6 +158,8 @@ class ReliabilityProfile(BaseModel):
     tenant_autonomy_ceiling: AutonomyLevel | None = None
     compensation_enabled: bool = False
     partial_results_enabled: bool = False
+    middleware_hook_timeout_seconds: float = Field(default=2.0, ge=0.01, le=60.0)
+    recovery_contract: ApplicationRecoveryContract | None = None
 
 
 class ObservabilityProfile(BaseModel):
@@ -376,6 +384,12 @@ class ApplicationEnvironmentProfile(BaseModel):
     reasoning_profile: ReasoningProfile = Field(default_factory=ReasoningProfile)
     scaling_profile: ScalingProfile = Field(default_factory=ScalingProfile)
     governance_profile: GovernanceProfile = Field(default_factory=GovernanceProfile)
+    capability_governance_profile: CapabilityGovernanceProfile = Field(
+        default_factory=CapabilityGovernanceProfile,
+    )
+    agent_governance_profile: AgentGovernanceProfile = Field(
+        default_factory=AgentGovernanceProfile,
+    )
     host_deployment_profile: HostDeploymentProfile = Field(default_factory=HostDeploymentProfile)
     integration_governance_profile: IntegrationGovernanceProfile = Field(
         default_factory=IntegrationGovernanceProfile
@@ -450,8 +464,6 @@ class ApplicationEnvironmentProfile(BaseModel):
             tool_enabled.extend(
                 [
                     "errors.capture",
-                    "harness.echo",
-                    "harness.skill_registry",
                     "sandbox.exec",
                 ]
             )
@@ -678,6 +690,12 @@ class ApplicationEnvironmentProfile(BaseModel):
         return production_plane_c_modality_profile()
 
     @classmethod
+    def _product_budget_reaction(cls) -> BudgetReactionProfile:
+        from intergrax.applications._shared.budget_wiring import product_budget_reaction
+
+        return product_budget_reaction()
+
+    @classmethod
     def product_defaults(
         cls,
         *,
@@ -708,6 +726,8 @@ class ApplicationEnvironmentProfile(BaseModel):
                 long_running_scheduler_enabled=True,
                 compensation_enabled=True,
                 partial_results_enabled=True,
+                middleware_hook_timeout_seconds=0.25,
+                recovery_contract=standard_strict_product_recovery_contract(),
             ),
             observability_profile=ObservabilityProfile(
                 trace_sqlite_enabled=True,
@@ -724,6 +744,7 @@ class ApplicationEnvironmentProfile(BaseModel):
                 forecasting_enabled=True,
                 optimization_recommendations_enabled=True,
                 tenant_fairness_quotas_enabled=True,
+                budget_reaction=cls._product_budget_reaction(),
             ),
             compliance_profile=ComplianceProfile(enabled=True),
             prompt_profile=PromptProfile(approval_required=True),

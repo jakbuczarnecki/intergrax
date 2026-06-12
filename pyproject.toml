@@ -140,7 +140,7 @@ harness-author = [
   "python-dotenv>=1.0",
   "PyYAML>=6.0",
 ]
-# Optional legacy adapters and notebooks only — not required for Nexus / Harness runtime.
+# Optional legacy adapters only — not required for Nexus / Harness runtime.
 langgraph-legacy = ["langgraph>=0.0.40"]
 # Minimal LLM provider subsets (core package still installs all providers by default).
 llm-openai = ["openai>=1.0", "tiktoken>=0.7"]
@@ -229,6 +229,7 @@ markers = [
   "asyncio: Async tests using pytest-asyncio.",
   "gate: Minimal pre-P4.2 regression gate (deterministic, no network).",
   "agent_os: Agent OS acceptance scenarios (Phase L.5); included in gate.",
+  "tier3_scenario: Tier-3 UC-A* scenario matrix coverage (APP-CON-7).",
   "vectorstore_soak: RAG vector-store prod SLO soak against real backends (M-RAG.30); skipped when service unreachable.",
 ]
 

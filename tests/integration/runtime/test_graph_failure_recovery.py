@@ -2,10 +2,7 @@
 
 import pytest
 
-from intergrax.agents.agent_contract import Agent
-from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_execution_result import AgentExecutionStatus
-from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.long_running.checkpoint_builder import build_runtime_checkpoint
 from intergrax.runtime.long_running.runtime_checkpoint import attach_runtime_checkpoint_to_metadata
@@ -15,67 +12,14 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode, ExecutionNodeStatus
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
-from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, PlanStep, TaskPlanner
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
-
-
-class _AnswerPipeline(RuntimePipeline):
-    def __init__(self, prefix: str) -> None:
-        self._prefix = prefix
-
-    async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
-        answer = f"{self._prefix}: {state.request.message}"
-        state.raw_answer = answer
-        state.runtime_answer = RuntimeAnswer(run_id=state.run_id, answer=answer)
-        return state.runtime_answer
-
-
-class _GraphRecoveryAgent(Agent):
-    run_count = 0
-
-    def __init__(self, *, agent_id: str, prefix: str) -> None:
-        self._agent_id = agent_id
-        self._prefix = prefix
-
-    def get_contract(self) -> AgentContract:
-        return AgentContract(
-            id=self._agent_id,
-            name=self._agent_id,
-            description="graph recovery stub",
-            capabilities=["graph.recovery"],
-        )
-
-    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
-        if task_context.capability == "graph.recovery":
-            return CapabilityMatchResult(
-                matched=True,
-                agent_id=self._agent_id,
-                matched_capabilities=["graph.recovery"],
-                score=1.0,
-            )
-        return CapabilityMatchResult(matched=False)
-
-    def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        _GraphRecoveryAgent.run_count += 1
-        config = RuntimeConfig(
-            llm_adapter=FakeLLMAdapter(fixed_text=f"{self._prefix}: {request.message}"),
-            enable_rag=False,
-            production_mode=False,
-            tenant_id=request.tenant_id,
-        )
-        config.pipeline = _AnswerPipeline(self._prefix)
-        return RuntimeContext.build(
-            config=config,
-            session_manager=build_in_memory_session_manager(),
-        )
+from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
 
 class _FlakyValidationEngine(NexusValidationEngine):
@@ -153,10 +97,14 @@ def _build_graph(task_id: str) -> ExecutionGraph:
 @pytest.mark.integration
 @pytest.mark.gate
 async def test_graph_executor_skips_completed_nodes_on_resume():
-    _GraphRecoveryAgent.run_count = 0
+    UaepPipelineStubAgent.run_count = 0
     registry = AgentRegistry()
-    registry.register(_GraphRecoveryAgent(agent_id="agent_a", prefix="A"))
-    registry.register(_GraphRecoveryAgent(agent_id="agent_b", prefix="B"))
+    registry.register(
+        UaepPipelineStubAgent(agent_id="agent_a", capability="graph.recovery", prefix="A")
+    )
+    registry.register(
+        UaepPipelineStubAgent(agent_id="agent_b", capability="graph.recovery", prefix="B")
+    )
 
     task = Task(
         tenant_id="t1",
@@ -176,7 +124,7 @@ async def test_graph_executor_skips_completed_nodes_on_resume():
     assert len(executions) == 1
     assert graph.node_by_id("n1").status == ExecutionNodeStatus.COMPLETED
     assert graph.node_by_id("n2").status == ExecutionNodeStatus.FAILED
-    assert _GraphRecoveryAgent.run_count == 2
+    assert UaepPipelineStubAgent.run_count == 2
 
     runtime = build_runtime_checkpoint(task, graph=graph, last_execution=executions[-1])
     attach_runtime_checkpoint_to_metadata(task.metadata, runtime)
@@ -191,17 +139,21 @@ async def test_graph_executor_skips_completed_nodes_on_resume():
     assert "B: recover graph" in executions[1].summary
     assert graph.node_by_id("n1").status == ExecutionNodeStatus.SKIPPED
     assert graph.node_by_id("n2").status == ExecutionNodeStatus.COMPLETED
-    assert _GraphRecoveryAgent.run_count == 3
+    assert UaepPipelineStubAgent.run_count == 3
 
 
 @pytest.mark.asyncio
 @pytest.mark.integration
 @pytest.mark.gate
 async def test_nexus_loop_graph_failure_resume(tmp_path):
-    _GraphRecoveryAgent.run_count = 0
+    UaepPipelineStubAgent.run_count = 0
     registry = AgentRegistry()
-    registry.register(_GraphRecoveryAgent(agent_id="agent_a", prefix="A"))
-    registry.register(_GraphRecoveryAgent(agent_id="agent_b", prefix="B"))
+    registry.register(
+        UaepPipelineStubAgent(agent_id="agent_a", capability="graph.recovery", prefix="A")
+    )
+    registry.register(
+        UaepPipelineStubAgent(agent_id="agent_b", capability="graph.recovery", prefix="B")
+    )
     checkpoint_store = SQLiteTaskCheckpointStore(db_path=tmp_path / "ckpt.db")
     validation = _FlakyValidationEngine(fail_agent_b_times=1)
 
@@ -245,4 +197,4 @@ async def test_nexus_loop_graph_failure_resume(tmp_path):
     )
 
     assert completed.state == TaskState.COMPLETED
-    assert _GraphRecoveryAgent.run_count == 3
+    assert UaepPipelineStubAgent.run_count == 3

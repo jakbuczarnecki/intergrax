@@ -82,6 +82,7 @@ async def test_graph_executor_agent_selection_hook_blocks() -> None:
 @pytest.mark.gate
 def test_legal_factory_exposes_interaction_intake_route(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LEGAL_INCLUDE_MCP", "false")
+    monkeypatch.setenv("INTERGRAX_HARNESS_API_KEY", "gate-test-harness-key")
     from legal_application.host.factory import create_legal_backend_app
 
     app = create_legal_backend_app()

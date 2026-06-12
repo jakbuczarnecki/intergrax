@@ -22,6 +22,19 @@ or product-host wiring that does not change platform contracts.
 
 If no ADR is needed, record **"no ADR needed"** with rationale in the PR or plan row.
 
+## Layout
+
+```text
+docs/adr/
+  README.md          ← index (this file)
+  TEMPLATE.md        ← copy source
+  entries/
+    YYYY-MM-DD/
+      ADR-{AREA}-{NNN}.md
+```
+
+Day folders group ADRs by **creation date** (same convention as the [implementation journal](../guides/implementation-journal/README.md)).
+
 ## Naming
 
 ```text
@@ -32,32 +45,42 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 
 ## Process
 
-1. Copy [`TEMPLATE.md`](TEMPLATE.md) to the next sequential id for your area tag.
-2. Fill **Context**, **Decision**, **Consequences**, and **Compliance**.
-3. Link from canon (`intergrax_runtime_architecture.md`) and/or `intergrax_runtime_architecture.md`.
-4. Set **Status** to `Accepted` when implemented; `Superseded` when replaced.
+1. Create `entries/YYYY-MM-DD/` if needed (use today's date).
+2. Copy [`TEMPLATE.md`](TEMPLATE.md) to `entries/YYYY-MM-DD/ADR-{AREA}-{NNN}.md`.
+3. Fill **Context**, **Decision**, **Consequences**, and **Compliance**.
+4. Add a row to the **Index** below.
+5. Link from canon (`intergrax_runtime_architecture.md`) and/or the relevant `docs/plan/<DOMAIN>.md`.
+6. Set **Status** to `Accepted` when implemented; `Superseded` when replaced.
+7. Run `python scripts/check_harness_adr.py`.
 
 ## Index
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| [ADR-FLOW-001](ADR-FLOW-001.md) | Declarative delegation (`DELEGATES_TO`) expansion | Accepted · implemented |
-| [ADR-FLOW-002](ADR-FLOW-002.md) | Reserved lifecycle states | Accepted |
-| [ADR-FLOW-003](ADR-FLOW-003.md) | `MODIFY_PLAN` decision semantics | Accepted |
-| [ADR-FLOW-004](ADR-FLOW-004.md) | Graph spec seed guard via `trigger_capabilities` | Accepted |
-| [ADR-ADAPT-001](ADR-ADAPT-001.md) | Adaptive Harness Intelligence over classical RL | Accepted |
-| [ADR-LLM-001](ADR-LLM-001.md) | Typed LLM adapter response envelope | Accepted |
-| [ADR-CRITIC-001](ADR-CRITIC-001.md) | Critic & Verification Layer — tier-separated PEV verify stack | Accepted |
-| [ADR-OBS-001](ADR-OBS-001.md) | Harness Observability Spine — unified bus for all tiers | Accepted |
-| [ADR-MEM-001](ADR-MEM-001.md) | Context Compiler — global budget allocator and degradation ladder | Accepted |
-| [ADR-SCALE-001](ADR-SCALE-001.md) | Harness Elastic Capacity Plane — complement K8s HPA | Accepted |
-| [ADR-GR-001](ADR-GR-001.md) | LLM guardrail integration plane (M-P12) | Accepted |
-| [ADR-CODECRAFT-001](ADR-CODECRAFT-001.md) | Ephemeral Code Craft as separate Harness domain | Accepted |
-| [ADR-TOOL-001](ADR-TOOL-001.md) | Catalog tool dispatch and full-gateway routing (TOOL-ENG-1/2) | Accepted |
-| [ADR-AGENT-001](ADR-AGENT-001.md) | Agent cognitive patterns as Tier-2 library — Nexus remains Agent OS | Accepted |
-| [ADR-AGENT-002](ADR-AGENT-002.md) | Author-facing `Agent.run()` facade over UAEP; per-agent environment merge | Accepted |
-| [ADR-AGENT-003](ADR-AGENT-003.md) | Agent step loop (`on_next_step`); dual observability planes | Accepted |
+| [ADR-ADAPT-001](entries/2026-06-05/ADR-ADAPT-001.md) | Adaptive Harness Intelligence over classical RL | Accepted |
+| [ADR-LLM-001](entries/2026-06-06/ADR-LLM-001.md) | Typed LLM adapter response envelope | Accepted |
+| [ADR-FLOW-001](entries/2026-06-07/ADR-FLOW-001.md) | Declarative delegation (`DELEGATES_TO`) expansion | Accepted · implemented |
+| [ADR-FLOW-002](entries/2026-06-07/ADR-FLOW-002.md) | Reserved lifecycle states | Accepted |
+| [ADR-FLOW-003](entries/2026-06-07/ADR-FLOW-003.md) | `MODIFY_PLAN` decision semantics | Accepted |
+| [ADR-CRITIC-001](entries/2026-06-07/ADR-CRITIC-001.md) | Critic & Verification Layer — tier-separated PEV verify stack | Accepted |
+| [ADR-MEM-001](entries/2026-06-08/ADR-MEM-001.md) | Context Compiler — global budget allocator and degradation ladder | Accepted |
+| [ADR-OBS-001](entries/2026-06-08/ADR-OBS-001.md) | Harness Observability Spine — unified bus for all tiers | Accepted |
+| [ADR-SCALE-001](entries/2026-06-08/ADR-SCALE-001.md) | Harness Elastic Capacity Plane — complement K8s HPA | Accepted |
+| [ADR-FLOW-004](entries/2026-06-09/ADR-FLOW-004.md) | Graph spec seed guard via `trigger_capabilities` | Accepted |
+| [ADR-GR-001](entries/2026-06-09/ADR-GR-001.md) | LLM guardrail integration plane (M-P12) | Accepted |
+| [ADR-SCALE-002](entries/2026-06-09/ADR-SCALE-002.md) | Ingress controller vs nginx integration slug (ECP-6.1) | Accepted |
+| [ADR-CODECRAFT-001](entries/2026-06-10/ADR-CODECRAFT-001.md) | Ephemeral Code Craft as separate Harness domain | Accepted |
+| [ADR-TOOL-001](entries/2026-06-10/ADR-TOOL-001.md) | Catalog tool dispatch and full-gateway routing (TOOL-ENG-1/2) | Accepted |
+| [ADR-AGENT-001](entries/2026-06-11/ADR-AGENT-001.md) | Agent cognitive patterns as Tier-2 library — Nexus remains Agent OS | Accepted |
+| [ADR-AGENT-002](entries/2026-06-11/ADR-AGENT-002.md) | Author-facing `Agent.run()` facade over UAEP; per-agent environment merge | Accepted |
+| [ADR-AGENT-003](entries/2026-06-11/ADR-AGENT-003.md) | Agent step loop (`on_next_step`); dual observability planes | Accepted |
+| [ADR-TOOL-002](entries/2026-06-11/ADR-TOOL-002.md) | Bounded multi-iteration tool loop; graph boundary (TOOL-ENG-6) | Accepted |
+| [ADR-APP-002](entries/2026-06-12/ADR-APP-002.md) | EnvironmentSnapshot on STRICT task intake | Accepted |
+| [ADR-CTX-001](entries/2026-06-12/ADR-CTX-001.md) | Context Engineering as first-class domain and plugin engine | Accepted |
+| [ADR-FLOW-005](entries/2026-06-12/ADR-FLOW-005.md) | Retire Tier-1 AgentEngine pipeline stack (ACP-CLOSE-LEG-5) | Accepted |
+| ADR-TOOL-003 | `ToolInvocationPattern` protocol and orchestration plugin model (TOOL-ENG-16) | **Proposed** — write before merge |
+| ADR-TOOL-004 | `ToolSelectionStrategy` plugin registry; semantic index vs RAG; hierarchical passes (TOOL-ENG-13/14/26) | **Proposed** — write before TOOL-ENG-26 merge |
 
 ---
 
-*Scaffold baseline: 2026-06-07*
+*Scaffold baseline: 2026-06-12*

@@ -42,7 +42,7 @@ Do not maintain separate status/readiness files under this agent. Use:
 
 | ID | Task | Status | Priority | Notes |
 |----|------|--------|----------|-------|
-| DISPUTE_ANALYST-1 | Replace scaffold stub in `steps/pipeline.py` | Planned | High | One PR per domain step |
+| DISPUTE_ANALYST-1 | Replace scaffold stub in ``on_next_step` / cognitive pattern hooks` | Planned | High | One PR per domain step |
 | DISPUTE_ANALYST-2 | Extend `prompts/system.md` for domain | Planned | Medium | Keep prompts versioned here |
 | DISPUTE_ANALYST-3 | Register skills/tools on `contract.py` | Planned | Medium | See `docs/architecture/SKILLS.md` |
 | DISPUTE_ANALYST-4 | Agent smoke test green | Done | High | `tests/test_dispute_analyst_agent.py` |

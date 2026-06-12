@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -42,3 +42,4 @@ class ApplicationRunSummary(BaseModel):
     total_steps: int = 0
     total_llm_tokens: int = 0
     completed_at: datetime = Field(default_factory=_utc_now)
+    metadata: dict[str, Any] = Field(default_factory=dict)

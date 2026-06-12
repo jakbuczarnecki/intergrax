@@ -79,6 +79,14 @@ def apply_reliability_task_defaults(task: Task, env: ApplicationEnvironmentProfi
             "step_count": len(compensation.steps),
             "handler_ids": sorted(compensation.handlers.keys()),
         }
+    from intergrax.applications._shared.recovery_contract_wiring import (
+        attach_recovery_contract_to_task_metadata,
+    )
+
+    task.metadata = attach_recovery_contract_to_task_metadata(
+        task.metadata,
+        reliability.recovery_contract,
+    )
     task = apply_partial_results_task_defaults(task, env)
     task.sync_metadata()
     return task

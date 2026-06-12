@@ -70,13 +70,13 @@ Intergrax is **not** “one Python class that is also the OS.” The **agent** i
 
 **Author entry points:** [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) Appendix AC · roster [`agents/README.md`](../agents/README.md).
 
-**Implementation:** architecture **decision-complete**; code delivery [ACP waves](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md#61aw-acp-detailed-implementation-waves) (typed contracts → step loop → fleet migration Wave 8 → prod gates). UAEP remains a **bridge** until fleet migration completes.
+**Implementation:** architecture **decision-complete**; code delivery [ACP waves](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md#61aw-acp-detailed-implementation-waves) (typed contracts → step loop → fleet migration Wave 8 → prod gates → **ACP-CLOSE-LEG-5** pipeline retirement). Product agents control the loop via **`on_next_step`** only; Tier-1 `RuntimeEngine` pipeline stack removed ([ADR-FLOW-005](adr/entries/2026-06-12/ADR-FLOW-005.md)).
 
 ---
 
 ## Application in the harness environment
 
-**Hub summary** — full canon in [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](architecture/TIER3_APPLICATION_ENVIRONMENT.md) §24–§45 (APP-CON) · plan [Phase H-APP-CON](plan/TIER3_APPLICATION_ENVIRONMENT.md#phase-h-app-con--application-environment-architecture-canon-app-con).
+**Hub summary** — full canon in [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](architecture/TIER3_APPLICATION_ENVIRONMENT.md) §24–§51 (APP-CON / APP-EVOL / APP-OPS) · **freeze audit:** [`guides/GOVERNANCE_CONSISTENCY_AUDIT.md`](guides/GOVERNANCE_CONSISTENCY_AUDIT.md) · plan [H-APP-CON](plan/TIER3_APPLICATION_ENVIRONMENT.md#phase-h-app-con--application-environment-architecture-canon-app-con) · [H-APP-FREEZE](plan/TIER3_APPLICATION_ENVIRONMENT.md#phase-h-app-freeze--cross-document-governance-consistency-audit).
 
 The **application** is a **deployable composition shell** — not a cognitive agent. It normalizes intake → `Task`, declares roster and harness profiles, and returns product output. Tier-3 authors control environment through **three modes** (§30): declarative profile, rules envelope, imperative `ApplicationHost` hooks.
 
@@ -113,7 +113,7 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 
 **Author entry points:** [`applications/USAGE.md`](../applications/USAGE.md) · `HarnessApplication` (`intergrax/harness/app.py`) · scaffold `new-application` · [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md) §0.
 
-**Implementation:** H-APP profile/wiring **Done**; APP-CON code gaps (`ApplicationHost` pipeline mount) — [H-APP-CON](plan/TIER3_APPLICATION_ENVIRONMENT.md#phase-h-app-con--application-environment-architecture-canon-app-con).
+**Implementation:** H-APP profile/wiring **Done**; APP-CON-1 host pipeline mount **Done**; budget reactions (ACP-TOK-2/3) and APP-PROD-1 gate — [H-APP-CON](plan/TIER3_APPLICATION_ENVIRONMENT.md#phase-h-app-con--application-environment-architecture-canon-app-con).
 
 ---
 
@@ -133,6 +133,7 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 | [`architecture/SKILLS.md`](architecture/SKILLS.md) | [`plan/SKILLS.md`](plan/SKILLS.md) |
 | [`architecture/LLM_ADAPTERS.md`](architecture/LLM_ADAPTERS.md) | [`plan/LLM_ADAPTERS.md`](plan/LLM_ADAPTERS.md) |
 | [`architecture/MEMORY.md`](architecture/MEMORY.md) | [`plan/MEMORY.md`](plan/MEMORY.md) |
+| [`architecture/CONTEXT_ENGINEERING.md`](architecture/CONTEXT_ENGINEERING.md) | [`plan/CONTEXT_ENGINEERING.md`](plan/CONTEXT_ENGINEERING.md) |
 | [`architecture/MODALITY.md`](architecture/MODALITY.md) | [`plan/MODALITY.md`](plan/MODALITY.md) |
 | [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) | [`plan/OBSERVABILITY.md`](plan/OBSERVABILITY.md) |
 | [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](architecture/RELIABILITY_FAILURE_AND_HITL.md) | [`plan/RELIABILITY_FAILURE_AND_HITL.md`](plan/RELIABILITY_FAILURE_AND_HITL.md) |
@@ -174,7 +175,8 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 | 11b Ephemeral Code Craft | `CODE_CRAFT` |
 | 12–13 Skills / integrations | `SKILLS` · `INTEGRATIONS` |
 | 14 RAG | `RAG` (+ `MEMORY` for Knowledge vs LTM boundary) |
-| 15–16 Memory / context | `MEMORY` |
+| 15 Memory | `MEMORY` |
+| 16 Context engineering | `CONTEXT_ENGINEERING` |
 | 17–20 Prompt / assembly / registry / capability graph | `AGENT_CONTRACTS_AND_ASSEMBLY` |
 | 21 Observability | `OBSERVABILITY` |
 | 22 Reliability / HITL | `RELIABILITY_FAILURE_AND_HITL` + UAEP §42.10 |
@@ -207,6 +209,7 @@ Essential platform behaviours span multiple domain pairs — use this index befo
 | Interrupt anywhere / resume from checkpoint | [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §28 + UAEP §42.8–§42.9 | FLOW-CTL |
 | Guardrails / policy enforcement (catalog) | [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.11.6 · §42.37 · vendor backends [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) §47 | GR-DOC · M.12 |
 | RAG / retrieval engine | [`architecture/RAG.md`](architecture/RAG.md) · integration slugs [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) | M-RAG · M-RAG-DEPTH |
+| Context engineering engine | [`architecture/CONTEXT_ENGINEERING.md`](architecture/CONTEXT_ENGINEERING.md) | CTX Done · **CE-EXT** (plugin engine) |
 | Ephemeral Code Craft (dynamic codegen loop) | [`architecture/CODE_CRAFT.md`](architecture/CODE_CRAFT.md) · substrate [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](architecture/RELIABILITY_FAILURE_AND_HITL.md) | ECC-0…ECC-6 |
 
 Platform docs do not replace `agents/*/ARCHITECTURE.md` or `applications/*/ARCHITECTURE.md`.
@@ -231,13 +234,13 @@ Platform docs do not replace `agents/*/ARCHITECTURE.md` or `applications/*/ARCHI
 
 | ADR | Topic |
 |-----|-------|
-| [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md) | Declarative delegation (`DELEGATES_TO`) |
-| [`adr/ADR-FLOW-002.md`](adr/ADR-FLOW-002.md) | Reserved lifecycle states |
-| [`adr/ADR-FLOW-003.md`](adr/ADR-FLOW-003.md) | `MODIFY_PLAN` semantics |
-| [`adr/ADR-FLOW-004.md`](adr/ADR-FLOW-004.md) | Graph spec seed guard (`trigger_capabilities`) |
-| [`adr/ADR-CODECRAFT-001.md`](adr/ADR-CODECRAFT-001.md) | Ephemeral Code Craft as separate Harness domain |
-| [`adr/ADR-AGENT-001.md`](adr/ADR-AGENT-001.md) | Agent cognitive patterns (ACP) — Tier-2 library, Nexus stays Agent OS |
-| [`adr/ADR-AGENT-002.md`](adr/ADR-AGENT-002.md) | Author `Agent.run()` facade + per-agent environment binding |
-| [`adr/ADR-AGENT-003.md`](adr/ADR-AGENT-003.md) | `on_next_step` step loop + dual observability (agent trace vs app orchestration) |
+| [`adr/entries/2026-06-07/ADR-FLOW-001.md`](adr/entries/2026-06-07/ADR-FLOW-001.md) | Declarative delegation (`DELEGATES_TO`) |
+| [`adr/entries/2026-06-07/ADR-FLOW-002.md`](adr/entries/2026-06-07/ADR-FLOW-002.md) | Reserved lifecycle states |
+| [`adr/entries/2026-06-07/ADR-FLOW-003.md`](adr/entries/2026-06-07/ADR-FLOW-003.md) | `MODIFY_PLAN` semantics |
+| [`adr/entries/2026-06-09/ADR-FLOW-004.md`](adr/entries/2026-06-09/ADR-FLOW-004.md) | Graph spec seed guard (`trigger_capabilities`) |
+| [`adr/entries/2026-06-10/ADR-CODECRAFT-001.md`](adr/entries/2026-06-10/ADR-CODECRAFT-001.md) | Ephemeral Code Craft as separate Harness domain |
+| [`adr/entries/2026-06-11/ADR-AGENT-001.md`](adr/entries/2026-06-11/ADR-AGENT-001.md) | Agent cognitive patterns (ACP) — Tier-2 library, Nexus stays Agent OS |
+| [`adr/entries/2026-06-11/ADR-AGENT-002.md`](adr/entries/2026-06-11/ADR-AGENT-002.md) | Author `Agent.run()` facade + per-agent environment binding |
+| [`adr/entries/2026-06-11/ADR-AGENT-003.md`](adr/entries/2026-06-11/ADR-AGENT-003.md) | `on_next_step` step loop + dual observability (agent trace vs app orchestration) |
 
 **Platform configuration canon (CFG-*):** [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §56 · implementation [`plan/ORCHESTRATION.md`](plan/ORCHESTRATION.md) Phase **ORCH-CONFIG**.

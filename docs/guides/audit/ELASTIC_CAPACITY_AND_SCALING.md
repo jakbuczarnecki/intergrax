@@ -78,7 +78,7 @@ integrations/providers/message_bus/celery/
 intergrax/runtime/architecture/multi_agent_contention_simulation.py
 intergrax/runtime/observability/harness_slos.py
 target: intergrax/runtime/capacity/ (ECP-DEPTH ECP-1..8)
-docs/adr/ADR-SCALE-001.md · ADR-SCALE-002.md
+docs/adr/entries/2026-06-08/ADR-SCALE-001.md · ADR-SCALE-002.md
 ```
 
 Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.

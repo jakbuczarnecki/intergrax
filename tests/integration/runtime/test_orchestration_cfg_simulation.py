@@ -13,7 +13,6 @@ import json
 
 import pytest
 
-from intergrax.agents.agent_contract import Agent
 from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
@@ -28,73 +27,15 @@ from intergrax.applications.contracts.graph_spec import (
     GraphNode,
 )
 from intergrax.applications.contracts.intent_route import IntentRoute
-from intergrax.contracts.agent_contract_meta import AgentContract
-from intergrax.contracts.capability import CapabilityMatchResult
-from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
 _PIPELINE = "acceptance.harness.pipeline"
 _SINGLE = "acceptance.harness.intake"
-
-
-class _AnswerPipeline(RuntimePipeline):
-    def __init__(self, prefix: str) -> None:
-        self._prefix = prefix
-
-    async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
-        answer = f"{self._prefix}: {state.request.message}"
-        state.runtime_answer = RuntimeAnswer(run_id=state.run_id, answer=answer)
-        return state.runtime_answer
-
-
-class _HarnessStubAgent(Agent):
-    """Minimal pipeline agent for harness CFG simulation."""
-
-    def __init__(self, *, agent_id: str, capability: str, prefix: str) -> None:
-        self._agent_id = agent_id
-        self._capability = capability
-        self._prefix = prefix
-
-    def get_contract(self) -> AgentContract:
-        return AgentContract(
-            id=self._agent_id,
-            name=self._agent_id,
-            description="harness cfg simulation stub",
-            capabilities=[self._capability],
-        )
-
-    def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
-        if capability in (None, self._capability, _PIPELINE):
-            return CapabilityMatchResult(
-                matched=True,
-                agent_id=self._agent_id,
-                matched_capabilities=[self._capability],
-                score=1.0,
-            )
-        return CapabilityMatchResult(matched=False)
-
-    def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        config = RuntimeConfig(
-            llm_adapter=FakeLLMAdapter(fixed_text=f"{self._prefix}: {request.message}"),
-            enable_rag=False,
-            production_mode=False,
-            tenant_id=request.tenant_id,
-        )
-        config.pipeline = _AnswerPipeline(self._prefix)
-        return RuntimeContext.build(
-            config=config,
-            session_manager=build_in_memory_session_manager(),
-        )
 
 
 def _simulation_environment() -> ApplicationEnvironmentProfile:
@@ -136,24 +77,30 @@ def _simulation_environment() -> ApplicationEnvironmentProfile:
 def _simulation_registry() -> AgentRegistry:
     registry = AgentRegistry()
     registry.register(
-        _HarnessStubAgent(
+        UaepPipelineStubAgent(
             agent_id="evidence_agent",
             capability="evidence.analyze",
             prefix="evidence",
+            extra_capabilities=(_PIPELINE,),
+            description="harness cfg simulation stub",
         )
     )
     registry.register(
-        _HarnessStubAgent(
+        UaepPipelineStubAgent(
             agent_id="response_agent",
             capability="correspondence.draft",
             prefix="response",
+            extra_capabilities=(_PIPELINE,),
+            description="harness cfg simulation stub",
         )
     )
     registry.register(
-        _HarnessStubAgent(
+        UaepPipelineStubAgent(
             agent_id="intake_agent",
             capability=_SINGLE,
             prefix="intake",
+            extra_capabilities=(_PIPELINE,),
+            description="harness cfg simulation stub",
         )
     )
     return registry
@@ -270,10 +217,12 @@ def _three_agent_parallel_environment() -> ApplicationEnvironmentProfile:
 def _three_agent_registry() -> AgentRegistry:
     registry = _simulation_registry()
     registry.register(
-        _HarnessStubAgent(
+        UaepPipelineStubAgent(
             agent_id="synthesis_agent",
             capability="synthesis.merge",
             prefix="synthesis",
+            extra_capabilities=(_PIPELINE,),
+            description="harness cfg simulation stub",
         )
     )
     return registry

@@ -44,6 +44,11 @@ def main() -> int:
             "check_agent_acp_ap02_tool_loop_boundary.py failed (ACP-CLOSE-CI-2)"
         )
 
+    if _run("check_agent_token_budget_contract.py") != 0:
+        violations.append(
+            "check_agent_token_budget_contract.py failed (ACP-TOK-CI)"
+        )
+
     if (
         _run(
             "check_agent_production_readiness.py",

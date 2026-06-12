@@ -16,7 +16,7 @@ DOMAINS: list[dict] = [
         "layers": "1–2, 32",
         "mission": (
             "Verify Intergrax is developed as a **Harness AI / Agent OS** — the runtime is the durable "
-            "product, agents are replaceable — with enforced four-tier boundaries, 21 domain-pair documentation "
+            "product, agents are replaceable — with enforced four-tier boundaries, 22 domain-pair documentation "
             "governance, gate maintenance discipline, and strategic alignment to IDEAL_HARNESS_AI_ARCHITECTURE."
         ),
         "code": """docs/intergrax_runtime_architecture.md (hub)
@@ -39,7 +39,7 @@ Sample imports across intergrax/, agents/, applications/ for tier violations""",
             "Tier-2 agents consume Tier-0 via policy/ToolRuntime — no vendor SDK imports.",
             "Tier-3 applications compose runtime+agents+profiles — no duplicated agent pipelines.",
             "Import boundaries enforced: `intergrax/` ↛ `agents/`/`applications/`; agents ↛ applications.",
-            "Documentation model: hub-only `docs/` root; 21 architecture↔plan pairs 1:1; no monolithic plan.",
+            "Documentation model: hub-only `docs/` root; 22 architecture↔plan pairs 1:1; no monolithic plan.",
             "New capabilities reuse Tier-0 (§5.2.2) — no parallel universal mechanisms.",
             "LLM calls via `llm_adapters/` — not Integration Library vendor wrappers.",
             "Integrations register via manifest/`register_from_manifest` — not ad-hoc SDK in agents.",
@@ -188,7 +188,8 @@ scripts/check_orchestration_config_docs.py""",
         ),
         "code": """intergrax/runtime/task/unified_task_runner.py
 intergrax/runtime/nexus/nexus_loop.py
-intergrax/runtime/nexus/runtime_steps/ (tools_step, rag_step, context_step, …)
+intergrax/runtime/nexus/tools/tool_loop.py · plan_context_invocation.py
+intergrax/agents/agent_engine.py · authoring/acp_run.py · HarnessKernel
 intergrax/runtime/nexus/agent_router.py
 intergrax/runtime/nexus/context/context_manager.py
 intergrax/runtime/nexus/handoff/coordinator.py
@@ -200,7 +201,7 @@ tests/acceptance/agent_os/""",
         "active_phases": "FLOW 18/18 Done · FLOW-CTL · FLOW-8 harness Done/product Deferred · H-APP-WIRING · COG-DEPTH cross-ref",
         "known_gaps": "FLOW-GAP-20 hybrid daemon LKW · UC-6 research stubs · WAITING_FOR_RESOURCES/EXPIRED reserved v1 · production-ready = Partial without strict profile + W-OPS",
         "dimensions": [
-            "Three planning planes distinguished: Nexus planner / UAEP engine planner / tool planner.",
+            "Three planning planes distinguished: Nexus planner / agent on_next_step / tool planner.",
             "TaskClassifier does not mutate Task.state directly.",
             "AgentRouter respects production_mode and registry constraints.",
             "Handoff uses HandoffCoordinator — traced lineage.",
@@ -209,7 +210,7 @@ tests/acceptance/agent_os/""",
             "Cancel is cooperative at step boundaries.",
             "Trace reconstructs full 'why did run stop' narrative.",
             "DECISION_EMITTED on UAEP steps before side effects.",
-            "RagStep poisoning defense active (cross-check RAG domain for catalog gap).",
+            "RAG poisoning defense active on catalog rag.retrieve path (cross-check RAG domain).",
             "Reserved lifecycle states not used in production hosts.",
             "Engine planner requires llm_adapter at bootstrap — fail-fast if missing.",
             "Partial completion policy explicit when PARTIALLY_COMPLETED allowed.",
@@ -252,12 +253,12 @@ intergrax/agents/persistence/  [ACP-PROD checkpoint · declarative tools]
 intergrax/runtime/registry/agent_registry.py
 intergrax/prompts/registry/ (YamlPromptRegistry)
 intergrax/runtime/architecture/capability_graph*.py · agent_lifecycle_governance.py
-intergrax/runtime/nexus/engine/runtime.py  [legacy ACP-LEG]
+intergrax/runtime/nexus/tools/tool_loop.py  [ACP tool loop]
 agents/ (Tier-2 roster) · applications/_shared/prompt_wiring.py
 scripts/check_agents_lifecycle_metadata.py · check_agents_vendor_imports.py""",
         "key_symbols": "AgentContract · UAEPAgent · RuntimeExecutionContext · AgentDecision · CognitiveAgent · acp.state.v1 · IntergraxAgent · PromptMeta · AgentStepContext · StepOutcome · AgentRunTrace · ApplicationRunSummary",
         "active_phases": "ACP Done (2026-06-11) · ACP-CLOSE active §6.1bb · PE/REG/CG/AS closed · AUDIT-IDEAL residuals",
-        "known_gaps": "GAP-ACP-03/04/07 Open · ACP-CLOSE-LEG-1..3 · ACP-CLOSE-PROD-1..8 · ACP-CLOSE-PAT-1..2 · TOOL-ENG-6 · AUDIT-IDEAL-19.1/20.1/31.1",
+        "known_gaps": "GAP-ACP-03/04/07 Open · ACP-CLOSE-LEG-5 Done · ACP-CLOSE-PROD-1..8 · ACP-CLOSE-PAT-1..2 · TOOL-ENG-16 pattern plugin · AUDIT-IDEAL-19.1/20.1/31.1",
         "dimensions": [
             "AgentContract has required fields per §12 — capabilities, allowed_tools, risk metadata.",
             "UAEPAgent: get_steps/run_step — AgentEngine path, not private HTTP bypass.",
@@ -266,7 +267,7 @@ scripts/check_agents_lifecycle_metadata.py · check_agents_vendor_imports.py""",
             "ADR-AGENT-001 Accepted; architecture §21–§36 ACP + run/step canon present.",
             "Three cognition planes (§23) — no private multi-agent graph inside run_step (ACP-AP-01).",
             "Tool calls via RuntimeExecutionContext.invoke_tool / ToolRuntime only.",
-            "Agents do not call RuntimeEngine.run() from Tier-2 (ACP-LEG).",
+            "Agents control loop via on_next_step only — no Tier-2 RuntimeEngine/pipeline (ACP-CLOSE-LEG-5).",
             "CognitiveAgent base exists or gap ACP-1 recorded.",
             "Pattern classes Reflex/ReAct/PlanExecute/Decomposition/Reflection vs ACP-2..6.",
             "acp.state.v1 schema and cognitive_pattern on contract (ACP-0/0b).",
@@ -407,14 +408,14 @@ intergrax/rag/rerankers/ · intergrax/rag/vectorstore/
 intergrax/rag/evaluation/golden_harness.py
 intergrax/rag/tracking/ (RetrievalTrace, metrics)
 applications/_shared/rag_runtime_bridge.py
-intergrax/runtime/nexus/runtime_steps/rag_step.py
+intergrax/runtime/nexus/tools/plan_context_invocation.py
 intergrax/tools/providers/rag/
 .github/workflows/rag-guard.yml · tests/fixtures/rag_golden/""",
         "key_symbols": "RagProfile · RagStack · RetrievalService · RetrievalRequest/RetrievalResult · RetrievalTrace · IngestPipeline · QueryRouter · MetadataFilter · DualIndexStrategy · HierarchicalRetriever",
         "active_phases": "M-RAG.1–M-RAG.22 Done · **M-RAG-DEPTH active** (M-RAG.23–M-RAG.37 ← GAP-RAG-01..23)",
         "known_gaps": "GAP-RAG-01/17/23 query_expansion unwired (P0) · GAP-RAG-02/03 DualIndex not default ingest · GAP-RAG-04 poisoning Nexus-only not catalog rag.retrieve · GAP-RAG-05/06 no stream/async ingest · GAP-RAG-07 vector bridges beta · GAP-RAG-08/09 OTel/metrics opt-in · GAP-RAG-10–12 no fallback chain · GAP-RAG-18 GraphRAG beta · GAP-RAG-20 tenant isolation partial · GAP-RAG-21 no load/soak gate",
         "dimensions": [
-            "Single canonical path: RagProfile → RetrievalService → rag.* tools / Nexus RagStep.",
+            "Single canonical path: RagProfile → RetrievalService → rag.retrieve catalog tool.",
             "Agents do not call vectorstore.query or vendor SDKs directly.",
             "RagProfile fields wired — flag dead config (especially query_expansion, INTERGRAX_RAG_* env).",
             "ParserPipeline + chunking strategies (5+) used on ingest — not raw text shortcut.",
@@ -463,14 +464,14 @@ intergrax/tools/providers/rag/
 intergrax/runtime/nexus/tools/tool_runtime.py · invoker.py · catalog_dispatch.py
 intergrax/runtime/nexus/tools/tool_planning_service.py · catalog_tool_planner.py
 intergrax/runtime/nexus/tools/tool_selection.py
-intergrax/runtime/nexus/runtime_steps/tools_step.py
+intergrax/runtime/nexus/tools/tool_loop.py
 intergrax/runtime/tools/idempotent_invoker.py · runtime_bound_catalog.py
 applications/_shared/catalog_runtime_bridge.py · tool wiring
 scripts/check_legacy_tool_plan_booleans.py · check_tool_mcp_schema_export.py
 scripts/check_tool_injection_defense.py · check_agent_registry_bypass.py""",
         "key_symbols": "ToolContract · ToolRegistry · ToolProfile · ToolWiringContext · ToolRequest/ToolResponse · ToolAccessPolicy · ToolSelectionStrategy · ToolPlanDecision · ToolRiskLevel · tools_mode · tools_context_scope",
         "active_phases": "Phase O/T-EXPAND Done · **TOOL-ENG active** (0–5,11 Done; 6–10,12 open) · Phase V V-SEC/V-COST/V-EVAL",
-        "known_gaps": "TOOL-ENG-6 ReAct loop missing · TOOL-ENG-7 post-tool verify HIGH risk · TOOL-ENG-8 tools_mode=required hard fail · TOOL-ENG-9 parallel read-only · TOOL-ENG-10 AHI subset selection · TOOL-ENG-12 tool_choice exposure · 172+ tools need ToolsStep/gateway path consistency",
+        "known_gaps": "TOOL-ENG-16 ToolInvocationPattern plugin · TOOL-ENG-7 post-tool verify HIGH risk · TOOL-ENG-8 tools_mode=required hard fail · TOOL-ENG-9 parallel read-only · TOOL-ENG-10 AHI subset selection · TOOL-ENG-12 tool_choice exposure · 172+ tools need ACP invoke_tool/gateway path consistency",
         "dimensions": [
             "All invocations via ToolRuntime → policy → RuntimeToolInvoker — no bypass.",
             "Every tool: tool_id, input/output schema, risk level, description for LLM selection.",
@@ -656,51 +657,98 @@ scripts/check_llm_adapter_typed_returns.py · scripts/check_agents_llm_adapter_r
     },
     {
         "id": "MEMORY",
-        "title": "Memory and Context Engineering",
-        "layers": "15–16",
+        "title": "Memory Platform",
+        "layers": "15",
         "mission": (
-            "Audit **memory stores**, scopes, lifecycle, **ContextManager** assembly, budgets, "
-            "consolidation, and Knowledge-vs-LTM boundary — explicit, governed, observable, retrieval-first."
+            "Audit **memory stores**, scopes, lifecycle, consolidation, and Knowledge-vs-LTM boundary — "
+            "explicit, governed, observable, retrieval-first. Context assembly is audited under CONTEXT_ENGINEERING."
         ),
         "code": """intergrax/memory/ (user_profile_memory.py, contracts/)
 intergrax/runtime/nexus/session/ · intergrax/runtime/task_memory/
-intergrax/runtime/nexus/context/context_manager.py · context_models.py
 intergrax/runtime/organization/ · consolidation services
-applications/_shared/memory_wiring.py · context_runtime_bridge.py · context_wiring.py
-ContextCompiler (MEM-DEPTH)""",
-        "key_symbols": "MemoryProfile · MemoryKind · MemoryWritePolicy · PolicyScopedMemoryView · AgentContextBundle · ContextBudgetPolicy · TaskContextAssemblyOptions · MemoryConsolidationJob · DegradationLadder · ContextProfile",
+applications/_shared/memory_wiring.py · memory_runtime_bridge.py
+EntityGraphMemoryStore · workspace_index_spike.py (RFC — CE owns production wiring)""",
+        "key_symbols": "MemoryProfile · MemoryKind · MemoryWritePolicy · PolicyScopedMemoryView · MemoryConsolidationJob · MemoryView · SharedTaskContext",
         "active_phases": "MEM Done · MEM-DEPTH Done · MEM-OBS.1 · ADR-MEM-001",
-        "known_gaps": "Procedural memory minimal · temporal fact validity (MEM-DEPTH-5.2) · LangMem/Zep parity gaps on entity graph · fragmented budgeting partially unified via ContextCompiler",
+        "known_gaps": "Procedural memory minimal · org memory maturity · LangMem/Zep parity gaps on entity graph",
         "dimensions": [
             "Memory types separated: STM, task KV, session, user LTM, tenant, procedural, shared context.",
             "Agents do not write Redis/Postgres/vector DB directly.",
             "Session vs checkpoint vs task KV stores distinct.",
             "Every read/write scoped; subagent namespace isolation (task_id/delegation/{node_id}/).",
             "MemoryWritePolicy + BEFORE_MEMORY_WRITE hooks enforced.",
-            "Context assembly via ContextProfile + ContextBudgetPolicy.",
-            "Provenance on every AgentContextBundle fragment.",
-            "ContextCompiler unified budget (MEM-DEPTH) — not siloed trims.",
-            "Retrieval-first for large history — SUMMARIZE_OLDEST/TRUNCATE_OLDEST ladders.",
+            "Retrieval-first for large history — consolidation not full dump.",
             "Knowledge (RAG) ≠ user LTM — graph RAG ≠ Zep-style entity memory.",
             "Retention_days, FIFO session limits, LTM top_k enforced.",
             "LTM logical delete tombstones vectors where applicable.",
             "Org profile vs user profile separation.",
             "Consolidation triggers configured in MemoryProfile.",
             "RAG knowledge does not silently mutate user memory profile.",
+            "Layer C context compiler spec lives in CONTEXT_ENGINEERING canon — not duplicated here.",
         ],
         "scale_probes": [
             "Long session exceeding FIFO — summarization path.",
-            "Tight token budget with multi-source context.",
             "Delegation namespace isolation under parallel subagents.",
             "Large LTM corpus with vector search + dedup.",
+            "Entity graph memory under concurrent writes.",
         ],
-        "overrides": "MemoryProfile · ContextProfile · context_runtime_bridge · BEFORE_MEMORY_WRITE hooks · TaskMemoryViewBinding on ToolWiringContext",
+        "overrides": "MemoryProfile · memory_runtime_bridge · BEFORE_MEMORY_WRITE hooks · TaskMemoryViewBinding on ToolWiringContext",
         "ci_scripts": [
-            "uv run pytest tests/unit/runtime/nexus/context/ -q",
             "uv run pytest tests/unit/memory/ -q",
+            "uv run pytest tests/unit/applications/test_memory_profile_runtime_bridge.py -m gate -q",
         ],
-        "production_baseline": "Mem0/Zep/Letta taxonomies · LangMem consolidation · Anthropic-style context budgeting",
-        "anti_patterns": "Global memory store · full chat history dump · graph RAG as user memory · unscoped writes · agents with DB drivers",
+        "production_baseline": "Mem0/Zep/Letta taxonomies · LangMem consolidation",
+        "anti_patterns": "Global memory store · graph RAG as user memory · unscoped writes · agents with DB drivers",
+        "appendix": "Appendix G",
+    },
+    {
+        "id": "CONTEXT_ENGINEERING",
+        "title": "Context Engineering Engine",
+        "layers": "16",
+        "mission": (
+            "Audit the **Tier-1 context compiler engine**: plugin providers, budget/degradation, step-aware assembly, "
+            "provenance, quality scoring, observability, and Tier-3 ContextProfile control plane — integrated with Harness."
+        ),
+        "code": """intergrax/runtime/nexus/context/ (context_engine.py target, context_compiler.py, context_manager.py)
+intergrax/context_engineering/ (ContextEngine · providers)
+intergrax/runtime/architecture/context_engineering.py · context_regression_benchmark.py
+intergrax/contracts/context_assembly.py
+intergrax/context/ (target contracts + plugin registry)
+applications/_shared/context_runtime_bridge.py · context_wiring.py
+intergrax/runtime/events/context_skill_recording.py · payloads/canonical.py""",
+        "key_symbols": "ContextEngine · ContextSourceProvider · ContextFragment · ContextAssemblyRequest · AssembledContext · ContextCompiler · ContextManager · AgentContextBundle · ContextBudgetPolicy · TaskContextAssemblyOptions · ContextDecisionProfile · ContextProfile · DegradationLadder",
+        "active_phases": "CTX Done · CE-DOC Done · CE-EXT Planned (CE-1..CE-12)",
+        "known_gaps": "No plugin catalog (GAP-CTX-01) · dual assembly paths (GAP-CTX-02) · not step-aware (GAP-CTX-04) · workspace provider spike only (GAP-CTX-06) · OTel spans partial (GAP-CTX-09)",
+        "dimensions": [
+            "ContextEngine.assemble() is the single target entry (CE-3) — no agent prompt concatenation.",
+            "ContextSourceProvider plugin catalog with register_context_plugin (CE-2).",
+            "Global token budget + DegradationLadder never-overflow (ADR-MEM-001 / ContextCompiler).",
+            "Provenance on every included/excluded fragment.",
+            "CONTEXT_ASSEMBLED / CONTEXT_TRIMMED events on all paths.",
+            "BEFORE_CONTEXT_BUILD / AFTER_CONTEXT_BUILD hooks wired.",
+            "ContextProfile drives Tier-3 presets (default, codebase, regulated_minimal).",
+            "Step-aware ContextAssemblyRequest (step_kind, objective) on UAEP path (CE-4).",
+            "Quality scoring integrated in DefaultContextRanker (CE-10).",
+            "OTel spans on assemble/collect/budget (CE-9).",
+            "RAG/Memory/Tool outputs enter via providers — not CE owning retrieval.",
+            "Codebase preset uses WorkspaceContextProvider — not full repo dump.",
+            "Context regression benchmark gates preset drift.",
+            "Forbidden: Tier-2 imports of Nexus context internals for assembly.",
+        ],
+        "scale_probes": [
+            "128k budget with multi-source fragments — degradation ladder trace.",
+            "Graph node SUMMARY_ONLY tier under tight budget.",
+            "Codebase 1k+ files — retrieval-first workspace provider.",
+            "Delegation child explore preset — parent synthesis only.",
+        ],
+        "overrides": "ContextProfile · context_runtime_bridge · context_wiring · context_plugins[] · engine_preset · BEFORE_CONTEXT_BUILD hooks",
+        "ci_scripts": [
+            "uv run pytest tests/unit/runtime/nexus/context/ -m gate -q",
+            "uv run pytest tests/unit/applications/test_context_wiring.py -m gate -q",
+            "uv run pytest tests/acceptance/test_acceptance_context_compiler_long_session.py -q",
+        ],
+        "production_baseline": "Cursor-class context engine · Anthropic-style budgeting · LangGraph-style state injection patterns",
+        "anti_patterns": "Agent-built prompts · silent fragment drop · string-heuristic source detection as final state · CE logic in Tier-2",
         "appendix": "Appendix L",
     },
     {
@@ -851,48 +899,65 @@ tests/acceptance/agent_os/ (04, 05, 05b HITL/checkpoint)""",
         "title": "Tier-3 Application Environment",
         "layers": "3, 28",
         "mission": (
-            "Audit **deployable application hosts**: ApplicationEnvironmentProfile as composition root, "
-            "all runtime bridges, catalog bootstrap, host matrix honesty, and product wiring without Nexus business logic."
+            "Audit **deployable application hosts** (architecture §24–§51): "
+            "ApplicationEnvironmentProfile as composition root, host contracts §25–§32, "
+            "environment state §42, production gates §40/§46, evolution §49, platform ops §50, "
+            "and author DX — without Nexus business logic or duplicate registries."
         ),
         "code": """applications/*/host/factory.py
-intergrax/applications/contracts/environment_profile.py
-applications/_shared/environment_wiring.py · nexus_factory.py · harness_host_runtime.py
-applications/_shared/*_wiring.py (identity, shadow, sandbox, interaction, catalog_runtime_bridge, …)
-applications/reference hosts: lab, legal, research, poc_template, LKW, …""",
-        "key_symbols": "ApplicationEnvironmentProfile · ApplicationManifest · ApplicationBuildContext · IdentityProfile · ExecutionMode · ShadowWorkspaceProfile · SandboxProfile · ScalingProfile (ECP cross-ref) · full §22.1 sub-profiles table",
-        "active_phases": "H-APP 43 tasks Done · H-APP-WIRING · H-APP-DOC.* · CFG-* cross-ref ORCH-CONFIG",
-        "known_gaps": "CFG-14 LKW hybrid incomplete · MCP optional uneven · queue worker not scaffold-default · INCLUDE_INTERACTIONS/SCHEDULER adoption uneven",
+intergrax/applications/contracts/environment_profile.py · application_registry.py · environment_health_score.py
+intergrax/applications/_shared/environment_wiring.py · harness_host_runtime.py · registry_ops_wiring.py
+intergrax/applications/_shared/*_wiring.py (snapshot, migration, package, health_score, recovery, certification, …)
+scripts/check_application_production_gates.py · check_application_registry.py · check_application_health_score.py
+intergrax/cli/apps.py · envs.py · doctor_health_app.py · doctor_diff_app.py
+docs/guides/APPLICATION_CREATION_GUIDE.md""",
+        "key_symbols": "ApplicationEnvironmentProfile · ApplicationManifest · ApplicationHost · ApplicationEnvironmentState · EnvironmentSnapshot · ApplicationPackage · ApplicationRegistry · EnvironmentHealthScore · ApplicationOperationalOwnership · ApplicationRecoveryContract · AgentCertification · CapabilityGovernanceProfile · OrganizationalPolicyEnvelope · ExecutionMode",
+        "active_phases": "H-APP Done · APP-CON-1..8 Done · APP-PROD-1..9 Done · APP-EVOL-1..7 Done · APP-OPS-1..4 Done · APP-CON-DX Done",
+        "known_gaps": "CFG-14 LKW hybrid incomplete · MCP optional uneven · queue worker not scaffold-default · policy_coverage health proxy (UC-A7 golden deferred) · multi-tenant registry store deferred",
         "dimensions": [
-            "ApplicationManifest declares environment_id and roster.",
-            "wire_application_environment() without getattr reflection.",
-            "Business logic only in Tier-2 agents — not Tier-3 host factory.",
-            "Free-text intake has classifier or explicit capability routing.",
-            "Posture (S1–S7) matches profile knobs §23.2.",
-            "All *Profile sections wired through bridges — no orphan fields.",
-            "bootstrap_catalogs + ToolProfile/SkillProfile/IntegrationProfile coherent.",
+            "ApplicationManifest + full profile on product hosts (§45 checklist).",
+            "wire_application_environment() without getattr; package closure when conformance_check.",
+            "Business logic only in Tier-2 agents — not Tier-3 host factory (§28).",
+            "Capability routing via capabilities[] not class names (§37.4).",
+            "ApplicationHost hooks: timeout, BLOCK on error, audit events (APP-CON-5).",
+            "ApplicationEnvironmentState lifecycle sync on Nexus hooks (APP-CON-3).",
+            "RunArtifactBundle on ApplicationRunSummary (APP-CON-6).",
+            "Tier-3 scenario matrix / UC-A* evidence per reference host (APP-CON-7).",
+            "Workspace shadow/sandbox cleanup on lifespan (APP-CON-8).",
+            "EnvironmentSnapshot on intake + profile_snapshot_id (APP-EVOL-1).",
+            "ApplicationMigration CI + typed sub-migrations (APP-EVOL-2/2b).",
+            "CapabilityAlias sunset routing in STRICT (APP-EVOL-3).",
+            "AgentCertification on STRICT roster (APP-EVOL-4).",
+            "ApplicationRecoveryContract + ARCHITECTURE recovery docs (APP-EVOL-5).",
+            "ApplicationEnvironmentDiff + doctor diff-app (APP-EVOL-6).",
+            "ApplicationPackage + package.json from scaffold (APP-EVOL-7).",
+            "STRICT capability graph deploy gate + blast radius (APP-OPS-1).",
+            "ApplicationOperationalOwnership on product manifests (APP-OPS-2).",
+            "EnvironmentHealthScore + doctor health-app (APP-OPS-3).",
+            "ApplicationRegistry + EnvironmentRegistry + apps/envs CLI (APP-OPS-4).",
+            "check_application_production_gates.py aggregates APP-PROD + APP-CON + APP-EVOL + APP-OPS.",
             "Roster ⊆ skill/tool profiles (EnvironmentSkillToolConsistencyCheck).",
-            "IdentityProfile enforces tenant on runs.",
-            "Guardrail slug wired when security profile requires.",
-            "Task control routes mounted when INCLUDE_TASK_CONTROL.",
-            "Shadow/sandbox scoped per task — no global leak.",
-            "Docker/deploy artifacts from scaffold Phase N where claimed.",
-            "Host matrix §59.2 honest vs architecture claims.",
-            "graph_spec and OrchestrationProfile aligned per CFG case.",
+            "IdentityProfile + budget enforcement on STRICT product hosts.",
+            "Deploy triad present on scaffolded standard hosts.",
+            "APPLICATION_CREATION_GUIDE.md aligns with §31 · §45 · §47.",
         ],
         "scale_probes": [
-            "Cold start bootstrap all catalogs.",
-            "Multi-host fleet profile variant drift.",
+            "Cold start bootstrap all catalogs across four product hosts.",
+            "Registry sync + health score for full STRICT fleet.",
+            "Pre-deploy diff between manifest versions.",
             "strict_multi_agent_defaults() on legal/finance hosts.",
         ],
-        "overrides": "Full ApplicationEnvironmentProfile — this layer IS the primary override surface for the platform",
+        "overrides": "Full ApplicationEnvironmentProfile · ApplicationManifest · OrganizationalPolicyEnvelope per tenant · registry artifacts in build/",
         "ci_scripts": [
             "uv run pytest tests/unit/applications/ -q",
-            "uv run pytest tests/ -q -k orchestration_wiring",
+            "uv run python scripts/check_application_production_gates.py",
+            "uv run python scripts/check_application_registry.py",
+            "uv run python scripts/check_application_health_score.py",
             "python scripts/check_harness_no_getattr.py",
         ],
-        "production_baseline": "Reference hosts (legal_application, research_application, lab_application) · Viktor worker-in-Slack · enterprise FastAPI agent host patterns",
-        "anti_patterns": "Business pipeline in applications/host · orphan profile fields · getattr wiring · Nexus fork per product",
-        "appendix": "Appendix H (full profile map)",
+        "production_baseline": "Reference hosts (legal, research, dispute_sim, local_workspace) · enterprise FastAPI agent host · ops registry + health score on release",
+        "anti_patterns": "Business pipeline in applications/host · README as ops registry · getattr wiring · Nexus fork per product · skipping production gates",
+        "appendix": "APPLICATION_CREATION_GUIDE.md · Appendix F · Appendix H",
     },
     {
         "id": "EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE",
@@ -1043,22 +1108,22 @@ eval/nexus_eval_runner.py""",
         "title": "Reasoning and Cognition",
         "layers": "7",
         "mission": (
-            "Audit **three cognition planes** (Nexus planning, UAEP engine, tool planning): "
+            "Audit **three cognition planes** (Nexus planning, agent on_next_step, tool planning): "
             "TaskClassifier, typed plans, DecisionRecord, planner strategies, reasoning failure taxonomy."
         ),
         "code": """intergrax/runtime/nexus/task_classifier.py
 intergrax/runtime/nexus/planning/task_planner.py · EngineBackedNexusPlanner · nexus_llm_plan_builder.py
 applications/_shared/graph_spec_to_plan.py
 intergrax/runtime/nexus/tools/catalog_tool_planner.py · tool_planning_service.py · tool_selection.py
-intergrax/runtime/nexus/planning/engine_planner_orchestrator.py
+intergrax/agents/authoring/patterns/ (ReAct, plan_execute, …)
 intergrax/contracts/decision_record.py
 intergrax/prompts/registry/ (planner prompt ids)""",
-        "key_symbols": "TaskClassification · NexusPlan/PlanStep · EnginePlan · ToolPlanDecision · DecisionRecord (decision_record.v1) · IntentRoute · ReasoningProfile · OrchestrationProfile.planner_kind/classifier_kind",
+        "key_symbols": "TaskClassification · NexusPlan/PlanStep · StepOutcome · ToolPlanDecision · DecisionRecord (decision_record.v1) · IntentRoute · ReasoningProfile · OrchestrationProfile.planner_kind/classifier_kind",
         "active_phases": "COG-DEPTH Done · COG-1..6 · COG-3.* classifier · ORCH-CONFIG.1 · COG-OBS residuals",
-        "known_gaps": "ReasoningFailureKind enum on trace (COG-6 target) · allow_dynamic_replan partial · engine vs Nexus planner bridge debt documented",
+        "known_gaps": "ReasoningFailureKind enum on trace (COG-6 target) · allow_dynamic_replan partial · retired RuntimeEngine engine planner (ACP-CLOSE-LEG-5)",
         "dimensions": [
             "Classification precedes side-effectful execution.",
-            "Plans are typed (NexusPlan/EnginePlan) — not free-text-only.",
+            "Plans are typed (NexusPlan) — not free-text-only.",
             "LLM planner falls back to TaskPlanner on parse failure.",
             "DecisionRecord on UAEP steps (decision_record.v1 schema).",
             "Nexus planning emits decision records (COG-4).",
@@ -1103,7 +1168,7 @@ integrations/providers/message_bus/celery/
 intergrax/runtime/architecture/multi_agent_contention_simulation.py
 intergrax/runtime/observability/harness_slos.py
 target: intergrax/runtime/capacity/ (ECP-DEPTH ECP-1..8)
-docs/adr/ADR-SCALE-001.md · ADR-SCALE-002.md""",
+docs/adr/entries/2026-06-08/ADR-SCALE-001.md · ADR-SCALE-002.md""",
         "key_symbols": "ScalingProfile (target) · ScalingPolicy · ScalingAction · ScalingSignal · CapacitySignalCollector · ScalingProvisioner · SIG_QUEUE_DEPTH · GRAPH_BACKPRESSURE",
         "active_phases": "ECP-DOC · ECP-DEPTH (ECP-1..8, ECP-OBS) · ADR-SCALE-001/002 · cross-ref W-OPS.4 SLIs · ORCH GRAPH_BACKPRESSURE",
         "known_gaps": "No unified CapacitySignalCollector yet · ScalingProfile missing on ApplicationEnvironmentProfile · K8s scale API not in canon · nginx slug missing · ECP evaluate/govern layers target only",
@@ -1168,7 +1233,13 @@ def render(domain: dict) -> str:
 
     appendix_block = ""
     if appendix != "N/A":
-        appendix_block = f"6. `docs/guides/AGENT_CREATION_GUIDE.md` **{appendix}**\n"
+        if "APPLICATION_CREATION_GUIDE" in appendix:
+            appendix_block = (
+                "6. `docs/guides/APPLICATION_CREATION_GUIDE.md`\n"
+                "7. `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix F · Appendix H**\n"
+            )
+        else:
+            appendix_block = f"6. `docs/guides/AGENT_CREATION_GUIDE.md` **{appendix}**\n"
 
     adr_block = ""
     if adr:

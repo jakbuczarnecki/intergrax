@@ -6,7 +6,24 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**RAG engine (layer 14):** [`architecture/RAG.md`](../architecture/RAG.md) ↔ [`plan/RAG.md`](RAG.md) — M-RAG, M-RAG-DEPTH, Phase RAG closeout. This plan covers **integration catalog** slugs only.
+**RAG engine (layer 14):** [`architecture/RAG.md`](../architecture/RAG.md) ↔ [`plan/RAG.md`](RAG.md) — M-RAG, M-RAG-DEPTH, **M-RAG-GRAPH** (GraphRAG platform). This plan covers **integration catalog** slugs only; RAG adapters for `graph_store` are owned by M-RAG.38–M-RAG.51 in [`plan/RAG.md`](RAG.md).
+
+---
+
+## Phase H-INT-GRAPH — graph_store expansion (Planned)
+
+**Purpose:** New `graph_store` vendor slugs required before RAG adapters M-RAG.49–M-RAG.51.  
+**RAG coordination:** [`plan/RAG.md`](RAG.md) Wave G4 · GAP-RAG-33.
+
+| ID | Slug | Category | Priority | Status | RAG deliverable | Notes |
+|----|------|----------|----------|--------|-----------------|-------|
+| H-INT-GRAPH-1 | `neptune` | graph_store | **P3** | **Planned** | M-RAG.49 | AWS Neptune — OpenCypher or configured dialect; no local infra default |
+| H-INT-GRAPH-2 | `orientdb` | graph_store | **P3** | **Planned** | M-RAG.50 | OrientDB SQL/graph API facade |
+| H-INT-GRAPH-3 | `arangodb` | graph_store | **P3** | **Planned** | M-RAG.51 | ArangoDB AQL bridge |
+
+**Per-slug checklist:** contract gate → `providers/graph_store/<slug>/` → health probe → bootstrap register → RAG `RagGraphStoreBackend` adapter (M-RAG.38 registry) → gate green.
+
+**Explicitly out of scope:** Microsoft GraphRAG library vendoring (harness-native indexer M-RAG.47); TigerGraph / JanusGraph unless product reprioritizes.
 
 ---
 
@@ -378,8 +395,8 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 | H-INT-4 | M-P4.14 | `github_actions` | ci_cd | **P0** | **Done** (beta) | Harness release gate status; `harness-release.yml` evidence | Requires **M-P4-CAT.2**; workflow run + check suite read |
 | H-INT-4 | M-P4.15 | `redpanda` | message_bus | **P1** | **Done** (beta) | Kafka-compatible async `AdaptationScheduler` / pattern miner | Lab compose; consumer/producer contract tests |
 | H-INT-4 | M-P4.16 | `cloudflare_r2` | object_storage | **P1** | **Done** (beta) | S3-compatible cheap eval/adaptive artifacts | `ObjectStorage` put/get; reuse S3 adapter patterns |
-| H-INT-5 | M-P4.17 | `memgraph` | graph_store | **P1** | **Done** (beta) | GraphRAG alternative; lighter lab footprint | `GraphStore` contract; RAG `INTERGRAX_RAG_GRAPH_STORE` option |
-| H-INT-5 | M-P4.18 | `falkordb` | graph_store | **P2** | **Done** (beta) | Redis-module graph — reuse lab `redis` stack | Bolt/Redis protocol adapter |
+| H-INT-5 | M-P4.17 | `memgraph` | graph_store | **P1** | **Done** (beta) | GraphRAG alternative; lighter lab footprint | Integration `GraphStore` contract; RAG adapter **Planned** M-RAG.39 |
+| H-INT-5 | M-P4.18 | `falkordb` | graph_store | **P2** | **Done** (beta) | Redis-module graph — reuse lab `redis` stack | Bolt/Redis adapter; RAG adapter **Planned** M-RAG.39 |
 | H-INT-5 | M-P4.19 | `incident_io` | notification_channel | **P1** | **Done** (beta) | Ops runbooks (`runbook/adaptive/*`) → real incidents | Outbound incident create; HITL escalation path |
 | H-INT-5 | M-P4.20 | `kubernetes` | cloud_platform | **P1** | **Done** (beta) | Prod harness host deploy; health probes at scale | Extend `CloudPlatform` — scale API: [ECP-4.*](plan/ELASTIC_CAPACITY_AND_SCALING.md) |
 | H-INT-5 | M-P4.21 | `servicenow` | issue_tracker | **P2** | **Done** (beta) | Enterprise change approval for policy learning | `IssueTracker` search/get; HITL change ticket |
@@ -684,7 +701,7 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 
 **Optional dependency group:** `Intergrax-ai[integrations-guardrails]` — `presidio-analyzer`, `presidio-anonymizer` only (torch/docling conflict). Install `llm-guard`, `guardrails-ai`, `nemoguardrails` manually when needed.
 
-**ADR:** [ADR-GR-001](../adr/ADR-GR-001.md) — Accepted.
+**ADR:** [ADR-GR-001](../adr/entries/2026-06-09/ADR-GR-001.md) — Accepted.
 
 ##### M.12 — Paydown log
 

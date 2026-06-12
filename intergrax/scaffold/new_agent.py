@@ -66,171 +66,6 @@ def _write(path: Path, content: str, *, force: bool) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def _agent_py(slug: str, class_name: str, primary_capability: str) -> str:
-    return dedent(
-        f'''\
-        # © Artur Czarnecki. All rights reserved.
-        # Intergrax framework – proprietary and confidential.
-
-        from __future__ import annotations
-
-        from {slug}.capabilities import CAPABILITIES
-        from {slug}.contract import build_agent_contract
-        from {slug}.steps.pipeline import build_pipeline, run_domain_step
-        from intergrax.agents.agent_contract import Agent
-        from intergrax.contracts.agent_decision import AgentDecision
-        from intergrax.contracts.agent_step import AgentStep, StepOutput
-        from intergrax.contracts.capability import CapabilityMatchResult
-        from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-        from intergrax.runtime.task.task import TaskContext
-        from intergrax.runtime.nexus.config import RuntimeConfig
-        from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-        from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-        from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
-        from intergrax.runtime.nexus.session.session_manager import SessionManager
-        from intergrax.agents.authoring.uaep_pipeline_bridge import pipeline_agent_steps, pipeline_step_complete
-
-
-        class {class_name}(Agent):
-            """UAEP-first scaffolded agent — replace domain logic in ``steps/`` and ``prompts/``."""
-
-            def get_contract(self):
-                return build_agent_contract()
-
-            def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
-                capability = task_context.capability
-                supported = set(CAPABILITIES)
-                if capability is None or capability in supported:
-                    return CapabilityMatchResult(
-                        matched=True,
-                        agent_id="{slug}",
-                        matched_capabilities=list(supported),
-                        score=1.0,
-                        rationale="capability match",
-                    )
-                return CapabilityMatchResult(matched=False, rationale="capability not supported")
-
-            def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-                from intergrax.agents.defaults import harness_production_mode
-
-                config = RuntimeConfig(
-                    llm_adapter=build_pipeline().llm_adapter,
-                    enable_rag=False,
-                    production_mode=harness_production_mode(),
-                    tenant_id=request.tenant_id,
-                )
-                config.pipeline = build_pipeline().pipeline
-                session_manager = SessionManager(storage=InMemorySessionStorage())
-                return RuntimeContext.build(config=config, session_manager=session_manager)
-
-            def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
-                _ = context
-                contract = self.get_contract()
-                return pipeline_agent_steps(
-                    step_id="{slug}_step",
-                    step_name="{slug}_step",
-                    trace_label="{primary_capability}",
-                    allowed_tools=list(contract.allowed_tools),
-                )
-
-            async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
-                return await run_domain_step(step, ctx)
-
-            def decide_after_step(
-                self,
-                step: AgentStep,
-                output: StepOutput | None,
-                ctx: RuntimeExecutionContext,
-            ) -> AgentDecision:
-                _ = step, output, ctx
-                return pipeline_step_complete(reason="{slug} step finished")
-        '''
-    )
-
-
-def _reference_agent_py(slug: str, class_name: str, primary_capability: str) -> str:
-    return dedent(
-        f'''\
-        # © Artur Czarnecki. All rights reserved.
-        # Intergrax framework – proprietary and confidential.
-
-        from __future__ import annotations
-
-        from {slug}.capabilities import CAPABILITIES
-        from {slug}.contract import build_agent_contract
-        from {slug}.steps.pipeline import build_pipeline, run_domain_step
-        from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
-        from intergrax.agents.reference_harness import (
-            LabHarnessContext,
-            build_lab_agent_runtime_context,
-            default_reference_harness,
-        )
-        from intergrax.contracts.agent_decision import AgentDecision
-        from intergrax.contracts.agent_step import AgentStep, StepOutput
-        from intergrax.contracts.capability import CapabilityMatchResult
-        from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-        from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-        from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-        from intergrax.runtime.task.task import TaskContext
-        from intergrax.agents.authoring.uaep_pipeline_bridge import pipeline_agent_steps, pipeline_step_complete
-
-
-        class {class_name}(HarnessReferenceAgent):
-            """Harness reference agent — inject ``LabHarnessContext`` from Tier-3 host builders."""
-
-            def __init__(self, harness: LabHarnessContext | None = None) -> None:
-                self._harness = harness or default_reference_harness()
-
-            def get_contract(self):
-                return build_agent_contract()
-
-            def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
-                capability = task_context.capability
-                supported = set(CAPABILITIES)
-                if capability is None or capability in supported:
-                    return CapabilityMatchResult(
-                        matched=True,
-                        agent_id="{slug}",
-                        matched_capabilities=list(supported),
-                        score=1.0,
-                        rationale="capability match",
-                    )
-                return CapabilityMatchResult(matched=False, rationale="capability not supported")
-
-            def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-                built = build_pipeline()
-                return build_lab_agent_runtime_context(
-                    request=request,
-                    llm_adapter=built.llm_adapter,
-                    harness=self._harness,
-                    pipeline=built.pipeline,
-                )
-
-            def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
-                _ = context
-                contract = self.get_contract()
-                return pipeline_agent_steps(
-                    step_id="{slug}_step",
-                    step_name="{slug}_step",
-                    trace_label="{primary_capability}",
-                    allowed_tools=list(contract.allowed_tools),
-                )
-
-            async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
-                return await run_domain_step(step, ctx)
-
-            def decide_after_step(
-                self,
-                step: AgentStep,
-                output: StepOutput | None,
-                ctx: RuntimeExecutionContext,
-            ) -> AgentDecision:
-                _ = step, output, ctx
-                return pipeline_step_complete(reason="{slug} step finished")
-        '''
-    )
-
-
 def _normalize_pattern(pattern: str | None) -> str | None:
     if pattern is None:
         return None
@@ -241,15 +76,63 @@ def _normalize_pattern(pattern: str | None) -> str | None:
     return normalized
 
 
-def _acp_agent_py(
+def _acp_agent_hooks(
     slug: str,
     class_name: str,
     primary_capability: str,
     *,
     pattern: str,
 ) -> str:
+    return (
+        f"""\
+            async def perceive(self, step_ctx: AgentStepContext) -> Observation:
+                _ = step_ctx
+                return Observation(summary="TODO: domain perception")
+
+            async def reason(
+                self,
+                step_ctx: AgentStepContext,
+                observation: Observation,
+            ) -> ReasoningResult:
+                _ = step_ctx
+                return ReasoningResult(thought=observation.summary)
+
+            async def act(
+                self,
+                step_ctx: AgentStepContext,
+                reasoning: ReasoningResult,
+            ) -> dict[str, object]:
+                _ = step_ctx
+                return {{"summary": reasoning.thought, "capability": "{primary_capability}"}}
+
+            def evaluate(
+                self,
+                step_ctx: AgentStepContext,
+                output: dict[str, object],
+            ) -> AgentEvaluation:
+                _ = step_ctx
+                return AgentEvaluation(
+                    verdict=CognitiveEvaluation.COMPLETE,
+                    reason="{pattern} scaffold complete",
+                    confidence=0.9,
+                )
+"""
+    )
+
+
+def _acp_agent_py(
+    slug: str,
+    class_name: str,
+    primary_capability: str,
+    *,
+    pattern: str,
+    reference: bool = False,
+) -> str:
+    if reference:
+        return _acp_reference_agent_py(slug, class_name, primary_capability, pattern=pattern)
     base_class = SCAFFOLD_PATTERNS[pattern]
     pattern_import = _PATTERN_IMPORTS[pattern]
+    hooks = _acp_agent_hooks(slug, class_name, primary_capability, pattern=pattern)
     return dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
@@ -322,38 +205,94 @@ def _acp_agent_py(
                 )
                 session_manager = SessionManager(storage=InMemorySessionStorage())
                 return RuntimeContext.build(config=config, session_manager=session_manager)
+{hooks}
+        '''
+    )
 
-            async def perceive(self, step_ctx: AgentStepContext) -> Observation:
-                _ = step_ctx
-                return Observation(summary="TODO: domain perception")
 
-            async def reason(
+def _acp_reference_agent_py(
+    slug: str,
+    class_name: str,
+    primary_capability: str,
+    *,
+    pattern: str,
+) -> str:
+    base_class = SCAFFOLD_PATTERNS[pattern]
+    pattern_import = _PATTERN_IMPORTS[pattern]
+    hooks = _acp_agent_hooks(slug, class_name, primary_capability, pattern=pattern)
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        from __future__ import annotations
+
+        from {slug}.capabilities import CAPABILITIES
+        from {slug}.contract import build_agent_contract
+        {pattern_import}
+        from intergrax.agents.authoring.patterns.types import (
+            AgentEvaluation,
+            CognitiveEvaluation,
+            Observation,
+            ReasoningResult,
+        )
+        from intergrax.agents.reference_harness import (
+            LabHarnessContext,
+            build_lab_agent_runtime_context,
+            default_reference_harness,
+        )
+        from intergrax.contracts.agent_contract_meta import AgentRiskLevel
+        from intergrax.contracts.agent_step_context import AgentStepContext
+        from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+        from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+        from intergrax.memory.conversational_memory import ChatMessage
+        from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+        from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+        from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+        from typing import Optional, Sequence
+
+
+        class _{ _pascal_name(slug) }StubLLM(LLMAdapter):
+            provider = "{slug}"
+            model = "{slug}-stub"
+
+            @property
+            def context_window_tokens(self) -> int:
+                return 128_000
+
+            def generate_messages(
                 self,
-                step_ctx: AgentStepContext,
-                observation: Observation,
-            ) -> ReasoningResult:
-                _ = step_ctx
-                return ReasoningResult(thought=observation.summary)
+                messages: Sequence[ChatMessage],
+                *,
+                temperature: Optional[float] = None,
+                max_tokens: Optional[int] = None,
+                run_id: Optional[str] = None,
+            ) -> LLMAdapterResponse:
+                for msg in reversed(messages):
+                    if msg.content:
+                        return build_adapter_response(content=msg.content[:200])
+                return build_adapter_response(content="{slug}: (empty)")
 
-            async def act(
-                self,
-                step_ctx: AgentStepContext,
-                reasoning: ReasoningResult,
-            ) -> dict[str, object]:
-                _ = step_ctx
-                return {{"summary": reasoning.thought, "capability": "{primary_capability}"}}
 
-            def evaluate(
-                self,
-                step_ctx: AgentStepContext,
-                output: dict[str, object],
-            ) -> AgentEvaluation:
-                _ = step_ctx
-                return AgentEvaluation(
-                    verdict=CognitiveEvaluation.COMPLETE,
-                    reason="{pattern} scaffold complete",
-                    confidence=0.9,
+        class {class_name}({base_class}):
+            """Harness reference agent — inject ``LabHarnessContext`` from Tier-3 host builders."""
+
+            contract_id = "{slug}"
+            capabilities = tuple(CAPABILITIES)
+            agent_name = "{class_name}"
+            agent_description = "Scaffolded {pattern} reference agent"
+            risk_level = AgentRiskLevel.LOW
+            max_steps = 10
+
+            def __init__(self, harness: LabHarnessContext | None = None) -> None:
+                self._harness = harness or default_reference_harness()
+
+            def build_context(self, request: RuntimeRequest) -> RuntimeContext:
+                return build_lab_agent_runtime_context(
+                    request=request,
+                    llm_adapter=_{_pascal_name(slug)}StubLLM(),
+                    harness=self._harness,
                 )
+{hooks}
         '''
     )
 
@@ -427,37 +366,6 @@ def _acp_test_agent_py(slug: str, class_name: str, primary_capability: str) -> s
     )
 
 
-def _contract_py(slug: str, class_name: str, primary_capability: str) -> str:
-    return dedent(
-        f'''\
-        # © Artur Czarnecki. All rights reserved.
-        # Intergrax framework – proprietary and confidential.
-
-        from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
-        from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
-        from {slug}.capabilities import CAPABILITIES
-
-        # Register skill packs on the contract — see docs/architecture/SKILLS.md
-
-
-        def build_agent_contract() -> AgentContract:
-            return AgentContract(
-                id="{slug}",
-                name="{class_name}",
-                description="Scaffolded UAEP agent for Intergrax experiments.",
-                version="0.1.0",
-                capabilities=CAPABILITIES,
-                skills=[],
-                extra_tools=[],
-                risk_level=AgentRiskLevel.LOW,
-                lifecycle_state=AgentLifecycleState.DEVELOPMENT,
-                owner_team="platform",
-                max_steps=10,
-            )
-        '''
-    )
-
-
 def _capabilities_py(slug: str, capabilities: list[str]) -> str:
     caps_lines = ",\n    ".join(repr(c) for c in capabilities)
     return dedent(
@@ -470,92 +378,6 @@ def _capabilities_py(slug: str, capabilities: list[str]) -> str:
         CAPABILITIES: list[str] = [
             {caps_lines}
         ]
-        '''
-    )
-
-
-def _steps_pipeline_py(slug: str, primary_capability: str) -> str:
-    pascal = _pascal_name(slug)
-    return dedent(
-        f'''\
-        # © Artur Czarnecki. All rights reserved.
-        # Intergrax framework – proprietary and confidential.
-
-        from __future__ import annotations
-
-        from dataclasses import dataclass
-        from typing import Optional, Sequence
-
-        from intergrax.agents.authoring.uaep_pipeline_bridge import run_pipeline_step
-        from intergrax.contracts.agent_step import AgentStep, StepOutput
-        from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-        from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
-        from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-        from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-        from intergrax.memory.conversational_memory import ChatMessage
-        from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-        from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
-        from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer
-        from intergrax.runtime.nexus.runtime_steps.contract import RuntimeStepRunner
-        from intergrax.runtime.nexus.runtime_steps.persist_and_build_answer_step import PersistAndBuildAnswerStep
-        from intergrax.runtime.nexus.runtime_steps.setup_steps_tool import SETUP_STEPS
-
-
-        class _{pascal}LLMStub(LLMAdapter):
-            provider = "{slug}"
-            model = "{slug}-stub"
-
-            @property
-            def context_window_tokens(self) -> int:
-                return 128_000
-
-            def generate_messages(
-                self,
-                messages: Sequence[ChatMessage],
-                *,
-                temperature: Optional[float] = None,
-                max_tokens: Optional[int] = None,
-                run_id: Optional[str] = None,
-            ) -> LLMAdapterResponse:
-                for msg in reversed(messages):
-                    content = msg.content or ""
-                    if content:
-                        return build_adapter_response(content=f"{slug}: {{content[:200]}}")
-                return build_adapter_response(content="{slug}: (empty)")
-
-
-        class _{pascal}Pipeline(RuntimePipeline):
-            async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
-                await RuntimeStepRunner.execute_pipeline(
-                    [*SETUP_STEPS, PersistAndBuildAnswerStep()],
-                    state,
-                )
-                message = (state.request.message or "").strip()
-                answer = f"{slug}: {{message}}"
-                if state.runtime_answer is not None:
-                    state.runtime_answer.answer = answer
-                if state.runtime_answer is None:
-                    raise RuntimeError("{slug} pipeline did not produce runtime_answer.")
-                return state.runtime_answer
-
-
-        @dataclass(frozen=True)
-        class PipelineBundle:
-            llm_adapter: LLMAdapter
-            pipeline: _{pascal}Pipeline
-
-
-        def build_pipeline() -> PipelineBundle:
-            return PipelineBundle(
-                llm_adapter=_{pascal}LLMStub(),
-                pipeline=_{pascal}Pipeline(),
-            )
-
-
-        async def run_domain_step(step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
-            """Replace with multi-step domain logic as the agent grows."""
-            _ = step
-            return await run_pipeline_step(step, ctx)
         '''
     )
 
@@ -580,41 +402,6 @@ def _prompts_system_md(slug: str) -> str:
 
         Capability focus: see ``capabilities.py``.
         """
-    )
-
-
-def _test_agent_py(slug: str, class_name: str, primary_capability: str) -> str:
-    return dedent(
-        f'''\
-        # © Artur Czarnecki. All rights reserved.
-
-        import pytest
-
-        from {slug}.{slug}_agent import {class_name}
-        from intergrax.runtime.nexus.nexus_loop import NexusLoop
-        from intergrax.runtime.registry.agent_registry import AgentRegistry
-        from intergrax.runtime.task.task import Task, TaskContext, TaskState
-
-
-        @pytest.mark.asyncio
-        @pytest.mark.integration
-        @pytest.mark.gate
-        async def test_{slug}_agent_runs_through_nexus():
-            registry = AgentRegistry()
-            registry.register({class_name}())
-            loop = NexusLoop(registry)
-            result = await loop.handle_task(
-                Task(
-                    tenant_id="t1",
-                    user_id="u1",
-                    message="scaffold smoke",
-                    context=TaskContext(capability="{primary_capability}"),
-                )
-            )
-            assert result.state == TaskState.COMPLETED
-            assert "scaffold smoke" in result.answer
-            assert result.agent_id == "{slug}"
-        '''
     )
 
 
@@ -715,8 +502,9 @@ def create_acp_pattern_agent(
     pattern: str,
     force: bool = False,
     minimal: bool = False,
+    reference: bool = False,
 ) -> Path:
-    """Create typed cognitive-pattern agent (no UAEP boilerplate — ACP-8)."""
+    """Create typed cognitive-pattern agent (ACP default — no legacy pipeline)."""
     normalized = _normalize_pattern(pattern)
     assert normalized is not None
     slug = _slug(name)
@@ -738,7 +526,13 @@ def create_acp_pattern_agent(
     primary_capability = capabilities[0]
     _write(
         target / f"{slug}_agent.py",
-        _acp_agent_py(slug, class_name, primary_capability, pattern=normalized),
+        _acp_agent_py(
+            slug,
+            class_name,
+            primary_capability,
+            pattern=normalized,
+            reference=reference,
+        ),
         force=force,
     )
     _write(
@@ -761,7 +555,7 @@ def create_acp_pattern_agent(
             slug=slug,
             class_name=class_name,
             capabilities=capabilities,
-            reference=False,
+            reference=reference,
             pattern=normalized,
         ),
         force=force,
@@ -772,7 +566,7 @@ def create_acp_pattern_agent(
             slug=slug,
             class_name=class_name,
             capabilities=capabilities,
-            reference=False,
+            reference=reference,
             pattern=normalized,
         ),
         force=force,
@@ -806,86 +600,6 @@ def create_acp_pattern_agent(
     return target
 
 
-def create_uaep_agent(
-    *,
-    name: str,
-    capabilities: list[str],
-    root: Path,
-    force: bool = False,
-    reference: bool = False,
-    minimal: bool = False,
-) -> Path:
-    """Legacy UAEP scaffold — use typed ``create_acp_pattern_agent`` for new agents (DEBT-ACP-05)."""
-    slug = _slug(name)
-    class_name = _class_name(slug)
-    if not capabilities:
-        capabilities = [f"{slug}.basic"]
-
-    agents_root = root / "agents"
-    agents_root.mkdir(parents=True, exist_ok=True)
-    agents_init = agents_root / "__init__.py"
-    if not agents_init.exists():
-        agents_init.write_text("", encoding="utf-8")
-
-    target = agents_root / slug
-    if target.exists() and not force:
-        raise FileExistsError(f"Agent directory already exists: {target}")
-
-    target.mkdir(parents=True, exist_ok=True)
-
-    primary_capability = capabilities[0]
-
-    agent_src = _reference_agent_py if reference else _agent_py
-    _write(target / f"{slug}_agent.py", agent_src(slug, class_name, primary_capability), force=force)
-    _write(target / "contract.py", _contract_py(slug, class_name, primary_capability), force=force)
-    _write(target / "capabilities.py", _capabilities_py(slug, capabilities), force=force)
-    _write(target / "steps" / "__init__.py", "", force=force)
-    _write(target / "steps" / "pipeline.py", _steps_pipeline_py(slug, primary_capability), force=force)
-    _write(target / "schemas" / "__init__.py", _schemas_init(), force=force)
-    _write(target / "prompts" / "system.md", _prompts_system_md(slug), force=force)
-    _write(target / "tests" / "__init__.py", "", force=force)
-    _write(target / "tests" / f"test_{slug}_agent.py", _test_agent_py(slug, class_name, primary_capability), force=force)
-    if not minimal:
-        _write(target / "notebooks" / f"01_{slug}_experiment.ipynb", _notebook_stub(slug, primary_capability), force=force)
-    _write(
-        target / "ARCHITECTURE.md",
-        render_agent_architecture_doc(
-            slug=slug,
-            class_name=class_name,
-            capabilities=capabilities,
-            reference=reference,
-        ),
-        force=force,
-    )
-    _write(
-        target / "IMPLEMENTATION_PLAN.md",
-        render_agent_implementation_plan(
-            slug=slug,
-            class_name=class_name,
-            capabilities=capabilities,
-            reference=reference,
-        ),
-        force=force,
-    )
-    _write(
-        target / "__init__.py",
-        dedent(
-            f'''\
-            from {slug}.{slug}_agent import {class_name}
-
-            __all__ = ["{class_name}"]
-            '''
-        ),
-        force=force,
-    )
-    if not minimal:
-        _write(target / "README.md", _readme(slug, class_name, capabilities), force=force)
-    write_agent_adr_scaffold(agent_dir=target, slug=slug, force=force)
-    write_agent_tracing_scaffold(target=target, slug=slug, force=force)
-
-    return target
-
-
 def create_agent(
     *,
     name: str,
@@ -897,14 +611,10 @@ def create_agent(
     pattern: str | None = None,
     uaep: bool = False,
 ) -> Path:
-    if reference or uaep:
-        return create_uaep_agent(
-            name=name,
-            capabilities=capabilities,
-            root=root,
-            force=force,
-            reference=reference,
-            minimal=minimal,
+    if uaep:
+        raise ValueError(
+            "UAEP pipeline scaffold (--uaep) was removed; use default ACP pattern scaffold "
+            "(reflex, react, plan_execute, reflection, decomposition)."
         )
     effective_pattern = _normalize_pattern(pattern or "reflex")
     assert effective_pattern is not None
@@ -915,6 +625,7 @@ def create_agent(
         pattern=effective_pattern,
         force=force,
         minimal=minimal,
+        reference=reference,
     )
 
 

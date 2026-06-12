@@ -13,7 +13,6 @@ REQUIRED = (
     "signoff_probe_agent.py",
     "contract.py",
     "capabilities.py",
-    "steps/pipeline.py",
     "tests/test_signoff_probe_agent.py",
     "ARCHITECTURE.md",
     "IMPLEMENTATION_PLAN.md",

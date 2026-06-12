@@ -42,7 +42,7 @@ Perform a **rigorous, evidence-backed audit** of the **Platform Foundation** dom
 
 ## Mission
 
-Verify Intergrax is developed as a **Harness AI / Agent OS** — the runtime is the durable product, agents are replaceable — with enforced four-tier boundaries, 21 domain-pair documentation governance, gate maintenance discipline, and strategic alignment to IDEAL_HARNESS_AI_ARCHITECTURE.
+Verify Intergrax is developed as a **Harness AI / Agent OS** — the runtime is the durable product, agents are replaceable — with enforced four-tier boundaries, 22 domain-pair documentation governance, gate maintenance discipline, and strategic alignment to IDEAL_HARNESS_AI_ARCHITECTURE.
 
 ## Key symbols and contracts
 
@@ -97,7 +97,7 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 4. Tier-2 agents consume Tier-0 via policy/ToolRuntime — no vendor SDK imports.
 5. Tier-3 applications compose runtime+agents+profiles — no duplicated agent pipelines.
 6. Import boundaries enforced: `intergrax/` ↛ `agents/`/`applications/`; agents ↛ applications.
-7. Documentation model: hub-only `docs/` root; 21 architecture↔plan pairs 1:1; no monolithic plan.
+7. Documentation model: hub-only `docs/` root; 22 architecture↔plan pairs 1:1; no monolithic plan.
 8. New capabilities reuse Tier-0 (§5.2.2) — no parallel universal mechanisms.
 9. LLM calls via `llm_adapters/` — not Integration Library vendor wrappers.
 10. Integrations register via manifest/`register_from_manifest` — not ad-hoc SDK in agents.

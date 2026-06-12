@@ -2,21 +2,22 @@
 
 **Last updated:** 2026-06-05 · Phase P-Ext · **H-APP** · §10 policy rules (`intergrax.policy_rules`)
 
-Intergrax exposes three **Tier-0 plugin catalogs**. Shipped providers and third-party pip packages register through the same protocols.
+Intergrax exposes four **plugin catalogs** (three Tier-0 + Context Engineering Tier-1 contracts with Tier-0 shared types). Shipped providers and third-party pip packages register through the same protocols.
 
-| Layer | Entry point group | Protocol | Register function |
-|-------|-------------------|----------|-------------------|
-| Integration | `intergrax.integrations` | `IntegrationPlugin` | `register_integration_plugin()` |
-| Tool | `intergrax.tools` | `ToolPlugin` | `register_tool_plugin()` |
-| Skill | `intergrax.skills` | `SkillPlugin` | `register_skill_plugin()` |
+| Layer | Entry point group | Protocol | Register function | Status |
+|-------|-------------------|----------|-------------------|--------|
+| Integration | `intergrax.integrations` | `IntegrationPlugin` | `register_integration_plugin()` | **Done** |
+| Tool | `intergrax.tools` | `ToolPlugin` | `register_tool_plugin()` | **Done** |
+| Skill | `intergrax.skills` | `SkillPlugin` | `register_skill_plugin()` | **Done** |
+| Context | `intergrax.context` | `ContextPlugin` | `register_context_plugin()` | **Planned** — [CE-2](../plan/CONTEXT_ENGINEERING.md) |
 
-**Architecture:** Integration → Tool → Skill → Agent. See [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.5.1, §7.1.6–§7.1.8.
+**Architecture:** Integration → Tool → Skill → Agent; **Context Engineering** assembles LLM windows from all sources — see [`architecture/CONTEXT_ENGINEERING.md`](../architecture/CONTEXT_ENGINEERING.md) · [plan CE-EXT](../plan/CONTEXT_ENGINEERING.md).
 
 ---
 
 ## 0. Tier-3 environment vs Tier-2 agent (H-APP, DX)
 
-**LangGraph is not required.** Intergrax ships its own Nexus loop, `HarnessApplication`, and `AgentGraph`. The table below is a **conceptual mapping** for authors coming from LangGraph — not a runtime dependency. Optional legacy notebooks and `intergrax.supervisor.build_langgraph_from_plan` need the extra `pip install 'Intergrax-ai[langgraph-legacy]'`.
+**LangGraph is not required.** Intergrax ships its own Nexus loop, `HarnessApplication`, and `AgentGraph`. The table below is a **conceptual mapping** for authors coming from LangGraph — not a runtime dependency. Optional `intergrax.supervisor.build_langgraph_from_plan` needs the extra `pip install 'Intergrax-ai[langgraph-legacy]'`.
 
 | LangGraph (analogy) | Intergrax |
 |---------------------|-----------|
@@ -237,8 +238,11 @@ Entry point group: `intergrax.memory_stores`
 |----------|----------------|----------|
 | `UserProfileStorePlugin` | `create_user_profile_store(**kwargs)` | Default `InMemoryUserProfileStore` / sqlite bundle / optional Mongo `document_store` (MEM-PERS.2) |
 | `SessionStoragePlugin` | `create_session_storage(**kwargs)` | Default `InMemorySessionStorage` / sqlite bundle |
+| `SessionTurnIndexStore` (target MEM-VEC-3.1) | `create_session_turn_index(**kwargs)` | Default episodic vector adapter over host `VectorstoreManager` |
 
 Bootstrap: `intergrax.core.memory_bootstrap.bootstrap_memory_stores(discover_entry_points=True)`.
+
+**Vector memory:** LTM and session episodic indexes reuse the host integration **vector store** — memory plugins swap index adapters, not vendor SDKs. See [`architecture/MEMORY.md`](architecture/MEMORY.md) §5.3, §11.5.
 
 Reference fixture: `tests/fixtures/plugin_packages/memory_store_plugin/`.
 

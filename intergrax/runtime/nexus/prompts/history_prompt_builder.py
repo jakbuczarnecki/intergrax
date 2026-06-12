@@ -39,7 +39,7 @@ class HistorySummaryPromptBuilder(Protocol):
     of the prompt.
 
     You can provide a custom implementation and pass it to
-    RuntimeEngine to fully control:
+    AgentEngine / context assembly to fully control:
 
     - the exact system prompt text used when summarizing older history,
     - how the request / strategy / message splits influence that prompt.

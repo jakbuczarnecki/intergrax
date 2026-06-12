@@ -5,10 +5,19 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import pytest
 
+_REPO_ROOT = Path(__file__).resolve().parent
+_BUILD_DIR = _REPO_ROOT / "build"
+
 GATE_HARNESS_API_KEY = "gate-test-harness-key"
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Ensure gitignored ``build/`` exists before xdist basetemp/cache setup."""
+    _BUILD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @pytest.fixture

@@ -11,19 +11,6 @@ wheels/
 .venv
 
 # Project
-notebooks/rag/video
-notebooks/rag/images
-notebooks/rag/docs
-notebooks/rag/chroma_db
-
-notebooks/multimedia/video
-notebooks/multimedia/images
-notebooks/multimedia/docs
-
-notebooks/nexus/chroma_db
-notebooks/nexus/data
-notebooks/nexus/_artifacts
-
 temp_documents/
 api/chat/rag_app.db
 

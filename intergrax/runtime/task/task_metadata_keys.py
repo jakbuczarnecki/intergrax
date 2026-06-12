@@ -42,6 +42,10 @@ class TaskMetadataKey(StrEnum):
 
     SHARED_TASK_CONTEXT = "shared_task_context"
 
+    APP_ENV_STATE = "app_env_state.v1"
+    ENVIRONMENT_SNAPSHOT = "environment_snapshot.v1"
+    CAPABILITY_ALIAS_REDIRECT = "capability_alias_redirect.v1"
+
 
 class TaskOrchestrationMetadataKey(StrEnum):
     """Classification and graph orchestration flat keys."""
@@ -80,6 +84,7 @@ class TaskResultMetadataKey(StrEnum):
     SANDBOX_SESSION_ID = "sandbox_session_id"
     SANDBOX_OPERATION_COUNT = "sandbox_operation_count"
     APPLICATION_RUN_SUMMARY = "application_run_summary.v1"
+    RUN_ARTIFACT_BUNDLE = "run_artifact_bundle.v1"
 
 
 TASK_METADATA_LEGACY_OPTION_KEYS: frozenset[str] = frozenset(

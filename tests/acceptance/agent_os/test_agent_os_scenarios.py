@@ -31,7 +31,6 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode, ExecutionNodeStatus
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy
@@ -45,59 +44,9 @@ from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.runtime.workspace.shadow_workspace import SHADOW_WORKSPACE_FLAG
 
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
 pytestmark = [pytest.mark.integration, pytest.mark.agent_os, pytest.mark.gate]
-
-
-class _AnswerPipeline(RuntimePipeline):
-    def __init__(self, prefix: str) -> None:
-        self._prefix = prefix
-
-    async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
-        answer = f"{self._prefix}: {state.request.message}"
-        state.runtime_answer = RuntimeAnswer(run_id=state.run_id, answer=answer)
-        return state.runtime_answer
-
-
-class _GraphStubAgent(Agent):
-    run_log: list[str] = []
-
-    def __init__(self, *, agent_id: str, capability: str, prefix: str) -> None:
-        self._agent_id = agent_id
-        self._capability = capability
-        self._prefix = prefix
-
-    def get_contract(self) -> AgentContract:
-        return AgentContract(
-            id=self._agent_id,
-            name=self._agent_id,
-            description="acceptance graph stub",
-            capabilities=[self._capability],
-        )
-
-    def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
-        if capability == self._capability:
-            return CapabilityMatchResult(
-                matched=True,
-                agent_id=self._agent_id,
-                matched_capabilities=[self._capability],
-                score=1.0,
-            )
-        return CapabilityMatchResult(matched=False)
-
-    def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        config = RuntimeConfig(
-            llm_adapter=FakeLLMAdapter(fixed_text=f"{self._prefix}: {request.message}"),
-            enable_rag=False,
-            production_mode=False,
-            tenant_id=request.tenant_id,
-        )
-        config.pipeline = _AnswerPipeline(self._prefix)
-        return RuntimeContext.build(
-            config=config,
-            session_manager=build_in_memory_session_manager(),
-        )
 
 
 class _HitlAcceptanceAgent(Agent):
@@ -550,11 +499,11 @@ async def test_acceptance_01_single_agent_execution(echo_loop: NexusLoop):
 @pytest.mark.asyncio
 async def test_acceptance_02_sequential_multi_agent():
     """Agent A → Agent B → Agent C."""
-    _GraphStubAgent.run_log = []
+    UaepPipelineStubAgent.run_log = []
     registry = AgentRegistry()
-    registry.register(_GraphStubAgent(agent_id="a", capability="cap.a", prefix="A"))
-    registry.register(_GraphStubAgent(agent_id="b", capability="cap.b", prefix="B"))
-    registry.register(_GraphStubAgent(agent_id="c", capability="cap.c", prefix="C"))
+    registry.register(UaepPipelineStubAgent(agent_id="a", capability="cap.a", prefix="A"))
+    registry.register(UaepPipelineStubAgent(agent_id="b", capability="cap.b", prefix="B"))
+    registry.register(UaepPipelineStubAgent(agent_id="c", capability="cap.c", prefix="C"))
     task = Task(
         tenant_id="t1",
         user_id="u1",
@@ -582,9 +531,9 @@ async def test_acceptance_02_sequential_multi_agent():
 async def test_acceptance_03_parallel_multi_agent():
     """Agent A, B, C in parallel batch."""
     registry = AgentRegistry()
-    registry.register(_GraphStubAgent(agent_id="pa", capability="cap.pa", prefix="PA"))
-    registry.register(_GraphStubAgent(agent_id="pb", capability="cap.pb", prefix="PB"))
-    registry.register(_GraphStubAgent(agent_id="pc", capability="cap.pc", prefix="PC"))
+    registry.register(UaepPipelineStubAgent(agent_id="pa", capability="cap.pa", prefix="PA"))
+    registry.register(UaepPipelineStubAgent(agent_id="pb", capability="cap.pb", prefix="PB"))
+    registry.register(UaepPipelineStubAgent(agent_id="pc", capability="cap.pc", prefix="PC"))
     task = Task(
         tenant_id="t1",
         user_id="u1",

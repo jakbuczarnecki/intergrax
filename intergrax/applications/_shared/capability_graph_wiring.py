@@ -122,3 +122,19 @@ def resolve_environment_capability_graph(
     seeds = _seed_node_ids(manifest, snapshot)
     subgraph = extract_environment_capability_graph(catalog_graph, seed_node_ids=seeds)
     return EnvironmentCapabilityGraphView(graph=subgraph)
+
+
+def wire_environment_capability_graph(
+    manifest: ApplicationManifest,
+    env: ApplicationEnvironmentProfile,
+    snapshot: HarnessRegistrySnapshot,
+    *,
+    catalog: CapabilityGraph | None = None,
+) -> EnvironmentCapabilityGraphView:
+    """Alias for :func:`resolve_environment_capability_graph` (architecture §50.1.2)."""
+    return resolve_environment_capability_graph(
+        manifest,
+        env,
+        snapshot,
+        catalog=catalog,
+    )

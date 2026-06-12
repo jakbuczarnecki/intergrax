@@ -108,7 +108,7 @@ Cursor AI MUST NOT:
 - add new PostgreSQL/Redis/file clients in agents when Tier-0 adapters exist,
 - implement §42 scaffold as standalone replacements for existing Nexus trace/tool/LLM paths.
 
-When wiring §42 (events, hooks, UAEP), **integrate with** existing `RunTraceWriter`, `ToolRuntime`, `RuntimeEngine` — do not fork them.
+When wiring §42 (events, hooks, UAEP), **integrate with** existing `RunTraceWriter`, `ToolRuntime`, `AgentEngine` — do not fork them.
 
 ---
 

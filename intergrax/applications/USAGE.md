@@ -332,7 +332,7 @@ Tier-3 hosts declare multi-agent topology and routing on `ApplicationEnvironment
 
 | Need | Profile fields | Notes |
 |------|----------------|-------|
-| Fixed pipeline | `graph_spec` + `trigger_capabilities` | Seed graph only for listed orchestration tokens ([ADR-FLOW-004](../../docs/adr/ADR-FLOW-004.md)) |
+| Fixed pipeline | `graph_spec` + `trigger_capabilities` | Seed graph only for listed orchestration tokens ([ADR-FLOW-004](../../docs/adr/entries/2026-06-09/ADR-FLOW-004.md)) |
 | Free-text routing | `orchestration_profile.classifier_kind=rules` + `intent_routes` | Keyword → orchestration token; see `IntentRoute` |
 | LLM routing | `classifier_kind=llm` | Requires host LLM adapter; falls back to rules |
 | Long-running jobs | `orchestration_profile.long_running_enabled` | Apply `apply_long_running_from_profile(task, env)` at intake |

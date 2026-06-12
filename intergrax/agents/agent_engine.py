@@ -40,7 +40,7 @@ class AgentEngine:
     Tier-2 → Tier-1 bridge (§42.19, §42.44).
 
     Resolves agents and executes via typed ACP session or UAEP bridge.
-    Legacy ``RuntimeEngine`` pipeline fallback removed (ACP-CLOSE-LEG-1).
+    Legacy pipeline fallback removed — ACP-only execution (ACP-CLOSE-LEG-5).
     """
 
     def __init__(
@@ -201,5 +201,5 @@ class AgentEngine:
         raise ValueError(
             f"{type(agent).__name__} is not executable: set acp.session.v1 metadata for "
             "IntergraxAgent ACP runs, implement UAEPAgent (get_steps/run_step), or migrate "
-            "off RuntimeEngine pipeline (ACP-CLOSE-LEG-1)."
+            "off legacy pipeline — use ACP on_next_step or UAEP test shim (ACP-CLOSE-LEG-5)."
         )

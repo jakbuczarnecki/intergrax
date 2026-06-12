@@ -50,7 +50,7 @@ Answer user questions by retrieving relevant document fragments from the local R
 ## UAEP pipeline
 
 ```text
-steps/pipeline.py
+`on_next_step` / cognitive pattern hooks
   1. parse_query
   2. retrieve_context    → rag.retrieve
   3. rank_and_dedupe

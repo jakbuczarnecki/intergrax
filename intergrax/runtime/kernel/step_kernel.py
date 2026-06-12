@@ -27,6 +27,12 @@ from intergrax.contracts.agent_run_trace import (
     PolicyCheckPhase,
     PolicyVerdictRecord,
 )
+from intergrax.agents.acp_token_metering_bridge import apply_llm_metering_after_step
+from intergrax.contracts.acp_budget_enforcement import (
+    evaluate_hard_budget_violation,
+    is_budget_exceeded_outcome,
+)
+from intergrax.contracts.agent_budget import ResolvedBudgetLimits
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.agents.persistence.compensation_enqueue import (
@@ -89,6 +95,14 @@ class StepKernelContext:
     state_root: dict[str, Any] = field(default_factory=dict)
     run_trace: AgentRunTrace = field(default_factory=AgentRunTrace)
     events: list[RuntimeEvent] = field(default_factory=list)
+    resolved_budget_limits: ResolvedBudgetLimits = field(
+        default_factory=ResolvedBudgetLimits
+    )
+    budget_reaction: Any = None
+    notification_adapter: Any = None
+    budget_reaction_hook: Any = None
+    budget_threshold_emitted: set[str] = field(default_factory=set)
+    budget_degrade_active: bool = False
 
 
 class HarnessKernel:
@@ -121,7 +135,7 @@ class HarnessKernel:
                     finished_at=_utc_now(),
                 ),
             )
-            await HarnessKernel._append_trace(kernel_ctx, record)
+            await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
             return record
 
         mode_error = validate_side_effect_mode(outcome, kernel_ctx.side_effect_mode)
@@ -144,11 +158,33 @@ class HarnessKernel:
                     finished_at=_utc_now(),
                 ),
             )
-            await HarnessKernel._append_trace(kernel_ctx, record)
+            await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
             return record
 
         policy_pre = HarnessKernel._policy_pre_check(outcome, step_ctx, kernel_ctx)
         trace_events += await HarnessKernel._emit_policy(kernel_ctx, policy_pre, phase="pre")
+        if is_budget_exceeded_outcome(outcome):
+            record = StepExecutionRecord(
+                step_index=step_ctx.step_index,
+                outcome_applied=False,
+                policy_pre=policy_pre,
+                error_code=AgentRunErrorCode.BUDGET_EXCEEDED,
+                trace_event_count=trace_events,
+                step_record=HarnessKernel._build_step_record(
+                    step_ctx=step_ctx,
+                    outcome=outcome,
+                    state_version=int(
+                        extract_acp_state_blob(kernel_ctx.state_root).get("_version", 0)
+                    ),
+                    policy_pre=policy_pre,
+                    error_code=AgentRunErrorCode.BUDGET_EXCEEDED,
+                    terminal_reason=TerminalReason.BUDGET_EXCEEDED,
+                    next_action=StepNextAction.FAIL,
+                    finished_at=_utc_now(),
+                ),
+            )
+            await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
+            return record
         if outcome.errors and kernel_ctx.reliability is not None:
             for error in outcome.errors:
                 kernel_ctx.reliability.record_failure(error.code)
@@ -172,7 +208,7 @@ class HarnessKernel:
                     finished_at=_utc_now(),
                 ),
             )
-            await HarnessKernel._append_trace(kernel_ctx, record)
+            await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
             return record
 
         merge_result = merge_session_state(
@@ -201,7 +237,7 @@ class HarnessKernel:
                     finished_at=_utc_now(),
                 ),
             )
-            await HarnessKernel._append_trace(kernel_ctx, record)
+            await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
             return record
 
         kernel_ctx.state_root = merge_result.state
@@ -245,7 +281,7 @@ class HarnessKernel:
                         finished_at=_utc_now(),
                     ),
                 )
-                await HarnessKernel._append_trace(kernel_ctx, record)
+                await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
                 return record
             step_action_args = {
                 str(action["tool_id"]): (
@@ -339,7 +375,7 @@ class HarnessKernel:
                             finished_at=_utc_now(),
                         ),
                     )
-                    await HarnessKernel._append_trace(kernel_ctx, record)
+                    await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
                     return record
 
         policy_post = HarnessKernel._policy_post_check(outcome, step_ctx, kernel_ctx)
@@ -379,7 +415,7 @@ class HarnessKernel:
                     finished_at=_utc_now(),
                 ),
             )
-            await HarnessKernel._append_trace(kernel_ctx, record)
+            await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
             return record
 
         budget_exceeded = HarnessKernel._budget_exceeded(step_ctx, kernel_ctx)
@@ -414,7 +450,7 @@ class HarnessKernel:
                     finished_at=_utc_now(),
                 ),
             )
-            await HarnessKernel._append_trace(kernel_ctx, record)
+            await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
             return record
 
         trace_events += await HarnessKernel._emit(
@@ -458,7 +494,7 @@ class HarnessKernel:
                 finished_at=_utc_now(),
             ),
         )
-        await HarnessKernel._append_trace(kernel_ctx, record)
+        await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
         return record
 
     @staticmethod
@@ -554,7 +590,7 @@ class HarnessKernel:
         )
         if org_decision is not None:
             return org_decision
-        if outcome.errors:
+        if outcome.errors and not is_budget_exceeded_outcome(outcome):
             return PolicyDecision(
                 action=PolicyAction.DENY,
                 reason="step_errors_present",
@@ -590,6 +626,19 @@ class HarnessKernel:
             action=PolicyAction.ALLOW,
             reason="non_terminal_step",
             policy_rule_id="kernel.post_allow",
+        )
+
+    @staticmethod
+    def check_hard_budget_before_llm(
+        step_ctx: AgentStepContext,
+        kernel_ctx: StepKernelContext,
+        *,
+        pending_agent_tokens: int = 0,
+    ):
+        return evaluate_hard_budget_violation(
+            step_ctx.invocation_usage,
+            kernel_ctx.resolved_budget_limits,
+            pending_agent_tokens=pending_agent_tokens,
         )
 
     @staticmethod
@@ -670,6 +719,14 @@ class HarnessKernel:
         return enqueue_result.diagnostics(), trace_events
 
     @staticmethod
+    async def emit_runtime_event(
+        kernel_ctx: StepKernelContext,
+        event_type: RuntimeEventType,
+        payload: dict[str, Any],
+    ) -> int:
+        return await HarnessKernel._emit(kernel_ctx, event_type, payload)
+
+    @staticmethod
     async def _emit(
         kernel_ctx: StepKernelContext,
         event_type: RuntimeEventType,
@@ -710,10 +767,23 @@ class HarnessKernel:
     @staticmethod
     async def _append_trace(
         kernel_ctx: StepKernelContext,
+        step_ctx: AgentStepContext,
         record: StepExecutionRecord,
     ) -> None:
         if record.step_record is None:
             return
+        updated_root, usage_view = apply_llm_metering_after_step(
+            state_root=kernel_ctx.state_root,
+            step_metadata=step_ctx.metadata,
+            llm_calls=record.step_record.llm_calls,
+            limits=kernel_ctx.resolved_budget_limits,
+        )
+        kernel_ctx.state_root = updated_root
+        step_ctx.state_snapshot = updated_root
+        step_ctx.invocation_usage = usage_view
+        from intergrax.agents.acp_budget_reactions import maybe_emit_budget_threshold
+
+        await maybe_emit_budget_threshold(step_ctx, kernel_ctx)
         kernel_ctx.run_trace.steps.append(record.step_record)
         kernel_ctx.run_trace.total_steps = len(kernel_ctx.run_trace.steps)
         kernel_ctx.run_trace.total_llm_tokens += sum(

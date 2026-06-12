@@ -21,7 +21,7 @@
 9. [Task classification](#9-task-classification)
 10. [Nexus planning](#10-nexus-planning)
 11. [Declarative graph seeding](#11-declarative-graph-seeding)
-12. [Engine planner (RuntimeEngine path)](#12-engine-planner-runtimeengine-path)
+12. [Retired engine planner stack](#12-retired-engine-planner-stack)
 13. [Tool planning](#13-tool-planning)
 14. [UAEP step cognition and DecisionRecord](#14-uaep-step-cognition-and-decisionrecord)
 15. [Prompt compilation as cognition input](#15-prompt-compilation-as-cognition-input)
@@ -81,7 +81,7 @@ RCL closes the **documentation and contract boundary** gap first; runtime depth 
 | **Tool planning** | Selection of tool calls inside a UAEP step loop (`ToolPlanDecision`) |
 | **Step planning** | Internal UAEP step sequencing (`StepPlanner`, agent `get_steps`) |
 | **DecisionRecord** | Typed rationale artifact for a model/tool/subagent choice (`decision_record.v1`) |
-| **Engine planner** | LLM-backed `EnginePlan` path used by `RuntimeEngine` / replan loops |
+| **Engine planner (retired)** | Removed with ACP-CLOSE-LEG-5 — use Nexus `EngineBackedNexusPlanner` or agent `on_next_step` |
 | **Nexus planner** | Task-level `NexusPlan` producer (`TaskPlanner`, `EngineBackedNexusPlanner`, graph seed wrapper) |
 | **Graph seeding** | Mapping declarative `ApplicationGraphSpec` → `NexusPlan` when task has no pre-set `plan_id` |
 | **RCL** | Reasoning and Cognition Layer — this document |
@@ -428,35 +428,26 @@ GraphSpecSeedingPlanner wraps inner planner
 | Edge kind | Effect on `NexusPlan` |
 |-----------|----------------------|
 | `DEPENDS_ON` | Target step `depends_on` source |
-| `DELEGATES_TO` | Child step + `DelegationSpec` on child ([ADR-FLOW-001](../adr/ADR-FLOW-001.md)) |
+| `DELEGATES_TO` | Child step + `DelegationSpec` on child ([ADR-FLOW-001](../adr/entries/2026-06-07/ADR-FLOW-001.md)) |
 
 **Authoring:** `AgentGraph` fluent builder — `intergrax/applications/contracts/graph_builder.py`  
 **Application domain:** [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md)
 
 ---
 
-## 12. Engine planner (RuntimeEngine path)
+## 12. Retired engine planner stack
 
-Separate from Nexus task planning, **`EnginePlannerOrchestrator`** serves the RuntimeEngine / replan loop with **`EnginePlan`** models.
+**Status:** **Removed** (ACP-CLOSE-LEG-5 · [ADR-FLOW-005](../adr/entries/2026-06-12/ADR-FLOW-005.md)).
 
-| Module | Role |
-|--------|------|
-| `engine_planner_orchestrator.py` | LLM plan generation, forced-plan replay |
-| `engine_plan_models.py` | `EnginePlan`, `PlannerPromptConfig` |
-| `engine_planner_parse.py` | Structured parse helpers |
-| `engine_planner_messages.py` | Message assembly |
-| `engine_planner_diagnostics.py` | Planner debug metadata |
-| `plan_loop_controller.py` | Replan loop control |
-| `plan_sources.py` | `LLMPlanSource`, replay sources |
+The Tier-1 **agent session** pipeline (`RuntimeEngine`, `RuntimePipeline`, `runtime_steps/`, pipeline-bound `plan_loop_controller`) was deleted (ACP-CLOSE-LEG-5). Per-run step decomposition and replan are **author responsibilities** inside **`on_next_step`** (cognitive patterns: ReAct, plan-execute, reflection). Nexus **task** planning (`EngineBackedNexusPlanner`, `nexus_llm_plan_builder`, `TaskPlanner`) is unchanged — it schedules multi-agent work, not in-session cognitive steps.
 
-**Bridge status:** Nexus `planner_kind=engine` uses **`nexus_llm_plan_builder.py`** — a lighter JSON bridge — **not** the full `EnginePlannerOrchestrator` stack. Unification is COG-1.* backlog.
-
-**When to use which path:**
+**Active planning paths:**
 
 | Path | Entry | Output | Typical use |
 |------|-------|--------|-------------|
-| Nexus planners | `NexusPlanningRunner` | `NexusPlan` | Multi-agent task orchestration |
-| Engine planner | `RuntimeEngine` / step pipelines | `EnginePlan` | Single-runtime step decomposition, replan |
+| Nexus task planning | `NexusPlanningRunner` / `TaskPlanner` | `NexusPlan` | Multi-agent task orchestration |
+| Nexus engine kind | `planner_kind=engine` → `EngineBackedNexusPlanner` | `NexusPlan` via `nexus_llm_plan_builder.py` | LLM JSON plan for graph nodes |
+| Agent cognition | `Agent.on_next_step` | `StepOutcome` | Tool loops, sub-goals, HITL, termination |
 
 ---
 
@@ -464,7 +455,9 @@ Separate from Nexus task planning, **`EnginePlannerOrchestrator`** serves the Ru
 
 Tool cognition selects **which tools** the LLM calls inside a step loop.
 
-**Selection modes (production strategies):** before `ToolPlanningService` runs, `ToolSelectionStrategy` may narrow the planner schema — standard (full catalog), keyword top-k, skill pack today; semantic index and hierarchical traversal planned (TOOL-ENG-13/14). Canon: [`TOOLS.md`](TOOLS.md#tool-selection-modes-production-strategies).
+**Selection modes (production strategies):** before `ToolPlanningService` runs, `ToolSelectionStrategy` may narrow the planner schema — standard (full catalog), keyword top-k, skill pack today; semantic index and hierarchical traversal planned (TOOL-ENG-13/14). Canon: [`TOOLS.md`](TOOLS.md#tool-selection-modes-production-strategies) · plugin model: [`TOOLS.md`](TOOLS.md#tool-selection-plugin-model-l6-extensibility).
+
+**Invocation patterns (orchestration):** after `ToolCallPlan` is produced, `ToolInvocationPattern` *(planned TOOL-ENG-16)* determines how the batch executes — single-pass, parallel batch, bounded ReAct, deterministic chain. Distinct from Nexus `ExecutionGraph` (agent-level). Canon: [`TOOLS.md`](TOOLS.md#tool-invocation-patterns-production-orchestration) · flow: [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §15.1.
 
 | Module | Role |
 |--------|------|
@@ -533,11 +526,11 @@ class DecisionRecord(BaseModel):
 | `AgentDecision` | Step control flow | CONTINUE / INTERRUPT / FAIL loop |
 | `DecisionRecord` | Audit + explainability | Persistent rationale for ops and eval |
 
-### 14.3 Step planner (internal)
+### 14.3 Agent vs Nexus planning boundary
 
-`intergrax/runtime/nexus/planning/step_planner/` — strategies for runtime step plans inside engine pipelines. Consumed by RuntimeEngine paths, not directly by Nexus graph scheduling.
+**Agent loop:** `on_next_step` owns intra-run cognition (tools, replan, HITL). **Nexus loop:** owns multi-agent graphs, capability routing, merge policy. Do not implement private multi-agent graphs inside `on_next_step` (ACP-AP-01).
 
-**Gap (COG-4.*):** Nexus planning phase does not yet emit `DecisionRecord` for classification/planner choice — only UAEP steps.
+**Gap (COG-4.*):** Nexus planning phase does not yet emit `DecisionRecord` for classification/planner choice — only governed agent steps.
 
 ---
 
@@ -727,8 +720,8 @@ All implementation tasks: [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_
 | [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) §8.3 | Nexus owns global reasoning |
 | [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](../guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §7 | Audit procedure |
 | [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix I §I.4 | Planning strategies for authors |
-| [`adr/ADR-FLOW-001.md`](../adr/ADR-FLOW-001.md) | Delegation expansion in plans |
-| [`adr/ADR-FLOW-003.md`](../adr/ADR-FLOW-003.md) | MODIFY_PLAN reserved semantics |
+| [`adr/entries/2026-06-07/ADR-FLOW-001.md`](../adr/entries/2026-06-07/ADR-FLOW-001.md) | Delegation expansion in plans |
+| [`adr/entries/2026-06-07/ADR-FLOW-003.md`](../adr/entries/2026-06-07/ADR-FLOW-003.md) | MODIFY_PLAN reserved semantics |
 | [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) | Execution capacity (dimension A) vs agent topology (dimension B) |
 
 ---
@@ -742,8 +735,8 @@ All implementation tasks: [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_
 | `runtime/nexus/planning/task_planner.py` | 1 | 1 | `NexusPlan`, `TaskPlanner` |
 | `runtime/nexus/planning/nexus_llm_plan_builder.py` | 1 | 1 | LLM → `NexusPlan` bridge |
 | `runtime/nexus/planning/nexus_planner_protocol.py` | 1 | 1 | Planner protocol |
-| `runtime/nexus/planning/engine_planner_orchestrator.py` | 1 | 1/2 | `EnginePlan` LLM planner |
-| `runtime/nexus/planning/plan_loop_controller.py` | 1 | 2 | Replan control |
+| `runtime/nexus/planning/nexus_llm_plan_builder.py` | 1 | 2 | Nexus `planner_kind=engine` JSON bridge |
+| *(retired)* `nexus_llm_plan_builder.py` | — | — | Removed ACP-CLOSE-LEG-5 |
 | `runtime/nexus/planning/step_planner/` | 1 | 2 | Step plan strategies |
 | `runtime/nexus/tools/catalog_tool_planner.py` | 1 | 3 | Tool planning |
 | `runtime/nexus/tools/tool_planning_service.py` | 1 | 3 | Tool plan LLM service |

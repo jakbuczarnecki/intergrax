@@ -45,4 +45,9 @@ def merge_host_into_pipeline(
     if not extra:
         return pipeline
     combined = list(pipeline._middleware) + extra  # noqa: SLF001 — harness composition
-    return MiddlewarePipeline(hook_registry=pipeline.hooks, middleware=combined)
+    merged = MiddlewarePipeline(hook_registry=pipeline.hooks, middleware=combined)
+    merged.configure_hook_runtime(
+        hook_timeout_seconds=pipeline._hook_timeout_seconds,  # noqa: SLF001
+        event_bus=pipeline._event_bus,  # noqa: SLF001
+    )
+    return merged

@@ -38,7 +38,7 @@ def main() -> int:
 
     if (REPO_ROOT / "intergrax" / "agents" / "uaep_pipeline.py").is_file():
         violations.append(
-            "intergrax/agents/uaep_pipeline.py must be retired — use authoring/uaep_pipeline_bridge.py (ACP-CLOSE-LEG-3)"
+            "intergrax/agents/uaep_pipeline.py must remain retired (legacy pipeline removed)"
         )
     for agent_py in sorted((REPO_ROOT / "agents").rglob("*.py")):
         if "RuntimeEngine" not in agent_py.read_text(encoding="utf-8"):

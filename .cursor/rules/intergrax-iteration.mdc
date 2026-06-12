@@ -193,16 +193,16 @@ Every **significant architecture change or design decision** must produce a prop
 
 | Domain | ADR location | When |
 |--------|--------------|------|
-| **Harness platform** (Tier-0/Tier-1) | `docs/adr/` — see [`docs/adr/README.md`](docs/adr/README.md) | Nexus semantics, tools/skills/integrations contracts, LLM/RAG/policy, cross-cutting platform behavior |
+| **Harness platform** (Tier-0/Tier-1) | `docs/adr/entries/YYYY-MM-DD/` — see [`docs/adr/README.md`](docs/adr/README.md) | Nexus semantics, tools/skills/integrations contracts, LLM/RAG/policy, cross-cutting platform behavior |
 | **Business agent** (Tier-2) | `agents/<slug>/adr/` — see `agents/<slug>/adr/README.md` | Domain pipelines, capabilities, agent-specific tool/skill policy, I/O contracts |
 | **Business application** (Tier-3) | `applications/<pkg>/adr/` — see `applications/<pkg>/adr/README.md` | Manifest roster, host profiles, serving/deployment, product orchestration |
 
 **Process:**
 
-1. Copy domain `adr/TEMPLATE.md` to the next sequential id (`ADR-{AREA}-{NNN}.md`).
+1. Copy domain `adr/TEMPLATE.md` to the next sequential id (`ADR-{AREA}-{NNN}.md`). Harness platform ADRs go under `docs/adr/entries/YYYY-MM-DD/` (creation date).
 2. Fill Context, Decision, Consequences; set Status when accepted.
 3. Link from the domain `ARCHITECTURE.md` and/or `IMPLEMENTATION_PLAN.md`.
-4. For Harness ADRs, also link from `docs/intergrax_runtime_architecture.md` and the relevant `docs/plan/<DOMAIN>.md` when applicable.
+4. For Harness ADRs, add a row to `docs/adr/README.md`, link from `docs/intergrax_runtime_architecture.md` and the relevant `docs/plan/<DOMAIN>.md`, and run `python scripts/check_harness_adr.py`.
 5. If no ADR is needed, record **"no ADR needed"** with rationale in the plan row or PR — do not skip silently.
 
 **Scaffolds:** `python -m intergrax.scaffold new-agent` and `new-application` emit `adr/README.md` + `adr/TEMPLATE.md` automatically.
@@ -218,6 +218,7 @@ uv run pytest -m gate -q
 python scripts/check_harness_no_getattr.py
 uv run python scripts/check_observability_gates.py
 python scripts/check_docs_domain_pairs.py
+python scripts/check_harness_adr.py
 ```
 
 Agent-only work:

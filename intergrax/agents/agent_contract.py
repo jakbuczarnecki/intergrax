@@ -21,8 +21,8 @@ class Agent(ABC):
 
     Agent is responsible for:
     - building RuntimeContext (including RuntimeConfig)
-    - configuring pipeline via config.pipeline
     - declaring capabilities via get_contract()
+    - cognitive behavior via ACP (``on_next_step``) or UAEP steps
 
     Agent is NOT responsible for:
     - RuntimeState
@@ -34,10 +34,7 @@ class Agent(ABC):
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         """
         Build fully configured RuntimeContext for this agent.
-        Must include:
-        - RuntimeConfig
-        - config.pipeline
-        - all required dependencies
+        Must include RuntimeConfig and dependencies required for this agent's run.
         """
         ...
 

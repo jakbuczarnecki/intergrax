@@ -38,7 +38,7 @@ class SessionManager:
 
     Responsibilities:
       - Orchestrate session lifecycle on top of a SessionStorage backend.
-      - Provide a stable API for the runtime engine (RuntimeEngine).
+      - Provide a stable API for agent runtime sessions (AgentEngine / UAEP).
       - Integrate with user/organization profile managers to expose
         prompt-ready system instructions per session.
       - Optionally trigger long-term user memory consolidation for a session.

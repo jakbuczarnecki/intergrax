@@ -70,3 +70,22 @@ class ShadowWorkspaceManager:
         self._active.pop(workspace.workspace_id, None)
         workspace.cleanup()
         return True
+
+    @property
+    def active_count(self) -> int:
+        """Number of distinct active workspaces (dedupes tenant:task and id keys)."""
+        return len({id(workspace) for workspace in self._active.values()})
+
+    def dispose_all_active(self) -> int:
+        """Dispose every tracked workspace — host shutdown / lifespan teardown."""
+        seen: set[int] = set()
+        disposed = 0
+        for workspace in list(self._active.values()):
+            token = id(workspace)
+            if token in seen:
+                continue
+            seen.add(token)
+            workspace.cleanup()
+            disposed += 1
+        self._active.clear()
+        return disposed
