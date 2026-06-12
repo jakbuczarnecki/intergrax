@@ -301,7 +301,7 @@ Total ECP-DEPTH: 28 (excluding ECP-DOC)
 |----|-------------|--------|----------|--------|------------|
 | ECP-PROD.1 | **Live signal bridge** — `GRAPH_BACKPRESSURE` bus → collector; optional `task_index` depth | **Done** | **Critical** | `capacity/event_bridge.py`, `scaling_wiring.py` | Unit gate |
 | ECP-PROD.2 | **Scheduler governance** — skip apply on `hitl_required` / `denied` | **Done** | **Critical** | `capacity/scheduler.py` | Unit test HITL |
-| ECP-PROD.3 | **K8s REST scale** — default factory scales Deployment via API | Planned | **Critical** | `integrations/.../kubernetes/`, `p5/clients.py` | Gate test + mock HTTP |
+| ECP-PROD.3 | **K8s REST scale** — default factory scales Deployment via API | **Done** | **Critical** | `kubernetes/rest_client.py`, `p5/factories.py` | Gate test + mock HTTP |
 | ECP-PROD.4 | **Celery worker scale** — provisioner calls adapter (not `pass`) | Planned | High | `capacity/provisioner.py`, celery integration | Gate test |
 | ECP-PROD.5 | **Ceiling raise** — bounded `max_inflight_nodes` patch | Planned | High | `capacity/provisioner.py`, profile hook | Unit test |
 | ECP-PROD.6 | **HITL approval path** — scale-up waits for operator | Planned | High | `capacity/governance.py` | Integration stub |
