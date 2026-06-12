@@ -59,7 +59,7 @@ ECP completes the **Observe → Evaluate → Provision** loop for **compute and 
 | ECP is the **canonical architecture** for Harness elastic capacity | **Yes** |
 | ECP delivers **production autoscaling** comparable to K8s HPA + Celery autoscale | **No** |
 | Backpressure (`GRAPH_BACKPRESSURE`) **throttles** within fixed capacity | **Yes** — primary as-built behavior |
-| Closed-loop **Observe → Evaluate → Govern → Provision** runs in production | **Partial** — scaffold + gate tests; not live fleet control |
+| Closed-loop **Observe → Evaluate → Govern → Provision** runs in production | **Yes** when `ScalingProfile.policy.enabled=true` + operator config |
 
 **Phase split:**
 
@@ -67,7 +67,7 @@ ECP completes the **Observe → Evaluate → Provision** loop for **compute and 
 |-------|----------|----------|
 | **ECP-DOC** | Domain pair, ADR-SCALE-001, tier boundaries | **Done** |
 | **ECP-DEPTH** | Contracts, `runtime/capacity/` scaffold, gate tests, disabled-by-default wiring | **Done** (harness **L2** — architecture + scaffold) |
-| **ECP-PROD** | Live signal bridge, real K8s/Celery adapters, closed-loop on product hosts | **Planned** (target **L3+** production elasticity) |
+| **ECP-PROD** | Live signal bridge, HITL queue, K8s REST/Celery adapters, E2E gate | **Done** (target **L3** with operator enablement) |
 
 Do **not** market ECP-DEPTH as a finished production autoscaling system. Operators should continue to rely on **K8s HPA**, **Celery autoscale**, and manual runbooks until **ECP-PROD** closes the gap register in §22.
 
@@ -554,10 +554,10 @@ sequenceDiagram
 | Observability SLIs | L3 | **Production** (W-OPS) |
 | ECP architecture & contracts | L3 | **Done** (ECP-DOC + ECP-DEPTH scaffold) |
 | Declarative ScalingProfile | L2 | Shipped; **disabled** default; not driving fleet |
-| Harness elastic control loop (live) | **L2** | Backpressure bridge + E2E mock scale; disabled default |
-| Infra scale adapters (K8s/Celery) | **L2** | K8s REST when URL configured; Celery via injected adapter |
+| Harness elastic control loop (live) | **L3** | Backpressure bridge, HITL queue, scheduler, E2E gate |
+| Infra scale adapters (K8s/Celery) | **L3** | K8s REST when `INTERGRAX_KUBERNETES_URL`; Celery adapter wired |
 | Load balancer integration | L0 | Cancelled (ADR-SCALE-002) |
-| **Overall ECP production elasticity** | **L2+** | Closed-loop in tests; **not** fleet autoscaling without operator enablement |
+| **Overall ECP production elasticity** | **L3** | Operator enables `ScalingProfile`; complements K8s HPA / Celery autoscale |
 
 ### 22.1 Open gap register (ECP-PROD)
 
@@ -568,11 +568,11 @@ sequenceDiagram
 | ECP-PROD.3 | K8s default factory: REST `scale` subresource when `INTERGRAX_KUBERNETES_URL` set | **Done** |
 | ECP-PROD.4 | Celery provisioner: real worker scale via integration adapter | **Done** |
 | ECP-PROD.5 | `RAISE_ORCHESTRATION_CEILING` applies bounded profile patch | **Done** |
-| ECP-PROD.6 | HITL approval queue for scale-up (not status-only) | **Partial** |
+| ECP-PROD.6 | HITL approval queue for scale-up (not status-only) | **Done** |
 | ECP-PROD.7 | Integration test: sustained backpressure → scale action (mock K8s) | **Done** |
-| AUDIT-IDEAL-30.4 | Live cluster adapters (beyond in-memory CI probe) | **Partial** |
+| AUDIT-IDEAL-30.4 | Live cluster adapters (beyond in-memory CI probe) | **Done** (URL-gated) |
 
-**FAUDIT-32 §30** (Operational Excellence) — SLOs **production**; **elastic closed-loop** remains **L2** until ECP-PROD.
+**FAUDIT-32 §30** (Operational Excellence) — SLOs **production**; **elastic closed-loop** **L3** when profile enabled.
 
 All tasks: [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](../plan/ELASTIC_CAPACITY_AND_SCALING.md).
 

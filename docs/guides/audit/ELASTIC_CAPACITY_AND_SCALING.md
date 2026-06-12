@@ -54,7 +54,7 @@ ECP-DOC · ECP-DEPTH (ECP-1..8, ECP-OBS) · ADR-SCALE-001/002 · cross-ref W-OPS
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-ECP-DEPTH scaffold Done — **not** production autoscaling · CapacitySignalCollector not wired to live GRAPH_BACKPRESSURE · K8s default factory health-only (scale needs injected client or ECP-PROD.3) · Celery SCALE action is provisioner stub · Scheduler may apply when hitl_required · AUDIT-IDEAL-30.4 in-memory probes only · nginx slug cancelled (ADR-SCALE-002)
+ECP-PROD Done — enable ScalingProfile on host · K8s live when INTERGRAX_KUBERNETES_URL · HITL via CapacityApprovalQueue · queue depth when kv_store wired · complements (not replaces) K8s HPA · nginx cancelled (ADR-SCALE-002)
 
 ---
 

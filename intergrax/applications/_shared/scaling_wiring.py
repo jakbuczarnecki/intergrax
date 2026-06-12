@@ -10,12 +10,15 @@ from dataclasses import dataclass
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications._shared.orchestration_wiring import resolve_max_inflight_nodes
 from intergrax.runtime.capacity.ceiling_patcher import BoundedOrchestrationCeilingPatcher
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.runtime.capacity.action_gate import CapacityActionGate
+from intergrax.runtime.capacity.approval_queue import CapacityApprovalQueue
 from intergrax.runtime.capacity.collector import CapacitySignalCollector
 from intergrax.runtime.capacity.evaluator import ScalingEvaluator
 from intergrax.runtime.capacity.event_bridge import CapacityEventBridge
 from intergrax.runtime.capacity.events import PublishFn
 from intergrax.runtime.capacity.provisioner import ScalingProvisioner
+from intergrax.runtime.capacity.queue_depth import make_queue_depth_provider
 from intergrax.runtime.capacity.scheduler import CapacityScheduler
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 
@@ -29,6 +32,7 @@ class ApplicationScalingWiring:
     provisioner: ScalingProvisioner | None
     scheduler: CapacityScheduler | None
     event_bridge: CapacityEventBridge | None
+    approval_queue: CapacityApprovalQueue | None
 
 
 def wire_application_scaling(
@@ -37,13 +41,19 @@ def wire_application_scaling(
     event_bus: RuntimeEventBus | None = None,
     publish: PublishFn | None = None,
     queue_depth_provider: Callable[[], float] | None = None,
+    kv_store: DistributedKVStore | None = None,
+    tenant_id: str = "harness",
 ) -> ApplicationScalingWiring:
     policy = env.scaling_profile.policy
     if not policy.enabled:
-        return ApplicationScalingWiring(None, None, None, None, None)
+        return ApplicationScalingWiring(None, None, None, None, None, None)
+    resolved_queue_depth = queue_depth_provider
+    if resolved_queue_depth is None and kv_store is not None:
+        resolved_queue_depth = make_queue_depth_provider(kv_store, tenant_id)
+    approval_queue = CapacityApprovalQueue() if policy.require_hitl_for_scale_up else None
     collector = CapacitySignalCollector(
         publish=publish,
-        queue_depth_provider=queue_depth_provider,
+        queue_depth_provider=resolved_queue_depth,
     )
     evaluator = ScalingEvaluator(policy, publish=publish)
     ceiling_patcher = BoundedOrchestrationCeilingPatcher(
@@ -57,9 +67,18 @@ def wire_application_scaling(
         collector=collector,
         evaluator=evaluator,
         provisioner=provisioner,
+        approval_queue=approval_queue,
+        publish=publish,
     )
     event_bridge: CapacityEventBridge | None = None
     if event_bus is not None:
         event_bridge = CapacityEventBridge(collector, event_bus)
         event_bridge.attach()
-    return ApplicationScalingWiring(collector, evaluator, provisioner, scheduler, event_bridge)
+    return ApplicationScalingWiring(
+        collector,
+        evaluator,
+        provisioner,
+        scheduler,
+        event_bridge,
+        approval_queue,
+    )

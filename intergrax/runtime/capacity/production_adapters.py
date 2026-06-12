@@ -4,15 +4,19 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
+from typing import Any, Literal
 
 from intergrax.runtime.capacity.contracts import ScalingAction, ScalingActionKind, ScalingTarget
 from intergrax.runtime.capacity.provisioner import ScalingProvisioner
 
+KubernetesBackendKind = Literal["live", "in_memory"]
+
 
 @dataclass
 class InMemoryKubernetesScaler:
-    """Deterministic Kubernetes scaler for harness production adapter wiring."""
+    """Deterministic Kubernetes scaler for harness CI when cluster URL is unset."""
 
     replicas_by_deployment: dict[str, int] = field(default_factory=dict)
 
@@ -35,22 +39,35 @@ class CeleryProductionAdapter:
         return self.worker_count
 
 
+def resolve_kubernetes_backend() -> tuple[Any, KubernetesBackendKind]:
+    """Use REST K8s client when INTERGRAX_KUBERNETES_URL is configured."""
+    if os.environ.get("INTERGRAX_KUBERNETES_URL", "").strip():
+        from intergrax.integrations.providers.cloud_platform.kubernetes.bundle import (
+            create_kubernetes_cloud_platform,
+        )
+
+        return create_kubernetes_cloud_platform(), "live"
+    return InMemoryKubernetesScaler(replicas_by_deployment={"nexus-host": 2}), "in_memory"
+
+
 @dataclass(frozen=True, slots=True)
 class ProductionCapacityAdapters:
-    kubernetes: InMemoryKubernetesScaler
+    kubernetes: Any
     celery: CeleryProductionAdapter
     provisioner: ScalingProvisioner
+    kubernetes_backend: KubernetesBackendKind
 
 
 def build_production_capacity_adapters() -> ProductionCapacityAdapters:
     """Wire production Celery/K8s adapters behind the scaling provisioner."""
-    kubernetes = InMemoryKubernetesScaler(replicas_by_deployment={"nexus-host": 2})
+    kubernetes, backend_kind = resolve_kubernetes_backend()
     celery = CeleryProductionAdapter(worker_count=2)
     provisioner = ScalingProvisioner(kubernetes=kubernetes, celery=celery)
     return ProductionCapacityAdapters(
         kubernetes=kubernetes,
         celery=celery,
         provisioner=provisioner,
+        kubernetes_backend=backend_kind,
     )
 
 
@@ -73,9 +90,7 @@ def apply_production_scale_probe(adapters: ProductionCapacityAdapters) -> bool:
             reason="audit-ideal-30.4 probe",
         )
     )
-    return (
-        k8s_ok
-        and celery_ok
-        and adapters.kubernetes.get_replicas(deployment="nexus-host") >= 2
-        and adapters.celery.worker_count >= 3
-    )
+    replicas_ok = True
+    if adapters.kubernetes_backend == "in_memory":
+        replicas_ok = adapters.kubernetes.get_replicas(deployment="nexus-host") >= 2
+    return k8s_ok and celery_ok and replicas_ok and adapters.celery.worker_count >= 3

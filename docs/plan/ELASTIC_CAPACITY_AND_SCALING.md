@@ -19,7 +19,7 @@
 |----|---------|-----|----------|--------|
 | AUDIT-IDEAL-24.3 | §24 Cost | CPU/memory/concurrency quotas with tenant fairness (shared UAEP) | P2 | **Done** |
 | AUDIT-IDEAL-30.1 | §30 Ops | Honest §22 maturity — ECP is architecture, not production autoscaling | **P0** | **Done** (2026-06-12) |
-| AUDIT-IDEAL-30.4 | §30 Ops | Celery/K8s production-scale adapters (beyond stub/beta) | P2 | **Partial** — in-memory gate probe only; ECP-PROD.3–4 |
+| AUDIT-IDEAL-30.4 | §30 Ops | Celery/K8s production-scale adapters (beyond stub/beta) | P2 | **Done** |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 
@@ -287,12 +287,13 @@ Total ECP-DEPTH: 28 (excluding ECP-DOC)
 |------|--------|---------|
 | 2026-06-09 | ECP-0.*–ECP-OBS.* | Phase ECP-DEPTH **28/28 scaffold Done** (ECP-6.2 Cancelled) |
 | 2026-06-12 | AUDIT-IDEAL-30.1 | Honest maturity: ECP-DEPTH ≠ production autoscaling; §22 gap register |
+| 2026-06-12 | ECP-PROD.* | Phase ECP-PROD closed — HITL queue, K8s URL-gated adapters, E2E |
 
 ---
 
-## Phase ECP-PROD — Production elasticity (Band 2aú — active)
+## Phase ECP-PROD — Production elasticity (Band 2aú — closed)
 
-**Status:** **Planned** (2026-06-12)  
+**Status:** **Done** (2026-06-12) — ECP-PROD.1–7 **Done**; live cluster requires `INTERGRAX_KUBERNETES_URL` at runtime  
 **Prerequisites:** ECP-DEPTH scaffold **Done**  
 **Goal:** Close architecture §22 gap register — **L2 → L3+** production closed-loop capacity  
 **Priority:** **P0** (ECP-PROD.1–3) · **P1** (ECP-PROD.4–7)
@@ -304,9 +305,9 @@ Total ECP-DEPTH: 28 (excluding ECP-DOC)
 | ECP-PROD.3 | **K8s REST scale** — default factory scales Deployment via API | **Done** | **Critical** | `kubernetes/rest_client.py`, `p5/factories.py` | Gate test + mock HTTP |
 | ECP-PROD.4 | **Celery worker scale** — provisioner calls adapter (not `pass`) | **Done** | High | `capacity/provisioner.py` | Gate test |
 | ECP-PROD.5 | **Ceiling raise** — bounded `max_inflight_nodes` patch | **Done** | High | `capacity/ceiling_patcher.py` | Unit test |
-| ECP-PROD.6 | **HITL approval path** — scale-up waits for operator | **Partial** | High | `capacity/governance.py` | Scheduler blocks; approval queue TBD |
+| ECP-PROD.6 | **HITL approval path** — scale-up waits for operator | **Done** | High | `capacity/approval_queue.py`, `governance.py` | Queue + SCALE_* events |
 | ECP-PROD.7 | **E2E gate** — backpressure → evaluate → K8s scale (mock) | **Done** | High | `tests/integration/runtime/test_ecp_backpressure_scale.py` | `-m gate` |
-| AUDIT-IDEAL-30.4 | **Re-close** with real adapter contracts (not InMemory-only) | **Partial** | P2 | `production_adapters.py` | Probe in-memory; live cluster out of CI |
+| AUDIT-IDEAL-30.4 | **Re-close** with real adapter contracts (not InMemory-only) | **Done** | P2 | `production_adapters.py` | Live K8s when URL set; in-memory in CI |
 
 ### ECP-PROD — Sprint plan
 

@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-12-028 | 2026-06-12 | tier-1, tier-3 ELASTIC_CAPACITY_AND_SCALING | ECP-PROD.6 · AUDIT-IDEAL-30.4 | [ECP-PROD closeout — HITL queue and production adapters](entries/2026-06-12/platform-ecp-prod-hitl-closeout.md) | pending |
 | IJ-2026-06-12-027 | 2026-06-12 | tier-1, tier-3 ELASTIC_CAPACITY_AND_SCALING | ECP-PROD.1–5 · ECP-PROD.7 · AUDIT-IDEAL-30.1 | [ECP-PROD — honest maturity and production elasticity hardening](entries/2026-06-12/platform-ecp-prod-layer-closeout.md) | pending |
 | IJ-2026-06-12-026 | 2026-06-12 | tier-0, tier-1, tier-3 REASONING_AND_COGNITION | COG-PROD.1–5 · AUDIT-IDEAL-7.1 | [COG-PROD — Reasoning plane production hardening](entries/2026-06-12/platform-cog-prod-layer-closeout.md) | 218fd286 |
 | IJ-2026-06-12-025 | 2026-06-12 | tier-0 RAG | M-RAG.38–M-RAG.48 · M-RAG.52 · AUDIT-IDEAL-14.8 | [M-RAG-GRAPH closeout — universal GraphRAG platform (G1–G3)](entries/2026-06-12/rag-m-rag-graph-closeout.md) | pending |

@@ -77,6 +77,67 @@ def publish_scale_applied(
     )
 
 
+def publish_scale_requested(
+    publish: PublishFn,
+    plan: ScalingActionPlan,
+    *,
+    tenant_id: str = "harness",
+    run_id: str = "capacity-request",
+) -> None:
+    publish(
+        RuntimeEvent(
+            event_type=RuntimeEventType.SCALE_REQUESTED,
+            tenant_id=tenant_id,
+            task_id=run_id,
+            run_id=run_id,
+            phase=ExecutionPhase.HUMAN_APPROVAL,
+            payload={
+                "plan_id": plan.plan_id,
+                "evaluation_status": plan.evaluation_status,
+                "action_count": len(plan.actions),
+            },
+        )
+    )
+
+
+def publish_scale_approved(
+    publish: PublishFn,
+    plan: ScalingActionPlan,
+    *,
+    tenant_id: str = "harness",
+    run_id: str = "capacity-approve",
+) -> None:
+    publish(
+        RuntimeEvent(
+            event_type=RuntimeEventType.SCALE_APPROVED,
+            tenant_id=tenant_id,
+            task_id=run_id,
+            run_id=run_id,
+            phase=ExecutionPhase.HUMAN_APPROVAL,
+            payload={"plan_id": plan.plan_id},
+        )
+    )
+
+
+def publish_scale_denied(
+    publish: PublishFn,
+    plan_id: str,
+    *,
+    tenant_id: str = "harness",
+    run_id: str = "capacity-deny",
+) -> None:
+    publish(
+        RuntimeEvent(
+            event_type=RuntimeEventType.SCALE_DENIED,
+            tenant_id=tenant_id,
+            task_id=run_id,
+            run_id=run_id,
+            phase=ExecutionPhase.HUMAN_APPROVAL,
+            payload={"plan_id": plan_id},
+        )
+    )
+
+
 def publish_scale_failed(
     publish: PublishFn,
     action: ScalingAction,

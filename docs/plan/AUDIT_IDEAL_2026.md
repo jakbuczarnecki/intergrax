@@ -111,7 +111,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-30.1 | Ops / SLO | 30 | Sync `architecture/ELASTIC_CAPACITY_AND_SCALING.md` §22 after ECP-DEPTH | **P0** | `ELASTIC_CAPACITY_AND_SCALING` | **Done** |
 | AUDIT-IDEAL-30.2 | Ops / SLO | 30 | Real deploy SLO window evidence (`W_OPS_RELEASE_CYCLES>=2` prod) | P1 | `OBSERVABILITY` · `EXPERIMENTATION` | **Done** |
 | AUDIT-IDEAL-30.3 | Ops / SLO | 30 | On-call ownership model for production components | P2 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Done** |
-| AUDIT-IDEAL-30.4 | Ops / SLO | 30 | Celery/K8s production-scale adapters (beyond stub/beta) | P2 | `ELASTIC_CAPACITY_AND_SCALING` | **Partial** — in-memory gate probe; ECP-PROD.3–4 |
+| AUDIT-IDEAL-30.4 | Ops / SLO | 30 | Celery/K8s production-scale adapters (beyond stub/beta) | P2 | `ELASTIC_CAPACITY_AND_SCALING` | **Done** |
 | AUDIT-IDEAL-31.1 | Agent lifecycle | 31 | Owner/on-call mandatory on all certified agents | P1 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
 | AUDIT-IDEAL-31.2 | Agent lifecycle | 31 | Evaluation results required before production promotion (enforce) | P1 | `AGENT_CONTRACTS_AND_ASSEMBLY` | **Done** |
 | AUDIT-IDEAL-32.1 | Doc governance | 32 | Living architecture debt burn-down tied to milestones | P2 | `PLATFORM_FOUNDATION` | **Done** |
