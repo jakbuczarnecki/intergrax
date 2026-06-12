@@ -6,9 +6,9 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**Active queue (2026-06-12):** [§6.1e](#61e-harness-implementation-queue--tool-engine-active) · Phase **TOOL-ENG** — tool engine hardening + **selection modes** (standard / semantic / hierarchical) + **invocation patterns** (single / parallel / ReAct / chain / graph boundary). Catalog expansion (Phase O / T-EXPAND) is **closed**; default harness work = **engine**, not new `tool_id` rows.
+**Queue status (2026-06-12):** Phase **TOOL-ENG** **closed** (36/36) · [§Layer completion final audit](#layer-completion-final-audit-2026-06-12). Catalog expansion (Phase O / T-EXPAND) **closed**. Default harness queue → **gate maintenance** in [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md).
 
-**Layer completion mode (2026-06-12):** [§Layer completion audit](#layer-completion-audit-2026-06-12) · [§Layer completion sprints](#layer-completion-sprints-2026-06-12)
+**Layer completion mode (2026-06-12):** [§Layer completion audit](#layer-completion-audit-2026-06-12) · [§Layer completion sprints](#layer-completion-sprints-2026-06-12) · [§Final audit](#layer-completion-final-audit-2026-06-12)
 
 ---
 
@@ -16,7 +16,7 @@
 
 **Scope:** Tier-0 `intergrax/tools/` catalog + Tier-1 tool engine (`intergrax/runtime/nexus/tools/`, `intergrax/runtime/tools/`). Direct dependencies: INTEGRATIONS (compose only), SKILLS (selection), UNIFIED_EXECUTION_RUNTIME §42.12 (`ToolRuntime`), NEXUS_EXECUTION_FLOW §15–17.
 
-**Maturity (audit map §11):** **L3** catalog · **L2** engine orchestration (2a) · **L3** atomic invoke (2b) · **L2** selection at scale (semantic/hierarchical planned).
+**Maturity (audit map §11):** **L3** catalog · **L3** engine orchestration (2a) · **L3** atomic invoke (2b) · **L3** selection at scale · **L3** governance (HIGH+ verify, required-mode).
 
 ### Tier-0 — Tool Library (catalog)
 
@@ -39,7 +39,7 @@
 | Catalog dispatch + gateway | **Done** | TOOL-ENG-1/2 | ADR-TOOL-001 |
 | Scope policy wiring | **Done** | TOOL-ENG-3 | `RuntimeContext.build()` |
 | Plan constraints → planner | **Done** | TOOL-ENG-4 | `allowed_tool_ids` filter |
-| `ToolSelectionStrategy` | **Done** | TOOL-ENG-5 | `strategy_for_mode()` — **missing acceptance test file** (doc claims `test_tool_selection_strategy.py`) |
+| `ToolSelectionStrategy` | **Done** | TOOL-ENG-5 | `strategy_for_mode()` · `test_tool_selection_strategy.py` |
 | Bounded tool loop (interim) | **Done** | TOOL-ENG-6 | ADR-TOOL-002 · `tool_loop.py` |
 | `tools_context_scope` | **Done** | TOOL-ENG-11 | `tool_planner_input.py` |
 | `ToolInvocationPattern` plugin | **Done** | TOOL-ENG-16 | S1 — ADR-TOOL-003 |
@@ -62,12 +62,53 @@
 |------|--------|
 | TOOL-ENG-DOC.1–7 | **Done** |
 | Engine gap register ↔ plan register | **Aligned** |
-| Audit prompt `known_gaps` | **Stale** — updated 2026-06-12 layer completion pass |
-| Plan acceptance `test_tool_selection_strategy.py` | **Done** (S0) |
+| Audit prompt `known_gaps` | **Aligned** — 2026-06-12 final audit |
+| CI gates `check_tool_invocation_patterns` / `check_tool_engine_ahi_hook` | **Done** |
 
 ### Architecture violations
 
 None detected in Tier-0 catalog handlers (no vendor SDK bypass). Tier-1 invoke path routes through `RuntimeToolInvoker`. Graph vs tool-pattern boundary documented (DOC.6).
+
+---
+
+## Layer completion final audit (2026-06-12)
+
+**Krok 5 — audyt końcowy** po S0–S8. Weryfikacja: dokumentacja ↔ implementacja ↔ plan ↔ CI.
+
+### Wynik
+
+| Obszar | Werdykt |
+|--------|---------|
+| TOOL-ENG register (36/36) | **Closed** |
+| Tier-0 catalog (190 tools) | **L3 Production** |
+| Tier-1 selection L6 | **L3** — standard, keyword, semantic, hierarchical, plugins |
+| Tier-1 orchestration 2a | **L3** — 5 shipped patterns + chain + EP registry |
+| Tier-1 atomic invoke 2b | **L3** — dispatch, gateway, scope, idempotency |
+| Governance | **L3** — required-mode, HIGH+ block, tool_choice |
+| Dokumentacja architecture/plan | **Aligned** (post-final-audit sync) |
+| Testy + CI | **Green** — see verification block below |
+
+### Świadomie odroczone (nie blokują zamknięcia warstwy)
+
+| Item | Uzasadnienie |
+|------|--------------|
+| Hierarchical LLM category pass | ADR-TOOL-005 v1 — deterministic rank wystarcza na L3 |
+| L1 critic (`eval.judge`) per tool output | Osobny zakres CVL — opcjonalny via `CriticProfile` |
+| Pusta grupa EP w `pyproject.toml` | Loadery gotowe; host pakiety rejestrują strategie/wzorce |
+
+### Weryfikacja (2026-06-12)
+
+```bash
+uv run pytest tests/unit/runtime/nexus/tools/ -q                    # 58 passed
+uv run python scripts/check_tool_invocation_patterns.py            # OK
+uv run python scripts/check_tool_engine_ahi_hook.py                # OK
+python scripts/check_legacy_tool_plan_booleans.py                  # OK
+uv run python scripts/check_tool_mcp_schema_export.py              # OK
+python scripts/check_tool_injection_defense.py                     # OK
+python scripts/check_agent_registry_bypass.py                      # OK
+```
+
+**Warstwa Tools:** **ukończona** wg Layer Completion Mode.
 
 ---
 
