@@ -113,6 +113,8 @@ class UAEPExecutor:
         memory_limits: Optional[TaskMemoryLimits] = None,
         critic_hooks: Any = None,
         verify_uaep_step: bool = False,
+        context_engine: Any = None,
+        llm_adapter: Any = None,
     ) -> None:
         resolved_policy = coerce_policy_engine(policy_engine)
         self._policy_engine = resolved_policy
@@ -126,6 +128,8 @@ class UAEPExecutor:
         self._memory_limits = memory_limits or TaskMemoryLimits()
         self._critic_hooks = critic_hooks
         self._verify_uaep_step = verify_uaep_step
+        self._context_engine = context_engine
+        self._llm_adapter = llm_adapter
         if middleware is not None:
             self._middleware = middleware
         elif event_bus is not None:
@@ -212,6 +216,18 @@ class UAEPExecutor:
         )
 
         runtime_context = agent.build_context(request)
+        if self._context_engine is not None and self._llm_adapter is not None:
+            from intergrax.runtime.nexus.context.uaep_assemble import assemble_uaep_session_prompt
+
+            assembled_prompt = await assemble_uaep_session_prompt(
+                request,
+                agent_id=contract.id,
+                engine=self._context_engine,
+                llm_adapter=self._llm_adapter,
+                event_bus=self._event_bus,
+            )
+            if assembled_prompt and assembled_prompt != (request.message or ""):
+                request = request.model_copy(update={"message": assembled_prompt})
         exec_ctx.domain_context = runtime_context
         exec_ctx.tool_gateway = BoundToolGateway(
             exec_ctx,

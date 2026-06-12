@@ -36,6 +36,9 @@ from intergrax.runtime.nexus.context.shared_task_context import (
     load_shared_task_context,
     save_shared_task_context,
 )
+from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.runtime.hooks.hook_context import HookContext
+from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionNode
 from intergrax.runtime.events.context_skill_recording import record_context_assembly
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -55,6 +58,7 @@ if TYPE_CHECKING:
     from intergrax.context.orchestrator import ContextOrchestrator
     from intergrax.context.protocols import ContextEngine
     from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+    from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
     from intergrax.runtime.nexus.config import RuntimeConfig
 
 
@@ -90,6 +94,7 @@ class ContextManager:
         context_engine: Optional["ContextEngine"] = None,
         context_orchestrator: Optional["ContextOrchestrator"] = None,
         llm_adapter: Optional["LLMAdapter"] = None,
+        middleware: Optional["MiddlewarePipeline"] = None,
     ) -> None:
         self._default_policy = default_policy or TaskContextAssemblyOptions(
             max_prior_chars=max_prior_chars,
@@ -101,6 +106,19 @@ class ContextManager:
         self._context_engine = context_engine
         self._context_orchestrator = context_orchestrator
         self._llm_adapter = llm_adapter
+        self._middleware = middleware
+
+    def bind_middleware(self, middleware: "MiddlewarePipeline") -> None:
+        """Attach hook pipeline for graph context assembly (CE-HOOKS-GRAPH)."""
+        self._middleware = middleware
+
+    @property
+    def context_engine(self) -> Optional["ContextEngine"]:
+        return self._context_engine
+
+    @property
+    def llm_adapter(self) -> Optional["LLMAdapter"]:
+        return self._llm_adapter
 
     def get_shared_context(self, task: Task) -> Optional[SharedTaskContext]:
         return load_shared_task_context(task)
@@ -149,6 +167,17 @@ class ContextManager:
         )
         if not use_engine:
             return bundle
+
+        hook_base = HookContext(
+            task_id=task.task_id,
+            run_id=task.task_id,
+            node_id=node.node_id,
+            agent_id=node.agent_id,
+            phase=ExecutionPhase.CONTEXT_BUILDING,
+            runtime_state={"message": task.message, "capability": node.capability or ""},
+        )
+        if self._middleware is not None:
+            await self._middleware.run_before(HookPoint.BEFORE_CONTEXT_BUILD, hook_base)
 
         from intergrax.context.contracts import ContextProviderContext
         from intergrax.runtime.nexus.config import RuntimeConfig
@@ -213,6 +242,11 @@ class ContextManager:
                 },
                 engine_id=engine.engine_id,
                 step_kind=node.capability,
+            )
+        if self._middleware is not None:
+            await self._middleware.run_after(
+                HookPoint.AFTER_CONTEXT_BUILD,
+                hook_base.model_copy(update={"phase": ExecutionPhase.CONTEXT_BUILDING}),
             )
         return bundle.model_copy(update={"message": trim.message, "metadata": bundle_metadata})
 
