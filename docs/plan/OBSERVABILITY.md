@@ -188,7 +188,7 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 
 | D.3 | Experiment registry | **Done** | SQLite registry; CLI + `GET/POST /debug/experiments` |
 
-| D.4 | Notebook templates | **Done** | `notebooks/experiments/`, `experiments/workflow.py` |
+| D.4 | Experiment workflow API | **Done** | `intergrax/experiments/workflow.py`, `tests/unit/experiments/` |
 
 | D.5 | Cost in trace | **Done** | `AgentExecutionResult.cost` from LLM usage / runtime stats |
 

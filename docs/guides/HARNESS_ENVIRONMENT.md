@@ -318,7 +318,7 @@ Execution references in the implementation plan:
 
 ## Legacy RAG stack (U-Leg.2)
 
-`intergrax.rag.answers` was **removed**. Use `intergrax.rag.retrieval.RetrievalService`. Archived code: `intergrax/legacy/rag_answers/` (notebooks only).
+`intergrax.rag.answers` was **removed**. Use `intergrax.rag.retrieval.RetrievalService`. Archived code: `intergrax/legacy/rag_answers/` (no supported consumers; removal candidate).
 
 ## Verification commands
 

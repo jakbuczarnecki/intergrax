@@ -2002,21 +2002,16 @@ python -m intergrax.debug experiments list --decision pending
 
 HTTP: `GET/POST /debug/experiments`, `POST /debug/experiments/{id}/decision`, `POST /debug/experiments/{id}/runs/{run_id}`.
 
-### D.4 Notebook templates (Done)
+### D.4 Experiment workflow API (Done)
 
-Interactive §35 workflow under `notebooks/experiments/`:
-
-| File | Purpose |
-|------|---------|
-| `00_experiment_template.ipynb` | Blank template — copy for new capabilities |
-| `01_echo_experiment.ipynb` | Deterministic Echo smoke test |
-
-Shared API: `intergrax.experiments.workflow.ExperimentSession`.
+Platform-level `notebooks/` was **removed** (2026-06-12). §35 workflow: `intergrax.experiments.workflow.ExperimentSession`; tests in `tests/unit/experiments/`.
 
 ```python
+from pathlib import Path
 from intergrax.experiments.workflow import ExperimentSession, ensure_repo_root_on_path
+
 ensure_repo_root_on_path()
-session = ExperimentSession(trace_db=Path("build/notebooks/trace.db"))
+session = ExperimentSession(trace_db=Path("build/experiments/trace.db"))
 ```
 
 ### D.5 Cost in trace (Done)

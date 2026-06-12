@@ -92,8 +92,6 @@ EXTRA_BUNDLES: Dict[str, str] = {
 
     "INTERGRAX_FULL": r"intergrax",
     
-    "NOTEBOOKS": r"notebooks",
-
     "TESTS_FULL": r"tests",
     "TESTS_UNITS": r"tests\unit",
 
@@ -136,7 +134,7 @@ class CodeObjectMeta:
 class FileMeta:
     rel_path: str
     module_name: str
-    module_group: str  # first segment after "intergrax/" or a known top folder like "notebooks"
+    module_group: str  # first segment after "intergrax/" or a known top folder like "tests"
     sha256: str
     lines: int
     chars: int
@@ -349,7 +347,7 @@ def module_group_from_rel(rel_path: str) -> str:
             return parts[1] or "root"
         return "root"
 
-    if top in {"notebooks", "tests"}:
+    if top in {"tests"}:
         return top
 
     return top or "root"

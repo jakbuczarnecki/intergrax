@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-12-001 | 2026-06-12 | tier-0 EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE | D.4 | [Remove platform notebooks directory](entries/2026-06-12/dx-remove-platform-notebooks.md) | pending |
 | IJ-2026-06-11-029 | 2026-06-11 | tier-0, tier-2 AGENT_CONTRACTS_AND_ASSEMBLY | ACP-TOK-2 | [Sprint 4 ACP-TOK-2 budget enforcement](entries/2026-06-11/acp-sprint4-tok-2-budget-enforcement.md) | pending |
 | IJ-2026-06-11-028 | 2026-06-11 | tier-0, tier-2 AGENT_CONTRACTS_AND_ASSEMBLY | ACP-TOK-1 | [Sprint 3 ACP-TOK-1 token metering rollups](entries/2026-06-11/acp-sprint3-tok-1-token-metering.md) | pending |
 | IJ-2026-06-11-027 | 2026-06-11 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-CON-3 | [Sprint 2 APP-CON-3 env state lifecycle sync](entries/2026-06-11/tier3-sprint2-app-con-3-env-state-lifecycle.md) | pending |

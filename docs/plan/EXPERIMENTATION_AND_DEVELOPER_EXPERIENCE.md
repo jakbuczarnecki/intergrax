@@ -1324,7 +1324,7 @@ uv run pytest tests/ -m gate -q
 
 | D.3 | Experiment registry | **Done** | SQLite registry; CLI + `GET/POST /debug/experiments` |
 
-| D.4 | Notebook templates | **Done** | `notebooks/experiments/`, `experiments/workflow.py` |
+| D.4 | Experiment workflow API | **Done** | `intergrax/experiments/workflow.py`, `tests/unit/experiments/`; platform `notebooks/` removed (2026-06-12) |
 
 | D.5 | Cost in trace | **Done** | `AgentExecutionResult.cost` from LLM usage / runtime stats |
 
