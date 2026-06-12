@@ -8,7 +8,7 @@ scope: TOOLS
 plan_ref:
   - TOOL-ENG-DOC
 status: completed
-commit: pending
+commit: 0e0da6ce
 adr: none — documentation sync only; no architecture change
 ---
 
