@@ -52,6 +52,7 @@ from intergrax.runtime.nexus.context.graph_assembly import (
 from intergrax.runtime.task.task import Task
 
 if TYPE_CHECKING:
+    from intergrax.context.orchestrator import ContextOrchestrator
     from intergrax.context.protocols import ContextEngine
     from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
     from intergrax.runtime.nexus.config import RuntimeConfig
@@ -87,6 +88,7 @@ class ContextManager:
         budget_policy: Optional[ContextBudgetPolicy] = None,
         event_bus: Optional[RuntimeEventBus] = None,
         context_engine: Optional["ContextEngine"] = None,
+        context_orchestrator: Optional["ContextOrchestrator"] = None,
         llm_adapter: Optional["LLMAdapter"] = None,
     ) -> None:
         self._default_policy = default_policy or TaskContextAssemblyOptions(
@@ -97,6 +99,7 @@ class ContextManager:
         )
         self._event_bus = event_bus
         self._context_engine = context_engine
+        self._context_orchestrator = context_orchestrator
         self._llm_adapter = llm_adapter
 
     def get_shared_context(self, task: Task) -> Optional[SharedTaskContext]:
@@ -152,6 +155,7 @@ class ContextManager:
 
         from intergrax.context.contracts import ContextProviderContext
         from intergrax.runtime.nexus.config import RuntimeConfig
+        from intergrax.runtime.nexus.context.provider_handles import build_graph_provider_handles
 
         request = build_graph_assembly_request(
             task,
@@ -162,15 +166,23 @@ class ContextManager:
         runtime_config = RuntimeConfig(llm_adapter=self._llm_adapter, production_mode=False)
         provider_ctx = ContextProviderContext(
             engine_id=engine.engine_id,
-            handles={
-                "runtime_config": runtime_config,
-                "messages": graph_messages_from_text(bundle.message),
-                "event_bus": self._event_bus,
-                "node_id": node.node_id,
-                "agent_id": node.agent_id,
-            },
+            handles=build_graph_provider_handles(
+                task,
+                runtime_config=runtime_config,
+                messages=graph_messages_from_text(bundle.message),
+                event_bus=self._event_bus,
+                node_id=node.node_id,
+                agent_id=node.agent_id,
+                engine_id=engine.engine_id,
+            ),
         )
-        assembled = await engine.assemble(request, provider_ctx=provider_ctx)
+        if self._context_orchestrator is not None and engine.engine_id == "codebase":
+            assembled = await self._context_orchestrator.assemble_with_hops(
+                request,
+                provider_ctx=provider_ctx,
+            )
+        else:
+            assembled = await engine.assemble(request, provider_ctx=provider_ctx)
         final_message = text_from_assembled_messages(assembled.messages)
         original_chars = len(bundle.message)
         final_chars = len(final_message)

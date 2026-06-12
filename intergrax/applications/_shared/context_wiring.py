@@ -141,12 +141,14 @@ def resolve_context_manager_from_environment(
     """Build ``ContextManager`` with environment assembly and budget policies."""
     assembly = env.context_profile.assembly_options
     engine = context_engine or resolve_context_engine_from_environment(env)
+    orchestrator = resolve_context_orchestrator_from_environment(env, engine)
     return ContextManager(
         max_prior_chars=assembly.max_prior_chars,
         default_policy=assembly,
         budget_policy=resolve_context_budget_policy(env),
         event_bus=event_bus,
         context_engine=engine,
+        context_orchestrator=orchestrator,
         llm_adapter=llm_adapter,  # type: ignore[arg-type]
     )
 

@@ -12,8 +12,12 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.context.bootstrap import materialize_context_plugin_registry
+from intergrax.context.orchestrator import ContextOrchestrator
+from intergrax.runtime.nexus.context.codebase_engine import CodebaseContextEngine
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
 from intergrax.runtime.nexus.context.context_manager import ContextManager
+from intergrax.runtime.nexus.context.provider_handles import WORKSPACE_FILES_METADATA_KEY
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionNode
 from intergrax.runtime.task.task import Task, TaskContext
 
@@ -66,3 +70,29 @@ async def test_build_agent_context_async_records_engine_id() -> None:
     assembled = [e for e in bus.history if e.event_type == RuntimeEventType.CONTEXT_ASSEMBLED]
     assert len(assembled) == 1
     assert assembled[0].payload.get("engine_id") == "default"
+
+
+@pytest.mark.asyncio
+async def test_codebase_orchestrator_path_injects_workspace_files() -> None:
+    bus = RuntimeEventBus(record_history=True)
+    adapter = _SmallWindowAdapter()
+    registry = materialize_context_plugin_registry(["intergrax.builtin"])
+    engine = CodebaseContextEngine(registry=registry)
+    orchestrator = ContextOrchestrator(engine)
+    manager = ContextManager(
+        event_bus=bus,
+        context_engine=engine,
+        context_orchestrator=orchestrator,
+        llm_adapter=adapter,
+    )
+    task = Task(
+        tenant_id="t1",
+        user_id="u1",
+        message="fix handler",
+        context=TaskContext(),
+        metadata={WORKSPACE_FILES_METADATA_KEY: {"main.py": "print('ok')\n"}},
+    )
+    node = ExecutionNode(node_id="n1", agent_id="a1", capability="cap.code")
+    bundle = await manager.build_agent_context_async(task, node, {})
+    assert "main.py" in bundle.message or "print" in bundle.message
+    assert bundle.metadata.get("engine_id") == "codebase"
