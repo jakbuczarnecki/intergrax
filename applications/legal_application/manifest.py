@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.budget_wiring import product_agent_budget_slice
 from intergrax.applications.contracts.environment_profile import (
     AdaptiveProfile,
     ApplicationEnvironmentProfile,
@@ -46,6 +47,7 @@ LEGAL_APPLICATION_MANIFEST = ApplicationManifest.product(
             factory=build_legal_agent_from_context,
             capabilities=["legal.review"],
             default=True,
+            budget_slice=product_agent_budget_slice(),
         ),
     ],
     description="Legal review host composing Tier-2 LegalAgent",

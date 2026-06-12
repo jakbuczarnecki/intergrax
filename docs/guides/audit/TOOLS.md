@@ -42,19 +42,19 @@ Perform a **rigorous, evidence-backed audit** of the **Tool Library and ToolRunt
 
 ## Mission
 
-Audit the **Tool Library** (190+ catalog tools) and **ToolRuntime** execution engine: selection/planning strategies, policy enforcement, idempotency, MCP export, catalog dispatch, and TOOL-ENG hardening queue — vs production tool-governance systems.
+Audit the **Tool Library** (190+ catalog tools) and **ToolRuntime** execution engine: selection/planning strategies, **invocation orchestration patterns**, policy enforcement, idempotency, MCP export, catalog dispatch, and TOOL-ENG hardening queue — vs production tool-governance systems.
 
 ## Key symbols and contracts
 
-ToolContract · ToolRegistry · ToolProfile · ToolWiringContext · ToolRequest/ToolResponse · ToolAccessPolicy · ToolSelectionStrategy · ToolPlanDecision · ToolRiskLevel · tools_mode · tools_context_scope
+ToolContract · ToolRegistry · ToolProfile · ToolWiringContext · ToolRequest/ToolResponse · ToolAccessPolicy · ToolSelectionStrategy · ToolPlannerProtocol · ToolInvocationPattern *(planned)* · ToolPlanDecision · ToolRiskLevel · tools_mode · tools_context_scope · tool_invocation_pattern *(planned)*
 
 ## Active plan phases (verify status vs code reality)
 
-Phase O/T-EXPAND Done · **TOOL-ENG active** (0–5,11 Done; 6–10,12 open) · Phase V V-SEC/V-COST/V-EVAL
+Phase O/T-EXPAND Done · **TOOL-ENG active** (10/32 Done — 2026-06-12) · Phase V V-SEC/V-COST/V-EVAL
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-TOOL-ENG-6 ReAct loop missing · TOOL-ENG-7 post-tool verify HIGH risk · TOOL-ENG-8 tools_mode=required hard fail · TOOL-ENG-9 parallel read-only · TOOL-ENG-10 AHI subset selection · TOOL-ENG-12 tool_choice exposure · 172+ tools need ToolsStep/gateway path consistency
+TOOL-ENG-16 ToolInvocationPattern protocol missing · TOOL-ENG-9 parallel batch invoke · TOOL-ENG-20 deterministic chain · TOOL-ENG-13 semantic index · TOOL-ENG-22 ToolsStep hardcoded loop · TOOL-ENG-7 post-tool verify HIGH · TOOL-ENG-8 tools_mode=required hard fail · TOOL-ENG-12 tool_choice · TOOL-ENG-10 AHI dynamic mode · graph vs tool boundary documented (DOC.5/6)
 
 ---
 
@@ -76,7 +76,8 @@ intergrax/tools/core/contracts.py · intergrax/tools/registry/
 intergrax/runtime/nexus/tools/tool_runtime.py · invoker.py · catalog_dispatch.py
 intergrax/runtime/nexus/tools/tool_planning_service.py · catalog_tool_planner.py
 intergrax/runtime/nexus/tools/tool_selection.py
-intergrax/runtime/nexus/runtime_steps/tools_step.py
+intergrax/runtime/nexus/runtime_steps/tools_step.py · tool_loop_step.py
+intergrax/runtime/nexus/tools/tool_invocation_pattern.py (when TOOL-ENG-16 lands)
 intergrax/runtime/tools/idempotent_invoker.py · runtime_bound_catalog.py
 applications/_shared/catalog_runtime_bridge.py · tool wiring
 scripts/check_legacy_tool_plan_booleans.py · check_tool_mcp_schema_export.py
@@ -107,8 +108,15 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 14. Plugin model: ToolPlugin + entry points + bootstrap_catalogs.
 15. Skills merge into tool allow-list correctly at resolution time.
 16. HIGH-risk tools: post-tool verification (ENG-7 gap status).
-17. ReAct / iterative tool loop bounded (ENG-6 gap status).
-18. EnvironmentProfile tool_selection fields wired (recent catalog_runtime_bridge work).
+17. ReAct / iterative tool loop bounded (ENG-6 — **Done**; refactor to BoundedReactPattern ENG-18).
+18. EnvironmentProfile tool_selection fields wired (catalog_runtime_bridge).
+19. **Invocation patterns:** single-pass, parallel batch, bounded ReAct, deterministic chain — canon vs code (`architecture/TOOLS.md` §patterns).
+20. `ToolInvocationPattern` plugin protocol exists and `ToolsStep` delegates (ENG-16/22).
+21. Parallel read-only batch invoke with bounded concurrency (ENG-9).
+22. `ToolChainSpec` output→input mapping for deterministic chains (ENG-20).
+23. Graph vs tool orchestration boundary — `GraphExecutor` does not schedule tool iterations (ADR-TOOL-002).
+24. Host `tool_invocation_mode` bridged to `RuntimeConfig` (ENG-23).
+25. Entry-point registries for custom invocation + selection patterns (ENG-24/26).
 
 ---
 

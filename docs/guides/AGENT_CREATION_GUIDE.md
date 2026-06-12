@@ -1546,7 +1546,7 @@ build_harness_host_runtime()
 
 **Rule:** register tools/skills in Tier-0 catalogs and enable them on `ApplicationEnvironmentProfile` — **never** create agent-local tool registries.
 
-**Runtime pipeline (select → invoke → log):** [`architecture/TOOLS.md`](architecture/TOOLS.md#tool-execution-pipeline) · enforcement [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.12 · flow narrative [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §15–§17.
+**Runtime pipeline (select → orchestrate → invoke → log):** [`architecture/TOOLS.md`](architecture/TOOLS.md#tool-execution-pipeline) · invocation patterns [`architecture/TOOLS.md`](architecture/TOOLS.md#tool-invocation-patterns-production-orchestration) · enforcement [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.12 · flow narrative [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §15–§17.
 
 ### J.3 Core contracts (typed, inspectable)
 
@@ -1556,6 +1556,7 @@ build_harness_host_runtime()
 | `ToolProfile` | `tools/registry/profile.py` | Enabled tools/bundles for a host |
 | `ToolWiringContext` | `tools/registry/wiring.py` | Integration slug → provider wiring |
 | `ToolPlannerProtocol` | `runtime/nexus/tools/tool_planner_protocol.py` | Agent-local tool loop planning |
+| `ToolInvocationPattern` *(planned)* | `runtime/nexus/tools/tool_invocation_pattern.py` | Multi-call orchestration plugin (TOOL-ENG-16) |
 | `SkillManifest` | `skills/core/contracts.py` | skill_id, tool_ids, prompts, policy fragment |
 | `SkillProfile` | `skills/registry/profile.py` | Enabled skill bundles for a host |
 | `SkillResolverProtocol` | `skills/resolver.py` | Resolve skill_ids → `ResolvedSkillPack` |
@@ -1573,9 +1574,10 @@ build_harness_host_runtime()
 | **Plugin catalogs** | `ToolPlugin` / `SkillPlugin` entry points (Phase P-Ext **Done**) |
 | **Agent contract** | `skills: list[SkillManifest]` + `extra_tools` — merged at registry bind time |
 | **Tool selection mode** | `ApplicationEnvironmentProfile.tool_selection_mode` → `RuntimeConfig` — standard (`full_catalog`), keyword top-k (`retrieval_top_k`), `skill_pack`; semantic / hierarchical planned (TOOL-ENG-13/14) — [`architecture/TOOLS.md`](architecture/TOOLS.md#tool-selection-modes-production-strategies) |
+| **Tool invocation pattern** *(planned TOOL-ENG-21/23)* | `ApplicationEnvironmentProfile.tool_invocation_mode` → `RuntimeConfig.tool_invocation_pattern` — `single_pass`, `parallel_batch`, `bounded_react`, `deterministic_chain`, `parallel_semantic_batch`; custom via entry point `intergrax.tool_invocation_patterns` (TOOL-ENG-24) — [`architecture/TOOLS.md`](architecture/TOOLS.md#tool-invocation-patterns-production-orchestration) |
 | **Conformance** | `EnvironmentSkillToolConsistencyCheck` — roster tools/skills ⊆ environment |
 
-Agent-local tool orchestration: `RuntimeConfig.tool_planner` (`CatalogToolPlanner`) + `tools_mode` + `tool_selection_mode` — `ToolSelectionStrategy` narrows the planner schema before LLM tool choice; execution still through `ToolRuntime`, separate from Nexus graph planning (Appendix I).
+Agent-local tool orchestration: `RuntimeConfig.tool_planner` (`CatalogToolPlanner`) + `tools_mode` + `tool_selection_mode` + `tool_invocation_pattern` — `ToolSelectionStrategy` narrows the planner schema (L6); `ToolInvocationPattern` orchestrates multi-call execution (2a); atomic calls still through `RuntimeToolInvoker` / `ToolRuntime`. Separate from Nexus agent graph planning (Appendix I · [`ORCHESTRATION.md`](architecture/ORCHESTRATION.md)).
 
 ### J.5 Runtime bridge (TS-1 — Done)
 

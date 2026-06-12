@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.budget_wiring import product_agent_budget_slice
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -48,17 +49,20 @@ LOCAL_WORKSPACE_APPLICATION_MANIFEST = ApplicationManifest.product(
             LocalIndexerAgent,
             factory=build_local_workspace_local_indexer_from_context,
             capabilities=["local.workspace.index"],
+            budget_slice=product_agent_budget_slice(),
         ),
         AgentBinding.mount(
             LocalSearchAgent,
             factory=build_local_workspace_local_search_from_context,
             capabilities=["local.workspace.search"],
             default=True,
+            budget_slice=product_agent_budget_slice(),
         ),
         AgentBinding.mount(
             LocalSynthesizerAgent,
             factory=build_local_workspace_local_synthesizer_from_context,
             capabilities=["local.workspace.synthesize"],
+            budget_slice=product_agent_budget_slice(),
         ),
     ],
     description=(

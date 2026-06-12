@@ -1154,7 +1154,7 @@ Synthesis of §24–§35 and ACP §36.
 | `ApplicationEnvironmentState` | **Done** APP-CON-2 | Kernel seeding on intake (optional) |
 | `ApplicationRunSummary` | **Done** ACP-OBS-2 | — |
 | Org envelope | **Done** ACP-ORG-1..2 | Enforcement depth ACP-ORG-3 |
-| Budget reactions (hard cap + notify) | **Partial** | ACP-TOK-2 · ACP-TOK-3 §43 |
+| Budget reactions (hard cap + notify) | **Done** | ACP-TOK-* · APP-PROD-7 §43 |
 | APP production scoreboard | **Partial** | APP-PROD-1 §46 |
 
 ---
@@ -1350,7 +1350,7 @@ Symmetric to ACP §40 — **host environments** that run mutating workloads.
 | APP-PROD-4 | Manifest conformance | **Done** | `test_manifest_conformance` |
 | APP-PROD-5 | Deploy triad | **Done** | `test_application_deploy_triad` |
 | APP-PROD-6 | `check_environment_state_usage` — hooks use `app_env_state.v1` | Planned | CI lint |
-| APP-PROD-7 | `check_budget_enforcement` — COST profile on STRICT product hosts | Planned | ACP-TOK-2 |
+| APP-PROD-7 | `check_budget_enforcement` — COST profile on STRICT product hosts | **Done** | `check_budget_enforcement.py` |
 | APP-PROD-8 | `check_workspace_cleanup` — factory lifespan cleanup hooks | Planned | integration |
 | APP-PROD-9 | Gate test + CI `gate-governance-tier` | **Done** | `test_check_application_production_gates.py` |
 
@@ -1520,18 +1520,20 @@ BudgetReactionProfile:
 | `test_budget_custom_hook` | Host callback invoked | ACP-TOK-3 |
 | `test_environment_cap_pause_graph` | Graph stops on env exceed | ACP-TOK-3 |
 | `check_application_production_gates` | Host wiring + manifest | APP-PROD-1 |
+| `check_budget_enforcement` | STRICT product COST + `budget_slice` | APP-PROD-7 |
 
 ## 43.7 Implementation status (honest)
 
 | ID | Deliverable | Status |
 |----|-------------|--------|
 | Contracts | `BudgetReactionProfile`, `AgentBudgetSlice` | **Done** |
-| Metering | `invocation_usage` rollups | **Partial** ACP-TOK-1 |
-| Kernel enforce + reactions | `HarnessKernel` pre-LLM | **Planned** ACP-TOK-2 |
-| Host notify + hooks | Tier-3 wiring | **Planned** ACP-TOK-3 |
+| Metering | `invocation_usage` rollups | **Done** ACP-TOK-1 |
+| Kernel enforce + reactions | `HarnessKernel` pre-LLM | **Done** ACP-TOK-2 · ACP-TOK-3 |
+| Host notify + hooks | Tier-3 wiring | **Done** ACP-TOK-3 |
+| Product gate | `check_budget_enforcement` | **Done** APP-PROD-7 |
 | Nexus `RunBudget` | Environment cap | **Partial** COST-1 |
 
-**Production claim:** mutating STRICT hosts MUST NOT ship until ACP-TOK-2 **Done** unless explicit ADR waiver.
+**Production claim:** mutating STRICT product hosts MUST declare `budget_reaction` + per-agent `budget_slice` (APP-PROD-7).
 
 **Anti-pattern BUD-AP-01:** Hardcoded limits in `on_next_step`. **Correct:** `budget_slice` + `budget_reaction`.
 

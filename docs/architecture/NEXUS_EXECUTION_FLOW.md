@@ -835,6 +835,38 @@ flowchart TD
 
 **Agents must not** import vendor SDKs or call integrations directly (canon §42.12, §42.41).
 
+### 15.1 Tool invocation orchestration (Plane 3 — vs graph)
+
+> **Canonical patterns:** [`TOOLS.md`](TOOLS.md#tool-invocation-patterns-production-orchestration) — single / parallel batch / bounded ReAct / deterministic chain.  
+> **Agent graph orchestration:** [`ORCHESTRATION.md`](ORCHESTRATION.md) §50–§56 — `ExecutionGraph` / `GraphExecutor` (separate domain).
+
+```mermaid
+flowchart LR
+    subgraph Graph["Tier-1 ORCHESTRATION"]
+        EG[ExecutionGraph]
+        GE[GraphExecutor]
+    end
+
+    subgraph Node["Per graph node — UAEP / pipeline"]
+        TS[ToolsStep]
+        TIP[ToolInvocationPattern — planned]
+        RTI[RuntimeToolInvoker]
+    end
+
+    EG --> GE --> TS
+    TS --> TIP --> RTI
+```
+
+| Layer | Orchestrates | Module | Tool iterations? |
+|-------|--------------|--------|------------------|
+| **Agent graph** | Agents, delegation, merge | `GraphExecutor` | **No** — ADR-TOOL-002 rejects tool ReAct from graph |
+| **Tool invocation pattern** | Multi-call plan within one step | `ToolInvocationPattern` *(TOOL-ENG-16)* | **Yes** — `bounded_react`, `parallel_batch`, etc. |
+| **Atomic invoke** | Single `tool_id` call | `RuntimeToolInvoker` | N/A |
+
+**Flow today (interim):** `ToolsStep` → `run_bounded_tool_loop` → `execute_planned_tool_calls` (sequential) → `RuntimeToolInvoker`.
+
+**Flow target:** `ToolsStep` → `pattern_for_mode(config.tool_invocation_pattern)` → shipped or custom `ToolInvocationPattern` → `RuntimeToolInvoker`.
+
 ---
 
 ## 16. Governance and policy timeline

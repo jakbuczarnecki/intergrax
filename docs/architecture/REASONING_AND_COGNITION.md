@@ -466,6 +466,8 @@ Tool cognition selects **which tools** the LLM calls inside a step loop.
 
 **Selection modes (production strategies):** before `ToolPlanningService` runs, `ToolSelectionStrategy` may narrow the planner schema — standard (full catalog), keyword top-k, skill pack today; semantic index and hierarchical traversal planned (TOOL-ENG-13/14). Canon: [`TOOLS.md`](TOOLS.md#tool-selection-modes-production-strategies).
 
+**Invocation patterns (orchestration):** after `ToolCallPlan` is produced, `ToolInvocationPattern` *(planned TOOL-ENG-16)* determines how the batch executes — single-pass, parallel batch, bounded ReAct, deterministic chain. Distinct from Nexus `ExecutionGraph` (agent-level). Canon: [`TOOLS.md`](TOOLS.md#tool-invocation-patterns-production-orchestration) · flow: [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §15.1.
+
 | Module | Role |
 |--------|------|
 | `tool_selection.py` | L6 schema narrowing — `ToolSelectionStrategy`, `resolve_planner_allowed_tool_ids` (TOOL-ENG-5) |

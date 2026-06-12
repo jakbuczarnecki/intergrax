@@ -678,6 +678,12 @@ class ApplicationEnvironmentProfile(BaseModel):
         return production_plane_c_modality_profile()
 
     @classmethod
+    def _product_budget_reaction(cls) -> BudgetReactionProfile:
+        from intergrax.applications._shared.budget_wiring import product_budget_reaction
+
+        return product_budget_reaction()
+
+    @classmethod
     def product_defaults(
         cls,
         *,
@@ -724,6 +730,7 @@ class ApplicationEnvironmentProfile(BaseModel):
                 forecasting_enabled=True,
                 optimization_recommendations_enabled=True,
                 tenant_fairness_quotas_enabled=True,
+                budget_reaction=cls._product_budget_reaction(),
             ),
             compliance_profile=ComplianceProfile(enabled=True),
             prompt_profile=PromptProfile(approval_required=True),

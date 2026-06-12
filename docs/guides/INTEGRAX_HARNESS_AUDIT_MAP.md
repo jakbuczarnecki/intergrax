@@ -735,7 +735,7 @@ Verify that tools are atomic, policy-governed, observable operations.
 Tool Layer Score: L0-L4
 ```
 
-**Authoring reference:** [`architecture/TOOLS.md`](architecture/TOOLS.md) — [Tool execution pipeline](architecture/TOOLS.md#tool-execution-pipeline) (select → invoke → log) + [Tool engine component map](architecture/TOOLS.md#tool-engine-implemented-today); runtime narrative [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §15–§17; enforcement [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.12; author control plane [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) Appendix J. **Closeout:** [Phase TOOL-ENG-DOC](plan/TOOLS.md) — **Done**.
+**Authoring reference:** [`architecture/TOOLS.md`](architecture/TOOLS.md) — [Tool execution pipeline](architecture/TOOLS.md#tool-execution-pipeline) (select → orchestrate → invoke → log) + [Invocation patterns](architecture/TOOLS.md#tool-invocation-patterns-production-orchestration) + [Tool engine component map](architecture/TOOLS.md#tool-engine-implemented-today); runtime narrative [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §15–§17; enforcement [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.12; author control plane [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) Appendix J. **Active:** [Phase TOOL-ENG](plan/TOOLS.md) — invocation pattern queue TOOL-ENG-16–30.
 
 ---
 

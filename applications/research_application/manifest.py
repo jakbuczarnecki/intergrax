@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.budget_wiring import product_agent_budget_slice
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -27,8 +28,8 @@ RESEARCH_APPLICATION_MANIFEST = ApplicationManifest.product(
     integration_profile=IntegrationProfile.research_product(),
     environment=_research_environment(),
     agents=[
-        AgentBinding.mount(ResearchAgent),
-        AgentBinding.mount(SummaryAgent),
+        AgentBinding.mount(ResearchAgent, budget_slice=product_agent_budget_slice()),
+        AgentBinding.mount(SummaryAgent, budget_slice=product_agent_budget_slice()),
     ],
     description="Research → summarize multi-agent host (prototype)",
 )

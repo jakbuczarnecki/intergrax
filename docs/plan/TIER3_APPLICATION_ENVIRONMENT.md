@@ -39,10 +39,10 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 | §37 | Pre-implementation APP-CON contracts | H-APP-CON-DOC.* | **Done** | *doc-only* |
 | §38 | L4 execution stack | H-APP.3.3 · H-APP-WIRING | **Done** | `nexus_factory.py` · `build_harness_host_runtime` |
 | §39 | `OrganizationalPolicyEnvelope` | ACP-ORG-* | **Done** | `org_policy.py` · `test_uc11_product_host_compliance.py` |
-| §40 | APP-PROD gates | APP-PROD-1..9 | **Partial** | APP-PROD-9 **Done** · 6–8 open |
+| §40 | APP-PROD gates | APP-PROD-1..9 | **Partial** | APP-PROD-7 · APP-PROD-9 **Done** · 6 · 8 open |
 | §41 | Composition primitive separation | H-APP-CON-DOC.* | **Done** | *doc-only* |
 | §42 | `ApplicationEnvironmentState` v2 | APP-CON-2 · APP-CON-3 | **Done** | `environment_state.py` · lifecycle middleware |
-| §43 | Budget / token governance | ACP-TOK-* · APP-CON-3 | **Partial** | see [Cross-plan §43](#cross-plan--43-budget--token-governance) |
+| §43 | Budget / token governance | ACP-TOK-* · APP-CON-3 · APP-PROD-7 | **Done** | see [Cross-plan §43](#cross-plan--43-budget--token-governance) |
 | §44 | Scenario test matrix | APP-CON-7 | Planned | `tests/unit/applications/` bundle |
 | §45 | New application checklist | APP-CON-DX.1 · N.* | **Partial** | scaffold + guide |
 | §46 | Production readiness criteria | APP-PROD-* · ACP-PROD-* | **Partial** | §46 + agent gates |
@@ -83,7 +83,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 | APP-PROD-4 | §40.2 | Manifest conformance | **Done** | `test_manifest_conformance.py` |
 | APP-PROD-5 | §40.2 | Deploy triad | **Done** | `test_application_deploy_triad.py` |
 | APP-PROD-6 | §40.2 | `check_environment_state_usage` lint | Planned | CI script; hooks use typed state |
-| APP-PROD-7 | §40.2 · §43 | `check_budget_enforcement` on STRICT product hosts | Planned | blocked until ACP-TOK-2 |
+| APP-PROD-7 | §40.2 · §43 | `check_budget_enforcement` on STRICT product hosts | **Done** | `check_budget_enforcement.py` · product manifests `budget_slice` |
 | APP-PROD-8 | §20–§21 | `check_workspace_cleanup` lifespan hooks | Planned | factory teardown integration test |
 | APP-PROD-9 | §40.2 | Wire APP-PROD-1 into `pytest -m gate` / CI | **Done** | `test_check_application_production_gates.py` · CI `gate-governance-tier` |
 
@@ -123,9 +123,9 @@ Architecture §43 is **implemented jointly** with ACP §25.4–§25.5. Tier-3 co
 | Kernel hard cap + block LLM | ACP | **ACP-TOK-2** | **Done** |
 | Host notify / HITL / `custom_hook` | ACP + TIER3 | **ACP-TOK-3** · APP-CON-3 | **Done** |
 | CI gate | ACP | **ACP-TOK-CI** | **Done** |
-| APP-PROD-7 host gate | TIER3 | **APP-PROD-7** | Planned (after ACP-TOK-2) |
+| APP-PROD-7 host gate | TIER3 | **APP-PROD-7** | **Done** |
 
-**Fidelity rule:** do not mark §43 **Done** in architecture until ACP-TOK-2 **Done** and APP-CON-3 seeds `ActiveBudgetState` on hooks.
+**Fidelity rule:** §43 **Done** — ACP-TOK-* complete, APP-CON-3 seeds `ActiveBudgetState`, APP-PROD-7 gates STRICT product manifests.
 
 ---
 

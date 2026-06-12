@@ -54,6 +54,8 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-GR-001](ADR-GR-001.md) | LLM guardrail integration plane (M-P12) | Accepted |
 | [ADR-CODECRAFT-001](ADR-CODECRAFT-001.md) | Ephemeral Code Craft as separate Harness domain | Accepted |
 | [ADR-TOOL-001](ADR-TOOL-001.md) | Catalog tool dispatch and full-gateway routing (TOOL-ENG-1/2) | Accepted |
+| [ADR-TOOL-002](ADR-TOOL-002.md) | Bounded multi-iteration tool loop; graph boundary (TOOL-ENG-6) | Accepted |
+| ADR-TOOL-003 | `ToolInvocationPattern` protocol and orchestration plugin model (TOOL-ENG-16) | **Proposed** — write before merge |
 | [ADR-AGENT-001](ADR-AGENT-001.md) | Agent cognitive patterns as Tier-2 library — Nexus remains Agent OS | Accepted |
 | [ADR-AGENT-002](ADR-AGENT-002.md) | Author-facing `Agent.run()` facade over UAEP; per-agent environment merge | Accepted |
 | [ADR-AGENT-003](ADR-AGENT-003.md) | Agent step loop (`on_next_step`); dual observability planes | Accepted |

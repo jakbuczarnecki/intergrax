@@ -563,6 +563,30 @@ Agents MUST NOT call each other directly — all collaboration via **SharedTaskC
 - Swarm without budget envelope (`max_delegation_depth`, cost profile).
 - Pattern name in docs but undeclared in host `graph_spec` or plan metadata.
 
+## 50.4 Tool invocation vs agent graph (boundary)
+
+> **Tool patterns canon:** [`TOOLS.md`](TOOLS.md#tool-invocation-patterns-production-orchestration) · **Flow:** [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §15.1 · **ADR:** [ADR-TOOL-002](adr/ADR-TOOL-002.md) (no tool ReAct from `GraphExecutor`).
+
+| Layer | Domain doc | Orchestrates | Examples |
+|-------|------------|--------------|----------|
+| **Agent graph** | This file §50–§56 | Agents, delegation, merge, parallel **nodes** | `ExecutionGraph`, `GraphExecutor`, `MergePolicy` |
+| **Tool invocation pattern** | [`TOOLS.md`](TOOLS.md) | Multi-call **tool** batches within one agent step | `ToolInvocationPattern` *(TOOL-ENG-16)* — single-pass, parallel batch, bounded ReAct, deterministic chain |
+| **Atomic tool invoke** | [`TOOLS.md`](TOOLS.md) §42.12 | One `tool_id` call | `RuntimeToolInvoker` |
+
+```text
+ExecutionGraph node (agent A)
+    └── UAEP / pipeline
+            └── ToolsStep
+                    └── ToolInvocationPattern  ← Plane 3 tool orchestration
+                            └── RuntimeToolInvoker (per call)
+```
+
+**Rules:**
+
+1. `GraphExecutor` MUST NOT schedule tool-plan iterations — that belongs to `ToolInvocationPattern` inside the node's agent run ([ADR-TOOL-002](adr/ADR-TOOL-002.md)).
+2. Each graph node MAY configure `tool_invocation_pattern` on the host `RuntimeConfig` (TOOL-ENG-21/23).
+3. LangGraph-style branching at **agent** granularity = `graph_spec` edges + conditions; at **tool** granularity = invocation pattern + planner loop — do not merge the two models.
+
 ---
 
 # 51. Parallelism, Merge, and Backpressure

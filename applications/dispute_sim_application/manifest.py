@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.budget_wiring import product_agent_budget_slice
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -54,21 +55,25 @@ DISPUTE_SIM_APPLICATION_MANIFEST = ApplicationManifest.product(
             factory=build_dispute_sim_dispute_intake_from_context,
             capabilities=["dispute.intake"],
             default=True,
+            budget_slice=product_agent_budget_slice(),
         ),
         AgentBinding.mount(
             DisputeAnalystAgent,
             factory=build_dispute_sim_dispute_analyst_from_context,
             capabilities=["dispute.analyze"],
+            budget_slice=product_agent_budget_slice(),
         ),
         AgentBinding.mount(
             DisputeStrategistAgent,
             factory=build_dispute_sim_dispute_strategist_from_context,
             capabilities=["dispute.strategy"],
+            budget_slice=product_agent_budget_slice(),
         ),
         AgentBinding.mount(
             DisputeScenarioAgent,
             factory=build_dispute_sim_dispute_scenario_from_context,
             capabilities=["dispute.scenario"],
+            budget_slice=product_agent_budget_slice(),
         ),
     ],
     description="Dispute Simulation Workspace — multi-agent litigation prep and scenario host",

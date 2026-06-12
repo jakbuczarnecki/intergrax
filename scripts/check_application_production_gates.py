@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""Tier-3 application production gate checks (APP-PROD-1..6)."""
+"""Tier-3 application production gate checks (APP-PROD-1..7)."""
 
 from __future__ import annotations
 
@@ -11,6 +11,10 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 APPLICATIONS_ROOT = REPO_ROOT / "applications"
+for path in (REPO_ROOT, APPLICATIONS_ROOT, REPO_ROOT / "agents"):
+    text = str(path)
+    if text not in sys.path:
+        sys.path.insert(0, text)
 
 REQUIRED_FACTORY_MARKERS = (
     "build_harness_host_runtime",
@@ -76,11 +80,24 @@ def check_environment_wiring_entry() -> list[str]:
     return violations
 
 
+def check_budget_enforcement() -> list[str]:
+    from intergrax.applications._shared.budget_wiring import check_manifest_budget_enforcement
+    from intergrax.applications._shared.product_manifest_registry import (
+        iter_strict_product_manifests,
+    )
+
+    violations: list[str] = []
+    for product_id, manifest in iter_strict_product_manifests():
+        violations.extend(check_manifest_budget_enforcement(product_id, manifest))
+    return violations
+
+
 def main() -> int:
     checks = (
         ("no_ad_hoc_nexus", check_no_ad_hoc_nexus_in_factories),
         ("manifest_profile_consistency", check_manifest_profile_on_manifest),
         ("environment_wiring", check_environment_wiring_entry),
+        ("budget_enforcement", check_budget_enforcement),
     )
     violations: list[str] = []
     for _name, fn in checks:
