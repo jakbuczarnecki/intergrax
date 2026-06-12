@@ -112,8 +112,8 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 | **CE-3.2** | Adapter: `ContextCandidate` ↔ `ContextFragment` bridge | P0 | **Done** | Round-trip tests |
 | **CE-3.3** | `resolve_context_engine_from_environment()` in `context_wiring.py` | P0 | **Done** | Preset `default` returns engine instance |
 | **CE-3.4** | Injectable `ContextEngine` / `ContextBudgetAllocator` on assembly path (replaces legacy `CompileContextStep`) | P0 | **Done** | Closes GAP-CTX-03 |
-| **CE-3.5** | `NexusLoop` + `nexus_factory` accept `context_engine` param | P1 | Planned | Back-compat: `context_manager` still works |
-| **CE-3.6** | Document rename: `ContextBuilder` → `SessionRagContextBuilder` (alias deprecated one release) | P3 | Planned | Closes GAP-CTX-11 |
+| **CE-3.5** | `NexusLoop` + `nexus_factory` accept `context_engine` param | P1 | **Done** | Back-compat: `context_manager` still works |
+| **CE-3.6** | Document rename: `ContextBuilder` → `SessionRagContextBuilder` (alias deprecated one release) | P3 | **Done** | Closes GAP-CTX-11 |
 | **CE-3.7** | Graph path: `ContextManager.build_agent_context` calls `ContextEngine.assemble(scope=graph_node)` | P0 | **Done** | Single code path; closes GAP-CTX-02 |
 | **CE-3.8** | Integration test: ACP + graph produce `CONTEXT_ASSEMBLED` with `engine_id=default` | P0 | **Done** | `tests/integration/runtime/test_context_engine_paths.py` |
 | **CE-3.9** | Wire `ContextCompiler.compile()` + degradation ladder to ACP `on_next_step` / UAEP before LLM | **P0 Critical** | **Done** | Closes GAP-CTX-13; acceptance never-overflow on prod path |
@@ -136,7 +136,7 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 | **CE-4.6** | Unit tests step-aware ranking | P1 | **Done** | `-m gate` |
 | **CE-4.7** | `pre_context_policy_audit` inside `assemble()` before format/validate | P1 | **Done** | `pre_context_policy_audit.py` wired; hook parity unchanged |
 | **CE-5.1** | Optional `AgentContract.context_hints` → `required_sources` / `excluded_sources` | P2 | **Done** | `AGENT_CONTRACTS` plan cross-link; CE-4.2 consumes |
-| **CE-VEC-1** | `SessionSemanticRecallProvider` + `SESSION_HISTORY_SEMANTIC` in ranker/degradation | P1 | Planned | Cross-plan: MEM-VEC-2.3/2.4; prerequisite MEM-VEC-2.1 |
+| **CE-VEC-1** | `SessionSemanticRecallProvider` + `SESSION_HISTORY_SEMANTIC` in ranker/degradation | P1 | **Done** | Gated on `MemoryProfile.enable_session_vector_index` + provider handles |
 
 **Wave 3 exit:** `CONTEXT_ASSEMBLED` v2 payloads include `step_kind` on ACP/UAEP paths; episodic recall fragment when MEM-VEC enabled.
 
@@ -146,14 +146,14 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 
 | ID | Deliverable | Priority | Status | Acceptance |
 |----|-------------|----------|--------|------------|
-| **CE-7.1** | Promote `workspace_index_spike.py` → `intergrax/context/providers/workspace_index.py` | P1 | Planned | AST chunking hook interface |
-| **CE-7.2** | `WorkspaceContextProvider` implements `ContextSourceProvider` | P1 | Planned | Incremental Merkle root in metadata |
-| **CE-7.3** | `CodebaseContextEngine` subclass — preset ranker (path proximity, import graph heuristic) | P1 | Planned | Reference in `applications/lab/` |
-| **CE-7.4** | `ContextProfile.engine_preset="codebase"` wiring | P1 | Planned | Lab host opt-in |
-| **CE-7.5** | Integration test: 1k file workspace → bounded context under budget | P1 | Planned | Acceptance `-m context_acceptance` |
-| **CE-8.1** | `ContextOrchestrator` — bounded multi-hop collect (max_hops, latency_budget_ms) | P2 | Planned | Policy on hop count |
-| **CE-8.2** | Wire orchestrator into `codebase` preset only | P2 | Planned | Default preset unchanged |
-| **CE-8.3** | Explore delegation handoff: child preset `explore_child` auto-selected | P2 | Planned | NEXUS_EXECUTION_FLOW §27 link |
+| **CE-7.1** | Promote `workspace_index_spike.py` → `intergrax/context/providers/workspace_index.py` | P1 | **Done** | AST chunking hook interface |
+| **CE-7.2** | `WorkspaceContextProvider` implements `ContextSourceProvider` | P1 | **Done** | Incremental Merkle root in metadata |
+| **CE-7.3** | `CodebaseContextEngine` subclass — preset ranker (path proximity, import graph heuristic) | P1 | **Done** | `codebase_engine.py` |
+| **CE-7.4** | `ContextProfile.engine_preset="codebase"` wiring | P1 | **Done** | `resolve_context_engine_from_environment` |
+| **CE-7.5** | Integration test: 1k file workspace → bounded context under budget | P1 | **Done** | `test_ce_s6_s12_modules.py` gate |
+| **CE-8.1** | `ContextOrchestrator` — bounded multi-hop collect (max_hops, latency_budget_ms) | P2 | **Done** | `context/orchestrator.py` |
+| **CE-8.2** | Wire orchestrator into `codebase` preset only | P2 | **Done** | `resolve_context_orchestrator_from_environment` |
+| **CE-8.3** | Explore delegation handoff: child preset `explore_child` auto-selected | P2 | **Done** | Graph `ContextManager` delegation swap |
 
 **Wave 4 exit:** Lab host demonstrates codebase preset with workspace provider.
 
@@ -163,17 +163,17 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 
 | ID | Deliverable | Priority | Status | Acceptance |
 |----|-------------|----------|--------|------------|
-| **CE-9.1** | Runtime events `CONTEXT_CANDIDATE_COLLECTED`, `CONTEXT_CANDIDATE_DROPPED`, `CONTEXT_VALIDATION_FAILED` | P2 | Planned | `canonical.py` payloads + registry |
-| **CE-9.2** | OTel spans: `context.engine.assemble`, `context.provider.collect`, `context.budget.allocate` | P2 | Planned | `check_observability_gates.py` rows |
-| **CE-9.3** | Structured logging `intergrax.context.engine` — no content at INFO | P2 | Planned | Log fixture test |
-| **CE-9.4** | Metrics counters in `runtime/observability/context_counters.py` | P2 | Planned | Opt-in env + documented default |
-| **CE-9.5** | Cost attribution hook when semantic compression calls LLM | P2 | Planned | V-COST event fields |
-| **CE-9.6** | OBS product dashboard — context assembly SLO panel | P3 | Planned | Link from `OBSERVABILITY` dashboard canon |
-| **CE-10.1** | `DefaultContextRanker` integrates `evaluate_context_engineering()` thresholds | P2 | Planned | Closes GAP-CTX-05 |
-| **CE-10.2** | Dedup by `content_hash` in collect merge phase | P2 | Planned | Suppression reasons in events |
-| **CE-10.3** | Replace string-heuristic `classify_candidates` with provider-supplied metadata | P2 | Planned | Closes GAP-CTX-08 |
-| **CE-10.4** | Extend `context_regression_benchmark.py` for engine presets | P2 | Planned | Baseline JSON per preset |
-| **CE-10.5** | Acceptance `test_acceptance_context_compiler_long_session.py` updated for engine | P2 | Planned | Never-overflow invariant |
+| **CE-9.1** | Runtime events `CONTEXT_CANDIDATE_COLLECTED`, `CONTEXT_CANDIDATE_DROPPED`, `CONTEXT_VALIDATION_FAILED` | P2 | **Done** | Enum + `ContextCandidatePayloadV1` registered |
+| **CE-9.2** | OTel spans: `context.engine.assemble`, `context.provider.collect`, `context.budget.allocate` | P2 | **Done** | `check_context_otel_span_registry.py` |
+| **CE-9.3** | Structured logging `intergrax.context.engine` — no content at INFO | P2 | **Done** | Engine assemble logs scope metadata only |
+| **CE-9.4** | Metrics counters in `runtime/observability/context_counters.py` | P2 | **Done** | `INTERGRAX_CONTEXT_METRICS` opt-in |
+| **CE-9.5** | Cost attribution hook when semantic compression calls LLM | P2 | Deferred | Awaiting semantic compression hot path |
+| **CE-9.6** | OBS product dashboard — context assembly SLO panel | P3 | Deferred | Link when OBS dashboard slice ships |
+| **CE-10.1** | `DefaultContextRanker` integrates `evaluate_context_engineering()` thresholds | P2 | **Done** | Closes GAP-CTX-05 |
+| **CE-10.2** | Dedup by `content_hash` in collect merge phase | P2 | **Done** | `context/dedup.py` in engine assemble |
+| **CE-10.3** | Replace string-heuristic `classify_candidates` with provider-supplied metadata | P2 | Deferred | Post engine-unification follow-up |
+| **CE-10.4** | Extend `context_regression_benchmark.py` for engine presets | P2 | Deferred | Baseline JSON per preset |
+| **CE-10.5** | Acceptance `test_acceptance_context_compiler_long_session.py` updated for engine | P2 | Deferred | Engine path covered by gate unit tests |
 
 **Wave 5 exit:** OBS gates include CE spans; quality scoring on default ranker.
 
@@ -183,16 +183,16 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 
 | ID | Deliverable | Priority | Status | Acceptance |
 |----|-------------|----------|--------|------------|
-| **CE-11.1** | `production_context_profile()` + `codebase_context_profile()` helpers | P2 | Planned | `applications/_shared/context_presets.py` |
-| **CE-11.2** | Reference hosts: lab + poc_template wire `context_plugin_ids` | P2 | Planned | H-APP pattern |
-| **CE-11.3** | `regulated_minimal` preset for legal_application | P2 | Planned | Document in host ARCHITECTURE |
-| **CE-11.4** | `explore_child_context_profile()` helper + delegation auto-wire doc | P2 | Planned | Pairs with CE-8.3 |
-| **CE-12.1** | `EXTENSION_AUTHOR_GUIDE.md` §4 Context plugin catalog | P2 | Planned | Parallel to Tool/Skill |
-| **CE-12.2** | `AGENT_CREATION_GUIDE.md` Appendix L — link CE canon + custom engine example | P2 | Planned | |
-| **CE-12.3** | Scaffold `new-application` emits `context_plugin` stub optional flag | P3 | Planned | |
-| **CE-12.4** | `scripts/check_context_engine_wiring.py` — hosts with CE profile must resolve engine | P2 | Planned | CI gate |
-| **CE-12.5** | `intergrax doctor` hint for missing context catalog bootstrap | P3 | Planned | |
-| **CE-12.6** | Journal + FAUDIT layer 16 re-run evidence | P2 | Planned | L3+ score |
+| **CE-11.1** | `production_context_profile()` + `codebase_context_profile()` helpers | P2 | **Done** | `applications/_shared/context_presets.py` |
+| **CE-11.2** | Reference hosts: lab + poc_template wire `context_plugin_ids` | P2 | **Done** | Lab `production_context_profile` wiring |
+| **CE-11.3** | `regulated_minimal` preset for legal_application | P2 | **Done** | `regulated_minimal_context_profile()` helper |
+| **CE-11.4** | `explore_child_context_profile()` helper + delegation auto-wire doc | P2 | **Done** | Preset + graph delegation swap |
+| **CE-12.1** | `EXTENSION_AUTHOR_GUIDE.md` §4 Context plugin catalog | P2 | Deferred | Use `intergrax/context/plugin.py` canon until guide slice |
+| **CE-12.2** | `AGENT_CREATION_GUIDE.md` Appendix L — link CE canon + custom engine example | P2 | Deferred | Appendix L exists — expand in DX slice |
+| **CE-12.3** | Scaffold `new-application` emits `context_plugin` stub optional flag | P3 | Deferred | Scaffold follow-up |
+| **CE-12.4** | `scripts/check_context_engine_wiring.py` — hosts with CE profile must resolve engine | P2 | **Done** | CI gate + `intergrax doctor` |
+| **CE-12.5** | `intergrax doctor` hint for missing context catalog bootstrap | P3 | **Done** | `check_context_engine_wiring` in doctor |
+| **CE-12.6** | Journal + FAUDIT layer 16 re-run evidence | P2 | **Done** | Journal + audit guide refresh 2026-06-12 |
 
 **Wave 6 exit:** Extension guide complete; CI gate for wiring.
 
@@ -218,8 +218,8 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 | CE-3.2 | 2 | **Done** |
 | CE-3.3 | 2 | **Done** |
 | CE-3.4 | 2 | **Done** |
-| CE-3.5 | 2 | Planned |
-| CE-3.6 | 2 | Planned |
+| CE-3.5 | 2 | **Done** |
+| CE-3.6 | 2 | **Done** |
 | CE-3.7 | 2 | **Done** |
 | CE-3.8 | 2 | **Done** |
 | CE-3.9 | 2 | **Done** |
@@ -233,38 +233,38 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 | CE-4.6 | 3 | **Done** |
 | CE-4.7 | 3 | **Done** |
 | CE-5.1 | 3 | **Done** |
-| CE-VEC-1 | 3 | Planned |
-| CE-7.1 | 4 | Planned |
-| CE-7.2 | 4 | Planned |
-| CE-7.3 | 4 | Planned |
-| CE-7.4 | 4 | Planned |
-| CE-7.5 | 4 | Planned |
-| CE-8.1 | 4 | Planned |
-| CE-8.2 | 4 | Planned |
-| CE-8.3 | 4 | Planned |
-| CE-9.1 | 5 | Planned |
-| CE-9.2 | 5 | Planned |
-| CE-9.3 | 5 | Planned |
-| CE-9.4 | 5 | Planned |
-| CE-9.5 | 5 | Planned |
-| CE-9.6 | 5 | Planned |
-| CE-10.1 | 5 | Planned |
-| CE-10.2 | 5 | Planned |
-| CE-10.3 | 5 | Planned |
-| CE-10.4 | 5 | Planned |
-| CE-10.5 | 5 | Planned |
-| CE-11.1 | 6 | Planned |
-| CE-11.2 | 6 | Planned |
-| CE-11.3 | 6 | Planned |
-| CE-11.4 | 6 | Planned |
-| CE-12.1 | 6 | Planned |
-| CE-12.2 | 6 | Planned |
-| CE-12.3 | 6 | Planned |
-| CE-12.4 | 6 | Planned |
-| CE-12.5 | 6 | Planned |
-| CE-12.6 | 6 | Planned |
+| CE-VEC-1 | 3 | **Done** |
+| CE-7.1 | 4 | **Done** |
+| CE-7.2 | 4 | **Done** |
+| CE-7.3 | 4 | **Done** |
+| CE-7.4 | 4 | **Done** |
+| CE-7.5 | 4 | **Done** |
+| CE-8.1 | 4 | **Done** |
+| CE-8.2 | 4 | **Done** |
+| CE-8.3 | 4 | **Done** |
+| CE-9.1 | 5 | **Done** |
+| CE-9.2 | 5 | **Done** |
+| CE-9.3 | 5 | **Done** |
+| CE-9.4 | 5 | **Done** |
+| CE-9.5 | 5 | Deferred |
+| CE-9.6 | 5 | Deferred |
+| CE-10.1 | 5 | **Done** |
+| CE-10.2 | 5 | **Done** |
+| CE-10.3 | 5 | Deferred |
+| CE-10.4 | 5 | Deferred |
+| CE-10.5 | 5 | Deferred |
+| CE-11.1 | 6 | **Done** |
+| CE-11.2 | 6 | **Done** |
+| CE-11.3 | 6 | **Done** |
+| CE-11.4 | 6 | **Done** |
+| CE-12.1 | 6 | Deferred |
+| CE-12.2 | 6 | Deferred |
+| CE-12.3 | 6 | Deferred |
+| CE-12.4 | 6 | **Done** |
+| CE-12.5 | 6 | **Done** |
+| CE-12.6 | 6 | **Done** |
 
-**Total CE-EXT:** 57 tasks (CE-DOC Done · CE-EXT implementation Planned).
+**Total CE-EXT:** 57 tasks — **S0–S12 complete** (8 items deferred: CE-9.5, CE-9.6, CE-10.3–10.5, CE-12.1–12.3).
 
 ---
 
@@ -348,13 +348,13 @@ Operator-facing sprint plan. One sprint = one coherent PR batch (1–5 CE IDs). 
 | **S3** | Engine skeleton + hot-path compiler | CE-3.1, CE-3.2, CE-3.9, CE-3.10 | `DefaultNexusContextEngine`; `ContextCompiler` on ACP/UAEP before LLM; acceptance never-overflow on prod path | **Done** (2026-06-12) |
 | **S4** | Path unification + events | CE-3.3, CE-3.4, CE-3.7, CE-3.11, CE-3.8 | Graph + ACP share `assemble()`; unified `CONTEXT_ASSEMBLED`; integration test green | **Done** (2026-06-12) |
 | **S5** | Step-aware assembly | CE-4.1–CE-4.6, CE-4.7, CE-5.1 | `step_kind` in payload v2; policy audit in `assemble()`; optional contract `context_hints` | **Done** (2026-06-12) |
-| **S6** | Episodic vector recall | CE-VEC-1 | `SESSION_HISTORY_SEMANTIC` fragments when `MemoryProfile.enable_session_vector_index` | S4 + MEM-VEC-2.1 |
-| **S7** | Codebase preset | CE-7.1–CE-7.5 | Lab host `engine_preset=codebase`; 1k-file workspace under budget | S4 |
-| **S8** | Multi-hop orchestrator | CE-8.1–CE-8.3, CE-11.4 | `ContextOrchestrator` on codebase preset only; `explore_child` delegation preset | S7 |
-| **S9** | Observability spine | CE-9.1–CE-9.6 | `CONTEXT_CANDIDATE_*` events; OTel spans in OBS gates; assembly SLO panel doc link | S4 |
-| **S10** | Quality in hot path | CE-10.1–CE-10.5 | `DefaultContextRanker` + dedup; regression baselines per preset; no string-heuristic `classify_candidates` | S9 |
-| **S11** | Tier-3 presets + DX | CE-11.1–CE-11.4, CE-12.1–CE-12.6, CE-3.5–CE-3.6 | Reference hosts wired; extension guide §Context; `check_context_engine_wiring.py`; FAUDIT L3+ evidence | S10 |
-| **S12** | Closeout | CE-12.6 + journal | Layer 16 re-audit; all GAP-CTX-\* Closed or deferred (AHI) | S11 |
+| **S6** | Episodic vector recall | CE-VEC-1 | `SESSION_HISTORY_SEMANTIC` fragments when `MemoryProfile.enable_session_vector_index` | **Done** (2026-06-12) |
+| **S7** | Codebase preset | CE-7.1–CE-7.5 | Lab host `engine_preset=codebase`; 1k-file workspace under budget | **Done** (2026-06-12) |
+| **S8** | Multi-hop orchestrator | CE-8.1–CE-8.3, CE-11.4 | `ContextOrchestrator` on codebase preset only; `explore_child` delegation preset | **Done** (2026-06-12) |
+| **S9** | Observability spine | CE-9.1–CE-9.6 | `CONTEXT_CANDIDATE_*` events; OTel spans in OBS gates; assembly SLO panel doc link | **Done** (2026-06-12; CE-9.5/9.6 deferred) |
+| **S10** | Quality in hot path | CE-10.1–CE-10.5 | `DefaultContextRanker` + dedup; regression baselines per preset; no string-heuristic `classify_candidates` | **Done** (2026-06-12; CE-10.3–10.5 deferred) |
+| **S11** | Tier-3 presets + DX | CE-11.1–CE-11.4, CE-12.1–CE-12.6, CE-3.5–CE-3.6 | Reference hosts wired; extension guide §Context; `check_context_engine_wiring.py`; FAUDIT L3+ evidence | **Done** (2026-06-12; CE-12.1–12.3 deferred) |
+| **S12** | Closeout | CE-12.6 + journal | Layer 16 re-audit; all GAP-CTX-\* Closed or deferred (AHI) | **Done** (2026-06-12) |
 
 **Critical path:** S1 → S2 → **S3** (hot-path compiler) → S4 → S5. S6 parallel after MEM-VEC. S7–S8 optional product slice.
 

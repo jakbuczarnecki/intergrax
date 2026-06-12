@@ -180,3 +180,7 @@ class ContextBuilder:
             for c in result.chunks
         ]
         return retrieved_chunks, None
+
+
+SessionRagContextBuilder = ContextBuilder
+"""Deprecated alias — use ``ContextBuilder`` (CE-3.6)."""

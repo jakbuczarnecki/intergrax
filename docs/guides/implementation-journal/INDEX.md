@@ -5,7 +5,8 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-12-010 | 2026-06-12 | tier-0, tier-1, tier-2 CONTEXT_ENGINEERING | CE-4.1 · CE-4.2 · CE-4.3 · CE-4.4 · CE-4.5 · CE-4.6 · CE-4.7 · CE-5.1 | [CE Sprint 5 — Step-aware context assembly](entries/2026-06-12/platform-ce-sprint5-step-aware.md) | pending |
+| IJ-2026-06-12-011 | 2026-06-12 | tier-0, tier-1, tier-3 CONTEXT_ENGINEERING | CE-VEC-1 · CE-7.1 · CE-8.3 · CE-9.2 · CE-10.1 · CE-11.1 · CE-12.4 · CE-12.6 | [CE Sprints 6–12 — providers, observability, DX closeout](entries/2026-06-12/platform-ce-sprint6-12-closeout.md) | pending |
+| IJ-2026-06-12-010 | 2026-06-12 | tier-0, tier-1, tier-2 CONTEXT_ENGINEERING | CE-4.1 · CE-4.2 · CE-4.3 · CE-4.4 · CE-4.5 · CE-4.6 · CE-4.7 · CE-5.1 | [CE Sprint 5 — Step-aware context assembly](entries/2026-06-12/platform-ce-sprint5-step-aware.md) | 269d64c4 |
 | IJ-2026-06-12-009 | 2026-06-12 | tier-1, tier-3 CONTEXT_ENGINEERING | CE-3.3 · CE-3.4 · CE-3.7 · CE-3.8 · CE-3.11 | [CE Sprint 4 — Path unification and CONTEXT_ASSEMBLED events](entries/2026-06-12/platform-ce-sprint4-path-unification.md) | 096efe25 |
 | IJ-2026-06-12-008 | 2026-06-12 | tier-0, tier-1, tier-2 CONTEXT_ENGINEERING | CE-3.1 · CE-3.2 · CE-3.9 · CE-3.10 | [CE Sprint 3 — DefaultNexusContextEngine and compiler hot path](entries/2026-06-12/platform-ce-sprint3-engine-hotpath.md) | 228ebff0 |
 | IJ-2026-06-12-007 | 2026-06-12 | tier-0, tier-3 CONTEXT_ENGINEERING | CE-1.5 · CE-2.1 · CE-2.2 · CE-2.3 · CE-2.4 · CE-2.5 | [CE Sprint 2 — Context plugin catalog bootstrap](entries/2026-06-12/platform-ce-sprint2-context-catalog.md) | pending |

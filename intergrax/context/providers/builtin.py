@@ -89,9 +89,20 @@ class BuiltinContextPlugin:
 
     @classmethod
     def register(cls, registry: ContextPluginRegistry) -> None:
+        from intergrax.context.providers.session_semantic_recall import (
+            SessionSemanticRecallProvider,
+        )
+        from intergrax.context.providers.workspace import WorkspaceContextProvider
+
         for provider_id, source in _BUILTIN_SPECS:
+            if provider_id == "builtin.workspace":
+                registry.add_provider(WorkspaceContextProvider())
+                continue
             registry.add_provider(_make_stub_provider(provider_id, source))  # type: ignore[arg-type]
+        registry.add_provider(SessionSemanticRecallProvider())
 
     @classmethod
     def builtin_provider_ids(cls) -> tuple[str, ...]:
-        return tuple(spec[0] for spec in _BUILTIN_SPECS)
+        return tuple(spec[0] for spec in _BUILTIN_SPECS) + (
+            "builtin.session_history_semantic",
+        )

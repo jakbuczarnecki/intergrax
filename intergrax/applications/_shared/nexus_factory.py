@@ -67,6 +67,7 @@ def build_nexus_loop_from_environment(
     llm_adapter: LLMAdapter | None = None,
     runtime_event_bus: RuntimeEventBus | None = None,
     context_manager: ContextManager | None = None,
+    context_engine: object | None = None,
     security_wiring: ApplicationSecurityWiring | None = None,
     guardrail_wiring: ApplicationGuardrailWiring | None = None,
     critic_wiring: ApplicationCriticWiring | None = None,
@@ -88,6 +89,7 @@ def build_nexus_loop_from_environment(
         env,
         event_bus=runtime_event_bus,
         llm_adapter=llm_adapter,
+        context_engine=context_engine,  # type: ignore[arg-type]
     )
 
     loop = NexusLoop(

@@ -50,11 +50,11 @@ ContextEngine · ContextSourceProvider · ContextFragment · ContextAssemblyRequ
 
 ## Active plan phases (verify status vs code reality)
 
-CTX Done · CE-DOC Done · CE-EXT Planned (CE-1..CE-12)
+CTX Done · CE-DOC Done · CE-EXT **Done** (S0–S12; CE-9.5/9.6, CE-10.3–10.5, CE-12.1–12.3 deferred)
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-No plugin catalog (GAP-CTX-01) · dual assembly paths (GAP-CTX-02) · ContextCompiler not on hot path (GAP-CTX-13) · CONTEXT_BUILT vs CONTEXT_ASSEMBLED split (GAP-CTX-14) · not step-aware (GAP-CTX-04) · workspace spike only (GAP-CTX-06) · OTel spans partial (GAP-CTX-09)
+GAP-CTX-01 **Closed** (CE-2) · GAP-CTX-02/03/13/14 **Closed** (CE-3/4) · GAP-CTX-04 **Closed** (CE-4) · GAP-CTX-05 **Closed** (CE-10.1) · GAP-CTX-06 **Closed** (CE-7) · GAP-CTX-08 **Open** (CE-10.3 deferred) · GAP-CTX-09 **Closed** (CE-9.2) · GAP-CTX-10 **Partial** (CE-9.1 enum; bus emission follow-up)
 
 ---
 

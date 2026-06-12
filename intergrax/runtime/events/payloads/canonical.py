@@ -145,6 +145,14 @@ class ContextAssemblyPayloadV1(RuntimeEventPayload):
     engine_id: str = ""
 
 
+class ContextCandidatePayloadV1(RuntimeEventPayload):
+    schema_id = "context_candidate.v1"
+
+    provider_id: str
+    fragment_count: int = 0
+    engine_id: str = ""
+
+
 class ContextAssemblyPayloadV2(RuntimeEventPayload):
     schema_id = "context_assembly.v2"
 

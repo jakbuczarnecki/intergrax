@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from intergrax.context.contracts import ContextAssemblyRequest, ContextFragment, ContextFragmentSource
+from intergrax.context.quality import ContextChunkSignal, evaluate_context_engineering
 
 STEP_KIND_SOURCE_BOOSTS: dict[str, frozenset[ContextFragmentSource]] = {
     "tool_call": frozenset({ContextFragmentSource.TOOL_OUTPUT}),
@@ -27,11 +28,15 @@ class DefaultContextRanker:
         request: ContextAssemblyRequest,
     ) -> list[ContextFragment]:
         if not fragments or not request.step_kind:
-            return sorted(fragments, key=lambda item: item.relevance_score, reverse=True)
+            return self._apply_quality_gate(
+                sorted(fragments, key=lambda item: item.relevance_score, reverse=True)
+            )
 
         boosted_sources = STEP_KIND_SOURCE_BOOSTS.get(request.step_kind, frozenset())
         if not boosted_sources:
-            return sorted(fragments, key=lambda item: item.relevance_score, reverse=True)
+            return self._apply_quality_gate(
+                sorted(fragments, key=lambda item: item.relevance_score, reverse=True)
+            )
 
         ranked: list[ContextFragment] = []
         for fragment in fragments:
@@ -54,4 +59,23 @@ class DefaultContextRanker:
                 )
             else:
                 ranked.append(fragment)
-        return sorted(ranked, key=lambda item: item.relevance_score, reverse=True)
+        return self._apply_quality_gate(
+            sorted(ranked, key=lambda item: item.relevance_score, reverse=True)
+        )
+
+    def _apply_quality_gate(self, fragments: list[ContextFragment]) -> list[ContextFragment]:
+        if not fragments:
+            return fragments
+        signals = [
+            ContextChunkSignal(
+                chunk_id=fragment.fragment_id,
+                content_hash=fragment.content_hash,
+                relevance_score=fragment.relevance_score,
+                freshness_score=fragment.freshness_score,
+                confidence_score=fragment.confidence_score,
+            )
+            for fragment in fragments
+        ]
+        report = evaluate_context_engineering(chunks=signals)
+        passed_ids = {record.chunk_id for record in report.records if record.passed}
+        return [fragment for fragment in fragments if fragment.fragment_id in passed_ids]

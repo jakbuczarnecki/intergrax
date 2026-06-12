@@ -126,7 +126,20 @@ class ContextManager:
         policy: Optional[TaskContextAssemblyOptions] = None,
     ) -> AgentContextBundle:
         """Graph context assembly — uses ``ContextEngine.assemble`` when wired (CE-3.7)."""
-        use_engine = self._context_engine is not None and self._llm_adapter is not None
+        engine = self._context_engine
+        if (
+            engine is not None
+            and node.delegation is not None
+            and engine.engine_id != "explore_child"
+        ):
+            from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
+
+            engine = DefaultNexusContextEngine(
+                engine_id="explore_child",
+                registry=engine.registry,
+            )
+
+        use_engine = engine is not None and self._llm_adapter is not None
         bundle = self._build_agent_context_core(
             task,
             node,
@@ -148,13 +161,13 @@ class ContextManager:
         )
         runtime_config = RuntimeConfig(llm_adapter=self._llm_adapter, production_mode=False)
         provider_ctx = ContextProviderContext(
-            engine_id=self._context_engine.engine_id,
+            engine_id=engine.engine_id,
             handles={
                 "runtime_config": runtime_config,
                 "messages": graph_messages_from_text(bundle.message),
             },
         )
-        assembled = await self._context_engine.assemble(request, provider_ctx=provider_ctx)
+        assembled = await engine.assemble(request, provider_ctx=provider_ctx)
         final_message = text_from_assembled_messages(assembled.messages)
         original_chars = len(bundle.message)
         final_chars = len(final_message)
@@ -170,7 +183,7 @@ class ContextManager:
                 "context_trimmed": trim.trimmed,
                 "context_original_chars": trim.original_chars,
                 "context_final_chars": trim.final_chars,
-                "engine_id": self._context_engine.engine_id,
+                "engine_id": engine.engine_id,
                 "degradation_steps": list(assembled.degradation_steps),
             }
         )
@@ -186,7 +199,7 @@ class ContextManager:
                     **bundle_metadata,
                     "tenant_id": task.tenant_id,
                 },
-                engine_id=self._context_engine.engine_id,
+                engine_id=engine.engine_id,
                 step_kind=node.capability,
             )
         return bundle.model_copy(update={"message": trim.message, "metadata": bundle_metadata})

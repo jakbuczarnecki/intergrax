@@ -163,6 +163,7 @@ class MemoryProfile(BaseModel):
     scope_boundary: str = "tenant"
     consolidation_mode: Literal["manual", "scheduled", "auto"] = "manual"
     enable_entity_graph_memory: bool = False
+    enable_session_vector_index: bool = False
 
 
 class ReliabilityProfile(BaseModel):

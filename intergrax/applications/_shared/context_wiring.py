@@ -92,18 +92,43 @@ def resolve_context_budget_policy(env: ApplicationEnvironmentProfile) -> Context
 def resolve_context_engine_from_environment(
     env: ApplicationEnvironmentProfile,
 ) -> DefaultNexusContextEngine:
-    """Resolve ``DefaultNexusContextEngine`` for the environment preset."""
+    """Resolve context engine for the environment preset (CE-7.4, CE-8.2)."""
     registry = resolve_context_plugin_registry_from_environment(env)
     engine_ref = env.context_profile.engine_ref
-    if env.context_profile.engine_preset == "custom" and engine_ref:
-        # CE-3.3: dotted import deferred to CE-7 custom engines
+    preset = env.context_profile.engine_preset
+    if preset == "custom" and engine_ref:
         raise ValueError(
             f"Custom context engine_ref is not wired yet: {engine_ref!r} (use preset=default)"
         )
-    return DefaultNexusContextEngine(
-        engine_id=env.context_profile.engine_preset,
-        registry=registry,
-    )
+    if preset == "codebase":
+        from intergrax.runtime.nexus.context.codebase_engine import CodebaseContextEngine
+
+        return CodebaseContextEngine(registry=registry)
+    return DefaultNexusContextEngine(engine_id=preset, registry=registry)
+
+
+def resolve_context_orchestrator_from_environment(
+    env: ApplicationEnvironmentProfile,
+    engine: DefaultNexusContextEngine,
+):
+    """Return bounded orchestrator for codebase preset only (CE-8.2)."""
+    if env.context_profile.engine_preset != "codebase":
+        return None
+    from intergrax.context.orchestrator import ContextOrchestrator
+
+    return ContextOrchestrator(engine)
+
+
+def resolve_context_engine_for_graph_node(
+    env: ApplicationEnvironmentProfile,
+    *,
+    has_delegation: bool,
+) -> DefaultNexusContextEngine:
+    """Delegation children use ``explore_child`` preset automatically (CE-8.3)."""
+    if has_delegation:
+        registry = resolve_context_plugin_registry_from_environment(env)
+        return DefaultNexusContextEngine(engine_id="explore_child", registry=registry)
+    return resolve_context_engine_from_environment(env)
 
 
 def resolve_context_manager_from_environment(
@@ -111,10 +136,11 @@ def resolve_context_manager_from_environment(
     *,
     event_bus: RuntimeEventBus | None = None,
     llm_adapter: object | None = None,
+    context_engine: DefaultNexusContextEngine | None = None,
 ) -> ContextManager:
     """Build ``ContextManager`` with environment assembly and budget policies."""
     assembly = env.context_profile.assembly_options
-    engine = resolve_context_engine_from_environment(env)
+    engine = context_engine or resolve_context_engine_from_environment(env)
     return ContextManager(
         max_prior_chars=assembly.max_prior_chars,
         default_policy=assembly,

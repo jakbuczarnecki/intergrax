@@ -16,7 +16,7 @@ plan_ref:
   - CE-4.7
   - CE-5.1
 status: completed
-commit: pending
+commit: 269d64c4
 adr: no ADR needed — extends CE contracts and event payloads without Nexus semantic change
 ---
 

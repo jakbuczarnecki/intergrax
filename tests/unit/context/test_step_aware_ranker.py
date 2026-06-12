@@ -28,7 +28,7 @@ def _fragment(source: ContextFragmentSource, score: float) -> ContextFragment:
         token_estimate=10,
         relevance_score=score,
         freshness_score=0.5,
-        confidence_score=0.5,
+        confidence_score=0.8,
         mandatory=False,
     )
 

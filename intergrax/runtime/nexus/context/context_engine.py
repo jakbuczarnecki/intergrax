@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from intergrax.context.contracts import (
@@ -12,9 +13,14 @@ from intergrax.context.contracts import (
     ContextAssemblyRequest,
     ContextProviderContext,
 )
+from intergrax.context.dedup import dedup_fragments_by_hash
 from intergrax.context.ranker import DefaultContextRanker
 from intergrax.context.registry import ContextPluginRegistry
+from intergrax.context.tracking.context_spans import context_span
+from intergrax.runtime.observability.context_counters import get_context_counters
 from intergrax.runtime.policy.context_assembly_policy import run_pre_context_policy_gate
+
+logger = logging.getLogger("intergrax.context.engine")
 from intergrax.runtime.nexus.context.compile_service import compile_chat_messages
 from intergrax.runtime.nexus.context.context_compiler import ContextCompiler
 from intergrax.runtime.nexus.context.context_validator import DefaultContextValidator
@@ -58,6 +64,23 @@ class DefaultNexusContextEngine:
         *,
         provider_ctx: ContextProviderContext | None = None,
     ) -> AssembledContext:
+        counters = get_context_counters()
+        counters.record_assemble(self._engine_id)
+        logger.info(
+            "assemble scope=%s task_id=%s step_kind=%s",
+            request.assembly_scope,
+            request.task_id,
+            request.step_kind,
+        )
+        with context_span("context.engine.assemble"):
+            return await self._assemble_inner(request, provider_ctx=provider_ctx)
+
+    async def _assemble_inner(
+        self,
+        request: ContextAssemblyRequest,
+        *,
+        provider_ctx: ContextProviderContext | None = None,
+    ) -> AssembledContext:
         ctx = provider_ctx or ContextProviderContext(engine_id=self._engine_id)
         runtime_config: RuntimeConfig | None = ctx.handles.get("runtime_config")
         raw_messages: list[ChatMessage] = list(ctx.handles.get("messages") or [])
@@ -71,17 +94,28 @@ class DefaultNexusContextEngine:
             raise ValueError("; ".join(pre_gate.errors))
 
         collected_fragments: list = []
-        for provider in self._registry.list_providers():
-            fragments = await provider.collect(request, ctx)
-            if fragments:
-                collected_fragments.extend(fragments)
+        with context_span("context.provider.collect"):
+            for provider in self._registry.list_providers():
+                fragments = await provider.collect(request, ctx)
+                if fragments:
+                    counters = get_context_counters()
+                    counters.candidate_collected_total += len(fragments)
+                    collected_fragments.extend(fragments)
+
+        unique, dropped = dedup_fragments_by_hash(collected_fragments)
+        collected_fragments = unique
+        if dropped:
+            counters = get_context_counters()
+            counters.candidate_dropped_total += len(dropped)
 
         post_gate = run_pre_context_policy_gate(request, collected=tuple(collected_fragments))
         if not post_gate.allowed:
+            get_context_counters().validation_failed_total += 1
             raise ValueError("; ".join(post_gate.errors))
 
         if collected_fragments:
-            collected_fragments = self._ranker.rank(collected_fragments, request)
+            with context_span("context.budget.allocate"):
+                collected_fragments = self._ranker.rank(collected_fragments, request)
 
         compile_result = compile_chat_messages(
             raw_messages,
