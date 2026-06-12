@@ -65,6 +65,8 @@ uv run pytest tests/unit/rag/ tests/unit/tools/providers/rag/ -m gate -q
 
 92 passed (RAG gate slice).
 
-## Remaining scope
+## Risks and follow-ups
 
-M-RAG.49–51 (Neptune/OrientDB/ArangoDB) blocked on Integration H-INT rows — optional G4.
+- M-RAG.49–51 (Neptune/OrientDB/ArangoDB) blocked on Integration H-INT catalog rows — optional G4.
+- FalkorDB not yet in `APPROVED_PRODUCTION_GRAPH_STORE_SLUGS` — requires ops soak before prod promotion (M-RAG.48 follow-up).
+- Graph maintenance and async ingest jobs require Tier-3 `workflow_orchestrator` worker implementation.
