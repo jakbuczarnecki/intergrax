@@ -22,11 +22,16 @@ from intergrax.applications._shared.security_wiring import (
     wire_application_security,
 )
 from intergrax.applications._shared.context_wiring import resolve_context_manager_from_environment
+from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 from intergrax.applications._shared.orchestration_wiring import (
     OrchestrationWiringContext,
     resolve_nexus_task_classifier,
     resolve_nexus_task_planner,
     resolve_orchestration_runtime_settings,
+)
+from intergrax.applications._shared.reasoning_wiring import (
+    resolve_planner_llm_adapter,
+    resolve_planner_model_id,
 )
 from intergrax.applications._shared.adaptive_wiring import ApplicationAdaptiveWiring
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
@@ -81,7 +86,13 @@ def build_nexus_loop_from_environment(
     if orch.retry_policy_name == "strict":
         retry_policy = RetryPolicy(max_retries=1)
 
-    wiring_context = OrchestrationWiringContext(llm_adapter=llm_adapter)
+    producer_llm = resolve_llm_adapter(env, agent_override=llm_adapter)
+    planner_llm = resolve_planner_llm_adapter(env, producer_adapter=producer_llm)
+    wiring_context = OrchestrationWiringContext(
+        llm_adapter=producer_llm,
+        planner_llm_adapter=planner_llm,
+        planner_parse_retries=env.reasoning_profile.planner_parse_retries,
+    )
     planner = resolve_nexus_task_planner(env, wiring_context=wiring_context)
     classifier = resolve_nexus_task_classifier(registry, env, wiring_context=wiring_context)
     runtime_settings = resolve_orchestration_runtime_settings(env)
@@ -125,7 +136,7 @@ def build_nexus_loop_from_environment(
         emit_coordination_advisory=orch.emit_coordination_advisory,
         allow_dynamic_replan=runtime_settings.allow_dynamic_replan,
         denied_planner_model_ids=tuple(env.reasoning_profile.denied_planner_model_ids),
-        planner_model_id=env.reasoning_profile.planner_llm_profile_id,
+        planner_model_id=resolve_planner_model_id(env),
     )
     resolved_security = security_wiring or wire_application_security(env)
     apply_application_security_wiring(loop, resolved_security)

@@ -10,7 +10,11 @@ locales:
         Use only the agent_ids provided in the user message.
         Never include commentary outside JSON.
       developer: null
-      user_template: null
+      user_template: |
+        Agent ids: {agent_ids}
+        Task message: {task_message!r}
+        Capability: {capability}
+        Classification: {classification}
 
 meta:
   model_family: generic

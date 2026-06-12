@@ -19,7 +19,17 @@ def nexus_task_planner_prompt(
     classification: str,
 ) -> str:
     reg = resolve_yaml_prompt_registry(registry=registry, catalog_path=catalog_path)
-    system = reg.resolve_localized(prompt_id).system
+    localized = reg.resolve_localized(prompt_id)
+    system = localized.system or ""
+    user_template = localized.user_template
+    if user_template:
+        user_body = user_template.format(
+            agent_ids=agent_ids,
+            task_message=task_message,
+            capability=capability,
+            classification=classification,
+        )
+        return f"{system}\n\n{user_body}".strip()
     return (
         f"{system}\n"
         f"Agent ids: {agent_ids}\n"

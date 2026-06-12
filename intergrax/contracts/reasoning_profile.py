@@ -6,12 +6,15 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from intergrax.llm_adapters.registry.profile import LLMProfile
+
 
 class ReasoningProfile(BaseModel):
     """Planner/classifier LLM selection and prompt ids."""
 
     model_config = ConfigDict(extra="forbid")
 
+    planner_llm_profile: LLMProfile | None = None
     planner_llm_profile_id: str | None = None
     planner_prompt_id: str = "nexus_task_planner"
     planner_parse_retries: int = Field(default=0, ge=0, le=8)
