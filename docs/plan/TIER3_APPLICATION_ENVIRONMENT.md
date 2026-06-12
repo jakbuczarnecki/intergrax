@@ -26,7 +26,7 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 | §23 | Interaction postures | H-APP-DOC.* · H-APP-WIRING.* | **Done** | §23.7 matrix closed on reference hosts |
 | §24 | `ApplicationManifest` / `AgentBinding` | N.1 · H-APP.1.2 | **Done** | `manifest.py` · `test_manifest_conformance.py` |
 | §25 | `run_task` / `HarnessApplication` / `ApplicationHost` | APP-CON-1 · N.* | **Done** | `harness/app.py` · `test_application_host_wiring.py` |
-| §26 | `ApplicationRunSummary` (Plane A) | ACP-OBS-2 · APP-CON-6 | **Partial** | `application_run_summary_builder.py` · artifact bundle open |
+| §26 | `ApplicationRunSummary` (Plane A) | ACP-OBS-2 · APP-CON-6 | **Done** | `application_run_summary_builder.py` · `run_artifact_bundle_builder.py` |
 | §27 | Roster / registry assembly | N.2.1 · H-APP.1.4 | **Done** | `registry_assembly_resolver.py` |
 | §28 | APP invariants (no app cognition loop) | H-APP-CON-DOC.* | **Done** | *doc-only* · rejected `on_next_orchestration_step` |
 | §29–§31 | Terminology · control modes · facade | H-APP.0.* · APP-CON-DX.1 | **Partial** | DX appendix open |
@@ -47,7 +47,7 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 | §45 | New application checklist | APP-CON-DX.1 · N.* | **Partial** | scaffold + guide |
 | §46 | Production readiness criteria | APP-PROD-* · ACP-PROD-* | **Partial** | §46 + agent gates |
 | §47 | Developer mental model | APP-CON-DX.1 | **Partial** | *doc-only* in arch |
-| §48 | Application artifacts | APP-CON-4 · APP-CON-6 | **Partial** | `application_artifacts.py` · summary attach open |
+| §48 | Application artifacts | APP-CON-4 · APP-CON-6 | **Done** | `application_artifacts.py` · `run_artifact_bundle.v1` on summary |
 | §49 | Runtime evolution | APP-EVOL-1..7 · APP-EVOL-2b | Planned | §49.8 register |
 | §50 | Platform operations | APP-OPS-1..4 | **Partial** | `capability_graph_wiring.py` partial |
 | §51 | Cross-doc consistency | H-APP-FREEZE-* | **Done** | `GOVERNANCE_CONSISTENCY_AUDIT.md` |
@@ -67,7 +67,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 | APP-CON-3 | §42 · §43 | Nexus lifecycle updates `app_env_state.v1` (phase, budget, HITL) | **Done** | `test_application_environment_state_lifecycle.py` |
 | APP-CON-4 | §48 | Artifact ref models | **Done** | `application_artifacts.py` |
 | APP-CON-5 | §32.6 | Hook timeout · error→BLOCK · audit events | **Done** | `test_hook_runtime_guard.py` · product 250ms timeout |
-| APP-CON-6 | §26 · §48 | `RunArtifactBundle` on `ApplicationRunSummary.metadata` | Planned | `run_artifact_bundle.v1` key in finisher test |
+| APP-CON-6 | §26 · §48 | `RunArtifactBundle` on `ApplicationRunSummary.metadata` | **Done** | `test_task_finisher_artifact_bundle.py` |
 | APP-CON-7 | §35 · §44 | Scenario matrix gate — UC-A* minimum per posture | Planned | `test_tier3_scenario_matrix.py` or tagged `-m tier3_scenario` |
 | APP-CON-8 | §20–§21 | Shadow/sandbox refs in env state + lifespan cleanup | Planned | `APP-PROD-8` integration |
 | APP-CON-DX.1 | §31 · §45 · §47 | Author guide APP appendix (mental model + checklist) | Planned | `AGENT_CREATION_GUIDE.md` or `APPLICATION_CREATION_GUIDE.md` |

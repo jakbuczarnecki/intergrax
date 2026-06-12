@@ -2,15 +2,16 @@
 
 **Last updated:** 2026-06-05 · Phase P-Ext · **H-APP** · §10 policy rules (`intergrax.policy_rules`)
 
-Intergrax exposes three **Tier-0 plugin catalogs**. Shipped providers and third-party pip packages register through the same protocols.
+Intergrax exposes four **plugin catalogs** (three Tier-0 + Context Engineering Tier-1 contracts with Tier-0 shared types). Shipped providers and third-party pip packages register through the same protocols.
 
-| Layer | Entry point group | Protocol | Register function |
-|-------|-------------------|----------|-------------------|
-| Integration | `intergrax.integrations` | `IntegrationPlugin` | `register_integration_plugin()` |
-| Tool | `intergrax.tools` | `ToolPlugin` | `register_tool_plugin()` |
-| Skill | `intergrax.skills` | `SkillPlugin` | `register_skill_plugin()` |
+| Layer | Entry point group | Protocol | Register function | Status |
+|-------|-------------------|----------|-------------------|--------|
+| Integration | `intergrax.integrations` | `IntegrationPlugin` | `register_integration_plugin()` | **Done** |
+| Tool | `intergrax.tools` | `ToolPlugin` | `register_tool_plugin()` | **Done** |
+| Skill | `intergrax.skills` | `SkillPlugin` | `register_skill_plugin()` | **Done** |
+| Context | `intergrax.context` | `ContextPlugin` | `register_context_plugin()` | **Planned** — [CE-2](../plan/CONTEXT_ENGINEERING.md) |
 
-**Architecture:** Integration → Tool → Skill → Agent. See [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1.5.1, §7.1.6–§7.1.8.
+**Architecture:** Integration → Tool → Skill → Agent; **Context Engineering** assembles LLM windows from all sources — see [`architecture/CONTEXT_ENGINEERING.md`](../architecture/CONTEXT_ENGINEERING.md) · [plan CE-EXT](../plan/CONTEXT_ENGINEERING.md).
 
 ---
 

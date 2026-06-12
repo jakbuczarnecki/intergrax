@@ -915,7 +915,8 @@ Memory Architecture Score: L0-L4
 
 ## 16. Context Engineering Layer
 
-**Authoring map (control plane):** `guides/AGENT_CREATION_GUIDE.md` **Appendix L** · implementation closeout: plan **Phase CTX** (**Done**).
+**Domain pair:** [`architecture/CONTEXT_ENGINEERING.md`](../architecture/CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md) · **ADR-CTX-001**  
+**Authoring map (control plane):** `guides/AGENT_CREATION_GUIDE.md` **Appendix L** · CTX control plane **Done** · plugin engine **CE-EXT Planned**
 
 ### Purpose
 

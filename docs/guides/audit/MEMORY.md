@@ -1,8 +1,8 @@
-# Memory and Context Engineering — Domain Layer Audit Instruction
+# Memory Platform — Domain Layer Audit Instruction
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
 **Domain pair:** [`architecture/MEMORY.md`](../architecture/MEMORY.md) · [`plan/MEMORY.md`](../plan/MEMORY.md)  
-**Audit map layers:** 15–16 · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HARNESS_AUDIT_MAP.md)  
+**Audit map layers:** 15 · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HARNESS_AUDIT_MAP.md)  
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -32,21 +32,21 @@ focus:
 
 # ═══ END USER CONFIG ═══
 
-# TASK: Deep production audit — Memory and Context Engineering (`MEMORY`)
+# TASK: Deep production audit — Memory Platform (`MEMORY`)
 
 You are an **implementation audit agent** for the Intergrax Harness AI platform.
 
-Perform a **rigorous, evidence-backed audit** of the **Memory and Context Engineering** domain. You must inspect **architecture canon, implementation plan, source code, tests, and CI gates** and compare against **production-grade systems** in this problem space.
+Perform a **rigorous, evidence-backed audit** of the **Memory Platform** domain. You must inspect **architecture canon, implementation plan, source code, tests, and CI gates** and compare against **production-grade systems** in this problem space.
 
 **Do not** produce a shallow documentation survey. **Do not** declare the whole platform complete.
 
 ## Mission
 
-Audit **memory stores**, scopes, lifecycle, **ContextManager** assembly, budgets, consolidation, and Knowledge-vs-LTM boundary — explicit, governed, observable, retrieval-first.
+Audit **memory stores**, scopes, lifecycle, consolidation, and Knowledge-vs-LTM boundary — explicit, governed, observable, retrieval-first. Context assembly is audited under CONTEXT_ENGINEERING.
 
 ## Key symbols and contracts
 
-MemoryProfile · MemoryKind · MemoryWritePolicy · PolicyScopedMemoryView · AgentContextBundle · ContextBudgetPolicy · TaskContextAssemblyOptions · MemoryConsolidationJob · DegradationLadder · ContextProfile
+MemoryProfile · MemoryKind · MemoryWritePolicy · PolicyScopedMemoryView · MemoryConsolidationJob · MemoryView · SharedTaskContext
 
 ## Active plan phases (verify status vs code reality)
 
@@ -54,7 +54,7 @@ MEM Done · MEM-DEPTH Done · MEM-OBS.1 · ADR-MEM-001
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-Procedural memory minimal · temporal fact validity (MEM-DEPTH-5.2) · LangMem/Zep parity gaps on entity graph · fragmented budgeting partially unified via ContextCompiler
+Procedural memory minimal · org memory maturity · LangMem/Zep parity gaps on entity graph
 
 ---
 
@@ -63,9 +63,9 @@ Procedural memory minimal · temporal fact validity (MEM-DEPTH-5.2) · LangMem/Z
 1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state
 2. `docs/architecture/MEMORY.md` — architecture canon (incl. audit registers if present)
 3. `docs/plan/MEMORY.md` — implementation plan and gap IDs
-4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 15–16
+4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 15
 5. `docs/guides/audit/README.md` — shared production Harness checklist (**mandatory**)
-6. `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix L**
+6. `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix G**
 
 ---
 
@@ -74,10 +74,9 @@ Procedural memory minimal · temporal fact validity (MEM-DEPTH-5.2) · LangMem/Z
 ```text
 intergrax/memory/ (user_profile_memory.py, contracts/)
 intergrax/runtime/nexus/session/ · intergrax/runtime/task_memory/
-intergrax/runtime/nexus/context/context_manager.py · context_models.py
 intergrax/runtime/organization/ · consolidation services
-applications/_shared/memory_wiring.py · context_runtime_bridge.py · context_wiring.py
-ContextCompiler (MEM-DEPTH)
+applications/_shared/memory_wiring.py · memory_runtime_bridge.py
+EntityGraphMemoryStore · workspace_index_spike.py (RFC — CE owns production wiring)
 ```
 
 Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
@@ -93,16 +92,14 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 3. Session vs checkpoint vs task KV stores distinct.
 4. Every read/write scoped; subagent namespace isolation (task_id/delegation/{node_id}/).
 5. MemoryWritePolicy + BEFORE_MEMORY_WRITE hooks enforced.
-6. Context assembly via ContextProfile + ContextBudgetPolicy.
-7. Provenance on every AgentContextBundle fragment.
-8. ContextCompiler unified budget (MEM-DEPTH) — not siloed trims.
-9. Retrieval-first for large history — SUMMARIZE_OLDEST/TRUNCATE_OLDEST ladders.
-10. Knowledge (RAG) ≠ user LTM — graph RAG ≠ Zep-style entity memory.
-11. Retention_days, FIFO session limits, LTM top_k enforced.
-12. LTM logical delete tombstones vectors where applicable.
-13. Org profile vs user profile separation.
-14. Consolidation triggers configured in MemoryProfile.
-15. RAG knowledge does not silently mutate user memory profile.
+6. Retrieval-first for large history — consolidation not full dump.
+7. Knowledge (RAG) ≠ user LTM — graph RAG ≠ Zep-style entity memory.
+8. Retention_days, FIFO session limits, LTM top_k enforced.
+9. LTM logical delete tombstones vectors where applicable.
+10. Org profile vs user profile separation.
+11. Consolidation triggers configured in MemoryProfile.
+12. RAG knowledge does not silently mutate user memory profile.
+13. Layer C context compiler spec lives in CONTEXT_ENGINEERING canon — not duplicated here.
 
 ---
 
@@ -111,9 +108,9 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 For each probe describe **actual code path**, limits, and failure mode:
 
 - Long session exceeding FIFO — summarization path.
-- Tight token budget with multi-source context.
 - Delegation namespace isolation under parallel subagents.
 - Large LTM corpus with vector search + dedup.
+- Entity graph memory under concurrent writes.
 
 ---
 
@@ -121,7 +118,7 @@ For each probe describe **actual code path**, limits, and failure mode:
 
 Confirm overrides are **wired in code**, not documentation-only:
 
-MemoryProfile · ContextProfile · context_runtime_bridge · BEFORE_MEMORY_WRITE hooks · TaskMemoryViewBinding on ToolWiringContext
+MemoryProfile · memory_runtime_bridge · BEFORE_MEMORY_WRITE hooks · TaskMemoryViewBinding on ToolWiringContext
 
 ---
 
@@ -143,7 +140,7 @@ Apply **every** section in `docs/guides/audit/README.md` §Shared production Har
 
 ## 7. Production baseline comparison
 
-Compare against: **Mem0/Zep/Letta taxonomies · LangMem consolidation · Anthropic-style context budgeting**
+Compare against: **Mem0/Zep/Letta taxonomies · LangMem consolidation**
 
 State explicitly:
 
@@ -158,7 +155,7 @@ State explicitly:
 
 ## 8. Anti-patterns (must not be present)
 
-- Global memory store · full chat history dump · graph RAG as user memory · unscoped writes · agents with DB drivers
+- Global memory store · graph RAG as user memory · unscoped writes · agents with DB drivers
 
 ---
 
@@ -173,8 +170,8 @@ If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile 
 ## 10. Verification — run and cite
 
 ```bash
-uv run pytest tests/unit/runtime/nexus/context/ -q
 uv run pytest tests/unit/memory/ -q
+uv run pytest tests/unit/applications/test_memory_profile_runtime_bridge.py -m gate -q
 ```
 
 Add any domain-specific scripts you discover. If a command fails, state why.

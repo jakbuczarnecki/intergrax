@@ -16,7 +16,7 @@ DOMAINS: list[dict] = [
         "layers": "1–2, 32",
         "mission": (
             "Verify Intergrax is developed as a **Harness AI / Agent OS** — the runtime is the durable "
-            "product, agents are replaceable — with enforced four-tier boundaries, 21 domain-pair documentation "
+            "product, agents are replaceable — with enforced four-tier boundaries, 22 domain-pair documentation "
             "governance, gate maintenance discipline, and strategic alignment to IDEAL_HARNESS_AI_ARCHITECTURE."
         ),
         "code": """docs/intergrax_runtime_architecture.md (hub)
@@ -39,7 +39,7 @@ Sample imports across intergrax/, agents/, applications/ for tier violations""",
             "Tier-2 agents consume Tier-0 via policy/ToolRuntime — no vendor SDK imports.",
             "Tier-3 applications compose runtime+agents+profiles — no duplicated agent pipelines.",
             "Import boundaries enforced: `intergrax/` ↛ `agents/`/`applications/`; agents ↛ applications.",
-            "Documentation model: hub-only `docs/` root; 21 architecture↔plan pairs 1:1; no monolithic plan.",
+            "Documentation model: hub-only `docs/` root; 22 architecture↔plan pairs 1:1; no monolithic plan.",
             "New capabilities reuse Tier-0 (§5.2.2) — no parallel universal mechanisms.",
             "LLM calls via `llm_adapters/` — not Integration Library vendor wrappers.",
             "Integrations register via manifest/`register_from_manifest` — not ad-hoc SDK in agents.",
@@ -656,51 +656,98 @@ scripts/check_llm_adapter_typed_returns.py · scripts/check_agents_llm_adapter_r
     },
     {
         "id": "MEMORY",
-        "title": "Memory and Context Engineering",
-        "layers": "15–16",
+        "title": "Memory Platform",
+        "layers": "15",
         "mission": (
-            "Audit **memory stores**, scopes, lifecycle, **ContextManager** assembly, budgets, "
-            "consolidation, and Knowledge-vs-LTM boundary — explicit, governed, observable, retrieval-first."
+            "Audit **memory stores**, scopes, lifecycle, consolidation, and Knowledge-vs-LTM boundary — "
+            "explicit, governed, observable, retrieval-first. Context assembly is audited under CONTEXT_ENGINEERING."
         ),
         "code": """intergrax/memory/ (user_profile_memory.py, contracts/)
 intergrax/runtime/nexus/session/ · intergrax/runtime/task_memory/
-intergrax/runtime/nexus/context/context_manager.py · context_models.py
 intergrax/runtime/organization/ · consolidation services
-applications/_shared/memory_wiring.py · context_runtime_bridge.py · context_wiring.py
-ContextCompiler (MEM-DEPTH)""",
-        "key_symbols": "MemoryProfile · MemoryKind · MemoryWritePolicy · PolicyScopedMemoryView · AgentContextBundle · ContextBudgetPolicy · TaskContextAssemblyOptions · MemoryConsolidationJob · DegradationLadder · ContextProfile",
+applications/_shared/memory_wiring.py · memory_runtime_bridge.py
+EntityGraphMemoryStore · workspace_index_spike.py (RFC — CE owns production wiring)""",
+        "key_symbols": "MemoryProfile · MemoryKind · MemoryWritePolicy · PolicyScopedMemoryView · MemoryConsolidationJob · MemoryView · SharedTaskContext",
         "active_phases": "MEM Done · MEM-DEPTH Done · MEM-OBS.1 · ADR-MEM-001",
-        "known_gaps": "Procedural memory minimal · temporal fact validity (MEM-DEPTH-5.2) · LangMem/Zep parity gaps on entity graph · fragmented budgeting partially unified via ContextCompiler",
+        "known_gaps": "Procedural memory minimal · org memory maturity · LangMem/Zep parity gaps on entity graph",
         "dimensions": [
             "Memory types separated: STM, task KV, session, user LTM, tenant, procedural, shared context.",
             "Agents do not write Redis/Postgres/vector DB directly.",
             "Session vs checkpoint vs task KV stores distinct.",
             "Every read/write scoped; subagent namespace isolation (task_id/delegation/{node_id}/).",
             "MemoryWritePolicy + BEFORE_MEMORY_WRITE hooks enforced.",
-            "Context assembly via ContextProfile + ContextBudgetPolicy.",
-            "Provenance on every AgentContextBundle fragment.",
-            "ContextCompiler unified budget (MEM-DEPTH) — not siloed trims.",
-            "Retrieval-first for large history — SUMMARIZE_OLDEST/TRUNCATE_OLDEST ladders.",
+            "Retrieval-first for large history — consolidation not full dump.",
             "Knowledge (RAG) ≠ user LTM — graph RAG ≠ Zep-style entity memory.",
             "Retention_days, FIFO session limits, LTM top_k enforced.",
             "LTM logical delete tombstones vectors where applicable.",
             "Org profile vs user profile separation.",
             "Consolidation triggers configured in MemoryProfile.",
             "RAG knowledge does not silently mutate user memory profile.",
+            "Layer C context compiler spec lives in CONTEXT_ENGINEERING canon — not duplicated here.",
         ],
         "scale_probes": [
             "Long session exceeding FIFO — summarization path.",
-            "Tight token budget with multi-source context.",
             "Delegation namespace isolation under parallel subagents.",
             "Large LTM corpus with vector search + dedup.",
+            "Entity graph memory under concurrent writes.",
         ],
-        "overrides": "MemoryProfile · ContextProfile · context_runtime_bridge · BEFORE_MEMORY_WRITE hooks · TaskMemoryViewBinding on ToolWiringContext",
+        "overrides": "MemoryProfile · memory_runtime_bridge · BEFORE_MEMORY_WRITE hooks · TaskMemoryViewBinding on ToolWiringContext",
         "ci_scripts": [
-            "uv run pytest tests/unit/runtime/nexus/context/ -q",
             "uv run pytest tests/unit/memory/ -q",
+            "uv run pytest tests/unit/applications/test_memory_profile_runtime_bridge.py -m gate -q",
         ],
-        "production_baseline": "Mem0/Zep/Letta taxonomies · LangMem consolidation · Anthropic-style context budgeting",
-        "anti_patterns": "Global memory store · full chat history dump · graph RAG as user memory · unscoped writes · agents with DB drivers",
+        "production_baseline": "Mem0/Zep/Letta taxonomies · LangMem consolidation",
+        "anti_patterns": "Global memory store · graph RAG as user memory · unscoped writes · agents with DB drivers",
+        "appendix": "Appendix G",
+    },
+    {
+        "id": "CONTEXT_ENGINEERING",
+        "title": "Context Engineering Engine",
+        "layers": "16",
+        "mission": (
+            "Audit the **Tier-1 context compiler engine**: plugin providers, budget/degradation, step-aware assembly, "
+            "provenance, quality scoring, observability, and Tier-3 ContextProfile control plane — integrated with Harness."
+        ),
+        "code": """intergrax/runtime/nexus/context/ (context_engine.py target, context_compiler.py, context_manager.py)
+intergrax/runtime/nexus/runtime_steps/compile_context_step.py
+intergrax/runtime/architecture/context_engineering.py · context_regression_benchmark.py
+intergrax/contracts/context_assembly.py
+intergrax/context/ (target contracts + plugin registry)
+applications/_shared/context_runtime_bridge.py · context_wiring.py
+intergrax/runtime/events/context_skill_recording.py · payloads/canonical.py""",
+        "key_symbols": "ContextEngine · ContextSourceProvider · ContextFragment · ContextAssemblyRequest · AssembledContext · ContextCompiler · ContextManager · AgentContextBundle · ContextBudgetPolicy · TaskContextAssemblyOptions · ContextDecisionProfile · ContextProfile · DegradationLadder",
+        "active_phases": "CTX Done · CE-DOC Done · CE-EXT Planned (CE-1..CE-12)",
+        "known_gaps": "No plugin catalog (GAP-CTX-01) · dual assembly paths (GAP-CTX-02) · not step-aware (GAP-CTX-04) · workspace provider spike only (GAP-CTX-06) · OTel spans partial (GAP-CTX-09)",
+        "dimensions": [
+            "ContextEngine.assemble() is the single target entry (CE-3) — no agent prompt concatenation.",
+            "ContextSourceProvider plugin catalog with register_context_plugin (CE-2).",
+            "Global token budget + DegradationLadder never-overflow (ADR-MEM-001 / ContextCompiler).",
+            "Provenance on every included/excluded fragment.",
+            "CONTEXT_ASSEMBLED / CONTEXT_TRIMMED events on all paths.",
+            "BEFORE_CONTEXT_BUILD / AFTER_CONTEXT_BUILD hooks wired.",
+            "ContextProfile drives Tier-3 presets (default, codebase, regulated_minimal).",
+            "Step-aware ContextAssemblyRequest (step_kind, objective) on UAEP path (CE-4).",
+            "Quality scoring integrated in DefaultContextRanker (CE-10).",
+            "OTel spans on assemble/collect/budget (CE-9).",
+            "RAG/Memory/Tool outputs enter via providers — not CE owning retrieval.",
+            "Codebase preset uses WorkspaceContextProvider — not full repo dump.",
+            "Context regression benchmark gates preset drift.",
+            "Forbidden: Tier-2 imports of Nexus context internals for assembly.",
+        ],
+        "scale_probes": [
+            "128k budget with multi-source fragments — degradation ladder trace.",
+            "Graph node SUMMARY_ONLY tier under tight budget.",
+            "Codebase 1k+ files — retrieval-first workspace provider.",
+            "Delegation child explore preset — parent synthesis only.",
+        ],
+        "overrides": "ContextProfile · context_runtime_bridge · context_wiring · context_plugins[] · engine_preset · BEFORE_CONTEXT_BUILD hooks",
+        "ci_scripts": [
+            "uv run pytest tests/unit/runtime/nexus/context/ -m gate -q",
+            "uv run pytest tests/unit/applications/test_context_wiring.py -m gate -q",
+            "uv run pytest tests/acceptance/test_acceptance_context_compiler_long_session.py -q",
+        ],
+        "production_baseline": "Cursor-class context engine · Anthropic-style budgeting · LangGraph-style state injection patterns",
+        "anti_patterns": "Agent-built prompts · silent fragment drop · string-heuristic source detection as final state · CE logic in Tier-2",
         "appendix": "Appendix L",
     },
     {

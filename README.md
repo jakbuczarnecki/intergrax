@@ -416,7 +416,7 @@ intergrax/              # Tier-0 platform + Tier-1 Nexus
   scaffold/             # new-agent, new-application, new-stack
 agents/                 # Tier-2 specialized agents
 applications/           # Tier-3 deployable hosts
-docs/                   # Architecture canon (21 domain pairs) + guides
+docs/                   # Architecture canon (22 domain pairs) + guides
 infra/                  # Local Docker compose for backends
 tests/ · scripts/       # Gate tests and harness CI checks
 ```

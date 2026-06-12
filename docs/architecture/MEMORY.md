@@ -4,9 +4,10 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Plan (1:1):** [`plan/MEMORY.md`](../plan/MEMORY.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
-**Audit layers:** 15–16  
+**Audit layer:** 15 (Memory)  
 **Audit instruction:** [`guides/audit/MEMORY.md`](../guides/audit/MEMORY.md)  
-**Related:** [`architecture/RAG.md`](RAG.md) — Tier-0 retrieval engine; this doc covers memory stores, context assembly, and the **Knowledge vs LTM** boundary.  
+**Context assembly (Layer C):** [`architecture/CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md)  
+**Related:** [`architecture/RAG.md`](RAG.md) — Tier-0 retrieval engine; this doc covers **memory stores, lifecycle**, and the **Knowledge vs LTM** boundary.  
 ---
 
 ## 2. Design principles
@@ -14,12 +15,12 @@
 | Principle | Meaning in Intergrax |
 |-----------|---------------------|
 | **Explicit stores** | Memory is never an implicit side effect of chat history alone. Every durable fact has a store, scope, and write path. |
-| **Tier-1 ownership** | Nexus owns session history, context assembly, consolidation triggers, and budget policy. Agents consume via `MemoryView` and runtime steps — no direct DB access. |
+| **Tier-1 ownership** | Nexus owns session history, consolidation triggers, and memory read APIs. Agents consume via `MemoryView` — no direct DB access. **Context assembly** is [`CONTEXT_ENGINEERING`](CONTEXT_ENGINEERING.md). |
 | **Bounded by default** | FIFO session limits, token budgets, LTM top_k, retention_days, namespace isolation. Unbounded growth is a defect. |
 | **Separation of concerns** | **Memory** = persisted state. **Context** = what the model sees this turn. **Knowledge** = document RAG (agent-mutable only via explicit tools). **Trace** = immutable audit. |
 | **Retrieval-first for scale** | Large corpora (documents, codebase, long history) enter context via retrieval, summarization, or delegation — not full dumps. |
 | **Policy-governed writes** | Sensitive LTM writes pass `BEFORE_MEMORY_WRITE` hooks and `MemoryWritePolicy`. |
-| **Provenance everywhere** | Every context fragment in `AgentContextBundle` and every trim/summary MUST be traceable. |
+| **Provenance on read** | Memory reads consumed by CE MUST be attributable — see [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §12. |
 | **Graph RAG ≠ agent memory** | Document knowledge graphs (`intergrax/rag/graph/`) are retrieval infrastructure — not user entity / episodic memory (Zep-style). |
 
 ---
@@ -38,18 +39,19 @@ Production-grade Harness AI separates three cooperating layers:
 │  LAYER B — Memory Lifecycle (when and how to persist)                    │
 │  extract → score → dedup → store → index → forget/TTL                   │
 └───────────────────────────────┬─────────────────────────────────────────┘
-                                │ read path
-┌───────────────────────────────▼─────────────────────────────────────────┐
-│  LAYER C — Context Compiler (what the LLM sees this turn)                │
-│  collect → rank → budget → compress → format → validate → provenance    │
-└─────────────────────────────────────────────────────────────────────────┘
+                                │ read API (MemoryView, session, LTM search)
+                                ▼
+              ┌─────────────────────────────────────────┐
+              │  LAYER C — Context Engineering         │
+              │  (separate domain — see CONTEXT_ENGINEERING.md) │
+              └─────────────────────────────────────────┘
 ```
 
 | Layer | Phase MEM (Done) | Phase MEM-DEPTH (Done) |
 |-------|------------------|------------------------|
 | **A — Stores** | Four operational stores + trace + RAG wired | Mongo session parity + entity graph store |
 | **B — Lifecycle** | Manual/scheduled consolidation service | Auto job, dedup, episodic, structured summaries |
-| **C — Context Compiler** | Separate steps (`HistoryLayer`, budget trim) | Unified `ContextCompiler` + `DegradationLadder` + pre-flight |
+| **C — Context Engineering** | Documented under MEMORY (legacy) | **Split to [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md)** — `ContextCompiler` delivery Done |
 
 ---
 
@@ -181,7 +183,12 @@ Extraction produces up to `max_facts` `USER_FACT`, `max_preferences` `PREFERENCE
 
 ---
 
-## 7. Read path — context assembly today
+## 7. Read path — context assembly (moved)
+
+> **Canonical spec:** [`architecture/CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §7–§14.  
+> This section retains a **summary** for MEMORY↔CE navigation only.
+
+## 7.1 Read path — context assembly today (summary)
 
 ### 7.1 Nexus session turn pipeline
 
@@ -503,7 +510,7 @@ See [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) §3.
 | Context compiler (unified) | 4.5 | N/A | Done |
 | **Overall** | **~4.2** | Platform wiring Done | **Done** (2026-06-08) |
 
-**FAUDIT-32:** Memory Layer **L3+** · Context Engineering **L4** — Phase MEM-DEPTH closeout.
+**FAUDIT-32:** Memory Layer **L3+** — Phase MEM-DEPTH closeout. Context Engineering scored separately — [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §3.
 
 All implementation tasks: [Phase MEM-DEPTH](../plan/MEMORY.md).
 
@@ -515,7 +522,8 @@ All implementation tasks: [Phase MEM-DEPTH](../plan/MEMORY.md).
 |----------|--------------|
 | [intergrax_runtime_architecture.md §27–§28](architecture/MEMORY.md#27-memory-model) | Canon summary — links here for depth |
 | [guides/AGENT_CREATION_GUIDE.md Appendix G](guides/AGENT_CREATION_GUIDE.md#appendix-g--memory--rag-naming-phase-q) | Author control plane |
-| [guides/AGENT_CREATION_GUIDE.md Appendix L](guides/AGENT_CREATION_GUIDE.md#appendix-l--context-engineering-control-plane) | Context engineering control plane |
+| [architecture/CONTEXT_ENGINEERING.md](CONTEXT_ENGINEERING.md) | Context engineering engine (Layer C) |
+| [guides/AGENT_CREATION_GUIDE.md Appendix L](guides/AGENT_CREATION_GUIDE.md#appendix-l--context-engineering-control-plane) | Author control plane (links CE canon) |
 | [architecture/TOOLS.md](architecture/TOOLS.md) | `memory.*` and `rag.retrieve` tools |
 | [architecture/NEXUS_EXECUTION_FLOW.md](architecture/NEXUS_EXECUTION_FLOW.md) | Runtime turn narrative |
 | [IDEAL_HARNESS_AI_ARCHITECTURE.md §16](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md#16-context-engineering-layer) | Target context compiler vision |
@@ -526,20 +534,9 @@ All implementation tasks: [Phase MEM-DEPTH](../plan/MEMORY.md).
 
 ---
 
-## 19. Context Quality Hardening
+## 19. Context quality (delegated)
 
-Context engineering MUST include explicit quality controls (not only token budgeting):
-
-| Control | Mechanism |
-|---------|-----------|
-| Relevance / freshness / confidence | Scoring in context assembly |
-| Duplicate suppression | Context noise controls |
-| Regression benchmarks | `context_regression_benchmark.py` |
-| Lineage | Traceable chain from output evidence → source |
-
-**Code:** `runtime/architecture/context_engineering.py`, `retrieval_effectiveness.py`, `runtime/nexus/context/`.
-
-**Authoring:** [`guides/AGENT_CREATION_GUIDE.md` Appendix L](../guides/AGENT_CREATION_GUIDE.md).
+Context quality controls (scoring, dedup, regression, lineage) are owned by **[`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §11**.
 
 ---
 

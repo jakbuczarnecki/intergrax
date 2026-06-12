@@ -6,8 +6,12 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import StrEnum
+from typing import Final
 
 from pydantic import BaseModel, ConfigDict, Field
+
+RUN_ARTIFACT_BUNDLE_METADATA_KEY: Final[str] = "run_artifact_bundle.v1"
+APPLICATION_ARTIFACTS_STAGING_KEY: Final[str] = "application_artifacts.v1"
 
 
 def _utc_now() -> datetime:

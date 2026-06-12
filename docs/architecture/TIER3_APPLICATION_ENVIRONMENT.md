@@ -606,6 +606,8 @@ ApplicationRunSummary:
     agent_invocations: list[AgentInvocationSummary]
     total_agents / total_steps / total_llm_tokens
     completed_at
+    metadata:
+        run_artifact_bundle.v1 → RunArtifactBundle §48
 ```
 
 Populated by `build_application_run_summary()` on Nexus task completion (ACP-OBS-2). Attached to `TaskResult.metadata` under `application_run_summary.v1`.

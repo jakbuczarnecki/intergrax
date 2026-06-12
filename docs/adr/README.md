@@ -50,6 +50,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-CRITIC-001](ADR-CRITIC-001.md) | Critic & Verification Layer — tier-separated PEV verify stack | Accepted |
 | [ADR-OBS-001](ADR-OBS-001.md) | Harness Observability Spine — unified bus for all tiers | Accepted |
 | [ADR-MEM-001](ADR-MEM-001.md) | Context Compiler — global budget allocator and degradation ladder | Accepted |
+| [ADR-CTX-001](ADR-CTX-001.md) | Context Engineering as first-class domain and plugin engine | Accepted |
 | [ADR-SCALE-001](ADR-SCALE-001.md) | Harness Elastic Capacity Plane — complement K8s HPA | Accepted |
 | [ADR-GR-001](ADR-GR-001.md) | LLM guardrail integration plane (M-P12) | Accepted |
 | [ADR-CODECRAFT-001](ADR-CODECRAFT-001.md) | Ephemeral Code Craft as separate Harness domain | Accepted |
