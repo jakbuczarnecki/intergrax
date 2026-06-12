@@ -94,6 +94,9 @@ class BuiltinContextPlugin:
         )
         from intergrax.context.providers.workspace import WorkspaceContextProvider
 
+        from intergrax.context.formatter import DefaultContextFormatter
+
+        registry.set_formatter(DefaultContextFormatter())
         for provider_id, source in _BUILTIN_SPECS:
             if provider_id == "builtin.workspace":
                 registry.add_provider(WorkspaceContextProvider())

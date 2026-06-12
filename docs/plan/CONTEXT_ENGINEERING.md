@@ -50,7 +50,7 @@
 | GAP-CTX-16 | CE-8.2b, CE-PROV-CTX | CE-ALIGN | **Closed** |
 | GAP-CTX-17 | CE-ENG-REF | CE-ALIGN | **Closed** |
 | GAP-CTX-18 | CE-PRESET-ENG | CE-ALIGN | **Closed** |
-| GAP-CTX-19 | CE-REGISTRY-FMT | CE-ALIGN | **Open** — `ContextFormatter` / `ContextBudgetAllocator` registry unused in engine |
+| GAP-CTX-19 | CE-REGISTRY-FMT | CE-ALIGN | **Closed** (formatter via catalog; allocator = ContextCompiler) |
 
 ---
 
@@ -86,9 +86,9 @@
 | **CE-8.2b** | Wire `ContextOrchestrator.assemble_with_hops` on graph `codebase` preset | P1 | **Done** |
 | **CE-ENG-REF** | Resolve `ContextProfile.engine_ref` custom class via dotted import | P1 | **Done** |
 | **CE-PRESET-ENG** | `RegulatedMinimalContextEngine` + `ExploreChildContextEngine` ranker/threshold behavior | P2 | **Done** |
-| **CE-REGISTRY-FMT** | Engine uses registry `formatter` / `allocator` when plugin sets them | P2 | Planned |
+| **CE-REGISTRY-FMT** | Engine uses registry `formatter` when plugin sets it (`BuiltinContextPlugin`) | P2 | **Done** |
 | **CE-PROV-CTX** | Graph `provider_ctx` handles: `workspace_files`, session vector flags from task/env | P1 | **Done** |
-| **CE-7.5b** | Integration test: 1k-file workspace → assemble under token budget with fragment in window | P1 | Planned |
+| **CE-7.5b** | Integration test: 1k-file workspace → assemble under token budget with fragment in window | P1 | **Done** |
 | **CE-UAEP-ASM** | UAEP session turn optional `ContextEngine.assemble()` when engine wired | P2 | Planned |
 | **CE-HOOKS-GRAPH** | `BEFORE_CONTEXT_BUILD` / `AFTER_CONTEXT_BUILD` on graph engine assemble | P2 | Planned |
 
@@ -408,7 +408,7 @@ Post-audit alignment sprints. One sprint = one commit.
 | **A1** | Fragment format merge | CE-FMT-1, CE-FMT-2 | Ranked fragments injected into messages before compile; excluded tuple populated | **Done** |
 | **A2** | Orchestrator hot path | CE-8.2b, CE-PROV-CTX | Codebase graph assemble uses orchestrator; workspace handles on provider_ctx | **Done** |
 | **A3** | Custom engine + presets | CE-ENG-REF, CE-PRESET-ENG | `engine_ref` resolves; regulated_minimal / explore_child engines | **Done** |
-| **A4** | Registry + e2e test | CE-REGISTRY-FMT, CE-7.5b | Registry formatter used; 1k workspace assemble gate test |
+| **A4** | Registry + e2e test | CE-REGISTRY-FMT, CE-7.5b | Registry formatter used; 1k workspace assemble gate test | **Done** |
 | **A5** | UAEP + graph hooks | CE-UAEP-ASM, CE-HOOKS-GRAPH | Optional UAEP assemble; hooks on graph engine path |
 | **A6** | Closeout audit | CE-DOC.10 | Re-audit; GAP-CTX-15..19 Closed or deferred; journal |
 

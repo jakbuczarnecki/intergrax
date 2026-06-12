@@ -63,6 +63,57 @@ def test_workspace_index_and_provider_chunks() -> None:
 
 
 @pytest.mark.asyncio
+async def test_one_k_workspace_assemble_stays_under_budget() -> None:
+    from intergrax.llm.messages import ChatMessage
+    from intergrax.runtime.nexus.config import RuntimeConfig
+    from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+    from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+    from intergrax.context.bootstrap import materialize_context_plugin_registry
+    from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
+
+    class _WindowAdapter(LLMAdapter):
+        provider = "fake"
+        model = "fake-1k"
+
+        @property
+        def context_window_tokens(self) -> int:
+            return 2048
+
+        def generate_messages(self, messages, **kwargs) -> LLMAdapterResponse:
+            _ = messages, kwargs
+            return LLMAdapterResponse(content="ok")
+
+    files = {f"f{i}.py": f"print({i})\n" for i in range(1000)}
+    registry = materialize_context_plugin_registry(["intergrax.builtin"])
+    engine = CodebaseContextEngine(registry=registry)
+    adapter = _WindowAdapter()
+    config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
+    request = ContextAssemblyRequest(
+        trace_id="t",
+        run_id="r",
+        task_id="task",
+        tenant_id="tenant",
+        assembly_scope="graph_node",
+        objective="review codebase",
+        decision_profile=ContextDecisionSnapshot(),
+        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=512),
+        assembly_options=TaskContextAssemblyOptions(),
+    )
+    ctx = ContextProviderContext(
+        handles={
+            "runtime_config": config,
+            "messages": [ChatMessage(role="user", content="summarize")],
+            "workspace_files": files,
+            "workspace_max_chunks": 8,
+        }
+    )
+    assembled = await engine.assemble(request, provider_ctx=ctx)
+    assert assembled.total_tokens <= assembled.budget_tokens
+    assert assembled.fragments_included
+    assert any("f" in (msg.content or "") for msg in assembled.messages)
+
+
+@pytest.mark.asyncio
 async def test_workspace_provider_respects_max_chunks() -> None:
     provider = WorkspaceContextProvider()
     files = {f"f{i}.py": "x\n" for i in range(50)}
