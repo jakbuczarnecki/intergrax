@@ -38,7 +38,11 @@ from intergrax.agents.configure_run_strict import ConfigureRunStrictViolation
 from intergrax.agents.run_environment import EffectiveAgentRunEnvironment, merge_environment
 from intergrax.tools.tool_execution_profile import build_profile_map
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey, AcpRunContextKey, AcpStructuredDataKey
-from intergrax.contracts.acp_state import ACP_STATE_KEY
+from intergrax.agents.acp_token_metering_bridge import (
+    initial_invocation_usage,
+    seed_state_root_budget_limits,
+)
+from intergrax.contracts.acp_state import ACP_STATE_KEY, ACP_USAGE_KEY
 from intergrax.contracts.agent_run import AgentRunError, AgentRunRequest, AgentRunResult
 from intergrax.contracts.agent_run_trace import AgentRunTrace
 from intergrax.contracts.agent_run_enums import (
@@ -136,6 +140,8 @@ async def run_acp_session(
     if resume is not None:
         state_root = resume.state_root
         start_step_index = resume.start_step_index
+    else:
+        state_root = seed_state_root_budget_limits(state_root, merged.resolved_budget_limits)
 
     task_id = str(request.metadata.get("task_id") or run_id)
     run_trace = AgentRunTrace(run_id=run_id)
@@ -177,6 +183,7 @@ async def run_acp_session(
         reliability=reliability,
         state_root=state_root,
         run_trace=run_trace,
+        resolved_budget_limits=merged.resolved_budget_limits,
     )
     kernel_ctx.checkpoint_hook = make_checkpoint_hook(
         persistence=persistence,
@@ -195,6 +202,24 @@ async def run_acp_session(
         task_id=task_id,
     )
 
+    step_metadata = {
+        **merged.merged_metadata,
+        AcpRunContextKey.RUN_INPUT: request.input,
+        AcpRunContextKey.TENANT_ID: merged.tenant_id,
+        "memory_namespace": merged.memory_namespace,
+        "memory_scope": merged.memory_scope.value,
+        "allowed_tools": list(merged.allowed_tools),
+        AcpRunContextKey.ORGANIZATIONAL: (
+            merged.organizational.model_dump(mode="json")
+            if merged.organizational is not None
+            else None
+        ),
+        **(
+            {AcpRunContextKey.CRITIC_HOOKS: host.critic_graph_hooks}
+            if host is not None and host.critic_graph_hooks is not None
+            else {}
+        ),
+    }
     step_ctx = AgentStepContext(
         step_index=start_step_index,
         run_id=run_id,
@@ -202,26 +227,14 @@ async def run_acp_session(
         contract_id=merged.contract_id,
         side_effect_mode=merged.side_effect_mode,
         state_snapshot=dict(kernel_ctx.state_root),
-        metadata={
-            **merged.merged_metadata,
-            AcpRunContextKey.RUN_INPUT: request.input,
-            AcpRunContextKey.TENANT_ID: merged.tenant_id,
-            "memory_namespace": merged.memory_namespace,
-            "memory_scope": merged.memory_scope.value,
-            "allowed_tools": list(merged.allowed_tools),
-            AcpRunContextKey.ORGANIZATIONAL: (
-                merged.organizational.model_dump(mode="json")
-                if merged.organizational is not None
-                else None
-            ),
-            **(
-                {AcpRunContextKey.CRITIC_HOOKS: host.critic_graph_hooks}
-                if host is not None and host.critic_graph_hooks is not None
-                else {}
-            ),
-        },
+        metadata=step_metadata,
         llm_router=llm_router,
         shared_context=shared_context,
+        invocation_usage=initial_invocation_usage(
+            kernel_ctx.state_root,
+            step_metadata,
+            merged.resolved_budget_limits,
+        ),
     )
 
     max_iterations = merged.max_steps or contract.max_steps or 32
@@ -256,6 +269,7 @@ async def run_acp_session(
             update={
                 "step_index": step_ctx.step_index + 1,
                 "state_snapshot": dict(kernel_ctx.state_root),
+                "invocation_usage": step_ctx.invocation_usage,
             },
         )
 
@@ -284,6 +298,8 @@ async def run_acp_session(
 
     if step_ctx.shared_context is not None:
         persist_view(request.metadata, step_ctx.shared_context)
+    if ACP_USAGE_KEY in step_ctx.metadata:
+        request.metadata[ACP_USAGE_KEY] = step_ctx.metadata[ACP_USAGE_KEY]
 
     artifact_refs = artifact_refs_from_payloads(
         list(last_outcome.artifacts),

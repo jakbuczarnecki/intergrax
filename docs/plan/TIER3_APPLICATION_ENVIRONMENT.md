@@ -119,7 +119,7 @@ Architecture §43 is **implemented jointly** with ACP §25.4–§25.5. Tier-3 co
 |--------------|------------|-----|--------|
 | `CostProfile` / `budget_reaction` config | TIER3 (this file) | H-APP.1.1 `CostProfile` | **Done** |
 | `AgentBinding.budget_slice` | TIER3 + ACP | H-APP.1.2 · ACP §34 | **Done** |
-| Token metering rollups | ACP | **ACP-TOK-1** | Planned |
+| Token metering rollups | ACP | **ACP-TOK-1** | **Done** |
 | Kernel hard cap + block LLM | ACP | **ACP-TOK-2** | Planned |
 | Host notify / HITL / `custom_hook` | ACP + TIER3 | **ACP-TOK-3** · APP-CON-3 | **Partial** (APP-CON-3 **Done** · ACP-TOK-3 open) |
 | CI gate | ACP | **ACP-TOK-CI** | Planned |

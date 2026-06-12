@@ -15,7 +15,7 @@
 
 | Track | Scope | Status | Remaining IDs |
 |-------|-------|--------|---------------|
-| **ACP runtime depth** | §25.4–§25.5 token usage, limits, reactions | **Open** | **ACP-TOK-1** · **ACP-TOK-2** · **ACP-TOK-CI** |
+| **ACP runtime depth** | §25.4–§25.5 token usage, limits, reactions | **Partial** | **ACP-TOK-1** **Done** · **ACP-TOK-2** · **ACP-TOK-CI** |
 | **Architecture doc truth** | §28.3 GAP register · §36.4 · §40.13 tables | **Open** | **ACP-FINISH-DOC-1** (after TOK) |
 | **AUDIT-IDEAL (§12–§20)** | Registry snapshot · cap-graph CI · lifecycle owner | **Parallel** | AUDIT-IDEAL-19.1 · 20.1 · 31.1 |
 | **Gate maintenance** | §6.1 continuous | **Active** | `pytest -m gate` on every PR |
@@ -324,7 +324,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | AUDIT-IDEAL-20.1 | this file §AUDIT-IDEAL | Product CI blast-radius on tool/skill changes | Planned |
 | AUDIT-IDEAL-31.1 | this file §AUDIT-IDEAL | Owner/on-call mandatory on certified agents | Planned |
 | TOOL-ENG-6 | `plan/TOOLS.md` | Tool loop step — sync with ACP-CLOSE-PAT-1 | **Done** |
-| ACP-TOK-1..3 | this file §ACP-FINISH | Token metering, limits, reactions | Planned |
+| ACP-TOK-1..3 | this file §ACP-FINISH | Token metering, limits, reactions | **Partial** (TOK-1 **Done**) |
 | ACP-TOK-CI | this file §ACP-FINISH | Token budget CI gate | Planned |
 | ACP-FINISH-DOC-1 | this file §ACP-FINISH | GAP-ACP-36/37 Closed + §40.13 sync | Planned |
 
@@ -345,7 +345,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 
 | ID | Area | Deliverable | Status | Arch § | Modules / scripts | Acceptance |
 |----|------|-------------|--------|--------|-------------------|------------|
-| ACP-TOK-1 | TOK | **Metering** — agent + environment token rollups in invocation state | Planned | §25.4 · §33.4 | `HarnessKernel`, `acp_run.py`, `merge_environment` | `budget.tokens_*` live; `invocation_usage` refreshed each step; `acp.usage.v1` on task metadata |
+| ACP-TOK-1 | TOK | **Metering** — agent + environment token rollups in invocation state | **Done** | §25.4 · §33.4 | `HarnessKernel`, `acp_run.py`, `merge_environment` | `test_acp_token_usage_metering.py` |
 | ACP-TOK-2 | TOK | **Limits** — per-agent caps from application + hard/advisory enforcement | Planned | §25.5.1–§25.5.2 | `AgentBinding.budget_slice`, `AgentExecutionOptions.max_total_tokens`, kernel pre-LLM check | Hard limit blocks next LLM; advisory exposes `tokens_remaining` only |
 | ACP-TOK-3 | TOK | **Reactions** — environment policies on threshold/exceed | Planned | §25.5.3 · §30.8 | `CostProfile.budget_reaction`, host hooks, notify wiring | `abort` · `hitl` · `degrade_model` · `notify_only` · `custom_hook` paths tested |
 | ACP-TOK-CI | CI | Token budget contract gate | Planned | §25.4–§25.5 · §40.10 | `check_agent_token_budget_contract.py` | CI-18 row; fails if kernel bypasses metering or agents increment budget in state_delta |
@@ -750,7 +750,7 @@ ACP-FINISH:  TOK-1 → TOK-2 → TOK-3 → TOK-CI → FINISH-DOC-1
 
 | Order | ID | Priority | Arch § | Status | Depends |
 |-------|-----|----------|--------|--------|---------|
-| 1 | ACP-TOK-1 | **P1** | §25.4 · §33.4 | Planned | — |
+| 1 | ACP-TOK-1 | **P1** | §25.4 · §33.4 | **Done** | — |
 | 2 | ACP-TOK-2 | **P1** | §25.5.1–§25.5.2 | Planned | TOK-1 |
 | 3 | ACP-TOK-3 | **P1** | §25.5.3 · §30.8 | Planned | TOK-2 |
 | 4 | ACP-TOK-CI | P2 | §40.10 CI-18 | Planned | TOK-1..3 |
