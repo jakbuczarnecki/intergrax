@@ -16,9 +16,24 @@ Write when iteration is **complete** per `intergrax-iteration.mdc` (including jo
 
 **Skip:** brainstorming only, typos/formatting, audit-only with no delivery, operator says **no journal** (state skip rationale in chat).
 
+## Path layout (mandatory)
+
+Full path: `docs/guides/implementation-journal/entries/YYYY-MM-DD/<scope>-<slug>.md`
+
+- **Date belongs in the folder**, not in the filename.
+- The only file allowed directly under `entries/` is `_TEMPLATE.md`.
+
+| Correct | Wrong |
+|---------|-------|
+| `entries/2026-06-11/acp-close-pat-2-reflection-cvl.md` | `entries/2026-06-11-acp-close-pat-2-reflection-cvl.md` |
+| `entries/2026-06-11/rag-m-rag-23.md` | `entries/rag-m-rag-23.md` |
+| `entries/2026-06-11/tools-tool-eng-4.md` | `entries/2026-06-11/tools-2026-06-11-tool-eng-4.md` |
+
+Do **not** mirror harness ADR filenames (`ADR-AREA-NNN.md` under a date folder) by prefixing journal slugs with `YYYY-MM-DD-`.
+
 ## Required actions
 
-1. Create day directory `entries/YYYY-MM-DD/` if missing; copy `_TEMPLATE.md` → `entries/YYYY-MM-DD/<scope>-<slug>.md` (date in folder only — not repeated in filename).
+1. Create day directory `entries/YYYY-MM-DD/` if missing; copy `_TEMPLATE.md` → `entries/YYYY-MM-DD/<scope>-<slug>.md` (date in folder only — **never** in the filename).
 2. **English only** in the journal file.
 3. Frontmatter: `id`, `date`, `tiers` (YAML list), `scope`, `plan_ref` (YAML list of formal IDs), `status: completed`, `commit`, `adr`.
 4. Fill all sections; Operator request = **paraphrase**, not verbatim transcript.
