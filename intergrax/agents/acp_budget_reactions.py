@@ -12,7 +12,7 @@ from intergrax.contracts.agent_budget import (
     BudgetNotifyChannel,
     BudgetReactionProfile,
 )
-from intergrax.contracts.budget_reaction_hook import BudgetReactionHook
+from intergrax.contracts.budget_reaction_hook import BudgetReactionHook, CustomBudgetReactionHook
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.notifications.models import NotificationMessage
@@ -125,14 +125,14 @@ async def handle_hard_budget_violation(
     hook = kernel_ctx.budget_reaction_hook
     if hook is not None and isinstance(hook, BudgetReactionHook):
         await hook.on_budget_exceeded(payload)
-    elif hook is not None and profile is not None:
-        if (
-            reaction == BudgetExceededReaction.CUSTOM_HOOK
-            and profile.custom_hook_id is not None
-        ):
-            custom = getattr(hook, "on_custom_budget_hook", None)
-            if callable(custom):
-                await custom(profile.custom_hook_id, payload)
+    elif (
+        hook is not None
+        and profile is not None
+        and reaction == BudgetExceededReaction.CUSTOM_HOOK
+        and profile.custom_hook_id is not None
+        and isinstance(hook, CustomBudgetReactionHook)
+    ):
+        await hook.on_custom_budget_hook(profile.custom_hook_id, payload)
 
     if reaction == BudgetExceededReaction.HITL:
         return StepOutcome.pause_hitl(

@@ -464,8 +464,6 @@ class ApplicationEnvironmentProfile(BaseModel):
             tool_enabled.extend(
                 [
                     "errors.capture",
-                    "harness.echo",
-                    "harness.skill_registry",
                     "sandbox.exec",
                 ]
             )

@@ -8,7 +8,6 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_runtime_event_store
 from intergrax.integrations.providers.relational_store.sqlite.paths import (
     DEFAULT_RUNTIME_EVENTS_DB,
     ENV_RUNTIME_EVENTS_DB,
@@ -31,6 +30,10 @@ __all__ = [
 
 def open_runtime_event_store(db_path: Path | None = None) -> SQLiteRuntimeEventStore:
     """Open SQLite runtime event store via ``integrations.providers.sqlite``."""
+    from intergrax.integrations.providers.relational_store.sqlite import (
+        create_sqlite_runtime_event_store,
+    )
+
     if db_path is not None:
         return create_sqlite_runtime_event_store(db_path=db_path)  # type: ignore[return-value]
     return create_sqlite_runtime_event_store()  # type: ignore[return-value]

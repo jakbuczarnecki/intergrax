@@ -14,3 +14,10 @@ class BudgetReactionHook(Protocol):
     async def on_budget_threshold(self, payload: dict[str, Any]) -> None: ...
 
     async def on_budget_exceeded(self, payload: dict[str, Any]) -> None: ...
+
+
+@runtime_checkable
+class CustomBudgetReactionHook(Protocol):
+    """Host callback for ``BudgetExceededReaction.CUSTOM_HOOK`` (non-standard hook surface)."""
+
+    async def on_custom_budget_hook(self, hook_id: str, payload: dict[str, Any]) -> None: ...
