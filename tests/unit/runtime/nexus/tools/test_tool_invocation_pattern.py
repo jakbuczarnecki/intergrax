@@ -29,7 +29,8 @@ class _Out(BaseModel):
 
 
 class _Planner:
-    def plan_tools(self, input_data, context=None, *, run_id, allowed_tool_ids=None):
+    def plan_tools(self, input_data, context=None, *, run_id, allowed_tool_ids=None, tool_choice=None):
+        _ = tool_choice
         _ = input_data, context, run_id, allowed_tool_ids
         return ToolPlanDecision(
             final_answer=None,

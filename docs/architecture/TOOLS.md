@@ -297,7 +297,7 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 | **Standard selection** (full schema → LLM) | **Production** | `FullCatalogSelectionStrategy` + `ToolPlanningService` (TOOL-ENG-0/4/5) |
 | **Pre-filter selection** (keyword / skill / static) | **Partial** | `ToolSelectionStrategy` — static, `skill_pack`, `retrieval_top_k` (keyword overlap, not embeddings) |
 | **Semantic tool index** | **Gap** | Planned **TOOL-ENG-13** — vector index of `ToolContract` descriptions |
-| **Hierarchical tool selection** | **Gap** | Planned **TOOL-ENG-14** — category-tree traversal before final LLM pick |
+| **Hierarchical tool selection** | **Done v1** | TOOL-ENG-14 — deterministic category→tool passes; LLM category pass deferred |
 | **`tool_ids` plan dispatch** | **Done** | `catalog_dispatch.invoke_catalog_tool_ids` after pipeline shims (TOOL-ENG-1) |
 | **§42.12 gateway** | **Partial** | Catalog `tool_id` → invoker (TOOL-ENG-2); runtime-bound + sandbox unchanged |
 | **`tool_scope_policy` wiring** | **Done** | Passed to `RuntimeToolInvoker` in `RuntimeContext.build()` (TOOL-ENG-3) |
@@ -729,26 +729,24 @@ ToolsStep → resolve_planner_allowed_tool_ids(FULL_CATALOG | STATIC with no pla
 
 **Definition:** Build a **vector index** of tool metadata (`tool_id`, `description`, `description_short`, `tags`, `category`). On each planner request, embed the user query (or planner input text), retrieve top-k similar tools, export **only that subset** to the LLM.
 
-**Implementation today:** **Not shipped.** `ToolSelectionMode.RETRIEVAL_TOP_K` is **not** semantic mode — it ranks by **keyword token overlap** in `RetrievalTopKSelectionStrategy` (`tool_selection.py`), with no embedding manager or vector store.
-
-**Target (TOOL-ENG-13):**
+**Implementation today:** **Done** (TOOL-ENG-13 · ADR-TOOL-004). `ToolSelectionMode.SEMANTIC` → `SemanticToolIndexSelectionStrategy` + in-memory `ToolCatalogEmbedder` index. `RETRIEVAL_TOP_K` / `KEYWORD_TOP_K` remain keyword overlap only.
 
 ```text
-bootstrap / catalog change → ToolCatalogEmbedder → tool_vector_index
-ToolsStep query → embed → similarity search → top-k tool_ids → ToolPlanningService
+bootstrap / registry change → ToolCatalogEmbedder → in-memory index
+ToolsStep query → embed → cosine top-k → tool_ids → ToolPlanningService
 ```
 
-Reuse Tier-0 RAG primitives (`embedding_manager`, dedicated collection e.g. `__harness_tool_catalog__`) — distinct from `rag.retrieve` document index.
+Reuse Tier-0 `embedding_manager` — distinct from `rag.retrieve` document index.
 
-**Observability target:** trace `tool_selection_mode`, candidate `tool_id`s, scores; `ops:tool_selection` hint.
+**Observability:** `ToolSelectionDiagV1` (`ops:tool_selection`) with semantic scores when available (TOOL-ENG-32).
 
 ### Hierarchical mode
 
 **Definition:** Tools are organized in a **tree** (bundle → `category` → `tool_id`). The LLM traverses the tree in bounded passes: e.g. (1) pick `category=issue_tracker`, (2) receive schema for `jira.*` + `issues.*` only, (3) emit final `tool_call`.
 
-**Implementation today:** **Not shipped.** `ToolContract.category` and bundle membership exist as metadata; `catalog.list_tools` supports category filter for **introspection**, not planner traversal. `skill_pack` mode is **declarative grouping**, not LLM-driven hierarchy.
+**Implementation today:** **Done v1** (TOOL-ENG-14 · ADR-TOOL-005). `ToolSelectionMode.HIERARCHICAL` → deterministic category rank → tool rank within branches (`hierarchical_tool_selector.py`). **LLM category schema pass** deferred to v2.
 
-**Target (TOOL-ENG-14):** `HierarchicalToolSelectionStrategy`, config `tool_selection_max_hierarchy_passes`, category tree from bundle + `category` fields (or host-defined taxonomy).
+**Config:** `RuntimeConfig.tool_selection_max_hierarchy_passes` bounds category branches.
 
 ### `ToolSelectionMode` → production mode mapping
 
@@ -757,9 +755,9 @@ Reuse Tier-0 RAG primitives (`embedding_manager`, dedicated collection e.g. `__h
 | `full_catalog` | **Standard** | `FullCatalogSelectionStrategy` | **Done** (TOOL-ENG-5) |
 | `static` | **Standard** (+ plan constraint) | `StaticAllowListSelectionStrategy` | **Done** (TOOL-ENG-4/5) |
 | `skill_pack` | *Auxiliary narrowing* (not a production mode) | `SkillPackSelectionStrategy` — skill → `tool_ids` | **Done** (TOOL-ENG-5) |
-| `retrieval_top_k` | *Keyword pre-filter* (semantic **analog only**) | `RetrievalTopKSelectionStrategy` — token overlap | **Done** (TOOL-ENG-5); rename clarity **TOOL-ENG-15** |
-| *(planned)* `semantic` | **Semantic** | `SemanticToolIndexSelectionStrategy` | **Planned** TOOL-ENG-13 |
-| *(planned)* `hierarchical` | **Hierarchical** | `HierarchicalToolSelectionStrategy` | **Planned** TOOL-ENG-14 |
+| `retrieval_top_k` / `keyword_top_k` | *Keyword pre-filter* | `RetrievalTopKSelectionStrategy` — token overlap | **Done** (TOOL-ENG-5/15) |
+| `semantic` | **Semantic** | `SemanticToolIndexSelectionStrategy` | **Done** TOOL-ENG-13 |
+| `hierarchical` | **Hierarchical** | `HierarchicalToolSelectionStrategy` | **Done** TOOL-ENG-14 (v1 deterministic) |
 
 **Config:** `RuntimeConfig.tool_selection_mode`, `tool_selection_top_k`; bridged from `ApplicationEnvironmentProfile` via `catalog_runtime_bridge.py`.
 
@@ -865,8 +863,8 @@ ToolSelectionStrategy (Protocol):
 |-----------------|---------------------|----------------|--------|
 | **Standard** | `full_catalog` | `FullCatalogSelectionStrategy` | **Done** |
 | **Standard** (+ plan) | `static` | `StaticAllowListSelectionStrategy` | **Done** |
-| **Semantic** | `semantic` *(planned enum)* | `SemanticToolIndexSelectionStrategy` | **Planned** TOOL-ENG-13 |
-| **Hierarchical** | `hierarchical` *(planned enum)* | `HierarchicalToolSelectionStrategy` | **Planned** TOOL-ENG-14 |
+| **Semantic** | `semantic` | `SemanticToolIndexSelectionStrategy` | **Done** TOOL-ENG-13 |
+| **Hierarchical** | `hierarchical` | `HierarchicalToolSelectionStrategy` | **Done** TOOL-ENG-14 |
 | *Auxiliary* | `skill_pack` | `SkillPackSelectionStrategy` | **Done** |
 | *Keyword pre-filter* | `retrieval_top_k` | `RetrievalTopKSelectionStrategy` | **Done** (not semantic) |
 
@@ -923,8 +921,8 @@ Authors MUST implement `ToolSelectionStrategy` and plug in via one of:
 
 | Surface | When | Status | Plan ID |
 |---------|------|--------|---------|
-| **A — Config instance** | Host/agent wires a Python class at bootstrap (tests, bespoke hosts) | **Planned** | TOOL-ENG-31 — `RuntimeConfig.tool_selection_strategy: ToolSelectionStrategy \| None` overrides mode enum |
-| **B — Entry point** | Distributable plugin package | **Planned** | TOOL-ENG-26 — `intergrax.tool_selection_strategies` group; profile references `strategy_id` |
+| **A — Config instance** | Host/agent wires a Python class at bootstrap (tests, bespoke hosts) | **Done** | TOOL-ENG-31 — `RuntimeConfig.tool_selection_strategy` overrides mode enum |
+| **B — Entry point** | Distributable plugin package | **Done** | TOOL-ENG-26 — `intergrax.tool_selection_strategies` + `tool_selection_strategy_id` |
 | **C — Custom planner** | Full control of selection + planning in one component | **Done** | inject `ToolPlannerProtocol` via `RuntimeConfig.tool_planner` — bypasses L6 narrow step |
 
 **Rule:** Surfaces A/B affect **only L6** — execution still flows through `ToolPlanningService` (or custom planner on C) and `RuntimeToolInvoker`. Custom selection MUST NOT call handlers or integrations directly.

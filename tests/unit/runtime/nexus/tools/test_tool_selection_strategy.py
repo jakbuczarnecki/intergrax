@@ -55,6 +55,14 @@ def test_static_mode_uses_plan_tool_ids() -> None:
     assert ids == ("alpha.tool",)
 
 
+def test_keyword_top_k_alias_matches_retrieval_top_k() -> None:
+    registry = _registry_with("rag.retrieve", "jira.search_tasks", "notify.send")
+    ctx = ToolSelectionContext(registry=registry, query="search jira tasks", top_k=1)
+    retrieval = strategy_for_mode(ToolSelectionMode.RETRIEVAL_TOP_K).select_tool_ids(ctx)
+    keyword = strategy_for_mode(ToolSelectionMode.KEYWORD_TOP_K).select_tool_ids(ctx)
+    assert retrieval == keyword == ("jira.search_tasks",)
+
+
 def test_retrieval_top_k_ranks_by_query_overlap() -> None:
     registry = _registry_with("rag.retrieve", "jira.search_tasks", "notify.send")
     ctx = ToolSelectionContext(registry=registry, query="search jira tasks", top_k=1)

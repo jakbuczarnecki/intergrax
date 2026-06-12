@@ -17,6 +17,7 @@ from intergrax.runtime.nexus.config_types import ToolInvocationMode
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState, ToolCallTrace
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.tool_invocation_aggregate import ToolInvocationAggregate
+from intergrax.runtime.nexus.tools.tool_verify_hooks import emit_high_risk_tool_verify_signal
 from intergrax.runtime.nexus.tools.tool_invocation_pattern import (
     ToolInvocationPattern,
     ToolInvocationResult,
@@ -70,6 +71,7 @@ def _invoke_planned_call(
     )
     result = invoker.invoke(state=state, request=req, agent_id=state.request.agent_id)
     trace = _trace_from_result(call, result)
+    emit_high_risk_tool_verify_signal(state=state, invoker=invoker, trace=trace)
     if invoke_lock is not None:
         with invoke_lock:
             enforce_tool_call_budget(state)

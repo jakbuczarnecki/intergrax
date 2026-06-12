@@ -37,8 +37,11 @@ def apply_tool_engine_settings_from_environment(
     from intergrax.runtime.nexus.config_types import ToolInvocationMode, ToolSelectionMode
 
     config.tool_planner_prompt_id = env.reasoning_profile.tool_planner_prompt_id
+    mode_value = env.tool_selection_mode
+    if mode_value == "keyword_top_k":
+        mode_value = "retrieval_top_k"
     try:
-        config.tool_selection_mode = ToolSelectionMode(env.tool_selection_mode)
+        config.tool_selection_mode = ToolSelectionMode(mode_value)
     except ValueError:
         config.tool_selection_mode = ToolSelectionMode.STATIC
     config.tool_selection_top_k = env.tool_selection_top_k

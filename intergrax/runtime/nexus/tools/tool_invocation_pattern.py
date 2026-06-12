@@ -71,12 +71,15 @@ def pattern_for_mode(mode: ToolInvocationMode) -> ToolInvocationPattern:
         from intergrax.runtime.nexus.tools.patterns.parallel_batch import ParallelBatchPattern
 
         return ParallelBatchPattern()
-    if mode in (
-        ToolInvocationMode.DETERMINISTIC_CHAIN,
-        ToolInvocationMode.PARALLEL_SEMANTIC_BATCH,
-    ):
+    if mode == ToolInvocationMode.PARALLEL_SEMANTIC_BATCH:
+        from intergrax.runtime.nexus.tools.patterns.parallel_semantic_batch import (
+            ParallelSemanticBatchPattern,
+        )
+
+        return ParallelSemanticBatchPattern()
+    if mode == ToolInvocationMode.DETERMINISTIC_CHAIN:
         raise NotImplementedError(
             f"ToolInvocationMode.{mode.value} is registered but not yet shipped; "
-            "see TOOL-ENG-20/25."
+            "see TOOL-ENG-20."
         )
     return SinglePassPattern()

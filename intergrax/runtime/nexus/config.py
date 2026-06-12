@@ -54,6 +54,7 @@ from intergrax.tools.core.provider import ToolProvider
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry import ToolProfile, ToolRegistry, ToolWiringContext, build_registry_from_profile
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
+from intergrax.runtime.nexus.tools.tool_selection import ToolSelectionStrategy
 from intergrax.websearch.service.websearch_config import WebSearchConfig
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
@@ -172,6 +173,11 @@ class RuntimeConfig:
     # Planner schema narrowing before LLM tool selection (TOOL-ENG-5).
     tool_selection_mode: ToolSelectionMode = ToolSelectionMode.STATIC
     tool_selection_top_k: int = 20
+    tool_selection_max_hierarchy_passes: int = 2
+    # Instance override — takes precedence over tool_selection_mode (TOOL-ENG-31).
+    tool_selection_strategy: Optional[ToolSelectionStrategy] = None
+    # Entry-point plugin id from intergrax.tool_selection_strategies (TOOL-ENG-26).
+    tool_selection_strategy_id: Optional[str] = None
 
     # Determines how much contextual information the tool planner receives:
     #

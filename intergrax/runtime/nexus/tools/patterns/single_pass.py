@@ -11,6 +11,7 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.tool_invocation_pattern import ToolInvocationResult
 from intergrax.runtime.nexus.tools.tool_loop import execute_planned_tool_calls
+from intergrax.runtime.nexus.tools.tool_planning_policy import tool_choice_for_mode
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.tools.core.tool_plan import ToolCallPlan
 
@@ -41,6 +42,7 @@ class SinglePassPattern:
                 context=None,
                 run_id=state.run_id,
                 allowed_tool_ids=allowed_tool_ids,
+                tool_choice=tool_choice_for_mode(state.context.config.tools_mode),
             )
             tool_plan = decision.tool_plan
 

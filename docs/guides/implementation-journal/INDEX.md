@@ -5,6 +5,8 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-12-020 | 2026-06-12 | tier-1 TOOLS | TOOL-ENG-14,15,26,31,32,7,8,12 | [TOOLS S6 + S8 partial — hierarchical selection and governance hooks](entries/2026-06-12/tools-layer-s6-hierarchical-selection.md) | pending |
+| IJ-2026-06-12-019 | 2026-06-12 | tier-1 TOOLS | TOOL-ENG-13, TOOL-ENG-25 | [TOOLS S5 — semantic catalog index and parallel semantic batch](entries/2026-06-12/tools-layer-s5-semantic-index.md) | pending |
 | IJ-2026-06-12-018 | 2026-06-12 | tier-1 TOOLS | TOOL-ENG-9, TOOL-ENG-29 | [TOOLS S4 — ParallelBatchPattern and ToolInvocationAggregate](entries/2026-06-12/tools-layer-s4-parallel-batch.md) | pending |
 | IJ-2026-06-12-017 | 2026-06-12 | tier-0, tier-1 TOOLS | TOOL-ENG-16–18,21–23, TEST.1 | [TOOLS S0–S3 — ToolInvocationPattern protocol and shipped patterns](entries/2026-06-12/tools-layer-s0-s3-invocation-pattern.md) | pending |
 | IJ-2026-06-12-016 | 2026-06-12 | tier-0 CONTEXT_ENGINEERING | CE-DOC.11 · GAP-CTX-20 | [CE-DOC.11 — CE-PROV-WIRE phase and GAP-CTX-20 register](entries/2026-06-12/platform-ce-doc11-prov-wire-register.md) | pending |

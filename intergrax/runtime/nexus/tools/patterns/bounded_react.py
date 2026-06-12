@@ -19,6 +19,7 @@ from intergrax.runtime.nexus.tools.tool_loop import (
     append_native_tool_messages,
     execute_planned_tool_calls,
 )
+from intergrax.runtime.nexus.tools.tool_planning_policy import tool_choice_for_mode
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.tools.core.tool_plan import ToolCallPlan
@@ -68,6 +69,7 @@ class BoundedReactPattern:
                     messages,
                     allowed_tool_ids=allowed_tool_ids,
                     run_id=state.run_id,
+                    tool_choice=tool_choice_for_mode(state.context.config.tools_mode),
                 )
             except Exception:
                 break

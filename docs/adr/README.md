@@ -80,6 +80,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-FLOW-005](entries/2026-06-12/ADR-FLOW-005.md) | Retire Tier-1 AgentEngine pipeline stack (ACP-CLOSE-LEG-5) | Accepted |
 | [ADR-TOOL-003](entries/2026-06-12/ADR-TOOL-003.md) | `ToolInvocationPattern` protocol and orchestration plugin model (TOOL-ENG-16) | Accepted |
 | [ADR-TOOL-004](entries/2026-06-12/ADR-TOOL-004.md) | Semantic tool catalog index vs RAG; selection boundary (TOOL-ENG-13) | Accepted |
+| [ADR-TOOL-005](entries/2026-06-12/ADR-TOOL-005.md) | Hierarchical selection v1; strategy plugin surfaces (TOOL-ENG-14,26,31) | Accepted |
 
 ---
 
