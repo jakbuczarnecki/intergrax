@@ -38,6 +38,7 @@ EVENT_PHASE_COVERAGE: dict[RuntimeEventType, ExecutionPhase] = {
     RuntimeEventType.VALIDATION_PASSED: ExecutionPhase.VALIDATION,
     RuntimeEventType.VALIDATION_FAILED: ExecutionPhase.VALIDATION,
     # DECISION_EMITTED is multi-phase (planning | step_execution | finalization) — COG-4 / FLOW-12
+    RuntimeEventType.DECISION_EMITTED: ExecutionPhase.STEP_EXECUTION,
     RuntimeEventType.INTERRUPT_REQUESTED: ExecutionPhase.INTERRUPT_HANDLING,
     RuntimeEventType.INTERRUPT_HANDLED: ExecutionPhase.INTERRUPT_HANDLING,
     RuntimeEventType.INTERRUPT_ESCALATED: ExecutionPhase.INTERRUPT_HANDLING,

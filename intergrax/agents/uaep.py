@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import time
+from dataclasses import replace
 from typing import Any, List, Optional
 from uuid import uuid4
 
@@ -227,7 +228,7 @@ class UAEPExecutor:
                 event_bus=self._event_bus,
             )
             if assembled_prompt and assembled_prompt != (request.message or ""):
-                request = request.model_copy(update={"message": assembled_prompt})
+                request = replace(request, message=assembled_prompt)
         exec_ctx.domain_context = runtime_context
         exec_ctx.tool_gateway = BoundToolGateway(
             exec_ctx,
