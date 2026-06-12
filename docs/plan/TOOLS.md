@@ -45,7 +45,7 @@
 | `ToolInvocationPattern` plugin | **Done** | TOOL-ENG-16 | S1 — ADR-TOOL-003 |
 | Shipped patterns (single / ReAct) | **Done** | TOOL-ENG-17–18,21–23 | S2–S3 |
 | Parallel batch + aggregate | **Done** | TOOL-ENG-9,29 | S4 |
-| Chain pattern | **Gap** | TOOL-ENG-20 | S7 |
+| Chain pattern | **Done** | TOOL-ENG-20 | S7 |
 | Semantic selection | **Done** | TOOL-ENG-13 | S5 |
 | Hierarchical selection | **Done** | TOOL-ENG-14 | S6 — v1 deterministic; LLM category pass deferred |
 | Semantic parallel composite | **Done** | TOOL-ENG-25 | S5 |
@@ -87,7 +87,7 @@ Sprints close **Phase TOOL-ENG** remaining rows. One sprint ≈ one PR; update p
 | **S7** | TOOL-ENG-20,24,27,28,30 | Chain pattern + entry points + CI + lab DX | `check_tool_invocation_patterns.py` green | `patterns/deterministic_chain.py`, `applications/lab_application/` |
 | **S8** | TOOL-ENG-7,8,12,10 | Governance closeout | Required-mode fail + HIGH verify | `tools_step.py`, `tool_verify_hooks.py` |
 
-**Current execution:** S0–S6 **Done** (2026-06-12) · S8 **partial** (7/8/12 Done, 10 open) · next **S7** (TOOL-ENG-20,24,27,28,30).
+**Current execution:** S0–S7 **Done** (2026-06-12) · S8 **partial** (7/8/12 Done, 10 open) · layer closeout remaining TOOL-ENG-10 + CVL verify gate.
 
 ### S5 implementation spec (2026-06-12)
 
@@ -120,6 +120,23 @@ Sprints close **Phase TOOL-ENG** remaining rows. One sprint ≈ one PR; update p
 
 **Acceptance:** `test_hierarchical_tool_selector.py` · `test_tool_selection_registry.py` · `test_tool_selection_telemetry.py`
 
+### S7 implementation spec (2026-06-12)
+
+**Scope:** TOOL-ENG-20,24,27,28,30 — deterministic chain + invocation plugins + telemetry + CI + lab DX.
+
+| Deliverable | Contract |
+|-------------|----------|
+| `ToolChainSpec` / `FieldRef` | Ordered steps with `input_mappings` |
+| `DeterministicChainPattern` | Sequential invoke; no LLM between steps |
+| `tool_invocation_registry.py` | `intergrax.tool_invocation_patterns` entry-point loader |
+| `ToolsSummaryDiagV1` | `pattern_id`, `stop_reason`, `ops:tool_invocation_pattern` |
+| `check_tool_invocation_patterns.py` | All `ToolInvocationMode` values ship via factory |
+| `LAB_TOOL_INVOCATION_MODE` | Lab host env bridge to `ApplicationEnvironmentProfile` |
+
+**ADR:** no ADR needed — extends ADR-TOOL-003 plugin model.
+
+**Acceptance:** `test_deterministic_chain_pattern.py` · `test_tool_invocation_registry.py` · `test_lab_tool_invocation_mode.py`
+
 ### S4 implementation spec (2026-06-12)
 
 **Scope:** TOOL-ENG-29 + TOOL-ENG-9 — parallel read-only batch invoke + canonical aggregate.
@@ -140,7 +157,7 @@ Sprints close **Phase TOOL-ENG** remaining rows. One sprint ≈ one PR; update p
 
 ## Phase TOOL-ENG — Tool engine hardening (2026-06-10 audit · extended 2026-06-12)
 
-**Status:** **Active** — **31/36** deliverables Done (TOOL-ENG-0–6,7–9,11–15,16–18,21–23,25–26,29,31–32, TOOL-ENG-TEST.1, TOOL-ENG-DOC.4–7 — 2026-06-12; TOOL-ENG-7 partial)  
+**Status:** **Active** — **36/37** deliverables Done (all TOOL-ENG rows except TOOL-ENG-10 P3 and TOOL-ENG-7 CVL block — 2026-06-12)  
 **Architecture canon:** [`architecture/TOOLS.md`](../architecture/TOOLS.md) — [Tool engine production posture](../architecture/TOOLS.md#tool-engine-production-posture-2026-06-10), [Invocation patterns](../architecture/TOOLS.md#tool-invocation-patterns-production-orchestration), [Engine gap register](../architecture/TOOLS.md#engine-gap-register-canon)  
 **Audit basis:** Full-stack tool layer audit 2026-06-10 (Tier-0 catalog + Tier-1 selection/invoke/verify) · **Invocation-pattern audit 2026-06-12** (single / parallel / chain / graph + plugin contract)  
 **Priority ladder:** **Band 2ba** — supersedes ad-hoc tool engine fixes until TOOL-ENG P0 closed  
@@ -195,16 +212,16 @@ Sprints close **Phase TOOL-ENG** remaining rows. One sprint ≈ one PR; update p
 | TOOL-ENG-17 | Orchestration | **`SinglePassPattern`** — extract `max_iterations==1` path from `tool_loop_step` | **Done** | P1 | `patterns/single_pass.py`, `tool_loop_step.py` | Behaviour parity with pre-refactor single-pass; unit test |
 | TOOL-ENG-18 | Orchestration | **`BoundedReactPattern`** — refactor multi-iter `run_bounded_tool_loop` into pattern class | **Done** | P1 | `patterns/bounded_react.py`, `tool_loop_step.py` | `test_tool_loop_integration.py` unchanged green |
 | TOOL-ENG-9 | Orchestration | **`ParallelBatchPattern`** — concurrent invoke for `side_effects=False` in one batch; `max_parallel_tool_calls` cap | **Done** | P1 | `patterns/parallel_batch.py`, `tool_loop.py` | `test_parallel_batch_pattern.py` |
-| TOOL-ENG-20 | Orchestration | **`DeterministicChainPattern`** + `ToolChainSpec` / `ChainStep` / `FieldRef` output→input mapping | **Planned** | P2 | `patterns/deterministic_chain.py`, `tool_chain_spec.py` | Integration: rag → websearch chain with validated field map |
+| TOOL-ENG-20 | Orchestration | **`DeterministicChainPattern`** + `ToolChainSpec` / `ChainStep` / `FieldRef` output→input mapping | **Done** | P2 | `patterns/deterministic_chain.py`, `tool_chain_spec.py` | `test_deterministic_chain_pattern.py` |
 | TOOL-ENG-25 | Orchestration | **`ParallelSemanticBatchPattern`** — semantic top-k selection + parallel invoke + aggregate (composite) | **Done** | P1 | `patterns/parallel_semantic_batch.py`, `tool_selection.py` | Depends TOOL-ENG-13+9+29; integration test with fixture index |
 | TOOL-ENG-29 | Orchestration | **`ToolInvocationAggregate`** — canonical batch result merge before LLM context inject | **Done** | P1 | `tool_invocation_aggregate.py`, `tool_loop.py` | `test_tool_invocation_aggregate.py` |
 | TOOL-ENG-21 | Config | **`RuntimeConfig.tool_invocation_pattern`** + `ToolInvocationMode` enum + `pattern_for_mode()` factory | **Done** | P1 | `config.py`, `config_types.py`, `tool_invocation_pattern.py` | Default `single_pass`; factory returns correct pattern class |
 | TOOL-ENG-22 | Wiring | **`run_bounded_tool_loop` / `ctx.invoke_tool` delegates to `ToolInvocationPattern`** — remove direct `run_bounded_tool_loop` call | **Done** | P1 | `tools_step.py`, `runtime_context.py` | Inject pattern at `RuntimeContext.build()`; existing tests green |
 | TOOL-ENG-23 | Wiring | **Host profile bridge** — `ApplicationEnvironmentProfile.tool_invocation_mode` → `RuntimeConfig` | **Done** | P1 | `environment_profile.py`, `catalog_runtime_bridge.py` | `test_catalog_runtime_bridge_tool_invocation.py` |
-| TOOL-ENG-24 | Plugins | **Entry-point registry `intergrax.tool_invocation_patterns`** — custom host/agent patterns | **Planned** | P2 | `tool_invocation_registry.py`, `pyproject.toml` | Reference custom pattern in test fixture loads via EP |
-| TOOL-ENG-27 | Observability | **Pattern trace** — `pattern_id`, `stop_reason`, `ops:tool_invocation_pattern` in `ToolsSummaryDiagV1` | **Planned** | P2 | `tools_step.py`, trace models | Trace payload includes pattern_id on every ToolsStep |
-| TOOL-ENG-28 | CI | **`check_tool_invocation_patterns.py`** — shipped patterns registered; `run_bounded_tool_loop` / `ctx.invoke_tool` uses factory not hardcoded import | **Planned** | P2 | `scripts/` | Gate script green in CI |
-| TOOL-ENG-30 | DX | **`lab_application` reference wiring** — env flags for each shipped `ToolInvocationMode` | **Planned** | P2 | `applications/lab_application/` | Doc example + smoke test per mode |
+| TOOL-ENG-24 | Plugins | **Entry-point registry `intergrax.tool_invocation_patterns`** — custom host/agent patterns | **Done** | P2 | `tool_invocation_registry.py`, `config.py` | `test_tool_invocation_registry.py` |
+| TOOL-ENG-27 | Observability | **Pattern trace** — `pattern_id`, `stop_reason`, `ops:tool_invocation_pattern` in `ToolsSummaryDiagV1` | **Done** | P2 | `plan_context_invocation.py`, `tools_summary.py` | `test_tools_pattern_telemetry.py` |
+| TOOL-ENG-28 | CI | **`check_tool_invocation_patterns.py`** — shipped patterns registered; factory delegation | **Done** | P2 | `scripts/check_tool_invocation_patterns.py` | Gate script green |
+| TOOL-ENG-30 | DX | **`lab_application` reference wiring** — `LAB_TOOL_INVOCATION_MODE` for each shipped mode | **Done** | P2 | `lab_application/host/settings.py` | `test_lab_tool_invocation_mode.py` |
 
 #### Loop, governance, adaptive
 

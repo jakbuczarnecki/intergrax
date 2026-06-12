@@ -347,6 +347,8 @@ async def run_tools_context(state: RuntimeState) -> None:
     warning: Optional[str] = None
     error_type: Optional[str] = None
     error_message: Optional[str] = None
+    loop_pattern_id: Optional[str] = None
+    loop_stop_reason: Optional[str] = None
 
     try:
         planner_input = resolve_tool_planner_input(state)
@@ -398,6 +400,8 @@ async def run_tools_context(state: RuntimeState) -> None:
             max_iterations=state.context.config.max_tool_iterations,
             invocation_mode=state.context.config.tool_invocation_mode,
         )
+        loop_pattern_id = loop_result.pattern_id or None
+        loop_stop_reason = loop_result.stop_reason or None
 
         if not loop_result.tool_traces:
             if tools_mode == "required":
@@ -440,5 +444,7 @@ async def run_tools_context(state: RuntimeState) -> None:
             warning=warning,
             error_type=error_type,
             error_message=error_message,
+            pattern_id=loop_pattern_id,
+            stop_reason=loop_stop_reason,
         ),
     )

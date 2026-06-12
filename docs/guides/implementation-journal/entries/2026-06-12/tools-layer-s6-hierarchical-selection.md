@@ -14,7 +14,7 @@ plan_ref:
   - TOOL-ENG-8
   - TOOL-ENG-12
 status: completed
-commit: pending
+commit: 818bd174
 adr: docs/adr/entries/2026-06-12/ADR-TOOL-005.md
 ---
 

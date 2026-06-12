@@ -552,13 +552,13 @@ query → SemanticToolIndexSelectionStrategy (or keyword) → top-k tool_ids
 
 **Definition:** Fixed sequence of tools where step *n+1* input is derived from step *n* output via explicit field mapping — **no LLM between steps**.
 
-**Implementation today:** **Not shipped**
+**Implementation today:** **Done** (TOOL-ENG-20)
 
-| Gap | Target |
-|-----|--------|
-| No `ToolChainSpec` | Pydantic model: ordered `tool_id` + `field_mappings` |
-| No output→input mapper | Validate against `output_schema` → `input_schema` |
-| Agent `act()` manual chaining only | Harness-first `DeterministicChainPattern` |
+| Component | Status |
+|-----------|--------|
+| `ToolChainSpec` / `ChainStep` / `FieldRef` | **Done** — `tool_chain_spec.py` |
+| Output→input mapper | **Done** — `tool_chain_mapper.py` |
+| `DeterministicChainPattern` | **Done** — `patterns/deterministic_chain.py` |
 
 **Example target spec:**
 
@@ -645,7 +645,7 @@ ToolInvocationResult:
 | Catalog tools (`ToolPlugin`) | **Yes** | **Yes** | **Yes** | **Yes** |
 | Tool selection (`ToolSelectionStrategy`) | **Yes** | `strategy_for_mode()` — **hardcoded** | **No** | **Yes** |
 | Tool planning (`ToolPlannerProtocol`) | **Yes** | inject via config | N/A | **Yes** |
-| Invocation orchestration (`ToolInvocationPattern`) | **Yes** | `pattern_for_mode()` | **No** | **Yes** |
+| Invocation orchestration (`ToolInvocationPattern`) | **Yes** | `pattern_for_mode()` + `resolve_invocation_pattern()` | **Yes** | **Yes** |
 
 ### Pattern vs selection mode mapping
 

@@ -22,6 +22,10 @@ class ToolsSummaryDiagV1(DiagnosticPayload):
     error_type: Optional[str]
     error_message: Optional[str]
 
+    pattern_id: Optional[str] = None
+    stop_reason: Optional[str] = None
+    ops: str = "tool_invocation_pattern"
+
     def redact(self) -> ToolsSummaryDiagV1:
         """
         This diagnostic payload may contain warning or error messages
@@ -37,6 +41,9 @@ class ToolsSummaryDiagV1(DiagnosticPayload):
             warning=DEFAULT_REDACTED_TEXT if self.warning is not None else None,
             error_type=self.error_type,
             error_message=DEFAULT_REDACTED_TEXT if self.error_message is not None else None,
+            pattern_id=self.pattern_id,
+            stop_reason=self.stop_reason,
+            ops=self.ops,
         )
 
     @classmethod
@@ -44,7 +51,7 @@ class ToolsSummaryDiagV1(DiagnosticPayload):
         return "intergrax.diag.tools.summary"
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        payload: Dict[str, Any] = {
             "tools_mode": self.tools_mode,
             "used_tools": self.used_tools,
             "tool_calls_count": self.tool_calls_count,
@@ -52,4 +59,10 @@ class ToolsSummaryDiagV1(DiagnosticPayload):
             "warning": self.warning,
             "error_type": self.error_type,
             "error_message": self.error_message,
+            "ops": self.ops,
         }
+        if self.pattern_id is not None:
+            payload["pattern_id"] = self.pattern_id
+        if self.stop_reason is not None:
+            payload["stop_reason"] = self.stop_reason
+        return payload

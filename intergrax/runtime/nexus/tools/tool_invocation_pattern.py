@@ -32,6 +32,7 @@ class ToolInvocationResult:
     tool_traces: list[ToolCallTrace] = field(default_factory=list)
     loop_iterations: int = 0
     stop_reason: ToolInvocationStopReason = "legacy_single_pass"
+    pattern_id: str = ""
     appended_messages: list[ChatMessage] = field(default_factory=list)
     used_native_tool_messages: bool = False
     aggregate: ToolInvocationAggregate | None = None
@@ -78,8 +79,36 @@ def pattern_for_mode(mode: ToolInvocationMode) -> ToolInvocationPattern:
 
         return ParallelSemanticBatchPattern()
     if mode == ToolInvocationMode.DETERMINISTIC_CHAIN:
-        raise NotImplementedError(
-            f"ToolInvocationMode.{mode.value} is registered but not yet shipped; "
-            "see TOOL-ENG-20."
+        from intergrax.runtime.nexus.tools.patterns.deterministic_chain import (
+            DeterministicChainPattern,
         )
+
+        return DeterministicChainPattern()
     return SinglePassPattern()
+
+
+def resolve_invocation_pattern(
+    *,
+    mode: ToolInvocationMode | None,
+    max_iterations: int,
+    pattern_override: ToolInvocationPattern | None = None,
+    entry_point_pattern_id: str | None = None,
+) -> ToolInvocationPattern:
+    """Resolve pattern from override, entry point, mode, or iteration default."""
+    if pattern_override is not None:
+        return pattern_override
+    if entry_point_pattern_id:
+        from intergrax.runtime.nexus.tools.tool_invocation_registry import (
+            load_tool_invocation_pattern,
+        )
+
+        loaded = load_tool_invocation_pattern(entry_point_pattern_id)
+        if loaded is not None:
+            return loaded
+    if mode is not None:
+        return pattern_for_mode(mode)
+    if max_iterations > 1:
+        from intergrax.runtime.nexus.tools.patterns.bounded_react import BoundedReactPattern
+
+        return BoundedReactPattern()
+    return pattern_for_mode(ToolInvocationMode.SINGLE_PASS)

@@ -102,6 +102,11 @@ def build_lab_environment_profile(
             )
         }
     )
+    env = env.model_copy(
+        update={
+            "tool_invocation_mode": settings.tool_invocation_mode,
+        }
+    )
     if settings.enable_llm_guardrails:
         from intergrax.applications.contracts.environment_profile import GuardrailProfile
 

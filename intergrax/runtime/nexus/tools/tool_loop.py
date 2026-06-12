@@ -8,6 +8,7 @@ import json
 import threading
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from intergrax.llm.messages import ChatMessage
@@ -22,7 +23,7 @@ from intergrax.runtime.nexus.tools.tool_invocation_pattern import (
     ToolInvocationPattern,
     ToolInvocationResult,
     ToolInvocationStopReason,
-    pattern_for_mode,
+    resolve_invocation_pattern,
 )
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.tools.core.tool_plan import PlannedToolCall
@@ -192,16 +193,14 @@ def resolve_tool_invocation_pattern(
     invocation_mode: ToolInvocationMode | None,
     max_iterations: int,
     pattern: ToolInvocationPattern | None = None,
+    entry_point_pattern_id: str | None = None,
 ) -> ToolInvocationPattern:
-    if pattern is not None:
-        return pattern
-    if invocation_mode is not None:
-        return pattern_for_mode(invocation_mode)
-    if max_iterations > 1:
-        from intergrax.runtime.nexus.tools.patterns.bounded_react import BoundedReactPattern
-
-        return BoundedReactPattern()
-    return pattern_for_mode(ToolInvocationMode.SINGLE_PASS)
+    return resolve_invocation_pattern(
+        mode=invocation_mode,
+        max_iterations=max_iterations,
+        pattern_override=pattern,
+        entry_point_pattern_id=entry_point_pattern_id,
+    )
 
 
 def run_bounded_tool_loop(
@@ -223,9 +222,10 @@ def run_bounded_tool_loop(
     resolved = resolve_tool_invocation_pattern(
         invocation_mode=invocation_mode,
         max_iterations=max_iterations,
-        pattern=pattern,
+        pattern=pattern or state.context.config.tool_invocation_pattern,
+        entry_point_pattern_id=state.context.config.tool_invocation_pattern_id,
     )
-    return resolved.execute(
+    result = resolved.execute(
         state=state,
         invoker=invoker,
         planner=tool_planner,
@@ -234,6 +234,10 @@ def run_bounded_tool_loop(
         max_iterations=max_iterations,
         planner_input=planner_input,
     )
+    pattern_id = resolved.pattern_id
+    if not result.pattern_id:
+        return replace(result, pattern_id=pattern_id)
+    return result
 
 
 def inject_tool_traces_system_context(

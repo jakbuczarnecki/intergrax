@@ -53,6 +53,8 @@ from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.provider import ToolProvider
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry import ToolProfile, ToolRegistry, ToolWiringContext, build_registry_from_profile
+from intergrax.runtime.nexus.tools.tool_chain_spec import ToolChainSpec
+from intergrax.runtime.nexus.tools.tool_invocation_pattern import ToolInvocationPattern
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.runtime.nexus.tools.tool_selection import ToolSelectionStrategy
 from intergrax.websearch.service.websearch_config import WebSearchConfig
@@ -200,6 +202,15 @@ class RuntimeConfig:
 
     # Orchestration pattern for multi-call batches (TOOL-ENG-21). None → infer from max_tool_iterations.
     tool_invocation_mode: Optional[ToolInvocationMode] = None
+
+    # Instance override — takes precedence over tool_invocation_mode (TOOL-ENG-24).
+    tool_invocation_pattern: Optional[ToolInvocationPattern] = None
+
+    # Entry-point plugin id from intergrax.tool_invocation_patterns (TOOL-ENG-24).
+    tool_invocation_pattern_id: Optional[str] = None
+
+    # Fixed pipeline when tool_invocation_mode=deterministic_chain (TOOL-ENG-20).
+    tool_chain_spec: Optional[ToolChainSpec] = None
 
     # Max concurrent read-only tool invocations per batch (TOOL-ENG-9). 1 = always serial.
     max_parallel_tool_calls: int = 8
