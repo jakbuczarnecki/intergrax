@@ -48,7 +48,7 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 | §46 | Production readiness criteria | APP-PROD-* · ACP-PROD-* | **Partial** | §46 + agent gates |
 | §47 | Developer mental model | APP-CON-DX.1 | **Partial** | *doc-only* in arch |
 | §48 | Application artifacts | APP-CON-4 · APP-CON-6 | **Done** | `application_artifacts.py` · `run_artifact_bundle.v1` on summary |
-| §49 | Runtime evolution | APP-EVOL-1..7 · APP-EVOL-2b | **Partial** | APP-EVOL-1/2/2b/3 **Done** · §49.8 register |
+| §49 | Runtime evolution | APP-EVOL-1..7 · APP-EVOL-2b | **Partial** | APP-EVOL-1..4 **Done** · §49.8 register |
 | §50 | Platform operations | APP-OPS-1..4 | **Partial** | APP-OPS-1 **Done** · `capability_graph_deploy_gate.py` |
 | §51 | Cross-doc consistency | H-APP-FREEZE-* | **Done** | `GOVERNANCE_CONSISTENCY_AUDIT.md` |
 
@@ -95,7 +95,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 | APP-EVOL-2 | `ApplicationMigration` schema + CI validator | **Done** | `application_migration.py` · `check_application_migrations.py` |
 | APP-EVOL-2b | `ProfileMigration` / `GraphSpecMigration` / `OrgEnvelopeMigration` | **Done** | `migration_wiring.py` typed validators per §49.2.4 |
 | APP-EVOL-3 | `CapabilityAlias` + deprecation routing | **Done** | `capability_alias_wiring.py` · `check_capability_alias_registry.py` |
-| APP-EVOL-4 | `AgentCertification` + STRICT roster gate | Planned | non-PRODUCTION blocked in product hosts |
+| APP-EVOL-4 | `AgentCertification` + STRICT roster gate | **Done** | `agent_certification_wiring.py` · `check_agent_certification_roster.py` |
 | APP-EVOL-5 | `ApplicationRecoveryContract` on `ReliabilityProfile` | Planned | product ARCHITECTURE template + test |
 | APP-EVOL-6 | `ApplicationEnvironmentDiff` + `doctor diff-app` | Planned | pre-deploy CI diff |
 | APP-EVOL-7 | `ApplicationPackage` + dependency resolver | Planned | `new-stack` emits package manifest |
@@ -173,7 +173,7 @@ Recommended PR sequence — one APP ID per PR:
 10. APP-OPS-2       application ownership on manifest — **Done**
 11. APP-CON-7       scenario matrix tests — **Done**
 12. APP-EVOL-2/2b   migrations — **Done**
-13. APP-EVOL-3..7   evolution + packaging — **3 Done** · 4–7 open
+13. APP-EVOL-3..7   evolution + packaging — **3–4 Done** · 5–7 open
 14. APP-OPS-3/4     health score + registries
 15. APP-CON-DX.*    author guide + audit prompt
 ```
@@ -502,7 +502,7 @@ uv run pytest -m gate -q
 | APP-EVOL-1 | `EnvironmentSnapshot` + intake `profile_snapshot_id` | **Done** | **Critical** | `test_environment_snapshot_wiring.py` |
 | APP-EVOL-2 | `ApplicationMigration` schema + CI validator | **Done** | High | `check_application_migrations.py` |
 | APP-EVOL-3 | `CapabilityAlias` + deprecation routing | **Done** | High | `test_capability_alias_wiring.py` |
-| APP-EVOL-4 | `AgentCertification` + STRICT roster gate | Planned | High | non-PRODUCTION blocked |
+| APP-EVOL-4 | `AgentCertification` + STRICT roster gate | **Done** | High | `test_agent_certification_gate.py` |
 | APP-EVOL-5 | `ApplicationRecoveryContract` on profile | Planned | High | product ARCHITECTURE template |
 | APP-EVOL-6 | `ApplicationEnvironmentDiff` + `doctor diff-app` | Planned | Medium | pre-deploy CI diff |
 | APP-EVOL-7 | `ApplicationPackage` + dependency resolver | Planned | Medium | `new-stack` emits package manifest |

@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.agent_certification_wiring import apply_roster_agent_governance
 from intergrax.applications._shared.budget_wiring import product_agent_budget_slice
 from intergrax.applications._shared.ownership_wiring import standard_product_operational_ownership
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
@@ -19,8 +20,31 @@ from local_workspace_application.host.agent_factories import (
 )
 
 
+_LOCAL_WORKSPACE_AGENTS = [
+    AgentBinding.mount(
+        LocalIndexerAgent,
+        factory=build_local_workspace_local_indexer_from_context,
+        capabilities=["local.workspace.index"],
+        budget_slice=product_agent_budget_slice(),
+    ),
+    AgentBinding.mount(
+        LocalSearchAgent,
+        factory=build_local_workspace_local_search_from_context,
+        capabilities=["local.workspace.search"],
+        default=True,
+        budget_slice=product_agent_budget_slice(),
+    ),
+    AgentBinding.mount(
+        LocalSynthesizerAgent,
+        factory=build_local_workspace_local_synthesizer_from_context,
+        capabilities=["local.workspace.synthesize"],
+        budget_slice=product_agent_budget_slice(),
+    ),
+]
+
+
 def _local_workspace_environment() -> ApplicationEnvironmentProfile:
-    return (
+    base = (
         ApplicationEnvironmentProfile.product_defaults(
             profile_id="local_workspace.product",
             skill_bundles=["harness"],
@@ -34,6 +58,11 @@ def _local_workspace_environment() -> ApplicationEnvironmentProfile:
         )
         .with_harness_memory()
     )
+    return apply_roster_agent_governance(
+        base,
+        agents=_LOCAL_WORKSPACE_AGENTS,
+        app_id="local_workspace",
+    )
 
 
 LOCAL_WORKSPACE_APPLICATION_MANIFEST = ApplicationManifest.product(
@@ -45,27 +74,7 @@ LOCAL_WORKSPACE_APPLICATION_MANIFEST = ApplicationManifest.product(
     default_capability="local.workspace.search",
     integration_profile=IntegrationProfile.legal_product(),
     environment=_local_workspace_environment(),
-    agents=[
-        AgentBinding.mount(
-            LocalIndexerAgent,
-            factory=build_local_workspace_local_indexer_from_context,
-            capabilities=["local.workspace.index"],
-            budget_slice=product_agent_budget_slice(),
-        ),
-        AgentBinding.mount(
-            LocalSearchAgent,
-            factory=build_local_workspace_local_search_from_context,
-            capabilities=["local.workspace.search"],
-            default=True,
-            budget_slice=product_agent_budget_slice(),
-        ),
-        AgentBinding.mount(
-            LocalSynthesizerAgent,
-            factory=build_local_workspace_local_synthesizer_from_context,
-            capabilities=["local.workspace.synthesize"],
-            budget_slice=product_agent_budget_slice(),
-        ),
-    ],
+    agents=list(_LOCAL_WORKSPACE_AGENTS),
     description=(
         "Local Knowledge Workspace (LKW) — multi-agent host for indexing, "
         "semantic search, and synthesis over user-local documents."

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""Tier-3 application production gate checks (APP-PROD-1..8 · APP-OPS-1..2 · APP-CON-7 · APP-EVOL-2/3)."""
+"""Tier-3 application production gate checks (APP-PROD-1..8 · APP-OPS-1..2 · APP-CON-7 · APP-EVOL-2/3/4)."""
 
 from __future__ import annotations
 
@@ -116,6 +116,18 @@ def check_capability_graph_strict_deploy() -> list[str]:
     return violations
 
 
+def check_agent_certification_roster() -> list[str]:
+    from intergrax.applications._shared.agent_certification_wiring import (
+        check_strict_product_agent_certification,
+    )
+    from intergrax.applications._shared.product_manifest_registry import iter_strict_product_manifests
+
+    violations: list[str] = []
+    for product_id, manifest in iter_strict_product_manifests():
+        violations.extend(check_strict_product_agent_certification(product_id, manifest))
+    return violations
+
+
 def check_capability_alias_registry() -> list[str]:
     import importlib
     import inspect
@@ -211,6 +223,7 @@ def main() -> int:
         ("tier3_scenario_matrix", check_tier3_scenario_matrix),
         ("application_migrations", check_application_migrations),
         ("capability_alias_registry", check_capability_alias_registry),
+        ("agent_certification_roster", check_agent_certification_roster),
     )
     violations: list[str] = []
     for _name, fn in checks:

@@ -1994,7 +1994,7 @@ AgentCertification:
 
 **Promotion flow:** agent passes ACP-PROD gates → lifecycle `STAGING` → product host eval → `PRODUCTION` → added to `ApplicationManifest.agents`.
 
-**Status:** lifecycle enum + transition evaluator **Done** (V-ALG.3); `AgentCertification` store + APP-EVOL-4 host gate **Planned**.
+**Status:** lifecycle enum + transition evaluator **Done** (V-ALG.3); `AgentCertificationRecord` + STRICT roster gate **Done** (`agent_governance.py` · `agent_certification_wiring.py` · APP-EVOL-4).
 
 ---
 
@@ -2151,7 +2151,7 @@ graph_spec nodes            → roster capabilities satisfied
 | APP-EVOL-1 | `EnvironmentSnapshot` + snapshot capture on intake | **Done** | `test_environment_snapshot_wiring.py` · ADR-APP-002 |
 | APP-EVOL-2 | `ApplicationMigration` schema + validator CLI | **Done** | `check_application_migrations.py` |
 | APP-EVOL-3 | `CapabilityAlias` registry + sunset routing | **Done** | `check_capability_alias_registry.py` |
-| APP-EVOL-4 | `AgentCertification` + STRICT roster gate | Planned | non-PRODUCTION blocked in product hosts |
+| APP-EVOL-4 | `AgentCertification` + STRICT roster gate | **Done** | `check_agent_certification_roster.py` |
 | APP-EVOL-5 | `ApplicationRecoveryContract` on `ReliabilityProfile` | Planned | documented + integration test |
 | APP-EVOL-6 | `ApplicationEnvironmentDiff` + `doctor diff-app` | Planned | pre-deploy CI diff |
 | APP-EVOL-7 | `ApplicationPackage` + dependency resolver | Planned | `new-stack` emits package manifest |

@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.agent_certification_wiring import apply_roster_agent_governance
 from intergrax.applications._shared.budget_wiring import product_agent_budget_slice
 from intergrax.applications._shared.ownership_wiring import standard_product_operational_ownership
 from intergrax.applications.contracts.environment_profile import (
@@ -17,8 +18,19 @@ from legal.legal_agent import LegalAgent
 from legal_application.host.agent_factories import build_legal_agent_from_context
 
 
+_LEGAL_AGENTS = [
+    AgentBinding.mount(
+        LegalAgent,
+        factory=build_legal_agent_from_context,
+        capabilities=["legal.review"],
+        default=True,
+        budget_slice=product_agent_budget_slice(),
+    ),
+]
+
+
 def _legal_environment() -> ApplicationEnvironmentProfile:
-    return (
+    base = (
         ApplicationEnvironmentProfile.product_defaults(
             profile_id="legal.product",
             skill_bundles=["legal"],
@@ -32,6 +44,7 @@ def _legal_environment() -> ApplicationEnvironmentProfile:
         .with_harness_memory()
         .with_reference_host_platform_defaults()
     )
+    return apply_roster_agent_governance(base, agents=_LEGAL_AGENTS, app_id="legal")
 
 
 LEGAL_APPLICATION_MANIFEST = ApplicationManifest.product(
@@ -42,15 +55,7 @@ LEGAL_APPLICATION_MANIFEST = ApplicationManifest.product(
     default_port=8000,
     integration_profile=IntegrationProfile.legal_product(),
     environment=_legal_environment(),
-    agents=[
-        AgentBinding.mount(
-            LegalAgent,
-            factory=build_legal_agent_from_context,
-            capabilities=["legal.review"],
-            default=True,
-            budget_slice=product_agent_budget_slice(),
-        ),
-    ],
+    agents=list(_LEGAL_AGENTS),
     description="Legal review host composing Tier-2 LegalAgent",
     ownership=standard_product_operational_ownership("legal"),
 )

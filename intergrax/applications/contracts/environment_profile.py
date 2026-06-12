@@ -14,6 +14,7 @@ from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.contracts.reasoning_profile import ReasoningProfile
 from intergrax.contracts.resilience_policy import ResiliencePolicy, default_resilience_policy
 from intergrax.runtime.capacity.contracts import ScalingPolicy
+from intergrax.applications.contracts.agent_governance import AgentGovernanceProfile
 from intergrax.applications.contracts.capability_alias import CapabilityGovernanceProfile
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
 from intergrax.applications.contracts.intent_route import IntentRoute
@@ -380,6 +381,9 @@ class ApplicationEnvironmentProfile(BaseModel):
     governance_profile: GovernanceProfile = Field(default_factory=GovernanceProfile)
     capability_governance_profile: CapabilityGovernanceProfile = Field(
         default_factory=CapabilityGovernanceProfile,
+    )
+    agent_governance_profile: AgentGovernanceProfile = Field(
+        default_factory=AgentGovernanceProfile,
     )
     host_deployment_profile: HostDeploymentProfile = Field(default_factory=HostDeploymentProfile)
     integration_governance_profile: IntegrationGovernanceProfile = Field(
