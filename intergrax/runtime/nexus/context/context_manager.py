@@ -183,10 +183,18 @@ class ContextManager:
         from intergrax.runtime.nexus.config import RuntimeConfig
         from intergrax.runtime.nexus.context.provider_handles import build_graph_provider_handles
 
+        resolved_policy = policy or self.resolve_policy(task)
+        shared = self.ensure_shared_context(task)
+        prior_records, _, _ = collect_dependency_records(
+            node,
+            prior_outputs,
+            policy=resolved_policy,
+            shared_version=shared.version,
+        )
         request = build_graph_assembly_request(
             task,
             node,
-            policy=policy or self.resolve_policy(task),
+            policy=resolved_policy,
             budget_policy=self._budget_policy,
         )
         runtime_config = RuntimeConfig(llm_adapter=self._llm_adapter, production_mode=False)
@@ -195,11 +203,12 @@ class ContextManager:
             handles=build_graph_provider_handles(
                 task,
                 runtime_config=runtime_config,
-                messages=graph_messages_from_text(bundle.message),
+                messages=graph_messages_from_text(task.message or ""),
                 event_bus=self._event_bus,
                 node_id=node.node_id,
                 agent_id=node.agent_id,
                 engine_id=engine.engine_id,
+                prior_output_records=prior_records,
             ),
         )
         if self._context_orchestrator is not None and engine.engine_id == "codebase":

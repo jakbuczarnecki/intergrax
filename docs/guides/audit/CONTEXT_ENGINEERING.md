@@ -54,7 +54,7 @@ CTX Done · CE-EXT **Done** · CE-ALIGN **Done** · **CE-PROV-WIRE Planned** (GA
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-GAP-CTX-01–19 (excl. 08) **Closed** · GAP-CTX-20 **Open** (CE-PROV-WIRE) · GAP-CTX-08 **Open** (CE-10.3) · GAP-CTX-12 **Deferred** (AHI) — architecture §16
+GAP-CTX-01–19 (excl. 08) **Closed** · GAP-CTX-20 **Open** (CE-PROV-WIRE B1 partial — task/graph/session live) · GAP-CTX-08 **Open** (CE-10.3) · GAP-CTX-12 **Deferred** (AHI) — architecture §16
 
 ---
 

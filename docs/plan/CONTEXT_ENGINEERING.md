@@ -54,7 +54,7 @@
 | GAP-CTX-17 | CE-ENG-REF | CE-ALIGN | **Closed** |
 | GAP-CTX-18 | CE-PRESET-ENG | CE-ALIGN | **Closed** |
 | GAP-CTX-19 | CE-REGISTRY-FMT | CE-ALIGN | **Closed** (formatter via catalog; allocator = ContextCompiler) |
-| GAP-CTX-20 | CE-PROV-WIRE | CE-PROV-WIRE | **Open** — 11 builtin `collect()` stubs; live: workspace + session_semantic only |
+| GAP-CTX-20 | CE-PROV-WIRE | CE-PROV-WIRE | **Open** (partial) — 8 builtin `collect()` stubs remain; live: workspace, session_semantic, task_message, graph_prior, session_history (B1) |
 
 ---
 
@@ -89,15 +89,15 @@
 
 | ID | Deliverable | Priority | Status | Legacy source (as-built) |
 |----|-------------|----------|--------|--------------------------|
-| **CE-PROV-BRIDGE** | `intergrax/context/providers/legacy_bridge.py` — shared adapters + handle key contract doc | P0 | Planned | `provider_handles.py` extension |
-| **CE-PROV-01** | `builtin.task_message` — objective + user turn from `messages` / request | P0 | Planned | `graph_assembly` / `ContextAssemblyRequest.objective` |
+| **CE-PROV-BRIDGE** | `intergrax/context/providers/legacy_bridge.py` — shared adapters + handle key contract doc | P0 | **Done** (2026-06-12) | `provider_handles.py` extension |
+| **CE-PROV-01** | `builtin.task_message` — objective + user turn from `messages` / request | P0 | **Done** (2026-06-12) | `graph_assembly` / `ContextAssemblyRequest.objective` |
 | **CE-PROV-02** | `builtin.system_instructions` — system prompt slices from `runtime_config` / prompt registry handles | P1 | Planned | `RuntimeConfig` + agent contract prompt assets |
-| **CE-PROV-03** | `builtin.session_history` — chronological session turns | P0 | Planned | `engine_history_layer.py` / session memory view |
+| **CE-PROV-03** | `builtin.session_history` — chronological session turns | P0 | **Done** (2026-06-12) | `session_history_messages` handle / task metadata |
 | **CE-PROV-04** | `builtin.longterm_memory` — LTM search hits | P1 | Planned | MEMORY LTM step / `memory_view` handles |
 | **CE-PROV-05** | `builtin.rag` — retrieved chunks + citations | P0 | Planned | `ContextBuilder` / `rag_chunks` handle / catalog retrieve snapshot |
 | **CE-PROV-06** | `builtin.websearch` — websearch result blocks | P2 | Planned | websearch step output handle |
 | **CE-PROV-07** | `builtin.tool_output` — tool result blocks from step | P1 | Planned | `tool_context_helpers.py` / step tool blocks handle |
-| **CE-PROV-08** | `builtin.graph_prior` — prior node outputs on graph path | P0 | Planned | `context_assembler.collect_dependency_records` / `prior_outputs` handle |
+| **CE-PROV-08** | `builtin.graph_prior` — prior node outputs on graph path | P0 | **Done** (2026-06-12) | `prior_output_records` handle from `collect_dependency_records` |
 | **CE-PROV-09** | `builtin.shared_context` — `SharedTaskContext` KV reads | P1 | Planned | `shared_task_context.py` via task metadata |
 | **CE-PROV-10** | `builtin.attachments` — attachment summaries | P2 | Planned | `AttachmentRef` / ingestion summaries handle |
 | **CE-PROV-11** | `builtin.policy_overlay` — policy fragment bundles | P2 | Planned | `prompt_policy_overlay.py` / policy handles |
@@ -459,7 +459,7 @@ One sprint = one coherent provider family or gate. One commit per sprint.
 | Sprint | Goal | CE IDs | Exit criteria |
 |--------|------|--------|---------------|
 | **B0** | Plan + architecture register | CE-DOC.11 | GAP-CTX-20 + phase CE-PROV-WIRE in plan/architecture §16 | **Done** |
-| **B1** | Legacy bridge + graph core | CE-PROV-BRIDGE, CE-PROV-01, CE-PROV-08, CE-PROV-03 | Graph path: task_message, graph_prior, session_history fragments in assembled window |
+| **B1** | Legacy bridge + graph core | CE-PROV-BRIDGE, CE-PROV-01, CE-PROV-08, CE-PROV-03 | Graph path: task_message, graph_prior, session_history fragments in assembled window | **Done** |
 | **B2** | Memory + RAG | CE-PROV-04, CE-PROV-05, CE-PROV-06 | RAG/LTM/websearch fragments when handles set; gate unit tests |
 | **B3** | Shared + tools + policy | CE-PROV-09, CE-PROV-07, CE-PROV-02, CE-PROV-11 | shared_context + tool_output + system/policy overlays |
 | **B4** | Attachments + integration | CE-PROV-10, CE-PROV-INT, CE-PROV-GATE | Attachment summaries; integration test; `check_context_builtin_providers.py` green |

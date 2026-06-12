@@ -9,7 +9,7 @@
 **ADR:** [`ADR-CTX-001`](../adr/entries/2026-06-12/ADR-CTX-001.md) · [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler budget semantics)  
 **Related:** [`architecture/MEMORY.md`](MEMORY.md) (stores + lifecycle) · [`architecture/RAG.md`](RAG.md) (retrieval) · [`architecture/TOOLS.md`](TOOLS.md) (tool outputs) · [`architecture/NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) (turn narrative) · [`architecture/OBSERVABILITY.md`](OBSERVABILITY.md) (event spine) · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix L  
 **Implementation (as-built):** `intergrax/context/` · `intergrax/runtime/nexus/context/` · `intergrax/runtime/architecture/context_engineering.py` · `intergrax/contracts/context_assembly.py` · `applications/_shared/context_*`  
-**Last architecture pass:** 2026-06-12 (CE-DOC.11 — CE-PROV-WIRE phase register)
+**Last architecture pass:** 2026-06-12 (CE-PROV-WIRE B1 — legacy bridge + graph core providers)
 
 ---
 
@@ -332,15 +332,15 @@ Legacy `runtime_steps` pipeline (`HistoryLayer` → `CompileContextStep`) was **
 
 | provider_id | Source(s) | Module | collect status | CE-PROV-WIRE |
 |-------------|-----------|--------|----------------|--------------|
-| `builtin.task_message` | TASK_MESSAGE | `builtin.py` stub | **stub** (returns `[]`) | CE-PROV-01 — `ContextAssemblyRequest` / messages handle |
+| `builtin.task_message` | TASK_MESSAGE | `builtin.py` + `legacy_bridge.py` | **live** (objective / messages handle) | CE-PROV-01 **Done** |
 | `builtin.system_instructions` | SYSTEM_INSTRUCTIONS | `builtin.py` stub | **stub** | CE-PROV-02 — `runtime_config` / prompt registry handle |
-| `builtin.session_history` | SESSION_HISTORY | `builtin.py` stub | **stub** | CE-PROV-03 — `engine_history_layer` / session memory handle |
+| `builtin.session_history` | SESSION_HISTORY | `builtin.py` + `legacy_bridge.py` | **live** (`session_history_messages` handle) | CE-PROV-03 **Done** |
 | `builtin.session_history_semantic` | SESSION_HISTORY_SEMANTIC | `session_semantic_recall.py` | **live** (vector index + hits handle) | — (CE-VEC-1) |
 | `builtin.longterm_memory` | LONGTERM_MEMORY | `builtin.py` stub | **stub** | CE-PROV-04 — LTM search / `memory_view` handle |
 | `builtin.rag` | RAG | `builtin.py` stub | **stub** | CE-PROV-05 — `rag_chunks` / retrieve snapshot handle |
 | `builtin.websearch` | WEBSEARCH | `builtin.py` stub | **stub** | CE-PROV-06 — websearch blocks handle |
 | `builtin.tool_output` | TOOL_OUTPUT | `builtin.py` stub | **stub** | CE-PROV-07 — tool step blocks handle |
-| `builtin.graph_prior` | GRAPH_PRIOR | `builtin.py` stub | **stub** | CE-PROV-08 — `prior_outputs` / graph assembler handle |
+| `builtin.graph_prior` | GRAPH_PRIOR | `builtin.py` + `legacy_bridge.py` | **live** (`prior_output_records` handle) | CE-PROV-08 **Done** |
 | `builtin.shared_context` | SHARED_CONTEXT | `builtin.py` stub | **stub** | CE-PROV-09 — `SharedTaskContext` on task metadata |
 | `builtin.attachments` | ATTACHMENT | `builtin.py` stub | **stub** | CE-PROV-10 — attachment summary handle |
 | `builtin.policy_overlay` | POLICY_OVERLAY | `builtin.py` stub | **stub** | CE-PROV-11 — policy overlay handle |
@@ -701,7 +701,7 @@ profile = ApplicationEnvironmentProfile(
 | GAP-CTX-17 | **Closed** | `engine_ref=custom` not resolved | `context_engine_resolver.load_context_engine` |
 | GAP-CTX-18 | **Closed** | Preset engines lack §8.5 behavior | `preset_engines.py` |
 | GAP-CTX-19 | **Closed** | Registry formatter unused | `BuiltinContextPlugin` sets `DefaultContextFormatter` |
-| GAP-CTX-20 | **Open** | 11 builtin stub `collect()` return `[]` on engine path | **CE-PROV-WIRE** (phase + sprints B1–B4) |
+| GAP-CTX-20 | **Open** (partial) | 8 builtin stub `collect()` still return `[]` on engine path (B1 closed task/graph/session) | **CE-PROV-WIRE** sprints B2–B4 |
 
 **Traceability:** [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md) · **CE-ALIGN** Done · **CE-PROV-WIRE** Planned.
 
@@ -720,8 +720,8 @@ profile = ApplicationEnvironmentProfile(
 | `intergrax/context/dedup.py` | 0 | `dedup_fragments_by_hash()` |
 | `intergrax/context/orchestrator.py` | 0 | `ContextOrchestrator` (codebase preset) |
 | `intergrax/context/quality.py` | 0 | `evaluate_context_engineering()` |
-| `intergrax/context/providers/builtin.py` | 0 | `BuiltinContextPlugin` (stubs — CE-PROV-WIRE) |
-| `intergrax/context/providers/legacy_bridge.py` | 0 | Legacy collector adapters (**CE-PROV-BRIDGE** — planned) |
+| `intergrax/context/providers/builtin.py` | 0 | `BuiltinContextPlugin` (B1 live: task/graph/session; remaining stubs — CE-PROV-WIRE) |
+| `intergrax/context/providers/legacy_bridge.py` | 0 | Legacy collector adapters (**CE-PROV-BRIDGE** — B1 shipped) |
 | `intergrax/context/providers/workspace.py` | 0 | `WorkspaceContextProvider` |
 | `intergrax/context/providers/workspace_index.py` | 0 | Merkle workspace index |
 | `intergrax/context/providers/session_semantic_recall.py` | 0 | Episodic vector recall provider |

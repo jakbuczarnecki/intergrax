@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Shipped builtin context providers — catalog placeholders + live workspace/session (CE-2.3)."""
+"""Shipped builtin context providers — catalog + live collectors (CE-2.3, CE-PROV-WIRE)."""
 
 from __future__ import annotations
 
@@ -12,6 +12,13 @@ from intergrax.context.contracts import (
     ContextFragment,
     ContextFragmentSource,
     ContextProviderContext,
+)
+from intergrax.context.providers.legacy_bridge import (
+    PRIOR_OUTPUT_RECORDS_HANDLE,
+    SESSION_HISTORY_MESSAGES_HANDLE,
+    fragments_from_prior_output_records,
+    fragments_from_session_history,
+    fragments_from_task_message,
 )
 from intergrax.context.registry import ContextPluginRegistry
 
@@ -29,6 +36,51 @@ _BUILTIN_SPECS: tuple[tuple[str, ContextFragmentSource], ...] = (
     ("builtin.policy_overlay", ContextFragmentSource.POLICY_OVERLAY),
     ("builtin.workspace", ContextFragmentSource.WORKSPACE),
 )
+
+
+async def _collect_task_message(
+    request: ContextAssemblyRequest,
+    ctx: ContextProviderContext,
+) -> list[ContextFragment]:
+    messages = ctx.handles.get("messages")
+    typed_messages = list(messages) if isinstance(messages, list) else None
+    return fragments_from_task_message(request, messages=typed_messages)
+
+
+async def _collect_graph_prior(
+    request: ContextAssemblyRequest,
+    ctx: ContextProviderContext,
+) -> list[ContextFragment]:
+    _ = request
+    records = ctx.handles.get(PRIOR_OUTPUT_RECORDS_HANDLE)
+    if not isinstance(records, list) or not records:
+        return []
+    max_entries = request.assembly_options.max_prior_entries
+    return fragments_from_prior_output_records(records, max_entries=max_entries)
+
+
+async def _collect_session_history(
+    request: ContextAssemblyRequest,
+    ctx: ContextProviderContext,
+) -> list[ContextFragment]:
+    if not request.decision_profile.include_session_history:
+        return []
+    raw = ctx.handles.get(SESSION_HISTORY_MESSAGES_HANDLE)
+    if not isinstance(raw, list) or not raw:
+        return []
+    max_entries = request.decision_profile.max_memory_entries_in_context
+    return fragments_from_session_history(
+        raw,
+        max_entries=max_entries,
+        include_session_history=True,
+    )
+
+
+_COLLECT_OVERRIDES: dict[str, Callable[..., list[ContextFragment]]] = {
+    "builtin.task_message": _collect_task_message,
+    "builtin.graph_prior": _collect_graph_prior,
+    "builtin.session_history": _collect_session_history,
+}
 
 
 def _make_stub_provider(
@@ -101,7 +153,10 @@ class BuiltinContextPlugin:
             if provider_id == "builtin.workspace":
                 registry.add_provider(WorkspaceContextProvider())
                 continue
-            registry.add_provider(_make_stub_provider(provider_id, source))  # type: ignore[arg-type]
+            collect_override = _COLLECT_OVERRIDES.get(provider_id)
+            registry.add_provider(
+                _make_stub_provider(provider_id, source, collect_fn=collect_override)  # type: ignore[arg-type]
+            )
         registry.add_provider(SessionSemanticRecallProvider())
 
     @classmethod

@@ -11,6 +11,7 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.task.task import Task
 
 WORKSPACE_FILES_METADATA_KEY = "workspace_files"
+SESSION_HISTORY_MESSAGES_METADATA_KEY = "session_history_messages"
 
 
 def workspace_files_from_task(task: Task) -> dict[str, str]:
@@ -19,6 +20,14 @@ def workspace_files_from_task(task: Task) -> dict[str, str]:
     if not isinstance(raw, dict) or not raw:
         return {}
     return {str(path): str(content) for path, content in raw.items()}
+
+
+def session_history_messages_from_task(task: Task) -> list[Any]:
+    """Read session history turns from task metadata when present."""
+    raw = task.metadata.get(SESSION_HISTORY_MESSAGES_METADATA_KEY)
+    if not isinstance(raw, list) or not raw:
+        return []
+    return list(raw)
 
 
 def build_graph_provider_handles(
@@ -30,8 +39,15 @@ def build_graph_provider_handles(
     node_id: str,
     agent_id: str | None,
     engine_id: str,
+    prior_output_records: list[Any] | None = None,
+    session_history_messages: list[Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble runtime handles for ``ContextProviderContext`` on graph nodes."""
+    from intergrax.context.providers.legacy_bridge import (
+        PRIOR_OUTPUT_RECORDS_HANDLE,
+        SESSION_HISTORY_MESSAGES_HANDLE,
+    )
+
     handles: dict[str, Any] = {
         "runtime_config": runtime_config,
         "messages": messages,
@@ -49,4 +65,11 @@ def build_graph_provider_handles(
     vector_hits = task.metadata.get("session_vector_hits")
     if isinstance(vector_hits, list):
         handles["session_vector_hits"] = vector_hits
+    if prior_output_records:
+        handles[PRIOR_OUTPUT_RECORDS_HANDLE] = list(prior_output_records)
+    history_messages = session_history_messages
+    if history_messages is None:
+        history_messages = session_history_messages_from_task(task)
+    if history_messages:
+        handles[SESSION_HISTORY_MESSAGES_HANDLE] = list(history_messages)
     return handles
