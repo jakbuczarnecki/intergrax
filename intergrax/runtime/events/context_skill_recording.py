@@ -9,7 +9,10 @@ from typing import Any, Mapping, Optional, Sequence
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.payload_registry import runtime_event_with_payload
-from intergrax.runtime.events.payloads import ContextAssemblyPayloadV1, SkillResolvedPayloadV1
+from intergrax.runtime.events.payloads import (
+    ContextAssemblyPayloadV2,
+    SkillResolvedPayloadV1,
+)
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.nexus.context.context_budget import ContextTrimResult
 from intergrax.skills.resolver import ResolvedSkillPack
@@ -77,6 +80,8 @@ def record_context_assembly(
     trim: ContextTrimResult,
     metadata: Mapping[str, Any],
     engine_id: str = "",
+    step_index: int | None = None,
+    step_kind: str | None = None,
 ) -> None:
     base_payload: dict[str, Any] = {
         "node_id": node_id,
@@ -97,7 +102,7 @@ def record_context_assembly(
                 phase=ExecutionPhase.CONTEXT_BUILDING,
                 correlation_id=task_id,
             ),
-            ContextAssemblyPayloadV1(
+            ContextAssemblyPayloadV2(
                 node_id=node_id,
                 summary_tier=str(metadata.get("summary_tier"))
                 if metadata.get("summary_tier") is not None
@@ -106,6 +111,8 @@ def record_context_assembly(
                 context_final_chars=trim.final_chars,
                 trimmed=False,
                 engine_id=engine_id,
+                step_index=step_index,
+                step_kind=step_kind,
             ),
             promote_fields=base_payload,
         )
@@ -122,7 +129,7 @@ def record_context_assembly(
                     phase=ExecutionPhase.CONTEXT_BUILDING,
                     correlation_id=task_id,
                 ),
-                ContextAssemblyPayloadV1(
+                ContextAssemblyPayloadV2(
                     node_id=node_id,
                     summary_tier=str(metadata.get("summary_tier"))
                     if metadata.get("summary_tier") is not None
@@ -131,6 +138,8 @@ def record_context_assembly(
                     context_final_chars=trim.final_chars,
                     trimmed=True,
                     engine_id=engine_id,
+                    step_index=step_index,
+                    step_kind=step_kind,
                 ),
                 promote_fields={**base_payload, "trimmed": True},
             )

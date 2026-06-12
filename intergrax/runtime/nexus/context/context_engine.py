@@ -12,7 +12,9 @@ from intergrax.context.contracts import (
     ContextAssemblyRequest,
     ContextProviderContext,
 )
+from intergrax.context.ranker import DefaultContextRanker
 from intergrax.context.registry import ContextPluginRegistry
+from intergrax.runtime.policy.context_assembly_policy import run_pre_context_policy_gate
 from intergrax.runtime.nexus.context.compile_service import compile_chat_messages
 from intergrax.runtime.nexus.context.context_compiler import ContextCompiler
 from intergrax.runtime.nexus.context.context_validator import DefaultContextValidator
@@ -34,11 +36,13 @@ class DefaultNexusContextEngine:
         registry: ContextPluginRegistry | None = None,
         compiler: ContextCompiler | None = None,
         validator: DefaultContextValidator | None = None,
+        ranker: DefaultContextRanker | None = None,
     ) -> None:
         self._engine_id = engine_id
         self._registry = registry or ContextPluginRegistry()
         self._compiler = compiler or ContextCompiler()
         self._validator = validator or DefaultContextValidator()
+        self._ranker = ranker or DefaultContextRanker()
 
     @property
     def engine_id(self) -> str:
@@ -62,8 +66,22 @@ class DefaultNexusContextEngine:
         if runtime_config is None:
             raise ValueError("ContextProviderContext.handles must include runtime_config")
 
+        pre_gate = run_pre_context_policy_gate(request)
+        if not pre_gate.allowed:
+            raise ValueError("; ".join(pre_gate.errors))
+
+        collected_fragments: list = []
         for provider in self._registry.list_providers():
-            await provider.collect(request, ctx)
+            fragments = await provider.collect(request, ctx)
+            if fragments:
+                collected_fragments.extend(fragments)
+
+        post_gate = run_pre_context_policy_gate(request, collected=tuple(collected_fragments))
+        if not post_gate.allowed:
+            raise ValueError("; ".join(post_gate.errors))
+
+        if collected_fragments:
+            collected_fragments = self._ranker.rank(collected_fragments, request)
 
         compile_result = compile_chat_messages(
             raw_messages,

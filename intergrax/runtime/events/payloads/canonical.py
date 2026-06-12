@@ -145,6 +145,19 @@ class ContextAssemblyPayloadV1(RuntimeEventPayload):
     engine_id: str = ""
 
 
+class ContextAssemblyPayloadV2(RuntimeEventPayload):
+    schema_id = "context_assembly.v2"
+
+    node_id: str
+    summary_tier: str | None = None
+    context_original_chars: int
+    context_final_chars: int
+    trimmed: bool = False
+    engine_id: str = ""
+    step_index: int | None = None
+    step_kind: str | None = None
+
+
 class TaskLifecyclePayloadV1(RuntimeEventPayload):
     schema_id = "task_lifecycle.v1"
 

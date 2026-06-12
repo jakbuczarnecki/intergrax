@@ -16,6 +16,7 @@ from intergrax.contracts.agent_contract_section12 import (
     DEFAULT_OUTPUT_SCHEMA,
     DEFAULT_VALIDATION_RULES,
 )
+from intergrax.contracts.agent_context_hints import AgentContextHints
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.skills.core.contracts import SkillManifest
 from intergrax.tools.core.contracts import ToolContract
@@ -113,4 +114,8 @@ class AgentContract(BaseModel):
     pattern_config: Dict[str, Any] = Field(
         default_factory=dict,
         description="Pattern-specific configuration (max_react_iterations, etc.).",
+    )
+    context_hints: AgentContextHints | None = Field(
+        default=None,
+        description="Optional CE required/excluded sources and step_kind (CE-5.1).",
     )

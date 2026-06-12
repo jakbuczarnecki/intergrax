@@ -252,9 +252,14 @@ async def run_acp_session(
             else {}
         ),
     }
+    hints = contract.context_hints
     step_ctx = AgentStepContext(
         step_index=start_step_index,
         run_id=run_id,
+        task_id=task_id,
+        tenant_id=merged.tenant_id,
+        message=str(request.input or ""),
+        step_kind=hints.step_kind if hints is not None else None,
         agent_id=merged.agent_id,
         contract_id=merged.contract_id,
         side_effect_mode=merged.side_effect_mode,

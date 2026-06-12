@@ -128,14 +128,14 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 
 | ID | Deliverable | Priority | Status | Acceptance |
 |----|-------------|----------|--------|------------|
-| **CE-4.1** | Populate `ContextAssemblyRequest` in UAEP `BEFORE_CONTEXT_BUILD` with `step_index`, `step_kind` | P1 | Planned | Sourced from `AgentStepContext` |
-| **CE-4.2** | ACP: map `StepOutcome` / contract `context_hints` → `required_sources` / `excluded_sources` | P1 | Planned | Agent contract optional field — no breaking change |
-| **CE-4.3** | `objective` field from task message or active plan slice (`DecisionRecord` link) | P2 | Planned | REASONING plan cross-link only |
-| **CE-4.4** | `DefaultContextRanker` boosts fragments matching `step_kind` (config table) | P1 | Planned | e.g. `tool_call` → boost TOOL_OUTPUT |
-| **CE-4.5** | Event payload v2: `context_assembly.v2` with step fields (registry bump) | P1 | Planned | `payload_registry.py` + gate |
-| **CE-4.6** | Unit tests step-aware ranking | P1 | Planned | `-m gate` |
-| **CE-4.7** | `pre_context_policy_audit` inside `assemble()` before format/validate | P1 | Planned | `pre_context_policy_audit.py` wired; hook parity unchanged |
-| **CE-5.1** | Optional `AgentContract.context_hints` → `required_sources` / `excluded_sources` | P2 | Planned | `AGENT_CONTRACTS` plan cross-link; CE-4.2 consumes |
+| **CE-4.1** | Populate `ContextAssemblyRequest` in UAEP `BEFORE_CONTEXT_BUILD` with `step_index`, `step_kind` | P1 | **Done** | Sourced from `AgentStepContext` |
+| **CE-4.2** | ACP: map `StepOutcome` / contract `context_hints` → `required_sources` / `excluded_sources` | P1 | **Done** | Agent contract optional field — no breaking change |
+| **CE-4.3** | `objective` field from task message or active plan slice (`DecisionRecord` link) | P2 | **Done** | REASONING plan cross-link only |
+| **CE-4.4** | `DefaultContextRanker` boosts fragments matching `step_kind` (config table) | P1 | **Done** | e.g. `tool_call` → boost TOOL_OUTPUT |
+| **CE-4.5** | Event payload v2: `context_assembly.v2` with step fields (registry bump) | P1 | **Done** | `payload_registry.py` + gate |
+| **CE-4.6** | Unit tests step-aware ranking | P1 | **Done** | `-m gate` |
+| **CE-4.7** | `pre_context_policy_audit` inside `assemble()` before format/validate | P1 | **Done** | `pre_context_policy_audit.py` wired; hook parity unchanged |
+| **CE-5.1** | Optional `AgentContract.context_hints` → `required_sources` / `excluded_sources` | P2 | **Done** | `AGENT_CONTRACTS` plan cross-link; CE-4.2 consumes |
 | **CE-VEC-1** | `SessionSemanticRecallProvider` + `SESSION_HISTORY_SEMANTIC` in ranker/degradation | P1 | Planned | Cross-plan: MEM-VEC-2.3/2.4; prerequisite MEM-VEC-2.1 |
 
 **Wave 3 exit:** `CONTEXT_ASSEMBLED` v2 payloads include `step_kind` on ACP/UAEP paths; episodic recall fragment when MEM-VEC enabled.
@@ -225,14 +225,14 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 | CE-3.9 | 2 | **Done** |
 | CE-3.10 | 2 | **Done** |
 | CE-3.11 | 2 | **Done** |
-| CE-4.1 | 3 | Planned |
-| CE-4.2 | 3 | Planned |
-| CE-4.3 | 3 | Planned |
-| CE-4.4 | 3 | Planned |
-| CE-4.5 | 3 | Planned |
-| CE-4.6 | 3 | Planned |
-| CE-4.7 | 3 | Planned |
-| CE-5.1 | 3 | Planned |
+| CE-4.1 | 3 | **Done** |
+| CE-4.2 | 3 | **Done** |
+| CE-4.3 | 3 | **Done** |
+| CE-4.4 | 3 | **Done** |
+| CE-4.5 | 3 | **Done** |
+| CE-4.6 | 3 | **Done** |
+| CE-4.7 | 3 | **Done** |
+| CE-5.1 | 3 | **Done** |
 | CE-VEC-1 | 3 | Planned |
 | CE-7.1 | 4 | Planned |
 | CE-7.2 | 4 | Planned |
@@ -347,7 +347,7 @@ Operator-facing sprint plan. One sprint = one coherent PR batch (1–5 CE IDs). 
 | **S2** | Plugin catalog bootstrap | CE-2.1–CE-2.5, CE-1.5 | `register_context_plugin()`, `BuiltinContextPlugin` ≥10 providers; `pytest tests/unit/context/` green | **Done** (2026-06-12) |
 | **S3** | Engine skeleton + hot-path compiler | CE-3.1, CE-3.2, CE-3.9, CE-3.10 | `DefaultNexusContextEngine`; `ContextCompiler` on ACP/UAEP before LLM; acceptance never-overflow on prod path | **Done** (2026-06-12) |
 | **S4** | Path unification + events | CE-3.3, CE-3.4, CE-3.7, CE-3.11, CE-3.8 | Graph + ACP share `assemble()`; unified `CONTEXT_ASSEMBLED`; integration test green | **Done** (2026-06-12) |
-| **S5** | Step-aware assembly | CE-4.1–CE-4.6, CE-4.7, CE-5.1 | `step_kind` in payload v2; policy audit in `assemble()`; optional contract `context_hints` | S4 |
+| **S5** | Step-aware assembly | CE-4.1–CE-4.6, CE-4.7, CE-5.1 | `step_kind` in payload v2; policy audit in `assemble()`; optional contract `context_hints` | **Done** (2026-06-12) |
 | **S6** | Episodic vector recall | CE-VEC-1 | `SESSION_HISTORY_SEMANTIC` fragments when `MemoryProfile.enable_session_vector_index` | S4 + MEM-VEC-2.1 |
 | **S7** | Codebase preset | CE-7.1–CE-7.5 | Lab host `engine_preset=codebase`; 1k-file workspace under budget | S4 |
 | **S8** | Multi-hop orchestrator | CE-8.1–CE-8.3, CE-11.4 | `ContextOrchestrator` on codebase preset only; `explore_child` delegation preset | S7 |

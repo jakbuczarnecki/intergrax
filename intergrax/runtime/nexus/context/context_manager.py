@@ -187,6 +187,7 @@ class ContextManager:
                     "tenant_id": task.tenant_id,
                 },
                 engine_id=self._context_engine.engine_id,
+                step_kind=node.capability,
             )
         return bundle.model_copy(update={"message": trim.message, "metadata": bundle_metadata})
 
@@ -275,6 +276,7 @@ class ContextManager:
                     **bundle_metadata,
                     "tenant_id": task.tenant_id,
                 },
+                step_kind=node.capability,
             )
 
         return AgentContextBundle(

@@ -12,7 +12,7 @@ plan_ref:
   - CE-3.8
   - CE-3.11
 status: completed
-commit: pending
+commit: 096efe25
 adr: no ADR needed — unifies existing event spine per CE-3.11 without contract breakage
 ---
 
