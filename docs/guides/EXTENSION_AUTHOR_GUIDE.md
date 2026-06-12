@@ -238,8 +238,11 @@ Entry point group: `intergrax.memory_stores`
 |----------|----------------|----------|
 | `UserProfileStorePlugin` | `create_user_profile_store(**kwargs)` | Default `InMemoryUserProfileStore` / sqlite bundle / optional Mongo `document_store` (MEM-PERS.2) |
 | `SessionStoragePlugin` | `create_session_storage(**kwargs)` | Default `InMemorySessionStorage` / sqlite bundle |
+| `SessionTurnIndexStore` (target MEM-VEC-3.1) | `create_session_turn_index(**kwargs)` | Default episodic vector adapter over host `VectorstoreManager` |
 
 Bootstrap: `intergrax.core.memory_bootstrap.bootstrap_memory_stores(discover_entry_points=True)`.
+
+**Vector memory:** LTM and session episodic indexes reuse the host integration **vector store** — memory plugins swap index adapters, not vendor SDKs. See [`architecture/MEMORY.md`](architecture/MEMORY.md) §5.3, §11.5.
 
 Reference fixture: `tests/fixtures/plugin_packages/memory_store_plugin/`.
 

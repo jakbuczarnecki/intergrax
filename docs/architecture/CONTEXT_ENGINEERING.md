@@ -158,6 +158,7 @@ class ContextFragmentSource(str, Enum):
     TASK_MESSAGE = "task_message"
     SYSTEM_INSTRUCTIONS = "system_instructions"
     SESSION_HISTORY = "session_history"
+    SESSION_HISTORY_SEMANTIC = "session_history_semantic"  # MEM-VEC-2.4 — episodic vector recall hits
     LONGTERM_MEMORY = "longterm_memory"
     RAG = "rag"
     WEBSEARCH = "websearch"
@@ -593,8 +594,9 @@ ContextOrchestrator (max_hops=3, latency_budget_ms)
 
 ### 14.2 Long session support
 
-- `HistoryLayer` SUMMARIZE_OLDEST before CE budget
-- CE drops oldest optional fragments last
+- **Episodic semantic recall** (when `MemoryProfile.enable_session_vector_index`) — retrieve relevant past turns from the session turn vector index before assembling chronological history; see [`MEMORY.md`](MEMORY.md) §7.1.1 (MEM-VEC-2.*)
+- `HistoryLayer` SUMMARIZE_OLDEST on the **remaining** chronological tail when episodic + budget still overflow
+- CE drops lowest-scored optional fragments (`SESSION_HISTORY_SEMANTIC` before mandatory user turn) per degradation ladder
 
 ### 14.3 Document Q&A
 
