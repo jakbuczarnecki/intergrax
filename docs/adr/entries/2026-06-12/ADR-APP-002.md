@@ -5,7 +5,7 @@
 | **Status** | Accepted · **implemented** (`APP-EVOL-1`) |
 | **Date** | 2026-06-11 |
 | **Deciders** | Intergrax platform architecture |
-| **Related** | [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../architecture/TIER3_APPLICATION_ENVIRONMENT.md) §49.1.2 · plan `APP-EVOL-1` |
+| **Related** | [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../../architecture/TIER3_APPLICATION_ENVIRONMENT.md) §49.1.2 · plan `APP-EVOL-1` |
 
 ## Context
 

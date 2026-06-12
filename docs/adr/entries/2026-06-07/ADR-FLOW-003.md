@@ -5,7 +5,7 @@
 | **Status** | Accepted (FLOW-16) |
 | **Date** | 2026-06-07 |
 | **Deciders** | Intergrax platform architecture |
-| **Related** | [`architecture/NEXUS_EXECUTION_FLOW.md`](../architecture/NEXUS_EXECUTION_FLOW.md) §10 · plan `FLOW-16` / `FLOW-GAP-15` |
+| **Related** | [`architecture/NEXUS_EXECUTION_FLOW.md`](../../architecture/NEXUS_EXECUTION_FLOW.md) §10 · plan `FLOW-16` / `FLOW-GAP-15` |
 
 ## Context
 

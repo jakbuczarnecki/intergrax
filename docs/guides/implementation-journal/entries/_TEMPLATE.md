@@ -32,7 +32,7 @@ What did this unlock for the Harness, agents, or product hosts?
 |------|--------|
 | Architecture | `docs/architecture/<DOMAIN>.md` or `agents/<slug>/ARCHITECTURE.md` |
 | Plan | `docs/plan/<DOMAIN>.md` row / phase |
-| ADR | `docs/adr/ADR-XXX-NNN.md` or `agents/<slug>/adr/` |
+| ADR | `docs/adr/entries/YYYY-MM-DD/ADR-XXX-NNN.md` or `agents/<slug>/adr/` |
 | Audit / gap | GAP-* or AUDIT-IDEAL-* if applicable |
 
 ## Changed artifacts

@@ -76,7 +76,7 @@ inside run():
 - **Production is measurable** — [Agent Production Readiness Scoreboard](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md#4015-agent-production-readiness-scoreboard) (contract, runtime, policy, observability, checkpointing, idempotency, security, evaluation, lifecycle, routing).
 - **Agents are swappable** — capability-based routing (`research.web_search`), not hardcoded class names in Nexus.
 
-**Canonical decisions:** [ADR-AGENT-001](docs/adr/ADR-AGENT-001.md) (Nexus stays Agent OS) · [ADR-AGENT-002](docs/adr/ADR-AGENT-002.md) (`Agent.run()` facade) · [ADR-AGENT-003](docs/adr/ADR-AGENT-003.md) (step loop + dual observability).
+**Canonical decisions:** [ADR-AGENT-001](docs/adr/entries/2026-06-11/ADR-AGENT-001.md) (Nexus stays Agent OS) · [ADR-AGENT-002](docs/adr/entries/2026-06-11/ADR-AGENT-002.md) (`Agent.run()` facade) · [ADR-AGENT-003](docs/adr/entries/2026-06-11/ADR-AGENT-003.md) (step loop + dual observability).
 
 **Implementation status:** architecture **decision-complete** (§13–§40); delivery via plan [Phase ACP](docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) (typed contracts → step loop → fleet migration → prod gates). Today: UAEP bridge + Nexus path; target: typed `on_next_step` on all roster agents.
 
@@ -356,7 +356,7 @@ Tier-0 building blocks — one canonical path per concern. Agents use these thro
 | **Memory** | STM/LTM, context compiler, Knowledge vs LTM boundary | [architecture/MEMORY.md](docs/architecture/MEMORY.md) · [plan](docs/plan/MEMORY.md) |
 | **Modality / ML** | Vision, speech, classical ML via catalog tools | [architecture/MODALITY.md](docs/architecture/MODALITY.md) |
 | **Governance & HITL** | Policy bundle, budgets, shadow workspace, sandbox | [UAEP §42.11](docs/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [Appendix H](docs/guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
-| **LLM guardrails** | Vendor scanners via Integration `llm_guardrail` (M.12) | [INTEGRATIONS §47](docs/architecture/INTEGRATIONS.md) · [UAEP §42.11.6](docs/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [ADR-GR-001](docs/adr/ADR-GR-001.md) |
+| **LLM guardrails** | Vendor scanners via Integration `llm_guardrail` (M.12) | [INTEGRATIONS §47](docs/architecture/INTEGRATIONS.md) · [UAEP §42.11.6](docs/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [ADR-GR-001](docs/adr/entries/2026-06-09/ADR-GR-001.md) |
 | **Observability** | Event bus, trace DB, unified journal, OTLP | [architecture/OBSERVABILITY.md](docs/architecture/OBSERVABILITY.md) |
 | **Plugins** | pip-installable integration/tool/skill catalogs | [EXTENSION_AUTHOR_GUIDE.md](docs/guides/EXTENSION_AUTHOR_GUIDE.md) |
 
@@ -433,7 +433,7 @@ tests/ · scripts/       # Gate tests and harness CI checks
 |------------|------|
 | Understand strategic direction | [INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) |
 | Understand the platform | [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) → pick a domain pair |
-| **Understand the agent model** | [The agent model](#the-agent-model--why-architects-choose-intergrax) · [AGENT_CONTRACTS §13–§40](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [ADR-AGENT-001..003](docs/adr/ADR-AGENT-001.md) |
+| **Understand the agent model** | [The agent model](#the-agent-model--why-architects-choose-intergrax) · [AGENT_CONTRACTS §13–§40](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [ADR-AGENT-001..003](docs/adr/entries/2026-06-11/ADR-AGENT-001.md) |
 | See implementation status | [plan/PLATFORM_FOUNDATION.md](docs/plan/PLATFORM_FOUNDATION.md) · [plan ACP](docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) |
 | Create a new agent | [AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md) · [Appendix AC](docs/guides/AGENT_CREATION_GUIDE.md#appendix-ac--agent-run-cognitive-patterns-and-environment-acp) |
 | Full Nexus execution flow | [NEXUS_EXECUTION_FLOW.md](docs/architecture/NEXUS_EXECUTION_FLOW.md) |
@@ -485,7 +485,7 @@ tests/ · scripts/       # Gate tests and harness CI checks
 | **Critic & Verification (PEV)** | [architecture/CRITIC_VERIFICATION.md](docs/architecture/CRITIC_VERIFICATION.md) |
 | **Reasoning & cognition** | [architecture/REASONING_AND_COGNITION.md](docs/architecture/REASONING_AND_COGNITION.md) |
 | **Elastic capacity** | [architecture/ELASTIC_CAPACITY_AND_SCALING.md](docs/architecture/ELASTIC_CAPACITY_AND_SCALING.md) |
-| **Ephemeral Code Craft** | [architecture/CODE_CRAFT.md](docs/architecture/CODE_CRAFT.md) · [ADR-CODECRAFT-001](docs/adr/ADR-CODECRAFT-001.md) |
+| **Ephemeral Code Craft** | [architecture/CODE_CRAFT.md](docs/architecture/CODE_CRAFT.md) · [ADR-CODECRAFT-001](docs/adr/entries/2026-06-10/ADR-CODECRAFT-001.md) |
 
 Full phase tracker: [plan/PLATFORM_FOUNDATION.md](docs/plan/PLATFORM_FOUNDATION.md) · [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md)
 

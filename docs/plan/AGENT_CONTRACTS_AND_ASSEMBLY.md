@@ -53,7 +53,7 @@
 
 **Status:** **Done** (2026-06-11) — Waves **0–8** delivered; master register **80/80** ACP-* rows **Done**; fleet migration **100%** Runtime dimension  
 **Architecture:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 (incl. **§32.0** readability & typed-only contracts)  
-**ADR:** [ADR-AGENT-001](../adr/ADR-AGENT-001.md) · [ADR-AGENT-002](../adr/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/ADR-AGENT-003.md)  
+**ADR:** [ADR-AGENT-001](../adr/entries/2026-06-11/ADR-AGENT-001.md) · [ADR-AGENT-002](../adr/entries/2026-06-11/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/entries/2026-06-11/ADR-AGENT-003.md)  
 **Author guide:** [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix AC (sync with §32.0)  
 **Audit:** [`guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md) · domain audit **2026-06-11**  
 **Priority ladder:** **Band 2aw** — **closed** · **Band 2bb (ACP-CLOSE)** — **closed** · **active:** [ACP-FINISH](#phase-acp-finish--agent-architecture-completion) **Band 2bc**
@@ -199,11 +199,11 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-DOC.1 | ACP0 | **Architecture canon §21–§28** — ACP spec, flows, patterns, gaps | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | This document + ADR-AGENT-001 |
 | ACP-DOC.2 | ACP0 | **Appendix AC** — cognitive patterns author guide in `AGENT_CREATION_GUIDE.md` | **Done** | `guides/AGENT_CREATION_GUIDE.md` | TOC + pattern selection table + skeleton |
 | ACP-DOC.3 | ACP0 | **Audit prompt** — ACP dimensions in domain audit | **Done** | `guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` | Regenerated via `generate_domain_audit_prompts.py` |
-| ACP-ADR.1 | ACP0 | **ADR-AGENT-001** accepted | **Done** | `docs/adr/ADR-AGENT-001.md` | Linked from architecture §21 |
-| ACP-ADR.2 | ACP0 | **ADR-AGENT-002** accepted — `run()` facade | **Done** | `docs/adr/ADR-AGENT-002.md` | Linked from architecture §29 |
+| ACP-ADR.1 | ACP0 | **ADR-AGENT-001** accepted | **Done** | `docs/adr/entries/2026-06-11/ADR-AGENT-001.md` | Linked from architecture §21 |
+| ACP-ADR.2 | ACP0 | **ADR-AGENT-002** accepted — `run()` facade | **Done** | `docs/adr/entries/2026-06-11/ADR-AGENT-002.md` | Linked from architecture §29 |
 | ACP-DOC.4 | ACP0 | **Architecture §29–§30** — run facade + per-agent environment binding | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §29–§30 + ADR-AGENT-002 |
 | ACP-DOC.5 | ACP0 | **Architecture §31–§36** — dual observability, step loop, LLM routing, UC catalog | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §31–§36 + ADR-AGENT-003 |
-| ACP-ADR.3 | ACP0 | **ADR-AGENT-003** accepted — `on_next_step` + dual observability | **Done** | `docs/adr/ADR-AGENT-003.md` | Linked from architecture §31–§32 |
+| ACP-ADR.3 | ACP0 | **ADR-AGENT-003** accepted — `on_next_step` + dual observability | **Done** | `docs/adr/entries/2026-06-11/ADR-AGENT-003.md` | Linked from architecture §31–§32 |
 | ACP-DX-1 | ACP-DX | **`AgentRunRequest` / `AgentRunResult` / `RequestIdentity` / `AgentEnvironmentOverrides`** Pydantic contracts | **Done** | `intergrax/contracts/agent_run.py` | Round-trip + user_id required when memory_scope=user |
 | ACP-DX-2 | ACP-DX | **`merge_environment`** + `EffectiveAgentRunEnvironment` + **memory_scope resolution** §30.9 | **Done** | `intergrax/agents/run_environment.py` | Unit test merge order + user vs org namespace |
 | ACP-DX-3 | ACP-DX | **`IntergraxAgent.run` upgrade** — uses merge + typed result; hooks `configure_run`, `on_run_start/end` | **Done** | `intergrax/agents/authoring/base.py`, `acp_run.py` | Test direct run without Nexus |

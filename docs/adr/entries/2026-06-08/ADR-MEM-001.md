@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-06-08 |
 | **Deciders** | Harness platform architecture |
-| **Related** | [`architecture/MEMORY.md`](../architecture/MEMORY.md) · Phase MEM-DEPTH · audit map §16 |
+| **Related** | [`architecture/MEMORY.md`](../../architecture/MEMORY.md) · Phase MEM-DEPTH · audit map §16 |
 
 ## Context
 
@@ -50,7 +50,7 @@ Introduce **`ContextCompiler`** in Tier-1 (`runtime/nexus/context/`) that:
 
 - Tier boundaries preserved — compiler in Tier-1; agents unchanged.
 - Provenance via existing `CONTEXT_*` runtime events.
-- Linked from [`architecture/MEMORY.md`](../architecture/MEMORY.md) §7–§8 and [`plan/MEMORY.md`](../plan/MEMORY.md) Phase MEM-DEPTH.
+- Linked from [`architecture/MEMORY.md`](../../architecture/MEMORY.md) §7–§8 and [`plan/MEMORY.md`](../../plan/MEMORY.md) Phase MEM-DEPTH.
 
 ## Implementation notes
 

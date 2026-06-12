@@ -342,8 +342,8 @@ stateDiagram-v2
 
 | State | Status | Plan action |
 |-------|--------|-------------|
-| `WAITING_FOR_RESOURCES` | **Reserved v1** — valid transitions; Nexus graph runner does not enter this state; see [ADR-FLOW-002](adr/ADR-FLOW-002.md) | Long-running / scheduler band |
-| `EXPIRED` | **Reserved v1** — intended for HITL/scheduler timeout; see [ADR-FLOW-002](adr/ADR-FLOW-002.md) | Long-running / scheduler band |
+| `WAITING_FOR_RESOURCES` | **Reserved v1** — valid transitions; Nexus graph runner does not enter this state; see [ADR-FLOW-002](adr/entries/2026-06-07/ADR-FLOW-002.md) | Long-running / scheduler band |
+| `EXPIRED` | **Reserved v1** — intended for HITL/scheduler timeout; see [ADR-FLOW-002](adr/entries/2026-06-07/ADR-FLOW-002.md) | Long-running / scheduler band |
 
 Until implemented, operators should assume only the states in the diagram above are reachable from Nexus.
 
@@ -712,7 +712,7 @@ resume restores plan/graph/UAEP cursor from SQLite
 | Mechanism | When | Who schedules child | Memory model |
 |-----------|------|---------------------|--------------|
 | `DEPENDS_ON` | Declarative graph | Plan → separate graph node | Shared context via `ContextManager` |
-| `DELEGATES_TO` | Declarative graph | Plan expansion → child node ([ADR-FLOW-001](adr/ADR-FLOW-001.md)) | Child node + `DelegationSpec` via `SubtaskContract` |
+| `DELEGATES_TO` | Declarative graph | Plan expansion → child node ([ADR-FLOW-001](adr/entries/2026-06-07/ADR-FLOW-001.md)) | Child node + `DelegationSpec` via `SubtaskContract` |
 | `AgentDecision.HANDOFF` | Runtime | `HandoffCoordinator` inserts node | Handoff payload in shared context |
 | UAEP steps | Inside one node | Same agent | Agent-local + shared read |
 
@@ -736,7 +736,7 @@ flowchart LR
 
 ### 13.3 Decision record
 
-Accepted and implemented: [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md) (FLOW-2, FLOW-14).
+Accepted and implemented: [`adr/entries/2026-06-07/ADR-FLOW-001.md`](adr/entries/2026-06-07/ADR-FLOW-001.md) (FLOW-2, FLOW-14).
 
 ---
 
@@ -1120,20 +1120,20 @@ Honest deltas for plan scheduling. **Closeout phases (ORCH Done) wired bootstrap
 | ID | Gap | Current behavior | Category | Severity | AUDIT_MAP |
 |----|-----|------------------|----------|----------|-----------|
 | FLOW-GAP-01 | `EngineBackedNexusPlanner` | **Closed (FLOW-1)** — `EngineBackedNexusPlanner` bridges engine planner to `NexusTaskPlannerProtocol` | Runtime-core | High | §7 |
-| FLOW-GAP-02 | `DELEGATES_TO` / `child_agent_id` | **Closed (FLOW-2/14)** — [ADR-FLOW-001](adr/ADR-FLOW-001.md) child node expansion + `SubtaskContract` | Runtime-core | **Critical** | §10 |
+| FLOW-GAP-02 | `DELEGATES_TO` / `child_agent_id` | **Closed (FLOW-2/14)** — [ADR-FLOW-001](adr/entries/2026-06-07/ADR-FLOW-001.md) child node expansion + `SubtaskContract` | Runtime-core | **Critical** | §10 |
 | FLOW-GAP-03 | `max_delegation_depth` | **Closed (FLOW-3)** — enforced in `GraphExecutor` | Runtime-core | Medium | §10 |
 | FLOW-GAP-04 | Run-level `RetryCoordinator` | **Closed (FLOW-4)** — `OrchestrationProfile.max_run_retries` wired in `NexusGraphRunner` | Runtime-core | Medium | §9, §22 |
 | FLOW-GAP-05 | `AgentGraph.on_error(retry)` | **Closed (FLOW-5)** — `retry_on_error` propagated to `GraphExecutor` retry policy | DX | Low | §9 |
 | FLOW-GAP-06 | Graph cycle fallback | **Closed (FLOW-6)** — `ExecutionGraphCycleError` on cycle | Runtime-core | Medium | §9 |
 | FLOW-GAP-07 | `FinalResponseComposer` | **Closed (FLOW-7)** — `MergeStrategy` profile-driven merge | Production-hardening | Medium | §9 |
-| FLOW-GAP-08 | `WAITING_FOR_RESOURCES` / `EXPIRED` | **Closed (FLOW-10)** — [ADR-FLOW-002](adr/ADR-FLOW-002.md) reserved v1 semantics | DX / lifecycle | Low | §8 |
+| FLOW-GAP-08 | `WAITING_FOR_RESOURCES` / `EXPIRED` | **Closed (FLOW-10)** — [ADR-FLOW-002](adr/entries/2026-06-07/ADR-FLOW-002.md) reserved v1 semantics | DX / lifecycle | Low | §8 |
 | FLOW-GAP-09 | Pre-plan LLM policy hooks | **Closed (FLOW-11)** — `evaluate_pre_llm` at planning boundary | Production-hardening | Medium | §5 |
 | FLOW-GAP-10 | Product multi-agent proof | **Done (harness)** — `test_orchestration_cfg_simulation.py` (ORCH-CONFIG.5); Tier-3 §42.43 product host **Deferred** §6.3 | Product-proof | Product | §28 |
 | FLOW-GAP-11 | Evaluator / LLM-judge not mandatory on multi-agent fan-in | **Closed (FLOW-9)** — post-graph eval observation hook in `NexusLoop` | Production-hardening | Medium | §25 |
 | FLOW-GAP-12 | `max_inflight_nodes` not on `OrchestrationProfile` | **Closed (FLOW-13)** — profile field + `nexus_factory` wire | Runtime-core | Medium | §9 |
 | FLOW-GAP-13 | `SubtaskContract` not used in declarative graph | **Closed (FLOW-14)** — `graph_spec_to_plan` uses `SubtaskContract.to_delegation_spec()` | Runtime-core | Medium | §10 |
 | FLOW-GAP-14 | Subagent budget not delegated | **Closed (FLOW-15)** — `max_llm_calls`/`max_tool_calls` on delegation envelope | Production-hardening | Medium | §10 |
-| FLOW-GAP-15 | `MODIFY_PLAN` reserved / undocumented | **Closed (FLOW-16)** — [ADR-FLOW-003](adr/ADR-FLOW-003.md); `MODIFY_PLAN_NOT_SUPPORTED` without handoff | DX | Low | §9 |
+| FLOW-GAP-15 | `MODIFY_PLAN` reserved / undocumented | **Closed (FLOW-16)** — [ADR-FLOW-003](adr/entries/2026-06-07/ADR-FLOW-003.md); `MODIFY_PLAN_NOT_SUPPORTED` without handoff | DX | Low | §9 |
 | FLOW-GAP-16 | `MULTI_AGENT` step order fragile | **Closed (FLOW-17)** — `multi_agent_order` on `OrchestrationProfile` | DX | Low | §9 |
 | FLOW-GAP-17 | Tier-3 task control HTTP (cancel/resume/autonomy) | **Closed (H-APP-WIRING)** — legal/research/poc_template + scaffold `INCLUDE_TASK_CONTROL` | Tier-3 wiring | Medium | §28, ORCH §59.2 |
 | FLOW-GAP-18 | Async `run_async` product exposure | **Closed** — reference hosts mount `/v1/tasks/run-async`; durable queue opt-in (`INCLUDE_QUEUE_WORKER`) | Tier-3 wiring | Medium | ORCH §57.5 |
@@ -1188,7 +1188,7 @@ Harness MVP and new Tier-2 agents remain unblocked. LLM-backed dynamic decomposi
 | FLOW-13 | FLOW-GAP-12 | `max_inflight_nodes` on profile + factory wire | `GRAPH_BACKPRESSURE` when cap hit | Medium |
 | FLOW-14 | FLOW-GAP-13 | `SubtaskContract` in ADR-FLOW-001 expansion | Scopes/objective on child `DelegationSpec` | Medium |
 | FLOW-15 | FLOW-GAP-14 | Subagent budget envelope enforcement | Child exceeds envelope → fail | Medium |
-| FLOW-16 | FLOW-GAP-15 | `MODIFY_PLAN` ADR ([ADR-FLOW-003](adr/ADR-FLOW-003.md)) | Reserved semantics or enum trim | Low |
+| FLOW-16 | FLOW-GAP-15 | `MODIFY_PLAN` ADR ([ADR-FLOW-003](adr/entries/2026-06-07/ADR-FLOW-003.md)) | Reserved semantics or enum trim | Low |
 | FLOW-17 | FLOW-GAP-16 | `MULTI_AGENT` ordering policy on profile | Stable declared agent order | Low |
 | FLOW-DOC.* | — | Flow reference + plan sync after each PR | Zero open `FLOW-GAP` in §23 | Low |
 
@@ -1227,14 +1227,14 @@ Harness MVP and new Tier-2 agents remain unblocked. LLM-backed dynamic decomposi
 | Harness audit map | [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
 | Root README | [`../README.md`](../README.md) |
 | AGENTS.md (AI routing) | [`../AGENTS.md`](../AGENTS.md) |
-| Delegation ADR | [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md) |
-| Lifecycle ADR | [`adr/ADR-FLOW-002.md`](adr/ADR-FLOW-002.md) |
-| MODIFY_PLAN ADR | [`adr/ADR-FLOW-003.md`](adr/ADR-FLOW-003.md) |
+| Delegation ADR | [`adr/entries/2026-06-07/ADR-FLOW-001.md`](adr/entries/2026-06-07/ADR-FLOW-001.md) |
+| Lifecycle ADR | [`adr/entries/2026-06-07/ADR-FLOW-002.md`](adr/entries/2026-06-07/ADR-FLOW-002.md) |
+| MODIFY_PLAN ADR | [`adr/entries/2026-06-07/ADR-FLOW-003.md`](adr/entries/2026-06-07/ADR-FLOW-003.md) |
 | Ideal harness target | [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) |
 
 ---
 
-**Maintainer note:** When runtime behavior changes, update **this file first** (narrative truth), then sync canon §42.14.3 / §42.43, [ADR-FLOW-001](adr/ADR-FLOW-001.md), and plan traceability §25 — not the other way around.
+**Maintainer note:** When runtime behavior changes, update **this file first** (narrative truth), then sync canon §42.14.3 / §42.43, [ADR-FLOW-001](adr/entries/2026-06-07/ADR-FLOW-001.md), and plan traceability §25 — not the other way around.
 
 ---
 

@@ -65,7 +65,7 @@ applications/    MAY import from agents/ and intergrax/
 - Global ladder, DoD, product backlog → `docs/plan/PLATFORM_FOUNDATION.md`
 - Agent workflow → `docs/guides/AGENT_CREATION_GUIDE.md`
 - Harness AI terms → `docs/architecture/PLATFORM_FOUNDATION.md` §5.3 only
-- Nexus execution flow → `docs/architecture/NEXUS_EXECUTION_FLOW.md` + `docs/plan/NEXUS_EXECUTION_FLOW.md` · ADR → `docs/adr/ADR-FLOW-001.md`
+- Nexus execution flow → `docs/architecture/NEXUS_EXECUTION_FLOW.md` + `docs/plan/NEXUS_EXECUTION_FLOW.md` · ADR → `docs/adr/entries/2026-06-07/ADR-FLOW-001.md`
 - Completed implementation episodes → `docs/guides/implementation-journal/` (English; required on DoD unless operator skips)
 
 ### Harness platform
@@ -96,7 +96,7 @@ applications/    MAY import from agents/ and intergrax/
 | Reasoning / planning / cognition | [REASONING_AND_COGNITION.md](docs/architecture/REASONING_AND_COGNITION.md) · [plan/REASONING_AND_COGNITION.md](docs/plan/REASONING_AND_COGNITION.md) |
 | Nexus execution flow | [NEXUS_EXECUTION_FLOW.md](docs/architecture/NEXUS_EXECUTION_FLOW.md) · [plan/NEXUS_EXECUTION_FLOW.md](docs/plan/NEXUS_EXECUTION_FLOW.md) |
 | Agents / registry / capabilities | [AGENT_CONTRACTS_AND_ASSEMBLY.md](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [plan/AGENT_CONTRACTS_AND_ASSEMBLY.md](docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) |
-| Observability | [OBSERVABILITY.md](docs/architecture/OBSERVABILITY.md) · [plan/OBSERVABILITY.md](docs/plan/OBSERVABILITY.md) · [ADR-OBS-001](docs/adr/ADR-OBS-001.md) |
+| Observability | [OBSERVABILITY.md](docs/architecture/OBSERVABILITY.md) · [plan/OBSERVABILITY.md](docs/plan/OBSERVABILITY.md) · [ADR-OBS-001](docs/adr/entries/2026-06-08/ADR-OBS-001.md) |
 | Reliability / HITL | [RELIABILITY_FAILURE_AND_HITL.md](docs/architecture/RELIABILITY_FAILURE_AND_HITL.md) · [plan/RELIABILITY_FAILURE_AND_HITL.md](docs/plan/RELIABILITY_FAILURE_AND_HITL.md) |
 | L4 adaptive harness | [ADAPTIVE_HARNESS_INTELLIGENCE.md](docs/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) · [plan/ADAPTIVE_HARNESS_INTELLIGENCE.md](docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
 | Elastic capacity / platform scaling | [ELASTIC_CAPACITY_AND_SCALING.md](docs/architecture/ELASTIC_CAPACITY_AND_SCALING.md) · [plan/ELASTIC_CAPACITY_AND_SCALING.md](docs/plan/ELASTIC_CAPACITY_AND_SCALING.md) |
@@ -129,6 +129,7 @@ python scripts/check_harness_no_getattr.py
 uv run python scripts/check_observability_gates.py
 python scripts/check_docs_domain_pairs.py
 python scripts/check_implementation_journal.py
+python scripts/check_harness_adr.py
 uv run python scripts/check_agent_acp_close_ci.py
 ```
 

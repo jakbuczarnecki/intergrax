@@ -428,7 +428,7 @@ GraphSpecSeedingPlanner wraps inner planner
 | Edge kind | Effect on `NexusPlan` |
 |-----------|----------------------|
 | `DEPENDS_ON` | Target step `depends_on` source |
-| `DELEGATES_TO` | Child step + `DelegationSpec` on child ([ADR-FLOW-001](../adr/ADR-FLOW-001.md)) |
+| `DELEGATES_TO` | Child step + `DelegationSpec` on child ([ADR-FLOW-001](../adr/entries/2026-06-07/ADR-FLOW-001.md)) |
 
 **Authoring:** `AgentGraph` fluent builder — `intergrax/applications/contracts/graph_builder.py`  
 **Application domain:** [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md)
@@ -437,7 +437,7 @@ GraphSpecSeedingPlanner wraps inner planner
 
 ## 12. Retired engine planner stack
 
-**Status:** **Removed** (ACP-CLOSE-LEG-5 · [ADR-FLOW-005](../adr/ADR-FLOW-005.md)).
+**Status:** **Removed** (ACP-CLOSE-LEG-5 · [ADR-FLOW-005](../adr/entries/2026-06-12/ADR-FLOW-005.md)).
 
 The Tier-1 **agent session** pipeline (`RuntimeEngine`, `RuntimePipeline`, `runtime_steps/`, pipeline-bound `plan_loop_controller`) was deleted (ACP-CLOSE-LEG-5). Per-run step decomposition and replan are **author responsibilities** inside **`on_next_step`** (cognitive patterns: ReAct, plan-execute, reflection). Nexus **task** planning (`engine_planner_orchestrator`, `nexus_llm_plan_builder`, `TaskPlanner`) is unchanged — it schedules multi-agent work, not in-session cognitive steps.
 
@@ -720,8 +720,8 @@ All implementation tasks: [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_
 | [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) §8.3 | Nexus owns global reasoning |
 | [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](../guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §7 | Audit procedure |
 | [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix I §I.4 | Planning strategies for authors |
-| [`adr/ADR-FLOW-001.md`](../adr/ADR-FLOW-001.md) | Delegation expansion in plans |
-| [`adr/ADR-FLOW-003.md`](../adr/ADR-FLOW-003.md) | MODIFY_PLAN reserved semantics |
+| [`adr/entries/2026-06-07/ADR-FLOW-001.md`](../adr/entries/2026-06-07/ADR-FLOW-001.md) | Delegation expansion in plans |
+| [`adr/entries/2026-06-07/ADR-FLOW-003.md`](../adr/entries/2026-06-07/ADR-FLOW-003.md) | MODIFY_PLAN reserved semantics |
 | [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) | Execution capacity (dimension A) vs agent topology (dimension B) |
 
 ---

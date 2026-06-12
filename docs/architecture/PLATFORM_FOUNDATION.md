@@ -718,7 +718,7 @@ Do **not** add an `llm_provider` category or LLM slugs to the Integration Catalo
 
 #### Ephemeral Code Craft (ECC)
 
-**Canonical domain pair:** [`architecture/CODE_CRAFT.md`](CODE_CRAFT.md) ↔ [`plan/CODE_CRAFT.md`](../plan/CODE_CRAFT.md) — harness-orchestrated dynamic codegen loop; `codecraft.*` catalog tools; `CodeCraftProfile`; execution substrate `runtime/sandbox/`. ADR: [`adr/ADR-CODECRAFT-001.md`](../adr/ADR-CODECRAFT-001.md).
+**Canonical domain pair:** [`architecture/CODE_CRAFT.md`](CODE_CRAFT.md) ↔ [`plan/CODE_CRAFT.md`](../plan/CODE_CRAFT.md) — harness-orchestrated dynamic codegen loop; `codecraft.*` catalog tools; `CodeCraftProfile`; execution substrate `runtime/sandbox/`. ADR: [`adr/entries/2026-06-10/ADR-CODECRAFT-001.md`](../adr/entries/2026-06-10/ADR-CODECRAFT-001.md).
 
 ### 7.1.3 Integration Catalog (Initial Backlog)
 

@@ -70,7 +70,7 @@ Intergrax is **not** “one Python class that is also the OS.” The **agent** i
 
 **Author entry points:** [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) Appendix AC · roster [`agents/README.md`](../agents/README.md).
 
-**Implementation:** architecture **decision-complete**; code delivery [ACP waves](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md#61aw-acp-detailed-implementation-waves) (typed contracts → step loop → fleet migration Wave 8 → prod gates → **ACP-CLOSE-LEG-5** pipeline retirement). Product agents control the loop via **`on_next_step`** only; Tier-1 `RuntimeEngine` pipeline stack removed ([ADR-FLOW-005](adr/ADR-FLOW-005.md)).
+**Implementation:** architecture **decision-complete**; code delivery [ACP waves](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md#61aw-acp-detailed-implementation-waves) (typed contracts → step loop → fleet migration Wave 8 → prod gates → **ACP-CLOSE-LEG-5** pipeline retirement). Product agents control the loop via **`on_next_step`** only; Tier-1 `RuntimeEngine` pipeline stack removed ([ADR-FLOW-005](adr/entries/2026-06-12/ADR-FLOW-005.md)).
 
 ---
 
@@ -234,13 +234,13 @@ Platform docs do not replace `agents/*/ARCHITECTURE.md` or `applications/*/ARCHI
 
 | ADR | Topic |
 |-----|-------|
-| [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md) | Declarative delegation (`DELEGATES_TO`) |
-| [`adr/ADR-FLOW-002.md`](adr/ADR-FLOW-002.md) | Reserved lifecycle states |
-| [`adr/ADR-FLOW-003.md`](adr/ADR-FLOW-003.md) | `MODIFY_PLAN` semantics |
-| [`adr/ADR-FLOW-004.md`](adr/ADR-FLOW-004.md) | Graph spec seed guard (`trigger_capabilities`) |
-| [`adr/ADR-CODECRAFT-001.md`](adr/ADR-CODECRAFT-001.md) | Ephemeral Code Craft as separate Harness domain |
-| [`adr/ADR-AGENT-001.md`](adr/ADR-AGENT-001.md) | Agent cognitive patterns (ACP) — Tier-2 library, Nexus stays Agent OS |
-| [`adr/ADR-AGENT-002.md`](adr/ADR-AGENT-002.md) | Author `Agent.run()` facade + per-agent environment binding |
-| [`adr/ADR-AGENT-003.md`](adr/ADR-AGENT-003.md) | `on_next_step` step loop + dual observability (agent trace vs app orchestration) |
+| [`adr/entries/2026-06-07/ADR-FLOW-001.md`](adr/entries/2026-06-07/ADR-FLOW-001.md) | Declarative delegation (`DELEGATES_TO`) |
+| [`adr/entries/2026-06-07/ADR-FLOW-002.md`](adr/entries/2026-06-07/ADR-FLOW-002.md) | Reserved lifecycle states |
+| [`adr/entries/2026-06-07/ADR-FLOW-003.md`](adr/entries/2026-06-07/ADR-FLOW-003.md) | `MODIFY_PLAN` semantics |
+| [`adr/entries/2026-06-09/ADR-FLOW-004.md`](adr/entries/2026-06-09/ADR-FLOW-004.md) | Graph spec seed guard (`trigger_capabilities`) |
+| [`adr/entries/2026-06-10/ADR-CODECRAFT-001.md`](adr/entries/2026-06-10/ADR-CODECRAFT-001.md) | Ephemeral Code Craft as separate Harness domain |
+| [`adr/entries/2026-06-11/ADR-AGENT-001.md`](adr/entries/2026-06-11/ADR-AGENT-001.md) | Agent cognitive patterns (ACP) — Tier-2 library, Nexus stays Agent OS |
+| [`adr/entries/2026-06-11/ADR-AGENT-002.md`](adr/entries/2026-06-11/ADR-AGENT-002.md) | Author `Agent.run()` facade + per-agent environment binding |
+| [`adr/entries/2026-06-11/ADR-AGENT-003.md`](adr/entries/2026-06-11/ADR-AGENT-003.md) | `on_next_step` step loop + dual observability (agent trace vs app orchestration) |
 
 **Platform configuration canon (CFG-*):** [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §56 · implementation [`plan/ORCHESTRATION.md`](plan/ORCHESTRATION.md) Phase **ORCH-CONFIG**.

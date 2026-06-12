@@ -5,7 +5,7 @@
 | **Status** | Accepted (ORCH-CONFIG.2) |
 | **Date** | 2026-06-09 |
 | **Deciders** | Intergrax platform architecture |
-| **Related** | [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §56 · plan `ORCH-CONFIG.2` · CFG-18 |
+| **Related** | [`architecture/ORCHESTRATION.md`](../../architecture/ORCHESTRATION.md) §56 · plan `ORCH-CONFIG.2` · CFG-18 |
 
 ## Context
 

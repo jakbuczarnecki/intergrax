@@ -182,7 +182,7 @@ Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 �
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
 | M-LLM-R.0.1 | **Plan register** — Phase M-LLM-R, §4.0 Band 2z, §6.1v, §6.2ad, Appendix L; M-LLM follow-up pointer | **Done** | **Critical** | This section | Cross-links from `architecture/LLM_ADAPTERS.md` |
-| M-LLM-R.0.2 | **`docs/adr/ADR-LLM-001.md`** — typed completion envelope vs plain string; two-layer usage model preserved | **Done** | High | `docs/adr/` | ADR linked from plan + `architecture/LLM_ADAPTERS.md` |
+| M-LLM-R.0.2 | **`docs/adr/entries/2026-06-06/ADR-LLM-001.md`** — typed completion envelope vs plain string; two-layer usage model preserved | **Done** | High | `docs/adr/` | ADR linked from plan + `architecture/LLM_ADAPTERS.md` |
 | M-LLM-R.0.3 | **Canon §5.2.2 addendum** — `LLMAdapterResponse` contract paragraph in `intergrax_runtime_architecture.md` | **Done** | Medium | Architecture canon | No duplicate full spec in README |
 
 #### Wave M-LLM-R-1 — Contract types (Tier-0)

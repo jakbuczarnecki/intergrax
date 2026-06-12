@@ -31,7 +31,7 @@ Harness operators and Tier-3 authors have a single canonical spec for end-to-end
 |------|--------|
 | Architecture | `docs/architecture/MEMORY.md` §5.3, §6.4–6.5, §7.1.1, §11.5 |
 | Plan | `docs/plan/MEMORY.md` Phase MEM-VEC |
-| ADR | `docs/adr/ADR-MEM-002.md` (planned MEM-VEC-0.2) |
+| ADR | `docs/adr/entries/YYYY-MM-DD/ADR-MEM-002.md` (planned MEM-VEC-0.2) |
 | Cross-domain | `docs/architecture/CONTEXT_ENGINEERING.md` §7.2, §14.2 |
 
 ## Changed artifacts

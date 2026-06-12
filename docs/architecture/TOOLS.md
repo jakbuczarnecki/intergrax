@@ -425,7 +425,7 @@ Distinct ways catalog capabilities reach a backend — not all equivalent.
 3. Loop stops on: empty `tool_calls`, budget exceeded, `max_iterations`, or planner final answer.
 4. Requires native `supports_tools()` — JSON fallback remains single-iteration only.
 
-**ADR:** [ADR-TOOL-002](../adr/ADR-TOOL-002.md) — tool iterations MUST NOT be scheduled from `GraphExecutor` (agent-graph boundary).
+**ADR:** [ADR-TOOL-002](../adr/entries/2026-06-11/ADR-TOOL-002.md) — tool iterations MUST NOT be scheduled from `GraphExecutor` (agent-graph boundary).
 
 ### JSON fallback path
 
@@ -1134,7 +1134,7 @@ Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary (upda
 | TOOL-ENG-DOC.5 | Canon: invocation patterns + plugin contract | **Done** |
 | TOOL-ENG-DOC.6 | ORCHESTRATION §50.4 + FLOW §15.1 cross-refs for graph vs tool-pattern boundary | **Done** |
 
-**ADR:** [ADR-TOOL-001](../adr/ADR-TOOL-001.md) (TOOL-ENG-1/2) · [ADR-TOOL-002](../adr/ADR-TOOL-002.md) (TOOL-ENG-6) · **ADR-TOOL-003** *(required before TOOL-ENG-16 merge)* — `ToolInvocationPattern` protocol and graph boundary.
+**ADR:** [ADR-TOOL-001](../adr/entries/2026-06-10/ADR-TOOL-001.md) (TOOL-ENG-1/2) · [ADR-TOOL-002](../adr/entries/2026-06-11/ADR-TOOL-002.md) (TOOL-ENG-6) · **ADR-TOOL-003** *(required before TOOL-ENG-16 merge)* — `ToolInvocationPattern` protocol and graph boundary.
 
 ### CI / gate scripts (catalog)
 

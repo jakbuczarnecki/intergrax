@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §0.3, §3.8, §12  
 **Audit layers:** 30 (Operational Excellence) · cross-ref 9 (orchestration backpressure), 21 (observability SLIs)  
 **Audit instruction:** [`guides/audit/ELASTIC_CAPACITY_AND_SCALING.md`](../guides/audit/ELASTIC_CAPACITY_AND_SCALING.md)  
-**ADR:** [ADR-SCALE-001](../adr/ADR-SCALE-001.md)  
+**ADR:** [ADR-SCALE-001](../adr/entries/2026-06-08/ADR-SCALE-001.md)  
 ---
 
 ## Table of contents
@@ -568,7 +568,7 @@ All tasks: [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](../plan/ELASTIC_CAPACITY_AND
 | [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) | Deploy manifests, host profiles |
 | [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) | Agent topology (dimension B) |
 | [`guides/HARNESS_ENVIRONMENT.md`](../guides/HARNESS_ENVIRONMENT.md) | SLO catalog, Celery env vars |
-| [`adr/ADR-SCALE-001.md`](../adr/ADR-SCALE-001.md) | ECP vs K8s HPA decision |
+| [`adr/entries/2026-06-08/ADR-SCALE-001.md`](../adr/entries/2026-06-08/ADR-SCALE-001.md) | ECP vs K8s HPA decision |
 
 ---
 

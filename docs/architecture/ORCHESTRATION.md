@@ -531,7 +531,7 @@ Canonical enum: `CoordinationPattern` in `intergrax/runtime/architecture/multi_a
 
 | Pattern | When to use | Harness mapping | Runtime depth |
 |---------|-------------|-----------------|---------------|
-| **Hierarchical** | Top-down plan; planner delegates to specialized executors | `graph_spec` + `DELEGATES_TO` ([ADR-FLOW-001](adr/ADR-FLOW-001.md)) | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §13 |
+| **Hierarchical** | Top-down plan; planner delegates to specialized executors | `graph_spec` + `DELEGATES_TO` ([ADR-FLOW-001](adr/entries/2026-06-07/ADR-FLOW-001.md)) | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §13 |
 | **Orchestrator–worker** | Central Nexus plan; workers are graph nodes with capabilities | `TaskPlanner` / `graph_spec` → sequential or batched nodes | §12 UC-4, §42.43 |
 | **Supervisor–worker** | Quality/policy supervision over workers; re-plan on failure | HITL + `AgentDecision.INTERRUPT` + policy hooks | UAEP §42.8, FLOW §11 |
 | **Peer-to-peer** | Independent subtasks; parallel decomposition | Topological **batches** + `MergePolicy` | §51 below |
@@ -565,7 +565,7 @@ Agents MUST NOT call each other directly — all collaboration via **SharedTaskC
 
 ## 50.4 Tool invocation vs agent graph (boundary)
 
-> **Tool patterns canon:** [`TOOLS.md`](TOOLS.md#tool-invocation-patterns-production-orchestration) · **Flow:** [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §15.1 · **ADR:** [ADR-TOOL-002](adr/ADR-TOOL-002.md) (no tool ReAct from `GraphExecutor`).
+> **Tool patterns canon:** [`TOOLS.md`](TOOLS.md#tool-invocation-patterns-production-orchestration) · **Flow:** [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §15.1 · **ADR:** [ADR-TOOL-002](adr/entries/2026-06-11/ADR-TOOL-002.md) (no tool ReAct from `GraphExecutor`).
 
 | Layer | Domain doc | Orchestrates | Examples |
 |-------|------------|--------------|----------|
@@ -583,7 +583,7 @@ ExecutionGraph node (agent A)
 
 **Rules:**
 
-1. `GraphExecutor` MUST NOT schedule tool-plan iterations — that belongs to `ToolInvocationPattern` inside the node's agent run ([ADR-TOOL-002](adr/ADR-TOOL-002.md)).
+1. `GraphExecutor` MUST NOT schedule tool-plan iterations — that belongs to `ToolInvocationPattern` inside the node's agent run ([ADR-TOOL-002](adr/entries/2026-06-11/ADR-TOOL-002.md)).
 2. Each graph node MAY configure `tool_invocation_pattern` on the host `RuntimeConfig` (TOOL-ENG-21/23).
 3. LangGraph-style branching at **agent** granularity = `graph_spec` edges + conditions; at **tool** granularity = invocation pattern + planner loop — do not merge the two models.
 
@@ -825,7 +825,7 @@ Both dimensions apply to the **same** `NexusLoop.handle_task()` path.
 **Status:** Canonical architecture (2026-06-09) — **single source of truth** for configurable platform behaviour across postures, routing layers, agent counts, and coordination strategies.  
 **Plan (1:1):** [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md) Phase **ORCH-CONFIG** · cross-domain: [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) H-APP-DOC.* · [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_AND_COGNITION.md) COG-3.*  
 **Runtime narrative:** [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §3.1 · **Host posture summary:** [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23  
-**ADR:** [`ADR-FLOW-004`](../../adr/ADR-FLOW-004.md) for seed guard (ORCH-CONFIG.2); other gaps scheduled in ORCH-CONFIG.
+**ADR:** [`ADR-FLOW-004`](../../adr/entries/2026-06-09/ADR-FLOW-004.md) for seed guard (ORCH-CONFIG.2); other gaps scheduled in ORCH-CONFIG.
 
 ## 56.1 Why this section lives in ORCHESTRATION (not a new doc)
 
@@ -1138,7 +1138,7 @@ Honest platform readiness derived from §56.7. **This table is the direct input 
 | ORCH-CONFIG.5 | `plan/NEXUS_EXECUTION_FLOW.md` FLOW-8 |
 | ORCH-CONFIG.8 | `plan/ORCHESTRATION.md` ORCH-5.1 |
 
-**ADR policy:** ORCH-CONFIG.2 → [`ADR-FLOW-004`](../../adr/ADR-FLOW-004.md); ORCH-CONFIG.3 → no ADR (suffix convention only).
+**ADR policy:** ORCH-CONFIG.2 → [`ADR-FLOW-004`](../../adr/entries/2026-06-09/ADR-FLOW-004.md); ORCH-CONFIG.3 → no ADR (suffix convention only).
 
 ## 56.12 Extensibility — arbitrary agent count & strategy
 
@@ -1203,7 +1203,7 @@ Free text → IntentRoute → acceptance.harness.pipeline (token)
 ```
 
 **Harness proof:** `tests/integration/runtime/test_orchestration_cfg_simulation.py` (abstract stubs — no Tier-3 product).  
-**ADR:** seed guard — [`ADR-FLOW-004`](../adr/ADR-FLOW-004.md).
+**ADR:** seed guard — [`ADR-FLOW-004`](../adr/entries/2026-06-09/ADR-FLOW-004.md).
 
 ## 56.14 Author checklist (before shipping a Tier-3 host)
 

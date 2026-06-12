@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-06-09 |
 | **Deciders** | Harness platform |
-| **Related** | [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) §47 · [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) M-P12 |
+| **Related** | [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) §47 · [`plan/INTEGRATIONS.md`](../../plan/INTEGRATIONS.md) M-P12 |
 
 ## Context
 

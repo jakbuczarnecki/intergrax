@@ -5,7 +5,7 @@
 | **Status** | Accepted · **implemented** (`ACP-CLOSE-LEG-5`) |
 | **Date** | 2026-06-12 |
 | **Deciders** | Intergrax platform architecture |
-| **Related** | [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13.5 · plan `ACP-CLOSE-LEG-5` |
+| **Related** | [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13.5 · plan `ACP-CLOSE-LEG-5` |
 
 ## Context
 

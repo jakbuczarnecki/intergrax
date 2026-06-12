@@ -426,7 +426,7 @@ uv run pytest -m gate -q
 **Prerequisites:** Phase H-APP **Done** · Phase ORCH-STRAT **Done** · Phase COG-DOC **Done**  
 **Goal:** Close authoring gaps for flexible Tier-3 postures (daemon, reactive, background) and multi-agent configuration without runtime changes.
 
-**ADR:** [`ADR-FLOW-004`](../adr/ADR-FLOW-004.md) for `trigger_capabilities` (H-APP-DOC.2 / ORCH-CONFIG.2 **Done**). Authoring-only items need no ADR.
+**ADR:** [`ADR-FLOW-004`](../adr/entries/2026-06-09/ADR-FLOW-004.md) for `trigger_capabilities` (H-APP-DOC.2 / ORCH-CONFIG.2 **Done**). Authoring-only items need no ADR.
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|

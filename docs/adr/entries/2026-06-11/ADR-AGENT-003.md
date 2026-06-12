@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-06-10 |
 | **Deciders** | Platform architecture (Harness AI) |
-| **Related** | [ADR-AGENT-001](ADR-AGENT-001.md) · [ADR-AGENT-002](ADR-AGENT-002.md) · [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §31–§36 |
+| **Related** | [ADR-AGENT-001](entries/2026-06-11/ADR-AGENT-001.md) · [ADR-AGENT-002](entries/2026-06-11/ADR-AGENT-002.md) · [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §31–§36 |
 
 ## Context
 
@@ -52,7 +52,7 @@ UAEP already implements an internal step loop (`run_step`, `decide_after_step`) 
 
 - ADR-AGENT-001 preserved (Nexus remains Agent OS).
 - ADR-AGENT-002 preserved (`run()` facade).
-- Observability aligns with [`OBSERVABILITY.md`](../architecture/OBSERVABILITY.md) §1.2.
+- Observability aligns with [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) §1.2.
 
 ## Implementation notes
 

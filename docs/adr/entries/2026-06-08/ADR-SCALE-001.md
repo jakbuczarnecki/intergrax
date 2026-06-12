@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-06-08 |
 | **Deciders** | Harness platform architecture |
-| **Related** | [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../architecture/ELASTIC_CAPACITY_AND_SCALING.md) · Phase ECP-DOC · Phase ECP-DEPTH |
+| **Related** | [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../../architecture/ELASTIC_CAPACITY_AND_SCALING.md) · Phase ECP-DOC · Phase ECP-DEPTH |
 
 ## Context
 
@@ -54,7 +54,7 @@ Adopt the **Harness Elastic Capacity Plane (ECP)** as a **Tier-1 async control p
 1. Capacity mutations flow through **typed `ScalingAction`** + **integrations** — no vendor SDKs in `NexusLoop`.
 2. ECP runs **async** (scheduler/worker) — never synchronously inside graph execution.
 3. Scale-up in production defaults to **policy + optional HITL**; scale-down uses **hysteresis** and cooldown.
-4. **Two dimensions stay separate:** ECP scales **execution capacity** (replicas/workers); [`REASONING_AND_COGNITION.md`](../architecture/REASONING_AND_COGNITION.md) scales **agent topology** in plans.
+4. **Two dimensions stay separate:** ECP scales **execution capacity** (replicas/workers); [`REASONING_AND_COGNITION.md`](../../architecture/REASONING_AND_COGNITION.md) scales **agent topology** in plans.
 
 ## Consequences
 
@@ -80,6 +80,6 @@ Adopt the **Harness Elastic Capacity Plane (ECP)** as a **Tier-1 async control p
 
 ## Implementation notes
 
-- Architecture: [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../architecture/ELASTIC_CAPACITY_AND_SCALING.md)
+- Architecture: [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../../architecture/ELASTIC_CAPACITY_AND_SCALING.md)
 - Plan: Phase ECP-DOC (Done) · Phase ECP-DEPTH (Band 2ao, planned)
 - Verification (when runtime lands): `tests/unit/runtime/capacity/`; mock K8s in gate; no live cluster in CI

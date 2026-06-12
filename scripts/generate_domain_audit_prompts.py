@@ -1151,7 +1151,7 @@ integrations/providers/message_bus/celery/
 intergrax/runtime/architecture/multi_agent_contention_simulation.py
 intergrax/runtime/observability/harness_slos.py
 target: intergrax/runtime/capacity/ (ECP-DEPTH ECP-1..8)
-docs/adr/ADR-SCALE-001.md · ADR-SCALE-002.md""",
+docs/adr/entries/2026-06-08/ADR-SCALE-001.md · ADR-SCALE-002.md""",
         "key_symbols": "ScalingProfile (target) · ScalingPolicy · ScalingAction · ScalingSignal · CapacitySignalCollector · ScalingProvisioner · SIG_QUEUE_DEPTH · GRAPH_BACKPRESSURE",
         "active_phases": "ECP-DOC · ECP-DEPTH (ECP-1..8, ECP-OBS) · ADR-SCALE-001/002 · cross-ref W-OPS.4 SLIs · ORCH GRAPH_BACKPRESSURE",
         "known_gaps": "No unified CapacitySignalCollector yet · ScalingProfile missing on ApplicationEnvironmentProfile · K8s scale API not in canon · nginx slug missing · ECP evaluate/govern layers target only",

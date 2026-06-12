@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-06-10 |
 | **Deciders** | Harness platform |
-| **Related** | [`architecture/CODE_CRAFT.md`](../architecture/CODE_CRAFT.md) · [`plan/CODE_CRAFT.md`](../plan/CODE_CRAFT.md) |
+| **Related** | [`architecture/CODE_CRAFT.md`](../../architecture/CODE_CRAFT.md) · [`plan/CODE_CRAFT.md`](../../plan/CODE_CRAFT.md) |
 
 ## Context
 
@@ -41,7 +41,7 @@ Rejected:
 ## Consequences
 
 - Hub, AGENTS.md, audit map, and README updated to **21 domain pairs**.
-- Implementation delivered in phases **ECC-0 … ECC-6** per [`plan/CODE_CRAFT.md`](../plan/CODE_CRAFT.md).
+- Implementation delivered in phases **ECC-0 … ECC-6** per [`plan/CODE_CRAFT.md`](../../plan/CODE_CRAFT.md).
 - `TOOLS.md` retains `code.exec` / `sandbox.exec` as low-level primitives; cross-links to CODE_CRAFT for orchestrated flows.
 - Production hosts default `CodeCraftProfile.mode=disabled` or `supervised`; lab may use `autonomous` with local sandbox.
 - Significant security surface — cloud/container isolation tiers required before regulated profiles ship.

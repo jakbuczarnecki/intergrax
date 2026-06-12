@@ -1326,7 +1326,7 @@ Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/H
 **Audience:** Tier-3 application authors, platform engineers, operators.  
 **Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §7 (Reasoning/planning), §8 (Agent OS), §9 (Orchestration/graph), §10 (Subagents); canon [§42.3](architecture/UNIFIED_EXECUTION_RUNTIME.md#423-hook-system)–[§42.15](architecture/UNIFIED_EXECUTION_RUNTIME.md#4215-agent-handoff-contracts), [§42.43](architecture/UNIFIED_EXECUTION_RUNTIME.md#4243-multi-agent-collaboration-flow-reference).
 
-**Full execution flow (diagrams, data flow, edge cases, evaluation hooks, plan traceability):** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) — read this for end-to-end narrative; Appendix I is the **configuration control plane** map. Delegation target semantics: [`adr/ADR-FLOW-001.md`](adr/ADR-FLOW-001.md).
+**Full execution flow (diagrams, data flow, edge cases, evaluation hooks, plan traceability):** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) — read this for end-to-end narrative; Appendix I is the **configuration control plane** map. Delegation target semantics: [`adr/entries/2026-06-07/ADR-FLOW-001.md`](adr/entries/2026-06-07/ADR-FLOW-001.md).
 
 Intergrax orchestration is **centralized in Tier-1 (Nexus)** — agents own **local** `on_next_step` iterations only. Planning, scheduling, graph execution, handoff, retry, HITL, and trace are **composable runtime responsibilities** with typed contracts and hook extension points.
 
@@ -1386,7 +1386,7 @@ Coordination patterns (Phase V-MA)
 | `AgentHandoff` | `contracts/agent_handoff.py` | Nexus-mediated transfer (never direct agent calls) |
 | `TaskContextAssemblyOptions` | `contracts/context_assembly.py` | Bounded child context (FULL / SUMMARY_ONLY / …) |
 | `AgentExecutionResult` | `contracts/agent_execution_result.py` | Status, decision, artifacts for merge |
-| `AgentDecision` | `contracts/agent_decision.py` | COMPLETE · RETRY · INTERRUPT · MODIFY_PLAN · HANDOFF (`MODIFY_PLAN` without handoff → `MODIFY_PLAN_NOT_SUPPORTED` per [ADR-FLOW-003](adr/ADR-FLOW-003.md)) |
+| `AgentDecision` | `contracts/agent_decision.py` | COMPLETE · RETRY · INTERRUPT · MODIFY_PLAN · HANDOFF (`MODIFY_PLAN` without handoff → `MODIFY_PLAN_NOT_SUPPORTED` per [ADR-FLOW-003](adr/entries/2026-06-07/ADR-FLOW-003.md)) |
 | `ValidationResult` | `contracts/validation.py` | Step/node/task validation gates |
 | `ApplicationGraphSpec` | `applications/contracts/graph_spec.py` | Declarative multi-agent topology on manifest roster |
 
@@ -2610,7 +2610,7 @@ Runbooks: [`runbook/adaptive/`](../runbook/adaptive/) · architecture: [`archite
 
 ## Appendix AC — Agent `run()`, cognitive patterns, and environment (ACP)
 
-**Canon:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13 · §21–§40 · **§32.0** (readability & typed-only) · **ADR:** [ADR-AGENT-001](../adr/ADR-AGENT-001.md) · [ADR-AGENT-002](../adr/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/ADR-AGENT-003.md) · **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase **ACP** — waves §6.1aw
+**Canon:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13 · §21–§40 · **§32.0** (readability & typed-only) · **ADR:** [ADR-AGENT-001](../adr/entries/2026-06-11/ADR-AGENT-001.md) · [ADR-AGENT-002](../adr/entries/2026-06-11/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/entries/2026-06-11/ADR-AGENT-003.md) · **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase **ACP** — waves §6.1aw
 
 ### AC.1 Mental model — canonical §29 (do not duplicate)
 

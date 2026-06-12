@@ -9,7 +9,7 @@ plan_ref:
   - APP-EVOL-1
 status: completed
 commit: pending
-adr: docs/adr/ADR-APP-002.md
+adr: docs/adr/entries/2026-06-12/ADR-APP-002.md
 ---
 
 # Sprint 11 — EnvironmentSnapshot on STRICT task intake
@@ -36,7 +36,7 @@ STRICT production tasks now carry an auditable environment fingerprint at intake
 |------|--------|
 | Architecture | `docs/architecture/TIER3_APPLICATION_ENVIRONMENT.md` §49.1.2 |
 | Plan | `docs/plan/TIER3_APPLICATION_ENVIRONMENT.md` APP-EVOL-1 · §6.2y step 8 |
-| ADR | `docs/adr/ADR-APP-002.md` |
+| ADR | `docs/adr/entries/2026-06-12/ADR-APP-002.md` |
 
 ## Changed artifacts
 

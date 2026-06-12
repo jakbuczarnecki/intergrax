@@ -684,7 +684,7 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 
 **Optional dependency group:** `Intergrax-ai[integrations-guardrails]` — `presidio-analyzer`, `presidio-anonymizer` only (torch/docling conflict). Install `llm-guard`, `guardrails-ai`, `nemoguardrails` manually when needed.
 
-**ADR:** [ADR-GR-001](../adr/ADR-GR-001.md) — Accepted.
+**ADR:** [ADR-GR-001](../adr/entries/2026-06-09/ADR-GR-001.md) — Accepted.
 
 ##### M.12 — Paydown log
 

@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-06-08 |
 | **Deciders** | Harness platform |
-| **Related** | [`architecture/OBSERVABILITY.md`](../architecture/OBSERVABILITY.md) · [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) §33 · [Phase OBS-BUS](../plan/OBSERVABILITY.md) |
+| **Related** | [`architecture/OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) · [`intergrax_runtime_architecture.md`](../../intergrax_runtime_architecture.md) §33 · [Phase OBS-BUS](../../plan/OBSERVABILITY.md) |
 
 ## Context
 

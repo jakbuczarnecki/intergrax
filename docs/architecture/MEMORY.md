@@ -193,7 +193,7 @@ flowchart LR
 
 Extraction produces up to `max_facts` `USER_FACT`, `max_preferences` `PREFERENCE`, optional `SESSION_SUMMARY`. May regenerate `system_instructions` via `UserProfileInstructionsService`.
 
-**As-built:** `MemoryConsolidationJob` + `consolidation_mode` (`manual` \| `scheduled` \| `auto`) on `MemoryProfile`. ADR: [`ADR-MEM-001`](../adr/ADR-MEM-001.md).
+**As-built:** `MemoryConsolidationJob` + `consolidation_mode` (`manual` \| `scheduled` \| `auto`) on `MemoryProfile`. ADR: [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md).
 
 ### 6.3 Retention and forget
 
@@ -329,7 +329,7 @@ Today each layer applies **local** limits:
 | `ContextBudgetPolicy` | `max_chars` + token estimate; char-cut fallback |
 | `TaskContextAssemblyOptions` | `max_prior_chars`, summary tiers |
 
-**Unified allocator:** `ContextCompiler` + `CompileContextStep` before agent LLM step (`on_next_step`); see [`ADR-MEM-001`](../adr/ADR-MEM-001.md).
+**Unified allocator:** `ContextCompiler` + `CompileContextStep` before agent LLM step (`on_next_step`); see [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md).
 
 ---
 

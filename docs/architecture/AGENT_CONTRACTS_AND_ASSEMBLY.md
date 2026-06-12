@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 17–20, 31 (+ ACP cognitive patterns §21)  
 **Audit instruction:** [`guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
-**ADR:** [`adr/ADR-AGENT-001.md`](../adr/ADR-AGENT-001.md) · [`adr/ADR-AGENT-002.md`](../adr/ADR-AGENT-002.md) · [`adr/ADR-AGENT-003.md`](../adr/ADR-AGENT-003.md) — ACP · `run()` · `on_next_step` · dual observability  
+**ADR:** [`adr/entries/2026-06-11/ADR-AGENT-001.md`](../adr/entries/2026-06-11/ADR-AGENT-001.md) · [`adr/entries/2026-06-11/ADR-AGENT-002.md`](../adr/entries/2026-06-11/ADR-AGENT-002.md) · [`adr/entries/2026-06-11/ADR-AGENT-003.md`](../adr/entries/2026-06-11/ADR-AGENT-003.md) — ACP · `run()` · `on_next_step` · dual observability  
 
 ---
 
@@ -86,7 +86,7 @@ AgentContract:
 
 # 13. Agent Interface: `run()` Facade, Step Loop, and UAEP
 
-**ADR:** [ADR-AGENT-002](../adr/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/ADR-AGENT-003.md)
+**ADR:** [ADR-AGENT-002](../adr/entries/2026-06-11/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/entries/2026-06-11/ADR-AGENT-003.md)
 
 ## 13.1 Primary author API — session `run()` (ADR-AGENT-002)
 
@@ -172,7 +172,7 @@ Legacy UAEP names (implementation today):
 
 | Path | Status |
 |------|--------|
-| `RuntimeEngine` / `RuntimePipeline` / `runtime_steps/` | **Removed** — [ADR-FLOW-005](../adr/ADR-FLOW-005.md) |
+| `RuntimeEngine` / `RuntimePipeline` / `runtime_steps/` | **Removed** — [ADR-FLOW-005](../adr/entries/2026-06-12/ADR-FLOW-005.md) |
 | `agents/*/steps/pipeline.py` / `uaep_pipeline_bridge.py` | **Removed** — use `on_next_step` + cognitive patterns |
 | `execute()` pseudocode | Replaced by `run()` + `on_next_step` |
 | Override `execute_next_step` / `advance_step` | **Forbidden** — bypasses policy/trace |
@@ -340,7 +340,7 @@ Before implementing a new agent, answer:
 42. Can a reviewer understand terminal vs continue from the **final `return` only** — without tracing harness internals §32.0?
 ```
 
-If these questions cannot be answered, do not implement the agent yet. **Author guide:** §29–§36 · **ADR:** [ADR-AGENT-001](../adr/ADR-AGENT-001.md) · [ADR-AGENT-002](../adr/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/ADR-AGENT-003.md).
+If these questions cannot be answered, do not implement the agent yet. **Author guide:** §29–§36 · **ADR:** [ADR-AGENT-001](../adr/entries/2026-06-11/ADR-AGENT-001.md) · [ADR-AGENT-002](../adr/entries/2026-06-11/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/entries/2026-06-11/ADR-AGENT-003.md).
 
 ---
 
@@ -452,7 +452,7 @@ Runtime MUST reject or reroute retired/deprecated agents in production mode (V-R
 # 21. Agent Cognitive Architecture (ACP)
 
 **Status:** Canonical architecture — **platform delivered** (Phase ACP Done); **closeout** Phase **ACP-CLOSE** **Done** (2026-06-11)  
-**ADR:** [ADR-AGENT-001](../adr/ADR-AGENT-001.md)  
+**ADR:** [ADR-AGENT-001](../adr/entries/2026-06-11/ADR-AGENT-001.md)  
 **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) — ACP Done · **ACP-CLOSE** §6.1bb  
 **Cross-domain:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) (planes 1–3) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) (narrative) · [`TOOLS.md`](TOOLS.md) TOOL-ENG-6 (tool loop) · [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) (reflection)
 
@@ -1291,8 +1291,8 @@ Developer code path:
 
 | Document | Relationship |
 |----------|--------------|
-| [`adr/ADR-AGENT-002.md`](../adr/ADR-AGENT-002.md) | Author `run()` facade decision |
-| [`adr/ADR-AGENT-003.md`](../adr/ADR-AGENT-003.md) | Step loop + dual observability |
+| [`adr/entries/2026-06-11/ADR-AGENT-002.md`](../adr/entries/2026-06-11/ADR-AGENT-002.md) | Author `run()` facade decision |
+| [`adr/entries/2026-06-11/ADR-AGENT-003.md`](../adr/entries/2026-06-11/ADR-AGENT-003.md) | Step loop + dual observability |
 | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.4–§42.7 | UAEP lifecycle, decisions |
 | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) | End-to-end narrative S1–S7 |
 | [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §22–§23 | Application shell + profile injection §30 |
@@ -1307,7 +1307,7 @@ Developer code path:
 
 # 29. Author-Facing `run()` Facade
 
-**ADR:** [ADR-AGENT-002](../adr/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/ADR-AGENT-003.md)  
+**ADR:** [ADR-AGENT-002](../adr/entries/2026-06-11/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/entries/2026-06-11/ADR-AGENT-003.md)  
 **Goal:** One obvious session API for Tier-2 authors; **`on_next_step`** for domain iterations; Nexus + UAEP remain implementation details.
 
 ## 29.0 Author terminology — single canonical entry (ACP-CLOSE-PAT-3)
@@ -1851,7 +1851,7 @@ metadata.matter_id from intake
 
 # 31. Dual Observability: Application and Agent Planes
 
-**ADR:** [ADR-AGENT-003](../adr/ADR-AGENT-003.md)  
+**ADR:** [ADR-AGENT-003](../adr/entries/2026-06-11/ADR-AGENT-003.md)  
 **Observability spine:** [`OBSERVABILITY.md`](OBSERVABILITY.md) §1.2  
 **Goal:** Application logs **orchestration**; agent `run()` returns **execution journal** — complementary, not duplicated.
 
@@ -1961,7 +1961,7 @@ AgentInvocationSummary:
 
 # 32. Agent Step Loop (`on_next_step`)
 
-**ADR:** [ADR-AGENT-003](../adr/ADR-AGENT-003.md)  
+**ADR:** [ADR-AGENT-003](../adr/entries/2026-06-11/ADR-AGENT-003.md)  
 **Execution stack:** §38 · **UAEP map:** `AgentRuntime.advance_step` + `HarnessKernel.execute_step` (ACP-STEP-2).
 
 ## 32.0 Author readability and typed contracts (normative)
@@ -2482,9 +2482,9 @@ Canonical scenarios — all supported by **same** agent class + environment merg
 
 | Artifact | Role |
 |----------|------|
-| [ADR-AGENT-001](../adr/ADR-AGENT-001.md) | ACP patterns; Nexus stays |
-| [ADR-AGENT-002](../adr/ADR-AGENT-002.md) | `run()` facade |
-| [ADR-AGENT-003](../adr/ADR-AGENT-003.md) | Step loop + dual observability |
+| [ADR-AGENT-001](../adr/entries/2026-06-11/ADR-AGENT-001.md) | ACP patterns; Nexus stays |
+| [ADR-AGENT-002](../adr/entries/2026-06-11/ADR-AGENT-002.md) | `run()` facade |
+| [ADR-AGENT-003](../adr/entries/2026-06-11/ADR-AGENT-003.md) | Step loop + dual observability |
 | [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) | ACP-DX, ACP-STEP, ACP-OBS, ACP-LLM, ACP-STATE, ACP-CON |
 
 ---

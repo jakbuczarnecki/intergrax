@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-06-10 |
 | **Deciders** | Platform architecture (Harness AI) |
-| **Related** | [ADR-AGENT-001](ADR-AGENT-001.md) · [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §29–§30 · [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase **ACP** |
+| **Related** | [ADR-AGENT-001](entries/2026-06-11/ADR-AGENT-001.md) · [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §29–§30 · [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase **ACP** |
 
 ## Context
 
@@ -62,7 +62,7 @@ ADR-AGENT-001 rejected **removing Nexus** or **absorbing Agent OS into agent cla
 
 ## Implementation notes
 
-- Plan rows: **ACP-DX-1** … **ACP-DX-5** in [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md)
+- Plan rows: **ACP-DX-1** … **ACP-DX-5** in [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md)
 - Canon: architecture §29–§30
 - Verification (post-implementation):
 

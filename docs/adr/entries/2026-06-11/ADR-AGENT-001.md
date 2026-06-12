@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-06-10 |
 | **Deciders** | Platform architecture (Harness AI) |
-| **Related** | [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §21–§30 · [ADR-AGENT-002](ADR-AGENT-002.md) · [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase **ACP** · [`UNIFIED_EXECUTION_RUNTIME.md`](../architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.5 |
+| **Related** | [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §21–§30 · [ADR-AGENT-002](entries/2026-06-11/ADR-AGENT-002.md) · [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase **ACP** · [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.5 |
 
 ## Context
 
@@ -26,7 +26,7 @@ Production harness requirements (multi-agent graphs, HITL, policy, checkpoints, 
 3. **Cognitive patterns** (`ReflexAgent`, `ReActAgent`, `PlanExecuteAgent`, `DecompositionAgent`, `ReflectionAgent`) implement domain hooks (`perceive`, `reason`, `act`, `evaluate`) **inside** `run_step` / `decide_after_step` — not a parallel execution engine.
 4. **Configuration split preserved:** governance and environment profiles remain Tier-3 `ApplicationEnvironmentProfile`; agents declare contract + cognitive pattern + domain logic; `build_context` consumes injected profile metadata from the host.
 5. **Legacy `AgentEngine` path** is deprecated for new agents; Phase **ACP-LEG** tracks migration to UAEP-only.
-6. **Author-facing `run()` facade** — see [ADR-AGENT-002](ADR-AGENT-002.md); complements this ADR without moving Nexus into agents.
+6. **Author-facing `run()` facade** — see [ADR-AGENT-002](entries/2026-06-11/ADR-AGENT-002.md); complements this ADR without moving Nexus into agents.
 
 **Rejected:**
 

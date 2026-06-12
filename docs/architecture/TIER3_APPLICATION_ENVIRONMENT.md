@@ -354,7 +354,7 @@ should_seed_plan_from_graph_spec(task) is True
 | `capability = "<product>.pipeline"` | Signals multi-step product intent to operators and traces |
 | `graph_spec` with `DEPENDS_ON` chain | Sequential cooperation (A → B → C) |
 | Parallel branches | Multiple nodes with no `depends_on` between them → same topological batch |
-| `DELEGATES_TO` edges | Hierarchical delegation per [ADR-FLOW-001](../adr/ADR-FLOW-001.md) |
+| `DELEGATES_TO` edges | Hierarchical delegation per [ADR-FLOW-001](../adr/entries/2026-06-07/ADR-FLOW-001.md) |
 | `merge_strategy` on profile | How parallel/sequential summaries compose for the user |
 
 **Implemented (H-APP-DOC.2 / ORCH-CONFIG.2):** `ApplicationGraphSpec.trigger_capabilities` — seed graph only when task capability matches (avoids graph override on single-agent routes). See ADR-FLOW-004.

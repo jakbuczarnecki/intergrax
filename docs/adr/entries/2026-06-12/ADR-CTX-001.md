@@ -5,11 +5,11 @@
 | **Status** | Accepted |
 | **Date** | 2026-06-12 |
 | **Deciders** | Harness platform architecture |
-| **Related** | [`architecture/CONTEXT_ENGINEERING.md`](../architecture/CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md) · [`ADR-MEM-001`](ADR-MEM-001.md) · audit map §16 |
+| **Related** | [`architecture/CONTEXT_ENGINEERING.md`](../../architecture/CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../../plan/CONTEXT_ENGINEERING.md) · [`ADR-MEM-001`](../2026-06-08/ADR-MEM-001.md) · audit map §16 |
 
 ## Context
 
-Context assembly was historically documented under [`architecture/MEMORY.md`](../architecture/MEMORY.md) as “Layer C — Context Compiler”. Implementation lives in `intergrax/runtime/nexus/context/` with partial closeout (Phase CTX, MEM-DEPTH, R-Context).
+Context assembly was historically documented under [`architecture/MEMORY.md`](../../architecture/MEMORY.md) as “Layer C — Context Compiler”. Implementation lives in `intergrax/runtime/nexus/context/` with partial closeout (Phase CTX, MEM-DEPTH, R-Context).
 
 **Problem:** Context Engineering is not a memory store. It is a **cross-source orchestration engine** that consumes Memory, RAG, Tools, Orchestration priors, policies, and runtime state to produce a bounded LLM window per step. Authors need a **plugin catalog** (providers, rankers, formatters) comparable to Tools/Skills/Integrations — not only YAML profiles.
 
@@ -48,4 +48,4 @@ Alternatives considered:
 
 ### Follow-up
 
-Execute [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md) Phase CE-EXT waves CE-1 → CE-12.
+Execute [`plan/CONTEXT_ENGINEERING.md`](../../plan/CONTEXT_ENGINEERING.md) Phase CE-EXT waves CE-1 → CE-12.

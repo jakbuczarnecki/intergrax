@@ -1328,7 +1328,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 
 
-**Source:** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §23–§25 · [ADR-FLOW-001](adr/ADR-FLOW-001.md)
+**Source:** [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §23–§25 · [ADR-FLOW-001](adr/entries/2026-06-07/ADR-FLOW-001.md)
 
 **Phase register:** [Phase FLOW](plan/ORCHESTRATION.md) · **Band 2aj** · queue [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed) · execution [§6.2aj](#62aj-phase-flow-execution-order-band-2aj--closed-2026-06-07)
 
@@ -1473,7 +1473,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 **Harness-first rule (2026-06-09):** ORCH-CONFIG validates platform behaviour via **harness integration tests** (`tests/integration/runtime/test_orchestration_cfg_simulation.py`) with abstract stub agents — **not** by implementing Tier-3 business products. Tier-3 reference hosts (FLOW-8 / §6.3) remain product-gated.
 
-**ADR:** [`ADR-FLOW-004`](../adr/ADR-FLOW-004.md) (ORCH-CONFIG.2 seed guard); ORCH-CONFIG.3 → no ADR (suffix convention).
+**ADR:** [`ADR-FLOW-004`](../adr/entries/2026-06-09/ADR-FLOW-004.md) (ORCH-CONFIG.2 seed guard); ORCH-CONFIG.3 → no ADR (suffix convention).
 
 | ID | CFG / scope | Deliverable | Status | Priority | Acceptance |
 |----|-------------|-------------|--------|----------|------------|

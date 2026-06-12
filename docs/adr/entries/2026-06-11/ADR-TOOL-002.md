@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-06-11 |
 | **Deciders** | Harness platform |
-| **Related** | [`architecture/TOOLS.md`](../architecture/TOOLS.md) · [`plan/TOOLS.md`](../plan/TOOLS.md) TOOL-ENG-6 · ACP-CLOSE-PAT-1 |
+| **Related** | [`architecture/TOOLS.md`](../../architecture/TOOLS.md) · [`plan/TOOLS.md`](../../plan/TOOLS.md) TOOL-ENG-6 · ACP-CLOSE-PAT-1 |
 
 ## Context
 

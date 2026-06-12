@@ -10,7 +10,7 @@ plan_ref:
   - ACP-CLOSE-LEG-5
 status: completed
 commit: pending
-adr: docs/adr/ADR-FLOW-005.md
+adr: docs/adr/entries/2026-06-12/ADR-FLOW-005.md
 ---
 
 # Retire Tier-1 RuntimeEngine pipeline stack (ACP-CLOSE-LEG-5)
@@ -35,7 +35,7 @@ Deleted the full RuntimeEngine pipeline stack and migrated surviving utilities (
 |------|--------|
 | Architecture | `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §13.5 |
 | Plan | `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` — `ACP-CLOSE-LEG-5` |
-| ADR | `docs/adr/ADR-FLOW-005.md` |
+| ADR | `docs/adr/entries/2026-06-12/ADR-FLOW-005.md` |
 
 ## Changed artifacts
 

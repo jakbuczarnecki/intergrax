@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-06-10 |
 | **Deciders** | Harness platform |
-| **Related** | [`architecture/TOOLS.md`](../architecture/TOOLS.md) · [`plan/TOOLS.md`](../plan/TOOLS.md) TOOL-ENG-1, TOOL-ENG-2 |
+| **Related** | [`architecture/TOOLS.md`](../../architecture/TOOLS.md) · [`plan/TOOLS.md`](../../plan/TOOLS.md) TOOL-ENG-1, TOOL-ENG-2 |
 
 ## Context
 

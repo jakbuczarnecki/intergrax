@@ -31,14 +31,14 @@ Platform now has a first-class domain for the context compiler engine — clear 
 |------|--------|
 | Architecture | `docs/architecture/CONTEXT_ENGINEERING.md` |
 | Plan | `docs/plan/CONTEXT_ENGINEERING.md` — CE-DOC Done, CE-EXT Planned |
-| ADR | `docs/adr/ADR-CTX-001.md` |
+| ADR | `docs/adr/entries/2026-06-12/ADR-CTX-001.md` |
 | Audit | `docs/guides/audit/CONTEXT_ENGINEERING.md` · audit map §16 |
 
 ## Changed artifacts
 
 - `docs/architecture/CONTEXT_ENGINEERING.md` — full engine canon
 - `docs/plan/CONTEXT_ENGINEERING.md` — implementation register
-- `docs/adr/ADR-CTX-001.md` — domain split decision
+- `docs/adr/entries/2026-06-12/ADR-CTX-001.md` — domain split decision
 - `docs/architecture/MEMORY.md` — Layer C delegation
 - `docs/intergrax_runtime_architecture.md` — 22nd pair + capability index
 - `scripts/generate_domain_audit_prompts.py` — MEMORY/CE split

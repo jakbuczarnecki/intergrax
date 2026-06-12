@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-06-09 |
 | **Deciders** | Harness platform |
-| **Related** | [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../architecture/ELASTIC_CAPACITY_AND_SCALING.md) · ECP-6.1 |
+| **Related** | [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../../architecture/ELASTIC_CAPACITY_AND_SCALING.md) · ECP-6.1 |
 
 ## Context
 

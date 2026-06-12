@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-06-07 |
 | **Deciders** | Harness platform architecture |
-| **Related** | [`architecture/CRITIC_VERIFICATION.md`](../architecture/CRITIC_VERIFICATION.md) · canon §55 · Phase CRIT-V |
+| **Related** | [`architecture/CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) · canon §55 · Phase CRIT-V |
 
 ## Context
 
@@ -38,7 +38,7 @@ Adopt the **Critic & Verification Layer (CVL)** with a **three-layer stack (L0/L
 - **Monolithic Nexus critic** — violates fat-nexus anti-pattern; cannot encode domain rubrics correctly.
 - **Application-only** — duplicates infrastructure; breaks observability and release gates.
 
-**LLM-as-judge is opt-in** via `CriticProfile` — not mandatory on every run (consistent with [`architecture/NEXUS_EXECUTION_FLOW.md`](../architecture/NEXUS_EXECUTION_FLOW.md) §18).
+**LLM-as-judge is opt-in** via `CriticProfile` — not mandatory on every run (consistent with [`architecture/NEXUS_EXECUTION_FLOW.md`](../../architecture/NEXUS_EXECUTION_FLOW.md) §18).
 
 **L0 always runs before L1** when L1 is enabled.
 
@@ -65,6 +65,6 @@ Adopt the **Critic & Verification Layer (CVL)** with a **three-layer stack (L0/L
 
 ## Implementation notes
 
-- Architecture: [`architecture/CRITIC_VERIFICATION.md`](../architecture/CRITIC_VERIFICATION.md)
+- Architecture: [`architecture/CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md)
 - Plan: Phase CRIT-V (Band 2ak) — waves CRIT-V-0 through CRIT-V-7
 - Verification: `uv run pytest -m gate -q` after each wave; critic-specific tests under `tests/unit/runtime/critic/`

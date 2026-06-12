@@ -9,7 +9,7 @@ plan_ref:
   - TOOL-ENG-2
 status: completed
 commit: aa0a3e61
-adr: docs/adr/ADR-TOOL-001.md
+adr: docs/adr/entries/2026-06-10/ADR-TOOL-001.md
 ---
 
 # Catalog dispatch and full-gateway tool routing
@@ -32,12 +32,12 @@ Harness tool invocations follow one canonical gateway path — improves observab
 |------|--------|
 | Architecture | `docs/architecture/TOOLS.md` |
 | Plan | `docs/plan/TOOLS.md` TOOL-ENG-1, TOOL-ENG-2 |
-| ADR | `docs/adr/ADR-TOOL-001.md` |
+| ADR | `docs/adr/entries/2026-06-10/ADR-TOOL-001.md` |
 
 ## Changed artifacts
 
 - `intergrax/runtime/nexus/tools/tool_runtime.py`
-- `docs/adr/ADR-TOOL-001.md`
+- `docs/adr/entries/2026-06-10/ADR-TOOL-001.md`
 - `docs/architecture/TOOLS.md`, `docs/plan/TOOLS.md`
 
 ## Verification

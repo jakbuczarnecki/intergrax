@@ -93,7 +93,7 @@ Total: 70 deliverables
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
 | W-ADAPT-0.1 | **Plan + canon sync** — Phase W-ADAPT section, §4.0 Band 2y, §6.1t, §6.2ac, Appendix K; AHIA ↔ plan cross-links | **Done** | **Critical** | This section + AHIA Appendix B |
-| W-ADAPT-0.2 | **`docs/adr/ADR-ADAPT-001.md`** — Adaptive Harness Intelligence over classical RL (AHIA Appendix C) | **Done** | High | ADR accepted; linked from AHIA + canon §54 |
+| W-ADAPT-0.2 | **`docs/adr/entries/2026-06-05/ADR-ADAPT-001.md`** — Adaptive Harness Intelligence over classical RL (AHIA Appendix C) | **Done** | High | ADR accepted; linked from AHIA + canon §54 |
 | W-ADAPT-0.3 | **Package scaffold** — `intergrax/runtime/adaptive/` with `contracts.py`, `__init__.py`, re-exports | **Done** | **Critical** | Importable; no runtime side effects |
 | W-ADAPT-0.4 | **Extend `runtime/architecture/__init__.py`** — export adaptive contracts without duplicating `adaptive_governance.py` | **Done** | Medium | Unit smoke import |
 | W-ADAPT-0.5 | **Gate test stub** — `tests/unit/runtime/adaptive/test_package_imports.py` | **Done** | Medium | `pytest -m gate` green |

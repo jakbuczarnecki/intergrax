@@ -5,7 +5,7 @@
 | **Status** | Proposed |
 | **Date** | YYYY-MM-DD |
 | **Deciders** | Team / role |
-| **Related** | [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · plan row |
+| **Related** | [`intergrax_runtime_architecture.md`](../../intergrax_runtime_architecture.md) · plan row |
 
 ## Context
 

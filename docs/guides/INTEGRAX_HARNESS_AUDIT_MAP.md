@@ -489,7 +489,7 @@ Nothing should execute without appropriate policy checks, permission checks and 
 Policy Enforcement Score: L0-L4
 ```
 
-**Guardrails vector (M.12):** Vendor LLM scanners are **not** a separate tier — they extend Policy & Governance via `IntegrationProfile.llm_guardrail` + `GuardrailProfile` + `LlmGuardrailMiddleware`. Canon: UAEP [§42.11.6](architecture/UNIFIED_EXECUTION_RUNTIME.md) · Integration [§47](architecture/INTEGRATIONS.md) · [ADR-GR-001](adr/ADR-GR-001.md).
+**Guardrails vector (M.12):** Vendor LLM scanners are **not** a separate tier — they extend Policy & Governance via `IntegrationProfile.llm_guardrail` + `GuardrailProfile` + `LlmGuardrailMiddleware`. Canon: UAEP [§42.11.6](architecture/UNIFIED_EXECUTION_RUNTIME.md) · Integration [§47](architecture/INTEGRATIONS.md) · [ADR-GR-001](adr/entries/2026-06-09/ADR-GR-001.md).
 
 **Authoring reference:** [`guides/AGENT_CREATION_GUIDE.md` Appendix H](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) (control plane map, security profile, policy bundle read order); canon [§42.11](architecture/UNIFIED_EXECUTION_RUNTIME.md#4211-policy-engine); [`guides/EXTENSION_AUTHOR_GUIDE.md` §10](guides/EXTENSION_AUTHOR_GUIDE.md#10-policy-rule-handler-plugins-phase-dx-58) (`intergrax.policy_rules`). **Closeout:** [Phase GOV-AUDIT](plan/UNIFIED_EXECUTION_RUNTIME.md) **Done** (GOV-DOC.*) · [Phase M.12](plan/INTEGRATIONS.md) guardrails **Done**.
 
@@ -1557,7 +1557,7 @@ Verify that the system can be operated as a production platform.
 Operational Excellence Score: L0-L4
 ```
 
-**Domain pair (canon):** [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](architecture/ELASTIC_CAPACITY_AND_SCALING.md) ↔ [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](plan/ELASTIC_CAPACITY_AND_SCALING.md) · [ADR-SCALE-001](adr/ADR-SCALE-001.md) — closed-loop **elastic capacity** (Harness ECP) extends this layer; SLO/runbook baseline: Phase W-OPS **Done**.
+**Domain pair (canon):** [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](architecture/ELASTIC_CAPACITY_AND_SCALING.md) ↔ [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](plan/ELASTIC_CAPACITY_AND_SCALING.md) · [ADR-SCALE-001](adr/entries/2026-06-08/ADR-SCALE-001.md) — closed-loop **elastic capacity** (Harness ECP) extends this layer; SLO/runbook baseline: Phase W-OPS **Done**.
 
 ---
 

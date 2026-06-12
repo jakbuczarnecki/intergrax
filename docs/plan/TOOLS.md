@@ -16,7 +16,7 @@
 **Architecture canon:** [`architecture/TOOLS.md`](../architecture/TOOLS.md) — [Tool engine production posture](../architecture/TOOLS.md#tool-engine-production-posture-2026-06-10), [Invocation patterns](../architecture/TOOLS.md#tool-invocation-patterns-production-orchestration), [Engine gap register](../architecture/TOOLS.md#engine-gap-register-canon)  
 **Audit basis:** Full-stack tool layer audit 2026-06-10 (Tier-0 catalog + Tier-1 selection/invoke/verify) · **Invocation-pattern audit 2026-06-12** (single / parallel / chain / graph + plugin contract)  
 **Priority ladder:** **Band 2ba** — supersedes ad-hoc tool engine fixes until TOOL-ENG P0 closed  
-**ADR:** [ADR-TOOL-001](../adr/ADR-TOOL-001.md) (TOOL-ENG-1/2) · [ADR-TOOL-002](../adr/ADR-TOOL-002.md) (TOOL-ENG-6) · **ADR-TOOL-003 required** before TOOL-ENG-16 merge
+**ADR:** [ADR-TOOL-001](../adr/entries/2026-06-10/ADR-TOOL-001.md) (TOOL-ENG-1/2) · [ADR-TOOL-002](../adr/entries/2026-06-11/ADR-TOOL-002.md) (TOOL-ENG-6) · **ADR-TOOL-003 required** before TOOL-ENG-16 merge
 
 **Problem statement (2026-06-10, partially closed):** Tier-0 catalog is production-grade (190 tools, contracts, MCP). Tier-1 gaps on bootstrap, dispatch, gateway, selection — **closed** TOOL-ENG-0–6,11.
 
