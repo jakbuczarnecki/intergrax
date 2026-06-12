@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from intergrax.applications._shared.budget_wiring import product_agent_budget_slice
+from intergrax.applications._shared.ownership_wiring import standard_product_operational_ownership
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -77,6 +78,7 @@ DISPUTE_SIM_APPLICATION_MANIFEST = ApplicationManifest.product(
         ),
     ],
     description="Dispute Simulation Workspace — multi-agent litigation prep and scenario host",
+    ownership=standard_product_operational_ownership("dispute_sim"),
 )
 
 # Backward-compatible alias for scaffold-generated imports.

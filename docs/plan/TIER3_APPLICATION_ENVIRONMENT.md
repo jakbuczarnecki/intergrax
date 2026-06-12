@@ -105,7 +105,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 | ID | Deliverable | Status | Acceptance |
 |----|-------------|--------|------------|
 | APP-OPS-1 | Env capability graph + blast radius STRICT gate | **Done** | `check_capability_graph_strict_deploy.py` · `test_capability_graph_deploy_gate.py` |
-| APP-OPS-2 | `ApplicationOperationalOwnership` on manifest | Planned | APP-PROD gate · product hosts |
+| APP-OPS-2 | `ApplicationOperationalOwnership` on manifest | **Done** | `check_application_ownership.py` · `test_operational_ownership_gate.py` |
 | APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | Planned | release score artifact |
 | APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | Planned | `intergrax apps list` / `envs list` |
 
@@ -170,7 +170,7 @@ Recommended PR sequence — one APP ID per PR:
 7.  APP-CON-8       shadow/sandbox cleanup + APP-PROD-8 — **Done**
 8.  APP-EVOL-1      EnvironmentSnapshot on intake — **Done**
 9.  APP-OPS-1       capability graph STRICT deploy gate — **Done**
-10. APP-OPS-2       application ownership on manifest
+10. APP-OPS-2       application ownership on manifest — **Done**
 11. APP-CON-7       scenario matrix tests
 12. APP-EVOL-2/2b   migrations
 13. APP-EVOL-3..7   evolution + packaging
@@ -522,7 +522,7 @@ uv run pytest -m gate -q
 | H-APP-OPS-DOC.1 | Architecture §50 Platform Operations Canon | **Done** | **Critical** | `architecture/TIER3_APPLICATION_ENVIRONMENT.md` |
 | H-APP-OPS-DOC.2 | §49.2.4 typed migrations (Profile/Graph/Envelope) | **Done** | High | sub-migration schemas in §49 |
 | APP-OPS-1 | Env capability graph + blast radius STRICT gate | **Done** | **Critical** | `check_capability_graph_strict_deploy.py` |
-| APP-OPS-2 | `ApplicationOperationalOwnership` + APP-PROD | Planned | High | manifest ownership required |
+| APP-OPS-2 | `ApplicationOperationalOwnership` + APP-PROD | **Done** | High | `check_application_ownership.py` |
 | APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | Planned | High | release score artifact |
 | APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | Planned | Medium | `apps list` / `envs list` |
 | APP-EVOL-2b | Typed migration validators | Planned | High | CI per primitive |

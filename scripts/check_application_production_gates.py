@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""Tier-3 application production gate checks (APP-PROD-1..8 · APP-OPS-1)."""
+"""Tier-3 application production gate checks (APP-PROD-1..8 · APP-OPS-1..2)."""
 
 from __future__ import annotations
 
@@ -88,6 +88,20 @@ def check_workspace_cleanup() -> list[str]:
     return check_all_factory_workspace_cleanup(APPLICATIONS_ROOT)
 
 
+def check_application_ownership() -> list[str]:
+    from intergrax.applications._shared.ownership_wiring import (
+        check_manifest_operational_ownership,
+    )
+    from intergrax.applications._shared.product_manifest_registry import (
+        iter_product_manifests,
+    )
+
+    violations: list[str] = []
+    for product_id, manifest in iter_product_manifests():
+        violations.extend(check_manifest_operational_ownership(product_id, manifest))
+    return violations
+
+
 def check_capability_graph_strict_deploy() -> list[str]:
     from intergrax.applications._shared.capability_graph_deploy_gate import (
         check_strict_product_capability_graph,
@@ -122,6 +136,7 @@ def main() -> int:
         ("budget_enforcement", check_budget_enforcement),
         ("workspace_cleanup", check_workspace_cleanup),
         ("capability_graph_strict_deploy", check_capability_graph_strict_deploy),
+        ("application_ownership", check_application_ownership),
     )
     violations: list[str] = []
     for _name, fn in checks:

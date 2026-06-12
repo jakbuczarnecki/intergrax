@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from intergrax.applications._shared.budget_wiring import product_agent_budget_slice
+from intergrax.applications._shared.ownership_wiring import standard_product_operational_ownership
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -32,4 +33,5 @@ RESEARCH_APPLICATION_MANIFEST = ApplicationManifest.product(
         AgentBinding.mount(SummaryAgent, budget_slice=product_agent_budget_slice()),
     ],
     description="Research → summarize multi-agent host (prototype)",
+    ownership=standard_product_operational_ownership("research"),
 )

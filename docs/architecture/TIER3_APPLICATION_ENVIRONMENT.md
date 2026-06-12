@@ -2276,10 +2276,10 @@ ApplicationEscalationContact:
 
 | Surface | Field | Status |
 |---------|-------|--------|
-| `ApplicationManifest` | `ownership: ApplicationOperationalOwnership \| null` | **Planned** APP-OPS-2 |
+| `ApplicationManifest` | `ownership: ApplicationOperationalOwnership \| null` | **Done** APP-OPS-2 |
 | Product `ARCHITECTURE.md` frontmatter | owner, maintainer, on-call | **Required today** (informal) |
 | `ApplicationEnvironmentProfile` | inherit from manifest | target |
-| APP-PROD gate | product hosts must declare ownership | **Planned** APP-OPS-2 |
+| APP-PROD gate | product hosts must declare ownership | **Done** `check_application_ownership.py` |
 
 ### 50.2.3 Enforcement
 
@@ -2291,7 +2291,7 @@ ApplicationEscalationContact:
 
 **Symmetric agent rule:** roster agents still require `ProductionOwnerMetadata` per contract (V-ALG.4); application ownership covers **host / environment**, not per-agent substitution.
 
-**Status:** agent ownership **Done**; application ownership schema **Planned** APP-OPS-2.
+**Status:** agent ownership **Done**; application ownership schema **Done** (`operational_ownership.py` · APP-OPS-2).
 
 ---
 
@@ -2440,7 +2440,7 @@ EnvironmentDeployment:
 | ID | Deliverable | Status | Acceptance |
 |----|-------------|--------|------------|
 | APP-OPS-1 | STRICT deploy gate: `EnvironmentCapabilityGraphView` + blast radius check | **Done** | `check_capability_graph_strict_deploy.py` |
-| APP-OPS-2 | `ApplicationOperationalOwnership` on manifest + APP-PROD gate | Planned | product hosts require owner/maintainer/escalation |
+| APP-OPS-2 | `ApplicationOperationalOwnership` on manifest + APP-PROD gate | **Done** | `check_application_ownership.py` |
 | APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | Planned | score artifact on release tag |
 | APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | Planned | `apps list` / `envs list` |
 | APP-EVOL-2b | `ProfileMigration` / `GraphSpecMigration` / `OrgEnvelopeMigration` | Planned | typed validators in CI |
