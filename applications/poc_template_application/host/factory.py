@@ -10,10 +10,10 @@ from typing import Optional
 from fastapi import FastAPI
 
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
-from intergrax.applications._shared.fastapi_mcp import (
-    apply_lifespans,
-    couple_fastapi_with_mcp,
-    make_scheduler_lifespan,
+from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
+from intergrax.applications._shared.workspace_cleanup_wiring import (
+    apply_factory_lifespans,
+    build_factory_lifespans,
 )
 from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
@@ -127,14 +127,17 @@ def create_poc_template_application(
             route_prefix=settings.route_prefix,
             tool_registry=runtime.env_wiring.tool_wiring.registry,
         )
-        extra_lifespans = [make_scheduler_lifespan(scheduler)] if scheduler else []
+        extra_lifespans = build_factory_lifespans(
+            runtime,
+            schedulers=[scheduler] if scheduler else None,
+        )
         app = couple_fastapi_with_mcp(
             app,
             mcp,
             mount_path=settings.mcp_mount_path,
             extra_lifespans=extra_lifespans,
         )
-    elif scheduler is not None:
-        apply_lifespans(app, make_scheduler_lifespan(scheduler))
+    else:
+        apply_factory_lifespans(app, runtime, schedulers=[scheduler] if scheduler else None)
     attach_plugin_shutdown(app, platform.shutdown_callbacks)
     return app

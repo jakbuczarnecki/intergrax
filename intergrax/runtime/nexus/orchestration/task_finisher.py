@@ -21,6 +21,7 @@ from intergrax.runtime.nexus.orchestration.application_run_summary_builder impor
 from intergrax.runtime.nexus.orchestration.workspace_cleanup import (
     cleanup_sandbox_for_task,
     cleanup_shadow_for_task,
+    clear_isolation_refs_in_task_env_state,
 )
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.nexus.response.final_response_composer import FinalResponseComposer
@@ -145,6 +146,7 @@ def build_nexus_task_result(
 
     cleanup_shadow_for_task(task, executions, shadow_manager=shadow_manager)
     cleanup_sandbox_for_task(task, executions, sandbox_manager=sandbox_manager)
+    clear_isolation_refs_in_task_env_state(task)
 
     task.sync_metadata()
     result = TaskResult(

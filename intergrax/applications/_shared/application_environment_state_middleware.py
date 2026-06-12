@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from intergrax.applications._shared.workspace_cleanup_wiring import sync_isolation_refs_for_hook
 from intergrax.applications.contracts.environment_state import (
     ApplicationEnvironmentState,
     EnvironmentHealthStatus,
@@ -147,6 +148,7 @@ def sync_application_environment_state_for_hook(
             "budget": budget,
         }
     )
+    state = sync_isolation_refs_for_hook(ctx, state)
     ctx.runtime_state.update(state.apply_to_runtime_state(dict(ctx.runtime_state)))
     return state
 

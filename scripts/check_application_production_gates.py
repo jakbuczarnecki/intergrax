@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""Tier-3 application production gate checks (APP-PROD-1..7)."""
+"""Tier-3 application production gate checks (APP-PROD-1..8)."""
 
 from __future__ import annotations
 
@@ -80,6 +80,14 @@ def check_environment_wiring_entry() -> list[str]:
     return violations
 
 
+def check_workspace_cleanup() -> list[str]:
+    from intergrax.applications._shared.workspace_cleanup_wiring import (
+        check_all_factory_workspace_cleanup,
+    )
+
+    return check_all_factory_workspace_cleanup(APPLICATIONS_ROOT)
+
+
 def check_budget_enforcement() -> list[str]:
     from intergrax.applications._shared.budget_wiring import check_manifest_budget_enforcement
     from intergrax.applications._shared.product_manifest_registry import (
@@ -98,6 +106,7 @@ def main() -> int:
         ("manifest_profile_consistency", check_manifest_profile_on_manifest),
         ("environment_wiring", check_environment_wiring_entry),
         ("budget_enforcement", check_budget_enforcement),
+        ("workspace_cleanup", check_workspace_cleanup),
     )
     violations: list[str] = []
     for _name, fn in checks:

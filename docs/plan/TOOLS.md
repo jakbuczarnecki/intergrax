@@ -12,7 +12,7 @@
 
 ## Phase TOOL-ENG — Tool engine hardening (2026-06-10 audit · extended 2026-06-12)
 
-**Status:** **Active** — **11/32** deliverables Done (TOOL-ENG-0–6,11, TOOL-ENG-DOC.4–6 — 2026-06-12)  
+**Status:** **Active** — **12/35** deliverables Done (TOOL-ENG-0–6,11, TOOL-ENG-DOC.4–7 — 2026-06-12)  
 **Architecture canon:** [`architecture/TOOLS.md`](../architecture/TOOLS.md) — [Tool engine production posture](../architecture/TOOLS.md#tool-engine-production-posture-2026-06-10), [Invocation patterns](../architecture/TOOLS.md#tool-invocation-patterns-production-orchestration), [Engine gap register](../architecture/TOOLS.md#engine-gap-register-canon)  
 **Audit basis:** Full-stack tool layer audit 2026-06-10 (Tier-0 catalog + Tier-1 selection/invoke/verify) · **Invocation-pattern audit 2026-06-12** (single / parallel / chain / graph + plugin contract)  
 **Priority ladder:** **Band 2ba** — supersedes ad-hoc tool engine fixes until TOOL-ENG P0 closed  
@@ -45,7 +45,10 @@
 | TOOL-ENG-13 | Selection | **Semantic tool index** — `ToolCatalogEmbedder`, `SemanticToolIndexSelectionStrategy`, reindex on catalog change | **Planned** | P1 | `tool_catalog_embedder.py`, `tool_selection.py`, RAG `embedding_manager` | Gate: 190-tool query ranks correct `tool_id`; trace scores · **ADR required** |
 | TOOL-ENG-14 | Selection | **Hierarchical tool selection** — category-tree multi-pass LLM | **Planned** | P2 | `hierarchical_tool_selector.py`, `tool_selection.py`, prompts | Integration: category pass → tool pass · **ADR required** |
 | TOOL-ENG-15 | Selection | **`retrieval_top_k` naming** — keyword overlap clarity; optional `keyword_top_k` alias | **Planned** | P2 | `config_types.py`, `environment_profile.py`, docs | Alias accepted in bridge; no behavior change |
-| TOOL-ENG-26 | Selection | **`ToolSelectionStrategy` entry-point plugins** — `intergrax.tool_selection_strategies` registry beyond `strategy_for_mode()` | **Planned** | P2 | `tool_selection.py`, `pyproject.toml` entry points | Custom strategy loadable from host profile |
+| TOOL-ENG-26 | Selection | **`ToolSelectionStrategy` entry-point plugins** — `intergrax.tool_selection_strategies` registry beyond `strategy_for_mode()` | **Planned** | P2 | `tool_selection.py`, `pyproject.toml` entry points | Custom strategy loadable from host profile · **ADR-TOOL-004** |
+| TOOL-ENG-31 | Selection | **`RuntimeConfig.tool_selection_strategy` instance override** — inject custom strategy at bootstrap; overrides `tool_selection_mode` enum | **Planned** | P1 | `config.py`, `runtime_context.py`, `tools_step.py` | Unit: injected strategy used instead of `strategy_for_mode` |
+| TOOL-ENG-32 | Selection | **Selection trace telemetry** — `strategy_id`, candidate `tool_id`s, scores in diag/trace | **Planned** | P2 | `tools_step.py`, trace models | `ops:tool_selection` on ToolsStep payload |
+| TOOL-ENG-DOC.7 | Docs | **Selection plugin model canon** — L6 protocol, shipped strategies, custom surfaces A/B/C | **Done** | P1 | `architecture/TOOLS.md` §selection plugin | §[Tool selection plugin model](../architecture/TOOLS.md#tool-selection-plugin-model-l6-extensibility) |
 
 #### Dispatch & atomic invoke (2b)
 
@@ -92,6 +95,7 @@
 | TOOL-ENG-DOC.4 | Docs | **Selection modes canon** — standard / semantic / hierarchical | **Done** | P1 | `architecture/TOOLS.md`, FLOW §15 | §modes live |
 | TOOL-ENG-DOC.5 | Docs | **Invocation patterns canon** | **Done** | P1 | `architecture/TOOLS.md` §patterns | §patterns live |
 | TOOL-ENG-DOC.6 | Docs | **Graph vs tool-pattern boundary** — ORCHESTRATION §50.4 + FLOW §15.1 cross-refs | **Done** | P2 | `ORCHESTRATION.md`, `NEXUS_EXECUTION_FLOW.md` | Linked from both domain pairs |
+| TOOL-ENG-DOC.7 | Docs | **Selection plugin model canon** — standard / semantic / hierarchical + custom strategy surfaces | **Done** | P1 | `architecture/TOOLS.md` §selection plugin | §plugin model live |
 
 **Delivery rule:** One **TOOL-ENG-\*** ID per PR → update this table + [§6.1e](#61e-harness-implementation-queue--tool-engine-active) + architecture [gap register](../architecture/TOOLS.md#engine-gap-register-canon) → `pytest -m gate` + new acceptance tests green.
 
@@ -104,8 +108,8 @@ TOOL-ENG-0 → 3 → 1 → 2 → 4 → 11 → 5 → DOC.4 → 6 → DOC.5
 # Next — invocation pattern foundation (P0/P1)
 TOOL-ENG-16 (ADR-TOOL-003) → 17 → 18 → 21 → 22 → 23 → 29 → 9 → 13 → 25
 
-# Selection scale + naming
-TOOL-ENG-14 → 15 → 26
+# Selection plugin + scale
+TOOL-ENG-31 → 26 → 13 → 14 → 15 → 32
 
 # Chain + plugins + observability
 TOOL-ENG-20 → 24 → 27 → 28 → 30
@@ -185,17 +189,20 @@ TOOL-ENG-12 → 8 → 7 → 10
 | 20 | **TOOL-ENG-25** | Code | **Planned** | `ParallelSemanticBatchPattern` | composite integration test |
 | 21 | **TOOL-ENG-14** | Code + ADR | **Planned** | Hierarchical selection | 2-pass integration |
 | 22 | **TOOL-ENG-15** | Code + Docs | **Planned** | `keyword_top_k` alias | alias in bridge |
-| 23 | **TOOL-ENG-26** | Code | **Planned** | Selection strategy entry points | custom strategy EP test |
-| 24 | **TOOL-ENG-20** | Code | **Planned** | `DeterministicChainPattern` + `ToolChainSpec` | chain integration test |
-| 25 | **TOOL-ENG-24** | Code | **Planned** | Invocation pattern entry points | custom pattern EP test |
-| 26 | **TOOL-ENG-27** | Code | **Planned** | Pattern trace telemetry | diag payload test |
-| 27 | **TOOL-ENG-28** | CI | **Planned** | `check_tool_invocation_patterns.py` | gate green |
-| 28 | **TOOL-ENG-30** | DX | **Planned** | `lab_application` pattern examples | smoke per mode |
-| 29 | **TOOL-ENG-DOC.6** | Docs | **Done** | ORCHESTRATION §50.4 + FLOW §15.1 boundary cross-refs | linked pairs |
-| 30 | **TOOL-ENG-12** | Code | **Planned** | `tool_choice` wiring | required mode test |
-| 31 | **TOOL-ENG-8** | Code | **Planned** | `tools_mode=required` fail | unit test |
-| 32 | **TOOL-ENG-7** | Code | **Planned** | Post-tool verify HIGH+ | middleware test |
-| 33 | **TOOL-ENG-10** | Code | **Planned** | AHI dynamic mode hook | fixture test |
+| 23 | **TOOL-ENG-31** | Code | **Planned** | `tool_selection_strategy` config inject | override factory test |
+| 24 | **TOOL-ENG-26** | Code + ADR | **Planned** | Selection strategy entry points | ADR-TOOL-004 · custom EP test |
+| 25 | **TOOL-ENG-20** | Code | **Planned** | `DeterministicChainPattern` + `ToolChainSpec` | chain integration test |
+| 26 | **TOOL-ENG-24** | Code | **Planned** | Invocation pattern entry points | custom pattern EP test |
+| 27 | **TOOL-ENG-32** | Code | **Planned** | Selection trace telemetry | ops:tool_selection test |
+| 28 | **TOOL-ENG-27** | Code | **Planned** | Pattern trace telemetry | diag payload test |
+| 29 | **TOOL-ENG-28** | CI | **Planned** | `check_tool_invocation_patterns.py` | gate green |
+| 30 | **TOOL-ENG-30** | DX | **Planned** | `lab_application` pattern examples | smoke per mode |
+| 31 | **TOOL-ENG-DOC.6** | Docs | **Done** | ORCHESTRATION §50.4 + FLOW §15.1 boundary | linked pairs |
+| 32 | **TOOL-ENG-DOC.7** | Docs | **Done** | Selection plugin model canon | §selection plugin |
+| 33 | **TOOL-ENG-12** | Code | **Planned** | `tool_choice` wiring | required mode test |
+| 34 | **TOOL-ENG-8** | Code | **Planned** | `tools_mode=required` fail | unit test |
+| 35 | **TOOL-ENG-7** | Code | **Planned** | Post-tool verify HIGH+ | middleware test |
+| 36 | **TOOL-ENG-10** | Code | **Planned** | AHI dynamic mode hook | fixture test |
 
 **Explicitly excluded:** K.1, K.2, new product catalog tools — [§6.3 product backlog](../plan/PLATFORM_FOUNDATION.md).
 
@@ -313,36 +320,41 @@ TOOL-ENG-12 → 8 → 7 → 10
 
 ---
 
-## Phase TOOL-ENG-DOC — Tool execution pipeline canon (Band 2ar)
+## Phase TOOL-ENG-DOC — Tool engine documentation canon (Band 2ar / 2bb)
 
-**Status:** **Active** (DOC.4 open 2026-06-11) — pipeline canon **Done**; selection modes canon **Done** (TOOL-ENG-DOC.4)  
+**Status:** **Done** (2026-06-12) — **7/7** DOC rows · pipeline · selection modes · invocation patterns · selection plugin · graph boundary  
 **Prerequisites:** Phase TS **Done** · Phase O **Done** · Phase LEG **Done**  
-**Goal:** Consolidate **selection → invocation → logging** and **production selection modes** in [`architecture/TOOLS.md`](../architecture/TOOLS.md)  
-**Priority ladder:** **Band 2ar** (pipeline) **closed** · **Band 2bb** (selection modes doc) **closed** 2026-06-11  
-**ADR:** **No ADR needed** for DOC rows — documentation only; TOOL-ENG-13/14 require ADR at implementation
+**Goal:** Canon in [`architecture/TOOLS.md`](../architecture/TOOLS.md) for selection (L6), orchestration (2a), atomic invoke (2b), logging — plus plugin extensibility  
+**ADR:** **No ADR needed** for DOC rows; implementation rows TOOL-ENG-13/14/16/26 require ADR at code merge
 
 | ID | Deliverable | Status | Priority | Module / doc | Acceptance |
 |----|-------------|--------|----------|--------------|------------|
-| TOOL-ENG-DOC.1 | **`Tool execution pipeline`** section — diagram + phase table + entry paths | **Done** | **Critical** | `architecture/TOOLS.md` | Covers select, invoke, log |
-| TOOL-ENG-DOC.2 | **Component naming note** — Tool engine vs `ToolRuntime` facade | **Done** | High | same | Linked from §Tool engine table |
+| TOOL-ENG-DOC.1 | **Tool execution pipeline** — diagram + phase table + entry paths | **Done** | Critical | `architecture/TOOLS.md` | select → orchestrate → invoke → log |
+| TOOL-ENG-DOC.2 | **Component naming** — Tool engine vs `ToolRuntime` | **Done** | High | same | §Tool engine table |
 | TOOL-ENG-DOC.3 | **Cross-ref sync** — FLOW §15, AUDIT_MAP §11, Appendix J | **Done** | Medium | `docs/*` | Links resolve |
-| TOOL-ENG-DOC.4 | **Selection modes canon** — standard / semantic / hierarchical; L6 vs layers; `retrieval_top_k` clarification | **Done** | **Critical** | `architecture/TOOLS.md`, `plan/TOOLS.md`, FLOW §15, audit/TOOLS | §[Tool selection modes](../architecture/TOOLS.md#tool-selection-modes-production-strategies) |
+| TOOL-ENG-DOC.4 | **Selection modes** — standard / semantic / hierarchical | **Done** | Critical | `architecture/TOOLS.md`, FLOW §15 | §modes |
+| TOOL-ENG-DOC.5 | **Invocation patterns** — single / parallel / ReAct / chain / graph boundary | **Done** | Critical | `architecture/TOOLS.md`, FLOW §15.1, ORCH §50.4 | §patterns |
+| TOOL-ENG-DOC.6 | **Graph vs tool-pattern boundary** | **Done** | High | `ORCHESTRATION.md`, `NEXUS_EXECUTION_FLOW.md` | §50.4 + §15.1 |
+| TOOL-ENG-DOC.7 | **Selection plugin model** — `ToolSelectionStrategy`, surfaces A/B/C | **Done** | Critical | `architecture/TOOLS.md` | §selection plugin |
 
 ### TOOL-ENG-DOC traceability
 
 | Pipeline phase | Canon section | Runtime modules |
 |----------------|---------------|-----------------|
-| Selection | TOOLS §[Tool selection modes](../architecture/TOOLS.md#tool-selection-modes-production-strategies) · [layers](../architecture/TOOLS.md#tool-selection--strategies-and-layers) · FLOW §15 | `ToolSelectionStrategy`, `CatalogToolPlanner`, `ToolAccessPolicy` |
-| Invocation | TOOLS §Tool execution pipeline · [§42.12 gateway](../architecture/TOOLS.md#4212-gateway-surface-toolrequest) · [tool_ids dispatch](../architecture/TOOLS.md#tool_ids-dispatch-semantics-actual) | `ToolRuntime`, `RuntimeToolInvoker`, `tool_gateway.py` |
-| Logging | TOOLS §Tool execution pipeline · FLOW §17 · OBS | `trace_event`, `RuntimeEvent` `TOOL_*`, `ToolsStep` |
-| Engine gaps | TOOLS §[Engine gap register](../architecture/TOOLS.md#engine-gap-register-canon) | Phase **TOOL-ENG** master register |
+| Selection L6 | §[modes](../architecture/TOOLS.md#tool-selection-modes-production-strategies) · §[plugin model](../architecture/TOOLS.md#tool-selection-plugin-model-l6-extensibility) · FLOW §15 | `ToolSelectionStrategy`, `resolve_planner_allowed_tool_ids` |
+| Planning L6b | §Multi-tool execution · §patterns | `ToolPlanningService`, `ToolPlannerProtocol` |
+| Orchestration 2a | §[Invocation patterns](../architecture/TOOLS.md#tool-invocation-patterns-production-orchestration) · FLOW §15.1 | `ToolInvocationPattern` *(planned)*, `run_bounded_tool_loop` |
+| Atomic invoke 2b | §pipeline · §42.12 gateway | `RuntimeToolInvoker`, `ToolRuntime` |
+| Logging | §pipeline · FLOW §17 · OBS | `trace_event`, `TOOL_*`, `ToolsStep` |
+| Gaps | §[Engine gap register](../architecture/TOOLS.md#engine-gap-register-canon) | Phase **TOOL-ENG** master register |
 
 ### TOOL-ENG-DOC — Paydown log
 
 | Date | ID | Summary |
 |------|-----|---------|
-| 2026-06-08 | TOOL-ENG-DOC.1–3 | Tool execution pipeline § in architecture; AUDIT_MAP §11 + Appendix J + FLOW §15 cross-refs |
-| 2026-06-11 | TOOL-ENG-DOC.4 | Production selection modes (standard / semantic / hierarchical); TOOL-ENG-13/14/15 plan rows |
+| 2026-06-08 | TOOL-ENG-DOC.1–3 | Tool execution pipeline §; cross-refs |
+| 2026-06-11 | TOOL-ENG-DOC.4 | Selection modes canon; TOOL-ENG-13/14/15 |
+| 2026-06-12 | TOOL-ENG-DOC.5–7 | Invocation patterns + selection plugin + ORCH/FLOW boundary |
 
 ---
 

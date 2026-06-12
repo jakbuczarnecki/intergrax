@@ -20,8 +20,8 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 
 | Arch § | Topic | Plan IDs | Status | Code / test anchor |
 |--------|-------|----------|--------|-------------------|
-| §20 | Shadow workspace lifecycle | H-APP.3.4 · APP-CON-8 · APP-PROD-8 | **Partial** | `shadow_wiring.py` · lifecycle doc §20 · cleanup gate open |
-| §21 | Sandbox lifecycle | H-APP.3.5 · APP-CON-8 · APP-PROD-8 | **Partial** | `sandbox_wiring.py` · artifact capture open |
+| §20 | Shadow workspace lifecycle | H-APP.3.4 · APP-CON-8 · APP-PROD-8 | **Done** | `shadow_wiring.py` · `workspace_cleanup_wiring.py` · `check_workspace_cleanup.py` |
+| §21 | Sandbox lifecycle | H-APP.3.5 · APP-CON-8 · APP-PROD-8 | **Done** | `sandbox_wiring.py` · `workspace_cleanup_wiring.py` · `test_workspace_cleanup_wiring.py` |
 | §22 | `ApplicationEnvironmentProfile` | H-APP.1.* | **Done** | `environment_profile.py` · `test_environment_profile.py` |
 | §23 | Interaction postures | H-APP-DOC.* · H-APP-WIRING.* | **Done** | §23.7 matrix closed on reference hosts |
 | §24 | `ApplicationManifest` / `AgentBinding` | N.1 · H-APP.1.2 | **Done** | `manifest.py` · `test_manifest_conformance.py` |
@@ -69,7 +69,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 | APP-CON-5 | §32.6 | Hook timeout · error→BLOCK · audit events | **Done** | `test_hook_runtime_guard.py` · product 250ms timeout |
 | APP-CON-6 | §26 · §48 | `RunArtifactBundle` on `ApplicationRunSummary.metadata` | **Done** | `test_task_finisher_artifact_bundle.py` |
 | APP-CON-7 | §35 · §44 | Scenario matrix gate — UC-A* minimum per posture | Planned | `test_tier3_scenario_matrix.py` or tagged `-m tier3_scenario` |
-| APP-CON-8 | §20–§21 | Shadow/sandbox refs in env state + lifespan cleanup | Planned | `APP-PROD-8` integration |
+| APP-CON-8 | §20–§21 | Shadow/sandbox refs in env state + lifespan cleanup | **Done** | `workspace_cleanup_wiring.py` · `test_workspace_cleanup_wiring.py` |
 | APP-CON-DX.1 | §31 · §45 · §47 | Author guide APP appendix (mental model + checklist) | Planned | `AGENT_CREATION_GUIDE.md` or `APPLICATION_CREATION_GUIDE.md` |
 | APP-CON-DX.2 | §37 | Regenerate domain audit prompt for §24–§51 | Planned | `generate_domain_audit_prompts.py` |
 
@@ -84,7 +84,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 | APP-PROD-5 | §40.2 | Deploy triad | **Done** | `test_application_deploy_triad.py` |
 | APP-PROD-6 | §40.2 | `check_environment_state_usage` lint | Planned | CI script; hooks use typed state |
 | APP-PROD-7 | §40.2 · §43 | `check_budget_enforcement` on STRICT product hosts | **Done** | `check_budget_enforcement.py` · product manifests `budget_slice` |
-| APP-PROD-8 | §20–§21 | `check_workspace_cleanup` lifespan hooks | Planned | factory teardown integration test |
+| APP-PROD-8 | §20–§21 | `check_workspace_cleanup` lifespan hooks | **Done** | `check_workspace_cleanup.py` · `test_check_workspace_cleanup.py` |
 | APP-PROD-9 | §40.2 | Wire APP-PROD-1 into `pytest -m gate` / CI | **Done** | `test_check_application_production_gates.py` · CI `gate-governance-tier` |
 
 ### APP-EVOL — evolution (architecture §49)
@@ -167,7 +167,7 @@ Recommended PR sequence — one APP ID per PR:
 4.  APP-PROD-7      budget gate on STRICT hosts
 5.  APP-CON-5       hook timeout / error handling
 6.  APP-CON-6       artifact bundle on ApplicationRunSummary
-7.  APP-CON-8       shadow/sandbox cleanup + APP-PROD-8
+7.  APP-CON-8       shadow/sandbox cleanup + APP-PROD-8 — **Done**
 8.  APP-EVOL-1      EnvironmentSnapshot on intake
 9.  APP-OPS-1       capability graph STRICT deploy gate
 10. APP-OPS-2       application ownership on manifest

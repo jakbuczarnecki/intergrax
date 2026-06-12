@@ -18,10 +18,10 @@ from intergrax.runtime.interactions.verification.factory import create_inbound_v
 from intergrax.runtime.long_running.wiring import wire_long_running_scheduler
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
-from intergrax.applications._shared.fastapi_mcp import (
-    apply_lifespans,
-    couple_fastapi_with_mcp,
-    make_scheduler_lifespan,
+from intergrax.applications._shared.fastapi_mcp import couple_fastapi_with_mcp
+from intergrax.applications._shared.workspace_cleanup_wiring import (
+    apply_factory_lifespans,
+    build_factory_lifespans,
 )
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.host.tool_wiring import wire_lab_tools
@@ -191,6 +191,8 @@ def create_lab_application(
             dependencies=[Depends(require_harness_auth)],
         )
     scheduler = scheduler_wiring.scheduler if scheduler_wiring is not None else None
+    scaling_wiring = wire_application_scaling(lab_env)
+    factory_schedulers = [s for s in (scheduler, scaling_wiring.scheduler) if s is not None]
     if settings.include_mcp:
         tool_wiring = wire_lab_tools(
             integration_profile=integrations.profile,
@@ -201,15 +203,15 @@ def create_lab_application(
             route_prefix=settings.route_prefix,
             tool_registry=tool_wiring.registry,
         )
-        extra_lifespans = [make_scheduler_lifespan(scheduler)] if scheduler else []
+        extra_lifespans = build_factory_lifespans(runtime, schedulers=factory_schedulers)
         app = couple_fastapi_with_mcp(
             app,
             mcp,
             mount_path=settings.mcp_mount_path,
             extra_lifespans=extra_lifespans,
         )
-    elif scheduler is not None:
-        apply_lifespans(app, make_scheduler_lifespan(scheduler))
+    else:
+        apply_factory_lifespans(app, runtime, schedulers=factory_schedulers)
     attach_plugin_shutdown(app, plugin_bootstrap.shutdown_callbacks)
     register_llm_metrics_routes(app)
     wire_application_identity(
@@ -228,7 +230,4 @@ def create_lab_application(
             prefix="/v1",
             dependencies=[Depends(require_harness_auth)],
         )
-    scaling_wiring = wire_application_scaling(lab_env)
-    if scaling_wiring.scheduler is not None:
-        apply_lifespans(app, make_scheduler_lifespan(scaling_wiring.scheduler))
     return app

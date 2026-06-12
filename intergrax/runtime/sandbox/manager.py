@@ -70,3 +70,22 @@ class SandboxSessionManager:
         self._active.pop(session.session_id, None)
         session.cleanup()
         return True
+
+    @property
+    def active_count(self) -> int:
+        """Number of distinct active sessions (dedupes tenant:task and id keys)."""
+        return len({id(session) for session in self._active.values()})
+
+    def dispose_all_active(self) -> int:
+        """Dispose every tracked session — host shutdown / lifespan teardown."""
+        seen: set[int] = set()
+        disposed = 0
+        for session in list(self._active.values()):
+            token = id(session)
+            if token in seen:
+                continue
+            seen.add(token)
+            session.cleanup()
+            disposed += 1
+        self._active.clear()
+        return disposed

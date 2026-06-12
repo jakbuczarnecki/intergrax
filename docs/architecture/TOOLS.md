@@ -784,8 +784,182 @@ Reuse Tier-0 RAG primitives (`embedding_manager`, dedicated collection e.g. `__h
 | Semantic tool vector index | **Planned** | TOOL-ENG-13 |
 | Hierarchical category traversal | **Planned** | TOOL-ENG-14 |
 | `retrieval_top_k` naming clarity (`keyword_top_k` alias) | **Planned** | TOOL-ENG-15 |
+| Selection strategy plugin registry | **Planned** | TOOL-ENG-26 |
+| Direct strategy instance on `RuntimeConfig` | **Planned** | TOOL-ENG-31 |
 | Risk-based routing (`ToolRiskLevel` → HITL) | **Planned** | TOOL-ENG-7 |
 | AHI dynamic mode / subset | **Planned** | TOOL-ENG-10 |
+
+---
+
+## Tool selection plugin model (L6 extensibility)
+
+**Audit basis:** Tool-selection plugin audit 2026-06-12.  
+**Plan register:** TOOL-ENG-13,14,15,26,31 · **ADR:** ADR-TOOL-004 *(required before TOOL-ENG-26 merge)*.
+
+Layer **L6** narrows which `tool_id` values reach the LLM planner **before** `ToolPlanningService` exports OpenAI function schemas. This is distinct from **L6b** (LLM picks `tool_calls`) and **2a** ([invocation patterns](#tool-invocation-patterns-production-orchestration)).
+
+### Design intent
+
+| Principle | Meaning |
+|-----------|---------|
+| **Protocol-first** | Every selection algorithm implements `ToolSelectionStrategy` — one method, typed context |
+| **Shipped defaults** | Standard, semantic, hierarchical ship as named strategy classes — not runtime branches in `ToolsStep` |
+| **Host override** | Tier-3 MAY inject a custom strategy instance or register via entry point |
+| **Compose with policy** | Strategy output is always intersected with L0–L5 allow-lists and plan `tool_ids` (TOOL-ENG-4) |
+| **Observable** | Trace `tool_selection_mode`, `strategy_id`, candidate ids, scores |
+
+### Integration point (runtime flow)
+
+```mermaid
+flowchart TD
+    subgraph L0_L5["L0–L5 allow-lists"]
+        REG[ToolRegistry subset]
+        PLAN[plan_allowed_tool_ids]
+    end
+
+    subgraph L6["L6 — ToolSelectionStrategy plugin"]
+        RESOLVE[resolve_selection_strategy]
+        STRAT[select_tool_ids ctx]
+    end
+
+    subgraph L6b["L6b — LLM planner"]
+        TPS[ToolPlanningService]
+        TC[tool_calls]
+    end
+
+    REG --> CTX[ToolSelectionContext]
+    PLAN --> CTX
+    CTX --> RESOLVE --> STRAT
+    STRAT --> IDS[planner allowed_tool_ids]
+    IDS --> TPS --> TC
+```
+
+**Call site today:** `ToolsStep.run` → `resolve_planner_allowed_tool_ids(mode, ctx)` → `strategy_for_mode(mode)` — **hardcoded factory** (gap TOOL-ENG-26).
+
+**Target call site:** `ToolsStep.run` → `resolve_selection_strategy(config)` → `strategy.select_tool_ids(ctx)` → intersect with plan ids.
+
+### Base contract
+
+```text
+ToolSelectionContext (dataclass):
+    registry: ToolRegistry          # L0 runtime catalog
+    query: str                      # user / planner input text for retrieval modes
+    skill_profile: SkillProfile | None
+    plan_allowed_tool_ids: Sequence[str] | None   # EnginePlan / step constraint
+    top_k: int                      # semantic / keyword cap
+
+ToolSelectionStrategy (Protocol):
+    strategy_id: str                # trace + config (target TOOL-ENG-31)
+    def select_tool_ids(self, ctx: ToolSelectionContext) -> Sequence[str] | None:
+        # None → no L6 narrowing (full registry at planner)
+        # ()   → empty schema (planner sees zero tools)
+        # tuple → explicit allow-list for L6b
+```
+
+**Intersection rule** (`resolve_planner_allowed_tool_ids`): when both strategy and plan provide ids → **set intersection**; empty intersection → planner gets zero tools.
+
+### Shipped production strategies
+
+| Production mode | `ToolSelectionMode` | Strategy class | Status |
+|-----------------|---------------------|----------------|--------|
+| **Standard** | `full_catalog` | `FullCatalogSelectionStrategy` | **Done** |
+| **Standard** (+ plan) | `static` | `StaticAllowListSelectionStrategy` | **Done** |
+| **Semantic** | `semantic` *(planned enum)* | `SemanticToolIndexSelectionStrategy` | **Planned** TOOL-ENG-13 |
+| **Hierarchical** | `hierarchical` *(planned enum)* | `HierarchicalToolSelectionStrategy` | **Planned** TOOL-ENG-14 |
+| *Auxiliary* | `skill_pack` | `SkillPackSelectionStrategy` | **Done** |
+| *Keyword pre-filter* | `retrieval_top_k` | `RetrievalTopKSelectionStrategy` | **Done** (not semantic) |
+
+#### Standard — `FullCatalogSelectionStrategy` / `StaticAllowListSelectionStrategy`
+
+Export the L0–L5 allow-list (or plan subset) directly to LLM. Model performs final tool choice.
+
+```text
+select_tool_ids → None | plan_ids
+ToolPlanningService → generate_with_tools(allowed_tool_ids=…)
+```
+
+#### Semantic — `SemanticToolIndexSelectionStrategy` (target)
+
+Vector index of tool metadata — **not** document RAG.
+
+```text
+# Index lifecycle (TOOL-ENG-13)
+catalog bootstrap / ToolPlugin register / unregister
+    → ToolCatalogEmbedder.embed(contracts)
+    → vector collection __harness_tool_catalog__
+
+# Per request
+query text → embed → similarity_search(top_k) → tool_ids
+    → ToolPlanningService on subset only
+```
+
+| Component | Reuse from Tier-0 |
+|-----------|-------------------|
+| Embeddings | `embedding_manager` from `ToolWiringContext` |
+| Vector store | dedicated collection — **not** `rag.retrieve` index |
+| Reindex hook | `register_tool_plugin()` / profile rebuild |
+
+**Trace payload (target):** `strategy_id=semantic`, `candidates=[{tool_id, score}]`, `ops:tool_selection`.
+
+#### Hierarchical — `HierarchicalToolSelectionStrategy` (target)
+
+Multi-pass **LLM-assisted** traversal of a category tree — not the same as `skill_pack` (declarative, no LLM category pass).
+
+```text
+Pass 1: LLM picks category / bundle from taxonomy schema (no individual tools)
+Pass 2..N: narrowed sub-schema per branch (bounded by tool_selection_max_hierarchy_passes)
+Final pass: ToolPlanningService on leaf tool_ids only
+```
+
+| Input | Source |
+|-------|--------|
+| Tree nodes | `ToolContract.category`, bundle membership, optional host `ToolCategoryTaxonomy` |
+| Pass budget | `RuntimeConfig.tool_selection_max_hierarchy_passes` |
+
+### Custom strategy — three extension surfaces
+
+Authors MUST implement `ToolSelectionStrategy` and plug in via one of:
+
+| Surface | When | Status | Plan ID |
+|---------|------|--------|---------|
+| **A — Config instance** | Host/agent wires a Python class at bootstrap (tests, bespoke hosts) | **Planned** | TOOL-ENG-31 — `RuntimeConfig.tool_selection_strategy: ToolSelectionStrategy \| None` overrides mode enum |
+| **B — Entry point** | Distributable plugin package | **Planned** | TOOL-ENG-26 — `intergrax.tool_selection_strategies` group; profile references `strategy_id` |
+| **C — Custom planner** | Full control of selection + planning in one component | **Done** | inject `ToolPlannerProtocol` via `RuntimeConfig.tool_planner` — bypasses L6 narrow step |
+
+**Rule:** Surfaces A/B affect **only L6** — execution still flows through `ToolPlanningService` (or custom planner on C) and `RuntimeToolInvoker`. Custom selection MUST NOT call handlers or integrations directly.
+
+**Example custom strategy (sketch):**
+
+```python
+class DomainWeightedSelectionStrategy:
+    strategy_id = "acme.domain_weighted"
+
+    def select_tool_ids(self, ctx: ToolSelectionContext) -> Sequence[str] | None:
+        # custom ranking over ctx.registry + ctx.query
+        ...
+```
+
+### Plugin maturity (selection vs catalog vs invocation)
+
+| Surface | Protocol | Shipped modes | Entry points | Config inject | Custom without fork |
+|---------|----------|---------------|--------------|---------------|---------------------|
+| Catalog (`ToolPlugin`) | **Yes** | 190 tools | **Yes** | N/A | **Yes** |
+| **Selection (`ToolSelectionStrategy`)** | **Yes** | standard only | **No** | **No** | **Partial** — custom `ToolPlannerProtocol` only |
+| Invocation (`ToolInvocationPattern`) | Planned | interim loop | Planned | Planned | Planned |
+
+### Selection plugin gap register
+
+| ID | Gap | Priority |
+|----|-----|----------|
+| TOOL-ENG-13 | `SemanticToolIndexSelectionStrategy` + `ToolCatalogEmbedder` + reindex | P1 |
+| TOOL-ENG-14 | `HierarchicalToolSelectionStrategy` + taxonomy + multi-pass | P2 |
+| TOOL-ENG-15 | `semantic` / `hierarchical` enum values + `keyword_top_k` alias | P2 |
+| TOOL-ENG-26 | Entry-point registry `intergrax.tool_selection_strategies` | P2 |
+| TOOL-ENG-31 | `RuntimeConfig.tool_selection_strategy` instance override | P1 |
+| TOOL-ENG-DOC.7 | Selection plugin model canon (this section) | **Done** |
+| TOOL-ENG-32 | Selection trace: `strategy_id`, candidates, scores in `ToolsSummaryDiagV1` | P2 |
+
+**ADR:** ADR-TOOL-004 — selection plugin registry, semantic index boundary vs `rag.retrieve`, hierarchical pass semantics.
 
 ### Introspection tools (builder DX)
 
@@ -912,6 +1086,9 @@ Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary (upda
 | TOOL-ENG-14 | Hierarchical tool selection (category-tree multi-pass) | P2 |
 | TOOL-ENG-15 | Clarify `retrieval_top_k` as keyword overlap; optional `keyword_top_k` alias | P2 |
 | TOOL-ENG-26 | `ToolSelectionStrategy` entry-point plugin registry | P2 |
+| TOOL-ENG-31 | `RuntimeConfig.tool_selection_strategy` instance override | P1 |
+| TOOL-ENG-32 | Selection trace: `strategy_id`, candidates, scores | P2 |
+| TOOL-ENG-DOC.7 | Selection plugin model canon | **Done** |
 
 ### Dispatch & gateway (2b)
 

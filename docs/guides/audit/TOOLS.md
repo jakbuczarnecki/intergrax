@@ -42,19 +42,19 @@ Perform a **rigorous, evidence-backed audit** of the **Tool Library and ToolRunt
 
 ## Mission
 
-Audit the **Tool Library** (190+ catalog tools) and **ToolRuntime** execution engine: selection/planning strategies, policy enforcement, idempotency, MCP export, catalog dispatch, and TOOL-ENG hardening queue — vs production tool-governance systems.
+Audit the **Tool Library** (190+ catalog tools) and **ToolRuntime** execution engine: **selection plugin model** (standard / semantic / hierarchical), invocation patterns, policy enforcement, idempotency, MCP export, catalog dispatch, and TOOL-ENG hardening queue — vs production tool-governance systems.
 
 ## Key symbols and contracts
 
-ToolContract · ToolRegistry · ToolProfile · ToolWiringContext · ToolRequest/ToolResponse · ToolAccessPolicy · ToolSelectionStrategy · ToolPlanDecision · ToolRiskLevel · tools_mode · tools_context_scope
+ToolContract · ToolRegistry · ToolProfile · ToolWiringContext · ToolRequest/ToolResponse · ToolAccessPolicy · ToolSelectionStrategy · ToolSelectionContext · ToolPlannerProtocol · SemanticToolIndexSelectionStrategy *(planned)* · HierarchicalToolSelectionStrategy *(planned)* · ToolPlanDecision · ToolRiskLevel · tools_mode · tools_context_scope
 
 ## Active plan phases (verify status vs code reality)
 
-Phase O/T-EXPAND Done · **TOOL-ENG active** (0–5,11 Done; 6–10,12 open) · Phase V V-SEC/V-COST/V-EVAL
+Phase O/T-EXPAND Done · **TOOL-ENG active** (12/35 Done — 2026-06-12) · Phase V V-SEC/V-COST/V-EVAL
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-TOOL-ENG-6 ReAct loop missing · TOOL-ENG-7 post-tool verify HIGH risk · TOOL-ENG-8 tools_mode=required hard fail · TOOL-ENG-9 parallel read-only · TOOL-ENG-10 AHI subset selection · TOOL-ENG-12 tool_choice exposure · 172+ tools need ToolsStep/gateway path consistency
+TOOL-ENG-13 semantic tool vector index · TOOL-ENG-14 hierarchical multi-pass · TOOL-ENG-26/31 selection plugin registry + config inject · TOOL-ENG-16 invocation pattern protocol · TOOL-ENG-9 parallel batch · strategy_for_mode hardcoded factory · retrieval_top_k ≠ semantic
 
 ---
 
@@ -108,7 +108,12 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 15. Skills merge into tool allow-list correctly at resolution time.
 16. HIGH-risk tools: post-tool verification (ENG-7 gap status).
 17. ReAct / iterative tool loop bounded (ENG-6 gap status).
-18. EnvironmentProfile tool_selection fields wired (recent catalog_runtime_bridge work).
+18. EnvironmentProfile tool_selection fields wired (catalog_runtime_bridge).
+19. Selection plugin canon — standard / semantic / hierarchical + custom surfaces A/B/C (`architecture/TOOLS.md` §selection plugin).
+20. Semantic index uses dedicated tool catalog collection — not `rag.retrieve` document index (ENG-13).
+21. Hierarchical mode is LLM multi-pass — not same as `skill_pack` (ENG-14).
+22. `RuntimeConfig.tool_selection_strategy` instance override (ENG-31).
+23. Entry-point `intergrax.tool_selection_strategies` (ENG-26).
 
 ---
 

@@ -57,6 +57,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-TOOL-001](ADR-TOOL-001.md) | Catalog tool dispatch and full-gateway routing (TOOL-ENG-1/2) | Accepted |
 | [ADR-TOOL-002](ADR-TOOL-002.md) | Bounded multi-iteration tool loop; graph boundary (TOOL-ENG-6) | Accepted |
 | ADR-TOOL-003 | `ToolInvocationPattern` protocol and orchestration plugin model (TOOL-ENG-16) | **Proposed** — write before merge |
+| ADR-TOOL-004 | `ToolSelectionStrategy` plugin registry; semantic index vs RAG; hierarchical passes (TOOL-ENG-13/14/26) | **Proposed** — write before TOOL-ENG-26 merge |
 | [ADR-AGENT-001](ADR-AGENT-001.md) | Agent cognitive patterns as Tier-2 library — Nexus remains Agent OS | Accepted |
 | [ADR-AGENT-002](ADR-AGENT-002.md) | Author-facing `Agent.run()` facade over UAEP; per-agent environment merge | Accepted |
 | [ADR-AGENT-003](ADR-AGENT-003.md) | Agent step loop (`on_next_step`); dual observability planes | Accepted |
