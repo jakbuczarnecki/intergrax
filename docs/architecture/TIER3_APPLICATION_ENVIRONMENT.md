@@ -2233,7 +2233,7 @@ wire_environment_capability_graph(manifest, env, snapshot)
 
 **Gap vs package-only model:** `ApplicationPackage` knows **what** depends on **what**; `CapabilityGraph` knows **impact**, **lineage**, and **blast radius** — required for platform-scale change management.
 
-**Status:** harness graph + lineage/impact **Done** (V-CG.1–3); Tier-3 `EnvironmentCapabilityGraphView` **Partial**; APP-OPS-1 gate (graph validation on STRICT deploy) **Planned**.
+**Status:** harness graph + lineage/impact **Done** (V-CG.1–3); Tier-3 `EnvironmentCapabilityGraphView` **Done**; APP-OPS-1 STRICT deploy gate **Done** (`capability_graph_deploy_gate.py`).
 
 ---
 
@@ -2439,7 +2439,7 @@ EnvironmentDeployment:
 
 | ID | Deliverable | Status | Acceptance |
 |----|-------------|--------|------------|
-| APP-OPS-1 | STRICT deploy gate: `EnvironmentCapabilityGraphView` + blast radius check | Planned | CI fails on uncertified node in radius |
+| APP-OPS-1 | STRICT deploy gate: `EnvironmentCapabilityGraphView` + blast radius check | **Done** | `check_capability_graph_strict_deploy.py` |
 | APP-OPS-2 | `ApplicationOperationalOwnership` on manifest + APP-PROD gate | Planned | product hosts require owner/maintainer/escalation |
 | APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | Planned | score artifact on release tag |
 | APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | Planned | `apps list` / `envs list` |

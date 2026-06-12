@@ -49,7 +49,7 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 | §47 | Developer mental model | APP-CON-DX.1 | **Partial** | *doc-only* in arch |
 | §48 | Application artifacts | APP-CON-4 · APP-CON-6 | **Done** | `application_artifacts.py` · `run_artifact_bundle.v1` on summary |
 | §49 | Runtime evolution | APP-EVOL-1..7 · APP-EVOL-2b | **Partial** | APP-EVOL-1 **Done** · §49.8 register |
-| §50 | Platform operations | APP-OPS-1..4 | **Partial** | `capability_graph_wiring.py` partial |
+| §50 | Platform operations | APP-OPS-1..4 | **Partial** | APP-OPS-1 **Done** · `capability_graph_deploy_gate.py` |
 | §51 | Cross-doc consistency | H-APP-FREEZE-* | **Done** | `GOVERNANCE_CONSISTENCY_AUDIT.md` |
 
 ---
@@ -104,7 +104,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 
 | ID | Deliverable | Status | Acceptance |
 |----|-------------|--------|------------|
-| APP-OPS-1 | Env capability graph + blast radius STRICT gate | Planned | extends `capability_graph_wiring.py` · CI impact check |
+| APP-OPS-1 | Env capability graph + blast radius STRICT gate | **Done** | `check_capability_graph_strict_deploy.py` · `test_capability_graph_deploy_gate.py` |
 | APP-OPS-2 | `ApplicationOperationalOwnership` on manifest | Planned | APP-PROD gate · product hosts |
 | APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | Planned | release score artifact |
 | APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | Planned | `intergrax apps list` / `envs list` |
@@ -169,7 +169,7 @@ Recommended PR sequence — one APP ID per PR:
 6.  APP-CON-6       artifact bundle on ApplicationRunSummary
 7.  APP-CON-8       shadow/sandbox cleanup + APP-PROD-8 — **Done**
 8.  APP-EVOL-1      EnvironmentSnapshot on intake — **Done**
-9.  APP-OPS-1       capability graph STRICT deploy gate
+9.  APP-OPS-1       capability graph STRICT deploy gate — **Done**
 10. APP-OPS-2       application ownership on manifest
 11. APP-CON-7       scenario matrix tests
 12. APP-EVOL-2/2b   migrations
@@ -521,7 +521,7 @@ uv run pytest -m gate -q
 |----|-------------|--------|----------|------------|
 | H-APP-OPS-DOC.1 | Architecture §50 Platform Operations Canon | **Done** | **Critical** | `architecture/TIER3_APPLICATION_ENVIRONMENT.md` |
 | H-APP-OPS-DOC.2 | §49.2.4 typed migrations (Profile/Graph/Envelope) | **Done** | High | sub-migration schemas in §49 |
-| APP-OPS-1 | Env capability graph + blast radius STRICT gate | Planned | **Critical** | CI impact check on deploy |
+| APP-OPS-1 | Env capability graph + blast radius STRICT gate | **Done** | **Critical** | `check_capability_graph_strict_deploy.py` |
 | APP-OPS-2 | `ApplicationOperationalOwnership` + APP-PROD | Planned | High | manifest ownership required |
 | APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | Planned | High | release score artifact |
 | APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | Planned | Medium | `apps list` / `envs list` |
