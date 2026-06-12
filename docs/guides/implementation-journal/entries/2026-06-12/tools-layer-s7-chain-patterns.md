@@ -12,7 +12,7 @@ plan_ref:
   - TOOL-ENG-28
   - TOOL-ENG-30
 status: completed
-commit: pending
+commit: c7ef461e
 adr: none — extends ADR-TOOL-003 plugin model; no new Tier boundary
 ---
 
