@@ -42,6 +42,9 @@ class TaskMetadataKey(StrEnum):
 
     SHARED_TASK_CONTEXT = "shared_task_context"
 
+    APP_ENV_STATE = "app_env_state.v1"
+    ENVIRONMENT_SNAPSHOT = "environment_snapshot.v1"
+
 
 class TaskOrchestrationMetadataKey(StrEnum):
     """Classification and graph orchestration flat keys."""

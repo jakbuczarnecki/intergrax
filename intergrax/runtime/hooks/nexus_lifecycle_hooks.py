@@ -13,8 +13,10 @@ from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.security.task_security_context import resource_tenant_id_for_task
 from intergrax.runtime.task.task import Task
+from intergrax.runtime.task.task_metadata_keys import TaskMetadataKey
 
-APP_ENV_STATE_RUNTIME_KEY = "app_env_state.v1"
+APP_ENV_STATE_RUNTIME_KEY = TaskMetadataKey.APP_ENV_STATE
+ENV_SNAPSHOT_RUNTIME_KEY = TaskMetadataKey.ENVIRONMENT_SNAPSHOT
 
 
 class NexusLifecycleHookError(RuntimeError):
@@ -65,7 +67,9 @@ class NexusLifecycleHookCoordinator:
     ) -> None:
         ctx = nexus_lifecycle_hook_context(task, phase=phase, extra=extra)
         _merge_task_env_state(task, ctx)
+        _merge_task_snapshot(task, ctx)
         result = await self._pipeline.run_before(point, ctx)
+        _persist_task_snapshot(task, ctx)
         _persist_task_env_state(task, ctx)
         _guard(result, point)
 
@@ -79,7 +83,9 @@ class NexusLifecycleHookCoordinator:
     ) -> None:
         ctx = nexus_lifecycle_hook_context(task, phase=phase, extra=extra)
         _merge_task_env_state(task, ctx)
+        _merge_task_snapshot(task, ctx)
         result = await self._pipeline.run_after(point, ctx)
+        _persist_task_snapshot(task, ctx)
         _persist_task_env_state(task, ctx)
         _guard(result, point)
 
@@ -88,6 +94,22 @@ def _merge_task_env_state(task: Task, ctx: HookContext) -> None:
     persisted = task.metadata.get(APP_ENV_STATE_RUNTIME_KEY)
     if isinstance(persisted, dict):
         ctx.runtime_state[APP_ENV_STATE_RUNTIME_KEY] = persisted
+
+
+def _merge_task_snapshot(task: Task, ctx: HookContext) -> None:
+    persisted = task.metadata.get(ENV_SNAPSHOT_RUNTIME_KEY)
+    if isinstance(persisted, dict):
+        ctx.runtime_state[ENV_SNAPSHOT_RUNTIME_KEY] = persisted
+        profile_snapshot_id = persisted.get("profile_snapshot_id")
+        if isinstance(profile_snapshot_id, str) and profile_snapshot_id:
+            ctx.runtime_state["profile_snapshot_id"] = profile_snapshot_id
+
+
+def _persist_task_snapshot(task: Task, ctx: HookContext) -> None:
+    updated = ctx.runtime_state.get(ENV_SNAPSHOT_RUNTIME_KEY)
+    if isinstance(updated, dict):
+        task.metadata[ENV_SNAPSHOT_RUNTIME_KEY] = updated
+        task.sync_metadata()
 
 
 def _persist_task_env_state(task: Task, ctx: HookContext) -> None:

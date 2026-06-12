@@ -180,10 +180,13 @@ def seed_application_environment_state(
     profile_snapshot_id: str | None = None,
 ) -> dict[str, Any]:
     """Bootstrap ``HookContext.runtime_state`` for task intake hooks."""
+    resolved_snapshot_id = profile_snapshot_id
+    if resolved_snapshot_id is None and execution_mode != ExecutionMode.STRICT:
+        resolved_snapshot_id = profile_id
     state = ApplicationEnvironmentState(
         app_id=app_id,
         profile_id=profile_id,
-        profile_snapshot_id=profile_snapshot_id or profile_id,
+        profile_snapshot_id=resolved_snapshot_id,
         execution_mode=execution_mode,
         task_id=task_id,
         organization_id=organization_id,

@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from intergrax.applications._shared.workspace_cleanup_wiring import sync_isolation_refs_for_hook
+from intergrax.applications.contracts.environment_snapshot import ENV_SNAPSHOT_RUNTIME_KEY
 from intergrax.applications.contracts.environment_state import (
     ApplicationEnvironmentState,
     EnvironmentHealthStatus,
@@ -96,6 +97,8 @@ def sync_application_environment_state_for_hook(
 ) -> ApplicationEnvironmentState:
     """Load, seed, and update host-visible environment state for one lifecycle hook."""
     state = ApplicationEnvironmentState.from_runtime_state(ctx.runtime_state)
+    profile_snapshot_id = _profile_snapshot_id_from_context(ctx)
+
     if state is None:
         seeded = seed_application_environment_state(
             app_id=app_id,
@@ -103,7 +106,7 @@ def sync_application_environment_state_for_hook(
             execution_mode=execution_mode,
             task_id=ctx.task_id,
             organization_id=_organization_id(ctx),
-            profile_snapshot_id=profile_id,
+            profile_snapshot_id=profile_snapshot_id,
         )
         state = ApplicationEnvironmentState.from_runtime_state(seeded)
     assert state is not None
@@ -137,17 +140,18 @@ def sync_application_environment_state_for_hook(
             update={"environment_tokens_limit": run_budget.max_total_tokens}
         )
 
-    state = state.model_copy(
-        update={
-            "task_id": ctx.task_id,
-            "run_id": ctx.run_id,
-            "graph_id": graph_id,
-            "phase": phase,
-            "health": health,
-            "hitl": hitl,
-            "budget": budget,
-        }
-    )
+    update: dict[str, object] = {
+        "task_id": ctx.task_id,
+        "run_id": ctx.run_id,
+        "graph_id": graph_id,
+        "phase": phase,
+        "health": health,
+        "hitl": hitl,
+        "budget": budget,
+    }
+    if profile_snapshot_id is not None:
+        update["profile_snapshot_id"] = profile_snapshot_id
+    state = state.model_copy(update=update)
     state = sync_isolation_refs_for_hook(ctx, state)
     ctx.runtime_state.update(state.apply_to_runtime_state(dict(ctx.runtime_state)))
     return state
@@ -156,6 +160,18 @@ def sync_application_environment_state_for_hook(
 def _organization_id(ctx: HookContext) -> str | None:
     value = ctx.runtime_state.get("organization_id")
     return value if isinstance(value, str) else None
+
+
+def _profile_snapshot_id_from_context(ctx: HookContext) -> str | None:
+    value = ctx.runtime_state.get("profile_snapshot_id")
+    if isinstance(value, str) and value:
+        return value
+    raw_snapshot = ctx.runtime_state.get(ENV_SNAPSHOT_RUNTIME_KEY)
+    if isinstance(raw_snapshot, dict):
+        nested = raw_snapshot.get("profile_snapshot_id")
+        if isinstance(nested, str) and nested:
+            return nested
+    return None
 
 
 class ApplicationEnvironmentStateMiddleware(RuntimeMiddleware):

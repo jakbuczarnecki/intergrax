@@ -218,6 +218,16 @@ def build_harness_host_runtime(
     )
     assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)
     assert_guardrail_assembly_valid(guardrail_wiring, environment, nexus=nexus_loop)
+    from intergrax.applications._shared.environment_snapshot_wiring import (
+        apply_environment_snapshot_wiring,
+    )
+
+    apply_environment_snapshot_wiring(
+        nexus_loop,
+        manifest=resolved_manifest,
+        environment=environment,
+        registry_snapshot=env_wiring.registry_snapshot,
+    )
     apply_application_environment_state_wiring(
         nexus_loop,
         manifest=resolved_manifest,

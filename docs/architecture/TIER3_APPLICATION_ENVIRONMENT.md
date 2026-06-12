@@ -1813,7 +1813,7 @@ ApplicationVersion:
     compatible_runtime: str            # harness baseline, e.g. "1.0.0"
 ```
 
-**Status:** `ApplicationManifest.version` **Done**; `EnvironmentSnapshot` / `ApplicationVersion` registry **Planned** APP-EVOL-1.
+**Status:** `ApplicationManifest.version` **Done**; `EnvironmentSnapshot` **Done** (`APP-EVOL-1` · ADR-APP-002); `ApplicationVersion` registry **Planned** APP-EVOL-7.
 
 ---
 
@@ -2145,7 +2145,7 @@ graph_spec nodes            → roster capabilities satisfied
 
 | ID | Deliverable | Status | Acceptance |
 |----|-------------|--------|------------|
-| APP-EVOL-1 | `EnvironmentSnapshot` + snapshot capture on intake | Planned | `profile_snapshot_id` on every STRICT task |
+| APP-EVOL-1 | `EnvironmentSnapshot` + snapshot capture on intake | **Done** | `test_environment_snapshot_wiring.py` · ADR-APP-002 |
 | APP-EVOL-2 | `ApplicationMigration` schema + validator CLI | Planned | CI fails on breaking change without migration |
 | APP-EVOL-3 | `CapabilityAlias` registry + sunset routing | Planned | deprecated capability redirect test |
 | APP-EVOL-4 | `AgentCertification` + STRICT roster gate | Planned | non-PRODUCTION blocked in product hosts |

@@ -48,7 +48,7 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 | §46 | Production readiness criteria | APP-PROD-* · ACP-PROD-* | **Partial** | §46 + agent gates |
 | §47 | Developer mental model | APP-CON-DX.1 | **Partial** | *doc-only* in arch |
 | §48 | Application artifacts | APP-CON-4 · APP-CON-6 | **Done** | `application_artifacts.py` · `run_artifact_bundle.v1` on summary |
-| §49 | Runtime evolution | APP-EVOL-1..7 · APP-EVOL-2b | Planned | §49.8 register |
+| §49 | Runtime evolution | APP-EVOL-1..7 · APP-EVOL-2b | **Partial** | APP-EVOL-1 **Done** · §49.8 register |
 | §50 | Platform operations | APP-OPS-1..4 | **Partial** | `capability_graph_wiring.py` partial |
 | §51 | Cross-doc consistency | H-APP-FREEZE-* | **Done** | `GOVERNANCE_CONSISTENCY_AUDIT.md` |
 
@@ -91,7 +91,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 
 | ID | Deliverable | Status | Acceptance |
 |----|-------------|--------|------------|
-| APP-EVOL-1 | `EnvironmentSnapshot` + intake `profile_snapshot_id` | Planned | STRICT tasks carry snapshot id |
+| APP-EVOL-1 | `EnvironmentSnapshot` + intake `profile_snapshot_id` | **Done** | `test_environment_snapshot_wiring.py` · ADR-APP-002 |
 | APP-EVOL-2 | `ApplicationMigration` schema + CI validator | Planned | breaking bump requires migration ref |
 | APP-EVOL-2b | `ProfileMigration` / `GraphSpecMigration` / `OrgEnvelopeMigration` | Planned | typed validators per §49.2.4 |
 | APP-EVOL-3 | `CapabilityAlias` + deprecation routing | Planned | UAEP §42.27 + alias window test |
@@ -168,7 +168,7 @@ Recommended PR sequence — one APP ID per PR:
 5.  APP-CON-5       hook timeout / error handling
 6.  APP-CON-6       artifact bundle on ApplicationRunSummary
 7.  APP-CON-8       shadow/sandbox cleanup + APP-PROD-8 — **Done**
-8.  APP-EVOL-1      EnvironmentSnapshot on intake
+8.  APP-EVOL-1      EnvironmentSnapshot on intake — **Done**
 9.  APP-OPS-1       capability graph STRICT deploy gate
 10. APP-OPS-2       application ownership on manifest
 11. APP-CON-7       scenario matrix tests
@@ -499,7 +499,7 @@ uv run pytest -m gate -q
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
 | H-APP-EVOL-DOC.1 | Architecture §49 Runtime Evolution and Governance | **Done** | **Critical** | `architecture/TIER3_APPLICATION_ENVIRONMENT.md` |
-| APP-EVOL-1 | `EnvironmentSnapshot` + intake `profile_snapshot_id` | Planned | **Critical** | STRICT tasks carry snapshot id |
+| APP-EVOL-1 | `EnvironmentSnapshot` + intake `profile_snapshot_id` | **Done** | **Critical** | `test_environment_snapshot_wiring.py` |
 | APP-EVOL-2 | `ApplicationMigration` schema + CI validator | Planned | High | breaking bump requires migration ref |
 | APP-EVOL-3 | `CapabilityAlias` + deprecation routing | Planned | High | UAEP §42.27 + alias window test |
 | APP-EVOL-4 | `AgentCertification` + STRICT roster gate | Planned | High | non-PRODUCTION blocked |
