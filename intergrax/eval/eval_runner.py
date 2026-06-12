@@ -1,34 +1,38 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
-# Use, modification, or distribution without written permission is prohibited.
 
-from typing import List
+from __future__ import annotations
+
+from typing import List, Protocol, runtime_checkable
 
 from intergrax.eval.eval_case import EvalCase
 from intergrax.eval.eval_result import EvalResult
-
-from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
-from intergrax.runtime.replay.replay_engine import ReplayEngine
+from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.replay.metrics import ExecutionMetricsEngine
 from intergrax.runtime.replay.models import ReconstructedRun
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer
+from intergrax.runtime.replay.replay_engine import ReplayEngine
+
+
+@runtime_checkable
+class RuntimeRunnerProtocol(Protocol):
+    async def run(self, request: RuntimeRequest) -> RuntimeAnswer: ...
 
 
 class EvalRunner:
 
     def __init__(
         self,
-        runtime_engine: RuntimeEngine,
+        runtime_runner: RuntimeRunnerProtocol,
         replay_engine: ReplayEngine,
         metrics_engine: ExecutionMetricsEngine,
     ) -> None:
-        self._runtime_engine = runtime_engine
+        self._runtime_runner = runtime_runner
         self._replay_engine = replay_engine
         self._metrics_engine = metrics_engine
 
     async def run_case(self, case: EvalCase) -> EvalResult:
 
-        answer: RuntimeAnswer = await self._runtime_engine.run(
+        answer: RuntimeAnswer = await self._runtime_runner.run(
             case.runtime_request
         )
 

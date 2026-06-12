@@ -4,57 +4,23 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import Any
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.agents.authoring.uaep_pipeline_bridge import (
-    pipeline_agent_steps,
-    pipeline_step_complete,
-    run_pipeline_step,
-)
 from intergrax.contracts.agent_contract_meta import AgentContract
-from intergrax.contracts.agent_decision import AgentDecision
+from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
+from intergrax.contracts.agent_handoff import AgentHandoff
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest, RouteInfo
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
 
-def build_prefix_answer_pipeline(
-    prefix: str,
-    *,
-    separator: str = ": ",
-    route_extra: dict[str, object] | None = None,
-) -> RuntimePipeline:
-    """Return a one-shot pipeline that answers ``{prefix}{separator}{message}``."""
-
-    class _PrefixAnswerPipeline(RuntimePipeline):
-        async def _inner_run(self, state: RuntimeState) -> RuntimeAnswer:
-            answer = f"{prefix}{separator}{state.request.message}"
-            state.raw_answer = answer
-            route = RouteInfo(extra=dict(route_extra or {})) if route_extra else RouteInfo()
-            state.runtime_answer = RuntimeAnswer(
-                run_id=state.run_id,
-                answer=answer,
-                route=route,
-            )
-            return state.runtime_answer
-
-    return _PrefixAnswerPipeline()
-
-
 class UaepPipelineStubAgent(Agent):
-    """
-    UAEP gate stub backed by a single internal Nexus pipeline step.
-
-    Replaces legacy RuntimeEngine-only stubs removed by ACP-CLOSE-LEG-1.
-    """
+    """UAEP gate stub with deterministic prefix answers (no legacy pipeline)."""
 
     run_count: int = 0
     run_log: list[str] = []
@@ -70,7 +36,6 @@ class UaepPipelineStubAgent(Agent):
         extra_capabilities: tuple[str, ...] = (),
         always_match: bool = False,
         route_extra: dict[str, object] | None = None,
-        pipeline_factory: Callable[[RuntimeRequest], RuntimePipeline] | None = None,
         track_request_metadata: bool = False,
     ) -> None:
         self._agent_id = agent_id
@@ -80,8 +45,7 @@ class UaepPipelineStubAgent(Agent):
         self._answer_separator = answer_separator
         self._extra_capabilities = extra_capabilities
         self._always_match = always_match
-        self._route_extra = route_extra
-        self._pipeline_factory = pipeline_factory
+        self._route_extra = dict(route_extra or {})
         self._track_request_metadata = track_request_metadata
         self.last_metadata: dict[str, Any] = {}
 
@@ -118,21 +82,14 @@ class UaepPipelineStubAgent(Agent):
         UaepPipelineStubAgent.run_log.append(self._agent_id)
         if self._track_request_metadata:
             self.last_metadata = dict(request.metadata)
-        if self._pipeline_factory is not None:
-            pipeline = self._pipeline_factory(request)
-        else:
-            pipeline = build_prefix_answer_pipeline(
-                self._prefix,
-                separator=self._answer_separator,
-                route_extra=self._route_extra,
-            )
         config = RuntimeConfig(
-            llm_adapter=FakeLLMAdapter(fixed_text=f"{self._prefix}{self._answer_separator}{request.message}"),
+            llm_adapter=FakeLLMAdapter(
+                fixed_text=f"{self._prefix}{self._answer_separator}{request.message}"
+            ),
             enable_rag=False,
             production_mode=False,
             tenant_id=request.tenant_id,
         )
-        config.pipeline = pipeline
         return RuntimeContext.build(
             config=config,
             session_manager=build_in_memory_session_manager(),
@@ -140,14 +97,19 @@ class UaepPipelineStubAgent(Agent):
 
     def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
         _ = context
-        return pipeline_agent_steps(
-            step_id=f"{self._agent_id}_pipeline",
-            step_name=f"{self._agent_id}_pipeline",
-            trace_label=self._capability,
-        )
+        return [
+            AgentStep(
+                step_id=f"{self._agent_id}_step",
+                step_name=f"{self._agent_id}_step",
+                step_index=0,
+                trace_label=self._capability,
+            )
+        ]
 
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
-        return await run_pipeline_step(step, ctx)
+        message = (ctx.request.message or "") if ctx.request is not None else ""
+        answer = f"{self._prefix}{self._answer_separator}{message}"
+        return StepOutput(step_id=step.step_id, summary=answer, data={"answer": answer})
 
     def decide_after_step(
         self,
@@ -156,4 +118,16 @@ class UaepPipelineStubAgent(Agent):
         ctx: RuntimeExecutionContext,
     ) -> AgentDecision:
         _ = step, output, ctx
-        return pipeline_step_complete(reason=f"{self._agent_id} gate stub finished")
+        raw_handoff = self._route_extra.get("pending_handoff")
+        if raw_handoff is not None:
+            handoff = (
+                raw_handoff
+                if isinstance(raw_handoff, AgentHandoff)
+                else AgentHandoff.model_validate(raw_handoff)
+            )
+            return AgentDecision(
+                type=AgentDecisionType.MODIFY_PLAN,
+                reason="gate stub handoff",
+                handoff=handoff,
+            )
+        return AgentDecision(type=AgentDecisionType.COMPLETE, reason=f"{self._agent_id} gate stub finished")

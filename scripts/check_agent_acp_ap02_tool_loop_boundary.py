@@ -25,7 +25,7 @@ FORBIDDEN_TOOL_LOOP_TOKENS: tuple[str, ...] = (
 
 ALLOWED_RUN_BOUNDED_TOOL_LOOP_IMPORTERS: frozenset[str] = frozenset(
     {
-        "intergrax/runtime/nexus/runtime_steps/tools_step.py",
+        "intergrax/runtime/nexus/tools/plan_context_invocation.py",
     }
 )
 
@@ -65,7 +65,7 @@ def main() -> int:
     nexus_root = REPO_ROOT / "intergrax" / "runtime" / "nexus"
     for path in sorted(nexus_root.rglob("*.py")):
         rel = _rel(path)
-        if rel == "intergrax/runtime/nexus/runtime_steps/tool_loop_step.py":
+        if rel == "intergrax/runtime/nexus/tools/tool_loop.py":
             continue
         text = path.read_text(encoding="utf-8")
         if "run_bounded_tool_loop" not in text:

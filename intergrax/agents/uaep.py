@@ -41,7 +41,6 @@ from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddlewar
 from intergrax.runtime.nexus.tools.uaep_tool_gateway import BoundToolGateway
 from intergrax.runtime.policy.policy_engine import PolicyEngine, coerce_policy_engine
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
-from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RouteInfo, RuntimeRequest
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
@@ -96,8 +95,7 @@ class UAEPExecutor:
     """
     Executes agents through the Unified Agent Execution Protocol (§42.5).
 
-    Legacy pipeline agents (no ``get_steps`` / ``run_step``) continue via
-    :meth:`AgentEngine._execute_agent_impl` fallback.
+    Executes UAEP-capable agents via the harness kernel step bridge.
     """
 
     def __init__(

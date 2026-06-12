@@ -75,6 +75,11 @@ EVENT_PHASE_COVERAGE: dict[RuntimeEventType, ExecutionPhase] = {
     RuntimeEventType.AUTONOMY_LEVEL_CHANGED: ExecutionPhase.STEP_EXECUTION,
     RuntimeEventType.RECOVERY_REBOOT: ExecutionPhase.RETRY_HANDLING,
     RuntimeEventType.GUARDRAIL_BLOCKED: ExecutionPhase.CONTEXT_BUILDING,
+    RuntimeEventType.BUDGET_THRESHOLD: ExecutionPhase.STEP_EXECUTION,
+    RuntimeEventType.BUDGET_EXCEEDED: ExecutionPhase.STEP_EXECUTION,
+    RuntimeEventType.HOOK_BLOCKED: ExecutionPhase.STEP_EXECUTION,
+    RuntimeEventType.HOOK_ERROR: ExecutionPhase.STEP_EXECUTION,
+    RuntimeEventType.HOOK_TIMEOUT: ExecutionPhase.STEP_EXECUTION,
 }
 
 EVENT_OPS_FILTER_HINTS: dict[RuntimeEventType, OpsFilterHint] = {
@@ -141,6 +146,11 @@ EVENT_OPS_FILTER_HINTS: dict[RuntimeEventType, OpsFilterHint] = {
     RuntimeEventType.AUTONOMY_LEVEL_CHANGED: "ops:governance",
     RuntimeEventType.RECOVERY_REBOOT: "ops:retry",
     RuntimeEventType.GUARDRAIL_BLOCKED: "ops:alert",
+    RuntimeEventType.BUDGET_THRESHOLD: "ops:budget",
+    RuntimeEventType.BUDGET_EXCEEDED: "ops:alert",
+    RuntimeEventType.HOOK_BLOCKED: "ops:alert",
+    RuntimeEventType.HOOK_ERROR: "ops:alert",
+    RuntimeEventType.HOOK_TIMEOUT: "ops:alert",
 }
 
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from problem_radar.capabilities import CAPABILITIES
 from problem_radar.contract import build_agent_contract
 from problem_radar.steps.domain import build_stub_problem_radar_output
-from problem_radar.steps.pipeline import build_pipeline
+from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
 from intergrax.agents.authoring.acp_stub_reflex import (
     evaluate_complete,
     perceive_run_input,
@@ -53,12 +53,10 @@ class ProblemRadarAgent(ReflexAgent):
         return CapabilityMatchResult(matched=False, rationale="not a problem radar capability")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        built = build_pipeline()
         return build_lab_agent_runtime_context(
             request=request,
-            llm_adapter=built.llm_adapter,
+            llm_adapter=PrefixStubLLMAdapter(prefix="problem_radar"),
             harness=self._harness,
-            pipeline=built.pipeline,
             enable_websearch=True,
         )
 

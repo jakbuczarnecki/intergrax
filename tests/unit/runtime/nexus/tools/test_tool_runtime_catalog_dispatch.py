@@ -115,15 +115,15 @@ async def test_tool_runtime_invoke_dispatches_catalog_ids_without_use_tools() ->
 
     with (
         patch(
-            "intergrax.runtime.nexus.runtime_steps.rag_step.RagStep.run",
+            "intergrax.runtime.nexus.tools.plan_context_invocation.run_rag_context",
             new_callable=AsyncMock,
         ),
         patch(
-            "intergrax.runtime.nexus.runtime_steps.websearch_step.WebsearchStep.run",
+            "intergrax.runtime.nexus.tools.plan_context_invocation.run_websearch_context",
             new_callable=AsyncMock,
         ),
         patch(
-            "intergrax.runtime.nexus.runtime_steps.tools_step.ToolsStep.run",
+            "intergrax.runtime.nexus.tools.plan_context_invocation.run_tools_context",
             new_callable=AsyncMock,
         ) as tools_step_mock,
     ):

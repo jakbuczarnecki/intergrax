@@ -17,12 +17,6 @@ from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrie
 from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
-from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
-from intergrax.runtime.nexus.planning.engine_plan_models import PlannerPromptConfig
-from intergrax.runtime.nexus.planning.plan_loop_models import PlanLoopPolicy
-from intergrax.runtime.nexus.planning.plan_sources import PlanSource
-from intergrax.runtime.nexus.planning.step_executor_models import StepExecutorConfig
-from intergrax.runtime.nexus.planning.step_planner import StepPlannerConfig
 from intergrax.runtime.nexus.policies.runtime_policies import RuntimePolicies
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.contracts.idempotency_store import IdempotencyStore
@@ -80,16 +74,6 @@ class ToolsRuntimeConfig:
     tool_wiring_context: Optional[ToolWiringContext] = None
     tool_scope_policy: Optional[ToolScopePolicy] = None
     modality_profile: ModalityProfile | None = None
-
-
-@dataclass
-class PlanningRuntimeConfig:
-    pipeline: Optional[RuntimePipeline] = None
-    step_planner_cfg: Optional[StepPlannerConfig] = None
-    step_executor_cfg: Optional[StepExecutorConfig] = None
-    planner_prompt_config: Optional[PlannerPromptConfig] = None
-    plan_loop_policy: Optional[PlanLoopPolicy] = None
-    plan_source: Optional[PlanSource] = None
 
 
 @dataclass

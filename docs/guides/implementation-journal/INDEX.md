@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-12-004 | 2026-06-12 | tier-1, tier-2, tier-3 AGENT_CONTRACTS_AND_ASSEMBLY | ACP-CLOSE-LEG-5 | [Retire Tier-1 RuntimeEngine pipeline stack](entries/2026-06-12/acp-close-leg-5-pipeline-retirement.md) | pending |
 | IJ-2026-06-12-003 | 2026-06-12 | tier-0 MEMORY | MEM-VEC-0.1 | [Memory vector recall — three-domain catalog and MEM-VEC plan](entries/2026-06-12/platform-memory-vector-recall-canon.md) | pending |
 | IJ-2026-06-11-036 | 2026-06-11 | tier-1, tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-1 | [Sprint 11 APP-EVOL-1 environment snapshot intake](entries/2026-06-11/tier3-sprint11-app-evol-1-environment-snapshot.md) | pending |
 | IJ-2026-06-11-035 | 2026-06-11 | tier-1, tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-CON-8 | [Sprint 10 APP-CON-8 workspace cleanup lifespan](entries/2026-06-11/tier3-sprint10-app-con-8-workspace-cleanup.md) | pending |

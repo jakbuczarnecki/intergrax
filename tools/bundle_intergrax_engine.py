@@ -107,7 +107,8 @@ EXTRA_BUNDLES: Dict[str, str] = {
     "RUNTIME_USER_PROFILE": r"intergrax\runtime\user_profile",
     "RUNTIME_NEXUS": r"intergrax\runtime\nexus",
     "RUNTIME_NEXUS_TRACING": r"intergrax\runtime\nexus\tracing",
-    "RUNTIME_NEXUS_NEXUS_RUNTIME_STEPS": r"intergrax\runtime\nexus\runtime_steps",
+    "RUNTIME_NEXUS_TOOLS": r"intergrax\runtime\nexus\tools",
+    "RUNTIME_NEXUS_CONTEXT": r"intergrax\runtime\nexus\context",
 
 
     "FASTAPI_CORE": r"intergrax\fastapi_core",

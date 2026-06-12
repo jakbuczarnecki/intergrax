@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.runtime_steps.tools import insert_context_before_last_user
+from intergrax.runtime.nexus.context.tool_context_helpers import insert_context_before_last_user
 from intergrax.runtime.nexus.tools.context_injection_output import ContextInjectionOutput
 from intergrax.runtime.nexus.tools.tool_invoker_protocol import ToolInvokerProtocol
 from intergrax.tools.execution_models import ToolExecutionRequest

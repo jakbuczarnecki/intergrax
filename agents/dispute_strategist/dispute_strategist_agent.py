@@ -5,15 +5,15 @@ from __future__ import annotations
 
 from dispute_strategist.capabilities import CAPABILITIES
 from dispute_strategist.contract import build_agent_contract
-from dispute_strategist.steps.pipeline import build_pipeline
 from intergrax.agents.authoring.acp_stub_reflex import (
-    build_pipeline_runtime_context,
+    build_agent_runtime_context,
     evaluate_complete,
     perceive_run_input,
     prefixed_act_output,
     reason_passthrough,
 )
 from intergrax.agents.authoring.patterns.reflex import ReflexAgent
+from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -47,7 +47,7 @@ class DisputeStrategistAgent(ReflexAgent):
         return CapabilityMatchResult(matched=False, rationale="capability not supported")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        return build_pipeline_runtime_context(request, build_pipeline)
+        return build_agent_runtime_context(request, PrefixStubLLMAdapter(prefix="dispute_strategist"))
 
     async def perceive(self, step_ctx: AgentStepContext):
         return perceive_run_input(step_ctx, self)

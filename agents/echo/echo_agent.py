@@ -28,7 +28,6 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.task.task import TaskContext
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.skills.providers.harness.manifests import HARNESS_TOOL_SMOKE
 
@@ -55,13 +54,6 @@ class _EchoLLMAdapter(LLMAdapter):
             if content:
                 return build_adapter_response(content=f"echo: {content}")
         return build_adapter_response(content="echo: (empty)")
-
-
-class _EchoHarnessPipeline(RuntimePipeline):
-    """Lab harness pipeline shell — domain logic lives in Reflex hooks."""
-
-    async def _inner_run(self, state):  # type: ignore[no-untyped-def]
-        raise RuntimeError("EchoAgent uses ACP Reflex hooks; pipeline is harness-only.")
 
 
 class EchoAgent(ReflexAgent):
@@ -121,7 +113,6 @@ class EchoAgent(ReflexAgent):
             request=request,
             llm_adapter=_EchoLLMAdapter(),
             harness=self._harness,
-            pipeline=_EchoHarnessPipeline(),
         )
 
     async def perceive(self, step_ctx: AgentStepContext) -> Observation:

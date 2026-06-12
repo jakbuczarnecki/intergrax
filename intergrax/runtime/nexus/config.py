@@ -26,7 +26,6 @@ if TYPE_CHECKING:
 from intergrax.rag.profiles.runtime_rag_sync import sync_rag_profile_from_runtime_config
 from intergrax.runtime.nexus.config_sections import (
     ModelRuntimeConfig,
-    PlanningRuntimeConfig,
     RetrievalRuntimeConfig,
     ToolsRuntimeConfig,
     TraceRuntimeConfig,
@@ -41,12 +40,6 @@ from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseReranker
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.runtime.nexus.budget.budget_models import BudgetPolicy, RunBudget
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
-from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
-from intergrax.runtime.nexus.planning.engine_plan_models import PlannerPromptConfig
-from intergrax.runtime.nexus.planning.plan_loop_models import PlanLoopPolicy
-from intergrax.runtime.nexus.planning.plan_sources import PlanSource
-from intergrax.runtime.nexus.planning.step_executor_models import StepExecutorConfig
-from intergrax.runtime.nexus.planning.step_planner import StepPlannerConfig
 from intergrax.runtime.nexus.policies.runtime_policies import RuntimePolicies
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.contracts.idempotency_store import IdempotencyStore
@@ -242,30 +235,9 @@ class RuntimeConfig:
 
 
     # ------------------------------------------------------------------
-    # PLANNING
-    # ------------------------------------------------------------------
-
-    # Optional explicit pipeline instance.
-    # If provided, Runtime will run it.
-    pipeline: Optional[RuntimePipeline] = None
-
-    step_planner_cfg: Optional[StepPlannerConfig] = None
-
-    step_executor_cfg: Optional[StepExecutorConfig] = None
-    
-    planner_prompt_config: Optional[PlannerPromptConfig] = None
-
-    plan_loop_policy: Optional[PlanLoopPolicy] = None
-
-    plan_source: Optional[PlanSource] = None
-
-
-    # ------------------------------------------------------------------
     # RUNTIME POLICIES
     # ------------------------------------------------------------------
 
-    # Hard timeout for a single runtime.run() execution.
-    # If set, the entire pipeline execution is cancelled after this duration.
     runtime_timeout_ms: Optional[int] = None
 
     # Run-level retry (safety net). Defaults to OFF.
@@ -373,17 +345,6 @@ class RuntimeConfig:
         )
 
     @property
-    def planning_section(self) -> PlanningRuntimeConfig:
-        return PlanningRuntimeConfig(
-            pipeline=self.pipeline,
-            step_planner_cfg=self.step_planner_cfg,
-            step_executor_cfg=self.step_executor_cfg,
-            planner_prompt_config=self.planner_prompt_config,
-            plan_loop_policy=self.plan_loop_policy,
-            plan_source=self.plan_source,
-        )
-
-    @property
     def trace_section(self) -> TraceRuntimeConfig:
         return TraceRuntimeConfig(
             trace_db_path=self.trace_db_path,
@@ -433,9 +394,6 @@ class RuntimeConfig:
                 raise TypeError("retry_run_on must contain RuntimeErrorCode items only.")
 
 
-        if self.pipeline is not None and not isinstance(self.pipeline, RuntimePipeline):
-            raise TypeError("pipeline must be an instance of RuntimePipeline.")
-        
         if self.enable_rag:
             if self.embedding_manager is None or self.vectorstore_manager is None:
                 raise ValueError(

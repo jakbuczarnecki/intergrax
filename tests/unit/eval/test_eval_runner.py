@@ -83,7 +83,7 @@ async def test_run_case_success_exact_match():
     metrics = StubMetricsEngine()
 
     runner = EvalRunner(
-        runtime_engine=runtime,
+        runtime_runner=runtime,
         replay_engine=replay,
         metrics_engine=metrics,
     )
@@ -133,7 +133,7 @@ async def test_run_case_failure_exact_mismatch():
     metrics = StubMetricsEngine()
 
     runner = EvalRunner(
-        runtime_engine=runtime,
+        runtime_runner=runtime,
         replay_engine=replay,
         metrics_engine=metrics,
     )
@@ -186,7 +186,7 @@ async def test_run_case_missing_run_id():
     metrics = StubMetricsEngine()
 
     runner = EvalRunner(
-        runtime_engine=runtime,
+        runtime_runner=runtime,
         replay_engine=replay,
         metrics_engine=metrics,
     )

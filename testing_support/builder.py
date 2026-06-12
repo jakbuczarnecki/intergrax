@@ -33,16 +33,8 @@ from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 from intergrax.runtime.governance.execution_guard import ExecutionGuard, GovernanceEvaluation
 from intergrax.runtime.governance.service import GovernanceService
 from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.nexus.engine.runtime import RuntimeEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.pipelines.contract import RuntimePipeline
-from intergrax.runtime.nexus.pipelines.no_planner_pipeline import NoPlannerPipeline
-from intergrax.runtime.nexus.planning.engine_plan_models import EngineNextStep, PlanIntent, PlannerPromptConfig
-from intergrax.runtime.nexus.planning.plan_loop_models import PlanLoopPolicy
-from intergrax.runtime.nexus.planning.plan_sources import PlanSpec, ScriptedPlanSource
-from intergrax.runtime.nexus.planning.step_executor_models import StepExecutorConfig
-from intergrax.runtime.nexus.planning.step_planner import StepPlannerConfig
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
@@ -179,19 +171,6 @@ class DummyExecutionGuard(ExecutionGuard):
             regression=regression,
         )
 
-@dataclass(frozen=True)
-class DeterministicRuntimeHarness:
-    """
-    What integration tests need:
-    - engine
-    - config (to inspect/adjust in tests)
-    - session manager (optional, for direct history assertions later)
-    """
-    engine: RuntimeEngine
-    config: RuntimeConfig
-    session_manager: SessionManager
-
-
 class FakeEmbeddingProvider(EmbeddingProvider):
     
     def __init__(
@@ -281,171 +260,28 @@ def build_fake_embedding_manager() -> EmbeddingManager:
     return manager
 
 
-def build_runtime_config_deterministic(
+def build_runtime_config_for_tests(
     *,
-    pipeline: RuntimePipeline | None = None,
-    plan_specs: Optional[Sequence[PlanSpec]] = None,
     llm_text: str = "OK",
-    plan_loop_policy: Optional[PlanLoopPolicy] = None,
     idempotency_store: Optional[IdempotencyStore] = None,
+    production_mode: bool = False,
+    trace_db_path: str | None = None,
 ) -> RuntimeConfig:
-    """
-    Deterministic RuntimeConfig for CI:
-    - no RAG/vectorstore/web/tools unless explicitly enabled later
-    - scripted plan source
-    - required planner/step configs present (fail-fast validations pass)
-    """
-    llm = FakeLLMAdapter(fixed_text=llm_text)
-
-    if plan_specs is None:
-        plan_specs = [
-            PlanSpec(
-                version="1",
-                intent=PlanIntent.GENERIC,
-                next_step=EngineNextStep.FINALIZE,
-                reasoning_summary="test: minimal plan spec for deterministic harness",
-                ask_clarifying_question=False,
-                clarifying_question=None,
-                use_websearch=False,
-                use_user_longterm_memory=False,
-                use_rag=False,
-                use_tools=False,
-                debug=None,
-            )
-        ]
-    
-
+    """Minimal deterministic RuntimeConfig for unit tests."""
     cfg = RuntimeConfig(
-        llm_adapter=llm,
-        embedding_manager=None,
-        vectorstore_manager=None,
+        llm_adapter=FakeLLMAdapter(fixed_text=llm_text),
         tenant_id="test-tenant",
         workspace_id="test-workspace",
-        websearch_executor=None,
-        websearch_config=None,
-        tool_planner=None,
-        pipeline=pipeline if pipeline is not None else NoPlannerPipeline(),
-        step_planner_cfg=StepPlannerConfig(),
-        step_executor_cfg=StepExecutorConfig(),
-        planner_prompt_config=PlannerPromptConfig(),
-        plan_loop_policy=plan_loop_policy or PlanLoopPolicy(),
-        plan_source=ScriptedPlanSource(plans=plan_specs),
         enable_rag=False,
         enable_websearch=False,
         enable_org_profile_memory=False,
         tools_mode="off",
         idempotency_store=idempotency_store,
-        production_mode=False,
+        production_mode=production_mode,
+        trace_db_path=trace_db_path,
     )
-
-    # If RuntimeConfig exposes validate(), keep it enabled (enterprise style).
-    # This makes test failures immediate and readable.
     cfg.validate()
-
     return cfg
-
-
-def build_engine_harness_production_trace(
-    *,
-    trace_db_path: Path,
-    llm_text: str = "OK",
-) -> DeterministicRuntimeHarness:
-
-    if trace_db_path is None:
-        raise ValueError("trace_db_path must be provided.")
-
-    llm = FakeLLMAdapter(fixed_text=llm_text)
-
-    cfg = RuntimeConfig(
-        llm_adapter=llm,
-        embedding_manager=None,
-        vectorstore_manager=None,
-        tenant_id="test-tenant",
-        workspace_id="test-workspace",
-        websearch_executor=None,
-        websearch_config=None,
-        tool_planner=None,
-        pipeline=NoPlannerPipeline(),
-        step_planner_cfg=StepPlannerConfig(),
-        step_executor_cfg=StepExecutorConfig(),
-        planner_prompt_config=PlannerPromptConfig(),
-        plan_loop_policy=PlanLoopPolicy(),
-        plan_source=ScriptedPlanSource(
-            plans=[
-                PlanSpec(
-                    version="1",
-                    intent=PlanIntent.GENERIC,
-                    next_step=EngineNextStep.FINALIZE,
-                    reasoning_summary="test: production trace harness",
-                    ask_clarifying_question=False,
-                    clarifying_question=None,
-                    use_websearch=False,
-                    use_user_longterm_memory=False,
-                    use_rag=False,
-                    use_tools=False,
-                    debug=None,
-                )
-            ]
-        ),
-        enable_rag=False,
-        enable_websearch=False,
-        enable_org_profile_memory=False,
-        tools_mode="off",
-        production_mode=True,
-        trace_db_path=str(trace_db_path),
-    )
-
-    cfg.validate()
-
-    session_manager = build_in_memory_session_manager()
-
-    governance_service = GovernanceService(
-        guard=DummyExecutionGuard()
-    )
-
-    ctx = RuntimeContext.build(
-        config=cfg,
-        session_manager=session_manager,
-        ingestion_service=None,
-        context_builder=None,
-        rag_prompt_builder=None,
-        user_longterm_memory_prompt_builder=None,
-        websearch_prompt_builder=None,
-        history_prompt_builder=None,
-        prompt_registry=None,
-        governance_service=governance_service,
-    )
-
-    engine = RuntimeEngine(context=ctx)
-
-    return DeterministicRuntimeHarness(
-        engine=engine,
-        config=cfg,
-        session_manager=session_manager,
-    )
-
-
-
-def build_engine_harness(
-    *,
-    cfg: RuntimeConfig,
-    session_manager: Optional[SessionManager] = None,
-) -> DeterministicRuntimeHarness:
-    sm = session_manager or build_in_memory_session_manager()
-
-    ctx = RuntimeContext.build(
-        config=cfg,
-        session_manager=sm,
-        ingestion_service=None,
-        context_builder=None,
-        rag_prompt_builder=None,
-        user_longterm_memory_prompt_builder=None,
-        websearch_prompt_builder=None,
-        history_prompt_builder=None,
-    )
-
-    engine = RuntimeEngine(context=ctx)
-    return DeterministicRuntimeHarness(engine=engine, config=cfg, session_manager=sm)
 
 
 def build_runtime_state_for_tests(*, run_id: str) -> RuntimeState:
@@ -471,12 +307,6 @@ def build_runtime_state_for_tests(*, run_id: str) -> RuntimeState:
         websearch_executor=None,
         websearch_config=None,
         tool_planner=None,
-        pipeline=None,
-        step_planner_cfg=None,
-        step_executor_cfg=None,
-        planner_prompt_config=None,
-        plan_loop_policy=None,
-        plan_source=None,
         enable_rag=False,
         enable_websearch=False,
         enable_org_profile_memory=False,

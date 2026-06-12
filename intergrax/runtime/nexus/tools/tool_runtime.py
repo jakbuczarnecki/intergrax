@@ -8,8 +8,6 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Optional, Protocol, Sequence, runtime_checkable
 
-from intergrax.runtime.nexus.planning.engine_plan_models import EnginePlan
-
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID
 
 if TYPE_CHECKING:
@@ -173,19 +171,16 @@ class ToolRuntime:
     Tier-1 runtime primitive for invoking Nexus capability steps.
 
     Agents declare tool needs via contract; runtime executes catalog tools and
-    compatibility pipeline steps (RAG / websearch / tools planner).
+    context injection (RAG / websearch / tools planner).
     """
 
     @staticmethod
     def plan_from_like(source: ToolPlanLike) -> ToolInvocationPlan:
-        if isinstance(source, EnginePlan):
-            tool_ids = source.resolved_tool_ids()
-        else:
-            tool_ids = list(source.tool_ids)
-            if source.use_rag and RAG_RETRIEVE_TOOL_ID not in tool_ids:
-                tool_ids.append(RAG_RETRIEVE_TOOL_ID)
-            if source.use_websearch and WEBSEARCH_QUERY_TOOL_ID not in tool_ids:
-                tool_ids.append(WEBSEARCH_QUERY_TOOL_ID)
+        tool_ids = list(source.tool_ids)
+        if source.use_rag and RAG_RETRIEVE_TOOL_ID not in tool_ids:
+            tool_ids.append(RAG_RETRIEVE_TOOL_ID)
+        if source.use_websearch and WEBSEARCH_QUERY_TOOL_ID not in tool_ids:
+            tool_ids.append(WEBSEARCH_QUERY_TOOL_ID)
         return ToolInvocationPlan.from_tool_ids(
             tool_ids,
             use_tools=bool(source.use_tools),
@@ -199,11 +194,13 @@ class ToolRuntime:
         trace_step: str = "ToolRuntime",
         allowed_tools: Optional[Sequence[str]] = None,
     ) -> ToolRuntimeResult:
+        from intergrax.runtime.nexus.tools.plan_context_invocation import (
+            run_rag_context,
+            run_tools_context,
+            run_websearch_context,
+        )
         from intergrax.runtime.nexus.tools.tool_access_policy import ToolAccessPolicy
         from intergrax.runtime.policy.tool_policy_resolution import resolve_allowed_tools_from_config
-        from intergrax.runtime.nexus.runtime_steps.rag_step import RagStep
-        from intergrax.runtime.nexus.runtime_steps.tools_step import ToolsStep
-        from intergrax.runtime.nexus.runtime_steps.websearch_step import WebsearchStep
         from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
         cfg = state.context.config
@@ -231,7 +228,7 @@ class ToolRuntime:
 
         if plan.use_rag:
             if cfg.enable_rag:
-                await RagStep().run(state)
+                await run_rag_context(state)
             else:
                 state.trace_event(
                     component=TraceComponent.PIPELINE,
@@ -242,7 +239,7 @@ class ToolRuntime:
 
         if plan.use_websearch:
             if cfg.enable_websearch:
-                await WebsearchStep().run(state)
+                await run_websearch_context(state)
             else:
                 state.trace_event(
                     component=TraceComponent.PIPELINE,
@@ -260,7 +257,7 @@ class ToolRuntime:
                 if planner_constraints:
                     state.tool_planner_allowed_tool_ids = planner_constraints
                 try:
-                    await ToolsStep().run(state)
+                    await run_tools_context(state)
                 finally:
                     state.tool_planner_allowed_tool_ids = previous_constraints
             else:
