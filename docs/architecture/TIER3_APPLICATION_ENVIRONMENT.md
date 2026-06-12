@@ -2359,11 +2359,11 @@ ApplicationHealthScore:
 | `test_coverage` | §44 rows pass for posture | missing scenario test |
 | `capability_graph_valid` | no orphan nodes in env graph | unreachable agent node |
 
-**CLI target:** `intergrax doctor health-app <app_id>` · CI publishes score artifact on release.
+**CLI:** `intergrax doctor health-app --app legal` (`--json` · `--write` · `--fail-below`).
 
 **Relation to §42:** `EnvironmentHealthStatus` on `ApplicationEnvironmentState` is **runtime task-scoped**; `EnvironmentHealthScore` is **ops platform-scoped** — complementary, not duplicate.
 
-**Status:** **Planned** APP-OPS-3.
+**Status:** **Done** (`environment_health_score.py` · `health_score_wiring.py` · `check_application_health_score.py` · APP-OPS-3).
 
 ---
 
@@ -2444,7 +2444,7 @@ EnvironmentDeployment:
 |----|-------------|--------|------------|
 | APP-OPS-1 | STRICT deploy gate: `EnvironmentCapabilityGraphView` + blast radius check | **Done** | `check_capability_graph_strict_deploy.py` |
 | APP-OPS-2 | `ApplicationOperationalOwnership` on manifest + APP-PROD gate | **Done** | `check_application_ownership.py` |
-| APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | Planned | score artifact on release tag |
+| APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | **Done** | `check_application_health_score.py` |
 | APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | Planned | `apps list` / `envs list` |
 | APP-EVOL-2b | `ProfileMigration` / `GraphSpecMigration` / `OrgEnvelopeMigration` | **Done** | `migration_wiring.py` typed validators |
 

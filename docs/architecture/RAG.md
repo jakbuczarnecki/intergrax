@@ -8,7 +8,7 @@
 **Audit instruction:** [`guides/audit/RAG.md`](../guides/audit/RAG.md)  
 **Related:** [`architecture/INTEGRATIONS.md`](INTEGRATIONS.md) (vector_store, document_parser, rerank_provider slugs) · [`architecture/MEMORY.md`](MEMORY.md) (Knowledge store vs LTM) · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix K §K.5  
 **Implementation:** `intergrax/rag/`  
-**Last architecture audit:** 2026-06-10 (full engine depth vs production RAG systems; code-verified — see §Audit verification evidence)
+**Last architecture audit:** 2026-06-12 (GraphRAG platform audit — plugin contracts, backend matrix, lifecycle gaps; see §GraphRAG architecture · §Engine depth audit register) · 2026-06-10 (full engine depth — §Audit verification evidence)
 
 ---
 
@@ -42,7 +42,7 @@ Tier-3 IntegrationProfile + RagProfile
 | Multi-GB corpora / book-scale without Tier-3 jobs? | **Partial** — sync ingest rejected above `sync_ingest_max_bytes`; use `rag.schedule_ingest_job` + orchestrator worker (M-RAG.26). Streaming shard ingest remains Tier-3 workflow responsibility. |
 | Untrusted surfaces via raw `rag.retrieve`? | **Ready** when `security_profile.retrieval_poisoning_defense_enabled` on `ToolWiringContext` (M-RAG.25). |
 
-**Remediation:** every audit finding maps 1:1 to [`plan/RAG.md`](../plan/RAG.md) Phase M-RAG-DEPTH (GAP-RAG-01 … GAP-RAG-21 → M-RAG.23 … M-RAG.37).
+**Remediation:** core retrieval gaps — Phase M-RAG-DEPTH **complete** (GAP-RAG-01 … GAP-RAG-23). GraphRAG platform gaps — Phase **M-RAG-GRAPH** (GAP-RAG-24 … GAP-RAG-36 → M-RAG.38 … M-RAG.52) in [`plan/RAG.md`](../plan/RAG.md).
 
 ---
 
@@ -51,12 +51,13 @@ Tier-3 IntegrationProfile + RagProfile
 | Dimension | Score | Notes |
 |-----------|-------|-------|
 | Control-plane architecture (single path, typed contracts) | **L3** | `RetrievalService`, `RagProfile`, runtime bridges, 12 `rag.*` catalog tools |
-| Retrieval mode breadth | **L2.5–L3** | hybrid, fusion, graph, agentic — graph **beta**; hierarchical + dual-index wired via profile (M-RAG.24) |
+| Retrieval mode breadth | **L2.5–L3** | hybrid, fusion, agentic — **L3**; graph_rag **L2 beta** (M-RAG-GRAPH target: M-RAG.42); hierarchical + dual-index wired via profile (M-RAG.24) |
+| GraphRAG platform (build / maintain / retrieve) | **L2** | Contracts + neo4j prod path (M-RAG.33); no backend registry, lifecycle sync, or graph tenant isolation — Phase M-RAG-GRAPH |
 | Strategy selection (autonomous) | **L1.5** | Tier/cost routing only; MIME/size/retriever auto-pick deferred to Tier-3 + AHI |
 | Ingest — short / medium documents | **L3** | Parser catalog, 5 chunking strategies, optional contextual enrich |
 | Ingest — very large corpora | **L2–L2.5** | Sync path size-guarded; `rag.schedule_ingest_job` triggers orchestrator with idempotent contract (M-RAG.26); shard/stream execution in workflow worker |
 | Resilience (retry, fallback, circuit breaker) | **L2.5** | Retriever retry=2 aligned with embedding; fallback `fusion`→`hybrid`→`vector_similarity`; optional vector circuit breaker |
-| Observability | **L2** | `RetrievalTrace`, parser trace, opt-in metrics; no OTel spans on retrieve/ingest hot path |
+| Observability | **L2.5** | `RetrievalTrace`, parser trace, opt-in metrics; OTel spans on retrieve/ingest (M-RAG.27) |
 | Security (poisoning) | **L3** | Nexus `rag.retrieve` (catalog) + catalog `rag.retrieve` when `security_profile` wired (M-RAG.25) |
 | Citations | **L3** | Formal `Citation` on `RetrievalResult` + `RagRetrieveOutput.citations` (M-RAG.29) |
 | Vector backends (prod SLO) | **L2.5–L3** | Catalog **stable:** `qdrant`, `pgvector`, `chroma`, `weaviate`, `lancedb`, `typesense`; **beta:** `pinecone`, `milvus`, `vespa`, `inmemory`; soak gate `prod_slo.py` + gate tests (M-RAG.30) |
@@ -98,8 +99,21 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-21 | niegotowość | ~~No RAG load/soak gate~~ — **closed M-RAG.36**: `evaluation/load_soak.py` concurrent retrieve SLO + CI `rag-guard.yml` | **P2** | M-RAG.36 **Done** | — |
 | GAP-RAG-22 | niska jakość | ~~No semantic chunking ingest size guard~~ — **closed M-RAG.37**: `semantic_chunking_max_chars` + `semantic_chunking_size_exceeded` before chunk | **P2** | M-RAG.37 **Done** | — |
 | GAP-RAG-23 | niska jakość | ~~M-RAG.6 query expansion **Partial**~~ — **closed M-RAG.23**: M-RAG.6 **Done** | **P0** | M-RAG.23 **Done** | 14.3 |
+| GAP-RAG-24 | niedoróbka | `create_rag_graph_store` hardcodes `inmemory` / `neo4j` — no `RagGraphStoreBackend` registry (unlike vectorstore bridges) | **P0** | M-RAG.38 **Planned** | — |
+| GAP-RAG-25 | niedoróbka | Integration slugs `memgraph` / `falkordb` exist but are not selectable RAG graph backends; INTEGRATIONS plan drift on `INTERGRAX_RAG_GRAPH_STORE` | **P1** | M-RAG.39 **Planned** | — |
+| GAP-RAG-26 | niegotowość | No graph lifecycle sync — `rag.delete_documents` / `purge_collection` do not unlink graph nodes or `HAS_CHUNK` edges | **P1** | M-RAG.40 **Planned** | — |
+| GAP-RAG-27 | niegotowość | No cross-backend tenant isolation contract for document knowledge graph (vector isolation: M-RAG.35 only) | **P1** | M-RAG.41 **Planned** | — |
+| GAP-RAG-28 | niska jakość | `graph_rag` retriever **beta** — substring label match, fixed seed heuristics, no structured entity seed from chunk metadata | **P1** | M-RAG.42 **Planned** | — |
+| GAP-RAG-29 | niedoróbka | `runtime/architecture/hybrid_retrieval.py` reference path not fused into `GraphRagRetriever` / `fusion` retrieval | **P2** | M-RAG.43 **Planned** | — |
+| GAP-RAG-30 | niedoróbka | `graph_provenance` contracts exist but are not surfaced on `RetrievalTrace` in the graph retrieval hot path | **P2** | M-RAG.44 **Planned** | — |
+| GAP-RAG-31 | niegotowość | No graph maintenance job contract (orphan cleanup, stale-edge prune, incremental reindex) | **P2** | M-RAG.45 **Planned** | — |
+| GAP-RAG-32 | niedoróbka | No `GraphIndexer` plugin registry — custom indexers require manual `resolve_graph_indexer` wiring | **P2** | M-RAG.46 **Planned** | — |
+| GAP-RAG-33 | gap | `graph_store` catalog lacks Neptune, OrientDB, ArangoDB, TigerGraph, JanusGraph | **P3** | M-RAG.49–M-RAG.51 **Planned** | — |
+| GAP-RAG-34 | ograniczenie | No coupling to Microsoft GraphRAG library — harness ships a native indexer/retriever pipeline; optional community-report mode is harness-owned (M-RAG.47) | — | M-RAG.47 **Planned** | — |
+| GAP-RAG-35 | niedoróbka | `production_graph_rag_profile()` / `validate_graph_rag_production_wiring` accept only `neo4j` slug — blocks lab-soaked Bolt backends (`memgraph`) | **P2** | M-RAG.48 **Planned** | — |
+| GAP-RAG-36 | niska jakość | Golden harness `graph_rag` scenario covers happy-path only — no multi-hop, delete-sync, or tenant-leak regression cases | **P2** | M-RAG.52 **Planned** | — |
 
-**Traceability rule:** no open GAP-RAG row without a **Planned** M-RAG.\* deliverable in [`plan/RAG.md`](../plan/RAG.md). GAP-RAG-15 is an explicit architectural boundary, not a harness defect.
+**Traceability rule:** no open GAP-RAG row without a **Planned** M-RAG.\* deliverable in [`plan/RAG.md`](../plan/RAG.md). **GAP-RAG-15** and **GAP-RAG-34** are explicit architectural boundaries, not harness defects.
 
 ---
 
@@ -144,7 +158,7 @@ RETRIEVE (rag.retrieve / RetrievalService)
 | Loaders | `document_loaders/` | Handler registry + `ParserPipeline`; parsers via Integration catalog |
 | Embeddings | `embedding/` | Provider registry, batched pipeline, retry |
 | Vector store | `vectorstore/` | Manager + hybrid/sparse; backends via Integration bridges |
-| GraphRAG | `graph/` | `GraphStore` contract; inmemory / neo4j; heuristic/LLM indexer |
+| GraphRAG | `graph/` | RAG `GraphStore` ABC; bootstrap backends; indexers; adapters to Integration `graph_store` |
 | Agentic | `retrieval/agentic_loop.py`, `query_refiner.py` | Budgeted deep-tier loop |
 | Evaluation | `evaluation/metrics.py`, `golden_harness.py` | `recall@k`, MRR; golden CI scenarios |
 | Observability | `tracking/metrics.py`, `observability_bridge.py` | Opt-in metrics + runtime plugin |
@@ -211,14 +225,108 @@ Vector-store catalog slugs and env prefixes: [`architecture/INTEGRATIONS.md`](IN
 
 ---
 
-## GraphRAG
+## GraphRAG architecture
 
-- Contract: `graph/contracts/graph_store.py`
-- Backends: `inmemory` (lab default), `neo4j` (`INTERGRAX_RAG_GRAPH_STORE=neo4j`)
-- Indexer modes: `heuristic`, `llm`, `heuristic_then_llm`
-- Retriever: `graph_rag` — **beta** retriever flag; Tier-3 prod uses `production_graph_rag_profile()` + `graph_store=neo4j` (M-RAG.33)
+GraphRAG indexes **document knowledge** (entity–relation graphs linked to retrieval chunks). It is **not** user episodic / entity memory — see [`architecture/MEMORY.md`](MEMORY.md) §Graph RAG ≠ agent memory and [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.7.1.
 
-**Boundary:** Document knowledge graphs are retrieval infrastructure — not user entity / episodic memory. See [`architecture/MEMORY.md`](MEMORY.md) §Graph RAG ≠ agent memory.
+**Posture (audit 2026-06-12):** **L2 platform** — typed contracts, ingest hook, neo4j prod preset (M-RAG.33), beta retriever. **Not** a drop-in Microsoft GraphRAG replacement. Target: **L3 universal GraphRAG component** via Phase **M-RAG-GRAPH** in [`plan/RAG.md`](../plan/RAG.md).
+
+### Three-layer contract model
+
+```text
+Integration Library (Tier-0 catalog)
+  integrations/contracts/graph_store.py — GraphStore Protocol
+    run_query(statement, parameters) · get_node(node_id)
+  Slugs: neo4j · memgraph · falkordb (see INTEGRATIONS §graph_store)
+        ↓ adapter (e.g. Neo4jRagGraphStore)
+RAG engine (Tier-0 intergrax/rag/graph/)
+  graph/contracts/graph_store.py — GraphStore ABC
+    upsert_node · upsert_edge · neighbors · find_nodes · link_chunk · chunk_ids_for_nodes
+  graph/indexer/ — HeuristicGraphIndexer · LlmGraphIndexer · GraphIndexer Protocol
+  retrievers/providers/graph_rag_retriever.py — GraphRagRetriever
+        ↓ governance / explainability
+Runtime architecture (Tier-1 contracts)
+  runtime/architecture/graph_rag.py — GraphRagArchitectureContract · node/edge enums
+  runtime/architecture/graph_provenance.py — GraphTraceFieldBundle
+  runtime/architecture/hybrid_retrieval.py — vector + keyword + graph channel merge (reference)
+```
+
+| Layer | Contract | Extension point |
+|-------|----------|-----------------|
+| Integration | `integrations.contracts.graph_store.GraphStore` | `IntegrationManifest` + factory or `IntegrationPlugin` — [`EXTENSION_AUTHOR_GUIDE.md`](../guides/EXTENSION_AUTHOR_GUIDE.md) §2 |
+| RAG graph | `rag.graph.contracts.graph_store.GraphStore` | Implement ABC or wrap integration store; inject via `create_default_rag_stack(graph_store=...)` |
+| Indexer | `GraphIndexer` Protocol (`graph/indexer/graph_indexer_factory.py`) | Custom class + profile mode or **planned** plugin registry (M-RAG.46) |
+| Retriever | `BaseRetriever` | Register in retriever bootstrap; `retriever_id=graph_rag` |
+
+**Distinction:** Integration `GraphStore` is a **vendor query facade** (Cypher-oriented). RAG `GraphStore` is a **document-graph semantic contract** (chunk linkage, neighborhood traversal). Adapters translate between them — pattern: `Neo4jRagGraphStore`.
+
+### Plugin and backend matrix
+
+| Backend | Integration slug | RAG bootstrap today | Prod Tier-3 (M-RAG.33) | Plan |
+|---------|------------------|---------------------|------------------------|------|
+| In-memory | — | **Default** (`inmemory`) | Harness / lab only | — |
+| Neo4j | `neo4j` | **`neo4j`** via `Neo4jRagGraphStore` | **Required** today | Harden (M-RAG.38) |
+| Memgraph | `memgraph` | **Not wired** (Bolt-compatible) | Blocked by slug validation | M-RAG.39, M-RAG.48 |
+| FalkorDB | `falkordb` | **Not wired** | Blocked | M-RAG.39 |
+| Amazon Neptune | — | **Absent** | — | M-RAG.49 (+ H-INT) |
+| OrientDB | — | **Absent** | — | M-RAG.50 (+ H-INT) |
+| ArangoDB | — | **Absent** | — | M-RAG.51 (+ H-INT) |
+
+**Env / profile:**
+
+| Knob | Role |
+|------|------|
+| `INTERGRAX_RAG_GRAPH_ENABLED` | Register `graph_rag` retriever + ingest graph indexing |
+| `INTERGRAX_RAG_GRAPH_STORE` | Backend id — today: `inmemory` \| `neo4j` only (**GAP-RAG-24**) |
+| `INTERGRAX_RAG_GRAPH_INDEXER_MODE` | `heuristic` \| `llm` \| `heuristic_then_llm` |
+| `RagProfile.graph_rag_hops` | Max hops for `GraphRagRetriever` (default 1) |
+| `production_graph_rag_profile()` | Tier-3 prod preset — neo4j backend + validation (M-RAG.33) |
+| `IntegrationProfile.graph_store` | Integration slug resolved at bootstrap → passed to `create_rag_graph_store` |
+
+**Microsoft GraphRAG:** not integrated. `ms365_graph` is Microsoft **Graph API** (mail/calendar) — unrelated. Optional harness-native **community-report indexer** (M-RAG.47) may approximate global/local search patterns without vendoring MS GraphRAG.
+
+### Lifecycle — build · update · maintain · use
+
+| Phase | Current behaviour | Gap | Plan |
+|-------|-------------------|-----|------|
+| **Build** | `IngestPipeline` → optional `resolve_graph_indexer()` after vector index | Indexer quality heuristic/LLM only | M-RAG.46, M-RAG.47 |
+| **Update** | Upsert on re-ingest only | No delete/unlink when chunks removed | M-RAG.40 |
+| **Maintain** | None | Orphan nodes, stale edges, no scheduled jobs | M-RAG.45 |
+| **Use** | `GraphRagRetriever`: vector seed + label substring + 1-hop | Beta; no hybrid channel fusion; weak provenance trace | M-RAG.42–M-RAG.44 |
+| **Isolate** | Vector tenant contract (M-RAG.35) | Graph has no tenant namespace contract | M-RAG.41 |
+
+```text
+BUILD (ingest)
+  chunks indexed → GraphIndexer.index_documents(docs, chunk_ids)
+    → upsert_node/edge · link_chunk(chunk_id)
+
+USE (retrieve)
+  deep tier when graph_rag_enabled → GraphRagRetriever
+    → vector ANN seeds → graph neighbors → chunk_ids_for_nodes → merge candidates
+
+UPDATE / MAINTAIN (planned)
+  rag.delete_documents → unlink/remove graph artifacts (M-RAG.40)
+  rag.schedule_graph_maintenance_job → workflow worker prune/reindex (M-RAG.45)
+```
+
+### Consumption surfaces (beyond RAG engine)
+
+| Surface | Role |
+|---------|------|
+| `rag.retrieve` / `RetrievalService` | Canonical retrieval when `graph_rag_enabled` |
+| `graph.run_query` / `graph.get_node` tools | Direct integration `graph_store` access — [`architecture/TOOLS.md`](TOOLS.md) |
+| Skills `graph.entity_explorer`, `graph.path_finder`, `graph.knowledge_linker` | Agent packs combining graph tools + `rag.retrieve` |
+| Maturity gate | `runtime/architecture/graph_rag.py` contract validation in governance evidence |
+
+### GraphRAG production checklist (Tier-3)
+
+1. `RagProfile.graph_rag_enabled=true` + `production_graph_rag_profile()` on product hosts.
+2. `IntegrationProfile.graph_store=neo4j` (today); after M-RAG.48 — approved durable slug list.
+3. Neo4j ops ready (Bolt `:7687`, infra profile `rag`) — [`infra/PORTS.md`](../../infra/PORTS.md).
+4. Run graph tenant isolation gates when M-RAG.41 lands (alongside vector M-RAG.35).
+5. Enable `graph_indexer_mode=llm` only with injected `LLMAdapter` on ingest path.
+
+Remediation for all GraphRAG gaps: Phase **M-RAG-GRAPH** — [`plan/RAG.md`](../plan/RAG.md).
 
 ---
 
@@ -231,7 +339,7 @@ RAG **consumes** Integration Library categories; it does not duplicate vendor ad
 | `vector_store` | Embedding indexes — implementations in `rag/vectorstore/`, catalog bridges in `integrations/providers/vector_store/` |
 | `document_parser` | Ingest parsing — `CatalogDocumentParser` + `INTERGRAX_RAG_DOCUMENT_PARSER_SLUG` |
 | `rerank_provider` | Vendor rerank APIs — `rerankers/` resolves via profile |
-| `graph_store` | GraphRAG backends — optional `INTERGRAX_RAG_GRAPH_STORE` |
+| `graph_store` | Integration backends — adapted to RAG `GraphStore` via `create_rag_graph_store` (today: neo4j adapter only; registry: M-RAG.38) |
 | `workflow_orchestrator` | Large-corpus reindex / async ingest via `rag.schedule_ingest_job` (M-RAG.26) |
 
 Bootstrap: `create_vectorstore_manager()` in `vectorstore/bootstrap/` resolves via integration catalog when `vector_store` is configured on `IntegrationProfile`.
@@ -241,6 +349,8 @@ Bootstrap: `create_vectorstore_manager()` in `vectorstore/bootstrap/` resolves v
 ## Tenant scope and metadata
 
 Retrieve and ingest accept scope fields (`tenant_id`, `session_id`, `user_id`, `workspace_id`) → `MetadataFilter` on vector query. `InMemoryVectorStore` enforces `tenant_id` mismatch as `ValueError`. Cross-backend contract: `intergrax/rag/vectorstore/tenant/tenant_isolation_contract.py` — gate tests for `inmemory`, `pgvector`, `weaviate`, `qdrant` (M-RAG.35).
+
+**Graph store:** tenant namespace on document knowledge graphs is **not** enforced today — **GAP-RAG-27**; planned `graph/tenant/` contract (M-RAG.41).
 
 ---
 
@@ -301,6 +411,7 @@ Automatic tier routing (`QueryRouter`) covers **cost/latency tiers only**, not M
 4. **Security:** enable `retrieval_poisoning_defense_enabled` on `ApplicationSecurityProfile` so Nexus `rag.retrieve` (catalog) and catalog `rag.retrieve` share the same filter.
 5. **Observability:** enable RAG metrics (`INTERGRAX_RAG_METRICS_ENABLED`); OTel spans on by default — disable only when needed.
 6. **Isolation:** run gate `test_vectorstore_cross_tenant_isolation.py`; validate tenant namespace per chosen vector backend in ops (M-RAG.35).
+7. **GraphRAG (when enabled):** neo4j durable backend; after M-RAG-GRAPH — graph delete-sync, graph tenant gates, extended golden scenarios.
 
 ---
 
@@ -337,9 +448,10 @@ Code-backed audit (`guides/audit/RAG.md`, mode `audit-only`). Key confirmations:
 | Unit RAG suite | **114 passed**, 1 skipped (`fastembed` optional) | `uv run pytest tests/unit/rag/ -q` |
 | Golden + tools + bridge gate | **24 passed** | `test_golden_retrieval_gate.py`, `tests/unit/tools/providers/rag/`, `test_rag_runtime_bridge.py` |
 | `query_expansion` wired | **Closed M-RAG.23** | `effective_retriever(deep)` + `query_expander_from_profile()` in `retriever_bootstrap.py` |
-| DualIndex not on default ingest | **Confirmed open** | `ingest_pipeline.py` → `vectorstore.add_documents`; bootstrap omits `toc_vector_store` |
+| DualIndex on hierarchical profile | **Closed M-RAG.24** | `IndexingManager` + `DualIndexStrategy` when `hierarchical_index_enabled` |
+| GraphRAG backend registry | **Open GAP-RAG-24** | `graph_store_bootstrap.py` — `inmemory` / `neo4j` only |
 | Catalog poisoning filter | **Closed M-RAG.25** | `perform_rag_retrieve` calls `filter_retrieved_chunks_for_poisoning` when `security_profile` enabled |
 | Agents bypass vectorstore | **No violation** | No `vectorstore.query` in `agents/` |
 | Vector manifest stability | **Partial** | `integrations/providers/vector_store/*/manifest.py` — stable vs beta per GAP-RAG-07 row above |
 
-**Posture:** L3 implementation target for Tier-3 reference hosts — **M-RAG-DEPTH complete** (2026-06-10). Actionable GAP-RAG rows closed; **GAP-RAG-15** remains an explicit architectural boundary (Tier-3 + AHI).
+**Posture:** L3 implementation for core retrieval — **M-RAG-DEPTH complete** (2026-06-10). **GraphRAG platform** remains **L2** with **GAP-RAG-24 … GAP-RAG-36** open — Phase **M-RAG-GRAPH** (2026-06-12 audit). **GAP-RAG-15** and **GAP-RAG-34** remain explicit boundaries.

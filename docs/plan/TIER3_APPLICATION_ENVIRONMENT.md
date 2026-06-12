@@ -106,7 +106,7 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 |----|-------------|--------|------------|
 | APP-OPS-1 | Env capability graph + blast radius STRICT gate | **Done** | `check_capability_graph_strict_deploy.py` · `test_capability_graph_deploy_gate.py` |
 | APP-OPS-2 | `ApplicationOperationalOwnership` on manifest | **Done** | `check_application_ownership.py` · `test_operational_ownership_gate.py` |
-| APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | Planned | release score artifact |
+| APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | **Done** | `check_application_health_score.py` |
 | APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | Planned | `intergrax apps list` / `envs list` |
 
 ---
@@ -174,7 +174,7 @@ Recommended PR sequence — one APP ID per PR:
 11. APP-CON-7       scenario matrix tests — **Done**
 12. APP-EVOL-2/2b   migrations — **Done**
 13. APP-EVOL-3..7   evolution + packaging — **Done**
-14. APP-OPS-3/4     health score + registries
+14. APP-OPS-3/4     health score + registries — **3 Done** · 4 open
 15. APP-CON-DX.*    author guide + audit prompt
 ```
 
@@ -523,7 +523,7 @@ uv run pytest -m gate -q
 | H-APP-OPS-DOC.2 | §49.2.4 typed migrations (Profile/Graph/Envelope) | **Done** | High | sub-migration schemas in §49 |
 | APP-OPS-1 | Env capability graph + blast radius STRICT gate | **Done** | **Critical** | `check_capability_graph_strict_deploy.py` |
 | APP-OPS-2 | `ApplicationOperationalOwnership` + APP-PROD | **Done** | High | `check_application_ownership.py` |
-| APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | Planned | High | release score artifact |
+| APP-OPS-3 | `EnvironmentHealthScore` + `doctor health-app` | **Done** | High | `check_application_health_score.py` |
 | APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | Planned | Medium | `apps list` / `envs list` |
 | APP-EVOL-2b | Typed migration validators | **Done** | High | `migration_wiring.py` per primitive |
 

@@ -17,8 +17,10 @@ def register_parser(sub: argparse._SubParsersAction) -> None:
     doctor_sub = parser.add_subparsers(dest="doctor_command")
     doctor_sub.add_parser("check", help="Run harness health scripts (default)")
     from intergrax.cli.doctor_diff_app import register_parser as register_diff_app
+    from intergrax.cli.doctor_health_app import register_parser as register_health_app
 
     register_diff_app(doctor_sub)
+    register_health_app(doctor_sub)
 
 
 def _run_script(script: Path, root: Path) -> tuple[bool, str]:
@@ -40,6 +42,10 @@ def run_doctor(args: argparse.Namespace) -> int:
         from intergrax.cli.doctor_diff_app import run_doctor_diff_app
 
         return run_doctor_diff_app(args)
+    if getattr(args, "doctor_command", None) == "health-app":
+        from intergrax.cli.doctor_health_app import run_doctor_health_app
+
+        return run_doctor_health_app(args)
 
     root = args.root.resolve()
     checks: list[tuple[str, bool, str]] = []
