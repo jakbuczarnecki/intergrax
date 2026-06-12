@@ -54,7 +54,7 @@ CTX Done · CE-DOC Done · CE-EXT Planned (CE-1..CE-12)
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-No plugin catalog (GAP-CTX-01) · dual assembly paths (GAP-CTX-02) · not step-aware (GAP-CTX-04) · workspace provider spike only (GAP-CTX-06) · OTel spans partial (GAP-CTX-09)
+No plugin catalog (GAP-CTX-01) · dual assembly paths (GAP-CTX-02) · ContextCompiler not on hot path (GAP-CTX-13) · CONTEXT_BUILT vs CONTEXT_ASSEMBLED split (GAP-CTX-14) · not step-aware (GAP-CTX-04) · workspace spike only (GAP-CTX-06) · OTel spans partial (GAP-CTX-09)
 
 ---
 

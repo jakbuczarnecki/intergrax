@@ -14,12 +14,12 @@
 | Phase | Scope | Status |
 |-------|-------|--------|
 | **CTX** (control plane closeout) | `context_runtime_bridge`, `context_wiring`, Appendix L | **Done** (2026-06-02) |
-| **R-Context** | Budget API, `CONTEXT_*` events | **Done** |
-| **MEM-DEPTH-1.\*** | `ContextCompiler`, `DegradationLadder`, preflight | **Done** (owned by MEMORY delivery; CE consumes) |
-| **CE-DOC** | Domain split + architecture + plan | **Done** (2026-06-12) |
-| **CE-EXT** | Plugin engine + step-aware + codebase preset | **Planned** — this register |
+| **R-Context** | Budget API, `CONTEXT_*` events (graph path) | **Done** |
+| **MEM-DEPTH-1.\*** | `ContextCompiler`, `DegradationLadder`, preflight **modules** | **Done** — library + tests; **hot-path wiring = CE-3.9** (post ACP-CLOSE) |
+| **CE-DOC** | Domain split + architecture + plan + FAUDIT refresh | **Done** (CE-DOC.7 closes 2026-06-12 audit) |
+| **CE-EXT** | Plugin engine + hot-path compiler + step-aware + codebase preset | **Planned** — this register |
 
-**As-built maturity:** L2.5 engine / L3 control plane — see architecture §3.
+**As-built maturity:** L2 engine / L3 control plane — see architecture §3.
 
 **Delivery rule:** One **CE-\*** ID per PR → update master table + gap register → `pytest -m gate` + domain CI scripts green.
 
@@ -40,6 +40,8 @@
 | GAP-CTX-09 | CE-9.2 | 5 |
 | GAP-CTX-10 | CE-9.1 | 5 |
 | GAP-CTX-11 | CE-3.6 | 2 |
+| GAP-CTX-13 | CE-3.9, CE-3.10 | 2 |
+| GAP-CTX-14 | CE-3.11 | 2 |
 
 ---
 
@@ -55,6 +57,7 @@
 | CE-DOC.4 | Hub + audit map + `guides/audit/CONTEXT_ENGINEERING.md` | **Done** |
 | CE-DOC.5 | MEMORY canon cross-links (Layer C → CE) | **Done** |
 | CE-DOC.6 | `generate_domain_audit_prompts.py` MEMORY/CE split | **Done** |
+| CE-DOC.7 | FAUDIT layer 16 refresh — post-ACP as-built paths, GAP-CTX-13/14, module inventory, sprint register | **Done** (2026-06-12) |
 
 ---
 
@@ -68,13 +71,15 @@
 ### Execution order (waves)
 
 ```text
-Wave 1 (P0): CE-1 contracts + CE-2 registry
-Wave 2 (P0): CE-3 DefaultNexusContextEngine unification
-Wave 3 (P1): CE-4 step-aware assembly
-Wave 4 (P1): CE-7 workspace provider + CE-8 orchestrator (optional hop)
+Wave 1 (P0): CE-1 contracts + CE-2 registry + CE-2.6 ContextProfile fields
+Wave 2 (P0): CE-3 engine + CE-3.9 hot-path compiler wiring (critical)
+Wave 3 (P1): CE-4 step-aware + CE-5.1 contract hints + CE-VEC-1 episodic recall
+Wave 4 (P1): CE-7 workspace provider + CE-8 orchestrator
 Wave 5 (P2): CE-9 observability + CE-10 quality in hot path
 Wave 6 (P2): CE-11 Tier-3 presets + CE-12 DX / scaffold / gates
 ```
+
+See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sprint breakdown.
 
 ---
 
@@ -93,6 +98,7 @@ Wave 6 (P2): CE-11 Tier-3 presets + CE-12 DX / scaffold / gates
 | **CE-2.3** | Shipped `BuiltinContextPlugin` registering all §8.4 providers (stubs delegating to as-built steps) | P0 | Planned | Integration test: registry lists ≥10 providers |
 | **CE-2.4** | `ContextProfile.context_plugin_ids` + validation against registry | P1 | Planned | Unknown id → fail at wire time (lab) / warn (prod) |
 | **CE-2.5** | Unit tests `tests/unit/context/test_context_plugin_registry.py` | P0 | Planned | `-m gate` |
+| **CE-2.6** | Extend `ContextProfile` with `engine_preset`, `engine_ref`, `context_plugin_ids` | P0 | Planned | `environment_profile.py`; bridge passes through |
 
 **Wave 1 exit:** `uv run pytest tests/unit/context/ -m gate -q` green.
 
@@ -105,13 +111,16 @@ Wave 6 (P2): CE-11 Tier-3 presets + CE-12 DX / scaffold / gates
 | **CE-3.1** | `DefaultNexusContextEngine` in `context_engine.py` implementing `ContextEngine` | P0 | Planned | Delegates to existing steps + compiler |
 | **CE-3.2** | Adapter: `ContextCandidate` ↔ `ContextFragment` bridge | P0 | Planned | Round-trip tests |
 | **CE-3.3** | `resolve_context_engine_from_environment()` in `context_wiring.py` | P0 | Planned | Preset `default` returns engine instance |
-| **CE-3.4** | `CompileContextStep` accepts injectable `ContextEngine` / `ContextBudgetAllocator` | P0 | Planned | Closes GAP-CTX-03 |
+| **CE-3.4** | Injectable `ContextEngine` / `ContextBudgetAllocator` on assembly path (replaces legacy `CompileContextStep`) | P0 | Planned | Closes GAP-CTX-03 |
 | **CE-3.5** | `NexusLoop` + `nexus_factory` accept `context_engine` param | P1 | Planned | Back-compat: `context_manager` still works |
 | **CE-3.6** | Document rename: `ContextBuilder` → `SessionRagContextBuilder` (alias deprecated one release) | P3 | Planned | Closes GAP-CTX-11 |
 | **CE-3.7** | Graph path: `ContextManager.build_agent_context` calls `ContextEngine.assemble(scope=graph_node)` | P0 | Planned | Single code path; closes GAP-CTX-02 |
-| **CE-3.8** | Integration test: turn + graph produce `CONTEXT_ASSEMBLED` with `engine_id=default` | P0 | Planned | `tests/integration/runtime/test_context_engine_paths.py` |
+| **CE-3.8** | Integration test: ACP + graph produce `CONTEXT_ASSEMBLED` with `engine_id=default` | P0 | Planned | `tests/integration/runtime/test_context_engine_paths.py` |
+| **CE-3.9** | Wire `ContextCompiler.compile()` + degradation ladder to ACP `on_next_step` / UAEP before LLM | **P0 Critical** | Planned | Closes GAP-CTX-13; acceptance never-overflow on prod path |
+| **CE-3.10** | `ContextValidator` → `verify_context_preflight()` inside `DefaultNexusContextEngine.validate` | P0 | Planned | Gate: preflight before every engine-assembled LLM call |
+| **CE-3.11** | Unify UAEP `CONTEXT_BUILT` → `CONTEXT_ASSEMBLED` (+ trim events); deprecate or alias `CONTEXT_BUILT` | P1 | Planned | Closes GAP-CTX-14; `payload_registry.py` + gate |
 
-**Wave 2 exit:** Dual paths unified under `DefaultNexusContextEngine`; existing context unit tests green.
+**Wave 2 exit:** `ContextCompiler` on production hot path; graph + ACP/UAEP unified under `DefaultNexusContextEngine`.
 
 ---
 
@@ -125,8 +134,11 @@ Wave 6 (P2): CE-11 Tier-3 presets + CE-12 DX / scaffold / gates
 | **CE-4.4** | `DefaultContextRanker` boosts fragments matching `step_kind` (config table) | P1 | Planned | e.g. `tool_call` → boost TOOL_OUTPUT |
 | **CE-4.5** | Event payload v2: `context_assembly.v2` with step fields (registry bump) | P1 | Planned | `payload_registry.py` + gate |
 | **CE-4.6** | Unit tests step-aware ranking | P1 | Planned | `-m gate` |
+| **CE-4.7** | `pre_context_policy_audit` inside `assemble()` before format/validate | P1 | Planned | `pre_context_policy_audit.py` wired; hook parity unchanged |
+| **CE-5.1** | Optional `AgentContract.context_hints` → `required_sources` / `excluded_sources` | P2 | Planned | `AGENT_CONTRACTS` plan cross-link; CE-4.2 consumes |
+| **CE-VEC-1** | `SessionSemanticRecallProvider` + `SESSION_HISTORY_SEMANTIC` in ranker/degradation | P1 | Planned | Cross-plan: MEM-VEC-2.3/2.4; prerequisite MEM-VEC-2.1 |
 
-**Wave 3 exit:** `CONTEXT_ASSEMBLED` payloads include `step_kind` on UAEP path.
+**Wave 3 exit:** `CONTEXT_ASSEMBLED` v2 payloads include `step_kind` on ACP/UAEP paths; episodic recall fragment when MEM-VEC enabled.
 
 ---
 
@@ -156,6 +168,7 @@ Wave 6 (P2): CE-11 Tier-3 presets + CE-12 DX / scaffold / gates
 | **CE-9.3** | Structured logging `intergrax.context.engine` — no content at INFO | P2 | Planned | Log fixture test |
 | **CE-9.4** | Metrics counters in `runtime/observability/context_counters.py` | P2 | Planned | Opt-in env + documented default |
 | **CE-9.5** | Cost attribution hook when semantic compression calls LLM | P2 | Planned | V-COST event fields |
+| **CE-9.6** | OBS product dashboard — context assembly SLO panel | P3 | Planned | Link from `OBSERVABILITY` dashboard canon |
 | **CE-10.1** | `DefaultContextRanker` integrates `evaluate_context_engineering()` thresholds | P2 | Planned | Closes GAP-CTX-05 |
 | **CE-10.2** | Dedup by `content_hash` in collect merge phase | P2 | Planned | Suppression reasons in events |
 | **CE-10.3** | Replace string-heuristic `classify_candidates` with provider-supplied metadata | P2 | Planned | Closes GAP-CTX-08 |
@@ -173,6 +186,7 @@ Wave 6 (P2): CE-11 Tier-3 presets + CE-12 DX / scaffold / gates
 | **CE-11.1** | `production_context_profile()` + `codebase_context_profile()` helpers | P2 | Planned | `applications/_shared/context_presets.py` |
 | **CE-11.2** | Reference hosts: lab + poc_template wire `context_plugin_ids` | P2 | Planned | H-APP pattern |
 | **CE-11.3** | `regulated_minimal` preset for legal_application | P2 | Planned | Document in host ARCHITECTURE |
+| **CE-11.4** | `explore_child_context_profile()` helper + delegation auto-wire doc | P2 | Planned | Pairs with CE-8.3 |
 | **CE-12.1** | `EXTENSION_AUTHOR_GUIDE.md` §4 Context plugin catalog | P2 | Planned | Parallel to Tool/Skill |
 | **CE-12.2** | `AGENT_CREATION_GUIDE.md` Appendix L — link CE canon + custom engine example | P2 | Planned | |
 | **CE-12.3** | Scaffold `new-application` emits `context_plugin` stub optional flag | P3 | Planned | |
@@ -199,6 +213,7 @@ Wave 6 (P2): CE-11 Tier-3 presets + CE-12 DX / scaffold / gates
 | CE-2.3 | 1 | Planned |
 | CE-2.4 | 1 | Planned |
 | CE-2.5 | 1 | Planned |
+| CE-2.6 | 1 | Planned |
 | CE-3.1 | 2 | Planned |
 | CE-3.2 | 2 | Planned |
 | CE-3.3 | 2 | Planned |
@@ -207,12 +222,18 @@ Wave 6 (P2): CE-11 Tier-3 presets + CE-12 DX / scaffold / gates
 | CE-3.6 | 2 | Planned |
 | CE-3.7 | 2 | Planned |
 | CE-3.8 | 2 | Planned |
+| CE-3.9 | 2 | Planned |
+| CE-3.10 | 2 | Planned |
+| CE-3.11 | 2 | Planned |
 | CE-4.1 | 3 | Planned |
 | CE-4.2 | 3 | Planned |
 | CE-4.3 | 3 | Planned |
 | CE-4.4 | 3 | Planned |
 | CE-4.5 | 3 | Planned |
 | CE-4.6 | 3 | Planned |
+| CE-4.7 | 3 | Planned |
+| CE-5.1 | 3 | Planned |
+| CE-VEC-1 | 3 | Planned |
 | CE-7.1 | 4 | Planned |
 | CE-7.2 | 4 | Planned |
 | CE-7.3 | 4 | Planned |
@@ -226,6 +247,7 @@ Wave 6 (P2): CE-11 Tier-3 presets + CE-12 DX / scaffold / gates
 | CE-9.3 | 5 | Planned |
 | CE-9.4 | 5 | Planned |
 | CE-9.5 | 5 | Planned |
+| CE-9.6 | 5 | Planned |
 | CE-10.1 | 5 | Planned |
 | CE-10.2 | 5 | Planned |
 | CE-10.3 | 5 | Planned |
@@ -234,6 +256,7 @@ Wave 6 (P2): CE-11 Tier-3 presets + CE-12 DX / scaffold / gates
 | CE-11.1 | 6 | Planned |
 | CE-11.2 | 6 | Planned |
 | CE-11.3 | 6 | Planned |
+| CE-11.4 | 6 | Planned |
 | CE-12.1 | 6 | Planned |
 | CE-12.2 | 6 | Planned |
 | CE-12.3 | 6 | Planned |
@@ -241,7 +264,7 @@ Wave 6 (P2): CE-11 Tier-3 presets + CE-12 DX / scaffold / gates
 | CE-12.5 | 6 | Planned |
 | CE-12.6 | 6 | Planned |
 
-**Total CE-EXT:** 47 tasks (all Planned until first implementation PR).
+**Total CE-EXT:** 57 tasks (CE-DOC Done · CE-EXT implementation Planned).
 
 ---
 
@@ -251,7 +274,7 @@ These items are **Done** under MEMORY / CTX / R-Context — CE-EXT **consumes** 
 
 | Capability | Owner phase | Module |
 |------------|-------------|--------|
-| `ContextCompiler` + ladder | MEM-DEPTH-1 | `context_compiler.py` |
+| `ContextCompiler` + ladder (modules) | MEM-DEPTH-1 | `context_compiler.py`, `degradation_ladder.py` — **re-wire hot path in CE-3.9** |
 | `ContextManager` v2 + provenance | R-Context / CTX | `context_manager.py` |
 | `context_runtime_bridge` | CTX-1 | `context_runtime_bridge.py` |
 | `context_wiring` | CTX-2 | `context_wiring.py` |
@@ -299,13 +322,40 @@ uv run python scripts/check_observability_gates.py
 
 ```text
 CE-DOC.* (Done)
-→ CE-1.1 → CE-1.3 → CE-1.4 → CE-2.1 → CE-2.3 → CE-2.5
-→ CE-3.1 → CE-3.7 → CE-3.4 → CE-3.8
-→ CE-4.1 → CE-4.4 → CE-4.5
+→ CE-2.6 → CE-1.1 → CE-1.3 → CE-1.4 → CE-2.1 → CE-2.3 → CE-2.5
+→ CE-3.1 → CE-3.9 → CE-3.10 → CE-3.7 → CE-3.4 → CE-3.11 → CE-3.8
+→ CE-4.1 → CE-5.1 → CE-4.4 → CE-4.5 → CE-4.7
+→ CE-VEC-1 (after MEM-VEC-2.1)
 → CE-7.1 → CE-7.2 → CE-7.3 → CE-7.5
 → CE-9.1 → CE-9.2 → CE-10.1
-→ CE-11.1 → CE-12.1 → CE-12.4
+→ CE-11.1 → CE-11.4 → CE-12.1 → CE-12.4
 ```
+
+---
+
+## Sprints (CE-EXT delivery)
+
+Operator-facing sprint plan. One sprint = one coherent PR batch (1–5 CE IDs). Adjust velocity to team capacity.
+
+| Sprint | Goal | CE IDs | Exit criteria | Depends on |
+|--------|------|--------|---------------|------------|
+| **S0** | Documentation + audit alignment | CE-DOC.7 | Architecture §2–§17 reflect post-ACP as-built; GAP-CTX-13/14 registered | — |
+| **S1** | Tier-0 contracts + profile fields | CE-2.6, CE-1.1–CE-1.4, CE-1.6 | `intergrax/context/contracts.py` exists; `ContextProfile` preset fields; gate import boundary | S0 |
+| **S2** | Plugin catalog bootstrap | CE-2.1–CE-2.5, CE-1.5 | `register_context_plugin()`, `BuiltinContextPlugin` ≥10 providers; `pytest tests/unit/context/` green | S1 |
+| **S3** | Engine skeleton + hot-path compiler | CE-3.1, CE-3.2, CE-3.9, CE-3.10 | `DefaultNexusContextEngine`; `ContextCompiler` on ACP/UAEP before LLM; acceptance never-overflow on prod path | S2 |
+| **S4** | Path unification + events | CE-3.3, CE-3.4, CE-3.7, CE-3.11, CE-3.8 | Graph + ACP share `assemble()`; unified `CONTEXT_ASSEMBLED`; integration test green | S3 |
+| **S5** | Step-aware assembly | CE-4.1–CE-4.6, CE-4.7, CE-5.1 | `step_kind` in payload v2; policy audit in `assemble()`; optional contract `context_hints` | S4 |
+| **S6** | Episodic vector recall | CE-VEC-1 | `SESSION_HISTORY_SEMANTIC` fragments when `MemoryProfile.enable_session_vector_index` | S4 + MEM-VEC-2.1 |
+| **S7** | Codebase preset | CE-7.1–CE-7.5 | Lab host `engine_preset=codebase`; 1k-file workspace under budget | S4 |
+| **S8** | Multi-hop orchestrator | CE-8.1–CE-8.3, CE-11.4 | `ContextOrchestrator` on codebase preset only; `explore_child` delegation preset | S7 |
+| **S9** | Observability spine | CE-9.1–CE-9.6 | `CONTEXT_CANDIDATE_*` events; OTel spans in OBS gates; assembly SLO panel doc link | S4 |
+| **S10** | Quality in hot path | CE-10.1–CE-10.5 | `DefaultContextRanker` + dedup; regression baselines per preset; no string-heuristic `classify_candidates` | S9 |
+| **S11** | Tier-3 presets + DX | CE-11.1–CE-11.4, CE-12.1–CE-12.6, CE-3.5–CE-3.6 | Reference hosts wired; extension guide §Context; `check_context_engine_wiring.py`; FAUDIT L3+ evidence | S10 |
+| **S12** | Closeout | CE-12.6 + journal | Layer 16 re-audit; all GAP-CTX-\* Closed or deferred (AHI) | S11 |
+
+**Critical path:** S1 → S2 → **S3** (hot-path compiler) → S4 → S5. S6 parallel after MEM-VEC. S7–S8 optional product slice.
+
+**Minimum viable CE (MVP):** S0–S4 closes GAP-CTX-01, 02, 03, 13, 14 — L3 engine on default preset.
 
 ---
 
