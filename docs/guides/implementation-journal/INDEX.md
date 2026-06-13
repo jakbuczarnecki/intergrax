@@ -5,7 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-13-004 | 2026-06-13 | tier-0 RAG | M-RAG.53 · M-RAG.54 | [M-RAG.53–M-RAG.54 — GraphRAG usage hardening](entries/2026-06-13/rag-m-rag-graph-g5-usage-hardening.md) | pending |
+| IJ-2026-06-13-004 | 2026-06-13 | tier-0 RAG | M-RAG.53 · M-RAG.54 | [M-RAG.53–M-RAG.54 — GraphRAG usage hardening](entries/2026-06-13/rag-m-rag-graph-g5-usage-hardening.md) | 031ccb4a |
 | IJ-2026-06-13-003 | 2026-06-13 | tier-0, tier-1 CODE_CRAFT | S7–S10 · ECC-7–9 | [S7–S10 — Code Craft post-closeout layer completion](entries/2026-06-13/codecraft-s7-s10-layer-completion.md) | 784d9dc9 |
 | IJ-2026-06-13-002 | 2026-06-13 | tier-0, tier-1, tier-3 CODE_CRAFT | ECC-2…ECC-6 | [ECC-2…ECC-6 — Code Craft layer completion closeout](entries/2026-06-13/codecraft-ecc-2-6-layer-closeout.md) | f6cd2d4d |
 | IJ-2026-06-13-001 | 2026-06-13 | tier-0, tier-1 CODE_CRAFT | ECC-1 · GAP-ECC-03/04/09 | [ECC-1 — single-shot codecraft.run with StaticCodeGate and trace](entries/2026-06-13/codecraft-ecc-1-single-shot.md) | b79cb177 |

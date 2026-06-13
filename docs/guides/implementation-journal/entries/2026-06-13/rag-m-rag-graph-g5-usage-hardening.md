@@ -8,7 +8,7 @@ plan_ref:
   - M-RAG.53
   - M-RAG.54
 status: completed
-commit: pending
+commit: 031ccb4a
 adr: none — extends existing GraphRAG retrieval contracts; no new cross-cutting platform semantics
 ---
 
