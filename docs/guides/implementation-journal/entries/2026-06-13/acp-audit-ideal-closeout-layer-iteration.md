@@ -9,7 +9,7 @@ plan_ref:
   - AUDIT-IDEAL-20.1
   - AUDIT-IDEAL-31.1
 status: completed
-commit: pending
+commit: addf2f79
 adr: none — documentation sync + scoreboard evidence; implementations pre-existing
 ---
 

@@ -5,7 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-13-009 | 2026-06-13 | tier-0 AGENT_CONTRACTS_AND_ASSEMBLY | AUDIT-IDEAL-19.1 · 20.1 · 31.1 | [AUDIT-IDEAL closeout — sync §12–§20 domain plan with master register](entries/2026-06-13/acp-audit-ideal-closeout-layer-iteration.md) | pending |
+| IJ-2026-06-13-009 | 2026-06-13 | tier-0 AGENT_CONTRACTS_AND_ASSEMBLY | AUDIT-IDEAL-19.1 · 20.1 · 31.1 | [AUDIT-IDEAL closeout — sync §12–§20 domain plan with master register](entries/2026-06-13/acp-audit-ideal-closeout-layer-iteration.md) | addf2f79 |
 | IJ-2026-06-13-008 | 2026-06-13 | tier-0, tier-2 AGENT_CONTRACTS_AND_ASSEMBLY | ACP-FINISH-DOC-1 · ACP-TOK-2 · ACP-TOK-3 | [ACP-FINISH-DOC-1 — close GAP-ACP-36/37 and sync architecture canon](entries/2026-06-13/acp-finish-doc-1-gap-register-closeout.md) | 32b9e854 |
 | IJ-2026-06-13-007 | 2026-06-13 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-PROD-7 · ACP-TOK-2 · ACP-TOK-3 | [Tier-3 budget governance — documentation sync with ACP-TOK completion](entries/2026-06-13/tier3-budget-governance-doc-sync.md) | 0de17aff |
 | IJ-2026-06-13-006 | 2026-06-13 | tier-0 RAG | M-RAG.59–61 | [M-RAG-CONVERGE — Frozen iteration II doc + diagnostics](entries/2026-06-13/rag-m-rag-converge-frozen-iteration-ii.md) | pending |
