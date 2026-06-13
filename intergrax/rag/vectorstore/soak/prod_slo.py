@@ -16,7 +16,14 @@ from langchain_core.documents import Document
 from intergrax.integrations.contracts.base import IntegrationStatus
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStore
 
-STABLE_PROD_SLO_SLUGS: tuple[str, ...] = ("qdrant", "pgvector", "chroma", "weaviate")
+STABLE_PROD_SLO_SLUGS: tuple[str, ...] = (
+    "qdrant",
+    "pgvector",
+    "chroma",
+    "weaviate",
+    "lancedb",
+    "typesense",
+)
 
 BETA_PROMOTION_CANDIDATE_SLUGS: tuple[str, ...] = ("pinecone", "milvus", "vespa")
 

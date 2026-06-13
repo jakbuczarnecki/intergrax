@@ -28,7 +28,7 @@
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR (when applicable) → update this table + master register → gate green. Additional GAP-RAG rows without AUDIT-IDEAL IDs use M-RAG.\* only.
 
-**Engine audit (2026-06-10):** Maturity **L2.5 implementation / L3 control plane**. Closeout: [Phase M-RAG-DEPTH](#phase-m-rag-depth--production-hardening-post-audit-2026-06-10).
+**Engine audit (2026-06-13):** Maturity **L3 implementation / L3 control plane** — **Frozen**. Closeout: [Phase M-RAG-CONVERGE](#phase-m-rag-converge--doc--diagnostics-closeout-2026-06-13).
 
 ---
 
@@ -50,7 +50,7 @@ Every finding in [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth 
 | GAP-RAG-18 | niegotowość | M-RAG.33 | 2 |
 | GAP-RAG-20 | niegotowość | M-RAG.35 | 2 |
 | GAP-RAG-08 | niedoróbka | M-RAG.27 **Done** | 3 |
-| GAP-RAG-09 | niska jakość | M-RAG.27 **Done** (metrics opt-in documented; spans on spine) | 3 |
+| GAP-RAG-09 | niska jakość | M-RAG.57 **Done** (metrics default follows OTel spine when env unset) | 3 |
 | GAP-RAG-10 | niedoróbka | M-RAG.28 **Done** | 3 |
 | GAP-RAG-11 | niska jakość | M-RAG.28 **Done** | 3 |
 | GAP-RAG-12 | niska jakość | M-RAG.28 **Done** | 3 |
@@ -60,7 +60,7 @@ Every finding in [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth 
 | GAP-RAG-19 | niedoróbka | M-RAG.34 **Done** | 3 |
 | GAP-RAG-21 | niegotowość | M-RAG.36 **Done** | 3 |
 | GAP-RAG-22 | niska jakość | M-RAG.37 **Done** | 3 |
-| GAP-RAG-15 | ograniczenie | Tier-3 + AHI | — |
+| GAP-RAG-15 | ograniczenie | M-RAG.58 **Frozen** (Tier-3 + AHI) | — |
 | GAP-RAG-24 | niedoróbka | M-RAG.38 | G1 |
 | GAP-RAG-25 | niedoróbka | M-RAG.39 | G1 |
 | GAP-RAG-26 | niegotowość | M-RAG.40 | G1 |
@@ -74,6 +74,8 @@ Every finding in [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth 
 | GAP-RAG-34 | ograniczenie | M-RAG.47 | G3 |
 | GAP-RAG-35 | niedoróbka | M-RAG.48 | G2 |
 | GAP-RAG-36 | niska jakość | M-RAG.52 | G2 |
+| GAP-RAG-39 | niedoróbka | M-RAG.60 **Done** | CONVERGE |
+| GAP-RAG-40 | niedoróbka | M-RAG.61 **Done** | CONVERGE |
 
 **Coverage (M-RAG-DEPTH):** 22 actionable gaps + 1 architectural boundary — **100% mapped** (complete 2026-06-10).
 
@@ -503,3 +505,15 @@ Requires Integration catalog slugs (Neptune, OrientDB, ArangoDB) per [`plan/INTE
 | P4.1 | **M-RAG.58** | P4 | GAP-RAG-15 **Frozen** — autonomous retriever/chunker selection owned by [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md) | **Frozen** |
 
 **Layer status:** RAG domain **Frozen** for harness iteration — no open P0–P3 items; future work = ops soak promotion (beta→stable manifests) and AHI adaptive routing.
+
+### Phase M-RAG-CONVERGE — doc + diagnostics closeout (2026-06-13)
+
+Iteration II on **Frozen** layer — sync stale architecture sections and close minor harness gaps.
+
+| Sprint | ID | Priority | Scope | Status |
+|--------|-----|----------|-------|--------|
+| C1 | **M-RAG.59** | P2 | Architecture/plan audit evidence convergence (readiness verdict, maturity L3, GraphRAG matrix, duplicate GAP rows) | **Done** |
+| C2 | **M-RAG.60** | P2 | Export `channel_contributions` + `graph_provenance_records` on `rag.retrieve` diagnostics | **Done** |
+| C3 | **M-RAG.61** | P3 | Align `STABLE_PROD_SLO_SLUGS` with stable manifests (`lancedb`, `typesense`) | **Done** |
+
+**DoD:** architecture §Production readiness / §Maturity / §GraphRAG / §Audit evidence aligned with code; tool diagnostics expose graph trace fields; stable soak tuple matches integration manifests.

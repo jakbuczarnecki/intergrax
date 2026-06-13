@@ -240,3 +240,54 @@ def test_build_registry_from_profile_enables_rag_tool() -> None:
     )
     registry = build_registry_from_profile(ToolProfile(enabled=["rag.retrieve"]), ctx=ctx)
     assert registry.has("rag.retrieve")
+
+
+@pytest.mark.gate
+def test_rag_retrieve_diagnostics_include_graph_trace_fields() -> None:
+    from langchain_core.documents import Document
+
+    from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
+    from intergrax.rag.graph.indexer.heuristic_graph_indexer import HeuristicGraphIndexer
+    from intergrax.rag.graph.providers.inmemory_graph_store import InMemoryGraphStore
+    from intergrax.rag.retrieval.retrieval_service import RetrievalService
+    from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_manager
+    from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+
+    store = InMemoryVectorStore(tenant_id="tool-trace")
+    manager = VectorstoreManager(store=store)
+    doc = Document(
+        page_content="Vertex Corp deploys Intergrax GraphRAG on Neo4j.",
+        metadata={"tenant_id": "tool-trace"},
+    )
+    manager.add_documents([doc], [[0.1, 0.2, 0.3]], ids=["chunk-vertex"])
+    graph = InMemoryGraphStore()
+    HeuristicGraphIndexer(graph).index_documents([doc], chunk_ids=["chunk-vertex"])
+
+    profile = RagProfile(
+        retriever_id="graph_rag",
+        route_mode="off",
+        graph_rag_enabled=True,
+        enable_rerank=False,
+    )
+    retriever_manager = create_default_retriever_manager(
+        vector_store=manager,
+        embedding_manager=FakeEmbeddingManager(),
+        graph_store=graph,
+        profile=profile,
+    )
+    service = RetrievalService(retriever_manager=retriever_manager, profile=profile)
+    ctx = ToolWiringContext(
+        vectorstore_manager=manager,
+        embedding_manager=FakeEmbeddingManager(),
+        rag_profile=profile,
+        retrieval_service=service,
+    )
+
+    out = perform_rag_retrieve(ctx, RagRetrieveInput(query="Vertex Corp", top_k=2))
+
+    assert out.used is True
+    assert out.diagnostics.get("channel_contributions")
+    assert out.diagnostics.get("graph_provenance_records")
+    record = out.diagnostics["graph_provenance_records"][0]
+    assert "node_id" in record
+    assert "explanation" in record
