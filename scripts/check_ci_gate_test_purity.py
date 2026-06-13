@@ -5,12 +5,13 @@
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
 from pathlib import Path
 
-CI_MARKER = "gate and not no_ci"
+CI_MARKER = os.environ.get("INTERGRAX_CI_TEST_MARKER", "ci_smoke")
 
 FORBIDDEN: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("fastapi_testclient", re.compile(r"fastapi\.testclient|\bTestClient\b")),
@@ -61,13 +62,23 @@ PER_TEST_FORBIDDEN: tuple[tuple[str, re.Pattern[str]], ...] = (
 _FUNC_DEF = re.compile(r"^def (test_[a-zA-Z0-9_]+)\(", re.MULTILINE)
 
 
+def _pytest_collect_roots(repo_root: Path) -> list[str]:
+    if CI_MARKER == "ci_smoke":
+        if str(repo_root) not in sys.path:
+            sys.path.insert(0, str(repo_root))
+        from tests.unit.conftest import CI_SMOKE_DIR_PREFIXES, CI_SMOKE_FILES
+
+        return [*CI_SMOKE_DIR_PREFIXES, *sorted(CI_SMOKE_FILES)]
+    return ["tests/unit"]
+
+
 def _collect_ci_tests(repo_root: Path) -> list[tuple[Path, str]]:
     proc = subprocess.run(
         [
             sys.executable,
             "-m",
             "pytest",
-            "tests/unit",
+            *_pytest_collect_roots(repo_root),
             "-m",
             CI_MARKER,
             "--collect-only",
