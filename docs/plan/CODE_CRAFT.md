@@ -121,7 +121,7 @@ Out of scope: implementation code (ECC-1+), product-specific agents (§6.3).
 | MIS-08 | `CraftTestRunner` integrated in loop | ECC-2 |
 | MIS-09 | `CraftResult` promotion contract | ECC-3 |
 | MIS-10 | `EphemeralToolRegistry` (task-scoped) | ECC-5 |
-| MIS-11 | Separate codegen LLM profile | ECC-2 |
+| MIS-11 | Separate codegen LLM profile | ECC-2 (Protocol + template adapter; `codegen_llm_profile_ref` wiring → GAP-ECC-20) |
 | MIS-12 | HITL gate before exec (supervised mode) | ECC-3 |
 | MIS-13 | `CODECRAFT_*` observability events | ECC-1+ |
 | MIS-14 | Optional `CodeCraftNode` in execution graph | ECC-5 |

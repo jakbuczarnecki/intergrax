@@ -771,7 +771,7 @@ Verify that dynamic codegen runs through harness orchestration (`CodeCraftOrches
 Ephemeral Code Craft Score: L0-L4
 ```
 
-**Authoring reference:** [`architecture/CODE_CRAFT.md`](architecture/CODE_CRAFT.md) · substrate [`RELIABILITY_FAILURE_AND_HITL.md`](architecture/RELIABILITY_FAILURE_AND_HITL.md) · verification [`CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md). **Closed:** [Phase ECC](plan/CODE_CRAFT.md) (2026-06-13) — ECC-0…ECC-6 Done; depth = metrics dashboards (§10.2) + container isolation tier.
+**Authoring reference:** [`architecture/CODE_CRAFT.md`](architecture/CODE_CRAFT.md) · substrate [`RELIABILITY_FAILURE_AND_HITL.md`](architecture/RELIABILITY_FAILURE_AND_HITL.md) · verification [`CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md). **Closed:** [Phase ECC](plan/CODE_CRAFT.md) (2026-06-13) — ECC-0…ECC-6 + S7–S10 Done (L3+); depth = metrics dashboards (§10.2) + container isolation tier + codegen LLM profile wiring.
 
 ---
 

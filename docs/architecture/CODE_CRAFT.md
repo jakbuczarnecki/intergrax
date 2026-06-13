@@ -8,7 +8,7 @@
 **Audit layer:** 11b (Ephemeral Code Craft)  
 **Audit instruction:** [`guides/audit/CODE_CRAFT.md`](../guides/audit/CODE_CRAFT.md)  
 **Implementation:** `intergrax/codecraft/` · `intergrax/runtime/codecraft/` · `intergrax/tools/providers/codecraft/`  
-**Last updated:** 2026-06-13 — layer completion audit; **ECC-0…ECC-6 Done**
+**Last updated:** 2026-06-13 — layer completion closeout; **ECC-0…ECC-6 + S7–S10 Done (L3+)**
 
 ---
 
@@ -371,6 +371,9 @@ Canon cross-ref: [`OBSERVABILITY.md`](OBSERVABILITY.md) · [`TOOLS.md`](TOOLS.md
 | ECC-4 | Cloud sandbox default + security.scan | **Done** (2026-06-13) |
 | ECC-5 | Ephemeral tool registry + graph node | **Done** (2026-06-13) |
 | ECC-6 | AHI adaptive trigger | **Done** (2026-06-13) |
+| ECC-7 | Trace taxonomy parity (generation/test/verdict/HITL/promote) | **Done** (2026-06-13, S8) |
+| ECC-8 | Single-shot sandbox routing parity on `codecraft.run` | **Done** (2026-06-13, S9) |
+| ECC-9 | `health.check_codecraft` probe + `check_codecraft_layer.py` gate | **Done** (2026-06-13, S10) |
 
 Detail: [`plan/CODE_CRAFT.md`](../plan/CODE_CRAFT.md).
 
