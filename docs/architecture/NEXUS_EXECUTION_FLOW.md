@@ -849,7 +849,7 @@ flowchart LR
 
     subgraph Node["Per graph node — UAEP / pipeline"]
         TS[ToolsStep]
-        TIP[ToolInvocationPattern — planned]
+        TIP[ToolInvocationPattern — Done TOOL-ENG-16]
         RTI[RuntimeToolInvoker]
     end
 
@@ -860,12 +860,10 @@ flowchart LR
 | Layer | Orchestrates | Module | Tool iterations? |
 |-------|--------------|--------|------------------|
 | **Agent graph** | Agents, delegation, merge | `GraphExecutor` | **No** — ADR-TOOL-002 rejects tool ReAct from graph |
-| **Tool invocation pattern** | Multi-call plan within one step | `ToolInvocationPattern` *(TOOL-ENG-16)* | **Yes** — `bounded_react`, `parallel_batch`, etc. |
+| **Tool invocation pattern** | Multi-call plan within one step | `ToolInvocationPattern` **Done** (TOOL-ENG-16) | **Yes** — `bounded_react`, `parallel_batch`, etc. |
 | **Atomic invoke** | Single `tool_id` call | `RuntimeToolInvoker` | N/A |
 
-**Flow today (interim):** `run_bounded_tool_loop` / `ctx.invoke_tool` → `run_bounded_tool_loop` → `execute_planned_tool_calls` (sequential) → `RuntimeToolInvoker`.
-
-**Flow target:** `run_bounded_tool_loop` / `ctx.invoke_tool` → `pattern_for_mode(config.tool_invocation_pattern)` → shipped or custom `ToolInvocationPattern` → `RuntimeToolInvoker`.
+**Flow (production):** `run_bounded_tool_loop` / `ctx.invoke_tool` → `resolve_invocation_pattern(config)` → shipped or custom `ToolInvocationPattern.execute()` → `RuntimeToolInvoker` (TOOL-ENG-16/22).
 
 ---
 

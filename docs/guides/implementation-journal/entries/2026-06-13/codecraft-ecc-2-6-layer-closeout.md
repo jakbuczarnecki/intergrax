@@ -13,7 +13,7 @@ plan_ref:
   - ECC-5
   - ECC-6
 status: completed
-commit: pending
+commit: f6cd2d4d
 adr: none — extends ADR-CODECRAFT-001
 ---
 

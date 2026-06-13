@@ -570,7 +570,7 @@ Agents MUST NOT call each other directly — all collaboration via **SharedTaskC
 | Layer | Domain doc | Orchestrates | Examples |
 |-------|------------|--------------|----------|
 | **Agent graph** | This file §50–§56 | Agents, delegation, merge, parallel **nodes** | `ExecutionGraph`, `GraphExecutor`, `MergePolicy` |
-| **Tool invocation pattern** | [`TOOLS.md`](TOOLS.md) | Multi-call **tool** batches within one agent step | `ToolInvocationPattern` *(TOOL-ENG-16)* — single-pass, parallel batch, bounded ReAct, deterministic chain |
+| **Tool invocation pattern** | [`TOOLS.md`](TOOLS.md) | Multi-call **tool** batches within one agent step | `ToolInvocationPattern` **Done** (TOOL-ENG-16) — single-pass, parallel batch, bounded ReAct, deterministic chain |
 | **Atomic tool invoke** | [`TOOLS.md`](TOOLS.md) §42.12 | One `tool_id` call | `RuntimeToolInvoker` |
 
 ```text

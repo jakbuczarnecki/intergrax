@@ -40,7 +40,7 @@
 | Scope policy wiring | **Done** | TOOL-ENG-3 | `RuntimeContext.build()` |
 | Plan constraints → planner | **Done** | TOOL-ENG-4 | `allowed_tool_ids` filter |
 | `ToolSelectionStrategy` | **Done** | TOOL-ENG-5 | `strategy_for_mode()` · `test_tool_selection_strategy.py` |
-| Bounded tool loop (interim) | **Done** | TOOL-ENG-6 | ADR-TOOL-002 · `tool_loop.py` |
+| Bounded tool loop | **Done** | TOOL-ENG-6/18 | ADR-TOOL-002 · delegates to `BoundedReactPattern` |
 | `tools_context_scope` | **Done** | TOOL-ENG-11 | `tool_planner_input.py` |
 | `ToolInvocationPattern` plugin | **Done** | TOOL-ENG-16 | S1 — ADR-TOOL-003 |
 | Shipped patterns (single / ReAct) | **Done** | TOOL-ENG-17–18,21–23 | S2–S3 |
@@ -218,21 +218,17 @@ Sprints close **Phase TOOL-ENG** remaining rows. One sprint ≈ one PR; update p
 **Architecture canon:** [`architecture/TOOLS.md`](../architecture/TOOLS.md) — [Tool engine production posture](../architecture/TOOLS.md#tool-engine-production-posture-2026-06-10), [Invocation patterns](../architecture/TOOLS.md#tool-invocation-patterns-production-orchestration), [Engine gap register](../architecture/TOOLS.md#engine-gap-register-canon)  
 **Audit basis:** Full-stack tool layer audit 2026-06-10 (Tier-0 catalog + Tier-1 selection/invoke/verify) · **Invocation-pattern audit 2026-06-12** (single / parallel / chain / graph + plugin contract)  
 **Priority ladder:** **Band 2ba** — supersedes ad-hoc tool engine fixes until TOOL-ENG P0 closed  
-**ADR:** [ADR-TOOL-001](../adr/entries/2026-06-10/ADR-TOOL-001.md) (TOOL-ENG-1/2) · [ADR-TOOL-002](../adr/entries/2026-06-11/ADR-TOOL-002.md) (TOOL-ENG-6) · **ADR-TOOL-003 required** before TOOL-ENG-16 merge
+**ADR:** [ADR-TOOL-001](../adr/entries/2026-06-10/ADR-TOOL-001.md) (TOOL-ENG-1/2) · [ADR-TOOL-002](../adr/entries/2026-06-11/ADR-TOOL-002.md) (TOOL-ENG-6) · [ADR-TOOL-003](../adr/entries/2026-06-12/ADR-TOOL-003.md) (TOOL-ENG-16) · [ADR-TOOL-004](../adr/entries/2026-06-12/ADR-TOOL-004.md) · [ADR-TOOL-005](../adr/entries/2026-06-12/ADR-TOOL-005.md)
 
 **Problem statement (2026-06-10, partially closed):** Tier-0 catalog is production-grade (190 tools, contracts, MCP). Tier-1 gaps on bootstrap, dispatch, gateway, selection — **closed** TOOL-ENG-0–6,11.
 
-**Problem statement (2026-06-12 — invocation patterns):** Tier-1 **orchestration of multi-call plans** is hardcoded in `run_bounded_tool_loop` / `ctx.invoke_tool` → `run_bounded_tool_loop` → sequential `execute_planned_tool_calls`. Missing:
+**Problem statement (2026-06-12 — invocation patterns) — closed:** Tier-1 orchestration of multi-call plans was hardcoded in `run_bounded_tool_loop` → sequential `execute_planned_tool_calls`. **Resolved** by TOOL-ENG-16–30:
 
-- `ToolInvocationPattern` plugin protocol (precedent: `ToolSelectionStrategy`, `ToolPlannerProtocol`)
-- Named shipped patterns: single-pass, parallel batch, bounded ReAct, deterministic chain
-- Parallel read-only invoke (TOOL-ENG-9)
-- Semantic parallel batch composite (TOOL-ENG-25)
-- Deterministic output→input chains (`ToolChainSpec`)
-- Host wiring + entry-point registry for custom patterns
-- Clear boundary: agent `ExecutionGraph` (ORCHESTRATION) vs tool orchestration (TOOLS Plane 3)
-
-**Target:** Production-parity tool engine — selection at scale, **pluggable invocation orchestration**, atomic invoke unchanged, graph boundary documented, hard governance.
+- `ToolInvocationPattern` plugin protocol (ADR-TOOL-003)
+- Shipped patterns: single-pass, parallel batch, bounded ReAct, deterministic chain, parallel semantic batch
+- Parallel read-only invoke (TOOL-ENG-9), semantic parallel composite (TOOL-ENG-25), `ToolChainSpec` chains (TOOL-ENG-20)
+- Host wiring + entry-point registry for custom patterns (TOOL-ENG-23/24)
+- Agent `ExecutionGraph` vs tool orchestration boundary documented (TOOL-ENG-DOC.6)
 
 ### TOOL-ENG — Master register
 
@@ -284,7 +280,7 @@ Sprints close **Phase TOOL-ENG** remaining rows. One sprint ≈ one PR; update p
 
 | ID | Area | Deliverable | Status | Priority | Modules | Acceptance |
 |----|------|-------------|--------|----------|---------|------------|
-| TOOL-ENG-6 | Loop | **Bounded tool loop** — `max_tool_iterations`, native `role=tool` (interim impl before TOOL-ENG-18) | **Done** | P1 | `tool_loop_step.py`, ADR-TOOL-002 | `test_tool_loop_integration.py` |
+| TOOL-ENG-6 | Loop | **Bounded tool loop** — `max_iterations`, native `role=tool`; refactored to `BoundedReactPattern` (TOOL-ENG-18) | **Done** | P1 | `tool_loop_step.py`, ADR-TOOL-002 | `test_tool_loop_integration.py` |
 | TOOL-ENG-7 | Verify | **Post-tool verify** — `risk_level >= HIGH` → trace + enforce block | **Done** | P2 | `tool_verify_hooks.py`, `tool_loop.py` | `test_tool_verify_enforcement.py` |
 | TOOL-ENG-8 | Governance | **`tools_mode=required` hard fail** | **Done** | P2 | `plan_context_invocation.py` | `ToolsRequiredError` when zero traces |
 | TOOL-ENG-12 | Config | **`tool_choice` wiring** from host / `tools_mode` | **Done** | P2 | `tool_planning_policy.py`, patterns | `required` → tool_choice required |
@@ -333,17 +329,17 @@ TOOL-ENG-12 → 8 → 7 → 10
 | Planner schema vs `allowed_tools` | Full registry leak | **Done** | Filtered |
 | Selection modes canon | Missing | **Done** (DOC.4) | Architecture + plan pair |
 | Invocation patterns canon | Missing | **Done** (DOC.5) | §patterns + plan register |
-| `ToolInvocationPattern` plugin | N/A | **Partial** | Protocol + single/ReAct shipped (TOOL-ENG-16–18); parallel/chain/semantic batch open |
+| `ToolInvocationPattern` plugin | N/A | **Done** | Protocol + all shipped patterns (TOOL-ENG-16–30) |
 | Parallel read-only invoke | **Done** | **Done** | `ParallelBatchPattern` (TOOL-ENG-9) |
-| Deterministic tool chains | Agent code only | **Gap** | `ToolChainSpec` (TOOL-ENG-20) |
-| Semantic tool index | Keyword overlap | **Gap** | Vector top-k (TOOL-ENG-13) |
-| Hierarchical category traversal | Metadata only | **Gap** | Multi-pass (TOOL-ENG-14) |
+| Deterministic tool chains | Agent code only | **Done** | `ToolChainSpec` + `DeterministicChainPattern` (TOOL-ENG-20) |
+| Semantic tool index | Keyword overlap | **Done** | Vector top-k (TOOL-ENG-13) |
+| Hierarchical category traversal | Metadata only | **Done** v1 | Multi-pass (TOOL-ENG-14) |
 | Tool loop iterations | 1 | **Done** (`max_tool_iterations`) | Refactored to `BoundedReactPattern` (TOOL-ENG-18) |
-| `tools_mode=required` | Warning trace | Warning | Run failure (TOOL-ENG-8) |
+| `tools_mode=required` | Warning trace | **Done** | Run failure (TOOL-ENG-8) |
 | Invoker scope enforcement | Unwired | **Done** | Production wiring |
-| Graph vs tool orchestration boundary | Implicit | **Documented** (DOC.5) | ORCHESTRATION + FLOW cross-refs (DOC.6) |
+| Graph vs tool orchestration boundary | Implicit | **Documented** (DOC.5/6) | ORCHESTRATION + FLOW cross-refs |
 | E2E multi-tool loop test | None | **Done** | `test_tool_loop_integration.py` |
-| Custom invocation pattern from host | N/A | **Gap** | Entry points (TOOL-ENG-24) |
+| Custom invocation pattern from host | N/A | **Done** | Entry points (TOOL-ENG-24) |
 
 ### TOOL-ENG — Paydown log
 
@@ -364,7 +360,7 @@ TOOL-ENG-12 → 8 → 7 → 10
 
 ---
 
-### 6.1e Harness implementation queue — tool engine (active)
+### 6.1e Harness implementation queue — tool engine (closed 2026-06-12)
 
 **Purpose:** Single ordered list for **Phase TOOL-ENG** (Band 2ba). **Opened 2026-06-10** · extended **2026-06-12** (invocation patterns).
 
@@ -379,7 +375,7 @@ TOOL-ENG-12 → 8 → 7 → 10
 | 6 | **TOOL-ENG-11** | Code | **Done** | `tools_context_scope` | scope enum tests |
 | 7 | **TOOL-ENG-5** | Code | **Done** | `ToolSelectionStrategy` | `test_tool_selection_strategy.py` |
 | 8 | **TOOL-ENG-DOC.4** | Docs | **Done** | Selection modes canon | architecture §modes |
-| 9 | **TOOL-ENG-6** | Code + ADR | **Done** | Bounded tool loop (interim) | `test_tool_loop_integration.py` |
+| 9 | **TOOL-ENG-6** | Code + ADR | **Done** | Bounded tool loop → `BoundedReactPattern` | `test_tool_loop_integration.py` |
 | 10 | **TOOL-ENG-DOC.5** | Docs | **Done** | Invocation patterns canon | architecture §patterns |
 | 11 | **TOOL-ENG-16** | Code + ADR | **Done** | `ToolInvocationPattern` Protocol | ADR-TOOL-003 · conformance test |
 | 12 | **TOOL-ENG-17** | Code | **Done** | `SinglePassPattern` | single-pass parity test |
@@ -389,24 +385,24 @@ TOOL-ENG-12 → 8 → 7 → 10
 | 16 | **TOOL-ENG-23** | Code | **Done** | Host profile bridge | `test_catalog_runtime_bridge_tool_invocation.py` |
 | 17 | **TOOL-ENG-29** | Code | **Done** | `ToolInvocationAggregate` | aggregate unit test |
 | 18 | **TOOL-ENG-9** | Code | **Done** | `ParallelBatchPattern` | `test_parallel_batch_pattern.py` |
-| 19 | **TOOL-ENG-13** | Code + ADR | **Planned** | Semantic tool vector index | embedding rank gate |
-| 20 | **TOOL-ENG-25** | Code | **Planned** | `ParallelSemanticBatchPattern` | composite integration test |
-| 21 | **TOOL-ENG-14** | Code + ADR | **Planned** | Hierarchical selection | 2-pass integration |
-| 22 | **TOOL-ENG-15** | Code + Docs | **Planned** | `keyword_top_k` alias | alias in bridge |
-| 23 | **TOOL-ENG-31** | Code | **Planned** | `tool_selection_strategy` config inject | override factory test |
-| 24 | **TOOL-ENG-26** | Code + ADR | **Planned** | Selection strategy entry points | ADR-TOOL-004 · custom EP test |
-| 25 | **TOOL-ENG-20** | Code | **Planned** | `DeterministicChainPattern` + `ToolChainSpec` | chain integration test |
-| 26 | **TOOL-ENG-24** | Code | **Planned** | Invocation pattern entry points | custom pattern EP test |
-| 27 | **TOOL-ENG-32** | Code | **Planned** | Selection trace telemetry | ops:tool_selection test |
-| 28 | **TOOL-ENG-27** | Code | **Planned** | Pattern trace telemetry | diag payload test |
-| 29 | **TOOL-ENG-28** | CI | **Planned** | `check_tool_invocation_patterns.py` | gate green |
-| 30 | **TOOL-ENG-30** | DX | **Planned** | `lab_application` pattern examples | smoke per mode |
+| 19 | **TOOL-ENG-13** | Code + ADR | **Done** | Semantic tool vector index | embedding rank gate |
+| 20 | **TOOL-ENG-25** | Code | **Done** | `ParallelSemanticBatchPattern` | composite integration test |
+| 21 | **TOOL-ENG-14** | Code + ADR | **Done** | Hierarchical selection | 2-pass integration |
+| 22 | **TOOL-ENG-15** | Code + Docs | **Done** | `keyword_top_k` alias | alias in bridge |
+| 23 | **TOOL-ENG-31** | Code | **Done** | `tool_selection_strategy` config inject | override factory test |
+| 24 | **TOOL-ENG-26** | Code + ADR | **Done** | Selection strategy entry points | ADR-TOOL-004 · custom EP test |
+| 25 | **TOOL-ENG-20** | Code | **Done** | `DeterministicChainPattern` + `ToolChainSpec` | chain integration test |
+| 26 | **TOOL-ENG-24** | Code | **Done** | Invocation pattern entry points | custom pattern EP test |
+| 27 | **TOOL-ENG-32** | Code | **Done** | Selection trace telemetry | ops:tool_selection test |
+| 28 | **TOOL-ENG-27** | Code | **Done** | Pattern trace telemetry | diag payload test |
+| 29 | **TOOL-ENG-28** | CI | **Done** | `check_tool_invocation_patterns.py` | gate green |
+| 30 | **TOOL-ENG-30** | DX | **Done** | `lab_application` pattern examples | smoke per mode |
 | 31 | **TOOL-ENG-DOC.6** | Docs | **Done** | ORCHESTRATION §50.4 + FLOW §15.1 boundary | linked pairs |
 | 32 | **TOOL-ENG-DOC.7** | Docs | **Done** | Selection plugin model canon | §selection plugin |
-| 33 | **TOOL-ENG-12** | Code | **Planned** | `tool_choice` wiring | required mode test |
-| 34 | **TOOL-ENG-8** | Code | **Planned** | `tools_mode=required` fail | unit test |
-| 35 | **TOOL-ENG-7** | Code | **Planned** | Post-tool verify HIGH+ | middleware test |
-| 36 | **TOOL-ENG-10** | Code | **Planned** | AHI dynamic mode hook | fixture test |
+| 33 | **TOOL-ENG-12** | Code | **Done** | `tool_choice` wiring | required mode test |
+| 34 | **TOOL-ENG-8** | Code | **Done** | `tools_mode=required` fail | unit test |
+| 35 | **TOOL-ENG-7** | Code | **Done** | Post-tool verify HIGH+ | middleware test |
+| 36 | **TOOL-ENG-10** | Code | **Done** | AHI dynamic mode hook | fixture test |
 
 **Explicitly excluded:** K.1, K.2, new product catalog tools — [§6.3 product backlog](../plan/PLATFORM_FOUNDATION.md).
 
@@ -547,7 +543,7 @@ TOOL-ENG-12 → 8 → 7 → 10
 |----------------|---------------|-----------------|
 | Selection L6 | §[modes](../architecture/TOOLS.md#tool-selection-modes-production-strategies) · §[plugin model](../architecture/TOOLS.md#tool-selection-plugin-model-l6-extensibility) · FLOW §15 | `ToolSelectionStrategy`, `resolve_planner_allowed_tool_ids` |
 | Planning L6b | §Multi-tool execution · §patterns | `ToolPlanningService`, `ToolPlannerProtocol` |
-| Orchestration 2a | §[Invocation patterns](../architecture/TOOLS.md#tool-invocation-patterns-production-orchestration) · FLOW §15.1 | `ToolInvocationPattern` *(planned)*, `run_bounded_tool_loop` |
+| Orchestration 2a | §[Invocation patterns](../architecture/TOOLS.md#tool-invocation-patterns-production-orchestration) · FLOW §15.1 | `ToolInvocationPattern` **Done** (TOOL-ENG-16), `run_bounded_tool_loop` / `resolve_invocation_pattern()` |
 | Atomic invoke 2b | §pipeline · §42.12 gateway | `RuntimeToolInvoker`, `ToolRuntime` |
 | Logging | §pipeline · FLOW §17 · OBS | `trace_event`, `TOOL_*`, `run_bounded_tool_loop` / `ctx.invoke_tool` |
 | Gaps | §[Engine gap register](../architecture/TOOLS.md#engine-gap-register-canon) | Phase **TOOL-ENG** master register |
