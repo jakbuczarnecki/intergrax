@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  administration: write
+  contents: read
 
 jobs:
   sync:
@@ -25,8 +25,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Require repository metadata token
+        env:
+          REPO_METADATA_TOKEN: ${{ secrets.REPO_METADATA_TOKEN }}
+        run: |
+          if [ -z "$REPO_METADATA_TOKEN" ]; then
+            echo "::error::REPO_METADATA_TOKEN secret is missing. Add a fine-grained PAT with Administration: Read and write (see .github/repo-management/README.md)."
+            exit 1
+          fi
+
       - name: Sync description, homepage, and topics
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.REPO_METADATA_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: python .github/repo-management/sync_github_repository_metadata.py --apply

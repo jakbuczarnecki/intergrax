@@ -21,7 +21,6 @@
 - [ ] No documentation changes needed
 - [ ] docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md
 - [ ] docs/intergrax_runtime_architecture.md
-- [ ] docs/intergrax_runtime_architecture.md
 - [ ] docs/guides/AGENT_CREATION_GUIDE.md
 - [ ] Other: <!-- list -->
 

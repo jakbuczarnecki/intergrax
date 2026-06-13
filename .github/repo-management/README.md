@@ -75,13 +75,18 @@ Synced metadata to jakbuczarnecki/intergrax
 
 ---
 
-## CI auto-sync (no PAT required)
+## CI auto-sync
 
-On push to `main` when `repository-metadata.json` or sync scripts change, workflow **Sync repository metadata** applies the manifest using `GITHUB_TOKEN`.
+On push to `main` when `repository-metadata.json` or sync scripts change, workflow **Sync repository metadata** applies the manifest using a repository secret.
 
-Ensure in the repository:
+### One-time CI setup
 
-**Settings → Actions → General → Workflow permissions** → **Read and write permissions**
+1. Create the same fine-grained PAT as in [One-time setup (local sync)](#1-create-a-fine-grained-personal-access-token) (**Administration: Read and write** on `intergrax`).
+2. Repository **Settings → Secrets and variables → Actions → New repository secret**
+3. Name: `REPO_METADATA_TOKEN`
+4. Value: the PAT (do not reuse a committed or logged token)
+
+`GITHUB_TOKEN` cannot update repository description or topics — GitHub Actions workflow permissions do not include an `administration` scope.
 
 ---
 
@@ -106,7 +111,7 @@ GitHub limits:
 | `No GitHub credentials found` | Add `GH_TOKEN` to `.env` or run `gh auth login` |
 | `GitHub API ... failed (403)` | Token missing **Administration: Read and write** on this repo |
 | `Could not resolve target repository` | Run from a git clone with `origin` pointing at GitHub, or set `"repository": "owner/name"` in the manifest |
-| CI workflow does not update settings | Enable **Read and write** workflow permissions for Actions |
+| CI workflow does not update settings | Add `REPO_METADATA_TOKEN` repository secret (fine-grained PAT with **Administration: Read and write**) |
 
 ---
 
