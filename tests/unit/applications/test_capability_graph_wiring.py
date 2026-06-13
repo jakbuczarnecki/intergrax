@@ -73,6 +73,7 @@ def test_extract_environment_capability_graph_includes_neighbors() -> None:
     assert "tool:rag.retrieve" in node_ids
 
 
+@pytest.mark.no_ci
 def test_resolve_environment_capability_graph_from_lab_wiring() -> None:
     settings = LabApplicationSettings.from_env()
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="cg.resolve")
@@ -86,6 +87,7 @@ def test_resolve_environment_capability_graph_from_lab_wiring() -> None:
     assert any(node_id.startswith("agent:") for node_id in view.node_ids())
 
 
+@pytest.mark.no_ci
 def test_wire_application_environment_includes_capability_graph() -> None:
     settings = LabApplicationSettings.from_env()
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="cg.wire")
@@ -95,6 +97,7 @@ def test_wire_application_environment_includes_capability_graph() -> None:
     assert wiring.capability_graph.graph.nodes
 
 
+@pytest.mark.no_ci
 def test_validate_environment_capability_graph_detects_missing_tool_node() -> None:
     settings = LabApplicationSettings.from_env()
     manifest = build_lab_manifest(settings)
@@ -119,6 +122,7 @@ def test_validate_environment_capability_graph_detects_missing_tool_node() -> No
     assert any("tool:" in error or "skill:" in error or "agent:" in error for error in result.errors)
 
 
+@pytest.mark.no_ci
 def test_assert_capability_graph_assembly_valid_raises() -> None:
     settings = LabApplicationSettings.from_env()
     manifest = build_lab_manifest(settings)

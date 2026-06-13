@@ -17,7 +17,7 @@ from intergrax.integrations.registry.profile import IntegrationProfile
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_probe_integration_profile_health_lab_profile() -> None:

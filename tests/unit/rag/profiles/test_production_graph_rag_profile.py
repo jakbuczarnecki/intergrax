@@ -23,7 +23,7 @@ from intergrax.rag.profiles.rag_profile import (
     validate_graph_rag_production_wiring,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 @pytest.fixture(autouse=True)

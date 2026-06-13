@@ -137,6 +137,7 @@ def _host_with_reaction(
 
 @pytest.mark.unit
 @pytest.mark.gate
+@pytest.mark.no_ci
 async def test_budget_exceeded_hitl_pauses_run() -> None:
     host_ctx = _host_with_reaction(
         BudgetReactionProfile(on_agent_limit_exceeded=BudgetExceededReaction.HITL),
@@ -153,6 +154,7 @@ async def test_budget_exceeded_hitl_pauses_run() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
+@pytest.mark.no_ci
 async def test_budget_exceeded_notify_only_sends_notification() -> None:
     adapter = _RecordingNotificationAdapter()
     host_ctx = _host_with_reaction(
@@ -177,6 +179,7 @@ async def test_budget_exceeded_notify_only_sends_notification() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
+@pytest.mark.no_ci
 async def test_budget_custom_hook_invoked_on_exceed() -> None:
     hook = _RecordingBudgetHook()
     host_ctx = _host_with_reaction(

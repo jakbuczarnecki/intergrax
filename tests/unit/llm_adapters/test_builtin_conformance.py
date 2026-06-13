@@ -175,6 +175,7 @@ def _restore_registry_state():
         LLMAdapterRegistry._factories = snapshot
 
 
+@pytest.mark.no_ci
 @pytest.mark.parametrize("provider", list(LLMProvider))
 def test_builtin_provider_conformance(provider: LLMProvider, _restore_registry_state) -> None:
     LLMAdapterRegistry._factories.clear()

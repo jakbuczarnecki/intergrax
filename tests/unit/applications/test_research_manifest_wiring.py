@@ -18,6 +18,7 @@ def test_research_manifest_lists_two_agents() -> None:
     assert len(enabled) == 2
 
 
+@pytest.mark.no_ci
 def test_build_research_registry_registers_pipeline_agents() -> None:
     registry = build_research_registry()
     ids = set(registry.list_agent_ids())
@@ -29,6 +30,7 @@ def test_build_research_registry_registers_pipeline_agents() -> None:
     assert "websearch.query" in research_contract.allowed_tools
 
 
+@pytest.mark.no_ci
 def test_build_research_registry_via_builders() -> None:
     ctx = ApplicationBuildContext.for_manifest(RESEARCH_APPLICATION_MANIFEST)
     registry = build_application_registry(

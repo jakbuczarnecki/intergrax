@@ -104,6 +104,7 @@ def test_evaluate_hard_budget_advisory_does_not_block() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
+@pytest.mark.no_ci
 async def test_hard_limit_blocks_second_step_llm() -> None:
     environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="tok_hard.lab")
     binding = AgentBinding.model_construct(
@@ -128,6 +129,7 @@ async def test_hard_limit_blocks_second_step_llm() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
+@pytest.mark.no_ci
 async def test_advisory_limit_allows_second_step_llm() -> None:
     environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="tok_advisory.lab")
     binding = AgentBinding.model_construct(

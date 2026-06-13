@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""Fail when gate-marked unit tests use infra-heavy patterns without ``no_ci`` (CI purity gate)."""
+"""Fail when CI-selected unit tests (gate and not no_ci) use infra-heavy patterns."""
 
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
 from pathlib import Path
 
-SCAN_ROOT = Path("tests/unit")
+CI_MARKER = "gate and not no_ci"
 
 FORBIDDEN: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("fastapi_testclient", re.compile(r"fastapi\.testclient|\bTestClient\b")),
@@ -25,35 +26,119 @@ FORBIDDEN: tuple[tuple[str, re.Pattern[str]], ...] = (
         ),
     ),
     ("http_client", re.compile(r"\bhttpx\.(get|post|Client)\(|\brequests\.(get|post)\(")),
+    ("subprocess_script", re.compile(r"subprocess\.(run|check_output|Popen)\(")),
     ("subprocess_server", re.compile(r"subprocess\.(Popen|run).*uvicorn")),
     ("mcp_runtime", re.compile(r"\bFastMCP\s*\(|couple_fastapi_with_mcp\s*\(|build_[a-z_]+_mcp_server\s*\(")),
 )
 
+PER_TEST_FORBIDDEN: tuple[tuple[str, re.Pattern[str]], ...] = (
+    (
+        "tier3_host_bootstrap",
+        re.compile(r"\bwire_application_environment\s*\("),
+    ),
+    (
+        "lab_tool_bootstrap",
+        re.compile(r"\bwire_lab_tools\s*\("),
+    ),
+    (
+        "integration_catalog_bootstrap",
+        re.compile(r"\bregister_default_integrations\s*\("),
+    ),
+    (
+        "rag_stack_bootstrap",
+        re.compile(r"\bcreate_default_rag_stack\s*\("),
+    ),
+    (
+        "fleet_readiness_scan",
+        re.compile(r"\bbuild_roster_readiness_report\s*\("),
+    ),
+    (
+        "skill_registry_bootstrap",
+        re.compile(r"\bbuild_application_skill_wiring\s*\("),
+    ),
+)
 
-def _has_gate_marker(text: str) -> bool:
-    return "pytest.mark.gate" in text or "@pytest.mark.gate" in text
+_FUNC_DEF = re.compile(r"^def (test_[a-zA-Z0-9_]+)\(", re.MULTILINE)
+
+
+def _collect_ci_tests(repo_root: Path) -> list[tuple[Path, str]]:
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "tests/unit",
+            "-m",
+            CI_MARKER,
+            "--collect-only",
+            "-q",
+        ],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode not in (0, 5):
+        print(proc.stdout)
+        print(proc.stderr, file=sys.stderr)
+        raise SystemExit(f"pytest collect failed: {proc.returncode}")
+    tests: list[tuple[Path, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for line in proc.stdout.splitlines():
+        line = line.strip()
+        if not line.startswith("tests/") or "::" not in line:
+            continue
+        rel, node = line.split("::", 1)
+        func = node.split("[", 1)[0]
+        key = (rel, func)
+        if key in seen:
+            continue
+        seen.add(key)
+        tests.append((repo_root / rel, func))
+    return tests
+
+
+def _function_block(text: str, func_name: str) -> str:
+    match = re.search(rf"^def {re.escape(func_name)}\(", text, re.MULTILINE)
+    if match is None:
+        return ""
+    start = match.start()
+    next_def = re.search(r"^def test_", text[match.end() :], re.MULTILINE)
+    end = match.end() + next_def.start() if next_def else len(text)
+    return text[start:end]
 
 
 def main() -> int:
     repo_root = Path(__file__).resolve().parents[1]
-    root = repo_root / SCAN_ROOT
+    tests = _collect_ci_tests(repo_root)
+    files = sorted({path for path, _ in tests})
     violations: list[tuple[str, list[str]]] = []
-    for path in sorted(root.rglob("test_*.py")):
+    per_test_violations: list[tuple[str, list[str]]] = []
+
+    for path in files:
         text = path.read_text(encoding="utf-8")
-        if not _has_gate_marker(text):
-            continue
-        if "pytest.mark.no_ci" in text:
-            continue
         hits = sorted({name for name, pat in FORBIDDEN if pat.search(text)})
         if hits:
             rel = path.relative_to(repo_root).as_posix()
             violations.append((rel, hits))
-    if violations:
-        print("ci gate purity violations (gate tests with infra patterns, missing no_ci):")
+
+    for path, func_name in tests:
+        block = _function_block(path.read_text(encoding="utf-8"), func_name)
+        if not block:
+            continue
+        hits = sorted({name for name, pat in PER_TEST_FORBIDDEN if pat.search(block)})
+        if hits:
+            rel = path.relative_to(repo_root).as_posix()
+            per_test_violations.append((f"{rel}::{func_name}", hits))
+
+    if violations or per_test_violations:
+        print(f"ci gate purity violations ({CI_MARKER!r}, {len(files)} files, {len(tests)} tests):")
         for rel, hits in violations:
             print(f"  {rel}: {', '.join(hits)}")
+        for nodeid, hits in per_test_violations:
+            print(f"  {nodeid}: {', '.join(hits)}")
         return 1
-    print("ci gate purity audit: OK")
+    print(f"ci gate purity audit: OK ({len(files)} CI-selected test modules, {len(tests)} tests)")
     return 0
 
 

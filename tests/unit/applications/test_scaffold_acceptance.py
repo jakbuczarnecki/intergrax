@@ -47,6 +47,7 @@ def test_scaffold_profiles_exposed_on_cli() -> None:
     assert set(profile_action.choices) == {"lab", "product"}
 
 
+@pytest.mark.no_ci
 def test_scaffold_lab_profile_generated_artifacts(tmp_path) -> None:
     target, pkg, short = prepare_scaffold_package(
         tmp_path,
@@ -70,6 +71,7 @@ def test_scaffold_lab_profile_generated_artifacts(tmp_path) -> None:
     _assert_tool_wiring_in_host(target, pkg, short)
 
 
+@pytest.mark.no_ci
 def test_scaffold_product_profile_generated_artifacts(tmp_path) -> None:
     target, pkg, short = prepare_scaffold_package(
         tmp_path,
@@ -102,6 +104,7 @@ def test_scaffold_product_profile_generated_artifacts(tmp_path) -> None:
     assert any(name.endswith("BackendSettings") for name in settings_src)
 
 
+@pytest.mark.no_ci
 def test_scaffold_generated_smoke_tests_are_importable(tmp_path) -> None:
     """Generated ``<pkg>_tests/host/test_*_smoke.py`` matches factory entrypoints."""
     _, pkg, short = prepare_scaffold_package(
@@ -146,6 +149,7 @@ def test_scaffold_generated_smoke_tests_are_importable(tmp_path) -> None:
     assert f"test_{short2}_backend_health" in smoke2_text
 
 
+@pytest.mark.no_ci
 def test_new_stack_cli_creates_agent_and_application(tmp_path) -> None:
     root = tmp_path / "repo"
     (root / "applications").mkdir(parents=True)
