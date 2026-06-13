@@ -17,7 +17,6 @@ body:
         - README.md (navigation / status)
         - docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md
         - docs/intergrax_runtime_architecture.md
-        - docs/intergrax_runtime_architecture.md
         - docs/guides/AGENT_CREATION_GUIDE.md
         - docs/architecture/INTEGRATIONS.md
         - docs/architecture/TOOLS.md
