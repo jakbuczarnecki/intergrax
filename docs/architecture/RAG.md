@@ -108,12 +108,13 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-30 | niedoróbka | ~~graph provenance not on trace~~ — **closed M-RAG.54**: `graph_provenance_records` + summary on `RetrievalTrace` | **P1** | M-RAG.54 **Done** | — |
 | GAP-RAG-31 | niegotowość | ~~No graph maintenance job~~ — **closed M-RAG.45**: `rag.schedule_graph_maintenance_job` + workflow contract | **P2** | M-RAG.45 **Done** | — |
 | GAP-RAG-32 | niedoróbka | ~~No GraphIndexer plugin registry~~ — **closed M-RAG.46**: `register_graph_indexer_plugin()` | **P2** | M-RAG.46 **Done** | — |
-| GAP-RAG-33 | gap | `graph_store` catalog lacks Neptune, OrientDB, ArangoDB, TigerGraph, JanusGraph | **P3** | M-RAG.49–M-RAG.51 **Planned** | — |
+| GAP-RAG-33 | gap | ~~`graph_store` catalog lacks Neptune, OrientDB, ArangoDB~~ — **closed M-RAG.49–51** (TigerGraph/JanusGraph out of scope) | **P3** | M-RAG.49–51 **Done** | — |
 | GAP-RAG-34 | ograniczenie | No Microsoft GraphRAG vendoring — optional harness-native `community_report` indexer (M-RAG.47 **Done**, default off) | — | M-RAG.47 **Done** | — |
 | GAP-RAG-35 | niedoróbka | ~~prod slug list neo4j-only~~ — **closed M-RAG.48**: `APPROVED_PRODUCTION_GRAPH_STORE_SLUGS` (`neo4j`, `memgraph`) | **P2** | M-RAG.48 **Done** | — |
-| GAP-RAG-35b | niedoróbka | `falkordb` absent from `APPROVED_PRODUCTION_GRAPH_STORE_SLUGS` pending graph soak | **P2** | M-RAG.55 **Planned** | — |
-| GAP-RAG-09b | niska jakość | RAG aggregated metrics opt-in while OTel spans default-on — spine misalignment | **P2** | M-RAG.57 **Planned** | 14.7 |
-| GAP-RAG-07b | niedoróbka | Beta vector slugs (`pinecone`, `milvus`, `vespa`) lack harness soak gate via adapter injection | **P2** | M-RAG.56 **Planned** | — |
+| GAP-RAG-35b | niedoróbka | ~~`falkordb` absent from prod slug list~~ — **closed M-RAG.55**: graph soak gate + `falkordb` in `APPROVED_PRODUCTION_GRAPH_STORE_SLUGS` | **P2** | M-RAG.55 **Done** | — |
+| GAP-RAG-09b | niska jakość | ~~RAG metrics opt-in vs OTel default-on~~ — **closed M-RAG.57**: metrics default follows `INTERGRAX_RAG_OTEL_SPANS_ENABLED` when unset | **P2** | M-RAG.57 **Done** | 14.7 |
+| GAP-RAG-07b | niedoróbka | ~~Beta vector slugs lack harness soak gate~~ — **closed M-RAG.56**: `run_beta_adapter_soak` + gate for pinecone/milvus/vespa | **P2** | M-RAG.56 **Done** | — |
+| GAP-RAG-15 | ograniczenie | No autonomous MIME/size-based chunking or retriever selection — **Frozen** (M-RAG.58); owned by Tier-3 + [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md) | **P4** | M-RAG.58 **Frozen** | — |
 
 **Traceability rule:** no open GAP-RAG row without a **Planned** M-RAG.\* deliverable in [`plan/RAG.md`](../plan/RAG.md). **GAP-RAG-15** and **GAP-RAG-34** are explicit architectural boundaries, not harness defects.
 
@@ -270,9 +271,9 @@ Runtime architecture (Tier-1 contracts)
 | Neo4j | `neo4j` | **`neo4j`** via `Neo4jRagGraphStore` | **Required** today | Harden (M-RAG.38) |
 | Memgraph | `memgraph` | **`memgraph`** via `CypherRagGraphStore` | Pending soak (M-RAG.48) | M-RAG.48 |
 | FalkorDB | `falkordb` | **`falkordb`** via `CypherRagGraphStore` | Pending soak (M-RAG.48) | M-RAG.48 |
-| Amazon Neptune | — | **Absent** | — | M-RAG.49 (+ H-INT) |
-| OrientDB | — | **Absent** | — | M-RAG.50 (+ H-INT) |
-| ArangoDB | — | **Absent** | — | M-RAG.51 (+ H-INT) |
+| Amazon Neptune | `neptune` | **`neptune`** via `CypherRagGraphStore` | Beta (M-RAG.49) | — |
+| OrientDB | `orientdb` | **`orientdb`** via `CypherRagGraphStore` | Beta (M-RAG.50) | — |
+| ArangoDB | `arangodb` | **`arangodb`** via `CypherRagGraphStore` | Beta (M-RAG.51) | — |
 
 **Env / profile:**
 
@@ -374,7 +375,7 @@ Retrieve and ingest accept scope fields (`tenant_id`, `session_id`, `user_id`, `
 | Tool diagnostics | `RagRetrieveOutput.diagnostics` | — |
 | Parser ingest | `parser_trace` metadata; export Langfuse/Sentry | — |
 | Nexus summary | `RagSummaryDiagV1` (PII-safe) | — |
-| Aggregated metrics | `INTERGRAX_RAG_METRICS_ENABLED` → collector + runtime plugin | Opt-in by design (GAP-RAG-09 documented) |
+| Aggregated metrics | `INTERGRAX_RAG_METRICS_ENABLED` → collector + runtime plugin | Default **on** when OTel spans enabled and env unset (M-RAG.57) |
 | OpenTelemetry spans | `tracking/rag_spans.py` on `RetrievalService` + `IngestPipeline` stages | Default on; disable `INTERGRAX_RAG_OTEL_SPANS_ENABLED=false` |
 
 Enable metrics: `INTERGRAX_RAG_METRICS_ENABLED=true` or `register_rag_observability_plugin(plugins)` from `tracking/observability_bridge.py`.
@@ -456,4 +457,4 @@ Code-backed audit (`guides/audit/RAG.md`, mode `audit-only`). Key confirmations:
 | Agents bypass vectorstore | **No violation** | No `vectorstore.query` in `agents/` |
 | Vector manifest stability | **Partial** | `integrations/providers/vector_store/*/manifest.py` — stable vs beta per GAP-RAG-07 row above |
 
-**Posture:** L3 implementation for core retrieval — **M-RAG-DEPTH complete** (2026-06-10). **GraphRAG platform** **L3** including usage hardening (M-RAG-GRAPH G1–G5, 2026-06-13). **GAP-RAG-15** and **GAP-RAG-34** remain explicit boundaries.
+**Posture:** RAG layer **Frozen** (2026-06-13) — M-RAG-DEPTH + M-RAG-GRAPH + M-RAG-BACKLOG complete. **GAP-RAG-15** frozen to AHI; **GAP-RAG-34** boundary intact.

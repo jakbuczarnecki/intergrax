@@ -17,9 +17,9 @@
 
 | ID | Slug | Category | Priority | Status | RAG deliverable | Notes |
 |----|------|----------|----------|--------|-----------------|-------|
-| H-INT-GRAPH-1 | `neptune` | graph_store | **P3** | **Planned** | M-RAG.49 | AWS Neptune — OpenCypher or configured dialect; no local infra default |
-| H-INT-GRAPH-2 | `orientdb` | graph_store | **P3** | **Planned** | M-RAG.50 | OrientDB SQL/graph API facade |
-| H-INT-GRAPH-3 | `arangodb` | graph_store | **P3** | **Planned** | M-RAG.51 | ArangoDB AQL bridge |
+| H-INT-GRAPH-1 | `neptune` | graph_store | **P3** | **Done** | M-RAG.49 | AWS Neptune — OpenCypher HTTP bridge |
+| H-INT-GRAPH-2 | `orientdb` | graph_store | **P3** | **Done** | M-RAG.50 | OrientDB OpenCypher HTTP bridge |
+| H-INT-GRAPH-3 | `arangodb` | graph_store | **P3** | **Done** | M-RAG.51 | ArangoDB AQL HTTP bridge |
 
 **Per-slug checklist:** contract gate → `providers/graph_store/<slug>/` → health probe → bootstrap register → RAG `RagGraphStoreBackend` adapter (M-RAG.38 registry) → gate green.
 

@@ -70,7 +70,7 @@ Every finding in [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth 
 | GAP-RAG-30 | niedoróbka | M-RAG.44 **Done** · M-RAG.54 **Done** | G2 · G5 |
 | GAP-RAG-31 | niegotowość | M-RAG.45 | G3 |
 | GAP-RAG-32 | niedoróbka | M-RAG.46 | G3 |
-| GAP-RAG-33 | gap | M-RAG.49–M-RAG.51 | G4 |
+| GAP-RAG-33 | gap | M-RAG.49–M-RAG.51 **Done** | G4 |
 | GAP-RAG-34 | ograniczenie | M-RAG.47 | G3 |
 | GAP-RAG-35 | niedoróbka | M-RAG.48 | G2 |
 | GAP-RAG-36 | niska jakość | M-RAG.52 | G2 |
@@ -225,7 +225,7 @@ Requires new Integration catalog slugs first (H-INT in INTEGRATIONS plan).
 **Phase RAG complete when:** RAG-1 + RAG-DOC.* **Done**; §6.1e queue closed. **Status: complete (2026-06-02).**  
 **Phase M-RAG-DEPTH:** **Complete** (2026-06-10) — M-RAG.23 … M-RAG.37 **Done**.
 
-**Phase M-RAG-GRAPH:** **Complete** (2026-06-13) — M-RAG.38 … M-RAG.54 **Done**; **Phase M-RAG-BACKLOG active** (M-RAG.55–M-RAG.57 P2 · M-RAG.49–51 P3); boundaries: GAP-RAG-15 (P4 frozen), GAP-RAG-34.
+**Phase M-RAG-BACKLOG:** **Complete** (2026-06-13) — M-RAG.55–M-RAG.57 **Done**; M-RAG.49–M-RAG.51 **Done**; M-RAG.58 **Frozen** (GAP-RAG-15).
 
 ---
 
@@ -484,22 +484,22 @@ Requires Integration catalog slugs (Neptune, OrientDB, ArangoDB) per [`plan/INTE
 
 | Sprint | ID | Priority | Scope | Files |
 |--------|-----|----------|-------|-------|
-| P2.1 | **M-RAG.55** | P2 | Graph store soak gate; promote `falkordb` to `APPROVED_PRODUCTION_GRAPH_STORE_SLUGS` after harness soak | `graph/soak/prod_slo.py`, `tests/unit/rag/graph/test_graph_store_prod_slo_soak.py`, `profiles/rag_profile.py` |
-| P2.2 | **M-RAG.56** | P2 | Beta vector slug soak harness — inject in-memory store through beta adapter factories | `vectorstore/soak/prod_slo.py`, `tests/unit/rag/vectorstore/test_beta_vector_soak_gate.py` |
-| P2.3 | **M-RAG.57** | P2 | RAG metrics default-on when OTel spine enabled (align with `INTERGRAX_RAG_OTEL_SPANS_ENABLED`) | `tracking/metrics.py`, `tests/unit/rag/tracking/test_rag_metrics_default.py` |
+| P2.1 | **M-RAG.55** | P2 | Graph store soak gate; promote `falkordb` to `APPROVED_PRODUCTION_GRAPH_STORE_SLUGS` after harness soak | 29 | **Done** |
+| P2.2 | **M-RAG.56** | P2 | Beta vector slug soak harness — inject in-memory store through beta adapter factories | 29 | **Done** |
+| P2.3 | **M-RAG.57** | P2 | RAG metrics default-on when OTel spine enabled (align with `INTERGRAX_RAG_OTEL_SPANS_ENABLED`) | 30 | **Done** |
 
 ### Phase M-RAG-BACKLOG — P3 vendor graph_store (2026-06-13)
 
 | Sprint | ID | Priority | Scope | Depends |
 |--------|-----|----------|-------|---------|
-| P3.1 | **H-INT-GRAPH-1** + **M-RAG.49** | P3 | `neptune` integration + RAG `CypherRagGraphStore` adapter | — |
-| P3.2 | **H-INT-GRAPH-2** + **M-RAG.50** | P3 | `orientdb` integration + RAG adapter | — |
-| P3.3 | **H-INT-GRAPH-3** + **M-RAG.51** | P3 | `arangodb` integration + RAG AQL adapter | — |
+| P3.1 | **H-INT-GRAPH-1** + **M-RAG.49** | P3 | `neptune` integration + RAG `CypherRagGraphStore` adapter | **Done** |
+| P3.2 | **H-INT-GRAPH-2** + **M-RAG.50** | P3 | `orientdb` integration + RAG adapter | **Done** |
+| P3.3 | **H-INT-GRAPH-3** + **M-RAG.51** | P3 | `arangodb` integration + RAG AQL adapter | **Done** |
 
 ### Phase M-RAG-BACKLOG — P4 frozen boundary (2026-06-13)
 
-| Sprint | ID | Priority | Scope |
-|--------|-----|----------|-------|
-| P4.1 | **M-RAG.58** | P4 | Document GAP-RAG-15 as **Frozen** — autonomous retriever/chunker selection owned by [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md); no RAG-layer implementation |
+| Sprint | ID | Priority | Scope | Status |
+|--------|-----|----------|-------|--------|
+| P4.1 | **M-RAG.58** | P4 | GAP-RAG-15 **Frozen** — autonomous retriever/chunker selection owned by [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md) | **Frozen** |
 
-**Suggested first PR (backlog):** **M-RAG.55** — graph store soak gate (unblocks falkordb prod slug).
+**Layer status:** RAG domain **Frozen** for harness iteration — no open P0–P3 items; future work = ops soak promotion (beta→stable manifests) and AHI adaptive routing.

@@ -288,6 +288,61 @@ class FalkorDbGraphStore(Neo4jGraphStore):
     pass
 
 
+class NeptuneGraphStore(Neo4jGraphStore):
+    """Amazon Neptune OpenCypher facade."""
+
+    pass
+
+
+class OrientDbGraphStore(Neo4jGraphStore):
+    """OrientDB graph facade (OpenCypher-compatible HTTP bridge)."""
+
+    pass
+
+
+class ArangoDbGraphStore:
+    """ArangoDB AQL graph facade."""
+
+    def __init__(self, client: Any) -> None:
+        self._client = client
+        self._closed = False
+
+    def run_query(
+        self,
+        statement: str,
+        *,
+        parameters: Optional[Mapping[str, Any]] = None,
+    ) -> GraphQueryResult:
+        self._require_open()
+        records = self._client.run_aql(statement, dict(parameters or {}))
+        return GraphQueryResult(records=[dict(r) for r in records])
+
+    def get_node(self, node_id: str) -> Optional[GraphNodeRecord]:
+        self._require_open()
+        payload = self._client.get_document(node_id)
+        if payload is None:
+            return None
+        return GraphNodeRecord(
+            id=str(payload.get("id") or node_id),
+            labels=list(payload.get("labels") or []),
+            properties=dict(payload.get("properties") or payload),
+        )
+
+    def close(self) -> None:
+        self._closed = True
+
+    def health(self) -> HealthStatus:
+        from intergrax.integrations._shared.health import probe_client_health
+
+        if self._closed:
+            return HealthStatus(slug="arangodb", healthy=False, detail="graph store closed")
+        return probe_client_health(self._client, slug="arangodb")
+
+    def _require_open(self) -> None:
+        if self._closed:
+            raise IntegrationConfigurationError("ArangoDB graph store is closed")
+
+
 class KubernetesCloudPlatform:
     def __init__(self, client: Any, *, namespace: str, slug: str = "kubernetes") -> None:
         self._client = client
