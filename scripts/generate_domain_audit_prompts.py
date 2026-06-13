@@ -257,8 +257,8 @@ intergrax/runtime/nexus/tools/tool_loop.py  [ACP tool loop]
 agents/ (Tier-2 roster) · applications/_shared/prompt_wiring.py
 scripts/check_agents_lifecycle_metadata.py · check_agents_vendor_imports.py""",
         "key_symbols": "AgentContract · UAEPAgent · RuntimeExecutionContext · AgentDecision · CognitiveAgent · acp.state.v1 · IntergraxAgent · PromptMeta · AgentStepContext · StepOutcome · AgentRunTrace · ApplicationRunSummary",
-        "active_phases": "ACP Done (2026-06-11) · ACP-CLOSE active §6.1bb · PE/REG/CG/AS closed · AUDIT-IDEAL residuals",
-        "known_gaps": "GAP-ACP-03/04/07 Open · ACP-CLOSE-LEG-5 Done · ACP-CLOSE-PROD-1..8 · ACP-CLOSE-PAT-1..2 · TOOL-ENG-16 pattern plugin · AUDIT-IDEAL-19.1/20.1/31.1",
+        "active_phases": "ACP · ACP-CLOSE · ACP-FINISH Done (2026-06-13) · PE/REG/CG/AS closed · AUDIT-IDEAL-19.1/20.1/31.1 parallel",
+        "known_gaps": "GAP-ACP-36/37 Closed (ACP-TOK-*) · GAP register 37 Closed · 0 Open · AUDIT-IDEAL-19.1/20.1/31.1 Planned · COST-1 RunBudget Partial",
         "dimensions": [
             "AgentContract has required fields per §12 — capabilities, allowed_tools, risk metadata.",
             "UAEPAgent: get_steps/run_step — AgentEngine path, not private HTTP bypass.",

@@ -830,7 +830,7 @@ AcpInvocationUsageView:                     # read-only on AgentStepContext
 
 **Cross-domain:** token metering originates in [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) (`LLMUsageTracker`, `LLMMetricsCollector`); budget envelopes in [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) (`cost_budget`, `BudgetEnvelope`). ACP exposes **author-readable rollups** only — Tier-2 MUST NOT import vendor metrics SDKs.
 
-**Plan:** ACP-TOK-1 (**Planned** — kernel population + acceptance).
+**Plan:** ACP-TOK-1 (**Done** — `acp_token_metering_bridge.py`, `test_acp_token_usage_metering.py`).
 
 ## 25.5 Token budget limits, enforcement, and application reactions
 
@@ -891,7 +891,7 @@ AcpInvocationUsageView:
 
 ### 25.5.3 Environment reaction policies (Tier-3 configurable)
 
-Applications configure **what happens** when a threshold is crossed or a hard limit is hit. Declared on `CostProfile.budget_reaction` ([`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) · partial **COST-1** today).
+Applications configure **what happens** when a threshold is crossed or a hard limit is hit. Declared on `CostProfile.budget_reaction` ([`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §43 · **Done**; Nexus `RunBudget` env cap remains **Partial** COST-1).
 
 ```text
 BudgetReactionProfile:
@@ -958,9 +958,9 @@ CostProfile(
 | [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) | Token metering source |
 | ACP §25.4 / §32.6 / §33.4 | Author read surface + adaptive downgrade |
 
-**Implementation status:** environment `CostProfile` + Nexus `RunBudget` **partial** (COST-1); per-agent `AgentBinding.budget_slice` + ACP kernel enforcement + reaction hooks = **ACP-TOK-2** (**Planned**).
+**Implementation status:** per-agent `AgentBinding.budget_slice` + ACP kernel pre-LLM enforcement + reaction hooks = **Done** (ACP-TOK-2 · ACP-TOK-3 · ACP-TOK-CI). Environment `CostProfile` + host `budget_reaction` wiring = **Done** (Tier-3 §43 · APP-PROD-7). Nexus `RunBudget` graph-level env cap = **Partial** (COST-1).
 
-**Plan:** ACP-TOK-1 (metering) · **ACP-TOK-2** (limits + reactions).
+**Plan:** ACP-TOK-1 · ACP-TOK-2 · ACP-TOK-3 · ACP-TOK-CI — **Done**.
 
 ---
 
@@ -1236,7 +1236,7 @@ Developer code path:
 
 ## 28.3 Gap register (ACP)
 
-**Audit sync (2026-06-11):** **35 Closed** · **2 Open** (GAP-ACP-36, GAP-ACP-37) · ACP-CLOSE complete; token depth = **ACP-TOK-1** · **ACP-TOK-2**.
+**Audit sync (2026-06-13):** **37 Closed** · **0 Open** · ACP-FINISH complete; token depth = **ACP-TOK-1** · **ACP-TOK-2** · **ACP-TOK-3** · **ACP-TOK-CI** **Done**.
 
 | ID | Gap | Priority | Plan row | Status |
 |----|-----|----------|----------|--------|
@@ -1275,8 +1275,8 @@ Developer code path:
 | GAP-ACP-32 | Artifact contract missing (loose string list) | P1 | ACP-PROD-6 | **Closed** |
 | GAP-ACP-33 | Release gates / CI matrix not normative for agents | P1 | ACP-PROD-9..10 | **Closed** |
 | GAP-ACP-34 | `RequestIdentity` + memory_scope not in contracts | P0 | ACP-DX-1 + ACP-DX-2 §30.9 | **Closed** |
-| GAP-ACP-36 | No agent + environment token rollups in invocation state | P1 | ACP-TOK-1 §25.4 | **Open** |
-| GAP-ACP-37 | No per-agent limits + configurable exceed reactions from application | P1 | ACP-TOK-2 §25.5 | **Open** |
+| GAP-ACP-36 | No agent + environment token rollups in invocation state | P1 | ACP-TOK-1 §25.4 | **Closed** |
+| GAP-ACP-37 | No per-agent limits + configurable exceed reactions from application | P1 | ACP-TOK-2 · ACP-TOK-3 §25.5 | **Closed** |
 
 ## 28.4 Anti-patterns (ACP)
 
@@ -2488,8 +2488,8 @@ Canonical scenarios — all supported by **same** agent class + environment merg
 | Production reliability | **Done** (platform modules ACP-PROD-1..12) | Host depth §40.1–§40.3 · §40.12 evidence |
 | Legacy paths | **Done** — LEG-1..3; UAEP author surface removed | — |
 | ReAct + tools | **Done** — `tool_loop_step` + `react_budget` | CI-17 ACP-AP-02 gate **Done** |
-| Token usage in invocation state | **Partial** — contracts §25.4 | **ACP-TOK-1** — kernel population |
-| Per-agent limits + exceed reactions | **Partial** — contracts §25.5 | **ACP-TOK-2** — kernel + host hooks |
+| Token usage in invocation state | **Done** — ACP-TOK-1 | — |
+| Per-agent limits + exceed reactions | **Done** — ACP-TOK-2 · ACP-TOK-3 | Nexus `RunBudget` env cap **Partial** (COST-1) |
 
 ## 36.5 Related ADRs and plan
 
@@ -3416,30 +3416,31 @@ Waivers require ADR + operator sign-off — not silent skip.
 | **Production coding** | + §40 implemented (ACP-PROD) | Mutating prod agents, org simulation prod |
 | **Roster production_mode** | + §40.9 gates green | Customer-facing deployment |
 
-**Audit scores (2026-06-11 — post ACP waves):**
+**Audit scores (2026-06-13 — post ACP-FINISH):**
 
 | Dimension | Score |
 |-----------|--------|
-| Conceptual architecture | **9/10** ✓ |
-| Platform implementation (ACP waves 0–8) | **8.5/10** ✓ |
-| Architecture ↔ code doc sync | **9/10** ✓ (after ACP-CLOSE-DOC-2/3) |
-| Mutating agents production-ready | **Partial** — §40.12 + mutating checkpoint/idempotency + STRICT configure_run deny + compensation queue + CI-1/3 + UC-11 product golden **Done**; PAT/CI-2 remain |
+| Conceptual architecture | **10/10** ✓ |
+| Platform implementation (ACP waves 0–8 + ACP-FINISH) | **9.5/10** ✓ |
+| Architecture ↔ code doc sync | **10/10** ✓ (ACP-FINISH-DOC-1) |
+| Mutating agents production-ready | **Done** — §40.12 + ACP-CLOSE-PROD-* + ACP-TOK-* + STRICT configure_run deny + compensation queue + CI-1/3 + UC-11 product golden **Done** |
 
 ### 40.13.1 Audit acceptance (2026-06)
 
-**Accepted as target canon** — architecture §13–§40 and plan register ACP-* are **decision-complete**. Further architecture iteration MUST be driven by **implementation gaps** (ADR + plan row), not open-ended doc expansion.
+**Accepted as target canon** — architecture §13–§40 and plan register ACP-* are **decision-complete and implementation-complete** for token budget depth (§25.4–§25.5). Further architecture iteration MUST be driven by **implementation gaps** (ADR + plan row), not open-ended doc expansion.
 
 | Decision | Verdict |
 |----------|---------|
 | Adopt §13–§39 execution model (`run` / `on_next_step` / `advance_step` / `HarnessKernel` / `NexusLoop`) | **Yes** — **delivered** |
-| Adopt §40 production gate for mutating / customer-facing agents | **Yes** |
-| Update implementation plan from this canon | **Yes** — Phase ACP **Done**; **ACP-CLOSE** active |
+| Adopt §40 production gate for mutating / customer-facing agents | **Yes** — **delivered** |
+| Update implementation plan from this canon | **Yes** — Phase ACP · ACP-CLOSE · **ACP-FINISH Done** (2026-06-13) |
 | Platform ACP modules (ACP-DX through ACP-PROD-12) | **Done** (2026-06-11) |
-| Declare mutating agents **production-ready** | **No** — until **ACP-CLOSE-PROD-*** + §40.12 checklist |
+| Token metering + limits + reactions (§25.4–§25.5) | **Yes** — **delivered** (ACP-TOK-1..3 · ACP-TOK-CI) |
+| Declare mutating agents **production-ready** | **Yes** — when host passes ACP-PROD + ACP-CLOSE-PROD + APP-PROD gates |
 
-**Clarification (2026-06):** §32.0 readability; §38 runtime glue vs kernel split. **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) §6.1bb **ACP-CLOSE** · DEBT register 3 open items.
+**Clarification (2026-06-13):** §25.4–§25.5 closed via ACP-FINISH; Nexus `RunBudget` graph env cap remains COST-1 **Partial** (does not block per-agent enforcement). **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) **ACP-FINISH Done** · parallel AUDIT-IDEAL-19.1/20.1/31.1 only.
 
-**Next work (2026-06-11):** Phase **ACP-CLOSE** — LEG-1/2 · PROD host depth · architecture doc maintenance via ADR only for new gaps.
+**Next work:** AUDIT-IDEAL §12–§20 residuals (registry snapshot, cap-graph CI, lifecycle owner) — parallel track, not blocking ACP §13–§40.
 
 ---
 

@@ -51,11 +51,11 @@ AgentContract · UAEPAgent · RuntimeExecutionContext · AgentDecision · Cognit
 
 ## Active plan phases (verify status vs code reality)
 
-ACP Done (2026-06-11) · ACP-CLOSE active §6.1bb · PE/REG/CG/AS closed · AUDIT-IDEAL residuals
+ACP · ACP-CLOSE · ACP-FINISH Done (2026-06-13) · PE/REG/CG/AS closed · AUDIT-IDEAL-19.1/20.1/31.1 parallel
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-GAP-ACP-03/04/07 Open · ACP-CLOSE-LEG-5 Done · ACP-CLOSE-PROD-1..8 · ACP-CLOSE-PAT-1..2 · TOOL-ENG-16 pattern plugin · AUDIT-IDEAL-19.1/20.1/31.1
+GAP-ACP-36/37 Closed (ACP-TOK-*) · GAP register 37 Closed · 0 Open · AUDIT-IDEAL-19.1/20.1/31.1 Planned · COST-1 RunBudget Partial
 
 ---
 
