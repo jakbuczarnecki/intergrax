@@ -7,7 +7,7 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**Status:** **ECC-0 Done** (2026-06-10) — domain pair + audit register + ADR. Implementation **Planned**.  
+**Status:** **ECC-0 Done** · **ECC-1 In progress** (2026-06-13 layer completion)  
 **Default queue:** Pull ECC-1 after operator selects this domain; otherwise §6.1 gate maintenance continues in [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md).
 
 ---
@@ -335,7 +335,7 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 | Phase | Status | Priority | Closes gaps |
 |-------|--------|----------|-------------|
 | ECC-0 | **Done** | P0 | GAP-ECC-14 |
-| ECC-1 | **Planned** | P0 | 03, 04, 09, 15 |
+| ECC-1 | **In progress** | P0 | 03, 04, 09, 15 |
 | ECC-2 | **Planned** | P0 | 01, 03, 10, 11 |
 | ECC-3 | **Planned** | P1 | 02, 07, 08, 10 |
 | ECC-4 | **Planned** | P1 | 05 |
@@ -349,6 +349,88 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 | Date | ID | Summary |
 |------|-----|---------|
 | 2026-06-10 | ECC-0 | Domain pair CODE_CRAFT, ADR-CODECRAFT-001, full audit register, hub/README/AGENTS sync |
+| 2026-06-13 | LAYER-AUDIT | Layer completion audit — zero implementation code; substrate ~40% Done; sprint plan §Sprints added; ECC-1 started |
+
+---
+
+# Layer completion audit (2026-06-13)
+
+**Method:** Re-read domain pair + ADR + grep `intergrax/codecraft/`, `intergrax/runtime/codecraft/`, `intergrax/tools/providers/codecraft/` — **no Python modules exist** (confirmed).
+
+**Verdict:** Documentation canon **Done** (ECC-0). Harness orchestration **Missing**. Substrate reuse path **validated** — `SandboxSession`, `code.exec`, `security.scan`, CVL `eval.judge`, `sandbox_host` integrations present.
+
+**Doc inconsistencies closed this iteration:**
+
+| Issue | Resolution |
+|-------|------------|
+| README layout lists `codecraft/` without status | README updated — `(ECC-1+ in progress)` |
+| No file-level module map | Added architecture §16 |
+| Sprint breakdown absent | Added §Sprints below |
+| `TraceComponent` for CODECRAFT unspecified | Documented as `TraceComponent.CODECRAFT` diagnostic steps (ECC-1) |
+
+**Open gaps unchanged:** GAP-ECC-01…13 (14 closed ECC-0 only).
+
+---
+
+# Sprints (layer completion)
+
+Each sprint = one PR-sized slice → gate green → plan row update → commit.
+
+## Sprint S1 — ECC-1 Single-shot craft
+
+| Field | Value |
+|-------|-------|
+| **Scope** | `codecraft.run`, `StaticCodeGate`, `CodeCraftTraceEmitter`, catalog registration |
+| **Goal** | Smallest governed path: accept code → L0 gate → sandbox exec → typed `CraftResult` |
+| **DoD** | Unit tests for gate + deny paths; tool in catalog; `CODECRAFT_*` trace steps; gate tests green |
+| **Files** | `intergrax/codecraft/{contracts,profile,static_gate}.py` · `intergrax/runtime/codecraft/trace.py` · `intergrax/tools/providers/codecraft/*` · `intergrax/tools/registry/shipped_plugins.py` · `intergrax/runtime/sandbox/sandbox_runtime.py` · `tests/unit/codecraft/` · `tests/unit/tools/providers/codecraft/` |
+
+## Sprint S2 — ECC-2 Session loop
+
+| Field | Value |
+|-------|-------|
+| **Scope** | `CodeCraftOrchestrator`, session manager, `start/iterate/get_state/dispose`, codegen adapter, test runner |
+| **Goal** | Multi-iteration generate→gate→exec→test loop with budgets |
+| **DoD** | E2E mock test; CVL L0 hook; skill `codecraft.ephemeral_builder` manifest |
+| **Files** | `intergrax/runtime/codecraft/{orchestrator,session_manager}.py` · `intergrax/codecraft/{codegen_adapter,test_runner}.py` · extended `tools/providers/codecraft/` · `intergrax/skills/providers/codecraft/` |
+
+## Sprint S3 — ECC-3 Modes + HITL + promotion
+
+| Field | Value |
+|-------|-------|
+| **Scope** | `CodeCraftProfile` on `ApplicationEnvironmentProfile`, wiring, modes, HITL, `CraftResultPromoter` |
+| **Goal** | Tier-3 profile drives mode enforcement; supervised HITL; typed promotion |
+| **DoD** | Lab preset wired; mode matrix tests; `codecraft.promote` tool |
+| **Files** | `intergrax/applications/contracts/environment_profile.py` · `intergrax/applications/_shared/codecraft_wiring.py` · `intergrax/codecraft/promoter.py` · UAEP policy fragment |
+
+## Sprint S4 — ECC-4 Production isolation
+
+| Field | Value |
+|-------|-------|
+| **Scope** | Cloud sandbox routing, `security.scan` pre-exec, egress policy, harness preset |
+| **Goal** | Regulated hosts default `isolation_tier=cloud` |
+| **DoD** | Integration test with mocked `HostedSandboxSession`; health probe extension |
+| **Files** | orchestrator isolation routing · `applications/_shared` presets · health probes |
+
+## Sprint S5 — ECC-5 Ephemeral registry + graph
+
+| Field | Value |
+|-------|-------|
+| **Scope** | `EphemeralToolRegistry`, `codecraft.list_ephemeral_tools`, optional `CodeCraftNode` |
+| **Goal** | Task-scoped tools never pollute global catalog |
+| **DoD** | Registry isolation tests; graph spec example in lab |
+| **Files** | `intergrax/runtime/codecraft/ephemeral_registry.py` · NEXUS_EXECUTION_FLOW cross-ref |
+
+## Sprint S6 — ECC-6 Adaptive trigger
+
+| Field | Value |
+|-------|-------|
+| **Scope** | AHI catalog-miss signal, budget-aware craft decision |
+| **Goal** | L4 suggests or invokes craft when policy allows |
+| **DoD** | Signal tests in adaptive domain integration |
+| **Files** | `intergrax/runtime/adaptive/` hooks · ADAPTIVE_HARNESS_INTELLIGENCE plan row |
+
+**Minimum L3 closeout:** S1–S4 (ECC-1…ECC-4). S5–S6 are depth.
 
 ---
 

@@ -7,8 +7,8 @@
 **ADR:** [`adr/entries/2026-06-10/ADR-CODECRAFT-001.md`](../adr/entries/2026-06-10/ADR-CODECRAFT-001.md)  
 **Audit layer:** 11b (Ephemeral Code Craft)  
 **Audit instruction:** [`guides/audit/CODE_CRAFT.md`](../guides/audit/CODE_CRAFT.md)  
-**Implementation (planned):** `intergrax/codecraft/` · `intergrax/runtime/codecraft/`  
-**Last updated:** 2026-06-10 — architecture + audit canon (implementation **Planned**)
+**Implementation:** `intergrax/codecraft/` · `intergrax/runtime/codecraft/` · `intergrax/tools/providers/codecraft/`  
+**Last updated:** 2026-06-13 — layer completion audit; ECC-1 in progress
 
 ---
 
@@ -363,7 +363,7 @@ Canon cross-ref: [`OBSERVABILITY.md`](OBSERVABILITY.md) · [`TOOLS.md`](TOOLS.md
 | Phase | Scope | Status |
 |-------|-------|--------|
 | ECC-0 | ADR + domain pair docs | **Done** (2026-06-10) |
-| ECC-1 | `codecraft.run` + static gate + trace | **Planned** |
+| ECC-1 | `codecraft.run` + static gate + trace | **In progress** (2026-06-13) |
 | ECC-2 | Session loop `start/iterate/dispose` | **Planned** |
 | ECC-3 | Modes + HITL + promotion | **Planned** |
 | ECC-4 | Cloud sandbox default + security.scan | **Planned** |
@@ -371,3 +371,45 @@ Canon cross-ref: [`OBSERVABILITY.md`](OBSERVABILITY.md) · [`TOOLS.md`](TOOLS.md
 | ECC-6 | AHI adaptive trigger | **Planned** |
 
 Detail: [`plan/CODE_CRAFT.md`](../plan/CODE_CRAFT.md).
+
+---
+
+## 16. Implementation module map
+
+Tier-0 contracts and gate (ECC-1+):
+
+| Module | Responsibility |
+|--------|----------------|
+| `intergrax/codecraft/contracts.py` | `CraftResult`, `StaticGateResult`, session I/O models |
+| `intergrax/codecraft/profile.py` | `CodeCraftProfile`, `CraftMode` |
+| `intergrax/codecraft/static_gate.py` | `StaticCodeGate` — AST, imports, size, forbidden patterns |
+| `intergrax/codecraft/codegen_adapter.py` | LLM code generation (ECC-2) |
+| `intergrax/codecraft/test_runner.py` | `CraftTestRunner` (ECC-2) |
+| `intergrax/codecraft/promoter.py` | `CraftResultPromoter` (ECC-3) |
+
+Tier-1 runtime orchestration:
+
+| Module | Responsibility |
+|--------|----------------|
+| `intergrax/runtime/codecraft/orchestrator.py` | `CodeCraftOrchestrator` (ECC-2) |
+| `intergrax/runtime/codecraft/session_manager.py` | `craft_id` lifecycle (ECC-2) |
+| `intergrax/runtime/codecraft/trace.py` | `CodeCraftTraceEmitter`, `CODECRAFT_*` diagnostic steps |
+| `intergrax/runtime/codecraft/ephemeral_registry.py` | Task-scoped tools (ECC-5) |
+
+Tool surface (`ToolRuntime`):
+
+| Module | Responsibility |
+|--------|----------------|
+| `intergrax/tools/providers/codecraft/bundle.py` | Register `codecraft.*` catalog tools |
+| `intergrax/tools/providers/codecraft/service.py` | Handler services — gate + sandbox delegate |
+
+Tier-3 wiring (ECC-3):
+
+| Module | Responsibility |
+|--------|----------------|
+| `intergrax/applications/_shared/codecraft_wiring.py` | `wire_application_codecraft()` |
+| `ApplicationEnvironmentProfile.codecraft_profile` | Host profile field |
+
+**Trace integration:** `TraceComponent.CODECRAFT` diagnostic steps (`codecraft.session_opened`, `codecraft.static_gate`, …) — correlated via `craft_id`, `sandbox_session_id`, `run_id`. Full `RuntimeEventType` enum extension deferred until observability spine unifies tool-domain events.
+
+**Policy:** `codecraft.*` tools added to `SANDBOX_REQUIRED_TOOLS` (same routing as `code.exec`). Fail-closed when `codecraft_profile` missing, `mode=disabled`, or sandbox session absent.
