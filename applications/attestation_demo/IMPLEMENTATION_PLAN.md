@@ -15,7 +15,7 @@ Application ADRs: [`adr/README.md`](adr/README.md)
 |-------|--------|
 | Host purpose, EBE contract, trust model | **ARCHITECTURE.md** |
 | Task queue and verification | **This file** |
-| Partner quickstart + sample payloads | **README.md** |
+| Partner quickstart + sample payloads | **README.md** · **partner_handoff/** |
 | Deploy runbook | **BUILD_AND_DEPLOY.md** |
 
 ---
@@ -29,7 +29,7 @@ Application ADRs: [`adr/README.md`](adr/README.md)
 | EBE-3 | `attestation_demo` host + `POST /poc/run` | **Done** | High | Tier-3 scaffold layout |
 | EBE-4 | `boundary_demo_agent` + `records.put` lab wiring | **Done** | High | `host/tool_wiring.py` |
 | EBE-5 | README + sample JSON + trust model | **Done** | High | Partner handoff |
-| EBE-6 | Application ADR + doc pair + deploy triad | **Done** | High | ADR-ATTESTATION_DEMO-001 |
+| EBE-6 | Platform OBSERVABILITY pair + harness ADR + partner handoff | **Done** | High | ADR-OBS-002, `partner_handoff/` |
 | EBE-7 | Webhook sink | Deferred | Low | Phase 2 |
 | EBE-8 | HarnessKernel step-level events | Deferred | Low | Phase 2 |
 | EBE-9 | Host-side event signing | Deferred | Low | Phase 2 |
@@ -44,4 +44,5 @@ uv run pytest tests/unit/runtime/attestation/ -q
 uv run pytest tests/unit/applications/test_application_deploy_triad.py -q -k attestation_demo
 uv run pytest tests/unit/applications/test_agent_app_doc_pair.py -q -k attestation_demo
 uv run pytest tests/unit/scaffold/test_adr_scaffold.py -q -k attestation_demo
+python scripts/check_harness_adr.py
 ```

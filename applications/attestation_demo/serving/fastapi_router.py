@@ -5,8 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from fastapi import APIRouter, FastAPI, HTTPException, status
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
+
+from intergrax.applications._shared.harness_auth import require_harness_api_key
 
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -94,7 +96,11 @@ def mount_attestation_demo_routes(
     )
     router = APIRouter(prefix=prefix, tags=["attestation_demo"])
 
-    @router.post("/poc/run", response_model=AttestationPocRunResponseV1)
+    @router.post(
+        "/poc/run",
+        response_model=AttestationPocRunResponseV1,
+        dependencies=[Depends(require_harness_api_key)],
+    )
     async def poc_run(body: AttestationPocRunRequestV1) -> AttestationPocRunResponseV1:
         try:
             return await service.run_task(body)
@@ -104,7 +110,10 @@ def mount_attestation_demo_routes(
                 detail=f"run_error: {exc.__class__.__name__}",
             ) from exc
 
-    @router.get("/poc/runs/{run_id}/boundary-events")
+    @router.get(
+        "/poc/runs/{run_id}/boundary-events",
+        dependencies=[Depends(require_harness_api_key)],
+    )
     async def list_boundary_events(run_id: str) -> dict[str, object]:
         events = boundary_event_buffer.snapshot_for_run(run_id)
         return {"run_id": run_id, "boundary_events": events, "count": len(events)}

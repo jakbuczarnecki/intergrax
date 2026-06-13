@@ -77,6 +77,34 @@ MCP is **disabled** by default for this host (`ATTESTATION_DEMO_INCLUDE_MCP=fals
 
 ---
 
+## 7. Partner deploy (AgentReceipt / Cullen)
+
+Handoff package: [`partner_handoff/README.md`](partner_handoff/README.md)
+
+| Deliverable | Path |
+|-------------|------|
+| Sample request | `partner_handoff/poc_run_request.v1.json` |
+| Sample response shape | `partner_handoff/poc_run_response.v1.json` |
+| Integration guide | `partner_handoff/README.md` |
+
+### Recommended production posture
+
+1. Set `INTERGRAX_HARNESS_API_KEY` in `.env` (or container env).
+2. Expose port **8097** (or reverse-proxy to `/v1/attestation_demo/poc/run`).
+3. Share base URL + API key with partner adapter repo.
+4. Partner calls `POST /v1/attestation_demo/poc/run` → maps `boundary_events[]` → `createSignedReceipt` (`client_observed`).
+
+```bash
+curl -s -X POST "https://<host>/v1/attestation_demo/poc/run" \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: $INTERGRAX_HARNESS_API_KEY" \
+  -d @applications/attestation_demo/partner_handoff/poc_run_request.v1.json
+```
+
+Journal comparison (same host): `GET /debug/tasks/{run_id}/trace`
+
+---
+
 ## 3. Verify before deploy
 
 ```bash

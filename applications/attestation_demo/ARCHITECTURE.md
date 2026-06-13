@@ -557,9 +557,10 @@ When `IdempotentToolInvoker` returns cache hit, PoC default: emit once per logic
 | Artifact | Action |
 |----------|--------|
 | `applications/attestation_demo/README.md` | Quickstart, trust model, sample payloads |
-| `docs/architecture/OBSERVABILITY.md` | § Execution Boundary Export; unsigned events; non-goal: receipt product |
-| `docs/plan/OBSERVABILITY.md` | Register EBE-1…EBE-9 rows |
-| `docs/adr/entries/…/ADR-OBS-…` | Unsigned boundary export vs host attestation |
+| `applications/attestation_demo/partner_handoff/` | Committed request/response JSON + integration guide |
+| `docs/architecture/OBSERVABILITY.md` | §18 Execution Boundary Export; unsigned events; non-goal: receipt product |
+| `docs/plan/OBSERVABILITY.md` | Phase EBE register (EBE-1…EBE-9) |
+| `docs/adr/entries/2026-06-13/ADR-OBS-002.md` | Unsigned boundary export vs host attestation |
 | `applications/attestation_demo/IMPLEMENTATION_PLAN.md` | Task checklist |
 | `applications/attestation_demo/adr/` | Application ADRs (ADR-ATTESTATION_DEMO-001) |
 

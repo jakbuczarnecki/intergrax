@@ -12,6 +12,7 @@ This Tier-3 host demonstrates **Execution Boundary Export (EBE)**: Intergrax emi
 | [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) | Task queue and verification |
 | [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) | Local run, Docker, deploy runbook |
 | [`adr/README.md`](adr/README.md) | Application architecture decisions |
+| [`partner_handoff/README.md`](partner_handoff/README.md) | **Partner integration** — auth, mapping, sample JSON |
 
 ## Run locally
 

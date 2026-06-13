@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-13-013 | 2026-06-13 | tier-1, tier-2, tier-3 OBSERVABILITY | EBE-1…EBE-6 | [EBE PoC v1 — deployable attestation_demo for AgentReceipt partner handoff](entries/2026-06-13/attestation-demo-partner-poc-deploy.md) | pending |
 | IJ-2026-06-13-012 | 2026-06-13 | tier-0, tier-1 CRITIC_VERIFICATION | CVL-LC-3 · CVL-LC-4 | [CVL — Layer completion iteration II](entries/2026-06-13/cvl-layer-completion-ii.md) | 8a1ed778 |
 | IJ-2026-06-13-011 | 2026-06-13 | tier-0, tier-1 CRITIC_VERIFICATION | CVL-LC-1 · CVL-LC-2 | [CVL — Critic Verification layer completion closeout](entries/2026-06-13/cvl-layer-completion-closeout.md) | 93995259 |
 | IJ-2026-06-13-010 | 2026-06-13 | tier-0, tier-1 CODE_CRAFT | S11 · RUN-ECC-01 · GAP-ECC-23 | [S11 — Code Craft layer completion II (audit sync + exec budget)](entries/2026-06-13/codecraft-s11-layer-completion-ii.md) | 08a0c59f |
