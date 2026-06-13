@@ -383,7 +383,7 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 |-------|------------|
 | Architecture §12 still listed orchestrator/profile as Missing | Updated to L3 closeout table |
 | Plan audit §3.3 / §4 still open gaps | Marked **Done** with ECC phase mapping |
-| PLATFORM_FOUNDATION `codecraft.* (planned)` | Updated in separate commit |
+| PLATFORM_FOUNDATION `codecraft.* (planned)` | **Done** — synced 2026-06-13 doc-sync |
 
 **Remaining depth (not gaps):** metrics dashboards (§10.2), `container` isolation tier backend, full `RuntimeEventType` enum for CODECRAFT.
 
