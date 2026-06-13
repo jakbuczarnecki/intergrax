@@ -66,8 +66,8 @@ Every finding in [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth 
 | GAP-RAG-26 | niegotowość | M-RAG.40 | G1 |
 | GAP-RAG-27 | niegotowość | M-RAG.41 | G1 |
 | GAP-RAG-28 | niska jakość | M-RAG.42 | G2 |
-| GAP-RAG-29 | niedoróbka | M-RAG.43 **Partial** · M-RAG.53 | G2 · G5 |
-| GAP-RAG-30 | niedoróbka | M-RAG.44 **Partial** · M-RAG.54 | G2 · G5 |
+| GAP-RAG-29 | niedoróbka | M-RAG.43 **Done** · M-RAG.53 **Done** | G2 · G5 |
+| GAP-RAG-30 | niedoróbka | M-RAG.44 **Done** · M-RAG.54 **Done** | G2 · G5 |
 | GAP-RAG-31 | niegotowość | M-RAG.45 | G3 |
 | GAP-RAG-32 | niedoróbka | M-RAG.46 | G3 |
 | GAP-RAG-33 | gap | M-RAG.49–M-RAG.51 | G4 |
@@ -225,7 +225,7 @@ Requires new Integration catalog slugs first (H-INT in INTEGRATIONS plan).
 **Phase RAG complete when:** RAG-1 + RAG-DOC.* **Done**; §6.1e queue closed. **Status: complete (2026-06-02).**  
 **Phase M-RAG-DEPTH:** **Complete** (2026-06-10) — M-RAG.23 … M-RAG.37 **Done**.
 
-**Phase M-RAG-GRAPH:** **Mostly complete** (2026-06-12) — M-RAG.38 … M-RAG.48, M-RAG.52 **Done**; **G5 active** M-RAG.53–M-RAG.54 (usage hardening); M-RAG.49–51 **Planned** (H-INT blocked); boundaries: GAP-RAG-15, GAP-RAG-34 (community_report delivered).
+**Phase M-RAG-GRAPH:** **Complete** (2026-06-13) — M-RAG.38 … M-RAG.54 **Done**; M-RAG.49–51 **Planned** (H-INT blocked); boundaries: GAP-RAG-15, GAP-RAG-34.
 
 ---
 
@@ -313,6 +313,8 @@ Requires new Integration catalog slugs first (H-INT in INTEGRATIONS plan).
 | 2026-06-12 | RAG-DOC.5 | GraphRAG architecture audit; GAP-RAG-24–36; Phase M-RAG-GRAPH waves G1–G4; architecture §GraphRAG architecture |
 | 2026-06-12 | M-RAG.38–41 | Graph store backend registry; memgraph/falkordb adapters; delete/purge lifecycle sync; graph tenant isolation contract |
 | 2026-06-12 | M-RAG.42–52 | GraphRAG retrieval hardening, prod slug list, golden scenarios, maintenance job, indexer plugins, community_report mode |
+| 2026-06-13 | RAG-DOC.6 | Layer Completion audit; GAP-RAG-29/30 partial reclassification; G5 sprint plan |
+| 2026-06-13 | M-RAG.53–54 | GraphRAG usage hardening — 3-channel fusion + structured provenance on RetrievalTrace |
 
 ---
 
@@ -364,8 +366,8 @@ Ordered queue for RAG domain work. **Active:** M-RAG-GRAPH (15 items). **Closed:
 
 | Order | ID | Wave | Priority | Deliverable | GAP-RAG | Status |
 |-------|-----|------|----------|-------------|---------|--------|
-| 16 | **M-RAG.53** | G5 | **P1** | Full 3-channel fusion in `GraphRagRetriever` — vector + keyword (lexical) + graph via `orchestrate_hybrid_retrieval` / `execute_hybrid_retrieval` reference | 29 | **Planned** |
-| 17 | **M-RAG.54** | G5 | **P1** | Structured graph provenance — `GraphTraceFieldBundle` / `provenance_records` on `RetrievalTrace` | 30 | **Planned** |
+| 16 | **M-RAG.53** | G5 | **P1** | Full 3-channel fusion in `GraphRagRetriever` — vector + keyword (lexical) + graph | 29 | **Done** |
+| 17 | **M-RAG.54** | G5 | **P1** | Structured graph provenance — `graph_provenance_records` on `RetrievalTrace` | 30 | **Done** |
 
 ### Active — AUDIT-IDEAL (RAG band)
 

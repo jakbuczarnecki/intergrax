@@ -104,8 +104,8 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-26 | niegotowość | ~~No graph lifecycle sync~~ — **closed M-RAG.40**: `unlink_chunks` / `purge_graph` + catalog delete/purge hooks | **P1** | M-RAG.40 **Done** | — |
 | GAP-RAG-27 | niegotowość | ~~No graph tenant isolation~~ — **closed M-RAG.41**: `graph/tenant/graph_isolation_contract.py` + tenant scope on stores | **P1** | M-RAG.41 **Done** | — |
 | GAP-RAG-28 | niska jakość | ~~`graph_rag` retriever beta~~ — **closed M-RAG.42**: metadata/chunk-linked entity seeds; **stable** | **P1** | M-RAG.42 **Done** | — |
-| GAP-RAG-29 | niedoróbka | ~~hybrid channel not fused~~ — **partial M-RAG.43**: vector+graph fusion only; keyword channel missing vs `execute_hybrid_retrieval` reference | **P1** | M-RAG.53 **Planned** | — |
-| GAP-RAG-30 | niedoróbka | ~~graph provenance not on trace~~ — **partial M-RAG.44**: summary + node ids only; no structured `GraphTraceFieldBundle` / `provenance_records` | **P1** | M-RAG.54 **Planned** | — |
+| GAP-RAG-29 | niedoróbka | ~~hybrid channel not fused~~ — **closed M-RAG.53**: vector+keyword+graph fusion via `graph_channel_fusion.py`; `channel_contributions` on trace | **P1** | M-RAG.53 **Done** | — |
+| GAP-RAG-30 | niedoróbka | ~~graph provenance not on trace~~ — **closed M-RAG.54**: `graph_provenance_records` + summary on `RetrievalTrace` | **P1** | M-RAG.54 **Done** | — |
 | GAP-RAG-31 | niegotowość | ~~No graph maintenance job~~ — **closed M-RAG.45**: `rag.schedule_graph_maintenance_job` + workflow contract | **P2** | M-RAG.45 **Done** | — |
 | GAP-RAG-32 | niedoróbka | ~~No GraphIndexer plugin registry~~ — **closed M-RAG.46**: `register_graph_indexer_plugin()` | **P2** | M-RAG.46 **Done** | — |
 | GAP-RAG-33 | gap | `graph_store` catalog lacks Neptune, OrientDB, ArangoDB, TigerGraph, JanusGraph | **P3** | M-RAG.49–M-RAG.51 **Planned** | — |
@@ -292,7 +292,7 @@ Runtime architecture (Tier-1 contracts)
 | **Build** | `IngestPipeline` → optional `resolve_graph_indexer()` after vector index | Indexer quality heuristic/LLM only | M-RAG.46, M-RAG.47 |
 | **Update** | Re-ingest upsert + `rag.delete_documents` graph unlink (M-RAG.40) | — | — |
 | **Maintain** | `purge_graph` on `rag.purge_collection` (M-RAG.40); `rag.schedule_graph_maintenance_job` (M-RAG.45) | — | — |
-| **Use** | `GraphRagRetriever`: vector seed + metadata-linked entities + hop expansion | **Stable** retriever; **partial** 3-channel fusion (vector+graph; keyword pending M-RAG.53); provenance summary only (structured bundle pending M-RAG.54) | M-RAG.42–M-RAG.44 · M-RAG.53–M-RAG.54 |
+| **Use** | `GraphRagRetriever`: vector seed + metadata-linked entities + hop expansion + 3-channel fusion | **Stable** — vector+keyword+graph fusion (M-RAG.53); structured provenance records on trace (M-RAG.54) | — |
 | **Isolate** | Vector tenant contract (M-RAG.35) + graph tenant contract (M-RAG.41) | — | — |
 
 ```text
@@ -454,4 +454,4 @@ Code-backed audit (`guides/audit/RAG.md`, mode `audit-only`). Key confirmations:
 | Agents bypass vectorstore | **No violation** | No `vectorstore.query` in `agents/` |
 | Vector manifest stability | **Partial** | `integrations/providers/vector_store/*/manifest.py` — stable vs beta per GAP-RAG-07 row above |
 
-**Posture:** L3 implementation for core retrieval — **M-RAG-DEPTH complete** (2026-06-10). **GraphRAG platform** **L3** for build/maintain/isolate (M-RAG-GRAPH G1–G3, 2026-06-12). **GraphRAG usage** has **P1 partials** GAP-RAG-29/30 — Phase **M-RAG-GRAPH-G5** (M-RAG.53–M-RAG.54, 2026-06-13 audit). **GAP-RAG-15** and **GAP-RAG-34** remain explicit boundaries.
+**Posture:** L3 implementation for core retrieval — **M-RAG-DEPTH complete** (2026-06-10). **GraphRAG platform** **L3** including usage hardening (M-RAG-GRAPH G1–G5, 2026-06-13). **GAP-RAG-15** and **GAP-RAG-34** remain explicit boundaries.

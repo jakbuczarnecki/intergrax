@@ -19,7 +19,7 @@ class _Emb:
 
 
 @pytest.mark.gate
-def test_retrieval_trace_includes_graph_provenance_fields() -> None:
+def test_retrieval_trace_includes_structured_graph_provenance() -> None:
     store = InMemoryVectorStore(tenant_id="trace")
     manager = VectorstoreManager(store=store)
     doc = Document(
@@ -46,3 +46,7 @@ def test_retrieval_trace_includes_graph_provenance_fields() -> None:
     result = service.retrieve(RetrievalRequest(query="Vertex Corp", top_k=2))
     assert result.used is True
     assert result.trace.graph_expanded_node_ids or result.trace.graph_provenance_summary
+    assert result.trace.graph_provenance_records
+    record = result.trace.graph_provenance_records[0]
+    assert "node_id" in record
+    assert "explanation" in record

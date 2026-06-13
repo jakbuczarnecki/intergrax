@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 @dataclass(frozen=True)
@@ -19,3 +19,4 @@ class RetrieverExecutionMetadata:
     channel_contributions: Optional[Dict[str, List[str]]] = None
     graph_expanded_node_ids: Optional[List[str]] = None
     graph_provenance_summary: Optional[str] = None
+    graph_provenance_records: Optional[List[Dict[str, Any]]] = None

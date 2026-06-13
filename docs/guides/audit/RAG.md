@@ -50,15 +50,15 @@ RagProfile · RagStack · RetrievalService · RetrievalRequest/RetrievalResult �
 
 ## Active plan phases (verify status vs code reality)
 
-M-RAG.1–M-RAG.22 Done · **M-RAG-DEPTH complete** (M-RAG.23–M-RAG.37) · **M-RAG-GRAPH G1–G3 complete** (M-RAG.38–M-RAG.52) · **M-RAG-GRAPH G5 active** (M-RAG.53–M-RAG.54 ← GAP-RAG-29/30 partial)
+M-RAG.1–M-RAG.22 Done · **M-RAG-DEPTH complete** (M-RAG.23–M-RAG.37) · **M-RAG-GRAPH complete** (M-RAG.38–M-RAG.54; M-RAG.49–51 optional P3)
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
 **Closed (M-RAG-DEPTH):** GAP-RAG-01 … GAP-RAG-23 (except GAP-RAG-15 boundary).
 
-**Closed (M-RAG-GRAPH G1–G3):** GAP-RAG-24 … GAP-RAG-28, GAP-RAG-31 … GAP-RAG-32, GAP-RAG-35 … GAP-RAG-36.
+**Closed (M-RAG-GRAPH):** GAP-RAG-24 … GAP-RAG-36 (except GAP-RAG-33 P3, GAP-RAG-34 boundary).
 
-**Partial / active (M-RAG-GRAPH G5):** GAP-RAG-29 keyword channel missing in GraphRagRetriever · GAP-RAG-30 structured provenance bundle not on RetrievalTrace · GAP-RAG-33 Neptune/OrientDB/ArangoDB absent (P3).
+**Optional / backlog:** GAP-RAG-33 Neptune/OrientDB/ArangoDB (P3, H-INT blocked).
 
 ---
 

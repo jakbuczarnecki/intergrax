@@ -45,6 +45,7 @@ class RetrievalTrace:
     channel_contributions: Dict[str, List[str]] = field(default_factory=dict)
     graph_expanded_node_ids: List[str] = field(default_factory=list)
     graph_provenance_summary: str = ""
+    graph_provenance_records: List[Dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass

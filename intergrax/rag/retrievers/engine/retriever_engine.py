@@ -114,6 +114,9 @@ class RetrieverEngine:
                 graph_provenance_summary=(
                     graph_trace.graph_provenance_summary if graph_trace is not None else None
                 ),
+                graph_provenance_records=(
+                    list(graph_trace.graph_provenance_records) if graph_trace is not None else None
+                ),
             )
             return candidates
 
