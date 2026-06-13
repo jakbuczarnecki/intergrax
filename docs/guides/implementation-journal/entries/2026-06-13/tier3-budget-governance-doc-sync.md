@@ -9,7 +9,7 @@ plan_ref:
   - ACP-TOK-2
   - ACP-TOK-3
 status: completed
-commit: pending
+commit: 0de17aff
 adr: none — documentation sync only; ACP-TOK-2/3 runtime delivered in ACP plan (2026-06-11)
 ---
 
