@@ -114,7 +114,7 @@ Tier-3  ApplicationEnvironmentProfile
 Tier-1  Ephemeral Code Craft Layer
            ├── CodeCraftOrchestrator      ← single entry: start / iterate / run / promote / dispose
            ├── CodeCraftSessionManager    ← craft_id lifecycle per tenant/task
-           ├── CodeCraftPolicyBridge      ← profile + PolicyEngine → allow/deny/HITL
+           ├── CodeCraftPolicyBridge      ← profile + PolicyEngine → allow/deny/HITL (inlined: orchestrator + `codecraft_governance` fragment — no standalone module)
            ├── CraftTestRunner            ← pytest or custom command in sandbox
            ├── CraftResultPromoter        ← CraftResult → structured_data / ArtifactStore
            ├── EphemeralToolRegistry      ← task-scoped virtual tools (not global catalog)
@@ -272,17 +272,17 @@ sequenceDiagram
 
 ### 10.1 Event taxonomy
 
-| Event | Payload highlights |
-|-------|-------------------|
-| `CODECRAFT_SESSION_OPENED` | `craft_id`, `mode`, `isolation_tier`, goal hash |
-| `CODECRAFT_GENERATION` | iteration, `model_id`, token usage |
-| `CODECRAFT_STATIC_GATE` | pass/fail, `rule_ids` |
-| `CODECRAFT_EXEC` | `sandbox_session_id`, duration, exit_code |
-| `CODECRAFT_TEST` | command, pass/fail |
-| `CODECRAFT_ITERATION_VERDICT` | continue / revise / promote / abort |
-| `CODECRAFT_HITL_REQUESTED` | reason |
-| `CODECRAFT_PROMOTED` | schema id, artifact refs |
-| `CODECRAFT_DISPOSED` | cleanup status |
+| Event | Payload highlights | Trace step (shipped) |
+|-------|-------------------|----------------------|
+| `CODECRAFT_SESSION_OPENED` | `craft_id`, `mode`, `isolation_tier`, goal hash | `codecraft.session_opened` **Done** |
+| `CODECRAFT_GENERATION` | iteration, `model_id`, token usage | `codecraft.generation` — **S8** |
+| `CODECRAFT_STATIC_GATE` | pass/fail, `rule_ids` | `codecraft.static_gate` **Done** |
+| `CODECRAFT_EXEC` | `sandbox_session_id`, duration, exit_code | `codecraft.exec` **Done** |
+| `CODECRAFT_TEST` | command, pass/fail | `codecraft.test` — **S8** |
+| `CODECRAFT_ITERATION_VERDICT` | continue / revise / promote / abort | `codecraft.iteration_verdict` — **S8** |
+| `CODECRAFT_HITL_REQUESTED` | reason | `codecraft.hitl_requested` — **S8** |
+| `CODECRAFT_PROMOTED` | schema id, artifact refs | `codecraft.promoted` — **S8** |
+| `CODECRAFT_DISPOSED` | cleanup status | `codecraft.disposed` **Done** |
 
 Correlation: `craft_id` ↔ `sandbox_session_id` ↔ `task_id` ↔ `run_id` ↔ `correlation_id`.
 
@@ -325,12 +325,12 @@ Canon cross-ref: [`OBSERVABILITY.md`](OBSERVABILITY.md) · [`TOOLS.md`](TOOLS.md
 | CodeCraftProfile | **Done** — Tier-3 profile | ECC-3 |
 | Static code gate | **Done** — `StaticCodeGate` | ECC-1 |
 | Promotion contract | **Done** — `CraftResult` | ECC-3 |
-| CODECRAFT trace events | **Done** — `CodeCraftTraceEmitter` | ECC-1+; full `RuntimeEventType` enum extension deferred |
+| CODECRAFT trace events | **Done** — `CodeCraftTraceEmitter` | ECC-1+; full taxonomy partial — see [§Post-closeout gaps](../plan/CODE_CRAFT.md#post-closeout-gap-register-2026-06-13) |
 | Graph node | **Done** — optional `CodeCraftNode` | ECC-5 |
 | AHI adaptive trigger | **Done** — `adaptive_trigger.py` | ECC-6 |
 | Metrics dashboards | **Planned** | Iteration success rate, gate failure rate — §10.2 |
 
-**Maturity:** **L3** — ECC-0…ECC-6 closed (2026-06-13). Depth work = metrics spine + container isolation tier.
+**Maturity:** **L3** — ECC-0…ECC-6 closed (2026-06-13). Post-closeout sprints S7–S10 close trace parity, sandbox routing, health probe, CI gate. Depth backlog: metrics §10.2, `container` tier, `codegen_llm_profile_ref` wiring.
 
 ---
 
@@ -395,6 +395,9 @@ Tier-1 runtime orchestration:
 |--------|----------------|
 | `intergrax/runtime/codecraft/orchestrator.py` | `CodeCraftOrchestrator` (ECC-2) |
 | `intergrax/runtime/codecraft/session_manager.py` | `craft_id` lifecycle (ECC-2) |
+| `intergrax/runtime/codecraft/sandbox_resolver.py` | `isolation_tier` routing (ECC-4) |
+| `intergrax/runtime/codecraft/cv_bridge.py` | CVL iteration verdict (ECC-2) |
+| `intergrax/runtime/codecraft/adaptive_trigger.py` | AHI catalog-miss trigger (ECC-6) |
 | `intergrax/runtime/codecraft/trace.py` | `CodeCraftTraceEmitter`, `CODECRAFT_*` diagnostic steps |
 | `intergrax/runtime/codecraft/ephemeral_registry.py` | Task-scoped tools (ECC-5) |
 
