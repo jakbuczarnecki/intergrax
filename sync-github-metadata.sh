@@ -10,12 +10,12 @@ cd "$ROOT"
 usage() {
   cat <<'EOF'
 
-Usage: ./sync-github-metadata.sh [apply|help]
+Usage: ./sync-github-metadata.sh [check|help]
 
-  ./sync-github-metadata.sh        Validate .github/repository-metadata.json
-  ./sync-github-metadata.sh apply  Push description, homepage, and topics to GitHub
+  ./sync-github-metadata.sh        Push description, homepage, and topics to GitHub
+  ./sync-github-metadata.sh check  Validate manifest only (dry run)
 
-Requires: uv. For apply also: gh auth login
+Requires: uv and gh auth login
 EOF
 }
 
@@ -28,18 +28,18 @@ fi
 MODE="${1:-}"
 
 case "$MODE" in
-  "")
-    echo "[INFO] Dry run - validating manifest only. Use \"apply\" to sync to GitHub."
-    uv run python scripts/sync_github_repository_metadata.py
-    ;;
-  apply)
+  ""|apply)
     if ! command -v gh >/dev/null 2>&1; then
-      echo "[ERROR] gh CLI is required for apply. Install: https://cli.github.com/" >&2
+      echo "[ERROR] gh CLI is required. Install: https://cli.github.com/" >&2
       echo "Then authenticate: gh auth login" >&2
       exit 1
     fi
     echo "[INFO] Applying manifest to GitHub repository settings..."
     uv run python scripts/sync_github_repository_metadata.py --apply
+    ;;
+  check|dry-run|validate)
+    echo "[INFO] Dry run - validating manifest only (no GitHub changes)."
+    uv run python scripts/sync_github_repository_metadata.py
     ;;
   help|-h|--help)
     usage

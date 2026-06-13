@@ -119,8 +119,8 @@ def main(argv: list[str] | None = None) -> int:
     if not args.apply:
         print(
             "\nDry run only. To sync to GitHub run:\n"
-            "  sync-github-metadata.bat apply   (Windows)\n"
-            "  ./sync-github-metadata.sh apply  (Linux/macOS)\n"
+            "  sync-github-metadata.bat         (Windows)\n"
+            "  ./sync-github-metadata.sh        (Linux/macOS)\n"
             "  or: uv run python scripts/sync_github_repository_metadata.py --apply"
         )
         return 0

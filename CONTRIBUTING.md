@@ -235,11 +235,11 @@ Edit that manifest for the public **description**, **homepage**, and **topics** 
 **Manual sync:**
 
 ```bash
-./sync-github-metadata.sh              # dry run / validate (Linux, macOS, Git Bash)
-./sync-github-metadata.sh apply        # push to GitHub
+./sync-github-metadata.sh              # push to GitHub (Linux, macOS, Git Bash)
+./sync-github-metadata.sh check        # dry run / validate only
 
-sync-github-metadata.bat               # dry run / validate (Windows)
-sync-github-metadata.bat apply         # push to GitHub
+sync-github-metadata.bat               # push to GitHub (Windows)
+sync-github-metadata.bat check         # dry run / validate only
 ```
 
 Equivalent:

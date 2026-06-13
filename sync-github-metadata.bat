@@ -15,20 +15,25 @@ if errorlevel 1 (
 
 set MODE=%1
 
-if /I "%MODE%"=="apply" goto :apply
+if /I "%MODE%"=="check" goto :check
+if /I "%MODE%"=="dry-run" goto :check
+if /I "%MODE%"=="validate" goto :check
 if /I "%MODE%"=="-h" goto :help
 if /I "%MODE%"=="--help" goto :help
 if /I "%MODE%"=="help" goto :help
 if not "%MODE%"=="" goto :unknown
 
-echo [INFO] Dry run - validating manifest only. Use "apply" to sync to GitHub.
+goto :apply
+
+:check
+echo [INFO] Dry run - validating manifest only (no GitHub changes).
 uv run python scripts/sync_github_repository_metadata.py
 exit /b %ERRORLEVEL%
 
 :apply
 where gh >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] gh CLI is required for apply. Install: https://cli.github.com/
+    echo [ERROR] gh CLI is required. Install: https://cli.github.com/
     echo Then authenticate: gh auth login
     exit /b 1
 )
@@ -38,12 +43,12 @@ exit /b %ERRORLEVEL%
 
 :help
 echo.
-echo Usage: sync-github-metadata.bat [apply^|help]
+echo Usage: sync-github-metadata.bat [check^|help]
 echo.
-echo   sync-github-metadata.bat        Validate .github/repository-metadata.json
-echo   sync-github-metadata.bat apply  Push description, homepage, and topics to GitHub
+echo   sync-github-metadata.bat         Push description, homepage, and topics to GitHub
+echo   sync-github-metadata.bat check   Validate manifest only (dry run)
 echo.
-echo Requires: uv. For apply also: gh auth login
+echo Requires: uv and gh auth login
 exit /b 0
 
 :unknown
