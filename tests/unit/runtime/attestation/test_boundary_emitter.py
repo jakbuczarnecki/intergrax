@@ -92,6 +92,64 @@ def test_boundary_event_buffer_append_and_snapshot():
     assert snapshot[0]["signed"] is False
 
 
+def test_execution_boundary_emitter_writes_failed_status_to_buffer() -> None:
+    buffer = BoundaryEventBuffer()
+    config = RuntimeConfig(
+        llm_adapter=FakeLLMAdapter(fixed_text="ok"),
+        enable_rag=False,
+        production_mode=False,
+        execution_boundary_export=ExecutionBoundaryExportRuntimeSettings(
+            enabled=True,
+            capture_mode=AttestationCaptureMode.SIDE_EFFECTS_ONLY,
+            allowlist=frozenset(),
+        ),
+        boundary_event_buffer=buffer,
+    )
+    runtime_context = RuntimeContext.build(
+        config=config,
+        session_manager=SessionManager(storage=InMemorySessionStorage()),
+    )
+    request = RuntimeRequest(
+        tenant_id="lab",
+        user_id="u1",
+        session_id="s1",
+        agent_id="boundary_demo_agent",
+        message="hi",
+        metadata={"run_id": "run_failed_emit", "task_id": "task_failed_emit"},
+    )
+    state = RuntimeState(context=runtime_context, request=request, run_id="run_failed_emit")
+    contract = ToolContract(
+        tool_id="records.put",
+        name="records.put",
+        description="put",
+        input_schema=RecordsPutInput,
+        output_schema=RecordsPutOutput,
+        error_mapping={},
+        side_effects=True,
+        risk_level=ToolRiskLevel.MEDIUM,
+    )
+    tool_request = ToolExecutionRequest(
+        run_id="run_failed_emit",
+        step_id="store_demo_record",
+        tool_id="records.put",
+        input=RecordsPutInput(partition_key="p", row_key="r", data={"title": "x"}),
+    )
+    from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
+
+    result = ToolExecutionResult.fail(RuntimeErrorCode.VALIDATION_ERROR, "validation failed")
+    ExecutionBoundaryEmitter.maybe_emit(
+        state=state,
+        agent_id="boundary_demo_agent",
+        contract=contract,
+        request=tool_request,
+        result=result,
+    )
+    events = buffer.snapshot_for_run("run_failed_emit")
+    assert len(events) == 1
+    assert events[0]["action_status"] == "failed"
+    assert events[0]["error_message"] == "validation failed"
+
+
 def test_execution_boundary_emitter_writes_to_buffer():
     buffer = BoundaryEventBuffer()
     config = RuntimeConfig(

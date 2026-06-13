@@ -153,7 +153,15 @@ class RuntimeToolInvoker:
                     error_message=msg,
                 ),
             )
-            return ToolExecutionResult.fail(RuntimeErrorCode.VALIDATION_ERROR, msg)
+            result = ToolExecutionResult.fail(RuntimeErrorCode.VALIDATION_ERROR, msg)
+            self._emit_boundary_event(
+                state=state,
+                agent_id=agent_id,
+                contract=contract,
+                request=request,
+                result=result,
+            )
+            return result
 
         # 3) trace start
         state.trace_event(

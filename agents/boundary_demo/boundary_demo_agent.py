@@ -134,7 +134,17 @@ class BoundaryDemoAgent(Agent):
             )
         )
         if response.status != ToolResponseStatus.SUCCESS:
-            raise RuntimeError(response.error or "records.put failed")
+            error_text = response.error or "records.put failed"
+            return StepOutput(
+                step_id=step.step_id,
+                summary=f"records.put failed: {error_text}",
+                data={
+                    "stored": False,
+                    "partition_key": partition_key,
+                    "row_key": row_key,
+                    "error": error_text,
+                },
+            )
 
         output_data: dict[str, Any] = {
             "stored": True,

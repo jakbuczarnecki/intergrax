@@ -18,12 +18,13 @@ import pytest
 from fastapi.testclient import TestClient
 
 from attestation_demo.host.factory import create_attestation_demo_application
-
-pytestmark = [pytest.mark.unit]
+from attestation_demo.partner_handoff.contract_assertions import assert_partner_poc_response_shape
 
 _PREFIX = "/v1/attestation_demo"
 _HANDOFF_DIR = Path(__file__).resolve().parents[2] / "partner_handoff"
 _SAMPLE_REQUEST = _HANDOFF_DIR / "poc_run_request.v1.json"
+
+pytestmark = [pytest.mark.unit]
 
 
 @pytest.fixture
@@ -41,8 +42,7 @@ def poc_response(client: TestClient) -> dict:
 
 def test_partner_delivery_via_trigger_api_response_not_webhook(poc_response: dict) -> None:
     """PoC v1: boundary event in POST /poc/run response; webhook deferred."""
-    assert "boundary_events" in poc_response
-    assert len(poc_response["boundary_events"]) >= 1
+    assert_partner_poc_response_shape(poc_response)
     assert poc_response.get("state") == "completed"
 
 

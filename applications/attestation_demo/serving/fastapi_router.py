@@ -18,7 +18,7 @@ from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 
 class AttestationPocRunRequestV1(BaseModel):
-    tenant_id: str = "lab"
+    tenant_id: str = "default"
     user_id: str = "lab-user"
     session_id: Optional[str] = None
     message: str = Field(default="PoC attestation report", min_length=1)
