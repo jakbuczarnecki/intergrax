@@ -1,0 +1,33 @@
+# © Artur Czarnecki. All rights reserved.
+# Sync GitHub repository description, homepage, and topics from the canonical manifest.
+#
+# Source of truth: .github/repository-metadata.json
+# Manual run: Actions → "Sync repository metadata" → Run workflow
+# Local run:    uv run python scripts/sync_github_repository_metadata.py
+
+name: Sync repository metadata
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/repository-metadata.json"
+      - ".github/workflows/sync-repository-metadata.yml"
+      - "scripts/sync_github_repository_metadata.py"
+  workflow_dispatch:
+
+permissions:
+  administration: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sync description, homepage, and topics
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python scripts/sync_github_repository_metadata.py --apply

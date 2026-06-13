@@ -52,8 +52,8 @@ Think as a **Harness AI architect** first, then as an engineer.
 ### Install
 
 ```bash
-git clone https://github.com/jakbuczarnecki/intergrax-ai.git
-cd intergrax-ai
+git clone https://github.com/jakbuczarnecki/intergrax.git
+cd intergrax
 uv sync --extra dev
 ```
 
@@ -216,7 +216,7 @@ Intergrax framework – proprietary and confidential.
 
 ## Reporting issues
 
-Use [GitHub Issues](https://github.com/jakbuczarnecki/intergrax-ai/issues) with the appropriate template:
+Use [GitHub Issues](https://github.com/jakbuczarnecki/intergrax/issues) with the appropriate template:
 
 - **Bug report** — reproducible defect
 - **Feature request** — new capability (include Harness AI alignment rationale)
@@ -228,45 +228,30 @@ For security vulnerabilities, see [SECURITY.md](SECURITY.md) — **do not** open
 
 ## GitHub repository metadata (maintainer setup)
 
-Configure these in **Settings → General** for discoverability:
+**Source of truth:** [`.github/repository-metadata.json`](.github/repository-metadata.json)
 
-### Description
+Edit that manifest for the public **description**, **homepage**, and **topics** (GitHub allows up to 20 topics). On push to `main`, the workflow [`.github/workflows/sync-repository-metadata.yml`](.github/workflows/sync-repository-metadata.yml) applies the manifest to GitHub.
 
-```
-Agent OS and Harness AI runtime for building, orchestrating, and validating specialized AI agents in Python.
-```
+**Manual sync:**
 
-### Topics (recommended)
+```bash
+./sync-github-metadata.sh              # dry run / validate (Linux, macOS, Git Bash)
+./sync-github-metadata.sh apply        # push to GitHub
 
-```
-ai-agents
-agent-framework
-agent-os
-harness-ai
-multi-agent
-multi-agent-systems
-llm
-llm-framework
-rag
-retrieval-augmented-generation
-python
-orchestration
-ai-orchestration
-nexus
-tool-use
-human-in-the-loop
-observability
-policy-engine
-context-engineering
-fastapi
-machine-learning
+sync-github-metadata.bat               # dry run / validate (Windows)
+sync-github-metadata.bat apply         # push to GitHub
 ```
 
-### Website
+Equivalent:
 
+```bash
+uv run python scripts/sync_github_repository_metadata.py          # dry run / validate
+uv run python scripts/sync_github_repository_metadata.py --apply  # requires gh auth login
 ```
-https://github.com/jakbuczarnecki/intergrax-ai#readme
-```
+
+Or run the **Sync repository metadata** workflow from the Actions tab.
+
+Keep [`pyproject.toml`](pyproject.toml) `description` and `keywords` aligned with the manifest for PyPI-style discovery and packaging consistency.
 
 ---
 
@@ -280,4 +265,4 @@ Intergrax is proprietary software. See [LICENSE](LICENSE). Contribution does not
 
 - **Maintainer:** Artur Czarnecki
 - **Email:** jakbu.czarnecki.83@gmail.com
-- **Repository:** https://github.com/jakbuczarnecki/intergrax-ai
+- **Repository:** https://github.com/jakbuczarnecki/intergrax

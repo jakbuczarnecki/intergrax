@@ -8,25 +8,31 @@ packages = ["intergrax"]
 [project]
 name = "Intergrax-ai"
 version = "0.1.0"
-description = "Agent OS and Harness AI runtime for building, orchestrating, experimenting with, and validating specialized AI agents. Four-tier platform with Nexus orchestration, policy, tools, skills, RAG, and multi-agent graphs."
+description = "Harness AI & Agent OS for governed multi-agent systems in Python — Nexus orchestration, policy, tools, skills, RAG & multimodal evaluation. Prototype fast, harden agents for production."
 readme = "README.md"
 license = { text = "Proprietary" }
 requires-python = ">=3.12,<3.13"
 keywords = [
+  "harness-ai",
+  "agent-os",
+  "multi-agent-systems",
   "ai-agents",
   "agent-framework",
-  "agent-os",
-  "harness-ai",
-  "multi-agent",
+  "agent-orchestration",
   "llm",
   "rag",
-  "orchestration",
-  "nexus",
   "python",
+  "mcp",
   "tool-use",
+  "governance",
   "human-in-the-loop",
-  "context-engineering",
+  "observability",
   "policy-engine",
+  "context-engineering",
+  "multimodal",
+  "orchestration",
+  "production-ai",
+  "evaluation",
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -231,6 +237,7 @@ markers = [
   "e2e: End-to-end flows (very few; production-like).",
   "asyncio: Async tests using pytest-asyncio.",
   "gate: Minimal pre-P4.2 regression gate (deterministic, no network).",
+  "no_ci: Excluded from GitHub CI — infra-heavy (FastAPI, SQLite, MCP, sleeps, threading).",
   "agent_os: Agent OS acceptance scenarios (Phase L.5); included in gate.",
   "tier3_scenario: Tier-3 UC-A* scenario matrix coverage (APP-CON-7).",
   "vectorstore_soak: RAG vector-store prod SLO soak against real backends (M-RAG.30); skipped when service unreachable.",
