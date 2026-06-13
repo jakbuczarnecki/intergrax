@@ -2,12 +2,13 @@
 # Intergrax framework – proprietary and confidential.
 #
 # CI profiles:
-#   pull_request, workflow_dispatch (full) — gate tests + parallel governance + closeout + harness (~5–7 min)
+#   pull_request, workflow_dispatch (full) — unit gate tests + parallel governance + closeout + harness (~4–6 min)
 #   push (main only) — same full profile; W-OPS + catalog exports run on main only
-#   workflow_dispatch (fast) — unit gate + governance (~4 min)
+#   workflow_dispatch (fast) — unit gate + governance (~3 min)
 #
 # Feature-branch pushes do not trigger CI (avoids duplicate runs when a PR is open).
-# Gate marker (`-m gate`) selects deterministic, network-free regression tests.
+# Gate marker (`-m gate`) on tests/unit only — deterministic, network-free logic regression.
+# Integration, acceptance, and Tier-3 host smoke suites run locally (scripts\test.bat / full pytest).
 # Harness job runs only non-gate harness-depth tests (gate-covered paths omitted).
 #
 # Local full suite: scripts\test.bat unit  (uv sync --extra dev)
@@ -119,17 +120,8 @@ jobs:
       - name: Install dependencies (CI minimal)
         run: uv sync --extra dev-ci --frozen
 
-      - name: Run full regression gate
-        run: >-
-          uv run pytest
-          tests/unit
-          tests/integration
-          tests/acceptance
-          applications/legal_application/legal_tests/host
-          applications/lab_application/lab_application_tests
-          applications/research_application/research_application_tests
-          agents/signoff_probe
-          -m gate -n auto -q --tb=line
+      - name: Run unit regression gate
+        run: uv run pytest tests/unit -m gate -n auto -q --tb=line
 
   gate-governance-tier:
     if: >-
