@@ -1,57 +1,109 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Tool I/O contracts for codecraft.* (ECC-1)."""
+"""Tool I/O contracts for codecraft.* (ECC-1+)."""
 
 from __future__ import annotations
 
-from typing import Any
-
 from pydantic import BaseModel, ConfigDict, Field
 
-from intergrax.codecraft.contracts import CraftResult, StaticGateResult
+from intergrax.codecraft.contracts import CodeCraftSession, CraftResult
 
 
-class CodeCraftRunToolInput(BaseModel):
-    """Input for ``codecraft.run`` — single-shot gate + sandbox exec."""
-
+class CodeCraftContextFields(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    code: str
-    goal: str | None = None
-    language: str = "python"
-    timeout_s: float = Field(default=30.0, ge=1.0, le=600.0)
-    craft_id: str | None = None
     run_id: str | None = None
     tenant_id: str = "default"
     task_id: str = "default"
     agent_id: str = ""
 
 
-class CodeCraftRunToolOutput(BaseModel):
-    """Output for ``codecraft.run``."""
+class CodeCraftRunToolInput(CodeCraftContextFields):
+    code: str
+    goal: str | None = None
+    language: str = "python"
+    timeout_s: float = Field(default=30.0, ge=1.0, le=600.0)
+    craft_id: str | None = None
 
+
+class CodeCraftStartToolInput(CodeCraftContextFields):
+    goal: str
+    constraints: str = ""
+    language: str = "python"
+    craft_id: str | None = None
+    initial_code: str | None = None
+
+
+class CodeCraftIterateToolInput(CodeCraftContextFields):
+    craft_id: str
+    patch_diagnostics: str = ""
+    hitl_approved: bool = False
+    timeout_s: float = Field(default=30.0, ge=1.0, le=600.0)
+
+
+class CodeCraftGetStateToolInput(CodeCraftContextFields):
+    craft_id: str
+
+
+class CodeCraftDisposeToolInput(CodeCraftContextFields):
+    craft_id: str
+
+
+class CodeCraftPromoteToolInput(CodeCraftContextFields):
+    craft_id: str
+
+
+class CodeCraftListEphemeralToolsInput(CodeCraftContextFields):
+    craft_id: str
+
+
+class CodeCraftRunToolOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     result: CraftResult
     trace_event_count: int = 0
 
 
-class CodeCraftDeniedOutput(BaseModel):
-    """Fail-closed deny response."""
-
+class CodeCraftStartToolOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    denied: bool = True
-    reason: str
-    static_gate: StaticGateResult | None = None
+    session: CodeCraftSession | None = None
+    error: str = ""
+    trace_event_count: int = 0
+
+
+class CodeCraftIterateToolOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    session: CodeCraftSession | None = None
+    result: CraftResult
+    trace_event_count: int = 0
+
+
+class CodeCraftGetStateToolOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    session: CodeCraftSession | None = None
+    found: bool = False
+
+
+class CodeCraftDisposeToolOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    disposed: bool = False
     craft_id: str = ""
+    trace_event_count: int = 0
 
 
-__all__ = [
-    "CodeCraftDeniedOutput",
-    "CodeCraftRunToolInput",
-    "CodeCraftRunToolOutput",
-    "CraftResult",
-    "StaticGateResult",
-]
+class CodeCraftPromoteToolOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    result: CraftResult
+
+
+class CodeCraftListEphemeralToolsOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    craft_id: str
+    tool_ids: list[str] = Field(default_factory=list)

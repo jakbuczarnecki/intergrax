@@ -409,7 +409,7 @@ intergrax/              # Tier-0 platform + Tier-1 Nexus
   skills/               # Skill Library
   llm_adapters/         # LLM providers
   rag/ · memory/        # Retrieval and memory
-  codecraft/            # Ephemeral Code Craft engine (ECC-1+ in progress)
+  codecraft/            # Ephemeral Code Craft engine (ECC-0…ECC-6 Done)
   runtime/nexus/        # NexusLoop, AgentEngine, UAEP, orchestration
   runtime/adaptive/     # L4 Adaptive Control Plane
   applications/         # Tier-3 composition engine

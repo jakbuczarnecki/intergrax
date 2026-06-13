@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""codecraft.run service — static gate + sandbox delegate (ECC-1)."""
+"""codecraft.* catalog tool services (ECC-1+)."""
 
 from __future__ import annotations
 
@@ -11,25 +11,124 @@ from uuid import uuid4
 from intergrax.codecraft.contracts import CodeCraftRunInput, CraftResult, StaticGateResult
 from intergrax.codecraft.profile import CodeCraftProfile
 from intergrax.codecraft.static_gate import StaticCodeGate
+from intergrax.runtime.codecraft.ephemeral_registry import get_ephemeral_registry_store
+from intergrax.runtime.codecraft.orchestrator import CodeCraftOrchestrator, resolve_codecraft_profile
 from intergrax.runtime.codecraft.trace import CodeCraftTraceEmitter
-from intergrax.tools.providers.codecraft.contracts import CodeCraftRunToolInput, CodeCraftRunToolOutput
+from intergrax.tools.providers.codecraft.contracts import (
+    CodeCraftDisposeToolInput,
+    CodeCraftDisposeToolOutput,
+    CodeCraftGetStateToolInput,
+    CodeCraftGetStateToolOutput,
+    CodeCraftIterateToolInput,
+    CodeCraftIterateToolOutput,
+    CodeCraftListEphemeralToolsInput,
+    CodeCraftListEphemeralToolsOutput,
+    CodeCraftPromoteToolInput,
+    CodeCraftPromoteToolOutput,
+    CodeCraftRunToolInput,
+    CodeCraftRunToolOutput,
+    CodeCraftStartToolInput,
+    CodeCraftStartToolOutput,
+)
 from intergrax.tools.providers.sandbox.contracts import CodeExecInput
 from intergrax.tools.providers.sandbox.extended_service import code_exec
 from intergrax.tools.providers.sandbox._session import resolve_sandbox_session
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 CODECRAFT_RUN_TOOL_ID = "codecraft.run"
+CODECRAFT_START_TOOL_ID = "codecraft.start"
+CODECRAFT_ITERATE_TOOL_ID = "codecraft.iterate"
+CODECRAFT_GET_STATE_TOOL_ID = "codecraft.get_state"
+CODECRAFT_DISPOSE_TOOL_ID = "codecraft.dispose"
+CODECRAFT_PROMOTE_TOOL_ID = "codecraft.promote"
+CODECRAFT_LIST_EPHEMERAL_TOOLS_TOOL_ID = "codecraft.list_ephemeral_tools"
+
+CODECRAFT_TOOL_IDS: tuple[str, ...] = (
+    CODECRAFT_RUN_TOOL_ID,
+    CODECRAFT_START_TOOL_ID,
+    CODECRAFT_ITERATE_TOOL_ID,
+    CODECRAFT_GET_STATE_TOOL_ID,
+    CODECRAFT_DISPOSE_TOOL_ID,
+    CODECRAFT_PROMOTE_TOOL_ID,
+    CODECRAFT_LIST_EPHEMERAL_TOOLS_TOOL_ID,
+)
 
 
-def resolve_codecraft_profile(ctx: ToolWiringContext) -> CodeCraftProfile | None:
-    raw = ctx.extras.get("codecraft_profile")
-    if raw is None:
-        return None
-    if isinstance(raw, CodeCraftProfile):
-        return raw
-    if isinstance(raw, dict):
-        return CodeCraftProfile.model_validate(raw)
-    return None
+def _orchestrator(ctx: ToolWiringContext, run_id: str | None) -> CodeCraftOrchestrator:
+    return CodeCraftOrchestrator(ctx, run_id=run_id or f"craft_run_{uuid4().hex[:12]}")
+
+
+def codecraft_start(ctx: ToolWiringContext, params: CodeCraftStartToolInput) -> CodeCraftStartToolOutput:
+    orch = _orchestrator(ctx, params.run_id)
+    session, deny = orch.start(
+        goal=params.goal,
+        task_id=params.task_id,
+        tenant_id=params.tenant_id,
+        agent_id=params.agent_id,
+        constraints=params.constraints,
+        craft_id=params.craft_id,
+        initial_code=params.initial_code,
+        language=params.language,
+    )
+    if deny is not None:
+        return CodeCraftStartToolOutput(error=deny.error, trace_event_count=orch.trace_event_count)
+    return CodeCraftStartToolOutput(session=session, trace_event_count=orch.trace_event_count)
+
+
+def codecraft_iterate(ctx: ToolWiringContext, params: CodeCraftIterateToolInput) -> CodeCraftIterateToolOutput:
+    orch = _orchestrator(ctx, params.run_id)
+    session, result = orch.iterate(
+        craft_id=params.craft_id,
+        task_id=params.task_id,
+        tenant_id=params.tenant_id,
+        agent_id=params.agent_id,
+        patch_diagnostics=params.patch_diagnostics,
+        hitl_approved=params.hitl_approved,
+        timeout_s=params.timeout_s,
+    )
+    return CodeCraftIterateToolOutput(
+        session=session,
+        result=result,
+        trace_event_count=orch.trace_event_count,
+    )
+
+
+def codecraft_get_state(ctx: ToolWiringContext, params: CodeCraftGetStateToolInput) -> CodeCraftGetStateToolOutput:
+    orch = _orchestrator(ctx, params.run_id)
+    session = orch.get_state(params.craft_id)
+    return CodeCraftGetStateToolOutput(session=session, found=session is not None)
+
+
+def codecraft_dispose(ctx: ToolWiringContext, params: CodeCraftDisposeToolInput) -> CodeCraftDisposeToolOutput:
+    orch = _orchestrator(ctx, params.run_id)
+    disposed = orch.dispose(
+        params.craft_id,
+        tenant_id=params.tenant_id,
+        task_id=params.task_id,
+        agent_id=params.agent_id,
+    )
+    return CodeCraftDisposeToolOutput(
+        disposed=disposed is not None,
+        craft_id=params.craft_id,
+        trace_event_count=orch.trace_event_count,
+    )
+
+
+def codecraft_promote(ctx: ToolWiringContext, params: CodeCraftPromoteToolInput) -> CodeCraftPromoteToolOutput:
+    orch = _orchestrator(ctx, params.run_id)
+    result = orch.promote(params.craft_id)
+    return CodeCraftPromoteToolOutput(result=result)
+
+
+def codecraft_list_ephemeral_tools(
+    ctx: ToolWiringContext,
+    params: CodeCraftListEphemeralToolsInput,
+) -> CodeCraftListEphemeralToolsOutput:
+    registry = get_ephemeral_registry_store(ctx).for_craft(params.craft_id)
+    return CodeCraftListEphemeralToolsOutput(
+        craft_id=params.craft_id,
+        tool_ids=list(registry.list_tools()),
+    )
 
 
 def codecraft_run(ctx: ToolWiringContext, params: CodeCraftRunToolInput) -> CodeCraftRunToolOutput:

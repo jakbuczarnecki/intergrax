@@ -7,7 +7,7 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**Status:** **ECC-0 Done** · **ECC-1 Done** (2026-06-13) · ECC-2 **Planned**  
+**Status:** **ECC-0…ECC-6 Done** (2026-06-13 layer completion)  
 **Default queue:** Pull ECC-1 after operator selects this domain; otherwise §6.1 gate maintenance continues in [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md).
 
 ---
@@ -258,6 +258,8 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 
 ## Phase ECC-2 — Session iteration loop
 
+**Status:** **Done** (2026-06-13)
+
 **Goal:** `codecraft.start`, `codecraft.iterate`, `codecraft.get_state`, `codecraft.dispose` + orchestrator.
 
 | ID | Deliverable | Module | Acceptance |
@@ -275,6 +277,8 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 ---
 
 ## Phase ECC-3 — Modes, HITL, promotion
+
+**Status:** **Done** (2026-06-13)
 
 **Goal:** `CodeCraftProfile`, supervised/autonomous, `CraftResultPromoter`, `codecraft.promote`.
 
@@ -294,6 +298,8 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 
 ## Phase ECC-4 — Production isolation
 
+**Status:** **Done** (2026-06-13)
+
 **Goal:** Regulated hosts default cloud sandbox; optional `security.scan` pre-exec.
 
 | ID | Deliverable | Module | Acceptance |
@@ -310,6 +316,8 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 
 ## Phase ECC-5 — Ephemeral tools + graph node
 
+**Status:** **Done** (2026-06-13)
+
 | ID | Deliverable | Acceptance |
 |----|-------------|------------|
 | ECC-5.1 | `EphemeralToolRegistry` | Tools visible only for `craft_id` |
@@ -322,6 +330,8 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 ---
 
 ## Phase ECC-6 — Adaptive trigger (L4)
+
+**Status:** **Done** (2026-06-13)
 
 | ID | Deliverable | Acceptance |
 |----|-------------|------------|
@@ -338,11 +348,11 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 |-------|--------|----------|-------------|
 | ECC-0 | **Done** | P0 | GAP-ECC-14 |
 | ECC-1 | **Done** | P0 | 03, 04, 09, 15 |
-| ECC-2 | **Planned** | P0 | 01, 03, 10, 11 |
-| ECC-3 | **Planned** | P1 | 02, 07, 08, 10 |
-| ECC-4 | **Planned** | P1 | 05 |
-| ECC-5 | **Planned** | P2 | 06, 12 |
-| ECC-6 | **Planned** | P2 | 13 |
+| ECC-2 | **Done** | P0 | 01, 03, 10, 11 |
+| ECC-3 | **Done** | P1 | 02, 07, 08, 10 |
+| ECC-4 | **Done** | P1 | 05 |
+| ECC-5 | **Done** | P2 | 06, 12 |
+| ECC-6 | **Done** | P2 | 13 |
 
 ---
 
@@ -353,6 +363,11 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 | 2026-06-10 | ECC-0 | Domain pair CODE_CRAFT, ADR-CODECRAFT-001, full audit register, hub/README/AGENTS sync |
 | 2026-06-13 | LAYER-AUDIT | Layer completion audit — zero implementation code; substrate ~40% Done; sprint plan §Sprints added; ECC-1 started |
 | 2026-06-13 | ECC-1 | `codecraft.run`, StaticCodeGate, CodeCraftTraceEmitter, catalog plugin, gate tests |
+| 2026-06-13 | ECC-2 | Orchestrator, session tools, codegen adapter, test runner, CVL bridge, skill |
+| 2026-06-13 | ECC-3 | Tier-3 profile wiring, HITL, promoter, codecraft.promote |
+| 2026-06-13 | ECC-4 | Isolation routing, security scan hook, harness_codecraft_stack preset |
+| 2026-06-13 | ECC-5 | EphemeralToolRegistry, list_ephemeral_tools, CodeCraftGraphBinding |
+| 2026-06-13 | ECC-6 | Adaptive catalog-miss trigger + budget gate |
 
 ---
 
@@ -379,7 +394,7 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 
 Each sprint = one PR-sized slice → gate green → plan row update → commit.
 
-## Sprint S1 — ECC-1 Single-shot craft
+## Sprint S1 — ECC-1 Single-shot craft (**Done**)
 
 | Field | Value |
 |-------|-------|
@@ -388,7 +403,7 @@ Each sprint = one PR-sized slice → gate green → plan row update → commit.
 | **DoD** | Unit tests for gate + deny paths; tool in catalog; `CODECRAFT_*` trace steps; gate tests green |
 | **Files** | `intergrax/codecraft/{contracts,profile,static_gate}.py` · `intergrax/runtime/codecraft/trace.py` · `intergrax/tools/providers/codecraft/*` · `intergrax/tools/registry/shipped_plugins.py` · `intergrax/runtime/sandbox/sandbox_runtime.py` · `tests/unit/codecraft/` · `tests/unit/tools/providers/codecraft/` |
 
-## Sprint S2 — ECC-2 Session loop
+## Sprint S2 — ECC-2 Session loop (**Done**)
 
 | Field | Value |
 |-------|-------|
@@ -397,7 +412,7 @@ Each sprint = one PR-sized slice → gate green → plan row update → commit.
 | **DoD** | E2E mock test; CVL L0 hook; skill `codecraft.ephemeral_builder` manifest |
 | **Files** | `intergrax/runtime/codecraft/{orchestrator,session_manager}.py` · `intergrax/codecraft/{codegen_adapter,test_runner}.py` · extended `tools/providers/codecraft/` · `intergrax/skills/providers/codecraft/` |
 
-## Sprint S3 — ECC-3 Modes + HITL + promotion
+## Sprint S3 — ECC-3 Modes + HITL + promotion (**Done**)
 
 | Field | Value |
 |-------|-------|
@@ -406,7 +421,7 @@ Each sprint = one PR-sized slice → gate green → plan row update → commit.
 | **DoD** | Lab preset wired; mode matrix tests; `codecraft.promote` tool |
 | **Files** | `intergrax/applications/contracts/environment_profile.py` · `intergrax/applications/_shared/codecraft_wiring.py` · `intergrax/codecraft/promoter.py` · UAEP policy fragment |
 
-## Sprint S4 — ECC-4 Production isolation
+## Sprint S4 — ECC-4 Production isolation (**Done**)
 
 | Field | Value |
 |-------|-------|
@@ -415,7 +430,7 @@ Each sprint = one PR-sized slice → gate green → plan row update → commit.
 | **DoD** | Integration test with mocked `HostedSandboxSession`; health probe extension |
 | **Files** | orchestrator isolation routing · `applications/_shared` presets · health probes |
 
-## Sprint S5 — ECC-5 Ephemeral registry + graph
+## Sprint S5 — ECC-5 Ephemeral registry + graph (**Done**)
 
 | Field | Value |
 |-------|-------|
@@ -424,7 +439,7 @@ Each sprint = one PR-sized slice → gate green → plan row update → commit.
 | **DoD** | Registry isolation tests; graph spec example in lab |
 | **Files** | `intergrax/runtime/codecraft/ephemeral_registry.py` · NEXUS_EXECUTION_FLOW cross-ref |
 
-## Sprint S6 — ECC-6 Adaptive trigger
+## Sprint S6 — ECC-6 Adaptive trigger (**Done**)
 
 | Field | Value |
 |-------|-------|

@@ -364,11 +364,11 @@ Canon cross-ref: [`OBSERVABILITY.md`](OBSERVABILITY.md) · [`TOOLS.md`](TOOLS.md
 |-------|-------|--------|
 | ECC-0 | ADR + domain pair docs | **Done** (2026-06-10) |
 | ECC-1 | `codecraft.run` + static gate + trace | **Done** (2026-06-13) |
-| ECC-2 | Session loop `start/iterate/dispose` | **Planned** |
-| ECC-3 | Modes + HITL + promotion | **Planned** |
-| ECC-4 | Cloud sandbox default + security.scan | **Planned** |
-| ECC-5 | Ephemeral tool registry + graph node | **Planned** |
-| ECC-6 | AHI adaptive trigger | **Planned** |
+| ECC-2 | Session loop `start/iterate/dispose` | **Done** (2026-06-13) |
+| ECC-3 | Modes + HITL + promotion | **Done** (2026-06-13) |
+| ECC-4 | Cloud sandbox default + security.scan | **Done** (2026-06-13) |
+| ECC-5 | Ephemeral tool registry + graph node | **Done** (2026-06-13) |
+| ECC-6 | AHI adaptive trigger | **Done** (2026-06-13) |
 
 Detail: [`plan/CODE_CRAFT.md`](../plan/CODE_CRAFT.md).
 

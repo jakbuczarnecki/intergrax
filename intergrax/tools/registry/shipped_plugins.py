@@ -26,9 +26,9 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
     from intergrax.tools.providers.catalog.bundle import CATALOG_BUNDLE_ID, CATALOG_TOOL_IDS, register_catalog_tools
     from intergrax.tools.providers.codecraft.bundle import (
         CODECRAFT_BUNDLE_ID,
-        CODECRAFT_TOOL_IDS,
         register_codecraft_tools,
     )
+    from intergrax.tools.providers.codecraft.service import CODECRAFT_TOOL_IDS
     from intergrax.tools.providers.context_tool.bundle import CONTEXT_BUNDLE_ID, CONTEXT_TOOL_IDS, register_context_tools
     from intergrax.tools.providers.braintrust.bundle import (
         BRAINTRUST_BUNDLE_ID,

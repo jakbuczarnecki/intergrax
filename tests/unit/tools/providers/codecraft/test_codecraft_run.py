@@ -126,6 +126,7 @@ def test_codecraft_tool_registered_in_catalog() -> None:
     bundle = get_bundle("codecraft")
     assert bundle is not None
     assert "codecraft.run" in bundle.tool_ids
+    assert "codecraft.start" in bundle.tool_ids
 
 
 def test_requires_sandbox_tool_includes_codecraft_run() -> None:

@@ -17,6 +17,25 @@ HEALTH_CHECK_RELATIONAL_STORE_TOOL_ID = "health.check_relational_store"
 HEALTH_CHECK_WIKI_KNOWLEDGE_TOOL_ID = "health.check_wiki_knowledge"
 HEALTH_CHECK_SEARCH_PROVIDER_TOOL_ID = "health.check_search_provider"
 HEALTH_CHECK_NOTIFICATION_CHANNEL_TOOL_ID = "health.check_notification_channel"
+HEALTH_CHECK_CODECRAFT_TOOL_ID = "health.check_codecraft"
+
+
+def health_check_codecraft(ctx: ToolWiringContext, _params: object) -> HealthCheckIntegrationOutput:
+    profile = ctx.extras.get("codecraft_profile")
+    if profile is None:
+        return HealthCheckIntegrationOutput(
+            status=HealthStatusOutput(slug="codecraft", healthy=False, detail="profile_not_configured"),
+        )
+    mode = getattr(profile, "mode", None) or profile.get("mode") if isinstance(profile, dict) else None
+    if mode == "disabled":
+        return HealthCheckIntegrationOutput(
+            status=HealthStatusOutput(slug="codecraft", healthy=True, detail="mode_disabled"),
+        )
+    sandbox_ok = ctx.sandbox_session is not None or ctx.sandbox_host is not None
+    detail = "ready" if sandbox_ok else "sandbox_not_configured"
+    return HealthCheckIntegrationOutput(
+        status=HealthStatusOutput(slug="codecraft", healthy=sandbox_ok, detail=detail),
+    )
 
 
 def _probe_backend(slug: str, backend: Any) -> HealthCheckIntegrationOutput:

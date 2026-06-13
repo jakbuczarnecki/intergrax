@@ -32,6 +32,7 @@ from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry.profile import ToolProfile
 from intergrax.applications.contracts.business_outcome_webhook import BusinessOutcomeWebhookConfig
+from intergrax.codecraft.profile import CodeCraftProfile
 from intergrax.runtime.adaptive.contracts import UtilityWeights
 from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
 from intergrax.runtime.policy.compliance_profiles import ComplianceDomainClass
@@ -427,6 +428,7 @@ class ApplicationEnvironmentProfile(BaseModel):
     graph_spec: ApplicationGraphSpec | None = None
     shadow_workspace: ShadowWorkspaceProfile | None = None
     sandbox: SandboxProfile | None = None
+    codecraft_profile: CodeCraftProfile | None = None
     features: ApplicationFeatures = Field(default_factory=ApplicationFeatures.lab_defaults)
     domain_policy_fragments: dict[str, Any] = Field(default_factory=dict)
     tool_selection_mode: str = "static"
@@ -537,6 +539,7 @@ class ApplicationEnvironmentProfile(BaseModel):
             identity_profile=IdentityProfile(require_api_key=False),
             shadow_workspace=ShadowWorkspaceProfile(),
             sandbox=SandboxProfile(enable_exec_tool=True),
+            codecraft_profile=CodeCraftProfile(mode="supervised", isolation_tier="local"),
             features=ApplicationFeatures.lab_defaults(),
             execution_mode=ExecutionMode.BALANCED,
         )
