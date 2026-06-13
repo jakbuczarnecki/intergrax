@@ -16,7 +16,7 @@
 
 | ID | AUDIT § | Gap | Priority | Status | M-RAG |
 |----|---------|-----|----------|--------|-------|
-| AUDIT-IDEAL-14.1 | §14 RAG | Graph RAG production profile (shared with MEMORY) | P1 | **Done** | M-RAG.12 (beta) |
+| AUDIT-IDEAL-14.1 | §14 RAG | Graph RAG production profile (shared with MEMORY) | P1 | **Done** | M-RAG.12 (stable) |
 | AUDIT-IDEAL-14.3 | §14 RAG | Wire `RagProfile.query_expansion` to retrieval path | P0 | **Done** | M-RAG.23 |
 | AUDIT-IDEAL-14.4 | §14 RAG | Dual-index + hierarchical retriever default bootstrap | P1 | **Done** | M-RAG.24 |
 | AUDIT-IDEAL-14.5 | §14 RAG | Retrieval poisoning defense on `rag.retrieve` catalog path | P1 | **Done** | M-RAG.25 |
@@ -66,8 +66,8 @@ Every finding in [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth 
 | GAP-RAG-26 | niegotowość | M-RAG.40 | G1 |
 | GAP-RAG-27 | niegotowość | M-RAG.41 | G1 |
 | GAP-RAG-28 | niska jakość | M-RAG.42 | G2 |
-| GAP-RAG-29 | niedoróbka | M-RAG.43 | G2 |
-| GAP-RAG-30 | niedoróbka | M-RAG.44 | G2 |
+| GAP-RAG-29 | niedoróbka | M-RAG.43 **Partial** · M-RAG.53 | G2 · G5 |
+| GAP-RAG-30 | niedoróbka | M-RAG.44 **Partial** · M-RAG.54 | G2 · G5 |
 | GAP-RAG-31 | niegotowość | M-RAG.45 | G3 |
 | GAP-RAG-32 | niedoróbka | M-RAG.46 | G3 |
 | GAP-RAG-33 | gap | M-RAG.49–M-RAG.51 | G4 |
@@ -225,7 +225,7 @@ Requires new Integration catalog slugs first (H-INT in INTEGRATIONS plan).
 **Phase RAG complete when:** RAG-1 + RAG-DOC.* **Done**; §6.1e queue closed. **Status: complete (2026-06-02).**  
 **Phase M-RAG-DEPTH:** **Complete** (2026-06-10) — M-RAG.23 … M-RAG.37 **Done**.
 
-**Phase M-RAG-GRAPH:** **Mostly complete** (2026-06-12) — M-RAG.38 … M-RAG.48, M-RAG.52 **Done**; M-RAG.49–51 **Planned** (H-INT blocked); boundaries: GAP-RAG-15, GAP-RAG-34 (community_report delivered).
+**Phase M-RAG-GRAPH:** **Mostly complete** (2026-06-12) — M-RAG.38 … M-RAG.48, M-RAG.52 **Done**; **G5 active** M-RAG.53–M-RAG.54 (usage hardening); M-RAG.49–51 **Planned** (H-INT blocked); boundaries: GAP-RAG-15, GAP-RAG-34 (community_report delivered).
 
 ---
 
@@ -247,7 +247,7 @@ Requires new Integration catalog slugs first (H-INT in INTEGRATIONS plan).
 | M-RAG.9 | Tool/Nexus wiring (`retrieval_service`, profile on `ToolWiringContext`) | **Done** | `RuntimeConfig.retrieval_service` |
 | M-RAG.10 | Native sparse / BM25 in vector backends | **Done** | `LexicalHybridSupport` + `query_hybrid` on InMemory/Qdrant/Weaviate; RRF fusion |
 | M-RAG.11 | RAG eval CI gate + golden datasets | **Done** | `tests/fixtures/rag_golden/`, `golden_harness.py`, `rag-guard.yml` |
-| M-RAG.12 | GraphRAG (`GraphStore` contract) | **Done** (beta) | `graph/` + `graph_rag` retriever; prod contract: M-RAG.33 |
+| M-RAG.12 | GraphRAG (`GraphStore` contract) | **Done** (stable) | `graph/` + `graph_rag` retriever **stable** (M-RAG.42); prod contract: M-RAG.33 |
 | M-RAG.13 | Platform agentic retrieval loop (budgeted) | **Done** | `AgenticRetrievalLoop` + M-RAG.34 iteration schedule / latency budget trace |
 | M-RAG.14 | Qdrant native sparse vectors + RRF fusion | **Done** | `INTERGRAX_RAG_QDRANT_SPARSE`, `bm25_sparse_encoder.py` |
 | M-RAG.15 | Weaviate native `query.hybrid` | **Done** | Live client + `INTERGRAX_RAG_WEAVIATE_NATIVE_HYBRID`; fallback to in-memory |
@@ -340,7 +340,7 @@ Ordered queue for RAG domain work. **Active:** M-RAG-GRAPH (15 items). **Closed:
 | 14 | **M-RAG.36** | 3 | **P2** | RAG load/soak gate (concurrent retrieve SLO) | 21 | **Done** |
 | 15 | **M-RAG.37** | 3 | **P2** | Semantic chunking ingest size guard | 22 | **Done** |
 
-### Active — Phase M-RAG-GRAPH (execute in wave G1 → G4)
+### Closed — Phase M-RAG-GRAPH G1–G4 (2026-06-12)
 
 | Order | ID | Wave | Priority | Deliverable | GAP-RAG | Status |
 |-------|-----|------|----------|-------------|---------|--------|
@@ -349,8 +349,8 @@ Ordered queue for RAG domain work. **Active:** M-RAG-GRAPH (15 items). **Closed:
 | 3 | **M-RAG.40** | G1 | **P1** | Graph delete/purge lifecycle sync with vector index | 26 | **Done** |
 | 4 | **M-RAG.41** | G1 | **P1** | Graph tenant isolation contract + gate tests | 27 | **Done** |
 | 5 | **M-RAG.42** | G2 | **P1** | `GraphRagRetriever` hardening; promote stable | 28 | **Done** |
-| 6 | **M-RAG.43** | G2 | **P2** | Hybrid retrieval graph channel fusion | 29 | **Done** |
-| 7 | **M-RAG.44** | G2 | **P2** | Graph provenance on `RetrievalTrace` | 30 | **Done** |
+| 6 | **M-RAG.43** | G2 | **P2** | Hybrid retrieval graph channel fusion (vector+graph) | 29 | **Partial** |
+| 7 | **M-RAG.44** | G2 | **P2** | Graph provenance on `RetrievalTrace` (summary fields) | 30 | **Partial** |
 | 8 | **M-RAG.48** | G2 | **P2** | Approved prod graph_store slug list (neo4j + soaked Bolt backends) | 35 | **Done** |
 | 9 | **M-RAG.52** | G2 | **P2** | Extended golden harness graph scenarios | 36 | **Done** |
 | 10 | **M-RAG.45** | G3 | **P2** | `rag.schedule_graph_maintenance_job` workflow contract | 31 | **Done** |
@@ -359,6 +359,13 @@ Ordered queue for RAG domain work. **Active:** M-RAG-GRAPH (15 items). **Closed:
 | 13 | **M-RAG.49** | G4 | **P3** | Neptune integration + RAG adapter (H-INT dependency) | 33 | **Planned** |
 | 14 | **M-RAG.50** | G4 | **P3** | OrientDB integration + RAG adapter (H-INT dependency) | 33 | **Planned** |
 | 15 | **M-RAG.51** | G4 | **P3** | ArangoDB integration + RAG adapter (H-INT dependency) | 33 | **Planned** |
+
+### Active — Phase M-RAG-GRAPH G5 — GraphRAG usage hardening (2026-06-13)
+
+| Order | ID | Wave | Priority | Deliverable | GAP-RAG | Status |
+|-------|-----|------|----------|-------------|---------|--------|
+| 16 | **M-RAG.53** | G5 | **P1** | Full 3-channel fusion in `GraphRagRetriever` — vector + keyword (lexical) + graph via `orchestrate_hybrid_retrieval` / `execute_hybrid_retrieval` reference | 29 | **Planned** |
+| 17 | **M-RAG.54** | G5 | **P1** | Structured graph provenance — `GraphTraceFieldBundle` / `provenance_records` on `RetrievalTrace` | 30 | **Planned** |
 
 ### Active — AUDIT-IDEAL (RAG band)
 
@@ -385,7 +392,7 @@ Ordered queue for RAG domain work. **Active:** M-RAG-GRAPH (15 items). **Closed:
 | M-RAG.9 | Tool/Nexus wiring | **Done** |
 | M-RAG.10 | Native sparse / BM25 | **Done** |
 | M-RAG.11 | Golden CI gate | **Done** |
-| M-RAG.12 | GraphRAG (beta) | **Done** |
+| M-RAG.12 | GraphRAG (beta) | **Done** (stable) |
 | M-RAG.13 | Agentic retrieval loop | **Done** |
 | M-RAG.14 | Qdrant sparse + RRF | **Done** |
 | M-RAG.15 | Weaviate native hybrid | **Done** |
@@ -457,6 +464,15 @@ Execute after documentation sync. One sprint = one commit unless operator splits
 | M-RAG.47 | Optional `community_report` indexer | `graph/indexer/community_report_graph_indexer.py`, `rag_profile.py`, `tests/unit/rag/graph/test_community_report_graph_indexer.py` |
 
 **DoD:** maintenance job idempotent; third-party indexer registers via plugin; community mode opt-in only.
+
+### Sprint G5 — GraphRAG usage hardening (M-RAG.53–M-RAG.54)
+
+| Item | Scope | Files |
+|------|-------|-------|
+| M-RAG.53 | Full 3-channel fusion (vector + keyword + graph) | `retrieval/graph_channel_fusion.py`, `retrievers/providers/graph_rag_retriever.py`, `tests/unit/rag/graph/test_hybrid_retrieval_graph_channel.py` |
+| M-RAG.54 | Structured `GraphTraceFieldBundle` on `RetrievalTrace` | `retrieval/graph_provenance_builder.py`, `retrieval/retrieval_result.py`, `retrievers/engine/retriever_execution.py`, `retrieval/retrieval_service.py`, `tests/unit/rag/graph/test_graph_provenance_retrieval_trace.py` |
+
+**DoD:** `channel_contributions` includes `vector`, `keyword`, `graph`; `RetrievalTrace.graph_provenance_records` populated with structured path records.
 
 ### Sprint G4 — Additional integrations (M-RAG.49–M-RAG.51) — blocked on H-INT
 
