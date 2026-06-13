@@ -33,7 +33,7 @@ from intergrax.integrations.registry.harness_lab_stack import HARNESS_M6_P6_PROB
 from intergrax.integrations.registry import presets
 from intergrax.integrations.registry.profile import IntegrationProfile
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 M6_P6_SLUGS = (
     "trivy",

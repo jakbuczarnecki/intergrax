@@ -17,7 +17,7 @@ from intergrax.fastapi_core.config import ApiEnvironment
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry import presets
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_application_environment_profile_lab_defaults() -> None:

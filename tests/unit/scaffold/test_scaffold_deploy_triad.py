@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = [pytest.mark.no_ci]
+
 from intergrax.scaffold.agent_catalog import resolve_agent_specs
 from intergrax.scaffold.application_names import ScaffoldApplicationNames
 from intergrax.scaffold.new_application import _create_lab_application

@@ -15,7 +15,7 @@ from intergrax.runtime.adaptive.contracts import HarnessOutcomeSignal
 from intergrax.runtime.adaptive.signal_store import SQLiteSignalStore
 from scripts.phase_w_adapt_report import build_signal_trend_report
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 

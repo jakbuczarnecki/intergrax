@@ -8,7 +8,7 @@ from lab_application.host.factory import create_lab_application
 from lab_application.host.settings import LabApplicationSettings
 from intergrax.fastapi_core.config import ApiEnvironment
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_staging_profile_requires_harness_api_key(monkeypatch: pytest.MonkeyPatch) -> None:

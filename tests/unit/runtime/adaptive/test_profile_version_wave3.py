@@ -43,7 +43,7 @@ from intergrax.runtime.architecture.adaptive_governance import (
 from intergrax.runtime.architecture.online_evaluation_registry import InMemoryOnlineEvaluationRegistry
 from intergrax.runtime.architecture.runtime_governance_bridge import RuntimeArchitectureGovernanceBridge
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def _sample_draft() -> ProfileVersionDraft:

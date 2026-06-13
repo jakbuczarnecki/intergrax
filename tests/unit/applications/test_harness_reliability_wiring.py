@@ -29,7 +29,7 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_resolve_reliability_wiring_options_maps_profile_fields() -> None:

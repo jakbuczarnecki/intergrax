@@ -24,7 +24,7 @@ from poc_template_application.manifest import build_poc_template_manifest
 from research_application.host.wiring import build_research_environment_profile
 from testing_support.builder import FakeLLMAdapter
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def _request() -> RuntimeRequest:

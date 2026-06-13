@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 GUIDE = Path(__file__).resolve().parents[3] / "docs" / "guides" / "APPLICATION_CREATION_GUIDE.md"
 

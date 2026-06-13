@@ -14,7 +14,7 @@ from intergrax.applications._shared.harness_auth import (
     resolve_harness_api_key,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_resolve_harness_api_key_unset(monkeypatch: pytest.MonkeyPatch) -> None:

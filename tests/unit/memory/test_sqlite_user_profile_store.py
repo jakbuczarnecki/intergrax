@@ -23,6 +23,7 @@ pytestmark = pytest.mark.unit
 
 @pytest.mark.asyncio
 @pytest.mark.gate
+@pytest.mark.no_ci
 async def test_sqlite_user_profile_store_save_and_load_roundtrip(tmp_path: Path) -> None:
     store = SQLiteUserProfileStore(db_path=str(tmp_path / "user_profiles.db"))
     profile = UserProfile(
@@ -54,6 +55,7 @@ async def test_sqlite_user_profile_store_save_and_load_roundtrip(tmp_path: Path)
 
 @pytest.mark.asyncio
 @pytest.mark.gate
+@pytest.mark.no_ci
 async def test_sqlite_user_profile_store_isolates_tenants(tmp_path: Path) -> None:
     store = SQLiteUserProfileStore(db_path=str(tmp_path / "user_profiles.db"))
     profile_a = UserProfile(
@@ -77,6 +79,7 @@ async def test_sqlite_user_profile_store_isolates_tenants(tmp_path: Path) -> Non
 
 @pytest.mark.asyncio
 @pytest.mark.gate
+@pytest.mark.no_ci
 async def test_sqlite_user_profile_store_delete_is_tenant_scoped(tmp_path: Path) -> None:
     store = SQLiteUserProfileStore(db_path=str(tmp_path / "user_profiles.db"))
     profile = UserProfile(

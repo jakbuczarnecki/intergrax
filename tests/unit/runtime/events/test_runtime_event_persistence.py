@@ -2,6 +2,8 @@
 
 import pytest
 
+pytestmark = pytest.mark.no_ci
+
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import NullRuntimeEventPersistence

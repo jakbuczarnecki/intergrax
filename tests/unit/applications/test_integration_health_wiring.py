@@ -21,7 +21,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def test_probe_integration_profile_health_lab_profile() -> None:
-    register_default_integrations()
+    register_default_integrations(override=True)
     profile = IntegrationProfile.lab()
     health = probe_integration_profile_health(profile)
 

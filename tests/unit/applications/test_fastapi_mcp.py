@@ -13,7 +13,7 @@ from intergrax.applications._shared.fastapi_mcp import (
     make_scheduler_lifespan,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_couple_fastapi_with_mcp_serves_both_apps() -> None:

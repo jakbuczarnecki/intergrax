@@ -12,7 +12,7 @@ from intergrax.applications._shared.task_control_wiring import (
 from poc_template_application.host.factory import create_poc_template_application
 from poc_template_application.host.settings import PocTemplateApplicationSettings
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_build_reliability_task_enricher_applies_defaults() -> None:

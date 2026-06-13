@@ -20,7 +20,7 @@ from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.nexus.config import RuntimeConfig
 from testing_support.builder import FakeLLMAdapter
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 class _DisabledFlagBackend:

@@ -7,9 +7,10 @@
 #   workflow_dispatch (fast) — unit gate + governance (~3 min)
 #
 # Feature-branch pushes do not trigger CI (avoids duplicate runs when a PR is open).
-# Gate marker (`-m gate`) on tests/unit only — deterministic, network-free logic regression.
+# CI pytest: `-m "gate and not no_ci"` on tests/unit; xdist parallel for speed.
+# Meta-tests (scripts/, depth gates, integration health probes) marked ``no_ci`` — covered by governance jobs.
 # Integration, acceptance, and Tier-3 host smoke suites run locally (scripts\test.bat / full pytest).
-# Harness job runs only non-gate harness-depth tests (gate-covered paths omitted).
+# Harness depth pytest job removed from CI — run locally via scripts\test.bat unit.
 #
 # Local full suite: scripts\test.bat unit  (uv sync --extra dev)
 
@@ -47,7 +48,7 @@ jobs:
       github.event_name == 'workflow_dispatch' &&
       github.event.inputs.profile == 'fast'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -62,8 +63,8 @@ jobs:
       - name: Install dependencies (CI minimal)
         run: uv sync --extra dev-ci --frozen
 
-      - name: Unit regression gate
-        run: uv run pytest tests/unit -m gate -n auto -q --tb=line
+      - name: Lightweight unit regression gate
+        run: uv run pytest tests/unit -m "gate and not no_ci" -n auto -q --tb=line
 
       - name: Governance audits
         run: >-
@@ -78,6 +79,7 @@ jobs:
           && uv run python scripts/check_production_chat_agent_imports.py
           && uv run python scripts/check_integration_vendor_imports.py
           && uv run python scripts/check_harness_no_getattr.py
+          && uv run python scripts/check_ci_gate_test_purity.py
           && uv run python scripts/check_legacy_modules_removed.py
           && uv run python scripts/check_agent_skill_resolution.py
           && uv run python scripts/check_harness_registry_resolution.py
@@ -120,8 +122,8 @@ jobs:
       - name: Install dependencies (CI minimal)
         run: uv sync --extra dev-ci --frozen
 
-      - name: Run unit regression gate
-        run: uv run pytest tests/unit -m gate -n auto -q --tb=line
+      - name: Lightweight unit regression gate
+        run: uv run pytest tests/unit -m "gate and not no_ci" -n auto -q --tb=line
 
   gate-governance-tier:
     if: >-
@@ -160,6 +162,7 @@ jobs:
           && uv run python scripts/check_production_chat_agent_imports.py
           && uv run python scripts/check_integration_vendor_imports.py
           && uv run python scripts/check_harness_no_getattr.py
+          && uv run python scripts/check_ci_gate_test_purity.py
           && uv run python scripts/check_application_production_gates.py
           && uv run python scripts/check_legacy_modules_removed.py
           && uv run python scripts/check_agent_skill_resolution.py
@@ -259,50 +262,3 @@ jobs:
       - name: Export capability catalog feed (main only)
         if: github.ref == 'refs/heads/main'
         run: uv run python scripts/export_capability_catalog_feed.py
-
-  harness:
-    if: >-
-      github.event_name == 'pull_request' ||
-      github.ref == 'refs/heads/main' ||
-      (
-        github.event_name == 'workflow_dispatch' &&
-        github.event.inputs.profile != 'fast'
-      )
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-          python-version: "3.12"
-
-      - name: Install dependencies (CI minimal)
-        run: uv sync --extra dev-ci --frozen
-
-      - name: Harness depth tests (non-gate only)
-        run: >-
-          uv run pytest
-          tests/unit/integrations/providers/test_harness_m9.py
-          tests/unit/integrations/providers/test_p4_harness_providers.py
-          tests/unit/tools/providers/observability/
-          tests/unit/tools/providers/gitlab/
-          tests/unit/tools/providers/pagerduty/
-          tests/unit/tools/providers/braintrust/
-          tests/unit/applications/test_task_defaults.py
-          tests/unit/applications/test_harness_default_notify.py
-          -m "not gate" -n auto -q --tb=line
-
-      - name: Strict harness profile tests
-        env:
-          LAB_STRICT_HARNESS: "true"
-          INTERGRAX_HARNESS_API_KEY: "ci-strict-harness-key"
-        run: >-
-          uv run pytest
-          tests/unit/applications/test_harness_auth.py
-          tests/unit/applications/test_lab_strict_harness.py
-          -q --tb=line

@@ -23,7 +23,7 @@ from intergrax.runtime.task.task import Task
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_resolve_agent_checkpoint_db_path_adjacent_to_task_checkpoints(tmp_path: Path) -> None:

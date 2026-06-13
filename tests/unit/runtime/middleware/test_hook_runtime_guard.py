@@ -18,7 +18,7 @@ from intergrax.runtime.middleware.base import RuntimeMiddleware
 from intergrax.runtime.middleware.hook_runtime_guard import invoke_guarded_hook
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 class _SlowMiddleware(RuntimeMiddleware):

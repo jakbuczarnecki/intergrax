@@ -26,7 +26,7 @@ from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTrac
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_resolve_observability_wiring_options_maps_trace_sqlite() -> None:

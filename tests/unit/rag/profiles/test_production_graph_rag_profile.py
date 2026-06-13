@@ -28,7 +28,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 @pytest.fixture(autouse=True)
 def _register_integrations() -> None:
-    register_default_integrations()
+    register_default_integrations(override=True)
 
 
 def test_production_rag_profile_is_harness_inmemory_graph() -> None:

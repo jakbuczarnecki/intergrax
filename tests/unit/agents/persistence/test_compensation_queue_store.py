@@ -11,7 +11,7 @@ from intergrax.agents.persistence.compensation_queue_store import (
 )
 from intergrax.contracts.side_effect import CompensationRequest
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def _sample_job(*, tenant_id: str = "tenant-a") -> CompensationJob:

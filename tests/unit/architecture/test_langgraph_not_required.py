@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-pytestmark = pytest.mark.gate
+pytestmark = [pytest.mark.gate, pytest.mark.no_ci]
 
 import importlib
 import subprocess

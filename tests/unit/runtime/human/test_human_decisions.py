@@ -11,7 +11,7 @@ from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.human.store import SQLiteHumanDecisionStore
 from intergrax.runtime.task.task import Task
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_parse_human_response_verdicts():

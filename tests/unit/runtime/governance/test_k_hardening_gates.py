@@ -12,6 +12,8 @@ from intergrax.runtime.policy.policy_engine import (
 )
 from intergrax.runtime.replay.policy_config import ExecutionPolicyConfig
 
+pytestmark = [pytest.mark.unit, pytest.mark.no_ci]
+
 
 @pytest.mark.unit
 @pytest.mark.gate

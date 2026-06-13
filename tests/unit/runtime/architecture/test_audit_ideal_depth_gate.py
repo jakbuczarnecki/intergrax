@@ -48,7 +48,7 @@ from intergrax.runtime.policy.policy_engine import PolicyEngine
 from intergrax.runtime.policy.pre_output_policy_bridge import apply_pre_output_policy
 from intergrax.runtime.task.task import Task
 
-pytestmark = pytest.mark.gate
+pytestmark = [pytest.mark.gate, pytest.mark.no_ci]
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 

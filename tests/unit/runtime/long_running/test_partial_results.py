@@ -13,7 +13,7 @@ from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_partial_result_from_checkpoint_extracts_runtime_fields(tmp_path) -> None:

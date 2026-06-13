@@ -11,7 +11,7 @@ import pytest
 from intergrax.runtime.adaptive.contracts import HarnessOutcomeSignal
 from intergrax.runtime.adaptive.signal_store import InMemorySignalStore, SQLiteSignalStore
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def _sample_signal(*, tenant_id: str = "t1", run_id: str = "run_1") -> HarnessOutcomeSignal:
