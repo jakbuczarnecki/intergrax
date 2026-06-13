@@ -1,9 +1,9 @@
 # © Artur Czarnecki. All rights reserved.
 # Sync GitHub repository description, homepage, and topics from the canonical manifest.
 #
-# Source of truth: .github/repository-metadata.json
+# Source of truth: .github/repo-management/repository-metadata.json
 # Manual run: Actions → "Sync repository metadata" → Run workflow
-# Local run:    uv run python scripts/sync_github_repository_metadata.py
+# Local run:  .github/repo-management/README.md
 
 name: Sync repository metadata
 
@@ -11,9 +11,8 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/repository-metadata.json"
+      - ".github/repo-management/**"
       - ".github/workflows/sync-repository-metadata.yml"
-      - "scripts/sync_github_repository_metadata.py"
   workflow_dispatch:
 
 permissions:
@@ -30,4 +29,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: python scripts/sync_github_repository_metadata.py --apply
+        run: python .github/repo-management/sync_github_repository_metadata.py --apply

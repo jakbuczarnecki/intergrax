@@ -228,28 +228,23 @@ For security vulnerabilities, see [SECURITY.md](SECURITY.md) — **do not** open
 
 ## GitHub repository metadata (maintainer setup)
 
-**Source of truth:** [`.github/repository-metadata.json`](.github/repository-metadata.json)
+**Source of truth:** [`.github/repo-management/repository-metadata.json`](.github/repo-management/repository-metadata.json)
 
-Edit that manifest for the public **description**, **homepage**, and **topics** (GitHub allows up to 20 topics). On push to `main`, the workflow [`.github/workflows/sync-repository-metadata.yml`](.github/workflows/sync-repository-metadata.yml) applies the manifest to GitHub.
+**Setup guide:** [`.github/repo-management/README.md`](.github/repo-management/README.md) (token, `.env`, sync commands, CI)
 
-**Manual sync:**
+Edit the manifest for the public **description**, **homepage**, and **topics** (GitHub allows up to 20 topics). On push to `main`, the workflow [`.github/workflows/sync-repository-metadata.yml`](.github/workflows/sync-repository-metadata.yml) applies the manifest to GitHub.
 
-```bash
-./sync-github-metadata.sh              # push to GitHub (Linux, macOS, Git Bash)
-./sync-github-metadata.sh check        # dry run / validate only
-
-sync-github-metadata.bat               # push to GitHub (Windows)
-sync-github-metadata.bat check         # dry run / validate only
-```
-
-Equivalent:
+**Manual sync** (from repository root):
 
 ```bash
-uv run python scripts/sync_github_repository_metadata.py          # dry run / validate
-uv run python scripts/sync_github_repository_metadata.py --apply  # requires gh auth login
+.github/repo-management/sync-github-metadata.bat           # push to GitHub (Windows)
+.github/repo-management/sync-github-metadata.bat check    # dry run only
+
+./.github/repo-management/sync-github-metadata.sh          # push to GitHub (Linux/macOS)
+./.github/repo-management/sync-github-metadata.sh check    # dry run only
 ```
 
-Or run the **Sync repository metadata** workflow from the Actions tab.
+Store `GH_TOKEN` in `.env` (see `.env.example`). The sync script loads it automatically.
 
 Keep [`pyproject.toml`](pyproject.toml) `description` and `keywords` aligned with the manifest for PyPI-style discovery and packaging consistency.
 
