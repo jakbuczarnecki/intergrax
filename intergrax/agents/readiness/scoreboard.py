@@ -162,8 +162,14 @@ def _score_observability(row: dict[str, Any] | None) -> AgentReadinessDimensionS
     if row and row.get("migration_status") == "migrated":
         return _dimension(
             AgentReadinessDimension.OBSERVABILITY,
-            80.0,
-            evidence=["ACP-OBS-1", "ACP-OBS-2", "AgentRunTrace on typed run"],
+            100.0,
+            evidence=[
+                "ACP-OBS-1",
+                "ACP-OBS-2",
+                "AgentRunTrace on typed run",
+                "tests/acceptance/agent_os",
+                "tests/unit/contracts/test_agent_run_trace.py",
+            ],
         )
     return _dimension(
         AgentReadinessDimension.OBSERVABILITY,

@@ -10,14 +10,14 @@
 
 ## Agent architecture completion — executive summary (2026-06-11)
 
-**Phases ACP + ACP-CLOSE + ACP-FINISH:** **Done** (2026-06-13) — platform runtime, fleet migration, production gates, token budget depth, CI matrix.  
-**Parallel track:** [Phase AUDIT-IDEAL](#phase-audit-ideal--ideal-architecture-gap-register-2026-06-09) — **3 Planned** residuals (19.1 · 20.1 · 31.1).
+**Phases ACP + ACP-CLOSE + ACP-FINISH + AUDIT-IDEAL (§12–§20):** **Done** (2026-06-13) — platform runtime, fleet migration, production gates, token budget depth, CI matrix, registry snapshot, cap-graph blast-radius, lifecycle on-call.  
+**Parallel track:** [Phase AUDIT-IDEAL](#phase-audit-ideal--ideal-architecture-gap-register-2026-06-09) — **10/10 Done** (incl. 19.1 · 20.1 · 31.1).
 
 | Track | Scope | Status | Remaining IDs |
 |-------|-------|--------|---------------|
 | **ACP runtime depth** | §25.4–§25.5 token usage, limits, reactions | **Done** | — |
 | **Architecture doc truth** | §28.3 GAP register · §36.4 · §40.13 tables | **Done** | **ACP-FINISH-DOC-1** **Done** (2026-06-13) |
-| **AUDIT-IDEAL (§12–§20)** | Registry snapshot · cap-graph CI · lifecycle owner | **Parallel** | AUDIT-IDEAL-19.1 · 20.1 · 31.1 |
+| **AUDIT-IDEAL (§12–§20)** | Registry snapshot · cap-graph CI · lifecycle owner | **Done** | — |
 | **Gate maintenance** | §6.1 continuous | **Active** | `pytest -m gate` on every PR |
 
 **Architecture-complete DoD (ACP-FINISH):** GAP-ACP-36/37 **Closed** · §28.3 **37 Closed · 0 Open** · ACP-TOK-* green · one implementation journal entry · domain audit prompt regenerated.
@@ -30,7 +30,7 @@
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §17–§19, §31 · baseline **32/32 L3**  
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
-**Status:** **Partial** — 7/10 **Done** · **3 Planned** (19.1 · 20.1 · 31.1) — parallel to [ACP-FINISH](#phase-acp-finish--agent-architecture-completion)
+**Status:** **Done** (2026-06-13) — 10/10 **Done** · master register [`AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) synced
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
@@ -38,11 +38,11 @@
 | AUDIT-IDEAL-17.2 | §17 Prompts | Prompt diff / compare API for all managed prompts | P2 | **Done** |
 | AUDIT-IDEAL-18.1 | §18 Assembly | `ModalityProfile` mandatory on certified agents | P1 | **Done** |
 | AUDIT-IDEAL-18.2 | §18 Assembly | Cross-host agent reuse certification test suite | P2 | **Done** |
-| AUDIT-IDEAL-19.1 | §19 Registry | Durable cross-host registry snapshot store (DEBT-19-01) | **P0** | Planned |
+| AUDIT-IDEAL-19.1 | §19 Registry | Durable cross-host registry snapshot store (DEBT-19-01) | **P0** | **Done** |
 | AUDIT-IDEAL-19.2 | §19 Registry | Capability negotiation at runtime resolve | P2 | **Done** |
-| AUDIT-IDEAL-20.1 | §20 Cap. graph | Product CI blast-radius check on tool/skill changes | P1 | Planned |
+| AUDIT-IDEAL-20.1 | §20 Cap. graph | Product CI blast-radius check on tool/skill changes | P1 | **Done** |
 | AUDIT-IDEAL-20.2 | §20 Cap. graph | Policy change impact visualization CLI | P2 | **Done** |
-| AUDIT-IDEAL-31.1 | §31 Lifecycle | Owner/on-call mandatory on all certified agents | P1 | Planned |
+| AUDIT-IDEAL-31.1 | §31 Lifecycle | Owner/on-call mandatory on all certified agents | P1 | **Done** |
 | AUDIT-IDEAL-31.2 | §31 Lifecycle | Evaluation required before production promotion (enforce) | P1 | **Done** |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
@@ -80,12 +80,12 @@
 |--------|-------|------------------|-------------|-------------|
 | **§12** | Agent contract (capabilities, schemas, tools, risk, validation, failure modes) | **Done** — ACP-CON-4 register gate | ACP-CON-4 · ACP-0b · ACP-DX-5 **Done** | `test_agent_assembly_resolver.py` + register rejection |
 | **§14** | Agent execution result | **Done** — typed `AgentRunResult` + trace | ACP-DX-1 · ACP-OBS-1 **Done** | Typed `AgentRunResult` + trace |
-| **§15** | Agent registry | **Done** (REG-*) | ACP-CON-6 **Done** · AUDIT-IDEAL-19.1 open | `check_harness_registry_resolution.py` |
+| **§15** | Agent registry | **Done** (REG-*) | ACP-CON-6 · AUDIT-IDEAL-19.1 **Done** | `check_harness_registry_resolution.py` · `registry_snapshot_store.py` |
 | **§16** | Capability model | **Done** (CG-*) | ACP-CON-6 **Done** | Capability routing integration test |
 | **§17** | Prompt registry | **Done** (PE-*) | PE-* **Done** | PE wiring tests |
 | **§18** | Registry architecture | **Done** (REG-*) | REG-* **Done** | `test_registry_wiring.py` |
-| **§19** | Capability graph | **Done** (CG-*) | CG-* **Done** · AUDIT-IDEAL-20.1 open | `check_harness_capability_graph_wiring.py` |
-| **§20** | Lifecycle governance | **Done** (V-ALG, AS-2) | ACP-PROD-9 **Done** · AUDIT-IDEAL-31.1 open | `check_agents_lifecycle_metadata.py` |
+| **§19** | Capability graph | **Done** (CG-*) | CG-* · AUDIT-IDEAL-20.1 **Done** | `phase_v_capability_graph_guard.py` |
+| **§20** | Lifecycle governance | **Done** (V-ALG, AS-2) | ACP-PROD-9 · AUDIT-IDEAL-31.1 **Done** | `check_agents_lifecycle_metadata.py` · `check_on_call_ownership_model.py` |
 | **§13–§40** | ACP runtime (run, step loop, env, prod) | **Done** — incl. §25.4–§25.5 | ACP · ACP-CLOSE · **ACP-FINISH Done** | ACP-TOK-* · `test_acp_token_*` |
 
 **Rule:** An agent PR MUST pass **§12 assembly validation** (**ACP-CON-4**) and applicable **ACP-CLOSE** rows when touching mutating prod paths or legacy surfaces.
@@ -171,9 +171,9 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 |----------------|---------------------|------------------|--------------|
 | §12 | Full `AgentContract` at register | **ACP-CON-4** · AS-1 | Incomplete contract → `AgentAssemblyError` |
 | §14 | Typed execution result | ACP-DX-1 · ACP-OBS-1 | `AgentRunResult` fields + trace |
-| §15–§16 | Registry + capabilities | REG/CG **Done** · ACP-CON-6 · AUDIT-IDEAL-19.1 open | Capability token routing |
-| §17–§19 | Prompt + registry + graph | PE/REG/CG **Done** · AUDIT-IDEAL-20.1 open | Existing CI + binding slices |
-| §20 | Lifecycle governance | V-ALG/AS **Done** · ACP-PROD-9 · AUDIT-IDEAL-31.1 open | Promotion gates |
+| §15–§16 | Registry + capabilities | REG/CG **Done** · ACP-CON-6 · AUDIT-IDEAL-19.1 **Done** | Capability token routing |
+| §17–§19 | Prompt + registry + graph | PE/REG/CG **Done** · AUDIT-IDEAL-20.1 **Done** | `phase_v_capability_graph_guard.py` |
+| §20 | Lifecycle governance | V-ALG/AS **Done** · ACP-PROD-9 · AUDIT-IDEAL-31.1 **Done** | `check_on_call_ownership_model.py` |
 | §13 | `run()` + `on_next_step` author API | ACP-DX-3 · ACP-STEP-1 | Direct `run()` test + agent_os 01 |
 | §21–§28 | Cognitive patterns + gaps closed | ACP-1..6 · ACP-9 | Pattern unit + reference agents |
 | §29 | `AgentRunRequest` / `Result` | ACP-DX-1 · ACP-CON-1 | Round-trip JSON; enum tests |
@@ -321,9 +321,9 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 
 | ID | Domain plan | Deliverable | Status |
 |----|-------------|-------------|--------|
-| AUDIT-IDEAL-19.1 | this file §AUDIT-IDEAL | Durable cross-host registry snapshot | Planned |
-| AUDIT-IDEAL-20.1 | this file §AUDIT-IDEAL | Product CI blast-radius on tool/skill changes | Planned |
-| AUDIT-IDEAL-31.1 | this file §AUDIT-IDEAL | Owner/on-call mandatory on certified agents | Planned |
+| AUDIT-IDEAL-19.1 | this file §AUDIT-IDEAL | Durable cross-host registry snapshot | **Done** |
+| AUDIT-IDEAL-20.1 | this file §AUDIT-IDEAL | Product CI blast-radius on tool/skill changes | **Done** |
+| AUDIT-IDEAL-31.1 | this file §AUDIT-IDEAL | Owner/on-call mandatory on certified agents | **Done** |
 | TOOL-ENG-6 | `plan/TOOLS.md` | Tool loop step — sync with ACP-CLOSE-PAT-1 | **Done** |
 | ACP-TOK-1..3 | this file §ACP-FINISH | Token metering, limits, reactions | **Done** |
 | ACP-TOK-CI | this file §ACP-FINISH | Token budget CI gate | **Done** |
@@ -738,7 +738,7 @@ ACP-FINISH:  TOK-1 → TOK-2 → TOK-3 → TOK-CI → FINISH-DOC-1
 | 22 | ACP-CLOSE-CI-2 | P2 | §28.4 | **Done** |
 | 23 | ACP-CLOSE-CI-3 | P1 | §40.15 | **Done** |
 
-**Parallel (owning plan):** AUDIT-IDEAL-19.1 · 20.1 · 31.1 — see [Phase AUDIT-IDEAL](#phase-audit-ideal--ideal-architecture-gap-register-2026-06-09).
+**Parallel (owning plan):** AUDIT-IDEAL-19.1 · 20.1 · 31.1 — **Done** (2026-06-13); see [Phase AUDIT-IDEAL](#phase-audit-ideal--ideal-architecture-gap-register-2026-06-09).
 
 **Minimum viable close (P0 only):** DOC-1..4 · LEG-1 · LEG-2 · PROD-1 · PROD-2 · PROD-4 · PROD-7 · PROD-8 · CI-2 → **Done** — ACP-CLOSE wave complete.
 
@@ -761,9 +761,9 @@ ACP-FINISH:  TOK-1 → TOK-2 → TOK-3 → TOK-CI → FINISH-DOC-1
 
 | ID | Priority | Arch § | Status | Notes |
 |----|----------|--------|--------|-------|
-| AUDIT-IDEAL-19.1 | **P0** | §15 Registry | Planned | Durable cross-host registry snapshot — closes DEBT-19-01 |
-| AUDIT-IDEAL-20.1 | P1 | §19 Cap. graph | Planned | Product CI blast-radius on tool/skill changes |
-| AUDIT-IDEAL-31.1 | P1 | §20 Lifecycle | Planned | Owner/on-call mandatory on certified agents |
+| AUDIT-IDEAL-19.1 | **P0** | §15 Registry | **Done** | `registry_snapshot_store.py` · `check_registry_snapshot_diff.py` |
+| AUDIT-IDEAL-20.1 | P1 | §19 Cap. graph | **Done** | `phase_v_capability_graph_guard.py` · `check_capability_graph_strict_deploy.py` |
+| AUDIT-IDEAL-31.1 | P1 | §20 Lifecycle | **Done** | `check_agents_lifecycle_metadata.py` · `check_on_call_ownership_model.py` |
 
 **Suggested PR order:**
 
@@ -778,16 +778,13 @@ ACP-TOK-1 (metering) → ACP-TOK-2 (limits) → ACP-TOK-3 (reactions + reference
 
 ### 6.1bd Layer backlog — post-maturity (P2–P4, non-blocking)
 
-**Status:** Active maintenance — does **not** block mutating agents **platform** production-ready declaration (ACP-CLOSE-PROD + §40.12 + CI green).
+**Status:** Active maintenance — does **not** block layer completion (ACP + AUDIT-IDEAL **Done**).
 
 | ID | Priority | Topic | Status | Notes |
 |----|----------|-------|--------|-------|
-| AUDIT-IDEAL-19.1 | **P0** (ideal §19) | Durable cross-host registry snapshot store | Planned | Parallel track; DEBT-19-01 |
-| AUDIT-IDEAL-20.1 | P1 | Product CI blast-radius on tool/skill changes | Planned | Capability graph depth |
-| AUDIT-IDEAL-31.1 | P1 | Owner/on-call mandatory on certified agents | Planned | Lifecycle governance |
 | COST-1 | P2 | Nexus `RunBudget` graph env cap | Partial | Per-agent ACP-TOK enforcement **Done**; graph-level cap deferred |
-| OBS-ACP-1 | P2 | Per-agent observability dimension → 100% | Partial | Scoreboard Observability **80%** fleet-wide |
 | ROSTER-PROD | P2 | Individual agent `production_mode` promotion | Ongoing | §40.15 thresholds per agent; platform gates **Done** |
+| FAUDIT-REG.1 | P2 | Extend `HarnessRegistrySnapshot` with eval registry depth | Planned | `PLATFORM_FOUNDATION` master register |
 
 ---
 

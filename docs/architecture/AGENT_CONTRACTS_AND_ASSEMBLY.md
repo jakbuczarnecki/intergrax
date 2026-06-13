@@ -405,7 +405,7 @@ Registries are versioned, snapshot-capable catalogs — not mutable globals.
 
 Tier-3 `wire_application_environment()` materializes registries from `ApplicationEnvironmentProfile` tool/skill/integration/prompt profiles → `RuntimeConfig` via `runtime_config_bridge.py` and domain `*_assembly_resolver.py` modules.
 
-Snapshots and conformance CI validate registry shape before release (`scripts/check_agents_lifecycle_metadata.py`, harness registry guards).
+Snapshots and conformance CI validate registry shape before release (`scripts/check_agents_lifecycle_metadata.py`, harness registry guards). **Durable cross-host snapshots:** `applications/_shared/registry_snapshot_store.py` (AUDIT-IDEAL-19.1) + `check_registry_snapshot_diff.py`.
 
 **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase REG.
 
@@ -436,7 +436,8 @@ Integration -> Tool -> Skill -> Policy -> Agent -> Application -> Product
 | `capability_graph_lineage.py` | Lineage / provenance |
 | `capability_graph_compatibility.py` | Edge compatibility |
 | `capability_graph_applications.py` | Application slice |
-| `scripts/phase_v_capability_graph_guard.py` | CI guard |
+| `scripts/phase_v_capability_graph_guard.py` | CI guard + blast-radius impact (AUDIT-IDEAL-20.1) |
+| `scripts/check_capability_graph_strict_deploy.py` | STRICT deploy gate (APP-OPS-1) |
 
 Nexus routes to **capabilities** (§16), not hardcoded class names. Graph edges MUST reflect manifest roster per application — not global cross-product shortcuts.
 
@@ -456,7 +457,7 @@ Beyond contract shape (§12) and registry metadata (§15):
 | Retirement | rollback/archive semantics |
 | Ownership | explicit owner + escalation path |
 
-**Code:** `runtime/architecture/agent_lifecycle_governance.py`, `agent_certification.py`, `agent_promotion.py`, `production_ownership.py`.
+**Code:** `runtime/architecture/agent_lifecycle_governance.py`, `agent_certification.py`, `agent_promotion.py`, `production_ownership.py`. **On-call gate (AUDIT-IDEAL-31.1):** `check_agents_lifecycle_metadata.py`, `check_on_call_ownership_model.py`, `on_call_contact` on `AgentContract`.
 
 Runtime MUST reject or reroute retired/deprecated agents in production mode (V-REM-ALG.*). **Plan:** Phase AS + V-REM in [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md).
 
@@ -464,9 +465,9 @@ Runtime MUST reject or reroute retired/deprecated agents in production mode (V-R
 
 # 21. Agent Cognitive Architecture (ACP)
 
-**Status:** Canonical architecture — **platform delivered** (Phase ACP Done); **closeout** Phase **ACP-CLOSE** **Done** (2026-06-11)  
+**Status:** Canonical architecture — **platform delivered** (Phase ACP + ACP-CLOSE + ACP-FINISH **Done**); AUDIT-IDEAL §12–§20 **Done** (2026-06-13)  
 **ADR:** [ADR-AGENT-001](../adr/entries/2026-06-11/ADR-AGENT-001.md)  
-**Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) — ACP Done · **ACP-CLOSE** §6.1bb  
+**Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) — ACP · ACP-CLOSE · ACP-FINISH · AUDIT-IDEAL **Done**  
 **Cross-domain:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) (planes 1–3) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) (narrative) · [`TOOLS.md`](TOOLS.md) TOOL-ENG-6 (tool loop) · [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) (reflection)
 
 ## 21.1 Purpose
@@ -3438,9 +3439,9 @@ Waivers require ADR + operator sign-off — not silent skip.
 | Token metering + limits + reactions (§25.4–§25.5) | **Yes** — **delivered** (ACP-TOK-1..3 · ACP-TOK-CI) |
 | Declare mutating agents **production-ready** | **Yes** — when host passes ACP-PROD + ACP-CLOSE-PROD + APP-PROD gates |
 
-**Clarification (2026-06-13):** §25.4–§25.5 closed via ACP-FINISH; Nexus `RunBudget` graph env cap remains COST-1 **Partial** (does not block per-agent enforcement). **Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) **ACP-FINISH Done** · parallel AUDIT-IDEAL-19.1/20.1/31.1 only.
+**Clarification (2026-06-13):** §25.4–§25.5 closed via ACP-FINISH; AUDIT-IDEAL-19.1/20.1/31.1 **Done** — §12–§20 layer complete. Nexus `RunBudget` graph env cap remains COST-1 **Partial** (does not block per-agent enforcement).
 
-**Next work:** AUDIT-IDEAL §12–§20 residuals (registry snapshot, cap-graph CI, lifecycle owner) — parallel track, not blocking ACP §13–§40.
+**Next work (non-blocking):** COST-1 graph cap · per-roster `production_mode` promotion (§40.15) · gate maintenance §6.1.
 
 ---
 
