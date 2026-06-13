@@ -695,7 +695,7 @@ Subagent Architecture Score: L0-L4
 
 ## 11. Tool Layer
 
-**Authoring map (control plane):** `guides/AGENT_CREATION_GUIDE.md` **Appendix J** · implementation closeout: plan **Phase TS** (**Done**).
+**Authoring map (control plane):** `guides/AGENT_CREATION_GUIDE.md` **Appendix J** · implementation closeout: plan **Phase TOOL-ENG** (**Done** 2026-06-12).
 
 ### Purpose
 
