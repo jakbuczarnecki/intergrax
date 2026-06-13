@@ -2371,7 +2371,7 @@ ApplicationHealthScore:
 
 Platform engineering surface — **inventory** of what exists, where it runs, at which version. Distinct from runtime Nexus registry (agent instances).
 
-### 50.4.1 ApplicationRegistry (target)
+### 50.4.1 ApplicationRegistry **Done** (APP-OPS-4)
 
 ```text
 ApplicationRegistry:
@@ -2394,7 +2394,7 @@ ApplicationRegistryEntry:
 - `get_application(app_id)` — manifest + latest health
 - `register_application(package)` — on scaffold / CI publish
 
-### 50.4.2 EnvironmentRegistry (target)
+### 50.4.2 EnvironmentRegistry **Done** (APP-OPS-4)
 
 A **deployed instance** of an application (lab, staging, prod, tenant-specific):
 
@@ -2425,7 +2425,7 @@ EnvironmentDeployment:
 
 ### 50.4.3 Registry operations
 
-| Command (target) | Returns |
+| Command | Returns |
 |------------------|---------|
 | `intergrax apps list` | All applications |
 | `intergrax apps show <app_id>` | Versions, ownership, health |

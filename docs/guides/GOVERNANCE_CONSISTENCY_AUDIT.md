@@ -57,14 +57,14 @@ IDEAL requires typed nodes, lineage, blast radius, validation gates. Implemented
 | **`AgentRegistry`** | 1 runtime | In-process agent instances for one host boot | Per process | ACP §15 |
 | **Tool / Skill / Integration / Prompt / Evaluation registry** | 0–1 | Catalog materialized from profile | Snapshot per deploy | ACP §18 |
 | **`applications/README.md` index** | 3 docs | Human roster of monorepo apps | Manual | `applications/README.md` |
-| **`ApplicationRegistry`** (planned) | Ops | Inventory of `ApplicationPackage` releases | Append-only versions | TIER3 §50.4 |
-| **`EnvironmentRegistry`** (planned) | Ops | Deployed instances (region, image, endpoint) | Per deployment event | TIER3 §50.4 |
+| **`ApplicationRegistry`** **Done** (APP-OPS-4) | Ops | Inventory of `ApplicationPackage` releases | Append-only versions | TIER3 §50.4 |
+| **`EnvironmentRegistry`** **Done** (APP-OPS-4) | Ops | Deployed instances (region, image, endpoint) | Per deployment event | TIER3 §50.4 |
 
 ### 3.1 Rules
 
 - **`AgentRegistry`** ≠ **`ApplicationRegistry`**. First is **runtime selection**; second is **platform inventory**.
 - **`EnvironmentRegistry`** ≠ **`ApplicationEnvironmentProfile`**. Profile is config; registry entry is **where** that config is deployed.
-- README table is **documentation index**, not a registry contract — until APP-OPS-4, do not treat README as source of truth for ops automation.
+- README table is **documentation index**, not a registry contract — prefer `ApplicationRegistry` artifacts for ops automation (APP-OPS-4 **Done**).
 
 **Overlap risk:** Low, if naming is preserved. **Conflict:** None.
 
@@ -76,7 +76,7 @@ IDEAL requires typed nodes, lineage, blast radius, validation gates. Implemented
 |-----------|------|-------|-----------------|
 | **`AgentLifecycleState` + transition evaluator** | ACP §20 · `agent_lifecycle_governance.py` | experimental→retired **state machine** | Ownership |
 | **`ProductionOwnerMetadata` / V-ALG.4** | ACP §20 · `production_ownership.py` | Per-**agent** on-call when `production_eligible` | Application owner |
-| **`ApplicationOperationalOwnership`** (planned) | TIER3 §50.2 | Per-**application host** team / escalation | Agent lifecycle |
+| **`ApplicationOperationalOwnership`** **Done** (APP-OPS-2) | TIER3 §50.2 | Per-**application host** team / escalation | Agent lifecycle |
 | **`GovernanceProfile`** | `environment_profile.py` | **Feature flags**: quarterly review, dashboard toggles | Ownership or lifecycle |
 | **`IntegrationGovernanceProfile`** | `environment_profile.py` | **Feature flags**: marketplace catalog, hot-reload | Integration ownership |
 
@@ -104,7 +104,7 @@ ApplicationOperationalOwnership → application host ops contacts (APP-OPS-2)
 | **ACP-PROD-*** | Boolean agent gates | Agent certification | ACP §45 |
 | **`EnvironmentHealthStatus`** | Runtime enum per Task | During execution | TIER3 §42 |
 | **`ArchitectureMetricsReport`** (V-AM.1) | Graph structural metrics | Report-only CI | `architecture_metrics.py` · enabled via `GovernanceProfile.architecture_health_metrics_enabled` |
-| **`EnvironmentHealthScore`** (planned) | Composite 0–1 ops score | Continuous / release | TIER3 §50.3 |
+| **`EnvironmentHealthScore`** **Done** (APP-OPS-3) | Composite 0–1 ops score | Continuous / release | TIER3 §50.3 |
 
 ### 5.1 Stack (no duplication)
 
@@ -145,11 +145,11 @@ EnvironmentHealthStatus → live task posture (budget, HITL, policy)
 | Capability **routing** | ACP §15 + UAEP §42.27 |
 | Capability **graph at host** | TIER3 §50.1 (view only) |
 | Runtime registries (agent/tool/skill/…) | ACP §18 |
-| Ops registries (app/env inventory) | TIER3 §50.4 (planned) |
+| Ops registries (app/env inventory) | TIER3 §50.4 **Done** (APP-OPS-4) |
 | Agent lifecycle + certification | ACP §20 |
-| Application ops ownership | TIER3 §50.2 (planned) |
+| Application ops ownership | TIER3 §50.2 **Done** (APP-OPS-2) |
 | Deploy boolean gates | TIER3 §40 APP-PROD |
-| Continuous health scoring | TIER3 §50.3 (planned) |
+| Continuous health scoring | TIER3 §50.3 **Done** (APP-OPS-3) |
 | Graph structural metrics | V-AM.1 / `architecture_metrics.py` |
 
 ---
@@ -164,7 +164,7 @@ EnvironmentHealthStatus → live task posture (budget, HITL, policy)
 | 4 | ACP §19 → TIER3 §50.1 cross-ref | **Done** |
 | 5 | TIER3 §50.1 → ACP §19 canonical graph | **Done** |
 | 6 | Ban `CapabilityRegistry` in glossary | **Done** (§2.1) |
-| 7 | APP-OPS implementation | Planned — not architecture |
+| 7 | APP-OPS implementation | **Done** (APP-OPS-1…4) |
 
 **Architecture freeze:** Tier-3 structural canon §24–§51 + this audit = **approved for freeze**. Further work is implementation (APP-*, ACP-TOK-*) and glossary discipline — not new composition primitives without ADR.
 
