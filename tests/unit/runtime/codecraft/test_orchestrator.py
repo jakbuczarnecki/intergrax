@@ -165,3 +165,15 @@ def test_orchestrator_max_iterations(craft_ctx: ToolWiringContext) -> None:
     orch.iterate(craft_id=session.craft_id, task_id="t", tenant_id="t")
     session2, result = orch.iterate(craft_id=session.craft_id, task_id="t", tenant_id="t")
     assert result.error == "max_iterations_exceeded" or (session2 and session2.iteration >= 1)
+
+
+def test_orchestrator_trace_taxonomy(craft_ctx: ToolWiringContext) -> None:
+    orch = CodeCraftOrchestrator(craft_ctx)
+    session, _ = orch.start(goal="print ok", task_id="task-1", tenant_id="tenant-1")
+    assert session is not None
+    orch.iterate(craft_id=session.craft_id, task_id="task-1", tenant_id="tenant-1")
+    steps = {evt.step for evt in orch._emitter.events}  # noqa: SLF001 — trace contract test
+    assert "codecraft.generation" in steps
+    assert "codecraft.iteration_verdict" in steps
+    assert "codecraft.test" in steps
+    assert "codecraft.session_opened" in steps

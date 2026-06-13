@@ -395,7 +395,7 @@ Layer completion audit after ECC-0…ECC-6 — gaps blocking **production parity
 
 | GAP-ID | Category | Description | Sprint | Priority |
 |--------|----------|-------------|--------|----------|
-| GAP-ECC-16 | observability | Trace taxonomy incomplete — missing generation/test/verdict/HITL/promote steps | **S8** | P1 |
+| GAP-ECC-16 | observability | Trace taxonomy incomplete — missing generation/test/verdict/HITL/promote steps | **S8** **Done** | P1 |
 | GAP-ECC-17 | routing | `codecraft.run` bypasses `resolve_craft_sandbox_session` (no cloud tier on single-shot) | **S9** | P1 |
 | GAP-ECC-18 | ops | `health.check_codecraft` probe not registered in health bundle | **S10** | P2 |
 | GAP-ECC-19 | CI | No `check_codecraft_layer.py` harness gate | **S10** | P2 |
@@ -418,7 +418,7 @@ Layer completion audit after ECC-0…ECC-6 — gaps blocking **production parity
 | **DoD** | Domain pair aligned; post-closeout gaps enumerated |
 | **Files** | `docs/architecture/CODE_CRAFT.md`, `docs/plan/CODE_CRAFT.md` |
 
-## Sprint S8 — Trace taxonomy parity (ECC-7)
+## Sprint S8 — Trace taxonomy parity (ECC-7) (**Done**)
 
 | Field | Value |
 |-------|-------|

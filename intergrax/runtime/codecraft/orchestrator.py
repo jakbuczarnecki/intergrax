@@ -100,6 +100,15 @@ class CodeCraftOrchestrator:
 
         adapter = resolve_codegen_adapter(self._ctx)
         code = initial_code or adapter.generate(goal=goal, constraints=constraints, language=session.language)
+        self._emitter.generation(
+            craft_id=session.craft_id,
+            mode=profile.mode,
+            iteration=1,
+            model_id=getattr(adapter, "model_id", "template"),
+            tenant_id=tenant_id,
+            task_id=task_id,
+            agent_id=agent_id,
+        )
         session = session.model_copy(update={"code": code})
         ephemeral = get_ephemeral_registry_store(self._ctx).for_craft(session.craft_id)
         helper_tool_id = f"ephemeral.{session.craft_id}.helper"
@@ -141,6 +150,15 @@ class CodeCraftOrchestrator:
                 code=code,
                 diagnostics=patch_diagnostics,
                 language=session.language,
+            )
+            self._emitter.generation(
+                craft_id=craft_id,
+                mode=profile.mode,
+                iteration=next_iteration,
+                model_id=getattr(adapter, "model_id", "template"),
+                tenant_id=tenant_id,
+                task_id=task_id,
+                agent_id=agent_id,
             )
 
         gate = StaticCodeGate(profile).scan(code, language=session.language)
@@ -194,6 +212,14 @@ class CodeCraftOrchestrator:
                 },
             )
             self._sessions.save(session)
+            self._emitter.hitl_requested(
+                craft_id=craft_id,
+                mode=profile.mode,
+                reason="supervised_exec_approval",
+                tenant_id=tenant_id,
+                task_id=task_id,
+                agent_id=agent_id,
+            )
             return session, CraftResult(
                 craft_id=craft_id,
                 success=False,
@@ -269,12 +295,30 @@ class CodeCraftOrchestrator:
             )
 
         test_result = CraftTestRunner(profile).run(self._ctx, rel_path="craft_main.py")
+        self._emitter.test_completed(
+            craft_id=craft_id,
+            mode=profile.mode,
+            passed=None if test_result.skipped else test_result.passed,
+            test_command=profile.test_command_template.format(path="craft_main.py"),
+            tenant_id=tenant_id,
+            task_id=task_id,
+            agent_id=agent_id,
+        )
         verdict = iteration_cvl_verdict(
             static_gate=gate,
             exec_success=exec_success,
             test_passed=None if test_result.skipped else test_result.passed,
             iteration=next_iteration,
             max_iterations=session.max_iterations,
+        )
+        self._emitter.iteration_verdict(
+            craft_id=craft_id,
+            mode=profile.mode,
+            verdict=verdict,
+            iteration=next_iteration,
+            tenant_id=tenant_id,
+            task_id=task_id,
+            agent_id=agent_id,
         )
         record = IterationRecord(
             iteration=next_iteration,
@@ -340,6 +384,13 @@ class CodeCraftOrchestrator:
             return self._deny_result("craft_session_not_found", craft_id=craft_id)
         promoter = CraftResultPromoter()
         result = promoter.promote_session(session, schema_ref=profile.promotion_schema_ref)
+        self._emitter.promoted(
+            craft_id=craft_id,
+            mode=profile.mode,
+            schema_ref=profile.promotion_schema_ref,
+            tenant_id=session.tenant_id,
+            task_id=session.task_id,
+        )
         self._sessions.save(session.model_copy(update={"promoted": True}))
         return result
 

@@ -19,8 +19,13 @@ from intergrax.runtime.nexus.tracing.trace_models import (
 )
 
 CODECRAFT_STEP_SESSION_OPENED = "codecraft.session_opened"
+CODECRAFT_STEP_GENERATION = "codecraft.generation"
 CODECRAFT_STEP_STATIC_GATE = "codecraft.static_gate"
 CODECRAFT_STEP_EXEC = "codecraft.exec"
+CODECRAFT_STEP_TEST = "codecraft.test"
+CODECRAFT_STEP_ITERATION_VERDICT = "codecraft.iteration_verdict"
+CODECRAFT_STEP_HITL_REQUESTED = "codecraft.hitl_requested"
+CODECRAFT_STEP_PROMOTED = "codecraft.promoted"
 CODECRAFT_STEP_DISPOSED = "codecraft.disposed"
 
 
@@ -36,6 +41,11 @@ class CodeCraftDiagV1(DiagnosticPayload):
     sandbox_session_id: str | None = None
     exit_code: int | None = None
     duration_ms: float | None = None
+    iteration: int | None = None
+    model_id: str | None = None
+    verdict: str | None = None
+    test_command: str | None = None
+    schema_ref: str | None = None
 
     @classmethod
     def schema_id(cls) -> str:
@@ -51,6 +61,11 @@ class CodeCraftDiagV1(DiagnosticPayload):
             "sandbox_session_id": self.sandbox_session_id,
             "exit_code": self.exit_code,
             "duration_ms": self.duration_ms,
+            "iteration": self.iteration,
+            "model_id": self.model_id,
+            "verdict": self.verdict,
+            "test_command": self.test_command,
+            "schema_ref": self.schema_ref,
         }
 
     def redact(self) -> CodeCraftDiagV1:
@@ -92,6 +107,37 @@ class CodeCraftTraceEmitter:
                 event="CODECRAFT_SESSION_OPENED",
                 mode=mode,
                 passed=None,
+            ),
+            tags={
+                "tenant_id": tenant_id,
+                "task_id": task_id,
+                "agent_id": agent_id,
+                "craft_id": craft_id,
+            },
+        )
+
+    def generation(
+        self,
+        *,
+        craft_id: str,
+        mode: str,
+        iteration: int,
+        model_id: str = "template",
+        tenant_id: str,
+        task_id: str,
+        agent_id: str = "",
+    ) -> TraceEvent:
+        return self._emit(
+            step=CODECRAFT_STEP_GENERATION,
+            message=f"codecraft generation iteration {iteration}",
+            level=TraceLevel.INFO,
+            payload=CodeCraftDiagV1(
+                craft_id=craft_id,
+                event="CODECRAFT_GENERATION",
+                mode=mode,
+                passed=None,
+                iteration=iteration,
+                model_id=model_id,
             ),
             tags={
                 "tenant_id": tenant_id,
@@ -156,6 +202,126 @@ class CodeCraftTraceEmitter:
                 sandbox_session_id=sandbox_session_id,
                 exit_code=exit_code,
                 duration_ms=duration_ms,
+            ),
+            tags={
+                "tenant_id": tenant_id,
+                "task_id": task_id,
+                "agent_id": agent_id,
+                "craft_id": craft_id,
+            },
+        )
+
+    def test_completed(
+        self,
+        *,
+        craft_id: str,
+        mode: str,
+        passed: bool | None,
+        test_command: str,
+        tenant_id: str,
+        task_id: str,
+        agent_id: str = "",
+    ) -> TraceEvent:
+        skipped = passed is None
+        return self._emit(
+            step=CODECRAFT_STEP_TEST,
+            message=f"codecraft test {'skipped' if skipped else 'passed' if passed else 'failed'}",
+            level=TraceLevel.INFO if skipped or passed else TraceLevel.ERROR,
+            payload=CodeCraftDiagV1(
+                craft_id=craft_id,
+                event="CODECRAFT_TEST",
+                mode=mode,
+                passed=passed,
+                test_command=test_command,
+            ),
+            tags={
+                "tenant_id": tenant_id,
+                "task_id": task_id,
+                "agent_id": agent_id,
+                "craft_id": craft_id,
+            },
+        )
+
+    def iteration_verdict(
+        self,
+        *,
+        craft_id: str,
+        mode: str,
+        verdict: str,
+        iteration: int,
+        tenant_id: str,
+        task_id: str,
+        agent_id: str = "",
+    ) -> TraceEvent:
+        return self._emit(
+            step=CODECRAFT_STEP_ITERATION_VERDICT,
+            message=f"codecraft iteration verdict {verdict}",
+            level=TraceLevel.INFO,
+            payload=CodeCraftDiagV1(
+                craft_id=craft_id,
+                event="CODECRAFT_ITERATION_VERDICT",
+                mode=mode,
+                passed=None,
+                verdict=verdict,
+                iteration=iteration,
+            ),
+            tags={
+                "tenant_id": tenant_id,
+                "task_id": task_id,
+                "agent_id": agent_id,
+                "craft_id": craft_id,
+            },
+        )
+
+    def hitl_requested(
+        self,
+        *,
+        craft_id: str,
+        mode: str,
+        reason: str,
+        tenant_id: str,
+        task_id: str,
+        agent_id: str = "",
+    ) -> TraceEvent:
+        return self._emit(
+            step=CODECRAFT_STEP_HITL_REQUESTED,
+            message=f"codecraft HITL requested ({reason})",
+            level=TraceLevel.WARNING,
+            payload=CodeCraftDiagV1(
+                craft_id=craft_id,
+                event="CODECRAFT_HITL_REQUESTED",
+                mode=mode,
+                passed=None,
+                verdict=reason,
+            ),
+            tags={
+                "tenant_id": tenant_id,
+                "task_id": task_id,
+                "agent_id": agent_id,
+                "craft_id": craft_id,
+            },
+        )
+
+    def promoted(
+        self,
+        *,
+        craft_id: str,
+        mode: str,
+        schema_ref: str | None,
+        tenant_id: str,
+        task_id: str,
+        agent_id: str = "",
+    ) -> TraceEvent:
+        return self._emit(
+            step=CODECRAFT_STEP_PROMOTED,
+            message="codecraft result promoted",
+            level=TraceLevel.INFO,
+            payload=CodeCraftDiagV1(
+                craft_id=craft_id,
+                event="CODECRAFT_PROMOTED",
+                mode=mode,
+                passed=True,
+                schema_ref=schema_ref,
             ),
             tags={
                 "tenant_id": tenant_id,

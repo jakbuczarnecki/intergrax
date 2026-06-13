@@ -275,13 +275,13 @@ sequenceDiagram
 | Event | Payload highlights | Trace step (shipped) |
 |-------|-------------------|----------------------|
 | `CODECRAFT_SESSION_OPENED` | `craft_id`, `mode`, `isolation_tier`, goal hash | `codecraft.session_opened` **Done** |
-| `CODECRAFT_GENERATION` | iteration, `model_id`, token usage | `codecraft.generation` — **S8** |
+| `CODECRAFT_GENERATION` | iteration, `model_id`, token usage | `codecraft.generation` **Done** |
 | `CODECRAFT_STATIC_GATE` | pass/fail, `rule_ids` | `codecraft.static_gate` **Done** |
 | `CODECRAFT_EXEC` | `sandbox_session_id`, duration, exit_code | `codecraft.exec` **Done** |
-| `CODECRAFT_TEST` | command, pass/fail | `codecraft.test` — **S8** |
-| `CODECRAFT_ITERATION_VERDICT` | continue / revise / promote / abort | `codecraft.iteration_verdict` — **S8** |
-| `CODECRAFT_HITL_REQUESTED` | reason | `codecraft.hitl_requested` — **S8** |
-| `CODECRAFT_PROMOTED` | schema id, artifact refs | `codecraft.promoted` — **S8** |
+| `CODECRAFT_TEST` | command, pass/fail | `codecraft.test` **Done** |
+| `CODECRAFT_ITERATION_VERDICT` | continue / revise / promote / abort | `codecraft.iteration_verdict` **Done** |
+| `CODECRAFT_HITL_REQUESTED` | reason | `codecraft.hitl_requested` **Done** |
+| `CODECRAFT_PROMOTED` | schema id, artifact refs | `codecraft.promoted` **Done** |
 | `CODECRAFT_DISPOSED` | cleanup status | `codecraft.disposed` **Done** |
 
 Correlation: `craft_id` ↔ `sandbox_session_id` ↔ `task_id` ↔ `run_id` ↔ `correlation_id`.
