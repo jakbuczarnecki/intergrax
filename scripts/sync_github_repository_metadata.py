@@ -10,6 +10,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+
+def _configure_stdio() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            reconfigure(encoding="utf-8", errors="replace")
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = REPO_ROOT / ".github" / "repository-metadata.json"
 MAX_DESCRIPTION_LENGTH = 350
@@ -89,6 +96,7 @@ def _apply(manifest: dict[str, object], repository: str) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _configure_stdio()
     parser = argparse.ArgumentParser(
         description="Validate or sync GitHub repository metadata manifest."
     )
@@ -109,7 +117,12 @@ def main(argv: list[str] | None = None) -> int:
     _print_plan(manifest)
 
     if not args.apply:
-        print("\nDry run only. Re-run with --apply to sync to GitHub.")
+        print(
+            "\nDry run only. To sync to GitHub run:\n"
+            "  sync-github-metadata.bat apply   (Windows)\n"
+            "  ./sync-github-metadata.sh apply  (Linux/macOS)\n"
+            "  or: uv run python scripts/sync_github_repository_metadata.py --apply"
+        )
         return 0
 
     repository = os.environ.get("GITHUB_REPOSITORY")

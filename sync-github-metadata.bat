@@ -21,7 +21,7 @@ if /I "%MODE%"=="--help" goto :help
 if /I "%MODE%"=="help" goto :help
 if not "%MODE%"=="" goto :unknown
 
-echo [INFO] Dry run — validating manifest only. Use "apply" to sync to GitHub.
+echo [INFO] Dry run - validating manifest only. Use "apply" to sync to GitHub.
 uv run python scripts/sync_github_repository_metadata.py
 exit /b %ERRORLEVEL%
 

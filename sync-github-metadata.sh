@@ -29,7 +29,7 @@ MODE="${1:-}"
 
 case "$MODE" in
   "")
-    echo "[INFO] Dry run — validating manifest only. Use \"apply\" to sync to GitHub."
+    echo "[INFO] Dry run - validating manifest only. Use \"apply\" to sync to GitHub."
     uv run python scripts/sync_github_repository_metadata.py
     ;;
   apply)
