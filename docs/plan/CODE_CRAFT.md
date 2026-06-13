@@ -396,7 +396,7 @@ Layer completion audit after ECC-0…ECC-6 — gaps blocking **production parity
 | GAP-ID | Category | Description | Sprint | Priority |
 |--------|----------|-------------|--------|----------|
 | GAP-ECC-16 | observability | Trace taxonomy incomplete — missing generation/test/verdict/HITL/promote steps | **S8** **Done** | P1 |
-| GAP-ECC-17 | routing | `codecraft.run` bypasses `resolve_craft_sandbox_session` (no cloud tier on single-shot) | **S9** | P1 |
+| GAP-ECC-17 | routing | `codecraft.run` bypasses `resolve_craft_sandbox_session` (no cloud tier on single-shot) | **S9** **Done** | P1 |
 | GAP-ECC-18 | ops | `health.check_codecraft` probe not registered in health bundle | **S10** | P2 |
 | GAP-ECC-19 | CI | No `check_codecraft_layer.py` harness gate | **S10** | P2 |
 | GAP-ECC-20 | codegen | `codegen_llm_profile_ref` unused — template adapter only | backlog | P3 |
@@ -427,7 +427,7 @@ Layer completion audit after ECC-0…ECC-6 — gaps blocking **production parity
 | **DoD** | Unit tests assert new steps; closes GAP-ECC-16 |
 | **Files** | `intergrax/runtime/codecraft/trace.py`, `orchestrator.py`, `tests/unit/runtime/codecraft/` |
 
-## Sprint S9 — Single-shot sandbox parity (ECC-8)
+## Sprint S9 — Single-shot sandbox parity (ECC-8) (**Done**)
 
 | Field | Value |
 |-------|-------|

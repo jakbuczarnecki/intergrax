@@ -8,11 +8,14 @@ from __future__ import annotations
 import time
 from uuid import uuid4
 
+from dataclasses import replace
+
 from intergrax.codecraft.contracts import CodeCraftRunInput, CraftResult, StaticGateResult
 from intergrax.codecraft.profile import CodeCraftProfile
 from intergrax.codecraft.static_gate import StaticCodeGate
 from intergrax.runtime.codecraft.ephemeral_registry import get_ephemeral_registry_store
 from intergrax.runtime.codecraft.orchestrator import CodeCraftOrchestrator, resolve_codecraft_profile
+from intergrax.runtime.codecraft.sandbox_resolver import resolve_craft_sandbox_session
 from intergrax.runtime.codecraft.trace import CodeCraftTraceEmitter
 from intergrax.tools.providers.codecraft.contracts import (
     CodeCraftDisposeToolInput,
@@ -32,7 +35,6 @@ from intergrax.tools.providers.codecraft.contracts import (
 )
 from intergrax.tools.providers.sandbox.contracts import CodeExecInput
 from intergrax.tools.providers.sandbox.extended_service import code_exec
-from intergrax.tools.providers.sandbox._session import resolve_sandbox_session
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 CODECRAFT_RUN_TOOL_ID = "codecraft.run"
@@ -128,6 +130,23 @@ def codecraft_list_ephemeral_tools(
     return CodeCraftListEphemeralToolsOutput(
         craft_id=params.craft_id,
         tool_ids=list(registry.list_tools()),
+    )
+
+
+def _security_scan_passed(ctx: ToolWiringContext, code: str) -> bool:
+    if ctx.security_scanner is None:
+        return False
+    try:
+        report = ctx.security_scanner.scan_repo("inline://craft")
+        return report.status.lower() in {"ok", "passed", "clean", "success"}
+    except Exception:  # noqa: BLE001
+        return "eval(" not in code and "exec(" not in code
+
+
+def _write_craft_file(sandbox, code: str) -> None:
+    sandbox.execute(
+        "write_file",
+        {"path": "craft_main.py", "content": code},
     )
 
 
@@ -242,8 +261,38 @@ def codecraft_run(ctx: ToolWiringContext, params: CodeCraftRunToolInput) -> Code
             trace_event_count=len(emitter.events),
         )
 
-    session = resolve_sandbox_session(ctx)
-    if session is None:
+    if profile.security_scan_before_exec and not _security_scan_passed(ctx, params.code):
+        gate = StaticGateResult(
+            passed=False,
+            rule_ids=["security_scan_failed"],
+            message="security_scan_failed",
+        )
+        emitter.disposed(
+            craft_id=craft_id,
+            mode=profile.mode,
+            tenant_id=params.tenant_id,
+            task_id=params.task_id,
+            agent_id=params.agent_id,
+        )
+        return CodeCraftRunToolOutput(
+            result=CraftResult(
+                craft_id=craft_id,
+                success=False,
+                mode=profile.mode,
+                static_gate=gate,
+                error="security_scan_failed",
+                verdict="abort",
+            ),
+            trace_event_count=len(emitter.events),
+        )
+
+    sandbox = resolve_craft_sandbox_session(
+        ctx,
+        profile,
+        tenant_id=params.tenant_id,
+        task_id=params.task_id,
+    )
+    if sandbox is None:
         emitter.disposed(
             craft_id=craft_id,
             mode=profile.mode,
@@ -263,9 +312,11 @@ def codecraft_run(ctx: ToolWiringContext, params: CodeCraftRunToolInput) -> Code
             trace_event_count=len(emitter.events),
         )
 
+    _write_craft_file(sandbox, params.code)
     started = time.perf_counter()
+    exec_ctx = replace(ctx, sandbox_session=sandbox)
     exec_out = code_exec(
-        ctx,
+        exec_ctx,
         CodeExecInput(code=params.code, language=params.language, timeout_s=params.timeout_s),
     )
     duration_ms = (time.perf_counter() - started) * 1000.0

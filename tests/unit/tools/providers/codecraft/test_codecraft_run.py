@@ -94,13 +94,31 @@ def test_codecraft_run_executes_in_sandbox(sandbox_session: SandboxSession) -> N
     ctx = ToolWiringContext(sandbox_session=sandbox_session, extras={"codecraft_profile": profile})
     out = codecraft_run(
         ctx,
-        CodeCraftRunToolInput(code="print('crafted')\n"),
+        CodeCraftRunToolInput(code="print('crafted')\n", tenant_id="tenant-1", task_id="task-1"),
     )
     assert out.result.success is True
     assert "crafted" in out.result.stdout
     assert out.result.sandbox_session_id == sandbox_session.session_id
     assert out.result.verdict == "promote"
     assert out.trace_event_count >= 4
+
+
+def test_codecraft_run_cloud_tier_uses_sandbox_resolver_fallback(sandbox_session: SandboxSession) -> None:
+    profile = CodeCraftProfile(
+        mode="autonomous",
+        isolation_tier="cloud",
+        forbidden_imports=["os", "subprocess"],
+    )
+    ctx = ToolWiringContext(
+        sandbox_session=sandbox_session,
+        extras={"codecraft_profile": profile},
+    )
+    out = codecraft_run(
+        ctx,
+        CodeCraftRunToolInput(code="print('cloud-fallback')\n", tenant_id="tenant-1", task_id="task-1"),
+    )
+    assert out.result.success is True
+    assert "cloud-fallback" in out.result.stdout
 
 
 def test_codecraft_dry_run_skips_exec(sandbox_session: SandboxSession) -> None:
