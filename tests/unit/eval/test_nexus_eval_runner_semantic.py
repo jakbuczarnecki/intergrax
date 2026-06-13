@@ -9,10 +9,13 @@ import pytest
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.eval.eval_case import EvalCase
 from intergrax.eval.nexus_eval_runner import NexusEvalRunner
+from intergrax.runtime.critic.critic_wiring import CriticHookConfig, build_critic_graph_hooks
+from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import TaskResult, TaskState
 from intergrax.tools.providers.eval.contracts import EvalJudgeInput, EvalJudgeOutput
-from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -89,6 +92,19 @@ async def test_nexus_eval_runner_semantic_mode_fails_closed_without_client() -> 
     result = await runner.run_case(case)
     assert result.success is False
     assert result.error == "semantic_mismatch"
+
+
+def test_nexus_eval_runner_from_nexus_loop_wires_critic_client() -> None:
+    client = _FakeSemanticClient()
+    hooks = build_critic_graph_hooks(
+        config=CriticHookConfig(semantic_judge_enabled=True, verify_graph_final=True),
+        l1_client=client,
+    )
+    assert hooks is not None
+    nexus = NexusLoop(AgentRegistry())
+    nexus.apply_critic_graph_hooks(hooks)
+    runner = NexusEvalRunner.from_nexus_loop(nexus)
+    assert runner._semantic_client is client  # noqa: SLF001
 
 
 @pytest.mark.asyncio

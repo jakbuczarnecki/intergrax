@@ -777,14 +777,14 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 
 ---
 
-## Audit §CVL-3 — Maturity scores (2026-06-13)
+## Audit §CVL-3 — Maturity scores (2026-06-13, iteration II)
 
 | Dimension | Score | Notes |
 |-----------|-------|-------|
-| Architecture Completeness | **95%** | L4 adaptive thresholds deferred by design |
-| Production Readiness | **90%** | Harness L3+; product hosts opt-in via `CriticProfile` |
-| Documentation Consistency | **95%** | §2 sync + audit prompt regeneration (CVL-LC-1) |
-| Implementation Consistency | **92%** | Runtime matches contracts; trajectory tool is heuristic not LLM |
+| Architecture Completeness | **96%** | Trajectory dual-mode documented |
+| Production Readiness | **92%** | Bootstrap idempotency + combined gate stability |
+| Documentation Consistency | **97%** | §7.3 trajectory clarification (CVL-LC-4) |
+| Implementation Consistency | **95%** | Graph critic tests pass in combined sessions |
 
 **State:** **Architecturally Mature** — no P0/P1 blockers.
 
@@ -794,9 +794,9 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 
 | ID | Priority | Item | Notes |
 |----|----------|------|-------|
-| CVL-BACKLOG-01 | P2 | LLM trajectory judge in runtime path | `eval.trajectory_judge` skill exists; tool `eval.trajectory` uses heuristic scoring |
-| CVL-BACKLOG-02 | P2 | Test isolation for critic graph suite | Tool bundle double-registration when run after eval tests in same session |
-| CVL-BACKLOG-03 | P2 | `NexusEvalRunner.from_nexus_loop` auto-wire semantic client | **CVL-LC-2** — extract from critic graph hooks |
+| CVL-BACKLOG-01 | P2 | LLM trajectory judge in runtime path | **Documented** — `eval.trajectory_judge` skill; `eval.trajectory` stays heuristic (CVL-LC-4) |
+| CVL-BACKLOG-02 | P2 | Test isolation for critic graph suite | **Done** — `register_default_tools` idempotent override (CVL-LC-3) |
+| CVL-BACKLOG-03 | P2 | `NexusEvalRunner.from_nexus_loop` auto-wire semantic client | **Done** — CVL-LC-2 |
 | CVL-BACKLOG-04 | P3 | Duplicate CRIT-V master register removed | **CVL-LC-1** doc cleanup |
 | CVL-BACKLOG-05 | P4 | L4 adaptive critic thresholds in CI | AHIA / `VerificationLoop` extension |
 | CVL-BACKLOG-06 | P4 | FLOW-8 product reference host with critic demo | §6.3 deferred |
@@ -820,6 +820,24 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 | **Goal** | Offline harness eval uses wired critic path without manual client injection |
 | **DoD** | Unit test for auto-wire + fail-closed; closes CVL-BACKLOG-03 |
 | **Files** | `intergrax/eval/nexus_eval_runner.py`, `intergrax/runtime/critic/l1_gateway.py`, `intergrax/runtime/nexus/nexus_loop.py`, `tests/unit/eval/test_nexus_eval_runner_semantic.py` |
+
+## Sprint CVL-LC-3 — Tool catalog bootstrap idempotency (**Done** 2026-06-13)
+
+| Field | Value |
+|-------|-------|
+| **Scope** | `register_default_tools()` overrides already-registered bundles instead of raising |
+| **Goal** | `RuntimeContext.build()` safe after partial catalog registration in test sessions |
+| **DoD** | Critic graph integration tests pass in combined CVL+eval gate runs; closes CVL-BACKLOG-02 |
+| **Files** | `intergrax/tools/registry/bootstrap.py`, `intergrax/tools/registry/catalog.py`, `tests/unit/tools/registry/test_bootstrap_idempotent.py` |
+
+## Sprint CVL-LC-4 — Trajectory eval dual-mode docs (**Done** 2026-06-13)
+
+| Field | Value |
+|-------|-------|
+| **Scope** | Architecture §7.3 + plan backlog clarify heuristic `eval.trajectory` vs `eval.trajectory_judge` skill |
+| **Goal** | Honest L1 trajectory contract — no false expectation of LLM rubric on `eval.trajectory` tool |
+| **DoD** | Architecture/plan aligned; closes CVL-BACKLOG-01 (documented) |
+| **Files** | `docs/architecture/CRITIC_VERIFICATION.md`, `docs/plan/CRITIC_VERIFICATION.md` |
 
 ---
 

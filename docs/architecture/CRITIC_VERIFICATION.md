@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 25 (verify depth)  
 **Audit instruction:** [`guides/audit/CRITIC_VERIFICATION.md`](../guides/audit/CRITIC_VERIFICATION.md)  
-**Last updated:** 2026-06-13 — layer completion closeout; **CRIT-V-0…7 + FOLLOWUP Done (L3+)**
+**Last updated:** 2026-06-13 — layer completion II; **CRIT-V-0…7 + FOLLOWUP + CVL-LC-1…3 Done (L3+)**
 ---
 
 ## 1. Purpose
@@ -184,10 +184,12 @@ Wraps existing validation path:
 
 Invokes:
 
-- `eval.judge` — semantic scoring against `RubricSpec`
-- `eval.trajectory` — process scoring from replayed trace slice
+- `eval.judge` — semantic scoring against `RubricSpec` (LLM-as-judge via separate critic profile)
+- `eval.trajectory` — **deterministic** process scoring from replayed trace slice (tool errors, duplicates, denied calls)
 
-Uses **separate** `LLMProfile` (critic profile) from producer agent.
+For **LLM-based trajectory regression** in offline eval harnesses, compose the `eval.trajectory_judge` skill (`eval.judge` + `eval.trajectory` + `eval.record_observation`) — not a separate Tier-1 gateway path.
+
+Uses **separate** `LLMProfile` (critic profile) from producer agent for `eval.judge` only.
 
 ### 7.4 EvaluatorLoopExecutor (Tier-1)
 

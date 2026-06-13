@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import AbstractSet, Sequence
 
+from intergrax.tools.registry.catalog import is_tool_bundle_registered
 from intergrax.tools.registry.plugin_register import register_tool_plugin
 
 _BOOTSTRAPPED = False
@@ -39,7 +40,10 @@ def register_default_tools(
         manifest = plugin_type.tool_bundle_manifest()
         if allowed is not None and manifest.bundle_id not in allowed:
             continue
-        register_tool_plugin(plugin_type, override=override)
+        register_tool_plugin(
+            plugin_type,
+            override=override or is_tool_bundle_registered(manifest.bundle_id),
+        )
 
     if bundle_ids is None:
         _BOOTSTRAPPED = True
