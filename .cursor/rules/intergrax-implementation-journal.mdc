@@ -1,6 +1,7 @@
 ---
 description: Persist completed implementation episodes to docs/guides/implementation-journal/
-alwaysApply: true
+globs: docs/guides/implementation-journal/**
+alwaysApply: false
 ---
 
 # Intergrax — Implementation Journal
