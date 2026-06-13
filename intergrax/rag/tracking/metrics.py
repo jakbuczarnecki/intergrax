@@ -15,7 +15,12 @@ _rag_metrics_enabled_override: Optional[bool] = None
 
 
 def _rag_metrics_enabled() -> bool:
-    return os.getenv("INTERGRAX_RAG_METRICS_ENABLED", "").strip().lower() in (
+    raw = os.getenv("INTERGRAX_RAG_METRICS_ENABLED", "").strip().lower()
+    if not raw:
+        from intergrax.rag.tracking.rag_spans import is_rag_otel_spans_enabled
+
+        return is_rag_otel_spans_enabled()
+    return raw in (
         "1",
         "true",
         "yes",
@@ -23,7 +28,7 @@ def _rag_metrics_enabled() -> bool:
     )
 
 
-def set_rag_metrics_enabled(enabled: bool) -> None:
+def set_rag_metrics_enabled(enabled: bool | None) -> None:
     global _rag_metrics_enabled_override
     _rag_metrics_enabled_override = enabled
 

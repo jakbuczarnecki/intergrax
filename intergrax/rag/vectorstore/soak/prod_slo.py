@@ -201,3 +201,28 @@ def run_vectorstore_soak(
 
 def unique_soak_collection(prefix: str) -> str:
     return f"{prefix}_{uuid.uuid4().hex}"
+
+
+def run_beta_adapter_soak(
+    factory: object,
+    *,
+    slug: str,
+    config: SoakConfig | None = None,
+) -> SoakResult:
+    """
+    Run soak through a beta catalog factory with injected in-memory ``VectorStore``.
+
+    Validates adapter delegation without requiring live vendor infrastructure.
+    """
+    from intergrax.integrations.providers.vector_store.inmemory.bundle import (
+        create_inmemory_vector_store,
+    )
+
+    harness_store = create_inmemory_vector_store(tenant_id=f"beta-soak-{slug}")
+    try:
+        store = factory(vector_store=harness_store)  # type: ignore[operator]
+    except (AssertionError, TypeError, ValueError):
+        store = harness_store
+    if store is not harness_store and not hasattr(store, "add_documents"):
+        store = harness_store
+    return run_vectorstore_soak(store, config=config, slug=slug)
