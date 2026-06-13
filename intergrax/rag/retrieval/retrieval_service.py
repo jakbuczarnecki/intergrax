@@ -226,6 +226,8 @@ def _apply_retriever_execution_trace(
         trace.graph_expanded_node_ids = list(execution.graph_expanded_node_ids)
     if execution.graph_provenance_summary:
         trace.graph_provenance_summary = execution.graph_provenance_summary
+    if execution.graph_provenance_records:
+        trace.graph_provenance_records = list(execution.graph_provenance_records)
 
 
 def _record_retrieval_metrics(

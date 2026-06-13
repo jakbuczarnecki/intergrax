@@ -24,6 +24,11 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
     from intergrax.tools.providers.agent.bundle import AGENT_BUNDLE_ID, AGENT_TOOL_IDS, register_agent_tools
     from intergrax.tools.providers.browser.bundle import BROWSER_BUNDLE_ID, BROWSER_TOOL_IDS, register_browser_tools
     from intergrax.tools.providers.catalog.bundle import CATALOG_BUNDLE_ID, CATALOG_TOOL_IDS, register_catalog_tools
+    from intergrax.tools.providers.codecraft.bundle import (
+        CODECRAFT_BUNDLE_ID,
+        register_codecraft_tools,
+    )
+    from intergrax.tools.providers.codecraft.service import CODECRAFT_TOOL_IDS
     from intergrax.tools.providers.context_tool.bundle import CONTEXT_BUNDLE_ID, CONTEXT_TOOL_IDS, register_context_tools
     from intergrax.tools.providers.braintrust.bundle import (
         BRAINTRUST_BUNDLE_ID,
@@ -237,6 +242,13 @@ def _load_shipped_tool_plugins() -> tuple[type, ...]:
             register_fn=register_sandbox_tools,
             description="Sandboxed code execution tools (exec, code, script, browser).",
             class_name="SandboxToolPlugin",
+        ),
+        define_tool_plugin(
+            bundle_id=CODECRAFT_BUNDLE_ID,
+            tool_ids=CODECRAFT_TOOL_IDS,
+            register_fn=register_codecraft_tools,
+            description="Ephemeral Code Craft — governed generate/gate/exec loop.",
+            class_name="CodeCraftToolPlugin",
         ),
         define_tool_plugin(
             bundle_id=LTM_BUNDLE_ID,

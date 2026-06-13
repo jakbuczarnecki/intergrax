@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import ApplicationManifest
@@ -20,6 +20,9 @@ from intergrax.tools.registry.profile import ToolProfile
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
+
+if TYPE_CHECKING:
+    from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 
 
 @dataclass(frozen=True)
@@ -46,6 +49,7 @@ class ApplicationBuildContext:
     trace_db_path: Path | None = None
     environment: ApplicationEnvironmentProfile | None = None
     prompt_registry: YamlPromptRegistry | None = None
+    boundary_event_buffer: BoundaryEventBuffer | None = None
 
     @classmethod
     def for_manifest(
@@ -65,6 +69,7 @@ class ApplicationBuildContext:
         trace_db_path: Path | None = None,
         environment: ApplicationEnvironmentProfile | None = None,
         prompt_registry: YamlPromptRegistry | None = None,
+        boundary_event_buffer: BoundaryEventBuffer | None = None,
     ) -> ApplicationBuildContext:
         resolved_profile = integration_profile
         if resolved_profile is None and isinstance(manifest, ApplicationManifest):
@@ -84,4 +89,5 @@ class ApplicationBuildContext:
             trace_db_path=trace_db_path,
             environment=environment,
             prompt_registry=prompt_registry,
+            boundary_event_buffer=boundary_event_buffer,
         )

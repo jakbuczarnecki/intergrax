@@ -28,6 +28,7 @@ APPLICATIONS_WITH_DOC_PAIR = (
     "poc_template_application",
     "research_application",
     "local_workspace_application",
+    "attestation_demo",
 )
 
 

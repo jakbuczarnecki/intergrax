@@ -22,7 +22,7 @@ AgenticQueryMode = Literal["deterministic", "llm"]
 
 HARNESS_GRAPH_STORE_BACKEND = "inmemory"
 PRODUCTION_GRAPH_STORE_BACKEND = "neo4j"
-APPROVED_PRODUCTION_GRAPH_STORE_SLUGS: tuple[str, ...] = ("neo4j", "memgraph")
+APPROVED_PRODUCTION_GRAPH_STORE_SLUGS: tuple[str, ...] = ("neo4j", "memgraph", "falkordb")
 
 
 def _env_bool(name: str, default: bool = False) -> bool:

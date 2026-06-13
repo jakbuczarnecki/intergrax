@@ -93,6 +93,13 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
     }
     if result.trace.embedding_version_warnings:
         diagnostics["embedding_version_warnings"] = list(result.trace.embedding_version_warnings)
+    if result.trace.channel_contributions:
+        diagnostics["channel_contributions"] = {
+            channel: list(chunk_ids)
+            for channel, chunk_ids in result.trace.channel_contributions.items()
+        }
+    if result.trace.graph_provenance_records:
+        diagnostics["graph_provenance_records"] = list(result.trace.graph_provenance_records)
     if poisoning_warnings:
         diagnostics["poisoning_review_warnings"] = poisoning_warnings
     if poisoning_reason:

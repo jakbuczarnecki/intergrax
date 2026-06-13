@@ -7,8 +7,8 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**Status:** **ECC-0 Done** (2026-06-10) — domain pair + audit register + ADR. Implementation **Planned**.  
-**Default queue:** Pull ECC-1 after operator selects this domain; otherwise §6.1 gate maintenance continues in [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md).
+**Status:** **ECC-0…ECC-6 Done** · **S7–S10 post-closeout** (2026-06-13 layer completion audit)  
+**Default queue:** Phase **ECC** **closed** (2026-06-13); default gate maintenance continues in [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md).
 
 ---
 
@@ -39,7 +39,7 @@
 
 **Audit date:** 2026-06-10  
 **Method:** Vision vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` §3.6 · `AUDIT-IDEAL-11.1` · code `runtime/sandbox/` · `tools/providers/sandbox/` · skills `sandbox.*` · UAEP §42.12  
-**Verdict:** Execution **substrate Done** (~40% of target); **harness orchestration Missing** — new domain **CODE_CRAFT** required.
+**Verdict:** Execution **substrate Done** (~40% of target at audit open); **harness orchestration Done** (ECC-1…ECC-6, 2026-06-13) — domain **CODE_CRAFT** closed at L3.
 
 ---
 
@@ -97,36 +97,36 @@ Out of scope: implementation code (ECC-1+), product-specific agents (§6.3).
 | CUR-14 | Security scan tool | `security.scan` via `security_scanner` integration (M.6 P6) |
 | CUR-15 | Shadow workspace | Separate artifact isolation (`runtime/shadow/`) |
 
-### §3.2 Partial
+### §3.2 Partial / depth (post ECC-0…ECC-6)
 
-| ID | Item | Gap |
-|----|------|-----|
-| PAR-01 | `sandbox.refactor_loop` skill | Manifest only — no harness executor |
-| PAR-02 | Evaluator-loop (CVL) | Pattern exists for graphs — not wired to code craft |
-| PAR-03 | Local sandbox security | Workspace isolation only — not production-grade containment |
-| PAR-04 | Trace | `TOOL_*` + `SandboxAuditEntry` — no `CODECRAFT_*` span |
-| PAR-05 | Documentation | Sandbox split across TOOLS, RELIABILITY, PLATFORM_FOUNDATION §7.4.9 |
+| ID | Item | Status | Notes |
+|----|------|--------|-------|
+| PAR-01 | `sandbox.refactor_loop` skill | **Superseded** | Use `codecraft.ephemeral_builder` + orchestrator (ECC-2) |
+| PAR-02 | Evaluator-loop (CVL) | **Done** | `runtime/codecraft/cv_bridge.py` (ECC-2) |
+| PAR-03 | Local sandbox security | **Accepted limitation** | Documented — use `isolation_tier=cloud` for regulated hosts |
+| PAR-04 | CODECRAFT trace taxonomy | **Done** | S8 — full §10.1 taxonomy |
+| PAR-05 | Documentation scatter | **Mitigated** | Domain pair + audit map §11b; cross-links in TOOLS/RELIABILITY |
 
-### §3.3 Missing (ECC target)
+### §3.3 Missing at audit open — closed by ECC-1…ECC-6 (2026-06-13)
 
-| ID | Item |
-|----|------|
-| MIS-01 | `CodeCraftOrchestrator` |
-| MIS-02 | `CodeCraftSession` / `craft_id` lifecycle |
-| MIS-03 | `CodeCraftProfile` on ApplicationEnvironmentProfile |
-| MIS-04 | Craft modes (`disabled` … `autonomous`) |
-| MIS-05 | `StaticCodeGate` (AST, imports, size, secrets) |
-| MIS-06 | `codecraft.*` catalog tools |
-| MIS-07 | Iteration API (`start`, `iterate`, `dispose`) |
-| MIS-08 | `CraftTestRunner` integrated in loop |
-| MIS-09 | `CraftResult` promotion contract |
-| MIS-10 | `EphemeralToolRegistry` (task-scoped) |
-| MIS-11 | Separate codegen LLM profile |
-| MIS-12 | HITL gate before exec (supervised mode) |
-| MIS-13 | `CODECRAFT_*` observability events |
-| MIS-14 | Optional `CodeCraftNode` in execution graph |
-| MIS-15 | AHI trigger for when to invoke craft |
-| MIS-16 | Dedicated domain pair documentation — **addressed ECC-0** |
+| ID | Item | Closed by |
+|----|------|-----------|
+| MIS-01 | `CodeCraftOrchestrator` | ECC-2 |
+| MIS-02 | `CodeCraftSession` / `craft_id` lifecycle | ECC-2 |
+| MIS-03 | `CodeCraftProfile` on ApplicationEnvironmentProfile | ECC-3 |
+| MIS-04 | Craft modes (`disabled` … `autonomous`) | ECC-3 |
+| MIS-05 | `StaticCodeGate` (AST, imports, size, secrets) | ECC-1 |
+| MIS-06 | `codecraft.*` catalog tools | ECC-1…ECC-5 |
+| MIS-07 | Iteration API (`start`, `iterate`, `dispose`) | ECC-2 |
+| MIS-08 | `CraftTestRunner` integrated in loop | ECC-2 |
+| MIS-09 | `CraftResult` promotion contract | ECC-3 |
+| MIS-10 | `EphemeralToolRegistry` (task-scoped) | ECC-5 |
+| MIS-11 | Separate codegen LLM profile | ECC-2 (Protocol + template adapter; `codegen_llm_profile_ref` wiring → GAP-ECC-20) |
+| MIS-12 | HITL gate before exec (supervised mode) | ECC-3 |
+| MIS-13 | `CODECRAFT_*` observability events | ECC-1+ |
+| MIS-14 | Optional `CodeCraftNode` in execution graph | ECC-5 |
+| MIS-15 | AHI trigger for when to invoke craft | ECC-6 |
+| MIS-16 | Dedicated domain pair documentation — **addressed ECC-0** | ECC-0 |
 
 ---
 
@@ -134,23 +134,23 @@ Out of scope: implementation code (ECC-1+), product-specific agents (§6.3).
 
 | GAP-ID | Category | Description | Maps to |
 |--------|----------|-------------|---------|
-| GAP-ECC-01 | orchestration | No harness generate→test→fix loop | ECC-2 |
-| GAP-ECC-02 | profile | No `CodeCraftProfile` | ECC-3 |
-| GAP-ECC-03 | tools | No `codecraft.*` surface | ECC-1, ECC-2 |
-| GAP-ECC-04 | security | No static code gate before exec | ECC-1 |
-| GAP-ECC-05 | security | Local sandbox overstated as full isolation | ECC-4 |
-| GAP-ECC-06 | semantics | No ephemeral tool registry | ECC-5 |
-| GAP-ECC-07 | I/O | No typed promotion (`CraftResult`) | ECC-3 |
-| GAP-ECC-08 | control | No craft-specific HITL path | ECC-3 |
-| GAP-ECC-09 | observability | No `CODECRAFT_*` events | ECC-1 |
-| GAP-ECC-10 | integration | CVL not specialized for code iterations | ECC-2, ECC-3 |
-| GAP-ECC-11 | skills | `refactor_loop` without executor | ECC-2 |
-| GAP-ECC-12 | graph | No `CodeCraftNode` | ECC-5 |
-| GAP-ECC-13 | L4 | No adaptive craft trigger | ECC-6 |
-| GAP-ECC-14 | docs | No canonical domain — **Closed ECC-0** | ECC-0 |
-| GAP-ECC-15 | tier risk | Agents may implement own loops | ECC-1+ policy + docs |
+| GAP-ECC-01 | orchestration | No harness generate→test→fix loop | **Done** ECC-2 |
+| GAP-ECC-02 | profile | No `CodeCraftProfile` | **Done** ECC-3 |
+| GAP-ECC-03 | tools | No `codecraft.*` surface | **Done** ECC-1, ECC-2 |
+| GAP-ECC-04 | security | No static code gate before exec | **Done** ECC-1 |
+| GAP-ECC-05 | security | Local sandbox overstated as full isolation | **Done** ECC-4 |
+| GAP-ECC-06 | semantics | No ephemeral tool registry | **Done** ECC-5 |
+| GAP-ECC-07 | I/O | No typed promotion (`CraftResult`) | **Done** ECC-3 |
+| GAP-ECC-08 | control | No craft-specific HITL path | **Done** ECC-3 |
+| GAP-ECC-09 | observability | No `CODECRAFT_*` events | **Done** ECC-1 |
+| GAP-ECC-10 | integration | CVL not specialized for code iterations | **Done** ECC-2, ECC-3 |
+| GAP-ECC-11 | skills | `refactor_loop` without executor | **Done** ECC-2 |
+| GAP-ECC-12 | graph | No `CodeCraftNode` | **Done** ECC-5 |
+| GAP-ECC-13 | L4 | No adaptive craft trigger | **Done** ECC-6 |
+| GAP-ECC-14 | docs | No canonical domain | **Done** ECC-0 |
+| GAP-ECC-15 | tier risk | Agents may implement own loops | **Done** ECC-1+ policy + docs |
 
-**Coverage:** 15 gaps — 1 closed (ECC-0); 14 open → ECC-1…ECC-6.
+**Coverage:** 15 gaps — **all closed** (ECC-0…ECC-6, 2026-06-13). Remaining depth: metrics dashboards (architecture §10.2), container isolation tier.
 
 ---
 
@@ -178,7 +178,7 @@ Out of scope: implementation code (ECC-1+), product-specific agents (§6.3).
 | Hub 21st domain + layer 11b | **Done** ECC-0 |
 | `TOOLS.md` cross-link (not ownership) | **Done** ECC-0 |
 | `PLATFORM_FOUNDATION.md` Tier-0 index row | **Done** ECC-0 |
-| `INTEGRAX_HARNESS_AUDIT_MAP.md` layer 11b note | Optional follow-up |
+| `INTEGRAX_HARNESS_AUDIT_MAP.md` layer 11b note | **Done** ECC doc-sync |
 | `AUDIT_IDEAL_2026.md` row AUDIT-IDEAL-11.4 | Optional follow-up |
 
 ---
@@ -189,7 +189,7 @@ Out of scope: implementation code (ECC-1+), product-specific agents (§6.3).
 |--------|---------|-------------------|
 | OpenAI Code Interpreter | Session + promote result | `CodeCraftSession` + `CraftResult` |
 | E2B / Modal | VM/container per session | `HostedSandboxSession` (Done) |
-| Cursor / Devin | Plan→code→test→fix trace | `CodeCraftOrchestrator` (Missing) |
+| Cursor / Devin | Plan→code→test→fix trace | `CodeCraftOrchestrator` **Done** (ECC-2) |
 | LangGraph code nodes | Graph checkpoint | `CodeCraftNode` ECC-5 |
 | CVL Evaluator-loop | critique→revise | Reuse — ECC specialization |
 
@@ -237,6 +237,8 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 
 ## Phase ECC-1 — Single-shot craft (`codecraft.run`)
 
+**Status:** **Done** (2026-06-13)
+
 **Goal:** Smallest coherent slice — generate (or accept) code, static gate, sandbox exec, trace, deny paths.
 
 | ID | Deliverable | Module | Acceptance |
@@ -256,6 +258,8 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 
 ## Phase ECC-2 — Session iteration loop
 
+**Status:** **Done** (2026-06-13)
+
 **Goal:** `codecraft.start`, `codecraft.iterate`, `codecraft.get_state`, `codecraft.dispose` + orchestrator.
 
 | ID | Deliverable | Module | Acceptance |
@@ -273,6 +277,8 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 ---
 
 ## Phase ECC-3 — Modes, HITL, promotion
+
+**Status:** **Done** (2026-06-13)
 
 **Goal:** `CodeCraftProfile`, supervised/autonomous, `CraftResultPromoter`, `codecraft.promote`.
 
@@ -292,6 +298,8 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 
 ## Phase ECC-4 — Production isolation
 
+**Status:** **Done** (2026-06-13)
+
 **Goal:** Regulated hosts default cloud sandbox; optional `security.scan` pre-exec.
 
 | ID | Deliverable | Module | Acceptance |
@@ -308,6 +316,8 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 
 ## Phase ECC-5 — Ephemeral tools + graph node
 
+**Status:** **Done** (2026-06-13)
+
 | ID | Deliverable | Acceptance |
 |----|-------------|------------|
 | ECC-5.1 | `EphemeralToolRegistry` | Tools visible only for `craft_id` |
@@ -320,6 +330,8 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 ---
 
 ## Phase ECC-6 — Adaptive trigger (L4)
+
+**Status:** **Done** (2026-06-13)
 
 | ID | Deliverable | Acceptance |
 |----|-------------|------------|
@@ -335,12 +347,12 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 | Phase | Status | Priority | Closes gaps |
 |-------|--------|----------|-------------|
 | ECC-0 | **Done** | P0 | GAP-ECC-14 |
-| ECC-1 | **Planned** | P0 | 03, 04, 09, 15 |
-| ECC-2 | **Planned** | P0 | 01, 03, 10, 11 |
-| ECC-3 | **Planned** | P1 | 02, 07, 08, 10 |
-| ECC-4 | **Planned** | P1 | 05 |
-| ECC-5 | **Planned** | P2 | 06, 12 |
-| ECC-6 | **Planned** | P2 | 13 |
+| ECC-1 | **Done** | P0 | 03, 04, 09, 15 |
+| ECC-2 | **Done** | P0 | 01, 03, 10, 11 |
+| ECC-3 | **Done** | P1 | 02, 07, 08, 10 |
+| ECC-4 | **Done** | P1 | 05 |
+| ECC-5 | **Done** | P2 | 06, 12 |
+| ECC-6 | **Done** | P2 | 13 |
 
 ---
 
@@ -349,6 +361,180 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 | Date | ID | Summary |
 |------|-----|---------|
 | 2026-06-10 | ECC-0 | Domain pair CODE_CRAFT, ADR-CODECRAFT-001, full audit register, hub/README/AGENTS sync |
+| 2026-06-13 | LAYER-CLOSE | Layer completion audit — ECC-0…ECC-6 **Done**; architecture §12 + plan register synced |
+| 2026-06-13 | ECC-1 | `codecraft.run`, StaticCodeGate, CodeCraftTraceEmitter, catalog plugin, gate tests |
+| 2026-06-13 | ECC-2 | Orchestrator, session tools, codegen adapter, test runner, CVL bridge, skill |
+| 2026-06-13 | ECC-3 | Tier-3 profile wiring, HITL, promoter, codecraft.promote |
+| 2026-06-13 | ECC-4 | Isolation routing, security scan hook, harness_codecraft_stack preset |
+| 2026-06-13 | ECC-5 | EphemeralToolRegistry, list_ephemeral_tools, CodeCraftGraphBinding |
+| 2026-06-13 | S7–S10 | Post-closeout — trace taxonomy, sandbox routing parity, health probe, CI gate |
+| 2026-06-13 | S11 | Layer completion II — audit doc sync, exec budget enforcement, GAP-ECC-23 register |
+
+---
+
+# Layer completion audit II (2026-06-13)
+
+**Trigger:** Operator note — ECC still reads as architecture + partial start in audit prompts despite shipped runtime.
+
+**Method:** Re-verify 28 Python modules, `wire_application_codecraft()`, 7 `codecraft.*` catalog tools, gate + unit tests.
+
+**Findings:**
+
+| ID | Severity | Issue | Resolution |
+|----|----------|-------|------------|
+| DOC-ECC-01 | P1 | `guides/audit/CODE_CRAFT.md` + `generate_domain_audit_prompts.py` still say ECC-1+ Planned | S11 doc-sync |
+| DOC-ECC-02 | P1 | Known gaps list stale (orchestrator missing) | Regenerated audit prompt |
+| RUN-ECC-01 | P1 | `max_total_exec_time_s` tracked but not enforced before exec | S11 orchestrator + `codecraft.run` cap |
+
+**Verdict:** Runtime **Done** (ECC-0…ECC-6 + S7–S10). Remaining work = depth backlog only (GAP-ECC-20…23).
+
+---
+
+# Layer completion audit (2026-06-13)
+
+**Method:** Re-read domain pair + ADR + grep `intergrax/codecraft/`, `intergrax/runtime/codecraft/`, `intergrax/tools/providers/codecraft/` — **28 Python modules** shipped.
+
+**Verdict:** Documentation canon **Done** (ECC-0). Harness orchestration **Done** (ECC-1…ECC-6). Substrate reuse path **validated** — `SandboxSession`, `code.exec`, `security.scan`, CVL bridge, `sandbox_host` integrations wired.
+
+**Doc inconsistencies closed (2026-06-13 doc-sync iteration):**
+
+| Issue | Resolution |
+|-------|------------|
+| Architecture §12 still listed orchestrator/profile as Missing | Updated to L3 closeout table |
+| Plan audit §3.3 / §4 still open gaps | Marked **Done** with ECC phase mapping |
+| PLATFORM_FOUNDATION `codecraft.* (planned)` | **Done** — synced 2026-06-13 doc-sync |
+
+**Remaining depth (not blocking L3):** metrics dashboards (§10.2), `container` isolation tier backend, `codegen_llm_profile_ref` → dedicated LLM adapter wiring.
+
+---
+
+# Post-closeout gap register (2026-06-13)
+
+Layer completion audit after ECC-0…ECC-6 — gaps blocking **production parity** within CODE_CRAFT domain:
+
+| GAP-ID | Category | Description | Sprint | Priority |
+|--------|----------|-------------|--------|----------|
+| GAP-ECC-16 | observability | Trace taxonomy incomplete — missing generation/test/verdict/HITL/promote steps | **S8** **Done** | P1 |
+| GAP-ECC-17 | routing | `codecraft.run` bypasses `resolve_craft_sandbox_session` (no cloud tier on single-shot) | **S9** **Done** | P1 |
+| GAP-ECC-18 | ops | `health.check_codecraft` probe not registered in health bundle | **S10** **Done** | P2 |
+| GAP-ECC-19 | CI | No `check_codecraft_layer.py` harness gate | **S10** **Done** | P2 |
+| GAP-ECC-20 | codegen | `codegen_llm_profile_ref` unused — template adapter only | backlog | P3 |
+| GAP-ECC-21 | security | `container` isolation tier not implemented | backlog | P3 |
+| GAP-ECC-22 | observability | §10.2 metrics dashboards | backlog | P3 |
+| GAP-ECC-23 | control | `Task.metadata.codecraft_mode` per-task override not wired | backlog | P2 |
+
+**Coverage:** 4 actionable (S8–S10) **Done** · S11 doc-sync + exec budget **Done** · 4 depth backlog (GAP-ECC-20…23).
+
+---
+
+# Post-closeout sprints S7–S10
+
+## Sprint S11 — Audit doc sync + exec budget (**Done**)
+
+| Field | Value |
+|-------|-------|
+| **Scope** | Regenerate audit prompt; enforce `max_total_exec_time_s`; register GAP-ECC-23 |
+| **Goal** | Documentation matches shipped runtime; cumulative exec budget fail-closed |
+| **DoD** | Audit prompt shows Done; unit test for budget deny; gate green |
+| **Files** | `docs/guides/audit/CODE_CRAFT.md`, `scripts/generate_domain_audit_prompts.py`, `intergrax/codecraft/profile.py`, `intergrax/runtime/codecraft/orchestrator.py`, `intergrax/tools/providers/codecraft/service.py`, tests |
+
+## Sprint S7 — Documentation sync (**Done** in this iteration)
+
+| Field | Value |
+|-------|-------|
+| **Scope** | Architecture §6/§10/§16 + plan gap register + §3.2 refresh |
+| **Goal** | Docs as source of truth before code changes |
+| **DoD** | Domain pair aligned; post-closeout gaps enumerated |
+| **Files** | `docs/architecture/CODE_CRAFT.md`, `docs/plan/CODE_CRAFT.md` |
+
+## Sprint S8 — Trace taxonomy parity (ECC-7) (**Done**)
+
+| Field | Value |
+|-------|-------|
+| **Scope** | `CodeCraftTraceEmitter` + orchestrator hooks for generation, test, verdict, HITL, promote |
+| **Goal** | Architecture §10.1 events emitted on real paths |
+| **DoD** | Unit tests assert new steps; closes GAP-ECC-16 |
+| **Files** | `intergrax/runtime/codecraft/trace.py`, `orchestrator.py`, `tests/unit/runtime/codecraft/` |
+
+## Sprint S9 — Single-shot sandbox parity (ECC-8) (**Done**)
+
+| Field | Value |
+|-------|-------|
+| **Scope** | `codecraft.run` uses `resolve_craft_sandbox_session` + optional security scan |
+| **Goal** | ECC-4 isolation routing on all exec paths |
+| **DoD** | Test with cloud-tier profile mock; closes GAP-ECC-17 |
+| **Files** | `intergrax/tools/providers/codecraft/service.py`, tests |
+
+## Sprint S10 — Health probe + CI gate (ECC-9) (**Done**)
+
+| Field | Value |
+|-------|-------|
+| **Scope** | Register `health.check_codecraft`; add `scripts/check_codecraft_layer.py` |
+| **Goal** | Ops probe + gate maintenance for catalog/wiring invariants |
+| **DoD** | Gate green; closes GAP-ECC-18, GAP-ECC-19 |
+| **Files** | `intergrax/tools/providers/health/*`, `scripts/check_codecraft_layer.py` |
+
+---
+
+# Sprints (layer completion — ECC-0…ECC-6)
+
+Each sprint = one PR-sized slice → gate green → plan row update → commit.
+
+## Sprint S1 — ECC-1 Single-shot craft (**Done**)
+
+| Field | Value |
+|-------|-------|
+| **Scope** | `codecraft.run`, `StaticCodeGate`, `CodeCraftTraceEmitter`, catalog registration |
+| **Goal** | Smallest governed path: accept code → L0 gate → sandbox exec → typed `CraftResult` |
+| **DoD** | Unit tests for gate + deny paths; tool in catalog; `CODECRAFT_*` trace steps; gate tests green |
+| **Files** | `intergrax/codecraft/{contracts,profile,static_gate}.py` · `intergrax/runtime/codecraft/trace.py` · `intergrax/tools/providers/codecraft/*` · `intergrax/tools/registry/shipped_plugins.py` · `intergrax/runtime/sandbox/sandbox_runtime.py` · `tests/unit/codecraft/` · `tests/unit/tools/providers/codecraft/` |
+
+## Sprint S2 — ECC-2 Session loop (**Done**)
+
+| Field | Value |
+|-------|-------|
+| **Scope** | `CodeCraftOrchestrator`, session manager, `start/iterate/get_state/dispose`, codegen adapter, test runner |
+| **Goal** | Multi-iteration generate→gate→exec→test loop with budgets |
+| **DoD** | E2E mock test; CVL L0 hook; skill `codecraft.ephemeral_builder` manifest |
+| **Files** | `intergrax/runtime/codecraft/{orchestrator,session_manager}.py` · `intergrax/codecraft/{codegen_adapter,test_runner}.py` · extended `tools/providers/codecraft/` · `intergrax/skills/providers/codecraft/` |
+
+## Sprint S3 — ECC-3 Modes + HITL + promotion (**Done**)
+
+| Field | Value |
+|-------|-------|
+| **Scope** | `CodeCraftProfile` on `ApplicationEnvironmentProfile`, wiring, modes, HITL, `CraftResultPromoter` |
+| **Goal** | Tier-3 profile drives mode enforcement; supervised HITL; typed promotion |
+| **DoD** | Lab preset wired; mode matrix tests; `codecraft.promote` tool |
+| **Files** | `intergrax/applications/contracts/environment_profile.py` · `intergrax/applications/_shared/codecraft_wiring.py` · `intergrax/codecraft/promoter.py` · UAEP policy fragment |
+
+## Sprint S4 — ECC-4 Production isolation (**Done**)
+
+| Field | Value |
+|-------|-------|
+| **Scope** | Cloud sandbox routing, `security.scan` pre-exec, egress policy, harness preset |
+| **Goal** | Regulated hosts default `isolation_tier=cloud` |
+| **DoD** | Integration test with mocked `HostedSandboxSession`; health probe extension |
+| **Files** | orchestrator isolation routing · `applications/_shared` presets · health probes |
+
+## Sprint S5 — ECC-5 Ephemeral registry + graph (**Done**)
+
+| Field | Value |
+|-------|-------|
+| **Scope** | `EphemeralToolRegistry`, `codecraft.list_ephemeral_tools`, optional `CodeCraftNode` |
+| **Goal** | Task-scoped tools never pollute global catalog |
+| **DoD** | Registry isolation tests; graph spec example in lab |
+| **Files** | `intergrax/runtime/codecraft/ephemeral_registry.py` · NEXUS_EXECUTION_FLOW cross-ref |
+
+## Sprint S6 — ECC-6 Adaptive trigger (**Done**)
+
+| Field | Value |
+|-------|-------|
+| **Scope** | AHI catalog-miss signal, budget-aware craft decision |
+| **Goal** | L4 suggests or invokes craft when policy allows |
+| **DoD** | Signal tests in adaptive domain integration |
+| **Files** | `intergrax/runtime/adaptive/` hooks · ADAPTIVE_HARNESS_INTELLIGENCE plan row |
+
+**Minimum L3 closeout:** S1–S4 (ECC-1…ECC-4). S5–S6 are depth.
 
 ---
 

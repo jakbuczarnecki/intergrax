@@ -45,11 +45,14 @@ class NexusEvalRunner:
         *,
         replay_engine: Optional[ReplayEngine] = None,
         metrics_engine: Optional[ExecutionMetricsEngine] = None,
+        semantic_client: CriticEvalToolClient | None = None,
     ) -> "NexusEvalRunner":
+        resolved_client = semantic_client if semantic_client is not None else nexus_loop.critic_eval_tool_client()
         return cls(
             UnifiedTaskRunner(nexus_loop),
             replay_engine=replay_engine,
             metrics_engine=metrics_engine,
+            semantic_client=resolved_client,
         )
 
     async def run_case(self, case: EvalCase) -> EvalResult:
@@ -157,7 +160,7 @@ class NexusEvalRunner:
 
     def _semantic_match(self, case: EvalCase, final_answer: str, run_id: str) -> bool:
         if self._semantic_client is None or not case.rubric_ref:
-            return final_answer == case.expected_output
+            return False
         agent_id = case.runtime_request.agent_id or "eval-agent"
         result = self._semantic_client.judge(
             EvalJudgeInput(

@@ -176,7 +176,7 @@ curl -s "http://127.0.0.1:8090/debug/tasks/{task_id}/trace?include_runtime=true"
 | **Run through Nexus** | Lab or product host → `NexusLoop` → `Agent.run()` / `AgentEngine` | [NEXUS_EXECUTION_FLOW.md](docs/architecture/NEXUS_EXECUTION_FLOW.md) · [Agent model](#the-agent-model--why-architects-choose-intergrax) |
 | **Inspect traces** | `/debug/tasks/{id}/trace`, `intergrax.debug` | [HARNESS_ENVIRONMENT.md](docs/guides/HARNESS_ENVIRONMENT.md) |
 | **Evaluate execution** | Evaluation profile, online registry, CVL hooks | [CRITIC_VERIFICATION.md](docs/architecture/CRITIC_VERIFICATION.md) |
-| **Ephemeral code craft** | Dynamic codegen loop in sandbox (architecture **Done**, impl ECC-1+) | [CODE_CRAFT.md](docs/architecture/CODE_CRAFT.md) |
+| **Ephemeral code craft** | Dynamic codegen loop in sandbox (**Done** ECC-0…ECC-6) | [CODE_CRAFT.md](docs/architecture/CODE_CRAFT.md) |
 | **Extend via plugins** | `ToolPlugin`, `IntegrationPlugin`, `SkillPlugin` EPs | [EXTENSION_AUTHOR_GUIDE.md](docs/guides/EXTENSION_AUTHOR_GUIDE.md) |
 
 Reference hosts: [`applications/README.md`](applications/README.md) · Reference agents: [`agents/README.md`](agents/README.md)
@@ -352,7 +352,7 @@ Tier-0 building blocks — one canonical path per concern. Agents use these thro
 | **Skills** | **149** skills · **41** bundles · `intergrax/skills/` | [architecture/SKILLS.md](docs/architecture/SKILLS.md) · [plan](docs/plan/SKILLS.md) |
 | **LLM adapters** | 19 providers · typed `LLMAdapterResponse` | [architecture/LLM_ADAPTERS.md](docs/architecture/LLM_ADAPTERS.md) |
 | **RAG** | Retrieval, ingest, hybrid/graph/agentic, golden eval | [architecture/RAG.md](docs/architecture/RAG.md) · [plan](docs/plan/RAG.md) |
-| **Ephemeral Code Craft** | Dynamic codegen, test/fix loop, sandbox promotion (ECC-0 canon) | [architecture/CODE_CRAFT.md](docs/architecture/CODE_CRAFT.md) · [plan](docs/plan/CODE_CRAFT.md) |
+| **Ephemeral Code Craft** | Dynamic codegen, test/fix loop, sandbox promotion (**Done** ECC-0…ECC-6) | [architecture/CODE_CRAFT.md](docs/architecture/CODE_CRAFT.md) · [plan](docs/plan/CODE_CRAFT.md) |
 | **Memory** | STM/LTM, context compiler, Knowledge vs LTM boundary | [architecture/MEMORY.md](docs/architecture/MEMORY.md) · [plan](docs/plan/MEMORY.md) |
 | **Modality / ML** | Vision, speech, classical ML via catalog tools | [architecture/MODALITY.md](docs/architecture/MODALITY.md) |
 | **Governance & HITL** | Policy bundle, budgets, shadow workspace, sandbox | [UAEP §42.11](docs/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [Appendix H](docs/guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
@@ -409,7 +409,7 @@ intergrax/              # Tier-0 platform + Tier-1 Nexus
   skills/               # Skill Library
   llm_adapters/         # LLM providers
   rag/ · memory/        # Retrieval and memory
-  codecraft/            # Ephemeral Code Craft engine (planned ECC-1+)
+  codecraft/            # Ephemeral Code Craft engine (ECC-0…ECC-6 Done)
   runtime/nexus/        # NexusLoop, AgentEngine, UAEP, orchestration
   runtime/adaptive/     # L4 Adaptive Control Plane
   applications/         # Tier-3 composition engine

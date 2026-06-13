@@ -170,8 +170,8 @@ flowchart TD
     end
 
     subgraph Orchestrate["2a — Invocation orchestration"]
-        TIP[ToolInvocationPattern — planned TOOL-ENG-16]
-        TLB[run_bounded_tool_loop — interim]
+        RBL[run_bounded_tool_loop / ctx.invoke_tool]
+        TIP[ToolInvocationPattern — Done TOOL-ENG-16]
     end
 
     subgraph Invoke["2b — Atomic invoke"]
@@ -193,9 +193,9 @@ flowchart TD
     TP --> TR
     SK --> CTP
     PB --> TAP
-    CTP --> LLM --> TAP --> TIP
-    TIP --> TLB
-    TLB --> TR
+    CTP --> LLM --> TAP --> RBL
+    RBL --> TIP
+    TIP --> TR
     TR --> GW --> RTI --> IID --> EX --> BE
     RTI --> TE --> EVT
     RTI --> MW
@@ -207,7 +207,7 @@ flowchart TD
 | Phase | Question answered | Primary components | Tier |
 |-------|-------------------|-------------------|------|
 | **1 — Selection** | Which tools exist and which may this run use? | `ToolProfile`, `SkillResolver`, `resolve_allowed_tools_from_config`, `ToolSelectionStrategy`, `CatalogToolPlanner`, `ToolPlanningService`, `ToolAccessPolicy` | Tier-3 bootstrap + Tier-1 |
-| **2a — Orchestration** | How is a **plan batch** executed (single / parallel / chain / ReAct)? | `ToolInvocationPattern` *(planned)* · interim: `run_bounded_tool_loop`, `execute_planned_tool_calls` | Tier-1 |
+| **2a — Orchestration** | How is a **plan batch** executed (single / parallel / chain / ReAct)? | `ToolInvocationPattern` **Done** (TOOL-ENG-16) via `run_bounded_tool_loop` / `resolve_invocation_pattern()` | Tier-1 |
 | **2b — Atomic invoke** | How is **one** tool call executed safely? | `ToolRuntime`, `RuntimeToolGateway`, `RuntimeToolInvoker`, `ToolExecutor`, `runtime_bound_catalog` | Tier-1 |
 | **3 — Logging** | What happened, for audit and debug? | `trace_event`, `RuntimeEvent` (`TOOL_*`), security middleware, `RunTraceWriter`, agent/tool trace metadata | Tier-1 + observability |
 
@@ -224,7 +224,7 @@ flowchart TD
 
 All successful catalog executions converge on **`RuntimeToolInvoker`** (optionally wrapped by **`IdempotentToolInvoker`**) — registry lookup, input/output schema validation, optional `ToolScopePolicy`, timeout/retry, error mapping, trace start/end.
 
-Multi-call batches route through **`run_bounded_tool_loop`** today; target architecture injects a **`ToolInvocationPattern`** plugin before the invoker (see [§Invocation patterns](#tool-invocation-patterns-production-orchestration)).
+Multi-call batches route through **`run_bounded_tool_loop`** / **`ctx.invoke_tool`**, which resolve and delegate to a configured **`ToolInvocationPattern`** before `RuntimeToolInvoker` (see [§Invocation patterns](#tool-invocation-patterns-production-orchestration)).
 
 ### Selection detail (layers)
 
@@ -409,7 +409,7 @@ Distinct ways catalog capabilities reach a backend — not all equivalent.
 
 ## Multi-tool execution semantics
 
-**Scope:** behaviour of `run_bounded_tool_loop` **today** (interim implementation). Target orchestration model: [§Invocation patterns](#tool-invocation-patterns-production-orchestration).
+**Scope:** behaviour of **`ToolInvocationPattern`** shipped modes (TOOL-ENG-16–30). Entry facade: `run_bounded_tool_loop` / `ctx.invoke_tool` → `resolve_invocation_pattern()`.
 
 ### Single-pass path (`max_tool_iterations == 1`)
 
@@ -463,7 +463,7 @@ Modern agent systems support multiple **orchestration patterns** for executing t
 |------|----------|-----------|
 | **Selection (L6)** | Which tools appear in the LLM schema? | `ToolSelectionStrategy` — [§Production strategies](#tool-selection-modes-production-strategies) |
 | **Planning (L6b)** | Which calls does the LLM emit? | `ToolPlannerProtocol` / `ToolPlanningService` |
-| **Orchestration (2a)** | How is the call batch executed? | `ToolInvocationPattern` *(planned)* |
+| **Orchestration (2a)** | How is the call batch executed? | `ToolInvocationPattern` **Done** (TOOL-ENG-16) |
 | **Atomic invoke (2b)** | How is one call enforced? | `RuntimeToolInvoker` — unchanged |
 
 ```mermaid
@@ -540,7 +540,7 @@ query → SemanticToolIndexSelectionStrategy (or keyword) → top-k tool_ids
 
 **Definition:** Iterative loop: LLM plans tools → harness invokes → observations returned to LLM → repeat until stop condition. Distinct from deterministic chains because **LLM re-plans** between batches.
 
-**Implementation today:** **Done** (interim) — `run_bounded_tool_loop` + `max_tool_iterations` (TOOL-ENG-6).
+**Implementation today:** **Done** — `BoundedReactPattern` via `run_bounded_tool_loop` + `max_tool_iterations` (TOOL-ENG-6/18).
 
 | Component | Status |
 |-----------|--------|
@@ -617,7 +617,7 @@ ToolInvocationResult:
     used_native_tool_messages: bool
 ```
 
-**Shipped implementations (target):**
+**Shipped implementations:**
 
 | `ToolInvocationMode` | Class | Plan ID |
 |----------------------|-------|---------|
@@ -628,7 +628,7 @@ ToolInvocationResult:
 | `parallel_semantic_batch` | `ParallelSemanticBatchPattern` | TOOL-ENG-25 |
 | *(custom)* | Host/agent plugin via entry point | TOOL-ENG-24 |
 
-**Configuration target:**
+**Configuration (production):**
 
 | Surface | Field | Default |
 |---------|-------|---------|
@@ -637,14 +637,14 @@ ToolInvocationResult:
 | `ApplicationEnvironmentProfile` | `tool_invocation_mode` | bridged via `catalog_runtime_bridge.py` |
 | Entry point group | `intergrax.tool_invocation_patterns` | optional custom patterns |
 
-**Wiring target:** `run_bounded_tool_loop` / `ctx.invoke_tool` resolves pattern from `RuntimeConfig` — no hardcoded `run_bounded_tool_loop` call (TOOL-ENG-22).
+**Wiring (production):** `run_bounded_tool_loop` / `ctx.invoke_tool` resolves pattern from `RuntimeConfig` via `resolve_invocation_pattern()` (TOOL-ENG-22).
 
 ### Plugin maturity matrix (2026-06-12 audit)
 
 | Plugin surface | Protocol exists | Factory/registry | Entry points | Host wiring |
 |----------------|-----------------|------------------|--------------|-------------|
 | Catalog tools (`ToolPlugin`) | **Yes** | **Yes** | **Yes** | **Yes** |
-| Tool selection (`ToolSelectionStrategy`) | **Yes** | `strategy_for_mode()` — **hardcoded** | **No** | **Yes** |
+| Tool selection (`ToolSelectionStrategy`) | **Yes** | `strategy_for_mode()` + entry points | **Yes** | **Yes** |
 | Tool planning (`ToolPlannerProtocol`) | **Yes** | inject via config | N/A | **Yes** |
 | Invocation orchestration (`ToolInvocationPattern`) | **Yes** | `pattern_for_mode()` + `resolve_invocation_pattern()` | **Yes** | **Yes** |
 
@@ -834,9 +834,7 @@ flowchart TD
     IDS --> TPS --> TC
 ```
 
-**Call site today:** `ToolsStep.run` → `resolve_planner_allowed_tool_ids(mode, ctx)` → `strategy_for_mode(mode)` — **hardcoded factory** (gap TOOL-ENG-26).
-
-**Target call site:** `ToolsStep.run` → `resolve_selection_strategy(config)` → `strategy.select_tool_ids(ctx)` → intersect with plan ids.
+**Call site:** `ToolsStep.run` → `resolve_selection_strategy(config)` → `strategy.select_tool_ids(ctx)` → intersect with plan ids (TOOL-ENG-26/31).
 
 ### Base contract
 
@@ -849,7 +847,7 @@ ToolSelectionContext (dataclass):
     top_k: int                      # semantic / keyword cap
 
 ToolSelectionStrategy (Protocol):
-    strategy_id: str                # trace + config (target TOOL-ENG-31)
+    strategy_id: str                # trace + config (TOOL-ENG-31)
     def select_tool_ids(self, ctx: ToolSelectionContext) -> Sequence[str] | None:
         # None → no L6 narrowing (full registry at planner)
         # ()   → empty schema (planner sees zero tools)
@@ -878,7 +876,7 @@ select_tool_ids → None | plan_ids
 ToolPlanningService → generate_with_tools(allowed_tool_ids=…)
 ```
 
-#### Semantic — `SemanticToolIndexSelectionStrategy` (target)
+#### Semantic — `SemanticToolIndexSelectionStrategy` **Done** (TOOL-ENG-13)
 
 Vector index of tool metadata — **not** document RAG.
 
@@ -899,9 +897,9 @@ query text → embed → similarity_search(top_k) → tool_ids
 | Vector store | dedicated collection — **not** `rag.retrieve` index |
 | Reindex hook | `register_tool_plugin()` / profile rebuild |
 
-**Trace payload (target):** `strategy_id=semantic`, `candidates=[{tool_id, score}]`, `ops:tool_selection`.
+**Trace payload:** `strategy_id=semantic`, `candidates=[{tool_id, score}]`, `ops:tool_selection` (TOOL-ENG-32).
 
-#### Hierarchical — `HierarchicalToolSelectionStrategy` (target)
+#### Hierarchical — `HierarchicalToolSelectionStrategy` **Done** (TOOL-ENG-14)
 
 Multi-pass **LLM-assisted** traversal of a category tree — not the same as `skill_pack` (declarative, no LLM category pass).
 
@@ -944,18 +942,18 @@ class DomainWeightedSelectionStrategy:
 | Surface | Protocol | Shipped modes | Entry points | Config inject | Custom without fork |
 |---------|----------|---------------|--------------|---------------|---------------------|
 | Catalog (`ToolPlugin`) | **Yes** | 190 tools | **Yes** | N/A | **Yes** |
-| **Selection (`ToolSelectionStrategy`)** | **Yes** | standard only | **No** | **No** | **Partial** — custom `ToolPlannerProtocol` only |
-| Invocation (`ToolInvocationPattern`) | Planned | interim loop | Planned | Planned | Planned |
+| **Selection (`ToolSelectionStrategy`)** | **Yes** | all shipped modes | **Yes** | **Yes** | **Yes** |
+| Invocation (`ToolInvocationPattern`) | **Yes** | all shipped modes | **Yes** | **Yes** | **Yes** |
 
-### Selection plugin gap register
+### Selection plugin gap register — closed (2026-06-12)
 
-| ID | Gap | Priority |
-|----|-----|----------|
-| TOOL-ENG-13 | `SemanticToolIndexSelectionStrategy` + `ToolCatalogEmbedder` + reindex | P1 |
-| TOOL-ENG-14 | `HierarchicalToolSelectionStrategy` + taxonomy + multi-pass | P2 |
-| TOOL-ENG-15 | `semantic` / `hierarchical` enum values + `keyword_top_k` alias | P2 |
-| TOOL-ENG-26 | Entry-point registry `intergrax.tool_selection_strategies` | P2 |
-| TOOL-ENG-31 | `RuntimeConfig.tool_selection_strategy` instance override | P1 |
+| ID | Deliverable | Status |
+|----|-------------|--------|
+| TOOL-ENG-13 | `SemanticToolIndexSelectionStrategy` + `ToolCatalogEmbedder` + reindex | **Done** |
+| TOOL-ENG-14 | `HierarchicalToolSelectionStrategy` + taxonomy + multi-pass | **Done** v1 |
+| TOOL-ENG-15 | `semantic` / `hierarchical` enum values + `keyword_top_k` alias | **Done** |
+| TOOL-ENG-26 | Entry-point registry `intergrax.tool_selection_strategies` | **Done** |
+| TOOL-ENG-31 | `RuntimeConfig.tool_selection_strategy` instance override | **Done** |
 | TOOL-ENG-DOC.7 | Selection plugin model canon (this section) | **Done** |
 | TOOL-ENG-32 | Selection trace: `strategy_id`, candidates, scores in `ToolsSummaryDiagV1` | P2 |
 

@@ -40,6 +40,7 @@ APPLICATIONS_WITH_ADR = (
     "poc_template_application",
     "research_application",
     "local_workspace_application",
+    "attestation_demo",
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]

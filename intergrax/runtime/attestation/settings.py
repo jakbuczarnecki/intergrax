@@ -1,0 +1,41 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""Runtime settings resolved from Tier-3 ``ExecutionBoundaryExportProfile``."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+from intergrax.runtime.attestation.attestation_policy import AttestationCaptureMode
+
+if TYPE_CHECKING:
+    from intergrax.applications.contracts.environment_profile import (
+        ExecutionBoundaryExportProfile,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class ExecutionBoundaryExportRuntimeSettings:
+    enabled: bool
+    capture_mode: AttestationCaptureMode
+    allowlist: frozenset[str]
+    include_canonical_io: bool = True
+
+
+def resolve_execution_boundary_export_runtime(
+    profile: ExecutionBoundaryExportProfile | None,
+) -> ExecutionBoundaryExportRuntimeSettings | None:
+    if profile is None or not profile.enabled:
+        return None
+    mode_raw = (profile.capture_mode or "side_effects_only").strip().lower()
+    try:
+        capture_mode = AttestationCaptureMode(mode_raw)
+    except ValueError:
+        capture_mode = AttestationCaptureMode.SIDE_EFFECTS_ONLY
+    return ExecutionBoundaryExportRuntimeSettings(
+        enabled=True,
+        capture_mode=capture_mode,
+        allowlist=frozenset(profile.allowlist),
+        include_canonical_io=profile.include_canonical_io,
+    )

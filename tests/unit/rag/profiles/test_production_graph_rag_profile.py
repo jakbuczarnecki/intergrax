@@ -55,6 +55,12 @@ def test_validate_graph_rag_production_wiring_accepts_memgraph() -> None:
     assert validate_graph_rag_production_wiring(profile, graph_store_slug="memgraph") is None
 
 
+def test_validate_graph_rag_production_wiring_accepts_falkordb() -> None:
+    profile = production_graph_rag_profile()
+    assert "falkordb" in APPROVED_PRODUCTION_GRAPH_STORE_SLUGS
+    assert validate_graph_rag_production_wiring(profile, graph_store_slug="falkordb") is None
+
+
 def test_validate_graph_rag_production_wiring_rejects_inmemory_backend() -> None:
     profile = production_rag_profile()
     reason = validate_graph_rag_production_wiring(profile, graph_store_slug="neo4j")
@@ -77,14 +83,22 @@ def test_product_environment_resolves_neo4j_graph_rag_profile() -> None:
     assert profile.graph_store_backend == PRODUCTION_GRAPH_STORE_BACKEND
 
 
-def test_product_environment_rejects_mismatched_graph_store_slug() -> None:
+def test_validate_graph_rag_production_wiring_rejects_unapproved_integration_slug() -> None:
+    profile = production_graph_rag_profile()
+    reason = validate_graph_rag_production_wiring(profile, graph_store_slug="tigergraph")
+    assert reason is not None
+    assert reason.startswith("integration_graph_store_not_approved:")
+
+
+def test_product_environment_resolves_falkordb_graph_rag_profile() -> None:
     env = ApplicationEnvironmentProfile.product_defaults().model_copy(
         update={"context_profile": ContextProfile(enable_rag=True)},
     )
-    with pytest.raises(ValueError, match="integration_graph_store_not_approved"):
-        resolve_rag_profile_for_environment(
-            env,
-            integration_profile=IntegrationProfile(
-                graph_store=IntegrationBinding.from_slug("falkordb"),
-            ),
-        )
+    profile = resolve_rag_profile_for_environment(
+        env,
+        integration_profile=IntegrationProfile(
+            graph_store=IntegrationBinding.from_slug("falkordb"),
+        ),
+    )
+    assert profile is not None
+    assert profile.graph_store_backend == PRODUCTION_GRAPH_STORE_BACKEND

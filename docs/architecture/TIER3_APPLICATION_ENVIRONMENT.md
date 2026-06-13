@@ -1084,7 +1084,7 @@ ApplicationEnvironmentProfile
 | **Tier-1** | Metering, hard caps, `BUDGET_*` events |
 | **Tier-2** | Read usage; soft strategy only |
 
-**Cross-plan:** ACP-TOK-2 (Planned) — kernel enforcement + host reaction hooks.
+**Cross-plan:** ACP-TOK-2 · ACP-TOK-3 (**Done**) — kernel enforcement + host reaction hooks. Tier-3 configures; harness enforces (ACP §25.5).
 
 ## 34.4 Anti-patterns (application binding)
 
@@ -1461,7 +1461,7 @@ Tier-3 config (CostProfile + AgentBinding.budget_slice + budget_reaction)
     → materialize_runtime_config / merge_environment
     → ResolvedBudgetLimits on AgentStepContext (ACP-TOK-1)
     → each LLM call meters tokens (LLM adapters + §25.4 rollups)
-    → HarnessKernel pre-LLM check (ACP-TOK-2 target):
+    → HarnessKernel pre-LLM check (ACP-TOK-2):
          if tokens_total >= limit * warn_threshold_ratio → BUDGET_THRESHOLD event + notify
          if hard limit exceeded → apply BudgetExceededReaction
     → ApplicationEnvironmentState.budget updated (APP-CON-3)
@@ -1494,7 +1494,7 @@ BudgetReactionProfile:
 
 ## 43.4 Soft vs hard caps
 
-| Kind | Detection | Kernel (target) | Host (Tier-3) |
+| Kind | Detection | Kernel | Host (Tier-3) |
 |------|-----------|-----------------|---------------|
 | **Soft** | usage ≥ limit × ratio | `BUDGET_THRESHOLD` event | `notify_channels`; update `budget.warn_emitted` |
 | **Hard agent** | agent scope ≥ limit, `enforcement=hard` | Block LLM; `on_agent_limit_exceeded` | HITL ticket / webhook / `custom_hook_id` |
@@ -1512,7 +1512,7 @@ BudgetReactionProfile:
 | **`custom_hook`** | Emit payload to host registry | Billing, paging, CRM — **no vendor SDK in Tier-2** |
 | **`pause_graph`** | Environment exceed only — freeze graph | Task status + summary |
 
-## 43.6 Acceptance tests (target gates)
+## 43.6 Acceptance tests (gates)
 
 | Test | Asserts | Gate |
 |------|---------|------|
@@ -1556,7 +1556,7 @@ Minimum verification before claiming host maturity. Map to §23.5 recipes and §
 | **Simulation** | dispute_sim / scenario bindings | Graph + scenario metadata | Scenario playbook overlay applied |
 | **Mutating prod** | STRICT + reliability | ACP-PROD + APP-PROD §46 | Idempotency + checkpoint on host |
 | **ApplicationHost hook** | any | `test_application_host_wiring` | Middleware mounted; BLOCK works |
-| **Budget exceed** | cost_profile | Planned ACP-TOK-2 gate | `BUDGET_EXCEEDED` + reaction path |
+| **Budget exceed** | cost_profile | ACP-TOK-2 · ACP-TOK-3 · APP-PROD-7 | `BUDGET_EXCEEDED` + reaction path |
 
 **Gate commands:**
 
@@ -1628,7 +1628,7 @@ A Tier-3 host MAY be labeled **production-ready** only when **all** mandatory ro
 | Virtual org (UC-A7) | `OrganizationalPolicyEnvelope` + eval golden zero `POLICY_DENIED` on happy path |
 | `ApplicationHost` hooks | APP-CON-1 middleware mounted + hook unit test |
 | Mutating tools in STRICT | ACP-PROD gates on agents + host idempotency store |
-| Budget-sensitive | `budget_reaction` configured + ACP-TOK-2/3 when implemented |
+| Budget-sensitive | `budget_reaction` + per-agent `budget_slice`; APP-PROD-7 gate on STRICT hosts |
 
 ## 46.3 Maturity score (architecture audit)
 
@@ -1636,10 +1636,10 @@ A Tier-3 host MAY be labeled **production-ready** only when **all** mandatory ro
 |-----------|--------|----------------------|
 | Architecture completeness | 10/10 | **10/10** — APP-CON §24–§48 + evolution §49 |
 | Hook runtime wiring | 10/10 | **10/10** — APP-CON-1 · APP-CON-5 Done |
-| Budget / prod gates | 10/10 | **9/10** — APP-PROD-1..9 **Done**; ACP-TOK-2/3 cross-plan open |
+| Budget / prod gates | 10/10 | **10/10** — APP-PROD-1..9 **Done** · ACP-TOK-1..3 · ACP-TOK-CI **Done** |
 | Evolution / governance | 10/10 | **10/10** — APP-EVOL-1..7 **Done** · §49.2.4 typed migrations |
 | Platform operations | 10/10 | **10/10** — APP-OPS-1..4 **Done** · health score · registry CLI |
-| **Overall production readiness** | — | **~9.5/10** reference canon; **~8/10** mutating STRICT until ACP-TOK-2/3 |
+| **Overall production readiness** | — | **~10/10** reference canon; mutating STRICT requires APP-PROD-7 + ACP-TOK-* runtime |
 | **Architecture freeze readiness** | — | **Ready** — structural canon §24–§51; platform APP-* implementation **Done** |
 
 ---
@@ -1692,7 +1692,7 @@ A Tier-3 host MAY be labeled **production-ready** only when **all** mandatory ro
 
 | Implement | Do not implement |
 |-----------|------------------|
-| Everything in §47.2 + §46.1 mandatory | Ship without ACP-TOK-2 when mutating |
+| Everything in §47.2 + §46.1 mandatory | Ship without `budget_reaction` + `budget_slice` (APP-PROD-7) |
 | `ReliabilityProfile` idempotency + checkpoints | |
 | `CriticProfile` for high-risk caps | |
 | `budget_reaction` when cost-sensitive | |
@@ -2371,7 +2371,7 @@ ApplicationHealthScore:
 
 Platform engineering surface — **inventory** of what exists, where it runs, at which version. Distinct from runtime Nexus registry (agent instances).
 
-### 50.4.1 ApplicationRegistry (target)
+### 50.4.1 ApplicationRegistry **Done** (APP-OPS-4)
 
 ```text
 ApplicationRegistry:
@@ -2394,7 +2394,7 @@ ApplicationRegistryEntry:
 - `get_application(app_id)` — manifest + latest health
 - `register_application(package)` — on scaffold / CI publish
 
-### 50.4.2 EnvironmentRegistry (target)
+### 50.4.2 EnvironmentRegistry **Done** (APP-OPS-4)
 
 A **deployed instance** of an application (lab, staging, prod, tenant-specific):
 
@@ -2425,7 +2425,7 @@ EnvironmentDeployment:
 
 ### 50.4.3 Registry operations
 
-| Command (target) | Returns |
+| Command | Returns |
 |------------------|---------|
 | `intergrax apps list` | All applications |
 | `intergrax apps show <app_id>` | Versions, ownership, health |

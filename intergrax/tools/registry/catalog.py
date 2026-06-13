@@ -96,6 +96,11 @@ def list_bundle_ids() -> list[str]:
     return sorted(_CATALOG)
 
 
+def is_tool_bundle_registered(bundle_id: str) -> bool:
+    """Return whether a bundle id is already present in the catalog."""
+    return bundle_id.strip().lower() in _CATALOG
+
+
 def list_catalog_tool_ids() -> list[str]:
     ids: set[str] = set()
     for entry in _CATALOG.values():

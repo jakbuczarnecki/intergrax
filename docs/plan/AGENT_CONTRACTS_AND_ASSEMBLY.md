@@ -10,19 +10,19 @@
 
 ## Agent architecture completion — executive summary (2026-06-11)
 
-**Phases ACP + ACP-CLOSE:** **Done** — platform runtime, fleet migration, production gates, CI matrix.  
-**Active closeout:** [Phase ACP-FINISH](#phase-acp-finish--agent-architecture-completion) — **5 blocking tasks** + **3 parallel** AUDIT-IDEAL residuals.
+**Phases ACP + ACP-CLOSE + ACP-FINISH + AUDIT-IDEAL (§12–§20):** **Done** (2026-06-13) — platform runtime, fleet migration, production gates, token budget depth, CI matrix, registry snapshot, cap-graph blast-radius, lifecycle on-call.  
+**Parallel track:** [Phase AUDIT-IDEAL](#phase-audit-ideal--ideal-architecture-gap-register-2026-06-09) — **10/10 Done** (incl. 19.1 · 20.1 · 31.1).
 
 | Track | Scope | Status | Remaining IDs |
 |-------|-------|--------|---------------|
-| **ACP runtime depth** | §25.4–§25.5 token usage, limits, reactions | **Partial** | **ACP-TOK-1** · **ACP-TOK-2** · **ACP-TOK-3** · **ACP-TOK-CI** **Done** |
-| **Architecture doc truth** | §28.3 GAP register · §36.4 · §40.13 tables | **Open** | **ACP-FINISH-DOC-1** (after TOK) |
-| **AUDIT-IDEAL (§12–§20)** | Registry snapshot · cap-graph CI · lifecycle owner | **Parallel** | AUDIT-IDEAL-19.1 · 20.1 · 31.1 |
+| **ACP runtime depth** | §25.4–§25.5 token usage, limits, reactions | **Done** | — |
+| **Architecture doc truth** | §28.3 GAP register · §36.4 · §40.13 tables | **Done** | **ACP-FINISH-DOC-1** **Done** (2026-06-13) |
+| **AUDIT-IDEAL (§12–§20)** | Registry snapshot · cap-graph CI · lifecycle owner | **Done** | — |
 | **Gate maintenance** | §6.1 continuous | **Active** | `pytest -m gate` on every PR |
 
 **Architecture-complete DoD (ACP-FINISH):** GAP-ACP-36/37 **Closed** · §28.3 **37 Closed · 0 Open** · ACP-TOK-* green · one implementation journal entry · domain audit prompt regenerated.
 
-**Ordered queue:** [§6.1bc](#61bc-harness-implementation-queue--acp-finish-active).
+**Ordered queue:** [§6.1bc](#61bc-harness-implementation-queue--acp-finish-closed) — **Done** (2026-06-13).
 
 ---
 
@@ -30,7 +30,7 @@
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §17–§19, §31 · baseline **32/32 L3**  
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
-**Status:** **Partial** — 7/10 **Done** · **3 Planned** (19.1 · 20.1 · 31.1) — parallel to [ACP-FINISH](#phase-acp-finish--agent-architecture-completion)
+**Status:** **Done** (2026-06-13) — 10/10 **Done** · master register [`AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) synced
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
@@ -38,11 +38,11 @@
 | AUDIT-IDEAL-17.2 | §17 Prompts | Prompt diff / compare API for all managed prompts | P2 | **Done** |
 | AUDIT-IDEAL-18.1 | §18 Assembly | `ModalityProfile` mandatory on certified agents | P1 | **Done** |
 | AUDIT-IDEAL-18.2 | §18 Assembly | Cross-host agent reuse certification test suite | P2 | **Done** |
-| AUDIT-IDEAL-19.1 | §19 Registry | Durable cross-host registry snapshot store (DEBT-19-01) | **P0** | Planned |
+| AUDIT-IDEAL-19.1 | §19 Registry | Durable cross-host registry snapshot store (DEBT-19-01) | **P0** | **Done** |
 | AUDIT-IDEAL-19.2 | §19 Registry | Capability negotiation at runtime resolve | P2 | **Done** |
-| AUDIT-IDEAL-20.1 | §20 Cap. graph | Product CI blast-radius check on tool/skill changes | P1 | Planned |
+| AUDIT-IDEAL-20.1 | §20 Cap. graph | Product CI blast-radius check on tool/skill changes | P1 | **Done** |
 | AUDIT-IDEAL-20.2 | §20 Cap. graph | Policy change impact visualization CLI | P2 | **Done** |
-| AUDIT-IDEAL-31.1 | §31 Lifecycle | Owner/on-call mandatory on all certified agents | P1 | Planned |
+| AUDIT-IDEAL-31.1 | §31 Lifecycle | Owner/on-call mandatory on all certified agents | P1 | **Done** |
 | AUDIT-IDEAL-31.2 | §31 Lifecycle | Evaluation required before production promotion (enforce) | P1 | **Done** |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
@@ -56,17 +56,17 @@
 **ADR:** [ADR-AGENT-001](../adr/entries/2026-06-11/ADR-AGENT-001.md) · [ADR-AGENT-002](../adr/entries/2026-06-11/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/entries/2026-06-11/ADR-AGENT-003.md)  
 **Author guide:** [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix AC (sync with §32.0)  
 **Audit:** [`guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md) · domain audit **2026-06-11**  
-**Priority ladder:** **Band 2aw** — **closed** · **Band 2bb (ACP-CLOSE)** — **closed** · **active:** [ACP-FINISH](#phase-acp-finish--agent-architecture-completion) **Band 2bc**
+**Priority ladder:** **Band 2aw** — **closed** · **Band 2bb (ACP-CLOSE)** — **closed** · **Band 2bc (ACP-FINISH)** — **closed** (2026-06-13)
 
 **Strategic outcome (delivered):** Tier-2 authors use **`agent.run(AgentRunRequest)`** + typed **`on_next_step` → `StepOutcome`**; environment merges per-agent memory/tools/RAG/LLM from Tier-3 profile; Nexus remains `Task` entry for multi-agent prod.
 
-**Remaining (ACP-FINISH):** §25.4–§25.5 token metering + per-agent limits + application reaction policies — see **ACP-TOK-***.
+**Remaining (ACP-FINISH):** none — §25.4–§25.5 **Done** via **ACP-TOK-*** (2026-06-11 implementation · 2026-06-13 doc sync).
+
+**Explicit production gate:** mutating agents — **ACP-CLOSE-PROD-*** **Done**; token budget depth **Done** (**ACP-TOK-2** · **ACP-TOK-3**) for hosts using `AgentBinding.budget_slice`.
+
+**Doc canon status (2026-06-13):** architecture §13–§40 **accepted and implementation-complete**; GAP-ACP-36/37 **Closed** via **ACP-TOK-*** + **ACP-FINISH-DOC-1**.
 
 **Explicitly excluded:** Nexus refactor; moving `GraphExecutor`/`PolicyEngine` into agents; Phase K business agents; new Tier-0 execution engine.
-
-**Explicit production gate:** mutating agents — **ACP-CLOSE-PROD-*** **Done**; token budget depth optional until **ACP-TOK-2** for hosts using `AgentBinding.budget_slice`.
-
-**Doc canon status (audit 2026-06-11):** architecture §13–§40 **accepted**; implementation **core delivered**; **2 open GAPs** (GAP-ACP-36/37) close via **ACP-TOK-***.
 
 **Full-domain scope:** Phase **ACP** (§13–§40) **implemented** at platform level; **§12–§20** normative — maintain via gate + **AUDIT-IDEAL** residuals. See [§12–§20 scope mapping](#acp-scope-mapping-12-20-vs-acp-waves).
 
@@ -80,13 +80,13 @@
 |--------|-------|------------------|-------------|-------------|
 | **§12** | Agent contract (capabilities, schemas, tools, risk, validation, failure modes) | **Done** — ACP-CON-4 register gate | ACP-CON-4 · ACP-0b · ACP-DX-5 **Done** | `test_agent_assembly_resolver.py` + register rejection |
 | **§14** | Agent execution result | **Done** — typed `AgentRunResult` + trace | ACP-DX-1 · ACP-OBS-1 **Done** | Typed `AgentRunResult` + trace |
-| **§15** | Agent registry | **Done** (REG-*) | ACP-CON-6 **Done** · AUDIT-IDEAL-19.1 open | `check_harness_registry_resolution.py` |
+| **§15** | Agent registry | **Done** (REG-*) | ACP-CON-6 · AUDIT-IDEAL-19.1 **Done** | `check_harness_registry_resolution.py` · `registry_snapshot_store.py` |
 | **§16** | Capability model | **Done** (CG-*) | ACP-CON-6 **Done** | Capability routing integration test |
 | **§17** | Prompt registry | **Done** (PE-*) | PE-* **Done** | PE wiring tests |
 | **§18** | Registry architecture | **Done** (REG-*) | REG-* **Done** | `test_registry_wiring.py` |
-| **§19** | Capability graph | **Done** (CG-*) | CG-* **Done** · AUDIT-IDEAL-20.1 open | `check_harness_capability_graph_wiring.py` |
-| **§20** | Lifecycle governance | **Done** (V-ALG, AS-2) | ACP-PROD-9 **Done** · AUDIT-IDEAL-31.1 open | `check_agents_lifecycle_metadata.py` |
-| **§13–§40** | ACP runtime (run, step loop, env, prod) | **Done** (core) · §25.4–§25.5 **open** | ACP waves 0–8 + ACP-CLOSE **Done** · [ACP-FINISH](#phase-acp-finish--agent-architecture-completion) | ACP-TOK-* closes GAP-ACP-36/37 |
+| **§19** | Capability graph | **Done** (CG-*) | CG-* · AUDIT-IDEAL-20.1 **Done** | `phase_v_capability_graph_guard.py` |
+| **§20** | Lifecycle governance | **Done** (V-ALG, AS-2) | ACP-PROD-9 · AUDIT-IDEAL-31.1 **Done** | `check_agents_lifecycle_metadata.py` · `check_on_call_ownership_model.py` |
+| **§13–§40** | ACP runtime (run, step loop, env, prod) | **Done** — incl. §25.4–§25.5 | ACP · ACP-CLOSE · **ACP-FINISH Done** | ACP-TOK-* · `test_acp_token_*` |
 
 **Rule:** An agent PR MUST pass **§12 assembly validation** (**ACP-CON-4**) and applicable **ACP-CLOSE** rows when touching mutating prod paths or legacy surfaces.
 
@@ -133,10 +133,10 @@
 | DEBT-ACP-14 | Full state replace / in-place mutation | `state_delta` §37.2 | **Closed** | ACP-CON-2 |
 | DEBT-ACP-15 | Scaffold UAEP-first only | Typed scaffold `--pattern` | **Closed** | ACP-8 |
 | DEBT-ACP-16 | Roster on legacy patterns | Typed loop fleet-wide | **Closed** | ACP-MIG-* · ACP-LEG-2 |
-| DEBT-ACP-17 | No prod checkpoint / idempotency (platform) | §40 persistence modules | **Closed** (platform) · checkpoint host **Done** · idempotency/compensation depth open | ACP-PROD-1..3 · **ACP-CLOSE-PROD-*** |
+| DEBT-ACP-17 | No prod checkpoint / idempotency (platform) | §40 persistence modules | **Closed** — platform + host depth + compensation queue + cross-run idempotency | ACP-PROD-1..3 · **ACP-CLOSE-PROD-1..8 Done** |
 | DEBT-ACP-18 | ReAct loop split from TOOL-ENG-6 | Unified budget §25.2 | **Closed** | **ACP-CLOSE-PAT-1** + **TOOL-ENG-6** |
 
-**Removal policy:** ACP + ACP-CLOSE **closed**. **ACP-FINISH** closes remaining architecture GAPs only — no new DEBT items; extend via ADR if scope expands.
+**Removal policy:** ACP + ACP-CLOSE + **ACP-FINISH closed** (2026-06-13). Extend via ADR if scope expands.
 
 ---
 
@@ -171,9 +171,9 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 |----------------|---------------------|------------------|--------------|
 | §12 | Full `AgentContract` at register | **ACP-CON-4** · AS-1 | Incomplete contract → `AgentAssemblyError` |
 | §14 | Typed execution result | ACP-DX-1 · ACP-OBS-1 | `AgentRunResult` fields + trace |
-| §15–§16 | Registry + capabilities | REG/CG **Done** · ACP-CON-6 · AUDIT-IDEAL-19.1 open | Capability token routing |
-| §17–§19 | Prompt + registry + graph | PE/REG/CG **Done** · AUDIT-IDEAL-20.1 open | Existing CI + binding slices |
-| §20 | Lifecycle governance | V-ALG/AS **Done** · ACP-PROD-9 · AUDIT-IDEAL-31.1 open | Promotion gates |
+| §15–§16 | Registry + capabilities | REG/CG **Done** · ACP-CON-6 · AUDIT-IDEAL-19.1 **Done** | Capability token routing |
+| §17–§19 | Prompt + registry + graph | PE/REG/CG **Done** · AUDIT-IDEAL-20.1 **Done** | `phase_v_capability_graph_guard.py` |
+| §20 | Lifecycle governance | V-ALG/AS **Done** · ACP-PROD-9 · AUDIT-IDEAL-31.1 **Done** | `check_on_call_ownership_model.py` |
 | §13 | `run()` + `on_next_step` author API | ACP-DX-3 · ACP-STEP-1 | Direct `run()` test + agent_os 01 |
 | §21–§28 | Cognitive patterns + gaps closed | ACP-1..6 · ACP-9 | Pattern unit + reference agents |
 | §29 | `AgentRunRequest` / `Result` | ACP-DX-1 · ACP-CON-1 | Round-trip JSON; enum tests |
@@ -188,7 +188,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | §37 | Operational contracts | ACP-CON-* | Merge, enums, routing, security CI |
 | §38 | NexusLoop vs HarnessKernel split | ACP-STEP-2 · ACP-STEP-2b | Runtime glue-only test; kernel owns policy/trace/budget/state |
 | §39 | Org policy envelope | ACP-ORG-* | UC-11 fixture |
-| §40 | Production reliability + scoreboard | ACP-PROD-* **Done** · **ACP-CLOSE-PROD-*** depth | Scoreboard + §40.12 per mutating agent |
+| §40 | Production reliability + scoreboard | ACP-PROD-* **Done** · **ACP-CLOSE-PROD-1..8 Done** | Per-roster `production_mode` via §40.15 scoreboard thresholds |
 | §45 | New agent checklist | ACP-8 · ACP-11..13 | Scaffold + conformance CI |
 | **Fleet** | Roster migration | **ACP-MIG-*** Wave 8 | Tracker 100% Runtime dimension |
 
@@ -321,13 +321,13 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 
 | ID | Domain plan | Deliverable | Status |
 |----|-------------|-------------|--------|
-| AUDIT-IDEAL-19.1 | this file §AUDIT-IDEAL | Durable cross-host registry snapshot | Planned |
-| AUDIT-IDEAL-20.1 | this file §AUDIT-IDEAL | Product CI blast-radius on tool/skill changes | Planned |
-| AUDIT-IDEAL-31.1 | this file §AUDIT-IDEAL | Owner/on-call mandatory on certified agents | Planned |
+| AUDIT-IDEAL-19.1 | this file §AUDIT-IDEAL | Durable cross-host registry snapshot | **Done** |
+| AUDIT-IDEAL-20.1 | this file §AUDIT-IDEAL | Product CI blast-radius on tool/skill changes | **Done** |
+| AUDIT-IDEAL-31.1 | this file §AUDIT-IDEAL | Owner/on-call mandatory on certified agents | **Done** |
 | TOOL-ENG-6 | `plan/TOOLS.md` | Tool loop step — sync with ACP-CLOSE-PAT-1 | **Done** |
-| ACP-TOK-1..3 | this file §ACP-FINISH | Token metering, limits, reactions | **Partial** (TOK-1 **Done**) |
-| ACP-TOK-CI | this file §ACP-FINISH | Token budget CI gate | Planned |
-| ACP-FINISH-DOC-1 | this file §ACP-FINISH | GAP-ACP-36/37 Closed + §40.13 sync | Planned |
+| ACP-TOK-1..3 | this file §ACP-FINISH | Token metering, limits, reactions | **Done** |
+| ACP-TOK-CI | this file §ACP-FINISH | Token budget CI gate | **Done** |
+| ACP-FINISH-DOC-1 | this file §ACP-FINISH | GAP-ACP-36/37 Closed + §40.13 sync | **Done** (2026-06-13) |
 
 **ACP-CLOSE DoD:** DEBT-ACP **3/3 Open → Closed**; architecture §28.3 synced; mutating scoreboard dimensions **≥100%**; §40.12 evidenced; `pytest -m gate` green.
 
@@ -337,7 +337,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 
 ## Phase ACP-FINISH — Agent architecture completion
 
-**Status:** **Active** (2026-06-11) — final open GAPs in architecture §28.3 · **Band 2bc** · queue **[§6.1bc](#61bc-harness-implementation-queue--acp-finish-active)**  
+**Status:** **Done** (2026-06-13) — GAP-ACP-36/37 **Closed** · architecture §28.3 **37 Closed · 0 Open** · **Band 2bc closed**  
 **Goal:** Close **GAP-ACP-36** (invocation token rollups) and **GAP-ACP-37** (per-agent limits + application reaction policies). After this phase, agent architecture canon is **decision-complete and implementation-complete** for §13–§40 (AUDIT-IDEAL §12–§20 residuals remain parallel).
 
 **Explicitly excluded:** New cognitive patterns; Nexus orchestration refactor; Phase K business agents.
@@ -350,7 +350,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-TOK-2 | TOK | **Limits** — per-agent caps from application + hard/advisory enforcement | **Done** | §25.5.1–§25.5.2 | `AgentBinding.budget_slice`, `AgentExecutionOptions.max_total_tokens`, kernel pre-LLM check | `test_acp_token_budget_enforcement.py` |
 | ACP-TOK-3 | TOK | **Reactions** — environment policies on threshold/exceed | **Done** | §25.5.3 · §30.8 | `CostProfile.budget_reaction`, host hooks, notify wiring | `abort` · `hitl` · `degrade_model` · `notify_only` · `custom_hook` paths tested |
 | ACP-TOK-CI | CI | Token budget contract gate | **Done** | §25.4–§25.5 · §40.10 | `check_agent_token_budget_contract.py` | CI-18 row; fails if kernel bypasses metering or agents increment budget in state_delta |
-| ACP-FINISH-DOC-1 | DOC | Architecture status tables + GAP-ACP-36/37 → Closed | Planned | §28.3 · §36.4 · §40.13 | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`, audit prompt | 37 Closed · 0 Open; §40.13 declares architecture **complete** |
+| ACP-FINISH-DOC-1 | DOC | Architecture status tables + GAP-ACP-36/37 → Closed | **Done** (2026-06-13) | §28.3 · §36.4 · §40.13 | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`, audit prompt | 37 Closed · 0 Open; §40.13 declares architecture **complete** |
 
 ### ACP-FINISH — Sub-task breakdown (implementation guide)
 
@@ -377,13 +377,13 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 
 ## Phase ACP-DEPTH — (merged into ACP-FINISH)
 
-Historical alias for token-depth work. **Active register:** [Phase ACP-FINISH](#phase-acp-finish--agent-architecture-completion).
+Historical alias for token-depth work. **Closed register:** [Phase ACP-FINISH](#phase-acp-finish--agent-architecture-completion) **Done** (2026-06-13).
 
 ---
 
 ### 6.1av Harness implementation queue — Agent Cognitive Patterns (ACP) — closed
 
-**Status:** **Done** (2026-06-11) · **Active queue:** [§6.1bc ACP-FINISH](#61bc-harness-implementation-queue--acp-finish-active)
+**Status:** **Done** (2026-06-11) · **Follow-on:** [§6.1bc ACP-FINISH](#61bc-harness-implementation-queue--acp-finish-closed) **Done** (2026-06-13)
 
 **Purpose:** Historical wave order (Band 2aw). **Detailed steps:** [§6.1aw](#61aw-acp-detailed-implementation-waves).
 
@@ -702,7 +702,7 @@ ACP-CLOSE:  DOC-2..4 → LEG-1 → LEG-2 → LEG-3 → PROD-1 → PROD-2 → PRO
 ACP-FINISH:  TOK-1 → TOK-2 → TOK-3 → TOK-CI → FINISH-DOC-1
 ```
 
-**Note:** ACP + ACP-CLOSE **complete**. **ACP-FINISH** closes last architecture GAPs (§25.4–§25.5).
+**Note:** ACP + ACP-CLOSE + **ACP-FINISH complete** (2026-06-13) — §25.4–§25.5 token depth closed.
 
 **Journal:** ACP waves journaled; one entry on **ACP-CLOSE** phase completion, per [`implementation-journal/README.md`](../guides/implementation-journal/README.md).
 
@@ -738,16 +738,16 @@ ACP-FINISH:  TOK-1 → TOK-2 → TOK-3 → TOK-CI → FINISH-DOC-1
 | 22 | ACP-CLOSE-CI-2 | P2 | §28.4 | **Done** |
 | 23 | ACP-CLOSE-CI-3 | P1 | §40.15 | **Done** |
 
-**Parallel (owning plan):** AUDIT-IDEAL-19.1 · 20.1 · 31.1 — see [Phase AUDIT-IDEAL](#phase-audit-ideal--ideal-architecture-gap-register-2026-06-09).
+**Parallel (owning plan):** AUDIT-IDEAL-19.1 · 20.1 · 31.1 — **Done** (2026-06-13); see [Phase AUDIT-IDEAL](#phase-audit-ideal--ideal-architecture-gap-register-2026-06-09).
 
 **Minimum viable close (P0 only):** DOC-1..4 · LEG-1 · LEG-2 · PROD-1 · PROD-2 · PROD-4 · PROD-7 · PROD-8 · CI-2 → **Done** — ACP-CLOSE wave complete.
 
 ---
 
-### 6.1bc Harness implementation queue — ACP-FINISH (active)
+### 6.1bc Harness implementation queue — ACP-FINISH (closed)
 
 **Purpose:** Final tasks to declare **agent architecture (§13–§40) implementation-complete**. **Band 2bc**.  
-**Blocks:** GAP-ACP-36 · GAP-ACP-37 · architecture §28.3 open count → 0.
+**Status:** **Done** (2026-06-13) — GAP-ACP-36 · GAP-ACP-37 **Closed** · architecture §28.3 open count → **0**.
 
 | Order | ID | Priority | Arch § | Status | Depends |
 |-------|-----|----------|--------|--------|---------|
@@ -755,15 +755,15 @@ ACP-FINISH:  TOK-1 → TOK-2 → TOK-3 → TOK-CI → FINISH-DOC-1
 | 2 | ACP-TOK-2 | **P1** | §25.5.1–§25.5.2 | **Done** | TOK-1 |
 | 3 | ACP-TOK-3 | **P1** | §25.5.3 · §30.8 | **Done** | TOK-2 |
 | 4 | ACP-TOK-CI | P2 | §40.10 CI-18 | **Done** | TOK-1..3 |
-| 5 | ACP-FINISH-DOC-1 | P1 | §28.3 · §40.13 | Planned | TOK-CI |
+| 5 | ACP-FINISH-DOC-1 | P1 | §28.3 · §40.13 | **Done** (2026-06-13) | TOK-CI |
 
 **Parallel (ideal-architecture depth — not blocking ACP-FINISH DoD):**
 
 | ID | Priority | Arch § | Status | Notes |
 |----|----------|--------|--------|-------|
-| AUDIT-IDEAL-19.1 | **P0** | §15 Registry | Planned | Durable cross-host registry snapshot — closes DEBT-19-01 |
-| AUDIT-IDEAL-20.1 | P1 | §19 Cap. graph | Planned | Product CI blast-radius on tool/skill changes |
-| AUDIT-IDEAL-31.1 | P1 | §20 Lifecycle | Planned | Owner/on-call mandatory on certified agents |
+| AUDIT-IDEAL-19.1 | **P0** | §15 Registry | **Done** | `registry_snapshot_store.py` · `check_registry_snapshot_diff.py` |
+| AUDIT-IDEAL-20.1 | P1 | §19 Cap. graph | **Done** | `phase_v_capability_graph_guard.py` · `check_capability_graph_strict_deploy.py` |
+| AUDIT-IDEAL-31.1 | P1 | §20 Lifecycle | **Done** | `check_agents_lifecycle_metadata.py` · `check_on_call_ownership_model.py` |
 
 **Suggested PR order:**
 
@@ -772,7 +772,19 @@ ACP-TOK-1 (metering) → ACP-TOK-2 (limits) → ACP-TOK-3 (reactions + reference
   → ACP-TOK-CI → ACP-FINISH-DOC-1
 ```
 
-**Journal:** one entry on **ACP-FINISH** phase completion when row 5 is Done.
+**Journal:** [`entries/2026-06-13/acp-finish-doc-1-gap-register-closeout.md`](../guides/implementation-journal/entries/2026-06-13/acp-finish-doc-1-gap-register-closeout.md) (ACP-FINISH phase completion).
+
+---
+
+### 6.1bd Layer backlog — post-maturity (P2–P4, non-blocking)
+
+**Status:** Active maintenance — does **not** block layer completion (ACP + AUDIT-IDEAL **Done**).
+
+| ID | Priority | Topic | Status | Notes |
+|----|----------|-------|--------|-------|
+| COST-1 | P2 | Nexus `RunBudget` graph env cap | Partial | Per-agent ACP-TOK enforcement **Done**; graph-level cap deferred |
+| ROSTER-PROD | P2 | Individual agent `production_mode` promotion | Ongoing | §40.15 thresholds per agent; platform gates **Done** |
+| FAUDIT-REG.1 | P2 | Extend `HarnessRegistrySnapshot` with eval registry depth | Planned | `PLATFORM_FOUNDATION` master register |
 
 ---
 

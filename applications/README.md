@@ -9,6 +9,7 @@
 
 | Application | Profile | Default port | Agents mounted | Purpose |
 |-------------|---------|--------------|----------------|---------|
+| [`attestation_demo/`](attestation_demo/) | lab | 8097 | BoundaryDemoAgent | **Partner PoC** — unsigned EBE events in `POST /poc/run` |
 | [`poc_template_application/`](poc_template_application/) | lab | 8095 | Echo | Canonical Tier-3 scaffold reference |
 | [`lab_application/`](lab_application/) | lab | 8090 | Echo, SignoffProbe, Legal, Research, … | Universal lab + `/debug/*` trace API |
 | [`legal_application/`](legal_application/) | product | 8000 | LegalAgent | Contract review API |

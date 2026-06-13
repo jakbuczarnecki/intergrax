@@ -41,6 +41,17 @@ class EvaluatorLoopGraphBinding(BaseModel):
     spec: EvaluatorLoopSpec
 
 
+class CodeCraftGraphBinding(BaseModel):
+    """Optional code craft node in application graph specs (ECC-5)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    agent_id: str
+    goal_template: str = "Synthesize helper for task"
+    max_iterations: int = Field(default=8, ge=1, le=64)
+    promote_on_success: bool = True
+
+
 class ApplicationGraphSpec(BaseModel):
     """
     Validated application graph — nodes must exist on the manifest roster.
@@ -66,6 +77,7 @@ class ApplicationGraphSpec(BaseModel):
         description="Capability suffix that triggers graph seed when trigger_capabilities is empty.",
     )
     evaluator_loop: EvaluatorLoopGraphBinding | None = None
+    codecraft_node: CodeCraftGraphBinding | None = None
 
     def roster_agent_ids(self) -> frozenset[str]:
         return frozenset(node.agent_id for node in self.nodes)

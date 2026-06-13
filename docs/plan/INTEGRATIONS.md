@@ -17,9 +17,9 @@
 
 | ID | Slug | Category | Priority | Status | RAG deliverable | Notes |
 |----|------|----------|----------|--------|-----------------|-------|
-| H-INT-GRAPH-1 | `neptune` | graph_store | **P3** | **Planned** | M-RAG.49 | AWS Neptune — OpenCypher or configured dialect; no local infra default |
-| H-INT-GRAPH-2 | `orientdb` | graph_store | **P3** | **Planned** | M-RAG.50 | OrientDB SQL/graph API facade |
-| H-INT-GRAPH-3 | `arangodb` | graph_store | **P3** | **Planned** | M-RAG.51 | ArangoDB AQL bridge |
+| H-INT-GRAPH-1 | `neptune` | graph_store | **P3** | **Done** | M-RAG.49 | AWS Neptune — OpenCypher HTTP bridge |
+| H-INT-GRAPH-2 | `orientdb` | graph_store | **P3** | **Done** | M-RAG.50 | OrientDB OpenCypher HTTP bridge |
+| H-INT-GRAPH-3 | `arangodb` | graph_store | **P3** | **Done** | M-RAG.51 | ArangoDB AQL HTTP bridge |
 
 **Per-slug checklist:** contract gate → `providers/graph_store/<slug>/` → health probe → bootstrap register → RAG `RagGraphStoreBackend` adapter (M-RAG.38 registry) → gate green.
 
@@ -70,10 +70,12 @@
 | 4 | H-INT-9 | M-P5.29–M-P5.34 | P2 reserve: codecov, trivy, grafana_oncall, opentelemetry_collector, snowflake, supabase | **P2** | **Done** |
 | 5 | PRE | M-P5-PRE.1 | Tier-3 presets: `harness_metrics_stack`, `harness_eval_stack`, `harness_async_stack`, `harness_ci_stack` | **P0** | **Done** |
 
-**Explicitly excluded:** Band 3 product agents; see [M.6 P5 register](#m6-p5--harness-integration-depth-done--3334).### 6.1y Harness implementation queue — Integration expansion (M.6 P6 planned)
+**Explicitly excluded:** Band 3 product agents; see [M.6 P5 register](#m6-p5--harness-integration-depth-done--3334).
+
+### 6.1y Harness implementation queue — Integration expansion (M.6 P6 Done)
 
 **Purpose:** Ordered backlog for **Phase M.6 P6** (Band 2ac). **Status:** **Done** (2026-06-02) — **32/32**.  
-**Register:** [M.6 P6 — Master register](#m6-p6--master-register-32-slugs) · **Execution order:** [§6.2ag](#62ag-phase-m6-p6-execution-order-band-2ac--planned)  
+**Register:** [M.6 P6 — Master register](#m6-p6--master-register-32-slugs) · **Execution order:** [§6.2ag](#62ag-phase-m6-p6-execution-order-band-2ac--done)  
 **Policy:** One slug per PR (or one CAT wave before first slug in a new category); runs **in parallel** with §6.1 maintenance — pull when security/sandbox/identity/GitOps/speech harness gaps block ops.
 
 | Order | Wave | IDs | Slugs (summary) | Priority | Status |
@@ -529,7 +531,7 @@ Vendor document parsing moved from `intergrax/rag/document_loaders/parsers/` int
 
 **Status:** **Done** (2026-06-02) — **32/32** · catalog **167** slugs in layout.py  
 **Source:** Harness integration gap audit (2026-06-02) — post M.6 P5; all **32** proposed slugs registered below (includes `trivy` migrated from M-P5.30, plus `modal`, `daytona`, `workos`, `hubspot` from audit waves)  
-**Queue:** [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-planned) · **Execution order:** [§6.2ag](#62ag-phase-m6-p6-execution-order-band-2ac--planned)  
+**Queue:** [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-done) · **Execution order:** [§6.2ag](#62ag-phase-m6-p6-execution-order-band-2ac--done)  
 **Priority ladder:** **Band 2ac** (§4.0) — runs **in parallel** with §6.1 maintenance; **does not** unblock Band 3 product work
 
 **Scope:** **32 greenfield** slugs — new provider trees + category contracts where noted. No business-agent logic.

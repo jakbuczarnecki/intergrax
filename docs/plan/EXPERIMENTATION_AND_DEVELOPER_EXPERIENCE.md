@@ -161,9 +161,11 @@ Work **one AA ID per PR/session**; after each step update the AA master table + 
 
 Full task register: [Appendix I](plan/PLATFORM_FOUNDATION.md).
 
-**Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3. **Feature queues:** Phase W-ADAPT — §6.1t; Phase M-LLM-R — §6.1v; Phase M.6 P4 — §6.1w (closed); Phase M.6 P5 — §6.1x (closed); Phase M.6 P6 — §6.1y (planned).### 6.2ag Phase M.6 P6 execution order (Band 2ac — Done)
+**Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3. **Feature queues:** Phase W-ADAPT — §6.1t; Phase M-LLM-R — §6.1v; Phase M.6 P4 — §6.1w (closed); Phase M.6 P5 — §6.1x (closed); Phase M.6 P6 — §6.1y (closed).
 
-**Status:** **Done** (2026-06-02) · register: [M.6 P6](#m6-p6--harness-integration-expansion-planned) · queue: [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-planned)
+### 6.2ag Phase M.6 P6 execution order (Band 2ac — Done)
+
+**Status:** **Done** (2026-06-02) · register: [M.6 P6](#m6-p6--harness-integration-expansion-planned) · queue: [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-done)
 
 ```text
 Wave H-INT-0 (categories):  M-P6-CAT.1 → M-P6-CAT.2 → M-P6-CAT.3 → M-P6-CAT.4 → M-P6-CAT.5 → M-P6-CAT.6 → M-P6-CAT.7 → M-P6-CAT.8 → M-P6-CAT.9
@@ -553,7 +555,7 @@ DONE:    Phase Q — Harness Quality (audit #1) — Waves 1–9
 DONE:    Phase L, M, M-LLM, M-RAG, N, O — harness GA (functional)
 DONE:    Phase K hardening K.3–K.5; Appendix B paydown (except B.15)
 
-PARALLEL (harness-only): M.6 P6 integration expansion (§6.1y, **32 planned**); M.6 P5 residual `trivy` absorbed into P6 M-P6.1; legacy M.6 on-demand slugs; R-Skill catalog expansion (platform packs)
+PARALLEL (harness-only): M.6 P6 integration expansion (§6.1y, **32 Done — closed 2026-06-02**); M.6 P5 residual `trivy` absorbed into P6 M-P6.1; legacy M.6 on-demand slugs; R-Skill catalog expansion (platform packs)
 
 BAND 3 — END OF PLAN (see §6.3; not default “next”):
   • K.1 Problem Radar / K.2 Vendor Discovery (business agents)
@@ -599,7 +601,7 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 | **Canonical implementation queue (infrastructure)** | [§6.1](#61-harness-platform-maintenance-default--band-1) (**active** — maintenance) · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) (all closed) · [§6.1z](#61z-harness-implementation-queue-consolidated) (closed) |
 | Integration catalog expansion (Done) | [M.6 P4](#m6-p4--harness-platform-expansion-done) · [§6.1w](#61w-harness-implementation-queue--integration-expansion-m6-p4-closed) — **28/28 Done** |
 | Integration harness depth (Done) | [M.6 P5](#m6-p5--harness-integration-depth-done--3334) · [§6.1x](#61x-harness-implementation-queue--integration-depth-m6-p5-done) — **33/34 Done** |
-| Integration harness expansion | [M.6 P6](#m6-p6--harness-integration-expansion-planned) · [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-planned) — **Done** (32/32 + wiring) |
+| Integration harness expansion | [M.6 P6](#m6-p6--harness-integration-expansion-planned) · [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-done) — **Done** (32/32 + wiring) |
 | Ongoing gate + audit scripts | [§6.1](#61-harness-platform-maintenance-default--band-1) |
 | Memory platform wiring (Done) | [Phase MEM](#phase-mem--memory-platform-completion) · [§6.2aa](#62aa-phase-mem-execution-order-band-2h--closed) |
 | **Memory intelligence depth (closed)** | [Phase MEM-DEPTH](#phase-mem-depth--memory-intelligence-depth) · [`architecture/MEMORY.md`](architecture/MEMORY.md) · [§6.2ab](#62ab-phase-mem-depth-execution-order-band-2am--closed) |

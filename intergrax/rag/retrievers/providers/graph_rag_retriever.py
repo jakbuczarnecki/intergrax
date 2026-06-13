@@ -1,16 +1,21 @@
 # © Artur Czarnecki. All rights reserved.
 # Integrax framework – proprietary and confidential.
 
-"""Graph-augmented retrieval: vector seeds + metadata-linked graph expansion (M-RAG.42–43)."""
+"""Graph-augmented retrieval: vector + keyword + graph channel fusion (M-RAG.42–43, M-RAG.53–54)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Set
+from typing import Any, Dict, List, Set
 
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
-from intergrax.rag.graph.contracts.graph_store import GraphStore
-from intergrax.rag.retrieval.graph_channel_fusion import GraphChannelHit, fuse_graph_channels
+from intergrax.rag.graph.contracts.graph_store import GraphNode, GraphStore
+from intergrax.rag.retrieval.graph_channel_fusion import (
+    GraphChannelHit,
+    build_keyword_hits,
+    fuse_graph_channels,
+)
+from intergrax.rag.retrieval.graph_provenance_builder import build_graph_retrieval_provenance
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
     RetrieverCandidate,
@@ -24,6 +29,7 @@ class GraphRetrieverTrace:
     channel_contributions: Dict[str, List[str]] = field(default_factory=dict)
     expanded_node_ids: List[str] = field(default_factory=list)
     graph_provenance_summary: str = ""
+    graph_provenance_records: List[Dict[str, Any]] = field(default_factory=list)
 
 
 class GraphRagRetriever(BaseRetriever):
@@ -93,10 +99,12 @@ class GraphRagRetriever(BaseRetriever):
         related_node_ids |= self._entity_ids_from_metadata(seeds)
         related_node_ids |= self._entity_ids_from_query_tokens(query.query_text)
 
+        expanded_nodes: List[GraphNode] = []
         expanded_node_ids: Set[str] = set(related_node_ids)
         for node_id in list(related_node_ids):
             for neighbor in self._graph.neighbors(node_id, max_hops=self._graph_hops):
                 expanded_node_ids.add(neighbor.id)
+                expanded_nodes.append(neighbor)
 
         graph_hits: List[GraphChannelHit] = []
         extra_chunk_ids = self._graph.chunk_ids_for_nodes(expanded_node_ids)
@@ -125,12 +133,25 @@ class GraphRagRetriever(BaseRetriever):
                         rank=hit.rank,
                     )
 
-        provenance_summary = self._build_provenance_summary(expanded_node_ids)
+        keyword_hits = build_keyword_hits(
+            query_text=query.query_text,
+            candidates=[(candidate.id, candidate.content) for candidate in by_id.values()],
+        )
 
-        if self._hybrid_fusion_enabled and (vector_hits or graph_hits):
+        provenance_bundle = build_graph_retrieval_provenance(
+            trace_id=query.query_text[:64] or "graph_rag",
+            graph_id=getattr(self._graph, "tenant_id", None) or "rag_graph",
+            seed_node_ids=sorted(related_node_ids),
+            expanded_nodes=expanded_nodes,
+        )
+        provenance_summary = provenance_bundle.explainability_summary
+        provenance_records = [record.to_dict() for record in provenance_bundle.provenance_records]
+
+        if self._hybrid_fusion_enabled and (vector_hits or graph_hits or keyword_hits):
             fusion = fuse_graph_channels(
                 vector_hits=vector_hits,
                 graph_hits=graph_hits,
+                keyword_hits=keyword_hits,
                 top_k=int(query.top_k),
             )
             ordered_ids = fusion.merged_document_ids
@@ -139,6 +160,7 @@ class GraphRagRetriever(BaseRetriever):
                 channel_contributions=dict(fusion.channel_contributions),
                 expanded_node_ids=sorted(expanded_node_ids),
                 graph_provenance_summary=provenance_summary,
+                graph_provenance_records=provenance_records,
             )
             return candidates[: int(query.top_k)]
 
@@ -147,6 +169,7 @@ class GraphRagRetriever(BaseRetriever):
         self._last_trace = GraphRetrieverTrace(
             expanded_node_ids=sorted(expanded_node_ids),
             graph_provenance_summary=provenance_summary,
+            graph_provenance_records=provenance_records,
         )
         return candidates[: int(query.top_k)]
 
@@ -172,9 +195,3 @@ class GraphRagRetriever(BaseRetriever):
             for node in self._graph.find_nodes(label_contains=token, limit=3):
                 found.add(node.id)
         return found
-
-    def _build_provenance_summary(self, node_ids: Set[str]) -> str:
-        if not node_ids:
-            return ""
-        labels = [node_id.replace("ent:", "").replace("_", " ") for node_id in sorted(node_ids)[:5]]
-        return f"Graph expansion nodes: {' -> '.join(labels)}"

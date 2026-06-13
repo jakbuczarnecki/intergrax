@@ -11,6 +11,7 @@ from intergrax.skills.providers.cache.plugin import CacheSkillPlugin
 from intergrax.skills.providers.catalog.plugin import CatalogSkillPlugin
 from intergrax.skills.providers.cloud_platform.plugin import CloudPlatformSkillPlugin
 from intergrax.skills.providers.code.plugin import CodeSkillPlugin
+from intergrax.skills.providers.codecraft.plugin import CodeCraftSkillPlugin
 from intergrax.skills.providers.collaboration.plugin import CollaborationSkillPlugin
 from intergrax.skills.providers.context.plugin import ContextSkillPlugin
 from intergrax.skills.providers.cost.plugin import CostSkillPlugin
@@ -54,6 +55,7 @@ SHIPPED_SKILL_PLUGINS: tuple[type, ...] = (
     CatalogSkillPlugin,
     CloudPlatformSkillPlugin,
     CodeSkillPlugin,
+    CodeCraftSkillPlugin,
     CollaborationSkillPlugin,
     ContextSkillPlugin,
     CostSkillPlugin,

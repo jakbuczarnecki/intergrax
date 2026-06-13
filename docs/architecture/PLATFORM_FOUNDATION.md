@@ -705,7 +705,7 @@ Category contracts MUST be **backend-agnostic**: same method names and DTOs whet
 | **LLM providers** | `intergrax/llm_adapters/` (`LLMAdapter`, `LLMAdapterRegistry`, `LLMProfile`, metrics) | 19 slugs — [architecture/LLM_ADAPTERS.md](architecture/LLM_ADAPTERS.md) §5.2.2 |
 | **Tokenization** | `intergrax/tokenizers/` | Not an external integration slug |
 | **RAG pipeline** | `intergrax/rag/` | Vector stores + document parsers use **catalog bridges**; orchestration stays in `rag/` |
-| **Ephemeral Code Craft** | `intergrax/codecraft/` + `runtime/codecraft/` (planned ECC-1+) | Composes `runtime/sandbox/` + `codecraft.*` tools; not a second sandbox |
+| **Ephemeral Code Craft** | `intergrax/codecraft/` + `runtime/codecraft/` **Done** (ECC-0…ECC-6) | Composes `runtime/sandbox/` + `codecraft.*` tools; not a second sandbox |
 | **Model & modality inference** | `intergrax/model_inference/` (planned), tools, optional integration hosts | Vision CV (YOLO, ONNX, …), classical ML, speech APIs — §7.1.9; **not** LLM slugs in Integration Library |
 
 #### RAG stack (Tier-0)
@@ -1016,7 +1016,7 @@ Agent / planner
 | `use_websearch` / `websearch.query` (catalog) | `websearch.query` | `SearchProvider` via `IntegrationProfile.search_provider` |
 | `use_tools` / `run_bounded_tool_loop` / `ctx.invoke_tool` | *(explicit tool_ids)* | `ToolRegistry` entries |
 | Sandbox execution | `sandbox.exec` | `intergrax/runtime/sandbox/` (already a tool_id) |
-| Ephemeral Code Craft | `codecraft.*` (planned) | `intergrax/codecraft/` + `runtime/codecraft/` — see [`CODE_CRAFT.md`](CODE_CRAFT.md) |
+| Ephemeral Code Craft | `codecraft.*` **Done** (ECC-0…ECC-6) | `intergrax/codecraft/` + `runtime/codecraft/` — see [`CODE_CRAFT.md`](CODE_CRAFT.md) |
 
 **Migration rules:**
 

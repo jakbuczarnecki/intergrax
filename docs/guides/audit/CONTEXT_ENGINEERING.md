@@ -50,11 +50,11 @@ ContextEngine · ContextSourceProvider · ContextFragment · ContextAssemblyRequ
 
 ## Active plan phases (verify status vs code reality)
 
-CTX Done · CE-EXT **Done** · CE-ALIGN **Done** · **CE-PROV-WIRE Planned** (GAP-CTX-20)
+CTX Done · CE-DOC Done · CE-EXT Planned (CE-1..CE-12)
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-GAP-CTX-01–19 (excl. 08) **Closed** · GAP-CTX-20 **Open** (CE-PROV-WIRE B1 partial — task/graph/session live) · GAP-CTX-08 **Open** (CE-10.3) · GAP-CTX-12 **Deferred** (AHI) — architecture §16
+No plugin catalog (GAP-CTX-01) · dual assembly paths (GAP-CTX-02) · not step-aware (GAP-CTX-04) · workspace provider spike only (GAP-CTX-06) · OTel spans partial (GAP-CTX-09)
 
 ---
 
@@ -72,16 +72,13 @@ GAP-CTX-01–19 (excl. 08) **Closed** · GAP-CTX-20 **Open** (CE-PROV-WIRE B1 pa
 ## 2. Code and test paths (inspect — search repo, do not assume)
 
 ```text
-intergrax/context/ (contracts, providers, ranker, dedup, orchestrator, tracking)
-intergrax/runtime/nexus/context/ (context_engine.py, codebase_engine.py, context_manager.py, compile_service.py)
-intergrax/runtime/policy/context_assembly_policy.py
-intergrax/runtime/observability/context_counters.py
+intergrax/runtime/nexus/context/ (context_engine.py target, context_compiler.py, context_manager.py)
+intergrax/context_engineering/ (ContextEngine · providers)
 intergrax/runtime/architecture/context_engineering.py · context_regression_benchmark.py
-intergrax/contracts/context_assembly.py · agent_context_hints.py
-applications/_shared/context_presets.py · context_runtime_bridge.py · context_wiring.py
-intergrax/runtime/events/context_skill_recording.py · payloads/canonical.py (context_assembly.v2)
-scripts/check_context_engine_wiring.py · check_context_otel_span_registry.py
-tests/unit/context/ · tests/integration/runtime/test_context_engine_paths.py
+intergrax/contracts/context_assembly.py
+intergrax/context/ (target contracts + plugin registry)
+applications/_shared/context_runtime_bridge.py · context_wiring.py
+intergrax/runtime/events/context_skill_recording.py · payloads/canonical.py
 ```
 
 Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.

@@ -555,4 +555,39 @@ uv run python scripts/check_observability_gates.py
 
 ---
 
-*This document is the canonical observability architecture. Update it when changing spine contracts, emission rules, or persistence profiles. Implementation status: [Phase OBS-BUS — Done](../plan/OBSERVABILITY.md).*
+## 18. Execution Boundary Export (EBE) — optional side channel
+
+**Status:** PoC v1 **Done** (partner AgentReceipt sandbox).  
+**Reference host:** `applications/attestation_demo/` · **ADR:** [ADR-OBS-002](../adr/entries/2026-06-13/ADR-OBS-002.md)
+
+EBE is an **optional** export path for **unsigned, vendor-neutral** tool-boundary facts. It complements — does not replace — the Harness Observability Spine (HOS).
+
+| Principle | Rule |
+|-----------|------|
+| **Emit at invoker boundary** | `RuntimeToolInvoker` hook after tool execution |
+| **Event-first, receipt-second** | Platform emits `execution_boundary_event.v1`; external products sign receipts |
+| **Non-blocking** | Buffer/sink failures never fail tool invoke |
+| **Honest trust** | `signed: false` in PoC v1; no implied platform attestation |
+| **HOS unchanged** | Unified journal, trace bridge, middleware — no receipt logic |
+
+### Schema
+
+`execution_boundary_event.v1` — Pydantic model in `intergrax/runtime/attestation/execution_boundary_event.py`.
+
+### Configuration
+
+`ExecutionBoundaryExportProfile` on `ApplicationEnvironmentProfile` → `attestation_runtime_bridge.py` → `RuntimeConfig.execution_boundary_export` + optional `BoundaryEventBuffer`.
+
+### PoC v1 delivery
+
+Synchronous API response (`boundary_events[]`) from Tier-3 `POST /v1/attestation_demo/poc/run`. Webhook sink and HarnessKernel step-level export are **deferred**.
+
+### Non-goals
+
+- Intergrax receipt product or AgentReceipt embedding
+- Host-side Ed25519 signing (future phase)
+- Mandatory EBE on all hosts
+
+---
+
+*This document is the canonical observability architecture. Update it when changing spine contracts, emission rules, or persistence profiles. Implementation status: [Phase OBS-BUS — Done](../plan/OBSERVABILITY.md). EBE PoC v1: [Phase EBE](../plan/OBSERVABILITY.md#phase-ebe--execution-boundary-export-partner-poc).*

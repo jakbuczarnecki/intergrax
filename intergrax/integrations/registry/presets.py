@@ -260,6 +260,28 @@ def harness_sandbox_stack(
     )
 
 
+def harness_codecraft_stack(
+    *,
+    primary_sandbox: str = "e2b",
+    enable_semgrep: bool = True,
+) -> IntegrationProfile:
+    """ECC-4 preset — cloud sandbox + optional security scanner for regulated craft."""
+    sandbox = harness_sandbox_stack(primary_sandbox=primary_sandbox)
+    security = harness_security_stack(enable_semgrep=enable_semgrep, enable_snyk=False)
+    options = dict(sandbox.options)
+    options.update(security.options)
+    return IntegrationProfile(
+        relational_store=SQLITE,
+        sandbox_host=sandbox.sandbox_host,
+        security_scanner=security.security_scanner,
+        secrets_store=security.secrets_store,
+        notification_channel=LOG,
+        interaction_surface=LAB_JSON,
+        document_parser=DOCLING,
+        options=options,
+    )
+
+
 def harness_identity_stack(
     *,
     primary_identity: str = "keycloak",

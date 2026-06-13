@@ -192,6 +192,22 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 
 | D.5 | Cost in trace | **Done** | `AgentExecutionResult.cost` from LLM usage / runtime stats |
 
+---
 
+## Phase EBE — Execution Boundary Export (partner PoC)
+
+**Architecture:** [`architecture/OBSERVABILITY.md`](../architecture/OBSERVABILITY.md) §18 · **ADR:** [ADR-OBS-002](../adr/entries/2026-06-13/ADR-OBS-002.md) · **Reference host:** `applications/attestation_demo/`
+
+| ID | Deliverable | Status | Modules / artifacts | Acceptance |
+|----|-------------|--------|---------------------|------------|
+| EBE-1 | `execution_boundary_event.v1` + invoker hook + memory buffer | **Done** | `intergrax/runtime/attestation/` | `tests/unit/runtime/attestation/` |
+| EBE-2 | `ExecutionBoundaryExportProfile` + wiring bridge | **Done** | `attestation_runtime_bridge.py`, `environment_profile.py` | host runtime wiring |
+| EBE-3 | `attestation_demo` host + `POST /poc/run` | **Done** | `applications/attestation_demo/` | `attestation_demo_tests` |
+| EBE-4 | `boundary_demo_agent` + `records.put` lab wiring | **Done** | `agents/boundary_demo/`, `host/tool_wiring.py` | PoC smoke |
+| EBE-5 | Partner handoff (README + sample JSON) | **Done** | `partner_handoff/` | committed request/response fixtures |
+| EBE-6 | Domain doc + harness ADR (trust model) | **Done** | `architecture/OBSERVABILITY.md` §18, ADR-OBS-002 | doc pair + `check_harness_adr.py` |
+| EBE-7 | Webhook sink | Deferred | `sinks/webhook.py` | Phase 2 |
+| EBE-8 | HarnessKernel step-level events | Deferred | kernel hook | Phase 2 |
+| EBE-9 | Host-side event signing | Deferred | optional seal | Phase 2 |
 
 ---

@@ -33,7 +33,7 @@ def _env_rag_otel_spans_enabled() -> bool:
     )
 
 
-def set_rag_otel_spans_enabled(enabled: bool) -> None:
+def set_rag_otel_spans_enabled(enabled: bool | None) -> None:
     global _rag_otel_spans_enabled_override
     _rag_otel_spans_enabled_override = enabled
 

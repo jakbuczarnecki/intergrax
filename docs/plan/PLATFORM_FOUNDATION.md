@@ -491,7 +491,7 @@ DONE:    Phase Q — Harness Quality (audit #1) — Waves 1–9
 DONE:    Phase L, M, M-LLM, M-RAG, N, O — harness GA (functional)
 DONE:    Phase K hardening K.3–K.5; Appendix B paydown (except B.15)
 
-PARALLEL (harness-only): M.6 P6 integration expansion (§6.1y, **32 planned**); M.6 P5 residual `trivy` absorbed into P6 M-P6.1; legacy M.6 on-demand slugs; R-Skill catalog expansion (platform packs)
+PARALLEL (harness-only): M.6 P6 integration expansion (§6.1y, **32 Done — closed 2026-06-02**); M.6 P5 residual `trivy` absorbed into P6 M-P6.1; legacy M.6 on-demand slugs; R-Skill catalog expansion (platform packs)
 
 BAND 3 — END OF PLAN (see §6.3; not default “next”):
   • K.1 Problem Radar / K.2 Vendor Discovery (business agents)
@@ -537,7 +537,7 @@ RULE:    Strategy → canon → plan → code; Tier-1 via §0.6; four layers Int
 | **Canonical implementation queue (infrastructure)** | [§6.1](#61-harness-platform-maintenance-default--band-1) (**active** — maintenance) · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) (all closed) · [§6.1z](#61z-harness-implementation-queue-consolidated) (closed) |
 | Integration catalog expansion (Done) | [M.6 P4](#m6-p4--harness-platform-expansion-done) · [§6.1w](#61w-harness-implementation-queue--integration-expansion-m6-p4-closed) — **28/28 Done** |
 | Integration harness depth (Done) | [M.6 P5](#m6-p5--harness-integration-depth-done--3334) · [§6.1x](#61x-harness-implementation-queue--integration-depth-m6-p5-done) — **33/34 Done** |
-| Integration harness expansion | [M.6 P6](#m6-p6--harness-integration-expansion-planned) · [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-planned) — **Done** (32/32 + wiring) |
+| Integration harness expansion | [M.6 P6](#m6-p6--harness-integration-expansion-planned) · [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-done) — **Done** (32/32 + wiring) |
 | LLM guardrail integrations (Done) | [M.12](plan/INTEGRATIONS.md) · [§6.1an](#61an-harness-implementation-queue--llm-guardrail-integrations-closed) — **Done** (14/14 + hardening) |
 | Ongoing gate + audit scripts | [§6.1](#61-harness-platform-maintenance-default--band-1) |
 | Memory platform wiring (Done) | [Phase MEM](plan/MEMORY.md) · [§6.2aa](#62aa-phase-mem-execution-order-band-2h--closed) |
@@ -1735,10 +1735,10 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 
 **Explicitly excluded:** Band 3 product agents; see [M.6 P5 register](#m6-p5--harness-integration-depth-done--3334).
 
-### 6.1y Harness implementation queue — Integration expansion (M.6 P6 planned)
+### 6.1y Harness implementation queue — Integration expansion (M.6 P6 Done)
 
 **Purpose:** Ordered backlog for **Phase M.6 P6** (Band 2ac). **Status:** **Done** (2026-06-02) — **32/32**.  
-**Register:** [M.6 P6 — Master register](#m6-p6--master-register-32-slugs) · **Execution order:** [§6.2ag](#62ag-phase-m6-p6-execution-order-band-2ac--planned)  
+**Register:** [M.6 P6 — Master register](#m6-p6--master-register-32-slugs) · **Execution order:** [§6.2ag](#62ag-phase-m6-p6-execution-order-band-2ac--done)  
 **Policy:** One slug per PR (or one CAT wave before first slug in a new category); runs **in parallel** with §6.1 maintenance — pull when security/sandbox/identity/GitOps/speech harness gaps block ops.
 
 | Order | Wave | IDs | Slugs (summary) | Priority | Status |
@@ -1776,7 +1776,7 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 
 ### 6.1 Harness platform maintenance (default — Band 1)
 
-§4.1 backlog is **closed**. Ongoing work = keep the harness green; **Band 2y W-ADAPT**, **Band 2z M-LLM-R**, **Band 2aa M.6 P4**, and **Band 2ab M.6 P5** are **closed**. **Band 2ac M.6 P6** = **Done** (32/32) — see **[§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-planned)**. **Band 2ay M.12** = **Done** — see **[§6.1an](#61an-harness-implementation-queue--llm-guardrail-integrations-closed)**. **Next product work** = [§6.3](#63-end-of-plan--deferred-product-work-only) (product prioritization only).
+§4.1 backlog is **closed**. Ongoing work = keep the harness green; **Band 2y W-ADAPT**, **Band 2z M-LLM-R**, **Band 2aa M.6 P4**, and **Band 2ab M.6 P5** are **closed**. **Band 2ac M.6 P6** = **Done** (32/32) — see **[§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-done)**. **Band 2ay M.12** = **Done** — see **[§6.1an](#61an-harness-implementation-queue--llm-guardrail-integrations-closed)**. **Next product work** = [§6.3](#63-end-of-plan--deferred-product-work-only) (product prioritization only).
 
 ```text
 Verify (every harness PR):
@@ -2311,11 +2311,11 @@ Work **one MEM-DEPTH ID per PR**; after each step update the MEM-DEPTH master ta
 
 Full task register: [Appendix I](plan/PLATFORM_FOUNDATION.md).
 
-**Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3. **Feature queues:** Phase W-ADAPT — §6.1t; Phase M-LLM-R — §6.1v; Phase M.6 P4 — §6.1w (closed); Phase M.6 P5 — §6.1x (closed); Phase M.6 P6 — §6.1y (planned).
+**Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3. **Feature queues:** Phase W-ADAPT — §6.1t; Phase M-LLM-R — §6.1v; Phase M.6 P4 — §6.1w (closed); Phase M.6 P5 — §6.1x (closed); Phase M.6 P6 — §6.1y (closed).
 
 ### 6.2ag Phase M.6 P6 execution order (Band 2ac — Done)
 
-**Status:** **Done** (2026-06-02) · register: [M.6 P6](#m6-p6--harness-integration-expansion-planned) · queue: [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-planned)
+**Status:** **Done** (2026-06-02) · register: [M.6 P6](#m6-p6--harness-integration-expansion-planned) · queue: [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-done)
 
 ```text
 Wave H-INT-0 (categories):  M-P6-CAT.1 → M-P6-CAT.2 → M-P6-CAT.3 → M-P6-CAT.4 → M-P6-CAT.5 → M-P6-CAT.6 → M-P6-CAT.7 → M-P6-CAT.8 → M-P6-CAT.9
@@ -3871,7 +3871,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ### 6.1 Harness platform maintenance (default — Band 1)
 
-§4.1 backlog is **closed**. Ongoing work = keep the harness green; **Band 2y W-ADAPT**, **Band 2z M-LLM-R**, **Band 2aa M.6 P4**, and **Band 2ab M.6 P5** are **closed**. **Band 2ac M.6 P6** = **Done** (32/32) — see **[§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-planned)**. **Next product work** = [§6.3](#63-end-of-plan--deferred-product-work-only) (product prioritization only).
+§4.1 backlog is **closed**. Ongoing work = keep the harness green; **Band 2y W-ADAPT**, **Band 2z M-LLM-R**, **Band 2aa M.6 P4**, and **Band 2ab M.6 P5** are **closed**. **Band 2ac M.6 P6** = **Done** (32/32) — see **[§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-done)**. **Next product work** = [§6.3](#63-end-of-plan--deferred-product-work-only) (product prioritization only).
 
 ```text
 Verify (every harness PR):

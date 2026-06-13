@@ -35,6 +35,11 @@ from intergrax.applications._shared.notify_tool_wiring import wire_scheduled_not
 from intergrax.applications._shared.session_tool_wiring import wire_session_storage_tool_binding
 from intergrax.applications._shared.skill_tool_profile import extend_tool_profile_for_skills
 from intergrax.applications._shared.sandbox_wiring import tool_profile_with_sandbox, wire_sandbox_sessions
+from intergrax.applications._shared.codecraft_wiring import (
+    apply_codecraft_to_wiring_context,
+    tool_profile_with_codecraft,
+    wire_application_codecraft,
+)
 from intergrax.applications._shared.shadow_wiring import wire_shadow_workspace
 from intergrax.applications._shared.skill_wiring import ApplicationSkillWiring, build_application_skill_wiring
 from intergrax.applications._shared.tool_wiring import ApplicationToolWiring, build_application_tool_wiring
@@ -78,6 +83,8 @@ def wire_application_environment(
     sandbox_session: Any | None = None,
     websearch_executor: Any | None = None,
     conformance_check: bool = True,
+    document_store: Any | None = None,
+    boundary_event_buffer: Any | None = None,
 ) -> ApplicationEnvironmentWiring:
     """
     Single Tier-3 entry: catalogs, modality, policy, tool/skill registries.
@@ -100,6 +107,8 @@ def wire_application_environment(
     )
 
     tool_profile = tool_profile_with_sandbox(env)
+    env_for_codecraft = env.model_copy(update={"tool_profile": tool_profile})
+    tool_profile = tool_profile_with_codecraft(env_for_codecraft)
     tool_profile = extend_tool_profile_for_skills(tool_profile, env.skill_profile)
     if resolved_integration is not None:
         tool_profile = extend_tool_profile_for_integration(tool_profile, resolved_integration)
@@ -109,6 +118,19 @@ def wire_application_environment(
     from intergrax.applications._shared.integration_tool_wiring import wire_integration_tool_context
 
     wiring_context = wire_integration_tool_context(wiring_context, resolved_integration)
+    if document_store is not None:
+        from dataclasses import replace
+
+        wiring_context = replace(wiring_context, document_store=document_store)
+    codecraft_wiring = wire_application_codecraft(env)
+    wiring_context = apply_codecraft_to_wiring_context(wiring_context, codecraft_wiring)
+    if resolved_integration is not None:
+        from dataclasses import replace
+
+        wiring_context = replace(
+            wiring_context,
+            extras={**wiring_context.extras, "integration_profile": resolved_integration},
+        )
 
     memory_wiring = resolve_memory_platform_wiring(env, integration_profile=resolved_integration)
     wiring_context = wire_session_storage_tool_binding(wiring_context, memory_wiring.session_storage)
@@ -141,7 +163,16 @@ def wire_application_environment(
         security_profile=env.security_profile,
     )
     skill_wiring = build_application_skill_wiring(env.skill_profile)
-    policy_bundle = wire_policy_bundle(env)
+    policy_bundle = wire_policy_bundle(
+        env.model_copy(
+            update={
+                "domain_policy_fragments": {
+                    **env.domain_policy_fragments,
+                    **codecraft_wiring.domain_fragments,
+                },
+            },
+        ),
+    )
     prompt_registry = resolve_prompt_registry(env.prompt_profile)
 
     tool_registry = tool_wiring.registry
@@ -163,6 +194,7 @@ def wire_application_environment(
         trace_db_path=trace_db_path,
         environment=env,
         prompt_registry=prompt_registry,
+        boundary_event_buffer=boundary_event_buffer,
     )
 
     registry_snapshot = resolve_registry_snapshot(build_context)

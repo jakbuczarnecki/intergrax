@@ -17,7 +17,7 @@ class _Emb:
 
 
 @pytest.mark.gate
-def test_graph_rag_exposes_channel_contributions() -> None:
+def test_graph_rag_exposes_three_channel_contributions() -> None:
     store = InMemoryVectorStore(tenant_id="hybrid")
     manager = VectorstoreManager(store=store)
     doc = Document(
@@ -36,3 +36,5 @@ def test_graph_rag_exposes_channel_contributions() -> None:
     assert trace is not None
     assert "vector" in trace.channel_contributions
     assert trace.channel_contributions["vector"]
+    assert "keyword" in trace.channel_contributions
+    assert trace.channel_contributions["keyword"]

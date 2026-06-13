@@ -70,6 +70,45 @@ def _factory_falkordb(
     return CypherRagGraphStore(store, tenant_id=tenant_id)
 
 
+def _factory_arangodb(
+    *,
+    integration_graph_store: Any = None,
+    tenant_id: str | None = None,
+) -> GraphStore:
+    store = integration_graph_store
+    if store is None:
+        from intergrax.integrations.providers.graph_store.arangodb.bundle import create_arangodb_graph_store
+
+        store = create_arangodb_graph_store()
+    return CypherRagGraphStore(store, tenant_id=tenant_id)
+
+
+def _factory_neptune(
+    *,
+    integration_graph_store: Any = None,
+    tenant_id: str | None = None,
+) -> GraphStore:
+    store = integration_graph_store
+    if store is None:
+        from intergrax.integrations.providers.graph_store.neptune.bundle import create_neptune_graph_store
+
+        store = create_neptune_graph_store()
+    return CypherRagGraphStore(store, tenant_id=tenant_id)
+
+
+def _factory_orientdb(
+    *,
+    integration_graph_store: Any = None,
+    tenant_id: str | None = None,
+) -> GraphStore:
+    store = integration_graph_store
+    if store is None:
+        from intergrax.integrations.providers.graph_store.orientdb.bundle import create_orientdb_graph_store
+
+        store = create_orientdb_graph_store()
+    return CypherRagGraphStore(store, tenant_id=tenant_id)
+
+
 def ensure_graph_store_backends_registered() -> None:
     global _BACKENDS_REGISTERED
     if _BACKENDS_REGISTERED:
@@ -78,6 +117,9 @@ def ensure_graph_store_backends_registered() -> None:
     register_graph_store_backend("neo4j", _factory_neo4j)
     register_graph_store_backend("memgraph", _factory_memgraph)
     register_graph_store_backend("falkordb", _factory_falkordb)
+    register_graph_store_backend("neptune", _factory_neptune)
+    register_graph_store_backend("orientdb", _factory_orientdb)
+    register_graph_store_backend("arangodb", _factory_arangodb)
     _BACKENDS_REGISTERED = True
 
 
@@ -91,7 +133,7 @@ def create_rag_graph_store(
     Build a GraphRAG store via ``RagGraphStoreBackend`` registry.
 
     ``INTERGRAX_RAG_GRAPH_STORE`` / ``RagProfile.graph_store_backend``:
-    ``inmemory`` (default) · ``neo4j`` · ``memgraph`` · ``falkordb``.
+    ``inmemory`` (default) · ``neo4j`` · ``memgraph`` · ``falkordb`` · ``neptune`` · ``orientdb`` · ``arangodb``.
     """
     ensure_graph_store_backends_registered()
     profile = profile or RagProfile()

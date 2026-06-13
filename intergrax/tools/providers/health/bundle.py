@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.providers.health.category_probes import (
+    HEALTH_CHECK_CODECRAFT_TOOL_ID,
     HEALTH_CHECK_GRAPH_STORE_TOOL_ID,
     HEALTH_CHECK_IDENTITY_PROVIDER_TOOL_ID,
     HEALTH_CHECK_KEY_VALUE_CACHE_TOOL_ID,
@@ -23,6 +24,7 @@ from intergrax.tools.providers.health.contracts import (
 )
 from intergrax.tools.providers.health.handlers import (
     HealthCheckGraphStoreHandler,
+    HealthCheckCodecraftHandler,
     HealthCheckIdentityProviderHandler,
     HealthCheckIntegrationHandler,
     HealthCheckKeyValueCacheHandler,
@@ -54,6 +56,7 @@ HEALTH_TOOL_IDS: tuple[str, ...] = (
     HEALTH_CHECK_WIKI_KNOWLEDGE_TOOL_ID,
     HEALTH_CHECK_SEARCH_PROVIDER_TOOL_ID,
     HEALTH_CHECK_NOTIFICATION_CHANNEL_TOOL_ID,
+    HEALTH_CHECK_CODECRAFT_TOOL_ID,
 )
 
 _SLOT_PROBE_SPECS: tuple[tuple[str, str, type], ...] = (
@@ -101,6 +104,11 @@ _SLOT_PROBE_SPECS: tuple[tuple[str, str, type], ...] = (
         HEALTH_CHECK_NOTIFICATION_CHANNEL_TOOL_ID,
         "Probe configured notification channel backend health.",
         HealthCheckNotificationChannelHandler,
+    ),
+    (
+        HEALTH_CHECK_CODECRAFT_TOOL_ID,
+        "Probe CodeCraft profile and sandbox substrate readiness.",
+        HealthCheckCodecraftHandler,
     ),
 )
 

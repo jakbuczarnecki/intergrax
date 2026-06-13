@@ -13,6 +13,7 @@ APPLICATIONS = (
     "local_workspace_application",
     "poc_template_application",
     "research_application",
+    "attestation_demo",
 )
 
 

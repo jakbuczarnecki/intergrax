@@ -257,8 +257,8 @@ intergrax/runtime/nexus/tools/tool_loop.py  [ACP tool loop]
 agents/ (Tier-2 roster) · applications/_shared/prompt_wiring.py
 scripts/check_agents_lifecycle_metadata.py · check_agents_vendor_imports.py""",
         "key_symbols": "AgentContract · UAEPAgent · RuntimeExecutionContext · AgentDecision · CognitiveAgent · acp.state.v1 · IntergraxAgent · PromptMeta · AgentStepContext · StepOutcome · AgentRunTrace · ApplicationRunSummary",
-        "active_phases": "ACP Done (2026-06-11) · ACP-CLOSE active §6.1bb · PE/REG/CG/AS closed · AUDIT-IDEAL residuals",
-        "known_gaps": "GAP-ACP-03/04/07 Open · ACP-CLOSE-LEG-5 Done · ACP-CLOSE-PROD-1..8 · ACP-CLOSE-PAT-1..2 · TOOL-ENG-16 pattern plugin · AUDIT-IDEAL-19.1/20.1/31.1",
+        "active_phases": "ACP · ACP-CLOSE · ACP-FINISH Done (2026-06-13) · PE/REG/CG/AS closed · AUDIT-IDEAL-19.1/20.1/31.1 parallel",
+        "known_gaps": "GAP-ACP-36/37 Closed (ACP-TOK-*) · GAP register 37 Closed · 0 Open · AUDIT-IDEAL-19.1/20.1/31.1 Planned · COST-1 RunBudget Partial",
         "dimensions": [
             "AgentContract has required fields per §12 — capabilities, allowed_tools, risk metadata.",
             "UAEPAgent: get_steps/run_step — AgentEngine path, not private HTTP bypass.",
@@ -515,22 +515,23 @@ scripts/check_tool_injection_defense.py · check_agent_registry_bypass.py""",
         "title": "Ephemeral Code Craft",
         "layers": "11b",
         "mission": (
-            "Audit **ephemeral code-generation loop** design and current sandbox/codecraft implementation: "
-            "bounded iterations, sandbox tiers, policy gates, CVL integration, ephemeral tool registry hygiene — "
-            "honest Planned vs Done status per ECC phase."
+            "Audit **Ephemeral Code Craft runtime** at L3+: verify `codecraft.*` tools, "
+            "`wire_application_codecraft()`, orchestrator loop, sandbox tiers, policy gates, "
+            "CVL integration, ephemeral tool registry hygiene — confirm Done vs depth backlog."
         ),
-        "code": """intergrax/codecraft/ (target) · intergrax/runtime/codecraft/ (target)
+        "code": """intergrax/codecraft/ · intergrax/runtime/codecraft/
 intergrax/runtime/sandbox/
 intergrax/tools/providers/sandbox/ · intergrax/tools/providers/codecraft/
+intergrax/applications/_shared/codecraft_wiring.py
 intergrax/runtime/critic/ (CVL hooks)
 docs/architecture/CODE_CRAFT.md · docs/plan/CODE_CRAFT.md · ADR-CODECRAFT-001""",
-        "key_symbols": "CodeCraftProfile · CodeCraftOrchestrator · CodeCraftSession · CraftResult · IterationRecord · StaticCodeGate · craft modes (disabled|dry_run|assist_only|supervised|autonomous) · EphemeralToolRegistry",
-        "active_phases": "ECC-1+ (**implementation Planned** per canon) · ADR-CODECRAFT-001",
-        "known_gaps": "CodeCraftOrchestrator not implemented · sandbox.refactor_loop skill without executor · ephemeral tools could pollute ToolRegistry · local SandboxSession ≠ OS containment · AUDIT-IDEAL-11.1 false completeness risk",
+        "key_symbols": "CodeCraftProfile · CodeCraftOrchestrator · CodeCraftSession · CraftResult · IterationRecord · StaticCodeGate · craft modes (disabled|dry_run|assist_only|supervised|autonomous) · EphemeralToolRegistry · wire_application_codecraft",
+        "active_phases": "ECC-0…ECC-6 + S7–S11 **Done** (L3+, 2026-06-13) · ADR-CODECRAFT-001",
+        "known_gaps": "codegen_llm_profile_ref wiring (GAP-ECC-20) · container isolation tier (GAP-ECC-21) · metrics dashboards §10.2 (GAP-ECC-22) · Task.metadata.codecraft_mode override (GAP-ECC-23) · local SandboxSession ≠ OS containment (accepted)",
         "dimensions": [
             "CodeCraft uses existing sandbox ToolRuntime path — no parallel execution stack.",
-            "L0 StaticCodeGate before any execute (when ECC implemented).",
-            "Codegen LLM separated from producer/judge LLM identity.",
+            "L0 StaticCodeGate before any execute in autonomous/supervised paths.",
+            "Codegen LLM separated from producer/judge LLM identity (template adapter shipped; profile ref → backlog).",
             "Ephemeral tools do not persist in global ToolRegistry after session.",
             "CraftResult promotion typed — not stdout-only.",
             "Fail-closed when codecraft_profile missing or mode=disabled.",
@@ -541,7 +542,8 @@ docs/architecture/CODE_CRAFT.md · docs/plan/CODE_CRAFT.md · ADR-CODECRAFT-001"
             "Modes table §6.3 respected (supervised vs autonomous).",
             "Resource disposal releases craft_id / sandbox session.",
             "cloud substrate (e2b/modal/daytona) via IntegrationProfile — not agent SDK.",
-            "Document honest L0/L1 maturity — do not claim production ECC if Planned.",
+            "max_total_exec_time_s enforced on session iteration paths.",
+            "Document honest L3 maturity — depth backlog only for metrics/container/codegen LLM.",
         ],
         "scale_probes": [
             "generate→gate→exec→test→CVL iteration within max_iterations.",
@@ -550,11 +552,13 @@ docs/architecture/CODE_CRAFT.md · docs/plan/CODE_CRAFT.md · ADR-CODECRAFT-001"
         ],
         "overrides": "ApplicationEnvironmentProfile.codecraft_profile · Task.metadata.codecraft_mode · sandbox_host_slug · codegen_llm_profile_ref · require_hitl_before_exec",
         "ci_scripts": [
+            "python scripts/check_codecraft_layer.py",
+            "uv run pytest tests/unit/codecraft/ tests/unit/tools/providers/codecraft/ tests/unit/runtime/codecraft/ -q",
             "uv run pytest tests/unit/runtime/sandbox/ -q",
             "python scripts/check_harness_no_getattr.py",
         ],
         "production_baseline": "Cursor ephemeral codegen · E2B/Modal sandboxes · CI codegen with semgrep/trivy gates",
-        "anti_patterns": "Claiming ECC Done when orchestrator missing · arbitrary exec bypassing ToolRuntime · global registry pollution · local workspace labeled as OS sandbox",
+        "anti_patterns": "Claiming ECC Planned when runtime shipped · arbitrary exec bypassing ToolRuntime · global registry pollution · local workspace labeled as OS sandbox",
         "appendix": "Appendix J (tool surfaces)",
     },
     {
@@ -1071,8 +1075,8 @@ intergrax/tools/providers/eval/judge.py
 applications/_shared/critic_runtime_bridge.py · critic_assembly_resolver.py
 eval/nexus_eval_runner.py""",
         "key_symbols": "CriticProfile · CriticRequest · CriticVerdict · L0Gateway · L1Gateway · EvaluatorLoopSpec · RubricSpec · ValidationResult · eval.judge · eval.trajectory · eval.record_observation",
-        "active_phases": "CRIT-V 0–7 + FOLLOWUP Done · FAUDIT-EVAL.1 · FLOW-9 cross-ref",
-        "known_gaps": "L4 adaptive critic thresholds deferred (AHIA) · FLOW-8 product host deferred · document closeout vs execution depth honestly",
+        "active_phases": "CRIT-V 0–7 + FOLLOWUP Done · CVL-LC-1/2 layer completion (2026-06-13) · FAUDIT-EVAL.1 closed",
+        "known_gaps": "L4 adaptive critic thresholds deferred (AHIA) · FLOW-8 product host deferred · LLM trajectory judge optional (eval.trajectory_judge skill)",
         "dimensions": [
             "L0 static/rule gateway before L1 LLM judge always.",
             "Judge LLM ≠ producer LLM (separate profile/ref).",

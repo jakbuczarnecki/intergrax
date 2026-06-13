@@ -15,6 +15,7 @@ from intergrax.integrations._shared.p3.clients import HttpNotificationChannel, R
 from intergrax.integrations._shared.p3.configs import MinioIntegrationConfig, VectorIntegrationConfig
 from intergrax.integrations._shared.p3.factories import _create_http_observability
 from intergrax.integrations._shared.p5.clients import (
+    ArangoDbGraphStore,
     CloudSecretsStore,
     FalkorDbGraphStore,
     HttpCiCdBackend,
@@ -23,7 +24,9 @@ from intergrax.integrations._shared.p5.clients import (
     KubernetesCloudPlatform,
     MailgunInteractionAdapter,
     MemgraphGraphStore,
+    NeptuneGraphStore,
     OllamaInteractionAdapter,
+    OrientDbGraphStore,
     RestSecretsStore,
 )
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
@@ -813,6 +816,81 @@ def create_falkordb_graph_store(
         client=client,
         client_factory=client_factory,
         **config_overrides,
+    )
+
+
+def create_neptune_graph_store(
+    *,
+    graph_store: Optional[GraphStore] = None,
+    client: Optional[Any] = None,
+    client_factory: Optional[Callable[[], Any]] = None,
+    **config_overrides: object,
+) -> GraphStore:
+    return _graph_store_factory(
+        env_prefix="INTERGRAX_NEPTUNE",
+        provider="neptune",
+        adapter_cls=NeptuneGraphStore,
+        graph_store=graph_store,
+        client=client,
+        client_factory=client_factory,
+        **config_overrides,
+    )
+
+
+def create_orientdb_graph_store(
+    *,
+    graph_store: Optional[GraphStore] = None,
+    client: Optional[Any] = None,
+    client_factory: Optional[Callable[[], Any]] = None,
+    **config_overrides: object,
+) -> GraphStore:
+    return _graph_store_factory(
+        env_prefix="INTERGRAX_ORIENTDB",
+        provider="orientdb",
+        adapter_cls=OrientDbGraphStore,
+        graph_store=graph_store,
+        client=client,
+        client_factory=client_factory,
+        **config_overrides,
+    )
+
+
+def create_arangodb_graph_store(
+    *,
+    graph_store: Optional[GraphStore] = None,
+    client: Optional[Any] = None,
+    client_factory: Optional[Callable[[], Any]] = None,
+    **config_overrides: object,
+) -> GraphStore:
+    config = HttpIntegrationConfig.from_env("INTERGRAX_ARANGODB", **config_overrides)
+
+    def _open() -> Any:
+        http = _open_httpx_client(config, default_url=config.base_url or "http://127.0.0.1:8529")
+
+        class _Client:
+            def run_aql(self, statement: str, parameters: dict[str, Any]) -> list[dict[str, Any]]:
+                response = http.post(
+                    "/_api/cursor",
+                    json={"query": statement, "bindVars": parameters},
+                )
+                response.raise_for_status()
+                payload = response.json()
+                return list(payload.get("result") or [])
+
+            def get_document(self, node_id: str) -> Optional[dict[str, Any]]:
+                response = http.get(f"/_api/document/rag_entities/{node_id}")
+                if response.status_code >= 400:
+                    return None
+                return dict(response.json())
+
+        return _Client()
+
+    return _resolve(
+        implementation=graph_store,
+        backend=client,
+        backend_factory=client_factory,
+        open_fn=_open,
+        adapter_fn=lambda c: ArangoDbGraphStore(c),
     )
 
 

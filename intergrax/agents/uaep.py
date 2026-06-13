@@ -230,6 +230,13 @@ class UAEPExecutor:
             if assembled_prompt and assembled_prompt != (request.message or ""):
                 request = replace(request, message=assembled_prompt)
         exec_ctx.domain_context = runtime_context
+        from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+
+        exec_ctx.metadata["runtime_state"] = RuntimeState(
+            context=runtime_context,
+            request=request,
+            run_id=run_id,
+        )
         exec_ctx.tool_gateway = BoundToolGateway(
             exec_ctx,
             allowed_tools=list(contract.allowed_tools),
