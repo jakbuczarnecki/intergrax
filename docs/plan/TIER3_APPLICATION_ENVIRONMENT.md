@@ -45,7 +45,7 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 | §43 | Budget / token governance | ACP-TOK-* · APP-CON-3 · APP-PROD-7 | **Done** | see [Cross-plan §43](#cross-plan--43-budget--token-governance) |
 | §44 | Scenario test matrix | APP-CON-7 | **Done** | `check_tier3_scenario_matrix.py` · `-m tier3_scenario` |
 | §45 | New application checklist | APP-CON-DX.1 · N.* | **Done** | `APPLICATION_CREATION_GUIDE.md` §3 |
-| §46 | Production readiness criteria | APP-PROD-* · ACP-PROD-* | **Done** | APP-PROD-* **Done** · ACP-TOK-2/3 cross-plan open |
+| §46 | Production readiness criteria | APP-PROD-* · ACP-PROD-* · ACP-TOK-* | **Done** | APP-PROD-* **Done** · ACP-TOK-1..3 · ACP-TOK-CI **Done** |
 | §47 | Developer mental model | APP-CON-DX.1 | **Done** | `APPLICATION_CREATION_GUIDE.md` §1 |
 | §48 | Application artifacts | APP-CON-4 · APP-CON-6 | **Done** | `application_artifacts.py` · `run_artifact_bundle.v1` on summary |
 | §49 | Runtime evolution | APP-EVOL-1..7 · APP-EVOL-2b | **Done** | `environment_diff_wiring.py` · `package_wiring.py` · §49.8 register |
@@ -166,7 +166,7 @@ Recommended PR sequence — one APP ID per PR:
 ```text
 1.  APP-PROD-9      wire production gates to CI
 2.  APP-CON-3       env state lifecycle sync on hooks — **Done**
-3.  ACP-TOK-1..3    (agent plan) budget enforcement — unblocks §43
+3.  ACP-TOK-1..3    (agent plan) budget enforcement — **Done** · unblocks §43
 4.  APP-PROD-7      budget gate on STRICT hosts
 5.  APP-CON-5       hook timeout / error handling
 6.  APP-CON-6       artifact bundle on ApplicationRunSummary

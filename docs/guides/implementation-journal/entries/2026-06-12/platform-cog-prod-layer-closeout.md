@@ -61,7 +61,7 @@ uv run pytest tests/unit/applications/test_reasoning_wiring.py tests/unit/runtim
 python scripts/check_reasoning_gates.py
 ```
 
-## Risks / follow-ups
+## Risks and follow-ups
 
 - `tests/acceptance/agent_os/test_lab_application.py::test_lab_application_runs_research_mock_with_graph_trace` fails on branch with pre-existing `RuntimeRequest.model_copy` AttributeError (out of COG-PROD scope).
 - L4 adaptive planner selection remains AHI observe-only scope.

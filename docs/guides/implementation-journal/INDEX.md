@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-13-007 | 2026-06-13 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-PROD-7 · ACP-TOK-2 · ACP-TOK-3 | [Tier-3 budget governance — documentation sync with ACP-TOK completion](entries/2026-06-13/tier3-budget-governance-doc-sync.md) | pending |
 | IJ-2026-06-13-006 | 2026-06-13 | tier-0 RAG | M-RAG.59–61 | [M-RAG-CONVERGE — Frozen iteration II doc + diagnostics](entries/2026-06-13/rag-m-rag-converge-frozen-iteration-ii.md) | pending |
 | IJ-2026-06-13-005 | 2026-06-13 | tier-0 RAG | M-RAG.55–58 · M-RAG.49–51 | [M-RAG-BACKLOG — P2–P4 layer closeout](entries/2026-06-13/rag-m-rag-backlog-p2-p4-closeout.md) | 1bedf446 |
 | IJ-2026-06-13-004 | 2026-06-13 | tier-0 RAG | M-RAG.53 · M-RAG.54 | [M-RAG.53–M-RAG.54 — GraphRAG usage hardening](entries/2026-06-13/rag-m-rag-graph-g5-usage-hardening.md) | 031ccb4a |
