@@ -1,6 +1,6 @@
 # Agent Contracts, Registry, and Capability Model
 
-**Status:** Canonical architecture (domain pair 1:1) · **Production coding gate:** §40 + ACP-PROD-* (mutating agents)  
+**Status:** Canonical architecture (domain pair 1:1) · **Production coding gate:** §40 + ACP-PROD-* + **ACP-CLOSE-PROD-*** **Done** (mutating agents platform-ready)  
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Plan (1:1):** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
@@ -1314,7 +1314,7 @@ Developer code path:
 | [`plan/TOOLS.md`](../plan/TOOLS.md) TOOL-ENG-6 | Tool loop for ReActAgent |
 | [`plan/CRITIC_VERIFICATION.md`](../plan/CRITIC_VERIFICATION.md) | ReflectionAgent critic hooks |
 
-**Implementation:** Phase **ACP** **Done** (2026-06-11). Active closeout: plan **ACP-CLOSE** §6.1bb. ADR-AGENT-001/002/003 accepted.
+**Implementation:** Phase **ACP** **Done** (2026-06-11). **ACP-CLOSE** + **ACP-FINISH** **Done** (2026-06-13) — mutating platform gates green (`check_agent_acp_close_ci.py`). ADR-AGENT-001/002/003 accepted.
 
 ---
 
@@ -2475,21 +2475,21 @@ Canonical scenarios — all supported by **same** agent class + environment merg
 | **Virtual employees** | `AgentBinding.org_role_id` + shared envelope |
 | **Compliance measurable** | `PolicyVerdictRecord` + eval suites §39.5 |
 
-## 36.4 Implementation alignment (2026-06-11 audit)
+## 36.4 Implementation alignment (2026-06-13 audit)
 
-| Component | Status | Remaining (ACP-CLOSE) |
-|-----------|--------|------------------------|
+| Component | Status | Remaining |
+|-----------|--------|-----------|
 | Session entry | **Done** — `AgentRunRequest`/`Result` via `acp_run.py` | — |
 | Step loop | **Done** — `on_next_step` → `advance_step` → `HarnessKernel` | — |
 | Trace on result | **Done** — `AgentRunTrace` on `AgentRunResult` | — |
 | App orchestration log | **Done** — `ApplicationRunSummary` | — |
 | Per-step LLM | **Done** — `StepLLMRouter` | — |
 | Environment merge | **Done** — `merge_environment` + binding slices | — |
-| Production reliability | **Done** (platform modules ACP-PROD-1..12) | Host depth §40.1–§40.3 · §40.12 evidence |
-| Legacy paths | **Done** — LEG-1..3; UAEP author surface removed | — |
+| Production reliability | **Done** — ACP-PROD-1..12 + **ACP-CLOSE-PROD-1..8**; §40.12 reference green; mutating checkpoint/idempotency **100%** | Per-roster `production_mode` promotion (§40.15 thresholds) |
+| Legacy paths | **Done** — LEG-1..5; UAEP author surface removed | — |
 | ReAct + tools | **Done** — `tool_loop_step` + `react_budget` | CI-17 ACP-AP-02 gate **Done** |
 | Token usage in invocation state | **Done** — ACP-TOK-1 | — |
-| Per-agent limits + exceed reactions | **Done** — ACP-TOK-2 · ACP-TOK-3 | Nexus `RunBudget` env cap **Partial** (COST-1) |
+| Per-agent limits + exceed reactions | **Done** — ACP-TOK-2 · ACP-TOK-3 · ACP-TOK-CI | Nexus `RunBudget` env cap **Partial** (COST-1) |
 
 ## 36.5 Related ADRs and plan
 
@@ -2602,16 +2602,16 @@ Acceptance: integration test routes by `research.web_search` with two implementa
 
 ## 37.8 Maturity note (external audit alignment)
 
-| Dimension | Canon | Code (2026-06-11) |
+| Dimension | Canon | Code (2026-06-13) |
 |-----------|-------|-------------------|
-| Mental model clarity | 9/10 | **9/10** — typed loop shipped |
-| Agent flexibility | 9/10 | **9/10** — patterns + scaffold |
-| Observability spec | 9/10 | **9/10** — dual planes on result |
-| Production readiness | 9/10 target | **7.5/10** — platform Done; mutating prod blocked until ACP-CLOSE-PROD-* |
-| DX / readability | 9/10 (§32.0) | **9/10** — factories + typed-state CI |
-| Typed author surface | Required §32.0 | **Done** — UAEP internal bridge only (LEG closeout open) |
+| Mental model clarity | 9/10 | **10/10** — typed loop shipped; §32.0 CI green |
+| Agent flexibility | 9/10 | **9.5/10** — patterns + scaffold `--pattern` |
+| Observability spec | 9/10 | **9.5/10** — dual planes on result |
+| Production readiness | 9/10 target | **9.5/10** — mutating **platform gate Done** (ACP-CLOSE-PROD-* + §40.12 + CI-1/3); per-agent `production_mode` via §40.15 scoreboard |
+| DX / readability | 9/10 (§32.0) | **9.5/10** — factories + typed-state CI |
+| Typed author surface | Required §32.0 | **Done** — UAEP internal bridge only (ACP-CLOSE-LEG **Done**) |
 
-**Audit gate (2026-06-11):** conceptual architecture **9/10**; implementation **8.5/10**; **mutating production_mode** — §40.12 reference checklist green (ACP-CLOSE-PROD-7); scoreboard mutating checkpoint/idempotency **100%** (ACP-CLOSE-PROD-8); STRICT configure_run widen deny per-agent **Done** (ACP-CLOSE-ORG-1); compensation queue **Done** (ACP-CLOSE-PROD-5); ACP-CLOSE CI-1/3 wired in regression gate workflow.
+**Audit gate (2026-06-13 — post ACP-FINISH):** conceptual architecture **10/10**; platform implementation **9.5/10**; **mutating agents production-ready (platform)** — §40.12 reference checklist green (ACP-CLOSE-PROD-7); scoreboard mutating checkpoint/idempotency **100%** (ACP-CLOSE-PROD-8); compensation queue + cross-run idempotency **Done** (ACP-CLOSE-PROD-5/6); ACP-CLOSE CI-1/2/3 + ACP-TOK-CI wired in regression gate workflow (`check_agent_acp_close_ci.py` green).
 
 **Recommended decision (accepted):** keep Nexus as Agent OS; implement `run()` + `on_next_step()` + typed contracts — do **not** merge Nexus into agent class (ADR-AGENT-001..003). **`NexusLoop` MUST NOT become the agent plan brain** — see §38.
 
@@ -2944,11 +2944,11 @@ See [`OBSERVABILITY.md`](OBSERVABILITY.md) — extend spine with `policy.verdict
 
 # 40. Production Reliability, Safety, Persistence, and Release Gates
 
-**Purpose:** Close the gap between **canonical architecture** (§13–§39) and **safe production coding**. Implementation of Tier-2 agents for mutating workloads MUST NOT proceed until corresponding **ACP-PROD-*** rows are **Done** or explicitly waived with ADR.
+**Purpose:** Close the gap between **canonical architecture** (§13–§39) and **safe production coding**. New Tier-2 agents for mutating workloads MUST satisfy **ACP-PROD-*** platform modules **and** **ACP-CLOSE-PROD-*** host depth before `production_mode` promotion — both tracks **Done** at platform level (2026-06-13).
 
 **Cross-domain:** [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) · [`OBSERVABILITY.md`](OBSERVABILITY.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.12 tools · [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) eval gates · §20 lifecycle governance
 
-**Status:** Normative spec — **platform implemented** (ACP-PROD-1..12 **Done**); **host depth + prod evidence** = plan **ACP-CLOSE-PROD-***.
+**Status:** Normative spec — **platform implemented** (ACP-PROD-1..12 **Done**); **host depth + prod evidence** (**ACP-CLOSE-PROD-1..8 Done**); CI aggregate **`check_agent_acp_close_ci.py` green**; per-agent promotion via §40.15 scoreboard thresholds.
 
 ---
 

@@ -133,7 +133,7 @@
 | DEBT-ACP-14 | Full state replace / in-place mutation | `state_delta` §37.2 | **Closed** | ACP-CON-2 |
 | DEBT-ACP-15 | Scaffold UAEP-first only | Typed scaffold `--pattern` | **Closed** | ACP-8 |
 | DEBT-ACP-16 | Roster on legacy patterns | Typed loop fleet-wide | **Closed** | ACP-MIG-* · ACP-LEG-2 |
-| DEBT-ACP-17 | No prod checkpoint / idempotency (platform) | §40 persistence modules | **Closed** (platform) · checkpoint host **Done** · idempotency/compensation depth open | ACP-PROD-1..3 · **ACP-CLOSE-PROD-*** |
+| DEBT-ACP-17 | No prod checkpoint / idempotency (platform) | §40 persistence modules | **Closed** — platform + host depth + compensation queue + cross-run idempotency | ACP-PROD-1..3 · **ACP-CLOSE-PROD-1..8 Done** |
 | DEBT-ACP-18 | ReAct loop split from TOOL-ENG-6 | Unified budget §25.2 | **Closed** | **ACP-CLOSE-PAT-1** + **TOOL-ENG-6** |
 
 **Removal policy:** ACP + ACP-CLOSE + **ACP-FINISH closed** (2026-06-13). Extend via ADR if scope expands.
@@ -188,7 +188,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | §37 | Operational contracts | ACP-CON-* | Merge, enums, routing, security CI |
 | §38 | NexusLoop vs HarnessKernel split | ACP-STEP-2 · ACP-STEP-2b | Runtime glue-only test; kernel owns policy/trace/budget/state |
 | §39 | Org policy envelope | ACP-ORG-* | UC-11 fixture |
-| §40 | Production reliability + scoreboard | ACP-PROD-* **Done** · **ACP-CLOSE-PROD-*** depth | Scoreboard + §40.12 per mutating agent |
+| §40 | Production reliability + scoreboard | ACP-PROD-* **Done** · **ACP-CLOSE-PROD-1..8 Done** | Per-roster `production_mode` via §40.15 scoreboard thresholds |
 | §45 | New agent checklist | ACP-8 · ACP-11..13 | Scaffold + conformance CI |
 | **Fleet** | Roster migration | **ACP-MIG-*** Wave 8 | Tracker 100% Runtime dimension |
 
@@ -773,6 +773,21 @@ ACP-TOK-1 (metering) → ACP-TOK-2 (limits) → ACP-TOK-3 (reactions + reference
 ```
 
 **Journal:** [`entries/2026-06-13/acp-finish-doc-1-gap-register-closeout.md`](../guides/implementation-journal/entries/2026-06-13/acp-finish-doc-1-gap-register-closeout.md) (ACP-FINISH phase completion).
+
+---
+
+### 6.1bd Layer backlog — post-maturity (P2–P4, non-blocking)
+
+**Status:** Active maintenance — does **not** block mutating agents **platform** production-ready declaration (ACP-CLOSE-PROD + §40.12 + CI green).
+
+| ID | Priority | Topic | Status | Notes |
+|----|----------|-------|--------|-------|
+| AUDIT-IDEAL-19.1 | **P0** (ideal §19) | Durable cross-host registry snapshot store | Planned | Parallel track; DEBT-19-01 |
+| AUDIT-IDEAL-20.1 | P1 | Product CI blast-radius on tool/skill changes | Planned | Capability graph depth |
+| AUDIT-IDEAL-31.1 | P1 | Owner/on-call mandatory on certified agents | Planned | Lifecycle governance |
+| COST-1 | P2 | Nexus `RunBudget` graph env cap | Partial | Per-agent ACP-TOK enforcement **Done**; graph-level cap deferred |
+| OBS-ACP-1 | P2 | Per-agent observability dimension → 100% | Partial | Scoreboard Observability **80%** fleet-wide |
+| ROSTER-PROD | P2 | Individual agent `production_mode` promotion | Ongoing | §40.15 thresholds per agent; platform gates **Done** |
 
 ---
 
