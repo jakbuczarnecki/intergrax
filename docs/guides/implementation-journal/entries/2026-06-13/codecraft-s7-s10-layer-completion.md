@@ -14,7 +14,7 @@ plan_ref:
   - S9
   - S10
 status: completed
-commit: pending
+commit: 784d9dc9
 adr: none — extends ADR-CODECRAFT-001
 ---
 
@@ -54,7 +54,7 @@ Code Craft layer reaches L3+ production parity for harness operators: full trace
 - `uv run pytest tests/unit/codecraft tests/unit/tools/providers/codecraft tests/unit/runtime/codecraft tests/unit/tools/providers/health/test_codecraft_probe.py` — 26 passed
 - `uv run python scripts/check_codecraft_layer.py` — OK
 
-## Remaining risks
+## Risks and follow-ups
 
 - `codegen_llm_profile_ref` still uses template adapter (GAP-ECC-20)
 - `container` isolation tier not implemented (GAP-ECC-21)
