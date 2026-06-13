@@ -42,18 +42,13 @@ from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
 def _enrich_tool_wiring_context(wiring_ctx: ToolWiringContext, config: "RuntimeConfig") -> ToolWiringContext:
     """Fill catalog tool dependencies from RuntimeConfig when Tier-3 omitted explicit wiring."""
-    return ToolWiringContext(
-        issue_tracker=wiring_ctx.issue_tracker,
-        search_provider=wiring_ctx.search_provider,
-        wiki_knowledge=wiring_ctx.wiki_knowledge,
-        notification_channel=wiring_ctx.notification_channel,
-        observability_backend=wiring_ctx.observability_backend,
-        rag_manager=wiring_ctx.rag_manager,
+    from dataclasses import replace
+
+    return replace(
+        wiring_ctx,
         vectorstore_manager=wiring_ctx.vectorstore_manager or config.vectorstore_manager,
         embedding_manager=wiring_ctx.embedding_manager or config.embedding_manager,
         websearch_executor=wiring_ctx.websearch_executor or config.websearch_executor,
-        sandbox_session=wiring_ctx.sandbox_session,
-        extras=dict(wiring_ctx.extras),
     )
 
 

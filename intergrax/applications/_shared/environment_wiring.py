@@ -83,6 +83,8 @@ def wire_application_environment(
     sandbox_session: Any | None = None,
     websearch_executor: Any | None = None,
     conformance_check: bool = True,
+    document_store: Any | None = None,
+    boundary_event_buffer: Any | None = None,
 ) -> ApplicationEnvironmentWiring:
     """
     Single Tier-3 entry: catalogs, modality, policy, tool/skill registries.
@@ -116,6 +118,10 @@ def wire_application_environment(
     from intergrax.applications._shared.integration_tool_wiring import wire_integration_tool_context
 
     wiring_context = wire_integration_tool_context(wiring_context, resolved_integration)
+    if document_store is not None:
+        from dataclasses import replace
+
+        wiring_context = replace(wiring_context, document_store=document_store)
     codecraft_wiring = wire_application_codecraft(env)
     wiring_context = apply_codecraft_to_wiring_context(wiring_context, codecraft_wiring)
     if resolved_integration is not None:
@@ -188,6 +194,7 @@ def wire_application_environment(
         trace_db_path=trace_db_path,
         environment=env,
         prompt_registry=prompt_registry,
+        boundary_event_buffer=boundary_event_buffer,
     )
 
     registry_snapshot = resolve_registry_snapshot(build_context)

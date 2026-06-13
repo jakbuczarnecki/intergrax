@@ -364,6 +364,20 @@ class ShadowWorkspaceProfile(BaseModel):
     retention_hours: int | None = Field(default=None, ge=1)
 
 
+class ExecutionBoundaryExportProfile(BaseModel):
+    """Execution Boundary Export (EBE) — unsigned tool-boundary events for external attestation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = False
+    capture_mode: str = Field(
+        default="side_effects_only",
+        description="off | side_effects_only | allowlist",
+    )
+    allowlist: list[str] = Field(default_factory=list)
+    include_canonical_io: bool = True
+
+
 class SandboxProfile(BaseModel):
     """Sandbox session manager configuration (Phase H-APP.3.5)."""
 
@@ -429,6 +443,7 @@ class ApplicationEnvironmentProfile(BaseModel):
     shadow_workspace: ShadowWorkspaceProfile | None = None
     sandbox: SandboxProfile | None = None
     codecraft_profile: CodeCraftProfile | None = None
+    execution_boundary_export_profile: ExecutionBoundaryExportProfile | None = None
     features: ApplicationFeatures = Field(default_factory=ApplicationFeatures.lab_defaults)
     domain_policy_fragments: dict[str, Any] = Field(default_factory=dict)
     tool_selection_mode: str = "static"

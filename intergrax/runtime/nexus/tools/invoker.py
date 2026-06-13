@@ -176,6 +176,7 @@ class RuntimeToolInvoker:
         # 4) execute + normalize (timeout + runtime-managed retries)
         return self._execute_with_policy(
             state=state,
+            agent_id=agent_id,
             contract=contract,
             request=request,
         )
@@ -184,6 +185,7 @@ class RuntimeToolInvoker:
         self,
         *,
         state: "RuntimeState",
+        agent_id: str,
         contract: ToolContract,
         request: ToolExecutionRequest[BaseModel],
     ) -> ToolExecutionResult[BaseModel]:
@@ -218,7 +220,15 @@ class RuntimeToolInvoker:
                         modality_metrics=modality_metrics,
                     ),
                 )
-                return ToolExecutionResult.ok(out)
+                result = ToolExecutionResult.ok(out)
+                self._emit_boundary_event(
+                    state=state,
+                    agent_id=agent_id,
+                    contract=contract,
+                    request=request,
+                    result=result,
+                )
+                return result
 
             except FuturesTimeoutError:
                 duration_ms = max(0, int((time.perf_counter() - start_perf) * 1000))
@@ -235,7 +245,15 @@ class RuntimeToolInvoker:
                         error_message=msg,
                     ),
                 )
-                return ToolExecutionResult.fail(RuntimeErrorCode.TIMEOUT, msg)
+                result = ToolExecutionResult.fail(RuntimeErrorCode.TIMEOUT, msg)
+                self._emit_boundary_event(
+                    state=state,
+                    agent_id=agent_id,
+                    contract=contract,
+                    request=request,
+                    result=result,
+                )
+                return result
 
             except Exception as exc:
                 last_exc = exc
@@ -270,13 +288,64 @@ class RuntimeToolInvoker:
                         error_message=msg,
                     ),
                 )
-                return ToolExecutionResult.fail(code, msg)
+                result = ToolExecutionResult.fail(code, msg)
+                self._emit_boundary_event(
+                    state=state,
+                    agent_id=agent_id,
+                    contract=contract,
+                    request=request,
+                    result=result,
+                )
+                return result
 
         # Unreachable if attempts >= 1; satisfies type checker.
         if last_exc is not None:
             code = self._map_error(contract, last_exc)
-            return ToolExecutionResult.fail(code, str(last_exc))
-        return ToolExecutionResult.fail(RuntimeErrorCode.TOOL_ERROR, "Tool execution failed.")
+            result = ToolExecutionResult.fail(code, str(last_exc))
+            self._emit_boundary_event(
+                state=state,
+                agent_id=agent_id,
+                contract=contract,
+                request=request,
+                result=result,
+            )
+            return result
+        result = ToolExecutionResult.fail(RuntimeErrorCode.TOOL_ERROR, "Tool execution failed.")
+        self._emit_boundary_event(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+            result=result,
+        )
+        return result
+
+    @staticmethod
+    def _emit_boundary_event(
+        *,
+        state: "RuntimeState",
+        agent_id: str,
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+        result: ToolExecutionResult[BaseModel],
+    ) -> None:
+        from intergrax.runtime.attestation.boundary_emitter import ExecutionBoundaryEmitter
+
+        try:
+            ExecutionBoundaryEmitter.maybe_emit(
+                state=state,
+                agent_id=agent_id,
+                contract=contract,
+                request=request,
+                result=result,
+            )
+        except Exception:
+            state.trace_event(
+                component=TraceComponent.TOOLS,
+                step="execution_boundary_export_error",
+                message="Execution boundary export failed (non-blocking).",
+                level=TraceLevel.WARNING,
+            )
 
     def _execute_once(
         self,

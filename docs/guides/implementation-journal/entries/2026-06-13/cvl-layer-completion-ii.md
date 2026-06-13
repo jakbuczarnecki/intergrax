@@ -11,7 +11,7 @@ plan_ref:
   - CVL-BACKLOG-01
   - CVL-BACKLOG-02
 status: completed
-commit: pending
+commit: 8a1ed778
 adr: none — bootstrap idempotency and trajectory doc clarification; no contract change
 ---
 

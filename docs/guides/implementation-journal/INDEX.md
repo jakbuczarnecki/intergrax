@@ -5,7 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-13-012 | 2026-06-13 | tier-0, tier-1 CRITIC_VERIFICATION | CVL-LC-3 · CVL-LC-4 | [CVL — Layer completion iteration II](entries/2026-06-13/cvl-layer-completion-ii.md) | pending |
+| IJ-2026-06-13-012 | 2026-06-13 | tier-0, tier-1 CRITIC_VERIFICATION | CVL-LC-3 · CVL-LC-4 | [CVL — Layer completion iteration II](entries/2026-06-13/cvl-layer-completion-ii.md) | 8a1ed778 |
 | IJ-2026-06-13-011 | 2026-06-13 | tier-0, tier-1 CRITIC_VERIFICATION | CVL-LC-1 · CVL-LC-2 | [CVL — Critic Verification layer completion closeout](entries/2026-06-13/cvl-layer-completion-closeout.md) | 93995259 |
 | IJ-2026-06-13-010 | 2026-06-13 | tier-0, tier-1 CODE_CRAFT | S11 · RUN-ECC-01 · GAP-ECC-23 | [S11 — Code Craft layer completion II (audit sync + exec budget)](entries/2026-06-13/codecraft-s11-layer-completion-ii.md) | 08a0c59f |
 | IJ-2026-06-13-009 | 2026-06-13 | tier-0 AGENT_CONTRACTS_AND_ASSEMBLY | AUDIT-IDEAL-19.1 · 20.1 · 31.1 | [AUDIT-IDEAL closeout — sync §12–§20 domain plan with master register](entries/2026-06-13/acp-audit-ideal-closeout-layer-iteration.md) | addf2f79 |

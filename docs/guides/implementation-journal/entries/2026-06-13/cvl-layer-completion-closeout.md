@@ -10,7 +10,7 @@ plan_ref:
   - CVL-LC-2
   - GAP-CVL-10
 status: completed
-commit: pending
+commit: 93995259
 adr: none — doc sync and NexusEvalRunner fail-closed wiring; no contract change
 ---
 

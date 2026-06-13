@@ -87,6 +87,7 @@ from intergrax.applications._shared.security_wiring import (
 from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 
 
 @dataclass(frozen=True)
@@ -108,6 +109,7 @@ class HarnessHostRuntime:
     application_host: ApplicationHost | None
     agent_checkpoint_store: AgentCheckpointStore
     compensation_queue_store: CompensationQueueStore
+    boundary_event_buffer: BoundaryEventBuffer | None = None
 
 
 def build_harness_host_runtime(
@@ -126,6 +128,8 @@ def build_harness_host_runtime(
     agent_checkpoint_store: AgentCheckpointStore | None = None,
     notification_adapter: NotificationAdapter | None = None,
     application_host: ApplicationHost | None = None,
+    document_store: Any | None = None,
+    boundary_event_buffer: Any | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment wiring → registry → observability → NexusLoop.
@@ -140,6 +144,8 @@ def build_harness_host_runtime(
         resolved_manifest,
         environment,
         settings=settings,
+        document_store=document_store,
+        boundary_event_buffer=boundary_event_buffer,
     )
     resolved_registry = registry or build_application_registry(
         resolved_manifest,
@@ -259,4 +265,5 @@ def build_harness_host_runtime(
         application_host=application_host,
         agent_checkpoint_store=resolved_agent_checkpoint_store,
         compensation_queue_store=resolved_compensation_queue_store,
+        boundary_event_buffer=boundary_event_buffer,
     )

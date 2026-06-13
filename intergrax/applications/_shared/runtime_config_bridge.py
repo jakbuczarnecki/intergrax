@@ -20,6 +20,9 @@ from intergrax.applications._shared.memory_runtime_bridge import apply_memory_pr
 from intergrax.applications._shared.observability_runtime_bridge import (
     apply_observability_profiles_from_environment,
 )
+from intergrax.applications._shared.attestation_runtime_bridge import (
+    apply_attestation_profiles_from_environment,
+)
 from intergrax.applications._shared.reliability_runtime_bridge import (
     apply_reliability_profiles_from_environment,
 )
@@ -128,6 +131,14 @@ def materialize_runtime_config(
     apply_memory_profile_to_runtime_config(config, env.memory_profile)
     apply_prompt_profiles_from_environment(config, env)
     apply_observability_profiles_from_environment(config, env)
+    boundary_buffer = None
+    if isinstance(harness_ctx, ApplicationBuildContext):
+        boundary_buffer = harness_ctx.boundary_event_buffer
+    apply_attestation_profiles_from_environment(
+        config,
+        env,
+        boundary_event_buffer=boundary_buffer,
+    )
     apply_security_profiles_from_environment(config, env)
     apply_guardrail_profiles_to_runtime_config(config, env)
     reliability_wiring = wire_application_reliability(env)
