@@ -179,7 +179,7 @@ Wiring **Done** (ECC-3): `wire_application_codecraft()` → `RuntimeConfig` → 
 | `supervised` | yes | after approval | yes | after approval | **required** before exec |
 | `autonomous` | yes | auto | auto | auto if gates pass | on policy violation only |
 
-Override per task: `Task.metadata.codecraft_mode` (analogous to `metadata.sandbox`).
+Override per task: `Task.metadata.codecraft_mode` (analogous to `metadata.sandbox`) — **depth backlog GAP-ECC-23**; host profile is the shipped default.
 
 ---
 

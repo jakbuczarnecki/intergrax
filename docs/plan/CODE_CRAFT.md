@@ -368,6 +368,25 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 | 2026-06-13 | ECC-4 | Isolation routing, security scan hook, harness_codecraft_stack preset |
 | 2026-06-13 | ECC-5 | EphemeralToolRegistry, list_ephemeral_tools, CodeCraftGraphBinding |
 | 2026-06-13 | S7–S10 | Post-closeout — trace taxonomy, sandbox routing parity, health probe, CI gate |
+| 2026-06-13 | S11 | Layer completion II — audit doc sync, exec budget enforcement, GAP-ECC-23 register |
+
+---
+
+# Layer completion audit II (2026-06-13)
+
+**Trigger:** Operator note — ECC still reads as architecture + partial start in audit prompts despite shipped runtime.
+
+**Method:** Re-verify 28 Python modules, `wire_application_codecraft()`, 7 `codecraft.*` catalog tools, gate + unit tests.
+
+**Findings:**
+
+| ID | Severity | Issue | Resolution |
+|----|----------|-------|------------|
+| DOC-ECC-01 | P1 | `guides/audit/CODE_CRAFT.md` + `generate_domain_audit_prompts.py` still say ECC-1+ Planned | S11 doc-sync |
+| DOC-ECC-02 | P1 | Known gaps list stale (orchestrator missing) | Regenerated audit prompt |
+| RUN-ECC-01 | P1 | `max_total_exec_time_s` tracked but not enforced before exec | S11 orchestrator + `codecraft.run` cap |
+
+**Verdict:** Runtime **Done** (ECC-0…ECC-6 + S7–S10). Remaining work = depth backlog only (GAP-ECC-20…23).
 
 ---
 
@@ -402,12 +421,22 @@ Layer completion audit after ECC-0…ECC-6 — gaps blocking **production parity
 | GAP-ECC-20 | codegen | `codegen_llm_profile_ref` unused — template adapter only | backlog | P3 |
 | GAP-ECC-21 | security | `container` isolation tier not implemented | backlog | P3 |
 | GAP-ECC-22 | observability | §10.2 metrics dashboards | backlog | P3 |
+| GAP-ECC-23 | control | `Task.metadata.codecraft_mode` per-task override not wired | backlog | P2 |
 
-**Coverage:** 4 actionable (S8–S10) **Done** · 3 depth backlog (GAP-ECC-20…22).
+**Coverage:** 4 actionable (S8–S10) **Done** · S11 doc-sync + exec budget **Done** · 4 depth backlog (GAP-ECC-20…23).
 
 ---
 
 # Post-closeout sprints S7–S10
+
+## Sprint S11 — Audit doc sync + exec budget (**Done**)
+
+| Field | Value |
+|-------|-------|
+| **Scope** | Regenerate audit prompt; enforce `max_total_exec_time_s`; register GAP-ECC-23 |
+| **Goal** | Documentation matches shipped runtime; cumulative exec budget fail-closed |
+| **DoD** | Audit prompt shows Done; unit test for budget deny; gate green |
+| **Files** | `docs/guides/audit/CODE_CRAFT.md`, `scripts/generate_domain_audit_prompts.py`, `intergrax/codecraft/profile.py`, `intergrax/runtime/codecraft/orchestrator.py`, `intergrax/tools/providers/codecraft/service.py`, tests |
 
 ## Sprint S7 — Documentation sync (**Done** in this iteration)
 

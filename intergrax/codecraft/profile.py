@@ -54,3 +54,9 @@ class CodeCraftProfile(BaseModel):
 
     def generation_allowed(self) -> bool:
         return self.mode not in ("disabled",)
+
+    def exec_budget_exhausted(self, total_exec_time_s: float) -> bool:
+        return total_exec_time_s >= self.max_total_exec_time_s
+
+    def remaining_exec_time_s(self, total_exec_time_s: float) -> float:
+        return max(0.0, self.max_total_exec_time_s - total_exec_time_s)

@@ -244,6 +244,21 @@ class CodeCraftOrchestrator:
                 verdict="abort",
             )
 
+        if profile.exec_allowed() and profile.exec_budget_exhausted(session.total_exec_time_s):
+            gate = StaticGateResult(
+                passed=False,
+                rule_ids=["max_total_exec_time_exceeded"],
+                message="max_total_exec_time_exceeded",
+            )
+            return session, CraftResult(
+                craft_id=craft_id,
+                success=False,
+                mode=profile.mode,
+                static_gate=gate,
+                error="max_total_exec_time_exceeded",
+                verdict="abort",
+            )
+
         sandbox = resolve_craft_sandbox_session(
             self._ctx,
             profile,
@@ -271,9 +286,13 @@ class CodeCraftOrchestrator:
             self._write_craft_file(sandbox, code)
             started = time.perf_counter()
             exec_ctx = replace(self._ctx, sandbox_session=sandbox)
+            effective_timeout = min(
+                timeout_s,
+                profile.remaining_exec_time_s(session.total_exec_time_s),
+            )
             exec_out = code_exec(
                 exec_ctx,
-                CodeExecInput(code=code, language=session.language, timeout_s=timeout_s),
+                CodeExecInput(code=code, language=session.language, timeout_s=effective_timeout),
             )
             duration_ms = (time.perf_counter() - started) * 1000.0
             stdout = str((exec_out.output or {}).get("stdout") or "")

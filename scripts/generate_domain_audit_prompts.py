@@ -515,22 +515,23 @@ scripts/check_tool_injection_defense.py · check_agent_registry_bypass.py""",
         "title": "Ephemeral Code Craft",
         "layers": "11b",
         "mission": (
-            "Audit **ephemeral code-generation loop** design and current sandbox/codecraft implementation: "
-            "bounded iterations, sandbox tiers, policy gates, CVL integration, ephemeral tool registry hygiene — "
-            "honest Planned vs Done status per ECC phase."
+            "Audit **Ephemeral Code Craft runtime** at L3+: verify `codecraft.*` tools, "
+            "`wire_application_codecraft()`, orchestrator loop, sandbox tiers, policy gates, "
+            "CVL integration, ephemeral tool registry hygiene — confirm Done vs depth backlog."
         ),
-        "code": """intergrax/codecraft/ (target) · intergrax/runtime/codecraft/ (target)
+        "code": """intergrax/codecraft/ · intergrax/runtime/codecraft/
 intergrax/runtime/sandbox/
 intergrax/tools/providers/sandbox/ · intergrax/tools/providers/codecraft/
+intergrax/applications/_shared/codecraft_wiring.py
 intergrax/runtime/critic/ (CVL hooks)
 docs/architecture/CODE_CRAFT.md · docs/plan/CODE_CRAFT.md · ADR-CODECRAFT-001""",
-        "key_symbols": "CodeCraftProfile · CodeCraftOrchestrator · CodeCraftSession · CraftResult · IterationRecord · StaticCodeGate · craft modes (disabled|dry_run|assist_only|supervised|autonomous) · EphemeralToolRegistry",
-        "active_phases": "ECC-1+ (**implementation Planned** per canon) · ADR-CODECRAFT-001",
-        "known_gaps": "CodeCraftOrchestrator not implemented · sandbox.refactor_loop skill without executor · ephemeral tools could pollute ToolRegistry · local SandboxSession ≠ OS containment · AUDIT-IDEAL-11.1 false completeness risk",
+        "key_symbols": "CodeCraftProfile · CodeCraftOrchestrator · CodeCraftSession · CraftResult · IterationRecord · StaticCodeGate · craft modes (disabled|dry_run|assist_only|supervised|autonomous) · EphemeralToolRegistry · wire_application_codecraft",
+        "active_phases": "ECC-0…ECC-6 + S7–S11 **Done** (L3+, 2026-06-13) · ADR-CODECRAFT-001",
+        "known_gaps": "codegen_llm_profile_ref wiring (GAP-ECC-20) · container isolation tier (GAP-ECC-21) · metrics dashboards §10.2 (GAP-ECC-22) · Task.metadata.codecraft_mode override (GAP-ECC-23) · local SandboxSession ≠ OS containment (accepted)",
         "dimensions": [
             "CodeCraft uses existing sandbox ToolRuntime path — no parallel execution stack.",
-            "L0 StaticCodeGate before any execute (when ECC implemented).",
-            "Codegen LLM separated from producer/judge LLM identity.",
+            "L0 StaticCodeGate before any execute in autonomous/supervised paths.",
+            "Codegen LLM separated from producer/judge LLM identity (template adapter shipped; profile ref → backlog).",
             "Ephemeral tools do not persist in global ToolRegistry after session.",
             "CraftResult promotion typed — not stdout-only.",
             "Fail-closed when codecraft_profile missing or mode=disabled.",
@@ -541,7 +542,8 @@ docs/architecture/CODE_CRAFT.md · docs/plan/CODE_CRAFT.md · ADR-CODECRAFT-001"
             "Modes table §6.3 respected (supervised vs autonomous).",
             "Resource disposal releases craft_id / sandbox session.",
             "cloud substrate (e2b/modal/daytona) via IntegrationProfile — not agent SDK.",
-            "Document honest L0/L1 maturity — do not claim production ECC if Planned.",
+            "max_total_exec_time_s enforced on session iteration paths.",
+            "Document honest L3 maturity — depth backlog only for metrics/container/codegen LLM.",
         ],
         "scale_probes": [
             "generate→gate→exec→test→CVL iteration within max_iterations.",
@@ -550,11 +552,13 @@ docs/architecture/CODE_CRAFT.md · docs/plan/CODE_CRAFT.md · ADR-CODECRAFT-001"
         ],
         "overrides": "ApplicationEnvironmentProfile.codecraft_profile · Task.metadata.codecraft_mode · sandbox_host_slug · codegen_llm_profile_ref · require_hitl_before_exec",
         "ci_scripts": [
+            "python scripts/check_codecraft_layer.py",
+            "uv run pytest tests/unit/codecraft/ tests/unit/tools/providers/codecraft/ tests/unit/runtime/codecraft/ -q",
             "uv run pytest tests/unit/runtime/sandbox/ -q",
             "python scripts/check_harness_no_getattr.py",
         ],
         "production_baseline": "Cursor ephemeral codegen · E2B/Modal sandboxes · CI codegen with semgrep/trivy gates",
-        "anti_patterns": "Claiming ECC Done when orchestrator missing · arbitrary exec bypassing ToolRuntime · global registry pollution · local workspace labeled as OS sandbox",
+        "anti_patterns": "Claiming ECC Planned when runtime shipped · arbitrary exec bypassing ToolRuntime · global registry pollution · local workspace labeled as OS sandbox",
         "appendix": "Appendix J (tool surfaces)",
     },
     {

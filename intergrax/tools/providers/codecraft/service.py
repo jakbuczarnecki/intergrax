@@ -315,9 +315,10 @@ def codecraft_run(ctx: ToolWiringContext, params: CodeCraftRunToolInput) -> Code
     _write_craft_file(sandbox, params.code)
     started = time.perf_counter()
     exec_ctx = replace(ctx, sandbox_session=sandbox)
+    effective_timeout = min(params.timeout_s, profile.max_total_exec_time_s)
     exec_out = code_exec(
         exec_ctx,
-        CodeExecInput(code=params.code, language=params.language, timeout_s=params.timeout_s),
+        CodeExecInput(code=params.code, language=params.language, timeout_s=effective_timeout),
     )
     duration_ms = (time.perf_counter() - started) * 1000.0
     stdout = str((exec_out.output or {}).get("stdout") or "")

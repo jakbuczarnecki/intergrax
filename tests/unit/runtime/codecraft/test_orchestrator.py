@@ -167,6 +167,18 @@ def test_orchestrator_max_iterations(craft_ctx: ToolWiringContext) -> None:
     assert result.error == "max_iterations_exceeded" or (session2 and session2.iteration >= 1)
 
 
+def test_orchestrator_exec_budget_exhausted(craft_ctx: ToolWiringContext) -> None:
+    profile = CodeCraftProfile(mode="autonomous", max_total_exec_time_s=1.0, require_tests=False)
+    craft_ctx.extras["codecraft_profile"] = profile
+    orch = CodeCraftOrchestrator(craft_ctx)
+    session, _ = orch.start(goal="g", task_id="t", tenant_id="t")
+    assert session is not None
+    session = session.model_copy(update={"total_exec_time_s": 1.0})
+    orch._sessions.save(session)  # noqa: SLF001 — budget precondition
+    _, result = orch.iterate(craft_id=session.craft_id, task_id="t", tenant_id="t")
+    assert result.error == "max_total_exec_time_exceeded"
+
+
 def test_orchestrator_trace_taxonomy(craft_ctx: ToolWiringContext) -> None:
     orch = CodeCraftOrchestrator(craft_ctx)
     session, _ = orch.start(goal="print ok", task_id="task-1", tenant_id="tenant-1")
