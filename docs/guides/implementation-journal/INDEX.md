@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-13-001 | 2026-06-13 | tier-0, tier-1 CODE_CRAFT | ECC-1 · GAP-ECC-03/04/09 | [ECC-1 — single-shot codecraft.run with StaticCodeGate and trace](entries/2026-06-13/codecraft-ecc-1-single-shot.md) | b79cb177 |
 | IJ-2026-06-12-028 | 2026-06-12 | tier-1, tier-3 ELASTIC_CAPACITY_AND_SCALING | ECP-PROD.6 · AUDIT-IDEAL-30.4 | [ECP-PROD closeout — HITL queue and production adapters](entries/2026-06-12/platform-ecp-prod-hitl-closeout.md) | pending |
 | IJ-2026-06-12-027 | 2026-06-12 | tier-1, tier-3 ELASTIC_CAPACITY_AND_SCALING | ECP-PROD.1–5 · ECP-PROD.7 · AUDIT-IDEAL-30.1 | [ECP-PROD — honest maturity and production elasticity hardening](entries/2026-06-12/platform-ecp-prod-layer-closeout.md) | pending |
 | IJ-2026-06-12-026 | 2026-06-12 | tier-0, tier-1, tier-3 REASONING_AND_COGNITION | COG-PROD.1–5 · AUDIT-IDEAL-7.1 | [COG-PROD — Reasoning plane production hardening](entries/2026-06-12/platform-cog-prod-layer-closeout.md) | 218fd286 |

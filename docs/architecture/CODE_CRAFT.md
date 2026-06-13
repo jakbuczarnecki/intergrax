@@ -363,7 +363,7 @@ Canon cross-ref: [`OBSERVABILITY.md`](OBSERVABILITY.md) · [`TOOLS.md`](TOOLS.md
 | Phase | Scope | Status |
 |-------|-------|--------|
 | ECC-0 | ADR + domain pair docs | **Done** (2026-06-10) |
-| ECC-1 | `codecraft.run` + static gate + trace | **In progress** (2026-06-13) |
+| ECC-1 | `codecraft.run` + static gate + trace | **Done** (2026-06-13) |
 | ECC-2 | Session loop `start/iterate/dispose` | **Planned** |
 | ECC-3 | Modes + HITL + promotion | **Planned** |
 | ECC-4 | Cloud sandbox default + security.scan | **Planned** |

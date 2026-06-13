@@ -7,7 +7,7 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**Status:** **ECC-0 Done** · **ECC-1 In progress** (2026-06-13 layer completion)  
+**Status:** **ECC-0 Done** · **ECC-1 Done** (2026-06-13) · ECC-2 **Planned**  
 **Default queue:** Pull ECC-1 after operator selects this domain; otherwise §6.1 gate maintenance continues in [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md).
 
 ---
@@ -237,6 +237,8 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 
 ## Phase ECC-1 — Single-shot craft (`codecraft.run`)
 
+**Status:** **Done** (2026-06-13)
+
 **Goal:** Smallest coherent slice — generate (or accept) code, static gate, sandbox exec, trace, deny paths.
 
 | ID | Deliverable | Module | Acceptance |
@@ -335,7 +337,7 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 | Phase | Status | Priority | Closes gaps |
 |-------|--------|----------|-------------|
 | ECC-0 | **Done** | P0 | GAP-ECC-14 |
-| ECC-1 | **In progress** | P0 | 03, 04, 09, 15 |
+| ECC-1 | **Done** | P0 | 03, 04, 09, 15 |
 | ECC-2 | **Planned** | P0 | 01, 03, 10, 11 |
 | ECC-3 | **Planned** | P1 | 02, 07, 08, 10 |
 | ECC-4 | **Planned** | P1 | 05 |
@@ -350,6 +352,7 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 |------|-----|---------|
 | 2026-06-10 | ECC-0 | Domain pair CODE_CRAFT, ADR-CODECRAFT-001, full audit register, hub/README/AGENTS sync |
 | 2026-06-13 | LAYER-AUDIT | Layer completion audit — zero implementation code; substrate ~40% Done; sprint plan §Sprints added; ECC-1 started |
+| 2026-06-13 | ECC-1 | `codecraft.run`, StaticCodeGate, CodeCraftTraceEmitter, catalog plugin, gate tests |
 
 ---
 

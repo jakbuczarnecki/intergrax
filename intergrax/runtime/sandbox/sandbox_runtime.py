@@ -37,7 +37,7 @@ AGENT_BUILDER_SANDBOX_OPERATIONS: FrozenSet[str] = frozenset(
 )
 
 SANDBOX_REQUIRED_TOOLS: FrozenSet[str] = frozenset(
-    {SANDBOX_TOOL_NAME, "code.exec", "browser.run", "script.run"}
+    {SANDBOX_TOOL_NAME, "code.exec", "browser.run", "script.run", "codecraft.run"}
 )
 
 
