@@ -225,7 +225,7 @@ Requires new Integration catalog slugs first (H-INT in INTEGRATIONS plan).
 **Phase RAG complete when:** RAG-1 + RAG-DOC.* **Done**; §6.1e queue closed. **Status: complete (2026-06-02).**  
 **Phase M-RAG-DEPTH:** **Complete** (2026-06-10) — M-RAG.23 … M-RAG.37 **Done**.
 
-**Phase M-RAG-GRAPH:** **Complete** (2026-06-13) — M-RAG.38 … M-RAG.54 **Done**; M-RAG.49–51 **Planned** (H-INT blocked); boundaries: GAP-RAG-15, GAP-RAG-34.
+**Phase M-RAG-GRAPH:** **Complete** (2026-06-13) — M-RAG.38 … M-RAG.54 **Done**; **Phase M-RAG-BACKLOG active** (M-RAG.55–M-RAG.57 P2 · M-RAG.49–51 P3); boundaries: GAP-RAG-15 (P4 frozen), GAP-RAG-34.
 
 ---
 
@@ -476,12 +476,30 @@ Execute after documentation sync. One sprint = one commit unless operator splits
 
 **DoD:** `channel_contributions` includes `vector`, `keyword`, `graph`; `RetrievalTrace.graph_provenance_records` populated with structured path records.
 
-### Sprint G4 — Additional integrations (M-RAG.49–M-RAG.51) — blocked on H-INT
+### Sprint G4 — Additional integrations (M-RAG.49–M-RAG.51) — P3
 
-Requires Integration catalog slugs (Neptune, OrientDB, ArangoDB) per [`plan/INTEGRATIONS.md`](INTEGRATIONS.md). RAG delivers adapters only after H-INT rows land.
+Requires Integration catalog slugs (Neptune, OrientDB, ArangoDB) per [`plan/INTEGRATIONS.md`](INTEGRATIONS.md) H-INT-GRAPH.
 
----
+### Phase M-RAG-BACKLOG — P2 hardening (2026-06-13)
 
-## Suggested first PR
+| Sprint | ID | Priority | Scope | Files |
+|--------|-----|----------|-------|-------|
+| P2.1 | **M-RAG.55** | P2 | Graph store soak gate; promote `falkordb` to `APPROVED_PRODUCTION_GRAPH_STORE_SLUGS` after harness soak | `graph/soak/prod_slo.py`, `tests/unit/rag/graph/test_graph_store_prod_slo_soak.py`, `profiles/rag_profile.py` |
+| P2.2 | **M-RAG.56** | P2 | Beta vector slug soak harness — inject in-memory store through beta adapter factories | `vectorstore/soak/prod_slo.py`, `tests/unit/rag/vectorstore/test_beta_vector_soak_gate.py` |
+| P2.3 | **M-RAG.57** | P2 | RAG metrics default-on when OTel spine enabled (align with `INTERGRAX_RAG_OTEL_SPANS_ENABLED`) | `tracking/metrics.py`, `tests/unit/rag/tracking/test_rag_metrics_default.py` |
 
-**M-RAG.38** — `RagGraphStoreBackend` registry + refactor `create_rag_graph_store` (Wave G1.1; closes GAP-RAG-24). Unblocks M-RAG.39 and all subsequent GraphRAG backend work.
+### Phase M-RAG-BACKLOG — P3 vendor graph_store (2026-06-13)
+
+| Sprint | ID | Priority | Scope | Depends |
+|--------|-----|----------|-------|---------|
+| P3.1 | **H-INT-GRAPH-1** + **M-RAG.49** | P3 | `neptune` integration + RAG `CypherRagGraphStore` adapter | — |
+| P3.2 | **H-INT-GRAPH-2** + **M-RAG.50** | P3 | `orientdb` integration + RAG adapter | — |
+| P3.3 | **H-INT-GRAPH-3** + **M-RAG.51** | P3 | `arangodb` integration + RAG AQL adapter | — |
+
+### Phase M-RAG-BACKLOG — P4 frozen boundary (2026-06-13)
+
+| Sprint | ID | Priority | Scope |
+|--------|-----|----------|-------|
+| P4.1 | **M-RAG.58** | P4 | Document GAP-RAG-15 as **Frozen** — autonomous retriever/chunker selection owned by [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md); no RAG-layer implementation |
+
+**Suggested first PR (backlog):** **M-RAG.55** — graph store soak gate (unblocks falkordb prod slug).

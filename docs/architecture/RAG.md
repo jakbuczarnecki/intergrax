@@ -111,7 +111,9 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-33 | gap | `graph_store` catalog lacks Neptune, OrientDB, ArangoDB, TigerGraph, JanusGraph | **P3** | M-RAG.49–M-RAG.51 **Planned** | — |
 | GAP-RAG-34 | ograniczenie | No Microsoft GraphRAG vendoring — optional harness-native `community_report` indexer (M-RAG.47 **Done**, default off) | — | M-RAG.47 **Done** | — |
 | GAP-RAG-35 | niedoróbka | ~~prod slug list neo4j-only~~ — **closed M-RAG.48**: `APPROVED_PRODUCTION_GRAPH_STORE_SLUGS` (`neo4j`, `memgraph`) | **P2** | M-RAG.48 **Done** | — |
-| GAP-RAG-36 | niska jakość | ~~golden harness shallow~~ — **closed M-RAG.52**: post-delete empty expansion scenario + multi_hop retained | **P2** | M-RAG.52 **Done** | — |
+| GAP-RAG-35b | niedoróbka | `falkordb` absent from `APPROVED_PRODUCTION_GRAPH_STORE_SLUGS` pending graph soak | **P2** | M-RAG.55 **Planned** | — |
+| GAP-RAG-09b | niska jakość | RAG aggregated metrics opt-in while OTel spans default-on — spine misalignment | **P2** | M-RAG.57 **Planned** | 14.7 |
+| GAP-RAG-07b | niedoróbka | Beta vector slugs (`pinecone`, `milvus`, `vespa`) lack harness soak gate via adapter injection | **P2** | M-RAG.56 **Planned** | — |
 
 **Traceability rule:** no open GAP-RAG row without a **Planned** M-RAG.\* deliverable in [`plan/RAG.md`](../plan/RAG.md). **GAP-RAG-15** and **GAP-RAG-34** are explicit architectural boundaries, not harness defects.
 
