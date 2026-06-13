@@ -26,7 +26,10 @@ def health_check_codecraft(ctx: ToolWiringContext, _params: object) -> HealthChe
         return HealthCheckIntegrationOutput(
             status=HealthStatusOutput(slug="codecraft", healthy=False, detail="profile_not_configured"),
         )
-    mode = getattr(profile, "mode", None) or profile.get("mode") if isinstance(profile, dict) else None
+    if isinstance(profile, dict):
+        mode = profile.get("mode")
+    else:
+        mode = getattr(profile, "mode", None)
     if mode == "disabled":
         return HealthCheckIntegrationOutput(
             status=HealthStatusOutput(slug="codecraft", healthy=True, detail="mode_disabled"),

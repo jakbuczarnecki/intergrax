@@ -12,6 +12,7 @@ from intergrax.tools.providers.health.contracts import (
 )
 from intergrax.tools.providers.health.service import health_check_integration, health_check_profile
 from intergrax.tools.providers.health.category_probes import (
+    health_check_codecraft,
     health_check_graph_store,
     health_check_identity_provider,
     health_check_key_value_cache,
@@ -68,3 +69,7 @@ class HealthCheckSearchProviderHandler(ServiceToolHandler[HealthCheckProfileInpu
 
 class HealthCheckNotificationChannelHandler(ServiceToolHandler[HealthCheckProfileInput, HealthCheckIntegrationOutput]):
     _service = health_check_notification_channel
+
+
+class HealthCheckCodecraftHandler(ServiceToolHandler[HealthCheckProfileInput, HealthCheckIntegrationOutput]):
+    _service = health_check_codecraft

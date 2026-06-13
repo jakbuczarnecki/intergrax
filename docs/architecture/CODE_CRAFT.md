@@ -325,12 +325,12 @@ Canon cross-ref: [`OBSERVABILITY.md`](OBSERVABILITY.md) · [`TOOLS.md`](TOOLS.md
 | CodeCraftProfile | **Done** — Tier-3 profile | ECC-3 |
 | Static code gate | **Done** — `StaticCodeGate` | ECC-1 |
 | Promotion contract | **Done** — `CraftResult` | ECC-3 |
-| CODECRAFT trace events | **Done** — `CodeCraftTraceEmitter` | ECC-1+; full taxonomy partial — see [§Post-closeout gaps](../plan/CODE_CRAFT.md#post-closeout-gap-register-2026-06-13) |
+| CODECRAFT trace events | **Done** — full §10.1 taxonomy | S8 |
 | Graph node | **Done** — optional `CodeCraftNode` | ECC-5 |
 | AHI adaptive trigger | **Done** — `adaptive_trigger.py` | ECC-6 |
 | Metrics dashboards | **Planned** | Iteration success rate, gate failure rate — §10.2 |
 
-**Maturity:** **L3** — ECC-0…ECC-6 closed (2026-06-13). Post-closeout sprints S7–S10 close trace parity, sandbox routing, health probe, CI gate. Depth backlog: metrics §10.2, `container` tier, `codegen_llm_profile_ref` wiring.
+**Maturity:** **L3+** — ECC-0…ECC-6 + post-closeout S7–S10 (2026-06-13). Depth backlog: metrics §10.2, `container` tier, `codegen_llm_profile_ref` wiring.
 
 ---
 
@@ -418,3 +418,5 @@ Tier-3 wiring (ECC-3):
 **Trace integration:** `TraceComponent.CODECRAFT` diagnostic steps (`codecraft.session_opened`, `codecraft.static_gate`, …) — correlated via `craft_id`, `sandbox_session_id`, `run_id`. Full `RuntimeEventType` enum extension deferred until observability spine unifies tool-domain events.
 
 **Policy:** `codecraft.*` tools added to `SANDBOX_REQUIRED_TOOLS` (same routing as `code.exec`). Fail-closed when `codecraft_profile` missing, `mode=disabled`, or sandbox session absent.
+
+**CI gate:** `scripts/check_codecraft_layer.py` — catalog tools, wiring, trace steps, health probe registration (ECC-9).

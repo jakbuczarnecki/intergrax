@@ -104,7 +104,7 @@ Out of scope: implementation code (ECC-1+), product-specific agents (§6.3).
 | PAR-01 | `sandbox.refactor_loop` skill | **Superseded** | Use `codecraft.ephemeral_builder` + orchestrator (ECC-2) |
 | PAR-02 | Evaluator-loop (CVL) | **Done** | `runtime/codecraft/cv_bridge.py` (ECC-2) |
 | PAR-03 | Local sandbox security | **Accepted limitation** | Documented — use `isolation_tier=cloud` for regulated hosts |
-| PAR-04 | CODECRAFT trace taxonomy | **Partial → S8** | Core steps shipped; generation/test/verdict/HITL/promote — sprint S8 |
+| PAR-04 | CODECRAFT trace taxonomy | **Done** | S8 — full §10.1 taxonomy |
 | PAR-05 | Documentation scatter | **Mitigated** | Domain pair + audit map §11b; cross-links in TOOLS/RELIABILITY |
 
 ### §3.3 Missing at audit open — closed by ECC-1…ECC-6 (2026-06-13)
@@ -367,7 +367,7 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 | 2026-06-13 | ECC-3 | Tier-3 profile wiring, HITL, promoter, codecraft.promote |
 | 2026-06-13 | ECC-4 | Isolation routing, security scan hook, harness_codecraft_stack preset |
 | 2026-06-13 | ECC-5 | EphemeralToolRegistry, list_ephemeral_tools, CodeCraftGraphBinding |
-| 2026-06-13 | ECC-6 | Adaptive catalog-miss trigger + budget gate |
+| 2026-06-13 | S7–S10 | Post-closeout — trace taxonomy, sandbox routing parity, health probe, CI gate |
 
 ---
 
@@ -397,13 +397,13 @@ Layer completion audit after ECC-0…ECC-6 — gaps blocking **production parity
 |--------|----------|-------------|--------|----------|
 | GAP-ECC-16 | observability | Trace taxonomy incomplete — missing generation/test/verdict/HITL/promote steps | **S8** **Done** | P1 |
 | GAP-ECC-17 | routing | `codecraft.run` bypasses `resolve_craft_sandbox_session` (no cloud tier on single-shot) | **S9** **Done** | P1 |
-| GAP-ECC-18 | ops | `health.check_codecraft` probe not registered in health bundle | **S10** | P2 |
-| GAP-ECC-19 | CI | No `check_codecraft_layer.py` harness gate | **S10** | P2 |
+| GAP-ECC-18 | ops | `health.check_codecraft` probe not registered in health bundle | **S10** **Done** | P2 |
+| GAP-ECC-19 | CI | No `check_codecraft_layer.py` harness gate | **S10** **Done** | P2 |
 | GAP-ECC-20 | codegen | `codegen_llm_profile_ref` unused — template adapter only | backlog | P3 |
 | GAP-ECC-21 | security | `container` isolation tier not implemented | backlog | P3 |
 | GAP-ECC-22 | observability | §10.2 metrics dashboards | backlog | P3 |
 
-**Coverage:** 4 actionable (S8–S10) · 3 depth backlog.
+**Coverage:** 4 actionable (S8–S10) **Done** · 3 depth backlog (GAP-ECC-20…22).
 
 ---
 
@@ -436,7 +436,7 @@ Layer completion audit after ECC-0…ECC-6 — gaps blocking **production parity
 | **DoD** | Test with cloud-tier profile mock; closes GAP-ECC-17 |
 | **Files** | `intergrax/tools/providers/codecraft/service.py`, tests |
 
-## Sprint S10 — Health probe + CI gate (ECC-9)
+## Sprint S10 — Health probe + CI gate (ECC-9) (**Done**)
 
 | Field | Value |
 |-------|-------|

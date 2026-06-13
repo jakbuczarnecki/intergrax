@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-13-003 | 2026-06-13 | tier-0, tier-1 CODE_CRAFT | S7–S10 · ECC-7–9 | [S7–S10 — Code Craft post-closeout layer completion](entries/2026-06-13/codecraft-s7-s10-layer-completion.md) | pending |
 | IJ-2026-06-13-002 | 2026-06-13 | tier-0, tier-1, tier-3 CODE_CRAFT | ECC-2…ECC-6 | [ECC-2…ECC-6 — Code Craft layer completion closeout](entries/2026-06-13/codecraft-ecc-2-6-layer-closeout.md) | f6cd2d4d |
 | IJ-2026-06-13-001 | 2026-06-13 | tier-0, tier-1 CODE_CRAFT | ECC-1 · GAP-ECC-03/04/09 | [ECC-1 — single-shot codecraft.run with StaticCodeGate and trace](entries/2026-06-13/codecraft-ecc-1-single-shot.md) | b79cb177 |
 | IJ-2026-06-12-028 | 2026-06-12 | tier-1, tier-3 ELASTIC_CAPACITY_AND_SCALING | ECP-PROD.6 · AUDIT-IDEAL-30.4 | [ECP-PROD closeout — HITL queue and production adapters](entries/2026-06-12/platform-ecp-prod-hitl-closeout.md) | pending |
