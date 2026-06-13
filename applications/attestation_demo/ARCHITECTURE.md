@@ -38,7 +38,7 @@ It does **not** natively answer **outside the organization**:
 - Can a partner verify that a side-effecting tool action occurred **without** access to our journal?
 - Can execution evidence be attached to a ticket, audit packet, or external workflow?
 
-**AgentReceipt** (Cullen Meyers) is an external product that provides portable signed receipts. Intergrax does **not** build or host that product.
+**AgentReceipt** is an external partner product that provides portable signed receipts. Intergrax does **not** build or host that product.
 
 ### 1.2 Business goal of this solution
 

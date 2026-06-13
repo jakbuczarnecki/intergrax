@@ -22,7 +22,7 @@ adr: docs/adr/entries/2026-06-13/ADR-OBS-002.md · applications/attestation_demo
 
 ## Operator request
 
-Bring `attestation_demo` iteratively to a deployable state where the external partner (AgentReceipt / Cullen) can integrate per agreed trust model: unsigned `execution_boundary_event.v1` in API response, `client_observed` receipts, full scaffold compliance, tests, and partner handoff artifacts.
+Bring `attestation_demo` iteratively to a deployable state where the external partner (AgentReceipt) can integrate per agreed trust model: unsigned `execution_boundary_event.v1` in API response, `client_observed` receipts, full scaffold compliance, tests, and partner handoff artifacts.
 
 ## Summary
 

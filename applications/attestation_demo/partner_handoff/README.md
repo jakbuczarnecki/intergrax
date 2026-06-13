@@ -1,6 +1,6 @@
 # Partner handoff — AgentReceipt integration (PoC v1)
 
-**Audience:** Cullen Meyers / AgentReceipt adapter authors.
+**Audience:** AgentReceipt adapter authors and integration operators.
 
 ## Base URL
 

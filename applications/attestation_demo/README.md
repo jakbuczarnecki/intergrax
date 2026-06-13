@@ -1,6 +1,6 @@
 # Attestation Demo — Partner PoC Quickstart
 
-**Audience:** AgentReceipt integration (Cullen Meyers) and internal harness reviewers.
+**Audience:** AgentReceipt partner integration and internal harness reviewers.
 
 This Tier-3 host demonstrates **Execution Boundary Export (EBE)**: Intergrax emits **unsigned** `execution_boundary_event.v1` records at the `RuntimeToolInvoker` boundary. The partner adapter signs receipts externally (`client_observed` recommended).
 

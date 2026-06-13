@@ -77,7 +77,7 @@ MCP is **disabled** by default for this host (`ATTESTATION_DEMO_INCLUDE_MCP=fals
 
 ---
 
-## 7. Partner deploy (AgentReceipt / Cullen)
+## 7. Partner deploy (AgentReceipt)
 
 Handoff package: [`partner_handoff/README.md`](partner_handoff/README.md)
 
