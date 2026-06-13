@@ -19,6 +19,10 @@ class L1Gateway:
     def client_configured(self) -> bool:
         return self._tool_client is not None
 
+    @property
+    def tool_client(self) -> CriticEvalToolClient | None:
+        return self._tool_client
+
     def verify_semantic(self, request: CriticRequest) -> LayerVerdict:
         if self._tool_client is None:
             return LayerVerdict(

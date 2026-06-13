@@ -13,6 +13,7 @@ from intergrax.runtime.critic.contracts import (
     CriticVerdict,
     LayerVerdict,
 )
+from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
 from intergrax.runtime.critic.l0_gateway import L0Gateway
 from intergrax.runtime.critic.l1_gateway import L1Gateway
 from intergrax.runtime.critic.l2_gateway import L2Gateway
@@ -47,6 +48,10 @@ class CriticOrchestrator:
     @property
     def l1_client_configured(self) -> bool:
         return self._l1.client_configured
+
+    @property
+    def l1_tool_client(self) -> CriticEvalToolClient | None:
+        return self._l1.tool_client
 
     def verify(
         self,

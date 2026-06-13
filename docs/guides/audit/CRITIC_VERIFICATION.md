@@ -50,11 +50,11 @@ CriticProfile · CriticRequest · CriticVerdict · L0Gateway · L1Gateway · Eva
 
 ## Active plan phases (verify status vs code reality)
 
-CRIT-V 0–7 + FOLLOWUP Done · FAUDIT-EVAL.1 · FLOW-9 cross-ref
+CRIT-V 0–7 + FOLLOWUP Done · CVL-LC-1/2 layer completion (2026-06-13) · FAUDIT-EVAL.1 closed
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-L4 adaptive critic thresholds deferred (AHIA) · FLOW-8 product host deferred · document closeout vs execution depth honestly
+L4 adaptive critic thresholds deferred (AHIA) · FLOW-8 product host deferred · LLM trajectory judge optional (eval.trajectory_judge skill)
 
 ---
 

@@ -1075,8 +1075,8 @@ intergrax/tools/providers/eval/judge.py
 applications/_shared/critic_runtime_bridge.py · critic_assembly_resolver.py
 eval/nexus_eval_runner.py""",
         "key_symbols": "CriticProfile · CriticRequest · CriticVerdict · L0Gateway · L1Gateway · EvaluatorLoopSpec · RubricSpec · ValidationResult · eval.judge · eval.trajectory · eval.record_observation",
-        "active_phases": "CRIT-V 0–7 + FOLLOWUP Done · FAUDIT-EVAL.1 · FLOW-9 cross-ref",
-        "known_gaps": "L4 adaptive critic thresholds deferred (AHIA) · FLOW-8 product host deferred · document closeout vs execution depth honestly",
+        "active_phases": "CRIT-V 0–7 + FOLLOWUP Done · CVL-LC-1/2 layer completion (2026-06-13) · FAUDIT-EVAL.1 closed",
+        "known_gaps": "L4 adaptive critic thresholds deferred (AHIA) · FLOW-8 product host deferred · LLM trajectory judge optional (eval.trajectory_judge skill)",
         "dimensions": [
             "L0 static/rule gateway before L1 LLM judge always.",
             "Judge LLM ≠ producer LLM (separate profile/ref).",

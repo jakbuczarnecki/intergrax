@@ -71,6 +71,27 @@ async def test_nexus_eval_runner_semantic_mode_passes_non_exact_output() -> None
 
 
 @pytest.mark.asyncio
+async def test_nexus_eval_runner_semantic_mode_fails_closed_without_client() -> None:
+    case = EvalCase(
+        case_id="semantic-no-client",
+        runtime_request=RuntimeRequest(
+            message="evaluate",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="session-1",
+            agent_id="agent-1",
+        ),
+        expected_output="exact canonical answer",
+        semantic_match_enabled=True,
+        rubric_ref="prompt.rubric.default",
+    )
+    runner = NexusEvalRunner(_StubTaskRunner())
+    result = await runner.run_case(case)
+    assert result.success is False
+    assert result.error == "semantic_mismatch"
+
+
+@pytest.mark.asyncio
 async def test_nexus_eval_runner_exact_mode_still_default() -> None:
     case = EvalCase(
         case_id="exact-1",

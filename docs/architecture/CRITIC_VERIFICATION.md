@@ -6,6 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 25 (verify depth)  
 **Audit instruction:** [`guides/audit/CRITIC_VERIFICATION.md`](../guides/audit/CRITIC_VERIFICATION.md)  
+**Last updated:** 2026-06-13 — layer completion closeout; **CRIT-V-0…7 + FOLLOWUP Done (L3+)**
 ---
 
 ## 1. Purpose
@@ -22,18 +23,20 @@ CVL completes the **Plan → Execute → Verify (PEV)** loop that leading Harnes
 
 ## 2. Problem statement
 
-Today Intergrax has strong **structural validation** (`NexusValidationEngine`), **evaluation infrastructure** (registry, shadow eval, offline runner contracts), and **adaptive verification** (`VerificationLoop` for profile promotion). Gaps vs production-grade Harness AI:
+Intergrax already had strong **structural validation** (`NexusValidationEngine`), **evaluation infrastructure** (registry, shadow eval, offline runner contracts), and **adaptive verification** (`VerificationLoop` for profile promotion). Before Phase CRIT-V (2026-06-07…2026-06-08), production-grade PEV **Verify** depth was missing:
 
-| Gap | Impact |
-|-----|--------|
-| No universal **semantic judge primitive** (`eval.judge`) | LLM-as-judge scores must be supplied ad hoc |
-| No **trajectory evaluation** contract | Process quality (tool path, loops, waste) invisible to gates |
-| **Evaluator-loop** is a catalog pattern only | No runtime critique→revise→re-evaluate executor |
-| **NexusEvalRunner** uses exact-match only | Offline benchmarks miss semantic equivalence |
-| **L0→L1→L2 stack** not explicit in one model | Authors unclear where to put rubrics vs hooks |
-| Evaluation layer maturity **L2** (FAUDIT-32) | Closeout wiring ≠ execution depth |
+| Gap (pre-CRIT-V) | Impact | Status |
+|------------------|--------|--------|
+| No universal **semantic judge primitive** (`eval.judge`) | LLM-as-judge scores supplied ad hoc | **Done** — `tools/providers/eval/judge.py` + `L1Gateway` |
+| No **trajectory evaluation** contract | Process quality invisible to gates | **Done** — `eval.trajectory` (heuristic process scoring) |
+| **Evaluator-loop** catalog pattern only | No critique→revise→re-evaluate executor | **Done** — `EvaluatorLoopExecutor` + graph wiring |
+| **NexusEvalRunner** exact-match only | Offline benchmarks miss semantic equivalence | **Done** — optional `semantic_match_enabled` + `eval.judge` |
+| **L0→L1→L2 stack** not explicit | Authors unclear where to put rubrics vs hooks | **Done** — §6 stack + `CriticOrchestrator` |
+| Evaluation layer maturity **L2** (FAUDIT-32) | Closeout wiring ≠ execution depth | **Done** — CRIT-V uplift to **L3** |
 
-CVL closes these gaps **without** violating tier boundaries or creating a second evaluation system parallel to `OnlineEvaluationRegistry`.
+CVL closed these gaps **without** violating tier boundaries or creating a second evaluation system parallel to `OnlineEvaluationRegistry`.
+
+**Remaining depth (not blocking L3):** L4 adaptive critic thresholds (AHIA), LLM-based trajectory judge (`eval.trajectory_judge` skill), FLOW-8 product reference host — see plan backlog §CVL-Backlog.
 
 ---
 
@@ -266,7 +269,7 @@ class CriticRequest(BaseModel):
 | Tool ID | Input | Output |
 |---------|-------|--------|
 | `eval.judge` | output text, rubric, reference context, optional golden | score 0–1, reasons, passed |
-| `eval.trajectory` | run_id or trace slice, rubric | score, anomaly flags, reasons |
+| `eval.trajectory` | run_id or trace slice, min_score threshold | score, process anomaly flags, reasons (heuristic — not LLM rubric) |
 
 Both tools append optional `OnlineEvaluationObservation` when registry bound.
 
@@ -394,7 +397,7 @@ Integrates with existing `RuntimePolicyEngine` — no agent-specific branches.
 | **L3** | L2 + trajectory eval + evaluator-loop executor + semantic offline runner |
 | **L4** | L3 + adaptive critic threshold proposals + human-calibrated judge baseline in CI |
 
-**Current:** L3 (CRIT-V complete). **Next:** L4 adaptive critic thresholds (deferred — AHIA / product gate).
+**Current:** **L3+** (CRIT-V-0…7 + FOLLOWUP complete, 2026-06-13 layer completion audit). **Next:** L4 adaptive critic thresholds (deferred — AHIA / product gate).
 
 ---
 

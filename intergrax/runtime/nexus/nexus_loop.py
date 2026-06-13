@@ -84,6 +84,7 @@ from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddlewar
 
 if TYPE_CHECKING:
     from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
+    from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
 
 class NexusLoop:
     """
@@ -296,6 +297,13 @@ class NexusLoop:
     ) -> None:
         """Attach critic hooks to the UAEP executor for step-level verification."""
         self._engine.uaep_executor.set_critic_hooks(hooks, verify_uaep_step=verify_uaep_step)
+
+    def critic_eval_tool_client(self) -> Optional["CriticEvalToolClient"]:
+        """Return the L1 eval tool client when critic graph hooks are wired."""
+        hooks = self._graph_executor._critic_graph_hooks
+        if hooks is None:
+            return None
+        return hooks.orchestrator.l1_tool_client
 
     @property
     def trace_emitter(self) -> Optional[TaskTraceEmitter]:
