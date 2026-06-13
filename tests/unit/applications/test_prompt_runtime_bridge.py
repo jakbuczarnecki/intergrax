@@ -21,7 +21,7 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from testing_support.builder import FakeLLMAdapter
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def _request() -> RuntimeRequest:

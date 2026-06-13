@@ -31,7 +31,7 @@ from intergrax.tools.registry.bootstrap import register_default_tools, reset_def
 from intergrax.tools.registry.catalog import clear_tool_catalog, list_catalog_tool_ids
 from intergrax.tools.registry.wiring import ToolWiringContext
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 @pytest.fixture(autouse=True)

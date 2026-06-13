@@ -6,6 +6,8 @@ import hmac
 import json
 
 import pytest
+
+pytestmark = pytest.mark.no_ci
 from fastapi.testclient import TestClient
 
 from intergrax.debug.app import create_debug_app

@@ -41,7 +41,7 @@ from intergrax.runtime.observability.harness_slos import list_harness_slos, slo_
 from intergrax.runtime.registry.agent_routing_policy import evaluate_agent_routing
 from intergrax.runtime.task.task import Task
 
-pytestmark = pytest.mark.gate
+pytestmark = [pytest.mark.gate, pytest.mark.no_ci]
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 

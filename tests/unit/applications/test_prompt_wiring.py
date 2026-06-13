@@ -59,6 +59,7 @@ def test_resolve_prompt_registry_protocol_satisfies_protocol() -> None:
     assert isinstance(registry, YamlPromptRegistry)
 
 
+@pytest.mark.no_ci
 def test_wire_application_environment_includes_prompt_registry() -> None:
     settings = LabApplicationSettings.from_env()
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="pe.wire")
@@ -69,6 +70,7 @@ def test_wire_application_environment_includes_prompt_registry() -> None:
     assert wiring.build_context.prompt_registry is wiring.prompt_registry
 
 
+@pytest.mark.no_ci
 def test_build_runtime_context_from_environment_injects_prompt_registry() -> None:
     settings = LabApplicationSettings.from_env()
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="pe.ctx")

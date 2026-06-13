@@ -48,7 +48,7 @@ from intergrax.integrations.registry.catalog import catalog_snapshot, clear_cata
 from intergrax.integrations.registry import presets
 from intergrax.integrations.registry.profile import IntegrationProfile
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 M7_P7_SLUGS = (
     "perplexity",

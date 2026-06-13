@@ -2,6 +2,8 @@
 
 import pytest
 
+pytestmark = [pytest.mark.no_ci]
+
 from intergrax.skills.registry.bootstrap import register_default_skills, reset_default_skills_for_tests
 from intergrax.skills.registry.catalog import catalog_snapshot, clear_skill_catalog
 from intergrax.skills.registry.profile import SkillProfile

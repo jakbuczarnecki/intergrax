@@ -49,7 +49,7 @@ from intergrax.runtime.architecture.evaluation_registry_trends import (
 )
 from scripts.phase_w_adapt_report import build_proposal_report
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 

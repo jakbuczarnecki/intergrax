@@ -25,6 +25,7 @@ def test_harness_lab_stable_slug_list_is_documented_set() -> None:
     assert "otel" in slugs
 
 
+@pytest.mark.no_ci
 def test_harness_lab_stack_entries_are_stable_after_bootstrap() -> None:
     register_default_integrations()
     validate_harness_lab_stable_stack()

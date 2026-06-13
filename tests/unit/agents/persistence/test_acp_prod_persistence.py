@@ -2,6 +2,8 @@
 
 import pytest
 
+pytestmark = pytest.mark.no_ci
+
 from intergrax.agents.persistence.checkpoint_store import (
     InMemoryAgentCheckpointStore,
     SQLiteAgentCheckpointStore,

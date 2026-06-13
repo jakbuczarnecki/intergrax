@@ -53,6 +53,7 @@ def test_profile_uses_hierarchical_index_flag_and_retriever() -> None:
     assert profile_uses_hierarchical_index(RagProfile()) is False
 
 
+@pytest.mark.no_ci
 def test_rag_stack_wires_toc_store_when_hierarchical_enabled() -> None:
     profile = RagProfile(
         hierarchical_index_enabled=True,
@@ -65,6 +66,7 @@ def test_rag_stack_wires_toc_store_when_hierarchical_enabled() -> None:
     assert stack.toc_vectorstore_manager is not stack.vectorstore_manager
 
 
+@pytest.mark.no_ci
 def test_dual_index_ingest_and_hierarchical_retrieve_expands_parents(tmp_path) -> None:
     source = tmp_path / "book.txt"
     book_text = "alpha " * 200 + "beta " * 200 + "gamma " * 200

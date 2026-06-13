@@ -22,3 +22,5 @@ LLM_INSTRUCTIONS.txt
 
 # Tests results cache
 .pytest_cache/
+
+_external_apps/

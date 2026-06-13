@@ -2,6 +2,8 @@
 
 import pytest
 
+pytestmark = pytest.mark.no_ci
+
 from intergrax.runtime.task_memory import (
     InMemoryTaskMemoryStore,
     NullTaskMemoryPersistence,

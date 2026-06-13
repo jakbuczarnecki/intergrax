@@ -67,8 +67,9 @@ async def assemble_uaep_session_prompt(
     )
     runtime_config = RuntimeConfig(llm_adapter=llm_adapter, production_mode=False)
     base_message = request.message or ""
+    engine_id = engine.engine_id
     provider_ctx = ContextProviderContext(
-        engine_id=getattr(engine, "engine_id", "default"),
+        engine_id=engine_id,
         handles=build_graph_provider_handles(
             _task_stub_from_request(request),
             runtime_config=runtime_config,
@@ -76,7 +77,7 @@ async def assemble_uaep_session_prompt(
             event_bus=event_bus,
             node_id=agent_id,
             agent_id=agent_id,
-            engine_id=getattr(engine, "engine_id", "default"),
+            engine_id=engine_id,
         ),
     )
     assembled = await engine.assemble(assembly_request, provider_ctx=provider_ctx)

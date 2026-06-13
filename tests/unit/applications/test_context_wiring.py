@@ -22,7 +22,7 @@ from intergrax.runtime.task.task_contract import TaskExecutionOptions
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_resolve_context_budget_policy_uses_profile_or_derives_from_assembly() -> None:

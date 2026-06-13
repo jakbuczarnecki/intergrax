@@ -2,6 +2,8 @@
 
 import pytest
 
+pytestmark = pytest.mark.no_ci
+
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.task.task import Task

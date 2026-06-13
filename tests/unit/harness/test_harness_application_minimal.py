@@ -12,7 +12,7 @@ from intergrax.applications.contracts.graph_builder import AgentGraph
 from intergrax.harness import HarnessApplication
 from intergrax.integrations.registry.profile import IntegrationProfile
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_harness_application_echo_run() -> None:

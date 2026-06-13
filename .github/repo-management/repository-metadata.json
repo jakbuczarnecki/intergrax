@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "description": "Harness AI & Agent OS for governed multi-agent systems in Python — Nexus orchestration, policy, tools, skills, RAG & multimodal evaluation. Prototype fast, harden agents for production.",
+  "homepage": "https://github.com/jakbuczarnecki/intergrax#readme",
+  "topics": [
+    "harness-ai",
+    "agent-os",
+    "multi-agent-systems",
+    "ai-agents",
+    "agent-framework",
+    "agent-orchestration",
+    "llm",
+    "rag",
+    "python",
+    "mcp",
+    "tool-use",
+    "governance",
+    "human-in-the-loop",
+    "observability",
+    "policy-engine",
+    "context-engineering",
+    "multimodal",
+    "orchestration",
+    "production-ai",
+    "evaluation"
+  ]
+}

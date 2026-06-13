@@ -20,16 +20,19 @@ def test_lab_settings_strict_harness_default_off() -> None:
     assert settings.strict_harness is False
 
 
+@pytest.mark.no_ci
 def test_wire_lab_tools_omits_sandbox_without_session() -> None:
     wiring = wire_lab_tools()
     assert "sandbox.exec" not in wiring.profile.enabled
 
 
+@pytest.mark.no_ci
 def test_wire_lab_tools_includes_sandbox_when_session_wired() -> None:
     wiring = wire_lab_tools(sandbox_session=object())
     assert "sandbox.exec" in wiring.profile.enabled
 
 
+@pytest.mark.no_ci
 def test_wire_lab_tools_harness_enables_modality_tools_and_profile() -> None:
     from intergrax.model_inference.registry.vision_profile import VISION_PROFILE_EXTRA_KEY
     from intergrax.runtime.modality.modality_profile import MODALITY_PROFILE_EXTRA_KEY

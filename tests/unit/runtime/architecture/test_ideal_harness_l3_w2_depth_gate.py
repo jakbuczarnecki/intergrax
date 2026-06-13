@@ -28,7 +28,7 @@ from intergrax.runtime.security.pii_redaction import redact_pii
 from intergrax.runtime.security.tool_injection_guard import ToolInjectionError, assert_tool_input_safe
 from intergrax.runtime.task.task import TaskResult, TaskState
 
-pytestmark = pytest.mark.gate
+pytestmark = [pytest.mark.gate, pytest.mark.no_ci]
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 

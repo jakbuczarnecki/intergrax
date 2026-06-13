@@ -19,7 +19,7 @@ from intergrax.applications._shared.registry_ops_wiring import (
 from intergrax.applications.contracts.application_package import ApplicationDistributionChannel
 from intergrax.applications._shared.package_wiring import build_application_package, package_gate_environment
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 

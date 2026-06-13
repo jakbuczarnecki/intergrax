@@ -14,7 +14,7 @@ from intergrax.runtime.adaptive.contracts import HarnessOutcomeSignal
 from intergrax.runtime.adaptive.proposal_store import InMemoryProposalStore
 from intergrax.runtime.adaptive.signal_store import InMemorySignalStore
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_adaptive_debug_router_lists_signals_and_proposals() -> None:

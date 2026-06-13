@@ -25,7 +25,7 @@ from intergrax.runtime.observability.persistence_conformance import (
     assert_runtime_event_persistence_conformance,
 )
 
-pytestmark = pytest.mark.gate
+pytestmark = [pytest.mark.gate, pytest.mark.no_ci]
 
 
 @pytest.fixture

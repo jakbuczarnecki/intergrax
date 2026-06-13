@@ -23,12 +23,12 @@ from intergrax.rag.profiles.rag_profile import (
     validate_graph_rag_production_wiring,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 @pytest.fixture(autouse=True)
 def _register_integrations() -> None:
-    register_default_integrations()
+    register_default_integrations(override=True)
 
 
 def test_production_rag_profile_is_harness_inmemory_graph() -> None:

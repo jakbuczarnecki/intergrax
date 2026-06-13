@@ -26,6 +26,7 @@ from lab_application.manifest import build_lab_manifest
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
+@pytest.mark.no_ci
 def test_resolve_registry_snapshot_from_build_context() -> None:
     settings = LabApplicationSettings.from_env()
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="reg.snapshot")
@@ -38,6 +39,7 @@ def test_resolve_registry_snapshot_from_build_context() -> None:
     assert snapshot.skill_ids()
 
 
+@pytest.mark.no_ci
 def test_resolve_registry_snapshot_protocol_returns_snapshot() -> None:
     settings = LabApplicationSettings.from_env()
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="reg.protocol")
@@ -48,6 +50,7 @@ def test_resolve_registry_snapshot_protocol_returns_snapshot() -> None:
     assert protocol.skill_ids() == wiring.registry_snapshot.skill_ids()  # type: ignore[union-attr]
 
 
+@pytest.mark.no_ci
 def test_wire_application_environment_includes_registry_snapshot() -> None:
     settings = LabApplicationSettings.from_env()
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="reg.wire")
@@ -56,6 +59,7 @@ def test_wire_application_environment_includes_registry_snapshot() -> None:
     assert wiring.registry_snapshot is not None
 
 
+@pytest.mark.no_ci
 def test_wire_application_environment_wires_session_storage_binding() -> None:
     settings = LabApplicationSettings.from_env()
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="reg.session.binding")

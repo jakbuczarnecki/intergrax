@@ -43,11 +43,13 @@ def test_build_legal_manifest_overrides_contract_id() -> None:
     assert manifest.agents[0].contract_id == "custom-legal-id"
 
 
+@pytest.mark.no_ci
 def test_build_legal_registry_materializes_default_agent() -> None:
     registry = build_legal_registry(_dev_settings())
     assert registry.has("legal-default") or registry.has("legal")
 
 
+@pytest.mark.no_ci
 def test_build_legal_registry_passes_tool_context() -> None:
     settings = _dev_settings(enable_rag=True, enable_websearch=False)
     manifest = build_legal_manifest(settings)

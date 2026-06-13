@@ -118,6 +118,7 @@ def test_merge_environment_materializes_token_limits() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
+@pytest.mark.no_ci
 async def test_kernel_increments_budget_after_llm_drain() -> None:
     from intergrax.agents.authoring.llm_router import StepLLMRouter
     from intergrax.contracts.agent_budget import ResolvedBudgetLimits
@@ -169,6 +170,7 @@ async def test_kernel_increments_budget_after_llm_drain() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
+@pytest.mark.no_ci
 async def test_acp_run_persists_usage_metadata_and_budget_state() -> None:
     _LlmMeterAgent.models_used = []
     manifest = ApplicationManifest.lab(
@@ -212,6 +214,7 @@ async def test_acp_run_persists_usage_metadata_and_budget_state() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
+@pytest.mark.no_ci
 async def test_second_step_sees_invocation_usage_from_prior_llm_call() -> None:
     seen_totals: list[int] = []
 

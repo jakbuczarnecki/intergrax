@@ -27,9 +27,9 @@ docs/plan/<DOMAIN>.md                      ← how to implement / status / tasks
 docs/guides/                               ← strategy, ideal model, audit, authoring
 ```
 
-**21 domain pairs** (same basename in `architecture/` and `plan/`):
+**22 domain pairs** (same basename in `architecture/` and `plan/`):
 
-`PLATFORM_FOUNDATION`, `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `NEXUS_EXECUTION_FLOW`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `INTEGRATIONS`, `RAG`, `TOOLS`, `CODE_CRAFT`, `SKILLS`, `LLM_ADAPTERS`, `MEMORY`, `MODALITY`, `OBSERVABILITY`, `RELIABILITY_FAILURE_AND_HITL`, `TIER3_APPLICATION_ENVIRONMENT`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`, `ADAPTIVE_HARNESS_INTELLIGENCE`, `CRITIC_VERIFICATION`, `REASONING_AND_COGNITION`, `ELASTIC_CAPACITY_AND_SCALING`.
+`PLATFORM_FOUNDATION`, `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `NEXUS_EXECUTION_FLOW`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `INTEGRATIONS`, `RAG`, `TOOLS`, `CODE_CRAFT`, `SKILLS`, `LLM_ADAPTERS`, `MEMORY`, `CONTEXT_ENGINEERING`, `MODALITY`, `OBSERVABILITY`, `RELIABILITY_FAILURE_AND_HITL`, `TIER3_APPLICATION_ENVIRONMENT`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`, `ADAPTIVE_HARNESS_INTELLIGENCE`, `CRITIC_VERIFICATION`, `REASONING_AND_COGNITION`, `ELASTIC_CAPACITY_AND_SCALING`.
 
 **Per-iteration reading rule:** when working on a harness layer, read **only**:
 1. `docs/intergrax_runtime_architecture.md` (hub / pair picker)
@@ -65,7 +65,8 @@ Do **not** load unrelated domain pairs. There is **no** monolithic implementatio
 | Ephemeral Code Craft (dynamic codegen loop) | `CODE_CRAFT` |
 | Skills | `SKILLS` |
 | LLM adapters, response envelope | `LLM_ADAPTERS` |
-| Memory, context, knowledge graph | `MEMORY` |
+| Memory / LTM stores | `MEMORY` |
+| Context engineering engine | `CONTEXT_ENGINEERING` |
 | Vision / audio / ML modality | `MODALITY` |
 | Observability spine | `OBSERVABILITY` |
 | Retry, HITL, failure model | `RELIABILITY_FAILURE_AND_HITL` |
@@ -219,6 +220,7 @@ python scripts/check_harness_no_getattr.py
 uv run python scripts/check_observability_gates.py
 python scripts/check_docs_domain_pairs.py
 python scripts/check_harness_adr.py
+python scripts/check_implementation_journal.py
 ```
 
 Agent-only work:

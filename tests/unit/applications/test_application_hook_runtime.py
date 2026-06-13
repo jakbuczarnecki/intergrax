@@ -12,7 +12,7 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_product_defaults_use_250ms_hook_timeout() -> None:

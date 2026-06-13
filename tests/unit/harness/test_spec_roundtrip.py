@@ -9,6 +9,8 @@ from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec, Gr
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
 
+pytestmark = [pytest.mark.gate, pytest.mark.no_ci]
+
 
 @pytest.mark.gate
 def test_environment_profile_json_roundtrip() -> None:

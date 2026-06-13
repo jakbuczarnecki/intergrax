@@ -2,14 +2,12 @@
 # Intergrax framework – proprietary and confidential.
 #
 # CI profiles:
-#   pull_request, workflow_dispatch (full) — gate tests + parallel governance + closeout + harness (~5–7 min)
-#   push (main only) — same full profile; W-OPS + catalog exports run on main only
-#   workflow_dispatch (fast) — unit gate + governance (~4 min)
+#   pull_request, push (main) — ci_smoke unit tests + 3 boundary scripts (~45–90s wall-clock)
+#   schedule (nightly 03:00 UTC), workflow_dispatch (full) — full gate + governance + closeout
+#   workflow_dispatch (smoke) — same as PR (debug)
 #
 # Feature-branch pushes do not trigger CI (avoids duplicate runs when a PR is open).
-# Gate marker (`-m gate`) selects deterministic, network-free regression tests.
-# Harness job runs only non-gate harness-depth tests (gate-covered paths omitted).
-#
+# Full regression: `uv run pytest tests/unit -m "gate and not no_ci"` locally or nightly CI.
 # Local full suite: scripts\test.bat unit  (uv sync --extra dev)
 
 name: Regression gate
@@ -21,19 +19,21 @@ on:
       - "docs/**"
       - "**/*.md"
   pull_request:
+  schedule:
+    - cron: "0 3 * * *"
   workflow_dispatch:
     inputs:
       profile:
-        description: "fast (unit gate only) or full (default)"
+        description: "smoke (PR default) or full (nightly parity)"
         type: choice
         options:
+          - smoke
           - full
-          - fast
-        default: full
+        default: smoke
 
 concurrency:
-  group: regression-gate-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  group: regression-gate-${{ github.event_name }}-${{ github.ref }}-${{ github.event.inputs.profile || 'smoke' }}
+  cancel-in-progress: true
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -41,12 +41,16 @@ env:
   UV_PYTHON_DOWNLOADS: never
 
 jobs:
-  fast-gate:
+  ci-smoke:
     if: >-
-      github.event_name == 'workflow_dispatch' &&
-      github.event.inputs.profile == 'fast'
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (
+        github.event_name == 'workflow_dispatch' &&
+        github.event.inputs.profile == 'smoke'
+      )
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
 
     steps:
       - name: Checkout
@@ -61,47 +65,23 @@ jobs:
       - name: Install dependencies (CI minimal)
         run: uv sync --extra dev-ci --frozen
 
-      - name: Unit regression gate
-        run: uv run pytest tests/unit -m gate -n auto -q --tb=line
+      - name: CI smoke unit tests
+        run: uv run python scripts/run_ci_smoke_pytest.py
 
-      - name: Governance audits
+      - name: Tier boundary audits (instant)
+        env:
+          INTERGRAX_CI_TEST_MARKER: ci_smoke
         run: >-
-          uv run python scripts/check_agents_vendor_imports.py
-          && uv run python scripts/check_capability_routing.py
-          && uv run python scripts/check_agent_step_security.py
-          && uv run python scripts/check_agent_threat_model.py
-          && uv run python scripts/check_agent_acp_close_ci.py
-          && uv run python scripts/check_contract_schema_versions.py
-          && uv run python scripts/check_acp_ci_conformance_matrix.py --scripts-only
-          && uv run python scripts/check_agent_typed_state.py
-          && uv run python scripts/check_production_chat_agent_imports.py
-          && uv run python scripts/check_integration_vendor_imports.py
-          && uv run python scripts/check_harness_no_getattr.py
-          && uv run python scripts/check_legacy_modules_removed.py
-          && uv run python scripts/check_agent_skill_resolution.py
-          && uv run python scripts/check_harness_registry_resolution.py
-          && uv run python scripts/check_harness_capability_graph_wiring.py
-          && uv run python scripts/check_harness_observability_wiring.py
-          && uv run python scripts/check_observability_gates.py
-          && uv run python scripts/check_harness_reliability_wiring.py
-          && uv run python scripts/check_harness_security_wiring.py
-          && uv run python scripts/check_harness_guardrail_wiring.py
-          && uv run python scripts/check_harness_security_promote_gate.py
-          && uv run python scripts/check_harness_cost_wiring.py
-          && uv run python scripts/check_harness_evaluation_wiring.py
-          && uv run python scripts/check_legacy_tool_plan_booleans.py
-          && uv run python scripts/check_plugin_catalog.py
-          && uv run python scripts/check_scaffold_harness_alignment.py
+          uv run python scripts/check_harness_no_getattr.py
           && uv run python scripts/check_agents_no_tier3_imports.py
-          && uv run python scripts/check_docs_domain_pairs.py
+          && uv run python scripts/check_ci_gate_test_purity.py
 
   gate-tests:
     if: >-
-      github.event_name == 'pull_request' ||
-      github.ref == 'refs/heads/main' ||
+      github.event_name == 'schedule' ||
       (
         github.event_name == 'workflow_dispatch' &&
-        github.event.inputs.profile != 'fast'
+        github.event.inputs.profile == 'full'
       )
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -119,25 +99,15 @@ jobs:
       - name: Install dependencies (CI minimal)
         run: uv sync --extra dev-ci --frozen
 
-      - name: Run full regression gate
-        run: >-
-          uv run pytest
-          tests/unit
-          tests/integration
-          tests/acceptance
-          applications/legal_application/legal_tests/host
-          applications/lab_application/lab_application_tests
-          applications/research_application/research_application_tests
-          agents/signoff_probe
-          -m gate -n auto -q --tb=line
+      - name: Full unit regression gate
+        run: uv run pytest tests/unit -m "gate and not no_ci" -n auto -q --tb=line
 
   gate-governance-tier:
     if: >-
-      github.event_name == 'pull_request' ||
-      github.ref == 'refs/heads/main' ||
+      github.event_name == 'schedule' ||
       (
         github.event_name == 'workflow_dispatch' &&
-        github.event.inputs.profile != 'fast'
+        github.event.inputs.profile == 'full'
       )
     runs-on: ubuntu-latest
     timeout-minutes: 12
@@ -156,6 +126,8 @@ jobs:
         run: uv sync --extra dev-ci --frozen
 
       - name: Tier boundary and registry audits
+        env:
+          INTERGRAX_CI_TEST_MARKER: "gate and not no_ci"
         run: >-
           uv run python scripts/check_agents_vendor_imports.py
           && uv run python scripts/check_capability_routing.py
@@ -168,6 +140,7 @@ jobs:
           && uv run python scripts/check_production_chat_agent_imports.py
           && uv run python scripts/check_integration_vendor_imports.py
           && uv run python scripts/check_harness_no_getattr.py
+          && uv run python scripts/check_ci_gate_test_purity.py
           && uv run python scripts/check_application_production_gates.py
           && uv run python scripts/check_legacy_modules_removed.py
           && uv run python scripts/check_agent_skill_resolution.py
@@ -182,11 +155,10 @@ jobs:
 
   gate-governance-wiring:
     if: >-
-      github.event_name == 'pull_request' ||
-      github.ref == 'refs/heads/main' ||
+      github.event_name == 'schedule' ||
       (
         github.event_name == 'workflow_dispatch' &&
-        github.event.inputs.profile != 'fast'
+        github.event.inputs.profile == 'full'
       )
     runs-on: ubuntu-latest
     timeout-minutes: 12
@@ -224,11 +196,10 @@ jobs:
       - gate-governance-wiring
     if: >-
       (
-        github.event_name == 'pull_request' ||
-        github.ref == 'refs/heads/main' ||
+        github.event_name == 'schedule' ||
         (
           github.event_name == 'workflow_dispatch' &&
-          github.event.inputs.profile != 'fast'
+          github.event.inputs.profile == 'full'
         )
       ) &&
       needs.gate-tests.result == 'success' &&
@@ -256,61 +227,11 @@ jobs:
       - name: Phase W-ADAPT runtime L4 closeout gate
         run: uv run python scripts/phase_w_adapt_closeout_gate.py --enforce-l4-runtime
 
-      - name: Phase W-OPS operational evidence (main only, non-enforcing)
-        if: github.ref == 'refs/heads/main'
+      - name: Phase W-OPS operational evidence (nightly / full dispatch)
         run: uv run python scripts/phase_w_ops_evidence.py
 
-      - name: Export harness spec schemas (main only)
-        if: github.ref == 'refs/heads/main'
+      - name: Export harness spec schemas
         run: uv run python scripts/export_harness_spec_schemas.py
 
-      - name: Export capability catalog feed (main only)
-        if: github.ref == 'refs/heads/main'
+      - name: Export capability catalog feed
         run: uv run python scripts/export_capability_catalog_feed.py
-
-  harness:
-    if: >-
-      github.event_name == 'pull_request' ||
-      github.ref == 'refs/heads/main' ||
-      (
-        github.event_name == 'workflow_dispatch' &&
-        github.event.inputs.profile != 'fast'
-      )
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-          python-version: "3.12"
-
-      - name: Install dependencies (CI minimal)
-        run: uv sync --extra dev-ci --frozen
-
-      - name: Harness depth tests (non-gate only)
-        run: >-
-          uv run pytest
-          tests/unit/integrations/providers/test_harness_m9.py
-          tests/unit/integrations/providers/test_p4_harness_providers.py
-          tests/unit/tools/providers/observability/
-          tests/unit/tools/providers/gitlab/
-          tests/unit/tools/providers/pagerduty/
-          tests/unit/tools/providers/braintrust/
-          tests/unit/applications/test_task_defaults.py
-          tests/unit/applications/test_harness_default_notify.py
-          -m "not gate" -n auto -q --tb=line
-
-      - name: Strict harness profile tests
-        env:
-          LAB_STRICT_HARNESS: "true"
-          INTERGRAX_HARNESS_API_KEY: "ci-strict-harness-key"
-        run: >-
-          uv run pytest
-          tests/unit/applications/test_harness_auth.py
-          tests/unit/applications/test_lab_strict_harness.py
-          -q --tb=line

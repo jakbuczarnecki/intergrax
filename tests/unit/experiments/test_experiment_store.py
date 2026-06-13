@@ -5,7 +5,7 @@ import pytest
 from intergrax.experiments.models import ExperimentDecision, RegisterExperimentRequest
 from intergrax.experiments.store import SQLiteExperimentStore
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 @pytest.fixture

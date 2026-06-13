@@ -6,7 +6,7 @@ from intergrax.debug.cli import main
 from intergrax.experiments.models import ExperimentDecision
 from intergrax.experiments.store import SQLiteExperimentStore, open_experiment_store
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_debug_cli_experiments_register_list_decide(tmp_path, capsys):

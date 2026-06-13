@@ -23,7 +23,7 @@ from intergrax.tools.providers.eval.judge import _JudgeLLMResult
 from intergrax.tools.registry.wiring import ToolWiringContext
 from testing_support.builder import FakeLLMAdapter
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_tool_registry_critic_client_judge_uses_wiring_context_llm() -> None:

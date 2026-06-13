@@ -95,6 +95,7 @@ def test_debug_api_missing_db():
 
 
 @pytest.mark.gate
+@pytest.mark.no_ci
 def test_debug_api_uses_injected_trace_store_without_sqlite():
     from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
 

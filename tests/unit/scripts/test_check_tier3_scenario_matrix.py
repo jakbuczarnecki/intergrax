@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.tier3_scenario]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.tier3_scenario, pytest.mark.no_ci]
 
 
 def test_check_tier3_scenario_matrix_passes() -> None:

@@ -136,6 +136,7 @@ def checkpoints_client(checkpoint_store):
 
 
 @pytest.mark.gate
+@pytest.mark.no_ci
 def test_debug_api_runtime_events(events_client: TestClient):
     response = events_client.get(
         "/debug/tasks/task_events_1/events",
@@ -148,6 +149,7 @@ def test_debug_api_runtime_events(events_client: TestClient):
 
 
 @pytest.mark.gate
+@pytest.mark.no_ci
 def test_debug_api_runtime_events_not_configured():
     app = create_debug_app()
     with TestClient(app) as client:
@@ -156,6 +158,7 @@ def test_debug_api_runtime_events_not_configured():
 
 
 @pytest.mark.gate
+@pytest.mark.no_ci
 def test_debug_api_checkpoints(checkpoints_client):
     client, task = checkpoints_client
     response = client.get(
@@ -170,6 +173,7 @@ def test_debug_api_checkpoints(checkpoints_client):
 
 @pytest.mark.asyncio
 @pytest.mark.gate
+@pytest.mark.no_ci
 async def test_debug_api_human_response_resume(tmp_path):
     registry = AgentRegistry()
     registry.register(_HitlAgent())

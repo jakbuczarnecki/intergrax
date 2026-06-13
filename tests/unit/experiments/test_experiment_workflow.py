@@ -11,7 +11,7 @@ from intergrax.experiments.workflow import (
 from intergrax.runtime.registry.bootstrap import build_harness_registry
 from intergrax.runtime.task.task import TaskResult, TaskState
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_ensure_repo_root_on_path(tmp_path):

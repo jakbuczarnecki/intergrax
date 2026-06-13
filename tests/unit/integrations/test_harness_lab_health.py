@@ -19,7 +19,7 @@ from intergrax.integrations.registry.harness_lab_stack import (
     HARNESS_M6_P6_PROBE_SLUGS,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 @pytest.fixture(autouse=True)

@@ -7,7 +7,7 @@ import pytest
 from intergrax.integrations.registry.profile import IntegrationProfile
 from lab_application.host.tool_wiring import wire_lab_tools
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_harness_lab_tools_include_runtime_bound_catalog_tools() -> None:

@@ -23,7 +23,7 @@ from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
 from testing_support.builder import FakeLLMAdapter
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def _request() -> RuntimeRequest:

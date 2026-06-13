@@ -10,10 +10,10 @@
 | Field | Value |
 |-------|-------|
 | **Name** | Intergrax |
-| **Tagline** | Agent OS and Harness AI runtime |
+| **Tagline** | Harness AI & Agent OS for governed multi-agent systems |
 | **Language** | Python 3.12 |
 | **Package** | Intergrax-ai (pyproject.toml) |
-| **Repository** | https://github.com/jakbuczarnecki/intergrax-ai |
+| **Repository** | https://github.com/jakbuczarnecki/intergrax |
 | **Maintainer** | Artur Czarnecki |
 | **Status** | Active private R&D; harness platform complete |
 | **License** | Proprietary — see LICENSE |

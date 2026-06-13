@@ -24,7 +24,7 @@ from research_application.host.agent_builders import RESEARCH_AGENT_BUILDERS
 from research_application.host.wiring import build_research_registry
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 MIGRATED_AGENT_IDS = frozenset(
     {

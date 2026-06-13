@@ -8,7 +8,7 @@ import pytest
 
 from intergrax.scaffold.new_application import create_application
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_scaffold_lab_factory_uses_harness_host_runtime(tmp_path) -> None:

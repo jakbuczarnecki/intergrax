@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         Documentation lives in `docs/` — one source of truth per topic.
-        Index: [README — Documentation](https://github.com/jakbuczarnecki/intergrax-ai/blob/main/README.md#documentation-index)
+        Index: [README — Documentation](https://github.com/jakbuczarnecki/intergrax/blob/main/README.md#documentation-index)
 
   - type: dropdown
     id: document

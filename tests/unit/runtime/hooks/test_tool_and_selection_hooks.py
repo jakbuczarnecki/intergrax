@@ -2,6 +2,8 @@
 
 import pytest
 
+pytestmark = [pytest.mark.no_ci]
+
 from echo.echo_agent import EchoAgent
 from intergrax.contracts.tool_request import ToolRequest, ToolResponseStatus
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult

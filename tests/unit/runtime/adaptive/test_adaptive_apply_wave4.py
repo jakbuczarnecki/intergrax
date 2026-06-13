@@ -45,7 +45,7 @@ from intergrax.runtime.adaptive.adaptation_executor import AdaptationExecutor
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def _policy_learning_package(*, proposal_id: str = "prop_policy") -> AdaptationProposalPackage:

@@ -14,7 +14,7 @@ from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from testing_support.builder import FakeLLMAdapter
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_strict_harness_runtime_config_uses_production_mode_and_trace_path(

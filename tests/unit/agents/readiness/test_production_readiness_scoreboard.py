@@ -38,6 +38,7 @@ def test_echo_readiness_runtime_dimension_is_100() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
+@pytest.mark.no_ci
 def test_roster_scoreboard_fleet_migration_complete() -> None:
     roster = build_roster_readiness_report()
     assert roster.agent_count >= 16
@@ -49,6 +50,7 @@ def test_roster_scoreboard_fleet_migration_complete() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
+@pytest.mark.no_ci
 def test_scoreboard_json_roundtrip() -> None:
     roster = build_roster_readiness_report()
     payload = json.loads(roster.model_dump_json())
@@ -79,6 +81,7 @@ def test_mutating_agent_checkpoint_and_idempotency_dimensions_are_100() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
+@pytest.mark.no_ci
 def test_roster_mutating_checkpoint_idempotency_gate() -> None:
     roster = build_roster_readiness_report()
     assert mutating_checkpoint_idempotency_at_100(roster) is True

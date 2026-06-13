@@ -1,5 +1,5 @@
 # Intergrax — crawler guidance
-# https://github.com/jakbuczarnecki/intergrax-ai
+# https://github.com/jakbuczarnecki/intergrax
 
 User-agent: *
 Allow: /

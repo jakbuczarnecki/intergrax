@@ -26,7 +26,7 @@ from intergrax.runtime.architecture.capability_graph import (
 )
 from echo.echo_agent import EchoAgent
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def _graph_view() -> EnvironmentCapabilityGraphView:

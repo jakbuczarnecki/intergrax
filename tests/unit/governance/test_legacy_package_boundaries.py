@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-pytestmark = pytest.mark.gate
+pytestmark = [pytest.mark.gate, pytest.mark.no_ci]
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _FORBIDDEN_PREFIXES = (

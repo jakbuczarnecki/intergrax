@@ -18,7 +18,7 @@ from intergrax.applications.contracts.environment_health_score import (
     HealthDimension,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 

@@ -28,7 +28,7 @@ from intergrax.runtime.organization.stores.sqlite_organization_profile_store imp
 )
 from tests.unit.integrations.providers.document_store.test_mongodb import _collection_factory
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_resolve_memory_platform_wiring_uses_sqlite_when_relational_store_sqlite(

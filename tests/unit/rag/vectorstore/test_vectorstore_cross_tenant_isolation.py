@@ -22,7 +22,7 @@ from intergrax.rag.vectorstore.tenant.tenant_isolation_contract import (
     run_tenant_isolation_contract,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 @dataclass

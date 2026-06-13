@@ -6,25 +6,27 @@ authors:
   - family-names: Czarnecki
     given-names: Artur
     email: jakbu.czarnecki.83@gmail.com
-repository-code: "https://github.com/jakbuczarnecki/intergrax-ai"
-url: "https://github.com/jakbuczarnecki/intergrax-ai"
+repository-code: "https://github.com/jakbuczarnecki/intergrax"
+url: "https://github.com/jakbuczarnecki/intergrax"
 abstract: >-
-  Intergrax is an Agent OS and Harness AI runtime for building, orchestrating,
-  experimenting with, and validating specialized AI agents in Python. It provides
-  a four-tier platform (Platform, Nexus Agent OS, Agents, Applications), governed
-  runtime with policy and observability, and a capability model spanning
-  Integration, Tool, Skill, and Agent layers.
+  Intergrax is a Harness AI and Agent OS runtime for governed multi-agent systems
+  in Python. It provides a four-tier platform (Platform, Nexus Agent OS, Agents,
+  Applications), policy-first execution with observability and evaluation, and
+  capability catalogs spanning integrations, tools, skills, RAG, memory, and
+  multimodal modalities.
 keywords:
-  - agent framework
-  - agent operating system
   - harness ai
-  - multi-agent orchestration
+  - agent operating system
+  - multi-agent systems
+  - agent orchestration
   - llm runtime
   - retrieval-augmented generation
   - python
   - ai agents
   - policy engine
   - context engineering
+  - human-in-the-loop
+  - observability
 license: Proprietary
 version: 0.1.0
 date-released: "2026-06-05"

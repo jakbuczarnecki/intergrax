@@ -42,6 +42,7 @@ def test_collect_dependencies_includes_agent_and_profile() -> None:
     assert ApplicationDependencyKind.PROFILE_FRAGMENT in kinds
 
 
+@pytest.mark.no_ci
 def test_strict_product_package_closure_passes() -> None:
     product_id, manifest = next(iter(iter_strict_product_manifests()))
     env = manifest.resolved_environment()

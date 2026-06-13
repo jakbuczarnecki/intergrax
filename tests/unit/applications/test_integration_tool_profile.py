@@ -46,20 +46,22 @@ def test_integration_category_configured_for_instance_binding() -> None:
     assert profile.slug_for_category(IntegrationCategory.SECURITY_SCANNER) is None
 
 
+@pytest.mark.no_ci
 def test_extend_tool_profile_adds_security_and_workflow_tools() -> None:
     from intergrax.integrations.registry.bootstrap import register_default_integrations
 
-    register_default_integrations()
+    register_default_integrations(override=True)
     profile = harness_security_stack()
     tool_profile = extend_tool_profile_for_integration(ToolProfile(enabled=["rag.retrieve"]), profile)
     assert SECURITY_SCAN_TOOL_ID in tool_profile.enabled
 
 
+@pytest.mark.no_ci
 def test_extend_tool_profile_adds_sandbox_exec_for_host() -> None:
     from intergrax.integrations.providers.sandbox_host.e2b.bundle import create_e2b_sandbox_host
     from intergrax.integrations.registry.bootstrap import register_default_integrations
 
-    register_default_integrations()
+    register_default_integrations(override=True)
 
     class _FakeHost:
         def create_session(self) -> dict[str, str]:
@@ -79,19 +81,21 @@ def test_extend_tool_profile_adds_sandbox_exec_for_host() -> None:
     assert "sandbox.exec" in tool_profile.enabled
 
 
+@pytest.mark.no_ci
 def test_harness_sandbox_stack_preset_enables_sandbox_tool_id() -> None:
     from intergrax.integrations.registry.bootstrap import register_default_integrations
 
-    register_default_integrations()
+    register_default_integrations(override=True)
     profile = harness_sandbox_stack()
     tool_profile = extend_tool_profile_for_integration(ToolProfile(enabled=[]), profile)
     assert "sandbox.exec" in tool_profile.enabled
 
 
+@pytest.mark.no_ci
 def test_workflow_tools_enabled_for_orchestrator_slug() -> None:
     from intergrax.integrations.registry.bootstrap import register_default_integrations
 
-    register_default_integrations()
+    register_default_integrations(override=True)
     profile = IntegrationProfile(workflow_orchestrator="prefect")
     tool_profile = extend_tool_profile_for_integration(ToolProfile(enabled=[]), profile)
     assert WORKFLOW_TRIGGER_TOOL_ID in tool_profile.enabled
@@ -99,11 +103,12 @@ def test_workflow_tools_enabled_for_orchestrator_slug() -> None:
     assert WORKFLOW_CANCEL_RUN_TOOL_ID in tool_profile.enabled
 
 
+@pytest.mark.no_ci
 def test_notify_batch_enabled_for_notification_channel() -> None:
     from intergrax.integrations.registry.bootstrap import register_default_integrations
     from intergrax.integrations.registry.catalog_manifests import LOG
 
-    register_default_integrations()
+    register_default_integrations(override=True)
     profile = IntegrationProfile(notification_channel=LOG)
     tool_profile = extend_tool_profile_for_integration(ToolProfile(enabled=[]), profile)
     assert NOTIFY_SEND_BATCH_TOOL_ID in tool_profile.enabled

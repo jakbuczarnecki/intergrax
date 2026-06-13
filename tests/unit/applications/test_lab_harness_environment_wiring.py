@@ -25,6 +25,7 @@ def test_lab_integration_profile_otel_when_explicitly_enabled() -> None:
     assert_profile_slug(profile, "observability_backend", "otel")
 
 
+@pytest.mark.no_ci
 def test_lab_skill_profile_includes_harness_bundle() -> None:
     profile = lab_skill_profile()
     assert "harness" in profile.enabled_bundles

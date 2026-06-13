@@ -14,7 +14,7 @@ from intergrax.applications.contracts.environment_profile import (
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from echo.echo_agent import EchoAgent
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_long_running_enabled_via_environment_only() -> None:

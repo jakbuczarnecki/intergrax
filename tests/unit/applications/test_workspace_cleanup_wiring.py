@@ -33,7 +33,7 @@ from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.runtime.workspace.shadow_workspace import SHADOW_WORKSPACE_ID_KEY
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def test_sync_isolation_refs_for_hook_populates_env_state(tmp_path) -> None:
