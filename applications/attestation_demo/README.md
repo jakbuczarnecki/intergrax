@@ -4,6 +4,15 @@
 
 This Tier-3 host demonstrates **Execution Boundary Export (EBE)**: Intergrax emits **unsigned** `execution_boundary_event.v1` records at the `RuntimeToolInvoker` boundary. The partner adapter signs receipts externally (`client_observed` recommended).
 
+## Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Host design, EBE contract, trust model |
+| [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) | Task queue and verification |
+| [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) | Local run, Docker, deploy runbook |
+| [`adr/README.md`](adr/README.md) | Application architecture decisions |
+
 ## Run locally
 
 ```bash

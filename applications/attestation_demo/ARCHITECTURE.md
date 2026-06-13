@@ -1,11 +1,25 @@
 # attestation_demo — architecture
 
-**Status:** Design (partner PoC — agreed with AgentReceipt author)  
+**Status:** PoC v1 (partner-ready)  
+**Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
+**Application ADRs:** [`adr/README.md`](adr/README.md)  
 **Domain pair (platform):** `OBSERVABILITY.md` + `TIER3_APPLICATION_ENVIRONMENT.md`  
-**Partner product:** AgentReceipt (external; not part of Intergrax)  
-**Plan tracker:** `IMPLEMENTATION_PLAN.md` (to be added when implementation starts)
+**Partner product:** AgentReceipt (external; not part of Intergrax)
 
 **PoC v1 delivery (agreed):** execution-boundary events in the **trigger API response only**. Webhook delivery is **deferred** to a later phase.
+
+---
+
+## Dependencies (pyproject.toml)
+
+| Extra | Role |
+|-------|------|
+| *(base)* | `uv sync` from repo root — harness + FastAPI + records tool bundle |
+| `dev-ci` | Gate tests before partner handoff / deploy |
+
+Tier-2 agent: `agents/boundary_demo/` (on `PYTHONPATH` with `applications/`).
+
+Deploy triad: [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) · `docker/` · gate `test_application_deploy_triad.py`.
 
 ---
 
@@ -547,6 +561,7 @@ When `IdempotentToolInvoker` returns cache hit, PoC default: emit once per logic
 | `docs/plan/OBSERVABILITY.md` | Register EBE-1…EBE-9 rows |
 | `docs/adr/entries/…/ADR-OBS-…` | Unsigned boundary export vs host attestation |
 | `applications/attestation_demo/IMPLEMENTATION_PLAN.md` | Task checklist |
+| `applications/attestation_demo/adr/` | Application ADRs (ADR-ATTESTATION_DEMO-001) |
 
 ---
 

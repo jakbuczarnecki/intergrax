@@ -28,6 +28,7 @@ from intergrax.integrations._shared.in_memory_document_store import InMemoryDocu
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from attestation_demo.host.agent_builders import ATTESTATION_DEMO_AGENT_BUILDERS
+from attestation_demo.host.integration_wiring import wire_attestation_demo_integrations
 from attestation_demo.host.settings import AttestationDemoSettings
 from attestation_demo.manifest import build_attestation_demo_manifest
 from attestation_demo.serving.fastapi_router import mount_attestation_demo_routes
@@ -44,7 +45,11 @@ def create_attestation_demo_application(
     boundary_event_buffer: BoundaryEventBuffer | None = None,
 ) -> FastAPI:
     settings = settings or AttestationDemoSettings.from_env()
-    resolved_document_store = document_store or InMemoryDocumentStore()
+    integrations = wire_attestation_demo_integrations(
+        db_path=db_path,
+        document_store=document_store,
+    )
+    resolved_document_store = integrations.document_store
     resolved_buffer = boundary_event_buffer or BoundaryEventBuffer()
     manifest = build_attestation_demo_manifest()
     env = manifest.resolved_environment()

@@ -1,0 +1,17 @@
+# © Artur Czarnecki. All rights reserved.
+# Run from repository root: docker compose -f applications/attestation_demo/docker/docker-compose.yml up --build
+
+services:
+  attestation_demo:
+    build:
+      context: ../../..
+      dockerfile: applications/attestation_demo/docker/Dockerfile
+    image: attestation-demo:latest
+    ports:
+      - "8097:8097"
+    env_file:
+      - ../.env
+    environment:
+      ATTESTATION_DEMO_BACKEND_HOST: "0.0.0.0"
+      ATTESTATION_DEMO_BACKEND_PORT: "8097"
+      INTERGRAX_ENV: prod

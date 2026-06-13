@@ -1,0 +1,19 @@
+# Per-application ignore file — monorepo root as context.
+# BuildKit: docker buildx build -f applications/attestation_demo/docker/Dockerfile \
+#   --ignorefile applications/attestation_demo/docker/.dockerignore -t attestation-demo .
+# Classic: cp this file to repo-root .dockerignore, then docker build -f ...
+
+.git
+.venv
+build/
+**/__pycache__/
+*.pyc
+.pytest_cache
+notebooks/
+docs/
+tests/
+infra/
+applications/*
+!applications/attestation_demo/
+agents/*
+!agents/boundary_demo/
