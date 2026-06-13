@@ -16,6 +16,7 @@ Application ADRs: [`adr/README.md`](adr/README.md)
 | Host purpose, EBE contract, trust model | **ARCHITECTURE.md** |
 | Task queue and verification | **This file** |
 | Partner quickstart + sample payloads | **README.md** · **partner_handoff/** |
+| Docker build / run / verify (step-by-step) | **DOCKER_VERIFY_RUNBOOK.md** |
 | Deploy runbook | **BUILD_AND_DEPLOY.md** |
 
 ---

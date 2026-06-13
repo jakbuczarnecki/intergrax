@@ -51,4 +51,5 @@ or `Authorization: Bearer <key>`. When the env var is unset (local dev default),
 - Intergrax host-side signing
 - HarnessKernel step-level export
 
-Full design: [`ARCHITECTURE.md`](../ARCHITECTURE.md) · Application ADR: [`adr/ADR-ATTESTATION_DEMO-001.md`](../adr/ADR-ATTESTATION_DEMO-001.md)
+Full design: [`ARCHITECTURE.md`](../ARCHITECTURE.md) · Application ADR: [`adr/ADR-ATTESTATION_DEMO-001.md`](../adr/ADR-ATTESTATION_DEMO-001.md)  
+Operator verify: [`DOCKER_VERIFY_RUNBOOK.md`](../DOCKER_VERIFY_RUNBOOK.md)
