@@ -739,6 +739,42 @@ Tool Layer Score: L0-L4
 
 ---
 
+## 11b. Ephemeral Code Craft Layer
+
+**Authoring map:** [`architecture/CODE_CRAFT.md`](architecture/CODE_CRAFT.md) · [`plan/CODE_CRAFT.md`](plan/CODE_CRAFT.md) · audit prompt [`guides/audit/CODE_CRAFT.md`](guides/audit/CODE_CRAFT.md)
+
+### Purpose
+
+Verify that dynamic codegen runs through harness orchestration (`CodeCraftOrchestrator`), not agent-local subprocess loops; that ephemeral tools stay task-scoped; and that sandbox substrate is reused.
+
+### Audit Questions
+
+* Is `CodeCraftProfile` wired on the host (`wire_application_codecraft`)?
+* Do `codecraft.*` tools route through `ToolRuntime` / `SANDBOX_REQUIRED_TOOLS`?
+* Does `StaticCodeGate` run before exec in autonomous modes?
+* Are craft modes enforced (`disabled`, `dry_run`, `assist_only`, `supervised`, `autonomous`)?
+* Is promotion typed (`CraftResult`) rather than stdout-only?
+* Are `CODECRAFT_*` trace steps emitted and correlated with `craft_id` / `sandbox_session_id`?
+* Does supervised mode use HITL before exec?
+* Are ephemeral tools registered only in `EphemeralToolRegistry`, not global `ToolRegistry`?
+
+### Typical Gaps
+
+* Craft loop implemented inside Tier-2 agent code.
+* Missing sandbox session → host subprocess fallback (must fail closed).
+* Local sandbox treated as production security boundary without `isolation_tier=cloud`.
+* Global catalog pollution from generated helpers.
+
+### Score
+
+```text
+Ephemeral Code Craft Score: L0-L4
+```
+
+**Authoring reference:** [`architecture/CODE_CRAFT.md`](architecture/CODE_CRAFT.md) · substrate [`RELIABILITY_FAILURE_AND_HITL.md`](architecture/RELIABILITY_FAILURE_AND_HITL.md) · verification [`CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md). **Closed:** [Phase ECC](plan/CODE_CRAFT.md) (2026-06-13) — ECC-0…ECC-6 Done; depth = metrics dashboards (§10.2) + container isolation tier.
+
+---
+
 ## 12. Skill Layer
 
 **Authoring map (control plane):** `guides/AGENT_CREATION_GUIDE.md` **Appendix J** · implementation closeout: plan **Phase TS** (**Done**).
