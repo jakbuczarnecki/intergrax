@@ -141,7 +141,7 @@ Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 185 pr
 
 ### M.6 P6 — Harness integration expansion (Done — 32/32)
 
-**Register:** [intergrax_runtime_architecture.md — M.6 P6](../plan/INTEGRATIONS.md#m6-p6--harness-integration-expansion-planned) · Band **2ac** · Queue **[§6.1y](../plan/INTEGRATIONS.md#61y-harness-implementation-queue--integration-expansion-m6-p6-planned)**
+**Register:** [intergrax_runtime_architecture.md — M.6 P6](../plan/INTEGRATIONS.md#m6-p6--harness-integration-expansion-planned) · Band **2ac** · Queue **[§6.1y](../plan/INTEGRATIONS.md#61y-harness-implementation-queue--integration-expansion-m6-p6-done)**
 
 | Wave | Focus | Slugs | Status |
 |------|--------|-------|--------|
