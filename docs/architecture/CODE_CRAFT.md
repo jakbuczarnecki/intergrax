@@ -8,7 +8,7 @@
 **Audit layer:** 11b (Ephemeral Code Craft)  
 **Audit instruction:** [`guides/audit/CODE_CRAFT.md`](../guides/audit/CODE_CRAFT.md)  
 **Implementation:** `intergrax/codecraft/` · `intergrax/runtime/codecraft/` · `intergrax/tools/providers/codecraft/`  
-**Last updated:** 2026-06-13 — layer completion audit; ECC-1 in progress
+**Last updated:** 2026-06-13 — layer completion audit; **ECC-0…ECC-6 Done**
 
 ---
 
@@ -134,7 +134,7 @@ Substrate (reuse)
 
 ### 6.1 CodeCraftOrchestrator (Tier-1)
 
-**Planned module:** `intergrax/runtime/codecraft/orchestrator.py`
+**Module:** `intergrax/runtime/codecraft/orchestrator.py` **Done** (ECC-2)
 
 **Responsibilities:**
 
@@ -167,7 +167,7 @@ Typed profile on `ApplicationEnvironmentProfile`:
 | `require_hitl_before_exec` | Force human gate (supervised default) |
 | `security_scan_before_exec` | Invoke `security.scan` when true |
 
-Wiring (planned): `wire_application_codecraft()` → `RuntimeConfig` → `RuntimePolicyBundle` fragment `codecraft_governance`.
+Wiring **Done** (ECC-3): `wire_application_codecraft()` → `RuntimeConfig` → `RuntimePolicyBundle` fragment `codecraft_governance` (`applications/_shared/codecraft_wiring.py`).
 
 ### 6.3 Craft modes
 
@@ -185,7 +185,7 @@ Override per task: `Task.metadata.codecraft_mode` (analogous to `metadata.sandbo
 
 ## 7. Tool surface (`codecraft.*`)
 
-Catalog tools (planned) — all route through `ToolRuntime`:
+Catalog tools **Done** (ECC-1…ECC-5) — all route through `ToolRuntime`:
 
 | tool_id | Role |
 |---------|------|
@@ -315,20 +315,22 @@ Canon cross-ref: [`OBSERVABILITY.md`](OBSERVABILITY.md) · [`TOOLS.md`](TOOLS.md
 
 ## 12. Current state vs target (summary)
 
-| Capability | Current (2026-06-10) | Target (ECC) |
-|------------|----------------------|--------------|
-| Isolated exec | **Done** — `runtime/sandbox/`, `code.exec` | Reused as substrate |
-| Cloud sandbox | **Done** — `HostedSandboxSession`, e2b/modal/daytona | Preferred production backend |
+| Capability | Status (2026-06-13) | Notes |
+|------------|----------------------|-------|
+| Isolated exec | **Done** — `runtime/sandbox/`, `code.exec` | Substrate reused |
+| Cloud sandbox | **Done** — `HostedSandboxSession`, e2b/modal/daytona | ECC-4 default for regulated hosts |
 | Tool policy | **Done** — `SANDBOX_REQUIRED_TOOLS`, UAEP gateway | Extended for `codecraft.*` |
-| Harness craft loop | **Missing** | `CodeCraftOrchestrator` |
-| Ephemeral tool registry | **Missing** | Task-scoped registry |
-| CodeCraftProfile | **Missing** | Tier-3 profile |
-| Static code gate | **Missing** | Tier-0 `StaticCodeGate` |
-| Promotion contract | **Missing** | `CraftResult` |
-| CODECRAFT trace events | **Missing** | `CodeCraftTraceEmitter` |
-| Graph node | **Missing** | Optional `CodeCraftNode` |
+| Harness craft loop | **Done** — `CodeCraftOrchestrator` | ECC-2 |
+| Ephemeral tool registry | **Done** — task-scoped registry | ECC-5 |
+| CodeCraftProfile | **Done** — Tier-3 profile | ECC-3 |
+| Static code gate | **Done** — `StaticCodeGate` | ECC-1 |
+| Promotion contract | **Done** — `CraftResult` | ECC-3 |
+| CODECRAFT trace events | **Done** — `CodeCraftTraceEmitter` | ECC-1+; full `RuntimeEventType` enum extension deferred |
+| Graph node | **Done** — optional `CodeCraftNode` | ECC-5 |
+| AHI adaptive trigger | **Done** — `adaptive_trigger.py` | ECC-6 |
+| Metrics dashboards | **Planned** | Iteration success rate, gate failure rate — §10.2 |
 
-**Maturity:** **L0** (architecture + plan only) → target **L3** after ECC-1…ECC-4.
+**Maturity:** **L3** — ECC-0…ECC-6 closed (2026-06-13). Depth work = metrics spine + container isolation tier.
 
 ---
 
