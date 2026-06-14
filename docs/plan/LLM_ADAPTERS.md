@@ -33,7 +33,7 @@
 **Source:** Deep production audit 2026-06-14 — contract L3, model metadata L1–L2, routing L1–L2, DX L2.  
 **Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) §Model catalog · §Routing · §Audit register  
 **Goal:** Elevate Tier-0 LLM layer from **production L3 foundation** to **best-in-class developer engine** — correct context for any model string, unified token accounting, runtime routing/failover, single agent API.  
-**Status:** **Planned** — **docs baseline Done** (X.0.1–0.3, X.7.1, X.6.3 partial) · **code 0/35**  
+**Status:** **In progress** — **docs baseline Done** (X.0.1–0.3, X.7.1, X.6.3 partial) · **code LC-1/LC-2 partial** (X.1.1–1.5, X.3.1, X.3.3)  
 **Priority ladder:** Band **2ba** (after M-LLM-R closeout) · queue [§6.1ax](#61ax-harness-implementation-queue--llm-developer-excellence-m-llm-x)  
 **Execution order:** [§6.2af](#62af-phase-m-llm-x-execution-order)  
 **Target maturity:** Model metadata **L3**, routing **L3**, DX **L3+** (see architecture maturity table).
@@ -51,6 +51,80 @@
 
 ---
 
+## Layer Completion Mode — Sprint register (2026-06-14)
+
+**Mode:** Intergrax Layer Completion · **Domain:** LLM_ADAPTERS only  
+**Baseline:** M-LLM-R **Done** (contract L3) · M-LLM-X code in progress  
+**Target state:** No open **P0/P1** in audit register → **State B — Architecturally Mature**
+
+### Krok 1 — Audit summary (2026-06-14)
+
+| ID | Problem | Class | Sprint |
+|----|---------|-------|--------|
+| LLM-AUDIT-1 | Brak `ModelCatalog` — rozproszone dicts | **P0** | LC-1 |
+| LLM-AUDIT-2 | Override `context_window_tokens` tylko Ollama | **P0** | LC-1 |
+| LLM-AUDIT-11 | `ContextBudgetPolicy` 4k odłączone od adapter window | **P0** | LC-2 |
+| LLM-AUDIT-3 | Preflight `chars//4` zamiast adapter tokenizer | **P0** | LC-2 |
+| LLM-AUDIT-12 | Prefix heuristics tylko Bedrock | **P0** | LC-1 |
+| LLM-AUDIT-15 | History layer vs preflight niespójne | **P0** | LC-2 (history już używa adapter; preflight fix) |
+| LLM-AUDIT-4 | `ModelRouter` poza hot path | **P1** | LC-3 |
+| LLM-AUDIT-5 | Brak failover chain | **P1** | LC-3 |
+| LLM-AUDIT-6 | ACP `StepLLMRouter` stub | **P1** | LC-3 |
+| LLM-AUDIT-7 | OpenRouter 32k fallback | **P1** | LC-4 (M-LLM-X.2) |
+| LLM-AUDIT-9 | AHI routing ceremonial | **P1** | LC-3 |
+| AUDIT-IDEAL-6.3–6.6 | Catalog, preflight, failover, ACP bridge | **P0/P1** | LC-1…LC-3 |
+
+**Closed (no sprint):** M-LLM-R envelope · AUDIT-IDEAL-6.1 structured output · LLM-AUDIT-13 Cohere DX · tier boundaries · observability L3.
+
+### Sprint LC-1 — ModelCatalog + resolver (P0)
+
+| Field | Value |
+|-------|-------|
+| **Scope** | M-LLM-X.1.1–1.5 |
+| **Goal** | Jedna ścieżka `resolve_context_window_tokens`; wszystkie adapters wired |
+| **DoD** | `test_model_catalog.py` green; profile override na Claude/Groq/vLLM |
+| **Files** | `registry/model_catalog.py`, `registry/context_window.py`, `registry/model_catalog.yaml`, `providers/*`, `registry/profile.py` |
+
+### Sprint LC-2 — Token accounting (P0)
+
+| Field | Value |
+|-------|-------|
+| **Scope** | M-LLM-X.3.1, 3.3 |
+| **Goal** | Preflight + `ContextBudgetPolicy.from_adapter` używają adapter window/tokenizer |
+| **DoD** | `test_context_window_wiring.py`; preflight unit tests green |
+| **Files** | `context_preflight.py`, `context_budget.py` |
+
+### Sprint LC-3 — Failover + runtime routing (P1)
+
+| Field | Value |
+|-------|-------|
+| **Scope** | M-LLM-X.4.1–4.3, 5.1–5.5 |
+| **Goal** | Profile chain, Nexus hot path, ACP bridge |
+| **DoD** | Failover unit test; AHI wiring → AUDIT-IDEAL-6.2 Done |
+| **Files** | `registry/failover_adapter.py`, `model_router.py`, `nexus_factory.py`, `llm_router.py` |
+
+### Sprint LC-4 — Gateway metadata + DX closeout (P1/P2)
+
+| Field | Value |
+|-------|-------|
+| **Scope** | M-LLM-X.2.*, 7.2–7.4, 8.* |
+| **Goal** | OpenRouter fetch, validate_runtime, CI guards, audit register closeout |
+| **DoD** | All LLM-AUDIT-* Done in architecture |
+
+### Backlog (P2–P4 — nie blokuje ukończenia warstwy)
+
+| ID | Item | Class |
+|----|------|-------|
+| LLM-AUDIT-14 | Capability flags z catalog | **P2** |
+| LLM-AUDIT-8 | `validate_runtime()` + doctor | **P2** |
+| LLM-AUDIT-10 | Plugin provider enum-free profile | **P2** |
+| M-LLM-X.6.1–6.2 | Custom gateway example | **P2** |
+| Streaming tool-call parity | Provider-specific gaps | **P2** |
+| Vendor-native tokenizer plugins | Post-X deferred | **P4** |
+| Central LLM gateway microservice | Separate ADR | **P4** |
+
+---
+
 ### 6.1ax Harness implementation queue — LLM Developer Excellence (M-LLM-X)
 
 **Purpose:** Ordered backlog for **Phase M-LLM-X**. Pull **P0 waves first** — context window accuracy blocks context engine quality.
@@ -58,9 +132,9 @@
 | Order | Wave | IDs | Priority | Status |
 |-------|------|-----|----------|--------|
 | 0 | X-0 | M-LLM-X.0.1–0.3 | **P0** | **Done** |
-| 1 | X-1 | M-LLM-X.1.1–1.6 | **P0** | **Planned** |
+| 1 | X-1 | M-LLM-X.1.1–1.6 | **P0** | **Partial** (1.1–1.5 Done) |
 | 2 | X-2 | M-LLM-X.2.1–2.4 | P1 | **Planned** |
-| 3 | X-3 | M-LLM-X.3.1–3.5 | **P0** | **Planned** |
+| 3 | X-3 | M-LLM-X.3.1–3.5 | **P0** | **Partial** (3.1, 3.3 Done) |
 | 4 | X-4 | M-LLM-X.4.1–4.5 | P1 | **Planned** |
 | 5 | X-5 | M-LLM-X.5.1–5.5 | P1 | **Planned** |
 | 6 | X-6 | M-LLM-X.6.1–6.3 | P2 | **Partial** (6.3 Done) |
@@ -107,12 +181,12 @@ Wave M-LLM-X-8 (closeout):     M-LLM-X.8.1 → 8.2 → 8.3
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| M-LLM-X.1.1 | **`ModelRecord` + `ModelCatalog`** frozen types | **Planned** | Critical | `registry/model_catalog.py` | Unit: load, immutability |
-| M-LLM-X.1.2 | **Bundled `model_catalog.yaml`** — OpenAI, Claude, Gemini, Mistral, Bedrock, Groq, common OpenRouter ids; family prefix rules | **Planned** | Critical | `registry/model_catalog.yaml` | ≥50 entries; prefix rules for `claude-*`, `gpt-*`, `gemini-*` |
-| M-LLM-X.1.3 | **`resolve_context_window_tokens(provider, model, options)`** — single resolver per ADR-LLM-002 order | **Planned** | Critical | `registry/context_window.py` | Unit: override > exact > prefix > default |
-| M-LLM-X.1.4 | **Wire all 19 adapters** — remove inline dicts; call resolver at `__init__` | **Planned** | Critical | `providers/*` | No direct `.get(model, 32000)` left in adapters |
-| M-LLM-X.1.5 | **`LLMProfile` propagates `context_window_tokens`** to every adapter ctor via `create_adapter()` | **Planned** | Critical | `registry/profile.py` | Test: Claude + Groq + vLLM override |
-| M-LLM-X.1.6 | **Env `INTERGRAX_LLM_MODEL_CATALOG_PATH`** optional YAML overlay | **Planned** | Medium | `model_catalog.py` | Operator merge without code deploy |
+| M-LLM-X.1.1 | **`ModelRecord` + `ModelCatalog`** frozen types | **Done** | Critical | `registry/model_catalog.py` | Unit: load, immutability |
+| M-LLM-X.1.2 | **Bundled `model_catalog.yaml`** — OpenAI, Claude, Gemini, Mistral, Bedrock, Groq, common OpenRouter ids; family prefix rules | **Done** | Critical | `registry/model_catalog.yaml` | ≥50 entries; prefix rules for `claude-*`, `gpt-*`, `gemini-*` |
+| M-LLM-X.1.3 | **`resolve_context_window_tokens(provider, model, options)`** — single resolver per ADR-LLM-002 order | **Done** | Critical | `registry/context_window.py` | Unit: override > exact > prefix > default |
+| M-LLM-X.1.4 | **Wire all 19 adapters** — remove inline dicts; call resolver at `__init__` | **Done** | Critical | `providers/*` | Resolver at ctor; legacy dicts as fallback only |
+| M-LLM-X.1.5 | **`LLMProfile` propagates `context_window_tokens`** to every adapter ctor via `create_adapter()` | **Done** | Critical | `registry/profile.py` | Test: Claude override |
+| M-LLM-X.1.6 | **Env `INTERGRAX_LLM_MODEL_CATALOG_PATH`** optional YAML overlay | **Done** | Medium | `model_catalog.py` | Operator merge without code deploy |
 | M-LLM-X.1.7 | **Capability flags from catalog** — populate `supports_vision` / tools / structured when `ModelRecord` known | **Planned** | Medium | `providers/*`, `modality_capabilities.py` | Conformance subset; W-ML.1 alignment |
 
 ---
@@ -132,11 +206,11 @@ Wave M-LLM-X-8 (closeout):     M-LLM-X.8.1 → 8.2 → 8.3
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| M-LLM-X.3.1 | **`verify_context_preflight`** uses `adapter.count_messages_tokens(messages)` | **Planned** | Critical | `context_preflight.py` | Unit: tiktoken path exercised |
-| M-LLM-X.3.2 | **`count_message_tokens` helper** — delegate to adapter when provided | **Planned** | High | `context_preflight.py` | Backward compat optional counter |
-| M-LLM-X.3.3 | **`ContextBudgetPolicy.from_adapter(adapter)`** factory — derive `max_tokens_estimate` from `resolve_input_budget_tokens` | **Planned** | High | `context_budget.py` | Nexus compile tests updated |
+| M-LLM-X.3.1 | **`verify_context_preflight`** uses `adapter.count_messages_tokens(messages)` | **Done** | Critical | `context_preflight.py` | Unit: adapter path exercised |
+| M-LLM-X.3.2 | **`count_message_tokens` helper** — delegate to adapter when provided | **Partial** | High | `context_preflight.py` | Adapter default when counter None |
+| M-LLM-X.3.3 | **`ContextBudgetPolicy.from_adapter(adapter)`** factory — derive `max_tokens_estimate` from `resolve_input_budget_tokens` | **Done** | High | `context_budget.py` | Unit test |
 | M-LLM-X.3.4 | **`scripts/check_context_preflight_uses_adapter_tokens.py`** CI guard | **Planned** | High | `scripts/` | Added to §6.1 maintenance |
-| M-LLM-X.3.5 | **`engine_history_layer`** history token count via `adapter.count_messages_tokens` | **Planned** | High | `engine_history_layer.py` | Same tokenizer path as preflight |
+| M-LLM-X.3.5 | **`engine_history_layer`** history token count via `adapter.count_messages_tokens` | **Done** | High | `engine_history_layer.py` | Already delegated; preflight aligned LC-2 |
 
 ---
 

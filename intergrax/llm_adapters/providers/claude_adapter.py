@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import json
 import os
@@ -27,6 +28,7 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason, parse_finish_reason
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
@@ -81,7 +83,12 @@ class ClaudeChatAdapter(LLMAdapter):
         self.model: str = resolved_model
         self.defaults = defaults
         self.model_name_for_token_estimation: str = self.model
-        self._context_window_tokens: int = self._CLAUDE_CONTEXT_WINDOWS.get(self.model, 32_000)
+        self._context_window_tokens: int = init_adapter_context_window_tokens(
+            provider=LLMProvider.CLAUDE,
+            model=self.model,
+            constructor_kwargs=defaults,
+            legacy_windows=self._CLAUDE_CONTEXT_WINDOWS,
+        )
         self.provider = LLMProvider.CLAUDE
 
     @property
@@ -101,7 +108,7 @@ class ClaudeChatAdapter(LLMAdapter):
         out_tok: int = 0,
     ) -> LLMAdapterResponse:
         tool_calls = tool_calls_from_openai_dicts(tool_calls_raw or extract_anthropic_tool_calls(resp))
-        finish = parse_finish_reason(getattr(resp, "stop_reason", None))
+        finish = parse_finish_reason(attribute_access.optional(resp, "stop_reason", None))
         if tool_calls and finish == LLMFinishReason.COMPLETED:
             finish = LLMFinishReason.TOOL_CALLS
         return build_adapter_response(
@@ -110,7 +117,7 @@ class ClaudeChatAdapter(LLMAdapter):
             usage=LLMTokenUsage.from_counts(input_tokens=in_tok, output_tokens=out_tok),
             model=self.model,
             provider=self._provider_slug(),
-            response_id=str(getattr(resp, "id", "") or "") or None,
+            response_id=str(attribute_access.optional(resp, "id", "") or "") or None,
             tool_calls=tool_calls,
             provider_extensions=self._estimate_extensions(),
         )
@@ -151,7 +158,7 @@ class ClaudeChatAdapter(LLMAdapter):
 
             text = extract_anthropic_text(resp)
             out_tok = int(self.estimate_tokens_for_text(text, model_hint=self.model_name_for_token_estimation))
-            if getattr(resp, "usage", None):
+            if attribute_access.optional(resp, "usage", None):
                 in_tok = int(resp.usage.input_tokens or in_tok)
                 out_tok = int(resp.usage.output_tokens or out_tok)
 
@@ -287,7 +294,7 @@ class ClaudeChatAdapter(LLMAdapter):
                 kwargs["tool_choice"] = tool_choice
 
             resp = self._execute(lambda: self.client.messages.create(**kwargs))
-            if getattr(resp, "usage", None):
+            if attribute_access.optional(resp, "usage", None):
                 in_tok = int(resp.usage.input_tokens or in_tok)
                 out_tok = int(resp.usage.output_tokens or 0)
 
@@ -349,13 +356,13 @@ class ClaudeChatAdapter(LLMAdapter):
             for event in stream:
                 if event.type == "content_block_delta":
                     delta = event.delta
-                    if getattr(delta, "type", None) == "text_delta":
+                    if attribute_access.optional(delta, "type", None) == "text_delta":
                         txt = delta.text or ""
                         if txt:
                             buf.append(txt)
                             yield partial_stream_event(delta_content=txt)
 
-            get_final = getattr(stream, "get_final_message", None)
+            get_final = attribute_access.optional(stream, "get_final_message", None)
             resp = get_final() if callable(get_final) else None
             if resp is None:
                 result = self.generate_with_tools(
@@ -369,7 +376,7 @@ class ClaudeChatAdapter(LLMAdapter):
                 yield final_stream_event(response=result)
                 return
 
-            if getattr(resp, "usage", None):
+            if attribute_access.optional(resp, "usage", None):
                 in_tok = int(resp.usage.input_tokens or in_tok)
                 out_tok = int(resp.usage.output_tokens or 0)
 

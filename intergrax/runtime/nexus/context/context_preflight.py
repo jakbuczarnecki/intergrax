@@ -41,8 +41,10 @@ def verify_context_preflight(
 
     Raises ValueError when invariant is violated after compile pass.
     """
-    counter = count_tokens or _default_count_tokens
-    assembled = count_message_tokens(messages, count_tokens=counter)
+    if count_tokens is None:
+        assembled = int(adapter.count_messages_tokens(messages))
+    else:
+        assembled = count_message_tokens(messages, count_tokens=count_tokens)
     context_window = int(adapter.context_window_tokens)
 
     if max_output_tokens is not None:

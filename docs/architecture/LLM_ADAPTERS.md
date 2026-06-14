@@ -20,9 +20,9 @@ Tier-0 **LLM adapter layer** is the Harness cognition entry point: one `LLMAdapt
 | Typed completion envelope | **L3** | L3 (maintain) | M-LLM-R closed; CI guards |
 | Provider abstraction (19 slugs) | **L3** | L3+ (plugin story) | `LLMAdapterRegistry`, OpenAI-compat factory |
 | Model ID as free string | **L3** | L3 (maintain) | `LLMProfile.model: str` |
-| Model metadata / context window | **L1–L2** | **L3** | Per-adapter dicts; fallback 32k — see §Model catalog |
+| Model metadata / context window | **L2** | **L3** | `ModelCatalog` + resolver Done (LC-1); dynamic gateway pending X.2 |
 | Multi-model routing / failover | **L1–L2** | **L3** | `ModelRouter` stub; no runtime failover — see §Routing |
-| Token accounting consistency | **L2** | **L3** | tiktoken vs chars/4 split — see §Token accounting |
+| Token accounting consistency | **L2+** | **L3** | Preflight uses adapter tokenizer (LC-2); CI guard pending X.3.4 |
 | Developer experience | **L2** | **L3+** | [`USAGE.md`](../../intergrax/llm_adapters/USAGE.md) **Done**; dual API Nexus vs ACP — see §Developer surfaces |
 | Observability & governance | **L3** | L3 (maintain) | Prometheus, quota, replay bridge |
 
@@ -228,8 +228,9 @@ Only **Ollama** accepts constructor `context_window_tokens=` today; other adapte
 Central Tier-0 registry (Phase M-LLM-X.1):
 
 ```text
-intergrax/llm_adapters/registry/model_catalog.py   — resolve API
-intergrax/llm_adapters/registry/model_catalog.yaml — bundled defaults (versioned)
+intergrax/llm_adapters/registry/model_catalog.py   — resolve API (Done)
+intergrax/llm_adapters/registry/model_catalog.yaml — bundled defaults (Done)
+intergrax/llm_adapters/registry/context_window.py  — resolve_context_window_tokens (Done)
 ```
 
 #### `ModelRecord` (frozen)
@@ -303,8 +304,8 @@ These read `adapter.context_window_tokens` — they **automatically benefit** fr
 
 | Path | Current | Target |
 |------|---------|--------|
-| `verify_context_preflight` | Default `chars // 4` | **`adapter.count_messages_tokens(messages)`** |
-| `ContextBudgetPolicy` defaults | Fixed 4k estimate | Derive from `resolve_input_budget_tokens(adapter)` when adapter available |
+| `verify_context_preflight` | **`adapter.count_messages_tokens`** (default) | Maintain; optional custom counter |
+| `ContextBudgetPolicy` defaults | **`from_adapter()`** factory available | Nexus compile paths adopt factory (X.3.3 rollout) |
 | Billing / SLO | SDK usage on envelope | Unchanged |
 
 **Rule:** Budgeting and preflight MUST use the same tokenizer path as the adapter when an `LLMAdapter` is in scope.
@@ -465,7 +466,7 @@ Per-provider model env vars: `INTERGRAX_DEFAULT_<PROVIDER>_MODEL` (see [`USAGE.m
 | Soft governance warn | `INTERGRAX_LLM_GOVERNANCE_WARN_TOKENS` |
 | Pushgateway | `INTERGRAX_LLM_PROMETHEUS_PUSHGATEWAY_URL` |
 | Distributed rate limit | `set_llm_distributed_rate_limiter` + `use_distributed_rate_limit` |
-| Context preflight | `verify_context_preflight()` — uses `adapter.context_window_tokens` **today**; token **count** via `chars // 4` until M-LLM-X.3 |
+| Context preflight | `verify_context_preflight()` — default **`adapter.count_messages_tokens`** |
 
 ---
 
@@ -533,8 +534,8 @@ Do not merge counters without explicit bridge code.
 |----|-----|----------|--------|---------------|
 | AUDIT-IDEAL-6.1 | Structured output validation on reference + certified paths | P1 | **Done** | M-LLM-R — §Structured output |
 | AUDIT-IDEAL-6.2 | Live cost/latency/quality routing (AHI prod path) | P2 | **Partial** | M-LLM-X.5 — LLM-AUDIT-9 |
-| AUDIT-IDEAL-6.3 | Central `ModelCatalog` + context window resolution | P0 | **Planned** | M-LLM-X.1 — LLM-AUDIT-1 |
-| AUDIT-IDEAL-6.4 | Tokenizer-consistent context preflight | P0 | **Planned** | M-LLM-X.3 — LLM-AUDIT-3, 15 |
+| AUDIT-IDEAL-6.3 | Central `ModelCatalog` + context window resolution | P0 | **Done** | M-LLM-X.1 — LC-1 |
+| AUDIT-IDEAL-6.4 | Tokenizer-consistent context preflight | P0 | **Partial** | M-LLM-X.3 — LC-2 (preflight Done; CI guard pending) |
 | AUDIT-IDEAL-6.5 | Profile failover chain | P1 | **Planned** | M-LLM-X.4 — LLM-AUDIT-5 |
 | AUDIT-IDEAL-6.6 | ACP `StepLLMRouter` backed by `LLMAdapter` | P1 | **Planned** | M-LLM-X.5 — LLM-AUDIT-6 |
 | AUDIT-IDEAL-6.7 | Developer `USAGE.md` + startup validation | P2 | **Partial** | M-LLM-X.7 — LLM-AUDIT-8 |
@@ -543,9 +544,9 @@ Do not merge counters without explicit bridge code.
 
 | ID | Gap | Severity | Phase | Status |
 |----|-----|----------|-------|--------|
-| LLM-AUDIT-1 | No central `ModelCatalog`; per-adapter context dicts stale | **P0** | M-LLM-X.1 | **Planned** |
-| LLM-AUDIT-2 | `context_window_tokens` override only on Ollama | **P0** | M-LLM-X.1 | **Planned** |
-| LLM-AUDIT-3 | Preflight token estimate uses chars/4 not adapter tokenizer | **P0** | M-LLM-X.3.1–3.4 | **Planned** |
+| LLM-AUDIT-1 | No central `ModelCatalog`; per-adapter context dicts stale | **P0** | M-LLM-X.1 | **Done** |
+| LLM-AUDIT-2 | `context_window_tokens` override only on Ollama | **P0** | M-LLM-X.1 | **Done** |
+| LLM-AUDIT-3 | Preflight token estimate uses chars/4 not adapter tokenizer | **P0** | M-LLM-X.3.1–3.4 | **Partial** — preflight Done; CI guard pending |
 | LLM-AUDIT-4 | `ModelRouter` not on Nexus hot path | **P1** | M-LLM-X.4–5 | **Planned** |
 | LLM-AUDIT-5 | No provider failover chain | **P1** | M-LLM-X.4 | **Planned** |
 | LLM-AUDIT-6 | ACP `StepLLMRouter` disconnected from `LLMAdapter` | **P1** | M-LLM-X.5 | **Planned** |
@@ -553,11 +554,11 @@ Do not merge counters without explicit bridge code.
 | LLM-AUDIT-8 | No `intergrax/llm_adapters/USAGE.md` | **P2** | M-LLM-X.7 | **Partial** — USAGE Done; `validate_runtime` pending |
 | LLM-AUDIT-9 | AUDIT-IDEAL-6.2 wiring ceremonial — no runtime swap | **P1** | M-LLM-X.5 | **Partial** |
 | LLM-AUDIT-10 | Plugin provider story undocumented | **P2** | M-LLM-X.6 | **Partial** — USAGE §Extension; enum-free profile pending X.6.1 |
-| LLM-AUDIT-11 | `ContextBudgetPolicy` default 4k decoupled from adapter window | **P0** | M-LLM-X.3.3 | **Planned** |
-| LLM-AUDIT-12 | Prefix context heuristics only on Bedrock (not Claude/OpenAI/Gemini) | **P0** | M-LLM-X.1.2–1.3 | **Planned** |
+| LLM-AUDIT-11 | `ContextBudgetPolicy` default 4k decoupled from adapter window | **P0** | M-LLM-X.3.3 | **Partial** — factory Done; Nexus adoption pending |
+| LLM-AUDIT-12 | Prefix context heuristics only on Bedrock (not Claude/OpenAI/Gemini) | **P0** | M-LLM-X.1.2–1.3 | **Done** |
 | LLM-AUDIT-13 | Cohere dual slug (`cohere` vs `cohere_native`) confuses developers | **P2** | M-LLM-X.7.5 | **Done** |
 | LLM-AUDIT-14 | Capability flags not catalog-driven (`supports_vision`, tools, structured) | **P2** | M-LLM-X.1.7 | **Planned** |
-| LLM-AUDIT-15 | `engine_history_layer` token count inconsistent with preflight (chars/4) | **P0** | M-LLM-X.3.5 | **Planned** |
+| LLM-AUDIT-15 | `engine_history_layer` token count inconsistent with preflight (chars/4) | **P0** | M-LLM-X.3.5 | **Done** — history already used adapter; preflight aligned in LC-2 |
 
 **Deferred (documented, no X-phase task):** tiktoken OpenAI-centric token estimate for non-OpenAI models — acceptable for budgeting until vendor-specific tokenizer plugins; note in `USAGE.md`.
 
