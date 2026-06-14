@@ -9,7 +9,7 @@
 **ADR:** [`ADR-CTX-001`](../adr/entries/2026-06-12/ADR-CTX-001.md) · [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler budget semantics)  
 **Related:** [`architecture/MEMORY.md`](MEMORY.md) (stores + lifecycle) · [`architecture/RAG.md`](RAG.md) (retrieval) · [`architecture/TOOLS.md`](TOOLS.md) (tool outputs) · [`architecture/NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) (turn narrative) · [`architecture/OBSERVABILITY.md`](OBSERVABILITY.md) (event spine) · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix L  
 **Implementation (as-built):** `intergrax/context/` · `intergrax/runtime/nexus/context/` · `intergrax/runtime/architecture/context_engineering.py` · `intergrax/contracts/context_assembly.py` · `applications/_shared/context_*`  
-**Last architecture pass:** 2026-06-14 (CE-PROV-WIRE B2–B4 — provider handle contract + live collect)
+**Last architecture pass:** 2026-06-14 (iteration II — CE-10.3 + CE-HANDLE-FILL planned)
 
 ---
 
@@ -689,7 +689,7 @@ profile = ApplicationEnvironmentProfile(
 | GAP-CTX-05 | **Closed** | Quality scoring not in hot path | CE-10.1 ranker gate |
 | GAP-CTX-06 | **Closed** | Workspace spike only | CE-7 workspace provider |
 | GAP-CTX-07 | **Closed** | No `ContextOrchestrator` | CE-8 codebase preset |
-| GAP-CTX-08 | **Open** | `classify_candidates` string heuristics | CE-10.3 deferred |
+| GAP-CTX-08 | **Open** (C1 active) | `classify_candidates` string heuristics | **CE-10.3** — CE-FMT-1 tag prefix classification (iteration II) |
 | GAP-CTX-09 | **Closed** | No OTel spans on hot path | CE-9.2 span registry + shim |
 | GAP-CTX-10 | **Closed** | No `CONTEXT_CANDIDATE_*` bus events | CE-9.1 engine emission via `context_skill_recording` |
 | GAP-CTX-11 | **Closed** | `ContextBuilder` name collision | CE-3.6 `SessionRagContextBuilder` alias |
