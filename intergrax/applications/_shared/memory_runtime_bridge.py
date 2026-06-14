@@ -12,9 +12,11 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     MemoryProfile,
 )
+from intergrax.memory.memory_vector_errors import MemoryVectorBackendUnavailableError
 from intergrax.runtime.nexus.config import RuntimeConfig
 
 __all__ = [
+    "MemoryVectorBackendUnavailableError",
     "apply_context_profile_to_runtime_config",
     "apply_memory_profile_to_runtime_config",
     "apply_environment_profiles_to_runtime_config",
@@ -33,6 +35,11 @@ def apply_memory_profile_to_runtime_config(
     config.memory_retention_days = memory.retention_days
     config.memory_scope_boundary = memory.scope_boundary
     config.memory_consolidation_mode = memory.consolidation_mode
+    config.enable_session_vector_index = memory.enable_session_vector_index
+    config.include_cross_session_episodic = memory.include_cross_session_episodic
+    config.session_index_top_k = memory.session_index_top_k
+    config.session_index_score_threshold = memory.session_index_score_threshold
+    config.vector_index_namespace = memory.vector_index_namespace
     return config
 
 

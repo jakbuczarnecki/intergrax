@@ -69,6 +69,13 @@ def extract_provider_metadata_from_runtime_state(state: RuntimeState) -> dict[st
     if state.base_history:
         metadata[SESSION_HISTORY_MESSAGES_METADATA_KEY] = list(state.base_history)
 
+    vector_hits = state.request.metadata.get("session_vector_hits")
+    if isinstance(vector_hits, list) and vector_hits:
+        metadata["session_vector_hits"] = list(vector_hits)
+    memory_profile = state.request.metadata.get("memory_profile")
+    if isinstance(memory_profile, dict) and memory_profile.get("enable_session_vector_index"):
+        metadata["memory_profile"] = dict(memory_profile)
+
     instruction_parts: list[str] = []
     if state.profile_org_instructions and state.profile_org_instructions.strip():
         instruction_parts.append(state.profile_org_instructions.strip())

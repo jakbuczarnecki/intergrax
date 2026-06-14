@@ -7,8 +7,11 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.runtime.nexus.session.session_message_append_result import SessionMessageAppendResult
 from intergrax.runtime.nexus.tracing.session.session_consolidation_diag import SessionConsolidationDiagV1
+
 if TYPE_CHECKING:
+    from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+
 from intergrax.runtime.nexus.session.chat_session import (
     ChatSession,
     SessionCloseReason,
@@ -54,6 +57,11 @@ class SessionManager:
         user_profile_manager: Optional[UserProfileManager] = None,
         organization_profile_manager: Optional[OrganizationProfileManager] = None,
         session_memory_consolidation_service: Optional[SessionMemoryConsolidationService] = None,
+        session_turn_index_store: Optional["SessionTurnIndexStore"] = None,
+        session_turn_index_enabled: bool = False,
+        session_index_top_k: int = 8,
+        session_index_score_threshold: Optional[float] = None,
+        include_cross_session_episodic: bool = False,
         user_turns_consolidation_interval: Optional[int] = GLOBAL_SETTINGS.default_user_turns_consolidation_interval,
         consolidation_cooldown_seconds: Optional[int] = GLOBAL_SETTINGS.default_consolidation_cooldown_seconds,
     ) -> None:
@@ -93,6 +101,13 @@ class SessionManager:
         self._session_memory_consolidation_service = (
             session_memory_consolidation_service
         )
+        self._session_turn_index_store = session_turn_index_store
+        self._session_turn_index_enabled = bool(
+            session_turn_index_enabled and session_turn_index_store is not None
+        )
+        self._session_index_top_k = max(1, int(session_index_top_k))
+        self._session_index_score_threshold = session_index_score_threshold
+        self._include_cross_session_episodic = include_cross_session_episodic
 
         # Resolve the effective interval for mid-session consolidation.
         # The value is interpreted as:
@@ -354,6 +369,14 @@ class SessionManager:
             message=message,
         )
 
+        if self._session_turn_index_enabled and self._session_turn_index_store is not None:
+            await self._session_turn_index_store.upsert_turn(
+                tenant_id=tenant_id,
+                session_id=session_id,
+                user_id=session.user_id if session is not None else None,
+                message=stored_message,
+            )
+
         return SessionMessageAppendResult(
             message=stored_message,
             consolidation_diag=consolidation_diag,
@@ -412,6 +435,42 @@ class SessionManager:
             top_k=top_k,
             score_threshold=score_threshold,
         )
+
+    async def search_session_semantic_recall(
+        self,
+        *,
+        tenant_id: str,
+        session_id: str,
+        user_id: str | None,
+        query: str,
+        top_k: int | None = None,
+        score_threshold: float | None = None,
+        include_cross_session: bool | None = None,
+    ) -> list[dict[str, Any]]:
+        """Semantic search over episodic session turn index (MEM-VEC-2.3)."""
+        if not self._session_turn_index_enabled or self._session_turn_index_store is None:
+            return []
+        return await self._session_turn_index_store.search_turns(
+            query=query,
+            tenant_id=tenant_id,
+            session_id=session_id,
+            user_id=user_id,
+            top_k=top_k or self._session_index_top_k,
+            score_threshold=(
+                score_threshold
+                if score_threshold is not None
+                else self._session_index_score_threshold
+            ),
+            include_cross_session=(
+                self._include_cross_session_episodic
+                if include_cross_session is None
+                else include_cross_session
+            ),
+        )
+
+    @property
+    def user_profile_manager(self) -> UserProfileManager | None:
+        return self._user_profile_manager
 
 
     # ------------------------------------------------------------------

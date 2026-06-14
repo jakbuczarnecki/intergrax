@@ -165,6 +165,11 @@ class MemoryProfile(BaseModel):
     consolidation_mode: Literal["manual", "scheduled", "auto"] = "manual"
     enable_entity_graph_memory: bool = False
     enable_session_vector_index: bool = False
+    include_cross_session_episodic: bool = False
+    session_index_top_k: int = Field(default=8, ge=1)
+    session_index_score_threshold: float | None = None
+    vector_index_namespace: str | None = None
+    session_index_roles: tuple[str, ...] = ("user", "assistant")
 
 
 class ReliabilityProfile(BaseModel):

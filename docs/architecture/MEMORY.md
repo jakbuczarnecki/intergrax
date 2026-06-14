@@ -64,8 +64,8 @@ Industry systems (LangMem, Mem0, Zep, Letta, CoALA) use a cognitive taxonomy. In
 | Cognitive type | Purpose | Intergrax store / mechanism | Maturity |
 |----------------|---------|----------------------------|----------|
 | **Working memory** | Active turn context | `state.base_history` + injected LTM/RAG/tool blocks + `AgentContextBundle` | Strong — `ContextCompiler` |
-| **Episodic** | Specific past events / trajectories | `EPISODIC_EVENT` + `SESSION_SUMMARY`; **session turn vector index** (target MEM-VEC); session history; trace replay | Medium → target **Strong** |
-| **Semantic** | Stable facts and preferences | `USER_FACT`, `PREFERENCE`, `ORG_FACT` + **LTM vector index** | Medium — extract + semantic search (wiring gap MEM-VEC-1.*) |
+| **Episodic** | Specific past events / trajectories | `EPISODIC_EVENT` + `SESSION_SUMMARY`; **session turn vector index** (MEM-VEC-2.*) | Strong — episodic index + CE recall |
+| **Semantic** | Stable facts and preferences | `USER_FACT`, `PREFERENCE`, `ORG_FACT` + **LTM vector index** | Strong — LTM wiring + semantic search |
 | **Procedural** | How the system should behave | `system_instructions` (user/org profile); Prompt Registry | Minimal — no versioned procedural store |
 | **Knowledge** | Document / corpus truth | RAG vectorstore; Graph RAG (documents) | Strong |
 | **Task-scoped** | Per-run scratch state | `TaskMemory` + `PolicyScopedMemoryView` | Strong |
@@ -138,7 +138,7 @@ Intergrax uses **one vector integration stack** (`EmbeddingManager`, `Vectorstor
 3. **Tombstones** — logical deletes in the primary store MUST propagate vector tombstones (`deleted=1` or `delete(ids)`).
 4. **Agents** — Tier-2 agents consume semantic memory only via Nexus steps, `ltm.search`, or future `memory.semantic_search` skill runtime — never via direct vector SDK calls.
 
-**As-built gap (2026-06-12 audit):** LTM index code exists in `UserProfileManager` but default Tier-3 wiring does not inject the RAG stack; episodic session indexing is **not implemented**. Close via [Phase MEM-VEC](../plan/MEMORY.md#phase-mem-vec--vector-memory-integration-band-2aw).
+**As-built (2026-06-14):** LTM and episodic vector indexes wired via `memory_vector_wiring.py`; Tier-3 hosts inject RAG stack into `UserProfileManager` and `SessionTurnIndexStore`. Remaining: MEM-VEC-3.* plugin EP + `memory.semantic_search` skill runtime (P2).
 
 ---
 
@@ -612,15 +612,15 @@ See [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) §3.
 | Task KV | 4 | Done | 4 (maintain) |
 | Context / LLM window | 4.5 | Partial | Done — Context Compiler |
 | STM session | 4 | Partial | Done — Mongo + SQLite parity |
-| User LTM | 3.5 | Partial | Done — store; vector wiring gap |
-| LTM / session vector recall | 2 | N/A | Planned — MEM-VEC |
+| User LTM | 4 | Partial | Done — store + vector wiring |
+| LTM / session vector recall | 4 | N/A | Done — MEM-VEC-1/2 |
 | Org memory | 2.5 | Partial | 2.5 |
 | Consolidation | 4 | Partial | Done — job + modes |
 | Graph agent memory | 3 | RFC only | Done — `EntityGraphMemoryStore` |
 | Context compiler (unified) | 4.5 | N/A | Done |
-| **Overall** | **~3.9** | Platform wiring Done | MEM-VEC open (vector recall) |
+| **Overall** | **~4.2** | Platform wiring Done | MEM-VEC-3.* P2 backlog |
 
-**FAUDIT-32:** Memory Layer **L3** until MEM-VEC-1.* closes LTM wiring and MEM-VEC-2.* ships episodic recall. Context Engineering scored separately — [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §3.
+**FAUDIT-32:** Memory Layer **L4** for vector recall (MEM-VEC-1/2 closed). Context Engineering scored separately — [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §3.
 
 Implementation tasks: [Phase MEM-VEC](../plan/MEMORY.md#phase-mem-vec--vector-memory-integration-band-2aw) · [Phase MEM-DEPTH](../plan/MEMORY.md) (closed).
 

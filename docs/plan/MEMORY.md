@@ -32,7 +32,7 @@
 
 ## Phase MEM-VEC — Vector memory integration (Band 2aw)
 
-**Status:** **Active** (2026-06-14) — MEM-VEC-0.2 ADR accepted; MEMV1/MEMV2 implementation in progress.  
+**Status:** **Active** (2026-06-14) — MEMV1/MEMV2 **Done**; MEMV3 (P2 plugin + skill runtime) backlog.  
 **Architecture:** [`architecture/MEMORY.md`](../architecture/MEMORY.md) §5.3, §6.4–6.5, §7.1.1, §11.5  
 **Cross-plan:** [`plan/CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) — `SESSION_HISTORY_SEMANTIC` fragment source (CE-VEC-1)  
 **ADR:** [`ADR-MEM-002`](../adr/entries/2026-06-14/ADR-MEM-002.md) — three-domain vector catalog (Accepted 2026-06-14)  
@@ -60,14 +60,14 @@ Work **MEM-VEC-1.*** before MEM-VEC-2.* — LTM wiring is a small diff that unbl
 |----|-------------|----------|--------|---------------|
 | MEM-VEC-0.1 | **Architecture canon** — §5.3 vector index catalog, §6.4–6.5 write paths, §7.1.1 semantic recall, §11.5 plugins | P0 | **Done** | `architecture/MEMORY.md` |
 | MEM-VEC-0.2 | **ADR-MEM-002** — three-domain vector catalog, episodic vs LTM vs knowledge, collection isolation, tombstone rules | P0 | **Done** | `docs/adr/entries/2026-06-14/ADR-MEM-002.md` |
-| MEM-VEC-1.1 | **`build_session_manager_from_environment` accepts `rag_stack`** — inject `embedding_manager`, `vectorstore_manager`, `retrieval_service` into `UserProfileManager` | **P0 Critical** | Planned | `applications/_shared/memory_wiring.py` |
-| MEM-VEC-1.2 | **`build_runtime_context_from_environment` passes shared RAG stack** into memory wiring + sets `ToolWiringContext.user_profile_manager` to same manager instance | **P0 Critical** | Planned | `runtime_config_bridge.py`, `environment_wiring.py` |
-| MEM-VEC-1.3 | **Integration gate** — lab profile with sqlite + inmemory vector: consolidation write → `search_longterm_memory` hits | **P0** | Planned | `tests/integration/applications/test_memory_vector_ltm_wiring.py` |
-| MEM-VEC-1.4 | **`MemoryProfile` vector flags** — `vector_index_namespace`; fail-closed when flags true but no vector backend | P0 | Planned | `environment_profile.py`, `memory_runtime_bridge.py` |
-| MEM-VEC-2.1 | **`SessionTurnIndexStore` protocol** + default adapter over `VectorstoreManager` (`episodic` metadata schema) | P1 | Planned | `intergrax/memory/contracts/` |
-| MEM-VEC-2.2 | **Write path** — `SessionTurnIndexService` on `append_message`; tombstone on delete; `enable_session_vector_index` on `MemoryProfile` | P1 | Planned | `session_manager.py`, `memory_runtime_bridge.py` |
-| MEM-VEC-2.3 | **`SessionSemanticRecallStep`** — semantic search episodic index; inject in CE provider before history layer; trace diag | P1 | Planned | `context_engineering/providers/` |
-| MEM-VEC-2.4 | **CE fragment source** — `SESSION_HISTORY_SEMANTIC` in `ContextCompiler` classification + degradation ladder | P1 | Planned | `context_compiler_models.py`, `CONTEXT_ENGINEERING.md` |
+| MEM-VEC-1.1 | **`build_session_manager_from_environment` accepts `rag_stack`** — inject `embedding_manager`, `vectorstore_manager`, `retrieval_service` into `UserProfileManager` | **P0 Critical** | **Done** | `applications/_shared/memory_wiring.py`, `memory_vector_wiring.py` |
+| MEM-VEC-1.2 | **`build_runtime_context_from_environment` passes shared RAG stack** into memory wiring + sets `ToolWiringContext.user_profile_manager` to same manager instance | **P0 Critical** | **Done** | `runtime_config_bridge.py`, `environment_wiring.py` |
+| MEM-VEC-1.3 | **Integration gate** — lab profile with sqlite + inmemory vector: consolidation write → `search_longterm_memory` hits | **P0** | **Done** | `tests/integration/applications/test_memory_vector_ltm_wiring.py` |
+| MEM-VEC-1.4 | **`MemoryProfile` vector flags** — `vector_index_namespace`; fail-closed when flags true but no vector backend | P0 | **Done** | `environment_profile.py`, `memory_runtime_bridge.py`, `memory_vector_wiring.py` |
+| MEM-VEC-2.1 | **`SessionTurnIndexStore` protocol** + default adapter over `VectorstoreManager` (`episodic` metadata schema) | P1 | **Done** | `intergrax/memory/contracts/session_turn_index.py`, `session_turn_index_service.py` |
+| MEM-VEC-2.2 | **Write path** — `SessionTurnIndexService` on `append_message`; tombstone on delete; `enable_session_vector_index` on `MemoryProfile` | P1 | **Done** | `session_manager.py`, `memory_runtime_bridge.py` |
+| MEM-VEC-2.3 | **`SessionSemanticRecallStep`** — semantic search episodic index; inject in CE provider before history layer; trace diag | P1 | **Done** | `memory_context_invocation.py`, `tool_runtime.py`, `uaep.py` |
+| MEM-VEC-2.4 | **CE fragment source** — `SESSION_HISTORY_SEMANTIC` in `ContextCompiler` classification + degradation ladder | P1 | **Done** (CE-VEC-1) | `context/contracts.py`, `runtime_state_handle_bridge.py` |
 | MEM-VEC-3.1 | **`SessionTurnIndexStorePlugin`** EP + fixture package | P2 | Planned | `intergrax.memory_stores`, `tests/fixtures/plugin_packages/` |
 | MEM-VEC-3.2 | **`memory.semantic_search` skill runtime** — delegates to `ltm.search` + episodic recall (not prompt-only) | P2 | Planned | `skills/providers/memory/` |
 
@@ -77,7 +77,8 @@ Work **MEM-VEC-1.*** before MEM-VEC-2.* — LTM wiring is a small diff that unbl
 |------|-----|---------|
 | 2026-06-12 | MEM-VEC-0.1 | Canon: three-domain vector catalog, wiring contract, episodic recall target state |
 | 2026-06-14 | MEM-VEC-0.2 | ADR-MEM-002: three-domain vector catalog accepted |
-| — | — | *(append row per merged PR)* |
+| 2026-06-14 | MEM-VEC-1.1–1.4 | LTM vector wiring, fail-closed gate, integration test |
+| 2026-06-14 | MEM-VEC-2.1–2.4 | Episodic index write/recall + CE handle population |
 
 **Explicitly out of NOW:** merging `knowledge` + `ltm` + `episodic` into one collection; Mem0 SaaS replacement; Neo4j as default episodic backend.
 

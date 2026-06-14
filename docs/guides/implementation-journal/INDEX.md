@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-14-003 | 2026-06-14 | tier-0, tier-1 MEMORY | MEM-VEC-1.* · MEM-VEC-2.* | [MEM-VEC — LTM and episodic vector recall wiring](entries/2026-06-14/platform-memory-mem-vec-wiring.md) | pending |
 | IJ-2026-06-14-002 | 2026-06-14 | tier-0, tier-1 CONTEXT_ENGINEERING | CE-10.3 · CE-HANDLE-1…4 | [CE iteration II — CE-10.3 tag classification + CE-HANDLE-FILL](entries/2026-06-14/platform-ce-iteration-ii-handle-fill.md) | 4fbebc01 |
 | IJ-2026-06-14-001 | 2026-06-14 | tier-0, tier-1 CONTEXT_ENGINEERING | CE-PROV-02…11 · CE-PROV-GATE · CE-PROV-INT | [CE-PROV-WIRE B2–B4 — builtin provider collect closeout (GAP-CTX-20)](entries/2026-06-14/platform-ce-prov-wire-b2-b4-closeout.md) | 77ba4fed |
 | IJ-2026-06-13-013 | 2026-06-13 | tier-1, tier-2, tier-3 OBSERVABILITY | EBE-1…EBE-6 | [EBE PoC v1 — deployable attestation_demo for AgentReceipt partner handoff](entries/2026-06-13/attestation-demo-partner-poc-deploy.md) | pending |
