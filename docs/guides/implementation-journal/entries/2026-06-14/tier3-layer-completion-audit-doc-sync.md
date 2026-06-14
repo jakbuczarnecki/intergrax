@@ -11,7 +11,7 @@ plan_ref:
   - LC-DOC
   - LC-IMPL-1
 status: completed
-commit: pending
+commit: dfed30ba
 adr: no ADR needed — documentation sync and missing import fix; no contract change
 ---
 
