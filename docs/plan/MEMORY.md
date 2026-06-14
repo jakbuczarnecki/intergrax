@@ -14,7 +14,7 @@
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §7, §16 · baseline **32/32 L3**  
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
-**Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
+**Status:** **Done** — memory-routed rows 14.1–14.2, 15.1–15.3, 16.1–16.2 closed in master register (16.x implemented in CONTEXT_ENGINEERING)
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
@@ -23,8 +23,8 @@
 | AUDIT-IDEAL-15.1 | §15 Memory | Org memory 2.5 (organizational LTM scope) | **P0** | **Done** |
 | AUDIT-IDEAL-15.2 | §15 Memory | Episodic / semantic / procedural taxonomy (`MemoryKind` uplift) | P1 | **Done** |
 | AUDIT-IDEAL-15.3 | §15 Memory | Entity graph memory ship (MEM-DEPTH-5.1 beyond RFC) | P2 | **Done** |
-| AUDIT-IDEAL-16.1 | §16 Context | Online context drift monitoring + alerts | P1 | **Done** |
-| AUDIT-IDEAL-16.2 | §16 Context | Semantic compression in production profiles | P2 | **Done** |
+| AUDIT-IDEAL-16.1 | §16 Context | Online context drift monitoring + alerts | P1 | **Done** — owner [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §11 |
+| AUDIT-IDEAL-16.2 | §16 Context | Semantic compression in production profiles | P2 | **Done** — owner CE §11 (`semantic_compression_enabled`) |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 
@@ -199,14 +199,14 @@ Knowledge:      RAG vectorstore; Graph RAG (document graph — NOT agent entity 
 Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutable memory)
 ```
 
-**Gap (document, do not implement as separate modules in MEM0):** no first-class **episodic / semantic / procedural** taxonomy in code — only `MemoryKind` entry tags (`USER_FACT`, `PREFERENCE`, `SESSION_SUMMARY`, `ORG_FACT`, `POLICY`). IDEAL harness doc describes episodic/semantic as **vision only**.
+**MemoryKind taxonomy (as-built):** LTM entries use `MemoryKind` tags including `EPISODIC_EVENT` and `PROCEDURAL` (AUDIT-IDEAL-15.2 Done). Cognitive episodic/semantic/procedural **stores** remain mapped to session index + LTM + `system_instructions` — not separate Mem0-style modules. Temporal validity on facts deferred: MEM-DEPTH-5.2.
 
 ### MEM — Persistence backend matrix (as-built)
 
 | Layer | In-memory | SQLite | Postgres | Redis | Mongo |
 |-------|-----------|--------|----------|-------|-------|
 | Task KV | test | prod path (`INTERGRAX_TASK_MEMORY_DB`) | — | — | — |
-| Session | lab SQLite via bridge | bundle path | — | — | — |
+| Session | lab SQLite via bridge | bundle path | — | — | `DocumentStoreSessionStorage` (MEM-DEPTH-2.1) |
 | User profile LTM | test | bundle (`SQLiteUserProfileStore`) | — | — | optional `DocumentStoreUserProfileStore` (MEM-PERS.2) |
 | Org profile | test | bundle | — | — | — |
 | Checkpoints (≠ memory) | — | yes | — | — | — |

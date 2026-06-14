@@ -5,6 +5,8 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-14-006 | 2026-06-14 | tier-0, tier-1 MEMORY | MEM-AUDIT register · doc sync | [MEMORY — post-verification architecture and audit sync](entries/2026-06-14/platform-memory-audit-doc-sync.md) | pending |
+| IJ-2026-06-14-005 | 2026-06-14 | tier-0 SKILLS | SK-EXP5 · ACP-CLOSE-CI | [Gate regression fix — catalog drift, fleet roster, pytest scope](entries/2026-06-14/platform-gate-regression-fix.md) | pending |
 | IJ-2026-06-14-004 | 2026-06-14 | tier-0 LLM_ADAPTERS | M-LLM-X.0.1–0.3 · X.6.3 · X.7.1 · X.7.5 | [M-LLM-X — post-audit architecture and plan sync](entries/2026-06-14/platform-llm-x-audit-doc-sync.md) | pending |
 | IJ-2026-06-14-003 | 2026-06-14 | tier-0, tier-1 MEMORY | MEM-VEC-1.* · MEM-VEC-2.* | [MEM-VEC — LTM and episodic vector recall wiring](entries/2026-06-14/platform-memory-mem-vec-wiring.md) | pending |
 | IJ-2026-06-14-002 | 2026-06-14 | tier-0, tier-1 CONTEXT_ENGINEERING | CE-10.3 · CE-HANDLE-1…4 | [CE iteration II — CE-10.3 tag classification + CE-HANDLE-FILL](entries/2026-06-14/platform-ce-iteration-ii-handle-fill.md) | 4fbebc01 |

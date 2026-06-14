@@ -50,33 +50,53 @@ MemoryProfile · MemoryKind · MemoryWritePolicy · PolicyScopedMemoryView · Me
 
 ## Active plan phases (verify status vs code reality)
 
-MEM Done · MEM-DEPTH Done · MEM-OBS.1 · ADR-MEM-001
+MEM Done · MEM-DEPTH Done · **MEM-VEC** P0–P1 Done (MEM-VEC-3 P2 backlog) · MEM-OBS.1 Done · ADR-MEM-001 · **ADR-MEM-002**
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-Procedural memory minimal · org memory maturity · LangMem/Zep parity gaps on entity graph
+| Gap | Status | Phase |
+|-----|--------|-------|
+| LTM vector wiring on Tier-3 hosts | **Done** | MEM-VEC-1.* |
+| Episodic session turn index + semantic recall | **Done** | MEM-VEC-2.* |
+| Fail-closed when vector flags set without backend | **Done** | MEM-VEC-1.4 |
+| `SessionTurnIndexStore` plugin entry point | **Open** | MEM-VEC-3.1 |
+| `memory.semantic_search` skill runtime (LTM + episodic) | **Open** | MEM-VEC-3.2 |
+| Temporal fact validity on LTM entries | **Open** | MEM-DEPTH-5.2 |
+| Versioned procedural memory store | **Open** (minimal by design) | — |
+| Org memory maturity vs user LTM | **Partial** | AUDIT-15.1 |
+| Entity graph vs Zep parity depth | **Partial** | AUDIT-15.3 — `EntityGraphMemoryStore` shipped |
+| Per-step budget caps before CE collect | **Partial** | ADR-MEM-001 global allocator Done |
+| Explore delegation (Cursor-class) | **Open** | MEM-DEPTH-4.* |
+| Context drift + semantic compression (AUDIT-16.x) | **Done** | CE §11 — not MEMORY code path |
+| Mongo session persistence | **Done** | MEM-DEPTH-2.1 |
+| MemoryKind `EPISODIC_EVENT` / `PROCEDURAL` | **Done** | AUDIT-15.2 |
 
 ---
 
 ## 1. Canonical reads (in order)
 
 1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state
-2. `docs/architecture/MEMORY.md` — architecture canon (incl. audit registers if present)
+2. `docs/architecture/MEMORY.md` — architecture canon (incl. §17 audit register)
 3. `docs/plan/MEMORY.md` — implementation plan and gap IDs
-4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 15
-5. `docs/guides/audit/README.md` — shared production Harness checklist (**mandatory**)
-6. `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix G**
+4. `docs/architecture/CONTEXT_ENGINEERING.md` — Layer C; AUDIT-IDEAL-16.1–16.2 owner
+5. `docs/adr/entries/2026-06-14/ADR-MEM-002.md` — vector catalog
+6. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 15
+7. `docs/guides/audit/README.md` — shared production Harness checklist (**mandatory**)
+8. `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix G**
 
 ---
 
 ## 2. Code and test paths (inspect — search repo, do not assume)
 
 ```text
-intergrax/memory/ (user_profile_memory.py, contracts/)
-intergrax/runtime/nexus/session/ · intergrax/runtime/task_memory/
-intergrax/runtime/organization/ · consolidation services
-applications/_shared/memory_wiring.py · memory_runtime_bridge.py
-EntityGraphMemoryStore · workspace_index_spike.py (RFC — CE owns production wiring)
+intergrax/memory/ (user_profile_memory.py, session_turn_index_service.py, entity_graph_memory.py)
+intergrax/applications/_shared/memory_wiring.py · memory_vector_wiring.py · memory_runtime_bridge.py
+intergrax/runtime/nexus/context/memory_context_invocation.py
+intergrax/context/providers/session_semantic_recall.py
+intergrax/runtime/nexus/session/session_manager.py · document_store_session_storage.py
+intergrax/runtime/task_memory/ · intergrax/runtime/organization/
+tests/integration/applications/test_memory_vector_ltm_wiring.py
+tests/unit/applications/test_memory_vector_wiring.py
 ```
 
 Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
@@ -172,6 +192,7 @@ If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile 
 ```bash
 uv run pytest tests/unit/memory/ -q
 uv run pytest tests/unit/applications/test_memory_profile_runtime_bridge.py -m gate -q
+uv run pytest tests/unit/applications/test_memory_vector_wiring.py tests/integration/applications/test_memory_vector_ltm_wiring.py -q
 ```
 
 Add any domain-specific scripts you discover. If a command fails, state why.

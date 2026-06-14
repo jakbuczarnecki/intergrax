@@ -906,7 +906,7 @@ RAG Architecture Score: L0-L4
 
 ## 15. Memory Layer
 
-**Canonical architecture:** [`architecture/MEMORY.md`](architecture/MEMORY.md) · implementation: [Phase MEM](plan/MEMORY.md) (**Done**) · [Phase MEM-DEPTH](plan/MEMORY.md) (**Done**)
+**Canonical architecture:** [`architecture/MEMORY.md`](architecture/MEMORY.md) · implementation: [Phase MEM](plan/MEMORY.md) (**Done**) · [Phase MEM-DEPTH](plan/MEMORY.md) (**Done**) · [Phase MEM-VEC](plan/MEMORY.md) (**P0–P1 Done**, MEM-VEC-3 backlog)
 
 ### Purpose
 

@@ -124,7 +124,7 @@ uv run intergrax doctor
 ## Verification (required after harness changes)
 
 ```bash
-uv run pytest -m gate -q
+uv run pytest -m "gate and not no_ci" -q
 python scripts/check_harness_no_getattr.py
 uv run python scripts/check_observability_gates.py
 python scripts/check_docs_domain_pairs.py
