@@ -5,6 +5,15 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-14-009 | 2026-06-14 | tier-0, tier-1, tier-2, tier-3 LLM_ADAPTERS | LC-2b · LC-3 · M-LLM-X.4 · M-LLM-X.5 | [LLM Layer Completion — failover, routing, ACP bridge](entries/2026-06-14/platform-llm-layer-completion-lc2b-lc3.md) | 96b937e2 |
+| IJ-2026-06-14-008 | 2026-06-14 | tier-0, tier-1 LLM_ADAPTERS | LC-1 · LC-2 · M-LLM-X.1 | [LLM Layer Completion — ModelCatalog + preflight alignment](entries/2026-06-14/platform-llm-layer-completion-lc1-lc2.md) | pending |
+| IJ-2026-06-14-007 | 2026-06-14 | tier-0 LLM_ADAPTERS | LLM-AUDIT-14/15 · M-LLM-X.8.1 | [LLM — audit register gap close and M-LLM-R conformance matrix](entries/2026-06-14/platform-llm-audit-register-gap-close.md) | 775610ff |
+| IJ-2026-06-14-006 | 2026-06-14 | tier-0, tier-1 MEMORY | MEM-AUDIT register · doc sync | [MEMORY — post-verification architecture and audit sync](entries/2026-06-14/platform-memory-audit-doc-sync.md) | pending |
+| IJ-2026-06-14-005 | 2026-06-14 | tier-0 SKILLS | SK-EXP5 · ACP-CLOSE-CI | [Gate regression fix — catalog drift, fleet roster, pytest scope](entries/2026-06-14/platform-gate-regression-fix.md) | pending |
+| IJ-2026-06-14-004 | 2026-06-14 | tier-0 LLM_ADAPTERS | M-LLM-X.0.1–0.3 · X.6.3 · X.7.1 · X.7.5 | [M-LLM-X — post-audit architecture and plan sync](entries/2026-06-14/platform-llm-x-audit-doc-sync.md) | pending |
+| IJ-2026-06-14-003 | 2026-06-14 | tier-0, tier-1 MEMORY | MEM-VEC-1.* · MEM-VEC-2.* | [MEM-VEC — LTM and episodic vector recall wiring](entries/2026-06-14/platform-memory-mem-vec-wiring.md) | pending |
+| IJ-2026-06-14-002 | 2026-06-14 | tier-0, tier-1 CONTEXT_ENGINEERING | CE-10.3 · CE-HANDLE-1…4 | [CE iteration II — CE-10.3 tag classification + CE-HANDLE-FILL](entries/2026-06-14/platform-ce-iteration-ii-handle-fill.md) | 4fbebc01 |
+| IJ-2026-06-14-001 | 2026-06-14 | tier-0, tier-1 CONTEXT_ENGINEERING | CE-PROV-02…11 · CE-PROV-GATE · CE-PROV-INT | [CE-PROV-WIRE B2–B4 — builtin provider collect closeout (GAP-CTX-20)](entries/2026-06-14/platform-ce-prov-wire-b2-b4-closeout.md) | 77ba4fed |
 | IJ-2026-06-13-013 | 2026-06-13 | tier-1, tier-2, tier-3 OBSERVABILITY | EBE-1…EBE-6 | [EBE PoC v1 — deployable attestation_demo for AgentReceipt partner handoff](entries/2026-06-13/attestation-demo-partner-poc-deploy.md) | pending |
 | IJ-2026-06-13-012 | 2026-06-13 | tier-0, tier-1 CRITIC_VERIFICATION | CVL-LC-3 · CVL-LC-4 | [CVL — Layer completion iteration II](entries/2026-06-13/cvl-layer-completion-ii.md) | 8a1ed778 |
 | IJ-2026-06-13-011 | 2026-06-13 | tier-0, tier-1 CRITIC_VERIFICATION | CVL-LC-1 · CVL-LC-2 | [CVL — Critic Verification layer completion closeout](entries/2026-06-13/cvl-layer-completion-closeout.md) | 93995259 |

@@ -3,6 +3,7 @@
 """Prompt diff / compare helpers for managed prompts (AUDIT-IDEAL-17.2)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from dataclasses import dataclass
 
@@ -42,8 +43,8 @@ def compare_prompt_documents(
 
     diffs: list[PromptFieldDiff] = []
     for field_name in ("system", "developer", "user_template"):
-        before = getattr(left_content, field_name) or ""
-        after = getattr(right_content, field_name) or ""
+        before = attribute_access.optional(left_content, field_name) or ""
+        after = attribute_access.optional(right_content, field_name) or ""
         if before != after:
             diffs.append(PromptFieldDiff(field_name=field_name, before=before, after=after))
 

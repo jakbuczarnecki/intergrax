@@ -250,6 +250,11 @@ class RuntimeConfig:
     memory_retention_days: Optional[int] = None
     memory_scope_boundary: str = "tenant"
     memory_consolidation_mode: str = "manual"
+    enable_session_vector_index: bool = False
+    include_cross_session_episodic: bool = False
+    session_index_top_k: int = 8
+    session_index_score_threshold: Optional[float] = None
+    vector_index_namespace: Optional[str] = None
 
     # Context assembly (Phase MEM-1.2, MEM-CTX.1)
     context_budget_policy: Optional["ContextBudgetPolicy"] = None

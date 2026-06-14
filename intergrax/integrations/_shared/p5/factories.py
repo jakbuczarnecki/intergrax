@@ -4,6 +4,7 @@
 """Phase M.6 P4 integration factories (28 harness-ROI slugs)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any, Callable, Optional
 
@@ -907,7 +908,7 @@ def create_incident_io_notification_channel(
 
     def _sender(*, message: Any) -> None:
         http = _open_httpx_client(config, default_url=config.base_url or "https://api.incident.io")
-        http.post("/v2/incidents", json={"name": getattr(message, "subject", "Alert"), "summary": getattr(message, "body", "")})
+        http.post("/v2/incidents", json={"name": attribute_access.optional(message, "subject", "Alert"), "summary": attribute_access.optional(message, "body", "")})
 
     return HttpNotificationChannel(_sender, provider="incident_io")
 
@@ -1022,8 +1023,8 @@ def create_sendgrid_notification_channel(
             json={
                 "personalizations": [{"to": [{"email": "ops@example.com"}]}],
                 "from": {"email": config.user or "noreply@intergrax.local"},
-                "subject": getattr(message, "subject", "Notification"),
-                "content": [{"type": "text/plain", "value": getattr(message, "body", "")}],
+                "subject": attribute_access.optional(message, "subject", "Notification"),
+                "content": [{"type": "text/plain", "value": attribute_access.optional(message, "body", "")}],
             },
         )
 

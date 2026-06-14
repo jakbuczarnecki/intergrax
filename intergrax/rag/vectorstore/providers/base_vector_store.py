@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import uuid
 from typing import Any, Dict, List, Optional, Sequence, Union
@@ -59,7 +60,7 @@ class BaseVectorStore(VectorStore):
     ) -> None:
         if not batch:
             return
-        if getattr(self, "_dim", None) is None:
+        if attribute_access.optional(self, "_dim", None) is None:
             self._dim = len(batch[0])
         else:
             bad = [

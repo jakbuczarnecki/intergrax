@@ -4,14 +4,20 @@
 
 from __future__ import annotations
 
+import asyncio
 import time
 import uuid
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.contracts.agent_run_trace import GatewayCallStatus, LlmCallRecord
+from intergrax.llm.messages import ChatMessage
+
+if TYPE_CHECKING:
+    from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+    from intergrax.runtime.nexus.config import RuntimeConfig
 
 
 class LlmStepResult(BaseModel):
@@ -36,6 +42,33 @@ class LlmCompletePort(Protocol):
     ) -> tuple[str, int, int]: ...
 
 
+class LLMAdapterCompletePort:
+    """Async bridge from Tier-0 ``LLMAdapter`` to ACP ``LlmCompletePort`` (M-LLM-X.5.4)."""
+
+    def __init__(self, adapter: object) -> None:
+        self._adapter = adapter
+
+    async def complete(
+        self,
+        prompt: str,
+        *,
+        model_id: str,
+        provider: str,
+    ) -> tuple[str, int, int]:
+        del model_id, provider
+
+        def _call() -> tuple[str, int, int]:
+            response = self._adapter.generate_messages(  # type: ignore[attr-defined]
+                [ChatMessage(role="user", content=prompt)],
+            )
+            usage = response.usage
+            tokens_in = int(usage.input_tokens) if usage is not None else 0
+            tokens_out = int(usage.output_tokens) if usage is not None else 0
+            return response.content, tokens_in, tokens_out
+
+        return await asyncio.to_thread(_call)
+
+
 @dataclass
 class StepLLMRouter:
     """
@@ -48,7 +81,9 @@ class StepLLMRouter:
     default_model: str
     provider: str = "stub"
     llm_port: LlmCompletePort | None = None
-    runtime_config: object | None = None
+    llm_adapter: LLMAdapter | None = None
+    runtime_config: RuntimeConfig | None = None
+    require_real_llm: bool = False
     _pending_calls: list[LlmCallRecord] = field(default_factory=list, init=False, repr=False)
     _last_effective_model: str = field(default="", init=False, repr=False)
 
@@ -74,6 +109,16 @@ class StepLLMRouter:
         self._pending_calls.clear()
         return drained
 
+    def _resolve_completion_port(self) -> LlmCompletePort | None:
+        if self.llm_port is not None:
+            return self.llm_port
+        adapter = self.llm_adapter
+        if adapter is None and self.runtime_config is not None:
+            adapter = self.runtime_config.llm_adapter
+        if adapter is not None:
+            return LLMAdapterCompletePort(adapter)
+        return None
+
     async def complete(self, prompt: str, *, model_hint: str | None = None) -> LlmStepResult:
         model_id = self.resolve_model(model_hint)
         if self.runtime_config is not None:
@@ -81,12 +126,19 @@ class StepLLMRouter:
 
             prompt = compile_prompt_text(prompt, self.runtime_config)  # type: ignore[arg-type]
         started = time.perf_counter()
-        if self.llm_port is not None:
-            text, tokens_in, tokens_out = await self.llm_port.complete(
+        completion_port = self._resolve_completion_port()
+        if completion_port is not None:
+            provider = self.provider
+            if self.runtime_config is not None and self.runtime_config.llm_adapter is not None:
+                raw_provider = self.runtime_config.llm_adapter.provider
+                provider = raw_provider.value if hasattr(raw_provider, "value") else str(raw_provider)
+            text, tokens_in, tokens_out = await completion_port.complete(
                 prompt,
                 model_id=model_id,
-                provider=self.provider,
+                provider=provider,
             )
+        elif self.require_real_llm:
+            raise RuntimeError("StepLLMRouter requires llm_port or llm_adapter in production mode")
         else:
             text = prompt
             tokens_in = len(prompt.split())

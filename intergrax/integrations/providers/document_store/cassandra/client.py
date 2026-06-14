@@ -4,6 +4,7 @@
 """Cassandra CQL client — session injected from ``opens.py`` only."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import json
 from typing import Any, Mapping, Optional
@@ -83,7 +84,7 @@ class CassandraCqlClient:
         row = self._session.execute(self._select_one, (partition_key, row_key)).one()
         if row is None:
             return None
-        payload = getattr(row, "payload", None)
+        payload = attribute_access.optional(row, "payload", None)
         return DocumentRecord(
             partition_key=partition_key,
             row_key=row_key,
@@ -133,15 +134,15 @@ class CassandraCqlClient:
         documents = [
             DocumentRecord(
                 partition_key=partition_key,
-                row_key=str(getattr(row, "row_key", "")),
-                data=_decode_payload(getattr(row, "payload", None)),
+                row_key=str(attribute_access.optional(row, "row_key", "")),
+                data=_decode_payload(attribute_access.optional(row, "payload", None)),
             )
             for row in rows
         ]
         return DocumentQueryResult(documents=documents, total=len(documents))
 
     def shutdown(self) -> None:
-        cluster = getattr(self._session, "cluster", None)
+        cluster = attribute_access.optional(self._session, "cluster", None)
         self._session.shutdown()
         if cluster is not None:
             cluster.shutdown()

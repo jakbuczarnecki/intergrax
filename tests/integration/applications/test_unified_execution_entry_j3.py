@@ -1,6 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import asyncio
 
@@ -135,7 +136,7 @@ def test_worker_checkpoint_resume_via_queue_payload(tmp_path) -> None:
             )
 
         def can_handle(self, task_context: object) -> CapabilityMatchResult:
-            cap = getattr(task_context, "capability", None)
+            cap = attribute_access.optional(task_context, "capability", None)
             if cap in (None, "hitl.basic"):
                 return CapabilityMatchResult(
                     matched=True,

@@ -4,6 +4,7 @@
 """Cohere API v2 native adapter (ClientV2 chat / chat_stream)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import json
 import os
@@ -26,6 +27,7 @@ from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExte
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall, tool_calls_from_openai_dicts
+from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
 
 class CohereNativeChatAdapter(LLMAdapter):
@@ -56,7 +58,12 @@ class CohereNativeChatAdapter(LLMAdapter):
         self.provider = LLMProvider.COHERE_NATIVE
         self.defaults = defaults
         self.model_name_for_token_estimation = self.model
-        self._context_window_tokens = int(self._CONTEXT_WINDOWS.get(self.model, 128_000))
+        self._context_window_tokens = init_adapter_context_window_tokens(
+            provider=LLMProvider.COHERE_NATIVE,
+            model=self.model,
+            constructor_kwargs=defaults,
+            legacy_windows=self._CONTEXT_WINDOWS,
+        )
 
     @property
     def context_window_tokens(self) -> int:
@@ -76,17 +83,17 @@ class CohereNativeChatAdapter(LLMAdapter):
         text_parts: List[str] = []
         tool_calls_raw: List[Dict[str, Any]] = []
         for block in blocks or []:
-            if getattr(block, "type", None) == "text":
-                text_parts.append(getattr(block, "text", "") or "")
-            if getattr(block, "type", None) == "tool_call":
-                fn = getattr(block, "function", None)
+            if attribute_access.optional(block, "type", None) == "text":
+                text_parts.append(attribute_access.optional(block, "text", "") or "")
+            if attribute_access.optional(block, "type", None) == "tool_call":
+                fn = attribute_access.optional(block, "function", None)
                 tool_calls_raw.append(
                     {
-                        "id": getattr(block, "id", "") or "",
+                        "id": attribute_access.optional(block, "id", "") or "",
                         "type": "function",
                         "function": {
-                            "name": getattr(fn, "name", "") if fn else "",
-                            "arguments": json.dumps(getattr(fn, "arguments", {}) or {}),
+                            "name": attribute_access.optional(fn, "name", "") if fn else "",
+                            "arguments": json.dumps(attribute_access.optional(fn, "arguments", {}) or {}),
                         },
                     }
                 )
@@ -169,7 +176,7 @@ class CohereNativeChatAdapter(LLMAdapter):
                 kwargs["max_tokens"] = int(max_tokens)
             stream = self._execute(lambda: self.client.chat_stream(**kwargs))
             for event in stream:
-                if getattr(event, "type", None) == "content-delta":
+                if attribute_access.optional(event, "type", None) == "content-delta":
                     txt = event.delta.message.content.text or ""
                     if txt:
                         buf.append(txt)
@@ -306,14 +313,14 @@ class CohereNativeChatAdapter(LLMAdapter):
 
             stream = self._execute(lambda: self.client.chat_stream(**kwargs))
             for event in stream:
-                if getattr(event, "type", None) == "content-delta":
+                if attribute_access.optional(event, "type", None) == "content-delta":
                     txt = event.delta.message.content.text or ""
                     if txt:
                         buf.append(txt)
                         yield partial_stream_event(delta_content=txt)
-                if getattr(event, "type", None) == "message-end":
-                    msg = getattr(event, "message", None)
-                    if msg and getattr(msg, "content", None):
+                if attribute_access.optional(event, "type", None) == "message-end":
+                    msg = attribute_access.optional(event, "message", None)
+                    if msg and attribute_access.optional(msg, "content", None):
                         _, tool_calls = self._parse_tool_blocks(msg.content)
 
             if not buf and not tool_calls:

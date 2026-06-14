@@ -4,6 +4,7 @@
 """CI gate — capability alias registry on Tier-3 hosts (APP-EVOL-3)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import importlib
 import inspect
@@ -34,7 +35,7 @@ def _load_manifest(package: str) -> ApplicationManifest | None:
     for name in dir(module):
         if not (name.startswith("build_") and "manifest" in name.lower()):
             continue
-        builder = getattr(module, name, None)
+        builder = attribute_access.optional(module, name, None)
         if not callable(builder) or inspect.isclass(builder):
             continue
         try:

@@ -4,6 +4,7 @@
 """Azure Blob duck-typed client wrapper (no azure SDK here)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any, Mapping, Optional
 
@@ -25,7 +26,7 @@ class AzureBlobClient:
         metadata: Optional[Mapping[str, str]] = None,
     ) -> None:
         kwargs: dict[str, Any] = {"overwrite": True}
-        content_settings = getattr(self._container, "content_settings", None)
+        content_settings = attribute_access.optional(self._container, "content_settings", None)
         if content_settings is not None:
             kwargs["content_settings"] = content_settings(content_type=content_type)
         elif metadata:
@@ -35,16 +36,16 @@ class AzureBlobClient:
     def download_blob(self, key: str) -> tuple[bytes, str, dict[str, str]]:
         blob = self._container.download_blob(key)
         raw = blob.readall() if hasattr(blob, "readall") else blob.read()
-        props = getattr(blob, "properties", None) or {}
-        content_type = str(getattr(props, "content_settings", None) and props.content_settings.content_type or "application/octet-stream")
-        metadata = dict(getattr(props, "metadata", None) or {})
+        props = attribute_access.optional(blob, "properties", None) or {}
+        content_type = str(attribute_access.optional(props, "content_settings", None) and props.content_settings.content_type or "application/octet-stream")
+        metadata = dict(attribute_access.optional(props, "metadata", None) or {})
         return raw, content_type, metadata
 
     def delete_blob(self, key: str) -> None:
         self._container.delete_blob(key)
 
     def generate_sas_url(self, key: str, *, expires_in_seconds: int, method: str) -> str:
-        generate = getattr(self._container, "generate_sas_url", None)
+        generate = attribute_access.optional(self._container, "generate_sas_url", None)
         if callable(generate):
             return str(generate(key, expires_in_seconds=expires_in_seconds, method=method))
         raise NotImplementedError("container client does not support SAS URLs")

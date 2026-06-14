@@ -32,6 +32,7 @@ MIGRATION_TIERS: dict[str, str] = {
     "intergrax_assistant": "T4",
     "problem_radar": "T4",
     "vendor_discovery": "T4",
+    "boundary_demo": "T3",
 }
 
 MIGRATED_AGENTS: frozenset[str] = frozenset(
@@ -52,6 +53,7 @@ MIGRATED_AGENTS: frozenset[str] = frozenset(
         "intergrax_assistant",
         "problem_radar",
         "vendor_discovery",
+        "boundary_demo",
     }
 )
 

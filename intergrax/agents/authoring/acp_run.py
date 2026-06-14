@@ -219,6 +219,12 @@ async def run_acp_session(
         allowed_models=tuple(merged.allowed_llm_models),
         default_model=merged.default_llm_model,
         runtime_config=router_runtime_config,
+        llm_adapter=router_runtime_config.llm_adapter if router_runtime_config is not None else None,
+        require_real_llm=(
+            host.app_profile.execution_mode.value == "strict"
+            if host is not None and host.app_profile is not None
+            else False
+        ),
     )
     step_ctx_holder: list[AgentStepContext] = []
     llm_router = wrap_budget_enforcing_router(

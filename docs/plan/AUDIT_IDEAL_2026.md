@@ -6,7 +6,7 @@
 **Baseline:** **32/32 L3** (`scripts/harness_maturity_report.py`, IDEAL-L3 W2 Done)  
 **Hub:** [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) · Band **2az** · queue **§6.1au**  
 **Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](../guides/ARCHITECTURE_DEBT_REGISTER.md)  
-**Status:** **AUDIT-IDEAL in progress** (RAG depth wave) — **83/85 Done** · **0 Deferred §6.3** · **2 Planned**
+**Status:** **AUDIT-IDEAL in progress** (RAG depth wave) — **82/88 Done** · **0 Deferred §6.3** · **6 Planned**
 
 > **Scope:** Close gaps between **L3 Production Harness OS** and **full ideal architecture** (modular, elastic, complete). Harness infrastructure only unless row is explicitly **Deferred §6.3** (product).
 
@@ -45,7 +45,12 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-5.2 | Policy & governance | 5 | Compliance profile templates per regulated domain class | P2 | `UNIFIED_EXECUTION_RUNTIME` | **Done** |
 | AUDIT-IDEAL-5.3 | Policy & governance | 5 | Governance health dashboard (GOV-PROD.1) | P4 | `OBSERVABILITY` | **Done** |
 | AUDIT-IDEAL-6.1 | LLM adapters | 6 | Structured output validation on 100% reference + certified agent paths | P1 | `LLM_ADAPTERS` | **Done** |
-| AUDIT-IDEAL-6.2 | LLM adapters | 6 | Live cost/latency/quality model routing (AHI integration prod path) | P2 | `LLM_ADAPTERS` · `ADAPTIVE_HARNESS_INTELLIGENCE` | **Done** |
+| AUDIT-IDEAL-6.2 | LLM adapters | 6 | Live cost/latency/quality model routing (AHI integration prod path) | P2 | `LLM_ADAPTERS` · `ADAPTIVE_HARNESS_INTELLIGENCE` | **Partial** — M-LLM-X.5 |
+| AUDIT-IDEAL-6.3 | LLM adapters | 6 | Central `ModelCatalog` + unified context window resolution | P0 | `LLM_ADAPTERS` | **Planned** — M-LLM-X.1 |
+| AUDIT-IDEAL-6.4 | LLM adapters | 6 | Tokenizer-consistent context preflight (adapter path) | P0 | `LLM_ADAPTERS` · `CONTEXT_ENGINEERING` | **Planned** — M-LLM-X.3 |
+| AUDIT-IDEAL-6.5 | LLM adapters | 6 | Profile failover chain on retriable provider errors | P1 | `LLM_ADAPTERS` · `RELIABILITY_FAILURE_AND_HITL` | **Planned** — M-LLM-X.4 |
+| AUDIT-IDEAL-6.6 | LLM adapters | 6 | ACP `StepLLMRouter` backed by `LLMAdapter` (single DX) | P1 | `LLM_ADAPTERS` · `NEXUS_EXECUTION_FLOW` | **Planned** — M-LLM-X.5 |
+| AUDIT-IDEAL-6.7 | LLM adapters | 6 | Developer `USAGE.md` + startup validation | P2 | `LLM_ADAPTERS` · `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Partial** — [USAGE.md](../../intergrax/llm_adapters/USAGE.md) Done; M-LLM-X.7.2 |
 | AUDIT-IDEAL-7.1 | Cognition | 7 | Ship `ReasoningProfile` contract + environment wire | P1 | `REASONING_AND_COGNITION` | **Done** |
 | AUDIT-IDEAL-7.2 | Cognition | 7 | Complete `allow_dynamic_replan` runtime path | P1 | `REASONING_AND_COGNITION` | **Done** |
 | AUDIT-IDEAL-7.3 | Cognition | 7 | Reasoning failure taxonomy on all planner kinds | P2 | `REASONING_AND_COGNITION` | **Done** |
@@ -129,7 +134,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) | 1.1, 1.2, 2.1, 32.1, 32.2 |
 | [`ORCHESTRATION.md`](ORCHESTRATION.md) | 3.1, 9.1, 9.2, 9.3 |
 | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) | 4.1, 4.2, 5.1, 5.2, 23.1, 23.2, 24.1, 24.2, 24.3 |
-| [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) | 6.1, 6.2 |
+| [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) | 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7 |
 | [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) | 7.1, 7.2, 7.3 |
 | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) | 8.1, 8.2, 10.1, 10.2 |
 | [`TOOLS.md`](TOOLS.md) | 11.1, 11.2, 11.3 |

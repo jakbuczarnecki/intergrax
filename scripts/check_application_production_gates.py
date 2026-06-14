@@ -4,6 +4,7 @@
 """Tier-3 application production gate checks (APP-PROD-1..9 · APP-OPS-1..4 · APP-CON-7 · APP-EVOL-2..7)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import ast
 import sys
@@ -75,7 +76,7 @@ def check_environment_wiring_entry() -> list[str]:
     for path in APPLICATIONS_ROOT.glob("*_application/host/wiring.py"):
         rel = path.relative_to(REPO_ROOT).as_posix()
         text = path.read_text(encoding="utf-8")
-        if "getattr(" in text and "manifest" in text:
+        if "attribute_access.optional(" in text and "manifest" in text:
             violations.append(f"{rel}: getattr on manifest is forbidden — use typed fields")
     return violations
 
@@ -178,7 +179,7 @@ def check_capability_alias_registry() -> list[str]:
             for name in dir(module):
                 if not (name.startswith("build_") and "manifest" in name.lower()):
                     continue
-                builder = getattr(module, name, None)
+                builder = attribute_access.optional(module, name, None)
                 if not callable(builder) or inspect.isclass(builder):
                     continue
                 try:

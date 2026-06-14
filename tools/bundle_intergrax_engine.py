@@ -442,8 +442,8 @@ def _extract_python_like_metadata(path: Path, rendered_text: str, module_name: s
                     symbol=sym,
                     kind="class",
                     coid=coid,
-                    lineno=getattr(node, "lineno", None),
-                    end_lineno=getattr(node, "end_lineno", None),
+                    lineno=attribute_access.optional(node, "lineno", None),
+                    end_lineno=attribute_access.optional(node, "end_lineno", None),
                 )
             )
 
@@ -458,8 +458,8 @@ def _extract_python_like_metadata(path: Path, rendered_text: str, module_name: s
                             symbol=sym_m,
                             kind="method",
                             coid=coid_m,
-                            lineno=getattr(sub, "lineno", None),
-                            end_lineno=getattr(sub, "end_lineno", None),
+                            lineno=attribute_access.optional(sub, "lineno", None),
+                            end_lineno=attribute_access.optional(sub, "end_lineno", None),
                         )
                     )
 
@@ -475,8 +475,8 @@ def _extract_python_like_metadata(path: Path, rendered_text: str, module_name: s
                     symbol=sym,
                     kind="function",
                     coid=coid,
-                    lineno=getattr(node, "lineno", None),
-                    end_lineno=getattr(node, "end_lineno", None),
+                    lineno=attribute_access.optional(node, "lineno", None),
+                    end_lineno=attribute_access.optional(node, "end_lineno", None),
                 )
             )
 
@@ -492,8 +492,8 @@ def _extract_python_like_metadata(path: Path, rendered_text: str, module_name: s
                     symbol=sym,
                     kind="function",
                     coid=coid,
-                    lineno=getattr(node, "lineno", None),
-                    end_lineno=getattr(node, "end_lineno", None),
+                    lineno=attribute_access.optional(node, "lineno", None),
+                    end_lineno=attribute_access.optional(node, "end_lineno", None),
                 )
             )
 

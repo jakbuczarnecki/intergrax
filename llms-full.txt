@@ -44,6 +44,7 @@ docs/
 ├── architecture/CRITIC_VERIFICATION.md
 ├── architecture/NEXUS_EXECUTION_FLOW.md
 ├── architecture/INTEGRATIONS.md · architecture/RAG.md · architecture/TOOLS.md · architecture/SKILLS.md · architecture/LLM_ADAPTERS.md · architecture/MODALITY.md
+├── intergrax/llm_adapters/USAGE.md   # LLM developer guide (Tier-0)
 └── guides/AGENT_CREATION_GUIDE.md · guides/EXTENSION_AUTHOR_GUIDE.md · INTEGRAX_HARNESS_AUDIT_MAP.md
 ```
 

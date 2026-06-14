@@ -4,6 +4,7 @@
 """Phase M.7 P7 integration factories (18 agent-developer slugs)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any, Callable, Optional, Sequence
 
@@ -370,8 +371,8 @@ def create_telegram_integration(
             )
 
     def _notify_sender(*, message: Any) -> None:
-        chat_id = str(getattr(message, "channel_id", None) or getattr(message, "recipient", None) or "default")
-        text = str(getattr(message, "body", None) or getattr(message, "text", None) or "")
+        chat_id = str(attribute_access.optional(message, "channel_id", None) or attribute_access.optional(message, "recipient", None) or "default")
+        text = str(attribute_access.optional(message, "body", None) or attribute_access.optional(message, "text", None) or "")
         _NotifyClient().send_message(chat_id, text)
 
     notify = notification_channel or HttpNotificationChannel(_notify_sender, provider="telegram", health_client=_NotifyClient())

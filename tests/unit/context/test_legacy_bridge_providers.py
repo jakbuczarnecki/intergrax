@@ -16,9 +16,17 @@ from intergrax.context.contracts import (
     ContextProviderContext,
 )
 from intergrax.context.providers.legacy_bridge import (
+    fragments_from_attachment_summaries,
+    fragments_from_ltm_entries,
+    fragments_from_policy_overlay_fragments,
     fragments_from_prior_output_records,
+    fragments_from_rag_chunks,
     fragments_from_session_history,
+    fragments_from_shared_context_reads,
+    fragments_from_system_instructions,
     fragments_from_task_message,
+    fragments_from_tool_output_blocks,
+    fragments_from_websearch_blocks,
 )
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
@@ -31,6 +39,7 @@ from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEn
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.context.context_models import ContextProvenance, ContextSourceType, PriorOutputRecord
 from intergrax.runtime.nexus.context.provider_handles import (
+    RAG_CHUNKS_METADATA_KEY,
     SESSION_HISTORY_MESSAGES_METADATA_KEY,
     build_graph_provider_handles,
 )
@@ -194,3 +203,92 @@ async def test_builtin_collectors_read_provider_handles() -> None:
     assert task_frags and task_frags[0].source == ContextFragmentSource.TASK_MESSAGE
     assert prior_frags and prior_frags[0].source == ContextFragmentSource.GRAPH_PRIOR
     assert history_frags and history_frags[0].source == ContextFragmentSource.SESSION_HISTORY
+
+
+def test_fragments_from_rag_chunks_emits_citations() -> None:
+    chunks = [
+        {"text": "retrieved doc", "metadata": {"doc_id": "d1", "source": "manual.pdf", "page": 3}},
+    ]
+    fragments = fragments_from_rag_chunks(chunks)
+    assert len(fragments) == 1
+    assert fragments[0].source == ContextFragmentSource.RAG
+    assert fragments[0].metadata.get("citations")
+
+
+def test_fragments_from_ltm_entries_skips_deleted() -> None:
+    entries = [{"entry_id": "e1", "content": "fact", "deleted": True}, {"entry_id": "e2", "content": "ok"}]
+    fragments = fragments_from_ltm_entries(entries)
+    assert len(fragments) == 1
+    assert fragments[0].source == ContextFragmentSource.LONGTERM_MEMORY
+
+
+def test_fragments_from_websearch_and_tool_output() -> None:
+    web = fragments_from_websearch_blocks(["result snippet", {"content": "block", "url": "https://x"}])
+    tools = fragments_from_tool_output_blocks([{"content": "tool ok", "tool_call_id": "tc1"}])
+    assert web and web[0].source == ContextFragmentSource.WEBSEARCH
+    assert tools and tools[0].source == ContextFragmentSource.TOOL_OUTPUT
+
+
+def test_fragments_from_system_policy_shared_attachment() -> None:
+    system = fragments_from_system_instructions("Be concise.")
+    policy = fragments_from_policy_overlay_fragments(
+        [{"overlay_id": "o2", "content": "second", "priority": 200}, {"overlay_id": "o1", "content": "first", "priority": 50}]
+    )
+    shared = fragments_from_shared_context_reads({"dep-1": {"summary": "shared payload"}})
+    attachments = fragments_from_attachment_summaries([{"attachment_id": "a1", "summary": "image desc"}])
+    assert system[0].mandatory is True
+    assert policy[0].source_id == "o1"
+    assert shared[0].source == ContextFragmentSource.SHARED_CONTEXT
+    assert attachments[0].source == ContextFragmentSource.ATTACHMENT
+
+
+@pytest.mark.asyncio
+async def test_builtin_collectors_read_extended_handles() -> None:
+    registry = materialize_context_plugin_registry(["intergrax.builtin"])
+    providers = {provider.provider_id: provider for provider in registry.list_providers()}
+    request = _assembly_request(objective="handle task")
+    runtime_config = RuntimeConfig(llm_adapter=_WindowAdapter(), production_mode=False)
+    task = Task(
+        tenant_id="t1",
+        user_id="u1",
+        message="handle task",
+        context=TaskContext(),
+        metadata={
+            RAG_CHUNKS_METADATA_KEY: [{"text": "rag hit", "metadata": {"doc_id": "doc-1"}}],
+            "ltm_entries": [{"entry_id": "ltm-1", "content": "memory fact"}],
+            "websearch_blocks": ["search hit"],
+            "tool_output_blocks": [{"content": "tool result", "tool_call_id": "t1"}],
+            "system_instructions": "Follow policy.",
+            "policy_overlay_fragments": [{"overlay_id": "p1", "content": "overlay"}],
+            "attachment_summaries": [{"attachment_id": "att-1", "summary": "chart summary"}],
+        },
+    )
+    handles = build_graph_provider_handles(
+        task,
+        runtime_config=runtime_config,
+        messages=[ChatMessage(role="user", content="handle task")],
+        event_bus=None,
+        node_id="n1",
+        agent_id="worker",
+        engine_id="default",
+        shared_context_reads={"dep-x": {"summary": "shared"}},
+    )
+    ctx = ContextProviderContext(engine_id="default", handles=handles)
+
+    rag_frags = await providers["builtin.rag"].collect(request, ctx)
+    ltm_frags = await providers["builtin.longterm_memory"].collect(request, ctx)
+    web_frags = await providers["builtin.websearch"].collect(request, ctx)
+    tool_frags = await providers["builtin.tool_output"].collect(request, ctx)
+    sys_frags = await providers["builtin.system_instructions"].collect(request, ctx)
+    shared_frags = await providers["builtin.shared_context"].collect(request, ctx)
+    policy_frags = await providers["builtin.policy_overlay"].collect(request, ctx)
+    attach_frags = await providers["builtin.attachments"].collect(request, ctx)
+
+    assert rag_frags and rag_frags[0].source == ContextFragmentSource.RAG
+    assert ltm_frags and ltm_frags[0].source == ContextFragmentSource.LONGTERM_MEMORY
+    assert web_frags and web_frags[0].source == ContextFragmentSource.WEBSEARCH
+    assert tool_frags and tool_frags[0].source == ContextFragmentSource.TOOL_OUTPUT
+    assert sys_frags and sys_frags[0].source == ContextFragmentSource.SYSTEM_INSTRUCTIONS
+    assert shared_frags and shared_frags[0].source == ContextFragmentSource.SHARED_CONTEXT
+    assert policy_frags and policy_frags[0].source == ContextFragmentSource.POLICY_OVERLAY
+    assert attach_frags and attach_frags[0].source == ContextFragmentSource.ATTACHMENT

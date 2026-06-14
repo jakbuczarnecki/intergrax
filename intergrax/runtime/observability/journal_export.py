@@ -4,6 +4,7 @@
 """Unified run journal export — ref payloads and OTLP-style snapshots (OBS-BUS-6)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import hashlib
 from dataclasses import dataclass
@@ -201,7 +202,7 @@ def _trace_row_tags(event: Any) -> dict[str, Any]:
     if isinstance(event, Mapping):
         tags = event.get("tags")
         return dict(tags) if isinstance(tags, dict) else {}
-    tags = getattr(event, "tags", None)
+    tags = attribute_access.optional(event, "tags", None)
     return dict(tags) if isinstance(tags, dict) else {}
 
 

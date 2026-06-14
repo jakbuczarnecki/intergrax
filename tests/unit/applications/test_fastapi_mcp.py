@@ -1,6 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import pytest
 from fastapi import FastAPI
@@ -35,7 +36,7 @@ def test_couple_fastapi_with_mcp_serves_both_apps() -> None:
     assert client.get("/hello").json() == {"ok": "api"}
     # MCP mount is registered (exact path depends on transport; API must stay reachable)
     assert any(
-        getattr(r, "path", None) in {"/mcp", "/mcp/"}
+        attribute_access.optional(r, "path", None) in {"/mcp", "/mcp/"}
         for r in combined.routes
         if hasattr(r, "path")
     )

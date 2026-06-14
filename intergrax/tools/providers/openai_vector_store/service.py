@@ -3,6 +3,7 @@
 """OpenAI managed vector store operations for catalog tools (not Tier-0 ``rag.*``)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import os
 import time
@@ -132,8 +133,8 @@ class OpenAIVectorStoreOps:
             limit=100,
         )
         file_ids = [f.id for f in files_page.data]
-        next_page = getattr(files_page, "has_more", False)
-        cursor = getattr(files_page, "last_id", None)
+        next_page = attribute_access.optional(files_page, "has_more", False)
+        cursor = attribute_access.optional(files_page, "last_id", None)
         while next_page and cursor:
             page = self._client.vector_stores.files.list(
                 vector_store_id=self._vector_store_id,
@@ -141,8 +142,8 @@ class OpenAIVectorStoreOps:
                 limit=100,
             )
             file_ids.extend([f.id for f in page.data])
-            next_page = getattr(page, "has_more", False)
-            cursor = getattr(page, "last_id", None)
+            next_page = attribute_access.optional(page, "has_more", False)
+            cursor = attribute_access.optional(page, "last_id", None)
         return file_ids
 
     def clear_vector_store_and_storage(self) -> int:
@@ -196,7 +197,7 @@ class OpenAIVectorStoreOps:
         attempts = 0
         while attempts < self._config.max_poll_attempts:
             f_info = self._client.files.retrieve(uploaded.id)
-            status = getattr(f_info, "status", None)
+            status = attribute_access.optional(f_info, "status", None)
             if status == "processed":
                 break
             if status == "error":
@@ -238,7 +239,7 @@ class OpenAIVectorStoreOps:
                 }
             ],
         )
-        return str(getattr(response, "output_text", "") or "")
+        return str(attribute_access.optional(response, "output_text", "") or "")
 
 
 def resolve_openai_client(ctx: ToolWiringContext) -> Any | None:

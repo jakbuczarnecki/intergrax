@@ -4,6 +4,7 @@
 """Verify contract schema_version literals match registry (architecture §40.11 · ACP-PROD-11)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import importlib
 import sys
@@ -20,14 +21,14 @@ def main() -> int:
     violations: list[str] = []
     for entry in CONTRACT_SCHEMA_REGISTRY:
         module = importlib.import_module(entry.module_path)
-        model = getattr(module, entry.contract_name, None)
+        model = attribute_access.optional(module, entry.contract_name, None)
         if model is None:
             violations.append(f"missing model {entry.contract_name} in {entry.module_path}")
             continue
-        schema_field = getattr(model, "model_fields", {}).get("schema_version")
+        schema_field = attribute_access.optional(model, "model_fields", {}).get("schema_version")
         if schema_field is None:
             if entry.contract_name == "AcpSessionState":
-                default = getattr(model, "ACP_STATE_SCHEMA_VERSION", None)
+                default = attribute_access.optional(model, "ACP_STATE_SCHEMA_VERSION", None)
                 if default != entry.current_version:
                     violations.append(
                         f"{entry.contract_name}: expected {entry.current_version}, got {default}"

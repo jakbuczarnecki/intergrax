@@ -51,6 +51,10 @@ from intergrax.applications._shared.memory_wiring import (
     build_session_manager_from_environment,
     resolve_memory_platform_wiring,
 )
+from intergrax.applications._shared.memory_vector_wiring import (
+    assert_memory_vector_backend_available,
+    resolve_rag_stack_for_memory_wiring,
+)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import runtime_policies_for_execution_mode
@@ -148,6 +152,11 @@ def materialize_runtime_config(
         idempotency_store=reliability_wiring.idempotency_store,
     )
     apply_context_profiles_from_environment(config, env)
+    if config.context_budget_policy is None and config.llm_adapter is not None:
+        from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
+
+        config.context_budget_policy = ContextBudgetPolicy.from_adapter(config.llm_adapter)
+        derive_run_budget_from_context_policy(config)
     apply_cost_profiles_from_environment(config, env)
     evaluation_wiring = wire_application_evaluation(env)
     adaptive_wiring = wire_adaptive_profile(
@@ -194,6 +203,8 @@ def build_runtime_context_from_environment(
     llm_adapter: LLMAdapter | None = None,
 ) -> RuntimeContext:
     """Build ``RuntimeContext`` from environment profile with resolved memory backends."""
+    from dataclasses import replace
+
     config = materialize_runtime_config(
         request,
         harness_ctx,
@@ -205,11 +216,23 @@ def build_runtime_context_from_environment(
         env,
         integration_profile=integration_profile,
     )
+    rag_stack = resolve_rag_stack_for_memory_wiring(
+        env,
+        integration_profile=integration_profile,
+        llm_adapter=config.llm_adapter,
+    )
+    assert_memory_vector_backend_available(env, rag_stack)
     session_manager = build_session_manager_from_environment(
         env,
         integration_profile=integration_profile,
         memory_wiring=memory_wiring,
+        rag_stack=rag_stack,
     )
+    if config.tool_wiring_context is not None and session_manager.user_profile_manager is not None:
+        config.tool_wiring_context = replace(
+            config.tool_wiring_context,
+            user_profile_manager=session_manager.user_profile_manager,
+        )
     prompt_registry = resolve_prompt_registry(env.prompt_profile)
     return RuntimeContext.build(
         config=config,

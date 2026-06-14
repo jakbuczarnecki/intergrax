@@ -41,6 +41,21 @@ class LLMProfile(BaseModel):
     provider: LLMProvider
     model: Optional[str] = None
     options: dict[str, Any] = Field(default_factory=dict)
+    fallback_profiles: tuple[LLMProfile, ...] = Field(default_factory=tuple)
+    routing_policy_hint: str | None = None
+
+    @field_validator("fallback_profiles", mode="before")
+    @classmethod
+    def _coerce_fallback_profiles(cls, value: object) -> tuple[LLMProfile, ...]:
+        if value is None:
+            return ()
+        if isinstance(value, LLMProfile):
+            return (value,)
+        if isinstance(value, list):
+            return tuple(LLMProfile.model_validate(item) if isinstance(item, dict) else item for item in value)
+        if isinstance(value, tuple):
+            return value
+        raise ValueError("fallback_profiles must be a sequence of LLMProfile")
 
     @field_validator("provider", mode="before")
     @classmethod
@@ -63,6 +78,58 @@ class LLMProfile(BaseModel):
         if self.model:
             kwargs.setdefault("model", self.model)
         return LLMAdapterRegistry.create(self.provider, **kwargs)
+
+    def create_adapter_with_failover(
+        self,
+        *,
+        secrets: Optional[Mapping[str, str]] = None,
+        policy_route_hint: str | None = None,
+        **overrides: Any,
+    ) -> LLMAdapter:
+        """Create adapter with optional profile-chain failover (M-LLM-X.4.3)."""
+        from intergrax.llm_adapters.registry.failover_adapter import FailoverLLMAdapter
+        from intergrax.llm_adapters.registry.model_router import ModelRouter
+
+        hint = policy_route_hint or self.routing_policy_hint
+        router = ModelRouter.from_profiles(
+            self,
+            fallbacks=self.fallback_profiles,
+            policy_route_hint=hint,
+        )
+        adapters = [
+            profile.create_adapter(secrets=secrets, **overrides)
+            for profile in router.ordered_profiles()
+        ]
+        if len(adapters) == 1:
+            return adapters[0]
+        return FailoverLLMAdapter(adapters)
+
+    def validate_runtime(self, *, secrets: Optional[Mapping[str, str]] = None) -> list[str]:
+        """
+        Lightweight startup checks: catalog hit, context window, optional API key.
+
+        Returns a list of warning messages (empty when all checks pass).
+        """
+        from intergrax.llm_adapters.registry.context_window import resolve_context_window_tokens
+
+        warnings: list[str] = []
+        model_id = (self.model or "").strip()
+        if not model_id:
+            warnings.append("LLMProfile.model is unset")
+        else:
+            tokens = resolve_context_window_tokens(
+                self.provider,
+                model_id,
+                profile_options=self.options,
+            )
+            if tokens <= 0:
+                warnings.append(f"context_window_tokens resolved to {tokens} for model={model_id!r}")
+
+        merged = merge_secrets_into_options(self.provider, dict(self.options), secrets)
+        if not merged.get("api_key"):
+            if self.provider.value not in {"ollama", "vllm", "llama_cpp"}:
+                warnings.append(f"no api_key in profile options or secrets for provider={self.provider.value}")
+        return warnings
 
     def with_secrets(self, secrets: Mapping[str, str]) -> LLMProfile:
         """Return profile with secrets merged into ``options`` (api_key, etc.)."""

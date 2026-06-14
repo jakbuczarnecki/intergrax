@@ -211,6 +211,7 @@ Essential platform behaviours span multiple domain pairs — use this index befo
 | RAG / retrieval engine | [`architecture/RAG.md`](architecture/RAG.md) · integration slugs [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) | M-RAG · M-RAG-DEPTH |
 | Context engineering engine | [`architecture/CONTEXT_ENGINEERING.md`](architecture/CONTEXT_ENGINEERING.md) | CE-EXT Done · CE-ALIGN Done · **CE-PROV-WIRE Planned** |
 | Ephemeral Code Craft (dynamic codegen loop) | [`architecture/CODE_CRAFT.md`](architecture/CODE_CRAFT.md) · substrate [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](architecture/RELIABILITY_FAILURE_AND_HITL.md) | ECC-0…ECC-6 |
+| LLM adapters (typed envelope + ModelCatalog) | [`architecture/LLM_ADAPTERS.md`](architecture/LLM_ADAPTERS.md) · [`intergrax/llm_adapters/USAGE.md`](../intergrax/llm_adapters/USAGE.md) | M-LLM-R **Done** · **M-LLM-X** (active) |
 
 Platform docs do not replace `agents/*/ARCHITECTURE.md` or `applications/*/ARCHITECTURE.md`.
 
@@ -241,6 +242,5 @@ Platform docs do not replace `agents/*/ARCHITECTURE.md` or `applications/*/ARCHI
 | [`adr/entries/2026-06-10/ADR-CODECRAFT-001.md`](adr/entries/2026-06-10/ADR-CODECRAFT-001.md) | Ephemeral Code Craft as separate Harness domain |
 | [`adr/entries/2026-06-11/ADR-AGENT-001.md`](adr/entries/2026-06-11/ADR-AGENT-001.md) | Agent cognitive patterns (ACP) — Tier-2 library, Nexus stays Agent OS |
 | [`adr/entries/2026-06-11/ADR-AGENT-002.md`](adr/entries/2026-06-11/ADR-AGENT-002.md) | Author `Agent.run()` facade + per-agent environment binding |
-| [`adr/entries/2026-06-11/ADR-AGENT-003.md`](adr/entries/2026-06-11/ADR-AGENT-003.md) | `on_next_step` step loop + dual observability (agent trace vs app orchestration) |
-
-**Platform configuration canon (CFG-*):** [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §56 · implementation [`plan/ORCHESTRATION.md`](plan/ORCHESTRATION.md) Phase **ORCH-CONFIG**.
+| [`adr/entries/2026-06-06/ADR-LLM-001.md`](adr/entries/2026-06-06/ADR-LLM-001.md) | Typed LLM adapter response envelope |
+| [`adr/entries/2026-06-14/ADR-LLM-002.md`](adr/entries/2026-06-14/ADR-LLM-002.md) | ModelCatalog + context window resolution |

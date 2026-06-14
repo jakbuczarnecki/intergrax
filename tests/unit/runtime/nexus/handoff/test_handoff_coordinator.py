@@ -1,5 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
+from intergrax.utils import attribute_access
 import pytest
 
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
@@ -31,7 +32,7 @@ class _StubAgent(Agent):
         )
 
     def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
+        capability = attribute_access.optional(task_context, "capability", None)
         if capability == self._capability:
             return CapabilityMatchResult(
                 matched=True,

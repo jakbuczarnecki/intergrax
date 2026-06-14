@@ -9,6 +9,7 @@ Only this module may construct boto3 S3 clients. All composition roots use
 """
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any, Callable, Optional
 
@@ -91,7 +92,7 @@ def open_s3_client(
     client_kwargs: dict[str, str] = {}
     if config.endpoint_url:
         client_kwargs["endpoint_url"] = config.endpoint_url
-    region = config.region or getattr(boto_session, "region_name", None)
+    region = config.region or attribute_access.optional(boto_session, "region_name", None)
     return boto_session.client("s3", region_name=region, **client_kwargs)
 
 

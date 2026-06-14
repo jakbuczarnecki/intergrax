@@ -3,6 +3,7 @@
 
 """Prometheus observability integration (Phase M.6)."""
 
+from intergrax.utils.lazy_export import export_from_bundle
 from intergrax.integrations.providers.observability_backend.prometheus.config import (
     ENV_PROMETHEUS_BASE_URL,
     ENV_PROMETHEUS_BEARER_TOKEN,
@@ -41,7 +42,7 @@ def __getattr__(name: str):
     if name in _LAZY_EXPORTS:
         from intergrax.integrations.providers.observability_backend.prometheus import bundle as _bundle
 
-        return getattr(_bundle, name)
+        return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "PrometheusObservabilityBackend":
         from intergrax.integrations.providers.observability_backend.prometheus.adapter import PrometheusObservabilityBackend
 

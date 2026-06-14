@@ -99,7 +99,7 @@ def build_nexus_loop_from_environment(
     resolved_context_manager = context_manager or resolve_context_manager_from_environment(
         env,
         event_bus=runtime_event_bus,
-        llm_adapter=llm_adapter,
+        llm_adapter=producer_llm,
         context_engine=context_engine,  # type: ignore[arg-type]
     )
 

@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -83,11 +84,11 @@ class VectorStore(ABC):
 
     def list_collections(self) -> List[str]:
         """Return logical collection names exposed by this store (default: single active collection)."""
-        name = getattr(self, "collection_name", None)
+        name = attribute_access.optional(self, "collection_name", None)
         if name is None and hasattr(self, "cfg"):
-            cfg = getattr(self, "cfg")
-            name = getattr(cfg, "collection_name", None)
+            cfg = attribute_access.optional(self, "cfg")
+            name = attribute_access.optional(cfg, "collection_name", None)
         if name:
             return [str(name)]
-        tenant_id = getattr(self, "_tenant_id", "default")
+        tenant_id = attribute_access.optional(self, "_tenant_id", "default")
         return [f"inmemory:{tenant_id}"]

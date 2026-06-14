@@ -7,6 +7,7 @@ Each test maps to a mandatory runtime acceptance criterion.
 """
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import pytest
 
@@ -60,7 +61,7 @@ class _HitlAcceptanceAgent(Agent):
         )
 
     def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
+        capability = attribute_access.optional(task_context, "capability", None)
         if capability in (None, "acceptance.hitl"):
             return CapabilityMatchResult(
                 matched=True,
@@ -121,7 +122,7 @@ class _MidStepAcceptanceAgent(Agent):
         )
 
     def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
+        capability = attribute_access.optional(task_context, "capability", None)
         if capability in (None, "acceptance.mid_step"):
             return CapabilityMatchResult(
                 matched=True,
@@ -188,7 +189,7 @@ class _RetryPrimaryAgent(Agent):
         )
 
     def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
+        capability = attribute_access.optional(task_context, "capability", None)
         if capability in (None, "acceptance.retry"):
             return CapabilityMatchResult(
                 matched=True,
@@ -239,7 +240,7 @@ class _RetryAlternateAgent(Agent):
         )
 
     def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
+        capability = attribute_access.optional(task_context, "capability", None)
         if capability in (None, "acceptance.retry"):
             return CapabilityMatchResult(
                 matched=True,
@@ -375,7 +376,7 @@ class _SandboxAcceptanceAgent(Agent):
         )
 
     def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
+        capability = attribute_access.optional(task_context, "capability", None)
         if capability in (None, "acceptance.sandbox"):
             return CapabilityMatchResult(
                 matched=True,
@@ -437,7 +438,7 @@ class _ShadowAcceptanceAgent(Agent):
         )
 
     def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
+        capability = attribute_access.optional(task_context, "capability", None)
         if capability in (None, "acceptance.shadow"):
             return CapabilityMatchResult(
                 matched=True,

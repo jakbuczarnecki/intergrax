@@ -4,6 +4,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 from typing import TypedDict, Dict, Any, List, Callable, Optional
 from dataclasses import asdict
 import re  # NEW
@@ -126,15 +127,15 @@ def make_node_fn(step: PlanStep, component: Optional[BaseSupervisorComponent]) -
             _append_log(state, f"[{step.id}] inputs = {resolved_inputs}")
 
             if method in ("TOOL", "RAG"):
-                if not component or not getattr(component, "instance", None):
+                if not component or not attribute_access.optional(component, "instance", None):
                     raise RuntimeError(f"Step {step.id} requires component '{step.component}' but it's unavailable.")
-                exec_fn = getattr(component.instance, "execute", None)
+                exec_fn = attribute_access.optional(component.instance, "execute", None)
                 if not callable(exec_fn):
                     raise RuntimeError(f"Component '{component.name}' has no callable execute(...)")
                 result = exec_fn(**resolved_inputs)
             else:
-                if component and getattr(component, "instance", None):
-                    exec_fn = getattr(component.instance, "execute", None)
+                if component and attribute_access.optional(component, "instance", None):
+                    exec_fn = attribute_access.optional(component.instance, "execute", None)
                     if not callable(exec_fn):
                         raise RuntimeError(f"Component '{component.name}' has no callable execute(...)")
                     result = exec_fn(**resolved_inputs)
@@ -161,13 +162,13 @@ def topo_order(steps: List[PlanStep]) -> List[PlanStep]:
       - primary: honor explicit depends_on
       - fallback: preserve original order when no dependencies given
     """
-    if any(getattr(s, "depends_on", None) for s in steps):
+    if any(attribute_access.optional(s, "depends_on", None) for s in steps):
         id_to_step = {s.id: s for s in steps}
         indeg = {s.id: 0 for s in steps}
         graph = {s.id: [] for s in steps}
 
         for s in steps:
-            deps = getattr(s, "depends_on", []) or []
+            deps = attribute_access.optional(s, "depends_on", []) or []
             for dep in deps:
                 if dep in id_to_step:
                     graph[dep].append(s.id)

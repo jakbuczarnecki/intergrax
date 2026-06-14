@@ -22,6 +22,7 @@ Environment:
 """
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import argparse
 import json
@@ -238,7 +239,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    handler = getattr(args, "handler", None)
+    handler = attribute_access.optional(args, "handler", None)
     if handler is None:
         parser.print_help()
         return 2

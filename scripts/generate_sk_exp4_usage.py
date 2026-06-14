@@ -2,6 +2,7 @@
 """One-shot generator for SK-EXP4 per-skill USAGE.md files."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import importlib
 from pathlib import Path
@@ -90,7 +91,7 @@ def _load_manifest(skill_id: str):
     bundle, _ = skill_id.split(".", 1)
     mod = importlib.import_module(f"intergrax.skills.providers.{bundle}.manifests")
     const = skill_id.replace(".", "_").upper()
-    return getattr(mod, const)
+    return attribute_access.optional(mod, const)
 
 
 def main() -> None:

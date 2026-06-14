@@ -4,6 +4,7 @@
 """Harness Tier A — HITL escalation notifies PagerDuty channel via runtime adapter."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any
 
@@ -47,7 +48,7 @@ class _HitlLongRunningAgent(Agent):
         )
 
     def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
+        capability = attribute_access.optional(task_context, "capability", None)
         if capability in (None, "hitl.lr"):
             return CapabilityMatchResult(
                 matched=True,

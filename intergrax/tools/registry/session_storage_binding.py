@@ -4,6 +4,7 @@
 """Sync adapter from async ``SessionStorage`` to ``SessionStorageBinding``."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import asyncio
 import inspect
@@ -35,13 +36,13 @@ class SessionStorageToolBinding:
         sessions = _run_async(self._list_sessions_async(tenant_id, user_id, limit=limit))
         rows: list[dict[str, str]] = []
         for session in list(sessions or []):
-            updated_at = getattr(session, "updated_at", None)
+            updated_at = attribute_access.optional(session, "updated_at", None)
             updated_at_utc = updated_at.isoformat() if hasattr(updated_at, "isoformat") else str(updated_at or "")
             rows.append(
                 {
-                    "session_id": str(getattr(session, "id", "")),
-                    "user_id": str(getattr(session, "user_id", None) or user_id),
-                    "tenant_id": str(getattr(session, "tenant_id", None) or tenant_id),
+                    "session_id": str(attribute_access.optional(session, "id", "")),
+                    "user_id": str(attribute_access.optional(session, "user_id", None) or user_id),
+                    "tenant_id": str(attribute_access.optional(session, "tenant_id", None) or tenant_id),
                     "updated_at_utc": updated_at_utc,
                 }
             )
@@ -57,7 +58,7 @@ class SessionStorageToolBinding:
             result = [
                 item
                 for item in list(result or [])
-                if str(getattr(item, "tenant_id", tenant_id) or tenant_id) == tenant_id
+                if str(attribute_access.optional(item, "tenant_id", tenant_id) or tenant_id) == tenant_id
             ]
         return list(result or [])
 
@@ -66,8 +67,8 @@ class SessionStorageToolBinding:
             self._storage.get_history(tenant_id=tenant_id, session_id=session_id),
         )
         for message in reversed(list(history or [])):
-            if getattr(message, "role", "") == "user":
-                content = str(getattr(message, "content", "") or "").strip()
+            if attribute_access.optional(message, "role", "") == "user":
+                content = str(attribute_access.optional(message, "content", "") or "").strip()
                 if content:
                     return content
         return None
@@ -84,12 +85,12 @@ class SessionStorageToolBinding:
         )
         rows: list[dict[str, str]] = []
         for message in list(history or [])[-limit:]:
-            content = str(getattr(message, "content", "") or "").strip()
+            content = str(attribute_access.optional(message, "content", "") or "").strip()
             if not content:
                 continue
             rows.append(
                 {
-                    "role": str(getattr(message, "role", "") or ""),
+                    "role": str(attribute_access.optional(message, "role", "") or ""),
                     "content": content,
                     "session_id": session_id.strip(),
                     "tenant_id": tenant_id.strip(),

@@ -3,6 +3,7 @@
 """Load and validate Tier-3 application migrations (APP-EVOL-2 · APP-EVOL-2b)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import json
 import re
@@ -268,7 +269,7 @@ def _load_manifest_for_package(package: str) -> ApplicationManifest | None:
     for name in dir(module):
         if not (name.startswith("build_") and "manifest" in name.lower()):
             continue
-        builder = getattr(module, name, None)
+        builder = attribute_access.optional(module, name, None)
         if not callable(builder) or inspect.isclass(builder):
             continue
         try:

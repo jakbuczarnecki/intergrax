@@ -4,6 +4,7 @@
 """S3 bucket client — duck-typed boto3 S3 API (no boto3 import here)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any, Mapping, Optional
 
@@ -12,7 +13,7 @@ from intergrax.integrations.providers.object_storage.s3.config import S3Integrat
 
 
 def _is_not_found(exc: Exception) -> bool:
-    response = getattr(exc, "response", None)
+    response = attribute_access.optional(exc, "response", None)
     if isinstance(response, dict):
         code = response.get("Error", {}).get("Code")
         return code in {"NoSuchKey", "404", "NotFound"}

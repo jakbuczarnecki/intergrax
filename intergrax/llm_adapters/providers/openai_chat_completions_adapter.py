@@ -8,6 +8,7 @@ Used by Groq, vLLM, and similar providers (same message/tools/stream shape).
 """
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
 
@@ -32,6 +33,7 @@ from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResu
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
+from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
 
 class OpenAIChatCompletionsAdapter(LLMAdapter):
@@ -56,7 +58,12 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
         self.defaults = defaults
         self.model_name_for_token_estimation = model
         windows = context_windows if context_windows is not None else self._CONTEXT_WINDOWS
-        self._context_window_tokens = int(windows.get(model, 32_000))
+        self._context_window_tokens = init_adapter_context_window_tokens(
+            provider=provider,
+            model=model,
+            constructor_kwargs=defaults,
+            legacy_windows=windows,
+        )
 
     @property
     def context_window_tokens(self) -> int:
@@ -316,7 +323,7 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
             response_format={
                 "type": "json_schema",
                 "json_schema": {
-                    "name": getattr(output_model, "__name__", "structured_output"),
+                    "name": attribute_access.optional(output_model, "__name__", "structured_output"),
                     "schema": schema,
                     "strict": True,
                 },

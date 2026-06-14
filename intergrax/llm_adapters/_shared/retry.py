@@ -2,6 +2,7 @@
 # Integrax framework – proprietary and confidential.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import time
 from typing import Callable, TypeVar
@@ -11,12 +12,17 @@ from intergrax.llm_adapters._shared.call_config import LLMCallConfig
 T = TypeVar("T")
 
 
+def is_retriable_provider_error(exc: BaseException, config: LLMCallConfig) -> bool:
+    """Return True when ``exc`` warrants retry or profile failover."""
+    return _is_retryable(exc, config)
+
+
 def _is_retryable(exc: BaseException, config: LLMCallConfig) -> bool:
-    status = getattr(exc, "status_code", None)
+    status = attribute_access.optional(exc, "status_code", None)
     if status is None:
-        response = getattr(exc, "response", None)
+        response = attribute_access.optional(exc, "response", None)
         if response is not None:
-            status = getattr(response, "status_code", None)
+            status = attribute_access.optional(response, "status_code", None)
     if isinstance(status, int) and status in config.retry_on_status:
         return True
     name = type(exc).__name__.lower()

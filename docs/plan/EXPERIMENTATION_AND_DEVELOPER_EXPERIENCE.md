@@ -24,6 +24,7 @@
 | AUDIT-IDEAL-27.4 | §27 DX | Visual builder / graph editor (Phase 2 UI) | P3 | **Done** |
 | AUDIT-IDEAL-30.2 | §30 Ops | Real deploy SLO window evidence (shared OBSERVABILITY) | P1 | **Done** |
 | AUDIT-IDEAL-30.3 | §30 Ops | On-call ownership model for production components | P2 | **Done** |
+| AUDIT-IDEAL-6.7 | §6 LLM (shared) | Developer `USAGE.md` + startup validation | P2 | **Partial** — [USAGE.md](../../intergrax/llm_adapters/USAGE.md) Done; `validate_runtime` [M-LLM-X.7.2](plan/LLM_ADAPTERS.md) |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 

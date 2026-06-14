@@ -3,6 +3,7 @@
 
 """Confluence wiki integration (Phase M.6)."""
 
+from intergrax.utils.lazy_export import export_from_bundle
 from intergrax.integrations.providers.wiki_knowledge.confluence.config import (
     ENV_CONFLUENCE_API_TOKEN,
     ENV_CONFLUENCE_BASE_URL,
@@ -43,7 +44,7 @@ def __getattr__(name: str):
     if name in _LAZY_EXPORTS:
         from intergrax.integrations.providers.wiki_knowledge.confluence import bundle as _bundle
 
-        return getattr(_bundle, name)
+        return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "ConfluenceWikiKnowledge":
         from intergrax.integrations.providers.wiki_knowledge.confluence.adapter import ConfluenceWikiKnowledge
 

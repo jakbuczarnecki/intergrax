@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import json
 import os
@@ -28,6 +29,7 @@ from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResu
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall, tool_calls_from_openai_dicts
+from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
 
 class GeminiChatAdapter(LLMAdapter):
@@ -84,7 +86,12 @@ class GeminiChatAdapter(LLMAdapter):
         self.model_name_for_token_estimation = self.model
         self.defaults = defaults
 
-        self._context_window_tokens: int = self._estimate_gemini_context_window(self.model)
+        self._context_window_tokens: int = init_adapter_context_window_tokens(
+            provider=LLMProvider.GEMINI,
+            model=self.model,
+            constructor_kwargs=defaults,
+            legacy_windows=self._GEMINI_CONTEXT_WINDOWS,
+        )
 
         self.provider = LLMProvider.GEMINI
 
@@ -232,7 +239,7 @@ class GeminiChatAdapter(LLMAdapter):
                 return
 
             contents = self._map_contents(convo)
-            stream_fn = getattr(self.client.models, "generate_content_stream", None)
+            stream_fn = attribute_access.optional(self.client.models, "generate_content_stream", None)
             if stream_fn is None:
                 raise RuntimeError(
                     "GeminiChatAdapter.stream_messages fallback requires google-genai "
@@ -244,7 +251,7 @@ class GeminiChatAdapter(LLMAdapter):
                 contents=contents,
                 config=config,
             ):
-                txt = getattr(chunk, "text", None)
+                txt = attribute_access.optional(chunk, "text", None)
                 if txt:
                     buf.append(txt)
                     yield partial_stream_event(delta_content=txt)
@@ -382,7 +389,7 @@ class GeminiChatAdapter(LLMAdapter):
                 tools=openai_tools_to_gemini(tools_schema),
             )
             contents = self._map_contents(convo)
-            stream_fn = getattr(self.client.models, "generate_content_stream", None)
+            stream_fn = attribute_access.optional(self.client.models, "generate_content_stream", None)
             if stream_fn is None:
                 result = self.generate_with_tools(
                     messages,
@@ -397,7 +404,7 @@ class GeminiChatAdapter(LLMAdapter):
 
             tool_calls_acc: tuple[LLMToolCall, ...] = ()
             for chunk in stream_fn(model=self.model, contents=contents, config=config):
-                txt = getattr(chunk, "text", None)
+                txt = attribute_access.optional(chunk, "text", None)
                 if txt:
                     buf.append(txt)
                     yield partial_stream_event(delta_content=txt)
@@ -462,18 +469,18 @@ class GeminiChatAdapter(LLMAdapter):
     def _parse_gemini_response(self, response: Any) -> tuple[str, tuple[LLMToolCall, ...]]:
         text_parts: List[str] = []
         tool_calls_raw: List[Dict[str, Any]] = []
-        candidates = getattr(response, "candidates", None) or []
+        candidates = attribute_access.optional(response, "candidates", None) or []
         for cand in candidates:
-            content = getattr(cand, "content", None)
+            content = attribute_access.optional(cand, "content", None)
             if content is None:
                 continue
-            for part in getattr(content, "parts", None) or []:
-                if getattr(part, "text", None):
+            for part in attribute_access.optional(content, "parts", None) or []:
+                if attribute_access.optional(part, "text", None):
                     text_parts.append(part.text or "")
-                fc = getattr(part, "function_call", None)
+                fc = attribute_access.optional(part, "function_call", None)
                 if fc is not None:
-                    name = getattr(fc, "name", "") or ""
-                    args = getattr(fc, "args", None) or {}
+                    name = attribute_access.optional(fc, "name", "") or ""
+                    args = attribute_access.optional(fc, "args", None) or {}
                     tool_calls_raw.append(
                         {
                             "id": name or "gemini_call",

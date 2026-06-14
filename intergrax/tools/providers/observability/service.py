@@ -2,6 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any
 
@@ -83,7 +84,7 @@ def logs_search(ctx: ToolWiringContext, params: LogsSearchInput) -> LogsSearchOu
 
     backend = resolve_observability_backend(ctx, role="logs")
 
-    rest_client = getattr(backend, "rest_client", None)
+    rest_client = attribute_access.optional(backend, "rest_client", None)
     if rest_client is None:
         raise RuntimeError("observability_backend_does_not_support_log_search")
 
@@ -108,7 +109,7 @@ def traces_query(ctx: ToolWiringContext, params: TracesQueryInput) -> TracesQuer
 
     backend = resolve_observability_backend(ctx, role="traces")
 
-    query_fn = getattr(backend, "query_traces", None)
+    query_fn = attribute_access.optional(backend, "query_traces", None)
     if query_fn is None:
         raise RuntimeError("observability_backend_does_not_support_trace_query")
 
@@ -130,7 +131,7 @@ def errors_capture(ctx: ToolWiringContext, params: ErrorsCaptureInput) -> Errors
 
     backend = resolve_observability_backend(ctx, role="errors")
 
-    capture_message = getattr(backend, "capture_message", None)
+    capture_message = attribute_access.optional(backend, "capture_message", None)
     if capture_message is None:
         raise RuntimeError("observability_backend_does_not_support_error_capture")
 

@@ -1,5 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
+from intergrax.utils import attribute_access
 import pytest
 
 pytestmark = [pytest.mark.no_ci]
@@ -88,5 +89,5 @@ def test_legal_factory_exposes_interaction_intake_route(monkeypatch: pytest.Monk
     from legal_application.host.factory import create_legal_backend_app
 
     app = create_legal_backend_app()
-    paths = {getattr(route, "path", "") for route in app.routes}
+    paths = {attribute_access.optional(route, "path", "") for route in app.routes}
     assert "/v1/interactions/intake" in paths

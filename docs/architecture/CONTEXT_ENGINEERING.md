@@ -9,7 +9,7 @@
 **ADR:** [`ADR-CTX-001`](../adr/entries/2026-06-12/ADR-CTX-001.md) · [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler budget semantics)  
 **Related:** [`architecture/MEMORY.md`](MEMORY.md) (stores + lifecycle) · [`architecture/RAG.md`](RAG.md) (retrieval) · [`architecture/TOOLS.md`](TOOLS.md) (tool outputs) · [`architecture/NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) (turn narrative) · [`architecture/OBSERVABILITY.md`](OBSERVABILITY.md) (event spine) · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix L  
 **Implementation (as-built):** `intergrax/context/` · `intergrax/runtime/nexus/context/` · `intergrax/runtime/architecture/context_engineering.py` · `intergrax/contracts/context_assembly.py` · `applications/_shared/context_*`  
-**Last architecture pass:** 2026-06-12 (CE-PROV-WIRE B1 — legacy bridge + graph core providers)
+**Last architecture pass:** 2026-06-14 (iteration II — CE-10.3 + CE-HANDLE-FILL Done)
 
 ---
 
@@ -57,7 +57,7 @@ Tier-3 ContextProfile + ContextEnginePreset + context_plugins[]
 | Observability on assembly path? | **L3** — unified `CONTEXT_ASSEMBLED` v2 (CE-3.11); `CONTEXT_CANDIDATE_*` on engine assemble when `event_bus` wired (CE-9.1); OTel span shim + `check_context_otel_span_registry.py` |
 | Can authors register custom providers without forking Nexus? | **Yes** — `register_context_plugin()` + `context_plugin_ids` on `ContextProfile` |
 
-**Remaining:** **GAP-CTX-20** (CE-PROV-WIRE), **GAP-CTX-08**, deferred CE-9.5/9.6, CE-10.3–10.5, CE-12.1–12.3 — see §16.
+**Remaining:** deferred CE-9.5/9.6, CE-10.4–10.5, CE-12.1–12.3 — see §16.
 
 ---
 
@@ -69,7 +69,7 @@ Tier-3 ContextProfile + ContextEnginePreset + context_plugins[]
 | Global budget / never-overflow | **L3** | `ContextCompiler` on ACP LLM path + graph engine assemble; UAEP session path hybrid |
 | Provenance + assembly events | **L3** | `CONTEXT_ASSEMBLED` v2 with `engine_id` + `step_kind`; graph + UAEP aligned (CE-3.11) |
 | Quality scoring (relevance/freshness/confidence) | **L3** | `DefaultContextRanker` + `evaluate_context_engineering()` gate (CE-10.1) |
-| Plugin extensibility | **L3−** | Catalog + FORMAT merge shipped; **GAP-CTX-20** — stub `collect()` → legacy wiring (**CE-PROV-WIRE**) |
+| Plugin extensibility | **L3** | Catalog + FORMAT merge + **CE-PROV-WIRE** live collect for all §8.4 builtins (handle-gated where noted) |
 | Step-aware selection | **L3** | ACP `AgentStepContext` + ranker table; graph uses `node.capability` as `step_kind` |
 | Codebase-scale preset | **L3** | `CodebaseContextEngine` + workspace provider; 1k-file gate test |
 | Interactive multi-hop context loop | **L2** | `ContextOrchestrator` on codebase preset only (CE-8) |
@@ -322,7 +322,7 @@ Legacy `runtime_steps` pipeline (`HistoryLayer` → `CompileContextStep`) was **
 | Path | Collect | Budget / validate | Format | Events | Engine integration |
 |------|---------|-------------------|--------|--------|-------------------|
 | **Graph** | `compose_agent_message()` + optional provider `collect()` | `ContextEngine.assemble()` when `llm_adapter` wired; else `trim_message_to_budget` | bundle message | `CONTEXT_ASSEMBLED` v2 + `engine_id` | **Hybrid** — CE-3.7 |
-| **UAEP** | `build_context` + optional `assemble_uaep_session_prompt` | engine merge when wired | `ContextCompiler` when engine wired | `CONTEXT_ASSEMBLED` v2 | **Hybrid** — assemble wired (CE-UAEP-ASM); stub collect until CE-PROV-WIRE |
+| **UAEP** | `build_context` + optional `assemble_uaep_session_prompt` | engine merge when wired | `ContextCompiler` when engine wired | `CONTEXT_ASSEMBLED` v2 | **Hybrid** — assemble wired (CE-UAEP-ASM); provider collect via legacy bridge handles |
 | **ACP** | catalog tools in `on_next_step` + provider stubs in engine | `compile_prompt_text()` / `ContextCompiler` before each LLM call | step prompt | step trace + assembly v2 when graph-wired | **Hybrid** — CE-3.9 compiler hot path |
 | **Engine unit/integration** | `DefaultNexusContextEngine.assemble()` | collect → dedup → rank → `ContextCompiler` → `verify_context_preflight()` | `ChatMessage[]` | via `ContextManager` when wired | **Reference spine** |
 
@@ -333,20 +333,20 @@ Legacy `runtime_steps` pipeline (`HistoryLayer` → `CompileContextStep`) was **
 | provider_id | Source(s) | Module | collect status | CE-PROV-WIRE |
 |-------------|-----------|--------|----------------|--------------|
 | `builtin.task_message` | TASK_MESSAGE | `builtin.py` + `legacy_bridge.py` | **live** (objective / messages handle) | CE-PROV-01 **Done** |
-| `builtin.system_instructions` | SYSTEM_INSTRUCTIONS | `builtin.py` stub | **stub** | CE-PROV-02 — `runtime_config` / prompt registry handle |
+| `builtin.system_instructions` | SYSTEM_INSTRUCTIONS | `builtin.py` + `legacy_bridge.py` | **live (handle-gated)** | CE-PROV-02 **Done** |
 | `builtin.session_history` | SESSION_HISTORY | `builtin.py` + `legacy_bridge.py` | **live** (`session_history_messages` handle) | CE-PROV-03 **Done** |
 | `builtin.session_history_semantic` | SESSION_HISTORY_SEMANTIC | `session_semantic_recall.py` | **live** (vector index + hits handle) | — (CE-VEC-1) |
-| `builtin.longterm_memory` | LONGTERM_MEMORY | `builtin.py` stub | **stub** | CE-PROV-04 — LTM search / `memory_view` handle |
-| `builtin.rag` | RAG | `builtin.py` stub | **stub** | CE-PROV-05 — `rag_chunks` / retrieve snapshot handle |
-| `builtin.websearch` | WEBSEARCH | `builtin.py` stub | **stub** | CE-PROV-06 — websearch blocks handle |
-| `builtin.tool_output` | TOOL_OUTPUT | `builtin.py` stub | **stub** | CE-PROV-07 — tool step blocks handle |
+| `builtin.longterm_memory` | LONGTERM_MEMORY | `builtin.py` + `legacy_bridge.py` | **live (handle-gated)** | CE-PROV-04 **Done** |
+| `builtin.rag` | RAG | `builtin.py` + `legacy_bridge.py` | **live (handle-gated)** | CE-PROV-05 **Done** |
+| `builtin.websearch` | WEBSEARCH | `builtin.py` + `legacy_bridge.py` | **live (handle-gated)** | CE-PROV-06 **Done** |
+| `builtin.tool_output` | TOOL_OUTPUT | `builtin.py` + `legacy_bridge.py` | **live (handle-gated)** | CE-PROV-07 **Done** |
 | `builtin.graph_prior` | GRAPH_PRIOR | `builtin.py` + `legacy_bridge.py` | **live** (`prior_output_records` handle) | CE-PROV-08 **Done** |
-| `builtin.shared_context` | SHARED_CONTEXT | `builtin.py` stub | **stub** | CE-PROV-09 — `SharedTaskContext` on task metadata |
-| `builtin.attachments` | ATTACHMENT | `builtin.py` stub | **stub** | CE-PROV-10 — attachment summary handle |
-| `builtin.policy_overlay` | POLICY_OVERLAY | `builtin.py` stub | **stub** | CE-PROV-11 — policy overlay handle |
+| `builtin.shared_context` | SHARED_CONTEXT | `builtin.py` + `legacy_bridge.py` | **live (handle-gated)** | CE-PROV-09 **Done** |
+| `builtin.attachments` | ATTACHMENT | `builtin.py` + `legacy_bridge.py` | **live (handle-gated)** | CE-PROV-10 **Done** |
+| `builtin.policy_overlay` | POLICY_OVERLAY | `builtin.py` + `legacy_bridge.py` | **live (handle-gated)** | CE-PROV-11 **Done** |
 | `builtin.workspace` | WORKSPACE | `workspace.py` | **live** (`workspace_files` handle) | — (CE-7.2) |
 
-**Plan:** [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md) phase **CE-PROV-WIRE** · sprints B1–B4.
+**Plan:** [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md) phase **CE-PROV-WIRE** · sprints B1–B4. Handle key contract documented in plan §CE-PROV-WIRE (2026-06-14).
 
 ### 8.5 Engine presets (Tier-3)
 
@@ -395,7 +395,7 @@ sequenceDiagram
     UAEP->>Agent: UAEP steps / tool gateway
 ```
 
-When `context_engine` + `llm_adapter` are wired on `UAEPExecutor`, **`assemble_uaep_session_prompt`** runs after `build_context` (**CE-UAEP-ASM**). Provider collect on UAEP is **stub until CE-PROV-WIRE** (GAP-CTX-20).
+When `context_engine` + `llm_adapter` are wired on `UAEPExecutor`, **`assemble_uaep_session_prompt`** runs after `build_context` (**CE-UAEP-ASM**). Provider collect uses task/request metadata handles populated by upstream steps (**CE-PROV-WIRE**).
 
 ### 9.1.1 Engine assembly spine (CE-3 + CE-3.9 — shipped on ACP/graph)
 
@@ -487,7 +487,7 @@ Each step **MUST** emit diagnostics: `degradation_step`, `bytes_removed`, `fragm
 | Regression benchmark | `context_regression_benchmark.py` | **Done** |
 | Retrieval effectiveness | `retrieval_effectiveness.py` | **Done** (RAG boundary) |
 
-**CE-10.3** (provider metadata for `classify_candidates`) remains deferred — engine still uses message-index heuristics for compiler candidates.
+**CE-10.3** (CE-FMT-1 tag classification in `classify_candidates`) **Done** — legacy string heuristics remain fallback for non-tagged injections.
 
 ---
 
@@ -689,7 +689,7 @@ profile = ApplicationEnvironmentProfile(
 | GAP-CTX-05 | **Closed** | Quality scoring not in hot path | CE-10.1 ranker gate |
 | GAP-CTX-06 | **Closed** | Workspace spike only | CE-7 workspace provider |
 | GAP-CTX-07 | **Closed** | No `ContextOrchestrator` | CE-8 codebase preset |
-| GAP-CTX-08 | **Open** | `classify_candidates` string heuristics | CE-10.3 deferred |
+| GAP-CTX-08 | **Closed** | `classify_candidates` string heuristics | **CE-10.3** — CE tag prefix + legacy fallback (2026-06-14) |
 | GAP-CTX-09 | **Closed** | No OTel spans on hot path | CE-9.2 span registry + shim |
 | GAP-CTX-10 | **Closed** | No `CONTEXT_CANDIDATE_*` bus events | CE-9.1 engine emission via `context_skill_recording` |
 | GAP-CTX-11 | **Closed** | `ContextBuilder` name collision | CE-3.6 `SessionRagContextBuilder` alias |
@@ -701,9 +701,9 @@ profile = ApplicationEnvironmentProfile(
 | GAP-CTX-17 | **Closed** | `engine_ref=custom` not resolved | `context_engine_resolver.load_context_engine` |
 | GAP-CTX-18 | **Closed** | Preset engines lack §8.5 behavior | `preset_engines.py` |
 | GAP-CTX-19 | **Closed** | Registry formatter unused | `BuiltinContextPlugin` sets `DefaultContextFormatter` |
-| GAP-CTX-20 | **Open** (partial) | 8 builtin stub `collect()` still return `[]` on engine path (B1 closed task/graph/session) | **CE-PROV-WIRE** sprints B2–B4 |
+| GAP-CTX-20 | **Closed** | 8 builtin stub `collect()` returned `[]` on engine path | **CE-PROV-WIRE** B1–B4 Done (2026-06-14) |
 
-**Traceability:** [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md) · **CE-ALIGN** Done · **CE-PROV-WIRE** Planned.
+**Traceability:** [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md) · **CE-ALIGN** Done · **CE-PROV-WIRE** Done.
 
 ---
 
@@ -720,7 +720,7 @@ profile = ApplicationEnvironmentProfile(
 | `intergrax/context/dedup.py` | 0 | `dedup_fragments_by_hash()` |
 | `intergrax/context/orchestrator.py` | 0 | `ContextOrchestrator` (codebase preset) |
 | `intergrax/context/quality.py` | 0 | `evaluate_context_engineering()` |
-| `intergrax/context/providers/builtin.py` | 0 | `BuiltinContextPlugin` (B1 live: task/graph/session; remaining stubs — CE-PROV-WIRE) |
+| `intergrax/context/providers/builtin.py` | 0 | `BuiltinContextPlugin` (all §8.4 providers live via legacy bridge) |
 | `intergrax/context/providers/legacy_bridge.py` | 0 | Legacy collector adapters (**CE-PROV-BRIDGE** — B1 shipped) |
 | `intergrax/context/providers/workspace.py` | 0 | `WorkspaceContextProvider` |
 | `intergrax/context/providers/workspace_index.py` | 0 | Merkle workspace index |
@@ -750,7 +750,9 @@ profile = ApplicationEnvironmentProfile(
 | `intergrax/applications/_shared/context_wiring.py` | 3 | Engine + manager resolution |
 | `intergrax/agents/authoring/context_assembly_bridge.py` | 2 | ACP `ContextAssemblyRequest` builder |
 | `intergrax/agents/uaep.py` | 2 bridge | UAEP hooks + `CONTEXT_ASSEMBLED` v2 |
+| `intergrax/runtime/nexus/context/runtime_state_handle_bridge.py` | 1 | RuntimeState → CE provider metadata sync (CE-HANDLE-FILL) |
 | `scripts/check_context_engine_wiring.py` | — | CI preset resolution gate |
+| `scripts/check_context_builtin_providers.py` | — | CI builtin collect wiring gate (CE-PROV-GATE) |
 | `scripts/check_context_otel_span_registry.py` | — | CI span wiring gate |
 
 ---

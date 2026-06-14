@@ -1,6 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
+from intergrax.utils import attribute_access
 from intergrax.runtime.long_running.models import NotificationMessage, TaskCheckpoint
 from intergrax.runtime.long_running.notification import (
     ENV_SLACK_WEBHOOK_URL,
@@ -65,14 +66,14 @@ def __getattr__(name: str):
     if name in {"LongRunningScheduler", "TaskResumeExecutor", "UnifiedTaskResumeExecutor"}:
         from intergrax.runtime.long_running import scheduler as _scheduler
 
-        return getattr(_scheduler, name)
+        return attribute_access.optional(_scheduler, name)
     if name in {
         "DEFAULT_SCHEDULER_POLL_SECONDS",
         "ENV_SCHEDULER_POLL_SECONDS",
     }:
         from intergrax.runtime.long_running import scheduler as _scheduler
 
-        return getattr(_scheduler, name)
+        return attribute_access.optional(_scheduler, name)
     if name in {"ScheduledResume", "ScheduledResumeStatus"}:
         from intergrax.runtime.long_running.scheduled_resume import (
             ScheduledResume,

@@ -4,6 +4,7 @@
 """Phase M.7 integration factories (recommended harness providers)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from pathlib import Path
 from typing import Any, Callable, Optional
@@ -618,7 +619,7 @@ def create_neo4j_graph_store(
                 if not rows:
                     return None
                 node = rows[0].get("node")
-                return {"id": node_id, "labels": list(getattr(node, "labels", []) or []), "properties": dict(node or {})}
+                return {"id": node_id, "labels": list(attribute_access.optional(node, "labels", []) or []), "properties": dict(node or {})}
 
             def close(self) -> None:
                 self._drv.close()

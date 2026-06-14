@@ -9,6 +9,7 @@ All composition roots use ``bundle.create_gcp_*`` or ``profile.resolve(CLOUD_PLA
 """
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any, Callable, Optional
 
@@ -34,7 +35,7 @@ def _import_google_auth() -> tuple[Any, Any, Any]:
 
 
 def _ensure_valid_credentials(credentials: Any, request_cls: Any) -> None:
-    if not getattr(credentials, "valid", False):
+    if not attribute_access.optional(credentials, "valid", False):
         credentials.refresh(request_cls())
 
 
@@ -53,7 +54,7 @@ def open_gcp_credentials(
             config.credentials_file,
             scopes=scopes,
         )
-        project_id = config.project_id or str(getattr(credentials, "project_id", "") or "")
+        project_id = config.project_id or str(attribute_access.optional(credentials, "project_id", "") or "")
     else:
         credentials, default_project = google_auth.default(scopes=scopes)
         project_id = config.project_id or str(default_project or "")

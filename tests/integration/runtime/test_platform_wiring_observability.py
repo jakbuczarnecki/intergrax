@@ -1,6 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from unittest.mock import MagicMock
 
@@ -17,9 +18,9 @@ pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
 def _subscription_ids(bus) -> set[str]:
     ids: set[str] = set()
-    for sid, _, _ in getattr(bus, "_wildcard", []):
+    for sid, _, _ in attribute_access.optional(bus, "_wildcard", []):
         ids.add(sid)
-    for handlers in getattr(bus, "_handlers", {}).values():
+    for handlers in attribute_access.optional(bus, "_handlers", {}).values():
         for sid, _, _ in handlers:
             ids.add(sid)
     return ids
