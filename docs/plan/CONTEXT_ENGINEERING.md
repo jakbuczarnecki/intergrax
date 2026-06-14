@@ -23,7 +23,7 @@
 | **CE-PROV-WIRE** | Builtin stub providers → legacy collectors on `assemble()` path | **Done** (B1–B4, 2026-06-14) |
 | **CE-DOC.9** | FAUDIT 2026-06-12 deep audit — GAP-CTX-15..19 + CE-ALIGN sprint register | **Done** (2026-06-12) |
 | **CE-DOC.10** | CE-ALIGN closeout audit + architecture sync | **Done** (2026-06-12) |
-| **CE-HANDLE-FILL** | RuntimeState → provider metadata sync on nexus context steps | **Planned** — see [Phase CE-HANDLE-FILL](#phase-ce-handle-fill) |
+| **CE-HANDLE-FILL** | RuntimeState → provider metadata sync on nexus context steps | **Done** (2026-06-14) |
 
 **As-built maturity:** L3+ engine / L3 control plane — CE-PROV-WIRE closed GAP-CTX-20; see architecture §3.
 
@@ -35,8 +35,8 @@
 
 | ID | Severity | Finding | Resolution |
 |----|----------|---------|------------|
-| AUD-CE-11 | **P1** | Provider handles require manual `task.metadata` / `request.metadata` population — RuntimeState already holds RAG/LTM/tools but does not sync to CE handles | **CE-HANDLE-FILL** sprint C2 |
-| AUD-CE-05 | **P2→active** | GAP-CTX-08 — `classify_candidates` uses legacy string heuristics despite CE-FMT-1 `[context:source:id]` tags | **CE-10.3** sprint C1 |
+| AUD-CE-11 | **P1** | Provider handles require manual metadata population | **Closed** — CE-HANDLE-FILL (2026-06-14) |
+| AUD-CE-05 | **P2** | GAP-CTX-08 — `classify_candidates` string heuristics | **Closed** — CE-10.3 (2026-06-14) |
 | AUD-CE-06 | **P2** | OTel full SDK wiring optional; shim only | Backlog |
 | AUD-CE-07 | **P2** | CE-9.5 cost attribution on semantic compression | Backlog |
 | AUD-CE-08 | **P3** | CE-10.4 preset regression baselines | Backlog |
@@ -77,7 +77,7 @@
 | GAP-CTX-05 | CE-10.1 | 5 | **Closed** |
 | GAP-CTX-06 | CE-7 | 4 | **Closed** |
 | GAP-CTX-07 | CE-8 | 4 | **Closed** |
-| GAP-CTX-08 | CE-10.3 | 5 | **Open** (deferred) |
+| GAP-CTX-08 | CE-10.3 | 5 | **Closed** — CE-FMT-1 tag classification (2026-06-14) |
 | GAP-CTX-09 | CE-9.2 | 5 | **Closed** |
 | GAP-CTX-10 | CE-9.1 | 5 | **Closed** |
 | GAP-CTX-11 | CE-3.6 | 2 | **Closed** |
@@ -298,7 +298,7 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 | **CE-9.6** | OBS product dashboard — context assembly SLO panel | P3 | Deferred | Link when OBS dashboard slice ships |
 | **CE-10.1** | `DefaultContextRanker` integrates `evaluate_context_engineering()` thresholds | P2 | **Done** | Closes GAP-CTX-05 |
 | **CE-10.2** | Dedup by `content_hash` in collect merge phase | P2 | **Done** | `context/dedup.py` in engine assemble |
-| **CE-10.3** | Replace string-heuristic `classify_candidates` with provider-supplied metadata | P2 | Deferred | Post engine-unification follow-up |
+| **CE-10.3** | Replace string-heuristic `classify_candidates` with CE-FMT-1 tag prefix classification | P2 | **Done** (2026-06-14) | Closes GAP-CTX-08 |
 | **CE-10.4** | Extend `context_regression_benchmark.py` for engine presets | P2 | Deferred | Baseline JSON per preset |
 | **CE-10.5** | Acceptance `test_acceptance_context_compiler_long_session.py` updated for engine | P2 | Deferred | Engine path covered by gate unit tests |
 
@@ -377,7 +377,7 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 | CE-9.6 | 5 | Deferred |
 | CE-10.1 | 5 | **Done** |
 | CE-10.2 | 5 | **Done** |
-| CE-10.3 | 5 | Deferred |
+| CE-10.3 | 5 | **Done** |
 | CE-10.4 | 5 | Deferred |
 | CE-10.5 | 5 | Deferred |
 | CE-11.1 | 6 | **Done** |
@@ -530,17 +530,17 @@ One sprint = one coherent provider family or gate. One commit per sprint.
 
 ## Phase CE-HANDLE-FILL — RuntimeState provider metadata sync
 
-**Status:** **Planned** (2026-06-14, iteration II)  
+**Status:** **Done** (2026-06-14)  
 **Goal:** Close **AUD-CE-11** — after nexus context steps (`run_rag_context`, `run_websearch_context`, `run_tools_context`), sync `RuntimeState` artifacts into `RuntimeRequest.metadata` using the CE-PROV-WIRE handle key contract so downstream `assemble()` / graph task stubs receive populated handles without manual host wiring.  
 **Prerequisites:** CE-PROV-WIRE Done  
 **Success gate:** `extract_provider_metadata_from_runtime_state()` unit tests; `run_rag_context` updates `request.metadata["rag_chunks"]`; integration test assembles RAG fragment when metadata synced from state snapshot.
 
 | ID | Deliverable | Priority | Status |
 |----|-------------|----------|--------|
-| **CE-HANDLE-1** | `runtime_state_handle_bridge.py` — extract + merge helpers | P1 | Planned |
-| **CE-HANDLE-2** | Wire merge into `plan_context_invocation.py` after RAG/websearch/tools | P1 | Planned |
-| **CE-HANDLE-3** | Unit tests `test_runtime_state_handle_bridge.py` | P1 | Planned |
-| **CE-HANDLE-4** | Integration test: metadata sync → provider collect | P1 | Planned |
+| **CE-HANDLE-1** | `runtime_state_handle_bridge.py` — extract + merge helpers | P1 | **Done** (2026-06-14) |
+| **CE-HANDLE-2** | Wire merge into `plan_context_invocation.py` after RAG/websearch/tools | P1 | **Done** (2026-06-14) |
+| **CE-HANDLE-3** | Unit tests `test_runtime_state_handle_bridge.py` | P1 | **Done** (2026-06-14) |
+| **CE-HANDLE-4** | Integration test: metadata sync → provider collect | P1 | **Done** (2026-06-14) |
 
 ---
 
@@ -548,8 +548,8 @@ One sprint = one coherent provider family or gate. One commit per sprint.
 
 | Sprint | Goal | CE IDs | Exit criteria | Files |
 |--------|------|--------|---------------|-------|
-| **C1** | CE tag candidate classification | CE-10.3 | GAP-CTX-08 Closed; `[context:rag:…]` maps to `ContextCandidateSource.RAG` | `context_compiler.py`, `test_context_compiler.py`, architecture §11/§16 |
-| **C2** | RuntimeState handle autofill | CE-HANDLE-1…4 | `request.metadata` synced after context steps; bridge tests green | `runtime_state_handle_bridge.py`, `plan_context_invocation.py`, tests |
+| **C1** | CE tag candidate classification | CE-10.3 | GAP-CTX-08 Closed; `[context:rag:…]` maps to `ContextCandidateSource.RAG` | **Done** |
+| **C2** | RuntimeState handle autofill | CE-HANDLE-1…4 | `request.metadata` synced after context steps; bridge tests green | **Done** |
 
 ---
 

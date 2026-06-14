@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence
 
 from intergrax.applications.contracts.environment_profile import ContextDecisionProfile
@@ -43,7 +44,24 @@ def _last_user_index(messages: Sequence[ChatMessage]) -> int:
     return max(0, len(messages) - 1)
 
 
+_CE_CONTEXT_TAG = re.compile(
+    r"^\[context:(?P<source>[a-z_]+):[^\]]+\]\s",
+    re.IGNORECASE,
+)
+
+
 def _detect_injection_source(content: str) -> ContextCandidateSource:
+    """Prefer CE-FMT-1 ``[context:source:id]`` tags over legacy string heuristics (CE-10.3)."""
+    match = _CE_CONTEXT_TAG.match(content or "")
+    if match:
+        from intergrax.context.contracts import ContextFragmentSource
+        from intergrax.runtime.nexus.context.fragment_bridge import candidate_source_from_fragment
+
+        try:
+            fragment_source = ContextFragmentSource(match.group("source"))
+            return candidate_source_from_fragment(fragment_source)
+        except ValueError:
+            pass
     lowered = content.lower()
     if "long-term memory" in lowered or "user memory" in lowered or "ltm:" in lowered:
         return ContextCandidateSource.LONGTERM_MEMORY

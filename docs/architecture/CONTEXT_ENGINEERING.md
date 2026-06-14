@@ -9,7 +9,7 @@
 **ADR:** [`ADR-CTX-001`](../adr/entries/2026-06-12/ADR-CTX-001.md) · [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler budget semantics)  
 **Related:** [`architecture/MEMORY.md`](MEMORY.md) (stores + lifecycle) · [`architecture/RAG.md`](RAG.md) (retrieval) · [`architecture/TOOLS.md`](TOOLS.md) (tool outputs) · [`architecture/NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) (turn narrative) · [`architecture/OBSERVABILITY.md`](OBSERVABILITY.md) (event spine) · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix L  
 **Implementation (as-built):** `intergrax/context/` · `intergrax/runtime/nexus/context/` · `intergrax/runtime/architecture/context_engineering.py` · `intergrax/contracts/context_assembly.py` · `applications/_shared/context_*`  
-**Last architecture pass:** 2026-06-14 (iteration II — CE-10.3 + CE-HANDLE-FILL planned)
+**Last architecture pass:** 2026-06-14 (iteration II — CE-10.3 + CE-HANDLE-FILL Done)
 
 ---
 
@@ -57,7 +57,7 @@ Tier-3 ContextProfile + ContextEnginePreset + context_plugins[]
 | Observability on assembly path? | **L3** — unified `CONTEXT_ASSEMBLED` v2 (CE-3.11); `CONTEXT_CANDIDATE_*` on engine assemble when `event_bus` wired (CE-9.1); OTel span shim + `check_context_otel_span_registry.py` |
 | Can authors register custom providers without forking Nexus? | **Yes** — `register_context_plugin()` + `context_plugin_ids` on `ContextProfile` |
 
-**Remaining:** **GAP-CTX-08**, deferred CE-9.5/9.6, CE-10.3–10.5, CE-12.1–12.3 — see §16.
+**Remaining:** deferred CE-9.5/9.6, CE-10.4–10.5, CE-12.1–12.3 — see §16.
 
 ---
 
@@ -487,7 +487,7 @@ Each step **MUST** emit diagnostics: `degradation_step`, `bytes_removed`, `fragm
 | Regression benchmark | `context_regression_benchmark.py` | **Done** |
 | Retrieval effectiveness | `retrieval_effectiveness.py` | **Done** (RAG boundary) |
 
-**CE-10.3** (provider metadata for `classify_candidates`) remains deferred — engine still uses message-index heuristics for compiler candidates.
+**CE-10.3** (CE-FMT-1 tag classification in `classify_candidates`) **Done** — legacy string heuristics remain fallback for non-tagged injections.
 
 ---
 
@@ -689,7 +689,7 @@ profile = ApplicationEnvironmentProfile(
 | GAP-CTX-05 | **Closed** | Quality scoring not in hot path | CE-10.1 ranker gate |
 | GAP-CTX-06 | **Closed** | Workspace spike only | CE-7 workspace provider |
 | GAP-CTX-07 | **Closed** | No `ContextOrchestrator` | CE-8 codebase preset |
-| GAP-CTX-08 | **Open** (C1 active) | `classify_candidates` string heuristics | **CE-10.3** — CE-FMT-1 tag prefix classification (iteration II) |
+| GAP-CTX-08 | **Closed** | `classify_candidates` string heuristics | **CE-10.3** — CE tag prefix + legacy fallback (2026-06-14) |
 | GAP-CTX-09 | **Closed** | No OTel spans on hot path | CE-9.2 span registry + shim |
 | GAP-CTX-10 | **Closed** | No `CONTEXT_CANDIDATE_*` bus events | CE-9.1 engine emission via `context_skill_recording` |
 | GAP-CTX-11 | **Closed** | `ContextBuilder` name collision | CE-3.6 `SessionRagContextBuilder` alias |
@@ -750,7 +750,9 @@ profile = ApplicationEnvironmentProfile(
 | `intergrax/applications/_shared/context_wiring.py` | 3 | Engine + manager resolution |
 | `intergrax/agents/authoring/context_assembly_bridge.py` | 2 | ACP `ContextAssemblyRequest` builder |
 | `intergrax/agents/uaep.py` | 2 bridge | UAEP hooks + `CONTEXT_ASSEMBLED` v2 |
+| `intergrax/runtime/nexus/context/runtime_state_handle_bridge.py` | 1 | RuntimeState → CE provider metadata sync (CE-HANDLE-FILL) |
 | `scripts/check_context_engine_wiring.py` | — | CI preset resolution gate |
+| `scripts/check_context_builtin_providers.py` | — | CI builtin collect wiring gate (CE-PROV-GATE) |
 | `scripts/check_context_otel_span_registry.py` | — | CI span wiring gate |
 
 ---
