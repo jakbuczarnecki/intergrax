@@ -78,14 +78,18 @@ All adapter completion methods return typed envelopes — **not** bare `str` or 
 | Field | Type | Notes |
 |-------|------|-------|
 | `content` | `str` | Assistant text (alias: `.text`) |
-| `finish_reason` | `LLMFinishReason` | Normalized stop reason |
+| `finish_reason` | `LLMFinishReason` | Includes `CONTENT_FILTER`, `REFUSAL`, `LENGTH`, `TOOL_CALLS` — normalized via `parse_finish_reason()` |
 | `usage` | `LLMTokenUsage` | Per-call token accounting |
 | `model` / `provider` | `str` | Identity metadata |
 | `response_id` | `str \| None` | Provider correlation id |
-| `refusal` | `str \| None` | Provider-native safety/refusal when present |
+| `refusal` | `str \| None` | Provider-native safety/refusal text when present |
 | *(post-adapter)* | `GuardrailScanResult` | Optional Tier-3 `llm_guardrail` via middleware (`AFTER_LLM_OUTPUT`) — [`INTEGRATIONS.md`](INTEGRATIONS.md) §47 |
 | `tool_calls` | `tuple[LLMToolCall, ...]` | Native tool calls |
 | `provider_extensions` | `LLMProviderExtensions` | Tagged optional slices (usage source, vendor fields) |
+
+### Structured output (AUDIT-IDEAL-6.1 — Done)
+
+`generate_structured(..., output_model: type[T])` returns `LLMStructuredResult[T]`. Adapters parse provider JSON and validate with Pydantic via `_validate_with_model()` (see `openai_responses_adapter.py`, OpenAI-compat delegate). Reference agents and certified paths MUST use this method — not manual `json.loads` on bare strings. Gate: `check_agents_llm_adapter_response.py` + conformance tests under `tests/unit/llm_adapters/`.
 
 Example:
 
@@ -118,6 +122,32 @@ Optional `LLMCallSummary` on `SignalAssemblyInput.last_llm_call` → `HarnessOut
 |--------|---------|
 | `scripts/check_llm_adapter_typed_returns.py` | ABC public methods must not return bare `str` / dict |
 | `scripts/check_agents_llm_adapter_response.py` | Tier-2 agents must not annotate adapter returns as `str` |
+| `scripts/check_agents_vendor_imports.py` | Tier-2 agents must not import vendor LLM SDKs directly |
+
+### M-LLM-R as-built conformance (audit dimensions)
+
+Re-validate per [`guides/audit/LLM_ADAPTERS.md`](../guides/audit/LLM_ADAPTERS.md) §3:
+
+| # | Dimension | Status | Evidence |
+|---|-----------|--------|----------|
+| 1 | Typed envelope (`LLMAdapterResponse` / `LLMStructuredResult`) | **Yes** | §Response envelope; `check_llm_adapter_typed_returns.py` |
+| 2 | Agents do not treat LLM returns as bare `str` | **Yes** | `check_agents_llm_adapter_response.py` |
+| 3 | Vendor SDK only inside `providers/*` | **Yes** | `check_agents_vendor_imports.py`; tier boundary §Design principles |
+| 4 | Refusal / content filter surfaced | **Yes** | `refusal` field + `LLMFinishReason.CONTENT_FILTER` / `REFUSAL` |
+| 5 | Streaming parity with non-stream paths | **Partial** | `LLMStreamEvent` contract; provider-specific tool-call streaming gaps |
+| 6 | `LLMProfile` drives model selection | **Yes** | §Model selection; `resolve_llm_adapter()` |
+| 7 | Token/cost on envelope + run aggregation | **Yes** | §Token accounting; Prometheus + `LLMUsageTracker` |
+| 8 | Retries, timeout, circuit breaker | **Yes** | `LLMCallConfig`; §Resilience |
+| 9 | Structured output schema validation | **Yes** | `generate_structured` + Pydantic; AUDIT-IDEAL-6.1 |
+| 10 | Guardrail middleware when profile set | **Yes** | `AFTER_LLM_OUTPUT`; INTEGRATIONS §47 |
+| 11 | Tenant scope + hard quota | **Yes** | `llm_tenant_scope`; `INTERGRAX_LLM_TENANT_MAX_TOKENS` |
+| 12 | Metrics export on task complete | **Yes** | `runtime.llm_metrics_export` plugin; `/metrics/llm` |
+| 13 | Attachments respect `ModalityProfile.max_media_bytes` | **Yes** | §Modality attachments |
+| 14 | Capability flags default false (W-ML.1) | **Partial** | Per-provider overrides; catalog-driven flags: M-LLM-X.1.7 |
+| 15 | Secrets via `llm/<provider>/api_key` | **Yes** | §Secrets; `create_adapter_from_secrets_store()` |
+| 16 | Replay bridge maps trace → adapter calls | **Yes** | §Trace and replay bridge |
+
+**Planner ≠ producer (COG-PROD):** **Done** — `ReasoningProfile.planner_llm_profile` → `resolve_planner_llm_adapter()` (not an LLM-AUDIT open gap).
 
 ---
 
@@ -435,7 +465,7 @@ Per-provider model env vars: `INTERGRAX_DEFAULT_<PROVIDER>_MODEL` (see [`USAGE.m
 | Soft governance warn | `INTERGRAX_LLM_GOVERNANCE_WARN_TOKENS` |
 | Pushgateway | `INTERGRAX_LLM_PROMETHEUS_PUSHGATEWAY_URL` |
 | Distributed rate limit | `set_llm_distributed_rate_limiter` + `use_distributed_rate_limit` |
-| Context preflight | `verify_context_preflight()` — uses adapter window (tokenizer fix: M-LLM-X.3) |
+| Context preflight | `verify_context_preflight()` — uses `adapter.context_window_tokens` **today**; token **count** via `chars // 4` until M-LLM-X.3 |
 
 ---
 
@@ -497,11 +527,25 @@ Do not merge counters without explicit bridge code.
 
 ## Audit register (2026-06-14)
 
+### AUDIT-IDEAL §6 (LLM layer — master register cross-ref)
+
+| ID | Gap | Priority | Status | Phase / owner |
+|----|-----|----------|--------|---------------|
+| AUDIT-IDEAL-6.1 | Structured output validation on reference + certified paths | P1 | **Done** | M-LLM-R — §Structured output |
+| AUDIT-IDEAL-6.2 | Live cost/latency/quality routing (AHI prod path) | P2 | **Partial** | M-LLM-X.5 — LLM-AUDIT-9 |
+| AUDIT-IDEAL-6.3 | Central `ModelCatalog` + context window resolution | P0 | **Planned** | M-LLM-X.1 — LLM-AUDIT-1 |
+| AUDIT-IDEAL-6.4 | Tokenizer-consistent context preflight | P0 | **Planned** | M-LLM-X.3 — LLM-AUDIT-3, 15 |
+| AUDIT-IDEAL-6.5 | Profile failover chain | P1 | **Planned** | M-LLM-X.4 — LLM-AUDIT-5 |
+| AUDIT-IDEAL-6.6 | ACP `StepLLMRouter` backed by `LLMAdapter` | P1 | **Planned** | M-LLM-X.5 — LLM-AUDIT-6 |
+| AUDIT-IDEAL-6.7 | Developer `USAGE.md` + startup validation | P2 | **Partial** | M-LLM-X.7 — LLM-AUDIT-8 |
+
+### Production audit gaps (LLM-AUDIT-*)
+
 | ID | Gap | Severity | Phase | Status |
 |----|-----|----------|-------|--------|
 | LLM-AUDIT-1 | No central `ModelCatalog`; per-adapter context dicts stale | **P0** | M-LLM-X.1 | **Planned** |
 | LLM-AUDIT-2 | `context_window_tokens` override only on Ollama | **P0** | M-LLM-X.1 | **Planned** |
-| LLM-AUDIT-3 | Preflight uses chars/4 not adapter tokenizer | **P0** | M-LLM-X.3 | **Planned** |
+| LLM-AUDIT-3 | Preflight token estimate uses chars/4 not adapter tokenizer | **P0** | M-LLM-X.3.1–3.4 | **Planned** |
 | LLM-AUDIT-4 | `ModelRouter` not on Nexus hot path | **P1** | M-LLM-X.4–5 | **Planned** |
 | LLM-AUDIT-5 | No provider failover chain | **P1** | M-LLM-X.4 | **Planned** |
 | LLM-AUDIT-6 | ACP `StepLLMRouter` disconnected from `LLMAdapter` | **P1** | M-LLM-X.5 | **Planned** |
@@ -512,12 +556,32 @@ Do not merge counters without explicit bridge code.
 | LLM-AUDIT-11 | `ContextBudgetPolicy` default 4k decoupled from adapter window | **P0** | M-LLM-X.3.3 | **Planned** |
 | LLM-AUDIT-12 | Prefix context heuristics only on Bedrock (not Claude/OpenAI/Gemini) | **P0** | M-LLM-X.1.2–1.3 | **Planned** |
 | LLM-AUDIT-13 | Cohere dual slug (`cohere` vs `cohere_native`) confuses developers | **P2** | M-LLM-X.7.5 | **Done** |
+| LLM-AUDIT-14 | Capability flags not catalog-driven (`supports_vision`, tools, structured) | **P2** | M-LLM-X.1.7 | **Planned** |
+| LLM-AUDIT-15 | `engine_history_layer` token count inconsistent with preflight (chars/4) | **P0** | M-LLM-X.3.5 | **Planned** |
 
 **Deferred (documented, no X-phase task):** tiktoken OpenAI-centric token estimate for non-OpenAI models — acceptable for budgeting until vendor-specific tokenizer plugins; note in `USAGE.md`.
 
+**By design:** two-layer usage model (`LLMAdapterUsageLog` + `LLMUsageTracker`) — do not merge without explicit bridge (ADR-LLM-001).
+
 **Ops (host responsibility):** distributed Redis rate limit requires `set_llm_distributed_rate_limiter` at Tier-3 bootstrap — not a Tier-0 code gap.
 
-**Closed baselines:** M-LLM (13/13), M-LLM-R (39/39), AUDIT-IDEAL-6.1.
+**Single adapter per Nexus run:** `RuntimeConfig.llm_adapter` holds one primary instance today; multi-model via profile chain + routing is M-LLM-X.4–5 (not a separate LLM-AUDIT ID).
+
+**Closed baselines:** M-LLM (13/13), M-LLM-R (39/39), AUDIT-IDEAL-6.1 **Done**; AUDIT-IDEAL-6.2 + 6.7 **Partial**; 6.3–6.6 **Planned**.
+
+---
+
+## Anti-patterns
+
+| Anti-pattern | Why forbidden | Correct approach |
+|--------------|---------------|------------------|
+| Adapter returns bare `str` | Breaks metering, guardrails, replay | `LLMAdapterResponse` / `LLMStructuredResult[T]` |
+| Hardcoded model in Tier-2 agent | Bypasses profile, catalog, routing | `LLMProfile` + host resolver |
+| Direct OpenAI/Anthropic SDK in agents | Tier violation | Injected `LLMAdapter` via Nexus |
+| Manual JSON parse for structured output | No schema validation | `generate_structured(output_model=...)` |
+| Per-adapter context dict without catalog entry | Stale windows for new models | `ModelCatalog` + ADR-LLM-002 resolution |
+| Silent 32k fallback on OpenRouter ids | Wrong history trim | Profile override or M-LLM-X.2 metadata |
+| Merging adapter + run usage counters | Double-count or lost attribution | Two-layer model per ADR-LLM-001 |
 
 ---
 
@@ -527,6 +591,7 @@ Do not merge counters without explicit bridge code.
 uv run pytest tests/unit/llm_adapters/ -m gate -q
 python scripts/check_llm_adapter_typed_returns.py
 python scripts/check_agents_llm_adapter_response.py
+python scripts/check_agents_vendor_imports.py
 ```
 
 **Target gates (M-LLM-X):** `check_model_catalog_coverage.py`, `check_context_preflight_uses_adapter_tokens.py`.

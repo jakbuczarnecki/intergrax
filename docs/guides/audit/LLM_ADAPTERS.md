@@ -54,22 +54,22 @@ M-LLM-R envelope Done · **M-LLM-X** docs baseline Done (X.0, USAGE, ADR-LLM-002
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-| Gap | Status | Phase |
-|-----|--------|-------|
-| Central `ModelCatalog` + unified context window | **Open** | M-LLM-X.1 |
-| `context_window_tokens` profile override (all providers) | **Open** | M-LLM-X.1.5 |
-| Preflight uses adapter tokenizer not chars/4 | **Open** | M-LLM-X.3 |
-| Profile failover chain on retriable errors | **Open** | M-LLM-X.4 |
-| `ModelRouter` on Nexus hot path + AHI runtime swap | **Partial** | M-LLM-X.5 |
-| ACP `StepLLMRouter` backed by `LLMAdapter` | **Open** | M-LLM-X.5.4 |
-| OpenRouter / gateway dynamic model metadata | **Open** | M-LLM-X.2 |
-| Developer `USAGE.md` + startup validation | **Partial** | M-LLM-X.7 — USAGE Done |
-| Plugin provider story undocumented | **Partial** | M-LLM-X.6 — USAGE §Extension |
-| Cohere dual slug DX | **Done** | M-LLM-X.7.5 — USAGE §Providers |
-| `ContextBudgetPolicy` 4k default decoupled from adapter | **Open** | M-LLM-X.3.3 |
-| Prefix context heuristics missing (non-Bedrock) | **Open** | M-LLM-X.1.2–1.3 |
-| Capability flags not catalog-driven | **Open** | M-LLM-X.1.7 |
-| History layer token count inconsistent with preflight | **Open** | M-LLM-X.3.5 |
+| Gap | Status | Phase | Register ID |
+|-----|--------|-------|-------------|
+| Central `ModelCatalog` + unified context window | **Open** | M-LLM-X.1 | LLM-AUDIT-1 |
+| `context_window_tokens` profile override (all providers) | **Open** | M-LLM-X.1.5 | LLM-AUDIT-2 |
+| Preflight uses adapter tokenizer not chars/4 | **Open** | M-LLM-X.3.1–3.4 | LLM-AUDIT-3 |
+| Profile failover chain on retriable errors | **Open** | M-LLM-X.4 | LLM-AUDIT-5 |
+| `ModelRouter` on Nexus hot path + AHI runtime swap | **Partial** | M-LLM-X.5 | LLM-AUDIT-4, 9 |
+| ACP `StepLLMRouter` backed by `LLMAdapter` | **Open** | M-LLM-X.5.4 | LLM-AUDIT-6 |
+| OpenRouter / gateway dynamic model metadata | **Open** | M-LLM-X.2 | LLM-AUDIT-7 |
+| Developer `USAGE.md` + startup validation | **Partial** | M-LLM-X.7 | LLM-AUDIT-8 |
+| Plugin provider story undocumented | **Partial** | M-LLM-X.6 | LLM-AUDIT-10 |
+| Cohere dual slug DX | **Done** | M-LLM-X.7.5 | LLM-AUDIT-13 |
+| `ContextBudgetPolicy` 4k default decoupled from adapter | **Open** | M-LLM-X.3.3 | LLM-AUDIT-11 |
+| Prefix context heuristics missing (non-Bedrock) | **Open** | M-LLM-X.1.2–1.3 | LLM-AUDIT-12 |
+| Capability flags not catalog-driven | **Open** | M-LLM-X.1.7 | LLM-AUDIT-14 |
+| History layer token count inconsistent with preflight | **Open** | M-LLM-X.3.5 | LLM-AUDIT-15 |
 | Planner LLM ≠ producer discipline | **Done** | COG-PROD via `resolve_planner_llm_adapter` |
 | Distributed rate limit needs Redis wiring at host | **Partial** | ops — host must call `set_llm_distributed_rate_limiter` |
 | Usage tracking layers not auto-merged | **By design** | two-layer model per ADR-LLM-001 |
@@ -94,7 +94,7 @@ intergrax/llm_adapters/ (registry/, providers/*, call_lifecycle.py, tracking/)
 intergrax/llm/messages.py (AttachmentRef)
 intergrax/runtime/replay/trace_replay_bridge.py
 intergrax/runtime/adaptive/llm_call_summary.py
-scripts/check_llm_adapter_typed_returns.py · scripts/check_agents_llm_adapter_response.py
+scripts/check_llm_adapter_typed_returns.py · scripts/check_agents_llm_adapter_response.py · scripts/check_agents_vendor_imports.py
 ```
 
 Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.

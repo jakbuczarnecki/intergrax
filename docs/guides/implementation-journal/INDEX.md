@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-14-007 | 2026-06-14 | tier-0 LLM_ADAPTERS | LLM-AUDIT-14/15 · M-LLM-X.8.1 | [LLM — audit register gap close and M-LLM-R conformance matrix](entries/2026-06-14/platform-llm-audit-register-gap-close.md) | pending |
 | IJ-2026-06-14-006 | 2026-06-14 | tier-0, tier-1 MEMORY | MEM-AUDIT register · doc sync | [MEMORY — post-verification architecture and audit sync](entries/2026-06-14/platform-memory-audit-doc-sync.md) | pending |
 | IJ-2026-06-14-005 | 2026-06-14 | tier-0 SKILLS | SK-EXP5 · ACP-CLOSE-CI | [Gate regression fix — catalog drift, fleet roster, pytest scope](entries/2026-06-14/platform-gate-regression-fix.md) | pending |
 | IJ-2026-06-14-004 | 2026-06-14 | tier-0 LLM_ADAPTERS | M-LLM-X.0.1–0.3 · X.6.3 · X.7.1 · X.7.5 | [M-LLM-X — post-audit architecture and plan sync](entries/2026-06-14/platform-llm-x-audit-doc-sync.md) | pending |

@@ -222,7 +222,7 @@ PR-11: M-LLM-X.8.* closeout
 |------------------------|----------|
 | LLM-AUDIT-1 — No central ModelCatalog | M-LLM-X.1.1–1.6 |
 | LLM-AUDIT-2 — context override Ollama-only | M-LLM-X.1.5 |
-| LLM-AUDIT-3 — Preflight chars/4 | M-LLM-X.3.1–3.5 |
+| LLM-AUDIT-3 — Preflight chars/4 | M-LLM-X.3.1–3.4 |
 | LLM-AUDIT-4 — ModelRouter not on hot path | M-LLM-X.5.1–5.3 |
 | LLM-AUDIT-5 — No failover chain | M-LLM-X.4.1–4.5 |
 | LLM-AUDIT-6 — StepLLMRouter stub | M-LLM-X.5.4–5.5 |
@@ -233,7 +233,8 @@ PR-11: M-LLM-X.8.* closeout
 | LLM-AUDIT-11 — ContextBudgetPolicy fixed 4k decoupled from adapter | M-LLM-X.3.3 |
 | LLM-AUDIT-12 — Prefix heuristics only on Bedrock today | M-LLM-X.1.2, 1.3 |
 | LLM-AUDIT-13 — Cohere dual slug (`cohere` / `cohere_native`) DX | M-LLM-X.7.5 |
-| Capability flags not catalog-driven | M-LLM-X.1.7 |
+| LLM-AUDIT-14 — Capability flags not catalog-driven | M-LLM-X.1.7 |
+| LLM-AUDIT-15 — History layer token count inconsistent with preflight | M-LLM-X.3.5 |
 | tiktoken OpenAI-centric estimate (all providers) | **Deferred** — document limitation in USAGE; vendor tokenizer plugins post-X |
 | Single `RuntimeConfig.llm_adapter` per run (multi-model) | M-LLM-X.4–5 (profile chain + routing); no multi-adapter pool in X |
 | Distributed Redis rate limit host wiring | **Ops** — document in USAGE X.7.1; not LLM-AUDIT tier-0 code |
