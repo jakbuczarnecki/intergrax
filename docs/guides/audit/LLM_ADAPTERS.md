@@ -50,11 +50,29 @@ LLMAdapter · LLMAdapterResponse · LLMFinishReason · LLMTokenUsage · LLMToolC
 
 ## Active plan phases (verify status vs code reality)
 
-M-LLM-R envelope Done · W-ML.1 capability flags · Phase V FAUDIT-LLM.1 residual · COG cross-ref planner≠producer
+M-LLM-R envelope Done · **M-LLM-X** docs baseline Done (X.0, USAGE, ADR-LLM-002) · code waves X-1…X-8 Planned · W-ML.1 capability flags · COG cross-ref planner≠producer
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-Planner LLM ≠ producer discipline incomplete at Nexus boundary · distributed rate limit needs Redis wiring · usage tracking layers not auto-merged
+| Gap | Status | Phase |
+|-----|--------|-------|
+| Central `ModelCatalog` + unified context window | **Open** | M-LLM-X.1 |
+| `context_window_tokens` profile override (all providers) | **Open** | M-LLM-X.1.5 |
+| Preflight uses adapter tokenizer not chars/4 | **Open** | M-LLM-X.3 |
+| Profile failover chain on retriable errors | **Open** | M-LLM-X.4 |
+| `ModelRouter` on Nexus hot path + AHI runtime swap | **Partial** | M-LLM-X.5 |
+| ACP `StepLLMRouter` backed by `LLMAdapter` | **Open** | M-LLM-X.5.4 |
+| OpenRouter / gateway dynamic model metadata | **Open** | M-LLM-X.2 |
+| Developer `USAGE.md` + startup validation | **Partial** | M-LLM-X.7 — USAGE Done |
+| Plugin provider story undocumented | **Partial** | M-LLM-X.6 — USAGE §Extension |
+| Cohere dual slug DX | **Done** | M-LLM-X.7.5 — USAGE §Providers |
+| `ContextBudgetPolicy` 4k default decoupled from adapter | **Open** | M-LLM-X.3.3 |
+| Prefix context heuristics missing (non-Bedrock) | **Open** | M-LLM-X.1.2–1.3 |
+| Capability flags not catalog-driven | **Open** | M-LLM-X.1.7 |
+| History layer token count inconsistent with preflight | **Open** | M-LLM-X.3.5 |
+| Planner LLM ≠ producer discipline | **Done** | COG-PROD via `resolve_planner_llm_adapter` |
+| Distributed rate limit needs Redis wiring at host | **Partial** | ops — host must call `set_llm_distributed_rate_limiter` |
+| Usage tracking layers not auto-merged | **By design** | two-layer model per ADR-LLM-001 |
 
 ---
 
@@ -63,8 +81,9 @@ Planner LLM ≠ producer discipline incomplete at Nexus boundary · distributed 
 1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state
 2. `docs/architecture/LLM_ADAPTERS.md` — architecture canon (incl. audit registers if present)
 3. `docs/plan/LLM_ADAPTERS.md` — implementation plan and gap IDs
-4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 6
-5. `docs/guides/audit/README.md` — shared production Harness checklist (**mandatory**)
+4. `intergrax/llm_adapters/USAGE.md` — developer operational guide
+5. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 6
+6. `docs/guides/audit/README.md` — shared production Harness checklist (**mandatory**)
 
 ---
 

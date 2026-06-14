@@ -1029,7 +1029,7 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 
 Full catalog (167 providers, each with English `USAGE.md`): [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md). Per-slug examples: `intergrax/integrations/providers/<category>/<slug>/USAGE.md`.
 
-LLM adapters (`intergrax/llm_adapters/`) are **not** part of the Integration Library — configure them separately.
+LLM adapters (`intergrax/llm_adapters/`) are **not** part of the Integration Library — configure them via **`LLMProfile`** and [`intergrax/llm_adapters/USAGE.md`](../intergrax/llm_adapters/USAGE.md). Architecture: [`docs/architecture/LLM_ADAPTERS.md`](../docs/architecture/LLM_ADAPTERS.md). Active uplift: **Phase M-LLM-X** (ModelCatalog, routing, DX).
 
 ### Decision checklist
 
@@ -2669,7 +2669,7 @@ Declare on **`AgentContract`** (defaults); narrow per host via **`AgentBinding`*
 | Tools / skills | `skill_ids`, `extra_tools` on contract | `await ctx.invoke_tool(...)` |
 | Memory | `memory_namespace_template` + **`memory_scope`** on contract | `ctx.memory_view` — **user-scoped by default** §30.9; org agents use `memory_scope=org` |
 | RAG / knowledge | `default_rag_collection` + tool `rag.retrieve` | collection in tool args / metadata |
-| LLM | Host `LLMProfile`; per-step hint via `StepLLMRouter` §33 | `ctx.llm_router.set_hint(...)` in `on_next_step` |
+| LLM | Host `LLMProfile`; per-step hint via `StepLLMRouter` §33 | `ctx.llm_router` in `on_next_step` — converges on `LLMAdapter` ([M-LLM-X.5](../plan/LLM_ADAPTERS.md)) |
 | Database | `required_integration_slugs` + tools | integration tools only |
 
 Same agent in **lab** vs **prod**: different Tier-3 profile — **no code fork**.

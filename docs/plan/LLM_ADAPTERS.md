@@ -17,9 +17,226 @@
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
 | AUDIT-IDEAL-6.1 | §6 LLM | Structured output validation on 100% reference + certified agent paths | P1 | **Done** |
-| AUDIT-IDEAL-6.2 | §6 LLM | Live cost/latency/quality model routing (AHI prod path) | P2 | **Done** |
+| AUDIT-IDEAL-6.2 | §6 LLM | Live cost/latency/quality model routing (AHI prod path) | P2 | **Partial** — gate wiring exists; runtime adapter swap deferred to M-LLM-X.5 |
+| AUDIT-IDEAL-6.3 | §6 LLM | Central `ModelCatalog` + unified context window resolution | P0 | **Planned** — M-LLM-X.1 |
+| AUDIT-IDEAL-6.4 | §6 LLM | Tokenizer-consistent context preflight (adapter path) | P0 | **Planned** — M-LLM-X.3 |
+| AUDIT-IDEAL-6.5 | §6 LLM | Profile failover chain on retriable provider errors | P1 | **Planned** — M-LLM-X.4 |
+| AUDIT-IDEAL-6.6 | §6 LLM | ACP `StepLLMRouter` backed by `LLMAdapter` (single DX) | P1 | **Planned** — M-LLM-X.5 |
+| AUDIT-IDEAL-6.7 | §6 LLM | Developer `USAGE.md` + startup validation | P2 | **Partial** — [USAGE.md](../../intergrax/llm_adapters/USAGE.md) Done; X.7.2 pending |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+
+---
+
+## Phase M-LLM-X — LLM Developer Excellence (post-audit 2026-06-14)
+
+**Source:** Deep production audit 2026-06-14 — contract L3, model metadata L1–L2, routing L1–L2, DX L2.  
+**Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) §Model catalog · §Routing · §Audit register  
+**Goal:** Elevate Tier-0 LLM layer from **production L3 foundation** to **best-in-class developer engine** — correct context for any model string, unified token accounting, runtime routing/failover, single agent API.  
+**Status:** **Planned** — **docs baseline Done** (X.0.1–0.3, X.7.1, X.6.3 partial) · **code 0/35**  
+**Priority ladder:** Band **2ba** (after M-LLM-R closeout) · queue [§6.1ax](#61ax-harness-implementation-queue--llm-developer-excellence-m-llm-x)  
+**Execution order:** [§6.2af](#62af-phase-m-llm-x-execution-order)  
+**Target maturity:** Model metadata **L3**, routing **L3**, DX **L3+** (see architecture maturity table).
+
+**Hard rules (non-negotiable):**
+
+- **No** new per-adapter hardcoded context dicts without catalog entry or prefix rule — migrate to `ModelCatalog`.
+- **`LLMProfile.options["context_window_tokens"]`** MUST override catalog for **all** providers (not Ollama-only).
+- **Preflight / history budget** MUST use `adapter.count_messages_tokens` when adapter is in scope.
+- **No** vendor SDK imports in Tier-2 — unchanged tier boundary.
+- One **M-LLM-X.\*** task group per PR → update master table + architecture audit register → gate green.
+- **ADR:** [ADR-LLM-002](../adr/entries/2026-06-14/ADR-LLM-002.md) **Done** — prerequisite for M-LLM-X.1 code merge.
+
+**Explicitly excluded:** Central LLM gateway microservice (needs separate platform ADR), rewriting all 19 SDK clients, product HTTP DTOs, Phase K agents.
+
+---
+
+### 6.1ax Harness implementation queue — LLM Developer Excellence (M-LLM-X)
+
+**Purpose:** Ordered backlog for **Phase M-LLM-X**. Pull **P0 waves first** — context window accuracy blocks context engine quality.
+
+| Order | Wave | IDs | Priority | Status |
+|-------|------|-----|----------|--------|
+| 0 | X-0 | M-LLM-X.0.1–0.3 | **P0** | **Done** |
+| 1 | X-1 | M-LLM-X.1.1–1.6 | **P0** | **Planned** |
+| 2 | X-2 | M-LLM-X.2.1–2.4 | P1 | **Planned** |
+| 3 | X-3 | M-LLM-X.3.1–3.5 | **P0** | **Planned** |
+| 4 | X-4 | M-LLM-X.4.1–4.5 | P1 | **Planned** |
+| 5 | X-5 | M-LLM-X.5.1–5.5 | P1 | **Planned** |
+| 6 | X-6 | M-LLM-X.6.1–6.3 | P2 | **Partial** (6.3 Done) |
+| 7 | X-7 | M-LLM-X.7.1–7.5 | P2 | **Partial** (7.1, 7.5 Done; 7.2–7.4 Planned) |
+| 8 | X-8 | M-LLM-X.8.1–8.3 | Medium | **Planned** |
+
+**Closeout gate:** All M-LLM-X.* Done + architecture audit register all **Done** + `tests/unit/llm_adapters/` green + new CI scripts green.
+
+---
+
+### 6.2af Phase M-LLM-X execution order
+
+**Status:** **Planned**
+
+```text
+Wave M-LLM-X-0 (planning):     M-LLM-X.0.1 → 0.2 → 0.3
+Wave M-LLM-X-1 (catalog):      M-LLM-X.1.1 → 1.2 → 1.3 → 1.4 → 1.5 → 1.6
+Wave M-LLM-X-2 (dynamic meta): M-LLM-X.2.1 → 2.2 → 2.3 → 2.4
+Wave M-LLM-X-3 (tokens):       M-LLM-X.3.1 → 3.2 → 3.3 → 3.4 → 3.5
+Wave M-LLM-X-4 (failover):     M-LLM-X.4.1 → 4.2 → 4.3 → 4.4 → 4.5
+Wave M-LLM-X-5 (routing):      M-LLM-X.5.1 → 5.2 → 5.3 → 5.4 → 5.5
+Wave M-LLM-X-6 (plugins):      M-LLM-X.6.1 → 6.2 → 6.3
+Wave M-LLM-X-7 (DX):           M-LLM-X.7.1 → 7.2 → 7.3 → 7.4 → 7.5
+Wave M-LLM-X-8 (closeout):     M-LLM-X.8.1 → 8.2 → 8.3
+```
+
+**Prerequisites:** M-LLM + M-LLM-R **Done**; CONTEXT_ENGINE preflight paths stable.
+
+**Parallelism:** X-2 (OpenRouter fetch) may run after X-1.3; X-5 depends on X-4.2; X-7 may start after X-1.1 (docs partial).
+
+---
+
+#### Wave M-LLM-X-0 — Planning and ADR
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-X.0.1 | **Plan register** — §6.1ax, §6.2af, AUDIT-IDEAL-6.3–6.7 rows | **Done** | Critical | This file + architecture audit register | Cross-linked |
+| M-LLM-X.0.2 | **`docs/adr/entries/2026-06-14/ADR-LLM-002.md`** — ModelCatalog, resolution order, override semantics | **Done** | Critical | `docs/adr/` | Linked from architecture + hub |
+| M-LLM-X.0.3 | **Master register sync** — `AUDIT_IDEAL_2026.md` rows 6.2–6.7 | **Done** | High | `plan/AUDIT_IDEAL_2026.md` | 6.2 + 6.7 Partial; 6.3–6.6 Planned |
+
+---
+
+#### Wave M-LLM-X-1 — ModelCatalog and context window (P0)
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-X.1.1 | **`ModelRecord` + `ModelCatalog`** frozen types | **Planned** | Critical | `registry/model_catalog.py` | Unit: load, immutability |
+| M-LLM-X.1.2 | **Bundled `model_catalog.yaml`** — OpenAI, Claude, Gemini, Mistral, Bedrock, Groq, common OpenRouter ids; family prefix rules | **Planned** | Critical | `registry/model_catalog.yaml` | ≥50 entries; prefix rules for `claude-*`, `gpt-*`, `gemini-*` |
+| M-LLM-X.1.3 | **`resolve_context_window_tokens(provider, model, options)`** — single resolver per ADR-LLM-002 order | **Planned** | Critical | `registry/context_window.py` | Unit: override > exact > prefix > default |
+| M-LLM-X.1.4 | **Wire all 19 adapters** — remove inline dicts; call resolver at `__init__` | **Planned** | Critical | `providers/*` | No direct `.get(model, 32000)` left in adapters |
+| M-LLM-X.1.5 | **`LLMProfile` propagates `context_window_tokens`** to every adapter ctor via `create_adapter()` | **Planned** | Critical | `registry/profile.py` | Test: Claude + Groq + vLLM override |
+| M-LLM-X.1.6 | **Env `INTERGRAX_LLM_MODEL_CATALOG_PATH`** optional YAML overlay | **Planned** | Medium | `model_catalog.py` | Operator merge without code deploy |
+| M-LLM-X.1.7 | **Capability flags from catalog** — populate `supports_vision` / tools / structured when `ModelRecord` known | **Planned** | Medium | `providers/*`, `modality_capabilities.py` | Conformance subset; W-ML.1 alignment |
+
+---
+
+#### Wave M-LLM-X-2 — Dynamic gateway metadata (P1)
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-X.2.1 | **`OpenRouterModelMetadataClient`** — optional `/models` fetch, TTL cache | **Planned** | High | `registry/gateway_metadata/` | Mocked unit tests |
+| M-LLM-X.2.2 | **Merge gateway metadata into catalog session cache** | **Planned** | High | `model_catalog.py` | context from API when present |
+| M-LLM-X.2.3 | **`LLMProfile.options["fetch_gateway_metadata"]=True`** opt-in | **Planned** | Medium | `profile.py` | Default false (no network in unit gate) |
+| M-LLM-X.2.4 | **Diagnostic `ModelCatalogMissDiagV1`** when fallback default used | **Planned** | Medium | tracing | Trace on first miss per model/run |
+
+---
+
+#### Wave M-LLM-X-3 — Token accounting consistency (P0)
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-X.3.1 | **`verify_context_preflight`** uses `adapter.count_messages_tokens(messages)` | **Planned** | Critical | `context_preflight.py` | Unit: tiktoken path exercised |
+| M-LLM-X.3.2 | **`count_message_tokens` helper** — delegate to adapter when provided | **Planned** | High | `context_preflight.py` | Backward compat optional counter |
+| M-LLM-X.3.3 | **`ContextBudgetPolicy.from_adapter(adapter)`** factory — derive `max_tokens_estimate` from `resolve_input_budget_tokens` | **Planned** | High | `context_budget.py` | Nexus compile tests updated |
+| M-LLM-X.3.4 | **`scripts/check_context_preflight_uses_adapter_tokens.py`** CI guard | **Planned** | High | `scripts/` | Added to §6.1 maintenance |
+| M-LLM-X.3.5 | **`engine_history_layer`** history token count via `adapter.count_messages_tokens` | **Planned** | High | `engine_history_layer.py` | Same tokenizer path as preflight |
+
+---
+
+#### Wave M-LLM-X-4 — Profile failover chain (P1)
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-X.4.1 | **`LLMProfile.fallback_profiles: tuple[LLMProfile, ...]`** | **Planned** | High | `registry/profile.py` | Pydantic validation; extra=forbid |
+| M-LLM-X.4.2 | **`FailoverLLMAdapter`** — wraps primary; tries chain on retriable errors | **Planned** | Critical | `registry/failover_adapter.py` | Unit: 429 → fallback success |
+| M-LLM-X.4.3 | **`LLMProfile.create_adapter_with_failover()`** | **Planned** | High | `profile.py` | Integration with `LLMCallConfig.retry_on_status` |
+| M-LLM-X.4.4 | **Trace `LLMRoutingAttemptDiagV1`** per failover attempt | **Planned** | Medium | observability | Fields: profile_id, provider, model, error |
+| M-LLM-X.4.5 | **Tier-3 wiring** — `ApplicationEnvironmentProfile` optional fallback list | **Planned** | Medium | `environment_profile.py`, `nexus_factory.py` | Host smoke test |
+
+---
+
+#### Wave M-LLM-X-5 — Runtime routing and AHI integration (P1)
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-X.5.1 | **Expand `ModelRouter`** — hints: `balanced`, `cheapest`, `fastest`, `quality`; map to profile index | **Planned** | High | `registry/model_router.py` | Unit: each hint |
+| M-LLM-X.5.2 | **`resolve_runtime_llm_profile(env, policy_hint)`** — single entry for Nexus factory | **Planned** | Critical | `applications/_shared/llm_resolver.py` | Replaces ceremonial AHI-only wiring |
+| M-LLM-X.5.3 | **Wire `resolve_live_model_routing_wiring` → actual adapter selection** | **Planned** | Critical | `llm_routing_wiring.py`, `nexus_factory.py` | AUDIT-IDEAL-6.2 → **Done** |
+| M-LLM-X.5.4 | **`StepLLMRouter` → `LLMAdapter` bridge** — async wrapper over `generate_messages` | **Planned** | High | `agents/authoring/llm_router.py` | ACP tests use real FakeLLMAdapter |
+| M-LLM-X.5.5 | **Remove stub echo path** when `llm_port` unset in production hosts | **Planned** | Medium | `acp_run.py` | Fail-fast if adapter missing in PRODUCT profile |
+
+---
+
+#### Wave M-LLM-X-6 — Plugin provider story (P2)
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-X.6.1 | **`LLMProfile` accepts `provider: str`** without enum (validated against registry) | **Planned** | Medium | `profile.py` | `register()` slug works without enum PR |
+| M-LLM-X.6.2 | **Example custom gateway** in `tests/unit/llm_adapters/test_custom_provider_register.py` | **Planned** | Medium | tests | Conformance subset |
+| M-LLM-X.6.3 | **Architecture §Extension** + AGENT_CREATION_GUIDE cross-link | **Done** | Low | docs | USAGE + canon §Extension |
+
+---
+
+#### Wave M-LLM-X-7 — Developer experience (P2)
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-X.7.1 | **`intergrax/llm_adapters/USAGE.md`** — quickstart, env matrix, overrides, failover, catalog | **Done** | High | Tier-0 module root | Linked from architecture |
+| M-LLM-X.7.2 | **`LLMProfile.validate_runtime()`** — catalog hit, key, context > 0 | **Planned** | Medium | `profile.py` | Optional call from `intergrax doctor` |
+| M-LLM-X.7.3 | **`scripts/check_model_catalog_coverage.py`** — gate warns on adapter default models missing from YAML | **Planned** | Medium | CI | §6.1 maintenance |
+| M-LLM-X.7.4 | **Scaffold `new-agent` template** — comment block pointing to USAGE + catalog override | **Planned** | Low | `scaffold/new_agent.py` | Scaffold test |
+| M-LLM-X.7.5 | **Cohere slug guidance** — document `cohere` (compat) vs `cohere_native` selection in USAGE | **Done** | Low | `USAGE.md` §Providers | Reduces dual-slug confusion |
+
+---
+
+#### Wave M-LLM-X-8 — Closeout
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-X.8.1 | **Architecture audit register** — all LLM-AUDIT-* → Done | **Planned** | Critical | `architecture/LLM_ADAPTERS.md` | Matches code |
+| M-LLM-X.8.2 | **AUDIT-IDEAL-6.2–6.7** → Done in master register | **Planned** | High | `AUDIT_IDEAL_2026.md` | Gate scripts |
+| M-LLM-X.8.3 | **Implementation journal** + maturity re-score L3+ | **Planned** | Medium | `implementation-journal/` | `check_implementation_journal.py` |
+
+---
+
+### M-LLM-X — Suggested PR order
+
+```text
+PR-1:  M-LLM-X.0.2 ADR-LLM-002 — Done
+PR-2:  M-LLM-X.1.1 → 1.3 (catalog + resolver — no adapter wire yet)
+PR-3:  M-LLM-X.1.4 → 1.5 (adapter migration + profile override)
+PR-4:  M-LLM-X.3.1 → 3.4 (preflight — highest user-visible win after catalog)
+PR-5:  M-LLM-X.1.2 + 1.6 (YAML seed + operator overlay)
+PR-6:  M-LLM-X.4.1 → 4.3 (failover adapter)
+PR-7:  M-LLM-X.5.1 → 5.3 (runtime routing + AHI)
+PR-8:  M-LLM-X.5.4 → 5.5 (ACP bridge)
+PR-9:  M-LLM-X.2.* (OpenRouter metadata — optional network)
+PR-10: M-LLM-X.6.* + 7.* (plugins + DX)
+PR-11: M-LLM-X.8.* closeout
+```
+
+**Estimated effort:** 11 PRs · ~4–6 weeks harness maintenance cadence.
+
+---
+
+### M-LLM-X — Traceability (audit gap → task ID)
+
+| Audit gap (2026-06-14) | Task IDs |
+|------------------------|----------|
+| LLM-AUDIT-1 — No central ModelCatalog | M-LLM-X.1.1–1.6 |
+| LLM-AUDIT-2 — context override Ollama-only | M-LLM-X.1.5 |
+| LLM-AUDIT-3 — Preflight chars/4 | M-LLM-X.3.1–3.5 |
+| LLM-AUDIT-4 — ModelRouter not on hot path | M-LLM-X.5.1–5.3 |
+| LLM-AUDIT-5 — No failover chain | M-LLM-X.4.1–4.5 |
+| LLM-AUDIT-6 — StepLLMRouter stub | M-LLM-X.5.4–5.5 |
+| LLM-AUDIT-7 — OpenRouter 32k fallback | M-LLM-X.2.*, X-1.2 |
+| LLM-AUDIT-8 — No USAGE.md | M-LLM-X.7.1, 7.5 |
+| LLM-AUDIT-9 — AUDIT-IDEAL-6.2 partial | M-LLM-X.5.3, X-8.2 |
+| LLM-AUDIT-10 — Plugin provider undocumented | M-LLM-X.6.* |
+| LLM-AUDIT-11 — ContextBudgetPolicy fixed 4k decoupled from adapter | M-LLM-X.3.3 |
+| LLM-AUDIT-12 — Prefix heuristics only on Bedrock today | M-LLM-X.1.2, 1.3 |
+| LLM-AUDIT-13 — Cohere dual slug (`cohere` / `cohere_native`) DX | M-LLM-X.7.5 |
+| Capability flags not catalog-driven | M-LLM-X.1.7 |
+| tiktoken OpenAI-centric estimate (all providers) | **Deferred** — document limitation in USAGE; vendor tokenizer plugins post-X |
+| Single `RuntimeConfig.llm_adapter` per run (multi-model) | M-LLM-X.4–5 (profile chain + routing); no multi-adapter pool in X |
+| Distributed Redis rate limit host wiring | **Ops** — document in USAGE X.7.1; not LLM-AUDIT tier-0 code |
 
 ---
 

@@ -245,6 +245,8 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 | **CE-3.8** | Integration test: ACP + graph produce `CONTEXT_ASSEMBLED` with `engine_id=default` | P0 | **Done** | `tests/integration/runtime/test_context_engine_paths.py` |
 | **CE-3.9** | Wire `ContextCompiler.compile()` + degradation ladder to ACP `on_next_step` / UAEP before LLM | **P0 Critical** | **Done** | Closes GAP-CTX-13; acceptance never-overflow on prod path |
 | **CE-3.10** | `ContextValidator` → `verify_context_preflight()` inside `DefaultNexusContextEngine.validate` | P0 | **Done** | Gate: preflight before every engine-assembled LLM call |
+| **CE-LLM-X** | Preflight + history token count via `adapter.count_messages_tokens` (not chars/4) | P0 | **Planned** | Owner: [M-LLM-X.3](plan/LLM_ADAPTERS.md) · touches `context_preflight.py`, `engine_history_layer.py` |
+| **CE-LLM-X-b** | `ContextBudgetPolicy.from_adapter(adapter)` — budget derived from context window | P0 | **Planned** | Owner: M-LLM-X.3.3 |
 | **CE-3.11** | Unify UAEP `CONTEXT_BUILT` → `CONTEXT_ASSEMBLED` (+ trim events); deprecate or alias `CONTEXT_BUILT` | P1 | **Done** | Closes GAP-CTX-14; `payload_registry.py` + gate |
 
 **Wave 2 exit:** `ContextCompiler` on production hot path; graph + ACP/UAEP unified under `DefaultNexusContextEngine`.
