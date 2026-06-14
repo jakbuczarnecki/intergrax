@@ -9,7 +9,7 @@
 
 ---
 
-## Status summary (2026-06-12)
+## Status summary (2026-06-14)
 
 | Phase | Scope | Status |
 |-------|-------|--------|
@@ -20,7 +20,7 @@
 | **CE-EXT** | Plugin engine + hot-path compiler + step-aware + codebase preset | **Done** (S0–S12, 2026-06-12) |
 | **CE-DOC.8** | Architecture ↔ implementation sync post CE-EXT | **Done** (2026-06-12) |
 | **CE-ALIGN** | Post-audit implementation alignment (GAP-CTX-15..19) | **Done** (A0–A6, 2026-06-12) |
-| **CE-PROV-WIRE** | Builtin stub providers → legacy collectors on `assemble()` path | **Planned** — see [Phase CE-PROV-WIRE](#phase-ce-prov-wire) |
+| **CE-PROV-WIRE** | Builtin stub providers → legacy collectors on `assemble()` path | **In progress** — B1 Done; B2–B4 active (2026-06-14) |
 | **CE-DOC.9** | FAUDIT 2026-06-12 deep audit — GAP-CTX-15..19 + CE-ALIGN sprint register | **Done** (2026-06-12) |
 | **CE-DOC.10** | CE-ALIGN closeout audit + architecture sync | **Done** (2026-06-12) |
 | **CE-DOC.11** | CE-PROV-WIRE phase + GAP-CTX-20 register; architecture §8.4 sync | **Done** (2026-06-12) |
@@ -28,6 +28,25 @@
 **As-built maturity:** L3+ engine spine (FORMAT merge + graph/UAEP assemble) · **L3− plugin collect** until CE-PROV-WIRE closes GAP-CTX-20; see architecture §3.
 
 **Delivery rule:** One **CE-\*** ID per PR → update master table + gap register → `pytest -m gate` + domain CI scripts green.
+
+---
+
+## Layer audit register (2026-06-14 — CE-PROV-WIRE closeout)
+
+| ID | Severity | Finding | Resolution |
+|----|----------|---------|------------|
+| AUD-CE-01 | **P1** | GAP-CTX-20 — 8 builtin `collect()` stubs return `[]` on engine path | **CE-PROV-WIRE B2–B4** (this iteration) |
+| AUD-CE-02 | **P1** | `provider_handles.py` omits RAG/LTM/websearch/tool/shared/policy/attachment handle keys | **B2–B4** — extend handle contract + graph wiring |
+| AUD-CE-03 | **P1** | No CI gate enforcing live collect for §8.4 builtins | **CE-PROV-GATE** — `check_context_builtin_providers.py` |
+| AUD-CE-04 | **P1** | Missing integration test: graph assemble with RAG + priors in LLM window | **CE-PROV-INT** |
+| AUD-CE-05 | **P2** | GAP-CTX-08 — `classify_candidates` string heuristics | Deferred CE-10.3 (post CE-PROV-05) |
+| AUD-CE-06 | **P2** | OTel full SDK wiring optional; shim only | CE-9.2 shipped; hardening backlog |
+| AUD-CE-07 | **P2** | CE-9.5 cost attribution on semantic compression | Deferred |
+| AUD-CE-08 | **P3** | CE-10.4 preset regression baselines | Deferred |
+| AUD-CE-09 | **P3** | CE-12.1–12.3 extension guide / scaffold slices | Deferred |
+| AUD-CE-10 | **P4** | GAP-CTX-12 L4 adaptive ranking | AHI domain |
+
+**No P0 findings** — tier boundaries intact; stubs are wiring gaps, not architectural violations.
 
 ---
 
@@ -80,29 +99,47 @@
 
 ## Phase CE-PROV-WIRE — Builtin provider legacy collector wiring
 
-**Status:** **Planned** (2026-06-12)  
+**Status:** **In progress** (2026-06-14) — B1 Done; B2–B4 active  
 **Goal:** Close **GAP-CTX-20** — every §8.4 builtin stub `collect()` delegates to the existing Nexus/Tier-0 collector for its source domain so `DefaultNexusContextEngine.assemble()` satisfies §7.1 on graph + UAEP paths (not only workspace/session_semantic).  
 **Prerequisites:** CE-ALIGN Done (CE-FMT-1, CE-PROV-CTX handles) · CE-2.3 catalog  
-**Success gate:** All 11 stub providers emit `ContextFragment[]` when handles populated; gate test per provider family; architecture §8.4 `collect status` = **live** or **live (handle-gated)**.
+**Success gate:** All 8 remaining stub providers emit `ContextFragment[]` when handles populated; gate test per provider family; architecture §8.4 `collect status` = **live** or **live (handle-gated)**; `check_context_builtin_providers.py` green.
 
 **Distinction:** **CE-PROV-CTX** (Done) passes handles into `ContextProviderContext`; **CE-PROV-WIRE** implements `collect()` body for each builtin stub.
+
+**Handle key contract** (``ContextProviderContext.handles`` + task metadata mirrors):
+
+| Handle key | Type | Provider |
+|------------|------|----------|
+| `prior_output_records` | list | `builtin.graph_prior` (B1) |
+| `session_history_messages` | list[ChatMessage] | `builtin.session_history` (B1) |
+| `messages` | list[ChatMessage] | `builtin.task_message` (B1) |
+| `rag_chunks` | list | `builtin.rag` (B2) |
+| `ltm_entries` | list | `builtin.longterm_memory` (B2) |
+| `websearch_blocks` | list[str \| dict] | `builtin.websearch` (B2) |
+| `shared_context_reads` | dict | `builtin.shared_context` (B3) |
+| `tool_output_blocks` | list | `builtin.tool_output` (B3) |
+| `system_instructions` | str | `builtin.system_instructions` (B3) |
+| `policy_overlay_fragments` | list[dict] | `builtin.policy_overlay` (B3) |
+| `attachment_summaries` | list[dict] | `builtin.attachments` (B4) |
+| `workspace_files` | dict[str,str] | `builtin.workspace` (CE-7) |
+| `session_vector_hits` | list | `builtin.session_history_semantic` (CE-VEC) |
 
 | ID | Deliverable | Priority | Status | Legacy source (as-built) |
 |----|-------------|----------|--------|--------------------------|
 | **CE-PROV-BRIDGE** | `intergrax/context/providers/legacy_bridge.py` — shared adapters + handle key contract doc | P0 | **Done** (2026-06-12) | `provider_handles.py` extension |
 | **CE-PROV-01** | `builtin.task_message` — objective + user turn from `messages` / request | P0 | **Done** (2026-06-12) | `graph_assembly` / `ContextAssemblyRequest.objective` |
-| **CE-PROV-02** | `builtin.system_instructions` — system prompt slices from `runtime_config` / prompt registry handles | P1 | Planned | `RuntimeConfig` + agent contract prompt assets |
+| **CE-PROV-02** | `builtin.system_instructions` — system prompt slices from `system_instructions` handle | P1 | **B3** | prompt registry / profile instructions |
 | **CE-PROV-03** | `builtin.session_history` — chronological session turns | P0 | **Done** (2026-06-12) | `session_history_messages` handle / task metadata |
-| **CE-PROV-04** | `builtin.longterm_memory` — LTM search hits | P1 | Planned | MEMORY LTM step / `memory_view` handles |
-| **CE-PROV-05** | `builtin.rag` — retrieved chunks + citations | P0 | Planned | `ContextBuilder` / `rag_chunks` handle / catalog retrieve snapshot |
-| **CE-PROV-06** | `builtin.websearch` — websearch result blocks | P2 | Planned | websearch step output handle |
-| **CE-PROV-07** | `builtin.tool_output` — tool result blocks from step | P1 | Planned | `tool_context_helpers.py` / step tool blocks handle |
+| **CE-PROV-04** | `builtin.longterm_memory` — LTM search hits | P1 | **B2** | `ltm_entries` handle / UserProfileMemoryEntry rows |
+| **CE-PROV-05** | `builtin.rag` — retrieved chunks + citations | P0 | **B2** | `rag_chunks` handle / ContextBuilder snapshot |
+| **CE-PROV-06** | `builtin.websearch` — websearch result blocks | P2 | **B2** | `websearch_blocks` handle |
+| **CE-PROV-07** | `builtin.tool_output` — tool result blocks from step | P1 | **B3** | `tool_output_blocks` handle |
 | **CE-PROV-08** | `builtin.graph_prior` — prior node outputs on graph path | P0 | **Done** (2026-06-12) | `prior_output_records` handle from `collect_dependency_records` |
-| **CE-PROV-09** | `builtin.shared_context` — `SharedTaskContext` KV reads | P1 | Planned | `shared_task_context.py` via task metadata |
-| **CE-PROV-10** | `builtin.attachments` — attachment summaries | P2 | Planned | `AttachmentRef` / ingestion summaries handle |
-| **CE-PROV-11** | `builtin.policy_overlay` — policy fragment bundles | P2 | Planned | `prompt_policy_overlay.py` / policy handles |
-| **CE-PROV-GATE** | `scripts/check_context_builtin_providers.py` — no empty stub for wired provider ids | P1 | Planned | CI gate |
-| **CE-PROV-INT** | Integration tests: graph assemble with RAG + graph_prior fragments in LLM window | P1 | Planned | `tests/integration/runtime/test_context_provider_wiring.py` |
+| **CE-PROV-09** | `builtin.shared_context` — `SharedTaskContext` KV reads | P1 | **B3** | `shared_context_reads` precomputed on graph path |
+| **CE-PROV-10** | `builtin.attachments` — attachment summaries | P2 | **B4** | `attachment_summaries` handle |
+| **CE-PROV-11** | `builtin.policy_overlay` — policy fragment bundles | P2 | **B3** | `policy_overlay_fragments` handle |
+| **CE-PROV-GATE** | `scripts/check_context_builtin_providers.py` — no empty stub for wired provider ids | P1 | **B4** | CI gate |
+| **CE-PROV-INT** | Integration tests: graph assemble with RAG + graph_prior fragments in LLM window | P1 | **B4** | `tests/integration/runtime/test_context_provider_wiring.py` |
 
 **CE-2.3 completion note:** catalog registration is **Done**; **live collect** for all §8.4 rows completes when CE-PROV-WIRE is **Done**.
 
@@ -460,9 +497,13 @@ One sprint = one coherent provider family or gate. One commit per sprint.
 |--------|------|--------|---------------|
 | **B0** | Plan + architecture register | CE-DOC.11 | GAP-CTX-20 + phase CE-PROV-WIRE in plan/architecture §16 | **Done** |
 | **B1** | Legacy bridge + graph core | CE-PROV-BRIDGE, CE-PROV-01, CE-PROV-08, CE-PROV-03 | Graph path: task_message, graph_prior, session_history fragments in assembled window | **Done** |
-| **B2** | Memory + RAG | CE-PROV-04, CE-PROV-05, CE-PROV-06 | RAG/LTM/websearch fragments when handles set; gate unit tests |
-| **B3** | Shared + tools + policy | CE-PROV-09, CE-PROV-07, CE-PROV-02, CE-PROV-11 | shared_context + tool_output + system/policy overlays |
-| **B4** | Attachments + integration | CE-PROV-10, CE-PROV-INT, CE-PROV-GATE | Attachment summaries; integration test; `check_context_builtin_providers.py` green |
+| **B2** | Memory + RAG | CE-PROV-04, CE-PROV-05, CE-PROV-06 | RAG/LTM/websearch fragments when handles set; unit tests in `test_legacy_bridge_providers.py` | **Active** |
+| **B3** | Shared + tools + policy | CE-PROV-09, CE-PROV-07, CE-PROV-02, CE-PROV-11 | shared_context + tool_output + system/policy overlays; `provider_handles.py` + `context_manager.py` | **Active** |
+| **B4** | Attachments + integration | CE-PROV-10, CE-PROV-INT, CE-PROV-GATE | Attachment summaries; integration test; `check_context_builtin_providers.py` green | **Active** |
+
+**B2 files:** `legacy_bridge.py`, `builtin.py`, `test_legacy_bridge_providers.py`  
+**B3 files:** `legacy_bridge.py`, `builtin.py`, `provider_handles.py`, `context_manager.py`, `uaep_assemble.py`, tests  
+**B4 files:** `legacy_bridge.py`, `builtin.py`, `scripts/check_context_builtin_providers.py`, `tests/integration/runtime/test_context_provider_wiring.py`, architecture §8.4/§16 sync
 
 **Critical path:** B1 → B2 (unblocks CE-10.3 metadata follow-up).
 

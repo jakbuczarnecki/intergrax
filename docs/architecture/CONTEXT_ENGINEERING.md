@@ -9,7 +9,7 @@
 **ADR:** [`ADR-CTX-001`](../adr/entries/2026-06-12/ADR-CTX-001.md) · [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler budget semantics)  
 **Related:** [`architecture/MEMORY.md`](MEMORY.md) (stores + lifecycle) · [`architecture/RAG.md`](RAG.md) (retrieval) · [`architecture/TOOLS.md`](TOOLS.md) (tool outputs) · [`architecture/NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) (turn narrative) · [`architecture/OBSERVABILITY.md`](OBSERVABILITY.md) (event spine) · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix L  
 **Implementation (as-built):** `intergrax/context/` · `intergrax/runtime/nexus/context/` · `intergrax/runtime/architecture/context_engineering.py` · `intergrax/contracts/context_assembly.py` · `applications/_shared/context_*`  
-**Last architecture pass:** 2026-06-12 (CE-PROV-WIRE B1 — legacy bridge + graph core providers)
+**Last architecture pass:** 2026-06-14 (CE-PROV-WIRE B2–B4 — provider handle contract + live collect)
 
 ---
 
@@ -69,7 +69,7 @@ Tier-3 ContextProfile + ContextEnginePreset + context_plugins[]
 | Global budget / never-overflow | **L3** | `ContextCompiler` on ACP LLM path + graph engine assemble; UAEP session path hybrid |
 | Provenance + assembly events | **L3** | `CONTEXT_ASSEMBLED` v2 with `engine_id` + `step_kind`; graph + UAEP aligned (CE-3.11) |
 | Quality scoring (relevance/freshness/confidence) | **L3** | `DefaultContextRanker` + `evaluate_context_engineering()` gate (CE-10.1) |
-| Plugin extensibility | **L3−** | Catalog + FORMAT merge shipped; **GAP-CTX-20** — stub `collect()` → legacy wiring (**CE-PROV-WIRE**) |
+| Plugin extensibility | **L3−** | Catalog + FORMAT merge shipped; **GAP-CTX-20** — B1 Done; B2–B4 wiring active (**CE-PROV-WIRE**) |
 | Step-aware selection | **L3** | ACP `AgentStepContext` + ranker table; graph uses `node.capability` as `step_kind` |
 | Codebase-scale preset | **L3** | `CodebaseContextEngine` + workspace provider; 1k-file gate test |
 | Interactive multi-hop context loop | **L2** | `ContextOrchestrator` on codebase preset only (CE-8) |
@@ -346,7 +346,7 @@ Legacy `runtime_steps` pipeline (`HistoryLayer` → `CompileContextStep`) was **
 | `builtin.policy_overlay` | POLICY_OVERLAY | `builtin.py` stub | **stub** | CE-PROV-11 — policy overlay handle |
 | `builtin.workspace` | WORKSPACE | `workspace.py` | **live** (`workspace_files` handle) | — (CE-7.2) |
 
-**Plan:** [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md) phase **CE-PROV-WIRE** · sprints B1–B4.
+**Plan:** [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md) phase **CE-PROV-WIRE** · sprints B1–B4. Handle key contract documented in plan §CE-PROV-WIRE (2026-06-14).
 
 ### 8.5 Engine presets (Tier-3)
 
@@ -701,7 +701,7 @@ profile = ApplicationEnvironmentProfile(
 | GAP-CTX-17 | **Closed** | `engine_ref=custom` not resolved | `context_engine_resolver.load_context_engine` |
 | GAP-CTX-18 | **Closed** | Preset engines lack §8.5 behavior | `preset_engines.py` |
 | GAP-CTX-19 | **Closed** | Registry formatter unused | `BuiltinContextPlugin` sets `DefaultContextFormatter` |
-| GAP-CTX-20 | **Open** (partial) | 8 builtin stub `collect()` still return `[]` on engine path (B1 closed task/graph/session) | **CE-PROV-WIRE** sprints B2–B4 |
+| GAP-CTX-20 | **Open** (partial → B2–B4) | 8 builtin stub `collect()` still return `[]` on engine path (B1 closed task/graph/session) | **CE-PROV-WIRE** sprints B2–B4 active (2026-06-14) |
 
 **Traceability:** [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md) · **CE-ALIGN** Done · **CE-PROV-WIRE** Planned.
 
