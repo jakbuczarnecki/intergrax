@@ -3,6 +3,7 @@
 
 """S3 object storage integration (Phase M.6 P2)."""
 
+from intergrax.utils.lazy_export import export_from_bundle
 from intergrax.integrations.providers.object_storage.s3.config import (
     ENV_S3_BUCKET,
     ENV_S3_ENDPOINT_URL,
@@ -45,7 +46,7 @@ def __getattr__(name: str):
     if name in _LAZY_EXPORTS:
         from intergrax.integrations.providers.object_storage.s3 import bundle as _bundle
 
-        return getattr(_bundle, name)
+        return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "S3ObjectStorage":
         from intergrax.integrations.providers.object_storage.s3.adapter import S3ObjectStorage
 

@@ -4,6 +4,7 @@
 """DocumentStore-backed ``RuntimeEventPersistence`` (OBS-BUS-5 scale-out path)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import List, Protocol, runtime_checkable
 
@@ -88,7 +89,7 @@ class DocumentBackedRuntimeEventStore(RuntimeEventPersistence):
 
     def _list_partition(self, partition_key: str, *, limit: int) -> List[RuntimeEvent]:
         result = self._store.query(partition_key, limit=limit)
-        documents = getattr(result, "documents", ())
+        documents = attribute_access.optional(result, "documents", ())
         events: list[RuntimeEvent] = []
         for doc in documents:
             data = doc.data if hasattr(doc, "data") else {}

@@ -3,6 +3,7 @@
 
 """Chroma vector store integration (Phase M.6 P2)."""
 
+from intergrax.utils.lazy_export import export_from_bundle
 from intergrax.integrations.providers.vector_store.chroma.config import (
     ENV_CHROMA_COLLECTION,
     ENV_CHROMA_MODE,
@@ -45,7 +46,7 @@ def __getattr__(name: str):
     if name in _LAZY_EXPORTS:
         from intergrax.integrations.providers.vector_store.chroma import bundle as _bundle
 
-        return getattr(_bundle, name)
+        return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "ChromaVectorStoreIntegration":
         from intergrax.integrations.providers.vector_store.chroma.adapter import ChromaVectorStoreIntegration
 

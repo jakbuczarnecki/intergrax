@@ -2,6 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from intergrax.tools.providers.rag.lifecycle_contracts import (
     RagDeleteDocumentsInput,
@@ -50,7 +51,7 @@ def perform_rag_describe_collection(
         return RagDescribeCollectionOutput(used=False, reason="vectorstore_manager_not_configured")
 
     collections: list[str] = []
-    list_fn = getattr(vectorstore, "list_collections", None)
+    list_fn = attribute_access.optional(vectorstore, "list_collections", None)
     if list_fn is not None:
         try:
             collections = [str(name) for name in list(list_fn())]
@@ -64,7 +65,7 @@ def perform_rag_describe_collection(
     if not collection and collections:
         collection = collections[0]
 
-    count_fn = getattr(vectorstore, "count", None)
+    count_fn = attribute_access.optional(vectorstore, "count", None)
     if count_fn is None:
         return RagDescribeCollectionOutput(
             used=False,

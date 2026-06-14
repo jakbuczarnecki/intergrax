@@ -56,20 +56,20 @@ M-LLM-R envelope Done · **M-LLM-X** docs baseline Done (X.0, USAGE, ADR-LLM-002
 
 | Gap | Status | Phase | Register ID |
 |-----|--------|-------|-------------|
-| Central `ModelCatalog` + unified context window | **Open** | M-LLM-X.1 | LLM-AUDIT-1 |
-| `context_window_tokens` profile override (all providers) | **Open** | M-LLM-X.1.5 | LLM-AUDIT-2 |
-| Preflight uses adapter tokenizer not chars/4 | **Open** | M-LLM-X.3.1–3.4 | LLM-AUDIT-3 |
-| Profile failover chain on retriable errors | **Open** | M-LLM-X.4 | LLM-AUDIT-5 |
-| `ModelRouter` on Nexus hot path + AHI runtime swap | **Partial** | M-LLM-X.5 | LLM-AUDIT-4, 9 |
-| ACP `StepLLMRouter` backed by `LLMAdapter` | **Open** | M-LLM-X.5.4 | LLM-AUDIT-6 |
-| OpenRouter / gateway dynamic model metadata | **Open** | M-LLM-X.2 | LLM-AUDIT-7 |
+| Central `ModelCatalog` + unified context window | **Done** | M-LLM-X.1 | LLM-AUDIT-1 |
+| `context_window_tokens` profile override (all providers) | **Done** | M-LLM-X.1.5 | LLM-AUDIT-2 |
+| Preflight uses adapter tokenizer not chars/4 | **Done** | M-LLM-X.3.1–3.4 | LLM-AUDIT-3 |
+| Profile failover chain on retriable errors | **Done** | M-LLM-X.4 | LLM-AUDIT-5 |
+| `ModelRouter` on Nexus hot path + AHI runtime swap | **Done** | M-LLM-X.5 | LLM-AUDIT-4, 9 |
+| ACP `StepLLMRouter` backed by `LLMAdapter` | **Done** | M-LLM-X.5.4 | LLM-AUDIT-6 |
+| OpenRouter / gateway dynamic model metadata | **Backlog P2** | M-LLM-X.2 | LLM-AUDIT-7 (static 128k default Done) |
 | Developer `USAGE.md` + startup validation | **Partial** | M-LLM-X.7 | LLM-AUDIT-8 |
 | Plugin provider story undocumented | **Partial** | M-LLM-X.6 | LLM-AUDIT-10 |
 | Cohere dual slug DX | **Done** | M-LLM-X.7.5 | LLM-AUDIT-13 |
-| `ContextBudgetPolicy` 4k default decoupled from adapter | **Open** | M-LLM-X.3.3 | LLM-AUDIT-11 |
-| Prefix context heuristics missing (non-Bedrock) | **Open** | M-LLM-X.1.2–1.3 | LLM-AUDIT-12 |
-| Capability flags not catalog-driven | **Open** | M-LLM-X.1.7 | LLM-AUDIT-14 |
-| History layer token count inconsistent with preflight | **Open** | M-LLM-X.3.5 | LLM-AUDIT-15 |
+| `ContextBudgetPolicy` 4k default decoupled from adapter | **Done** | M-LLM-X.3.3 | LLM-AUDIT-11 |
+| Prefix context heuristics missing (non-Bedrock) | **Done** | M-LLM-X.1.2–1.3 | LLM-AUDIT-12 |
+| Capability flags not catalog-driven | **Backlog P2** | M-LLM-X.1.7 | LLM-AUDIT-14 |
+| History layer token count inconsistent with preflight | **Done** | M-LLM-X.3.5 | LLM-AUDIT-15 |
 | Planner LLM ≠ producer discipline | **Done** | COG-PROD via `resolve_planner_llm_adapter` |
 | Distributed rate limit needs Redis wiring at host | **Partial** | ops — host must call `set_llm_distributed_rate_limiter` |
 | Usage tracking layers not auto-merged | **By design** | two-layer model per ADR-LLM-001 |

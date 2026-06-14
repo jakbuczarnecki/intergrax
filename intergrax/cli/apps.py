@@ -3,6 +3,7 @@
 """``intergrax apps`` — Tier-3 application registry CLI (APP-OPS-4)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import argparse
 import json
@@ -46,7 +47,7 @@ def run_apps(args: argparse.Namespace) -> int:
 
     if args.apps_command == "list":
         entries = list_applications(repo_root)
-        if getattr(args, "json", False):
+        if attribute_access.optional(args, "json", False):
             payload = [entry.model_dump(mode="json") for entry in entries]
             print(json.dumps(payload, indent=2, sort_keys=True))
             return 0

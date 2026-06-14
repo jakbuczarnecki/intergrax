@@ -3,6 +3,7 @@
 
 """Jira issue tracker integration (Phase M.6)."""
 
+from intergrax.utils.lazy_export import export_from_bundle
 from intergrax.integrations.providers.issue_tracker.jira.config import (
     ENV_JIRA_API_TOKEN,
     ENV_JIRA_BASE_URL,
@@ -43,7 +44,7 @@ def __getattr__(name: str):
     if name in _LAZY_EXPORTS:
         from intergrax.integrations.providers.issue_tracker.jira import bundle as _bundle
 
-        return getattr(_bundle, name)
+        return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "JiraIssueTracker":
         from intergrax.integrations.providers.issue_tracker.jira.adapter import JiraIssueTracker
 

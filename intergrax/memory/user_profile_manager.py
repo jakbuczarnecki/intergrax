@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import json
 from typing import Optional, Dict, Any, List, Union
@@ -283,7 +284,7 @@ class UserProfileManager:
             entry_id = str(hit.id or (hit.metadata or {}).get("entry_id") or "")
             if not entry_id:
                 continue
-            score = float(getattr(hit, "similarity_score", None) or getattr(hit, "score", 0.0) or 0.0)
+            score = float(attribute_access.optional(hit, "similarity_score", None) or attribute_access.optional(hit, "score", 0.0) or 0.0)
             if thr is None or score >= thr:
                 filtered.append((entry_id, score))
 

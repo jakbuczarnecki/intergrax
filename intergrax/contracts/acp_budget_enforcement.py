@@ -3,6 +3,7 @@
 """Hard/advisory token budget enforcement helpers (§25.5 · ACP-TOK-2)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from dataclasses import dataclass
 from enum import StrEnum
@@ -86,9 +87,9 @@ def evaluate_hard_budget_violation(
 
 
 def is_budget_exceeded_outcome(outcome: Any) -> bool:
-    if getattr(outcome, "terminal_reason", None) == TerminalReason.BUDGET_EXCEEDED:
+    if attribute_access.optional(outcome, "terminal_reason", None) == TerminalReason.BUDGET_EXCEEDED:
         return True
-    errors = getattr(outcome, "errors", None) or []
+    errors = attribute_access.optional(outcome, "errors", None) or []
     return any(
-        getattr(error, "code", None) == AgentRunErrorCode.BUDGET_EXCEEDED for error in errors
+        attribute_access.optional(error, "code", None) == AgentRunErrorCode.BUDGET_EXCEEDED for error in errors
     )

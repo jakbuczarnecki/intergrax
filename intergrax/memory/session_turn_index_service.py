@@ -3,6 +3,7 @@
 """Default episodic session turn vector index (Phase MEM-VEC-2.1–2.2)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import json
 from typing import Any, Sequence
@@ -122,11 +123,11 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
 
         hits: list[dict[str, Any]] = []
         for hit in raw_hits:
-            score = float(getattr(hit, "similarity_score", None) or getattr(hit, "score", 0.0) or 0.0)
+            score = float(attribute_access.optional(hit, "similarity_score", None) or attribute_access.optional(hit, "score", 0.0) or 0.0)
             if score_threshold is not None and score < score_threshold:
                 continue
             meta = dict(hit.metadata or {})
-            text = str(getattr(hit, "content", None) or getattr(hit, "text", "") or "")
+            text = str(attribute_access.optional(hit, "content", None) or attribute_access.optional(hit, "text", "") or "")
             hits.append(
                 {
                     "text": text,

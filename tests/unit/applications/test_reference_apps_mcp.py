@@ -1,6 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import pytest
 from fastapi.testclient import TestClient
@@ -22,7 +23,7 @@ def test_lab_application_exposes_mcp_mount() -> None:
     app = create_lab_application(settings=settings)
     client = TestClient(app)
     assert client.get("/v1/lab/agents").status_code == 200
-    assert any(getattr(r, "path", None) in {"/mcp", "/mcp/"} for r in app.routes if hasattr(r, "path"))
+    assert any(attribute_access.optional(r, "path", None) in {"/mcp", "/mcp/"} for r in app.routes if hasattr(r, "path"))
 
 
 def test_research_application_exposes_mcp_mount(
@@ -37,4 +38,4 @@ def test_research_application_exposes_mcp_mount(
     app = create_research_backend_app(settings=settings)
     client = TestClient(app, headers=harness_auth_headers)
     assert client.get("/health").status_code == 200
-    assert any(getattr(r, "path", None) in {"/mcp", "/mcp/"} for r in app.routes if hasattr(r, "path"))
+    assert any(attribute_access.optional(r, "path", None) in {"/mcp", "/mcp/"} for r in app.routes if hasattr(r, "path"))

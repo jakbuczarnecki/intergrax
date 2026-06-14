@@ -50,7 +50,7 @@ def _task_with_human_request(**overrides) -> Task:
     task.runtime.orchestration.resume_token = "tok_abc"
     task.state = TaskState.WAITING_FOR_HUMAN
     for key, value in overrides.items():
-        setattr(task, key, value)
+        object.__setattr__(task, key, value)
     return task
 
 

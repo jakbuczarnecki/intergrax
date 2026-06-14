@@ -152,6 +152,11 @@ def materialize_runtime_config(
         idempotency_store=reliability_wiring.idempotency_store,
     )
     apply_context_profiles_from_environment(config, env)
+    if config.context_budget_policy is None and config.llm_adapter is not None:
+        from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
+
+        config.context_budget_policy = ContextBudgetPolicy.from_adapter(config.llm_adapter)
+        derive_run_budget_from_context_policy(config)
     apply_cost_profiles_from_environment(config, env)
     evaluation_wiring = wire_application_evaluation(env)
     adaptive_wiring = wire_adaptive_profile(

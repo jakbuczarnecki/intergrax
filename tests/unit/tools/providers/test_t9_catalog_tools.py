@@ -1,6 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Sequence
 
@@ -91,7 +92,7 @@ class FakeNotificationChannel:
         self.messages: list[str] = []
 
     def notify(self, message: object) -> None:
-        self.messages.append(str(getattr(message, "subject", "")))
+        self.messages.append(str(attribute_access.optional(message, "subject", "")))
 
 
 class FakeWebSearchCache:

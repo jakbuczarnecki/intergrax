@@ -4,6 +4,7 @@
 """Search logic for ``websearch.query`` — composes websearch executor or SearchProvider."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any, List, Sequence
 
@@ -80,9 +81,9 @@ def _from_web_search_result(result: WebSearchResult) -> WebsearchResultItem:
 
 
 def _from_search_hit(hit: Any) -> WebsearchResultItem:
-    snippet = (getattr(hit, "snippet", None) or "").strip()
-    title = (getattr(hit, "title", None) or "").strip()
-    url = (getattr(hit, "url", None) or "").strip()
+    snippet = (attribute_access.optional(hit, "snippet", None) or "").strip()
+    title = (attribute_access.optional(hit, "title", None) or "").strip()
+    url = (attribute_access.optional(hit, "url", None) or "").strip()
     domain = ""
     if hasattr(hit, "domain"):
         try:
@@ -95,8 +96,8 @@ def _from_search_hit(hit: Any) -> WebsearchResultItem:
         snippet=snippet,
         text=snippet or title,
         domain=domain,
-        rank=int(getattr(hit, "rank", 0) or 0),
-        provider=str(getattr(hit, "provider", "") or ""),
+        rank=int(attribute_access.optional(hit, "rank", 0) or 0),
+        provider=str(attribute_access.optional(hit, "provider", "") or ""),
     )
 
 

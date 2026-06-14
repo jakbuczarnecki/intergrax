@@ -4,6 +4,7 @@
 """Optional SPLADE sparse encoder (requires ``fastembed``)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import os
 from typing import List, Optional
@@ -44,7 +45,7 @@ class SpladeSparseEncoder:
         if not (text or "").strip():
             return SparseVector(indices=[], values=[])
         model = self._ensure_model()
-        embed = getattr(model, "embed")
+        embed = attribute_access.optional(model, "embed")
         raw = next(embed([text]))
         indices: List[int] = []
         values: List[float] = []

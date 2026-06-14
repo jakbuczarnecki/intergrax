@@ -2,6 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Sequence
@@ -67,11 +68,11 @@ class _FakeQdrantClient:
         **_: Any,
     ) -> Any:
         points = list(self._collections.get(collection_name, []))
-        must = getattr(query_filter, "must", None) or []
+        must = attribute_access.optional(query_filter, "must", None) or []
         for condition in must:
-            key = condition.get("key") if isinstance(condition, dict) else getattr(condition, "key", None)
-            match = condition.get("match") if isinstance(condition, dict) else getattr(condition, "match", None)
-            value = match.get("value") if isinstance(match, dict) else getattr(match, "value", None)
+            key = condition.get("key") if isinstance(condition, dict) else attribute_access.optional(condition, "key", None)
+            match = condition.get("match") if isinstance(condition, dict) else attribute_access.optional(condition, "match", None)
+            value = match.get("value") if isinstance(match, dict) else attribute_access.optional(match, "value", None)
             if key:
                 points = [p for p in points if p.payload.get(key) == value]
         selected = points[:limit]

@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 import json
 import os
 from typing import Literal, Optional
@@ -87,23 +88,23 @@ class ImageSmartLoader:
         """
         if not isinstance(self.caption_llm, LangChainOllamaAdapter):
             return None
-        defaults = getattr(self.caption_llm, "defaults", {}) or {}
+        defaults = attribute_access.optional(self.caption_llm, "defaults", {}) or {}
         model = defaults.get("model")
         if model:
             return model
-        chat = getattr(self.caption_llm, "chat", None)
+        chat = attribute_access.optional(self.caption_llm, "chat", None)
         if chat is not None:
             for attr in ("model", "model_name", "model_id"):
                 if hasattr(chat, attr):
                     try:
-                        val = getattr(chat, attr)
+                        val = attribute_access.optional(chat, attr)
                         if isinstance(val, str) and val.strip():
                             return val.strip()
                     except Exception:
                         pass
             for attr in ("kwargs", "config", "client"):
                 try:
-                    obj = getattr(chat, attr, None)
+                    obj = attribute_access.optional(chat, attr, None)
                     if isinstance(obj, dict):
                         for k in ("model", "model_name", "model_id"):
                             if isinstance(obj.get(k), str) and obj[k].strip():

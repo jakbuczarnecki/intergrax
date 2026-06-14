@@ -4,6 +4,7 @@
 """Embedding model version mismatch policy for ingest and retrieve (M-RAG.31)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import logging
 from dataclasses import dataclass, field
@@ -123,7 +124,7 @@ def filter_chunks_by_embedding_version(
     kept: list[TChunk] = []
     filtered_count = 0
     for chunk in chunks:
-        metadata = getattr(chunk, "metadata", None) or {}
+        metadata = attribute_access.optional(chunk, "metadata", None) or {}
         chunk_version = normalize_embedding_model_version(
             metadata.get(EMBEDDING_MODEL_VERSION_METADATA_KEY)
         )

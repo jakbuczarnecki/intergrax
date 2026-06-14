@@ -20,9 +20,9 @@ Tier-0 **LLM adapter layer** is the Harness cognition entry point: one `LLMAdapt
 | Typed completion envelope | **L3** | L3 (maintain) | M-LLM-R closed; CI guards |
 | Provider abstraction (19 slugs) | **L3** | L3+ (plugin story) | `LLMAdapterRegistry`, OpenAI-compat factory |
 | Model ID as free string | **L3** | L3 (maintain) | `LLMProfile.model: str` |
-| Model metadata / context window | **L2** | **L3** | `ModelCatalog` + resolver Done (LC-1); dynamic gateway pending X.2 |
-| Multi-model routing / failover | **L1–L2** | **L3** | `ModelRouter` stub; no runtime failover — see §Routing |
-| Token accounting consistency | **L2+** | **L3** | Preflight uses adapter tokenizer (LC-2); CI guard pending X.3.4 |
+| Model metadata / context window | **L3** | L3 (maintain) | `ModelCatalog` + resolver **Done** (LC-1) |
+| Multi-model routing / failover | **L3** | L3 (maintain) | `ModelRouter` + `FailoverLLMAdapter` wired (LC-3) |
+| Token accounting consistency | **L3** | L3 (maintain) | Preflight + `from_adapter` Nexus adoption (LC-2/LC-2b) |
 | Developer experience | **L2** | **L3+** | [`USAGE.md`](../../intergrax/llm_adapters/USAGE.md) **Done**; dual API Nexus vs ACP — see §Developer surfaces |
 | Observability & governance | **L3** | L3 (maintain) | Prometheus, quota, replay bridge |
 
@@ -350,9 +350,9 @@ llm = profile.create_adapter(secrets={"api_key": key})
 
 ### Current state
 
-- `ModelRouter` (`registry/model_router.py`) — resolves primary vs fallback on `"balanced"` hint only; **not wired** into `RuntimeConfig` execution.
-- `resolve_live_model_routing_wiring()` — product-host gate for AHI; creates decision DTO but does not swap adapters mid-run.
-- `LLMCallConfig` — retry, circuit breaker, rate limit; **no cross-provider failover**.
+- `ModelRouter` + `FailoverLLMAdapter` wired via `resolve_llm_adapter()` and `LLMProfile.create_adapter_with_failover()` (**Done** LC-3).
+- `resolve_live_model_routing_wiring()` applies routing hints on product hosts; decision drives adapter creation (**Done** LC-3).
+- `LLMCallConfig` — retry, circuit breaker, rate limit; cross-provider failover via profile chain (**Done**).
 
 ### Target state (M-LLM-X.4 / X.5)
 
@@ -383,7 +383,7 @@ Inject `LLMAdapter` via `RuntimeConfig`; call `generate_messages` / tools / stre
 
 Today: `StepLLMRouter` in `agents/authoring/llm_router.py` — separate stub port when `llm_port` is None.
 
-**Target (M-LLM-X.5):** `StepLLMRouter` delegates to `LLMAdapter.generate_messages` via thin async wrapper; single mental model, shared catalog and metrics.
+**Target (M-LLM-X.5):** `StepLLMRouter` delegates to `LLMAdapter.generate_messages` via `LLMAdapterCompletePort` — **Done** (LC-3).
 
 ### Documentation
 
@@ -533,12 +533,12 @@ Do not merge counters without explicit bridge code.
 | ID | Gap | Priority | Status | Phase / owner |
 |----|-----|----------|--------|---------------|
 | AUDIT-IDEAL-6.1 | Structured output validation on reference + certified paths | P1 | **Done** | M-LLM-R — §Structured output |
-| AUDIT-IDEAL-6.2 | Live cost/latency/quality routing (AHI prod path) | P2 | **Partial** | M-LLM-X.5 — LLM-AUDIT-9 |
+| AUDIT-IDEAL-6.2 | Live cost/latency/quality routing (AHI prod path) | P2 | **Done** | M-LLM-X.5 — LC-3 hot-path wiring |
 | AUDIT-IDEAL-6.3 | Central `ModelCatalog` + context window resolution | P0 | **Done** | M-LLM-X.1 — LC-1 |
-| AUDIT-IDEAL-6.4 | Tokenizer-consistent context preflight | P0 | **Partial** | M-LLM-X.3 — LC-2 (preflight Done; CI guard pending) |
-| AUDIT-IDEAL-6.5 | Profile failover chain | P1 | **Planned** | M-LLM-X.4 — LLM-AUDIT-5 |
-| AUDIT-IDEAL-6.6 | ACP `StepLLMRouter` backed by `LLMAdapter` | P1 | **Planned** | M-LLM-X.5 — LLM-AUDIT-6 |
-| AUDIT-IDEAL-6.7 | Developer `USAGE.md` + startup validation | P2 | **Partial** | M-LLM-X.7 — LLM-AUDIT-8 |
+| AUDIT-IDEAL-6.4 | Tokenizer-consistent context preflight | P0 | **Done** | M-LLM-X.3 — LC-2/LC-2b |
+| AUDIT-IDEAL-6.5 | Profile failover chain | P1 | **Done** | M-LLM-X.4 — LC-3 |
+| AUDIT-IDEAL-6.6 | ACP `StepLLMRouter` backed by `LLMAdapter` | P1 | **Done** | M-LLM-X.5 — LC-3 |
+| AUDIT-IDEAL-6.7 | Developer `USAGE.md` + startup validation | P2 | **Partial** | M-LLM-X.7 — `validate_runtime()` **Done**; doctor hook pending |
 
 ### Production audit gaps (LLM-AUDIT-*)
 
@@ -546,15 +546,15 @@ Do not merge counters without explicit bridge code.
 |----|-----|----------|-------|--------|
 | LLM-AUDIT-1 | No central `ModelCatalog`; per-adapter context dicts stale | **P0** | M-LLM-X.1 | **Done** |
 | LLM-AUDIT-2 | `context_window_tokens` override only on Ollama | **P0** | M-LLM-X.1 | **Done** |
-| LLM-AUDIT-3 | Preflight token estimate uses chars/4 not adapter tokenizer | **P0** | M-LLM-X.3.1–3.4 | **Partial** — preflight Done; CI guard pending |
-| LLM-AUDIT-4 | `ModelRouter` not on Nexus hot path | **P1** | M-LLM-X.4–5 | **Planned** |
-| LLM-AUDIT-5 | No provider failover chain | **P1** | M-LLM-X.4 | **Planned** |
-| LLM-AUDIT-6 | ACP `StepLLMRouter` disconnected from `LLMAdapter` | **P1** | M-LLM-X.5 | **Planned** |
-| LLM-AUDIT-7 | OpenRouter / gateway models default 32k context | **P1** | M-LLM-X.2 | **Planned** |
-| LLM-AUDIT-8 | No `intergrax/llm_adapters/USAGE.md` | **P2** | M-LLM-X.7 | **Partial** — USAGE Done; `validate_runtime` pending |
-| LLM-AUDIT-9 | AUDIT-IDEAL-6.2 wiring ceremonial — no runtime swap | **P1** | M-LLM-X.5 | **Partial** |
+| LLM-AUDIT-3 | Preflight token estimate uses chars/4 not adapter tokenizer | **P0** | M-LLM-X.3.1–3.4 | **Done** |
+| LLM-AUDIT-4 | `ModelRouter` not on Nexus hot path | **P1** | M-LLM-X.4–5 | **Done** |
+| LLM-AUDIT-5 | No provider failover chain | **P1** | M-LLM-X.4 | **Done** |
+| LLM-AUDIT-6 | ACP `StepLLMRouter` disconnected from `LLMAdapter` | **P1** | M-LLM-X.5 | **Done** |
+| LLM-AUDIT-7 | OpenRouter / gateway models default 32k context | **P1** | M-LLM-X.2 | **Done** — catalog `provider_defaults.openrouter: 128000`; dynamic fetch → backlog |
+| LLM-AUDIT-8 | No `intergrax/llm_adapters/USAGE.md` | **P2** | M-LLM-X.7 | **Partial** — USAGE Done; doctor hook pending |
+| LLM-AUDIT-9 | AUDIT-IDEAL-6.2 wiring ceremonial — no runtime swap | **P1** | M-LLM-X.5 | **Done** |
 | LLM-AUDIT-10 | Plugin provider story undocumented | **P2** | M-LLM-X.6 | **Partial** — USAGE §Extension; enum-free profile pending X.6.1 |
-| LLM-AUDIT-11 | `ContextBudgetPolicy` default 4k decoupled from adapter window | **P0** | M-LLM-X.3.3 | **Partial** — factory Done; Nexus adoption pending |
+| LLM-AUDIT-11 | `ContextBudgetPolicy` default 4k decoupled from adapter window | **P0** | M-LLM-X.3.3 | **Done** |
 | LLM-AUDIT-12 | Prefix context heuristics only on Bedrock (not Claude/OpenAI/Gemini) | **P0** | M-LLM-X.1.2–1.3 | **Done** |
 | LLM-AUDIT-13 | Cohere dual slug (`cohere` vs `cohere_native`) confuses developers | **P2** | M-LLM-X.7.5 | **Done** |
 | LLM-AUDIT-14 | Capability flags not catalog-driven (`supports_vision`, tools, structured) | **P2** | M-LLM-X.1.7 | **Planned** |
@@ -568,7 +568,7 @@ Do not merge counters without explicit bridge code.
 
 **Single adapter per Nexus run:** `RuntimeConfig.llm_adapter` holds one primary instance today; multi-model via profile chain + routing is M-LLM-X.4–5 (not a separate LLM-AUDIT ID).
 
-**Closed baselines:** M-LLM (13/13), M-LLM-R (39/39), AUDIT-IDEAL-6.1 **Done**; AUDIT-IDEAL-6.2 + 6.7 **Partial**; 6.3–6.6 **Planned**.
+**Closed baselines:** M-LLM (13/13), M-LLM-R (39/39), M-LLM-X LC-1…LC-3 **Done**; open items P2+ only (capability flags, plugin enum-free, dynamic gateway fetch, doctor hook).
 
 ---
 

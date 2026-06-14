@@ -4,6 +4,7 @@
 """Azure cloud platform adapter — ``CloudPlatform`` facade (no SDK here)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any, Optional
 
@@ -57,7 +58,7 @@ class AzureCloudPlatform:
     def health(self) -> HealthStatus:
         try:
             token = self._credential.get_token(AZURE_MANAGEMENT_SCOPE)
-            expires_on = getattr(token, "expires_on", None)
+            expires_on = attribute_access.optional(token, "expires_on", None)
             detail = f"token_expires={expires_on}" if expires_on is not None else "ok"
             if self._config.subscription_id:
                 detail = f"subscription={self._config.subscription_id}; {detail}"

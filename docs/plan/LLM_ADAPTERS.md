@@ -18,11 +18,11 @@
 |----|---------|-----|----------|--------|
 | AUDIT-IDEAL-6.1 | §6 LLM | Structured output validation on 100% reference + certified agent paths | P1 | **Done** |
 | AUDIT-IDEAL-6.2 | §6 LLM | Live cost/latency/quality model routing (AHI prod path) | P2 | **Partial** — gate wiring exists; runtime adapter swap deferred to M-LLM-X.5 |
-| AUDIT-IDEAL-6.3 | §6 LLM | Central `ModelCatalog` + unified context window resolution | P0 | **Planned** — M-LLM-X.1 |
-| AUDIT-IDEAL-6.4 | §6 LLM | Tokenizer-consistent context preflight (adapter path) | P0 | **Planned** — M-LLM-X.3 |
-| AUDIT-IDEAL-6.5 | §6 LLM | Profile failover chain on retriable provider errors | P1 | **Planned** — M-LLM-X.4 |
-| AUDIT-IDEAL-6.6 | §6 LLM | ACP `StepLLMRouter` backed by `LLMAdapter` (single DX) | P1 | **Planned** — M-LLM-X.5 |
-| AUDIT-IDEAL-6.7 | §6 LLM | Developer `USAGE.md` + startup validation | P2 | **Partial** — [USAGE.md](../../intergrax/llm_adapters/USAGE.md) Done; X.7.2 pending |
+| AUDIT-IDEAL-6.3 | §6 LLM | Central `ModelCatalog` + unified context window resolution | P0 | **Done** — LC-1 |
+| AUDIT-IDEAL-6.4 | §6 LLM | Tokenizer-consistent context preflight (adapter path) | P0 | **Done** — LC-2/LC-2b |
+| AUDIT-IDEAL-6.5 | §6 LLM | Profile failover chain on retriable provider errors | P1 | **Done** — LC-3 |
+| AUDIT-IDEAL-6.6 | §6 LLM | ACP `StepLLMRouter` backed by `LLMAdapter` (single DX) | P1 | **Done** — LC-3 |
+| AUDIT-IDEAL-6.7 | §6 LLM | Developer `USAGE.md` + startup validation | P2 | **Partial** — USAGE Done; `validate_runtime()` Done; doctor hook pending |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 
@@ -55,61 +55,39 @@
 
 **Mode:** Intergrax Layer Completion · **Domain:** LLM_ADAPTERS only  
 **Baseline:** M-LLM-R **Done** (contract L3) · M-LLM-X code in progress  
-**Target state:** No open **P0/P1** in audit register → **State B — Architecturally Mature**
+**Status:** **LC-3 closeout** — P0/P1 audit gaps closed · backlog P2+ only  
+**Target state:** **State B — Architecturally Mature** (no open P0/P1)
 
-### Krok 1 — Audit summary (2026-06-14)
+### Krok 1 — Audit summary (2026-06-14, re-validated)
 
-| ID | Problem | Class | Sprint |
-|----|---------|-------|--------|
-| LLM-AUDIT-1 | Brak `ModelCatalog` — rozproszone dicts | **P0** | LC-1 |
-| LLM-AUDIT-2 | Override `context_window_tokens` tylko Ollama | **P0** | LC-1 |
-| LLM-AUDIT-11 | `ContextBudgetPolicy` 4k odłączone od adapter window | **P0** | LC-2 |
-| LLM-AUDIT-3 | Preflight `chars//4` zamiast adapter tokenizer | **P0** | LC-2 |
-| LLM-AUDIT-12 | Prefix heuristics tylko Bedrock | **P0** | LC-1 |
-| LLM-AUDIT-15 | History layer vs preflight niespójne | **P0** | LC-2 (history już używa adapter; preflight fix) |
-| LLM-AUDIT-4 | `ModelRouter` poza hot path | **P1** | LC-3 |
-| LLM-AUDIT-5 | Brak failover chain | **P1** | LC-3 |
-| LLM-AUDIT-6 | ACP `StepLLMRouter` stub | **P1** | LC-3 |
-| LLM-AUDIT-7 | OpenRouter 32k fallback | **P1** | LC-4 (M-LLM-X.2) |
-| LLM-AUDIT-9 | AHI routing ceremonial | **P1** | LC-3 |
-| AUDIT-IDEAL-6.3–6.6 | Catalog, preflight, failover, ACP bridge | **P0/P1** | LC-1…LC-3 |
+| ID | Problem | Class | Sprint | Status |
+|----|---------|-------|--------|--------|
+| LLM-AUDIT-1 … 2, 11, 3, 12, 15 | ModelCatalog + token accounting | **P0** | LC-1/LC-2/LC-2b | **Done** |
+| LLM-AUDIT-4 … 6, 9, 7 | Routing, failover, ACP, OpenRouter default | **P1** | LC-3/LC-4 | **Done** |
 
 **Closed (no sprint):** M-LLM-R envelope · AUDIT-IDEAL-6.1 structured output · LLM-AUDIT-13 Cohere DX · tier boundaries · observability L3.
 
-### Sprint LC-1 — ModelCatalog + resolver (P0)
+### Sprint LC-1 — ModelCatalog + resolver (P0) — **Done**
+
+### Sprint LC-2 — Token accounting (P0) — **Done**
+
+### Sprint LC-2b — Nexus budget adoption + CI guard (P0) — **Done**
 
 | Field | Value |
 |-------|-------|
-| **Scope** | M-LLM-X.1.1–1.5 |
-| **Goal** | Jedna ścieżka `resolve_context_window_tokens`; wszystkie adapters wired |
-| **DoD** | `test_model_catalog.py` green; profile override na Claude/Groq/vLLM |
-| **Files** | `registry/model_catalog.py`, `registry/context_window.py`, `registry/model_catalog.yaml`, `providers/*`, `registry/profile.py` |
+| **Scope** | M-LLM-X.3.3 rollout, M-LLM-X.3.4 |
+| **Goal** | `resolve_context_budget_policy(from adapter)`, RuntimeConfig bridge, preflight CI guard |
+| **DoD** | `test_context_window_wiring.py`; `check_context_preflight_uses_adapter_tokens.py` green |
 
-### Sprint LC-2 — Token accounting (P0)
-
-| Field | Value |
-|-------|-------|
-| **Scope** | M-LLM-X.3.1, 3.3 |
-| **Goal** | Preflight + `ContextBudgetPolicy.from_adapter` używają adapter window/tokenizer |
-| **DoD** | `test_context_window_wiring.py`; preflight unit tests green |
-| **Files** | `context_preflight.py`, `context_budget.py` |
-
-### Sprint LC-3 — Failover + runtime routing (P1)
+### Sprint LC-3 — Failover + runtime routing (P1) — **Done**
 
 | Field | Value |
 |-------|-------|
 | **Scope** | M-LLM-X.4.1–4.3, 5.1–5.5 |
 | **Goal** | Profile chain, Nexus hot path, ACP bridge |
-| **DoD** | Failover unit test; AHI wiring → AUDIT-IDEAL-6.2 Done |
-| **Files** | `registry/failover_adapter.py`, `model_router.py`, `nexus_factory.py`, `llm_router.py` |
+| **DoD** | `test_failover_adapter.py`, `test_model_router.py`, ACP adapter port test green |
 
-### Sprint LC-4 — Gateway metadata + DX closeout (P1/P2)
-
-| Field | Value |
-|-------|-------|
-| **Scope** | M-LLM-X.2.*, 7.2–7.4, 8.* |
-| **Goal** | OpenRouter fetch, validate_runtime, CI guards, audit register closeout |
-| **DoD** | All LLM-AUDIT-* Done in architecture |
+### Sprint LC-4 — Gateway metadata + DX closeout — **Partial** (static OpenRouter default Done; dynamic fetch → backlog)
 
 ### Backlog (P2–P4 — nie blokuje ukończenia warstwy)
 
@@ -132,11 +110,11 @@
 | Order | Wave | IDs | Priority | Status |
 |-------|------|-----|----------|--------|
 | 0 | X-0 | M-LLM-X.0.1–0.3 | **P0** | **Done** |
-| 1 | X-1 | M-LLM-X.1.1–1.6 | **P0** | **Partial** (1.1–1.5 Done) |
-| 2 | X-2 | M-LLM-X.2.1–2.4 | P1 | **Planned** |
-| 3 | X-3 | M-LLM-X.3.1–3.5 | **P0** | **Partial** (3.1, 3.3 Done) |
-| 4 | X-4 | M-LLM-X.4.1–4.5 | P1 | **Planned** |
-| 5 | X-5 | M-LLM-X.5.1–5.5 | P1 | **Planned** |
+| 1 | X-1 | M-LLM-X.1.1–1.6 | **P0** | **Done** |
+| 2 | X-2 | M-LLM-X.2.1–2.4 | P1 | **Backlog** (static catalog covers OpenRouter default) |
+| 3 | X-3 | M-LLM-X.3.1–3.5 | **P0** | **Done** |
+| 4 | X-4 | M-LLM-X.4.1–4.5 | P1 | **Partial** (4.1–4.3 Done; 4.4 trace DTO, 4.5 Tier-3 wiring → backlog) |
+| 5 | X-5 | M-LLM-X.5.1–5.5 | P1 | **Done** |
 | 6 | X-6 | M-LLM-X.6.1–6.3 | P2 | **Partial** (6.3 Done) |
 | 7 | X-7 | M-LLM-X.7.1–7.5 | P2 | **Partial** (7.1, 7.5 Done; 7.2–7.4 Planned) |
 | 8 | X-8 | M-LLM-X.8.1–8.3 | Medium | **Planned** |
@@ -209,7 +187,7 @@ Wave M-LLM-X-8 (closeout):     M-LLM-X.8.1 → 8.2 → 8.3
 | M-LLM-X.3.1 | **`verify_context_preflight`** uses `adapter.count_messages_tokens(messages)` | **Done** | Critical | `context_preflight.py` | Unit: adapter path exercised |
 | M-LLM-X.3.2 | **`count_message_tokens` helper** — delegate to adapter when provided | **Partial** | High | `context_preflight.py` | Adapter default when counter None |
 | M-LLM-X.3.3 | **`ContextBudgetPolicy.from_adapter(adapter)`** factory — derive `max_tokens_estimate` from `resolve_input_budget_tokens` | **Done** | High | `context_budget.py` | Unit test |
-| M-LLM-X.3.4 | **`scripts/check_context_preflight_uses_adapter_tokens.py`** CI guard | **Planned** | High | `scripts/` | Added to §6.1 maintenance |
+| M-LLM-X.3.4 | **`scripts/check_context_preflight_uses_adapter_tokens.py`** CI guard | **Done** | High | `scripts/` | Added to §6.1 maintenance |
 | M-LLM-X.3.5 | **`engine_history_layer`** history token count via `adapter.count_messages_tokens` | **Done** | High | `engine_history_layer.py` | Already delegated; preflight aligned LC-2 |
 
 ---
@@ -218,9 +196,9 @@ Wave M-LLM-X-8 (closeout):     M-LLM-X.8.1 → 8.2 → 8.3
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| M-LLM-X.4.1 | **`LLMProfile.fallback_profiles: tuple[LLMProfile, ...]`** | **Planned** | High | `registry/profile.py` | Pydantic validation; extra=forbid |
-| M-LLM-X.4.2 | **`FailoverLLMAdapter`** — wraps primary; tries chain on retriable errors | **Planned** | Critical | `registry/failover_adapter.py` | Unit: 429 → fallback success |
-| M-LLM-X.4.3 | **`LLMProfile.create_adapter_with_failover()`** | **Planned** | High | `profile.py` | Integration with `LLMCallConfig.retry_on_status` |
+| M-LLM-X.4.1 | **`LLMProfile.fallback_profiles: tuple[LLMProfile, ...]`** | **Done** | High | `registry/profile.py` | Pydantic validation; extra=forbid |
+| M-LLM-X.4.2 | **`FailoverLLMAdapter`** — wraps primary; tries chain on retriable errors | **Done** | Critical | `registry/failover_adapter.py` | Unit: 429 → fallback success |
+| M-LLM-X.4.3 | **`LLMProfile.create_adapter_with_failover()`** | **Done** | High | `profile.py` | Integration with `LLMCallConfig.retry_on_status` |
 | M-LLM-X.4.4 | **Trace `LLMRoutingAttemptDiagV1`** per failover attempt | **Planned** | Medium | observability | Fields: profile_id, provider, model, error |
 | M-LLM-X.4.5 | **Tier-3 wiring** — `ApplicationEnvironmentProfile` optional fallback list | **Planned** | Medium | `environment_profile.py`, `nexus_factory.py` | Host smoke test |
 
@@ -230,11 +208,11 @@ Wave M-LLM-X-8 (closeout):     M-LLM-X.8.1 → 8.2 → 8.3
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| M-LLM-X.5.1 | **Expand `ModelRouter`** — hints: `balanced`, `cheapest`, `fastest`, `quality`; map to profile index | **Planned** | High | `registry/model_router.py` | Unit: each hint |
-| M-LLM-X.5.2 | **`resolve_runtime_llm_profile(env, policy_hint)`** — single entry for Nexus factory | **Planned** | Critical | `applications/_shared/llm_resolver.py` | Replaces ceremonial AHI-only wiring |
-| M-LLM-X.5.3 | **Wire `resolve_live_model_routing_wiring` → actual adapter selection** | **Planned** | Critical | `llm_routing_wiring.py`, `nexus_factory.py` | AUDIT-IDEAL-6.2 → **Done** |
-| M-LLM-X.5.4 | **`StepLLMRouter` → `LLMAdapter` bridge** — async wrapper over `generate_messages` | **Planned** | High | `agents/authoring/llm_router.py` | ACP tests use real FakeLLMAdapter |
-| M-LLM-X.5.5 | **Remove stub echo path** when `llm_port` unset in production hosts | **Planned** | Medium | `acp_run.py` | Fail-fast if adapter missing in PRODUCT profile |
+| M-LLM-X.5.1 | **Expand `ModelRouter`** — hints: `balanced`, `cheapest`, `fastest`, `quality`; map to profile index | **Done** | High | `registry/model_router.py` | Unit: each hint |
+| M-LLM-X.5.2 | **`resolve_runtime_llm_profile(env, policy_hint)`** — single entry for Nexus factory | **Done** | Critical | `applications/_shared/llm_resolver.py` | Replaces ceremonial AHI-only wiring |
+| M-LLM-X.5.3 | **Wire `resolve_live_model_routing_wiring` → actual adapter selection** | **Done** | Critical | `llm_routing_wiring.py`, `llm_resolver.py` | AUDIT-IDEAL-6.2 → **Done** |
+| M-LLM-X.5.4 | **`StepLLMRouter` → `LLMAdapter` bridge** — async wrapper over `generate_messages` | **Done** | High | `agents/authoring/llm_router.py` | ACP tests use real adapter port |
+| M-LLM-X.5.5 | **Remove stub echo path** when `llm_port` unset in production hosts | **Done** | Medium | `acp_run.py` | Fail-fast if adapter missing in STRICT profile |
 
 ---
 
@@ -253,7 +231,7 @@ Wave M-LLM-X-8 (closeout):     M-LLM-X.8.1 → 8.2 → 8.3
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
 | M-LLM-X.7.1 | **`intergrax/llm_adapters/USAGE.md`** — quickstart, env matrix, overrides, failover, catalog | **Done** | High | Tier-0 module root | Linked from architecture |
-| M-LLM-X.7.2 | **`LLMProfile.validate_runtime()`** — catalog hit, key, context > 0 | **Planned** | Medium | `profile.py` | Optional call from `intergrax doctor` |
+| M-LLM-X.7.2 | **`LLMProfile.validate_runtime()`** — catalog hit, key, context > 0 | **Done** | Medium | `profile.py` | Optional call from `intergrax doctor` pending |
 | M-LLM-X.7.3 | **`scripts/check_model_catalog_coverage.py`** — gate warns on adapter default models missing from YAML | **Planned** | Medium | CI | §6.1 maintenance |
 | M-LLM-X.7.4 | **Scaffold `new-agent` template** — comment block pointing to USAGE + catalog override | **Planned** | Low | `scaffold/new_agent.py` | Scaffold test |
 | M-LLM-X.7.5 | **Cohere slug guidance** — document `cohere` (compat) vs `cohere_native` selection in USAGE | **Done** | Low | `USAGE.md` §Providers | Reduces dual-slug confusion |

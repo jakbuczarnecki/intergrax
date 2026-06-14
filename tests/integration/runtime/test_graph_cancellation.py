@@ -1,5 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
+from intergrax.utils import attribute_access
 import pytest
 
 from intergrax.agents.agent_contract import Agent
@@ -76,7 +77,7 @@ class _MultiStepUaepAgent(Agent):
         )
 
     def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = getattr(task_context, "capability", None)
+        capability = attribute_access.optional(task_context, "capability", None)
         if capability == "uaep.cancel":
             return CapabilityMatchResult(
                 matched=True,

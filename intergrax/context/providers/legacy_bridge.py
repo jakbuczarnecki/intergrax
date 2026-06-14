@@ -22,6 +22,7 @@ Handle key contract (``ContextProviderContext.handles``):
 """
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any
 
@@ -117,7 +118,7 @@ def fragments_from_task_message(
 
 
 def _record_text(record: Any) -> str:
-    if hasattr(record, "evidence") and (getattr(record, "evidence") or "").strip():
+    if hasattr(record, "evidence") and (attribute_access.optional(record, "evidence") or "").strip():
         return str(record.evidence).strip()
     if hasattr(record, "summary"):
         return str(record.summary or "").strip()
@@ -184,10 +185,10 @@ def fragments_from_session_history(
         return []
     fragments: list[ContextFragment] = []
     for index, message in enumerate(messages[-max_entries:]):
-        role = getattr(message, "role", None) or (
+        role = attribute_access.optional(message, "role", None) or (
             message.get("role") if isinstance(message, dict) else "user"
         )
-        content = getattr(message, "content", None)
+        content = attribute_access.optional(message, "content", None)
         if content is None and isinstance(message, dict):
             content = message.get("content")
         text = str(content or "").strip()
@@ -217,7 +218,7 @@ def _chunk_text(ch: Any) -> str:
         return ""
     for attr in ("text", "content", "page_content", "chunk", "value"):
         if hasattr(ch, attr):
-            value = getattr(ch, attr)
+            value = attribute_access.optional(ch, attr)
             if isinstance(value, str) and value.strip():
                 return value.strip()
     return ""
@@ -253,7 +254,7 @@ def _block_source_id(block: Any, *, fallback: str) -> str:
                 return str(value).strip()
     for attr in ("source_id", "id", "tool_call_id", "overlay_id", "attachment_id"):
         if hasattr(block, attr):
-            value = getattr(block, attr)
+            value = attribute_access.optional(block, attr)
             if value is not None and str(value).strip():
                 return str(value).strip()
     return fallback
@@ -311,7 +312,7 @@ def fragments_from_ltm_entries(
     for index, entry in enumerate(entries[:max_entries]):
         if isinstance(entry, dict) and entry.get("deleted"):
             continue
-        if hasattr(entry, "deleted") and getattr(entry, "deleted"):
+        if hasattr(entry, "deleted") and attribute_access.optional(entry, "deleted"):
             continue
         text = _chunk_text(entry)
         if not text:
@@ -327,7 +328,7 @@ def fragments_from_ltm_entries(
         else:
             for key in ("kind", "title", "session_id", "importance"):
                 if hasattr(entry, key):
-                    meta[key] = getattr(entry, key)
+                    meta[key] = attribute_access.optional(entry, key)
         fragments.append(
             _fragment(
                 fragment_id=f"ltm-{entry_id}",
@@ -435,9 +436,9 @@ def fragments_from_policy_overlay_fragments(
             overlay_id = str(overlay.get("overlay_id") or f"overlay-{index}")
             priority = int(overlay.get("priority") or 100)
         else:
-            content = str(getattr(overlay, "content", "") or "").strip()
-            overlay_id = str(getattr(overlay, "overlay_id", None) or f"overlay-{index}")
-            priority = int(getattr(overlay, "priority", 100) or 100)
+            content = str(attribute_access.optional(overlay, "content", "") or "").strip()
+            overlay_id = str(attribute_access.optional(overlay, "overlay_id", None) or f"overlay-{index}")
+            priority = int(attribute_access.optional(overlay, "priority", 100) or 100)
         if content:
             normalized.append((priority, overlay_id, content))
     normalized.sort(key=lambda row: row[0])

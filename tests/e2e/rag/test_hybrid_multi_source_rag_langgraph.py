@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from pathlib import Path
 
@@ -93,7 +94,7 @@ async def test_hybrid_multi_source_rag_retrieval_pipeline() -> None:
 
     ids = []
     for i, d in enumerate(documents):
-        md = getattr(d, "metadata", {}) or {}
+        md = attribute_access.optional(d, "metadata", {}) or {}
         chunk_id = md.get("chunk_id")
         if chunk_id:
             ids.append(str(chunk_id))

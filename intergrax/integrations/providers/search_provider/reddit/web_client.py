@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import os
 import time
@@ -155,7 +156,7 @@ class RedditAPIProvider(WebSearchProvider):
 
         # Freshness: spec.freshness → t
         # Reddit options: hour, day, week, month, year, all
-        freshness = getattr(spec, "freshness", None) or self.default_freshness
+        freshness = attribute_access.optional(spec, "freshness", None) or self.default_freshness
         if freshness:
             params["t"] = freshness
 

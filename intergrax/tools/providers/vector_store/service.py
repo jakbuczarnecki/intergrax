@@ -2,6 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from intergrax.tools.providers.vector_store.contracts import (
     VectorStoreCountInput,
@@ -32,7 +33,7 @@ def vector_store_count(ctx: ToolWiringContext, _params: VectorStoreCountInput) -
     vectorstore = _vectorstore(ctx)
     if vectorstore is None:
         return VectorStoreCountOutput(used=False, reason="vectorstore_manager_not_configured")
-    count_fn = getattr(vectorstore, "count", None)
+    count_fn = attribute_access.optional(vectorstore, "count", None)
     if count_fn is None:
         return VectorStoreCountOutput(used=False, reason="count_not_supported")
     try:
@@ -49,7 +50,7 @@ def vector_store_delete(ctx: ToolWiringContext, params: VectorStoreDeleteInput) 
     ids = [item.strip() for item in params.document_ids if item.strip()]
     if not ids:
         return VectorStoreDeleteOutput(used=False, reason="document_ids_empty")
-    delete_fn = getattr(vectorstore, "delete", None)
+    delete_fn = attribute_access.optional(vectorstore, "delete", None)
     if delete_fn is None:
         return VectorStoreDeleteOutput(used=False, reason="delete_not_supported")
     try:
@@ -66,7 +67,7 @@ def vector_store_list_collections(
     vectorstore = _vectorstore(ctx)
     if vectorstore is None:
         return VectorStoreListCollectionsOutput(used=False, reason="vectorstore_manager_not_configured")
-    list_fn = getattr(vectorstore, "list_collections", None)
+    list_fn = attribute_access.optional(vectorstore, "list_collections", None)
     if list_fn is None:
         return VectorStoreListCollectionsOutput(used=False, reason="list_collections_not_supported")
     try:

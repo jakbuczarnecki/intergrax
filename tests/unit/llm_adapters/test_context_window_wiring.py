@@ -12,6 +12,17 @@ from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.runtime.nexus.context.context_preflight import verify_context_preflight
 
 
+def test_resolve_context_budget_policy_uses_adapter_when_unset() -> None:
+    from intergrax.applications._shared.context_wiring import resolve_context_budget_policy
+    from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+
+    adapter = MagicMock()
+    adapter.context_window_tokens = 200_000
+    env = ApplicationEnvironmentProfile.lab_defaults()
+    policy = resolve_context_budget_policy(env, llm_adapter=adapter)
+    assert policy.max_tokens_estimate > 4000
+
+
 def test_llm_profile_context_window_override_propagates_to_claude() -> None:
     reset_model_catalog_cache()
     profile = LLMProfile(

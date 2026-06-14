@@ -5,9 +5,8 @@
 
 from __future__ import annotations
 
-import importlib
-
 from intergrax.agents.agent_contract import Agent
+from intergrax.utils.lazy_export import export_from_import_path
 
 __all__ = ["Agent", "AgentEngine", "UAEPExecutor", "supports_uaep", "UAEPAgent"]
 
@@ -24,4 +23,4 @@ def __getattr__(name: str) -> object:
     if spec is None:
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
     module_path, attr = spec
-    return getattr(importlib.import_module(module_path), attr)
+    return export_from_import_path(module_path, attr)

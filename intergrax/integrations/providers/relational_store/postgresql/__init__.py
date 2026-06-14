@@ -8,6 +8,7 @@ Public entry points: ``create_postgresql_relational_store()``, ``create_postgres
 ``register_postgresql_integration()``, and ``profile.resolve(RELATIONAL_STORE)``.
 """
 
+from intergrax.utils.lazy_export import export_from_bundle
 from intergrax.integrations.providers.relational_store.postgresql.config import (
     ENV_POSTGRESQL_DATABASE,
     ENV_POSTGRESQL_DSN,
@@ -58,7 +59,7 @@ def __getattr__(name: str):
     if name in _LAZY_EXPORTS:
         from intergrax.integrations.providers.relational_store.postgresql import bundle as _bundle
 
-        return getattr(_bundle, name)
+        return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "PostgreSQLRelationalStore":
         from intergrax.integrations.providers.relational_store.postgresql.adapter import PostgreSQLRelationalStore
 

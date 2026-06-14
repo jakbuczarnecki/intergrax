@@ -1,9 +1,37 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
+from unittest.mock import MagicMock
 
 from intergrax.agents.authoring.llm_router import StepLLMRouter
 from intergrax.contracts.agent_run_trace import GatewayCallStatus
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_step_llm_router_uses_llm_adapter_port() -> None:
+    from intergrax.agents.authoring.llm_router import StepLLMRouter
+    from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+    from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+
+    adapter = MagicMock()
+    adapter.provider = LLMProvider.OPENAI
+    adapter.generate_messages.return_value = LLMAdapterResponse(
+        content="adapter-response",
+        usage=LLMTokenUsage(input_tokens=4, output_tokens=6),
+        model="gpt-4o",
+        provider="openai",
+    )
+    router = StepLLMRouter(
+        allowed_models=("gpt-4o",),
+        default_model="gpt-4o",
+        llm_adapter=adapter,
+    )
+    result = await router.complete("hello")
+    assert result.text == "adapter-response"
+    assert result.tokens_in == 4
+    assert result.tokens_out == 6
 
 
 @pytest.mark.unit

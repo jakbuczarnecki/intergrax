@@ -4,6 +4,7 @@
 """Retrieval logic for ``rag.retrieve`` — uses Tier-0 :class:`RetrievalService`."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any, List, Optional, Sequence
 
@@ -121,7 +122,7 @@ def _retrieval_poisoning_defense_enabled(ctx: ToolWiringContext) -> bool:
         profile = raw if raw is not None else None
     if profile is None:
         return False
-    return bool(getattr(profile, "retrieval_poisoning_defense_enabled", False))
+    return bool(attribute_access.optional(profile, "retrieval_poisoning_defense_enabled", False))
 
 
 def _apply_retrieval_poisoning_filter(

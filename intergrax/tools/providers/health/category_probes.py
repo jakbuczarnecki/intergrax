@@ -2,6 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any
 
@@ -29,7 +30,7 @@ def health_check_codecraft(ctx: ToolWiringContext, _params: object) -> HealthChe
     if isinstance(profile, dict):
         mode = profile.get("mode")
     else:
-        mode = getattr(profile, "mode", None)
+        mode = attribute_access.optional(profile, "mode", None)
     if mode == "disabled":
         return HealthCheckIntegrationOutput(
             status=HealthStatusOutput(slug="codecraft", healthy=True, detail="mode_disabled"),
@@ -46,16 +47,16 @@ def _probe_backend(slug: str, backend: Any) -> HealthCheckIntegrationOutput:
         return HealthCheckIntegrationOutput(
             status=HealthStatusOutput(slug=slug, healthy=False, detail="not_configured"),
         )
-    health_fn = getattr(backend, "health", None)
+    health_fn = attribute_access.optional(backend, "health", None)
     if health_fn is None:
         return HealthCheckIntegrationOutput(
             status=HealthStatusOutput(slug=slug, healthy=True, detail="no_health_method"),
         )
     try:
         result = health_fn()
-        healthy = bool(getattr(result, "healthy", True))
-        detail = str(getattr(result, "detail", "") or "ok")
-        resolved_slug = str(getattr(result, "slug", slug) or slug)
+        healthy = bool(attribute_access.optional(result, "healthy", True))
+        detail = str(attribute_access.optional(result, "detail", "") or "ok")
+        resolved_slug = str(attribute_access.optional(result, "slug", slug) or slug)
         return HealthCheckIntegrationOutput(
             status=HealthStatusOutput(slug=resolved_slug, healthy=healthy, detail=detail),
         )

@@ -4,6 +4,7 @@
 """Weaviate schema migration and multi-tenant collection setup."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
@@ -65,7 +66,7 @@ def _ensure_tenant(collection: Any, cfg: WeaviateSchemaConfig) -> None:
     if not cfg.multi_tenant:
         return
     tenants = collection.tenants.get()
-    tenant_names = {getattr(t, "name", str(t)) for t in (tenants or [])}
+    tenant_names = {attribute_access.optional(t, "name", str(t)) for t in (tenants or [])}
     if cfg.tenant_id not in tenant_names:
         collection.tenants.create([cfg.tenant_id])
 

@@ -86,7 +86,7 @@ class ContextFragment:
         if not self.content_hash:
             object.__setattr__(self, "content_hash", content_hash_for_text(self.content))
         for name in ("relevance_score", "freshness_score", "confidence_score"):
-            value = getattr(self, name)
+            value = object.__getattribute__(self, name)
             if not 0.0 <= value <= 1.0:
                 raise ValueError(f"{name} must be in [0, 1], got {value}")
         if self.token_estimate < 0:
