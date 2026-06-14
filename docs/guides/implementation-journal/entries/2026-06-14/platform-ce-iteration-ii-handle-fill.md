@@ -12,7 +12,7 @@ plan_ref:
   - CE-HANDLE-3
   - CE-HANDLE-4
 status: completed
-commit: pending
+commit: 4fbebc01
 adr: none — wiring existing CE-FMT-1 tags and RuntimeState metadata sync
 ---
 
