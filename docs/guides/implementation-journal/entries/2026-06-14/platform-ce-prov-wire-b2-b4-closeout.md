@@ -17,7 +17,7 @@ plan_ref:
   - CE-PROV-GATE
   - CE-PROV-INT
 status: completed
-commit: pending
+commit: 77ba4fed
 adr: none — legacy bridge wiring; no new cross-cutting contract
 ---
 
