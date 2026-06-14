@@ -15,7 +15,10 @@ from intergrax.applications._shared.integration_runtime_bridge import (
 )
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 from intergrax.applications._shared.rag_runtime_bridge import apply_rag_for_environment
-from intergrax.applications._shared.context_runtime_bridge import apply_context_profiles_from_environment
+from intergrax.applications._shared.context_runtime_bridge import (
+    apply_context_profiles_from_environment,
+    derive_run_budget_from_context_policy,
+)
 from intergrax.applications._shared.memory_runtime_bridge import apply_memory_profile_to_runtime_config
 from intergrax.applications._shared.observability_runtime_bridge import (
     apply_observability_profiles_from_environment,

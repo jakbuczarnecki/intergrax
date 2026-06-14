@@ -82,7 +82,7 @@ An isolated temporary filesystem workspace for work **without mutating the main 
 
 ## 20.3 Integration with application state
 
-When active, `ApplicationEnvironmentState.shadow_workspace` (§42) carries `workspace_id`, paths — updated by host hooks on `AFTER_TASK_INTAKE` or framework seed (APP-CON-3 planned).
+When active, `ApplicationEnvironmentState.shadow_workspace` (§42) carries `workspace_id`, paths — updated by host hooks on `AFTER_TASK_INTAKE` or framework seed (**Done** APP-CON-3 lifecycle middleware).
 
 ## 20.4 Use cases
 
@@ -1632,15 +1632,15 @@ A Tier-3 host MAY be labeled **production-ready** only when **all** mandatory ro
 
 ## 46.3 Maturity score (architecture audit)
 
-| Dimension | Target | Current (2026-06-11) |
+| Dimension | Target | Current (2026-06-14) |
 |-----------|--------|----------------------|
-| Architecture completeness | 10/10 | **10/10** — APP-CON §24–§48 + evolution §49 |
+| Architecture completeness | 10/10 | **10/10** — APP-CON §24–§48 + evolution §49 + ops §50 |
 | Hook runtime wiring | 10/10 | **10/10** — APP-CON-1 · APP-CON-5 Done |
 | Budget / prod gates | 10/10 | **10/10** — APP-PROD-1..9 **Done** · ACP-TOK-1..3 · ACP-TOK-CI **Done** |
 | Evolution / governance | 10/10 | **10/10** — APP-EVOL-1..7 **Done** · §49.2.4 typed migrations |
 | Platform operations | 10/10 | **10/10** — APP-OPS-1..4 **Done** · health score · registry CLI |
-| **Overall production readiness** | — | **~10/10** reference canon; mutating STRICT requires APP-PROD-7 + ACP-TOK-* runtime |
-| **Architecture freeze readiness** | — | **Ready** — structural canon §24–§51; platform APP-* implementation **Done** |
+| **Overall production readiness** | — | **~9.5/10** reference platform; enterprise marketplace/distribution **P4** |
+| **Architecture freeze readiness** | — | **Architecturally Mature** — §24–§51 + APP-* **Done**; P4 = marketplace UI + semver on graph/envelope models |
 
 ---
 
@@ -1773,12 +1773,12 @@ Author edits manifest / profile / graph / envelope
 |----------|---------------|-----------|
 | **`ApplicationManifest`** | `version: semver` | Deployable application package release |
 | **`ApplicationEnvironmentProfile`** | `spec_version: str` | Serialized profile shape for UI round-trip (DX-7.2) |
-| **`ApplicationGraphSpec`** | `graph_version: semver` (target) | Topology breaking changes bump major |
-| **`OrganizationalPolicyEnvelope`** | `envelope_version: semver` (target) | Org rules breaking changes bump major |
+| **`ApplicationGraphSpec`** | `graph_version: semver` (**P4 backlog**) | Migration schema supports versions; model field not yet on `ApplicationGraphSpec` |
+| **`OrganizationalPolicyEnvelope`** | `envelope_version: semver` (**P4 backlog**) | Migration schema supports versions; model uses `schema_version` today |
 | **`ApplicationEnvironmentState`** | `profile_snapshot_id` | Active resolved profile fingerprint for a Task |
 | **Wire contracts** | `schema_version` | e.g. `app_env_state.v2`, `run_artifact_bundle.v1` |
 
-### 49.1.2 EnvironmentSnapshot (target contract)
+### 49.1.2 EnvironmentSnapshot (**Done** · APP-EVOL-1)
 
 Immutable materialization of everything Nexus needs for one deploy or one Task intake:
 
@@ -1867,7 +1867,7 @@ MigrationStep:
 
 **Anti-pattern EVOL-AP-01:** Editing production YAML without version bump — breaks audit and replay.
 
-### 49.2.4 Typed migration primitives (target)
+### 49.2.4 Typed migration primitives (**Done** · APP-EVOL-2b)
 
 `ApplicationMigration` orchestrates **typed** sub-migrations — one schema per primitive, composable in CI:
 
@@ -1911,7 +1911,7 @@ OrgEnvelopeMigration:
 
 Tier-3 routes work via **capability tokens** on `Task` and `AgentBinding.capabilities[]` (§24.2, §37.4). At scale, capabilities need a **lifecycle** independent of agent class names.
 
-### 49.3.1 Capability registry model (normative target)
+### 49.3.1 Capability registry model (normative · **Done** APP-EVOL-3)
 
 ```text
 CapabilityDescriptor:                    # UAEP §42.27 — harness-wide
@@ -1922,7 +1922,7 @@ CapabilityDescriptor:                    # UAEP §42.27 — harness-wide
     deprecated: bool
     superseded_by: str | null
 
-CapabilityAlias:                         # APP-EVOL-3 target
+CapabilityAlias:                         # APP-EVOL-3 Done
     alias: str                            # research.pipeline (legacy)
     canonical: str                         # research.orchestrate
     sunset_at: datetime | null
@@ -1964,7 +1964,7 @@ experimental → development → candidate → staging → production → deprec
 
 Each Tier-2 agent contract carries `lifecycle_state` (ACP). Tier-3 **`AgentBinding`** references agents that MUST satisfy host policy.
 
-### 49.4.2 Governance policies (target)
+### 49.4.2 Governance policies (**Done** · APP-EVOL-4)
 
 ```text
 AgentApprovalPolicy:
@@ -2051,7 +2051,7 @@ Mutating STRICT hosts MUST document in product `ARCHITECTURE.md`:
 
 Large agent environments require **diff**, not eyeballing YAML.
 
-### 49.6.1 ApplicationEnvironmentDiff (target)
+### 49.6.1 ApplicationEnvironmentDiff (**Done** · APP-EVOL-6)
 
 ```text
 ApplicationEnvironmentDiff:
@@ -2090,7 +2090,7 @@ ApplicationEnvironmentDiff:
 
 Intergrax composes **Applications + Agents + Skills + Tools + Profiles**. A formal **package** model enables marketplace-style distribution without forking the harness.
 
-### 49.7.1 ApplicationPackage (target)
+### 49.7.1 ApplicationPackage (**Done** · APP-EVOL-7)
 
 ```text
 ApplicationPackage:
@@ -2244,7 +2244,7 @@ wire_environment_capability_graph(manifest, env, snapshot)
 
 Agents have production ownership (V-ALG.4 · `production_ownership.py` · `OnCallOwnershipRegistry` for roster). **Applications** need the same operational contract at environment level.
 
-### 50.2.1 ApplicationOperationalOwnership (target)
+### 50.2.1 ApplicationOperationalOwnership (**Done** · APP-OPS-2)
 
 ```text
 ApplicationOperationalOwnership:
@@ -2281,7 +2281,7 @@ ApplicationEscalationContact:
 |---------|-------|--------|
 | `ApplicationManifest` | `ownership: ApplicationOperationalOwnership \| null` | **Done** APP-OPS-2 |
 | Product `ARCHITECTURE.md` frontmatter | owner, maintainer, on-call | **Required today** (informal) |
-| `ApplicationEnvironmentProfile` | inherit from manifest | target |
+| `ApplicationEnvironmentProfile` | inherit from manifest | **Deferred P4** — manifest gate sufficient today |
 | APP-PROD gate | product hosts must declare ownership | **Done** `check_application_ownership.py` |
 
 ### 50.2.3 Enforcement
@@ -2302,7 +2302,7 @@ ApplicationEscalationContact:
 
 APP-PROD and APP-EVOL gates are **boolean pass/fail**. At platform scale, operators need a **continuous health score** per application and per deployed environment.
 
-### 50.3.1 EnvironmentHealthScore (target)
+### 50.3.1 EnvironmentHealthScore (**Done** · APP-OPS-3)
 
 ```text
 EnvironmentHealthScore:

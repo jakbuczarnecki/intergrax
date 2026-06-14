@@ -530,7 +530,7 @@ uv run pytest -m gate -q
 | APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | **Done** | Medium | `check_application_registry.py` |
 | APP-EVOL-2b | Typed migration validators | **Done** | High | `migration_wiring.py` per primitive |
 
-**Freeze declaration:** Tier-3 **structural architecture** is complete at §51. Further work is APP-* implementation only — no new composition primitives without ADR.
+**Freeze declaration:** Tier-3 **structural architecture** is complete at §51. APP-* master backlog **Done** (2026-06-11); layer completion audit (2026-06-14) = **Architecturally Mature**. Further work is P3/P4 backlog only — no new composition primitives without ADR.
 
 ---
 
@@ -545,6 +545,41 @@ uv run pytest -m gate -q
 | H-APP-FREEZE-2 | TIER3 §51 + ACP §19 cross-refs | **Done** | Canonical ownership matrix |
 | H-APP-FREEZE-3 | §22 GovernanceProfile description fix | **Done** | Flags ≠ ownership |
 
-**Outcome:** No structural conflicts. Glossary bans `CapabilityRegistry`. Architecture freeze **approved**.
+**Outcome:** No structural conflicts. Glossary bans `CapabilityRegistry`. Architecture freeze **approved**. APP-EVOL-1..7 and APP-OPS-1..4 **Done** (2026-06-11); layer completion audit (2026-06-14) confirms doc ↔ code alignment.
+
+---
+
+## Tier-3 Layer Completion Audit (2026-06-14)
+
+**Verdict:** **Architecturally Mature** — no P0/P1 architecture gaps; APP-* master backlog **Done**.
+
+| ID | Finding | Priority | Resolution |
+|----|---------|----------|------------|
+| T3-LC-01 | Architecture §49–§50 section headers still labeled `(target)` while registers show **Done** | P2 | Headers synced to **Done** · status rows authoritative |
+| T3-LC-02 | `GOVERNANCE_CONSISTENCY_AUDIT` listed `CapabilityAlias` as planned | P2 | Updated to **Done** APP-EVOL-3 |
+| T3-LC-03 | `runtime_config_bridge` missing import for `derive_run_budget_from_context_policy` | P1 | LC-IMPL-1 — import from `context_runtime_bridge` |
+| T3-LC-04 | `ApplicationGraphSpec.graph_version` / `OrganizationalPolicyEnvelope.envelope_version` not on models | P4 | Migration schema only; model fields deferred |
+| T3-LC-05 | Ownership inherit manifest → profile not wired | P4 | Manifest gate sufficient; profile inherit deferred |
+| T3-LC-06 | Queue worker scaffold-default (T3-GAP-05) | P3 | Opt-in by design · AUDIT-IDEAL-28.2 **Done** |
+| T3-LC-07 | Marketplace UI + signed distribution channel | P4 | H-APP explicitly deferred |
+
+### Tier-3 backlog (post-completion)
+
+| ID | Priority | Item | Notes |
+|----|----------|------|-------|
+| T3-BL-P3-01 | P3 | Default `INCLUDE_QUEUE_WORKER` on product scaffold | Opt-in today; legal + scaffold only |
+| T3-BL-P3-02 | P3 | `RunBudget` from `CostProfile` beyond context mirror | Partial COST-1; context bridge derives when unset |
+| T3-BL-P4-01 | P4 | `graph_version` on `ApplicationGraphSpec` | Migration schema ready |
+| T3-BL-P4-02 | P4 | `envelope_version` on `OrganizationalPolicyEnvelope` | Uses `schema_version` today |
+| T3-BL-P4-03 | P4 | Profile inherit `ownership` from manifest | APP-OPS-2 manifest gate covers deploy |
+| T3-BL-P4-04 | P4 | Integration marketplace UI | H-APP deferred · §6.3 |
+| T3-BL-P4-05 | P4 | Signed `ApplicationPackage` registry channel | Local/git channel **Done**; marketplace channel future |
+
+### Sprint register (2026-06-14 layer completion)
+
+| Sprint | Scope | DoD |
+|--------|-------|-----|
+| LC-DOC | Doc sync §49–§50 headers · hub · governance audit · this register | No `(target)` on **Done** APP-* rows |
+| LC-IMPL-1 | `runtime_config_bridge` import fix | `uv run pytest tests/unit/applications/ -q` green |
 
 ---
