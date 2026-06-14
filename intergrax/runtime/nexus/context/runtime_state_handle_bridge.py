@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from intergrax.runtime.nexus.context.context_handle_rows import ltm_entry_row, retrieved_chunk_row
 from intergrax.runtime.nexus.context.provider_handles import (
     ATTACHMENT_SUMMARIES_METADATA_KEY,
     LTM_ENTRIES_METADATA_KEY,
@@ -18,38 +19,6 @@ from intergrax.runtime.nexus.context.provider_handles import (
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 
 
-def _retrieved_chunk_row(chunk: Any) -> dict[str, Any]:
-    if isinstance(chunk, dict):
-        metadata = dict(chunk.get("metadata") or {})
-        if chunk.get("id") is not None:
-            metadata.setdefault("id", chunk.get("id"))
-        if chunk.get("score") is not None:
-            metadata.setdefault("score", chunk.get("score"))
-        text = str(chunk.get("text") or chunk.get("content") or "").strip()
-        return {"text": text, "metadata": metadata}
-    metadata = dict(getattr(chunk, "metadata", None) or {})
-    chunk_id = getattr(chunk, "id", None)
-    if chunk_id is not None:
-        metadata.setdefault("id", chunk_id)
-    score = getattr(chunk, "score", None)
-    if score is not None:
-        metadata.setdefault("score", score)
-    text = str(getattr(chunk, "text", "") or "").strip()
-    return {"text": text, "metadata": metadata}
-
-
-def _ltm_entry_row(entry: Any) -> dict[str, Any]:
-    if isinstance(entry, dict):
-        return dict(entry)
-    row: dict[str, Any] = {}
-    for key in ("entry_id", "content", "title", "session_id", "kind", "importance", "deleted"):
-        if hasattr(entry, key):
-            row[key] = getattr(entry, key)
-    if not row.get("content") and hasattr(entry, "content"):
-        row["content"] = str(getattr(entry, "content") or "")
-    return row
-
-
 def extract_provider_metadata_from_runtime_state(state: RuntimeState) -> dict[str, Any]:
     """Build CE handle metadata dict from nexus ``RuntimeState`` artifacts."""
     metadata: dict[str, Any] = {}
@@ -57,14 +26,14 @@ def extract_provider_metadata_from_runtime_state(state: RuntimeState) -> dict[st
     built = state.context_builder_result
     if built is not None and built.retrieved_chunks:
         metadata[RAG_CHUNKS_METADATA_KEY] = [
-            _retrieved_chunk_row(chunk) for chunk in built.retrieved_chunks
+            retrieved_chunk_row(chunk) for chunk in built.retrieved_chunks
         ]
 
     ltm_result = state.user_longterm_memory_result
-    if ltm_result is not None:
-        entries = getattr(ltm_result, "retrieved_entries", None)
-        if isinstance(entries, list) and entries:
-            metadata[LTM_ENTRIES_METADATA_KEY] = [_ltm_entry_row(entry) for entry in entries]
+    if isinstance(ltm_result, dict):
+        hits = ltm_result.get("hits")
+        if isinstance(hits, list) and hits:
+            metadata[LTM_ENTRIES_METADATA_KEY] = [ltm_entry_row(entry) for entry in hits]
 
     if state.base_history:
         metadata[SESSION_HISTORY_MESSAGES_METADATA_KEY] = list(state.base_history)

@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Any
 
 from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.nexus.context.context_handle_rows import ltm_entry_row
 from intergrax.runtime.nexus.context.provider_handles import (
     LTM_ENTRIES_METADATA_KEY,
 )
@@ -17,18 +18,6 @@ from intergrax.runtime.nexus.tracing.memory.user_longterm_memory_summary import 
     UserLongtermMemorySummaryDiagV1,
 )
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
-
-
-def _ltm_entry_row(entry: Any) -> dict[str, Any]:
-    if isinstance(entry, dict):
-        return dict(entry)
-    row: dict[str, Any] = {}
-    for key in ("entry_id", "content", "title", "session_id", "kind", "importance", "deleted"):
-        if hasattr(entry, key):
-            row[key] = getattr(entry, key)
-    if not row.get("content") and hasattr(entry, "content"):
-        row["content"] = str(getattr(entry, "content") or "")
-    return row
 
 
 def memory_profile_handle_snapshot(config: RuntimeConfig) -> dict[str, Any]:
@@ -64,7 +53,7 @@ async def populate_request_memory_recall_metadata(
         )
         if result and result.get("hits"):
             request.metadata[LTM_ENTRIES_METADATA_KEY] = [
-                _ltm_entry_row(entry) for entry in result["hits"]
+                ltm_entry_row(entry) for entry in result["hits"]
             ]
 
     if config.enable_session_vector_index and session_id:
