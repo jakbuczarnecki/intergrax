@@ -92,7 +92,20 @@ def _task_stub_from_request(request: RuntimeRequest):
     metadata = {
         k: v
         for k, v in request.metadata.items()
-        if k in {"workspace_files", "memory_profile", "session_vector_hits"}
+        if k
+        in {
+            "workspace_files",
+            "memory_profile",
+            "session_vector_hits",
+            "session_history_messages",
+            "rag_chunks",
+            "ltm_entries",
+            "websearch_blocks",
+            "tool_output_blocks",
+            "system_instructions",
+            "policy_overlay_fragments",
+            "attachment_summaries",
+        }
     }
     return Task(
         tenant_id=str(request.tenant_id or "default"),

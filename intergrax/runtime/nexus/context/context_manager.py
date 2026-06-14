@@ -191,6 +191,7 @@ class ContextManager:
             policy=resolved_policy,
             shared_version=shared.version,
         )
+        shared_reads = bridge_shared_context_reads(shared, node, resolved_policy)
         request = build_graph_assembly_request(
             task,
             node,
@@ -209,6 +210,7 @@ class ContextManager:
                 agent_id=node.agent_id,
                 engine_id=engine.engine_id,
                 prior_output_records=prior_records,
+                shared_context_reads=shared_reads,
             ),
         )
         if self._context_orchestrator is not None and engine.engine_id == "codebase":
