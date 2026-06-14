@@ -21,7 +21,7 @@ plan_ref:
   - LC-2b
   - LC-3
 status: completed
-commit: pending
+commit: 96b937e2
 adr: no ADR needed — implements ADR-LLM-002 and existing M-LLM-X plan without contract change
 ---
 

@@ -5,7 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-14-009 | 2026-06-14 | tier-0, tier-1, tier-2, tier-3 LLM_ADAPTERS | LC-2b · LC-3 · M-LLM-X.4 · M-LLM-X.5 | [LLM Layer Completion — failover, routing, ACP bridge](entries/2026-06-14/platform-llm-layer-completion-lc2b-lc3.md) | pending |
+| IJ-2026-06-14-009 | 2026-06-14 | tier-0, tier-1, tier-2, tier-3 LLM_ADAPTERS | LC-2b · LC-3 · M-LLM-X.4 · M-LLM-X.5 | [LLM Layer Completion — failover, routing, ACP bridge](entries/2026-06-14/platform-llm-layer-completion-lc2b-lc3.md) | 96b937e2 |
 | IJ-2026-06-14-008 | 2026-06-14 | tier-0, tier-1 LLM_ADAPTERS | LC-1 · LC-2 · M-LLM-X.1 | [LLM Layer Completion — ModelCatalog + preflight alignment](entries/2026-06-14/platform-llm-layer-completion-lc1-lc2.md) | pending |
 | IJ-2026-06-14-007 | 2026-06-14 | tier-0 LLM_ADAPTERS | LLM-AUDIT-14/15 · M-LLM-X.8.1 | [LLM — audit register gap close and M-LLM-R conformance matrix](entries/2026-06-14/platform-llm-audit-register-gap-close.md) | 775610ff |
 | IJ-2026-06-14-006 | 2026-06-14 | tier-0, tier-1 MEMORY | MEM-AUDIT register · doc sync | [MEMORY — post-verification architecture and audit sync](entries/2026-06-14/platform-memory-audit-doc-sync.md) | pending |
