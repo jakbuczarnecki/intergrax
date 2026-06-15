@@ -193,7 +193,7 @@ dev = [
   "pymongo>=4.6",
   "docx2txt>=0.8",
   "unstructured>=0.12",
-  "docling[all]==2.76.0",
+  "docling[all]==2.102.2",
 ]
 # Minimal deps for GitHub Actions regression gate (no docling / unstructured / linters).
 dev-ci = [
