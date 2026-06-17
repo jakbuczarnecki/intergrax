@@ -206,6 +206,66 @@ def run_vectorstore_soak(
     )
 
 
+@dataclass(frozen=True)
+class BetaPromotionReadiness:
+    slug: str
+    ready: bool
+    harness_soak_passed: bool
+    manifest_beta: bool
+    reason: str = ""
+
+
+def evaluate_beta_promotion_readiness(
+    slug: str,
+    *,
+    factory: object,
+    config: SoakConfig | None = None,
+) -> BetaPromotionReadiness:
+    """
+    Harness-side beta→stable promotion gate (M-RAG.64).
+
+    ``ready`` is True when the slug is a beta candidate, manifest status is beta,
+    and ``run_beta_adapter_soak`` passes. Ops still performs live soak before
+    manifest promotion in Integration catalog.
+    """
+    if slug not in BETA_PROMOTION_CANDIDATE_SLUGS:
+        return BetaPromotionReadiness(
+            slug=slug,
+            ready=False,
+            harness_soak_passed=False,
+            manifest_beta=False,
+            reason="not_beta_candidate",
+        )
+
+    status = manifest_status_for_slug(slug)
+    if status != IntegrationStatus.BETA:
+        return BetaPromotionReadiness(
+            slug=slug,
+            ready=False,
+            harness_soak_passed=False,
+            manifest_beta=False,
+            reason=f"manifest_not_beta:{status.value}",
+        )
+
+    soak = run_beta_adapter_soak(factory, slug=slug, config=config)
+    if not soak.passed:
+        return BetaPromotionReadiness(
+            slug=slug,
+            ready=False,
+            harness_soak_passed=False,
+            manifest_beta=True,
+            reason=f"harness_soak_failed:{soak.reason}",
+        )
+
+    return BetaPromotionReadiness(
+        slug=slug,
+        ready=True,
+        harness_soak_passed=True,
+        manifest_beta=True,
+        reason="harness_ready_pending_ops_live_soak",
+    )
+
+
 def unique_soak_collection(prefix: str) -> str:
     return f"{prefix}_{uuid.uuid4().hex}"
 

@@ -266,7 +266,7 @@ Requires new Integration catalog slugs first (H-INT in INTEGRATIONS plan).
 ## Phase M-RAG-DEPTH — Production hardening (post audit 2026-06-10)
 
 **Source:** Full engine depth audit · canon [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth audit register  
-**Status:** **Planned** — runs in parallel with §6.1 gate maintenance ([`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md))  
+**Status:** **Done** (2026-06-10) — runs in parallel with §6.1 gate maintenance ([`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md))  
 **Policy:** See [Step-by-step rollout](#step-by-step-rollout--phase-m-rag-depth) waves 1–3
 
 | # | ID | Deliverable | Priority | Status | GAP-RAG | Acceptance |
@@ -353,16 +353,16 @@ Ordered queue for RAG domain work. **Active:** M-RAG-GRAPH (15 items). **Closed:
 | 3 | **M-RAG.40** | G1 | **P1** | Graph delete/purge lifecycle sync with vector index | 26 | **Done** |
 | 4 | **M-RAG.41** | G1 | **P1** | Graph tenant isolation contract + gate tests | 27 | **Done** |
 | 5 | **M-RAG.42** | G2 | **P1** | `GraphRagRetriever` hardening; promote stable | 28 | **Done** |
-| 6 | **M-RAG.43** | G2 | **P2** | Hybrid retrieval graph channel fusion (vector+graph) | 29 | **Partial** |
-| 7 | **M-RAG.44** | G2 | **P2** | Graph provenance on `RetrievalTrace` (summary fields) | 30 | **Partial** |
+| 6 | **M-RAG.43** | G2 | **P2** | Hybrid retrieval graph channel fusion (vector+graph) | 29 | **Done** |
+| 7 | **M-RAG.44** | G2 | **P2** | Graph provenance on `RetrievalTrace` (summary fields) | 30 | **Done** |
 | 8 | **M-RAG.48** | G2 | **P2** | Approved prod graph_store slug list (neo4j + soaked Bolt backends) | 35 | **Done** |
 | 9 | **M-RAG.52** | G2 | **P2** | Extended golden harness graph scenarios | 36 | **Done** |
 | 10 | **M-RAG.45** | G3 | **P2** | `rag.schedule_graph_maintenance_job` workflow contract | 31 | **Done** |
 | 11 | **M-RAG.46** | G3 | **P2** | `GraphIndexer` plugin registry + author guide | 32 | **Done** |
 | 12 | **M-RAG.47** | G3 | **P2** | Optional `community_report` indexer mode (harness-native) | 34 | **Done** |
-| 13 | **M-RAG.49** | G4 | **P3** | Neptune integration + RAG adapter (H-INT dependency) | 33 | **Planned** |
-| 14 | **M-RAG.50** | G4 | **P3** | OrientDB integration + RAG adapter (H-INT dependency) | 33 | **Planned** |
-| 15 | **M-RAG.51** | G4 | **P3** | ArangoDB integration + RAG adapter (H-INT dependency) | 33 | **Planned** |
+| 13 | **M-RAG.49** | G4 | **P3** | Neptune integration + RAG adapter (H-INT dependency) | 33 | **Done** |
+| 14 | **M-RAG.50** | G4 | **P3** | OrientDB integration + RAG adapter (H-INT dependency) | 33 | **Done** |
+| 15 | **M-RAG.51** | G4 | **P3** | ArangoDB integration + RAG adapter (H-INT dependency) | 33 | **Done** |
 
 ### Active — Phase M-RAG-GRAPH G5 — GraphRAG usage hardening (2026-06-13)
 
@@ -517,3 +517,29 @@ Iteration II on **Frozen** layer — sync stale architecture sections and close 
 | C3 | **M-RAG.61** | P3 | Align `STABLE_PROD_SLO_SLUGS` with stable manifests (`lancedb`, `typesense`) | **Done** |
 
 **DoD:** architecture §Production readiness / §Maturity / §GraphRAG / §Audit evidence aligned with code; tool diagnostics expose graph trace fields; stable soak tuple matches integration manifests.
+
+---
+
+## Phase M-RAG-ITERATION-III — Layer Completion (2026-06-17)
+
+**Source:** Operator accepted strategic proposals A–H and L from Layer Completion audit (2026-06-17). Proposals I/J/K remain **Rejected** (Tier-0 stream ingest, ColBERT, AHI auto-selection).
+
+| Sprint | ID | Priority | Deliverable | Status |
+|--------|-----|----------|-------------|--------|
+| S1 | **M-RAG.59b** | P2 | Documentation Convergence III + audit prompt regen | **Done** |
+| S2 | **M-RAG.62** | P1 | Tenant isolation contract — `chroma`, `lancedb`, `typesense` | **Done** |
+| S3 | **M-RAG.63** | P1 | `validate_rag_profile_wiring` / `assert_rag_profile_wiring` at bootstrap | **Done** |
+| S4 | **M-RAG.67** | P2 | Reference async ingest shard planner (`reference_workflows/rag_async_ingest.py`) | **Done** |
+| S5 | **M-RAG.68a** | P3 | Evaluation metrics — `precision@k`, `ndcg@k` | **Done** |
+| S6 | **M-RAG.64** | P2 | `evaluate_beta_promotion_readiness()` harness gate | **Done** |
+| S7 | **M-RAG.66** | P3 | `register_chunking_strategy_plugin()` registry | **Done** |
+| S8 | **M-RAG.65** | P2 | `CollectionAccessPolicy` on `VectorstoreManager` | **Done** |
+| S9 | **M-RAG.68** | P3 | Legacy `rag_answers` removal timeline (2026-12-31) | **Done** |
+
+**Layer status:** RAG domain **Architecturally Mature** (2026-06-17) — zero open P0/P1 harness defects; ops beta→stable manifest promotion and AHI adaptive routing remain backlog.
+
+**Verification:**
+
+```bash
+uv run pytest tests/unit/rag/ tests/unit/tools/providers/rag/ tests/unit/applications/test_rag_async_ingest_reference.py -m gate -q
+```
