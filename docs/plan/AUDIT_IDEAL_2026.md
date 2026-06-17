@@ -48,7 +48,7 @@ One **AUDIT-IDEAL-\*** ID per PR → update this register + affected domain plan
 | AUDIT-IDEAL-6.2 | LLM adapters | 6 | Live cost/latency/quality model routing (AHI integration prod path) | P2 | `LLM_ADAPTERS` · `ADAPTIVE_HARNESS_INTELLIGENCE` | **Partial** — M-LLM-X.5 |
 | AUDIT-IDEAL-6.3 | LLM adapters | 6 | Central `ModelCatalog` + unified context window resolution | P0 | `LLM_ADAPTERS` | **Planned** — M-LLM-X.1 |
 | AUDIT-IDEAL-6.4 | LLM adapters | 6 | Tokenizer-consistent context preflight (adapter path) | P0 | `LLM_ADAPTERS` · `CONTEXT_ENGINEERING` | **Planned** — M-LLM-X.3 |
-| AUDIT-IDEAL-6.5 | LLM adapters | 6 | Profile failover chain on retriable provider errors | P1 | `LLM_ADAPTERS` · `RELIABILITY_FAILURE_AND_HITL` | **Planned** — M-LLM-X.4 |
+| AUDIT-IDEAL-6.5 | LLM adapters | 6 | Profile failover chain on retriable provider errors | P1 | `LLM_ADAPTERS` · `RELIABILITY_FAILURE_AND_HITL` | **Done** — M-LLM-X.4.1–4.4 |
 | AUDIT-IDEAL-6.6 | LLM adapters | 6 | ACP `StepLLMRouter` backed by `LLMAdapter` (single DX) | P1 | `LLM_ADAPTERS` · `NEXUS_EXECUTION_FLOW` | **Planned** — M-LLM-X.5 |
 | AUDIT-IDEAL-6.7 | LLM adapters | 6 | Developer `USAGE.md` + startup validation | P2 | `LLM_ADAPTERS` · `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | **Partial** — [USAGE.md](../../intergrax/llm_adapters/USAGE.md) Done; M-LLM-X.7.2 |
 | AUDIT-IDEAL-7.1 | Cognition | 7 | Ship `ReasoningProfile` contract + environment wire | P1 | `REASONING_AND_COGNITION` | **Done** |

@@ -9,9 +9,9 @@
   "results_dir": "docs/guides/audit/results/2026-06-17",
   "started_at": "2026-06-17",
   "last_updated": "2026-06-17",
-  "completed_at": null,
-  "current_domain": "TOOLS",
-  "notes": "Mode B started: domains 1-6 no open P0/P1; LLM_ADAPTERS M-LLM-X.4.4 implemented.",
+  "completed_at": "2026-06-17",
+  "current_domain": null,
+  "notes": "Mode B complete: 7 skipped (no P0/P1), LLM_ADAPTERS M-LLM-X.4.4, REL AUDIT-IDEAL-6.5, CVL AUDIT-IDEAL-25.1, DX AUDIT-IDEAL-27.2; 14 skipped domains gate-maintenance only.",
   "domain_order": [
     "PLATFORM_FOUNDATION",
     "UNIFIED_EXECUTION_RUNTIME",
@@ -95,133 +95,155 @@
       "status": "completed",
       "verdict": "item_done",
       "p0_open": 0,
-      "p1_open": 1,
+      "p1_open": 0,
       "result_md": "docs/guides/audit/results/2026-06-17/LLM_ADAPTERS.md",
       "plan_updated": true,
       "item_id": "M-LLM-X.4.4",
       "journal": "docs/guides/implementation-journal/entries/2026-06-17/platform-llm-m-llm-x-4-4-routing-trace.md",
       "completed_at": "2026-06-17",
-      "notes": "M-LLM-X.4.4 Done; X-4 partial (4.5 backlog)"
+      "notes": "M-LLM-X.4.4 Done; X-4 partial (4.5 backlog Medium)"
     },
     "TOOLS": {
-      "status": "pending",
-      "verdict": null,
+      "status": "skipped",
+      "verdict": "no_open_p0_p1",
       "p0_open": 0,
       "p1_open": 0,
       "result_md": "docs/guides/audit/results/2026-06-17/TOOLS.md",
-      "plan_updated": false
+      "plan_updated": false,
+      "notes": "TOOL-ENG closed; no open P0/P1"
     },
     "CODE_CRAFT": {
-      "status": "pending",
-      "verdict": null,
+      "status": "skipped",
+      "verdict": "no_open_p0_p1",
       "p0_open": 0,
       "p1_open": 0,
       "result_md": "docs/guides/audit/results/2026-06-17/CODE_CRAFT.md",
-      "plan_updated": false
+      "plan_updated": false,
+      "notes": "ECC-0..6 Done; depth backlog P2/P3 only"
     },
     "SKILLS": {
-      "status": "pending",
-      "verdict": null,
+      "status": "skipped",
+      "verdict": "no_open_p0_p1",
       "p0_open": 0,
       "p1_open": 0,
       "result_md": "docs/guides/audit/results/2026-06-17/SKILLS.md",
-      "plan_updated": false
+      "plan_updated": false,
+      "notes": "Layer completion closed; no open P0/P1"
     },
     "INTEGRATIONS": {
-      "status": "pending",
-      "verdict": null,
+      "status": "skipped",
+      "verdict": "no_open_p0_p1",
       "p0_open": 0,
       "p1_open": 0,
       "result_md": "docs/guides/audit/results/2026-06-17/INTEGRATIONS.md",
-      "plan_updated": false
+      "plan_updated": false,
+      "notes": "Layer completion closed; no open P0/P1"
     },
     "RAG": {
-      "status": "pending",
-      "verdict": null,
+      "status": "skipped",
+      "verdict": "no_open_p0_p1",
       "p0_open": 0,
       "p1_open": 0,
       "result_md": "docs/guides/audit/results/2026-06-17/RAG.md",
-      "plan_updated": false
+      "plan_updated": false,
+      "notes": "AUDIT-IDEAL-14.* Done; no open P0/P1"
     },
     "MEMORY": {
-      "status": "pending",
-      "verdict": null,
+      "status": "skipped",
+      "verdict": "no_open_p0_p1",
       "p0_open": 0,
       "p1_open": 0,
       "result_md": "docs/guides/audit/results/2026-06-17/MEMORY.md",
-      "plan_updated": false
+      "plan_updated": false,
+      "notes": "MEM-VEC + LC closed; no open P0/P1"
     },
     "CONTEXT_ENGINEERING": {
-      "status": "pending",
-      "verdict": null,
+      "status": "skipped",
+      "verdict": "no_open_p0_p1",
       "p0_open": 0,
       "p1_open": 0,
       "result_md": "docs/guides/audit/results/2026-06-17/CONTEXT_ENGINEERING.md",
-      "plan_updated": false
+      "plan_updated": false,
+      "notes": "CE register Done; no open P0/P1"
     },
     "MODALITY": {
-      "status": "pending",
-      "verdict": null,
+      "status": "skipped",
+      "verdict": "no_open_p0_p1",
       "p0_open": 0,
       "p1_open": 0,
       "result_md": "docs/guides/audit/results/2026-06-17/MODALITY.md",
-      "plan_updated": false
+      "plan_updated": false,
+      "notes": "Layer completion closed; no open P0/P1"
     },
     "OBSERVABILITY": {
-      "status": "pending",
-      "verdict": null,
+      "status": "skipped",
+      "verdict": "no_open_p0_p1",
       "p0_open": 0,
       "p1_open": 0,
       "result_md": "docs/guides/audit/results/2026-06-17/OBSERVABILITY.md",
-      "plan_updated": false
+      "plan_updated": false,
+      "notes": "OBS-EVOL closed; no open P0/P1"
     },
     "RELIABILITY_FAILURE_AND_HITL": {
-      "status": "pending",
-      "verdict": null,
+      "status": "completed",
+      "verdict": "item_done",
       "p0_open": 0,
       "p1_open": 0,
       "result_md": "docs/guides/audit/results/2026-06-17/RELIABILITY_FAILURE_AND_HITL.md",
-      "plan_updated": false
+      "plan_updated": true,
+      "item_id": "AUDIT-IDEAL-6.5",
+      "completed_at": "2026-06-17",
+      "notes": "Failover chain M-LLM-X.4.1-4.4 verified; plan synced"
     },
     "CRITIC_VERIFICATION": {
-      "status": "pending",
-      "verdict": null,
+      "status": "completed",
+      "verdict": "item_done",
       "p0_open": 0,
-      "p1_open": 0,
+      "p1_open": 1,
       "result_md": "docs/guides/audit/results/2026-06-17/CRITIC_VERIFICATION.md",
-      "plan_updated": false
+      "plan_updated": true,
+      "item_id": "AUDIT-IDEAL-25.1",
+      "completed_at": "2026-06-17",
+      "notes": "Shadow eval automation gate green; 25.3 remains P1 backlog"
     },
     "ADAPTIVE_HARNESS_INTELLIGENCE": {
-      "status": "pending",
-      "verdict": null,
+      "status": "skipped",
+      "verdict": "no_open_p0_p1",
       "p0_open": 0,
       "p1_open": 0,
       "result_md": "docs/guides/audit/results/2026-06-17/ADAPTIVE_HARNESS_INTELLIGENCE.md",
-      "plan_updated": false
+      "plan_updated": false,
+      "notes": "AHI-LC closed; no open P0/P1"
     },
     "ELASTIC_CAPACITY_AND_SCALING": {
-      "status": "pending",
-      "verdict": null,
+      "status": "skipped",
+      "verdict": "no_open_p0_p1",
       "p0_open": 0,
       "p1_open": 0,
       "result_md": "docs/guides/audit/results/2026-06-17/ELASTIC_CAPACITY_AND_SCALING.md",
-      "plan_updated": false
+      "plan_updated": false,
+      "notes": "ECP-LC closed; no open P0/P1"
     },
     "EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE": {
-      "status": "pending",
-      "verdict": null,
+      "status": "completed",
+      "verdict": "item_done",
       "p0_open": 0,
       "p1_open": 0,
       "result_md": "docs/guides/audit/results/2026-06-17/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md",
-      "plan_updated": false
+      "plan_updated": true,
+      "item_id": "AUDIT-IDEAL-27.2",
+      "journal": "docs/guides/implementation-journal/entries/2026-06-17/platform-dx-audit-ideal-27-2-replay-wiring.md",
+      "completed_at": "2026-06-17",
+      "notes": "replay_environment_wiring + gate on product_defaults"
     },
     "TIER3_APPLICATION_ENVIRONMENT": {
-      "status": "pending",
-      "verdict": null,
+      "status": "skipped",
+      "verdict": "no_open_p0_p1",
       "p0_open": 0,
       "p1_open": 0,
       "result_md": "docs/guides/audit/results/2026-06-17/TIER3_APPLICATION_ENVIRONMENT.md",
-      "plan_updated": false
+      "plan_updated": false,
+      "notes": "APP-EVOL-8.6 M3 Planned without P0/P1 priority"
     }
   }
 }

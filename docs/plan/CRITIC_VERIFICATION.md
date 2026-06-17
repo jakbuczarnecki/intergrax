@@ -18,7 +18,7 @@
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
-| AUDIT-IDEAL-25.1 | §25 Evaluation | Shadow eval path automation (DEBT-25-01) | P1 | Planned |
+| AUDIT-IDEAL-25.1 | §25 Evaluation | Shadow eval path automation (DEBT-25-01) | P1 | **Done** |
 | AUDIT-IDEAL-25.2 | §25 Evaluation | Human review sample queue (beyond CLI) | P2 | **Done** |
 | AUDIT-IDEAL-25.3 | §25 Evaluation | Context/RAG eval blocking product release CI | P1 | Planned |
 

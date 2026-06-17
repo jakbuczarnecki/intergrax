@@ -81,6 +81,7 @@ def main() -> int:
         ("check_plan_scorecard_sync.py", ()),
         ("check_multi_agent_contention_simulation.py", ()),
         ("check_trace_explorer_wiring.py", ()),
+        ("check_replay_environment_wiring.py", ()),
         ("check_quarterly_strategy_review.py", ()),
         ("check_architecture_health_metrics.py", ()),
         ("check_production_capacity_adapters.py", ()),

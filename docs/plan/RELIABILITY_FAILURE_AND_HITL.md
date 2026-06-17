@@ -20,7 +20,7 @@
 |----|---------|-----|----------|--------|
 | AUDIT-IDEAL-22.1 | §22 Reliability | Compensation flows on product side-effect paths | P1 | **Done** |
 | AUDIT-IDEAL-22.2 | §22 Reliability | Partial results contract on all reference hosts | P2 | **Done** |
-| AUDIT-IDEAL-6.5 | §6 LLM (shared) | Profile failover chain on retriable provider errors | P1 | **Planned** — [M-LLM-X.4](plan/LLM_ADAPTERS.md) |
+| AUDIT-IDEAL-6.5 | §6 LLM (shared) | Profile failover chain on retriable provider errors | P1 | **Done** — [M-LLM-X.4.1–4.4](plan/LLM_ADAPTERS.md) |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 

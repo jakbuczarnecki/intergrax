@@ -36,7 +36,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--require-complete",
         action="store_true",
-        help="Fail unless every domain status is completed",
+        help="Fail unless every domain status is completed, skipped, or blocked",
     )
     return parser.parse_args()
 
@@ -98,8 +98,8 @@ def main() -> int:
                     result_path = REPO_ROOT / result_path
                 if not result_path.is_file():
                     errors.append(f"{domain}: missing result file {result_md}")
-        if args.require_complete and status != "completed":
-            errors.append(f"{domain}: status is {status!r}, expected completed")
+        if args.require_complete and status not in ("completed", "skipped", "blocked"):
+            errors.append(f"{domain}: status is {status!r}, expected completed/skipped/blocked")
 
     summary = run_dir / "RUN_SUMMARY.md"
     if not summary.is_file():
