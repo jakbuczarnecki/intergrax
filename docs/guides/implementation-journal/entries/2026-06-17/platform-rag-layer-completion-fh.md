@@ -12,7 +12,7 @@ plan_ref:
   - RAG-LC-S4
   - Full-Harness-LC-RAG
 status: completed
-commit: pending
+commit: 764f0b59
 adr: none — formal closeout; M-RAG-ITERATION-III delivered 2026-06-17
 ---
 

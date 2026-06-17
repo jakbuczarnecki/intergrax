@@ -11,7 +11,7 @@ plan_ref:
   - INTEGRATIONS-LC-S4
   - Full-Harness-LC-INTEGRATIONS
 status: completed
-commit: pending
+commit: 41b7d1ad
 adr: none — formal closeout; M.6 P5/P6 + M.7 P7 + M.12 delivered 2026-06-02–2026-06-08
 ---
 
