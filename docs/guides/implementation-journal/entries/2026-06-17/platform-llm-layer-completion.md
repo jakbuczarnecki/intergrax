@@ -11,7 +11,7 @@ plan_ref:
   - LLM-LC-S4
   - Full-Harness-LC-LLM
 status: completed
-commit: pending
+commit: 4a51cff1
 adr: none — formal closeout; LC-1–LC-3 delivered 2026-06-14
 ---
 
@@ -39,6 +39,12 @@ LLM adapter layer formally closed for Full Harness LC — typed envelope, ModelC
 | Architecture | `docs/architecture/LLM_ADAPTERS.md` Purpose and maturity |
 | Plan | `docs/plan/LLM_ADAPTERS.md` Phase LLM-LC |
 | Prior LC | `entries/2026-06-14/platform-llm-layer-completion-lc2b-lc3.md` |
+
+## Changed artifacts
+
+- `docs/guides/audit/LLM_ADAPTERS.md` — known gaps sync
+- `docs/architecture/LLM_ADAPTERS.md` — Full Harness LC maturity note
+- `docs/plan/LLM_ADAPTERS.md` — Phase LLM-LC register, AUDIT-IDEAL header
 
 ## Verification
 
