@@ -18,6 +18,7 @@ from intergrax.rag.graph.contracts.graph_store import GraphStore
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_manager
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.profiles.rag_profile import RagProfile, rag_profile_from_env
+from intergrax.rag.profiles.rag_profile_validator import assert_rag_profile_wiring
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
 from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_manager
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
@@ -54,6 +55,17 @@ def create_default_rag_stack(
     graph_store: Optional[GraphStore] = None,
 ) -> RagStack:
     profile = profile or rag_profile_from_env()
+    graph_slug: Optional[str] = None
+    if integration_profile is not None:
+        graph_slug = integration_profile.slug_for_category(IntegrationCategory.GRAPH_STORE)
+
+    assert_rag_profile_wiring(
+        profile,
+        integration_profile=integration_profile,
+        llm_available=llm_for_contextual is not None,
+        graph_store_slug=graph_slug,
+    )
+
     if vectorstore_manager is None:
         vectorstore_manager = create_vectorstore_manager(profile=integration_profile)
     if embedding_manager is None:

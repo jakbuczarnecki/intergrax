@@ -17,9 +17,13 @@ from intergrax.tools.providers.memory.contracts import (
     MemorySearchInput,
     MemorySearchMatch,
     MemorySearchOutput,
+    MemorySemanticHit,
+    MemorySemanticSearchInput,
+    MemorySemanticSearchOutput,
     MemoryWriteInput,
     MemoryWriteOutput,
 )
+from intergrax.tools.providers.ltm.service import _require_user_profile_manager
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 MEMORY_READ_TOOL_ID = "memory.read"
@@ -27,6 +31,7 @@ MEMORY_WRITE_TOOL_ID = "memory.write"
 MEMORY_LIST_KEYS_TOOL_ID = "memory.list_keys"
 MEMORY_DELETE_KEY_TOOL_ID = "memory.delete_key"
 MEMORY_SEARCH_TOOL_ID = "memory.search"
+MEMORY_SEMANTIC_SEARCH_TOOL_ID = "memory.semantic_search"
 
 
 def _require_memory_view(ctx: ToolWiringContext) -> TaskMemoryViewBinding:
@@ -143,4 +148,79 @@ def memory_delete_key(ctx: ToolWiringContext, params: MemoryDeleteKeyInput) -> M
         namespace=params.namespace.strip(),
         key=params.key.strip(),
         deleted=bool(deleted),
+    )
+
+
+def _session_manager_from_context(ctx: ToolWiringContext):
+    manager = ctx.extras.get("session_manager")
+    if manager is None:
+        raise RuntimeError("session_manager_not_configured")
+    return manager
+
+
+def memory_semantic_search(
+    ctx: ToolWiringContext,
+    params: MemorySemanticSearchInput,
+) -> MemorySemanticSearchOutput:
+    """Unified semantic search across LTM vector index and episodic session index."""
+    query = params.query.strip()
+    user_id = params.user_id.strip()
+    if not query:
+        return MemorySemanticSearchOutput(used=False, reason="empty_query")
+
+    hits: list[MemorySemanticHit] = []
+
+    if params.include_ltm:
+        manager = _require_user_profile_manager(ctx)
+        if manager.is_longterm_rag_enabled():
+            result = run_async(
+                manager.search_longterm_memory(
+                    user_id,
+                    query,
+                    top_k=params.top_k,
+                )
+            )
+            scores = result.get("scores") or []
+            for index, entry in enumerate(result.get("hits") or []):
+                kind = entry.kind.value if hasattr(entry.kind, "value") else str(entry.kind)
+                hits.append(
+                    MemorySemanticHit(
+                        source="ltm",
+                        entry_id=entry.entry_id,
+                        content=entry.content,
+                        kind=kind,
+                        score=float(scores[index]) if index < len(scores) else 0.0,
+                    )
+                )
+
+    if params.include_episodic and params.session_id.strip():
+        session_manager = _session_manager_from_context(ctx)
+        episodic = run_async(
+            session_manager.search_session_semantic_recall(
+                tenant_id=params.tenant_id.strip() or "default",
+                session_id=params.session_id.strip(),
+                user_id=user_id,
+                query=query,
+                top_k=params.top_k,
+                include_cross_session=params.include_cross_session_episodic,
+            )
+        )
+        for row in episodic:
+            hits.append(
+                MemorySemanticHit(
+                    source="episodic",
+                    entry_id=str(row.get("message_id") or ""),
+                    content=str(row.get("text") or ""),
+                    score=float(row.get("score") or 0.0),
+                    session_id=str(row.get("session_id") or ""),
+                    role=str(row.get("role") or ""),
+                )
+            )
+
+    hits.sort(key=lambda item: item.score, reverse=True)
+    trimmed = hits[: params.top_k]
+    return MemorySemanticSearchOutput(
+        used=bool(trimmed),
+        hits=trimmed,
+        reason="hits" if trimmed else "no_hits",
     )

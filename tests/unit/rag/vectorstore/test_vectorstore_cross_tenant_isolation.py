@@ -10,9 +10,12 @@ from typing import Any, Dict, List, Sequence
 import pytest
 from langchain_core.documents import Document
 
+from intergrax.integrations.providers.vector_store.chroma.rag_store import ChromaConfig, ChromaVectorStore
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
+from intergrax.integrations.providers.vector_store.lancedb.bundle import create_lancedb_vector_store
 from intergrax.integrations.providers.vector_store.pgvector.rag_store import PgVectorRagStore
 from intergrax.integrations.providers.vector_store.qdrant.rag_store import QdrantConfig, QdrantVectorStore
+from intergrax.integrations.providers.vector_store.typesense.bundle import create_typesense_vector_store
 from intergrax.integrations.providers.vector_store.weaviate.rag_store import (
     WeaviateConfig,
     WeaviateVectorStore,
@@ -124,11 +127,30 @@ def _factory_qdrant(tenant_id: str, collection_name: str) -> VectorStore:
     return store
 
 
+def _factory_chroma(tenant_id: str, collection_name: str) -> VectorStore:
+    return ChromaVectorStore(
+        ChromaConfig(collection_name=collection_name, tenant_id=tenant_id),
+    )
+
+
+def _factory_lancedb(tenant_id: str, collection_name: str) -> VectorStore:
+    del collection_name
+    return create_lancedb_vector_store(vector_store=InMemoryVectorStore(tenant_id=tenant_id))
+
+
+def _factory_typesense(tenant_id: str, collection_name: str) -> VectorStore:
+    del collection_name
+    return create_typesense_vector_store(vector_store=InMemoryVectorStore(tenant_id=tenant_id))
+
+
 _BACKENDS: dict[str, Any] = {
     "inmemory": _factory_inmemory,
     "pgvector": _factory_pgvector,
     "weaviate": _factory_weaviate,
     "qdrant": _factory_qdrant,
+    "chroma": _factory_chroma,
+    "lancedb": _factory_lancedb,
+    "typesense": _factory_typesense,
 }
 
 

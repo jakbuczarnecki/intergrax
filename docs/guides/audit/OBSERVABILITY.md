@@ -42,19 +42,19 @@ Perform a **rigorous, evidence-backed audit** of the **Observability Spine (HOS)
 
 ## Mission
 
-Audit the **Harness Observability Spine**: 54+ RuntimeEventType catalog, typed DiagnosticPayload, unified journal, causal trees, redaction, extension SDK, and operator reconstructability of every run.
+Audit the **Harness Observability Spine**: layered event catalog (spine + event_kind), typed DiagnosticPayload, unified journal, causal trees, and operator reconstructability.
 
 ## Key symbols and contracts
 
-RuntimeEvent · TraceEvent · DiagnosticPayload · TraceComponent · ObservabilityProfile · CoreLLMCallRecordedDiagV1 · ToolsSummaryDiagV1 · RagSummaryDiagV1 · ops filter hints
+RuntimeEvent · event_kind · EventCategory · EventCatalog · emit_domain_signal · DiagnosticPayload · TraceComponent · ops filter hints
 
 ## Active plan phases (verify status vs code reality)
 
-OBS-BUS 0–7 Done · ADR-OBS-001 · maintenance §6.1 only
+OBS-BUS 0–7 Done · OBS-EVOL-9 Done (9.9 deferred) · ADR-OBS-001 · ADR-OBS-003 · **Full Harness LC** (2026-06-17)
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-Residual RuntimeEventPayload evolution · product dashboards deferred §6.3a · external APM optional not mandatory
+OBS-EVOL-9.9 optional `runtime_event.v2` (post-publication) · product dashboards §6.3a
 
 ---
 
@@ -72,12 +72,10 @@ Residual RuntimeEventPayload evolution · product dashboards deferred §6.3a · 
 ## 2. Code and test paths (inspect — search repo, do not assume)
 
 ```text
-intergrax/runtime/events/runtime_event.py · event_bus.py · phase_coverage.py · unified_run_journal.py
+intergrax/runtime/events/runtime_event.py · event_catalog.py · signals.py · event_bus.py
 intergrax/runtime/nexus/tracing/ · ObservabilityEmitter · TraceScope
-intergrax/runtime/observability/payload_registry.py · persistence_conformance.py
-intergrax/runtime/observability/harness_slos.py
-LLM/RAG/modality metric plugins
-scripts/check_observability_gates.py
+intergrax/runtime/events/payload_registry.py · persistence_conformance.py
+scripts/check_observability_gates.py · check_event_catalog.py
 ```
 
 Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
@@ -89,20 +87,22 @@ Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this doma
 For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol` or `test_name`).
 
 1. Single spine — no per-agent private trace SQLite DBs.
-2. Every RuntimeEventType has ExecutionPhase + ops filter hint — CI catalog tests.
-3. DiagnosticPayload guard rejects raw dicts where typed schema required.
-4. parent_event_id via TraceScope — causal tree reconstructable.
-5. AGENT_SELECTED, STEP_FAILED, TOOL_*, POLICY_* emitted on hot paths.
-6. Journal export includes parser/RAG summaries where applicable.
-7. redact() before persist in production_mode.
-8. Extension SDK registers schema_id for custom payloads.
-9. correlation_id defaults to task_id consistently.
-10. persistence_conformance assert passes.
-11. Multi-agent graph callbacks emit typed graph_node.v1 payloads.
-12. Metrics layer third after events — not replacing journal.
-13. Debug APIs documented; PII never in prod journal content fields.
-14. check_harness_observability_wiring.py green for reference hosts.
-15. External OTLP export optional — canonical journal always populated.
+2. Spine event_type frozen ~50 at publication; domain extends via event_kind.
+3. Every spine RuntimeEventType has EventCatalog entry — phase + ops hint + payload.
+4. Tier-2/3 use emit_domain_signal — not new RuntimeEventType.
+5. DiagnosticPayload guard rejects raw dicts where typed schema required.
+6. parent_event_id via TraceScope — causal tree reconstructable.
+7. AGENT_SELECTED, STEP_FAILED, TOOL_*, POLICY_* emitted on hot paths.
+8. Journal export includes parser/RAG summaries where applicable.
+9. redact() before persist in production_mode.
+10. Extension SDK registers schema_id for custom payloads.
+11. correlation_id defaults to task_id consistently.
+12. persistence_conformance assert passes.
+13. Multi-agent graph callbacks emit typed graph_node.v1 payloads.
+14. Metrics layer third after events — not replacing journal.
+15. Debug APIs documented; PII never in prod journal content fields.
+16. check_harness_observability_wiring.py green for reference hosts.
+17. External OTLP export optional — canonical journal always populated.
 
 ---
 
@@ -157,7 +157,7 @@ State explicitly:
 
 ## 8. Anti-patterns (must not be present)
 
-- Per-agent trace DB · raw prompt/completion in prod journal · orphan event types without phase · metrics-only observability
+- Per-agent trace DB · raw prompt/completion in prod journal · Tier-2 adding RuntimeEventType · metrics-only observability
 
 ---
 
@@ -173,6 +173,7 @@ If architecture doc has a maturity table (e.g. RAG §Maturity score), reconcile 
 
 ```bash
 uv run python scripts/check_observability_gates.py
+uv run python scripts/check_event_catalog.py
 uv run pytest tests/unit/runtime/observability/ -q
 uv run pytest tests/unit/runtime/events/ -q
 ```

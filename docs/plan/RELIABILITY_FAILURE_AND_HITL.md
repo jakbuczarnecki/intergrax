@@ -6,6 +6,8 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates REL + REL-ADV closeout).
+
 ---
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
@@ -122,5 +124,23 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 | IDEAL-22.3–22.6 | Compensation, partial results, chaos, per-step retry | Planned (W2) |
 
 **Gate:** `tests/unit/runtime/architecture/test_ideal_harness_l3_depth_gate.py`
+
+---
+
+## Phase RELIABILITY-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — re-validates REL + REL-ADV + AUDIT-IDEAL-22.1/22.2; no open P0/P1  
+**Prerequisites:** Phase REL **Done** · REL-ADV **Done**  
+**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**ADR:** **No ADR needed**
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| REL-LC-S1 | **Re-audit** — REL/REL-ADV register + HITL verdict | **Done** | High | No P0/P1 |
+| REL-LC-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
+| REL-LC-S3 | **Gate verification** | **Done** | High | 23 tests · 3 CI scripts |
+| REL-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+
+**Deferred P2–P4:** IDEAL-22.3–22.6 chaos/per-step retry · ResiliencePolicy HTTP product parity · durable async queue opt-in · M-LLM-X.4 failover (LLM domain)
 
 ---

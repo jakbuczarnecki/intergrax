@@ -10,6 +10,7 @@ from typing import Any
 
 from intergrax.applications._shared.environment_conformance import (
     EnvironmentSkillToolConsistencyCheck,
+    ProfileInvariantValidator,
 )
 from intergrax.applications._shared.integration_health_wiring import probe_integration_profile_health
 from intergrax.applications._shared.context_wiring import bootstrap_application_context_catalog
@@ -139,6 +140,14 @@ def wire_application_environment(
         )
 
     memory_wiring = resolve_memory_platform_wiring(env, integration_profile=resolved_integration)
+    from intergrax.applications._shared.memory_wiring import build_session_manager_from_environment
+
+    session_manager = build_session_manager_from_environment(
+        env,
+        integration_profile=resolved_integration,
+        memory_wiring=memory_wiring,
+        rag_stack=rag_stack,
+    )
     user_profile_manager = build_user_profile_manager(
         memory_wiring.user_profile_store,
         env,
@@ -150,6 +159,14 @@ def wire_application_environment(
         wiring_context = replace(
             wiring_context,
             user_profile_manager=user_profile_manager,
+            extras={**wiring_context.extras, "session_manager": session_manager},
+        )
+    else:
+        from dataclasses import replace
+
+        wiring_context = replace(
+            wiring_context,
+            extras={**wiring_context.extras, "session_manager": session_manager},
         )
     wiring_context = wire_session_storage_tool_binding(wiring_context, memory_wiring.session_storage)
     wiring_context = wire_scheduled_notification_tool_binding(wiring_context)
@@ -225,6 +242,7 @@ def wire_application_environment(
             manifest.agents,
             env,
         )
+        ProfileInvariantValidator(fail_on_violation=False).validate(env)
         from intergrax.applications._shared.package_wiring import assert_manifest_package_closure
 
         assert_manifest_package_closure(

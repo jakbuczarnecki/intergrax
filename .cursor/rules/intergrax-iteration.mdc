@@ -25,6 +25,8 @@ docs/intergrax_runtime_architecture.md     ← sole file in docs/ root (hub)
 docs/architecture/<DOMAIN>.md              ← what the layer is
 docs/plan/<DOMAIN>.md                      ← how to implement / status / tasks
 docs/guides/                               ← strategy, ideal model, audit, authoring
+docs/guides/SYSTEM_INVARIANTS.md           ← cross-domain “never violate” index (P2-ARCH-01)
+docs/guides/LAYER_COMPLETION_MODE.md       ← deep domain layer closeout workflow
 ```
 
 **22 domain pairs** (same basename in `architecture/` and `plan/`):
@@ -33,8 +35,9 @@ docs/guides/                               ← strategy, ideal model, audit, aut
 
 **Per-iteration reading rule:** when working on a harness layer, read **only**:
 1. `docs/intergrax_runtime_architecture.md` (hub / pair picker)
-2. `docs/architecture/<DOMAIN>.md` + `docs/plan/<DOMAIN>.md` for the **selected domain**
-3. `docs/guides/*` only when strategy, audit, or authoring context is needed
+2. `docs/guides/SYSTEM_INVARIANTS.md` (skim — cross-domain rules you must not break)
+3. `docs/architecture/<DOMAIN>.md` + `docs/plan/<DOMAIN>.md` for the **selected domain**
+4. `docs/guides/*` only when strategy, audit, or authoring context is needed
 
 Do **not** load unrelated domain pairs. There is **no** monolithic implementation plan file.
 
@@ -43,11 +46,12 @@ Do **not** load unrelated domain pairs. There is **no** monolithic implementatio
 | Priority | Document | Role |
 |----------|----------|------|
 | 1 | `docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md` | Strategic goal, decision hierarchy, work cycle |
-| 2 | `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | Target Harness AI architecture |
-| 3 | `docs/intergrax_runtime_architecture.md` + `docs/architecture/<DOMAIN>.md` | Architecture hub + domain canon |
-| 4 | `docs/plan/<DOMAIN>.md` | Domain implementation plan (1:1 with architecture) |
-| 5 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | Harness layers, audit methodology |
-| 6 | `docs/architecture/NEXUS_EXECUTION_FLOW.md` + `docs/plan/NEXUS_EXECUTION_FLOW.md` | Execution flow narrative + tasks |
+| 2 | `docs/guides/SYSTEM_INVARIANTS.md` | Cross-domain “never violate” index — skim every iteration (P2-ARCH-01) |
+| 3 | `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | Target Harness AI architecture |
+| 4 | `docs/intergrax_runtime_architecture.md` + `docs/architecture/<DOMAIN>.md` | Architecture hub + domain canon |
+| 5 | `docs/plan/<DOMAIN>.md` | Domain implementation plan (1:1 with architecture) |
+| 6 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | Harness layers, audit methodology |
+| 7 | `docs/architecture/NEXUS_EXECUTION_FLOW.md` + `docs/plan/NEXUS_EXECUTION_FLOW.md` | Execution flow narrative + tasks |
 
 ## Domain selection — task → pair (read only this pair)
 

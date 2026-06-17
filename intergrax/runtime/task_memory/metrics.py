@@ -13,6 +13,7 @@ class MemoryPlatformMetrics:
     memory_writes: int = 0
     retention_violations: int = 0
     ltm_hits: int = 0
+    episodic_hits: int = 0
     hook_blocks: int = 0
 
     def record_read(self) -> None:
@@ -27,6 +28,9 @@ class MemoryPlatformMetrics:
     def record_ltm_hit(self) -> None:
         self.ltm_hits += 1
 
+    def record_episodic_hit(self) -> None:
+        self.episodic_hits += 1
+
     def record_hook_block(self) -> None:
         self.hook_blocks += 1
 
@@ -36,6 +40,7 @@ class MemoryPlatformMetrics:
             f"intergrax_memory_writes_total {self.memory_writes}",
             f"intergrax_memory_retention_violations_total {self.retention_violations}",
             f"intergrax_memory_ltm_hits_total {self.ltm_hits}",
+            f"intergrax_memory_episodic_hits_total {self.episodic_hits}",
             f"intergrax_memory_hook_blocks_total {self.hook_blocks}",
         ]
 

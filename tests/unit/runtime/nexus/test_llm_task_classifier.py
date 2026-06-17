@@ -71,3 +71,4 @@ def test_llm_classifier_falls_back_to_rules_on_parse_failure() -> None:
     classified = classifier.classify(task)
     assert classified.context.capability == _PIPELINE
     assert classified.runtime.classification.classifier_source == "rules"
+    assert classified.metadata.get("reasoning_failure_kind") == "classifier_fallback"

@@ -195,10 +195,11 @@ Lab reference agents implement `HarnessReferenceAgent` + `UAEPAgent`; manifest b
 
 ## Harness control plane (authoring)
 
-Governance, policy, and observability are **composable control-plane layers** — configured via `ApplicationEnvironmentProfile`, `RuntimePolicyBundle`, hooks, and plugin entry points; enforced by Nexus on every run.
+Governance, policy, and observability are **composable control-plane layers** — configured via `ApplicationEnvironmentProfile` (§22.1 flat today · §22.6 nested bundles target — [ADR-APP-003](adr/entries/2026-06-17/ADR-APP-003.md)), `RuntimePolicyBundle`, hooks, and plugin entry points; enforced by Nexus on every run.
 
 | Need | Where |
 |------|--------|
+| Profile bundle model (P1-ARCH-01) | [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](architecture/TIER3_APPLICATION_ENVIRONMENT.md) §22.6 · plan `APP-EVOL-8` |
 | Full control-plane map (profiles, bundles, hooks, EP groups) | [`guides/AGENT_CREATION_GUIDE.md` Appendix H](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
 | Operator policy read order | Architecture [§42.11.5](architecture/UNIFIED_EXECUTION_RUNTIME.md#42115-how-to-read-policy-for-a-run-operator) |
 | Policy rule handler plugins (`intergrax.policy_rules`) | [`guides/EXTENSION_AUTHOR_GUIDE.md` §10](guides/EXTENSION_AUTHOR_GUIDE.md#10-policy-rule-handler-plugins-phase-dx-58) |

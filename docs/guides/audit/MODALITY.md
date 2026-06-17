@@ -50,11 +50,11 @@ ModalityProfile · VisionInferenceAdapter · ModelInferenceAdapter · VisionMode
 
 ## Active plan phases (verify status vs code reality)
 
-W-ML harness Done · W-ML remote Triton/HF incremental · Phase W-ML registry extensions
+W-ML harness Done · AUDIT-IDEAL-29.1/29.2 Done · **Full Harness LC** (2026-06-17)
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-model_inference/ partial · remote serving incremental · Plane A vs C boundary discipline · online training out of scope
+OpenCV test env (`cv2.imread`) · online training out of scope · Plane A/C boundary ops docs
 
 ---
 

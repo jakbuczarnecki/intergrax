@@ -81,6 +81,8 @@ def make_journal_export_runtime_plugin(
                     "run_id": run_id,
                     "task_id": event.task_id,
                     "tenant_id": tenant,
+                    "traceparent": event.traceparent,
+                    "tracestate": event.tracestate,
                     "journal_export": snapshot.to_dict(),
                     "journal_otlp": otlp,
                     "journal_ref": event.payload.get("journal_ref"),

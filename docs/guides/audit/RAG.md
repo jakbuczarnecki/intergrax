@@ -50,11 +50,11 @@ RagProfile · RagStack · RetrievalService · RetrievalRequest/RetrievalResult �
 
 ## Active plan phases (verify status vs code reality)
 
-M-RAG.1–M-RAG.22 Done · **M-RAG-DEPTH active** (M-RAG.23–M-RAG.37 ← GAP-RAG-01..23)
+M-RAG.1–M-RAG.68 Done · M-RAG-GRAPH Done · M-RAG-CONVERGE Done · M-RAG-ITERATION-III Done · **Full Harness LC** (2026-06-17)
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-GAP-RAG-01/17/23 query_expansion unwired (P0) · GAP-RAG-02/03 DualIndex not default ingest · GAP-RAG-04 poisoning Nexus-only not catalog rag.retrieve · GAP-RAG-05/06 no stream/async ingest · GAP-RAG-07 vector bridges beta · GAP-RAG-08/09 OTel/metrics opt-in · GAP-RAG-10–12 no fallback chain · GAP-RAG-18 GraphRAG beta · GAP-RAG-20 tenant isolation partial · GAP-RAG-21 no load/soak gate
+beta→stable manifest promotion · M-RAG.58 AHI adaptive routing (Frozen) · ops soak gates
 
 ---
 

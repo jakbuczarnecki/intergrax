@@ -133,6 +133,36 @@ class FakeLLMAdapter(LLMAdapter):
             )
 
 
+class MeteringFakeLLMAdapter(FakeLLMAdapter):
+    """Fake adapter with prompt-sized token metering (ACP-TOK smoke / host runs)."""
+
+    def generate_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
+    ) -> LLMAdapterResponse:
+        from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+
+        prompt = messages[-1].content if messages else ""
+        word_count = max(len(prompt.split()), 1)
+        call = self.usage.begin_call(run_id=run_id)
+        try:
+            return build_adapter_response(
+                content=self._fixed_text,
+                usage=LLMTokenUsage(input_tokens=word_count, output_tokens=word_count),
+            )
+        finally:
+            self.usage.end_call(
+                call,
+                input_tokens=word_count,
+                output_tokens=word_count,
+                success=True,
+            )
+
+
 class DummyExecutionGuard(ExecutionGuard):
     """
     Minimal execution guard for production-trace tests.

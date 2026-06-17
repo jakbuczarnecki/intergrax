@@ -10,8 +10,10 @@ import re
 from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.applications.contracts.intent_route import IntentRoute
+from intergrax.contracts.reasoning_failure import ReasoningFailureKind
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.runtime.nexus.planning.nexus_classifier_prompts import nexus_task_classifier_prompt
 from intergrax.runtime.nexus.rules_task_classifier import RulesTaskClassifier
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext
@@ -40,8 +42,10 @@ class LlmTaskClassifier:
         intent_routes: list[IntentRoute] | None = None,
         orchestration_trigger_capabilities: frozenset[str] | None = None,
         pipeline_capability_suffix: str = ".pipeline",
+        classifier_prompt_id: str = "nexus_task_classifier",
     ) -> None:
         self._llm_adapter = llm_adapter
+        self._classifier_prompt_id = classifier_prompt_id
         self._routes = list(intent_routes or [])
         self._rules = RulesTaskClassifier(
             registry,
@@ -55,20 +59,25 @@ class LlmTaskClassifier:
 
     def classify(self, task: Task) -> Task:
         existing = (task.context.capability or "").strip()
-        if existing:
-            return self._rules.classify(task)
-
-        inferred = self._infer_capability(task)
-        if inferred is not None:
-            capability, confidence, rationale = inferred
-            task.context = TaskContext(
-                capability=capability,
-                intent=task.context.intent,
-                metadata=dict(task.context.metadata),
-            )
-            task.runtime.classification.classifier_source = "llm"
-            task.runtime.classification.confidence = confidence
-            task.runtime.classification.rationale = rationale
+        inferred: tuple[str, float, str] | None = None
+        attempted_llm = False
+        if not existing:
+            inferred = self._infer_capability(task)
+            attempted_llm = bool((task.message or "").strip() and self._allowed_capabilities)
+            if inferred is not None:
+                capability, confidence, rationale = inferred
+                task.context = TaskContext(
+                    capability=capability,
+                    intent=task.context.intent,
+                    metadata=dict(task.context.metadata),
+                )
+                task.runtime.classification.classifier_source = "llm"
+                task.runtime.classification.confidence = confidence
+                task.runtime.classification.rationale = rationale
+            elif attempted_llm:
+                task.metadata["reasoning_failure_kind"] = (
+                    ReasoningFailureKind.CLASSIFIER_FALLBACK.value
+                )
 
         classified = self._rules.classify(task)
         if not existing and classified.context.capability:
@@ -80,6 +89,11 @@ class LlmTaskClassifier:
             if not cls.rationale:
                 cls.rationale = f"intent_route:{classified.context.capability}"
             classified.sync_metadata()
+        elif attempted_llm and inferred is None:
+            classified.metadata["reasoning_failure_kind"] = (
+                ReasoningFailureKind.CLASSIFIER_FALLBACK.value
+            )
+            classified.sync_metadata()
         return classified
 
     def _infer_capability(self, task: Task) -> tuple[str, float, str] | None:
@@ -89,12 +103,10 @@ class LlmTaskClassifier:
         if not message:
             return None
 
-        options = ", ".join(repr(cap) for cap in self._allowed_capabilities)
-        prompt = (
-            "You are a Nexus task router. Return JSON only with shape "
-            '{"capability":"...","confidence":0.0-1.0,"rationale":"..."} '
-            f"Choose exactly one capability from: {options}. "
-            f"User message: {message!r}"
+        prompt = nexus_task_classifier_prompt(
+            prompt_id=self._classifier_prompt_id,
+            capabilities=self._allowed_capabilities,
+            task_message=message,
         )
         response = self._llm_adapter.generate_messages(
             [ChatMessage(role="user", content=prompt)],

@@ -18,6 +18,7 @@ from intergrax.runtime.nexus.tracing.memory.user_longterm_memory_summary import 
     UserLongtermMemorySummaryDiagV1,
 )
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+from intergrax.runtime.task_memory.metrics import memory_platform_metrics
 
 
 def memory_profile_handle_snapshot(config: RuntimeConfig) -> dict[str, Any]:
@@ -94,6 +95,8 @@ async def run_longterm_memory_context(state: RuntimeState) -> None:
     state.user_longterm_memory_result = result
     used = bool(result.get("used_longterm") or result.get("debug", {}).get("used"))
     state.used_user_longterm_memory = used
+    if used:
+        memory_platform_metrics().record_ltm_hit()
     context_blocks_count = 0
     if used and state.context.user_longterm_memory_prompt_builder is not None:
         hits = result.get("hits") or []
@@ -150,4 +153,7 @@ async def run_session_semantic_recall_context(state: RuntimeState) -> None:
     )
     state.request.metadata["memory_profile"] = memory_profile_handle_snapshot(cfg)
     if hits:
+        memory_platform_metrics().record_episodic_hit()
         state.request.metadata["session_vector_hits"] = hits
+    elif cfg.enable_session_vector_index:
+        state.request.metadata["session_vector_recall_reason"] = "no_hits"

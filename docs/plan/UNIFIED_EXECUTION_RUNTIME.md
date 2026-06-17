@@ -18,7 +18,7 @@
 |----|---------|-----|----------|--------|
 | AUDIT-IDEAL-4.1 | §4 Identity | Cryptographic signing / audit-protect for critical actions | P2 | **Done** |
 | AUDIT-IDEAL-4.2 | §4 Identity | Hard tenant storage isolation (Postgres multi-tenant RFC → ship) | P1 | **Done** |
-| AUDIT-IDEAL-5.1 | §5 Policy | Pre-output policy hooks on all LLM response paths | P1 | Planned |
+| AUDIT-IDEAL-5.1 | §5 Policy | Pre-output policy hooks on all LLM response paths | P1 | **Done** |
 | AUDIT-IDEAL-5.2 | §5 Policy | Compliance profile templates per regulated domain class | P2 | **Done** |
 | AUDIT-IDEAL-23.1 | §23 Security | Immutable multi-region security audit trail | P2 | **Done** |
 | AUDIT-IDEAL-23.2 | §23 Security | Retrieval poisoning + tool injection live on product hosts | P1 | **Done** |
@@ -680,6 +680,8 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 **DoD:** All OBS-BUS rows **Done**; `build_unified_run_journal` reproduces full Nexus+AgentEngine path without reading source; every `RuntimeEventType` in §42.1.2 has ≥1 production emitter; `parent_event_id` populated for tool/LLM/delegation; extension scaffold documented; gate green.
 
 **Explicitly excluded:** product-specific dashboards (§6.3a); replacing external APM as mandatory deployment.
+
+**Cross-plan — Event catalog evolution:** Layered identity (`event_kind`, `EventCatalog`) is tracked in [`plan/OBSERVABILITY.md`](OBSERVABILITY.md) **OBS-EVOL-9** · architecture §42.1.6 · ADR-OBS-003. UAEP §42.1 event tables remain spine reference until consolidation (OBS-EVOL-9.7).
 
 ---
 

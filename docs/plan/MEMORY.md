@@ -8,6 +8,8 @@
 
 **Cross-plan — Agent layer (ACP):** Per-agent `memory_view` and `memory_scope` (user vs org §30.9) resolve in `merge_environment` — [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 2** (`ACP-DX-2`). Agent session state (`AcpSessionState`) is separate from LTM namespaces; do not store secrets in `acp.state.v1` (architecture §25.2).
 
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates layer completion + MEM-VEC/MEM-DEPTH closeout).
+
 ---
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
@@ -32,7 +34,7 @@
 
 ## Phase MEM-VEC — Vector memory integration (Band 2aw)
 
-**Status:** **Active** (2026-06-14) — MEMV1/MEMV2 **Done**; MEMV3 (P2 plugin + skill runtime) backlog.  
+**Status:** **Done** (2026-06-17) — MEMV1/MEMV2 **Done**; MEMV3 plugin + skill runtime **Done**.  
 **Architecture:** [`architecture/MEMORY.md`](../architecture/MEMORY.md) §5.3, §6.4–6.5, §7.1.1, §11.5  
 **Cross-plan:** [`plan/CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) — `SESSION_HISTORY_SEMANTIC` fragment source (CE-VEC-1)  
 **ADR:** [`ADR-MEM-002`](../adr/entries/2026-06-14/ADR-MEM-002.md) — three-domain vector catalog (Accepted 2026-06-14)  
@@ -68,8 +70,8 @@ Work **MEM-VEC-1.*** before MEM-VEC-2.* — LTM wiring is a small diff that unbl
 | MEM-VEC-2.2 | **Write path** — `SessionTurnIndexService` on `append_message`; tombstone on delete; `enable_session_vector_index` on `MemoryProfile` | P1 | **Done** | `session_manager.py`, `memory_runtime_bridge.py` |
 | MEM-VEC-2.3 | **`SessionSemanticRecallStep`** — semantic search episodic index; inject in CE provider before history layer; trace diag | P1 | **Done** | `memory_context_invocation.py`, `tool_runtime.py`, `uaep.py` |
 | MEM-VEC-2.4 | **CE fragment source** — `SESSION_HISTORY_SEMANTIC` in `ContextCompiler` classification + degradation ladder | P1 | **Done** (CE-VEC-1) | `context/contracts.py`, `runtime_state_handle_bridge.py` |
-| MEM-VEC-3.1 | **`SessionTurnIndexStorePlugin`** EP + fixture package | P2 | Planned | `intergrax.memory_stores`, `tests/fixtures/plugin_packages/` |
-| MEM-VEC-3.2 | **`memory.semantic_search` skill runtime** — delegates to `ltm.search` + episodic recall (not prompt-only) | P2 | Planned | `skills/providers/memory/` |
+| MEM-VEC-3.1 | **`SessionTurnIndexStorePlugin`** EP + fixture package | P2 | **Done** | `intergrax.memory_stores`, `tests/fixtures/plugin_packages/session_turn_index_plugin/` |
+| MEM-VEC-3.2 | **`memory.semantic_search` skill runtime** — delegates to `ltm.search` + episodic recall (not prompt-only) | P2 | **Done** | `tools/providers/memory/`, `skills/providers/memory/` |
 
 ### MEM-VEC — Paydown log
 
@@ -78,6 +80,7 @@ Work **MEM-VEC-1.*** before MEM-VEC-2.* — LTM wiring is a small diff that unbl
 | 2026-06-12 | MEM-VEC-0.1 | Canon: three-domain vector catalog, wiring contract, episodic recall target state |
 | 2026-06-14 | MEM-VEC-0.2 | ADR-MEM-002: three-domain vector catalog accepted |
 | 2026-06-14 | MEM-VEC-1.1–1.4 | LTM vector wiring, fail-closed gate, integration test |
+| 2026-06-17 | MEM-VEC-3.1–3.2 | SessionTurnIndexStorePlugin EP + memory.semantic_search tool runtime |
 | 2026-06-14 | MEM-VEC-2.1–2.4 | Episodic index write/recall + CE handle population |
 
 **Explicitly out of NOW:** merging `knowledge` + `ltm` + `episodic` into one collection; Mem0 SaaS replacement; Neo4j as default episodic backend.
@@ -599,5 +602,23 @@ Total: 26
 | 2026-06-06 | M-LLM-R.0.1 | Phase M-LLM-R register + §6.1v + §6.2ad + Appendix L + Band 2z |
 | 2026-06-06 | M-LLM-R.* | Typed `LLMAdapterResponse` envelope; providers + consumers migrated; gate **755** passed |
 | — | — | *(append row per merged PR)* |
+
+---
+
+## Phase MEMORY-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — re-validates 2026-06-17 layer completion + MEM-VEC/MEM-DEPTH; no open P0/P1  
+**Prerequisites:** MEM-VEC **Done** · MEM-DEPTH **Done** · MEM-OBS.1 **Done**  
+**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**ADR:** **No ADR needed**
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| MEMORY-LC-S1 | **Re-audit** — MEM register + tier-0/1 verdict | **Done** | High | No P0/P1 |
+| MEMORY-LC-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
+| MEMORY-LC-S3 | **Gate verification** | **Done** | High | 41 unit tests + integration · `check_entity_graph_memory_wiring` |
+| MEMORY-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+
+**Deferred P2–P4:** procedural memory depth · org memory maturity · LangMem/Zep parity on entity graph
 
 ---

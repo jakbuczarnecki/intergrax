@@ -1511,6 +1511,7 @@ Verify that applications are deployable environments, not agents.
 * No application manifest.
 * Deployment not self-contained.
 * Tier-3 wiring duplicated.
+* Flat `ApplicationEnvironmentProfile` namespace growth — mitigated by hierarchical bundles (§22.6 · APP-EVOL-8 · ADR-APP-003).
 
 ### Score
 

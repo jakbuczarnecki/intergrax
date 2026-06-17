@@ -175,6 +175,9 @@ class RuntimeConfig:
     # YamlPromptRegistry prompt id for catalog tool planner (ReasoningProfile bridge).
     tool_planner_prompt_id: str = "tools_agent_planner"
 
+    # Registry prompt id for agent-level engine step cognition (ReasoningProfile bridge).
+    engine_planner_prompt_id: str = "planner_default"
+
     # Planner schema narrowing before LLM tool selection (TOOL-ENG-5).
     tool_selection_mode: ToolSelectionMode = ToolSelectionMode.STATIC
     tool_selection_top_k: int = 20

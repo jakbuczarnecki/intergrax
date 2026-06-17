@@ -10,6 +10,7 @@ from typing import List, Dict, Any, Optional
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.utils.time_provider import SystemTimeProvider
+from intergrax.memory.user_profile_memory import UserProfileMemoryEntry
 
 
 @dataclass
@@ -131,3 +132,6 @@ class OrganizationProfile:
     # system_instructions, extra). Concrete stores may use this to decide
     # whether they need to perform an UPDATE at the profile level.
     modified: bool = False
+
+    # Organizational long-term memory entries (AUDIT-IDEAL-15.1 uplift).
+    memory_entries: List[UserProfileMemoryEntry] = field(default_factory=list)

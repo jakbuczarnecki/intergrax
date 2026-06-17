@@ -14,6 +14,10 @@ from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVec
 from intergrax.rag.vectorstore.contracts.vector_store import VectorStore
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 from intergrax.rag.vectorstore.contracts.vector_store import VectorStoreHit
+from intergrax.rag.vectorstore.governance.collection_access_policy import (
+    CollectionAccessPolicy,
+    enforce_collection_access,
+)
 from intergrax.logging import IntergraxLogging
 
 logger = IntergraxLogging.get_logger(__name__, component="rag")
@@ -27,9 +31,22 @@ class VectorstoreManager(BaseVectorstoreManager):
     It delegates all operations to the injected VectorStore instance.
     """
 
-    def __init__(self, store: VectorStore) -> None:
+    def __init__(
+        self,
+        store: VectorStore,
+        *,
+        access_policy: Optional[CollectionAccessPolicy] = None,
+        collection_name: Optional[str] = None,
+    ) -> None:
         self._store = store
+        self._access_policy = access_policy
+        self._collection_name = collection_name
 
+    def _workspace_from_metadata(self, metadata: Optional[Dict[str, Any]]) -> Optional[str]:
+        if not metadata:
+            return None
+        value = metadata.get("workspace_id")
+        return str(value) if value is not None else None
 
     def add_documents(
         self,
@@ -39,6 +56,12 @@ class VectorstoreManager(BaseVectorstoreManager):
         ids: Optional[Sequence[str]] = None,
         base_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
+        enforce_collection_access(
+            self._access_policy,
+            "write",
+            workspace_id=self._workspace_from_metadata(base_metadata),
+            collection_name=self._collection_name,
+        )
 
         docs = list(documents)
         if base_metadata:
@@ -84,7 +107,15 @@ class VectorstoreManager(BaseVectorstoreManager):
         metadata_filter: Optional[MetadataFilter] = None,
         include_embeddings: bool = False,
     ) -> Sequence[VectorStoreHit]:
-        
+        enforce_collection_access(
+            self._access_policy,
+            "read",
+            workspace_id=self._workspace_from_metadata(
+                metadata_filter.conditions if metadata_filter else None
+            ),
+            collection_name=self._collection_name,
+        )
+
         if isinstance(query_embedding, np.ndarray):
             query_embedding = query_embedding.tolist()
 

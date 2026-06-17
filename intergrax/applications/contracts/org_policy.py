@@ -9,7 +9,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from intergrax.applications.contracts.environment_profile import (
+from intergrax.applications.contracts.environment_profile.sub_profiles import (
     GuardrailProfile,
     PolicyRulesProfile,
 )

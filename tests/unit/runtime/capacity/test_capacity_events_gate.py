@@ -29,7 +29,8 @@ def test_capacity_signal_emits_dedicated_event_type() -> None:
     collector = CapacitySignalCollector(publish=_publish)
     collector.collect(backpressure_rate=1.0)
     assert events
-    assert events[0].event_type is RuntimeEventType.CAPACITY_SIGNAL_COLLECTED
+    assert events[0].event_type is RuntimeEventType.DOMAIN_SIGNAL
+    assert events[0].event_kind == "platform.capacity.capacity_signal_collected"
 
 
 def test_scale_evaluated_event_emitted() -> None:
@@ -60,7 +61,11 @@ def test_scale_evaluated_event_emitted() -> None:
             )
         ]
     )
-    assert any(event.event_type is RuntimeEventType.SCALE_EVALUATED for event in events)
+    assert any(
+        event.event_type is RuntimeEventType.DOMAIN_SIGNAL
+        and event.event_kind == "platform.capacity.scale_evaluated"
+        for event in events
+    )
 
 
 def test_capacity_action_gate_denies_scale_up() -> None:
@@ -93,5 +98,9 @@ def test_scale_failed_event_on_denied_action() -> None:
             delta=1,
         )
     )
-    assert any(event.event_type is RuntimeEventType.SCALE_FAILED for event in events)
+    assert any(
+        event.event_type is RuntimeEventType.DOMAIN_SIGNAL
+        and event.event_kind == "platform.capacity.scale_failed"
+        for event in events
+    )
     assert HookPoint.BEFORE_CAPACITY_ACTION.value == "before_capacity_action"

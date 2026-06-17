@@ -4,8 +4,10 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, List
 
+from intergrax.memory.memory_temporal import filter_active_memory_entries
+from intergrax.memory.user_profile_memory import MemoryKind, UserProfileMemoryEntry
 from intergrax.runtime.organization.organization_profile import OrganizationProfile
 from intergrax.runtime.organization.organization_profile_store import OrganizationProfileStore
 
@@ -115,6 +117,49 @@ class OrganizationProfileManager:
         # Lack of exception is interpreted as success.
         profile.modified = False
         return profile
+
+    async def add_memory_entry(
+        self,
+        organization_id: str,
+        entry: UserProfileMemoryEntry,
+    ) -> UserProfileMemoryEntry:
+        profile = await self._store.get_profile(organization_id)
+        if entry.kind == MemoryKind.OTHER:
+            entry.kind = MemoryKind.ORG_FACT
+        profile.memory_entries.append(entry)
+        profile.modified = True
+        await self._store.save_profile(profile)
+        profile.modified = False
+        return entry
+
+    async def list_memory_entries(
+        self,
+        organization_id: str,
+        *,
+        kind: MemoryKind | None = None,
+    ) -> List[UserProfileMemoryEntry]:
+        profile = await self._store.get_profile(organization_id)
+        entries = filter_active_memory_entries(list(profile.memory_entries))
+        if kind is None:
+            return entries
+        return [entry for entry in entries if entry.kind == kind]
+
+    async def search_memory_entries(
+        self,
+        organization_id: str,
+        query: str,
+        *,
+        top_k: int = 8,
+    ) -> List[UserProfileMemoryEntry]:
+        needle = (query or "").strip().lower()
+        if not needle:
+            return []
+        hits = [
+            entry
+            for entry in await self.list_memory_entries(organization_id)
+            if needle in (entry.content or "").lower()
+        ]
+        return hits[:top_k]
 
     # ---------------------------------------------------------------------
     # Internal helpers

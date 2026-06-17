@@ -42,6 +42,7 @@ def test_bootstrap_memory_stores_counts_explicit_plugins() -> None:
 
     assert result.user_profile_plugins == 1
     assert result.session_storage_plugins == 1
+    assert result.session_turn_index_plugins == 0
 
 
 def test_bootstrap_memory_stores_discovers_entry_points_when_enabled() -> None:
@@ -61,3 +62,4 @@ def test_bootstrap_memory_stores_sums_discovered_and_explicit_plugins() -> None:
 
     assert combined.user_profile_plugins == discovered.user_profile_plugins + 1
     assert combined.session_storage_plugins == discovered.session_storage_plugins + 1
+    assert combined.session_turn_index_plugins == discovered.session_turn_index_plugins

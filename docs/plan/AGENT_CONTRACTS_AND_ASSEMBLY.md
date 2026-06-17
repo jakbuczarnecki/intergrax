@@ -1026,3 +1026,21 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | V-EVAL.2 | Golden datasets + scenario libraries + regression suites | **Done** (typed asset bundle contracts) | High | Versioned benchmark assets |
 | V-EVAL.3 | Automated evaluators (rule-based + LLM judge) | **Done** | High | Evaluator outputs persisted |
 | V-EVAL.4 | Evaluation registry trend/comparison reports | **Done** | High | Report artifact required for major releases |
+
+---
+
+## Phase ACP-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — formal Full Harness LC closeout; no open P0/P1 in domain scope  
+**Prerequisites:** Phase ACP + ACP-CLOSE + ACP-FINISH + AUDIT-IDEAL **Done**  
+**Goal:** Reconcile audit prompt + ACP-INV-02 canon; confirm gates green; journal + progress tracker  
+**ADR:** **No ADR needed** — documentation and process closeout only
+
+| ID | Deliverable | Status | Priority | Module | Acceptance |
+|----|-------------|--------|----------|--------|------------|
+| ACP-LC-S1 | **Audit prompt sync** — AUDIT-IDEAL rows Done in known gaps | **Done** | High | `docs/guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` | No Planned drift |
+| ACP-LC-S2 | **ACP-INV-02 canon** — remove stale „until ACP-LEG” wording | **Done** | High | `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §21 | Matches ACP-CLOSE-LEG-5 |
+| ACP-LC-S3 | **Gate verification** — `check_agent_acp_close_ci.py` green | **Done** | High | `scripts/check_agent_acp_close_ci.py` | Fleet 17/17 · migration complete |
+| ACP-LC-S4 | **Full Harness LC journal** + `layer_completion_progress.json` | **Done** | High | implementation-journal | mature status |
+
+**Deferred P2 (not blocking LC):** `boundary_demo` ReflexAgent migration · COST-1 graph RunBudget cap · FAUDIT-REG.1

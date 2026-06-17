@@ -8,6 +8,10 @@
 
 **Cross-plan — Agent layer (ACP):** Dual observability planes (architecture §31) — `AgentRunTrace` on `AgentRunResult` (Plane B) and `ApplicationRunSummary` on Task completion (Plane A). Delivered in [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 3** (`ACP-OBS-1`, `ACP-OBS-2`) and **Wave 7** redaction (`ACP-PROD-8`). Trace spine changes MUST keep step records compatible with `AgentStepRecord` tool/RAG/LLM fields.
 
+**Cross-plan — Event catalog (OBS-EVOL-9 · P1-ARCH-02):** Layered spine + `event_kind` (architecture §4.4 · ADR-OBS-003). Developers extend via `emit_domain_signal`, not new `RuntimeEventType`. Pre-release spine consolidation before publication.
+
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates OBS-EVOL-9 closeout).
+
 ---
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
@@ -36,7 +40,7 @@
 |----|-------------|--------|
 | IDEAL-21.1 | `harness_slos.py` SLO catalog types | **Done** |
 | IDEAL-21.2 | Runbook index (HARNESS_ENVIRONMENT ORCH-5.5) | **Done** |
-| IDEAL-21.3–21.6 | Cost dashboard, emission audit, OTLP all hosts | Planned (W2) |
+| IDEAL-21.3–21.6 | Cost dashboard, emission audit, OTLP all hosts | **Done** (see [`IDEAL_HARNESS_L3.md`](IDEAL_HARNESS_L3.md) §21) |
 
 ---
 
@@ -209,5 +213,77 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 | EBE-7 | Webhook sink | Deferred | `sinks/webhook.py` | Phase 2 |
 | EBE-8 | HarnessKernel step-level events | Deferred | kernel hook | Phase 2 |
 | EBE-9 | Host-side event signing | Deferred | optional seal | Phase 2 |
+
+---
+
+## Phase OBS-EVOL-9 — Layered event catalog (P1-ARCH-02)
+
+**Status:** **Done** (2026-06-17) — M0–M3 register complete; OBS-EVOL-9.9 (`runtime_event.v2`) deferred (low priority, post-publication)  
+**Goal:** Scale HOS beyond flat `RuntimeEventType` growth — spine + `event_kind` + `EventCatalog` — **before external v1 publication** (no external migration).
+
+**ADR:** [`ADR-OBS-003`](../adr/entries/2026-06-17/ADR-OBS-003.md)  
+**Architecture:** [`architecture/OBSERVABILITY.md`](../architecture/OBSERVABILITY.md) §4.4 · UAEP [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](../architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.1.6
+
+### OBS-EVOL-9 — Strategic Architecture Review (accepted 2026-06-17)
+
+| SAR | Deliverable | Folded into |
+|-----|-------------|-------------|
+| SAR-01 | `EmitContext` protocol for emit APIs | OBS-EVOL-9.3 |
+| SAR-02 | `retention_class` on `EventCatalogEntry` | OBS-EVOL-9.1 |
+| SAR-03 | Declarative `kind_prefix` subscriptions on `ObservabilityProfile` | OBS-EVOL-9.10 |
+| SAR-04 | W3C `traceparent` / `tracestate` on `RuntimeEvent` | OBS-EVOL-9.11 |
+| SAR-05 | `sample_rate` metadata + bus enforcement | OBS-EVOL-9.1 metadata · OBS-EVOL-9.6 enforcement |
+| SAR-06 | Deprecation shim (old spine → `DOMAIN_SIGNAL`) | OBS-EVOL-9.7 |
+| SAR-07 | `JournalQuery` read-model filters | OBS-EVOL-9.5 |
+| SAR-08 | `LLMStreamEvent.event_kind` namespace lint | OBS-EVOL-9.6 |
+| SAR-09 | Mandatory redaction on `emit_domain_signal` | OBS-EVOL-9.3 |
+| SAR-10 | Elevate `EventKindRegistry` to P1 | OBS-EVOL-9.4 |
+| SAR-11/12 | Per-category buses / hierarchical enum | **Rejected** (ADR-OBS-003) |
+
+| ID | Phase | Deliverable | Status | Priority | Acceptance |
+|----|-------|-------------|--------|----------|------------|
+| OBS-EVOL-9-DOC | M0 | Architecture §4.4 + plan register + ADR-OBS-003 + author guides | **Done** | **Critical** | This register · ADR · `EXTENSION_AUTHOR_GUIDE.md` §11 · `APPLICATION_CREATION_GUIDE.md` §8 · `AGENT_CREATION_GUIDE.md` §Q.5 |
+| OBS-EVOL-9.1 | M1 | `EventCategory` + `EventCatalogEntry` + `event_catalog.py` (`retention_class`, `sample_rate`, `consolidation_kind`; deprecate `phase_coverage.py` as SSOT) | **Done** | **Critical** | `event_catalog.py` · `test_event_catalog.py` |
+| OBS-EVOL-9.2 | M1 | `event_kind` + `event_category` + `ops_hint` on `RuntimeEvent`; auto-fill from catalog | **Done** | **Critical** | `runtime_event.py` · `test_runtime_event_kind.py` |
+| OBS-EVOL-9.3 | M1 | `EmitContext` + `emit_domain_signal()` (redaction) + `emit_platform_event()` | **Done** | **Critical** | `signals.py` · `emit_context.py` · `test_domain_signals.py` |
+| OBS-EVOL-9.4 | M1 | `EventKindRegistry` for extension kinds (agents/apps namespaces) | **Done** | **Critical** | `event_kind_registry.py` · `test_event_kind_registry.py` |
+| OBS-EVOL-9.5 | M2 | `RuntimeEventBus.subscribe(categories=, kind_prefix=, ops_hints=)` + `JournalQuery` | **Done** | High | `event_bus.py` · `journal_query.py` · `test_event_bus_taxonomy_subscribe.py` |
+| OBS-EVOL-9.6 | M2 | `scripts/check_event_catalog.py` + sampling enforcement + LLM `event_kind` namespace lint | **Done** | High | CI script · `test_event_bus_sampling.py` · extend `check_observability_gates.py` |
+| OBS-EVOL-9.7 | M2 | **Pre-release spine consolidation** — 74 → 56; `DOMAIN_SIGNAL` + read shim | **Done** | **Critical** | `spine_consolidation.py` · emitters · `test_spine_consolidation.py` · `check_event_catalog.py` |
+| OBS-EVOL-9.8 | M2 | Scaffold: `emit_domain_signal` template in `new_agent` / `new_application` | **Done** | Medium | `signal_templates.py` · `test_scaffold_domain_signals.py` |
+| OBS-EVOL-9.9 | M3 | Optional `runtime_event.v2` envelope (`event_kind` required) | **Deferred** | Low | Opt-in `schema_version`; v1 indefinite — post-publication backlog |
+| OBS-EVOL-9.10 | M2 | Declarative bus subscriptions on `ObservabilityProfile` | **Done** | P2 | `sub_profiles.py` · `event_subscription_registry.py` · `observability_wiring.py` |
+| OBS-EVOL-9.11 | M3 | W3C Trace Context (`traceparent` / `tracestate`) on `RuntimeEvent` + OTLP bridge | **Done** | P3 | `w3c_trace_context.py` · `journal_export.py` · `export_bridge.py` |
+
+**Suggested PR order:** OBS-EVOL-9-DOC → OBS-EVOL-9.1 → OBS-EVOL-9.2 → OBS-EVOL-9.3 → OBS-EVOL-9.4 → OBS-EVOL-9.6 → OBS-EVOL-9.5 → OBS-EVOL-9.7 → OBS-EVOL-9.8 → OBS-EVOL-9.10 → OBS-EVOL-9.11.
+
+**Explicitly out of scope:** per-category event buses; hierarchical enums; mandatory external APM.
+
+### OBS-EVOL-9 — Verification gates (verified 2026-06-17)
+
+```bash
+uv run pytest tests/unit/runtime/events/ -q
+uv run python scripts/check_event_catalog.py
+uv run python scripts/check_observability_gates.py
+python scripts/check_harness_adr.py
+```
+
+---
+
+## Phase OBSERVABILITY-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — re-validates OBS-EVOL-9 + OBS-BUS closeout; no open P0/P1  
+**Prerequisites:** OBS-EVOL-9 M0–M3 **Done** (9.9 deferred) · ADR-OBS-001/003  
+**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**ADR:** **No ADR needed**
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| OBS-LC-S1 | **Re-audit** — OBS register + spine verdict | **Done** | High | No P0/P1 |
+| OBS-LC-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
+| OBS-LC-S3 | **Gate verification** | **Done** | High | 87 event tests · `check_observability_gates` |
+| OBS-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+
+**Deferred P2–P4:** OBS-EVOL-9.9 `runtime_event.v2` · product dashboards §6.3a
 
 ---

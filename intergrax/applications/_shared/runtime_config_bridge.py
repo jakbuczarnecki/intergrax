@@ -15,7 +15,10 @@ from intergrax.applications._shared.integration_runtime_bridge import (
 )
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 from intergrax.applications._shared.rag_runtime_bridge import apply_rag_for_environment
-from intergrax.applications._shared.context_runtime_bridge import apply_context_profiles_from_environment
+from intergrax.applications._shared.context_runtime_bridge import (
+    apply_context_profiles_from_environment,
+    derive_run_budget_from_context_policy,
+)
 from intergrax.applications._shared.memory_runtime_bridge import apply_memory_profile_to_runtime_config
 from intergrax.applications._shared.observability_runtime_bridge import (
     apply_observability_profiles_from_environment,
@@ -228,11 +231,13 @@ def build_runtime_context_from_environment(
         memory_wiring=memory_wiring,
         rag_stack=rag_stack,
     )
-    if config.tool_wiring_context is not None and session_manager.user_profile_manager is not None:
-        config.tool_wiring_context = replace(
-            config.tool_wiring_context,
-            user_profile_manager=session_manager.user_profile_manager,
-        )
+    if config.tool_wiring_context is not None:
+        extras = dict(config.tool_wiring_context.extras)
+        extras["session_manager"] = session_manager
+        replace_kwargs: dict[str, object] = {"extras": extras}
+        if session_manager.user_profile_manager is not None:
+            replace_kwargs["user_profile_manager"] = session_manager.user_profile_manager
+        config.tool_wiring_context = replace(config.tool_wiring_context, **replace_kwargs)
     prompt_registry = resolve_prompt_registry(env.prompt_profile)
     return RuntimeContext.build(
         config=config,

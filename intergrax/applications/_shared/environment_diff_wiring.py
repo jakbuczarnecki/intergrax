@@ -55,10 +55,10 @@ def diff_profile(
     left: ApplicationEnvironmentProfile,
     right: ApplicationEnvironmentProfile,
 ) -> StructuredDiff:
-    """Diff two environment profiles."""
+    """Diff two environment profiles (bundle-normalized)."""
     return diff_structured(
-        left.model_dump(mode="json"),
-        right.model_dump(mode="json"),
+        left.bundle_dump(mode="json"),
+        right.bundle_dump(mode="json"),
     )
 
 

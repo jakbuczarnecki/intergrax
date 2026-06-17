@@ -48,3 +48,7 @@ class RuntimeEventPayload(BaseModel):
         if not isinstance(data, dict):
             raise ValueError("envelope missing typed data dict")
         return cls.model_validate(data)
+
+    def redact(self) -> Self:
+        """Return a production-safe copy; override in extension payloads with secrets."""
+        return self

@@ -940,3 +940,21 @@ TARGET (remaining TOOL-ENG):
 - Product-only tool packs (§6.3 / Phase K)
 
 ---
+
+## Phase TOOLS-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — re-validates 2026-06-12 Layer Completion; no open P0/P1  
+**Prerequisites:** TOOL-ENG **Closed** (36/36)  
+**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**ADR:** **No ADR needed**
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| TOOLS-LC-S1 | **Re-audit** — TOOL-ENG register + tier-0/1 verdict | **Done** | High | No P0/P1 |
+| TOOLS-LC-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
+| TOOLS-LC-S3 | **Gate verification** | **Done** | High | 58 unit tests · 2 CI scripts |
+| TOOLS-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+
+**Deferred P2–P4:** hierarchical LLM category pass · per-tool L1 critic (CVL) · host EP pattern packages
+
+---

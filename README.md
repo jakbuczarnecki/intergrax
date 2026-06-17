@@ -13,7 +13,7 @@
 ## Overview
 
 - **What:** Intergrax is a **Harness AI platform** — the durable runtime that runs many agents, not a single chatbot or domain bot.
-- **What it provides:** Nexus Agent OS, Tier-0 catalogs (**185** integrations · **190** tools · **149** skills in **41** bundles), LLM, RAG, memory, **Ephemeral Code Craft** (planned), policy, trace, multi-agent graphs, and Tier-3 application hosts.
+- **What it provides:** Nexus Agent OS, Tier-0 catalogs (**185** integrations · **190** tools · **149** skills in **41** bundles), LLM, RAG, memory, **Ephemeral Code Craft** (**Done** ECC-0…ECC-6), policy, trace, multi-agent graphs, and Tier-3 application hosts.
 - **Who it is for:** Teams building **governed multi-agent systems** — platform engineers, agent architects, Harness AI researchers, and product teams shipping agent-backed applications.
 - **Why it is different:** **The Harness is the product; agents are replaceable.** Agents own **domain decisions** inside a typed session loop; the harness owns **policy, trace, and execution**; Nexus owns **multi-agent orchestration**; applications own **environment, identity, and production gates** — without collapsing these into one mega-class.
 - **Problem it solves:** Stop rebuilding infrastructure for every new agent. Target: **idea → first traced Nexus run in under one hour**, then **same agent class** from lab notebook to governed production roster.
@@ -39,7 +39,25 @@
          Integration → Tool → Skill → LLM · RAG · Memory (Tier-0)
 ```
 
-Strategic direction: [Development Strategy](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) · Ideal target: [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) · **Agent model canon:** [AGENT_CONTRACTS_AND_ASSEMBLY.md](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40
+Strategic direction: [Development Strategy](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) · [System invariants](docs/guides/SYSTEM_INVARIANTS.md) · Ideal target: [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) · **Agent model canon:** [AGENT_CONTRACTS_AND_ASSEMBLY.md](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40
+
+---
+
+## Current platform maturity
+
+**Harness baseline:** **32/32** audit layers at **L3** ([scorecard](scripts/harness_maturity_report.py) · [IDEAL_HARNESS_L3](docs/plan/IDEAL_HARNESS_L3.md) · [audit map §5](docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md#5-maturity-scoring-model)).
+
+Maturity uses **L0–L4** levels (not arbitrary percentages). Per-domain evidence lives in paired `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md`.
+
+| Area | Maturity | Evidence / open gap |
+|------|----------|---------------------|
+| **Agent contracts (ACP)** | **L3** | [Phase ACP](docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) **Done** · fleet `on_next_step` migration ongoing |
+| **Tools** | **L3** | [TOOL-ENG](docs/plan/TOOLS.md) closeout **Done** · deferred: hierarchical LLM category pass |
+| **Tier-3 hosts** | **L3** (depth partial) | [APP-PROD](docs/plan/TIER3_APPLICATION_ENVIRONMENT.md) gates **Done** · §22 profile bundles M3 planned |
+| **Memory** | **L3** | [MEM / MEM-VEC](docs/plan/MEMORY.md) **Done** · depth: procedural taxonomy + org parity gaps |
+| **Adaptive harness (AHI)** | **L4 runtime** | [W-ADAPT](docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md) **Done** · 30-day production evidence = product hosts |
+
+**Also at L3:** RAG · LLM adapters · Observability · Nexus flow · UAEP · Skills · Integrations — full index in [architecture hub](docs/intergrax_runtime_architecture.md).
 
 ---
 
@@ -432,6 +450,8 @@ tests/ · scripts/       # Gate tests and harness CI checks
 | I want to… | Read |
 |------------|------|
 | Understand strategic direction | [INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) |
+| **Rules you must not break** | [SYSTEM_INVARIANTS.md](docs/guides/SYSTEM_INVARIANTS.md) — `SYS-INV-*` index (P2-ARCH-01) |
+| **Close out a full harness layer** | [LAYER_COMPLETION_MODE.md](docs/guides/LAYER_COMPLETION_MODE.md) |
 | Understand the platform | [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) → pick a domain pair |
 | **Understand the agent model** | [The agent model](#the-agent-model--why-architects-choose-intergrax) · [AGENT_CONTRACTS §13–§40](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [ADR-AGENT-001..003](docs/adr/entries/2026-06-11/ADR-AGENT-001.md) |
 | See implementation status | [plan/PLATFORM_FOUNDATION.md](docs/plan/PLATFORM_FOUNDATION.md) · [plan ACP](docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) |
@@ -453,7 +473,7 @@ tests/ · scripts/       # Gate tests and harness CI checks
 
 | Area | Links |
 |------|-------|
-| **Strategy & hub** | [Strategy](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) · [Architecture hub](docs/intergrax_runtime_architecture.md) · [Ideal model](docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) |
+| **Strategy & hub** | [Strategy](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) · [System invariants](docs/guides/SYSTEM_INVARIANTS.md) · [Layer completion](docs/guides/LAYER_COMPLETION_MODE.md) · [Architecture hub](docs/intergrax_runtime_architecture.md) · [Ideal model](docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) |
 | **Domain canon (21 pairs)** | `docs/architecture/{DOMAIN}.md` ↔ `docs/plan/{DOMAIN}.md` — indexed in [hub](docs/intergrax_runtime_architecture.md) |
 | **Execution** | [UAEP / §42](docs/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [Nexus flow](docs/architecture/NEXUS_EXECUTION_FLOW.md) · [Orchestration](docs/architecture/ORCHESTRATION.md) |
 | **Authoring** | [Agent guide](docs/guides/AGENT_CREATION_GUIDE.md) · [Extension guide](docs/guides/EXTENSION_AUTHOR_GUIDE.md) · [applications/USAGE.md](applications/USAGE.md) |
@@ -468,11 +488,11 @@ tests/ · scripts/       # Gate tests and harness CI checks
 
 ## Project snapshot
 
-**Last updated:** 2026-06-08 · **Stage:** active private R&D
+**Last updated:** 2026-06-17 · **Stage:** active private R&D
 
 | Dimension | Status |
 |-----------|--------|
-| **Platform maturity** | Harness platform **complete** — Tier-0 catalogs, Nexus Agent OS, control-plane closeouts, L4 adaptive runtime (W-ADAPT Done) |
+| **Platform maturity** | **32/32 L3** harness baseline — see [Current platform maturity](#current-platform-maturity); default [gate maintenance](docs/plan/PLATFORM_FOUNDATION.md#61-harness-platform-maintenance-default--band-1) active |
 | **Active development** | Default queue: [§6.1 gate maintenance](docs/plan/PLATFORM_FOUNDATION.md#61-harness-platform-maintenance-default--band-1) · depth bands: [MEM-DEPTH](docs/plan/MEMORY.md), [CRIT-V](docs/plan/CRITIC_VERIFICATION.md), [OBS-BUS](docs/plan/OBSERVABILITY.md) |
 | **Business agents** | Phase K — **end of plan** until explicit product prioritization ([§6.3](docs/plan/PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only)) |
 | **Regression gate** | `uv run pytest -m gate -q` — CI green ([workflow badge](#intergrax)) |

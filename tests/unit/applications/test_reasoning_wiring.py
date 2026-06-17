@@ -8,6 +8,7 @@ from intergrax.applications._shared.reasoning_wiring import (
     resolve_engine_planner_prompt_config,
     resolve_planner_llm_adapter,
     resolve_planner_model_id,
+    resolve_reasoning_task_metadata,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.reasoning_profile import ReasoningProfile
@@ -57,3 +58,13 @@ def test_resolve_engine_planner_prompt_config() -> None:
     )
     config = resolve_engine_planner_prompt_config(env)
     assert config.prompt_id == "planner_replan_default"
+
+
+def test_resolve_reasoning_task_metadata_includes_engine_prompt() -> None:
+    env = ApplicationEnvironmentProfile.lab_defaults().model_copy(
+        update={
+            "reasoning_profile": ReasoningProfile(engine_planner_prompt_id="planner_replan_default"),
+        }
+    )
+    metadata = resolve_reasoning_task_metadata(env)
+    assert metadata["engine_planner_prompt_id"] == "planner_replan_default"

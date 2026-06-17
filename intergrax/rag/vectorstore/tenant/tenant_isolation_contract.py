@@ -17,6 +17,9 @@ TENANT_ISOLATION_CONTRACT_BACKENDS: tuple[str, ...] = (
     "pgvector",
     "weaviate",
     "qdrant",
+    "chroma",
+    "lancedb",
+    "typesense",
 )
 
 StoreFactory = Callable[[str, str], VectorStore]

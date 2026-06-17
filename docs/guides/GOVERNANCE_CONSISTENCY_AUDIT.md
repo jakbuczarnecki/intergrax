@@ -29,7 +29,7 @@ After APP-CON / APP-EVOL / APP-OPS documentation tranches, the platform has many
 | **`CapabilityDescriptor`** | UAEP §42.27 | Routing metadata | `(capability, semver, agent_id)` for versioned Nexus routing |
 | **`CapabilityGraph`** | **ACP §19** (model) · `capability_graph.py` | Structural graph | Integration→Tool→Skill→Policy→Agent→Application dependency edges |
 | **`EnvironmentCapabilityGraphView`** | TIER3 §50.1 · `capability_graph_wiring.py` | Tier-3 slice | Application-scoped subgraph for impact/lineage at host boundary |
-| **`CapabilityAlias` / deprecation** | TIER3 §49.3 (target APP-EVOL-3) | Sunset policy | Redirect deprecated capability strings during migration window |
+| **`CapabilityAlias` / deprecation** | TIER3 §49.3 (**Done** APP-EVOL-3) | Sunset policy | Redirect deprecated capability strings during migration window |
 
 ### 2.1 Anti-pattern: `CapabilityRegistry`
 
@@ -40,7 +40,7 @@ After APP-CON / APP-EVOL / APP-OPS documentation tranches, the platform has many
 | Route task to agent | `AgentRegistry` + `CapabilityMatchResult` (ACP §15) |
 | Versioned capability metadata | `CapabilityDescriptor` on contract / UAEP routing table |
 | Dependency / blast radius | `CapabilityGraph` + `build_capability_impact_report()` |
-| Deprecation redirect | `CapabilityAlias` (planned) on harness routing policy |
+| Deprecation redirect | `CapabilityAlias` **Done** (`capability_alias_wiring.py` · intake middleware) |
 
 **Risk:** Authors conflate “registry of capabilities” with `AgentRegistry` or invent `CapabilityRegistry`. Glossary term: **capability routing** = registry; **capability structure** = graph.
 
@@ -63,7 +63,7 @@ IDEAL requires typed nodes, lineage, blast radius, validation gates. Implemented
 ### 3.1 Rules
 
 - **`AgentRegistry`** ≠ **`ApplicationRegistry`**. First is **runtime selection**; second is **platform inventory**.
-- **`EnvironmentRegistry`** ≠ **`ApplicationEnvironmentProfile`**. Profile is config; registry entry is **where** that config is deployed.
+- **`EnvironmentRegistry`** ≠ **`ApplicationEnvironmentProfile`**. Profile is config; registry entry is **where** that config is deployed. Nested profile bundles (§22.6 · ADR-APP-003) do **not** introduce a second config type — they group fields inside the same profile.
 - README table is **documentation index**, not a registry contract — prefer `ApplicationRegistry` artifacts for ops automation (APP-OPS-4 **Done**).
 
 **Overlap risk:** Low, if naming is preserved. **Conflict:** None.

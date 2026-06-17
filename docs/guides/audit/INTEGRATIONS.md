@@ -50,11 +50,11 @@ IntegrationManifest · IntegrationProfile · IntegrationCategory · IntegrationP
 
 ## Active plan phases (verify status vs code reality)
 
-Phase M catalog · M.6 P5/P6/P7 Done · M.12 guardrails Done · M-P12-CAT.1 · GR-DOC
+Phase M catalog · M.6 P5/P6/P7 Done · M.12 guardrails Done · M-P12-CAT.1 · GR-DOC · **Full Harness LC** (2026-06-17)
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-Most slugs **beta** — stable vs beta must be honest · thin P4 shells · SaaS-only without local container · nginx/ingress slug missing (ECP cross-ref)
+beta→stable slug promotion honesty · thin P4 provider shells · SaaS-only slugs without local container · nginx/ingress slug (ECP cross-ref)
 
 ---
 

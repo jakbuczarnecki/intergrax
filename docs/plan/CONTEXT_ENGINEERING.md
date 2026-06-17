@@ -9,7 +9,7 @@
 
 ---
 
-## Status summary (2026-06-14)
+## Status summary (2026-06-17)
 
 | Phase | Scope | Status |
 |-------|-------|--------|
@@ -25,9 +25,25 @@
 | **CE-DOC.10** | CE-ALIGN closeout audit + architecture sync | **Done** (2026-06-12) |
 | **CE-HANDLE-FILL** | RuntimeState → provider metadata sync on nexus context steps | **Done** (2026-06-14) |
 
-**As-built maturity:** L3+ engine / L3 control plane — CE-PROV-WIRE closed GAP-CTX-20; see architecture §3.
+**As-built maturity:** L3+ engine / L3 control plane — CE-PROV-WIRE closed GAP-CTX-20; Layer Completion iteration III (2026-06-17) confirms **Architecturally Mature** — no P0/P1; **Full Harness LC** (2026-06-17); see architecture §3.
 
 **Delivery rule:** One **CE-\*** ID per PR → update master table + gap register → `pytest -m gate` + domain CI scripts green.
+
+---
+
+## Layer audit register (2026-06-17 — iteration III, Layer Completion Mode)
+
+| ID | Severity | Finding | Resolution |
+|----|----------|---------|------------|
+| AUD-CE-12 | **P1** | CE-LLM-X / CE-LLM-X-b still **Planned** in Wave 2 while M-LLM-X.3 **Done** in LLM_ADAPTERS (preflight + `from_adapter`) | **Closed** — plan sync iteration III (2026-06-17) |
+| AUD-CE-13 | **P2** | OTel full SDK wiring optional; shim only | Backlog (AUD-CE-06) |
+| AUD-CE-14 | **P2** | CE-9.5 cost attribution on semantic compression | Backlog (AUD-CE-07) |
+| AUD-CE-15 | **P3** | CE-10.4 preset regression baselines | Backlog (AUD-CE-08) |
+| AUD-CE-16 | **P3** | CE-12.1–12.3 extension guide / scaffold slices | Backlog (AUD-CE-09) |
+| AUD-CE-17 | **P4** | GAP-CTX-12 L4 adaptive ranking | AHI domain (AUD-CE-10) |
+| AUD-CE-18 | **P4** | ACP path hybrid — optional per-step full `assemble()` | Backlog — architecture §8.3 |
+
+**No P0 findings.** **No open P1 implementation gaps** after AUD-CE-12 doc sync. Tier boundaries intact; 73 unit + 3 integration gate tests green; CE CI scripts green (`check_context_*`).
 
 ---
 
@@ -245,8 +261,8 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 | **CE-3.8** | Integration test: ACP + graph produce `CONTEXT_ASSEMBLED` with `engine_id=default` | P0 | **Done** | `tests/integration/runtime/test_context_engine_paths.py` |
 | **CE-3.9** | Wire `ContextCompiler.compile()` + degradation ladder to ACP `on_next_step` / UAEP before LLM | **P0 Critical** | **Done** | Closes GAP-CTX-13; acceptance never-overflow on prod path |
 | **CE-3.10** | `ContextValidator` → `verify_context_preflight()` inside `DefaultNexusContextEngine.validate` | P0 | **Done** | Gate: preflight before every engine-assembled LLM call |
-| **CE-LLM-X** | Preflight + history token count via `adapter.count_messages_tokens` (not chars/4) | P0 | **Planned** | Owner: [M-LLM-X.3](plan/LLM_ADAPTERS.md) · touches `context_preflight.py`, `engine_history_layer.py` |
-| **CE-LLM-X-b** | `ContextBudgetPolicy.from_adapter(adapter)` — budget derived from context window | P0 | **Planned** | Owner: M-LLM-X.3.3 |
+| **CE-LLM-X** | Preflight + history token count via `adapter.count_messages_tokens` (not chars/4) | P0 | **Done** | Closed via [M-LLM-X.3](plan/LLM_ADAPTERS.md) LC-2 (2026-06-14) · `context_preflight.py` · gate `check_context_preflight_uses_adapter_tokens.py` |
+| **CE-LLM-X-b** | `ContextBudgetPolicy.from_adapter(adapter)` — budget derived from context window | P0 | **Done** | Closed via M-LLM-X.3.3 · `context_budget.py` |
 | **CE-3.11** | Unify UAEP `CONTEXT_BUILT` → `CONTEXT_ASSEMBLED` (+ trim events); deprecate or alias `CONTEXT_BUILT` | P1 | **Done** | Closes GAP-CTX-14; `payload_registry.py` + gate |
 
 **Wave 2 exit:** `ContextCompiler` on production hot path; graph + ACP/UAEP unified under `DefaultNexusContextEngine`.
@@ -552,6 +568,24 @@ One sprint = one coherent provider family or gate. One commit per sprint.
 |--------|------|--------|---------------|-------|
 | **C1** | CE tag candidate classification | CE-10.3 | GAP-CTX-08 Closed; `[context:rag:…]` maps to `ContextCandidateSource.RAG` | **Done** |
 | **C2** | RuntimeState handle autofill | CE-HANDLE-1…4 | `request.metadata` synced after context steps; bridge tests green | **Done** |
+
+---
+
+## Phase CONTEXT_ENGINEERING-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — re-validates CE-ITERATION-III + CE-PROV-WIRE; no open P0/P1  
+**Prerequisites:** CE-EXT **Done** · CE-HANDLE-FILL **Done**  
+**Goal:** Formal Full Harness LC closeout — gate verification, journal, audit prompt sync  
+**ADR:** **No ADR needed**
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| CE-LC-S1 | **Re-audit** — CE register + frozen verdict | **Done** | High | No P0/P1 |
+| CE-LC-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
+| CE-LC-S3 | **Gate verification** | **Done** | High | 73 gate unit tests · CE CI scripts |
+| CE-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+
+**Deferred P2–P4:** OTel SDK wiring · CE-9.5 cost attribution · CE-10.4 preset baselines · GAP-CTX-12 AHI adaptive ranking
 
 ---
 

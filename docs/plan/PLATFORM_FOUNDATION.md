@@ -2906,6 +2906,10 @@ Decision:       L1 certified — GO Phase S (harness environment), then Phase K 
 | B.05 | **Escalation policy production path** — `SAFETY_VIOLATION` / HITL expiry → real escalation (not stub) | §42.38, §42.10 | **Medium** | **Done** | HITL-heavy agents | Tier-1 | `escalation.v1` template, `wire_long_running_scheduler`, lab startup, SAFETY_VIOLATION timeout→escalate (2026-05-27) |
 | B.06 | **Hook / middleware parity** — full §42.20 pipeline vs current Nexus-embedded hooks | §42.20, §42.22 | **Low** | **Done** | Extension agents via plugins | Tier-1 | Lifecycle + **tool call** + **agent selection** hooks; decision/interrupt/retry hooks remain optional (2026-05-27) |
 | B.07 | **§42 maturity remainder** — schema versioning (§42.29), full `ExecutionPhase` coverage, plugin contracts | §42 | **Medium** | **Done** (baseline) | Platform stability for new agents | Tier-1 | `runtime/schema/registry.py`, `events/phase_coverage.py`, `plugins/contract.py` (2026-05-27) |
+| P1-ARCH-03 | **Root README ↔ architecture canon sync** — Overview `(planned)` residuals vs domain L3 closeout (ECC) | hub · domain pairs | **P1** | **Done** | Onboarding / first read | docs | README Overview + Project snapshot aligned with `CODE_CRAFT` closeout (2026-06-17) |
+| P2-ARCH-01 | **System invariants index** — cross-domain `SYS-INV-*` “never violate” guide with CI map | hub · ACP · APP · ORCH | **P2** | **Done** | All authors / auditors | docs | [`guides/SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) (2026-06-17) |
+| P2-ARCH-03 | **Root README platform maturity** — L0–L4 per-area table with plan evidence links (not arbitrary %) | hub · README | **P2** | **Done** | Onboarding / architects | docs | README §Current platform maturity + `harness_maturity_report.py` (2026-06-17) |
+| P2-DOC-LC-1 | **Layer Completion Mode** — canonical deep layer closeout workflow (journal-linked) | guides · strategy | **P2** | **Done** | Maintainers / layer closeout | docs | [`guides/LAYER_COMPLETION_MODE.md`](../guides/LAYER_COMPLETION_MODE.md) (2026-06-17) |
 
 ### B.2 Observability & debug surface
 
@@ -2915,6 +2919,7 @@ Decision:       L1 certified — GO Phase S (harness environment), then Phase K 
 | B.09 | **Debug API trace reader** — only SQLite file path; no injectable in-memory / shared store handle | §19 | **Medium** | **Done** | Lab tests, local dev without file I/O | Tier-1 | `trace_store` on `create_debug_router` / `create_debug_app`; lab passes Nexus store (2026-05-27) |
 | B.10 | **NexusLoop runtime events in app factories** — all Tier-3 factories pass runtime events to Nexus | §42.24 | **Medium** | **Done** | Events 503 on `/debug/tasks/{id}/events` | Tier-3 | Legal + Research default SQLite; lab when path passed (2026-05-27) |
 | B.11 | **Metrics layer** — event-first, trace-second, **metrics-third** unified export | §42.1, §33 | **Low** | **Done** | Ops visibility, SLOs | Tier-0 | `runtime/metrics/export.py` + `GET /debug/tasks/{run_id}/metrics` (2026-05-27) |
+| P1-ARCH-02 | **Layered event catalog** — spine + `event_kind` + `EventCatalog`; pre-release consolidation | OBS §4.4, §42.1.6 | **P1** | **Done** | All Tier-2/3 authors | Tier-0/1 | OBS-EVOL-9 M0–M3 **Done** (2026-06-17) · ADR-OBS-003 · [OBS plan](plan/OBSERVABILITY.md#phase-obs-evol-9--layered-event-catalog-p1-arch-02) |
 
 ### B.3 Interaction surfaces (§18)
 
@@ -5947,6 +5952,10 @@ L4 readiness requires:
 | B.05 | **Escalation policy production path** — `SAFETY_VIOLATION` / HITL expiry → real escalation (not stub) | §42.38, §42.10 | **Medium** | **Done** | HITL-heavy agents | Tier-1 | `escalation.v1` template, `wire_long_running_scheduler`, lab startup, SAFETY_VIOLATION timeout→escalate (2026-05-27) |
 | B.06 | **Hook / middleware parity** — full §42.20 pipeline vs current Nexus-embedded hooks | §42.20, §42.22 | **Low** | **Done** | Extension agents via plugins | Tier-1 | Lifecycle + **tool call** + **agent selection** hooks; decision/interrupt/retry hooks remain optional (2026-05-27) |
 | B.07 | **§42 maturity remainder** — schema versioning (§42.29), full `ExecutionPhase` coverage, plugin contracts | §42 | **Medium** | **Done** (baseline) | Platform stability for new agents | Tier-1 | `runtime/schema/registry.py`, `events/phase_coverage.py`, `plugins/contract.py` (2026-05-27) |
+| P1-ARCH-03 | **Root README ↔ architecture canon sync** — Overview `(planned)` residuals vs domain L3 closeout (ECC) | hub · domain pairs | **P1** | **Done** | Onboarding / first read | docs | README Overview + Project snapshot aligned with `CODE_CRAFT` closeout (2026-06-17) |
+| P2-ARCH-01 | **System invariants index** — cross-domain `SYS-INV-*` “never violate” guide with CI map | hub · ACP · APP · ORCH | **P2** | **Done** | All authors / auditors | docs | [`guides/SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) (2026-06-17) |
+| P2-ARCH-03 | **Root README platform maturity** — L0–L4 per-area table with plan evidence links (not arbitrary %) | hub · README | **P2** | **Done** | Onboarding / architects | docs | README §Current platform maturity + `harness_maturity_report.py` (2026-06-17) |
+| P2-DOC-LC-1 | **Layer Completion Mode** — canonical deep layer closeout workflow (journal-linked) | guides · strategy | **P2** | **Done** | Maintainers / layer closeout | docs | [`guides/LAYER_COMPLETION_MODE.md`](../guides/LAYER_COMPLETION_MODE.md) (2026-06-17) |
 
 ### B.2 Observability & debug surface
 
@@ -5956,6 +5965,7 @@ L4 readiness requires:
 | B.09 | **Debug API trace reader** — only SQLite file path; no injectable in-memory / shared store handle | §19 | **Medium** | **Done** | Lab tests, local dev without file I/O | Tier-1 | `trace_store` on `create_debug_router` / `create_debug_app`; lab passes Nexus store (2026-05-27) |
 | B.10 | **NexusLoop runtime events in app factories** — all Tier-3 factories pass runtime events to Nexus | §42.24 | **Medium** | **Done** | Events 503 on `/debug/tasks/{id}/events` | Tier-3 | Legal + Research default SQLite; lab when path passed (2026-05-27) |
 | B.11 | **Metrics layer** — event-first, trace-second, **metrics-third** unified export | §42.1, §33 | **Low** | **Done** | Ops visibility, SLOs | Tier-0 | `runtime/metrics/export.py` + `GET /debug/tasks/{run_id}/metrics` (2026-05-27) |
+| P1-ARCH-02 | **Layered event catalog** — spine + `event_kind` + `EventCatalog`; pre-release consolidation | OBS §4.4, §42.1.6 | **P1** | **Done** | All Tier-2/3 authors | Tier-0/1 | OBS-EVOL-9 M0–M3 **Done** (2026-06-17) · ADR-OBS-003 · [OBS plan](plan/OBSERVABILITY.md#phase-obs-evol-9--layered-event-catalog-p1-arch-02) |
 
 ### B.3 Interaction surfaces (§18)
 

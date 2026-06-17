@@ -12,7 +12,7 @@
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5 · baseline **32/32 L3**  
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
-**Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
+**Status:** **Done** (2026-06-14) — P0/P1 rows closed via LC-1–LC-3; 6.2/6.7 Partial (P2 backlog)
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
@@ -33,7 +33,7 @@
 **Source:** Deep production audit 2026-06-14 — contract L3, model metadata L1–L2, routing L1–L2, DX L2.  
 **Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) §Model catalog · §Routing · §Audit register  
 **Goal:** Elevate Tier-0 LLM layer from **production L3 foundation** to **best-in-class developer engine** — correct context for any model string, unified token accounting, runtime routing/failover, single agent API.  
-**Status:** **In progress** — **docs baseline Done** (X.0.1–0.3, X.7.1, X.6.3 partial) · **code LC-1/LC-2 partial** (X.1.1–1.5, X.3.1, X.3.3)  
+**Status:** **LC baseline Done** (2026-06-14) — P0/P1 closed · **M-LLM-X partial waves** = P2+ backlog (not blocking layer maturity)  
 **Priority ladder:** Band **2ba** (after M-LLM-R closeout) · queue [§6.1ax](#61ax-harness-implementation-queue--llm-developer-excellence-m-llm-x)  
 **Execution order:** [§6.2af](#62af-phase-m-llm-x-execution-order)  
 **Target maturity:** Model metadata **L3**, routing **L3**, DX **L3+** (see architecture maturity table).
@@ -553,3 +553,21 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 ```
 
 **Explicitly out of scope:** K.1/K.2, new product Tier-3 apps, rewriting provider SDK clients, HTTP API response DTOs for product routes (Tier-3 owns those separately).
+
+---
+
+## Phase LLM-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — re-validates 2026-06-14 Layer Completion; no open P0/P1  
+**Prerequisites:** LC-1–LC-3 **Done** · M-LLM-R **Done**  
+**Goal:** Formal Full Harness LC closeout — audit prompt sync, gate verification, journal  
+**ADR:** **No ADR needed**
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| LLM-LC-S1 | **Audit prompt sync** — planner≠producer Done; P0/P1 gaps closed | **Done** | High | `docs/guides/audit/LLM_ADAPTERS.md` |
+| LLM-LC-S2 | **Plan/architecture sync** — AUDIT-IDEAL header + M-LLM-X backlog clarity | **Done** | High | Domain pair consistent |
+| LLM-LC-S3 | **Gate verification** — typed returns, preflight, agents LLM response | **Done** | High | 3 scripts green · 110 unit tests |
+| LLM-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+
+**Deferred P2–P4:** M-LLM-X.2 dynamic OpenRouter fetch · X.4.4/X.4.5 trace DTO + Tier-3 failover list · Redis distributed rate limit · doctor hook (AUDIT-IDEAL-6.7)

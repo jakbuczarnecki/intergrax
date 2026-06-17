@@ -328,11 +328,11 @@ uv run pytest tests/acceptance/agent_os/test_lab_application.py -q
 
 ## Orchestration configuration (ORCH-CONFIG / §56)
 
-Tier-3 hosts declare multi-agent topology and routing on `ApplicationEnvironmentProfile`:
+Tier-3 hosts declare multi-agent topology and routing on `ApplicationEnvironmentProfile` (flat §22.1 today · nested bundles §22.6 — [ADR-APP-003](../../docs/adr/entries/2026-06-17/ADR-APP-003.md)):
 
 | Need | Profile fields | Notes |
 |------|----------------|-------|
-| Fixed pipeline | `graph_spec` + `trigger_capabilities` | Seed graph only for listed orchestration tokens ([ADR-FLOW-004](../../docs/adr/entries/2026-06-09/ADR-FLOW-004.md)) |
+| Fixed pipeline | `graph_spec` (→ `topology.graph_spec` when bundled) + `trigger_capabilities` | Seed graph only for listed orchestration tokens ([ADR-FLOW-004](../../docs/adr/entries/2026-06-09/ADR-FLOW-004.md)) |
 | Free-text routing | `orchestration_profile.classifier_kind=rules` + `intent_routes` | Keyword → orchestration token; see `IntentRoute` |
 | LLM routing | `classifier_kind=llm` | Requires host LLM adapter; falls back to rules |
 | Long-running jobs | `orchestration_profile.long_running_enabled` | Apply `apply_long_running_from_profile(task, env)` at intake |

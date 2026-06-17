@@ -15,7 +15,10 @@ COPY pyproject.toml uv.lock README.md ./
 COPY intergrax/ ./intergrax/
 COPY applications/__init__.py ./applications/__init__.py
 COPY applications/attestation_demo/ ./applications/attestation_demo/
-COPY agents/boundary_demo/ ./agents/boundary_demo/
+COPY agents/ ./agents/
+COPY prompts/tools_agent_context/ ./prompts/tools_agent_context/
+COPY prompts/tools_agent_planner/ ./prompts/tools_agent_planner/
+COPY prompts/tools_agent_system/ ./prompts/tools_agent_system/
 
 RUN uv sync --no-dev
 
@@ -37,7 +40,7 @@ COPY --from=builder /app /app
 ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8097
-WORKDIR /app/applications/attestation_demo
+WORKDIR /app
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8097/v1/attestation_demo/agents')" || exit 1

@@ -25,7 +25,7 @@ def test_record_skill_resolved_appends_history() -> None:
     pack = SkillResolver(skills).resolve(["demo"])
     record_skill_resolved(bus, agent_id="agent_x", pack=pack)
     assert bus.history[-1].event_type == RuntimeEventType.SKILL_RESOLVED
-    assert bus.history[-1].payload["skill_ids"] == ["demo"]
+    assert bus.history[-1].payload["data"]["skill_ids"] == ["demo"]
 
 
 @pytest.mark.unit

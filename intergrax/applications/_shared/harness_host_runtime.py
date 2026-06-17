@@ -229,9 +229,15 @@ def build_harness_host_runtime(
     )
     from intergrax.applications._shared.environment_snapshot_wiring import (
         apply_environment_snapshot_wiring,
+        cache_deploy_environment_snapshot,
     )
 
     apply_capability_alias_wiring(nexus_loop, environment=environment)
+    cache_deploy_environment_snapshot(
+        resolved_manifest,
+        environment,
+        registry_snapshot=env_wiring.registry_snapshot,
+    )
     apply_environment_snapshot_wiring(
         nexus_loop,
         manifest=resolved_manifest,
@@ -246,6 +252,14 @@ def build_harness_host_runtime(
     )
     apply_application_host_wiring(nexus_loop, application_host)
     apply_hook_runtime_guard_wiring(nexus_loop, environment)
+    from intergrax.applications._shared.observability_wiring import (
+        wire_observability_event_subscriptions,
+    )
+
+    wire_observability_event_subscriptions(
+        nexus_loop.event_bus,
+        environment.observability_profile,
+    )
     from intergrax.applications._shared.reliability_wiring import apply_reliability_governance_wiring
 
     apply_reliability_governance_wiring(nexus_loop, environment)

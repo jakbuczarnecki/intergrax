@@ -485,7 +485,7 @@ ACP does **not** replace Nexus, redefine tiers, or introduce a second execution 
 | ID | Invariant |
 |----|-----------|
 | **ACP-INV-01** | Nexus remains Agent OS — global orchestration, policy, HITL, multi-agent graph |
-| **ACP-INV-02** | All agent runs use UAEP step loop (or approved legacy path until ACP-LEG) |
+| **ACP-INV-02** | All agent runs use UAEP step loop (legacy UAEP authoring retired — ACP-CLOSE-LEG-5) |
 | **ACP-INV-03** | Cognitive patterns are **Tier-2 libraries** — no imports from `applications/` |
 | **ACP-INV-04** | Side effects only through `RuntimeExecutionContext.tool_gateway` → `ToolRuntime` |
 | **ACP-INV-05** | Control flow via `AgentDecision` — never `sleep()` for HITL, never direct Slack/webhooks |
@@ -1237,7 +1237,7 @@ Developer code path:
 
 ## 28.3 Gap register (ACP)
 
-**Audit sync (2026-06-13):** **37 Closed** · **0 Open** · ACP-FINISH complete; token depth = **ACP-TOK-1** · **ACP-TOK-2** · **ACP-TOK-3** · **ACP-TOK-CI** **Done**.
+**Audit sync (2026-06-13 · ACP-LC 2026-06-17):** **37 Closed** · **0 Open** · ACP-FINISH complete; Full Harness LC closeout — no open P0/P1 in domain scope.
 
 | ID | Gap | Priority | Plan row | Status |
 |----|-----|----------|----------|--------|
@@ -1309,7 +1309,7 @@ Developer code path:
 | [`adr/entries/2026-06-11/ADR-AGENT-003.md`](../adr/entries/2026-06-11/ADR-AGENT-003.md) | Step loop + dual observability |
 | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.4–§42.7 | UAEP lifecycle, decisions |
 | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) | End-to-end narrative S1–S7 |
-| [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §22–§23 | Application shell + profile injection §30 |
+| [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §22–§23 · §22.6 | Application shell + profile injection §30 · hierarchical bundles (ADR-APP-003) |
 | [`MEMORY.md`](MEMORY.md) · [`RAG.md`](RAG.md) · [`TOOLS.md`](TOOLS.md) | Per-agent resource planes §30 |
 | [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) | **Appendix AC** — author `run()` + patterns |
 | [`plan/TOOLS.md`](../plan/TOOLS.md) TOOL-ENG-6 | Tool loop for ReActAgent |
@@ -2927,7 +2927,7 @@ See [`OBSERVABILITY.md`](OBSERVABILITY.md) — extend spine with `policy.verdict
 | Document | Relationship |
 |----------|--------------|
 | [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §39 | **Canonical home** — org envelope, virtual workforce, APP-CON |
-| [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §22 | `PolicyRulesProfile`, `GuardrailProfile`, profile wiring |
+| [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §22 · §22.6 | `PolicyRulesProfile`, `GuardrailProfile`, profile wiring · bundle grouping (ADR-APP-003) |
 | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.11 | `RuntimePolicyBundle`, guardrails |
 | [`OBSERVABILITY.md`](OBSERVABILITY.md) | Trace spine + compliance metrics |
 | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) | Scenario/playbook validation via critic |

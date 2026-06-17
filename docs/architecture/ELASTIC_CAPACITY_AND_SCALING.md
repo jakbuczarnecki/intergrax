@@ -7,6 +7,8 @@
 **Audit layers:** 30 (Operational Excellence) · cross-ref 9 (orchestration backpressure), 21 (observability SLIs)  
 **Audit instruction:** [`guides/audit/ELASTIC_CAPACITY_AND_SCALING.md`](../guides/audit/ELASTIC_CAPACITY_AND_SCALING.md)  
 **ADR:** [ADR-SCALE-001](../adr/entries/2026-06-08/ADR-SCALE-001.md)  
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates ECP-PROD); honest maturity **Done**
+
 ---
 
 ## Table of contents

@@ -8,7 +8,8 @@
 **Audit instruction:** [`guides/audit/MEMORY.md`](../guides/audit/MEMORY.md)  
 **Context assembly (Layer C):** [`architecture/CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md)  
 **Related:** [`architecture/RAG.md`](RAG.md) — Tier-0 retrieval engine; this doc covers **memory stores, lifecycle**, and the **Knowledge vs LTM** boundary.  
-**ADR:** [ADR-MEM-001](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler) · [ADR-MEM-002](../adr/entries/2026-06-14/ADR-MEM-002.md) (vector catalog)
+**ADR:** [ADR-MEM-001](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler) · [ADR-MEM-002](../adr/entries/2026-06-14/ADR-MEM-002.md) (vector catalog)  
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates layer completion); MEM-VEC + MEM-DEPTH **Done**
 
 ## 2. Design principles
 
@@ -79,7 +80,7 @@ USER_FACT | PREFERENCE | SESSION_SUMMARY | ORG_FACT | POLICY
 EPISODIC_EVENT | PROCEDURAL | OTHER
 ```
 
-These tags classify **LTM entries** — semantic vs episodic vs procedural at the **entry** level (AUDIT-IDEAL-15.2 Done). **Deferred:** temporal validity fields on facts (MEM-DEPTH-5.2 — Zep-style `valid_from` / `valid_until`).
+These tags classify **LTM entries** — semantic vs episodic vs procedural at the **entry** level (AUDIT-IDEAL-15.2 Done). Temporal validity (`valid_from` / `valid_until`) enforced on retrieval (MEM-DEPTH-5.2 **Done**, 2026-06-17).
 
 ---
 
@@ -139,7 +140,7 @@ Intergrax uses **one vector integration stack** (`EmbeddingManager`, `Vectorstor
 3. **Tombstones** — logical deletes in the primary store MUST propagate vector tombstones (`deleted=1` or `delete(ids)`).
 4. **Agents** — Tier-2 agents consume semantic memory only via Nexus steps, `ltm.search`, or future `memory.semantic_search` skill runtime — never via direct vector SDK calls.
 
-**As-built (2026-06-14):** LTM and episodic vector indexes wired via `memory_vector_wiring.py`; Tier-3 hosts inject RAG stack into `UserProfileManager` and `SessionTurnIndexStore`. Remaining: MEM-VEC-3.* plugin EP + `memory.semantic_search` skill runtime (P2).
+**As-built (2026-06-17):** LTM and episodic vector indexes wired via `memory_vector_wiring.py`; `retrieval_service` injected into `UserProfileManager`; `vector_index_namespace` enforced via `collection_name` metadata; Tier-3 hosts inject RAG stack into profile manager and episodic index.
 
 ---
 
@@ -251,7 +252,7 @@ flowchart LR
 | Chunk unit | One `ChatMessage` per index row (no cross-turn merge at write time) |
 | `entry_id` | Stable id from `session_messages.entry_id` — upsert key |
 | Roles indexed | `user`, `assistant` by default; `system` / `tool` configurable via `MemoryProfile.session_index_roles` |
-| Async | Indexing MAY be async post-append; CE read path MUST tolerate short lag or skip with `reason=index_pending` |
+| Async | Indexing is **synchronous** on `append_message` in the default adapter; CE tolerates empty episodic hits with `session_vector_recall_reason=no_hits` |
 
 Consolidation (`SessionMemoryConsolidationService`) remains the path for **cross-session semantic facts**; episodic index answers **“what was said in this or prior sessions?”** without waiting for consolidation.
 
@@ -436,7 +437,7 @@ task_id/delegation/{node_id}/
 
 via `PolicyScopedMemoryView`. Parent receives bounded context via `ContextManager` — not raw child history.
 
-### 10.2 Explore pattern (target — Cursor-class)
+### 10.2 Explore pattern (Done — MEM-DEPTH-4.2 + MEM-LC-8)
 
 For wide codebase or corpus search:
 
@@ -461,7 +462,7 @@ Properties:
 - Parallel searches do not bloat parent history
 - Return payload is **structured findings**, not raw file dumps
 
-Target: MEM-DEPTH-4.1, MEM-DEPTH-4.2.
+Target: MEM-DEPTH-4.1, MEM-DEPTH-4.2 — **wired** via `explore_integration.py` in `graph_executor`.
 
 ---
 
@@ -522,7 +523,7 @@ enable_websearch: bool
 |----------|----------|---------|----------|
 | `UserProfileStorePlugin` | `intergrax.memory_stores` | `create_user_profile_store(**kwargs)` | Default SQLite / Mongo / in-memory LTM store |
 | `SessionStoragePlugin` | `intergrax.memory_stores` | `create_session_storage(**kwargs)` | Default session persistence |
-| `SessionTurnIndexStore` (MEM-VEC-2.1; plugin EP **Planned** MEM-VEC-3.1) | `intergrax.memory_stores` | `create_session_turn_index(**kwargs)` | Default: `VectorSessionTurnIndexStore` over `VectorstoreManager` |
+| `SessionTurnIndexStore` (MEM-VEC-2.1; plugin EP MEM-VEC-3.1 **Done**) | `intergrax.memory_stores` | `create_session_turn_index(**kwargs)` | Default: `VectorSessionTurnIndexStore` over `VectorstoreManager` |
 
 Vector **integration** providers (Chroma, pgvector, Qdrant, …) remain in the integrations catalog — memory plugins select **how** indexes are written, not which vendor SDK is used. Custom Tier-3 hosts register EP plugins; Tier-2 agents still use Nexus APIs and tools only.
 
@@ -620,24 +621,24 @@ See [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) §3.
 | STM session | 4 | Partial | Done — Mongo + SQLite parity | — |
 | User LTM | 4 | Partial | Done — store + vector wiring | Done — MEM-VEC-1 |
 | LTM / session vector recall | 4 | N/A | N/A | Done — MEM-VEC-1/2 |
-| Org memory | 2.5 | Partial | 2.5 | — |
+| Org memory | 3.5 | Partial | Done — org LTM entries + Mongo fallback store | — |
 | Consolidation | 4 | Partial | Done — job + modes | — |
-| Graph agent memory | 3 | RFC only | Done — `EntityGraphMemoryStore` | — |
+| Graph agent memory | 3.5 | RFC only | Done — `EntityGraphMemoryStore` + consolidation indexing | — |
 | Context compiler (unified) | 4.5 | N/A | Done | CE canon |
-| **Overall** | **~4.2** | Platform wiring Done | Closed | MEM-VEC-3.* P2 backlog |
+| **Overall** | **~4.5** | Platform wiring Done | Closed | MEM-VEC **Done** |
 
-**FAUDIT-32:** Memory Layer **L4** for vector recall (MEM-VEC-1/2 closed). Context Engineering scored separately — [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §3.
+**FAUDIT-32:** Memory Layer **L4** for vector recall and layer-completion hardening (2026-06-17).
 
 ### Audit register (open / partial — re-validate)
 
 | ID | Gap | Severity | Phase | Status |
 |----|-----|----------|-------|--------|
 | MEM-AUDIT-1 | No versioned procedural memory store (Prompt Registry only) | P2 | — | **Open** (by design minimal) |
-| MEM-AUDIT-2 | Org memory maturity 2.5 vs user LTM 4 | P2 | — | **Partial** |
-| MEM-AUDIT-3 | Temporal fact validity on LTM entries | P2 | MEM-DEPTH-5.2 | **Planned** |
-| MEM-AUDIT-4 | `SessionTurnIndexStore` plugin EP not shipped | P2 | MEM-VEC-3.1 | **Planned** |
-| MEM-AUDIT-5 | `memory.semantic_search` skill runtime (unified LTM + episodic) | P2 | MEM-VEC-3.2 | **Planned** |
-| MEM-AUDIT-6 | Explore delegation pattern (Cursor-class) | P2 | MEM-DEPTH-4.* | **Planned** |
+| MEM-AUDIT-2 | Org memory maturity vs user LTM | P2 | — | **Partial** — org `memory_entries` + manager search shipped |
+| MEM-AUDIT-3 | Temporal fact validity on LTM entries | P2 | MEM-DEPTH-5.2 | **Done** |
+| MEM-AUDIT-4 | `SessionTurnIndexStore` plugin EP not shipped | P2 | MEM-VEC-3.1 | **Done** |
+| MEM-AUDIT-5 | `memory.semantic_search` skill runtime (unified LTM + episodic) | P2 | MEM-VEC-3.2 | **Done** |
+| MEM-AUDIT-6 | Explore delegation pattern (Cursor-class) | P2 | MEM-DEPTH-4.* | **Done** — graph executor wiring |
 | MEM-AUDIT-7 | Per-step budget caps before CE collect | P2 | CE + ADR-MEM-001 | **Partial** — global allocator Done |
 
 **Closed baselines:** MEM (48/48), MEM-DEPTH, AUDIT-IDEAL-15.1–15.3, AUDIT-IDEAL-16.1–16.2 (CE owner).

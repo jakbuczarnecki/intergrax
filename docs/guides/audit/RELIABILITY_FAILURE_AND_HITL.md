@@ -50,7 +50,7 @@ RetryPolicy · RetryRecord · RetryHint · ResiliencePolicy · AutonomyLevel (MA
 
 ## Active plan phases (verify status vs code reality)
 
-REL Done · REL-ADV Done · H-APP-WIRING.1 HTTP surfaces
+REL Done · REL-ADV Done · H-APP-WIRING.1 HTTP surfaces · **Full Harness LC** (2026-06-17)
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 

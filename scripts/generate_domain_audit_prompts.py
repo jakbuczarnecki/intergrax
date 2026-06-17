@@ -806,21 +806,21 @@ intergrax/runtime/observability/modality_counters.py""",
         "title": "Observability Spine (HOS)",
         "layers": "21, 30",
         "mission": (
-            "Audit the **Harness Observability Spine**: 54+ RuntimeEventType catalog, typed DiagnosticPayload, "
-            "unified journal, causal trees, redaction, extension SDK, and operator reconstructability of every run."
+            "Audit the **Harness Observability Spine**: layered event catalog (spine + event_kind), "
+            "typed DiagnosticPayload, unified journal, causal trees, and operator reconstructability."
         ),
-        "code": """intergrax/runtime/events/runtime_event.py · event_bus.py · phase_coverage.py · unified_run_journal.py
+        "code": """intergrax/runtime/events/runtime_event.py · event_catalog.py · signals.py · event_bus.py
 intergrax/runtime/nexus/tracing/ · ObservabilityEmitter · TraceScope
-intergrax/runtime/observability/payload_registry.py · persistence_conformance.py
-intergrax/runtime/observability/harness_slos.py
-LLM/RAG/modality metric plugins
-scripts/check_observability_gates.py""",
-        "key_symbols": "RuntimeEvent · TraceEvent · DiagnosticPayload · TraceComponent · ObservabilityProfile · CoreLLMCallRecordedDiagV1 · ToolsSummaryDiagV1 · RagSummaryDiagV1 · ops filter hints",
-        "active_phases": "OBS-BUS 0–7 Done · ADR-OBS-001 · maintenance §6.1 only",
-        "known_gaps": "Residual RuntimeEventPayload evolution · product dashboards deferred §6.3a · external APM optional not mandatory",
+intergrax/runtime/events/payload_registry.py · persistence_conformance.py
+scripts/check_observability_gates.py · check_event_catalog.py""",
+        "key_symbols": "RuntimeEvent · event_kind · EventCategory · EventCatalog · emit_domain_signal · DiagnosticPayload · TraceComponent · ops filter hints",
+        "active_phases": "OBS-BUS 0–7 Done · OBS-EVOL-9 Planned · ADR-OBS-001 · ADR-OBS-003",
+        "known_gaps": "OBS-EVOL-9 implementation · spine consolidation pre-release · product dashboards §6.3a",
         "dimensions": [
             "Single spine — no per-agent private trace SQLite DBs.",
-            "Every RuntimeEventType has ExecutionPhase + ops filter hint — CI catalog tests.",
+            "Spine event_type frozen ~50 at publication; domain extends via event_kind.",
+            "Every spine RuntimeEventType has EventCatalog entry — phase + ops hint + payload.",
+            "Tier-2/3 use emit_domain_signal — not new RuntimeEventType.",
             "DiagnosticPayload guard rejects raw dicts where typed schema required.",
             "parent_event_id via TraceScope — causal tree reconstructable.",
             "AGENT_SELECTED, STEP_FAILED, TOOL_*, POLICY_* emitted on hot paths.",
@@ -843,11 +843,12 @@ scripts/check_observability_gates.py""",
         "overrides": "ObservabilityProfile · wire_nexus_observability() · PersistingTaskTraceEmitter · custom RuntimeEventBus handlers (Tier-3 plugins)",
         "ci_scripts": [
             "uv run python scripts/check_observability_gates.py",
+            "uv run python scripts/check_event_catalog.py",
             "uv run pytest tests/unit/runtime/observability/ -q",
             "uv run pytest tests/unit/runtime/events/ -q",
         ],
         "production_baseline": "OpenTelemetry + structured logging · Datadog/Honeycomb SLO workflows · Langfuse/LangSmith LLM trace UX",
-        "anti_patterns": "Per-agent trace DB · raw prompt/completion in prod journal · orphan event types without phase · metrics-only observability",
+        "anti_patterns": "Per-agent trace DB · raw prompt/completion in prod journal · Tier-2 adding RuntimeEventType · metrics-only observability",
         "appendix": "Appendix H (observability mandatory vs optional)",
     },
     {
@@ -909,14 +910,15 @@ tests/acceptance/agent_os/ (04, 05, 05b HITL/checkpoint)""",
             "and author DX — without Nexus business logic or duplicate registries."
         ),
         "code": """applications/*/host/factory.py
-intergrax/applications/contracts/environment_profile.py · application_registry.py · environment_health_score.py
-intergrax/applications/_shared/environment_wiring.py · harness_host_runtime.py · registry_ops_wiring.py
+intergrax/applications/contracts/environment_profile/ · application_registry.py · environment_health_score.py
+intergrax/applications/_shared/environment_wiring.py · harness_host_runtime.py · environment_snapshot_wiring.py
+intergrax/applications/_shared/reference_capability_bundle.py · environment_conformance.py
 intergrax/applications/_shared/*_wiring.py (snapshot, migration, package, health_score, recovery, certification, …)
-scripts/check_application_production_gates.py · check_application_registry.py · check_application_health_score.py
+scripts/check_application_production_gates.py · check_environment_profile_bundle_schema.py
 intergrax/cli/apps.py · envs.py · doctor_health_app.py · doctor_diff_app.py
 docs/guides/APPLICATION_CREATION_GUIDE.md""",
-        "key_symbols": "ApplicationEnvironmentProfile · ApplicationManifest · ApplicationHost · ApplicationEnvironmentState · EnvironmentSnapshot · ApplicationPackage · ApplicationRegistry · EnvironmentHealthScore · ApplicationOperationalOwnership · ApplicationRecoveryContract · AgentCertification · CapabilityGovernanceProfile · OrganizationalPolicyEnvelope · ExecutionMode",
-        "active_phases": "H-APP Done · APP-CON-1..8 Done · APP-PROD-1..9 Done · APP-EVOL-1..7 Done · APP-OPS-1..4 Done · APP-CON-DX Done",
+        "key_symbols": "ApplicationEnvironmentProfile · HostMeta · CapabilityBundle · CognitionBundle · GovernanceBundle · DomainPolicyFragments · ProfileInvariantValidator · ApplicationManifest · EnvironmentSnapshot · bundle_normalized_payload",
+        "active_phases": "H-APP Done · APP-CON-1..8 Done · APP-PROD-1..9 Done · APP-EVOL-1..7 Done · APP-EVOL-8 M1 Done · APP-OPS-1..4 Done · APP-CON-DX Done",
         "known_gaps": "CFG-14 LKW hybrid incomplete · MCP optional uneven · queue worker not scaffold-default · policy_coverage health proxy (UC-A7 golden deferred) · multi-tenant registry store deferred",
         "dimensions": [
             "ApplicationManifest + full profile on product hosts (§45 checklist).",
@@ -935,6 +937,10 @@ docs/guides/APPLICATION_CREATION_GUIDE.md""",
             "ApplicationRecoveryContract + ARCHITECTURE recovery docs (APP-EVOL-5).",
             "ApplicationEnvironmentDiff + doctor diff-app (APP-EVOL-6).",
             "ApplicationPackage + package.json from scaffold (APP-EVOL-7).",
+            "APP-EVOL-8 M1: nested profile bundles + flat property shims (ADR-APP-003).",
+            "bundle_normalized_payload on EnvironmentSnapshot digests (APP-EVOL-8.3).",
+            "ProfileInvariantValidator cross-bundle checks (APP-EVOL-8).",
+            "check_environment_profile_bundle_schema.py (APP-EVOL-8.7).",
             "STRICT capability graph deploy gate + blast radius (APP-OPS-1).",
             "ApplicationOperationalOwnership on product manifests (APP-OPS-2).",
             "EnvironmentHealthScore + doctor health-app (APP-OPS-3).",
@@ -957,6 +963,7 @@ docs/guides/APPLICATION_CREATION_GUIDE.md""",
             "uv run python scripts/check_application_production_gates.py",
             "uv run python scripts/check_application_registry.py",
             "uv run python scripts/check_application_health_score.py",
+            "uv run python scripts/check_environment_profile_bundle_schema.py",
             "python scripts/check_harness_no_getattr.py",
         ],
         "production_baseline": "Reference hosts (legal, research, dispute_sim, local_workspace) · enterprise FastAPI agent host · ops registry + health score on release",

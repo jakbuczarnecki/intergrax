@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from typing import Awaitable, Callable, Optional
 
@@ -24,6 +25,7 @@ from intergrax.runtime.nexus.planning.nexus_planner_protocol import NexusTaskPla
 from intergrax.runtime.nexus.observability.planning_metrics import (
     record_planning_failure,
     record_planner_fallback,
+    record_planner_latency,
 )
 from intergrax.runtime.nexus.planning.plan_validator import validate_nexus_plan
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
@@ -117,6 +119,9 @@ class NexusPlanningRunner:
 
         task = self.classifier.classify(task)
         classification = task.classification or ""
+        failure_kind = task.metadata.get("reasoning_failure_kind")
+        if failure_kind:
+            record_planning_failure(kind=str(failure_kind))
         lifecycle.transition(task, TaskState.CLASSIFIED)
 
         hook_failure = await self.hitl.run_lifecycle_hook(
@@ -132,6 +137,10 @@ class NexusPlanningRunner:
             return PlanningPhaseOutcome(early_result=hook_failure)
 
         if classification == TaskClassification.UNSUPPORTED.value:
+            unsupported_kind = ReasoningFailureKind.CLASSIFIER_UNSUPPORTED.value
+            task.metadata["reasoning_failure_kind"] = unsupported_kind
+            record_planning_failure(kind=unsupported_kind)
+            task.sync_metadata()
             lifecycle.transition(task, TaskState.FAILED)
             return PlanningPhaseOutcome(
                 early_result=await self.finish_task(
@@ -202,7 +211,9 @@ class NexusPlanningRunner:
                     classification=classification,
                 )
 
+        plan_started = time.perf_counter()
         plan = self.planner.plan(task, self.registry)
+        record_planner_latency(latency_ms=(time.perf_counter() - plan_started) * 1000.0)
         plan_errors = validate_nexus_plan(plan, self.registry)
         if plan_errors:
             lifecycle.transition(task, TaskState.FAILED)

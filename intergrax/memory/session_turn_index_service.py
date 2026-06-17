@@ -12,11 +12,13 @@ from langchain_core.documents import Document
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
+from intergrax.memory.memory_vector_namespace import (
+    EPISODIC_INDEX_DOMAIN,
+    LTM_INDEX_DOMAIN,
+    resolve_memory_index_collection,
+)
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
-
-EPISODIC_INDEX_DOMAIN = "episodic"
-LTM_INDEX_DOMAIN = "ltm"
 
 
 def _sanitize_metadata(meta: dict[str, Any]) -> dict[str, Any]:
@@ -42,10 +44,19 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
         embedding_manager: BaseEmbeddingManager,
         vectorstore_manager: BaseVectorstoreManager,
         index_roles: Sequence[str] = ("user", "assistant"),
+        tenant_id: str = "default",
+        vector_index_namespace: str | None = None,
     ) -> None:
         self._embedding_manager = embedding_manager
         self._vectorstore_manager = vectorstore_manager
         self._index_roles = tuple(index_roles)
+        self._tenant_id = tenant_id
+        self._vector_index_namespace = vector_index_namespace
+        self._collection_name = resolve_memory_index_collection(
+            vector_index_namespace=vector_index_namespace,
+            tenant_id=tenant_id,
+            domain=EPISODIC_INDEX_DOMAIN,
+        )
 
     async def upsert_turn(
         self,
@@ -72,6 +83,7 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
                 "role": message.role,
                 "deleted": 0,
                 "index_domain": EPISODIC_INDEX_DOMAIN,
+                "collection_name": self._collection_name,
             }
         )
         doc = Document(page_content=text, metadata=meta)
@@ -105,6 +117,7 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
             "tenant_id": tenant_id,
             "deleted": 0,
             "index_domain": EPISODIC_INDEX_DOMAIN,
+            "collection_name": self._collection_name,
         }
         if not include_cross_session and session_id:
             where["session_id"] = session_id

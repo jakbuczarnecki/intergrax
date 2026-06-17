@@ -3,6 +3,7 @@
 **Canonical author workflow for Tier-3 application environments** (`applications/<app>/`).
 
 Architecture canon: [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../architecture/TIER3_APPLICATION_ENVIRONMENT.md) §31 · §45 · §47  
+Cross-domain invariants: [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) — especially APP-INV / SYS-INV tier boundaries (P2-ARCH-01)  
 Agent roster and Nexus path: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) Step 4E · Appendix F  
 Composition engine: [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md) · [`applications/USAGE.md`](../../applications/USAGE.md)
 
@@ -25,6 +26,22 @@ Tier-3 **wires** the Harness; Tier-2 **thinks**. Pick one recipe:
 | **47.5 Mutating prod** | Tools that change external state | + `ReliabilityProfile`, ACP-TOK gates, HITL routes |
 
 **Never implement in Tier-3:** agent business steps, ad-hoc `NexusLoop(...)`, vendor SDK calls, `if org ==` branches.
+
+### 1.1 Profile bundles (architecture §22.6 · P1-ARCH-01)
+
+`ApplicationEnvironmentProfile` remains the **single composition root**. Target structure groups **43 flat fields** into **seven bundles** — implementation `APP-EVOL-8` (M1–M3):
+
+| Bundle | Configure when you need… |
+|--------|--------------------------|
+| `HostMeta` | `profile_id`, `execution_mode`, lab vs product `features` |
+| `SecurityEnvelope` | identity, V-SEC, guardrails, compliance, `OrganizationalPolicyEnvelope` |
+| `CapabilityBundle` | tools, skills, integrations, LLM, context, memory, prompt |
+| `CognitionBundle` | reasoning, orchestration, critic, adaptive, evaluation, codecraft |
+| `GovernanceBundle` | reliability, observability, cost, scaling, deploy, EBE |
+| `TopologyBundle` | `ApplicationGraphSpec` |
+| `IsolationBundle` | shadow workspace, sandbox |
+
+Until M1, use the flat fields in §22.1 (`env.tool_profile`, …). **M1 Done (2026-06-17):** nested bundles + flat shims — `environment_profile/` package. Canon: [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../architecture/TIER3_APPLICATION_ENVIRONMENT.md) §22.6 · [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md).
 
 ---
 
@@ -65,7 +82,7 @@ Answer **before** shipping:
  3. Roster — AgentBinding.mount for each agent?
  4. Capability routing — explicit L1 or classifier L3?
  5. Single vs multi-agent — graph_spec or pipeline token (§23.4)?
- 6. Full ApplicationEnvironmentProfile — no orphan slices?
+ 6. Full ApplicationEnvironmentProfile — no orphan slices? (see §1.1 bundles when APP-EVOL-8 lands)
  7. wire_application_environment() — no getattr on manifest?
  8. build_harness_host_runtime() — not ad-hoc NexusLoop?
  9. All surfaces → UnifiedTaskRunner.run_task()?
@@ -127,7 +144,67 @@ python scripts/check_harness_no_getattr.py
 | Topic | Document |
 |-------|----------|
 | Profile field map | AGENT_CREATION_GUIDE Appendix H |
+| Domain runtime signals (`event_kind`) | §8 below · AGENT_CREATION_GUIDE Appendix Q §Q.5 |
 | Scenario matrix / UC-A* | architecture §35 · §44 |
 | Evolution (snapshot, migrations, package) | architecture §49 |
 | Ops (health, registry, capability graph) | architecture §50 |
 | Domain audit | [`audit/TIER3_APPLICATION_ENVIRONMENT.md`](audit/TIER3_APPLICATION_ENVIRONMENT.md) |
+
+---
+
+## 8. Domain runtime signals and Tier-3 hooks (OBS-EVOL-9)
+
+**Canon:** [`architecture/OBSERVABILITY.md`](../architecture/OBSERVABILITY.md) §4.4 · [`ADR-OBS-003`](../adr/entries/2026-06-17/ADR-OBS-003.md) · plan [`OBS-EVOL-9`](../plan/OBSERVABILITY.md#phase-obs-evol-9--layered-event-catalog-p1-arch-02)
+
+Tier-3 hosts **wire** domain signals; agents **emit** them. Do not add `RuntimeEventType` members from product code.
+
+### 8.1 Responsibility split
+
+| Layer | Emits | Subscribes |
+|-------|-------|------------|
+| Tier-2 agent | `emit_domain_signal(kind, payload)` | — |
+| Tier-3 host | Optional adapters (kind → spine) | `kind_prefix="applications.<app>."` on `RuntimeEventBus` |
+| Platform | `emit_platform_event` (lifecycle spine) | `event_category` / `ops_hint` |
+
+### 8.2 Subscribe to agent signals in ApplicationHost
+
+```python
+def on_legal_clause_flagged(event: RuntimeEvent) -> None:
+    if event.event_kind != "agents.legal.clause_flagged":
+        return
+  # escalate, audit log, metrics — no Nexus fork
+
+bus.subscribe(
+    on_legal_clause_flagged,
+    kind_prefix="agents.legal.",  # OBS-EVOL-9.5 target API
+)
+```
+
+Until OBS-EVOL-9.5 ships, filter on `event.event_kind` inside a wildcard subscriber.
+
+### 8.3 Adapter pattern — domain kind → platform spine
+
+When a domain signal must trigger **platform** behaviour (HITL, policy), implement a **Tier-3 adapter** — never extend the spine enum from the product:
+
+```text
+agents.dispute_sim.risk_threshold_exceeded
+    → (host adapter in applications/dispute_sim/host/wiring.py)
+    → HUMAN_APPROVAL_REQUESTED   # existing spine
+```
+
+Keep adapters in `host/` wiring modules, registered at `build_harness_host_runtime()` — not in `intergrax/runtime/`.
+
+### 8.4 Checklist (add to §45 when emitting custom signals)
+
+```text
+19. Domain signals use emit_domain_signal + registered payload — not RuntimeEventType?
+20. Tier-3 hooks subscribe by kind_prefix / event_category — not per-enum lists?
+21. HITL escalation uses adapter to existing spine — not new platform enum?
+```
+
+### 8.5 Verification (post OBS-EVOL-9)
+
+```bash
+uv run pytest tests/unit/runtime/events/ -q
+uv run python scripts/check_event_catalog.py
+```
