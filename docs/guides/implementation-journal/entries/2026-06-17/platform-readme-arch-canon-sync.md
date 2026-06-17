@@ -7,7 +7,7 @@ scope: PLATFORM_FOUNDATION
 plan_ref:
   - P1-ARCH-03
 status: completed
-commit: 3b3a9fc2
+commit: e4c20f18
 adr: none — documentation sync only; no contract or runtime change
 ---
 
