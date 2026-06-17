@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-17-002 | 2026-06-17 | tier-0, tier-2 AGENT_CONTRACTS_AND_ASSEMBLY | ACP-TOK-CI | [ACP-TOK-CI — stabilize token budget smoke tests and CI diagnostics](entries/2026-06-17/platform-acp-tok-ci-smoke-stabilization.md) | pending |
 | IJ-2026-06-17-001 | 2026-06-17 | tier-0, tier-1, tier-3 MEMORY | MEM-VEC-3.* · MEM-DEPTH-5.2 · MEM-OBS.1 | [MEMORY layer completion — namespace, semantic search, org LTM](entries/2026-06-17/platform-memory-layer-completion.md) | 72e65f2b |
 | IJ-2026-06-14-010 | 2026-06-14 | tier-3 TIER3_APPLICATION_ENVIRONMENT | T3-LC-01..03 · LC-DOC · LC-IMPL-1 | [Tier-3 Layer Completion — doc sync + runtime_config_bridge fix](entries/2026-06-14/tier3-layer-completion-audit-doc-sync.md) | dfed30ba |
 | IJ-2026-06-14-009 | 2026-06-14 | tier-0, tier-1, tier-2, tier-3 LLM_ADAPTERS | LC-2b · LC-3 · M-LLM-X.4 · M-LLM-X.5 | [LLM Layer Completion — failover, routing, ACP bridge](entries/2026-06-14/platform-llm-layer-completion-lc2b-lc3.md) | 96b937e2 |

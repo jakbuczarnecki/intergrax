@@ -109,7 +109,7 @@ dependencies = [
   "yt-dlp>=2024.0",
   "webvtt-py>=0.4",
   "opencv-python-headless==4.9.0.80",
-  "chardet>=5.2",
+  "chardet>=5.2,<6",
   # -----------------
   # UI
   # -----------------
@@ -248,6 +248,7 @@ filterwarnings = [
   # Keep deprecations visible by default (we'll tighten later)
   "default::DeprecationWarning",
   "default::PendingDeprecationWarning",
+  "ignore::requests.exceptions.RequestsDependencyWarning",
   "ignore:intergrax.legacy.rag_answers is archived:DeprecationWarning",
 
   # Silence known noisy SWIG deprecations seen on Windows (PyMuPDF/fitz and similar).
