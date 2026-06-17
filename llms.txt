@@ -5,6 +5,7 @@
 **Hub (sole docs/ root file):** docs/intergrax_runtime_architecture.md  
 **Domain pairs (1:1):** docs/architecture/<DOMAIN>.md ↔ docs/plan/<DOMAIN>.md  
 **Guides (strategy, ideal, audit):** docs/guides/
+**System invariants (P2-ARCH-01):** docs/guides/SYSTEM_INVARIANTS.md — cross-domain “never violate” index before domain pairs
 
 Domains: PLATFORM_FOUNDATION · UNIFIED_EXECUTION_RUNTIME · ORCHESTRATION · NEXUS_EXECUTION_FLOW · AGENT_CONTRACTS_AND_ASSEMBLY · INTEGRATIONS · RAG · TOOLS · CODE_CRAFT · SKILLS · LLM_ADAPTERS · MEMORY · MODALITY · OBSERVABILITY · RELIABILITY_FAILURE_AND_HITL · TIER3_APPLICATION_ENVIRONMENT · EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE · ADAPTIVE_HARNESS_INTELLIGENCE · CRITIC_VERIFICATION · REASONING_AND_COGNITION · ELASTIC_CAPACITY_AND_SCALING
 

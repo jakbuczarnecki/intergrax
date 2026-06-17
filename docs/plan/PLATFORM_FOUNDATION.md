@@ -2907,6 +2907,7 @@ Decision:       L1 certified — GO Phase S (harness environment), then Phase K 
 | B.06 | **Hook / middleware parity** — full §42.20 pipeline vs current Nexus-embedded hooks | §42.20, §42.22 | **Low** | **Done** | Extension agents via plugins | Tier-1 | Lifecycle + **tool call** + **agent selection** hooks; decision/interrupt/retry hooks remain optional (2026-05-27) |
 | B.07 | **§42 maturity remainder** — schema versioning (§42.29), full `ExecutionPhase` coverage, plugin contracts | §42 | **Medium** | **Done** (baseline) | Platform stability for new agents | Tier-1 | `runtime/schema/registry.py`, `events/phase_coverage.py`, `plugins/contract.py` (2026-05-27) |
 | P1-ARCH-03 | **Root README ↔ architecture canon sync** — Overview `(planned)` residuals vs domain L3 closeout (ECC) | hub · domain pairs | **P1** | **Done** | Onboarding / first read | docs | README Overview + Project snapshot aligned with `CODE_CRAFT` closeout (2026-06-17) |
+| P2-ARCH-01 | **System invariants index** — cross-domain `SYS-INV-*` “never violate” guide with CI map | hub · ACP · APP · ORCH | **P2** | **Done** | All authors / auditors | docs | [`guides/SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) (2026-06-17) |
 
 ### B.2 Observability & debug surface
 
@@ -5950,6 +5951,7 @@ L4 readiness requires:
 | B.06 | **Hook / middleware parity** — full §42.20 pipeline vs current Nexus-embedded hooks | §42.20, §42.22 | **Low** | **Done** | Extension agents via plugins | Tier-1 | Lifecycle + **tool call** + **agent selection** hooks; decision/interrupt/retry hooks remain optional (2026-05-27) |
 | B.07 | **§42 maturity remainder** — schema versioning (§42.29), full `ExecutionPhase` coverage, plugin contracts | §42 | **Medium** | **Done** (baseline) | Platform stability for new agents | Tier-1 | `runtime/schema/registry.py`, `events/phase_coverage.py`, `plugins/contract.py` (2026-05-27) |
 | P1-ARCH-03 | **Root README ↔ architecture canon sync** — Overview `(planned)` residuals vs domain L3 closeout (ECC) | hub · domain pairs | **P1** | **Done** | Onboarding / first read | docs | README Overview + Project snapshot aligned with `CODE_CRAFT` closeout (2026-06-17) |
+| P2-ARCH-01 | **System invariants index** — cross-domain `SYS-INV-*` “never violate” guide with CI map | hub · ACP · APP · ORCH | **P2** | **Done** | All authors / auditors | docs | [`guides/SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) (2026-06-17) |
 
 ### B.2 Observability & debug surface
 
