@@ -8,7 +8,7 @@
 **Audit instruction:** [`guides/audit/RAG.md`](../guides/audit/RAG.md)  
 **Related:** [`architecture/INTEGRATIONS.md`](INTEGRATIONS.md) (vector_store, document_parser, rerank_provider slugs) · [`architecture/MEMORY.md`](MEMORY.md) (Knowledge store vs LTM) · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix K §K.5  
 **Implementation:** `intergrax/rag/`  
-**Last architecture audit:** 2026-06-17 (iteration III — Layer Completion accepted proposals A–H, L; **Architecturally Mature**) · 2026-06-13 (iteration II Frozen) · 2026-06-12 (GraphRAG G1–G5)
+**Last architecture audit:** 2026-06-17 — **Full Harness LC** (re-validates M-RAG-ITERATION-III); **Architecturally Mature** · 2026-06-13 (iteration II Frozen) · 2026-06-12 (GraphRAG G1–G5)
 
 ---
 

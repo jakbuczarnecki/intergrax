@@ -543,3 +543,23 @@ Iteration II on **Frozen** layer — sync stale architecture sections and close 
 ```bash
 uv run pytest tests/unit/rag/ tests/unit/tools/providers/rag/ tests/unit/applications/test_rag_async_ingest_reference.py -m gate -q
 ```
+
+---
+
+## Phase RAG-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — re-validates M-RAG-ITERATION-III + M-RAG-CONVERGE; no open P0/P1  
+**Prerequisites:** M-RAG-GRAPH **Done** · M-RAG.62–M-RAG.68 **Done**  
+**Goal:** Formal Full Harness LC closeout — gate verification, journal, audit prompt sync  
+**ADR:** **No ADR needed**
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| RAG-LC-S1 | **Re-audit** — GAP-RAG register + frozen verdict | **Done** | High | No P0/P1 |
+| RAG-LC-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
+| RAG-LC-S3 | **Gate verification** | **Done** | High | 108 gate tests · 2 CI scripts |
+| RAG-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+
+**Deferred P2–P4:** beta→stable manifest promotion · M-RAG.58 AHI adaptive routing (Frozen) · ops soak gates
+
+---
