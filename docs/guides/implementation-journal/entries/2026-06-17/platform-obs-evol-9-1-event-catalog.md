@@ -9,7 +9,7 @@ plan_ref:
   - OBS-EVOL-9.1
   - OBS-EVOL-9-SAR
 status: completed
-commit: pending
+commit: 14094dda
 adr: ADR-OBS-003
 ---
 
