@@ -5,6 +5,8 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-17-038 | 2026-06-17 | tier-0, tier-1 CRITIC_VERIFICATION | CVL-LC-FH-S1–S4 · Full-Harness-LC-CVL | [CRITIC_VERIFICATION — Full Harness Layer Completion closeout](entries/2026-06-17/platform-cvl-layer-completion-fh.md) | pending |
+| IJ-2026-06-17-037 | 2026-06-17 | tier-0, tier-1, tier-3 RELIABILITY_FAILURE_AND_HITL | REL-LC-S1–S4 · Full-Harness-LC-REL | [RELIABILITY_FAILURE_AND_HITL — Full Harness Layer Completion closeout](entries/2026-06-17/platform-rel-layer-completion-fh.md) | pending |
 | IJ-2026-06-17-036 | 2026-06-17 | tier-0, tier-1 OBSERVABILITY | OBS-LC-S1–S4 · Full-Harness-LC-OBS | [OBSERVABILITY — Full Harness Layer Completion closeout](entries/2026-06-17/platform-obs-layer-completion-fh.md) | c00cb317 |
 | IJ-2026-06-17-035 | 2026-06-17 | tier-0, tier-1 MODALITY | MODALITY-LC-S1–S4 · Full-Harness-LC-MODALITY | [MODALITY — Full Harness Layer Completion closeout](entries/2026-06-17/platform-modality-layer-completion.md) | e1e1c506 |
 | IJ-2026-06-17-034 | 2026-06-17 | tier-0, tier-1, tier-3 CONTEXT_ENGINEERING | CE-LC-S1–S4 · Full-Harness-LC-CE | [CONTEXT_ENGINEERING — Full Harness Layer Completion closeout](entries/2026-06-17/platform-ce-layer-completion-fh.md) | b4d580df |

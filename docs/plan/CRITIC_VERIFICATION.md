@@ -6,6 +6,8 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates CVL-LC-1…4 closeout).
+
 ---
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
@@ -838,6 +840,24 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 | **Goal** | Honest L1 trajectory contract — no false expectation of LLM rubric on `eval.trajectory` tool |
 | **DoD** | Architecture/plan aligned; closes CVL-BACKLOG-01 (documented) |
 | **Files** | `docs/architecture/CRITIC_VERIFICATION.md`, `docs/plan/CRITIC_VERIFICATION.md` |
+
+---
+
+## Phase CRITIC_VERIFICATION-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — re-validates CVL-LC-1…4 + CRIT-V-0…7; no open P0/P1  
+**Prerequisites:** CRIT-V **Done** · CVL layer completion **Done** (2026-06-13)  
+**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**ADR:** **No ADR needed**
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| CVL-LC-FH-S1 | **Re-audit** — CRIT-V register + CVL verdict | **Done** | High | No P0/P1 |
+| CVL-LC-FH-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
+| CVL-LC-FH-S3 | **Gate verification** | **Done** | High | 33 critic tests · 2 CI scripts |
+| CVL-LC-FH-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+
+**Deferred P2–P4:** L4 adaptive critic thresholds (AHI) · FLOW-8 product host · LLM trajectory judge optional
 
 ---
 
