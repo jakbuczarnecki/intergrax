@@ -4,6 +4,7 @@
 
 This is the **only** step-by-step workflow document. Do not duplicate this process elsewhere.
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
+Cross-domain invariants: [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) — skim before agent work (P2-ARCH-01)  
 Implementation status: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
 
 **Audience:** human developers, GPT, Claude, Gemini, Cursor agents.
@@ -2924,6 +2925,7 @@ Run before opening a harness PR (see `scripts/`):
 
 When asked to create a new Intergrax agent:
 
+0. Skim [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) — cross-domain rules (`SYS-INV-*`) that apply to every agent.
 1. Read this guide end-to-end.
 2. Run `python -m intergrax.scaffold new-agent <slug> --capability <id>`.
 3. Edit only `agents/<slug>/` — primarily `steps/`, `prompts/`, `schemas/`, `contract.py`.

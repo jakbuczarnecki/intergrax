@@ -108,5 +108,6 @@ uv run python scripts/check_observability_gates.py
 ## For AI coding agents
 
 - AGENTS.md — hard rules and task routing
+- docs/guides/SYSTEM_INVARIANTS.md — cross-domain never-violate index (SYS-INV-*, P2-ARCH-01)
 - README.md#documentation-index — master navigation
 - llms.txt — concise map

@@ -39,7 +39,7 @@
          Integration → Tool → Skill → LLM · RAG · Memory (Tier-0)
 ```
 
-Strategic direction: [Development Strategy](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) · Ideal target: [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) · **Agent model canon:** [AGENT_CONTRACTS_AND_ASSEMBLY.md](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40
+Strategic direction: [Development Strategy](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) · [System invariants](docs/guides/SYSTEM_INVARIANTS.md) · Ideal target: [IDEAL_HARNESS_AI_ARCHITECTURE.md](docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) · **Agent model canon:** [AGENT_CONTRACTS_AND_ASSEMBLY.md](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40
 
 ---
 
@@ -432,6 +432,7 @@ tests/ · scripts/       # Gate tests and harness CI checks
 | I want to… | Read |
 |------------|------|
 | Understand strategic direction | [INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) |
+| **Rules you must not break** | [SYSTEM_INVARIANTS.md](docs/guides/SYSTEM_INVARIANTS.md) — `SYS-INV-*` index (P2-ARCH-01) |
 | Understand the platform | [intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) → pick a domain pair |
 | **Understand the agent model** | [The agent model](#the-agent-model--why-architects-choose-intergrax) · [AGENT_CONTRACTS §13–§40](docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [ADR-AGENT-001..003](docs/adr/entries/2026-06-11/ADR-AGENT-001.md) |
 | See implementation status | [plan/PLATFORM_FOUNDATION.md](docs/plan/PLATFORM_FOUNDATION.md) · [plan ACP](docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) |
@@ -453,7 +454,7 @@ tests/ · scripts/       # Gate tests and harness CI checks
 
 | Area | Links |
 |------|-------|
-| **Strategy & hub** | [Strategy](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) · [Architecture hub](docs/intergrax_runtime_architecture.md) · [Ideal model](docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) |
+| **Strategy & hub** | [Strategy](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) · [System invariants](docs/guides/SYSTEM_INVARIANTS.md) · [Architecture hub](docs/intergrax_runtime_architecture.md) · [Ideal model](docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) |
 | **Domain canon (21 pairs)** | `docs/architecture/{DOMAIN}.md` ↔ `docs/plan/{DOMAIN}.md` — indexed in [hub](docs/intergrax_runtime_architecture.md) |
 | **Execution** | [UAEP / §42](docs/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [Nexus flow](docs/architecture/NEXUS_EXECUTION_FLOW.md) · [Orchestration](docs/architecture/ORCHESTRATION.md) |
 | **Authoring** | [Agent guide](docs/guides/AGENT_CREATION_GUIDE.md) · [Extension guide](docs/guides/EXTENSION_AUTHOR_GUIDE.md) · [applications/USAGE.md](applications/USAGE.md) |

@@ -11,7 +11,7 @@ Intergrax exposes four **plugin catalogs** (three Tier-0 + Context Engineering T
 | Skill | `intergrax.skills` | `SkillPlugin` | `register_skill_plugin()` | **Done** |
 | Context | `intergrax.context` | `ContextPlugin` | `register_context_plugin()` | **Planned** — [CE-2](../plan/CONTEXT_ENGINEERING.md) |
 
-**Architecture:** Integration → Tool → Skill → Agent; **Context Engineering** assembles LLM windows from all sources — see [`architecture/CONTEXT_ENGINEERING.md`](../architecture/CONTEXT_ENGINEERING.md) · [plan CE-EXT](../plan/CONTEXT_ENGINEERING.md).
+**Architecture:** Integration → Tool → Skill → Agent; **Context Engineering** assembles LLM windows from all sources — see [`architecture/CONTEXT_ENGINEERING.md`](../architecture/CONTEXT_ENGINEERING.md) · [plan CE-EXT](../plan/CONTEXT_ENGINEERING.md). **Invariants:** [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) — Tier-0/Tier-2 boundaries (`SYS-INV-*`).
 
 ---
 

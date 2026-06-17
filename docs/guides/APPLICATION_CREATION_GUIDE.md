@@ -3,6 +3,7 @@
 **Canonical author workflow for Tier-3 application environments** (`applications/<app>/`).
 
 Architecture canon: [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../architecture/TIER3_APPLICATION_ENVIRONMENT.md) §31 · §45 · §47  
+Cross-domain invariants: [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) — especially APP-INV / SYS-INV tier boundaries (P2-ARCH-01)  
 Agent roster and Nexus path: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) Step 4E · Appendix F  
 Composition engine: [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md) · [`applications/USAGE.md`](../../applications/USAGE.md)
 

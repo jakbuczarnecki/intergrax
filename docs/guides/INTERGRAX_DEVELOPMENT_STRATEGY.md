@@ -2,7 +2,7 @@
 
 **Status:** Canonical (2026-06-06) — default queue: §6.1 maintenance; Band 2ad (FAUDIT-32) **Done**  
 **Audience:** Maintainers, architects, implementation agents, Cursor AI  
-**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) (hub) · [architecture/](intergrax_runtime_architecture.md) · [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) · [plan/](plan/) · [README.md — Documentation index](../README.md#documentation-index)
+**Related:** [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) (hub) · [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) (cross-domain never-violate index) · [architecture/](intergrax_runtime_architecture.md) · [plan/](plan/) · [README.md — Documentation index](../README.md#documentation-index)
 
 This document defines **how** Intergrax is developed and **what** overrides what when goals conflict. It does not duplicate technical contracts (those live in the architecture canon).
 
@@ -26,6 +26,7 @@ If the implementation plan does not support it — the plan MUST change.
 | Priority | Source | Rule |
 |----------|--------|------|
 | **1** | **This document** — strategic goal | Production Harness AI / Agent OS |
+| **1b** | [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) | Cross-domain architectural rules — must not contradict domain canon |
 | **2** | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) + [architecture/](intergrax_runtime_architecture.md) | Architecture hub + domain canon — living spec, not immutable truth |
 | **3** | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) | Implementation map — consequence of architecture; must not force bad architecture |
 

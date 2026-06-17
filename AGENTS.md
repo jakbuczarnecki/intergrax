@@ -42,6 +42,8 @@ ANALIZA → OCENA ARCHITEKTURY → OCENA PLANU → PROPOZYCJA USPRAWNIEŃ
 
 ## Hard rules (never violate)
 
+Full cross-domain index: [docs/guides/SYSTEM_INVARIANTS.md](docs/guides/SYSTEM_INVARIANTS.md) (`SYS-INV-*`, P2-ARCH-01). Summary below — when in doubt, use the index and linked domain canon.
+
 ### Tier dependency boundaries
 
 ```text
@@ -60,7 +62,7 @@ applications/    MAY import from agents/ and intergrax/
 ### Documentation
 
 - **One source of truth per topic** — `docs/` root = hub only; no parallel guides
-- Strategy / ideal / audit → `docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`, `IDEAL_HARNESS_AI_ARCHITECTURE.md`, `INTEGRAX_HARNESS_AUDIT_MAP.md`
+- Strategy / ideal / audit / invariants → `docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`, `IDEAL_HARNESS_AI_ARCHITECTURE.md`, `INTEGRAX_HARNESS_AUDIT_MAP.md`, `SYSTEM_INVARIANTS.md`
 - Architecture hub → `docs/intergrax_runtime_architecture.md`
 - Domain pairs → `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md` (**1:1**, same filename)
 - Global ladder, DoD, product backlog → `docs/plan/PLATFORM_FOUNDATION.md`
