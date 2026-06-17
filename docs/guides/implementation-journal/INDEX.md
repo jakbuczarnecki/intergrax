@@ -5,7 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-17-017 | 2026-06-17 | platform PLATFORM_FOUNDATION | P2-ARCH-01 | [P2-ARCH-01 — System invariants cross-domain index](entries/2026-06-17/platform-system-invariants-index.md) | pending |
+| IJ-2026-06-17-017 | 2026-06-17 | platform PLATFORM_FOUNDATION | P2-ARCH-01 | [P2-ARCH-01 — System invariants cross-domain index](entries/2026-06-17/platform-system-invariants-index.md) | aeba83f1 |
 | IJ-2026-06-17-016 | 2026-06-17 | platform PLATFORM_FOUNDATION | P1-ARCH-03 | [P1-ARCH-03 — Root README architecture canon sync](entries/2026-06-17/platform-readme-arch-canon-sync.md) | e4c20f18 |
 | IJ-2026-06-17-015 | 2026-06-17 | tier-0, tier-1 OBSERVABILITY | OBS-EVOL-9 | [OBS-EVOL-9 — Phase closeout and gates](entries/2026-06-17/platform-obs-evol-9-phase-closeout.md) | 04f43d22 |
 | IJ-2026-06-17-014 | 2026-06-17 | tier-0, tier-1 OBSERVABILITY | OBS-EVOL-9.11 | [OBS-EVOL-9.11 — W3C Trace Context](entries/2026-06-17/platform-obs-evol-9-11-w3c-trace-context.md) | d2e5546e |

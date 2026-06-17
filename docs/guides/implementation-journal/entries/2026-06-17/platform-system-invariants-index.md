@@ -7,7 +7,7 @@ scope: PLATFORM_FOUNDATION
 plan_ref:
   - P2-ARCH-01
 status: completed
-commit: pending
+commit: aeba83f1
 adr: none — index-only guide; domain canon unchanged
 ---
 
