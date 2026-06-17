@@ -16,7 +16,7 @@
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
-| AUDIT-IDEAL-3.1 | §3 Intake | Canonical `TaskEnvelope` consolidation (`Task` + `RuntimeRequest`) | P1 | Planned |
+| AUDIT-IDEAL-3.1 | §3 Intake | Canonical `TaskEnvelope` consolidation (`Task` + `RuntimeRequest`) | P1 | **Done** |
 | AUDIT-IDEAL-9.1 | §9 Orchestration | Production queue adapter (beyond SQLite scaffold) | P1 | **Done** |
 | AUDIT-IDEAL-9.2 | §9 Orchestration | Swarm + peer-to-peer coordination graph templates | P2 | **Done** |
 | AUDIT-IDEAL-9.3 | §9 Orchestration | Dynamic execution strategy selection (L4 / AHI hook) | P2 | **Done** |
@@ -51,7 +51,7 @@
 | 1 | **ORCH-STRAT.1–5** | Docs | **Done** | Architecture §50–§54 | Strategy catalog + gap register |
 | 2 | **ORCH-STRAT.6** | Docs | **Done** | Cross-ref sync | FLOW §27, AUDIT_MAP §9–§10 |
 
-**Runtime backlog:** [Phase ORCH-5](#phase-orch-5--orchestration-strategy-runtime-gaps-band-2aq--planned) — not started.
+**Runtime backlog:** [Phase ORCH-5](#phase-orch-5--orchestration-strategy-runtime-gaps-band-2aq--closed) — **Done** (2026-06-09).
 
 ### 6.1d Harness implementation queue — orchestration authoring docs (closed)
 
@@ -1513,7 +1513,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ---
 
-## Phase ORCH-5 — Orchestration strategy runtime gaps (Band 2aq — planned)
+## Phase ORCH-5 — Orchestration strategy runtime gaps (Band 2aq — closed)
 
 **Status:** **Done** (2026-06-09) — **5/5 Done**  
 **Prerequisites:** Phase ORCH-STRAT **Done** · default queue = §6.1 maintenance  
