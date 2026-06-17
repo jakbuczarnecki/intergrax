@@ -64,5 +64,6 @@ Adopt **layered runtime event identity** on the existing HOS bus:
 ## Implementation notes
 
 - Tracker: Phase **OBS-EVOL-9** (M0 doc → M4 optional `runtime_event.v2`)
+- **SAR accepted (2026-06-17):** EmitContext, retention_class, profile subscriptions, traceparent, sampling, deprecation shim, JournalQuery, LLM namespace lint, domain redaction; per-category buses and hierarchical enum **rejected**
 - Verification: `scripts/check_event_catalog.py` (planned), existing phase/payload gates until migration
 - Author guides: `AGENT_CREATION_GUIDE.md` Appendix Q §Q.5, `EXTENSION_AUTHOR_GUIDE.md` §11, `APPLICATION_CREATION_GUIDE.md` §8

@@ -124,7 +124,7 @@ Intergrax observability deliberately separates three planes (pattern: event sour
 
 ### 4.4 Layered event identity (P1-ARCH-02 · OBS-EVOL-9)
 
-**Status:** Architecture **accepted** (2026-06-17) · implementation **planned** · **ADR:** [`ADR-OBS-003`](../adr/entries/2026-06-17/ADR-OBS-003.md)
+**Status:** Architecture **accepted** (2026-06-17) · implementation **in progress** (OBS-EVOL-9.1) · **ADR:** [`ADR-OBS-003`](../adr/entries/2026-06-17/ADR-OBS-003.md) · **SAR:** accepted 2026-06-17 (§4.4.7–4.4.13)
 
 HOS uses **three levels of identity** so the spine scales without forcing developers through platform enum changes:
 
@@ -226,6 +226,53 @@ bus.subscribe(handler, kind_prefix="agents.legal.")                     # produc
 | EVT-AP-03 | Per-agent trace SQLite | Plane B via `AgentEngine` |
 | EVT-AP-04 | Duplicate semantics in enum and kind | Kind is authoritative for domain; spine for lifecycle |
 | EVT-AP-05 | High-cardinality `event_kind` in Prometheus labels | Aggregate by `event_category`; kind in journal only |
+| EVT-AP-06 | Reuse `event_kind` name for LLM stream chunks and HOS bus signals | Stream: `intergrax.llm.stream.*`; bus: `platform.llm.*` / `agents.*` |
+
+#### 4.4.7 Production metadata (`EventCatalogEntry` · SAR accepted)
+
+Each spine type is described by a single **`EventCatalogEntry`** in `event_catalog.py` (SSOT):
+
+| Field | Role |
+|-------|------|
+| `phase` | `ExecutionPhase` — Nexus lifecycle placement |
+| `ops_hint` | Stable ops scrape / alert routing token |
+| `category` | `EventCategory` — subscriber and metrics grouping |
+| `preferred_payload_schema_id` | Merged from payload registry |
+| `sample_rate` | `1.0` default; `<1.0` for high-volume types (`TASK_PROGRESS`) — enforced at bus persist (OBS-EVOL-9.6) |
+| `retention_class` | `operational` \| `audit` \| `debug` — ties to data classification retention (IDEAL-23.5) |
+| `consolidation_kind` | Target `platform.*` kind when spine member moves to `DOMAIN_SIGNAL` (OBS-EVOL-9.7) |
+
+`phase_coverage.py` is a **deprecated view** — import catalog helpers instead.
+
+#### 4.4.8 `EmitContext` (OBS-EVOL-9.3)
+
+All public emit APIs accept a typed **`EmitContext`** carrying `task_id`, `run_id`, `tenant_id`, `correlation_id`, and active `TraceScope` — correlation by construction (SAR-01).
+
+#### 4.4.9 Domain signal redaction (OBS-EVOL-9.3)
+
+`emit_domain_signal()` **must** call `payload.redact()` and respect `production_mode` before `RuntimeEventBus.record` — same bar as Plane B `DiagnosticPayload` (SAR-09).
+
+#### 4.4.10 `JournalQuery` (OBS-EVOL-9.5)
+
+Read-model API over unified journal:
+
+```python
+query_journal(run_id, categories={EventCategory.TOOL}, kind_prefix="agents.legal.")
+```
+
+Replaces ad-hoc enum-list filtering in debug tooling (SAR-07).
+
+#### 4.4.11 Declarative profile subscriptions (OBS-EVOL-9.10)
+
+`ObservabilityProfile.event_subscriptions: list[EventSubscriptionSpec]` — Tier-3 declares `kind_prefix` / `event_category` handlers; wiring registers them at host bootstrap (SAR-03).
+
+#### 4.4.12 W3C Trace Context (OBS-EVOL-9.11)
+
+Optional `traceparent` / `tracestate` on `RuntimeEvent` for external APM correlation; propagated through Nexus and OTLP export (SAR-04).
+
+#### 4.4.13 Spine consolidation shim (OBS-EVOL-9.7)
+
+During pre-release migration, deprecated spine types auto-map to `DOMAIN_SIGNAL` + `consolidation_kind` with `DeprecationWarning` in non-strict lab mode (SAR-06).
 
 ### 4.2 Plane B — Diagnostic trace (`TraceEvent` + `DiagnosticPayload`)
 
@@ -619,8 +666,9 @@ Audit map §21 score: **L4** (OBS-BUS-7 gate evidence).
 | Trace models | `intergrax/runtime/nexus/tracing/trace_models.py` |
 | Trace payloads | `intergrax/runtime/nexus/tracing/**/*.py` |
 | Runtime events | `intergrax/runtime/events/runtime_event.py` |
-| Event catalog (target) | `intergrax/runtime/events/event_catalog.py` |
-| Domain signals (target) | `intergrax/runtime/events/signals.py` |
+| Event catalog (SSOT) | `intergrax/runtime/events/event_catalog.py` |
+| Domain signals (target) | `intergrax/runtime/events/signals.py`, `emit_context.py` |
+| Journal query (target) | `intergrax/runtime/events/journal_query.py` |
 | Event bus | `intergrax/runtime/events/event_bus.py` |
 | Trace bridge | `intergrax/runtime/events/trace_bridge.py` |
 | Emitter + TraceScope | `intergrax/runtime/observability/emitter.py`, `trace_scope.py` |
@@ -656,13 +704,13 @@ uv run python scripts/check_observability_gates.py
 
 ---
 
-## 17. Session closeout (2026-06-08)
+## 17. Session closeout
 
-**Harness Observability Spine:** **complete** for platform scope (OBS-BUS-0…7). Tier-3 wires stores; Tier-2 extends via `DiagnosticPayload` + extension SDK; optional sinks subscribe to the journal or `TASK_COMPLETED` export.
+**OBS-BUS (L4):** **Done** (2026-06-08) — unified spine, typed payloads, extension SDK, journal export, CI gates.
+
+**OBS-EVOL-9 (P1-ARCH-02):** **In progress** — layered identity (`event_kind`, `EventCatalog`, `DOMAIN_SIGNAL`). Required before external v1 publication. See plan OBS-EVOL-9 register and §4.4.7–4.4.13.
 
 **Not in spine scope:** product dashboards (§6.3a), mandatory external APM, per-agent private trace DBs.
-
-**Next harness work:** default §6.1 maintenance unless reprioritized (e.g. Phase CRIT-V, Phase K).
 
 ---
 

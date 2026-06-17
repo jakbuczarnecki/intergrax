@@ -3,6 +3,17 @@
 
 """Runtime event package (architecture §42.1–§42.2)."""
 
+from intergrax.runtime.events.event_catalog import (
+    EVENT_CATALOG,
+    EventCatalogEntry,
+    EventCategory,
+    RetentionClass,
+    category_for_event_kind,
+    category_for_spine_type,
+    get_catalog_entry,
+    ops_filter_hint_for_event,
+    phase_for_event,
+)
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import (
     NullRuntimeEventPersistence,
@@ -40,17 +51,26 @@ from intergrax.runtime.events.unified_run_journal import (
 __all__ = [
     "DEFAULT_RUNTIME_EVENTS_DB",
     "ENV_RUNTIME_EVENTS_DB",
+    "EVENT_CATALOG",
     "EVENT_TYPE_PREFERRED_SCHEMA",
+    "EventCatalogEntry",
+    "EventCategory",
     "ExecutionPhase",
     "InMemoryRuntimeEventStore",
     "JOURNAL_SCHEMA_VERSION",
     "NullRuntimeEventPersistence",
+    "RetentionClass",
     "RuntimeEvent",
     "RuntimeEventBus",
     "RuntimeEventPayload",
     "RuntimeEventPersistence",
     "RuntimeEventType",
+    "category_for_event_kind",
+    "category_for_spine_type",
+    "get_catalog_entry",
     "get_payload_schema",
+    "ops_filter_hint_for_event",
+    "phase_for_event",
     "register_payload_schema",
     "runtime_event_with_payload",
     "validate_payload_envelope",

@@ -38,7 +38,7 @@
 |----|-------------|--------|
 | IDEAL-21.1 | `harness_slos.py` SLO catalog types | **Done** |
 | IDEAL-21.2 | Runbook index (HARNESS_ENVIRONMENT ORCH-5.5) | **Done** |
-| IDEAL-21.3–21.6 | Cost dashboard, emission audit, OTLP all hosts | Planned (W2) |
+| IDEAL-21.3–21.6 | Cost dashboard, emission audit, OTLP all hosts | **Done** (see [`IDEAL_HARNESS_L3.md`](IDEAL_HARNESS_L3.md) §21) |
 
 ---
 
@@ -216,26 +216,44 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 
 ## Phase OBS-EVOL-9 — Layered event catalog (P1-ARCH-02)
 
-**Status:** **Planned** (2026-06-17) — architecture §4.4 + ADR-OBS-003 **accepted**; code **not started**  
+**Status:** **In progress** (2026-06-17) — M0 doc **Done**; M1 code **started** (OBS-EVOL-9.1)  
 **Goal:** Scale HOS beyond flat `RuntimeEventType` growth — spine + `event_kind` + `EventCatalog` — **before external v1 publication** (no external migration).
 
 **ADR:** [`ADR-OBS-003`](../adr/entries/2026-06-17/ADR-OBS-003.md)  
 **Architecture:** [`architecture/OBSERVABILITY.md`](../architecture/OBSERVABILITY.md) §4.4 · UAEP [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](../architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.1.6
 
+### OBS-EVOL-9 — Strategic Architecture Review (accepted 2026-06-17)
+
+| SAR | Deliverable | Folded into |
+|-----|-------------|-------------|
+| SAR-01 | `EmitContext` protocol for emit APIs | OBS-EVOL-9.3 |
+| SAR-02 | `retention_class` on `EventCatalogEntry` | OBS-EVOL-9.1 |
+| SAR-03 | Declarative `kind_prefix` subscriptions on `ObservabilityProfile` | OBS-EVOL-9.10 |
+| SAR-04 | W3C `traceparent` / `tracestate` on `RuntimeEvent` | OBS-EVOL-9.11 |
+| SAR-05 | `sample_rate` metadata + bus enforcement | OBS-EVOL-9.1 metadata · OBS-EVOL-9.6 enforcement |
+| SAR-06 | Deprecation shim (old spine → `DOMAIN_SIGNAL`) | OBS-EVOL-9.7 |
+| SAR-07 | `JournalQuery` read-model filters | OBS-EVOL-9.5 |
+| SAR-08 | `LLMStreamEvent.event_kind` namespace lint | OBS-EVOL-9.6 |
+| SAR-09 | Mandatory redaction on `emit_domain_signal` | OBS-EVOL-9.3 |
+| SAR-10 | Elevate `EventKindRegistry` to P1 | OBS-EVOL-9.4 |
+| SAR-11/12 | Per-category buses / hierarchical enum | **Rejected** (ADR-OBS-003) |
+
 | ID | Phase | Deliverable | Status | Priority | Acceptance |
 |----|-------|-------------|--------|----------|------------|
 | OBS-EVOL-9-DOC | M0 | Architecture §4.4 + plan register + ADR-OBS-003 + author guides | **Done** | **Critical** | This register · ADR · `EXTENSION_AUTHOR_GUIDE.md` §11 · `APPLICATION_CREATION_GUIDE.md` §8 · `AGENT_CREATION_GUIDE.md` §Q.5 |
-| OBS-EVOL-9.1 | M1 | `EventCategory` + `EventCatalogEntry` + `event_catalog.py` (merge phase/ops/payload maps; deprecate `phase_coverage.py` as SSOT) | **Planned** | **Critical** | `event_catalog.py` · `test_event_catalog.py` · gates read catalog |
-| OBS-EVOL-9.2 | M1 | `event_kind` + `event_category` on `RuntimeEvent`; auto-fill on emit | **Planned** | **Critical** | `runtime_event.py` · `test_runtime_event_kind.py` |
-| OBS-EVOL-9.3 | M1 | `emit_domain_signal()` + `emit_platform_event()` public APIs | **Planned** | **Critical** | `signals.py` · `test_domain_signals.py` |
-| OBS-EVOL-9.4 | M1 | `EventKindRegistry` for extension kinds (agents/apps namespaces) | **Planned** | High | `event_kind_registry.py` · `test_event_kind_registry.py` |
-| OBS-EVOL-9.5 | M2 | `RuntimeEventBus.subscribe(categories=, kind_prefix=, ops_hints=)` | **Planned** | High | `event_bus.py` · `test_event_bus_taxonomy_subscribe.py` |
-| OBS-EVOL-9.6 | M2 | `scripts/check_event_catalog.py` + wire into `check_observability_gates.py` | **Planned** | High | CI script · extend `check_observability_gates.py` |
-| OBS-EVOL-9.7 | M2 | **Pre-release spine consolidation** — 74 → ~50 types; `DOMAIN_SIGNAL` + `platform.*` kinds | **Planned** | **Critical** | `runtime_event.py` · `event_catalog.py` · update all emitters + `test_observability_emission_coverage.py` |
+| OBS-EVOL-9.1 | M1 | `EventCategory` + `EventCatalogEntry` + `event_catalog.py` (`retention_class`, `sample_rate`, `consolidation_kind`; deprecate `phase_coverage.py` as SSOT) | **Done** | **Critical** | `event_catalog.py` · `test_event_catalog.py` |
+| OBS-EVOL-9.2 | M1 | `event_kind` + `event_category` + `ops_hint` on `RuntimeEvent`; auto-fill from catalog | **Planned** | **Critical** | `runtime_event.py` · `test_runtime_event_kind.py` |
+| OBS-EVOL-9.3 | M1 | `EmitContext` + `emit_domain_signal()` (redaction) + `emit_platform_event()` | **Planned** | **Critical** | `signals.py` · `emit_context.py` · `test_domain_signals.py` |
+| OBS-EVOL-9.4 | M1 | `EventKindRegistry` for extension kinds (agents/apps namespaces) | **Planned** | **Critical** | `event_kind_registry.py` · `test_event_kind_registry.py` |
+| OBS-EVOL-9.5 | M2 | `RuntimeEventBus.subscribe(categories=, kind_prefix=, ops_hints=)` + `JournalQuery` | **Planned** | High | `event_bus.py` · `journal_query.py` · `test_event_bus_taxonomy_subscribe.py` |
+| OBS-EVOL-9.6 | M2 | `scripts/check_event_catalog.py` + sampling enforcement + LLM `event_kind` namespace lint | **Planned** | High | CI script · extend `check_observability_gates.py` |
+| OBS-EVOL-9.7 | M2 | **Pre-release spine consolidation** — 74 → ~50; `DOMAIN_SIGNAL` + deprecation shim | **Planned** | **Critical** | `runtime_event.py` · emitters · `test_observability_emission_coverage.py` |
 | OBS-EVOL-9.8 | M2 | Scaffold: `emit_domain_signal` template in `new_agent` / `new_application` | **Planned** | Medium | `intergrax/scaffold/new_agent.py` · `new_application.py` |
 | OBS-EVOL-9.9 | M3 | Optional `runtime_event.v2` envelope (`event_kind` required) | **Planned** | Low | Opt-in `schema_version`; v1 indefinite |
+| OBS-EVOL-9.10 | M2 | Declarative bus subscriptions on `ObservabilityProfile` | **Planned** | P2 | `sub_profiles.py` · `observability_wiring.py` |
+| OBS-EVOL-9.11 | M3 | W3C Trace Context (`traceparent` / `tracestate`) on `RuntimeEvent` + OTLP bridge | **Planned** | P3 | `runtime_event.py` · `export_bridge.py` |
 
-**Suggested PR order:** OBS-EVOL-9-DOC → OBS-EVOL-9.1 → OBS-EVOL-9.2 → OBS-EVOL-9.3 → OBS-EVOL-9.4 → OBS-EVOL-9.6 → OBS-EVOL-9.5 → OBS-EVOL-9.7 → OBS-EVOL-9.8.
+**Suggested PR order:** OBS-EVOL-9-DOC → OBS-EVOL-9.1 → OBS-EVOL-9.2 → OBS-EVOL-9.3 → OBS-EVOL-9.4 → OBS-EVOL-9.6 → OBS-EVOL-9.5 → OBS-EVOL-9.7 → OBS-EVOL-9.8 → OBS-EVOL-9.10 → OBS-EVOL-9.11.
 
 **Explicitly out of scope:** per-category event buses; hierarchical enums; mandatory external APM.
 
