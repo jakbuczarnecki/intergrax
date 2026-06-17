@@ -42,19 +42,19 @@ Perform a **rigorous, evidence-backed audit** of the **Tier-3 Application Enviro
 
 ## Mission
 
-Audit **deployable application hosts** (architecture §24–§51): ApplicationEnvironmentProfile as composition root, host contracts §25–§32, environment state §42, production gates §40/§46, evolution §49, platform ops §50, and author DX — without Nexus business logic or duplicate registries.
+Audit **deployable application hosts** (architecture §24–§51): `ApplicationEnvironmentProfile` as composition root (§22.1 flat · §22.6 hierarchical bundles · ADR-APP-003), host contracts §25–§32, environment state §42, production gates §40/§46, evolution §49, platform ops §50, and author DX — without Nexus business logic or duplicate registries.
 
 ## Key symbols and contracts
 
-ApplicationEnvironmentProfile · ApplicationManifest · ApplicationHost · ApplicationEnvironmentState · EnvironmentSnapshot · ApplicationPackage · ApplicationRegistry · EnvironmentHealthScore · ApplicationOperationalOwnership · ApplicationRecoveryContract · AgentCertification · CapabilityGovernanceProfile · OrganizationalPolicyEnvelope · ExecutionMode
+ApplicationEnvironmentProfile · HostMeta · SecurityEnvelope · CapabilityBundle · CognitionBundle · GovernanceBundle · TopologyBundle · IsolationBundle · ApplicationManifest · ApplicationHost · ApplicationEnvironmentState · EnvironmentSnapshot · ApplicationPackage · ApplicationRegistry · EnvironmentHealthScore · ApplicationOperationalOwnership · ApplicationRecoveryContract · AgentCertification · CapabilityGovernanceProfile · OrganizationalPolicyEnvelope · ExecutionMode
 
 ## Active plan phases (verify status vs code reality)
 
-H-APP Done · APP-CON-1..8 Done · APP-PROD-1..9 Done · APP-EVOL-1..7 Done · APP-OPS-1..4 Done · APP-CON-DX Done
+H-APP Done · APP-CON-1..8 Done · APP-PROD-1..9 Done · APP-EVOL-1..7 Done · **APP-EVOL-8 Planned** (hierarchical bundles · P1-ARCH-01) · APP-OPS-1..4 Done · APP-CON-DX Done
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-CFG-14 LKW hybrid incomplete · MCP optional uneven · queue worker not scaffold-default · policy_coverage health proxy (UC-A7 golden deferred) · multi-tenant registry store deferred
+APP-EVOL-8 hierarchical profile bundles (§22.6) — architecture **accepted**, code **not started** · CFG-14 LKW hybrid incomplete · MCP optional uneven · queue worker not scaffold-default · policy_coverage health proxy (UC-A7 golden deferred) · multi-tenant registry store deferred
 
 ---
 

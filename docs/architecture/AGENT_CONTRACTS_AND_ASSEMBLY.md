@@ -1309,7 +1309,7 @@ Developer code path:
 | [`adr/entries/2026-06-11/ADR-AGENT-003.md`](../adr/entries/2026-06-11/ADR-AGENT-003.md) | Step loop + dual observability |
 | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.4–§42.7 | UAEP lifecycle, decisions |
 | [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) | End-to-end narrative S1–S7 |
-| [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §22–§23 | Application shell + profile injection §30 |
+| [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §22–§23 · §22.6 | Application shell + profile injection §30 · hierarchical bundles (ADR-APP-003) |
 | [`MEMORY.md`](MEMORY.md) · [`RAG.md`](RAG.md) · [`TOOLS.md`](TOOLS.md) | Per-agent resource planes §30 |
 | [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) | **Appendix AC** — author `run()` + patterns |
 | [`plan/TOOLS.md`](../plan/TOOLS.md) TOOL-ENG-6 | Tool loop for ReActAgent |
@@ -2927,7 +2927,7 @@ See [`OBSERVABILITY.md`](OBSERVABILITY.md) — extend spine with `policy.verdict
 | Document | Relationship |
 |----------|--------------|
 | [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §39 | **Canonical home** — org envelope, virtual workforce, APP-CON |
-| [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §22 | `PolicyRulesProfile`, `GuardrailProfile`, profile wiring |
+| [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §22 · §22.6 | `PolicyRulesProfile`, `GuardrailProfile`, profile wiring · bundle grouping (ADR-APP-003) |
 | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.11 | `RuntimePolicyBundle`, guardrails |
 | [`OBSERVABILITY.md`](OBSERVABILITY.md) | Trace spine + compliance metrics |
 | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) | Scenario/playbook validation via critic |

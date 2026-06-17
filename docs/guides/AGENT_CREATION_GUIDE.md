@@ -1210,7 +1210,16 @@ Intergrax is **policy-first** and **event-first**. Governance and observability 
 ### H.2 Control plane map (where to customize)
 
 ```text
-ApplicationEnvironmentProfile (Tier-3 umbrella)
+ApplicationEnvironmentProfile (Tier-3 umbrella — single root)
+  ├── meta (HostMeta)             → profile_id, execution_mode, features  [§22.6 target]
+  ├── security (SecurityEnvelope) → identity, security_profile, guardrails, org envelope
+  ├── capabilities (CapabilityBundle) → tools, skills, integrations, LLM, context, memory, prompt
+  ├── cognition (CognitionBundle) → reasoning, orchestration, critic, adaptive, evaluation, codecraft
+  ├── governance (GovernanceBundle) → reliability, observability, cost, scaling, deploy, EBE
+  ├── topology (TopologyBundle)   → ApplicationGraphSpec
+  └── isolation (IsolationBundle) → shadow workspace, sandbox
+
+Flat accessors (current wire — until APP-EVOL-8 M1):
   ├── security_profile          → V-SEC toggles (prompt/tool/retrieval/tenant) → application_security_wiring.py
   ├── guardrail_profile         → vendor LLM scan toggles (M.12) + `integration_profile.llm_guardrail` slug
   ├── integration_profile.llm_guardrail → NeMo / LLM Guard / Presidio / … (Tier-0 catalog — agents never import SDKs)
@@ -1223,6 +1232,8 @@ ApplicationEnvironmentProfile (Tier-3 umbrella)
   ├── adaptive_profile          → L4 runtime loops, stores, canary traffic (Appendix V)
   ├── execution_mode            → strict | balanced | exploratory → runtime_policies
   └── integration_profile       → observability_backend slug (prometheus, otel, elasticsearch, …)
+
+Canon: architecture/TIER3_APPLICATION_ENVIRONMENT.md §22.6 · ADR-APP-003.
 
 RuntimePolicyBundle (composed once per host)
   ├── tool_access / tool_scope  → allowed_tools intersection with AgentContract

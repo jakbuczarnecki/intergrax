@@ -63,7 +63,7 @@ IDEAL requires typed nodes, lineage, blast radius, validation gates. Implemented
 ### 3.1 Rules
 
 - **`AgentRegistry`** ≠ **`ApplicationRegistry`**. First is **runtime selection**; second is **platform inventory**.
-- **`EnvironmentRegistry`** ≠ **`ApplicationEnvironmentProfile`**. Profile is config; registry entry is **where** that config is deployed.
+- **`EnvironmentRegistry`** ≠ **`ApplicationEnvironmentProfile`**. Profile is config; registry entry is **where** that config is deployed. Nested profile bundles (§22.6 · ADR-APP-003) do **not** introduce a second config type — they group fields inside the same profile.
 - README table is **documentation index**, not a registry contract — prefer `ApplicationRegistry` artifacts for ops automation (APP-OPS-4 **Done**).
 
 **Overlap risk:** Low, if naming is preserved. **Conflict:** None.

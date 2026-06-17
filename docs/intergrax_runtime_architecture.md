@@ -97,7 +97,7 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 | Question | Owner | Canon |
 |----------|-------|-------|
 | What agents are active in this product? | **`ApplicationManifest`** roster | §24 · §27 |
-| What harness slices are enabled? | **`ApplicationEnvironmentProfile`** | §22 |
+| What harness slices are enabled? | **`ApplicationEnvironmentProfile`** (§22.1 flat · §22.6 bundles) | §22 · [ADR-APP-003](adr/entries/2026-06-17/ADR-APP-003.md) |
 | Reactive vs daemon vs batch? | Posture + host factory | §23 |
 | Who sets routing capability? | L1–L4 matrix | §23.3 |
 | Virtual org / simulation rules? | **`OrganizationalPolicyEnvelope`** | §39 |
@@ -108,12 +108,12 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 
 - **Applications compose; they do not cognate** — business logic stays in Tier-2 agents.
 - **One Task lifecycle** — all surfaces converge on `UnifiedTaskRunner` → `NexusLoop`.
-- **Profile is the composition root** — no ad-hoc `getattr` wiring in hosts.
+- **Profile is the composition root** — no ad-hoc `getattr` wiring in hosts; nested bundles (§22.6) group slices under the same root.
 - **Hooks are boundaries, not step loops** — no `Application.on_next_orchestration_step()`.
 
 **Author entry points:** [`applications/USAGE.md`](../applications/USAGE.md) · `HarnessApplication` (`intergrax/harness/app.py`) · scaffold `new-application` · [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md) §0.
 
-**Implementation:** H-APP profile/wiring **Done**; APP-CON-1 host pipeline mount **Done**; budget reactions **Done** (ACP-TOK-1..3 · ACP-TOK-CI) + APP-PROD-1..9 gates; APP-EVOL-1..7 evolution **Done**; APP-OPS-1..4 platform ops **Done** — [TIER3 plan](plan/TIER3_APPLICATION_ENVIRONMENT.md#master-implementation-backlog-app-unified). **Maturity:** Architecturally Mature for reference hosts; enterprise marketplace/distribution remains **P4** backlog.
+**Implementation:** H-APP profile/wiring **Done**; APP-CON-1 host pipeline mount **Done**; budget reactions **Done** (ACP-TOK-1..3 · ACP-TOK-CI) + APP-PROD-1..9 gates; APP-EVOL-1..7 evolution **Done**; **APP-EVOL-8** hierarchical bundles **Planned** ([ADR-APP-003](adr/entries/2026-06-17/ADR-APP-003.md)); APP-OPS-1..4 platform ops **Done** — [TIER3 plan](plan/TIER3_APPLICATION_ENVIRONMENT.md#master-implementation-backlog-app-unified). **Maturity:** Architecturally Mature for reference hosts; **APP-EVOL-8** is approved post-freeze evolution (P1-ARCH-01).
 
 ---
 

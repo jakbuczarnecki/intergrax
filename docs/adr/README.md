@@ -77,6 +77,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-AGENT-003](entries/2026-06-11/ADR-AGENT-003.md) | Agent step loop (`on_next_step`); dual observability planes | Accepted |
 | [ADR-TOOL-002](entries/2026-06-11/ADR-TOOL-002.md) | Bounded multi-iteration tool loop; graph boundary (TOOL-ENG-6) | Accepted |
 | [ADR-APP-002](entries/2026-06-12/ADR-APP-002.md) | EnvironmentSnapshot on STRICT task intake | Accepted |
+| [ADR-APP-003](entries/2026-06-17/ADR-APP-003.md) | Hierarchical profile bundles on ApplicationEnvironmentProfile | Accepted |
 | [ADR-CTX-001](entries/2026-06-12/ADR-CTX-001.md) | Context Engineering as first-class domain and plugin engine | Accepted |
 | [ADR-MEM-002](entries/2026-06-14/ADR-MEM-002.md) | Three-domain vector memory catalog (knowledge, LTM, episodic) | Accepted |
 | [ADR-FLOW-005](entries/2026-06-12/ADR-FLOW-005.md) | Retire Tier-1 AgentEngine pipeline stack (ACP-CLOSE-LEG-5) | Accepted |

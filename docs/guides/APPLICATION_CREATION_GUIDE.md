@@ -26,6 +26,22 @@ Tier-3 **wires** the Harness; Tier-2 **thinks**. Pick one recipe:
 
 **Never implement in Tier-3:** agent business steps, ad-hoc `NexusLoop(...)`, vendor SDK calls, `if org ==` branches.
 
+### 1.1 Profile bundles (architecture §22.6 · P1-ARCH-01)
+
+`ApplicationEnvironmentProfile` remains the **single composition root**. Target structure groups **43 flat fields** into **seven bundles** — implementation `APP-EVOL-8` (M1–M3):
+
+| Bundle | Configure when you need… |
+|--------|--------------------------|
+| `HostMeta` | `profile_id`, `execution_mode`, lab vs product `features` |
+| `SecurityEnvelope` | identity, V-SEC, guardrails, compliance, `OrganizationalPolicyEnvelope` |
+| `CapabilityBundle` | tools, skills, integrations, LLM, context, memory, prompt |
+| `CognitionBundle` | reasoning, orchestration, critic, adaptive, evaluation, codecraft |
+| `GovernanceBundle` | reliability, observability, cost, scaling, deploy, EBE |
+| `TopologyBundle` | `ApplicationGraphSpec` |
+| `IsolationBundle` | shadow workspace, sandbox |
+
+Until M1 lands, use the flat fields in §22.1 (`env.tool_profile`, …). Canon: [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../architecture/TIER3_APPLICATION_ENVIRONMENT.md) §22.6 · [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md).
+
 ---
 
 ## 2. Author workflow (architecture §31)
@@ -65,7 +81,7 @@ Answer **before** shipping:
  3. Roster — AgentBinding.mount for each agent?
  4. Capability routing — explicit L1 or classifier L3?
  5. Single vs multi-agent — graph_spec or pipeline token (§23.4)?
- 6. Full ApplicationEnvironmentProfile — no orphan slices?
+ 6. Full ApplicationEnvironmentProfile — no orphan slices? (see §1.1 bundles when APP-EVOL-8 lands)
  7. wire_application_environment() — no getattr on manifest?
  8. build_harness_host_runtime() — not ad-hoc NexusLoop?
  9. All surfaces → UnifiedTaskRunner.run_task()?

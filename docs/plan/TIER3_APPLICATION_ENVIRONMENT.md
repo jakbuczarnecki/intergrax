@@ -8,6 +8,8 @@
 
 **Cross-plan — Agent layer (ACP):** Tier-3 hosts supply `ApplicationEnvironmentProfile`, `AgentBinding`, intake `RequestIdentity`, and org envelope — consumed by agent `merge_environment` (architecture ACP §30 · TIER3 §39). Implementation synced in [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 2** (`ACP-DX-2`, `ACP-DX-5`) and **Wave 6** (`ACP-ORG-1..2`). Host PRs that change profile merge order MUST update agent plan acceptance tests.
 
+**Cross-plan — Profile bundles (APP-EVOL-8):** Hierarchical bundles (architecture §22.6 · ADR-APP-003) preserve flat property shims in M1 — no ACP contract change until `spec_version` 2.0 (M3).
+
 **Application authoring canon (APP-CON):** architecture §24–§51 — symmetric to ACP §12–§45 for Tier-3 environments. **Evolution canon (APP-EVOL):** architecture §49. **Operations canon (APP-OPS):** architecture §50. **Freeze audit:** [`guides/GOVERNANCE_CONSISTENCY_AUDIT.md`](../guides/GOVERNANCE_CONSISTENCY_AUDIT.md). Phases **H-APP-CON** · **H-APP-EVOL** · **H-APP-OPS** · **H-APP-FREEZE** below.
 
 **Fidelity rule:** Every architecture §20–§51 normative row MUST map to a plan ID in [§Architecture fidelity matrix](#architecture-fidelity-matrix--20-51) and a verification artifact in [§Fidelity verification gates](#fidelity-verification-gates). Completing the **open APP-\*** backlog is sufficient for implementation to match frozen architecture — no new primitives without ADR.
@@ -22,7 +24,7 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 |--------|-------|----------|--------|-------------------|
 | §20 | Shadow workspace lifecycle | H-APP.3.4 · APP-CON-8 · APP-PROD-8 | **Done** | `shadow_wiring.py` · `workspace_cleanup_wiring.py` · `check_workspace_cleanup.py` |
 | §21 | Sandbox lifecycle | H-APP.3.5 · APP-CON-8 · APP-PROD-8 | **Done** | `sandbox_wiring.py` · `workspace_cleanup_wiring.py` · `test_workspace_cleanup_wiring.py` |
-| §22 | `ApplicationEnvironmentProfile` | H-APP.1.* | **Done** | `environment_profile.py` · `test_environment_profile.py` |
+| §22 | `ApplicationEnvironmentProfile` | H-APP.1.* · **APP-EVOL-8** | **Partial** — flat §22.1 **Done**; hierarchical bundles §22.6 **Planned** | `environment_profile.py` · `test_environment_profile.py` · ADR-APP-003 |
 | §23 | Interaction postures | H-APP-DOC.* · H-APP-WIRING.* | **Done** | §23.7 matrix closed on reference hosts |
 | §24 | `ApplicationManifest` / `AgentBinding` | N.1 · H-APP.1.2 | **Done** | `manifest.py` · `test_manifest_conformance.py` |
 | §25 | `run_task` / `HarnessApplication` / `ApplicationHost` | APP-CON-1 · N.* | **Done** | `harness/app.py` · `test_application_host_wiring.py` |
@@ -99,6 +101,29 @@ Single register for all open architecture rows. **Execution order:** [§6.2y](#6
 | APP-EVOL-5 | `ApplicationRecoveryContract` on `ReliabilityProfile` | **Done** | `application_recovery_contract.py` · `check_application_recovery_contract.py` |
 | APP-EVOL-6 | `ApplicationEnvironmentDiff` + `doctor diff-app` | **Done** | `check_application_environment_diff.py` |
 | APP-EVOL-7 | `ApplicationPackage` + dependency resolver | **Done** | `check_application_package.py` |
+| APP-EVOL-8 | Hierarchical profile bundles (P1-ARCH-01 · §22.6) | **Planned** | ADR-APP-003 · phases M1–M3 below |
+
+### APP-EVOL-8 — Hierarchical profile bundles (P1-ARCH-01)
+
+**Status:** **Planned** (2026-06-17) — architecture §22.6 + ADR-APP-003 **accepted**; code **not started**  
+**Goal:** Reduce flat `ApplicationEnvironmentProfile` namespace growth (43+ top-level fields) by nesting existing sub-profiles into seven bundles **without** changing `APP-INV-06`, §41 primitives, or Nexus wiring in M1–M2.
+
+**ADR:** [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md)
+
+| ID | Phase | Deliverable | Status | Priority | Acceptance |
+|----|-------|-------------|--------|----------|------------|
+| APP-EVOL-8-DOC | — | Architecture §22.6 + plan register + cross-doc sync | **Done** | **Critical** | This plan row · `architecture/TIER3_APPLICATION_ENVIRONMENT.md` §22.6 |
+| APP-EVOL-8.1 | M1 | Bundle models (`HostMeta`, `SecurityEnvelope`, `CapabilityBundle`, `CognitionBundle`, `GovernanceBundle`, `TopologyBundle`, `IsolationBundle`, `EnvironmentExtensions`) nested on root | **Planned** | **Critical** | `environment_profile.py` · `extra=forbid` on all bundles |
+| APP-EVOL-8.2 | M1 | Flat `@property` shims (`env.tool_profile` → `env.capabilities.tools`) — zero wiring diff | **Planned** | **Critical** | Existing `*_wiring.py` tests green without edits |
+| APP-EVOL-8.3 | M1 | Flat JSON deserializer + bundle-normalized snapshot/diff digest parity | **Planned** | High | `test_environment_profile_bundles.py` · `test_environment_snapshot_wiring.py` |
+| APP-EVOL-8.4 | M2 | Per-bundle presets (`CapabilityBundle.lab()`, `GovernanceBundle.product()`, …) | **Planned** | High | `lab_defaults()` / `product_defaults()` built from bundles |
+| APP-EVOL-8.5 | M2 | Shared capability packs — reusable `CapabilityBundle` across manifests | **Planned** | Medium | Reference host imports shared pack · doc example in `APPLICATION_CREATION_GUIDE.md` |
+| APP-EVOL-8.6 | M3 | `spec_version: "2.0.0"` — nested JSON canonical; flat top-level deprecated | **Planned** | Medium | Migration guide · `ProfileMigration` validator extension |
+| APP-EVOL-8.7 | M1 | Gate: `check_environment_profile_bundle_schema.py` — export schema includes bundles | **Planned** | Medium | `scripts/export_harness_spec_schemas.py` round-trip |
+
+**Explicitly out of scope:** second composition root; Nexus profile fork; moving `AgentBinding` into bundles; marketplace UI.
+
+**Suggested PR order:** APP-EVOL-8-DOC → APP-EVOL-8.1 → APP-EVOL-8.2 → APP-EVOL-8.3 → APP-EVOL-8.7 → APP-EVOL-8.4 → APP-EVOL-8.5 → APP-EVOL-8.6.
 
 ### APP-OPS — platform operations (architecture §50)
 
@@ -243,7 +268,7 @@ Total: 43
 | §3.7 | Product observability profile (optional debug) | H-APP.4.8 |
 | §4 | Operational L3 release evidence | H-APP.6.1–H-APP.6.2 |
 | §5 | Registry bypass prevention | H-APP.0.4 |
-| §6 | EnvironmentProfile recommendation | H-APP.1.1–H-APP.1.5 |
+| §6 | EnvironmentProfile recommendation | H-APP.1.1–H-APP.1.5 · **APP-EVOL-8** (§22.6 bundles) |
 | §6 (follow-up) | Per-app migration checklist | H-APP.5.1–H-APP.5.3 |
 
 ### H-APP — Master deliverables register (all 43 tasks)
@@ -509,8 +534,10 @@ uv run pytest -m gate -q
 | APP-EVOL-5 | `ApplicationRecoveryContract` on profile | **Done** | High | `test_recovery_contract_wiring.py` |
 | APP-EVOL-6 | `ApplicationEnvironmentDiff` + `doctor diff-app` | **Done** | Medium | `check_application_environment_diff.py` |
 | APP-EVOL-7 | `ApplicationPackage` + dependency resolver | **Done** | Medium | `check_application_package.py` |
+| APP-EVOL-8-DOC | Architecture §22.6 hierarchical bundles | **Done** | **Critical** | `architecture/TIER3_APPLICATION_ENVIRONMENT.md` §22.6 · ADR-APP-003 |
+| APP-EVOL-8.1–8.7 | Bundle models + shims + presets + spec 2.0 | **Planned** | **Critical** | See [APP-EVOL-8 register](#app-evol-8--hierarchical-profile-bundles-p1-arch-01) |
 
-**Explicitly out of scope:** marketplace UI; Nexus fork; Tier-3 cognition loop.
+**Explicitly out of scope:** marketplace UI; Nexus fork; Tier-3 cognition loop; second composition root.
 
 ---
 
@@ -530,7 +557,7 @@ uv run pytest -m gate -q
 | APP-OPS-4 | `ApplicationRegistry` + `EnvironmentRegistry` + CLI | **Done** | Medium | `check_application_registry.py` |
 | APP-EVOL-2b | Typed migration validators | **Done** | High | `migration_wiring.py` per primitive |
 
-**Freeze declaration:** Tier-3 **structural architecture** is complete at §51. APP-* master backlog **Done** (2026-06-11); layer completion audit (2026-06-14) = **Architecturally Mature**. Further work is P3/P4 backlog only — no new composition primitives without ADR.
+**Freeze declaration:** Tier-3 **structural architecture** is complete at §51 for flat profile §22.1. **APP-EVOL-8** (§22.6 hierarchical bundles · P1-ARCH-01) is the **only approved post-freeze composition evolution** — requires ADR-APP-003 (**accepted**). APP-* master backlog **Done** (2026-06-11) except APP-EVOL-8; layer completion audit (2026-06-14) = **Architecturally Mature** for reference hosts. Further work is APP-EVOL-8 + P3/P4 backlog.
 
 ---
 
@@ -567,6 +594,7 @@ uv run pytest -m gate -q
 
 | ID | Priority | Item | Notes |
 |----|----------|------|-------|
+| T3-BL-P1-01 | P1 | Hierarchical profile bundles (`APP-EVOL-8` · P1-ARCH-01) | Architecture §22.6 **Done** · M1 code **Planned** · ADR-APP-003 |
 | T3-BL-P3-01 | P3 | Default `INCLUDE_QUEUE_WORKER` on product scaffold | Opt-in today; legal + scaffold only |
 | T3-BL-P3-02 | P3 | `RunBudget` from `CostProfile` beyond context mirror | Partial COST-1; context bridge derives when unset |
 | T3-BL-P4-01 | P4 | `graph_version` on `ApplicationGraphSpec` | Migration schema ready |

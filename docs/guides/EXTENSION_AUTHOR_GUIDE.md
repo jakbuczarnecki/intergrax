@@ -34,7 +34,7 @@ Intergrax exposes four **plugin catalogs** (three Tier-0 + Context Engineering T
 | Business logic, UAEP steps | Yes | No |
 | Tool/skill allow-list on contract | Yes | Enables catalogs via profiles |
 | Integration backends (Postgres, S3, …) | No | `IntegrationProfile` / presets |
-| Nexus loop, retry, graph routing | No | `ApplicationEnvironmentProfile` |
+| Nexus loop, retry, graph routing | No | `ApplicationEnvironmentProfile` (§22.6 nested bundles — same root) |
 | HTTP/MCP host, auth, tenant | No | Host factory / `HarnessApplication` |
 
 | Belongs in `applications/<app>/` | Belongs in `agents/<name>/` |

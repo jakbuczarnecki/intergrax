@@ -17,6 +17,7 @@
 | [§20](#20-shadow-workspace-model) | Shadow workspace model |
 | [§21](#21-sandbox-model) | Sandbox model |
 | [§22](#22-application-environment-profile-canonical) | **ApplicationEnvironmentProfile** (composition root) |
+| [§22.6](#226-hierarchical-profile-bundles-target) | **Hierarchical profile bundles** (P1-ARCH-01 · ADR-APP-003) |
 | [§23](#23-application-interaction-postures-canonical) | Interaction postures, routing, scenarios |
 | [§24](#24-application-contract) | **Application contract** (`ApplicationManifest`) |
 | [§25](#25-application-interface-run_task-facade-harnessapplication-and-applicationhost) | **Application interface:** `run_task()`, `HarnessApplication`, `ApplicationHost` |
@@ -146,7 +147,9 @@ A **controlled execution environment** for risky computation — code exec, brow
 
 Tier-3 hosts are configured through **`ApplicationEnvironmentProfile`** — a typed umbrella aggregating every harness control plane slice.
 
-## 22.1 Profile composition
+**Evolution (P1-ARCH-01):** the flat surface in §22.1 remains the **current wire-compatible shape** (`spec_version` `1.x`). Canonical target structure is **seven nested bundles** under the same root — §22.6 · [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md) · plan `APP-EVOL-8`.
+
+## 22.1 Profile composition (flat surface — current)
 
 | Sub-profile | Purpose |
 |-------------|---------|
@@ -229,6 +232,91 @@ Every Tier-3 application MUST:
 | [`ORCHESTRATION.md`](ORCHESTRATION.md) | Nexus orchestration fields on profile |
 | [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) | `ScalingProfile`, deploy/Helm vs ECP provisioning |
 | [`guides/HARNESS_ENVIRONMENT.md`](../guides/HARNESS_ENVIRONMENT.md) | Lab stack operator guide |
+| [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md) | Hierarchical profile bundles decision |
+
+## 22.6 Hierarchical profile bundles (target)
+
+**Status:** Architecture **accepted** · implementation **planned** (`APP-EVOL-8`) · **ADR:** [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md)
+
+### 22.6.1 Problem
+
+`ApplicationEnvironmentProfile` aggregates **43+ top-level fields** across **25+ sub-profile types**. Each new harness domain adds another top-level slot. Sub-profiles are typed and wired independently, but the **flat namespace** increases author cognitive load, preset duplication, and merge-surface growth (`runtime_config_bridge`, `merge_environment`, `EnvironmentSnapshot` digests).
+
+**Invariant preserved:** **`ApplicationEnvironmentProfile` remains the single composition root** (`APP-INV-06`). Bundles are **grouping containers only** — not new runtime primitives and not replacements for §41 separation (`ApplicationGraphSpec`, `OrganizationalPolicyEnvelope`, `AgentBinding`, `ApplicationHost`).
+
+### 22.6.2 Bundle model
+
+Seven nested containers replace the flat top-level namespace. Sub-profile **types are unchanged** — only nesting and authoring presets evolve.
+
+```text
+ApplicationEnvironmentProfile                    # composition root (unchanged name)
+├── meta: HostMeta                               # host identity posture
+├── security: SecurityEnvelope                   # trust boundary + org rules
+├── capabilities: CapabilityBundle               # Tier-0 catalogs (tools/skills/LLM/…)
+├── cognition: CognitionBundle                   # reasoning, orchestration, critic, eval
+├── governance: GovernanceBundle                 # reliability, observability, cost, ops
+├── topology: TopologyBundle                     # declarative multi-agent graph
+├── isolation: IsolationBundle                   # shadow workspace + sandbox
+└── extensions: EnvironmentExtensions            # domain_policy_fragments escape hatch
+```
+
+| Bundle | Nested fields (maps from §22.1 flat field) | Answers |
+|--------|---------------------------------------------|---------|
+| **`HostMeta`** | `profile_id`, `spec_version`, `application_profile`, `execution_mode`, `features` | *What kind of host is this?* |
+| **`SecurityEnvelope`** | `identity_profile` → `identity`; `security_profile` → `application_security`; `guardrail_profile` → `guardrails`; `policy_rules`; `compliance_profile` → `compliance`; `organizational_policy` | *Who may run, under which rules?* |
+| **`CapabilityBundle`** | `integration_profile` → `integrations`; `tool_profile` → `tools`; `skill_profile` → `skills`; `llm_profile` → `llm`; `modality_profile` → `modality`; `prompt_profile` → `prompt`; `context_profile` → `context`; `memory_profile` → `memory`; `tool_selection_*` + `tool_invocation_*` + `max_parallel_tool_calls` → `tool_selection` / `tool_invocation` | *What catalogs and context planes are enabled?* |
+| **`CognitionBundle`** | `reasoning_profile` → `reasoning`; `orchestration_profile` → `orchestration`; `critic_profile` → `critic`; `adaptive_profile` → `adaptive`; `evaluation_profile` → `evaluation`; `codecraft_profile` → `codecraft` | *How does the harness plan, verify, and adapt?* |
+| **`GovernanceBundle`** | `reliability_profile` → `reliability`; `observability_profile` → `observability`; `cost_profile` → `cost`; `scaling_profile` → `scaling`; `governance_profile` → `platform`; `capability_governance_profile` → `capability`; `agent_governance_profile` → `agent`; `integration_governance_profile` → `integration_marketplace`; `host_deployment_profile` → `deployment`; `execution_boundary_export_profile` → `boundary_export` | *SRE, budget, deploy, platform ops* |
+| **`TopologyBundle`** | `graph_spec` | *Declarative agent topology (§41 primitive)* |
+| **`IsolationBundle`** | `shadow_workspace`; `sandbox` | *Safe experiment / code-exec isolation (§20–§21)* |
+| **`EnvironmentExtensions`** | `domain_policy_fragments` | *Product-specific `RuntimePolicyBundle` slices — typed escape hatch* |
+
+**Field count:** 43 flat top-level → **7 containers** (+ unchanged sub-profile schemas inside bundles).
+
+### 22.6.3 Authoring (target)
+
+Reusable capability presets MAY be shared across hosts:
+
+```python
+LEGAL_CAPABILITIES = CapabilityBundle.product(
+    tools=..., skills=..., llm=..., context=..., memory=...,
+)
+
+ApplicationEnvironmentProfile(
+    meta=HostMeta.product(profile_id="legal.prod"),
+    security=SecurityEnvelope.strict(org=legal_org_envelope()),
+    capabilities=LEGAL_CAPABILITIES,
+    cognition=CognitionBundle.regulated(),
+    governance=GovernanceBundle.production_slo(),
+    topology=TopologyBundle(graph_spec=legal_graph_spec()),
+    isolation=IsolationBundle.product(),
+)
+```
+
+Effective per-agent config remains **`EnvironmentProfile ⊕ AgentBinding.merge_environment()`** — bundles do not replace `AgentBinding` slices (§34 · ACP §30).
+
+### 22.6.4 Migration phases (normative)
+
+| Phase | Scope | `spec_version` | Breaking? |
+|-------|-------|----------------|-----------|
+| **M1 — Grouping** | Nested bundle models on root; flat accessors as `@property` shims; flat JSON deserializer | `1.x` | **No** |
+| **M2 — Authoring** | Per-bundle presets (`CapabilityBundle.lab()`, `GovernanceBundle.strict()`, shared packs) | `1.x` | **No** |
+| **M3 — Canonical nested** | Nested JSON/schema canonical; flat top-level deprecated | `2.0.0` | **Yes** (major) |
+
+**Wiring unchanged in M1–M2:** `wire_application_environment`, `materialize_runtime_config`, and `build_nexus_loop_from_environment` continue to read profile slices through shims or bundle paths — no Nexus fork.
+
+**Snapshot / diff:** `EnvironmentSnapshot` and `ApplicationEnvironmentDiff` MUST digest bundle-normalized canonical form so nested and flat serializations produce identical fingerprints when semantically equal (`APP-EVOL-8.3`).
+
+### 22.6.5 Anti-patterns
+
+| ID | Anti-pattern | Correct |
+|----|--------------|---------|
+| BND-AP-01 | Multiple composition roots (`HostProfile` + `CapabilityProfile` as peers) | Single `ApplicationEnvironmentProfile` root with nested bundles |
+| BND-AP-02 | Bundle contains business logic or wiring | Bundles are Pydantic data only; wiring stays in `applications/_shared/*_wiring.py` |
+| BND-AP-03 | Merge `OrganizationalPolicyEnvelope` into `CapabilityBundle` | Org envelope stays in `SecurityEnvelope` (§41 primitive) |
+| BND-AP-04 | Per-agent overrides in host bundles | Use `AgentBinding` + `merge_environment()` |
+
+**Plan:** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) — `APP-EVOL-8` · `P1-ARCH-01`.
 
 ---
 
@@ -703,7 +791,7 @@ APP does **not** replace Nexus, redefine tiers, or introduce a second agent exec
 | **APP-INV-03** | Business logic lives in **Tier-2 agents** — Tier-3 hosts MUST NOT implement domain cognitive loops |
 | **APP-INV-04** | Configuration: **manifest + profile in Tier-3**; **contract + `on_next_step` in Tier-2** (ACP-INV-06) |
 | **APP-INV-05** | Side effects at environment boundary via **hooks, policy, webhooks** — never ad-hoc vendor SDKs in `factory.py` |
-| **APP-INV-06** | **`ApplicationEnvironmentProfile`** is the single composition root for harness slices (IDEAL §17) |
+| **APP-INV-06** | **`ApplicationEnvironmentProfile`** is the single composition root for harness slices (IDEAL §17) — nested bundles §22.6 group fields; they do not create additional roots |
 | **APP-INV-07** | Imperative control via **`ApplicationHost` + `HookPoint`** — not duplicate `NexusLoop` subclasses |
 | **APP-INV-08** | Organizational policy is **Tier-3 data** — agents consume merged context; hosts declare envelope (§39) |
 | **APP-INV-09** | **`run_task()` / HTTP `/run`** is the application entry; **`Agent.run()`** is the agent entry (ACP-INV-09) |
@@ -1378,7 +1466,7 @@ Normative mapping — **do not conflate** these primitives:
 | **`ApplicationHost`** | Imperative reactions | Dynamic block/modify/escalate at Nexus events | Replace graph; cognitive loop |
 | **`OrganizationalPolicyEnvelope`** | Rules / simulation | Org-wide channels, playbooks, tool denies | Per-agent factory logic |
 | **`AgentBinding`** | Per-agent wiring | Implementation class, capability, slices, `org_role_id` | Orchestration topology |
-| **`ApplicationEnvironmentProfile`** | Harness slices | Catalogs, modes, observability, cost, reliability | Business rules in code |
+| **`ApplicationEnvironmentProfile`** | Harness slices (§22.1 flat · §22.6 bundles) | Catalogs, modes, observability, cost, reliability | Business rules in code; not a second composition root |
 | **`ShadowWorkspaceProfile` / `SandboxProfile`** | Isolation | Safe experiments / code exec | Agent selection |
 | **`NexusLoop`** | Tier-1 OS | Execute Task graph with policy | Product-specific forks |
 
@@ -1387,7 +1475,7 @@ Topology     → ApplicationGraphSpec (+ OrchestrationProfile)
 Rules        → OrganizationalPolicyEnvelope + PolicyRulesProfile
 Per-agent    → AgentBinding → merge_environment()
 Reactions    → ApplicationHost.on_hook()
-Catalogs     → ApplicationEnvironmentProfile sub-profiles
+Catalogs     → ApplicationEnvironmentProfile → CapabilityBundle (§22.6) or flat sub-profiles (§22.1)
 Cognition    → Agent.on_next_step() ONLY
 ```
 
