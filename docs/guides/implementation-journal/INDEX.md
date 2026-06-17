@@ -5,7 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-17-030 | 2026-06-17 | tier-0 SKILLS | SKILLS-LC-S1–S4 · Full-Harness-LC-SKILLS | [SKILLS — Full Harness Layer Completion closeout](entries/2026-06-17/platform-skills-layer-completion.md) | pending |
+| IJ-2026-06-17-030 | 2026-06-17 | tier-0 SKILLS | SKILLS-LC-S1–S4 · Full-Harness-LC-SKILLS | [SKILLS — Full Harness Layer Completion closeout](entries/2026-06-17/platform-skills-layer-completion.md) | 5d2690f3 |
 | IJ-2026-06-17-029 | 2026-06-17 | tier-0, tier-1, tier-3 CODE_CRAFT | CODE_CRAFT-LC-S1–S4 · Full-Harness-LC-CODE_CRAFT | [CODE_CRAFT — Full Harness Layer Completion closeout](entries/2026-06-17/platform-codecraft-layer-completion.md) | 7c60a013 |
 | IJ-2026-06-17-028 | 2026-06-17 | tier-0, tier-1 TOOLS | TOOLS-LC-S1–S4 · Full-Harness-LC-TOOLS | [TOOLS — Full Harness Layer Completion closeout](entries/2026-06-17/platform-tools-layer-completion.md) | 8065cb35 |
 | IJ-2026-06-17-027 | 2026-06-17 | tier-0 LLM_ADAPTERS | LLM-LC-S1–S4 · Full-Harness-LC-LLM | [LLM_ADAPTERS — Full Harness Layer Completion closeout](entries/2026-06-17/platform-llm-layer-completion.md) | 4a51cff1 |

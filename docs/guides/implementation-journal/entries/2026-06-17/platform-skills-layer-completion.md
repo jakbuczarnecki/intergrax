@@ -11,7 +11,7 @@ plan_ref:
   - SKILLS-LC-S4
   - Full-Harness-LC-SKILLS
 status: completed
-commit: pending
+commit: 5d2690f3
 adr: none — formal closeout; SK-EXP…SK-EXP5 + SK-BRIDGE delivered 2026-06-08
 ---
 
