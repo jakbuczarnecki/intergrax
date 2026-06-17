@@ -14,7 +14,7 @@ plan_ref:
   - M-RAG.67
   - M-RAG.68
 status: completed
-commit: 080fbb6c
+commit: 7e52ce8c
 adr: none — extensions within existing RAG contracts; no new cross-cutting semantics
 ---
 
