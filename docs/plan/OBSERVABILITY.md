@@ -244,9 +244,9 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 | OBS-EVOL-9.1 | M1 | `EventCategory` + `EventCatalogEntry` + `event_catalog.py` (`retention_class`, `sample_rate`, `consolidation_kind`; deprecate `phase_coverage.py` as SSOT) | **Done** | **Critical** | `event_catalog.py` · `test_event_catalog.py` |
 | OBS-EVOL-9.2 | M1 | `event_kind` + `event_category` + `ops_hint` on `RuntimeEvent`; auto-fill from catalog | **Done** | **Critical** | `runtime_event.py` · `test_runtime_event_kind.py` |
 | OBS-EVOL-9.3 | M1 | `EmitContext` + `emit_domain_signal()` (redaction) + `emit_platform_event()` | **Done** | **Critical** | `signals.py` · `emit_context.py` · `test_domain_signals.py` |
-| OBS-EVOL-9.4 | M1 | `EventKindRegistry` for extension kinds (agents/apps namespaces) | **Planned** | **Critical** | `event_kind_registry.py` · `test_event_kind_registry.py` |
+| OBS-EVOL-9.4 | M1 | `EventKindRegistry` for extension kinds (agents/apps namespaces) | **Done** | **Critical** | `event_kind_registry.py` · `test_event_kind_registry.py` |
 | OBS-EVOL-9.5 | M2 | `RuntimeEventBus.subscribe(categories=, kind_prefix=, ops_hints=)` + `JournalQuery` | **Planned** | High | `event_bus.py` · `journal_query.py` · `test_event_bus_taxonomy_subscribe.py` |
-| OBS-EVOL-9.6 | M2 | `scripts/check_event_catalog.py` + sampling enforcement + LLM `event_kind` namespace lint | **Planned** | High | CI script · extend `check_observability_gates.py` |
+| OBS-EVOL-9.6 | M2 | `scripts/check_event_catalog.py` + sampling enforcement + LLM `event_kind` namespace lint | **Done** | High | CI script · `test_event_bus_sampling.py` · extend `check_observability_gates.py` |
 | OBS-EVOL-9.7 | M2 | **Pre-release spine consolidation** — 74 → ~50; `DOMAIN_SIGNAL` + deprecation shim | **Planned** | **Critical** | `runtime_event.py` · emitters · `test_observability_emission_coverage.py` |
 | OBS-EVOL-9.8 | M2 | Scaffold: `emit_domain_signal` template in `new_agent` / `new_application` | **Planned** | Medium | `intergrax/scaffold/new_agent.py` · `new_application.py` |
 | OBS-EVOL-9.9 | M3 | Optional `runtime_event.v2` envelope (`event_kind` required) | **Planned** | Low | Opt-in `schema_version`; v1 indefinite |

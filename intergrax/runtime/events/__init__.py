@@ -13,6 +13,12 @@ from intergrax.runtime.events.event_catalog import (
     get_catalog_entry,
     ops_filter_hint_for_event,
     phase_for_event,
+    should_persist_event,
+)
+from intergrax.runtime.events.event_kind_registry import (
+    EventKindRegistryEntry,
+    register_event_kind,
+    require_registered_event_kind,
 )
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import (
@@ -58,6 +64,7 @@ __all__ = [
     "EmitContext",
     "EventCatalogEntry",
     "EventCategory",
+    "EventKindRegistryEntry",
     "ExecutionPhase",
     "InMemoryRuntimeEventStore",
     "JOURNAL_SCHEMA_VERSION",
@@ -76,8 +83,11 @@ __all__ = [
     "get_payload_schema",
     "ops_filter_hint_for_event",
     "phase_for_event",
+    "register_event_kind",
     "register_payload_schema",
+    "require_registered_event_kind",
     "runtime_event_with_payload",
+    "should_persist_event",
     "validate_payload_envelope",
     "SQLiteRuntimeEventStore",
     "bridge_persisted_trace_events",

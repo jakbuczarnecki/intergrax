@@ -5,12 +5,13 @@
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from typing import Final
 
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_taxonomy import EventCategory, RetentionClass, category_for_event_kind
-from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 
 OpsFilterHint = str
 
@@ -333,3 +334,12 @@ def list_unmapped_event_types() -> list[RuntimeEventType]:
 
 def list_unmapped_ops_filter_hints() -> list[RuntimeEventType]:
     return list_unmapped_event_types()
+
+
+def should_persist_event(event: RuntimeEvent) -> bool:
+    """Deterministic sampling gate for spine events (OBS-EVOL-9.6)."""
+    entry = get_catalog_entry(event.event_type)
+    if entry is None or entry.sample_rate >= 1.0:
+        return True
+    digest = int(hashlib.sha256(event.event_id.encode("utf-8")).hexdigest()[:8], 16)
+    return (digest % 10_000) < int(entry.sample_rate * 10_000)

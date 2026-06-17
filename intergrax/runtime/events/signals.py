@@ -77,7 +77,15 @@ def emit_domain_signal(
     node_id: str | None = None,
 ) -> RuntimeEvent:
     """Emit a Tier-2/3 domain signal on the unified bus."""
+    from intergrax.runtime.events.event_kind_registry import require_registered_event_kind
+
     validate_event_kind(kind)
+    registry_entry = require_registered_event_kind(kind)
+    if payload.schema_id != registry_entry.payload_schema_id:
+        raise DomainSignalError(
+            f"payload schema {payload.schema_id!r} does not match registered "
+            f"schema for {kind!r}: {registry_entry.payload_schema_id!r}"
+        )
     safe_payload = payload.redact() if ctx.production_mode else payload
     event = RuntimeEvent(
         tenant_id=ctx.tenant_id,

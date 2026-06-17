@@ -10,6 +10,7 @@ from collections import defaultdict
 from typing import Awaitable, Callable, DefaultDict, List, Optional, Set, Union
 from uuid import uuid4
 
+from intergrax.runtime.events.event_catalog import should_persist_event
 from intergrax.runtime.events.persistence_contract import (
     RuntimeEventPersistence,
     resolve_event_tenant_id,
@@ -97,7 +98,7 @@ class RuntimeEventBus:
         """Synchronous append for callers that cannot await (e.g. TaskLifecycle)."""
         if self._record_history:
             self._history.append(event)
-        if self._persistence is not None:
+        if self._persistence is not None and should_persist_event(event):
             try:
                 self._persistence.append(
                     event,

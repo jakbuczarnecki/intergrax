@@ -15,6 +15,7 @@ _AUDIT_SCRIPTS = (
     "check_payload_schema_registry.py",
     "check_observability_persistence_conformance.py",
     "check_rag_otel_span_registry.py",
+    "check_event_catalog.py",
 )
 
 

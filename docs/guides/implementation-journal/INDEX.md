@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-17-009 | 2026-06-17 | tier-0, tier-1 OBSERVABILITY | OBS-EVOL-9.4 · 9.6 | [OBS-EVOL-9.4/9.6 — EventKindRegistry + catalog gate](entries/2026-06-17/platform-obs-evol-9-4-6-kind-registry-gate.md) | pending |
 | IJ-2026-06-17-008 | 2026-06-17 | tier-0, tier-1 OBSERVABILITY | OBS-EVOL-9.2 · 9.3 | [OBS-EVOL-9.2/9.3 — taxonomy fields and emit APIs](entries/2026-06-17/platform-obs-evol-9-2-3-emit-apis.md) | 6568ba48 |
 | IJ-2026-06-17-007 | 2026-06-17 | tier-0, tier-1 OBSERVABILITY | OBS-EVOL-9.1 · SAR | [OBS-EVOL-9.1 — EventCatalog SSOT + SAR fold-in](entries/2026-06-17/platform-obs-evol-9-1-event-catalog.md) | 14094dda |
 | IJ-2026-06-17-006 | 2026-06-17 | tier-0, tier-1 OBSERVABILITY | OBS-EVOL-9 · P1-ARCH-02 | [OBS-EVOL-9 — Layered event catalog architecture](entries/2026-06-17/platform-obs-evol-9-event-catalog-architecture.md) | 11b8e07d |

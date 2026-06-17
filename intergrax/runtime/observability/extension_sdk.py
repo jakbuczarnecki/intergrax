@@ -99,9 +99,18 @@ def register_application_diagnostic_payload(
     return schema_cls
 
 
-def register_extension_runtime_payload(schema_cls: type[TRuntime]) -> type[TRuntime]:
+def register_extension_runtime_payload(
+    schema_cls: type[TRuntime],
+    *,
+    event_kind: str | None = None,
+) -> type[TRuntime]:
     assert_extension_runtime_schema_id(schema_cls.schema_id)
-    return register_payload_schema(schema_cls, extension=True)
+    registered = register_payload_schema(schema_cls, extension=True)
+    if event_kind is not None:
+        from intergrax.runtime.events.event_kind_registry import register_event_kind
+
+        register_event_kind(event_kind, schema_cls.schema_id)
+    return registered
 
 
 def get_registered_diagnostic_payload(schema_id: str) -> type[DiagnosticPayload] | None:
@@ -124,5 +133,9 @@ class PayloadSchemaRegistry:
         return register_application_diagnostic_payload(schema_cls, app_slug=app_slug)
 
     @staticmethod
-    def register_runtime_extension(schema_cls: type[TRuntime]) -> type[TRuntime]:
-        return register_extension_runtime_payload(schema_cls)
+    def register_runtime_extension(
+        schema_cls: type[TRuntime],
+        *,
+        event_kind: str | None = None,
+    ) -> type[TRuntime]:
+        return register_extension_runtime_payload(schema_cls, event_kind=event_kind)

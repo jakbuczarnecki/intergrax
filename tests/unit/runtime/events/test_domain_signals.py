@@ -12,6 +12,7 @@ from intergrax.runtime.events.payloads.base import RuntimeEventPayload
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.signals import DomainSignalError, emit_domain_signal, emit_platform_event
 from intergrax.runtime.events.payloads.canonical import ToolPayloadV1
+from intergrax.runtime.events.event_kind_registry import clear_event_kind_registry
 from intergrax.runtime.observability.extension_sdk import register_extension_runtime_payload
 
 pytestmark = pytest.mark.gate
@@ -26,7 +27,15 @@ class _LegalClauseFlaggedV1(RuntimeEventPayload):
         return self
 
 
-register_extension_runtime_payload(_LegalClauseFlaggedV1)
+@pytest.fixture(autouse=True)
+def _register_legal_domain_kind() -> None:
+    clear_event_kind_registry()
+    register_extension_runtime_payload(
+        _LegalClauseFlaggedV1,
+        event_kind="agents.legal.clause_flagged",
+    )
+    yield
+    clear_event_kind_registry()
 
 
 def test_emit_domain_signal_records_on_bus() -> None:
@@ -52,7 +61,10 @@ def test_emit_domain_signal_redacts_in_production_mode() -> None:
         def redact(self) -> _SecretPayload:
             return self.model_copy(update={"secret": "[REDACTED]"})
 
-    register_extension_runtime_payload(_SecretPayload)
+    register_extension_runtime_payload(
+        _SecretPayload,
+        event_kind="agents.legal.secret_flagged",
+    )
     ctx = EmitContext(
         task_id="task-1",
         run_id="run-1",
