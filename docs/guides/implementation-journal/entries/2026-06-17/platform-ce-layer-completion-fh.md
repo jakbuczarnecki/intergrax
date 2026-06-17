@@ -13,7 +13,7 @@ plan_ref:
   - CE-LC-S4
   - Full-Harness-LC-CE
 status: completed
-commit: pending
+commit: b4d580df
 adr: none — formal closeout; CE-ITERATION-III delivered 2026-06-17
 ---
 

@@ -13,7 +13,7 @@ plan_ref:
   - MEMORY-LC-S4
   - Full-Harness-LC-MEMORY
 status: completed
-commit: pending
+commit: 027685dc
 adr: none — formal closeout; layer completion delivered 2026-06-17 (IJ-2026-06-17-001)
 ---
 
