@@ -28,7 +28,7 @@ Tier-0 **LLM adapter layer** is the Harness cognition entry point: one `LLMAdapt
 
 **Strategic rule:** The Harness owns provider plumbing; agents and applications declare **profiles**, never vendor SDKs.
 
-Deep production audit (2026-06-14): foundation is **production-grade L3** on contract and ops; **not yet best-in-class** for daily developer use until **M-LLM-X** closes model-metadata and routing gaps.
+Deep production audit (2026-06-14): foundation is **production-grade L3** on contract and ops. **Full Harness LC (2026-06-17):** no open P0/P1 — M-LLM-X partial waves remain **P2+ backlog** (dynamic gateway metadata, DX doctor hook).
 
 ---
 

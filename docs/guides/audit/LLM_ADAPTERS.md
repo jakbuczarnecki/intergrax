@@ -54,7 +54,7 @@ M-LLM-R envelope Done · W-ML.1 capability flags · Phase V FAUDIT-LLM.1 residua
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-Planner LLM ≠ producer discipline incomplete at Nexus boundary · distributed rate limit needs Redis wiring · usage tracking layers not auto-merged
+Planner≠producer discipline **Done** at Nexus boundary (COG-PROD · `resolve_planner_llm_adapter`) · distributed Redis rate limit **Partial** (P2) · usage tracking auto-merge **Partial** (P2 — two-layer model intentional)
 
 ---
 
