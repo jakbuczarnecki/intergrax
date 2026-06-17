@@ -124,7 +124,7 @@ Intergrax observability deliberately separates three planes (pattern: event sour
 
 ### 4.4 Layered event identity (P1-ARCH-02 · OBS-EVOL-9)
 
-**Status:** Architecture **accepted** (2026-06-17) · spine consolidation **Done** (OBS-EVOL-9.7) · **ADR:** [`ADR-OBS-003`](../adr/entries/2026-06-17/ADR-OBS-003.md) · **SAR:** accepted 2026-06-17 (§4.4.7–4.4.13)
+**Status:** Architecture **accepted** (2026-06-17) · implementation **Done** (OBS-EVOL-9 register) · **ADR:** [`ADR-OBS-003`](../adr/entries/2026-06-17/ADR-OBS-003.md) · **SAR:** accepted 2026-06-17 (§4.4.7–4.4.13)
 
 HOS uses **three levels of identity** so the spine scales without forcing developers through platform enum changes:
 
@@ -708,7 +708,7 @@ uv run python scripts/check_observability_gates.py
 
 **OBS-BUS (L4):** **Done** (2026-06-08) — unified spine, typed payloads, extension SDK, journal export, CI gates.
 
-**OBS-EVOL-9 (P1-ARCH-02):** **In progress** — layered identity (`event_kind`, `EventCatalog`, `DOMAIN_SIGNAL`). Required before external v1 publication. See plan OBS-EVOL-9 register and §4.4.7–4.4.13.
+**OBS-EVOL-9 (P1-ARCH-02):** **Done** (2026-06-17) — layered identity (`event_kind`, `EventCatalog`, `DOMAIN_SIGNAL`, profile subscriptions, W3C trace context). Publication-ready spine (56 types). See plan OBS-EVOL-9 register and §4.4.7–4.4.13.
 
 **Not in spine scope:** product dashboards (§6.3a), mandatory external APM, per-agent private trace DBs.
 

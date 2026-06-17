@@ -72,7 +72,14 @@ def test_observability_l4_journal_export_and_terminal_ref_wired() -> None:
 
 
 def test_observability_l4_platform_bootstrap_registers_journal_export() -> None:
-    from intergrax.applications._shared.platform_wiring import bootstrap_nexus_platform
+    from pathlib import Path
 
-    source = inspect.getsource(bootstrap_nexus_platform)
+    source_path = (
+        Path(__file__).resolve().parents[4]
+        / "intergrax"
+        / "applications"
+        / "_shared"
+        / "platform_wiring.py"
+    )
+    source = source_path.read_text(encoding="utf-8")
     assert "register_journal_export_plugin" in source

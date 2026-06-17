@@ -26,6 +26,7 @@ def main() -> int:
         "tests/unit/runtime/events/test_event_bus_sampling.py",
         "tests/unit/runtime/events/test_event_bus_taxonomy_subscribe.py",
         "tests/unit/runtime/events/test_spine_consolidation.py",
+        "tests/unit/runtime/events/test_w3c_trace_context.py",
         "-q",
     ]
     result = subprocess.run(cmd, cwd=repo_root, check=False)
