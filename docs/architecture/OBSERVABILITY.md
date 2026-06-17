@@ -268,7 +268,7 @@ Replaces ad-hoc enum-list filtering in debug tooling (SAR-07).
 
 #### 4.4.12 W3C Trace Context (OBS-EVOL-9.11)
 
-Optional `traceparent` / `tracestate` on `RuntimeEvent` for external APM correlation; propagated through Nexus and OTLP export (SAR-04).
+Optional `traceparent` / `tracestate` on `RuntimeEvent` for external APM correlation. `EmitContext` propagates inbound headers; `NexusRuntimeEventPublisher` injects per-event spans from task metadata; OTLP journal export prefers W3C trace/span ids when present. **Code:** `w3c_trace_context.py`, `journal_export.py`, `export_bridge.py`.
 
 #### 4.4.13 Spine consolidation shim (OBS-EVOL-9.7)
 

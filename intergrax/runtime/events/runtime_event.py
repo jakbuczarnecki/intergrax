@@ -10,7 +10,7 @@ from enum import Enum
 from typing import Any, Dict, Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_phase import ExecutionPhase
@@ -94,7 +94,31 @@ class RuntimeEvent(BaseModel):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     correlation_id: str = ""
     parent_event_id: Optional[str] = None
+    traceparent: Optional[str] = None
+    tracestate: Optional[str] = None
     schema_version: str = "runtime_event.v1"
+
+    @field_validator("traceparent")
+    @classmethod
+    def _validate_traceparent(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        from intergrax.runtime.events.w3c_trace_context import is_valid_traceparent
+
+        if not is_valid_traceparent(value):
+            raise ValueError(f"invalid W3C traceparent: {value!r}")
+        return value.strip()
+
+    @field_validator("tracestate")
+    @classmethod
+    def _validate_tracestate(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        from intergrax.runtime.events.w3c_trace_context import is_valid_tracestate
+
+        if not is_valid_tracestate(value):
+            raise ValueError(f"invalid W3C tracestate: {value!r}")
+        return value.strip()
 
     @model_validator(mode="before")
     @classmethod
@@ -123,9 +147,14 @@ class RuntimeEvent(BaseModel):
             self.ops_hint = "ops:domain_signal"
 
     def with_parent(self, parent: RuntimeEvent) -> RuntimeEvent:
-        return self.model_copy(
-            update={
-                "parent_event_id": parent.event_id,
-                "correlation_id": parent.correlation_id or parent.event_id,
-            }
-        )
+        from intergrax.runtime.events.w3c_trace_context import child_traceparent
+
+        updates: dict[str, object] = {
+            "parent_event_id": parent.event_id,
+            "correlation_id": parent.correlation_id or parent.event_id,
+        }
+        if parent.traceparent:
+            updates["traceparent"] = child_traceparent(parent.traceparent)
+            if parent.tracestate:
+                updates["tracestate"] = parent.tracestate
+        return self.model_copy(update=updates)

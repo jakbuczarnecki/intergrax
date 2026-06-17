@@ -21,6 +21,8 @@ class EmitContext:
     tenant_id: str | None = None
     correlation_id: str = ""
     parent_event_id: str | None = None
+    traceparent: str | None = None
+    tracestate: str | None = None
     bus: RuntimeEventBus | None = None
     production_mode: bool = False
 

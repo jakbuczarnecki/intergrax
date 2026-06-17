@@ -32,6 +32,15 @@ def validate_event_kind(kind: str) -> None:
         )
 
 
+def _trace_fields_from_ctx(ctx: EmitContext) -> dict[str, str]:
+    fields: dict[str, str] = {}
+    if ctx.traceparent:
+        fields["traceparent"] = ctx.traceparent
+    if ctx.tracestate:
+        fields["tracestate"] = ctx.tracestate
+    return fields
+
+
 def emit_platform_event(
     ctx: EmitContext,
     *,
@@ -59,6 +68,7 @@ def emit_platform_event(
         severity=severity,
         correlation_id=ctx.effective_correlation_id,
         parent_event_id=ctx.parent_event_id,
+        **_trace_fields_from_ctx(ctx),
     )
     event = runtime_event_with_payload(event, payload)
     if ctx.bus is not None:
@@ -102,6 +112,7 @@ def emit_domain_signal(
         severity=severity,
         correlation_id=ctx.effective_correlation_id,
         parent_event_id=ctx.parent_event_id,
+        **_trace_fields_from_ctx(ctx),
     )
     event = runtime_event_with_payload(event, safe_payload)
     if ctx.bus is not None:
