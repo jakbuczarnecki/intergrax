@@ -1,6 +1,6 @@
 # Audit result — `RELIABILITY_FAILURE_AND_HITL`
 
-**Run:** 2026-06-17 · **Mode:** layer_completion (short re-audit Steps 1+6)  
+**Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
 
 ---

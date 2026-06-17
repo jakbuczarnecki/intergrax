@@ -1,6 +1,6 @@
 # Audit result — `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
 
-**Run:** 2026-06-17 · **Mode:** layer_completion (short re-audit Steps 1+6)  
+**Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
 
 ---
@@ -18,16 +18,24 @@
 
 ## Findings
 
-No open P0/P1 in `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` scope. Prior Layer Completion closeout revalidated.
+| ID | Severity | Finding | Evidence | Status |
+|----|----------|---------|----------|--------|
+| DX-AUDIT-01 | — | AUDIT-IDEAL-27.2 replay_environment_wiring gate green | `scripts/check_replay_environment_wiring.py` | closed |
+| DX-AUDIT-02 | P2 | AUDIT-IDEAL-6.7 doctor hook partial | plan cross-ref LLM | open |
+
+No open P0/P1 in DX domain plan register.
 
 ---
 
 ## Gates executed
 
 ```bash
+uv run python scripts/check_replay_environment_wiring.py
 uv run python scripts/check_docs_domain_pairs.py
 uv run python scripts/check_implementation_journal.py
 ```
+
+Replay wiring: OK.
 
 ---
 

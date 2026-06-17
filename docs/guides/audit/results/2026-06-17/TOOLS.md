@@ -1,6 +1,6 @@
 # Audit result — `TOOLS`
 
-**Run:** 2026-06-17 · **Mode:** layer_completion (short re-audit Steps 1+6)  
+**Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
 
 ---
@@ -26,7 +26,13 @@ No open P0/P1 in `TOOLS` scope. Prior Layer Completion closeout revalidated.
 
 ```bash
 python scripts/check_legacy_tool_plan_booleans.py
+uv run python scripts/check_tool_mcp_schema_export.py
+uv run python scripts/check_tool_injection_defense.py
+python scripts/check_agent_registry_bypass.py
+uv run pytest tests/unit/runtime/nexus/tools/ -q
 ```
+
+58 tool unit tests passed.
 
 ---
 

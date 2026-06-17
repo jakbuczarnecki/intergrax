@@ -1,7 +1,7 @@
 # Audit result — `TIER3_APPLICATION_ENVIRONMENT`
 
-**Run:** 2026-06-17 · **Mode:** layer_completion (short re-audit Steps 1+6)  
-**Auditor:** cursor-agent · **Verdict:** mature_revalidated
+**Run:** 2026-06-17 · **Mode:** audit_only  
+**Auditor:** cursor-agent · **Verdict:** drift_detected
 
 ---
 
@@ -18,7 +18,12 @@
 
 ## Findings
 
-No open P0/P1 in `TIER3_APPLICATION_ENVIRONMENT` scope. Prior Layer Completion closeout revalidated.
+| ID | Severity | Finding | Evidence | Status |
+|----|----------|---------|----------|--------|
+| T3-AUDIT-01 | P1 | APP-EVOL-8.6 M3 `spec_version` 2.0 nested canonical wire — Planned | `docs/plan/TIER3_APPLICATION_ENVIRONMENT.md` T3-BL-P1-01 | open |
+| T3-AUDIT-02 | P2 | CFG-14 LKW hybrid deferred §6.3 | ORCHESTRATION cross-ref | deferred |
+
+**p0_open:** 0 · **p1_open:** 1
 
 ---
 

@@ -1,6 +1,6 @@
 # Audit result — `AGENT_CONTRACTS_AND_ASSEMBLY`
 
-**Run:** 2026-06-17 · **Mode:** layer_completion (short re-audit Steps 1+6)  
+**Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
 
 ---
@@ -29,6 +29,8 @@ uv run python scripts/check_agent_acp_close_ci.py
 uv run python scripts/check_agents_lifecycle_metadata.py
 uv run python scripts/phase_v_capability_graph_guard.py
 ```
+
+ACP CI gate: OK (17 agents).
 
 ---
 

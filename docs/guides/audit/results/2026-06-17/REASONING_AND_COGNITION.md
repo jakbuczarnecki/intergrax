@@ -1,6 +1,6 @@
 # Audit result — `REASONING_AND_COGNITION`
 
-**Run:** 2026-06-17 · **Mode:** layer_completion (short re-audit Steps 1+6)  
+**Run:** 2026-06-17 · **Mode:** audit_only  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
 
 ---
@@ -28,6 +28,8 @@ No open P0/P1 in `REASONING_AND_COGNITION` scope. Prior Layer Completion closeou
 uv run python scripts/check_reasoning_gates.py
 uv run pytest tests/unit/runtime/nexus/planning/ -q
 ```
+
+All green (6 planning tests passed).
 
 ---
 
