@@ -35,7 +35,7 @@ External developers will extend observability via `emit_domain_signal` and paylo
 | Architecture | `docs/architecture/OBSERVABILITY.md` §4.4 |
 | Plan | `docs/plan/OBSERVABILITY.md` OBS-EVOL-9 |
 | UAEP | `docs/architecture/UNIFIED_EXECUTION_RUNTIME.md` §42.1.6–42.1.7 |
-| Author guide | `docs/guides/AGENT_CREATION_GUIDE.md` Appendix Q §Q.5 |
+| Author guides | `AGENT_CREATION_GUIDE.md` Appendix Q §Q.5 · `EXTENSION_AUTHOR_GUIDE.md` §11 · `APPLICATION_CREATION_GUIDE.md` §8 |
 | Debt | `docs/plan/PLATFORM_FOUNDATION.md` Appendix B P1-ARCH-02 |
 
 ## Changed artifacts
@@ -49,6 +49,8 @@ External developers will extend observability via `emit_domain_signal` and paylo
 - `docs/adr/README.md`
 - `docs/guides/AGENT_CREATION_GUIDE.md`
 - `scripts/generate_domain_audit_prompts.py`
+- `docs/guides/EXTENSION_AUTHOR_GUIDE.md` §11
+- `docs/guides/APPLICATION_CREATION_GUIDE.md` §8
 
 ## Verification
 

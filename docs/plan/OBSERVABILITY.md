@@ -224,15 +224,15 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 
 | ID | Phase | Deliverable | Status | Priority | Acceptance |
 |----|-------|-------------|--------|----------|------------|
-| OBS-EVOL-9-DOC | M0 | Architecture §4.4 + plan register + ADR-OBS-003 + author guides | **Done** | **Critical** | This register · ADR · `check_harness_adr.py` |
-| OBS-EVOL-9.1 | M1 | `EventCategory` + `EventCatalogEntry` + `event_catalog.py` (merge phase/ops/payload maps) | **Planned** | **Critical** | Single registry; gates read catalog |
-| OBS-EVOL-9.2 | M1 | `event_kind` + `event_category` on `RuntimeEvent`; auto-fill on emit | **Planned** | **Critical** | Default `event_kind == event_type.value` |
-| OBS-EVOL-9.3 | M1 | `emit_domain_signal()` + `emit_platform_event()` public APIs | **Planned** | **Critical** | Tier-2/3 use domain helper only |
-| OBS-EVOL-9.4 | M1 | `EventKindRegistry` for extension kinds (agents/apps namespaces) | **Planned** | High | `register_event_kind(kind, payload_schema_id)` |
-| OBS-EVOL-9.5 | M2 | `RuntimeEventBus.subscribe(categories=, kind_prefix=, ops_hints=)` | **Planned** | High | Legacy `event_types=` unchanged |
-| OBS-EVOL-9.6 | M2 | `scripts/check_event_catalog.py` + wire into `check_observability_gates.py` | **Planned** | High | Spine completeness; kind registry lint |
-| OBS-EVOL-9.7 | M2 | **Pre-release spine consolidation** — 74 → ~50 types; `DOMAIN_SIGNAL` + `platform.*` kinds | **Planned** | **Critical** | Before publication; update emitters + tests |
-| OBS-EVOL-9.8 | M2 | Scaffold: `emit_domain_signal` template in `new_agent` / `new_application` | **Planned** | Medium | Generated agent includes example kind + payload |
+| OBS-EVOL-9-DOC | M0 | Architecture §4.4 + plan register + ADR-OBS-003 + author guides | **Done** | **Critical** | This register · ADR · `EXTENSION_AUTHOR_GUIDE.md` §11 · `APPLICATION_CREATION_GUIDE.md` §8 · `AGENT_CREATION_GUIDE.md` §Q.5 |
+| OBS-EVOL-9.1 | M1 | `EventCategory` + `EventCatalogEntry` + `event_catalog.py` (merge phase/ops/payload maps; deprecate `phase_coverage.py` as SSOT) | **Planned** | **Critical** | `event_catalog.py` · `test_event_catalog.py` · gates read catalog |
+| OBS-EVOL-9.2 | M1 | `event_kind` + `event_category` on `RuntimeEvent`; auto-fill on emit | **Planned** | **Critical** | `runtime_event.py` · `test_runtime_event_kind.py` |
+| OBS-EVOL-9.3 | M1 | `emit_domain_signal()` + `emit_platform_event()` public APIs | **Planned** | **Critical** | `signals.py` · `test_domain_signals.py` |
+| OBS-EVOL-9.4 | M1 | `EventKindRegistry` for extension kinds (agents/apps namespaces) | **Planned** | High | `event_kind_registry.py` · `test_event_kind_registry.py` |
+| OBS-EVOL-9.5 | M2 | `RuntimeEventBus.subscribe(categories=, kind_prefix=, ops_hints=)` | **Planned** | High | `event_bus.py` · `test_event_bus_taxonomy_subscribe.py` |
+| OBS-EVOL-9.6 | M2 | `scripts/check_event_catalog.py` + wire into `check_observability_gates.py` | **Planned** | High | CI script · extend `check_observability_gates.py` |
+| OBS-EVOL-9.7 | M2 | **Pre-release spine consolidation** — 74 → ~50 types; `DOMAIN_SIGNAL` + `platform.*` kinds | **Planned** | **Critical** | `runtime_event.py` · `event_catalog.py` · update all emitters + `test_observability_emission_coverage.py` |
+| OBS-EVOL-9.8 | M2 | Scaffold: `emit_domain_signal` template in `new_agent` / `new_application` | **Planned** | Medium | `intergrax/scaffold/new_agent.py` · `new_application.py` |
 | OBS-EVOL-9.9 | M3 | Optional `runtime_event.v2` envelope (`event_kind` required) | **Planned** | Low | Opt-in `schema_version`; v1 indefinite |
 
 **Suggested PR order:** OBS-EVOL-9-DOC → OBS-EVOL-9.1 → OBS-EVOL-9.2 → OBS-EVOL-9.3 → OBS-EVOL-9.4 → OBS-EVOL-9.6 → OBS-EVOL-9.5 → OBS-EVOL-9.7 → OBS-EVOL-9.8.

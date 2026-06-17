@@ -65,4 +65,4 @@ Adopt **layered runtime event identity** on the existing HOS bus:
 
 - Tracker: Phase **OBS-EVOL-9** (M0 doc → M4 optional `runtime_event.v2`)
 - Verification: `scripts/check_event_catalog.py` (planned), existing phase/payload gates until migration
-- Author guides: `AGENT_CREATION_GUIDE.md` Appendix Q §Q.5, `EXTENSION_AUTHOR_GUIDE.md` §runtime signals
+- Author guides: `AGENT_CREATION_GUIDE.md` Appendix Q §Q.5, `EXTENSION_AUTHOR_GUIDE.md` §11, `APPLICATION_CREATION_GUIDE.md` §8

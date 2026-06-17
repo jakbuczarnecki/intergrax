@@ -1,6 +1,6 @@
 # Extension Author Guide (Tier-0 Plugin Catalogs)
 
-**Last updated:** 2026-06-05 · Phase P-Ext · **H-APP** · §10 policy rules (`intergrax.policy_rules`)
+**Last updated:** 2026-06-17 · Phase P-Ext · **H-APP** · §10 policy rules · §11 runtime signals (OBS-EVOL-9)
 
 Intergrax exposes four **plugin catalogs** (three Tier-0 + Context Engineering Tier-1 contracts with Tier-0 shared types). Shipped providers and third-party pip packages register through the same protocols.
 
@@ -267,3 +267,60 @@ Bootstrap: `intergrax.runtime.policy.rules.plugin_loader.register_policy_rule_pl
 **Author map:** [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) [Appendix H](guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · canon [§42.11](architecture/UNIFIED_EXECUTION_RUNTIME.md#4211-policy-engine).
 
 Lab reference: `applications/lab_application/policy/rules/harness_lab.yaml`.
+
+---
+
+## 11. Runtime signals — spine vs `event_kind` (OBS-EVOL-9)
+
+**Canon:** [`architecture/OBSERVABILITY.md`](../architecture/OBSERVABILITY.md) §4.4 · [`ADR-OBS-003`](../adr/entries/2026-06-17/ADR-OBS-003.md)
+
+Extension authors (integrations, tools, skills) and agent authors share one observability contract:
+
+| Signal need | API | Register |
+|-------------|-----|----------|
+| Debug / reconstruction | `DiagnosticPayload` via `AgentEngine` | `register_payload_schema(..., extension=True)` + `agents.<slug>.diag.*` |
+| Operator-visible domain fact | `emit_domain_signal(kind, payload)` | `event_kind` + extension payload schema |
+| Platform lifecycle | `emit_platform_event` | Platform only — `EventCatalog` + ADR |
+
+### 11.1 `event_kind` namespace rules
+
+| Prefix | Owner | Example |
+|--------|-------|---------|
+| `agents.<slug>.` | Tier-2 agent | `agents.legal.clause_flagged` |
+| `applications.<slug>.` | Tier-3 product | `applications.dispute_sim.risk_threshold_exceeded` |
+| `platform.<domain>.` | Harness (via `DOMAIN_SIGNAL`) | `platform.adaptive.signal_recorded` |
+| `intergrax.<domain>.` | Reserved — platform spine payloads | `intergrax.graph.checkpoint_persisted` |
+
+Rules:
+
+- Lowercase slug segments; dots only; no wildcards in emitted kinds.
+- One kind = one semantics; never reuse `schema_id` for different meaning.
+- **Do not** add `RuntimeEventType` from extension or agent packages.
+
+### 11.2 Minimal agent example
+
+```python
+from intergrax.runtime.events.signals import emit_domain_signal
+
+emit_domain_signal(
+    ctx,
+    kind="agents.my_plugin.risk_flagged",
+    payload=MyRiskFlaggedPayloadV1(score=0.92),
+)
+```
+
+Register payload at agent bootstrap:
+
+```python
+register_payload_schema(MyRiskFlaggedPayloadV1, extension=True)
+```
+
+### 11.3 Integration / tool plugins
+
+Plugins **do not** publish directly to `RuntimeEventBus`. Emit through:
+
+- **ToolRuntime** — existing `TOOL_*` spine events (audit path).
+- **Agent step** — `emit_domain_signal` when the product must surface a domain fact.
+- **Trace** — `DiagnosticPayload` for implementation detail.
+
+**Author map:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) [Appendix Q §Q.5](AGENT_CREATION_GUIDE.md#q5-domain-runtime-signals-event_kind--obs-evol-9) · [`APPLICATION_CREATION_GUIDE.md`](APPLICATION_CREATION_GUIDE.md) §8 (Tier-3 subscribe / adapters).
