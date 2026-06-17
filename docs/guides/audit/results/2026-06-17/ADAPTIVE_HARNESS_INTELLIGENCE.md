@@ -1,4 +1,4 @@
-# Audit result — `UNIFIED_EXECUTION_RUNTIME`
+# Audit result — `ADAPTIVE_HARNESS_INTELLIGENCE`
 
 **Run:** 2026-06-17 · **Mode:** layer_completion (short re-audit Steps 1+6)  
 **Auditor:** cursor-agent · **Verdict:** mature_revalidated
@@ -18,24 +18,23 @@
 
 ## Findings
 
-No open P0/P1 in `UNIFIED_EXECUTION_RUNTIME` scope. Prior Layer Completion closeout revalidated.
+No open P0/P1 in `ADAPTIVE_HARNESS_INTELLIGENCE` scope. Prior Layer Completion closeout revalidated.
 
 ---
 
 ## Gates executed
 
 ```bash
-uv run python scripts/check_agent_acp_close_ci.py
-uv run pytest tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py tests/unit/runtime/policy/ -q
+uv run python scripts/phase_w_adapt_report.py
+uv run pytest tests/unit/runtime/adaptive/ -q
 ```
 
 ---
 
 ## Backlog P2–P4 (deferred)
 
-- HTTP mid-run autonomy — lab vs product host parity
-- Supervisor EscalationRouter — future evolution
-- Middleware target layout — partial evolution
+- L4 adaptive thresholds product-gated — P4
+- Foundation model training — out of scope
 
 ---
 

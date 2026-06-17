@@ -18,23 +18,25 @@
 
 ## Findings
 
-| ID | Severity | Finding | Evidence | Status |
-|----|----------|---------|----------|--------|
-| ORCH-LC-01 | P4 | CFG-14 LKW hybrid E2E deferred product host | plan §6.3 | deferred |
-| ORCH-LC-02 | P4 | Active-active node redundancy L0 future | architecture backlog | deferred |
-| ORCH-LC-03 | P4 | QueuedNexusExecutionAdapter not scaffold-default | plan note | deferred |
-
-No open P0/P1 in ORCHESTRATION scope. Phase ORCH / FLOW closeouts **Done**.
+No open P0/P1 in `ORCHESTRATION` scope. Prior Layer Completion closeout revalidated.
 
 ---
 
 ## Gates executed
 
 ```bash
-uv run python scripts/check_orchestration_config_docs.py  # OK
-uv run pytest tests/unit/runtime/nexus/orchestration/ -q  # pass
-uv run pytest tests/integration/runtime/test_engine_planner_orchestration_gate.py -q  # pass
+uv run python scripts/check_orchestration_config_docs.py
+uv run pytest tests/unit/runtime/nexus/orchestration/ -q
+uv run pytest tests/integration/runtime/test_engine_planner_orchestration_gate.py -q
 ```
+
+---
+
+## Backlog P2–P4 (deferred)
+
+- CFG-14 LKW hybrid E2E — deferred product host
+- Active-active node redundancy — L0 future
+- QueuedNexusExecutionAdapter — not scaffold-default
 
 ---
 
