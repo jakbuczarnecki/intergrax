@@ -12,7 +12,7 @@ plan_ref:
   - TOOLS-LC-S4
   - Full-Harness-LC-TOOLS
 status: completed
-commit: pending
+commit: 8065cb35
 adr: none — formal closeout; TOOL-ENG 36/36 delivered 2026-06-12
 ---
 

@@ -5,7 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-17-028 | 2026-06-17 | tier-0, tier-1 TOOLS | TOOLS-LC-S1–S4 · Full-Harness-LC-TOOLS | [TOOLS — Full Harness Layer Completion closeout](entries/2026-06-17/platform-tools-layer-completion.md) | pending |
+| IJ-2026-06-17-028 | 2026-06-17 | tier-0, tier-1 TOOLS | TOOLS-LC-S1–S4 · Full-Harness-LC-TOOLS | [TOOLS — Full Harness Layer Completion closeout](entries/2026-06-17/platform-tools-layer-completion.md) | 8065cb35 |
 | IJ-2026-06-17-027 | 2026-06-17 | tier-0 LLM_ADAPTERS | LLM-LC-S1–S4 · Full-Harness-LC-LLM | [LLM_ADAPTERS — Full Harness Layer Completion closeout](entries/2026-06-17/platform-llm-layer-completion.md) | 4a51cff1 |
 | IJ-2026-06-17-026 | 2026-06-17 | tier-0, tier-2 AGENT_CONTRACTS_AND_ASSEMBLY | ACP-LC-S1–S4 · Full-Harness-LC-ACP | [AGENT_CONTRACTS_AND_ASSEMBLY — Full Harness Layer Completion closeout](entries/2026-06-17/platform-acp-layer-completion.md) | 439346dc |
 | IJ-2026-06-17-025 | 2026-06-17 | tier-0, tier-1, tier-3 REASONING_AND_COGNITION | COG-LC-S1–S6 · Full-Harness-LC-COG | [REASONING_AND_COGNITION — Full Harness Layer Completion closeout](entries/2026-06-17/platform-cog-layer-completion.md) | 0687d6a2 |
