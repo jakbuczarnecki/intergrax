@@ -242,8 +242,8 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 |----|-------|-------------|--------|----------|------------|
 | OBS-EVOL-9-DOC | M0 | Architecture §4.4 + plan register + ADR-OBS-003 + author guides | **Done** | **Critical** | This register · ADR · `EXTENSION_AUTHOR_GUIDE.md` §11 · `APPLICATION_CREATION_GUIDE.md` §8 · `AGENT_CREATION_GUIDE.md` §Q.5 |
 | OBS-EVOL-9.1 | M1 | `EventCategory` + `EventCatalogEntry` + `event_catalog.py` (`retention_class`, `sample_rate`, `consolidation_kind`; deprecate `phase_coverage.py` as SSOT) | **Done** | **Critical** | `event_catalog.py` · `test_event_catalog.py` |
-| OBS-EVOL-9.2 | M1 | `event_kind` + `event_category` + `ops_hint` on `RuntimeEvent`; auto-fill from catalog | **Planned** | **Critical** | `runtime_event.py` · `test_runtime_event_kind.py` |
-| OBS-EVOL-9.3 | M1 | `EmitContext` + `emit_domain_signal()` (redaction) + `emit_platform_event()` | **Planned** | **Critical** | `signals.py` · `emit_context.py` · `test_domain_signals.py` |
+| OBS-EVOL-9.2 | M1 | `event_kind` + `event_category` + `ops_hint` on `RuntimeEvent`; auto-fill from catalog | **Done** | **Critical** | `runtime_event.py` · `test_runtime_event_kind.py` |
+| OBS-EVOL-9.3 | M1 | `EmitContext` + `emit_domain_signal()` (redaction) + `emit_platform_event()` | **Done** | **Critical** | `signals.py` · `emit_context.py` · `test_domain_signals.py` |
 | OBS-EVOL-9.4 | M1 | `EventKindRegistry` for extension kinds (agents/apps namespaces) | **Planned** | **Critical** | `event_kind_registry.py` · `test_event_kind_registry.py` |
 | OBS-EVOL-9.5 | M2 | `RuntimeEventBus.subscribe(categories=, kind_prefix=, ops_hints=)` + `JournalQuery` | **Planned** | High | `event_bus.py` · `journal_query.py` · `test_event_bus_taxonomy_subscribe.py` |
 | OBS-EVOL-9.6 | M2 | `scripts/check_event_catalog.py` + sampling enforcement + LLM `event_kind` namespace lint | **Planned** | High | CI script · extend `check_observability_gates.py` |

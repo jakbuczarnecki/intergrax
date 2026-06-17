@@ -38,6 +38,8 @@ from intergrax.runtime.events.payload_registry import (
 from intergrax.runtime.events.payloads import RuntimeEventPayload
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.runtime.events.emit_context import EmitContext
+from intergrax.runtime.events.signals import emit_domain_signal, emit_platform_event
 from intergrax.runtime.events.trace_bridge import (
     runtime_event_from_task_state,
     trace_event_to_runtime_event,
@@ -53,6 +55,7 @@ __all__ = [
     "ENV_RUNTIME_EVENTS_DB",
     "EVENT_CATALOG",
     "EVENT_TYPE_PREFERRED_SCHEMA",
+    "EmitContext",
     "EventCatalogEntry",
     "EventCategory",
     "ExecutionPhase",
@@ -67,6 +70,8 @@ __all__ = [
     "RuntimeEventType",
     "category_for_event_kind",
     "category_for_spine_type",
+    "emit_domain_signal",
+    "emit_platform_event",
     "get_catalog_entry",
     "get_payload_schema",
     "ops_filter_hint_for_event",

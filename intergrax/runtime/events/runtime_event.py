@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.runtime.events.event_taxonomy import EventCategory, category_for_event_kind
 
 
 class RuntimeEventType(str, Enum):
@@ -91,6 +92,7 @@ class RuntimeEventType(str, Enum):
     HOOK_BLOCKED = "hook_blocked"
     HOOK_ERROR = "hook_error"
     HOOK_TIMEOUT = "hook_timeout"
+    DOMAIN_SIGNAL = "domain_signal"
 
 
 class RuntimeEvent(BaseModel):
@@ -102,6 +104,9 @@ class RuntimeEvent(BaseModel):
     agent_id: Optional[str] = None
     step_id: Optional[str] = None
     event_type: RuntimeEventType
+    event_kind: str = ""
+    event_category: EventCategory | None = None
+    ops_hint: str = ""
     phase: ExecutionPhase
     severity: EventSeverity = EventSeverity.INFO
     payload: Dict[str, Any] = Field(default_factory=dict)
@@ -109,6 +114,25 @@ class RuntimeEvent(BaseModel):
     correlation_id: str = ""
     parent_event_id: Optional[str] = None
     schema_version: str = "runtime_event.v1"
+
+    def model_post_init(self, __context: Any) -> None:
+        from intergrax.runtime.events.event_catalog import get_catalog_entry
+
+        entry = get_catalog_entry(self.event_type)
+        if entry is not None:
+            if not self.event_kind:
+                self.event_kind = entry.default_event_kind
+            if self.event_category is None:
+                self.event_category = entry.category
+            if not self.ops_hint:
+                self.ops_hint = entry.ops_hint
+            return
+        if not self.event_kind:
+            self.event_kind = self.event_type.value
+        if self.event_category is None:
+            self.event_category = category_for_event_kind(self.event_kind)
+        if not self.ops_hint and self.event_type == RuntimeEventType.DOMAIN_SIGNAL:
+            self.ops_hint = "ops:domain_signal"
 
     def with_parent(self, parent: RuntimeEvent) -> RuntimeEvent:
         return self.model_copy(

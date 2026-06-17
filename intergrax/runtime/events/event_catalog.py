@@ -6,11 +6,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
 from typing import Final
 
 from intergrax.contracts.execution_phase import ExecutionPhase
-from intergrax.runtime.events.payload_registry import EVENT_TYPE_PREFERRED_SCHEMA
+from intergrax.runtime.events.event_taxonomy import EventCategory, RetentionClass, category_for_event_kind
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 
 OpsFilterHint = str
@@ -21,27 +20,6 @@ _SAMPLED_EVENT_TYPES: dict[RuntimeEventType, float] = {
     RuntimeEventType.TASK_PROGRESS: 0.25,
     RuntimeEventType.CAPACITY_SIGNAL_COLLECTED: 0.5,
 }
-
-
-class EventCategory(str, Enum):
-    """Derived ops grouping for subscribers and metrics cardinality control."""
-
-    TASK = "task"
-    PLAN = "plan"
-    TOOL = "tool"
-    AGENT = "agent"
-    CONTEXT = "context"
-    HUMAN = "human"
-    POLICY = "policy"
-    PLATFORM = "platform"
-
-
-class RetentionClass(str, Enum):
-    """Store retention tier aligned with data classification (IDEAL-23.5)."""
-
-    OPERATIONAL = "operational"
-    AUDIT = "audit"
-    DEBUG = "debug"
 
 
 _AUDIT_RETENTION_PREFIXES = (
@@ -148,6 +126,7 @@ _SPINE_PHASE: dict[RuntimeEventType, ExecutionPhase] = {
     RuntimeEventType.HOOK_BLOCKED: ExecutionPhase.STEP_EXECUTION,
     RuntimeEventType.HOOK_ERROR: ExecutionPhase.STEP_EXECUTION,
     RuntimeEventType.HOOK_TIMEOUT: ExecutionPhase.STEP_EXECUTION,
+    RuntimeEventType.DOMAIN_SIGNAL: ExecutionPhase.STEP_EXECUTION,
 }
 
 _SPINE_OPS_HINT: dict[RuntimeEventType, OpsFilterHint] = {
@@ -225,6 +204,7 @@ _SPINE_OPS_HINT: dict[RuntimeEventType, OpsFilterHint] = {
     RuntimeEventType.HOOK_BLOCKED: "ops:alert",
     RuntimeEventType.HOOK_ERROR: "ops:alert",
     RuntimeEventType.HOOK_TIMEOUT: "ops:alert",
+    RuntimeEventType.DOMAIN_SIGNAL: "ops:domain_signal",
 }
 
 
@@ -271,27 +251,6 @@ def category_for_spine_type(event_type: RuntimeEventType) -> EventCategory:
     return EventCategory.PLATFORM
 
 
-def category_for_event_kind(event_kind: str) -> EventCategory:
-    """Derive category from namespaced ``event_kind`` (extension path)."""
-    if event_kind.startswith("agents."):
-        return EventCategory.AGENT
-    if event_kind.startswith("applications."):
-        return EventCategory.PLATFORM
-    if event_kind.startswith("platform.task."):
-        return EventCategory.TASK
-    if event_kind.startswith("platform.plan."):
-        return EventCategory.PLAN
-    if event_kind.startswith("platform.context."):
-        return EventCategory.CONTEXT
-    if event_kind.startswith("platform.policy."):
-        return EventCategory.POLICY
-    if event_kind.startswith("platform."):
-        return EventCategory.PLATFORM
-    if event_kind.startswith("intergrax.llm.stream."):
-        return EventCategory.AGENT
-    return EventCategory.PLATFORM
-
-
 def consolidation_kind_for_spine_type(event_type: RuntimeEventType) -> str | None:
     """Target ``platform.*`` kind when member consolidates to ``DOMAIN_SIGNAL``."""
     name = event_type.name
@@ -322,6 +281,8 @@ def sample_rate_for_spine_type(event_type: RuntimeEventType) -> float:
 
 
 def build_event_catalog() -> dict[RuntimeEventType, EventCatalogEntry]:
+    from intergrax.runtime.events.payload_registry import EVENT_TYPE_PREFERRED_SCHEMA
+
     catalog: dict[RuntimeEventType, EventCatalogEntry] = {}
     for event_type in RuntimeEventType:
         phase = _SPINE_PHASE.get(event_type)
