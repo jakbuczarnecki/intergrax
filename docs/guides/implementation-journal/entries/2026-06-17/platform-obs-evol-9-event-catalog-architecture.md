@@ -9,7 +9,7 @@ plan_ref:
   - OBS-EVOL-9-DOC
   - P1-ARCH-02
 status: completed
-commit: 7fc7f67b
+commit: 11b8e07d
 adr: ADR-OBS-003
 ---
 
