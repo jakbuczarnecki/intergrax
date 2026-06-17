@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-17-020 | 2026-06-17 | tier-0, tier-1, tier-3 CONTEXT_ENGINEERING | CE-LLM-X · CE-ITERATION-III | [CE — Layer Completion iteration III closeout](entries/2026-06-17/platform-ce-layer-completion-iii.md) | pending |
 | IJ-2026-06-17-019 | 2026-06-17 | platform PLATFORM_FOUNDATION | P2-ARCH-03 | [P2-ARCH-03 — Root README platform maturity table](entries/2026-06-17/platform-readme-maturity-table.md) | eb99f407 |
 | IJ-2026-06-17-018 | 2026-06-17 | platform PLATFORM_FOUNDATION | P2-DOC-LC-1 | [P2-DOC-LC-1 — Layer Completion Mode canonical guide](entries/2026-06-17/platform-layer-completion-mode-guide.md) | 4e973baf |
 | IJ-2026-06-17-017 | 2026-06-17 | platform PLATFORM_FOUNDATION | P2-ARCH-01 | [P2-ARCH-01 — System invariants cross-domain index](entries/2026-06-17/platform-system-invariants-index.md) | aeba83f1 |
