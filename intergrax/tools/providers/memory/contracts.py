@@ -81,3 +81,30 @@ class MemorySearchOutput(BaseModel):
     query: str
     matches: list[MemorySearchMatch] = Field(default_factory=list)
     total: int = 0
+
+
+class MemorySemanticHit(BaseModel):
+    source: str = Field(description="ltm or episodic")
+    entry_id: str = ""
+    content: str = ""
+    kind: str = ""
+    score: float = 0.0
+    session_id: str = ""
+    role: str = ""
+
+
+class MemorySemanticSearchInput(BaseModel):
+    user_id: str = Field(..., min_length=1)
+    query: str = Field(..., min_length=1)
+    session_id: str = ""
+    tenant_id: str = "default"
+    top_k: int = Field(default=8, ge=1, le=50)
+    include_episodic: bool = True
+    include_ltm: bool = True
+    include_cross_session_episodic: bool = False
+
+
+class MemorySemanticSearchOutput(BaseModel):
+    used: bool = False
+    hits: list[MemorySemanticHit] = Field(default_factory=list)
+    reason: str = ""

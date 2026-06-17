@@ -158,7 +158,7 @@ class RetrievalService:
                     RetrievalChunk(
                         id=r.candidate.id,
                         text=r.candidate.text,
-                        score=float(r.score),
+                        score=float(r.rerank_score),
                         metadata=dict(r.candidate.metadata or {}),
                     )
                     for r in reranked

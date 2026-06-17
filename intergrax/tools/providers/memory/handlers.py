@@ -13,6 +13,8 @@ from intergrax.tools.providers.memory.contracts import (
     MemoryReadOutput,
     MemorySearchInput,
     MemorySearchOutput,
+    MemorySemanticSearchInput,
+    MemorySemanticSearchOutput,
     MemoryWriteInput,
     MemoryWriteOutput,
 )
@@ -21,6 +23,7 @@ from intergrax.tools.providers.memory.service import (
     memory_list_keys,
     memory_read,
     memory_search,
+    memory_semantic_search,
     memory_write,
 )
 
@@ -43,3 +46,9 @@ class MemoryDeleteKeyHandler(ServiceToolHandler[MemoryDeleteKeyInput, MemoryDele
 
 class MemorySearchHandler(ServiceToolHandler[MemorySearchInput, MemorySearchOutput]):
     _service = memory_search
+
+
+class MemorySemanticSearchHandler(
+    ServiceToolHandler[MemorySemanticSearchInput, MemorySemanticSearchOutput]
+):
+    _service = memory_semantic_search

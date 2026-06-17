@@ -32,7 +32,7 @@
 
 ## Phase MEM-VEC — Vector memory integration (Band 2aw)
 
-**Status:** **Active** (2026-06-14) — MEMV1/MEMV2 **Done**; MEMV3 (P2 plugin + skill runtime) backlog.  
+**Status:** **Done** (2026-06-17) — MEMV1/MEMV2 **Done**; MEMV3 plugin + skill runtime **Done**.  
 **Architecture:** [`architecture/MEMORY.md`](../architecture/MEMORY.md) §5.3, §6.4–6.5, §7.1.1, §11.5  
 **Cross-plan:** [`plan/CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) — `SESSION_HISTORY_SEMANTIC` fragment source (CE-VEC-1)  
 **ADR:** [`ADR-MEM-002`](../adr/entries/2026-06-14/ADR-MEM-002.md) — three-domain vector catalog (Accepted 2026-06-14)  
@@ -68,8 +68,8 @@ Work **MEM-VEC-1.*** before MEM-VEC-2.* — LTM wiring is a small diff that unbl
 | MEM-VEC-2.2 | **Write path** — `SessionTurnIndexService` on `append_message`; tombstone on delete; `enable_session_vector_index` on `MemoryProfile` | P1 | **Done** | `session_manager.py`, `memory_runtime_bridge.py` |
 | MEM-VEC-2.3 | **`SessionSemanticRecallStep`** — semantic search episodic index; inject in CE provider before history layer; trace diag | P1 | **Done** | `memory_context_invocation.py`, `tool_runtime.py`, `uaep.py` |
 | MEM-VEC-2.4 | **CE fragment source** — `SESSION_HISTORY_SEMANTIC` in `ContextCompiler` classification + degradation ladder | P1 | **Done** (CE-VEC-1) | `context/contracts.py`, `runtime_state_handle_bridge.py` |
-| MEM-VEC-3.1 | **`SessionTurnIndexStorePlugin`** EP + fixture package | P2 | Planned | `intergrax.memory_stores`, `tests/fixtures/plugin_packages/` |
-| MEM-VEC-3.2 | **`memory.semantic_search` skill runtime** — delegates to `ltm.search` + episodic recall (not prompt-only) | P2 | Planned | `skills/providers/memory/` |
+| MEM-VEC-3.1 | **`SessionTurnIndexStorePlugin`** EP + fixture package | P2 | **Done** | `intergrax.memory_stores`, `tests/fixtures/plugin_packages/session_turn_index_plugin/` |
+| MEM-VEC-3.2 | **`memory.semantic_search` skill runtime** — delegates to `ltm.search` + episodic recall (not prompt-only) | P2 | **Done** | `tools/providers/memory/`, `skills/providers/memory/` |
 
 ### MEM-VEC — Paydown log
 
@@ -78,6 +78,7 @@ Work **MEM-VEC-1.*** before MEM-VEC-2.* — LTM wiring is a small diff that unbl
 | 2026-06-12 | MEM-VEC-0.1 | Canon: three-domain vector catalog, wiring contract, episodic recall target state |
 | 2026-06-14 | MEM-VEC-0.2 | ADR-MEM-002: three-domain vector catalog accepted |
 | 2026-06-14 | MEM-VEC-1.1–1.4 | LTM vector wiring, fail-closed gate, integration test |
+| 2026-06-17 | MEM-VEC-3.1–3.2 | SessionTurnIndexStorePlugin EP + memory.semantic_search tool runtime |
 | 2026-06-14 | MEM-VEC-2.1–2.4 | Episodic index write/recall + CE handle population |
 
 **Explicitly out of NOW:** merging `knowledge` + `ltm` + `episodic` into one collection; Mem0 SaaS replacement; Neo4j as default episodic backend.

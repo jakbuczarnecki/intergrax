@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.memory.memory_vector_errors import MemoryVectorBackendUnavailableError
@@ -14,10 +14,6 @@ from intergrax.memory.user_profile_store import UserProfileStore
 
 if TYPE_CHECKING:
     from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
-    from intergrax.rag.bootstrap.rag_stack_bootstrap import RagStack
-
-
-if TYPE_CHECKING:
     from intergrax.rag.bootstrap.rag_stack_bootstrap import RagStack
 
 
@@ -73,10 +69,14 @@ def build_user_profile_manager(
     if not (profile.enable_user_memory or profile.enable_long_term_memory):
         return None
 
-    kwargs: dict[str, object] = {}
+    kwargs: dict[str, object] = {
+        "tenant_id": env.profile_id or "default",
+        "vector_index_namespace": profile.vector_index_namespace,
+    }
     if profile.enable_long_term_memory and rag_stack is not None:
         kwargs["embedding_manager"] = rag_stack.embedding_manager
         kwargs["vectorstore_manager"] = rag_stack.vectorstore_manager
+        kwargs["retrieval_service"] = rag_stack.retrieval_service
         kwargs["rag_profile"] = rag_stack.profile
 
     return UserProfileManager(store, **kwargs)
@@ -86,15 +86,31 @@ def build_session_turn_index_store(
     env: ApplicationEnvironmentProfile,
     *,
     rag_stack: RagStack | None = None,
+    session_turn_index_plugins: Sequence[type] = (),
 ) -> SessionTurnIndexStore | None:
     """Construct episodic index when ``enable_session_vector_index`` is true."""
+    from intergrax.core.memory_bootstrap import discover_session_turn_index_plugin_types
+
     profile = env.memory_profile
     if not profile.enable_session_vector_index:
         return None
     if rag_stack is None:
         return None
+
+    plugin_types = list(session_turn_index_plugins) or discover_session_turn_index_plugin_types()
+    for plugin_type in plugin_types:
+        return plugin_type.create_session_turn_index(
+            embedding_manager=rag_stack.embedding_manager,
+            vectorstore_manager=rag_stack.vectorstore_manager,
+            index_roles=profile.session_index_roles,
+            tenant_id=env.profile_id or "default",
+            vector_index_namespace=profile.vector_index_namespace,
+        )
+
     return VectorSessionTurnIndexStore(
         embedding_manager=rag_stack.embedding_manager,
         vectorstore_manager=rag_stack.vectorstore_manager,
         index_roles=profile.session_index_roles,
+        tenant_id=env.profile_id or "default",
+        vector_index_namespace=profile.vector_index_namespace,
     )

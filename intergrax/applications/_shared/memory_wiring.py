@@ -108,10 +108,17 @@ def resolve_memory_platform_wiring(
     if _mongodb_enabled(profile):
         mongo_bundle = create_mongodb_integration(**_mongodb_integration_overrides(profile))
         document_store: DocumentStore = mongo_bundle.document_store
+        org_store = None
+        if env.memory_profile.enable_org_memory:
+            from intergrax.runtime.organization.stores.in_memory_organization_profile_store import (
+                InMemoryOrganizationProfileStore,
+            )
+
+            org_store = InMemoryOrganizationProfileStore()
         return MemoryPlatformWiring(
             session_storage=DocumentStoreSessionStorage(document_store),
             user_profile_store=DocumentStoreUserProfileStore(document_store),
-            organization_profile_store=None,
+            organization_profile_store=org_store,
             sqlite_bundle=None,
             mongodb_bundle=mongo_bundle,
             entity_graph_store=entity_graph_store,

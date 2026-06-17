@@ -13,6 +13,9 @@ from intergrax.memory.user_profile_memory import (
     UserProfile,
     UserProfileMemoryEntry,
 )
+from intergrax.memory.memory_temporal import filter_active_memory_entries, is_memory_entry_active
+from intergrax.memory.memory_vector_namespace import resolve_memory_index_collection
+from intergrax.memory.memory_vector_namespace import LTM_INDEX_DOMAIN
 from intergrax.memory.user_profile_store import UserProfileStore
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.profiles.rag_profile import RagProfile
@@ -51,9 +54,16 @@ class UserProfileManager:
             longterm_top_k: int = 6,
             longterm_score_threshold: float = 0.25,
             tenant_id: str = "default",
+            vector_index_namespace: str | None = None,
     ) -> None:
         self._store = store
         self._tenant_id = tenant_id
+        self._vector_index_namespace = vector_index_namespace
+        self._ltm_collection_name = resolve_memory_index_collection(
+            vector_index_namespace=vector_index_namespace,
+            tenant_id=tenant_id,
+            domain=LTM_INDEX_DOMAIN,
+        )
 
         # Optional Long-Term Memory RAG dependencies
         self._embedding_manager = embedding_manager
@@ -96,11 +106,22 @@ class UserProfileManager:
             query=query,
             final_top_k=top_k,
             score_threshold=score_threshold,
-            metadata_filter=MetadataFilter(conditions={"user_id": user_id, "deleted": 0, "index_domain": "ltm"}),
+            metadata_filter=MetadataFilter(
+                conditions={
+                    "user_id": user_id,
+                    "deleted": 0,
+                    "index_domain": LTM_INDEX_DOMAIN,
+                    "collection_name": self._ltm_collection_name,
+                }
+            ),
         )
         result = service.retrieve(request)
         profile = await self._get_store_profile(user_id)
-        by_id = {e.entry_id: e for e in profile.memory_entries if not e.deleted}
+        by_id = {
+            e.entry_id: e
+            for e in profile.memory_entries
+            if is_memory_entry_active(e)
+        }
         hits: List[UserProfileMemoryEntry] = []
         scores: List[float] = []
         for chunk in result.chunks:
@@ -145,9 +166,10 @@ class UserProfileManager:
             {
                 "user_id": user_id,
                 "entry_id": entry.entry_id,
-                "kind": entry.kind,
+                "kind": entry.kind.value if hasattr(entry.kind, "value") else str(entry.kind),
                 "deleted": 1 if entry.deleted else 0,
-                "index_domain": "ltm",
+                "index_domain": LTM_INDEX_DOMAIN,
+                "collection_name": self._ltm_collection_name,
             }
         )
         
@@ -271,7 +293,12 @@ class UserProfileManager:
         from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 
         metadata_filter = MetadataFilter(
-            conditions={"user_id": user_id, "deleted": 0, "index_domain": "ltm"},
+            conditions={
+                "user_id": user_id,
+                "deleted": 0,
+                "index_domain": LTM_INDEX_DOMAIN,
+                "collection_name": self._ltm_collection_name,
+            },
         )
         raw_hits = self._vectorstore_manager.query(
             embedding,
@@ -306,7 +333,11 @@ class UserProfileManager:
 
         # Map ids -> canonical entries from the stored profile (source of truth)
         profile = await self._get_store_profile(user_id)
-        by_id = {e.entry_id: e for e in profile.memory_entries if not e.deleted}
+        by_id = {
+            e.entry_id: e
+            for e in profile.memory_entries
+            if is_memory_entry_active(e)
+        }
 
         hits: List[UserProfileMemoryEntry] = []
         hit_scores: List[float] = []

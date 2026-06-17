@@ -59,14 +59,14 @@ MEM Done · MEM-DEPTH Done · **MEM-VEC** P0–P1 Done (MEM-VEC-3 P2 backlog) ·
 | LTM vector wiring on Tier-3 hosts | **Done** | MEM-VEC-1.* |
 | Episodic session turn index + semantic recall | **Done** | MEM-VEC-2.* |
 | Fail-closed when vector flags set without backend | **Done** | MEM-VEC-1.4 |
-| `SessionTurnIndexStore` plugin entry point | **Open** | MEM-VEC-3.1 |
-| `memory.semantic_search` skill runtime (LTM + episodic) | **Open** | MEM-VEC-3.2 |
-| Temporal fact validity on LTM entries | **Open** | MEM-DEPTH-5.2 |
+| `SessionTurnIndexStore` plugin entry point | **Done** | MEM-VEC-3.1 |
+| `memory.semantic_search` skill runtime (LTM + episodic) | **Done** | MEM-VEC-3.2 |
+| Temporal fact validity on LTM entries | **Done** | MEM-DEPTH-5.2 |
 | Versioned procedural memory store | **Open** (minimal by design) | — |
-| Org memory maturity vs user LTM | **Partial** | AUDIT-15.1 |
-| Entity graph vs Zep parity depth | **Partial** | AUDIT-15.3 — `EntityGraphMemoryStore` shipped |
+| Org memory maturity vs user LTM | **Partial** | org LTM entries shipped |
+| Entity graph vs Zep parity depth | **Partial** | consolidation indexing wired |
 | Per-step budget caps before CE collect | **Partial** | ADR-MEM-001 global allocator Done |
-| Explore delegation (Cursor-class) | **Open** | MEM-DEPTH-4.* |
+| Explore delegation (Cursor-class) | **Done** | MEM-DEPTH-4.2 graph executor |
 | Context drift + semantic compression (AUDIT-16.x) | **Done** | CE §11 — not MEMORY code path |
 | Mongo session persistence | **Done** | MEM-DEPTH-2.1 |
 | MemoryKind `EPISODIC_EVENT` / `PROCEDURAL` | **Done** | AUDIT-15.2 |
