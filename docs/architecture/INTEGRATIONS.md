@@ -80,7 +80,7 @@ Adapters should be generic and reusable.
 ## Catalog
 
 
-**Last updated:** 2026-06-10 (RAG domain pair split · M.7 P7 **Done** 18/18)
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates M.7 P7 closeout); **185** slugs · M.7 P7 **Done** 18/18
 
 The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. Agents and applications wire backends **by category**, not by vendor SDK, so the same agent code can run in a local lab, a customer VPC, or a multi-cloud deployment.
 

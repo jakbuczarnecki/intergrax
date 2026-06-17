@@ -5,6 +5,8 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-17-032 | 2026-06-17 | tier-0, tier-3 RAG | RAG-LC-S1–S4 · Full-Harness-LC-RAG | [RAG — Full Harness Layer Completion closeout](entries/2026-06-17/platform-rag-layer-completion-fh.md) | pending |
+| IJ-2026-06-17-031 | 2026-06-17 | tier-0 INTEGRATIONS | INTEGRATIONS-LC-S1–S4 · Full-Harness-LC-INTEGRATIONS | [INTEGRATIONS — Full Harness Layer Completion closeout](entries/2026-06-17/platform-integrations-layer-completion.md) | pending |
 | IJ-2026-06-17-030 | 2026-06-17 | tier-0 SKILLS | SKILLS-LC-S1–S4 · Full-Harness-LC-SKILLS | [SKILLS — Full Harness Layer Completion closeout](entries/2026-06-17/platform-skills-layer-completion.md) | 5d2690f3 |
 | IJ-2026-06-17-029 | 2026-06-17 | tier-0, tier-1, tier-3 CODE_CRAFT | CODE_CRAFT-LC-S1–S4 · Full-Harness-LC-CODE_CRAFT | [CODE_CRAFT — Full Harness Layer Completion closeout](entries/2026-06-17/platform-codecraft-layer-completion.md) | 7c60a013 |
 | IJ-2026-06-17-028 | 2026-06-17 | tier-0, tier-1 TOOLS | TOOLS-LC-S1–S4 · Full-Harness-LC-TOOLS | [TOOLS — Full Harness Layer Completion closeout](entries/2026-06-17/platform-tools-layer-completion.md) | 8065cb35 |
