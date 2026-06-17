@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-17-013 | 2026-06-17 | tier-0, tier-3 OBSERVABILITY | OBS-EVOL-9.10 | [OBS-EVOL-9.10 — Profile event subscriptions](entries/2026-06-17/platform-obs-evol-9-10-profile-subscriptions.md) | pending |
 | IJ-2026-06-17-012 | 2026-06-17 | tier-0, tier-2, tier-3 OBSERVABILITY | OBS-EVOL-9.8 | [OBS-EVOL-9.8 — Scaffold domain signals](entries/2026-06-17/platform-obs-evol-9-8-scaffold-domain-signals.md) | 7a81df64 |
 | IJ-2026-06-17-011 | 2026-06-17 | tier-0, tier-1 OBSERVABILITY | OBS-EVOL-9.7 | [OBS-EVOL-9.7 — Spine consolidation](entries/2026-06-17/platform-obs-evol-9-7-spine-consolidation.md) | 39ee2f6f |
 | IJ-2026-06-17-010 | 2026-06-17 | tier-0, tier-1 OBSERVABILITY | OBS-EVOL-9.5 | [OBS-EVOL-9.5 — Bus taxonomy + JournalQuery](entries/2026-06-17/platform-obs-evol-9-5-bus-taxonomy-journal-query.md) | 6765f637 |

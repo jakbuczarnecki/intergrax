@@ -252,6 +252,14 @@ def build_harness_host_runtime(
     )
     apply_application_host_wiring(nexus_loop, application_host)
     apply_hook_runtime_guard_wiring(nexus_loop, environment)
+    from intergrax.applications._shared.observability_wiring import (
+        wire_observability_event_subscriptions,
+    )
+
+    wire_observability_event_subscriptions(
+        nexus_loop.event_bus,
+        environment.observability_profile,
+    )
     from intergrax.applications._shared.reliability_wiring import apply_reliability_governance_wiring
 
     apply_reliability_governance_wiring(nexus_loop, environment)

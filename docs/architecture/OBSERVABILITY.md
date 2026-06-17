@@ -264,7 +264,7 @@ Replaces ad-hoc enum-list filtering in debug tooling (SAR-07).
 
 #### 4.4.11 Declarative profile subscriptions (OBS-EVOL-9.10)
 
-`ObservabilityProfile.event_subscriptions: list[EventSubscriptionSpec]` — Tier-3 declares `kind_prefix` / `event_category` handlers; wiring registers them at host bootstrap (SAR-03).
+`ObservabilityProfile.event_subscriptions: list[EventSubscriptionSpec]` — Tier-3 declares `kind_prefix`, `categories`, `ops_hints`, and/or `event_types` plus a `handler_id`. Handlers register via `register_event_subscription_handler()`; `wire_observability_event_subscriptions()` attaches them at host bootstrap (`harness_host_runtime`). **Code:** `sub_profiles.py`, `event_subscription_registry.py`, `observability_wiring.py`.
 
 #### 4.4.12 W3C Trace Context (OBS-EVOL-9.11)
 

@@ -23,6 +23,8 @@ from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.runtime.adaptive.contracts import UtilityWeights
 from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
 from intergrax.runtime.capacity.contracts import ScalingPolicy
+from intergrax.runtime.events.event_taxonomy import EventCategory
+from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.runtime.policy.compliance_profiles import ComplianceDomainClass
 
@@ -179,6 +181,45 @@ class ReliabilityProfile(BaseModel):
     recovery_contract: ApplicationRecoveryContract | None = None
 
 
+class EventSubscriptionSpec(BaseModel):
+    """Declarative runtime bus subscription for a Tier-3 host (OBS-EVOL-9.10)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    subscription_id: str = Field(min_length=1)
+    handler_id: str = Field(min_length=1)
+    kind_prefix: str | None = None
+    categories: list[EventCategory] | None = None
+    ops_hints: list[str] | None = None
+    event_types: list[RuntimeEventType] | None = None
+    priority: int = Field(default=100, ge=0, le=1000)
+    enabled: bool = True
+
+    @field_validator("kind_prefix")
+    @classmethod
+    def _strip_kind_prefix(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        return stripped or None
+
+    @field_validator("ops_hints")
+    @classmethod
+    def _strip_ops_hints(cls, value: list[str] | None) -> list[str] | None:
+        if value is None:
+            return None
+        cleaned = [item.strip() for item in value if item.strip()]
+        return cleaned or None
+
+    def has_filter(self) -> bool:
+        return bool(
+            self.kind_prefix
+            or self.categories
+            or self.ops_hints
+            or self.event_types
+        )
+
+
 class ObservabilityProfile(BaseModel):
     """Trace, OTEL, metrics, optional product debug (Phase H-APP.4.8)."""
 
@@ -191,6 +232,27 @@ class ObservabilityProfile(BaseModel):
     causal_diagnostics_enabled: bool = False
     health_dashboard_enabled: bool = False
     unified_observability_dashboard_enabled: bool = False
+    event_subscriptions: list[EventSubscriptionSpec] = Field(default_factory=list)
+
+    @field_validator("event_subscriptions")
+    @classmethod
+    def _validate_event_subscriptions(
+        cls,
+        specs: list[EventSubscriptionSpec],
+    ) -> list[EventSubscriptionSpec]:
+        seen: set[str] = set()
+        for spec in specs:
+            if spec.subscription_id in seen:
+                raise ValueError(
+                    f"duplicate event subscription_id: {spec.subscription_id!r}"
+                )
+            seen.add(spec.subscription_id)
+            if spec.enabled and not spec.has_filter():
+                raise ValueError(
+                    f"subscription {spec.subscription_id!r} requires at least one filter "
+                    "(kind_prefix, categories, ops_hints, or event_types)"
+                )
+        return specs
 
 
 class CostProfile(BaseModel):

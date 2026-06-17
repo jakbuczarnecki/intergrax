@@ -250,7 +250,7 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 | OBS-EVOL-9.7 | M2 | **Pre-release spine consolidation** — 74 → 56; `DOMAIN_SIGNAL` + read shim | **Done** | **Critical** | `spine_consolidation.py` · emitters · `test_spine_consolidation.py` · `check_event_catalog.py` |
 | OBS-EVOL-9.8 | M2 | Scaffold: `emit_domain_signal` template in `new_agent` / `new_application` | **Done** | Medium | `signal_templates.py` · `test_scaffold_domain_signals.py` |
 | OBS-EVOL-9.9 | M3 | Optional `runtime_event.v2` envelope (`event_kind` required) | **Planned** | Low | Opt-in `schema_version`; v1 indefinite |
-| OBS-EVOL-9.10 | M2 | Declarative bus subscriptions on `ObservabilityProfile` | **Planned** | P2 | `sub_profiles.py` · `observability_wiring.py` |
+| OBS-EVOL-9.10 | M2 | Declarative bus subscriptions on `ObservabilityProfile` | **Done** | P2 | `sub_profiles.py` · `event_subscription_registry.py` · `observability_wiring.py` |
 | OBS-EVOL-9.11 | M3 | W3C Trace Context (`traceparent` / `tracestate`) on `RuntimeEvent` + OTLP bridge | **Planned** | P3 | `runtime_event.py` · `export_bridge.py` |
 
 **Suggested PR order:** OBS-EVOL-9-DOC → OBS-EVOL-9.1 → OBS-EVOL-9.2 → OBS-EVOL-9.3 → OBS-EVOL-9.4 → OBS-EVOL-9.6 → OBS-EVOL-9.5 → OBS-EVOL-9.7 → OBS-EVOL-9.8 → OBS-EVOL-9.10 → OBS-EVOL-9.11.
