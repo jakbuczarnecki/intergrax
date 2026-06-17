@@ -46,6 +46,7 @@ from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventTyp
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.emit_context import EmitContext
 from intergrax.runtime.events.signals import emit_domain_signal, emit_platform_event
+from intergrax.runtime.events.journal_query import query_journal
 from intergrax.runtime.events.trace_bridge import (
     runtime_event_from_task_state,
     trace_event_to_runtime_event,
@@ -93,6 +94,7 @@ __all__ = [
     "bridge_persisted_trace_events",
     "build_unified_run_journal",
     "open_runtime_event_store",
+    "query_journal",
     "resolve_runtime_event_persistence",
     "resolve_runtime_events_db_path",
     "runtime_event_from_task_state",

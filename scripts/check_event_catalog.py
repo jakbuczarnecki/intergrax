@@ -19,6 +19,7 @@ def main() -> int:
         "tests/unit/runtime/events/test_event_catalog.py",
         "tests/unit/runtime/events/test_event_kind_registry.py",
         "tests/unit/runtime/events/test_event_bus_sampling.py",
+        "tests/unit/runtime/events/test_event_bus_taxonomy_subscribe.py",
         "-q",
     ]
     result = subprocess.run(cmd, cwd=repo_root, check=False)
