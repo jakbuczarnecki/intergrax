@@ -7,7 +7,7 @@ scope: PLATFORM_FOUNDATION
 plan_ref:
   - P2-DOC-LC-1
 status: completed
-commit: pending
+commit: 4e973baf
 adr: none — process guide only; no architecture contract change
 ---
 
