@@ -43,6 +43,24 @@ Strategic direction: [Development Strategy](docs/guides/INTERGRAX_DEVELOPMENT_ST
 
 ---
 
+## Current platform maturity
+
+**Harness baseline:** **32/32** audit layers at **L3** ([scorecard](scripts/harness_maturity_report.py) · [IDEAL_HARNESS_L3](docs/plan/IDEAL_HARNESS_L3.md) · [audit map §5](docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md#5-maturity-scoring-model)).
+
+Maturity uses **L0–L4** levels (not arbitrary percentages). Per-domain evidence lives in paired `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md`.
+
+| Area | Maturity | Evidence / open gap |
+|------|----------|---------------------|
+| **Agent contracts (ACP)** | **L3** | [Phase ACP](docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) **Done** · fleet `on_next_step` migration ongoing |
+| **Tools** | **L3** | [TOOL-ENG](docs/plan/TOOLS.md) closeout **Done** · deferred: hierarchical LLM category pass |
+| **Tier-3 hosts** | **L3** (depth partial) | [APP-PROD](docs/plan/TIER3_APPLICATION_ENVIRONMENT.md) gates **Done** · §22 profile bundles M3 planned |
+| **Memory** | **L3** | [MEM / MEM-VEC](docs/plan/MEMORY.md) **Done** · depth: procedural taxonomy + org parity gaps |
+| **Adaptive harness (AHI)** | **L4 runtime** | [W-ADAPT](docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md) **Done** · 30-day production evidence = product hosts |
+
+**Also at L3:** RAG · LLM adapters · Observability · Nexus flow · UAEP · Skills · Integrations — full index in [architecture hub](docs/intergrax_runtime_architecture.md).
+
+---
+
 ## The agent model — why architects choose Intergrax
 
 Most agent frameworks mix **planning, policy, tool I/O, and multi-agent routing** into a single author-facing class. That works for demos; it breaks for **governed products** — opaque control flow, untyped state, and agents that secretly become mini operating systems.
@@ -474,7 +492,7 @@ tests/ · scripts/       # Gate tests and harness CI checks
 
 | Dimension | Status |
 |-----------|--------|
-| **Platform maturity** | L3 harness baseline **Done** — Tier-0 catalogs, Nexus Agent OS, control-plane closeouts, L4 adaptive runtime (W-ADAPT Done); default [gate maintenance](docs/plan/PLATFORM_FOUNDATION.md#61-harness-platform-maintenance-default--band-1) active |
+| **Platform maturity** | **32/32 L3** harness baseline — see [Current platform maturity](#current-platform-maturity); default [gate maintenance](docs/plan/PLATFORM_FOUNDATION.md#61-harness-platform-maintenance-default--band-1) active |
 | **Active development** | Default queue: [§6.1 gate maintenance](docs/plan/PLATFORM_FOUNDATION.md#61-harness-platform-maintenance-default--band-1) · depth bands: [MEM-DEPTH](docs/plan/MEMORY.md), [CRIT-V](docs/plan/CRITIC_VERIFICATION.md), [OBS-BUS](docs/plan/OBSERVABILITY.md) |
 | **Business agents** | Phase K — **end of plan** until explicit product prioritization ([§6.3](docs/plan/PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only)) |
 | **Regression gate** | `uv run pytest -m gate -q` — CI green ([workflow badge](#intergrax)) |
