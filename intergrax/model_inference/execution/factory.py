@@ -11,7 +11,6 @@ from intergrax.model_inference.execution.profile import (
     ModalityExecutionProfile,
     modality_execution_profile_from_env,
 )
-from intergrax.model_inference.execution.celery_executor import CeleryModalityInferenceExecutor
 from intergrax.model_inference.execution.thread_pool_executor import ThreadPoolModalityInferenceExecutor
 
 MODALITY_EXECUTOR_EXTRA_KEY = "modality_inference_executor"
@@ -23,6 +22,8 @@ def build_modality_inference_executor(
 ) -> ModalityInferenceExecutor:
     resolved = profile or modality_execution_profile_from_env()
     if resolved.mode == ModalityExecutionMode.CELERY:
+        from intergrax.model_inference.execution.celery_executor import CeleryModalityInferenceExecutor
+
         return CeleryModalityInferenceExecutor(profile=resolved)
     if resolved.mode == ModalityExecutionMode.THREAD_POOL:
         return ThreadPoolModalityInferenceExecutor(profile=resolved)
