@@ -332,8 +332,10 @@ def test_adaptive_verification_runtime_events() -> None:
         loop_kind="routing_tuning",
         reason="verification_failed",
     )
-    assert failed.event_type == RuntimeEventType.ADAPTIVE_VERIFICATION_FAILED
-    assert blocked.event_type == RuntimeEventType.ADAPTIVE_LOOP_BLOCKED
+    assert failed.event_type == RuntimeEventType.DOMAIN_SIGNAL
+    assert failed.event_kind == "platform.adaptive.adaptive_verification_failed"
+    assert blocked.event_type == RuntimeEventType.DOMAIN_SIGNAL
+    assert blocked.event_kind == "platform.adaptive.adaptive_loop_blocked"
 
 
 def test_cost_budget_check_uses_budget_envelopes() -> None:

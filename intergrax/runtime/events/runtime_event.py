@@ -10,7 +10,7 @@ from enum import Enum
 from typing import Any, Dict, Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_phase import ExecutionPhase
@@ -67,31 +67,12 @@ class RuntimeEventType(str, Enum):
     TASK_COMPLETED = "task_completed"
     TASK_FAILED = "task_failed"
     RUNTIME_HANDLER_FAILED = "runtime_handler_failed"
-    ADAPTIVE_SIGNAL_RECORDED = "adaptive_signal_recorded"
-    ADAPTIVE_PROPOSAL_SUBMITTED = "adaptive_proposal_submitted"
-    ADAPTIVE_PROFILE_APPLIED = "adaptive_profile_applied"
-    ADAPTIVE_PROFILE_ROLLBACK = "adaptive_profile_rollback"
-    ADAPTIVE_VERIFICATION_FAILED = "adaptive_verification_failed"
-    ADAPTIVE_LOOP_BLOCKED = "adaptive_loop_blocked"
     LLM_CALL = "llm_call"
     POLICY_DECISION = "policy_decision"
     GRAPH_BACKPRESSURE = "graph_backpressure"
-    CAPACITY_SIGNAL_COLLECTED = "capacity_signal_collected"
-    SCALE_EVALUATED = "scale_evaluated"
-    SCALE_REQUESTED = "scale_requested"
-    SCALE_APPROVED = "scale_approved"
-    SCALE_DENIED = "scale_denied"
-    SCALE_APPLIED = "scale_applied"
-    SCALE_FAILED = "scale_failed"
-    AUTONOMY_LEVEL_SET = "autonomy_level_set"
-    AUTONOMY_LEVEL_CHANGED = "autonomy_level_changed"
-    RECOVERY_REBOOT = "recovery_reboot"
     GUARDRAIL_BLOCKED = "guardrail_blocked"
     BUDGET_THRESHOLD = "budget_threshold"
     BUDGET_EXCEEDED = "budget_exceeded"
-    HOOK_BLOCKED = "hook_blocked"
-    HOOK_ERROR = "hook_error"
-    HOOK_TIMEOUT = "hook_timeout"
     DOMAIN_SIGNAL = "domain_signal"
 
 
@@ -114,6 +95,13 @@ class RuntimeEvent(BaseModel):
     correlation_id: str = ""
     parent_event_id: Optional[str] = None
     schema_version: str = "runtime_event.v1"
+
+    @model_validator(mode="before")
+    @classmethod
+    def _migrate_legacy_spine(cls, data: Any) -> Any:
+        from intergrax.runtime.events.spine_consolidation import migrate_legacy_spine_payload
+
+        return migrate_legacy_spine_payload(data)
 
     def model_post_init(self, __context: Any) -> None:
         from intergrax.runtime.events.event_catalog import get_catalog_entry

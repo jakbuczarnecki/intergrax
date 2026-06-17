@@ -8,7 +8,8 @@ from collections.abc import Callable
 
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.capacity.contracts import CapacitySignal, ScalingAction, ScalingActionPlan
-from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from intergrax.runtime.events.runtime_event import RuntimeEvent
+from intergrax.runtime.events.spine_consolidation import build_platform_signal_event
 
 PublishFn = Callable[[RuntimeEvent], None]
 
@@ -20,8 +21,8 @@ def publish_capacity_signal_collected(
     tenant_id: str = "harness",
 ) -> None:
     publish(
-        RuntimeEvent(
-            event_type=RuntimeEventType.CAPACITY_SIGNAL_COLLECTED,
+        build_platform_signal_event(
+            kind="platform.capacity.capacity_signal_collected",
             tenant_id=tenant_id,
             task_id=signal.signal_id,
             run_id=signal.signal_id,
@@ -43,8 +44,8 @@ def publish_scale_evaluated(
     run_id: str = "capacity-eval",
 ) -> None:
     publish(
-        RuntimeEvent(
-            event_type=RuntimeEventType.SCALE_EVALUATED,
+        build_platform_signal_event(
+            kind="platform.capacity.scale_evaluated",
             tenant_id=tenant_id,
             task_id=run_id,
             run_id=run_id,
@@ -66,8 +67,8 @@ def publish_scale_applied(
     run_id: str = "capacity-apply",
 ) -> None:
     publish(
-        RuntimeEvent(
-            event_type=RuntimeEventType.SCALE_APPLIED,
+        build_platform_signal_event(
+            kind="platform.capacity.scale_applied",
             tenant_id=tenant_id,
             task_id=run_id,
             run_id=run_id,
@@ -85,8 +86,8 @@ def publish_scale_requested(
     run_id: str = "capacity-request",
 ) -> None:
     publish(
-        RuntimeEvent(
-            event_type=RuntimeEventType.SCALE_REQUESTED,
+        build_platform_signal_event(
+            kind="platform.capacity.scale_requested",
             tenant_id=tenant_id,
             task_id=run_id,
             run_id=run_id,
@@ -108,8 +109,8 @@ def publish_scale_approved(
     run_id: str = "capacity-approve",
 ) -> None:
     publish(
-        RuntimeEvent(
-            event_type=RuntimeEventType.SCALE_APPROVED,
+        build_platform_signal_event(
+            kind="platform.capacity.scale_approved",
             tenant_id=tenant_id,
             task_id=run_id,
             run_id=run_id,
@@ -127,8 +128,8 @@ def publish_scale_denied(
     run_id: str = "capacity-deny",
 ) -> None:
     publish(
-        RuntimeEvent(
-            event_type=RuntimeEventType.SCALE_DENIED,
+        build_platform_signal_event(
+            kind="platform.capacity.scale_denied",
             tenant_id=tenant_id,
             task_id=run_id,
             run_id=run_id,
@@ -147,8 +148,8 @@ def publish_scale_failed(
     run_id: str = "capacity-apply",
 ) -> None:
     publish(
-        RuntimeEvent(
-            event_type=RuntimeEventType.SCALE_FAILED,
+        build_platform_signal_event(
+            kind="platform.capacity.scale_failed",
             tenant_id=tenant_id,
             task_id=run_id,
             run_id=run_id,

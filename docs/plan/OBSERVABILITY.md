@@ -247,7 +247,7 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 | OBS-EVOL-9.4 | M1 | `EventKindRegistry` for extension kinds (agents/apps namespaces) | **Done** | **Critical** | `event_kind_registry.py` · `test_event_kind_registry.py` |
 | OBS-EVOL-9.5 | M2 | `RuntimeEventBus.subscribe(categories=, kind_prefix=, ops_hints=)` + `JournalQuery` | **Done** | High | `event_bus.py` · `journal_query.py` · `test_event_bus_taxonomy_subscribe.py` |
 | OBS-EVOL-9.6 | M2 | `scripts/check_event_catalog.py` + sampling enforcement + LLM `event_kind` namespace lint | **Done** | High | CI script · `test_event_bus_sampling.py` · extend `check_observability_gates.py` |
-| OBS-EVOL-9.7 | M2 | **Pre-release spine consolidation** — 74 → ~50; `DOMAIN_SIGNAL` + deprecation shim | **Planned** | **Critical** | `runtime_event.py` · emitters · `test_observability_emission_coverage.py` |
+| OBS-EVOL-9.7 | M2 | **Pre-release spine consolidation** — 74 → 56; `DOMAIN_SIGNAL` + read shim | **Done** | **Critical** | `spine_consolidation.py` · emitters · `test_spine_consolidation.py` · `check_event_catalog.py` |
 | OBS-EVOL-9.8 | M2 | Scaffold: `emit_domain_signal` template in `new_agent` / `new_application` | **Planned** | Medium | `intergrax/scaffold/new_agent.py` · `new_application.py` |
 | OBS-EVOL-9.9 | M3 | Optional `runtime_event.v2` envelope (`event_kind` required) | **Planned** | Low | Opt-in `schema_version`; v1 indefinite |
 | OBS-EVOL-9.10 | M2 | Declarative bus subscriptions on `ObservabilityProfile` | **Planned** | P2 | `sub_profiles.py` · `observability_wiring.py` |

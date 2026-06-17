@@ -96,7 +96,11 @@ async def test_pipeline_timeout_blocks_and_emits_event() -> None:
     assert result.action is HookAction.BLOCK
     assert result.reason is not None
     assert result.reason.startswith("hook_timeout:")
-    assert any(event.event_type is RuntimeEventType.HOOK_TIMEOUT for event in events)
+    assert any(
+        event.event_type is RuntimeEventType.DOMAIN_SIGNAL
+        and event.event_kind == "platform.hook.hook_timeout"
+        for event in events
+    )
 
 
 @pytest.mark.asyncio
@@ -124,7 +128,11 @@ async def test_pipeline_non_allow_emits_hook_blocked_event() -> None:
     )
     result = await pipeline.run_before(HookPoint.BEFORE_TASK_INTAKE, _ctx())
     assert result.action is HookAction.BLOCK
-    assert any(event.event_type is RuntimeEventType.HOOK_BLOCKED for event in events)
+    assert any(
+        event.event_type is RuntimeEventType.DOMAIN_SIGNAL
+        and event.event_kind == "platform.hook.hook_blocked"
+        for event in events
+    )
 
 
 @pytest.mark.asyncio

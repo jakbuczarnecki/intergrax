@@ -12,7 +12,6 @@ from intergrax.runtime.events.event_catalog import (
     RetentionClass,
     category_for_event_kind,
     category_for_spine_type,
-    consolidation_kind_for_spine_type,
     get_catalog_entry,
     list_unmapped_event_types,
     sample_rate_for_spine_type,
@@ -20,6 +19,10 @@ from intergrax.runtime.events.event_catalog import (
 from intergrax.runtime.events.payload_registry import EVENT_TYPE_PREFERRED_SCHEMA
 from intergrax.runtime.events.phase_coverage import phase_for_event
 from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.events.spine_consolidation import (
+    LEGACY_SPINE_TO_PLATFORM_KIND,
+    PLATFORM_KIND_CATALOG,
+)
 
 pytestmark = pytest.mark.gate
 
@@ -52,16 +55,11 @@ def test_sample_rate_reduced_for_high_volume_types() -> None:
     assert sample_rate_for_spine_type(RuntimeEventType.TASK_CREATED) == 1.0
 
 
-def test_consolidation_kind_set_for_platform_candidates() -> None:
-    adaptive = get_catalog_entry(RuntimeEventType.ADAPTIVE_SIGNAL_RECORDED)
-    assert adaptive is not None
-    assert adaptive.consolidation_kind == "platform.adaptive.adaptive_signal_recorded"
-    hook = get_catalog_entry(RuntimeEventType.HOOK_ERROR)
-    assert hook is not None
-    assert hook.consolidation_kind == "platform.hook.hook_error"
-    assert consolidation_kind_for_spine_type(RuntimeEventType.RECOVERY_REBOOT) == (
-        "platform.recovery.reboot"
-    )
+def test_consolidated_platform_kinds_removed_from_spine() -> None:
+    spine_values = {member.value for member in RuntimeEventType}
+    for legacy_value in LEGACY_SPINE_TO_PLATFORM_KIND:
+        assert legacy_value not in spine_values
+    assert len(PLATFORM_KIND_CATALOG) == len(LEGACY_SPINE_TO_PLATFORM_KIND)
 
 
 def test_retention_class_audit_for_tool_events() -> None:

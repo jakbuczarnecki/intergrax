@@ -120,11 +120,11 @@ Intergrax observability deliberately separates three planes (pattern: event sour
 
 **Code:** `intergrax/runtime/events/runtime_event.py`, `phase_coverage.py`, `event_bus.py`
 
-**Catalog:** **74** `RuntimeEventType` values today (pre-consolidation); target **~50 spine** types at publication — see §4.4 layered identity.
+**Catalog:** **56** `RuntimeEventType` spine members (publication budget; OBS-EVOL-9.7). Platform adaptive/capacity/hook/recovery signals emit on `DOMAIN_SIGNAL` + `platform.*` `event_kind` — see §4.4.13.
 
 ### 4.4 Layered event identity (P1-ARCH-02 · OBS-EVOL-9)
 
-**Status:** Architecture **accepted** (2026-06-17) · implementation **in progress** (OBS-EVOL-9.1) · **ADR:** [`ADR-OBS-003`](../adr/entries/2026-06-17/ADR-OBS-003.md) · **SAR:** accepted 2026-06-17 (§4.4.7–4.4.13)
+**Status:** Architecture **accepted** (2026-06-17) · spine consolidation **Done** (OBS-EVOL-9.7) · **ADR:** [`ADR-OBS-003`](../adr/entries/2026-06-17/ADR-OBS-003.md) · **SAR:** accepted 2026-06-17 (§4.4.7–4.4.13)
 
 HOS uses **three levels of identity** so the spine scales without forcing developers through platform enum changes:
 
@@ -272,7 +272,7 @@ Optional `traceparent` / `tracestate` on `RuntimeEvent` for external APM correla
 
 #### 4.4.13 Spine consolidation shim (OBS-EVOL-9.7)
 
-During pre-release migration, deprecated spine types auto-map to `DOMAIN_SIGNAL` + `consolidation_kind` with `DeprecationWarning` in non-strict lab mode (SAR-06).
+Nineteen legacy flat spine members (adaptive, capacity/scale, autonomy, recovery, hook) were removed from `RuntimeEventType`. Emitters use `build_platform_signal_event()` → `DOMAIN_SIGNAL` + namespaced `platform.*` kind. Persisted journals with legacy `event_type` values are coerced on read via `migrate_legacy_spine_payload()` (payload retains `legacy_spine_type`). Publication gate: `assert_publication_spine_budget()` (max 56). **Code:** `spine_consolidation.py`, `scripts/check_event_catalog.py`.
 
 ### 4.2 Plane B — Diagnostic trace (`TraceEvent` + `DiagnosticPayload`)
 

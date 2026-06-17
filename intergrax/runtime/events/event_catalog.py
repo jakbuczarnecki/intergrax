@@ -19,7 +19,6 @@ OpsFilterHint = str
 _DEFAULT_SAMPLE_RATE = 1.0
 _SAMPLED_EVENT_TYPES: dict[RuntimeEventType, float] = {
     RuntimeEventType.TASK_PROGRESS: 0.25,
-    RuntimeEventType.CAPACITY_SIGNAL_COLLECTED: 0.5,
 }
 
 
@@ -102,31 +101,12 @@ _SPINE_PHASE: dict[RuntimeEventType, ExecutionPhase] = {
     RuntimeEventType.TASK_COMPLETED: ExecutionPhase.COMPLETION,
     RuntimeEventType.TASK_FAILED: ExecutionPhase.COMPLETION,
     RuntimeEventType.RUNTIME_HANDLER_FAILED: ExecutionPhase.INTERRUPT_HANDLING,
-    RuntimeEventType.ADAPTIVE_SIGNAL_RECORDED: ExecutionPhase.TRACE_PERSISTENCE,
-    RuntimeEventType.ADAPTIVE_PROPOSAL_SUBMITTED: ExecutionPhase.FINALIZATION,
-    RuntimeEventType.ADAPTIVE_PROFILE_APPLIED: ExecutionPhase.FINALIZATION,
-    RuntimeEventType.ADAPTIVE_PROFILE_ROLLBACK: ExecutionPhase.FINALIZATION,
-    RuntimeEventType.ADAPTIVE_VERIFICATION_FAILED: ExecutionPhase.FINALIZATION,
-    RuntimeEventType.ADAPTIVE_LOOP_BLOCKED: ExecutionPhase.FINALIZATION,
     RuntimeEventType.LLM_CALL: ExecutionPhase.STEP_EXECUTION,
     RuntimeEventType.POLICY_DECISION: ExecutionPhase.STEP_EXECUTION,
     RuntimeEventType.GRAPH_BACKPRESSURE: ExecutionPhase.STEP_EXECUTION,
-    RuntimeEventType.CAPACITY_SIGNAL_COLLECTED: ExecutionPhase.STEP_EXECUTION,
-    RuntimeEventType.SCALE_EVALUATED: ExecutionPhase.STEP_EXECUTION,
-    RuntimeEventType.SCALE_REQUESTED: ExecutionPhase.HUMAN_APPROVAL,
-    RuntimeEventType.SCALE_APPROVED: ExecutionPhase.HUMAN_APPROVAL,
-    RuntimeEventType.SCALE_DENIED: ExecutionPhase.HUMAN_APPROVAL,
-    RuntimeEventType.SCALE_APPLIED: ExecutionPhase.STEP_EXECUTION,
-    RuntimeEventType.SCALE_FAILED: ExecutionPhase.STEP_EXECUTION,
-    RuntimeEventType.AUTONOMY_LEVEL_SET: ExecutionPhase.INTAKE,
-    RuntimeEventType.AUTONOMY_LEVEL_CHANGED: ExecutionPhase.STEP_EXECUTION,
-    RuntimeEventType.RECOVERY_REBOOT: ExecutionPhase.RETRY_HANDLING,
     RuntimeEventType.GUARDRAIL_BLOCKED: ExecutionPhase.CONTEXT_BUILDING,
     RuntimeEventType.BUDGET_THRESHOLD: ExecutionPhase.STEP_EXECUTION,
     RuntimeEventType.BUDGET_EXCEEDED: ExecutionPhase.STEP_EXECUTION,
-    RuntimeEventType.HOOK_BLOCKED: ExecutionPhase.STEP_EXECUTION,
-    RuntimeEventType.HOOK_ERROR: ExecutionPhase.STEP_EXECUTION,
-    RuntimeEventType.HOOK_TIMEOUT: ExecutionPhase.STEP_EXECUTION,
     RuntimeEventType.DOMAIN_SIGNAL: ExecutionPhase.STEP_EXECUTION,
 }
 
@@ -180,31 +160,12 @@ _SPINE_OPS_HINT: dict[RuntimeEventType, OpsFilterHint] = {
     RuntimeEventType.TASK_COMPLETED: "ops:completion",
     RuntimeEventType.TASK_FAILED: "ops:alert",
     RuntimeEventType.RUNTIME_HANDLER_FAILED: "ops:alert",
-    RuntimeEventType.ADAPTIVE_SIGNAL_RECORDED: "ops:adaptive",
-    RuntimeEventType.ADAPTIVE_PROPOSAL_SUBMITTED: "ops:adaptive",
-    RuntimeEventType.ADAPTIVE_PROFILE_APPLIED: "ops:adaptive",
-    RuntimeEventType.ADAPTIVE_PROFILE_ROLLBACK: "ops:alert",
-    RuntimeEventType.ADAPTIVE_VERIFICATION_FAILED: "ops:alert",
-    RuntimeEventType.ADAPTIVE_LOOP_BLOCKED: "ops:alert",
     RuntimeEventType.LLM_CALL: "ops:llm_audit",
     RuntimeEventType.POLICY_DECISION: "ops:policy_audit",
     RuntimeEventType.GRAPH_BACKPRESSURE: "ops:backpressure",
-    RuntimeEventType.CAPACITY_SIGNAL_COLLECTED: "ops:capacity",
-    RuntimeEventType.SCALE_EVALUATED: "ops:capacity",
-    RuntimeEventType.SCALE_REQUESTED: "ops:capacity",
-    RuntimeEventType.SCALE_APPROVED: "ops:hitl",
-    RuntimeEventType.SCALE_DENIED: "ops:hitl",
-    RuntimeEventType.SCALE_APPLIED: "ops:capacity",
-    RuntimeEventType.SCALE_FAILED: "ops:alert",
-    RuntimeEventType.AUTONOMY_LEVEL_SET: "ops:governance",
-    RuntimeEventType.AUTONOMY_LEVEL_CHANGED: "ops:governance",
-    RuntimeEventType.RECOVERY_REBOOT: "ops:retry",
     RuntimeEventType.GUARDRAIL_BLOCKED: "ops:alert",
     RuntimeEventType.BUDGET_THRESHOLD: "ops:budget",
     RuntimeEventType.BUDGET_EXCEEDED: "ops:alert",
-    RuntimeEventType.HOOK_BLOCKED: "ops:alert",
-    RuntimeEventType.HOOK_ERROR: "ops:alert",
-    RuntimeEventType.HOOK_TIMEOUT: "ops:alert",
     RuntimeEventType.DOMAIN_SIGNAL: "ops:domain_signal",
 }
 
@@ -229,7 +190,7 @@ def category_for_spine_type(event_type: RuntimeEventType) -> EventCategory:
         return EventCategory.HUMAN
     if name.startswith(("POLICY_", "GUARDRAIL_", "BUDGET_")):
         return EventCategory.POLICY
-    if name.startswith(("ADAPTIVE_", "SCALE_", "CAPACITY_", "AUTONOMY_", "HOOK_", "RECOVERY_")):
+    if name == "DOMAIN_SIGNAL":
         return EventCategory.PLATFORM
     if name in {
         "VALIDATION_STARTED",
@@ -253,16 +214,7 @@ def category_for_spine_type(event_type: RuntimeEventType) -> EventCategory:
 
 
 def consolidation_kind_for_spine_type(event_type: RuntimeEventType) -> str | None:
-    """Target ``platform.*`` kind when member consolidates to ``DOMAIN_SIGNAL``."""
-    name = event_type.name
-    if name.startswith("ADAPTIVE_"):
-        return f"platform.adaptive.{event_type.value}"
-    if name.startswith(("SCALE_", "CAPACITY_", "AUTONOMY_")):
-        return f"platform.capacity.{event_type.value}"
-    if name.startswith("HOOK_"):
-        return f"platform.hook.{event_type.value}"
-    if name == "RECOVERY_REBOOT":
-        return "platform.recovery.reboot"
+    """Deprecated — consolidated types removed from spine (OBS-EVOL-9.7)."""
     return None
 
 
@@ -337,7 +289,13 @@ def list_unmapped_ops_filter_hints() -> list[RuntimeEventType]:
 
 
 def should_persist_event(event: RuntimeEvent) -> bool:
-    """Deterministic sampling gate for spine events (OBS-EVOL-9.6)."""
+    """Deterministic sampling gate for spine and platform domain signals (OBS-EVOL-9.6/9.7)."""
+    from intergrax.runtime.events.spine_consolidation import should_persist_platform_kind
+
+    if event.event_type == RuntimeEventType.DOMAIN_SIGNAL and event.event_kind.startswith(
+        "platform."
+    ):
+        return should_persist_platform_kind(event.event_kind, event.event_id)
     entry = get_catalog_entry(event.event_type)
     if entry is None or entry.sample_rate >= 1.0:
         return True

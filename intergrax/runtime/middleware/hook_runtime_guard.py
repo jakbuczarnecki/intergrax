@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
-from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from intergrax.runtime.events.spine_consolidation import build_platform_signal_event
 
 if TYPE_CHECKING:
     from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -84,23 +84,23 @@ async def _emit_hook_violation(
 ) -> None:
     if event_bus is None:
         return
-    event_type = {
-        "timeout": RuntimeEventType.HOOK_TIMEOUT,
-        "error": RuntimeEventType.HOOK_ERROR,
-    }.get(violation_kind, RuntimeEventType.HOOK_BLOCKED)
+    kind = {
+        "timeout": "platform.hook.hook_timeout",
+        "error": "platform.hook.hook_error",
+    }.get(violation_kind, "platform.hook.hook_blocked")
     severity = (
         EventSeverity.ERROR
         if violation_kind in {"timeout", "error"}
         else EventSeverity.WARNING
     )
     await event_bus.publish(
-        RuntimeEvent(
+        build_platform_signal_event(
+            kind=kind,
             task_id=ctx.task_id,
             run_id=ctx.run_id,
             node_id=ctx.node_id,
             agent_id=ctx.agent_id,
             step_id=ctx.step_id,
-            event_type=event_type,
             phase=ctx.phase,
             severity=severity,
             correlation_id=ctx.task_id,
