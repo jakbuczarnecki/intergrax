@@ -6,7 +6,7 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**Last updated:** 2026-06-08 — SK-EXP through SK-EXP5 **Done** (149 skills · 41 bundles); SK-BRIDGE.* residual.
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates 2026-06-08 closeout); SK-EXP through SK-EXP5 **Done** (149 skills · 41 bundles); SK-BRIDGE.1/2 **Done**.
 
 ---
 
@@ -534,5 +534,23 @@ Wave R5 (policy):          R-Policy.1 → R-Policy.2 → R-Policy.3
 ```
 
 **Gate before Phase K.1/K.2 scale:** **Met** — Q+ **Done**, R-Skill.1–R-Skill.5 and R-Context.1 **Done**.
+
+---
+
+## Phase SKILLS-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — re-validates 2026-06-08 Layer Completion (SK-EXP…SK-EXP5, SK-BRIDGE.1/2); no open P0/P1  
+**Prerequisites:** Phase TS **Closed** · AUDIT-IDEAL-12.1/12.2 **Done**  
+**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**ADR:** **No ADR needed**
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| SKILLS-LC-S1 | **Re-audit** — catalog + bridge register | **Done** | High | No P0/P1 |
+| SKILLS-LC-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
+| SKILLS-LC-S3 | **Gate verification** | **Done** | High | 182 unit tests · 2 CI gate scripts |
+| SKILLS-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+
+**Deferred P2–P4:** knowledge bundle BETA maturity · `check_agent_skill_resolution` boundary_demo legacy · optional SK-PRESET depth
 
 ---

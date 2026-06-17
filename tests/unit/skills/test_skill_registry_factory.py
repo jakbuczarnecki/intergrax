@@ -33,7 +33,7 @@ def test_register_default_skills_includes_legal_and_research() -> None:
     reset_default_skills_for_tests()
     clear_skill_catalog()
     register_default_skills()
-    registry = build_registry_from_profile(SkillProfile())
+    registry = build_registry_from_profile(SkillProfile(register_all_catalog_bundles=True))
     assert registry.has("legal.contract_review")
     assert registry.has("research.literature_scan")
 
