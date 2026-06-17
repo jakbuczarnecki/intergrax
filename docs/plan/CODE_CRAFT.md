@@ -7,7 +7,7 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**Status:** **ECC-0…ECC-6 Done** · **S7–S10 post-closeout** (2026-06-13 layer completion audit)  
+**Status:** **ECC-0…ECC-6 Done** · **S7–S11 post-closeout** (2026-06-13) · **Full Harness LC** (2026-06-17)  
 **Default queue:** Phase **ECC** **closed** (2026-06-13); default gate maintenance continues in [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md).
 
 ---
@@ -545,3 +545,23 @@ Each sprint = one PR-sized slice → gate green → plan row update → commit.
 - Container runtime implementation details before ECC-4 design spike.
 - Replacing or removing `code.exec` / `sandbox.exec` primitives.
 - Monolithic `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` or `plan/phases/` folders.
+
+---
+
+## Phase CODE_CRAFT-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — re-validates 2026-06-13 Layer Completion (ECC-0…ECC-6 + S7–S11); no open P0/P1  
+**Prerequisites:** ECC phases **Closed** · `check_codecraft_layer.py` gate  
+**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**ADR:** **No ADR needed** — formal closeout; ADR-CODECRAFT-001 accepted
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| CODE_CRAFT-LC-S1 | **Re-audit** — ECC register + tier-0/1 verdict | **Done** | High | No P0/P1 |
+| CODE_CRAFT-LC-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
+| CODE_CRAFT-LC-S3 | **Gate verification** | **Done** | High | 7 unit tests · `check_codecraft_layer.py` |
+| CODE_CRAFT-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+
+**Deferred P2–P4:** GAP-ECC-23 task metadata override · GAP-ECC-20 codegen LLM profile ref · GAP-ECC-21 container tier · GAP-ECC-22 metrics dashboards
+
+---

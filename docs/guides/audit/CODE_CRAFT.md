@@ -50,7 +50,7 @@ CodeCraftProfile · CodeCraftOrchestrator · CodeCraftSession · CraftResult · 
 
 ## Active plan phases (verify status vs code reality)
 
-ECC-0…ECC-6 + S7–S11 **Done** (L3+, 2026-06-13) · ADR-CODECRAFT-001
+ECC-0…ECC-6 + S7–S11 **Done** (L3+, 2026-06-13) · **Full Harness LC** (2026-06-17) · ADR-CODECRAFT-001
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
