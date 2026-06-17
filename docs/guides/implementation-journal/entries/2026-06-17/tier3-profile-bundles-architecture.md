@@ -11,7 +11,7 @@ plan_ref:
   - APP-EVOL-8.3
   - P1-ARCH-01
 status: completed
-commit: pending
+commit: eb70ba38
 adr: ADR-APP-003
 ---
 
