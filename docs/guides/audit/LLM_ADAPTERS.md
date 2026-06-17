@@ -50,29 +50,11 @@ LLMAdapter · LLMAdapterResponse · LLMFinishReason · LLMTokenUsage · LLMToolC
 
 ## Active plan phases (verify status vs code reality)
 
-M-LLM-R envelope Done · **M-LLM-X** docs baseline Done (X.0, USAGE, ADR-LLM-002) · code waves X-1…X-8 Planned · W-ML.1 capability flags · COG cross-ref planner≠producer
+M-LLM-R envelope Done · W-ML.1 capability flags · Phase V FAUDIT-LLM.1 residual · COG cross-ref planner≠producer
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-| Gap | Status | Phase | Register ID |
-|-----|--------|-------|-------------|
-| Central `ModelCatalog` + unified context window | **Done** | M-LLM-X.1 | LLM-AUDIT-1 |
-| `context_window_tokens` profile override (all providers) | **Done** | M-LLM-X.1.5 | LLM-AUDIT-2 |
-| Preflight uses adapter tokenizer not chars/4 | **Done** | M-LLM-X.3.1–3.4 | LLM-AUDIT-3 |
-| Profile failover chain on retriable errors | **Done** | M-LLM-X.4 | LLM-AUDIT-5 |
-| `ModelRouter` on Nexus hot path + AHI runtime swap | **Done** | M-LLM-X.5 | LLM-AUDIT-4, 9 |
-| ACP `StepLLMRouter` backed by `LLMAdapter` | **Done** | M-LLM-X.5.4 | LLM-AUDIT-6 |
-| OpenRouter / gateway dynamic model metadata | **Backlog P2** | M-LLM-X.2 | LLM-AUDIT-7 (static 128k default Done) |
-| Developer `USAGE.md` + startup validation | **Partial** | M-LLM-X.7 | LLM-AUDIT-8 |
-| Plugin provider story undocumented | **Partial** | M-LLM-X.6 | LLM-AUDIT-10 |
-| Cohere dual slug DX | **Done** | M-LLM-X.7.5 | LLM-AUDIT-13 |
-| `ContextBudgetPolicy` 4k default decoupled from adapter | **Done** | M-LLM-X.3.3 | LLM-AUDIT-11 |
-| Prefix context heuristics missing (non-Bedrock) | **Done** | M-LLM-X.1.2–1.3 | LLM-AUDIT-12 |
-| Capability flags not catalog-driven | **Backlog P2** | M-LLM-X.1.7 | LLM-AUDIT-14 |
-| History layer token count inconsistent with preflight | **Done** | M-LLM-X.3.5 | LLM-AUDIT-15 |
-| Planner LLM ≠ producer discipline | **Done** | COG-PROD via `resolve_planner_llm_adapter` |
-| Distributed rate limit needs Redis wiring at host | **Partial** | ops — host must call `set_llm_distributed_rate_limiter` |
-| Usage tracking layers not auto-merged | **By design** | two-layer model per ADR-LLM-001 |
+Planner LLM ≠ producer discipline incomplete at Nexus boundary · distributed rate limit needs Redis wiring · usage tracking layers not auto-merged
 
 ---
 
@@ -81,9 +63,8 @@ M-LLM-R envelope Done · **M-LLM-X** docs baseline Done (X.0, USAGE, ADR-LLM-002
 1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state
 2. `docs/architecture/LLM_ADAPTERS.md` — architecture canon (incl. audit registers if present)
 3. `docs/plan/LLM_ADAPTERS.md` — implementation plan and gap IDs
-4. `intergrax/llm_adapters/USAGE.md` — developer operational guide
-5. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 6
-6. `docs/guides/audit/README.md` — shared production Harness checklist (**mandatory**)
+4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 6
+5. `docs/guides/audit/README.md` — shared production Harness checklist (**mandatory**)
 
 ---
 
@@ -94,7 +75,7 @@ intergrax/llm_adapters/ (registry/, providers/*, call_lifecycle.py, tracking/)
 intergrax/llm/messages.py (AttachmentRef)
 intergrax/runtime/replay/trace_replay_bridge.py
 intergrax/runtime/adaptive/llm_call_summary.py
-scripts/check_llm_adapter_typed_returns.py · scripts/check_agents_llm_adapter_response.py · scripts/check_agents_vendor_imports.py
+scripts/check_llm_adapter_typed_returns.py · scripts/check_agents_llm_adapter_response.py
 ```
 
 Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
