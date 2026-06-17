@@ -403,6 +403,7 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 | Architecture §12 still listed orchestrator/profile as Missing | Updated to L3 closeout table |
 | Plan audit §3.3 / §4 still open gaps | Marked **Done** with ECC phase mapping |
 | PLATFORM_FOUNDATION `codecraft.* (planned)` | **Done** — synced 2026-06-13 doc-sync |
+| Root `README.md` Overview `(planned)` vs ECC Done elsewhere | **Done** — P1-ARCH-03 sync (2026-06-17) |
 
 **Remaining depth (not blocking L3):** metrics dashboards (§10.2), `container` isolation tier backend, `codegen_llm_profile_ref` → dedicated LLM adapter wiring.
 

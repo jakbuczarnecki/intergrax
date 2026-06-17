@@ -13,7 +13,7 @@
 ## Overview
 
 - **What:** Intergrax is a **Harness AI platform** — the durable runtime that runs many agents, not a single chatbot or domain bot.
-- **What it provides:** Nexus Agent OS, Tier-0 catalogs (**185** integrations · **190** tools · **149** skills in **41** bundles), LLM, RAG, memory, **Ephemeral Code Craft** (planned), policy, trace, multi-agent graphs, and Tier-3 application hosts.
+- **What it provides:** Nexus Agent OS, Tier-0 catalogs (**185** integrations · **190** tools · **149** skills in **41** bundles), LLM, RAG, memory, **Ephemeral Code Craft** (**Done** ECC-0…ECC-6), policy, trace, multi-agent graphs, and Tier-3 application hosts.
 - **Who it is for:** Teams building **governed multi-agent systems** — platform engineers, agent architects, Harness AI researchers, and product teams shipping agent-backed applications.
 - **Why it is different:** **The Harness is the product; agents are replaceable.** Agents own **domain decisions** inside a typed session loop; the harness owns **policy, trace, and execution**; Nexus owns **multi-agent orchestration**; applications own **environment, identity, and production gates** — without collapsing these into one mega-class.
 - **Problem it solves:** Stop rebuilding infrastructure for every new agent. Target: **idea → first traced Nexus run in under one hour**, then **same agent class** from lab notebook to governed production roster.
@@ -468,11 +468,11 @@ tests/ · scripts/       # Gate tests and harness CI checks
 
 ## Project snapshot
 
-**Last updated:** 2026-06-08 · **Stage:** active private R&D
+**Last updated:** 2026-06-17 · **Stage:** active private R&D
 
 | Dimension | Status |
 |-----------|--------|
-| **Platform maturity** | Harness platform **complete** — Tier-0 catalogs, Nexus Agent OS, control-plane closeouts, L4 adaptive runtime (W-ADAPT Done) |
+| **Platform maturity** | L3 harness baseline **Done** — Tier-0 catalogs, Nexus Agent OS, control-plane closeouts, L4 adaptive runtime (W-ADAPT Done); default [gate maintenance](docs/plan/PLATFORM_FOUNDATION.md#61-harness-platform-maintenance-default--band-1) active |
 | **Active development** | Default queue: [§6.1 gate maintenance](docs/plan/PLATFORM_FOUNDATION.md#61-harness-platform-maintenance-default--band-1) · depth bands: [MEM-DEPTH](docs/plan/MEMORY.md), [CRIT-V](docs/plan/CRITIC_VERIFICATION.md), [OBS-BUS](docs/plan/OBSERVABILITY.md) |
 | **Business agents** | Phase K — **end of plan** until explicit product prioritization ([§6.3](docs/plan/PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only)) |
 | **Regression gate** | `uv run pytest -m gate -q` — CI green ([workflow badge](#intergrax)) |
