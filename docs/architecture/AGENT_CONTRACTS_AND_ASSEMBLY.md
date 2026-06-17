@@ -485,7 +485,7 @@ ACP does **not** replace Nexus, redefine tiers, or introduce a second execution 
 | ID | Invariant |
 |----|-----------|
 | **ACP-INV-01** | Nexus remains Agent OS — global orchestration, policy, HITL, multi-agent graph |
-| **ACP-INV-02** | All agent runs use UAEP step loop (or approved legacy path until ACP-LEG) |
+| **ACP-INV-02** | All agent runs use UAEP step loop (legacy UAEP authoring retired — ACP-CLOSE-LEG-5) |
 | **ACP-INV-03** | Cognitive patterns are **Tier-2 libraries** — no imports from `applications/` |
 | **ACP-INV-04** | Side effects only through `RuntimeExecutionContext.tool_gateway` → `ToolRuntime` |
 | **ACP-INV-05** | Control flow via `AgentDecision` — never `sleep()` for HITL, never direct Slack/webhooks |
@@ -1237,7 +1237,7 @@ Developer code path:
 
 ## 28.3 Gap register (ACP)
 
-**Audit sync (2026-06-13):** **37 Closed** · **0 Open** · ACP-FINISH complete; token depth = **ACP-TOK-1** · **ACP-TOK-2** · **ACP-TOK-3** · **ACP-TOK-CI** **Done**.
+**Audit sync (2026-06-13 · ACP-LC 2026-06-17):** **37 Closed** · **0 Open** · ACP-FINISH complete; Full Harness LC closeout — no open P0/P1 in domain scope.
 
 | ID | Gap | Priority | Plan row | Status |
 |----|-----|----------|----------|--------|
