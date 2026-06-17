@@ -8,7 +8,7 @@ plan_ref:
   - AUDIT-IDEAL-6.6
   - Full-Harness-LC-FLOW
 status: completed
-commit: pending
+commit: 096e124a
 adr: none — doc sync; delivery via M-LLM-X.5 in LLM_ADAPTERS
 ---
 
