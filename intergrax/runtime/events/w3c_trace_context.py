@@ -10,6 +10,8 @@ import secrets
 from dataclasses import dataclass
 from typing import Any, Mapping
 
+from intergrax.utils import attribute_access
+
 _TRACEPARENT_RE = re.compile(
     r"^(?P<version>00)-(?P<trace_id>[0-9a-f]{32})-(?P<parent_id>[0-9a-f]{16})-(?P<flags>[0-9a-f]{2})$"
 )
@@ -143,7 +145,7 @@ def trace_context_from_metadata(metadata: Mapping[str, Any]) -> tuple[str | None
 
 def ensure_run_trace_context(task: Any) -> RunTraceContext:
     """Resolve or allocate a stable W3C trace id for a Nexus task run."""
-    metadata = getattr(task, "metadata", None)
+    metadata = attribute_access.optional(task, "metadata", None)
     if not isinstance(metadata, dict):
         return RunTraceContext(trace_id=generate_trace_id())
 
@@ -172,7 +174,7 @@ def ensure_run_trace_context(task: Any) -> RunTraceContext:
 
 def inject_w3c_trace_on_event(event: Any, task: Any) -> Any:
     """Attach a per-event traceparent when the event does not already carry W3C context."""
-    if getattr(event, "traceparent", None):
+    if attribute_access.optional(event, "traceparent", None):
         return event
     run_ctx = ensure_run_trace_context(task)
     return event.model_copy(

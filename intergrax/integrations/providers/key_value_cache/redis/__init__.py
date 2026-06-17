@@ -9,8 +9,9 @@ minimal runtime images that only need to register the integration catalog.
 
 from __future__ import annotations
 
-from importlib import import_module
 from typing import Any
+
+from intergrax.utils.lazy_export import export_from_import_path
 
 _EXPORTS = {
     "ENV_REDIS_DB": "intergrax.integrations.providers.key_value_cache.redis.config",
@@ -40,6 +41,6 @@ def __getattr__(name: str) -> Any:
         module_name = _EXPORTS[name]
     except KeyError as exc:
         raise AttributeError(name) from exc
-    value = getattr(import_module(module_name), name)
+    value = export_from_import_path(module_name, name)
     globals()[name] = value
     return value

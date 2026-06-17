@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Optional
 
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.utils import attribute_access
 from intergrax.rag.profiles.rag_profile import (
     APPROVED_PRODUCTION_GRAPH_STORE_SLUGS,
     RagProfile,
@@ -58,8 +59,11 @@ def validate_rag_profile_wiring(
     def _add(kind: str, message: str) -> None:
         issues.append(f"{kind}:{message}")
 
-    for field_name in ("retriever_id", "fast_retriever_id", "deep_retriever_id"):
-        retriever_id = getattr(profile, field_name)
+    for field_name, retriever_id in (
+        ("retriever_id", profile.retriever_id),
+        ("fast_retriever_id", profile.fast_retriever_id),
+        ("deep_retriever_id", profile.deep_retriever_id),
+    ):
         if retriever_id not in _REGISTERED_RETRIEVER_IDS:
             _add(prefix, f"unknown_retriever_id:{field_name}={retriever_id}")
 
@@ -90,7 +94,7 @@ def validate_rag_profile_wiring(
 
         instance = integration_profile.instance_for_category(IntegrationCategory.GRAPH_STORE)
         if instance is not None:
-            graph_slug = getattr(instance, "slug", None)
+            graph_slug = attribute_access.optional(instance, "slug", None)
 
     if production_host:
         graph_error = validate_graph_rag_production_wiring(profile, graph_store_slug=graph_slug)
