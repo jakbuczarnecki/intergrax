@@ -8,7 +8,7 @@ plan_ref:
   - AUDIT-IDEAL-3.1
   - Full-Harness-LC-ORCH
 status: completed
-commit: pending
+commit: 75d5142a
 adr: none — doc sync; TaskEnvelope delivered via FAUDIT-INTAKE.1
 ---
 

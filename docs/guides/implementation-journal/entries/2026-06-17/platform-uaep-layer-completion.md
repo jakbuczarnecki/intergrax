@@ -9,7 +9,7 @@ plan_ref:
   - AUDIT-IDEAL-5.1
   - Full-Harness-LC-UAEP
 status: completed
-commit: pending
+commit: 75d5142a
 adr: none — doc sync; delivery via FAUDIT-POL.1 / pre_output_policy_bridge
 ---
 

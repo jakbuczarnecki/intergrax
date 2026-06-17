@@ -8,7 +8,7 @@ plan_ref:
   - P1-ARCH-02
   - Full-Harness-LC-PF
 status: completed
-commit: pending
+commit: 75d5142a
 adr: none — doc sync only; implementation delivered under OBS-EVOL-9
 ---
 
