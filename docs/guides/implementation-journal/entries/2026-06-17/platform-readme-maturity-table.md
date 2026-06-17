@@ -7,7 +7,7 @@ scope: PLATFORM_FOUNDATION
 plan_ref:
   - P2-ARCH-03
 status: completed
-commit: pending
+commit: eb99f407
 adr: none — onboarding docs only; L0–L4 canon unchanged
 ---
 
