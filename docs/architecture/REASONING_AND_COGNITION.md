@@ -48,7 +48,7 @@ RCL completes the **Think → Plan → Decide** path that precedes orchestrated 
 
 **Strategic positioning:** The Harness owns **how** reasoning is structured, observable, and separated from execution; agents and applications own **domain-specific** step logic inside UAEP bounds.
 
-**Core invariant:** Reasoning outputs MUST be **typed contracts** (`NexusPlan`, `PlanStep`, `ToolPlanDecision`, `DecisionRecord`, `EnginePlan`) — never opaque free-text plans consumed directly by executors without validation.
+**Core invariant:** Reasoning outputs MUST be **typed contracts** (`NexusPlan`, `PlanStep`, `ToolPlanDecision`, `DecisionRecord`) — never opaque free-text plans consumed directly by executors without validation. (`EnginePlan` retired — legacy trace types only; see §12.)
 
 ---
 
@@ -79,7 +79,7 @@ Runtime depth uplift: Phase **COG-DEPTH** (closed 2026-06-09) · production hard
 | **Reasoning** | Any deterministic or LLM-backed process that selects the next structured action without committing side effects |
 | **Cognition** | Reasoning plus its inputs: assembled prompts, memory injections, policy overlays, model choice |
 | **Classification** | First routing label on a Nexus task (`TaskClassification`) — constrains planner strategies |
-| **Planning** | Production of `NexusPlan` / `EnginePlan` — agent topology and step graph **before** `GraphExecutor` |
+| **Planning** | Production of `NexusPlan` — agent topology and step graph **before** `GraphExecutor` |
 | **Tool planning** | Selection of tool calls inside a UAEP step loop (`ToolPlanDecision`) |
 | **Step planning** | Internal UAEP step sequencing (`StepPlanner`, agent `get_steps`) |
 | **DecisionRecord** | Typed rationale artifact for a model/tool/subagent choice (`decision_record.v1`) |
@@ -97,7 +97,7 @@ Runtime depth uplift: Phase **COG-DEPTH** (closed 2026-06-09) · production hard
 | Principle | Meaning in Intergrax |
 |-----------|---------------------|
 | **Reasoning before side effects** | Classifiers and planners run in `NexusPlanningRunner` before `GraphExecutor` mutates external state |
-| **Typed plan contracts** | `NexusPlan`, `PlanStep`, `EnginePlan`, `ToolPlanDecision` are Pydantic/dataclass boundaries — executors reject invalid shapes |
+| **Typed plan contracts** | `NexusPlan`, `PlanStep`, `ToolPlanDecision` are Pydantic/dataclass boundaries — executors reject invalid shapes |
 | **Separation from execution** | UAEP steps 3–8 (`UNIFIED_EXECUTION_RUNTIME` §42.5) isolate context build, step loop, validation from Nexus graph scheduling |
 | **Observable decisions** | Every UAEP step emits `DECISION_EMITTED` with `DecisionRecord` payload (FLOW-12 / FAUDIT-COG.1) |
 | **Explicit strategies** | `planner_kind`, `classifier_kind`, `multi_agent_order`, graph seed rules — no hidden planner selection |
@@ -152,7 +152,7 @@ Intergrax implements cognition at **three nested scopes**. All three converge on
 - LLM provider abstraction → [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md)
 - Prompt compiler (context + policy + memory) → §15 below + [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §17
 - Model selection (cost, latency, risk, quality) → §16 below + `LLMProfile` / future `ReasoningProfile`
-- Structured output contracts → `NexusPlan`, `EnginePlan`, `ToolPlanDecision`, `DecisionRecord`
+- Structured output contracts → `NexusPlan`, `ToolPlanDecision`, `DecisionRecord`
 
 Ideal execution spine (§3.5 flow):
 
@@ -174,12 +174,11 @@ Intergrax maps **Orchestrator creates plan** to Plane 1 (`NexusPlanningRunner`) 
 | `DecisionRecord` contract | defines | emits on UAEP paths | supplies step rationale metadata | — |
 | `NexusPlan` / `PlanStep` | — | `TaskPlanner`, LLM planners, graph seed | — | `graph_spec`, `OrchestrationProfile` |
 | `TaskClassification` | enum | `TaskClassifier` | — | governance flags on task |
-| `EnginePlan` | — | `EnginePlannerOrchestrator` | — | forced plan replay configs |
 | Tool planning | `ToolRegistry` | `CatalogToolPlanner` | tool allowlists via contract | `ToolProfile` |
 | Prompt layers for planning | `YamlPromptRegistry` | planner prompt ids (target) | agent prompt ids | `PromptProfile` |
 | Plan validation criteria | — | `NexusValidationEngine` consumes | `Agent.validate()` | `validation_criteria` on plan |
 | Domain step logic | — | UAEP loop only | **primary owner** | agent roster |
-| Dynamic replan | — | `allow_dynamic_replan` flag (partial) | replan hooks in engine path | profile toggle |
+| Dynamic replan | — | `allow_dynamic_replan` flag + `replan_policy.v1` metadata (AUDIT-IDEAL-7.2) | replan hooks in engine path | profile toggle |
 
 ### 7.2 What RCL MUST NOT do
 
@@ -703,7 +702,7 @@ sequenceDiagram
 | Engine planner prompt binding | L3 | **Done** | COG-PROD.3 |
 | **Overall RCL (FAUDIT-32 §7)** | **L3+** | **Done** | COG-DEPTH + COG-PROD |
 
-**Post-COG-PROD:** Typed reasoning plane production-ready at L3+; L4 adaptive planner selection remains AHI scope (observe-only default).
+**Post-COG-PROD / COG-LC:** Typed reasoning plane production-ready at L3+; L4 adaptive planner selection remains AHI scope (observe-only default).
 
 All implementation tasks: [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_AND_COGNITION.md).
 
@@ -743,7 +742,9 @@ All implementation tasks: [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_
 | `applications/_shared/reasoning_wiring.py` | 3 | 1 | `ReasoningProfile` → tool/engine/planner LLM wiring |
 | `contracts/reasoning_profile.py` | 0 | — | `ReasoningProfile` contract |
 | `contracts/reasoning_failure.py` | 0 | — | `ReasoningFailureKind` taxonomy |
-| `runtime/nexus/planning/step_planner/` | 1 | 2 | Step plan strategies |
+| `runtime/nexus/planning/engine_planner_prompts.py` | 1 | 2 | Registry-backed agent engine prompt resolution (COG-LC-S2) |
+| `runtime/nexus/planning/nexus_classifier_prompts.py` | 1 | 1 | Registry-backed LLM classifier prompt (COG-LC-S6) |
+| `runtime/nexus/planning/plan_loop_models.py` | 1 | 2 | `PlanLoopPolicy` for replan boundaries |
 | `runtime/nexus/tools/catalog_tool_planner.py` | 1 | 3 | Tool planning |
 | `runtime/nexus/tools/tool_planning_service.py` | 1 | 3 | Tool plan LLM service |
 | `contracts/decision_record.py` | 0 | 2 | DecisionRecord contract |
@@ -779,7 +780,8 @@ From `ApplicationEnvironmentProfile.orchestration_profile`:
 | `planner_prompt_id` | Nexus LLM planner registry id (default `nexus_task_planner`) |
 | `planner_parse_retries` | LLM JSON parse retry budget on unified bridge (COG-PROD.2) |
 | `tool_planner_prompt_id` | Tool catalog planner prompt id |
-| `engine_planner_prompt_id` | Agent-level engine step planner id (`planner_default`, …) |
+| `engine_planner_prompt_id` | Agent-level engine step planner id (`planner_default`, `planner_replan_default`, …) — wired to `RuntimeConfig` + task metadata (COG-LC-S2) |
+| `classifier_prompt_id` | LLM classifier registry id (default `nexus_task_classifier`) (COG-LC-S6) |
 | `denied_planner_model_ids` | Planning-phase model deny via `PolicyEngine` (COG-5.3) |
 
 ### Authoring patterns

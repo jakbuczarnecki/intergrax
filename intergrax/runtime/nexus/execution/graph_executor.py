@@ -560,6 +560,9 @@ class GraphExecutor:
             replan_policy = task.metadata.get("replan_policy.v1")
             if isinstance(replan_policy, dict):
                 request.metadata["replan_policy.v1"] = replan_policy
+            engine_prompt_id = task.metadata.get("engine_planner_prompt_id")
+            if isinstance(engine_prompt_id, str) and engine_prompt_id.strip():
+                request.metadata["engine_planner_prompt_id"] = engine_prompt_id.strip()
             return await AgentEngine.run_agent_with_result(
                 current_agent,
                 request,

@@ -45,6 +45,7 @@ def main() -> int:
         ("check_deploy_slo_evidence.py", ()),
         ("check_product_intake_parity.py", ()),
         ("check_reasoning_failure_taxonomy.py", ()),
+        ("check_reasoning_gates.py", ()),
         ("check_product_long_running_resume.py", ()),
         ("check_swarm_coordination_templates.py", ()),
         ("check_tool_mcp_schema_export.py", ()),

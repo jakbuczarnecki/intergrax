@@ -12,7 +12,7 @@
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5, §16 · baseline **32/32 L3**  
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
-**Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
+**Status:** **Done** (2026-06-09) — incremental after IDEAL-L3 W2 closeout; closed COG-LC (2026-06-17)
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
@@ -149,7 +149,7 @@ Work **one COG ID per PR** — phase **closed**; historical order below.
 | COG-1.1 | **`EngineBackedNexusPlanner` → `EnginePlannerOrchestrator` adapter** — shared parse/validate path for `NexusPlan` | **Done** | **Critical** | `nexus_plan_bridge.py`, `orchestration_wiring.py` | `test_nexus_plan_bridge.py` |
 | COG-1.2 | **Unified planner diagnostics** — single `planner_build_debug` surface on Nexus planning trace | **Done** | High | `nexus_plan_bridge.py` | `PLAN_CREATED` payload includes `planner_source` |
 | COG-1.3 | **Plan validation gate** — reject LLM plans with cycles/unknown agents before graph build | **Done** | High | `plan_validator.py` · `planning_runner.py` | Unknown agent/dep → FAILED before graph build |
-| COG-1.4 | **`allow_dynamic_replan` wire** — document + test engine replan boundary vs Nexus plan immutability | **Done** | Medium | `interrupts/handler.py`, ADR-FLOW-003 | `test_cog_depth_residual_gate.py` |
+| COG-1.4 | **`allow_dynamic_replan` wire** — document + test engine replan boundary vs Nexus plan immutability | **Done** | Medium | `interrupts/handler.py`, ADR-FLOW-003 | `test_audit_ideal_depth_gate.py` |
 | COG-1.5 | **Gate test** — `planner_kind=engine` regression suite with mock LLM | **Done** | High | `test_nexus_plan_bridge.py`, `test_engine_planner_orchestration_gate.py` | `-m gate` green |
 
 ### Wave COG2 — Prompt Registry on planners (P0)
@@ -157,7 +157,7 @@ Work **one COG ID per PR** — phase **closed**; historical order below.
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
 | COG-2.1 | **`nexus.task_planner.v1` prompt id** — replace inline string in `nexus_llm_plan_builder.py` | **Done** | **Critical** | `prompts/nexus_task_planner/`, `nexus_planner_prompts.py` | `check_reasoning_gates.py` |
-| COG-2.2 | **Tool planner prompt ids** — ensure `ToolPlanningConfig` uses registry in all reference hosts | **Done** | High | `reasoning_wiring.py`, `tool_planning_config.py` | `test_cog_depth_residual_gate.py` |
+| COG-2.2 | **Tool planner prompt ids** — ensure `ToolPlanningConfig` uses registry in all reference hosts | **Done** | High | `reasoning_wiring.py`, `tool_planning_config.py` | `test_catalog_runtime_bridge.py` |
 | COG-2.3 | **Engine planner `PlannerPromptConfig` registry binding** | **Done** | High | `reasoning_wiring.py` | `resolve_engine_planner_prompt_config()` |
 | COG-2.4 | **Author guide Appendix** — planner prompt authoring for Tier-3 | **Done** | Medium | `guides/AGENT_CREATION_GUIDE.md` | Appendix COG-2.4 |
 
@@ -290,6 +290,24 @@ These items implemented under FLOW/ORCH phases — **Done**; canon now owned by 
 | S2 Planner LLM | COG-PROD.1 | `reasoning_wiring.py`, `orchestration_wiring.py`, `nexus_factory.py`, `contracts/reasoning_profile.py` |
 | S3 Parse + prompt | COG-PROD.2 | `nexus_plan_bridge.py`, `nexus_planner_prompts.py`, `prompts/nexus_task_planner/1.yaml` |
 | S4 Decision + engine prompt | COG-PROD.3, COG-PROD.5 | `planning_runner.py`, `reasoning_wiring.py`, `scripts/check_reasoning_gates.py`, tests |
+
+---
+
+## Phase COG-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — Full Harness LC sprint closeout after COG-PROD  
+**Prerequisites:** Phase COG-PROD **Done**  
+**Goal:** Close P1/P2 gaps from Layer Completion audit — doc reconciliation, Plane 2 engine prompt wire, planning latency metrics, classifier failure emission, CI bundle, LLM classifier registry prompt  
+**ADR:** **No ADR needed** — extends existing `ReasoningProfile`, `RuntimeConfig`, and planning metrics contracts
+
+| ID | Deliverable | Status | Priority | Module | Acceptance |
+|----|-------------|--------|----------|--------|------------|
+| COG-LC-S1 | **Doc reconciliation** — remove stale `EnginePlan`/`EnginePlannerOrchestrator` active refs; fix Appendix A; AUDIT-IDEAL header | **Done** | High | `docs/architecture/REASONING_AND_COGNITION.md`, `docs/plan/REASONING_AND_COGNITION.md` | No doc↔code contradictions in §21 |
+| COG-LC-S2 | **Engine prompt wire (Plane 2)** — `RuntimeConfig.engine_planner_prompt_id` + task/request metadata | **Done** | **Critical** | `catalog_runtime_bridge.py`, `reasoning_wiring.py`, `graph_executor.py` | `test_catalog_runtime_bridge.py`, `test_reasoning_wiring.py` |
+| COG-LC-S3 | **Planning latency metrics** — `record_planner_latency` in `planning_runner` | **Done** | High | `planning_runner.py`, `planning_metrics.py` | `test_planning_metrics.py` |
+| COG-LC-S4 | **Classifier failure emission** — `CLASSIFIER_*` in runtime trace metadata | **Done** | High | `llm_task_classifier.py`, `planning_runner.py` | `test_llm_task_classifier.py` |
+| COG-LC-S5 | **CI bundle** — `check_reasoning_gates.py` in AGENTS.md + `check_audit_ideal_gates.py` | **Done** | Medium | `scripts/` | gate script green |
+| COG-LC-S6 | **LLM classifier registry prompt** — `nexus_task_classifier` prompt asset | **Done** | Medium | `prompts/nexus_task_classifier/`, `nexus_classifier_prompts.py` | `check_reasoning_gates.py` |
 
 ---
 

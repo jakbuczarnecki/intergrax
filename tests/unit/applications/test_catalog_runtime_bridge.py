@@ -123,6 +123,20 @@ def test_apply_tool_engine_settings_from_environment() -> None:
     apply_tool_engine_settings_from_environment(config, env)
 
     assert config.tool_planner_prompt_id == "tools_custom"
+    assert config.engine_planner_prompt_id == "planner_default"
+
+
+def test_apply_tool_engine_settings_engine_planner_prompt() -> None:
+    env = ApplicationEnvironmentProfile.lab_defaults().model_copy(
+        update={
+            "reasoning_profile": ReasoningProfile(engine_planner_prompt_id="planner_replan_default"),
+        }
+    )
+    config = RuntimeConfig(llm_adapter=FakeLLMAdapter(), production_mode=False)
+
+    apply_tool_engine_settings_from_environment(config, env)
+
+    assert config.engine_planner_prompt_id == "planner_replan_default"
 
 
 def test_materialize_runtime_config_lab_harness_uses_environment_catalogs() -> None:

@@ -133,6 +133,7 @@ uv run pytest -m "gate and not no_ci" -q
 python scripts/check_harness_no_getattr.py
 uv run python scripts/check_observability_gates.py
 python scripts/check_docs_domain_pairs.py
+python scripts/check_reasoning_gates.py
 python scripts/check_implementation_journal.py
 python scripts/check_harness_adr.py
 uv run python scripts/check_agent_acp_close_ci.py
