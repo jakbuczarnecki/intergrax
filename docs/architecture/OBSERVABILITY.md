@@ -6,6 +6,8 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 21, 30  
 **Audit instruction:** [`guides/audit/OBSERVABILITY.md`](../guides/audit/OBSERVABILITY.md)  
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates OBS-EVOL-9); OBS-BUS + event catalog spine **Done**
+
 ---
 
 ## 1. Purpose and scope

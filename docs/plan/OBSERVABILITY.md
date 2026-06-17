@@ -10,6 +10,8 @@
 
 **Cross-plan — Event catalog (OBS-EVOL-9 · P1-ARCH-02):** Layered spine + `event_kind` (architecture §4.4 · ADR-OBS-003). Developers extend via `emit_domain_signal`, not new `RuntimeEventType`. Pre-release spine consolidation before publication.
 
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates OBS-EVOL-9 closeout).
+
 ---
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
@@ -265,5 +267,23 @@ uv run python scripts/check_event_catalog.py
 uv run python scripts/check_observability_gates.py
 python scripts/check_harness_adr.py
 ```
+
+---
+
+## Phase OBSERVABILITY-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — re-validates OBS-EVOL-9 + OBS-BUS closeout; no open P0/P1  
+**Prerequisites:** OBS-EVOL-9 M0–M3 **Done** (9.9 deferred) · ADR-OBS-001/003  
+**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**ADR:** **No ADR needed**
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| OBS-LC-S1 | **Re-audit** — OBS register + spine verdict | **Done** | High | No P0/P1 |
+| OBS-LC-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
+| OBS-LC-S3 | **Gate verification** | **Done** | High | 87 event tests · `check_observability_gates` |
+| OBS-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+
+**Deferred P2–P4:** OBS-EVOL-9.9 `runtime_event.v2` · product dashboards §6.3a
 
 ---
