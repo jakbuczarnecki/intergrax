@@ -12,7 +12,7 @@ plan_ref:
   - AHI-LC-S4
   - Full-Harness-LC-AHI
 status: completed
-commit: pending
+commit: e24ae434
 adr: none — formal closeout; W-ADAPT 70/70 delivered 2026-06-02
 ---
 
@@ -30,6 +30,13 @@ Continue Full Harness Layer Completion orchestration to AHI after CRITIC_VERIFIC
 ## Project impact
 
 Adaptive Harness Intelligence layer formally closed for Full Harness LC — L4 closed-loop runtime, policy learning, marketplace readiness.
+
+## Traceability
+
+| Link | Target |
+|------|--------|
+| Architecture | `docs/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md` |
+| Plan | `docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md` Phase AHI-LC |
 
 ## Changed artifacts
 

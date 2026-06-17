@@ -11,7 +11,7 @@ plan_ref:
   - TIER3-LC-S4
   - Full-Harness-LC-TIER3
 status: completed
-commit: pending
+commit: d4178533
 adr: none — formal closeout; H-APP + APP-CON/EVOL/OPS delivered 2026-06-14
 ---
 
@@ -29,6 +29,13 @@ Complete Full Harness Layer Completion orchestration — final domain pair TIER3
 ## Project impact
 
 Tier-3 Application Environment layer formally closed for Full Harness LC — **22/22 domain pairs mature**.
+
+## Traceability
+
+| Link | Target |
+|------|--------|
+| Architecture | `docs/architecture/TIER3_APPLICATION_ENVIRONMENT.md` |
+| Plan | `docs/plan/TIER3_APPLICATION_ENVIRONMENT.md` Phase TIER3-LC |
 
 ## Changed artifacts
 

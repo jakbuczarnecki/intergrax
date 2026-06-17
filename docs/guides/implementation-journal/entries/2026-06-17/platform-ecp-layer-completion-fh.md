@@ -12,7 +12,7 @@ plan_ref:
   - ECP-LC-S4
   - Full-Harness-LC-ECP
 status: completed
-commit: pending
+commit: e24ae434
 adr: none — formal closeout; ECP-PROD delivered 2026-06-12
 ---
 
@@ -30,6 +30,14 @@ Continue Full Harness Layer Completion orchestration to ECP after AHI closeout.
 ## Project impact
 
 Elastic Capacity layer formally closed for Full Harness LC — signal bridge, K8s/Celery adapters, HITL approval path.
+
+## Traceability
+
+| Link | Target |
+|------|--------|
+| Architecture | `docs/architecture/ELASTIC_CAPACITY_AND_SCALING.md` |
+| Plan | `docs/plan/ELASTIC_CAPACITY_AND_SCALING.md` Phase ECP-LC |
+| Prior LC | `entries/2026-06-12/platform-ecp-prod-layer-closeout.md` |
 
 ## Changed artifacts
 

@@ -11,7 +11,7 @@ plan_ref:
   - DX-LC-S4
   - Full-Harness-LC-DX
 status: completed
-commit: pending
+commit: d4178533
 adr: none — formal closeout; DX 47/47 + W-OPS delivered 2026-06-02
 ---
 
@@ -29,6 +29,13 @@ Continue Full Harness Layer Completion orchestration to DX after ECP closeout.
 ## Project impact
 
 DX layer formally closed for Full Harness LC — scaffold, eval, trace explorer, simulator, chaos CI.
+
+## Traceability
+
+| Link | Target |
+|------|--------|
+| Architecture | `docs/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` |
+| Plan | `docs/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` Phase DX-LC |
 
 ## Changed artifacts
 
