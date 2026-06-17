@@ -8,7 +8,7 @@ scope: OBSERVABILITY
 plan_ref:
   - OBS-EVOL-9.7
 status: completed
-commit: pending
+commit: 39ee2f6f
 adr: ADR-OBS-003
 ---
 

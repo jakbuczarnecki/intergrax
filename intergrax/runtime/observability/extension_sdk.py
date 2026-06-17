@@ -46,6 +46,30 @@ def application_diagnostic_schema_id(app_slug: str, name: str) -> str:
     return f"applications.{app_slug}.diag.{name}"
 
 
+def agent_signal_schema_id(agent_slug: str, name: str) -> str:
+    _validate_slug(agent_slug, label="agent_slug")
+    _validate_slug(name, label="signal name")
+    return f"agents.{agent_slug}.{name}.v1"
+
+
+def agent_signal_event_kind(agent_slug: str, name: str) -> str:
+    _validate_slug(agent_slug, label="agent_slug")
+    _validate_slug(name, label="signal name")
+    return f"agents.{agent_slug}.{name}"
+
+
+def application_signal_schema_id(app_slug: str, name: str) -> str:
+    _validate_slug(app_slug, label="application_slug")
+    _validate_slug(name, label="signal name")
+    return f"applications.{app_slug}.{name}.v1"
+
+
+def application_signal_event_kind(app_slug: str, name: str) -> str:
+    _validate_slug(app_slug, label="application_slug")
+    _validate_slug(name, label="signal name")
+    return f"applications.{app_slug}.{name}"
+
+
 def assert_agent_diagnostic_schema_id(schema_id: str, *, agent_slug: str) -> None:
     _validate_slug(agent_slug, label="agent_slug")
     expected = f"agents.{agent_slug}.diag."

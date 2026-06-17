@@ -12,6 +12,7 @@ from pathlib import Path
 from textwrap import dedent
 
 from intergrax.scaffold.adr_templates import write_agent_adr_scaffold
+from intergrax.scaffold.signal_templates import write_agent_signal_scaffold
 from intergrax.scaffold.tracing_templates import write_agent_tracing_scaffold
 from intergrax.scaffold.doc_templates import (
     render_agent_architecture_doc,
@@ -487,6 +488,7 @@ def _readme(slug: str, class_name: str, capabilities: list[str]) -> str:
         - ``prompts/`` — prompt assets
         - ``schemas/`` — I/O models
         - ``tracing/`` — DiagnosticPayload extensions (OBS extension SDK)
+        - ``signals/`` — ``emit_domain_signal`` payloads and registry (OBS-EVOL-9)
         - ``tests/`` — agent smoke tests
         - ``notebooks/`` — interactive experiments
         - ``adr/`` — architecture decision records
@@ -597,6 +599,7 @@ def create_acp_pattern_agent(
     )
     write_agent_adr_scaffold(agent_dir=target, slug=slug, force=force)
     write_agent_tracing_scaffold(target=target, slug=slug, force=force)
+    write_agent_signal_scaffold(target=target, slug=slug, force=force)
     return target
 
 
