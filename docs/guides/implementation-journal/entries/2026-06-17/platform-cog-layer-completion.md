@@ -15,7 +15,7 @@ plan_ref:
   - COG-LC-S6
   - Full-Harness-LC-COG
 status: completed
-commit: pending
+commit: 0687d6a2
 adr: none — extends ReasoningProfile, RuntimeConfig, and planning_metrics; no new Tier-0 mechanism
 ---
 

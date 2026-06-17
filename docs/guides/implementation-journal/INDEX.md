@@ -5,7 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-17-025 | 2026-06-17 | tier-0, tier-1, tier-3 REASONING_AND_COGNITION | COG-LC-S1–S6 · Full-Harness-LC-COG | [REASONING_AND_COGNITION — Full Harness Layer Completion closeout](entries/2026-06-17/platform-cog-layer-completion.md) | pending |
+| IJ-2026-06-17-025 | 2026-06-17 | tier-0, tier-1, tier-3 REASONING_AND_COGNITION | COG-LC-S1–S6 · Full-Harness-LC-COG | [REASONING_AND_COGNITION — Full Harness Layer Completion closeout](entries/2026-06-17/platform-cog-layer-completion.md) | 0687d6a2 |
 | IJ-2026-06-17-024 | 2026-06-17 | tier-1 NEXUS_EXECUTION_FLOW | AUDIT-IDEAL-6.6 · Full-Harness-LC-FLOW | [NEXUS_EXECUTION_FLOW — Full Harness Layer Completion closeout](entries/2026-06-17/platform-flow-layer-completion.md) | 096e124a |
 | IJ-2026-06-17-023 | 2026-06-17 | tier-1 ORCHESTRATION | AUDIT-IDEAL-3.1 · Full-Harness-LC-ORCH | [ORCHESTRATION — Full Harness Layer Completion closeout](entries/2026-06-17/platform-orch-layer-completion.md) | 75d5142a |
 | IJ-2026-06-17-022 | 2026-06-17 | tier-0, tier-1 UNIFIED_EXECUTION_RUNTIME | AUDIT-IDEAL-5.1 · Full-Harness-LC-UAEP | [UNIFIED_EXECUTION_RUNTIME — Full Harness Layer Completion closeout](entries/2026-06-17/platform-uaep-layer-completion.md) | 75d5142a |
