@@ -1,17 +1,17 @@
 {
-  "orchestrator": "full_harness_audit_only",
-  "mode": "audit_only",
+  "orchestrator": "full_harness_layer_completion",
+  "mode": "layer_completion",
   "scope": "all",
   "single_domain": null,
-  "canonical": "docs/guides/audit/ORCHESTRATOR.md",
-  "bootstrap": "docs/guides/audit/bootstrap/01_audit_all_domains.txt",
+  "canonical": "docs/guides/audit/LAYER_COMPLETION_ORCHESTRATOR.md",
+  "bootstrap": "docs/guides/audit/bootstrap/05_closeout_all_domains.txt",
   "run_id": "2026-06-17",
   "results_dir": "docs/guides/audit/results/2026-06-17",
   "started_at": "2026-06-17",
   "last_updated": "2026-06-17",
   "completed_at": null,
-  "current_domain": "PLATFORM_FOUNDATION",
-  "notes": "",
+  "current_domain": "NEXUS_EXECUTION_FLOW",
+  "notes": "PF re-validated mature; gate test isolation fix applied.",
   "domain_order": [
     "PLATFORM_FOUNDATION",
     "UNIFIED_EXECUTION_RUNTIME",
@@ -38,28 +38,55 @@
   ],
   "domains": {
     "PLATFORM_FOUNDATION": {
-      "status": "pending",
-      "verdict": null,
+      "status": "completed",
+      "verdict": "mature_revalidated",
       "p0_open": 0,
       "p1_open": 0,
       "result_md": "docs/guides/audit/results/2026-06-17/PLATFORM_FOUNDATION.md",
-      "plan_updated": false
+      "plan_updated": false,
+      "recommendation": "Architecturally Mature",
+      "scores": {
+        "architecture_completeness": 96,
+        "production_readiness": 94,
+        "documentation_consistency": 95,
+        "implementation_consistency": 95
+      },
+      "journal": "docs/guides/implementation-journal/entries/2026-06-17/platform-pf-layer-completion.md",
+      "completed_at": "2026-06-17"
     },
     "UNIFIED_EXECUTION_RUNTIME": {
-      "status": "pending",
-      "verdict": null,
+      "status": "completed",
+      "verdict": "mature_revalidated",
       "p0_open": 0,
       "p1_open": 0,
       "result_md": "docs/guides/audit/results/2026-06-17/UNIFIED_EXECUTION_RUNTIME.md",
-      "plan_updated": false
+      "plan_updated": false,
+      "recommendation": "Architecturally Mature",
+      "scores": {
+        "architecture_completeness": 95,
+        "production_readiness": 93,
+        "documentation_consistency": 94,
+        "implementation_consistency": 94
+      },
+      "journal": "docs/guides/implementation-journal/entries/2026-06-17/platform-uaep-layer-completion.md",
+      "completed_at": "2026-06-17"
     },
     "ORCHESTRATION": {
-      "status": "pending",
-      "verdict": null,
+      "status": "completed",
+      "verdict": "mature_revalidated",
       "p0_open": 0,
       "p1_open": 0,
       "result_md": "docs/guides/audit/results/2026-06-17/ORCHESTRATION.md",
-      "plan_updated": false
+      "plan_updated": false,
+      "recommendation": "Architecturally Mature",
+      "scores": {
+        "architecture_completeness": 95,
+        "production_readiness": 94,
+        "documentation_consistency": 95,
+        "implementation_consistency": 94
+      },
+      "journal": "docs/guides/implementation-journal/entries/2026-06-17/platform-orch-layer-completion.md",
+      "completed_at": "2026-06-17"
     },
     "NEXUS_EXECUTION_FLOW": {
       "status": "pending",
