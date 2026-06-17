@@ -16,4 +16,8 @@ infra/
 applications/*
 !applications/attestation_demo/
 agents/*
-!agents/boundary_demo/
+!agents/**
+prompts/*
+!prompts/tools_agent_context/
+!prompts/tools_agent_planner/
+!prompts/tools_agent_system/
