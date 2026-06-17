@@ -12,7 +12,7 @@ plan_ref:
   - ACP-LC-S4
   - Full-Harness-LC-ACP
 status: completed
-commit: pending
+commit: 439346dc
 adr: none — documentation and process closeout; ACP runtime already Done
 ---
 
