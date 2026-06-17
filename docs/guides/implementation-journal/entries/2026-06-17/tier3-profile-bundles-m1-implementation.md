@@ -12,7 +12,7 @@ plan_ref:
   - APP-EVOL-8.5
   - APP-EVOL-8.7
 status: completed
-commit: 721fec14
+commit: 9538f616
 adr: ADR-APP-003 — implementation follows accepted decision; no new ADR
 ---
 

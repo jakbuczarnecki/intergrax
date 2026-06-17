@@ -5,7 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-17-005 | 2026-06-17 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-8.1–8.5 · 8.7 | [Tier-3 — APP-EVOL-8 M1 profile bundles implementation](entries/2026-06-17/tier3-profile-bundles-m1-implementation.md) | 721fec14 |
+| IJ-2026-06-17-005 | 2026-06-17 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-8.1–8.5 · 8.7 | [Tier-3 — APP-EVOL-8 M1 profile bundles implementation](entries/2026-06-17/tier3-profile-bundles-m1-implementation.md) | 9538f616 |
 | IJ-2026-06-17-004 | 2026-06-17 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-8 · P1-ARCH-01 | [Tier-3 — Hierarchical profile bundles architecture](entries/2026-06-17/tier3-profile-bundles-architecture.md) | eb70ba38 |
 | IJ-2026-06-17-003 | 2026-06-17 | tier-0, tier-3 RAG | M-RAG.62–M-RAG.68 | [RAG — Layer Completion iteration III](entries/2026-06-17/platform-rag-layer-completion-iii.md) | 7e52ce8c |
 | IJ-2026-06-17-002 | 2026-06-17 | tier-0, tier-2 AGENT_CONTRACTS_AND_ASSEMBLY | ACP-TOK-CI | [ACP-TOK-CI — stabilize token budget smoke tests and CI diagnostics](entries/2026-06-17/platform-acp-tok-ci-smoke-stabilization.md) | pending |
