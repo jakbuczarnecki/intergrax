@@ -10,7 +10,15 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
-from intergrax.llm_adapters.registry.failover_adapter import FailoverLLMAdapter
+from intergrax.llm_adapters.registry.failover_adapter import (
+    FailoverLLMAdapter,
+    LLMRoutingAttemptRecord,
+)
+from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import (
+    LLMRoutingAttemptDiagV1,
+    attach_failover_routing_trace_observer,
+    routing_attempt_to_diag,
+)
 
 
 class _StubAdapter:
@@ -51,23 +59,51 @@ class _StubAdapter:
 
 @pytest.mark.unit
 @pytest.mark.gate
-def test_failover_adapter_uses_secondary_on_retriable_error() -> None:
+def test_routing_attempt_to_diag_maps_profile_id() -> None:
+    record = LLMRoutingAttemptRecord(
+        profile_index=0,
+        profile_id="openai:gpt-4o",
+        provider="openai",
+        model="gpt-4o",
+        error="RuntimeError: rate limited",
+    )
+    diag = routing_attempt_to_diag(record)
+    assert diag.profile_id == "openai:gpt-4o"
+    assert diag.schema_id() == "intergrax.diag.engine.core_llm.routing_attempt"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_attach_failover_routing_trace_observer_emits_per_attempt() -> None:
     primary = _StubAdapter(provider=LLMProvider.OPENAI, model="gpt-4o", fail=True)
     secondary = _StubAdapter(provider=LLMProvider.GROQ, model="llama-3.3-70b-versatile")
     adapter = FailoverLLMAdapter(
         [primary, secondary],
         profile_ids=("openai:gpt-4o", "groq:llama-3.3-70b-versatile"),
     )
-    response = adapter.generate_messages([ChatMessage(role="user", content="hi")])
-    assert response.content == "ok-llama-3.3-70b-versatile"
-    assert len(adapter.routing_attempts) == 1
-    assert adapter.routing_attempts[0].profile_id == "openai:gpt-4o"
+    emitted: list[LLMRoutingAttemptDiagV1] = []
+
+    def _trace_event(**kwargs: object) -> None:
+        payload = kwargs.get("payload")
+        assert isinstance(payload, LLMRoutingAttemptDiagV1)
+        emitted.append(payload)
+
+    attach_failover_routing_trace_observer(adapter, _trace_event)
+    adapter.generate_messages([ChatMessage(role="user", content="hi")])
+
+    assert len(emitted) == 1
+    assert emitted[0].profile_id == "openai:gpt-4o"
+    assert emitted[0].provider == "openai"
 
 
-def test_failover_adapter_raises_when_all_profiles_fail() -> None:
+@pytest.mark.unit
+@pytest.mark.gate
+def test_failover_adapter_clears_attempts_between_calls() -> None:
     primary = _StubAdapter(provider=LLMProvider.OPENAI, model="gpt-4o", fail=True)
-    secondary = _StubAdapter(provider=LLMProvider.GROQ, model="backup", fail=True)
-    adapter = FailoverLLMAdapter([primary, secondary])
-    with pytest.raises(RuntimeError, match="rate limited"):
-        adapter.generate_messages([ChatMessage(role="user", content="hi")])
-    assert len(adapter.routing_attempts) == 2
+    secondary = _StubAdapter(provider=LLMProvider.GROQ, model="backup")
+    adapter = FailoverLLMAdapter([primary, secondary], profile_ids=("openai:gpt-4o", "groq:backup"))
+    adapter.generate_messages([ChatMessage(role="user", content="hi")])
+    assert len(adapter.routing_attempts) == 1
+    primary._fail = False
+    adapter.generate_messages([ChatMessage(role="user", content="hi")])
+    assert len(adapter.routing_attempts) == 0

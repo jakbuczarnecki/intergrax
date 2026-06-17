@@ -25,7 +25,7 @@
    | Implement open plan items, one domain | [`bootstrap/04_implement_plan_one_domain.txt`](bootstrap/04_implement_plan_one_domain.txt) |
    | Full layer completion (LCM) all domains | [`bootstrap/05_closeout_all_domains.txt`](bootstrap/05_closeout_all_domains.txt) |
 
-4. Agent iterates domain-by-domain; results land in [`results/YYYY-MM-DD/`](results/README.md).
+4. Agent iterates domain-by-domain; results land in [`results/YYYY-MM-DD/`](results/README.md). Mode **B** continues through all 22 pairs without asking between domains (`pause` / `stop` to halt) — use **Resume** if one session does not finish the run.
 
 5. Resume later: paste same bootstrap + line `RESUME: docs/guides/audit/results/YYYY-MM-DD/progress.json`.
 

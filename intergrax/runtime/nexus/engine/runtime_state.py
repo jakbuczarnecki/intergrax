@@ -196,7 +196,14 @@ class RuntimeState(RuntimeStateContract):
         if self.llm_usage_tracker is None:
            self.llm_usage_tracker = LLMUsageTracker(run_id=self.run_id)            
            
-        self.llm_usage_tracker.register_adapter(self.context.config.llm_adapter, label="core_adapter")
+        core_adapter = self.context.config.llm_adapter
+        if core_adapter is not None:
+            from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import (
+                attach_failover_routing_trace_observer,
+            )
+
+            attach_failover_routing_trace_observer(core_adapter, self.trace_event)
+        self.llm_usage_tracker.register_adapter(core_adapter, label="core_adapter")
 
         from intergrax.runtime.nexus.tools.tool_planner_trackable import ToolPlannerTrackable
 

@@ -25,6 +25,8 @@ Run a **repeatable, evidence-backed audit** across all **22 harness domain pairs
 | **A1 — Audit one** | `02_audit_one_domain.txt` | This file | No | Yes |
 | **B — Implement plans all** | `03_implement_plan_all_domains.txt` | [`IMPLEMENT_ORCHESTRATOR.md`](IMPLEMENT_ORCHESTRATOR.md) | Yes | Already in plan |
 | **B1 — Implement one** | `04_implement_plan_one_domain.txt` | [`IMPLEMENT_ORCHESTRATOR.md`](IMPLEMENT_ORCHESTRATOR.md) | Yes | Already in plan |
+
+Mode **B** uses the same iteration discipline as Mode A (atomic domain unit, no micro-pauses, continue without asking between domains) — see [`IMPLEMENT_ORCHESTRATOR.md`](IMPLEMENT_ORCHESTRATOR.md) §Iteration discipline. Resume across sessions when one Cursor turn does not finish all 22 pairs.
 | **C — Layer closeout** | `05_closeout_all_domains.txt` | [`LAYER_COMPLETION_ORCHESTRATOR.md`](LAYER_COMPLETION_ORCHESTRATOR.md) | If P0/P1 | Yes + architecture |
 
 ---

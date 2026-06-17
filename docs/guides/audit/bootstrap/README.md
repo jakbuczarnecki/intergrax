@@ -18,4 +18,6 @@ uv run python scripts/init_architecture_audit_run.py --date YYYY-MM-DD --mode au
 
 **Resume:** paste same file + line `RESUME: docs/guides/audit/results/YYYY-MM-DD/progress.json`
 
+**Mode B iteration:** one P0/P1 item per domain (or skip); agent continues through all 22 domains without asking between pairs unless operator writes `pause` / `stop`. A single Cursor turn may not finish the full run — use **Resume** for the next session. See [`IMPLEMENT_ORCHESTRATOR.md`](../IMPLEMENT_ORCHESTRATOR.md) §Iteration discipline.
+
 **Canonical docs:** [`../README.md`](../README.md) · [`../ORCHESTRATOR.md`](../ORCHESTRATOR.md)
