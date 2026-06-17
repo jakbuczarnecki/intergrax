@@ -50,11 +50,11 @@ ContextEngine · ContextSourceProvider · ContextFragment · ContextAssemblyRequ
 
 ## Active plan phases (verify status vs code reality)
 
-CTX Done · CE-DOC Done · CE-EXT Planned (CE-1..CE-12)
+CTX Done · CE-DOC Done · CE-EXT Done · CE-PROV-WIRE Done · CE-HANDLE-FILL Done · **Full Harness LC** (2026-06-17)
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-No plugin catalog (GAP-CTX-01) · dual assembly paths (GAP-CTX-02) · not step-aware (GAP-CTX-04) · workspace provider spike only (GAP-CTX-06) · OTel spans partial (GAP-CTX-09)
+OTel SDK wiring · CE-9.5 cost attribution · CE-10.4 preset baselines · GAP-CTX-12 AHI adaptive ranking
 
 ---
 

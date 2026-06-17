@@ -25,7 +25,7 @@
 | **CE-DOC.10** | CE-ALIGN closeout audit + architecture sync | **Done** (2026-06-12) |
 | **CE-HANDLE-FILL** | RuntimeState → provider metadata sync on nexus context steps | **Done** (2026-06-14) |
 
-**As-built maturity:** L3+ engine / L3 control plane — CE-PROV-WIRE closed GAP-CTX-20; Layer Completion iteration III (2026-06-17) confirms **Architecturally Mature** — no P0/P1; see architecture §3.
+**As-built maturity:** L3+ engine / L3 control plane — CE-PROV-WIRE closed GAP-CTX-20; Layer Completion iteration III (2026-06-17) confirms **Architecturally Mature** — no P0/P1; **Full Harness LC** (2026-06-17); see architecture §3.
 
 **Delivery rule:** One **CE-\*** ID per PR → update master table + gap register → `pytest -m gate` + domain CI scripts green.
 
@@ -568,6 +568,24 @@ One sprint = one coherent provider family or gate. One commit per sprint.
 |--------|------|--------|---------------|-------|
 | **C1** | CE tag candidate classification | CE-10.3 | GAP-CTX-08 Closed; `[context:rag:…]` maps to `ContextCandidateSource.RAG` | **Done** |
 | **C2** | RuntimeState handle autofill | CE-HANDLE-1…4 | `request.metadata` synced after context steps; bridge tests green | **Done** |
+
+---
+
+## Phase CONTEXT_ENGINEERING-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — re-validates CE-ITERATION-III + CE-PROV-WIRE; no open P0/P1  
+**Prerequisites:** CE-EXT **Done** · CE-HANDLE-FILL **Done**  
+**Goal:** Formal Full Harness LC closeout — gate verification, journal, audit prompt sync  
+**ADR:** **No ADR needed**
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| CE-LC-S1 | **Re-audit** — CE register + frozen verdict | **Done** | High | No P0/P1 |
+| CE-LC-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
+| CE-LC-S3 | **Gate verification** | **Done** | High | 73 gate unit tests · CE CI scripts |
+| CE-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+
+**Deferred P2–P4:** OTel SDK wiring · CE-9.5 cost attribution · CE-10.4 preset baselines · GAP-CTX-12 AHI adaptive ranking
 
 ---
 
