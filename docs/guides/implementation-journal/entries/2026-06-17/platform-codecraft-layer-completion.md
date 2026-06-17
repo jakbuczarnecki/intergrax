@@ -13,7 +13,7 @@ plan_ref:
   - CODE_CRAFT-LC-S4
   - Full-Harness-LC-CODE_CRAFT
 status: completed
-commit: pending
+commit: 7c60a013
 adr: none — formal closeout; ECC-0…ECC-6 + S7–S11 delivered 2026-06-13
 ---
 
