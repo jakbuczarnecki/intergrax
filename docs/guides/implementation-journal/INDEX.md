@@ -5,8 +5,12 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-17-038 | 2026-06-17 | tier-0, tier-1 CRITIC_VERIFICATION | CVL-LC-FH-S1–S4 · Full-Harness-LC-CVL | [CRITIC_VERIFICATION — Full Harness Layer Completion closeout](entries/2026-06-17/platform-cvl-layer-completion-fh.md) | pending |
-| IJ-2026-06-17-037 | 2026-06-17 | tier-0, tier-1, tier-3 RELIABILITY_FAILURE_AND_HITL | REL-LC-S1–S4 · Full-Harness-LC-REL | [RELIABILITY_FAILURE_AND_HITL — Full Harness Layer Completion closeout](entries/2026-06-17/platform-rel-layer-completion-fh.md) | pending |
+| IJ-2026-06-17-042 | 2026-06-17 | tier-3 TIER3_APPLICATION_ENVIRONMENT | TIER3-LC-S1–S4 · Full-Harness-LC-TIER3 | [TIER3_APPLICATION_ENVIRONMENT — Full Harness Layer Completion closeout](entries/2026-06-17/platform-tier3-layer-completion-fh.md) | pending |
+| IJ-2026-06-17-041 | 2026-06-17 | platform EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE | DX-LC-S1–S4 · Full-Harness-LC-DX | [EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE — Full Harness Layer Completion closeout](entries/2026-06-17/platform-dx-layer-completion-fh.md) | pending |
+| IJ-2026-06-17-040 | 2026-06-17 | tier-1, tier-3 ELASTIC_CAPACITY_AND_SCALING | ECP-LC-S1–S4 · Full-Harness-LC-ECP | [ELASTIC_CAPACITY_AND_SCALING — Full Harness Layer Completion closeout](entries/2026-06-17/platform-ecp-layer-completion-fh.md) | pending |
+| IJ-2026-06-17-039 | 2026-06-17 | tier-0, tier-1 ADAPTIVE_HARNESS_INTELLIGENCE | AHI-LC-S1–S4 · Full-Harness-LC-AHI | [ADAPTIVE_HARNESS_INTELLIGENCE — Full Harness Layer Completion closeout](entries/2026-06-17/platform-ahi-layer-completion-fh.md) | pending |
+| IJ-2026-06-17-038 | 2026-06-17 | tier-0, tier-1 CRITIC_VERIFICATION | CVL-LC-FH-S1–S4 · Full-Harness-LC-CVL | [CRITIC_VERIFICATION — Full Harness Layer Completion closeout](entries/2026-06-17/platform-cvl-layer-completion-fh.md) | 58c1a7b4 |
+| IJ-2026-06-17-037 | 2026-06-17 | tier-0, tier-1, tier-3 RELIABILITY_FAILURE_AND_HITL | REL-LC-S1–S4 · Full-Harness-LC-REL | [RELIABILITY_FAILURE_AND_HITL — Full Harness Layer Completion closeout](entries/2026-06-17/platform-rel-layer-completion-fh.md) | 738925df |
 | IJ-2026-06-17-036 | 2026-06-17 | tier-0, tier-1 OBSERVABILITY | OBS-LC-S1–S4 · Full-Harness-LC-OBS | [OBSERVABILITY — Full Harness Layer Completion closeout](entries/2026-06-17/platform-obs-layer-completion-fh.md) | c00cb317 |
 | IJ-2026-06-17-035 | 2026-06-17 | tier-0, tier-1 MODALITY | MODALITY-LC-S1–S4 · Full-Harness-LC-MODALITY | [MODALITY — Full Harness Layer Completion closeout](entries/2026-06-17/platform-modality-layer-completion.md) | e1e1c506 |
 | IJ-2026-06-17-034 | 2026-06-17 | tier-0, tier-1, tier-3 CONTEXT_ENGINEERING | CE-LC-S1–S4 · Full-Harness-LC-CE | [CONTEXT_ENGINEERING — Full Harness Layer Completion closeout](entries/2026-06-17/platform-ce-layer-completion-fh.md) | b4d580df |

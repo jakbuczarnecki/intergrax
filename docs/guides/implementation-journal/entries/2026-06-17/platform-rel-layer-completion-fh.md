@@ -13,7 +13,7 @@ plan_ref:
   - REL-LC-S4
   - Full-Harness-LC-REL
 status: completed
-commit: pending
+commit: 738925df
 adr: none — formal closeout; REL + REL-ADV delivered 2026-06-02–2026-06-09
 ---
 

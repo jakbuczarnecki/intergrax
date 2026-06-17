@@ -12,7 +12,7 @@ plan_ref:
   - CVL-LC-FH-S4
   - Full-Harness-LC-CVL
 status: completed
-commit: pending
+commit: 58c1a7b4
 adr: none — formal closeout; CVL-LC-1…4 delivered 2026-06-13
 ---
 
