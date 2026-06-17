@@ -8,6 +8,8 @@
 
 **Cross-plan — Agent layer (ACP):** Per-agent `memory_view` and `memory_scope` (user vs org §30.9) resolve in `merge_environment` — [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 2** (`ACP-DX-2`). Agent session state (`AcpSessionState`) is separate from LTM namespaces; do not store secrets in `acp.state.v1` (architecture §25.2).
 
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates layer completion + MEM-VEC/MEM-DEPTH closeout).
+
 ---
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
@@ -600,5 +602,23 @@ Total: 26
 | 2026-06-06 | M-LLM-R.0.1 | Phase M-LLM-R register + §6.1v + §6.2ad + Appendix L + Band 2z |
 | 2026-06-06 | M-LLM-R.* | Typed `LLMAdapterResponse` envelope; providers + consumers migrated; gate **755** passed |
 | — | — | *(append row per merged PR)* |
+
+---
+
+## Phase MEMORY-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — re-validates 2026-06-17 layer completion + MEM-VEC/MEM-DEPTH; no open P0/P1  
+**Prerequisites:** MEM-VEC **Done** · MEM-DEPTH **Done** · MEM-OBS.1 **Done**  
+**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**ADR:** **No ADR needed**
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| MEMORY-LC-S1 | **Re-audit** — MEM register + tier-0/1 verdict | **Done** | High | No P0/P1 |
+| MEMORY-LC-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
+| MEMORY-LC-S3 | **Gate verification** | **Done** | High | 41 unit tests + integration · `check_entity_graph_memory_wiring` |
+| MEMORY-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+
+**Deferred P2–P4:** procedural memory depth · org memory maturity · LangMem/Zep parity on entity graph
 
 ---

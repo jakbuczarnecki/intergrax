@@ -8,7 +8,8 @@
 **Audit instruction:** [`guides/audit/MEMORY.md`](../guides/audit/MEMORY.md)  
 **Context assembly (Layer C):** [`architecture/CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md)  
 **Related:** [`architecture/RAG.md`](RAG.md) — Tier-0 retrieval engine; this doc covers **memory stores, lifecycle**, and the **Knowledge vs LTM** boundary.  
-**ADR:** [ADR-MEM-001](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler) · [ADR-MEM-002](../adr/entries/2026-06-14/ADR-MEM-002.md) (vector catalog)
+**ADR:** [ADR-MEM-001](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler) · [ADR-MEM-002](../adr/entries/2026-06-14/ADR-MEM-002.md) (vector catalog)  
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates layer completion); MEM-VEC + MEM-DEPTH **Done**
 
 ## 2. Design principles
 

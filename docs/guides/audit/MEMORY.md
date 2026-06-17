@@ -50,11 +50,11 @@ MemoryProfile · MemoryKind · MemoryWritePolicy · PolicyScopedMemoryView · Me
 
 ## Active plan phases (verify status vs code reality)
 
-MEM Done · MEM-DEPTH Done · MEM-OBS.1 · ADR-MEM-001
+MEM Done · MEM-DEPTH Done · MEM-VEC Done · MEM-OBS.1 · ADR-MEM-001/002 · **Full Harness LC** (2026-06-17)
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-Procedural memory minimal · org memory maturity · LangMem/Zep parity gaps on entity graph
+procedural memory depth · org memory maturity · LangMem/Zep parity on entity graph
 
 ---
 
