@@ -113,7 +113,9 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 
 **Author entry points:** [`applications/USAGE.md`](../applications/USAGE.md) · `HarnessApplication` (`intergrax/harness/app.py`) · scaffold `new-application` · [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md) §0.
 
-**Implementation:** H-APP profile/wiring **Done**; APP-CON-1 host pipeline mount **Done**; budget reactions **Done** (ACP-TOK-1..3 · ACP-TOK-CI) + APP-PROD-1..9 gates; APP-EVOL-1..7 evolution **Done**; **APP-EVOL-8** hierarchical bundles **Planned** ([ADR-APP-003](adr/entries/2026-06-17/ADR-APP-003.md)); APP-OPS-1..4 platform ops **Done** — [TIER3 plan](plan/TIER3_APPLICATION_ENVIRONMENT.md#master-implementation-backlog-app-unified). **Maturity:** Architecturally Mature for reference hosts; **APP-EVOL-8** is approved post-freeze evolution (P1-ARCH-01).
+**Implementation:** H-APP profile/wiring **Done**; APP-CON-1 host pipeline mount **Done**; budget reactions **Done** (ACP-TOK-1..3 · ACP-TOK-CI) + APP-PROD-1..9 gates; APP-EVOL-1..7 evolution **Done**; **APP-EVOL-8** hierarchical bundles **M1 Done** · M3 planned ([ADR-APP-003](adr/entries/2026-06-17/ADR-APP-003.md)); APP-OPS-1..4 platform ops **Done** — [TIER3 plan](plan/TIER3_APPLICATION_ENVIRONMENT.md#master-implementation-backlog-app-unified). **Maturity:** Architecturally Mature for reference hosts.
+
+**Observability spine evolution:** **OBS-EVOL-9** layered `event_kind` catalog **Planned** (pre-publication) — [ADR-OBS-003](adr/entries/2026-06-17/ADR-OBS-003.md) · [OBS plan](plan/OBSERVABILITY.md#phase-obs-evol-9--layered-event-catalog-p1-arch-02).
 
 ---
 

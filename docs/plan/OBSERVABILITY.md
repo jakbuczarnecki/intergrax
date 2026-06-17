@@ -8,6 +8,8 @@
 
 **Cross-plan — Agent layer (ACP):** Dual observability planes (architecture §31) — `AgentRunTrace` on `AgentRunResult` (Plane B) and `ApplicationRunSummary` on Task completion (Plane A). Delivered in [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 3** (`ACP-OBS-1`, `ACP-OBS-2`) and **Wave 7** redaction (`ACP-PROD-8`). Trace spine changes MUST keep step records compatible with `AgentStepRecord` tool/RAG/LLM fields.
 
+**Cross-plan — Event catalog (OBS-EVOL-9 · P1-ARCH-02):** Layered spine + `event_kind` (architecture §4.4 · ADR-OBS-003). Developers extend via `emit_domain_signal`, not new `RuntimeEventType`. Pre-release spine consolidation before publication.
+
 ---
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
@@ -209,5 +211,41 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 | EBE-7 | Webhook sink | Deferred | `sinks/webhook.py` | Phase 2 |
 | EBE-8 | HarnessKernel step-level events | Deferred | kernel hook | Phase 2 |
 | EBE-9 | Host-side event signing | Deferred | optional seal | Phase 2 |
+
+---
+
+## Phase OBS-EVOL-9 — Layered event catalog (P1-ARCH-02)
+
+**Status:** **Planned** (2026-06-17) — architecture §4.4 + ADR-OBS-003 **accepted**; code **not started**  
+**Goal:** Scale HOS beyond flat `RuntimeEventType` growth — spine + `event_kind` + `EventCatalog` — **before external v1 publication** (no external migration).
+
+**ADR:** [`ADR-OBS-003`](../adr/entries/2026-06-17/ADR-OBS-003.md)  
+**Architecture:** [`architecture/OBSERVABILITY.md`](../architecture/OBSERVABILITY.md) §4.4 · UAEP [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](../architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.1.6
+
+| ID | Phase | Deliverable | Status | Priority | Acceptance |
+|----|-------|-------------|--------|----------|------------|
+| OBS-EVOL-9-DOC | M0 | Architecture §4.4 + plan register + ADR-OBS-003 + author guides | **Done** | **Critical** | This register · ADR · `check_harness_adr.py` |
+| OBS-EVOL-9.1 | M1 | `EventCategory` + `EventCatalogEntry` + `event_catalog.py` (merge phase/ops/payload maps) | **Planned** | **Critical** | Single registry; gates read catalog |
+| OBS-EVOL-9.2 | M1 | `event_kind` + `event_category` on `RuntimeEvent`; auto-fill on emit | **Planned** | **Critical** | Default `event_kind == event_type.value` |
+| OBS-EVOL-9.3 | M1 | `emit_domain_signal()` + `emit_platform_event()` public APIs | **Planned** | **Critical** | Tier-2/3 use domain helper only |
+| OBS-EVOL-9.4 | M1 | `EventKindRegistry` for extension kinds (agents/apps namespaces) | **Planned** | High | `register_event_kind(kind, payload_schema_id)` |
+| OBS-EVOL-9.5 | M2 | `RuntimeEventBus.subscribe(categories=, kind_prefix=, ops_hints=)` | **Planned** | High | Legacy `event_types=` unchanged |
+| OBS-EVOL-9.6 | M2 | `scripts/check_event_catalog.py` + wire into `check_observability_gates.py` | **Planned** | High | Spine completeness; kind registry lint |
+| OBS-EVOL-9.7 | M2 | **Pre-release spine consolidation** — 74 → ~50 types; `DOMAIN_SIGNAL` + `platform.*` kinds | **Planned** | **Critical** | Before publication; update emitters + tests |
+| OBS-EVOL-9.8 | M2 | Scaffold: `emit_domain_signal` template in `new_agent` / `new_application` | **Planned** | Medium | Generated agent includes example kind + payload |
+| OBS-EVOL-9.9 | M3 | Optional `runtime_event.v2` envelope (`event_kind` required) | **Planned** | Low | Opt-in `schema_version`; v1 indefinite |
+
+**Suggested PR order:** OBS-EVOL-9-DOC → OBS-EVOL-9.1 → OBS-EVOL-9.2 → OBS-EVOL-9.3 → OBS-EVOL-9.4 → OBS-EVOL-9.6 → OBS-EVOL-9.5 → OBS-EVOL-9.7 → OBS-EVOL-9.8.
+
+**Explicitly out of scope:** per-category event buses; hierarchical enums; mandatory external APM.
+
+### OBS-EVOL-9 — Verification gates (target)
+
+```bash
+uv run pytest tests/unit/runtime/events/ -q
+uv run python scripts/check_event_catalog.py
+uv run python scripts/check_observability_gates.py
+python scripts/check_harness_adr.py
+```
 
 ---

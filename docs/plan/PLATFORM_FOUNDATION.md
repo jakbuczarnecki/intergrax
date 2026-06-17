@@ -2915,6 +2915,7 @@ Decision:       L1 certified — GO Phase S (harness environment), then Phase K 
 | B.09 | **Debug API trace reader** — only SQLite file path; no injectable in-memory / shared store handle | §19 | **Medium** | **Done** | Lab tests, local dev without file I/O | Tier-1 | `trace_store` on `create_debug_router` / `create_debug_app`; lab passes Nexus store (2026-05-27) |
 | B.10 | **NexusLoop runtime events in app factories** — all Tier-3 factories pass runtime events to Nexus | §42.24 | **Medium** | **Done** | Events 503 on `/debug/tasks/{id}/events` | Tier-3 | Legal + Research default SQLite; lab when path passed (2026-05-27) |
 | B.11 | **Metrics layer** — event-first, trace-second, **metrics-third** unified export | §42.1, §33 | **Low** | **Done** | Ops visibility, SLOs | Tier-0 | `runtime/metrics/export.py` + `GET /debug/tasks/{run_id}/metrics` (2026-05-27) |
+| P1-ARCH-02 | **Layered event catalog** — spine + `event_kind` + `EventCatalog`; pre-release consolidation | OBS §4.4, §42.1.6 | **P1** | **Planned** | All Tier-2/3 authors | Tier-0/1 | OBS-EVOL-9 · ADR-OBS-003 (2026-06-17) |
 
 ### B.3 Interaction surfaces (§18)
 
@@ -5956,6 +5957,7 @@ L4 readiness requires:
 | B.09 | **Debug API trace reader** — only SQLite file path; no injectable in-memory / shared store handle | §19 | **Medium** | **Done** | Lab tests, local dev without file I/O | Tier-1 | `trace_store` on `create_debug_router` / `create_debug_app`; lab passes Nexus store (2026-05-27) |
 | B.10 | **NexusLoop runtime events in app factories** — all Tier-3 factories pass runtime events to Nexus | §42.24 | **Medium** | **Done** | Events 503 on `/debug/tasks/{id}/events` | Tier-3 | Legal + Research default SQLite; lab when path passed (2026-05-27) |
 | B.11 | **Metrics layer** — event-first, trace-second, **metrics-third** unified export | §42.1, §33 | **Low** | **Done** | Ops visibility, SLOs | Tier-0 | `runtime/metrics/export.py` + `GET /debug/tasks/{run_id}/metrics` (2026-05-27) |
+| P1-ARCH-02 | **Layered event catalog** — spine + `event_kind` + `EventCatalog`; pre-release consolidation | OBS §4.4, §42.1.6 | **P1** | **Planned** | All Tier-2/3 authors | Tier-0/1 | OBS-EVOL-9 · ADR-OBS-003 (2026-06-17) |
 
 ### B.3 Interaction surfaces (§18)
 

@@ -806,21 +806,21 @@ intergrax/runtime/observability/modality_counters.py""",
         "title": "Observability Spine (HOS)",
         "layers": "21, 30",
         "mission": (
-            "Audit the **Harness Observability Spine**: 54+ RuntimeEventType catalog, typed DiagnosticPayload, "
-            "unified journal, causal trees, redaction, extension SDK, and operator reconstructability of every run."
+            "Audit the **Harness Observability Spine**: layered event catalog (spine + event_kind), "
+            "typed DiagnosticPayload, unified journal, causal trees, and operator reconstructability."
         ),
-        "code": """intergrax/runtime/events/runtime_event.py · event_bus.py · phase_coverage.py · unified_run_journal.py
+        "code": """intergrax/runtime/events/runtime_event.py · event_catalog.py · signals.py · event_bus.py
 intergrax/runtime/nexus/tracing/ · ObservabilityEmitter · TraceScope
-intergrax/runtime/observability/payload_registry.py · persistence_conformance.py
-intergrax/runtime/observability/harness_slos.py
-LLM/RAG/modality metric plugins
-scripts/check_observability_gates.py""",
-        "key_symbols": "RuntimeEvent · TraceEvent · DiagnosticPayload · TraceComponent · ObservabilityProfile · CoreLLMCallRecordedDiagV1 · ToolsSummaryDiagV1 · RagSummaryDiagV1 · ops filter hints",
-        "active_phases": "OBS-BUS 0–7 Done · ADR-OBS-001 · maintenance §6.1 only",
-        "known_gaps": "Residual RuntimeEventPayload evolution · product dashboards deferred §6.3a · external APM optional not mandatory",
+intergrax/runtime/events/payload_registry.py · persistence_conformance.py
+scripts/check_observability_gates.py · check_event_catalog.py""",
+        "key_symbols": "RuntimeEvent · event_kind · EventCategory · EventCatalog · emit_domain_signal · DiagnosticPayload · TraceComponent · ops filter hints",
+        "active_phases": "OBS-BUS 0–7 Done · OBS-EVOL-9 Planned · ADR-OBS-001 · ADR-OBS-003",
+        "known_gaps": "OBS-EVOL-9 implementation · spine consolidation pre-release · product dashboards §6.3a",
         "dimensions": [
             "Single spine — no per-agent private trace SQLite DBs.",
-            "Every RuntimeEventType has ExecutionPhase + ops filter hint — CI catalog tests.",
+            "Spine event_type frozen ~50 at publication; domain extends via event_kind.",
+            "Every spine RuntimeEventType has EventCatalog entry — phase + ops hint + payload.",
+            "Tier-2/3 use emit_domain_signal — not new RuntimeEventType.",
             "DiagnosticPayload guard rejects raw dicts where typed schema required.",
             "parent_event_id via TraceScope — causal tree reconstructable.",
             "AGENT_SELECTED, STEP_FAILED, TOOL_*, POLICY_* emitted on hot paths.",
@@ -843,11 +843,12 @@ scripts/check_observability_gates.py""",
         "overrides": "ObservabilityProfile · wire_nexus_observability() · PersistingTaskTraceEmitter · custom RuntimeEventBus handlers (Tier-3 plugins)",
         "ci_scripts": [
             "uv run python scripts/check_observability_gates.py",
+            "uv run python scripts/check_event_catalog.py",
             "uv run pytest tests/unit/runtime/observability/ -q",
             "uv run pytest tests/unit/runtime/events/ -q",
         ],
         "production_baseline": "OpenTelemetry + structured logging · Datadog/Honeycomb SLO workflows · Langfuse/LangSmith LLM trace UX",
-        "anti_patterns": "Per-agent trace DB · raw prompt/completion in prod journal · orphan event types without phase · metrics-only observability",
+        "anti_patterns": "Per-agent trace DB · raw prompt/completion in prod journal · Tier-2 adding RuntimeEventType · metrics-only observability",
         "appendix": "Appendix H (observability mandatory vs optional)",
     },
     {

@@ -681,6 +681,8 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 
 **Explicitly excluded:** product-specific dashboards (§6.3a); replacing external APM as mandatory deployment.
 
+**Cross-plan — Event catalog evolution:** Layered identity (`event_kind`, `EventCatalog`) is tracked in [`plan/OBSERVABILITY.md`](OBSERVABILITY.md) **OBS-EVOL-9** · architecture §42.1.6 · ADR-OBS-003. UAEP §42.1 event tables remain spine reference until consolidation (OBS-EVOL-9.7).
+
 ---
 
 

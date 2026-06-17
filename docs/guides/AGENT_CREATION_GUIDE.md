@@ -2188,6 +2188,32 @@ Release / CI
 
 Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §21: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md).
 
+### Q.5 Domain runtime signals (`event_kind` · OBS-EVOL-9)
+
+**Audience:** Tier-2 agent authors · **ADR:** [`ADR-OBS-003`](../adr/entries/2026-06-17/ADR-OBS-003.md)
+
+Agents and applications **must not** add members to `RuntimeEventType`. Use layered identity:
+
+| Need | API | Example |
+|------|-----|---------|
+| Debug / step detail | `DiagnosticPayload` via `AgentEngine` | `agents.legal.diag.clause_parse` |
+| Operator-visible domain fact | `emit_domain_signal(kind, payload)` | `agents.legal.clause_flagged` |
+| Platform lifecycle | Platform only — `emit_platform_event` | `TOOL_COMPLETED` |
+
+```python
+from intergrax.runtime.events.signals import emit_domain_signal
+
+emit_domain_signal(
+    ctx,
+    kind="agents.my_agent.risk_flagged",
+    payload=MyRiskFlaggedPayloadV1(...),
+)
+```
+
+Register `payload_schema_id` via extension SDK (`register_payload_schema(..., extension=True)`). Document `event_kind` in agent `ARCHITECTURE.md`. Tier-3 hooks subscribe with `kind_prefix="agents.my_agent."`.
+
+**Do not** import `RuntimeEventBus` or trace stores from Tier-2 agents.
+
 ---
 
 ## Appendix R — Reliability control plane closeout
