@@ -50,11 +50,11 @@ ScalingProfile (target) · ScalingPolicy · ScalingAction · ScalingSignal · Ca
 
 ## Active plan phases (verify status vs code reality)
 
-ECP-DOC · ECP-DEPTH (ECP-1..8, ECP-OBS) · ADR-SCALE-001/002 · cross-ref W-OPS.4 SLIs · ORCH GRAPH_BACKPRESSURE
+ECP-DOC · ECP-DEPTH · ECP-PROD Done · ADR-SCALE-001/002 · **Full Harness LC** (2026-06-17)
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-ECP-DEPTH scaffold not production autoscaling · Collector not wired to live GRAPH_BACKPRESSURE · K8s default factory health-only · Celery provisioner stub · Scheduler HITL bypass risk · AUDIT-IDEAL-30.4 in-memory probes · ECP-PROD backlog
+live K8s soak · nginx/ingress slug (INTEGRATIONS cross-ref) · approval queue test flake
 
 ---
 

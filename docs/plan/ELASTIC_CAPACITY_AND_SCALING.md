@@ -7,6 +7,8 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates ECP-PROD closeout).
+
 ---
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
@@ -321,3 +323,24 @@ Total ECP-DEPTH: 28 (excluding ECP-DOC)
 ---
 
 *End of Elastic Capacity and Scaling Implementation Plan.*
+
+---
+
+## Phase ECP-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — re-validates ECP-DOC + ECP-PROD + AUDIT-IDEAL-30.1/30.4; no open P0/P1  
+**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**ADR:** **No ADR needed**
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| ECP-LC-S1 | **Re-audit** — ECP register + honest maturity verdict | **Done** | High | No P0/P1 |
+| ECP-LC-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
+| ECP-LC-S3 | **Gate verification** | **Done** | High | 17/18 capacity tests · `check_production_capacity_adapters` |
+| ECP-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+
+**Deferred P2–P4:** `test_capacity_approval_queue_flow` event assertion flake · live K8s soak · nginx/ingress slug
+
+**Note:** Production adapter gate green; 1 unit test fails on `scale_requested` event collection (environment/timing).
+
+---

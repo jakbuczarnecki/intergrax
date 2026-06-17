@@ -6,6 +6,8 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates W-ADAPT 70/70 closeout).
+
 ---
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
@@ -248,5 +250,22 @@ W-ADAPT-0.2 → 0.3 → 0.4 → 0.5
 |------|------------|---------|
 | 2026-06-05 | W-ADAPT-0.1 | AHIA RFC + canon §54 + README; Phase W-ADAPT register opened in plan |
 | — | — | *(append row per merged PR)* |
+
+---
+
+## Phase AHI-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — re-validates W-ADAPT 70/70 + AUDIT-IDEAL-AHI.*; no open P0/P1  
+**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**ADR:** **No ADR needed**
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| AHI-LC-S1 | **Re-audit** — W-ADAPT register + L4 verdict | **Done** | High | No P0/P1 |
+| AHI-LC-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
+| AHI-LC-S3 | **Gate verification** | **Done** | High | 75 adaptive tests · `phase_w_adapt_closeout_gate` |
+| AHI-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+
+**Deferred P2–P4:** L4 adaptive thresholds product-gated · foundation model training out of scope
 
 ---
