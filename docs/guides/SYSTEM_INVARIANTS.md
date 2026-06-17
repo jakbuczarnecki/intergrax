@@ -219,3 +219,4 @@ REJECTED: Monolithic implementation plan files under plan/phases/
 2. Hub [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 3. **One** domain pair for your task ([`AGENTS.md`](../../AGENTS.md) task routing)  
 4. Author guides when building: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) · [`APPLICATION_CREATION_GUIDE.md`](APPLICATION_CREATION_GUIDE.md)
+5. Deep layer closeout (full domain): [`LAYER_COMPLETION_MODE.md`](LAYER_COMPLETION_MODE.md)

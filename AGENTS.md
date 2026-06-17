@@ -110,6 +110,7 @@ applications/    MAY import from agents/ and intergrax/
 | Available application environments | [applications/README.md](applications/README.md) |
 | Harness audit (32 layers) | [docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md](docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
 | System invariants (never violate) | [docs/guides/SYSTEM_INVARIANTS.md](docs/guides/SYSTEM_INVARIANTS.md) |
+| Layer completion (full domain closeout) | [docs/guides/LAYER_COMPLETION_MODE.md](docs/guides/LAYER_COMPLETION_MODE.md) |
 | Implementation journal | [docs/guides/implementation-journal/README.md](docs/guides/implementation-journal/README.md) |
 
 ---

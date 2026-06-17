@@ -26,6 +26,7 @@ docs/architecture/<DOMAIN>.md              ← what the layer is
 docs/plan/<DOMAIN>.md                      ← how to implement / status / tasks
 docs/guides/                               ← strategy, ideal model, audit, authoring
 docs/guides/SYSTEM_INVARIANTS.md           ← cross-domain “never violate” index (P2-ARCH-01)
+docs/guides/LAYER_COMPLETION_MODE.md       ← deep domain layer closeout workflow
 ```
 
 **22 domain pairs** (same basename in `architecture/` and `plan/`):
