@@ -12,7 +12,7 @@ plan_ref:
   - MODALITY-LC-S4
   - Full-Harness-LC-MODALITY
 status: completed
-commit: pending
+commit: e1e1c506
 adr: none — formal closeout; W-ML.0–W-ML.8 delivered 2026-06-02
 ---
 

@@ -12,7 +12,7 @@ plan_ref:
   - OBS-LC-S4
   - Full-Harness-LC-OBS
 status: completed
-commit: pending
+commit: c00cb317
 adr: none — formal closeout; OBS-EVOL-9 delivered 2026-06-17
 ---
 

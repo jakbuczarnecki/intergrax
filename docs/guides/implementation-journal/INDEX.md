@@ -5,8 +5,8 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-17-036 | 2026-06-17 | tier-0, tier-1 OBSERVABILITY | OBS-LC-S1–S4 · Full-Harness-LC-OBS | [OBSERVABILITY — Full Harness Layer Completion closeout](entries/2026-06-17/platform-obs-layer-completion-fh.md) | pending |
-| IJ-2026-06-17-035 | 2026-06-17 | tier-0, tier-1 MODALITY | MODALITY-LC-S1–S4 · Full-Harness-LC-MODALITY | [MODALITY — Full Harness Layer Completion closeout](entries/2026-06-17/platform-modality-layer-completion.md) | pending |
+| IJ-2026-06-17-036 | 2026-06-17 | tier-0, tier-1 OBSERVABILITY | OBS-LC-S1–S4 · Full-Harness-LC-OBS | [OBSERVABILITY — Full Harness Layer Completion closeout](entries/2026-06-17/platform-obs-layer-completion-fh.md) | c00cb317 |
+| IJ-2026-06-17-035 | 2026-06-17 | tier-0, tier-1 MODALITY | MODALITY-LC-S1–S4 · Full-Harness-LC-MODALITY | [MODALITY — Full Harness Layer Completion closeout](entries/2026-06-17/platform-modality-layer-completion.md) | e1e1c506 |
 | IJ-2026-06-17-034 | 2026-06-17 | tier-0, tier-1, tier-3 CONTEXT_ENGINEERING | CE-LC-S1–S4 · Full-Harness-LC-CE | [CONTEXT_ENGINEERING — Full Harness Layer Completion closeout](entries/2026-06-17/platform-ce-layer-completion-fh.md) | b4d580df |
 | IJ-2026-06-17-033 | 2026-06-17 | tier-0, tier-1, tier-3 MEMORY | MEMORY-LC-S1–S4 · Full-Harness-LC-MEMORY | [MEMORY — Full Harness Layer Completion closeout](entries/2026-06-17/platform-memory-layer-completion-fh.md) | 027685dc |
 | IJ-2026-06-17-032 | 2026-06-17 | tier-0, tier-3 RAG | RAG-LC-S1–S4 · Full-Harness-LC-RAG | [RAG — Full Harness Layer Completion closeout](entries/2026-06-17/platform-rag-layer-completion-fh.md) | 764f0b59 |
