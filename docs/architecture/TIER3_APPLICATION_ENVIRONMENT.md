@@ -17,7 +17,7 @@
 | [§20](#20-shadow-workspace-model) | Shadow workspace model |
 | [§21](#21-sandbox-model) | Sandbox model |
 | [§22](#22-application-environment-profile-canonical) | **ApplicationEnvironmentProfile** (composition root) |
-| [§22.6](#226-hierarchical-profile-bundles-target) | **Hierarchical profile bundles** (P1-ARCH-01 · ADR-APP-003) |
+| [§22.6](#226-hierarchical-profile-bundles) | **Hierarchical profile bundles** (P1-ARCH-01 · ADR-APP-003) |
 | [§23](#23-application-interaction-postures-canonical) | Interaction postures, routing, scenarios |
 | [§24](#24-application-contract) | **Application contract** (`ApplicationManifest`) |
 | [§25](#25-application-interface-run_task-facade-harnessapplication-and-applicationhost) | **Application interface:** `run_task()`, `HarnessApplication`, `ApplicationHost` |
@@ -234,9 +234,9 @@ Every Tier-3 application MUST:
 | [`guides/HARNESS_ENVIRONMENT.md`](../guides/HARNESS_ENVIRONMENT.md) | Lab stack operator guide |
 | [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md) | Hierarchical profile bundles decision |
 
-## 22.6 Hierarchical profile bundles (target)
+## 22.6 Hierarchical profile bundles
 
-**Status:** Architecture **accepted** · implementation **planned** (`APP-EVOL-8`) · **ADR:** [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md)
+**Status:** Architecture **accepted** · **M1 Done** · **M2 partial** · **M3 planned** (`APP-EVOL-8`) · **ADR:** [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md) · **Code:** `intergrax/applications/contracts/environment_profile/`
 
 ### 22.6.1 Problem
 

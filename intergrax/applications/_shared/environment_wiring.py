@@ -10,6 +10,7 @@ from typing import Any
 
 from intergrax.applications._shared.environment_conformance import (
     EnvironmentSkillToolConsistencyCheck,
+    ProfileInvariantValidator,
 )
 from intergrax.applications._shared.integration_health_wiring import probe_integration_profile_health
 from intergrax.applications._shared.context_wiring import bootstrap_application_context_catalog
@@ -241,6 +242,7 @@ def wire_application_environment(
             manifest.agents,
             env,
         )
+        ProfileInvariantValidator(fail_on_violation=False).validate(env)
         from intergrax.applications._shared.package_wiring import assert_manifest_package_closure
 
         assert_manifest_package_closure(

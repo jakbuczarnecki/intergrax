@@ -79,3 +79,33 @@ def _environment_skill_ids(env: ApplicationEnvironmentProfile) -> frozenset[str]
     from intergrax.skills.registry.factory import enabled_skill_ids_for_profile
 
     return frozenset(enabled_skill_ids_for_profile(env.skill_profile))
+
+
+class ProfileInvariantValidator:
+    """Cross-bundle semantic checks beyond roster/tool consistency (APP-EVOL-8)."""
+
+    def __init__(self, *, fail_on_violation: bool = True) -> None:
+        self._fail = fail_on_violation
+
+    def validate(self, env: ApplicationEnvironmentProfile) -> list[str]:
+        from intergrax.integrations.contracts.base import IntegrationCategory
+
+        violations: list[str] = []
+        if env.context_profile.enable_rag:
+            vector_slug = env.integration_profile.slug_for_category(IntegrationCategory.VECTOR_STORE)
+            if not vector_slug:
+                violations.append(
+                    "context.enable_rag=true requires integration_profile vector_store slug",
+                )
+        if env.context_profile.enable_websearch:
+            enabled_tools = set(env.tool_profile.enabled)
+            if (
+                "websearch.query" not in enabled_tools
+                and not env.tool_profile.register_all_catalog_bundles
+            ):
+                violations.append(
+                    "context.enable_websearch=true requires tool_profile websearch.query",
+                )
+        if violations and self._fail:
+            raise ApplicationManifestConformanceError("; ".join(violations))
+        return violations

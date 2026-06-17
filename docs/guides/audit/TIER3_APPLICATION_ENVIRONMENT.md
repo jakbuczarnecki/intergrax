@@ -42,19 +42,19 @@ Perform a **rigorous, evidence-backed audit** of the **Tier-3 Application Enviro
 
 ## Mission
 
-Audit **deployable application hosts** (architecture §24–§51): `ApplicationEnvironmentProfile` as composition root (§22.1 flat · §22.6 hierarchical bundles · ADR-APP-003), host contracts §25–§32, environment state §42, production gates §40/§46, evolution §49, platform ops §50, and author DX — without Nexus business logic or duplicate registries.
+Audit **deployable application hosts** (architecture §24–§51): ApplicationEnvironmentProfile as composition root, host contracts §25–§32, environment state §42, production gates §40/§46, evolution §49, platform ops §50, and author DX — without Nexus business logic or duplicate registries.
 
 ## Key symbols and contracts
 
-ApplicationEnvironmentProfile · HostMeta · SecurityEnvelope · CapabilityBundle · CognitionBundle · GovernanceBundle · TopologyBundle · IsolationBundle · ApplicationManifest · ApplicationHost · ApplicationEnvironmentState · EnvironmentSnapshot · ApplicationPackage · ApplicationRegistry · EnvironmentHealthScore · ApplicationOperationalOwnership · ApplicationRecoveryContract · AgentCertification · CapabilityGovernanceProfile · OrganizationalPolicyEnvelope · ExecutionMode
+ApplicationEnvironmentProfile · HostMeta · CapabilityBundle · CognitionBundle · GovernanceBundle · DomainPolicyFragments · ProfileInvariantValidator · ApplicationManifest · EnvironmentSnapshot · bundle_normalized_payload
 
 ## Active plan phases (verify status vs code reality)
 
-H-APP Done · APP-CON-1..8 Done · APP-PROD-1..9 Done · APP-EVOL-1..7 Done · **APP-EVOL-8 Planned** (hierarchical bundles · P1-ARCH-01) · APP-OPS-1..4 Done · APP-CON-DX Done
+H-APP Done · APP-CON-1..8 Done · APP-PROD-1..9 Done · APP-EVOL-1..7 Done · APP-EVOL-8 M1 Done · APP-OPS-1..4 Done · APP-CON-DX Done
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-APP-EVOL-8 hierarchical profile bundles (§22.6) — architecture **accepted**, code **not started** · CFG-14 LKW hybrid incomplete · MCP optional uneven · queue worker not scaffold-default · policy_coverage health proxy (UC-A7 golden deferred) · multi-tenant registry store deferred
+CFG-14 LKW hybrid incomplete · MCP optional uneven · queue worker not scaffold-default · policy_coverage health proxy (UC-A7 golden deferred) · multi-tenant registry store deferred
 
 ---
 
@@ -74,10 +74,11 @@ APP-EVOL-8 hierarchical profile bundles (§22.6) — architecture **accepted**, 
 
 ```text
 applications/*/host/factory.py
-intergrax/applications/contracts/environment_profile.py · application_registry.py · environment_health_score.py
-intergrax/applications/_shared/environment_wiring.py · harness_host_runtime.py · registry_ops_wiring.py
+intergrax/applications/contracts/environment_profile/ · application_registry.py · environment_health_score.py
+intergrax/applications/_shared/environment_wiring.py · harness_host_runtime.py · environment_snapshot_wiring.py
+intergrax/applications/_shared/reference_capability_bundle.py · environment_conformance.py
 intergrax/applications/_shared/*_wiring.py (snapshot, migration, package, health_score, recovery, certification, …)
-scripts/check_application_production_gates.py · check_application_registry.py · check_application_health_score.py
+scripts/check_application_production_gates.py · check_environment_profile_bundle_schema.py
 intergrax/cli/apps.py · envs.py · doctor_health_app.py · doctor_diff_app.py
 docs/guides/APPLICATION_CREATION_GUIDE.md
 ```
@@ -106,15 +107,19 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 14. ApplicationRecoveryContract + ARCHITECTURE recovery docs (APP-EVOL-5).
 15. ApplicationEnvironmentDiff + doctor diff-app (APP-EVOL-6).
 16. ApplicationPackage + package.json from scaffold (APP-EVOL-7).
-17. STRICT capability graph deploy gate + blast radius (APP-OPS-1).
-18. ApplicationOperationalOwnership on product manifests (APP-OPS-2).
-19. EnvironmentHealthScore + doctor health-app (APP-OPS-3).
-20. ApplicationRegistry + EnvironmentRegistry + apps/envs CLI (APP-OPS-4).
-21. check_application_production_gates.py aggregates APP-PROD + APP-CON + APP-EVOL + APP-OPS.
-22. Roster ⊆ skill/tool profiles (EnvironmentSkillToolConsistencyCheck).
-23. IdentityProfile + budget enforcement on STRICT product hosts.
-24. Deploy triad present on scaffolded standard hosts.
-25. APPLICATION_CREATION_GUIDE.md aligns with §31 · §45 · §47.
+17. APP-EVOL-8 M1: nested profile bundles + flat property shims (ADR-APP-003).
+18. bundle_normalized_payload on EnvironmentSnapshot digests (APP-EVOL-8.3).
+19. ProfileInvariantValidator cross-bundle checks (APP-EVOL-8).
+20. check_environment_profile_bundle_schema.py (APP-EVOL-8.7).
+21. STRICT capability graph deploy gate + blast radius (APP-OPS-1).
+22. ApplicationOperationalOwnership on product manifests (APP-OPS-2).
+23. EnvironmentHealthScore + doctor health-app (APP-OPS-3).
+24. ApplicationRegistry + EnvironmentRegistry + apps/envs CLI (APP-OPS-4).
+25. check_application_production_gates.py aggregates APP-PROD + APP-CON + APP-EVOL + APP-OPS.
+26. Roster ⊆ skill/tool profiles (EnvironmentSkillToolConsistencyCheck).
+27. IdentityProfile + budget enforcement on STRICT product hosts.
+28. Deploy triad present on scaffolded standard hosts.
+29. APPLICATION_CREATION_GUIDE.md aligns with §31 · §45 · §47.
 
 ---
 
@@ -189,6 +194,7 @@ uv run pytest tests/unit/applications/ -q
 uv run python scripts/check_application_production_gates.py
 uv run python scripts/check_application_registry.py
 uv run python scripts/check_application_health_score.py
+uv run python scripts/check_environment_profile_bundle_schema.py
 python scripts/check_harness_no_getattr.py
 ```
 

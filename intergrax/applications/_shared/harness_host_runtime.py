@@ -229,9 +229,15 @@ def build_harness_host_runtime(
     )
     from intergrax.applications._shared.environment_snapshot_wiring import (
         apply_environment_snapshot_wiring,
+        cache_deploy_environment_snapshot,
     )
 
     apply_capability_alias_wiring(nexus_loop, environment=environment)
+    cache_deploy_environment_snapshot(
+        resolved_manifest,
+        environment,
+        registry_snapshot=env_wiring.registry_snapshot,
+    )
     apply_environment_snapshot_wiring(
         nexus_loop,
         manifest=resolved_manifest,

@@ -909,14 +909,15 @@ tests/acceptance/agent_os/ (04, 05, 05b HITL/checkpoint)""",
             "and author DX — without Nexus business logic or duplicate registries."
         ),
         "code": """applications/*/host/factory.py
-intergrax/applications/contracts/environment_profile.py · application_registry.py · environment_health_score.py
-intergrax/applications/_shared/environment_wiring.py · harness_host_runtime.py · registry_ops_wiring.py
+intergrax/applications/contracts/environment_profile/ · application_registry.py · environment_health_score.py
+intergrax/applications/_shared/environment_wiring.py · harness_host_runtime.py · environment_snapshot_wiring.py
+intergrax/applications/_shared/reference_capability_bundle.py · environment_conformance.py
 intergrax/applications/_shared/*_wiring.py (snapshot, migration, package, health_score, recovery, certification, …)
-scripts/check_application_production_gates.py · check_application_registry.py · check_application_health_score.py
+scripts/check_application_production_gates.py · check_environment_profile_bundle_schema.py
 intergrax/cli/apps.py · envs.py · doctor_health_app.py · doctor_diff_app.py
 docs/guides/APPLICATION_CREATION_GUIDE.md""",
-        "key_symbols": "ApplicationEnvironmentProfile · ApplicationManifest · ApplicationHost · ApplicationEnvironmentState · EnvironmentSnapshot · ApplicationPackage · ApplicationRegistry · EnvironmentHealthScore · ApplicationOperationalOwnership · ApplicationRecoveryContract · AgentCertification · CapabilityGovernanceProfile · OrganizationalPolicyEnvelope · ExecutionMode",
-        "active_phases": "H-APP Done · APP-CON-1..8 Done · APP-PROD-1..9 Done · APP-EVOL-1..7 Done · APP-OPS-1..4 Done · APP-CON-DX Done",
+        "key_symbols": "ApplicationEnvironmentProfile · HostMeta · CapabilityBundle · CognitionBundle · GovernanceBundle · DomainPolicyFragments · ProfileInvariantValidator · ApplicationManifest · EnvironmentSnapshot · bundle_normalized_payload",
+        "active_phases": "H-APP Done · APP-CON-1..8 Done · APP-PROD-1..9 Done · APP-EVOL-1..7 Done · APP-EVOL-8 M1 Done · APP-OPS-1..4 Done · APP-CON-DX Done",
         "known_gaps": "CFG-14 LKW hybrid incomplete · MCP optional uneven · queue worker not scaffold-default · policy_coverage health proxy (UC-A7 golden deferred) · multi-tenant registry store deferred",
         "dimensions": [
             "ApplicationManifest + full profile on product hosts (§45 checklist).",
@@ -935,6 +936,10 @@ docs/guides/APPLICATION_CREATION_GUIDE.md""",
             "ApplicationRecoveryContract + ARCHITECTURE recovery docs (APP-EVOL-5).",
             "ApplicationEnvironmentDiff + doctor diff-app (APP-EVOL-6).",
             "ApplicationPackage + package.json from scaffold (APP-EVOL-7).",
+            "APP-EVOL-8 M1: nested profile bundles + flat property shims (ADR-APP-003).",
+            "bundle_normalized_payload on EnvironmentSnapshot digests (APP-EVOL-8.3).",
+            "ProfileInvariantValidator cross-bundle checks (APP-EVOL-8).",
+            "check_environment_profile_bundle_schema.py (APP-EVOL-8.7).",
             "STRICT capability graph deploy gate + blast radius (APP-OPS-1).",
             "ApplicationOperationalOwnership on product manifests (APP-OPS-2).",
             "EnvironmentHealthScore + doctor health-app (APP-OPS-3).",
@@ -957,6 +962,7 @@ docs/guides/APPLICATION_CREATION_GUIDE.md""",
             "uv run python scripts/check_application_production_gates.py",
             "uv run python scripts/check_application_registry.py",
             "uv run python scripts/check_application_health_score.py",
+            "uv run python scripts/check_environment_profile_bundle_schema.py",
             "python scripts/check_harness_no_getattr.py",
         ],
         "production_baseline": "Reference hosts (legal, research, dispute_sim, local_workspace) · enterprise FastAPI agent host · ops registry + health score on release",
