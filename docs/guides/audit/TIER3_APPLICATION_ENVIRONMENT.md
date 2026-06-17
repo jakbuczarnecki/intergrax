@@ -50,7 +50,7 @@ ApplicationEnvironmentProfile · HostMeta · CapabilityBundle · CognitionBundle
 
 ## Active plan phases (verify status vs code reality)
 
-H-APP Done · APP-CON-1..8 Done · APP-PROD-1..9 Done · APP-EVOL-1..7 Done · APP-EVOL-8 M1 Done · APP-OPS-1..4 Done · APP-CON-DX Done
+H-APP Done · APP-CON/PROD/EVOL/OPS Done · APP-EVOL-8 M1 Done · **Full Harness LC** (2026-06-17)
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 

@@ -14,6 +14,8 @@
 
 **Fidelity rule:** Every architecture §20–§51 normative row MUST map to a plan ID in [§Architecture fidelity matrix](#architecture-fidelity-matrix--20-51) and a verification artifact in [§Fidelity verification gates](#fidelity-verification-gates). Completing the **open APP-\*** backlog is sufficient for implementation to match frozen architecture — no new primitives without ADR.
 
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates H-APP + APP-CON/EVOL/OPS closeout).
+
 ---
 
 ## Architecture fidelity matrix — §20–§51
@@ -613,5 +615,22 @@ uv run pytest -m gate -q
 |--------|-------|-----|
 | LC-DOC | Doc sync §49–§50 headers · hub · governance audit · this register | No `(target)` on **Done** APP-* rows |
 | LC-IMPL-1 | `runtime_config_bridge` import fix | `uv run pytest tests/unit/applications/ -q` green |
+
+---
+
+## Phase TIER3-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — re-validates H-APP + APP-CON/PROD/EVOL/OPS; no open P0/P1  
+**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**ADR:** **No ADR needed**
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| TIER3-LC-S1 | **Re-audit** — H-APP register + host verdict | **Done** | High | No P0/P1 |
+| TIER3-LC-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
+| TIER3-LC-S3 | **Gate verification** | **Done** | High | applications unit tests · host wiring gates |
+| TIER3-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+
+**Deferred P2–P4:** APP-EVOL-8 M3 spec_version 2.0 · CFG-14 LKW hybrid · queue worker scaffold-default · marketplace UI
 
 ---
