@@ -109,6 +109,7 @@ applications/    MAY import from agents/ and intergrax/
 | Available agents (roster) | [agents/README.md](agents/README.md) |
 | Available application environments | [applications/README.md](applications/README.md) |
 | Harness audit (32 layers) | [docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md](docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
+| Architecture audit orchestration (22 pairs) | [docs/guides/audit/README.md](docs/guides/audit/README.md) · `scripts/init_architecture_audit_run.py` |
 | System invariants (never violate) | [docs/guides/SYSTEM_INVARIANTS.md](docs/guides/SYSTEM_INVARIANTS.md) |
 | Layer completion (full domain closeout) | [docs/guides/LAYER_COMPLETION_MODE.md](docs/guides/LAYER_COMPLETION_MODE.md) |
 | Implementation journal | [docs/guides/implementation-journal/README.md](docs/guides/implementation-journal/README.md) |

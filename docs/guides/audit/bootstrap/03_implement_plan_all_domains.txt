@@ -1,0 +1,9 @@
+Harness Architecture Audit — Mode B (implement open plan items, all 22 domain pairs).
+Canonical orchestrator: docs/guides/audit/IMPLEMENT_ORCHESTRATOR.md
+Skim: docs/guides/SYSTEM_INVARIANTS.md
+Progress: docs/guides/audit/results/YYYY-MM-DD/progress.json (init: uv run python scripts/init_architecture_audit_run.py --date YYYY-MM-DD --mode implement_plan).
+Journal: docs/guides/implementation-journal/ when behavior changes.
+Domain order: PLATFORM_FOUNDATION → UNIFIED_EXECUTION_RUNTIME → ORCHESTRATION → NEXUS_EXECUTION_FLOW → REASONING_AND_COGNITION → AGENT_CONTRACTS_AND_ASSEMBLY → LLM_ADAPTERS → TOOLS → CODE_CRAFT → SKILLS → INTEGRATIONS → RAG → MEMORY → CONTEXT_ENGINEERING → MODALITY → OBSERVABILITY → RELIABILITY_FAILURE_AND_HITL → CRITIC_VERIFICATION → ADAPTIVE_HARNESS_INTELLIGENCE → ELASTIC_CAPACITY_AND_SCALING → EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE → TIER3_APPLICATION_ENVIRONMENT.
+Per domain: read docs/plan/<DOMAIN>.md + docs/architecture/<DOMAIN>.md; pick one coherent open P0/P1 item (one PR-sized slice); implement minimal diff; run domain gates/tests; mark plan row Done; journal entry if needed; update progress.json; brief checkpoint; continue.
+Rules: no fresh full audit; no Phase K / §6.3 without reprioritization; reuse Tier-0; safety fuse if plan needs architecture change not in canon; one domain = atomic unit; commits only on operator request.
+Operator language: Polish. Repo artifacts: English.
