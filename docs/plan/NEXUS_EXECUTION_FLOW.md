@@ -66,7 +66,7 @@
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **FLOW-MAINT-01** | Code | P2 | **Done** | Wire `ResiliencePolicy.allow_partial_result` into `graph_runner` lifecycle transitions | When `False`, non-all-completed multi-node graph → `FAILED` not `PARTIALLY_COMPLETED`; unit/integration test |
 | 2 | **FLOW-MAINT-02** | Docs | P3 | **Planned** | Production-ready checklist in architecture §1.4 (strict profile + W-OPS SLO + reference host presets) | Operator runbook cross-ref; no new mechanisms |
-| 3 | **FLOW-MAINT-03** | Test/CI | P3 | **Planned** | Windows acceptance teardown guard for `signals.db` lock flake | `tests/acceptance/agent_os/` stable on Windows CI |
+| 3 | **FLOW-MAINT-03** | Test/CI | P3 | **Done** | Windows acceptance teardown guard for `signals.db` lock flake | `tests/acceptance/agent_os/` stable on Windows CI |
 | 4 | **FLOW-MAINT-04** | Test | P3 | **Planned** | Bootstrap fail-fast test when engine planner path lacks `llm_adapter` | `nexus_factory` / planning wiring raises typed error; gate test |
 
 **Suggested PR order:** FLOW-MAINT-01 → FLOW-MAINT-04 → FLOW-MAINT-03 → FLOW-MAINT-02 (doc).
