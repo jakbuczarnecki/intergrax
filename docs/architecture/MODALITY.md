@@ -183,6 +183,18 @@ Agent = LLMProfile + ModalityProfile + Skill Set + Policy Bundle + Context Profi
 | `tts_voice_id` | Default voice for `speech.synthesize` |
 | `require_deterministic_cv` | Force Plane C over Plane A for regulated domains |
 
+### Three-plane ops runbook (MOD-MAINT-03)
+
+| Plane | Operator action | When to use | Escalation |
+|-------|-----------------|-------------|------------|
+| **A — Generative** | Route via `ModalityProfile.allowed_planes` includes `generative`; monitor `llm_metrics` token/cost | Multimodal Q&A, captioning, unstructured media understanding | LLM adapter failover — [`LLM_ADAPTERS.md`](../plan/LLM_ADAPTERS.md) |
+| **B — Ingest** | Use RAG/parser pipeline; never bypass `ParserPipeline` for prod ingest | Document/audio ingest to retrieval index | RAG ops — [`RAG.md`](../plan/RAG.md) §6.1av |
+| **C — Deterministic CV/ML** | Set `require_deterministic_cv=true`; verify `opencv_runtime_available()` in runner; use harness registry artifacts | Regulated vision, golden-test CV, Celery modality jobs | MOD-MAINT OpenCV probe + `tests/unit/model_inference/` |
+
+**Boundary rule:** Plane C outputs are tool-attributed (`modality_metrics`); Plane A outputs are LLM-attributed — do not mix cost attribution on a single step without explicit `ModalityProfile` plane selection.
+
+**MOD-MAINT-04 backlog:** Triton/HF remote serving depth remains incremental post W-ML — register only; no online training scope.
+
 ---
 
 ## Observability & cost
