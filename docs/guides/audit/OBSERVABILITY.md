@@ -54,7 +54,7 @@ OBS-BUS 0–7 Done · OBS-EVOL-9 Planned · ADR-OBS-001 · ADR-OBS-003
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-OBS-EVOL-9 implementation · spine consolidation pre-release · product dashboards §6.3a
+OBS-LC Done · OBS-EVOL-9 M0–M3 Done · runtime_event.v2 preview registered · product dashboards §6.3a → Phase K
 
 ---
 

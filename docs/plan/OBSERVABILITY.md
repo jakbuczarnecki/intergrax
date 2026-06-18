@@ -293,10 +293,10 @@ python scripts/check_harness_adr.py
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **OBS-MAINT-01** | Schema | P3 | **Planned** | OBS-EVOL-9.9 — `runtime_event.v2` schema evolution (post-publication) | Migration doc + conformance tests |
-| 2 | **OBS-MAINT-02** | Cross-ref | P4 | **Planned** | Product dashboards §6.3a — cross-ref [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) Phase K owner | No duplicate OBS product scope |
-| 3 | **OBS-MAINT-03** | Docs | P3 | **Planned** | Audit prompt sync — OBS-EVOL-9 M0–M3 **Done** in known gaps | `docs/guides/audit/OBSERVABILITY.md` matches LC |
-| 4 | **OBS-MAINT-04** | Docs | P3 | **Planned** | Pre-release spine consolidation checklist — operator runbook row | Checklist in architecture or guides |
+| 1 | **OBS-MAINT-01** | Schema | P3 | **Done** | OBS-EVOL-9.9 — `runtime_event.v2` schema evolution (post-publication) | `PREVIEW_RUNTIME_SCHEMA_VERSIONS` + conformance tests |
+| 2 | **OBS-MAINT-02** | Cross-ref | P4 | **Done** | Product dashboards §6.3a — cross-ref [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) Phase K owner | Architecture cross-ref; no duplicate OBS product scope |
+| 3 | **OBS-MAINT-03** | Docs | P3 | **Done** | Audit prompt sync — OBS-EVOL-9 M0–M3 **Done** in known gaps | `docs/guides/audit/OBSERVABILITY.md` regenerated |
+| 4 | **OBS-MAINT-04** | Docs | P3 | **Done** | Pre-release spine consolidation checklist — operator runbook row | Checklist in architecture §pre-release |
 
 **Suggested PR order:** OBS-MAINT-03 → OBS-MAINT-04 → OBS-MAINT-01 → OBS-MAINT-02.
 

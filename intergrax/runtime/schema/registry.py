@@ -41,10 +41,16 @@ RUNTIME_SCHEMA_REGISTRY: dict[str, str] = {
     "nexus_task_worker": "nexus_task_worker.v1",
 }
 
+# Post-publication preview schema ids accepted by conformance gates (OBS-EVOL-9.9).
+PREVIEW_RUNTIME_SCHEMA_VERSIONS: dict[str, frozenset[str]] = {
+    "runtime_event": frozenset({"runtime_event.v2"}),
+}
+
 
 def current_runtime_version() -> RuntimeVersionInfo:
+    preview = {v for versions in PREVIEW_RUNTIME_SCHEMA_VERSIONS.values() for v in versions}
     return RuntimeVersionInfo(
-        supported_schemas=frozenset(RUNTIME_SCHEMA_REGISTRY.values()),
+        supported_schemas=frozenset(RUNTIME_SCHEMA_REGISTRY.values()) | preview,
     )
 
 
@@ -52,4 +58,7 @@ def validate_schema_version(schema_id: str, version: str) -> bool:
     expected = RUNTIME_SCHEMA_REGISTRY.get(schema_id)
     if expected is None:
         return False
-    return version == expected
+    if version == expected:
+        return True
+    previews = PREVIEW_RUNTIME_SCHEMA_VERSIONS.get(schema_id, frozenset())
+    return version in previews

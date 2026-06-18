@@ -491,10 +491,14 @@ Canonical payload families (canon §42.23.1):
 | Item | Notes |
 |------|-------|
 | Layered identity (`event_kind`, `EventCatalog`) | **OBS-EVOL-9** · ADR-OBS-003 · pre-release spine consolidation |
-| `RuntimeEvent.payload` Pydantic field | Migrate from `Dict[str, Any]` to discriminated union on the model itself |
-| Store retention policy | Platform-wide TTL / archival (future) |
-| OTLP protobuf push | Journal export ships OTLP-style JSON; vendor protobuf encoders remain optional integrations |
-| Legacy dual emit entry | `RuntimeState.trace_event()` coexists with `ObservabilityEmitter`; both route through the same bridge |
+| `runtime_event.v2` preview | **OBS-MAINT-01** — accepted via `PREVIEW_RUNTIME_SCHEMA_VERSIONS`; canonical wire format remains `runtime_event.v1` until migration |
+
+### Pre-release spine consolidation checklist (OBS-MAINT-04)
+
+1. `uv run python scripts/check_observability_gates.py` green  
+2. Payload registry includes all `RuntimeEventType` mappings  
+3. Tenant propagation on hot-path events (`check_runtime_event_tenant_propagation.py`)  
+4. Product dashboards deferred to [`plan/PLATFORM_FOUNDATION.md`](../plan/PLATFORM_FOUNDATION.md) §6.3a (Phase K) — **OBS-MAINT-02**
 
 ### 8.3 Extension rules for developers
 
