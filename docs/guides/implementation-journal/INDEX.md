@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-18-020 | 2026-06-18 | tier-0..2 multi-domain | ACP/FLOW/UAEP/ECC/MOD/LLM/TOOL MAINT | [MAINT P2 batch — ACP boundary_demo, graph partial, UAEP tenant, codecraft override, OpenCV probe, doctor gates](entries/2026-06-18/maint-acp-flow-uaep-batch.md) | pending |
 | IJ-2026-06-18-019 | 2026-06-18 | tier-3 TIER3_APPLICATION_ENVIRONMENT | T3-MAINT-01..04 | [T3-MAINT-01..04 — Interactive layer 22 audit plan registration (batch mode — final layer)](entries/2026-06-18/tier3-audit-maint-01-04-plan-register.md) | 769e6293 |
 | IJ-2026-06-18-018 | 2026-06-18 | tier-0, tier-3 EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE | DX-MAINT-01..04 | [DX-MAINT-01..04 — Interactive layer 21 audit plan registration (batch mode)](entries/2026-06-18/dx-audit-maint-01-04-plan-register.md) | 146c9bc5 |
 | IJ-2026-06-18-017 | 2026-06-18 | tier-1 ELASTIC_CAPACITY_AND_SCALING | ECP-MAINT-01..04 | [ECP-MAINT-01..04 — Interactive layer 20 audit plan registration (batch mode)](entries/2026-06-18/ecp-audit-maint-01-04-plan-register.md) | 125e66ff |
