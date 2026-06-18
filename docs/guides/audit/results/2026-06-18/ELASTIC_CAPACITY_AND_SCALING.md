@@ -1,7 +1,7 @@
 # Audit result — `ELASTIC_CAPACITY_AND_SCALING`
 
-**Run:** 2026-06-18 · **Mode:** audit_only  
-**Auditor:** cursor-agent · **Verdict:** mature_revalidated
+**Run:** 2026-06-18 · **Mode:** audit_only (interactive layer 20)  
+**Auditor:** cursor-agent · **Verdict:** L3 mature_revalidated
 
 ---
 
@@ -10,33 +10,44 @@
 | Dimension | Score |
 |-----------|-------|
 | Architecture completeness | 93 |
-| Production readiness | 91 |
+| Production readiness | 92 |
 | Documentation consistency | 94 |
-| Implementation consistency | 92 |
+| Implementation consistency | 93 |
 
 ---
 
 ## Findings
 
-No open P0/P1 in `ELASTIC_CAPACITY_AND_SCALING` scope. Prior Layer Completion closeout revalidated.
+| ID | Severity | Finding | Evidence | Status |
+|----|----------|---------|----------|--------|
+| ECP-GAP-01 | P2 | `test_capacity_approval_queue_flow` flake risk | plan LC note | **planned** (ECP-MAINT-01) |
+| ECP-GAP-02 | P3 | Live K8s soak | deferred | **planned** (ECP-MAINT-02) |
+| ECP-GAP-03 | P4 | nginx/ingress slug | INT cross-ref | **planned** (ECP-MAINT-03) |
+| ECP-GAP-04 | P3 | Capacity suite not in AGENTS.md verification | LC-S3 | **planned** (ECP-MAINT-04) |
+
+No open P0/P1. ECP-PROD **Done** · ECP-LC **Done**. Revalidation: **18/18** capacity tests green.
+
+---
+
+## Plan sync
+
+| Action | Target | Notes |
+|--------|--------|-------|
+| Plan row added/updated | `docs/plan/ELASTIC_CAPACITY_AND_SCALING.md` §6.1av | ECP-MAINT-01..04 |
 
 ---
 
 ## Gates executed
 
 ```bash
-uv run pytest tests/unit/runtime/capacity/test_ecp_depth_gate.py -q
+uv run pytest tests/unit/runtime/capacity/ -q
+uv run python scripts/check_production_capacity_adapters.py
 ```
 
----
-
-## Backlog P2–P4 (deferred)
-
-- test_capacity_approval_queue_flow flake — P2
-- Live K8s soak — P3 ops
+All green.
 
 ---
 
 ## Recommendation
 
-**Architecturally Mature**
+**Architecturally Mature (L3)**
