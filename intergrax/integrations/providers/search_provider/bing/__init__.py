@@ -8,6 +8,7 @@ Implementation lives under ``intergrax.websearch.providers.bing_provider``;
 compose only through this package.
 """
 
+from intergrax.utils.lazy_export import export_from_bundle
 from intergrax.integrations.providers.search_provider.bing.config import (
     DEFAULT_TIMEOUT_SECONDS,
     ENV_BING_API_KEY,
@@ -51,5 +52,5 @@ def __getattr__(name: str):
     if name in _BUNDLE_EXPORTS:
         from intergrax.integrations.providers.search_provider.bing import bundle as _bundle
 
-        return getattr(_bundle, name)
+        return export_from_bundle(_bundle, name, _BUNDLE_EXPORTS)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

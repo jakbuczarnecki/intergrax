@@ -24,3 +24,4 @@ LLM_INSTRUCTIONS.txt
 .pytest_cache/
 
 _external_apps/
+docs/_external/

@@ -1,6 +1,6 @@
 # Tier-3 application layer — readiness checklist
 
-**Status:** Ready to generate new deployable applications (Phase N complete).
+**Status:** Ready to generate new deployable applications (Phase N complete). **Platform maturity:** APP-CON · APP-PROD · APP-EVOL · APP-OPS registers **Done** — see [TIER3 plan §Master backlog](../docs/plan/TIER3_APPLICATION_ENVIRONMENT.md#master-implementation-backlog-app-unified). Enterprise marketplace UI and signed package distribution are **P4** (not required for host authoring).
 
 ## Generate a new application
 

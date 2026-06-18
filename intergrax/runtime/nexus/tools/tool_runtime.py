@@ -199,6 +199,13 @@ class ToolRuntime:
             run_tools_context,
             run_websearch_context,
         )
+        from intergrax.runtime.nexus.context.memory_context_invocation import (
+            run_longterm_memory_context,
+            run_session_semantic_recall_context,
+        )
+        from intergrax.runtime.nexus.context.runtime_state_handle_bridge import (
+            merge_provider_metadata_into_request,
+        )
         from intergrax.runtime.nexus.tools.tool_access_policy import ToolAccessPolicy
         from intergrax.runtime.policy.tool_policy_resolution import resolve_allowed_tools_from_config
         from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
@@ -225,6 +232,10 @@ class ToolRuntime:
                 ),
                 level=TraceLevel.WARNING,
             )
+
+        await run_longterm_memory_context(state)
+        await run_session_semantic_recall_context(state)
+        merge_provider_metadata_into_request(state)
 
         if plan.use_rag:
             if cfg.enable_rag:

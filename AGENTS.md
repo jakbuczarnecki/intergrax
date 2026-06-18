@@ -29,8 +29,9 @@ Tier-3  applications/        Deployable product environments
 
 1. Read [README.md — Start here](README.md#start-here) for documentation navigation
 2. Read [docs/intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) — pick your domain pair from the table
-3. Read **both** `docs/architecture/<DOMAIN>.md` and `docs/plan/<DOMAIN>.md` for that domain only
-4. Follow the work cycle in [docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md):
+3. Skim [docs/guides/SYSTEM_INVARIANTS.md](docs/guides/SYSTEM_INVARIANTS.md) — cross-domain rules you must not break (P2-ARCH-01)
+4. Read **both** `docs/architecture/<DOMAIN>.md` and `docs/plan/<DOMAIN>.md` for that domain only
+5. Follow the work cycle in [docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md):
 
 ```text
 ANALIZA → OCENA ARCHITEKTURY → OCENA PLANU → PROPOZYCJA USPRAWNIEŃ
@@ -40,6 +41,8 @@ ANALIZA → OCENA ARCHITEKTURY → OCENA PLANU → PROPOZYCJA USPRAWNIEŃ
 ---
 
 ## Hard rules (never violate)
+
+Full cross-domain index: [docs/guides/SYSTEM_INVARIANTS.md](docs/guides/SYSTEM_INVARIANTS.md) (`SYS-INV-*`, P2-ARCH-01). Summary below — when in doubt, use the index and linked domain canon.
 
 ### Tier dependency boundaries
 
@@ -59,7 +62,7 @@ applications/    MAY import from agents/ and intergrax/
 ### Documentation
 
 - **One source of truth per topic** — `docs/` root = hub only; no parallel guides
-- Strategy / ideal / audit → `docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`, `IDEAL_HARNESS_AI_ARCHITECTURE.md`, `INTEGRAX_HARNESS_AUDIT_MAP.md`
+- Strategy / ideal / audit / invariants → `docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`, `IDEAL_HARNESS_AI_ARCHITECTURE.md`, `INTEGRAX_HARNESS_AUDIT_MAP.md`, `SYSTEM_INVARIANTS.md`
 - Architecture hub → `docs/intergrax_runtime_architecture.md`
 - Domain pairs → `docs/architecture/<DOMAIN>.md` ↔ `docs/plan/<DOMAIN>.md` (**1:1**, same filename)
 - Global ladder, DoD, product backlog → `docs/plan/PLATFORM_FOUNDATION.md`
@@ -106,6 +109,9 @@ applications/    MAY import from agents/ and intergrax/
 | Available agents (roster) | [agents/README.md](agents/README.md) |
 | Available application environments | [applications/README.md](applications/README.md) |
 | Harness audit (32 layers) | [docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md](docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
+| Architecture audit orchestration (22 pairs) | [docs/guides/audit/README.md](docs/guides/audit/README.md) · `scripts/init_architecture_audit_run.py` |
+| System invariants (never violate) | [docs/guides/SYSTEM_INVARIANTS.md](docs/guides/SYSTEM_INVARIANTS.md) |
+| Layer completion (full domain closeout) | [docs/guides/LAYER_COMPLETION_MODE.md](docs/guides/LAYER_COMPLETION_MODE.md) |
 | Implementation journal | [docs/guides/implementation-journal/README.md](docs/guides/implementation-journal/README.md) |
 
 ---
@@ -124,10 +130,11 @@ uv run intergrax doctor
 ## Verification (required after harness changes)
 
 ```bash
-uv run pytest -m gate -q
+uv run pytest -m "gate and not no_ci" -q
 python scripts/check_harness_no_getattr.py
 uv run python scripts/check_observability_gates.py
 python scripts/check_docs_domain_pairs.py
+python scripts/check_reasoning_gates.py
 python scripts/check_implementation_journal.py
 python scripts/check_harness_adr.py
 uv run python scripts/check_agent_acp_close_ci.py

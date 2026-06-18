@@ -46,6 +46,30 @@ def application_diagnostic_schema_id(app_slug: str, name: str) -> str:
     return f"applications.{app_slug}.diag.{name}"
 
 
+def agent_signal_schema_id(agent_slug: str, name: str) -> str:
+    _validate_slug(agent_slug, label="agent_slug")
+    _validate_slug(name, label="signal name")
+    return f"agents.{agent_slug}.{name}.v1"
+
+
+def agent_signal_event_kind(agent_slug: str, name: str) -> str:
+    _validate_slug(agent_slug, label="agent_slug")
+    _validate_slug(name, label="signal name")
+    return f"agents.{agent_slug}.{name}"
+
+
+def application_signal_schema_id(app_slug: str, name: str) -> str:
+    _validate_slug(app_slug, label="application_slug")
+    _validate_slug(name, label="signal name")
+    return f"applications.{app_slug}.{name}.v1"
+
+
+def application_signal_event_kind(app_slug: str, name: str) -> str:
+    _validate_slug(app_slug, label="application_slug")
+    _validate_slug(name, label="signal name")
+    return f"applications.{app_slug}.{name}"
+
+
 def assert_agent_diagnostic_schema_id(schema_id: str, *, agent_slug: str) -> None:
     _validate_slug(agent_slug, label="agent_slug")
     expected = f"agents.{agent_slug}.diag."
@@ -99,9 +123,18 @@ def register_application_diagnostic_payload(
     return schema_cls
 
 
-def register_extension_runtime_payload(schema_cls: type[TRuntime]) -> type[TRuntime]:
+def register_extension_runtime_payload(
+    schema_cls: type[TRuntime],
+    *,
+    event_kind: str | None = None,
+) -> type[TRuntime]:
     assert_extension_runtime_schema_id(schema_cls.schema_id)
-    return register_payload_schema(schema_cls, extension=True)
+    registered = register_payload_schema(schema_cls, extension=True)
+    if event_kind is not None:
+        from intergrax.runtime.events.event_kind_registry import register_event_kind
+
+        register_event_kind(event_kind, schema_cls.schema_id)
+    return registered
 
 
 def get_registered_diagnostic_payload(schema_id: str) -> type[DiagnosticPayload] | None:
@@ -124,5 +157,9 @@ class PayloadSchemaRegistry:
         return register_application_diagnostic_payload(schema_cls, app_slug=app_slug)
 
     @staticmethod
-    def register_runtime_extension(schema_cls: type[TRuntime]) -> type[TRuntime]:
-        return register_extension_runtime_payload(schema_cls)
+    def register_runtime_extension(
+        schema_cls: type[TRuntime],
+        *,
+        event_kind: str | None = None,
+    ) -> type[TRuntime]:
+        return register_extension_runtime_payload(schema_cls, event_kind=event_kind)

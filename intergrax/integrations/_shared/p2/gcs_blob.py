@@ -4,6 +4,7 @@
 """GCP Cloud Storage client wrapper (no google SDK here)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any, Mapping, Optional
 
@@ -43,8 +44,8 @@ class GcsBlobClient:
         if not blob.exists():
             raise FileNotFoundError(key)
         raw = blob.download_as_bytes()
-        content_type = str(getattr(blob, "content_type", None) or "application/octet-stream")
-        return raw, content_type, dict(getattr(blob, "metadata", None) or {})
+        content_type = str(attribute_access.optional(blob, "content_type", None) or "application/octet-stream")
+        return raw, content_type, dict(attribute_access.optional(blob, "metadata", None) or {})
 
     def delete_blob(self, key: str) -> None:
         self._bucket.blob(key).delete()

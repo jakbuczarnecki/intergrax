@@ -36,8 +36,12 @@ class NexusRuntimeEventPublisher:
 
     async def publish(self, event: RuntimeEvent, *, task: Optional[Task] = None) -> None:
         scoped_task = task or self._current_task()
-        if scoped_task is not None and not event.tenant_id:
-            event = event.model_copy(update={"tenant_id": scoped_task.tenant_id})
+        if scoped_task is not None:
+            from intergrax.runtime.events.w3c_trace_context import inject_w3c_trace_on_event
+
+            event = inject_w3c_trace_on_event(event, scoped_task)
+            if not event.tenant_id:
+                event = event.model_copy(update={"tenant_id": scoped_task.tenant_id})
         await self._event_bus.publish(event)
 
     async def publish_terminal(self, task: Task) -> None:

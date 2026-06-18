@@ -19,6 +19,9 @@ from intergrax.runtime.nexus.context.tool_context_helpers import (
     insert_context_before_last_user,
 )
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.nexus.context.runtime_state_handle_bridge import (
+    merge_provider_metadata_into_request,
+)
 from intergrax.runtime.nexus.tools.catalog_context import (
     build_rag_retrieve_input,
     build_websearch_query_input,
@@ -182,6 +185,7 @@ async def run_rag_context(state: RuntimeState) -> None:
             warning=None,
         ),
     )
+    merge_provider_metadata_into_request(state)
 
 
 async def run_websearch_context(state: RuntimeState) -> None:
@@ -331,6 +335,7 @@ async def run_websearch_context(state: RuntimeState) -> None:
             context_preview=context_preview,
         ),
     )
+    merge_provider_metadata_into_request(state)
 
 
 async def run_tools_context(state: RuntimeState) -> None:
@@ -460,3 +465,4 @@ async def run_tools_context(state: RuntimeState) -> None:
             stop_reason=loop_stop_reason,
         ),
     )
+    merge_provider_metadata_into_request(state)

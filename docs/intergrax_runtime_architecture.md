@@ -3,6 +3,8 @@
 **Hub only** — domain architecture and implementation are paired 1:1 under `architecture/` and `plan/`.
 **Target:** [`guides/IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
+**Invariants:** [`guides/SYSTEM_INVARIANTS.md`](guides/SYSTEM_INVARIANTS.md) — cross-domain “never violate” index (P2-ARCH-01)
+**Layer completion:** [`guides/LAYER_COMPLETION_MODE.md`](guides/LAYER_COMPLETION_MODE.md) — deep domain layer closeout workflow
 **Audit:** [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) · **Domain audit prompts:** [`guides/audit/`](guides/audit/) · **Implementation journal:** [`guides/implementation-journal/`](guides/implementation-journal/README.md)
 **Authoring:** [`guides/`](guides/)
 
@@ -97,7 +99,7 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 | Question | Owner | Canon |
 |----------|-------|-------|
 | What agents are active in this product? | **`ApplicationManifest`** roster | §24 · §27 |
-| What harness slices are enabled? | **`ApplicationEnvironmentProfile`** | §22 |
+| What harness slices are enabled? | **`ApplicationEnvironmentProfile`** (§22.1 flat · §22.6 bundles) | §22 · [ADR-APP-003](adr/entries/2026-06-17/ADR-APP-003.md) |
 | Reactive vs daemon vs batch? | Posture + host factory | §23 |
 | Who sets routing capability? | L1–L4 matrix | §23.3 |
 | Virtual org / simulation rules? | **`OrganizationalPolicyEnvelope`** | §39 |
@@ -108,12 +110,14 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 
 - **Applications compose; they do not cognate** — business logic stays in Tier-2 agents.
 - **One Task lifecycle** — all surfaces converge on `UnifiedTaskRunner` → `NexusLoop`.
-- **Profile is the composition root** — no ad-hoc `getattr` wiring in hosts.
+- **Profile is the composition root** — no ad-hoc `getattr` wiring in hosts; nested bundles (§22.6) group slices under the same root.
 - **Hooks are boundaries, not step loops** — no `Application.on_next_orchestration_step()`.
 
 **Author entry points:** [`applications/USAGE.md`](../applications/USAGE.md) · `HarnessApplication` (`intergrax/harness/app.py`) · scaffold `new-application` · [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md) §0.
 
-**Implementation:** H-APP profile/wiring **Done**; APP-CON-1 host pipeline mount **Done**; budget reactions **Done** (ACP-TOK-1..3 · ACP-TOK-CI) + APP-PROD-1..9 gates — [TIER3 plan](plan/TIER3_APPLICATION_ENVIRONMENT.md#cross-plan--43-budget--token-governance).
+**Implementation:** H-APP profile/wiring **Done**; APP-CON-1 host pipeline mount **Done**; budget reactions **Done** (ACP-TOK-1..3 · ACP-TOK-CI) + APP-PROD-1..9 gates; APP-EVOL-1..7 evolution **Done**; **APP-EVOL-8** hierarchical bundles **M1 Done** · M3 planned ([ADR-APP-003](adr/entries/2026-06-17/ADR-APP-003.md)); APP-OPS-1..4 platform ops **Done** — [TIER3 plan](plan/TIER3_APPLICATION_ENVIRONMENT.md#master-implementation-backlog-app-unified). **Maturity:** Architecturally Mature for reference hosts.
+
+**Observability spine evolution:** **OBS-EVOL-9** layered `event_kind` catalog **Done** (2026-06-17; OBS-EVOL-9.9 deferred post-publication) — [ADR-OBS-003](adr/entries/2026-06-17/ADR-OBS-003.md) · [OBS plan](plan/OBSERVABILITY.md#phase-obs-evol-9--layered-event-catalog-p1-arch-02).
 
 ---
 
@@ -211,6 +215,7 @@ Essential platform behaviours span multiple domain pairs — use this index befo
 | RAG / retrieval engine | [`architecture/RAG.md`](architecture/RAG.md) · integration slugs [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) | M-RAG · M-RAG-DEPTH |
 | Context engineering engine | [`architecture/CONTEXT_ENGINEERING.md`](architecture/CONTEXT_ENGINEERING.md) | CE-EXT Done · CE-ALIGN Done · **CE-PROV-WIRE Planned** |
 | Ephemeral Code Craft (dynamic codegen loop) | [`architecture/CODE_CRAFT.md`](architecture/CODE_CRAFT.md) · substrate [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](architecture/RELIABILITY_FAILURE_AND_HITL.md) | ECC-0…ECC-6 |
+| LLM adapters (typed envelope + ModelCatalog) | [`architecture/LLM_ADAPTERS.md`](architecture/LLM_ADAPTERS.md) · [`intergrax/llm_adapters/USAGE.md`](../intergrax/llm_adapters/USAGE.md) | M-LLM-R **Done** · **M-LLM-X** (active) |
 
 Platform docs do not replace `agents/*/ARCHITECTURE.md` or `applications/*/ARCHITECTURE.md`.
 
@@ -241,6 +246,5 @@ Platform docs do not replace `agents/*/ARCHITECTURE.md` or `applications/*/ARCHI
 | [`adr/entries/2026-06-10/ADR-CODECRAFT-001.md`](adr/entries/2026-06-10/ADR-CODECRAFT-001.md) | Ephemeral Code Craft as separate Harness domain |
 | [`adr/entries/2026-06-11/ADR-AGENT-001.md`](adr/entries/2026-06-11/ADR-AGENT-001.md) | Agent cognitive patterns (ACP) — Tier-2 library, Nexus stays Agent OS |
 | [`adr/entries/2026-06-11/ADR-AGENT-002.md`](adr/entries/2026-06-11/ADR-AGENT-002.md) | Author `Agent.run()` facade + per-agent environment binding |
-| [`adr/entries/2026-06-11/ADR-AGENT-003.md`](adr/entries/2026-06-11/ADR-AGENT-003.md) | `on_next_step` step loop + dual observability (agent trace vs app orchestration) |
-
-**Platform configuration canon (CFG-*):** [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §56 · implementation [`plan/ORCHESTRATION.md`](plan/ORCHESTRATION.md) Phase **ORCH-CONFIG**.
+| [`adr/entries/2026-06-06/ADR-LLM-001.md`](adr/entries/2026-06-06/ADR-LLM-001.md) | Typed LLM adapter response envelope |
+| [`adr/entries/2026-06-14/ADR-LLM-002.md`](adr/entries/2026-06-14/ADR-LLM-002.md) | ModelCatalog + context window resolution |

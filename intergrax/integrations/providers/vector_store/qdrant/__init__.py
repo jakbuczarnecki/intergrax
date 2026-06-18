@@ -3,6 +3,7 @@
 
 """Qdrant vector store integration (Phase M.6 P2)."""
 
+from intergrax.utils.lazy_export import export_from_bundle
 from intergrax.integrations.providers.vector_store.qdrant.config import (
     ENV_QDRANT_API_KEY,
     ENV_QDRANT_COLLECTION,
@@ -45,7 +46,7 @@ def __getattr__(name: str):
     if name in _LAZY_EXPORTS:
         from intergrax.integrations.providers.vector_store.qdrant import bundle as _bundle
 
-        return getattr(_bundle, name)
+        return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "QdrantVectorStoreIntegration":
         from intergrax.integrations.providers.vector_store.qdrant.adapter import QdrantVectorStoreIntegration
 

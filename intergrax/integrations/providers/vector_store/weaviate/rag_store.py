@@ -2,6 +2,7 @@
 # Integrax framework – proprietary and confidential.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import uuid
 from dataclasses import dataclass
@@ -190,7 +191,7 @@ class WeaviateVectorStore(BaseVectorStore):
                         id=str(obj.uuid),
                         content=str(props.get("text", "")),
                         metadata=dict(props),
-                        similarity_score=float(getattr(obj.metadata, "score", 1.0 - rank * 0.01)),
+                        similarity_score=float(attribute_access.optional(obj.metadata, "score", 1.0 - rank * 0.01)),
                         rank=rank,
                     )
                 )

@@ -2,6 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from intergrax.tools.providers.rag.list_collections_contracts import (
     RagListCollectionsInput,
@@ -20,10 +21,10 @@ def perform_rag_list_collections(
     if vectorstore is None:
         return RagListCollectionsOutput(used=False, reason="vectorstore_manager_not_configured")
 
-    list_fn = getattr(vectorstore, "list_collections", None)
+    list_fn = attribute_access.optional(vectorstore, "list_collections", None)
     if list_fn is None:
-        store = getattr(vectorstore, "_store", None)
-        list_fn = getattr(store, "list_collections", None) if store is not None else None
+        store = attribute_access.optional(vectorstore, "_store", None)
+        list_fn = attribute_access.optional(store, "list_collections", None) if store is not None else None
 
     if list_fn is None:
         return RagListCollectionsOutput(used=False, reason="list_collections_not_supported")

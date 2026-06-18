@@ -8,6 +8,8 @@
 
 **RAG engine (layer 14):** [`architecture/RAG.md`](../architecture/RAG.md) ↔ [`plan/RAG.md`](RAG.md) — M-RAG, M-RAG-DEPTH, **M-RAG-GRAPH** (GraphRAG platform). This plan covers **integration catalog** slugs only; RAG adapters for `graph_store` are owned by M-RAG.38–M-RAG.51 in [`plan/RAG.md`](RAG.md).
 
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates M.6 P5/P6, M.7 P7, M.12 closeout); **185** catalog slugs.
+
 ---
 
 ## Phase H-INT-GRAPH — graph_store expansion (Planned)
@@ -1264,5 +1266,23 @@ L4 readiness requires:
 | 2026-06-02 | W-ADAPT-6.1–6.5 | ProcessPatternMiner, trace sequence reader, pattern report export |
 | 2026-06-02 | W-ADAPT-7.1–7.7 | Tier-3 AdaptiveProfile wiring, debug routes, business outcome webhook, acceptance E2E |
 | 2026-06-02 | W-ADAPT-OPS | Lab L4-O observe default (`LAB_ADAPTIVE_OBSERVE`); CI/release `--enforce-l4-runtime`; canon §54 + AHIA sync |
+
+---
+
+## Phase INTEGRATIONS-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — re-validates M.6 P5/P6, M.7 P7, M.12, H-INT-GRAPH; no open P0/P1  
+**Prerequisites:** Phase INT **Closed** · catalog **185** slugs · AUDIT-IDEAL-13.1/13.2 **Done**  
+**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**ADR:** **No ADR needed**
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| INTEGRATIONS-LC-S1 | **Re-audit** — M.6/M.7/M.12 register + tier-0 verdict | **Done** | High | No P0/P1 |
+| INTEGRATIONS-LC-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
+| INTEGRATIONS-LC-S3 | **Gate verification** | **Done** | High | 550 unit tests · 2 CI gate scripts |
+| INTEGRATIONS-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+
+**Deferred P2–P4:** beta→stable slug promotion honesty · thin P4 provider shells · SaaS-only slugs without local container · nginx/ingress slug (ECP cross-ref)
 
 ---

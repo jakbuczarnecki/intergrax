@@ -4,6 +4,9 @@ Living register of harness architecture debt (IDEAL-32.2). Review quarterly with
 
 | ID | Layer | Description | Owner | Target wave | AUDIT-IDEAL ID | Status |
 |----|-------|-------------|-------|-------------|----------------|--------|
+| P1-ARCH-01 | §22 Tier-3 profile | Flat `ApplicationEnvironmentProfile` namespace growth (43+ top-level fields) | platform | APP-EVOL-8 (M1–M3) | — | **Planned** — architecture §22.6 + ADR-APP-003 **accepted** (2026-06-17) |
+| P1-ARCH-03 | docs / README | Root `README.md` Overview snapshot stale vs domain canon (ECC `(planned)` vs L3 Done) | platform | doc-sync | — | **Closed** (2026-06-17) |
+| P2-ARCH-03 | docs / README | Root `README.md` lacks per-layer maturity visibility for architects (only aggregate L3 statement) | platform | doc-sync | — | **Closed** (2026-06-17) |
 | DEBT-19-01 | §19 Registry | Durable cross-host registry snapshot store | platform | W1 (Band 2az) | AUDIT-IDEAL-19.1 | **Closed** (2026-06-09) |
 | DEBT-25-01 | §25 Evaluation | Shadow eval path automation | platform | W2 (Band 2az) | AUDIT-IDEAL-25.1 | **Closed** (2026-06-09) |
 | DEBT-28-01 | §28 Tier-3 | Product durable queue default beyond SQLite scaffold | product | W2 / Band 3 | AUDIT-IDEAL-28.1 | **Closed** |

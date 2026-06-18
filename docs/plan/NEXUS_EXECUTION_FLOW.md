@@ -20,6 +20,7 @@
 | AUDIT-IDEAL-8.2 | §8 Runtime | Checkpoint introspection API for ops (beyond lab) | P2 | **Done** |
 | AUDIT-IDEAL-10.1 | §10 Subagents | Evaluator-loop standard node in product graph specs | P2 | **Done** |
 | AUDIT-IDEAL-10.2 | §10 Subagents | Budget delegation enforcement on all delegation paths | P2 | **Done** |
+| AUDIT-IDEAL-6.6 | §6 LLM (shared) | ACP `StepLLMRouter` backed by `LLMAdapter` | P1 | **Done** — [M-LLM-X.5](plan/LLM_ADAPTERS.md) · LC-3 |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 

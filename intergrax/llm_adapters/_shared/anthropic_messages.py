@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import json
 from typing import Any, Dict, List, Sequence
@@ -70,16 +71,16 @@ def map_anthropic_messages(msgs: Sequence[ChatMessage]) -> List[Dict[str, Any]]:
 def extract_anthropic_tool_calls(response: Any) -> List[Dict[str, Any]]:
     """Extract OpenAI-compatible tool_calls from an Anthropic Message response."""
     out: List[Dict[str, Any]] = []
-    for block in getattr(response, "content", None) or []:
-        if getattr(block, "type", None) != "tool_use":
+    for block in attribute_access.optional(response, "content", None) or []:
+        if attribute_access.optional(block, "type", None) != "tool_use":
             continue
         out.append(
             {
-                "id": getattr(block, "id", "") or "",
+                "id": attribute_access.optional(block, "id", "") or "",
                 "type": "function",
                 "function": {
-                    "name": getattr(block, "name", "") or "",
-                    "arguments": json.dumps(getattr(block, "input", None) or {}, ensure_ascii=False),
+                    "name": attribute_access.optional(block, "name", "") or "",
+                    "arguments": json.dumps(attribute_access.optional(block, "input", None) or {}, ensure_ascii=False),
                 },
             }
         )
@@ -88,7 +89,7 @@ def extract_anthropic_tool_calls(response: Any) -> List[Dict[str, Any]]:
 
 def extract_anthropic_text(response: Any) -> str:
     parts: List[str] = []
-    for block in getattr(response, "content", None) or []:
-        if getattr(block, "type", None) == "text":
-            parts.append(getattr(block, "text", "") or "")
+    for block in attribute_access.optional(response, "content", None) or []:
+        if attribute_access.optional(block, "type", None) == "text":
+            parts.append(attribute_access.optional(block, "text", "") or "")
     return "".join(parts)

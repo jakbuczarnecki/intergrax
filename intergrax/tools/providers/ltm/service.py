@@ -2,6 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from intergrax.memory.user_profile_memory import MemoryKind, UserProfileMemoryEntry
 from intergrax.tools._shared.async_dispatch import run_async
@@ -31,17 +32,17 @@ def _require_user_profile_manager(ctx: ToolWiringContext) -> UserProfileManagerB
 def _keyword_hits(profile: object, query: str) -> list[LtmMemoryHit]:
     needle = query.lower()
     hits: list[LtmMemoryHit] = []
-    entries = getattr(profile, "memory_entries", []) or []
+    entries = attribute_access.optional(profile, "memory_entries", []) or []
     for entry in entries:
-        if getattr(entry, "deleted", False):
+        if attribute_access.optional(entry, "deleted", False):
             continue
-        content = str(getattr(entry, "content", "") or "")
+        content = str(attribute_access.optional(entry, "content", "") or "")
         if needle in content.lower():
-            kind = getattr(entry, "kind", MemoryKind.OTHER)
+            kind = attribute_access.optional(entry, "kind", MemoryKind.OTHER)
             kind_value = kind.value if hasattr(kind, "value") else str(kind)
             hits.append(
                 LtmMemoryHit(
-                    entry_id=str(getattr(entry, "entry_id", "")),
+                    entry_id=str(attribute_access.optional(entry, "entry_id", "")),
                     content=content,
                     kind=kind_value,
                     score=1.0,
@@ -67,13 +68,13 @@ def ltm_search(ctx: ToolWiringContext, params: LtmSearchInput) -> LtmSearchOutpu
         scores = result.get("scores") or []
         hits: list[LtmMemoryHit] = []
         for index, entry in enumerate(hits_raw):
-            kind = getattr(entry, "kind", MemoryKind.OTHER)
+            kind = attribute_access.optional(entry, "kind", MemoryKind.OTHER)
             kind_value = kind.value if hasattr(kind, "value") else str(kind)
             score = float(scores[index]) if index < len(scores) else 0.0
             hits.append(
                 LtmMemoryHit(
-                    entry_id=str(getattr(entry, "entry_id", "")),
-                    content=str(getattr(entry, "content", "") or ""),
+                    entry_id=str(attribute_access.optional(entry, "entry_id", "")),
+                    content=str(attribute_access.optional(entry, "content", "") or ""),
                     kind=kind_value,
                     score=score,
                 )
@@ -100,4 +101,4 @@ def ltm_write_fact(ctx: ToolWiringContext, params: LtmWriteFactInput) -> LtmWrit
         title=params.title.strip() or None,
     )
     saved = run_async(manager.add_memory_entry(params.user_id.strip(), entry))
-    return LtmWriteFactOutput(written=True, entry_id=str(getattr(saved, "entry_id", "")))
+    return LtmWriteFactOutput(written=True, entry_id=str(attribute_access.optional(saved, "entry_id", "")))

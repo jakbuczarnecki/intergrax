@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.reasoning_wiring import resolve_engine_planner_prompt_config
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.nexus.config import RuntimeConfig
@@ -37,6 +38,7 @@ def apply_tool_engine_settings_from_environment(
     from intergrax.runtime.nexus.config_types import ToolInvocationMode, ToolSelectionMode
 
     config.tool_planner_prompt_id = env.reasoning_profile.tool_planner_prompt_id
+    config.engine_planner_prompt_id = resolve_engine_planner_prompt_config(env).prompt_id
     mode_value = env.tool_selection_mode
     if mode_value == "keyword_top_k":
         mode_value = "retrieval_top_k"

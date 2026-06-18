@@ -4,6 +4,7 @@
 """Dense + lexical hybrid query with RRF fusion."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any, Dict, List, Optional, Sequence
 
@@ -95,7 +96,7 @@ class LexicalHybridSupport:
         }
         for doc_id in list(self._lexical_index._doc_terms.keys()):  # noqa: SLF001
             if doc_id not in payload_by_id and hasattr(self, "_payloads"):
-                p = getattr(self, "_payloads", {}).get(doc_id)
+                p = attribute_access.optional(self, "_payloads", {}).get(doc_id)
                 if p:
                     payload_by_id[doc_id] = dict(p)
 

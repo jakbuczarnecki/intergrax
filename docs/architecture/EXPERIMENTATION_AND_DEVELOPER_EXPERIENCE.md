@@ -6,6 +6,8 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 25–27, 30  
 **Audit instruction:** [`guides/audit/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../guides/audit/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)  
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates DX + W-OPS closeout)
+
 ---
 
 ---

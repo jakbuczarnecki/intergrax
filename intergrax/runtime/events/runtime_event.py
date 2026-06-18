@@ -10,10 +10,11 @@ from enum import Enum
 from typing import Any, Dict, Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.runtime.events.event_taxonomy import EventCategory, category_for_event_kind
 
 
 class RuntimeEventType(str, Enum):
@@ -66,31 +67,13 @@ class RuntimeEventType(str, Enum):
     TASK_COMPLETED = "task_completed"
     TASK_FAILED = "task_failed"
     RUNTIME_HANDLER_FAILED = "runtime_handler_failed"
-    ADAPTIVE_SIGNAL_RECORDED = "adaptive_signal_recorded"
-    ADAPTIVE_PROPOSAL_SUBMITTED = "adaptive_proposal_submitted"
-    ADAPTIVE_PROFILE_APPLIED = "adaptive_profile_applied"
-    ADAPTIVE_PROFILE_ROLLBACK = "adaptive_profile_rollback"
-    ADAPTIVE_VERIFICATION_FAILED = "adaptive_verification_failed"
-    ADAPTIVE_LOOP_BLOCKED = "adaptive_loop_blocked"
     LLM_CALL = "llm_call"
     POLICY_DECISION = "policy_decision"
     GRAPH_BACKPRESSURE = "graph_backpressure"
-    CAPACITY_SIGNAL_COLLECTED = "capacity_signal_collected"
-    SCALE_EVALUATED = "scale_evaluated"
-    SCALE_REQUESTED = "scale_requested"
-    SCALE_APPROVED = "scale_approved"
-    SCALE_DENIED = "scale_denied"
-    SCALE_APPLIED = "scale_applied"
-    SCALE_FAILED = "scale_failed"
-    AUTONOMY_LEVEL_SET = "autonomy_level_set"
-    AUTONOMY_LEVEL_CHANGED = "autonomy_level_changed"
-    RECOVERY_REBOOT = "recovery_reboot"
     GUARDRAIL_BLOCKED = "guardrail_blocked"
     BUDGET_THRESHOLD = "budget_threshold"
     BUDGET_EXCEEDED = "budget_exceeded"
-    HOOK_BLOCKED = "hook_blocked"
-    HOOK_ERROR = "hook_error"
-    HOOK_TIMEOUT = "hook_timeout"
+    DOMAIN_SIGNAL = "domain_signal"
 
 
 class RuntimeEvent(BaseModel):
@@ -102,18 +85,76 @@ class RuntimeEvent(BaseModel):
     agent_id: Optional[str] = None
     step_id: Optional[str] = None
     event_type: RuntimeEventType
+    event_kind: str = ""
+    event_category: EventCategory | None = None
+    ops_hint: str = ""
     phase: ExecutionPhase
     severity: EventSeverity = EventSeverity.INFO
     payload: Dict[str, Any] = Field(default_factory=dict)
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     correlation_id: str = ""
     parent_event_id: Optional[str] = None
+    traceparent: Optional[str] = None
+    tracestate: Optional[str] = None
     schema_version: str = "runtime_event.v1"
 
+    @field_validator("traceparent")
+    @classmethod
+    def _validate_traceparent(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        from intergrax.runtime.events.w3c_trace_context import is_valid_traceparent
+
+        if not is_valid_traceparent(value):
+            raise ValueError(f"invalid W3C traceparent: {value!r}")
+        return value.strip()
+
+    @field_validator("tracestate")
+    @classmethod
+    def _validate_tracestate(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        from intergrax.runtime.events.w3c_trace_context import is_valid_tracestate
+
+        if not is_valid_tracestate(value):
+            raise ValueError(f"invalid W3C tracestate: {value!r}")
+        return value.strip()
+
+    @model_validator(mode="before")
+    @classmethod
+    def _migrate_legacy_spine(cls, data: Any) -> Any:
+        from intergrax.runtime.events.spine_consolidation import migrate_legacy_spine_payload
+
+        return migrate_legacy_spine_payload(data)
+
+    def model_post_init(self, __context: Any) -> None:
+        from intergrax.runtime.events.event_catalog import get_catalog_entry
+
+        entry = get_catalog_entry(self.event_type)
+        if entry is not None:
+            if not self.event_kind:
+                self.event_kind = entry.default_event_kind
+            if self.event_category is None:
+                self.event_category = entry.category
+            if not self.ops_hint:
+                self.ops_hint = entry.ops_hint
+            return
+        if not self.event_kind:
+            self.event_kind = self.event_type.value
+        if self.event_category is None:
+            self.event_category = category_for_event_kind(self.event_kind)
+        if not self.ops_hint and self.event_type == RuntimeEventType.DOMAIN_SIGNAL:
+            self.ops_hint = "ops:domain_signal"
+
     def with_parent(self, parent: RuntimeEvent) -> RuntimeEvent:
-        return self.model_copy(
-            update={
-                "parent_event_id": parent.event_id,
-                "correlation_id": parent.correlation_id or parent.event_id,
-            }
-        )
+        from intergrax.runtime.events.w3c_trace_context import child_traceparent
+
+        updates: dict[str, object] = {
+            "parent_event_id": parent.event_id,
+            "correlation_id": parent.correlation_id or parent.event_id,
+        }
+        if parent.traceparent:
+            updates["traceparent"] = child_traceparent(parent.traceparent)
+            if parent.tracestate:
+                updates["tracestate"] = parent.tracestate
+        return self.model_copy(update=updates)

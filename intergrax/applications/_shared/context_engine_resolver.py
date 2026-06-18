@@ -3,6 +3,7 @@
 """Resolve custom ContextEngine classes from dotted refs (CE-ENG-REF)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import importlib
 
@@ -33,7 +34,7 @@ def load_context_engine(
         ) from exc
 
     try:
-        engine_cls = getattr(module, class_name)
+        engine_cls = attribute_access.optional(module, class_name)
     except AttributeError as exc:
         raise ContextEngineImportError(
             f"Module {module_path!r} has no attribute {class_name!r}"

@@ -8,6 +8,7 @@ Public entry points: ``create_databricks_relational_store()``, ``create_databric
 ``register_databricks_integration()``, and ``profile.resolve(RELATIONAL_STORE)``.
 """
 
+from intergrax.utils.lazy_export import export_from_bundle
 from intergrax.integrations.providers.relational_store.databricks.config import (
     ENV_DATABRICKS_CATALOG,
     ENV_DATABRICKS_HOST,
@@ -52,7 +53,7 @@ def __getattr__(name: str):
     if name in _LAZY_EXPORTS:
         from intergrax.integrations.providers.relational_store.databricks import bundle as _bundle
 
-        return getattr(_bundle, name)
+        return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "DatabricksRelationalStore":
         from intergrax.integrations.providers.relational_store.databricks.adapter import DatabricksRelationalStore
 

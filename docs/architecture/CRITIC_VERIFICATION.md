@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 25 (verify depth)  
 **Audit instruction:** [`guides/audit/CRITIC_VERIFICATION.md`](../guides/audit/CRITIC_VERIFICATION.md)  
-**Last updated:** 2026-06-13 — layer completion II; **CRIT-V-0…7 + FOLLOWUP + CVL-LC-1…3 Done (L3+)**
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates CVL-LC); **CRIT-V-0…7 + FOLLOWUP + CVL-LC-1…4 Done (L3+)**
 ---
 
 ## 1. Purpose

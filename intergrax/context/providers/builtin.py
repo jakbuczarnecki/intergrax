@@ -14,11 +14,27 @@ from intergrax.context.contracts import (
     ContextProviderContext,
 )
 from intergrax.context.providers.legacy_bridge import (
+    ATTACHMENT_SUMMARIES_HANDLE,
+    LTM_ENTRIES_HANDLE,
+    POLICY_OVERLAY_FRAGMENTS_HANDLE,
     PRIOR_OUTPUT_RECORDS_HANDLE,
+    RAG_CHUNKS_HANDLE,
     SESSION_HISTORY_MESSAGES_HANDLE,
+    SHARED_CONTEXT_READS_HANDLE,
+    SYSTEM_INSTRUCTIONS_HANDLE,
+    TOOL_OUTPUT_BLOCKS_HANDLE,
+    WEBSEARCH_BLOCKS_HANDLE,
+    fragments_from_attachment_summaries,
+    fragments_from_ltm_entries,
+    fragments_from_policy_overlay_fragments,
     fragments_from_prior_output_records,
+    fragments_from_rag_chunks,
     fragments_from_session_history,
+    fragments_from_shared_context_reads,
+    fragments_from_system_instructions,
     fragments_from_task_message,
+    fragments_from_tool_output_blocks,
+    fragments_from_websearch_blocks,
 )
 from intergrax.context.registry import ContextPluginRegistry
 
@@ -36,6 +52,11 @@ _BUILTIN_SPECS: tuple[tuple[str, ContextFragmentSource], ...] = (
     ("builtin.policy_overlay", ContextFragmentSource.POLICY_OVERLAY),
     ("builtin.workspace", ContextFragmentSource.WORKSPACE),
 )
+
+# CE-PROV-GATE: every catalog builtin except workspace/session_semantic must wire collect.
+WIRED_BUILTIN_COLLECTOR_IDS: frozenset[str] = frozenset(
+    spec[0] for spec in _BUILTIN_SPECS if spec[0] != "builtin.workspace"
+) | frozenset({"builtin.session_history_semantic"})
 
 
 async def _collect_task_message(
@@ -76,10 +97,116 @@ async def _collect_session_history(
     )
 
 
+async def _collect_rag(
+    request: ContextAssemblyRequest,
+    ctx: ContextProviderContext,
+) -> list[ContextFragment]:
+    if ContextFragmentSource.RAG in request.excluded_sources:
+        return []
+    if not request.decision_profile.prefer_rag_when_enabled:
+        return []
+    raw = ctx.handles.get(RAG_CHUNKS_HANDLE)
+    if not isinstance(raw, list) or not raw:
+        return []
+    return fragments_from_rag_chunks(raw)
+
+
+async def _collect_longterm_memory(
+    request: ContextAssemblyRequest,
+    ctx: ContextProviderContext,
+) -> list[ContextFragment]:
+    if ContextFragmentSource.LONGTERM_MEMORY in request.excluded_sources:
+        return []
+    if not request.decision_profile.prefer_longterm_memory:
+        return []
+    raw = ctx.handles.get(LTM_ENTRIES_HANDLE)
+    if not isinstance(raw, list) or not raw:
+        return []
+    max_entries = request.decision_profile.max_memory_entries_in_context
+    return fragments_from_ltm_entries(raw, max_entries=max_entries)
+
+
+async def _collect_websearch(
+    request: ContextAssemblyRequest,
+    ctx: ContextProviderContext,
+) -> list[ContextFragment]:
+    if ContextFragmentSource.WEBSEARCH in request.excluded_sources:
+        return []
+    raw = ctx.handles.get(WEBSEARCH_BLOCKS_HANDLE)
+    if not isinstance(raw, list) or not raw:
+        return []
+    return fragments_from_websearch_blocks(raw)
+
+
+async def _collect_tool_output(
+    request: ContextAssemblyRequest,
+    ctx: ContextProviderContext,
+) -> list[ContextFragment]:
+    if ContextFragmentSource.TOOL_OUTPUT in request.excluded_sources:
+        return []
+    raw = ctx.handles.get(TOOL_OUTPUT_BLOCKS_HANDLE)
+    if not isinstance(raw, list) or not raw:
+        return []
+    return fragments_from_tool_output_blocks(raw)
+
+
+async def _collect_system_instructions(
+    request: ContextAssemblyRequest,
+    ctx: ContextProviderContext,
+) -> list[ContextFragment]:
+    _ = request
+    raw = ctx.handles.get(SYSTEM_INSTRUCTIONS_HANDLE)
+    if not isinstance(raw, str) or not raw.strip():
+        return []
+    return fragments_from_system_instructions(raw)
+
+
+async def _collect_shared_context(
+    request: ContextAssemblyRequest,
+    ctx: ContextProviderContext,
+) -> list[ContextFragment]:
+    _ = request
+    raw = ctx.handles.get(SHARED_CONTEXT_READS_HANDLE)
+    if not isinstance(raw, dict) or not raw:
+        return []
+    return fragments_from_shared_context_reads(raw)
+
+
+async def _collect_attachments(
+    request: ContextAssemblyRequest,
+    ctx: ContextProviderContext,
+) -> list[ContextFragment]:
+    if ContextFragmentSource.ATTACHMENT in request.excluded_sources:
+        return []
+    raw = ctx.handles.get(ATTACHMENT_SUMMARIES_HANDLE)
+    if not isinstance(raw, list) or not raw:
+        return []
+    return fragments_from_attachment_summaries(raw)
+
+
+async def _collect_policy_overlay(
+    request: ContextAssemblyRequest,
+    ctx: ContextProviderContext,
+) -> list[ContextFragment]:
+    _ = request
+    raw = ctx.handles.get(POLICY_OVERLAY_FRAGMENTS_HANDLE)
+    if not isinstance(raw, list) or not raw:
+        return []
+    return fragments_from_policy_overlay_fragments(raw)
+
+
 _COLLECT_OVERRIDES: dict[str, Callable[..., list[ContextFragment]]] = {
     "builtin.task_message": _collect_task_message,
     "builtin.graph_prior": _collect_graph_prior,
     "builtin.session_history": _collect_session_history,
+    "builtin.rag": _collect_rag,
+    "builtin.longterm_memory": _collect_longterm_memory,
+    "builtin.websearch": _collect_websearch,
+    "builtin.tool_output": _collect_tool_output,
+    "builtin.system_instructions": _collect_system_instructions,
+    "builtin.shared_context": _collect_shared_context,
+    "builtin.attachments": _collect_attachments,
+    "builtin.policy_overlay": _collect_policy_overlay,
 }
 
 
@@ -125,7 +252,7 @@ def _make_stub_provider(
 
 
 class BuiltinContextPlugin:
-    """Registers all architecture §8.4 builtin providers (live + no-op catalog stubs)."""
+    """Registers all architecture §8.4 builtin providers (live collectors via legacy bridge)."""
 
     @classmethod
     def plugin_id(cls) -> str:

@@ -21,6 +21,7 @@ from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExte
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
 
 class LangChainOllamaAdapter(LLMAdapter):
@@ -105,14 +106,17 @@ class LangChainOllamaAdapter(LLMAdapter):
         self.chat = chat or ChatOllama(model=resolved_model)
         self.defaults = defaults
 
-        if context_window_tokens is not None and context_window_tokens > 0:
-            # User-provided value = authoritative.
-            self._context_window_tokens = int(context_window_tokens)
-        else:
-            # Otherwise estimate from the model name (fallback path).
-            self._context_window_tokens = int(
-                self._estimate_ollama_context_window_from_model(self.chat.model)
+        if context_window_tokens is not None and int(context_window_tokens) > 0:
+            defaults["context_window_tokens"] = int(context_window_tokens)
+
+        self._context_window_tokens = int(
+            init_adapter_context_window_tokens(
+                provider=LLMProvider.OLLAMA,
+                model=resolved_model,
+                constructor_kwargs=defaults,
+                legacy_windows=self._OLLAMA_CONTEXT_WINDOWS,
             )
+        )
 
         self.provider = LLMProvider.OLLAMA
         self.model = self.chat.model

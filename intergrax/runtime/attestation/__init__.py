@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Execution Boundary Export (EBE) — unsigned tool-boundary events for external attestation."""
+"""Execution Boundary Export (EBE) — unsigned boundary events for external attestation."""
 
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.runtime.attestation.boundary_emitter import ExecutionBoundaryEmitter

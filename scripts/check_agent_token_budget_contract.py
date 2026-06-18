@@ -47,6 +47,8 @@ BUDGET_SMOKE_TESTS: tuple[str, ...] = (
     "tests/unit/agents/test_acp_token_budget_reactions.py",
 )
 
+_REQUESTS_DEP_WARNING = "RequestsDependencyWarning"
+
 
 def _rel(path: Path) -> str:
     return path.relative_to(REPO_ROOT).as_posix()
@@ -141,22 +143,42 @@ def _scan_agents_forbidden_imports() -> list[str]:
     return violations
 
 
+def _pytest_failure_detail(stdout: str, stderr: str) -> str:
+    """Prefer pytest output over noisy third-party stderr (e.g. requests pin warnings)."""
+    parts: list[str] = []
+    stdout = stdout.strip()
+    stderr = stderr.strip()
+    if stdout:
+        parts.append(stdout)
+    if stderr and _REQUESTS_DEP_WARNING not in stderr:
+        parts.append(stderr)
+    elif stderr and not stdout:
+        parts.append(stderr)
+    return "\n".join(parts) or "pytest failed"
+
+
 def _run_budget_smoke_tests() -> list[str]:
     violations: list[str] = []
+    pytest_args = (
+        "-q",
+        "--tb=short",
+        "-W",
+        "ignore::requests.exceptions.RequestsDependencyWarning",
+    )
     for rel_test in BUDGET_SMOKE_TESTS:
         test_path = REPO_ROOT / rel_test
         if not test_path.is_file():
             violations.append(f"missing smoke test module: {rel_test}")
             continue
         for cmd in (
-            ["uv", "run", "pytest", str(test_path), "-q", "--tb=short"],
-            [PYTHON, "-m", "pytest", str(test_path), "-q", "--tb=short"],
+            ["uv", "run", "pytest", str(test_path), *pytest_args],
+            [PYTHON, "-m", "pytest", str(test_path), *pytest_args],
         ):
             completed = subprocess.run(cmd, cwd=REPO_ROOT, check=False, capture_output=True, text=True)
             if completed.returncode == 0:
                 break
         else:
-            detail = (completed.stderr or completed.stdout or "pytest failed").strip()
+            detail = _pytest_failure_detail(completed.stdout, completed.stderr)
             violations.append(f"smoke test failed for {rel_test}: {detail}")
     return violations
 

@@ -42,6 +42,7 @@ from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExte
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
+from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
 
 class BedrockModelFamily(str, Enum):
@@ -432,7 +433,12 @@ class BedrockChatAdapter(LLMAdapter):
         self.model_name_for_token_estimation: str = self.config.model_id
 
         # Conservative default; you can refine per family if you want.
-        self._context_window_tokens: int = self._estimate_context_window(self.config.model_id)
+        self._context_window_tokens: int = init_adapter_context_window_tokens(
+            provider=LLMProvider.AWS_BEDROCK,
+            model=self.config.model_id,
+            constructor_kwargs=defaults,
+            legacy_windows=self._CONTEXT_WINDOWS,
+        )
 
         self.provider = LLMProvider.AWS_BEDROCK
         self.model = resolved_model_id

@@ -3,6 +3,7 @@
 
 """MongoDB document store integration (Phase M.6 P2)."""
 
+from intergrax.utils.lazy_export import export_from_bundle
 from intergrax.integrations.providers.document_store.mongodb.config import (
     ENV_MONGODB_COLLECTION,
     ENV_MONGODB_DATABASE,
@@ -43,7 +44,7 @@ def __getattr__(name: str):
     if name in _LAZY_EXPORTS:
         from intergrax.integrations.providers.document_store.mongodb import bundle as _bundle
 
-        return getattr(_bundle, name)
+        return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "MongoDBDocumentStore":
         from intergrax.integrations.providers.document_store.mongodb.adapter import MongoDBDocumentStore
 

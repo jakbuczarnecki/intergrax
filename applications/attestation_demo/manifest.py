@@ -56,6 +56,7 @@ def build_attestation_demo_environment() -> ApplicationEnvironmentProfile:
                 enabled=True,
                 capture_mode="side_effects_only",
                 include_canonical_io=True,
+                step_level_enabled=True,
             ),
         }
     )

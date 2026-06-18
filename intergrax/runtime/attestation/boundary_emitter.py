@@ -117,6 +117,8 @@ class ExecutionBoundaryEmitter:
 
         return ExecutionBoundaryEventV1(
             event_id=str(uuid4()),
+            event_sequence=0,
+            boundary_type="tool_execution",
             tool_id=contract.tool_id,
             agent_id=agent_id,
             run_id=run_id,

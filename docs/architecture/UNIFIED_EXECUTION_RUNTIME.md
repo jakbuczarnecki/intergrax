@@ -147,6 +147,33 @@ TASK_COMPLETED | TASK_FAILED
 
 **Filter token legend:** `trace:*` — default observability scrape; `ops:alert` — page-worthy failures; `ops:hitl` — human-in-the-loop queues; `ops:tool_audit` — tool policy audits; `ops:completion` — terminal task outcomes; `ops:retry` — retry scheduler; `ops:planning` — planner failures/updates; `ops:handoff` — graph delegation; `ops:memory` — memory store access; `ops:progress` — checkpointed long runs.
 
+### 42.1.6 Layered event identity (OBS-EVOL-9)
+
+**Canon:** [`architecture/OBSERVABILITY.md`](../architecture/OBSERVABILITY.md) §4.4 · **ADR:** [`ADR-OBS-003`](../adr/entries/2026-06-17/ADR-OBS-003.md)
+
+`RuntimeEvent` carries:
+
+```text
+event_type      # spine — platform lifecycle (~50 at publication)
+event_kind      # semantic namespaced id (domain extensions)
+event_category  # derived ops grouping
+```
+
+- **Tier-2/3** extend via `emit_domain_signal(kind, payload)` → spine `DOMAIN_SIGNAL`.
+- **Platform** adds spine types only via ADR + `EventCatalog` entry.
+- **Pre-release:** consolidate adaptive/capacity/hook enums to `platform.*` kinds (OBS-EVOL-9.7).
+
+### 42.1.7 Event catalog governance
+
+| Rule | Enforcement |
+|------|-------------|
+| New spine `RuntimeEventType` | ADR + `EventCatalogEntry` + emission gate |
+| New domain signal | `event_kind` registry + extension `payload_schema_id` |
+| Debug detail | `DiagnosticPayload` (Plane B) — not spine unless operator-facing |
+| Bus subscription | Prefer `event_category` / `kind_prefix` over enum lists |
+
+**Code (target):** `intergrax/runtime/events/event_catalog.py`, `signals.py`
+
 ---
 
 ## 42.2 Event Bus Architecture

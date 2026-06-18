@@ -10,6 +10,7 @@ from typing import Any
 
 from intergrax.applications._shared.environment_conformance import (
     EnvironmentSkillToolConsistencyCheck,
+    ProfileInvariantValidator,
 )
 from intergrax.applications._shared.integration_health_wiring import probe_integration_profile_health
 from intergrax.applications._shared.context_wiring import bootstrap_application_context_catalog
@@ -31,6 +32,11 @@ from intergrax.applications._shared.registry_assembly_resolver import assert_reg
 from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot, resolve_registry_snapshot
 from intergrax.applications._shared.integration_tool_profile import extend_tool_profile_for_integration
 from intergrax.applications._shared.memory_wiring import resolve_memory_platform_wiring
+from intergrax.applications._shared.memory_vector_wiring import (
+    assert_memory_vector_backend_available,
+    build_user_profile_manager,
+    resolve_rag_stack_for_memory_wiring,
+)
 from intergrax.applications._shared.notify_tool_wiring import wire_scheduled_notification_tool_binding
 from intergrax.applications._shared.session_tool_wiring import wire_session_storage_tool_binding
 from intergrax.applications._shared.skill_tool_profile import extend_tool_profile_for_skills
@@ -100,11 +106,12 @@ def wire_application_environment(
         circuit_breaker_config=reliability_wiring.circuit_breaker_config,
     )
 
-    rag_stack = resolve_rag_stack_for_environment(
+    rag_stack = resolve_rag_stack_for_memory_wiring(
         env,
         integration_profile=resolved_integration,
         llm_adapter=resolve_llm_adapter(env),
     )
+    assert_memory_vector_backend_available(env, rag_stack)
 
     tool_profile = tool_profile_with_sandbox(env)
     env_for_codecraft = env.model_copy(update={"tool_profile": tool_profile})
@@ -133,6 +140,34 @@ def wire_application_environment(
         )
 
     memory_wiring = resolve_memory_platform_wiring(env, integration_profile=resolved_integration)
+    from intergrax.applications._shared.memory_wiring import build_session_manager_from_environment
+
+    session_manager = build_session_manager_from_environment(
+        env,
+        integration_profile=resolved_integration,
+        memory_wiring=memory_wiring,
+        rag_stack=rag_stack,
+    )
+    user_profile_manager = build_user_profile_manager(
+        memory_wiring.user_profile_store,
+        env,
+        rag_stack=rag_stack,
+    )
+    if user_profile_manager is not None:
+        from dataclasses import replace
+
+        wiring_context = replace(
+            wiring_context,
+            user_profile_manager=user_profile_manager,
+            extras={**wiring_context.extras, "session_manager": session_manager},
+        )
+    else:
+        from dataclasses import replace
+
+        wiring_context = replace(
+            wiring_context,
+            extras={**wiring_context.extras, "session_manager": session_manager},
+        )
     wiring_context = wire_session_storage_tool_binding(wiring_context, memory_wiring.session_storage)
     wiring_context = wire_scheduled_notification_tool_binding(wiring_context)
 
@@ -207,6 +242,7 @@ def wire_application_environment(
             manifest.agents,
             env,
         )
+        ProfileInvariantValidator(fail_on_violation=False).validate(env)
         from intergrax.applications._shared.package_wiring import assert_manifest_package_closure
 
         assert_manifest_package_closure(

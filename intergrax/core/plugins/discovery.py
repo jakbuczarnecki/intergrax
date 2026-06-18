@@ -4,6 +4,7 @@
 """Load Tier-0 catalog plugins from setuptools entry points."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import importlib
 import logging
@@ -44,8 +45,8 @@ def _iter_entry_point_specs(group: str) -> list[tuple[str, str]]:
     selected = eps.select(group=group) if hasattr(eps, "select") else eps.get(group, [])
     specs: list[tuple[str, str]] = []
     for ep in selected:
-        name = getattr(ep, "name", "")
-        value = getattr(ep, "value", "")
+        name = attribute_access.optional(ep, "name", "")
+        value = attribute_access.optional(ep, "value", "")
         if name and value:
             specs.append((name, value))
     return specs
@@ -56,7 +57,7 @@ def _load_target(value: str) -> type:
     if not module_path or not attr:
         raise PluginLoadError(f"Invalid entry point target {value!r}; expected 'module:attr'")
     module = importlib.import_module(module_path)
-    target = getattr(module, attr)
+    target = attribute_access.optional(module, attr)
     if isinstance(target, type):
         return target
     if callable(target):

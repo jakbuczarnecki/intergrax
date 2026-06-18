@@ -11,6 +11,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_budget import trim_message_to_budget_tokenizer_aware, ContextBudgetPolicy
 from intergrax.runtime.nexus.context.context_compiler import ContextCompiler, classify_candidates
+from intergrax.runtime.nexus.context.context_compiler_models import ContextCandidateSource
 from intergrax.runtime.nexus.context.context_preflight import verify_context_preflight
 from intergrax.runtime.nexus.context.degradation_ladder import DegradationStepKind
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -46,6 +47,19 @@ def test_classify_candidates_marks_injections() -> None:
     candidates = classify_candidates(messages, count_tokens=lambda t: len(t) // 4)
     assert len(candidates) == 3
     assert candidates[-1].mandatory is True
+
+
+def test_classify_candidates_uses_ce_context_tags() -> None:
+    messages = [
+        ChatMessage(role="system", content="Core instructions"),
+        ChatMessage(
+            role="system",
+            content="[context:rag:doc-1] Retrieved policy paragraph.",
+        ),
+        ChatMessage(role="user", content="question"),
+    ]
+    candidates = classify_candidates(messages, count_tokens=lambda t: len(t) // 4)
+    assert candidates[1].source == ContextCandidateSource.RAG
 
 
 def test_context_compiler_trims_oversized_context() -> None:

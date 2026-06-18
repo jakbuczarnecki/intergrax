@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import json
 from dataclasses import dataclass
@@ -38,18 +39,18 @@ class LLMToolCall:
 
 def tool_calls_from_openai_message(message: Any) -> tuple[LLMToolCall, ...]:
     """Extract typed tool calls from an OpenAI-style chat completion message."""
-    raw = getattr(message, "tool_calls", None) or []
+    raw = attribute_access.optional(message, "tool_calls", None) or []
     out: list[LLMToolCall] = []
     for tc in raw:
-        fn = getattr(tc, "function", None)
+        fn = attribute_access.optional(tc, "function", None)
         if fn is None and isinstance(tc, dict):
             fn = tc.get("function")
-        name = getattr(fn, "name", None) if fn is not None else None
-        args = getattr(fn, "arguments", None) if fn is not None else None
+        name = attribute_access.optional(fn, "name", None) if fn is not None else None
+        args = attribute_access.optional(fn, "arguments", None) if fn is not None else None
         if name is None and isinstance(fn, dict):
             name = fn.get("name")
             args = fn.get("arguments")
-        tc_id = getattr(tc, "id", None) or (tc.get("id") if isinstance(tc, dict) else None)
+        tc_id = attribute_access.optional(tc, "id", None) or (tc.get("id") if isinstance(tc, dict) else None)
         if not name:
             continue
         out.append(

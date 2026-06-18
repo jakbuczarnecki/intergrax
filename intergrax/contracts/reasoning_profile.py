@@ -21,3 +21,4 @@ class ReasoningProfile(BaseModel):
     denied_planner_model_ids: list[str] = Field(default_factory=list)
     tool_planner_prompt_id: str = "tools_agent_planner"
     engine_planner_prompt_id: str = "planner_default"
+    classifier_prompt_id: str = "nexus_task_classifier"

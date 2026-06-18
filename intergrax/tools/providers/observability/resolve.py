@@ -4,6 +4,7 @@
 """Resolve observability backends by harness role (errors vs traces vs default)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any
 
@@ -31,10 +32,10 @@ def _first_matching(
 ) -> Any | None:
     for slug in slug_order:
         candidate = backends.get(slug)
-        if candidate is not None and getattr(candidate, attr, None) is not None:
+        if candidate is not None and attribute_access.optional(candidate, attr, None) is not None:
             return candidate
     for candidate in backends.values():
-        if getattr(candidate, attr, None) is not None:
+        if attribute_access.optional(candidate, attr, None) is not None:
             return candidate
     return None
 
@@ -63,7 +64,7 @@ def resolve_observability_backend(ctx: ToolWiringContext, *, role: str = "defaul
         if backend is not None:
             return backend
         for candidate in backends.values():
-            if getattr(candidate, "rest_client", None) is not None:
+            if attribute_access.optional(candidate, "rest_client", None) is not None:
                 return candidate
     if role == "eval":
         backend = _first_matching(backends, _EVAL_SLUGS, attr="log_eval")

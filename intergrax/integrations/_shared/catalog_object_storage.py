@@ -4,6 +4,7 @@
 """Shared ``ObjectStorage`` facade for blob backends (S3-compatible duck types)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Mapping, Optional, Protocol
 
@@ -16,11 +17,11 @@ class ObjectKeyConfig(Protocol):
 
 
 def is_blob_not_found(exc: Exception) -> bool:
-    response = getattr(exc, "response", None)
+    response = attribute_access.optional(exc, "response", None)
     if isinstance(response, dict):
         code = response.get("Error", {}).get("Code")
         return code in {"NoSuchKey", "404", "NotFound", "BlobNotFound", "ResourceNotFoundException"}
-    status = getattr(exc, "status_code", None)
+    status = attribute_access.optional(exc, "status_code", None)
     return status == 404
 
 
@@ -50,11 +51,11 @@ class CatalogObjectStorage:
     ) -> None:
         self._require_open()
         object_key = self._config.object_key(key)
-        upload = getattr(self._client, "upload_blob", None)
+        upload = attribute_access.optional(self._client, "upload_blob", None)
         if callable(upload):
             upload(object_key, body, content_type=content_type, metadata=dict(metadata or {}))
             return
-        put_object = getattr(self._client, "put_object", None)
+        put_object = attribute_access.optional(self._client, "put_object", None)
         if callable(put_object):
             kwargs = {
                 "Key": object_key,
@@ -71,7 +72,7 @@ class CatalogObjectStorage:
         self._require_open()
         object_key = self._config.object_key(key)
         try:
-            download = getattr(self._client, "download_blob", None)
+            download = attribute_access.optional(self._client, "download_blob", None)
             if callable(download):
                 raw, content_type, user_metadata = download(object_key)
                 return StoredObject(
@@ -81,7 +82,7 @@ class CatalogObjectStorage:
                     metadata=dict(user_metadata or {}),
                     size_bytes=len(raw),
                 )
-            get_object = getattr(self._client, "get_object", None)
+            get_object = attribute_access.optional(self._client, "get_object", None)
             if callable(get_object):
                 response = get_object(Key=object_key)
                 body_stream = response.get("Body")
@@ -102,11 +103,11 @@ class CatalogObjectStorage:
     def delete(self, key: str) -> None:
         self._require_open()
         object_key = self._config.object_key(key)
-        delete_blob = getattr(self._client, "delete_blob", None)
+        delete_blob = attribute_access.optional(self._client, "delete_blob", None)
         if callable(delete_blob):
             delete_blob(object_key)
             return
-        delete_object = getattr(self._client, "delete_object", None)
+        delete_object = attribute_access.optional(self._client, "delete_object", None)
         if callable(delete_object):
             delete_object(Key=object_key)
             return
@@ -121,7 +122,7 @@ class CatalogObjectStorage:
     ) -> str:
         self._require_open()
         object_key = self._config.object_key(key)
-        presign = getattr(self._client, "generate_presigned_url", None)
+        presign = attribute_access.optional(self._client, "generate_presigned_url", None)
         if callable(presign):
             client_method = "get_object" if method == "GET" else "put_object"
             return str(
@@ -131,10 +132,10 @@ class CatalogObjectStorage:
                     ExpiresIn=expires_in_seconds,
                 )
             )
-        sas = getattr(self._client, "generate_sas_url", None)
+        sas = attribute_access.optional(self._client, "generate_sas_url", None)
         if callable(sas):
             return str(sas(object_key, expires_in_seconds=expires_in_seconds, method=method))
-        signed = getattr(self._client, "generate_signed_url", None)
+        signed = attribute_access.optional(self._client, "generate_signed_url", None)
         if callable(signed):
             return str(signed(object_key, expiration=expires_in_seconds, method=method))
         raise IntegrationConfigurationError(f"{self._factory_name}: blob client missing presign API")

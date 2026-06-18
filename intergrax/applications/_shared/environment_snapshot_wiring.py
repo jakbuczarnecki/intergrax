@@ -8,7 +8,10 @@ import hashlib
 import json
 from typing import TYPE_CHECKING, Any
 
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+    bundle_normalized_payload,
+)
 from intergrax.applications.contracts.environment_snapshot import (
     ENV_SNAPSHOT_RUNTIME_KEY,
     EnvironmentSnapshot,
@@ -63,14 +66,64 @@ def compute_roster_digest(
     return stable_digest_hex({"bindings": bindings})
 
 
+_DEPLOY_SNAPSHOT_CACHE: dict[str, EnvironmentSnapshot] = {}
+
+
 def compute_profile_snapshot_id(environment: ApplicationEnvironmentProfile) -> str:
-    """Stable fingerprint of the resolved environment profile."""
-    payload = environment.model_dump(mode="json")
+    """Stable fingerprint of the resolved environment profile (bundle-normalized)."""
+    payload = bundle_normalized_payload(environment.bundle_dump(mode="json"))
     return f"prof_{stable_digest_hex(payload)[:24]}"
 
 
-def compute_snapshot_id(
+def _deploy_cache_key(
+    manifest: ApplicationManifest,
+    environment: ApplicationEnvironmentProfile,
     *,
+    registry_snapshot: HarnessRegistrySnapshot | None = None,
+) -> str:
+    roster_digest = compute_roster_digest(manifest, registry_snapshot=registry_snapshot)
+    return "|".join(
+        (
+            manifest.app_id,
+            manifest.version,
+            compute_profile_snapshot_id(environment),
+            roster_digest,
+        ),
+    )
+
+
+def cache_deploy_environment_snapshot(
+    manifest: ApplicationManifest,
+    environment: ApplicationEnvironmentProfile,
+    *,
+    registry_snapshot: HarnessRegistrySnapshot | None = None,
+) -> EnvironmentSnapshot:
+    """Materialize and cache snapshot at host bootstrap (APP-EVOL-8 deploy cache)."""
+    snapshot = capture_environment_snapshot(
+        manifest,
+        environment,
+        registry_snapshot=registry_snapshot,
+        captured_by=SnapshotCaptureSource.DEPLOY,
+    )
+    _DEPLOY_SNAPSHOT_CACHE[_deploy_cache_key(manifest, environment, registry_snapshot=registry_snapshot)] = (
+        snapshot
+    )
+    return snapshot
+
+
+def resolve_cached_environment_snapshot(
+    manifest: ApplicationManifest,
+    environment: ApplicationEnvironmentProfile,
+    *,
+    registry_snapshot: HarnessRegistrySnapshot | None = None,
+) -> EnvironmentSnapshot | None:
+    """Return deploy-cached snapshot when manifest/profile/roster fingerprint matches."""
+    return _DEPLOY_SNAPSHOT_CACHE.get(
+        _deploy_cache_key(manifest, environment, registry_snapshot=registry_snapshot),
+    )
+
+
+def compute_snapshot_id(    *,
     manifest_digest: str,
     profile_snapshot_id: str,
     roster_digest: str,
@@ -96,8 +149,17 @@ def capture_environment_snapshot(
     *,
     registry_snapshot: HarnessRegistrySnapshot | None = None,
     captured_by: SnapshotCaptureSource = SnapshotCaptureSource.INTAKE,
+    use_deploy_cache: bool = True,
 ) -> EnvironmentSnapshot:
     """Materialize an :class:`EnvironmentSnapshot` from resolved host artifacts."""
+    if captured_by == SnapshotCaptureSource.INTAKE and use_deploy_cache:
+        cached = resolve_cached_environment_snapshot(
+            manifest,
+            environment,
+            registry_snapshot=registry_snapshot,
+        )
+        if cached is not None:
+            return cached.model_copy(update={"captured_by": SnapshotCaptureSource.INTAKE})
     manifest_digest = compute_manifest_digest(manifest)
     roster_digest = compute_roster_digest(manifest, registry_snapshot=registry_snapshot)
     profile_snapshot_id = compute_profile_snapshot_id(environment)
@@ -169,7 +231,9 @@ def apply_environment_snapshot_wiring(
 __all__ = [
     "ENV_SNAPSHOT_RUNTIME_KEY",
     "apply_environment_snapshot_wiring",
+    "cache_deploy_environment_snapshot",
     "capture_environment_snapshot",
     "compute_profile_snapshot_id",
+    "resolve_cached_environment_snapshot",
     "stable_digest_hex",
 ]

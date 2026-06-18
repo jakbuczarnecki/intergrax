@@ -2,6 +2,7 @@
 # Integrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
+from intergrax.utils import attribute_access
 import warnings
 
 from dataclasses import dataclass, field
@@ -104,7 +105,7 @@ class IntergraxSupervisor:
         # Build a clean component execution context
         return ComponentContext(
             llm_adapter=self.cfg.llm_adapter,
-            resources=getattr(self.cfg, "resources", {}) or {}
+            resources=attribute_access.optional(self.cfg, "resources", {}) or {}
         )
 
     def register_components(self, comps: Iterable[Component]):
@@ -115,7 +116,7 @@ class IntergraxSupervisor:
         return list(self._components.values())
 
     def _is_available(self, c: Component) -> bool:
-        return getattr(c, "available", True)
+        return attribute_access.optional(c, "available", True)
 
     def set_prompts(self, *, plan_system: Optional[str] = None, plan_user_template: Optional[str] = None):
         if plan_system is not None:
@@ -141,12 +142,12 @@ class IntergraxSupervisor:
                     if isinstance(content, str):
                         return content
             # some adapters return SimpleNamespace/objects with .content
-            content = getattr(raw, "content", None)
+            content = attribute_access.optional(raw, "content", None)
             if isinstance(content, str):
                 return content
             # some return list of messages
             if isinstance(raw, list) and raw:
-                maybe = getattr(raw[-1], "content", None)
+                maybe = attribute_access.optional(raw[-1], "content", None)
                 if isinstance(maybe, str):
                     return maybe
             # fallback to string
@@ -494,7 +495,7 @@ class IntergraxSupervisor:
         for c in self._components.values():
             if not self._is_available(c):
                 continue
-            ex = f" | examples: {', '.join(c.examples)}" if getattr(c, "examples", None) else ""
+            ex = f" | examples: {', '.join(c.examples)}" if attribute_access.optional(c, "examples", None) else ""
             lines.append(f"- name: {c.name} | desc: {c.description} | use_when: {c.use_when}{ex}")
         if not lines:
             return "- (no components available)"
@@ -507,9 +508,9 @@ class IntergraxSupervisor:
                 continue
             rows.append({
                 "name": c.name,
-                "description": getattr(c, "description", ""),
-                "use_when": getattr(c, "use_when", ""),
-                "outputs": getattr(c, "outputs", []) or getattr(c, "allowed_outputs", []) or [],
+                "description": attribute_access.optional(c, "description", ""),
+                "use_when": attribute_access.optional(c, "use_when", ""),
+                "outputs": attribute_access.optional(c, "outputs", []) or attribute_access.optional(c, "allowed_outputs", []) or [],
             })
         return rows
 
@@ -612,13 +613,13 @@ class IntergraxSupervisor:
         print_fn(f"   Component: {step.component or '—'}")
         print_fn(f"   Component found: {comp_found}")
         if hasattr(step, "router_score"):
-            print_fn(f"   Assign score: {step.router_score:.2f} | low_confidence={bool(getattr(step,'low_confidence',False))}")
+            print_fn(f"   Assign score: {step.router_score:.2f} | low_confidence={bool(attribute_access.optional(step,'low_confidence',False))}")
         print_fn(f"   Inputs: {step.inputs or []}")
         print_fn(f"   Outputs: {step.outputs or []}")
         print_fn(f"   Success criteria: {step.success_criteria or []}")
         print_fn(f"   Fallback: {step.fallback or '-'}")
-        wm = getattr(step, "why_method", None) or (analysis_row or {}).get("why_method")
-        wc = getattr(step, "why_component", None) or (analysis_row or {}).get("why_component")
+        wm = attribute_access.optional(step, "why_method", None) or (analysis_row or {}).get("why_method")
+        wc = attribute_access.optional(step, "why_component", None) or (analysis_row or {}).get("why_component")
         if wm or wc:
             print_fn("   Rationale:")
             if wm: print_fn(f"     why_method: {wm}")

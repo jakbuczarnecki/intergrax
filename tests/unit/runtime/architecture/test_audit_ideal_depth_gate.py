@@ -100,6 +100,20 @@ def test_audit_ideal_27_2_replay_router() -> None:
     assert any(route.path.endswith("/replay") for route in router.routes)
 
 
+def test_audit_ideal_27_2_replay_environment_wiring() -> None:
+    from intergrax.applications._shared.replay_environment_wiring import (
+        resolve_replay_environment_wiring,
+    )
+
+    wiring = resolve_replay_environment_wiring(
+        ApplicationEnvironmentProfile.product_defaults()
+    )
+    assert wiring.enabled
+    assert wiring.router is not None
+    paths = {route.path for route in wiring.router.routes}
+    assert "/harness/replay" in paths
+
+
 def test_audit_ideal_30_1_ecp_architecture_synced() -> None:
     arch = REPO_ROOT / "docs" / "architecture" / "ELASTIC_CAPACITY_AND_SCALING.md"
     text = arch.read_text(encoding="utf-8")

@@ -8,7 +8,7 @@
 **Audit instruction:** [`guides/audit/RAG.md`](../guides/audit/RAG.md)  
 **Related:** [`architecture/INTEGRATIONS.md`](INTEGRATIONS.md) (vector_store, document_parser, rerank_provider slugs) · [`architecture/MEMORY.md`](MEMORY.md) (Knowledge store vs LTM) · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix K §K.5  
 **Implementation:** `intergrax/rag/`  
-**Last architecture audit:** 2026-06-13 (iteration II — doc convergence + tool diagnostics; layer **Frozen**) · 2026-06-13 (M-RAG-BACKLOG P2–P4) · 2026-06-12 (GraphRAG G1–G5)
+**Last architecture audit:** 2026-06-17 — **Full Harness LC** (re-validates M-RAG-ITERATION-III); **Architecturally Mature** · 2026-06-13 (iteration II Frozen) · 2026-06-12 (GraphRAG G1–G5)
 
 ---
 
@@ -42,7 +42,7 @@ Tier-3 IntegrationProfile + RagProfile
 | Multi-GB corpora / book-scale without Tier-3 jobs? | **Partial** — sync ingest rejected above `sync_ingest_max_bytes`; use `rag.schedule_ingest_job` + orchestrator worker (M-RAG.26). |
 | Untrusted surfaces via raw `rag.retrieve`? | **Ready** when `security_profile.retrieval_poisoning_defense_enabled` on `ToolWiringContext` (M-RAG.25). |
 
-**Remediation status:** M-RAG-DEPTH **complete** · M-RAG-GRAPH **complete** · M-RAG-BACKLOG **complete** · layer **Frozen** (2026-06-13).
+**Remediation status:** M-RAG-DEPTH **complete** · M-RAG-GRAPH **complete** · M-RAG-BACKLOG **complete** · M-RAG-ITERATION-III **complete** (2026-06-17) · layer **Architecturally Mature**.
 
 ---
 
@@ -61,7 +61,7 @@ Tier-3 IntegrationProfile + RagProfile
 | Security (poisoning) | **L3** | Nexus `rag.retrieve` (catalog) + catalog `rag.retrieve` when `security_profile` wired (M-RAG.25) |
 | Citations | **L3** | Formal `Citation` on `RetrievalResult` + `RagRetrieveOutput.citations` (M-RAG.29) |
 | Vector backends (prod SLO) | **L3** | Catalog **stable:** `qdrant`, `pgvector`, `chroma`, `weaviate`, `lancedb`, `typesense`; **beta:** `pinecone`, `milvus`, `vespa`, `inmemory`; soak gates M-RAG.30/56 |
-| Multi-tenant isolation | **L3** | Cross-backend contract tests vector + graph (M-RAG.35, M-RAG.41) |
+| Multi-tenant isolation | **L3** | Cross-backend contract tests vector (`inmemory`, `pgvector`, `weaviate`, `qdrant`, `chroma`, `lancedb`, `typesense` — M-RAG.62) + graph (M-RAG.35, M-RAG.41) |
 | Evaluation depth | **L3** | Golden harness + `run_retrieval_load_soak` CI gate (M-RAG.36) |
 
 **Overall engine posture:** **L3 implementation / L3 control plane** — **Frozen** harness layer (2026-06-13). L4 adaptive retriever selection → [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md).
@@ -165,6 +165,8 @@ RETRIEVE (rag.retrieve / RetrievalService)
 | Evaluation | `evaluation/metrics.py`, `golden_harness.py` | `recall@k`, MRR; golden CI scenarios |
 | Observability | `tracking/metrics.py`, `observability_bridge.py` | Opt-in metrics + runtime plugin |
 | Indexing | `indexing/` | `SingleIndexStrategy`, `DualIndexStrategy` (TOC + chunks) |
+| Governance | `vectorstore/governance/`, `profiles/rag_profile_validator.py` | Collection ACL (M-RAG.65); profile bootstrap validation (M-RAG.63) |
+| Reference workflows | `applications/_shared/reference_workflows/rag_async_ingest.py` | Tier-3 async ingest shard planner (M-RAG.67) |
 
 ---
 
@@ -341,7 +343,7 @@ RAG **consumes** Integration Library categories; it does not duplicate vendor ad
 | `vector_store` | Embedding indexes — implementations in `rag/vectorstore/`, catalog bridges in `integrations/providers/vector_store/` |
 | `document_parser` | Ingest parsing — `CatalogDocumentParser` + `INTERGRAX_RAG_DOCUMENT_PARSER_SLUG` |
 | `rerank_provider` | Vendor rerank APIs — `rerankers/` resolves via profile |
-| `graph_store` | Integration backends — adapted to RAG `GraphStore` via `create_rag_graph_store` (today: neo4j adapter only; registry: M-RAG.38) |
+| `graph_store` | Integration backends — adapted to RAG `GraphStore` via `create_rag_graph_store` backend registry (M-RAG.38+) |
 | `workflow_orchestrator` | Large-corpus reindex / async ingest via `rag.schedule_ingest_job` (M-RAG.26) |
 
 Bootstrap: `create_vectorstore_manager()` in `vectorstore/bootstrap/` resolves via integration catalog when `vector_store` is configured on `IntegrationProfile`.
@@ -350,7 +352,9 @@ Bootstrap: `create_vectorstore_manager()` in `vectorstore/bootstrap/` resolves v
 
 ## Tenant scope and metadata
 
-Retrieve and ingest accept scope fields (`tenant_id`, `session_id`, `user_id`, `workspace_id`) → `MetadataFilter` on vector query. `InMemoryVectorStore` enforces `tenant_id` mismatch as `ValueError`. Cross-backend contract: `intergrax/rag/vectorstore/tenant/tenant_isolation_contract.py` — gate tests for `inmemory`, `pgvector`, `weaviate`, `qdrant` (M-RAG.35).
+Retrieve and ingest accept scope fields (`tenant_id`, `session_id`, `user_id`, `workspace_id`) → `MetadataFilter` on vector query. `InMemoryVectorStore` enforces `tenant_id` mismatch as `ValueError`. Cross-backend contract: `intergrax/rag/vectorstore/tenant/tenant_isolation_contract.py` — gate tests for `inmemory`, `pgvector`, `weaviate`, `qdrant`, `chroma`, `lancedb`, `typesense` (M-RAG.35, M-RAG.62).
+
+Optional **collection-level ACL:** `CollectionAccessPolicy` on `VectorstoreManager` (M-RAG.65) — pair with UAEP at Tier-3 wiring.
 
 **Graph store:** tenant namespace enforced via `GraphStore.tenant_id` + `graph/tenant/graph_isolation_contract.py` gate tests (M-RAG.41).
 
@@ -385,7 +389,7 @@ OTel span names (tracer `intergrax.rag`): `rag.retrieve`, `rag.retrieve.single_p
 
 ## Evaluation
 
-- Metrics: `recall@k`, MRR — `evaluation/metrics.py`
+- Metrics: `recall@k`, MRR, `precision@k`, `ndcg@k` — `evaluation/metrics.py`
 - Golden harness: `tests/fixtures/rag_golden/retrieval_cases.json` — scenarios `retrieval`, `graph_rag`, `multi_hop`, `agentic`
 - CI: `.github/workflows/rag-guard.yml`
 - Load/soak SLO gate: `run_retrieval_load_soak()` — concurrent workers, p95 latency budget, per-query recall regression (`test_rag_load_soak_gate.py`; CI `.github/workflows/rag-guard.yml`)
@@ -447,7 +451,7 @@ Code-backed re-audit (iteration II on **Frozen** layer). Key confirmations:
 
 | Check | Result | Evidence |
 |-------|--------|----------|
-| Unit + tools RAG gate | **111 passed** | `uv run pytest tests/unit/rag/ tests/unit/tools/providers/rag/ -m gate -q` |
+| Unit + tools RAG gate | **108 passed** | `uv run pytest tests/unit/rag/ tests/unit/tools/providers/rag/ -m gate -q` |
 | GraphRAG 3-channel fusion | **Closed M-RAG.53** | `graph_channel_fusion.py` + `test_hybrid_retrieval_graph_channel.py` |
 | Graph provenance on trace | **Closed M-RAG.54** | `graph_provenance_builder.py` + `test_graph_provenance_retrieval_trace.py` |
 | Graph store soak + falkordb prod | **Closed M-RAG.55** | `graph/soak/prod_slo.py` + `test_graph_store_prod_slo_soak.py` |
@@ -456,4 +460,4 @@ Code-backed re-audit (iteration II on **Frozen** layer). Key confirmations:
 | Tool graph diagnostics | **Closed M-RAG.60** | `test_rag_retrieve.py::test_rag_retrieve_diagnostics_include_graph_trace_fields` |
 | Stable soak slug tuple | **Closed M-RAG.61** | `STABLE_PROD_SLO_SLUGS` includes `lancedb`, `typesense` |
 
-**Posture:** RAG layer **Frozen** (2026-06-13) — M-RAG-CONVERGE complete (M-RAG.59–61).
+**Posture:** RAG layer **Architecturally Mature** (2026-06-17) — M-RAG-ITERATION-III complete (M-RAG.62–M-RAG.68). Proposals I/J/K remain explicit rejections (Tier-0 stream ingest, ColBERT, AHI auto-selection).

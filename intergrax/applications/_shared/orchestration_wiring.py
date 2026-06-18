@@ -255,6 +255,7 @@ def resolve_nexus_task_classifier(
             intent_routes=intent_routes,
             orchestration_trigger_capabilities=orch_triggers,
             pipeline_capability_suffix=pipeline_suffix,
+            classifier_prompt_id=env.reasoning_profile.classifier_prompt_id,
         )
     raise OrchestrationWiringError(f"Unhandled classifier_kind: {kind.value}")
 

@@ -4,6 +4,7 @@
 """CodeCraftOrchestrator — harness craft loop (ECC-2+)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import time
 from uuid import uuid4
@@ -104,7 +105,7 @@ class CodeCraftOrchestrator:
             craft_id=session.craft_id,
             mode=profile.mode,
             iteration=1,
-            model_id=getattr(adapter, "model_id", "template"),
+            model_id=attribute_access.optional(adapter, "model_id", "template"),
             tenant_id=tenant_id,
             task_id=task_id,
             agent_id=agent_id,
@@ -155,7 +156,7 @@ class CodeCraftOrchestrator:
                 craft_id=craft_id,
                 mode=profile.mode,
                 iteration=next_iteration,
-                model_id=getattr(adapter, "model_id", "template"),
+                model_id=attribute_access.optional(adapter, "model_id", "template"),
                 tenant_id=tenant_id,
                 task_id=task_id,
                 agent_id=agent_id,

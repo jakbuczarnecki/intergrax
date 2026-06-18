@@ -12,13 +12,15 @@
 
 For one domain pair (e.g. RAG, Tools, Memory), use the dedicated prompt — **do not** rewrite ad-hoc instructions:
 
-1. Open [`audit/<DOMAIN>.md`](audit/README.md#domain-index-21-pairs) (e.g. [`audit/RAG.md`](audit/RAG.md)).
+1. Open [`audit/<DOMAIN>.md`](audit/README.md#domain-index-22-pairs) (e.g. [`audit/RAG.md`](audit/RAG.md)).
 2. Copy `---BEGIN PROMPT---` … `---END PROMPT---` into a new agent chat.
 3. Set `mode` in USER CONFIG.
 
 Domain prompts include shared observability/security/scale checklists plus domain-specific dimensions.
 
 ### Multi-layer or full-platform audit
+
+For **all 22 domain pairs** in one session, use [`audit/bootstrap/01_audit_all_domains.txt`](audit/bootstrap/01_audit_all_domains.txt) (Mode A) or [`audit/README.md`](audit/README.md) for other modes.
 
 ### What to copy
 

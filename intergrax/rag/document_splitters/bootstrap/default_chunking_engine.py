@@ -7,6 +7,7 @@ from __future__ import annotations
 from intergrax.rag.document_splitters.contracts.base_documents_splitter import BaseDocumentsSplitter
 from intergrax.rag.document_splitters.documents_splitter import DocumentsSplitter
 from intergrax.rag.document_splitters.engine.chunking_engine import ChunkingEngine
+from intergrax.rag.document_splitters.registry.plugin_registry import apply_chunking_strategy_plugins
 from intergrax.rag.document_splitters.registry.strategy_registry import (
     ChunkingStrategyRegistry,
 )
@@ -47,6 +48,8 @@ def create_default_chunking_engine(
         )
 
         registry.register(DoclingChunkingStrategy())
+
+    apply_chunking_strategy_plugins(registry)
 
     return ChunkingEngine(
         registry=registry,

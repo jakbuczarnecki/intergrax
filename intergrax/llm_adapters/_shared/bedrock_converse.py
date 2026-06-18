@@ -8,6 +8,7 @@ Falls back to InvokeModel codecs when Converse is unavailable in the runtime cli
 """
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import json
 from typing import Any, Dict, Iterable, List, Optional, Sequence
@@ -109,11 +110,11 @@ def extract_converse_tool_calls(response: Dict[str, Any]) -> List[Dict[str, Any]
 
 
 def converse_supported(client: Any) -> bool:
-    return callable(getattr(client, "converse", None))
+    return attribute_access.is_callable_attr(client, "converse")
 
 
 def converse_stream_supported(client: Any) -> bool:
-    return callable(getattr(client, "converse_stream", None))
+    return attribute_access.is_callable_attr(client, "converse_stream")
 
 
 def iter_converse_stream_text(events: Iterable[Any]) -> Iterable[str]:

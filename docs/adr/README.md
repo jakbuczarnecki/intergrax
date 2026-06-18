@@ -59,6 +59,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 |-----|-------|--------|
 | [ADR-ADAPT-001](entries/2026-06-05/ADR-ADAPT-001.md) | Adaptive Harness Intelligence over classical RL | Accepted |
 | [ADR-LLM-001](entries/2026-06-06/ADR-LLM-001.md) | Typed LLM adapter response envelope | Accepted |
+| [ADR-LLM-002](entries/2026-06-14/ADR-LLM-002.md) | Central ModelCatalog and context window resolution | Accepted |
 | [ADR-FLOW-001](entries/2026-06-07/ADR-FLOW-001.md) | Declarative delegation (`DELEGATES_TO`) expansion | Accepted · implemented |
 | [ADR-FLOW-002](entries/2026-06-07/ADR-FLOW-002.md) | Reserved lifecycle states | Accepted |
 | [ADR-FLOW-003](entries/2026-06-07/ADR-FLOW-003.md) | `MODIFY_PLAN` decision semantics | Accepted |
@@ -76,12 +77,15 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-AGENT-003](entries/2026-06-11/ADR-AGENT-003.md) | Agent step loop (`on_next_step`); dual observability planes | Accepted |
 | [ADR-TOOL-002](entries/2026-06-11/ADR-TOOL-002.md) | Bounded multi-iteration tool loop; graph boundary (TOOL-ENG-6) | Accepted |
 | [ADR-APP-002](entries/2026-06-12/ADR-APP-002.md) | EnvironmentSnapshot on STRICT task intake | Accepted |
+| [ADR-APP-003](entries/2026-06-17/ADR-APP-003.md) | Hierarchical profile bundles on ApplicationEnvironmentProfile | Accepted |
 | [ADR-CTX-001](entries/2026-06-12/ADR-CTX-001.md) | Context Engineering as first-class domain and plugin engine | Accepted |
+| [ADR-MEM-002](entries/2026-06-14/ADR-MEM-002.md) | Three-domain vector memory catalog (knowledge, LTM, episodic) | Accepted |
 | [ADR-FLOW-005](entries/2026-06-12/ADR-FLOW-005.md) | Retire Tier-1 AgentEngine pipeline stack (ACP-CLOSE-LEG-5) | Accepted |
 | [ADR-TOOL-003](entries/2026-06-12/ADR-TOOL-003.md) | `ToolInvocationPattern` protocol and orchestration plugin model (TOOL-ENG-16) | Accepted |
 | [ADR-TOOL-004](entries/2026-06-12/ADR-TOOL-004.md) | Semantic tool catalog index vs RAG; selection boundary (TOOL-ENG-13) | Accepted |
 | [ADR-TOOL-005](entries/2026-06-12/ADR-TOOL-005.md) | Hierarchical selection v1; strategy plugin surfaces (TOOL-ENG-14,26,31) | Accepted |
 | [ADR-OBS-002](entries/2026-06-13/ADR-OBS-002.md) | Unsigned Execution Boundary Export (EBE) — partner PoC side channel | Accepted |
+| [ADR-OBS-003](entries/2026-06-17/ADR-OBS-003.md) | Layered runtime event identity — spine + event_kind + EventCatalog | Accepted |
 
 ---
 

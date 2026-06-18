@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 from typing import Optional, Dict
 import httpx
 
@@ -70,7 +71,7 @@ async def fetch_page(
         is_paywalled=None,
         extra={
             "headers": dict(response.headers),
-            "http_version": getattr(response, "http_version", None),
+            "http_version": attribute_access.optional(response, "http_version", None),
         },
     )
     return page

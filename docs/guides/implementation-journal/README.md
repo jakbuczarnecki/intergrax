@@ -11,7 +11,7 @@
 | Significant decisions | `docs/adr/`, agent/app `adr/` | Link only — not a second ADR store |
 | Technical proof | Git commits, tests | Verification commands and outcome |
 
-The journal is **operator tooling** (alongside [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HARNESS_AUDIT_MAP.md) and [`audit/`](../audit/)). It does **not** replace domain pairs or plan rows.
+The journal is **operator tooling** (alongside [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HARNESS_AUDIT_MAP.md), [`LAYER_COMPLETION_MODE.md`](../LAYER_COMPLETION_MODE.md), and [`audit/`](../audit/)). It does **not** replace domain pairs or plan rows.
 
 **Operator request** sections are **paraphrases** of the architect's intent — not verbatim chat transcripts.
 

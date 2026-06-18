@@ -67,7 +67,7 @@ This document solves that problem by dividing the platform into auditable Harnes
 
 # 3. Audit Philosophy
 
-**Per-domain copy-paste prompts:** For deep single-domain audits (RAG, Tools, Memory, UAEP, …), use [`audit/README.md`](audit/README.md) — 21 prompts aligned 1:1 with `architecture/<DOMAIN>.md` ↔ `plan/<DOMAIN>.md`. Use this document for layer map, scoring, and output format; use `audit/<DOMAIN>.md` for the runnable agent instruction.
+**Per-domain copy-paste prompts:** For deep single-domain audits (RAG, Tools, Memory, UAEP, …), use [`audit/README.md`](audit/README.md) — 22 prompts aligned 1:1 with `architecture/<DOMAIN>.md` ↔ `plan/<DOMAIN>.md`. **Multi-domain orchestration** (all 22 pairs in one Cursor session): [`audit/bootstrap/`](audit/bootstrap/README.md). Use this document for layer map, scoring, and output format; use `audit/<DOMAIN>.md` for the runnable agent instruction.
 
 Do not audit the entire system at once.
 
@@ -906,7 +906,7 @@ RAG Architecture Score: L0-L4
 
 ## 15. Memory Layer
 
-**Canonical architecture:** [`architecture/MEMORY.md`](architecture/MEMORY.md) · implementation: [Phase MEM](plan/MEMORY.md) (**Done**) · [Phase MEM-DEPTH](plan/MEMORY.md) (**Done**)
+**Canonical architecture:** [`architecture/MEMORY.md`](architecture/MEMORY.md) · implementation: [Phase MEM](plan/MEMORY.md) (**Done**) · [Phase MEM-DEPTH](plan/MEMORY.md) (**Done**) · [Phase MEM-VEC](plan/MEMORY.md) (**P0–P1 Done**, MEM-VEC-3 backlog)
 
 ### Purpose
 
@@ -1511,6 +1511,7 @@ Verify that applications are deployable environments, not agents.
 * No application manifest.
 * Deployment not self-contained.
 * Tier-3 wiring duplicated.
+* Flat `ApplicationEnvironmentProfile` namespace growth — mitigated by hierarchical bundles (§22.6 · APP-EVOL-8 · ADR-APP-003).
 
 ### Score
 

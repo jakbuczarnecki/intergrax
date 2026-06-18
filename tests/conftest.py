@@ -4,21 +4,17 @@
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-
-
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+_REPO_ROOT = ROOT
 _FIXTURE_PKG = _REPO_ROOT / "tests" / "fixtures" / "plugin_packages" / "intergrax_catalog_fixture"
 
 
@@ -49,14 +45,28 @@ def catalog_fixture_installed() -> None:
 
 @pytest.fixture(scope="session", autouse=True)
 def _ensure_agent_fleet_inventory() -> None:
-    """Generate fleet inventory when gate tests run without prior governance scripts."""
-    inventory_path = _REPO_ROOT / "build" / "agent_fleet_inventory.json"
-    if inventory_path.is_file():
-        return
+    """Regenerate fleet inventory so gate readiness checks see current migration roster."""
     subprocess.check_call(
         [sys.executable, str(_REPO_ROOT / "scripts" / "audit_agent_fleet_legacy.py")],
         cwd=str(_REPO_ROOT),
     )
+
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    """When `-m gate` is used without `no_ci`, drop infra-heavy `no_ci` tests from selection."""
+    markexpr = str(config.getoption("-m") or "")
+    if "no_ci" in markexpr or "gate" not in markexpr:
+        return
+    deselected: list[pytest.Item] = []
+    remaining: list[pytest.Item] = []
+    for item in items:
+        if item.get_closest_marker("no_ci"):
+            deselected.append(item)
+        else:
+            remaining.append(item)
+    if deselected:
+        config.hook.pytest_deselected(items=deselected)
+        items[:] = remaining
 
 
 @pytest.fixture

@@ -17,6 +17,10 @@ from intergrax.runtime.organization.organization_profile import (
 from intergrax.runtime.organization.organization_profile_store import (
     OrganizationProfileStore,
 )
+from intergrax.memory.user_profile_serialization import (
+    memory_entry_from_dict,
+    memory_entry_to_dict,
+)
 from intergrax.utils.time_provider import SystemTimeProvider
 
 
@@ -184,6 +188,14 @@ class SQLiteOrganizationProfileStore(OrganizationProfileStore):
             extra=json.loads(extra_json) if extra_json else {},
         )
 
+        memory_payload = profile.extra.get("memory_entries_v1")
+        if isinstance(memory_payload, list):
+            profile.memory_entries = [
+                memory_entry_from_dict(item)
+                for item in memory_payload
+                if isinstance(item, dict)
+            ]
+
         profile.last_updated_utc = datetime.fromisoformat(last_updated_utc)
         profile.modified = bool(modified)
 
@@ -193,6 +205,13 @@ class SQLiteOrganizationProfileStore(OrganizationProfileStore):
         cursor = self._connection.cursor()
 
         profile.last_updated_utc = SystemTimeProvider.utc_now()
+        extra_payload = dict(profile.extra)
+        if profile.memory_entries:
+            extra_payload["memory_entries_v1"] = [
+                memory_entry_to_dict(entry) for entry in profile.memory_entries
+            ]
+        elif "memory_entries_v1" in extra_payload:
+            extra_payload.pop("memory_entries_v1", None)
 
         cursor.execute(
             """
@@ -256,7 +275,7 @@ class SQLiteOrganizationProfileStore(OrganizationProfileStore):
                 if profile.knowledge_sources
                 else None,
                 json.dumps(profile.tags) if profile.tags else None,
-                json.dumps(profile.extra) if profile.extra else None,
+                json.dumps(extra_payload) if extra_payload else None,
                 profile.last_updated_utc.isoformat(),
                 1 if profile.modified else 0,
             ),

@@ -4,6 +4,7 @@
 """Strongly-typed agent class references for Tier-3 bindings."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import importlib
 from typing import Any, Callable, TypeVar
@@ -23,8 +24,8 @@ def qualname_for_agent(agent_type: type[Agent]) -> str:
 
 def qualname_for_callable(fn: Callable[..., Any]) -> str:
     """Fully-qualified callable: ``package.module.function``."""
-    module = getattr(fn, "__module__", None)
-    qualname = getattr(fn, "__qualname__", None)
+    module = attribute_access.optional(fn, "__module__", None)
+    qualname = attribute_access.optional(fn, "__qualname__", None)
     if not module or not qualname:
         raise ValueError(f"Cannot derive qualname for callable {fn!r}")
     return f"{module}.{qualname}"
@@ -54,7 +55,7 @@ def resolve_agent_type(*, agent_type: type[Agent] | None, import_path: str | Non
         ) from exc
 
     try:
-        resolved = getattr(module, class_name)
+        resolved = attribute_access.optional(module, class_name)
     except AttributeError as exc:
         raise AgentImportError(
             f"Module {module_path!r} has no attribute {class_name!r}"

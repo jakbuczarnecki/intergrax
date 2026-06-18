@@ -33,10 +33,12 @@ def resolve_live_model_routing_wiring(
         return LiveModelRoutingWiring(enabled=False, engine_id="routing_tuning", routing_decision=None)
 
     primary = env.llm_profile or LLMProfile.lab()
-    fallback = LLMProfile(provider=primary.provider, model=primary.model)
+    fallbacks = tuple(primary.fallback_profiles)
+    if not fallbacks and primary.model:
+        fallbacks = (LLMProfile(provider=primary.provider, model=primary.model),)
     router = ModelRouter.from_profiles(
         primary,
-        fallback=fallback,
+        fallbacks=fallbacks,
         policy_route_hint="balanced",
     )
     engine = RoutingTuningEngine(InMemoryBanditStateStore())

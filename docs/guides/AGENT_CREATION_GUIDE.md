@@ -4,6 +4,7 @@
 
 This is the **only** step-by-step workflow document. Do not duplicate this process elsewhere.
 Architecture canon: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
+Cross-domain invariants: [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) — skim before agent work (P2-ARCH-01)  
 Implementation status: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
 
 **Audience:** human developers, GPT, Claude, Gemini, Cursor agents.
@@ -1029,7 +1030,7 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 
 Full catalog (167 providers, each with English `USAGE.md`): [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md). Per-slug examples: `intergrax/integrations/providers/<category>/<slug>/USAGE.md`.
 
-LLM adapters (`intergrax/llm_adapters/`) are **not** part of the Integration Library — configure them separately.
+LLM adapters (`intergrax/llm_adapters/`) are **not** part of the Integration Library — configure them via **`LLMProfile`** and [`intergrax/llm_adapters/USAGE.md`](../intergrax/llm_adapters/USAGE.md). Architecture: [`docs/architecture/LLM_ADAPTERS.md`](../docs/architecture/LLM_ADAPTERS.md). Active uplift: **Phase M-LLM-X** (ModelCatalog, routing, DX).
 
 ### Decision checklist
 
@@ -1210,7 +1211,16 @@ Intergrax is **policy-first** and **event-first**. Governance and observability 
 ### H.2 Control plane map (where to customize)
 
 ```text
-ApplicationEnvironmentProfile (Tier-3 umbrella)
+ApplicationEnvironmentProfile (Tier-3 umbrella — single root)
+  ├── meta (HostMeta)             → profile_id, execution_mode, features  [§22.6 target]
+  ├── security (SecurityEnvelope) → identity, security_profile, guardrails, org envelope
+  ├── capabilities (CapabilityBundle) → tools, skills, integrations, LLM, context, memory, prompt
+  ├── cognition (CognitionBundle) → reasoning, orchestration, critic, adaptive, evaluation, codecraft
+  ├── governance (GovernanceBundle) → reliability, observability, cost, scaling, deploy, EBE
+  ├── topology (TopologyBundle)   → ApplicationGraphSpec
+  └── isolation (IsolationBundle) → shadow workspace, sandbox
+
+Flat accessors (current wire — until APP-EVOL-8 M1):
   ├── security_profile          → V-SEC toggles (prompt/tool/retrieval/tenant) → application_security_wiring.py
   ├── guardrail_profile         → vendor LLM scan toggles (M.12) + `integration_profile.llm_guardrail` slug
   ├── integration_profile.llm_guardrail → NeMo / LLM Guard / Presidio / … (Tier-0 catalog — agents never import SDKs)
@@ -1223,6 +1233,8 @@ ApplicationEnvironmentProfile (Tier-3 umbrella)
   ├── adaptive_profile          → L4 runtime loops, stores, canary traffic (Appendix V)
   ├── execution_mode            → strict | balanced | exploratory → runtime_policies
   └── integration_profile       → observability_backend slug (prometheus, otel, elasticsearch, …)
+
+Canon: architecture/TIER3_APPLICATION_ENVIRONMENT.md §22.6 · ADR-APP-003.
 
 RuntimePolicyBundle (composed once per host)
   ├── tool_access / tool_scope  → allowed_tools intersection with AgentContract
@@ -2177,6 +2189,32 @@ Release / CI
 
 Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §21: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md).
 
+### Q.5 Domain runtime signals (`event_kind` · OBS-EVOL-9)
+
+**Audience:** Tier-2 agent authors · **ADR:** [`ADR-OBS-003`](../adr/entries/2026-06-17/ADR-OBS-003.md)
+
+Agents and applications **must not** add members to `RuntimeEventType`. Use layered identity:
+
+| Need | API | Example |
+|------|-----|---------|
+| Debug / step detail | `DiagnosticPayload` via `AgentEngine` | `agents.legal.diag.clause_parse` |
+| Operator-visible domain fact | `emit_domain_signal(kind, payload)` | `agents.legal.clause_flagged` |
+| Platform lifecycle | Platform only — `emit_platform_event` | `TOOL_COMPLETED` |
+
+```python
+from intergrax.runtime.events.signals import emit_domain_signal
+
+emit_domain_signal(
+    ctx,
+    kind="agents.my_agent.risk_flagged",
+    payload=MyRiskFlaggedPayloadV1(...),
+)
+```
+
+Register `payload_schema_id` via extension SDK (`register_payload_schema(..., extension=True)`). Document `event_kind` in agent `ARCHITECTURE.md`. Tier-3 hooks subscribe with `kind_prefix="agents.my_agent."`.
+
+**Do not** import `RuntimeEventBus` or trace stores from Tier-2 agents.
+
 ---
 
 ## Appendix R — Reliability control plane closeout
@@ -2669,7 +2707,7 @@ Declare on **`AgentContract`** (defaults); narrow per host via **`AgentBinding`*
 | Tools / skills | `skill_ids`, `extra_tools` on contract | `await ctx.invoke_tool(...)` |
 | Memory | `memory_namespace_template` + **`memory_scope`** on contract | `ctx.memory_view` — **user-scoped by default** §30.9; org agents use `memory_scope=org` |
 | RAG / knowledge | `default_rag_collection` + tool `rag.retrieve` | collection in tool args / metadata |
-| LLM | Host `LLMProfile`; per-step hint via `StepLLMRouter` §33 | `ctx.llm_router.set_hint(...)` in `on_next_step` |
+| LLM | Host `LLMProfile`; per-step hint via `StepLLMRouter` §33 | `ctx.llm_router` in `on_next_step` — converges on `LLMAdapter` ([M-LLM-X.5](../plan/LLM_ADAPTERS.md)) |
 | Database | `required_integration_slugs` + tools | integration tools only |
 
 Same agent in **lab** vs **prod**: different Tier-3 profile — **no code fork**.
@@ -2887,6 +2925,7 @@ Run before opening a harness PR (see `scripts/`):
 
 When asked to create a new Intergrax agent:
 
+0. Skim [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) — cross-domain rules (`SYS-INV-*`) that apply to every agent.
 1. Read this guide end-to-end.
 2. Run `python -m intergrax.scaffold new-agent <slug> --capability <id>`.
 3. Edit only `agents/<slug>/` — primarily `steps/`, `prompts/`, `schemas/`, `contract.py`.

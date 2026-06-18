@@ -4,6 +4,7 @@
 """Graph-augmented retrieval: vector + keyword + graph channel fusion (M-RAG.42–43, M-RAG.53–54)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Set
@@ -140,7 +141,7 @@ class GraphRagRetriever(BaseRetriever):
 
         provenance_bundle = build_graph_retrieval_provenance(
             trace_id=query.query_text[:64] or "graph_rag",
-            graph_id=getattr(self._graph, "tenant_id", None) or "rag_graph",
+            graph_id=attribute_access.optional(self._graph, "tenant_id", None) or "rag_graph",
             seed_node_ids=sorted(related_node_ids),
             expanded_nodes=expanded_nodes,
         )

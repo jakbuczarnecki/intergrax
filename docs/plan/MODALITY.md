@@ -6,6 +6,8 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates W-ML.0–W-ML.8 + AUDIT-IDEAL-29.1/29.2 closeout).
+
 ---
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
@@ -99,5 +101,25 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 | 2026-06-02 | W-ML.celery | `CeleryModalityInferenceExecutor`, serialized modality jobs, trace `modality_metrics` on `tool_invocation_end`, aggregated export |
 | 2026-06-02 | W-ML.metrics+ | Typed `ModalityInvocationCounters`, `media_bytes`/`tts_characters`/`ml_predictions` recording, message_bus Celery registration, capability graph modality `COMPATIBLE_WITH` edges |
 | 2026-06-03 | W-ML.7b | `TASK_COMPLETED` payload includes aggregated `modality_metrics` via `NexusRuntimeEventPublisher` + `RunTraceReader` |
+
+---
+
+## Phase MODALITY-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — re-validates W-ML.0–W-ML.8 + AUDIT-IDEAL-29.1/29.2; no open P0/P1  
+**Prerequisites:** Phase W-ML **Done** · modality CI gates  
+**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**ADR:** **No ADR needed**
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| MODALITY-LC-S1 | **Re-audit** — W-ML register + three-plane verdict | **Done** | High | No P0/P1 |
+| MODALITY-LC-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
+| MODALITY-LC-S3 | **Gate verification** | **Done** | High | 14 unit tests · 2 CI gate scripts |
+| MODALITY-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+
+**Deferred P2–P4:** OpenCV golden tests require `opencv-python-headless` in runner env · online training out of scope · Plane A/C boundary ops docs
+
+**Note:** `check_modality_live_endpoints` + `check_modality_product_worker_pool` green; 2 OpenCV-dependent unit tests fail when `cv2.imread` unavailable (environment, not harness defect).
 
 ---

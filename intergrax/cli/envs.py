@@ -3,6 +3,7 @@
 """``intergrax envs`` — Tier-3 environment registry CLI (APP-OPS-4)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import argparse
 import json
@@ -38,8 +39,8 @@ def run_envs(args: argparse.Namespace) -> int:
     _ensure_paths(repo_root)
 
     if args.envs_command == "list":
-        entries = list_environments(repo_root, app_id=getattr(args, "app_id", None))
-        if getattr(args, "json", False):
+        entries = list_environments(repo_root, app_id=attribute_access.optional(args, "app_id", None))
+        if attribute_access.optional(args, "json", False):
             payload = [entry.model_dump(mode="json") for entry in entries]
             print(json.dumps(payload, indent=2, sort_keys=True))
             return 0

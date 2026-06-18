@@ -102,11 +102,13 @@ class SessionMemoryConsolidationService:
         profile_manager: UserProfileManager,
         instructions_service: UserProfileInstructionsService,
         config: Optional[SessionMemoryConsolidationConfig] = None,
+        entity_graph_service: Any | None = None,
     ) -> None:
         self._llm = llm
         self._profile_manager = profile_manager
         self._instructions_service = instructions_service
         self._config = config or SessionMemoryConsolidationConfig()
+        self._entity_graph_service = entity_graph_service
 
 
     async def consolidate_session(
@@ -166,6 +168,8 @@ class SessionMemoryConsolidationService:
         for entry in entries:
             stored = await self._profile_manager.add_memory_entry(user_id, entry)
             stored_entries.append(stored)
+            if self._entity_graph_service is not None:
+                self._entity_graph_service.index_memory_entry(user_id=user_id, entry=stored)
 
         # Optionally refresh user-level system instructions as part of the
         # same pipeline, but only if something was actually stored.

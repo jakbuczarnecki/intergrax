@@ -3,6 +3,7 @@
 """Shadow/sandbox lifespan cleanup and env-state isolation refs (APP-CON-8 · APP-PROD-8)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
@@ -40,7 +41,7 @@ def _resolve_root_path(manager: ShadowWorkspaceManager | SandboxSessionManager |
     handle = manager.get(handle_id)
     if handle is None:
         return None
-    root = getattr(handle, "root", None)
+    root = attribute_access.optional(handle, "root", None)
     return str(root) if root is not None else None
 
 

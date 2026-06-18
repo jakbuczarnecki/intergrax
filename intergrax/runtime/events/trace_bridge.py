@@ -36,6 +36,7 @@ from intergrax.runtime.nexus.tracing.steps.step_started import RuntimeStepStarte
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.phase_coverage import phase_for_event
 from intergrax.runtime.nexus.tracing.adapters.core_llm_call_recorded import CoreLLMCallRecordedDiagV1
+from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import LLMRoutingAttemptDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceEvent, TraceLevel
 from intergrax.runtime.task.task import Task, TaskState
 
@@ -63,6 +64,7 @@ def trace_bridge_subject_from_tags(
 
 _CORE_LLM_CALL_SCHEMA = CoreLLMCallRecordedDiagV1.schema_id()
 _CORE_LLM_RETURNED_SCHEMA = "intergrax.diag.engine.core_llm.adapter_returned"
+_CORE_LLM_ROUTING_ATTEMPT_SCHEMA = LLMRoutingAttemptDiagV1.schema_id()
 
 _TOOL_STEP_TO_EVENT: dict[str, RuntimeEventType] = {
     "tool_invocation_start": RuntimeEventType.TOOL_REQUESTED,
@@ -202,7 +204,11 @@ def _resolve_event_type_from_trace(
         event_type = _GRAPH_STEP_TO_EVENT[trace.step]
     elif schema_id == GraphNodeDiagV1.schema_id() and trace.step in _GRAPH_STEP_TO_EVENT:
         event_type = _GRAPH_STEP_TO_EVENT[trace.step]
-    elif schema_id in {_CORE_LLM_CALL_SCHEMA, _CORE_LLM_RETURNED_SCHEMA}:
+    elif schema_id in {
+        _CORE_LLM_CALL_SCHEMA,
+        _CORE_LLM_RETURNED_SCHEMA,
+        _CORE_LLM_ROUTING_ATTEMPT_SCHEMA,
+    }:
         event_type = RuntimeEventType.LLM_CALL
     elif trace.step == "core_llm" and "finish_reason" in payload:
         event_type = RuntimeEventType.LLM_CALL

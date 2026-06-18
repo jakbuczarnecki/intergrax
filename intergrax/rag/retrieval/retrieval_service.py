@@ -4,6 +4,7 @@
 """Unified retrieval entry point for ``rag.retrieve``, Nexus, and diagnostics."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import time
 from typing import Any, List, Optional
@@ -58,7 +59,7 @@ class RetrievalService:
             "rag.retrieve",
             attributes={
                 "rag.query.length": len(query),
-                "rag.tenant_id": getattr(request, "tenant_id", None),
+                "rag.tenant_id": attribute_access.optional(request, "tenant_id", None),
             },
         ):
             if not query:
@@ -85,7 +86,7 @@ class RetrievalService:
             "rag.retrieve.single_pass",
             attributes={
                 "rag.query.length": len(query),
-                "rag.tenant_id": getattr(request, "tenant_id", None),
+                "rag.tenant_id": attribute_access.optional(request, "tenant_id", None),
             },
         ):
             trace = RetrievalTrace()
@@ -157,7 +158,7 @@ class RetrievalService:
                     RetrievalChunk(
                         id=r.candidate.id,
                         text=r.candidate.text,
-                        score=float(r.score),
+                        score=float(r.rerank_score),
                         metadata=dict(r.candidate.metadata or {}),
                     )
                     for r in reranked
@@ -201,7 +202,7 @@ class RetrievalService:
                 request=request,
                 trace=trace,
                 hits=len(chunks),
-                tenant_id=getattr(request, "tenant_id", None),
+                tenant_id=attribute_access.optional(request, "tenant_id", None),
             )
             return result
 
@@ -210,7 +211,7 @@ def _apply_retriever_execution_trace(
     retriever_manager: BaseRetrieverManager,
     trace: RetrievalTrace,
 ) -> None:
-    execution = getattr(retriever_manager, "last_execution", None)
+    execution = attribute_access.optional(retriever_manager, "last_execution", None)
     if execution is None:
         return
     trace.retriever_id = execution.used_retriever_id
@@ -253,15 +254,15 @@ def _record_retrieval_metrics(
 def _candidates_to_chunks(candidates: List[Any]) -> List[RetrievalChunk]:
     out: List[RetrievalChunk] = []
     for c in candidates:
-        text = (getattr(c, "content", None) or "").strip()
+        text = (attribute_access.optional(c, "content", None) or "").strip()
         if not text:
             continue
         out.append(
             RetrievalChunk(
-                id=str(getattr(c, "id", "unknown")),
+                id=str(attribute_access.optional(c, "id", "unknown")),
                 text=text,
-                score=float(getattr(c, "score", 0.0) or 0.0),
-                metadata=dict(getattr(c, "metadata", None) or {}),
+                score=float(attribute_access.optional(c, "score", 0.0) or 0.0),
+                metadata=dict(attribute_access.optional(c, "metadata", None) or {}),
             )
         )
     return out

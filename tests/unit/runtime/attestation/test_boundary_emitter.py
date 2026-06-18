@@ -65,10 +65,15 @@ def test_should_emit_side_effects_only():
 
 
 def test_resolve_execution_boundary_export_profile():
-    profile = ExecutionBoundaryExportProfile(enabled=True, capture_mode="side_effects_only")
+    profile = ExecutionBoundaryExportProfile(
+        enabled=True,
+        capture_mode="side_effects_only",
+        step_level_enabled=True,
+    )
     resolved = resolve_execution_boundary_export_runtime(profile)
     assert resolved is not None
     assert resolved.enabled is True
+    assert resolved.step_level_enabled is True
     assert resolved.capture_mode == AttestationCaptureMode.SIDE_EFFECTS_ONLY
 
 
@@ -76,6 +81,8 @@ def test_boundary_event_buffer_append_and_snapshot():
     buffer = BoundaryEventBuffer()
     event = ExecutionBoundaryEventV1(
         event_id="evt-1",
+        event_sequence=1,
+        boundary_type="tool_execution",
         tool_id="records.put",
         agent_id="boundary_demo_agent",
         run_id="run-1",
@@ -146,6 +153,8 @@ def test_execution_boundary_emitter_writes_failed_status_to_buffer() -> None:
     )
     events = buffer.snapshot_for_run("run_failed_emit")
     assert len(events) == 1
+    assert events[0]["event_sequence"] == 1
+    assert events[0]["boundary_type"] == "tool_execution"
     assert events[0]["action_status"] == "failed"
     assert events[0]["error_message"] == "validation failed"
 
@@ -204,5 +213,7 @@ def test_execution_boundary_emitter_writes_to_buffer():
     )
     events = buffer.snapshot_for_run("run_emit_1")
     assert len(events) == 1
+    assert events[0]["event_sequence"] == 1
+    assert events[0]["boundary_type"] == "tool_execution"
     assert events[0]["tool_id"] == "records.put"
     assert events[0]["input"]["partition_key"] == "p"

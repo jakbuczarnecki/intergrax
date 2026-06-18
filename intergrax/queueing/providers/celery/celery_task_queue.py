@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import List, Optional
 
@@ -172,7 +173,7 @@ class CeleryTaskQueue(TaskQueue):
             ("reserved", TaskStatus.PENDING),
             ("scheduled", TaskStatus.PENDING),
         ):
-            fetch = getattr(inspect, fetch_name, None)
+            fetch = attribute_access.optional(inspect, fetch_name, None)
             if fetch is None:
                 continue
             tasks_by_worker = fetch() or {}

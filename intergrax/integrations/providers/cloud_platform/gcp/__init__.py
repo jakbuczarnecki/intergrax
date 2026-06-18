@@ -3,6 +3,7 @@
 
 """GCP cloud platform integration (Phase M.6)."""
 
+from intergrax.utils.lazy_export import export_from_bundle
 from intergrax.integrations.providers.cloud_platform.gcp.config import (
     ENV_GCP_CREDENTIALS_FILE,
     ENV_GCP_PROJECT_ID,
@@ -43,7 +44,7 @@ def __getattr__(name: str):
     if name in _LAZY_EXPORTS:
         from intergrax.integrations.providers.cloud_platform.gcp import bundle as _bundle
 
-        return getattr(_bundle, name)
+        return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "GcpCloudPlatform":
         from intergrax.integrations.providers.cloud_platform.gcp.adapter import GcpCloudPlatform
 

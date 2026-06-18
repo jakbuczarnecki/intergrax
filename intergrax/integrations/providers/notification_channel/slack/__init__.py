@@ -8,6 +8,7 @@ Implementation lives under ``runtime/notifications`` and ``runtime/interactions`
 compose only through this package.
 """
 
+from intergrax.utils.lazy_export import export_from_bundle
 from intergrax.integrations.providers.notification_channel.slack.config import (
     DEFAULT_WEBHOOK_URL,
     ENV_SLACK_SIGNING_SECRET,
@@ -56,5 +57,5 @@ def __getattr__(name: str):
     if name in _BUNDLE_EXPORTS:
         from intergrax.integrations.providers.notification_channel.slack import bundle as _bundle
 
-        return getattr(_bundle, name)
+        return export_from_bundle(_bundle, name, _BUNDLE_EXPORTS)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

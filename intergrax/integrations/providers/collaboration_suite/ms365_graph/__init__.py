@@ -3,6 +3,7 @@
 
 """Microsoft 365 Graph collaboration suite integration (Phase M.6)."""
 
+from intergrax.utils.lazy_export import export_from_bundle
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.config import (
     ENV_MS365_CLIENT_ID,
     ENV_MS365_CLIENT_SECRET,
@@ -45,7 +46,7 @@ def __getattr__(name: str):
     if name in _LAZY_EXPORTS:
         from intergrax.integrations.providers.collaboration_suite.ms365_graph import bundle as _bundle
 
-        return getattr(_bundle, name)
+        return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "Ms365GraphCollaborationSuite":
         from intergrax.integrations.providers.collaboration_suite.ms365_graph.adapter import Ms365GraphCollaborationSuite
 

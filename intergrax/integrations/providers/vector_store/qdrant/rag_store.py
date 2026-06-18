@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence
@@ -433,6 +434,6 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         try:
             self._ensure_qdrant_collection()
             c = self._client.count(self.collection_name, exact=True)
-            return int(getattr(c, "count", 0))
+            return int(attribute_access.optional(c, "count", 0))
         except Exception:            
             return 0

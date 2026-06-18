@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import List, Optional
 
@@ -99,7 +100,7 @@ class RetrieverEngine:
                 )
                 continue
 
-            graph_trace = getattr(retriever, "last_graph_trace", None)
+            graph_trace = attribute_access.optional(retriever, "last_graph_trace", None)
             self._last_execution = RetrieverExecutionMetadata(
                 requested_retriever_id=retriever_id,
                 used_retriever_id=candidate_id,

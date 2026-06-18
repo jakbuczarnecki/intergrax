@@ -8,7 +8,8 @@
 **Audit instruction:** [`guides/audit/MEMORY.md`](../guides/audit/MEMORY.md)  
 **Context assembly (Layer C):** [`architecture/CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md)  
 **Related:** [`architecture/RAG.md`](RAG.md) — Tier-0 retrieval engine; this doc covers **memory stores, lifecycle**, and the **Knowledge vs LTM** boundary.  
----
+**ADR:** [ADR-MEM-001](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler) · [ADR-MEM-002](../adr/entries/2026-06-14/ADR-MEM-002.md) (vector catalog)  
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates layer completion); MEM-VEC + MEM-DEPTH **Done**
 
 ## 2. Design principles
 
@@ -49,11 +50,11 @@ Production-grade Harness AI separates three cooperating layers:
               └─────────────────────────────────────────┘
 ```
 
-| Layer | Phase MEM (Done) | Phase MEM-DEPTH (Done) |
-|-------|------------------|------------------------|
-| **A — Stores** | Four operational stores + trace + RAG wired | Mongo session parity + entity graph store |
-| **B — Lifecycle** | Manual/scheduled consolidation service | Auto job, dedup, episodic, structured summaries |
-| **C — Context Engineering** | Documented under MEMORY (legacy) | **Split to [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md)** — `ContextCompiler` delivery Done |
+| Layer | Phase MEM (Done) | Phase MEM-DEPTH (Done) | Phase MEM-VEC (P0–P1 Done) |
+|-------|------------------|------------------------|----------------------------|
+| **A — Stores** | Four operational stores + trace + RAG wired | Mongo session parity + entity graph store | LTM + episodic vector indexes wired |
+| **B — Lifecycle** | Manual/scheduled consolidation service | Auto job, dedup, episodic, structured summaries | Episodic index on `append_message` |
+| **C — Context Engineering** | Documented under MEMORY (legacy) | **Split to [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md)** — `ContextCompiler` delivery Done | CE `SESSION_HISTORY_SEMANTIC` + Nexus recall handles |
 
 ---
 
@@ -64,8 +65,8 @@ Industry systems (LangMem, Mem0, Zep, Letta, CoALA) use a cognitive taxonomy. In
 | Cognitive type | Purpose | Intergrax store / mechanism | Maturity |
 |----------------|---------|----------------------------|----------|
 | **Working memory** | Active turn context | `state.base_history` + injected LTM/RAG/tool blocks + `AgentContextBundle` | Strong — `ContextCompiler` |
-| **Episodic** | Specific past events / trajectories | `EPISODIC_EVENT` + `SESSION_SUMMARY`; **session turn vector index** (target MEM-VEC); session history; trace replay | Medium → target **Strong** |
-| **Semantic** | Stable facts and preferences | `USER_FACT`, `PREFERENCE`, `ORG_FACT` + **LTM vector index** | Medium — extract + semantic search (wiring gap MEM-VEC-1.*) |
+| **Episodic** | Specific past events / trajectories | `EPISODIC_EVENT` + `SESSION_SUMMARY`; **session turn vector index** (MEM-VEC-2) | Strong — episodic index + CE recall |
+| **Semantic** | Stable facts and preferences | `USER_FACT`, `PREFERENCE`, `ORG_FACT` + **LTM vector index** | Strong — LTM wiring + semantic search |
 | **Procedural** | How the system should behave | `system_instructions` (user/org profile); Prompt Registry | Minimal — no versioned procedural store |
 | **Knowledge** | Document / corpus truth | RAG vectorstore; Graph RAG (documents) | Strong |
 | **Task-scoped** | Per-run scratch state | `TaskMemory` + `PolicyScopedMemoryView` | Strong |
@@ -75,10 +76,11 @@ Industry systems (LangMem, Mem0, Zep, Letta, CoALA) use a cognitive taxonomy. In
 
 ```python
 # intergrax/memory/user_profile_memory.py
-USER_FACT | PREFERENCE | SESSION_SUMMARY | ORG_FACT | POLICY | OTHER
+USER_FACT | PREFERENCE | SESSION_SUMMARY | ORG_FACT | POLICY
+EPISODIC_EVENT | PROCEDURAL | OTHER
 ```
 
-These tags classify **LTM entries** — they are not a full episodic/semantic/procedural type system. Target extensions (MEM-DEPTH): `EPISODIC_EVENT`, `PROCEDURE`, temporal validity fields.
+These tags classify **LTM entries** — semantic vs episodic vs procedural at the **entry** level (AUDIT-IDEAL-15.2 Done). Temporal validity (`valid_from` / `valid_until`) enforced on retrieval (MEM-DEPTH-5.2 **Done**, 2026-06-17).
 
 ---
 
@@ -102,13 +104,13 @@ Canon §27 type              Runtime implementation
 
 | Store | Scope key | Module | Agent access | Default persistence |
 |-------|-----------|--------|--------------|---------------------|
-| **Session (STM)** | `session_id` | `runtime/nexus/session/` | Via Nexus history steps only | SQLite (lab bundle) or in-memory |
+| **Session (STM)** | `session_id` | `runtime/nexus/session/` | Via Nexus history steps only | SQLite bundle, in-memory fallback, or Mongo `DocumentStoreSessionStorage` (MEM-DEPTH-2.1) |
 | **Task KV** | `tenant_id` + `task_id` + namespace | `runtime/task_memory/` | `memory.*` tools via `MemoryView` | SQLite (`INTERGRAX_TASK_MEMORY_DB`) |
 | **User LTM** | `tenant_id` + `user_id` | `intergrax/memory/` | Nexus `UserLongtermMemoryStep` | SQLite bundle / Mongo document_store |
 | **Org profile** | `org_id` | `runtime/organization/` | Nexus profile steps | SQLite bundle |
 | **Shared handoff** | `task_id` | `SharedTaskContext` | `ContextManager` | Task metadata + KV bridge |
 | **Knowledge (RAG)** | collection + metadata filters | `intergrax/rag/` | `rag.retrieve` tool / `rag.retrieve` (catalog) | Vector store per integration profile |
-| **Session episodic index** | `tenant_id` + `session_id` (+ `user_id`) | `intergrax/memory/` (target MEM-VEC-2.*) | Nexus `SessionSemanticRecallStep` (target) | Vector store — **index over session turns**, not a replacement for `SessionStorage` |
+| **Session episodic index** | `tenant_id` + `session_id` (+ `user_id`) | `intergrax/memory/` (`SessionTurnIndexService`) | Nexus `run_session_semantic_recall_context` + CE `SessionSemanticRecallProvider` | Vector store — index over session turns, not a replacement for `SessionStorage` |
 | **Trace** | `run_id` | `runtime/nexus/tracing/` | Read-only debug APIs | SQLite |
 
 ### 5.2 Session vs checkpoint vs task KV
@@ -129,16 +131,16 @@ Intergrax uses **one vector integration stack** (`EmbeddingManager`, `Vectorstor
 |--------------|-----------------|--------------------------------|--------------------------------|---------------|
 | **`knowledge`** | Document / corpus chunks | RAG ingest pipelines | `tenant_id`, collection, `workspace_id`, … | `rag.ingest`, attachment ingest |
 | **`ltm`** | `UserProfileMemoryEntry.content` | `UserProfileStore` (SQLite / Mongo) | `user_id`, `entry_id`, `kind`, `deleted` | `add_memory_entry`, consolidation, `ltm.write_fact` |
-| **`episodic`** | Session turn text (user / assistant) | `SessionStorage` (SQLite / Mongo) | `tenant_id`, `session_id`, `user_id`, `entry_id`, `role`, `deleted` | `SessionManager.append_message` (target MEM-VEC-2.*) |
+| **`episodic`** | Session turn text (user / assistant) | `SessionStorage` (SQLite / Mongo) | `tenant_id`, `session_id`, `user_id`, `entry_id`, `role`, `deleted` | `SessionManager.append_message` (MEM-VEC-2.2) |
 
 **Rules:**
 
 1. **Knowledge ≠ LTM ≠ episodic** — document RAG must not silently absorb user facts; episodic turns must not replace LTM extraction for stable cross-session facts.
-2. **Collection isolation** — `MemoryProfile.vector_index_namespace` (target) or integration-profile defaults derive separate collection names per domain; lab hosts use `"{tenant_id}:ltm"` and `"{tenant_id}:episodic"` unless overridden.
+2. **Collection isolation** — `MemoryProfile.vector_index_namespace` or integration-profile defaults derive separate collection names per domain; lab hosts use `"{tenant_id}:ltm"` and `"{tenant_id}:episodic"` unless overridden.
 3. **Tombstones** — logical deletes in the primary store MUST propagate vector tombstones (`deleted=1` or `delete(ids)`).
 4. **Agents** — Tier-2 agents consume semantic memory only via Nexus steps, `ltm.search`, or future `memory.semantic_search` skill runtime — never via direct vector SDK calls.
 
-**As-built gap (2026-06-12 audit):** LTM index code exists in `UserProfileManager` but default Tier-3 wiring does not inject the RAG stack; episodic session indexing is **not implemented**. Close via [Phase MEM-VEC](../plan/MEMORY.md#phase-mem-vec--vector-memory-integration-band-2aw).
+**As-built (2026-06-17):** LTM and episodic vector indexes wired via `memory_vector_wiring.py`; `retrieval_service` injected into `UserProfileManager`; `vector_index_namespace` enforced via `collection_name` metadata; Tier-3 hosts inject RAG stack into profile manager and episodic index.
 
 ---
 
@@ -178,7 +180,7 @@ flowchart LR
 | Task KV | Agent via `memory.write` / UAEP | `MemoryWritePolicy`, `BEFORE_MEMORY_WRITE` hook, `scope_boundary` |
 | Session | Nexus after each turn | Session lifecycle coordinator |
 | User LTM | `SessionMemoryConsolidationService` or explicit API | LLM extraction; **LTM vector index upsert when RAG stack wired** |
-| Session episodic index | Nexus after `append_message` (target MEM-VEC-2.*) | Embed + upsert turn; tombstone on message delete |
+| Session episodic index | Nexus after `append_message` (MEM-VEC-2.2) | Embed + upsert turn; tombstone on message delete |
 | Org profile | `OrganizationProfileManager` | Admin / consolidation paths |
 | RAG knowledge | Ingest pipelines / tools | Not agent-silent mutation of user profile |
 
@@ -203,9 +205,9 @@ Extraction produces up to `max_facts` `USER_FACT`, `max_preferences` `PREFERENCE
 | `should_forget_stm_record` | Task KV namespaces prefixed `stm:` |
 | `UserProfileMemoryEntry.deleted` | Logical delete + vector index tombstone |
 | Session purge | Storage backend TTL (when configured) |
-| Episodic index purge | `retention_days` + session delete cascades tombstone all `entry_id` for `session_id` (target MEM-VEC-2.*) |
+| Episodic index purge | `retention_days` + session delete cascades tombstone all `entry_id` for `session_id` (MEM-VEC-2.2) |
 
-### 6.4 LTM vector index write path (as-built + target wiring)
+### 6.4 LTM vector index write path (as-built — MEM-VEC-1)
 
 When `UserProfileManager.is_longterm_rag_enabled()` is true, every durable LTM mutation upserts or tombstones the **`ltm`** index domain:
 
@@ -229,7 +231,7 @@ UserProfileManager(
 
 The **same** `UserProfileManager` instance MUST be exposed on `ToolWiringContext.user_profile_manager` for `ltm.search` / `ltm.write_fact` (MEM-VEC-1.2).
 
-### 6.5 Session turn vector index write path (target — MEM-VEC-2.*)
+### 6.5 Session turn vector index write path (as-built — MEM-VEC-2)
 
 Session messages remain in `SessionStorage`. When `MemoryProfile.enable_session_vector_index` is true, Nexus additionally indexes each appended turn into the **`episodic`** domain:
 
@@ -250,7 +252,7 @@ flowchart LR
 | Chunk unit | One `ChatMessage` per index row (no cross-turn merge at write time) |
 | `entry_id` | Stable id from `session_messages.entry_id` — upsert key |
 | Roles indexed | `user`, `assistant` by default; `system` / `tool` configurable via `MemoryProfile.session_index_roles` |
-| Async | Indexing MAY be async post-append; CE read path MUST tolerate short lag or skip with `reason=index_pending` |
+| Async | Indexing is **synchronous** on `append_message` in the default adapter; CE tolerates empty episodic hits with `session_vector_recall_reason=no_hits` |
 
 Consolidation (`SessionMemoryConsolidationService`) remains the path for **cross-session semantic facts**; episodic index answers **“what was said in this or prior sessions?”** without waiting for consolidation.
 
@@ -277,23 +279,24 @@ sequenceDiagram
     Engine->>HL: build_base_history
     Note over HL: token budget, SUMMARIZE_OLDEST / TRUNCATE
     HL-->>Engine: state.base_history
-    Engine->>Steps: InstructionsStep
-    Engine->>Steps: UserLongtermMemoryStep
-    Engine->>Steps: SessionSemanticRecallStep
-    Engine->>Steps: RagStep
+    Engine->>Steps: run_longterm_memory_context
+    Engine->>Steps: run_session_semantic_recall_context
+    Engine->>Steps: RagStep / rag.retrieve
     Engine->>Steps: HistoryStep
+    Note over Steps: CE SessionSemanticRecallProvider reads session_vector_hits handle
     Steps-->>Engine: messages[]
     Engine->>LLM: generate (budget check per layer)
 ```
 
-| Step | Source | Injection |
+| Runtime invocation | Source | Injection |
 |------|--------|-----------|
-| `InstructionsStep` | User/org `system_instructions` | System messages |
-| `UserLongtermMemoryStep` | `UserProfileManager.search_longterm_memory` — **`ltm`** index | Context block before last user |
-| `SessionSemanticRecallStep` | Session turn index semantic search — **`episodic`** index (target MEM-VEC-2.3) | Relevant past turns / snippets before `HistoryStep` |
-| `rag.retrieve` (catalog) | `RetrievalService` / `rag.retrieve` — **`knowledge`** index | Evidence chunks |
-| `HistoryStep` | `state.base_history` — chronological session store | Conversation turns (recent tail; may be trimmed when episodic recall covers older turns) |
+| `run_longterm_memory_context` | `UserProfileManager.search_longterm_memory` — **`ltm`** index | LTM block via prompt builder; CE `LONGTERM_MEMORY` fragments |
+| `run_session_semantic_recall_context` | `SessionManager.search_session_semantic_recall` — **`episodic`** index | Populates `session_vector_hits` for CE `SessionSemanticRecallProvider` |
+| `rag.retrieve` (catalog) | `RetrievalService` — **`knowledge`** index | Evidence chunks |
+| `HistoryStep` / `HistoryLayer` | `state.base_history` — chronological session store | Conversation turns (recent tail) |
 | Websearch | `websearch.query` | Evidence (when enabled) |
+
+Legacy doc names `UserLongtermMemoryStep` / `SessionSemanticRecallStep` map to the runtime functions above plus CE providers (CE-VEC-1).
 
 ### 7.1.1 Semantic session recall vs chronological history
 
@@ -301,12 +304,12 @@ sequenceDiagram
 |-----------|-------------|-------------------|-----------|
 | **Chronological history** | `SessionStorage` via `HistoryLayer` | Recent turns + token budget; `SUMMARIZE_OLDEST` / `TRUNCATE_OLDEST` | Default; short sessions |
 | **LTM semantic search** | `ltm` vector index | Query = current user message; top_k + score threshold | Cross-session facts; user returns after days |
-| **Episodic semantic recall** | `episodic` vector index (target) | Query = current user message; filter `session_id` and/or `user_id`; top_k | Long sessions; prior sessions when `include_cross_session_episodic` |
+| **Episodic semantic recall** | `episodic` vector index | Query = current user message; filter `session_id` and/or `user_id`; top_k | Long sessions; prior sessions when `include_cross_session_episodic` |
 | **RAG knowledge** | `knowledge` vector index | Corpus retrieval with tenant/workspace filters | Document Q&A |
 
 **Context Engineering contract:** semantic recall hits MUST enter assembly as attributable fragments (`ContextFragmentSource.SESSION_HISTORY_SEMANTIC` or `LONGTERM_MEMORY`) with `source_id` = `entry_id` — see [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §7.2, §14.2. `HistoryLayer` remains the chronological fallback; CE degradation ladder drops lowest-scored optional fragments before mandatory user turn.
 
-**Target pipeline order:** `UserLongtermMemoryStep` → `SessionSemanticRecallStep` → `rag.retrieve` (catalog) → `HistoryStep` → `CompileContextStep`.
+**Pipeline order (as-built):** `run_longterm_memory_context` → `run_session_semantic_recall_context` → `rag.retrieve` (catalog) → `HistoryStep` → `CompileContextStep` / CE collect.
 
 ### 7.2 Graph node context (`ContextManager`)
 
@@ -318,18 +321,20 @@ For multi-agent `ExecutionGraph` nodes, `ContextManager.build_agent_context()` a
 - `ContextBudgetPolicy` trim on composed message
 - Provenance in `AgentContextBundle`
 
-### 7.3 As-built gap: fragmented budgeting
+### 7.3 Budgeting — global allocator vs per-step caps
 
-Today each layer applies **local** limits:
+**Global allocator (Done — ADR-MEM-001):** `ContextCompiler` + degradation ladder in [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §10 before agent LLM step.
+
+**Per-step local caps (still apply before CE collect):**
 
 | Layer | Limit mechanism |
 |-------|-----------------|
 | `HistoryLayer` | ~⅔ input budget for history; `history_compression_strategy` |
-| `UserLongtermMemoryStep` | `max_longterm_entries_per_query`, `max_longterm_tokens` |
+| `run_longterm_memory_context` | `max_longterm_entries_per_query`, `max_longterm_tokens` |
 | `ContextBudgetPolicy` | `max_chars` + token estimate; char-cut fallback |
 | `TaskContextAssemblyOptions` | `max_prior_chars`, summary tiers |
 
-**Unified allocator:** `ContextCompiler` + `CompileContextStep` before agent LLM step (`on_next_step`); see [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md).
+**AUDIT-IDEAL-16.1 / 16.2** (drift monitoring, semantic compression profile flags) — owner: [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §11; status **Done** in master register.
 
 ---
 
@@ -402,7 +407,7 @@ max_memory_entries_in_context: int = 8
 | Document Q&A | RAG retrieval | RAG top_k within budget | Minimal history |
 | Multi-agent graph node | Prior outputs + shared context | Summary tier per policy | Task KV via tools |
 | Delegated explore child | Isolated namespace reads | Child budget; synthesis return | Parent gets summary only |
-| User returns after days | LTM semantic search (`ltm` index) | Session history empty or short | Episodic cross-session recall (target) |
+| User returns after days | LTM semantic search (`ltm` index) | Session history empty or short | Episodic cross-session recall when `include_cross_session_episodic` |
 | Long active session (> 50% context) | Episodic semantic recall + recent tail | `SUMMARIZE_OLDEST` on remainder | LTM top_k reduced |
 | Codebase-scale task | RAG + workspace tools | Retrieval-first; no full dump | Explore delegation (target) |
 | Regulated / high-risk | Policy + minimal context | `MINIMAL` tier; explicit citations | HITL before LTM write |
@@ -432,7 +437,7 @@ task_id/delegation/{node_id}/
 
 via `PolicyScopedMemoryView`. Parent receives bounded context via `ContextManager` — not raw child history.
 
-### 10.2 Explore pattern (target — Cursor-class)
+### 10.2 Explore pattern (Done — MEM-DEPTH-4.2 + MEM-LC-8)
 
 For wide codebase or corpus search:
 
@@ -457,7 +462,7 @@ Properties:
 - Parallel searches do not bloat parent history
 - Return payload is **structured findings**, not raw file dumps
 
-Target: MEM-DEPTH-4.1, MEM-DEPTH-4.2.
+Target: MEM-DEPTH-4.1, MEM-DEPTH-4.2 — **wired** via `explore_integration.py` in `graph_executor`.
 
 ---
 
@@ -470,7 +475,7 @@ enable_user_memory: bool
 enable_org_memory: bool
 enable_long_term_memory: bool
 enable_task_memory: bool
-enable_session_vector_index: bool = False          # MEM-VEC-2.* — episodic turn indexing
+enable_session_vector_index: bool = False          # MEM-VEC-2 — episodic turn indexing (Done)
 include_cross_session_episodic: bool = False       # episodic search across sessions for same user
 session_index_top_k: int = 8
 session_index_score_threshold: float | None = None
@@ -518,7 +523,7 @@ enable_websearch: bool
 |----------|----------|---------|----------|
 | `UserProfileStorePlugin` | `intergrax.memory_stores` | `create_user_profile_store(**kwargs)` | Default SQLite / Mongo / in-memory LTM store |
 | `SessionStoragePlugin` | `intergrax.memory_stores` | `create_session_storage(**kwargs)` | Default session persistence |
-| `SessionTurnIndexStore` (target MEM-VEC-2.1) | `intergrax.memory_stores` | `create_session_turn_index(**kwargs)` | Default: `VectorstoreManager` episodic adapter |
+| `SessionTurnIndexStore` (MEM-VEC-2.1; plugin EP MEM-VEC-3.1 **Done**) | `intergrax.memory_stores` | `create_session_turn_index(**kwargs)` | Default: `VectorSessionTurnIndexStore` over `VectorstoreManager` |
 
 Vector **integration** providers (Chroma, pgvector, Qdrant, …) remain in the integrations catalog — memory plugins select **how** indexes are written, not which vendor SDK is used. Custom Tier-3 hosts register EP plugins; Tier-2 agents still use Nexus APIs and tools only.
 
@@ -529,7 +534,7 @@ Vector **integration** providers (Chroma, pgvector, Qdrant, …) remain in the i
 | Layer | In-memory | SQLite (lab) | MongoDB | Postgres | Redis |
 |-------|-----------|--------------|---------|----------|-------|
 | Task KV | tests | `INTERGRAX_TASK_MEMORY_DB` | — | — | — |
-| Session | fallback | sqlite bundle | **in-memory today** | spike P3 | **not memory layer** |
+| Session | fallback | sqlite bundle | `DocumentStoreSessionStorage` (MEM-DEPTH-2.1) | spike P3 | **not memory layer** |
 | User LTM | tests | sqlite bundle | `DocumentStoreUserProfileStore` | spike P3 | — |
 | Org profile | tests | sqlite bundle | — | — | — |
 | Trace / events | tests | yes | — | — | — |
@@ -557,17 +562,19 @@ See [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) §3.
 
 ## 14. Market parity reference
 
-| Capability | LangGraph | Mem0 / Zep | Intergrax as-built | Target |
+| Capability | LangGraph | Mem0 / Zep | Intergrax as-built | Backlog |
 |------------|-----------|------------|-------------------|--------|
-| Thread persistence | Checkpointer | Session | Session + checkpoint separate | MEM-DEPTH-2.1 |
+| Thread persistence | Checkpointer | Session | Session + checkpoint + Mongo document_store ✅ | — |
 | Scoped KV | Store API | — | TaskMemory ✅ | — |
-| Auto fact extraction | — | Core | Consolidation (manual trigger) | MEM-DEPTH-3.1 |
-| Entity graph memory | — | Zep ✅ | Graph RAG docs only | MEM-DEPTH-5.1 |
-| Vector semantic LTM | Optional | ✅ | Code ✅; Tier-3 wiring partial | MEM-VEC-1.* |
-| Vector semantic session recall | Optional | ✅ | Not shipped | MEM-VEC-2.* |
+| Auto fact extraction | — | Core | Consolidation + `consolidation_mode=auto` ✅ | — |
+| Entity graph memory | — | Zep ✅ | `EntityGraphMemoryStore` ✅ (≠ Graph RAG) | — |
+| Vector semantic LTM | Optional | ✅ | Tier-3 wired via `memory_vector_wiring.py` ✅ | — |
+| Vector semantic session recall | Optional | ✅ | Episodic index + CE provider ✅ | — |
 | Subagent isolation | Subgraph | — | Delegation namespace ✅ | Explore pattern MEM-DEPTH-4.* |
-| Unified context budget | Partial | — | Fragmented layers | MEM-DEPTH-1.* |
+| Unified context budget | Partial | — | `ContextCompiler` ✅; per-step caps remain | CE ranker tuning |
 | Temporal fact validity | — | Zep ✅ | ❌ | MEM-DEPTH-5.2 |
+| Plugin episodic index EP | — | — | Default adapter only | MEM-VEC-3.1 |
+| Unified semantic search skill | — | ✅ | `ltm.search` tool only | MEM-VEC-3.2 |
 
 ---
 
@@ -578,7 +585,7 @@ See [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) §3.
 | Agent concatenates full chat for LLM | Unbounded overflow | Nexus `HistoryLayer` + budget |
 | Agent writes SQLite / Redis directly | Tier violation | `memory.*` tools + `MemoryView` |
 | Storing documents in user LTM | Wrong store semantics | RAG ingest (`knowledge` domain) |
-| Indexing session turns only in LTM consolidation | Loses verbatim recall | `episodic` index on append (MEM-VEC-2.*) |
+| Indexing session turns only in LTM consolidation | Loses verbatim recall | `episodic` index on append (MEM-VEC-2) |
 | Enabling LTM flags without wiring RAG to `UserProfileManager` | Silent no-op semantic search | MEM-VEC-1.1 harness contract |
 | Treating Graph RAG nodes as user entities | Conflates knowledge vs memory | Separate stores §5.3 |
 | Silent context drop | No audit | Degradation ladder + events |
@@ -607,20 +614,34 @@ See [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) §3.
 
 ## 17. Maturity scorecard and gap register
 
-| Area | Score (1–5) | Phase MEM | Phase MEM-DEPTH |
-|------|-------------|-----------|-----------------|
-| Task KV | 4 | Done | 4 (maintain) |
-| Context / LLM window | 4.5 | Partial | Done — Context Compiler |
-| STM session | 4 | Partial | Done — Mongo + SQLite parity |
-| User LTM | 3.5 | Partial | Done — store; vector wiring gap |
-| LTM / session vector recall | 2 | N/A | Planned — MEM-VEC |
-| Org memory | 2.5 | Partial | 2.5 |
-| Consolidation | 4 | Partial | Done — job + modes |
-| Graph agent memory | 3 | RFC only | Done — `EntityGraphMemoryStore` |
-| Context compiler (unified) | 4.5 | N/A | Done |
-| **Overall** | **~3.9** | Platform wiring Done | MEM-VEC open (vector recall) |
+| Area | Score (1–5) | Phase MEM | Phase MEM-DEPTH | Phase MEM-VEC |
+|------|-------------|-----------|-----------------|---------------|
+| Task KV | 4 | Done | 4 (maintain) | — |
+| Context / LLM window | 4.5 | Partial | Done — Context Compiler | CE owns ranker |
+| STM session | 4 | Partial | Done — Mongo + SQLite parity | — |
+| User LTM | 4 | Partial | Done — store + vector wiring | Done — MEM-VEC-1 |
+| LTM / session vector recall | 4 | N/A | N/A | Done — MEM-VEC-1/2 |
+| Org memory | 3.5 | Partial | Done — org LTM entries + Mongo fallback store | — |
+| Consolidation | 4 | Partial | Done — job + modes | — |
+| Graph agent memory | 3.5 | RFC only | Done — `EntityGraphMemoryStore` + consolidation indexing | — |
+| Context compiler (unified) | 4.5 | N/A | Done | CE canon |
+| **Overall** | **~4.5** | Platform wiring Done | Closed | MEM-VEC **Done** |
 
-**FAUDIT-32:** Memory Layer **L3** until MEM-VEC-1.* closes LTM wiring and MEM-VEC-2.* ships episodic recall. Context Engineering scored separately — [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §3.
+**FAUDIT-32:** Memory Layer **L4** for vector recall and layer-completion hardening (2026-06-17).
+
+### Audit register (open / partial — re-validate)
+
+| ID | Gap | Severity | Phase | Status |
+|----|-----|----------|-------|--------|
+| MEM-AUDIT-1 | No versioned procedural memory store (Prompt Registry only) | P2 | — | **Open** (by design minimal) |
+| MEM-AUDIT-2 | Org memory maturity vs user LTM | P2 | — | **Partial** — org `memory_entries` + manager search shipped |
+| MEM-AUDIT-3 | Temporal fact validity on LTM entries | P2 | MEM-DEPTH-5.2 | **Done** |
+| MEM-AUDIT-4 | `SessionTurnIndexStore` plugin EP not shipped | P2 | MEM-VEC-3.1 | **Done** |
+| MEM-AUDIT-5 | `memory.semantic_search` skill runtime (unified LTM + episodic) | P2 | MEM-VEC-3.2 | **Done** |
+| MEM-AUDIT-6 | Explore delegation pattern (Cursor-class) | P2 | MEM-DEPTH-4.* | **Done** — graph executor wiring |
+| MEM-AUDIT-7 | Per-step budget caps before CE collect | P2 | CE + ADR-MEM-001 | **Partial** — global allocator Done |
+
+**Closed baselines:** MEM (48/48), MEM-DEPTH, AUDIT-IDEAL-15.1–15.3, AUDIT-IDEAL-16.1–16.2 (CE owner).
 
 Implementation tasks: [Phase MEM-VEC](../plan/MEMORY.md#phase-mem-vec--vector-memory-integration-band-2aw) · [Phase MEM-DEPTH](../plan/MEMORY.md) (closed).
 
@@ -631,9 +652,11 @@ Implementation tasks: [Phase MEM-VEC](../plan/MEMORY.md#phase-mem-vec--vector-me
 | Document | Relationship |
 |----------|--------------|
 | [intergrax_runtime_architecture.md §27–§28](architecture/MEMORY.md#27-memory-model) | Canon summary — links here for depth |
+| [architecture/CONTEXT_ENGINEERING.md](CONTEXT_ENGINEERING.md) | Context engineering engine (Layer C); AUDIT-IDEAL-16.1–16.2 owner |
 | [guides/AGENT_CREATION_GUIDE.md Appendix G](guides/AGENT_CREATION_GUIDE.md#appendix-g--memory--rag-naming-phase-q) | Author control plane |
-| [architecture/CONTEXT_ENGINEERING.md](CONTEXT_ENGINEERING.md) | Context engineering engine (Layer C) |
 | [guides/AGENT_CREATION_GUIDE.md Appendix L](guides/AGENT_CREATION_GUIDE.md#appendix-l--context-engineering-control-plane) | Author control plane (links CE canon) |
+| [adr/entries/2026-06-08/ADR-MEM-001.md](../adr/entries/2026-06-08/ADR-MEM-001.md) | Context Compiler + degradation ladder |
+| [adr/entries/2026-06-14/ADR-MEM-002.md](../adr/entries/2026-06-14/ADR-MEM-002.md) | Three-domain vector catalog |
 | [architecture/TOOLS.md](architecture/TOOLS.md) | `memory.*` and `rag.retrieve` tools |
 | [architecture/NEXUS_EXECUTION_FLOW.md](architecture/NEXUS_EXECUTION_FLOW.md) | Runtime turn narrative |
 | [IDEAL_HARNESS_AI_ARCHITECTURE.md §16](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md#16-context-engineering-layer) | Target context compiler vision |

@@ -217,6 +217,18 @@ class UAEPExecutor:
         )
 
         runtime_context = agent.build_context(request)
+        from intergrax.runtime.attestation.kernel_wiring import apply_boundary_export_to_kernel
+
+        apply_boundary_export_to_kernel(kernel_ctx, runtime_context.config)
+        from intergrax.runtime.nexus.context.memory_context_invocation import (
+            populate_request_memory_recall_metadata,
+        )
+
+        await populate_request_memory_recall_metadata(
+            request,
+            config=runtime_context.config,
+            session_manager=runtime_context.session_manager,
+        )
         if self._context_engine is not None and self._llm_adapter is not None:
             from intergrax.runtime.nexus.context.uaep_assemble import assemble_uaep_session_prompt
 

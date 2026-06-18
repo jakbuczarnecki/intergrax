@@ -15,7 +15,10 @@ from intergrax.applications._shared.integration_runtime_bridge import (
 )
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 from intergrax.applications._shared.rag_runtime_bridge import apply_rag_for_environment
-from intergrax.applications._shared.context_runtime_bridge import apply_context_profiles_from_environment
+from intergrax.applications._shared.context_runtime_bridge import (
+    apply_context_profiles_from_environment,
+    derive_run_budget_from_context_policy,
+)
 from intergrax.applications._shared.memory_runtime_bridge import apply_memory_profile_to_runtime_config
 from intergrax.applications._shared.observability_runtime_bridge import (
     apply_observability_profiles_from_environment,
@@ -50,6 +53,10 @@ from intergrax.applications._shared.prompt_wiring import resolve_prompt_registry
 from intergrax.applications._shared.memory_wiring import (
     build_session_manager_from_environment,
     resolve_memory_platform_wiring,
+)
+from intergrax.applications._shared.memory_vector_wiring import (
+    assert_memory_vector_backend_available,
+    resolve_rag_stack_for_memory_wiring,
 )
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
@@ -148,6 +155,11 @@ def materialize_runtime_config(
         idempotency_store=reliability_wiring.idempotency_store,
     )
     apply_context_profiles_from_environment(config, env)
+    if config.context_budget_policy is None and config.llm_adapter is not None:
+        from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
+
+        config.context_budget_policy = ContextBudgetPolicy.from_adapter(config.llm_adapter)
+        derive_run_budget_from_context_policy(config)
     apply_cost_profiles_from_environment(config, env)
     evaluation_wiring = wire_application_evaluation(env)
     adaptive_wiring = wire_adaptive_profile(
@@ -194,6 +206,8 @@ def build_runtime_context_from_environment(
     llm_adapter: LLMAdapter | None = None,
 ) -> RuntimeContext:
     """Build ``RuntimeContext`` from environment profile with resolved memory backends."""
+    from dataclasses import replace
+
     config = materialize_runtime_config(
         request,
         harness_ctx,
@@ -205,11 +219,25 @@ def build_runtime_context_from_environment(
         env,
         integration_profile=integration_profile,
     )
+    rag_stack = resolve_rag_stack_for_memory_wiring(
+        env,
+        integration_profile=integration_profile,
+        llm_adapter=config.llm_adapter,
+    )
+    assert_memory_vector_backend_available(env, rag_stack)
     session_manager = build_session_manager_from_environment(
         env,
         integration_profile=integration_profile,
         memory_wiring=memory_wiring,
+        rag_stack=rag_stack,
     )
+    if config.tool_wiring_context is not None:
+        extras = dict(config.tool_wiring_context.extras)
+        extras["session_manager"] = session_manager
+        replace_kwargs: dict[str, object] = {"extras": extras}
+        if session_manager.user_profile_manager is not None:
+            replace_kwargs["user_profile_manager"] = session_manager.user_profile_manager
+        config.tool_wiring_context = replace(config.tool_wiring_context, **replace_kwargs)
     prompt_registry = resolve_prompt_registry(env.prompt_profile)
     return RuntimeContext.build(
         config=config,

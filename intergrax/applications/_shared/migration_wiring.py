@@ -3,6 +3,7 @@
 """Load and validate Tier-3 application migrations (APP-EVOL-2 · APP-EVOL-2b)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import json
 import re
@@ -11,10 +12,16 @@ from pathlib import Path
 
 from intergrax.applications.contracts.application_migration import (
     ApplicationMigration,
+    FieldTransform,
     GraphSpecMigration,
     MigrationStepTarget,
     OrgEnvelopeMigration,
     ProfileMigration,
+)
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+    migrate_profile_dict_to_spec_v2,
+    uses_nested_profile_wire,
 )
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.runtime.registry.semver_compat import SemVer
@@ -58,6 +65,27 @@ def _target_rank(target: MigrationStepTarget) -> int:
         return len(_TYPED_TARGET_ORDER)
 
 
+_PROFILE_SPEC_V2_MIGRATION_ID = "profile_spec_1x_to_2_0"
+
+
+def standard_profile_spec_v2_migration(*, golden_replay_ref: str | None = None) -> ProfileMigration:
+    """Canonical ``ProfileMigration`` for flat 1.x → nested ``spec_version`` 2.0.0 (APP-EVOL-8.6)."""
+    return ProfileMigration(
+        migration_id=_PROFILE_SPEC_V2_MIGRATION_ID,
+        from_spec_version="1.0.0",
+        to_spec_version="2.0.0",
+        field_transforms=[
+            FieldTransform(path="meta.spec_version", action="set", value="2.0.0"),
+        ],
+        breaking=True,
+        golden_replay_ref=golden_replay_ref,
+    )
+
+
+def _profile_spec_major(spec_version: str) -> int:
+    return int(str(spec_version).split(".", maxsplit=1)[0])
+
+
 def validate_profile_migration(migration: ProfileMigration) -> list[str]:
     """Validate a typed profile migration document."""
     violations: list[str] = []
@@ -69,11 +97,60 @@ def validate_profile_migration(migration: ProfileMigration) -> list[str]:
             "default_injection, or golden_replay_ref",
         )
     try:
-        SemVer.parse(migration.from_spec_version)
-        SemVer.parse(migration.to_spec_version)
+        from_spec = SemVer.parse(migration.from_spec_version)
+        to_spec = SemVer.parse(migration.to_spec_version)
     except ValueError as exc:
         violations.append(f"{migration.migration_id}: invalid profile spec version — {exc}")
+        return violations
+
+    if to_spec.major == 2 and from_spec.major < 2:
+        if not migration.breaking:
+            violations.append(
+                f"{migration.migration_id}: profile spec_version 1.x → 2.x requires breaking=true",
+            )
+        if not migration.field_transforms and not migration.golden_replay_ref:
+            violations.append(
+                f"{migration.migration_id}: profile spec_version 1.x → 2.x requires "
+                "field_transforms or golden_replay_ref",
+            )
+        if migration.to_spec_version != "2.0.0":
+            violations.append(
+                f"{migration.migration_id}: canonical nested wire targets spec_version 2.0.0",
+            )
     return violations
+
+
+def apply_profile_migration(
+    profile: ApplicationEnvironmentProfile | dict[str, object],
+    migration: ProfileMigration,
+) -> ApplicationEnvironmentProfile:
+    """Apply a typed profile migration to produce a validated profile."""
+    from intergrax.applications.contracts.environment_profile.normalization import (
+        lift_flat_profile_dict,
+    )
+
+    if isinstance(profile, ApplicationEnvironmentProfile):
+        current_spec = profile.spec_version
+        payload: dict[str, object] = profile.model_dump(mode="json")
+    else:
+        payload = dict(profile)
+        lifted = lift_flat_profile_dict(payload)
+        meta = lifted.get("meta", {})
+        current_spec = str(meta.get("spec_version", "1.0.0")) if isinstance(meta, dict) else "1.0.0"
+
+    if (
+        _profile_spec_major(migration.to_spec_version) == 2
+        and _profile_spec_major(current_spec) < 2
+    ):
+        migrated = migrate_profile_dict_to_spec_v2(payload)
+        return ApplicationEnvironmentProfile.model_validate(migrated)
+
+    restored = ApplicationEnvironmentProfile.model_validate(payload)
+    if migration.default_injection:
+        restored = restored.model_copy(update=migration.default_injection)
+    if uses_nested_profile_wire(migration.to_spec_version):
+        return restored.with_spec_v2_wire()
+    return restored
 
 
 def validate_graph_spec_migration(migration: GraphSpecMigration) -> list[str]:
@@ -268,7 +345,7 @@ def _load_manifest_for_package(package: str) -> ApplicationManifest | None:
     for name in dir(module):
         if not (name.startswith("build_") and "manifest" in name.lower()):
             continue
-        builder = getattr(module, name, None)
+        builder = attribute_access.optional(module, name, None)
         if not callable(builder) or inspect.isclass(builder):
             continue
         try:

@@ -13,6 +13,7 @@ from intergrax.context.registry import ContextPluginRegistry, UnknownContextPlug
 from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.task.task_contract import TaskExecutionOptions
@@ -80,11 +81,17 @@ def resolve_context_plugin_registry_from_environment(
     return materialize_context_plugin_registry(plugin_ids)
 
 
-def resolve_context_budget_policy(env: ApplicationEnvironmentProfile) -> ContextBudgetPolicy:
+def resolve_context_budget_policy(
+    env: ApplicationEnvironmentProfile,
+    *,
+    llm_adapter: LLMAdapter | None = None,
+) -> ContextBudgetPolicy:
     """Resolve effective context budget from environment profile."""
     budget = env.context_profile.budget_policy
     if budget is not None:
         return budget
+    if llm_adapter is not None:
+        return ContextBudgetPolicy.from_adapter(llm_adapter)
     assembly = env.context_profile.assembly_options
     return ContextBudgetPolicy(max_chars=max(assembly.max_prior_chars, 4000))
 
@@ -155,7 +162,7 @@ def resolve_context_manager_from_environment(
     return ContextManager(
         max_prior_chars=assembly.max_prior_chars,
         default_policy=assembly,
-        budget_policy=resolve_context_budget_policy(env),
+        budget_policy=resolve_context_budget_policy(env, llm_adapter=llm_adapter),  # type: ignore[arg-type]
         event_bus=event_bus,
         context_engine=engine,
         context_orchestrator=orchestrator,

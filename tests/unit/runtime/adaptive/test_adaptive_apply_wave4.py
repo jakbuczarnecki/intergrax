@@ -251,7 +251,8 @@ def test_adaptive_runtime_events_use_typed_event_types() -> None:
         proposal_id="prop-1",
         loop_id="loop-1",
     )
-    assert proposal_event.event_type == RuntimeEventType.ADAPTIVE_PROPOSAL_SUBMITTED
+    assert proposal_event.event_type == RuntimeEventType.DOMAIN_SIGNAL
+    assert proposal_event.event_kind == "platform.adaptive.adaptive_proposal_submitted"
     apply_event = build_adaptive_apply_event(
         task_id="task-1",
         run_id="run-1",
@@ -259,7 +260,8 @@ def test_adaptive_runtime_events_use_typed_event_types() -> None:
         version_id="v1",
         artifact_type="rag",
     )
-    assert apply_event.event_type == RuntimeEventType.ADAPTIVE_PROFILE_APPLIED
+    assert apply_event.event_type == RuntimeEventType.DOMAIN_SIGNAL
+    assert apply_event.event_kind == "platform.adaptive.adaptive_profile_applied"
     rollback_event = build_adaptive_rollback_event(
         task_id="task-1",
         run_id="run-1",
@@ -267,7 +269,8 @@ def test_adaptive_runtime_events_use_typed_event_types() -> None:
         restored_version_id="v0",
         artifact_type="rag",
     )
-    assert rollback_event.event_type == RuntimeEventType.ADAPTIVE_PROFILE_ROLLBACK
+    assert rollback_event.event_type == RuntimeEventType.DOMAIN_SIGNAL
+    assert rollback_event.event_kind == "platform.adaptive.adaptive_profile_rollback"
 
 
 def test_wire_adaptive_profile_disabled_returns_no_executor() -> None:

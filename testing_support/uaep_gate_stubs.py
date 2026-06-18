@@ -3,6 +3,7 @@
 """UAEP-compatible gate stubs for graph, orchestration, and debug intake tests."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any
 
@@ -66,7 +67,7 @@ class UaepPipelineStubAgent(Agent):
                 matched_capabilities=[self._capability],
                 score=1.0,
             )
-        capability = getattr(task_context, "capability", None)
+        capability = attribute_access.optional(task_context, "capability", None)
         allowed = {self._capability, *self._extra_capabilities, None}
         if capability in allowed:
             return CapabilityMatchResult(

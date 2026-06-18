@@ -266,12 +266,15 @@ class IntegrationProfile(BaseModel):
 
     @classmethod
     def research_product(cls) -> IntegrationProfile:
+        options: dict[str, dict[str, Any]] = {OTEL.slug: {}}
         return cls(
             relational_store=SQLITE,
             vector_store=INMEMORY,
             document_parser=DOCLING,
             search_provider=GOOGLE_CSE,
             rerank_provider=JINA_RERANK,
+            observability_backend=OTEL,
+            options=options,
         )
 
     @classmethod

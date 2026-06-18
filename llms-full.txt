@@ -44,6 +44,7 @@ docs/
 ├── architecture/CRITIC_VERIFICATION.md
 ├── architecture/NEXUS_EXECUTION_FLOW.md
 ├── architecture/INTEGRATIONS.md · architecture/RAG.md · architecture/TOOLS.md · architecture/SKILLS.md · architecture/LLM_ADAPTERS.md · architecture/MODALITY.md
+├── intergrax/llm_adapters/USAGE.md   # LLM developer guide (Tier-0)
 └── guides/AGENT_CREATION_GUIDE.md · guides/EXTENSION_AUTHOR_GUIDE.md · INTEGRAX_HARNESS_AUDIT_MAP.md
 ```
 
@@ -107,5 +108,7 @@ uv run python scripts/check_observability_gates.py
 ## For AI coding agents
 
 - AGENTS.md — hard rules and task routing
+- docs/guides/SYSTEM_INVARIANTS.md — cross-domain never-violate index (SYS-INV-*, P2-ARCH-01)
+- docs/guides/LAYER_COMPLETION_MODE.md — deep harness layer closeout workflow
 - README.md#documentation-index — master navigation
 - llms.txt — concise map

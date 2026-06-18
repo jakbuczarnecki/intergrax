@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""Fail when new getattr/setattr appear under harness paths (Phase Q+.0.3)."""
+"""Fail when getattr/setattr appear outside approved bridge modules."""
 
 from __future__ import annotations
 
@@ -10,16 +10,21 @@ import sys
 from pathlib import Path
 
 SCAN_ROOTS = (
-    "intergrax/runtime/nexus",
-    "intergrax/agents",
+    "intergrax",
     "agents",
+    "tests",
+    "scripts",
+    "testing_support",
 )
 
-# Grandfather list empty — all harness paths must stay free of getattr/setattr.
 GRANDFATHER: frozenset[str] = frozenset(
     {
-        # PEP 562 lazy exports for ``AgentEngine`` / UAEP symbols.
-        "intergrax/agents/__init__.py",
+        "intergrax/utils/attribute_access.py",
+        "intergrax/utils/lazy_export.py",
+        "scripts/codemod_remove_getattr.py",
+        "scripts/codemod_remove_getattr_text.py",
+        "scripts/patch_lazy_bundle_exports.py",
+        "tools/ast_audit.py",
     }
 )
 
@@ -34,8 +39,6 @@ def main() -> int:
         if not root.is_dir():
             continue
         for path in root.rglob("*.py"):
-            if "tests" in path.parts:
-                continue
             rel = path.relative_to(repo_root).as_posix()
             if rel in GRANDFATHER:
                 continue
@@ -47,12 +50,14 @@ def main() -> int:
                 if not stripped or stripped.startswith("#"):
                     continue
                 if PATTERN.search(stripped):
+                    if "monkeypatch.setattr" in stripped:
+                        continue
                     violations.append(f"{rel}:{line_no}: {stripped}")
     if violations:
-        print("getattr/setattr in harness paths (not grandfathered):")
+        print("getattr/setattr violations (outside bridge modules):")
         print("\n".join(violations))
         return 1
-    print("harness getattr audit: OK (zero grandfathered paths)")
+    print("getattr/setattr audit: OK (bridge modules only)")
     return 0
 
 

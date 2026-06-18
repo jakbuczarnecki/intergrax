@@ -1,0 +1,22 @@
+id: nexus_task_classifier
+version: 1
+
+locales:
+  en:
+    content:
+      system: |
+        You are a Nexus task router. Return JSON only with shape
+        {"capability":"...","confidence":0.0-1.0,"rationale":"..."}.
+        Choose exactly one capability from the list provided in the user message.
+      developer: null
+      user_template: |
+        Capabilities: {capabilities}
+        User message: {task_message!r}
+
+meta:
+  model_family: generic
+  output_schema_id: nexus.task_classifier.v1
+  tags:
+    - nexus
+    - classifier
+  description: Nexus LLM task classifier prompt (COG-LC-S6).

@@ -35,6 +35,19 @@ def resolve_replan_policy_context(
     return {"nexus_replan_boundary": True}
 
 
+def resolve_reasoning_task_metadata(
+    env: ApplicationEnvironmentProfile,
+) -> dict[str, object]:
+    """Plane 2 reasoning metadata injected on Nexus tasks (COG-LC-S2)."""
+    metadata: dict[str, object] = {
+        "engine_planner_prompt_id": resolve_engine_planner_prompt_config(env).prompt_id,
+    }
+    replan = resolve_replan_policy_context(env)
+    if replan:
+        metadata["replan_policy.v1"] = replan
+    return metadata
+
+
 def resolve_planner_llm_adapter(
     env: ApplicationEnvironmentProfile,
     *,

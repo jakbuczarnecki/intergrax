@@ -4,6 +4,7 @@
 
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 import json
 import os
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
@@ -26,6 +27,7 @@ from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResu
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
+from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
 
 class OpenAIChatResponsesAdapter(LLMAdapter):
@@ -100,7 +102,12 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
 
         self.model_name_for_token_estimation = self.model
         self.defaults = defaults
-        self._context_window_tokens: int = self._estimate_openai_context_window(self.model)
+        self._context_window_tokens: int = init_adapter_context_window_tokens(
+            provider=LLMProvider.OPENAI,
+            model=self.model,
+            constructor_kwargs=defaults,
+            legacy_windows=self._OPENAI_CONTEXT_WINDOWS,
+        )
 
         self.provider = LLMProvider.OPENAI
 
@@ -336,7 +343,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
                             buf.append(delta)
                             yield partial_stream_event(delta_content=delta)
 
-                get_final = getattr(stream, "get_final_response", None)
+                get_final = attribute_access.optional(stream, "get_final_response", None)
                 resp = get_final() if callable(get_final) else None
                 if resp is None:
                     raise RuntimeError("OpenAI responses stream did not return a final response")
@@ -419,7 +426,7 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
                 text={
                     "format": {
                         "type": "json_schema",
-                        "name": getattr(output_model, "__name__", "structured_output"),
+                        "name": attribute_access.optional(output_model, "__name__", "structured_output"),
                         "schema": schema,
                         "strict": True,
                     }
@@ -536,12 +543,12 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             d: Dict[str, Any] = {"role": m.role, "content": m.content}
 
             if m.role == "tool":
-                if getattr(m, "tool_call_id", None) is not None:
+                if attribute_access.optional(m, "tool_call_id", None) is not None:
                     d["tool_call_id"] = m.tool_call_id
-                if getattr(m, "name", None) is not None:
+                if attribute_access.optional(m, "name", None) is not None:
                     d["name"] = m.name
 
-            if getattr(m, "tool_calls", None):
+            if attribute_access.optional(m, "tool_calls", None):
                 d["tool_calls"] = m.tool_calls
 
             out.append(d)

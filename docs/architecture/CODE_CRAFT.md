@@ -8,7 +8,7 @@
 **Audit layer:** 11b (Ephemeral Code Craft)  
 **Audit instruction:** [`guides/audit/CODE_CRAFT.md`](../guides/audit/CODE_CRAFT.md)  
 **Implementation:** `intergrax/codecraft/` · `intergrax/runtime/codecraft/` · `intergrax/tools/providers/codecraft/`  
-**Last updated:** 2026-06-13 — layer completion closeout; **ECC-0…ECC-6 + S7–S10 Done (L3+)**
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates 2026-06-13 closeout); **ECC-0…ECC-6 + S7–S11 Done (L3+)**
 
 ---
 

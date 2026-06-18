@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import json
 import os
@@ -29,6 +30,7 @@ from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResu
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
+from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
 
 # -----------------------------
@@ -98,7 +100,12 @@ class MistralChatAdapter(LLMAdapter):
         self.model_name_for_token_estimation = self.model
         self.defaults = defaults
 
-        self._context_window_tokens: int = self._estimate_mistral_context_window(self.model)
+        self._context_window_tokens: int = init_adapter_context_window_tokens(
+            provider=LLMProvider.MISTRAL,
+            model=self.model,
+            constructor_kwargs=defaults,
+            legacy_windows=self._MISTRAL_CONTEXT_WINDOWS,
+        )
 
         self.provider = LLMProvider.MISTRAL
 
@@ -336,16 +343,16 @@ class MistralChatAdapter(LLMAdapter):
                 if delta.content:
                     buf.append(delta.content)
                     yield partial_stream_event(delta_content=delta.content)
-                raw_tc = getattr(delta, "tool_calls", None)
+                raw_tc = attribute_access.optional(delta, "tool_calls", None)
                 if raw_tc:
                     for tc in raw_tc:
-                        fn = getattr(tc, "function", None)
-                        name = getattr(fn, "name", None) if fn else None
-                        args = getattr(fn, "arguments", None) if fn else None
+                        fn = attribute_access.optional(tc, "function", None)
+                        name = attribute_access.optional(fn, "name", None) if fn else None
+                        args = attribute_access.optional(fn, "arguments", None) if fn else None
                         if name:
                             tool_calls_acc.append(
                                 {
-                                    "id": getattr(tc, "id", "") or "",
+                                    "id": attribute_access.optional(tc, "id", "") or "",
                                     "type": "function",
                                     "function": {
                                         "name": name,

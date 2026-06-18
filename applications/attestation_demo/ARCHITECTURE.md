@@ -1,12 +1,13 @@
 # attestation_demo — architecture
 
-**Status:** PoC v1 (partner-ready)  
+**Status:** PoC v2 (partner-ready)  
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 **Application ADRs:** [`adr/README.md`](adr/README.md)  
 **Domain pair (platform):** `OBSERVABILITY.md` + `TIER3_APPLICATION_ENVIRONMENT.md`  
 **Partner product:** AgentReceipt (external; not part of Intergrax)
 
-**PoC v1 delivery (agreed):** execution-boundary events in the **trigger API response only**. Webhook delivery is **deferred** to a later phase.
+**PoC v1 delivery (agreed):** execution-boundary events in the **trigger API response only**.  
+**PoC v2 (EBE-8, agreed with Cullen):** add `harness_step` events + `event_sequence`; one receipt per boundary event. Webhook delivery is **deferred**.
 
 ---
 
@@ -69,7 +70,7 @@ Build the **smallest end-to-end path** that lets an external consumer (AgentRece
 - changing trace/policy semantics,
 - embedding AgentReceipt in the platform.
 
-**PoC scope:** tool-level boundary only (`RuntimeToolInvoker`). Step-level export via `HarnessKernel` is **phase 2** (explicitly deferred per partner agreement).
+**PoC scope:** tool-level boundary (`RuntimeToolInvoker`) **and** harness-step boundary (`HarnessKernel`, EBE-8) when `step_level_enabled=true`.
 
 **Reference tool:** `records.put` (`side_effects=true`, `risk_level=MEDIUM`).
 

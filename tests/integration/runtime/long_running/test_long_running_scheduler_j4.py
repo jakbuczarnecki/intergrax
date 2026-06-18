@@ -1,6 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
@@ -43,7 +44,7 @@ class _TimeoutFailAgent(Agent):
         )
 
     def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        cap = getattr(task_context, "capability", None)
+        cap = attribute_access.optional(task_context, "capability", None)
         if cap in (None, "hitl.timeout_fail"):
             return CapabilityMatchResult(
                 matched=True,
@@ -108,7 +109,7 @@ class _TimeoutEscalateAgent(Agent):
         )
 
     def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        cap = getattr(task_context, "capability", None)
+        cap = attribute_access.optional(task_context, "capability", None)
         if cap in (None, "hitl.timeout_escalate"):
             return CapabilityMatchResult(
                 matched=True,
@@ -173,7 +174,7 @@ class _DelayedResumeAgent(Agent):
         )
 
     def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        cap = getattr(task_context, "capability", None)
+        cap = attribute_access.optional(task_context, "capability", None)
         if cap in (None, "hitl.delayed"):
             return CapabilityMatchResult(
                 matched=True,

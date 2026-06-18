@@ -3,6 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import json
 from typing import Optional, Dict, Any, List, Union
@@ -12,6 +13,9 @@ from intergrax.memory.user_profile_memory import (
     UserProfile,
     UserProfileMemoryEntry,
 )
+from intergrax.memory.memory_temporal import filter_active_memory_entries, is_memory_entry_active
+from intergrax.memory.memory_vector_namespace import resolve_memory_index_collection
+from intergrax.memory.memory_vector_namespace import LTM_INDEX_DOMAIN
 from intergrax.memory.user_profile_store import UserProfileStore
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.profiles.rag_profile import RagProfile
@@ -49,8 +53,17 @@ class UserProfileManager:
             rag_profile: Optional[RagProfile] = None,
             longterm_top_k: int = 6,
             longterm_score_threshold: float = 0.25,
+            tenant_id: str = "default",
+            vector_index_namespace: str | None = None,
     ) -> None:
         self._store = store
+        self._tenant_id = tenant_id
+        self._vector_index_namespace = vector_index_namespace
+        self._ltm_collection_name = resolve_memory_index_collection(
+            vector_index_namespace=vector_index_namespace,
+            tenant_id=tenant_id,
+            domain=LTM_INDEX_DOMAIN,
+        )
 
         # Optional Long-Term Memory RAG dependencies
         self._embedding_manager = embedding_manager
@@ -61,6 +74,15 @@ class UserProfileManager:
         # Retrieval defaults (can be overridden per call)
         self._longterm_top_k = int(longterm_top_k)
         self._longterm_score_threshold = float(longterm_score_threshold)
+
+    async def _get_store_profile(self, user_id: str) -> UserProfile:
+        return await self._store.get_profile(tenant_id=self._tenant_id, user_id=user_id)
+
+    async def _save_store_profile(self, profile: UserProfile) -> None:
+        await self._store.save_profile(tenant_id=self._tenant_id, profile=profile)
+
+    async def _delete_store_profile(self, user_id: str) -> None:
+        await self._store.delete_profile(tenant_id=self._tenant_id, user_id=user_id)
 
 
     def is_longterm_rag_enabled(self) -> bool:
@@ -84,11 +106,22 @@ class UserProfileManager:
             query=query,
             final_top_k=top_k,
             score_threshold=score_threshold,
-            metadata_filter=MetadataFilter(conditions={"user_id": user_id, "deleted": 0}),
+            metadata_filter=MetadataFilter(
+                conditions={
+                    "user_id": user_id,
+                    "deleted": 0,
+                    "index_domain": LTM_INDEX_DOMAIN,
+                    "collection_name": self._ltm_collection_name,
+                }
+            ),
         )
         result = service.retrieve(request)
-        profile = await self._store.get_profile(user_id)
-        by_id = {e.entry_id: e for e in profile.memory_entries if not e.deleted}
+        profile = await self._get_store_profile(user_id)
+        by_id = {
+            e.entry_id: e
+            for e in profile.memory_entries
+            if is_memory_entry_active(e)
+        }
         hits: List[UserProfileMemoryEntry] = []
         scores: List[float] = []
         for chunk in result.chunks:
@@ -133,8 +166,10 @@ class UserProfileManager:
             {
                 "user_id": user_id,
                 "entry_id": entry.entry_id,
-                "kind": entry.kind,
+                "kind": entry.kind.value if hasattr(entry.kind, "value") else str(entry.kind),
                 "deleted": 1 if entry.deleted else 0,
+                "index_domain": LTM_INDEX_DOMAIN,
+                "collection_name": self._ltm_collection_name,
             }
         )
         
@@ -252,37 +287,41 @@ class UserProfileManager:
 
         # Embed query
         q_emb = self._embedding_manager.embed_texts([q])
+        embedding = q_emb[0].tolist() if hasattr(q_emb[0], "tolist") else list(q_emb[0])
 
         # Filter strictly to this user, and exclude deleted entries.
-        where = {"user_id": user_id, "deleted": 0}
+        from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 
-        res = self._vectorstore_manager.query(q_emb, top_k=k, where=where)
+        metadata_filter = MetadataFilter(
+            conditions={
+                "user_id": user_id,
+                "deleted": 0,
+                "index_domain": LTM_INDEX_DOMAIN,
+                "collection_name": self._ltm_collection_name,
+            },
+        )
+        raw_hits = self._vectorstore_manager.query(
+            embedding,
+            top_k=k,
+            metadata_filter=metadata_filter,
+        )
 
-        ids = (res.get("ids") or [[]])[0] or []
-        scores = (res.get("scores") or [[]])[0] or []
-        metas = (res.get("metadatas") or [[]])[0] or []
-        docs = (res.get("documents") or [[]])[0] or []
-
-        # Apply threshold (if any)
         filtered: List[tuple[str, float]] = []
-        for i, entry_id in enumerate(ids):
-            try:
-                sc = float(scores[i])
-            except Exception:
+        for hit in raw_hits:
+            entry_id = str(hit.id or (hit.metadata or {}).get("entry_id") or "")
+            if not entry_id:
                 continue
-
-            if thr is None or sc >= thr:
-                filtered.append((str(entry_id), sc))
+            score = float(attribute_access.optional(hit, "similarity_score", None) or attribute_access.optional(hit, "score", 0.0) or 0.0)
+            if thr is None or score >= thr:
+                filtered.append((entry_id, score))
 
         if not filtered:
             debug = {
                 "enabled": True,
                 "used": False,
                 "reason": "no_hits",
-                "where": where,
+                "metadata_filter": metadata_filter.conditions,
                 "top_k": k,
-                "threshold": thr,
-                "raw_count": len(ids),
                 "filtered_count": 0,
             }
             return {
@@ -293,8 +332,12 @@ class UserProfileManager:
             }
 
         # Map ids -> canonical entries from the stored profile (source of truth)
-        profile = await self._store.get_profile(user_id)
-        by_id = {e.entry_id: e for e in profile.memory_entries if not e.deleted}
+        profile = await self._get_store_profile(user_id)
+        by_id = {
+            e.entry_id: e
+            for e in profile.memory_entries
+            if is_memory_entry_active(e)
+        }
 
         hits: List[UserProfileMemoryEntry] = []
         hit_scores: List[float] = []
@@ -310,14 +353,10 @@ class UserProfileManager:
             "enabled": True,
             "used": used,
             "reason": "hits" if used else "all_filtered_or_missing_in_profile",
-            "where": where,
+            "metadata_filter": metadata_filter.conditions,
             "top_k": k,
             "threshold": thr,
-            "raw_ids": ids,
-            "raw_scores": scores,
-            "raw_metadatas": metas,
-            "raw_documents_preview": [str(d)[:200] for d in docs],
-            "returned_count": len(hits),
+            "raw_count": len(raw_hits),
             "hits_count": len(hits),
         }
 
@@ -342,7 +381,7 @@ class UserProfileManager:
         Implementations of UserProfileStore are expected to return an
         initialized profile even if no data exists yet for that user.
         """
-        return await self._store.get_profile(user_id)
+        return await self._get_store_profile(user_id)
 
     async def save_profile(self, profile: UserProfile) -> None:
         """
@@ -350,7 +389,7 @@ class UserProfileManager:
 
         This MUST overwrite any previously stored profile for the same user.
         """
-        await self._store.save_profile(profile)
+        await self._save_store_profile(profile)
 
     async def delete_profile(self, user_id: str) -> None:
         """
@@ -358,7 +397,7 @@ class UserProfileManager:
 
         This operation is typically used for cleanup or account deletion flows.
         """
-        await self._store.delete_profile(user_id)
+        await self._delete_store_profile(user_id)
 
     # ---------------------------------------------------------------------
     # System instructions management
@@ -378,7 +417,7 @@ class UserProfileManager:
         Higher-level components may choose to update `system_instructions`
         using LLMs and then persist the result via `update_system_instructions()`.
         """
-        profile = await self._store.get_profile(user_id)
+        profile = await self._get_store_profile(user_id)
         return self._build_default_system_instructions(profile)
 
     async def update_system_instructions(
@@ -400,11 +439,11 @@ class UserProfileManager:
 
         Returns the updated UserProfile for convenience.
         """
-        profile = await self._store.get_profile(user_id)
+        profile = await self._get_store_profile(user_id)
         normalized = instructions.strip()
         profile.system_instructions = normalized or None
         profile.modified=True
-        await self._store.save_profile(profile)
+        await self._save_store_profile(profile)
         profile.modified=False
         return profile
 
@@ -427,7 +466,7 @@ class UserProfileManager:
 
         Returns the updated UserProfile for convenience.
         """
-        profile = await self._store.get_profile(user_id)
+        profile = await self._get_store_profile(user_id)
 
         if isinstance(entry_or_content, UserProfileMemoryEntry):
             entry = entry_or_content
@@ -442,7 +481,7 @@ class UserProfileManager:
 
         profile.memory_entries.append(entry)
 
-        await self._store.save_profile(profile)
+        await self._save_store_profile(profile)
 
         # Long-term memory vector index (optional)
         await self._index_upsert_entry(user_id=user_id, entry=entry)
@@ -460,7 +499,7 @@ class UserProfileManager:
         """
         Update a single long-term memory entry identified by `entry_id`.
         """
-        profile = await self._store.get_profile(user_id)
+        profile = await self._get_store_profile(user_id)
 
         for entry in profile.memory_entries:
             if entry.entry_id == entry_id:
@@ -471,7 +510,7 @@ class UserProfileManager:
                 entry.modified=True                
                 break
 
-        await self._store.save_profile(profile)
+        await self._save_store_profile(profile)
 
         # If content changed, refresh vector index
         if content is not None:
@@ -490,7 +529,7 @@ class UserProfileManager:
         """
         Remove a single long-term memory entry identified by `entry_id`.
         """
-        profile = await self._store.get_profile(user_id)
+        profile = await self._get_store_profile(user_id)
 
         found = False
         for entry in profile.memory_entries:
@@ -502,7 +541,7 @@ class UserProfileManager:
         if not found:
             return profile
        
-        await self._store.save_profile(profile)
+        await self._save_store_profile(profile)
 
         # Keep rerieval deterministic: remove from vector index on soft delete
         await self._index_delete_entry(entry_id=entry_id)
@@ -517,7 +556,7 @@ class UserProfileManager:
         This is usually used for privacy/cleanup flows or when the application
         decides to reset user-level memory.
         """
-        profile = await self._store.get_profile(user_id)     
+        profile = await self._get_store_profile(user_id)     
         
         changed = False
         for entry in profile.memory_entries:
@@ -526,7 +565,7 @@ class UserProfileManager:
                 changed = True
         
         if changed:
-            await self._store.save_profile(profile)
+            await self._save_store_profile(profile)
             # profile.memory_entries.clear()
 
         return profile
@@ -592,13 +631,13 @@ class UserProfileManager:
         This is a maintenance operation. Normal read flows should still ignore
         deleted entries even if purge is not called.
         """
-        profile = await self._store.get_profile(user_id)
+        profile = await self._get_store_profile(user_id)
 
         before = len(profile.memory_entries)
         profile.memory_entries = [e for e in profile.memory_entries if not e.deleted]
         after = len(profile.memory_entries)
 
         if after != before:
-            await self._store.save_profile(profile)
+            await self._save_store_profile(profile)
 
         return profile

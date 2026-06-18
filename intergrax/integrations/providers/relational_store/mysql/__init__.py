@@ -8,6 +8,7 @@ Public entry points: ``create_mysql_relational_store()``, ``create_mysql_integra
 ``register_mysql_integration()``, and ``profile.resolve(RELATIONAL_STORE)``.
 """
 
+from intergrax.utils.lazy_export import export_from_bundle
 from intergrax.integrations.providers.relational_store.mysql.config import (
     ENV_MYSQL_CHARSET,
     ENV_MYSQL_DATABASE,
@@ -58,7 +59,7 @@ def __getattr__(name: str):
     if name in _LAZY_EXPORTS:
         from intergrax.integrations.providers.relational_store.mysql import bundle as _bundle
 
-        return getattr(_bundle, name)
+        return export_from_bundle(_bundle, name, _LAZY_EXPORTS)
     if name == "MySQLRelationalStore":
         from intergrax.integrations.providers.relational_store.mysql.adapter import MySQLRelationalStore
 

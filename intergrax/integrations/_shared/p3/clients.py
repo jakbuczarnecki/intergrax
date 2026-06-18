@@ -4,6 +4,7 @@
 """Phase M.7 catalog adapters over duck-typed backends."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import json
 from pathlib import Path
@@ -263,8 +264,8 @@ class SeleniumBrowserAutomation:
     def fetch_page(self, url: str, *, wait_until: str = "load") -> PageContent:
         self._require_open()
         self._driver.get(url)
-        title = str(getattr(self._driver, "title", "") or "")
-        html = str(getattr(self._driver, "page_source", "") or "")
+        title = str(attribute_access.optional(self._driver, "title", "") or "")
+        html = str(attribute_access.optional(self._driver, "page_source", "") or "")
         text = ""
         try:
             body = self._driver.find_element("tag name", "body")

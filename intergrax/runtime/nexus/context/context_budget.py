@@ -27,6 +27,28 @@ class ContextBudgetPolicy:
         if self.max_tokens_estimate < 1:
             raise ValueError("max_tokens_estimate must be >= 1")
 
+    @classmethod
+    def from_adapter(
+        cls,
+        adapter: LLMAdapter,
+        *,
+        max_output_tokens: Optional[int] = None,
+        margin_tokens: int = 256,
+        summary_tier: ContextSummaryTier = ContextSummaryTier.FULL,
+        chars_per_token: int = 4,
+    ) -> ContextBudgetPolicy:
+        """Derive token and char budgets from adapter context window (M-LLM-X.3.3)."""
+        token_budget = resolve_input_budget_tokens(
+            adapter,
+            max_output_tokens=max_output_tokens,
+            margin_tokens=margin_tokens,
+        )
+        return cls(
+            max_tokens_estimate=token_budget,
+            max_chars=max(token_budget * chars_per_token, token_budget),
+            summary_tier=summary_tier,
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class ContextTrimResult:

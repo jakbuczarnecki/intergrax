@@ -1,12 +1,12 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Acceptance tests aligned with AgentReceipt partner PoC agreement.
+"""Acceptance tests aligned with AgentReceipt partner PoC agreement (v2).
 
 Validates:
-- execution-boundary event delivered in trigger API response (no webhook)
-- required event fields for AgentReceipt mapping
+- execution-boundary events delivered in trigger API response (no webhook)
+- tool_execution + harness_step events with event_sequence ordering
 - unsigned events + honest trust_model (client_observed, not server attested)
-- records.put tool boundary + journal comparison endpoint
+- records.put tool boundary + HarnessKernel step boundary
 """
 
 from __future__ import annotations
@@ -18,7 +18,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 from attestation_demo.host.factory import create_attestation_demo_application
-from attestation_demo.partner_handoff.contract_assertions import assert_partner_poc_response_shape
+from attestation_demo.partner_handoff.contract_assertions import (
+    assert_partner_harness_boundary_event,
+    assert_partner_poc_response_shape,
+    assert_partner_tool_boundary_event,
+)
 
 _PREFIX = "/v1/attestation_demo"
 _HANDOFF_DIR = Path(__file__).resolve().parents[2] / "partner_handoff"
@@ -40,49 +44,88 @@ def poc_response(client: TestClient) -> dict:
     return response.json()
 
 
+def _tool_event(poc_response: dict) -> dict:
+    return next(
+        event
+        for event in poc_response["boundary_events"]
+        if event.get("boundary_type") == "tool_execution"
+    )
+
+
+def _harness_event(poc_response: dict) -> dict:
+    return next(
+        event
+        for event in poc_response["boundary_events"]
+        if event.get("boundary_type") == "harness_step"
+    )
+
+
 def test_partner_delivery_via_trigger_api_response_not_webhook(poc_response: dict) -> None:
-    """PoC v1: boundary event in POST /poc/run response; webhook deferred."""
     assert_partner_poc_response_shape(poc_response)
     assert poc_response.get("state") == "completed"
 
 
+def test_partner_v2_event_sequence_and_types(poc_response: dict) -> None:
+    events = poc_response["boundary_events"]
+    assert [event["event_sequence"] for event in events] == [1, 2]
+    assert {event["boundary_type"] for event in events} == {
+        "tool_execution",
+        "harness_step",
+    }
+
+
 def test_partner_agent_and_tool_identity(poc_response: dict) -> None:
-    event = poc_response["boundary_events"][0]
+    tool_event = _tool_event(poc_response)
+    harness_event = _harness_event(poc_response)
     assert poc_response.get("agent_id") == "boundary_demo_agent"
-    assert event["agent_id"] == "boundary_demo_agent"
-    assert event["tool_id"] == "records.put"
+    assert tool_event["agent_id"] == "boundary_demo_agent"
+    assert harness_event["agent_id"] == "boundary_demo_agent"
+    assert tool_event["tool_id"] == "records.put"
 
 
 def test_partner_executed_status_and_canonical_io(poc_response: dict) -> None:
-    event = poc_response["boundary_events"][0]
-    assert event["action_status"] == "executed"
-    assert isinstance(event["input"], dict)
-    assert isinstance(event["output"], dict)
-    assert event["input"].get("partition_key") == "attestation_demo"
-    assert event["input"].get("data", {}).get("title") == "PoC report"
-    assert event["output"].get("stored") is True
+    tool_event = _tool_event(poc_response)
+    assert tool_event["action_status"] == "executed"
+    assert isinstance(tool_event["input"], dict)
+    assert isinstance(tool_event["output"], dict)
+    assert tool_event["input"].get("partition_key") == "attestation_demo"
+    assert tool_event["input"].get("data", {}).get("title") == "PoC report"
+    assert tool_event["output"].get("stored") is True
+
+
+def test_partner_harness_step_completed(poc_response: dict) -> None:
+    harness_event = _harness_event(poc_response)
+    assert harness_event["action_status"] == "completed"
+    assert harness_event["step_outcome"]["status"] == "completed"
+    assert harness_event["step_outcome"]["outcome_applied"] is True
+    assert harness_event["policy_verdicts"]
 
 
 def test_partner_optional_hashes_for_cross_check(poc_response: dict) -> None:
-    event = poc_response["boundary_events"][0]
-    assert event.get("input_hash", "").startswith("sha256:")
-    assert event.get("output_hash", "").startswith("sha256:")
+    for event in poc_response["boundary_events"]:
+        assert str(event.get("input_hash", "")).startswith("sha256:")
+        assert str(event.get("output_hash", "")).startswith("sha256:")
 
 
 def test_partner_run_id_step_id_lineage_and_timestamp(poc_response: dict) -> None:
     run_id = poc_response["run_id"]
-    event = poc_response["boundary_events"][0]
+    tool_event = _tool_event(poc_response)
+    harness_event = _harness_event(poc_response)
     assert run_id
-    assert event["run_id"] == run_id
-    assert event["step_id"] == "store_demo_record"
-    assert event["lineage"]["type"] == "execution_record"
-    assert run_id in event["lineage"]["ref"]
-    assert event.get("occurred_at")
+    assert tool_event["run_id"] == run_id
+    assert harness_event["run_id"] == run_id
+    assert tool_event["step_id"] == "store_demo_record"
+    assert harness_event["step_id"] == "store_demo_record"
+    assert tool_event["lineage"]["type"] == "execution_record"
+    assert run_id in tool_event["lineage"]["ref"]
+    assert run_id in harness_event["lineage"]["ref"]
+    assert tool_event.get("occurred_at")
+    assert harness_event.get("occurred_at")
 
 
 def test_partner_unsigned_event_no_platform_attestation(poc_response: dict) -> None:
-    event = poc_response["boundary_events"][0]
-    assert event["signed"] is False
+    for event in poc_response["boundary_events"]:
+        assert event["signed"] is False
     trust = poc_response.get("trust_model") or {}
     assert trust.get("platform_signed") == "false"
     assert trust.get("recommended_receipt_role") == "client_observed"
@@ -91,15 +134,15 @@ def test_partner_unsigned_event_no_platform_attestation(poc_response: dict) -> N
     assert "server_attested" not in json.dumps(trust).lower()
 
 
-def test_partner_records_put_tool_boundary_not_step_level_kernel(poc_response: dict) -> None:
-    event = poc_response["boundary_events"][0]
-    assert event["boundary_type"] == "tool_execution"
-    assert event["tool_id"] == "records.put"
-    assert event["side_effects"] is True
+def test_partner_tool_and_harness_boundaries(poc_response: dict) -> None:
+    tool_event = assert_partner_tool_boundary_event(_tool_event(poc_response))
+    harness_event = assert_partner_harness_boundary_event(_harness_event(poc_response))
+    assert tool_event.boundary_type == "tool_execution"
+    assert harness_event.boundary_type == "harness_step"
+    assert tool_event.side_effects is True
 
 
 def test_partner_journal_comparison_endpoint(client: TestClient, poc_response: dict) -> None:
-    """Adapter flow: compare receipt with Intergrax journal for same run_id."""
     run_id = poc_response["run_id"]
     trace = client.get(f"/debug/tasks/{run_id}/trace")
     assert trace.status_code == 200
@@ -109,9 +152,8 @@ def test_partner_journal_comparison_endpoint(client: TestClient, poc_response: d
 
 
 def test_partner_sample_handoff_request_format(client: TestClient) -> None:
-    """Committed partner_handoff/poc_run_request.v1.json must trigger successfully."""
     assert _SAMPLE_REQUEST.is_file()
     body = json.loads(_SAMPLE_REQUEST.read_text(encoding="utf-8"))
     response = client.post(f"{_PREFIX}/poc/run", json=body)
     assert response.status_code == 200
-    assert response.json().get("boundary_events")
+    assert len(response.json().get("boundary_events") or []) >= 2

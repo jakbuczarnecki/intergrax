@@ -2,6 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Literal, Sequence
 
@@ -40,7 +41,7 @@ class _DocxParagraphLoader:
         self.mode = mode
 
     def _is_heading(self, para) -> tuple[bool, int]:
-        style = getattr(para.style, "name", "") or ""
+        style = attribute_access.optional(para.style, "name", "") or ""
         if not style:
             return (False, 0)
         lowered = style.lower()

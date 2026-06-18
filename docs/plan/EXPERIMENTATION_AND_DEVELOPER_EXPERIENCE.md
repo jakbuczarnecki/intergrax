@@ -6,6 +6,8 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates DX + W-OPS + AUDIT-IDEAL-26/27 closeout).
+
 ---
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
@@ -19,11 +21,12 @@
 | AUDIT-IDEAL-26.1 | §26 CI | Architecture-boundary chaos job in weekly CI | P2 | **Done** |
 | AUDIT-IDEAL-26.2 | §26 CI | Simulation tests for multi-agent contention | P2 | **Done** |
 | AUDIT-IDEAL-27.1 | §27 DX | Trace Explorer interactive UI (beyond lab APIs) | P2 | **Done** |
-| AUDIT-IDEAL-27.2 | §27 DX | Replay environment HTTP API on product hosts | P1 | Planned |
+| AUDIT-IDEAL-27.2 | §27 DX | Replay environment HTTP API on product hosts | P1 | **Done** |
 | AUDIT-IDEAL-27.3 | §27 DX | Agent simulator on product hosts (not CLI-only) | P2 | **Done** |
 | AUDIT-IDEAL-27.4 | §27 DX | Visual builder / graph editor (Phase 2 UI) | P3 | **Done** |
 | AUDIT-IDEAL-30.2 | §30 Ops | Real deploy SLO window evidence (shared OBSERVABILITY) | P1 | **Done** |
 | AUDIT-IDEAL-30.3 | §30 Ops | On-call ownership model for production components | P2 | **Done** |
+| AUDIT-IDEAL-6.7 | §6 LLM (shared) | Developer `USAGE.md` + startup validation | P2 | **Partial** — [USAGE.md](../../intergrax/llm_adapters/USAGE.md) Done; `validate_runtime` [M-LLM-X.7.2](plan/LLM_ADAPTERS.md) |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 
@@ -1569,5 +1572,22 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | 2026-06-02 | W-OPS.0 | Harness maturity audit → Phase W-OPS + §6.2w in implementation plan |
 | 2026-06-05 | V-REM.0.* | Plan audit → Phase V-REM + Appendix J + §6.1z queue (10 open) |
 | — | — | *(append row per merged PR)* |
+
+---
+
+## Phase DX-LC — Full Harness Layer Completion closeout (2026-06-17)
+
+**Status:** **Done** (2026-06-17) — re-validates DX 47/47 + W-OPS + AUDIT-IDEAL-26/27; no open P0/P1  
+**Goal:** Formal Full Harness LC closeout — gate verification, journal  
+**ADR:** **No ADR needed**
+
+| ID | Deliverable | Status | Priority | Acceptance |
+|----|-------------|--------|----------|------------|
+| DX-LC-S1 | **Re-audit** — DX/W-OPS register | **Done** | High | No P0/P1 |
+| DX-LC-S2 | **Plan/architecture sync** — Full Harness LC note | **Done** | High | Domain pair consistent |
+| DX-LC-S3 | **Gate verification** | **Done** | High | DX CI scripts (trace explorer, simulator, chaos) |
+| DX-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
+
+**Deferred P2–P4:** GOV-PROD.1 dashboard · polished SaaS UI non-goal · AUDIT-IDEAL-6.7 doctor hook (LLM)
 
 ---

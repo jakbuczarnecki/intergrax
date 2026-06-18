@@ -13,6 +13,7 @@ from textwrap import dedent
 from intergrax.applications._shared.build_deploy_doc import render_build_deploy_doc
 from intergrax.applications._shared.docker_templates import write_application_docker
 from intergrax.scaffold.adr_templates import write_application_adr_scaffold
+from intergrax.scaffold.signal_templates import write_application_signal_scaffold
 from intergrax.scaffold.tracing_templates import write_application_tracing_scaffold
 from intergrax.scaffold.agent_catalog import ScaffoldAgentSpec, resolve_agent_specs
 from intergrax.scaffold.doc_templates import (
@@ -1098,6 +1099,12 @@ def _create_lab_application(
         short=names.short,
         force=force,
     )
+    write_application_signal_scaffold(
+        target=target,
+        pkg=names.pkg,
+        short=names.short,
+        force=force,
+    )
     write_scaffold_package_json(target, names, specs, profile, force=force)
 
 
@@ -1205,6 +1212,12 @@ def _create_product_application(
         force=force,
     )
     write_application_tracing_scaffold(
+        target=target,
+        pkg=names.pkg,
+        short=names.short,
+        force=force,
+    )
+    write_application_signal_scaffold(
         target=target,
         pkg=names.pkg,
         short=names.short,

@@ -2,6 +2,7 @@
 # Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from intergrax.tools.providers.braintrust.contracts import BraintrustLogEvalInput, BraintrustLogEvalOutput
 from intergrax.tools.registry.wiring import ToolWiringContext
@@ -13,7 +14,7 @@ def braintrust_log_eval(ctx: ToolWiringContext, params: BraintrustLogEvalInput) 
     from intergrax.tools.providers.observability.resolve import resolve_observability_backend
 
     backend = resolve_observability_backend(ctx, role="eval")
-    log_eval = getattr(backend, "log_eval", None)
+    log_eval = attribute_access.optional(backend, "log_eval", None)
     if log_eval is None:
         raise RuntimeError("observability_backend_does_not_support_eval_logging")
     log_id = str(

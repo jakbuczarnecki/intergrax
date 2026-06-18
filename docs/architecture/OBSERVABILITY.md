@@ -6,6 +6,8 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 21, 30  
 **Audit instruction:** [`guides/audit/OBSERVABILITY.md`](../guides/audit/OBSERVABILITY.md)  
+**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates OBS-EVOL-9); OBS-BUS + event catalog spine **Done**
+
 ---
 
 ## 1. Purpose and scope
@@ -105,7 +107,9 @@ Intergrax observability deliberately separates three planes (pattern: event sour
 
 | Field | Role |
 |-------|------|
-| `event_type` | `RuntimeEventType` enum — stable ops vocabulary |
+| `event_type` | `RuntimeEventType` enum — **spine** lifecycle vocabulary (§4.4) |
+| `event_kind` | Namespaced semantic id — **primary for domain extensions** (defaults to `event_type.value`) |
+| `event_category` | Derived ops grouping (`tool`, `agent`, `plan`, …) — §4.4.2 |
 | `phase` | `ExecutionPhase` — where in the Nexus lifecycle |
 | `severity` | `EventSeverity` — alert routing |
 | `task_id` | Logical work unit (user request scope) |
@@ -118,7 +122,159 @@ Intergrax observability deliberately separates three planes (pattern: event sour
 
 **Code:** `intergrax/runtime/events/runtime_event.py`, `phase_coverage.py`, `event_bus.py`
 
-**Catalog:** 54 `RuntimeEventType` values with `ExecutionPhase` and ops filter hints (`trace:*`, `ops:alert`, …).
+**Catalog:** **56** `RuntimeEventType` spine members (publication budget; OBS-EVOL-9.7). Platform adaptive/capacity/hook/recovery signals emit on `DOMAIN_SIGNAL` + `platform.*` `event_kind` — see §4.4.13.
+
+### 4.4 Layered event identity (P1-ARCH-02 · OBS-EVOL-9)
+
+**Status:** Architecture **accepted** (2026-06-17) · implementation **Done** (OBS-EVOL-9 register) · **ADR:** [`ADR-OBS-003`](../adr/entries/2026-06-17/ADR-OBS-003.md) · **SAR:** accepted 2026-06-17 (§4.4.7–4.4.13)
+
+HOS uses **three levels of identity** so the spine scales without forcing developers through platform enum changes:
+
+```text
+RuntimeEvent
+├── event_type      RuntimeEventType   # spine — platform lifecycle (~50 at publication)
+├── event_kind      str                # semantic — namespaced domain id (unbounded)
+├── event_category  EventCategory      # derived — ops/metrics/hook grouping
+├── phase           ExecutionPhase     # when in Nexus lifecycle
+├── ops_hint        str                # trace/alert routing token
+└── payload         envelope           # payload_schema_id + data (registry-backed)
+```
+
+| Level | Owner | Examples | Growth |
+|-------|-------|----------|--------|
+| **Spine** `event_type` | Platform (Tier-0/1) | `TASK_CREATED`, `TOOL_COMPLETED`, `HUMAN_APPROVAL_REQUESTED`, `DOMAIN_SIGNAL` | Frozen ~50; ADR to add |
+| **Kind** `event_kind` | Platform + agents + apps | `agents.legal.clause_flagged`, `platform.adaptive.signal_recorded` | Unbounded; registry |
+| **Trace** Plane B | Agents (preferred for debug) | `agents.legal.diag.clause_parse` | Unbounded; extension SDK |
+
+**Default rule:** `event_kind` defaults to `event_type.value` for spine events.
+
+#### 4.4.1 Author decision tree
+
+```text
+Need a new signal?
+├── Debug / reconstruction only?     → DiagnosticPayload (Plane B)
+├── Product/domain fact on bus?      → emit_domain_signal(kind, payload)
+│                                      event_type = DOMAIN_SIGNAL
+├── Nexus lifecycle transition?      → emit_platform_event(event_type, payload)
+│                                      (platform PR + EventCatalog entry + ADR if new spine)
+└── Must trigger platform HITL?      → Tier-3 adapter maps kind → existing spine
+                                       (e.g. kind → HUMAN_APPROVAL_REQUESTED)
+```
+
+#### 4.4.2 `EventCategory` (derived, not a second enum root)
+
+Categories group kinds for subscribers and metrics — **not** a replacement for `event_type`:
+
+| Category | Spine examples | Kind prefix examples |
+|----------|----------------|----------------------|
+| `task` | `TASK_*` | `platform.task.*` |
+| `plan` | `PLAN_*` | `platform.plan.*` |
+| `tool` | `TOOL_*` | `agents.*.tool_*` |
+| `agent` | `AGENT_SELECTED`, `STEP_*` | `agents.<slug>.*` |
+| `context` | `CONTEXT_*`, `MEMORY_*` | `platform.context.*` |
+| `human` | `HUMAN_*`, `PAUSE_*` | — |
+| `policy` | `POLICY_DECISION`, `GUARDRAIL_BLOCKED` | `platform.policy.*` |
+| `platform` | `DOMAIN_SIGNAL` carrier | `platform.adaptive.*`, `platform.capacity.*` |
+
+Ops subscribes to `ops_hint` and `event_category`; developers subscribe to `kind_prefix`.
+
+#### 4.4.3 Target spine at publication (pre-release consolidation)
+
+Before external v1, consolidate **non-lifecycle** enum members into `DOMAIN_SIGNAL` + `platform.*` kinds:
+
+| Keep on spine | Consolidate to `DOMAIN_SIGNAL` + kind |
+|---------------|---------------------------------------|
+| `TASK_*`, `PLAN_*`, `STEP_*` | — |
+| `TOOL_*`, `VALIDATION_*`, `DECISION_EMITTED` | — |
+| `HUMAN_*`, `INTERRUPT_*`, `PAUSE_*`, `RETRY_*` | — |
+| `CONTEXT_*`, `MEMORY_*`, `SKILL_*`, `INGESTION_FAILED` | — |
+| `HANDOFF_*`, `DELEGATION_GRANTED`, `GRAPH_BACKPRESSURE` | — |
+| `POLICY_DECISION`, `GUARDRAIL_BLOCKED`, `BUDGET_*` | — |
+| `TASK_PROGRESS`, `LLM_CALL`, `TRACE_PERSISTED` | — |
+| `RUNTIME_HANDLER_FAILED`, `CANCELLED`, `CANCELLATION_REQUESTED` | — |
+| — | `ADAPTIVE_*` → `platform.adaptive.*` |
+| — | `SCALE_*`, `CAPACITY_*`, `AUTONOMY_*` → `platform.capacity.*` |
+| — | `HOOK_*` → `platform.hook.*` |
+| — | `RECOVERY_REBOOT` → `platform.recovery.reboot` |
+
+**Code target:** `intergrax/runtime/events/event_catalog.py` (single registry); `phase_coverage.py` becomes a view until removed.
+
+#### 4.4.4 Public emit APIs (target)
+
+```python
+# Tier-2/3 — primary extension path
+emit_domain_signal(ctx, kind="agents.legal.clause_flagged", payload=LegalClauseFlaggedPayloadV1(...))
+
+# Platform only — lifecycle spine
+emit_platform_event(ctx, event_type=RuntimeEventType.TOOL_COMPLETED, payload=ToolPayloadV1(...))
+```
+
+Tier-2 agents **must not** import `RuntimeEventType` for product semantics.
+
+#### 4.4.5 Bus subscription (additive)
+
+```python
+bus.subscribe(handler, event_types={RuntimeEventType.TOOL_COMPLETED})  # legacy
+bus.subscribe(handler, categories={EventCategory.TOOL})                # preferred
+bus.subscribe(handler, kind_prefix="agents.legal.")                     # product hooks
+```
+
+#### 4.4.6 Anti-patterns
+
+| ID | Anti-pattern | Correct |
+|----|--------------|---------|
+| EVT-AP-01 | Tier-2 adds `RuntimeEventType` member | `emit_domain_signal` + extension payload |
+| EVT-AP-02 | Raw dict on bus without `payload_schema_id` | `RuntimeEventPayload.to_envelope()` |
+| EVT-AP-03 | Per-agent trace SQLite | Plane B via `AgentEngine` |
+| EVT-AP-04 | Duplicate semantics in enum and kind | Kind is authoritative for domain; spine for lifecycle |
+| EVT-AP-05 | High-cardinality `event_kind` in Prometheus labels | Aggregate by `event_category`; kind in journal only |
+| EVT-AP-06 | Reuse `event_kind` name for LLM stream chunks and HOS bus signals | Stream: `intergrax.llm.stream.*`; bus: `platform.llm.*` / `agents.*` |
+
+#### 4.4.7 Production metadata (`EventCatalogEntry` · SAR accepted)
+
+Each spine type is described by a single **`EventCatalogEntry`** in `event_catalog.py` (SSOT):
+
+| Field | Role |
+|-------|------|
+| `phase` | `ExecutionPhase` — Nexus lifecycle placement |
+| `ops_hint` | Stable ops scrape / alert routing token |
+| `category` | `EventCategory` — subscriber and metrics grouping |
+| `preferred_payload_schema_id` | Merged from payload registry |
+| `sample_rate` | `1.0` default; `<1.0` for high-volume types (`TASK_PROGRESS`) — enforced at bus persist (OBS-EVOL-9.6) |
+| `retention_class` | `operational` \| `audit` \| `debug` — ties to data classification retention (IDEAL-23.5) |
+| `consolidation_kind` | Target `platform.*` kind when spine member moves to `DOMAIN_SIGNAL` (OBS-EVOL-9.7) |
+
+`phase_coverage.py` is a **deprecated view** — import catalog helpers instead.
+
+#### 4.4.8 `EmitContext` (OBS-EVOL-9.3)
+
+All public emit APIs accept a typed **`EmitContext`** carrying `task_id`, `run_id`, `tenant_id`, `correlation_id`, and active `TraceScope` — correlation by construction (SAR-01).
+
+#### 4.4.9 Domain signal redaction (OBS-EVOL-9.3)
+
+`emit_domain_signal()` **must** call `payload.redact()` and respect `production_mode` before `RuntimeEventBus.record` — same bar as Plane B `DiagnosticPayload` (SAR-09).
+
+#### 4.4.10 `JournalQuery` (OBS-EVOL-9.5)
+
+Read-model API over unified journal:
+
+```python
+query_journal(run_id, categories={EventCategory.TOOL}, kind_prefix="agents.legal.")
+```
+
+Replaces ad-hoc enum-list filtering in debug tooling (SAR-07).
+
+#### 4.4.11 Declarative profile subscriptions (OBS-EVOL-9.10)
+
+`ObservabilityProfile.event_subscriptions: list[EventSubscriptionSpec]` — Tier-3 declares `kind_prefix`, `categories`, `ops_hints`, and/or `event_types` plus a `handler_id`. Handlers register via `register_event_subscription_handler()`; `wire_observability_event_subscriptions()` attaches them at host bootstrap (`harness_host_runtime`). **Code:** `sub_profiles.py`, `event_subscription_registry.py`, `observability_wiring.py`.
+
+#### 4.4.12 W3C Trace Context (OBS-EVOL-9.11)
+
+Optional `traceparent` / `tracestate` on `RuntimeEvent` for external APM correlation. `EmitContext` propagates inbound headers; `NexusRuntimeEventPublisher` injects per-event spans from task metadata; OTLP journal export prefers W3C trace/span ids when present. **Code:** `w3c_trace_context.py`, `journal_export.py`, `export_bridge.py`.
+
+#### 4.4.13 Spine consolidation shim (OBS-EVOL-9.7)
+
+Nineteen legacy flat spine members (adaptive, capacity/scale, autonomy, recovery, hook) were removed from `RuntimeEventType`. Emitters use `build_platform_signal_event()` → `DOMAIN_SIGNAL` + namespaced `platform.*` kind. Persisted journals with legacy `event_type` values are coerced on read via `migrate_legacy_spine_payload()` (payload retains `legacy_spine_type`). Publication gate: `assert_publication_spine_budget()` (max 56). **Code:** `spine_consolidation.py`, `scripts/check_event_catalog.py`.
 
 ### 4.2 Plane B — Diagnostic trace (`TraceEvent` + `DiagnosticPayload`)
 
@@ -334,6 +490,7 @@ Canonical payload families (canon §42.23.1):
 
 | Item | Notes |
 |------|-------|
+| Layered identity (`event_kind`, `EventCatalog`) | **OBS-EVOL-9** · ADR-OBS-003 · pre-release spine consolidation |
 | `RuntimeEvent.payload` Pydantic field | Migrate from `Dict[str, Any]` to discriminated union on the model itself |
 | Store retention policy | Platform-wide TTL / archival (future) |
 | OTLP protobuf push | Journal export ships OTLP-style JSON; vendor protobuf encoders remain optional integrations |
@@ -341,11 +498,12 @@ Canonical payload families (canon §42.23.1):
 
 ### 8.3 Extension rules for developers
 
-1. **Subclass `DiagnosticPayload`** — never emit raw dicts through `RuntimeState.trace_event`.
-2. **Stable `schema_id`** — never reuse for different semantics; bump `schema_version` on breaking changes.
-3. **Implement `redact()`** — assume production persistence.
-4. **Register** new schemas in domain `ARCHITECTURE.md` and payload registry (CI gate).
-5. **Do not** import trace stores in Tier-2 — use `AgentEngine` / Nexus context only.
+1. **Subclass `DiagnosticPayload`** — never emit raw dicts through `RuntimeState.trace_event` (Plane B debug).
+2. **Domain bus signals** — use `emit_domain_signal(kind, payload)` with registered extension payload; do **not** add `RuntimeEventType` (§4.4).
+3. **Stable `schema_id`** — never reuse for different semantics; bump `schema_version` on breaking changes.
+4. **Implement `redact()`** — assume production persistence.
+5. **Register** new schemas in payload registry (CI gate) and document `event_kind` in agent `ARCHITECTURE.md`.
+6. **Do not** import trace stores in Tier-2 — use `AgentEngine` / Nexus context only.
 
 ---
 
@@ -510,6 +668,9 @@ Audit map §21 score: **L4** (OBS-BUS-7 gate evidence).
 | Trace models | `intergrax/runtime/nexus/tracing/trace_models.py` |
 | Trace payloads | `intergrax/runtime/nexus/tracing/**/*.py` |
 | Runtime events | `intergrax/runtime/events/runtime_event.py` |
+| Event catalog (SSOT) | `intergrax/runtime/events/event_catalog.py` |
+| Domain signals (target) | `intergrax/runtime/events/signals.py`, `emit_context.py` |
+| Journal query (target) | `intergrax/runtime/events/journal_query.py` |
 | Event bus | `intergrax/runtime/events/event_bus.py` |
 | Trace bridge | `intergrax/runtime/events/trace_bridge.py` |
 | Emitter + TraceScope | `intergrax/runtime/observability/emitter.py`, `trace_scope.py` |
@@ -545,19 +706,19 @@ uv run python scripts/check_observability_gates.py
 
 ---
 
-## 17. Session closeout (2026-06-08)
+## 17. Session closeout
 
-**Harness Observability Spine:** **complete** for platform scope (OBS-BUS-0…7). Tier-3 wires stores; Tier-2 extends via `DiagnosticPayload` + extension SDK; optional sinks subscribe to the journal or `TASK_COMPLETED` export.
+**OBS-BUS (L4):** **Done** (2026-06-08) — unified spine, typed payloads, extension SDK, journal export, CI gates.
+
+**OBS-EVOL-9 (P1-ARCH-02):** **Done** (2026-06-17) — layered identity (`event_kind`, `EventCatalog`, `DOMAIN_SIGNAL`, profile subscriptions, W3C trace context). Publication-ready spine (56 types). See plan OBS-EVOL-9 register and §4.4.7–4.4.13.
 
 **Not in spine scope:** product dashboards (§6.3a), mandatory external APM, per-agent private trace DBs.
-
-**Next harness work:** default §6.1 maintenance unless reprioritized (e.g. Phase CRIT-V, Phase K).
 
 ---
 
 ## 18. Execution Boundary Export (EBE) — optional side channel
 
-**Status:** PoC v1 **Done** (partner AgentReceipt sandbox).  
+**Status:** PoC v1 **Done** · PoC v2 (EBE-8 harness-step export) **Done** (partner AgentReceipt sandbox).  
 **Reference host:** `applications/attestation_demo/` · **ADR:** [ADR-OBS-002](../adr/entries/2026-06-13/ADR-OBS-002.md)
 
 EBE is an **optional** export path for **unsigned, vendor-neutral** tool-boundary facts. It complements — does not replace — the Harness Observability Spine (HOS).
@@ -565,7 +726,9 @@ EBE is an **optional** export path for **unsigned, vendor-neutral** tool-boundar
 | Principle | Rule |
 |-----------|------|
 | **Emit at invoker boundary** | `RuntimeToolInvoker` hook after tool execution |
+| **Emit at kernel step boundary** | `HarnessKernel.execute_step` hook after trace append (EBE-8) |
 | **Event-first, receipt-second** | Platform emits `execution_boundary_event.v1`; external products sign receipts |
+| **One event, one receipt** | Partner maps each `boundary_events[]` element to a separate `client_observed` receipt |
 | **Non-blocking** | Buffer/sink failures never fail tool invoke |
 | **Honest trust** | `signed: false` in PoC v1; no implied platform attestation |
 | **HOS unchanged** | Unified journal, trace bridge, middleware — no receipt logic |
@@ -574,13 +737,20 @@ EBE is an **optional** export path for **unsigned, vendor-neutral** tool-boundar
 
 `execution_boundary_event.v1` — Pydantic model in `intergrax/runtime/attestation/execution_boundary_event.py`.
 
+| Field | Role |
+|-------|------|
+| `boundary_type` | `tool_execution` (invoker) or `harness_step` (kernel) |
+| `event_id` | Stable UUID per event (receipt key) |
+| `event_sequence` | Monotonic per `run_id`, assigned by `BoundaryEventBuffer` |
+| `policy_verdicts` / `step_outcome` | Harness-step events only |
+
 ### Configuration
 
-`ExecutionBoundaryExportProfile` on `ApplicationEnvironmentProfile` → `attestation_runtime_bridge.py` → `RuntimeConfig.execution_boundary_export` + optional `BoundaryEventBuffer`.
+`ExecutionBoundaryExportProfile` on `ApplicationEnvironmentProfile` (`step_level_enabled` for EBE-8) → `attestation_runtime_bridge.py` → `RuntimeConfig.execution_boundary_export` + optional `BoundaryEventBuffer`. UAEP and ACP session loops copy settings into `StepKernelContext` via `kernel_wiring.py`.
 
-### PoC v1 delivery
+### PoC v2 delivery (EBE-8)
 
-Synchronous API response (`boundary_events[]`) from Tier-3 `POST /v1/attestation_demo/poc/run`. Webhook sink and HarnessKernel step-level export are **deferred**.
+Synchronous API response (`boundary_events[]`) returns **two events per demo run** when `step_level_enabled=true`: `tool_execution` (seq 1) then `harness_step` (seq 2). Webhook sink and host signing remain **deferred**.
 
 ### Non-goals
 

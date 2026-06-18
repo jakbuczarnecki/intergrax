@@ -4,6 +4,7 @@
 """GCP cloud platform adapter — ``CloudPlatform`` facade (no google.auth here)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any, Optional
 
@@ -68,7 +69,7 @@ class GcpCloudPlatform:
 
     def health(self) -> HealthStatus:
         try:
-            if not getattr(self._credentials, "valid", False):
+            if not attribute_access.optional(self._credentials, "valid", False):
                 raise RuntimeError("GCP credentials are not valid")
             detail_parts: list[str] = []
             if self.project_id:

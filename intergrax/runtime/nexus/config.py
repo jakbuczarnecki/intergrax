@@ -175,6 +175,9 @@ class RuntimeConfig:
     # YamlPromptRegistry prompt id for catalog tool planner (ReasoningProfile bridge).
     tool_planner_prompt_id: str = "tools_agent_planner"
 
+    # Registry prompt id for agent-level engine step cognition (ReasoningProfile bridge).
+    engine_planner_prompt_id: str = "planner_default"
+
     # Planner schema narrowing before LLM tool selection (TOOL-ENG-5).
     tool_selection_mode: ToolSelectionMode = ToolSelectionMode.STATIC
     tool_selection_top_k: int = 20
@@ -250,6 +253,11 @@ class RuntimeConfig:
     memory_retention_days: Optional[int] = None
     memory_scope_boundary: str = "tenant"
     memory_consolidation_mode: str = "manual"
+    enable_session_vector_index: bool = False
+    include_cross_session_episodic: bool = False
+    session_index_top_k: int = 8
+    session_index_score_threshold: Optional[float] = None
+    vector_index_namespace: Optional[str] = None
 
     # Context assembly (Phase MEM-1.2, MEM-CTX.1)
     context_budget_policy: Optional["ContextBudgetPolicy"] = None

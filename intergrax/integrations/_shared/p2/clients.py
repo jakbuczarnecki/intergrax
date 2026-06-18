@@ -4,6 +4,7 @@
 """P2/P3 catalog adapters over duck-typed backends."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import uuid
 from typing import Any, Callable, Optional, Sequence
@@ -440,7 +441,7 @@ class PlaywrightBrowserAutomation:
         page = self._browser.new_page()
         try:
             response = page.goto(url, wait_until=wait_until, timeout=self._timeout_ms)
-            status = int(getattr(response, "status", 200) or 200)
+            status = int(attribute_access.optional(response, "status", 200) or 200)
             title = str(page.title() or "")
             html = str(page.content() or "")
             text = str(page.inner_text("body") if hasattr(page, "inner_text") else "")

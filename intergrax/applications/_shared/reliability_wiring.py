@@ -9,7 +9,7 @@ from pathlib import Path
 
 from intergrax.applications._shared.compensation_wiring import resolve_compensation_flow
 from intergrax.applications._shared.partial_results_wiring import apply_partial_results_task_defaults
-from intergrax.applications._shared.reasoning_wiring import resolve_replan_policy_context
+from intergrax.applications._shared.reasoning_wiring import resolve_reasoning_task_metadata
 from intergrax.applications._shared.reliability_runtime_bridge import (
     ReliabilityWiringOptions,
     resolve_reliability_wiring_options,
@@ -70,9 +70,8 @@ def apply_reliability_task_defaults(task: Task, env: ApplicationEnvironmentProfi
     task.metadata["resilience_policy.v1"] = reliability.resilience_policy.model_dump()
     task.metadata["max_interrupts_per_run"] = task.options.governance.max_interrupts_per_run
     task.metadata["autonomy_level_set"] = True
-    replan_ctx = resolve_replan_policy_context(env)
-    if replan_ctx:
-        task.metadata["replan_policy.v1"] = replan_ctx
+    for key, value in resolve_reasoning_task_metadata(env).items():
+        task.metadata[key] = value
     compensation = resolve_compensation_flow(env)
     if compensation is not None:
         task.metadata["compensation_flow.v1"] = {

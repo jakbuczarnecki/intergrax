@@ -4,6 +4,7 @@
 """Unified run journal export — ref payloads and OTLP-style snapshots (OBS-BUS-6)."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 import hashlib
 from dataclasses import dataclass
@@ -11,6 +12,10 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Mapping, Sequence
 
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
+from intergrax.runtime.events.w3c_trace_context import (
+    is_valid_traceparent,
+    parse_traceparent,
+)
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.events.unified_run_journal import (
     JOURNAL_SCHEMA_VERSION,
@@ -150,16 +155,26 @@ def render_journal_otlp_json(snapshot: JournalExportSnapshot | Mapping[str, Any]
             continue
         event_id = str(row.get("event_id", ""))
         event_type = str(row.get("event_type", "unknown"))
-        spans.append(
-            {
-                "traceId": _otlp_hex_id(run_id, length=32),
-                "spanId": _otlp_hex_id(event_id, length=16),
-                "name": event_type,
-                "kind": "SPAN_KIND_INTERNAL",
-                "startTimeUnixNano": _timestamp_to_unix_nano(row.get("timestamp")),
-                "attributes": _span_attributes(row, tenant_id=tenant_id),
-            }
-        )
+        traceparent_raw = row.get("traceparent")
+        if isinstance(traceparent_raw, str) and is_valid_traceparent(traceparent_raw):
+            parsed = parse_traceparent(traceparent_raw)
+            trace_id = parsed.trace_id
+            span_id = parsed.parent_id
+        else:
+            trace_id = _otlp_hex_id(run_id, length=32)
+            span_id = _otlp_hex_id(event_id, length=16)
+        span: Dict[str, Any] = {
+            "traceId": trace_id,
+            "spanId": span_id,
+            "name": event_type,
+            "kind": "SPAN_KIND_INTERNAL",
+            "startTimeUnixNano": _timestamp_to_unix_nano(row.get("timestamp")),
+            "attributes": _span_attributes(row, tenant_id=tenant_id),
+        }
+        parent_event_id = row.get("parent_event_id")
+        if isinstance(parent_event_id, str) and parent_event_id.strip():
+            span["parentSpanId"] = _otlp_hex_id(parent_event_id, length=16)
+        spans.append(span)
     return {
         "resourceSpans": [
             {
@@ -194,6 +209,12 @@ def _span_attributes(row: Mapping[str, Any], *, tenant_id: str) -> List[Dict[str
     parent = row.get("parent_event_id")
     if parent:
         attrs.append({"key": "intergrax.parent_event_id", "value": {"stringValue": str(parent)}})
+    traceparent = row.get("traceparent")
+    if traceparent:
+        attrs.append({"key": "w3c.traceparent", "value": {"stringValue": str(traceparent)}})
+    tracestate = row.get("tracestate")
+    if tracestate:
+        attrs.append({"key": "w3c.tracestate", "value": {"stringValue": str(tracestate)}})
     return attrs
 
 
@@ -201,7 +222,7 @@ def _trace_row_tags(event: Any) -> dict[str, Any]:
     if isinstance(event, Mapping):
         tags = event.get("tags")
         return dict(tags) if isinstance(tags, dict) else {}
-    tags = getattr(event, "tags", None)
+    tags = attribute_access.optional(event, "tags", None)
     return dict(tags) if isinstance(tags, dict) else {}
 
 

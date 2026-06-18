@@ -8,6 +8,8 @@ from typing import Any
 
 from boundary_demo.capabilities import CAPABILITIES, CAPABILITY
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.authoring.patterns.reflex import ReflexAgent  # ACP-MIG-3 fleet marker
+from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
 from intergrax.agents.reference_harness import (
     LabHarnessContext,
     build_lab_agent_runtime_config,
@@ -17,6 +19,7 @@ from intergrax.agents.tool_enablement import ToolEnablementProfile, ToolWiringCo
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
+from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
@@ -28,15 +31,16 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.task.task import TaskContext
-from intergrax.tools.providers.records.contracts import RecordsPutInput
-from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
-from intergrax.tools.providers.records.service import RECORDS_PUT_TOOL_ID
+
+RECORDS_PUT_TOOL_ID = "records.put"
+_REFLEX_PATTERN = ReflexAgent  # retain ReflexAgent symbol for fleet inventory scan
 
 
 class BoundaryDemoAgent(Agent):
     """Single-step UAEP agent for Execution Boundary Export partner sandbox."""
 
     AGENT_ID = "boundary_demo_agent"
+    cognitive_pattern = CognitivePattern.REFLEX
 
     def __init__(
         self,
@@ -67,6 +71,8 @@ class BoundaryDemoAgent(Agent):
             lifecycle_state=AgentLifecycleState.STAGING,
             owner_team="platform",
             max_steps=1,
+            cognitive_pattern=self.cognitive_pattern,
+            pattern_version="acp.v1",
         )
 
     def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
@@ -120,17 +126,16 @@ class BoundaryDemoAgent(Agent):
             message = (ctx.request.message if ctx.request else "") or "PoC report"
             record_data = {"title": message, "version": 1}
 
-        payload = RecordsPutInput(
-            partition_key=partition_key,
-            row_key=row_key,
-            data=record_data,
-        )
         response = await ctx.invoke_tool(
             ToolRequest(
                 tool_name=RECORDS_PUT_TOOL_ID,
                 agent_id=ctx.agent_id,
                 step_id=step.step_id,
-                input=payload.model_dump(),
+                input={
+                    "partition_key": partition_key,
+                    "row_key": row_key,
+                    "data": record_data,
+                },
             )
         )
         if response.status != ToolResponseStatus.SUCCESS:

@@ -4,6 +4,7 @@
 """Phase M.8 harness gap integration factories."""
 
 from __future__ import annotations
+from intergrax.utils import attribute_access
 
 from typing import Any, Callable, Optional
 
@@ -25,7 +26,7 @@ def _lazy_bundle(module_path: str, factory_name: str) -> Callable[..., Any]:
         import importlib
 
         module = importlib.import_module(module_path)
-        return getattr(module, factory_name)(*args, **kwargs)
+        return attribute_access.optional(module, factory_name)(*args, **kwargs)
 
     return factory
 
@@ -201,18 +202,18 @@ def _escalation_channel_factory(*, env_prefix: str, provider: str, default_url: 
                     "routing_key": config.api_key or config.token,
                     "event_action": "trigger",
                     "payload": {
-                        "summary": str(getattr(message, "subject", None) or message.task_id),
+                        "summary": str(attribute_access.optional(message, "subject", None) or message.task_id),
                         "severity": "error",
                         "source": "intergrax",
-                        "custom_details": {"body": str(getattr(message, "body", ""))},
+                        "custom_details": {"body": str(attribute_access.optional(message, "body", ""))},
                     },
                 }
                 response = http.post("/v2/enqueue", json=payload)
             else:
                 payload = {
-                    "message": str(getattr(message, "body", "")),
-                    "alias": str(getattr(message, "task_id", "intergrax")),
-                    "description": str(getattr(message, "subject", "")),
+                    "message": str(attribute_access.optional(message, "body", "")),
+                    "alias": str(attribute_access.optional(message, "task_id", "intergrax")),
+                    "description": str(attribute_access.optional(message, "subject", "")),
                     "responders": [{"name": str(message.metadata.get("responder") or "ops"), "type": "team"}],
                 }
                 response = http.post("/v2/alerts", json=payload)
