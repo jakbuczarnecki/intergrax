@@ -7,8 +7,12 @@ import pytest
 from intergrax.model_inference.adapters.opencv_vision import OpenCvVisionInferenceAdapter
 from intergrax.model_inference.bootstrap import build_harness_model_inference_registry
 from intergrax.model_inference.contracts import VisionInferenceRequest
+from intergrax.model_inference.opencv_availability import opencv_runtime_available
 
 pytestmark = pytest.mark.unit
+
+if not opencv_runtime_available():
+    pytestmark = pytest.mark.skip(reason="opencv-python-headless runtime unavailable")
 
 _FIXTURE_DIR = Path(__file__).resolve().parents[3] / "fixtures" / "vision_golden"
 _GOLDEN_IMAGE = _FIXTURE_DIR / "sample_target.png"

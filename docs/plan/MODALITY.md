@@ -129,8 +129,8 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **MOD-MAINT-01** | Test/CI | P2 | **Planned** | **Fix** `test_opencv_adapter_detects_white_rectangle` — wire `opencv-python-headless` optional extra **or** robust skip only when `cv2` truly unavailable; default CI/dev env must run green | `pytest tests/unit/model_inference/test_opencv_vision.py` passes in standard `uv` dev install |
-| 2 | **MOD-MAINT-02** | Test/Code | P2 | **Planned** | **Fix** `test_run_modality_detect_job_uses_harness_registry` — repair Celery modality execution path or test fixtures so registry wiring is asserted correctly | `pytest tests/unit/model_inference/test_celery_modality_execution.py` green |
+| 1 | **MOD-MAINT-01** | Test/CI | P2 | **Done** | **Fix** `test_opencv_adapter_detects_white_rectangle` — wire `opencv-python-headless` optional extra **or** robust skip only when `cv2` truly unavailable; default CI/dev env must run green | `pytest tests/unit/model_inference/test_opencv_vision.py` passes in standard `uv` dev install |
+| 2 | **MOD-MAINT-02** | Test/Code | P2 | **Done** | **Fix** `test_run_modality_detect_job_uses_harness_registry` — repair Celery modality execution path or test fixtures so registry wiring is asserted correctly | `pytest tests/unit/model_inference/test_celery_modality_execution.py` green |
 | 3 | **MOD-MAINT-03** | Docs | P4 | **Planned** | Plane A/C boundary — ops runbook section in modality canon | Architecture §three-plane ops table |
 | 4 | **MOD-MAINT-04** | Backlog | P3 | **Planned** | Remote serving incremental — Triton/HF depth register row (post W-ML closeout) | Plan row; no scope creep into online training |
 

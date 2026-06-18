@@ -5,6 +5,12 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from intergrax.model_inference.opencv_availability import opencv_runtime_available
+
+pytestmark = pytest.mark.unit
+if not opencv_runtime_available():
+    pytestmark = pytest.mark.skip(reason="opencv-python-headless runtime unavailable")
+
 from intergrax.model_inference.contracts import ModelArtifact, ModelArtifactFormat, VisionInferenceRequest
 from intergrax.model_inference.execution.celery_executor import CeleryModalityInferenceExecutor
 from intergrax.model_inference.execution.jobs import ModalityDetectJob
