@@ -54,7 +54,7 @@ Maturity uses **L0–L4** levels (not arbitrary percentages). Per-domain evidenc
 | **Agent contracts (ACP)** | **L3** | [Phase ACP](docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) **Done** · fleet `on_next_step` migration ongoing |
 | **Tools** | **L3** | [TOOL-ENG](docs/plan/TOOLS.md) closeout **Done** · deferred: hierarchical LLM category pass |
 | **Tier-3 hosts** | **L3** (depth partial) | [APP-PROD](docs/plan/TIER3_APPLICATION_ENVIRONMENT.md) gates **Done** · §22 profile bundles M1–M3 **Done** · enterprise distribution **P4** |
-| **Memory** | **L3** | [MEM / MEM-VEC](docs/plan/MEMORY.md) **Done** · depth: procedural taxonomy + org parity gaps |
+| **Memory** | **L3** | [MEM / MEM-VEC / MEM-DEPTH](docs/plan/MEMORY.md) **Done** · L3 harness · P2 depth: procedural store, org LTM parity, per-step budget caps before CE collect |
 | **Adaptive harness (AHI)** | **L4-ready** (mechanisms) | [W-ADAPT](docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md) **Done** · L4 runtime mechanisms implemented · production L4 evidence requires product-host run volume |
 
 **Also at L3:** RAG · LLM adapters · Observability · Nexus flow · UAEP · Skills · Integrations — full index in [architecture hub](docs/intergrax_runtime_architecture.md).
