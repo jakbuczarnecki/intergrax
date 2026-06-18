@@ -54,7 +54,7 @@ MEM Done · MEM-DEPTH Done · MEM-OBS.1 · ADR-MEM-001
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-Procedural memory minimal · org memory maturity · LangMem/Zep parity gaps on entity graph
+MEMORY-LC Done · MEM-DEPTH Done · §6.1av depth closed (procedural/org/temporal) · MEM-MAINT-03 LangMem/Zep entity graph parity **backlog** (not Mem0 SaaS; no Phase K)
 
 ---
 

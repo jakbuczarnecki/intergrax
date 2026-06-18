@@ -674,7 +674,7 @@ applications/_shared/memory_wiring.py · memory_runtime_bridge.py
 EntityGraphMemoryStore · workspace_index_spike.py (RFC — CE owns production wiring)""",
         "key_symbols": "MemoryProfile · MemoryKind · MemoryWritePolicy · PolicyScopedMemoryView · MemoryConsolidationJob · MemoryView · SharedTaskContext",
         "active_phases": "MEM Done · MEM-DEPTH Done · MEM-OBS.1 · ADR-MEM-001",
-        "known_gaps": "Procedural memory minimal · org memory maturity · LangMem/Zep parity gaps on entity graph",
+        "known_gaps": "MEMORY-LC Done · MEM-DEPTH Done · §6.1av depth closed (procedural/org/temporal) · MEM-MAINT-03 LangMem/Zep entity graph parity **backlog** (not Mem0 SaaS; no Phase K)",
         "dimensions": [
             "Memory types separated: STM, task KV, session, user LTM, tenant, procedural, shared context.",
             "Agents do not write Redis/Postgres/vector DB directly.",

@@ -628,14 +628,16 @@ Total: 26
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **MEM-MAINT-01** | Code | P3 | **Planned** | Procedural memory depth — cognitive store mapping + tests beyond minimal `PROCEDURAL` kind | Unit tests for procedural read/write/consolidation path |
-| 2 | **MEM-MAINT-02** | Code | P3 | **Planned** | Org memory maturity — promotion criteria + integration tests | Org profile scenarios pass maturity checklist |
-| 3 | **MEM-MAINT-03** | Backlog | P4 | **Planned** | LangMem/Zep entity graph parity — backlog register + explicit scope boundary (not Mem0 SaaS) | Plan row; no Phase K coupling |
-| 4 | **MEM-MAINT-04** | Code | P3 | **Planned** | MEM-DEPTH-5.2 — temporal validity on LTM facts | Valid-from/until on fact entries; retrieval respects window |
+| 1 | **MEM-MAINT-01** | Code | P3 | **Done** | Procedural memory depth — cognitive store mapping + tests beyond minimal `PROCEDURAL` kind | `cognitive_store_mapping.py` + procedural write/read tests |
+| 2 | **MEM-MAINT-02** | Code | P3 | **Done** | Org memory maturity — promotion criteria + integration tests | `org_memory_maturity.py` + maturity checklist tests |
+| 3 | **MEM-MAINT-03** | Backlog | P4 | **Done** | LangMem/Zep entity graph parity — backlog register + explicit scope boundary (not Mem0 SaaS) | Plan row; audit prompt boundary; no Phase K coupling |
+| 4 | **MEM-MAINT-04** | Code | P3 | **Done** | MEM-DEPTH-5.2 — temporal validity on LTM facts | `memory_temporal.py` tests for valid-from/until retrieval window |
 
 **Suggested PR order:** MEM-MAINT-04 → MEM-MAINT-01 → MEM-MAINT-02 → MEM-MAINT-03.
 
 **Cross-domain:** Knowledge vs LTM boundary — CONTEXT_ENGINEERING; entity graph wiring **Done** (MEM-DEPTH-5.1).
+
+**MEM-MAINT-03 scope boundary:** LangMem/Zep-style entity graph parity remains **backlog** — harness ships `EntityGraphMemoryStore` RFC spike; full Zep/LangMem SaaS parity is **out of scope** and **not** Phase K coupled.
 
 ---
 
