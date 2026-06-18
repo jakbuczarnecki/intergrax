@@ -23,6 +23,7 @@ Run a **repeatable, evidence-backed audit** across all **22 harness domain pairs
 |------|-----------|---------------|-------|----------------|
 | **A — Audit all** | `01_audit_all_domains.txt` | This file | No | Yes (backlog rows only) |
 | **A1 — Audit one** | `02_audit_one_domain.txt` | This file | No | Yes |
+| **A2 — Interactive layer-by-layer** | `06_interactive_layer_by_layer_audit.txt` | This file + bootstrap file | No | On operator approval per domain |
 | **B — Implement plans all** | `03_implement_plan_all_domains.txt` | [`IMPLEMENT_ORCHESTRATOR.md`](IMPLEMENT_ORCHESTRATOR.md) | Yes | Already in plan |
 | **B1 — Implement one** | `04_implement_plan_one_domain.txt` | [`IMPLEMENT_ORCHESTRATOR.md`](IMPLEMENT_ORCHESTRATOR.md) | Yes | Already in plan |
 

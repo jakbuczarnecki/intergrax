@@ -9,6 +9,9 @@ Copy **entire file** into a **new** Cursor agent chat as the first message.
 | [`03_implement_plan_all_domains.txt`](03_implement_plan_all_domains.txt) | B — implement plan | All 22 |
 | [`04_implement_plan_one_domain.txt`](04_implement_plan_one_domain.txt) | B1 — implement plan | Single domain |
 | [`05_closeout_all_domains.txt`](05_closeout_all_domains.txt) | C — layer completion | All 22 (LCM 1–6) |
+| [`06_interactive_layer_by_layer_audit.txt`](06_interactive_layer_by_layer_audit.txt) | **A2 — interactive audit** | One domain per stop; operator confirms before next |
+
+**Mode A2 (interactive):** Same audit depth as Mode A, but **one domain per session stop**. Agent presents gaps, plan-vs-code findings, and proposed tasks, then **waits for operator confirmation** before the next domain. Use when pair-reviewing harness maturity layer-by-layer (ideal → canon → plan → code). Operator may approve plan rows and request commit between domains.
 
 **Initialize run (recommended):**
 

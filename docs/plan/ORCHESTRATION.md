@@ -1564,6 +1564,22 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 **Explicitly excluded:** New queue transport; nested Nexus per async job.
 
+### 6.1av Harness implementation queue — Orchestration audit maintenance (planned)
+
+**Source:** Layer 3 audit (2026-06-18) — `ORCHESTRATION` layers 3, 9 · [`guides/audit/results/2026-06-18/ORCHESTRATION.md`](guides/audit/results/2026-06-18/ORCHESTRATION.md)  
+**Priority ladder:** **Band 1** (§6.1) — P3 harness depth + author DX; runs **in parallel** with gate maintenance; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **ORCH-MAINT-01** | Code/Docs | P3 | **Planned** | Scaffold `lab_stack` preset: `INCLUDE_QUEUE_WORKER=true` by default | `new-application` lab preset wires `QueuedNexusExecutionAdapter` path; gate green |
+| 2 | **ORCH-MAINT-02** | Docs | P3 | **Planned** | LKW hybrid daemon enablement runbook (CFG-14) in `local_workspace_application/ARCHITECTURE.md` | Operator can enable scheduler + interactions without reading source |
+| 3 | **ORCH-MAINT-03** | Code | P3 | **Planned** | `TaskPriority` in `intergrax/queueing/` + broker adapter hook | Priority field on enqueue; unit test; no Nexus fork |
+| 4 | **ORCH-MAINT-04** | Code | P3 | **Planned** | Durable `AsyncTaskIndex` via integration profile (Redis/SQLite slug) | `async_task_index_resolver.py` selects profile-backed index; lab may keep in-memory fallback |
+
+**Suggested PR order:** ORCH-MAINT-02 (doc) → ORCH-MAINT-01 → ORCH-MAINT-04 → ORCH-MAINT-03.
+
+**Explicitly excluded:** CFG-14 full LKW hybrid E2E (product §6.3); FLOW-8 product host; active-active L0 — [§6.3](../plan/PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only).
+
 ---
 
 ### Phase B — Extended Nexus

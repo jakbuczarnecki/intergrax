@@ -17,11 +17,12 @@
 
 3. Copy **entire file** → paste as first message:
 
-   | Goal | Paste this file |
-   |------|-----------------|
-   | Audit all 22 domains, update plans, **no code** | [`bootstrap/01_audit_all_domains.txt`](bootstrap/01_audit_all_domains.txt) |
-   | Audit **one** domain (edit `DOMAIN=` line first) | [`bootstrap/02_audit_one_domain.txt`](bootstrap/02_audit_one_domain.txt) |
-   | Implement open plan items, all domains | [`bootstrap/03_implement_plan_all_domains.txt`](bootstrap/03_implement_plan_all_domains.txt) |
+| Goal | Paste this file |
+|------|-----------------|
+| Audit all 22 domains, update plans, **no code** | [`bootstrap/01_audit_all_domains.txt`](bootstrap/01_audit_all_domains.txt) |
+| Audit **one** domain (edit `DOMAIN=` line first) | [`bootstrap/02_audit_one_domain.txt`](bootstrap/02_audit_one_domain.txt) |
+| **Interactive layer-by-layer audit** — one domain, STOP, operator confirms, next domain | [`bootstrap/06_interactive_layer_by_layer_audit.txt`](bootstrap/06_interactive_layer_by_layer_audit.txt) |
+| Implement open plan items, all domains | [`bootstrap/03_implement_plan_all_domains.txt`](bootstrap/03_implement_plan_all_domains.txt) |
    | Implement open plan items, one domain | [`bootstrap/04_implement_plan_one_domain.txt`](bootstrap/04_implement_plan_one_domain.txt) |
    | Full layer completion (LCM) all domains | [`bootstrap/05_closeout_all_domains.txt`](bootstrap/05_closeout_all_domains.txt) |
 
