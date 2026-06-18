@@ -5,7 +5,8 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-18-013 | 2026-06-18 | tier-1 OBSERVABILITY | OBS-MAINT-01..04 | [OBS-MAINT-01..04 — Interactive layer 16 audit plan registration](entries/2026-06-18/observability-audit-maint-01-04-plan-register.md) | pending |
+| IJ-2026-06-18-014 | 2026-06-18 | tier-1 RELIABILITY_FAILURE_AND_HITL | REL-MAINT-01..04 | [REL-MAINT-01..04 — Interactive layer 17 audit plan registration](entries/2026-06-18/reliability-audit-maint-01-04-plan-register.md) | pending |
+| IJ-2026-06-18-013 | 2026-06-18 | tier-1 OBSERVABILITY | OBS-MAINT-01..04 | [OBS-MAINT-01..04 — Interactive layer 16 audit plan registration](entries/2026-06-18/observability-audit-maint-01-04-plan-register.md) | 370e21d0 |
 | IJ-2026-06-18-012 | 2026-06-18 | tier-0 MODALITY | MOD-MAINT-01..04 | [MOD-MAINT-01..04 — Interactive layer 15 audit plan registration](entries/2026-06-18/modality-audit-maint-01-04-plan-register.md) | 0b4c7543 |
 | IJ-2026-06-18-011 | 2026-06-18 | tier-0, tier-1 CONTEXT_ENGINEERING | CE-MAINT-01..04 | [CE-MAINT-01..04 — Interactive layer 14 audit plan registration](entries/2026-06-18/context-engineering-audit-maint-01-04-plan-register.md) | d553fbb9 |
 | IJ-2026-06-18-010 | 2026-06-18 | tier-0, tier-1 MEMORY | MEM-MAINT-01..04 | [MEM-MAINT-01..04 — Interactive layer 13 audit plan registration](entries/2026-06-18/memory-audit-maint-01-04-plan-register.md) | 6be6fdac |
