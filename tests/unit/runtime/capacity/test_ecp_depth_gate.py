@@ -138,6 +138,7 @@ def test_capacity_approval_queue_flow() -> None:
     from intergrax.runtime.capacity.approval_queue import CapacityApprovalQueue
     from intergrax.runtime.capacity.governance import approve_capacity_plan
     from intergrax.runtime.capacity.scheduler import CapacityScheduler
+    from intergrax.runtime.events.runtime_event import RuntimeEventType
 
     events: list = []
     policy = ScalingPolicy(
@@ -178,7 +179,11 @@ def test_capacity_approval_queue_flow() -> None:
     collector.record_backpressure()
     asyncio.run(scheduler.tick())
     assert queue.list_pending()
-    assert any(event.event_type.value == "scale_requested" for event in events)
+    assert any(
+        event.event_type is RuntimeEventType.DOMAIN_SIGNAL
+        and event.event_kind == "platform.capacity.scale_requested"
+        for event in events
+    )
     pending_id = queue.list_pending()[0].plan_id
     approve_capacity_plan(queue, pending_id)
     asyncio.run(scheduler.tick())
