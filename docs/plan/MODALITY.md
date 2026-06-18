@@ -120,6 +120,24 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 
 **Deferred P2–P4:** OpenCV golden tests require `opencv-python-headless` in runner env · online training out of scope · Plane A/C boundary ops docs
 
-**Note:** `check_modality_live_endpoints` + `check_modality_product_worker_pool` green; 2 OpenCV-dependent unit tests fail when `cv2.imread` unavailable (environment, not harness defect).
+**Audit note (2026-06-18):** `pytest tests/unit/model_inference/` reports **2 failing tests** locally — treat as **harness defects to fix**, not environment-only waivers (see §6.1av MOD-MAINT-01/02).
+
+### 6.1av Harness implementation queue — Modality audit maintenance (planned)
+
+**Source:** Layer 15 audit (2026-06-18) — `MODALITY` layer 29 · [`guides/audit/results/2026-06-18/MODALITY.md`](guides/audit/results/2026-06-18/MODALITY.md)  
+**Priority ladder:** **Band 1** (§6.1) — **test repair first**, then docs/depth; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **MOD-MAINT-01** | Test/CI | P2 | **Planned** | **Fix** `test_opencv_adapter_detects_white_rectangle` — wire `opencv-python-headless` optional extra **or** robust skip only when `cv2` truly unavailable; default CI/dev env must run green | `pytest tests/unit/model_inference/test_opencv_vision.py` passes in standard `uv` dev install |
+| 2 | **MOD-MAINT-02** | Test/Code | P2 | **Planned** | **Fix** `test_run_modality_detect_job_uses_harness_registry` — repair Celery modality execution path or test fixtures so registry wiring is asserted correctly | `pytest tests/unit/model_inference/test_celery_modality_execution.py` green |
+| 3 | **MOD-MAINT-03** | Docs | P4 | **Planned** | Plane A/C boundary — ops runbook section in modality canon | Architecture §three-plane ops table |
+| 4 | **MOD-MAINT-04** | Backlog | P3 | **Planned** | Remote serving incremental — Triton/HF depth register row (post W-ML closeout) | Plan row; no scope creep into online training |
+
+**Suggested PR order:** MOD-MAINT-02 → MOD-MAINT-01 → MOD-MAINT-03 → MOD-MAINT-04.
+
+**Explicitly out of scope:** online training / AutoML — canon constraint.
 
 ---
+
+*End of Modality Implementation Plan.*

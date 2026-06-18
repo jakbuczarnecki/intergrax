@@ -5,7 +5,8 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-18-011 | 2026-06-18 | tier-0, tier-1 CONTEXT_ENGINEERING | CE-MAINT-01..04 | [CE-MAINT-01..04 — Interactive layer 14 audit plan registration](entries/2026-06-18/context-engineering-audit-maint-01-04-plan-register.md) | pending |
+| IJ-2026-06-18-012 | 2026-06-18 | tier-0 MODALITY | MOD-MAINT-01..04 | [MOD-MAINT-01..04 — Interactive layer 15 audit plan registration](entries/2026-06-18/modality-audit-maint-01-04-plan-register.md) | pending |
+| IJ-2026-06-18-011 | 2026-06-18 | tier-0, tier-1 CONTEXT_ENGINEERING | CE-MAINT-01..04 | [CE-MAINT-01..04 — Interactive layer 14 audit plan registration](entries/2026-06-18/context-engineering-audit-maint-01-04-plan-register.md) | d553fbb9 |
 | IJ-2026-06-18-010 | 2026-06-18 | tier-0, tier-1 MEMORY | MEM-MAINT-01..04 | [MEM-MAINT-01..04 — Interactive layer 13 audit plan registration](entries/2026-06-18/memory-audit-maint-01-04-plan-register.md) | 6be6fdac |
 | IJ-2026-06-18-009 | 2026-06-18 | tier-0, tier-1 RAG | RAG-MAINT-01..04 | [RAG-MAINT-01..04 — Interactive layer 12 audit plan registration](entries/2026-06-18/rag-audit-maint-01-04-plan-register.md) | c270e7c1 |
 | IJ-2026-06-18-008 | 2026-06-18 | tier-0 INTEGRATIONS | INT-MAINT-01..04 | [INT-MAINT-01..04 — Interactive layer 11 audit plan registration](entries/2026-06-18/integrations-audit-maint-01-04-plan-register.md) | e54d9936 |
