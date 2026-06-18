@@ -571,3 +571,23 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 | LLM-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
 
 **Deferred P2–P4:** M-LLM-X.2 dynamic OpenRouter fetch · X.4.4/X.4.5 trace DTO + Tier-3 failover list · Redis distributed rate limit · doctor hook (AUDIT-IDEAL-6.7)
+
+### 6.1av Harness implementation queue — LLM adapters audit maintenance (planned)
+
+**Source:** Layer 7 audit (2026-06-18) — `LLM_ADAPTERS` layer 6 · [`guides/audit/results/2026-06-18/LLM_ADAPTERS.md`](guides/audit/results/2026-06-18/LLM_ADAPTERS.md)  
+**Priority ladder:** **Band 1** (§6.1) — DX + Tier-3 wiring hygiene; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **LLM-MAINT-01** | DX | P2 | **Planned** | Close AUDIT-IDEAL-6.7 — add LLM subset (`check_llm_adapter_typed_returns` + optional catalog smoke) to `intergrax doctor check` | `intergrax doctor --ci` runs LLM checks; 6.7 **Done** |
+| 2 | **LLM-MAINT-02** | CI | P2 | **Planned** | M-LLM-X.7.3 — `scripts/check_model_catalog_coverage.py` warns on adapter default models missing from YAML | Gate registered in CI umbrella |
+| 3 | **LLM-MAINT-03** | Code | P2 | **Planned** | M-LLM-X.4.5 — Tier-3 `ApplicationEnvironmentProfile` optional LLM failover list wiring | Host smoke test; profile field documented |
+| 4 | **LLM-MAINT-04** | Docs | P3 | **Planned** | Redis distributed rate limit bootstrap pattern — reference host wiring doc + cross-ref ECP/TIER3 | USAGE + host guide; `set_llm_distributed_rate_limiter` exemplar |
+
+**Suggested PR order:** LLM-MAINT-01 → LLM-MAINT-02 → LLM-MAINT-03 → LLM-MAINT-04.
+
+**Cross-domain (not LLM-owned):** M-LLM-X.2 dynamic OpenRouter fetch · AUDIT-IDEAL-6.2 live routing (AHI) — remain in M-LLM-X register.
+
+---
+
+*End of LLM Adapters Implementation Plan.*
