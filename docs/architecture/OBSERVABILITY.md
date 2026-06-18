@@ -718,7 +718,7 @@ uv run python scripts/check_observability_gates.py
 
 ## 18. Execution Boundary Export (EBE) — optional side channel
 
-**Status:** PoC v1 **Done** (partner AgentReceipt sandbox).  
+**Status:** PoC v1 **Done** · PoC v2 (EBE-8 harness-step export) **Done** (partner AgentReceipt sandbox).  
 **Reference host:** `applications/attestation_demo/` · **ADR:** [ADR-OBS-002](../adr/entries/2026-06-13/ADR-OBS-002.md)
 
 EBE is an **optional** export path for **unsigned, vendor-neutral** tool-boundary facts. It complements — does not replace — the Harness Observability Spine (HOS).
@@ -726,7 +726,9 @@ EBE is an **optional** export path for **unsigned, vendor-neutral** tool-boundar
 | Principle | Rule |
 |-----------|------|
 | **Emit at invoker boundary** | `RuntimeToolInvoker` hook after tool execution |
+| **Emit at kernel step boundary** | `HarnessKernel.execute_step` hook after trace append (EBE-8) |
 | **Event-first, receipt-second** | Platform emits `execution_boundary_event.v1`; external products sign receipts |
+| **One event, one receipt** | Partner maps each `boundary_events[]` element to a separate `client_observed` receipt |
 | **Non-blocking** | Buffer/sink failures never fail tool invoke |
 | **Honest trust** | `signed: false` in PoC v1; no implied platform attestation |
 | **HOS unchanged** | Unified journal, trace bridge, middleware — no receipt logic |
@@ -735,13 +737,20 @@ EBE is an **optional** export path for **unsigned, vendor-neutral** tool-boundar
 
 `execution_boundary_event.v1` — Pydantic model in `intergrax/runtime/attestation/execution_boundary_event.py`.
 
+| Field | Role |
+|-------|------|
+| `boundary_type` | `tool_execution` (invoker) or `harness_step` (kernel) |
+| `event_id` | Stable UUID per event (receipt key) |
+| `event_sequence` | Monotonic per `run_id`, assigned by `BoundaryEventBuffer` |
+| `policy_verdicts` / `step_outcome` | Harness-step events only |
+
 ### Configuration
 
-`ExecutionBoundaryExportProfile` on `ApplicationEnvironmentProfile` → `attestation_runtime_bridge.py` → `RuntimeConfig.execution_boundary_export` + optional `BoundaryEventBuffer`.
+`ExecutionBoundaryExportProfile` on `ApplicationEnvironmentProfile` (`step_level_enabled` for EBE-8) → `attestation_runtime_bridge.py` → `RuntimeConfig.execution_boundary_export` + optional `BoundaryEventBuffer`. UAEP and ACP session loops copy settings into `StepKernelContext` via `kernel_wiring.py`.
 
-### PoC v1 delivery
+### PoC v2 delivery (EBE-8)
 
-Synchronous API response (`boundary_events[]`) from Tier-3 `POST /v1/attestation_demo/poc/run`. Webhook sink and HarnessKernel step-level export are **deferred**.
+Synchronous API response (`boundary_events[]`) returns **two events per demo run** when `step_level_enabled=true`: `tool_execution` (seq 1) then `harness_step` (seq 2). Webhook sink and host signing remain **deferred**.
 
 ### Non-goals
 

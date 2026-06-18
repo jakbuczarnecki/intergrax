@@ -214,6 +214,16 @@ async def run_acp_session(
             router_runtime_config,
             host.app_profile.context_profile,
         )
+        from intergrax.applications._shared.attestation_runtime_bridge import (
+            apply_attestation_profile_to_runtime_config,
+        )
+        from intergrax.runtime.attestation.kernel_wiring import apply_boundary_export_to_kernel
+
+        apply_attestation_profile_to_runtime_config(
+            router_runtime_config,
+            host.app_profile,
+        )
+        apply_boundary_export_to_kernel(kernel_ctx_holder[0], router_runtime_config)
 
     base_llm_router = StepLLMRouter(
         allowed_models=tuple(merged.allowed_llm_models),

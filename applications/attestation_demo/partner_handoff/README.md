@@ -1,4 +1,4 @@
-# Partner handoff — AgentReceipt integration (PoC v1)
+# Partner handoff — AgentReceipt integration (PoC v2)
 
 **Audience:** AgentReceipt adapter authors and integration operators.
 
@@ -23,18 +23,34 @@ or `Authorization: Bearer <key>`. When the env var is unset (local dev default),
 
 1. `POST /v1/attestation_demo/poc/run` with body from [`poc_run_request.v1.json`](poc_run_request.v1.json)
 2. Read `boundary_events[]` from the JSON response (shape: [`poc_run_response.v1.json`](poc_run_response.v1.json))
-3. Map each event → AgentReceipt `createSignedReceipt` with `receiptRole: "client_observed"`
-4. Persist via partner `LocalFileReceiptSink`; run `verify` / `chain`
-5. Optional journal compare: `GET /debug/tasks/{run_id}/trace` on the same host
+3. **Create one receipt per boundary event** (not one composite receipt per run)
+4. Map each event → AgentReceipt `createSignedReceipt` with `receiptRole: "client_observed"`
+5. Persist via partner `LocalFileReceiptSink`; run `verify` / `chain`
+6. Optional journal compare: `GET /debug/tasks/{run_id}/trace` on the same host
+
+## PoC v2 event shape
+
+Each successful demo run returns **two** events in `boundary_events[]`, ordered by `event_sequence`:
+
+| `event_sequence` | `boundary_type` | Claim |
+|------------------|-----------------|-------|
+| 1 | `tool_execution` | `records.put` executed at tool invoker |
+| 2 | `harness_step` | HarnessKernel step completed (policy + outcome) |
+
+Group related receipts with `run_id`, `step_id`, and `lineage.ref`. Use `event_id` as the stable per-event identifier.
 
 ## Field mapping (boundary event → AgentReceipt)
 
 | Intergrax `boundary_events[]` | AgentReceipt |
 |-------------------------------|--------------|
+| `event_id` | stable receipt / evidence key |
+| `event_sequence` | ordering within run |
+| `boundary_type` | distinguishes tool vs harness claim |
 | `agent_id` | `agentId` |
-| `tool_id` | `tool` |
+| `tool_id` | `tool` (tool events only) |
 | `action_status` | `actionStatus` |
 | `input` / `output` | `input` / `output` (hash via partner `stableJson`) |
+| `policy_verdicts` / `step_outcome` | harness-step metadata (optional mapping) |
 | `lineage.ref` | `lineage.ref` |
 | `lineage.type` | `lineage.type` |
 | — | `receiptRole: "client_observed"` (recommended) |
@@ -45,11 +61,11 @@ or `Authorization: Bearer <key>`. When the env var is unset (local dev default),
 - Partner signs locally — does **not** prove Intergrax server attestation.
 - Do **not** use `server_attested` unless co-located deployment is explicitly documented.
 
-## Deferred (not in PoC v1)
+## Deferred (not in PoC v2)
 
 - Webhook delivery of boundary events
 - Intergrax host-side signing
-- HarnessKernel step-level export
+- Run-level composite signed receipt (derived summary may come later)
 
 Full design: [`ARCHITECTURE.md`](../ARCHITECTURE.md) · Application ADR: [`adr/ADR-ATTESTATION_DEMO-001.md`](../adr/ADR-ATTESTATION_DEMO-001.md)  
 Operator verify: [`DOCKER_VERIFY_RUNBOOK.md`](../DOCKER_VERIFY_RUNBOOK.md)

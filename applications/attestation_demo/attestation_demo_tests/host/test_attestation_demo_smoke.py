@@ -37,14 +37,15 @@ def test_attestation_demo_poc_run_returns_boundary_events():
     assert body.get("state") == "completed"
     assert body.get("agent_id") == "boundary_demo_agent"
     events = body.get("boundary_events") or []
-    assert len(events) >= 1
-    event = events[0]
-    assert event.get("schema_id") == "execution_boundary_event.v1"
-    assert event.get("signed") is False
-    assert event.get("tool_id") == "records.put"
-    assert event.get("agent_id") == "boundary_demo_agent"
-    assert event.get("action_status") == "executed"
-    assert event.get("input", {}).get("partition_key") == "attestation_demo"
+    assert len(events) >= 2
+    tool_event = next(e for e in events if e.get("boundary_type") == "tool_execution")
+    assert tool_event.get("schema_id") == "execution_boundary_event.v1"
+    assert tool_event.get("signed") is False
+    assert tool_event.get("tool_id") == "records.put"
+    assert tool_event.get("agent_id") == "boundary_demo_agent"
+    assert tool_event.get("action_status") == "executed"
+    assert tool_event.get("event_sequence") == 1
+    assert tool_event.get("input", {}).get("partition_key") == "attestation_demo"
     assert body.get("trust_model", {}).get("recommended_receipt_role") == "client_observed"
 
     run_id = body.get("run_id")
@@ -70,19 +71,31 @@ def test_attestation_demo_poc_run_full_boundary_event_contract():
     )
     assert response.status_code == 200
     body = response.json()
-    event = body["boundary_events"][0]
+    tool_event = next(
+        event
+        for event in body["boundary_events"]
+        if event.get("boundary_type") == "tool_execution"
+    )
 
-    assert event["schema_id"] == "execution_boundary_event.v1"
-    assert event["boundary_type"] == "tool_execution"
-    assert event["signed"] is False
-    assert event["side_effects"] is True
-    assert event["risk_level"] == "medium"
-    assert event["step_id"] == "store_demo_record"
-    assert event["lineage"]["type"] == "execution_record"
-    assert event["lineage"]["ref"].startswith(body["run_id"])
-    assert event["runtime_ref"]["platform"] == "intergrax"
-    assert event["input_hash"] and event["input_hash"].startswith("sha256:")
-    assert event["output_hash"] and event["output_hash"].startswith("sha256:")
+    assert tool_event["schema_id"] == "execution_boundary_event.v1"
+    assert tool_event["boundary_type"] == "tool_execution"
+    assert tool_event["event_sequence"] == 1
+    assert tool_event["signed"] is False
+    assert tool_event["side_effects"] is True
+    assert tool_event["risk_level"] == "medium"
+    assert tool_event["step_id"] == "store_demo_record"
+    assert tool_event["lineage"]["type"] == "execution_record"
+    assert tool_event["lineage"]["ref"].startswith(body["run_id"])
+    assert tool_event["runtime_ref"]["platform"] == "intergrax"
+    assert tool_event["input_hash"] and tool_event["input_hash"].startswith("sha256:")
+    assert tool_event["output_hash"] and tool_event["output_hash"].startswith("sha256:")
+    harness_event = next(
+        event
+        for event in body["boundary_events"]
+        if event.get("boundary_type") == "harness_step"
+    )
+    assert harness_event["event_sequence"] == 2
+    assert harness_event["action_status"] == "completed"
 
     trace = client.get(f"/debug/tasks/{body['run_id']}/trace")
     assert trace.status_code == 200

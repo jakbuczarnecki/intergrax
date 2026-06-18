@@ -72,7 +72,11 @@ def test_partner_failed_tool_returns_failed_boundary_event_in_response() -> None
     payload = response.json()
     events = payload.get("boundary_events") or []
     assert len(events) >= 1
-    event = assert_partner_boundary_event(events[0], run_id=str(payload.get("run_id") or ""))
+    tool_event = next(
+        (event for event in events if event.get("boundary_type") == "tool_execution"),
+        events[0],
+    )
+    event = assert_partner_boundary_event(tool_event, run_id=str(payload.get("run_id") or ""))
     assert event.action_status == "failed"
     assert event.error_message
     assert event.signed is False

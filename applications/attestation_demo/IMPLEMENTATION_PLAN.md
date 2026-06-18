@@ -32,7 +32,7 @@ Application ADRs: [`adr/README.md`](adr/README.md)
 | EBE-5 | README + sample JSON + trust model | **Done** | High | Partner handoff |
 | EBE-6 | Platform OBSERVABILITY pair + harness ADR + partner handoff | **Done** | High | ADR-OBS-002, `partner_handoff/` |
 | EBE-7 | Webhook sink | Deferred | Low | Phase 2 |
-| EBE-8 | HarnessKernel step-level events | Deferred | Low | Phase 2 |
+| EBE-8 | HarnessKernel step-level events (`harness_step`, `event_sequence`) | **Done** | High | `step_level_enabled`, partner v2 contract tests |
 | EBE-9 | Host-side event signing | Deferred | Low | Phase 2 |
 
 ---
