@@ -2,7 +2,7 @@
 
 **Status:** Canonical (2026-06-17)  
 **Audience:** Maintainers, architects, implementation agents  
-**Related:** [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) · [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) · [implementation-journal/](implementation-journal/README.md)
+**Related:** [INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) · [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) · [implementation-journal/](../implementation-journal/README.md)
 
 **Cursor iteration (every session):** [`.cursor/rules/intergrax-iteration.mdc`](../../.cursor/rules/intergrax-iteration.mdc) — single-item gate maintenance; **this guide** is the extended workflow for **closing an entire harness layer** to architectural maturity.
 
@@ -24,11 +24,11 @@ The goal is not merely to implement existing architecture. The goal is to bring 
 |-------------|-------------|------|
 | [`.cursor/rules/intergrax-iteration.mdc`](../../.cursor/rules/intergrax-iteration.mdc) | One coherent plan item | Default Cursor sessions |
 | **This guide (Layer Completion Mode)** | Full domain layer → maturity | Deep layer closeout (journal: “Layer Completion Mode”) |
-| [audit/LAYER_COMPLETION_ORCHESTRATOR.md](audit/LAYER_COMPLETION_ORCHESTRATOR.md) | All 22 pairs sequentially | Paste [`audit/bootstrap/05_closeout_all_domains.txt`](audit/bootstrap/05_closeout_all_domains.txt) |
+| [audit/LAYER_COMPLETION_ORCHESTRATOR.md](../audit/LAYER_COMPLETION_ORCHESTRATOR.md) | All 22 pairs sequentially | Paste [`../audit/bootstrap/05_closeout_all_domains.txt`](../audit/bootstrap/05_closeout_all_domains.txt) |
 | [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) | Cross-domain never-violate rules | Skim **before every** Step 1 and Step 6 |
 | [AGENTS.md](../../AGENTS.md) | Hard repo rules, verification bundle | Always |
 
-**Operator paste:** canonical multi-domain bootstrap lives under [`audit/bootstrap/`](audit/bootstrap/README.md) (English). Personal PL notes may stay in `docs/_external/` (gitignored). **This file is the linkable canonical definition** for single-domain LCM steps.
+**Operator paste:** canonical multi-domain bootstrap lives under [`../audit/bootstrap/`](../audit/bootstrap/README.md) (English). Personal PL notes may stay in `docs/_external/` (gitignored). **This file is the linkable canonical definition** for single-domain LCM steps.
 
 ---
 
@@ -229,7 +229,7 @@ After each sprint:
 - run verification (minimum: `uv run pytest -m "gate and not no_ci" -q` plus scripts from [AGENTS.md](../../AGENTS.md) and [SYSTEM_INVARIANTS.md §7](SYSTEM_INVARIANTS.md#7-ci-enforcement-map-selected) relevant to the layer),
 - verify alignment with architecture **and** [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md),
 - commit **only when the operator explicitly requests**,
-- add an [implementation journal](implementation-journal/README.md) entry when the iteration completes (unless the operator skips).
+- add an [implementation journal](../implementation-journal/README.md) entry when the iteration completes (unless the operator skips).
 
 Advance to the next sprint **only** when the current sprint is closed and no P0/P1 blocker remains.
 
@@ -321,7 +321,7 @@ Before ending the session, present:
 
 ### Journal
 
-- path under `docs/guides/implementation-journal/entries/YYYY-MM-DD/` (when required).
+- path under `docs/implementation-journal/entries/YYYY-MM-DD/` (when required).
 
 ### Remaining risks
 

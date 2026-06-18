@@ -63,7 +63,7 @@ Production harness requirements (multi-agent graphs, HITL, policy, checkpoints, 
 
 - **Canon:** `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §21–§28
 - **Plan:** Phase **ACP** in `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`
-- **Audit:** `docs/guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` (ACP dimensions)
+- **Audit:** `docs/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` (ACP dimensions)
 - **Verification (post-implementation):**
 
 ```bash

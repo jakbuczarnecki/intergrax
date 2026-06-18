@@ -1592,7 +1592,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ### 6.1av Harness implementation queue — Developer experience audit maintenance (planned)
 
-**Source:** Layer 21 audit (2026-06-18) — `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` · [`guides/audit/results/2026-06-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](guides/audit/results/2026-06-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)  
+**Source:** Layer 21 audit (2026-06-18) — `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` · [`../audit_results/2026-06-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../audit_results/2026-06-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)  
 **Priority ladder:** **Band 1** (§6.1) — DX bundle + cross-refs; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

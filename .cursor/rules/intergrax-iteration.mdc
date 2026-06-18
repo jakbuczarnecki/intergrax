@@ -260,7 +260,7 @@ At the end of every iteration, provide:
 9. **Out-of-scope findings**
 10. **Suggested next step** aligned with the Intergrax Harness AI vision
 11. **One-line commit message** (English) — no commit unless the operator requests
-12. **Journal entry** — path `docs/guides/implementation-journal/entries/YYYY-MM-DD/<scope>-<slug>.md` per [`intergrax-implementation-journal.mdc`](intergrax-implementation-journal.mdc) (English file; required on Completion criteria unless operator explicitly skips)
+12. **Journal entry** — path `docs/implementation-journal/entries/YYYY-MM-DD/<scope>-<slug>.md` per [`intergrax-implementation-journal.mdc`](intergrax-implementation-journal.mdc) (English file; required on Completion criteria unless operator explicitly skips)
 
 ## Completion criteria
 
@@ -272,7 +272,7 @@ Do not consider an implementation item complete unless:
 - affected domain pair documentation is updated,
 - no unnecessary Tier-0 duplication was introduced,
 - significant architecture decisions have an ADR (or explicit "no ADR needed") in the correct domain,
-- an implementation journal entry exists under `docs/guides/implementation-journal/entries/YYYY-MM-DD/` with a row in `INDEX.md`, per [`intergrax-implementation-journal.mdc`](intergrax-implementation-journal.mdc), `python scripts/check_implementation_journal.py` passes, **or** the operator explicitly skipped the journal (state rationale in chat).
+- an implementation journal entry exists under `docs/implementation-journal/entries/YYYY-MM-DD/` with a row in `INDEX.md`, per [`intergrax-implementation-journal.mdc`](intergrax-implementation-journal.mdc), `python scripts/check_implementation_journal.py` passes, **or** the operator explicitly skipped the journal (state rationale in chat).
 
 Never claim that the whole platform is complete.
 Only report completion for the currently implemented scope.

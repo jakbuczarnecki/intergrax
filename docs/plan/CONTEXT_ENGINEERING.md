@@ -118,7 +118,7 @@
 | CE-DOC.1 | `architecture/CONTEXT_ENGINEERING.md` — full canon | **Done** |
 | CE-DOC.2 | `plan/CONTEXT_ENGINEERING.md` — this register | **Done** |
 | CE-DOC.3 | `ADR-CTX-001` domain split | **Done** |
-| CE-DOC.4 | Hub + audit map + `guides/audit/CONTEXT_ENGINEERING.md` | **Done** |
+| CE-DOC.4 | Hub + audit map + `audit/CONTEXT_ENGINEERING.md` | **Done** |
 | CE-DOC.5 | MEMORY canon cross-links (Layer C → CE) | **Done** |
 | CE-DOC.6 | `generate_domain_audit_prompts.py` MEMORY/CE split | **Done** |
 | CE-DOC.7 | FAUDIT layer 16 refresh — post-ACP as-built paths, GAP-CTX-13/14, module inventory, sprint register | **Done** (2026-06-12) |
@@ -589,7 +589,7 @@ One sprint = one coherent provider family or gate. One commit per sprint.
 
 ### 6.1av Harness implementation queue — Context engineering audit maintenance (planned)
 
-**Source:** Layer 14 audit (2026-06-18) — `CONTEXT_ENGINEERING` layer 16 · [`guides/audit/results/2026-06-18/CONTEXT_ENGINEERING.md`](guides/audit/results/2026-06-18/CONTEXT_ENGINEERING.md)  
+**Source:** Layer 14 audit (2026-06-18) — `CONTEXT_ENGINEERING` layer 16 · [`../audit_results/2026-06-18/CONTEXT_ENGINEERING.md`](../audit_results/2026-06-18/CONTEXT_ENGINEERING.md)  
 **Priority ladder:** **Band 1** (§6.1) — observability + quality depth; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

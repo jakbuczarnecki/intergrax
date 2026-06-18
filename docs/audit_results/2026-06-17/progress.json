@@ -1,0 +1,244 @@
+{
+  "orchestrator": "full_harness_audit_only",
+  "mode": "audit_only",
+  "scope": "all",
+  "single_domain": null,
+  "canonical": "docs/audit/ORCHESTRATOR.md",
+  "bootstrap": "docs/audit/bootstrap/01_audit_all_domains.txt",
+  "run_id": "2026-06-17",
+  "results_dir": "docs/audit_results/2026-06-17",
+  "started_at": "2026-06-17",
+  "last_updated": "2026-06-17",
+  "completed_at": "2026-06-17",
+  "current_domain": null,
+  "notes": "Mode A complete: 20 mature_revalidated, 2 drift_detected (CVL-25.3, APP-EVOL-8.6 P1); UAEP-AUDIT-01 plan sync",
+  "domain_order": [
+    "PLATFORM_FOUNDATION",
+    "UNIFIED_EXECUTION_RUNTIME",
+    "ORCHESTRATION",
+    "NEXUS_EXECUTION_FLOW",
+    "REASONING_AND_COGNITION",
+    "AGENT_CONTRACTS_AND_ASSEMBLY",
+    "LLM_ADAPTERS",
+    "TOOLS",
+    "CODE_CRAFT",
+    "SKILLS",
+    "INTEGRATIONS",
+    "RAG",
+    "MEMORY",
+    "CONTEXT_ENGINEERING",
+    "MODALITY",
+    "OBSERVABILITY",
+    "RELIABILITY_FAILURE_AND_HITL",
+    "CRITIC_VERIFICATION",
+    "ADAPTIVE_HARNESS_INTELLIGENCE",
+    "ELASTIC_CAPACITY_AND_SCALING",
+    "EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE",
+    "TIER3_APPLICATION_ENVIRONMENT"
+  ],
+  "domains": {
+    "PLATFORM_FOUNDATION": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/PLATFORM_FOUNDATION.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17"
+    },
+    "UNIFIED_EXECUTION_RUNTIME": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/UNIFIED_EXECUTION_RUNTIME.md",
+      "plan_updated": true,
+      "completed_at": "2026-06-17",
+      "notes": "P2 UAEP-AUDIT-01 synced to plan"
+    },
+    "ORCHESTRATION": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/ORCHESTRATION.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17"
+    },
+    "NEXUS_EXECUTION_FLOW": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/NEXUS_EXECUTION_FLOW.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17"
+    },
+    "REASONING_AND_COGNITION": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/REASONING_AND_COGNITION.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17"
+    },
+    "AGENT_CONTRACTS_AND_ASSEMBLY": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/AGENT_CONTRACTS_AND_ASSEMBLY.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17"
+    },
+    "LLM_ADAPTERS": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/LLM_ADAPTERS.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17",
+      "notes": "M-LLM-X.4.5 Medium backlog"
+    },
+    "TOOLS": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/TOOLS.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17"
+    },
+    "CODE_CRAFT": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/CODE_CRAFT.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17"
+    },
+    "SKILLS": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/SKILLS.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17"
+    },
+    "INTEGRATIONS": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/INTEGRATIONS.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17"
+    },
+    "RAG": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/RAG.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17"
+    },
+    "MEMORY": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/MEMORY.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17"
+    },
+    "CONTEXT_ENGINEERING": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/CONTEXT_ENGINEERING.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17"
+    },
+    "MODALITY": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/MODALITY.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17"
+    },
+    "OBSERVABILITY": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/OBSERVABILITY.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17"
+    },
+    "RELIABILITY_FAILURE_AND_HITL": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/RELIABILITY_FAILURE_AND_HITL.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17"
+    },
+    "CRITIC_VERIFICATION": {
+      "status": "completed",
+      "verdict": "drift_detected",
+      "p0_open": 0,
+      "p1_open": 1,
+      "result_md": "docs/audit_results/2026-06-17/CRITIC_VERIFICATION.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17",
+      "notes": "AUDIT-IDEAL-25.3 open P1"
+    },
+    "ADAPTIVE_HARNESS_INTELLIGENCE": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/ADAPTIVE_HARNESS_INTELLIGENCE.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17"
+    },
+    "ELASTIC_CAPACITY_AND_SCALING": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/ELASTIC_CAPACITY_AND_SCALING.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17"
+    },
+    "EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-17/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17",
+      "notes": "AUDIT-IDEAL-27.2 replay gate green"
+    },
+    "TIER3_APPLICATION_ENVIRONMENT": {
+      "status": "completed",
+      "verdict": "drift_detected",
+      "p0_open": 0,
+      "p1_open": 1,
+      "result_md": "docs/audit_results/2026-06-17/TIER3_APPLICATION_ENVIRONMENT.md",
+      "plan_updated": false,
+      "completed_at": "2026-06-17",
+      "notes": "APP-EVOL-8.6 M3 spec_version 2.0 P1"
+    }
+  }
+}

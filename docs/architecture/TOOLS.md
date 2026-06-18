@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/TOOLS.md`](../plan/TOOLS.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 11  
-**Audit instruction:** [`guides/audit/TOOLS.md`](../guides/audit/TOOLS.md)  
+**Audit instruction:** [`audit/TOOLS.md`](../audit/TOOLS.md)  
 ---
 
 ---

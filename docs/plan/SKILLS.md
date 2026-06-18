@@ -555,7 +555,7 @@ Wave R5 (policy):          R-Policy.1 → R-Policy.2 → R-Policy.3
 
 ### 6.1av Harness implementation queue — Skills audit maintenance (planned)
 
-**Source:** Layer 10 audit (2026-06-18) — `SKILLS` layer 12 · [`guides/audit/results/2026-06-18/SKILLS.md`](guides/audit/results/2026-06-18/SKILLS.md)  
+**Source:** Layer 10 audit (2026-06-18) — `SKILLS` layer 12 · [`../audit_results/2026-06-18/SKILLS.md`](../audit_results/2026-06-18/SKILLS.md)  
 **Priority ladder:** **Band 1** (§6.1) — catalog hygiene + DX; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

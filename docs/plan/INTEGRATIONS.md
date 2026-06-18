@@ -1287,7 +1287,7 @@ L4 readiness requires:
 
 ### 6.1av Harness implementation queue — Integrations audit maintenance (planned)
 
-**Source:** Layer 11 audit (2026-06-18) — `INTEGRATIONS` layer 13 · [`guides/audit/results/2026-06-18/INTEGRATIONS.md`](guides/audit/results/2026-06-18/INTEGRATIONS.md)  
+**Source:** Layer 11 audit (2026-06-18) — `INTEGRATIONS` layer 13 · [`../audit_results/2026-06-18/INTEGRATIONS.md`](../audit_results/2026-06-18/INTEGRATIONS.md)  
 **Priority ladder:** **Band 1** (§6.1) — catalog honesty + provider depth; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

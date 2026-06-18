@@ -565,7 +565,7 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| LLM-LC-S1 | **Audit prompt sync** — planner≠producer Done; P0/P1 gaps closed | **Done** | High | `docs/guides/audit/LLM_ADAPTERS.md` |
+| LLM-LC-S1 | **Audit prompt sync** — planner≠producer Done; P0/P1 gaps closed | **Done** | High | `docs/audit/LLM_ADAPTERS.md` |
 | LLM-LC-S2 | **Plan/architecture sync** — AUDIT-IDEAL header + M-LLM-X backlog clarity | **Done** | High | Domain pair consistent |
 | LLM-LC-S3 | **Gate verification** — typed returns, preflight, agents LLM response | **Done** | High | 3 scripts green · 110 unit tests |
 | LLM-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
@@ -574,7 +574,7 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 
 ### 6.1av Harness implementation queue — LLM adapters audit maintenance (planned)
 
-**Source:** Layer 7 audit (2026-06-18) — `LLM_ADAPTERS` layer 6 · [`guides/audit/results/2026-06-18/LLM_ADAPTERS.md`](guides/audit/results/2026-06-18/LLM_ADAPTERS.md)  
+**Source:** Layer 7 audit (2026-06-18) — `LLM_ADAPTERS` layer 6 · [`../audit_results/2026-06-18/LLM_ADAPTERS.md`](../audit_results/2026-06-18/LLM_ADAPTERS.md)  
 **Priority ladder:** **Band 1** (§6.1) — DX + Tier-3 wiring hygiene; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

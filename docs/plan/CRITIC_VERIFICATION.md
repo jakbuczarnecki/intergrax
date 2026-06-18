@@ -812,7 +812,7 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 | **Scope** | Architecture §2 historical gaps + status; plan audit register; audit prompt regeneration |
 | **Goal** | Honest L3+ layer status — no false “open gap” list at doc open |
 | **DoD** | Architecture/plan/audit prompt aligned; closes GAP-CVL-10, CVL-BACKLOG-04 |
-| **Files** | `docs/architecture/CRITIC_VERIFICATION.md`, `docs/plan/CRITIC_VERIFICATION.md`, `scripts/generate_domain_audit_prompts.py`, `docs/guides/audit/CRITIC_VERIFICATION.md` |
+| **Files** | `docs/architecture/CRITIC_VERIFICATION.md`, `docs/plan/CRITIC_VERIFICATION.md`, `scripts/generate_domain_audit_prompts.py`, `docs/audit/CRITIC_VERIFICATION.md` |
 
 ## Sprint CVL-LC-2 — NexusEvalRunner semantic wiring (**Done** 2026-06-13)
 
@@ -861,7 +861,7 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 
 ### 6.1av Harness implementation queue — Critic verification audit maintenance (planned)
 
-**Source:** Layer 18 audit (2026-06-18) — `CRITIC_VERIFICATION` layer 25 · [`guides/audit/results/2026-06-18/CRITIC_VERIFICATION.md`](guides/audit/results/2026-06-18/CRITIC_VERIFICATION.md)  
+**Source:** Layer 18 audit (2026-06-18) — `CRITIC_VERIFICATION` layer 25 · [`../audit_results/2026-06-18/CRITIC_VERIFICATION.md`](../audit_results/2026-06-18/CRITIC_VERIFICATION.md)  
 **Priority ladder:** **Band 1** (§6.1) — optional eval depth + cross-refs; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

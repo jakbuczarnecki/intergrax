@@ -382,7 +382,7 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 
 | ID | Severity | Issue | Resolution |
 |----|----------|-------|------------|
-| DOC-ECC-01 | P1 | `guides/audit/CODE_CRAFT.md` + `generate_domain_audit_prompts.py` still say ECC-1+ Planned | S11 doc-sync |
+| DOC-ECC-01 | P1 | `audit/CODE_CRAFT.md` + `generate_domain_audit_prompts.py` still say ECC-1+ Planned | S11 doc-sync |
 | DOC-ECC-02 | P1 | Known gaps list stale (orchestrator missing) | Regenerated audit prompt |
 | RUN-ECC-01 | P1 | `max_total_exec_time_s` tracked but not enforced before exec | S11 orchestrator + `codecraft.run` cap |
 
@@ -437,7 +437,7 @@ Layer completion audit after ECC-0…ECC-6 — gaps blocking **production parity
 | **Scope** | Regenerate audit prompt; enforce `max_total_exec_time_s`; register GAP-ECC-23 |
 | **Goal** | Documentation matches shipped runtime; cumulative exec budget fail-closed |
 | **DoD** | Audit prompt shows Done; unit test for budget deny; gate green |
-| **Files** | `docs/guides/audit/CODE_CRAFT.md`, `scripts/generate_domain_audit_prompts.py`, `intergrax/codecraft/profile.py`, `intergrax/runtime/codecraft/orchestrator.py`, `intergrax/tools/providers/codecraft/service.py`, tests |
+| **Files** | `docs/audit/CODE_CRAFT.md`, `scripts/generate_domain_audit_prompts.py`, `intergrax/codecraft/profile.py`, `intergrax/runtime/codecraft/orchestrator.py`, `intergrax/tools/providers/codecraft/service.py`, tests |
 
 ## Sprint S7 — Documentation sync (**Done** in this iteration)
 
@@ -566,7 +566,7 @@ Each sprint = one PR-sized slice → gate green → plan row update → commit.
 
 ### 6.1av Harness implementation queue — Code Craft audit maintenance (planned)
 
-**Source:** Layer 9 audit (2026-06-18) — `CODE_CRAFT` layer 11b · [`guides/audit/results/2026-06-18/CODE_CRAFT.md`](guides/audit/results/2026-06-18/CODE_CRAFT.md)  
+**Source:** Layer 9 audit (2026-06-18) — `CODE_CRAFT` layer 11b · [`../audit_results/2026-06-18/CODE_CRAFT.md`](../audit_results/2026-06-18/CODE_CRAFT.md)  
 **Priority ladder:** **Band 1** (§6.1) — depth backlog only; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

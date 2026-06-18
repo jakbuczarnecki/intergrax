@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.6  
 **ADR:** [`adr/entries/2026-06-10/ADR-CODECRAFT-001.md`](../adr/entries/2026-06-10/ADR-CODECRAFT-001.md)  
 **Audit layer:** 11b (Ephemeral Code Craft)  
-**Audit instruction:** [`guides/audit/CODE_CRAFT.md`](../guides/audit/CODE_CRAFT.md)  
+**Audit instruction:** [`audit/CODE_CRAFT.md`](../audit/CODE_CRAFT.md)  
 **Implementation:** `intergrax/codecraft/` · `intergrax/runtime/codecraft/` · `intergrax/tools/providers/codecraft/`  
 **Last updated:** 2026-06-17 — **Full Harness LC** (re-validates 2026-06-13 closeout); **ECC-0…ECC-6 + S7–S11 Done (L3+)**
 

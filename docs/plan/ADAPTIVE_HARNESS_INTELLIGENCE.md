@@ -270,7 +270,7 @@ W-ADAPT-0.2 → 0.3 → 0.4 → 0.5
 
 ### 6.1av Harness implementation queue — Adaptive harness intelligence audit maintenance (planned)
 
-**Source:** Layer 19 audit (2026-06-18) — `ADAPTIVE_HARNESS_INTELLIGENCE` L4 · [`guides/audit/results/2026-06-18/ADAPTIVE_HARNESS_INTELLIGENCE.md`](guides/audit/results/2026-06-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
+**Source:** Layer 19 audit (2026-06-18) — `ADAPTIVE_HARNESS_INTELLIGENCE` L4 · [`../audit_results/2026-06-18/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../audit_results/2026-06-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
 **Priority ladder:** **Band 1** (§6.1) — product-gated L4 depth; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

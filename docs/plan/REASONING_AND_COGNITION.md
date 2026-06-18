@@ -311,7 +311,7 @@ These items implemented under FLOW/ORCH phases — **Done**; canon now owned by 
 
 ### 6.1av Harness implementation queue — Reasoning audit maintenance (planned)
 
-**Source:** Layer 5 audit (2026-06-18) — `REASONING_AND_COGNITION` layer 7 · [`guides/audit/results/2026-06-18/REASONING_AND_COGNITION.md`](guides/audit/results/2026-06-18/REASONING_AND_COGNITION.md)  
+**Source:** Layer 5 audit (2026-06-18) — `REASONING_AND_COGNITION` layer 7 · [`../audit_results/2026-06-18/REASONING_AND_COGNITION.md`](../audit_results/2026-06-18/REASONING_AND_COGNITION.md)  
 **Priority ladder:** **Band 1** (§6.1) — doc/gate hygiene; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

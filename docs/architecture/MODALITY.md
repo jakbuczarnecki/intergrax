@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/MODALITY.md`](../plan/MODALITY.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 29  
-**Audit instruction:** [`guides/audit/MODALITY.md`](../guides/audit/MODALITY.md)  
+**Audit instruction:** [`audit/MODALITY.md`](../audit/MODALITY.md)  
 **Last updated:** 2026-06-17 — **Full Harness LC** (re-validates W-ML closeout); W-ML.0–W-ML.8 **Done**
 
 ---

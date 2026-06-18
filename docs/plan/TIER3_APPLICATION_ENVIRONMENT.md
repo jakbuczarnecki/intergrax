@@ -644,7 +644,7 @@ uv run pytest -m gate -q
 
 ### 6.1av Harness implementation queue — Tier-3 application environment audit maintenance (planned)
 
-**Source:** Layer 22 audit (2026-06-18) — `TIER3_APPLICATION_ENVIRONMENT` · [`guides/audit/results/2026-06-18/TIER3_APPLICATION_ENVIRONMENT.md`](guides/audit/results/2026-06-18/TIER3_APPLICATION_ENVIRONMENT.md)  
+**Source:** Layer 22 audit (2026-06-18) — `TIER3_APPLICATION_ENVIRONMENT` · [`../audit_results/2026-06-18/TIER3_APPLICATION_ENVIRONMENT.md`](../audit_results/2026-06-18/TIER3_APPLICATION_ENVIRONMENT.md)  
 **Priority ladder:** **Band 1** (§6.1) — product-deferred items + host hygiene; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

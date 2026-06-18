@@ -59,7 +59,7 @@
 
 ### 6.1av Harness implementation queue — Nexus execution flow audit maintenance (planned)
 
-**Source:** Layer 4 audit (2026-06-18) — `NEXUS_EXECUTION_FLOW` layers 8–10 · [`guides/audit/results/2026-06-18/NEXUS_EXECUTION_FLOW.md`](guides/audit/results/2026-06-18/NEXUS_EXECUTION_FLOW.md)  
+**Source:** Layer 4 audit (2026-06-18) — `NEXUS_EXECUTION_FLOW` layers 8–10 · [`../audit_results/2026-06-18/NEXUS_EXECUTION_FLOW.md`](../audit_results/2026-06-18/NEXUS_EXECUTION_FLOW.md)  
 **Priority ladder:** **Band 1** (§6.1) — incremental after gate maintenance; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

@@ -1815,7 +1815,7 @@ Verify (every harness PR):
 
 ### 6.1av Harness implementation queue — Platform Foundation audit maintenance (planned)
 
-**Source:** Layer 1 audit (2026-06-18) — `PLATFORM_FOUNDATION` layers 1, 2, 32 · [`guides/audit/results/2026-06-18/PLATFORM_FOUNDATION.md`](guides/audit/results/2026-06-18/PLATFORM_FOUNDATION.md)  
+**Source:** Layer 1 audit (2026-06-18) — `PLATFORM_FOUNDATION` layers 1, 2, 32 · [`../audit_results/2026-06-18/PLATFORM_FOUNDATION.md`](../audit_results/2026-06-18/PLATFORM_FOUNDATION.md)  
 **Priority ladder:** **Band 1** (§6.1) — doc hygiene + optional legacy cleanup; runs **in parallel** with gate maintenance
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
@@ -1843,7 +1843,7 @@ Verify (every harness PR):
 **Source:** Architecture audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) · baseline **32/32 L3**  
 **Priority ladder:** **Band 2az** (§4.0) — incremental after §6.1 gate maintenance  
 **Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](guides/ARCHITECTURE_DEBT_REGISTER.md)  
-**Platform audit hygiene:** [§6.1av](#61av-harness-implementation-queue--platform-foundation-audit-maintenance-planned) (**Done** — PF rows closed). Cross-domain §6.1av MAINT: **82/82 Done** (2026-06-18) — see [`guides/audit/results/2026-06-18/RUN_SUMMARY.md`](guides/audit/results/2026-06-18/RUN_SUMMARY.md).
+**Platform audit hygiene:** [§6.1av](#61av-harness-implementation-queue--platform-foundation-audit-maintenance-planned) (**Done** — PF rows closed). Cross-domain §6.1av MAINT: **82/82 Done** (2026-06-18) — see [`../audit_results/2026-06-18/RUN_SUMMARY.md`](../audit_results/2026-06-18/RUN_SUMMARY.md).
 
 **Execution order (recommended):**
 
@@ -3932,7 +3932,7 @@ Verify (every harness PR):
 
 ### 6.1av Harness implementation queue — Platform Foundation audit maintenance (planned)
 
-**Source:** Layer 1 audit (2026-06-18) — `PLATFORM_FOUNDATION` layers 1, 2, 32 · [`guides/audit/results/2026-06-18/PLATFORM_FOUNDATION.md`](guides/audit/results/2026-06-18/PLATFORM_FOUNDATION.md)  
+**Source:** Layer 1 audit (2026-06-18) — `PLATFORM_FOUNDATION` layers 1, 2, 32 · [`../audit_results/2026-06-18/PLATFORM_FOUNDATION.md`](../audit_results/2026-06-18/PLATFORM_FOUNDATION.md)  
 **Priority ladder:** **Band 1** (§6.1) — doc hygiene + optional legacy cleanup; runs **in parallel** with gate maintenance
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

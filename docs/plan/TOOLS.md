@@ -959,7 +959,7 @@ TARGET (remaining TOOL-ENG):
 
 ### 6.1av Harness implementation queue — Tools audit maintenance (planned)
 
-**Source:** Layer 8 audit (2026-06-18) — `TOOLS` layer 11 · [`guides/audit/results/2026-06-18/TOOLS.md`](guides/audit/results/2026-06-18/TOOLS.md)  
+**Source:** Layer 8 audit (2026-06-18) — `TOOLS` layer 11 · [`../audit_results/2026-06-18/TOOLS.md`](../audit_results/2026-06-18/TOOLS.md)  
 **Priority ladder:** **Band 1** (§6.1) — selection depth + DX hygiene; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

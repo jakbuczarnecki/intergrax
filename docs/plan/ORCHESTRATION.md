@@ -1566,7 +1566,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ### 6.1av Harness implementation queue — Orchestration audit maintenance (planned)
 
-**Source:** Layer 3 audit (2026-06-18) — `ORCHESTRATION` layers 3, 9 · [`guides/audit/results/2026-06-18/ORCHESTRATION.md`](guides/audit/results/2026-06-18/ORCHESTRATION.md)  
+**Source:** Layer 3 audit (2026-06-18) — `ORCHESTRATION` layers 3, 9 · [`../audit_results/2026-06-18/ORCHESTRATION.md`](../audit_results/2026-06-18/ORCHESTRATION.md)  
 **Priority ladder:** **Band 1** (§6.1) — P3 harness depth + author DX; runs **in parallel** with gate maintenance; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

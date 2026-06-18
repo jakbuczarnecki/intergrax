@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 13–14  
-**Audit instruction:** [`guides/audit/INTEGRATIONS.md`](../guides/audit/INTEGRATIONS.md)  
+**Audit instruction:** [`audit/INTEGRATIONS.md`](../audit/INTEGRATIONS.md)  
 ---
 
 # 18. Slack / Teams / Communication Integration Philosophy

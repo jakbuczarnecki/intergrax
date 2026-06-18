@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_AND_COGNITION.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5  
 **Audit layers:** 7 (Reasoning, Planning and Cognition) · cross-ref 17 (Prompt Registry input)  
-**Audit instruction:** [`guides/audit/REASONING_AND_COGNITION.md`](../guides/audit/REASONING_AND_COGNITION.md)  
+**Audit instruction:** [`audit/REASONING_AND_COGNITION.md`](../audit/REASONING_AND_COGNITION.md)  
 ---
 
 ## Table of contents

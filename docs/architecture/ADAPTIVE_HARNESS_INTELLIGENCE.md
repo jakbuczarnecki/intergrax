@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../plan/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** L4 AHI  
-**Audit instruction:** [`guides/audit/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../guides/audit/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
+**Audit instruction:** [`audit/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../audit/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
 **Last updated:** 2026-06-17 — **Full Harness LC** (re-validates W-ADAPT); **70/70 Done**
 
 ### L4 Frozen cross-domain index (AHI-MAINT-04)

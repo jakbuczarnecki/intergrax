@@ -31,7 +31,7 @@
 
 ### 6.1av Harness implementation queue — UAEP audit maintenance (planned)
 
-**Source:** Layer 2 audit (2026-06-18) — `UNIFIED_EXECUTION_RUNTIME` layers 4, 5, 8, 23–24 · [`guides/audit/results/2026-06-18/UNIFIED_EXECUTION_RUNTIME.md`](guides/audit/results/2026-06-18/UNIFIED_EXECUTION_RUNTIME.md)  
+**Source:** Layer 2 audit (2026-06-18) — `UNIFIED_EXECUTION_RUNTIME` layers 4, 5, 8, 23–24 · [`../audit_results/2026-06-18/UNIFIED_EXECUTION_RUNTIME.md`](../audit_results/2026-06-18/UNIFIED_EXECUTION_RUNTIME.md)  
 **Priority ladder:** **Band 1** (§6.1) — incremental after gate maintenance; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

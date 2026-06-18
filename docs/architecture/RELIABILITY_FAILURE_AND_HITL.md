@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/RELIABILITY_FAILURE_AND_HITL.md`](../plan/RELIABILITY_FAILURE_AND_HITL.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 22  
-**Audit instruction:** [`guides/audit/RELIABILITY_FAILURE_AND_HITL.md`](../guides/audit/RELIABILITY_FAILURE_AND_HITL.md)  
+**Audit instruction:** [`audit/RELIABILITY_FAILURE_AND_HITL.md`](../audit/RELIABILITY_FAILURE_AND_HITL.md)  
 **Last updated:** 2026-06-17 — **Full Harness LC** (re-validates REL-ADV); REL + HITL **Done**
 
 ---

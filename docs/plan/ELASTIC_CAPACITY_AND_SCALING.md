@@ -345,7 +345,7 @@ Total ECP-DEPTH: 28 (excluding ECP-DOC)
 
 ### 6.1av Harness implementation queue — Elastic capacity audit maintenance (planned)
 
-**Source:** Layer 20 audit (2026-06-18) — `ELASTIC_CAPACITY_AND_SCALING` · [`guides/audit/results/2026-06-18/ELASTIC_CAPACITY_AND_SCALING.md`](guides/audit/results/2026-06-18/ELASTIC_CAPACITY_AND_SCALING.md)  
+**Source:** Layer 20 audit (2026-06-18) — `ELASTIC_CAPACITY_AND_SCALING` · [`../audit_results/2026-06-18/ELASTIC_CAPACITY_AND_SCALING.md`](../audit_results/2026-06-18/ELASTIC_CAPACITY_AND_SCALING.md)  
 **Priority ladder:** **Band 1** (§6.1) — test stability + ops depth; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

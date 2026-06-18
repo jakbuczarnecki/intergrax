@@ -1,12 +1,12 @@
 # © Artur Czarnecki. All rights reserved.
-"""Generate docs/guides/audit/<DOMAIN>.md prompt files. Idempotent."""
+"""Generate docs/audit/<DOMAIN>.md prompt files. Idempotent."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "docs" / "guides" / "audit"
+OUT = ROOT / "docs" / "audit"
 
 # Each domain: canon-aligned audit instruction. Regenerate after architecture/plan contract changes.
 DOMAINS: list[dict] = [
@@ -1328,7 +1328,7 @@ Perform a **rigorous, evidence-backed audit** of the **{title}** domain. You mus
 2. `docs/architecture/{did}.md` — architecture canon (incl. audit registers if present)
 3. `docs/plan/{did}.md` — implementation plan and gap IDs
 4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers {layers}
-5. `docs/guides/audit/README.md` — shared production Harness checklist (**mandatory**)
+5. `docs/audit/README.md` — shared production Harness checklist (**mandatory**)
 {appendix_block}
 ---
 
@@ -1368,7 +1368,7 @@ Confirm overrides are **wired in code**, not documentation-only:
 
 ## 6. Cross-cutting checklist (mandatory)
 
-Apply **every** section in `docs/guides/audit/README.md` §Shared production Harness checklist:
+Apply **every** section in `docs/audit/README.md` §Shared production Harness checklist:
 
 - Architecture & modularity
 - Configuration & strategy selection

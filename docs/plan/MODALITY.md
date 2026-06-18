@@ -124,7 +124,7 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 
 ### 6.1av Harness implementation queue — Modality audit maintenance (planned)
 
-**Source:** Layer 15 audit (2026-06-18) — `MODALITY` layer 29 · [`guides/audit/results/2026-06-18/MODALITY.md`](guides/audit/results/2026-06-18/MODALITY.md)  
+**Source:** Layer 15 audit (2026-06-18) — `MODALITY` layer 29 · [`../audit_results/2026-06-18/MODALITY.md`](../audit_results/2026-06-18/MODALITY.md)  
 **Priority ladder:** **Band 1** (§6.1) — **test repair first**, then docs/depth; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

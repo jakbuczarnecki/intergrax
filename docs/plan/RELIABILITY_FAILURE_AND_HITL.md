@@ -145,7 +145,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ### 6.1av Harness implementation queue — Reliability audit maintenance (planned)
 
-**Source:** Layer 17 audit (2026-06-18) — `RELIABILITY_FAILURE_AND_HITL` layer 22 · [`guides/audit/results/2026-06-18/RELIABILITY_FAILURE_AND_HITL.md`](guides/audit/results/2026-06-18/RELIABILITY_FAILURE_AND_HITL.md)  
+**Source:** Layer 17 audit (2026-06-18) — `RELIABILITY_FAILURE_AND_HITL` layer 22 · [`../audit_results/2026-06-18/RELIABILITY_FAILURE_AND_HITL.md`](../audit_results/2026-06-18/RELIABILITY_FAILURE_AND_HITL.md)  
 **Priority ladder:** **Band 1** (§6.1) — IDEAL-L3 W2 depth + cross-domain wiring; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

@@ -623,7 +623,7 @@ Total: 26
 
 ### 6.1av Harness implementation queue — Memory audit maintenance (planned)
 
-**Source:** Layer 13 audit (2026-06-18) — `MEMORY` layer 15 · [`guides/audit/results/2026-06-18/MEMORY.md`](guides/audit/results/2026-06-18/MEMORY.md)  
+**Source:** Layer 13 audit (2026-06-18) — `MEMORY` layer 15 · [`../audit_results/2026-06-18/MEMORY.md`](../audit_results/2026-06-18/MEMORY.md)  
 **Priority ladder:** **Band 1** (§6.1) — depth backlog only; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
