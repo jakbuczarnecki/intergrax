@@ -9,6 +9,7 @@ from intergrax.runtime.events.phase_coverage import phase_for_event
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event
 from intergrax.runtime.nexus.tracing.adapters.core_llm_call_recorded import CoreLLMCallRecordedDiagV1
+from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import LLMRoutingAttemptDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceEvent, TraceLevel
 from intergrax.runtime.task.task import Task, TaskState
 
@@ -108,3 +109,39 @@ def test_trace_bridge_maps_llm_call_recorded_schema() -> None:
     assert event.event_type == RuntimeEventType.LLM_CALL
     assert event.payload["model"] == "gpt-test"
     assert event.payload["total_tokens"] == 16
+
+
+def test_trace_bridge_maps_llm_routing_attempt_schema() -> None:
+    task = Task(
+        task_id="t1",
+        tenant_id="tenant",
+        user_id="user",
+        agent_id="agent",
+        message="q",
+    )
+    trace = TraceEvent(
+        event_id="llm-route-1",
+        run_id="r1",
+        seq=5,
+        ts_utc="2026-06-17T10:00:00Z",
+        level=TraceLevel.WARNING,
+        component=TraceComponent.ENGINE,
+        step="llm_routing_attempt",
+        message="LLM profile failover attempt recorded.",
+        tags={"task_id": "t1"},
+    )
+    payload = {
+        "profile_id": "openai:gpt-4o",
+        "provider": "openai",
+        "model": "gpt-4o",
+        "error": "RuntimeError: rate limited",
+        "profile_index": 0,
+    }
+    event = trace_event_to_runtime_event(
+        trace,
+        task,
+        payload_schema_id=LLMRoutingAttemptDiagV1.schema_id(),
+        payload_dict=payload,
+    )
+    assert event.event_type == RuntimeEventType.LLM_CALL
+    assert event.payload["model"] == "gpt-4o"

@@ -5,6 +5,10 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-18-002 | 2026-06-18 | tier-1, tier-2, tier-3 OBSERVABILITY | EBE-8 | [EBE-8 — PoC v2 harness_step boundary export for AgentReceipt partner](entries/2026-06-18/observability-ebe-8-poc-v2-harness-step.md) | ae4b5680 |
+| IJ-2026-06-18-001 | 2026-06-18 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-8.6 | [APP-EVOL-8.6 — spec_version 2.0 nested canonical profile wire](entries/2026-06-18/tier3-app-evol-8-6-spec-v2-wire.md) | pending |
+| IJ-2026-06-17-044 | 2026-06-17 | tier-3 EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE | AUDIT-IDEAL-27.2 | [AUDIT-IDEAL-27.2 — Replay environment HTTP wiring on product hosts](entries/2026-06-17/platform-dx-audit-ideal-27-2-replay-wiring.md) | pending |
+| IJ-2026-06-17-043 | 2026-06-17 | tier-0, tier-1 LLM_ADAPTERS | M-LLM-X.4.4 | [M-LLM-X.4.4 — LLM failover routing attempt trace diagnostics](entries/2026-06-17/platform-llm-m-llm-x-4-4-routing-trace.md) | pending |
 | IJ-2026-06-17-042 | 2026-06-17 | tier-3 TIER3_APPLICATION_ENVIRONMENT | TIER3-LC-S1–S4 · Full-Harness-LC-TIER3 | [TIER3_APPLICATION_ENVIRONMENT — Full Harness Layer Completion closeout](entries/2026-06-17/platform-tier3-layer-completion-fh.md) | d4178533 |
 | IJ-2026-06-17-041 | 2026-06-17 | platform EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE | DX-LC-S1–S4 · Full-Harness-LC-DX | [EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE — Full Harness Layer Completion closeout](entries/2026-06-17/platform-dx-layer-completion-fh.md) | d4178533 |
 | IJ-2026-06-17-040 | 2026-06-17 | tier-1, tier-3 ELASTIC_CAPACITY_AND_SCALING | ECP-LC-S1–S4 · Full-Harness-LC-ECP | [ELASTIC_CAPACITY_AND_SCALING — Full Harness Layer Completion closeout](entries/2026-06-17/platform-ecp-layer-completion-fh.md) | e24ae434 |

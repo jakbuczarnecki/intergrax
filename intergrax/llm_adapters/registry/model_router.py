@@ -46,6 +46,10 @@ class ModelRouter:
         model = profile.model or "default"
         return f"{profile.provider.value}:{model}"
 
+    def ordered_profile_ids(self) -> tuple[str, ...]:
+        """Stable profile identifiers aligned with ``ordered_profiles()``."""
+        return tuple(self._profile_id(profile) for profile in self.ordered_profiles())
+
     def ordered_profiles(self) -> tuple[LLMProfile, ...]:
         """Return profiles in routing order for adapter creation."""
         hint = self._policy_route_hint

@@ -18,7 +18,7 @@ pytestmark = pytest.mark.gate
 
 
 class _AgentFlagV1(RuntimeEventPayload):
-    schema_id = "agents.legal.flag.v1"
+    schema_id = "agents.legal.taxonomy_flag.v1"
     ok: bool = True
 
 

@@ -82,6 +82,15 @@ def main() -> int:
         print("flat vs nested bundle digest mismatch", file=sys.stderr)
         return 1
 
+    v2_env = env.with_spec_v2_wire()
+    v2_wire = v2_env.model_dump(mode="json")
+    if not set(v2_wire).issuperset(BUNDLE_ROOT_KEYS):
+        print("spec_version 2.x wire dump must use nested bundle roots", file=sys.stderr)
+        return 1
+    if any(key in v2_wire for key in ("profile_id", "tool_profile", "llm_profile")):
+        print("spec_version 2.x wire dump must not expose flat top-level keys", file=sys.stderr)
+        return 1
+
     _ = flatten_profile_dict(nested)
 
     print("OK: environment profile bundle schema")

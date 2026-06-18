@@ -17,9 +17,12 @@ from intergrax.applications.contracts.environment_profile.domain_policy import (
     DomainPolicyFragments,
 )
 from intergrax.applications.contracts.environment_profile.normalization import (
+    PROFILE_SPEC_V2,
     bundle_normalized_payload,
     flatten_profile_dict,
     lift_flat_profile_dict,
+    migrate_profile_dict_to_spec_v2,
+    uses_nested_profile_wire,
 )
 from intergrax.applications.contracts.environment_profile.root import (
     ApplicationEnvironmentProfile,
@@ -97,7 +100,10 @@ __all__ = [
     "ToolInvocationConfig",
     "ToolSelectionConfig",
     "TopologyBundle",
+    "PROFILE_SPEC_V2",
     "bundle_normalized_payload",
     "flatten_profile_dict",
     "lift_flat_profile_dict",
+    "migrate_profile_dict_to_spec_v2",
+    "uses_nested_profile_wire",
 ]

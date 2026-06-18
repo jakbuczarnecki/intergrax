@@ -34,7 +34,9 @@ Add **Execution Boundary Export (EBE)** as an optional Tier-1 side channel:
 4. **Delivery (PoC v1):** per-run `BoundaryEventBuffer` surfaced in Tier-3 API response
 5. **Reference host:** `applications/attestation_demo` + `agents/boundary_demo` + `records.put`
 
-Deferred: webhook sink, HarnessKernel step-level export, host-side event signing.
+Deferred: webhook sink, host-side event signing.
+
+**EBE-8 (2026-06-13):** HarnessKernel step-level export added — `boundary_type: harness_step`, `event_sequence` per run, `step_level_enabled` on profile. HOS spine unchanged.
 
 ## Consequences
 

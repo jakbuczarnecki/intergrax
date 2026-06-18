@@ -217,6 +217,9 @@ class UAEPExecutor:
         )
 
         runtime_context = agent.build_context(request)
+        from intergrax.runtime.attestation.kernel_wiring import apply_boundary_export_to_kernel
+
+        apply_boundary_export_to_kernel(kernel_ctx, runtime_context.config)
         from intergrax.runtime.nexus.context.memory_context_invocation import (
             populate_request_memory_recall_metadata,
         )

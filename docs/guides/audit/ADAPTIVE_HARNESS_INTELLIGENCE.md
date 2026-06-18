@@ -50,7 +50,7 @@ HarnessOutcomeSignal · AdaptiveLoopEnvelope · AdaptiveLoopKind · ProfileVersi
 
 ## Active plan phases (verify status vs code reality)
 
-W-ADAPT W0–W7 Done (70/70) · Phase V L4 evidence · **Full Harness LC** (2026-06-17)
+W-ADAPT W0–W7 Done (70/70) · Phase V L4 evidence · L4 adaptive critic thresholds product-gated
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 

@@ -61,6 +61,8 @@ from intergrax.runtime.policy.org_enforcement import (
 from intergrax.contracts.step_execution import StepExecutionRecord
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.policy.policy_engine import PolicyEngine
+from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
+from intergrax.runtime.attestation.settings import ExecutionBoundaryExportRuntimeSettings
 
 EventEmitter = Callable[[RuntimeEvent], Awaitable[None]]
 CheckpointHook = Callable[[dict[str, Any], int], Awaitable[None]]
@@ -103,6 +105,8 @@ class StepKernelContext:
     budget_reaction_hook: Any = None
     budget_threshold_emitted: set[str] = field(default_factory=set)
     budget_degrade_active: bool = False
+    execution_boundary_export: ExecutionBoundaryExportRuntimeSettings | None = None
+    boundary_event_buffer: BoundaryEventBuffer | None = None
 
 
 class HarnessKernel:
@@ -135,8 +139,7 @@ class HarnessKernel:
                     finished_at=_utc_now(),
                 ),
             )
-            await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
-            return record
+            return await HarnessKernel._finish_step(kernel_ctx, step_ctx, record)
 
         mode_error = validate_side_effect_mode(outcome, kernel_ctx.side_effect_mode)
         if mode_error is not None:
@@ -158,8 +161,7 @@ class HarnessKernel:
                     finished_at=_utc_now(),
                 ),
             )
-            await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
-            return record
+            return await HarnessKernel._finish_step(kernel_ctx, step_ctx, record)
 
         policy_pre = HarnessKernel._policy_pre_check(outcome, step_ctx, kernel_ctx)
         trace_events += await HarnessKernel._emit_policy(kernel_ctx, policy_pre, phase="pre")
@@ -183,8 +185,7 @@ class HarnessKernel:
                     finished_at=_utc_now(),
                 ),
             )
-            await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
-            return record
+            return await HarnessKernel._finish_step(kernel_ctx, step_ctx, record)
         if outcome.errors and kernel_ctx.reliability is not None:
             for error in outcome.errors:
                 kernel_ctx.reliability.record_failure(error.code)
@@ -208,8 +209,7 @@ class HarnessKernel:
                     finished_at=_utc_now(),
                 ),
             )
-            await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
-            return record
+            return await HarnessKernel._finish_step(kernel_ctx, step_ctx, record)
 
         merge_result = merge_session_state(
             kernel_ctx.state_root,
@@ -237,8 +237,7 @@ class HarnessKernel:
                     finished_at=_utc_now(),
                 ),
             )
-            await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
-            return record
+            return await HarnessKernel._finish_step(kernel_ctx, step_ctx, record)
 
         kernel_ctx.state_root = merge_result.state
         step_ctx.state_snapshot = merge_result.state
@@ -281,8 +280,7 @@ class HarnessKernel:
                         finished_at=_utc_now(),
                     ),
                 )
-                await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
-                return record
+                return await HarnessKernel._finish_step(kernel_ctx, step_ctx, record)
             step_action_args = {
                 str(action["tool_id"]): (
                     action.get("args") if isinstance(action.get("args"), dict) else {}
@@ -375,8 +373,7 @@ class HarnessKernel:
                             finished_at=_utc_now(),
                         ),
                     )
-                    await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
-                    return record
+                    return await HarnessKernel._finish_step(kernel_ctx, step_ctx, record)
 
         policy_post = HarnessKernel._policy_post_check(outcome, step_ctx, kernel_ctx)
         trace_events += await HarnessKernel._emit_policy(kernel_ctx, policy_post, phase="post")
@@ -415,8 +412,7 @@ class HarnessKernel:
                     finished_at=_utc_now(),
                 ),
             )
-            await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
-            return record
+            return await HarnessKernel._finish_step(kernel_ctx, step_ctx, record)
 
         budget_exceeded = HarnessKernel._budget_exceeded(step_ctx, kernel_ctx)
         if budget_exceeded:
@@ -450,8 +446,7 @@ class HarnessKernel:
                     finished_at=_utc_now(),
                 ),
             )
-            await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
-            return record
+            return await HarnessKernel._finish_step(kernel_ctx, step_ctx, record)
 
         trace_events += await HarnessKernel._emit(
             kernel_ctx,
@@ -494,8 +489,7 @@ class HarnessKernel:
                 finished_at=_utc_now(),
             ),
         )
-        await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
-        return record
+        return await HarnessKernel._finish_step(kernel_ctx, step_ctx, record)
 
     @staticmethod
     def _build_step_record(
@@ -552,7 +546,7 @@ class HarnessKernel:
             merged_diagnostics.update(diagnostics)
 
         return AgentStepRecord(
-            step_id=f"step-{step_ctx.step_index:04d}",
+            step_id=str(step_ctx.metadata.get("step_id") or f"step-{step_ctx.step_index:04d}"),
             step_index=step_ctx.step_index,
             finished_at=finished_at,
             status=status,
@@ -763,6 +757,22 @@ class HarnessKernel:
                 "policy_rule_id": decision.policy_rule_id,
             },
         )
+
+    @staticmethod
+    async def _finish_step(
+        kernel_ctx: StepKernelContext,
+        step_ctx: AgentStepContext,
+        record: StepExecutionRecord,
+    ) -> StepExecutionRecord:
+        await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
+        from intergrax.runtime.attestation.harness_boundary_emitter import HarnessBoundaryEmitter
+
+        HarnessBoundaryEmitter.maybe_emit(
+            kernel_ctx=kernel_ctx,
+            step_ctx=step_ctx,
+            record=record,
+        )
+        return record
 
     @staticmethod
     async def _append_trace(

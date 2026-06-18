@@ -432,6 +432,10 @@ class ExecutionBoundaryExportProfile(BaseModel):
     )
     allowlist: list[str] = Field(default_factory=list)
     include_canonical_io: bool = True
+    step_level_enabled: bool = Field(
+        default=False,
+        description="Emit harness_step events from HarnessKernel.execute_step (EBE-8).",
+    )
 
 
 class SandboxProfile(BaseModel):

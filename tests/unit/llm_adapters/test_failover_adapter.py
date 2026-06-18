@@ -54,10 +54,14 @@ class _StubAdapter:
 def test_failover_adapter_uses_secondary_on_retriable_error() -> None:
     primary = _StubAdapter(provider=LLMProvider.OPENAI, model="gpt-4o", fail=True)
     secondary = _StubAdapter(provider=LLMProvider.GROQ, model="llama-3.3-70b-versatile")
-    adapter = FailoverLLMAdapter([primary, secondary])
+    adapter = FailoverLLMAdapter(
+        [primary, secondary],
+        profile_ids=("openai:gpt-4o", "groq:llama-3.3-70b-versatile"),
+    )
     response = adapter.generate_messages([ChatMessage(role="user", content="hi")])
     assert response.content == "ok-llama-3.3-70b-versatile"
     assert len(adapter.routing_attempts) == 1
+    assert adapter.routing_attempts[0].profile_id == "openai:gpt-4o"
 
 
 def test_failover_adapter_raises_when_all_profiles_fail() -> None:

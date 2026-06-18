@@ -96,13 +96,17 @@ class LLMProfile(BaseModel):
             fallbacks=self.fallback_profiles,
             policy_route_hint=hint,
         )
+        ordered_profiles = router.ordered_profiles()
         adapters = [
             profile.create_adapter(secrets=secrets, **overrides)
-            for profile in router.ordered_profiles()
+            for profile in ordered_profiles
         ]
         if len(adapters) == 1:
             return adapters[0]
-        return FailoverLLMAdapter(adapters)
+        return FailoverLLMAdapter(
+            adapters,
+            profile_ids=router.ordered_profile_ids(),
+        )
 
     def validate_runtime(self, *, secrets: Optional[Mapping[str, str]] = None) -> list[str]:
         """

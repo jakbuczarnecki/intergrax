@@ -34,8 +34,10 @@ from intergrax.applications.contracts.environment_profile.domain_policy import (
 )
 from intergrax.applications.contracts.environment_profile.normalization import (
     BUNDLE_ROOT_KEYS,
+    PROFILE_SPEC_V2,
     flatten_profile_dict,
     lift_flat_profile_dict,
+    uses_nested_profile_wire,
 )
 from intergrax.applications.contracts.environment_profile.sub_profiles import (
     AdaptiveProfile,
@@ -634,13 +636,23 @@ class ApplicationEnvironmentProfile(BaseModel):
 
     def model_dump(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         nested = super().model_dump(*args, **kwargs)
-        if str(self.meta.spec_version).startswith("2."):
+        if uses_nested_profile_wire(self.meta.spec_version):
             return nested
         return flatten_profile_dict(nested)
 
     def bundle_dump(self, **kwargs: Any) -> dict[str, Any]:
         """Canonical nested dump for digests and diff (APP-EVOL-8.3)."""
         return super().model_dump(mode=kwargs.get("mode", "json"))
+
+    def with_spec_v2_wire(self) -> ApplicationEnvironmentProfile:
+        """Return profile using nested canonical ``spec_version`` 2.0.0 wire (APP-EVOL-8.6)."""
+        if uses_nested_profile_wire(self.meta.spec_version):
+            return self
+        return self.model_copy(
+            update={
+                "meta": self.meta.model_copy(update={"spec_version": PROFILE_SPEC_V2}),
+            },
+        )
 
     @classmethod
     def harness_memory_profile(cls) -> MemoryProfile:

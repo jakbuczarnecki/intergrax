@@ -113,7 +113,7 @@
 | 1 | X-1 | M-LLM-X.1.1–1.6 | **P0** | **Done** |
 | 2 | X-2 | M-LLM-X.2.1–2.4 | P1 | **Backlog** (static catalog covers OpenRouter default) |
 | 3 | X-3 | M-LLM-X.3.1–3.5 | **P0** | **Done** |
-| 4 | X-4 | M-LLM-X.4.1–4.5 | P1 | **Partial** (4.1–4.3 Done; 4.4 trace DTO, 4.5 Tier-3 wiring → backlog) |
+| 4 | X-4 | M-LLM-X.4.1–4.5 | P1 | **Partial** (4.1–4.4 Done; 4.5 Tier-3 wiring → backlog) |
 | 5 | X-5 | M-LLM-X.5.1–5.5 | P1 | **Done** |
 | 6 | X-6 | M-LLM-X.6.1–6.3 | P2 | **Partial** (6.3 Done) |
 | 7 | X-7 | M-LLM-X.7.1–7.5 | P2 | **Partial** (7.1, 7.5 Done; 7.2–7.4 Planned) |
@@ -199,7 +199,7 @@ Wave M-LLM-X-8 (closeout):     M-LLM-X.8.1 → 8.2 → 8.3
 | M-LLM-X.4.1 | **`LLMProfile.fallback_profiles: tuple[LLMProfile, ...]`** | **Done** | High | `registry/profile.py` | Pydantic validation; extra=forbid |
 | M-LLM-X.4.2 | **`FailoverLLMAdapter`** — wraps primary; tries chain on retriable errors | **Done** | Critical | `registry/failover_adapter.py` | Unit: 429 → fallback success |
 | M-LLM-X.4.3 | **`LLMProfile.create_adapter_with_failover()`** | **Done** | High | `profile.py` | Integration with `LLMCallConfig.retry_on_status` |
-| M-LLM-X.4.4 | **Trace `LLMRoutingAttemptDiagV1`** per failover attempt | **Planned** | Medium | observability | Fields: profile_id, provider, model, error |
+| M-LLM-X.4.4 | **Trace `LLMRoutingAttemptDiagV1`** per failover attempt | **Done** | Medium | observability | Fields: profile_id, provider, model, error |
 | M-LLM-X.4.5 | **Tier-3 wiring** — `ApplicationEnvironmentProfile` optional fallback list | **Planned** | Medium | `environment_profile.py`, `nexus_factory.py` | Host smoke test |
 
 ---

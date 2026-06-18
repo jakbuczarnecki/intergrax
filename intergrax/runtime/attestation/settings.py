@@ -21,6 +21,7 @@ class ExecutionBoundaryExportRuntimeSettings:
     capture_mode: AttestationCaptureMode
     allowlist: frozenset[str]
     include_canonical_io: bool = True
+    step_level_enabled: bool = False
 
 
 def resolve_execution_boundary_export_runtime(
@@ -38,4 +39,5 @@ def resolve_execution_boundary_export_runtime(
         capture_mode=capture_mode,
         allowlist=frozenset(profile.allowlist),
         include_canonical_io=profile.include_canonical_io,
+        step_level_enabled=profile.step_level_enabled,
     )
