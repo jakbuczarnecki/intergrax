@@ -59,6 +59,7 @@ def run_doctor(args: argparse.Namespace) -> int:
         ("harness_guardrail_wiring", "check_harness_guardrail_wiring.py"),
         ("context_engine_wiring", "check_context_engine_wiring.py"),
         ("llm_adapter_typed_returns", "check_llm_adapter_typed_returns.py"),
+        ("llm_profile_runtime", "check_llm_profile_runtime.py"),
         ("model_catalog_coverage", "check_model_catalog_coverage.py"),
         ("tool_injection_defense", "check_tool_injection_defense.py"),
         ("legacy_tool_plan_booleans", "check_legacy_tool_plan_booleans.py"),
