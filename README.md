@@ -53,7 +53,7 @@ Maturity uses **L0–L4** levels (not arbitrary percentages). Per-domain evidenc
 |------|----------|---------------------|
 | **Agent contracts (ACP)** | **L3** | [Phase ACP](docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) **Done** · fleet `on_next_step` migration ongoing |
 | **Tools** | **L3** | [TOOL-ENG](docs/plan/TOOLS.md) closeout **Done** · deferred: hierarchical LLM category pass |
-| **Tier-3 hosts** | **L3** (depth partial) | [APP-PROD](docs/plan/TIER3_APPLICATION_ENVIRONMENT.md) gates **Done** · §22 profile bundles M3 planned |
+| **Tier-3 hosts** | **L3** (depth partial) | [APP-PROD](docs/plan/TIER3_APPLICATION_ENVIRONMENT.md) gates **Done** · §22 profile bundles M1–M3 **Done** · enterprise distribution **P4** |
 | **Memory** | **L3** | [MEM / MEM-VEC](docs/plan/MEMORY.md) **Done** · depth: procedural taxonomy + org parity gaps |
 | **Adaptive harness (AHI)** | **L4 runtime** | [W-ADAPT](docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md) **Done** · 30-day production evidence = product hosts |
 

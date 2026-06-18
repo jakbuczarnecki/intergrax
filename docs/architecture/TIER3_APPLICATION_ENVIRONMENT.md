@@ -237,7 +237,7 @@ Every Tier-3 application MUST:
 
 ## 22.6 Hierarchical profile bundles
 
-**Status:** Architecture **accepted** · **M1 Done** · **M2 partial** · **M3 Done** (`APP-EVOL-8.6`) · **ADR:** [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md) · **Code:** `intergrax/applications/contracts/environment_profile/`
+**Status:** Architecture **accepted** · **M1 Done** · **M2 Done** · **M3 Done** (`APP-EVOL-8.6`) · **ADR:** [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md) · **Code:** `intergrax/applications/contracts/environment_profile/`
 
 ### 22.6.1 Problem
 
