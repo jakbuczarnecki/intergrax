@@ -22,15 +22,21 @@ def resolve_async_task_index(
     Return durable SQLite index for product/strict hosts; in-memory for lab.
 
     Override with ``INTERGRAX_DURABLE_QUEUE=memory`` to force in-process index.
+    Integration profile may set ``async_task_index_slug`` (``sqlite`` | ``redis``).
     """
     override = os.getenv("INTERGRAX_DURABLE_QUEUE", "").strip().lower()
     if override in ("memory", "inmemory", "off", "false", "0"):
         return InMemoryAsyncTaskIndex()
 
+    integration_slug = (
+        getattr(env.integration_profile, "async_task_index_slug", None) or ""
+    ).strip().lower()
+
     use_durable = (
         env.application_profile is ApplicationProfile.PRODUCT
         or env.execution_mode.value == "strict"
         or env.features.durable_async_index_default
+        or integration_slug in ("sqlite", "sql", "redis")
     )
     if not use_durable:
         return InMemoryAsyncTaskIndex()

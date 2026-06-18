@@ -99,6 +99,8 @@ class IntegrationProfile(BaseModel):
     crm: IntegrationBinding | None = None
     llm_guardrail: IntegrationBinding | None = None
 
+    async_task_index_slug: str | None = None
+
     options: dict[str, dict[str, Any]] = Field(default_factory=dict)
 
     @model_validator(mode="before")

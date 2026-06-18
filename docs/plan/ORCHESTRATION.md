@@ -1571,10 +1571,10 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **ORCH-MAINT-01** | Code/Docs | P3 | **Planned** | Scaffold `lab_stack` preset: `INCLUDE_QUEUE_WORKER=true` by default | `new-application` lab preset wires `QueuedNexusExecutionAdapter` path; gate green |
+| 1 | **ORCH-MAINT-01** | Code/Docs | P3 | **Done** | Scaffold `lab_stack` preset: `INCLUDE_QUEUE_WORKER=true` by default | `new-application` lab preset wires `QueuedNexusExecutionAdapter` path; gate green |
 | 2 | **ORCH-MAINT-02** | Docs | P3 | **Planned** | LKW hybrid daemon enablement runbook (CFG-14) in `local_workspace_application/ARCHITECTURE.md` | Operator can enable scheduler + interactions without reading source |
-| 3 | **ORCH-MAINT-03** | Code | P3 | **Planned** | `TaskPriority` in `intergrax/queueing/` + broker adapter hook | Priority field on enqueue; unit test; no Nexus fork |
-| 4 | **ORCH-MAINT-04** | Code | P3 | **Planned** | Durable `AsyncTaskIndex` via integration profile (Redis/SQLite slug) | `async_task_index_resolver.py` selects profile-backed index; lab may keep in-memory fallback |
+| 3 | **ORCH-MAINT-03** | Code | P3 | **Done** | `TaskPriority` in `intergrax/queueing/` + broker adapter hook | Priority field on enqueue; unit test; no Nexus fork |
+| 4 | **ORCH-MAINT-04** | Code | P3 | **Done** | Durable `AsyncTaskIndex` via integration profile (Redis/SQLite slug) | `async_task_index_resolver.py` selects profile-backed index; lab may keep in-memory fallback |
 
 **Suggested PR order:** ORCH-MAINT-02 (doc) → ORCH-MAINT-01 → ORCH-MAINT-04 → ORCH-MAINT-03.
 
