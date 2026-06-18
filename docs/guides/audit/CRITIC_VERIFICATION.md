@@ -50,7 +50,7 @@ CriticProfile · CriticRequest · CriticVerdict · L0Gateway · L1Gateway · Eva
 
 ## Active plan phases (verify status vs code reality)
 
-CRIT-V 0–7 + FOLLOWUP Done · CVL-LC-1…4 Done · FAUDIT-EVAL.1 closed · **Full Harness LC** (2026-06-17)
+CRIT-V 0–7 + FOLLOWUP Done · CVL-LC-1/2 layer completion (2026-06-13) · FAUDIT-EVAL.1 closed
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 

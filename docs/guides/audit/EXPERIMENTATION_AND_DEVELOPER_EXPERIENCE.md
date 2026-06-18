@@ -50,7 +50,7 @@ EvaluationProfile · ExperimentSession · OnlineEvaluationRegistry · maturity g
 
 ## Active plan phases (verify status vs code reality)
 
-EVAL · CRIT-V cross-ref · MVP-EVOL · DX · AA · W-OPS Done · **Full Harness LC** (2026-06-17)
+EVAL · CRIT-V cross-ref · MVP-EVOL · DX · AA · W-OPS · Phase V G5 Production PRR
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 

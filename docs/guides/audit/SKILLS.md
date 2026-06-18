@@ -50,11 +50,11 @@ SkillManifest · SkillProfile · SkillRegistry · SkillResolver/SkillResolverPro
 
 ## Active plan phases (verify status vs code reality)
 
-SK-EXP through SK-EXP5 Done · **SK-BRIDGE.1** prompt→ContextManager **Done** · **SK-BRIDGE.2** policy_fragment→bundle **Done** · SK-PRESET.1 · Phase TS-3 · **Full Harness LC** (2026-06-17)
+SK-EXP through SK-EXP5 Done · **SK-BRIDGE.1** prompt→ContextManager · **SK-BRIDGE.2** policy_fragment→bundle · SK-PRESET.1 · Phase TS-3
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-knowledge bundle BETA maturity · boundary_demo legacy `allowed_tools` (ACP P2)
+prompt_instruction_ids not auto-injected to ContextManager · policy_fragment_id not merged to RuntimePolicyBundle · knowledge bundle BETA
 
 ---
 

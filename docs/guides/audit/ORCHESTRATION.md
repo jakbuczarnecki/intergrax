@@ -54,7 +54,7 @@ ORCH Done · ORCH-STRAT · ORCH-CONFIG (11/11) · ORCH-5.1 swarm · ORCH-6 sync/
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-CFG-14 LKW hybrid E2E deferred · active-active node redundancy L0 · QueuedNexusExecutionAdapter not scaffold-default
+CFG-14 LKW hybrid E2E deferred · active-active node redundancy L0 · QueuedNexusExecutionAdapter not scaffold-default · semantic merge ORCH-5.4 future
 
 ---
 

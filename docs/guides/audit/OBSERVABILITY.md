@@ -50,11 +50,11 @@ RuntimeEvent · event_kind · EventCategory · EventCatalog · emit_domain_signa
 
 ## Active plan phases (verify status vs code reality)
 
-OBS-BUS 0–7 Done · OBS-EVOL-9 Done (9.9 deferred) · ADR-OBS-001 · ADR-OBS-003 · **Full Harness LC** (2026-06-17)
+OBS-BUS 0–7 Done · OBS-EVOL-9 Planned · ADR-OBS-001 · ADR-OBS-003
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-OBS-EVOL-9.9 optional `runtime_event.v2` (post-publication) · product dashboards §6.3a
+OBS-EVOL-9 implementation · spine consolidation pre-release · product dashboards §6.3a
 
 ---
 
