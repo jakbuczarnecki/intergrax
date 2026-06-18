@@ -20,10 +20,12 @@
 
 | ID | Severity | Finding | Evidence | Status |
 |----|----------|---------|----------|--------|
-| UAEP-AUDIT-01 | P2 | `RuntimeEvent.tenant_id` not populated on several UAEP emit paths | `intergrax/agents/uaep.py:UAEPExecutor._emit`; `trace_middleware.py` | open |
+| UAEP-AUDIT-01 | P2 | `RuntimeEvent.tenant_id` not populated on UAEP/trace emit paths | `uaep.py:_emit`; `trace_middleware.py` | **planned** (§6.1av) |
+| UAEP-MAINT-02 | P3 | Duplicate `STEP_COMPLETED` (middleware + kernel) | `trace_middleware.py`; `step_kernel.py` | **planned** (§6.1av) |
+| UAEP-MAINT-03 | P3 | Security middleware layout diagram for authors | plan §6.1av | **planned** (§6.1av) |
 | UAEP-AUDIT-02 | P3 | `EscalationRouter` lab-minimal; §42.38 SUPERVISOR_AGENT target absent | `intergrax/runtime/human/escalation.py` | deferred |
-| UAEP-AUDIT-03 | P3 | Security modules split across `runtime/architecture/` + Tier-3 wiring vs §42.42 middleware layout | `applications/_shared/security_wiring.py` | open |
-| UAEP-AUDIT-04 | P3 | Possible duplicate `STEP_COMPLETED` (TraceEmittingMiddleware + HarnessKernel) | `trace_middleware.py`; `step_kernel.py` | open |
+| UAEP-AUDIT-03 | P3 | Security modules split across `runtime/architecture/` + Tier-3 wiring vs §42.42 middleware layout | `applications/_shared/security_wiring.py` | **planned** (UAEP-MAINT-03) |
+| UAEP-AUDIT-04 | P3 | Possible duplicate `STEP_COMPLETED` (TraceEmittingMiddleware + HarnessKernel) | `trace_middleware.py`; `step_kernel.py` | **planned** (UAEP-MAINT-02) |
 | UAEP-AUDIT-05 | P3 | §42.43 product reference host deferred §6.3 (FLOW-8 product) | plan FLOW-8 Partial | deferred |
 | UAEP-AUDIT-06 | P3 | GOV-PROD.1 product observability dashboard deferred | plan GOV-PROD.1 | deferred |
 | UAEP-AUDIT-07 | P3 | OBS-EVOL-9.7 event catalog consolidation pending | cross-plan OBSERVABILITY | deferred |
@@ -39,36 +41,18 @@ No open P0/P1.
 
 | Action | Target | Notes |
 |--------|--------|-------|
-| Plan row added/updated | `docs/plan/UNIFIED_EXECUTION_RUNTIME.md` | P2 UAEP-AUDIT-01 tenant_id on RuntimeEvent emitters |
+| Plan row added/updated | `docs/plan/UNIFIED_EXECUTION_RUNTIME.md` §6.1av | UAEP-AUDIT-01, UAEP-MAINT-02, UAEP-MAINT-03 |
 | Architecture sync needed | no | |
 
 ---
 
-## Gates executed
+## Backlog P2–P4 (planned / deferred)
 
-```bash
-uv run pytest tests/unit/runtime/ -q --tb=no
-python scripts/check_harness_no_getattr.py
-uv run python scripts/check_observability_gates.py
-uv run pytest -m "gate and not no_ci" -q --tb=no
-uv run python scripts/check_harness_security_wiring.py
-uv run python scripts/check_harness_cost_wiring.py
-uv run python scripts/check_harness_guardrail_wiring.py
-uv run python scripts/check_harness_reliability_wiring.py
-uv run pytest tests/unit/agents/test_uaep_executor.py tests/integration/agents/test_agent_engine_uaep_echo.py tests/integration/runtime/test_uaep_memory_view.py -q
-```
-
-Targeted UAEP tests: 22 passed. Wiring scripts: OK.
-
----
-
-## Backlog P2–P4 (deferred)
-
-- P2 UAEP-AUDIT-01 — tenant_id on all RuntimeEvent emitters + regression gate
-- P3 supervisor escalation target (§42.38)
-- P3 middleware layout convergence (§42.42)
-- P3 STEP_COMPLETED deduplication
-- P3 FLOW-8 product host, GOV-PROD.1, OBS-EVOL-9.7
+- P2 UAEP-AUDIT-01 — tenant_id on all RuntimeEvent emitters + regression gate (§6.1av)
+- P3 UAEP-MAINT-02 — STEP_COMPLETED deduplication (§6.1av)
+- P3 UAEP-MAINT-03 — security middleware layout diagram Appendix H (§6.1av)
+- P3 supervisor escalation target (§42.38) — deferred
+- P3 FLOW-8 product host, GOV-PROD.1, OBS-EVOL-9.7 — deferred
 
 ---
 
