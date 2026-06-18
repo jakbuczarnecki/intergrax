@@ -89,7 +89,7 @@ Every meaningful decision should produce a trace event or structured log.
 
 If a UI is needed, build a minimal debug/inspection surface.
 
-Do not build a polished SaaS frontend at this stage.
+Do not build a polished SaaS frontend at this stage. **DX-MAINT-04:** this remains an explicit harness non-goal — product UI belongs to Tier-3 hosts or Phase K, not the DX control plane.
 
 ---
 

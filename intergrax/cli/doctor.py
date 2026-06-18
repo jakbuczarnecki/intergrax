@@ -63,6 +63,7 @@ def run_doctor(args: argparse.Namespace) -> int:
         ("tool_injection_defense", "check_tool_injection_defense.py"),
         ("legacy_tool_plan_booleans", "check_legacy_tool_plan_booleans.py"),
         ("runtime_event_tenant", "check_runtime_event_tenant_propagation.py"),
+        ("audit_ideal_dx_subset", "check_audit_ideal_gates.py"),
         ("skill_selection_hook", "check_skill_selection_hook.py"),
     ]
     for name, script_name in scripts:

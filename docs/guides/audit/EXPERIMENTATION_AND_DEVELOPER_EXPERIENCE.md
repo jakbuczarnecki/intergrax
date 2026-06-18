@@ -54,7 +54,7 @@ EVAL · CRIT-V cross-ref · MVP-EVOL · DX · AA · W-OPS · Phase V G5 Producti
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-GOV-PROD.1 dashboard deferred · polished SaaS UI non-goal · MVP promotion CLI not Tier-3 router
+DX-LC Done · §6.1av DX-MAINT Done · GOV-PROD.1 dashboard backlog · polished SaaS UI explicit non-goal
 
 ---
 
