@@ -957,4 +957,22 @@ TARGET (remaining TOOL-ENG):
 
 **Deferred P2–P4:** hierarchical LLM category pass · per-tool L1 critic (CVL) · host EP pattern packages
 
+### 6.1av Harness implementation queue — Tools audit maintenance (planned)
+
+**Source:** Layer 8 audit (2026-06-18) — `TOOLS` layer 11 · [`guides/audit/results/2026-06-18/TOOLS.md`](guides/audit/results/2026-06-18/TOOLS.md)  
+**Priority ladder:** **Band 1** (§6.1) — selection depth + DX hygiene; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **TOOL-MAINT-01** | Code | P2 | **Planned** | ADR-TOOL-005 v2 — optional LLM category pass in `hierarchical_tool_selector.py` | Integration test; deterministic default preserved |
+| 2 | **TOOL-MAINT-02** | Docs/Trace | P2 | **Planned** | Per-tool L1 critic output trace contract — cross-ref CVL; canon acceptance in TOOLS §critic hook | Trace payload documented; CVL gate references tool_id |
+| 3 | **TOOL-MAINT-03** | DX | P3 | **Planned** | Host EP pattern packages — scaffold/docs for custom entry-point tool patterns | Scaffold or guide section; example host wiring |
+| 4 | **TOOL-MAINT-04** | DX | P3 | **Planned** | Tool gate subset in `intergrax doctor` — `check_tool_injection_defense` + `check_legacy_tool_plan_booleans` | `intergrax doctor --ci` runs tool checks |
+
+**Suggested PR order:** TOOL-MAINT-01 → TOOL-MAINT-02 → TOOL-MAINT-04 → TOOL-MAINT-03.
+
+**Cross-domain (not TOOLS-owned):** PF-MAINT-LEG-01 — legacy `use_rag`/`use_websearch` planner schema — [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md).
+
 ---
+
+*End of Tools Implementation Plan.*

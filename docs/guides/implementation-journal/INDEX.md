@@ -5,7 +5,8 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-18-004 | 2026-06-18 | tier-0 LLM_ADAPTERS | LLM-MAINT-01..04 | [LLM-MAINT-01..04 — Interactive layer 7 audit plan registration](entries/2026-06-18/llm-audit-maint-01-04-plan-register.md) | pending |
+| IJ-2026-06-18-005 | 2026-06-18 | tier-0, tier-1 TOOLS | TOOL-MAINT-01..04 | [TOOL-MAINT-01..04 — Interactive layer 8 audit plan registration](entries/2026-06-18/tools-audit-maint-01-04-plan-register.md) | pending |
+| IJ-2026-06-18-004 | 2026-06-18 | tier-0 LLM_ADAPTERS | LLM-MAINT-01..04 | [LLM-MAINT-01..04 — Interactive layer 7 audit plan registration](entries/2026-06-18/llm-audit-maint-01-04-plan-register.md) | 726750cb |
 | IJ-2026-06-18-003 | 2026-06-18 | tier-0, tier-2 AGENT_CONTRACTS_AND_ASSEMBLY | ACP-MAINT-01..03 | [ACP-MAINT-01..03 — Interactive layer 6 audit plan registration](entries/2026-06-18/acp-audit-maint-01-03-plan-register.md) | ae86fb40 |
 | IJ-2026-06-18-002 | 2026-06-18 | tier-1, tier-2, tier-3 OBSERVABILITY | EBE-8 | [EBE-8 — PoC v2 harness_step boundary export for AgentReceipt partner](entries/2026-06-18/observability-ebe-8-poc-v2-harness-step.md) | ae4b5680 |
 | IJ-2026-06-18-001 | 2026-06-18 | tier-3 TIER3_APPLICATION_ENVIRONMENT | APP-EVOL-8.6 | [APP-EVOL-8.6 — spec_version 2.0 nested canonical profile wire](entries/2026-06-18/tier3-app-evol-8-6-spec-v2-wire.md) | pending |

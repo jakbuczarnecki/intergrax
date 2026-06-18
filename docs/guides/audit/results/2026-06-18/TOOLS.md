@@ -1,7 +1,7 @@
 # Audit result — `TOOLS`
 
-**Run:** 2026-06-18 · **Mode:** audit_only  
-**Auditor:** cursor-agent · **Verdict:** mature_revalidated
+**Run:** 2026-06-18 · **Mode:** audit_only (interactive layer 8)  
+**Auditor:** cursor-agent · **Verdict:** L3 mature_revalidated
 
 ---
 
@@ -18,32 +18,48 @@
 
 ## Findings
 
-No open P0/P1 in `TOOLS` scope. Prior Layer Completion closeout revalidated.
+| ID | Severity | Finding | Evidence | Status |
+|----|----------|---------|----------|--------|
+| TOOL-GAP-01 | P2 | Hierarchical LLM category pass deferred (v1 deterministic Done) | ADR-TOOL-005 · TOOLS-LC deferred | **planned** (TOOL-MAINT-01) |
+| TOOL-GAP-02 | P2 | Per-tool L1 critic output — CVL cross-domain | TOOLS-LC deferred | **planned** (TOOL-MAINT-02) |
+| TOOL-GAP-03 | P3 | Host EP pattern packages not scaffolded | TOOLS-LC deferred | **planned** (TOOL-MAINT-03) |
+| TOOL-GAP-04 | P3 | Tool gates not in `intergrax doctor` bundle | `intergrax/cli/doctor.py` | **planned** (TOOL-MAINT-04) |
+| TOOL-GAP-05 | P2 | Legacy `use_rag`/`use_websearch` in planner schema | PLATFORM PF-MAINT-LEG-01 | deferred |
+
+No open P0/P1. TOOL-ENG **36/36 Closed** · TOOLS-LC **Done**.
+
+---
+
+## Plan sync
+
+| Action | Target | Notes |
+|--------|--------|-------|
+| Plan row added/updated | `docs/plan/TOOLS.md` §6.1av | TOOL-MAINT-01..04 |
+| Architecture sync needed | no | |
 
 ---
 
 ## Gates executed
 
 ```bash
-python scripts/check_legacy_tool_plan_booleans.py
+uv run python scripts/check_legacy_tool_plan_booleans.py
 uv run python scripts/check_tool_mcp_schema_export.py
 uv run python scripts/check_tool_injection_defense.py
-python scripts/check_agent_registry_bypass.py
+uv run python scripts/check_agent_registry_bypass.py
 uv run pytest tests/unit/runtime/nexus/tools/ -q
 ```
 
-58 tool unit tests passed.
+All green: **58 passed**.
 
 ---
 
-## Backlog P2–P4 (deferred)
+## Backlog P2–P4 (planned / deferred)
 
-- Hierarchical LLM category pass — P2 ADR-TOOL-005
-- Per-tool L1 critic output — P2 CVL
-- Host EP pattern packages — P3
+- TOOL-MAINT-01..04 — §6.1av
+- PF-MAINT-LEG-01 — PLATFORM_FOUNDATION
 
 ---
 
 ## Recommendation
 
-**Architecturally Mature**
+**Architecturally Mature (L3)** — depth backlog only; runtime gates green.
