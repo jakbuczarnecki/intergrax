@@ -257,7 +257,7 @@ Typed factories in `intergrax.integrations.registry.presets` — use in `Applica
 | Preset function | Returns | Typical use |
 |-----------------|---------|-------------|
 | `lab_stack(enable_otel=True)` | `IntegrationProfile.lab_harness_preset` | Default lab / scaffold hosts |
-| `legal_stack()` | `IntegrationProfile.legal_product()` | Legal product relational + vector |
+| `legal_stack()` | `IntegrationProfile.legal_product()` | Legal product relational + vector + OTEL observability backend |
 | `research_stack()` | `IntegrationProfile.research_product()` | Research product search + vector |
 | `data_stack(enable_redis=True, enable_qdrant=False)` | Lab harness + optional redis/qdrant | Data-heavy experiments |
 | `observability_stack(enable_otel=True, enable_grafana_stack=False)` | Lab harness OTEL-first; optional Grafana/Loki/Tempo triad | Trace/metrics focus |

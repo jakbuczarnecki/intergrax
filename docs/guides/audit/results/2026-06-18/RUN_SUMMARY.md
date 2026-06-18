@@ -1,39 +1,38 @@
 # Interactive layer-by-layer audit run — 2026-06-18
 
-**Mode:** audit_only (Mode A2 batch) · **Scope:** layers 6–22 (continued from layers 1–5 prior session)
+**Mode:** audit + implement (§6.1av MAINT) · **Scope:** all 22 domain pairs
 
 ## Status
 
-**Complete** — all 22 domain pairs audited; §6.1av maintenance queues registered per domain.
+**Complete** — audit registered; **§6.1av MAINT queue 82/82 Done** (2026-06-18).
 
-## Rollup (layers 6–22 this batch)
+## Rollup
 
-| # | Domain | Verdict | MAINT IDs | Commit (batch) |
-|---|--------|---------|-----------|----------------|
-| 6 | AGENT_CONTRACTS_AND_ASSEMBLY | L3+ | ACP-MAINT-01..03 | ae86fb40 |
-| 7 | LLM_ADAPTERS | L3 | LLM-MAINT-01..04 | 726750cb |
-| 8 | TOOLS | L3 | TOOL-MAINT-01..04 | a5f5fbb7 |
-| 9 | CODE_CRAFT | L3 | ECC-MAINT-01..04 | 0a0c22f1 |
-| 10 | SKILLS | L3 | SK-MAINT-01..04 | a7d20e41 |
-| 11 | INTEGRATIONS | L3 | INT-MAINT-01..04 | e54d9936 |
-| 12 | RAG | L3 | RAG-MAINT-01..04 | c270e7c1 |
-| 13 | MEMORY | L3 | MEM-MAINT-01..04 | 6be6fdac |
-| 14 | CONTEXT_ENGINEERING | L3+ | CE-MAINT-01..04 | d553fbb9 |
-| 15 | MODALITY | L3 | MOD-MAINT-01..04 | 0b4c7543 |
-| 16 | OBSERVABILITY | L3 | OBS-MAINT-01..04 | 370e21d0 |
-| 17 | RELIABILITY_FAILURE_AND_HITL | L3 | REL-MAINT-01..04 | a845011b |
-| 18 | CRITIC_VERIFICATION | L3 | CVL-MAINT-01..04 | 96107ac3 |
-| 19 | ADAPTIVE_HARNESS_INTELLIGENCE | L3+ | AHI-MAINT-01..04 | (this batch) |
-| 20 | ELASTIC_CAPACITY_AND_SCALING | L3 | ECP-MAINT-01..04 | (this batch) |
-| 21 | EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE | L3 | DX-MAINT-01..04 | (this batch) |
-| 22 | TIER3_APPLICATION_ENVIRONMENT | L3 | T3-MAINT-01..04 | (this batch) |
+| Phase | Count | Status |
+|-------|-------|--------|
+| §6.1av MAINT tasks (22 domains × ~4 rows) | **82** | **Done** |
+| AUDIT-IDEAL master register | **82/88 Done** · **6 Planned** | In progress (Band 2az) |
 
-## Known test hygiene (tracked, not blocking L3 verdict)
+## Implementation commits (domains 1–11 depth closeout)
 
-- `MOD-MAINT-01/02` — 2 failing `tests/unit/model_inference/` tests (fix required)
-- `RAG-MAINT-*` — Windows pytest teardown crash on full rag suite (environment)
-- `boundary_demo` — AS-3 violation (ACP-MAINT-01)
+| Domain | Commit | IDs |
+|--------|--------|-----|
+| CODE_CRAFT | f5133588 | ECC-MAINT-02..04 |
+| TOOLS | f95de3fb | TOOL-MAINT-02..03 |
+| INTEGRATIONS | 41056625 | INT-MAINT-02..04 |
+| SKILLS | e3080562 | SK-MAINT-02..03 |
+| REASONING | 2075b0af | COG-MAINT-03 |
+
+Prior batch (domains 1–11 partial + 12–22): see journal `IJ-2026-06-18-020` … `IJ-2026-06-18-031`.
+
+## Gate verification
+
+```bash
+uv run pytest -m "gate and not no_ci" -q
+```
+
+**2026-06-18:** 1494 passed after legal OTEL integration profile fix (`IntegrationProfile.legal_product` + OTEL backend).
 
 ## Policy
 
-No P0/P1 opened. All MAINT rows **Planned** — implementation deferred to gate maintenance PRs. Phase K / §6.3 product work not started.
+Phase K / §6.3 product work not started. Remaining **AUDIT-IDEAL** Planned rows (6.3, 6.4, 6.6, 14.4, 14.5) tracked in `docs/plan/AUDIT_IDEAL_2026.md`.

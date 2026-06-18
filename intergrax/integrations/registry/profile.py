@@ -259,11 +259,14 @@ class IntegrationProfile(BaseModel):
 
     @classmethod
     def legal_product(cls) -> IntegrationProfile:
+        options: dict[str, dict[str, Any]] = {OTEL.slug: {}}
         return cls(
             relational_store=SQLITE,
             vector_store=INMEMORY,
             document_parser=DOCLING,
             rerank_provider=COHERE_RERANK,
+            observability_backend=OTEL,
+            options=options,
         )
 
     @classmethod

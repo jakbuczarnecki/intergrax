@@ -5,7 +5,8 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-18-036 | 2026-06-18 | tier-1 REASONING_AND_COGNITION | COG-MAINT-03 | [COG-MAINT-03 — replan acceptance test](entries/2026-06-18/reasoning-maint-implement.md) | pending |
+| IJ-2026-06-18-037 | 2026-06-18 | tier-0, tier-3 legal | INT-MAINT-03 | [Legal host OTEL assembly fix](entries/2026-06-18/legal-otel-assembly-fix.md) | pending |
+| IJ-2026-06-18-036 | 2026-06-18 | tier-1 REASONING_AND_COGNITION | COG-MAINT-03 | [COG-MAINT-03 — replan acceptance test](entries/2026-06-18/reasoning-maint-implement.md) | 2075b0af |
 | IJ-2026-06-18-035 | 2026-06-18 | tier-0 SKILLS | SK-MAINT-02..03 | [SK-MAINT-02..03 — audit maintenance implementation](entries/2026-06-18/skills-maint-implement.md) | pending |
 | IJ-2026-06-18-034 | 2026-06-18 | tier-0 INTEGRATIONS | INT-MAINT-02..04 | [INT-MAINT-02..04 — audit maintenance implementation](entries/2026-06-18/integrations-maint-implement.md) | pending |
 | IJ-2026-06-18-033 | 2026-06-18 | tier-0 TOOLS | TOOL-MAINT-02..03 | [TOOL-MAINT-02..03 — audit maintenance implementation](entries/2026-06-18/tools-maint-implement.md) | pending |
