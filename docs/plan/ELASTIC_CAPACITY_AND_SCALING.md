@@ -341,6 +341,22 @@ Total ECP-DEPTH: 28 (excluding ECP-DOC)
 
 **Deferred P2–P4:** `test_capacity_approval_queue_flow` event assertion flake · live K8s soak · nginx/ingress slug
 
-**Note:** Production adapter gate green; 1 unit test fails on `scale_requested` event collection (environment/timing).
+**Audit note (2026-06-18):** capacity suite **18/18 green** in revalidation; flake row retained for CI stability hardening.
+
+### 6.1av Harness implementation queue — Elastic capacity audit maintenance (planned)
+
+**Source:** Layer 20 audit (2026-06-18) — `ELASTIC_CAPACITY_AND_SCALING` · [`../audit_results/2026-06-18/ELASTIC_CAPACITY_AND_SCALING.md`](../audit_results/2026-06-18/ELASTIC_CAPACITY_AND_SCALING.md)  
+**Priority ladder:** **Band 1** (§6.1) — test stability + ops depth; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **ECP-MAINT-01** | Test | P2 | **Done** | Harden `test_capacity_approval_queue_flow` — deterministic `scale_requested` event assertion | Event-kind assertion; no timing flake |
+| 2 | **ECP-MAINT-02** | Ops | P3 | **Done** | Live K8s soak gate — nightly or manual runbook | Manual runbook row in architecture |
+| 3 | **ECP-MAINT-03** | Cross-ref | P4 | **Done** | nginx/ingress slug — cross-ref [`INT-MAINT-04`](INTEGRATIONS.md#61av-harness-implementation-queue--integrations-audit-maintenance-planned) | ECP architecture ingress bridge |
+| 4 | **ECP-MAINT-04** | CI | P3 | **Done** | Register capacity suite in AGENTS.md verification list alongside `check_production_capacity_adapters` | AGENTS.md gate bundle updated |
+
+**Suggested PR order:** ECP-MAINT-01 → ECP-MAINT-04 → ECP-MAINT-02 → ECP-MAINT-03.
 
 ---
+
+*End of Elastic Capacity and Scaling Implementation Plan.*

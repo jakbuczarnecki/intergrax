@@ -25,9 +25,24 @@
 | AUDIT-IDEAL-24.1 | §24 Cost | Cost forecasting from historical run patterns | P2 | **Done** |
 | AUDIT-IDEAL-24.2 | §24 Cost | Automated cost optimization recommendations (AHI) | P2 | **Done** |
 | AUDIT-IDEAL-24.3 | §24 Cost | CPU/memory/concurrency quotas with tenant fairness | P2 | **Done** |
-| UAEP-AUDIT-01 | §8 Runtime | Populate `tenant_id` on all `RuntimeEvent` emitters (UAEP + trace middleware) | P2 | **Planned** |
+| UAEP-AUDIT-01 | §8 Runtime | Populate `tenant_id` on all `RuntimeEvent` emitters (UAEP + trace middleware) | P2 | **Done** |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
+
+### 6.1av Harness implementation queue — UAEP audit maintenance (planned)
+
+**Source:** Layer 2 audit (2026-06-18) — `UNIFIED_EXECUTION_RUNTIME` layers 4, 5, 8, 23–24 · [`../audit_results/2026-06-18/UNIFIED_EXECUTION_RUNTIME.md`](../audit_results/2026-06-18/UNIFIED_EXECUTION_RUNTIME.md)  
+**Priority ladder:** **Band 1** (§6.1) — incremental after gate maintenance; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **UAEP-AUDIT-01** | Code | P2 | **Done** | `tenant_id` on `RuntimeEvent` in `UAEPExecutor._emit`, `TraceEmittingMiddleware`, and any orphan emitters | §42.44.2; regression gate on event tenant propagation |
+| 2 | **UAEP-MAINT-02** | Code | P3 | **Done** | Dedup `STEP_COMPLETED` — canonical emitter in `HarnessKernel`; adjust `TraceEmittingMiddleware` to avoid duplicate journal entries | Single `STEP_COMPLETED` per step boundary in unified run journal |
+| 3 | **UAEP-MAINT-03** | Docs | P3 | **Done** | Security middleware layout diagram in `AGENT_CREATION_GUIDE.md` Appendix H (`runtime/architecture/` + Tier-3 `*_wiring.py` map) | No new mechanisms; author onboarding clarity |
+
+**Suggested PR order:** UAEP-AUDIT-01 → UAEP-MAINT-02 → UAEP-MAINT-03.
+
+**Explicitly excluded:** `EscalationRouter` SUPERVISOR_AGENT target (§42.38 lab-minimal — deferred); FLOW-8 product host; GOV-PROD.1 — [§6.3](../plan/PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only).
 
 ---
 

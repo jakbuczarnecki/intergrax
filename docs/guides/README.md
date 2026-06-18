@@ -12,5 +12,5 @@ Authoring guides, strategic context, and audit methodology.
 | [EXTENSION_AUTHOR_GUIDE.md](EXTENSION_AUTHOR_GUIDE.md) | Tier-0 plugin catalogs |
 | [HARNESS_ENVIRONMENT.md](HARNESS_ENVIRONMENT.md) | Lab stack, OTLP, presets |
 | [HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md](HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) | Multi-layer / full-platform audit prompt |
-| [audit/](audit/) | **Architecture audit orchestration** — 22 per-domain prompts + bootstrap paste (Modes A/B/C) |
-| [implementation-journal/README.md](implementation-journal/README.md) | **Implementation journal** — chronological episode log (Tier-0–3) |
+| [audit/](../audit/) | **Architecture audit orchestration** — 22 per-domain prompts + bootstrap paste (Modes A/B/C) |
+| [implementation-journal/README.md](../implementation-journal/README.md) | **Implementation journal** — chronological episode log (Tier-0–3) |

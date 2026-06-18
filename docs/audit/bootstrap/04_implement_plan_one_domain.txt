@@ -1,0 +1,11 @@
+Harness Architecture Audit — Mode B1 (implement open plan items, one domain).
+DOMAIN=PLATFORM_FOUNDATION
+Canonical orchestrator: docs/audit/IMPLEMENT_ORCHESTRATOR.md
+Skim: docs/guides/SYSTEM_INVARIANTS.md
+Progress: docs/audit_results/YYYY-MM-DD/progress.json (init: uv run python scripts/init_architecture_audit_run.py --date YYYY-MM-DD --mode implement_plan --domain <DOMAIN>).
+Journal: docs/implementation-journal/ when behavior changes.
+Edit DOMAIN= line above (e.g. TOOLS, MEMORY).
+Open item rule: Status ≠ Done AND Priority column = P0 or P1 in docs/plan/<DOMAIN>.md. Wave headers "(P1)" do not qualify child rows — use the row Priority column only.
+Per domain: read plan + architecture for DOMAIN only; if no open P0/P1 → mark progress.json skipped (verdict no_open_p0_p1), checkpoint, stop; else implement one coherent open P0/P1 item; verify; update plan; journal if needed; update progress.json; checkpoint.
+Rules: no Phase K / §6.3; tier boundaries AGENTS.md; safety fuse → STOP and report; commits only on request.
+Operator language: Polish. Repo artifacts: English.

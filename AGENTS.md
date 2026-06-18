@@ -69,7 +69,7 @@ applications/    MAY import from agents/ and intergrax/
 - Agent workflow → `docs/guides/AGENT_CREATION_GUIDE.md`
 - Harness AI terms → `docs/architecture/PLATFORM_FOUNDATION.md` §5.3 only
 - Nexus execution flow → `docs/architecture/NEXUS_EXECUTION_FLOW.md` + `docs/plan/NEXUS_EXECUTION_FLOW.md` · ADR → `docs/adr/entries/2026-06-07/ADR-FLOW-001.md`
-- Completed implementation episodes → `docs/guides/implementation-journal/` (English; required on DoD unless operator skips)
+- Completed implementation episodes → `docs/implementation-journal/` (English; required on DoD unless operator skips)
 
 ### Harness platform
 
@@ -83,6 +83,7 @@ applications/    MAY import from agents/ and intergrax/
 
 | Task | Read first (architecture + plan pair) |
 |------|---------------------------------------|
+| Audit a new idea before build | [docs/audit/bootstrap/07_idea_audit.txt](docs/audit/bootstrap/07_idea_audit.txt) · [IDEA_AUDIT_ORCHESTRATOR.md](docs/audit/IDEA_AUDIT_ORCHESTRATOR.md) (live chat; on approval update architecture + plan) |
 | Create a new agent | [docs/guides/AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md) |
 | Wire integrations | [INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) · [plan/INTEGRATIONS.md](docs/plan/INTEGRATIONS.md) |
 | RAG / retrieval engine | [RAG.md](docs/architecture/RAG.md) · [plan/RAG.md](docs/plan/RAG.md) |
@@ -109,10 +110,10 @@ applications/    MAY import from agents/ and intergrax/
 | Available agents (roster) | [agents/README.md](agents/README.md) |
 | Available application environments | [applications/README.md](applications/README.md) |
 | Harness audit (32 layers) | [docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md](docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
-| Architecture audit orchestration (22 pairs) | [docs/guides/audit/README.md](docs/guides/audit/README.md) · `scripts/init_architecture_audit_run.py` |
+| Architecture audit orchestration (22 pairs) | [docs/audit/README.md](docs/audit/README.md) · `scripts/init_architecture_audit_run.py` |
 | System invariants (never violate) | [docs/guides/SYSTEM_INVARIANTS.md](docs/guides/SYSTEM_INVARIANTS.md) |
 | Layer completion (full domain closeout) | [docs/guides/LAYER_COMPLETION_MODE.md](docs/guides/LAYER_COMPLETION_MODE.md) |
-| Implementation journal | [docs/guides/implementation-journal/README.md](docs/guides/implementation-journal/README.md) |
+| Implementation journal | [docs/implementation-journal/README.md](docs/implementation-journal/README.md) |
 
 ---
 
@@ -138,6 +139,8 @@ python scripts/check_reasoning_gates.py
 python scripts/check_implementation_journal.py
 python scripts/check_harness_adr.py
 uv run python scripts/check_agent_acp_close_ci.py
+python scripts/check_production_capacity_adapters.py
+python scripts/check_harness_resilience_policy.py
 ```
 
 For agent-only work:

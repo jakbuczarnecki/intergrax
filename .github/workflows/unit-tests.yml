@@ -230,6 +230,9 @@ jobs:
       - name: Phase W-OPS operational evidence (nightly / full dispatch)
         run: uv run python scripts/phase_w_ops_evidence.py
 
+      - name: RAG load/soak nightly report (RAG-MAINT-02)
+        run: uv run python scripts/rag_load_soak_report.py
+
       - name: Export harness spec schemas
         run: uv run python scripts/export_harness_spec_schemas.py
 

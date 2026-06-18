@@ -5,7 +5,7 @@
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 **Invariants:** [`guides/SYSTEM_INVARIANTS.md`](guides/SYSTEM_INVARIANTS.md) — cross-domain “never violate” index (P2-ARCH-01)
 **Layer completion:** [`guides/LAYER_COMPLETION_MODE.md`](guides/LAYER_COMPLETION_MODE.md) — deep domain layer closeout workflow
-**Audit:** [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) · **Domain audit prompts:** [`guides/audit/`](guides/audit/) · **Implementation journal:** [`guides/implementation-journal/`](guides/implementation-journal/README.md)
+**Audit:** [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) · **Domain audit prompts:** [`audit/`](audit/) · **Architecture audit results:** [`audit_results/`](audit_results/README.md) · **Implementation journal:** [`implementation-journal/`](implementation-journal/README.md)
 **Authoring:** [`guides/`](guides/)
 
 ---
@@ -21,6 +21,22 @@ Tier-3  applications/       deployable hosts
 
 Stack: Integration → Tool → Skill → Agent
 Execution: [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md)
+
+---
+
+## Implementer quick start
+
+**Default queue:** [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) **§4.0** priority ladder — Band 1 gate maintenance on every PR; Band 3 product work is **frozen** unless leadership reprioritizes (§6.3).
+
+| Goal | Read first | Command |
+|------|------------|---------|
+| New agent | [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) | `python -m intergrax.scaffold new-agent <name> --capability <cap>.<action>` |
+| New application host | [`guides/APPLICATION_CREATION_GUIDE.md`](guides/APPLICATION_CREATION_GUIDE.md) | `python -m intergrax.scaffold new-application <name>_application` |
+| Agent + app bundle | [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](plan/TIER3_APPLICATION_ENVIRONMENT.md) | `python -m intergrax.scaffold new-stack <name>` |
+| Extension / plugin | [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md) | `bootstrap_catalogs()` + entry points `intergrax.tools` / `intergrax.skills` / `intergrax.integrations` |
+| Harness health | [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) §6.1 | `uv run intergrax doctor --ci` · `uv run pytest -m gate -q` |
+
+**Work cycle:** strategy → architecture pair for your domain → smallest plan item → implement → gate green → update paired docs + journal if significant.
 
 ---
 
@@ -115,7 +131,7 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 
 **Author entry points:** [`applications/USAGE.md`](../applications/USAGE.md) · `HarnessApplication` (`intergrax/harness/app.py`) · scaffold `new-application` · [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md) §0.
 
-**Implementation:** H-APP profile/wiring **Done**; APP-CON-1 host pipeline mount **Done**; budget reactions **Done** (ACP-TOK-1..3 · ACP-TOK-CI) + APP-PROD-1..9 gates; APP-EVOL-1..7 evolution **Done**; **APP-EVOL-8** hierarchical bundles **M1 Done** · M3 planned ([ADR-APP-003](adr/entries/2026-06-17/ADR-APP-003.md)); APP-OPS-1..4 platform ops **Done** — [TIER3 plan](plan/TIER3_APPLICATION_ENVIRONMENT.md#master-implementation-backlog-app-unified). **Maturity:** Architecturally Mature for reference hosts.
+**Implementation:** H-APP profile/wiring **Done**; APP-CON-1 host pipeline mount **Done**; budget reactions **Done** (ACP-TOK-1..3 · ACP-TOK-CI) + APP-PROD-1..9 gates; APP-EVOL-1..7 evolution **Done**; **APP-EVOL-8** hierarchical bundles **M1–M3 Done** ([ADR-APP-003](adr/entries/2026-06-17/ADR-APP-003.md)); APP-OPS-1..4 platform ops **Done** — [TIER3 plan](plan/TIER3_APPLICATION_ENVIRONMENT.md#master-implementation-backlog-app-unified). **Maturity:** Architecturally Mature for reference hosts; enterprise marketplace/distribution **P4**.
 
 **Observability spine evolution:** **OBS-EVOL-9** layered `event_kind` catalog **Done** (2026-06-17; OBS-EVOL-9.9 deferred post-publication) — [ADR-OBS-003](adr/entries/2026-06-17/ADR-OBS-003.md) · [OBS plan](plan/OBSERVABILITY.md#phase-obs-evol-9--layered-event-catalog-p1-arch-02).
 
@@ -192,7 +208,7 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 | 31 Agent lifecycle | `AGENT_CONTRACTS_AND_ASSEMBLY` §20 |
 | 32 Doc governance loop | `PLATFORM_FOUNDATION` + `guides/` |
 
-Full audit procedure: [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md). **Domain audit prompts:** [`guides/audit/`](guides/audit/). **Completed implementation episodes:** [`guides/implementation-journal/INDEX.md`](guides/implementation-journal/INDEX.md).
+Full audit procedure: [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md). **Domain audit prompts:** [`audit/`](audit/). **Completed implementation episodes:** [`implementation-journal/INDEX.md`](implementation-journal/INDEX.md).
 
 ---
 

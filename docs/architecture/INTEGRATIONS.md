@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 13–14  
-**Audit instruction:** [`guides/audit/INTEGRATIONS.md`](../guides/audit/INTEGRATIONS.md)  
+**Audit instruction:** [`audit/INTEGRATIONS.md`](../audit/INTEGRATIONS.md)  
 ---
 
 # 18. Slack / Teams / Communication Integration Philosophy
@@ -257,7 +257,7 @@ Typed factories in `intergrax.integrations.registry.presets` — use in `Applica
 | Preset function | Returns | Typical use |
 |-----------------|---------|-------------|
 | `lab_stack(enable_otel=True)` | `IntegrationProfile.lab_harness_preset` | Default lab / scaffold hosts |
-| `legal_stack()` | `IntegrationProfile.legal_product()` | Legal product relational + vector |
+| `legal_stack()` | `IntegrationProfile.legal_product()` | Legal product relational + vector + OTEL observability backend |
 | `research_stack()` | `IntegrationProfile.research_product()` | Research product search + vector |
 | `data_stack(enable_redis=True, enable_qdrant=False)` | Lab harness + optional redis/qdrant | Data-heavy experiments |
 | `observability_stack(enable_otel=True, enable_grafana_stack=False)` | Lab harness OTEL-first; optional Grafana/Loki/Tempo triad | Trace/metrics focus |
@@ -1012,6 +1012,19 @@ python scripts/check_harness_guardrail_wiring.py
 ```
 
 **Implementation tracker:** [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) Phase **M.12** · UAEP doc Phase **GR-DOC**.
+
+---
+
+## Ingress / nginx bridge (INT-MAINT-04)
+
+The **nginx / ingress controller** catalog slug is **not** owned by Integrations.
+Capacity ingress is documented and implemented under
+[`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) (ECP-6.*).
+Decision: [ADR-SCALE-002](../adr/entries/2026-06-09/ADR-SCALE-002.md) — defer
+standalone nginx slug; Kubernetes deployment path remains canonical.
+
+Integrations cross-ref only. Host authors enable ingress via ECP profiles and
+`kubernetes` integration — see [`intergrax/integrations/USAGE.md`](../../intergrax/integrations/USAGE.md).
 
 ---
 

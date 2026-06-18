@@ -67,7 +67,7 @@ This document solves that problem by dividing the platform into auditable Harnes
 
 # 3. Audit Philosophy
 
-**Per-domain copy-paste prompts:** For deep single-domain audits (RAG, Tools, Memory, UAEP, …), use [`audit/README.md`](audit/README.md) — 22 prompts aligned 1:1 with `architecture/<DOMAIN>.md` ↔ `plan/<DOMAIN>.md`. **Multi-domain orchestration** (all 22 pairs in one Cursor session): [`audit/bootstrap/`](audit/bootstrap/README.md). Use this document for layer map, scoring, and output format; use `audit/<DOMAIN>.md` for the runnable agent instruction.
+**Per-domain copy-paste prompts:** For deep single-domain audits (RAG, Tools, Memory, UAEP, …), use [`../audit/README.md`](../audit/README.md) — 22 prompts aligned 1:1 with `architecture/<DOMAIN>.md` ↔ `plan/<DOMAIN>.md`. **Multi-domain orchestration** (all 22 pairs in one Cursor session): [`../audit/bootstrap/`](../audit/bootstrap/README.md). Use this document for layer map, scoring, and output format; use `../audit/<DOMAIN>.md` for the runnable agent instruction.
 
 Do not audit the entire system at once.
 
@@ -741,7 +741,7 @@ Tool Layer Score: L0-L4
 
 ## 11b. Ephemeral Code Craft Layer
 
-**Authoring map:** [`architecture/CODE_CRAFT.md`](architecture/CODE_CRAFT.md) · [`plan/CODE_CRAFT.md`](plan/CODE_CRAFT.md) · audit prompt [`guides/audit/CODE_CRAFT.md`](guides/audit/CODE_CRAFT.md)
+**Authoring map:** [`architecture/CODE_CRAFT.md`](architecture/CODE_CRAFT.md) · [`plan/CODE_CRAFT.md`](plan/CODE_CRAFT.md) · audit prompt [`../audit/CODE_CRAFT.md`](../audit/CODE_CRAFT.md)
 
 ### Purpose
 

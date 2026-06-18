@@ -33,7 +33,7 @@ docs/adr/
       ADR-{AREA}-{NNN}.md
 ```
 
-Day folders group ADRs by **creation date** (same convention as the [implementation journal](../guides/implementation-journal/README.md)).
+Day folders group ADRs by **creation date** (same convention as the [implementation journal](../implementation-journal/README.md)).
 
 ## Naming
 

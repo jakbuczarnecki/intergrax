@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/RAG.md`](../plan/RAG.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layer:** 14 (RAG and Retrieval)  
-**Audit instruction:** [`guides/audit/RAG.md`](../guides/audit/RAG.md)  
+**Audit instruction:** [`audit/RAG.md`](../audit/RAG.md)  
 **Related:** [`architecture/INTEGRATIONS.md`](INTEGRATIONS.md) (vector_store, document_parser, rerank_provider slugs) · [`architecture/MEMORY.md`](MEMORY.md) (Knowledge store vs LTM) · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix K §K.5  
 **Implementation:** `intergrax/rag/`  
 **Last architecture audit:** 2026-06-17 — **Full Harness LC** (re-validates M-RAG-ITERATION-III); **Architecturally Mature** · 2026-06-13 (iteration II Frozen) · 2026-06-12 (GraphRAG G1–G5)
@@ -88,7 +88,7 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-12 | niska jakość | ~~Asymmetric retry~~ — **closed M-RAG.28**: `RetrieverEngine.DEFAULT_MAX_RETRIES=2` | **P2** | M-RAG.28 **Done** | — |
 | GAP-RAG-13 | niedoróbka | ~~No formal `Citation` on engine output~~ — **closed M-RAG.29**: `retrieval/citation.py` + `RagCitationResult` | **P2** | M-RAG.29 **Done** | — |
 | GAP-RAG-14 | niedoróbka | ~~No embedding version policy~~ — **closed M-RAG.31**: warn on ingest, optional retrieve filter, reindex queue hook | **P2** | M-RAG.31 **Done** | — |
-| GAP-RAG-15 | ograniczenie | No autonomous MIME/size-based chunking or retriever selection — **Frozen** (M-RAG.58); owned by Tier-3 + [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md) | **P4** | M-RAG.58 **Frozen** | — |
+| GAP-RAG-15 | ograniczenie | No autonomous MIME/size-based chunking or retriever selection — **Frozen** (M-RAG.58); owner: [`AHI-MAINT-04`](../plan/ADAPTIVE_HARNESS_INTELLIGENCE.md#61av-harness-implementation-queue--adaptive-harness-intelligence-audit-maintenance-planned) | **P4** | M-RAG.58 **Frozen** | — |
 | GAP-RAG-16 | niska jakość | ~~Heuristic-only tier routing~~ — **closed M-RAG.32**: optional `llm_route_enabled` + `llm_tier_classifier.py` with heuristic fallback | **P2** | M-RAG.32 **Done** | — |
 | GAP-RAG-17 | niedoróbka | ~~`multiquery` not activated by `query_expansion`~~ — **closed M-RAG.23**: `effective_retriever(deep)` returns `multiquery` when expansion enabled | **P0** | M-RAG.23 **Done** | 14.3 |
 | GAP-RAG-18 | niegotowość | ~~No Tier-3 GraphRAG prod preset~~ — **closed M-RAG.33**: `production_graph_rag_profile()` requires `neo4j`; `production_rag_profile()` documented harness-only (in-memory graph) | **P1** | M-RAG.33 **Done** | — |

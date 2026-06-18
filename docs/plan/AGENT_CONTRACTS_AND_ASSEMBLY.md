@@ -55,7 +55,7 @@
 **Architecture:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 (incl. **§32.0** readability & typed-only contracts)  
 **ADR:** [ADR-AGENT-001](../adr/entries/2026-06-11/ADR-AGENT-001.md) · [ADR-AGENT-002](../adr/entries/2026-06-11/ADR-AGENT-002.md) · [ADR-AGENT-003](../adr/entries/2026-06-11/ADR-AGENT-003.md)  
 **Author guide:** [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix AC (sync with §32.0)  
-**Audit:** [`guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md) · domain audit **2026-06-11**  
+**Audit:** [`audit/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../audit/AGENT_CONTRACTS_AND_ASSEMBLY.md) · domain audit **2026-06-11**  
 **Priority ladder:** **Band 2aw** — **closed** · **Band 2bb (ACP-CLOSE)** — **closed** · **Band 2bc (ACP-FINISH)** — **closed** (2026-06-13)
 
 **Strategic outcome (delivered):** Tier-2 authors use **`agent.run(AgentRunRequest)`** + typed **`on_next_step` → `StepOutcome`**; environment merges per-agent memory/tools/RAG/LLM from Tier-3 profile; Nexus remains `Task` entry for multi-agent prod.
@@ -198,7 +198,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 |----|------|-------------|--------|---------|------------|
 | ACP-DOC.1 | ACP0 | **Architecture canon §21–§28** — ACP spec, flows, patterns, gaps | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | This document + ADR-AGENT-001 |
 | ACP-DOC.2 | ACP0 | **Appendix AC** — cognitive patterns author guide in `AGENT_CREATION_GUIDE.md` | **Done** | `guides/AGENT_CREATION_GUIDE.md` | TOC + pattern selection table + skeleton |
-| ACP-DOC.3 | ACP0 | **Audit prompt** — ACP dimensions in domain audit | **Done** | `guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` | Regenerated via `generate_domain_audit_prompts.py` |
+| ACP-DOC.3 | ACP0 | **Audit prompt** — ACP dimensions in domain audit | **Done** | `audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` | Regenerated via `generate_domain_audit_prompts.py` |
 | ACP-ADR.1 | ACP0 | **ADR-AGENT-001** accepted | **Done** | `docs/adr/entries/2026-06-11/ADR-AGENT-001.md` | Linked from architecture §21 |
 | ACP-ADR.2 | ACP0 | **ADR-AGENT-002** accepted — `run()` facade | **Done** | `docs/adr/entries/2026-06-11/ADR-AGENT-002.md` | Linked from architecture §29 |
 | ACP-DOC.4 | ACP0 | **Architecture §29–§30** — run facade + per-agent environment binding | **Done** | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §29–§30 + ADR-AGENT-002 |
@@ -294,7 +294,7 @@ Agent layer is **not isolated**. Each ACP wave may require coordinated delivery 
 | ACP-CLOSE-DOC-1 | DOC | Plan Phase ACP header + scope map sync | **Done** | plan | `plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` | This update |
 | ACP-CLOSE-DOC-2 | DOC | Architecture §28.3 GAP register — Closed/Open truth table | **Done** | §28.3 | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | 32 Closed · 3 Open (03/04/07) |
 | ACP-CLOSE-DOC-3 | DOC | Architecture §36.4 · §40.13 · implementation status tables | **Done** | §36.4 · §40.13 | `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | Code maps Done; §40 platform implemented |
-| ACP-CLOSE-DOC-4 | DOC | Regenerate domain audit prompt | **Done** | audit | `guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` | `generate_domain_audit_prompts.py` |
+| ACP-CLOSE-DOC-4 | DOC | Regenerate domain audit prompt | **Done** | audit | `audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` | `generate_domain_audit_prompts.py` |
 | ACP-CLOSE-LEG-1 | LEG | **Remove** `AgentEngine` fallback from `AgentEngine` | **Done** | §13.5 · §38 | `agent_engine.py` | `ValueError` on non-UAEP/non-ACP agents; DEBT-ACP-06 **Closed** |
 | ACP-CLOSE-LEG-2 | LEG | **Remove** author-visible UAEP (`decide_after_step` on `IntergraxAgent`) | **Done** | §13.3–13.4 | `uaep_linear_bridge.py`, `uaep.py` | `linear_agent_decide_after_step`; DEBT-ACP-04 **Closed** for linear agents |
 | ACP-CLOSE-LEG-3 | LEG | Retire public `uaep_pipeline.py` bridge | **Done** | §13.5 | ADR-FLOW-005 | Public module removed; superseded by ACP-only `AgentEngine` |
@@ -704,7 +704,7 @@ ACP-FINISH:  TOK-1 → TOK-2 → TOK-3 → TOK-CI → FINISH-DOC-1
 
 **Note:** ACP + ACP-CLOSE + **ACP-FINISH complete** (2026-06-13) — §25.4–§25.5 token depth closed.
 
-**Journal:** ACP waves journaled; one entry on **ACP-CLOSE** phase completion, per [`implementation-journal/README.md`](../guides/implementation-journal/README.md).
+**Journal:** ACP waves journaled; one entry on **ACP-CLOSE** phase completion, per [`implementation-journal/README.md`](../implementation-journal/README.md).
 
 ---
 
@@ -772,7 +772,7 @@ ACP-TOK-1 (metering) → ACP-TOK-2 (limits) → ACP-TOK-3 (reactions + reference
   → ACP-TOK-CI → ACP-FINISH-DOC-1
 ```
 
-**Journal:** [`entries/2026-06-13/acp-finish-doc-1-gap-register-closeout.md`](../guides/implementation-journal/entries/2026-06-13/acp-finish-doc-1-gap-register-closeout.md) (ACP-FINISH phase completion).
+**Journal:** [`entries/2026-06-13/acp-finish-doc-1-gap-register-closeout.md`](../implementation-journal/entries/2026-06-13/acp-finish-doc-1-gap-register-closeout.md) (ACP-FINISH phase completion).
 
 ---
 
@@ -1038,9 +1038,28 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| ACP-LC-S1 | **Audit prompt sync** — AUDIT-IDEAL rows Done in known gaps | **Done** | High | `docs/guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` | No Planned drift |
+| ACP-LC-S1 | **Audit prompt sync** — AUDIT-IDEAL rows Done in known gaps | **Done** | High | `docs/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` | No Planned drift |
 | ACP-LC-S2 | **ACP-INV-02 canon** — remove stale „until ACP-LEG” wording | **Done** | High | `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §21 | Matches ACP-CLOSE-LEG-5 |
 | ACP-LC-S3 | **Gate verification** — `check_agent_acp_close_ci.py` green | **Done** | High | `scripts/check_agent_acp_close_ci.py` | Fleet 17/17 · migration complete |
 | ACP-LC-S4 | **Full Harness LC journal** + `layer_completion_progress.json` | **Done** | High | implementation-journal | mature status |
 
 **Deferred P2 (not blocking LC):** `boundary_demo` ReflexAgent migration · COST-1 graph RunBudget cap · FAUDIT-REG.1
+
+### 6.1av Harness implementation queue — Agent contracts audit maintenance (planned)
+
+**Source:** Layer 6 audit (2026-06-18) — `AGENT_CONTRACTS_AND_ASSEMBLY` layers 17–20, 31 · E [`../audit_results/2026-06-18/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../audit_results/2026-06-18/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
+**Priority ladder:** **Band 1** (§6.1) — fleet hygiene + CI bundle alignment; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **ACP-MAINT-01** | Code | P2 | **Done** | Migrate `boundary_demo` off author-time `allowed_tools` — `skill_ids`/`extra_tools` + ReflexAgent path per AS-3 | `check_agent_skill_resolution.py` green; partner PoC behavior preserved |
+| 2 | **ACP-MAINT-02** | CI | P2 | **Done** | Include `check_agent_skill_resolution.py` in `check_agent_acp_close_ci.py` umbrella | ACP close CI fails on AS-3 violations fleet-wide |
+| 3 | **ACP-MAINT-03** | Docs | P3 | **Done** | Sync audit prompt known gaps — AUDIT-IDEAL-19.1/20.1/31.1 **Done** vs stale Planned wording | `docs/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` matches plan LC closeout |
+
+**Suggested PR order:** ACP-MAINT-01 → ACP-MAINT-02 → ACP-MAINT-03.
+
+**Cross-domain (not ACP-owned):** COST-1 graph `RunBudget` cap — [`plan/UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · FAUDIT-REG.1 — [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md).
+
+---
+
+*End of Agent Contracts and Assembly Implementation Plan.*

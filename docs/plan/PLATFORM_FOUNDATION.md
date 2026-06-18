@@ -436,7 +436,7 @@ Appendices: [`plan/`](plan/)
 | **2aw — Tier-3 execution surface parity (H-APP-WIRING)** | Close FLOW-GAP-17–20 / ORCH §59 Tier-3 wiring debt — task control API, async exposure, reference host adoption — **no** Nexus fork | **Done** (2026-06-09) — **6/6** | [Phase H-APP-WIRING](plan/TIER3_APPLICATION_ENVIRONMENT.md) · [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §59 |
 | **2ay — LLM guardrail integrations (M.12 / GR-INT)** | `llm_guardrail` catalog + `LlmGuardrailMiddleware` + assembly/CI + E2E gate + `GUARDRAIL_BLOCKED` observability — **no** business agents | **Done** (2026-06-09) — **14/14 + M-P12.HARD** | [Phase M.12](plan/INTEGRATIONS.md) · [GR-DOC](plan/UNIFIED_EXECUTION_RUNTIME.md) · **§6.1an** · [ADR-GR-001](adr/entries/2026-06-09/ADR-GR-001.md) |
 | **2ax — Ideal Harness L3 depth (IDEAL-L3)** | L2→L3 uplift per 32-layer audit — identity, reliability, security, cost, prompts, gates — **no** business agents | **W2 Done** (2026-06-09) — **32/32 L3** | [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md) · **§6.1at** · Band **2ax** |
-| **2az — Ideal architecture gap (AUDIT-IDEAL)** | Post-L3 audit → full IDEAL architecture — memory org, ECP sync, registry durable, L4 evidence, DX HTTP — **no** business agents unless §6.3 | **Planned** (2026-06-09) — **1/78** (AUDIT-IDEAL-2.1 Done) | [Phase AUDIT-IDEAL](plan/AUDIT_IDEAL_2026.md) · **§6.1au** · Band **2az** |
+| **2az — Ideal architecture gap (AUDIT-IDEAL)** | Post-L3 audit → full IDEAL architecture — memory org, ECP sync, registry durable, L4 evidence, DX HTTP — **no** business agents unless §6.3 | **Done** (2026-06-18) — **90/90 Done** · **0 Planned** | [Phase AUDIT-IDEAL](plan/AUDIT_IDEAL_2026.md) · **§6.1au** · Band **2az** |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 · FLOW-8 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
@@ -1813,20 +1813,37 @@ Verify (every harness PR):
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
 
+### 6.1av Harness implementation queue — Platform Foundation audit maintenance (planned)
+
+**Source:** Layer 1 audit (2026-06-18) — `PLATFORM_FOUNDATION` layers 1, 2, 32 · [`../audit_results/2026-06-18/PLATFORM_FOUNDATION.md`](../audit_results/2026-06-18/PLATFORM_FOUNDATION.md)  
+**Priority ladder:** **Band 1** (§6.1) — doc hygiene + optional legacy cleanup; runs **in parallel** with gate maintenance
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **PF-MAINT-DOC-01** | Docs | P2 | **Done** | Remove stale M.6 P6 from audit prompt known-gaps; sync audit result file | Audit prompt + result match plan §6.1y (**Done** 32/32) |
+| 2 | **PF-MAINT-DOC-02** | Docs | P2 | **Done** | Sync §6.1au + §4.0 Band 2az counter with `AUDIT_IDEAL_2026.md` | Plan shows **90/90 Done** · **0 Planned** |
+| 3 | **PF-MAINT-DX-01** | Docs | P3 | **Done** | Implementer quick-start in `intergrax_runtime_architecture.md` hub | §4.0 ladder + scaffold flow linked |
+| 4 | **PF-MAINT-LEG-01** | Code | P3 | **Done** | Remove `use_rag`/`use_websearch` from LLM planner schema (`EnginePlan`) | `check_legacy_tool_plan_booleans.py` green; `tool_ids` only |
+
+**Suggested PR order:** PF-MAINT-DOC-01 → PF-MAINT-DOC-02 → PF-MAINT-DX-01 (single doc PR) → PF-MAINT-LEG-01 (separate breaking PR).
+
+**Explicitly excluded:** Phase K, §50 marketplace, new Tier-0 mechanisms — [§6.3](#63-end-of-plan--deferred-product-work-only).
+
 ### 6.1at Harness implementation queue — Ideal Harness L3 depth (closed)
 
 **Status:** **Done** (W2 2026-06-09) — **32/32 L3** — master register: [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md)  
 **Priority ladder:** **Band 2ax** (§4.0) — **closed**  
 **Gate evidence:** `test_ideal_harness_l3_depth_gate.py` · `check_ideal_harness_l3_gates.py` · `harness_maturity_report.py`
 
-**Successor:** [§6.1au](#61au-harness-implementation-queue--audit-ideal-planned) (post-L3 ideal architecture gaps).
+**Successor:** [§6.1au](#61au-harness-implementation-queue--audit-ideal-complete) (post-L3 ideal architecture gaps — **Done**).
 
-### 6.1au Harness implementation queue — AUDIT-IDEAL (planned)
+### 6.1au Harness implementation queue — AUDIT-IDEAL (complete)
 
-**Status:** **Planned** (2026-06-09) — **1/78** rows — master register: [Phase AUDIT-IDEAL](plan/AUDIT_IDEAL_2026.md)  
+**Status:** **Done** (2026-06-18) — **90/90 Done** · **0 Planned** — master register: [Phase AUDIT-IDEAL](plan/AUDIT_IDEAL_2026.md)  
 **Source:** Architecture audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) · baseline **32/32 L3**  
 **Priority ladder:** **Band 2az** (§4.0) — incremental after §6.1 gate maintenance  
-**Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](guides/ARCHITECTURE_DEBT_REGISTER.md)
+**Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](guides/ARCHITECTURE_DEBT_REGISTER.md)  
+**Platform audit hygiene:** [§6.1av](#61av-harness-implementation-queue--platform-foundation-audit-maintenance-planned) (**Done** — PF rows closed). Cross-domain §6.1av MAINT: **82/82 Done** (2026-06-18) — see [`../audit_results/2026-06-18/RUN_SUMMARY.md`](../audit_results/2026-06-18/RUN_SUMMARY.md).
 
 **Execution order (recommended):**
 
@@ -3913,17 +3930,33 @@ Verify (every harness PR):
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
 
+### 6.1av Harness implementation queue — Platform Foundation audit maintenance (planned)
+
+**Source:** Layer 1 audit (2026-06-18) — `PLATFORM_FOUNDATION` layers 1, 2, 32 · [`../audit_results/2026-06-18/PLATFORM_FOUNDATION.md`](../audit_results/2026-06-18/PLATFORM_FOUNDATION.md)  
+**Priority ladder:** **Band 1** (§6.1) — doc hygiene + optional legacy cleanup; runs **in parallel** with gate maintenance
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **PF-MAINT-DOC-01** | Docs | P2 | **Done** | Remove stale M.6 P6 from audit prompt known-gaps; sync audit result file | Audit prompt + result match plan §6.1y (**Done** 32/32) |
+| 2 | **PF-MAINT-DOC-02** | Docs | P2 | **Done** | Sync §6.1au + §4.0 Band 2az counter with `AUDIT_IDEAL_2026.md` | Plan shows **90/90 Done** · **0 Planned** |
+| 3 | **PF-MAINT-DX-01** | Docs | P3 | **Done** | Implementer quick-start in `intergrax_runtime_architecture.md` hub | §4.0 ladder + scaffold flow linked |
+| 4 | **PF-MAINT-LEG-01** | Code | P3 | **Done** | Remove `use_rag`/`use_websearch` from LLM planner schema (`EnginePlan`) | `check_legacy_tool_plan_booleans.py` green; `tool_ids` only |
+
+**Suggested PR order:** PF-MAINT-DOC-01 → PF-MAINT-DOC-02 → PF-MAINT-DX-01 (single doc PR) → PF-MAINT-LEG-01 (separate breaking PR).
+
+**Explicitly excluded:** Phase K, §50 marketplace, new Tier-0 mechanisms — [§6.3](#63-end-of-plan--deferred-product-work-only).
+
 ### 6.1at Harness implementation queue — Ideal Harness L3 depth (closed)
 
 **Status:** **Done** (W2 2026-06-09) — **32/32 L3** — master register: [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md)  
 **Priority ladder:** **Band 2ax** (§4.0) — **closed**  
 **Gate evidence:** `test_ideal_harness_l3_depth_gate.py` · `check_ideal_harness_l3_gates.py` · `harness_maturity_report.py`
 
-**Successor:** [§6.1au](#61au-harness-implementation-queue--audit-ideal-planned) (post-L3 ideal architecture gaps).
+**Successor:** [§6.1au](#61au-harness-implementation-queue--audit-ideal-complete) (post-L3 ideal architecture gaps — **Done**).
 
-### 6.1au Harness implementation queue — AUDIT-IDEAL (planned)
+### 6.1au Harness implementation queue — AUDIT-IDEAL (complete)
 
-**Status:** **Planned** (2026-06-09) — **1/78** rows — master register: [Phase AUDIT-IDEAL](plan/AUDIT_IDEAL_2026.md)  
+**Status:** **Done** (2026-06-18) — **90/90 Done** · **0 Planned** — master register: [Phase AUDIT-IDEAL](plan/AUDIT_IDEAL_2026.md)  
 **Source:** Architecture audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) · baseline **32/32 L3**  
 **Priority ladder:** **Band 2az** (§4.0) — incremental after §6.1 gate maintenance  
 **Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](guides/ARCHITECTURE_DEBT_REGISTER.md)

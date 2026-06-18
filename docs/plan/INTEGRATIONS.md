@@ -1285,4 +1285,22 @@ L4 readiness requires:
 
 **Deferred P2–P4:** beta→stable slug promotion honesty · thin P4 provider shells · SaaS-only slugs without local container · nginx/ingress slug (ECP cross-ref)
 
+### 6.1av Harness implementation queue — Integrations audit maintenance (planned)
+
+**Source:** Layer 11 audit (2026-06-18) — `INTEGRATIONS` layer 13 · [`../audit_results/2026-06-18/INTEGRATIONS.md`](../audit_results/2026-06-18/INTEGRATIONS.md)  
+**Priority ladder:** **Band 1** (§6.1) — catalog honesty + provider depth; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **INT-MAINT-01** | CI | P2 | **Done** | Beta→stable promotion gate — `check_integration_maturity_labels.py` or conformance extension | STABLE slugs have health probe + test evidence |
+| 2 | **INT-MAINT-02** | Code | P3 | **Done** | Thin P4 provider shells — hardening checklist + minimal health probe per shell | Each P4 shell passes probe unit test |
+| 3 | **INT-MAINT-03** | Docs/Metadata | P3 | **Done** | SaaS-only slugs — honest lab-stack docs + `requires_local_container` metadata | Manifest field + USAGE honesty |
+| 4 | **INT-MAINT-04** | Cross-ref | P4 | **Done** | nginx/ingress slug — cross-ref [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) | ECP owns slug; INT documents bridge |
+
+**Suggested PR order:** INT-MAINT-01 → INT-MAINT-03 → INT-MAINT-02 → INT-MAINT-04.
+
+**Explicitly excluded from MAINT:** H-INT-GRAPH — remains in existing phase register (post IDEAL-L3 W2).
+
 ---
+
+*End of Integrations Implementation Plan.*

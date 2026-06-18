@@ -1590,4 +1590,22 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 **Deferred P2–P4:** GOV-PROD.1 dashboard · polished SaaS UI non-goal · AUDIT-IDEAL-6.7 doctor hook (LLM)
 
+### 6.1av Harness implementation queue — Developer experience audit maintenance (planned)
+
+**Source:** Layer 21 audit (2026-06-18) — `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` · [`../audit_results/2026-06-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../audit_results/2026-06-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)  
+**Priority ladder:** **Band 1** (§6.1) — DX bundle + cross-refs; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **DX-MAINT-01** | Cross-ref | P2 | **Done** | AUDIT-IDEAL-6.7 doctor hook — cross-ref [`LLM-MAINT-01`](LLM_ADAPTERS.md#61av-harness-implementation-queue--llm-adapters-audit-maintenance-planned) | LLM owns implementation |
+| 2 | **DX-MAINT-02** | DX | P3 | **Done** | Expand `intergrax doctor check` — trace explorer + replay + simulator wiring subset | Doctor runs `check_audit_ideal_gates.py` subset |
+| 3 | **DX-MAINT-03** | Backlog | P3 | **Done** | GOV-PROD.1 dashboard — register row with scope boundary | Plan backlog row; not blocking L3 DX |
+| 4 | **DX-MAINT-04** | Docs | P4 | **Done** | Polished SaaS UI — explicit non-goal note in DX canon | Architecture non-goal note |
+
+**Suggested PR order:** DX-MAINT-02 → DX-MAINT-01 → DX-MAINT-03 → DX-MAINT-04.
+
+**Note:** AUDIT-IDEAL-27.2 replay wiring **Done** (2026-06-18 revalidation).
+
 ---
+
+*End of Experimentation and Developer Experience Implementation Plan.*

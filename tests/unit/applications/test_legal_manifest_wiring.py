@@ -43,6 +43,19 @@ def test_build_legal_manifest_overrides_contract_id() -> None:
     assert manifest.agents[0].contract_id == "custom-legal-id"
 
 
+def test_legal_environment_observability_assembly_valid() -> None:
+    from intergrax.applications._shared.observability_assembly_resolver import (
+        assert_observability_assembly_valid,
+    )
+    from intergrax.applications._shared.observability_wiring import wire_application_observability
+    from legal_application.host.wiring import build_legal_environment_profile
+
+    env = build_legal_environment_profile(_dev_settings())
+    assert env.integration_profile.observability_backend is not None
+    wiring = wire_application_observability(env)
+    assert_observability_assembly_valid(wiring, env)
+
+
 @pytest.mark.no_ci
 def test_build_legal_registry_materializes_default_agent() -> None:
     registry = build_legal_registry(_dev_settings())

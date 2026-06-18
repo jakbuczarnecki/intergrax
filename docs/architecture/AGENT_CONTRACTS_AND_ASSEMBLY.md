@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 17–20, 31 (+ ACP cognitive patterns §21)  
-**Audit instruction:** [`guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
+**Audit instruction:** [`audit/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../audit/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
 **ADR:** [`adr/entries/2026-06-11/ADR-AGENT-001.md`](../adr/entries/2026-06-11/ADR-AGENT-001.md) · [`adr/entries/2026-06-11/ADR-AGENT-002.md`](../adr/entries/2026-06-11/ADR-AGENT-002.md) · [`adr/entries/2026-06-11/ADR-AGENT-003.md`](../adr/entries/2026-06-11/ADR-AGENT-003.md) — ACP · `run()` · `on_next_step` · dual observability  
 
 ---

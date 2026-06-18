@@ -21,7 +21,7 @@ def resolve_craft_sandbox_session(
     task_id: str,
 ) -> SandboxExecCapable | None:
     """Route execution substrate per ``CodeCraftProfile.isolation_tier``."""
-    if profile.isolation_tier == "cloud":
+    if profile.isolation_tier in ("cloud", "container"):
         integration_raw = ctx.extras.get("integration_profile")
         if isinstance(integration_raw, IntegrationProfile):
             hosted = resolve_hosted_sandbox_session(
@@ -39,4 +39,6 @@ def resolve_craft_sandbox_session(
                 tenant_id=tenant_id,
                 task_id=task_id,
             )
+        if profile.isolation_tier == "cloud":
+            return None
     return resolve_sandbox_session(ctx)

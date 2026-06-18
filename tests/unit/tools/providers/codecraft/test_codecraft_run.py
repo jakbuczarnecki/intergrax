@@ -206,3 +206,18 @@ def test_register_codecraft_tools_on_registry(sandbox_session: SandboxSession) -
     registry = ToolRegistry()
     register_codecraft_tools(registry, ctx)
     assert registry.has("codecraft.run")
+
+
+def test_resolve_codecraft_profile_task_metadata_overrides_mode() -> None:
+    from intergrax.runtime.codecraft.orchestrator import resolve_codecraft_profile
+
+    base = CodeCraftProfile(mode="disabled")
+    ctx = ToolWiringContext(
+        extras={
+            "codecraft_profile": base,
+            "task_metadata": {"codecraft_mode": "supervised"},
+        },
+    )
+    profile = resolve_codecraft_profile(ctx)
+    assert profile is not None
+    assert profile.mode == "supervised"

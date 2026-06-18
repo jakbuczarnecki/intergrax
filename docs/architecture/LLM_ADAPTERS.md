@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/LLM_ADAPTERS.md`](../plan/LLM_ADAPTERS.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5  
 **Audit layers:** 6 · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../guides/INTEGRAX_HARNESS_AUDIT_MAP.md)  
-**Audit instruction:** [`guides/audit/LLM_ADAPTERS.md`](../guides/audit/LLM_ADAPTERS.md)  
+**Audit instruction:** [`audit/LLM_ADAPTERS.md`](../audit/LLM_ADAPTERS.md)  
 **Developer guide:** [`intergrax/llm_adapters/USAGE.md`](../../intergrax/llm_adapters/USAGE.md)  
 **ADR:** [ADR-LLM-001](../adr/entries/2026-06-06/ADR-LLM-001.md) (envelope) · [ADR-LLM-002](../adr/entries/2026-06-14/ADR-LLM-002.md) (ModelCatalog)
 
@@ -126,7 +126,7 @@ Optional `LLMCallSummary` on `SignalAssemblyInput.last_llm_call` → `HarnessOut
 
 ### M-LLM-R as-built conformance (audit dimensions)
 
-Re-validate per [`guides/audit/LLM_ADAPTERS.md`](../guides/audit/LLM_ADAPTERS.md) §3:
+Re-validate per [`audit/LLM_ADAPTERS.md`](../audit/LLM_ADAPTERS.md) §3:
 
 | # | Dimension | Status | Evidence |
 |---|-----------|--------|----------|

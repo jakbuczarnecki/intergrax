@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-JOURNAL = ROOT / "docs" / "guides" / "implementation-journal"
+JOURNAL = ROOT / "docs" / "implementation-journal"
 INDEX = JOURNAL / "INDEX.md"
 ENTRIES = JOURNAL / "entries"
 
@@ -47,7 +47,7 @@ def main() -> int:
     errors: list[str] = []
 
     if not INDEX.is_file():
-        errors.append("missing docs/guides/implementation-journal/INDEX.md")
+        errors.append("missing docs/implementation-journal/INDEX.md")
         _report(errors)
         return 1
 

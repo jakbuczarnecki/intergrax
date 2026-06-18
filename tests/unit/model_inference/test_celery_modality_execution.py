@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -15,6 +14,9 @@ from intergrax.model_inference.execution.jobs import ModalityJobResult
 from intergrax.model_inference.registry.vision_profile import vision_profile_from_env
 from intergrax.model_inference.workers import celery_app as celery_module
 from intergrax.model_inference.workers.task_runner import run_modality_job
+from intergrax.model_inference.opencv_availability import opencv_runtime_available
+
+pytestmark = pytest.mark.unit
 
 
 @pytest.fixture(autouse=True)
@@ -47,20 +49,21 @@ def test_celery_without_broker_falls_back_to_delegate() -> None:
     delegate.run_detect.assert_called_once()
 
 
-def test_run_modality_detect_job_uses_harness_registry() -> None:
+@pytest.mark.skipif(not opencv_runtime_available(), reason="opencv-python-headless runtime unavailable")
+def test_run_modality_detect_job_uses_harness_registry(vision_golden_image, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("INTERGRAX_VISION_PROVIDER", "onnxruntime")
     profile = vision_profile_from_env()
     registry = build_harness_model_inference_registry(profile=profile)
     artifact_id = profile.resolved_artifact_id
     adapter_slug = profile.adapter_slug
     registry.get_artifact(artifact_id)
-    golden = Path(__file__).resolve().parents[2] / "fixtures" / "vision_golden" / "sample_target.png"
     job = ModalityDetectJob(
         adapter_slug=adapter_slug,
         artifact_id=artifact_id,
         request=VisionInferenceRequest(
             request_id="req-1",
             artifact_id=artifact_id,
-            media_uri=golden.resolve().as_uri(),
+            media_uri=vision_golden_image.resolve().as_uri(),
         ),
     )
     raw = run_modality_job(job.model_dump_json())

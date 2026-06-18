@@ -55,7 +55,25 @@
 
 **Suggested PR order:** See [Phase FLOW — Suggested PR order](#flow--suggested-pr-order).
 
-**Explicitly excluded:** K.1, K.2 (unless FLOW-8 activated), nested harness per child.### 6.1ak Harness implementation queue — Critic & Verification Layer (closed)
+**Explicitly excluded:** K.1, K.2 (unless FLOW-8 activated), nested harness per child.
+
+### 6.1av Harness implementation queue — Nexus execution flow audit maintenance (planned)
+
+**Source:** Layer 4 audit (2026-06-18) — `NEXUS_EXECUTION_FLOW` layers 8–10 · [`../audit_results/2026-06-18/NEXUS_EXECUTION_FLOW.md`](../audit_results/2026-06-18/NEXUS_EXECUTION_FLOW.md)  
+**Priority ladder:** **Band 1** (§6.1) — incremental after gate maintenance; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **FLOW-MAINT-01** | Code | P2 | **Done** | Wire `ResiliencePolicy.allow_partial_result` into `graph_runner` lifecycle transitions | When `False`, non-all-completed multi-node graph → `FAILED` not `PARTIALLY_COMPLETED`; unit/integration test |
+| 2 | **FLOW-MAINT-02** | Docs | P3 | **Done** | Production-ready checklist in architecture §1.4 (strict profile + W-OPS SLO + reference host presets) | Operator runbook cross-ref; no new mechanisms |
+| 3 | **FLOW-MAINT-03** | Test/CI | P3 | **Done** | Windows acceptance teardown guard for `signals.db` lock flake | `tests/acceptance/agent_os/` stable on Windows CI |
+| 4 | **FLOW-MAINT-04** | Test | P3 | **Done** | Bootstrap fail-fast test when engine planner path lacks `llm_adapter` | `test_orchestration_wiring.py::test_engine_planner_requires_llm_adapter` |
+
+**Suggested PR order:** FLOW-MAINT-01 → FLOW-MAINT-04 → FLOW-MAINT-03 → FLOW-MAINT-02 (doc).
+
+**Explicitly excluded:** UC-6 production research agents; FLOW-8 / FLOW-GAP-20 product hosts — [§6.3](../plan/PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only).
+
+### 6.1ak Harness implementation queue — Critic & Verification Layer (closed)
 
 **Purpose:** Single ordered list for **Phase CRIT-V** (Band 2ak). **Closed 2026-06-08** — CRIT-V-0…7 + **CRIT-V-FOLLOWUP** closeout **Done**.
 

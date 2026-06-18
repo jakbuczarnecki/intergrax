@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 3, 9 · multi-agent patterns: audit layer 10 (cross-ref §50)  
-**Audit instruction:** [`guides/audit/ORCHESTRATION.md`](../guides/audit/ORCHESTRATION.md)  
+**Audit instruction:** [`audit/ORCHESTRATION.md`](../audit/ORCHESTRATION.md)  
 **Reasoning / planning canon:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) (audit layer 7)  
 **Elastic capacity:** [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) (infra replicas — not graph scheduling)  
 ---

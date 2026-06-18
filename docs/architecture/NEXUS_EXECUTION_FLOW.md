@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/NEXUS_EXECUTION_FLOW.md`](../plan/NEXUS_EXECUTION_FLOW.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 8, 9, 10 (flow narrative) · cognition depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §7–§10  
-**Audit instruction:** [`guides/audit/NEXUS_EXECUTION_FLOW.md`](../guides/audit/NEXUS_EXECUTION_FLOW.md)  
+**Audit instruction:** [`audit/NEXUS_EXECUTION_FLOW.md`](../audit/NEXUS_EXECUTION_FLOW.md)  
 ---
 
 ## 1. Purpose and boundaries
@@ -57,6 +57,17 @@ All three converge through `ToolRuntime` for side effects and `PolicyEngine` for
 | Proof level | Gate + acceptance tests | Product graph apps + ops evidence (W-OPS) |
 
 **Rule:** UC-1–UC-6 are **harness-proven** in lab; **production-ready** multi-agent product flows (UC-5 at scale, §42.43) remain **Phase K / FLOW-8** until explicit product decision.
+
+**Production-ready checklist (FLOW-MAINT-02):**
+
+| Gate | Strict / product host | Evidence |
+|------|----------------------|----------|
+| `execution_mode=strict` | Required | `ApplicationEnvironmentProfile` |
+| W-OPS SLO hooks | Trace + task lifecycle events persisted | `observability_profile` + OTEL slug |
+| Reference host presets | `harness_production_stack` or product manifest | `applications/*/manifest.py` |
+| Planner fail-fast | `planner_kind=engine` requires `llm_adapter` in wiring context | `test_orchestration_wiring.py` |
+| Partial results policy | `ResiliencePolicy.allow_partial_result` honored in graph runner | `test_graph_runner_resilience.py` |
+| Queue worker (optional) | `INCLUDE_QUEUE_WORKER=true` for async intake | ORCH-MAINT-01 lab scaffold default |
 
 ---
 

@@ -7,7 +7,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Author map:** [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) **Appendix J**  
 **Audit layers:** 12  
-**Audit instruction:** [`guides/audit/SKILLS.md`](../guides/audit/SKILLS.md)  
+**Audit instruction:** [`audit/SKILLS.md`](../audit/SKILLS.md)  
 
 ---
 

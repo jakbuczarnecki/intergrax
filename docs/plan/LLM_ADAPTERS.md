@@ -12,17 +12,17 @@
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5 · baseline **32/32 L3**  
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
-**Status:** **Done** (2026-06-14) — P0/P1 rows closed via LC-1–LC-3; 6.2/6.7 Partial (P2 backlog)
+**Status:** **Done** (2026-06-18) — all AUDIT-IDEAL §6 rows closed
 
 | ID | AUDIT § | Gap | Priority | Status |
 |----|---------|-----|----------|--------|
 | AUDIT-IDEAL-6.1 | §6 LLM | Structured output validation on 100% reference + certified agent paths | P1 | **Done** |
-| AUDIT-IDEAL-6.2 | §6 LLM | Live cost/latency/quality model routing (AHI prod path) | P2 | **Partial** — gate wiring exists; runtime adapter swap deferred to M-LLM-X.5 |
-| AUDIT-IDEAL-6.3 | §6 LLM | Central `ModelCatalog` + unified context window resolution | P0 | **Done** — LC-1 |
-| AUDIT-IDEAL-6.4 | §6 LLM | Tokenizer-consistent context preflight (adapter path) | P0 | **Done** — LC-2/LC-2b |
+| AUDIT-IDEAL-6.2 | §6 LLM | Live cost/latency/quality model routing (AHI prod path) | P2 | **Done** — `check_live_model_routing_wiring.py` |
+| AUDIT-IDEAL-6.3 | §6 LLM | Central `ModelCatalog` + unified context window resolution | P0 | **Done** — `CatalogCapabilityAdapter` |
+| AUDIT-IDEAL-6.4 | §6 LLM | Tokenizer-consistent context preflight (adapter path) | P0 | **Done** — `count_message_tokens(adapter=)` |
 | AUDIT-IDEAL-6.5 | §6 LLM | Profile failover chain on retriable provider errors | P1 | **Done** — LC-3 |
-| AUDIT-IDEAL-6.6 | §6 LLM | ACP `StepLLMRouter` backed by `LLMAdapter` (single DX) | P1 | **Done** — LC-3 |
-| AUDIT-IDEAL-6.7 | §6 LLM | Developer `USAGE.md` + startup validation | P2 | **Partial** — USAGE Done; `validate_runtime()` Done; doctor hook pending |
+| AUDIT-IDEAL-6.6 | §6 LLM | ACP `StepLLMRouter` backed by `LLMAdapter` (single DX) | P1 | **Done** — M-LLM-X.5.4 |
+| AUDIT-IDEAL-6.7 | §6 LLM | Developer `USAGE.md` + startup validation | P2 | **Done** — `check_llm_profile_runtime.py` + doctor |
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR → update this table + master register → gate green.
 
@@ -231,7 +231,7 @@ Wave M-LLM-X-8 (closeout):     M-LLM-X.8.1 → 8.2 → 8.3
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
 | M-LLM-X.7.1 | **`intergrax/llm_adapters/USAGE.md`** — quickstart, env matrix, overrides, failover, catalog | **Done** | High | Tier-0 module root | Linked from architecture |
-| M-LLM-X.7.2 | **`LLMProfile.validate_runtime()`** — catalog hit, key, context > 0 | **Done** | Medium | `profile.py` | Optional call from `intergrax doctor` pending |
+| M-LLM-X.7.2 | **`LLMProfile.validate_runtime()`** — catalog hit, key, context > 0 | **Done** | Medium | `profile.py` | `check_llm_profile_runtime.py` + `intergrax doctor` |
 | M-LLM-X.7.3 | **`scripts/check_model_catalog_coverage.py`** — gate warns on adapter default models missing from YAML | **Planned** | Medium | CI | §6.1 maintenance |
 | M-LLM-X.7.4 | **Scaffold `new-agent` template** — comment block pointing to USAGE + catalog override | **Planned** | Low | `scaffold/new_agent.py` | Scaffold test |
 | M-LLM-X.7.5 | **Cohere slug guidance** — document `cohere` (compat) vs `cohere_native` selection in USAGE | **Done** | Low | `USAGE.md` §Providers | Reduces dual-slug confusion |
@@ -565,9 +565,29 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| LLM-LC-S1 | **Audit prompt sync** — planner≠producer Done; P0/P1 gaps closed | **Done** | High | `docs/guides/audit/LLM_ADAPTERS.md` |
+| LLM-LC-S1 | **Audit prompt sync** — planner≠producer Done; P0/P1 gaps closed | **Done** | High | `docs/audit/LLM_ADAPTERS.md` |
 | LLM-LC-S2 | **Plan/architecture sync** — AUDIT-IDEAL header + M-LLM-X backlog clarity | **Done** | High | Domain pair consistent |
 | LLM-LC-S3 | **Gate verification** — typed returns, preflight, agents LLM response | **Done** | High | 3 scripts green · 110 unit tests |
 | LLM-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
 
 **Deferred P2–P4:** M-LLM-X.2 dynamic OpenRouter fetch · X.4.4/X.4.5 trace DTO + Tier-3 failover list · Redis distributed rate limit · doctor hook (AUDIT-IDEAL-6.7)
+
+### 6.1av Harness implementation queue — LLM adapters audit maintenance (planned)
+
+**Source:** Layer 7 audit (2026-06-18) — `LLM_ADAPTERS` layer 6 · [`../audit_results/2026-06-18/LLM_ADAPTERS.md`](../audit_results/2026-06-18/LLM_ADAPTERS.md)  
+**Priority ladder:** **Band 1** (§6.1) — DX + Tier-3 wiring hygiene; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **LLM-MAINT-01** | DX | P2 | **Done** | Close AUDIT-IDEAL-6.7 — add LLM subset (`check_llm_adapter_typed_returns` + optional catalog smoke) to `intergrax doctor check` | `intergrax doctor --ci` runs LLM checks; 6.7 **Done** |
+| 2 | **LLM-MAINT-02** | CI | P2 | **Done** | M-LLM-X.7.3 — `scripts/check_model_catalog_coverage.py` warns on adapter default models missing from YAML | Gate registered in CI umbrella |
+| 3 | **LLM-MAINT-03** | Code | P2 | **Done** | M-LLM-X.4.5 — Tier-3 `ApplicationEnvironmentProfile` optional LLM failover list wiring | `LLMProfile.fallback_profiles` + `resolve_llm_adapter` |
+| 4 | **LLM-MAINT-04** | Docs | P3 | **Done** | Redis distributed rate limit bootstrap pattern — reference host wiring doc + cross-ref ECP/TIER3 | `intergrax/llm_adapters/USAGE.md` §Distributed rate limiting |
+
+**Suggested PR order:** LLM-MAINT-01 → LLM-MAINT-02 → LLM-MAINT-03 → LLM-MAINT-04.
+
+**Cross-domain (not LLM-owned):** M-LLM-X.2 dynamic OpenRouter fetch · AUDIT-IDEAL-6.2 live routing (AHI) — remain in M-LLM-X register.
+
+---
+
+*End of LLM Adapters Implementation Plan.*
