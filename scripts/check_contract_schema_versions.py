@@ -17,6 +17,16 @@ if str(REPO_ROOT) not in sys.path:
 from intergrax.contracts.migrations.registry import CONTRACT_SCHEMA_REGISTRY  # noqa: E402
 
 
+def _schema_version_field(model: object) -> object | None:
+    """Pydantic ``ModelMetaclass`` exposes ``model_fields`` only via normal lookup."""
+    if isinstance(model, type) and hasattr(model, "model_fields"):
+        return model.model_fields.get("schema_version")
+    fields = attribute_access.optional(model, "model_fields", {})
+    if hasattr(fields, "get"):
+        return fields.get("schema_version")
+    return None
+
+
 def main() -> int:
     violations: list[str] = []
     for entry in CONTRACT_SCHEMA_REGISTRY:
@@ -25,14 +35,13 @@ def main() -> int:
         if model is None:
             violations.append(f"missing model {entry.contract_name} in {entry.module_path}")
             continue
-        schema_field = attribute_access.optional(model, "model_fields", {}).get("schema_version")
+        schema_field = _schema_version_field(model)
         if schema_field is None:
-            if entry.contract_name == "AcpSessionState":
-                default = attribute_access.optional(model, "ACP_STATE_SCHEMA_VERSION", None)
-                if default != entry.current_version:
-                    violations.append(
-                        f"{entry.contract_name}: expected {entry.current_version}, got {default}"
-                    )
+            module_default = attribute_access.optional(module, "ACP_STATE_SCHEMA_VERSION", None)
+            if module_default != entry.current_version:
+                violations.append(
+                    f"{entry.contract_name}: expected {entry.current_version}, got {module_default}"
+                )
             continue
         default = schema_field.default
         if default != entry.current_version:
