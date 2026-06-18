@@ -54,7 +54,7 @@ W-ADAPT W0–W7 Done (70/70) · Phase V L4 evidence · L4 adaptive critic thresh
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-L4 adaptive thresholds deferred to product decision · P3 strategic agents out of Tier-1 scope · no foundation model training in scope
+AHI-LC Done · §6.1av AHI-MAINT Done · L4 auto-apply requires explicit product gate · live routing owner LLM-MAINT-02
 
 ---
 
