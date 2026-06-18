@@ -1,56 +1,62 @@
-# AUDIT-IDEAL Band 2az closeout — 88/88 Done
+---
+id: IJ-2026-06-18-038
+date: 2026-06-18
+tiers:
+  - tier-0
+  - tier-1
+scope: AUDIT-IDEAL, LLM_ADAPTERS, RAG, PLATFORM_FOUNDATION
+plan_ref:
+  - AUDIT-IDEAL-6.2
+  - AUDIT-IDEAL-6.3
+  - AUDIT-IDEAL-6.4
+  - AUDIT-IDEAL-6.6
+  - AUDIT-IDEAL-6.7
+  - AUDIT-IDEAL-14.4
+  - AUDIT-IDEAL-14.5
+status: completed
+commit: pending
+adr: none — gate wiring and doctor hooks; no new platform contracts
+---
 
-**Date:** 2026-06-18  
-**Scope:** Close remaining 7 AUDIT-IDEAL rows (6.2–6.4, 6.6–6.7, 14.4–14.5) after §6.1av MAINT complete.  
-**Domain pairs:** `LLM_ADAPTERS`, `RAG`, `PLATFORM_FOUNDATION`, `CONTEXT_ENGINEERING`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
+# AUDIT-IDEAL Band 2az closeout — 90/90 Done
 
-## Completed items
+## Operator request
 
-| ID | Implementation | Tests / gates |
-|----|----------------|---------------|
-| AUDIT-IDEAL-6.3 | `CatalogCapabilityAdapter` enriches adapters from YAML catalog | `test_catalog_capabilities.py` |
-| AUDIT-IDEAL-6.4 | `count_message_tokens(..., adapter=)` delegates tokenizer to adapter | `test_count_message_tokens.py` |
-| AUDIT-IDEAL-6.2 | Live model routing on product hosts (AHI prod path) | `check_live_model_routing_wiring.py`, depth gate |
-| AUDIT-IDEAL-6.6 | `StepLLMRouter` async bridge over `LLMAdapter.generate_messages` | depth gate, `test_llm_router.py` |
-| AUDIT-IDEAL-6.7 | `LLMProfile.validate_runtime()` wired into doctor + CI | `check_llm_profile_runtime.py` |
-| AUDIT-IDEAL-14.4 | Hierarchical dual-index bootstrap gate | `check_rag_hierarchical_bootstrap.py` |
-| AUDIT-IDEAL-14.5 | Poisoning filter on `perform_rag_retrieve` catalog path | `check_rag_catalog_poisoning_defense.py` |
+Close remaining AUDIT-IDEAL rows interactively with a commit per step; report only after full implementation.
 
-## Changed files
+## Summary
 
-- `intergrax/llm_adapters/registry/catalog_capabilities.py`
-- `intergrax/llm_adapters/llm_provider_registry.py`
-- `intergrax/runtime/nexus/context/context_preflight.py`
-- `scripts/check_llm_profile_runtime.py`
-- `scripts/check_rag_hierarchical_bootstrap.py`
-- `scripts/check_rag_catalog_poisoning_defense.py`
-- `scripts/check_audit_ideal_gates.py`
-- `intergrax/cli/doctor.py`
+Closed seven open AUDIT-IDEAL items: catalog capability flags (6.3), adapter token preflight (6.4), live model routing gate (6.2), StepLLMRouter bridge tests (6.6), doctor `validate_runtime` hook (6.7), hierarchical bootstrap gate (14.4), and catalog poisoning gate (14.5). Master register synced to **90/90 Done**.
+
+## Project impact
+
+Band **2az** AUDIT-IDEAL register is complete; default harness queue returns to §6.1 gate maintenance.
+
+## Traceability
+
+| Link | Target |
+|------|--------|
+| Architecture | `docs/architecture/LLM_ADAPTERS.md`, `docs/architecture/RAG.md` |
+| Plan | `docs/plan/AUDIT_IDEAL_2026.md`, `docs/plan/LLM_ADAPTERS.md`, `docs/plan/RAG.md` |
+| Audit | `docs/guides/audit/results/2026-06-18/RUN_SUMMARY.md` |
+
+## Changed artifacts
+
+- `intergrax/llm_adapters/registry/catalog_capabilities.py` — catalog capability overlay
+- `intergrax/runtime/nexus/context/context_preflight.py` — adapter token delegation
+- `scripts/check_llm_profile_runtime.py`, `check_rag_hierarchical_bootstrap.py`, `check_rag_catalog_poisoning_defense.py`
+- `intergrax/cli/doctor.py`, `scripts/check_audit_ideal_gates.py`
 - `tests/unit/runtime/architecture/test_audit_ideal_depth_gate.py`
-- `docs/plan/AUDIT_IDEAL_2026.md`, `LLM_ADAPTERS.md`, `PLATFORM_FOUNDATION.md`
-- `docs/guides/audit/results/2026-06-18/RUN_SUMMARY.md`
 
 ## Verification
 
 ```bash
 uv run pytest -m "gate and not no_ci" -q
-python scripts/check_audit_ideal_gates.py
-python scripts/check_plan_scorecard_sync.py
-python scripts/check_implementation_journal.py
+uv run python scripts/check_plan_scorecard_sync.py
 ```
 
-## Architectural impact
+Result: gate suite green after catalog adapter regression fix.
 
-No new Tier-0 mechanisms — composition and gate wiring only. Tier boundaries preserved.
+## Risks and follow-ups
 
-## ADR
-
-**No ADR needed** — gate tests and doctor hooks; no contract or semantics change beyond documented closeout.
-
-## Risks
-
-- `check_model_catalog_coverage.py` remains a separate M-LLM-X.7.3 maintenance item (not blocking AUDIT-IDEAL).
-
-## Suggested next step
-
-Return to **§6.1 gate maintenance** per `PLATFORM_FOUNDATION.md` default queue.
+- `M-LLM-X.7.3` (`check_model_catalog_coverage.py` CI registration) remains separate maintenance backlog.

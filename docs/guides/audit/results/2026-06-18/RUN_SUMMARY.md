@@ -4,14 +4,14 @@
 
 ## Status
 
-**Complete** — §6.1av MAINT **82/82 Done** · AUDIT-IDEAL **88/88 Done** (2026-06-18).
+**Complete** — §6.1av MAINT **82/82 Done** · AUDIT-IDEAL **90/90 Done** (2026-06-18).
 
 ## Rollup
 
 | Phase | Count | Status |
 |-------|-------|--------|
 | §6.1av MAINT tasks (22 domains × ~4 rows) | **82** | **Done** |
-| AUDIT-IDEAL master register (Band 2az) | **88/88** | **Done** |
+| AUDIT-IDEAL master register (Band 2az) | **90/90** | **Done** |
 
 ## AUDIT-IDEAL closeout commits (2026-06-18)
 

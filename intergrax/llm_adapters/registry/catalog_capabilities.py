@@ -25,11 +25,17 @@ class CatalogCapabilityAdapter(LLMAdapter):
         self._inner = inner
         self._record = record
         self.provider = inner.provider
-        self.model = inner.model
-        self.model_name_for_token_estimation = inner.model_name_for_token_estimation
-        self.call_config = inner.call_config
-        self.usage = inner.usage
-        self.id = inner.id
+        self.model = getattr(inner, "model", "") or ""
+        self.model_name_for_token_estimation = getattr(inner, "model_name_for_token_estimation", None)
+        inner_call_config = getattr(inner, "call_config", None)
+        if inner_call_config is not None:
+            self.call_config = inner_call_config
+        inner_usage = getattr(inner, "usage", None)
+        if inner_usage is not None:
+            self.usage = inner_usage
+        inner_id = getattr(inner, "id", None)
+        if inner_id:
+            self.id = inner_id
 
     @property
     def context_window_tokens(self) -> int:
@@ -126,6 +132,13 @@ class CatalogCapabilityAdapter(LLMAdapter):
         self._inner.validate()
 
 
+def unwrap_catalog_capability_adapter(adapter: LLMAdapter) -> LLMAdapter:
+    """Return the concrete adapter when catalog enrichment wrapped it."""
+    if isinstance(adapter, CatalogCapabilityAdapter):
+        return adapter._inner
+    return adapter
+
+
 def enrich_adapter_with_catalog_capabilities(
     adapter: LLMAdapter,
     *,
@@ -133,7 +146,7 @@ def enrich_adapter_with_catalog_capabilities(
     model: str | None,
 ) -> LLMAdapter:
     """Return adapter wrapped with catalog capability flags when model is known."""
-    model_id = (model or adapter.model or "").strip()
+    model_id = (model or getattr(adapter, "model", None) or "").strip()
     if not model_id:
         return adapter
     record = lookup_model_record(model_id)

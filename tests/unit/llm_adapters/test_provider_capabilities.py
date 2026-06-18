@@ -11,6 +11,7 @@ import pytest
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
+from intergrax.llm_adapters.registry.catalog_capabilities import unwrap_catalog_capability_adapter
 from intergrax.llm_adapters.providers.openai_responses_adapter import OpenAIChatResponsesAdapter
 
 pytestmark = pytest.mark.unit
@@ -36,7 +37,8 @@ def test_lazy_registry_loads_openai(_restore_registry_state: Dict[str, Any]) -> 
     LLMAdapterRegistry._factories.clear()
     with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}, clear=False):
         adapter = LLMAdapterRegistry.create(LLMProvider.OPENAI, client=MagicMock(), model="gpt-4o-mini")
-    assert isinstance(adapter, OpenAIChatResponsesAdapter)
+    inner = unwrap_catalog_capability_adapter(adapter)
+    assert isinstance(inner, OpenAIChatResponsesAdapter)
 
 
 def test_openai_generate_with_tools_mocked() -> None:

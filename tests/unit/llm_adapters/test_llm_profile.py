@@ -9,6 +9,7 @@ import pytest
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.llm_adapters.registry.profile import LLMProfile, llm_profile_from_env
+from intergrax.llm_adapters.registry.catalog_capabilities import unwrap_catalog_capability_adapter
 from intergrax.llm_adapters.providers.openai_compat_providers import GroqChatAdapter
 
 
@@ -25,7 +26,8 @@ def test_llm_profile_create_adapter() -> None:
     profile = LLMProfile(provider=LLMProvider.GROQ, model="llama-3.3-70b-versatile", options={"max_retries": 1})
     with patch.dict("os.environ", {"GROQ_API_KEY": "k"}, clear=False):
         adapter = profile.create_adapter(client=MagicMock())
-    assert isinstance(adapter, GroqChatAdapter)
+    inner = unwrap_catalog_capability_adapter(adapter)
+    assert isinstance(inner, GroqChatAdapter)
     assert adapter.model == "llama-3.3-70b-versatile"
 
 
