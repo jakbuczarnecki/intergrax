@@ -1,7 +1,7 @@
 # Audit result — `TIER3_APPLICATION_ENVIRONMENT`
 
-**Run:** 2026-06-18 · **Mode:** implement_plan  
-**Auditor:** cursor-agent · **Verdict:** mature_revalidated
+**Run:** 2026-06-18 · **Mode:** audit_only (interactive layer 22 — final)  
+**Auditor:** cursor-agent · **Verdict:** L3 mature_revalidated
 
 ---
 
@@ -20,11 +20,12 @@
 
 | ID | Severity | Finding | Evidence | Status |
 |----|----------|---------|----------|--------|
-| T3-AUDIT-01 | — | APP-EVOL-8.6 M3 `spec_version` 2.0 nested canonical wire | `with_spec_v2_wire()`, `apply_profile_migration()` | closed |
-| T3-AUDIT-03 | — | `test_research_application_exposes_mcp_mount` | `IntegrationProfile.research_product()` OTEL backend | closed |
-| T3-AUDIT-04 | — | Tier-3 audit prompt stale | `generate_domain_audit_prompts.py` (2026-06-18) | closed |
+| T3-GAP-01 | P2 | CFG-14 LKW hybrid daemon | §6.3 / ORCH deferred | **planned** (T3-MAINT-01 cross-ref) |
+| T3-GAP-02 | P3 | Queue worker scaffold-default docs | T3-GAP-05 | **planned** (T3-MAINT-02) |
+| T3-GAP-03 | P4 | Marketplace UI | H-APP deferred | **planned** (T3-MAINT-03) |
+| T3-GAP-04 | P4 | T3-LC-04/05 model version fields | deferred schema | **planned** (T3-MAINT-04) |
 
-**p0_open:** 0 · **p1_open:** 0
+No open P0/P1. H-APP + APP-EVOL **Done** · TIER3-LC **Done**. APP-EVOL-8.6 **Done**.
 
 ---
 
@@ -32,28 +33,21 @@
 
 | Action | Target | Notes |
 |--------|--------|-------|
-| Plan row updated | `docs/plan/TIER3_APPLICATION_ENVIRONMENT.md` | APP-EVOL-8.6 → **Done**; migration guide added |
-| Architecture sync | `docs/architecture/TIER3_APPLICATION_ENVIRONMENT.md` | M3 **Done** |
+| Plan row added/updated | `docs/plan/TIER3_APPLICATION_ENVIRONMENT.md` §6.1av | T3-MAINT-01..04 |
 
 ---
 
 ## Gates executed
 
 ```bash
-uv run pytest tests/unit/applications/test_environment_profile_bundles.py tests/unit/applications/test_migration_wiring.py -q
+uv run pytest tests/unit/applications/ -q
 uv run python scripts/check_environment_profile_bundle_schema.py
 ```
 
-15 passed. Schema gate: OK.
-
----
-
-## Backlog P2–P4 (deferred)
-
-- CFG-14 LKW hybrid — deferred §6.3
+**474 passed**.
 
 ---
 
 ## Recommendation
 
-**Architecturally Mature** — APP-EVOL-8 M1–M3 complete; reference hosts may remain on 1.x wire until product cutover.
+**Architecturally Mature (L3)** — final layer of Mode A2 batch; all 22 domain pairs audited.

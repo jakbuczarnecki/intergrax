@@ -642,4 +642,22 @@ uv run pytest -m gate -q
 
 **Deferred P2–P4:** CFG-14 LKW hybrid · queue worker scaffold-default · marketplace UI
 
+### 6.1av Harness implementation queue — Tier-3 application environment audit maintenance (planned)
+
+**Source:** Layer 22 audit (2026-06-18) — `TIER3_APPLICATION_ENVIRONMENT` · [`guides/audit/results/2026-06-18/TIER3_APPLICATION_ENVIRONMENT.md`](guides/audit/results/2026-06-18/TIER3_APPLICATION_ENVIRONMENT.md)  
+**Priority ladder:** **Band 1** (§6.1) — product-deferred items + host hygiene; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **T3-MAINT-01** | Cross-ref | P2 | **Planned** | CFG-14 LKW hybrid daemon — cross-ref [`ORCH-MAINT-02`](ORCHESTRATION.md#61av-harness-implementation-queue--orchestration-audit-maintenance-planned) + §6.3 product gate | Runbook when product prioritizes |
+| 2 | **T3-MAINT-02** | Docs | P3 | **Planned** | Queue worker scaffold-default (T3-GAP-05) — opt-in documentation for hosts | APP-EVOL canon + host guide |
+| 3 | **T3-MAINT-03** | Backlog | P4 | **Planned** | Marketplace UI + signed distribution — explicit §6.3 defer register row | No silent scope creep |
+| 4 | **T3-MAINT-04** | Code | P4 | **Planned** | T3-LC-04/05 — `graph_version` / ownership inherit on profile models (deferred schema) | Migration + model fields when needed |
+
+**Suggested PR order:** T3-MAINT-02 → T3-MAINT-01 → T3-MAINT-04 → T3-MAINT-03.
+
+**Cross-domain:** ORCH-MAINT-02 · ORCH-MAINT-01 (queue worker).
+
 ---
+
+*End of Tier-3 Application Environment Implementation Plan.*
