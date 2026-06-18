@@ -10,9 +10,10 @@ import sys
 
 def main() -> int:
     from intergrax.llm_adapters.registry.profile import LLMProfile
+    from intergrax.utils import attribute_access
 
     profile = LLMProfile.lab()
-    if not callable(getattr(profile, "validate_runtime", None)):
+    if not attribute_access.is_callable_attr(profile, "validate_runtime"):
         print("LLMProfile.validate_runtime is missing or not callable", file=sys.stderr)
         return 1
     warnings = profile.validate_runtime()

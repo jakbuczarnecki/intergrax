@@ -156,7 +156,9 @@ class LLMAdapterRegistry:
             enrich_adapter_with_catalog_capabilities,
         )
 
-        model_id = kwargs.get("model") or getattr(adapter, "model", None)
+        from intergrax.utils import attribute_access
+
+        model_id = kwargs.get("model") or attribute_access.optional(adapter, "model", None)
         adapter = enrich_adapter_with_catalog_capabilities(
             adapter,
             provider=key,

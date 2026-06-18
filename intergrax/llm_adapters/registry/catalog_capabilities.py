@@ -15,6 +15,7 @@ from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.registry.model_catalog import ModelRecord, lookup_model_record
+from intergrax.utils import attribute_access
 
 
 class CatalogCapabilityAdapter(LLMAdapter):
@@ -25,15 +26,17 @@ class CatalogCapabilityAdapter(LLMAdapter):
         self._inner = inner
         self._record = record
         self.provider = inner.provider
-        self.model = getattr(inner, "model", "") or ""
-        self.model_name_for_token_estimation = getattr(inner, "model_name_for_token_estimation", None)
-        inner_call_config = getattr(inner, "call_config", None)
+        self.model = attribute_access.optional_str(inner, "model")
+        self.model_name_for_token_estimation = attribute_access.optional(
+            inner, "model_name_for_token_estimation", None
+        )
+        inner_call_config = attribute_access.optional(inner, "call_config", None)
         if inner_call_config is not None:
             self.call_config = inner_call_config
-        inner_usage = getattr(inner, "usage", None)
+        inner_usage = attribute_access.optional(inner, "usage", None)
         if inner_usage is not None:
             self.usage = inner_usage
-        inner_id = getattr(inner, "id", None)
+        inner_id = attribute_access.optional(inner, "id", None)
         if inner_id:
             self.id = inner_id
 
@@ -146,7 +149,7 @@ def enrich_adapter_with_catalog_capabilities(
     model: str | None,
 ) -> LLMAdapter:
     """Return adapter wrapped with catalog capability flags when model is known."""
-    model_id = (model or getattr(adapter, "model", None) or "").strip()
+    model_id = (model or attribute_access.optional(adapter, "model", None) or "").strip()
     if not model_id:
         return adapter
     record = lookup_model_record(model_id)
