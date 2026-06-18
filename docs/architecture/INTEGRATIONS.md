@@ -1015,6 +1015,19 @@ python scripts/check_harness_guardrail_wiring.py
 
 ---
 
+## Ingress / nginx bridge (INT-MAINT-04)
+
+The **nginx / ingress controller** catalog slug is **not** owned by Integrations.
+Capacity ingress is documented and implemented under
+[`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) (ECP-6.*).
+Decision: [ADR-SCALE-002](../adr/entries/2026-06-09/ADR-SCALE-002.md) — defer
+standalone nginx slug; Kubernetes deployment path remains canonical.
+
+Integrations cross-ref only. Host authors enable ingress via ECP profiles and
+`kubernetes` integration — see [`intergrax/integrations/USAGE.md`](../../intergrax/integrations/USAGE.md).
+
+---
+
 ## Adding a new provider
 
 1. Implement `intergrax/integrations/providers/<category>/<slug>/` (config, adapter, opens, bundle, register).
