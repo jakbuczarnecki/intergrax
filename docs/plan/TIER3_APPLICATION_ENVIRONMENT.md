@@ -649,10 +649,10 @@ uv run pytest -m gate -q
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **T3-MAINT-01** | Cross-ref | P2 | **Planned** | CFG-14 LKW hybrid daemon — cross-ref [`ORCH-MAINT-02`](ORCHESTRATION.md#61av-harness-implementation-queue--orchestration-audit-maintenance-planned) + §6.3 product gate | Runbook when product prioritizes |
-| 2 | **T3-MAINT-02** | Docs | P3 | **Planned** | Queue worker scaffold-default (T3-GAP-05) — opt-in documentation for hosts | APP-EVOL canon + host guide |
-| 3 | **T3-MAINT-03** | Backlog | P4 | **Planned** | Marketplace UI + signed distribution — explicit §6.3 defer register row | No silent scope creep |
-| 4 | **T3-MAINT-04** | Code | P4 | **Planned** | T3-LC-04/05 — `graph_version` / ownership inherit on profile models (deferred schema) | Migration + model fields when needed |
+| 1 | **T3-MAINT-01** | Cross-ref | P2 | **Done** | CFG-14 LKW hybrid daemon — cross-ref [`ORCH-MAINT-02`](ORCHESTRATION.md#61av-harness-implementation-queue--orchestration-audit-maintenance-planned) + §6.3 product gate | Runbook cross-ref when product prioritizes |
+| 2 | **T3-MAINT-02** | Docs | P3 | **Done** | Queue worker scaffold-default (T3-GAP-05) — opt-in documentation for hosts | APPLICATION_CREATION_GUIDE queue worker opt-in |
+| 3 | **T3-MAINT-03** | Backlog | P4 | **Done** | Marketplace UI + signed distribution — explicit §6.3 defer register row | Plan §6.3 defer; no scope creep |
+| 4 | **T3-MAINT-04** | Code | P4 | **Done** | T3-LC-04/05 — `graph_version` / ownership inherit on profile models (deferred schema) | Deferred schema documented; no migration until product need |
 
 **Suggested PR order:** T3-MAINT-02 → T3-MAINT-01 → T3-MAINT-04 → T3-MAINT-03.
 

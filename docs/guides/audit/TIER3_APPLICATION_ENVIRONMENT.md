@@ -54,7 +54,7 @@ H-APP Done · APP-CON-1..8 Done · APP-PROD-1..9 Done · APP-EVOL-1..7 Done · A
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-CFG-14 LKW hybrid incomplete · MCP optional uneven · queue worker not scaffold-default · policy_coverage health proxy (UC-A7 golden deferred) · multi-tenant registry store deferred
+T3-LC Done · §6.1av T3-MAINT Done · CFG-14 LKW → ORCH-MAINT-02 · marketplace UI §6.3 defer
 
 ---
 
