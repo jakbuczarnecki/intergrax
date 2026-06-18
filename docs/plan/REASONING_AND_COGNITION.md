@@ -318,7 +318,7 @@ These items implemented under FLOW/ORCH phases — **Done**; canon now owned by 
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **COG-MAINT-01** | Code/Docs | P2 | **Done** | Align §17 failure taxonomy with `ReasoningFailureKind` — canonical mapping table in architecture §17 | Trace payloads match §17 codes |
 | 2 | **COG-MAINT-02** | CI | P2 | **Done** | Extend `check_reasoning_gates.py` for SYS-INV-22 plane-separation import boundaries | Gate fails on forbidden cross-plane imports in hot paths |
-| 3 | **COG-MAINT-03** | Test | P3 | **Planned** | Acceptance test: `allow_dynamic_replan` replan after policy interrupt on reference host | E2E replan boundary proven |
+| 3 | **COG-MAINT-03** | Test | P3 | **Done** | Acceptance test: `allow_dynamic_replan` replan after policy interrupt on reference host | E2E replan boundary proven |
 
 **Suggested PR order:** COG-MAINT-01 → COG-MAINT-02 → COG-MAINT-03.
 
