@@ -54,7 +54,7 @@ REL Done · REL-ADV Done · H-APP-WIRING.1 HTTP surfaces
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-ResiliencePolicy HTTP exposure mostly lab · durable async queue opt-in · whole-run RetryCoordinator default max_run_retries=0
+REL-LC Done · §6.1av REL-MAINT Done · durable async queue → ORCH-MAINT-04 · LLM failover → LLM-MAINT-03
 
 ---
 

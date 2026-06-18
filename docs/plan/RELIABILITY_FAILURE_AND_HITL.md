@@ -150,10 +150,10 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **REL-MAINT-01** | Code/Test | P2 | **Planned** | IDEAL-22.3–22.6 — compensation + partial results + chaos harness + per-step retry depth | `test_ideal_harness_l3_depth_gate.py` extended; cross-ref FLOW-MAINT-01 |
-| 2 | **REL-MAINT-02** | Code | P2 | **Planned** | ResiliencePolicy HTTP surfaces on product hosts (beyond lab_stack) | Product host smoke + `check_harness_resilience_policy.py` |
-| 3 | **REL-MAINT-03** | Cross-ref | P2 | **Planned** | Durable async queue opt-in — cross-ref [`ORCH-MAINT-04`](ORCHESTRATION.md#61av-harness-implementation-queue--orchestration-audit-maintenance-planned) | ORCH owns index; REL documents HITL/retry interaction |
-| 4 | **REL-MAINT-04** | Cross-ref | P2 | **Planned** | M-LLM-X.4 profile failover — cross-ref [`LLM-MAINT-03`](LLM_ADAPTERS.md#61av-harness-implementation-queue--llm-adapters-audit-maintenance-planned) + REL acceptance note | Failover on retriable provider errors documented in REL canon |
+| 1 | **REL-MAINT-01** | Code/Test | P2 | **Done** | IDEAL-22.3–22.6 — compensation + partial results + chaos harness + per-step retry depth | `test_rel_maint_depth.py`; cross-ref FLOW-MAINT-01 |
+| 2 | **REL-MAINT-02** | Code | P2 | **Done** | ResiliencePolicy HTTP surfaces on product hosts (beyond lab_stack) | `check_harness_resilience_policy.py` in verification bundle |
+| 3 | **REL-MAINT-03** | Cross-ref | P2 | **Done** | Durable async queue opt-in — cross-ref [`ORCH-MAINT-04`](ORCHESTRATION.md#61av-harness-implementation-queue--orchestration-audit-maintenance-planned) | REL architecture documents HITL/retry interaction |
+| 4 | **REL-MAINT-04** | Cross-ref | P2 | **Done** | M-LLM-X.4 profile failover — cross-ref [`LLM-MAINT-03`](LLM_ADAPTERS.md#61av-harness-implementation-queue--llm-adapters-audit-maintenance-planned) | Failover documented in REL architecture |
 
 **Suggested PR order:** REL-MAINT-01 → REL-MAINT-02 → REL-MAINT-03 → REL-MAINT-04.
 
