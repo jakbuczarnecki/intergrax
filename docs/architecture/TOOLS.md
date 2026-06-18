@@ -1061,6 +1061,19 @@ ToolInvocationPlan(use_tools=True)            # ToolsStep → fresh LLM plan
 | Middleware after | `AFTER_TOOL_CALL` | Gateway |
 | HIGH+ verify gate | `run_post_tool_verify` | **Done** — trace + optional enforce block (**TOOL-ENG-7**) |
 | Semantic verify (L1 critic) | `eval.judge`, `eval.trajectory` | Adjacent CVL path — optional via `CriticProfile` |
+
+### Per-tool L1 critic trace contract (TOOL-MAINT-02)
+
+High-risk tool verification emits **`ToolVerifyRequiredDiagV1`** on trace step
+``tool_verify_required`` (`intergrax/runtime/nexus/tools/tool_verify_hooks.py`).
+Payload fields: ``tool_id``, ``risk_level``. This is the **L0/L1 boundary signal**
+before optional CVL semantic judges run on tool output.
+
+Cross-ref: [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) ·
+``CriticProfile.semantic_judge_enabled`` · ``eval.judge`` / ``eval.trajectory``.
+Gate scripts: ``check_tool_injection_defense.py`` · CVL gates in
+``check_reasoning_gates.py`` when critic hooks are enabled on the host.
+
 | Agent validate | `agent.validate` | UAEP final answer — not per-tool |
 
 ### `tools_mode=required`

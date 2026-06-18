@@ -174,6 +174,33 @@ Use `requires_skills` on `SkillManifest` for transitive dependencies (resolved b
 
 ---
 
+## 4b. Host entry-point tool patterns (TOOL-MAINT-03)
+
+Tier-3 hosts can ship **custom tool packs** via setuptools entry points without
+forking the platform catalog. Pattern:
+
+1. Implement `ToolPlugin` with `tool_manifests()` returning `ToolManifest` rows.
+2. Register in `pyproject.toml` under `[project.entry-points."intergrax.tools"]`.
+3. Enable tool ids on `ToolProfile.enabled` in `ApplicationEnvironmentProfile`.
+4. Wire host factory with `bootstrap_catalogs(discover_entry_points=True)` or
+   explicit `register_tool_plugin(MyToolPlugin)` before `wire_application_environment()`.
+
+Example host wiring (lab):
+
+```python
+from intergrax.applications._shared.environment_wiring import wire_application_environment
+from my_product.tools import MyToolPlugin
+
+register_tool_plugin(MyToolPlugin)
+bundle = wire_application_environment(env, manifest=manifest)
+ctx = bundle.wiring_context  # ToolWiringContext with custom tools resolved
+```
+
+Scaffold: `python -m intergrax.scaffold new-stack <name>` emits agent + application
+with entry-point placeholders. See `intergrax/tools/USAGE.md` for invoke/MCP paths.
+
+---
+
 ## 5. Setuptools entry points (`pyproject.toml`)
 
 ```toml

@@ -965,8 +965,8 @@ TARGET (remaining TOOL-ENG):
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **TOOL-MAINT-01** | Code | P2 | **Done** | ADR-TOOL-005 v2 — optional LLM category pass in `hierarchical_tool_selector.py` | Integration test; deterministic default preserved |
-| 2 | **TOOL-MAINT-02** | Docs/Trace | P2 | **Planned** | Per-tool L1 critic output trace contract — cross-ref CVL; canon acceptance in TOOLS §critic hook | Trace payload documented; CVL gate references tool_id |
-| 3 | **TOOL-MAINT-03** | DX | P3 | **Planned** | Host EP pattern packages — scaffold/docs for custom entry-point tool patterns | Scaffold or guide section; example host wiring |
+| 2 | **TOOL-MAINT-02** | Docs/Trace | P2 | **Done** | Per-tool L1 critic output trace contract — cross-ref CVL; canon acceptance in TOOLS §critic hook | Trace payload documented; CVL gate references tool_id |
+| 3 | **TOOL-MAINT-03** | DX | P3 | **Done** | Host EP pattern packages — scaffold/docs for custom entry-point tool patterns | Scaffold or guide section; example host wiring |
 | 4 | **TOOL-MAINT-04** | DX | P3 | **Done** | Tool gate subset in `intergrax doctor` — `check_tool_injection_defense` + `check_legacy_tool_plan_booleans` | `intergrax doctor --ci` runs tool checks |
 
 **Suggested PR order:** TOOL-MAINT-01 → TOOL-MAINT-02 → TOOL-MAINT-04 → TOOL-MAINT-03.
