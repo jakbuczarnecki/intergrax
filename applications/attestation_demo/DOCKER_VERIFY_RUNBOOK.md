@@ -2,7 +2,7 @@
 
 **Audience:** Operators and partners validating the Attestation Demo PoC before handoff.
 
-This runbook walks through **building the Docker image**, **starting the host**, and **checking every PoC v1 assumption** from [`ARCHITECTURE.md`](ARCHITECTURE.md) §17.
+This runbook walks through **building the Docker image**, **starting the host**, and **checking PoC v2 assumptions** (tool + harness boundary events) from [`ARCHITECTURE.md`](ARCHITECTURE.md) §17.
 
 Related docs: [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) · [`partner_handoff/README.md`](partner_handoff/README.md)
 
@@ -13,7 +13,7 @@ Related docs: [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) · [`partner_handoff/
 | # | Project assumption (ARCHITECTURE §17) | How this runbook checks it |
 |---|--------------------------------------|----------------------------|
 | 1 | `POST /poc/run` works without Intergrax fork | Step 5 — HTTP trigger |
-| 2 | Response has unsigned `execution_boundary_event.v1` for `records.put` | Step 6 — response checklist |
+| 2 | Response has unsigned `execution_boundary_event.v1` for `records.put` **and** `harness_step` | Step 6 — two events, `event_sequence` 1 and 2 |
 | 3 | Fields map to AgentReceipt `createSignedReceipt` | Step 6 — mapping table |
 | 4 | Debug journal available for same `run_id` | Step 8 — trace endpoint |
 | 5 | No Intergrax `server_attested` claim | Step 6 — `trust_model` + `signed: false` |
@@ -175,7 +175,8 @@ $response | ConvertTo-Json -Depth 10
 - HTTP **200**
 - `"state": "completed"`
 - `"agent_id": "boundary_demo_agent"`
-- `"boundary_events"` is a non-empty array
+- `"boundary_events"` is a non-empty array with **at least 2** elements
+- Compare shape to [`partner_handoff/poc_run_response.v2.json`](partner_handoff/poc_run_response.v2.json)
 
 Save `run_id` from the response for Steps 7–8.
 
@@ -195,13 +196,18 @@ Inspect the JSON from Step 5. Every item below must pass.
 | `trust_model.platform_signed` | `"false"` |
 | `trust_model.recommended_receipt_role` | `"client_observed"` |
 
-### 6.2 Boundary event (`boundary_events[0]`)
+### 6.2 Boundary events (PoC v2 — two receipts per run)
+
+Expect **two** events in `boundary_events[]`, ordered by `event_sequence`.
+
+**Event 1 — `tool_execution` (`event_sequence: 1`)**
 
 | Field | Expected |
 |-------|----------|
 | `schema_id` | `"execution_boundary_event.v1"` |
 | `signed` | `false` |
 | `boundary_type` | `"tool_execution"` |
+| `event_id` | non-empty UUID (unique per event) |
 | `tool_id` | `"records.put"` |
 | `agent_id` | `"boundary_demo_agent"` |
 | `action_status` | `"executed"` |
@@ -210,11 +216,21 @@ Inspect the JSON from Step 5. Every item below must pass.
 | `lineage.type` | `"execution_record"` |
 | `lineage.ref` | contains `run_id` |
 | `input.partition_key` | `"attestation_demo"` |
-| `input.data` | matches request `record_data` |
 | `output.stored` | `true` |
-| `input_hash` | starts with `sha256:` |
-| `output_hash` | starts with `sha256:` |
-| `runtime_ref.platform` | `"intergrax"` |
+| `input_hash` / `output_hash` | start with `sha256:` |
+
+**Event 2 — `harness_step` (`event_sequence: 2`)**
+
+| Field | Expected |
+|-------|----------|
+| `boundary_type` | `"harness_step"` |
+| `action_status` | `"completed"` |
+| `tool_id` | `null` |
+| `policy_verdicts` | non-empty array (pre/post allow) |
+| `step_outcome.status` | `"completed"` |
+| `lineage.ref` | contains `run_id` and `:harness_step` |
+
+**Failure path:** if storage fails, event 1 has `action_status: failed`; event 2 may still be `harness_step` / `completed` (separate claims). See [`partner_handoff/poc_run_response.failed.v2.json`](partner_handoff/poc_run_response.failed.v2.json).
 
 ### 6.3 AgentReceipt mapping readiness (partner-side)
 
@@ -222,12 +238,17 @@ These Intergrax fields must be present so the external adapter can call `createS
 
 | Intergrax field | AgentReceipt field |
 |-----------------|-------------------|
+| `event_id` | stable evidence / receipt key |
+| `event_sequence` | ordering within run |
+| `boundary_type` | distinguishes tool vs harness claim |
 | `agent_id` | `agentId` |
-| `tool_id` | `tool` |
+| `tool_id` | `tool` (tool events only) |
 | `action_status` | `actionStatus` |
 | `input` / `output` | `input` / `output` |
 | `lineage.ref` | `lineage.ref` |
 | *(partner sets)* | `receiptRole: "client_observed"` |
+
+Create **one receipt per** `boundary_events[]` element — not one composite receipt per run.
 
 **Do not** label receipts as `server_attested` based on this PoC alone.
 
@@ -345,7 +366,7 @@ Before sharing with a partner, confirm:
 
 - [ ] Step 4 — agents list returns `boundary_demo_agent`
 - [ ] Step 5 — PoC run returns `state: completed`
-- [ ] Step 6 — all boundary event fields pass
+- [ ] Step 6 — both boundary events pass (tool + harness, `event_sequence` 1 and 2)
 - [ ] Step 8 — debug trace available for `run_id`
 - [ ] Step 10 — pytest green (recommended)
 - [ ] `INTERGRAX_HARNESS_API_KEY` set if exposing publicly (Step 9)

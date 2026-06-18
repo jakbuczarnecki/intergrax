@@ -66,6 +66,9 @@ def assert_partner_poc_v2_events(events: list[dict[str, Any]], *, run_id: str = 
     sequences = [event.get("event_sequence") for event in events]
     assert sequences == sorted(sequences), "events must be ordered by event_sequence"
     assert len(set(sequences)) == len(sequences), "event_sequence must be unique per run"
+    event_ids = [str(event.get("event_id") or "") for event in events]
+    assert all(event_ids), "each event must have event_id"
+    assert len(set(event_ids)) == len(event_ids), "event_id must be unique per run"
     boundary_types = {event.get("boundary_type") for event in events}
     assert boundary_types == {"tool_execution", "harness_step"}
     tool_events = [event for event in events if event.get("boundary_type") == "tool_execution"]
@@ -74,6 +77,17 @@ def assert_partner_poc_v2_events(events: list[dict[str, Any]], *, run_id: str = 
     assert len(harness_events) == 1
     assert_partner_tool_boundary_event(tool_events[0], run_id=run_id)
     assert_partner_harness_boundary_event(harness_events[0], run_id=run_id)
+
+
+def assert_partner_failed_tool_dual_claims(events: list[dict[str, Any]], *, run_id: str = "") -> None:
+    """Tool failure still emits two distinct boundary claims (enterprise separation)."""
+    assert_partner_poc_v2_events(events, run_id=run_id)
+    tool_event = next(event for event in events if event.get("boundary_type") == "tool_execution")
+    harness_event = next(event for event in events if event.get("boundary_type") == "harness_step")
+    assert tool_event.get("action_status") == "failed"
+    assert tool_event.get("error_message")
+    assert harness_event.get("action_status") == "completed"
+    assert (harness_event.get("step_outcome") or {}).get("outcome_applied") is True
 
 
 def assert_partner_tool_boundary_event(

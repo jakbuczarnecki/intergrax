@@ -22,7 +22,7 @@ or `Authorization: Bearer <key>`. When the env var is unset (local dev default),
 ## Primary integration flow
 
 1. `POST /v1/attestation_demo/poc/run` with body from [`poc_run_request.v1.json`](poc_run_request.v1.json)
-2. Read `boundary_events[]` from the JSON response (shape: [`poc_run_response.v1.json`](poc_run_response.v1.json))
+2. Read `boundary_events[]` from the JSON response (shapes: [`poc_run_response.v2.json`](poc_run_response.v2.json), failure example: [`poc_run_response.failed.v2.json`](poc_run_response.failed.v2.json))
 3. **Create one receipt per boundary event** (not one composite receipt per run)
 4. Map each event → AgentReceipt `createSignedReceipt` with `receiptRole: "client_observed"`
 5. Persist via partner `LocalFileReceiptSink`; run `verify` / `chain`
@@ -38,6 +38,21 @@ Each successful demo run returns **two** events in `boundary_events[]`, ordered 
 | 2 | `harness_step` | HarnessKernel step completed (policy + outcome) |
 
 Group related receipts with `run_id`, `step_id`, and `lineage.ref`. Use `event_id` as the stable per-event identifier.
+
+> **Legacy:** [`poc_run_response.v1.json`](poc_run_response.v1.json) documents PoC v1 (single tool event only).
+
+## Failure path (dual claims)
+
+When `records.put` fails, Intergrax still returns **two** boundary events:
+
+| `event_sequence` | `boundary_type` | Typical `action_status` | Meaning |
+|------------------|-----------------|-------------------------|---------|
+| 1 | `tool_execution` | `failed` | Tool invoker boundary — side effect did not succeed |
+| 2 | `harness_step` | `completed` | Harness kernel finished policy/merge for the step |
+
+This is **intentional**: tool and harness are separate claims. Sign **one receipt per event**; verify each independently. Do not collapse into one composite run receipt.
+
+See [`poc_run_response.failed.v2.json`](poc_run_response.failed.v2.json) for the expected shape.
 
 ## Field mapping (boundary event → AgentReceipt)
 

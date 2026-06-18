@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 
 from attestation_demo.partner_handoff.contract_assertions import (
     assert_partner_boundary_event,
+    assert_partner_failed_tool_dual_claims,
     assert_partner_poc_response_shape,
 )
 from attestation_demo.host.factory import create_attestation_demo_application
@@ -53,8 +54,8 @@ def test_partner_boundary_event_validates_against_pydantic_schema(client: TestCl
     assert_partner_poc_response_shape(payload)
 
 
-def test_partner_failed_tool_returns_failed_boundary_event_in_response() -> None:
-    """Tool failure must still return unsigned boundary facts (action_status=failed)."""
+def test_partner_failed_tool_returns_dual_boundary_claims() -> None:
+    """Tool failure: separate tool receipt (failed) and harness receipt (completed)."""
     client = TestClient(
         create_attestation_demo_application(document_store=_FailingPutDocumentStore()),
     )
@@ -71,14 +72,6 @@ def test_partner_failed_tool_returns_failed_boundary_event_in_response() -> None
     assert response.status_code == 200, response.text
     payload = response.json()
     events = payload.get("boundary_events") or []
-    assert len(events) >= 1
-    tool_event = next(
-        (event for event in events if event.get("boundary_type") == "tool_execution"),
-        events[0],
-    )
-    event = assert_partner_boundary_event(tool_event, run_id=str(payload.get("run_id") or ""))
-    assert event.action_status == "failed"
-    assert event.error_message
-    assert event.signed is False
+    assert_partner_failed_tool_dual_claims(events, run_id=str(payload.get("run_id") or ""))
     trust = payload.get("trust_model") or {}
     assert trust.get("recommended_receipt_role") == "client_observed"
