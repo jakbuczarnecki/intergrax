@@ -721,8 +721,8 @@ intergrax/context/ (target contracts + plugin registry)
 applications/_shared/context_runtime_bridge.py · context_wiring.py
 intergrax/runtime/events/context_skill_recording.py · payloads/canonical.py""",
         "key_symbols": "ContextEngine · ContextSourceProvider · ContextFragment · ContextAssemblyRequest · AssembledContext · ContextCompiler · ContextManager · AgentContextBundle · ContextBudgetPolicy · TaskContextAssemblyOptions · ContextDecisionProfile · ContextProfile · DegradationLadder",
-        "active_phases": "CTX Done · CE-DOC Done · CE-EXT Planned (CE-1..CE-12)",
-        "known_gaps": "No plugin catalog (GAP-CTX-01) · dual assembly paths (GAP-CTX-02) · not step-aware (GAP-CTX-04) · workspace provider spike only (GAP-CTX-06) · OTel spans partial (GAP-CTX-09)",
+        "active_phases": "CE-LC Done · CE-DEPTH Done · §6.1av CE-MAINT closed (OTel, cost, baselines)",
+        "known_gaps": "GAP-CTX-12 adaptive ranking **Frozen** → AHI-MAINT-04 · CE-LC register closed",
         "dimensions": [
             "ContextEngine.assemble() is the single target entry (CE-3) — no agent prompt concatenation.",
             "ContextSourceProvider plugin catalog with register_context_plugin (CE-2).",

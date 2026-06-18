@@ -21,6 +21,9 @@ from intergrax.runtime.events.payloads import (
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.skills.resolver import ResolvedSkillPack
 
+if TYPE_CHECKING:
+    from intergrax.context.contracts import AssembledContext
+
 
 def record_skill_resolved(
     bus: RuntimeEventBus,
@@ -264,3 +267,56 @@ def record_context_assembly(
                 promote_fields={**base_payload, "trimmed": True},
             )
         )
+
+
+def record_context_assembled_from_engine(
+    bus: RuntimeEventBus,
+    *,
+    assembled: AssembledContext,
+    task_id: str,
+    run_id: str = "",
+    node_id: str = "",
+    agent_id: str | None = None,
+    engine_id: str = "",
+    step_index: int | None = None,
+    step_kind: str | None = None,
+) -> None:
+    """Record CONTEXT_ASSEMBLED with per-fragment cost attribution (CE-MAINT-02)."""
+    from intergrax.context.tracking.assembly_cost import assembly_cost_from_assembled
+
+    original_chars = sum(len(fragment.content) for fragment in assembled.fragments_included)
+    final_chars = sum(len(msg.content or "") for msg in assembled.messages)
+    cost = assembly_cost_from_assembled(assembled)
+    base_payload: dict[str, Any] = {
+        "node_id": node_id,
+        "context_original_chars": original_chars,
+        "context_final_chars": final_chars,
+        "engine_id": engine_id,
+        "fragment_token_cost": cost.fragment_token_cost,
+        "estimated_cost_microusd": cost.estimated_cost_microusd,
+    }
+    bus.record(
+        runtime_event_with_payload(
+            RuntimeEvent(
+                task_id=task_id,
+                run_id=run_id or task_id,
+                node_id=node_id,
+                agent_id=agent_id,
+                event_type=RuntimeEventType.CONTEXT_ASSEMBLED,
+                phase=ExecutionPhase.CONTEXT_BUILDING,
+                correlation_id=task_id,
+            ),
+            ContextAssemblyPayloadV2(
+                node_id=node_id,
+                context_original_chars=original_chars,
+                context_final_chars=final_chars,
+                trimmed=assembled.degradation_steps > 0,
+                engine_id=engine_id,
+                step_index=step_index,
+                step_kind=step_kind,
+                fragment_token_cost=cost.fragment_token_cost,
+                estimated_cost_microusd=cost.estimated_cost_microusd,
+            ),
+            promote_fields=base_payload,
+        )
+    )

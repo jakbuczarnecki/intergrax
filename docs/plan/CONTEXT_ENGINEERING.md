@@ -594,10 +594,10 @@ One sprint = one coherent provider family or gate. One commit per sprint.
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **CE-MAINT-01** | Observability | P2 | **Planned** | OTel SDK wiring — full spans on `ContextEngine.assemble()` hot path | Spans in trace; `check_observability_gates.py` green |
-| 2 | **CE-MAINT-02** | Metrics | P2 | **Planned** | CE-9.5 — cost attribution per fragment in trace/metrics | `CONTEXT_ASSEMBLED` payload includes cost fields |
-| 3 | **CE-MAINT-03** | Test | P3 | **Planned** | CE-10.4 — preset regression baselines (codebase, regulated_minimal) | Baseline fixtures + CI compare |
-| 4 | **CE-MAINT-04** | Docs | P3 | **Planned** | Audit prompt sync + cross-ref GAP-CTX-12 → AHI adaptive ranking (**Frozen**) | Prompt known gaps match LC closeout |
+| 1 | **CE-MAINT-01** | Observability | P2 | **Done** | OTel SDK wiring — full spans on `ContextEngine.assemble()` hot path | `context_spans.py` OTel tracer; gate tests green |
+| 2 | **CE-MAINT-02** | Metrics | P2 | **Done** | CE-9.5 — cost attribution per fragment in trace/metrics | `CONTEXT_ASSEMBLED` payload `fragment_token_cost` + `estimated_cost_microusd` |
+| 3 | **CE-MAINT-03** | Test | P3 | **Done** | CE-10.4 — preset regression baselines (codebase, regulated_minimal) | `test_ce_preset_regression_baselines.py` |
+| 4 | **CE-MAINT-04** | Docs | P3 | **Done** | Audit prompt sync + cross-ref GAP-CTX-12 → AHI adaptive ranking (**Frozen**) | Prompt known gaps match LC; AHI owner link |
 
 **Suggested PR order:** CE-MAINT-04 → CE-MAINT-01 → CE-MAINT-02 → CE-MAINT-03.
 
