@@ -1044,3 +1044,22 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | ACP-LC-S4 | **Full Harness LC journal** + `layer_completion_progress.json` | **Done** | High | implementation-journal | mature status |
 
 **Deferred P2 (not blocking LC):** `boundary_demo` ReflexAgent migration · COST-1 graph RunBudget cap · FAUDIT-REG.1
+
+### 6.1av Harness implementation queue — Agent contracts audit maintenance (planned)
+
+**Source:** Layer 6 audit (2026-06-18) — `AGENT_CONTRACTS_AND_ASSEMBLY` layers 17–20, 31 · E [`guides/audit/results/2026-06-18/AGENT_CONTRACTS_AND_ASSEMBLY.md`](guides/audit/results/2026-06-18/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
+**Priority ladder:** **Band 1** (§6.1) — fleet hygiene + CI bundle alignment; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **ACP-MAINT-01** | Code | P2 | **Planned** | Migrate `boundary_demo` off author-time `allowed_tools` — `skill_ids`/`extra_tools` + ReflexAgent path per AS-3 | `check_agent_skill_resolution.py` green; partner PoC behavior preserved |
+| 2 | **ACP-MAINT-02** | CI | P2 | **Planned** | Include `check_agent_skill_resolution.py` in `check_agent_acp_close_ci.py` umbrella | ACP close CI fails on AS-3 violations fleet-wide |
+| 3 | **ACP-MAINT-03** | Docs | P3 | **Planned** | Sync audit prompt known gaps — AUDIT-IDEAL-19.1/20.1/31.1 **Done** vs stale Planned wording | `docs/guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` matches plan LC closeout |
+
+**Suggested PR order:** ACP-MAINT-01 → ACP-MAINT-02 → ACP-MAINT-03.
+
+**Cross-domain (not ACP-owned):** COST-1 graph `RunBudget` cap — [`plan/UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · FAUDIT-REG.1 — [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md).
+
+---
+
+*End of Agent Contracts and Assembly Implementation Plan.*
