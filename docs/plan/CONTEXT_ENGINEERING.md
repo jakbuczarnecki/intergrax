@@ -587,6 +587,22 @@ One sprint = one coherent provider family or gate. One commit per sprint.
 
 **Deferred P2–P4:** OTel SDK wiring · CE-9.5 cost attribution · CE-10.4 preset baselines · GAP-CTX-12 AHI adaptive ranking
 
+### 6.1av Harness implementation queue — Context engineering audit maintenance (planned)
+
+**Source:** Layer 14 audit (2026-06-18) — `CONTEXT_ENGINEERING` layer 16 · [`guides/audit/results/2026-06-18/CONTEXT_ENGINEERING.md`](guides/audit/results/2026-06-18/CONTEXT_ENGINEERING.md)  
+**Priority ladder:** **Band 1** (§6.1) — observability + quality depth; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **CE-MAINT-01** | Observability | P2 | **Planned** | OTel SDK wiring — full spans on `ContextEngine.assemble()` hot path | Spans in trace; `check_observability_gates.py` green |
+| 2 | **CE-MAINT-02** | Metrics | P2 | **Planned** | CE-9.5 — cost attribution per fragment in trace/metrics | `CONTEXT_ASSEMBLED` payload includes cost fields |
+| 3 | **CE-MAINT-03** | Test | P3 | **Planned** | CE-10.4 — preset regression baselines (codebase, regulated_minimal) | Baseline fixtures + CI compare |
+| 4 | **CE-MAINT-04** | Docs | P3 | **Planned** | Audit prompt sync + cross-ref GAP-CTX-12 → AHI adaptive ranking (**Frozen**) | Prompt known gaps match LC closeout |
+
+**Suggested PR order:** CE-MAINT-04 → CE-MAINT-01 → CE-MAINT-02 → CE-MAINT-03.
+
+**Cross-domain:** OBSERVABILITY — OTel spine · AHI — GAP-CTX-12 adaptive context ranking.
+
 ---
 
 *End of Context Engineering implementation plan.*
