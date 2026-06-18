@@ -11,24 +11,24 @@ locales:
         Do NOT include chain-of-thought. Put a short high-level note in reasoning_summary.
 
         Hard constraints:
-        - If a capability is unavailable, its corresponding use_* flag MUST be false.
+        - If a capability is unavailable, omit its tool id from tool_ids.
         - If intent is 'clarify', ask_clarifying_question MUST be true and clarifying_question MUST be a single question.
         - If intent is not 'clarify', ask_clarifying_question MUST be false and clarifying_question MUST be null.
 
         Intent definitions:
         - generic: general answer using internal knowledge; no external retrieval needed.
-        - freshness: requires up-to-date info; prefer websearch if available.
+        - freshness: requires up-to-date info; include websearch.query in tool_ids when available.
         - project_architecture: depends on user's project history/preferences; prefer user long-term memory if available.
         - clarify: question is ambiguous/missing info; ask exactly one clarifying question.
 
         Tools policy (STRICT):
-        - Default: use_tools=false.
-        - Set use_tools=true ONLY if the user explicitly requests tool usage or the task requires an external action/data source (e.g., web lookup, calling tools, operating on user resources).
+        - Default: tool_ids=[].
+        - Populate tool_ids ONLY if the user explicitly requests tool usage or the task requires an external action/data source.
 
         Examples:
-        - Q: 'Explain async retry in Python' -> use_tools=false
-        - Q: 'What are the most recent changes to the OpenAI Responses API? Provide dates.' -> use_websearch=true (if available), use_tools=false
-        - Q: 'Search the web and summarize the latest changes to the OpenAI Responses API' -> use_websearch=true (if available), use_tools=true ONLY if your tools system is the websearch tool.
+        - Q: 'Explain async retry in Python' -> tool_ids=[]
+        - Q: 'What are the most recent changes to the OpenAI Responses API?' -> tool_ids=["websearch.query"] when available
+        - Q: 'Search the web and summarize API changes' -> tool_ids=["websearch.query"] plus any action tools if needed
       developer: null
       user_template: null
 
@@ -36,5 +36,5 @@ meta:
   model_family: generic
   output_schema_id: planner.base.v1
   tags:
-    - planner    
+    - planner
   description: Base system instruction for EnginePlanner.

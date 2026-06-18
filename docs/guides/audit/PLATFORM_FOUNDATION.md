@@ -54,7 +54,7 @@ Four-tier model · IntegrationProfile/ToolProfile/SkillProfile/LLMProfile · App
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-Phase K / §6.3 deferred product work · long-term §50 marketplace/visual builder · PF-MAINT-LEG-01 (`use_rag`/`use_websearch` schema removal — Planned §6.1av) · M.6 P6 integration expansion (**Done** §6.1y — do not report as open)
+Phase K / §6.3 deferred product work · long-term §50 marketplace/visual builder · codecraft/ incremental · unified tool model (legacy boolean flags deprecated)
 
 ---
 

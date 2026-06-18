@@ -1823,7 +1823,7 @@ Verify (every harness PR):
 | 1 | **PF-MAINT-DOC-01** | Docs | P2 | **Done** | Remove stale M.6 P6 from audit prompt known-gaps; sync audit result file | Audit prompt + result match plan §6.1y (**Done** 32/32) |
 | 2 | **PF-MAINT-DOC-02** | Docs | P2 | **Done** | Sync §6.1au + §4.0 Band 2az counter with `AUDIT_IDEAL_2026.md` | Plan shows **82/88 Done** · **6 Planned** |
 | 3 | **PF-MAINT-DX-01** | Docs | P3 | **Done** | Implementer quick-start in `intergrax_runtime_architecture.md` hub | §4.0 ladder + scaffold flow linked |
-| 4 | **PF-MAINT-LEG-01** | Code | P3 | **Planned** | Remove `use_rag`/`use_websearch` from LLM planner schema (`EnginePlan`) | `check_legacy_tool_plan_booleans.py` green; `tool_ids` only |
+| 4 | **PF-MAINT-LEG-01** | Code | P3 | **Done** | Remove `use_rag`/`use_websearch` from LLM planner schema (`EnginePlan`) | `check_legacy_tool_plan_booleans.py` green; `tool_ids` only |
 
 **Suggested PR order:** PF-MAINT-DOC-01 → PF-MAINT-DOC-02 → PF-MAINT-DX-01 (single doc PR) → PF-MAINT-LEG-01 (separate breaking PR).
 
@@ -1843,7 +1843,7 @@ Verify (every harness PR):
 **Source:** Architecture audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) · baseline **32/32 L3**  
 **Priority ladder:** **Band 2az** (§4.0) — incremental after §6.1 gate maintenance  
 **Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](guides/ARCHITECTURE_DEBT_REGISTER.md)  
-**Platform audit hygiene:** [§6.1av](#61av-harness-implementation-queue--platform-foundation-audit-maintenance-planned) (PF-MAINT-DOC/DX **Done**; PF-MAINT-LEG-01 **Planned**)
+**Platform audit hygiene:** [§6.1av](#61av-harness-implementation-queue--platform-foundation-audit-maintenance-planned) (PF-MAINT-DOC/DX **Done**; PF-MAINT-LEG-01 **Done**)
 
 **Execution order (recommended):**
 
@@ -3940,7 +3940,7 @@ Verify (every harness PR):
 | 1 | **PF-MAINT-DOC-01** | Docs | P2 | **Done** | Remove stale M.6 P6 from audit prompt known-gaps; sync audit result file | Audit prompt + result match plan §6.1y (**Done** 32/32) |
 | 2 | **PF-MAINT-DOC-02** | Docs | P2 | **Done** | Sync §6.1au + §4.0 Band 2az counter with `AUDIT_IDEAL_2026.md` | Plan shows **82/88 Done** · **6 Planned** |
 | 3 | **PF-MAINT-DX-01** | Docs | P3 | **Done** | Implementer quick-start in `intergrax_runtime_architecture.md` hub | §4.0 ladder + scaffold flow linked |
-| 4 | **PF-MAINT-LEG-01** | Code | P3 | **Planned** | Remove `use_rag`/`use_websearch` from LLM planner schema (`EnginePlan`) | `check_legacy_tool_plan_booleans.py` green; `tool_ids` only |
+| 4 | **PF-MAINT-LEG-01** | Code | P3 | **Done** | Remove `use_rag`/`use_websearch` from LLM planner schema (`EnginePlan`) | `check_legacy_tool_plan_booleans.py` green; `tool_ids` only |
 
 **Suggested PR order:** PF-MAINT-DOC-01 → PF-MAINT-DOC-02 → PF-MAINT-DX-01 (single doc PR) → PF-MAINT-LEG-01 (separate breaking PR).
 
