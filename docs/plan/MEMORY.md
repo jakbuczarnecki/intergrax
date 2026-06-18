@@ -621,4 +621,22 @@ Total: 26
 
 **Deferred P2–P4:** procedural memory depth · org memory maturity · LangMem/Zep parity on entity graph
 
+### 6.1av Harness implementation queue — Memory audit maintenance (planned)
+
+**Source:** Layer 13 audit (2026-06-18) — `MEMORY` layer 15 · [`guides/audit/results/2026-06-18/MEMORY.md`](guides/audit/results/2026-06-18/MEMORY.md)  
+**Priority ladder:** **Band 1** (§6.1) — depth backlog only; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **MEM-MAINT-01** | Code | P3 | **Planned** | Procedural memory depth — cognitive store mapping + tests beyond minimal `PROCEDURAL` kind | Unit tests for procedural read/write/consolidation path |
+| 2 | **MEM-MAINT-02** | Code | P3 | **Planned** | Org memory maturity — promotion criteria + integration tests | Org profile scenarios pass maturity checklist |
+| 3 | **MEM-MAINT-03** | Backlog | P4 | **Planned** | LangMem/Zep entity graph parity — backlog register + explicit scope boundary (not Mem0 SaaS) | Plan row; no Phase K coupling |
+| 4 | **MEM-MAINT-04** | Code | P3 | **Planned** | MEM-DEPTH-5.2 — temporal validity on LTM facts | Valid-from/until on fact entries; retrieval respects window |
+
+**Suggested PR order:** MEM-MAINT-04 → MEM-MAINT-01 → MEM-MAINT-02 → MEM-MAINT-03.
+
+**Cross-domain:** Knowledge vs LTM boundary — CONTEXT_ENGINEERING; entity graph wiring **Done** (MEM-DEPTH-5.1).
+
 ---
+
+*End of Memory Implementation Plan.*
