@@ -5,7 +5,8 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-18-007 | 2026-06-18 | tier-0 SKILLS | SK-MAINT-01..04 | [SK-MAINT-01..04 — Interactive layer 10 audit plan registration](entries/2026-06-18/skills-audit-maint-01-04-plan-register.md) | pending |
+| IJ-2026-06-18-008 | 2026-06-18 | tier-0 INTEGRATIONS | INT-MAINT-01..04 | [INT-MAINT-01..04 — Interactive layer 11 audit plan registration](entries/2026-06-18/integrations-audit-maint-01-04-plan-register.md) | e54d9936 |
+| IJ-2026-06-18-007 | 2026-06-18 | tier-0 SKILLS | SK-MAINT-01..04 | [SK-MAINT-01..04 — Interactive layer 10 audit plan registration](entries/2026-06-18/skills-audit-maint-01-04-plan-register.md) | a7d20e41 |
 | IJ-2026-06-18-006 | 2026-06-18 | tier-0, tier-1 CODE_CRAFT | ECC-MAINT-01..04 | [ECC-MAINT-01..04 — Interactive layer 9 audit plan registration](entries/2026-06-18/codecraft-audit-maint-01-04-plan-register.md) | 0a0c22f1 |
 | IJ-2026-06-18-005 | 2026-06-18 | tier-0, tier-1 TOOLS | TOOL-MAINT-01..04 | [TOOL-MAINT-01..04 — Interactive layer 8 audit plan registration](entries/2026-06-18/tools-audit-maint-01-04-plan-register.md) | a5f5fbb7 |
 | IJ-2026-06-18-004 | 2026-06-18 | tier-0 LLM_ADAPTERS | LLM-MAINT-01..04 | [LLM-MAINT-01..04 — Interactive layer 7 audit plan registration](entries/2026-06-18/llm-audit-maint-01-04-plan-register.md) | 726750cb |
