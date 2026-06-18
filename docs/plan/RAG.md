@@ -562,4 +562,24 @@ uv run pytest tests/unit/rag/ tests/unit/tools/providers/rag/ tests/unit/applica
 
 **Deferred P2–P4:** beta→stable manifest promotion · M-RAG.58 AHI adaptive routing (Frozen) · ops soak gates
 
+### 6.1av Harness implementation queue — RAG audit maintenance (planned)
+
+**Source:** Layer 12 audit (2026-06-18) — `RAG` layer 14 · [`guides/audit/results/2026-06-18/RAG.md`](guides/audit/results/2026-06-18/RAG.md)  
+**Priority ladder:** **Band 1** (§6.1) — ops honesty + prompt sync; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **RAG-MAINT-01** | CI/Ops | P2 | **Planned** | Beta→stable RagProfile/manifest promotion criteria + gate | STABLE profiles have soak evidence; cross-ref INT-MAINT-01 |
+| 2 | **RAG-MAINT-02** | CI | P3 | **Planned** | Production SLO soak depth — nightly workflow extension beyond M-RAG.36 gate marker | Nightly concurrent retrieve SLO report artifact |
+| 3 | **RAG-MAINT-03** | Docs | P3 | **Planned** | Audit prompt sync — GAP-RAG register **Closed** in known gaps | `docs/guides/audit/RAG.md` matches LC closeout |
+| 4 | **RAG-MAINT-04** | Cross-ref | P4 | **Planned** | M-RAG.58 AHI adaptive routing — document **Frozen** owner (AHI domain) | No RAG-owned implementation; AHI register link |
+
+**Suggested PR order:** RAG-MAINT-03 → RAG-MAINT-01 → RAG-MAINT-02 → RAG-MAINT-04.
+
+**Environment note:** Windows `pytest tests/unit/rag/` teardown crash (`-1073741819`) — track under DX if reproducible; not blocking L3 verdict.
+
+**Cross-domain:** INT-MAINT-01 — integration slug maturity · M-RAG.58 — [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md).
+
 ---
+
+*End of RAG Implementation Plan.*
