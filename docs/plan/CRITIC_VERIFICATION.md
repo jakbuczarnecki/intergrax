@@ -859,9 +859,23 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 
 **Deferred P2–P4:** L4 adaptive critic thresholds (AHI) · FLOW-8 product host · LLM trajectory judge optional
 
----
+### 6.1av Harness implementation queue — Critic verification audit maintenance (planned)
 
-## 6. What to implement next
+**Source:** Layer 18 audit (2026-06-18) — `CRITIC_VERIFICATION` layer 25 · [`guides/audit/results/2026-06-18/CRITIC_VERIFICATION.md`](guides/audit/results/2026-06-18/CRITIC_VERIFICATION.md)  
+**Priority ladder:** **Band 1** (§6.1) — optional eval depth + cross-refs; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **CVL-MAINT-01** | Code | P3 | **Planned** | Optional wire `eval.trajectory_judge` skill into default eval path (beyond heuristic `eval.trajectory`) | Host/profile opt-in; unit test for judge path |
+| 2 | **CVL-MAINT-02** | Cross-ref | P4 | **Planned** | L4 adaptive critic thresholds — cross-ref [`AHI-MAINT-*`](ADAPTIVE_HARNESS_INTELLIGENCE.md#61av-harness-implementation-queue--adaptive-harness-intelligence-audit-maintenance-planned) (**Frozen** until product gate) | AHI owns thresholds |
+| 3 | **CVL-MAINT-03** | Cross-ref | P4 | **Planned** | FLOW-8 product reference host — cross-ref [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) §6.3 | No CVL-owned product host |
+| 4 | **CVL-MAINT-04** | Cross-ref | P2 | **Planned** | Per-tool L1 critic output trace — cross-ref [`TOOL-MAINT-02`](TOOLS.md#61av-harness-implementation-queue--tools-audit-maintenance-planned) | Trace contract in TOOLS canon |
+
+**Suggested PR order:** CVL-MAINT-04 (doc cross-ref) → CVL-MAINT-01 → CVL-MAINT-02 → CVL-MAINT-03.
+
+**Note:** AUDIT-IDEAL-25.3 product release eval gate — **Done** (2026-06-18 revalidation).
+
+---
 
 **Default answer (infrastructure):** **[§6.1](#61-harness-platform-maintenance-default--band-1)** gate green on every PR — CRIT-V and OBS-BUS platform closeouts **Done**.
 

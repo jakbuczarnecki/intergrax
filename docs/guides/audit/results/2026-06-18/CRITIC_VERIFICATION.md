@@ -1,7 +1,7 @@
 # Audit result — `CRITIC_VERIFICATION`
 
-**Run:** 2026-06-18 · **Mode:** audit_only  
-**Auditor:** cursor-agent · **Verdict:** mature_revalidated
+**Run:** 2026-06-18 · **Mode:** audit_only (interactive layer 18)  
+**Auditor:** cursor-agent · **Verdict:** L3 mature_revalidated
 
 ---
 
@@ -20,12 +20,12 @@
 
 | ID | Severity | Finding | Evidence | Status |
 |----|----------|---------|----------|--------|
-| CVL-AUDIT-01 | — | AUDIT-IDEAL-25.3 Context/RAG eval blocking product release CI | `check_product_release_eval_gate.py` | closed |
-| CVL-AUDIT-02 | — | AUDIT-IDEAL-25.1 shadow eval automation gate green | `scripts/check_shadow_eval_automation.py` | closed |
-| CVL-AUDIT-03 | P3 | L4 adaptive critic thresholds — AHI scope | AHI domain | deferred |
-| CVL-AUDIT-04 | P4 | FLOW-8 product host deferred §6.3 | plan cross-ref | deferred |
+| CVL-GAP-01 | P3 | LLM trajectory judge — skill documented, runtime path optional | CVL-BACKLOG-01 | **planned** (CVL-MAINT-01) |
+| CVL-GAP-02 | P4 | L4 adaptive critic thresholds | AHI domain | **planned** (CVL-MAINT-02 cross-ref) |
+| CVL-GAP-03 | P4 | FLOW-8 product host | §6.3 deferred | **planned** (CVL-MAINT-03 cross-ref) |
+| CVL-GAP-04 | P2 | Per-tool L1 critic output trace | TOOL-MAINT-02 | **planned** (CVL-MAINT-04 cross-ref) |
 
-**p0_open:** 0 · **p1_open:** 0
+No open P0/P1. CRIT-V + CVL-LC **Done**. AUDIT-IDEAL-25.3 gate **Done**.
 
 ---
 
@@ -33,7 +33,7 @@
 
 | Action | Target | Notes |
 |--------|--------|-------|
-| Plan row added/updated | yes | AUDIT-IDEAL-25.3 → Done (gate green 2026-06-18) |
+| Plan row added/updated | `docs/plan/CRITIC_VERIFICATION.md` §6.1av | CVL-MAINT-01..04 |
 | Architecture sync needed | no | |
 
 ---
@@ -46,17 +46,16 @@ uv run python scripts/check_product_release_eval_gate.py
 uv run pytest tests/unit/runtime/critic/ -q
 ```
 
-Shadow eval: OK. Product release eval gate: OK (2 context golden cases). Critic unit tests: 33 passed.
+All green: **33 passed**.
 
 ---
 
-## Backlog P2–P4 (deferred)
+## Backlog P2–P4 (planned / deferred)
 
-- L4 adaptive critic thresholds — AHI P4
-- LLM trajectory judge optional — P3
+- CVL-MAINT-01..04 — §6.1av
 
 ---
 
 ## Recommendation
 
-**Architecturally Mature** — CVL harness mature; AUDIT-IDEAL-25.3 gate green; plan row synced to Done.
+**Architecturally Mature (L3)** — CVL harness Done; optional eval depth tracked.
