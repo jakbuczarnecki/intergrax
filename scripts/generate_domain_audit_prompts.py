@@ -412,8 +412,8 @@ intergrax/runtime/nexus/tools/plan_context_invocation.py
 intergrax/tools/providers/rag/
 .github/workflows/rag-guard.yml · tests/fixtures/rag_golden/""",
         "key_symbols": "RagProfile · RagStack · RetrievalService · RetrievalRequest/RetrievalResult · RetrievalTrace · IngestPipeline · QueryRouter · MetadataFilter · DualIndexStrategy · HierarchicalRetriever",
-        "active_phases": "M-RAG.1–M-RAG.22 Done · **M-RAG-DEPTH active** (M-RAG.23–M-RAG.37 ← GAP-RAG-01..23)",
-        "known_gaps": "GAP-RAG-01/17/23 query_expansion unwired (P0) · GAP-RAG-02/03 DualIndex not default ingest · GAP-RAG-04 poisoning Nexus-only not catalog rag.retrieve · GAP-RAG-05/06 no stream/async ingest · GAP-RAG-07 vector bridges beta · GAP-RAG-08/09 OTel/metrics opt-in · GAP-RAG-10–12 no fallback chain · GAP-RAG-18 GraphRAG beta · GAP-RAG-20 tenant isolation partial · GAP-RAG-21 no load/soak gate",
+        "active_phases": "RAG-LC Done · M-RAG-DEPTH/M-RAG-GRAPH/M-RAG-BACKLOG Done · §6.1av RAG-MAINT queue",
+        "known_gaps": "GAP-RAG-01..40 **Closed** (LC) · GAP-RAG-15/34 explicit Frozen boundaries · Open ops: RAG-MAINT-01 beta→stable promotion gate · RAG-MAINT-02 nightly soak depth · M-RAG.58 adaptive routing → AHI (Frozen)",
         "dimensions": [
             "Single canonical path: RagProfile → RetrievalService → rag.retrieve catalog tool.",
             "Agents do not call vectorstore.query or vendor SDKs directly.",

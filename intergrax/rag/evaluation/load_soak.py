@@ -5,9 +5,11 @@
 
 from __future__ import annotations
 
+import json
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, List, Mapping, Sequence
 
 from langchain_core.documents import Document
@@ -210,6 +212,27 @@ def _p95(values: Sequence[float]) -> float:
     ordered = sorted(float(v) for v in values)
     index = max(0, min(len(ordered) - 1, int(round(0.95 * (len(ordered) - 1)))))
     return ordered[index]
+
+
+def export_load_soak_report(
+    result: LoadSoakResult,
+    path: Path,
+    *,
+    generated_at: str,
+) -> None:
+    """Write nightly load/soak evidence artifact (RAG-MAINT-02)."""
+    out = Path(path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "generated_at": generated_at,
+        "passed": result.passed,
+        "concurrent_workers": result.concurrent_workers,
+        "queries_executed": result.queries_executed,
+        "p95_latency_ms": result.p95_latency_ms,
+        "min_observed_recall": result.min_observed_recall,
+        "reason": result.reason,
+    }
+    out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
 class _FakeEmbedder:
