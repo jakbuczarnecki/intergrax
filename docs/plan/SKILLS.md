@@ -553,4 +553,22 @@ Wave R5 (policy):          R-Policy.1 → R-Policy.2 → R-Policy.3
 
 **Deferred P2–P4:** knowledge bundle BETA maturity · `check_agent_skill_resolution` boundary_demo legacy · optional SK-PRESET depth
 
+### 6.1av Harness implementation queue — Skills audit maintenance (planned)
+
+**Source:** Layer 10 audit (2026-06-18) — `SKILLS` layer 12 · [`guides/audit/results/2026-06-18/SKILLS.md`](guides/audit/results/2026-06-18/SKILLS.md)  
+**Priority ladder:** **Band 1** (§6.1) — catalog hygiene + DX; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **SK-MAINT-01** | Cross-ref | P2 | **Planned** | AS-3 fleet resolution — cross-ref [`ACP-MAINT-01`](AGENT_CONTRACTS_AND_ASSEMBLY.md#61av-harness-implementation-queue--agent-contracts-audit-maintenance-planned); SK canon acceptance note | `check_agent_skill_resolution.py` green after ACP migration |
+| 2 | **SK-MAINT-02** | Code/Docs | P3 | **Planned** | Knowledge bundle BETA → STABLE — promotion criteria + tests | Bundle maturity labeled STABLE; gate or checklist |
+| 3 | **SK-MAINT-03** | Backlog | P4 | **Planned** | Optional SK-PRESET depth packs — register row + scope boundary | No Phase K coupling; explicit P4 defer |
+| 4 | **SK-MAINT-04** | Docs/CI | P3 | **Planned** | Audit prompt sync (SK-BRIDGE **Done**) + register `check_skill_selection_hook.py` in AGENTS.md verification | Prompt known gaps match plan; hook in verification list |
+
+**Suggested PR order:** SK-MAINT-04 → SK-MAINT-01 (doc cross-ref) → SK-MAINT-02 → SK-MAINT-03.
+
+**Cross-domain (not SKILLS-owned):** ACP-MAINT-01/02 — `boundary_demo` migration + ACP close CI bundle.
+
 ---
+
+*End of Skills Implementation Plan.*
