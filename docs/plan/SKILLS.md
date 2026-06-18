@@ -561,11 +561,24 @@ Wave R5 (policy):          R-Policy.1 → R-Policy.2 → R-Policy.3
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **SK-MAINT-01** | Cross-ref | P2 | **Done** | AS-3 fleet resolution — cross-ref [`ACP-MAINT-01`](AGENT_CONTRACTS_AND_ASSEMBLY.md#61av-harness-implementation-queue--agent-contracts-audit-maintenance-planned); SK canon acceptance note | `check_agent_skill_resolution.py` green after ACP migration |
-| 2 | **SK-MAINT-02** | Code/Docs | P3 | **Planned** | Knowledge bundle BETA → STABLE — promotion criteria + tests | Bundle maturity labeled STABLE; gate or checklist |
-| 3 | **SK-MAINT-03** | Backlog | P4 | **Planned** | Optional SK-PRESET depth packs — register row + scope boundary | No Phase K coupling; explicit P4 defer |
+| 2 | **SK-MAINT-02** | Code/Docs | P3 | **Done** | Knowledge bundle BETA → STABLE — promotion criteria + tests | Bundle maturity labeled STABLE; gate or checklist |
+| 3 | **SK-MAINT-03** | Backlog | P4 | **Done** | Optional SK-PRESET depth packs — register row + scope boundary | No Phase K coupling; explicit P4 defer |
 | 4 | **SK-MAINT-04** | Docs/CI | P3 | **Done** | Audit prompt sync (SK-BRIDGE **Done**) + register `check_skill_selection_hook.py` in AGENTS.md verification | `intergrax doctor check` runs skill hook |
 
 **Suggested PR order:** SK-MAINT-04 → SK-MAINT-01 (doc cross-ref) → SK-MAINT-02 → SK-MAINT-03.
+
+### 6.1aw SK-PRESET depth backlog (P4 defer — SK-MAINT-03)
+
+Optional vertical depth packs beyond SK-PRESET.1–5 shipped presets. **Not Phase K** —
+explicit P4 defer; register only:
+
+| ID | Scope | Status | Notes |
+|----|-------|--------|-------|
+| SK-PRESET-DEPTH-1 | Industry-specific skill depth (legal_ops, oncall) | **Deferred P4** | Extend existing vertical presets in `skill_wiring.py` |
+| SK-PRESET-DEPTH-2 | Cross-bundle composition packs (RAG + graph + ops) | **Deferred P4** | Requires CE + SK bridge maturity |
+| SK-PRESET-DEPTH-3 | Host-scoped preset overrides per tenant | **Deferred P4** | UAEP policy coupling — out of SK-only scope |
+
+**Boundary:** SK-MAINT-03 closes the register row; implementation waits for product reprioritization.
 
 **Cross-domain (not SKILLS-owned):** ACP-MAINT-01/02 — `boundary_demo` migration + ACP close CI bundle.
 

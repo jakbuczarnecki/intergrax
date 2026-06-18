@@ -11,7 +11,7 @@
 1. Resolves single tool `openai.file_search.query`.
 2. Does **not** use harness `RetrievalService` / `vectorstore_manager` — OpenAI backend only.
 3. Prompt ref: `knowledge.openai_strict.system` enforces citation-only answers.
-4. Bundle marked BETA — pair with integration OpenAI credentials on host.
+4. Bundle marked STABLE — pair with integration OpenAI credentials on host.
 
 ## How to use
 
