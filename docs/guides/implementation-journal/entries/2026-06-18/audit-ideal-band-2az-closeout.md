@@ -14,7 +14,7 @@ plan_ref:
   - AUDIT-IDEAL-14.4
   - AUDIT-IDEAL-14.5
 status: completed
-commit: pending
+commit: 4582e585
 adr: none — gate wiring and doctor hooks; no new platform contracts
 ---
 

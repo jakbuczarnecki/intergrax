@@ -5,7 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-18-038 | 2026-06-18 | multi-domain AUDIT-IDEAL | §6.1au Band 2az | [AUDIT-IDEAL 88/88 closeout](entries/2026-06-18/audit-ideal-band-2az-closeout.md) | pending |
+| IJ-2026-06-18-038 | 2026-06-18 | multi-domain AUDIT-IDEAL | §6.1au Band 2az | [AUDIT-IDEAL 90/90 closeout](entries/2026-06-18/audit-ideal-band-2az-closeout.md) | 4582e585 |
 | IJ-2026-06-18-037 | 2026-06-18 | tier-0, tier-3 legal | INT-MAINT-03 | [Legal host OTEL assembly fix](entries/2026-06-18/legal-otel-assembly-fix.md) | c9503158 |
 | IJ-2026-06-18-036 | 2026-06-18 | tier-1 REASONING_AND_COGNITION | COG-MAINT-03 | [COG-MAINT-03 — replan acceptance test](entries/2026-06-18/reasoning-maint-implement.md) | 2075b0af |
 | IJ-2026-06-18-035 | 2026-06-18 | tier-0 SKILLS | SK-MAINT-02..03 | [SK-MAINT-02..03 — audit maintenance implementation](entries/2026-06-18/skills-maint-implement.md) | pending |
