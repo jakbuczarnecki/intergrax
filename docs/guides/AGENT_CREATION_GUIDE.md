@@ -1256,6 +1256,38 @@ Plugin extension (Tier-0)
 
 **Rule:** compose policy **once** at Tier-3 startup (`build_runtime_policy_bundle`, `wire_application_environment`). Agents MUST NOT construct parallel policy objects.
 
+#### H.2.1 Security middleware layout (UAEP-MAINT-03)
+
+```mermaid
+flowchart TB
+  subgraph tier3 [Tier-3 host wiring]
+    WIRING["applications/*/host/*_wiring.py"]
+    ENV["ApplicationEnvironmentProfile"]
+    WIRING --> ENV
+  end
+  subgraph tier1 [Tier-1 UAEP runtime]
+    UAEP["UAEPExecutor"]
+    MW["MiddlewarePipeline"]
+    TM["TraceEmittingMiddleware — STEP_STARTED only"]
+    TD["ToolInjectionDefenseMiddleware"]
+    KERNEL["HarnessKernel — canonical STEP_COMPLETED"]
+    UAEP --> MW
+    MW --> TM
+    MW --> TD
+    UAEP --> KERNEL
+  end
+  subgraph arch [Runtime architecture canon]
+    SEC["intergrax/runtime/architecture/tool_security.py"]
+    POL["intergrax/runtime/policy/"]
+  end
+  ENV --> WIRING
+  WIRING --> UAEP
+  SEC --> TD
+  POL --> MW
+```
+
+Authors customize security through **Tier-3** `*_wiring.py` + `ApplicationEnvironmentProfile.security_profile` — not by forking `intergrax/runtime/middleware/`.
+
 ### H.3 Security profile (per application)
 
 `ApplicationEnvironmentProfile.security_profile` (`ApplicationSecurityProfile`) maps to Phase V-SEC / V-REM wiring:

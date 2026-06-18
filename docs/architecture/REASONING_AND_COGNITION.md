@@ -590,6 +590,17 @@ Classify failures **before** orchestration retry logic conflates them:
 
 **Shipped (COG-6.*):** `ReasoningFailureKind` enum on `plan_metadata`, task metadata, and `DECISION_EMITTED` payloads when planners fall back or policy blocks.
 
+**Canonical mapping (COG-MAINT-01)** — architecture §17 codes ↔ runtime enum:
+
+| §17 code | `ReasoningFailureKind` | Emit path |
+|----------|------------------------|-----------|
+| `COG-PLAN-PARSE` | `planner_parse_failed` | `nexus_plan_bridge.build_nexus_plan_unified` |
+| `COG-PLAN-VALID` | `planner_validation_failed` | `nexus_plan_bridge` agent roster validation |
+| `COG-POLICY-BLOCK` | `planner_policy_blocked` | `planning_runner` policy interrupt |
+| `COG-UNSUPPORTED` | `classifier_unsupported` | `RulesTaskClassifier` / rules path |
+| (classifier fallback) | `classifier_fallback` | `LlmTaskClassifier` parse fallback |
+| (generic planner fallback) | `planner_fallback` | engine planner → `TaskPlanner` |
+
 ---
 
 ## 18. Observability and trace contracts

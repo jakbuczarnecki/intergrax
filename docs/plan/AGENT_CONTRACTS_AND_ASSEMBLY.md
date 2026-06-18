@@ -1054,7 +1054,7 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **ACP-MAINT-01** | Code | P2 | **Done** | Migrate `boundary_demo` off author-time `allowed_tools` — `skill_ids`/`extra_tools` + ReflexAgent path per AS-3 | `check_agent_skill_resolution.py` green; partner PoC behavior preserved |
 | 2 | **ACP-MAINT-02** | CI | P2 | **Done** | Include `check_agent_skill_resolution.py` in `check_agent_acp_close_ci.py` umbrella | ACP close CI fails on AS-3 violations fleet-wide |
-| 3 | **ACP-MAINT-03** | Docs | P3 | **Planned** | Sync audit prompt known gaps — AUDIT-IDEAL-19.1/20.1/31.1 **Done** vs stale Planned wording | `docs/guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` matches plan LC closeout |
+| 3 | **ACP-MAINT-03** | Docs | P3 | **Done** | Sync audit prompt known gaps — AUDIT-IDEAL-19.1/20.1/31.1 **Done** vs stale Planned wording | `docs/guides/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` matches plan LC closeout |
 
 **Suggested PR order:** ACP-MAINT-01 → ACP-MAINT-02 → ACP-MAINT-03.
 

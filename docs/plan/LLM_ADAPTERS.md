@@ -581,8 +581,8 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **LLM-MAINT-01** | DX | P2 | **Done** | Close AUDIT-IDEAL-6.7 — add LLM subset (`check_llm_adapter_typed_returns` + optional catalog smoke) to `intergrax doctor check` | `intergrax doctor --ci` runs LLM checks; 6.7 **Done** |
 | 2 | **LLM-MAINT-02** | CI | P2 | **Done** | M-LLM-X.7.3 — `scripts/check_model_catalog_coverage.py` warns on adapter default models missing from YAML | Gate registered in CI umbrella |
-| 3 | **LLM-MAINT-03** | Code | P2 | **Planned** | M-LLM-X.4.5 — Tier-3 `ApplicationEnvironmentProfile` optional LLM failover list wiring | Host smoke test; profile field documented |
-| 4 | **LLM-MAINT-04** | Docs | P3 | **Planned** | Redis distributed rate limit bootstrap pattern — reference host wiring doc + cross-ref ECP/TIER3 | USAGE + host guide; `set_llm_distributed_rate_limiter` exemplar |
+| 3 | **LLM-MAINT-03** | Code | P2 | **Done** | M-LLM-X.4.5 — Tier-3 `ApplicationEnvironmentProfile` optional LLM failover list wiring | `LLMProfile.fallback_profiles` + `resolve_llm_adapter` |
+| 4 | **LLM-MAINT-04** | Docs | P3 | **Done** | Redis distributed rate limit bootstrap pattern — reference host wiring doc + cross-ref ECP/TIER3 | `intergrax/llm_adapters/USAGE.md` §Distributed rate limiting |
 
 **Suggested PR order:** LLM-MAINT-01 → LLM-MAINT-02 → LLM-MAINT-03 → LLM-MAINT-04.
 

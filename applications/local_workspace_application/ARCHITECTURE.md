@@ -871,6 +871,14 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 
 **Frontend:** none new. **Backend:** host only.
 
+**ORCH-MAINT-02 — CFG-14 hybrid daemon enablement (operator runbook):**
+
+1. Copy `.env.example` → `.env` in `applications/local_workspace_application/`.
+2. Set `LOCAL_WORKSPACE_INCLUDE_SCHEDULER=true`, `LOCAL_WORKSPACE_INCLUDE_INTERACTIONS=true`, `LOCAL_WORKSPACE_INCLUDE_TASK_CONTROL=true`.
+3. Optional queue path: `LOCAL_WORKSPACE_INCLUDE_QUEUE_WORKER=true` (see ORCH-MAINT-01 lab scaffold default).
+4. Start host: `uv run uvicorn local_workspace_application.host.main:app --port 8090`.
+5. Verify: `GET /health` → 200; `POST /v1/local_workspace/run` with `echo.basic` completes; scheduler poll logs when `INTERGRAX_SCHEDULER_POLL_SECONDS` set.
+
 **Platform audit (2026-06-09):** CFG-14 hybrid daemon E2E remains **deferred** (Band 3 / §6.3). Harness reference for task control + scheduler: `poc_template_application`, `legal_application`, `research_application` with `INCLUDE_TASK_CONTROL` — see [`docs/architecture/ORCHESTRATION.md`](../../docs/architecture/ORCHESTRATION.md) §59.2 · Phase **H-APP-WIRING.4**.
 
 ---

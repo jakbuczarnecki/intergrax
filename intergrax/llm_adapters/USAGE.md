@@ -213,6 +213,22 @@ INTERGRAX_LLM_TENANT_MAX_TOKENS=500000   # optional hard quota
 
 Scrape: `register_llm_metrics_routes(app)` → `GET /metrics/llm`.
 
+### Distributed rate limiting (LLM-MAINT-04)
+
+For multi-replica Tier-3 hosts, wire Redis-backed token buckets at process startup:
+
+```python
+from intergrax.integrations.providers.key_value_cache.redis import create_redis_rate_limiter
+from intergrax.llm_adapters._shared.resilience import set_llm_distributed_rate_limiter
+
+limiter = create_redis_rate_limiter(env.integration_profile.resolve_key_value_cache())
+set_llm_distributed_rate_limiter(limiter)
+```
+
+Requires `integration_profile.key_value_cache` slug `redis`. Cross-ref: [`docs/plan/ELASTIC_CAPACITY_AND_SCALING.md`](../../docs/plan/ELASTIC_CAPACITY_AND_SCALING.md) (platform scaling) · [`docs/plan/TIER3_APPLICATION_ENVIRONMENT.md`](../../docs/plan/TIER3_APPLICATION_ENVIRONMENT.md) (host wiring).
+
+**Failover profiles (LLM-MAINT-03):** set `LLMProfile.fallback_profiles` on `ApplicationEnvironmentProfile.capabilities.llm` — `resolve_llm_adapter(env)` builds `FailoverLLMAdapter` automatically when fallbacks or routing hints are present.
+
 ---
 
 ## Testing

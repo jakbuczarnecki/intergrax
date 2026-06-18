@@ -54,7 +54,7 @@ RAG-LC Done · M-RAG-DEPTH/M-RAG-GRAPH/M-RAG-BACKLOG Done · §6.1av RAG-MAINT q
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-GAP-RAG-01..40 **Closed** (LC) · GAP-RAG-15/34 explicit Frozen boundaries · Open ops: RAG-MAINT-01 beta→stable promotion gate · RAG-MAINT-02 nightly soak depth · M-RAG.58 adaptive routing → AHI (Frozen)
+GAP-RAG-01..40 **Closed** (LC) · GAP-RAG-15/34 Frozen · §6.1av RAG-MAINT **Done** · M-RAG.58 → AHI Frozen index
 
 ---
 

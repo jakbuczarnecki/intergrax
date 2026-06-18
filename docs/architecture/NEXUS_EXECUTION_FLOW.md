@@ -58,6 +58,17 @@ All three converge through `ToolRuntime` for side effects and `PolicyEngine` for
 
 **Rule:** UC-1–UC-6 are **harness-proven** in lab; **production-ready** multi-agent product flows (UC-5 at scale, §42.43) remain **Phase K / FLOW-8** until explicit product decision.
 
+**Production-ready checklist (FLOW-MAINT-02):**
+
+| Gate | Strict / product host | Evidence |
+|------|----------------------|----------|
+| `execution_mode=strict` | Required | `ApplicationEnvironmentProfile` |
+| W-OPS SLO hooks | Trace + task lifecycle events persisted | `observability_profile` + OTEL slug |
+| Reference host presets | `harness_production_stack` or product manifest | `applications/*/manifest.py` |
+| Planner fail-fast | `planner_kind=engine` requires `llm_adapter` in wiring context | `test_orchestration_wiring.py` |
+| Partial results policy | `ResiliencePolicy.allow_partial_result` honored in graph runner | `test_graph_runner_resilience.py` |
+| Queue worker (optional) | `INCLUDE_QUEUE_WORKER=true` for async intake | ORCH-MAINT-01 lab scaffold default |
+
 ---
 
 ## 2. Layer model at runtime

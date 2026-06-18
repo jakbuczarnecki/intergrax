@@ -37,8 +37,8 @@
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **UAEP-AUDIT-01** | Code | P2 | **Done** | `tenant_id` on `RuntimeEvent` in `UAEPExecutor._emit`, `TraceEmittingMiddleware`, and any orphan emitters | §42.44.2; regression gate on event tenant propagation |
-| 2 | **UAEP-MAINT-02** | Code | P3 | **Planned** | Dedup `STEP_COMPLETED` — canonical emitter in `HarnessKernel`; adjust `TraceEmittingMiddleware` to avoid duplicate journal entries | Single `STEP_COMPLETED` per step boundary in unified run journal |
-| 3 | **UAEP-MAINT-03** | Docs | P3 | **Planned** | Security middleware layout diagram in `AGENT_CREATION_GUIDE.md` Appendix H (`runtime/architecture/` + Tier-3 `*_wiring.py` map) | No new mechanisms; author onboarding clarity |
+| 2 | **UAEP-MAINT-02** | Code | P3 | **Done** | Dedup `STEP_COMPLETED` — canonical emitter in `HarnessKernel`; adjust `TraceEmittingMiddleware` to avoid duplicate journal entries | Single `STEP_COMPLETED` per step boundary in unified run journal |
+| 3 | **UAEP-MAINT-03** | Docs | P3 | **Done** | Security middleware layout diagram in `AGENT_CREATION_GUIDE.md` Appendix H (`runtime/architecture/` + Tier-3 `*_wiring.py` map) | No new mechanisms; author onboarding clarity |
 
 **Suggested PR order:** UAEP-AUDIT-01 → UAEP-MAINT-02 → UAEP-MAINT-03.
 
