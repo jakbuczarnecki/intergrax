@@ -268,4 +268,22 @@ W-ADAPT-0.2 → 0.3 → 0.4 → 0.5
 
 **Deferred P2–P4:** L4 adaptive thresholds product-gated · foundation model training out of scope
 
+### 6.1av Harness implementation queue — Adaptive harness intelligence audit maintenance (planned)
+
+**Source:** Layer 19 audit (2026-06-18) — `ADAPTIVE_HARNESS_INTELLIGENCE` L4 · [`guides/audit/results/2026-06-18/ADAPTIVE_HARNESS_INTELLIGENCE.md`](guides/audit/results/2026-06-18/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
+**Priority ladder:** **Band 1** (§6.1) — product-gated L4 depth; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **AHI-MAINT-01** | Process | P4 | **Planned** | L4 adaptive thresholds — product-gated promotion criteria + evidence bundle | Explicit product decision gate before auto-apply |
+| 2 | **AHI-MAINT-02** | Cross-ref | P2 | **Planned** | AUDIT-IDEAL-6.2 live routing — cross-ref [`LLM-MAINT-02`](LLM_ADAPTERS.md#61av-harness-implementation-queue--llm-adapters-audit-maintenance-planned) / M-LLM-X.5 | AHI canon documents LLM owner |
+| 3 | **AHI-MAINT-03** | Test/Ops | P3 | **Planned** | Production adaptive evidence — reference host runs populating `signal_trends.json` | `phase_w_adapt_report.py` shows non-zero signals in CI fixture |
+| 4 | **AHI-MAINT-04** | Docs | P3 | **Planned** | L4 **Frozen** items index — GAP-CTX-12, M-RAG.58, CVL L4 thresholds | Single cross-domain table in architecture §L4 |
+
+**Suggested PR order:** AHI-MAINT-04 → AHI-MAINT-02 → AHI-MAINT-03 → AHI-MAINT-01.
+
+**Explicitly out of scope:** foundation model training — canon constraint.
+
 ---
+
+*End of Adaptive Harness Intelligence Implementation Plan.*
