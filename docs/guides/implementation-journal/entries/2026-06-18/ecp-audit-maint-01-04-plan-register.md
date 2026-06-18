@@ -10,7 +10,7 @@ plan_ref:
   - ECP-MAINT-03
   - ECP-MAINT-04
 status: completed
-commit: pending
+commit: 125e66ff
 adr: none
 ---
 

@@ -5,10 +5,10 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-18-019 | 2026-06-18 | tier-3 TIER3_APPLICATION_ENVIRONMENT | T3-MAINT-01..04 | [T3-MAINT-01..04 — Interactive layer 22 audit plan registration (batch mode — final layer)](entries/2026-06-18/tier3-audit-maint-01-04-plan-register.md) | pending |
-| IJ-2026-06-18-018 | 2026-06-18 | tier-0, tier-3 EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE | DX-MAINT-01..04 | [DX-MAINT-01..04 — Interactive layer 21 audit plan registration (batch mode)](entries/2026-06-18/dx-audit-maint-01-04-plan-register.md) | pending |
-| IJ-2026-06-18-017 | 2026-06-18 | tier-1 ELASTIC_CAPACITY_AND_SCALING | ECP-MAINT-01..04 | [ECP-MAINT-01..04 — Interactive layer 20 audit plan registration (batch mode)](entries/2026-06-18/ecp-audit-maint-01-04-plan-register.md) | pending |
-| IJ-2026-06-18-016 | 2026-06-18 | tier-1 ADAPTIVE_HARNESS_INTELLIGENCE | AHI-MAINT-01..04 | [AHI-MAINT-01..04 — Interactive layer 19 audit plan registration (batch mode)](entries/2026-06-18/ahi-audit-maint-01-04-plan-register.md) | pending |
+| IJ-2026-06-18-019 | 2026-06-18 | tier-3 TIER3_APPLICATION_ENVIRONMENT | T3-MAINT-01..04 | [T3-MAINT-01..04 — Interactive layer 22 audit plan registration (batch mode — final layer)](entries/2026-06-18/tier3-audit-maint-01-04-plan-register.md) | 769e6293 |
+| IJ-2026-06-18-018 | 2026-06-18 | tier-0, tier-3 EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE | DX-MAINT-01..04 | [DX-MAINT-01..04 — Interactive layer 21 audit plan registration (batch mode)](entries/2026-06-18/dx-audit-maint-01-04-plan-register.md) | 146c9bc5 |
+| IJ-2026-06-18-017 | 2026-06-18 | tier-1 ELASTIC_CAPACITY_AND_SCALING | ECP-MAINT-01..04 | [ECP-MAINT-01..04 — Interactive layer 20 audit plan registration (batch mode)](entries/2026-06-18/ecp-audit-maint-01-04-plan-register.md) | 125e66ff |
+| IJ-2026-06-18-016 | 2026-06-18 | tier-1 ADAPTIVE_HARNESS_INTELLIGENCE | AHI-MAINT-01..04 | [AHI-MAINT-01..04 — Interactive layer 19 audit plan registration (batch mode)](entries/2026-06-18/ahi-audit-maint-01-04-plan-register.md) | 1fd612de |
 | IJ-2026-06-18-015 | 2026-06-18 | tier-1 CRITIC_VERIFICATION | CVL-MAINT-01..04 | [CVL-MAINT-01..04 — Interactive layer 18 audit plan registration](entries/2026-06-18/cvl-audit-maint-01-04-plan-register.md) | 96107ac3 |
 | IJ-2026-06-18-014 | 2026-06-18 | tier-1 RELIABILITY_FAILURE_AND_HITL | REL-MAINT-01..04 | [REL-MAINT-01..04 — Interactive layer 17 audit plan registration](entries/2026-06-18/reliability-audit-maint-01-04-plan-register.md) | a845011b |
 | IJ-2026-06-18-013 | 2026-06-18 | tier-1 OBSERVABILITY | OBS-MAINT-01..04 | [OBS-MAINT-01..04 — Interactive layer 16 audit plan registration](entries/2026-06-18/observability-audit-maint-01-04-plan-register.md) | 370e21d0 |

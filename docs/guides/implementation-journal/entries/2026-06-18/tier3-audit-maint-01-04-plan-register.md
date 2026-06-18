@@ -10,7 +10,7 @@ plan_ref:
   - T3-MAINT-03
   - T3-MAINT-04
 status: completed
-commit: pending
+commit: 769e6293
 adr: none
 ---
 

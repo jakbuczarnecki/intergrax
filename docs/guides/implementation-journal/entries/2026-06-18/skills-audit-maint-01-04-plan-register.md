@@ -10,7 +10,7 @@ plan_ref:
   - SK-MAINT-03
   - SK-MAINT-04
 status: completed
-commit: 8b157787
+commit: a7d20e41
 adr: none — audit maintenance register only; no contract change
 ---
 
