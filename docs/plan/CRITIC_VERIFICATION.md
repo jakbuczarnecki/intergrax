@@ -866,10 +866,10 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **CVL-MAINT-01** | Code | P3 | **Planned** | Optional wire `eval.trajectory_judge` skill into default eval path (beyond heuristic `eval.trajectory`) | Host/profile opt-in; unit test for judge path |
-| 2 | **CVL-MAINT-02** | Cross-ref | P4 | **Planned** | L4 adaptive critic thresholds — cross-ref [`AHI-MAINT-*`](ADAPTIVE_HARNESS_INTELLIGENCE.md#61av-harness-implementation-queue--adaptive-harness-intelligence-audit-maintenance-planned) (**Frozen** until product gate) | AHI owns thresholds |
-| 3 | **CVL-MAINT-03** | Cross-ref | P4 | **Planned** | FLOW-8 product reference host — cross-ref [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) §6.3 | No CVL-owned product host |
-| 4 | **CVL-MAINT-04** | Cross-ref | P2 | **Planned** | Per-tool L1 critic output trace — cross-ref [`TOOL-MAINT-02`](TOOLS.md#61av-harness-implementation-queue--tools-audit-maintenance-planned) | Trace contract in TOOLS canon |
+| 1 | **CVL-MAINT-01** | Code | P3 | **Done** | Optional wire `eval.trajectory_judge` skill into default eval path (beyond heuristic `eval.trajectory`) | `trajectory_judge_path.py` + unit test; host/profile opt-in |
+| 2 | **CVL-MAINT-02** | Cross-ref | P4 | **Done** | L4 adaptive critic thresholds — cross-ref [`AHI-MAINT-*`](ADAPTIVE_HARNESS_INTELLIGENCE.md#61av-harness-implementation-queue--adaptive-harness-intelligence-audit-maintenance-planned) (**Frozen** until product gate) | AHI owns thresholds |
+| 3 | **CVL-MAINT-03** | Cross-ref | P4 | **Done** | FLOW-8 product reference host — cross-ref [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) §6.3 | No CVL-owned product host |
+| 4 | **CVL-MAINT-04** | Cross-ref | P2 | **Done** | Per-tool L1 critic output trace — cross-ref [`TOOL-MAINT-02`](TOOLS.md#61av-harness-implementation-queue--tools-audit-maintenance-planned) | Trace contract in TOOLS canon |
 
 **Suggested PR order:** CVL-MAINT-04 (doc cross-ref) → CVL-MAINT-01 → CVL-MAINT-02 → CVL-MAINT-03.
 

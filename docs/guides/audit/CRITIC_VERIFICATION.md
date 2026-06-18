@@ -54,7 +54,7 @@ CRIT-V 0–7 + FOLLOWUP Done · CVL-LC-1/2 layer completion (2026-06-13) · FAUD
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-L4 adaptive critic thresholds deferred (AHIA) · FLOW-8 product host deferred · LLM trajectory judge optional (eval.trajectory_judge skill)
+CVL-LC Done · §6.1av CVL-MAINT Done · L4 thresholds Frozen → AHI · FLOW-8 host → §6.3
 
 ---
 
