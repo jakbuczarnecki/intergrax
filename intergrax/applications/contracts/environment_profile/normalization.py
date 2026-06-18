@@ -6,6 +6,14 @@ from __future__ import annotations
 
 from typing import Any
 
+PROFILE_SPEC_V2: str = "2.0.0"
+
+
+def uses_nested_profile_wire(spec_version: str) -> bool:
+    """Return whether serialized profile JSON must use nested bundle roots (M3)."""
+    return str(spec_version).startswith("2.")
+
+
 BUNDLE_ROOT_KEYS: frozenset[str] = frozenset(
     {
         "meta",
@@ -288,3 +296,17 @@ def bundle_normalized_payload(data: dict[str, Any]) -> dict[str, Any]:
     nested = lift_flat_profile_dict(data)
     payload = {key: nested[key] for key in sorted(nested) if key in BUNDLE_ROOT_KEYS}
     return _strip_null_nodes(payload)
+
+
+def nested_canonical_profile_dict(data: dict[str, Any], *, spec_version: str = PROFILE_SPEC_V2) -> dict[str, Any]:
+    """Produce nested bundle-only profile JSON for ``spec_version`` 2.x wire (APP-EVOL-8.6)."""
+    nested = lift_flat_profile_dict(data)
+    meta = _as_dict(nested.get("meta"))
+    meta["spec_version"] = spec_version
+    nested["meta"] = meta
+    return {key: nested[key] for key in BUNDLE_ROOT_KEYS if key in nested}
+
+
+def migrate_profile_dict_to_spec_v2(data: dict[str, Any]) -> dict[str, Any]:
+    """Migrate flat or nested ``spec_version`` 1.x profile JSON to nested 2.0.0 wire."""
+    return nested_canonical_profile_dict(data, spec_version=PROFILE_SPEC_V2)
