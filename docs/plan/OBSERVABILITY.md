@@ -286,4 +286,22 @@ python scripts/check_harness_adr.py
 
 **Deferred P2–P4:** OBS-EVOL-9.9 `runtime_event.v2` · product dashboards §6.3a
 
+### 6.1av Harness implementation queue — Observability audit maintenance (planned)
+
+**Source:** Layer 16 audit (2026-06-18) — `OBSERVABILITY` layers 21, 30 · [`guides/audit/results/2026-06-18/OBSERVABILITY.md`](guides/audit/results/2026-06-18/OBSERVABILITY.md)  
+**Priority ladder:** **Band 1** (§6.1) — post-publication + prompt sync; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **OBS-MAINT-01** | Schema | P3 | **Planned** | OBS-EVOL-9.9 — `runtime_event.v2` schema evolution (post-publication) | Migration doc + conformance tests |
+| 2 | **OBS-MAINT-02** | Cross-ref | P4 | **Planned** | Product dashboards §6.3a — cross-ref [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) Phase K owner | No duplicate OBS product scope |
+| 3 | **OBS-MAINT-03** | Docs | P3 | **Planned** | Audit prompt sync — OBS-EVOL-9 M0–M3 **Done** in known gaps | `docs/guides/audit/OBSERVABILITY.md` matches LC |
+| 4 | **OBS-MAINT-04** | Docs | P3 | **Planned** | Pre-release spine consolidation checklist — operator runbook row | Checklist in architecture or guides |
+
+**Suggested PR order:** OBS-MAINT-03 → OBS-MAINT-04 → OBS-MAINT-01 → OBS-MAINT-02.
+
+**Cross-domain:** CE-MAINT-01/02 — context assembly OTel/cost (OBS spine consumer).
+
 ---
+
+*End of Observability Implementation Plan.*
