@@ -86,6 +86,22 @@ class UAEPBlockedError(RuntimeError):
     """Raised when middleware/hooks block UAEP execution."""
 
 
+def _tenant_id_from_ctx(ctx: RuntimeExecutionContext) -> str:
+    request = ctx.request
+    if isinstance(request, RuntimeRequest):
+        tenant_id = request.tenant_id or request.metadata.get("tenant_id")
+        if tenant_id:
+            return str(tenant_id)
+    elif request is not None:
+        tenant_id = request.metadata.get("tenant_id")
+        if tenant_id:
+            return str(tenant_id)
+    raw = ctx.metadata.get("tenant_id")
+    if raw:
+        return str(raw)
+    return "default"
+
+
 class _BusEventEmitter:
     def __init__(self, bus: RuntimeEventBus) -> None:
         self._bus = bus
@@ -864,6 +880,7 @@ class UAEPExecutor:
                 run_id=ctx.run_id,
                 node_id=ctx.node_id,
                 agent_id=agent_id,
+                tenant_id=_tenant_id_from_ctx(ctx),
                 event_type=RuntimeEventType.CONTEXT_ASSEMBLED,
                 phase=ExecutionPhase.CONTEXT_BUILDING,
                 correlation_id=ctx.correlation_id or ctx.task_id,
@@ -892,6 +909,7 @@ class UAEPExecutor:
             run_id=ctx.run_id,
             node_id=ctx.node_id,
             agent_id=ctx.agent_id,
+            tenant_id=_tenant_id_from_ctx(ctx),
             event_type=event_type,
             phase=phase,
             payload=payload,
