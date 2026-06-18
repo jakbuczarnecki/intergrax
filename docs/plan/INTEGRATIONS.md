@@ -1292,7 +1292,7 @@ L4 readiness requires:
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **INT-MAINT-01** | CI | P2 | **Planned** | Beta→stable promotion gate — `check_integration_maturity_labels.py` or conformance extension | STABLE slugs have health probe + test evidence |
+| 1 | **INT-MAINT-01** | CI | P2 | **Done** | Beta→stable promotion gate — `check_integration_maturity_labels.py` or conformance extension | STABLE slugs have health probe + test evidence |
 | 2 | **INT-MAINT-02** | Code | P3 | **Planned** | Thin P4 provider shells — hardening checklist + minimal health probe per shell | Each P4 shell passes probe unit test |
 | 3 | **INT-MAINT-03** | Docs/Metadata | P3 | **Planned** | SaaS-only slugs — honest lab-stack docs + `requires_local_container` metadata | Manifest field + USAGE honesty |
 | 4 | **INT-MAINT-04** | Cross-ref | P4 | **Planned** | nginx/ingress slug — cross-ref [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) | ECP owns slug; INT documents bridge |
