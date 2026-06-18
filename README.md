@@ -55,9 +55,10 @@ Maturity uses **L0–L4** levels (not arbitrary percentages). Per-domain evidenc
 | **Tools** | **L3** | [TOOL-ENG](docs/plan/TOOLS.md) closeout **Done** · deferred: hierarchical LLM category pass |
 | **Tier-3 hosts** | **L3** (depth partial) | [APP-PROD](docs/plan/TIER3_APPLICATION_ENVIRONMENT.md) gates **Done** · §22 profile bundles M1–M3 **Done** · enterprise distribution **P4** |
 | **Memory** | **L3** | [MEM / MEM-VEC / MEM-DEPTH](docs/plan/MEMORY.md) **Done** · L3 harness · P2 depth: procedural store, org LTM parity, per-step budget caps before CE collect |
+| **RAG** | **L3** (profile-driven) | [M-RAG-DEPTH / GRAPH](docs/plan/RAG.md) **Done** · Tier-3 `RagProfile` required · autonomous parser/chunker/retriever selection **Frozen/P4** → AHI |
 | **Adaptive harness (AHI)** | **L4-ready** (mechanisms) | [W-ADAPT](docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md) **Done** · L4 runtime mechanisms implemented · production L4 evidence requires product-host run volume |
 
-**Also at L3:** RAG · LLM adapters · Observability · Nexus flow · UAEP · Skills · Integrations — full index in [architecture hub](docs/intergrax_runtime_architecture.md).
+**Also at L3:** LLM adapters · Observability · Nexus flow · UAEP · Skills · Integrations — full index in [architecture hub](docs/intergrax_runtime_architecture.md).
 
 ---
 
@@ -369,7 +370,7 @@ Tier-0 building blocks — one canonical path per concern. Agents use these thro
 | **Tools** | **190** catalog tools · **48** bundles · `intergrax/tools/` | [architecture/TOOLS.md](docs/architecture/TOOLS.md) · [plan](docs/plan/TOOLS.md) · [USAGE](intergrax/tools/USAGE.md) |
 | **Skills** | **149** skills · **41** bundles · `intergrax/skills/` | [architecture/SKILLS.md](docs/architecture/SKILLS.md) · [plan](docs/plan/SKILLS.md) |
 | **LLM adapters** | 19 providers · typed `LLMAdapterResponse` | [architecture/LLM_ADAPTERS.md](docs/architecture/LLM_ADAPTERS.md) |
-| **RAG** | Retrieval, ingest, hybrid/graph/agentic, golden eval | [architecture/RAG.md](docs/architecture/RAG.md) · [plan](docs/plan/RAG.md) |
+| **RAG** | Retrieval, ingest, hybrid/graph/agentic (profile-configured) · golden + load/soak gates | [architecture/RAG.md](docs/architecture/RAG.md) · [plan](docs/plan/RAG.md) |
 | **Ephemeral Code Craft** | Dynamic codegen, test/fix loop, sandbox promotion (**Done** ECC-0…ECC-6) | [architecture/CODE_CRAFT.md](docs/architecture/CODE_CRAFT.md) · [plan](docs/plan/CODE_CRAFT.md) |
 | **Memory** | STM/LTM, context compiler, Knowledge vs LTM boundary | [architecture/MEMORY.md](docs/architecture/MEMORY.md) · [plan](docs/plan/MEMORY.md) |
 | **Modality / ML** | Vision, speech, classical ML via catalog tools | [architecture/MODALITY.md](docs/architecture/MODALITY.md) |
