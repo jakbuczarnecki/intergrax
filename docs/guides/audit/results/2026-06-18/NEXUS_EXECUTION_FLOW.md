@@ -24,9 +24,8 @@
 | FLOW-FIND-02 | P2 | UC-6 research agents use stub LLM | `agents/research/research_agent.py:55` | open |
 | FLOW-FIND-03 | P2 | Production-ready Partial — strict + W-OPS SLO evidence incomplete | architecture §1.4 | deferred |
 | FLOW-FIND-04 | P2 | FLOW-8 product host Deferred; harness sim Done | `test_orchestration_cfg_simulation.py` | deferred §6.3 |
-| FLOW-FIND-05 | P2 | `allow_partial_result` in ResiliencePolicy not wired to graph_runner | `graph_runner.py:223-226` | open |
-| FLOW-FIND-06 | P3 | WFR/EXPIRED reserved v1 — documented, not Nexus graph entry | ADR-FLOW-002 | closed |
-| FLOW-FIND-07 | P3 | Acceptance teardown flake on Windows (signals.db lock) | pytest agent_os suite | open |
+| FLOW-FIND-05 | P2 | `allow_partial_result` in ResiliencePolicy not wired to graph_runner | `graph_runner.py:223-226` | **planned** (FLOW-MAINT-01) |
+| FLOW-FIND-07 | P3 | Acceptance teardown flake on Windows (signals.db lock) | pytest agent_os suite | **planned** (FLOW-MAINT-03) |
 | FLOW-FIND-08–10 | P3–P4 | RAG poisoning profile-gated; run retry off by design; LLM merge future | various | closed/deferred |
 
 Harness FLOW 18/18 Done. No open P0/P1.
@@ -37,30 +36,17 @@ Harness FLOW 18/18 Done. No open P0/P1.
 
 | Action | Target | Notes |
 |--------|--------|-------|
-| Plan row added/updated | optional P2 | FLOW-FIND-05 partial-completion gate |
+| Plan row added/updated | `docs/plan/NEXUS_EXECUTION_FLOW.md` §6.1av | FLOW-MAINT-01..04 |
 | Architecture sync needed | no | |
 
 ---
 
-## Gates executed
+## Backlog P2–P4 (planned / deferred)
 
-```bash
-uv run pytest tests/acceptance/agent_os/ -q
-uv run pytest tests/unit/runtime/nexus/ -q -k "handoff or graph_spec"
-python scripts/check_harness_no_getattr.py
-uv run pytest tests/integration/runtime/test_graph_executor_handoff_retry.py tests/integration/runtime/test_orchestration_cfg_simulation.py tests/integration/runtime/test_planning_decision_record_gate.py -q
-```
-
-Integration FLOW tests: 10 passed.
-
----
-
-## Backlog P2–P4 (deferred)
-
+- FLOW-MAINT-01..04 — §6.1av
 - FLOW-8 / FLOW-GAP-20 product hosts (§6.3)
-- UC-6 production research agents
-- FLOW-FIND-05 partial-completion policy wiring
-- W-OPS SLO evidence; Windows acceptance flake guard
+- UC-6 production research agents (§6.3)
+- W-OPS SLO evidence for production-ready claims (intentional Partial §1.4)
 
 ---
 
