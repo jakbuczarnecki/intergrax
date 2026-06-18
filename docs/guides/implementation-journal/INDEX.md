@@ -5,6 +5,11 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-18-036 | 2026-06-18 | tier-1 REASONING_AND_COGNITION | COG-MAINT-03 | [COG-MAINT-03 — replan acceptance test](entries/2026-06-18/reasoning-maint-implement.md) | pending |
+| IJ-2026-06-18-035 | 2026-06-18 | tier-0 SKILLS | SK-MAINT-02..03 | [SK-MAINT-02..03 — audit maintenance implementation](entries/2026-06-18/skills-maint-implement.md) | pending |
+| IJ-2026-06-18-034 | 2026-06-18 | tier-0 INTEGRATIONS | INT-MAINT-02..04 | [INT-MAINT-02..04 — audit maintenance implementation](entries/2026-06-18/integrations-maint-implement.md) | pending |
+| IJ-2026-06-18-033 | 2026-06-18 | tier-0 TOOLS | TOOL-MAINT-02..03 | [TOOL-MAINT-02..03 — audit maintenance implementation](entries/2026-06-18/tools-maint-implement.md) | pending |
+| IJ-2026-06-18-032 | 2026-06-18 | tier-0, tier-1 CODE_CRAFT | ECC-MAINT-02..04 | [ECC-MAINT-02..04 — audit maintenance implementation](entries/2026-06-18/codecraft-maint-implement.md) | pending |
 | IJ-2026-06-18-031 | 2026-06-18 | tier-3 TIER3_APPLICATION_ENVIRONMENT | T3-MAINT-01..04 | [T3-MAINT-01..04 — audit maintenance implementation](entries/2026-06-18/tier3-maint-implement.md) | f92deceb |
 | IJ-2026-06-18-030 | 2026-06-18 | tier-0, tier-3 EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE | DX-MAINT-01..04 | [DX-MAINT-01..04 — audit maintenance implementation](entries/2026-06-18/experimentation-dx-maint-implement.md) | 9ca1ab5a |
 | IJ-2026-06-18-029 | 2026-06-18 | tier-1 ELASTIC_CAPACITY_AND_SCALING | ECP-MAINT-01..04 | [ECP-MAINT-01..04 — audit maintenance implementation](entries/2026-06-18/elastic-capacity-maint-implement.md) | 4548dbc1 |

@@ -572,9 +572,9 @@ Each sprint = one PR-sized slice → gate green → plan row update → commit.
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **ECC-MAINT-01** | Code | P2 | **Done** | GAP-ECC-23 — wire `Task.metadata.codecraft_mode` per-task override in orchestrator | Unit test: task metadata overrides profile default |
-| 2 | **ECC-MAINT-02** | Code | P3 | **Planned** | GAP-ECC-20 — wire `codegen_llm_profile_ref` to dedicated codegen LLM adapter | Separate adapter identity in craft loop |
-| 3 | **ECC-MAINT-03** | Code | P3 | **Planned** | GAP-ECC-21 — design spike + `container` isolation tier implementation | ADR spike or extension; tier selectable in profile |
-| 4 | **ECC-MAINT-04** | Observability | P3 | **Planned** | GAP-ECC-22 — §10.2 metrics dashboards / trace panels for Code Craft | Metrics emitted; dashboard or trace explorer panel |
+| 2 | **ECC-MAINT-02** | Code | P3 | **Done** | GAP-ECC-20 — wire `codegen_llm_profile_ref` to dedicated codegen LLM adapter | Separate adapter identity in craft loop |
+| 3 | **ECC-MAINT-03** | Code | P3 | **Done** | GAP-ECC-21 — design spike + `container` isolation tier implementation | ADR spike or extension; tier selectable in profile |
+| 4 | **ECC-MAINT-04** | Observability | P3 | **Done** | GAP-ECC-22 — §10.2 metrics dashboards / trace panels for Code Craft | Metrics emitted; dashboard or trace explorer panel |
 
 **Suggested PR order:** ECC-MAINT-01 → ECC-MAINT-02 → ECC-MAINT-03 → ECC-MAINT-04.
 

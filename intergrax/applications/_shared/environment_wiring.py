@@ -129,7 +129,7 @@ def wire_application_environment(
         from dataclasses import replace
 
         wiring_context = replace(wiring_context, document_store=document_store)
-    codecraft_wiring = wire_application_codecraft(env)
+    codecraft_wiring = wire_application_codecraft(env, producer_adapter=resolve_llm_adapter(env))
     wiring_context = apply_codecraft_to_wiring_context(wiring_context, codecraft_wiring)
     if resolved_integration is not None:
         from dataclasses import replace
