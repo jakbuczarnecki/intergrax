@@ -350,10 +350,10 @@ Total ECP-DEPTH: 28 (excluding ECP-DOC)
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **ECP-MAINT-01** | Test | P2 | **Planned** | Harden `test_capacity_approval_queue_flow` — deterministic `scale_requested` event assertion | No timing flake in CI |
-| 2 | **ECP-MAINT-02** | Ops | P3 | **Planned** | Live K8s soak gate — nightly or manual runbook | Soak report artifact |
-| 3 | **ECP-MAINT-03** | Cross-ref | P4 | **Planned** | nginx/ingress slug — cross-ref [`INT-MAINT-04`](INTEGRATIONS.md#61av-harness-implementation-queue--integrations-audit-maintenance-planned) | ECP documents ingress bridge |
-| 4 | **ECP-MAINT-04** | CI | P3 | **Planned** | Register capacity suite in AGENTS.md verification list alongside `check_production_capacity_adapters` | Documented gate bundle |
+| 1 | **ECP-MAINT-01** | Test | P2 | **Done** | Harden `test_capacity_approval_queue_flow` — deterministic `scale_requested` event assertion | Event-kind assertion; no timing flake |
+| 2 | **ECP-MAINT-02** | Ops | P3 | **Done** | Live K8s soak gate — nightly or manual runbook | Manual runbook row in architecture |
+| 3 | **ECP-MAINT-03** | Cross-ref | P4 | **Done** | nginx/ingress slug — cross-ref [`INT-MAINT-04`](INTEGRATIONS.md#61av-harness-implementation-queue--integrations-audit-maintenance-planned) | ECP architecture ingress bridge |
+| 4 | **ECP-MAINT-04** | CI | P3 | **Done** | Register capacity suite in AGENTS.md verification list alongside `check_production_capacity_adapters` | AGENTS.md gate bundle updated |
 
 **Suggested PR order:** ECP-MAINT-01 → ECP-MAINT-04 → ECP-MAINT-02 → ECP-MAINT-03.
 

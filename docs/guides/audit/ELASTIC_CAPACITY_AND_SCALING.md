@@ -54,7 +54,7 @@ ECP-DOC · ECP-DEPTH (ECP-1..8, ECP-OBS) · ADR-SCALE-001/002 · cross-ref W-OPS
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-ECP-DEPTH scaffold not production autoscaling · Collector not wired to live GRAPH_BACKPRESSURE · K8s default factory health-only · Celery provisioner stub · Scheduler HITL bypass risk · AUDIT-IDEAL-30.4 in-memory probes · ECP-PROD backlog
+ECP-LC Done · §6.1av ECP-MAINT Done · live K8s soak manual runbook · ingress slug → INT-MAINT-04
 
 ---
 

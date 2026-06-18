@@ -345,6 +345,10 @@ Agents **MUST NOT** invoke high-risk scale tools by default — ECP control plan
 
 ### 12.3 Kubernetes integration (as-built)
 
+**Live K8s soak runbook (ECP-MAINT-02):** manual operator workflow — run `uv run pytest tests/unit/runtime/capacity/test_ecp_depth_gate.py -q`, then validate cluster scale via `ScalingProvisioner` against staging deployment; export evidence to `build/capacity/k8s_soak_report.json` (operator-maintained artifact; not blocking PR CI).
+
+**Ingress bridge (ECP-MAINT-03):** nginx/ingress integration slug owned by [`INT-MAINT-04`](../plan/INTEGRATIONS.md#61av-harness-implementation-queue--integrations-audit-maintenance-planned).
+
 | Attribute | Value |
 |-----------|-------|
 | Slug | `kubernetes` |
