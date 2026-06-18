@@ -9,7 +9,7 @@ scope: OBSERVABILITY
 plan_ref:
   - EBE-8
 status: completed
-commit: pending
+commit: ae4b5680
 adr: docs/adr/entries/2026-06-13/ADR-OBS-002.md — EBE-8 folded into accepted ADR scope; no new ADR
 ---
 
