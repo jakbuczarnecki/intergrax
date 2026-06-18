@@ -205,6 +205,7 @@ def record_context_assembly(
     engine_id: str = "",
     step_index: int | None = None,
     step_kind: str | None = None,
+    emit_assembled: bool = True,
 ) -> None:
     base_payload: dict[str, Any] = {
         "node_id": node_id,
@@ -213,33 +214,34 @@ def record_context_assembly(
         "context_final_chars": trim.final_chars,
         "engine_id": engine_id,
     }
-    bus.record(
-        runtime_event_with_payload(
-            RuntimeEvent(
-                tenant_id=metadata.get("tenant_id") if isinstance(metadata.get("tenant_id"), str) else None,
-                task_id=task_id,
-                run_id=run_id,
-                node_id=node_id,
-                agent_id=agent_id,
-                event_type=RuntimeEventType.CONTEXT_ASSEMBLED,
-                phase=ExecutionPhase.CONTEXT_BUILDING,
-                correlation_id=task_id,
-            ),
-            ContextAssemblyPayloadV2(
-                node_id=node_id,
-                summary_tier=str(metadata.get("summary_tier"))
-                if metadata.get("summary_tier") is not None
-                else None,
-                context_original_chars=trim.original_chars,
-                context_final_chars=trim.final_chars,
-                trimmed=False,
-                engine_id=engine_id,
-                step_index=step_index,
-                step_kind=step_kind,
-            ),
-            promote_fields=base_payload,
+    if emit_assembled:
+        bus.record(
+            runtime_event_with_payload(
+                RuntimeEvent(
+                    tenant_id=metadata.get("tenant_id") if isinstance(metadata.get("tenant_id"), str) else None,
+                    task_id=task_id,
+                    run_id=run_id,
+                    node_id=node_id,
+                    agent_id=agent_id,
+                    event_type=RuntimeEventType.CONTEXT_ASSEMBLED,
+                    phase=ExecutionPhase.CONTEXT_BUILDING,
+                    correlation_id=task_id,
+                ),
+                ContextAssemblyPayloadV2(
+                    node_id=node_id,
+                    summary_tier=str(metadata.get("summary_tier"))
+                    if metadata.get("summary_tier") is not None
+                    else None,
+                    context_original_chars=trim.original_chars,
+                    context_final_chars=trim.final_chars,
+                    trimmed=False,
+                    engine_id=engine_id,
+                    step_index=step_index,
+                    step_kind=step_kind,
+                ),
+                promote_fields=base_payload,
+            )
         )
-    )
     if trim.trimmed:
         bus.record(
             runtime_event_with_payload(
@@ -310,7 +312,7 @@ def record_context_assembled_from_engine(
                 node_id=node_id,
                 context_original_chars=original_chars,
                 context_final_chars=final_chars,
-                trimmed=assembled.degradation_steps > 0,
+                trimmed=final_chars < original_chars or bool(assembled.degradation_steps),
                 engine_id=engine_id,
                 step_index=step_index,
                 step_kind=step_kind,
