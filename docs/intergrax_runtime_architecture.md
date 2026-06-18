@@ -24,6 +24,22 @@ Execution: [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EX
 
 ---
 
+## Implementer quick start
+
+**Default queue:** [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) **§4.0** priority ladder — Band 1 gate maintenance on every PR; Band 3 product work is **frozen** unless leadership reprioritizes (§6.3).
+
+| Goal | Read first | Command |
+|------|------------|---------|
+| New agent | [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) | `python -m intergrax.scaffold new-agent <name> --capability <cap>.<action>` |
+| New application host | [`guides/APPLICATION_CREATION_GUIDE.md`](guides/APPLICATION_CREATION_GUIDE.md) | `python -m intergrax.scaffold new-application <name>_application` |
+| Agent + app bundle | [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](plan/TIER3_APPLICATION_ENVIRONMENT.md) | `python -m intergrax.scaffold new-stack <name>` |
+| Extension / plugin | [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md) | `bootstrap_catalogs()` + entry points `intergrax.tools` / `intergrax.skills` / `intergrax.integrations` |
+| Harness health | [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) §6.1 | `uv run intergrax doctor --ci` · `uv run pytest -m gate -q` |
+
+**Work cycle:** strategy → architecture pair for your domain → smallest plan item → implement → gate green → update paired docs + journal if significant.
+
+---
+
 ## Agent in the harness environment
 
 **Hub summary for architects, researchers, and AI crawlers** — full canon in [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 · plan [Phase ACP](plan/AGENT_CONTRACTS_AND_ASSEMBLY.md).

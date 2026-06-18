@@ -20,7 +20,11 @@
 
 | ID | Severity | Finding | Evidence | Status |
 |----|----------|---------|----------|--------|
-| PF-AUDIT-01 | P2 | M.6 P6 harness integration expansion (Band 2ac) remains Planned | `docs/plan/PLATFORM_FOUNDATION.md` §M.6 P6 | open |
+| PF-AUDIT-01 | P2 | M.6 P6 harness integration expansion (Band 2ac) | `docs/plan/PLATFORM_FOUNDATION.md` §6.1y | **closed** (32/32 Done 2026-06-02) |
+| PF-MAINT-DOC-01 | P2 | Audit prompt/results drift on M.6 P6 | `audit/PLATFORM_FOUNDATION.md` | **closed** (2026-06-18) |
+| PF-MAINT-DOC-02 | P2 | §6.1au AUDIT-IDEAL counter stale | plan §6.1au vs `AUDIT_IDEAL_2026.md` | **closed** (82/88) |
+| PF-MAINT-DX-01 | P3 | Implementer quick-start in hub | `intergrax_runtime_architecture.md` | **closed** (2026-06-18) |
+| PF-MAINT-LEG-01 | P3 | Remove legacy planner booleans from schema | plan §6.1av | **planned** |
 | PF-AUDIT-02 | P4 | Phase K business agents (K.1/K.2) deferred per §6.3 | `docs/plan/PLATFORM_FOUNDATION.md` §6.3 | deferred |
 | PF-AUDIT-03 | P4 | Long-term §50 marketplace/visual builder | architecture canon | deferred |
 | PF-TIER-01 | — | Tier boundaries enforced (intergrax ↛ agents/applications; agents ↛ applications) | `check_intergrax_no_applications_imports.py`, `check_agents_no_tier3_imports.py` | closed |
@@ -56,9 +60,9 @@ All green (2026-06-18).
 
 ---
 
-## Backlog P2–P4 (deferred)
+## Backlog P2–P4 (deferred / planned)
 
-- M.6 P6 harness integration expansion (Band 2ac) — Planned
+- PF-MAINT-LEG-01 — legacy `use_rag`/`use_websearch` schema removal (§6.1av, P3)
 - Phase K K.1/K.2 business agents — deferred §6.3
 - Long-term marketplace/visual builder — §50
 
