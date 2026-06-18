@@ -5,7 +5,17 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
-| IJ-2026-06-18-021 | 2026-06-18 | tier-0 RAG | RAG-MAINT-01..04 | [RAG-MAINT-01..04 — audit maintenance implementation](entries/2026-06-18/rag-maint-implement.md) | pending |
+| IJ-2026-06-18-031 | 2026-06-18 | tier-3 TIER3_APPLICATION_ENVIRONMENT | T3-MAINT-01..04 | [T3-MAINT-01..04 — audit maintenance implementation](entries/2026-06-18/tier3-maint-implement.md) | f92deceb |
+| IJ-2026-06-18-030 | 2026-06-18 | tier-0, tier-3 EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE | DX-MAINT-01..04 | [DX-MAINT-01..04 — audit maintenance implementation](entries/2026-06-18/experimentation-dx-maint-implement.md) | 9ca1ab5a |
+| IJ-2026-06-18-029 | 2026-06-18 | tier-1 ELASTIC_CAPACITY_AND_SCALING | ECP-MAINT-01..04 | [ECP-MAINT-01..04 — audit maintenance implementation](entries/2026-06-18/elastic-capacity-maint-implement.md) | 4548dbc1 |
+| IJ-2026-06-18-028 | 2026-06-18 | tier-1 ADAPTIVE_HARNESS_INTELLIGENCE | AHI-MAINT-01..04 | [AHI-MAINT-01..04 — audit maintenance implementation](entries/2026-06-18/adaptive-harness-intelligence-maint-implement.md) | f67af0e9 |
+| IJ-2026-06-18-027 | 2026-06-18 | tier-1 CRITIC_VERIFICATION | CVL-MAINT-01..04 | [CVL-MAINT-01..04 — audit maintenance implementation](entries/2026-06-18/critic-verification-maint-implement.md) | e6848641 |
+| IJ-2026-06-18-026 | 2026-06-18 | tier-1 RELIABILITY_FAILURE_AND_HITL | REL-MAINT-01..04 | [REL-MAINT-01..04 — audit maintenance implementation](entries/2026-06-18/reliability-maint-implement.md) | 88d6d09c |
+| IJ-2026-06-18-025 | 2026-06-18 | tier-1 OBSERVABILITY | OBS-MAINT-01..04 | [OBS-MAINT-01..04 — audit maintenance implementation](entries/2026-06-18/observability-maint-implement.md) | f19c8c6d |
+| IJ-2026-06-18-024 | 2026-06-18 | tier-0 MODALITY | MOD-MAINT-01..04 | [MOD-MAINT-01..04 — audit maintenance implementation](entries/2026-06-18/modality-maint-implement.md) | 29f8b400 |
+| IJ-2026-06-18-023 | 2026-06-18 | tier-0, tier-1 CONTEXT_ENGINEERING | CE-MAINT-01..04 | [CE-MAINT-01..04 — audit maintenance implementation](entries/2026-06-18/context-engineering-maint-implement.md) | e5ce9508 |
+| IJ-2026-06-18-022 | 2026-06-18 | tier-0, tier-1 MEMORY | MEM-MAINT-01..04 | [MEM-MAINT-01..04 — audit maintenance implementation](entries/2026-06-18/memory-maint-implement.md) | 0bfac563 |
+| IJ-2026-06-18-021 | 2026-06-18 | tier-0 RAG | RAG-MAINT-01..04 | [RAG-MAINT-01..04 — audit maintenance implementation](entries/2026-06-18/rag-maint-implement.md) | 9977963d |
 | IJ-2026-06-18-020 | 2026-06-18 | tier-0..2 multi-domain | ACP/FLOW/UAEP/ECC/MOD/LLM/TOOL MAINT | [MAINT P2 batch — ACP boundary_demo, graph partial, UAEP tenant, codecraft override, OpenCV probe, doctor gates](entries/2026-06-18/maint-acp-flow-uaep-batch.md) | pending |
 | IJ-2026-06-18-019 | 2026-06-18 | tier-3 TIER3_APPLICATION_ENVIRONMENT | T3-MAINT-01..04 | [T3-MAINT-01..04 — Interactive layer 22 audit plan registration (batch mode — final layer)](entries/2026-06-18/tier3-audit-maint-01-04-plan-register.md) | 769e6293 |
 | IJ-2026-06-18-018 | 2026-06-18 | tier-0, tier-3 EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE | DX-MAINT-01..04 | [DX-MAINT-01..04 — Interactive layer 21 audit plan registration (batch mode)](entries/2026-06-18/dx-audit-maint-01-04-plan-register.md) | 146c9bc5 |
