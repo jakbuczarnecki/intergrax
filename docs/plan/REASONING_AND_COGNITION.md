@@ -317,7 +317,7 @@ These items implemented under FLOW/ORCH phases — **Done**; canon now owned by 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **COG-MAINT-01** | Code/Docs | P2 | **Planned** | Align §17 failure taxonomy with `ReasoningFailureKind` — extend enum + emit paths **or** canonical mapping table in architecture §17 | Trace payloads match §17 codes; unit test per kind |
-| 2 | **COG-MAINT-02** | CI | P2 | **Planned** | Extend `check_reasoning_gates.py` for SYS-INV-22 plane-separation import boundaries | Gate fails on forbidden cross-plane imports in hot paths |
+| 2 | **COG-MAINT-02** | CI | P2 | **Done** | Extend `check_reasoning_gates.py` for SYS-INV-22 plane-separation import boundaries | Gate fails on forbidden cross-plane imports in hot paths |
 | 3 | **COG-MAINT-03** | Test | P3 | **Planned** | Acceptance test: `allow_dynamic_replan` replan after policy interrupt on reference host | E2E replan boundary proven |
 
 **Suggested PR order:** COG-MAINT-01 → COG-MAINT-02 → COG-MAINT-03.
