@@ -20,7 +20,12 @@ def opencv_runtime_available() -> bool:
     except ImportError:
         return False
 
-    if not callable(getattr(cv2, "imread", None)) or not callable(getattr(cv2, "imwrite", None)):
+    try:
+        imread = cv2.imread
+        imwrite = cv2.imwrite
+    except AttributeError:
+        return False
+    if not callable(imread) or not callable(imwrite):
         return False
 
     with tempfile.TemporaryDirectory() as tmp:

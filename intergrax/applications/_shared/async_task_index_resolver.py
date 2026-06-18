@@ -28,9 +28,7 @@ def resolve_async_task_index(
     if override in ("memory", "inmemory", "off", "false", "0"):
         return InMemoryAsyncTaskIndex()
 
-    integration_slug = (
-        getattr(env.integration_profile, "async_task_index_slug", None) or ""
-    ).strip().lower()
+    integration_slug = (env.integration_profile.async_task_index_slug or "").strip().lower()
 
     use_durable = (
         env.application_profile is ApplicationProfile.PRODUCT
