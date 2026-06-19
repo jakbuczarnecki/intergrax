@@ -200,7 +200,7 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 | 17–20 Prompt / assembly / registry / capability graph | `AGENT_CONTRACTS_AND_ASSEMBLY` |
 | 21 Observability | `OBSERVABILITY` |
 | 22 Reliability / HITL | `RELIABILITY_FAILURE_AND_HITL` + UAEP §42.10 |
-| 23–24 Security / cost | `UNIFIED_EXECUTION_RUNTIME` §42.45–47 |
+| 23–24 Security / cost | `UNIFIED_EXECUTION_RUNTIME` §42.45 (Security & Trust Planes S1/S2/S3) · §42.46 · [Phase SEC-PLANES](plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes--security--trust-planes-active) |
 | 25–27 Eval / CI / DX | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` + `CRITIC_VERIFICATION` |
 | 28 Tier-3 hosts | `TIER3_APPLICATION_ENVIRONMENT` |
 | 29 Modality | `MODALITY` |
@@ -227,7 +227,7 @@ Essential platform behaviours span multiple domain pairs — use this index befo
 | Autonomy slider (manual / ask / autonomous) | REL §35 + [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.10.2 | REL-ADV |
 | Sync / async execution postures | [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §57 | ORCH-6 |
 | Interrupt anywhere / resume from checkpoint | [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §28 + UAEP §42.8–§42.9 | FLOW-CTL |
-| Guardrails / policy enforcement (catalog) | [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.11.6 · §42.37 · vendor backends [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) §47 | GR-DOC · M.12 |
+| Guardrails / policy enforcement (catalog) | [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.11.6 · §42.45 (Security & Trust Planes) · vendor backends [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) §47 | GR-DOC · M.12 · SEC-PLANES |
 | RAG / retrieval engine | [`architecture/RAG.md`](architecture/RAG.md) · integration slugs [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) | M-RAG · M-RAG-DEPTH |
 | Context engineering engine | [`architecture/CONTEXT_ENGINEERING.md`](architecture/CONTEXT_ENGINEERING.md) | CE-EXT Done · CE-ALIGN Done · **CE-PROV-WIRE Planned** |
 | Ephemeral Code Craft (dynamic codegen loop) | [`architecture/CODE_CRAFT.md`](architecture/CODE_CRAFT.md) · substrate [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](architecture/RELIABILITY_FAILURE_AND_HITL.md) | ECC-0…ECC-6 |

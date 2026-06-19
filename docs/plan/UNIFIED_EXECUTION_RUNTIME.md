@@ -47,6 +47,40 @@
 
 ---
 
+### 6.1aw Harness implementation queue — Security & Trust Planes (SEC-PLANES) — **Active**
+
+**Source:** Idea audit (2026-06-19) — modular security layer without duplicate tier · canon [§42.45.3](../architecture/UNIFIED_EXECUTION_RUNTIME.md#42453-security-and-trust-planes-canonical)  
+**Priority ladder:** **Band 2bb** (§4.0) — incremental after §6.1 gate maintenance; **one ID per PR**  
+**Prerequisites:** Phase SEC **Done** (SEC-1–3) · Phase M.12 **Done** (llm_guardrail) · GOV-DOC.3 **Done** (`policy_rules` EP)
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **SEC-PLANES-DOC.1** | Docs | P1 | **Done** | Security & Trust Planes canon §42.45.2–§42.45.8 | Architecture + plan register linked |
+| 2 | **SEC-PLANES-DOC.2** | Docs | P2 | **Planned** | `AGENT_CREATION_GUIDE.md` Appendix H — Security Planes operator index + preset matrix | Cross-ref §42.45; no new runtime code |
+| 3 | **SEC-PLANES-ADR-1** | ADR | P2 | **Planned** | ADR: SecurityDefensePlugin EP + S1/S2/S3 plane discipline | Linked from §42.45 + hub; `check_harness_adr.py` green |
+| 4 | **SEC-EXT-1** | Code | P1 | **Planned** | `SecurityDefensePlugin` protocol + `SecurityInspectionResult` typed contract | Unit tests on protocol + schema |
+| 5 | **SEC-EXT-2** | Code | P1 | **Planned** | Entry point group `intergrax.security_defenses` + `register_security_defense_plugins()` | EP discovery gate; lab fixture package |
+| 6 | **SEC-EXT-3** | Code | P1 | **Planned** | Wire defense plugins via `security_runtime_bridge` → `MiddlewarePipeline` | Runs after native V-SEC middleware; before `ToolRuntime` |
+| 7 | **SEC-EXT-4** | Code | P2 | **Planned** | `ApplicationSecurityProfile.defense_plugin_ids` + `security_assembly_resolver` validation | Unknown plugin id fails wire-time on strict hosts |
+| 8 | **SEC-EXT-5** | Test | P2 | **Planned** | Lab reference plugin + gate tests (`tests/unit/runtime/security/`) | Plugin on `BEFORE_TOOL_CALL` blocks + traces |
+| 9 | **SEC-BUNDLE-1** | Code | P2 | **Planned** | Shipped defense bundle manifest pattern (native rule packs) | At least one bundle: `harness.strict_injection` |
+| 10 | **SEC-BUNDLE-2** | Code | P2 | **Planned** | `harness_defense_stack()` preset + `SecurityEnvelope.production()` factory | Preset composes S1+S2+S3 toggles; doc example |
+| 11 | **SEC-BUNDLE-3** | Code | P3 | **Planned** | `bootstrap_security_providers()` in `catalog_bootstrap` | Registers shipped bundles + optional EP discovery |
+| 12 | **ENC-1** | Code | P1 | **Planned** | `EncryptionEnforcementPolicy` — `DataClassification.RESTRICTED` requires resolved `secrets_store` | Fail-closed when backend missing on strict profile |
+| 13 | **ENC-2** | Code | P2 | **Planned** | Hook enforcement at memory write + sensitive tool output paths | RESTRICTED payload denied or encrypted via integration adapter |
+| 14 | **ENC-3** | Test | P2 | **Planned** | Gate tests + `check_harness_encryption_policy.py` CI script | Strict host without secrets backend fails assembly |
+| 15 | **ENC-DOC.1** | Docs | P3 | **Planned** | Encryption posture matrix (transit TLS vs at-rest integration) in §42.45 | No duplicate KMS SDK in Tier-0 |
+| 16 | **SEC-PLANES-DOC.3** | Docs | P2 | **Planned** | `EXTENSION_AUTHOR_GUIDE.md` §12 — `intergrax.security_defenses` author surface | Depends on SEC-EXT-2; cross-ref §42.21 item 7 |
+| 17 | **SEC-EXT-6** | CI | P3 | **Planned** | `check_harness_security_defense_plugins.py` — EP + assembly smoke | CI workflow step; strict profile lab |
+
+**Suggested PR order:** SEC-PLANES-DOC.1 → SEC-PLANES-DOC.2 → SEC-PLANES-ADR-1 → SEC-EXT-1 → SEC-EXT-2 → SEC-EXT-3 → SEC-EXT-4 → SEC-EXT-5 → SEC-BUNDLE-1 → SEC-BUNDLE-2 → SEC-BUNDLE-3 → ENC-1 → ENC-2 → ENC-3 → ENC-DOC.1 → SEC-PLANES-DOC.3 → SEC-EXT-6.
+
+**Phase complete when:** all **Planned** rows **Done**; §42.45.8 maturity table shows zero **Planned** for SEC-PLANES scope; gate green.
+
+**Explicitly excluded:** standalone `SecurityEngine` tier or package; harness-native blockchain integration (M.6 exclusion); Tier-3 attestation/receipt products (product wiring only); new business agents — [§6.3a](#63a-business-backlog-register-consolidated).
+
+---
+
 ### 6.1j Harness implementation queue — legacy module closeout (closed)
 
 **Purpose:** Single ordered list for **Phase CLEAN** (post-2p closeout). **Closed 2026-06-02**.
@@ -742,9 +776,73 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 
 **Explicitly excluded:** new business agents (K.1/K.2), product-only security dashboards — [§6.3a](#63a-business-backlog-register-consolidated).
 
+**Follow-on:** [Phase SEC-PLANES](#phase-sec-planes--security--trust-planes-active) (Band **2bb**, queue [§6.1aw](#61aw-harness-implementation-queue--security--trust-planes-sec-planes--active)).
+
 ---
 
+## Phase SEC-PLANES — Security & Trust Planes (**Active**)
 
+**Status:** **Planned** (2026-06-19) — **1/17 Done** (SEC-PLANES-DOC.1)  
+**Source:** Idea audit (2026-06-19) — modular security without duplicate tier  
+**Architecture:** [§42.45.2–§42.45.8](../architecture/UNIFIED_EXECUTION_RUNTIME.md#4245-security-and-data-governance)  
+**Prerequisites:** Phase SEC **Done** · M.12 **Done** · GOV-DOC.3 **Done**  
+**Priority ladder:** **Band 2bb** (§4.0) — incremental after §6.1 gate; **one ID per PR**  
+**Queue:** [§6.1aw](#61aw-harness-implementation-queue--security--trust-planes-sec-planes--active)  
+**Execution order:** [§6.2bo](#62bo-phase-sec-planes-execution-order-band-2bb--active)  
+**ADR:** SEC-PLANES-ADR-1 (required before SEC-EXT-3 merge)
+
+**Goal:** Deliver a **fully modular, provider-backed security surface** inside UAEP — Security & Trust Planes (S1/S2/S3), `SecurityEnvelope` composition, shipped presets, `intergrax.security_defenses` EP, and encryption enforcement bridge — **without** a standalone Security tier or engine.
+
+**Delivery rule:** One **SEC-PLANES-*** / **SEC-EXT-*** / **SEC-BUNDLE-*** / **ENC-*** ID per PR → update §6.1aw + §42.45.8 maturity → gate green.
+
+### SEC-PLANES — Master register
+
+| ID | Area | Deliverable | Priority | Status | Modules / docs | Acceptance |
+|----|------|-------------|----------|--------|----------------|------------|
+| SEC-PLANES-DOC.1 | DOC | Security & Trust Planes canon §42.45.2–§42.45.8 | P1 | **Done** | `architecture/UNIFIED_EXECUTION_RUNTIME.md` | Plan cross-link; plane model documented |
+| SEC-PLANES-DOC.2 | DOC | Appendix H — Security Planes operator index | P2 | **Planned** | `guides/AGENT_CREATION_GUIDE.md` | Preset matrix S1/S2/S3; cross-ref §42.45 |
+| SEC-PLANES-ADR-1 | ADR | SecurityDefensePlugin + plane discipline ADR | P2 | **Planned** | `docs/adr/entries/2026-06-19/` | Hub + §42.45 link; no SecurityEngine tier |
+| SEC-EXT-1 | EXT | `SecurityDefensePlugin` + `SecurityInspectionResult` | P1 | **Planned** | `intergrax/runtime/security/defense_plugin.py` | Protocol unit tests |
+| SEC-EXT-2 | EXT | `intergrax.security_defenses` EP + loader | P1 | **Planned** | `runtime/security/defense_plugin_loader.py` | EP discovery; lab fixture |
+| SEC-EXT-3 | EXT | Wire defense plugins in `security_runtime_bridge` | P1 | **Planned** | `security_runtime_bridge.py`, `application_security_wiring.py` | After native V-SEC; before ToolRuntime |
+| SEC-EXT-4 | EXT | `defense_plugin_ids` on profile + assembly resolver | P2 | **Planned** | `environment_profile.py`, `security_assembly_resolver.py` | Wire-time fail on unknown id (strict) |
+| SEC-EXT-5 | EXT | Lab reference plugin + gate tests | P2 | **Planned** | `tests/unit/runtime/security/` | BEFORE_TOOL_CALL block + trace |
+| SEC-EXT-6 | CI | `check_harness_security_defense_plugins.py` | P3 | **Planned** | `scripts/`, CI workflow | Smoke on strict lab profile |
+| SEC-BUNDLE-1 | BUNDLE | Shipped defense bundle manifest | P2 | **Planned** | `intergrax/runtime/security/bundles/` | `harness.strict_injection` bundle registered |
+| SEC-BUNDLE-2 | BUNDLE | `harness_defense_stack()` + `SecurityEnvelope.production()` | P2 | **Planned** | `integrations/registry/presets.py`, `bundles.py` | Composes S1+S2+S3; doc example |
+| SEC-BUNDLE-3 | BUNDLE | `bootstrap_security_providers()` | P3 | **Planned** | `intergrax/core/catalog_bootstrap.py` | Shipped bundles + optional EP |
+| ENC-1 | ENC | `EncryptionEnforcementPolicy` + secrets_store gate | P1 | **Planned** | `runtime/security/encryption_policy.py` | RESTRICTED requires backend on strict |
+| ENC-2 | ENC | Hook enforcement memory write + tool output | P2 | **Planned** | UAEP hooks + memory policy | RESTRICTED deny or encrypt via adapter |
+| ENC-3 | ENC | Gate tests + `check_harness_encryption_policy.py` | P2 | **Planned** | `scripts/`, tests | Assembly fails without secrets backend |
+| ENC-DOC.1 | DOC | Encryption posture matrix in §42.45 | P3 | **Planned** | architecture canon | Transit vs at-rest; no Tier-0 KMS SDK |
+| SEC-PLANES-DOC.3 | DOC | `EXTENSION_AUTHOR_GUIDE.md` §12 | P2 | **Planned** | `guides/EXTENSION_AUTHOR_GUIDE.md` | Depends SEC-EXT-2 |
+
+### SEC-PLANES — Workstreams
+
+| Workstream | IDs | Outcome |
+|------------|-----|---------|
+| **A — Canon & author maps** | SEC-PLANES-DOC.* | Operators and extension authors share one plane model |
+| **B — Defense plugin EP** | SEC-PLANES-ADR-1, SEC-EXT-1–6 | Third-party S2 inspections as first-class plugins |
+| **C — Shipped presets** | SEC-BUNDLE-* | Production-ready bundles without custom code |
+| **D — Encryption bridge** | ENC-* | Close `DataClassification.requires_encryption()` gap |
+
+**Phase complete when:** 17/17 **Done**; §42.45.8 has no **Planned** rows for SEC-PLANES scope.
+
+**Explicitly excluded:** standalone Security tier; harness blockchain; Tier-3 receipt/attestation products; duplicate PolicyEngine — [§6.3a](#63a-business-backlog-register-consolidated).
+
+### 6.2bo Phase SEC-PLANES execution order (Band 2bb — **Active**)
+
+```text
+1. SEC-PLANES-DOC.1   (Done) — canon §42.45 planes
+2. SEC-PLANES-DOC.2   — Appendix H operator index
+3. SEC-PLANES-ADR-1   — ADR before defense EP wiring
+4. SEC-EXT-1 → SEC-EXT-2 → SEC-EXT-3 → SEC-EXT-4 → SEC-EXT-5
+5. SEC-BUNDLE-1 → SEC-BUNDLE-2 → SEC-BUNDLE-3
+6. ENC-1 → ENC-2 → ENC-3 → ENC-DOC.1
+7. SEC-PLANES-DOC.3 → SEC-EXT-6
+```
+
+---
 
 **Status:** **Done** (2026-06-02) — **4/4** deliverables Done (COST-DOC.1 + COST-1–3)
 

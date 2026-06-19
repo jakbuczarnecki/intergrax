@@ -6,6 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 4–5, 8, 23–24  
 **Audit instruction:** [`audit/UNIFIED_EXECUTION_RUNTIME.md`](../audit/UNIFIED_EXECUTION_RUNTIME.md)  
+**Last updated:** 2026-06-19 — SEC-PLANES canon (Security & Trust Planes; idea audit 2026-06-19)  
 ---
 
 ## 42.1 Runtime Event Model
@@ -1141,9 +1142,11 @@ Extensions are allowed only through **approved extension points**:
 1. `HookRegistry` — hooks (§42.3)
 2. `ToolRegistry` — new tools (Tier-0 + registration)
 3. `AgentRegistry` — new agents (Tier-2)
-4. `PolicyEngine` rules — Tier-3 config
+4. `PolicyEngine` rules — Tier-3 config + `intergrax.policy_rules` EP (S3)
 5. `ValidationEngine` rules — registered validators
-6. Middleware plugins — Tier-3 bootstrap
+6. Middleware plugins — Tier-3 bootstrap (`RuntimePlugin`)
+7. **Security defense plugins** — `intergrax.security_defenses` EP → S2 middleware (**Planned** — Phase SEC-PLANES; §42.45.3)
+8. **Integration catalog** — vendor security backends (`llm_guardrail`, `secrets_store`, `identity_provider`, `security_scanner`) — S1/S2 via Tier-3 profile slugs
 
 ### Forbidden Extension Points
 
@@ -1718,19 +1721,158 @@ Tier-3 declares posture in `IdentityProfile`; Tier-1 enforces on execution path.
 
 ## 42.45 Security and Data Governance
 
-Agent-native threats MUST have explicit defenses (AUDIT_MAP §23):
+Agent-native threats MUST have explicit defenses (AUDIT_MAP §23). Security is a **runtime property of the Harness Agent OS** — not a separate tier, domain pair, or parallel execution engine.
 
-| Threat | Defense module |
-|--------|----------------|
-| Prompt injection | `prompt_security.py` |
-| Tool injection | `tool_security.py` + middleware |
-| Retrieval poisoning | `retrieval_security.py`, `retrieval_security_wiring.py` |
-| Tenant isolation | `tenant_security.py` |
-| Audit trail | Policy + trace on governance-critical actions |
+**Canonical index:** Security & Trust Planes (§42.45.3) · guardrail hook map (§42.11.6) · ideal model §3.2–3.3 · **Plan:** [Phase SEC-PLANES](../plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes--security--trust-planes-active).
 
-`ApplicationSecurityProfile` (Tier-3) toggles defenses per host. Wiring MUST reach `ToolRuntime` and RAG retrieval path — not documentation-only.
+### 42.45.1 Agent-native threat map
 
-**Authoring:** [`guides/AGENT_CREATION_GUIDE.md` Appendix S](../guides/AGENT_CREATION_GUIDE.md).
+| Threat | Plane | Defense module |
+|--------|-------|----------------|
+| Prompt injection | S2 | `prompt_security.py` + optional `llm_guardrail` |
+| Tool injection | S2 | `tool_security.py` + `ToolInjectionDefenseMiddleware` |
+| Retrieval poisoning | S2 | `retrieval_security.py`, `retrieval_security_wiring.py` |
+| Cross-tenant leak | S1+S2 | `tenant_security.py`, `IdentityProfile` |
+| Missing auth / scope | S1 | `IdentityProfile` + identity integrations |
+| Secrets in agent code | S1 | `secrets_store` integration only (SYS-INV-17) |
+| Budget / quota overrun | S3 | `BudgetPolicy`, `cost_quota.py` |
+| High-risk without human | S3 | `PolicyEngine` → HITL |
+| RESTRICTED data without encryption | S1+S3 | `DataClassification` + encryption bridge (**Planned** ENC-*) |
+| Override without audit | S1 | `critical_action_signing.py`, immutable audit trail |
+| Audit trail gap | S1+S3 | Policy + trace on governance-critical actions |
+
+`ApplicationSecurityProfile` (Tier-3) toggles S2 defenses per host. Wiring MUST reach `ToolRuntime` and RAG retrieval path — not documentation-only.
+
+### 42.45.2 Architectural decision — no separate Security tier
+
+| Decision | Rationale |
+|----------|-----------|
+| **No** standalone `SecurityEngine` or 23rd domain pair | Violates **SYS-INV-10** (one canonical path per concern); duplicates UAEP + PolicyEngine |
+| **No** guardrails as a separate Tier-0/Tier-1 package | Guardrails are the **enforcement surface** of Policy & Governance (§42.11.6) |
+| **Yes** Security & Trust Planes as a **logical index** inside UAEP | Same pattern as modality planes ([`MODALITY.md`](MODALITY.md)) — documentation + provider catalog, not a new runtime loop |
+| **Yes** modular providers and plugins | Through approved extension points (§42.21) — integrations, `policy_rules`, planned `security_defenses` EP |
+
+Governance failures MUST default to **fail-closed** on strict / CRITICAL-risk hosts (`SecurityEnvelope.strict()`).
+
+### 42.45.3 Security and Trust Planes (canonical)
+
+Three planes compose security on the **same UAEP hook timeline** (§42.11.6). Planes differ by **question** and **artifact**, not by separate pipelines.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────┐
+│  S1 — Identity & Trust Plane                                             │
+│  Who acts? Which tenant? Where do secrets live? Is the action signed?    │
+├──────────────────────────────────────────────────────────────────────────┤
+│  S2 — Runtime Defense Plane                                              │
+│  Is this payload / tool / chunk safe? (inspection at UAEP hooks)          │
+├──────────────────────────────────────────────────────────────────────────┤
+│  S3 — Governance & Compliance Plane                                      │
+│  May execution continue? Limits? HITL? Data classification? Org rules?   │
+└──────────────────────────────────────────────────────────────────────────┘
+                              ▲
+                              │ vendor backends (Integration catalog)
+                              └── llm_guardrail · secrets_store · identity ·
+                                  security_scanner · sandbox_host · …
+```
+
+| Plane | Question | Primary artifact | Typical fail mode |
+|-------|----------|------------------|-------------------|
+| **S1 Trust** | Identity, tenancy, secrets, signing | Auth context, tenant scope, `CriticalActionSignature` | Fail-closed on strict hosts |
+| **S2 Defense** | Agent-native threat inspection | `PromptInspectionResult`, blocked/modified `ToolRequest`, quarantined chunk | Fail-closed on CRITICAL |
+| **S3 Governance** | Policy, budgets, compliance, HITL | `PolicyDecision`, `ValidationResult` | Profile-driven |
+
+**Discipline:** S2 **inspects** (is it safe?); S3 **decides** (is it allowed?). Both emit trace. Agent-local `if` checks without trace are forbidden (§42.11.6 anti-patterns).
+
+**Ideal model mapping:** S1 ↔ IDEAL §3.2 Identity & Trust · S2+S3 ↔ IDEAL §3.3 Policy & Governance · AUDIT_MAP §4, §5, §23.
+
+### 42.45.4 Composition root — `SecurityEnvelope`
+
+Tier-3 hosts declare the full trust boundary in one typed bundle (`intergrax/applications/contracts/environment_profile/bundles.py`):
+
+```text
+SecurityEnvelope
+  ├── identity: IdentityProfile                    → S1
+  ├── application_security: ApplicationSecurityProfile → S2 toggles
+  ├── guardrails: GuardrailProfile                 → S2 vendor (llm_guardrail)
+  ├── policy_rules: PolicyRulesProfile | None      → S3 custom rules
+  ├── compliance: ComplianceProfile              → S3
+  └── organizational_policy: OrganizationalPolicyEnvelope | None → S3 org overlays
+```
+
+**Shipped presets:** `SecurityEnvelope.lab()`, `SecurityEnvelope.strict()` · integration preset `harness_security_stack()` (scanners). **Planned:** `SecurityEnvelope.production()`, shipped defense bundles (SEC-BUNDLE-*).
+
+**Wiring entry points (Tier-3):** `wire_application_security()`, `wire_application_guardrail()`, `wire_policy_bundle()`, `build_harness_host_runtime()` — assembly validated by `security_assembly_resolver` + CI `check_harness_security_wiring.py`.
+
+### 42.45.5 Provider and extension catalog
+
+Modularity is delivered through **four extension surfaces** — not a monolithic engine:
+
+| Surface | Entry point / mechanism | Plane | Shipped examples | Author extension |
+|---------|-------------------------|-------|------------------|------------------|
+| **Integration catalog** | `IntegrationPlugin` + profile slug | S1, S2 | Vault, Auth0, LLM Guard, Trivy, Semgrep | New integration EP |
+| **Policy rules** | `intergrax.policy_rules` | S3 | `harness_lab.yaml` | Custom `PolicyRuleHandlerPlugin` |
+| **Native defenses** | Profile toggles → middleware | S2 | `PromptDefenseMiddleware`, `ToolInjectionDefenseMiddleware` | Enable via `ApplicationSecurityProfile` |
+| **Runtime plugins** | `RuntimePlugin` at Tier-3 bootstrap | S2, S3 | Metrics, persistence hooks | `register(bus, hooks, policy)` |
+| **Security defense plugins** *(planned)* | `intergrax.security_defenses` | S2 | — | `SecurityDefensePlugin` on declared `HookPoint`s |
+
+**Authoring:** [`guides/AGENT_CREATION_GUIDE.md` Appendix H](../guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · [Appendix S](../guides/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) · [`guides/EXTENSION_AUTHOR_GUIDE.md`](../guides/EXTENSION_AUTHOR_GUIDE.md) §10 (policy rules) · §12 (security defenses — planned).
+
+Tier-2 agents **MUST NOT** implement parallel security — they consume a host already configured via `SecurityEnvelope`.
+
+### 42.45.6 Execution timeline (single run)
+
+```text
+STARTUP (Tier-3)
+  SecurityEnvelope → RuntimePolicyBundle + middleware list + integration slugs
+  security_runtime_bridge → RuntimeConfig.security_profile + llm_guardrail slug
+
+INTAKE
+  S1: tenant verify, identity scope
+  S3: PolicyEngine (autonomy ceiling, domain_fragments)
+
+PER UAEP STEP (see §42.11.6 for full guardrail table)
+  before_step     → S3: plan/step policy, context budget
+  pre-LLM         → S2: prompt_security + optional llm_guardrail.scan_input()
+  post-LLM        → S2: provider safety + optional scan_output()
+  before_tool     → S2+S3: tool_security + ToolAccessPolicy + injection middleware
+  after_tool      → trace + policy hooks
+  pre-RAG inject  → S2: retrieval_security (tenant-scoped)
+  pre-memory      → S3: MemoryWritePolicy
+  post-step       → S3: ValidationEngine (L0) → CVL L1 if enabled
+
+TERMINAL
+  S3: unresolved interrupts → HITL or FAIL
+  S1: audit trail (immutable when enabled)
+  S1: critical_action_signing for override / promotion / security config change
+```
+
+### 42.45.7 Forbidden patterns
+
+| Pattern | Why forbidden |
+|---------|---------------|
+| Standalone `SecurityEngine` beside UAEP | Duplicate path; SYS-INV-10 |
+| Vendor guardrail SDK in Tier-2 agents | SYS-INV-17 — use Integration → middleware |
+| Defense in agent code without trace | Untestable; bypasses PolicyEngine |
+| Parallel policy object per agent | Single `RuntimePolicyBundle` per host |
+| Harness-native blockchain / receipt product | Out of scope M.6; Tier-3 adapter pattern when product requires portable attestation |
+| Tier-0 encryption SDK in agents | Use `secrets_store` integration + planned ENC bridge |
+
+### 42.45.8 Maturity — Done vs planned
+
+| Capability | Status | Plan ID |
+|------------|--------|---------|
+| S2 native defenses + Tier-3 wiring (SEC-1–3) | **Done** | Phase SEC |
+| S2 vendor guardrails (M.12) | **Done** | M.12 / GR-INT |
+| S3 policy_rules EP (DX-5.8) | **Done** | GOV-DOC.3 |
+| S1 identity / secrets integrations | **Done** | M.6, H-INT-10 |
+| S1 critical action signing | **Done** | AUDIT-IDEAL-4.1 |
+| Security & Trust Planes canon (this section) | **Done** | SEC-PLANES-DOC.1 |
+| `intergrax.security_defenses` EP | **Planned** | SEC-EXT-* |
+| Shipped defense bundles + `bootstrap_security_providers()` | **Planned** | SEC-BUNDLE-* |
+| Encryption enforcement bridge (`RESTRICTED` → KMS) | **Planned** | ENC-* |
+| Author map Appendix H / EXTENSION §12 sync | **Planned** | SEC-PLANES-DOC.2–3 |
+
+**Authoring (wire-time closeout):** [`guides/AGENT_CREATION_GUIDE.md` Appendix S](../guides/AGENT_CREATION_GUIDE.md).
 
 ---
 
