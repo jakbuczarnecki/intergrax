@@ -746,9 +746,9 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 | LLM-LC-S3 | **Gate verification** — typed returns, preflight, agents LLM response | **Done** | High | 3 scripts green · 110 unit tests |
 | LLM-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
 
-**Deferred P2–P4:** M-LLM-X.2 dynamic OpenRouter fetch · X.4.4/X.4.5 trace DTO + Tier-3 failover list · Redis distributed rate limit · doctor hook (AUDIT-IDEAL-6.7)
+**Deferred P2–P4:** M-LLM-X.2 dynamic OpenRouter fetch · LLM-AUDIT-14 capability flags (M-LLM-X.1.7) · M-LLM-X.8 closeout register sync
 
-### 6.1av Harness implementation queue — LLM adapters audit maintenance (planned)
+### 6.1av Harness implementation queue — LLM adapters audit maintenance (closed)
 
 **Source:** Layer 7 audit (2026-06-18) — `LLM_ADAPTERS` layer 6 · [`../audit_results/2026-06-18/LLM_ADAPTERS.md`](../audit_results/2026-06-18/LLM_ADAPTERS.md)  
 **Priority ladder:** **Band 1** (§6.1) — DX + Tier-3 wiring hygiene; **one ID per PR**
@@ -760,9 +760,23 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 | 3 | **LLM-MAINT-03** | Code | P2 | **Done** | M-LLM-X.4.5 — Tier-3 `ApplicationEnvironmentProfile` optional LLM failover list wiring | `LLMProfile.fallback_profiles` + `resolve_llm_adapter` |
 | 4 | **LLM-MAINT-04** | Docs | P3 | **Done** | Redis distributed rate limit bootstrap pattern — reference host wiring doc + cross-ref ECP/TIER3 | `intergrax/llm_adapters/USAGE.md` §Distributed rate limiting |
 
-**Suggested PR order:** LLM-MAINT-01 → LLM-MAINT-02 → LLM-MAINT-03 → LLM-MAINT-04.
+**Suggested PR order:** none — §6.1av queue closed (2026-06-18).
 
 **Cross-domain (not LLM-owned):** M-LLM-X.2 dynamic OpenRouter fetch · AUDIT-IDEAL-6.2 live routing (AHI) — remain in M-LLM-X register.
+
+### 6.1ay Harness implementation queue — LLM adapters audit maintenance (2026-06-19)
+
+**Source:** Interactive layer audit (2026-06-19) — `LLM_ADAPTERS` layer 6 · [`../audit_results/2026-06-19/LLM_ADAPTERS.md`](../audit_results/2026-06-19/LLM_ADAPTERS.md) (pending) · prior: [`../audit_results/2026-06-18/LLM_ADAPTERS.md`](../audit_results/2026-06-18/LLM_ADAPTERS.md)  
+**Priority ladder:** **Band 1** (§6.1) — doc sync + audit artifact; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **LLM-MAINT-DOC-01** | Docs | P3 | **Planned** | Close §6.1av header; sync architecture audit register (AUDIT-IDEAL-6.7, LLM-AUDIT-8 → Done); fix LLM-LC deferred line | Canon matches LLM-MAINT-01..04 |
+| 2 | **LLM-MAINT-AUDIT-01** | Docs | P3 | **Planned** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `LLM_ADAPTERS.md` + `progress.json`; L3+ verdict layer 6 |
+
+**Suggested PR order:** LLM-MAINT-DOC-01 → LLM-MAINT-AUDIT-01.
+
+**Cross-domain (not LLM-owned):** M-LLM-X.2 · LLM-AUDIT-14 · M-LLM-X.8 closeout — unchanged backlog.
 
 ---
 
