@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 4–5, 8, 23–24  
 **Audit instruction:** [`audit/UNIFIED_EXECUTION_RUNTIME.md`](../audit/UNIFIED_EXECUTION_RUNTIME.md)  
-**Last updated:** 2026-06-19 — SEC-PLANES canon (Security & Trust Planes; idea audit 2026-06-19)  
+**Last updated:** 2026-06-19 — SEC-PLANES-EVOL follow-on register (enterprise hardening backlog)  
 ---
 
 ## 42.1 Runtime Event Model
@@ -1145,7 +1145,7 @@ Extensions are allowed only through **approved extension points**:
 4. `PolicyEngine` rules — Tier-3 config + `intergrax.policy_rules` EP (S3)
 5. `ValidationEngine` rules — registered validators
 6. Middleware plugins — Tier-3 bootstrap (`RuntimePlugin`)
-7. **Security defense plugins** — `intergrax.security_defenses` EP → S2 middleware (**Planned** — Phase SEC-PLANES; §42.45.3)
+7. **Security defense plugins** — `intergrax.security_defenses` EP → S2 middleware (Phase SEC-PLANES; §42.45.3)
 8. **Integration catalog** — vendor security backends (`llm_guardrail`, `secrets_store`, `identity_provider`, `security_scanner`) — S1/S2 via Tier-3 profile slugs
 
 ### Forbidden Extension Points
@@ -1723,7 +1723,7 @@ Tier-3 declares posture in `IdentityProfile`; Tier-1 enforces on execution path.
 
 Agent-native threats MUST have explicit defenses (AUDIT_MAP §23). Security is a **runtime property of the Harness Agent OS** — not a separate tier, domain pair, or parallel execution engine.
 
-**Canonical index:** Security & Trust Planes (§42.45.3) · guardrail hook map (§42.11.6) · ideal model §3.2–3.3 · **Plan:** [Phase SEC-PLANES](../plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes--security--trust-planes-active).
+**Canonical index:** Security & Trust Planes (§42.45.3) · guardrail hook map (§42.11.6) · ideal model §3.2–3.3 · **Plan:** [Phase SEC-PLANES](../plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes--security--trust-planes-active) (Done) · [Phase SEC-PLANES-EVOL](../plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes-evol--enterprise-hardening-active) (Active).
 
 ### 42.45.1 Agent-native threat map
 
@@ -1737,7 +1737,7 @@ Agent-native threats MUST have explicit defenses (AUDIT_MAP §23). Security is a
 | Secrets in agent code | S1 | `secrets_store` integration only (SYS-INV-17) |
 | Budget / quota overrun | S3 | `BudgetPolicy`, `cost_quota.py` |
 | High-risk without human | S3 | `PolicyEngine` → HITL |
-| RESTRICTED data without encryption | S1+S3 | `DataClassification` + encryption bridge (**Planned** ENC-*) |
+| RESTRICTED data without encryption | S1+S3 | `DataClassification` + `EncryptionEnforcementMiddleware` (ENC-*) |
 | Override without audit | S1 | `critical_action_signing.py`, immutable audit trail |
 | Audit trail gap | S1+S3 | Policy + trace on governance-critical actions |
 
@@ -1750,7 +1750,7 @@ Agent-native threats MUST have explicit defenses (AUDIT_MAP §23). Security is a
 | **No** standalone `SecurityEngine` or 23rd domain pair | Violates **SYS-INV-10** (one canonical path per concern); duplicates UAEP + PolicyEngine |
 | **No** guardrails as a separate Tier-0/Tier-1 package | Guardrails are the **enforcement surface** of Policy & Governance (§42.11.6) |
 | **Yes** Security & Trust Planes as a **logical index** inside UAEP | Same pattern as modality planes ([`MODALITY.md`](MODALITY.md)) — documentation + provider catalog, not a new runtime loop |
-| **Yes** modular providers and plugins | Through approved extension points (§42.21) — integrations, `policy_rules`, planned `security_defenses` EP |
+| **Yes** modular providers and plugins | Through approved extension points (§42.21) — integrations, `policy_rules`, `intergrax.security_defenses` EP |
 
 Governance failures MUST default to **fail-closed** on strict / CRITICAL-risk hosts (`SecurityEnvelope.strict()`).
 
@@ -1799,7 +1799,7 @@ SecurityEnvelope
   └── organizational_policy: OrganizationalPolicyEnvelope | None → S3 org overlays
 ```
 
-**Shipped presets:** `SecurityEnvelope.lab()`, `SecurityEnvelope.strict()` · integration preset `harness_security_stack()` (scanners). **Planned:** `SecurityEnvelope.production()`, shipped defense bundles (SEC-BUNDLE-*).
+**Shipped presets:** `SecurityEnvelope.lab()`, `SecurityEnvelope.strict()` (S1+S2 defense bundles), `SecurityEnvelope.production()` (S1+S2+S3 + encryption bridge) · integration preset `harness_defense_stack()`.
 
 **Wiring entry points (Tier-3):** `wire_application_security()`, `wire_application_guardrail()`, `wire_policy_bundle()`, `build_harness_host_runtime()` — assembly validated by `security_assembly_resolver` + CI `check_harness_security_wiring.py`.
 
@@ -1813,9 +1813,9 @@ Modularity is delivered through **four extension surfaces** — not a monolithic
 | **Policy rules** | `intergrax.policy_rules` | S3 | `harness_lab.yaml` | Custom `PolicyRuleHandlerPlugin` |
 | **Native defenses** | Profile toggles → middleware | S2 | `PromptDefenseMiddleware`, `ToolInjectionDefenseMiddleware` | Enable via `ApplicationSecurityProfile` |
 | **Runtime plugins** | `RuntimePlugin` at Tier-3 bootstrap | S2, S3 | Metrics, persistence hooks | `register(bus, hooks, policy)` |
-| **Security defense plugins** *(planned)* | `intergrax.security_defenses` | S2 | — | `SecurityDefensePlugin` on declared `HookPoint`s |
+| **Security defense plugins** | `intergrax.security_defenses` | S2 | `harness.strict_injection` | `SecurityDefensePlugin` on declared `HookPoint`s |
 
-**Authoring:** [`guides/AGENT_CREATION_GUIDE.md` Appendix H](../guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · [Appendix S](../guides/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) · [`guides/EXTENSION_AUTHOR_GUIDE.md`](../guides/EXTENSION_AUTHOR_GUIDE.md) §10 (policy rules) · §12 (security defenses — planned).
+**Authoring:** [`guides/AGENT_CREATION_GUIDE.md` Appendix H](../guides/AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) · [Appendix S](../guides/AGENT_CREATION_GUIDE.md#appendix-s--security-control-plane-closeout) · [`guides/EXTENSION_AUTHOR_GUIDE.md`](../guides/EXTENSION_AUTHOR_GUIDE.md) §10 (policy rules) · §12 (security defenses).
 
 Tier-2 agents **MUST NOT** implement parallel security — they consume a host already configured via `SecurityEnvelope`.
 
@@ -1855,7 +1855,7 @@ TERMINAL
 | Defense in agent code without trace | Untestable; bypasses PolicyEngine |
 | Parallel policy object per agent | Single `RuntimePolicyBundle` per host |
 | Harness-native blockchain / receipt product | Out of scope M.6; Tier-3 adapter pattern when product requires portable attestation |
-| Tier-0 encryption SDK in agents | Use `secrets_store` integration + planned ENC bridge |
+| Tier-0 encryption SDK in agents | Use `secrets_store` integration + ENC bridge (§42.45.9) |
 
 ### 42.45.8 Maturity — Done vs planned
 
@@ -1867,10 +1867,50 @@ TERMINAL
 | S1 identity / secrets integrations | **Done** | M.6, H-INT-10 |
 | S1 critical action signing | **Done** | AUDIT-IDEAL-4.1 |
 | Security & Trust Planes canon (this section) | **Done** | SEC-PLANES-DOC.1 |
-| `intergrax.security_defenses` EP | **Planned** | SEC-EXT-* |
-| Shipped defense bundles + `bootstrap_security_providers()` | **Planned** | SEC-BUNDLE-* |
-| Encryption enforcement bridge (`RESTRICTED` → KMS) | **Planned** | ENC-* |
-| Author map Appendix H / EXTENSION §12 sync | **Planned** | SEC-PLANES-DOC.2–3 |
+| `intergrax.security_defenses` EP | **Done** | SEC-EXT-* |
+| Shipped defense bundles + `bootstrap_security_providers()` | **Done** | SEC-BUNDLE-* |
+| Encryption enforcement bridge (`RESTRICTED` → secrets_store) | **Done** | ENC-* |
+| Author map Appendix H / EXTENSION §12 sync | **Done** | SEC-PLANES-DOC.2–3 |
+
+**Follow-on (enterprise hardening):** [Phase SEC-PLANES-EVOL](../plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes-evol--enterprise-hardening-closed) — **Done** (2026-06-19).
+
+| Capability | Status | Plan ID |
+|------------|--------|---------|
+| `bootstrap_security_providers()` in `catalog_bootstrap` | **Done** | SEC-EVOL-1 |
+| Lab EP fixture + discovery gate | **Done** | SEC-EVOL-2 |
+| Security spine signals (`platform.security.*`) | **Done** | SEC-EVOL-3 |
+| Encrypt-via-adapter for RESTRICTED payloads | **Done** | SEC-EVOL-4 |
+| Defense plugin inspection budget / timeout | **Done** | SEC-EVOL-5 |
+| Enterprise maturity author checklist (§42.45.10) | **Done** | SEC-EVOL-DOC-1 |
+
+### 42.45.9 Encryption posture matrix
+
+| Layer | Mechanism | Owner |
+|-------|-----------|-------|
+| **Transit** | TLS on HTTP/MCP hosts | Tier-3 deployment / reverse proxy |
+| **Secrets at rest** | `IntegrationProfile.secrets_store` slug (Vault, Doppler, …) | S1 integration catalog |
+| **RESTRICTED payload gate** | `EncryptionEnforcementMiddleware` + `require_secrets_store_for_encryption` | S2/S3 profile on strict hosts — **deny** when backend missing |
+| **RESTRICTED payload transform** | Encrypt via `secrets_store` integration adapter before persist/tool return | S1 integration — **Planned** SEC-EVOL-4 |
+| **Field-level KMS** | Not in harness — use integration adapter in Tier-3 product | Out of SEC-PLANES scope |
+
+No duplicate KMS SDK in Tier-0 — agents consume resolved secrets via platform integrations only.
+
+### 42.45.10 Enterprise hardening — maturity model and backlog
+
+Phase SEC-PLANES (2026-06-19) delivers a **harness-grade** Security & Trust Planes foundation. The items below close gaps identified in the post-implementation enterprise audit — they do **not** introduce a new tier or `SecurityEngine`.
+
+| Maturity area | SEC-PLANES baseline | SEC-PLANES-EVOL target |
+|---------------|---------------------|------------------------|
+| **Bootstrap** | `bootstrap_security_providers()` callable; shipped bundles at import time | Auto-invoke from `catalog_bootstrap` so EP discovery is default on host startup |
+| **Author / author DX** | Protocol + EP group documented | Lab fixture package in repo + CI discovery gate for third-party authors |
+| **Observability** | Middleware blocks propagate via hook denial | Typed spine-adjacent domain signals: `platform.security.defense_blocked`, `platform.security.encryption_denied` |
+| **Encryption runtime** | Fail-closed **deny** when `RESTRICTED` lacks `secrets_store` | Optional **encrypt-via-adapter** path when backend is configured (persist/tool output) |
+| **Resilience** | Plugins run synchronously on hook path | Per-plugin inspection budget / timeout guard to limit DoS on hot paths |
+| **Multi-tenant** | `TenantSecurityMiddleware` on native path | Author checklist: defense plugins MUST respect tenant scope from `HookContext` |
+
+**Canonical plan register:** [Phase SEC-PLANES-EVOL](../plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes-evol--enterprise-hardening-active) · queue [§6.1bc](../plan/UNIFIED_EXECUTION_RUNTIME.md#61bc-harness-implementation-queue--sec-planes-evol-enterprise-hardening--active).
+
+**Explicitly out of scope:** harness-native blockchain; SOC2/ISO certification evidence; Tier-0 KMS SDK; duplicate PolicyEngine.
 
 **Authoring (wire-time closeout):** [`guides/AGENT_CREATION_GUIDE.md` Appendix S](../guides/AGENT_CREATION_GUIDE.md).
 

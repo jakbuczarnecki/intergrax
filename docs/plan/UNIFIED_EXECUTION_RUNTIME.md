@@ -47,37 +47,63 @@
 
 ---
 
-### 6.1aw Harness implementation queue — Security & Trust Planes (SEC-PLANES) — **Active**
+### 6.1aw Harness implementation queue — Security & Trust Planes (SEC-PLANES) — **Closed**
 
 **Source:** Idea audit (2026-06-19) — modular security layer without duplicate tier · canon [§42.45.3](../architecture/UNIFIED_EXECUTION_RUNTIME.md#42453-security-and-trust-planes-canonical)  
 **Priority ladder:** **Band 2bb** (§4.0) — incremental after §6.1 gate maintenance; **one ID per PR**  
-**Prerequisites:** Phase SEC **Done** (SEC-1–3) · Phase M.12 **Done** (llm_guardrail) · GOV-DOC.3 **Done** (`policy_rules` EP)
+**Prerequisites:** Phase SEC **Done** (SEC-1–3) · Phase M.12 **Done** (llm_guardrail) · GOV-DOC.3 **Done** (`policy_rules` EP)  
+**Status:** **Done** (2026-06-19) — **17/17** · **Follow-on:** [Phase SEC-PLANES-EVOL](#phase-sec-planes-evol--enterprise-hardening-active) (Band **2bc**)
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **SEC-PLANES-DOC.1** | Docs | P1 | **Done** | Security & Trust Planes canon §42.45.2–§42.45.8 | Architecture + plan register linked |
-| 2 | **SEC-PLANES-DOC.2** | Docs | P2 | **Planned** | `AGENT_CREATION_GUIDE.md` Appendix H — Security Planes operator index + preset matrix | Cross-ref §42.45; no new runtime code |
-| 3 | **SEC-PLANES-ADR-1** | ADR | P2 | **Planned** | ADR: SecurityDefensePlugin EP + S1/S2/S3 plane discipline | Linked from §42.45 + hub; `check_harness_adr.py` green |
-| 4 | **SEC-EXT-1** | Code | P1 | **Planned** | `SecurityDefensePlugin` protocol + `SecurityInspectionResult` typed contract | Unit tests on protocol + schema |
-| 5 | **SEC-EXT-2** | Code | P1 | **Planned** | Entry point group `intergrax.security_defenses` + `register_security_defense_plugins()` | EP discovery gate; lab fixture package |
-| 6 | **SEC-EXT-3** | Code | P1 | **Planned** | Wire defense plugins via `security_runtime_bridge` → `MiddlewarePipeline` | Runs after native V-SEC middleware; before `ToolRuntime` |
-| 7 | **SEC-EXT-4** | Code | P2 | **Planned** | `ApplicationSecurityProfile.defense_plugin_ids` + `security_assembly_resolver` validation | Unknown plugin id fails wire-time on strict hosts |
-| 8 | **SEC-EXT-5** | Test | P2 | **Planned** | Lab reference plugin + gate tests (`tests/unit/runtime/security/`) | Plugin on `BEFORE_TOOL_CALL` blocks + traces |
-| 9 | **SEC-BUNDLE-1** | Code | P2 | **Planned** | Shipped defense bundle manifest pattern (native rule packs) | At least one bundle: `harness.strict_injection` |
-| 10 | **SEC-BUNDLE-2** | Code | P2 | **Planned** | `harness_defense_stack()` preset + `SecurityEnvelope.production()` factory | Preset composes S1+S2+S3 toggles; doc example |
-| 11 | **SEC-BUNDLE-3** | Code | P3 | **Planned** | `bootstrap_security_providers()` in `catalog_bootstrap` | Registers shipped bundles + optional EP discovery |
-| 12 | **ENC-1** | Code | P1 | **Planned** | `EncryptionEnforcementPolicy` — `DataClassification.RESTRICTED` requires resolved `secrets_store` | Fail-closed when backend missing on strict profile |
-| 13 | **ENC-2** | Code | P2 | **Planned** | Hook enforcement at memory write + sensitive tool output paths | RESTRICTED payload denied or encrypted via integration adapter |
-| 14 | **ENC-3** | Test | P2 | **Planned** | Gate tests + `check_harness_encryption_policy.py` CI script | Strict host without secrets backend fails assembly |
-| 15 | **ENC-DOC.1** | Docs | P3 | **Planned** | Encryption posture matrix (transit TLS vs at-rest integration) in §42.45 | No duplicate KMS SDK in Tier-0 |
-| 16 | **SEC-PLANES-DOC.3** | Docs | P2 | **Planned** | `EXTENSION_AUTHOR_GUIDE.md` §12 — `intergrax.security_defenses` author surface | Depends on SEC-EXT-2; cross-ref §42.21 item 7 |
-| 17 | **SEC-EXT-6** | CI | P3 | **Planned** | `check_harness_security_defense_plugins.py` — EP + assembly smoke | CI workflow step; strict profile lab |
+| 2 | **SEC-PLANES-DOC.2** | Docs | P2 | **Done** | `AGENT_CREATION_GUIDE.md` Appendix H — Security Planes operator index + preset matrix | Cross-ref §42.45; no new runtime code |
+| 3 | **SEC-PLANES-ADR-1** | ADR | P2 | **Done** | ADR: SecurityDefensePlugin EP + S1/S2/S3 plane discipline | Linked from §42.45 + hub; `check_harness_adr.py` green |
+| 4 | **SEC-EXT-1** | Code | P1 | **Done** | `SecurityDefensePlugin` protocol + `SecurityInspectionResult` typed contract | Unit tests on protocol + schema |
+| 5 | **SEC-EXT-2** | Code | P1 | **Done** | Entry point group `intergrax.security_defenses` + `register_security_defense_plugins()` | EP discovery gate; lab fixture package |
+| 6 | **SEC-EXT-3** | Code | P1 | **Done** | Wire defense plugins via `security_runtime_bridge` → `MiddlewarePipeline` | Runs after native V-SEC middleware; before `ToolRuntime` |
+| 7 | **SEC-EXT-4** | Code | P2 | **Done** | `ApplicationSecurityProfile.defense_plugin_ids` + `security_assembly_resolver` validation | Unknown plugin id fails wire-time on strict hosts |
+| 8 | **SEC-EXT-5** | Test | P2 | **Done** | Lab reference plugin + gate tests (`tests/unit/runtime/security/`) | Plugin on `BEFORE_TOOL_CALL` blocks + traces |
+| 9 | **SEC-BUNDLE-1** | Code | P2 | **Done** | Shipped defense bundle manifest pattern (native rule packs) | At least one bundle: `harness.strict_injection` |
+| 10 | **SEC-BUNDLE-2** | Code | P2 | **Done** | `harness_defense_stack()` preset + `SecurityEnvelope.production()` factory | Preset composes S1+S2+S3 toggles; doc example |
+| 11 | **SEC-BUNDLE-3** | Code | P3 | **Done** | `bootstrap_security_providers()` helper | Shipped bundles at import; EP via explicit call — **follow-on** SEC-EVOL-1 for `catalog_bootstrap` |
+| 12 | **ENC-1** | Code | P1 | **Done** | `EncryptionEnforcementPolicy` — `DataClassification.RESTRICTED` requires resolved `secrets_store` | Fail-closed when backend missing on strict profile |
+| 13 | **ENC-2** | Code | P2 | **Done** | Hook enforcement at memory write + sensitive tool output paths | RESTRICTED payload denied or encrypted via integration adapter |
+| 14 | **ENC-3** | Test | P2 | **Done** | Gate tests + `check_harness_encryption_policy.py` CI script | Strict host without secrets backend fails assembly |
+| 15 | **ENC-DOC.1** | Docs | P3 | **Done** | Encryption posture matrix (transit TLS vs at-rest integration) in §42.45 | No duplicate KMS SDK in Tier-0 |
+| 16 | **SEC-PLANES-DOC.3** | Docs | P2 | **Done** | `EXTENSION_AUTHOR_GUIDE.md` §12 — `intergrax.security_defenses` author surface | Depends on SEC-EXT-2; cross-ref §42.21 item 7 |
+| 17 | **SEC-EXT-6** | CI | P3 | **Done** | `check_harness_security_defense_plugins.py` — EP + assembly smoke | CI workflow step; strict profile lab |
 
 **Suggested PR order:** SEC-PLANES-DOC.1 → SEC-PLANES-DOC.2 → SEC-PLANES-ADR-1 → SEC-EXT-1 → SEC-EXT-2 → SEC-EXT-3 → SEC-EXT-4 → SEC-EXT-5 → SEC-BUNDLE-1 → SEC-BUNDLE-2 → SEC-BUNDLE-3 → ENC-1 → ENC-2 → ENC-3 → ENC-DOC.1 → SEC-PLANES-DOC.3 → SEC-EXT-6.
 
 **Phase complete when:** all **Planned** rows **Done**; §42.45.8 maturity table shows zero **Planned** for SEC-PLANES scope; gate green.
 
 **Explicitly excluded:** standalone `SecurityEngine` tier or package; harness-native blockchain integration (M.6 exclusion); Tier-3 attestation/receipt products (product wiring only); new business agents — [§6.3a](#63a-business-backlog-register-consolidated).
+
+---
+
+### 6.1bc Harness implementation queue — SEC-PLANES-EVOL (enterprise hardening) — **Closed**
+
+**Source:** Post-SEC-PLANES enterprise audit (2026-06-19) · canon [§42.45.10](../architecture/UNIFIED_EXECUTION_RUNTIME.md#424510-enterprise-hardening--maturity-model-and-backlog)  
+**Priority ladder:** **Band 2bc** (§4.0) — incremental after SEC-PLANES closeout; **one ID per PR**  
+**Prerequisites:** Phase SEC-PLANES **Done** (17/17) · Phase OBS spine **Done** (ADR-OBS-003)  
+**Status:** **Done** (2026-06-19) — **7/7**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **SEC-EVOL-1** | Code | P1 | **Done** | Wire `bootstrap_security_providers()` into `catalog_bootstrap.py` | `bootstrap_catalogs()` invokes security bootstrap; gate test |
+| 2 | **SEC-EVOL-2** | Code | P2 | **Done** | Lab EP fixture package + discovery gate | `[project.entry-points."intergrax.security_defenses"]` in repo lab fixture; CI loads plugin |
+| 3 | **SEC-EVOL-3** | Code | P1 | **Done** | Security domain spine signals | `platform.security.defense_blocked` + `platform.security.encryption_denied` from middleware; typed payloads |
+| 4 | **SEC-EVOL-4** | Code | P2 | **Done** | Encrypt-via-adapter path for RESTRICTED payloads | When `secrets_store` configured, middleware encrypts (not only deny) on memory write + tool output |
+| 5 | **SEC-EVOL-5** | Code | P3 | **Done** | Defense plugin inspection budget / timeout guard | Per-plugin wall-clock budget on hook path; fail-closed on overrun |
+| 6 | **SEC-EVOL-DOC-1** | Docs | P2 | **Done** | Enterprise maturity checklist in guides + §42.45.10 sync | Appendix H tenant-scope note; EXTENSION §12 author checklist |
+| 7 | **SEC-EVOL-6** | CI | P3 | **Done** | Extend CI smoke for catalog bootstrap + EP discovery | `check_harness_security_defense_plugins.py` covers post-catalog-bootstrap path |
+
+**Suggested PR order:** SEC-EVOL-1 → SEC-EVOL-3 → SEC-EVOL-2 → SEC-EVOL-4 → SEC-EVOL-DOC-1 → SEC-EVOL-5 → SEC-EVOL-6.
+
+**Phase complete when:** all **Planned** rows **Done**; §42.45.8 follow-on table has zero **Planned**; gate green.
+
+**Explicitly excluded:** harness-native blockchain; Tier-0 KMS SDK; SOC2/ISO certification artifacts; new business agents — [§6.3a](#63a-business-backlog-register-consolidated).
 
 ---
 
@@ -776,20 +802,22 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 
 **Explicitly excluded:** new business agents (K.1/K.2), product-only security dashboards — [§6.3a](#63a-business-backlog-register-consolidated).
 
-**Follow-on:** [Phase SEC-PLANES](#phase-sec-planes--security--trust-planes-active) (Band **2bb**, queue [§6.1aw](#61aw-harness-implementation-queue--security--trust-planes-sec-planes--active)).
+**Follow-on:** [Phase SEC-PLANES-EVOL](#phase-sec-planes-evol--enterprise-hardening-active) (Band **2bc**, queue [§6.1bc](#61bc-harness-implementation-queue--sec-planes-evol-enterprise-hardening--active)).
 
 ---
 
-## Phase SEC-PLANES — Security & Trust Planes (**Active**)
+## Phase SEC-PLANES — Security & Trust Planes (**Closed**)
 
-**Status:** **Planned** (2026-06-19) — **1/17 Done** (SEC-PLANES-DOC.1)  
+**Status:** **Done** (2026-06-19) — **17/17 Done** (SEC-PLANES)  
 **Source:** Idea audit (2026-06-19) — modular security without duplicate tier  
-**Architecture:** [§42.45.2–§42.45.8](../architecture/UNIFIED_EXECUTION_RUNTIME.md#4245-security-and-data-governance)  
+**Architecture:** [§42.45.2–§42.45.9](../architecture/UNIFIED_EXECUTION_RUNTIME.md#4245-security-and-data-governance)  
 **Prerequisites:** Phase SEC **Done** · M.12 **Done** · GOV-DOC.3 **Done**  
-**Priority ladder:** **Band 2bb** (§4.0) — incremental after §6.1 gate; **one ID per PR**  
-**Queue:** [§6.1aw](#61aw-harness-implementation-queue--security--trust-planes-sec-planes--active)  
-**Execution order:** [§6.2bo](#62bo-phase-sec-planes-execution-order-band-2bb--active)  
-**ADR:** SEC-PLANES-ADR-1 (required before SEC-EXT-3 merge)
+**Priority ladder:** **Band 2bb** (§4.0) — **closed**  
+**Queue:** [§6.1aw](#61aw-harness-implementation-queue--security--trust-planes-sec-planes--closed)  
+**Execution order:** [§6.2bo](#62bo-phase-sec-planes-execution-order-band-2bb--closed)  
+**ADR:** [ADR-SEC-001](../adr/entries/2026-06-19/ADR-SEC-001.md)
+
+**Follow-on:** [Phase SEC-PLANES-EVOL](#phase-sec-planes-evol--enterprise-hardening-active) (Band **2bc**, queue [§6.1bc](#61bc-harness-implementation-queue--sec-planes-evol-enterprise-hardening--active)).
 
 **Goal:** Deliver a **fully modular, provider-backed security surface** inside UAEP — Security & Trust Planes (S1/S2/S3), `SecurityEnvelope` composition, shipped presets, `intergrax.security_defenses` EP, and encryption enforcement bridge — **without** a standalone Security tier or engine.
 
@@ -800,22 +828,22 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 | ID | Area | Deliverable | Priority | Status | Modules / docs | Acceptance |
 |----|------|-------------|----------|--------|----------------|------------|
 | SEC-PLANES-DOC.1 | DOC | Security & Trust Planes canon §42.45.2–§42.45.8 | P1 | **Done** | `architecture/UNIFIED_EXECUTION_RUNTIME.md` | Plan cross-link; plane model documented |
-| SEC-PLANES-DOC.2 | DOC | Appendix H — Security Planes operator index | P2 | **Planned** | `guides/AGENT_CREATION_GUIDE.md` | Preset matrix S1/S2/S3; cross-ref §42.45 |
-| SEC-PLANES-ADR-1 | ADR | SecurityDefensePlugin + plane discipline ADR | P2 | **Planned** | `docs/adr/entries/2026-06-19/` | Hub + §42.45 link; no SecurityEngine tier |
-| SEC-EXT-1 | EXT | `SecurityDefensePlugin` + `SecurityInspectionResult` | P1 | **Planned** | `intergrax/runtime/security/defense_plugin.py` | Protocol unit tests |
-| SEC-EXT-2 | EXT | `intergrax.security_defenses` EP + loader | P1 | **Planned** | `runtime/security/defense_plugin_loader.py` | EP discovery; lab fixture |
-| SEC-EXT-3 | EXT | Wire defense plugins in `security_runtime_bridge` | P1 | **Planned** | `security_runtime_bridge.py`, `application_security_wiring.py` | After native V-SEC; before ToolRuntime |
-| SEC-EXT-4 | EXT | `defense_plugin_ids` on profile + assembly resolver | P2 | **Planned** | `environment_profile.py`, `security_assembly_resolver.py` | Wire-time fail on unknown id (strict) |
-| SEC-EXT-5 | EXT | Lab reference plugin + gate tests | P2 | **Planned** | `tests/unit/runtime/security/` | BEFORE_TOOL_CALL block + trace |
-| SEC-EXT-6 | CI | `check_harness_security_defense_plugins.py` | P3 | **Planned** | `scripts/`, CI workflow | Smoke on strict lab profile |
-| SEC-BUNDLE-1 | BUNDLE | Shipped defense bundle manifest | P2 | **Planned** | `intergrax/runtime/security/bundles/` | `harness.strict_injection` bundle registered |
-| SEC-BUNDLE-2 | BUNDLE | `harness_defense_stack()` + `SecurityEnvelope.production()` | P2 | **Planned** | `integrations/registry/presets.py`, `bundles.py` | Composes S1+S2+S3; doc example |
-| SEC-BUNDLE-3 | BUNDLE | `bootstrap_security_providers()` | P3 | **Planned** | `intergrax/core/catalog_bootstrap.py` | Shipped bundles + optional EP |
-| ENC-1 | ENC | `EncryptionEnforcementPolicy` + secrets_store gate | P1 | **Planned** | `runtime/security/encryption_policy.py` | RESTRICTED requires backend on strict |
-| ENC-2 | ENC | Hook enforcement memory write + tool output | P2 | **Planned** | UAEP hooks + memory policy | RESTRICTED deny or encrypt via adapter |
-| ENC-3 | ENC | Gate tests + `check_harness_encryption_policy.py` | P2 | **Planned** | `scripts/`, tests | Assembly fails without secrets backend |
-| ENC-DOC.1 | DOC | Encryption posture matrix in §42.45 | P3 | **Planned** | architecture canon | Transit vs at-rest; no Tier-0 KMS SDK |
-| SEC-PLANES-DOC.3 | DOC | `EXTENSION_AUTHOR_GUIDE.md` §12 | P2 | **Planned** | `guides/EXTENSION_AUTHOR_GUIDE.md` | Depends SEC-EXT-2 |
+| SEC-PLANES-DOC.2 | DOC | Appendix H — Security Planes operator index | P2 | **Done** | `guides/AGENT_CREATION_GUIDE.md` | Preset matrix S1/S2/S3; cross-ref §42.45 |
+| SEC-PLANES-ADR-1 | ADR | SecurityDefensePlugin + plane discipline ADR | P2 | **Done** | `docs/adr/entries/2026-06-19/ADR-SEC-001.md` | Hub + §42.45 link; no SecurityEngine tier |
+| SEC-EXT-1 | EXT | `SecurityDefensePlugin` + `SecurityInspectionResult` | P1 | **Done** | `intergrax/runtime/security/defense_plugin.py` | Protocol unit tests |
+| SEC-EXT-2 | EXT | `intergrax.security_defenses` EP + loader | P1 | **Done** | `runtime/security/defense_plugin_loader.py` | EP discovery; lab fixture |
+| SEC-EXT-3 | EXT | Wire defense plugins in `security_runtime_bridge` | P1 | **Done** | `security_runtime_bridge.py`, `application_security_wiring.py` | After native V-SEC; before ToolRuntime |
+| SEC-EXT-4 | EXT | `defense_plugin_ids` on profile + assembly resolver | P2 | **Done** | `environment_profile.py`, `security_assembly_resolver.py` | Wire-time fail on unknown id (strict) |
+| SEC-EXT-5 | EXT | Lab reference plugin + gate tests | P2 | **Done** | `tests/unit/runtime/security/` | BEFORE_TOOL_CALL block + trace |
+| SEC-EXT-6 | CI | `check_harness_security_defense_plugins.py` | P3 | **Done** | `scripts/`, CI workflow | Smoke on strict lab profile |
+| SEC-BUNDLE-1 | BUNDLE | Shipped defense bundle manifest | P2 | **Done** | `intergrax/runtime/security/defense_registry.py` | `harness.strict_injection` bundle registered |
+| SEC-BUNDLE-2 | BUNDLE | `harness_defense_stack()` + `SecurityEnvelope.production()` | P2 | **Done** | `integrations/registry/presets.py`, `bundles.py` | Composes S1+S2+S3; doc example |
+| SEC-BUNDLE-3 | BUNDLE | `bootstrap_security_providers()` | P3 | **Done** | `intergrax/core/security_bootstrap.py` | Shipped bundles + optional EP; **SEC-EVOL-1** wires `catalog_bootstrap` |
+| ENC-1 | ENC | `EncryptionEnforcementPolicy` + secrets_store gate | P1 | **Done** | `runtime/security/encryption_policy.py` | RESTRICTED requires backend on strict |
+| ENC-2 | ENC | Hook enforcement memory write + tool output | P2 | **Done** | `runtime/security/encryption_middleware.py` | RESTRICTED deny when no secrets backend |
+| ENC-3 | ENC | Gate tests + `check_harness_encryption_policy.py` | P2 | **Done** | `scripts/`, tests | Assembly fails without secrets backend |
+| ENC-DOC.1 | DOC | Encryption posture matrix in §42.45 | P3 | **Done** | architecture canon §42.45.9 | Transit vs at-rest; no Tier-0 KMS SDK |
+| SEC-PLANES-DOC.3 | DOC | `EXTENSION_AUTHOR_GUIDE.md` §12 | P2 | **Done** | `guides/EXTENSION_AUTHOR_GUIDE.md` | Depends SEC-EXT-2 |
 
 ### SEC-PLANES — Workstreams
 
@@ -830,16 +858,69 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 
 **Explicitly excluded:** standalone Security tier; harness blockchain; Tier-3 receipt/attestation products; duplicate PolicyEngine — [§6.3a](#63a-business-backlog-register-consolidated).
 
-### 6.2bo Phase SEC-PLANES execution order (Band 2bb — **Active**)
+### 6.2bo Phase SEC-PLANES execution order (Band 2bb — **Closed**)
 
 ```text
 1. SEC-PLANES-DOC.1   (Done) — canon §42.45 planes
-2. SEC-PLANES-DOC.2   — Appendix H operator index
-3. SEC-PLANES-ADR-1   — ADR before defense EP wiring
-4. SEC-EXT-1 → SEC-EXT-2 → SEC-EXT-3 → SEC-EXT-4 → SEC-EXT-5
-5. SEC-BUNDLE-1 → SEC-BUNDLE-2 → SEC-BUNDLE-3
-6. ENC-1 → ENC-2 → ENC-3 → ENC-DOC.1
-7. SEC-PLANES-DOC.3 → SEC-EXT-6
+2. SEC-PLANES-DOC.2   (Done) — Appendix H operator index
+3. SEC-PLANES-ADR-1   (Done) — ADR before defense EP wiring
+4. SEC-EXT-1 → SEC-EXT-2 → SEC-EXT-3 → SEC-EXT-4 → SEC-EXT-5  (Done)
+5. SEC-BUNDLE-1 → SEC-BUNDLE-2 → SEC-BUNDLE-3  (Done)
+6. ENC-1 → ENC-2 → ENC-3 → ENC-DOC.1  (Done)
+7. SEC-PLANES-DOC.3 → SEC-EXT-6  (Done)
+```
+
+---
+
+## Phase SEC-PLANES-EVOL — Enterprise hardening (**Closed**)
+
+**Status:** **Done** (2026-06-19) — **7/7 Done** (SEC-PLANES-EVOL)  
+**Source:** Post-SEC-PLANES enterprise audit (2026-06-19)  
+**Architecture:** [§42.45.10](../architecture/UNIFIED_EXECUTION_RUNTIME.md#424510-enterprise-hardening--maturity-model-and-backlog)  
+**Prerequisites:** Phase SEC-PLANES **Done** (17/17) · OBS spine domain signals (ADR-OBS-003)  
+**Priority ladder:** **Band 2bc** (§4.0) — incremental after SEC-PLANES; **one ID per PR**  
+**Queue:** [§6.1bc](#61bc-harness-implementation-queue--sec-planes-evol-enterprise-hardening--active)  
+**Execution order:** [§6.2bp](#62bp-phase-sec-planes-evol-execution-order-band-2bc--active)
+
+**Goal:** Close enterprise-grade gaps without a new Security tier — catalog bootstrap wiring, author EP fixture, observability spine, encrypt-via-adapter, and defense inspection resilience.
+
+**Delivery rule:** One **SEC-EVOL-*** ID per PR → update §6.1bc + §42.45.8 follow-on maturity → gate green.
+
+### SEC-PLANES-EVOL — Master register
+
+| ID | Area | Deliverable | Priority | Status | Modules / docs | Acceptance |
+|----|------|-------------|----------|--------|----------------|------------|
+| SEC-EVOL-1 | BOOT | `bootstrap_security_providers()` in `catalog_bootstrap` | P1 | **Done** | `intergrax/core/catalog_bootstrap.py`, `security_bootstrap.py` | Host catalog bootstrap loads EP plugins by default |
+| SEC-EVOL-2 | EXT | Lab EP fixture + discovery gate | P2 | **Done** | lab fixture package, tests | CI discovers fixture plugin via EP group |
+| SEC-EVOL-3 | OBS | Security domain spine signals | P1 | **Done** | `security_events.py`, middleware | `platform.security.defense_blocked`, `platform.security.encryption_denied` |
+| SEC-EVOL-4 | ENC | Encrypt-via-adapter for RESTRICTED | P2 | **Done** | `encryption_transform.py`, middleware | Transform path when backend configured; deny when not |
+| SEC-EVOL-5 | RES | Defense plugin inspection budget | P3 | **Done** | `PluginSecurityDefenseMiddleware` | Timeout/budget guard; fail-closed on overrun |
+| SEC-EVOL-DOC-1 | DOC | Enterprise maturity author checklist | P2 | **Done** | §42.45.10, Appendix H, EXTENSION §12 | Tenant scope + plugin author checklist documented |
+| SEC-EVOL-6 | CI | Catalog bootstrap + EP discovery smoke | P3 | **Done** | `scripts/check_harness_security_defense_plugins.py` | Smoke after `bootstrap_catalogs()` |
+
+### SEC-PLANES-EVOL — Workstreams
+
+| Workstream | IDs | Outcome |
+|------------|-----|---------|
+| **A — Bootstrap & author DX** | SEC-EVOL-1, SEC-EVOL-2, SEC-EVOL-6 | Default EP discovery; lab fixture for third-party authors |
+| **B — Observability** | SEC-EVOL-3 | SOC/SIEM-friendly security deny signals on spine |
+| **C — Encryption depth** | SEC-EVOL-4 | RESTRICTED transform path beyond deny-only gate |
+| **D — Resilience & docs** | SEC-EVOL-5, SEC-EVOL-DOC-1 | Hot-path guardrails + operator author checklist |
+
+**Phase complete when:** 7/7 **Done**; §42.45.8 follow-on table has no **Planned** rows.
+
+**Explicitly excluded:** harness blockchain; Tier-0 KMS; certification artifacts — [§6.3a](#63a-business-backlog-register-consolidated).
+
+### 6.2bp Phase SEC-PLANES-EVOL execution order (Band 2bc — **Closed**)
+
+```text
+1. SEC-EVOL-1   (Done) — catalog_bootstrap wiring
+2. SEC-EVOL-3   (Done) — security spine signals
+3. SEC-EVOL-2   (Done) — lab EP fixture + discovery gate
+4. SEC-EVOL-4   (Done) — encrypt-via-adapter path
+5. SEC-EVOL-DOC-1 (Done) — enterprise maturity checklist
+6. SEC-EVOL-5   (Done) — defense inspection budget
+7. SEC-EVOL-6   (Done) — CI smoke extension
 ```
 
 ---

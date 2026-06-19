@@ -65,6 +65,10 @@ class ApplicationSecurityProfile(BaseModel):
     audit_trail_regions: list[str] = Field(
         default_factory=lambda: ["eu-central-1", "us-east-1"],
     )
+    defense_plugin_ids: list[str] = Field(default_factory=list)
+    defense_bundle_ids: list[str] = Field(default_factory=list)
+    encryption_enforcement_enabled: bool = False
+    require_secrets_store_for_encryption: bool = False
 
 
 class GuardrailProfile(BaseModel):

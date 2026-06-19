@@ -237,6 +237,19 @@ def harness_security_stack(
     )
 
 
+def harness_defense_stack(
+    *,
+    primary_scanner: str = "trivy",
+    enable_semgrep: bool = True,
+) -> IntegrationProfile:
+    """Integration preset for production security hosts (Phase SEC-BUNDLE-2)."""
+    return harness_security_stack(
+        primary_scanner=primary_scanner,
+        enable_semgrep=enable_semgrep,
+        enable_snyk=False,
+    )
+
+
 def harness_sandbox_stack(
     *,
     primary_sandbox: str = "e2b",

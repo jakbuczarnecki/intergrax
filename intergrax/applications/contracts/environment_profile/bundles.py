@@ -121,9 +121,29 @@ class SecurityEnvelope(BaseModel):
                 retrieval_poisoning_defense_enabled=True,
                 tenant_security_verify_enabled=True,
                 immutable_audit_trail_enabled=True,
+                defense_bundle_ids=["harness.strict_injection"],
             ),
             compliance=ComplianceProfile(enabled=True),
             organizational_policy=org,
+        )
+
+    @classmethod
+    def production(
+        cls,
+        *,
+        org: OrganizationalPolicyEnvelope | None = None,
+    ) -> SecurityEnvelope:
+        """Production preset composing S1+S2+S3 security toggles (Phase SEC-BUNDLE-2)."""
+        base = cls.strict(org=org)
+        return base.model_copy(
+            update={
+                "application_security": base.application_security.model_copy(
+                    update={
+                        "encryption_enforcement_enabled": True,
+                        "require_secrets_store_for_encryption": True,
+                    },
+                ),
+            },
         )
 
 

@@ -27,6 +27,12 @@ from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookRe
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.base import RuntimeMiddleware
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
+from intergrax.applications._shared.security_runtime_bridge import (
+    SecurityWiringOptions,
+)
+from intergrax.runtime.security.defense_plugin import PluginSecurityDefenseMiddleware
+from intergrax.runtime.security.defense_registry import resolve_security_defense_plugins
+from intergrax.runtime.security.encryption_middleware import EncryptionEnforcementMiddleware
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 
 
@@ -174,14 +180,41 @@ def _attach_middleware(nexus: NexusLoop, middleware: RuntimeMiddleware) -> None:
 def register_application_security_hooks(
     nexus: NexusLoop,
     profile: ApplicationSecurityProfile,
+    *,
+    options: SecurityWiringOptions | None = None,
 ) -> None:
     """Attach security middleware when V-SEC toggles are enabled."""
+    resolved = options
+    if resolved is None:
+        from intergrax.applications._shared.security_runtime_bridge import (
+            resolve_security_wiring_options,
+        )
+
+        resolved = resolve_security_wiring_options(profile)
+    if resolved.encryption_enforcement_enabled:
+        from intergrax.runtime.security.encryption_transform import HarnessEnvelopeEncryptor
+
+        encryptor = HarnessEnvelopeEncryptor() if resolved.secrets_store_configured else None
+        _attach_middleware(
+            nexus,
+            EncryptionEnforcementMiddleware(
+                enforcement_enabled=True,
+                secrets_store_configured=resolved.secrets_store_configured,
+                encryptor=encryptor,
+                event_bus=nexus.event_bus,
+            ),
+        )
     if profile.prompt_defense_enabled:
         _attach_middleware(nexus, PromptDefenseMiddleware(default_prompt_defense_profile()))
     if profile.tool_injection_defense_enabled:
         _attach_middleware(nexus, ToolInjectionDefenseMiddleware(default_tool_invocation_policy()))
     if profile.tenant_security_verify_enabled:
         _attach_middleware(nexus, TenantSecurityMiddleware())
+    for plugin in resolve_security_defense_plugins(
+        resolved.defense_plugin_ids,
+        resolved.defense_bundle_ids,
+    ):
+        _attach_middleware(nexus, PluginSecurityDefenseMiddleware(plugin, event_bus=nexus.event_bus))
 
 
 def _stringify_argument_map(raw: Any) -> dict[str, str]:

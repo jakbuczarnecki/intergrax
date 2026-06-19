@@ -10,7 +10,9 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     ApplicationSecurityProfile,
 )
+from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.security.defense_registry import resolve_security_defense_plugins
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,17 +23,45 @@ class SecurityWiringOptions:
     tool_injection_defense_enabled: bool
     retrieval_poisoning_defense_enabled: bool
     tenant_security_verify_enabled: bool
+    defense_plugin_ids: tuple[str, ...] = ()
+    defense_bundle_ids: tuple[str, ...] = ()
+    defense_middleware_names: tuple[str, ...] = ()
+    encryption_enforcement_enabled: bool = False
+    secrets_store_configured: bool = False
+    require_secrets_store_for_encryption: bool = False
+
+
+def _secrets_store_configured(env: ApplicationEnvironmentProfile) -> bool:
+    profile = env.integration_profile
+    if profile is None:
+        return False
+    slug = profile.slug_for_category(IntegrationCategory.SECRETS_STORE)
+    return bool(slug and slug.strip())
 
 
 def resolve_security_wiring_options(
     profile: ApplicationSecurityProfile,
+    *,
+    env: ApplicationEnvironmentProfile | None = None,
 ) -> SecurityWiringOptions:
     """Translate ``ApplicationSecurityProfile`` into host wiring flags."""
+    plugins = resolve_security_defense_plugins(
+        tuple(profile.defense_plugin_ids),
+        tuple(profile.defense_bundle_ids),
+    )
+    defense_names = tuple(f"SecurityDefense:{plugin.plugin_id}" for plugin in plugins)
+    secrets_configured = _secrets_store_configured(env) if env is not None else False
     return SecurityWiringOptions(
         prompt_defense_enabled=profile.prompt_defense_enabled,
         tool_injection_defense_enabled=profile.tool_injection_defense_enabled,
         retrieval_poisoning_defense_enabled=profile.retrieval_poisoning_defense_enabled,
         tenant_security_verify_enabled=profile.tenant_security_verify_enabled,
+        defense_plugin_ids=tuple(profile.defense_plugin_ids),
+        defense_bundle_ids=tuple(profile.defense_bundle_ids),
+        defense_middleware_names=defense_names,
+        encryption_enforcement_enabled=profile.encryption_enforcement_enabled,
+        secrets_store_configured=secrets_configured,
+        require_secrets_store_for_encryption=profile.require_secrets_store_for_encryption,
     )
 
 

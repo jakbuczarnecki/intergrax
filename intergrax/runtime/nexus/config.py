@@ -16,6 +16,7 @@ from intergrax.runtime.nexus.config_types import (
 
 if TYPE_CHECKING:
     from intergrax.integrations.registry.profile import IntegrationProfile
+    from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
     from intergrax.runtime.events.event_bus import RuntimeEventBus
     from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
     from intergrax.applications.contracts.environment_profile import (
@@ -285,6 +286,7 @@ class RuntimeConfig:
     # DIAGNOSTICS
     # ------------------------------------------------------------------
     enable_llm_usage_collection: bool = True
+    llm_usage_tracker: Optional["LLMUsageTracker"] = None
 
 
     # ------------------------------------------------------------------

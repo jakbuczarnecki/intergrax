@@ -1,0 +1,16 @@
+[project]
+name = "intergrax-security-defense-fixture"
+version = "0.0.1"
+description = "Test-only security defense EP fixture (Phase SEC-EVOL-2)."
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.entry-points."intergrax.security_defenses"]
+fixture_defense = "intergrax_security_defense_fixture.plugin:FixtureDefensePlugin"

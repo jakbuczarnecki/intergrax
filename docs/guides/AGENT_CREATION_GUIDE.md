@@ -1298,8 +1298,34 @@ Authors customize security through **Tier-3** `*_wiring.py` + `ApplicationEnviro
 | `tool_injection_defense_enabled` | `ToolInjectionDefenseMiddleware` on `BEFORE_TOOL_CALL` |
 | `retrieval_poisoning_defense_enabled` | Trust-score / quarantine on RAG retrieval |
 | `tenant_security_verify_enabled` | Tenant boundary checks at task intake |
+| `defense_plugin_ids` | Custom S2 plugins via `intergrax.security_defenses` EP |
+| `defense_bundle_ids` | Shipped bundles (e.g. `harness.strict_injection`) |
+| `encryption_enforcement_enabled` | `EncryptionEnforcementMiddleware` on memory/tool paths |
+| `require_secrets_store_for_encryption` | Strict assembly requires `integration_profile.secrets_store` |
 
 Wiring: `intergrax/applications/_shared/application_security_wiring.py`. Gate tests under `tests/unit/runtime/architecture/` and integration paths.
+
+### H.3.1 Security & Trust Planes (operator index)
+
+| Plane | Question | Primary controls |
+|-------|----------|------------------|
+| **S1 Trust** | Who acts? Secrets? Signing? | `IdentityProfile`, `secrets_store` integration, `critical_action_signing` |
+| **S2 Defense** | Is payload/tool/chunk safe? | `ApplicationSecurityProfile` toggles, `defense_bundle_ids`, vendor `llm_guardrail` |
+| **S3 Governance** | Is execution allowed? | `PolicyRulesProfile`, `RuntimePolicyBundle`, HITL, budgets |
+
+**Presets:** `SecurityEnvelope.lab()` · `SecurityEnvelope.strict()` · `SecurityEnvelope.production()` · `harness_defense_stack()` integration preset.
+
+**Enterprise checklist (SEC-PLANES-EVOL):**
+
+| Check | Operator action |
+|-------|-----------------|
+| Catalog bootstrap | Ensure host calls `bootstrap_catalogs()` — loads `intergrax.security_defenses` EP automatically |
+| Production encryption | Use `SecurityEnvelope.production()` + `harness_defense_stack()` so `secrets_store` resolves |
+| Defense plugin tenant scope | Custom S2 plugins MUST read `tenant_id` from `HookContext.runtime_state` — never bypass `PolicyEngine` |
+| Observability | Subscribe to `platform.security.defense_blocked` and `platform.security.encryption_denied` on the runtime bus |
+| RESTRICTED payloads | With `secrets_store` configured, middleware encrypts inline secrets before memory/tool paths |
+
+Canon: [UAEP §42.45](architecture/UNIFIED_EXECUTION_RUNTIME.md#4245-security-and-data-governance) · [§42.45.10](architecture/UNIFIED_EXECUTION_RUNTIME.md#424510-enterprise-hardening--maturity-model-and-backlog) · ADR: [ADR-SEC-001](../adr/entries/2026-06-19/ADR-SEC-001.md).
 
 ### H.4 Policy bundle — operator read order
 
