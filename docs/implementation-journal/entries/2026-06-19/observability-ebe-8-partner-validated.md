@@ -8,7 +8,7 @@ scope: OBSERVABILITY
 plan_ref:
   - EBE-8
 status: completed
-commit: pending
+commit: 6c6fef1c
 adr: none — partner validation closeout; no schema or trust-model change
 ---
 
