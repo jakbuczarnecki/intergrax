@@ -231,6 +231,67 @@ Requires `integration_profile.key_value_cache` slug `redis`. Cross-ref: [`docs/p
 
 ---
 
+## LLM routing rules (M-LLM-X.9)
+
+**ADR:** [`ADR-LLM-003`](../../docs/adr/entries/2026-06-19/ADR-LLM-003.md) · **Canon:** [`LLM_ADAPTERS.md`](../../docs/architecture/LLM_ADAPTERS.md) § LLM routing rules
+
+Tier-3 hosts configure dynamic model selection with **`LLMRoutingProfile`** on `ApplicationEnvironmentProfile`. Each rule implements **`LLMRoutingRule`** (`matches` + `resolve`) — use built-in classes or subclass **`LLMRoutingRuleBase`** for custom logic.
+
+```python
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.llm_adapters.routing import (
+    BudgetBelowRule,
+    LLMRoutingProfile,
+    LLMRoutingRuleBase,
+    RoutingContext,
+    RoutingTarget,
+)
+
+primary = LLMProfile(provider=LLMProvider.OPENAI, model="gpt-4o-mini")
+local = LLMProfile(provider=LLMProvider.VLLM, model="meta-llama/Llama-3.1-8B")
+
+class LegalLowBudgetRule(LLMRoutingRuleBase):
+    rule_id = "legal.low_budget"
+    priority = 10
+
+    def matches(self, context: RoutingContext) -> bool:
+        return self.budget_below(context, 0.2) and self.task_is(context, "contract_review")
+
+    def resolve(self, context: RoutingContext) -> RoutingTarget:
+        return RoutingTarget(profile=local, reason="legal_budget")
+
+env = ApplicationEnvironmentProfile.lab_defaults()
+env.llm_profile = primary
+env.llm_routing_profile = LLMRoutingProfile(
+    default_profile=primary,
+    allowed_profiles=(primary, local),
+    rules=(LegalLowBudgetRule(), BudgetBelowRule(threshold=0.15, profile=local)),
+)
+
+adapter = resolve_llm_adapter(
+    env,
+    routing_context=RoutingContext(budget_remaining_ratio=0.1, task_class="contract_review"),
+)
+```
+
+| Built-in rule | When |
+|---------------|------|
+| `BudgetBelowRule(threshold, profile)` | `budget_remaining_ratio < threshold` |
+| `TaskClassRule(classes, profile=…, hint=…)` | Nexus `task_class` match |
+| `TokenThresholdRule(threshold, hint=…)` | `tokens_used > threshold` |
+| `BudgetExceededDegradeRule()` | `budget_degrade_active` — same path as `degrade_model` |
+
+**Per-step routing (agents):** wrap `StepLLMRouter` with `wrap_dynamic_llm_router()` from `intergrax.agents.authoring.dynamic_llm_router`.
+
+**HF models:** serve weights via **vLLM** or **llama.cpp** — use the model id on the local profile; HF Hub remains object storage only.
+
+**Testing:** unit-test `rule.matches(fake_context)` and `rule.resolve(...)` without Nexus. CI gate: `python scripts/check_llm_routing_rules.py`.
+
+---
+
 ## Self-hosted Docker (Ollama / vLLM / llama.cpp)
 
 | Backend | Start | Base URL env |

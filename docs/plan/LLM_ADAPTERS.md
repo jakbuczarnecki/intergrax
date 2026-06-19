@@ -119,7 +119,7 @@
 | 6 | X-6 | M-LLM-X.6.1–6.3 | P2 | **Partial** (6.3 Done) |
 | 7 | X-7 | M-LLM-X.7.1–7.5 | P2 | **Partial** (7.1, 7.5 Done; 7.2–7.4 Planned) |
 | 8 | X-8 | M-LLM-X.8.1–8.3 | Medium | **Planned** |
-| 9 | X-9 | M-LLM-X.9.1–9.9 | **P1** | **Planned** — ADR-LLM-003 · routing rule Protocol |
+| 9 | X-9 | M-LLM-X.9.1–9.9 | **P1** | **Done** (2026-06-19) — ADR-LLM-003 · routing rule Protocol |
 
 **Closeout gate:** All M-LLM-X.* Done + architecture audit register all **Done** + `tests/unit/llm_adapters/` green + new CI scripts green.
 
@@ -259,16 +259,16 @@ Wave M-LLM-X-9 (routing rules): M-LLM-X.9.1 → 9.2 → 9.2b → 9.3 → 9.4 →
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| M-LLM-X.9.1 | **`LLMRoutingRule` Protocol + `LLMRoutingRuleBase` ABC** — `matches()`, `resolve()`, `rule_id`, `priority` | **Planned** | **Critical** | `intergrax/llm_adapters/routing/contracts.py` | Unit: Protocol structural subtyping |
-| M-LLM-X.9.2 | **`RoutingContext`, `RoutingTarget`, `LLMRoutingProfile`** Pydantic models | **Planned** | **Critical** | `routing/contracts.py` | Immutable context snapshot |
-| M-LLM-X.9.2b | **`LLMRoutingEvaluator`** — priority sort, first-match, allowlist guard | **Planned** | **Critical** | `routing/evaluator.py` | Unit: priority + allowlist rejection |
-| M-LLM-X.9.3 | **Built-in rules package** — `BudgetBelowRule`, `TaskClassRule`, `TokenThresholdRule`, `BudgetExceededDegradeRule` | **Planned** | High | `routing/builtin_rules.py` | Each implements same Protocol |
-| M-LLM-X.9.4 | **Tier-3 `LLMRoutingProfile` on `ApplicationEnvironmentProfile`** + `CapabilityBundle` wire | **Planned** | **Critical** | `environment_profile/`, `nexus_factory.py` | Reference host manifest example |
-| M-LLM-X.9.5 | **Hot path wire** — `resolve_llm_adapter()` evaluates rules using budget meter + `task_class` | **Planned** | **Critical** | `llm_resolver.py`, `llm_routing_wiring.py` | Integration test: rule triggers profile swap |
-| M-LLM-X.9.6 | **Unify `BudgetReactionProfile.degrade_model`** with `BudgetExceededDegradeRule` | **Planned** | High | `AGENT_CONTRACTS` bridge | Single degrade code path; ACP-TOK-3 tests green |
-| M-LLM-X.9.7 | **`DynamicLLMRouter` wrapper** — per-step model swap within run (extends budget-enforcing pattern) | **Planned** | Medium | `agents/authoring/` | Unit: step boundary profile change |
-| M-LLM-X.9.8 | **USAGE.md cookbook** — built-in vs custom class, testing, allowlist, HF via vLLM | **Planned** | High | `intergrax/llm_adapters/USAGE.md` | Linked from architecture §Routing rules |
-| M-LLM-X.9.9 | **`scripts/check_llm_routing_rules.py`** — reference hosts validate allowlist conformance | **Planned** | Medium | `scripts/` | Registered in CI umbrella |
+| M-LLM-X.9.1 | **`LLMRoutingRule` Protocol + `LLMRoutingRuleBase` ABC** — `matches()`, `resolve()`, `rule_id`, `priority` | **Done** | **Critical** | `intergrax/llm_adapters/routing/contracts.py` | Unit: Protocol structural subtyping |
+| M-LLM-X.9.2 | **`RoutingContext`, `RoutingTarget`, `LLMRoutingProfile`** Pydantic models | **Done** | **Critical** | `routing/contracts.py` | Immutable context snapshot |
+| M-LLM-X.9.2b | **`LLMRoutingEvaluator`** — priority sort, first-match, allowlist guard | **Done** | **Critical** | `routing/evaluator.py` | Unit: priority + allowlist rejection |
+| M-LLM-X.9.3 | **Built-in rules package** — `BudgetBelowRule`, `TaskClassRule`, `TokenThresholdRule`, `BudgetExceededDegradeRule` | **Done** | High | `routing/builtin_rules.py` | Each implements same Protocol |
+| M-LLM-X.9.4 | **Tier-3 `LLMRoutingProfile` on `ApplicationEnvironmentProfile`** + `CapabilityBundle` wire | **Done** | **Critical** | `environment_profile/`, `llm_resolver.py` | `test_llm_routing_resolver.py` |
+| M-LLM-X.9.5 | **Hot path wire** — `resolve_llm_adapter()` evaluates rules using budget meter + `task_class` | **Done** | **Critical** | `llm_resolver.py`, `llm_routing_wiring.py` | Integration test: rule triggers profile swap |
+| M-LLM-X.9.6 | **Unify `BudgetReactionProfile.degrade_model`** with `BudgetExceededDegradeRule` | **Done** | High | `budget_enforcing_llm_router.py`, `builtin_rules.py` | `cheapest_allowed_model_hint`; ACP-TOK-3 tests green |
+| M-LLM-X.9.7 | **`DynamicLLMRouter` wrapper** — per-step model swap within run (extends budget-enforcing pattern) | **Done** | Medium | `agents/authoring/dynamic_llm_router.py` | `test_dynamic_llm_router.py` |
+| M-LLM-X.9.8 | **USAGE.md cookbook** — built-in vs custom class, testing, allowlist, HF via vLLM | **Done** | High | `intergrax/llm_adapters/USAGE.md` | Linked from architecture §Routing rules |
+| M-LLM-X.9.9 | **`scripts/check_llm_routing_rules.py`** — reference hosts validate allowlist conformance | **Done** | Medium | `scripts/` | `check_audit_ideal_gates.py` umbrella |
 
 **Suggested PR order (X-9):** 9.1 → 9.2 → 9.2b → 9.3 → 9.4 → 9.5 → 9.6 → 9.7 → 9.8 → 9.9.
 
@@ -666,20 +666,20 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 **Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) § LLM routing rules  
 **ADR:** [ADR-LLM-003](../adr/entries/2026-06-19/ADR-LLM-003.md) **Accepted**  
 **Goal:** `LLMRoutingRule` Protocol on Tier-0; built-in + custom Tier-3 classes; AHI L4 overlay unchanged.  
-**Phase status:** **Planned** — 0/10 Done · see [Wave M-LLM-X-9](#wave-m-llm-x-9--llm-routing-rules-protocol--custom-classes)
+**Phase status:** **Done** (2026-06-19) — 10/10 Done · see [Wave M-LLM-X-9](#wave-m-llm-x-9--llm-routing-rules-protocol--custom-classes)
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **M-LLM-X.9.1** | Contract | P1 | **Planned** | `LLMRoutingRule` Protocol + `LLMRoutingRuleBase` | `routing/contracts.py` importable |
-| 2 | **M-LLM-X.9.2** | Contract | P1 | **Planned** | `RoutingContext`, `RoutingTarget`, `LLMRoutingProfile` | Pydantic validation |
-| 3 | **M-LLM-X.9.2b** | Code | P1 | **Planned** | `LLMRoutingEvaluator` first-match + allowlist | Unit tests green |
-| 4 | **M-LLM-X.9.3** | Code | P1 | **Planned** | Built-in rule classes | Same Protocol as custom |
-| 5 | **M-LLM-X.9.4** | Tier-3 | P1 | **Planned** | `ApplicationEnvironmentProfile` field + wiring | Reference host example |
-| 6 | **M-LLM-X.9.5** | Wire | P1 | **Planned** | `resolve_llm_adapter()` hot path | Integration test |
-| 7 | **M-LLM-X.9.6** | Cross-ref | P2 | **Planned** | Unify `degrade_model` with routing rule | ACP-TOK-3 paths |
-| 8 | **M-LLM-X.9.7** | Code | P2 | **Planned** | `DynamicLLMRouter` per-step swap | Unit test |
-| 9 | **M-LLM-X.9.8** | Docs | P2 | **Planned** | USAGE.md cookbook | Architecture cross-link |
-| 10 | **M-LLM-X.9.9** | CI | P2 | **Planned** | `check_llm_routing_rules.py` | CI umbrella |
+| 1 | **M-LLM-X.9.1** | Contract | P1 | **Done** | `LLMRoutingRule` Protocol + `LLMRoutingRuleBase` | `routing/contracts.py` importable |
+| 2 | **M-LLM-X.9.2** | Contract | P1 | **Done** | `RoutingContext`, `RoutingTarget`, `LLMRoutingProfile` | Pydantic validation |
+| 3 | **M-LLM-X.9.2b** | Code | P1 | **Done** | `LLMRoutingEvaluator` first-match + allowlist | Unit tests green |
+| 4 | **M-LLM-X.9.3** | Code | P1 | **Done** | Built-in rule classes | Same Protocol as custom |
+| 5 | **M-LLM-X.9.4** | Tier-3 | P1 | **Done** | `ApplicationEnvironmentProfile` field + wiring | `test_llm_routing_resolver.py` |
+| 6 | **M-LLM-X.9.5** | Wire | P1 | **Done** | `resolve_llm_adapter()` hot path | Integration test |
+| 7 | **M-LLM-X.9.6** | Cross-ref | P2 | **Done** | Unify `degrade_model` with routing rule | ACP-TOK-3 paths |
+| 8 | **M-LLM-X.9.7** | Code | P2 | **Done** | `DynamicLLMRouter` per-step swap | Unit test |
+| 9 | **M-LLM-X.9.8** | Docs | P2 | **Done** | USAGE.md cookbook | Architecture cross-link |
+| 10 | **M-LLM-X.9.9** | CI | P2 | **Done** | `check_llm_routing_rules.py` | CI umbrella |
 
 **Suggested PR order:** 9.1 → 9.2 → 9.2b → 9.3 → 9.4 → 9.5 → 9.6 → 9.7 → 9.8 → 9.9.
 

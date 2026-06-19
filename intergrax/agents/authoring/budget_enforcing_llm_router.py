@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from intergrax.agents.acp_budget_enforcement_bridge import AcpBudgetExceededError
 from intergrax.agents.authoring.llm_router import LlmStepResult, StepLLMRouter
 from intergrax.contracts.acp_budget_enforcement import evaluate_hard_budget_violation
+from intergrax.llm_adapters.routing.builtin_rules import cheapest_allowed_model_hint
 from intergrax.contracts.acp_state import AcpInvocationUsageView
 from intergrax.contracts.agent_budget import ResolvedBudgetLimits
 from intergrax.contracts.agent_run_trace import LlmCallRecord
@@ -50,9 +51,7 @@ class BudgetEnforcingLLMRouter:
             raise AcpBudgetExceededError(violation)
         effective_hint = model_hint
         if self._degrade_provider is not None and self._degrade_provider():
-            allowed = self._inner.list_allowed_models()
-            if allowed:
-                effective_hint = allowed[-1]
+            effective_hint = cheapest_allowed_model_hint(self._inner.list_allowed_models())
         return await self._inner.complete(prompt, model_hint=effective_hint)
 
 

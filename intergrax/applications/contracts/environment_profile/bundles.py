@@ -17,6 +17,7 @@ from intergrax.codecraft.profile import CodeCraftProfile
 from intergrax.contracts.reasoning_profile import ReasoningProfile
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.llm_adapters.routing import LLMRoutingProfile
 from intergrax.runtime.modality.modality_profile import ModalityProfile
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry.profile import ToolProfile
@@ -135,6 +136,7 @@ class CapabilityBundle(BaseModel):
     tools: ToolProfile = Field(default_factory=ToolProfile)
     skills: SkillProfile = Field(default_factory=SkillProfile)
     llm: LLMProfile | None = None
+    llm_routing: LLMRoutingProfile | None = None
     modality: ModalityProfile | None = None
     prompt: PromptProfile = Field(default_factory=PromptProfile)
     context: ContextProfile = Field(default_factory=ContextProfile)

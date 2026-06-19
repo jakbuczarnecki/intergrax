@@ -279,7 +279,7 @@ W-ADAPT-0.2 → 0.3 → 0.4 → 0.5
 | 2 | **AHI-MAINT-02** | Cross-ref | P2 | **Done** | AUDIT-IDEAL-6.2 live routing — cross-ref [`LLM-MAINT-02`](LLM_ADAPTERS.md#61av-harness-implementation-queue--llm-adapters-audit-maintenance-planned) / M-LLM-X.5 | AHI canon documents LLM owner |
 | 3 | **AHI-MAINT-03** | Test/Ops | P3 | **Done** | Production adaptive evidence — reference host runs populating `signal_trends.json` | `phase_w_adapt_report.py --fixture` non-zero CI signals |
 | 4 | **AHI-MAINT-04** | Docs | P3 | **Done** | L4 **Frozen** items index — GAP-CTX-12, M-RAG.58, CVL L4 thresholds | Cross-domain table in architecture §L4 Frozen |
-| 5 | **AHI-MAINT-05** | Cross-ref | P2 | **Planned** | Connect `RoutingTuningEngine` bandit arms to `ProfileVersionStore` `artifact_type=llm_routing` — not hardcoded `balanced` hint | [`M-LLM-X.9`](LLM_ADAPTERS.md#wave-m-llm-x-9--llm-routing-rules-protocol--custom-classes) hot path; author rules win over L4 |
+| 5 | **AHI-MAINT-05** | Cross-ref | P2 | **Done** | Bandit arm → `ModelRouter` policy hint on live routing (not hardcoded `balanced`) | `llm_routing_wiring.py` + `check_live_model_routing_wiring.py` |
 
 **Suggested PR order:** AHI-MAINT-04 → AHI-MAINT-02 → AHI-MAINT-03 → AHI-MAINT-01 → **AHI-MAINT-05** (after M-LLM-X.9.5).
 
