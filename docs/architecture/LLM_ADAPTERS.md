@@ -440,7 +440,7 @@ OpenAI-compatible slugs share `openai_compat_factory.py`. ABC defaults: streamin
 | `azure_openai` | `azure_openai_adapter` | `AZURE_OPENAI_*` | yes | yes | |
 | `aws_bedrock` | `aws_bedrock_adapter` | `AWS_*` | yes | partial | Prefix context heuristics |
 | `groq` | `openai_compat` | `GROQ_API_KEY` | compat | compat | |
-| `vllm` | `openai_compat` | `VLLM_BASE_URL` | compat | compat | Self-hosted |
+| `vllm` | `openai_compat` | `INTERGRAX_DEFAULT_VLLM_BASE_URL` | compat | compat | Self-hosted; Intergrax Docker host **8100** → container 8000 |
 | `together` | `openai_compat` | `TOGETHER_API_KEY` | compat | compat | |
 | `fireworks` | `openai_compat` | `FIREWORKS_API_KEY` | compat | compat | |
 | `openrouter` | `openai_compat` | `OPENROUTER_API_KEY` | compat | compat | Multi-vendor model strings |
@@ -453,6 +453,31 @@ OpenAI-compatible slugs share `openai_compat_factory.py`. ABC defaults: streamin
 | `azure_ai_inference` | `azure_ai_inference_adapter` | `AZURE_AI_*` | yes | partial | |
 
 Per-provider model env vars: `INTERGRAX_DEFAULT_<PROVIDER>_MODEL` (see [`USAGE.md`](../../intergrax/llm_adapters/USAGE.md)).
+
+### Self-hosted inference (Ollama vs vLLM)
+
+| Concern | Ollama | vLLM |
+|---------|--------|------|
+| Adapter module | `ollama_adapter.py` (LangChain) | `openai_compat_providers.VllmChatAdapter` |
+| API shape | Ollama native HTTP | OpenAI Chat Completions (`/v1`) |
+| Tier-0 slug | `LLMProvider.OLLAMA` | `LLMProvider.VLLM` |
+| Local Docker | `infra/docker/ollama` · profile `rag` · port **11434** | `infra/docker/vllm` · profile **`vllm`** (opt-in) · host **8100** |
+| GPU | Optional (CPU OK for dev) | **NVIDIA GPU required** for practical use |
+| P5 integration | `interaction_surface/ollama` (health probe) | Not registered — use adapter + Docker health (`/v1/models`) |
+
+**Do not** add a LangChain-style duplicate adapter for vLLM — OpenAI-compat factory is the canonical path (M-LLM.3).
+
+**Intergrax Docker wiring:**
+
+```bash
+cd infra/integration && ./manage.sh start vllm
+export INTERGRAX_DEFAULT_VLLM_BASE_URL=http://127.0.0.1:8100/v1
+export INTERGRAX_LLM_PROVIDER=vllm
+```
+
+Port **8100** avoids conflict with Chroma (**8000**) in the `rag` profile — see [`infra/PORTS.md`](../../infra/PORTS.md).
+
+**Live smoke:** `tests/unit/llm_adapters/test_network_smoke.py::test_vllm_live_one_shot` (marker `network`; skips when server unreachable).
 
 ---
 

@@ -590,4 +590,24 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 
 ---
 
+### Phase LLM-MAINT-vllm — vLLM production ops (idea audit 2026-06-19)
+
+**Source:** Mode I idea audit — vLLM as production self-hosted LLM; provider slug **already Done** (M-LLM.3).  
+**Goal:** Ops parity with Ollama (Docker + env docs) without duplicating the OpenAI-compat adapter.
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **LLM-MAINT-vllm-1** | Docs + env | P2 | **Done** | Fix canon env vars; `.env.example` + architecture self-hosted table; cross-link `infra/PORTS.md` | Operator can wire `INTERGRAX_DEFAULT_VLLM_BASE_URL` without doc/code mismatch |
+| 2 | **LLM-MAINT-vllm-2** | Infra | P2 | **Done** | `infra/docker/vllm/docker-compose.yml`; integration profile **`vllm`**; host port **8100** | `./manage.sh start vllm` starts OpenAI API; no Chroma 8000 conflict |
+| 3 | **LLM-MAINT-vllm-3** | CI | P3 | **Done** | `test_vllm_live_one_shot` + `require_vllm_reachable`; workflow env vars | Skip when vLLM unreachable; live smoke via `-m network` |
+| 4 | **LLM-MAINT-vllm-4** | Catalog | P3 | **Done** | Expand `model_catalog.yaml` + adapter legacy windows for common vLLM ids | `check_model_catalog_coverage.py` green; parametrized catalog tests |
+
+**Explicitly deferred:** P5 `interaction_surface/vllm` slug (M-P4.29) — adapter + Docker health sufficient until harness lab needs catalog probe.
+
+**Phase status:** **Done** (2026-06-19) — 4/4 Done.
+
+**ADR:** no ADR needed — reuses M-LLM.3 OpenAI-compat adapter; infra-only addition.
+
+---
+
 *End of LLM Adapters Implementation Plan.*

@@ -39,6 +39,10 @@ cd infra/integration
 # RAG only
 ./manage.sh start rag
 
+# vLLM (production self-hosted LLM — requires NVIDIA GPU)
+./manage.sh start vllm
+# or standalone: cd ../docker && ./manage.sh vllm start
+
 # Build Docling image first (rag profile)
 ./manage.sh build rag
 ./manage.sh start rag
@@ -61,6 +65,7 @@ cd infra\integration
 | `core` | redis, postgresql |
 | `queue` | kafka, rabbitmq, nats |
 | `rag` | qdrant, chroma, weaviate, neo4j, milvus, ollama, docling |
+| `vllm` | vllm (NVIDIA GPU; opt-in — not in default stack) |
 | `data` | mongodb, mysql, cassandra, minio, memcached |
 | `secrets` | vault |
 | `observability` | elasticsearch, prometheus, clickhouse, langfuse, phoenix, mailpit |
@@ -80,6 +85,7 @@ Start a **single** service (same images/ports as unified stack):
 cd infra/docker
 ./manage.sh redis start
 ./manage.sh neo4j start
+./manage.sh vllm start   # NVIDIA GPU required
 ./manage.ps1 weaviate start
 ```
 
@@ -90,7 +96,7 @@ Docling (custom build):
 ./manage.sh docling start
 ```
 
-Health: Docling `http://localhost:8081/health`
+Health: Docling `http://localhost:8081/health` · vLLM models `http://localhost:8100/v1/models`
 
 ---
 

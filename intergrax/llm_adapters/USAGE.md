@@ -231,6 +231,25 @@ Requires `integration_profile.key_value_cache` slug `redis`. Cross-ref: [`docs/p
 
 ---
 
+## Self-hosted Docker (Ollama / vLLM)
+
+| Backend | Start | Base URL env |
+|---------|-------|--------------|
+| Ollama (dev / embeddings) | `cd infra/integration && ./manage.sh start rag` | `OLLAMA_HOST=http://127.0.0.1:11434` |
+| vLLM (production GPU) | `cd infra/integration && ./manage.sh start vllm` | `INTERGRAX_DEFAULT_VLLM_BASE_URL=http://127.0.0.1:8100/v1` |
+
+vLLM requires **NVIDIA GPU** + `nvidia-container-toolkit`. Host port **8100** avoids Chroma on **8000** — see [`infra/PORTS.md`](../../infra/PORTS.md).
+
+On **WSL2**, set `VLLM_USE_V1=0` (default in compose) if the v1 engine fails to initialize.
+
+```bash
+export INTERGRAX_LLM_PROVIDER=vllm
+export INTERGRAX_LLM_MODEL=meta-llama/Llama-3.1-8B-Instruct
+export INTERGRAX_DEFAULT_VLLM_BASE_URL=http://127.0.0.1:8100/v1
+```
+
+---
+
 ## Testing
 
 ```python
@@ -238,6 +257,17 @@ from testing_support.builder import FakeLLMAdapter
 
 adapter = FakeLLMAdapter(fixed_text="ok")
 ```
+
+Optional live smoke (not PR gate):
+
+```bash
+cd infra/integration && ./manage.sh start vllm
+export INTERGRAX_DEFAULT_VLLM_BASE_URL=http://127.0.0.1:8100/v1
+export INTERGRAX_DEFAULT_VLLM_MODEL=meta-llama/Llama-3.1-8B-Instruct
+uv run pytest tests/unit/llm_adapters/test_network_smoke.py::test_vllm_live_one_shot -m network -q
+```
+
+Skips automatically when vLLM is unreachable or env is unset. Workflow: `.github/workflows/llm-network-smoke.yml`.
 
 Conformance helpers: `intergrax/llm_adapters/_shared/conformance.py`.
 

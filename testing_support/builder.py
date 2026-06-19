@@ -259,6 +259,32 @@ def require_ollama_reachable(
         pytest.skip(f"Ollama not reachable at {raw}: {e}")
 
 
+def require_vllm_reachable(
+    *,
+    base_url: Optional[str] = None,
+    timeout_sec: float = 5.0,
+) -> None:
+    """
+    Skip the current test if the vLLM OpenAI-compatible HTTP API is not reachable.
+
+    Resolution order for the API base URL:
+    1. explicit ``base_url`` argument
+    2. environment variable ``INTERGRAX_DEFAULT_VLLM_BASE_URL``
+       (e.g. ``http://127.0.0.1:8100/v1`` for Intergrax Docker)
+    3. default ``http://127.0.0.1:8000/v1``
+    """
+
+    default_vllm_base_url = "http://127.0.0.1:8000/v1"
+    raw = (
+        base_url or os.environ.get("INTERGRAX_DEFAULT_VLLM_BASE_URL") or default_vllm_base_url
+    ).strip().rstrip("/")
+    models_url = f"{raw}/models"
+    try:
+        urllib.request.urlopen(models_url, timeout=timeout_sec)
+    except (urllib.error.URLError, OSError) as e:
+        pytest.skip(f"vLLM not reachable at {raw}: {e}")
+
+
 def build_in_memory_session_manager() -> SessionManager:
     storage = InMemorySessionStorage()
     return SessionManager(storage)

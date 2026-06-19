@@ -178,7 +178,13 @@ class VllmChatAdapter(_CompatAdapterBase):
         base_url_env="INTERGRAX_DEFAULT_VLLM_BASE_URL",
         default_base_url="http://127.0.0.1:8000/v1",
         default_model="meta-llama/Llama-3.1-8B-Instruct",
-        context_windows={"meta-llama/Llama-3.1-8B-Instruct": 128_000},
+        context_windows={
+            "meta-llama/Llama-3.1-8B-Instruct": 128_000,
+            "meta-llama/Llama-3.1-70B-Instruct": 128_000,
+            "meta-llama/Llama-3.2-3B-Instruct": 128_000,
+            "Qwen/Qwen2.5-7B-Instruct": 32_768,
+            "Qwen/Qwen2.5-0.5B-Instruct": 32_768,
+        },
         api_key_optional=True,
     )
 
