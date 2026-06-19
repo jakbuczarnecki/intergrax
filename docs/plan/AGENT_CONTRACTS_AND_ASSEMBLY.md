@@ -1062,16 +1062,16 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 
 ### 6.1ay Harness implementation queue — Agent contracts audit maintenance (2026-06-19)
 
-**Source:** Interactive layer audit (2026-06-19) — `AGENT_CONTRACTS_AND_ASSEMBLY` layers 17–20, 31 · [`../audit_results/2026-06-19/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../audit_results/2026-06-19/AGENT_CONTRACTS_AND_ASSEMBLY.md) (pending) · prior: [`../audit_results/2026-06-18/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../audit_results/2026-06-18/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
+**Source:** Interactive layer audit (2026-06-19) — `AGENT_CONTRACTS_AND_ASSEMBLY` layers 17–20, 31 · [`../audit_results/2026-06-19/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../audit_results/2026-06-19/AGENT_CONTRACTS_AND_ASSEMBLY.md) · prior: [`../audit_results/2026-06-18/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../audit_results/2026-06-18/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
 **Priority ladder:** **Band 1** (§6.1) — doc sync + audit artifact; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **ACP-MAINT-DOC-01** | Docs | P3 | **Planned** | Close §6.1av header; add architecture §28.3 revalidation note (fleet 17/17, ACP close CI) | Canon matches 2026-06-19 audit |
-| 2 | **ACP-MAINT-DOC-02** | Docs | P3 | **Planned** | Sync `docs/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` known gaps — AUDIT-IDEAL-19.1/20.1/31.1 **Done** | Lines 54/58 without stale „Planned” |
-| 3 | **ACP-MAINT-AUDIT-01** | Docs | P3 | **Planned** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `AGENT_CONTRACTS_AND_ASSEMBLY.md` + `progress.json`; L3+ verdict |
+| 1 | **ACP-MAINT-DOC-01** | Docs | P3 | **Done** | Close §6.1av header; add architecture §28.3 revalidation note (fleet 17/17, ACP close CI) | Canon matches 2026-06-19 audit |
+| 2 | **ACP-MAINT-DOC-02** | Docs | P3 | **Done** | Sync `docs/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` known gaps — AUDIT-IDEAL-19.1/20.1/31.1 **Done** | Lines 54/58 without stale „Planned” |
+| 3 | **ACP-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `AGENT_CONTRACTS_AND_ASSEMBLY.md` + `progress.json`; L3+ verdict |
 
-**Suggested PR order:** ACP-MAINT-DOC-01 → ACP-MAINT-DOC-02 → ACP-MAINT-AUDIT-01.
+**Suggested PR order:** none — §6.1ay queue closed (2026-06-19).
 
 **Cross-domain (not ACP-owned):** COST-1 graph `RunBudget` cap · FAUDIT-REG.1 — unchanged deferred.
 

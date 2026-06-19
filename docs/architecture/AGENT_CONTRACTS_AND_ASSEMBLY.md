@@ -1239,6 +1239,8 @@ Developer code path:
 
 **Audit sync (2026-06-13 · ACP-LC 2026-06-17):** **37 Closed** · **0 Open** · ACP-FINISH complete; Full Harness LC closeout — no open P0/P1 in domain scope.
 
+**Audit revalidation (2026-06-19, ACP-MAINT-DOC-01):** Fleet **17/17** migrated · `check_agent_acp_close_ci.py` green (skill resolution in umbrella · production readiness mean 100%) · AS-3 `boundary_demo` migrated off author-time `allowed_tools`. Deferred cross-domain: COST-1 graph `RunBudget` cap · FAUDIT-REG.1.
+
 | ID | Gap | Priority | Plan row | Status |
 |----|-----|----------|----------|--------|
 | GAP-ACP-01 | No `CognitiveAgent` base | P0 | ACP-1 | **Closed** |

@@ -1,10 +1,10 @@
 # Interactive layer-by-layer audit run — 2026-06-19
 
-**Mode:** audit_only + implement (Mode A2) · **Scope:** 5/22 domains
+**Mode:** audit_only + implement (Mode A2) · **Scope:** 6/22 domains
 
 ## Status
 
-**In progress** — 5/22 domains completed.
+**In progress** — 6/22 domains completed.
 
 ## Completed domains
 
@@ -15,29 +15,28 @@
 | `ORCHESTRATION` | mature_revalidated | L3 | 0/0 | [ORCHESTRATION.md](ORCHESTRATION.md) |
 | `NEXUS_EXECUTION_FLOW` | mature_revalidated | L3 | 0/0 | [NEXUS_EXECUTION_FLOW.md](NEXUS_EXECUTION_FLOW.md) |
 | `REASONING_AND_COGNITION` | mature_revalidated | L3 | 0/0 | [REASONING_AND_COGNITION.md](REASONING_AND_COGNITION.md) |
+| `AGENT_CONTRACTS_AND_ASSEMBLY` | mature_revalidated | L3+ | 0/0 | [AGENT_CONTRACTS_AND_ASSEMBLY.md](AGENT_CONTRACTS_AND_ASSEMBLY.md) |
 
 ## Maintenance implemented (2026-06-19)
 
 | ID | Domain | Status | Notes |
 |----|--------|--------|-------|
-| PF-MAINT-LEG-02 | PLATFORM_FOUNDATION | **Done** | `ToolInvocationPlan` tool_ids-only |
-| UAEP-MAINT-04 | UNIFIED_EXECUTION_RUNTIME | **Done** | STEP_COMPLETED dedup regression tests |
-| MOD-MAINT-05 | MODALITY | **Done** | Speech `provider_slug` property |
-| ORCH-MAINT-DOC-01 | ORCHESTRATION | **Done** | Architecture async-queue canon sync |
+| ORCH-MAINT-DOC-01 | ORCHESTRATION | **Done** | Async-queue canon sync |
 | FLOW-MAINT-05 | NEXUS_EXECUTION_FLOW | **Done** | Partial-result lifecycle tests |
-| COG-MAINT-DOC-01 | REASONING_AND_COGNITION | **Done** | §17 revalidation note + §6.1av close |
-| COG-MAINT-AUDIT-01 | REASONING_AND_COGNITION | **Done** | Audit result + progress tracker |
+| COG-MAINT-DOC-01 | REASONING_AND_COGNITION | **Done** | §17 revalidation note |
+| ACP-MAINT-DOC-01 | AGENT_CONTRACTS_AND_ASSEMBLY | **Done** | Architecture §28.3 revalidation |
+| ACP-MAINT-DOC-02 | AGENT_CONTRACTS_AND_ASSEMBLY | **Done** | Audit prompt known-gaps sync |
+| ACP-MAINT-AUDIT-01 | AGENT_CONTRACTS_AND_ASSEMBLY | **Done** | Audit result + progress tracker |
 
 ## Gate verification
 
 ```bash
-uv run python scripts/check_reasoning_gates.py
-uv run python scripts/check_reasoning_failure_taxonomy.py
-pytest tests/unit/runtime/nexus/planning/ tests/acceptance/agent_os/test_cog_maint_replan.py -q
+uv run python scripts/check_agent_acp_close_ci.py
+uv run python scripts/check_docs_domain_pairs.py
 ```
 
-Reasoning gates OK · 16+ tests passed (2026-06-19).
+ACP close CI OK · fleet 17/17 · readiness 100% (2026-06-19).
 
 ## Next domain
 
-`AGENT_CONTRACTS_AND_ASSEMBLY` — pending operator confirmation.
+`LLM_ADAPTERS` — pending operator confirmation.
