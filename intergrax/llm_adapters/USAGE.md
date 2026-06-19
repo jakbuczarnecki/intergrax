@@ -365,6 +365,18 @@ env.llm_routing_profile = LLMRoutingProfile(
 - [x] Tool planner / websearch / critic secondary LLM routing wiring (13.4–13.6)
 - [x] `nexus_plan_bridge` + `llm_task_classifier` snapshot sync (13.7)
 
+**Enterprise domain maturity (M-LLM-X.8 + X-14 — Planned):**
+
+- [ ] **X-8** domain closeout — audit register, AUDIT_IDEAL sync, journal (**LLM-AUDIT-21**)
+- [ ] Catalog-driven capability flags (**14.1** · LLM-AUDIT-22)
+- [ ] Dynamic gateway metadata merge (**14.2** · LLM-AUDIT-23)
+- [ ] Enum-free plugin provider + example (**14.3** · LLM-AUDIT-26)
+- [ ] ACP budget routing context bridge (**14.4** · LLM-AUDIT-24)
+- [ ] Opt-in evaluating wrap on secondary LLM (**14.5** · LLM-AUDIT-25)
+- [ ] Multi-step routing production soak (**14.6**)
+- [ ] Tokenizer accuracy doc + optional plugin spine (**14.7**)
+- [ ] Scaffold USAGE pointer (**14.8**)
+
 **Strict L5 closeout (M-LLM-X.12 — Done):**
 
 - [x] Budget meter ↔ routing context accuracy

@@ -114,18 +114,19 @@
 | 1 | X-1 | M-LLM-X.1.1–1.6 | **P0** | **Done** |
 | 2 | X-2 | M-LLM-X.2.1–2.4 | P1 | **Backlog** (static catalog covers OpenRouter default) |
 | 3 | X-3 | M-LLM-X.3.1–3.5 | **P0** | **Done** |
-| 4 | X-4 | M-LLM-X.4.1–4.5 | P1 | **Partial** (4.1–4.4 Done; 4.5 Tier-3 wiring → backlog) |
+| 4 | X-4 | M-LLM-X.4.1–4.5 | P1 | **Done** (4.5 via LLM-MAINT-03) |
 | 5 | X-5 | M-LLM-X.5.1–5.5 | P1 | **Done** |
-| 6 | X-6 | M-LLM-X.6.1–6.3 | P2 | **Partial** (6.3 Done) |
-| 7 | X-7 | M-LLM-X.7.1–7.5 | P2 | **Partial** (7.1, 7.5 Done; 7.2–7.4 Planned) |
-| 8 | X-8 | M-LLM-X.8.1–8.3 | Medium | **Planned** |
+| 6 | X-6 | M-LLM-X.6.1–6.3 | P2 | **Partial** (6.3 Done; 6.1–6.2 → **M-LLM-X.14.3**) |
+| 7 | X-7 | M-LLM-X.7.1–7.5 | P2 | **Partial** (7.1, 7.2, 7.3, 7.5 Done; 7.4 → **M-LLM-X.14.8**) |
+| 8 | X-8 | M-LLM-X.8.1–8.3 | **P1** | **Planned** — domain closeout · **LLM-AUDIT-21** |
 | 9 | X-9 | M-LLM-X.9.1–9.9 | **P1** | **Done** (2026-06-19) — ADR-LLM-003 · routing rule Protocol |
 | 10 | X-10 | M-LLM-X.10.1–10.8 | **P1** | **Done** — routing enterprise closeout (start-of-run + ACP) |
 | 11 | X-11 | M-LLM-X.11.1–11.8 | **P1** | **Done** — routing enterprise hardening (mid-run Nexus) |
 | 12 | X-12 | M-LLM-X.12.1–12.12 | **P1** | **Done** (2026-06-19) — routing strict enterprise closeout · LLM-AUDIT-19 |
 | 13 | X-13 | M-LLM-X.13.1–13.7 | P2 | **Done** — post-L5 routing polish · LLM-AUDIT-20 |
+| 14 | X-14 | M-LLM-X.14.1–14.8 | **P1** | **Planned** — enterprise domain maturity · LLM-AUDIT-22…26 |
 
-**Closeout gate:** All M-LLM-X.* Done + architecture audit register all **Done** + `tests/unit/llm_adapters/` green + new CI scripts green. **X-10** closed LLM-AUDIT-17. **X-11** closed LLM-AUDIT-18. **X-12** closed LLM-AUDIT-19 (strict L5). **X-13** closed LLM-AUDIT-20. **X-8** domain closeout is next mandatory wave.
+**Closeout gate:** Routing waves X-9…X-13 **Done** (LLM-AUDIT-17…20). **Enterprise domain grade:** **M-LLM-X.8** (LLM-AUDIT-21) then **M-LLM-X.14** (LLM-AUDIT-22…26) → architecture audit register all **Done** + journal + gates green.
 
 ---
 
@@ -148,9 +149,11 @@ Wave M-LLM-X-10 (routing enterprise): M-LLM-X.10.1 → 10.2 → 10.3 → 10.4 �
 Wave M-LLM-X-11 (routing hardening): M-LLM-X.11.1 → 11.2 → 11.3 → 11.4 → 11.5 → 11.6 → 11.7 → 11.8
 Wave M-LLM-X-12 (strict L5): M-LLM-X.12.1 → 12.2 → 12.3 → 12.4 → 12.5 → 12.6 → 12.7 → 12.8 → 12.9 → 12.10 → 12.11 → 12.12
 Wave M-LLM-X-13 (post-L5 polish): M-LLM-X.13.1 → 13.2 → 13.3 → 13.4 → 13.5 → 13.6 → 13.7
+Wave M-LLM-X-8 (domain closeout):     M-LLM-X.8.1 → 8.2 → 8.3
+Wave M-LLM-X-14 (enterprise domain):  M-LLM-X.14.2 → 14.1 → 14.4 → 14.3 → 14.5 → 14.6 → 14.7 → 14.8
 ```
 
-**Prerequisites:** M-LLM + M-LLM-R **Done**; CONTEXT_ENGINE preflight paths stable. **X-9** depends on X-4.2 (failover) and X-5.1 (ModelRouter hints) — both **Done**. **X-10** depends on **X-9 Done**. **X-11** depends on **X-10 Done**. **X-12** depends on **X-11 Done**. **X-8** depends on **X-12 Done**. **X-13** depends on **X-12 Done** (optional polish).
+**Prerequisites:** M-LLM + M-LLM-R **Done**; CONTEXT_ENGINE preflight paths stable. **X-9…X-13 Done** (routing L5). **X-8** depends on **X-12 Done** (met). **X-14** depends on **X-8 Done** (register hygiene before new enterprise code).
 
 **Parallelism:** X-2 (OpenRouter fetch) may run after X-1.3; X-5 depends on X-4.2; X-7 may start after X-1.1 (docs partial).
 
@@ -176,7 +179,7 @@ Wave M-LLM-X-13 (post-L5 polish): M-LLM-X.13.1 → 13.2 → 13.3 → 13.4 → 13
 | M-LLM-X.1.4 | **Wire all 19 adapters** — remove inline dicts; call resolver at `__init__` | **Done** | Critical | `providers/*` | Resolver at ctor; legacy dicts as fallback only |
 | M-LLM-X.1.5 | **`LLMProfile` propagates `context_window_tokens`** to every adapter ctor via `create_adapter()` | **Done** | Critical | `registry/profile.py` | Test: Claude override |
 | M-LLM-X.1.6 | **Env `INTERGRAX_LLM_MODEL_CATALOG_PATH`** optional YAML overlay | **Done** | Medium | `model_catalog.py` | Operator merge without code deploy |
-| M-LLM-X.1.7 | **Capability flags from catalog** — populate `supports_vision` / tools / structured when `ModelRecord` known | **Planned** | Medium | `providers/*`, `modality_capabilities.py` | Conformance subset; W-ML.1 alignment |
+| M-LLM-X.1.7 | **Capability flags from catalog** — populate `supports_vision` / tools / structured when `ModelRecord` known | **Planned** | Medium | `providers/*`, `modality_capabilities.py` | Conformance subset; → **M-LLM-X.14.1** · LLM-AUDIT-22 |
 
 ---
 
@@ -184,7 +187,7 @@ Wave M-LLM-X-13 (post-L5 polish): M-LLM-X.13.1 → 13.2 → 13.3 → 13.4 → 13
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| M-LLM-X.2.1 | **`OpenRouterModelMetadataClient`** — optional `/models` fetch, TTL cache | **Planned** | High | `registry/gateway_metadata/` | Mocked unit tests |
+| M-LLM-X.2.1 | **`OpenRouterModelMetadataClient`** — optional `/models` fetch, TTL cache | **Planned** | High | `registry/gateway_metadata/` | → **M-LLM-X.14.2** · LLM-AUDIT-23 |
 | M-LLM-X.2.2 | **Merge gateway metadata into catalog session cache** | **Planned** | High | `model_catalog.py` | context from API when present |
 | M-LLM-X.2.3 | **`LLMProfile.options["fetch_gateway_metadata"]=True`** opt-in | **Planned** | Medium | `profile.py` | Default false (no network in unit gate) |
 | M-LLM-X.2.4 | **Diagnostic `ModelCatalogMissDiagV1`** when fallback default used | **Planned** | Medium | tracing | Trace on first miss per model/run |
@@ -211,7 +214,7 @@ Wave M-LLM-X-13 (post-L5 polish): M-LLM-X.13.1 → 13.2 → 13.3 → 13.4 → 13
 | M-LLM-X.4.2 | **`FailoverLLMAdapter`** — wraps primary; tries chain on retriable errors | **Done** | Critical | `registry/failover_adapter.py` | Unit: 429 → fallback success |
 | M-LLM-X.4.3 | **`LLMProfile.create_adapter_with_failover()`** | **Done** | High | `profile.py` | Integration with `LLMCallConfig.retry_on_status` |
 | M-LLM-X.4.4 | **Trace `LLMRoutingAttemptDiagV1`** per failover attempt | **Done** | Medium | observability | Fields: profile_id, provider, model, error |
-| M-LLM-X.4.5 | **Tier-3 wiring** — `ApplicationEnvironmentProfile` optional fallback list | **Planned** | Medium | `environment_profile.py`, `nexus_factory.py` | Host smoke test |
+| M-LLM-X.4.5 | **Tier-3 wiring** — `ApplicationEnvironmentProfile` optional fallback list | **Done** | Medium | `llm_resolver.py` | LLM-MAINT-03 |
 
 ---
 
@@ -231,7 +234,7 @@ Wave M-LLM-X-13 (post-L5 polish): M-LLM-X.13.1 → 13.2 → 13.3 → 13.4 → 13
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| M-LLM-X.6.1 | **`LLMProfile` accepts `provider: str`** without enum (validated against registry) | **Planned** | Medium | `profile.py` | `register()` slug works without enum PR |
+| M-LLM-X.6.1 | **`LLMProfile` accepts `provider: str`** without enum (validated against registry) | **Planned** | Medium | `profile.py` | → **M-LLM-X.14.3** · LLM-AUDIT-26 |
 | M-LLM-X.6.2 | **Example custom gateway** in `tests/unit/llm_adapters/test_custom_provider_register.py` | **Planned** | Medium | tests | Conformance subset |
 | M-LLM-X.6.3 | **Architecture §Extension** + AGENT_CREATION_GUIDE cross-link | **Done** | Low | docs | USAGE + canon §Extension |
 
@@ -243,8 +246,8 @@ Wave M-LLM-X-13 (post-L5 polish): M-LLM-X.13.1 → 13.2 → 13.3 → 13.4 → 13
 |---|-------------|--------|----------|------------------|------------|
 | M-LLM-X.7.1 | **`intergrax/llm_adapters/USAGE.md`** — quickstart, env matrix, overrides, failover, catalog | **Done** | High | Tier-0 module root | Linked from architecture |
 | M-LLM-X.7.2 | **`LLMProfile.validate_runtime()`** — catalog hit, key, context > 0 | **Done** | Medium | `profile.py` | `check_llm_profile_runtime.py` + `intergrax doctor` |
-| M-LLM-X.7.3 | **`scripts/check_model_catalog_coverage.py`** — gate warns on adapter default models missing from YAML | **Planned** | Medium | CI | §6.1 maintenance |
-| M-LLM-X.7.4 | **Scaffold `new-agent` template** — comment block pointing to USAGE + catalog override | **Planned** | Low | `scaffold/new_agent.py` | Scaffold test |
+| M-LLM-X.7.3 | **`scripts/check_model_catalog_coverage.py`** — gate warns on adapter default models missing from YAML | **Done** | Medium | CI | LLM-MAINT-02 |
+| M-LLM-X.7.4 | **Scaffold `new-agent` template** — comment block pointing to USAGE + catalog override | **Planned** | Low | `scaffold/new_agent.py` | → **M-LLM-X.14.8** |
 | M-LLM-X.7.5 | **Cohere slug guidance** — document `cohere` (compat) vs `cohere_native` selection in USAGE | **Done** | Low | `USAGE.md` §Providers | Reduces dual-slug confusion |
 
 ---
@@ -253,9 +256,9 @@ Wave M-LLM-X-13 (post-L5 polish): M-LLM-X.13.1 → 13.2 → 13.3 → 13.4 → 13
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| M-LLM-X.8.1 | **Architecture audit register** — all LLM-AUDIT-* → Done | **Planned** | Critical | `architecture/LLM_ADAPTERS.md` | Matches code |
+| M-LLM-X.8.1 | **Architecture audit register** — all LLM-AUDIT-* → Done | **Planned** | Critical | `architecture/LLM_ADAPTERS.md` | **LLM-AUDIT-21** |
 | M-LLM-X.8.2 | **AUDIT-IDEAL-6.2–6.7** → Done in master register | **Planned** | High | `AUDIT_IDEAL_2026.md` | Gate scripts |
-| M-LLM-X.8.3 | **Implementation journal** + maturity re-score L3+ | **Planned** | Medium | `implementation-journal/` | `check_implementation_journal.py` |
+| M-LLM-X.8.3 | **Implementation journal** + maturity re-score L4 enterprise | **Planned** | Medium | `implementation-journal/` | `check_implementation_journal.py` |
 
 ---
 
@@ -431,11 +434,12 @@ PR-11: M-LLM-X.9.* (routing rule Protocol — ADR-LLM-003)
 PR-12: M-LLM-X.10.* (routing enterprise closeout — start-of-run + ACP) — Done
 PR-13: M-LLM-X.11.* (routing hardening — mid-run Nexus) — Done
 PR-14: M-LLM-X.12.* (routing strict L5 closeout) — Done
-PR-15: M-LLM-X.8.* closeout (after X-12)
-PR-16: M-LLM-X.13.* post-L5 polish (optional, parallel with X-8)
+PR-15: M-LLM-X.8.* domain closeout — **next mandatory**
+PR-16: M-LLM-X.13.* post-L5 polish — Done
+PR-17: M-LLM-X.14.* enterprise domain maturity (after X-8)
 ```
 
-**Estimated effort:** X-12 · ~2–3 PRs harness cadence · 2–3 weeks.
+**Estimated effort:** X-14 · ~3–4 PRs harness cadence · 2–3 weeks after X-8.
 
 ---
 
@@ -456,14 +460,20 @@ PR-16: M-LLM-X.13.* post-L5 polish (optional, parallel with X-8)
 | LLM-AUDIT-11 — ContextBudgetPolicy fixed 4k decoupled from adapter | M-LLM-X.3.3 |
 | LLM-AUDIT-12 — Prefix heuristics only on Bedrock today | M-LLM-X.1.2, 1.3 |
 | LLM-AUDIT-13 — Cohere dual slug (`cohere` / `cohere_native`) DX | M-LLM-X.7.5 |
-| LLM-AUDIT-14 — Capability flags not catalog-driven | M-LLM-X.1.7 |
+| LLM-AUDIT-14 — Capability flags not catalog-driven | M-LLM-X.14.1 · **LLM-AUDIT-22** |
 | LLM-AUDIT-15 — History layer token count inconsistent with preflight | M-LLM-X.3.5 |
 | LLM-AUDIT-16 — No unified routing rule contract (idea audit 2026-06-19) | M-LLM-X.9.* |
 | LLM-AUDIT-17 — Routing enterprise E2E start-of-run + ACP (context, trace, reference host) | M-LLM-X.10.* **Done** |
 | LLM-AUDIT-18 — Routing mid-run Nexus live re-eval, context refresh, full trace, true E2E | M-LLM-X.11.* **Done** (X-11 scope) |
 | LLM-AUDIT-19 — Routing strict L5: budget meter, all Nexus paths, tier boundary, production E2E | M-LLM-X.12.* **Done** |
 | LLM-AUDIT-20 — Post-L5 polish: ACP Plane A trace, tier bridge, concurrent test, secondary LLM surfaces | M-LLM-X.13.* **Done** |
-| tiktoken OpenAI-centric estimate (all providers) | **Deferred** — document limitation in USAGE; vendor tokenizer plugins post-X |
+| LLM-AUDIT-21 — Domain closeout register + journal + maturity re-score | M-LLM-X.8.* **Planned** |
+| LLM-AUDIT-22 — Capability flags not catalog-driven | M-LLM-X.14.1 **Planned** |
+| LLM-AUDIT-23 — Dynamic gateway metadata not on catalog hot path | M-LLM-X.14.2 **Planned** |
+| LLM-AUDIT-24 — ACP mid-run budget routing context gap | M-LLM-X.14.4 **Planned** |
+| LLM-AUDIT-25 — Secondary LLM opt-in evaluating wrap | M-LLM-X.14.5 **Planned** |
+| LLM-AUDIT-26 — Plugin provider enum coupling | M-LLM-X.14.3 **Planned** |
+| tiktoken OpenAI-centric estimate (all providers) | **Deferred** — **M-LLM-X.14.7** documents limitation; vendor tokenizer plugins optional |
 | Single `RuntimeConfig.llm_adapter` per run (multi-model) | M-LLM-X.4–5 (profile chain + routing); no multi-adapter pool in X |
 | Distributed Redis rate limit host wiring | **Ops** — document in USAGE X.7.1; not LLM-AUDIT tier-0 code |
 
@@ -746,7 +756,7 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 | LLM-LC-S3 | **Gate verification** — typed returns, preflight, agents LLM response | **Done** | High | 3 scripts green · 110 unit tests |
 | LLM-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
 
-**Deferred P2–P4:** M-LLM-X.2 dynamic OpenRouter fetch · LLM-AUDIT-14 capability flags (M-LLM-X.1.7) · M-LLM-X.8 closeout register sync
+**Deferred P2–P4:** M-LLM-X.14 enterprise domain (consolidates X-2 dynamic fetch · LLM-AUDIT-14 · plugin DX)
 
 ### 6.1av Harness implementation queue — LLM adapters audit maintenance (closed)
 
@@ -776,7 +786,7 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 
 **Suggested PR order:** none — §6.1ay queue closed (2026-06-19).
 
-**Cross-domain (not LLM-owned):** M-LLM-X.2 · LLM-AUDIT-14 · M-LLM-X.8 closeout — unchanged backlog.
+**Cross-domain (not LLM-owned):** M-LLM-X.8 closeout · M-LLM-X.14 enterprise domain — active backlog (2026-06-19).
 
 ---
 
@@ -946,6 +956,33 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 **Suggested PR order:** 13.1 → 13.2 → 13.3 → 13.7 → 13.4 → 13.5 → 13.6.
 
 **Closes:** **LLM-AUDIT-20**. **Does not block:** **M-LLM-X.8**.
+
+---
+
+### Phase M-LLM-X-14 — Enterprise domain maturity (2026-06-19)
+
+**Source:** Post X-13 maturity assessment — routing **L5**; whole-domain **L4+** until catalog caps, gateway metadata, ACP budget bridge, and plugin DX close.  
+**Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) § Enterprise domain maturity register  
+**Prerequisites:** **M-LLM-X.8 Done** (register + journal hygiene)  
+**Goal:** Close **LLM-AUDIT-22…26** — honest **L4 enterprise** domain maturity (routing L5 maintained).  
+**Phase status:** **Planned** — 0/8 · see [Wave M-LLM-X-14](#wave-m-llm-x-14--enterprise-domain-maturity-2026-06-19)
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **M-LLM-X.14.1** | Code | P2 | **Planned** | Catalog-driven capability flags (`supports_vision`, tools, structured) | **LLM-AUDIT-22** · modality conformance subset |
+| 2 | **M-LLM-X.14.2** | Code | P1 | **Planned** | Dynamic OpenRouter/gateway metadata client + catalog session merge (X-2 bundle) | **LLM-AUDIT-23** · mocked unit + opt-in profile flag |
+| 3 | **M-LLM-X.14.3** | Code | P2 | **Planned** | Enum-free `LLMProfile.provider: str` + custom gateway example test | **LLM-AUDIT-26** |
+| 4 | **M-LLM-X.14.4** | Wire | P2 | **Planned** | ACP `make_acp_routing_context_provider` maps `AcpInvocationUsageView` → `RoutingContext` token fields | **LLM-AUDIT-24** · integration test without provider mock |
+| 5 | **M-LLM-X.14.5** | Wire | P2 | **Planned** | Opt-in evaluating wrap for secondary LLM (`tool_planner`, websearch, critic) via host profile flag | **LLM-AUDIT-25** · mid-run model swap on planner path |
+| 6 | **M-LLM-X.14.6** | E2E | P2 | **Planned** | Multi-step production routing soak — budget burn across steps, trace correlation | `tests/acceptance/llm_routing/` |
+| 7 | **M-LLM-X.14.7** | Docs + spine | P3 | **Planned** | Tokenizer accuracy — USAGE limitation doc + optional `TokenizerPlugin` Protocol stub | No false precision claims on non-OpenAI models |
+| 8 | **M-LLM-X.14.8** | DX | P3 | **Planned** | Scaffold `new-agent` USAGE + catalog comment block (X-7.4) | Scaffold test green |
+
+**Suggested PR order:** 14.2 → 14.1 → 14.4 → 14.3 → 14.5 → 14.6 → 14.7 → 14.8.
+
+**Closes:** **LLM-AUDIT-22…26**. **Requires:** **M-LLM-X.8** (**LLM-AUDIT-21**) first.
+
+**ADR:** no ADR unless 14.3 changes public `LLMProfile` validation contract — then ADR-LLM-004.
 
 ---
 
