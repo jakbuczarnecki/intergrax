@@ -75,16 +75,16 @@
 
 ### 6.1aw Harness implementation queue — Nexus execution flow audit maintenance (2026-06-19)
 
-**Source:** Interactive layer audit (2026-06-19) — `NEXUS_EXECUTION_FLOW` layers 8–10 · [`../audit_results/2026-06-19/NEXUS_EXECUTION_FLOW.md`](../audit_results/2026-06-19/NEXUS_EXECUTION_FLOW.md) (pending) · prior: [`../audit_results/2026-06-18/NEXUS_EXECUTION_FLOW.md`](../audit_results/2026-06-18/NEXUS_EXECUTION_FLOW.md)  
+**Source:** Interactive layer audit (2026-06-19) — `NEXUS_EXECUTION_FLOW` layers 8–10 · [`../audit_results/2026-06-19/NEXUS_EXECUTION_FLOW.md`](../audit_results/2026-06-19/NEXUS_EXECUTION_FLOW.md) · prior: [`../audit_results/2026-06-18/NEXUS_EXECUTION_FLOW.md`](../audit_results/2026-06-18/NEXUS_EXECUTION_FLOW.md)  
 **Priority ladder:** **Band 1** (§6.1) — test depth + doc sync + audit artifact; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **FLOW-MAINT-05** | Test | P3 | **Planned** | Lifecycle regression: multi-node partial graph + `allow_partial_result=False` → `TaskState.FAILED`; `True` → `PARTIALLY_COMPLETED` | `test_graph_runner_resilience.py`; gate green |
-| 2 | **FLOW-MAINT-DOC-01** | Docs | P3 | **Planned** | Close §6.1av header; sync architecture §1.4 partial-results test row with FLOW-MAINT-05 | Canon matches test evidence |
-| 3 | **FLOW-MAINT-AUDIT-01** | Docs | P3 | **Planned** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `NEXUS_EXECUTION_FLOW.md` + `progress.json`; L3 verdict layers 8–10 |
+| 1 | **FLOW-MAINT-05** | Test | P3 | **Done** | Lifecycle regression: multi-node partial graph + `allow_partial_result=False` → `TaskState.FAILED`; `True` → `PARTIALLY_COMPLETED` | `test_graph_runner_resilience.py`; gate green |
+| 2 | **FLOW-MAINT-DOC-01** | Docs | P3 | **Done** | Close §6.1av header; sync architecture §1.4 partial-results test row with FLOW-MAINT-05 | Canon matches test evidence |
+| 3 | **FLOW-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `NEXUS_EXECUTION_FLOW.md` + `progress.json`; L3 verdict layers 8–10 |
 
-**Suggested PR order:** FLOW-MAINT-05 → FLOW-MAINT-DOC-01 → FLOW-MAINT-AUDIT-01.
+**Suggested PR order:** none — §6.1aw queue closed (2026-06-19).
 
 **Explicitly excluded:** UC-6 production research agents; FLOW-8 / FLOW-GAP-20 product hosts — [§6.3](../plan/PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only).
 

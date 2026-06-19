@@ -9,8 +9,8 @@
   "started_at": "2026-06-19",
   "last_updated": "2026-06-19",
   "completed_at": null,
-  "current_domain": "ORCHESTRATION",
-  "notes": "Mode A2 — 3/22 domains complete; ORCH-MAINT-DOC-01 + ORCH-MAINT-AUDIT-01 implemented 2026-06-19",
+  "current_domain": "NEXUS_EXECUTION_FLOW",
+  "notes": "Mode A2 — 4/22 domains complete; FLOW-MAINT-05 through FLOW-MAINT-AUDIT-01 implemented 2026-06-19",
   "domain_order": [
     "PLATFORM_FOUNDATION",
     "UNIFIED_EXECUTION_RUNTIME",
@@ -77,6 +77,21 @@
       "maint_ids": [
         "ORCH-MAINT-DOC-01",
         "ORCH-MAINT-AUDIT-01"
+      ]
+    },
+    "NEXUS_EXECUTION_FLOW": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "maturity": "L3",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-19/NEXUS_EXECUTION_FLOW.md",
+      "plan_updated": true,
+      "completed_at": "2026-06-19",
+      "maint_ids": [
+        "FLOW-MAINT-05",
+        "FLOW-MAINT-DOC-01",
+        "FLOW-MAINT-AUDIT-01"
       ]
     }
   }
