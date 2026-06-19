@@ -133,8 +133,9 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 | 2 | **MOD-MAINT-02** | Test/Code | P2 | **Done** | **Fix** `test_run_modality_detect_job_uses_harness_registry` — repair Celery modality execution path or test fixtures so registry wiring is asserted correctly | `pytest tests/unit/model_inference/test_celery_modality_execution.py` green |
 | 3 | **MOD-MAINT-03** | Docs | P4 | **Done** | Plane A/C boundary — ops runbook section in modality canon | Architecture §three-plane ops table |
 | 4 | **MOD-MAINT-04** | Backlog | P3 | **Done** | Remote serving incremental — Triton/HF depth register row (post W-ML closeout) | Plan backlog row; no online training scope |
+| 5 | **MOD-MAINT-05** | Code | P2 | **Planned** | Remove `getattr` from speech adapter bridge — typed `provider_slug` property + `HealthStatus` slug resolution (`UAEP-XREF-MOD-01`) | `check_harness_no_getattr.py` green |
 
-**Suggested PR order:** MOD-MAINT-02 → MOD-MAINT-01 → MOD-MAINT-03 → MOD-MAINT-04.
+**Suggested PR order:** MOD-MAINT-05.
 
 **Explicitly out of scope:** online training / AutoML — canon constraint.
 
