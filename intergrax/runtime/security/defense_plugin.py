@@ -61,16 +61,28 @@ class PluginSecurityDefenseMiddleware(RuntimeMiddleware):
         *,
         event_bus: RuntimeEventBus | None = None,
         inspection_timeout_ms: int = DEFAULT_DEFENSE_INSPECTION_TIMEOUT_MS,
+        enforce_tenant_scope: bool = True,
     ) -> None:
         self._plugin = plugin
         self._event_bus = event_bus
         self._inspection_timeout_ms = inspection_timeout_ms
+        self._enforce_tenant_scope = enforce_tenant_scope
         self.priority = plugin.priority
         self.name = f"SecurityDefense:{plugin.plugin_id}"
 
     async def before(self, point: HookPoint, ctx: HookContext) -> HookResult:
         if point not in self._plugin.hook_points:
             return HookResult()
+        if self._enforce_tenant_scope and not _tenant_scope_valid(ctx):
+            reason = "defense plugin blocked: tenant scope mismatch"
+            await emit_defense_blocked(
+                self._event_bus,
+                ctx=ctx,
+                point=point,
+                plugin_id=self._plugin.plugin_id,
+                reason=reason,
+            )
+            return HookResult(action=HookAction.BLOCK, reason=reason)
         timeout_seconds = max(self._inspection_timeout_ms, 1) / 1000.0
         try:
             result = await asyncio.wait_for(
@@ -103,3 +115,11 @@ class PluginSecurityDefenseMiddleware(RuntimeMiddleware):
 
     async def after(self, point: HookPoint, ctx: HookContext) -> HookResult:
         return HookResult()
+
+
+def _tenant_scope_valid(ctx: HookContext) -> bool:
+    tenant_id = str(ctx.runtime_state.get("tenant_id", "")).strip()
+    if not tenant_id:
+        return True
+    resource_tenant = str(ctx.runtime_state.get("resource_tenant_id", tenant_id)).strip()
+    return tenant_id == resource_tenant

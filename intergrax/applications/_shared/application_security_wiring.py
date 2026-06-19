@@ -6,7 +6,10 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from intergrax.applications.contracts.environment_profile import ApplicationSecurityProfile
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+    ApplicationSecurityProfile,
+)
 from intergrax.runtime.architecture.prompt_security import (
     PromptDefenseProfile,
     PromptInjectionRule,
@@ -182,6 +185,7 @@ def register_application_security_hooks(
     profile: ApplicationSecurityProfile,
     *,
     options: SecurityWiringOptions | None = None,
+    env: ApplicationEnvironmentProfile | None = None,
 ) -> None:
     """Attach security middleware when V-SEC toggles are enabled."""
     resolved = options
@@ -190,11 +194,13 @@ def register_application_security_hooks(
             resolve_security_wiring_options,
         )
 
-        resolved = resolve_security_wiring_options(profile)
+        resolved = resolve_security_wiring_options(profile, env=env)
     if resolved.encryption_enforcement_enabled:
-        from intergrax.runtime.security.encryption_transform import HarnessEnvelopeEncryptor
+        from intergrax.applications._shared.security_runtime_bridge import (
+            resolve_restricted_payload_encryptor,
+        )
 
-        encryptor = HarnessEnvelopeEncryptor() if resolved.secrets_store_configured else None
+        encryptor = resolve_restricted_payload_encryptor(env)
         _attach_middleware(
             nexus,
             EncryptionEnforcementMiddleware(
@@ -214,7 +220,17 @@ def register_application_security_hooks(
         resolved.defense_plugin_ids,
         resolved.defense_bundle_ids,
     ):
-        _attach_middleware(nexus, PluginSecurityDefenseMiddleware(plugin, event_bus=nexus.event_bus))
+        _attach_middleware(
+            nexus,
+            PluginSecurityDefenseMiddleware(
+                plugin,
+                event_bus=nexus.event_bus,
+                enforce_tenant_scope=True,
+            ),
+        )
+    from intergrax.runtime.security.security_observability import wire_security_spine_subscriber
+
+    wire_security_spine_subscriber(nexus.event_bus)
 
 
 def _stringify_argument_map(raw: Any) -> dict[str, str]:

@@ -139,7 +139,7 @@ def build_nexus_loop_from_environment(
         planner_model_id=resolve_planner_model_id(env),
     )
     resolved_security = security_wiring or wire_application_security(env)
-    apply_application_security_wiring(loop, resolved_security)
+    apply_application_security_wiring(loop, resolved_security, env=env)
     resolved_guardrail = guardrail_wiring or wire_application_guardrail(env)
     apply_application_guardrail_wiring(loop, resolved_guardrail, env)
     if critic_wiring is not None:

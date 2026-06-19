@@ -59,6 +59,13 @@ def wire_application_security(
 def apply_application_security_wiring(
     nexus: NexusLoop,
     wiring: ApplicationSecurityWiring,
+    *,
+    env: ApplicationEnvironmentProfile | None = None,
 ) -> None:
     """Attach V-SEC middleware to ``NexusLoop`` from resolved wiring."""
-    register_application_security_hooks(nexus, wiring.profile, options=wiring.options)
+    register_application_security_hooks(
+        nexus,
+        wiring.profile,
+        options=wiring.options,
+        env=env,
+    )

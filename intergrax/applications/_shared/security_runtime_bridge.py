@@ -13,6 +13,11 @@ from intergrax.applications.contracts.environment_profile import (
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.security.defense_registry import resolve_security_defense_plugins
+from intergrax.runtime.security.encryption_transform import (
+    HarnessEnvelopeEncryptor,
+    RestrictedPayloadEncryptor,
+    SecretsStorePayloadEncryptor,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,6 +42,28 @@ def _secrets_store_configured(env: ApplicationEnvironmentProfile) -> bool:
         return False
     slug = profile.slug_for_category(IntegrationCategory.SECRETS_STORE)
     return bool(slug and slug.strip())
+
+
+def resolve_restricted_payload_encryptor(
+    env: ApplicationEnvironmentProfile | None,
+) -> RestrictedPayloadEncryptor | None:
+    """
+    Resolve encryptor for RESTRICTED payloads (SEC-ENT-1).
+
+    Prefer live ``SecretsStore`` from integration profile; fall back to harness envelope.
+    """
+    if env is None or not _secrets_store_configured(env):
+        return None
+    profile = env.integration_profile
+    if profile is None:
+        return HarnessEnvelopeEncryptor()
+    try:
+        from intergrax.integrations._shared.conformance import assert_secrets_store
+
+        store = profile.resolve(IntegrationCategory.SECRETS_STORE)
+        return SecretsStorePayloadEncryptor(assert_secrets_store(store))
+    except Exception:
+        return HarnessEnvelopeEncryptor()
 
 
 def resolve_security_wiring_options(
