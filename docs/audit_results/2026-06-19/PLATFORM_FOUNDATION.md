@@ -33,7 +33,7 @@
 | ID | Severity | Finding | Evidence | Status |
 |----|----------|---------|----------|--------|
 | PF-DRIFT-01 | P3 | §0.5 regression gate counter stale (906 vs live gate) | plan §0.5 vs `pytest -m gate` | **closed** → PF-MAINT-DOC-03 |
-| PF-LEG-02 | P3 | Legacy booleans in `ToolInvocationPlan` runtime bridge | `tool_runtime.py`; DeprecationWarning in gate tests | **planned** → PF-MAINT-LEG-02 |
+| PF-LEG-02 | P3 | Legacy booleans removed from `ToolInvocationPlan` | `tool_runtime.py`; gate 1498 passed, no use_rag DeprecationWarning | **closed** → PF-MAINT-LEG-02 |
 | PF-AUDIT-02 | P4 | Phase K business agents (K.1/K.2) | plan §6.3 | **deferred** |
 | PF-AUDIT-03 | P4 | Long-term §50 marketplace/visual builder | architecture / DX canon | **deferred** |
 | PF-TIER-01 | — | Tier boundaries enforced | tier import gate scripts | **closed** |
@@ -76,7 +76,6 @@ All green (2026-06-19): **1498 passed** gate tests; **197** integration slugs af
 
 ## Backlog
 
-- **PF-MAINT-LEG-02** — remove runtime legacy boolean shims (§6.1av, P3, Planned)
 - Phase K K.1/K.2 — deferred §6.3
 - Marketplace/visual builder — §50 deferred
 

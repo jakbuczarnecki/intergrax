@@ -17,7 +17,7 @@
 | ID | Status | Notes |
 |----|--------|-------|
 | PF-MAINT-DOC-03 | **Done** | §0.5 gate counter → 1498 passed |
-| PF-MAINT-LEG-02 | **Planned** | Remove runtime legacy tool booleans |
+| PF-MAINT-LEG-02 | **Done** | Removed `ToolInvocationPlan` legacy booleans; gate 1498 passed |
 | PF-MAINT-AUDIT-01 | **Done** | Audit result + progress.json |
 
 ## Gate verification
