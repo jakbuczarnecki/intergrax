@@ -8,7 +8,9 @@ IDEA_TYPE=auto
 MODE=audit-only
 # IDEA_LABEL: short kebab-case label for the chat summary (not a repo path)
 # IDEA_TYPE: auto | integration | tool | skill | agent | application | harness_capability | improvement | analysis | cross_cutting
-# MODE: audit-only | audit-and-apply-docs
+# MODE: audit-only (default) | audit-and-apply-docs
+#   audit-only — Step 7 (doc apply) only after explicit operator approval in chat
+#   audit-and-apply-docs — operator intends doc updates in same session; still STOP for verdict; confirm before Step 7
 
 IDEA_DESCRIPTION:
 (Paste the idea here — what to add, build, improve, or analyze.)
@@ -51,7 +53,7 @@ Follow docs/audit/IDEA_AUDIT_ORCHESTRATOR.md in full:
 4. **Verdict** — one primary: already_implemented | in_plan | partial_overlap | novel | blocked | needs_clarification | deferred_product.
 5. **Propose** — when novel/partial: tier, contracts, reuse, ADR domain, scaffold commands, draft plan rows (English).
 6. **STOP** — operator checkpoint (Polish summary).
-7. **Apply docs (only after explicit approval, or when MODE=audit-and-apply-docs and operator confirmed)** — edit architecture + plan domain pair(s); ADR if significant.
+7. **Apply docs (only after explicit approval in chat)** — edit architecture + plan domain pair(s); ADR if significant. With `MODE=audit-and-apply-docs`, operator still must confirm (e.g. „zatwierdź docs”) before Step 7.
 
 ## Evidence checklist (all applicable)
 

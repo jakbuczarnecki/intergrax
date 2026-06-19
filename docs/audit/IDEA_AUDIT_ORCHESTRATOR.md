@@ -158,9 +158,32 @@ When the operator approves:
 2. Add or update rows in `docs/plan/<DOMAIN>.md` (English IDs, priority, acceptance criteria)
 3. Create ADR in the correct domain when significant (`docs/adr/` or agent/app `adr/`)
 4. Record **"no ADR needed"** with rationale when applicable
-5. Optionally add implementation-journal entry if the approval itself is a significant harness decision
+5. Add implementation-journal entry when the approved idea changes harness architecture or registers significant plan rows (see [`implementation-journal/README.md`](../implementation-journal/README.md)); otherwise record **"no journal needed"** in chat.
 
 **Do not** commit unless the operator requests.
+
+---
+
+## Example USER CONFIG (illustrative)
+
+```text
+IDEA_LABEL=whatsapp-notify
+IDEA_TYPE=integration
+MODE=audit-only
+
+IDEA_DESCRIPTION:
+Add WhatsApp outbound messaging for agent notifications (OTP, alerts).
+
+SUCCESS_CRITERIA:
+- Agents can send WhatsApp via ToolRuntime under Nexus policy
+- Twilio or Meta credentials via integration profile (no SDK in Tier-2)
+
+NON_GOALS:
+- Inbound WhatsApp webhook handling
+- Phase K product-specific templates
+```
+
+Agent should classify → `INTEGRATIONS` (+ possibly `TOOLS` if a dedicated notify tool), scan `intergrax/integrations/` for `twilio`, `notify.send`, deliver verdict in Polish, then STOP.
 
 ---
 
@@ -168,8 +191,8 @@ When the operator approves:
 
 | Mode | Bootstrap `MODE=` | Code? | Doc updates? |
 |------|-------------------|-------|--------------|
-| **I — Audit only** | `audit-only` | No | Propose in chat; apply only after Step 7 approval |
-| **I+ — Audit + apply docs** | `audit-and-apply-docs` | No | Same as I, but operator pre-approves doc apply in USER CONFIG |
+| **I — Audit only** | `audit-only` (default) | No | Propose in chat; Step 7 only after explicit operator approval in chat |
+| **I+ — Audit + apply docs (same session)** | `audit-and-apply-docs` | No | Operator pre-signals intent to update docs in this session; agent still delivers verdict + STOP; Step 7 only after explicit confirmation (e.g. „zatwierdź docs”) — **not** automatic on paste |
 
 ---
 

@@ -39,6 +39,7 @@ ORCHESTRATOR_BY_MODE: dict[str, str] = {
     "audit_only": "docs/audit/ORCHESTRATOR.md",
     "implement_plan": "docs/audit/IMPLEMENT_ORCHESTRATOR.md",
     "layer_completion": "docs/audit/LAYER_COMPLETION_ORCHESTRATOR.md",
+    "idea_audit": "docs/audit/IDEA_AUDIT_ORCHESTRATOR.md",
 }
 
 BOOTSTRAP_BY_MODE: dict[str, str] = {
@@ -47,6 +48,7 @@ BOOTSTRAP_BY_MODE: dict[str, str] = {
     "implement_plan": "docs/bootstrap/03_implement_plan_all_domains.txt",
     "implement_one": "docs/bootstrap/04_implement_plan_one_domain.txt",
     "layer_completion": "docs/bootstrap/05_closeout_all_domains.txt",
+    "idea_audit": "docs/bootstrap/07_idea_audit.txt",
 }
 
 

@@ -5,7 +5,7 @@
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 **Invariants:** [`guides/SYSTEM_INVARIANTS.md`](guides/SYSTEM_INVARIANTS.md) — cross-domain “never violate” index (P2-ARCH-01)
 **Layer completion:** [`guides/LAYER_COMPLETION_MODE.md`](guides/LAYER_COMPLETION_MODE.md) — deep domain layer closeout workflow
-**Audit:** [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) · **Cursor bootstrap:** [`bootstrap/`](bootstrap/) · **Domain audit prompts:** [`audit/`](audit/) · **Architecture audit results:** [`audit_results/`](audit_results/README.md) · **Implementation journal:** [`implementation-journal/`](implementation-journal/README.md)
+**Audit:** [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) · **Idea intake (Mode I):** [`bootstrap/07_idea_audit.txt`](bootstrap/07_idea_audit.txt) · **Cursor bootstrap:** [`bootstrap/`](bootstrap/) · **Domain audit prompts:** [`audit/`](audit/) · **Architecture audit results:** [`audit_results/`](audit_results/README.md) · **Implementation journal:** [`implementation-journal/`](implementation-journal/README.md)
 **Authoring:** [`guides/`](guides/)
 
 ---
@@ -208,7 +208,7 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 | 31 Agent lifecycle | `AGENT_CONTRACTS_AND_ASSEMBLY` §20 |
 | 32 Doc governance loop | `PLATFORM_FOUNDATION` + `guides/` |
 
-Full audit procedure: [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md). **Cursor paste files:** [`bootstrap/`](bootstrap/). **Domain audit prompts:** [`audit/`](audit/). **Completed implementation episodes:** [`implementation-journal/INDEX.md`](implementation-journal/INDEX.md).
+Full audit procedure: [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md). **New idea intake (Mode I):** [`bootstrap/07_idea_audit.txt`](bootstrap/07_idea_audit.txt) · [`audit/IDEA_AUDIT_ORCHESTRATOR.md`](audit/IDEA_AUDIT_ORCHESTRATOR.md). **Cursor paste files:** [`bootstrap/`](bootstrap/). **Domain audit prompts:** [`audit/`](audit/). **Completed implementation episodes:** [`implementation-journal/INDEX.md`](implementation-journal/INDEX.md).
 
 ---
 
