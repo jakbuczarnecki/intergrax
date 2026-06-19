@@ -19,7 +19,9 @@ services:
       - "8080"
       - --embeddings
       - -hf
-      - ${LLAMA_CPP_EMBED_HF_MODEL:-nomic-ai/nomic-embed-text-v1.5-GGUF:Q4_K_M.gguf}
+      - ${LLAMA_CPP_EMBED_HF_REPO:-nomic-ai/nomic-embed-text-v1.5-GGUF}
+      - -hff
+      - ${LLAMA_CPP_EMBED_HF_FILE:-nomic-embed-text-v1.5.Q4_K_M.gguf}
       - -np
       - "2"
     restart: unless-stopped

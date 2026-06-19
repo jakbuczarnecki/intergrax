@@ -18,7 +18,9 @@ services:
       - --port
       - "8080"
       - -hf
-      - ${LLAMA_CPP_HF_MODEL:-bartowski/Llama-3.2-1B-Instruct-GGUF:Llama-3.2-1B-Instruct-Q4_K_M.gguf}
+      - ${LLAMA_CPP_HF_REPO:-bartowski/Llama-3.2-1B-Instruct-GGUF}
+      - -hff
+      - ${LLAMA_CPP_HF_FILE:-Llama-3.2-1B-Instruct-Q4_K_M.gguf}
       - -c
       - "4096"
       - -np

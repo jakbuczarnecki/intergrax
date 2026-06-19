@@ -486,7 +486,9 @@ export INTERGRAX_LLM_MODEL=default
 
 Port **8100** (vLLM) and **8102** (llama.cpp) avoid conflict with Chroma (**8000**) and Weaviate (**8080**) — see [`infra/PORTS.md`](../../infra/PORTS.md).
 
-**Live smoke:** `test_vllm_live_one_shot` / `test_llama_cpp_live_one_shot` in `tests/unit/llm_adapters/test_network_smoke.py` (marker `network`; skips when server unreachable).
+**Live smoke (vLLM only):** `test_vllm_live_one_shot` in `tests/unit/llm_adapters/test_network_smoke.py` (marker `network`; weekly GitHub workflow).
+
+**llama.cpp verification (local only, not GitHub CI):** [`infra/docker/llama-cpp/VERIFY_RUNBOOK.md`](../../infra/docker/llama-cpp/VERIFY_RUNBOOK.md) · `tests/e2e/llama_cpp/` (`e2e`, `no_ci`, `network`).
 
 ---
 

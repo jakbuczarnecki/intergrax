@@ -318,6 +318,7 @@ def require_llama_cpp_reachable(
     *,
     base_url: Optional[str] = None,
     timeout_sec: float = 5.0,
+    hard_fail: bool = False,
 ) -> None:
     """
     Skip the current test if the llama.cpp OpenAI-compatible HTTP API is not reachable.
@@ -326,10 +327,10 @@ def require_llama_cpp_reachable(
     1. explicit ``base_url`` argument
     2. environment variable ``INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL``
        (e.g. ``http://127.0.0.1:8102/v1`` for Intergrax Docker)
-    3. default ``http://127.0.0.1:8080/v1``
+    3. default ``http://127.0.0.1:8102/v1`` (Intergrax Docker host port)
     """
 
-    default_llama_cpp_base_url = "http://127.0.0.1:8080/v1"
+    default_llama_cpp_base_url = "http://127.0.0.1:8102/v1"
     raw = (
         base_url
         or os.environ.get("INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL")
@@ -339,13 +340,17 @@ def require_llama_cpp_reachable(
     try:
         urllib.request.urlopen(models_url, timeout=timeout_sec)
     except (urllib.error.URLError, OSError) as e:
-        pytest.skip(f"llama.cpp not reachable at {raw}: {e}")
+        message = f"llama.cpp not reachable at {raw}: {e}"
+        if hard_fail or os.environ.get("INTERGRAX_LLAMA_CPP_VERIFY", "").strip() == "1":
+            pytest.fail(message)
+        pytest.skip(message)
 
 
 def require_llama_cpp_embed_reachable(
     *,
     base_url: Optional[str] = None,
     timeout_sec: float = 5.0,
+    hard_fail: bool = False,
 ) -> None:
     """
     Skip the current test if the llama.cpp embeddings HTTP API is not reachable.
@@ -368,7 +373,10 @@ def require_llama_cpp_embed_reachable(
     try:
         urllib.request.urlopen(models_url, timeout=timeout_sec)
     except (urllib.error.URLError, OSError) as e:
-        pytest.skip(f"llama.cpp embeddings not reachable at {raw}: {e}")
+        message = f"llama.cpp embeddings not reachable at {raw}: {e}"
+        if hard_fail or os.environ.get("INTERGRAX_LLAMA_CPP_VERIFY", "").strip() == "1":
+            pytest.fail(message)
+        pytest.skip(message)
 
 
 def build_in_memory_session_manager() -> SessionManager:

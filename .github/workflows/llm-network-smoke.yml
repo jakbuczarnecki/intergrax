@@ -40,8 +40,6 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
           INTERGRAX_DEFAULT_VLLM_BASE_URL: ${{ vars.INTERGRAX_DEFAULT_VLLM_BASE_URL }}
           INTERGRAX_DEFAULT_VLLM_MODEL: ${{ vars.INTERGRAX_DEFAULT_VLLM_MODEL }}
-          INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL: ${{ vars.INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL }}
-          INTERGRAX_DEFAULT_LLAMA_CPP_MODEL: ${{ vars.INTERGRAX_DEFAULT_LLAMA_CPP_MODEL }}
         run: >-
           uv run pytest
           tests/unit/llm_adapters/test_network_smoke.py

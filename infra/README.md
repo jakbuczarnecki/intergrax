@@ -106,6 +106,8 @@ Docling (custom build):
 
 Health: Docling `http://localhost:8081/health` · vLLM models `http://localhost:8100/v1/models` · llama.cpp models `http://localhost:8102/v1/models`
 
+**llama.cpp E2E verify (local only):** [`docker/llama-cpp/VERIFY_RUNBOOK.md`](docker/llama-cpp/VERIFY_RUNBOOK.md) · `./docker/llama-cpp/verify.sh`
+
 ---
 
 ## Environment defaults
@@ -130,6 +132,7 @@ Copy `infra/integration/.env.example` to `infra/integration/.env` to override cr
 | `tests/integration/queueing/*` (Kafka, RabbitMQ) | `queue` |
 | `tests/integration/rag/vectorstore/*` (Qdrant, Chroma) | `rag` |
 | `tests/integration/rag/embedding/test_ollama*` | `rag` (ollama) |
+| `tests/e2e/llama_cpp/*` | `llama-cpp` (local verify script; **not** PR CI) |
 | GraphRAG Neo4j | `rag` |
 | Harness conformance (Mongo, Cassandra, MinIO, Vault) | `data`, `secrets` |
 | Tools observability (ES, Prometheus) | `observability` |

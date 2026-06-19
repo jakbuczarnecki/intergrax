@@ -267,19 +267,23 @@ from testing_support.builder import FakeLLMAdapter
 adapter = FakeLLMAdapter(fixed_text="ok")
 ```
 
-Optional live smoke (not PR gate):
+Optional live smoke (not PR gate) — **vLLM only** in GitHub `llm-network-smoke.yml`:
 
 ```bash
 cd infra/integration && ./manage.sh start vllm
 export INTERGRAX_DEFAULT_VLLM_BASE_URL=http://127.0.0.1:8100/v1
 export INTERGRAX_DEFAULT_VLLM_MODEL=meta-llama/Llama-3.1-8B-Instruct
 uv run pytest tests/unit/llm_adapters/test_network_smoke.py::test_vllm_live_one_shot -m network -q
-
-cd infra/integration && ./manage.sh start llama-cpp
-export INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL=http://127.0.0.1:8102/v1
-export INTERGRAX_DEFAULT_LLAMA_CPP_MODEL=default
-uv run pytest tests/unit/llm_adapters/test_network_smoke.py::test_llama_cpp_live_one_shot -m network -q
 ```
+
+**llama.cpp — local E2E only (never GitHub CI):**
+
+```bash
+infra/docker/llama-cpp/verify.ps1   # Windows
+# infra/docker/llama-cpp/verify.sh  # Linux/macOS/Git Bash
+```
+
+See [`infra/docker/llama-cpp/VERIFY_RUNBOOK.md`](../../infra/docker/llama-cpp/VERIFY_RUNBOOK.md).
 
 Skips automatically when vLLM is unreachable or env is unset. Workflow: `.github/workflows/llm-network-smoke.yml`.
 

@@ -606,7 +606,7 @@ uv run pytest tests/unit/rag/ tests/unit/tools/providers/rag/ tests/unit/applica
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **RAG-MAINT-llama-cpp-1** | Code | P2 | **Done** | `llama_cpp_embedding_provider.py` + default registry | `provider_id=llama_cpp` in `EmbeddingProviderRegistry` |
 | 2 | **RAG-MAINT-llama-cpp-2** | Infra | P2 | **Done** | `infra/docker/llama-cpp-embed` + integration profile `llama-cpp` service | `INTERGRAX_DEFAULT_LLAMA_CPP_EMBED_BASE_URL=http://127.0.0.1:8103/v1` |
-| 3 | **RAG-MAINT-llama-cpp-3** | Tests | P2 | **Done** | Unit mocks + optional integration pipeline test | `tests/unit/rag/embedding/test_llama_cpp_embedding_provider.py` green |
+| 3 | **RAG-MAINT-llama-cpp-3** | Tests | P2 | **Done** | Unit mocks + E2E embed pipeline in `tests/e2e/llama_cpp/` (`no_ci`) | `test_llama_cpp_embedding_pipeline_documents` with live embed server |
 
 **Phase status:** **Done** (2026-06-19) — 3/3 Done.
 

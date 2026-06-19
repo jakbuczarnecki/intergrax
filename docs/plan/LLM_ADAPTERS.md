@@ -619,7 +619,7 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **LLM-MAINT-llama-cpp-1** | Docs + env | P2 | **Done** | Fix canon env vars; `.env.example` + architecture self-hosted table; cross-link `infra/PORTS.md` | Operator can wire `INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL` without doc/code mismatch |
 | 2 | **LLM-MAINT-llama-cpp-2** | Infra | P2 | **Done** | `infra/docker/llama-cpp/docker-compose.yml`; integration profile **`llama-cpp`**; host port **8102** | `./manage.sh start llama-cpp` starts OpenAI API; no Weaviate 8080 conflict |
-| 3 | **LLM-MAINT-llama-cpp-3** | CI | P3 | **Done** | `test_llama_cpp_live_one_shot` + `require_llama_cpp_reachable`; workflow env vars | Skip when llama.cpp unreachable; live smoke via `-m network` |
+| 3 | **LLM-MAINT-llama-cpp-3** | E2E verify | P3 | **Done** | `tests/e2e/llama_cpp/` + `infra/docker/llama-cpp/verify.{sh,ps1}`; **excluded from GitHub CI** | `INTERGRAX_LLAMA_CPP_VERIFY=1` hard-fails when stack down; not in `llm-network-smoke.yml` |
 | 4 | **LLM-MAINT-llama-cpp-4** | Catalog | P3 | **Done** | Expand `model_catalog.yaml` + adapter legacy windows for common llama.cpp ids | `check_model_catalog_coverage.py` green; parametrized catalog tests |
 
 **Explicitly deferred:** P5 `interaction_surface/llama_cpp` slug — adapter + Docker health sufficient until harness lab needs catalog probe.
