@@ -10,9 +10,9 @@ Copy **entire file** into a **new** Cursor agent chat as the first message.
 | [`04_implement_plan_one_domain.txt`](04_implement_plan_one_domain.txt) | B1 — implement plan | Single domain |
 | [`05_closeout_all_domains.txt`](05_closeout_all_domains.txt) | C — layer completion | All 22 (LCM 1–6) |
 | [`06_interactive_layer_by_layer_audit.txt`](06_interactive_layer_by_layer_audit.txt) | **A2 — interactive audit** | One domain per stop; operator confirms before next |
-| [`07_idea_audit.txt`](07_idea_audit.txt) | **I — idea intake audit** | Single idea — live chat audit; on approval update architecture + plan |
+| [`idea_audit.txt`](idea_audit.txt) | **I — idea intake audit** | Single idea in chat — live audit; Cursor rule auto-triggers; on approval update architecture + plan |
 
-**Mode I (idea audit):** Live audit against current canon and code. After operator approval, update `docs/architecture/` + `docs/plan/`. **No** `init_architecture_audit_run.py`, **no** `audit_results/` folder, **no** resume line. See [`IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md).
+**Mode I (idea audit):** Write the idea in natural language in a new chat (e.g. `Zrób audyt pomysłu: …`). Rule: `.cursor/rules/intergrax-idea-audit.mdc` → procedure [`idea_audit.txt`](idea_audit.txt). **No** file editing, **no** `init_architecture_audit_run.py`, **no** `audit_results/`. See [`IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md).
 
 **Mode A2 (interactive):** Same audit depth as Mode A, but **one domain per session stop**. Agent presents gaps, plan-vs-code findings, and proposed tasks, then **waits for operator confirmation** before the next domain.
 

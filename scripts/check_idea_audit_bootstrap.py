@@ -7,17 +7,16 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-BOOTSTRAP = ROOT / "docs" / "bootstrap" / "07_idea_audit.txt"
+BOOTSTRAP = ROOT / "docs" / "bootstrap" / "idea_audit.txt"
 ORCHESTRATOR = ROOT / "docs" / "audit" / "IDEA_AUDIT_ORCHESTRATOR.md"
 HUB = ROOT / "docs" / "intergrax_runtime_architecture.md"
 AUDIT_MAP = ROOT / "docs" / "guides" / "INTEGRAX_HARNESS_AUDIT_MAP.md"
 BOOTSTRAP_README = ROOT / "docs" / "bootstrap" / "README.md"
 
 REQUIRED_BOOTSTRAP_MARKERS = (
-    "IDEA_LABEL=",
-    "IDEA_TYPE=",
-    "MODE=",
-    "IDEA_DESCRIPTION:",
+    "Where the idea comes from",
+    "operator's message",
+    "Do not implement code",
     "IDEA_AUDIT_ORCHESTRATOR.md",
     "Do not** write idea-audit artifact files",
     "Duplicate scan (live)",
@@ -25,14 +24,20 @@ REQUIRED_BOOTSTRAP_MARKERS = (
     "partial_overlap",
     "needs_clarification",
     "deferred_product",
+    "Operator-facing summary: **Polish**",
+)
+
+FORBIDDEN_BOOTSTRAP_MARKERS = (
+    "USER CONFIG",
+    "IDEA_LABEL=",
+    "IDEA_DESCRIPTION:",
 )
 
 REQUIRED_ORCHESTRATOR_MARKERS = (
-    "07_idea_audit.txt",
+    "idea_audit.txt",
+    "intergrax-idea-audit.mdc",
     "Step 0",
     "Step 7",
-    "audit-only",
-    "audit-and-apply-docs",
     "No idea-audit artifact files",
 )
 
@@ -60,6 +65,10 @@ def main() -> int:
         if marker not in bootstrap_text:
             errors.append(f"bootstrap missing marker: {marker!r}")
 
+    for marker in FORBIDDEN_BOOTSTRAP_MARKERS:
+        if marker in bootstrap_text:
+            errors.append(f"bootstrap must not contain placeholder block: {marker!r}")
+
     for marker in REQUIRED_ORCHESTRATOR_MARKERS:
         if marker not in orchestrator_text:
             errors.append(f"orchestrator missing marker: {marker!r}")
@@ -71,14 +80,14 @@ def main() -> int:
     if "docs/audit/IDEA_AUDIT_ORCHESTRATOR.md" not in bootstrap_text:
         errors.append("bootstrap must reference docs/audit/IDEA_AUDIT_ORCHESTRATOR.md")
 
-    if "../bootstrap/07_idea_audit.txt" not in orchestrator_text:
-        errors.append("orchestrator must link to bootstrap/07_idea_audit.txt")
+    if "../bootstrap/idea_audit.txt" not in orchestrator_text:
+        errors.append("orchestrator must link to bootstrap/idea_audit.txt")
 
-    if "07_idea_audit.txt" not in hub_text:
-        errors.append("hub must reference bootstrap/07_idea_audit.txt")
+    if "idea_audit.txt" not in hub_text:
+        errors.append("hub must reference bootstrap/idea_audit.txt")
 
-    if "Mode I" not in audit_map_text or "07_idea_audit.txt" not in audit_map_text:
-        errors.append("audit map must index Mode I and 07_idea_audit.txt")
+    if "Mode I" not in audit_map_text or "idea_audit.txt" not in audit_map_text:
+        errors.append("audit map must index Mode I and idea_audit.txt")
 
     if "No" not in bootstrap_readme_text or "init_architecture_audit_run" not in bootstrap_readme_text:
         errors.append("bootstrap README must clarify init script scope for Mode I")

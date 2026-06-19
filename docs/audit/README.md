@@ -19,7 +19,7 @@
 
 | Goal | Paste this file |
 |------|-----------------|
-| **Audit a new idea** (integration, agent, app, harness change) before build | [`bootstrap/07_idea_audit.txt`](../bootstrap/07_idea_audit.txt) |
+| **Audit a new idea** (integration, agent, app, harness change) before build | Natural language: `Zrób audyt pomysłu: …` (see [Idea intake](#idea-intake-before-implementation)) |
 | Audit all 22 domains, update plans, **no code** | [`bootstrap/01_audit_all_domains.txt`](../bootstrap/01_audit_all_domains.txt) |
 | Audit **one** domain (edit `DOMAIN=` line first) | [`bootstrap/02_audit_one_domain.txt`](../bootstrap/02_audit_one_domain.txt) |
 | **Interactive layer-by-layer audit** — one domain, STOP, operator confirms, next domain | [`bootstrap/06_interactive_layer_by_layer_audit.txt`](../bootstrap/06_interactive_layer_by_layer_audit.txt) |
@@ -35,12 +35,15 @@
 
 ## Idea intake (before implementation)
 
-When you or another developer proposes a **new capability** — integration, agent, application, tool, skill, or cross-cutting harness change — use **Mode I** instead of ad-hoc prompts:
+When you or another developer proposes a **new capability** — integration, agent, application, tool, skill, or cross-cutting harness change — use **Mode I**:
 
-1. Copy [`bootstrap/07_idea_audit.txt`](../bootstrap/07_idea_audit.txt) into a **new** Cursor chat.
-2. Fill `IDEA_DESCRIPTION` (and optional `SUCCESS_CRITERIA` / `NON_GOALS`) in the USER CONFIG block.
-3. Agent delivers a **live** verdict in chat against current canon and code.
-4. After operator approval → update `docs/architecture/<DOMAIN>.md` and `docs/plan/<DOMAIN>.md` (no sidecar audit files).
+1. Open a **new** Cursor chat.
+2. Write the idea in natural language, e.g. `Zrób audyt pomysłu: dodać integrację WhatsApp …`
+3. The Cursor rule `.cursor/rules/intergrax-idea-audit.mdc` routes the agent to [`bootstrap/idea_audit.txt`](../bootstrap/idea_audit.txt).
+4. Agent delivers a **live** verdict in chat (Polish); **no code**.
+5. After operator approval → update `docs/architecture/<DOMAIN>.md` and `docs/plan/<DOMAIN>.md`.
+
+Alternatives: reference `idea_audit` explicitly, or paste the bootstrap file and add the idea below it.
 
 Canonical procedure: [`IDEA_AUDIT_ORCHESTRATOR.md`](IDEA_AUDIT_ORCHESTRATOR.md).
 

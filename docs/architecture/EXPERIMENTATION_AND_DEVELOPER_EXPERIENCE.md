@@ -344,7 +344,7 @@ Architecture health MUST be measured, not inferred.
 |---------|------|
 | `intergrax/scaffold/` | `new-agent`, `new-application`, `new-skill` |
 | `intergrax/cli/doctor.py` | Harness health checks |
-| `docs/bootstrap/07_idea_audit.txt` | **Mode I** — idea intake audit before build (live chat; [`IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md)) |
+| `docs/bootstrap/idea_audit.txt` | **Mode I** — idea intake procedure (natural language in chat; [`.cursor/rules/intergrax-idea-audit.mdc`](../../.cursor/rules/intergrax-idea-audit.mdc)) |
 | `scripts/test.bat` / `pytest -m gate` | Mandatory merge gates |
 | `guides/AGENT_CREATION_GUIDE.md` | Author workflow |
 

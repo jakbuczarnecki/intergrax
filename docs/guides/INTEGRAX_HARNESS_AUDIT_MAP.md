@@ -67,7 +67,7 @@ This document solves that problem by dividing the platform into auditable Harnes
 
 # 3. Audit Philosophy
 
-**Per-domain copy-paste prompts:** For deep single-domain audits (RAG, Tools, Memory, UAEP, …), use [`../audit/README.md`](../audit/README.md) — 22 prompts aligned 1:1 with `architecture/<DOMAIN>.md` ↔ `plan/<DOMAIN>.md`. **Multi-domain orchestration** (all 22 pairs in one Cursor session): [`../bootstrap/`](../bootstrap/README.md). **Idea intake before build (Mode I):** [`../bootstrap/07_idea_audit.txt`](../bootstrap/07_idea_audit.txt) · [`../audit/IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md) — live verdict in chat; on operator approval update the affected architecture + plan pair (no `audit_results/` folder). Use this document for layer map, scoring, and output format; use `../audit/<DOMAIN>.md` for the runnable agent instruction.
+**Per-domain copy-paste prompts:** For deep single-domain audits (RAG, Tools, Memory, UAEP, …), use [`../audit/README.md`](../audit/README.md) — 22 prompts aligned 1:1 with `architecture/<DOMAIN>.md` ↔ `plan/<DOMAIN>.md`. **Multi-domain orchestration** (all 22 pairs in one Cursor session): [`../bootstrap/`](../bootstrap/README.md). **Idea intake before build (Mode I):** [`../bootstrap/idea_audit.txt`](../bootstrap/idea_audit.txt) · [`../audit/IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md) — live verdict in chat; on operator approval update the affected architecture + plan pair (no `audit_results/` folder). Use this document for layer map, scoring, and output format; use `../audit/<DOMAIN>.md` for the runnable agent instruction.
 
 Do not audit the entire system at once.
 

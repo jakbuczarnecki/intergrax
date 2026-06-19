@@ -81,7 +81,7 @@ Do **not** load unrelated domain pairs. There is **no** monolithic implementatio
 | L4 adaptive harness (AHI) | `ADAPTIVE_HARNESS_INTELLIGENCE` |
 | Critic / verification (CVL) | `CRITIC_VERIFICATION` |
 | Elastic capacity / platform scaling (ECP) | `ELASTIC_CAPACITY_AND_SCALING` |
-| New idea before build (Mode I) | `docs/bootstrap/07_idea_audit.txt` + `docs/audit/IDEA_AUDIT_ORCHESTRATOR.md` — no code; on approval update architecture + plan |
+| New idea before build (Mode I) | Natural language in chat — `.cursor/rules/intergrax-idea-audit.mdc` → `docs/bootstrap/idea_audit.txt` (no code; on approval update architecture + plan) |
 | New Tier-2 agent (workflow) | `guides/AGENT_CREATION_GUIDE.md` + relevant domain pair |
 
 **How to use docs in an iteration:**

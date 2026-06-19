@@ -1,7 +1,8 @@
 # Idea Audit — Orchestration (Mode I)
 
 **Status:** Canonical orchestrator for **Mode I** — live audit of a **single product or harness idea** before implementation  
-**Bootstrap (paste):** [`bootstrap/07_idea_audit.txt`](../bootstrap/07_idea_audit.txt)  
+**Bootstrap (procedure):** [`bootstrap/idea_audit.txt`](../bootstrap/idea_audit.txt)  
+**Cursor rule:** `.cursor/rules/intergrax-idea-audit.mdc` — auto-triggers on "audyt pomysłu" / "idea audit"  
 **Related:** [`README.md`](README.md) · [`ORCHESTRATOR.md`](ORCHESTRATOR.md) · [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md)
 
 ---
@@ -15,11 +16,11 @@ Provide a **repeatable, evidence-backed intake audit** when an operator or devel
 - an **improvement** or **fix** to existing behavior;
 - a **feasibility / architecture analysis** before committing to build.
 
-**One Cursor session bootstrap** → agent researches **live** canon, plan, and code → delivers a structured verdict in chat.
+**One Cursor session** → agent reads the fixed procedure + operator's idea in chat → delivers a structured verdict in chat.
 
 **No idea-audit artifact files** — the durable record after approval is an update to the relevant **`docs/architecture/<DOMAIN>.md`** and **`docs/plan/<DOMAIN>.md`** pair (and ADR when required).
 
-**No code implementation** in Mode I unless the operator explicitly requests a follow-up implement session (Mode B bootstrap or normal iteration).
+**No code implementation** in Mode I unless the operator explicitly starts a **new** implement session afterward.
 
 ---
 
@@ -36,10 +37,20 @@ Provide a **repeatable, evidence-backed intake audit** when an operator or devel
 
 ## Before the session
 
-1. Open a **new** Cursor agent chat with repo access.
-2. Copy **entire** [`bootstrap/07_idea_audit.txt`](../bootstrap/07_idea_audit.txt).
-3. Edit only the **USER CONFIG** block (idea description, optional hints).
-4. Paste as the **first message**.
+**Recommended (simplest):** open a **new** Cursor agent chat and write in natural language, e.g.:
+
+```text
+Zrób audyt pomysłu: dodać integrację WhatsApp, żeby agent mógł zgłaszać użytkownikom postępy w zadaniach.
+```
+
+The project rule `.cursor/rules/intergrax-idea-audit.mdc` routes the agent to [`bootstrap/idea_audit.txt`](../bootstrap/idea_audit.txt).
+
+**Also valid:**
+
+- Reference the procedure: `na podstawie idea_audit przeprowadź audyt pomysłu …`
+- Paste [`bootstrap/idea_audit.txt`](../bootstrap/idea_audit.txt) and add the idea **below** it in the same message.
+
+**Do not** edit the bootstrap file — the idea always lives in the operator message.
 
 **Skim once per session:** [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md).
 
@@ -59,7 +70,7 @@ Re-running the same idea months later is expected — each session re-reads curr
 
 ---
 
-## Idea classification (agent infers if `IDEA_TYPE=auto`)
+## Idea classification (agent infers from operator message)
 
 | `IDEA_TYPE` | Primary domain pair(s) | Code search roots | Authoring guide |
 |-------------|------------------------|-------------------|-----------------|
@@ -138,7 +149,7 @@ Evidence format: `` `path:symbol` ``, test name, or gate output — **no doc-onl
 
 Specify in chat: tier, domain pair(s), contracts, reuse inventory, ADR need, scaffold commands, **draft plan row IDs** (English), tests/gates, suggested next implementation step.
 
-### Step 6 — Operator checkpoint — **STOP**
+### Step 6 — Operator checkpoint (Polish) — **STOP**
 
 Deliver summary per bootstrap output structure. **Do not** edit architecture or plan yet.
 
@@ -164,35 +175,15 @@ When the operator approves:
 
 ---
 
-## Example USER CONFIG (illustrative)
+## Example operator message
 
 ```text
-IDEA_LABEL=whatsapp-notify
-IDEA_TYPE=integration
-MODE=audit-only
-
-IDEA_DESCRIPTION:
-Add WhatsApp outbound messaging for agent notifications (OTP, alerts).
-
-SUCCESS_CRITERIA:
-- Agents can send WhatsApp via ToolRuntime under Nexus policy
-- Twilio or Meta credentials via integration profile (no SDK in Tier-2)
-
-NON_GOALS:
-- Inbound WhatsApp webhook handling
-- Phase K product-specific templates
+Zrób audyt pomysłu: dodać integrację WhatsApp do powiadomień agentów o postępie zadań.
+Kryterium sukcesu: wysyłka przez ToolRuntime pod polityką Nexus.
+Poza zakresem: inbound webhook, szablony Phase K.
 ```
 
-Agent should classify → `INTEGRATIONS` (+ possibly `TOOLS` if a dedicated notify tool), scan `intergrax/integrations/` for `twilio`, `notify.send`, deliver verdict in English, then STOP.
-
----
-
-## Modes
-
-| Mode | Bootstrap `MODE=` | Code? | Doc updates? |
-|------|-------------------|-------|--------------|
-| **I — Audit only** | `audit-only` (default) | No | Propose in chat; Step 7 only after explicit operator approval in chat |
-| **I+ — Audit + apply docs (same session)** | `audit-and-apply-docs` | No | Operator pre-signals intent to update docs in this session; agent still delivers verdict + STOP; Step 7 only after explicit confirmation (e.g. "approve docs") — **not** automatic on paste |
+Agent should classify → `INTEGRATIONS`, scan `intergrax/integrations/` for `twilio`, `notify.send`, deliver verdict in Polish, then STOP.
 
 ---
 

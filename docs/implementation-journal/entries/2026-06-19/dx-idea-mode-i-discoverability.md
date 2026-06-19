@@ -37,7 +37,7 @@ Operators can find the idea-intake workflow from hub, audit map, AGENTS, and cur
 
 ## Changed artifacts
 
-- `docs/bootstrap/07_idea_audit.txt` — MODE semantics; Step 7 confirmation wording
+- `docs/bootstrap/idea_audit.txt` — MODE semantics; Step 7 confirmation wording
 - `docs/audit/IDEA_AUDIT_ORCHESTRATOR.md` — example USER CONFIG; journal guidance; MODE table
 - `docs/bootstrap/README.md` — Mode I excludes init/resume
 - `docs/intergrax_runtime_architecture.md` — hub links to Mode I

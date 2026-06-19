@@ -1,0 +1,29 @@
+---
+description: Mode I — when the operator requests an idea audit, follow docs/bootstrap/idea_audit.txt (no code)
+alwaysApply: true
+---
+
+# Intergrax — Idea audit (Mode I)
+
+When the operator asks for an **idea audit** before implementation, switch to **Mode I** — do **not** implement code.
+
+## Triggers (any of these)
+
+- Polish: `audyt pomysłu`, `przeprowadź audyt pomysłu`, `oceń pomysł`, `czy warto dodać`, `czy już istnieje`
+- English: `idea audit`, `audit this idea`, `evaluate this idea`, `should we add`
+- Explicit: reference to `idea_audit`, `Mode I`, `IDEA_AUDIT_ORCHESTRATOR`
+
+If the message is clearly **implementation** ("zaimplementuj", "dodaj kod", "zrób PR") without an audit intent — **do not** use Mode I; use normal iteration instead.
+
+## Procedure (mandatory)
+
+1. **Read** `docs/bootstrap/idea_audit.txt` (full procedure).
+2. **Read** `docs/audit/IDEA_AUDIT_ORCHESTRATOR.md` when classification or domain mapping is unclear.
+3. The **idea** is the operator's natural-language description in the chat — not text inside the bootstrap file.
+4. Execute steps **0–6** from the bootstrap: live duplicate scan, classify, read canon, inspect code, verdict, proposal, **STOP**.
+5. **No code changes** in Mode I. **No** `ideas_results/` or sidecar audit files.
+6. Step **7** (update `docs/architecture/` + `docs/plan/`) only after **explicit** operator approval in chat.
+
+## Output
+
+Polish summary per structure in `idea_audit.txt`. End with STOP and checkpoint questions.

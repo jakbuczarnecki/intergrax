@@ -48,7 +48,7 @@ BOOTSTRAP_BY_MODE: dict[str, str] = {
     "implement_plan": "docs/bootstrap/03_implement_plan_all_domains.txt",
     "implement_one": "docs/bootstrap/04_implement_plan_one_domain.txt",
     "layer_completion": "docs/bootstrap/05_closeout_all_domains.txt",
-    "idea_audit": "docs/bootstrap/07_idea_audit.txt",
+    "idea_audit": "docs/bootstrap/idea_audit.txt",
 }
 
 

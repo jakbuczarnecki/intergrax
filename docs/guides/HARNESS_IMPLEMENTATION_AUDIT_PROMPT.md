@@ -4,7 +4,7 @@
 **Procedure source:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md)  
 **Per-domain deep audits:** [`../audit/README.md`](../audit/README.md) — copy-paste prompts for each of the 22 domain pairs (RAG, Tools, Memory, Context Engineering, …)
 
-**New idea intake (before build):** [`../bootstrap/07_idea_audit.txt`](../bootstrap/07_idea_audit.txt) — Mode I; [`../audit/IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md)
+**New idea intake (before build):** [`../bootstrap/idea_audit.txt`](../bootstrap/idea_audit.txt) — Mode I; [`../audit/IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md)
 
 ---
 

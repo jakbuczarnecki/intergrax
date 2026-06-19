@@ -13,13 +13,14 @@
 ## Phase DX-IDEA — Idea intake audit (Mode I)
 
 **Source:** Operator workflow for auditing a **single harness or product idea** before implementation.  
-**Bootstrap:** [`bootstrap/07_idea_audit.txt`](../bootstrap/07_idea_audit.txt) · **Orchestrator:** [`audit/IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md)  
-**Status:** **Done** — live chat audit; durable record = architecture + plan update after operator approval (no sidecar files).
+**Bootstrap:** [`bootstrap/idea_audit.txt`](../bootstrap/idea_audit.txt) · **Orchestrator:** [`audit/IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md) · **Cursor rule:** `.cursor/rules/intergrax-idea-audit.mdc`  
+**Status:** **Done** — live chat audit; idea in operator message; durable record = architecture + plan update after operator approval (no sidecar files).
 
 | ID | Gap | Priority | Status |
 |----|-----|----------|--------|
 | DX-IDEA-01 | Mode I indexed in hub, audit map, bootstrap README; architecture §43.2 surface | P2 | **Done** |
 | DX-IDEA-02 | `scripts/check_idea_audit_bootstrap.py` — bootstrap ↔ orchestrator consistency gate | P3 | **Done** |
+| DX-IDEA-03 | Natural-language idea intake via Cursor rule; bootstrap without USER CONFIG placeholders | P2 | **Done** |
 
 **Delivery rule:** One **DX-IDEA-\*** ID per PR → update this table → `check_idea_audit_bootstrap.py` green.
 

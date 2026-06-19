@@ -83,7 +83,7 @@ applications/    MAY import from agents/ and intergrax/
 
 | Task | Read first (architecture + plan pair) |
 |------|---------------------------------------|
-| Audit a new idea before build | [docs/bootstrap/07_idea_audit.txt](docs/bootstrap/07_idea_audit.txt) · [IDEA_AUDIT_ORCHESTRATOR.md](docs/audit/IDEA_AUDIT_ORCHESTRATOR.md) (live chat; on approval update architecture + plan) |
+| Audit a new idea before build | Say `Zrób audyt pomysłu: …` in a new chat — rule `.cursor/rules/intergrax-idea-audit.mdc` → [`idea_audit.txt`](docs/bootstrap/idea_audit.txt) · [`IDEA_AUDIT_ORCHESTRATOR.md`](docs/audit/IDEA_AUDIT_ORCHESTRATOR.md) |
 | Create a new agent | [docs/guides/AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md) |
 | Wire integrations | [INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) · [plan/INTEGRATIONS.md](docs/plan/INTEGRATIONS.md) |
 | RAG / retrieval engine | [RAG.md](docs/architecture/RAG.md) · [plan/RAG.md](docs/plan/RAG.md) |
