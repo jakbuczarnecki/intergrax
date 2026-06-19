@@ -326,15 +326,15 @@ These items implemented under FLOW/ORCH phases — **Done**; canon now owned by 
 
 ### 6.1aw Harness implementation queue — Reasoning audit maintenance (2026-06-19)
 
-**Source:** Interactive layer audit (2026-06-19) — `REASONING_AND_COGNITION` layer 7 · [`../audit_results/2026-06-19/REASONING_AND_COGNITION.md`](../audit_results/2026-06-19/REASONING_AND_COGNITION.md) (pending) · prior: [`../audit_results/2026-06-18/REASONING_AND_COGNITION.md`](../audit_results/2026-06-18/REASONING_AND_COGNITION.md)  
+**Source:** Interactive layer audit (2026-06-19) — `REASONING_AND_COGNITION` layer 7 · [`../audit_results/2026-06-19/REASONING_AND_COGNITION.md`](../audit_results/2026-06-19/REASONING_AND_COGNITION.md) · prior: [`../audit_results/2026-06-18/REASONING_AND_COGNITION.md`](../audit_results/2026-06-18/REASONING_AND_COGNITION.md)  
 **Priority ladder:** **Band 1** (§6.1) — doc sync + audit artifact; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **COG-MAINT-DOC-01** | Docs | P3 | **Planned** | Close §6.1av header; confirm architecture §17 mapping table current (COG-MAINT-01) | Plan §6.1av/§6.1aw consistent with Done maintenance rows |
-| 2 | **COG-MAINT-AUDIT-01** | Docs | P3 | **Planned** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `REASONING_AND_COGNITION.md` + `progress.json`; L3 verdict layer 7 |
+| 1 | **COG-MAINT-DOC-01** | Docs | P3 | **Done** | Close §6.1av header; confirm architecture §17 mapping table current (COG-MAINT-01) | Plan §6.1av/§6.1aw consistent with Done maintenance rows |
+| 2 | **COG-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `REASONING_AND_COGNITION.md` + `progress.json`; L3 verdict layer 7 |
 
-**Suggested PR order:** COG-MAINT-DOC-01 → COG-MAINT-AUDIT-01.
+**Suggested PR order:** none — §6.1aw queue closed (2026-06-19).
 
 **Explicitly excluded:** L4 adaptive planner selection (AHI scope) — observe-only default in canon §21.
 

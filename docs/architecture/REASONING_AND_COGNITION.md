@@ -601,6 +601,8 @@ Classify failures **before** orchestration retry logic conflates them:
 | (classifier fallback) | `classifier_fallback` | `LlmTaskClassifier` parse fallback |
 | (generic planner fallback) | `planner_fallback` | engine planner → `TaskPlanner` |
 
+**Audit note (2026-06-19, COG-MAINT-DOC-01):** Mapping revalidated against `ReasoningFailureKind` enum; gates `check_reasoning_failure_taxonomy.py` and `check_reasoning_gates.py` (SYS-INV-22 plane separation) green; dynamic replan boundary proven in `tests/acceptance/agent_os/test_cog_maint_replan.py`.
+
 ---
 
 ## 18. Observability and trace contracts

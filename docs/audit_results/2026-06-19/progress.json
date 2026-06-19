@@ -9,8 +9,8 @@
   "started_at": "2026-06-19",
   "last_updated": "2026-06-19",
   "completed_at": null,
-  "current_domain": "NEXUS_EXECUTION_FLOW",
-  "notes": "Mode A2 — 4/22 domains complete; FLOW-MAINT-05 through FLOW-MAINT-AUDIT-01 implemented 2026-06-19",
+  "current_domain": "REASONING_AND_COGNITION",
+  "notes": "Mode A2 — 5/22 domains complete; COG-MAINT-DOC-01 + COG-MAINT-AUDIT-01 implemented 2026-06-19",
   "domain_order": [
     "PLATFORM_FOUNDATION",
     "UNIFIED_EXECUTION_RUNTIME",
@@ -92,6 +92,20 @@
         "FLOW-MAINT-05",
         "FLOW-MAINT-DOC-01",
         "FLOW-MAINT-AUDIT-01"
+      ]
+    },
+    "REASONING_AND_COGNITION": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "maturity": "L3",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-19/REASONING_AND_COGNITION.md",
+      "plan_updated": true,
+      "completed_at": "2026-06-19",
+      "maint_ids": [
+        "COG-MAINT-DOC-01",
+        "COG-MAINT-AUDIT-01"
       ]
     }
   }
