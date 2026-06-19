@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from intergrax.integrations.contracts.base import HealthStatus
 from intergrax.integrations.contracts.speech_provider import SpeechProviderBackend
 from intergrax.speech_adapters.contracts.io import (
     SpeechSynthesizeInput,
@@ -20,7 +21,11 @@ class IntegrationSpeechAdapter(SpeechAdapter):
 
     def __init__(self, backend: SpeechProviderBackend, *, provider_slug: str) -> None:
         self._backend = backend
-        self.provider_slug = provider_slug.strip().lower()
+        self._provider_slug = provider_slug.strip().lower()
+
+    @property
+    def provider_slug(self) -> str:
+        return self._provider_slug
 
     def synthesize(self, payload: SpeechSynthesizeInput) -> SpeechSynthesizeOutput:
         result = self._backend.synthesize(payload.text, voice_id=payload.voice_id)
@@ -49,5 +54,6 @@ def infer_speech_provider_slug(backend: SpeechProviderBackend) -> str | None:
         status = backend.health()
     except Exception:
         return None
-    slug = getattr(status, "slug", None)
-    return str(slug) if slug else None
+    if isinstance(status, HealthStatus):
+        return status.slug or None
+    return None

@@ -14,7 +14,9 @@ from intergrax.speech_adapters.contracts.speech_adapter import SpeechAdapter
 
 
 class StubSpeechAdapter(SpeechAdapter):
-    provider_slug = "stub"
+    @property
+    def provider_slug(self) -> str:
+        return "stub"
 
     def synthesize(self, payload: SpeechSynthesizeInput) -> SpeechSynthesizeOutput:
         return SpeechSynthesizeOutput(
