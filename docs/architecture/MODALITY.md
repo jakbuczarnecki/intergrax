@@ -302,7 +302,7 @@ Registries: `VisionAdapterRegistry` (vision slugs). Speech SaaS vendors use **In
 | Whisper / yt_dlp / image ingest | **Done** (beta) |
 | HF embeddings / optional SPLADE | **Done** |
 | Multimodal LLM contract + attachment wire-up | **Done** (W-ML.1) |
-| `speech.synthesize` / `speech.transcribe` tools + integration catalog slugs | **Done** (W-ML.2) · slug alignment **Planned** (MOD-SPEECH-ARCH) |
+| `speech.synthesize` / `speech.transcribe` tools + integration catalog slugs | **Done** (W-ML.2) · slug alignment **Done** (MOD-SPEECH-ARCH) |
 | `model_inference` registry + OpenCV / stub / optional Ultralytics | **Done** (W-ML.3) |
 | Lab `ModalityProfile` + `ToolAccessPolicy.apply_modality_profile` | **Done** (W-ML.6) |
 | Golden fixture `tests/fixtures/vision_golden/sample_target.png` | **Done** |

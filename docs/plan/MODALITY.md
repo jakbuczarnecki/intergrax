@@ -142,8 +142,7 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 
 ## Phase MOD-SPEECH-ARCH — Speech provider slug alignment (Integration Library)
 
-**Status:** **Planned** — operator-approved 2026-06-19 (idea audit Mode I)  
-**ADR:** [ADR-MOD-001](../adr/entries/2026-06-19/ADR-MOD-001.md)  
+**Status:** **Done** (2026-06-19) — operator-approved hard cutover · [ADR-MOD-001](../adr/entries/2026-06-19/ADR-MOD-001.md)  
 **Canon:** [`architecture/MODALITY.md`](../architecture/MODALITY.md) §Plane C — Speech · [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) §Open catalog  
 **Cross-domain:** [`plan/INTEGRATIONS.md`](INTEGRATIONS.md) INT-SPEECH-ARCH.1
 
@@ -166,14 +165,16 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 
 | Order | ID | Deliverable | Priority | Status | Acceptance |
 |-------|-----|-------------|----------|--------|------------|
-| 1 | **MOD-SPEECH-ARCH.1** | **Delete** `SpeechProvider` enum; slug-based identity on `SpeechAdapter` / `SpeechProfile` | **P1** | **Planned** | No `SpeechProvider` enum in tree; `provider_slug: str` validated against registered catalog or explicit instance |
-| 2 | **MOD-SPEECH-ARCH.2** | `SpeechProfile` accepts `IntegrationBinding` / pre-built `SpeechProviderBackend` | **P1** | **Planned** | Tier-3 can inject backend without platform code change; unit tests for binding paths |
-| 3 | **MOD-SPEECH-ARCH.3** | **Delete** `speech_provider_for_slug()`; slug from `IntegrationProfile.slug_for_category(SPEECH_PROVIDER)` | **P1** | **Planned** | `deepgram` bridge labelled `deepgram`, not `stub`; no hardcoded slug→enum table |
-| 4 | **MOD-SPEECH-ARCH.4** | Unify `wire_modality_extras()` with integration path | **P1** | **Planned** | When `speech_provider` resolved from catalog, no parallel enum-based `create_adapter()`; integration wiring wins |
-| 5 | **MOD-SPEECH-ARCH.5** | External speech adapter registration via slug + factory (optional in-process path) | **P2** | **Planned** | Third-party package registers slug without editing `intergrax/speech_adapters/contracts/` enum file (file removed) |
-| 6 | **INT-SPEECH-ARCH.1** | Integration plan cross-row — document canonical speech wiring | **P2** | **Planned** | [`plan/INTEGRATIONS.md`](INTEGRATIONS.md) maintenance row **Done** when canon synced |
+| 1 | **MOD-SPEECH-ARCH.1** | **Delete** `SpeechProvider` enum; slug-based identity on `SpeechAdapter` / `SpeechProfile` | **P1** | **Done** | No `SpeechProvider` enum in tree; `provider_slug: str` validated against registered catalog or explicit instance |
+| 2 | **MOD-SPEECH-ARCH.2** | `SpeechProfile` accepts `IntegrationBinding` / pre-built `SpeechProviderBackend` | **P1** | **Done** | Tier-3 can inject backend without platform code change; unit tests for binding paths |
+| 3 | **MOD-SPEECH-ARCH.3** | **Delete** `speech_provider_for_slug()`; slug from `IntegrationProfile.slug_for_category(SPEECH_PROVIDER)` | **P1** | **Done** | `deepgram` bridge labelled `deepgram`, not `stub`; no hardcoded slug→enum table |
+| 4 | **MOD-SPEECH-ARCH.4** | Unify `wire_modality_extras()` with integration path | **P1** | **Done** | When `speech_provider` resolved from catalog, no parallel enum-based `create_adapter()`; integration wiring wins |
+| 5 | **MOD-SPEECH-ARCH.5** | External speech adapter registration via slug + factory (optional in-process path) | **P2** | **Done** | Third-party package registers slug without editing platform enum |
+| 6 | **INT-SPEECH-ARCH.1** | Integration plan cross-row — document canonical speech wiring | **P2** | **Done** | [`plan/INTEGRATIONS.md`](INTEGRATIONS.md) maintenance row closed with wiring unification |
 
 **Suggested PR order:** MOD-SPEECH-ARCH.1 → MOD-SPEECH-ARCH.3 → MOD-SPEECH-ARCH.2 → MOD-SPEECH-ARCH.4 → MOD-SPEECH-ARCH.5 + INT-SPEECH-ARCH.1 (docs).
+
+**Paydown log (2026-06-19):** Removed `SpeechProvider` enum; slug-based `SpeechProfile` + `IntegrationSpeechAdapter`; unified modality/integration wiring; tests extended for deepgram slug + external registry.
 
 **Verification:**
 

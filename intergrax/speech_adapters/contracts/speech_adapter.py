@@ -12,13 +12,12 @@ from intergrax.speech_adapters.contracts.io import (
     SpeechTranscribeInput,
     SpeechTranscribeOutput,
 )
-from intergrax.speech_adapters.contracts.speech_provider import SpeechProvider
 
 
 class SpeechAdapter(ABC):
     """Plane C speech provider contract — explicit subclassing required."""
 
-    provider: SpeechProvider
+    provider_slug: str
 
     @abstractmethod
     def synthesize(self, payload: SpeechSynthesizeInput) -> SpeechSynthesizeOutput:
@@ -29,5 +28,6 @@ class SpeechAdapter(ABC):
         raise NotImplementedError
 
     def validate(self) -> None:
-        if not isinstance(self.provider, SpeechProvider):
-            raise ValueError(f"{type(self).__name__}.provider must be SpeechProvider")
+        slug = getattr(self, "provider_slug", None)
+        if not isinstance(slug, str) or not slug.strip():
+            raise ValueError(f"{type(self).__name__}.provider_slug must be a non-empty string slug")

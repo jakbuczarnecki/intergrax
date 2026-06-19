@@ -1309,7 +1309,7 @@ L4 readiness requires:
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **INT-SPEECH-ARCH.1** | Docs/Code | P2 | **Planned** | Canon sync — `speech_provider` is sole vendor path for `speech.*` tools; remove enum references from integration wiring docs | [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) §Speech provider + MOD-SPEECH-ARCH gates green |
+| 1 | **INT-SPEECH-ARCH.1** | Docs/Code | P2 | **Done** | Canon sync — `speech_provider` is sole vendor path for `speech.*` tools; remove enum references from integration wiring docs | [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) §Speech provider + MOD-SPEECH-ARCH gates green |
 
 Close **INT-SPEECH-ARCH.1** in the same PR wave as **MOD-SPEECH-ARCH.4** (wiring unification).
 

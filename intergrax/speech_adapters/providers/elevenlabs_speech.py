@@ -13,13 +13,12 @@ from intergrax.speech_adapters.contracts.io import (
     SpeechTranscribeOutput,
 )
 from intergrax.speech_adapters.contracts.speech_adapter import SpeechAdapter
-from intergrax.speech_adapters.contracts.speech_provider import SpeechProvider
 
 
 class ElevenLabsSpeechAdapter(SpeechAdapter):
     """ElevenLabs REST TTS (requires ``api_key`` or ``ELEVENLABS_API_KEY`` env)."""
 
-    provider = SpeechProvider.ELEVENLABS
+    provider_slug = "elevenlabs"
     ENV_API_KEY = "ELEVENLABS_API_KEY"
     DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"
 
