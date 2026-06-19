@@ -83,7 +83,7 @@ applications/    MAY import from agents/ and intergrax/
 
 | Task | Read first (architecture + plan pair) |
 |------|---------------------------------------|
-| Audit a new idea before build | [docs/audit/bootstrap/07_idea_audit.txt](docs/audit/bootstrap/07_idea_audit.txt) · [IDEA_AUDIT_ORCHESTRATOR.md](docs/audit/IDEA_AUDIT_ORCHESTRATOR.md) (live chat; on approval update architecture + plan) |
+| Audit a new idea before build | [docs/bootstrap/07_idea_audit.txt](docs/bootstrap/07_idea_audit.txt) · [IDEA_AUDIT_ORCHESTRATOR.md](docs/audit/IDEA_AUDIT_ORCHESTRATOR.md) (live chat; on approval update architecture + plan) |
 | Create a new agent | [docs/guides/AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md) |
 | Wire integrations | [INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) · [plan/INTEGRATIONS.md](docs/plan/INTEGRATIONS.md) |
 | RAG / retrieval engine | [RAG.md](docs/architecture/RAG.md) · [plan/RAG.md](docs/plan/RAG.md) |
@@ -110,7 +110,7 @@ applications/    MAY import from agents/ and intergrax/
 | Available agents (roster) | [agents/README.md](agents/README.md) |
 | Available application environments | [applications/README.md](applications/README.md) |
 | Harness audit (32 layers) | [docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md](docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
-| Architecture audit orchestration (22 pairs) | [docs/audit/README.md](docs/audit/README.md) · `scripts/init_architecture_audit_run.py` |
+| Architecture audit orchestration (22 pairs) | [docs/audit/README.md](docs/audit/README.md) · [docs/bootstrap/](docs/bootstrap/README.md) · `scripts/init_architecture_audit_run.py` |
 | System invariants (never violate) | [docs/guides/SYSTEM_INVARIANTS.md](docs/guides/SYSTEM_INVARIANTS.md) |
 | Layer completion (full domain closeout) | [docs/guides/LAYER_COMPLETION_MODE.md](docs/guides/LAYER_COMPLETION_MODE.md) |
 | Implementation journal | [docs/implementation-journal/README.md](docs/implementation-journal/README.md) |

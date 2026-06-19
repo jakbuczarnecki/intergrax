@@ -42,11 +42,11 @@ ORCHESTRATOR_BY_MODE: dict[str, str] = {
 }
 
 BOOTSTRAP_BY_MODE: dict[str, str] = {
-    "audit_only": "docs/audit/bootstrap/01_audit_all_domains.txt",
-    "audit_one": "docs/audit/bootstrap/02_audit_one_domain.txt",
-    "implement_plan": "docs/audit/bootstrap/03_implement_plan_all_domains.txt",
-    "implement_one": "docs/audit/bootstrap/04_implement_plan_one_domain.txt",
-    "layer_completion": "docs/audit/bootstrap/05_closeout_all_domains.txt",
+    "audit_only": "docs/bootstrap/01_audit_all_domains.txt",
+    "audit_one": "docs/bootstrap/02_audit_one_domain.txt",
+    "implement_plan": "docs/bootstrap/03_implement_plan_all_domains.txt",
+    "implement_one": "docs/bootstrap/04_implement_plan_one_domain.txt",
+    "layer_completion": "docs/bootstrap/05_closeout_all_domains.txt",
 }
 
 

@@ -4,7 +4,7 @@
   "scope": "all",
   "single_domain": null,
   "canonical": "docs/audit/ORCHESTRATOR.md",
-  "bootstrap": "docs/audit/bootstrap/01_audit_all_domains.txt",
+  "bootstrap": "docs/bootstrap/01_audit_all_domains.txt",
   "run_id": "2026-06-17",
   "results_dir": "docs/audit_results/2026-06-17",
   "started_at": "2026-06-17",

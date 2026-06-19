@@ -1,7 +1,7 @@
 # Full Harness Layer Completion Orchestrator
 
 **Status:** Canonical orchestrator for **Mode C** — audit + closeout (LCM Steps 1–6)  
-**Bootstrap:** [`bootstrap/05_closeout_all_domains.txt`](bootstrap/05_closeout_all_domains.txt)  
+**Bootstrap:** [`bootstrap/05_closeout_all_domains.txt`](../bootstrap/05_closeout_all_domains.txt)  
 **Per-domain LCM canon:** [`LAYER_COMPLETION_MODE.md`](../guides/LAYER_COMPLETION_MODE.md)
 
 ---

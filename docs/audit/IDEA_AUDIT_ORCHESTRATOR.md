@@ -1,7 +1,7 @@
 # Idea Audit — Orchestration (Mode I)
 
 **Status:** Canonical orchestrator for **Mode I** — live audit of a **single product or harness idea** before implementation  
-**Bootstrap (paste):** [`bootstrap/07_idea_audit.txt`](bootstrap/07_idea_audit.txt)  
+**Bootstrap (paste):** [`bootstrap/07_idea_audit.txt`](../bootstrap/07_idea_audit.txt)  
 **Related:** [`README.md`](README.md) · [`ORCHESTRATOR.md`](ORCHESTRATOR.md) · [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md)
 
 ---
@@ -37,7 +37,7 @@ Provide a **repeatable, evidence-backed intake audit** when an operator or devel
 ## Before the session
 
 1. Open a **new** Cursor agent chat with repo access.
-2. Copy **entire** [`bootstrap/07_idea_audit.txt`](bootstrap/07_idea_audit.txt).
+2. Copy **entire** [`bootstrap/07_idea_audit.txt`](../bootstrap/07_idea_audit.txt).
 3. Edit only the **USER CONFIG** block (idea description, optional hints).
 4. Paste as the **first message**.
 

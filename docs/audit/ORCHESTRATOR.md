@@ -1,8 +1,8 @@
 # Architecture Audit — Orchestration (audit-only, all domains)
 
 **Status:** Canonical orchestrator for **Mode A** — audit + plan sync, **no implementation**  
-**Bootstrap (paste):** [`bootstrap/01_audit_all_domains.txt`](bootstrap/01_audit_all_domains.txt)  
-**Single domain:** [`bootstrap/02_audit_one_domain.txt`](bootstrap/02_audit_one_domain.txt)  
+**Bootstrap (paste):** [`bootstrap/01_audit_all_domains.txt`](../bootstrap/01_audit_all_domains.txt)  
+**Single domain:** [`bootstrap/02_audit_one_domain.txt`](../bootstrap/02_audit_one_domain.txt)  
 **Related:** [`ORCHESTRATOR.md`](ORCHESTRATOR.md) (this file) · [`LAYER_COMPLETION_MODE.md`](../guides/LAYER_COMPLETION_MODE.md) · [`implementation-journal/`](../implementation-journal/README.md)
 
 ---

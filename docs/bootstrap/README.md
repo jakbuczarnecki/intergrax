@@ -1,4 +1,4 @@
-# Bootstrap paste files
+# Cursor session bootstrap (paste files)
 
 Copy **entire file** into a **new** Cursor agent chat as the first message.
 
@@ -12,9 +12,9 @@ Copy **entire file** into a **new** Cursor agent chat as the first message.
 | [`06_interactive_layer_by_layer_audit.txt`](06_interactive_layer_by_layer_audit.txt) | **A2 — interactive audit** | One domain per stop; operator confirms before next |
 | [`07_idea_audit.txt`](07_idea_audit.txt) | **I — idea intake audit** | Single idea — live chat audit; on approval update architecture + plan |
 
-**Mode I (idea audit):** Live audit against current canon and code — **no** `ideas_results/` files. After operator approval, update `docs/architecture/` + `docs/plan/`. See [`IDEA_AUDIT_ORCHESTRATOR.md`](../IDEA_AUDIT_ORCHESTRATOR.md).
+**Mode I (idea audit):** Live audit against current canon and code. After operator approval, update `docs/architecture/` + `docs/plan/`. See [`IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md).
 
-**Mode A2 (interactive):** Same audit depth as Mode A, but **one domain per session stop**. Agent presents gaps, plan-vs-code findings, and proposed tasks, then **waits for operator confirmation** before the next domain. Use when pair-reviewing harness maturity layer-by-layer (ideal → canon → plan → code). Operator may approve plan rows and request commit between domains.
+**Mode A2 (interactive):** Same audit depth as Mode A, but **one domain per session stop**. Agent presents gaps, plan-vs-code findings, and proposed tasks, then **waits for operator confirmation** before the next domain.
 
 **Initialize run (recommended):**
 
@@ -24,6 +24,6 @@ uv run python scripts/init_architecture_audit_run.py --date YYYY-MM-DD --mode au
 
 **Resume:** paste same file + line `RESUME: docs/audit_results/YYYY-MM-DD/progress.json`
 
-**Mode B iteration:** one P0/P1 item per domain (or skip); agent continues through all 22 domains without asking between pairs unless operator writes `pause` / `stop`. A single Cursor turn may not finish the full run — use **Resume** for the next session. See [`IMPLEMENT_ORCHESTRATOR.md`](../IMPLEMENT_ORCHESTRATOR.md) §Iteration discipline.
+**Mode B iteration:** one P0/P1 item per domain (or skip); agent continues through all 22 domains without asking between pairs unless operator writes `pause` / `stop`. See [`IMPLEMENT_ORCHESTRATOR.md`](../audit/IMPLEMENT_ORCHESTRATOR.md) §Iteration discipline.
 
-**Canonical docs:** [`../README.md`](../README.md) · [`../ORCHESTRATOR.md`](../ORCHESTRATOR.md)
+**Canonical procedure docs:** [`../audit/README.md`](../audit/README.md) · [`../audit/ORCHESTRATOR.md`](../audit/ORCHESTRATOR.md)

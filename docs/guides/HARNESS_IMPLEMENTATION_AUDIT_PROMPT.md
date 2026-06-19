@@ -4,7 +4,7 @@
 **Procedure source:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md)  
 **Per-domain deep audits:** [`../audit/README.md`](../audit/README.md) — copy-paste prompts for each of the 22 domain pairs (RAG, Tools, Memory, Context Engineering, …)
 
-**New idea intake (before build):** [`../audit/bootstrap/07_idea_audit.txt`](../audit/bootstrap/07_idea_audit.txt) — Mode I; [`../audit/IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md)
+**New idea intake (before build):** [`../bootstrap/07_idea_audit.txt`](../bootstrap/07_idea_audit.txt) — Mode I; [`../audit/IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md)
 
 ---
 
@@ -22,7 +22,7 @@ Domain prompts include shared observability/security/scale checklists plus domai
 
 ### Multi-layer or full-platform audit
 
-For **all 22 domain pairs** in one session, use [`../audit/bootstrap/01_audit_all_domains.txt`](../audit/bootstrap/01_audit_all_domains.txt) (Mode A) or [`../audit/README.md`](../audit/README.md) for other modes.
+For **all 22 domain pairs** in one session, use [`../bootstrap/01_audit_all_domains.txt`](../bootstrap/01_audit_all_domains.txt) (Mode A) or [`../audit/README.md`](../audit/README.md) for other modes.
 
 ### What to copy
 

@@ -24,11 +24,11 @@ The goal is not merely to implement existing architecture. The goal is to bring 
 |-------------|-------------|------|
 | [`.cursor/rules/intergrax-iteration.mdc`](../../.cursor/rules/intergrax-iteration.mdc) | One coherent plan item | Default Cursor sessions |
 | **This guide (Layer Completion Mode)** | Full domain layer → maturity | Deep layer closeout (journal: “Layer Completion Mode”) |
-| [audit/LAYER_COMPLETION_ORCHESTRATOR.md](../audit/LAYER_COMPLETION_ORCHESTRATOR.md) | All 22 pairs sequentially | Paste [`../audit/bootstrap/05_closeout_all_domains.txt`](../audit/bootstrap/05_closeout_all_domains.txt) |
+| [audit/LAYER_COMPLETION_ORCHESTRATOR.md](../audit/LAYER_COMPLETION_ORCHESTRATOR.md) | All 22 pairs sequentially | Paste [`../bootstrap/05_closeout_all_domains.txt`](../bootstrap/05_closeout_all_domains.txt) |
 | [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) | Cross-domain never-violate rules | Skim **before every** Step 1 and Step 6 |
 | [AGENTS.md](../../AGENTS.md) | Hard repo rules, verification bundle | Always |
 
-**Operator paste:** canonical multi-domain bootstrap lives under [`../audit/bootstrap/`](../audit/bootstrap/README.md) (English). Personal PL notes may stay in `docs/_external/` (gitignored). **This file is the linkable canonical definition** for single-domain LCM steps.
+**Operator paste:** canonical multi-domain bootstrap lives under [`../bootstrap/`](../bootstrap/README.md) (English). Personal PL notes may stay in `docs/_external/` (gitignored). **This file is the linkable canonical definition** for single-domain LCM steps.
 
 ---
 
