@@ -120,9 +120,10 @@
 | 7 | X-7 | M-LLM-X.7.1–7.5 | P2 | **Partial** (7.1, 7.5 Done; 7.2–7.4 Planned) |
 | 8 | X-8 | M-LLM-X.8.1–8.3 | Medium | **Planned** |
 | 9 | X-9 | M-LLM-X.9.1–9.9 | **P1** | **Done** (2026-06-19) — ADR-LLM-003 · routing rule Protocol |
-| 10 | X-10 | M-LLM-X.10.1–10.8 | **P1** | **Done** — enterprise closeout + predefined rule catalog |
+| 10 | X-10 | M-LLM-X.10.1–10.8 | **P1** | **Done** — routing enterprise closeout (start-of-run + ACP) |
+| 11 | X-11 | M-LLM-X.11.1–11.8 | **P1** | **Planned** — routing enterprise hardening (mid-run Nexus) |
 
-**Closeout gate:** All M-LLM-X.* Done + architecture audit register all **Done** + `tests/unit/llm_adapters/` green + new CI scripts green. **X-10** required before declaring routing **enterprise end-to-end**.
+**Closeout gate:** All M-LLM-X.* Done + architecture audit register all **Done** + `tests/unit/llm_adapters/` green + new CI scripts green. **X-10** closed LLM-AUDIT-17 (start-of-run scope). **X-11** required for **LLM-AUDIT-18** (strict enterprise mid-run Nexus). **X-8** domain closeout follows **X-11**.
 
 ---
 
@@ -142,9 +143,10 @@ Wave M-LLM-X-7 (DX):           M-LLM-X.7.1 → 7.2 → 7.3 → 7.4 → 7.5
 Wave M-LLM-X-8 (closeout):     M-LLM-X.8.1 → 8.2 → 8.3
 Wave M-LLM-X-9 (routing rules): M-LLM-X.9.1 → 9.2 → 9.2b → 9.3 → 9.4 → 9.5 → 9.6 → 9.7 → 9.8 → 9.9
 Wave M-LLM-X-10 (routing enterprise): M-LLM-X.10.1 → 10.2 → 10.3 → 10.4 → 10.5 → 10.6 → 10.7 → 10.8
+Wave M-LLM-X-11 (routing hardening): M-LLM-X.11.1 → 11.2 → 11.3 → 11.4 → 11.5 → 11.6 → 11.7 → 11.8
 ```
 
-**Prerequisites:** M-LLM + M-LLM-R **Done**; CONTEXT_ENGINE preflight paths stable. **X-9** depends on X-4.2 (failover) and X-5.1 (ModelRouter hints) — both **Done**. **X-10** depends on **X-9 Done**.
+**Prerequisites:** M-LLM + M-LLM-R **Done**; CONTEXT_ENGINE preflight paths stable. **X-9** depends on X-4.2 (failover) and X-5.1 (ModelRouter hints) — both **Done**. **X-10** depends on **X-9 Done**. **X-11** depends on **X-10 Done**.
 
 **Parallelism:** X-2 (OpenRouter fetch) may run after X-1.3; X-5 depends on X-4.2; X-7 may start after X-1.1 (docs partial).
 
@@ -280,13 +282,11 @@ Wave M-LLM-X-10 (routing enterprise): M-LLM-X.10.1 → 10.2 → 10.3 → 10.4 �
 
 #### Wave M-LLM-X-10 — LLM routing enterprise closeout + predefined rule catalog
 
-**Source:** Post X-9 enterprise readiness review (2026-06-19) — foundation L3+ Done; end-to-end Nexus wiring and ops catalog **Planned**.  
+**Source:** Post X-9 enterprise readiness review (2026-06-19) — foundation L3+ Done; start-of-run enterprise closeout **Done** (2026-06-19).  
 **ADR:** [ADR-LLM-003](../adr/entries/2026-06-19/ADR-LLM-003.md) — no new ADR unless `ProfileVersion` contract changes (**AHI-MAINT-06**).  
-**Goal:** Parametric **predefined rule classes** (constructor params replace former enum DSL) + automatic runtime context + observability + reference host + E2E proof.
+**Goal:** Parametric **platform catalog** (Tier-0 predefined classes) + **custom rules** (Tier-3 Protocol) + automatic runtime context on materialize + observability + reference host + acceptance proof.
 
-##### Predefined rule catalog (M-LLM-X.10.1)
-
-Ship **12+** ready-made `LLMRoutingRule` implementations in `intergrax/llm_adapters/routing/builtin_rules.py` — each parametric via `__init__`, documented in USAGE. Authors compose manifests without custom subclasses for common cases.
+Ship **12+** ready-made `LLMRoutingRule` implementations in `intergrax/llm_adapters/routing/builtin_rules.py` — each parametric via `__init__`, documented in USAGE. Authors **prefer** builtins for common cases; **custom `LLMRoutingRule` subclasses remain fully supported** (ADR-LLM-003).
 
 | Class | Constructor params (examples) | `matches` semantics |
 |-------|------------------------------|---------------------|
@@ -326,7 +326,34 @@ Export `BUILTIN_ROUTING_RULES: tuple[type[LLMRoutingRuleBase], ...]` + `builtin_
 
 **Cross-domain:** **AHI-MAINT-06** — `ProfileVersionStore` `artifact_type=llm_routing` + persistent bandit (not `InMemoryBanditStateStore` only).
 
-**Note on X-9.5:** X-9 delivered evaluator + optional `routing_context` parameter; **X-10.2** closes the enterprise gap (automatic context on all default `resolve_llm_adapter()` callers).
+**Note on X-9.5:** X-9 delivered evaluator + optional `routing_context` parameter; **X-10.2** auto context on **materialize** path (not all `resolve_llm_adapter()` call sites — see **X-11.3**).
+
+**X-10 scope delivered:** start-of-run routing + ACP per-step. **Mid-run Nexus `llm_adapter` re-eval** → **M-LLM-X.11** (LLM-AUDIT-18).
+
+---
+
+#### Wave M-LLM-X-11 — Routing enterprise hardening (mid-run Nexus)
+
+**Source:** Post X-10 enterprise review (2026-06-19) — X-10 closed LLM-AUDIT-17; gaps remain for **live mid-run** routing on Nexus core adapter and full observability loop.  
+**ADR:** ADR-LLM-003 (unchanged); **no new ADR** unless `RoutingEvaluatingLLMAdapter` introduces new cross-tier contract.  
+**Goal:** Strict **enterprise grade** routing — budget/step/degrade changes during a Nexus run re-select profile; trace on every evaluation; true E2E proof.
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-X.11.1 | **`RoutingEvaluatingLLMAdapter`** — wrap `LLMAdapter`; before each `generate_messages` / `generate_with_tools` / `generate_structured` re-run `LLMRoutingEvaluator` with live context; rebuild inner adapter when profile/hint changes | **Planned** | **Critical** | `intergrax/llm_adapters/routing/evaluating_adapter.py`, `llm_resolver.py` | Unit: budget threshold crossing swaps profile identity |
+| M-LLM-X.11.2 | **`refresh_llm_routing_context()`** — update `RuntimeConfig.llm_routing_context` from budget meter (`ResolvedBudgetLimits` / usage), `step_index`, `budget_degrade_active`, `task_class` during Nexus step loop | **Planned** | **Critical** | `context_bridge.py`, `runtime_state.py` or step kernel hook | Context fields change between synthetic steps in test |
+| M-LLM-X.11.3 | **Unify `resolve_llm_adapter()` call sites** — `nexus_factory`, `environment_wiring`, `critic_tool_wiring`, `harness_host_runtime` pass `build_routing_context_from_runtime()` (tenant, metadata, budget when available) | **Planned** | **Critical** | `applications/_shared/*.py` | No bare `resolve_llm_adapter(env)` when `llm_routing_profile` set |
+| M-LLM-X.11.4 | **Observability loop** — emit `LLMRoutingRuleDiagV1` on **every** evaluation (evaluating adapter + `DynamicLLMRouter`); `trace_bridge` gate for `routing_rule` schema; `LLMRoutingAllowlistViolationDiagV1` on `AllowlistViolationError` | **Planned** | High | `llm_routing_attempt.py`, `trace_bridge.py`, `evaluator.py` | `test_trace_bridge_maps_llm_routing_rule_schema` green |
+| M-LLM-X.11.5 | **True E2E acceptance** — full ACP or Nexus run: seed budget → execute LLM step(s) → budget crosses `BudgetBelowRule` threshold → assert model/profile change in trace or adapter meter | **Planned** | High | `tests/acceptance/llm_routing/` | `-m gate` green; not resolver-only |
+| M-LLM-X.11.6 | **Harness host parity** — when `llm_routing_profile` set, wire evaluating adapter or document ACP-only; minimum: `harness_host_runtime` uses evaluating wrapper on `llm_adapter` passed to `build_nexus_loop_from_environment` | **Planned** | Medium | `harness_host_runtime.py`, `nexus_factory.py` | Host integration test |
+| M-LLM-X.11.7 | **Docs maturity re-score** — architecture L4→L5 criteria; USAGE §mid-run routing; clarify X-10 vs X-11 scope; custom + builtin authoring paths | **Planned** | Medium | `architecture/LLM_ADAPTERS.md`, `USAGE.md` | Linked from hub |
+| M-LLM-X.11.8 | **CI gate** — `scripts/check_llm_routing_context_wiring.py` (or extend `check_llm_routing_rules.py`) — static scan: no `resolve_llm_adapter(env)` without context bridge on Tier-3 wiring modules | **Planned** | Medium | `scripts/` | Registered in `check_audit_ideal_gates.py` |
+
+**Suggested PR order (X-11):** 11.1 → 11.2 → 11.3 → 11.4 → 11.5 → 11.6 → 11.7 → 11.8.
+
+**Cross-domain:** `NEXUS_EXECUTION_FLOW` (step loop hook) · `OBSERVABILITY` (trace schema) · `AGENT_CONTRACTS_AND_ASSEMBLY` (ACP budget meter).
+
+**Closes:** **LLM-AUDIT-18**. **Prerequisite for:** **M-LLM-X.8** domain closeout (honest audit register).
 
 ---
 
@@ -344,11 +371,12 @@ PR-8:  M-LLM-X.5.4 → 5.5 (ACP bridge)
 PR-9:  M-LLM-X.2.* (OpenRouter metadata — optional network)
 PR-10: M-LLM-X.6.* + 7.* (plugins + DX)
 PR-11: M-LLM-X.9.* (routing rule Protocol — ADR-LLM-003)
-PR-12: M-LLM-X.10.* (routing enterprise + predefined catalog)
-PR-13: M-LLM-X.8.* closeout (after X-10)
+PR-12: M-LLM-X.10.* (routing enterprise closeout — start-of-run + ACP) — Done
+PR-13: M-LLM-X.11.* (routing hardening — mid-run Nexus)
+PR-14: M-LLM-X.8.* closeout (after X-11)
 ```
 
-**Estimated effort:** 13 PRs · ~6–8 weeks harness maintenance cadence.
+**Estimated effort:** X-11 · ~2–3 PRs harness cadence · 2–4 weeks.
 
 ---
 
@@ -372,7 +400,8 @@ PR-13: M-LLM-X.8.* closeout (after X-10)
 | LLM-AUDIT-14 — Capability flags not catalog-driven | M-LLM-X.1.7 |
 | LLM-AUDIT-15 — History layer token count inconsistent with preflight | M-LLM-X.3.5 |
 | LLM-AUDIT-16 — No unified routing rule contract (idea audit 2026-06-19) | M-LLM-X.9.* |
-| LLM-AUDIT-17 — Routing enterprise end-to-end (auto context, trace, reference host, E2E) | M-LLM-X.10.* **Done** |
+| LLM-AUDIT-17 — Routing enterprise E2E start-of-run + ACP (context, trace, reference host) | M-LLM-X.10.* **Done** |
+| LLM-AUDIT-18 — Routing mid-run Nexus live re-eval, context refresh, full trace, true E2E | M-LLM-X.11.* **Planned** |
 | tiktoken OpenAI-centric estimate (all providers) | **Deferred** — document limitation in USAGE; vendor tokenizer plugins post-X |
 | Single `RuntimeConfig.llm_adapter` per run (multi-model) | M-LLM-X.4–5 (profile chain + routing); no multi-adapter pool in X |
 | Distributed Redis rate limit host wiring | **Ops** — document in USAGE X.7.1; not LLM-AUDIT tier-0 code |
@@ -745,26 +774,51 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 
 ### Phase M-LLM-X-10 — LLM routing enterprise closeout (2026-06-19)
 
-**Source:** Post X-9 enterprise readiness review — routing foundation Done; operational closeout Planned.  
-**Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) § LLM routing rules · § Enterprise routing backlog  
-**ADR:** ADR-LLM-003 (unchanged); **AHI-MAINT-06** may require ADR addendum if `ProfileVersion` schema changes.  
-**Goal:** Predefined parametric rule catalog + automatic `RoutingContext` + trace + reference host + E2E.  
-**Phase status:** **Planned** — 0/8 Done · see [Wave M-LLM-X-10](#wave-m-llm-x-10--llm-routing-enterprise-closeout--predefined-rule-catalog)
+**Source:** Post X-9 enterprise readiness review.  
+**Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) § LLM routing rules · § Enterprise routing  
+**ADR:** ADR-LLM-003 (unchanged); **AHI-MAINT-06** Done.  
+**Goal:** Platform catalog + custom Protocol + auto context on materialize + trace + lab reference + acceptance (resolver-level).  
+**Phase status:** **Done** — 8/8 · closes **LLM-AUDIT-17** (start-of-run scope). Mid-run gaps → **X-11**.
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **M-LLM-X.10.1** | Catalog | P1 | **Done** | 12+ predefined parametric rule classes | Unit test per class |
-| 2 | **M-LLM-X.10.2** | Wire | P1 | **Done** | `build_routing_context_from_runtime()` on default path | Nexus factory bridge |
-| 3 | **M-LLM-X.10.3** | Obs | P1 | **Done** | Trace `rule_id` + `routing_reason` | Schema gate |
-| 4 | **M-LLM-X.10.4** | Tier-3 | P1 | **Done** | Reference host manifest (predefined rules only) | CI gate scan |
-| 5 | **M-LLM-X.10.5** | E2E | P1 | **Done** | Acceptance: budget rule switches model | `tests/acceptance/llm_routing/` |
-| 6 | **M-LLM-X.10.6** | Wire | P2 | **Done** | Global `DynamicLLMRouter` on ACP hosts | Agent run test |
-| 7 | **M-LLM-X.10.7** | Docs | P2 | **Done** | USAGE predefined matrix + enterprise checklist | Architecture sync |
-| 8 | **M-LLM-X.10.8** | CI | P2 | **Done** | Extend `check_llm_routing_rules.py` | Umbrella gate |
+| 1 | **M-LLM-X.10.1** | Catalog | P1 | **Done** | 12+ predefined parametric rule classes + custom Protocol | Unit test per class |
+| 2 | **M-LLM-X.10.2** | Wire | P1 | **Done** | `build_routing_context_from_runtime()` on materialize path | `runtime_config_bridge` |
+| 3 | **M-LLM-X.10.3** | Obs | P1 | **Done** | Trace `rule_id` + `routing_reason` at tracker init | Schema unit test |
+| 4 | **M-LLM-X.10.4** | Tier-3 | P1 | **Done** | Lab reference host (predefined demo) | CI gate scan |
+| 5 | **M-LLM-X.10.5** | E2E | P1 | **Done** | Acceptance: budget rule switches model (resolver) | `tests/acceptance/llm_routing/` |
+| 6 | **M-LLM-X.10.6** | Wire | P2 | **Done** | `DynamicLLMRouter` on ACP hosts | Agent router test |
+| 7 | **M-LLM-X.10.7** | Docs | P2 | **Done** | USAGE matrix + checklist | Architecture sync |
+| 8 | **M-LLM-X.10.8** | CI | P2 | **Done** | `check_llm_routing_rules.py` | Umbrella gate |
 
-**Suggested PR order:** 10.1 → 10.2 → 10.3 → 10.4 → 10.5 → 10.6 → 10.7 → 10.8.
+**Suggested PR order:** 10.1 → 10.2 → … → 10.8 — **Done**.
 
 **Cross-domain:** **AHI-MAINT-06** (`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`).
+
+---
+
+### Phase M-LLM-X-11 — Routing enterprise hardening (2026-06-19)
+
+**Source:** Post X-10 enterprise review — honest maturity L4; strict enterprise requires mid-run Nexus.  
+**Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) § Enterprise routing hardening  
+**ADR:** ADR-LLM-003 (unchanged unless evaluating adapter changes tier contract).  
+**Goal:** Live mid-run profile swap on Nexus `llm_adapter`; full observability loop; true E2E; unified call sites.  
+**Phase status:** **Planned** — 0/8 Done · see [Wave M-LLM-X-11](#wave-m-llm-x-11--routing-enterprise-hardening-mid-run-nexus)
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **M-LLM-X.11.1** | Code | P1 | **Planned** | `RoutingEvaluatingLLMAdapter` | Unit: profile swap on context change |
+| 2 | **M-LLM-X.11.2** | Wire | P1 | **Planned** | `refresh_llm_routing_context()` in runtime loop | Step loop test |
+| 3 | **M-LLM-X.11.3** | Wire | P1 | **Planned** | All `resolve_llm_adapter` call sites use context bridge | CI static gate |
+| 4 | **M-LLM-X.11.4** | Obs | P1 | **Planned** | Per-eval trace + allowlist violation diag + trace_bridge gate | Schema tests |
+| 5 | **M-LLM-X.11.5** | E2E | P1 | **Planned** | Full run budget threshold → model change | `tests/acceptance/llm_routing/` |
+| 6 | **M-LLM-X.11.6** | Wire | P2 | **Planned** | Harness host evaluating adapter parity | Host test |
+| 7 | **M-LLM-X.11.7** | Docs | P2 | **Planned** | L5 maturity + USAGE mid-run section | Architecture sync |
+| 8 | **M-LLM-X.11.8** | CI | P2 | **Planned** | `check_llm_routing_context_wiring.py` | Umbrella gate |
+
+**Suggested PR order:** 11.1 → 11.2 → 11.3 → 11.4 → 11.5 → 11.6 → 11.7 → 11.8.
+
+**Closes:** **LLM-AUDIT-18**. **Blocks:** **M-LLM-X.8** honest closeout.
 
 ---
 

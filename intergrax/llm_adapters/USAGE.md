@@ -235,7 +235,12 @@ Requires `integration_profile.key_value_cache` slug `redis`. Cross-ref: [`docs/p
 
 **ADR:** [`ADR-LLM-003`](../../docs/adr/entries/2026-06-19/ADR-LLM-003.md) · **Canon:** [`LLM_ADAPTERS.md`](../../docs/architecture/LLM_ADAPTERS.md) § LLM routing rules
 
-Tier-3 hosts configure dynamic model selection with **`LLMRoutingProfile`** on `ApplicationEnvironmentProfile`. Each rule implements **`LLMRoutingRule`** (`matches` + `resolve`) — use **predefined built-in classes** (preferred) or subclass **`LLMRoutingRuleBase`** for custom logic.
+Tier-3 hosts configure dynamic model selection with **`LLMRoutingProfile`** on `ApplicationEnvironmentProfile`. Each rule implements **`LLMRoutingRule`** (`matches` + `resolve`).
+
+**Two authoring paths (both supported):**
+
+1. **Predefined catalog (Tier-0)** — platform ships production-ready parametric classes in `intergrax.llm_adapters.routing` (preferred for common cases; no boilerplate).
+2. **Custom rules (Tier-3)** — subclass **`LLMRoutingRuleBase`** or implement **`LLMRoutingRule`** directly when domain logic does not fit the catalog. Mix builtin and custom rules in the same `LLMRoutingProfile`.
 
 **Auto context (M-LLM-X.10.2):** Nexus / harness paths call `build_routing_context_from_runtime()` — authors do not pass `routing_context=` manually on default host wiring.
 
@@ -298,21 +303,56 @@ env.llm_routing_profile = LLMRoutingProfile(
 adapter = resolve_llm_adapter(env)  # routing context auto-filled on Nexus path
 ```
 
+### Custom rules (Tier-3)
+
+When catalog classes are insufficient, add app-specific rules alongside builtins:
+
+```python
+from intergrax.llm_adapters.routing import LLMRoutingRuleBase, RoutingContext, RoutingTarget
+
+class LegalLowBudgetRule(LLMRoutingRuleBase):
+    rule_id = "legal.low_budget"
+    priority = 10
+
+    def matches(self, context: RoutingContext) -> bool:
+        return self.budget_below(context, 0.2) and self.task_is(context, "contract_review")
+
+    def resolve(self, context: RoutingContext) -> RoutingTarget:
+        return RoutingTarget(profile=local, reason="legal_budget")
+
+env.llm_routing_profile = LLMRoutingProfile(
+    default_profile=primary,
+    allowed_profiles=(primary, local),
+    rules=(LegalLowBudgetRule(), BudgetBelowRule(threshold=0.15, profile=local)),
+)
+```
+
 **Per-step routing (agents):** ACP hosts with `llm_routing_profile` auto-wrap `StepLLMRouter` via `wrap_dynamic_llm_router()`.
 
 **Observability:** rule evaluations emit `LLMRoutingRuleDiagV1` (`intergrax.diag.engine.core_llm.routing_rule`) with `matched_rule_id`, `routing_reason`, `profile_id`.
 
-**Reference host:** `applications/lab_application` via `build_lab_environment_profile()` — predefined rules only.
+**Reference host (lab only):** `build_lab_environment_profile()` demonstrates the **predefined catalog** for CI (`check_llm_routing_rules.py`). Product hosts are not limited to builtins.
 
-**Enterprise checklist (M-LLM-X.10):**
+**Enterprise checklist (M-LLM-X.10 — Done · start-of-run + ACP):**
 
-- [x] 12+ predefined parametric rule classes
-- [x] `build_routing_context_from_runtime()` on default Nexus path
-- [x] Trace `LLMRoutingRuleDiagV1`
+- [x] 12+ predefined parametric rule classes (Tier-0 catalog)
+- [x] Custom `LLMRoutingRule` subclasses supported (Tier-3)
+- [x] `build_routing_context_from_runtime()` on materialize path
+- [x] Trace `LLMRoutingRuleDiagV1` (initial evaluation)
 - [x] Lab reference host manifest
-- [x] Acceptance E2E budget rule
-- [x] Global `DynamicLLMRouter` on ACP when profile set
+- [x] Acceptance: budget rule switches profile (resolver-level)
+- [x] `DynamicLLMRouter` on ACP when profile set
 - [x] CI gate `python scripts/check_llm_routing_rules.py`
+
+**Enterprise hardening (M-LLM-X.11 — Planned · mid-run Nexus):**
+
+- [ ] `RoutingEvaluatingLLMAdapter` — live re-eval on each LLM call
+- [ ] `refresh_llm_routing_context()` in Nexus step loop
+- [ ] All `resolve_llm_adapter()` call sites use context bridge
+- [ ] Per-evaluation trace + allowlist violation diag
+- [ ] True E2E run: budget threshold → model swap in flight
+- [ ] Harness host evaluating adapter parity
+- [ ] CI gate `check_llm_routing_context_wiring.py`
 
 **Testing:** unit-test `rule.matches(fake_context)` and `rule.resolve(...)` without Nexus. CI gate: `python scripts/check_llm_routing_rules.py`.
 

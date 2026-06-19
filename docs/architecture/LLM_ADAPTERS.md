@@ -21,7 +21,7 @@ Tier-0 **LLM adapter layer** is the Harness cognition entry point: one `LLMAdapt
 | Provider abstraction (19 slugs) | **L3** | L3+ (plugin story) | `LLMAdapterRegistry`, OpenAI-compat factory |
 | Model ID as free string | **L3** | L3 (maintain) | `LLMProfile.model: str` |
 | Model metadata / context window | **L3** | L3 (maintain) | `ModelCatalog` + resolver **Done** (LC-1) |
-| Multi-model routing / failover | **L3+** | **Enterprise E2E** (maintain) | `ModelRouter` + `FailoverLLMAdapter` + `LLMRoutingEvaluator` + X-10 closeout **Done** |
+| Multi-model routing / failover | **L4** (start-of-run + ACP) | **L5** (mid-run Nexus) | X-10 **Done**; mid-run gaps → **M-LLM-X.11** |
 | Token accounting consistency | **L3** | L3 (maintain) | Preflight + `from_adapter` Nexus adoption (LC-2/LC-2b) |
 | Developer experience | **L2** | **L3+** | [`USAGE.md`](../../intergrax/llm_adapters/USAGE.md) **Done**; dual API Nexus vs ACP — see §Developer surfaces |
 | Observability & governance | **L3** | L3 (maintain) | Prometheus, quota, replay bridge |
@@ -404,7 +404,7 @@ RoutingContext (snapshot from Nexus / budget meter / classifier)
 
 #### Built-in rules (same Protocol)
 
-**Done (X-9 + X-10):** full parametric catalog — constructor params replace former enum DSL; see [plan M-LLM-X.10](../plan/LLM_ADAPTERS.md#wave-m-llm-x-10--llm-routing-enterprise-closeout--predefined-rule-catalog).
+**Done (X-9 + X-10):** full parametric **platform catalog** (Tier-0) — constructor params replace former enum DSL. Tier-3 authors may always add **custom** `LLMRoutingRule` subclasses; see custom example below and [plan M-LLM-X.10](../plan/LLM_ADAPTERS.md#wave-m-llm-x-10--llm-routing-enterprise-closeout--predefined-rule-catalog).
 
 | Class | Status | Covers |
 |-------|--------|--------|
@@ -422,19 +422,38 @@ RoutingContext (snapshot from Nexus / budget meter / classifier)
 | `CompositeAllRule` / `CompositeAnyRule` | **Done** | AND / OR composition |
 | `AlwaysRule(profile\|hint)` | **Done** | explicit catch-all fallback |
 
-#### Enterprise routing (M-LLM-X.10 — Done)
+#### Enterprise routing (M-LLM-X.10 — Done · scope)
 
-Foundation upgraded to **enterprise end-to-end** on default host paths:
+**Delivered (2026-06-19):** predefined catalog, Protocol + custom rules, auto context on **materialize** path, reference lab host, CI gate, ACP `DynamicLLMRouter`, initial `LLMRoutingRuleDiagV1`.
 
-| Capability | Task ID | Status |
-|------------|---------|--------|
-| Auto `RoutingContext` from Nexus (budget, `task_class`, step, degrade) | M-LLM-X.10.2 | **Done** |
-| Trace `rule_id` + `routing_reason` on hot path | M-LLM-X.10.3 | **Done** |
-| Reference Tier-3 host with predefined rules only | M-LLM-X.10.4 | **Done** |
-| E2E Nexus acceptance (budget rule switches profile) | M-LLM-X.10.5 | **Done** |
-| Global `DynamicLLMRouter` wire on ACP hosts | M-LLM-X.10.6 | **Done** |
-| Full predefined rule catalog (12+ classes) | M-LLM-X.10.1 | **Done** |
-| AHI persistent `ProfileVersion` `llm_routing` + bandit store | AHI-MAINT-06 | **Done** |
+| Capability | Task ID | Status | Scope note |
+|------------|---------|--------|------------|
+| Predefined catalog (Tier-0) + custom rules (Tier-3) | M-LLM-X.10.1 | **Done** | Builtin + `LLMRoutingRule` Protocol |
+| Auto `RoutingContext` on materialize / ACP start | M-LLM-X.10.2 | **Done** | `runtime_config_bridge`, `acp_run` — not all call sites |
+| Trace `rule_id` + `routing_reason` | M-LLM-X.10.3 | **Done** | Once at `configure_llm_tracker` — not per re-eval |
+| Reference lab host (predefined demo; products may use custom) | M-LLM-X.10.4 | **Done** | CI gate lab-only |
+| Acceptance: budget rule switches profile | M-LLM-X.10.5 | **Done** | Resolver + materialize — not full Nexus run |
+| `DynamicLLMRouter` on ACP hosts | M-LLM-X.10.6 | **Done** | ACP only |
+| USAGE + architecture checklist | M-LLM-X.10.7 | **Done** | |
+| CI `check_llm_routing_rules.py` | M-LLM-X.10.8 | **Done** | |
+| AHI persistent bandit + ProfileVersion read | AHI-MAINT-06 | **Done** | Hint path; no full canary apply |
+
+**Maturity label:** **L4 enterprise-ready** on start-of-run + ACP paths. **Strict enterprise grade (mid-run Nexus)** requires **M-LLM-X.11**.
+
+#### Enterprise routing hardening (M-LLM-X.11 — Planned)
+
+Post X-10 review (2026-06-19) — close gaps for **live mid-run** routing on Nexus `llm_adapter` and full observability loop. See [plan M-LLM-X.11](../plan/LLM_ADAPTERS.md#wave-m-llm-x-11--routing-enterprise-hardening-mid-run-nexus).
+
+| Gap | Task ID |
+|-----|---------|
+| Nexus `llm_adapter` frozen after materialize — no mid-run re-eval | M-LLM-X.11.1 |
+| `llm_routing_context` not refreshed from budget / step / degrade in runtime loop | M-LLM-X.11.2 |
+| `resolve_llm_adapter()` without context on `nexus_factory`, wiring helpers | M-LLM-X.11.3 |
+| Trace only at tracker init; no allowlist-violation diag; no `trace_bridge` gate for `routing_rule` | M-LLM-X.11.4 |
+| E2E is resolver-level — no full run proof of budget-driven swap | M-LLM-X.11.5 |
+| `harness_host_runtime` lacks dynamic routing parity with ACP | M-LLM-X.11.6 |
+| Docs maturity re-score + USAGE mid-run section | M-LLM-X.11.7 |
+| CI gate: all resolver call sites use context bridge | M-LLM-X.11.8 |
 
 #### Custom rule example (Tier-3)
 
@@ -704,7 +723,8 @@ Do not merge counters without explicit bridge code.
 | LLM-AUDIT-14 | Capability flags not catalog-driven (`supports_vision`, tools, structured) | **P2** | M-LLM-X.1.7 | **Planned** |
 | LLM-AUDIT-15 | `engine_history_layer` token count inconsistent with preflight (chars/4) | **P0** | M-LLM-X.3.5 | **Done** — history already used adapter; preflight aligned in LC-2 |
 | LLM-AUDIT-16 | No unified LLM routing rule contract — static hints only; no custom author logic | **P1** | M-LLM-X.9 | **Done** — ADR-LLM-003 |
-| LLM-AUDIT-17 | Routing not enterprise end-to-end — manual context, no trace rule_id, no reference host | **P1** | M-LLM-X.10 | **Done** |
+| LLM-AUDIT-17 | Routing enterprise E2E — start-of-run + ACP (auto context, trace, reference host) | **P1** | M-LLM-X.10 | **Done** |
+| LLM-AUDIT-18 | Routing mid-run Nexus — live re-eval, context refresh, full trace loop, true E2E run | **P1** | M-LLM-X.11 | **Planned** |
 
 **Deferred (documented, no X-phase task):** tiktoken OpenAI-centric token estimate for non-OpenAI models — acceptable for budgeting until vendor-specific tokenizer plugins; note in `USAGE.md`.
 
@@ -758,7 +778,8 @@ Workflows: `unit-tests.yml`, `llm-adapters-guard.yml`, optional `llm-network-smo
 | Cost envelopes (V-COST.*) | UNIFIED_EXECUTION_RUNTIME |
 | AHI routing tuning production loop | ADAPTIVE_HARNESS_INTELLIGENCE + M-LLM-X.5 · **M-LLM-X.9** |
 | LLM routing rules (author + custom classes) | LLM_ADAPTERS M-LLM-X.9 · ADR-LLM-003 |
-| LLM routing enterprise closeout | M-LLM-X.10 · LLM-AUDIT-17 |
+| LLM routing enterprise closeout (start-of-run + ACP) | M-LLM-X.10 · LLM-AUDIT-17 |
+| LLM routing enterprise hardening (mid-run Nexus) | M-LLM-X.11 · LLM-AUDIT-18 |
 | `BudgetReactionProfile.degrade_model` unification | AGENT_CONTRACTS + M-LLM-X.9.6 |
 | AHI `ProfileVersion` llm_routing persistence | AHI-MAINT-06 |
 | Product HTTP API DTOs | Tier-3 applications |
