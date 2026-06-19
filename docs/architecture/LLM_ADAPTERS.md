@@ -21,7 +21,7 @@ Tier-0 **LLM adapter layer** is the Harness cognition entry point: one `LLMAdapt
 | Provider abstraction (19 slugs) | **L3** | L3+ (plugin story) | `LLMAdapterRegistry`, OpenAI-compat factory |
 | Model ID as free string | **L3** | L3 (maintain) | `LLMProfile.model: str` |
 | Model metadata / context window | **L3** | L3 (maintain) | `ModelCatalog` + resolver **Done** (LC-1) |
-| Multi-model routing / failover | **L3+** | **L3+** (maintain) | `ModelRouter` + `FailoverLLMAdapter` + `LLMRoutingEvaluator` (**Done** M-LLM-X.9) |
+| Multi-model routing / failover | **L3+** | **L3+** (maintain) | `ModelRouter` + `FailoverLLMAdapter` + `LLMRoutingEvaluator` (**Done** M-LLM-X.9); enterprise E2E → **M-LLM-X.10** |
 | Token accounting consistency | **L3** | L3 (maintain) | Preflight + `from_adapter` Nexus adoption (LC-2/LC-2b) |
 | Developer experience | **L2** | **L3+** | [`USAGE.md`](../../intergrax/llm_adapters/USAGE.md) **Done**; dual API Nexus vs ACP — see §Developer surfaces |
 | Observability & governance | **L3** | L3 (maintain) | Prometheus, quota, replay bridge |
@@ -404,12 +404,37 @@ RoutingContext (snapshot from Nexus / budget meter / classifier)
 
 #### Built-in rules (same Protocol)
 
-| Class | Replaces / covers |
-|-------|-------------------|
-| `BudgetBelowRule(threshold, profile)` | Low-budget → specific provider/model |
-| `TaskClassRule(classes, target)` | Task-class-based selection |
-| `TokenThresholdRule(n, hint)` | Token ceiling → degrade hint |
-| `BudgetExceededDegradeRule()` | Unifies `BudgetReactionProfile.degrade_model` (M-LLM-X.9.5) |
+**Done (X-9):** minimal set. **Planned (X-10.1):** full parametric catalog — constructor params replace former enum DSL; see [plan M-LLM-X.10](../plan/LLM_ADAPTERS.md#wave-m-llm-x-10--llm-routing-enterprise-closeout--predefined-rule-catalog).
+
+| Class | Status | Covers |
+|-------|--------|--------|
+| `BudgetBelowRule(threshold, profile\|hint)` | **Done** | `budget_remaining_ratio < threshold` |
+| `BudgetAboveRule(threshold, profile\|hint)` | Planned | `budget_remaining_ratio > threshold` |
+| `BudgetExceededDegradeRule()` | **Done** | `budget_degrade_active` → `CHEAPEST` |
+| `TaskClassInRule(classes, profile\|hint)` | **Done** (as `TaskClassRule`) | `task_class in classes` |
+| `TaskClassNotInRule(classes, …)` | Planned | negated task class |
+| `TokenUsedAboveRule(threshold, hint)` | **Done** (as `TokenThresholdRule`) | `tokens_used > threshold` |
+| `TokenUsedBelowRule(threshold, …)` | Planned | low token usage |
+| `StepIndexAtLeastRule` / `StepIndexBelowRule` | Planned | per-step routing |
+| `AgentIdInRule` / `TenantIdInRule` | Planned | identity-based routing |
+| `ModelHintPresentRule` | Planned | honour agent `model_hint` |
+| `PolicyHintRule(hint)` | Planned | force `RoutingHint` |
+| `CompositeAllRule` / `CompositeAnyRule` | Planned | AND / OR composition |
+| `AlwaysRule(profile\|hint)` | Planned | explicit catch-all fallback |
+
+#### Enterprise routing backlog (M-LLM-X.10 — Planned)
+
+Post X-9 review: foundation is **L3+**; declare **enterprise end-to-end** only after X-10.
+
+| Gap | Task ID |
+|-----|---------|
+| Auto `RoutingContext` from Nexus (budget, `task_class`, step, degrade) | M-LLM-X.10.2 |
+| Trace `rule_id` + `routing_reason` on hot path | M-LLM-X.10.3 |
+| Reference Tier-3 host with predefined rules only | M-LLM-X.10.4 |
+| E2E Nexus acceptance (budget rule switches profile) | M-LLM-X.10.5 |
+| Global `DynamicLLMRouter` wire on ACP hosts | M-LLM-X.10.6 |
+| Full predefined rule catalog (12+ classes) | M-LLM-X.10.1 |
+| AHI persistent `ProfileVersion` `llm_routing` | AHI-MAINT-06 |
 
 #### Custom rule example (Tier-3)
 
@@ -679,6 +704,7 @@ Do not merge counters without explicit bridge code.
 | LLM-AUDIT-14 | Capability flags not catalog-driven (`supports_vision`, tools, structured) | **P2** | M-LLM-X.1.7 | **Planned** |
 | LLM-AUDIT-15 | `engine_history_layer` token count inconsistent with preflight (chars/4) | **P0** | M-LLM-X.3.5 | **Done** — history already used adapter; preflight aligned in LC-2 |
 | LLM-AUDIT-16 | No unified LLM routing rule contract — static hints only; no custom author logic | **P1** | M-LLM-X.9 | **Done** — ADR-LLM-003 |
+| LLM-AUDIT-17 | Routing not enterprise end-to-end — manual context, no trace rule_id, no reference host | **P1** | M-LLM-X.10 | **Planned** |
 
 **Deferred (documented, no X-phase task):** tiktoken OpenAI-centric token estimate for non-OpenAI models — acceptable for budgeting until vendor-specific tokenizer plugins; note in `USAGE.md`.
 
@@ -732,7 +758,9 @@ Workflows: `unit-tests.yml`, `llm-adapters-guard.yml`, optional `llm-network-smo
 | Cost envelopes (V-COST.*) | UNIFIED_EXECUTION_RUNTIME |
 | AHI routing tuning production loop | ADAPTIVE_HARNESS_INTELLIGENCE + M-LLM-X.5 · **M-LLM-X.9** |
 | LLM routing rules (author + custom classes) | LLM_ADAPTERS M-LLM-X.9 · ADR-LLM-003 |
-| `BudgetReactionProfile.degrade_model` unification | AGENT_CONTRACTS + M-LLM-X.9.5 |
+| LLM routing enterprise closeout | M-LLM-X.10 · LLM-AUDIT-17 |
+| `BudgetReactionProfile.degrade_model` unification | AGENT_CONTRACTS + M-LLM-X.9.6 |
+| AHI `ProfileVersion` llm_routing persistence | AHI-MAINT-06 |
 | Product HTTP API DTOs | Tier-3 applications |
 
 **Out of scope:** per-business-agent adapter code in `llm_adapters/`, YOLO/ONNX engines, Phase K business agents.

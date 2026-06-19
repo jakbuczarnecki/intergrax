@@ -120,8 +120,9 @@
 | 7 | X-7 | M-LLM-X.7.1–7.5 | P2 | **Partial** (7.1, 7.5 Done; 7.2–7.4 Planned) |
 | 8 | X-8 | M-LLM-X.8.1–8.3 | Medium | **Planned** |
 | 9 | X-9 | M-LLM-X.9.1–9.9 | **P1** | **Done** (2026-06-19) — ADR-LLM-003 · routing rule Protocol |
+| 10 | X-10 | M-LLM-X.10.1–10.8 | **P1** | **Planned** — enterprise closeout + predefined rule catalog |
 
-**Closeout gate:** All M-LLM-X.* Done + architecture audit register all **Done** + `tests/unit/llm_adapters/` green + new CI scripts green.
+**Closeout gate:** All M-LLM-X.* Done + architecture audit register all **Done** + `tests/unit/llm_adapters/` green + new CI scripts green. **X-10** required before declaring routing **enterprise end-to-end**.
 
 ---
 
@@ -140,9 +141,10 @@ Wave M-LLM-X-6 (plugins):      M-LLM-X.6.1 → 6.2 → 6.3
 Wave M-LLM-X-7 (DX):           M-LLM-X.7.1 → 7.2 → 7.3 → 7.4 → 7.5
 Wave M-LLM-X-8 (closeout):     M-LLM-X.8.1 → 8.2 → 8.3
 Wave M-LLM-X-9 (routing rules): M-LLM-X.9.1 → 9.2 → 9.2b → 9.3 → 9.4 → 9.5 → 9.6 → 9.7 → 9.8 → 9.9
+Wave M-LLM-X-10 (routing enterprise): M-LLM-X.10.1 → 10.2 → 10.3 → 10.4 → 10.5 → 10.6 → 10.7 → 10.8
 ```
 
-**Prerequisites:** M-LLM + M-LLM-R **Done**; CONTEXT_ENGINE preflight paths stable. **X-9** depends on X-4.2 (failover) and X-5.1 (ModelRouter hints) — both **Done**.
+**Prerequisites:** M-LLM + M-LLM-R **Done**; CONTEXT_ENGINE preflight paths stable. **X-9** depends on X-4.2 (failover) and X-5.1 (ModelRouter hints) — both **Done**. **X-10** depends on **X-9 Done**.
 
 **Parallelism:** X-2 (OpenRouter fetch) may run after X-1.3; X-5 depends on X-4.2; X-7 may start after X-1.1 (docs partial).
 
@@ -272,7 +274,59 @@ Wave M-LLM-X-9 (routing rules): M-LLM-X.9.1 → 9.2 → 9.2b → 9.3 → 9.4 →
 
 **Suggested PR order (X-9):** 9.1 → 9.2 → 9.2b → 9.3 → 9.4 → 9.5 → 9.6 → 9.7 → 9.8 → 9.9.
 
-**Cross-domain:** AHI-MAINT-05 (`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`) — bandit arms → `ProfileVersion` `llm_routing`.
+**Cross-domain:** AHI-MAINT-05 (`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`) — bandit arms → `ProfileVersion` `llm_routing`. **X-10** adds **AHI-MAINT-06** (persistent profile versions).
+
+---
+
+#### Wave M-LLM-X-10 — LLM routing enterprise closeout + predefined rule catalog
+
+**Source:** Post X-9 enterprise readiness review (2026-06-19) — foundation L3+ Done; end-to-end Nexus wiring and ops catalog **Planned**.  
+**ADR:** [ADR-LLM-003](../adr/entries/2026-06-19/ADR-LLM-003.md) — no new ADR unless `ProfileVersion` contract changes (**AHI-MAINT-06**).  
+**Goal:** Parametric **predefined rule classes** (constructor params replace former enum DSL) + automatic runtime context + observability + reference host + E2E proof.
+
+##### Predefined rule catalog (M-LLM-X.10.1)
+
+Ship **12+** ready-made `LLMRoutingRule` implementations in `intergrax/llm_adapters/routing/builtin_rules.py` — each parametric via `__init__`, documented in USAGE. Authors compose manifests without custom subclasses for common cases.
+
+| Class | Constructor params (examples) | `matches` semantics |
+|-------|------------------------------|---------------------|
+| `BudgetBelowRule` | `threshold: float`, `profile` or `hint` | `budget_remaining_ratio < threshold` — **Done** (X-9) |
+| `BudgetAboveRule` | `threshold: float`, `profile` or `hint` | `budget_remaining_ratio > threshold` |
+| `BudgetExceededDegradeRule` | — | `budget_degrade_active` → `CHEAPEST` — **Done** (X-9) |
+| `TaskClassInRule` | `classes: tuple[str,…]`, `profile` or `hint` | `task_class in classes` — alias / extend `TaskClassRule` |
+| `TaskClassNotInRule` | `classes`, `profile` or `hint` | `task_class not in classes` |
+| `TokenUsedAboveRule` | `threshold: int`, `hint` | `tokens_used > threshold` — alias / extend `TokenThresholdRule` |
+| `TokenUsedBelowRule` | `threshold: int`, `profile` or `hint` | `tokens_used < threshold` |
+| `StepIndexAtLeastRule` | `min_step: int`, `profile` or `hint` | `step_index >= min_step` |
+| `StepIndexBelowRule` | `max_step: int`, `profile` or `hint` | `step_index < max_step` |
+| `AgentIdInRule` | `agent_ids: tuple[str,…]`, `profile` or `hint` | `agent_id in agent_ids` |
+| `TenantIdInRule` | `tenant_ids: tuple[str,…]`, `profile` or `hint` | `tenant_id in tenant_ids` |
+| `ModelHintPresentRule` | `profile` or `hint` | `model_hint` is non-empty |
+| `PolicyHintRule` | `hint: RoutingHint` | always `matches` → resolve hint (use with low priority) |
+| `CompositeAllRule` | `rules: tuple[LLMRoutingRule,…]`, `profile` or `hint` | all nested `matches()` true |
+| `CompositeAnyRule` | `rules: tuple[LLMRoutingRule,…]`, `profile` or `hint` | any nested `matches()` true |
+| `AlwaysRule` | `profile` or `hint`, `priority=-100` | unconditional fallback |
+
+Export `BUILTIN_ROUTING_RULES: tuple[type[LLMRoutingRuleBase], ...]` + `builtin_rule_catalog.md` table in USAGE.
+
+##### Enterprise closeout tasks
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-X.10.1 | **Predefined rule catalog** — 12+ parametric classes (table above); rename/alias X-9 rules where needed | **Planned** | **Critical** | `routing/builtin_rules.py`, `routing/__init__.py` | Parametrized unit test per class |
+| M-LLM-X.10.2 | **`build_routing_context_from_runtime()`** — auto-fill `task_class`, `budget_remaining_ratio`, `tokens_used`, `step_index`, `budget_degrade_active`, `tenant_id`, `agent_id` from Nexus / kernel / budget meter | **Planned** | **Critical** | `llm_resolver.py`, `runtime_config_bridge.py`, `nexus_factory.py` | No manual `routing_context=` required on default host path |
+| M-LLM-X.10.3 | **Routing observability** — emit `matched_rule_id`, `routing_reason`, selected `profile_id` on trace (`LLMRoutingAttemptDiagV1` extend or `LLMRoutingRuleDiagV1`) | **Planned** | High | `llm_resolver.py`, `observability/` | Gate test maps schema |
+| M-LLM-X.10.4 | **Reference host** — `lab_application` (or product reference) manifest with `LLMRoutingProfile` using **predefined classes only** | **Planned** | High | `applications/lab_application/` | `check_llm_routing_rules.py` scans host |
+| M-LLM-X.10.5 | **E2E acceptance** — Nexus run: `BudgetBelowRule` switches profile when budget crosses threshold | **Planned** | High | `tests/acceptance/llm_routing/` | `-m gate` green |
+| M-LLM-X.10.6 | **Global `DynamicLLMRouter` wire** — ACP / `harness_host_runtime` auto-wrap when `llm_routing_profile` set | **Planned** | Medium | `acp_run.py`, `harness_host_runtime.py` | Per-step swap in agent run test |
+| M-LLM-X.10.7 | **USAGE + architecture** — predefined rules matrix, enterprise readiness checklist, composition examples (`CompositeAllRule`) | **Planned** | Medium | `USAGE.md`, architecture §Routing rules | Linked from AGENT_CREATION_GUIDE |
+| M-LLM-X.10.8 | **CI gate extend** — `check_llm_routing_rules.py` validates catalog exports + reference host allowlist | **Planned** | Medium | `scripts/` | Registered in `check_audit_ideal_gates.py` |
+
+**Suggested PR order (X-10):** 10.1 → 10.2 → 10.3 → 10.4 → 10.5 → 10.6 → 10.7 → 10.8.
+
+**Cross-domain:** **AHI-MAINT-06** — `ProfileVersionStore` `artifact_type=llm_routing` + persistent bandit (not `InMemoryBanditStateStore` only).
+
+**Note on X-9.5:** X-9 delivered evaluator + optional `routing_context` parameter; **X-10.2** closes the enterprise gap (automatic context on all default `resolve_llm_adapter()` callers).
 
 ---
 
@@ -290,10 +344,11 @@ PR-8:  M-LLM-X.5.4 → 5.5 (ACP bridge)
 PR-9:  M-LLM-X.2.* (OpenRouter metadata — optional network)
 PR-10: M-LLM-X.6.* + 7.* (plugins + DX)
 PR-11: M-LLM-X.9.* (routing rule Protocol — ADR-LLM-003)
-PR-12: M-LLM-X.8.* closeout (after X-9)
+PR-12: M-LLM-X.10.* (routing enterprise + predefined catalog)
+PR-13: M-LLM-X.8.* closeout (after X-10)
 ```
 
-**Estimated effort:** 12 PRs · ~5–7 weeks harness maintenance cadence.
+**Estimated effort:** 13 PRs · ~6–8 weeks harness maintenance cadence.
 
 ---
 
@@ -317,6 +372,7 @@ PR-12: M-LLM-X.8.* closeout (after X-9)
 | LLM-AUDIT-14 — Capability flags not catalog-driven | M-LLM-X.1.7 |
 | LLM-AUDIT-15 — History layer token count inconsistent with preflight | M-LLM-X.3.5 |
 | LLM-AUDIT-16 — No unified routing rule contract (idea audit 2026-06-19) | M-LLM-X.9.* |
+| LLM-AUDIT-17 — Routing enterprise end-to-end (auto context, trace, reference host, E2E) | M-LLM-X.10.* |
 | tiktoken OpenAI-centric estimate (all providers) | **Deferred** — document limitation in USAGE; vendor tokenizer plugins post-X |
 | Single `RuntimeConfig.llm_adapter` per run (multi-model) | M-LLM-X.4–5 (profile chain + routing); no multi-adapter pool in X |
 | Distributed Redis rate limit host wiring | **Ops** — document in USAGE X.7.1; not LLM-AUDIT tier-0 code |
@@ -684,6 +740,31 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 **Suggested PR order:** 9.1 → 9.2 → 9.2b → 9.3 → 9.4 → 9.5 → 9.6 → 9.7 → 9.8 → 9.9.
 
 **Cross-domain:** AHI-MAINT-05 · `TIER3_APPLICATION_ENVIRONMENT` · `AGENT_CONTRACTS_AND_ASSEMBLY` (degrade_model).
+
+---
+
+### Phase M-LLM-X-10 — LLM routing enterprise closeout (2026-06-19)
+
+**Source:** Post X-9 enterprise readiness review — routing foundation Done; operational closeout Planned.  
+**Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) § LLM routing rules · § Enterprise routing backlog  
+**ADR:** ADR-LLM-003 (unchanged); **AHI-MAINT-06** may require ADR addendum if `ProfileVersion` schema changes.  
+**Goal:** Predefined parametric rule catalog + automatic `RoutingContext` + trace + reference host + E2E.  
+**Phase status:** **Planned** — 0/8 Done · see [Wave M-LLM-X-10](#wave-m-llm-x-10--llm-routing-enterprise-closeout--predefined-rule-catalog)
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **M-LLM-X.10.1** | Catalog | P1 | **Planned** | 12+ predefined parametric rule classes | Unit test per class |
+| 2 | **M-LLM-X.10.2** | Wire | P1 | **Planned** | `build_routing_context_from_runtime()` on default path | Nexus factory bridge |
+| 3 | **M-LLM-X.10.3** | Obs | P1 | **Planned** | Trace `rule_id` + `routing_reason` | Schema gate |
+| 4 | **M-LLM-X.10.4** | Tier-3 | P1 | **Planned** | Reference host manifest (predefined rules only) | CI gate scan |
+| 5 | **M-LLM-X.10.5** | E2E | P1 | **Planned** | Acceptance: budget rule switches model | `tests/acceptance/llm_routing/` |
+| 6 | **M-LLM-X.10.6** | Wire | P2 | **Planned** | Global `DynamicLLMRouter` on ACP hosts | Agent run test |
+| 7 | **M-LLM-X.10.7** | Docs | P2 | **Planned** | USAGE predefined matrix + enterprise checklist | Architecture sync |
+| 8 | **M-LLM-X.10.8** | CI | P2 | **Planned** | Extend `check_llm_routing_rules.py` | Umbrella gate |
+
+**Suggested PR order:** 10.1 → 10.2 → 10.3 → 10.4 → 10.5 → 10.6 → 10.7 → 10.8.
+
+**Cross-domain:** **AHI-MAINT-06** (`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`).
 
 ---
 
