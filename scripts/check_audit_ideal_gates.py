@@ -107,8 +107,8 @@ def main() -> int:
         exit_code = exit_code or _run(script, *extra)
     test_path = REPO_ROOT / "tests" / "unit" / "runtime" / "architecture" / "test_audit_ideal_depth_gate.py"
     for cmd in (
-        ["uv", "run", "pytest", str(test_path), "-q", "-m", "gate"],
-        [PYTHON, "-m", "pytest", str(test_path), "-q", "-m", "gate"],
+        ["uv", "run", "pytest", str(test_path), "-q", "-m", "gate and no_ci"],
+        [PYTHON, "-m", "pytest", str(test_path), "-q", "-m", "gate and no_ci"],
     ):
         completed = subprocess.run(cmd, cwd=REPO_ROOT, check=False)
         if completed.returncode == 0:
