@@ -1890,7 +1890,7 @@ TERMINAL
 | **Transit** | TLS on HTTP/MCP hosts | Tier-3 deployment / reverse proxy |
 | **Secrets at rest** | `IntegrationProfile.secrets_store` slug (Vault, Doppler, …) | S1 integration catalog |
 | **RESTRICTED payload gate** | `EncryptionEnforcementMiddleware` + `require_secrets_store_for_encryption` | S2/S3 profile on strict hosts — **deny** when backend missing |
-| **RESTRICTED payload transform** | Encrypt via `secrets_store` integration adapter before persist/tool return | S1 integration — **Planned** SEC-EVOL-4 |
+| **RESTRICTED payload transform** | Encrypt via `secrets_store` integration adapter before persist/tool return | S1 integration — **Done** SEC-EVOL-4 / SEC-ENT-1 |
 | **Field-level KMS** | Not in harness — use integration adapter in Tier-3 product | Out of SEC-PLANES scope |
 
 No duplicate KMS SDK in Tier-0 — agents consume resolved secrets via platform integrations only.
@@ -1908,9 +1908,26 @@ Phase SEC-PLANES (2026-06-19) delivers a **harness-grade** Security & Trust Plan
 | **Resilience** | Plugins run synchronously on hook path | Per-plugin inspection budget / timeout guard to limit DoS on hot paths |
 | **Multi-tenant** | `TenantSecurityMiddleware` on native path | Author checklist: defense plugins MUST respect tenant scope from `HookContext` |
 
-**Canonical plan register:** [Phase SEC-PLANES-EVOL](../plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes-evol--enterprise-hardening-active) · queue [§6.1bc](../plan/UNIFIED_EXECUTION_RUNTIME.md#61bc-harness-implementation-queue--sec-planes-evol-enterprise-hardening--active).
+**Canonical plan register:** [Phase SEC-PLANES-EVOL](../plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes-evol--enterprise-hardening-closed) · [Phase SEC-ENT](../plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-ent--enterprise-production-closed).
 
 **Explicitly out of scope:** harness-native blockchain; SOC2/ISO certification evidence; Tier-0 KMS SDK; duplicate PolicyEngine.
+
+### 42.45.11 Enterprise production readiness
+
+Phase SEC-ENT (2026-06-19) closes harness-scope **enterprise production** gaps identified after SEC-PLANES-EVOL.
+
+| Capability | Mechanism | Status |
+|------------|-----------|--------|
+| Live secrets-store encryptor | `resolve_restricted_payload_encryptor(env)` → `SecretsStorePayloadEncryptor` | **Done** SEC-ENT-1 |
+| Harness envelope fallback | `HarnessEnvelopeEncryptor` when adapter unavailable | **Done** SEC-EVOL-4 |
+| Typed spine payloads | `SecurityDefenseBlockedPayloadV1`, `SecurityEncryptionDeniedPayloadV1` | **Done** SEC-ENT-2 |
+| Tenant-scope defense guard | `PluginSecurityDefenseMiddleware` blocks cross-tenant before inspect | **Done** SEC-ENT-4 |
+| Ops counters | `wire_security_spine_subscriber()` on host wiring | **Done** SEC-ENT-5 |
+| CI spine audit | `check_harness_security_spine_signals.py` | **Done** SEC-ENT-3 |
+
+**SIEM / ops subscribe path:** subscribe to `RuntimeEventBus` with `kind_prefix="platform.security."` or consume persisted `DOMAIN_SIGNAL` events with `ops_hint=ops:alert`. Counters available via `SecuritySpineCounters` for in-process dashboards.
+
+**Remaining product-tier work (out of harness):** field-level KMS in Tier-3 products, SOC2 evidence packs, vendor SIEM dashboard templates.
 
 **Authoring (wire-time closeout):** [`guides/AGENT_CREATION_GUIDE.md` Appendix S](../guides/AGENT_CREATION_GUIDE.md).
 

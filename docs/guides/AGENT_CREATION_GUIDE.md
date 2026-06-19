@@ -1324,8 +1324,9 @@ Wiring: `intergrax/applications/_shared/application_security_wiring.py`. Gate te
 | Defense plugin tenant scope | Custom S2 plugins MUST read `tenant_id` from `HookContext.runtime_state` — never bypass `PolicyEngine` |
 | Observability | Subscribe to `platform.security.defense_blocked` and `platform.security.encryption_denied` on the runtime bus |
 | RESTRICTED payloads | With `secrets_store` configured, middleware encrypts inline secrets before memory/tool paths |
+| SIEM / ops | Use `kind_prefix="platform.security."` bus subscription; in-process counters via `SecuritySpineCounters` |
 
-Canon: [UAEP §42.45](architecture/UNIFIED_EXECUTION_RUNTIME.md#4245-security-and-data-governance) · [§42.45.10](architecture/UNIFIED_EXECUTION_RUNTIME.md#424510-enterprise-hardening--maturity-model-and-backlog) · ADR: [ADR-SEC-001](../adr/entries/2026-06-19/ADR-SEC-001.md).
+Canon: [UAEP §42.45](architecture/UNIFIED_EXECUTION_RUNTIME.md#4245-security-and-data-governance) · [§42.45.11](architecture/UNIFIED_EXECUTION_RUNTIME.md#424511-enterprise-production-readiness) · ADR: [ADR-SEC-001](../adr/entries/2026-06-19/ADR-SEC-001.md).
 
 ### H.4 Policy bundle — operator read order
 

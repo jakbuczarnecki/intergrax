@@ -187,6 +187,7 @@ jobs:
           && uv run python scripts/check_harness_security_promote_gate.py
           && uv run python scripts/check_harness_security_defense_plugins.py
           && uv run python scripts/check_harness_encryption_policy.py
+          && uv run python scripts/check_harness_security_spine_signals.py
           && uv run python scripts/check_harness_cost_wiring.py
           && uv run python scripts/check_harness_evaluation_wiring.py
           && uv run intergrax doctor --ci

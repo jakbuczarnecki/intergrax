@@ -200,7 +200,7 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 | 17–20 Prompt / assembly / registry / capability graph | `AGENT_CONTRACTS_AND_ASSEMBLY` |
 | 21 Observability | `OBSERVABILITY` |
 | 22 Reliability / HITL | `RELIABILITY_FAILURE_AND_HITL` + UAEP §42.10 |
-| 23–24 Security / cost | `UNIFIED_EXECUTION_RUNTIME` §42.45 (Security & Trust Planes S1/S2/S3) · §42.45.10 · §42.46 · [Phase SEC-PLANES](plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes--security--trust-planes-closed) · [Phase SEC-PLANES-EVOL](plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes-evol--enterprise-hardening-closed) |
+| 23–24 Security / cost | `UNIFIED_EXECUTION_RUNTIME` §42.45–§42.45.11 · §42.46 · [Phase SEC-PLANES](plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes--security--trust-planes-closed) · [Phase SEC-ENT](plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-ent--enterprise-production-closed) |
 | 25–27 Eval / CI / DX | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` + `CRITIC_VERIFICATION` |
 | 28 Tier-3 hosts | `TIER3_APPLICATION_ENVIRONMENT` |
 | 29 Modality | `MODALITY` |

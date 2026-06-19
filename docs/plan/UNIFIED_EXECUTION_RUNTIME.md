@@ -925,6 +925,63 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 
 ---
 
+### 6.1bd Harness implementation queue — SEC-ENT (enterprise production) — **Closed**
+
+**Source:** Post-EVOL enterprise audit (2026-06-19) · canon [§42.45.11](../architecture/UNIFIED_EXECUTION_RUNTIME.md#424511-enterprise-production-readiness)  
+**Priority ladder:** **Band 2bd** (§4.0) — after SEC-PLANES-EVOL; **one ID per PR**  
+**Prerequisites:** Phase SEC-PLANES-EVOL **Done** (7/7)  
+**Status:** **Done** (2026-06-19) — **6/6**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **SEC-ENT-1** | Code | P1 | **Done** | Live `SecretsStore` encryptor resolution at host wiring | `resolve_restricted_payload_encryptor(env)` prefers integration adapter |
+| 2 | **SEC-ENT-2** | Code | P2 | **Done** | Typed `platform.security.*` payload schemas + registry | `register_security_payload_schemas()` at bootstrap |
+| 3 | **SEC-ENT-3** | CI | P2 | **Done** | `check_harness_security_spine_signals.py` | Platform kind + event_kind registry smoke |
+| 4 | **SEC-ENT-4** | Code | P1 | **Done** | Defense plugin tenant-scope guard | Cross-tenant `resource_tenant_id` blocks before inspect |
+| 5 | **SEC-ENT-5** | Code | P2 | **Done** | Security spine subscriber / ops counters | `wire_security_spine_subscriber()` on host wiring |
+| 6 | **SEC-ENT-DOC-1** | Docs | P2 | **Done** | §42.45.11 production matrix + ops runbook index | Appendix H SIEM subscribe note |
+
+**Suggested PR order:** SEC-ENT-1 → SEC-ENT-4 → SEC-ENT-3 → SEC-ENT-2 → SEC-ENT-5 → SEC-ENT-DOC-1.
+
+**Phase complete when:** 6/6 **Done**; §42.45.11 maturity rows **Done**; gate green.
+
+**Explicitly excluded:** SOC2/ISO certification; harness-native KMS SDK; Tier-3 product SIEM dashboards — [§6.3a](#63a-business-backlog-register-consolidated).
+
+---
+
+## Phase SEC-ENT — Enterprise production (**Closed**)
+
+**Status:** **Done** (2026-06-19) — **6/6 Done** (SEC-ENT)  
+**Architecture:** [§42.45.11](../architecture/UNIFIED_EXECUTION_RUNTIME.md#424511-enterprise-production-readiness)  
+**Queue:** [§6.1bd](#61bd-harness-implementation-queue--sec-ent-enterprise-production--closed)  
+**Execution order:** [§6.2bq](#62bq-phase-sec-ent-execution-order-band-2bd--closed)
+
+**Goal:** Close remaining harness-scope enterprise gaps — live secrets-store encryptor wiring, typed spine payloads, tenant-scope defense guard, ops counters, CI spine audit.
+
+### SEC-ENT — Master register
+
+| ID | Area | Deliverable | Priority | Status | Modules / docs | Acceptance |
+|----|------|-------------|----------|--------|----------------|------------|
+| SEC-ENT-1 | ENC | Live `SecretsStore` encryptor at host wiring | P1 | **Done** | `security_runtime_bridge.py`, `application_security_wiring.py` | Production hosts use adapter when resolvable |
+| SEC-ENT-2 | OBS | Typed security spine payloads | P2 | **Done** | `runtime/security/payloads.py`, `security_bootstrap.py` | event_kind registry bound to schema_id |
+| SEC-ENT-3 | CI | `check_harness_security_spine_signals.py` | P2 | **Done** | `scripts/`, CI workflow | Platform catalog + registry green |
+| SEC-ENT-4 | DEF | Tenant-scope guard on defense plugins | P1 | **Done** | `defense_plugin.py` | Cross-tenant block + spine signal |
+| SEC-ENT-5 | OBS | Security spine ops counters | P2 | **Done** | `security_observability.py` | Subscriber on `platform.security.*` |
+| SEC-ENT-DOC-1 | DOC | §42.45.11 + Appendix H SIEM index | P2 | **Done** | architecture + guides | Ops subscribe path documented |
+
+### 6.2bq Phase SEC-ENT execution order (Band 2bd — **Closed**)
+
+```text
+1. SEC-ENT-1   (Done) — live SecretsStore encryptor
+2. SEC-ENT-4   (Done) — tenant-scope defense guard
+3. SEC-ENT-3   (Done) — spine signals CI gate
+4. SEC-ENT-2   (Done) — typed payloads
+5. SEC-ENT-5   (Done) — ops counters subscriber
+6. SEC-ENT-DOC-1 (Done) — production runbook index
+```
+
+---
+
 **Status:** **Done** (2026-06-02) — **4/4** deliverables Done (COST-DOC.1 + COST-1–3)
 
 **Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §24; V-COST **Done**; author map: `guides/AGENT_CREATION_GUIDE.md` **Appendix T**.
