@@ -1582,15 +1582,15 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 ### 6.1aw Harness implementation queue — Orchestration audit maintenance (2026-06-19)
 
-**Source:** Interactive layer audit (2026-06-19) — `ORCHESTRATION` layers 3, 9 · [`../audit_results/2026-06-19/ORCHESTRATION.md`](../audit_results/2026-06-19/ORCHESTRATION.md) (pending) · prior: [`../audit_results/2026-06-18/ORCHESTRATION.md`](../audit_results/2026-06-18/ORCHESTRATION.md)  
+**Source:** Interactive layer audit (2026-06-19) — `ORCHESTRATION` layers 3, 9 · [`../audit_results/2026-06-19/ORCHESTRATION.md`](../audit_results/2026-06-19/ORCHESTRATION.md) · prior: [`../audit_results/2026-06-18/ORCHESTRATION.md`](../audit_results/2026-06-18/ORCHESTRATION.md)  
 **Priority ladder:** **Band 1** (§6.1) — doc sync + audit artifact; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **ORCH-MAINT-DOC-01** | Docs | P3 | **Planned** | Sync architecture `ORCHESTRATION.md` §59.2 async-queue note + §59.4 `run_async` row with ORCH-MAINT-01/04 truth (lab scaffold `INCLUDE_QUEUE_WORKER=true`; `async_task_index_resolver` profile-backed index) | No stale “not scaffold-default” / lab-only in-memory wording; product hosts remain opt-in |
-| 2 | **ORCH-MAINT-AUDIT-01** | Docs | P3 | **Planned** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `ORCHESTRATION.md` + `progress.json` updated; L3 verdict layers 3, 9 |
+| 1 | **ORCH-MAINT-DOC-01** | Docs | P3 | **Done** | Sync architecture `ORCHESTRATION.md` §59.2 async-queue note + §59.4 `run_async` row with ORCH-MAINT-01/04 truth (lab scaffold `INCLUDE_QUEUE_WORKER=true`; `async_task_index_resolver` profile-backed index) | No stale “not scaffold-default” / lab-only in-memory wording; product hosts remain opt-in |
+| 2 | **ORCH-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `ORCHESTRATION.md` + `progress.json` updated; L3 verdict layers 3, 9 |
 
-**Suggested PR order:** ORCH-MAINT-AUDIT-01 → ORCH-MAINT-DOC-01.
+**Suggested PR order:** none — §6.1aw queue closed (2026-06-19).
 
 **Explicitly excluded:** CFG-14 full LKW hybrid E2E (product §6.3); FLOW-8 product host; active-active L0; new queue transport — [§6.3](../plan/PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only).
 
