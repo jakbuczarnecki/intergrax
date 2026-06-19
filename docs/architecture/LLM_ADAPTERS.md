@@ -21,7 +21,7 @@ Tier-0 **LLM adapter layer** is the Harness cognition entry point: one `LLMAdapt
 | Provider abstraction (19 slugs) | **L3** | L3+ (plugin story) | `LLMAdapterRegistry`, OpenAI-compat factory |
 | Model ID as free string | **L3** | L3 (maintain) | `LLMProfile.model: str` |
 | Model metadata / context window | **L3** | L3 (maintain) | `ModelCatalog` + resolver **Done** (LC-1) |
-| Multi-model routing / failover | **L5** (mid-run Nexus) | **L5** (maintain) | X-10 + X-11 **Done** |
+| Multi-model routing / failover | **L4+** (contract + UAEP/ACP) | **L5** (strict mid-run Nexus) | X-10 + X-11 **Done**; post-audit gaps → **M-LLM-X.12** · LLM-AUDIT-19 |
 | Token accounting consistency | **L3** | L3 (maintain) | Preflight + `from_adapter` Nexus adoption (LC-2/LC-2b) |
 | Developer experience | **L2** | **L3+** | [`USAGE.md`](../../intergrax/llm_adapters/USAGE.md) **Done**; dual API Nexus vs ACP — see §Developer surfaces |
 | Observability & governance | **L3** | L3 (maintain) | Prometheus, quota, replay bridge |
@@ -430,7 +430,7 @@ RoutingContext (snapshot from Nexus / budget meter / classifier)
 |------------|---------|--------|------------|
 | Predefined catalog (Tier-0) + custom rules (Tier-3) | M-LLM-X.10.1 | **Done** | Builtin + `LLMRoutingRule` Protocol |
 | Auto `RoutingContext` on materialize / ACP start | M-LLM-X.10.2 | **Done** | `runtime_config_bridge`, `acp_run` — not all call sites |
-| Trace `rule_id` + `routing_reason` | M-LLM-X.10.3 | **Done** | Once at `configure_llm_tracker` — not per re-eval |
+| Trace `rule_id` + `routing_reason` | M-LLM-X.10.3 | **Done** | Start-of-run; per-eval on UAEP path via X-11.4 — ACP + full payload → **X-12** |
 | Reference lab host (predefined demo; products may use custom) | M-LLM-X.10.4 | **Done** | CI gate lab-only |
 | Acceptance: budget rule switches profile | M-LLM-X.10.5 | **Done** | Resolver + materialize — not full Nexus run |
 | `DynamicLLMRouter` on ACP hosts | M-LLM-X.10.6 | **Done** | ACP only |
@@ -438,22 +438,54 @@ RoutingContext (snapshot from Nexus / budget meter / classifier)
 | CI `check_llm_routing_rules.py` | M-LLM-X.10.8 | **Done** | |
 | AHI persistent bandit + ProfileVersion read | AHI-MAINT-06 | **Done** | Hint path; no full canary apply |
 
-**Maturity label:** **L5 enterprise-ready** — start-of-run + ACP + mid-run Nexus `RoutingEvaluatingLLMAdapter` (M-LLM-X.11).
+**Maturity label:** **L4+ enterprise-ready** — start-of-run + ACP + UAEP mid-run evaluating adapter (M-LLM-X.11). **Strict L5** (budget-accurate mid-run on all Nexus paths, tier-clean, production E2E) → **M-LLM-X.12** · LLM-AUDIT-19.
 
 #### Enterprise routing hardening (M-LLM-X.11 — Done)
 
-**Delivered (2026-06-19):** live re-eval on Nexus `llm_adapter`, `refresh_llm_routing_context()` in UAEP step loop, unified Tier-3 resolver call sites, per-evaluation trace + allowlist violation diag, mid-run E2E swap proof, harness host parity, CI `check_llm_routing_context_wiring.py`.
+**Delivered (2026-06-19):** live re-eval on Nexus `llm_adapter`, `refresh_llm_routing_context()` in UAEP step loop, unified Tier-3 resolver call sites, per-evaluation trace + allowlist violation diag, mid-run acceptance (mocked adapter factory), harness host parity, CI `check_llm_routing_context_wiring.py`.
 
 | Capability | Task ID | Status |
 |------------|---------|--------|
 | `RoutingEvaluatingLLMAdapter` — re-eval before each LLM call | M-LLM-X.11.1 | **Done** |
-| `refresh_llm_routing_context()` + `llm_routing_snapshot` on `RuntimeConfig` | M-LLM-X.11.2 | **Done** |
+| `refresh_llm_routing_context()` + `llm_routing_snapshot` on `RuntimeConfig` | M-LLM-X.11.2 | **Done** (UAEP step boundary) |
 | `resolve_environment_llm_adapter()` on all Tier-3 wiring modules | M-LLM-X.11.3 | **Done** |
-| Per-eval `LLMRoutingRuleDiagV1` + allowlist violation diag | M-LLM-X.11.4 | **Done** |
-| Mid-run budget threshold → profile swap (acceptance) | M-LLM-X.11.5 | **Done** |
+| Per-eval `LLMRoutingRuleDiagV1` + allowlist violation diag | M-LLM-X.11.4 | **Done** (UAEP/Nexus state; ACP partial) |
+| Mid-run budget threshold → profile swap (acceptance) | M-LLM-X.11.5 | **Done** (evaluating adapter; mocked factory) |
 | Harness host + materialize evaluating adapter parity | M-LLM-X.11.6 | **Done** |
-| USAGE mid-run section + L5 maturity | M-LLM-X.11.7 | **Done** |
+| USAGE mid-run section | M-LLM-X.11.7 | **Done** |
 | CI `check_llm_routing_context_wiring.py` | M-LLM-X.11.8 | **Done** |
+
+**Closes:** LLM-AUDIT-18 (declared X-11 scope). **Does not claim strict L5** — see post-audit register **LLM-AUDIT-19**.
+
+#### Routing strict enterprise closeout (M-LLM-X.12 — Planned)
+
+**Source:** Post X-11 architecture audit (2026-06-19) — X-11 delivered the evaluating wrapper and wiring skeleton; production review found **budget meter drift**, **narrow execution-path coverage**, and **Tier-0 → Tier-3 import** in evaluating adapter.  
+**Goal:** Honest **L5** — budget-driven rules fire on real token usage; context sync on all Nexus hot paths; tier-clean evaluating factory; ACP trace parity; production E2E without mocks.  
+**Plan:** [Wave M-LLM-X-12](../plan/LLM_ADAPTERS.md#wave-m-llm-x-12--routing-strict-enterprise-closeout)
+
+| Gap (audit) | Severity | Task ID |
+|-------------|----------|---------|
+| `LLMUsageTracker` reads wrapper; inner adapter accumulates tokens → `BudgetBelowRule` may not fire mid-run | **P0** | M-LLM-X.12.1 |
+| `evaluating_adapter.py` imports `applications/_shared/llm_resolver` — Tier-0 → Tier-3 violation | **P1** | M-LLM-X.12.2 |
+| `sync_llm_routing_snapshot` only in UAEP — Nexus graph / CE paths skip refresh | **P1** | M-LLM-X.12.3 |
+| Context stale between multiple LLM calls within one step | **P1** | M-LLM-X.12.4 |
+| `create_adapter_for_routing_evaluation` passes empty `RoutingContext()` to AHI wiring | **P1** | M-LLM-X.12.5 |
+| `budget_degrade_active` not mapped in Nexus sync | **P1** | M-LLM-X.12.6 |
+| Global `set_routing_evaluation_observer` — concurrent run risk | **P2** | M-LLM-X.12.7 |
+| ACP `DynamicLLMRouter` without `on_evaluated` trace in `acp_run` | **P2** | M-LLM-X.12.8 |
+| First eval trusts resolver profile even when rules disagree | **P2** | M-LLM-X.12.9 |
+| E2E is mock-based — no production meter + trace proof | **P2** | M-LLM-X.12.10 |
+| Docs claimed L5 prematurely | **P2** | M-LLM-X.12.11 |
+| Planner / critic / websearch LLM bypass evaluating wrapper | **P3** | M-LLM-X.12.12 |
+
+**Strict L5 criteria (checklist — all must pass before L5 label):**
+
+1. `budget_remaining_ratio` in `RoutingContext` reflects **actual** run token usage on core adapter path.
+2. Context sync runs on **UAEP + Nexus graph + context-engine** paths before routing eval.
+3. No Tier-0 import from `applications/` for routing hot path.
+4. Per-eval trace on **ACP and Nexus** with correlated `run_id` (no process-global observers).
+5. Acceptance test: budget threshold → model swap **without** mocking `create_adapter_for_routing_evaluation`.
+6. Audit register **LLM-AUDIT-19** → **Done**.
 
 #### Custom rule example (Tier-3)
 
@@ -724,7 +756,8 @@ Do not merge counters without explicit bridge code.
 | LLM-AUDIT-15 | `engine_history_layer` token count inconsistent with preflight (chars/4) | **P0** | M-LLM-X.3.5 | **Done** — history already used adapter; preflight aligned in LC-2 |
 | LLM-AUDIT-16 | No unified LLM routing rule contract — static hints only; no custom author logic | **P1** | M-LLM-X.9 | **Done** — ADR-LLM-003 |
 | LLM-AUDIT-17 | Routing enterprise E2E — start-of-run + ACP (auto context, trace, reference host) | **P1** | M-LLM-X.10 | **Done** |
-| LLM-AUDIT-18 | Routing mid-run Nexus — live re-eval, context refresh, full trace loop, true E2E run | **P1** | M-LLM-X.11 | **Done** |
+| LLM-AUDIT-18 | Routing mid-run Nexus — live re-eval, context refresh, full trace loop, true E2E run | **P1** | M-LLM-X.11 | **Done** (X-11 scope) |
+| LLM-AUDIT-19 | Routing strict L5 — budget meter accuracy, all Nexus paths, tier boundary, production E2E, ACP trace parity | **P1** | M-LLM-X.12 | **Planned** |
 
 **Deferred (documented, no X-phase task):** tiktoken OpenAI-centric token estimate for non-OpenAI models — acceptable for budgeting until vendor-specific tokenizer plugins; note in `USAGE.md`.
 
@@ -780,6 +813,7 @@ Workflows: `unit-tests.yml`, `llm-adapters-guard.yml`, optional `llm-network-smo
 | LLM routing rules (author + custom classes) | LLM_ADAPTERS M-LLM-X.9 · ADR-LLM-003 |
 | LLM routing enterprise closeout (start-of-run + ACP) | M-LLM-X.10 · LLM-AUDIT-17 |
 | LLM routing enterprise hardening (mid-run Nexus) | M-LLM-X.11 · LLM-AUDIT-18 |
+| LLM routing strict enterprise closeout (L5 honest) | M-LLM-X.12 · LLM-AUDIT-19 |
 | `BudgetReactionProfile.degrade_model` unification | AGENT_CONTRACTS + M-LLM-X.9.6 |
 | AHI `ProfileVersion` llm_routing persistence | AHI-MAINT-06 |
 | Product HTTP API DTOs | Tier-3 applications |

@@ -354,7 +354,25 @@ env.llm_routing_profile = LLMRoutingProfile(
 - [x] Harness host + `materialize_runtime_config` evaluating adapter parity
 - [x] CI gate `check_llm_routing_context_wiring.py`
 
-**Mid-run routing:** when `llm_routing_profile` is set, `resolve_llm_adapter()` wraps the core adapter in `RoutingEvaluatingLLMAdapter`. `RuntimeConfig.llm_routing_snapshot` is refreshed via `sync_llm_routing_snapshot_for_state()` before each UAEP step and on each LLM call through the context provider.
+**Mid-run routing:** when `llm_routing_profile` is set, `resolve_llm_adapter()` wraps the core adapter in `RoutingEvaluatingLLMAdapter`. `RuntimeConfig.llm_routing_snapshot` is refreshed via `sync_llm_routing_snapshot_for_state()` before each UAEP step.
+
+**Known limitations (post X-11 audit — address in M-LLM-X.12):**
+
+- Budget-driven rules may not see accurate `tokens_used` until tracker reads inner adapter usage (12.1).
+- Context sync is strongest on **UAEP**; classic Nexus graph paths may lag (12.3).
+- **ACP** per-eval trace not fully wired on `DynamicLLMRouter` (12.8).
+- Evaluating adapter currently lives in Tier-0 with Tier-3 factory import — refactor planned (12.2).
+
+**Strict L5 closeout (M-LLM-X.12 — Planned):**
+
+- [ ] Budget meter ↔ routing context accuracy
+- [ ] Tier-clean evaluating factory (no `applications/` import from Tier-0)
+- [ ] Nexus-wide context sync (graph + CE paths)
+- [ ] Per-call context refresh within a step
+- [ ] ACP trace parity + production E2E without mocks
+- [ ] Closes **LLM-AUDIT-19**
+
+**Current maturity label:** **L4+** (not strict L5 until X-12 Done).
 
 **Testing:** unit-test `rule.matches(fake_context)` and `rule.resolve(...)` without Nexus. CI gate: `python scripts/check_llm_routing_rules.py`.
 
