@@ -242,6 +242,8 @@ vLLM requires **NVIDIA GPU** + `nvidia-container-toolkit`. Host port **8100** av
 
 On **WSL2**, set `VLLM_USE_V1=0` (default in compose) if the v1 engine fails to initialize.
 
+**RAG embeddings:** use `VllmEmbeddingProvider` (`provider_id=vllm`) with a **separate** vLLM embed server (`--task embed`) — see `infra/docker/vllm-embed` (host **8101**) and `INTERGRAX_DEFAULT_VLLM_EMBED_BASE_URL`.
+
 ```bash
 export INTERGRAX_LLM_PROVIDER=vllm
 export INTERGRAX_LLM_MODEL=meta-llama/Llama-3.1-8B-Instruct

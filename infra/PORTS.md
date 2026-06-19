@@ -16,6 +16,7 @@ All services bind to **localhost** unless noted. Use these ports in `INTERGRAX_*
 | Milvus | 19530, 9091 | rag | `milvus` |
 | Ollama | 11434 | rag | RAG/LLM embeddings |
 | vLLM | **8100** → container 8000 | vllm | Self-hosted LLM (`LLMProvider.VLLM`); avoids Chroma **8000** |
+| vLLM embed | **8101** → container 8000 | vllm | RAG embeddings (`provider_id=vllm`); separate embed model |
 | Docling | 8081 → container 8080 | rag | `docling` server mode |
 | MongoDB | 27017 | data | `mongodb` |
 | MySQL | 3306 | data | `mysql` |
@@ -57,7 +58,7 @@ All services bind to **localhost** unless noted. Use these ports in `INTERGRAX_*
 | `core` | redis, postgresql |
 | `queue` | kafka, rabbitmq, nats |
 | `rag` | qdrant, chroma, weaviate, neo4j, milvus, ollama, docling |
-| `vllm` | vllm (NVIDIA GPU required; opt-in — not in `default`) |
+| `vllm` | vllm, vllm-embed (NVIDIA GPU required; opt-in — not in `default`) |
 | `data` | mongodb, mysql, cassandra, minio, memcached |
 | `secrets` | vault |
 | `observability` | elasticsearch, prometheus, clickhouse, langfuse, phoenix, mailpit |

@@ -86,6 +86,7 @@ cd infra/docker
 ./manage.sh redis start
 ./manage.sh neo4j start
 ./manage.sh vllm start   # NVIDIA GPU required
+./manage.sh vllm-embed start
 ./manage.ps1 weaviate start
 ```
 

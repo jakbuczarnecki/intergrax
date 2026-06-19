@@ -285,6 +285,35 @@ def require_vllm_reachable(
         pytest.skip(f"vLLM not reachable at {raw}: {e}")
 
 
+def require_vllm_embed_reachable(
+    *,
+    base_url: Optional[str] = None,
+    timeout_sec: float = 5.0,
+) -> None:
+    """
+    Skip the current test if the vLLM embeddings HTTP API is not reachable.
+
+    Resolution order:
+    1. explicit ``base_url``
+    2. ``INTERGRAX_DEFAULT_VLLM_EMBED_BASE_URL``
+    3. ``INTERGRAX_DEFAULT_VLLM_BASE_URL``
+    4. ``http://127.0.0.1:8101/v1`` (Intergrax Docker embed default)
+    """
+
+    default_embed_base_url = "http://127.0.0.1:8101/v1"
+    raw = (
+        base_url
+        or os.environ.get("INTERGRAX_DEFAULT_VLLM_EMBED_BASE_URL")
+        or os.environ.get("INTERGRAX_DEFAULT_VLLM_BASE_URL")
+        or default_embed_base_url
+    ).strip().rstrip("/")
+    models_url = f"{raw}/models"
+    try:
+        urllib.request.urlopen(models_url, timeout=timeout_sec)
+    except (urllib.error.URLError, OSError) as e:
+        pytest.skip(f"vLLM embeddings not reachable at {raw}: {e}")
+
+
 def build_in_memory_session_manager() -> SessionManager:
     storage = InMemorySessionStorage()
     return SessionManager(storage)
