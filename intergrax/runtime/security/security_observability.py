@@ -20,6 +20,18 @@ class SecuritySpineCounters:
     defense_blocked: int = 0
     encryption_denied: int = 0
     subscription_id: str = ""
+    _seen_event_ids: set[str] = field(default_factory=set, repr=False)
+
+    def _count_once(self, event: RuntimeEvent, *, kind: str) -> None:
+        event_id = event.event_id or ""
+        if event_id and event_id in self._seen_event_ids:
+            return
+        if event_id:
+            self._seen_event_ids.add(event_id)
+        if kind == KIND_DEFENSE_BLOCKED:
+            self.defense_blocked += 1
+        elif kind == KIND_ENCRYPTION_DENIED:
+            self.encryption_denied += 1
 
 
 def wire_security_spine_subscriber(event_bus: object) -> SecuritySpineCounters:
@@ -32,11 +44,10 @@ def wire_security_spine_subscriber(event_bus: object) -> SecuritySpineCounters:
 
     def _handler(event: RuntimeEvent) -> None:
         kind = event.event_kind or ""
-        if kind == KIND_DEFENSE_BLOCKED:
-            counters.defense_blocked += 1
-        elif kind == KIND_ENCRYPTION_DENIED:
-            counters.encryption_denied += 1
+        if kind in {KIND_DEFENSE_BLOCKED, KIND_ENCRYPTION_DENIED}:
+            counters._count_once(event, kind=kind)
 
+    event_bus.unsubscribe("platform.security.counters")
     counters.subscription_id = event_bus.subscribe(
         _handler,
         kind_prefix="platform.security.",
