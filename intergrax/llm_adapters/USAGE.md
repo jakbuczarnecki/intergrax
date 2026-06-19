@@ -231,23 +231,30 @@ Requires `integration_profile.key_value_cache` slug `redis`. Cross-ref: [`docs/p
 
 ---
 
-## Self-hosted Docker (Ollama / vLLM)
+## Self-hosted Docker (Ollama / vLLM / llama.cpp)
 
 | Backend | Start | Base URL env |
 |---------|-------|--------------|
 | Ollama (dev / embeddings) | `cd infra/integration && ./manage.sh start rag` | `OLLAMA_HOST=http://127.0.0.1:11434` |
 | vLLM (production GPU) | `cd infra/integration && ./manage.sh start vllm` | `INTERGRAX_DEFAULT_VLLM_BASE_URL=http://127.0.0.1:8100/v1` |
+| llama.cpp (CPU-friendly) | `cd infra/integration && ./manage.sh start llama-cpp` | `INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL=http://127.0.0.1:8102/v1` |
 
-vLLM requires **NVIDIA GPU** + `nvidia-container-toolkit`. Host port **8100** avoids Chroma on **8000** — see [`infra/PORTS.md`](../../infra/PORTS.md).
+vLLM requires **NVIDIA GPU** + `nvidia-container-toolkit`. llama.cpp is **CPU-first** (optional CUDA). Host ports **8100** (vLLM) and **8102** (llama.cpp) avoid Chroma **8000** and Weaviate **8080** — see [`infra/PORTS.md`](../../infra/PORTS.md).
 
 On **WSL2**, set `VLLM_USE_V1=0` (default in compose) if the v1 engine fails to initialize.
 
-**RAG embeddings:** use `VllmEmbeddingProvider` (`provider_id=vllm`) with a **separate** vLLM embed server (`--task embed`) — see `infra/docker/vllm-embed` (host **8101**) and `INTERGRAX_DEFAULT_VLLM_EMBED_BASE_URL`.
+**RAG embeddings:** use `VllmEmbeddingProvider` (`provider_id=vllm`) or `LlamaCppEmbeddingProvider` (`provider_id=llama_cpp`) with a **separate** embed server — see `infra/docker/vllm-embed` (host **8101**) or `infra/docker/llama-cpp-embed` (host **8103**).
 
 ```bash
 export INTERGRAX_LLM_PROVIDER=vllm
 export INTERGRAX_LLM_MODEL=meta-llama/Llama-3.1-8B-Instruct
 export INTERGRAX_DEFAULT_VLLM_BASE_URL=http://127.0.0.1:8100/v1
+```
+
+```bash
+export INTERGRAX_LLM_PROVIDER=llama_cpp
+export INTERGRAX_LLM_MODEL=default
+export INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL=http://127.0.0.1:8102/v1
 ```
 
 ---
@@ -267,6 +274,11 @@ cd infra/integration && ./manage.sh start vllm
 export INTERGRAX_DEFAULT_VLLM_BASE_URL=http://127.0.0.1:8100/v1
 export INTERGRAX_DEFAULT_VLLM_MODEL=meta-llama/Llama-3.1-8B-Instruct
 uv run pytest tests/unit/llm_adapters/test_network_smoke.py::test_vllm_live_one_shot -m network -q
+
+cd infra/integration && ./manage.sh start llama-cpp
+export INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL=http://127.0.0.1:8102/v1
+export INTERGRAX_DEFAULT_LLAMA_CPP_MODEL=default
+uv run pytest tests/unit/llm_adapters/test_network_smoke.py::test_llama_cpp_live_one_shot -m network -q
 ```
 
 Skips automatically when vLLM is unreachable or env is unset. Workflow: `.github/workflows/llm-network-smoke.yml`.

@@ -262,6 +262,14 @@ models:
     context_window_tokens: 4096
     supports_tools: true
     provider_hints: [vllm]
+  - model_id: meta-llama/Llama-3.2-1B-Instruct
+    context_window_tokens: 128000
+    supports_tools: true
+    provider_hints: [llama_cpp, vllm]
+  - model_id: meta-llama/Llama-3.2-3B-Instruct
+    context_window_tokens: 128000
+    supports_tools: true
+    provider_hints: [llama_cpp, vllm]
   - model_id: default
     context_window_tokens: 8192
     provider_hints: [llama_cpp, vllm]

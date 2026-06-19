@@ -43,6 +43,10 @@ cd infra/integration
 ./manage.sh start vllm
 # or standalone: cd ../docker && ./manage.sh vllm start
 
+# llama.cpp (CPU-friendly self-hosted LLM)
+./manage.sh start llama-cpp
+# or standalone: cd ../docker && ./manage.sh llama-cpp start
+
 # Build Docling image first (rag profile)
 ./manage.sh build rag
 ./manage.sh start rag
@@ -66,6 +70,7 @@ cd infra\integration
 | `queue` | kafka, rabbitmq, nats |
 | `rag` | qdrant, chroma, weaviate, neo4j, milvus, ollama, docling |
 | `vllm` | vllm (NVIDIA GPU; opt-in — not in default stack) |
+| `llama-cpp` | llama-cpp, llama-cpp-embed (CPU-friendly; opt-in — not in default stack) |
 | `data` | mongodb, mysql, cassandra, minio, memcached |
 | `secrets` | vault |
 | `observability` | elasticsearch, prometheus, clickhouse, langfuse, phoenix, mailpit |
@@ -87,6 +92,8 @@ cd infra/docker
 ./manage.sh neo4j start
 ./manage.sh vllm start   # NVIDIA GPU required
 ./manage.sh vllm-embed start
+./manage.sh llama-cpp start
+./manage.sh llama-cpp-embed start
 ./manage.ps1 weaviate start
 ```
 
@@ -97,7 +104,7 @@ Docling (custom build):
 ./manage.sh docling start
 ```
 
-Health: Docling `http://localhost:8081/health` · vLLM models `http://localhost:8100/v1/models`
+Health: Docling `http://localhost:8081/health` · vLLM models `http://localhost:8100/v1/models` · llama.cpp models `http://localhost:8102/v1/models`
 
 ---
 

@@ -257,7 +257,14 @@ class LlamaCppChatAdapter(_CompatAdapterBase):
         base_url_env="INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL",
         default_base_url="http://127.0.0.1:8080/v1",
         default_model="default",
-        context_windows={},
+        context_windows={
+            "default": 8192,
+            "meta-llama/Llama-3.1-8B-Instruct": 128_000,
+            "meta-llama/Llama-3.2-3B-Instruct": 128_000,
+            "meta-llama/Llama-3.2-1B-Instruct": 128_000,
+            "Qwen/Qwen2.5-0.5B-Instruct": 32_768,
+            "Qwen/Qwen2.5-7B-Instruct": 32_768,
+        },
         api_key_optional=True,
     )
 

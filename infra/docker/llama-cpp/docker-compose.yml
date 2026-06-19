@@ -1,0 +1,29 @@
+# llama.cpp OpenAI-compatible inference server (CPU-friendly self-hosted LLM).
+# Host port 8102 avoids conflict with Weaviate (8080) and vLLM (8100).
+# Wire Intergrax: INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL=http://127.0.0.1:8102/v1
+
+services:
+  llama-cpp:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    container_name: intergrax-llama-cpp
+    ports:
+      - "8102:8080"
+    volumes:
+      - llama_cpp_cache:/root/.cache
+    environment:
+      HF_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
+    command:
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8080"
+      - -hf
+      - ${LLAMA_CPP_HF_MODEL:-bartowski/Llama-3.2-1B-Instruct-GGUF:Llama-3.2-1B-Instruct-Q4_K_M.gguf}
+      - -c
+      - "4096"
+      - -np
+      - "2"
+    restart: unless-stopped
+
+volumes:
+  llama_cpp_cache:

@@ -617,12 +617,14 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **LLM-MAINT-llama-cpp-1** | Docs + env | P2 | **Planned** | Fix canon env vars; `.env.example` + architecture self-hosted table; cross-link `infra/PORTS.md` | Operator can wire `INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL` without doc/code mismatch |
-| 2 | **LLM-MAINT-llama-cpp-2** | Infra | P2 | **Planned** | `infra/docker/llama-cpp/docker-compose.yml`; integration profile **`llama-cpp`**; host port **8102** | `./manage.sh start llama-cpp` starts OpenAI API; no Weaviate 8080 conflict |
-| 3 | **LLM-MAINT-llama-cpp-3** | CI | P3 | **Planned** | `test_llama_cpp_live_one_shot` + `require_llama_cpp_reachable`; workflow env vars | Skip when llama.cpp unreachable; live smoke via `-m network` |
-| 4 | **LLM-MAINT-llama-cpp-4** | Catalog | P3 | **Planned** | Expand `model_catalog.yaml` + adapter legacy windows for common llama.cpp ids | `check_model_catalog_coverage.py` green; parametrized catalog tests |
+| 1 | **LLM-MAINT-llama-cpp-1** | Docs + env | P2 | **Done** | Fix canon env vars; `.env.example` + architecture self-hosted table; cross-link `infra/PORTS.md` | Operator can wire `INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL` without doc/code mismatch |
+| 2 | **LLM-MAINT-llama-cpp-2** | Infra | P2 | **Done** | `infra/docker/llama-cpp/docker-compose.yml`; integration profile **`llama-cpp`**; host port **8102** | `./manage.sh start llama-cpp` starts OpenAI API; no Weaviate 8080 conflict |
+| 3 | **LLM-MAINT-llama-cpp-3** | CI | P3 | **Done** | `test_llama_cpp_live_one_shot` + `require_llama_cpp_reachable`; workflow env vars | Skip when llama.cpp unreachable; live smoke via `-m network` |
+| 4 | **LLM-MAINT-llama-cpp-4** | Catalog | P3 | **Done** | Expand `model_catalog.yaml` + adapter legacy windows for common llama.cpp ids | `check_model_catalog_coverage.py` green; parametrized catalog tests |
 
 **Explicitly deferred:** P5 `interaction_surface/llama_cpp` slug — adapter + Docker health sufficient until harness lab needs catalog probe.
+
+**Phase status:** **Done** (2026-06-19) — 4/4 Done.
 
 **ADR:** no ADR needed — reuses M-LLM.7 OpenAI-compat adapter; infra-only addition.
 

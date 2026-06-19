@@ -68,3 +68,11 @@ def test_vllm_live_one_shot() -> None:
     require_vllm_reachable()
     model = os.getenv("INTERGRAX_DEFAULT_VLLM_MODEL", "").strip() or None
     _one_shot(LLMProvider.VLLM, model=model)
+
+
+def test_llama_cpp_live_one_shot() -> None:
+    from testing_support.builder import require_llama_cpp_reachable
+
+    require_llama_cpp_reachable()
+    model = os.getenv("INTERGRAX_DEFAULT_LLAMA_CPP_MODEL", "").strip() or None
+    _one_shot(LLMProvider.LLAMA_CPP, model=model)
