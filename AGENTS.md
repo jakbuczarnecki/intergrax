@@ -34,8 +34,8 @@ Tier-3  applications/        Deployable product environments
 5. Follow the work cycle in [docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md):
 
 ```text
-ANALIZA → OCENA ARCHITEKTURY → OCENA PLANU → PROPOZYCJA USPRAWNIEŃ
-  → AKTUALIZACJA DOKUMENTACJI → IMPLEMENTACJA → WERYFIKACJA → WNIOSKI
+ANALYSIS → ARCHITECTURE REVIEW → PLAN REVIEW → IMPROVEMENT PROPOSAL
+  → DOCUMENTATION UPDATE → IMPLEMENTATION → VERIFICATION → CONCLUSIONS
 ```
 
 ---
@@ -69,7 +69,7 @@ applications/    MAY import from agents/ and intergrax/
 - Agent workflow → `docs/guides/AGENT_CREATION_GUIDE.md`
 - Harness AI terms → `docs/architecture/PLATFORM_FOUNDATION.md` §5.3 only
 - Nexus execution flow → `docs/architecture/NEXUS_EXECUTION_FLOW.md` + `docs/plan/NEXUS_EXECUTION_FLOW.md` · ADR → `docs/adr/entries/2026-06-07/ADR-FLOW-001.md`
-- Completed implementation episodes → `docs/implementation-journal/` (English; required on DoD unless operator skips)
+- Completed implementation **milestones** → `docs/implementation-journal/` (optional for routine iterations; see journal README)
 
 ### Harness platform
 
@@ -83,7 +83,7 @@ applications/    MAY import from agents/ and intergrax/
 
 | Task | Read first (architecture + plan pair) |
 |------|---------------------------------------|
-| Audit a new idea before build | [docs/audit/bootstrap/07_idea_audit.txt](docs/audit/bootstrap/07_idea_audit.txt) · [IDEA_AUDIT_ORCHESTRATOR.md](docs/audit/IDEA_AUDIT_ORCHESTRATOR.md) (live chat; on approval update architecture + plan) |
+| Audit a new idea before build | Say `Zrób audyt pomysłu: …` in a new chat — rule `.cursor/rules/intergrax-idea-audit.mdc` → [`idea_audit.txt`](docs/bootstrap/idea_audit.txt) · [`IDEA_AUDIT_ORCHESTRATOR.md`](docs/audit/IDEA_AUDIT_ORCHESTRATOR.md) |
 | Create a new agent | [docs/guides/AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md) |
 | Wire integrations | [INTEGRATIONS.md](docs/architecture/INTEGRATIONS.md) · [plan/INTEGRATIONS.md](docs/plan/INTEGRATIONS.md) |
 | RAG / retrieval engine | [RAG.md](docs/architecture/RAG.md) · [plan/RAG.md](docs/plan/RAG.md) |
@@ -110,7 +110,7 @@ applications/    MAY import from agents/ and intergrax/
 | Available agents (roster) | [agents/README.md](agents/README.md) |
 | Available application environments | [applications/README.md](applications/README.md) |
 | Harness audit (32 layers) | [docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md](docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
-| Architecture audit orchestration (22 pairs) | [docs/audit/README.md](docs/audit/README.md) · `scripts/init_architecture_audit_run.py` |
+| Architecture audit orchestration (22 pairs) | [docs/audit/README.md](docs/audit/README.md) · [docs/bootstrap/](docs/bootstrap/README.md) · `scripts/init_architecture_audit_run.py` |
 | System invariants (never violate) | [docs/guides/SYSTEM_INVARIANTS.md](docs/guides/SYSTEM_INVARIANTS.md) |
 | Layer completion (full domain closeout) | [docs/guides/LAYER_COMPLETION_MODE.md](docs/guides/LAYER_COMPLETION_MODE.md) |
 | Implementation journal | [docs/implementation-journal/README.md](docs/implementation-journal/README.md) |
@@ -135,6 +135,7 @@ uv run pytest -m "gate and not no_ci" -q
 python scripts/check_harness_no_getattr.py
 uv run python scripts/check_observability_gates.py
 python scripts/check_docs_domain_pairs.py
+python scripts/check_idea_audit_bootstrap.py
 python scripts/check_reasoning_gates.py
 python scripts/check_implementation_journal.py
 python scripts/check_harness_adr.py

@@ -1393,7 +1393,7 @@ State explicitly:
 | Matches L3 Production Harness OS | … |
 | L2 or below (name gaps with plan IDs) | … |
 | Intentional design boundary | … |
-| **niedoróbka** / missing wiring | … |
+| **incomplete_wiring** / missing wiring | … |
 
 ---
 

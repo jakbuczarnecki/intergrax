@@ -7,4 +7,4 @@ Result: docs/audit_results/YYYY-MM-DD/<DOMAIN>.md from docs/audit/TEMPLATE_DOMAI
 Edit DOMAIN= line above to target basename (e.g. MEMORY, ORCHESTRATION).
 Per domain: read only docs/architecture/<DOMAIN>.md + docs/plan/<DOMAIN>.md + docs/audit/<DOMAIN>.md; execute audit prompt; classify P0–P4; write result file; sync P2–P4 to plan; P0/P1 rows only in plan — do not implement; update progress.json; report checkpoint.
 Rules: tier boundaries AGENTS.md; safety fuse on plan/architecture/ideal conflict; no code unless operator approves doc fix; commits only on request.
-Operator language: Polish. Repo artifacts: English.
+Repository artifacts: English.

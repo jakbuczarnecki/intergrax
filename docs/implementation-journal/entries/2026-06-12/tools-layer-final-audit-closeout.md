@@ -16,7 +16,7 @@ adr: none — documentation sync only; no architecture change
 
 ## Operator request
 
-Execute Layer Completion Mode Krok 5: final audit of Tools layer after S0–S8; sync documentation as source of truth.
+Execute Layer Completion Mode Step 5: final audit of Tools layer after S0–S8; sync documentation as source of truth.
 
 ## Summary
 

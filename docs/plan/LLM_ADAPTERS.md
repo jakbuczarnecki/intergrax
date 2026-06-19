@@ -58,7 +58,7 @@
 **Status:** **LC-3 closeout** — P0/P1 audit gaps closed · backlog P2+ only  
 **Target state:** **State B — Architecturally Mature** (no open P0/P1)
 
-### Krok 1 — Audit summary (2026-06-14, re-validated)
+### Step 1 — Audit summary (2026-06-14, re-validated)
 
 | ID | Problem | Class | Sprint | Status |
 |----|---------|-------|--------|--------|
@@ -89,7 +89,7 @@
 
 ### Sprint LC-4 — Gateway metadata + DX closeout — **Partial** (static OpenRouter default Done; dynamic fetch → backlog)
 
-### Backlog (P2–P4 — nie blokuje ukończenia warstwy)
+### Backlog (P2–P4 — does not block layer completion)
 
 | ID | Item | Class |
 |----|------|-------|

@@ -48,10 +48,10 @@ Users store project knowledge across folders (PDF, DOCX, XLSX, TXT, email export
 
 | Need | Example |
 |------|---------|
-| **Find** | „Znajdź dokumenty o projekcie X / rozliczeniu Y” |
-| **Gather** | „Zbierz dane z folderów A i B dotyczące kosztorysu” |
+| **Find** | "Find documents about project X / settlement Y" |
+| **Gather** | "Gather data from folders A and B about the cost estimate" |
 | **Synthesize** | „Przygotuj mail / sprawozdanie / kosztorys wg szablonu” |
-| **Safety** | Nic nie usuwać ani nie nadpisywać w oryginalnych plikach użytkownika |
+| **Safety** | Do not delete or overwrite user original files |
 
 LKW solves this with **read-heavy indexing + semantic retrieval + isolated write artifacts**, orchestrated by Nexus.
 
@@ -694,7 +694,7 @@ Task(capability=local.workspace.index, metadata={source_paths: [...]})
 ### 10.2 Search flow
 
 ```text
-Task(capability=local.workspace.search, message="znajdź dokumenty o projekcie X")
+Task(capability=local.workspace.search, message="find documents about project X")
   → LocalSearchAgent
   → rag.retrieve(query, metadata filters)
   → Package evidence chunks + citations (path, page, chunk_id)
@@ -924,7 +924,7 @@ Each row is one implementable **wave**. Copy to [`IMPLEMENTATION_PLAN.md`](IMPLE
 | # | Scenario | Channels | Waves required |
 |---|----------|----------|----------------|
 | E1 | First install → pick folders → index | Tray + HTTP | LKW.5, LKW.6, LKW.8 |
-| E2 | “Znajdź dokumenty o X” at desk | MCP | LKW.1 |
+| E2 | "Find documents about X" at desk | MCP | LKW.1 |
 | E3 | Full report draft | HTTP pipeline | LKW.2 |
 | E4 | New file auto-indexed | background | LKW.7 |
 | E5 | Search from phone | Slack | LKW.6b (optional) |

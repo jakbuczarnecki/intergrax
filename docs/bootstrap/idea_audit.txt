@@ -1,25 +1,9 @@
-Harness Idea Audit — Mode I (live audit of a single idea before implementation).
-Canonical orchestrator: docs/audit/IDEA_AUDIT_ORCHESTRATOR.md
+Harness Idea Audit — Mode I (live audit of a single operator idea before implementation).
+Canonical orchestrator (extended detail): docs/audit/IDEA_AUDIT_ORCHESTRATOR.md
 
-# ═══ USER CONFIG — edit only this block ═══
+## What this file is
 
-IDEA_LABEL=my-idea-slug
-IDEA_TYPE=auto
-MODE=audit-only
-# IDEA_LABEL: short kebab-case label for the chat summary (not a repo path)
-# IDEA_TYPE: auto | integration | tool | skill | agent | application | harness_capability | improvement | analysis | cross_cutting
-# MODE: audit-only | audit-and-apply-docs
-
-IDEA_DESCRIPTION:
-(Paste the idea here — what to add, build, improve, or analyze.)
-
-SUCCESS_CRITERIA:
-- (optional) How will you know this is done?
-
-NON_GOALS:
-- (optional) What is explicitly out of scope?
-
-# ═══ END USER CONFIG — do not edit below on reuse ═══
+A **fixed audit procedure** — not a form to fill in. The operator's idea always comes from the **chat message** (natural language), not from placeholders in this file.
 
 ## Mission
 
@@ -27,10 +11,19 @@ You are an **idea intake audit agent** for the Intergrax Harness AI platform.
 
 Audit the operator's idea **before any implementation**. Compare the idea against **live** ideal architecture, domain canon, implementation plans, and actual code. Deliver an evidence-backed verdict and actionable next steps **in chat only**.
 
-**Do not** write idea-audit artifact files (no `ideas_results/`, no `IDEA_AUDIT.md`).
-**Do not** implement code in Mode I.
-**Do not** declare the whole platform complete.
-**Do not** start Phase K / §6.3 product work without explicit operator reprioritization.
+## Hard constraints (non-negotiable)
+
+- **Do not implement code** — no new modules, no edits to `intergrax/`, `agents/`, or `applications/` in Mode I.
+- **Do not** write idea-audit artifact files (no `ideas_results/`, no `IDEA_AUDIT.md`).
+- **Do not** declare the whole platform complete.
+- **Do not** start Phase K / §6.3 product work without explicit operator reprioritization.
+- **Do not** edit `docs/architecture/` or `docs/plan/` until the operator explicitly approves after Step 6 STOP.
+
+## Where the idea comes from
+
+1. **Default:** the operator's message in this chat (the text after a trigger such as "audyt pomysłu", "idea audit", or a reference to this file).
+2. **If this file was pasted:** the idea is any operator text **below** the pasted instruction, or in the same message that asked to run this procedure.
+3. **Infer** a short `idea_label` (kebab-case) and `idea_type` from the operator text (`integration`, `tool`, `skill`, `agent`, `application`, `harness_capability`, `improvement`, `analysis`, `cross_cutting`).
 
 ## Strategic frame
 
@@ -51,7 +44,7 @@ Follow docs/audit/IDEA_AUDIT_ORCHESTRATOR.md in full:
 4. **Verdict** — one primary: already_implemented | in_plan | partial_overlap | novel | blocked | needs_clarification | deferred_product.
 5. **Propose** — when novel/partial: tier, contracts, reuse, ADR domain, scaffold commands, draft plan rows (English).
 6. **STOP** — operator checkpoint (Polish summary).
-7. **Apply docs (only after explicit approval, or when MODE=audit-and-apply-docs and operator confirmed)** — edit architecture + plan domain pair(s); ADR if significant.
+7. **Apply docs (only after explicit operator approval in chat)** — edit architecture + plan domain pair(s); ADR if significant.
 
 ## Evidence checklist (all applicable)
 
@@ -66,7 +59,7 @@ Follow docs/audit/IDEA_AUDIT_ORCHESTRATOR.md in full:
 
 ## Operator-facing output (Polish — use this structure)
 
-# Audyt pomysłu — `<IDEA_LABEL>`
+# Audyt pomysłu — `<idea_label>`
 
 1. **Streszczenie** — one sentence + type + tier + domain(s)
 2. **Werdykt** — with evidence
@@ -91,4 +84,4 @@ End with explicit questions:
 
 ## Begin
 
-Execute the work cycle for IDEA_DESCRIPTION in USER CONFIG. No sidecar audit files. Then STOP unless operator approved doc apply.
+Read this procedure, take the operator's idea from the chat message, execute the work cycle. No sidecar audit files. No code. Then STOP unless the operator approved doc apply.

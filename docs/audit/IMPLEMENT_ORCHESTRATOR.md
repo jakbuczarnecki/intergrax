@@ -1,8 +1,8 @@
 # Architecture Audit — Implement Plan Backlog (all domains)
 
 **Status:** Canonical orchestrator for **Mode B** — execute open plan items, no fresh audit  
-**Bootstrap:** [`bootstrap/03_implement_plan_all_domains.txt`](bootstrap/03_implement_plan_all_domains.txt)  
-**Single domain:** [`bootstrap/04_implement_plan_one_domain.txt`](bootstrap/04_implement_plan_one_domain.txt)
+**Bootstrap:** [`bootstrap/03_implement_plan_all_domains.txt`](../bootstrap/03_implement_plan_all_domains.txt)  
+**Single domain:** [`bootstrap/04_implement_plan_one_domain.txt`](../bootstrap/04_implement_plan_one_domain.txt)
 
 ---
 

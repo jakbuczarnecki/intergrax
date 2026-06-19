@@ -29,14 +29,14 @@ Intergrax is under **active private R&D**. The **harness platform is complete** 
 ### Work cycle (mandatory for significant changes)
 
 ```text
-ANALIZA
-  → OCENA ARCHITEKTURY (zgodność z celem Harness AI)
-  → OCENA PLANU WDROŻENIA
-  → PROPOZYCJA USPRAWNIEŃ
-  → AKTUALIZACJA DOKUMENTACJI (strategia → kanon → plan)
-  → IMPLEMENTACJA
-  → WERYFIKACJA (gate + getattr audit where harness touched)
-  → WNIOSKI
+ANALYSIS
+  → ARCHITECTURE REVIEW (Harness AI goal alignment)
+  → PLAN REVIEW
+  → IMPROVEMENT PROPOSAL
+  → DOCUMENTATION UPDATE (strategy → canon → plan)
+  → IMPLEMENTATION
+  → VERIFICATION (gate + getattr audit where harness touched)
+  → CONCLUSIONS
 ```
 
 Think as a **Harness AI architect** first, then as an engineer.

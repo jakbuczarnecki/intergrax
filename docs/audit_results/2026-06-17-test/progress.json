@@ -4,7 +4,7 @@
   "scope": "single",
   "single_domain": "MEMORY",
   "canonical": "docs/audit/IMPLEMENT_ORCHESTRATOR.md",
-  "bootstrap": "docs/audit/bootstrap/04_implement_plan_one_domain.txt",
+  "bootstrap": "docs/bootstrap/04_implement_plan_one_domain.txt",
   "run_id": "2026-06-17-test",
   "results_dir": "docs/audit_results/2026-06-17-test",
   "started_at": "2026-06-17-test",

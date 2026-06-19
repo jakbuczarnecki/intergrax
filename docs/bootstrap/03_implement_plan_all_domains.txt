@@ -10,4 +10,4 @@ Iteration discipline: one domain = atomic unit — finish current domain (implem
 Rules: no fresh full audit; no Phase K / §6.3 without reprioritization; reuse Tier-0; safety fuse if plan needs architecture change not in canon — STOP, set domain blocked, report operator.
 When all domains completed or skipped: write results/<run_id>/RUN_SUMMARY.md; set completed_at and current_domain null in progress.json; run uv run python scripts/check_architecture_audit_run.py YYYY-MM-DD --require-complete.
 Resume: paste same file + line RESUME: docs/audit_results/YYYY-MM-DD/progress.json — read current_domain, do not restart from pair #1.
-Operator language: Polish. Repo artifacts: English.
+Repository artifacts: English.

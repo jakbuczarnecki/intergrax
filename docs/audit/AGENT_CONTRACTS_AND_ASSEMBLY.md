@@ -2,7 +2,7 @@
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
 **Domain pair:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
-**Audit map layers:** 17–20, 31 · ACP §21 · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../guides/INTEGRAX_HARNESS_AUDIT_MAP.md)  
+**Audit map layers:** 17–20, 31 · ACP §21 · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HARNESS_AUDIT_MAP.md)  
 **ADR:** [`ADR-AGENT-001`](../../adr/ADR-AGENT-001.md) · [`ADR-AGENT-002`](../../adr/ADR-AGENT-002.md) · [`ADR-AGENT-003`](../../adr/ADR-AGENT-003.md)  
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
@@ -14,7 +14,7 @@
 2. Copy from `---BEGIN PROMPT---` through `---END PROMPT---`.
 3. Edit **USER CONFIG** only (`mode`, optional `focus` slice).
 4. The agent must **read code, run tests, and re-validate known gaps** — not survey documentation alone.
-5. Output: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
+5. Output: [`HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](../HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) §7–§8.
 
 Regenerate after architecture/plan changes: `uv run python scripts/generate_domain_audit_prompts.py`
 
@@ -200,7 +200,7 @@ State explicitly:
 | Matches L3 Production Harness OS | … |
 | L2 or below (name gaps with plan IDs) | … |
 | Intentional design boundary | … |
-| **niedoróbka** / missing wiring | … |
+| **incomplete_wiring** / missing wiring | … |
 
 ---
 

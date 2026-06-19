@@ -1509,12 +1509,12 @@ Authors MUST NOT override `run()`, **`AgentRuntime.advance_step`**, or **`Harnes
 |--------------|-------------------|
 | „`run` jak Nexus” | `Agent.run()` — harness inside base |
 | „pipeline agenta” | Many `on_next_step` inside one `run()` |
-| „run po każdym kroku” | **`AgentRuntime.advance_step`** inside `run()` — not many external `run()` calls |
+| "run after every step" | **`AgentRuntime.advance_step`** inside `run()` — not many external `run()` calls |
 | „Nexus wykonuje plan agenta” | **No** — agent planuje w `on_next_step`; kernel wykonuje jeden cykl §38 |
-| „Nexus usunięty” | **No** — Nexus orchestrates `Task`; `run` executes one agent node |
+| "Nexus removed" | **No** — Nexus orchestrates `Task`; `run` executes one agent node |
 | „konfiguracja w klasie” | **Defaults on contract** + **runtime merge** from environment §30 |
-| „pełny trace w run” | `AgentRunResult.trace` §31 |
-| „aplikacja loguje orkiestrację” | `ApplicationRunSummary` §31 — separate plane |
+| "full trace in run" | `AgentRunResult.trace` §31 |
+| "application logs orchestration" | `ApplicationRunSummary` §31 — separate plane |
 
 ---
 
