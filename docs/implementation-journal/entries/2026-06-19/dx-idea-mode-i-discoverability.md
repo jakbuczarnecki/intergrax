@@ -8,7 +8,7 @@ plan_ref:
   - DX-IDEA-01
   - DX-IDEA-02
 status: completed
-commit: pending
+commit: 5385d518
 adr: none — DX documentation and bootstrap gate only; no runtime contract change
 ---
 
