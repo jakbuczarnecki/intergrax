@@ -28,7 +28,7 @@ Tier-0 **LLM adapter layer** is the Harness cognition entry point: one `LLMAdapt
 
 **Strategic rule:** The Harness owns provider plumbing; agents and applications declare **profiles**, never vendor SDKs.
 
-Deep production audit (2026-06-14): foundation is **production-grade L3** on contract and ops. **Full Harness LC (2026-06-17):** no open P0/P1 — M-LLM-X partial waves remain **P2+ backlog** (dynamic gateway metadata, DX doctor hook).
+Deep production audit (2026-06-14): foundation is **production-grade L3** on contract and ops. **Full Harness LC (2026-06-17):** no open P0/P1 — M-LLM-X partial waves remain **P2+ backlog** (dynamic gateway metadata, catalog-driven capability flags).
 
 ---
 
@@ -770,7 +770,7 @@ Do not merge counters without explicit bridge code.
 | AUDIT-IDEAL-6.4 | Tokenizer-consistent context preflight | P0 | **Done** | M-LLM-X.3 — LC-2/LC-2b |
 | AUDIT-IDEAL-6.5 | Profile failover chain | P1 | **Done** | M-LLM-X.4 — LC-3 |
 | AUDIT-IDEAL-6.6 | ACP `StepLLMRouter` backed by `LLMAdapter` | P1 | **Done** | M-LLM-X.5 — LC-3 |
-| AUDIT-IDEAL-6.7 | Developer `USAGE.md` + startup validation | P2 | **Partial** | M-LLM-X.7 — `validate_runtime()` **Done**; doctor hook pending |
+| AUDIT-IDEAL-6.7 | Developer `USAGE.md` + startup validation | P2 | **Done** | M-LLM-X.7 + LLM-MAINT-01 — `validate_runtime()` + `intergrax doctor` LLM checks |
 
 ### Production audit gaps (LLM-AUDIT-*)
 
@@ -783,7 +783,7 @@ Do not merge counters without explicit bridge code.
 | LLM-AUDIT-5 | No provider failover chain | **P1** | M-LLM-X.4 | **Done** |
 | LLM-AUDIT-6 | ACP `StepLLMRouter` disconnected from `LLMAdapter` | **P1** | M-LLM-X.5 | **Done** |
 | LLM-AUDIT-7 | OpenRouter / gateway models default 32k context | **P1** | M-LLM-X.2 | **Done** — catalog `provider_defaults.openrouter: 128000`; dynamic fetch → backlog |
-| LLM-AUDIT-8 | No `intergrax/llm_adapters/USAGE.md` | **P2** | M-LLM-X.7 | **Partial** — USAGE Done; doctor hook pending |
+| LLM-AUDIT-8 | No `intergrax/llm_adapters/USAGE.md` | **P2** | M-LLM-X.7 | **Done** — USAGE + doctor hook (LLM-MAINT-01) |
 | LLM-AUDIT-9 | AUDIT-IDEAL-6.2 wiring ceremonial — no runtime swap | **P1** | M-LLM-X.5 | **Done** |
 | LLM-AUDIT-10 | Plugin provider story undocumented | **P2** | M-LLM-X.6 | **Partial** — USAGE §Extension; enum-free profile pending X.6.1 |
 | LLM-AUDIT-11 | `ContextBudgetPolicy` default 4k decoupled from adapter window | **P0** | M-LLM-X.3.3 | **Done** |
@@ -805,7 +805,9 @@ Do not merge counters without explicit bridge code.
 
 **Single adapter per Nexus run:** `RuntimeConfig.llm_adapter` holds one primary instance today; multi-model via profile chain + routing is M-LLM-X.4–5 (not a separate LLM-AUDIT ID).
 
-**Closed baselines:** M-LLM (13/13), M-LLM-R (39/39), M-LLM-X LC-1…LC-3 **Done**; open items P2+ only (capability flags, plugin enum-free, dynamic gateway fetch, doctor hook).
+**Closed baselines:** M-LLM (13/13), M-LLM-R (39/39), M-LLM-X LC-1…LC-3 **Done**; open items P2+ only (capability flags, plugin enum-free, dynamic gateway fetch).
+
+**Audit revalidation (2026-06-19, LLM-MAINT-DOC-01):** §6.1av LLM-MAINT-01..04 confirmed in code · AUDIT-IDEAL-6.7 + LLM-AUDIT-8 → **Done** · routing L5 (M-LLM-X.12 / LLM-AUDIT-19) · 153 unit tests + LLM CI gates green · vLLM/llama.cpp ops phases Done. Deferred: LLM-AUDIT-14 capability flags · M-LLM-X.2 dynamic OpenRouter · M-LLM-X.8 closeout.
 
 ---
 

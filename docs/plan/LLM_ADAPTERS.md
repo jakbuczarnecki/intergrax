@@ -766,15 +766,15 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 
 ### 6.1ay Harness implementation queue — LLM adapters audit maintenance (2026-06-19)
 
-**Source:** Interactive layer audit (2026-06-19) — `LLM_ADAPTERS` layer 6 · [`../audit_results/2026-06-19/LLM_ADAPTERS.md`](../audit_results/2026-06-19/LLM_ADAPTERS.md) (pending) · prior: [`../audit_results/2026-06-18/LLM_ADAPTERS.md`](../audit_results/2026-06-18/LLM_ADAPTERS.md)  
+**Source:** Interactive layer audit (2026-06-19) — `LLM_ADAPTERS` layer 6 · [`../audit_results/2026-06-19/LLM_ADAPTERS.md`](../audit_results/2026-06-19/LLM_ADAPTERS.md) · prior: [`../audit_results/2026-06-18/LLM_ADAPTERS.md`](../audit_results/2026-06-18/LLM_ADAPTERS.md)  
 **Priority ladder:** **Band 1** (§6.1) — doc sync + audit artifact; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **LLM-MAINT-DOC-01** | Docs | P3 | **Planned** | Close §6.1av header; sync architecture audit register (AUDIT-IDEAL-6.7, LLM-AUDIT-8 → Done); fix LLM-LC deferred line | Canon matches LLM-MAINT-01..04 |
-| 2 | **LLM-MAINT-AUDIT-01** | Docs | P3 | **Planned** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `LLM_ADAPTERS.md` + `progress.json`; L3+ verdict layer 6 |
+| 1 | **LLM-MAINT-DOC-01** | Docs | P3 | **Done** | Close §6.1av header; sync architecture audit register (AUDIT-IDEAL-6.7, LLM-AUDIT-8 → Done); fix LLM-LC deferred line | Canon matches LLM-MAINT-01..04 |
+| 2 | **LLM-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `LLM_ADAPTERS.md` + `progress.json`; L3+ verdict layer 6 |
 
-**Suggested PR order:** LLM-MAINT-DOC-01 → LLM-MAINT-AUDIT-01.
+**Suggested PR order:** none — §6.1ay queue closed (2026-06-19).
 
 **Cross-domain (not LLM-owned):** M-LLM-X.2 · LLM-AUDIT-14 · M-LLM-X.8 closeout — unchanged backlog.
 
