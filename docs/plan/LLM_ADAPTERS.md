@@ -45,7 +45,8 @@
 - **Preflight / history budget** MUST use `adapter.count_messages_tokens` when adapter is in scope.
 - **No** vendor SDK imports in Tier-2 — unchanged tier boundary.
 - One **M-LLM-X.\*** task group per PR → update master table + architecture audit register → gate green.
-- **ADR:** [ADR-LLM-002](../adr/entries/2026-06-14/ADR-LLM-002.md) **Done** — prerequisite for M-LLM-X.1 code merge.
+- **ADR:** [ADR-LLM-002](../adr/entries/2026-06-14/ADR-LLM-002.md) **Done** — prerequisite for M-LLM-X.1 code merge.  
+**ADR:** [ADR-LLM-003](../adr/entries/2026-06-19/ADR-LLM-003.md) **Accepted** — prerequisite for M-LLM-X.9 code merge.
 
 **Explicitly excluded:** Central LLM gateway microservice (needs separate platform ADR), rewriting all 19 SDK clients, product HTTP DTOs, Phase K agents.
 
@@ -118,6 +119,7 @@
 | 6 | X-6 | M-LLM-X.6.1–6.3 | P2 | **Partial** (6.3 Done) |
 | 7 | X-7 | M-LLM-X.7.1–7.5 | P2 | **Partial** (7.1, 7.5 Done; 7.2–7.4 Planned) |
 | 8 | X-8 | M-LLM-X.8.1–8.3 | Medium | **Planned** |
+| 9 | X-9 | M-LLM-X.9.1–9.9 | **P1** | **Planned** — ADR-LLM-003 · routing rule Protocol |
 
 **Closeout gate:** All M-LLM-X.* Done + architecture audit register all **Done** + `tests/unit/llm_adapters/` green + new CI scripts green.
 
@@ -137,9 +139,10 @@ Wave M-LLM-X-5 (routing):      M-LLM-X.5.1 → 5.2 → 5.3 → 5.4 → 5.5
 Wave M-LLM-X-6 (plugins):      M-LLM-X.6.1 → 6.2 → 6.3
 Wave M-LLM-X-7 (DX):           M-LLM-X.7.1 → 7.2 → 7.3 → 7.4 → 7.5
 Wave M-LLM-X-8 (closeout):     M-LLM-X.8.1 → 8.2 → 8.3
+Wave M-LLM-X-9 (routing rules): M-LLM-X.9.1 → 9.2 → 9.2b → 9.3 → 9.4 → 9.5 → 9.6 → 9.7 → 9.8 → 9.9
 ```
 
-**Prerequisites:** M-LLM + M-LLM-R **Done**; CONTEXT_ENGINE preflight paths stable.
+**Prerequisites:** M-LLM + M-LLM-R **Done**; CONTEXT_ENGINE preflight paths stable. **X-9** depends on X-4.2 (failover) and X-5.1 (ModelRouter hints) — both **Done**.
 
 **Parallelism:** X-2 (OpenRouter fetch) may run after X-1.3; X-5 depends on X-4.2; X-7 may start after X-1.1 (docs partial).
 
@@ -248,6 +251,31 @@ Wave M-LLM-X-8 (closeout):     M-LLM-X.8.1 → 8.2 → 8.3
 
 ---
 
+#### Wave M-LLM-X-9 — LLM routing rules (Protocol + custom classes)
+
+**Source:** Mode I idea audit (2026-06-19) — dynamic model selection by task state, budget, and author logic.  
+**ADR:** [ADR-LLM-003](../adr/entries/2026-06-19/ADR-LLM-003.md) **Accepted**  
+**Goal:** Single developer-facing routing surface — built-in parametric rules and Tier-3 custom classes on one `LLMRoutingRule` Protocol; AHI L4 remains optional overlay.
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-X.9.1 | **`LLMRoutingRule` Protocol + `LLMRoutingRuleBase` ABC** — `matches()`, `resolve()`, `rule_id`, `priority` | **Planned** | **Critical** | `intergrax/llm_adapters/routing/contracts.py` | Unit: Protocol structural subtyping |
+| M-LLM-X.9.2 | **`RoutingContext`, `RoutingTarget`, `LLMRoutingProfile`** Pydantic models | **Planned** | **Critical** | `routing/contracts.py` | Immutable context snapshot |
+| M-LLM-X.9.2b | **`LLMRoutingEvaluator`** — priority sort, first-match, allowlist guard | **Planned** | **Critical** | `routing/evaluator.py` | Unit: priority + allowlist rejection |
+| M-LLM-X.9.3 | **Built-in rules package** — `BudgetBelowRule`, `TaskClassRule`, `TokenThresholdRule`, `BudgetExceededDegradeRule` | **Planned** | High | `routing/builtin_rules.py` | Each implements same Protocol |
+| M-LLM-X.9.4 | **Tier-3 `LLMRoutingProfile` on `ApplicationEnvironmentProfile`** + `CapabilityBundle` wire | **Planned** | **Critical** | `environment_profile/`, `nexus_factory.py` | Reference host manifest example |
+| M-LLM-X.9.5 | **Hot path wire** — `resolve_llm_adapter()` evaluates rules using budget meter + `task_class` | **Planned** | **Critical** | `llm_resolver.py`, `llm_routing_wiring.py` | Integration test: rule triggers profile swap |
+| M-LLM-X.9.6 | **Unify `BudgetReactionProfile.degrade_model`** with `BudgetExceededDegradeRule` | **Planned** | High | `AGENT_CONTRACTS` bridge | Single degrade code path; ACP-TOK-3 tests green |
+| M-LLM-X.9.7 | **`DynamicLLMRouter` wrapper** — per-step model swap within run (extends budget-enforcing pattern) | **Planned** | Medium | `agents/authoring/` | Unit: step boundary profile change |
+| M-LLM-X.9.8 | **USAGE.md cookbook** — built-in vs custom class, testing, allowlist, HF via vLLM | **Planned** | High | `intergrax/llm_adapters/USAGE.md` | Linked from architecture §Routing rules |
+| M-LLM-X.9.9 | **`scripts/check_llm_routing_rules.py`** — reference hosts validate allowlist conformance | **Planned** | Medium | `scripts/` | Registered in CI umbrella |
+
+**Suggested PR order (X-9):** 9.1 → 9.2 → 9.2b → 9.3 → 9.4 → 9.5 → 9.6 → 9.7 → 9.8 → 9.9.
+
+**Cross-domain:** AHI-MAINT-05 (`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`) — bandit arms → `ProfileVersion` `llm_routing`.
+
+---
+
 ### M-LLM-X — Suggested PR order
 
 ```text
@@ -261,10 +289,11 @@ PR-7:  M-LLM-X.5.1 → 5.3 (runtime routing + AHI)
 PR-8:  M-LLM-X.5.4 → 5.5 (ACP bridge)
 PR-9:  M-LLM-X.2.* (OpenRouter metadata — optional network)
 PR-10: M-LLM-X.6.* + 7.* (plugins + DX)
-PR-11: M-LLM-X.8.* closeout
+PR-11: M-LLM-X.9.* (routing rule Protocol — ADR-LLM-003)
+PR-12: M-LLM-X.8.* closeout (after X-9)
 ```
 
-**Estimated effort:** 11 PRs · ~4–6 weeks harness maintenance cadence.
+**Estimated effort:** 12 PRs · ~5–7 weeks harness maintenance cadence.
 
 ---
 
@@ -287,6 +316,7 @@ PR-11: M-LLM-X.8.* closeout
 | LLM-AUDIT-13 — Cohere dual slug (`cohere` / `cohere_native`) DX | M-LLM-X.7.5 |
 | LLM-AUDIT-14 — Capability flags not catalog-driven | M-LLM-X.1.7 |
 | LLM-AUDIT-15 — History layer token count inconsistent with preflight | M-LLM-X.3.5 |
+| LLM-AUDIT-16 — No unified routing rule contract (idea audit 2026-06-19) | M-LLM-X.9.* |
 | tiktoken OpenAI-centric estimate (all providers) | **Deferred** — document limitation in USAGE; vendor tokenizer plugins post-X |
 | Single `RuntimeConfig.llm_adapter` per run (multi-model) | M-LLM-X.4–5 (profile chain + routing); no multi-adapter pool in X |
 | Distributed Redis rate limit host wiring | **Ops** — document in USAGE X.7.1; not LLM-AUDIT tier-0 code |
@@ -627,6 +657,33 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 **Phase status:** **Done** (2026-06-19) — 4/4 Done.
 
 **ADR:** no ADR needed — reuses M-LLM.7 OpenAI-compat adapter; infra-only addition.
+
+---
+
+### Phase M-LLM-X-9 — LLM routing rules (idea audit 2026-06-19)
+
+**Source:** Mode I idea audit — adaptive LLM model switching with developer-defined custom rule classes.  
+**Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) § LLM routing rules  
+**ADR:** [ADR-LLM-003](../adr/entries/2026-06-19/ADR-LLM-003.md) **Accepted**  
+**Goal:** `LLMRoutingRule` Protocol on Tier-0; built-in + custom Tier-3 classes; AHI L4 overlay unchanged.  
+**Phase status:** **Planned** — 0/10 Done · see [Wave M-LLM-X-9](#wave-m-llm-x-9--llm-routing-rules-protocol--custom-classes)
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **M-LLM-X.9.1** | Contract | P1 | **Planned** | `LLMRoutingRule` Protocol + `LLMRoutingRuleBase` | `routing/contracts.py` importable |
+| 2 | **M-LLM-X.9.2** | Contract | P1 | **Planned** | `RoutingContext`, `RoutingTarget`, `LLMRoutingProfile` | Pydantic validation |
+| 3 | **M-LLM-X.9.2b** | Code | P1 | **Planned** | `LLMRoutingEvaluator` first-match + allowlist | Unit tests green |
+| 4 | **M-LLM-X.9.3** | Code | P1 | **Planned** | Built-in rule classes | Same Protocol as custom |
+| 5 | **M-LLM-X.9.4** | Tier-3 | P1 | **Planned** | `ApplicationEnvironmentProfile` field + wiring | Reference host example |
+| 6 | **M-LLM-X.9.5** | Wire | P1 | **Planned** | `resolve_llm_adapter()` hot path | Integration test |
+| 7 | **M-LLM-X.9.6** | Cross-ref | P2 | **Planned** | Unify `degrade_model` with routing rule | ACP-TOK-3 paths |
+| 8 | **M-LLM-X.9.7** | Code | P2 | **Planned** | `DynamicLLMRouter` per-step swap | Unit test |
+| 9 | **M-LLM-X.9.8** | Docs | P2 | **Planned** | USAGE.md cookbook | Architecture cross-link |
+| 10 | **M-LLM-X.9.9** | CI | P2 | **Planned** | `check_llm_routing_rules.py` | CI umbrella |
+
+**Suggested PR order:** 9.1 → 9.2 → 9.2b → 9.3 → 9.4 → 9.5 → 9.6 → 9.7 → 9.8 → 9.9.
+
+**Cross-domain:** AHI-MAINT-05 · `TIER3_APPLICATION_ENVIRONMENT` · `AGENT_CONTRACTS_AND_ASSEMBLY` (degrade_model).
 
 ---
 

@@ -7,7 +7,7 @@
 **Audit layers:** 6 · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../guides/INTEGRAX_HARNESS_AUDIT_MAP.md)  
 **Audit instruction:** [`audit/LLM_ADAPTERS.md`](../audit/LLM_ADAPTERS.md)  
 **Developer guide:** [`intergrax/llm_adapters/USAGE.md`](../../intergrax/llm_adapters/USAGE.md)  
-**ADR:** [ADR-LLM-001](../adr/entries/2026-06-06/ADR-LLM-001.md) (envelope) · [ADR-LLM-002](../adr/entries/2026-06-14/ADR-LLM-002.md) (ModelCatalog)
+**ADR:** [ADR-LLM-001](../adr/entries/2026-06-06/ADR-LLM-001.md) (envelope) · [ADR-LLM-002](../adr/entries/2026-06-14/ADR-LLM-002.md) (ModelCatalog) · [ADR-LLM-003](../adr/entries/2026-06-19/ADR-LLM-003.md) (routing rules)
 
 ---
 
@@ -21,7 +21,7 @@ Tier-0 **LLM adapter layer** is the Harness cognition entry point: one `LLMAdapt
 | Provider abstraction (19 slugs) | **L3** | L3+ (plugin story) | `LLMAdapterRegistry`, OpenAI-compat factory |
 | Model ID as free string | **L3** | L3 (maintain) | `LLMProfile.model: str` |
 | Model metadata / context window | **L3** | L3 (maintain) | `ModelCatalog` + resolver **Done** (LC-1) |
-| Multi-model routing / failover | **L3** | L3 (maintain) | `ModelRouter` + `FailoverLLMAdapter` wired (LC-3) |
+| Multi-model routing / failover | **L3** | **L3+** (rule contract) | `ModelRouter` + `FailoverLLMAdapter` wired (LC-3); **M-LLM-X.9** rule Protocol **Planned** |
 | Token accounting consistency | **L3** | L3 (maintain) | Preflight + `from_adapter` Nexus adoption (LC-2/LC-2b) |
 | Developer experience | **L2** | **L3+** | [`USAGE.md`](../../intergrax/llm_adapters/USAGE.md) **Done**; dual API Nexus vs ACP — see §Developer surfaces |
 | Observability & governance | **L3** | L3 (maintain) | Prometheus, quota, replay bridge |
@@ -47,12 +47,14 @@ Deep production audit (2026-06-14): foundation is **production-grade L3** on con
 
 ```text
 Tier-3  ApplicationEnvironmentProfile.llm_profile  →  LLMProfile.create_adapter()
+        LLMRoutingProfile.rules (M-LLM-X.9)          →  custom/built-in LLMRoutingRule classes
         ReasoningProfile.planner_llm_profile         →  separate planner adapter (COG-PROD)
         resolve_llm_adapter() precedence             →  agent > env > INTERGRAX_LLM_*
 
 Tier-1  RuntimeConfig.llm_adapter                    →  single primary adapter per Nexus run
+        LLMRoutingEvaluator (M-LLM-X.9)              →  first-match rule → ModelRouter
         context_preflight / engine_history_layer     →  adapter.context_window_tokens
-        ModelRouter (target)                         →  selects profile before adapter create
+        ModelRouter                                  →  selects profile before adapter create
 
 Tier-0  LLMAdapterRegistry                           →  lazy provider factories
         ModelCatalog (target)                        →  model_id → context, capabilities
@@ -371,6 +373,87 @@ AHI `RoutingTuningEngine` **recommends** profile order; policy engine **approves
 
 **Explicit non-goal:** Central LLM gateway microservice (§5.2.4) — separate ADR if pursued; M-LLM-X stays in-process Tier-0.
 
+### LLM routing rules (M-LLM-X.9 — Planned)
+
+**ADR:** [ADR-LLM-003](../adr/entries/2026-06-19/ADR-LLM-003.md)
+
+Authors configure dynamic model selection through a **Protocol contract** — not a rigid enum DSL. Built-in parametric rules and **custom classes** from Tier-3 share the same interface.
+
+#### Contracts (target location: `intergrax/llm_adapters/routing/`)
+
+| Type | Role |
+|------|------|
+| `RoutingContext` | Immutable snapshot: `task_class`, `budget_remaining_ratio`, `tokens_used`, `step_index`, `model_hint`, `tenant_id`, `agent_id`, … |
+| `RoutingTarget` | Rule output: `LLMProfile \| None`, `RoutingHint \| None`, `reason: str` (for trace) |
+| `LLMRoutingRule` | **Protocol** — `rule_id`, `priority`, `matches(ctx)`, `resolve(ctx)` |
+| `LLMRoutingRuleBase` | Optional ABC with helper methods (`budget_below`, `task_is`, …) |
+| `LLMRoutingProfile` | Tier-3: `default_profile`, `allowed_profiles`, `rules: tuple[LLMRoutingRule, ...]` |
+| `LLMRoutingEvaluator` | Sort by priority → first `matches()` → validate allowlist → `ModelRouter` |
+
+#### Evaluation flow
+
+```text
+RoutingContext (snapshot from Nexus / budget meter / classifier)
+    → sort rules by priority (descending)
+    → first rule where matches(ctx) is True
+    → target = rule.resolve(ctx)
+    → guard: target.profile ∈ allowed_profiles (reject + trace on violation)
+    → ModelRouter + FailoverLLMAdapter
+    → trace: rule_id, reason, profile_id (LLMRoutingAttemptDiagV1)
+```
+
+#### Built-in rules (same Protocol)
+
+| Class | Replaces / covers |
+|-------|-------------------|
+| `BudgetBelowRule(threshold, profile)` | Low-budget → specific provider/model |
+| `TaskClassRule(classes, target)` | Task-class-based selection |
+| `TokenThresholdRule(n, hint)` | Token ceiling → degrade hint |
+| `BudgetExceededDegradeRule()` | Unifies `BudgetReactionProfile.degrade_model` (M-LLM-X.9.5) |
+
+#### Custom rule example (Tier-3)
+
+```python
+class LowBudgetForceLocalRule(LLMRoutingRuleBase):
+    rule_id = "my_app.low_budget_vllm"
+    priority = 10
+
+    def matches(self, context: RoutingContext) -> bool:
+        return (
+            context.budget_remaining_ratio is not None
+            and context.budget_remaining_ratio < 0.2
+            and context.task_class in {"contract_review", "due_diligence"}
+        )
+
+    def resolve(self, context: RoutingContext) -> RoutingTarget:
+        return RoutingTarget(
+            profile=LLMProfile(provider="vllm", model="meta-llama/Llama-3.1-8B"),
+            reason=f"budget_low for {context.task_class}",
+        )
+```
+
+Wired in manifest: `LLMRoutingProfile(rules=(LowBudgetForceLocalRule(), BudgetBelowRule(...), ...))`.
+
+#### Three-layer model
+
+```text
+Layer 1 — Author rules (LLMRoutingProfile on Tier-3)     → explicit logic; always wins over L4
+Layer 2 — LLMRoutingEvaluator + ModelRouter (Tier-0)    → hot path (SYS-INV-10 single router)
+Layer 3 — AHI ROUTING_TUNING (AdaptiveProfile, optional) → bandit proposes ProfileVersion;
+                                                           does not execute arbitrary author code
+```
+
+#### Provider coverage
+
+| Model source | Routing path |
+|--------------|--------------|
+| Cloud API (OpenAI, Claude, Groq, …) | `LLMProfile(provider=…)` |
+| Local (Ollama, vLLM, llama.cpp) | Existing `LLMProvider` slugs |
+| HF self-hosted weights | Model id on `vllm` / `llama_cpp` profile |
+| HF Inference API (chat) | Optional provider plugin (M-LLM-X.9.8) or gateway via `openrouter` |
+
+**Anti-patterns:** string `eval` for rules; provider selection inside Tier-2 agents; routing target outside `allowed_profiles`; parallel router subsystem.
+
 ---
 
 ## Developer surfaces
@@ -595,6 +678,7 @@ Do not merge counters without explicit bridge code.
 | LLM-AUDIT-13 | Cohere dual slug (`cohere` vs `cohere_native`) confuses developers | **P2** | M-LLM-X.7.5 | **Done** |
 | LLM-AUDIT-14 | Capability flags not catalog-driven (`supports_vision`, tools, structured) | **P2** | M-LLM-X.1.7 | **Planned** |
 | LLM-AUDIT-15 | `engine_history_layer` token count inconsistent with preflight (chars/4) | **P0** | M-LLM-X.3.5 | **Done** — history already used adapter; preflight aligned in LC-2 |
+| LLM-AUDIT-16 | No unified LLM routing rule contract — static hints only; no custom author logic | **P1** | M-LLM-X.9 | **Planned** — ADR-LLM-003 |
 
 **Deferred (documented, no X-phase task):** tiktoken OpenAI-centric token estimate for non-OpenAI models — acceptable for budgeting until vendor-specific tokenizer plugins; note in `USAGE.md`.
 
@@ -613,7 +697,9 @@ Do not merge counters without explicit bridge code.
 | Anti-pattern | Why forbidden | Correct approach |
 |--------------|---------------|------------------|
 | Adapter returns bare `str` | Breaks metering, guardrails, replay | `LLMAdapterResponse` / `LLMStructuredResult[T]` |
-| Hardcoded model in Tier-2 agent | Bypasses profile, catalog, routing | `LLMProfile` + host resolver |
+| Hardcoded model in Tier-2 agent | Bypasses profile, catalog, routing | `LLMProfile` + host resolver + `LLMRoutingProfile` |
+| Custom routing logic without Protocol | Untraceable, bypasses allowlist | `LLMRoutingRule` subclass in Tier-3 |
+| String eval / dynamic rule paths | Security + audit failure | Importable typed rule classes only |
 | Direct OpenAI/Anthropic SDK in agents | Tier violation | Injected `LLMAdapter` via Nexus |
 | Manual JSON parse for structured output | No schema validation | `generate_structured(output_model=...)` |
 | Per-adapter context dict without catalog entry | Stale windows for new models | `ModelCatalog` + ADR-LLM-002 resolution |
@@ -644,7 +730,9 @@ Workflows: `unit-tests.yml`, `llm-adapters-guard.yml`, optional `llm-network-smo
 | Central LLM gateway service (single egress) | Platform ADR — not M-LLM-X |
 | Multimodal attachment mapping (W-ML.1) | LLM_ADAPTERS + MODALITY |
 | Cost envelopes (V-COST.*) | UNIFIED_EXECUTION_RUNTIME |
-| AHI routing tuning production loop | ADAPTIVE_HARNESS_INTELLIGENCE + M-LLM-X.5 |
+| AHI routing tuning production loop | ADAPTIVE_HARNESS_INTELLIGENCE + M-LLM-X.5 · **M-LLM-X.9** |
+| LLM routing rules (author + custom classes) | LLM_ADAPTERS M-LLM-X.9 · ADR-LLM-003 |
+| `BudgetReactionProfile.degrade_model` unification | AGENT_CONTRACTS + M-LLM-X.9.5 |
 | Product HTTP API DTOs | Tier-3 applications |
 
 **Out of scope:** per-business-agent adapter code in `llm_adapters/`, YOLO/ONNX engines, Phase K business agents.

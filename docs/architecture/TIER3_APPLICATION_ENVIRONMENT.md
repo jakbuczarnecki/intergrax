@@ -161,6 +161,7 @@ Tier-3 hosts are configured through **`ApplicationEnvironmentProfile`** — a ty
 | `ToolProfile` / `SkillProfile` | Allowed catalogs |
 | `IntegrationProfile` | Provider stack — includes optional `llm_guardrail` slug (§47) |
 | `LLMProfile` / `ModalityProfile` | Model and modality posture |
+| `LLMRoutingProfile` (M-LLM-X.9) | Dynamic model routing — built-in + custom `LLMRoutingRule` classes · [ADR-LLM-003](../adr/entries/2026-06-19/ADR-LLM-003.md) |
 | `ContextProfile` / `MemoryProfile` / `ContextDecisionProfile` | Assembly and stores |
 | `PromptProfile` | YAML prompt catalog path |
 | `ReliabilityProfile` | Idempotency, circuit breaker, checkpoint |
