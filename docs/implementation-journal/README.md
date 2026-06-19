@@ -19,17 +19,32 @@ The journal is **operator tooling** (alongside [`INTEGRAX_HARNESS_AUDIT_MAP.md`]
 
 ## When to write an entry
 
-Write an entry when an iteration **closes** a plan row, delivers a new mechanism, or ships agent/application capability — i.e. when the iteration summary in [`.cursor/rules/intergrax-iteration.mdc`](../../../.cursor/rules/intergrax-iteration.mdc) would mark work **complete**.
+**Default: skip.** The journal is a **milestone log**, not a Cursor session log. Git commits, PR descriptions, and plan row updates are the routine record for ordinary iterations.
 
-| Write | Skip |
-|-------|------|
-| Plan phase marked **Done** | Brainstorming or design-only chat |
-| New Tier-0/Tier-1 wiring or contract | Typo, formatting, comment-only |
-| Tier-2 agent or Tier-3 host feature | Exploratory spike with no merged artifact |
-| Audit remediation with code or canon update | `audit-only` report with no delivery |
-| ADR-level change (link the ADR) | Operator says **no journal** |
+Write an entry **only** when at least one **milestone trigger** below applies. Otherwise state **"no journal needed"** in the chat summary (with one-line rationale).
 
-**One entry per coherent iteration.** Multiple plan IDs in one PR → one entry listing all refs in `plan_ref`.
+### Milestone triggers (write)
+
+| Trigger | Examples |
+|---------|----------|
+| **Layer / phase closeout** | Full Harness LC, LCM 1–6 domain closeout, named plan phase header marked **Done** |
+| **ADR or significant contract change** | New or updated harness/agent/app ADR; architecture canon changes platform contracts or capability surface |
+| **Cross-domain or program closeout** | AUDIT-IDEAL band closeout, multi-domain maintenance batch with architectural impact |
+| **External validation** | Partner sign-off, production PoC validation, operational L3 sign-off |
+| **New harness / product capability** | New Tier-0 mechanism, new agent/application **shipped** (not scaffold-only) |
+| **Operator request** | Operator explicitly asks for a journal entry |
+
+### Default skip (do not write)
+
+| Skip | Examples |
+|------|----------|
+| Routine plan row | Single `*-MAINT-*`, gate fix, typo, formatting, comment-only |
+| Docs-only sync | Plan registration after audit with no code; hub/link updates; Mode I idea audit |
+| Exploratory work | Brainstorming, spike with no merged artifact |
+| Ordinary iteration | One coherent PR that closes a row but is not a milestone — use commit + plan update only |
+| Operator opt-out | Operator says **no journal** |
+
+**One entry per milestone** (not per Cursor chat). Multiple related plan IDs in one milestone → one entry listing all refs in `plan_ref`.
 
 ---
 
@@ -52,11 +67,11 @@ Harness audit map layer — see [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HA
 ## Workflow (agent)
 
 1. Complete implementation per iteration rules (tests, plan/architecture updates, ADR if needed).
-2. Create `entries/YYYY-MM-DD/` if needed; copy [`entries/_TEMPLATE.md`](entries/_TEMPLATE.md) → `entries/YYYY-MM-DD/<scope>-<slug>.md`.
+2. **If a milestone trigger applies** (see above): create `entries/YYYY-MM-DD/` if needed; copy [`entries/_TEMPLATE.md`](entries/_TEMPLATE.md) → `entries/YYYY-MM-DD/<scope>-<slug>.md`.
 3. Assign `id` per [`ENTRY_TEMPLATE.md`](ENTRY_TEMPLATE.md) §ID assignment.
 4. Fill frontmatter and sections in **English**; `plan_ref` = formal IDs only (YAML list).
 5. **Prepend** one row to [`INDEX.md`](INDEX.md) (newest first — do not append).
-6. Deliver iteration summary in chat (operator language) **and** point to the journal file path.
+6. Deliver iteration summary in chat (operator language). Include journal path **only when an entry was written**; otherwise **"no journal needed"** + rationale.
 
 **Quality rules:**
 

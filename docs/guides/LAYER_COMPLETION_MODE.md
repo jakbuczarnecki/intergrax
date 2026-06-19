@@ -229,7 +229,7 @@ After each sprint:
 - run verification (minimum: `uv run pytest -m "gate and not no_ci" -q` plus scripts from [AGENTS.md](../../AGENTS.md) and [SYSTEM_INVARIANTS.md §7](SYSTEM_INVARIANTS.md#7-ci-enforcement-map-selected) relevant to the layer),
 - verify alignment with architecture **and** [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md),
 - commit **only when the operator explicitly requests**,
-- add an [implementation journal](../implementation-journal/README.md) entry when the iteration completes (unless the operator skips).
+- add an [implementation journal](../implementation-journal/README.md) entry when the **layer closeout milestone** completes (see journal README §milestone triggers; skip routine rows).
 
 Advance to the next sprint **only** when the current sprint is closed and no P0/P1 blocker remains.
 
@@ -321,7 +321,7 @@ Before ending the session, present:
 
 ### Journal
 
-- path under `docs/implementation-journal/entries/YYYY-MM-DD/` (when required).
+- path under `docs/implementation-journal/entries/YYYY-MM-DD/` — **required** for layer closeout (milestone); see [README §milestone triggers](../implementation-journal/README.md).
 
 ### Remaining risks
 

@@ -69,7 +69,7 @@ applications/    MAY import from agents/ and intergrax/
 - Agent workflow → `docs/guides/AGENT_CREATION_GUIDE.md`
 - Harness AI terms → `docs/architecture/PLATFORM_FOUNDATION.md` §5.3 only
 - Nexus execution flow → `docs/architecture/NEXUS_EXECUTION_FLOW.md` + `docs/plan/NEXUS_EXECUTION_FLOW.md` · ADR → `docs/adr/entries/2026-06-07/ADR-FLOW-001.md`
-- Completed implementation episodes → `docs/implementation-journal/` (English; required on DoD unless operator skips)
+- Completed implementation **milestones** → `docs/implementation-journal/` (optional for routine iterations; see journal README)
 
 ### Harness platform
 
