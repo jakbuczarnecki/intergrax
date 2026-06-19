@@ -158,7 +158,7 @@ RETRIEVE (rag.retrieve / RetrievalService)
 | Rerankers | `rerankers/` | Registry + integration slugs (`cohere_rerank`, `jina_rerank`) |
 | Chunking | `document_splitters/` | `recursive`, `langchain_recursive`, `semantic`, `parent_child`, `docling` |
 | Loaders | `document_loaders/` | Handler registry + `ParserPipeline`; parsers via Integration catalog |
-| Embeddings | `embedding/` | Provider registry (`hf`, `openai`, `ollama`, `vllm`), batched pipeline, retry |
+| Embeddings | `embedding/` | Provider registry (`hf`, `openai`, `ollama`, `vllm`, `llama_cpp`), batched pipeline, retry |
 | Vector store | `vectorstore/` | Manager + hybrid/sparse; backends via Integration bridges |
 | GraphRAG | `graph/` | RAG `GraphStore` ABC; bootstrap backends; indexers; adapters to Integration `graph_store` |
 | Agentic | `retrieval/agentic_loop.py`, `query_refiner.py` | Budgeted deep-tier loop |

@@ -446,7 +446,7 @@ OpenAI-compatible slugs share `openai_compat_factory.py`. ABC defaults: streamin
 | `openrouter` | `openai_compat` | `OPENROUTER_API_KEY` | compat | compat | Multi-vendor model strings |
 | `deepseek` | `openai_compat` | `DEEPSEEK_API_KEY` | compat | compat | |
 | `xai` | `openai_compat` | `XAI_API_KEY` | compat | compat | |
-| `llama_cpp` | `openai_compat` | `LLAMA_CPP_BASE_URL` | compat | compat | |
+| `llama_cpp` | `openai_compat` | `INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL` | compat | compat | Self-hosted CPU-friendly; Intergrax Docker host **8102** |
 | `cohere` | `openai_compat` | `COHERE_API_KEY` | compat | compat | Chat Completions shim |
 | `cohere_native` | `cohere_native_adapter` | `COHERE_API_KEY` | yes | partial | Prefer when native tools needed |
 | `vertex_gemini` | `vertex_gemini_adapter` | `GOOGLE_APPLICATION_CREDENTIALS` | yes | yes | |
@@ -454,20 +454,20 @@ OpenAI-compatible slugs share `openai_compat_factory.py`. ABC defaults: streamin
 
 Per-provider model env vars: `INTERGRAX_DEFAULT_<PROVIDER>_MODEL` (see [`USAGE.md`](../../intergrax/llm_adapters/USAGE.md)).
 
-### Self-hosted inference (Ollama vs vLLM)
+### Self-hosted inference (Ollama vs vLLM vs llama.cpp)
 
-| Concern | Ollama | vLLM |
-|---------|--------|------|
-| Adapter module | `ollama_adapter.py` (LangChain) | `openai_compat_providers.VllmChatAdapter` |
-| API shape | Ollama native HTTP | OpenAI Chat Completions (`/v1`) |
-| Tier-0 slug | `LLMProvider.OLLAMA` | `LLMProvider.VLLM` |
-| Local Docker | `infra/docker/ollama` · profile `rag` · port **11434** | `infra/docker/vllm` · profile **`vllm`** (opt-in) · host **8100** |
-| GPU | Optional (CPU OK for dev) | **NVIDIA GPU required** for practical use |
-| P5 integration | `interaction_surface/ollama` (health probe) | Not registered — use adapter + Docker health (`/v1/models`) |
+| Concern | Ollama | vLLM | llama.cpp |
+|---------|--------|------|-----------|
+| Adapter module | `ollama_adapter.py` (LangChain) | `openai_compat_providers.VllmChatAdapter` | `openai_compat_providers.LlamaCppChatAdapter` |
+| API shape | Ollama native HTTP | OpenAI Chat Completions (`/v1`) | OpenAI Chat Completions (`/v1`) |
+| Tier-0 slug | `LLMProvider.OLLAMA` | `LLMProvider.VLLM` | `LLMProvider.LLAMA_CPP` |
+| Local Docker | `infra/docker/ollama` · profile `rag` · port **11434** | `infra/docker/vllm` · profile **`vllm`** (opt-in) · host **8100** | `infra/docker/llama-cpp` · profile **`llama-cpp`** (opt-in) · host **8102** |
+| GPU | Optional (CPU OK for dev) | **NVIDIA GPU required** for practical use | **CPU-first** (optional CUDA in compose) |
+| P5 integration | `interaction_surface/ollama` (health probe) | Not registered — adapter + Docker health (`/v1/models`) | Not registered — same as vLLM |
 
-**Do not** add a LangChain-style duplicate adapter for vLLM — OpenAI-compat factory is the canonical path (M-LLM.3).
+**Do not** add a LangChain-style duplicate adapter for vLLM or llama.cpp — OpenAI-compat factory is the canonical path (M-LLM.3, M-LLM.7).
 
-**Intergrax Docker wiring:**
+**Intergrax Docker wiring (vLLM):**
 
 ```bash
 cd infra/integration && ./manage.sh start vllm
@@ -475,9 +475,18 @@ export INTERGRAX_DEFAULT_VLLM_BASE_URL=http://127.0.0.1:8100/v1
 export INTERGRAX_LLM_PROVIDER=vllm
 ```
 
-Port **8100** avoids conflict with Chroma (**8000**) in the `rag` profile — see [`infra/PORTS.md`](../../infra/PORTS.md).
+**Intergrax Docker wiring (llama.cpp):**
 
-**Live smoke:** `tests/unit/llm_adapters/test_network_smoke.py::test_vllm_live_one_shot` (marker `network`; skips when server unreachable).
+```bash
+cd infra/integration && ./manage.sh start llama-cpp
+export INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL=http://127.0.0.1:8102/v1
+export INTERGRAX_LLM_PROVIDER=llama_cpp
+export INTERGRAX_LLM_MODEL=default
+```
+
+Port **8100** (vLLM) and **8102** (llama.cpp) avoid conflict with Chroma (**8000**) and Weaviate (**8080**) — see [`infra/PORTS.md`](../../infra/PORTS.md).
+
+**Live smoke:** `test_vllm_live_one_shot` / `test_llama_cpp_live_one_shot` in `tests/unit/llm_adapters/test_network_smoke.py` (marker `network`; skips when server unreachable).
 
 ---
 
