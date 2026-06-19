@@ -13,6 +13,7 @@ from intergrax.llm_adapters.registry.failover_adapter import (
     FailoverLLMAdapter,
     LLMRoutingAttemptRecord,
 )
+from intergrax.llm_adapters.routing.evaluator import AllowlistViolationError
 from intergrax.runtime.nexus.tracing.trace_models import (
     DiagnosticPayload,
     TraceComponent,
@@ -21,7 +22,7 @@ from intergrax.runtime.nexus.tracing.trace_models import (
 
 if TYPE_CHECKING:
     from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-    from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
+    from intergrax.llm_adapters.routing.contracts import RoutingContext, RoutingEvaluation
 
 TraceEmitFn = Callable[..., None]
 
@@ -79,6 +80,54 @@ def emit_llm_routing_rule_diag(
         step="llm_routing_rule",
         message="LLM routing rule evaluation recorded.",
         level=TraceLevel.INFO,
+        payload=payload,
+    )
+
+
+@dataclass(frozen=True)
+class LLMRoutingAllowlistViolationDiagV1(DiagnosticPayload):
+    """PII-safe record when routing resolves outside ``allowed_profiles`` (M-LLM-X.11.4)."""
+
+    rule_id: str | None
+    profile_id: str
+    tenant_id: str | None
+    agent_id: str | None
+    message: str
+
+    def redact(self) -> LLMRoutingAllowlistViolationDiagV1:
+        return self
+
+    @classmethod
+    def schema_id(cls) -> str:
+        return "intergrax.diag.engine.core_llm.routing_allowlist_violation"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "rule_id": self.rule_id,
+            "profile_id": self.profile_id,
+            "tenant_id": self.tenant_id,
+            "agent_id": self.agent_id,
+            "message": self.message,
+        }
+
+
+def emit_llm_routing_allowlist_violation_diag(
+    trace_event: TraceEmitFn,
+    error: AllowlistViolationError,
+    context: "RoutingContext",
+) -> None:
+    payload = LLMRoutingAllowlistViolationDiagV1(
+        rule_id=None,
+        profile_id="",
+        tenant_id=context.tenant_id,
+        agent_id=context.agent_id,
+        message=str(error),
+    )
+    trace_event(
+        component=TraceComponent.ENGINE,
+        step="llm_routing_allowlist_violation",
+        message="LLM routing allowlist violation.",
+        level=TraceLevel.ERROR,
         payload=payload,
     )
 

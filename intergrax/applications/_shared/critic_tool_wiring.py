@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any
 
 from intergrax.applications._shared.critic_llm_resolver import resolve_critic_llm_adapter
-from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
 from intergrax.applications._shared.tool_wiring import ApplicationToolWiring
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
@@ -28,7 +28,7 @@ def build_critic_tool_wiring_context(
     trace_reader: Any | None = None,
 ) -> ToolWiringContext:
     """Clone tool wiring context with critic-specific LLM and eval bindings."""
-    producer = resolve_llm_adapter(env)
+    producer = resolve_environment_llm_adapter(env)
     critic_llm = resolve_critic_llm_adapter(env, producer_adapter=producer)
     extras = dict(base_ctx.extras)
     extras["llm_adapter"] = critic_llm

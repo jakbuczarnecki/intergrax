@@ -25,9 +25,15 @@ from intergrax.llm_adapters.routing.builtin_rules import (
     cheapest_allowed_model_hint,
 )
 from intergrax.llm_adapters.routing.context_bridge import (
+    LLMRoutingRuntimeSnapshot,
     budget_remaining_ratio_from_limits,
     build_routing_context_from_runtime,
+    refresh_llm_routing_context,
     tokens_used_from_usage,
+)
+from intergrax.llm_adapters.routing.evaluating_adapter import (
+    RoutingEvaluatingLLMAdapter,
+    wrap_routing_evaluating_adapter,
 )
 from intergrax.llm_adapters.routing.contracts import (
     LLMRoutingProfile,
@@ -60,12 +66,16 @@ __all__ = [
     "LLMRoutingProfile",
     "LLMRoutingRule",
     "LLMRoutingRuleBase",
+    "LLMRoutingRuntimeSnapshot",
     "ModelHintPresentRule",
     "PolicyHintRule",
     "RoutingContext",
+    "RoutingEvaluatingLLMAdapter",
     "RoutingEvaluation",
     "RoutingHint",
     "RoutingTarget",
+    "refresh_llm_routing_context",
+    "wrap_routing_evaluating_adapter",
     "StepIndexAtLeastRule",
     "StepIndexBelowRule",
     "TaskClassInRule",

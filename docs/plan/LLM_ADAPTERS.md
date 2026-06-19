@@ -121,7 +121,7 @@
 | 8 | X-8 | M-LLM-X.8.1–8.3 | Medium | **Planned** |
 | 9 | X-9 | M-LLM-X.9.1–9.9 | **P1** | **Done** (2026-06-19) — ADR-LLM-003 · routing rule Protocol |
 | 10 | X-10 | M-LLM-X.10.1–10.8 | **P1** | **Done** — routing enterprise closeout (start-of-run + ACP) |
-| 11 | X-11 | M-LLM-X.11.1–11.8 | **P1** | **Planned** — routing enterprise hardening (mid-run Nexus) |
+| 11 | X-11 | M-LLM-X.11.1–11.8 | **P1** | **Done** — routing enterprise hardening (mid-run Nexus) |
 
 **Closeout gate:** All M-LLM-X.* Done + architecture audit register all **Done** + `tests/unit/llm_adapters/` green + new CI scripts green. **X-10** closed LLM-AUDIT-17 (start-of-run scope). **X-11** required for **LLM-AUDIT-18** (strict enterprise mid-run Nexus). **X-8** domain closeout follows **X-11**.
 
@@ -340,14 +340,14 @@ Export `BUILTIN_ROUTING_RULES: tuple[type[LLMRoutingRuleBase], ...]` + `builtin_
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| M-LLM-X.11.1 | **`RoutingEvaluatingLLMAdapter`** — wrap `LLMAdapter`; before each `generate_messages` / `generate_with_tools` / `generate_structured` re-run `LLMRoutingEvaluator` with live context; rebuild inner adapter when profile/hint changes | **Planned** | **Critical** | `intergrax/llm_adapters/routing/evaluating_adapter.py`, `llm_resolver.py` | Unit: budget threshold crossing swaps profile identity |
-| M-LLM-X.11.2 | **`refresh_llm_routing_context()`** — update `RuntimeConfig.llm_routing_context` from budget meter (`ResolvedBudgetLimits` / usage), `step_index`, `budget_degrade_active`, `task_class` during Nexus step loop | **Planned** | **Critical** | `context_bridge.py`, `runtime_state.py` or step kernel hook | Context fields change between synthetic steps in test |
-| M-LLM-X.11.3 | **Unify `resolve_llm_adapter()` call sites** — `nexus_factory`, `environment_wiring`, `critic_tool_wiring`, `harness_host_runtime` pass `build_routing_context_from_runtime()` (tenant, metadata, budget when available) | **Planned** | **Critical** | `applications/_shared/*.py` | No bare `resolve_llm_adapter(env)` when `llm_routing_profile` set |
-| M-LLM-X.11.4 | **Observability loop** — emit `LLMRoutingRuleDiagV1` on **every** evaluation (evaluating adapter + `DynamicLLMRouter`); `trace_bridge` gate for `routing_rule` schema; `LLMRoutingAllowlistViolationDiagV1` on `AllowlistViolationError` | **Planned** | High | `llm_routing_attempt.py`, `trace_bridge.py`, `evaluator.py` | `test_trace_bridge_maps_llm_routing_rule_schema` green |
-| M-LLM-X.11.5 | **True E2E acceptance** — full ACP or Nexus run: seed budget → execute LLM step(s) → budget crosses `BudgetBelowRule` threshold → assert model/profile change in trace or adapter meter | **Planned** | High | `tests/acceptance/llm_routing/` | `-m gate` green; not resolver-only |
-| M-LLM-X.11.6 | **Harness host parity** — when `llm_routing_profile` set, wire evaluating adapter or document ACP-only; minimum: `harness_host_runtime` uses evaluating wrapper on `llm_adapter` passed to `build_nexus_loop_from_environment` | **Planned** | Medium | `harness_host_runtime.py`, `nexus_factory.py` | Host integration test |
-| M-LLM-X.11.7 | **Docs maturity re-score** — architecture L4→L5 criteria; USAGE §mid-run routing; clarify X-10 vs X-11 scope; custom + builtin authoring paths | **Planned** | Medium | `architecture/LLM_ADAPTERS.md`, `USAGE.md` | Linked from hub |
-| M-LLM-X.11.8 | **CI gate** — `scripts/check_llm_routing_context_wiring.py` (or extend `check_llm_routing_rules.py`) — static scan: no `resolve_llm_adapter(env)` without context bridge on Tier-3 wiring modules | **Planned** | Medium | `scripts/` | Registered in `check_audit_ideal_gates.py` |
+| M-LLM-X.11.1 | **`RoutingEvaluatingLLMAdapter`** — wrap `LLMAdapter`; before each `generate_messages` / `generate_with_tools` / `generate_structured` re-run `LLMRoutingEvaluator` with live context; rebuild inner adapter when profile/hint changes | **Done** | **Critical** | `intergrax/llm_adapters/routing/evaluating_adapter.py`, `llm_resolver.py` | Unit: budget threshold crossing swaps profile identity |
+| M-LLM-X.11.2 | **`refresh_llm_routing_context()`** — update `RuntimeConfig.llm_routing_context` from budget meter (`ResolvedBudgetLimits` / usage), `step_index`, `budget_degrade_active`, `task_class` during Nexus step loop | **Done** | **Critical** | `context_bridge.py`, `llm_routing_runtime_bridge.py`, `uaep.py` | Context fields change between synthetic steps in test |
+| M-LLM-X.11.3 | **Unify `resolve_llm_adapter()` call sites** — `nexus_factory`, `environment_wiring`, `critic_tool_wiring`, `harness_host_runtime` pass `build_routing_context_from_runtime()` (tenant, metadata, budget when available) | **Done** | **Critical** | `applications/_shared/*.py` | No bare `resolve_llm_adapter(env)` when `llm_routing_profile` set |
+| M-LLM-X.11.4 | **Observability loop** — emit `LLMRoutingRuleDiagV1` on **every** evaluation (evaluating adapter + `DynamicLLMRouter`); `trace_bridge` gate for `routing_rule` schema; `LLMRoutingAllowlistViolationDiagV1` on `AllowlistViolationError` | **Done** | High | `llm_routing_attempt.py`, `trace_bridge.py`, `runtime_state.py` | `test_trace_bridge_maps_llm_routing_rule_schema` green |
+| M-LLM-X.11.5 | **True E2E acceptance** — full ACP or Nexus run: seed budget → execute LLM step(s) → budget crosses `BudgetBelowRule` threshold → assert model/profile change in trace or adapter meter | **Done** | High | `tests/acceptance/llm_routing/` | `-m gate` green; evaluating adapter mid-run swap |
+| M-LLM-X.11.6 | **Harness host parity** — when `llm_routing_profile` set, wire evaluating adapter or document ACP-only; minimum: `harness_host_runtime` uses evaluating wrapper on `llm_adapter` passed to `build_nexus_loop_from_environment` | **Done** | Medium | `harness_host_runtime.py`, `runtime_config_bridge.py` | Host integration test |
+| M-LLM-X.11.7 | **Docs maturity re-score** — architecture L4→L5 criteria; USAGE §mid-run routing; clarify X-10 vs X-11 scope; custom + builtin authoring paths | **Done** | Medium | `architecture/LLM_ADAPTERS.md`, `USAGE.md` | Linked from hub |
+| M-LLM-X.11.8 | **CI gate** — `scripts/check_llm_routing_context_wiring.py` (or extend `check_llm_routing_rules.py`) — static scan: no `resolve_llm_adapter(env)` without context bridge on Tier-3 wiring modules | **Done** | Medium | `scripts/` | Registered in `check_audit_ideal_gates.py` |
 
 **Suggested PR order (X-11):** 11.1 → 11.2 → 11.3 → 11.4 → 11.5 → 11.6 → 11.7 → 11.8.
 
@@ -401,7 +401,7 @@ PR-14: M-LLM-X.8.* closeout (after X-11)
 | LLM-AUDIT-15 — History layer token count inconsistent with preflight | M-LLM-X.3.5 |
 | LLM-AUDIT-16 — No unified routing rule contract (idea audit 2026-06-19) | M-LLM-X.9.* |
 | LLM-AUDIT-17 — Routing enterprise E2E start-of-run + ACP (context, trace, reference host) | M-LLM-X.10.* **Done** |
-| LLM-AUDIT-18 — Routing mid-run Nexus live re-eval, context refresh, full trace, true E2E | M-LLM-X.11.* **Planned** |
+| LLM-AUDIT-18 — Routing mid-run Nexus live re-eval, context refresh, full trace, true E2E | M-LLM-X.11.* **Done** |
 | tiktoken OpenAI-centric estimate (all providers) | **Deferred** — document limitation in USAGE; vendor tokenizer plugins post-X |
 | Single `RuntimeConfig.llm_adapter` per run (multi-model) | M-LLM-X.4–5 (profile chain + routing); no multi-adapter pool in X |
 | Distributed Redis rate limit host wiring | **Ops** — document in USAGE X.7.1; not LLM-AUDIT tier-0 code |
@@ -803,18 +803,18 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 **Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) § Enterprise routing hardening  
 **ADR:** ADR-LLM-003 (unchanged unless evaluating adapter changes tier contract).  
 **Goal:** Live mid-run profile swap on Nexus `llm_adapter`; full observability loop; true E2E; unified call sites.  
-**Phase status:** **Planned** — 0/8 Done · see [Wave M-LLM-X-11](#wave-m-llm-x-11--routing-enterprise-hardening-mid-run-nexus)
+**Phase status:** **Done** — 8/8 · closes **LLM-AUDIT-18** (mid-run Nexus evaluating adapter + context refresh).
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **M-LLM-X.11.1** | Code | P1 | **Planned** | `RoutingEvaluatingLLMAdapter` | Unit: profile swap on context change |
-| 2 | **M-LLM-X.11.2** | Wire | P1 | **Planned** | `refresh_llm_routing_context()` in runtime loop | Step loop test |
-| 3 | **M-LLM-X.11.3** | Wire | P1 | **Planned** | All `resolve_llm_adapter` call sites use context bridge | CI static gate |
-| 4 | **M-LLM-X.11.4** | Obs | P1 | **Planned** | Per-eval trace + allowlist violation diag + trace_bridge gate | Schema tests |
-| 5 | **M-LLM-X.11.5** | E2E | P1 | **Planned** | Full run budget threshold → model change | `tests/acceptance/llm_routing/` |
-| 6 | **M-LLM-X.11.6** | Wire | P2 | **Planned** | Harness host evaluating adapter parity | Host test |
-| 7 | **M-LLM-X.11.7** | Docs | P2 | **Planned** | L5 maturity + USAGE mid-run section | Architecture sync |
-| 8 | **M-LLM-X.11.8** | CI | P2 | **Planned** | `check_llm_routing_context_wiring.py` | Umbrella gate |
+| 1 | **M-LLM-X.11.1** | Code | P1 | **Done** | `RoutingEvaluatingLLMAdapter` | Unit: profile swap on context change |
+| 2 | **M-LLM-X.11.2** | Wire | P1 | **Done** | `refresh_llm_routing_context()` in runtime loop | Step loop test |
+| 3 | **M-LLM-X.11.3** | Wire | P1 | **Done** | All `resolve_llm_adapter` call sites use context bridge | CI static gate |
+| 4 | **M-LLM-X.11.4** | Obs | P1 | **Done** | Per-eval trace + allowlist violation diag + trace_bridge gate | Schema tests |
+| 5 | **M-LLM-X.11.5** | E2E | P1 | **Done** | Full run budget threshold → model change | `tests/acceptance/llm_routing/` |
+| 6 | **M-LLM-X.11.6** | Wire | P2 | **Done** | Harness host evaluating adapter parity | Host test |
+| 7 | **M-LLM-X.11.7** | Docs | P2 | **Done** | L5 maturity + USAGE mid-run section | Architecture sync |
+| 8 | **M-LLM-X.11.8** | CI | P2 | **Done** | `check_llm_routing_context_wiring.py` | Umbrella gate |
 
 **Suggested PR order:** 11.1 → 11.2 → 11.3 → 11.4 → 11.5 → 11.6 → 11.7 → 11.8.
 

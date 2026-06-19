@@ -77,6 +77,7 @@ def main() -> int:
         ("check_compliance_profile_wiring.py", ()),
         ("check_live_model_routing_wiring.py", ()),
         ("check_llm_routing_rules.py", ()),
+        ("check_llm_routing_context_wiring.py", ()),
         ("check_llm_profile_runtime.py", ()),
         ("check_rag_hierarchical_bootstrap.py", ()),
         ("check_rag_catalog_poisoning_defense.py", ()),

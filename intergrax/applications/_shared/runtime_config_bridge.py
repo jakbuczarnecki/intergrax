@@ -14,6 +14,10 @@ from intergrax.applications._shared.integration_runtime_bridge import (
     apply_integration_profiles_from_environment,
 )
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+from intergrax.applications._shared.llm_routing_runtime_bridge import (
+    init_llm_routing_on_config,
+    make_config_routing_context_provider,
+)
 from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
 from intergrax.applications._shared.rag_runtime_bridge import apply_rag_for_environment
 from intergrax.applications._shared.context_runtime_bridge import (
@@ -126,14 +130,9 @@ def materialize_runtime_config(
         agent_id=str(request.metadata.get("agent_id", "")) or None,
         metadata=request.metadata,
     )
-    resolved_llm = resolve_llm_adapter(
-        env,
-        agent_override=llm_adapter,
-        routing_context=routing_context,
-    )
 
     config = RuntimeConfig(
-        llm_adapter=resolved_llm,
+        llm_adapter=None,
         enable_rag=ctx_profile.enable_rag,
         enable_websearch=ctx_profile.enable_websearch,
         production_mode=strict or env.execution_mode.value == "strict",
@@ -146,6 +145,15 @@ def materialize_runtime_config(
         integration_profile=integration_profile,
         llm_routing_context=routing_context,
     )
+    init_llm_routing_on_config(config, routing_context, request)
+    context_provider = make_config_routing_context_provider(config)
+    resolved_llm = resolve_llm_adapter(
+        env,
+        agent_override=llm_adapter,
+        routing_context=routing_context,
+        context_provider=context_provider,
+    )
+    config.llm_adapter = resolved_llm
     apply_memory_profile_to_runtime_config(config, env.memory_profile)
     apply_prompt_profiles_from_environment(config, env)
     apply_observability_profiles_from_environment(config, env)

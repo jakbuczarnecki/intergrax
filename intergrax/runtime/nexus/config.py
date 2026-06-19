@@ -39,6 +39,7 @@ from intergrax.runtime.nexus.config_sections import (
 )
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.routing.context_bridge import LLMRoutingRuntimeSnapshot
 from intergrax.llm_adapters.routing.contracts import RoutingContext
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.profiles.rag_profile import RagProfile
@@ -117,6 +118,7 @@ class RuntimeConfig:
     tenant_id: Optional[str] = None
     workspace_id: Optional[str] = None
     llm_routing_context: Optional[RoutingContext] = None
+    llm_routing_snapshot: Optional[LLMRoutingRuntimeSnapshot] = None
 
     # ------------------------------------------------------------------
     # RAG CONFIGURATION

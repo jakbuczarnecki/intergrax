@@ -5,11 +5,25 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import dataclass, field
 from typing import Any
 
 from intergrax.contracts.acp_state import AcpInvocationUsageView
 from intergrax.contracts.agent_budget import ResolvedBudgetLimits
 from intergrax.llm_adapters.routing.contracts import RoutingContext
+
+
+@dataclass
+class LLMRoutingRuntimeSnapshot:
+    """Mutable routing inputs refreshed during a Nexus run (M-LLM-X.11.2)."""
+
+    task_class: str | None = None
+    agent_id: str | None = None
+    step_index: int | None = None
+    budget_degrade_active: bool = False
+    budget_limits: ResolvedBudgetLimits | None = None
+    invocation_usage: AcpInvocationUsageView | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 def budget_remaining_ratio_from_limits(
@@ -85,6 +99,50 @@ def build_routing_context_from_runtime(
         agent_id=resolved_agent_id,
         budget_degrade_active=budget_degrade_active,
     )
+
+
+def refresh_llm_routing_context(
+    snapshot: LLMRoutingRuntimeSnapshot,
+    *,
+    tenant_id: str | None = None,
+    step_index: int | None = None,
+    budget_degrade_active: bool | None = None,
+    task_class: str | None = None,
+    agent_id: str | None = None,
+    budget_limits: ResolvedBudgetLimits | None = None,
+    invocation_usage: AcpInvocationUsageView | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> tuple[LLMRoutingRuntimeSnapshot, RoutingContext]:
+    """Update snapshot fields and return a fresh immutable ``RoutingContext``."""
+    merged_metadata = dict(snapshot.metadata)
+    if metadata is not None:
+        merged_metadata.update(metadata)
+    refreshed = LLMRoutingRuntimeSnapshot(
+        task_class=task_class if task_class is not None else snapshot.task_class,
+        agent_id=agent_id if agent_id is not None else snapshot.agent_id,
+        step_index=step_index if step_index is not None else snapshot.step_index,
+        budget_degrade_active=(
+            budget_degrade_active
+            if budget_degrade_active is not None
+            else snapshot.budget_degrade_active
+        ),
+        budget_limits=budget_limits if budget_limits is not None else snapshot.budget_limits,
+        invocation_usage=(
+            invocation_usage if invocation_usage is not None else snapshot.invocation_usage
+        ),
+        metadata=merged_metadata,
+    )
+    context = build_routing_context_from_runtime(
+        tenant_id=tenant_id,
+        agent_id=refreshed.agent_id,
+        task_class=refreshed.task_class,
+        step_index=refreshed.step_index,
+        budget_degrade_active=refreshed.budget_degrade_active,
+        metadata=refreshed.metadata,
+        budget_limits=refreshed.budget_limits,
+        invocation_usage=refreshed.invocation_usage,
+    )
+    return refreshed, context
 
 
 def _meta_str(meta: Mapping[str, Any], *keys: str) -> str | None:

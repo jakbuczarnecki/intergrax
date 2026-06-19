@@ -344,15 +344,17 @@ env.llm_routing_profile = LLMRoutingProfile(
 - [x] `DynamicLLMRouter` on ACP when profile set
 - [x] CI gate `python scripts/check_llm_routing_rules.py`
 
-**Enterprise hardening (M-LLM-X.11 — Planned · mid-run Nexus):**
+**Enterprise hardening (M-LLM-X.11 — Done · mid-run Nexus):**
 
-- [ ] `RoutingEvaluatingLLMAdapter` — live re-eval on each LLM call
-- [ ] `refresh_llm_routing_context()` in Nexus step loop
-- [ ] All `resolve_llm_adapter()` call sites use context bridge
-- [ ] Per-evaluation trace + allowlist violation diag
-- [ ] True E2E run: budget threshold → model swap in flight
-- [ ] Harness host evaluating adapter parity
-- [ ] CI gate `check_llm_routing_context_wiring.py`
+- [x] `RoutingEvaluatingLLMAdapter` — live re-eval on each LLM call
+- [x] `refresh_llm_routing_context()` in Nexus / UAEP step loop
+- [x] All Tier-3 wiring uses `resolve_environment_llm_adapter()` or context provider
+- [x] Per-evaluation trace + `LLMRoutingAllowlistViolationDiagV1`
+- [x] Mid-run acceptance: budget threshold → model swap via evaluating adapter
+- [x] Harness host + `materialize_runtime_config` evaluating adapter parity
+- [x] CI gate `check_llm_routing_context_wiring.py`
+
+**Mid-run routing:** when `llm_routing_profile` is set, `resolve_llm_adapter()` wraps the core adapter in `RoutingEvaluatingLLMAdapter`. `RuntimeConfig.llm_routing_snapshot` is refreshed via `sync_llm_routing_snapshot_for_state()` before each UAEP step and on each LLM call through the context provider.
 
 **Testing:** unit-test `rule.matches(fake_context)` and `rule.resolve(...)` without Nexus. CI gate: `python scripts/check_llm_routing_rules.py`.
 

@@ -15,8 +15,7 @@ from intergrax.applications._shared.environment_wiring import (
     ApplicationEnvironmentWiring,
     wire_application_environment,
 )
-from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
-from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
+from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
 from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
 from intergrax.applications._shared.task_memory_wiring import wire_task_memory_from_profile
 from intergrax.applications._shared.wiring import build_application_registry
@@ -216,10 +215,7 @@ def build_harness_host_runtime(
         task_memory_db_path=task_memory.db_path,
         shadow_manager=env_wiring.shadow_manager,
         sandbox_manager=env_wiring.sandbox_manager,
-        llm_adapter=resolve_llm_adapter(
-            environment,
-            routing_context=build_routing_context_from_runtime(tenant_id="default"),
-        ),
+        llm_adapter=resolve_environment_llm_adapter(environment, tenant_id="default"),
         runtime_event_bus=env_wiring.build_context.runtime_event_bus,
         security_wiring=security_wiring,
         guardrail_wiring=guardrail_wiring,

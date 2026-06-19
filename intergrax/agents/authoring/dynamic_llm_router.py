@@ -13,6 +13,7 @@ from intergrax.llm_adapters.routing import (
     LLMRoutingEvaluator,
     LLMRoutingProfile,
     RoutingContext,
+    RoutingEvaluation,
     RoutingHint,
 )
 from intergrax.llm_adapters.routing.builtin_rules import cheapest_allowed_model_hint
@@ -26,6 +27,7 @@ class DynamicLLMRouter:
     _routing_profile: LLMRoutingProfile
     _context_provider: Callable[[], RoutingContext]
     _evaluator: LLMRoutingEvaluator = field(default_factory=LLMRoutingEvaluator)
+    _on_evaluated: Callable[[RoutingEvaluation], None] | None = None
 
     def list_allowed_models(self) -> list[str]:
         return self._inner.list_allowed_models()
@@ -45,6 +47,8 @@ class DynamicLLMRouter:
             self._routing_profile,
             self._context_provider(),
         )
+        if self._on_evaluated is not None:
+            self._on_evaluated(evaluation)
         if evaluation.target.hint is RoutingHint.CHEAPEST:
             return cheapest_allowed_model_hint(self._inner.list_allowed_models())
         if evaluation.selected_profile.model:
@@ -63,9 +67,11 @@ def wrap_dynamic_llm_router(
     *,
     routing_profile: LLMRoutingProfile,
     context_provider: Callable[[], RoutingContext],
+    on_evaluated: Callable[[RoutingEvaluation], None] | None = None,
 ) -> DynamicLLMRouter:
     return DynamicLLMRouter(
         _inner=router,
         _routing_profile=routing_profile,
         _context_provider=context_provider,
+        _on_evaluated=on_evaluated,
     )

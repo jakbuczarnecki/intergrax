@@ -191,18 +191,52 @@ class RuntimeState(RuntimeStateContract):
         )
 
 
-    def configure_llm_tracker(self) -> None:     
+    def configure_llm_tracker(self) -> None:
 
         if self.llm_usage_tracker is None:
-           self.llm_usage_tracker = LLMUsageTracker(run_id=self.run_id)            
-           
+           self.llm_usage_tracker = LLMUsageTracker(run_id=self.run_id)
+
         core_adapter = self.context.config.llm_adapter
         if core_adapter is not None:
-            from intergrax.applications._shared.llm_resolver import consume_routing_evaluation
+            from intergrax.applications._shared.llm_resolver import (
+                consume_routing_evaluation,
+                set_allowlist_violation_observer,
+                set_routing_evaluation_observer,
+            )
+            from intergrax.llm_adapters.routing.evaluating_adapter import RoutingEvaluatingLLMAdapter
             from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import (
                 attach_failover_routing_trace_observer,
+                emit_llm_routing_allowlist_violation_diag,
                 emit_llm_routing_rule_diag,
             )
+
+            def _on_evaluated(evaluation: object) -> None:
+                from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
+
+                assert isinstance(evaluation, RoutingEvaluation)
+                emit_llm_routing_rule_diag(self.trace_event, evaluation)
+                adapter = self.context.config.llm_adapter
+                if isinstance(adapter, RoutingEvaluatingLLMAdapter):
+                    attach_failover_routing_trace_observer(
+                        adapter.inner_adapter,
+                        self.trace_event,
+                    )
+
+            def _on_allowlist_violation(exc: object, context: object) -> None:
+                from intergrax.llm_adapters.routing.contracts import RoutingContext
+                from intergrax.llm_adapters.routing.evaluator import AllowlistViolationError
+
+                assert isinstance(exc, AllowlistViolationError)
+                assert isinstance(context, RoutingContext)
+                emit_llm_routing_allowlist_violation_diag(self.trace_event, exc, context)
+
+            set_routing_evaluation_observer(_on_evaluated)
+            set_allowlist_violation_observer(_on_allowlist_violation)
+
+            if isinstance(core_adapter, RoutingEvaluatingLLMAdapter):
+                core_adapter.set_on_evaluated(_on_evaluated)
+                core_adapter.set_on_allowlist_violation(_on_allowlist_violation)
+                attach_failover_routing_trace_observer(core_adapter.inner_adapter, self.trace_event)
 
             attach_failover_routing_trace_observer(core_adapter, self.trace_event)
             routing_evaluation = consume_routing_evaluation()
