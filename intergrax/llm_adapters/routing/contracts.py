@@ -86,6 +86,27 @@ class LLMRoutingRuleBase(ABC):
     def tokens_above(self, context: RoutingContext, threshold: int) -> bool:
         return context.tokens_used is not None and context.tokens_used > threshold
 
+    def budget_above(self, context: RoutingContext, ratio: float) -> bool:
+        return (
+            context.budget_remaining_ratio is not None
+            and context.budget_remaining_ratio > ratio
+        )
+
+    def tokens_below(self, context: RoutingContext, threshold: int) -> bool:
+        return context.tokens_used is not None and context.tokens_used < threshold
+
+    def step_at_least(self, context: RoutingContext, min_step: int) -> bool:
+        return context.step_index is not None and context.step_index >= min_step
+
+    def step_below(self, context: RoutingContext, max_step: int) -> bool:
+        return context.step_index is not None and context.step_index < max_step
+
+    def agent_in(self, context: RoutingContext, *agent_ids: str) -> bool:
+        return context.agent_id is not None and context.agent_id in agent_ids
+
+    def tenant_in(self, context: RoutingContext, *tenant_ids: str) -> bool:
+        return context.tenant_id in tenant_ids
+
 
 class LLMRoutingProfile(BaseModel):
     """Tier-3 routing posture — rules are Python objects (not JSON-serializable)."""

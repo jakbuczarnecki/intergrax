@@ -120,7 +120,7 @@
 | 7 | X-7 | M-LLM-X.7.1–7.5 | P2 | **Partial** (7.1, 7.5 Done; 7.2–7.4 Planned) |
 | 8 | X-8 | M-LLM-X.8.1–8.3 | Medium | **Planned** |
 | 9 | X-9 | M-LLM-X.9.1–9.9 | **P1** | **Done** (2026-06-19) — ADR-LLM-003 · routing rule Protocol |
-| 10 | X-10 | M-LLM-X.10.1–10.8 | **P1** | **Planned** — enterprise closeout + predefined rule catalog |
+| 10 | X-10 | M-LLM-X.10.1–10.8 | **P1** | **Done** — enterprise closeout + predefined rule catalog |
 
 **Closeout gate:** All M-LLM-X.* Done + architecture audit register all **Done** + `tests/unit/llm_adapters/` green + new CI scripts green. **X-10** required before declaring routing **enterprise end-to-end**.
 
@@ -313,14 +313,14 @@ Export `BUILTIN_ROUTING_RULES: tuple[type[LLMRoutingRuleBase], ...]` + `builtin_
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| M-LLM-X.10.1 | **Predefined rule catalog** — 12+ parametric classes (table above); rename/alias X-9 rules where needed | **Planned** | **Critical** | `routing/builtin_rules.py`, `routing/__init__.py` | Parametrized unit test per class |
-| M-LLM-X.10.2 | **`build_routing_context_from_runtime()`** — auto-fill `task_class`, `budget_remaining_ratio`, `tokens_used`, `step_index`, `budget_degrade_active`, `tenant_id`, `agent_id` from Nexus / kernel / budget meter | **Planned** | **Critical** | `llm_resolver.py`, `runtime_config_bridge.py`, `nexus_factory.py` | No manual `routing_context=` required on default host path |
-| M-LLM-X.10.3 | **Routing observability** — emit `matched_rule_id`, `routing_reason`, selected `profile_id` on trace (`LLMRoutingAttemptDiagV1` extend or `LLMRoutingRuleDiagV1`) | **Planned** | High | `llm_resolver.py`, `observability/` | Gate test maps schema |
-| M-LLM-X.10.4 | **Reference host** — `lab_application` (or product reference) manifest with `LLMRoutingProfile` using **predefined classes only** | **Planned** | High | `applications/lab_application/` | `check_llm_routing_rules.py` scans host |
-| M-LLM-X.10.5 | **E2E acceptance** — Nexus run: `BudgetBelowRule` switches profile when budget crosses threshold | **Planned** | High | `tests/acceptance/llm_routing/` | `-m gate` green |
-| M-LLM-X.10.6 | **Global `DynamicLLMRouter` wire** — ACP / `harness_host_runtime` auto-wrap when `llm_routing_profile` set | **Planned** | Medium | `acp_run.py`, `harness_host_runtime.py` | Per-step swap in agent run test |
-| M-LLM-X.10.7 | **USAGE + architecture** — predefined rules matrix, enterprise readiness checklist, composition examples (`CompositeAllRule`) | **Planned** | Medium | `USAGE.md`, architecture §Routing rules | Linked from AGENT_CREATION_GUIDE |
-| M-LLM-X.10.8 | **CI gate extend** — `check_llm_routing_rules.py` validates catalog exports + reference host allowlist | **Planned** | Medium | `scripts/` | Registered in `check_audit_ideal_gates.py` |
+| M-LLM-X.10.1 | **Predefined rule catalog** — 12+ parametric classes (table above); rename/alias X-9 rules where needed | **Done** | **Critical** | `routing/builtin_rules.py`, `routing/__init__.py` | Parametrized unit test per class |
+| M-LLM-X.10.2 | **`build_routing_context_from_runtime()`** — auto-fill `task_class`, `budget_remaining_ratio`, `tokens_used`, `step_index`, `budget_degrade_active`, `tenant_id`, `agent_id` from Nexus / kernel / budget meter | **Done** | **Critical** | `llm_resolver.py`, `runtime_config_bridge.py`, `nexus_factory.py` | No manual `routing_context=` required on default host path |
+| M-LLM-X.10.3 | **Routing observability** — emit `matched_rule_id`, `routing_reason`, selected `profile_id` on trace (`LLMRoutingAttemptDiagV1` extend or `LLMRoutingRuleDiagV1`) | **Done** | High | `llm_resolver.py`, `observability/` | Gate test maps schema |
+| M-LLM-X.10.4 | **Reference host** — `lab_application` (or product reference) manifest with `LLMRoutingProfile` using **predefined classes only** | **Done** | High | `applications/lab_application/` | `check_llm_routing_rules.py` scans host |
+| M-LLM-X.10.5 | **E2E acceptance** — Nexus run: `BudgetBelowRule` switches profile when budget crosses threshold | **Done** | High | `tests/acceptance/llm_routing/` | `-m gate` green |
+| M-LLM-X.10.6 | **Global `DynamicLLMRouter` wire** — ACP / `harness_host_runtime` auto-wrap when `llm_routing_profile` set | **Done** | Medium | `acp_run.py`, `harness_host_runtime.py` | Per-step swap in agent run test |
+| M-LLM-X.10.7 | **USAGE + architecture** — predefined rules matrix, enterprise readiness checklist, composition examples (`CompositeAllRule`) | **Done** | Medium | `USAGE.md`, architecture §Routing rules | Linked from AGENT_CREATION_GUIDE |
+| M-LLM-X.10.8 | **CI gate extend** — `check_llm_routing_rules.py` validates catalog exports + reference host allowlist | **Done** | Medium | `scripts/` | Registered in `check_audit_ideal_gates.py` |
 
 **Suggested PR order (X-10):** 10.1 → 10.2 → 10.3 → 10.4 → 10.5 → 10.6 → 10.7 → 10.8.
 
@@ -372,7 +372,7 @@ PR-13: M-LLM-X.8.* closeout (after X-10)
 | LLM-AUDIT-14 — Capability flags not catalog-driven | M-LLM-X.1.7 |
 | LLM-AUDIT-15 — History layer token count inconsistent with preflight | M-LLM-X.3.5 |
 | LLM-AUDIT-16 — No unified routing rule contract (idea audit 2026-06-19) | M-LLM-X.9.* |
-| LLM-AUDIT-17 — Routing enterprise end-to-end (auto context, trace, reference host, E2E) | M-LLM-X.10.* |
+| LLM-AUDIT-17 — Routing enterprise end-to-end (auto context, trace, reference host, E2E) | M-LLM-X.10.* **Done** |
 | tiktoken OpenAI-centric estimate (all providers) | **Deferred** — document limitation in USAGE; vendor tokenizer plugins post-X |
 | Single `RuntimeConfig.llm_adapter` per run (multi-model) | M-LLM-X.4–5 (profile chain + routing); no multi-adapter pool in X |
 | Distributed Redis rate limit host wiring | **Ops** — document in USAGE X.7.1; not LLM-AUDIT tier-0 code |
@@ -753,14 +753,14 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **M-LLM-X.10.1** | Catalog | P1 | **Planned** | 12+ predefined parametric rule classes | Unit test per class |
-| 2 | **M-LLM-X.10.2** | Wire | P1 | **Planned** | `build_routing_context_from_runtime()` on default path | Nexus factory bridge |
-| 3 | **M-LLM-X.10.3** | Obs | P1 | **Planned** | Trace `rule_id` + `routing_reason` | Schema gate |
-| 4 | **M-LLM-X.10.4** | Tier-3 | P1 | **Planned** | Reference host manifest (predefined rules only) | CI gate scan |
-| 5 | **M-LLM-X.10.5** | E2E | P1 | **Planned** | Acceptance: budget rule switches model | `tests/acceptance/llm_routing/` |
-| 6 | **M-LLM-X.10.6** | Wire | P2 | **Planned** | Global `DynamicLLMRouter` on ACP hosts | Agent run test |
-| 7 | **M-LLM-X.10.7** | Docs | P2 | **Planned** | USAGE predefined matrix + enterprise checklist | Architecture sync |
-| 8 | **M-LLM-X.10.8** | CI | P2 | **Planned** | Extend `check_llm_routing_rules.py` | Umbrella gate |
+| 1 | **M-LLM-X.10.1** | Catalog | P1 | **Done** | 12+ predefined parametric rule classes | Unit test per class |
+| 2 | **M-LLM-X.10.2** | Wire | P1 | **Done** | `build_routing_context_from_runtime()` on default path | Nexus factory bridge |
+| 3 | **M-LLM-X.10.3** | Obs | P1 | **Done** | Trace `rule_id` + `routing_reason` | Schema gate |
+| 4 | **M-LLM-X.10.4** | Tier-3 | P1 | **Done** | Reference host manifest (predefined rules only) | CI gate scan |
+| 5 | **M-LLM-X.10.5** | E2E | P1 | **Done** | Acceptance: budget rule switches model | `tests/acceptance/llm_routing/` |
+| 6 | **M-LLM-X.10.6** | Wire | P2 | **Done** | Global `DynamicLLMRouter` on ACP hosts | Agent run test |
+| 7 | **M-LLM-X.10.7** | Docs | P2 | **Done** | USAGE predefined matrix + enterprise checklist | Architecture sync |
+| 8 | **M-LLM-X.10.8** | CI | P2 | **Done** | Extend `check_llm_routing_rules.py` | Umbrella gate |
 
 **Suggested PR order:** 10.1 → 10.2 → 10.3 → 10.4 → 10.5 → 10.6 → 10.7 → 10.8.
 

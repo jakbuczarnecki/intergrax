@@ -198,11 +198,16 @@ class RuntimeState(RuntimeStateContract):
            
         core_adapter = self.context.config.llm_adapter
         if core_adapter is not None:
+            from intergrax.applications._shared.llm_resolver import consume_routing_evaluation
             from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import (
                 attach_failover_routing_trace_observer,
+                emit_llm_routing_rule_diag,
             )
 
             attach_failover_routing_trace_observer(core_adapter, self.trace_event)
+            routing_evaluation = consume_routing_evaluation()
+            if routing_evaluation is not None:
+                emit_llm_routing_rule_diag(self.trace_event, routing_evaluation)
         self.llm_usage_tracker.register_adapter(core_adapter, label="core_adapter")
 
         from intergrax.runtime.nexus.tools.tool_planner_trackable import ToolPlannerTrackable

@@ -11,9 +11,15 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.llm_adapters.registry.model_router import ModelRouter, ModelRoutingDecision
 from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.llm_adapters.routing import RoutingContext
+from intergrax.runtime.adaptive.bandit_state_store import (
+    BanditStateStore,
+    InMemoryBanditStateStore,
+    SQLiteBanditStateStore,
+)
+from intergrax.runtime.adaptive.contracts import ProfileArtifactType
+from intergrax.runtime.adaptive.profile_version_store import SQLiteProfileVersionStore
 from intergrax.runtime.adaptive.routing_tuning_engine import RoutingTuningEngine
 from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
-from intergrax.runtime.adaptive.bandit_state_store import InMemoryBanditStateStore
 
 _BANDIT_ARM_HINTS: dict[str, str] = {
     "rag_tier_default": "balanced",
@@ -29,11 +35,45 @@ class LiveModelRoutingWiring:
     routing_decision: ModelRoutingDecision | None
 
 
+def _resolve_bandit_store(env: ApplicationEnvironmentProfile) -> BanditStateStore:
+    """Persistent bandit store when adaptive profile paths are configured (AHI-MAINT-06)."""
+    adaptive = env.adaptive_profile
+    if adaptive.signal_store_path is not None:
+        bandit_path = adaptive.signal_store_path.parent / "bandit_state.db"
+        return SQLiteBanditStateStore(bandit_path)
+    if adaptive.profile_versions_db_path is not None:
+        bandit_path = adaptive.profile_versions_db_path.parent / "bandit_state.db"
+        return SQLiteBanditStateStore(bandit_path)
+    return InMemoryBanditStateStore()
+
+
+def _profile_version_policy_hint(
+    env: ApplicationEnvironmentProfile,
+    *,
+    tenant_id: str,
+    task_class: str,
+) -> str | None:
+    adaptive = env.adaptive_profile
+    if adaptive.profile_versions_db_path is None:
+        return None
+    store = SQLiteProfileVersionStore(adaptive.profile_versions_db_path)
+    versions = store.list_versions(
+        tenant_id=tenant_id,
+        task_class=task_class,
+        artifact_type=ProfileArtifactType.LLM_ROUTING,
+    )
+    if not versions:
+        return None
+    payload = versions[-1].artifact_payload
+    hint = payload.get("policy_route_hint") or payload.get("routing_policy_hint")
+    return str(hint) if hint else None
+
+
 def _select_policy_hint_from_bandit(
     *,
     tenant_id: str,
     task_class: str,
-    store: InMemoryBanditStateStore,
+    store: BanditStateStore,
 ) -> str:
     arm_scores = {
         arm_id: store.sample_arm_score(
@@ -68,8 +108,13 @@ def resolve_live_model_routing_wiring(
     if not fallbacks and primary.model:
         fallbacks = (LLMProfile(provider=primary.provider, model=primary.model),)
 
-    store = InMemoryBanditStateStore()
-    policy_hint = _select_policy_hint_from_bandit(
+    store = _resolve_bandit_store(env)
+    version_hint = _profile_version_policy_hint(
+        env,
+        tenant_id=tenant_id,
+        task_class=task_class,
+    )
+    policy_hint = version_hint or _select_policy_hint_from_bandit(
         tenant_id=tenant_id,
         task_class=task_class,
         store=store,

@@ -4,11 +4,25 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Any
+
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.registry.model_router import ModelRouter, ModelRoutingDecision
 from intergrax.llm_adapters.registry.profile import LLMProfile, llm_profile_from_env
-from intergrax.llm_adapters.routing import LLMRoutingEvaluator, RoutingContext
+from intergrax.llm_adapters.routing import LLMRoutingEvaluator, RoutingContext, RoutingEvaluation
+from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
+
+_last_routing_evaluation: RoutingEvaluation | None = None
+
+
+def consume_routing_evaluation() -> RoutingEvaluation | None:
+    """Return and clear the last routing evaluation from resolver path."""
+    global _last_routing_evaluation
+    result = _last_routing_evaluation
+    _last_routing_evaluation = None
+    return result
 
 
 def resolve_llm_profile(
@@ -24,20 +38,26 @@ def evaluate_llm_routing(
     env: ApplicationEnvironmentProfile | None,
     *,
     routing_context: RoutingContext | None = None,
+    on_evaluated: Callable[[RoutingEvaluation], None] | None = None,
 ) -> tuple[LLMProfile, str | None, str | None]:
     """
     Evaluate ``LLMRoutingProfile`` rules when configured (M-LLM-X.9.5).
 
     Returns ``(selected_profile, policy_route_hint, routing_reason)``.
     """
+    global _last_routing_evaluation
     profile = resolve_llm_profile(env)
     hint: str | None = profile.routing_policy_hint
     reason: str | None = None
+    _last_routing_evaluation = None
     if env is None or env.llm_routing_profile is None:
         return profile, hint, reason
 
     context = routing_context or RoutingContext()
     evaluation = LLMRoutingEvaluator().evaluate(env.llm_routing_profile, context)
+    _last_routing_evaluation = evaluation
+    if on_evaluated is not None:
+        on_evaluated(evaluation)
     profile = evaluation.selected_profile
     if evaluation.policy_route_hint is not None:
         hint = evaluation.policy_route_hint
@@ -88,6 +108,9 @@ def resolve_llm_adapter(
     *,
     policy_route_hint: str | None = None,
     routing_context: RoutingContext | None = None,
+    routing_metadata: dict[str, Any] | None = None,
+    tenant_id: str | None = None,
+    agent_id: str | None = None,
 ) -> LLMAdapter:
     """
     Resolve LLM adapter with explicit precedence.
@@ -102,13 +125,21 @@ def resolve_llm_adapter(
     if agent_override is not None:
         return agent_override
 
-    profile, rule_hint, _reason = evaluate_llm_routing(env, routing_context=routing_context)
+    context = routing_context
+    if context is None and (routing_metadata is not None or tenant_id is not None or agent_id is not None):
+        context = build_routing_context_from_runtime(
+            tenant_id=tenant_id,
+            agent_id=agent_id,
+            metadata=routing_metadata,
+        )
+
+    profile, rule_hint, _reason = evaluate_llm_routing(env, routing_context=context)
     hint = policy_route_hint or rule_hint or profile.routing_policy_hint
 
     if env is not None:
         from intergrax.applications._shared.llm_routing_wiring import resolve_live_model_routing_wiring
 
-        wiring = resolve_live_model_routing_wiring(env, routing_context=routing_context)
+        wiring = resolve_live_model_routing_wiring(env, routing_context=context)
         if wiring.enabled and wiring.routing_decision is not None:
             ahi_hint = wiring.routing_decision.routing_reason.removeprefix("policy_hint_")
             if ahi_hint:

@@ -280,7 +280,7 @@ W-ADAPT-0.2 → 0.3 → 0.4 → 0.5
 | 3 | **AHI-MAINT-03** | Test/Ops | P3 | **Done** | Production adaptive evidence — reference host runs populating `signal_trends.json` | `phase_w_adapt_report.py --fixture` non-zero CI signals |
 | 4 | **AHI-MAINT-04** | Docs | P3 | **Done** | L4 **Frozen** items index — GAP-CTX-12, M-RAG.58, CVL L4 thresholds | Cross-domain table in architecture §L4 Frozen |
 | 5 | **AHI-MAINT-05** | Cross-ref | P2 | **Done** | Bandit arm → `ModelRouter` policy hint on live routing (not hardcoded `balanced`) | `llm_routing_wiring.py` + `check_live_model_routing_wiring.py` |
-| 6 | **AHI-MAINT-06** | Code | P2 | **Planned** | `ProfileVersionStore` `artifact_type=llm_routing` + persistent `BanditStateStore` for production routing hints (replace in-memory-only path) | [`M-LLM-X.10`](LLM_ADAPTERS.md#wave-m-llm-x-10--llm-routing-enterprise-closeout--predefined-rule-catalog); author rules still win |
+| 6 | **AHI-MAINT-06** | Code | P2 | **Done** | `ProfileVersionStore` `artifact_type=llm_routing` + persistent `BanditStateStore` for production routing hints (replace in-memory-only path) | [`M-LLM-X.10`](LLM_ADAPTERS.md#wave-m-llm-x-10--llm-routing-enterprise-closeout--predefined-rule-catalog); author rules still win |
 
 **Suggested PR order:** AHI-MAINT-04 → AHI-MAINT-02 → AHI-MAINT-03 → AHI-MAINT-01 → AHI-MAINT-05 → **AHI-MAINT-06** (after M-LLM-X.10.2).
 

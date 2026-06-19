@@ -231,11 +231,36 @@ Requires `integration_profile.key_value_cache` slug `redis`. Cross-ref: [`docs/p
 
 ---
 
-## LLM routing rules (M-LLM-X.9)
+## LLM routing rules (M-LLM-X.9 · M-LLM-X.10)
 
 **ADR:** [`ADR-LLM-003`](../../docs/adr/entries/2026-06-19/ADR-LLM-003.md) · **Canon:** [`LLM_ADAPTERS.md`](../../docs/architecture/LLM_ADAPTERS.md) § LLM routing rules
 
-Tier-3 hosts configure dynamic model selection with **`LLMRoutingProfile`** on `ApplicationEnvironmentProfile`. Each rule implements **`LLMRoutingRule`** (`matches` + `resolve`) — use built-in classes or subclass **`LLMRoutingRuleBase`** for custom logic.
+Tier-3 hosts configure dynamic model selection with **`LLMRoutingProfile`** on `ApplicationEnvironmentProfile`. Each rule implements **`LLMRoutingRule`** (`matches` + `resolve`) — use **predefined built-in classes** (preferred) or subclass **`LLMRoutingRuleBase`** for custom logic.
+
+**Auto context (M-LLM-X.10.2):** Nexus / harness paths call `build_routing_context_from_runtime()` — authors do not pass `routing_context=` manually on default host wiring.
+
+### Predefined rule catalog
+
+| Class | Params | `matches` |
+|-------|--------|-----------|
+| `BudgetBelowRule` | `threshold`, `profile` or `hint` | `budget_remaining_ratio < threshold` |
+| `BudgetAboveRule` | `threshold`, `profile` or `hint` | `budget_remaining_ratio > threshold` |
+| `BudgetExceededDegradeRule` | — | `budget_degrade_active` → `CHEAPEST` |
+| `TaskClassInRule` | `classes`, `profile` or `hint` | `task_class in classes` |
+| `TaskClassNotInRule` | `classes`, `profile` or `hint` | `task_class not in classes` |
+| `TokenUsedAboveRule` | `threshold`, `hint` | `tokens_used > threshold` |
+| `TokenUsedBelowRule` | `threshold`, `profile` or `hint` | `tokens_used < threshold` |
+| `StepIndexAtLeastRule` | `min_step`, `profile` or `hint` | `step_index >= min_step` |
+| `StepIndexBelowRule` | `max_step`, `profile` or `hint` | `step_index < max_step` |
+| `AgentIdInRule` | `agent_ids`, `profile` or `hint` | `agent_id in agent_ids` |
+| `TenantIdInRule` | `tenant_ids`, `profile` or `hint` | `tenant_id in tenant_ids` |
+| `ModelHintPresentRule` | `profile` or `hint` | non-empty `model_hint` |
+| `PolicyHintRule` | `hint` | always (use low priority) |
+| `CompositeAllRule` | `rules`, `profile` or `hint` | all nested rules match |
+| `CompositeAnyRule` | `rules`, `profile` or `hint` | any nested rule matches |
+| `AlwaysRule` | `profile` or `hint`, `priority=-100` | unconditional fallback |
+
+Export: `BUILTIN_ROUTING_RULE_TYPES` from `intergrax.llm_adapters.routing`.
 
 ```python
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
@@ -244,51 +269,54 @@ from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.llm_adapters.routing import (
     BudgetBelowRule,
+    CompositeAllRule,
     LLMRoutingProfile,
-    LLMRoutingRuleBase,
-    RoutingContext,
-    RoutingTarget,
+    TaskClassInRule,
 )
 
 primary = LLMProfile(provider=LLMProvider.OPENAI, model="gpt-4o-mini")
 local = LLMProfile(provider=LLMProvider.VLLM, model="meta-llama/Llama-3.1-8B")
-
-class LegalLowBudgetRule(LLMRoutingRuleBase):
-    rule_id = "legal.low_budget"
-    priority = 10
-
-    def matches(self, context: RoutingContext) -> bool:
-        return self.budget_below(context, 0.2) and self.task_is(context, "contract_review")
-
-    def resolve(self, context: RoutingContext) -> RoutingTarget:
-        return RoutingTarget(profile=local, reason="legal_budget")
 
 env = ApplicationEnvironmentProfile.lab_defaults()
 env.llm_profile = primary
 env.llm_routing_profile = LLMRoutingProfile(
     default_profile=primary,
     allowed_profiles=(primary, local),
-    rules=(LegalLowBudgetRule(), BudgetBelowRule(threshold=0.15, profile=local)),
+    rules=(
+        CompositeAllRule(
+            rules=(
+                TaskClassInRule(classes=("contract_review",)),
+                BudgetBelowRule(threshold=0.2, profile=local),
+            ),
+            profile=local,
+            priority=12,
+        ),
+        BudgetBelowRule(threshold=0.15, profile=local),
+    ),
 )
 
-adapter = resolve_llm_adapter(
-    env,
-    routing_context=RoutingContext(budget_remaining_ratio=0.1, task_class="contract_review"),
-)
+adapter = resolve_llm_adapter(env)  # routing context auto-filled on Nexus path
 ```
 
-| Built-in rule | When |
-|---------------|------|
-| `BudgetBelowRule(threshold, profile)` | `budget_remaining_ratio < threshold` |
-| `TaskClassRule(classes, profile=…, hint=…)` | Nexus `task_class` match |
-| `TokenThresholdRule(threshold, hint=…)` | `tokens_used > threshold` |
-| `BudgetExceededDegradeRule()` | `budget_degrade_active` — same path as `degrade_model` |
+**Per-step routing (agents):** ACP hosts with `llm_routing_profile` auto-wrap `StepLLMRouter` via `wrap_dynamic_llm_router()`.
 
-**Per-step routing (agents):** wrap `StepLLMRouter` with `wrap_dynamic_llm_router()` from `intergrax.agents.authoring.dynamic_llm_router`.
+**Observability:** rule evaluations emit `LLMRoutingRuleDiagV1` (`intergrax.diag.engine.core_llm.routing_rule`) with `matched_rule_id`, `routing_reason`, `profile_id`.
 
-**HF models:** serve weights via **vLLM** or **llama.cpp** — use the model id on the local profile; HF Hub remains object storage only.
+**Reference host:** `applications/lab_application` via `build_lab_environment_profile()` — predefined rules only.
+
+**Enterprise checklist (M-LLM-X.10):**
+
+- [x] 12+ predefined parametric rule classes
+- [x] `build_routing_context_from_runtime()` on default Nexus path
+- [x] Trace `LLMRoutingRuleDiagV1`
+- [x] Lab reference host manifest
+- [x] Acceptance E2E budget rule
+- [x] Global `DynamicLLMRouter` on ACP when profile set
+- [x] CI gate `python scripts/check_llm_routing_rules.py`
 
 **Testing:** unit-test `rule.matches(fake_context)` and `rule.resolve(...)` without Nexus. CI gate: `python scripts/check_llm_routing_rules.py`.
+
+**HF models:** serve weights via **vLLM** or **llama.cpp** — use the model id on the local profile; HF Hub remains object storage only.
 
 ---
 

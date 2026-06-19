@@ -14,6 +14,7 @@ from intergrax.applications._shared.integration_runtime_bridge import (
     apply_integration_profiles_from_environment,
 )
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
 from intergrax.applications._shared.rag_runtime_bridge import apply_rag_for_environment
 from intergrax.applications._shared.context_runtime_bridge import (
     apply_context_profiles_from_environment,
@@ -120,7 +121,16 @@ def materialize_runtime_config(
         if harness_ctx.integration_profile is not None:
             integration_profile = harness_ctx.integration_profile
 
-    resolved_llm = resolve_llm_adapter(env, agent_override=llm_adapter)
+    routing_context = build_routing_context_from_runtime(
+        tenant_id=request.tenant_id,
+        agent_id=str(request.metadata.get("agent_id", "")) or None,
+        metadata=request.metadata,
+    )
+    resolved_llm = resolve_llm_adapter(
+        env,
+        agent_override=llm_adapter,
+        routing_context=routing_context,
+    )
 
     config = RuntimeConfig(
         llm_adapter=resolved_llm,
@@ -134,6 +144,7 @@ def materialize_runtime_config(
         tool_wiring_context=tool_wiring_context,
         runtime_policies=runtime_policies_for_execution_mode(env.execution_mode),
         integration_profile=integration_profile,
+        llm_routing_context=routing_context,
     )
     apply_memory_profile_to_runtime_config(config, env.memory_profile)
     apply_prompt_profiles_from_environment(config, env)
