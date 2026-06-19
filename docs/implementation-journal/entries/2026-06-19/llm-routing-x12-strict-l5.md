@@ -68,6 +68,7 @@ Result: 36 passed; tier boundary and context wiring gates OK.
 
 ## Risks and follow-ups
 
-- Secondary LLM surfaces (tool planner, websearch, critic) remain static-profile unless hosts add explicit routing wiring (M-LLM-X.12.12 policy).
-- `runtime_state.py` still imports Tier-3 evaluating type for isinstance wiring — acceptable bridge debt; duck-typing refactor optional later.
-- **M-LLM-X.8** domain closeout can proceed now that strict L5 routing is closed.
+- Secondary LLM surfaces (tool planner, websearch, critic) — policy in X-12.12; implementation → **M-LLM-X.13.4–13.6**.
+- `runtime_state.py` Tier-3 isinstance bridge — **M-LLM-X.13.1**.
+- ACP Plane A trace parity — **M-LLM-X.13.2**.
+- **M-LLM-X.8** domain closeout is next mandatory wave (unblocked by X-12).

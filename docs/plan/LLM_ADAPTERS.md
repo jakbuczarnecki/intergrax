@@ -123,8 +123,9 @@
 | 10 | X-10 | M-LLM-X.10.1–10.8 | **P1** | **Done** — routing enterprise closeout (start-of-run + ACP) |
 | 11 | X-11 | M-LLM-X.11.1–11.8 | **P1** | **Done** — routing enterprise hardening (mid-run Nexus) |
 | 12 | X-12 | M-LLM-X.12.1–12.12 | **P1** | **Done** (2026-06-19) — routing strict enterprise closeout · LLM-AUDIT-19 |
+| 13 | X-13 | M-LLM-X.13.1–13.7 | P2 | **Planned** — post-L5 routing polish · LLM-AUDIT-20 |
 
-**Closeout gate:** All M-LLM-X.* Done + architecture audit register all **Done** + `tests/unit/llm_adapters/` green + new CI scripts green. **X-10** closed LLM-AUDIT-17 (start-of-run scope). **X-11** closed LLM-AUDIT-18 (X-11 scope). **X-12** required for **LLM-AUDIT-19** (strict L5). **X-8** domain closeout follows **X-12**.
+**Closeout gate:** All M-LLM-X.* Done + architecture audit register all **Done** + `tests/unit/llm_adapters/` green + new CI scripts green. **X-10** closed LLM-AUDIT-17. **X-11** closed LLM-AUDIT-18. **X-12** closed LLM-AUDIT-19 (strict L5). **X-8** domain closeout is next mandatory wave. **X-13** optional post-L5 polish (does not block X-8).
 
 ---
 
@@ -146,9 +147,10 @@ Wave M-LLM-X-9 (routing rules): M-LLM-X.9.1 → 9.2 → 9.2b → 9.3 → 9.4 →
 Wave M-LLM-X-10 (routing enterprise): M-LLM-X.10.1 → 10.2 → 10.3 → 10.4 → 10.5 → 10.6 → 10.7 → 10.8
 Wave M-LLM-X-11 (routing hardening): M-LLM-X.11.1 → 11.2 → 11.3 → 11.4 → 11.5 → 11.6 → 11.7 → 11.8
 Wave M-LLM-X-12 (strict L5): M-LLM-X.12.1 → 12.2 → 12.3 → 12.4 → 12.5 → 12.6 → 12.7 → 12.8 → 12.9 → 12.10 → 12.11 → 12.12
+Wave M-LLM-X-13 (post-L5 polish): M-LLM-X.13.1 → 13.2 → 13.3 → 13.4 → 13.5 → 13.6 → 13.7
 ```
 
-**Prerequisites:** M-LLM + M-LLM-R **Done**; CONTEXT_ENGINE preflight paths stable. **X-9** depends on X-4.2 (failover) and X-5.1 (ModelRouter hints) — both **Done**. **X-10** depends on **X-9 Done**. **X-11** depends on **X-10 Done**. **X-12** depends on **X-11 Done**.
+**Prerequisites:** M-LLM + M-LLM-R **Done**; CONTEXT_ENGINE preflight paths stable. **X-9** depends on X-4.2 (failover) and X-5.1 (ModelRouter hints) — both **Done**. **X-10** depends on **X-9 Done**. **X-11** depends on **X-10 Done**. **X-12** depends on **X-11 Done**. **X-8** depends on **X-12 Done**. **X-13** depends on **X-12 Done** (optional polish).
 
 **Parallelism:** X-2 (OpenRouter fetch) may run after X-1.3; X-5 depends on X-4.2; X-7 may start after X-1.1 (docs partial).
 
@@ -389,6 +391,29 @@ Export `BUILTIN_ROUTING_RULES: tuple[type[LLMRoutingRuleBase], ...]` + `builtin_
 
 ---
 
+#### Wave M-LLM-X-13 — Post-L5 routing polish (optional)
+
+**Source:** Post X-12 enterprise audit (2026-06-19) — strict L5 achieved on core/UAEP/ACP paths; residual gaps are polish and secondary-surface coverage.  
+**Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) § Post-L5 follow-up register  
+**Goal:** Close **LLM-AUDIT-20** — full observability parity, tier-clean Nexus bridge, secondary LLM surfaces, auxiliary Nexus LLM hot paths.  
+**Does not block:** **M-LLM-X.8** domain closeout.
+
+| # | Deliverable | Status | Priority | Location / notes | Acceptance |
+|---|-------------|--------|----------|------------------|------------|
+| M-LLM-X.13.1 | **`runtime_state` tier bridge** — replace Tier-3 `isinstance(RoutingEvaluatingLLMAdapter)` with duck-typed Protocol or callback registry on `RuntimeConfig` | **Planned** | P2 | `runtime_state.py`, `runtime_config_bridge.py` | Tier-1 has zero `applications/_shared/routing_evaluating_adapter` import |
+| M-LLM-X.13.2 | **ACP Plane A trace parity** — map `on_evaluated` to `emit_llm_routing_rule_diag` (or Plane B → Plane A bridge), not only `step.diagnostics` | **Planned** | P2 | `acp_run.py`, `OBSERVABILITY` | ACP integration test asserts `llm_routing_rule` trace step |
+| M-LLM-X.13.3 | **Concurrent run isolation test** — two parallel Nexus/UAEP runs; routing traces and tracker entries do not cross-contaminate | **Planned** | P2 | `tests/acceptance/llm_routing/` | `-m gate` green |
+| M-LLM-X.13.4 | **Tool planner LLM routing** — evaluating wrap or dedicated `LLMRoutingProfile` wiring for `tool_planning_service` | **Planned** | P3 | `tool_planning_service.py`, Tier-3 host wiring | Budget rule can affect planner model mid-run (product opt-in) |
+| M-LLM-X.13.5 | **Websearch secondary LLM routing** — map/reduce/rerank adapters participate in snapshot sync or static policy documented per host | **Planned** | P3 | `websearch_config`, `runtime_config_bridge.py` | Integration: websearch LLM calls see refreshed budget context |
+| M-LLM-X.13.6 | **Critic LLM routing policy** — explicit wiring for critic evaluator LLM (wrap or separate profile rules) | **Planned** | P3 | `critic_runtime_bridge.py`, architecture § | No silent bypass of `LLMRoutingProfile` on critic path |
+| M-LLM-X.13.7 | **Auxiliary Nexus LLM paths** — `nexus_plan_bridge`, `llm_task_classifier` call `sync_routing_before_llm_call` before `generate_messages` | **Planned** | P2 | `routing_snapshot_sync.py` consumers | Unit: classifier/plan bridge refresh snapshot when routing enabled |
+
+**Suggested PR order (X-13):** 13.1 → 13.2 → 13.3 → 13.7 → 13.4 → 13.5 → 13.6.
+
+**Closes:** **LLM-AUDIT-20**. **Optional after:** **M-LLM-X.8**.
+
+---
+
 ### M-LLM-X — Suggested PR order
 
 ```text
@@ -407,6 +432,7 @@ PR-12: M-LLM-X.10.* (routing enterprise closeout — start-of-run + ACP) — Don
 PR-13: M-LLM-X.11.* (routing hardening — mid-run Nexus) — Done
 PR-14: M-LLM-X.12.* (routing strict L5 closeout) — Done
 PR-15: M-LLM-X.8.* closeout (after X-12)
+PR-16: M-LLM-X.13.* post-L5 polish (optional, parallel with X-8)
 ```
 
 **Estimated effort:** X-12 · ~2–3 PRs harness cadence · 2–3 weeks.
@@ -435,7 +461,8 @@ PR-15: M-LLM-X.8.* closeout (after X-12)
 | LLM-AUDIT-16 — No unified routing rule contract (idea audit 2026-06-19) | M-LLM-X.9.* |
 | LLM-AUDIT-17 — Routing enterprise E2E start-of-run + ACP (context, trace, reference host) | M-LLM-X.10.* **Done** |
 | LLM-AUDIT-18 — Routing mid-run Nexus live re-eval, context refresh, full trace, true E2E | M-LLM-X.11.* **Done** (X-11 scope) |
-| LLM-AUDIT-19 — Routing strict L5: budget meter, all Nexus paths, tier boundary, production E2E | M-LLM-X.12.* **Planned** |
+| LLM-AUDIT-19 — Routing strict L5: budget meter, all Nexus paths, tier boundary, production E2E | M-LLM-X.12.* **Done** |
+| LLM-AUDIT-20 — Post-L5 polish: ACP Plane A trace, tier bridge, concurrent test, secondary LLM surfaces | M-LLM-X.13.* **Planned** |
 | tiktoken OpenAI-centric estimate (all providers) | **Deferred** — document limitation in USAGE; vendor tokenizer plugins post-X |
 | Single `RuntimeConfig.llm_adapter` per run (multi-model) | M-LLM-X.4–5 (profile chain + routing); no multi-adapter pool in X |
 | Distributed Redis rate limit host wiring | **Ops** — document in USAGE X.7.1; not LLM-AUDIT tier-0 code |
@@ -837,7 +864,7 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 **Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) § Enterprise routing hardening  
 **ADR:** ADR-LLM-003 (unchanged unless evaluating adapter changes tier contract).  
 **Goal:** Live mid-run profile swap on Nexus `llm_adapter`; full observability loop; true E2E; unified call sites.  
-**Phase status:** **Done** — 8/8 · closes **LLM-AUDIT-18** (X-11 declared scope). Strict L5 gaps → **X-12** · LLM-AUDIT-19.
+**Phase status:** **Done** — 8/8 · closes **LLM-AUDIT-18** (X-11 declared scope). Strict L5 delivered in **X-12** · LLM-AUDIT-19 **Done**.
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
@@ -882,6 +909,29 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 **Suggested PR order:** 12.1 → 12.2 → 12.3 → 12.4 → 12.5 → 12.6 → 12.7 → 12.8 → 12.9 → 12.10 → 12.11 → 12.12.
 
 **Closes:** **LLM-AUDIT-19**. **Blocks:** **M-LLM-X.8** honest closeout.
+
+---
+
+### Phase M-LLM-X-13 — Post-L5 routing polish (2026-06-19)
+
+**Source:** Post X-12 enterprise audit — L5 on core paths; residual polish documented in journal and architecture.  
+**Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) § Post-L5 follow-up register  
+**Goal:** Close **LLM-AUDIT-20** without blocking domain closeout.  
+**Phase status:** **Planned** — 0/7 · see [Wave M-LLM-X-13](#wave-m-llm-x-13--post-l5-routing-polish-optional)
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **M-LLM-X.13.1** | Arch | P2 | **Planned** | `runtime_state` tier bridge (duck-type) | No Tier-1 → Tier-3 evaluating import |
+| 2 | **M-LLM-X.13.2** | Obs | P2 | **Planned** | ACP Plane A `llm_routing_rule` trace | Integration test green |
+| 3 | **M-LLM-X.13.3** | Test | P2 | **Planned** | Concurrent run isolation | Two parallel runs isolated |
+| 4 | **M-LLM-X.13.4** | Wire | P3 | **Planned** | Tool planner LLM routing | Opt-in mid-run planner swap |
+| 5 | **M-LLM-X.13.5** | Wire | P3 | **Planned** | Websearch secondary LLM routing | Budget context on websearch LLM |
+| 6 | **M-LLM-X.13.6** | Policy | P3 | **Planned** | Critic LLM routing policy | Explicit critic wiring |
+| 7 | **M-LLM-X.13.7** | Wire | P2 | **Planned** | Plan bridge + task classifier sync | Snapshot refresh before auxiliary LLM |
+
+**Suggested PR order:** 13.1 → 13.2 → 13.3 → 13.7 → 13.4 → 13.5 → 13.6.
+
+**Closes:** **LLM-AUDIT-20**. **Does not block:** **M-LLM-X.8**.
 
 ---
 
