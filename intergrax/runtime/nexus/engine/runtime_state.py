@@ -199,10 +199,8 @@ class RuntimeState(RuntimeStateContract):
         core_adapter = self.context.config.llm_adapter
         if core_adapter is not None:
             from intergrax.applications._shared.llm_resolver import consume_routing_evaluation
-            from intergrax.applications._shared.routing_evaluating_adapter import (
-                RoutingEvaluatingLLMAdapter,
-            )
             from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+            from intergrax.llm_adapters.routing.evaluating_hooks import wire_routing_evaluating_hooks
             from intergrax.llm_adapters.routing.metering import resolve_metering_adapter
             from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import (
                 attach_failover_routing_trace_observer,
@@ -215,12 +213,6 @@ class RuntimeState(RuntimeStateContract):
 
                 assert isinstance(evaluation, RoutingEvaluation)
                 emit_llm_routing_rule_diag(self.trace_event, evaluation)
-                adapter = self.context.config.llm_adapter
-                if isinstance(adapter, RoutingEvaluatingLLMAdapter):
-                    attach_failover_routing_trace_observer(
-                        adapter.inner_adapter,
-                        self.trace_event,
-                    )
 
             def _on_allowlist_violation(exc: object, context: object) -> None:
                 from intergrax.llm_adapters.routing.contracts import RoutingContext
@@ -239,13 +231,16 @@ class RuntimeState(RuntimeStateContract):
 
             meter_target = resolve_metering_adapter(core_adapter) or core_adapter
 
-            if isinstance(core_adapter, RoutingEvaluatingLLMAdapter):
-                core_adapter.set_on_evaluated(_on_evaluated)
-                core_adapter.set_on_allowlist_violation(_on_allowlist_violation)
-                core_adapter.set_on_inner_swapped(_on_inner_swapped)
-                attach_failover_routing_trace_observer(core_adapter.inner_adapter, self.trace_event)
-            else:
-                attach_failover_routing_trace_observer(core_adapter, self.trace_event)
+            wire_routing_evaluating_hooks(
+                core_adapter,
+                on_evaluated=_on_evaluated,
+                on_allowlist_violation=_on_allowlist_violation,
+                on_inner_swapped=_on_inner_swapped,
+                attach_failover_observer=lambda adapter: attach_failover_routing_trace_observer(
+                    adapter,
+                    self.trace_event,
+                ),
+            )
 
             routing_evaluation = consume_routing_evaluation()
             if routing_evaluation is not None:

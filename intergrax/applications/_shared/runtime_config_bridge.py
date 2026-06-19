@@ -215,6 +215,11 @@ def materialize_runtime_config(
     if isinstance(harness_ctx, ApplicationBuildContext) and harness_ctx.tool_wiring_context is not None:
         rag_wiring_context = harness_ctx.tool_wiring_context
     apply_rag_for_environment(config, env, tool_wiring_context=rag_wiring_context)
+    from intergrax.runtime.nexus.context.routing_snapshot_sync import (
+        wire_secondary_llm_routing_surfaces,
+    )
+
+    wire_secondary_llm_routing_surfaces(config)
     return apply_policy_bundle_to_runtime_config(config, policy_bundle)
 
 

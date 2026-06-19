@@ -258,18 +258,16 @@ async def run_acp_session(
     )
     if host is not None and host.app_profile is not None and host.app_profile.llm_routing_profile is not None:
         from intergrax.agents.authoring.dynamic_llm_router import wrap_dynamic_llm_router
+        from intergrax.agents.authoring.acp_routing_trace_bridge import (
+            record_acp_routing_rule_evaluation,
+        )
         from intergrax.applications._shared.llm_routing_context_bridge import (
             make_acp_routing_context_provider,
         )
         from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
-        from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import (
-            routing_evaluation_to_diag,
-        )
 
         def _on_routing_evaluated(evaluation: RoutingEvaluation) -> None:
-            kernel_ctx_holder[0].routing_rule_evaluations.append(
-                routing_evaluation_to_diag(evaluation).to_dict(),
-            )
+            record_acp_routing_rule_evaluation(kernel_ctx_holder[0], evaluation)
 
         llm_router = wrap_dynamic_llm_router(
             llm_router,

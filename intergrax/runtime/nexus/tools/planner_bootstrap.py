@@ -40,3 +40,8 @@ def wire_catalog_tool_planner_if_enabled(
         prompt_catalog_path=config.prompt_catalog_path,
         planner_prompt_id=config.tool_planner_prompt_id,
     )
+    from intergrax.runtime.nexus.context.routing_snapshot_sync import (
+        wire_secondary_llm_routing_surfaces,
+    )
+
+    wire_secondary_llm_routing_surfaces(config)

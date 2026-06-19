@@ -108,6 +108,9 @@ class LlmTaskClassifier:
             capabilities=self._allowed_capabilities,
             task_message=message,
         )
+        from intergrax.runtime.nexus.context.routing_snapshot_sync import sync_routing_for_task_llm_call
+
+        sync_routing_for_task_llm_call(task)
         response = self._llm_adapter.generate_messages(
             [ChatMessage(role="user", content=prompt)],
             run_id=task.task_id,
