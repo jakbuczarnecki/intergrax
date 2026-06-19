@@ -96,7 +96,7 @@ Explicitly assess against ideal harness qualities:
 - Scalability and operational readiness where in scope
 
 Classify every gap: **P0 / P1 / P2 / P3 / P4** with **arguments** (why it matters, risk if ignored).
-Mark: **intentional design boundary** vs **niedoróbka / missing wiring** vs **deferred product (§6.3)**.
+Mark: **intentional design boundary** vs **incomplete_wiring / missing wiring** vs **deferred product (§6.3)**.
 
 ### Step 4 — Plan vs implementation reconciliation
 
@@ -106,15 +106,15 @@ Mark: **intentional design boundary** vs **niedoróbka / missing wiring** vs **d
 
 ### Step 5 — Propose backlog tasks
 
-Present a table of proposed plan tasks with: ID, priority, deliverable, acceptance criteria, dopisać do planu? (yes/no pending operator).
+Present a table of proposed plan tasks with: ID, priority, deliverable, acceptance criteria, add to plan? (yes/no pending operator).
 
 Use naming convention when adding maintenance rows: `<DOMAIN-PREFIX>-MAINT-NN` or existing phase ID scheme in that domain plan.
 
-### Step 6 — Output format (operator-facing — Polish)
+### Step 6 — Output format (operator-facing)
 
 Deliver the full audit using this structure:
 
-# Audyt warstwy N — `<DOMAIN>`
+# Layer audit N — `<DOMAIN>`
 
 1. Scope (audit-map layers covered)
 2. Target state (ideal harness requirements for this domain)
@@ -165,7 +165,7 @@ Report: score before, target milestone, evidence, remaining risks — per layer 
 
 ## Language
 
-- Operator-facing summaries and STOP checkpoints: **Polish**
+- Operator-facing summaries and STOP checkpoints: **English**
 - Repository artifacts (plan rows, result files, commits): **English**
 
 ## Begin

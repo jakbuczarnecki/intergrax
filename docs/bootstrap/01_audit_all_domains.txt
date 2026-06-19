@@ -7,4 +7,4 @@ Domain order (do not reorder): PLATFORM_FOUNDATION → UNIFIED_EXECUTION_RUNTIME
 Per domain: read only docs/architecture/<DOMAIN>.md + docs/plan/<DOMAIN>.md + docs/audit/<DOMAIN>.md; execute audit prompt (inspect code, tests, CI gates); classify P0–P4; write result file; sync P2–P4 rows to plan (P0/P1 rows only — do not implement); update progress.json (status completed, verdict, p0_open, p1_open, plan_updated); brief checkpoint; continue to next domain.
 Rules: one domain pair = one atomic unit — finish fully before next; no micro-pauses inside a domain; continue between domains unless operator writes pause or stop; tier boundaries per AGENTS.md; safety fuse — plan/architecture/ideal conflict → STOP, set domain blocked; no code changes unless operator approves P0 doc fix; no Phase K / §6.3 without explicit reprioritization; commits only on operator request.
 When all domains completed: rollup RUN_SUMMARY.md; set completed_at and current_domain null; run uv run python scripts/check_architecture_audit_run.py YYYY-MM-DD --require-complete.
-Operator language: Polish for summaries. Repo artifacts: English.
+Repository artifacts: English.

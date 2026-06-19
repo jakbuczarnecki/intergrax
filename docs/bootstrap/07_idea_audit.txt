@@ -52,8 +52,8 @@ Follow docs/audit/IDEA_AUDIT_ORCHESTRATOR.md in full:
 3. **Inspect code** — search implementation roots; cite `path:symbol`, tests, or gates.
 4. **Verdict** — one primary: already_implemented | in_plan | partial_overlap | novel | blocked | needs_clarification | deferred_product.
 5. **Propose** — when novel/partial: tier, contracts, reuse, ADR domain, scaffold commands, draft plan rows (English).
-6. **STOP** — operator checkpoint (Polish summary).
-7. **Apply docs (only after explicit approval in chat)** — edit architecture + plan domain pair(s); ADR if significant. With `MODE=audit-and-apply-docs`, operator still must confirm (e.g. „zatwierdź docs”) before Step 7.
+6. **STOP** — operator checkpoint.
+7. **Apply docs (only after explicit approval in chat)** — edit architecture + plan domain pair(s); ADR if significant. With `MODE=audit-and-apply-docs`, operator still must confirm (e.g. "approve docs") before Step 7.
 
 ## Evidence checklist (all applicable)
 
@@ -66,29 +66,29 @@ Follow docs/audit/IDEA_AUDIT_ORCHESTRATOR.md in full:
 - [ ] SYS-INV / tier boundary / Nexus-fork risk
 - [ ] IDEAL_HARNESS_AI_ARCHITECTURE.md gap for mapped layers
 
-## Operator-facing output (Polish — use this structure)
+## Operator-facing output (use this structure)
 
-# Audyt pomysłu — `<IDEA_LABEL>`
+# Idea audit — `<IDEA_LABEL>`
 
-1. **Streszczenie** — one sentence + type + tier + domain(s)
-2. **Werdykt** — with evidence
-3. **Co już istnieje** — code, plan, architecture (table with paths)
-4. **Luki i ryzyka** — P0–P4 + invariants
-5. **Propozycja architektury** — when novel/partial: tier, contracts, reuse, ADR, scaffold
-6. **Szkic wierszy planu** — table (English IDs and acceptance criteria)
-7. **Rekomendowany następny krok** — bootstrap / guide / domain plan item
-8. **Pytania otwarte** — if needs_clarification
+1. **Summary** — one sentence + type + tier + domain(s)
+2. **Verdict** — with evidence
+3. **What already exists** — code, plan, architecture (table with paths)
+4. **Gaps and risks** — P0–P4 + invariants
+5. **Architecture proposal** — when novel/partial: tier, contracts, reuse, ADR, scaffold
+6. **Draft plan rows** — table (English IDs and acceptance criteria)
+7. **Recommended next step** — bootstrap / guide / domain plan item
+8. **Open questions** — if needs_clarification
 9. **STOP** — wait for operator
 
 End with explicit questions:
-- Zgadzasz się z werdyktem?
-- Zatwierdzić propozycję architektury i wiersze planu?
-- Zaktualizować teraz `docs/architecture/` i `docs/plan/`?
-- Kontynuować implementację w nowej sesji?
+- Do you agree with the verdict?
+- Approve the architecture proposal and plan rows?
+- Update `docs/architecture/` and `docs/plan/` now?
+- Continue implementation in a new session?
 
 ## Language
 
-- Operator-facing summary: **Polish**
+- Operator-facing summary: **English** (repository docs are English)
 - Repository artifacts (architecture, plan, ADR): **English**
 
 ## Begin

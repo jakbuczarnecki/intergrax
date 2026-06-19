@@ -95,6 +95,6 @@ docs/implementation-journal/
 
 ## Related
 
-- [INTERGRAX_DEVELOPMENT_STRATEGY.md](../INTERGRAX_DEVELOPMENT_STRATEGY.md) — work cycle (WNIOSKI → journal)
+- [INTERGRAX_DEVELOPMENT_STRATEGY.md](../guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) — work cycle (CONCLUSIONS → journal)
 - [`.cursor/rules/intergrax-implementation-journal.mdc`](../../../.cursor/rules/intergrax-implementation-journal.mdc) — Cursor rule
 - [`.cursor/rules/intergrax-iteration.mdc`](../../../.cursor/rules/intergrax-iteration.mdc) — Definition of Done

@@ -25,7 +25,7 @@ uv run pytest agents/local_search/tests -q
 ```bash
 curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
   -H "Content-Type: application/json" \
-  -d '{"message":"znajdź dokumenty o projekcie Alpha","capability":"local.workspace.search"}'
+  -d '{"message":"find documents about project Alpha","capability":"local.workspace.search"}'
 ```
 
 ## Implementation status

@@ -73,11 +73,11 @@ None detected in Tier-0 catalog handlers (no vendor SDK bypass). Tier-1 invoke p
 
 ## Layer completion final audit (2026-06-12)
 
-**Krok 5 — audyt końcowy** po S0–S8. Weryfikacja: dokumentacja ↔ implementacja ↔ plan ↔ CI.
+**Step 5 — final audit** after S0–S8. Verification: documentation ↔ implementation ↔ plan ↔ CI.
 
-### Wynik
+### Result
 
-| Obszar | Werdykt |
+| Area | Verdict |
 |--------|---------|
 | TOOL-ENG register (36/36) | **Closed** |
 | Tier-0 catalog (190 tools) | **L3 Production** |
@@ -85,18 +85,18 @@ None detected in Tier-0 catalog handlers (no vendor SDK bypass). Tier-1 invoke p
 | Tier-1 orchestration 2a | **L3** — 5 shipped patterns + chain + EP registry |
 | Tier-1 atomic invoke 2b | **L3** — dispatch, gateway, scope, idempotency |
 | Governance | **L3** — required-mode, HIGH+ block, tool_choice |
-| Dokumentacja architecture/plan | **Aligned** (post-final-audit sync) |
+| Architecture/plan documentation | **Aligned** (post-final-audit sync) |
 | Testy + CI | **Green** — see verification block below |
 
-### Świadomie odroczone (nie blokują zamknięcia warstwy)
+### Consciously deferred (does not block layer closeout)
 
-| Item | Uzasadnienie |
+| Item | Rationale |
 |------|--------------|
-| Hierarchical LLM category pass | ADR-TOOL-005 v1 — deterministic rank wystarcza na L3 |
-| L1 critic (`eval.judge`) per tool output | Osobny zakres CVL — opcjonalny via `CriticProfile` |
-| Pusta grupa EP w `pyproject.toml` | Loadery gotowe; host pakiety rejestrują strategie/wzorce |
+| Hierarchical LLM category pass | ADR-TOOL-005 v1 — deterministic rank sufficient for L3 |
+| L1 critic (`eval.judge`) per tool output | Separate CVL scope — optional via `CriticProfile` |
+| Empty EP group in `pyproject.toml` | Loaders ready; host packages register strategies/patterns |
 
-### Weryfikacja (2026-06-12)
+### Verification (2026-06-12)
 
 ```bash
 uv run pytest tests/unit/runtime/nexus/tools/ -q                    # 58 passed
@@ -108,7 +108,7 @@ python scripts/check_tool_injection_defense.py                     # OK
 python scripts/check_agent_registry_bypass.py                      # OK
 ```
 
-**Warstwa Tools:** **ukończona** wg Layer Completion Mode.
+**Tools layer:** **complete** per Layer Completion Mode.
 
 ---
 

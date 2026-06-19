@@ -11,4 +11,4 @@ For mature/frozen: short re-audit (Steps 1+6); if no new P0/P1 — next pair wit
 One domain pair per docs iteration — do not load other architecture/plan pairs.
 Rules: tier boundaries AGENTS.md; ADR when architecture changes; verification bundle after harness changes per AGENTS.md; commits only on operator request; do not declare entire platform permanently complete.
 After each pair: checkpoint (report + progress.json); continue without asking unless operator writes pause or stop.
-Operator language: Polish. Repo artifacts: English.
+Repository artifacts: English.

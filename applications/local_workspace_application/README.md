@@ -30,7 +30,7 @@ curl -s http://127.0.0.1:8020/health
 curl -s http://127.0.0.1:8020/v1/local_workspace/agents
 curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
   -H "Content-Type: application/json" \
-  -d '{"message":"znajdź informacje o projekcie X","capability":"local.workspace.search"}'
+  -d '{"message":"find information about project X","capability":"local.workspace.search"}'
 ```
 
 ## MCP

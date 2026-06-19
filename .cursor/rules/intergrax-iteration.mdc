@@ -104,8 +104,8 @@ Full task routing also in **`AGENTS.md`**.
 Follow the strategy work cycle:
 
 ```text
-ANALIZA → OCENA ARCHITEKTURY → OCENA PLANU → PROPOZYCJA (if needed)
-  → AKTUALIZACJA DOKUMENTACJI (tylko dotkniętej) → IMPLEMENTACJA → WERYFIKACJA → WNIOSKI
+ANALYSIS → ARCHITECTURE REVIEW → PLAN REVIEW → IMPROVEMENT PROPOSAL (if needed)
+  → DOCUMENTATION UPDATE (affected domains only) → IMPLEMENTATION → VERIFICATION → CONCLUSIONS
 ```
 
 **Architectural safety fuse:** If the domain plan, domain architecture, and ideal architecture are inconsistent, **stop implementation** and explain the conflict before modifying code.

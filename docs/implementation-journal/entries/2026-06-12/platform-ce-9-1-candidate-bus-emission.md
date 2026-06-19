@@ -16,7 +16,7 @@ adr: none — wires existing CE-9.1 event contracts to engine assemble path
 
 ## Operator request
 
-Close documentation and implementation gaps: finish CE-9.1 bus emission, fix journal niedoróbki, and align CE-2.3 stub provider wording with as-built behavior.
+Close documentation and implementation gaps: finish CE-9.1 bus emission, fix journal gaps, and align CE-2.3 stub provider wording with as-built behavior.
 
 ## Summary
 

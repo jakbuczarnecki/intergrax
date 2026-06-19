@@ -38,44 +38,44 @@ Every finding in [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth 
 
 | GAP-RAG | Category | M-RAG | Wave |
 |---------|----------|-------|------|
-| GAP-RAG-01 | niedoróbka | M-RAG.23 | 1 |
-| GAP-RAG-17 | niedoróbka | M-RAG.23 | 1 |
-| GAP-RAG-23 | niedoróbka | M-RAG.23 | 1 |
-| GAP-RAG-04 | niegotowość | M-RAG.25 | 2 |
-| GAP-RAG-02 | niedoróbka | M-RAG.24 | 2 |
-| GAP-RAG-03 | niedoróbka | M-RAG.24 | 2 |
-| GAP-RAG-05 | niegotowość | M-RAG.26 | 2 |
-| GAP-RAG-06 | niegotowość | M-RAG.26 | 2 |
-| GAP-RAG-07 | niegotowość | M-RAG.30 | 2 |
-| GAP-RAG-18 | niegotowość | M-RAG.33 | 2 |
-| GAP-RAG-20 | niegotowość | M-RAG.35 | 2 |
-| GAP-RAG-08 | niedoróbka | M-RAG.27 **Done** | 3 |
-| GAP-RAG-09 | niska jakość | M-RAG.57 **Done** (metrics default follows OTel spine when env unset) | 3 |
-| GAP-RAG-10 | niedoróbka | M-RAG.28 **Done** | 3 |
-| GAP-RAG-11 | niska jakość | M-RAG.28 **Done** | 3 |
-| GAP-RAG-12 | niska jakość | M-RAG.28 **Done** | 3 |
-| GAP-RAG-13 | niedoróbka | M-RAG.29 **Done** | 3 |
-| GAP-RAG-14 | niedoróbka | M-RAG.31 **Done** | 3 |
-| GAP-RAG-16 | niska jakość | M-RAG.32 **Done** | 3 |
-| GAP-RAG-19 | niedoróbka | M-RAG.34 **Done** | 3 |
-| GAP-RAG-21 | niegotowość | M-RAG.36 **Done** | 3 |
-| GAP-RAG-22 | niska jakość | M-RAG.37 **Done** | 3 |
-| GAP-RAG-15 | ograniczenie | M-RAG.58 **Frozen** (Tier-3 + AHI) | — |
-| GAP-RAG-24 | niedoróbka | M-RAG.38 | G1 |
-| GAP-RAG-25 | niedoróbka | M-RAG.39 | G1 |
-| GAP-RAG-26 | niegotowość | M-RAG.40 | G1 |
-| GAP-RAG-27 | niegotowość | M-RAG.41 | G1 |
-| GAP-RAG-28 | niska jakość | M-RAG.42 | G2 |
-| GAP-RAG-29 | niedoróbka | M-RAG.43 **Done** · M-RAG.53 **Done** | G2 · G5 |
-| GAP-RAG-30 | niedoróbka | M-RAG.44 **Done** · M-RAG.54 **Done** | G2 · G5 |
-| GAP-RAG-31 | niegotowość | M-RAG.45 | G3 |
-| GAP-RAG-32 | niedoróbka | M-RAG.46 | G3 |
+| GAP-RAG-01 | incomplete_wiring | M-RAG.23 | 1 |
+| GAP-RAG-17 | incomplete_wiring | M-RAG.23 | 1 |
+| GAP-RAG-23 | incomplete_wiring | M-RAG.23 | 1 |
+| GAP-RAG-04 | prod_blocker | M-RAG.25 | 2 |
+| GAP-RAG-02 | incomplete_wiring | M-RAG.24 | 2 |
+| GAP-RAG-03 | incomplete_wiring | M-RAG.24 | 2 |
+| GAP-RAG-05 | prod_blocker | M-RAG.26 | 2 |
+| GAP-RAG-06 | prod_blocker | M-RAG.26 | 2 |
+| GAP-RAG-07 | prod_blocker | M-RAG.30 | 2 |
+| GAP-RAG-18 | prod_blocker | M-RAG.33 | 2 |
+| GAP-RAG-20 | prod_blocker | M-RAG.35 | 2 |
+| GAP-RAG-08 | incomplete_wiring | M-RAG.27 **Done** | 3 |
+| GAP-RAG-09 | below_prod_bar | M-RAG.57 **Done** (metrics default follows OTel spine when env unset) | 3 |
+| GAP-RAG-10 | incomplete_wiring | M-RAG.28 **Done** | 3 |
+| GAP-RAG-11 | below_prod_bar | M-RAG.28 **Done** | 3 |
+| GAP-RAG-12 | below_prod_bar | M-RAG.28 **Done** | 3 |
+| GAP-RAG-13 | incomplete_wiring | M-RAG.29 **Done** | 3 |
+| GAP-RAG-14 | incomplete_wiring | M-RAG.31 **Done** | 3 |
+| GAP-RAG-16 | below_prod_bar | M-RAG.32 **Done** | 3 |
+| GAP-RAG-19 | incomplete_wiring | M-RAG.34 **Done** | 3 |
+| GAP-RAG-21 | prod_blocker | M-RAG.36 **Done** | 3 |
+| GAP-RAG-22 | below_prod_bar | M-RAG.37 **Done** | 3 |
+| GAP-RAG-15 | design_boundary | M-RAG.58 **Frozen** (Tier-3 + AHI) | — |
+| GAP-RAG-24 | incomplete_wiring | M-RAG.38 | G1 |
+| GAP-RAG-25 | incomplete_wiring | M-RAG.39 | G1 |
+| GAP-RAG-26 | prod_blocker | M-RAG.40 | G1 |
+| GAP-RAG-27 | prod_blocker | M-RAG.41 | G1 |
+| GAP-RAG-28 | below_prod_bar | M-RAG.42 | G2 |
+| GAP-RAG-29 | incomplete_wiring | M-RAG.43 **Done** · M-RAG.53 **Done** | G2 · G5 |
+| GAP-RAG-30 | incomplete_wiring | M-RAG.44 **Done** · M-RAG.54 **Done** | G2 · G5 |
+| GAP-RAG-31 | prod_blocker | M-RAG.45 | G3 |
+| GAP-RAG-32 | incomplete_wiring | M-RAG.46 | G3 |
 | GAP-RAG-33 | gap | M-RAG.49–M-RAG.51 **Done** | G4 |
-| GAP-RAG-34 | ograniczenie | M-RAG.47 | G3 |
-| GAP-RAG-35 | niedoróbka | M-RAG.48 | G2 |
-| GAP-RAG-36 | niska jakość | M-RAG.52 | G2 |
-| GAP-RAG-39 | niedoróbka | M-RAG.60 **Done** | CONVERGE |
-| GAP-RAG-40 | niedoróbka | M-RAG.61 **Done** | CONVERGE |
+| GAP-RAG-34 | design_boundary | M-RAG.47 | G3 |
+| GAP-RAG-35 | incomplete_wiring | M-RAG.48 | G2 |
+| GAP-RAG-36 | below_prod_bar | M-RAG.52 | G2 |
+| GAP-RAG-39 | incomplete_wiring | M-RAG.60 **Done** | CONVERGE |
+| GAP-RAG-40 | incomplete_wiring | M-RAG.61 **Done** | CONVERGE |
 
 **Coverage (M-RAG-DEPTH):** 22 actionable gaps + 1 architectural boundary — **100% mapped** (complete 2026-06-10).
 

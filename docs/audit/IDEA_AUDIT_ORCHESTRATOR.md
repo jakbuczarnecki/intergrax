@@ -138,7 +138,7 @@ Evidence format: `` `path:symbol` ``, test name, or gate output — **no doc-onl
 
 Specify in chat: tier, domain pair(s), contracts, reuse inventory, ADR need, scaffold commands, **draft plan row IDs** (English), tests/gates, suggested next implementation step.
 
-### Step 6 — Operator checkpoint (Polish) — **STOP**
+### Step 6 — Operator checkpoint — **STOP**
 
 Deliver summary per bootstrap output structure. **Do not** edit architecture or plan yet.
 
@@ -183,7 +183,7 @@ NON_GOALS:
 - Phase K product-specific templates
 ```
 
-Agent should classify → `INTEGRATIONS` (+ possibly `TOOLS` if a dedicated notify tool), scan `intergrax/integrations/` for `twilio`, `notify.send`, deliver verdict in Polish, then STOP.
+Agent should classify → `INTEGRATIONS` (+ possibly `TOOLS` if a dedicated notify tool), scan `intergrax/integrations/` for `twilio`, `notify.send`, deliver verdict in English, then STOP.
 
 ---
 
@@ -192,7 +192,7 @@ Agent should classify → `INTEGRATIONS` (+ possibly `TOOLS` if a dedicated noti
 | Mode | Bootstrap `MODE=` | Code? | Doc updates? |
 |------|-------------------|-------|--------------|
 | **I — Audit only** | `audit-only` (default) | No | Propose in chat; Step 7 only after explicit operator approval in chat |
-| **I+ — Audit + apply docs (same session)** | `audit-and-apply-docs` | No | Operator pre-signals intent to update docs in this session; agent still delivers verdict + STOP; Step 7 only after explicit confirmation (e.g. „zatwierdź docs”) — **not** automatic on paste |
+| **I+ — Audit + apply docs (same session)** | `audit-and-apply-docs` | No | Operator pre-signals intent to update docs in this session; agent still delivers verdict + STOP; Step 7 only after explicit confirmation (e.g. "approve docs") — **not** automatic on paste |
 
 ---
 
