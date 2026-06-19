@@ -430,7 +430,7 @@ RoutingContext (snapshot from Nexus / budget meter / classifier)
 |------------|---------|--------|------------|
 | Predefined catalog (Tier-0) + custom rules (Tier-3) | M-LLM-X.10.1 | **Done** | Builtin + `LLMRoutingRule` Protocol |
 | Auto `RoutingContext` on materialize / ACP start | M-LLM-X.10.2 | **Done** | `runtime_config_bridge`, `acp_run` — not all call sites |
-| Trace `rule_id` + `routing_reason` | M-LLM-X.10.3 | **Done** | Start-of-run; per-eval on UAEP/Nexus via X-11.4/X-12.7; ACP Plane A full parity → **X-13.2** |
+| Trace `rule_id` + `routing_reason` | M-LLM-X.10.3 | **Done** | Start-of-run; per-eval on UAEP/Nexus via X-11.4/X-12.7; ACP Plane A parity via **X-13.2** |
 | Reference lab host (predefined demo; products may use custom) | M-LLM-X.10.4 | **Done** | CI gate lab-only |
 | Acceptance: budget rule switches profile | M-LLM-X.10.5 | **Done** | Resolver + materialize — not full Nexus run |
 | `DynamicLLMRouter` on ACP hosts | M-LLM-X.10.6 | **Done** | ACP only |
@@ -478,23 +478,23 @@ RoutingContext (snapshot from Nexus / budget meter / classifier)
 
 **Maturity label:** **L5 strict enterprise-ready** for declarative routing on core + UAEP + ACP paths.
 
-**Secondary LLM policy (M-LLM-X.12.12):** Tool planner, websearch map/reduce/rerank, and critic LLM adapters are **not** auto-wrapped by `RoutingEvaluatingLLMAdapter`. Hosts must either (a) register separate `LLMRoutingProfile` rules via dedicated wiring, or (b) accept static profiles for those surfaces until a product decision extends evaluating wrap.
+**Secondary LLM policy (M-LLM-X.12.12 · X-13.4–13.6):** Tool planner, websearch map/reduce/rerank, and critic paths receive **routing snapshot sync** or explicit **critic routing metadata** when `llm_routing_profile` is enabled. They are not auto-wrapped in `RoutingEvaluatingLLMAdapter`; hosts may still opt into dedicated evaluating wraps per surface.
 
-**Closes:** **LLM-AUDIT-19**.
+**Closes:** **LLM-AUDIT-19** (X-12), **LLM-AUDIT-20** (X-13).
 
-#### Post-L5 follow-up register (M-LLM-X.13 — Planned)
+#### Post-L5 follow-up register (M-LLM-X.13 — Done)
 
-**Source:** Post X-12 enterprise audit (2026-06-19). Strict **L5** is met on core + UAEP + ACP agent paths; items below are polish and secondary-surface coverage — tracked as **LLM-AUDIT-20**, **does not downgrade** the L5 label on the declared scope.
+**Source:** Post X-12 enterprise audit (2026-06-19). All gaps below closed in **M-LLM-X.13** (2026-06-19).
 
-| Gap (post-audit) | Severity | Task ID |
-|------------------|----------|---------|
-| `runtime_state.py` imports Tier-3 `RoutingEvaluatingLLMAdapter` for `isinstance` wiring | **P2** | M-LLM-X.13.1 |
-| ACP records routing in `step.diagnostics` only — no Plane A `llm_routing_rule` trace step | **P2** | M-LLM-X.13.2 |
-| No dedicated concurrent-run isolation test for per-run observers | **P2** | M-LLM-X.13.3 |
-| `tool_planning_service` LLM bypasses evaluating wrap | **P3** | M-LLM-X.13.4 |
-| Websearch map/reduce/rerank LLM bypass evaluating wrap | **P3** | M-LLM-X.13.5 |
-| Critic evaluator LLM bypass evaluating wrap | **P3** | M-LLM-X.13.6 |
-| `nexus_plan_bridge` / `llm_task_classifier` skip routing snapshot sync | **P2** | M-LLM-X.13.7 |
+| Gap (post-audit) | Severity | Task ID | Status |
+|------------------|----------|---------|--------|
+| `runtime_state.py` imports Tier-3 `RoutingEvaluatingLLMAdapter` for `isinstance` wiring | **P2** | M-LLM-X.13.1 | **Done** — `evaluating_hooks.py` Protocol |
+| ACP records routing in `step.diagnostics` only — no Plane A `llm_routing_rule` trace step | **P2** | M-LLM-X.13.2 | **Done** — `acp_routing_trace_bridge.py` |
+| No dedicated concurrent-run isolation test for per-run observers | **P2** | M-LLM-X.13.3 | **Done** |
+| `tool_planning_service` LLM bypasses evaluating wrap | **P3** | M-LLM-X.13.4 | **Done** — snapshot sync |
+| Websearch map/reduce/rerank LLM bypass evaluating wrap | **P3** | M-LLM-X.13.5 | **Done** — snapshot sync |
+| Critic evaluator LLM bypass evaluating wrap | **P3** | M-LLM-X.13.6 | **Done** — routing policy metadata |
+| `nexus_plan_bridge` / `llm_task_classifier` skip routing snapshot sync | **P2** | M-LLM-X.13.7 | **Done** |
 
 **Plan:** [Wave M-LLM-X-13](../plan/LLM_ADAPTERS.md#wave-m-llm-x-13--post-l5-routing-polish-optional)
 
@@ -795,7 +795,7 @@ Do not merge counters without explicit bridge code.
 | LLM-AUDIT-17 | Routing enterprise E2E — start-of-run + ACP (auto context, trace, reference host) | **P1** | M-LLM-X.10 | **Done** |
 | LLM-AUDIT-18 | Routing mid-run Nexus — live re-eval, context refresh, full trace loop, true E2E run | **P1** | M-LLM-X.11 | **Done** (X-11 scope) |
 | LLM-AUDIT-19 | Routing strict L5 — budget meter accuracy, all Nexus paths, tier boundary, production E2E, ACP trace parity | **P1** | M-LLM-X.12 | **Done** |
-| LLM-AUDIT-20 | Post-L5 polish — ACP Plane A trace, tier bridge, concurrent test, secondary LLM + auxiliary Nexus paths | **P2** | M-LLM-X.13 | **Planned** |
+| LLM-AUDIT-20 | Post-L5 polish — ACP Plane A trace, tier bridge, concurrent test, secondary LLM + auxiliary Nexus paths | **P2** | M-LLM-X.13 | **Done** |
 
 **Deferred (documented, no X-phase task):** tiktoken OpenAI-centric token estimate for non-OpenAI models — acceptable for budgeting until vendor-specific tokenizer plugins; note in `USAGE.md`.
 

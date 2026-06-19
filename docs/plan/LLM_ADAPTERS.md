@@ -123,9 +123,9 @@
 | 10 | X-10 | M-LLM-X.10.1–10.8 | **P1** | **Done** — routing enterprise closeout (start-of-run + ACP) |
 | 11 | X-11 | M-LLM-X.11.1–11.8 | **P1** | **Done** — routing enterprise hardening (mid-run Nexus) |
 | 12 | X-12 | M-LLM-X.12.1–12.12 | **P1** | **Done** (2026-06-19) — routing strict enterprise closeout · LLM-AUDIT-19 |
-| 13 | X-13 | M-LLM-X.13.1–13.7 | P2 | **Planned** — post-L5 routing polish · LLM-AUDIT-20 |
+| 13 | X-13 | M-LLM-X.13.1–13.7 | P2 | **Done** — post-L5 routing polish · LLM-AUDIT-20 |
 
-**Closeout gate:** All M-LLM-X.* Done + architecture audit register all **Done** + `tests/unit/llm_adapters/` green + new CI scripts green. **X-10** closed LLM-AUDIT-17. **X-11** closed LLM-AUDIT-18. **X-12** closed LLM-AUDIT-19 (strict L5). **X-8** domain closeout is next mandatory wave. **X-13** optional post-L5 polish (does not block X-8).
+**Closeout gate:** All M-LLM-X.* Done + architecture audit register all **Done** + `tests/unit/llm_adapters/` green + new CI scripts green. **X-10** closed LLM-AUDIT-17. **X-11** closed LLM-AUDIT-18. **X-12** closed LLM-AUDIT-19 (strict L5). **X-13** closed LLM-AUDIT-20. **X-8** domain closeout is next mandatory wave.
 
 ---
 
@@ -400,13 +400,13 @@ Export `BUILTIN_ROUTING_RULES: tuple[type[LLMRoutingRuleBase], ...]` + `builtin_
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| M-LLM-X.13.1 | **`runtime_state` tier bridge** — replace Tier-3 `isinstance(RoutingEvaluatingLLMAdapter)` with duck-typed Protocol or callback registry on `RuntimeConfig` | **Planned** | P2 | `runtime_state.py`, `runtime_config_bridge.py` | Tier-1 has zero `applications/_shared/routing_evaluating_adapter` import |
-| M-LLM-X.13.2 | **ACP Plane A trace parity** — map `on_evaluated` to `emit_llm_routing_rule_diag` (or Plane B → Plane A bridge), not only `step.diagnostics` | **Planned** | P2 | `acp_run.py`, `OBSERVABILITY` | ACP integration test asserts `llm_routing_rule` trace step |
-| M-LLM-X.13.3 | **Concurrent run isolation test** — two parallel Nexus/UAEP runs; routing traces and tracker entries do not cross-contaminate | **Planned** | P2 | `tests/acceptance/llm_routing/` | `-m gate` green |
-| M-LLM-X.13.4 | **Tool planner LLM routing** — evaluating wrap or dedicated `LLMRoutingProfile` wiring for `tool_planning_service` | **Planned** | P3 | `tool_planning_service.py`, Tier-3 host wiring | Budget rule can affect planner model mid-run (product opt-in) |
-| M-LLM-X.13.5 | **Websearch secondary LLM routing** — map/reduce/rerank adapters participate in snapshot sync or static policy documented per host | **Planned** | P3 | `websearch_config`, `runtime_config_bridge.py` | Integration: websearch LLM calls see refreshed budget context |
-| M-LLM-X.13.6 | **Critic LLM routing policy** — explicit wiring for critic evaluator LLM (wrap or separate profile rules) | **Planned** | P3 | `critic_runtime_bridge.py`, architecture § | No silent bypass of `LLMRoutingProfile` on critic path |
-| M-LLM-X.13.7 | **Auxiliary Nexus LLM paths** — `nexus_plan_bridge`, `llm_task_classifier` call `sync_routing_before_llm_call` before `generate_messages` | **Planned** | P2 | `routing_snapshot_sync.py` consumers | Unit: classifier/plan bridge refresh snapshot when routing enabled |
+| M-LLM-X.13.1 | **`runtime_state` tier bridge** — replace Tier-3 `isinstance(RoutingEvaluatingLLMAdapter)` with duck-typed Protocol or callback registry on `RuntimeConfig` | **Done** | P2 | `evaluating_hooks.py`, `runtime_state.py` | Tier-1 has zero `applications/_shared/routing_evaluating_adapter` import |
+| M-LLM-X.13.2 | **ACP Plane A trace parity** — map `on_evaluated` to `emit_llm_routing_rule_diag` (or Plane B → Plane A bridge), not only `step.diagnostics` | **Done** | P2 | `acp_routing_trace_bridge.py`, `acp_run.py` | ACP integration test asserts `llm_routing_rule` trace step |
+| M-LLM-X.13.3 | **Concurrent run isolation test** — two parallel Nexus/UAEP runs; routing traces and tracker entries do not cross-contaminate | **Done** | P2 | `tests/acceptance/llm_routing/` | `-m gate` green |
+| M-LLM-X.13.4 | **Tool planner LLM routing** — evaluating wrap or dedicated `LLMRoutingProfile` wiring for `tool_planning_service` | **Done** | P3 | `tool_planning_service.py`, `planner_bootstrap.py` | Snapshot sync before planner LLM calls |
+| M-LLM-X.13.5 | **Websearch secondary LLM routing** — map/reduce/rerank adapters participate in snapshot sync or static policy documented per host | **Done** | P3 | `websearch_config`, `websearch_context_generator.py` | Map/reduce refresh routing snapshot when wired |
+| M-LLM-X.13.6 | **Critic LLM routing policy** — explicit wiring for critic evaluator LLM (wrap or separate profile rules) | **Done** | P3 | `critic_runtime_bridge.py` | `critic_llm_routing_*` metadata on `RuntimeConfig` |
+| M-LLM-X.13.7 | **Auxiliary Nexus LLM paths** — `nexus_plan_bridge`, `llm_task_classifier` call `sync_routing_before_llm_call` before `generate_messages` | **Done** | P2 | `routing_snapshot_sync.py` consumers | Unit: classifier/plan bridge refresh snapshot when routing enabled |
 
 **Suggested PR order (X-13):** 13.1 → 13.2 → 13.3 → 13.7 → 13.4 → 13.5 → 13.6.
 
@@ -462,7 +462,7 @@ PR-16: M-LLM-X.13.* post-L5 polish (optional, parallel with X-8)
 | LLM-AUDIT-17 — Routing enterprise E2E start-of-run + ACP (context, trace, reference host) | M-LLM-X.10.* **Done** |
 | LLM-AUDIT-18 — Routing mid-run Nexus live re-eval, context refresh, full trace, true E2E | M-LLM-X.11.* **Done** (X-11 scope) |
 | LLM-AUDIT-19 — Routing strict L5: budget meter, all Nexus paths, tier boundary, production E2E | M-LLM-X.12.* **Done** |
-| LLM-AUDIT-20 — Post-L5 polish: ACP Plane A trace, tier bridge, concurrent test, secondary LLM surfaces | M-LLM-X.13.* **Planned** |
+| LLM-AUDIT-20 — Post-L5 polish: ACP Plane A trace, tier bridge, concurrent test, secondary LLM surfaces | M-LLM-X.13.* **Done** |
 | tiktoken OpenAI-centric estimate (all providers) | **Deferred** — document limitation in USAGE; vendor tokenizer plugins post-X |
 | Single `RuntimeConfig.llm_adapter` per run (multi-model) | M-LLM-X.4–5 (profile chain + routing); no multi-adapter pool in X |
 | Distributed Redis rate limit host wiring | **Ops** — document in USAGE X.7.1; not LLM-AUDIT tier-0 code |
@@ -931,17 +931,17 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 **Source:** Post X-12 enterprise audit — L5 on core paths; residual polish documented in journal and architecture.  
 **Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) § Post-L5 follow-up register  
 **Goal:** Close **LLM-AUDIT-20** without blocking domain closeout.  
-**Phase status:** **Planned** — 0/7 · see [Wave M-LLM-X-13](#wave-m-llm-x-13--post-l5-routing-polish-optional)
+**Phase status:** **Done** — 7/7 · see [Wave M-LLM-X-13](#wave-m-llm-x-13--post-l5-routing-polish-optional)
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **M-LLM-X.13.1** | Arch | P2 | **Planned** | `runtime_state` tier bridge (duck-type) | No Tier-1 → Tier-3 evaluating import |
-| 2 | **M-LLM-X.13.2** | Obs | P2 | **Planned** | ACP Plane A `llm_routing_rule` trace | Integration test green |
-| 3 | **M-LLM-X.13.3** | Test | P2 | **Planned** | Concurrent run isolation | Two parallel runs isolated |
-| 4 | **M-LLM-X.13.4** | Wire | P3 | **Planned** | Tool planner LLM routing | Opt-in mid-run planner swap |
-| 5 | **M-LLM-X.13.5** | Wire | P3 | **Planned** | Websearch secondary LLM routing | Budget context on websearch LLM |
-| 6 | **M-LLM-X.13.6** | Policy | P3 | **Planned** | Critic LLM routing policy | Explicit critic wiring |
-| 7 | **M-LLM-X.13.7** | Wire | P2 | **Planned** | Plan bridge + task classifier sync | Snapshot refresh before auxiliary LLM |
+| 1 | **M-LLM-X.13.1** | Arch | P2 | **Done** | `runtime_state` tier bridge (duck-type) | No Tier-1 → Tier-3 evaluating import |
+| 2 | **M-LLM-X.13.2** | Obs | P2 | **Done** | ACP Plane A `llm_routing_rule` trace | Integration test green |
+| 3 | **M-LLM-X.13.3** | Test | P2 | **Done** | Concurrent run isolation | Two parallel runs isolated |
+| 4 | **M-LLM-X.13.4** | Wire | P3 | **Done** | Tool planner LLM routing | Snapshot sync before planner LLM |
+| 5 | **M-LLM-X.13.5** | Wire | P3 | **Done** | Websearch secondary LLM routing | Budget context on websearch LLM |
+| 6 | **M-LLM-X.13.6** | Policy | P3 | **Done** | Critic LLM routing policy | Explicit critic wiring |
+| 7 | **M-LLM-X.13.7** | Wire | P2 | **Done** | Plan bridge + task classifier sync | Snapshot refresh before auxiliary LLM |
 
 **Suggested PR order:** 13.1 → 13.2 → 13.3 → 13.7 → 13.4 → 13.5 → 13.6.
 

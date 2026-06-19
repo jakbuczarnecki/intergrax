@@ -357,13 +357,13 @@ env.llm_routing_profile = LLMRoutingProfile(
 
 **Mid-run routing:** when `llm_routing_profile` is set, `resolve_llm_adapter()` wraps the core adapter in `RoutingEvaluatingLLMAdapter` (Tier-3). `RuntimeConfig.llm_routing_snapshot` is refreshed via `sync_llm_routing_snapshot_for_state()` before each UAEP step, and via `sync_routing_before_llm_call()` on graph/CE paths.
 
-**Post-L5 follow-ups (M-LLM-X.13 — Planned, LLM-AUDIT-20):**
+**Post-L5 polish (M-LLM-X.13 — Done, LLM-AUDIT-20):**
 
-- [ ] `runtime_state` tier bridge — duck-type instead of Tier-3 `isinstance` import (13.1)
-- [ ] ACP Plane A `llm_routing_rule` trace step, not only `step.diagnostics` (13.2)
-- [ ] Concurrent run isolation acceptance test (13.3)
-- [ ] Tool planner / websearch / critic secondary LLM routing wiring (13.4–13.6)
-- [ ] `nexus_plan_bridge` + `llm_task_classifier` snapshot sync (13.7)
+- [x] `runtime_state` tier bridge — `evaluating_hooks.py` duck-type Protocol (13.1)
+- [x] ACP Plane A `llm_routing_rule` via `acp_routing_trace_bridge.py` (13.2)
+- [x] Concurrent run isolation acceptance test (13.3)
+- [x] Tool planner / websearch / critic secondary LLM routing wiring (13.4–13.6)
+- [x] `nexus_plan_bridge` + `llm_task_classifier` snapshot sync (13.7)
 
 **Strict L5 closeout (M-LLM-X.12 — Done):**
 
