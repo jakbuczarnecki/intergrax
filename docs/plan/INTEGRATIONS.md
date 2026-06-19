@@ -1301,6 +1301,18 @@ L4 readiness requires:
 
 **Explicitly excluded from MAINT:** H-INT-GRAPH — remains in existing phase register (post IDEAL-L3 W2).
 
+### Speech catalog alignment (MOD-SPEECH-ARCH cross-ref)
+
+**Source:** Idea audit 2026-06-19 · [ADR-MOD-001](../adr/entries/2026-06-19/ADR-MOD-001.md)  
+**Owner domain:** [`plan/MODALITY.md`](MODALITY.md) MOD-SPEECH-ARCH.*  
+**Policy:** Hard cutover — delete `SpeechProvider` enum legacy; no transitional compatibility layer.
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **INT-SPEECH-ARCH.1** | Docs/Code | P2 | **Planned** | Canon sync — `speech_provider` is sole vendor path for `speech.*` tools; remove enum references from integration wiring docs | [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) §Speech provider + MOD-SPEECH-ARCH gates green |
+
+Close **INT-SPEECH-ARCH.1** in the same PR wave as **MOD-SPEECH-ARCH.4** (wiring unification).
+
 ---
 
 *End of Integrations Implementation Plan.*

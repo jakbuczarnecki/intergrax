@@ -6,7 +6,7 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates W-ML.0–W-ML.8 + AUDIT-IDEAL-29.1/29.2 closeout).
+**Last updated:** 2026-06-19 — MOD-SPEECH-ARCH registered (speech slug identity; [ADR-MOD-001](../adr/entries/2026-06-19/ADR-MOD-001.md)).
 
 ---
 
@@ -137,6 +137,50 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 **Suggested PR order:** MOD-MAINT-02 → MOD-MAINT-01 → MOD-MAINT-03 → MOD-MAINT-04.
 
 **Explicitly out of scope:** online training / AutoML — canon constraint.
+
+---
+
+## Phase MOD-SPEECH-ARCH — Speech provider slug alignment (Integration Library)
+
+**Status:** **Planned** — operator-approved 2026-06-19 (idea audit Mode I)  
+**ADR:** [ADR-MOD-001](../adr/entries/2026-06-19/ADR-MOD-001.md)  
+**Canon:** [`architecture/MODALITY.md`](../architecture/MODALITY.md) §Plane C — Speech · [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) §Open catalog  
+**Cross-domain:** [`plan/INTEGRATIONS.md`](INTEGRATIONS.md) INT-SPEECH-ARCH.1
+
+**Problem:** `speech_adapters.SpeechProvider` enum duplicates and contradicts the Integration Library open-catalog model (`speech_provider` category). `deepgram` and future slugs cannot extend from outside the platform; `speech_provider_for_slug()` maps unknown slugs to `STUB`.
+
+**Policy (operator constraint):** **Hard cutover only** — delete legacy enum path in the same PR series as slug migration. **No** deprecation aliases, **no** dual-path compatibility shims, **no** transitional phases.
+
+**Explicitly in scope:**
+
+- Remove `SpeechProvider` enum and all enum-coercion sites.
+- `SpeechProfile` / bridge types use `provider_slug: str` or accept pre-built `SpeechProviderBackend` / `IntegrationBinding`.
+- Single wiring path: `IntegrationProfile.speech_provider` → `wire_integration_tool_context()` → `speech.*` tools.
+- Tests and docs updated atomically with code removal.
+
+**Explicitly out of scope:**
+
+- New speech vendor slugs beyond alignment work (register separately per integration PR).
+- `VisionProvider` enum remediation (separate future phase unless bundled by explicit reprioritization).
+- Phase K / §6.3 product voice features.
+
+| Order | ID | Deliverable | Priority | Status | Acceptance |
+|-------|-----|-------------|----------|--------|------------|
+| 1 | **MOD-SPEECH-ARCH.1** | **Delete** `SpeechProvider` enum; slug-based identity on `SpeechAdapter` / `SpeechProfile` | **P1** | **Planned** | No `SpeechProvider` enum in tree; `provider_slug: str` validated against registered catalog or explicit instance |
+| 2 | **MOD-SPEECH-ARCH.2** | `SpeechProfile` accepts `IntegrationBinding` / pre-built `SpeechProviderBackend` | **P1** | **Planned** | Tier-3 can inject backend without platform code change; unit tests for binding paths |
+| 3 | **MOD-SPEECH-ARCH.3** | **Delete** `speech_provider_for_slug()`; slug from `IntegrationProfile.slug_for_category(SPEECH_PROVIDER)` | **P1** | **Planned** | `deepgram` bridge labelled `deepgram`, not `stub`; no hardcoded slug→enum table |
+| 4 | **MOD-SPEECH-ARCH.4** | Unify `wire_modality_extras()` with integration path | **P1** | **Planned** | When `speech_provider` resolved from catalog, no parallel enum-based `create_adapter()`; integration wiring wins |
+| 5 | **MOD-SPEECH-ARCH.5** | External speech adapter registration via slug + factory (optional in-process path) | **P2** | **Planned** | Third-party package registers slug without editing `intergrax/speech_adapters/contracts/` enum file (file removed) |
+| 6 | **INT-SPEECH-ARCH.1** | Integration plan cross-row — document canonical speech wiring | **P2** | **Planned** | [`plan/INTEGRATIONS.md`](INTEGRATIONS.md) maintenance row **Done** when canon synced |
+
+**Suggested PR order:** MOD-SPEECH-ARCH.1 → MOD-SPEECH-ARCH.3 → MOD-SPEECH-ARCH.2 → MOD-SPEECH-ARCH.4 → MOD-SPEECH-ARCH.5 + INT-SPEECH-ARCH.1 (docs).
+
+**Verification:**
+
+```bash
+uv run pytest tests/unit/speech_adapters/ tests/unit/applications/test_p6_integration_tool_wiring.py tests/unit/tools/providers/test_modality_tools.py -q
+python scripts/check_harness_adr.py
+```
 
 ---
 

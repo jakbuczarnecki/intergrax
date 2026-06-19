@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 29  
 **Audit instruction:** [`audit/MODALITY.md`](../audit/MODALITY.md)  
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates W-ML closeout); W-ML.0–W-ML.8 **Done**
+**Last updated:** 2026-06-19 — MOD-SPEECH-ARCH (speech slug identity; [ADR-MOD-001](../adr/entries/2026-06-19/ADR-MOD-001.md))
 
 ---
 
@@ -134,17 +134,39 @@ VisionModelProfile  →  VisionInferenceRegistry  →  VisionInferenceAdapter
 
 ---
 
-## Integration categories (planned extensions)
+## Integration categories (modality-related)
 
-New categories require §5.2.4 approval. Planned slugs are **documentation placeholders** until Phase W-ML registers them.
+| Category | Contract | Shipped slugs | Extension |
+|----------|----------|---------------|-----------|
+| **speech_provider** | `SpeechProviderBackend` (TTS/STT SaaS) | `elevenlabs`, `deepgram` | Manifest + factory or `IntegrationPlugin` — **slug identity only** ([ADR-MOD-001](../adr/entries/2026-06-19/ADR-MOD-001.md)) |
+| **vision_serving** | Remote CV server gRPC/REST | `triton` | Same open-catalog rules |
+| **ml_inference_host** | Managed model endpoint | `replicate`, `huggingface_inference` | Same open-catalog rules |
 
-| Category | Contract (planned) | Example slugs (planned) |
-|----------|-------------------|-------------------------|
-| **speech_provider** | TTS/STT SaaS API | `elevenlabs`, `azure_speech`, `deepgram`, `openai_tts` |
-| **vision_serving** | Remote CV server gRPC/REST | `triton`, `torchserve`, `roboflow` |
-| **ml_inference_host** | Managed model endpoint | `huggingface_inference`, `sagemaker`, `azure_ml`, `vertex_prediction` |
+**Planned slugs (not yet registered):** `azure_speech`, `openai_tts`, `torchserve`, `roboflow`, `sagemaker`, `azure_ml`, `vertex_prediction`.
 
-**Existing:** `document_parser` (ingest), `rerank_provider`, observability (`wandb`, `arize`, `phoenix`) for **eval**, not training.
+**Existing (non-modality-C):** `document_parser` (ingest), `rerank_provider`, observability (`wandb`, `arize`, `phoenix`) for **eval**, not training.
+
+### Plane C — Speech (TTS/STT) — canonical wiring
+
+Speech SaaS vendors are **Integration Library** providers, not a closed platform enum.
+
+```text
+IntegrationManifest (slug) + factory
+    → SpeechProviderBackend (Protocol instance)
+        → wire_integration_tool_context()
+            → IntegrationSpeechAdapter (slug-labelled bridge)
+                → speech.synthesize / speech.transcribe (ToolRuntime)
+```
+
+| Rule | Detail |
+|------|--------|
+| **Single path** | Tier-3 hosts resolve `IntegrationProfile.speech_provider` (manifest, plugin class, slug `str`, or pre-built instance) — same binding model as other integration slots. |
+| **No enum** | Do **not** use `SpeechProvider` enum or enum-coerced profiles — removed per MOD-SPEECH-ARCH (hard cutover, no deprecation phase). |
+| **Env defaults** | `INTERGRAX_SPEECH_PROVIDER=<slug>` resolves against the registered integration catalog, not a platform enum. |
+| **Plane B ingest** | File/audio transcription for RAG remains `document_parser/whisper` — not a substitute for `speech.transcribe` in dialog. |
+| **Extension** | Third-party packages: `IntegrationPlugin` with category `speech_provider`; see [`INTEGRATIONS.md`](INTEGRATIONS.md) §Open catalog. |
+
+**Legacy removed (MOD-SPEECH-ARCH):** `SpeechProvider` enum, `speech_provider_for_slug()` hardcoded mapping, enum-only `SpeechProfile` coercion, parallel enum backend in `wire_modality_extras()` when integration slot is configured.
 
 ---
 
@@ -157,8 +179,8 @@ Atomic tools (LLM-selectable, MCP-exportable):
 | `vision.detect` | C | **Done** |
 | `vision.segment` | C | **Done** |
 | `vision.ocr_regions` | C | **Done** |
-| `speech.synthesize` | C + speech_provider | **Done** — `IntegrationSpeechAdapter` bridges catalog `speech_provider` slugs (`elevenlabs`, `deepgram`) into Tier-0 speech tools via `wire_integration_tool_context()` |
-| `speech.transcribe` | B or speech_provider | **Done** (stub / provider) |
+| `speech.synthesize` | C + `speech_provider` | **Done** — `SpeechProviderBackend` from Integration Library via `wire_integration_tool_context()` |
+| `speech.transcribe` | C + `speech_provider` (or Plane B ingest) | **Done** — catalog slug (e.g. `deepgram`) or ingest parsers for files |
 | `ml.predict` | C | **Done** |
 | `ml.explain` | C | **Done** (feature importance stub) |
 | `ml.batch_predict` | C | **Done** |
@@ -219,13 +241,15 @@ Agent = LLMProfile + ModalityProfile + Skill Set + Policy Bundle + Context Profi
 
 ---
 
-## Declarative profiles (mirrors `LLMProfile`)
+## Declarative profiles (mirrors `LLMProfile` where applicable)
 
-| Profile | Module | Factory |
-|---------|--------|---------|
+| Profile | Module | Factory / resolution |
+|---------|--------|----------------------|
 | **Vision** | `intergrax.model_inference.registry.VisionProfile` | `create_adapter()` → `VisionInferenceAdapter`; `build_registry()` → `ModelInferenceRegistry` |
-| **Speech** | `intergrax.speech_adapters.SpeechProfile` | `create_adapter()` → `SpeechAdapter` |
+| **Speech** | `IntegrationProfile.speech_provider` slot **or** `intergrax.speech_adapters.SpeechProfile` | `profile.resolve(SPEECH_PROVIDER)` → `SpeechProviderBackend`; env slug resolves against integration catalog ([ADR-MOD-001](../adr/entries/2026-06-19/ADR-MOD-001.md)) |
 | **Execution** | `intergrax.model_inference.execution.ModalityExecutionProfile` | `build_modality_inference_executor()` → `ModalityInferenceExecutor` (`in_process`, `thread_pool`, `celery`) |
+
+**Speech rule:** prefer `IntegrationProfile` for Tier-3 hosts. `SpeechProfile` is a thin env/lab helper over catalog slug resolution — not a parallel vendor registry.
 
 **Execution env (harness):**
 
@@ -236,20 +260,22 @@ Agent = LLMProfile + ModalityProfile + Skill Set + Policy Bundle + Context Profi
 | `INTERGRAX_MODALITY_CELERY_BROKER_URL` | Celery broker for distributed modality jobs |
 | `INTERGRAX_MODALITY_CELERY_EAGER` | `true` runs Celery tasks in-process (tests) |
 
-Example (application host)::
+Example (application host):
 
 ```python
-from intergrax.model_inference.registry import VisionProfile, VisionProvider, vision_profile_from_env
-from intergrax.speech_adapters import SpeechProfile, SpeechProvider, speech_profile_from_env
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.providers.speech_provider.deepgram.manifest import MANIFEST as DEEPGRAM
+from intergrax.model_inference.registry import VisionProfile, VisionProvider
 
 vision = VisionProfile(provider=VisionProvider.OPENCV)
 registry = vision.build_registry()
 
-speech = speech_profile_from_env()
-adapter = speech.create_adapter()
+integration = IntegrationProfile(speech_provider=DEEPGRAM)
+speech_backend = integration.resolve(IntegrationCategory.SPEECH_PROVIDER)
 ```
 
-Registries: `VisionAdapterRegistry`, `SpeechAdapterRegistry` (same pattern as `LLMAdapterRegistry`).
+Registries: `VisionAdapterRegistry` (vision slugs). Speech SaaS vendors use **Integration Library** catalog registration — not a closed enum.
 
 ## Harness environment variables
 
@@ -257,9 +283,9 @@ Registries: `VisionAdapterRegistry`, `SpeechAdapterRegistry` (same pattern as `L
 |----------|---------|
 | `INTERGRAX_VISION_PROVIDER` or legacy `INTERGRAX_VISION_ADAPTER` | `stub` \| `onnxruntime` (OpenCV, default) \| `yolo_ultralytics` |
 | `INTERGRAX_VISION_ARTIFACT_ID` | Optional artifact override for `vision.detect` default |
-| `INTERGRAX_SPEECH_PROVIDER` | `stub` \| `elevenlabs` (default `stub`, or `elevenlabs` when `ELEVENLABS_API_KEY` set) |
-| `INTERGRAX_SPEECH_VOICE_ID` | Optional default TTS voice |
-| `ELEVENLABS_API_KEY` | API key for `SpeechProfile(provider=elevenlabs)` |
+| `INTERGRAX_SPEECH_PROVIDER` | Integration catalog slug (e.g. `elevenlabs`, `deepgram`, `stub`) — resolved via `IntegrationProfile`, not enum |
+| `INTERGRAX_SPEECH_VOICE_ID` | Optional default TTS voice for `speech.synthesize` |
+| `INTERGRAX_ELEVENLABS_*` / `INTERGRAX_DEEPGRAM_*` | Per-slug integration env prefixes (see provider `USAGE.md`) |
 | `INTERGRAX_TRITON_URL` | Triton/KServe base URL for `VisionProvider.TRITON` |
 | `INTERGRAX_TRITON_MODEL` | Triton model name (default `yolo`) |
 | `HUGGINGFACE_API_KEY` | HF Inference API for `VisionProvider.HUGGINGFACE_INFERENCE` |
@@ -276,7 +302,7 @@ Registries: `VisionAdapterRegistry`, `SpeechAdapterRegistry` (same pattern as `L
 | Whisper / yt_dlp / image ingest | **Done** (beta) |
 | HF embeddings / optional SPLADE | **Done** |
 | Multimodal LLM contract + attachment wire-up | **Done** (W-ML.1) |
-| `speech.synthesize` / `speech.transcribe` tools + ElevenLabs/stub backend | **Done** (W-ML.2) |
+| `speech.synthesize` / `speech.transcribe` tools + integration catalog slugs | **Done** (W-ML.2) · slug alignment **Planned** (MOD-SPEECH-ARCH) |
 | `model_inference` registry + OpenCV / stub / optional Ultralytics | **Done** (W-ML.3) |
 | Lab `ModalityProfile` + `ToolAccessPolicy.apply_modality_profile` | **Done** (W-ML.6) |
 | Golden fixture `tests/fixtures/vision_golden/sample_target.png` | **Done** |

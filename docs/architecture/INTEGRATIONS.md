@@ -156,7 +156,20 @@ Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 185 pr
 
 **New categories (9):** `security_scanner`, `sandbox_host`, `identity_provider`, `speech_provider`, `workflow_orchestrator`, `vision_serving`, `ml_inference_host`, `billing_meter`, `crm`.
 
-**Post-catalog wiring (M-P6-WIRE):** `wire_integration_tool_context()` resolves P6 slots into `ToolWiringContext`; `extend_tool_profile_for_integration()` auto-enables `security.scan`, `workflow.*`, and `sandbox.exec` when matching categories are configured. Speech catalog slugs bridge to Tier-0 speech tools via `IntegrationSpeechAdapter`.
+**Post-catalog wiring (M-P6-WIRE):** `wire_integration_tool_context()` resolves P6 slots into `ToolWiringContext`; `extend_tool_profile_for_integration()` auto-enables `security.scan`, `workflow.*`, and `sandbox.exec` when matching categories are configured. Speech catalog slugs bridge to Tier-0 speech tools via `IntegrationSpeechAdapter` + `SpeechProviderBackend` ([ADR-MOD-001](../adr/entries/2026-06-19/ADR-MOD-001.md) — slug identity; enum path removed under MOD-SPEECH-ARCH).
+
+### Speech provider (`speech_provider`) — canonical tool path
+
+Speech SaaS vendors follow the **open catalog** rules (§Open catalog below) — same as all 185+ slugs.
+
+| Step | Mechanism |
+|------|-----------|
+| Register | `providers/speech_provider/<slug>/manifest.py` + `register_from_manifest()` or `IntegrationPlugin` |
+| Contract | `SpeechProviderBackend` — `synthesize()`, `transcribe()`, `health()` |
+| Tier-3 | `IntegrationProfile.speech_provider = <manifest \| plugin \| slug \| instance>` |
+| Tools | `wire_integration_tool_context()` → `IntegrationSpeechAdapter(provider_slug=…)` → `speech.synthesize` / `speech.transcribe` |
+
+**Do not** extend a platform `SpeechProvider` enum. **Do not** add vendor-specific branches in `wire_modality_extras()` when the integration slot is configured. Implementation paydown: [`plan/MODALITY.md`](../plan/MODALITY.md) MOD-SPEECH-ARCH.*.
 
 **Delivered:** 32 STABLE slugs (`_shared/p7`) · 9 category contracts · 4 Tier-3 presets · `HARNESS_M6_P6_PROBE_SLUGS` · debug API `GET /debug/integrations/health?stack=m6_p6`.
 
