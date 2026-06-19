@@ -7,11 +7,11 @@ import pytest
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.applications._shared.routing_evaluating_adapter import RoutingEvaluatingLLMAdapter
 from intergrax.llm_adapters.routing import (
     BudgetBelowRule,
     LLMRoutingProfile,
     RoutingContext,
-    RoutingEvaluatingLLMAdapter,
 )
 from intergrax.llm.messages import ChatMessage
 from testing_support.builder import FakeLLMAdapter
@@ -35,7 +35,11 @@ def test_evaluating_adapter_swaps_inner_on_budget_change(monkeypatch: pytest.Mon
     inner_local = FakeLLMAdapter(fixed_text="local")
     inner_local.model = "meta-llama/Llama-3.1-8B"
 
-    def _fake_create(_env: object, evaluation: object) -> FakeLLMAdapter:
+    def _fake_create(
+        _env: object,
+        evaluation: object,
+        _ctx: object | None = None,
+    ) -> FakeLLMAdapter:
         from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
 
         assert isinstance(evaluation, RoutingEvaluation)
@@ -43,11 +47,6 @@ def test_evaluating_adapter_swaps_inner_on_budget_change(monkeypatch: pytest.Mon
             return inner_local
         return inner_primary
 
-    monkeypatch.setattr(
-        "intergrax.llm_adapters.routing.evaluating_adapter.create_adapter_for_routing_evaluation",
-        _fake_create,
-        raising=False,
-    )
     monkeypatch.setattr(
         "intergrax.applications._shared.llm_resolver.create_adapter_for_routing_evaluation",
         _fake_create,
@@ -79,6 +78,8 @@ def test_evaluating_adapter_emits_on_evaluated_callback() -> None:
     env.llm_profile = primary
     env.llm_routing_profile = LLMRoutingProfile(default_profile=primary, allowed_profiles=(primary,))
     inner = FakeLLMAdapter()
+    inner.provider = LLMProvider.OPENAI
+    inner.model = "gpt-4o-mini"
     seen: list[str] = []
 
     def _on_evaluated(evaluation: object) -> None:

@@ -261,6 +261,15 @@ async def run_acp_session(
         from intergrax.applications._shared.llm_routing_context_bridge import (
             make_acp_routing_context_provider,
         )
+        from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
+        from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import (
+            routing_evaluation_to_diag,
+        )
+
+        def _on_routing_evaluated(evaluation: RoutingEvaluation) -> None:
+            kernel_ctx_holder[0].routing_rule_evaluations.append(
+                routing_evaluation_to_diag(evaluation).to_dict(),
+            )
 
         llm_router = wrap_dynamic_llm_router(
             llm_router,
@@ -273,6 +282,7 @@ async def run_acp_session(
                 task_class=str(request.metadata.get("task_class", "")) or None,
                 metadata=request.metadata,
             ),
+            on_evaluated=_on_routing_evaluated,
         )
     shared_context = load_view(request.metadata) or view_from_task_metadata(
         request.metadata,

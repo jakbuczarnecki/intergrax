@@ -144,6 +144,7 @@ def materialize_runtime_config(
         runtime_policies=runtime_policies_for_execution_mode(env.execution_mode),
         integration_profile=integration_profile,
         llm_routing_context=routing_context,
+        metadata={"run_id": str(request.metadata.get("run_id", request.session_id))},
     )
     init_llm_routing_on_config(config, routing_context, request)
     context_provider = make_config_routing_context_provider(config)

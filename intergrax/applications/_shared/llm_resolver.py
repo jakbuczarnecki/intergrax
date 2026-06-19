@@ -13,29 +13,13 @@ from intergrax.llm_adapters.registry.model_router import ModelRouter, ModelRouti
 from intergrax.llm_adapters.registry.profile import LLMProfile, llm_profile_from_env
 from intergrax.llm_adapters.routing import LLMRoutingEvaluator, RoutingContext, RoutingEvaluation
 from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
-from intergrax.llm_adapters.routing.evaluating_adapter import (
+from intergrax.applications._shared.routing_evaluating_adapter import (
     RoutingContextProvider,
     wrap_routing_evaluating_adapter,
 )
 from intergrax.llm_adapters.routing.evaluator import AllowlistViolationError
 
 _last_routing_evaluation: RoutingEvaluation | None = None
-_routing_evaluation_observer: Callable[[RoutingEvaluation], None] | None = None
-_allowlist_violation_observer: Callable[[AllowlistViolationError, RoutingContext], None] | None = None
-
-
-def set_routing_evaluation_observer(
-    observer: Callable[[RoutingEvaluation], None] | None,
-) -> None:
-    global _routing_evaluation_observer
-    _routing_evaluation_observer = observer
-
-
-def set_allowlist_violation_observer(
-    observer: Callable[[AllowlistViolationError, RoutingContext], None] | None,
-) -> None:
-    global _allowlist_violation_observer
-    _allowlist_violation_observer = observer
 
 
 def consume_routing_evaluation() -> RoutingEvaluation | None:
@@ -58,8 +42,6 @@ def resolve_llm_profile(
 def _record_routing_evaluation(evaluation: RoutingEvaluation) -> None:
     global _last_routing_evaluation
     _last_routing_evaluation = evaluation
-    if _routing_evaluation_observer is not None:
-        _routing_evaluation_observer(evaluation)
 
 
 def evaluate_llm_routing(
@@ -84,13 +66,11 @@ def evaluate_llm_routing(
     context = routing_context or RoutingContext()
     try:
         evaluation = LLMRoutingEvaluator().evaluate(env.llm_routing_profile, context)
-    except AllowlistViolationError as exc:
-        if _allowlist_violation_observer is not None:
-            _allowlist_violation_observer(exc, context)
+    except AllowlistViolationError:
         raise
     _last_routing_evaluation = evaluation
-    callback = on_evaluated or _record_routing_evaluation
-    callback(evaluation)
+    if on_evaluated is not None:
+        on_evaluated(evaluation)
     profile = evaluation.selected_profile
     if evaluation.policy_route_hint is not None:
         hint = evaluation.policy_route_hint
@@ -101,13 +81,15 @@ def evaluate_llm_routing(
 def create_adapter_for_routing_evaluation(
     env: ApplicationEnvironmentProfile,
     evaluation: RoutingEvaluation,
+    routing_context: RoutingContext | None = None,
 ) -> LLMAdapter:
-    """Instantiate adapter for a routing evaluation (M-LLM-X.11.1)."""
+    """Instantiate adapter for a routing evaluation (M-LLM-X.11.1 · M-LLM-X.12.5)."""
     from intergrax.applications._shared.llm_routing_wiring import resolve_live_model_routing_wiring
 
     profile = evaluation.selected_profile
     hint = evaluation.policy_route_hint or profile.routing_policy_hint
-    wiring = resolve_live_model_routing_wiring(env, routing_context=RoutingContext())
+    context = routing_context or RoutingContext()
+    wiring = resolve_live_model_routing_wiring(env, routing_context=context)
     if wiring.enabled and wiring.routing_decision is not None:
         ahi_hint = wiring.routing_decision.routing_reason.removeprefix("policy_hint_")
         if ahi_hint:
@@ -240,8 +222,12 @@ def resolve_llm_adapter(
             adapter,
             env,
             context_provider=live_provider,
+            adapter_factory=lambda evaluation, ctx: create_adapter_for_routing_evaluation(
+                env,
+                evaluation,
+                ctx,
+            ),
             on_evaluated=_record_routing_evaluation,
-            on_allowlist_violation=_allowlist_violation_observer,
         )
     return adapter
 

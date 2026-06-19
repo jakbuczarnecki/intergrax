@@ -31,10 +31,6 @@ from intergrax.llm_adapters.routing.context_bridge import (
     refresh_llm_routing_context,
     tokens_used_from_usage,
 )
-from intergrax.llm_adapters.routing.evaluating_adapter import (
-    RoutingEvaluatingLLMAdapter,
-    wrap_routing_evaluating_adapter,
-)
 from intergrax.llm_adapters.routing.contracts import (
     LLMRoutingProfile,
     LLMRoutingRule,
@@ -70,12 +66,10 @@ __all__ = [
     "ModelHintPresentRule",
     "PolicyHintRule",
     "RoutingContext",
-    "RoutingEvaluatingLLMAdapter",
     "RoutingEvaluation",
     "RoutingHint",
     "RoutingTarget",
     "refresh_llm_routing_context",
-    "wrap_routing_evaluating_adapter",
     "StepIndexAtLeastRule",
     "StepIndexBelowRule",
     "TaskClassInRule",

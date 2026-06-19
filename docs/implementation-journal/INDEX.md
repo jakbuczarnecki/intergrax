@@ -5,6 +5,7 @@ Procedure: [`README.md`](README.md) · Template: [`ENTRY_TEMPLATE.md`](ENTRY_TEM
 
 | ID | Date | Scope | Plan ref | Title | Commit |
 |----|------|-------|----------|-------|--------|
+| IJ-2026-06-19-003 | 2026-06-19 | tier-0, tier-1, tier-3 LLM_ADAPTERS | M-LLM-X.12.* · LLM-AUDIT-19 | [M-LLM-X.12 — Strict L5 LLM routing closeout](entries/2026-06-19/llm-routing-x12-strict-l5.md) | bbd32054 |
 | IJ-2026-06-19-002 | 2026-06-19 | tier-0 EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE | DX-IDEA-01..02 | [DX-IDEA — Mode I idea intake discoverability](entries/2026-06-19/dx-idea-mode-i-discoverability.md) | 5385d518 |
 | IJ-2026-06-19-001 | 2026-06-19 | tier-1, tier-3 OBSERVABILITY | EBE-8 | [EBE-8 — Partner live validation (AgentReceipt / Cullen)](entries/2026-06-19/observability-ebe-8-partner-validated.md) | 6c6fef1c |
 | IJ-2026-06-18-038 | 2026-06-18 | multi-domain AUDIT-IDEAL | §6.1au Band 2az | [AUDIT-IDEAL 90/90 closeout](entries/2026-06-18/audit-ideal-band-2az-closeout.md) | 4582e585 |

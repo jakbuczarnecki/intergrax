@@ -198,12 +198,12 @@ class RuntimeState(RuntimeStateContract):
 
         core_adapter = self.context.config.llm_adapter
         if core_adapter is not None:
-            from intergrax.applications._shared.llm_resolver import (
-                consume_routing_evaluation,
-                set_allowlist_violation_observer,
-                set_routing_evaluation_observer,
+            from intergrax.applications._shared.llm_resolver import consume_routing_evaluation
+            from intergrax.applications._shared.routing_evaluating_adapter import (
+                RoutingEvaluatingLLMAdapter,
             )
-            from intergrax.llm_adapters.routing.evaluating_adapter import RoutingEvaluatingLLMAdapter
+            from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+            from intergrax.llm_adapters.routing.metering import resolve_metering_adapter
             from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import (
                 attach_failover_routing_trace_observer,
                 emit_llm_routing_allowlist_violation_diag,
@@ -230,19 +230,27 @@ class RuntimeState(RuntimeStateContract):
                 assert isinstance(context, RoutingContext)
                 emit_llm_routing_allowlist_violation_diag(self.trace_event, exc, context)
 
-            set_routing_evaluation_observer(_on_evaluated)
-            set_allowlist_violation_observer(_on_allowlist_violation)
+            def _on_inner_swapped(inner: LLMAdapter) -> None:
+                self.llm_usage_tracker.register_adapter(
+                    inner,
+                    label=f"core_inner_{id(inner)}",
+                )
+                attach_failover_routing_trace_observer(inner, self.trace_event)
+
+            meter_target = resolve_metering_adapter(core_adapter) or core_adapter
 
             if isinstance(core_adapter, RoutingEvaluatingLLMAdapter):
                 core_adapter.set_on_evaluated(_on_evaluated)
                 core_adapter.set_on_allowlist_violation(_on_allowlist_violation)
+                core_adapter.set_on_inner_swapped(_on_inner_swapped)
                 attach_failover_routing_trace_observer(core_adapter.inner_adapter, self.trace_event)
+            else:
+                attach_failover_routing_trace_observer(core_adapter, self.trace_event)
 
-            attach_failover_routing_trace_observer(core_adapter, self.trace_event)
             routing_evaluation = consume_routing_evaluation()
             if routing_evaluation is not None:
                 emit_llm_routing_rule_diag(self.trace_event, routing_evaluation)
-        self.llm_usage_tracker.register_adapter(core_adapter, label="core_adapter")
+            self.llm_usage_tracker.register_adapter(meter_target, label="core_adapter")
 
         from intergrax.runtime.nexus.tools.tool_planner_trackable import ToolPlannerTrackable
 

@@ -21,7 +21,7 @@ Tier-0 **LLM adapter layer** is the Harness cognition entry point: one `LLMAdapt
 | Provider abstraction (19 slugs) | **L3** | L3+ (plugin story) | `LLMAdapterRegistry`, OpenAI-compat factory |
 | Model ID as free string | **L3** | L3 (maintain) | `LLMProfile.model: str` |
 | Model metadata / context window | **L3** | L3 (maintain) | `ModelCatalog` + resolver **Done** (LC-1) |
-| Multi-model routing / failover | **L4+** (contract + UAEP/ACP) | **L5** (strict mid-run Nexus) | X-10 + X-11 **Done**; post-audit gaps → **M-LLM-X.12** · LLM-AUDIT-19 |
+| Multi-model routing / failover | **L5** (strict mid-run Nexus) | — | X-10 + X-11 + **X-12 Done** · LLM-AUDIT-19 **Done** |
 | Token accounting consistency | **L3** | L3 (maintain) | Preflight + `from_adapter` Nexus adoption (LC-2/LC-2b) |
 | Developer experience | **L2** | **L3+** | [`USAGE.md`](../../intergrax/llm_adapters/USAGE.md) **Done**; dual API Nexus vs ACP — see §Developer surfaces |
 | Observability & governance | **L3** | L3 (maintain) | Prometheus, quota, replay bridge |
@@ -438,7 +438,7 @@ RoutingContext (snapshot from Nexus / budget meter / classifier)
 | CI `check_llm_routing_rules.py` | M-LLM-X.10.8 | **Done** | |
 | AHI persistent bandit + ProfileVersion read | AHI-MAINT-06 | **Done** | Hint path; no full canary apply |
 
-**Maturity label:** **L4+ enterprise-ready** — start-of-run + ACP + UAEP mid-run evaluating adapter (M-LLM-X.11). **Strict L5** (budget-accurate mid-run on all Nexus paths, tier-clean, production E2E) → **M-LLM-X.12** · LLM-AUDIT-19.
+**Maturity label:** **L4+ enterprise-ready** — start-of-run + ACP + UAEP mid-run evaluating adapter (M-LLM-X.11). **Strict L5** delivered in **M-LLM-X.12** · LLM-AUDIT-19 **Done**.
 
 #### Enterprise routing hardening (M-LLM-X.11 — Done)
 
@@ -457,11 +457,32 @@ RoutingContext (snapshot from Nexus / budget meter / classifier)
 
 **Closes:** LLM-AUDIT-18 (declared X-11 scope). **Does not claim strict L5** — see post-audit register **LLM-AUDIT-19**.
 
-#### Routing strict enterprise closeout (M-LLM-X.12 — Planned)
+#### Routing strict enterprise closeout (M-LLM-X.12 — Done)
 
-**Source:** Post X-11 architecture audit (2026-06-19) — X-11 delivered the evaluating wrapper and wiring skeleton; production review found **budget meter drift**, **narrow execution-path coverage**, and **Tier-0 → Tier-3 import** in evaluating adapter.  
-**Goal:** Honest **L5** — budget-driven rules fire on real token usage; context sync on all Nexus hot paths; tier-clean evaluating factory; ACP trace parity; production E2E without mocks.  
-**Plan:** [Wave M-LLM-X-12](../plan/LLM_ADAPTERS.md#wave-m-llm-x-12--routing-strict-enterprise-closeout)
+**Delivered (2026-06-19):** Tier-3 `RoutingEvaluatingLLMAdapter` with injected factory; Tier-0 `metering.py` + `runtime_sync.py`; Nexus graph/CE sync hooks; per-run observability; ACP routing diagnostics; production metering E2E; CI `check_llm_routing_tier_boundary.py`.
+
+| Deliverable | Task | Status |
+|-------------|------|--------|
+| Inner usage metering + tracker re-register on swap | M-LLM-X.12.1 | **Done** |
+| Tier-clean evaluating wrapper (Tier-3) | M-LLM-X.12.2 | **Done** |
+| Graph + CE routing snapshot sync | M-LLM-X.12.3 | **Done** |
+| Per-call context refresh via provider | M-LLM-X.12.4 | **Done** |
+| Live `RoutingContext` on adapter swap / AHI | M-LLM-X.12.5 | **Done** |
+| `budget_degrade_active` in Nexus sync | M-LLM-X.12.6 | **Done** |
+| Instance-bound observers (no globals) | M-LLM-X.12.7 | **Done** |
+| ACP `DynamicLLMRouter` routing diagnostics | M-LLM-X.12.8 | **Done** |
+| First-eval profile correction | M-LLM-X.12.9 | **Done** |
+| Production metering E2E | M-LLM-X.12.10 | **Done** |
+| Docs + audit register | M-LLM-X.12.11 | **Done** |
+| Secondary LLM surfaces policy (documented) | M-LLM-X.12.12 | **Done** |
+
+**Maturity label:** **L5 strict enterprise-ready** for declarative routing on core + UAEP + ACP paths.
+
+**Secondary LLM policy (M-LLM-X.12.12):** Tool planner, websearch map/reduce/rerank, and critic LLM adapters are **not** auto-wrapped by `RoutingEvaluatingLLMAdapter`. Hosts must either (a) register separate `LLMRoutingProfile` rules via dedicated wiring, or (b) accept static profiles for those surfaces until a product decision extends evaluating wrap.
+
+**Closes:** **LLM-AUDIT-19**.
+
+#### Routing strict enterprise closeout — audit register (historical gaps, closed)
 
 | Gap (audit) | Severity | Task ID |
 |-------------|----------|---------|
@@ -757,7 +778,7 @@ Do not merge counters without explicit bridge code.
 | LLM-AUDIT-16 | No unified LLM routing rule contract — static hints only; no custom author logic | **P1** | M-LLM-X.9 | **Done** — ADR-LLM-003 |
 | LLM-AUDIT-17 | Routing enterprise E2E — start-of-run + ACP (auto context, trace, reference host) | **P1** | M-LLM-X.10 | **Done** |
 | LLM-AUDIT-18 | Routing mid-run Nexus — live re-eval, context refresh, full trace loop, true E2E run | **P1** | M-LLM-X.11 | **Done** (X-11 scope) |
-| LLM-AUDIT-19 | Routing strict L5 — budget meter accuracy, all Nexus paths, tier boundary, production E2E, ACP trace parity | **P1** | M-LLM-X.12 | **Planned** |
+| LLM-AUDIT-19 | Routing strict L5 — budget meter accuracy, all Nexus paths, tier boundary, production E2E, ACP trace parity | **P1** | M-LLM-X.12 | **Done** |
 
 **Deferred (documented, no X-phase task):** tiktoken OpenAI-centric token estimate for non-OpenAI models — acceptable for budgeting until vendor-specific tokenizer plugins; note in `USAGE.md`.
 

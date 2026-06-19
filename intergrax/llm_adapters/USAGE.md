@@ -363,16 +363,16 @@ env.llm_routing_profile = LLMRoutingProfile(
 - **ACP** per-eval trace not fully wired on `DynamicLLMRouter` (12.8).
 - Evaluating adapter currently lives in Tier-0 with Tier-3 factory import — refactor planned (12.2).
 
-**Strict L5 closeout (M-LLM-X.12 — Planned):**
+**Strict L5 closeout (M-LLM-X.12 — Done):**
 
-- [ ] Budget meter ↔ routing context accuracy
-- [ ] Tier-clean evaluating factory (no `applications/` import from Tier-0)
-- [ ] Nexus-wide context sync (graph + CE paths)
-- [ ] Per-call context refresh within a step
-- [ ] ACP trace parity + production E2E without mocks
-- [ ] Closes **LLM-AUDIT-19**
+- [x] Budget meter ↔ routing context accuracy
+- [x] Tier-clean evaluating factory (no `applications/` import from Tier-0 routing)
+- [x] Nexus-wide context sync (graph + CE paths)
+- [x] Per-call context refresh within a step
+- [x] ACP trace parity + production E2E without factory mocks on core path
+- [x] Closes **LLM-AUDIT-19**
 
-**Current maturity label:** **L4+** (not strict L5 until X-12 Done).
+**Current maturity label:** **L5** (strict mid-run routing on core UAEP/Nexus/ACP paths).
 
 **Testing:** unit-test `rule.matches(fake_context)` and `rule.resolve(...)` without Nexus. CI gate: `python scripts/check_llm_routing_rules.py`.
 
