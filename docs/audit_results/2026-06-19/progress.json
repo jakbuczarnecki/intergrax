@@ -1,0 +1,55 @@
+{
+  "orchestrator": "interactive_layer_by_layer_audit",
+  "mode": "audit_only",
+  "scope": "interactive",
+  "canonical": "docs/bootstrap/06_interactive_layer_by_layer_audit.txt",
+  "bootstrap": "docs/bootstrap/06_interactive_layer_by_layer_audit.txt",
+  "run_id": "2026-06-19",
+  "results_dir": "docs/audit_results/2026-06-19",
+  "started_at": "2026-06-19",
+  "last_updated": "2026-06-19",
+  "completed_at": null,
+  "current_domain": "PLATFORM_FOUNDATION",
+  "notes": "Mode A2 interactive audit — domain 1/22 complete; awaiting operator to proceed to UNIFIED_EXECUTION_RUNTIME",
+  "domain_order": [
+    "PLATFORM_FOUNDATION",
+    "UNIFIED_EXECUTION_RUNTIME",
+    "ORCHESTRATION",
+    "NEXUS_EXECUTION_FLOW",
+    "REASONING_AND_COGNITION",
+    "AGENT_CONTRACTS_AND_ASSEMBLY",
+    "LLM_ADAPTERS",
+    "TOOLS",
+    "CODE_CRAFT",
+    "SKILLS",
+    "INTEGRATIONS",
+    "RAG",
+    "MEMORY",
+    "CONTEXT_ENGINEERING",
+    "MODALITY",
+    "OBSERVABILITY",
+    "RELIABILITY_FAILURE_AND_HITL",
+    "CRITIC_VERIFICATION",
+    "ADAPTIVE_HARNESS_INTELLIGENCE",
+    "ELASTIC_CAPACITY_AND_SCALING",
+    "EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE",
+    "TIER3_APPLICATION_ENVIRONMENT"
+  ],
+  "domains": {
+    "PLATFORM_FOUNDATION": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "maturity": "L3",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-19/PLATFORM_FOUNDATION.md",
+      "plan_updated": true,
+      "completed_at": "2026-06-19",
+      "maint_ids": [
+        "PF-MAINT-DOC-03",
+        "PF-MAINT-LEG-02",
+        "PF-MAINT-AUDIT-01"
+      ]
+    }
+  }
+}
