@@ -15,12 +15,21 @@
 
 **Do not read this entire file in one session** (LLM_ADAPTERS canon).
 
-- **Implement / audit default:** Read TOC sections matching current task only; skip appendices and paydown logs.
+- **Implement / audit default:** adapter envelope + provider routing. Skip legacy migration tables unless cited.
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/LLM_ADAPTERS.md`](../plan/LLM_ADAPTERS.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/LLM_ADAPTERS.md`](../guides/audit_slices/LLM_ADAPTERS.md).
+- **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ---
+
+
+
+
+
+
+
+
 
 ## Purpose and maturity
 

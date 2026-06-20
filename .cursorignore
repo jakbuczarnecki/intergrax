@@ -48,8 +48,15 @@ temp_documents/
 # Historical audit runs (use RESUME path explicitly)
 docs/audit_results/
 
+# ADR archive (load cited ADR only)
+docs/adr/entries/
+
 # Implementation journal archive
 docs/implementation-journal/entries/
+
+# Bulky agent test fixtures
+agents/**/tests/fixtures/**
+agents/**/tests/**/snapshots/
 
 # LLM crawler maps (hub docs suffice)
 llms-full.txt

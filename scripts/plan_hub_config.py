@@ -14,6 +14,8 @@ class PlanSplitConfig:
     move_h2_prefixes: tuple[str, ...] = ()
     move_h2_appendix: bool = True
     move_h2_phase_closeout: bool = False
+    move_h2_detail_prefixes: tuple[str, ...] = ()
+    split_h3_in_h2_prefixes: tuple[str, ...] = ()
     foreign_block_start: str | None = None
     foreign_block_end: str | None = None
     foreign_stub: str | None = None
@@ -31,6 +33,13 @@ PLATFORM = PlanSplitConfig(
         "6.3a ",
     ),
     move_h2_phase_closeout=True,
+    move_h2_detail_prefixes=(
+        "0. Architecture at a glance",
+        "2. Map:",
+        "3. Implementation Phases",
+        "4. Priority Order",
+        "Phase AUDIT-IDEAL",
+    ),
     dedupe_sync_footer=True,
 )
 
@@ -138,8 +147,9 @@ ORCHESTRATION_CFG = PlanSplitConfig(
 
 UAEP = PlanSplitConfig(
     domain="UNIFIED_EXECUTION_RUNTIME",
-    keep_h2_prefixes=(
-        "Phase AUDIT-IDEAL",
+    hub_h3_prefixes=("6.1av ",),
+    split_h3_in_h2_prefixes=("Phase AUDIT-IDEAL",),
+    move_h2_prefixes=(
         "Phase SEC-PLANES",
         "Phase SEC-ENT",
         "Phase GOV-AUDIT",
@@ -175,11 +185,10 @@ INTEGRATIONS_CFG = PlanSplitConfig(
 EXP_DX = PlanSplitConfig(
     domain="EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE",
     keep_h2_prefixes=(
-        "Phase AUDIT-IDEAL",
         "Phase DX-IDEA",
+        "Phase MVP-EVOL",
         "4. Priority",
         "5. Definition",
-        "Phase MVP-EVOL",
     ),
     move_h2_prefixes=(
         "Phase DX-LC",
@@ -187,6 +196,10 @@ EXP_DX = PlanSplitConfig(
         "Phase AA —",
         "Phase W-OPS",
         "Phase EVAL —",
+    ),
+    move_h2_detail_prefixes=(
+        "Phase AUDIT-IDEAL",
+        "4. Priority Order",
     ),
     move_h2_appendix=True,
 )

@@ -13,12 +13,21 @@
 
 **Do not read this entire file in one session** (UNIFIED_EXECUTION_RUNTIME canon).
 
-- **Implement / audit default:** Default: UAEP + PolicyEngine + RuntimeEvent spine. Skip §42 long narrative unless governance task.
+- **Implement / audit default:** UAEP + PolicyEngine + RuntimeEvent spine. Skip §42 long narrative unless governance task.
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../plan/UNIFIED_EXECUTION_RUNTIME.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md`](../guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md).
+- **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ---
+
+
+
+
+
+
+
+
 
 ## 42.1 Runtime Event Model
 

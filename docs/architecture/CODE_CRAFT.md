@@ -12,6 +12,25 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (CODE_CRAFT canon).
+
+- **Implement / audit default:** ephemeral codegen loop contracts. Skip LC closeout unless ECC task.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/CODE_CRAFT.md`](../plan/CODE_CRAFT.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/CODE_CRAFT.md`](../guides/audit_slices/CODE_CRAFT.md).
+- **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
+
+---
+
+
+
+
+
+
+
+
 ## 1. Purpose
 
 **Ephemeral Code Craft (ECC)** is the Harness AI subsystem that lets agents **synthesize, execute, test, iteratively refine, and promote** short-lived executable helpers when catalog tools are insufficient.

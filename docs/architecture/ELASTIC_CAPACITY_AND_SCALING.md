@@ -11,6 +11,25 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (ELASTIC_CAPACITY_AND_SCALING canon).
+
+- **Implement / audit default:** capacity adapter contracts. Skip scaling history unless ECP task.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](../plan/ELASTIC_CAPACITY_AND_SCALING.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/ELASTIC_CAPACITY_AND_SCALING.md`](../guides/audit_slices/ELASTIC_CAPACITY_AND_SCALING.md).
+- **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
+
+---
+
+
+
+
+
+
+
+
 ## Table of contents
 
 1. [Purpose](#1-purpose)

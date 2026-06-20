@@ -135,6 +135,23 @@ def split_plan(cfg: PlanSplitConfig) -> dict[str, int]:
             sat_audit_history.extend(h2_body)
             continue
 
+        if any(h2_title.startswith(p) for p in cfg.move_h2_detail_prefixes):
+            sat_embedded.extend(h2_body)
+            continue
+
+        if any(h2_title.startswith(p) for p in cfg.split_h3_in_h2_prefixes):
+            hub.append(h2_body[0])
+            for sub_title, sub_body in split_h3(h2_body[1:]):
+                if sub_title == "__intro__":
+                    hub.extend(sub_body)
+                elif is_hub_h3(sub_title, cfg):
+                    hub.extend(sub_body)
+                elif is_closed_heading(sub_title) or is_register_h3(sub_title):
+                    sat_closed.extend(sub_body)
+                else:
+                    sat_embedded.extend(sub_body)
+            continue
+
         if h2_title.startswith("Appendix") and cfg.move_h2_appendix:
             sat_appendices.extend(h2_body)
             continue

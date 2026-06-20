@@ -14,12 +14,21 @@
 
 **Do not read this entire file in one session** (ORCHESTRATION canon).
 
-- **Implement / audit default:** Default: intake + NexusLoop + graph executor. Skip strategy catalog §50+ unless ORCH-STRAT task.
+- **Implement / audit default:** intake + NexusLoop + graph executor. Skip strategy catalog §50+ unless ORCH-STRAT task.
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/ORCHESTRATION.md`](../guides/audit_slices/ORCHESTRATION.md).
+- **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ---
+
+
+
+
+
+
+
+
 
 ## Document roles (read order)
 

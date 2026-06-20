@@ -28,6 +28,25 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (MEMORY canon).
+
+- **Implement / audit default:** LTM store contracts + scope model. Skip store inventory tables — use code grep.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/MEMORY.md`](../plan/MEMORY.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/MEMORY.md`](../guides/audit_slices/MEMORY.md).
+- **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
+
+---
+
+
+
+
+
+
+
+
 ## 3. Three-layer memory model
 
 Production-grade Harness AI separates three cooperating layers:

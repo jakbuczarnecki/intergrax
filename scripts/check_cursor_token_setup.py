@@ -1,5 +1,5 @@
 # © Artur Czarnecki. All rights reserved.
-"""Verify AGENTS stub split (F2), bootstrap F3 markers, and CURSOR_TOKEN_SETUP."""
+"""Verify AGENTS stub split (F2), bootstrap F3/READ_BUDGET, and CURSOR_TOKEN_SETUP."""
 
 from __future__ import annotations
 
@@ -10,11 +10,12 @@ ROOT = Path(__file__).resolve().parents[1]
 BOOTSTRAP = ROOT / "docs" / "bootstrap"
 CURSOR_SETUP = ROOT / "docs" / "guides" / "CURSOR_TOKEN_SETUP.md"
 AGENT_INSTRUCTIONS = ROOT / "docs" / "guides" / "AGENT_INSTRUCTIONS.md"
+SYMBOL_INDEX = ROOT / "docs" / "guides" / "SYMBOL_INDEX.md"
 AGENTS_STUB = ROOT / "AGENTS.md"
 ITERATION_RULE = ROOT / ".cursor" / "rules" / "intergrax-iteration.mdc"
-AGENTS_REF_RULE = ROOT / ".cursor" / "rules" / "intergrax-agents-reference.mdc"
 
 SESSION_MARKER = "ONE_DOMAIN_ONE_CHAT"
+READ_BUDGET_MARKER = "READ_BUDGET"
 STUB_MARKER = "AGENT_INSTRUCTIONS.md"
 STUB_MAX_LINES = 35
 FULL_MIN_LINES = 150
@@ -34,6 +35,9 @@ def main() -> int:
     if not CURSOR_SETUP.is_file():
         errors.append("missing docs/guides/CURSOR_TOKEN_SETUP.md")
 
+    if not SYMBOL_INDEX.is_file():
+        errors.append("missing docs/guides/SYMBOL_INDEX.md")
+
     if not AGENT_INSTRUCTIONS.is_file():
         errors.append("missing docs/guides/AGENT_INSTRUCTIONS.md")
     elif len(AGENT_INSTRUCTIONS.read_text(encoding="utf-8").splitlines()) < FULL_MIN_LINES:
@@ -51,21 +55,17 @@ def main() -> int:
         if "## Task routing" in stub or "## Verification" in stub:
             errors.append("AGENTS.md stub must not contain full routing/verification sections")
 
-    if not AGENTS_REF_RULE.is_file():
-        errors.append("missing .cursor/rules/intergrax-agents-reference.mdc")
-
     iteration = ITERATION_RULE.read_text(encoding="utf-8")
     if "AGENT_INSTRUCTIONS.md" not in iteration:
         errors.append("intergrax-iteration.mdc must reference AGENT_INSTRUCTIONS.md (F2 stub split)")
     if SESSION_MARKER not in iteration and "ONE DOMAIN = ONE NEW CHAT" not in iteration:
         errors.append("intergrax-iteration.mdc must include F3 session protocol")
+    if "SYMBOL_INDEX" not in iteration:
+        errors.append("intergrax-iteration.mdc must reference SYMBOL_INDEX.md (F5)")
 
-    agents_ref = AGENTS_REF_RULE.read_text(encoding="utf-8")
-    if agents_ref.startswith("---"):
-        if "alwaysApply: false" not in agents_ref.split("---", 2)[1]:
-            errors.append("intergrax-agents-reference.mdc must have alwaysApply: false")
-    if "AGENT_INSTRUCTIONS.md" not in agents_ref:
-        errors.append("intergrax-agents-reference.mdc must point to AGENT_INSTRUCTIONS.md")
+    agents_ref = ROOT / ".cursor" / "rules" / "intergrax-agents-reference.mdc"
+    if agents_ref.is_file():
+        errors.append("remove redundant .cursor/rules/intergrax-agents-reference.mdc (stub replaces it)")
 
     for name in AUDIT_BOOTSTRAPS:
         path = BOOTSTRAP / name
@@ -75,6 +75,8 @@ def main() -> int:
         text = path.read_text(encoding="utf-8")
         if SESSION_MARKER not in text:
             errors.append(f"{name}: missing {SESSION_MARKER}")
+        if READ_BUDGET_MARKER not in text:
+            errors.append(f"{name}: missing {READ_BUDGET_MARKER}")
 
     if errors:
         print("check_cursor_token_setup: FAILED", file=sys.stderr)

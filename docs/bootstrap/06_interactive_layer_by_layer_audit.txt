@@ -1,4 +1,5 @@
 SESSION: ONE_DOMAIN_ONE_CHAT — mandatory: next domain requires NEW chat (not just STOP in same thread).
+READ_BUDGET: `@docs/guides/audit_slices/<DOMAIN>.md` first; plan hub + one satellite; max 1 read >5k tok/session; no Background Agents/subagents.
 Harness Architecture Audit — Mode A2 (interactive layer-by-layer, one domain per stop).
 Canonical orchestrator: docs/audit/ORCHESTRATOR.md (domain order + gates)
 Interactive discipline: THIS FILE — operator confirmation required between domains.

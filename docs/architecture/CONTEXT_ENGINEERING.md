@@ -13,6 +13,25 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (CONTEXT_ENGINEERING canon).
+
+- **Implement / audit default:** context assembly engine + scoring. Skip historical gap logs unless cited.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/CONTEXT_ENGINEERING.md`](../guides/audit_slices/CONTEXT_ENGINEERING.md).
+- **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
+
+---
+
+
+
+
+
+
+
+
 ## 1. Purpose
 
 Context Engineering (CE) is the **Tier-1 Harness engine** that decides **what information reaches the LLM** at a given execution step: which fragments to include, in what order, under what token budget, with full provenance and observability.

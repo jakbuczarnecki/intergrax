@@ -12,12 +12,21 @@
 
 **Do not read this entire file in one session** (NEXUS_EXECUTION_FLOW canon).
 
-- **Implement / audit default:** Default: §1–§20 flow narrative + §23 gap register. Skip §27+ scenario catalog unless FLOW task.
+- **Implement / audit default:** §1–§20 flow narrative + §23 gap register. Skip §27+ scenario catalog unless FLOW task.
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/NEXUS_EXECUTION_FLOW.md`](../plan/NEXUS_EXECUTION_FLOW.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/NEXUS_EXECUTION_FLOW.md`](../guides/audit_slices/NEXUS_EXECUTION_FLOW.md).
+- **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
 
 ---
+
+
+
+
+
+
+
+
 
 ## 1. Purpose and boundaries
 

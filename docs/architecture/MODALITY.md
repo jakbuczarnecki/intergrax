@@ -10,6 +10,25 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (MODALITY canon).
+
+- **Implement / audit default:** vision/audio modality adapters. Skip modality inventory unless MOD task.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/MODALITY.md`](../plan/MODALITY.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/MODALITY.md`](../guides/audit_slices/MODALITY.md).
+- **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
+
+---
+
+
+
+
+
+
+
+
 ## Why this document exists
 
 Harness AI at scale needs more than text LLMs: images, audio, dedicated CV detectors (YOLO, SAM, OCR pipelines), embeddings, rerankers, and batch classifiers. Intergrax already implements **parts** of this (Whisper ingest, HF embeddings, image smart loaders) without a single architectural name.

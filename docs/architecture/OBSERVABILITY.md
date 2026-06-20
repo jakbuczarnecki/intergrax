@@ -10,6 +10,25 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (OBSERVABILITY canon).
+
+- **Implement / audit default:** trace spine + RuntimeEvent. Skip OBS-LC history unless cited.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/OBSERVABILITY.md`](../plan/OBSERVABILITY.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/OBSERVABILITY.md`](../guides/audit_slices/OBSERVABILITY.md).
+- **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
+
+---
+
+
+
+
+
+
+
+
 ## 1. Purpose and scope
 
 ### 1.1 What this document defines

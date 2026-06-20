@@ -12,6 +12,25 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (RAG canon).
+
+- **Implement / audit default:** retrieval pipeline + index lifecycle. Skip full corpus tables unless RAG task.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/RAG.md`](../plan/RAG.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/RAG.md`](../guides/audit_slices/RAG.md).
+- **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
+
+---
+
+
+
+
+
+
+
+
 ## Purpose
 
 RAG is a **full Tier-0 retrieval layer**, not a vector-search shortcut. One canonical path serves catalog tools (`rag.retrieve`), Nexus `ContextBuilder` / `rag.retrieve` (catalog), and diagnostics.

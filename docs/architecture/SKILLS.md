@@ -11,6 +11,25 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (SKILLS canon).
+
+- **Implement / audit default:** skill selection hook + registry. Skip LC narrative unless SK task.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/SKILLS.md`](../plan/SKILLS.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/SKILLS.md`](../guides/audit_slices/SKILLS.md).
+- **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
+
+---
+
+
+
+
+
+
+
+
 ## Four-layer stack
 
 ```text

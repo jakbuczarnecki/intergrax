@@ -3,69 +3,36 @@ description: Intergrax Harness AI — iteration workflow, context budget, sessio
 alwaysApply: true
 ---
 
-# Intergrax — Iteration Instruction (Harness AI)
+# Intergrax — Iteration Instruction
 
-Implement the **Intergrax Harness AI / Agent Operating System**.
+Implement **Intergrax Harness AI / Agent OS**. Root `AGENTS.md` = stub (~350 tok). Full reference: `@docs/guides/AGENT_INSTRUCTIONS.md`. Symbol lookup: `@docs/guides/SYMBOL_INDEX.md`.
 
-**Rules source:** this file + root **`AGENTS.md` stub** (~350 tok, Cursor auto-load). Full reference: `@docs/guides/AGENT_INSTRUCTIONS.md` on demand (see `docs/guides/CURSOR_TOKEN_SETUP.md` F2).
-
-## Session protocol (F3 — mandatory)
+## F3 — session
 
 ```text
 ONE DOMAIN = ONE NEW CHAT
 ```
 
-- **Audit / implement / closeout:** one domain pair per Cursor chat unless the operator explicitly batches.
-- **Next domain:** open a **new chat** — do not continue prior domain's history in the same thread.
-- **Resume:** new chat + bootstrap + `RESUME: docs/audit_results/YYYY-MM-DD/progress.json` only.
-- Multi-domain threads cause linear history bloat (1M+ tokens) — forbidden unless operator opts in.
+Audit / implement / closeout: one domain pair per chat. Resume: new chat + bootstrap + `RESUME: docs/audit_results/…/progress.json` only.
 
-## Strategic frame
+## Context budget
 
-- **Harness is the product** — agents are replaceable; runtime is permanent.
-- Default scope: **gate maintenance** in `docs/plan/PLATFORM_FOUNDATION.md` §6.1 (hub only; satellites under `docs/plan/plan/`).
-- **Phase K** and **§6.3** require explicit operator reprioritization — never start silently.
+- **Read:** arch hub read-scope block + plan hub + **one** satellite (`docs/plan/plan/` or `docs/architecture/arch/`).
+- **Audits:** `docs/guides/audit_slices/<DOMAIN>.md` — not full IDEAL/AUDIT_MAP.
+- **Max:** one file >5k tok per session unless RESUME cites more. Grep with path filter before semantic search.
+- **Never** load `docs/audit_results/` unless RESUME. Respect `.cursorignore`.
 
-## Context budget (mandatory — every session)
-
-**Quality = targeted evidence, not bulk loading.**
-
-- Read **only** the selected `docs/architecture/<DOMAIN>.md` (read-scope block) + plan **hub** + optional **one** satellite.
-- **Never** load full multi-thousand-line plans — hub + [`docs/plan/plan/`](docs/plan/plan/); audits: [`docs/guides/audit_slices/<DOMAIN>.md`](docs/guides/audit_slices/).
-- **Never** re-read the same file in one session unless it changed.
-- Prefer **grep with path filters** over repo-wide semantic search.
-- Verification commands: read `@docs/guides/AGENT_INSTRUCTIONS.md` §Verification only when running harness gates.
-- Do **not** load `docs/audit_results/` unless RESUME says so.
-- Respect **`.cursorignore`**.
-
-## Documentation model
+## Never violate
 
 ```text
-docs/intergrax_runtime_architecture.md  ← hub
-docs/architecture/<DOMAIN>.md             ← canon (scoped §)
-docs/plan/<DOMAIN>.md                   ← plan hub
-docs/guides/audit_slices/<DOMAIN>.md  ← audit compact slice
-```
-
-22 paired domains — routing table in **`docs/guides/AGENT_INSTRUCTIONS.md`** (on demand). Do **not** load unrelated pairs.
-
-## Architecture (never violate)
-
-```text
-Tier-0 intergrax/  ·  Tier-1 intergrax/runtime/  ·  Tier-2 agents/  ·  Tier-3 applications/
+Tier-0 intergrax/ · Tier-1 runtime/ · Tier-2 agents/ · Tier-3 applications/
 intergrax/ ↛ agents/|applications/   agents/ ↛ applications/
 ```
 
-**Always:** smallest coherent diff; reuse Tier-0. **Never:** Tier-0 duplication; business logic in Nexus; agent-specific Nexus branches; vendor SDK in Tier-2; whole-platform-complete claims.
+Default scope: gate maintenance `docs/plan/PLATFORM_FOUNDATION.md` hub. Phase K / §6.3 only with explicit operator approval.
 
-**Mode I:** `audyt pomysłu` / `idea audit` → `.cursor/rules/intergrax-idea-audit.mdc` (no code until approved).
+**Mode I:** `audyt pomysłu` / `idea audit` → `intergrax-idea-audit.mdc` (no code until approved).
 
-**New component gate:** insufficient mechanisms → STOP, explain, wait for operator.
+Repository artifacts: English. Operator chat: session language. **Do not commit** unless asked.
 
-## Language
-
-Repository artifacts: English. Operator chat: primary language of the session.
-
-## Definition of Done
-
-Verification, ADR, iteration summary: **`@docs/guides/AGENT_INSTRUCTIONS.md`** when needed. **Do not commit** unless the operator asks.
+Verification / ADR / routing table: `@docs/guides/AGENT_INSTRUCTIONS.md` when needed.
