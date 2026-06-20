@@ -458,7 +458,7 @@ Tier-3 Applications  →  Tier-2 Agents  →  Tier-1 Nexus  →  Tier-0 Platform
 - Tier-1 MUST NOT import concrete agents or applications.
 - Tier-2 MUST NOT import applications.
 
-**Cross-domain invariant index:** [`guides/SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) (P2-ARCH-01) — terse “never violate” rules with links to this section and domain pairs.
+**Cross-layer invariants (canonical):** [`guides/SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md#cross-layer-system-invariants) (P2-ARCH-01) — MUST/MUST NOT rules across all tiers; `SYS-INV-*` index links to this §5 and domain pairs.
 
 **Enforcement (FAUDIT-TIER, 2026-06-06):** Tier-3 application manifest metadata for harness capability-graph seeding lives in `intergrax/applications/reference/harness_manifest_catalog.py` (static reference data, not `from applications.*` under `intergrax/`). CI: `scripts/check_intergrax_no_applications_imports.py` and `scripts/check_agents_no_tier3_imports.py`.
 

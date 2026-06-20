@@ -1,6 +1,6 @@
 # Intergrax — System Invariants
 
-**Status:** Canonical index (2026-06-17)  
+**Status:** Canonical index (2026-06-20)  
 **Audience:** Architects, reviewers, implementation agents, external auditors  
 **Audit ID:** P2-ARCH-01  
 **Related:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md)
@@ -9,9 +9,9 @@
 
 ## 1. Purpose
 
-Intergrax spreads **non-negotiable architectural rules** across 22 domain pairs, ADRs, and CI gates. This document is the **single index** — terse “X never Y” rules with pointers to canonical sections.
+Intergrax spreads **non-negotiable architectural rules** across 22 domain pairs, ADRs, and CI gates. This document is the **single cross-layer authority** — normative MUST / MUST NOT / SHOULD rules plus a terse `SYS-INV-*` index with CI pointers.
 
-**This file is not a second canon.** When semantics change, update the domain architecture first, then adjust the row here. Do not copy long tables from ACP / APP / ORCH into this guide.
+**This file is not a second canon.** When semantics change, update the domain architecture first, then adjust the cross-layer rule and §5 row here. Do not copy long tables from ACP / APP / ORCH into this guide.
 
 ---
 
@@ -19,11 +19,11 @@ Intergrax spreads **non-negotiable architectural rules** across 22 domain pairs,
 
 | Situation | Action |
 |-----------|--------|
-| **Onboarding** | Read §4 (execution stack) + §5 (invariant table) before opening a domain pair |
-| **Code review** | Check diff against §5; escalate violations before merge |
-| **Domain implementation** | Read your domain pair; use this doc only as a guardrail checklist |
-| **External audit** | §5 + §7 (CI mapping) + §8 (rejected patterns) |
-| **LLM session start** | Hub → this file → one domain pair (per-iteration rule) |
+| **Onboarding** | Read [Cross-Layer System Invariants](#cross-layer-system-invariants) + §4 (execution stack) before opening a domain pair |
+| **Code review** | Check diff against cross-layer rules and §5 index; escalate violations before merge |
+| **Domain implementation** | Read your domain pair; use cross-layer rules as guardrails |
+| **External audit** | Cross-layer rules + §5 + §7 (CI mapping) + §8 (rejected patterns) |
+| **LLM session start** | Hub → this file (cross-layer section) → one domain pair (per-iteration rule) |
 
 **Decision hierarchy** (when rules appear to conflict): [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) §Decision hierarchy — strategy → ideal architecture → domain architecture → domain plan.
 
@@ -34,6 +34,132 @@ Intergrax spreads **non-negotiable architectural rules** across 22 domain pairs,
 | ID | Rule | Canon |
 |----|------|-------|
 | **SYS-INV-00** | **The Harness is the product; agents are replaceable.** Platform runtime outlives any single agent implementation. | Hub · [`PLATFORM_FOUNDATION.md`](../architecture/PLATFORM_FOUNDATION.md) §2 · [ADR-AGENT-001](../adr/entries/2026-06-11/ADR-AGENT-001.md) |
+
+---
+
+# Cross-Layer System Invariants
+
+Normative rules that **MUST** hold across Tier-0..3, Nexus, agents, tools, context, LLM, observability, policy, and documentation. Domain-specific detail lives in architecture pairs (§6); CI mapping in §5 and §7.
+
+## 1. Tier boundary invariants
+
+- Tier-0 `intergrax/` provides universal, domain-agnostic primitives.
+- Tier-0 **MUST NOT** import from `agents/` or `applications/`.
+- Tier-1 `intergrax/runtime/` owns Nexus, AgentEngine, UAEP, policy, runtime events, orchestration execution.
+- Tier-2 `agents/` owns domain-specific reasoning and domain step decisions.
+- Tier-3 `applications/` owns deployable hosts, manifests, profiles, rosters, intake surfaces and product composition.
+- Business/product logic **MUST NOT** be implemented in Tier-0 or Tier-1 unless it is truly domain-agnostic.
+- Applications compose the harness; they **MUST NOT** become agents.
+- Agents run inside the harness; they **MUST NOT** become private runtimes.
+
+**Canon:** [`PLATFORM_FOUNDATION.md`](../architecture/PLATFORM_FOUNDATION.md) §5 · [`TIER3_APPLICATION_ENVIRONMENT.md`](../architecture/TIER3_APPLICATION_ENVIRONMENT.md) §28
+
+## 2. Nexus invariants
+
+- Nexus orchestrates tasks, graphs, routing, retries, HITL and finalization.
+- Nexus **MUST NOT** become a domain reasoning agent.
+- Nexus **MUST NOT** encode business conclusions, domain rubrics or product-specific decisions.
+- Nexus **MAY** select agents and execution topology through typed plans.
+- Nexus **MUST** delegate domain reasoning to Tier-2 agents.
+- Nexus **MUST** delegate verification to CVL / validation mechanisms.
+- Nexus **MUST** delegate side effects to ToolRuntime.
+- All application surfaces **MUST** converge on `UnifiedTaskRunner.run_task()` and `NexusLoop.handle_task()`.
+
+**Canon:** [`ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) §56 · [`NEXUS_EXECUTION_FLOW.md`](../architecture/NEXUS_EXECUTION_FLOW.md)
+
+## 3. Agent invariants
+
+- Agent authors implement domain behavior through `Agent.run()` / `on_next_step()` / approved step APIs.
+- Agents decide the next domain move inside their bounded local loop.
+- Agents **MUST NOT** implement private orchestration runtimes.
+- Agents **MUST NOT** create HTTP servers, schedulers, queues, global loops or private OS lifecycles.
+- Agents **MUST NOT** call vendor SDKs directly.
+- Agents **MUST NOT** bypass ToolRuntime, PolicyEngine, ContextCompiler, MemoryView or RuntimeEventBus.
+- Agents **MUST NOT** directly write to external systems except through approved tools.
+- Agents **MUST** return typed outputs suitable for validation and evaluation, not only raw text.
+
+**Canon:** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §21 · [`UNIFIED_EXECUTION_RUNTIME.md`](../architecture/UNIFIED_EXECUTION_RUNTIME.md) §42
+
+## 4. Tool and integration invariants
+
+- ToolRuntime is the only side-effect gateway for agent-invokable actions.
+- Agents and graph nodes **MUST NOT** call tool handlers or integrations directly.
+- Tools are agent-facing semantic operations.
+- Integrations are vendor/backend adapters and **MUST NOT** be agent-facing.
+- Skills are declarative composition packs, not runtime loops.
+- Skills **MUST NOT** contain execution control flow.
+- Tool access **MUST** be resolved from AgentContract, SkillResolver, ToolProfile and RuntimePolicyBundle.
+- Production applications **MUST NOT** enable all tools by default.
+
+**Canon:** [`TOOLS.md`](../architecture/TOOLS.md) · [`INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) · [`SKILLS.md`](../architecture/SKILLS.md)
+
+## 5. Context, memory and RAG invariants
+
+- Memory is persisted state.
+- Context is what the model sees in a specific step.
+- Knowledge/RAG is document or corpus retrieval.
+- Trace is immutable audit evidence.
+- These concepts **MUST NOT** be conflated.
+- ContextCompiler / ContextEngine is the approved path for assembling LLM context.
+- Agents **MUST NOT** hand-assemble production prompts from unbounded history.
+- Agents **MUST NOT** query vector stores directly.
+- RAG retrieval **MUST** go through the approved RAG service / catalog tools.
+- Knowledge indexes, long-term memory indexes and episodic/session indexes **MUST** remain logically separated.
+- Vector indexes are retrieval indexes, not primary stores.
+
+**Canon:** [`CONTEXT_ENGINEERING.md`](../architecture/CONTEXT_ENGINEERING.md) · [`MEMORY.md`](../architecture/MEMORY.md) · [`RAG.md`](../architecture/RAG.md)
+
+## 6. LLM invariants
+
+- LLM calls **MUST** go through LLMAdapter / approved routing abstractions.
+- Agents **MUST NOT** import provider SDKs directly.
+- LLM responses **MUST** use typed envelopes, not bare strings.
+- Structured outputs **MUST** be validated before being consumed by executors.
+- Planner, critic and producer profiles **SHOULD** be separable when risk or policy requires judge separation.
+
+**Canon:** [`LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) · [`REASONING_AND_COGNITION.md`](../architecture/REASONING_AND_COGNITION.md)
+
+## 7. Observability invariants
+
+- RuntimeEvent is the canonical event/audit envelope.
+- New runtime components **SHOULD** emit through RuntimeEventBus / approved observability spine.
+- Agents **MUST NOT** create private trace stores or private logging pipelines.
+- Every meaningful execution transition **MUST** be traceable.
+- Events **MUST NOT** contain secrets.
+- Domain-specific events **SHOULD** use namespaced `event_kind` / payload schemas instead of expanding platform lifecycle enums unnecessarily.
+
+**Canon:** [`OBSERVABILITY.md`](../architecture/OBSERVABILITY.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](../architecture/UNIFIED_EXECUTION_RUNTIME.md) §42
+
+## 8. Reliability, policy and HITL invariants
+
+- Agents emit intent; runtime and policy execute retries, escalation, HITL and failure handling.
+- Agents **MUST NOT** implement unbounded retry loops against tools, LLMs or integrations.
+- Human approval is managed by Nexus / HITL mechanisms, not ad-hoc agent messages.
+- High-risk side effects require policy approval and trace evidence.
+- LLM-as-judge alone **MUST NOT** authorize irreversible high-risk side effects.
+- Idempotency **MUST** be used for side-effectful tools where applicable.
+
+**Canon:** [`RELIABILITY_FAILURE_AND_HITL.md`](../architecture/RELIABILITY_FAILURE_AND_HITL.md) · [`CRITIC_VERIFICATION.md`](../architecture/CRITIC_VERIFICATION.md)
+
+## 9. Adaptive and scaling invariants
+
+- Adaptive Harness Intelligence may observe, propose and evaluate changes.
+- Production auto-apply of adaptive changes requires explicit product/governance decision.
+- AHI **MUST NOT** silently mutate prompts, routing, policies or profiles in production.
+- Elastic Capacity Plane scales infrastructure capacity only.
+- ECP **MUST NOT** decide agent topology or domain execution strategy.
+
+**Canon:** [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) · [`ELASTIC_CAPACITY_AND_SCALING.md`](../architecture/ELASTIC_CAPACITY_AND_SCALING.md)
+
+## 10. Documentation authority invariants
+
+- `docs/intergrax_runtime_architecture.md` is the hub, not the detailed owner of every subsystem.
+- Each `docs/architecture/*.md` file is the source of truth for its own subsystem.
+- Each architecture document **SHOULD** have a corresponding implementation plan in `docs/plan/*.md`.
+- When documents conflict, the more specific domain architecture owns subsystem-specific rules.
+- Any cross-layer rule **MUST** be reflected or referenced from this file (`SYSTEM_INVARIANTS.md`).
+
+**Canon:** [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) · hub [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
 
 ---
 
@@ -75,7 +201,9 @@ Responsibility split — **who decides vs who executes vs who orchestrates**:
 
 ---
 
-## 5. System invariants (normative index)
+## 5. System invariants (`SYS-INV-*` index)
+
+Cross-layer normative rules above; this table maps **IDs · CI gates · domain canon** for reviews and audits.
 
 Format: **ID · Layer · Rule · Canon · CI (if enforced)**
 
@@ -202,6 +330,7 @@ REJECTED: Monolithic implementation plan files under plan/phases/
 
 | Event | Action |
 |-------|--------|
+| New cross-layer rule | Add or update [Cross-Layer System Invariants](#cross-layer-system-invariants) subsection; add §5 row if CI-mapped |
 | New domain invariant (ACP-INV-*, APP-INV-*) | Add or update §5 row; link domain section — do not duplicate prose |
 | New CI gate for an existing rule | Update §7 and the row's CI column |
 | Semantic change | Domain architecture + ADR first; then this index |
@@ -215,7 +344,7 @@ REJECTED: Monolithic implementation plan files under plan/phases/
 
 ## 10. Reading order
 
-1. This file (§4–§5)  
+1. This file — [Cross-Layer System Invariants](#cross-layer-system-invariants) + §4 execution stack  
 2. Hub [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 3. **One** domain pair for your task ([`AGENTS.md`](../../AGENTS.md) task routing)  
 4. Author guides when building: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) · [`APPLICATION_CREATION_GUIDE.md`](APPLICATION_CREATION_GUIDE.md)
