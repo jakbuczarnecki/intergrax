@@ -17,15 +17,20 @@
 | `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | §3 Intake · §9 Orchestration / graph |
 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | §3 · §9 |
 | `docs/guides/SYSTEM_INVARIANTS.md` | SYS-INV-ORCH-* (grep IDs — do not read full file) |
-| `docs/plan/ORCHESTRATION.md` | **Hub:** Phase ORCH-* · §6.1aw maintenance |
-| `docs/architecture/ORCHESTRATION.md` | Intake · scheduler · graph · NexusPlan sections |
+| `docs/plan/ORCHESTRATION.md` | **Hub:** Phase ORCH-* hub · satellites on demand |
+| `docs/architecture/ORCHESTRATION.md` | §10–§26 hub · [`arch/ORCHESTRATION_extended_depth.md`](../architecture/arch/ORCHESTRATION_extended_depth.md) on demand |
+
+## Code entry (grep first — F5-B)
+
+- `intergrax/runtime/nexus/orchestration/` — intake, NexusLoop
+- `intergrax/runtime/nexus/orchestration/graph/` — execution graph
 
 ## Do not load unless cited
 
-- Full multi-thousand-line plan files
+- Full multi-thousand-line plan or architecture files (use hub + **one** satellite)
 - `docs/audit_results/` (unless RESUME)
 - Unrelated domain pairs
-- `docs/guides/audit_slices/` for other domains
+- Other domains' `audit_slices/`
 
 ## Evidence rule (unchanged)
 

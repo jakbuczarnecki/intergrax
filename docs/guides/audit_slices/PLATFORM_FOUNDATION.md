@@ -17,15 +17,20 @@
 | `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | §1 Strategic frame · §2 Tier model · §32 Documentation governance |
 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | §1–§2 · §32 · maturity §5 |
 | `docs/guides/SYSTEM_INVARIANTS.md` | SYS-INV-TIER-* · SYS-INV-DOC-* · P2-ARCH-01 (grep IDs — do not read full file) |
-| `docs/plan/PLATFORM_FOUNDATION.md` | **Hub:** §4 ladder · §6.1 maintenance · §6.3 deferred · satellite index |
-| `docs/architecture/PLATFORM_FOUNDATION.md` | §1–§5 · §5.2 reuse · §5.3 terminology |
+| `docs/plan/PLATFORM_FOUNDATION.md` | **Hub:** §6.1 maintenance · §6.3 deferred · [`plan/plan/`](../plan/plan/) on demand |
+| `docs/architecture/PLATFORM_FOUNDATION.md` | §1–§6 hub · [`arch/`](../architecture/arch/) on demand |
+
+## Code entry (grep first — F5-B)
+
+- `intergrax/scaffold/` — scaffolding CLI
+- `scripts/check_plan_hub_size.py` — plan hub gate
 
 ## Do not load unless cited
 
-- Full multi-thousand-line plan files
+- Full multi-thousand-line plan or architecture files (use hub + **one** satellite)
 - `docs/audit_results/` (unless RESUME)
 - Unrelated domain pairs
-- `docs/guides/audit_slices/` for other domains
+- Other domains' `audit_slices/`
 
 ## Evidence rule (unchanged)
 

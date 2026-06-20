@@ -34,20 +34,20 @@ SCOPES: dict[str, str] = {
         "Catalog: [`arch/TOOLS_catalog_and_index.md`](arch/TOOLS_catalog_and_index.md)."
     ),
     "UNIFIED_EXECUTION_RUNTIME": (
-        "UAEP + PolicyEngine + RuntimeEvent spine. "
-        "Skip §42 long narrative unless governance task."
+        "UAEP + PolicyEngine + RuntimeEvent spine (§42.1–§42.15). "
+        "Extended: [`arch/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md`](arch/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md)."
     ),
     "ORCHESTRATION": (
-        "intake + NexusLoop + graph executor. "
-        "Skip strategy catalog §50+ unless ORCH-STRAT task."
+        "intake + NexusLoop + graph executor (§10–§26). "
+        "Extended: [`arch/ORCHESTRATION_extended_depth.md`](arch/ORCHESTRATION_extended_depth.md)."
     ),
     "NEXUS_EXECUTION_FLOW": (
-        "§1–§20 flow narrative + §23 gap register. "
-        "Skip §27+ scenario catalog unless FLOW task."
+        "§1–§20 flow narrative. "
+        "Reference §21+: [`arch/NEXUS_EXECUTION_FLOW_scenario_catalog.md`](arch/NEXUS_EXECUTION_FLOW_scenario_catalog.md)."
     ),
     "INTEGRATIONS": (
-        "manifest registration + IntegrationProfile. "
-        "Skip slug inventory — use catalog grep."
+        "manifest registration + IntegrationProfile + wiring. "
+        "Catalog: [`arch/INTEGRATIONS_provider_catalog.md`](arch/INTEGRATIONS_provider_catalog.md)."
     ),
     "CRITIC_VERIFICATION": (
         "CVL contracts + orchestrator + wiring. Skip historical LC narrative unless cited."

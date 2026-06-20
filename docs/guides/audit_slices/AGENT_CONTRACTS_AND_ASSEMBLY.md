@@ -18,14 +18,19 @@
 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | §17–§20 · §31 |
 | `docs/guides/SYSTEM_INVARIANTS.md` | SYS-INV-ACP-* · SYS-INV-AGENT-* (grep IDs — do not read full file) |
 | `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` | **Hub:** §6 open · ACP closeout registers on demand |
-| `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §12–§25 · §37 capability routing · ACP §21 |
+| `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §12–§21 hub · [`arch/`](../architecture/arch/) on demand |
+
+## Code entry (grep first — F5-B)
+
+- `intergrax/runtime/nexus/agent/` — agent contracts, registry
+- `agents/` — Tier-2 agent implementations
 
 ## Do not load unless cited
 
-- Full multi-thousand-line plan files
+- Full multi-thousand-line plan or architecture files (use hub + **one** satellite)
 - `docs/audit_results/` (unless RESUME)
 - Unrelated domain pairs
-- `docs/guides/audit_slices/` for other domains
+- Other domains' `audit_slices/`
 
 ## Evidence rule (unchanged)
 

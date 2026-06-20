@@ -20,12 +20,16 @@
 | `docs/plan/CRITIC_VERIFICATION.md` | **Hub:** AUDIT-IDEAL · §CVL-4 backlog · audit_history satellite |
 | `docs/architecture/CRITIC_VERIFICATION.md` | CVL contracts · PEV · evaluator loop |
 
+## Code entry (grep first — F5-B)
+
+- `intergrax/runtime/nexus/critic/` — CVL orchestrator
+
 ## Do not load unless cited
 
-- Full multi-thousand-line plan files
+- Full multi-thousand-line plan or architecture files (use hub + **one** satellite)
 - `docs/audit_results/` (unless RESUME)
 - Unrelated domain pairs
-- `docs/guides/audit_slices/` for other domains
+- Other domains' `audit_slices/`
 
 ## Evidence rule (unchanged)
 

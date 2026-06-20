@@ -147,6 +147,7 @@ python scripts/check_plan_hub_size.py
 python scripts/check_cursor_token_setup.py
 python scripts/check_arch_hub_size.py
 python scripts/check_token_generator_freshness.py
+python scripts/check_audit_token_discipline.py
 uv run python scripts/check_agent_acp_close_ci.py
 python scripts/check_production_capacity_adapters.py
 python scripts/check_harness_resilience_policy.py

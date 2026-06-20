@@ -39,6 +39,9 @@ PLATFORM = PlanSplitConfig(
         "3. Implementation Phases",
         "4. Priority Order",
         "Phase AUDIT-IDEAL",
+        "Documentation model",
+        "5. Definition of Done",
+        "1. Plan Objective",
     ),
     dedupe_sync_footer=True,
 )
@@ -255,6 +258,65 @@ TOOLS_CFG = PlanSplitConfig(
     move_h2_appendix=True,
 )
 
+TIER3_PLAN = PlanSplitConfig(
+    domain="TIER3_APPLICATION_ENVIRONMENT",
+    hub_h3_prefixes=("6.2y ", "6.1"),
+    split_h3_in_h2_prefixes=("Phase AUDIT-IDEAL",),
+    move_h2_detail_prefixes=(
+        "Architecture fidelity matrix",
+        "Master implementation backlog",
+        "Cross-plan — §43",
+        "Fidelity verification gates",
+    ),
+    move_h2_prefixes=(
+        "Phase H-APP",
+        "Phase H-APP-DOC",
+        "Phase H-APP-WIRING",
+        "Phase H-APP-CON",
+        "Phase H-APP-EVOL",
+        "Phase H-APP-OPS",
+        "Phase H-APP-FREEZE",
+        "Tier-3 Layer Completion",
+        "Phase TIER3-LC",
+    ),
+    move_h2_appendix=True,
+)
+
+MEMORY_CFG = PlanSplitConfig(
+    domain="MEMORY",
+    hub_h3_prefixes=("6.1",),
+    split_h3_in_h2_prefixes=("Phase AUDIT-IDEAL",),
+    move_h2_prefixes=(
+        "Phase MEM-VEC",
+        "Phase MEM —",
+        "Phase MEM-DEPTH",
+        "Phase CTX —",
+        "Phase MEMORY-LC",
+    ),
+    move_h2_appendix=True,
+)
+
+RAG_CFG = PlanSplitConfig(
+    domain="RAG",
+    hub_h3_prefixes=("6.1",),
+    split_h3_in_h2_prefixes=("Phase AUDIT-IDEAL",),
+    move_h2_detail_prefixes=(
+        "Audit traceability matrix",
+        "Full implementation task register",
+        "Step-by-step rollout",
+    ),
+    move_h2_prefixes=(
+        "Phase RAG —",
+        "Phase M-RAG",
+        "Phase M-RAG-DEPTH",
+        "Phase M-RAG-GRAPH",
+        "Phase M-RAG-ITERATION",
+        "Phase RAG-LC",
+        "Layer Completion",
+    ),
+    move_h2_appendix=True,
+)
+
 CONFIGS: dict[str, PlanSplitConfig] = {
     c.domain: c
     for c in (
@@ -268,5 +330,8 @@ CONFIGS: dict[str, PlanSplitConfig] = {
         AGENT_CONTRACTS,
         LLM_ADAPTERS_CFG,
         TOOLS_CFG,
+        TIER3_PLAN,
+        MEMORY_CFG,
+        RAG_CFG,
     )
 }

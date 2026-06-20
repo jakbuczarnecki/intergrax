@@ -20,6 +20,8 @@ from plan_hub_lib import (
     split_h2,
     split_h3,
     tokens,
+    dedupe_satellite_index,
+    strip_leading_satellite_index,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -97,6 +99,7 @@ def should_keep_h2(title: str, cfg: PlanSplitConfig) -> bool:
 def split_plan(cfg: PlanSplitConfig) -> dict[str, int]:
     source = ROOT / "docs/plan" / f"{cfg.domain}.md"
     raw = source.read_text(encoding="utf-8")
+    raw = strip_leading_satellite_index(raw)
     lines = raw.splitlines()
     if cfg.dedupe_sync_footer:
         lines = remove_duplicate_sync_block(lines)
@@ -252,6 +255,8 @@ def split_plan(cfg: PlanSplitConfig) -> dict[str, int]:
     )
     if satellites:
         hub_text = insert_satellite_index(hub_text, satellite_index_rows(d, satellites))
+
+    hub_text = dedupe_satellite_index(hub_text)
 
     # Shared appendix links → platform satellites when duplicated
     hub_text = re.sub(

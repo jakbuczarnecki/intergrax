@@ -58,7 +58,17 @@ uv run python scripts/generate_architecture_read_scopes.py
 
 ---
 
-## F5 — Symbol index
+## H1 — Audit token discipline CI
+
+```bash
+uv run python scripts/check_audit_token_discipline.py
+```
+
+Domain audit prompts must reference `audit_slices` + `Context budget`; bootstraps must include `READ_BUDGET`.
+
+---
+
+## F5-B — Symbol index + CODE_ENTRY in audit slices
 
 [`docs/guides/SYMBOL_INDEX.md`](SYMBOL_INDEX.md) — grep before repo-wide semantic search.
 

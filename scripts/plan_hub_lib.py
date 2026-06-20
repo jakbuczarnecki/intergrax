@@ -32,6 +32,20 @@ def tokens(text: str) -> int:
     return len(text) // 4
 
 
+def strip_leading_satellite_index(hub_text: str) -> str:
+    marker = "## Satellite registers (read on demand)"
+    text = hub_text.lstrip("\n")
+    while text.startswith(marker):
+        idx = text.index(marker)
+        end = text.find("\n---\n", idx)
+        if end == -1:
+            text = text[:idx]
+            break
+        text = text[:idx] + text[end + 5 :]
+        text = text.lstrip("\n")
+    return text
+
+
 def is_closed_heading(title: str) -> bool:
     low = title.lower()
     return any(s in low for s in CLOSED_SIGNALS)
@@ -100,6 +114,22 @@ def satellite_index_rows(domain: str, files: dict[str, str]) -> list[str]:
         ]
     )
     return rows
+
+
+def dedupe_satellite_index(hub_text: str) -> str:
+    marker = "## Satellite registers (read on demand)"
+    if hub_text.count(marker) <= 1:
+        return hub_text
+    first = hub_text.index(marker)
+    tail = hub_text[first + len(marker) :]
+    second = tail.find(marker)
+    if second == -1:
+        return hub_text
+    abs_second = first + len(marker) + second
+    end = hub_text.find("\n---\n", abs_second + len(marker))
+    if end == -1:
+        end = len(hub_text)
+    return hub_text[:abs_second].rstrip() + "\n\n" + hub_text[end:].lstrip("\n")
 
 
 def insert_satellite_index(hub_text: str, index_rows: list[str]) -> str:

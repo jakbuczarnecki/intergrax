@@ -8,24 +8,29 @@
 
 ## Audit-map layers
 
-13
+11–12
 
 ## Read instead of full guides
 
 | Source | Read only |
 |--------|-----------|
-| `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | Sections matching audit-map layers 13 |
-| `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | Layers 13 · maturity §5 |
-| `docs/guides/SYSTEM_INVARIANTS.md` | Grep SYS-INV-* IDs from audit dimensions only (grep IDs — do not read full file) |
-| `docs/plan/INTEGRATIONS.md` | **Hub:** Hub §6 open rows · [`plan/plan/`](../plan/plan/) satellites on demand |
-| `docs/architecture/INTEGRATIONS.md` | TOC sections for layers 13 · see Cursor read scope block |
+| `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | §11 Integration library · §12 Provider model |
+| `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | §11–§12 |
+| `docs/guides/SYSTEM_INVARIANTS.md` | SYS-INV-INT-* (grep IDs — do not read full file) |
+| `docs/plan/INTEGRATIONS.md` | **Hub:** Phase INT / H-INT hub · satellites on demand |
+| `docs/architecture/INTEGRATIONS.md` | wiring + design principles hub · [`arch/INTEGRATIONS_provider_catalog.md`](../architecture/arch/INTEGRATIONS_provider_catalog.md) on demand |
+
+## Code entry (grep first — F5-B)
+
+- `intergrax/integrations/` — integration catalog
+- `intergrax/integrations/registry.py` — slug registration
 
 ## Do not load unless cited
 
-- Full multi-thousand-line plan files
+- Full multi-thousand-line plan or architecture files (use hub + **one** satellite)
 - `docs/audit_results/` (unless RESUME)
 - Unrelated domain pairs
-- `docs/guides/audit_slices/` for other domains
+- Other domains' `audit_slices/`
 
 ## Evidence rule (unchanged)
 

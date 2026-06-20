@@ -17,15 +17,21 @@ L4 AHI
 | `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | Sections matching audit-map layers L4 AHI |
 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | Layers L4 AHI · maturity §5 |
 | `docs/guides/SYSTEM_INVARIANTS.md` | Grep SYS-INV-* IDs from audit dimensions only (grep IDs — do not read full file) |
-| `docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md` | **Hub:** Hub §6 open rows · [`plan/plan/`](../plan/plan/) satellites on demand |
-| `docs/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md` | TOC sections for layers L4 AHI · see Cursor read scope block |
+| `docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md` | **Hub:** Hub §6 · [`plan/plan/`](../plan/plan/) satellites on demand |
+| `docs/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md` | Read-scope block + TOC sections for layers L4 AHI |
+
+## Code entry (grep first — F5-B)
+
+- `docs/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md` — read-scope block only
+- `docs/plan/ADAPTIVE_HARNESS_INTELLIGENCE.md` — plan hub only
+- `docs/guides/SYMBOL_INDEX.md` — symbol grep map
 
 ## Do not load unless cited
 
-- Full multi-thousand-line plan files
+- Full multi-thousand-line plan or architecture files (use hub + **one** satellite)
 - `docs/audit_results/` (unless RESUME)
 - Unrelated domain pairs
-- `docs/guides/audit_slices/` for other domains
+- Other domains' `audit_slices/`
 
 ## Evidence rule (unchanged)
 
