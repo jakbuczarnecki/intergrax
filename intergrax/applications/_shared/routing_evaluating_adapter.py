@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Sequence
+from enum import Enum
 from typing import Any, Protocol
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
@@ -106,8 +107,9 @@ class RoutingEvaluatingLLMAdapter(LLMAdapter):
         profile = evaluation.selected_profile
 
         def _provider_key(provider: object) -> str:
-            value = getattr(provider, "value", provider)
-            return str(value)
+            if isinstance(provider, Enum):
+                return str(provider.value)
+            return str(provider)
 
         return (
             _provider_key(profile.provider) == _provider_key(self._inner.provider)

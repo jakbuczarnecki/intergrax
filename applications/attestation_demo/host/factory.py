@@ -9,6 +9,7 @@ from typing import Optional
 
 from fastapi import FastAPI
 
+from intergrax.applications._shared.attestation_runtime_bridge import build_boundary_event_buffer
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
@@ -50,9 +51,9 @@ def create_attestation_demo_application(
         document_store=document_store,
     )
     resolved_document_store = integrations.document_store
-    resolved_buffer = boundary_event_buffer or BoundaryEventBuffer()
     manifest = build_attestation_demo_manifest()
     env = manifest.resolved_environment()
+    resolved_buffer = boundary_event_buffer or build_boundary_event_buffer(env) or BoundaryEventBuffer()
     runtime = build_harness_host_runtime(
         manifest.model_copy(update={"environment": env}),
         env,

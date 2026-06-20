@@ -12,7 +12,7 @@ from intergrax.websearch.service.websearch_config import WebSearchConfig, WebSea
 
 
 def _sync_routing_before_websearch_llm(cfg: WebSearchConfig) -> None:
-    routing_config = getattr(cfg, "routing_runtime_config", None)
+    routing_config = cfg.routing_runtime_config
     if routing_config is None:
         return
     from intergrax.runtime.nexus.config import RuntimeConfig

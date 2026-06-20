@@ -31,8 +31,6 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.task.task import TaskContext
-from intergrax.skills.providers.data.manifests import DATA_RECORDS_ADMIN
-
 RECORDS_PUT_TOOL_ID = "records.put"
 _REFLEX_PATTERN = ReflexAgent  # retain ReflexAgent symbol for fleet inventory scan
 
@@ -65,8 +63,9 @@ class BoundaryDemoAgent(Agent):
             description="Partner PoC agent — writes a demo record via records.put.",
             version="0.1.0",
             capabilities=list(CAPABILITIES),
-            skills=[DATA_RECORDS_ADMIN],
+            skills=[],
             extra_tools=[],
+            allowed_tools=[RECORDS_PUT_TOOL_ID],
             risk_level=AgentRiskLevel.MEDIUM,
             lifecycle_state=AgentLifecycleState.STAGING,
             owner_team="platform",

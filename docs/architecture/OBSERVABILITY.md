@@ -722,8 +722,8 @@ uv run python scripts/check_observability_gates.py
 
 ## 18. Execution Boundary Export (EBE) — optional side channel
 
-**Status:** PoC v1 **Done** · PoC v2 (EBE-8 harness-step export) **Done** · **Partner validated** (live Docker, AgentReceipt adapter, commit `106aee77`).  
-**Reference host:** `applications/attestation_demo/` · **ADR:** [ADR-OBS-002](../adr/entries/2026-06-13/ADR-OBS-002.md)
+**Status:** PoC v1 **Done** · PoC v2 (EBE-8) **Done** (partner validated) · **EBE-9 host signing Done** (BoundaryAttest PoC, optional profile flag).  
+**Reference host:** `applications/attestation_demo/` · **ADR:** [ADR-OBS-002](../adr/entries/2026-06-13/ADR-OBS-002.md) · [ADR-OBS-004](../adr/entries/2026-06-19/ADR-OBS-004.md)
 
 EBE is an **optional** export path for **unsigned, vendor-neutral** tool-boundary facts. It complements — does not replace — the Harness Observability Spine (HOS).
 
@@ -754,9 +754,19 @@ EBE is an **optional** export path for **unsigned, vendor-neutral** tool-boundar
 
 ### PoC v2 delivery (EBE-8)
 
-Synchronous API response (`boundary_events[]`) returns **two events per demo run** when `step_level_enabled=true`: `tool_execution` (seq 1) then `harness_step` (seq 2). Webhook sink and host signing remain **deferred**.
+Synchronous API response (`boundary_events[]`) returns **two events per demo run** when `step_level_enabled=true`: `tool_execution` (seq 1) then `harness_step` (seq 2). Webhook sink remains **deferred**.
 
-**Partner validation (2026-06):** External AgentReceipt adapter confirmed one `client_observed` receipt per event, hash parity, independent verification, and intentional dual claims on the failed-tool fixture. Reference handoff: branch `agent_experiment_runtime` @ `106aee776fcc6053e8265b9c3656638d107d351d`.
+### PoC v3 delivery (EBE-9 host signing)
+
+When `host_signing_enabled=true`, each event includes `signed: true` and a `host_attestation` envelope. Intergrax:
+
+1. Canonicalizes the unsigned event → `signed_payload_hash`
+2. Signs canonical JSON host-attestation statement (`boundaryattest.host-attestation.v1`)
+3. Exposes `trust_model.recommended_receipt_role: host_attested`
+
+Unsigned v2 remains available when signing is disabled. Golden vector: `applications/attestation_demo/partner_handoff/ebe9_golden_vector.v1.json`. Spec: `EBE-9_HOST_SIGNING.md`.
+
+**Partner validation (2026-06):** External BoundaryAttest adapter confirmed one `client_observed` receipt per event, hash parity, independent verification, and intentional dual claims on the failed-tool fixture. Reference handoff: branch `agent_experiment_runtime` @ `106aee776fcc6053e8265b9c3656638d107d351d`.
 
 **Trace correlation scope:** `GET /debug/tasks/{run_id}/trace` supports run/task-level journal comparison (agent, capability, graph node, critic, task state). It does **not** expose EBE `event_id`, `step_id`, or `tool_id`; exact per-event correlation uses the live `boundary_events[]` from `POST /poc/run` (or buffered replay endpoint). Enriching HOS trace with EBE identifiers is optional future work, not a PoC v2 requirement.
 

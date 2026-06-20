@@ -48,7 +48,7 @@ def refresh_config_routing_snapshot(
         return config.llm_routing_context
 
     tokens_used = tokens_used_from_adapter(config.llm_adapter, run_id=run_id)
-    usage_tracker = getattr(config, "llm_usage_tracker", None)
+    usage_tracker = config.llm_usage_tracker
     if usage_tracker is not None and tokens_used == 0:
         tokens_used = int(usage_tracker.build_report().total.total_tokens)
 

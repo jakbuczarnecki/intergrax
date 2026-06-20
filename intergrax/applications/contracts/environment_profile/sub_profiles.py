@@ -440,6 +440,14 @@ class ExecutionBoundaryExportProfile(BaseModel):
         default=False,
         description="Emit harness_step events from HarnessKernel.execute_step (EBE-8).",
     )
+    host_signing_enabled: bool = Field(
+        default=False,
+        description="Ed25519 host-attestation envelope per boundary event (EBE-9).",
+    )
+    host_signing_public_key_id: str = Field(
+        default="attestation-demo-host-1",
+        description="Pinned public key id surfaced in host_attestation envelopes.",
+    )
 
 
 class SandboxProfile(BaseModel):

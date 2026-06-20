@@ -37,7 +37,9 @@ or `Authorization: Bearer <key>`. When the env var is unset (local dev default),
 
 Use **`boundary_events[]` as the authoritative per-event source** for receipt keys and tool/harness claims. Use trace for optional run-level journal comparison.
 
-**Partner validated:** commit `106aee776fcc6053e8265b9c3656638d107d351d` on branch `agent_experiment_runtime` (live Docker, AgentReceipt adapter, 2026-06).
+**Partner validated:** commit `106aee776fcc6053e8265b9c3656638d107d351d` on branch `agent_experiment_runtime` (live Docker, BoundaryAttest adapter, 2026-06).
+
+**EBE-9 (host signing):** see [`EBE-9_HOST_SIGNING.md`](EBE-9_HOST_SIGNING.md) and golden vector [`ebe9_golden_vector.v1.json`](ebe9_golden_vector.v1.json). Default `attestation_demo` manifest enables signing; set `host_signing_enabled=false` for unsigned v2.
 
 ## PoC v2 event shape
 

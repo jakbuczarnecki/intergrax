@@ -59,7 +59,7 @@ class ExecutionBoundaryEventV1(BaseModel):
     event_id: str
     event_sequence: int = 0
     boundary_type: Literal["tool_execution", "harness_step"]
-    signed: Literal[False] = False
+    signed: bool = False
     tool_id: str | None = None
     agent_id: str
     run_id: str

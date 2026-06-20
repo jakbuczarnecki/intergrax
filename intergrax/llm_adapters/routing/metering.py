@@ -4,16 +4,23 @@
 
 from __future__ import annotations
 
+from typing import Protocol, runtime_checkable
+
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+
+
+@runtime_checkable
+class _InnerAdapterCarrier(Protocol):
+    @property
+    def inner_adapter(self) -> LLMAdapter: ...
 
 
 def resolve_metering_adapter(adapter: LLMAdapter | None) -> LLMAdapter | None:
     """Return the adapter that accumulates LLM usage (unwrap evaluating wrappers)."""
     if adapter is None:
         return None
-    inner = getattr(adapter, "inner_adapter", None)
-    if isinstance(inner, LLMAdapter):
-        return inner
+    if isinstance(adapter, _InnerAdapterCarrier):
+        return adapter.inner_adapter
     return adapter
 
 
