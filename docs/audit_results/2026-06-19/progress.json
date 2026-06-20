@@ -10,7 +10,7 @@
   "last_updated": "2026-06-19",
   "completed_at": null,
   "current_domain": "LLM_ADAPTERS",
-  "notes": "Mode A2 — 7/22 domains complete; LLM-MAINT-DOC-01 + LLM-MAINT-AUDIT-01 implemented 2026-06-19",
+  "notes": "Mode A2 — 7/22 domains complete; LLM enterprise X.8 + X-14 Done (757cef34)",
   "domain_order": [
     "PLATFORM_FOUNDATION",
     "UNIFIED_EXECUTION_RUNTIME",
@@ -126,7 +126,7 @@
     "LLM_ADAPTERS": {
       "status": "completed",
       "verdict": "mature_revalidated",
-      "maturity": "L3+",
+      "maturity": "L4 enterprise",
       "p0_open": 0,
       "p1_open": 0,
       "result_md": "docs/audit_results/2026-06-19/LLM_ADAPTERS.md",
@@ -134,7 +134,18 @@
       "completed_at": "2026-06-19",
       "maint_ids": [
         "LLM-MAINT-DOC-01",
-        "LLM-MAINT-AUDIT-01"
+        "LLM-MAINT-AUDIT-01",
+        "M-LLM-X.8.1",
+        "M-LLM-X.8.2",
+        "M-LLM-X.8.3",
+        "M-LLM-X.14.1",
+        "M-LLM-X.14.2",
+        "M-LLM-X.14.3",
+        "M-LLM-X.14.4",
+        "M-LLM-X.14.5",
+        "M-LLM-X.14.6",
+        "M-LLM-X.14.7",
+        "M-LLM-X.14.8"
       ]
     }
   }
