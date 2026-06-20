@@ -29,9 +29,9 @@ SCOPES: dict[str, str] = {
         "§40+: [`arch/TIER3_APPLICATION_ENVIRONMENT_production_gates.md`](arch/TIER3_APPLICATION_ENVIRONMENT_production_gates.md)."
     ),
     "TOOLS": (
-        "ToolRuntime path + plugin model + policy invoke. "
-        "Selection: [`arch/TOOLS_selection_and_plugins.md`](arch/TOOLS_selection_and_plugins.md). "
-        "Catalog: [`arch/TOOLS_catalog_and_index.md`](arch/TOOLS_catalog_and_index.md)."
+        "ToolRuntime path + plugin model + policy invoke (hub § through production posture). "
+        "Selection / invocation patterns: [`arch/TOOLS_selection_and_plugins.md`](arch/TOOLS_selection_and_plugins.md). "
+        "RuntimeConfig fields: [`arch/TOOLS_runtime_config_reference.md`](arch/TOOLS_runtime_config_reference.md)."
     ),
     "UNIFIED_EXECUTION_RUNTIME": (
         "UAEP + PolicyEngine + RuntimeEvent spine (§42.1–§42.15). "

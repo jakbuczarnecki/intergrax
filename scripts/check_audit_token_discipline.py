@@ -48,6 +48,15 @@ BEGIN = "---BEGIN PROMPT---"
 END = "---END PROMPT---"
 
 
+def extract_prompt_body(text: str) -> str | None:
+    """Last BEGIN/END pair — ignore instructional mention in 'How to use'."""
+    start = text.rfind(BEGIN)
+    end = text.rfind(END)
+    if start == -1 or end == -1 or end <= start:
+        return None
+    return text[start + len(BEGIN) : end]
+
+
 def main() -> int:
     errors: list[str] = []
 
@@ -64,8 +73,8 @@ def main() -> int:
         for req in REQUIRED_IN_DOMAIN_AUDIT:
             if req not in text:
                 errors.append(f"{path.relative_to(ROOT)}: missing required marker {req!r}")
-        if BEGIN in text and END in text:
-            body = text.split(BEGIN, 1)[1].split(END, 1)[0]
+        body = extract_prompt_body(text)
+        if body is not None:
             tok = len(body) // 4
             if tok > MAX_PROMPT_BODY_TOKENS:
                 errors.append(

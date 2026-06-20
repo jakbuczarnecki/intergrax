@@ -1258,6 +1258,11 @@ def render(domain: dict) -> str:
     active_phases = domain["active_phases"]
     known_gaps = domain["known_gaps"]
     dims = domain["dimensions"]
+    if len(dims) > 22:
+        extra = len(dims) - 20
+        dims = dims[:20] + [
+            f"… plus {extra} more rows — grep `architecture/{did}.md` §21–§40 and plan hub §6.1 (do not load full arch)"
+        ]
     scale = domain["scale_probes"]
     overrides = domain["overrides"]
     ci = domain["ci_scripts"]

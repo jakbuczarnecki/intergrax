@@ -127,40 +127,7 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 18. Deprecated/retired agents rejected in strict production_mode.
 19. Agent checklist §45 + ACP pattern selection (§26.1).
 20. Forbidden §42.41 patterns absent (vendor SDK, direct integrations).
-21. skill_ids → allowed_tools resolution audited.
-22. scaffold --pattern when ACP-8 Done.
-23. check_agent_pattern_conformance.py when ACP-13 Done.
-24. acceptance agent_os covers UAEP path for reference agents.
-25. AgentRunRequest/Result and merge_environment per §29–§30 (ACP-DX).
-26. Per-agent memory_namespace and rag_collection — not global store.
-27. Application metadata → environment_overrides wired in hosts.
-28. on_next_step / StepOutcome author API per §32 (ACP-STEP-1).
-29. execute_next_step harness-only — authors cannot override (ACP-STEP-2).
-30. HarnessKernel.execute_step deterministic primitive — no agent planning §38 (ACP-STEP-2b).
-31. NexusLoop vs HarnessKernel separation §38 — not nexus.run() as agent brain.
-32. AgentRunTrace on AgentRunResult with tool/RAG/LLM step records §31 (ACP-OBS-1).
-33. ApplicationRunSummary for Task orchestration §31 (ACP-OBS-2).
-34. StepLLMRouter per-step model within LLMProfile §33 (ACP-LLM-1).
-35. SharedContextView for multi-agent handoffs §34 (ACP-STATE-1).
-36. Use-case catalog UC-1..10 supported without agent rewrite §35.
-37. AgentRunErrorCode and TerminalReason enums per §37.4–§37.5 (ACP-CON-1).
-38. state_delta JSON merge-patch + _version + resume conflict §37.2 (ACP-CON-2).
-39. Side-effect mode immediate vs declarative — no mix per step §32.8 (ACP-CON-3).
-40. Capability routing by token not class name §37.6 (ACP-CON-6).
-41. Security guards STRICT tool/memory/RAG §37.7 (ACP-CON-7).
-42. OrganizationalPolicyEnvelope constrains agents without code fork §39 (ACP-ORG).
-43. PolicyVerdictRecord on steps for compliance measurement §39.5 (ACP-ORG-4).
-44. Checkpoint/resume/replay semantics §40.1 (ACP-PROD-1).
-45. Side-effect idempotency keys and dedupe §40.2 (ACP-PROD-2).
-46. ToolExecutionProfile mutability/compensation §40.3 (ACP-PROD-3).
-47. SharedContextView CAS concurrency §40.5 (ACP-PROD-5).
-48. ArtifactRef typed contract §40.6 (ACP-PROD-6).
-49. Agent threat model mitigations §40.7 (ACP-PROD-7).
-50. Privacy/redaction on trace/memory §40.8 (ACP-PROD-8).
-51. Release eval gates before production_mode §40.9 (ACP-PROD-9).
-52. CI conformance matrix §40.10 (ACP-PROD-10).
-53. Contract schema_version migration §40.11 (ACP-PROD-11).
-54. RequestIdentity tenant_id/user_id and memory_scope user vs org §30.9 (ACP-DX-1/2).
+21. … plus 34 more rows — grep `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §21–§40 and plan hub §6.1 (do not load full arch)
 
 ---
 

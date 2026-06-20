@@ -122,15 +122,7 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 18. bundle_normalized_payload on EnvironmentSnapshot digests (APP-EVOL-8.3).
 19. ProfileInvariantValidator cross-bundle checks (APP-EVOL-8).
 20. check_environment_profile_bundle_schema.py (APP-EVOL-8.7).
-21. STRICT capability graph deploy gate + blast radius (APP-OPS-1).
-22. ApplicationOperationalOwnership on product manifests (APP-OPS-2).
-23. EnvironmentHealthScore + doctor health-app (APP-OPS-3).
-24. ApplicationRegistry + EnvironmentRegistry + apps/envs CLI (APP-OPS-4).
-25. check_application_production_gates.py aggregates APP-PROD + APP-CON + APP-EVOL + APP-OPS.
-26. Roster ⊆ skill/tool profiles (EnvironmentSkillToolConsistencyCheck).
-27. IdentityProfile + budget enforcement on STRICT product hosts.
-28. Deploy triad present on scaffolded standard hosts.
-29. APPLICATION_CREATION_GUIDE.md aligns with §31 · §45 · §47.
+21. … plus 9 more rows — grep `architecture/TIER3_APPLICATION_ENVIRONMENT.md` §21–§40 and plan hub §6.1 (do not load full arch)
 
 ---
 

@@ -43,8 +43,8 @@ PLATFORM_ARCH = ArchSplitConfig(
 TOOLS_ARCH = ArchSplitConfig(
     domain="TOOLS",
     h2_satellite_markers=(
-        ("## Catalog tools", "catalog_and_index"),
-        ("## Tool selection", "selection_and_plugins"),
+        ("## Tool invocation patterns (production orchestration)", "invocation_patterns"),
+        ("## Runtime configuration reference", "runtime_config_reference"),
     ),
 )
 

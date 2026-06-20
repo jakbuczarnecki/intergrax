@@ -335,13 +335,12 @@ LLM_ADAPTERS_CFG = PlanSplitConfig(
 
 TOOLS_CFG = PlanSplitConfig(
     domain="TOOLS",
-    keep_h2_prefixes=(
-        "Phase AUDIT-IDEAL",
+    hub_h3_prefixes=("6.1av ", "6.1aw "),
+    split_h3_in_h2_prefixes=("Phase AUDIT-IDEAL",),
+    move_h2_prefixes=(
         "Phase LEG —",
         "Phase TS —",
         "Phase TOOL-ENG-DOC —",
-    ),
-    move_h2_prefixes=(
         "Layer completion audit",
         "Layer completion final",
         "Layer completion sprints",
