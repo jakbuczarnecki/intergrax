@@ -193,7 +193,7 @@ Custom provider slugs validate against `LLMAdapterRegistry.registered_providers(
 
 ### When to use `openrouter`
 
-`openrouter` is the **multi-vendor escape hatch**: one provider slug, arbitrary upstream model strings (`anthropic/claude-opus-4`, …). Context windows resolve via bundled **`ModelCatalog`**, optional **`fetch_gateway_metadata`** merge, or profile override. On catalog miss, **`ModelCatalogMissDiagV1`** is recorded on Plane A trace (`llm_catalog_miss`).
+`openrouter` is the **multi-vendor escape hatch**: one provider slug, arbitrary upstream model strings (`anthropic/claude-opus-4`, …). Context windows resolve via bundled **`ModelCatalog`**, optional **`fetch_gateway_metadata`** merge, or profile override. When no **exact** catalog entry matches, **`ModelCatalogMissDiagV1`** is recorded (including `provider_default` for unknown OpenRouter ids) on Plane A trace (`llm_catalog_miss`), runtime bus (`LLM_CALL`), and Prometheus (`intergrax_llm_catalog_miss_total` when metrics enabled).
 
 ---
 
@@ -522,6 +522,22 @@ RoutingContext (snapshot from Nexus / budget meter / classifier)
 | Scaffold DX | **P3** | M-LLM-X.14.8 | — | **Done** |
 
 **Enterprise-grade domain DoD:** **Met** — X-8 + X-14 **Done** · LLM-AUDIT-21…26 **Done** · LLM CI gates green.
+
+#### Catalog miss observability enterprise (M-LLM-X-15)
+
+**Source:** Post X-14 maturity assessment (2026-06-19) — trace wiring **L4−**; OpenRouter unknown models masked by `provider_defaults`; no metrics/E2E/gate.
+
+| Gap | Severity | Task ID | Status |
+|-----|----------|---------|--------|
+| Miss only on `fallback_default` — OpenRouter `provider_default` silent | **P1** | M-LLM-X.15.1 | **Planned** |
+| Trace sink wired only when `core_adapter is not None` | **P2** | M-LLM-X.15.2 | **Planned** |
+| No Prometheus counter for catalog misses | **P2** | M-LLM-X.15.3 | **Planned** |
+| No CI observability gate for `llm_catalog_miss` spine | **P2** | M-LLM-X.15.4 | **Planned** |
+| No acceptance E2E trace → runtime bus | **P2** | M-LLM-X.15.5 | **Planned** |
+| ADR-LLM-002 resolution order drift vs code | **P3** | M-LLM-X.15.6 | **Planned** |
+
+**Target maturity:** catalog-miss spine **L4 enterprise** (trace + bus + metrics + gate + E2E).  
+**Plan:** [Phase M-LLM-X-15](../plan/LLM_ADAPTERS.md#phase-m-llm-x-15--catalog-miss-enterprise-observability-2026-06-19)
 
 #### Routing strict enterprise closeout — audit register (historical gaps, closed)
 
