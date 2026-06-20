@@ -47,6 +47,8 @@ Bootstraps encode `SESSION:` + `READ_BUDGET:` + `OUTPUT_BUDGET:` on lines 1–3.
 
 Split domains: all 21 architecture hubs (F4-C wave 2 complete).
 
+Satellites are in `.cursorignore` — load with explicit `Read` or `@` when read-scope or audit cites extended §.
+
 ```bash
 uv run python scripts/split_domain_architecture.py [DOMAIN ...]
 uv run python scripts/check_arch_hub_size.py
@@ -58,6 +60,8 @@ uv run python scripts/check_arch_hub_size.py
 
 Split domains: all token-heavy plan hubs (G1-D wave 2 complete).
 
+Satellites (`docs/plan/plan/`) are in `.cursorignore` — same explicit-load rule as F4.
+
 ```bash
 uv run python scripts/split_domain_plan.py [DOMAIN ...]
 uv run python scripts/check_plan_hub_size.py
@@ -65,11 +69,19 @@ uv run python scripts/check_plan_hub_size.py
 
 ---
 
-## H2 — Bulky guides in `.cursorignore`
+## H2 — Bulky docs in `.cursorignore`
 
-Explicit `@` load only (reduces accidental index/search noise):
+Explicit `@` / `Read` only (reduces accidental index/search noise):
+
+**Satellite directories (F4 / G1):**
+
+- `docs/architecture/arch/`
+- `docs/plan/plan/`
+
+**Bulky guides:**
 
 - `docs/guides/AGENT_CREATION_GUIDE.md`
+- `docs/guides/APPLICATION_CREATION_GUIDE.md`
 - `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md`
 - `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md`
 - `docs/guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`
