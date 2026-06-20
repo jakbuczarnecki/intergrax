@@ -1,6 +1,6 @@
 # attestation_demo — architecture
 
-**Status:** PoC v2 + EBE-9 (partner-ready)  
+**Status:** PoC v2 + EBE-9 (partner validated)  
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 **Application ADRs:** [`adr/README.md`](adr/README.md)  
 **Domain pair (platform):** `OBSERVABILITY.md` + `TIER3_APPLICATION_ENVIRONMENT.md`  
@@ -550,7 +550,7 @@ When `IdempotentToolInvoker` returns cache hit, PoC default: emit once per logic
 | **EBE-6** | Domain doc update (`OBSERVABILITY` pair) + ADR (trust model) | Yes |
 | **EBE-7** | Webhook sink | **Deferred** |
 | **EBE-8** | HarnessKernel step-level events | **Done** |
-| **EBE-9** | Host-side event signing | **Done** (default on `attestation_demo` manifest) |
+| **EBE-9** | Host-side event signing | **Done** (partner validated @ BoundaryAttest `61be9918`) |
 
 ---
 

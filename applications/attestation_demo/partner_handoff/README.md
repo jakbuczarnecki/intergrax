@@ -40,9 +40,11 @@ or `Authorization: Bearer <key>`. When the env var is unset (local dev default),
 
 Use **`boundary_events[]` as the authoritative per-event source** for receipt keys and tool/harness claims. Use trace for optional run-level journal comparison.
 
-**Partner validated (unsigned v2):** commit `106aee776fcc6053e8265b9c3656638d107d351d` on branch `agent_experiment_runtime` (live Docker, BoundaryAttest adapter, 2026-06).
+**Partner validated (EBE-8 unsigned v2):** Intergrax `106aee776fcc6053e8265b9c3656638d107d351d` on `agent_experiment_runtime` (live Docker, 2026-06).
 
-**Current handoff (EBE-9 signed default):** branch `agent_experiment_runtime` — see repo tip after merge from `development`. Default manifest: `host_signing_enabled=true`, `public_key_id=attestation-demo-host-1`. Set `host_signing_enabled=false` to reproduce unsigned v2.
+**Partner validated (EBE-9 host signing):** Intergrax live @ `96b7f9974869e484406cbade3160b61c71b2980c`; handoff docs @ `13102cfaff1a7a9d212c16cd16587477cc533dc0` on `agent_experiment_runtime`. BoundaryAttest verifier @ `61be9918bc8f91fc8f160e0392d2914f38f3d4cb` (golden vector, 39/39 tests, unsigned v2 regression).
+
+**Default manifest:** `host_signing_enabled=true`, `public_key_id=attestation-demo-host-1`. Set `host_signing_enabled=false` to reproduce unsigned v2.
 
 ## PoC v2 event shape
 
