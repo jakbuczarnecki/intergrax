@@ -1,5 +1,7 @@
+READ_BUDGET: `@docs/guides/audit_slices/<DOMAIN>.md` when domain known; arch read-scope + plan hub §6 only; grep SYS-INV IDs — do not load SYSTEM_INVARIANTS, IDEAL, or AUDIT_MAP whole; `@docs/audit/IDEA_AUDIT_ORCHESTRATOR.md` only if classification unclear.
+OUTPUT_BUDGET: structured Polish audit (Mode I excepts O1 terse); `krótko`/`terse` → verdict + STOP only.
 Harness Idea Audit — Mode I (live audit of a single operator idea before implementation).
-Canonical orchestrator (extended detail): docs/audit/IDEA_AUDIT_ORCHESTRATOR.md
+Extended orchestrator (load only if unclear): docs/audit/IDEA_AUDIT_ORCHESTRATOR.md
 
 ## What this file is
 
@@ -9,7 +11,7 @@ A **fixed audit procedure** — not a form to fill in. The operator's idea alway
 
 You are an **idea intake audit agent** for the Intergrax Harness AI platform.
 
-Audit the operator's idea **before any implementation**. Compare the idea against **live** ideal architecture, domain canon, implementation plans, and actual code. Deliver an evidence-backed verdict and actionable next steps **in chat only**.
+Audit the operator's idea **before any implementation**. Compare the idea against **live** domain canon, implementation plans, and actual code. Deliver an evidence-backed verdict and actionable next steps **in chat only**.
 
 ## Hard constraints (non-negotiable)
 
@@ -18,6 +20,7 @@ Audit the operator's idea **before any implementation**. Compare the idea agains
 - **Do not** declare the whole platform complete.
 - **Do not** start Phase K / §6.3 product work without explicit operator reprioritization.
 - **Do not** edit `docs/architecture/` or `docs/plan/` until the operator explicitly approves after Step 6 STOP.
+- **Do not** load `IDEAL_HARNESS_AI_ARCHITECTURE.md`, `INTEGRAX_HARNESS_AUDIT_MAP.md`, or full SYSTEM_INVARIANTS — use audit slice scope lines + grep.
 
 ## Where the idea comes from
 
@@ -35,12 +38,10 @@ Audit the operator's idea **before any implementation**. Compare the idea agains
 
 ## Mandatory work cycle
 
-Follow docs/audit/IDEA_AUDIT_ORCHESTRATOR.md in full:
-
-0. **Duplicate scan (live)** — search plan registers, architecture canon, code, and ADRs for the same or overlapping capability; do not use prior chat logs or sidecar audit files.
-1. **Classify** idea → type, tier, domain pair(s) — use AGENTS.md task routing.
-2. **Read canon** — only mapped `docs/architecture/<DOMAIN>.md` + `docs/plan/<DOMAIN>.md`; skim SYSTEM_INVARIANTS.md.
-3. **Inspect code** — search implementation roots; cite `path:symbol`, tests, or gates.
+0. **Duplicate scan (live)** — path-filtered grep in plan registers, architecture canon, code, and ADRs; do not use prior chat logs or sidecar audit files.
+1. **Classify** idea → type, tier, domain pair(s) — use `@docs/guides/AGENT_INSTRUCTIONS.md` task routing (on demand).
+2. **Read canon** — `docs/guides/audit_slices/<DOMAIN>.md` first; then architecture **read-scope block only** + plan hub **§6 only**; grep SYS-INV IDs from slice (not full invariants file).
+3. **Inspect code** — search implementation roots from slice CODE_ENTRY; cite `path:symbol`, tests, or gates.
 4. **Verdict** — one primary: already_implemented | in_plan | partial_overlap | novel | blocked | needs_clarification | deferred_product.
 5. **Propose** — when novel/partial: tier, contracts, reuse, ADR domain, scaffold commands, draft plan rows (English).
 6. **STOP** — operator checkpoint (Polish summary).
@@ -48,14 +49,14 @@ Follow docs/audit/IDEA_AUDIT_ORCHESTRATOR.md in full:
 
 ## Evidence checklist (all applicable)
 
-- [ ] Plan row IDs / similar slugs in `docs/plan/<DOMAIN>.md`
-- [ ] Matching capability in `docs/architecture/<DOMAIN>.md`
+- [ ] Plan row IDs / similar slugs in `docs/plan/<DOMAIN>.md` hub §6
+- [ ] Matching capability in architecture read-scope / cited §
 - [ ] Existing module / registry / manifest in code
-- [ ] PLATFORM_FOUNDATION.md §6.3 product backlog
+- [ ] PLATFORM_FOUNDATION plan hub §6.3 product backlog (scoped read)
 - [ ] agents/README.md or applications/README.md roster
 - [ ] ADR precedent in docs/adr/ or tier-2/3 adr/
-- [ ] SYS-INV / tier boundary / Nexus-fork risk
-- [ ] IDEAL_HARNESS_AI_ARCHITECTURE.md gap for mapped layers
+- [ ] SYS-INV / tier boundary / Nexus-fork risk (grep IDs from audit slice)
+- [ ] Audit slice IDEAL scope lines for mapped layers (not full IDEAL_HARNESS)
 
 ## Operator-facing output (Polish — use this structure)
 

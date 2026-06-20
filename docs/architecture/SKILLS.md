@@ -47,6 +47,8 @@ Agent        →  UAEP module with skills[] on AgentContract
 
 Skills are **not** invoked by the LLM. The runtime **resolves** them into `allowed_tools` and metadata at **agent registration** (and via the diagnostic catalog tool `skill.resolve`).
 
+Skills may compose `codecraft.*` tools (e.g. `codecraft.ephemeral_builder`) — skills **compose** bundles; CodeCraft **orchestrates** ephemeral codegen under Harness governance ([`CODE_CRAFT.md`](CODE_CRAFT.md#codecraft-safety-boundary)). Skills **MUST NOT** implement agent-local craft loops or bypass ToolRuntime for generated code execution.
+
 **Unified RAG path (R-Context.4 — Done):** Prefer catalog tool `rag.retrieve` in resolved `allowed_tools` / `tool_ids`. `RuntimeToolGateway` capability plans use `tool_ids` first; legal bridge passes `tool_ids` only. `LegalToolPlan.use_rag` remains for LLM structured output and syncs to `tool_ids` via Pydantic validator — not passed to Nexus. Legacy metadata `use_rag` still honored in `ContextBuilder` for older callers.
 
 ---

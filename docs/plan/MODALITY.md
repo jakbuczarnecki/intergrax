@@ -6,7 +6,28 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**Last updated:** 2026-06-19 — MOD-SPEECH-ARCH registered (speech slug identity; [ADR-MOD-001](../adr/entries/2026-06-19/ADR-MOD-001.md)).
+**Last updated:** 2026-06-20 — **P2-ARCH-14** Modality production boundary.
+
+---
+
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (MODALITY plan).
+
+- **Implement / audit default:** §6.1 MOD maintenance · open modality integration rows · skip closed MOD-LC narrative
+- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
+- **Architecture hub:** [`architecture/MODALITY.md`](../architecture/MODALITY.md) read-scope block only.
+- **Audit slice:** [`guides/audit_slices/MODALITY.md`](../guides/audit_slices/MODALITY.md).
+- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+
+---
+
+## Architecture doc alignment (P2-ARCH)
+
+| ID | Scope | Status |
+|----|-------|--------|
+| **P2-ARCH-14** | Clarify Modality production boundary (plane-specific maturity; cross-layer disambiguation) | **Done** (2026-06-20) |
 
 ---
 

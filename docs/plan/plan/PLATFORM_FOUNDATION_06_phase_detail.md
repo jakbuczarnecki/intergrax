@@ -247,8 +247,11 @@ Decision:       L1 certified — GO Phase S (harness environment), then Phase K 
 | B.07 | **§42 maturity remainder** — schema versioning (§42.29), full `ExecutionPhase` coverage, plugin contracts | §42 | **Medium** | **Done** (baseline) | Platform stability for new agents | Tier-1 | `runtime/schema/registry.py`, `events/phase_coverage.py`, `plugins/contract.py` (2026-05-27) |
 | P1-ARCH-03 | **Root README ↔ architecture canon sync** — Overview `(planned)` residuals vs domain L3 closeout (ECC) | hub · domain pairs | **P1** | **Done** | Onboarding / first read | docs | README Overview + Project snapshot aligned with `CODE_CRAFT` closeout (2026-06-17) |
 | P2-ARCH-01 | **System invariants index** — cross-domain `SYS-INV-*` “never violate” guide with CI map | hub · ACP · APP · ORCH | **P2** | **Done** | All authors / auditors | docs | [`guides/SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) (2026-06-17) |
+| P2-ARCH-02 | **Maturity taxonomy** — four-axis A/I/P/E vocabulary; legacy L3/L4/L5 mapping; required Maturity Statement block | hub · guides · LCM | **P2** | **Done** | All authors / auditors | docs | [`guides/MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md) (2026-06-20) |
 | P2-ARCH-03 | **Root README platform maturity** — L0–L4 per-area table with plan evidence links (not arbitrary %) | hub · README | **P2** | **Done** | Onboarding / architects | docs | README §Current platform maturity + `harness_maturity_report.py` (2026-06-17) |
 | P2-DOC-LC-1 | **Layer Completion Mode** — canonical deep layer closeout workflow (journal-linked) | guides · strategy | **P2** | **Done** | Maintainers / layer closeout | docs | [`guides/LAYER_COMPLETION_MODE.md`](../guides/LAYER_COMPLETION_MODE.md) (2026-06-17) |
+| P2-DOC-AA-1 | **Agent author minimal path** — minimal safe Tier-2 authoring guide | guides · ACP | **P2** | **Done** | Tier-2 agent authors | docs | [`guides/AGENT_AUTHOR_MINIMAL_PATH.md`](../guides/AGENT_AUTHOR_MINIMAL_PATH.md) (2026-06-20) |
+| P2-DOC-T3-1 | **Tier-3 product hypothesis contract** — required product hypothesis before new hosts | guides · APP | **P2** | **Done** | Tier-3 application authors | docs | [`guides/TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md`](../guides/TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md) (2026-06-20) |
 
 ### B.2 Observability & debug surface
 

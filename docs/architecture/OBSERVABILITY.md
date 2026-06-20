@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 21, 30  
 **Audit instruction:** [`audit/OBSERVABILITY.md`](../audit/OBSERVABILITY.md)  
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates OBS-EVOL-9); OBS-BUS + event catalog spine **Done**
+**Last updated:** 2026-06-20 — **P2-ARCH-07** Observability Event Spine; OBS-BUS + event catalog spine **Done**
 
 ---
 
@@ -120,6 +120,99 @@ The **Harness Observability Spine** is the universal “bus” through which all
 ```
 
 **Key rule:** Harness, applications, and agents all use the **same spine**. Differences are only in **which steps emit** and **which `DiagnosticPayload` schemas** are registered — not in transport or storage mechanics.
+
+---
+
+## Observability Event Spine
+
+**Normative rule:** `RuntimeEvent` is the canonical runtime event and audit envelope for meaningful execution transitions.
+
+The Harness Observability Spine (§3) is the write/read/export path; this section defines **what each signal type owns** so agents, tools, integrations, and applications do not fork parallel observability pipelines.
+
+| Signal | Role | Must not become |
+|--------|------|-----------------|
+| **`RuntimeEvent`** | Canonical event/audit envelope on `RuntimeEventBus`; primary source of execution truth for lifecycle, policy, HITL, and operator reconstruction | A optional add-on beside private agent logs |
+| **`TraceEvent`** | Compatibility / read-model / diagnostic view (Plane B); fine-grained timeline via `RuntimeState.trace_event()` and `RunTraceWriter`; bridged to the bus by `trace_bridge` | A competing event bus or private audit store |
+| **Logs** | Local diagnostic output (stdlib logging, host logs, integration transport traces) | Canonical audit evidence or execution history |
+| **Metrics** | Aggregated operational signals (Prometheus, OTLP counters, SLO ratios) derived from events or counters | A substitute for the unified run journal |
+| **External sinks** | Destinations for normalized events, logs, or metrics (Langfuse, Sentry, Datadog, OTLP export) | Semantic owners of Intergrax event vocabulary |
+| **`DiagnosticPayload`** | Typed payload detail carried by Plane B trace rows or domain-signal envelopes (`payload_schema_id` + `redact()`) | An independent lifecycle channel with its own persistence contract |
+
+**Implementation detail:** Plane A/B/C breakdown, field catalog, and bridge mechanics — §4. Correlation identifiers — §6 and [Required correlation fields](#required-correlation-fields) below. Layered `event_type` / `event_kind` governance — §4.4 and [Event type governance](#event-type-governance) below.
+
+**Cross-layer canon:** [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §7 · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.1 · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §12.2 · [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger) · [`TOOLS.md`](TOOLS.md) · [`INTEGRATIONS.md`](INTEGRATIONS.md) · [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §31 · [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) · [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md#governance-boundary) · [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md#scaling-action-governance) · [`CODE_CRAFT.md`](CODE_CRAFT.md#codecraft-safety-boundary)
+
+---
+
+## Event ownership rules
+
+| Rule | Requirement |
+|------|-------------|
+| Runtime emission | New runtime components **SHOULD** emit meaningful execution transitions through `RuntimeEventBus` or the approved observability spine (§3). |
+| Agent trace stores | Agents **MUST NOT** create private trace stores. |
+| Agent logging pipelines | Agents **MUST NOT** create private logging pipelines for execution state. |
+| Tool side effects | Tools **MUST NOT** bypass runtime observability for side effects — `TOOL_*` and bridged diagnostics **MUST** be visible through the spine ([`TOOLS.md`](TOOLS.md)). |
+| Integration diagnostics | Integrations **MAY** log transport/backend diagnostics; they **MUST NOT** own harness execution trace semantics ([`INTEGRATIONS.md`](INTEGRATIONS.md)). |
+| Application summaries | Applications **MAY** add product-level summaries (e.g. `ApplicationRunSummary`); they **MUST NOT** replace runtime event history. |
+| External sinks | External sinks **MUST** receive normalized signals; they **MUST NOT** define canonical Intergrax event semantics. |
+| Secrets | Event payloads **MUST NOT** contain secrets. |
+| Redaction | Redaction **MUST** happen before persistence or external export where required (`DiagnosticPayload.redact()`, `production_mode`). |
+| Domain extension | Domain-specific events **SHOULD** use namespaced `event_kind` / payload schemas instead of expanding platform lifecycle enums unnecessarily (§4.4). |
+
+Audit stores (`RuntimeEventPersistence`, `RunTraceWriter`) persist spine-normalized records — they are **not** alternate semantic owners. Custom `RuntimeEventBus` handlers and journal export plugins are subscribers/sinks, not parallel buses.
+
+---
+
+## Required correlation fields
+
+Meaningful runtime events **SHOULD** preserve all correlation identifiers available at the emission boundary:
+
+| Field | Purpose |
+|-------|---------|
+| `task_id` | User-facing work unit |
+| `run_id` | Single execution attempt / trace timeline |
+| `node_id` | Graph node placement |
+| `agent_id` | Responsible agent |
+| `step_id` | UAEP / pipeline step |
+| `tool_call_id` | Tool invocation chain (when applicable) |
+| `correlation_id` | Cross-agent/tool chain (default: `task_id`) |
+| `parent_event_id` | Causal parent in the spine tree |
+| `event_id` | Unique event identity |
+| `timestamp` | UTC ordering |
+| `schema_version` | Envelope version (e.g. `runtime_event.v1`) |
+
+`EmitContext` and `TraceScope` (§6.2) populate these by construction on approved emit paths. A component that **drops** correlation identifiers **MUST** document **why** and **what observability is lost** (e.g. in PR description or module docstring).
+
+---
+
+## Event type governance
+
+| Rule | Detail |
+|------|--------|
+| Spine rarity | New high-level lifecycle `RuntimeEventType` members **SHOULD** be rare — publication budget ~56 (§4.4.13). |
+| Domain detail | Prefer namespaced `event_kind` or typed payload schemas (`emit_domain_signal`) for domain-specific detail. |
+| Platform changes | Adding a new platform-level spine `event_type` requires updating this document (§4.4), `EventCatalogEntry`, relevant ADR, and observability checks if they exist (`check_event_catalog.py`, `check_observability_gates.py`). |
+| No product-only categories | Do **not** create new event categories only to support one product-specific use case. |
+| Product payloads | Product-specific events **SHOULD** remain in product/domain payloads (`agents.*`, `applications.*` kinds) unless they represent a general harness lifecycle concept. |
+
+See also §4.4.6 anti-patterns and [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.1.7.
+
+---
+
+## Cursor review checklist
+
+Before adding or modifying observability behavior, Cursor **MUST** verify:
+
+- [ ] Is this a meaningful execution transition?
+- [ ] Should it be represented as `RuntimeEvent` (direct bus emit or trace bridge)?
+- [ ] Are correlation identifiers preserved (`EmitContext` / `TraceScope`)?
+- [ ] Are secrets redacted before persistence/export?
+- [ ] Is this a platform lifecycle `event_type` or a domain-specific `event_kind`/payload?
+- [ ] Does this create a parallel private trace/log system?
+- [ ] Are tool side effects visible through the runtime spine?
+- [ ] Are integration/backend logs clearly separated from harness execution events?
+- [ ] Are metrics derived from events or operational counters rather than replacing event history?
+- [ ] Are external sinks treated as destinations, not semantic owners?
 
 ---
 
@@ -592,7 +685,7 @@ wiring = wire_application_observability(env_profile)
 
 **Rule (canon §33.1):** Extend `RunTraceWriter` / `RuntimeEventPersistence` — do not fork a parallel trace system.
 
-**Compute / worker elastic capacity** (Nexus replicas, queue workers, load balancers): [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) — distinct from datastore scale-out above.
+**Compute / worker elastic capacity** (Nexus replicas, queue workers, load balancers): [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md#production-boundary) — capacity signals and governed scaling; distinct from datastore scale-out above; not a production autoscaler by default.
 
 ### 9.4 Custom persistence adapter
 

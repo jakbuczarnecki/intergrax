@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 22  
 **Audit instruction:** [`audit/RELIABILITY_FAILURE_AND_HITL.md`](../audit/RELIABILITY_FAILURE_AND_HITL.md)  
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates REL-ADV); REL + HITL **Done**
+**Last updated:** 2026-06-20 — **P2-ARCH-09** Attempt Ledger + retry ownership; REL + HITL **Done**
 
 ---
 
@@ -22,6 +22,10 @@
 
 ---
 
+
+---
+
+**Verification safety:** High-risk side effects and HITL boundaries — [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) · [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §8
 
 ---
 
@@ -86,8 +90,148 @@ Intergrax has **two independent retry layers**. Configure each explicitly; avoid
 
 A future `RetryCoordinator` may delegate to both with explicit `RETRY_SCHEDULED` / `RETRY_STARTED` events (§42.34). Until then, agents emit **intent** (`AgentDecision.RETRY`); runtime executes policy — no agent-internal `for attempt in range(n)` against adapters.
 
+**Full retry-layer taxonomy (R0–R4) and attempt reconstruction:** [Attempt Ledger](#attempt-ledger) below. **As-built mapping:** graph/validation ≈ **R3**; run-level ≈ **R2**; whole-run graph retry ≈ **R3** (coordinator scope).
+
 ---
 
+## Attempt Ledger
+
+**Attempt Ledger** is the logical runtime record of execution attempts, retries, failures, escalations, degradations, HITL pauses and terminal stop reasons.
+
+It does not have to be a single physical class in the current implementation.
+It is an **architectural invariant**: every meaningful retry/failure decision must be reconstructable from runtime events and retry metadata.
+
+Sources include (non-exhaustive): `RetryRecord`, `PauseRecord`, `RuntimeCheckpoint`, `RETRY_*` / `TOOL_*` / HITL `RuntimeEvent`s, `ToolCallTrace`, validation and critic verdict payloads, and correlation fields on the observability spine ([`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine)).
+
+**Cross-refs:** [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §8 · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §14 · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.34 · [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine) · [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) · [`TOOLS.md`](TOOLS.md) · [`INTEGRATIONS.md`](INTEGRATIONS.md) · [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) · [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md#governance-boundary) · [`CODE_CRAFT.md`](CODE_CRAFT.md#codecraft-safety-boundary)
+
+---
+
+## Attempt Ledger responsibilities
+
+Attempt Ledger **SHOULD** allow an operator to reconstruct:
+
+- `task_id` / `run_id` / `node_id` / `agent_id` / `step_id` involved,
+- attempt number,
+- original trigger,
+- failure type,
+- failure source,
+- retry policy used,
+- retry layer,
+- whether retry was allowed or denied,
+- backoff / delay decision if applicable,
+- idempotency key if applicable,
+- side effects already performed,
+- validation result,
+- critic / verification result if applicable,
+- HITL request / approval / rejection if applicable,
+- degradation decision,
+- final stop reason,
+- terminal outcome.
+
+---
+
+## Retry ownership rules
+
+- Agents **MAY** request recovery intent, but **MUST NOT** own global retry policy.
+- Agents **MUST NOT** implement unbounded retry loops.
+- Tools **MAY** expose retryable failure metadata, but **MUST NOT** silently retry high-risk side effects beyond backend/protocol-safe retry rules.
+- Integrations **MAY** perform protocol-level retries only when safe and compatible with runtime retry policy.
+- Nexus / runtime owns orchestration-level retry, escalation, HITL and terminal stop decisions.
+- Validation / critic failures must be recorded as retry inputs, not hidden inside final narrative.
+- Retry decisions must be traceable through `RuntimeEvent` / observability spine.
+- High-risk side effects require idempotency or explicit policy exception before retry.
+- A retry layer **MUST** be identifiable for every retry attempt.
+
+---
+
+## Retry layers
+
+Normative retry layers — every retry attempt **MUST** map to exactly one layer. Layers compose; they do not duplicate uncontrolled retries at the same semantic step.
+
+### R0 — Backend/protocol retry
+
+**Owner:** Integration or low-level client.
+
+**Use:** Transient transport failure, rate limit retry-after, safe idempotent backend call.
+
+**Limits:** Must not hide semantic failure. Must not retry unsafe side effects unless idempotency and policy allow it.
+
+### R1 — ToolRuntime retry
+
+**Owner:** ToolRuntime / policy.
+
+**Use:** Agent-requested tool side effect failed in a retryable way.
+
+**Limits:** Must preserve `tool_call_id` / idempotency / attempt metadata. Must not bypass policy or observability.
+
+### R2 — Agent step retry
+
+**Owner:** AgentEngine / runtime policy.
+
+**Use:** Agent step failed validation, malformed output, recoverable local step issue.
+
+**Limits:** Agent may produce a new decision, but runtime owns retry count and stop conditions. Maps to §31.1 **run-level** retry and NEXUS §14.1 **Layer B**.
+
+### R3 — Graph / Nexus retry
+
+**Owner:** Nexus / graph runtime.
+
+**Use:** Node failure, alternate agent, graph-level degradation, partial result, replan.
+
+**Limits:** Must not duplicate side effects without idempotency / policy clearance. Maps to §31.1 **graph/validation** retry, NEXUS §14.1 **Layer A**, and whole-run **Layer C** when enabled.
+
+### R4 — HITL / human-mediated retry
+
+**Owner:** Nexus / HITL runtime.
+
+**Use:** Human corrects input, approves continuation, rejects output, requests re-run.
+
+**Limits:** Human decision must be traceable.
+
+---
+
+## Stop reasons
+
+Terminal outcomes **SHOULD** include a clear **stop reason** (architectural vocabulary — not a code enum). Use the most specific reason that explains why execution ended.
+
+| Stop reason | Meaning |
+|-------------|---------|
+| `completed` | Task/run reached successful terminal state |
+| `validation_failed` | Deterministic validation rejected output; retries exhausted or denied |
+| `policy_denied` | PolicyEngine or guardrail blocked continuation |
+| `budget_exceeded` | Cost, token, tool-call or time budget exhausted |
+| `timeout` | Step, tool, or run timeout reached |
+| `max_attempts_exceeded` | Retry budget for the applicable layer exhausted |
+| `human_rejected` | Operator rejected output or action via HITL |
+| `human_timeout` | HITL queue item expired without decision |
+| `unsafe_side_effect_risk` | Retry or continuation blocked due to irreversible side-effect risk |
+| `missing_required_context` | Required context or dependency unavailable |
+| `tool_unavailable` | Tool registry miss, deny, or hard tool failure |
+| `integration_unavailable` | Backend/provider unavailable after safe retries |
+| `partial_result_returned` | Run stopped with explicit partial completion policy |
+| `degraded_result_returned` | Run returned degraded output per resilience policy |
+| `cancelled` | Operator or system cancellation |
+
+**Related taxonomy:** failure classes §33.4 · abandonment triggers [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §14.2 · terminal `RuntimeEvent` / `ops:completion` filters [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.1.
+
+---
+
+## Cursor review checklist
+
+Before adding or modifying retry/failure/HITL behavior, Cursor must verify:
+
+- [ ] Which retry layer is this?
+- [ ] Is the attempt recorded or reconstructable?
+- [ ] Is there a max attempt / stop condition?
+- [ ] Are side effects idempotent or protected by policy?
+- [ ] Is the failure type explicit?
+- [ ] Is the failure source explicit?
+- [ ] Are validation and critic failures visible to the runtime?
+- [ ] Is HITL handled by Nexus / HITL runtime, not an agent-local flow?
+- [ ] Are `RuntimeEvent` / observability identifiers preserved?
+- [ ] Is the terminal stop reason explicit?
+- [ ] Does this create duplicate retries across layers?
 
 ---
 

@@ -7,7 +7,7 @@ Load **only** the satellite matching your task or cited gap ID.
 |-----------|----------|
 | [`plan/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_embedded_detail.md`](plan/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_embedded_detail.md) | embedded detail |
 
-> **Cursor context budget:** read this hub + **at most one** satellite per session.
+> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
 
 # Experimentation And Developer Experience — Implementation Plan
@@ -18,7 +18,28 @@ Load **only** the satellite matching your task or cited gap ID.
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/plan/` satellites on demand).
 
-**Last updated:** 2026-06-19 — **DX-IDEA** Mode I idea intake discoverability + bootstrap gate.
+**Last updated:** 2026-06-20 — **P2-ARCH-13** Experimentation/DX architecture vs implementation rules boundary.
+
+---
+
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE plan).
+
+- **Implement / audit default:** Hub §6 · [`plan/plan/`](plan/plan/) satellites on demand. **On demand (one max):** [`plan/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_embedded_detail.md`](plan/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_embedded_detail.md). §6.1 maintenance queues — open P0/P1 only
+- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
+- **Architecture hub:** [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) read-scope block only.
+- **Audit slice:** [`guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md).
+- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+
+---
+
+## Architecture doc alignment (P2-ARCH)
+
+| ID | Scope | Status |
+|----|-------|--------|
+| **P2-ARCH-13** | Clarify Experimentation/DX architecture vs implementation rules boundary | **Done** (2026-06-20) |
 
 ---
 
@@ -50,7 +71,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_appendices.md`](plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_appendices.md) | appendices |
 | [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_audit_history.md`](plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_audit_history.md) | audit history |
 
-> **Cursor context budget:** read this hub + **at most one** satellite per session.
+> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
 
 ---

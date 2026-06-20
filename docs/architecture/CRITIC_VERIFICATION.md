@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 25 (verify depth)  
 **Audit instruction:** [`audit/CRITIC_VERIFICATION.md`](../audit/CRITIC_VERIFICATION.md)  
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates CVL-LC); **CRIT-V-0…7 + FOLLOWUP + CVL-LC-1…4 Done (L3+)**
+**Last updated:** 2026-06-20 — **P2-ARCH-08** Verification Safety Boundaries; **CRIT-V-0…7 + CVL-LC-1…4 Done (L3+)**
 ---
 
 ## Cursor read scope (token budget)
@@ -382,5 +382,120 @@ sequenceDiagram
 ```
 
 **Selection:** `select_coordination_pattern()` may recommend `EVALUATOR_LOOP` when complexity/risk high and latency budget allows — existing V-MA catalog.
+
+---
+
+## Verification Safety Boundaries
+
+CVL answers correctness questions; it does **not** silently grant authority for high-risk irreversible side effects.
+
+**Normative rule:** Verification may block, escalate, request more evidence, request HITL, or mark a result as insufficient. Verification **MUST NOT** silently authorize high-risk irreversible side effects based only on probabilistic or LLM-based judgment.
+
+Verification is a **Harness/runtime concern** — orchestrated through `CriticOrchestrator`, policy bridges, and HITL gates — not a private agent decision buried in narrative output.
+
+**Cross-refs:** [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §8 · [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine) · [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) · [`TOOLS.md`](TOOLS.md) · [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md) · [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md#governance-boundary) · [`CODE_CRAFT.md`](CODE_CRAFT.md#codecraft-safety-boundary)
+
+---
+
+## Verification levels and authority
+
+Normative authority model for the L0 / L1 / L2 stack (§6). Layers compose; they do not substitute for one another on high-risk paths.
+
+### L0 — Deterministic verification
+
+- schema validation
+- contract validation
+- type checks
+- required fields
+- policy constraints
+- deterministic safety rules
+- idempotency requirements
+- tool result shape validation
+
+L0 **MAY** block execution. L0 **SHOULD** run before L1 whenever possible.
+
+### L1 — Semantic / probabilistic verification
+
+- LLM-as-judge
+- rubric-based semantic evaluation
+- trajectory critique
+- confidence scoring
+- consistency checks
+- factuality checks when evidence is available
+
+L1 **MAY** recommend pass / fail / escalate. L1 **MUST NOT** be the only approval mechanism for irreversible high-risk side effects.
+
+### L2 — Human / authoritative verification
+
+- human approval
+- business owner approval
+- domain expert review
+- external authoritative system confirmation
+- legal / compliance review where required
+
+L2 is required when policy, risk tier, or missing evidence demands human or authoritative approval.
+
+**Combined verdict (unchanged):** `CriticVerdict.passed = L0.passed ∧ (L1.passed if enabled) ∧ (L2.passed if required)`.
+
+---
+
+## High-risk side effect rule
+
+Hard rules for side effects that are irreversible, externally visible, or policy-classified as high risk:
+
+- High-risk or irreversible side effects require policy approval and traceable verification evidence.
+- LLM-as-judge alone **MUST NOT** authorize high-risk irreversible side effects.
+- Semantic confidence alone **MUST NOT** override deterministic validation failure.
+- Human approval boundaries must be managed by Nexus / HITL mechanisms, not ad-hoc agent messages.
+- If verification cannot establish sufficient confidence, the runtime should escalate, degrade, request human review, or stop.
+- Verification results must be traceable through the observability spine (`RuntimeEvent` / `CriticTraceEmitter` — [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine)).
+
+---
+
+## Verification ownership
+
+| Concern | Owner |
+|---------|-------|
+| Verification architecture and execution gateway | Harness / runtime |
+| Domain rubric | Tier-2 agent / domain package |
+| Product risk threshold | Tier-3 application profile / policy |
+| Deterministic schema validation | Contract / runtime validators |
+| Semantic judge execution | CVL / approved evaluator mechanism |
+| HITL escalation | Nexus / HITL runtime |
+| Final side-effect authorization | Policy + runtime + required verification level |
+| Audit evidence | `RuntimeEvent` / observability spine |
+
+---
+
+## Disallowed verification patterns
+
+Agents, tools, and applications **MUST NOT**:
+
+- treat LLM judge output as unconditional truth
+- bypass L0 deterministic validation when L0 is available
+- perform high-risk side effects after L1-only approval
+- hide verification failures inside final narrative output
+- implement private human approval flows inside agents
+- store verification decisions only in local logs
+- bypass `RuntimeEvent` / observability spine for verification outcomes
+- use semantic evaluator results without preserving evidence / provenance
+- silently downgrade risk tier to avoid HITL
+- describe a verification path as production-ready without maturity / evidence statement ([`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md))
+
+---
+
+## Cursor review checklist
+
+Before adding or modifying verification behavior, Cursor must verify:
+
+- [ ] Is there an L0 deterministic check where possible?
+- [ ] Is L1 semantic evaluation clearly separated from L0 deterministic validation?
+- [ ] Can L1 block / escalate without being treated as absolute truth?
+- [ ] Does this path involve high-risk or irreversible side effects?
+- [ ] If high-risk, is L2 / HITL or authoritative verification required?
+- [ ] Are verification results traced through `RuntimeEvent` / observability spine?
+- [ ] Are rubrics domain-owned and policies application / runtime-owned?
+- [ ] Is the production readiness claim expressed through [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md)?
+- [ ] Does the change avoid private agent-local approval systems?
 
 ---

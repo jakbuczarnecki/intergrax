@@ -10,7 +10,30 @@
 
 **Cross-plan — Event catalog (OBS-EVOL-9 · P1-ARCH-02):** Layered spine + `event_kind` (architecture §4.4 · ADR-OBS-003). Developers extend via `emit_domain_signal`, not new `RuntimeEventType`. Pre-release spine consolidation before publication.
 
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates OBS-EVOL-9 closeout).
+**Last updated:** 2026-06-20 — **P2-ARCH-07** event spine canon.
+
+---
+
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (OBSERVABILITY plan).
+
+- **Implement / audit default:** Hub §6 · [`plan/plan/`](plan/plan/) satellites on demand. **On demand (one max):** [`plan/plan/OBSERVABILITY_audit_history.md`](plan/plan/OBSERVABILITY_audit_history.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
+- **Architecture hub:** [`architecture/OBSERVABILITY.md`](../architecture/OBSERVABILITY.md) read-scope block only.
+- **Audit slice:** [`guides/audit_slices/OBSERVABILITY.md`](../guides/audit_slices/OBSERVABILITY.md).
+- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+
+---
+
+## Architecture documentation (P2)
+
+| ID | Task | Status |
+|----|------|--------|
+| **P2-ARCH-07** | Clarify observability event spine and event ownership | **Done** (2026-06-20) |
+
+Architecture: [`OBSERVABILITY.md`](../architecture/OBSERVABILITY.md#observability-event-spine).
 
 ---
 
@@ -23,7 +46,7 @@ Load **only** the satellite matching your task or cited gap ID.
 |-----------|----------|
 | [`plan/plan/OBSERVABILITY_audit_history.md`](plan/plan/OBSERVABILITY_audit_history.md) | audit history |
 
-> **Cursor context budget:** read this hub + **at most one** satellite per session.
+> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
 
 ---

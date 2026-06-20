@@ -45,7 +45,9 @@ Bootstraps encode `SESSION:` + `READ_BUDGET:` + `OUTPUT_BUDGET:` on lines 1–3.
 
 ## F4 — Architecture hub + `docs/architecture/arch/` satellites
 
-Split domains: all 21 architecture hubs (F4-C wave 2 complete).
+Split domains: all 22 architecture hubs (F4-C wave 2 complete).
+
+Satellites are in `.cursorignore` — load with explicit `Read` or `@` when read-scope or audit cites extended §.
 
 ```bash
 uv run python scripts/split_domain_architecture.py [DOMAIN ...]
@@ -58,21 +60,38 @@ uv run python scripts/check_arch_hub_size.py
 
 Split domains: all token-heavy plan hubs (G1-D wave 2 complete).
 
+Satellites (`docs/plan/plan/`) are in `.cursorignore` — same explicit-load rule as F4.
+
 ```bash
 uv run python scripts/split_domain_plan.py [DOMAIN ...]
 uv run python scripts/check_plan_hub_size.py
+uv run python scripts/generate_plan_read_scopes.py
 ```
+
+Plan hubs include **Cursor read scope (token budget)** blocks (~150 tok) — read §6 / open queues only; same explicit-load rule as F4 arch read-scopes.
 
 ---
 
-## H2 — Bulky guides in `.cursorignore`
+## H2 — Bulky docs in `.cursorignore`
 
-Explicit `@` load only (reduces accidental index/search noise):
+Explicit `@` / `Read` only (reduces accidental index/search noise):
+
+**Satellite directories (F4 / G1):**
+
+- `docs/architecture/arch/`
+- `docs/plan/plan/`
+
+**Bulky guides:**
 
 - `docs/guides/AGENT_CREATION_GUIDE.md`
+- `docs/guides/APPLICATION_CREATION_GUIDE.md`
 - `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md`
 - `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md`
 - `docs/guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`
+- `docs/guides/SYSTEM_INVARIANTS.md` — grep `SYS-INV-*` IDs from audit slice; `@` full file only when cited
+- `docs/guides/MATURITY_TAXONOMY.md`
+- `docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`
+- `docs/intergrax_runtime_architecture.md` — domain pair index; use bootstrap domain list or `@` when needed
 - `docs/plan/AUDIT_IDEAL_2026.md`
 
 ---
@@ -93,6 +112,16 @@ uv run python scripts/check_audit_token_discipline.py
 ```bash
 uv run python scripts/generate_architecture_read_scopes.py
 ```
+
+---
+
+## G1-E2 — Plan read scopes (all domains)
+
+```bash
+uv run python scripts/generate_plan_read_scopes.py
+```
+
+Plan hub read-scope blocks mirror architecture E2 — §6 / open P0/P1 queues only; at most one `plan/plan/` satellite per session.
 
 ---
 

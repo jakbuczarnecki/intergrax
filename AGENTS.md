@@ -17,6 +17,6 @@ agents/ MUST NOT import from applications/
 applications/ MAY import from agents/ and intergrax/
 ```
 
-**Session (F3):** one domain = one new chat. **Output (O1):** terse by default; full report only on request — [`AGENT_INSTRUCTIONS.md`](docs/guides/AGENT_INSTRUCTIONS.md) § Operator communication. **Docs hub:** [`docs/intergrax_runtime_architecture.md`](docs/intergrax_runtime_architecture.md). **Invariants:** [`docs/guides/SYSTEM_INVARIANTS.md`](docs/guides/SYSTEM_INVARIANTS.md). Default scope: gate maintenance in [`docs/plan/PLATFORM_FOUNDATION.md`](docs/plan/PLATFORM_FOUNDATION.md) hub; Phase K / §6.3 only with explicit operator approval.
+**Session (F3):** one domain = one new chat. **Output (O1):** terse by default; full report only on request — [`AGENT_INSTRUCTIONS.md`](docs/guides/AGENT_INSTRUCTIONS.md) § Operator communication. **Canon routing:** load domain docs on demand via [`AGENT_INSTRUCTIONS.md`](docs/guides/AGENT_INSTRUCTIONS.md) — not bulk guides (invariants, maturity, strategy are `.cursorignore`; grep SYS-INV IDs or `@` explicit). Default scope: gate maintenance in [`docs/plan/PLATFORM_FOUNDATION.md`](docs/plan/PLATFORM_FOUNDATION.md) hub read-scope; Phase K / §6.3 only with explicit operator approval.
 
 **Do not delete this file via Cursor Settings** — the UI entry is the file itself; use the stub + full reference split instead (see CURSOR_TOKEN_SETUP F2).

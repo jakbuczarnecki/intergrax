@@ -8,7 +8,7 @@
 **Audit layer:** 11b (Ephemeral Code Craft)  
 **Audit instruction:** [`audit/CODE_CRAFT.md`](../audit/CODE_CRAFT.md)  
 **Implementation:** `intergrax/codecraft/` · `intergrax/runtime/codecraft/` · `intergrax/tools/providers/codecraft/`  
-**Last updated:** 2026-06-19 — interactive audit revalidation; **ECC-0…ECC-6 + S7–S11 + §6.1av Done (L3+)**
+**Last updated:** 2026-06-20 — **P2-ARCH-12** CodeCraft safety boundary; ECC-0…ECC-6 + S7–S11 + §6.1av Done (L3+)
 
 ---
 
@@ -315,6 +315,164 @@ Correlation: `craft_id` ↔ `sandbox_session_id` ↔ `task_id` ↔ `run_id` ↔ 
 - Iterations to success, static gate failure rate, exec vs generation time ratio, token cost per craft, HITL rate in supervised mode.
 - Emitted via ``codecraft.metrics_snapshot`` trace step and ``CodeCraftMetricsSnapshot.to_panel()`` (`runtime/codecraft/trace.py`).
 
-Canon cross-ref: [`OBSERVABILITY.md`](OBSERVABILITY.md) · [`TOOLS.md`](TOOLS.md) §Tool execution pipeline.
+Canon cross-ref: [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine) · [`TOOLS.md`](TOOLS.md) §Tool execution pipeline · [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) · [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §10 · [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md).
+
+---
+
+## CodeCraft Safety Boundary
+
+CodeCraft may synthesize, test and execute short-lived helper code **only** through approved sandbox, policy, observability and verification mechanisms.
+
+CodeCraft **MUST NOT** become a second autonomous runtime, private tool system or unrestricted code execution channel.
+
+ECC is a **controlled, auditable, sandboxed auxiliary mechanism** — not an alternate AgentEngine, Nexus loop, or agent-local subprocess runtime. Agents declare goals and invoke `codecraft.*` through `ToolRuntime`; the Harness owns orchestration, gating, execution substrate, verification and promotion boundaries.
+
+**Cross-refs:** [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §10 · [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md) · [`TOOLS.md`](TOOLS.md) · [`SKILLS.md`](SKILLS.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine) · [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) · [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger) · [`INTEGRATIONS.md`](INTEGRATIONS.md) · [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §21
+
+Implementation profile modes (`disabled`, `dry_run`, `assist_only`, `supervised`, `autonomous`) — §6.3 — map onto the governance-facing [execution modes](#execution-modes) below. When in doubt, treat **Lab** or **Supervised** as the safe default; **Governed production** is never implicit.
+
+---
+
+## Allowed CodeCraft actions
+
+CodeCraft **MAY**:
+
+- synthesize short-lived helper code for a bounded task,
+- execute helper code only in an approved sandbox or explicitly marked lab environment,
+- run deterministic tests for generated helpers,
+- refine helper code based on test failures,
+- return computed results to the runtime,
+- preserve trace evidence of generation, execution and validation,
+- request human review before risky execution or promotion,
+- propose promotion of a helper into a durable tool,
+- use CVL / validation before result consumption,
+- use security scanning where available,
+- operate in lab/test mode when clearly marked as non-production.
+
+---
+
+## Disallowed CodeCraft actions
+
+CodeCraft **MUST NOT**:
+
+- execute arbitrary code outside approved sandbox boundaries,
+- access secrets unless explicitly allowed by policy and never expose them in traces/prompts,
+- mutate repository files unless the task explicitly allows code modification through approved development workflow,
+- perform production side effects directly,
+- bypass ToolRuntime for agent-invokable side effects,
+- bypass PolicyEngine,
+- bypass RuntimeEvent / observability spine,
+- bypass CVL / validation where required,
+- create long-running background processes,
+- create private schedulers, queues or HTTP servers,
+- install dependencies without explicit approval/profile support,
+- promote generated code into durable tools automatically,
+- become a second agent runtime or orchestration engine,
+- use local subprocess execution as production sandbox,
+- describe CodeCraft as production-safe without maturity/evidence statement.
+
+---
+
+## Execution modes
+
+Governance-facing modes for operators, reviewers and Cursor. Map to `CodeCraftProfile.mode` and isolation settings — §6.2–§6.3.
+
+### Disabled
+
+CodeCraft is not available.
+
+### Lab
+
+CodeCraft may generate and execute helper code in a developer-controlled environment.
+No production workloads.
+No production secrets.
+No irreversible side effects.
+
+Typical profile mapping: `dry_run`, `assist_only`, or `supervised` with `isolation_tier=local` and non-production host profile.
+
+### Supervised
+
+CodeCraft may propose and test helper code, but risky execution or promotion requires human approval.
+
+Typical profile mapping: `supervised` with `require_hitl_before_exec=true`; promotion via explicit `codecraft.promote` only.
+
+### Governed production
+
+CodeCraft may run in production **only** when **all** conditions are met:
+
+- approved sandbox,
+- explicit CodeCraft profile,
+- policy approval,
+- observability coverage,
+- secret isolation,
+- filesystem/network limits,
+- CVL / validation,
+- rollback/kill behavior,
+- maturity statement using [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md).
+
+**Governed production is not the default.**
+
+Typical profile mapping: `autonomous` or `supervised` with `isolation_tier=container` or `cloud`, production `CodeCraftProfile`, and documented four-axis maturity — not `local` subprocess isolation alone.
+
+---
+
+## Sandbox requirements
+
+An approved CodeCraft sandbox **SHOULD** define:
+
+- filesystem boundaries,
+- network boundaries,
+- process/time limits,
+- memory/CPU limits,
+- dependency installation policy,
+- secret access policy,
+- allowed input/output channels,
+- artifact retention policy,
+- logging/redaction rules,
+- kill/timeout behavior,
+- reproducibility expectations,
+- audit evidence emitted through observability spine.
+
+A local subprocess is **not** sufficient as a production sandbox unless explicitly wrapped, constrained, audited and approved.
+
+See also §9 (Security and isolation) and [`INTEGRATIONS.md`](INTEGRATIONS.md) (`sandbox_host` substrate).
+
+---
+
+## Promotion boundary
+
+Generated helper code is **ephemeral by default** — scoped to `craft_id` and disposed unless explicitly promoted.
+
+Promotion into durable tool/catalog code requires:
+
+- explicit human or governance approval,
+- code review,
+- tests,
+- security review where applicable,
+- contract definition,
+- ToolRuntime compatibility,
+- documentation,
+- maturity/evidence statement,
+- traceability from generated helper to promoted artifact.
+
+CodeCraft **MUST NOT** silently expand the durable tool catalog. `EphemeralToolRegistry` entries remain task-scoped; global catalog changes follow the Tool Library process ([`TOOLS.md`](TOOLS.md)).
+
+---
+
+## Cursor review checklist
+
+Before adding or modifying CodeCraft behavior, Cursor must verify:
+
+- [ ] Is CodeCraft disabled, lab, supervised or governed production?
+- [ ] Is execution sandboxed?
+- [ ] Are filesystem, network, process and secret boundaries explicit?
+- [ ] Are generated artifacts ephemeral or proposed for promotion?
+- [ ] If promotion is involved, is human/governance approval required?
+- [ ] Are tests and validation required before result consumption?
+- [ ] Are RuntimeEvent / observability records preserved?
+- [ ] Are side effects routed through ToolRuntime where agent-invokable?
+- [ ] Does this avoid creating a second runtime, scheduler or tool system?
+- [ ] Is maturity stated using [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md)?
+- [ ] Does this avoid claiming production safety without evidence?
 
 ---

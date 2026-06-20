@@ -7,7 +7,20 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/plan/` satellites on demand).
 
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates ECP-PROD closeout).
+**Last updated:** 2026-06-20 — **P2-ARCH-11** ECP production boundary.
+
+---
+
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (ELASTIC_CAPACITY_AND_SCALING plan).
+
+- **Implement / audit default:** ECP phase registers · open P0/P1 capacity rows · skip closed scaling history unless cited
+- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
+- **Architecture hub:** [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../architecture/ELASTIC_CAPACITY_AND_SCALING.md) read-scope block only.
+- **Audit slice:** [`guides/audit_slices/ELASTIC_CAPACITY_AND_SCALING.md`](../guides/audit_slices/ELASTIC_CAPACITY_AND_SCALING.md).
+- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
 
 ---
 
@@ -21,7 +34,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | [`plan/plan/ELASTIC_CAPACITY_AND_SCALING_appendices.md`](plan/plan/ELASTIC_CAPACITY_AND_SCALING_appendices.md) | appendices |
 | [`plan/plan/ELASTIC_CAPACITY_AND_SCALING_audit_history.md`](plan/plan/ELASTIC_CAPACITY_AND_SCALING_audit_history.md) | audit history |
 
-> **Cursor context budget:** read this hub + **at most one** satellite per session.
+> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
 
 ---
@@ -139,5 +152,13 @@ Load **only** the satellite matching your task or cited gap ID.
 |----|-------------|--------|----------|--------|------------|
 | ECP-OBS.1 | **Capacity metrics** — `harness_scale_actions_total`, replica gauge | **Done** | High | `capacity/metrics.py` | `test_ecp_depth_gate.py` |
 | ECP-OBS.2 | **`CapacityScheduler`** — async cron driver | **Done** | **Critical** | `capacity/scheduler.py` | Async lifespan on lab host when enabled |
+
+---
+
+## Architecture doc alignment (P2-ARCH)
+
+| ID | Scope | Status |
+|----|-------|--------|
+| **P2-ARCH-11** | Clarify ECP production boundary and scaling governance | **Done** (2026-06-20) |
 
 ---

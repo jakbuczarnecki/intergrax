@@ -10,17 +10,29 @@ ROOT = Path(__file__).resolve().parents[1]
 BOOTSTRAP = ROOT / "docs" / "bootstrap"
 CURSOR_SETUP = ROOT / "docs" / "guides" / "CURSOR_TOKEN_SETUP.md"
 CURSORIGNORE = ROOT / ".cursorignore"
+H2_IGNORE_DIRS = (
+    "docs/architecture/arch/",
+    "docs/plan/plan/",
+)
 H2_IGNORE_PATHS = (
     "docs/guides/AGENT_CREATION_GUIDE.md",
+    "docs/guides/APPLICATION_CREATION_GUIDE.md",
     "docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md",
     "docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md",
     "docs/guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md",
+    "docs/guides/SYSTEM_INVARIANTS.md",
+    "docs/guides/MATURITY_TAXONOMY.md",
+    "docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md",
+    "docs/intergrax_runtime_architecture.md",
     "docs/plan/AUDIT_IDEAL_2026.md",
 )
 AGENT_INSTRUCTIONS = ROOT / "docs" / "guides" / "AGENT_INSTRUCTIONS.md"
 SYMBOL_INDEX = ROOT / "docs" / "guides" / "SYMBOL_INDEX.md"
 AGENTS_STUB = ROOT / "AGENTS.md"
 ITERATION_RULE = ROOT / ".cursor" / "rules" / "intergrax-iteration.mdc"
+PLAN_READ_SCOPE_MARKER = "## Cursor read scope (token budget)"
+PLAN_DIR = ROOT / "docs" / "plan"
+SKIP_PLAN_HUBS = frozenset({"AUDIT_IDEAL_2026.md", "IDEAL_HARNESS_L3.md"})
 
 SESSION_MARKER = "ONE_DOMAIN_ONE_CHAT"
 READ_BUDGET_MARKER = "READ_BUDGET"
@@ -51,6 +63,9 @@ def main() -> int:
         errors.append("missing .cursorignore")
     else:
         ignore = CURSORIGNORE.read_text(encoding="utf-8")
+        for path in H2_IGNORE_DIRS:
+            if path not in ignore:
+                errors.append(f".cursorignore must exclude satellite dir {path} (F4/G1)")
         for path in H2_IGNORE_PATHS:
             if path not in ignore:
                 errors.append(f".cursorignore must exclude bulky guide {path} (H2)")
@@ -88,6 +103,16 @@ def main() -> int:
         errors.append("intergrax-iteration.mdc must reference SYMBOL_INDEX.md (F5)")
     if O1_MARKER not in iteration or "terse default" not in iteration.lower():
         errors.append("intergrax-iteration.mdc must include O1 terse output policy")
+
+    plan_gen = ROOT / "scripts" / "generate_plan_read_scopes.py"
+    if not plan_gen.is_file():
+        errors.append("missing scripts/generate_plan_read_scopes.py (G1-E2)")
+    else:
+        for path in sorted(PLAN_DIR.glob("*.md")):
+            if path.name in SKIP_PLAN_HUBS:
+                continue
+            if PLAN_READ_SCOPE_MARKER not in path.read_text(encoding="utf-8"):
+                errors.append(f"{path.relative_to(ROOT)}: missing plan read-scope block (G1-E2)")
 
     agents_ref = ROOT / ".cursor" / "rules" / "intergrax-agents-reference.mdc"
     if agents_ref.is_file():

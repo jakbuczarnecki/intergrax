@@ -125,7 +125,7 @@ def code_entry_block(domain: str) -> str:
     if not entries:
         entries = (
             f"`docs/architecture/{domain}.md` — read-scope block only",
-            f"`docs/plan/{domain}.md` — plan hub only",
+            f"`docs/plan/{domain}.md` — read-scope block only",
             "`docs/guides/SYMBOL_INDEX.md` — symbol grep map",
         )
     lines = ["## Code entry (grep first — F5-B)", ""]
@@ -155,7 +155,7 @@ def render(domain: str, spec: dict[str, str]) -> str:
 | `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | {spec["ideal"]} |
 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | {spec["audit_map"]} |
 | `docs/guides/SYSTEM_INVARIANTS.md` | {spec["invariants"]} (grep IDs — do not read full file) |
-| `docs/plan/{domain}.md` | **Hub:** {spec["plan_hub"]} |
+| `docs/plan/{domain}.md` | **Read-scope:** {spec["plan_hub"]} |
 | `docs/architecture/{domain}.md` | {spec["architecture"]} |
 
 {code_entry_block(domain)}

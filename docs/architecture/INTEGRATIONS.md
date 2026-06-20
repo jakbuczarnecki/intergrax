@@ -32,14 +32,136 @@ Load **only** the satellite matching your task or cited §.
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
+**Related:**
 
-# 18. Slack / Teams / Communication Integration Philosophy
+| Document | Purpose |
+|----------|---------|
+| [`guides/SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) | Cross-layer MUST/MUST NOT rules — tool/integration invariants |
+| [`architecture/TOOLS.md`](TOOLS.md) | Agent-facing semantic operations |
+| [`architecture/SKILLS.md`](SKILLS.md) | Declarative tool composition packs |
+| [`architecture/NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) | Graph / routing / HITL / retries |
+| [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) | UnifiedTaskRunner, agent execution spine |
+| [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) | Application roster, profile, intake wiring |
+| [`guides/MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md) | Maturity claims vocabulary |
+| [`architecture/CODE_CRAFT.md`](CODE_CRAFT.md#codecraft-safety-boundary) | Ephemeral codegen sandbox substrate (`sandbox_host`); not agent-facing |
 
-Intergrax should support Slack and Teams as interaction surfaces.
+---
 
-This follows the Viktor-like idea where an AI worker can live inside organizational communication tools.
+## Integration Layer Contract
 
-Slack and Teams should be implemented as adapters.
+The **Integration Library** (`intergrax/integrations/`) is Intergrax’s **Tier-0** modular catalog of **backend and vendor adapters** — databases, queues, search APIs, vector indexes, cloud platforms, collaboration tools, and local services.
+
+Normative rules:
+
+- Integrations are **Tier-0 adapters** for external systems, infrastructure backends, vendor APIs and local services.
+- Integrations expose **backend-specific capabilities** to tools and platform services.
+- Integrations are **not agent-facing**.
+- Integrations are **not user-facing products**.
+- Integrations are **not orchestration engines**.
+- Integrations are **not memory engines**.
+- Integrations are **not context engines**.
+- Integrations are **not HITL systems**.
+- Integrations **must not** own agent lifecycle or application lifecycle.
+- **Elastic Capacity Plane** provisions infrastructure only through approved integration/deployment backends — see [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md#production-boundary).
+
+**Tools** are agent-facing semantic operations. **Applications** configure and wire integrations. **Agents never call integrations directly.**
+
+---
+
+## Responsibility boundary
+
+| Concern | Owner |
+|---|---|
+| Vendor SDK / protocol details | Integration |
+| Secrets and backend credentials access | Integration + policy/config |
+| Agent-facing semantic operation | Tool |
+| Tool invocation, policy, side-effect gateway | ToolRuntime |
+| Agent decision | Tier-2 Agent |
+| Graph / routing / HITL / retries | Nexus / runtime |
+| Application roster/profile/intake | Tier-3 Application |
+| LLM context assembly | ContextCompiler / ContextEngine |
+| Memory state | Memory services |
+| RAG retrieval orchestration | RAG service / catalog tools |
+| Observability events | RuntimeEventBus / [observability spine](OBSERVABILITY.md#observability-event-spine) — backend logs ≠ harness execution truth |
+| Capacity signal observation / scaling proposals | [ECP](ELASTIC_CAPACITY_AND_SCALING.md#production-boundary) |
+| Actual infrastructure mutation (scale/deploy) | Integration / platform deployment backend |
+
+---
+
+## Allowed integration responsibilities
+
+Integrations **MAY**:
+
+- wrap vendor SDKs or protocols,
+- normalize request/response transport details,
+- manage backend-specific authentication handoff,
+- expose typed low-level operations to tools/platform services,
+- translate backend errors into platform error types,
+- support health checks,
+- support capability discovery where appropriate,
+- provide low-level clients for platform-owned services,
+- handle retry only when it is backend/protocol-level and does not conflict with runtime retry policy.
+
+Integration retries are **R0 — Backend/protocol** layer — [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#retry-layers). Must not duplicate R1–R4 retries or hide semantic failures from the Attempt Ledger.
+
+---
+
+## Disallowed integration responsibilities
+
+Integrations **MUST NOT**:
+
+- be invoked directly by agents,
+- be invoked directly by Nexus graph nodes as side effects,
+- decide which agent should run,
+- manage global task lifecycle,
+- own orchestration loops,
+- own HITL approval,
+- own business/product decisions,
+- own prompt construction,
+- own LLM calls unless the integration itself is explicitly an LLM provider adapter under the LLM adapter layer,
+- write agent memory directly,
+- emit private trace pipelines outside the observability spine,
+- bypass ToolRuntime for agent-invokable side effects,
+- implement product-specific workflows.
+
+---
+
+## Integration access paths
+
+Correct access paths for integration use:
+
+### Agent-invokable side effects
+
+```text
+Agent -> Tool / Skill -> ToolRuntime -> Integration
+```
+
+### Application intake / external surface
+
+```text
+External system -> Integration adapter -> Tier-3 intake surface -> UnifiedTaskRunner.run_task()
+```
+
+### Platform service backend
+
+```text
+Platform service -> Integration adapter
+```
+
+**Examples:**
+
+- RAG service may use a vector database integration.
+- Memory service may use a database integration.
+- Observability sink may use OTEL/Sentry/log integration.
+- ToolRuntime may use Slack/Google/GitHub integration through a tool.
+
+---
+
+## Slack / Teams / collaboration adapters
+
+Intergrax supports Slack and Teams as **interaction surfaces** — examples of collaboration adapters, not the definition of the integration layer.
+
+Slack and Teams adapters **may** normalize external messages into tasks and send approved outputs back, but they **must not** own runtime orchestration.
 
 They may provide:
 
@@ -52,23 +174,17 @@ They may provide:
 - user context
 - channel context
 
-They should NOT own the runtime.
-
-Correct model:
+**Correct:**
 
 ```text
-Slack message
-    -> SlackAdapter
-    -> normalized Task
-    -> Nexus Runtime
-    -> Agent execution
-    -> Nexus final result
-    -> SlackAdapter sends response
+Slack event -> integration adapter -> application intake -> UnifiedTaskRunner.run_task()
+    -> Nexus Runtime -> Agent execution -> Nexus final result -> integration adapter sends response
 ```
 
-Incorrect model:
+**Incorrect:**
 
 ```text
+Slack bot -> direct agent call -> private memory -> direct tool execution
 Slack bot contains orchestration logic
 Slack bot directly manages agents
 Slack bot stores global task state
@@ -76,10 +192,24 @@ Slack bot stores global task state
 
 ---
 
+## Cursor review checklist
+
+Before adding or modifying an integration, Cursor must verify:
+
+- [ ] Is this truly an integration, not a tool, skill, agent or application?
+- [ ] Is the integration backend/vendor-facing rather than agent-facing?
+- [ ] Are side effects exposed to agents only through ToolRuntime?
+- [ ] Are secrets handled through approved config/policy mechanisms?
+- [ ] Does the integration avoid orchestration, HITL and product workflow ownership?
+- [ ] Are backend errors normalized?
+- [ ] Is observability routed through the platform spine ([`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine), [event ownership rules](OBSERVABILITY.md#event-ownership-rules))?
+- [ ] Is retry limited to protocol/backend concerns and compatible with runtime retry?
+- [ ] Is the integration wired through Tier-3 profile/config where required?
+- [ ] Are maturity claims expressed through [`guides/MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md)?
 
 ---
 
-# 46. Checklist For New Adapter Implementation
+## Adapter implementation checklist
 
 Before implementing a new adapter, answer:
 
@@ -93,12 +223,10 @@ Before implementing a new adapter, answer:
 7. What timeout/retry policy is needed?
 8. What data should be logged?
 9. What data must be protected?
-10. Which agents or runtime components may use it?
+10. Which tools or platform services may use it (not agents directly)?
 ```
 
 Adapters should be generic and reusable.
-
----
 
 ---
 
@@ -107,17 +235,22 @@ Adapters should be generic and reusable.
 
 **Last updated:** 2026-06-17 — **Full Harness LC** (re-validates M.7 P7 closeout); **185** slugs · M.7 P7 **Done** 18/18
 
-The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. Agents and applications wire backends **by category**, not by vendor SDK, so the same agent code can run in a local lab, a customer VPC, or a multi-cloud deployment.
+The **Integration Library** (`intergrax/integrations/`) is Intergrax’s modular catalog of external systems — databases, queues, search APIs, vector indexes, cloud platforms, and collaboration tools. See **Integration Layer Contract** above for normative tier boundaries. Applications wire backends **by category** via `IntegrationProfile`; agents consume backends **through catalog tools**, not by importing vendor adapters.
 
 **Related docs:**
 
 | Document | Purpose |
 |----------|---------|
-| [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) §7.1 | Architecture canon — tiers, contracts, registry rules |
-| [plan/INTEGRATIONS.md) Phase M | Phase status, backlog, delivery workflow |
-| [guides/AGENT_CREATION_GUIDE.md](guides/AGENT_CREATION_GUIDE.md) Appendix E | How agents vs applications use integrations |
+| [`guides/SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) | Cross-layer tool/integration invariants |
+| [`architecture/TOOLS.md`](TOOLS.md) | Agent-facing tools that compose these integrations |
+| [`architecture/SKILLS.md`](SKILLS.md) | Declarative tool composition packs |
+| [`architecture/NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) | Graph / routing / HITL / retries |
+| [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) | UnifiedTaskRunner execution spine |
+| [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) | Application profile and intake wiring |
+| [intergrax_runtime_architecture.md](../intergrax_runtime_architecture.md) §7.1 | Architecture canon — tiers, contracts, registry rules |
+| [plan/INTEGRATIONS.md](../plan/INTEGRATIONS.md) | Phase status, backlog, delivery workflow |
+| [guides/AGENT_CREATION_GUIDE.md](../guides/AGENT_CREATION_GUIDE.md) Appendix E | How agents vs applications use integrations |
 | [architecture/RAG.md](RAG.md) | RAG retrieval engine (consumes integration slugs) |
-| [architecture/TOOLS.md](architecture/TOOLS.md) | Agent-facing tools that compose these integrations |
 | Per-provider guides | `intergrax/integrations/providers/<category>/<slug>/USAGE.md` |
 | [../infra/README.md](../infra/README.md) | **Local Docker infrastructure** — compose profiles, manage scripts |
 | [../infra/PORTS.md](../infra/PORTS.md) | Host port matrix for integration tests |

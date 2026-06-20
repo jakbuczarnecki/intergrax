@@ -17,13 +17,13 @@
 | `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | Sections matching audit-map layers 11b |
 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | Layers 11b · maturity §5 |
 | `docs/guides/SYSTEM_INVARIANTS.md` | Grep SYS-INV-* IDs from audit dimensions only (grep IDs — do not read full file) |
-| `docs/plan/CODE_CRAFT.md` | **Hub:** Hub §6 · [`plan/plan/`](../plan/plan/) satellites on demand |
+| `docs/plan/CODE_CRAFT.md` | **Read-scope:** Hub §6 · [`plan/plan/`](../plan/plan/) satellites on demand |
 | `docs/architecture/CODE_CRAFT.md` | Read-scope block + TOC sections for layers 11b |
 
 ## Code entry (grep first — F5-B)
 
 - `docs/architecture/CODE_CRAFT.md` — read-scope block only
-- `docs/plan/CODE_CRAFT.md` — plan hub only
+- `docs/plan/CODE_CRAFT.md` — read-scope block only
 - `docs/guides/SYMBOL_INDEX.md` — symbol grep map
 
 ## Do not load unless cited

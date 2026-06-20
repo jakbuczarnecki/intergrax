@@ -12,6 +12,19 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (INTEGRATIONS plan).
+
+- **Implement / audit default:** Phase INT / H-INT hub queues · §6.1 open P0/P1 · M.6 expansion registers — satellite on demand
+- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
+- **Architecture hub:** [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) read-scope block only.
+- **Audit slice:** [`guides/audit_slices/INTEGRATIONS.md`](../guides/audit_slices/INTEGRATIONS.md).
+- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+
+---
+
 ## Phase H-INT-GRAPH — graph_store expansion (Planned)
 
 **Purpose:** New `graph_store` vendor slugs required before RAG adapters M-RAG.49–M-RAG.51.  
@@ -39,7 +52,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | [`plan/INTEGRATIONS_appendices.md`](plan/INTEGRATIONS_appendices.md) | appendices |
 | [`plan/INTEGRATIONS_audit_history.md`](plan/INTEGRATIONS_audit_history.md) | audit history |
 
-> **Cursor context budget:** read this hub + **at most one** satellite per session.
+> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
 
 ---
@@ -232,6 +245,14 @@ Wave H-INT-5 (enterprise):  M-P4.17 → M-P4.18 → M-P4.19 → M-P4.20 → M-P4
 | 1 | **INT-SPEECH-ARCH.1** | Docs/Code | P2 | **Done** | Canon sync — `speech_provider` is sole vendor path for `speech.*` tools; remove enum references from integration wiring docs | [`architecture/INTEGRATIONS.md`](../architecture/INTEGRATIONS.md) §Speech provider + MOD-SPEECH-ARCH gates green |
 
 Close **INT-SPEECH-ARCH.1** in the same PR wave as **MOD-SPEECH-ARCH.4** (wiring unification).
+
+---
+
+## Architecture doc alignment (P2-ARCH)
+
+| ID | Scope | Status |
+|----|-------|--------|
+| **P2-ARCH-06** | Clarify integration layer contract and access paths | **Done** (2026-06-20) |
 
 ---
 

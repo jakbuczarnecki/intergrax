@@ -1,14 +1,15 @@
 SESSION: ONE_DOMAIN_ONE_CHAT — prefer new chat per domain between pairs; no bulk doc reload.
-READ_BUDGET: plan hub + one satellite max; `@docs/guides/audit_slices/<DOMAIN>.md`; max 1 full read >5k tok/session.
+READ_BUDGET: `@docs/guides/audit_slices/<DOMAIN>.md`; plan hub §6 + arch read-scope + one satellite max; grep SYS-INV IDs only; max 1 full read >5k tok/session.
 OUTPUT_BUDGET: terse default (≤12 lines); full report only on operator request or milestone — AGENT_INSTRUCTIONS § Operator communication.
+# WARNING — HIGH TOKEN: batches 22 domains in one thread. Prefer docs/bootstrap/04_implement_plan_one_domain.txt (F3).
 Harness Architecture Audit — Mode B (implement open plan items, all 22 domain pairs).
 Canonical orchestrator: docs/audit/IMPLEMENT_ORCHESTRATOR.md
-Skim: docs/guides/SYSTEM_INVARIANTS.md
+Skim: grep SYS-INV IDs from audit slice — do not read full SYSTEM_INVARIANTS.md
 Progress: docs/audit_results/YYYY-MM-DD/progress.json (init: uv run python scripts/init_architecture_audit_run.py --date YYYY-MM-DD --mode implement_plan).
 Journal: docs/implementation-journal/ when behavior changes.
 Domain order (do not reorder): PLATFORM_FOUNDATION → UNIFIED_EXECUTION_RUNTIME → ORCHESTRATION → NEXUS_EXECUTION_FLOW → REASONING_AND_COGNITION → AGENT_CONTRACTS_AND_ASSEMBLY → LLM_ADAPTERS → TOOLS → CODE_CRAFT → SKILLS → INTEGRATIONS → RAG → MEMORY → CONTEXT_ENGINEERING → MODALITY → OBSERVABILITY → RELIABILITY_FAILURE_AND_HITL → CRITIC_VERIFICATION → ADAPTIVE_HARNESS_INTELLIGENCE → ELASTIC_CAPACITY_AND_SCALING → EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE → TIER3_APPLICATION_ENVIRONMENT.
 Open item rule: Status ≠ Done AND Priority column = P0 or P1 in docs/plan/<DOMAIN>.md backlog register. Wave headers "(P1)" do not qualify child rows — use the row Priority column only. Medium/Low/Planned-only rows are out of scope unless operator names a row id.
-Per domain: read docs/plan/<DOMAIN>.md + docs/architecture/<DOMAIN>.md; if no open P0/P1 → mark progress.json status skipped (verdict no_open_p0_p1), brief checkpoint, continue; else pick one coherent open P0/P1 item (one PR-sized slice); implement minimal diff; run domain gates/tests; mark plan row Done; journal entry if needed; update progress.json; brief checkpoint; continue to next domain.
+Per domain: read docs/plan/<DOMAIN>.md hub §6 + architecture read-scope block only; if no open P0/P1 → mark progress.json status skipped (verdict no_open_p0_p1), brief checkpoint, continue; else pick one coherent open P0/P1 item (one PR-sized slice); implement minimal diff; run domain gates/tests; mark plan row Done; journal entry if needed; update progress.json; brief checkpoint; continue to next domain.
 Iteration discipline: one domain = atomic unit — finish current domain (implement or skip) before next; no micro-pauses inside a domain; between domains continue without asking unless operator wrote pause or stop; do not ask "which domain next" — follow domain_order and progress.json current_domain; commits only on operator request.
 Rules: no fresh full audit; no Phase K / §6.3 without reprioritization; reuse Tier-0; safety fuse if plan needs architecture change not in canon — STOP, set domain blocked, report operator.
 When all domains completed or skipped: write results/<run_id>/RUN_SUMMARY.md; set completed_at and current_domain null in progress.json; run uv run python scripts/check_architecture_audit_run.py YYYY-MM-DD --require-complete.

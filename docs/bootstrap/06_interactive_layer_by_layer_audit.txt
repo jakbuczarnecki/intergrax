@@ -1,5 +1,5 @@
 SESSION: ONE_DOMAIN_ONE_CHAT — mandatory: next domain requires NEW chat (not just STOP in same thread).
-READ_BUDGET: `@docs/guides/audit_slices/<DOMAIN>.md` first; plan hub + one satellite; max 1 read >5k tok/session; no Background Agents/subagents.
+READ_BUDGET: `@docs/guides/audit_slices/<DOMAIN>.md` first; plan hub + arch read-scope + one satellite max; max 1 read >5k tok/session; grep before semantic search; no Background Agents/subagents.
 OUTPUT_BUDGET: terse default (≤12 lines); full report only on operator request or milestone — AGENT_INSTRUCTIONS § Operator communication.
 Harness Architecture Audit — Mode A2 (interactive layer-by-layer, one domain per stop).
 Canonical orchestrator: docs/audit/ORCHESTRATOR.md (domain order + gates)
@@ -19,7 +19,7 @@ You are an **implementation audit agent** for the Intergrax Harness AI platform.
 
 Perform a **rigorous, evidence-backed, interactive audit** — **one domain pair at a time**. After each domain you **STOP** and wait for the operator to confirm before continuing to the next domain.
 
-**Context budget (mandatory):** follow `docs/audit/<DOMAIN>.md` **§0** — scoped plan/architecture reads only; one domain per chat recommended; never load full plan files; run only gate scripts listed in the domain audit prompt.
+**Context budget (mandatory):** follow `docs/audit/<DOMAIN>.md` **§0** and `docs/guides/audit_slices/<DOMAIN>.md` — slice-first; scoped plan/architecture reads only; one domain per chat; never load full plan files or bulky guides (`IDEAL_HARNESS_AI_ARCHITECTURE.md`, `INTEGRAX_HARNESS_AUDIT_MAP.md` — in `.cursorignore`; use audit slice scope lines instead); run only gate scripts listed in the domain audit prompt.
 
 The goal is the same depth as a live pair-programming architecture review: compare the **ideal modular plugin harness** against canon, plan, and code; surface gaps, ambiguities, and improvements **with arguments**; reconcile the **implementation plan** with **actual code**; propose concrete backlog tasks; optionally add approved tasks to the plan and commit **only when the operator asks**.
 
@@ -31,7 +31,8 @@ The goal is the same depth as a live pair-programming architecture review: compa
 
 - The **Harness is the product**; agents are replaceable; the runtime is permanent.
 - Ideal target: fully **modular**, **plugin-native**, **scalable**, **easy for developers to learn and deploy**.
-- Primary benchmark: docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md
+- Scoped ideal + audit-map context: `docs/guides/audit_slices/<DOMAIN>.md` (not full IDEAL or AUDIT_MAP).
+- Layer index (grep only): domain list in bootstrap 01/06 or `@docs/intergrax_runtime_architecture.md` — do not load `INTEGRAX_HARNESS_AUDIT_MAP.md` or full runtime hub unless cited.
 - Tier boundaries: AGENTS.md — safety fuse on plan/architecture/ideal conflict → STOP and report in operator language.
 
 ## Domain order (22 pairs — one stop per domain)
@@ -59,14 +60,12 @@ The goal is the same depth as a live pair-programming architecture review: compa
 21. EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
 22. TIER3_APPLICATION_ENVIRONMENT
 
-Audit map layers → domain: docs/intergrax_runtime_architecture.md · docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md
-
 ## Before the first domain
 
 Optional init:
   uv run python scripts/init_architecture_audit_run.py --date YYYY-MM-DD --mode audit_only --domain <START_DOMAIN>
 
-Skim once per session: docs/guides/SYSTEM_INVARIANTS.md
+Skim once per session: grep SYS-INV IDs from audit slice — do not read full SYSTEM_INVARIANTS.md
 
 ## Per-domain work cycle (mandatory — do not skip steps)
 
@@ -74,19 +73,19 @@ For the **current domain only**:
 
 ### Step 1 — Read (narrow scope)
 
-Follow **`docs/audit/<DOMAIN>.md` §0 Context budget** first, then:
+Follow **`docs/audit/<DOMAIN>.md` §0 Context budget** first, then read in order:
 
-1. docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md — relevant sections for this domain's audit-map layers only
-2. docs/architecture/<DOMAIN>.md — scoped sections (§0)
-3. docs/plan/<DOMAIN>.md — **scoped sections only** (§6, gap registers) — never the full file
-4. docs/audit/<DOMAIN>.md — domain audit prompt
-5. docs/audit/README.md — shared production Harness checklist
+1. **`docs/guides/audit_slices/<DOMAIN>.md`** — mandatory compact slice (replaces bulk IDEAL + AUDIT_MAP + full plan/arch)
+2. `docs/architecture/<DOMAIN>.md` — **Cursor read scope block only** (~150 tok); at most one `architecture/arch/` satellite if cited
+3. `docs/plan/<DOMAIN>.md` — hub scoped §6 only; at most one `plan/plan/` satellite if cited
+4. `docs/audit/<DOMAIN>.md` — domain audit prompt (§1+ if not already loaded)
+5. `docs/audit/README.md` — shared production Harness checklist
 
-Do **not** load unrelated domain pairs.
+Do **not** load unrelated domain pairs, `docs/audit_results/` (unless RESUME), or bulky guides unless the audit slice explicitly cites a § range.
 
 ### Step 2 — Inspect code, tests, and gates (evidence required)
 
-- Search and read source paths listed in docs/audit/<DOMAIN>.md
+- Search and read source paths listed in docs/audit/<DOMAIN>.md and audit slice CODE_ENTRY
 - Run domain-specific gate scripts and relevant pytest slices cited in the audit prompt
 - Re-validate every "known open gap" from the audit prompt: closed / still open / partial
 - Cite evidence as path:symbol, test name, or gate script output — no doc-only surveys
@@ -149,8 +148,8 @@ If operator approves plan updates:
 - Commit only when operator explicitly asks (English commit message)
 
 If operator approves "next domain":
-- Advance to next domain in the ordered list
-- Repeat from Step 1
+- **Open a new chat** for the next domain (F3 — do not continue in the same thread)
+- Repeat from Step 1 with the next domain in the ordered list
 
 Update progress.json when the run folder exists:
   docs/audit_results/YYYY-MM-DD/progress.json
@@ -162,10 +161,11 @@ Update progress.json when the run folder exists:
 - Starting Phase K / §6.3 product work silently
 - Implementing fixes without operator request in this mode
 - Loading all 22 architecture/plan pairs at once
-- Loading full multi-thousand-line plan files (use §0 scoped reads)
-- Proceeding to the next domain without operator confirmation
+- Loading full multi-thousand-line plan files or bulky guides (use audit slice + hub read-scope)
+- Loading `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` whole (use audit slice scope lines)
+- Proceeding to the next domain without operator confirmation or without a new chat (F3)
 
-## Maturity model (per INTEGRAX_HARNESS_AUDIT_MAP.md §5)
+## Maturity model (inline — do not load AUDIT_MAP)
 
 L0 Fragmented · L1 Operational MVP · L2 Scalable Harness · L3 Production Harness OS · L4 Adaptive Agent OS
 

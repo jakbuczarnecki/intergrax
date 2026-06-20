@@ -7,7 +7,7 @@
 **Audit layers:** 30 (Operational Excellence) · cross-ref 9 (orchestration backpressure), 21 (observability SLIs)  
 **Audit instruction:** [`audit/ELASTIC_CAPACITY_AND_SCALING.md`](../audit/ELASTIC_CAPACITY_AND_SCALING.md)  
 **ADR:** [ADR-SCALE-001](../adr/entries/2026-06-08/ADR-SCALE-001.md)  
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates ECP-PROD); honest maturity **Done**
+**Last updated:** 2026-06-20 — **P2-ARCH-11** ECP production boundary; honest maturity **Done**
 
 ---
 
@@ -39,6 +39,13 @@ Load **only** the satellite matching your task or cited §.
 ## Table of contents
 
 1. [Purpose](#1-purpose)
+   - [Production Boundary](#production-boundary)
+   - [ECP responsibility boundary](#ecp-responsibility-boundary)
+   - [Allowed ECP actions](#allowed-ecp-actions)
+   - [Disallowed ECP actions](#disallowed-ecp-actions)
+   - [Production readiness statement](#production-readiness-statement)
+   - [Scaling action governance](#scaling-action-governance)
+   - [Cursor review checklist](#cursor-review-checklist)
 2. [Problem statement](#2-problem-statement)
 3. [Terminology](#3-terminology)
 4. [Design principles](#4-design-principles)
@@ -79,7 +86,15 @@ ECP completes the **Observe → Evaluate → Provision** loop for **compute and 
 
 **Core invariant:** Capacity mutations MUST flow through **typed `ScalingAction` contracts** and **Integration Library / ToolRuntime** — never ad-hoc SDK calls from `NexusLoop` or agents.
 
-### 1.1 Production positioning (honest)
+## Production Boundary
+
+Elastic Capacity Plane manages **infrastructure capacity signals and scaling actions**. It **MUST NOT** decide agent topology, domain execution strategy, graph semantics, HITL policy, tool permissions or product workflow behavior.
+
+ECP is the Harness **capacity architecture and governed scaling scaffold** — not an agent planner, graph scheduler, orchestration brain, business strategy layer, or drop-in replacement for Kubernetes HPA, Celery autoscaling or cloud-native autoscaling unless explicitly implemented, tested and documented as such.
+
+**Cross-refs:** [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §9 · [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §12.2 (S8) · [`ORCHESTRATION.md`](ORCHESTRATION.md) · [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md#governance-boundary) · [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine) · [`INTEGRATIONS.md`](INTEGRATIONS.md#integration-layer-contract) · [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md)
+
+### Honest maturity snapshot
 
 | Claim | Accurate today? |
 |-------|-----------------|
@@ -96,7 +111,103 @@ ECP completes the **Observe → Evaluate → Provision** loop for **compute and 
 | **ECP-DEPTH** | Contracts, `runtime/capacity/` scaffold, gate tests, disabled-by-default wiring | **Done** (harness **L2** — architecture + scaffold) |
 | **ECP-PROD** | Live signal bridge, HITL queue, K8s REST/Celery adapters, E2E gate | **Done** (target **L3** with operator enablement) |
 
-Do **not** market ECP-DEPTH as a finished production autoscaling system. Operators should continue to rely on **K8s HPA**, **Celery autoscale**, and manual runbooks until **ECP-PROD** closes the gap register in §22.
+Do **not** market ECP-DEPTH as a finished production autoscaling system. Operators should continue to rely on **K8s HPA**, **Celery autoscale**, and manual runbooks until maturity and evidence statements justify otherwise ([Production readiness statement](#production-readiness-statement)).
+
+---
+
+## ECP responsibility boundary
+
+| Concern | Owner |
+|---|---|
+| Capacity signal observation | ECP / observability / metrics |
+| Worker/runner capacity recommendation | ECP |
+| ScalingAction contract | ECP |
+| Actual infrastructure mutation | Integration / platform deployment backend |
+| Graph topology | Nexus / orchestration |
+| Agent selection | Nexus / routing policy |
+| Agent local step behavior | AgentEngine / Tier-2 agent |
+| Tool side-effect execution | ToolRuntime |
+| Product workflow behavior | Tier-3 application + Tier-2 agents |
+| Policy/HITL boundaries | Runtime policy + Nexus/HITL |
+| Cost/latency evidence | Observability / metrics / AHI where applicable |
+
+---
+
+## Allowed ECP actions
+
+ECP **MAY**:
+
+- observe capacity-related metrics,
+- observe queue depth / runner saturation / worker availability if exposed,
+- recommend scaling up or down,
+- emit typed `ScalingAction` proposals,
+- apply scaling actions only through approved integration/backend mechanisms when explicitly enabled,
+- support backpressure decisions where architecture allows,
+- report capacity limits,
+- report cost/latency tradeoffs,
+- integrate with observability and deployment backends,
+- provide evidence for manual or governed scaling decisions.
+
+---
+
+## Disallowed ECP actions
+
+ECP **MUST NOT**:
+
+- decide which agent should handle a task,
+- decide graph topology,
+- modify Nexus plans,
+- modify agent contracts,
+- change ToolProfiles or tool permissions,
+- alter HITL boundaries,
+- bypass runtime policy,
+- bypass observability,
+- directly call cloud/vendor SDKs outside approved integrations,
+- silently mutate production deployment capacity without explicit configuration/governance,
+- claim production autoscaling readiness without maturity/evidence statement,
+- replace Kubernetes HPA, Celery autoscaling or cloud-native autoscaling unless explicitly implemented, tested and documented as such.
+
+---
+
+## Production readiness statement
+
+ECP should be treated as **capacity architecture and governed scaling scaffold** unless implementation, tests and deployment evidence prove otherwise.
+
+For production deployments:
+
+- use existing proven infrastructure autoscaling mechanisms where available,
+- use ECP as observability/recommendation/governance layer unless explicitly enabled,
+- do not advertise ECP as production autoscaler unless Production readiness is **P4** or higher and Evidence maturity is **E4** or higher,
+- external enterprise claims require **P5/E5** according to [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md).
+
+---
+
+## Scaling action governance
+
+- Scaling actions must be typed and traceable.
+- Scaling actions must preserve correlation to capacity signals and triggering evidence.
+- Production scaling mutations require explicit configuration or governance approval.
+- Cost-impacting scaling should include budget/cost guardrails where available.
+- Scale-down decisions must consider in-flight work and graceful drain semantics.
+- Scaling failures must be visible through `RuntimeEvent` / observability spine.
+- Any automatic production scaling mode must define rollback or emergency disable behavior.
+
+---
+
+## Cursor review checklist
+
+Before adding or modifying ECP behavior, Cursor must verify:
+
+- Is this capacity management, not orchestration?
+- Does this change agent topology, routing or graph semantics? If yes, it does not belong to ECP.
+- Is the scaling action typed?
+- Is the triggering evidence traceable?
+- Is production auto-scaling explicitly enabled?
+- Are infrastructure mutations routed through approved integrations/deployment backends?
+- Are cost/budget implications considered?
+- Are scale-down and in-flight work risks considered?
+- Is maturity stated using [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md)?
+- Does the change avoid claiming HPA/Celery/cloud autoscaler equivalence without evidence?
 
 ---
 

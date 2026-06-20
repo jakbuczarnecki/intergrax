@@ -234,8 +234,8 @@ Full local suite: `scripts\test.bat unit` (Windows) or equivalent `uv run pytest
 | Path | Contents |
 |------|----------|
 | `docs/intergrax_runtime_architecture.md` | Sole `docs/` root file — hub indexing 22 domain pairs |
-| `docs/architecture/` | Domain architecture canon (21 files) |
-| `docs/plan/` | Domain implementation plans (21 files, 1:1 with architecture) |
+| `docs/architecture/` | Domain architecture canon (22 files) |
+| `docs/plan/` | Domain implementation plans (22 files, 1:1 with architecture) |
 | `docs/guides/` | Strategy, ideal model, audit map, authoring guides |
 | `../../intergrax/runtime/nexus/` | Nexus Agent OS core |
 | `../../intergrax/runtime/nexus/orchestration/` | Intake, planning, graph, HITL runners |

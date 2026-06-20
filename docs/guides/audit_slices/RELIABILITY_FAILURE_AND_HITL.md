@@ -17,13 +17,13 @@
 | `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | Sections matching audit-map layers 22 |
 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | Layers 22 · maturity §5 |
 | `docs/guides/SYSTEM_INVARIANTS.md` | Grep SYS-INV-* IDs from audit dimensions only (grep IDs — do not read full file) |
-| `docs/plan/RELIABILITY_FAILURE_AND_HITL.md` | **Hub:** Hub §6 · [`plan/plan/`](../plan/plan/) satellites on demand |
+| `docs/plan/RELIABILITY_FAILURE_AND_HITL.md` | **Read-scope:** Hub §6 · [`plan/plan/`](../plan/plan/) satellites on demand |
 | `docs/architecture/RELIABILITY_FAILURE_AND_HITL.md` | Read-scope block + TOC sections for layers 22 |
 
 ## Code entry (grep first — F5-B)
 
 - `docs/architecture/RELIABILITY_FAILURE_AND_HITL.md` — read-scope block only
-- `docs/plan/RELIABILITY_FAILURE_AND_HITL.md` — plan hub only
+- `docs/plan/RELIABILITY_FAILURE_AND_HITL.md` — read-scope block only
 - `docs/guides/SYMBOL_INDEX.md` — symbol grep map
 
 ## Do not load unless cited

@@ -39,6 +39,10 @@ Every meaningful runtime transition MUST emit a `RuntimeEvent`.
 
 Events are the **primary audit and orchestration signal**. Hooks, observability, policy, and recovery subscribe to events — they MUST NOT rely on hidden callbacks inside agents.
 
+**Event spine canon:** [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine) — signal-plane boundaries, [event ownership rules](OBSERVABILITY.md#event-ownership-rules), [required correlation fields](OBSERVABILITY.md#required-correlation-fields), [Cursor review checklist](OBSERVABILITY.md#cursor-review-checklist).
+
+**CodeCraft canon:** [`CODE_CRAFT.md`](CODE_CRAFT.md#codecraft-safety-boundary) — ephemeral codegen orchestration through ToolRuntime; not a second agent runtime.
+
 ### 42.1.1 RuntimeEvent Contract
 
 ```text
@@ -621,7 +625,7 @@ AutonomyLevel:
 
 **Events:** `AUTONOMY_LEVEL_SET`, `AUTONOMY_LEVEL_CHANGED` on `ops:governance` channel.
 
-**Full model:** [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) §35.
+**Full model:** [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) §35 · **Attempt Ledger / retry layers:** [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger) (R0–R4, stop reasons).
 
 **Implementation coverage (2026-06-09):** runtime enforcement **Done** (REL-ADV). **HTTP mid-run setter** is lab-only (`harness_task_routes`); see [`ORCHESTRATION.md`](ORCHESTRATION.md) §59.4 · [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) §23.7.
 
@@ -751,6 +755,8 @@ Terminal:
     PolicyEngine (unresolved interrupts) → REQUIRE_HUMAN or FAIL
     CVL final verification if require_critic_on_completion
 ```
+
+**Verification safety:** L0 / L1 / L2 authority, high-risk side-effect rules, and disallowed patterns — [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) · [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §8
 
 #### What is explicitly not a guardrail layer
 

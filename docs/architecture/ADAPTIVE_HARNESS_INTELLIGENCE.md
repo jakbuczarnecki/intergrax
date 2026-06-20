@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** L4 AHI  
 **Audit instruction:** [`audit/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../audit/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates W-ADAPT); **70/70 Done**
+**Last updated:** 2026-06-20 — **P2-ARCH-10** AHI governance boundary; **Full Harness LC** (re-validates W-ADAPT); **70/70 Done**
 
 ### L4 Frozen cross-domain index (AHI-MAINT-04)
 
@@ -62,7 +62,14 @@ Load **only** the satellite matching your task or cited §.
 13. [Process pattern intelligence](#13-process-pattern-intelligence)
 14. [Integration with existing Intergrax subsystems](#14-integration-with-existing-intergrax-subsystems)
 15. [Tier placement and dependency rules](#15-tier-placement-and-dependency-rules)
-16. [Security, governance, and human-in-the-loop](#16-security-governance-and-human-in-the-loop)
+16. [Security, governance, and human-in-the-loop](#16-security-governance-and-human-in-the-loop) *(planned — see [Governance Boundary](#governance-boundary))*
+28. [Governance Boundary](#governance-boundary)
+29. [Allowed AHI actions](#allowed-ahi-actions)
+30. [Disallowed AHI actions](#disallowed-ahi-actions)
+31. [AHI change lifecycle](#ahi-change-lifecycle)
+32. [Change risk classes](#change-risk-classes)
+33. [Production auto-apply rule](#production-auto-apply-rule)
+34. [Cursor review checklist](#cursor-review-checklist)
 17. [Data contracts (Pydantic reference)](#17-data-contracts-pydantic-reference)
 18. [End-to-end flow diagrams](#18-end-to-end-flow-diagrams)
 19. [Phased implementation roadmap — Phase W-ADAPT](#19-phased-implementation-roadmap--phase-w-adapt)
@@ -734,5 +741,167 @@ Maps 1:1 to existing `AdaptiveLoopKind` enum.
 | **Default authority** | `OBSERVE_ONLY` |
 | **Max iterations** | 20 (existing gate allows higher for this kind) |
 | **Existing hook** | `prompt_regression_suite.py`, `evaluation_registry_trends.py` |
+
+---
+
+## Governance Boundary
+
+Adaptive Harness Intelligence (AHI) is a **controlled mechanism for observation, proposal, and evaluation** of harness changes — not an autonomous self-modifying runtime.
+
+**Normative rule:** Adaptive Harness Intelligence may observe, analyze, recommend and evaluate changes. It **MUST NOT** silently mutate production prompts, routing, policies, profiles, retrievers, critic thresholds or tool-selection behavior without explicit governance approval.
+
+AHI extends the laboratory evidence discipline (`ExperimentSession` → KEEP/DISCARD) into production learning. Every recommendation or applied change must remain **versioned, gated, rollback-ready, and traceable** through the observability spine.
+
+**Cross-refs:** [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §9 · [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §12.2 (S8) · [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md#production-boundary) · [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) · [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger) · [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine) · [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md)
+
+---
+
+## Allowed AHI actions
+
+AHI **MAY**:
+
+- observe runtime outcomes,
+- analyze traces, events, failures, costs, latencies and quality signals,
+- detect recurring execution patterns,
+- propose bounded configuration changes,
+- propose prompt/profile/routing adjustments,
+- propose context ranking or retriever-selection changes,
+- propose critic threshold changes,
+- simulate or evaluate candidate changes offline,
+- run shadow evaluation where explicitly enabled,
+- generate governance-ready change proposals,
+- recommend canary rollout,
+- recommend rollback,
+- produce evidence reports.
+
+---
+
+## Disallowed AHI actions
+
+AHI **MUST NOT**:
+
+- silently mutate production prompts,
+- silently mutate production routing,
+- silently mutate `RuntimePolicyBundle` or equivalent policy profiles,
+- silently change critic thresholds,
+- silently change retriever selection,
+- silently change tool permissions or `ToolProfiles`,
+- silently change Tier-3 application rosters,
+- bypass maturity/evidence requirements,
+- bypass HITL/governance approval,
+- bypass `RuntimeEvent` / observability spine,
+- treat correlation as causation without evidence,
+- optimize for cost or latency at the expense of safety/policy,
+- self-promote target architecture to production-ready implementation,
+- auto-apply high-risk changes without explicit product/governance decision.
+
+---
+
+## AHI change lifecycle
+
+Every AHI-driven or AHI-recommended change follows this lifecycle:
+
+1. **Observe** — collect signals from runs, traces, eval, cost, HITL.
+2. **Detect** — identify recurring patterns, regressions, or optimization opportunities.
+3. **Propose** — emit bounded `AdaptiveLoopProposal` / profile version draft.
+4. **Evaluate** — offline simulation, shadow eval, or regression pre-check.
+5. **Classify risk** — assign low / medium / high / critical (see [Change risk classes](#change-risk-classes)).
+6. **Collect evidence** — link to `HarnessOutcomeSignal`, eval registry, capability graph impact.
+7. **Request governance approval** — human gate, ops workflow, or explicit product decision.
+8. **Shadow / canary if approved** — traffic shift within envelope limits only.
+9. **Apply only through approved configuration/profile mechanisms** — `ProfileVersionStore` pointer swap; no ad-hoc runtime mutation.
+10. **Monitor** — `VerificationLoop` over SLO window.
+11. **Roll back if needed** — restore previous profile version on failure.
+12. **Record outcome** — persist proposal ID, version lineage, utility delta.
+
+**Traceability rule:** Every AHI-applied or AHI-recommended change must be traceable through the observability spine and must preserve enough evidence to explain why the change was proposed.
+
+---
+
+## Change risk classes
+
+### Low risk
+
+**Examples:**
+
+- documentation recommendation,
+- dashboard suggestion,
+- non-production evaluation,
+- lab-only profile recommendation.
+
+May be proposed freely. Still requires trace/evidence if recorded as AHI output.
+
+### Medium risk
+
+**Examples:**
+
+- prompt/profile recommendation for controlled environment,
+- retriever ranking proposal,
+- non-critical cost/latency tuning,
+- canary candidate.
+
+Requires owner review before production use.
+
+### High risk
+
+**Examples:**
+
+- production policy change,
+- tool permission change,
+- HITL boundary change,
+- critic threshold relaxation,
+- routing change affecting high-risk workflows,
+- memory/RAG source trust change.
+
+Requires explicit governance approval, evidence, rollback plan and production readiness statement ([`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md)).
+
+### Critical risk
+
+**Examples:**
+
+- automatic side-effect authorization changes,
+- high-risk irreversible workflow changes,
+- compliance/legal approval bypass,
+- production auto-apply of safety-related behavior.
+
+Must not be auto-applied. Requires human/authoritative approval and policy-level authorization.
+
+---
+
+## Production auto-apply rule
+
+**Production auto-apply is disabled by default.**
+
+It may be enabled only when **all** conditions are met:
+
+- explicit product/governance decision,
+- bounded change type,
+- maturity statement using [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md),
+- evidence threshold,
+- rollback plan,
+- observability coverage,
+- policy approval,
+- canary or shadow validation where applicable,
+- owner assigned.
+
+If any condition is missing, AHI may only **propose**, not **apply**.
+
+---
+
+## Cursor review checklist
+
+Before adding or modifying AHI behavior, Cursor must verify:
+
+- [ ] Is this observe/propose/evaluate, or does it apply changes?
+- [ ] If it applies changes, is auto-apply explicitly approved?
+- [ ] What risk class is the change?
+- [ ] Is there evidence for the recommendation?
+- [ ] Is the maturity level stated using [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md)?
+- [ ] Is there a rollback path?
+- [ ] Are `RuntimeEvent` / observability records preserved?
+- [ ] Does this affect prompts, routing, policy, tools, retrievers, memory, critic thresholds or HITL boundaries?
+- [ ] Could this weaken safety, evidence, policy or human review?
+- [ ] Is the change applied only through approved profile/config mechanisms?
+- [ ] Does this avoid self-modifying runtime behavior?
 
 ---

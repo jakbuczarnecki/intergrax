@@ -8,6 +8,19 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (NEXUS_EXECUTION_FLOW plan).
+
+- **Implement / audit default:** §6.1 FLOW maintenance · open P0/P1 rows · Phase AUDIT-IDEAL gap table. Historical flow registers — [`plan/plan/`](plan/plan/) satellite on demand
+- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
+- **Architecture hub:** [`architecture/NEXUS_EXECUTION_FLOW.md`](../architecture/NEXUS_EXECUTION_FLOW.md) read-scope block only.
+- **Audit slice:** [`guides/audit_slices/NEXUS_EXECUTION_FLOW.md`](../guides/audit_slices/NEXUS_EXECUTION_FLOW.md).
+- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+
+---
+
 ## Satellite registers (read on demand)
 
 Large historical registers moved out of the hub to reduce Cursor context use.
@@ -17,7 +30,7 @@ Load **only** the satellite matching your task or cited gap ID.
 |-----------|----------|
 | [`plan/NEXUS_EXECUTION_FLOW_appendices.md`](plan/NEXUS_EXECUTION_FLOW_appendices.md) | appendices |
 
-> **Cursor context budget:** read this hub + **at most one** satellite per session.
+> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
 
 ---
@@ -101,6 +114,17 @@ Load **only** the satellite matching your task or cited gap ID.
 **Suggested PR order:** none — §6.1aw queue closed (2026-06-19).
 
 **Explicitly excluded:** UC-6 production research agents; FLOW-8 / FLOW-GAP-20 product hosts — [§6.3](../plan/PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only).
+
+### 6.1ax Harness implementation queue — Nexus scenario production status (closed)
+
+**Source:** Maturity taxonomy rollout — [`guides/MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md) · architecture §12.2  
+**Priority ladder:** **Band 1** (§6.1) — docs only; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **P2-ARCH-04** | Docs | P2 | **Done** | Add Nexus scenario production status matrix (S1–S8) with four-axis A/I/P/E mapping | Architecture §12.2; cross-refs MATURITY_TAXONOMY + SYSTEM_INVARIANTS; legacy §12.1 labels preserved |
+
+**Suggested PR order:** none — §6.1ax queue closed (2026-06-20).
 
 ### 6.1ak Harness implementation queue — Critic & Verification Layer (closed)
 

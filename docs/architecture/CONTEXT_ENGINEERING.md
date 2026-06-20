@@ -514,3 +514,74 @@ Each step **MUST** emit diagnostics: `degradation_step`, `bytes_removed`, `fragm
 **CE-10.3** (CE-FMT-1 tag classification in `classify_candidates`) **Done** — legacy string heuristics remain fallback for non-tagged injections.
 
 ---
+
+## 12. Context Path Unification
+
+**Normative rule (production):** For production execution, all LLM-facing context **SHOULD** be assembled through `ContextCompiler` / `ContextEngine` or an explicitly approved equivalent context assembly path.
+
+**Normative rule (new code):** New production code **MUST NOT** introduce a new ad-hoc prompt/context assembly path unless this architecture document explicitly approves it and defines its relationship to `ContextCompiler` / `ContextEngine`.
+
+Parallel ad-hoc paths — agent-local prompt building, UAEP/session prompt assembly without compiler, direct history concatenation, raw messages passed directly to `LLMAdapter`, test/lab shortcuts, tool/agent-specific prompt fragments — create drift risk: production LLM calls may bypass `MemoryView`, RAG provenance, policy, budget and observability.
+
+**Cross-refs:** [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) §5 · [`AGENT_AUTHOR_MINIMAL_PATH.md`](../guides/AGENT_AUTHOR_MINIMAL_PATH.md) · [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §17 · [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) · [`MEMORY.md`](MEMORY.md) · [`RAG.md`](RAG.md) · [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md#governance-boundary) (L4 adaptive ranking — observe/propose only by default)
+
+### 12.1 Approved context paths
+
+| Path | Role | Notes |
+|------|------|-------|
+| **`ContextCompiler` / `ContextEngine`** | **Canonical production path** | Collect → rank → budget → format → validate → emit; see §7–§11 |
+| **Prompt Registry / approved prompt mechanism** | Source of reusable prompt **fragments** | `SystemInstructionsProvider`; **not** a full replacement for context compilation |
+| **`MemoryView` / approved memory services** | Memory **access** path | Session, LTM, task KV reads; CE consumes via `MemoryContextProvider` |
+| **RAG service / catalog tools** | Knowledge **retrieval** path | `rag.retrieve` and Nexus retrieval steps; CE consumes via `RagContextProvider` |
+| **Test fixtures / lab shortcuts** | Non-production only | Allowed when explicitly marked **test** or **lab**; **MUST NOT** become production paths |
+
+### 12.2 Disallowed context paths
+
+Production agents and runtime components **MUST NOT**:
+
+- concatenate unbounded conversation history directly into LLM messages,
+- query vector stores directly from agents,
+- read arbitrary memory stores directly from agents,
+- bypass `ContextCompiler` for production LLM context,
+- bypass policy / budget / redaction / provenance controls,
+- build private prompt pipelines inside agents,
+- send raw tool outputs to LLM without approved filtering / formatting,
+- treat Prompt Registry as a full context engine,
+- treat RAG retrieval as memory,
+- treat trace logs as memory or user context.
+
+### 12.3 Transitional / legacy paths
+
+Some older or lab paths may still assemble prompts directly (e.g. UAEP `build_context` hybrid, ACP catalog-tool collect before per-step `assemble()`, direct `messages` to `LLMAdapter` in tests).
+
+They are allowed **only** when explicitly marked as:
+
+- **lab**, **test**, **migration**, **compatibility**, or **non-production**.
+
+Any such path **SHOULD** have:
+
+| Field | Requirement |
+|-------|-------------|
+| **Owner** | Team or domain responsible |
+| **Reason** | Why the path exists |
+| **Maturity status** | Per [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md) |
+| **Migration target** | Canonical CE path or approved equivalent |
+| **Known risks** | Budget, provenance, policy bypass, etc. |
+
+Do **not** remove legacy paths in this document — register and constrain them until migration completes.
+
+### 12.4 Cursor review checklist
+
+Before adding or modifying any LLM call, Cursor must verify:
+
+- [ ] Is the context assembled by `ContextCompiler` / `ContextEngine` or an approved equivalent?
+- [ ] Are prompt fragments coming from Prompt Registry or an approved prompt source?
+- [ ] Is memory accessed through `MemoryView` / approved memory services?
+- [ ] Is RAG accessed through approved RAG services / tools?
+- [ ] Is provenance preserved for retrieved fragments?
+- [ ] Are budgets applied before model invocation?
+- [ ] Are secrets and protected data redacted before persistence and model calls where required?
+- [ ] Is this path **production**, **lab**, **test**, or **compatibility**?
+- [ ] If not canonical, is the path explicitly documented as transitional (§12.3)?
+
+---
