@@ -43,6 +43,7 @@ Load **only** the satellite matching your task or cited §.
 | [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) | UnifiedTaskRunner, agent execution spine |
 | [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) | Application roster, profile, intake wiring |
 | [`guides/MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md) | Maturity claims vocabulary |
+| [`architecture/CODE_CRAFT.md`](CODE_CRAFT.md#codecraft-safety-boundary) | Ephemeral codegen sandbox substrate (`sandbox_host`); not agent-facing |
 
 ---
 

@@ -168,7 +168,17 @@ Normative rules that **MUST** hold across Tier-0..3, Nexus, agents, tools, conte
 
 **Canon:** [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md#governance-boundary) · [`ELASTIC_CAPACITY_AND_SCALING.md`](../architecture/ELASTIC_CAPACITY_AND_SCALING.md#production-boundary)
 
-## 10. Documentation authority invariants
+## 10. CodeCraft invariants
+
+- CodeCraft **MUST NOT** become a second runtime or unrestricted code execution channel.
+- Generated helper code is **ephemeral by default**.
+- Production CodeCraft execution requires approved sandbox, policy, observability and validation.
+- Generated code **MUST NOT** be promoted into durable tools without explicit review, tests and governance approval.
+- CodeCraft **MUST NOT** bypass ToolRuntime, PolicyEngine, CVL or RuntimeEventBus.
+
+**Canon:** [`CODE_CRAFT.md`](../architecture/CODE_CRAFT.md#codecraft-safety-boundary)
+
+## 11. Documentation authority invariants
 
 - `docs/intergrax_runtime_architecture.md` is the hub, not the detailed owner of every subsystem.
 - Each `docs/architecture/*.md` file is the source of truth for its own subsystem.
@@ -283,6 +293,11 @@ Format: **ID · Layer · Rule · Canon · CI (if enforced)**
 | **SYS-INV-28** | Tier-2 | Side effects and diagnostics go **through the runtime bus** — agents do not publish to external queues directly. | UAEP §42.1 · §42.24 | review |
 | **SYS-INV-29** | Tier-3 | **`ApplicationEnvironmentProfile`** is the composition root — no ad-hoc `getattr` wiring in hosts. | APP **APP-INV-06** · **APP-INV-10** | `check_harness_no_getattr.py` |
 | **SYS-INV-30** | Tier-1 | **`AdaptationEngine.propose()` never** runs inside `NexusLoop` hot path. | [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) | review |
+| **SYS-INV-31** | Tier-1 | CodeCraft **never** becomes a second runtime or unrestricted code execution channel. | [`CODE_CRAFT.md`](../architecture/CODE_CRAFT.md#codecraft-safety-boundary) | review |
+| **SYS-INV-32** | Tier-1 | Generated helper code is **ephemeral by default** — no silent durable catalog expansion. | [`CODE_CRAFT.md`](../architecture/CODE_CRAFT.md#promotion-boundary) | review |
+| **SYS-INV-33** | Tier-1 | Production CodeCraft requires approved sandbox, policy, observability and validation. | [`CODE_CRAFT.md`](../architecture/CODE_CRAFT.md#execution-modes) | review |
+| **SYS-INV-34** | Tier-1 | CodeCraft promotion to durable tools requires review, tests and governance approval. | [`CODE_CRAFT.md`](../architecture/CODE_CRAFT.md#promotion-boundary) · [`TOOLS.md`](../architecture/TOOLS.md) | review |
+| **SYS-INV-35** | Tier-1 | CodeCraft **never** bypasses ToolRuntime, PolicyEngine, CVL or RuntimeEventBus. | [`CODE_CRAFT.md`](../architecture/CODE_CRAFT.md#disallowed-codecraft-actions) | review |
 
 ---
 

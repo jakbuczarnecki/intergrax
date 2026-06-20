@@ -59,6 +59,7 @@ The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **
 | [UNIFIED_EXECUTION_RUNTIME.md](UNIFIED_EXECUTION_RUNTIME.md) §42.12 | `ToolRuntime` enforcement — `ToolRequest`, `TOOL_*` events |
 | [OBSERVABILITY.md](OBSERVABILITY.md#observability-event-spine) | Tool audit on runtime spine — `TOOL_*` events, `ops:tool_audit`, [event ownership rules](OBSERVABILITY.md#event-ownership-rules) |
 | **This doc — [Tool execution pipeline](#tool-execution-pipeline)** | End-to-end select → invoke → log (canonical for audit §11) |
+| [CODE_CRAFT.md](CODE_CRAFT.md#codecraft-safety-boundary) | Ephemeral codegen — governed `codecraft.*` path; not a second runtime |
 
 ---
 

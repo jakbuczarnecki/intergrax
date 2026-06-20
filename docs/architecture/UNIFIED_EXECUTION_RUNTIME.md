@@ -41,6 +41,8 @@ Events are the **primary audit and orchestration signal**. Hooks, observability,
 
 **Event spine canon:** [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine) — signal-plane boundaries, [event ownership rules](OBSERVABILITY.md#event-ownership-rules), [required correlation fields](OBSERVABILITY.md#required-correlation-fields), [Cursor review checklist](OBSERVABILITY.md#cursor-review-checklist).
 
+**CodeCraft canon:** [`CODE_CRAFT.md`](CODE_CRAFT.md#codecraft-safety-boundary) — ephemeral codegen orchestration through ToolRuntime; not a second agent runtime.
+
 ### 42.1.1 RuntimeEvent Contract
 
 ```text

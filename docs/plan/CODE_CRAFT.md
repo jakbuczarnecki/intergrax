@@ -20,7 +20,16 @@ Load **only** the satellite matching your task or cited gap ID.
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/plan/` satellites on demand).
 
 **Status:** **ECC-0…ECC-6 Done** · **S7–S11 post-closeout** (2026-06-13) · **Full Harness LC** (2026-06-17)  
+**Last updated:** 2026-06-20 — **P2-ARCH-12** CodeCraft safety boundary.  
 **Default queue:** Phase **ECC** **closed** (2026-06-13); default gate maintenance continues in [`PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md).
+
+---
+
+## Architecture doc alignment (P2-ARCH)
+
+| ID | Scope | Status |
+|----|-------|--------|
+| **P2-ARCH-12** | Clarify CodeCraft safety boundary and promotion rules | **Done** (2026-06-20) |
 
 ---
 
