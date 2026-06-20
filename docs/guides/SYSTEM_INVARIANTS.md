@@ -178,7 +178,19 @@ Normative rules that **MUST** hold across Tier-0..3, Nexus, agents, tools, conte
 
 **Canon:** [`CODE_CRAFT.md`](../architecture/CODE_CRAFT.md#codecraft-safety-boundary)
 
-## 11. Documentation authority invariants
+## 11. Modality invariants
+
+- Modality support is plane-specific and **MUST NOT** be treated as one maturity claim.
+- Plane A generative multimodal LLM calls **MUST** go through LLMAdapter / model profiles.
+- Plane B media/document ingest **MUST** preserve provenance and use approved ingest / RAG / indexing paths.
+- Plane C dedicated CV / ML / inference **MUST** run through approved tools, services, integrations and deployment profiles.
+- Media-derived context **MUST NOT** bypass ContextCompiler, Memory policy, RAG provenance or ToolRuntime where applicable.
+- Heavy local inference models **MUST NOT** be used in production without explicit deployment/resource profile and maturity/evidence statement.
+- Modality production readiness **MUST** be stated per plane using MATURITY_TAXONOMY.
+
+**Canon:** [`MODALITY.md`](../architecture/MODALITY.md#modality-production-boundary) · [`MATURITY_TAXONOMY.md`](MATURITY_TAXONOMY.md)
+
+## 12. Documentation authority invariants
 
 - `docs/intergrax_runtime_architecture.md` is the hub, not the detailed owner of every subsystem.
 - Architecture documents define subsystem boundaries and contracts.
