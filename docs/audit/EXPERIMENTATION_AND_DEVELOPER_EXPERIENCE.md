@@ -104,7 +104,7 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 2. new-application emits profile+wiring+docker+ADR per Phase N.
 3. intergrax doctor diagnoses lab stack accurately.
 4. Gate scripts pass after harness change (mandatory verification set).
-5. check_docs_domain_pairs enforces 22 pairs.
+5. check_docs_domain_pairs enforces 21 pairs.
 6. Eval registry trends before promotion (require_baseline_for_release).
 7. Shadow workspace observe-only compare path works.
 8. Acceptance agent_os suite covers OS claims.

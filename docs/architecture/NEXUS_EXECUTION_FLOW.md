@@ -12,7 +12,7 @@
 
 **Do not read this entire file in one session** (NEXUS_EXECUTION_FLOW canon).
 
-- **Implement / audit default:** §1–§20 flow narrative; **production posture:** §12.2. Reference §21+: [`arch/NEXUS_EXECUTION_FLOW_scenario_catalog.md`](arch/NEXUS_EXECUTION_FLOW_scenario_catalog.md).
+- **Implement / audit default:** §1–§20 flow narrative. Reference §21+: [`arch/NEXUS_EXECUTION_FLOW_scenario_catalog.md`](arch/NEXUS_EXECUTION_FLOW_scenario_catalog.md).
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/NEXUS_EXECUTION_FLOW.md`](../plan/NEXUS_EXECUTION_FLOW.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/NEXUS_EXECUTION_FLOW.md`](../guides/audit_slices/NEXUS_EXECUTION_FLOW.md).

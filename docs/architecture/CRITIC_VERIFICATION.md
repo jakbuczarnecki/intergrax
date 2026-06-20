@@ -13,7 +13,7 @@
 
 **Do not read this entire file in one session** (CRITIC_VERIFICATION canon).
 
-- **Implement / audit default:** [Verification Safety Boundaries](#verification-safety-boundaries) + CVL contracts + orchestrator + wiring. Skip historical LC narrative unless cited.
+- **Implement / audit default:** CVL contracts + orchestrator + wiring. Skip historical LC narrative unless cited.
 - **Use** table of contents below — `Read` with offset/limit per §.
 - **Plan hub:** [`plan/CRITIC_VERIFICATION.md`](../plan/CRITIC_VERIFICATION.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/CRITIC_VERIFICATION.md`](../guides/audit_slices/CRITIC_VERIFICATION.md).

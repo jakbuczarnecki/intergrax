@@ -20,8 +20,6 @@
 - **Plan hub:** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) (scoped §6 only).
 - **Audit slice:** [`guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md`](../guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md).
 - **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
-- **Adaptive profile / L4 tuning:** [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md#governance-boundary) — AHI may propose; production auto-apply disabled by default.
-- **Elastic capacity / ScalingProfile:** [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md#production-boundary) — ECP observes capacity and emits governed scaling actions; not agent topology or orchestration.
 
 ---
 
