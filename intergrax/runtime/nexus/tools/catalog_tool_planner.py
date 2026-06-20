@@ -34,6 +34,10 @@ class CatalogToolPlanner(ToolPlannerTrackable):
     def llm(self) -> LLMAdapter:
         return self._service.llm
 
+    def attach_routing_runtime_config(self, config: object) -> None:
+        """Wire live routing snapshot refresh before planner LLM calls."""
+        self._service.attach_routing_runtime_config(config)
+
     @classmethod
     def from_registry(
         cls,

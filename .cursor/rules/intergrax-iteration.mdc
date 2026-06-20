@@ -24,7 +24,9 @@ Platform harness documentation uses **paired domain documents** with **identical
 docs/intergrax_runtime_architecture.md     ← sole file in docs/ root (hub)
 docs/architecture/<DOMAIN>.md              ← what the layer is
 docs/plan/<DOMAIN>.md                      ← how to implement / status / tasks
-docs/guides/                               ← strategy, ideal model, audit, authoring
+docs/bootstrap/                            ← Cursor paste files (Modes A/B/C/I)
+docs/audit/                                ← audit orchestrators + per-domain prompts
+docs/guides/                               ← strategy, ideal model, authoring
 docs/guides/SYSTEM_INVARIANTS.md           ← cross-domain “never violate” index (P2-ARCH-01)
 docs/guides/LAYER_COMPLETION_MODE.md       ← deep domain layer closeout workflow
 ```
@@ -79,6 +81,7 @@ Do **not** load unrelated domain pairs. There is **no** monolithic implementatio
 | L4 adaptive harness (AHI) | `ADAPTIVE_HARNESS_INTELLIGENCE` |
 | Critic / verification (CVL) | `CRITIC_VERIFICATION` |
 | Elastic capacity / platform scaling (ECP) | `ELASTIC_CAPACITY_AND_SCALING` |
+| New idea before build (Mode I) | Natural language in chat — `.cursor/rules/intergrax-idea-audit.mdc` → `docs/bootstrap/idea_audit.txt` (no code; on approval update architecture + plan) |
 | New Tier-2 agent (workflow) | `guides/AGENT_CREATION_GUIDE.md` + relevant domain pair |
 
 **How to use docs in an iteration:**
@@ -101,8 +104,8 @@ Full task routing also in **`AGENTS.md`**.
 Follow the strategy work cycle:
 
 ```text
-ANALIZA → OCENA ARCHITEKTURY → OCENA PLANU → PROPOZYCJA (if needed)
-  → AKTUALIZACJA DOKUMENTACJI (tylko dotkniętej) → IMPLEMENTACJA → WERYFIKACJA → WNIOSKI
+ANALYSIS → ARCHITECTURE REVIEW → PLAN REVIEW → IMPROVEMENT PROPOSAL (if needed)
+  → DOCUMENTATION UPDATE (affected domains only) → IMPLEMENTATION → VERIFICATION → CONCLUSIONS
 ```
 
 **Architectural safety fuse:** If the domain plan, domain architecture, and ideal architecture are inconsistent, **stop implementation** and explain the conflict before modifying code.
@@ -223,6 +226,7 @@ uv run pytest -m "gate and not no_ci" -q
 python scripts/check_harness_no_getattr.py
 uv run python scripts/check_observability_gates.py
 python scripts/check_docs_domain_pairs.py
+python scripts/check_idea_audit_bootstrap.py
 python scripts/check_harness_adr.py
 python scripts/check_implementation_journal.py
 ```
@@ -260,7 +264,7 @@ At the end of every iteration, provide:
 9. **Out-of-scope findings**
 10. **Suggested next step** aligned with the Intergrax Harness AI vision
 11. **One-line commit message** (English) — no commit unless the operator requests
-12. **Journal entry** — path `docs/guides/implementation-journal/entries/YYYY-MM-DD/<scope>-<slug>.md` per [`intergrax-implementation-journal.mdc`](intergrax-implementation-journal.mdc) (English file; required on Completion criteria unless operator explicitly skips)
+12. **Journal entry** — only for **milestones** per [`intergrax-implementation-journal.mdc`](intergrax-implementation-journal.mdc); otherwise **"no journal needed"** + rationale in chat summary
 
 ## Completion criteria
 
@@ -272,7 +276,7 @@ Do not consider an implementation item complete unless:
 - affected domain pair documentation is updated,
 - no unnecessary Tier-0 duplication was introduced,
 - significant architecture decisions have an ADR (or explicit "no ADR needed") in the correct domain,
-- an implementation journal entry exists under `docs/guides/implementation-journal/entries/YYYY-MM-DD/` with a row in `INDEX.md`, per [`intergrax-implementation-journal.mdc`](intergrax-implementation-journal.mdc), `python scripts/check_implementation_journal.py` passes, **or** the operator explicitly skipped the journal (state rationale in chat).
+- **if the iteration is a journal milestone:** an entry exists under `docs/implementation-journal/entries/YYYY-MM-DD/` with a row in `INDEX.md`, per [`intergrax-implementation-journal.mdc`](intergrax-implementation-journal.mdc), and `python scripts/check_implementation_journal.py` passes; **otherwise** the chat summary states **"no journal needed"** with rationale (or the operator explicitly skipped).
 
 Never claim that the whole platform is complete.
 Only report completion for the currently implemented scope.

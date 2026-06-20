@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 13–14  
-**Audit instruction:** [`guides/audit/INTEGRATIONS.md`](../guides/audit/INTEGRATIONS.md)  
+**Audit instruction:** [`audit/INTEGRATIONS.md`](../audit/INTEGRATIONS.md)  
 ---
 
 # 18. Slack / Teams / Communication Integration Philosophy
@@ -156,7 +156,20 @@ Other slugs remain **`beta`** unless promoted explicitly. Do not mark all 185 pr
 
 **New categories (9):** `security_scanner`, `sandbox_host`, `identity_provider`, `speech_provider`, `workflow_orchestrator`, `vision_serving`, `ml_inference_host`, `billing_meter`, `crm`.
 
-**Post-catalog wiring (M-P6-WIRE):** `wire_integration_tool_context()` resolves P6 slots into `ToolWiringContext`; `extend_tool_profile_for_integration()` auto-enables `security.scan`, `workflow.*`, and `sandbox.exec` when matching categories are configured. Speech catalog slugs bridge to Tier-0 speech tools via `IntegrationSpeechAdapter`.
+**Post-catalog wiring (M-P6-WIRE):** `wire_integration_tool_context()` resolves P6 slots into `ToolWiringContext`; `extend_tool_profile_for_integration()` auto-enables `security.scan`, `workflow.*`, and `sandbox.exec` when matching categories are configured. Speech catalog slugs bridge to Tier-0 speech tools via `IntegrationSpeechAdapter` + `SpeechProviderBackend` ([ADR-MOD-001](../adr/entries/2026-06-19/ADR-MOD-001.md) — slug identity; enum path removed under MOD-SPEECH-ARCH).
+
+### Speech provider (`speech_provider`) — canonical tool path
+
+Speech SaaS vendors follow the **open catalog** rules (§Open catalog below) — same as all 185+ slugs.
+
+| Step | Mechanism |
+|------|-----------|
+| Register | `providers/speech_provider/<slug>/manifest.py` + `register_from_manifest()` or `IntegrationPlugin` |
+| Contract | `SpeechProviderBackend` — `synthesize()`, `transcribe()`, `health()` |
+| Tier-3 | `IntegrationProfile.speech_provider = <manifest \| plugin \| slug \| instance>` |
+| Tools | `wire_integration_tool_context()` → `IntegrationSpeechAdapter(provider_slug=…)` → `speech.synthesize` / `speech.transcribe` |
+
+**Do not** extend a platform `SpeechProvider` enum. **Do not** add vendor-specific branches in `wire_modality_extras()` when the integration slot is configured. Implementation paydown: [`plan/MODALITY.md`](../plan/MODALITY.md) MOD-SPEECH-ARCH.*.
 
 **Delivered:** 32 STABLE slugs (`_shared/p7`) · 9 category contracts · 4 Tier-3 presets · `HARNESS_M6_P6_PROBE_SLUGS` · debug API `GET /debug/integrations/health?stack=m6_p6`.
 
@@ -257,7 +270,7 @@ Typed factories in `intergrax.integrations.registry.presets` — use in `Applica
 | Preset function | Returns | Typical use |
 |-----------------|---------|-------------|
 | `lab_stack(enable_otel=True)` | `IntegrationProfile.lab_harness_preset` | Default lab / scaffold hosts |
-| `legal_stack()` | `IntegrationProfile.legal_product()` | Legal product relational + vector |
+| `legal_stack()` | `IntegrationProfile.legal_product()` | Legal product relational + vector + OTEL observability backend |
 | `research_stack()` | `IntegrationProfile.research_product()` | Research product search + vector |
 | `data_stack(enable_redis=True, enable_qdrant=False)` | Lab harness + optional redis/qdrant | Data-heavy experiments |
 | `observability_stack(enable_otel=True, enable_grafana_stack=False)` | Lab harness OTEL-first; optional Grafana/Loki/Tempo triad | Trace/metrics focus |
@@ -1012,6 +1025,19 @@ python scripts/check_harness_guardrail_wiring.py
 ```
 
 **Implementation tracker:** [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) Phase **M.12** · UAEP doc Phase **GR-DOC**.
+
+---
+
+## Ingress / nginx bridge (INT-MAINT-04)
+
+The **nginx / ingress controller** catalog slug is **not** owned by Integrations.
+Capacity ingress is documented and implemented under
+[`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) (ECP-6.*).
+Decision: [ADR-SCALE-002](../adr/entries/2026-06-09/ADR-SCALE-002.md) — defer
+standalone nginx slug; Kubernetes deployment path remains canonical.
+
+Integrations cross-ref only. Host authors enable ingress via ECP profiles and
+`kubernetes` integration — see [`intergrax/integrations/USAGE.md`](../../intergrax/integrations/USAGE.md).
 
 ---
 

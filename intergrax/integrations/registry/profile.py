@@ -99,6 +99,8 @@ class IntegrationProfile(BaseModel):
     crm: IntegrationBinding | None = None
     llm_guardrail: IntegrationBinding | None = None
 
+    async_task_index_slug: str | None = None
+
     options: dict[str, dict[str, Any]] = Field(default_factory=dict)
 
     @model_validator(mode="before")
@@ -257,11 +259,14 @@ class IntegrationProfile(BaseModel):
 
     @classmethod
     def legal_product(cls) -> IntegrationProfile:
+        options: dict[str, dict[str, Any]] = {OTEL.slug: {}}
         return cls(
             relational_store=SQLITE,
             vector_store=INMEMORY,
             document_parser=DOCLING,
             rerank_provider=COHERE_RERANK,
+            observability_backend=OTEL,
+            options=options,
         )
 
     @classmethod

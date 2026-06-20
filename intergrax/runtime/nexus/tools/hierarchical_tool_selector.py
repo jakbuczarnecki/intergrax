@@ -6,7 +6,10 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+import json
+import re
 
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.registry import ToolRegistry
 
@@ -80,6 +83,7 @@ def select_tools_hierarchical(
     top_k: int,
     max_category_passes: int = 2,
     allowed_tool_ids: Sequence[str] | None = None,
+    category_ranks: Sequence[CategoryRank] | None = None,
 ) -> tuple[str, ...]:
     """
     Two-pass hierarchical narrowing: category rank → tool rank within branches.
@@ -89,12 +93,16 @@ def select_tools_hierarchical(
     if top_k < 1:
         return ()
 
-    category_ranks = rank_categories(registry, query, allowed_tool_ids=allowed_tool_ids)
-    if not category_ranks:
+    ranks = (
+        category_ranks
+        if category_ranks is not None
+        else rank_categories(registry, query, allowed_tool_ids=allowed_tool_ids)
+    )
+    if not ranks:
         return ()
 
     pass_budget = max(1, max_category_passes)
-    selected_categories = category_ranks[:pass_budget]
+    selected_categories = ranks[:pass_budget]
     candidate_ids: list[str] = []
     for rank in selected_categories:
         candidate_ids.extend(rank.tool_ids)
@@ -114,3 +122,57 @@ def select_tools_hierarchical(
         ),
     )
     return tuple(scored[:top_k])
+
+
+async def rank_categories_with_llm(
+    registry: ToolRegistry,
+    query: str,
+    llm: LLMAdapter,
+    *,
+    allowed_tool_ids: Sequence[str] | None = None,
+) -> tuple[CategoryRank, ...]:
+    """
+    Optional LLM category pass (TOOL-MAINT-01 / ADR-TOOL-005 v2).
+
+    Falls back to deterministic ``rank_categories`` when the model output is unusable.
+    """
+    deterministic = rank_categories(registry, query, allowed_tool_ids=allowed_tool_ids)
+    categories = tuple(rank.category for rank in deterministic[:8])
+    if not categories:
+        return deterministic
+
+    prompt = (
+        "Rank integration tool categories by relevance to the user query. "
+        f"Query: {query!r}\n"
+        f"Categories: {list(categories)}\n"
+        'Return JSON: {"ordered_categories": ["category", ...]}'
+    )
+    try:
+        raw = await llm.generate(prompt)
+    except Exception:
+        return deterministic
+    return _order_ranks_from_llm(raw, deterministic)
+
+
+def _order_ranks_from_llm(
+    raw: str,
+    ranks: Sequence[CategoryRank],
+) -> tuple[CategoryRank, ...]:
+    match = re.search(r"\{.*\}", raw, flags=re.DOTALL)
+    if match is None:
+        return tuple(ranks)
+    try:
+        payload = json.loads(match.group(0))
+    except json.JSONDecodeError:
+        return tuple(ranks)
+    ordered = payload.get("ordered_categories")
+    if not isinstance(ordered, list):
+        return tuple(ranks)
+    by_category = {rank.category: rank for rank in ranks}
+    reordered: list[CategoryRank] = []
+    for item in ordered:
+        key = str(item).strip()
+        if key in by_category:
+            reordered.append(by_category.pop(key))
+    reordered.extend(by_category.values())
+    return tuple(reordered)

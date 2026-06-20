@@ -55,19 +55,7 @@ Edit `applications/attestation_demo/.env` if needed. Defaults are fine for local
 
 ## Step 2 — Build the Docker image
 
-### Linux / macOS / Git Bash
-
-```bash
-applications/attestation_demo/docker/build-docker.sh
-```
-
-### Windows (cmd or PowerShell)
-
-```bat
-applications\attestation_demo\docker\build-docker.bat
-```
-
-### Manual build (any OS)
+**Recommended (all platforms):** classic `docker build` from repo root — no BuildKit `--ignorefile` required. This is the path partners should use when `build-docker.sh` fails locally.
 
 ```bash
 docker build \
@@ -79,6 +67,46 @@ docker build \
 **Expected:** build completes without errors; image tagged `attestation-demo` (or `attestation-demo:latest`).
 
 **First build** may take several minutes (`uv sync` inside the image).
+
+### Wrapper scripts
+
+#### Linux / macOS / Git Bash
+
+```bash
+applications/attestation_demo/docker/build-docker.sh
+```
+
+Uses BuildKit with `--ignorefile` when available; **automatically falls back** to classic `docker build` if that fails (common on older Docker Desktop / buildx builds).
+
+#### Windows (cmd or PowerShell)
+
+```bat
+applications\attestation_demo\docker\build-docker.bat
+```
+
+Uses classic `docker build` only (same as manual build above).
+
+### BuildKit fallback (manual)
+
+If you see errors mentioning `--ignorefile` or an unsupported buildx flag, run the **recommended** classic build at the top of this section.
+
+Optional BuildKit path (when your Docker supports `--ignorefile`):
+
+```bash
+docker buildx build \
+  -f applications/attestation_demo/docker/Dockerfile \
+  --ignorefile applications/attestation_demo/docker/.dockerignore \
+  -t attestation-demo \
+  --load \
+  .
+```
+
+If BuildKit is unavailable, copy the app ignore rules to repo root before classic build:
+
+```bash
+cp applications/attestation_demo/docker/.dockerignore .dockerignore
+docker build -f applications/attestation_demo/docker/Dockerfile -t attestation-demo .
+```
 
 ### Alternative: compose build
 
@@ -281,9 +309,11 @@ curl -s "http://127.0.0.1:8097/debug/tasks/{run_id}/trace"
 - HTTP **200**
 - `"run_id"` matches Step 5
 - `"trace_events"` is a non-empty array
-- Trace content references the demo run (`boundary_demo_agent`, `store_demo_record`, or tool activity)
+- Trace content references the demo run (`boundary_demo_agent`, `attestation.demo` capability, completed graph node, critic verdict, or task state)
 
-This satisfies ARCHITECTURE §17 item 4 — partner can compare receipt fields with the internal journal.
+**Scope note:** the HOS journal trace correlates at **run/task level**. It does not expose EBE `event_id`, `step_id`, or `tool_id`. For exact per-event correlation (receipt key, tool claim, harness claim), use `boundary_events[]` from Step 5 or Step 7 — not the trace alone.
+
+This satisfies ARCHITECTURE §17 item 4 — partner can compare run-level journal facts with receipt grouping (`run_id`, `step_id`, `lineage.ref`).
 
 ---
 
@@ -356,6 +386,7 @@ docker compose -f applications/attestation_demo/docker/docker-compose.yml down
 | `boundary_events` empty | EBE profile not wired | Rebuild image from current `main`; run Step 10 pytest |
 | HTTP 401 on `/poc/run` | API key required | Set `X-Api-Key` header or unset `INTERGRAX_HARNESS_API_KEY` for dev |
 | Build fails on Windows path | Wrong build context | Run `docker build` from **repo root**, not `applications/attestation_demo/` |
+| `unknown flag: --ignorefile` or buildx error | Local BuildKit / buildx version | Use classic `docker build` (Step 2 — recommended); or `build-docker.bat` on Windows |
 | `jq` not found | Optional formatter | Use `python -m json.tool` or PowerShell `ConvertTo-Json` |
 
 ---

@@ -2,7 +2,9 @@
 
 **Purpose:** repeatable LLM prompt for Intergrax Harness AI implementation audits.  
 **Procedure source:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md)  
-**Per-domain deep audits:** [`audit/README.md`](audit/README.md) — copy-paste prompts for each of the 22 domain pairs (RAG, Tools, Memory, Context Engineering, …)
+**Per-domain deep audits:** [`../audit/README.md`](../audit/README.md) — copy-paste prompts for each of the 22 domain pairs (RAG, Tools, Memory, Context Engineering, …)
+
+**New idea intake (before build):** [`../bootstrap/idea_audit.txt`](../bootstrap/idea_audit.txt) — Mode I; [`../audit/IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md)
 
 ---
 
@@ -12,7 +14,7 @@
 
 For one domain pair (e.g. RAG, Tools, Memory), use the dedicated prompt — **do not** rewrite ad-hoc instructions:
 
-1. Open [`audit/<DOMAIN>.md`](audit/README.md#domain-index-22-pairs) (e.g. [`audit/RAG.md`](audit/RAG.md)).
+1. Open [`../audit/<DOMAIN>.md`](../audit/README.md#domain-index-22-pairs) (e.g. [`../audit/RAG.md`](../audit/RAG.md)).
 2. Copy `---BEGIN PROMPT---` … `---END PROMPT---` into a new agent chat.
 3. Set `mode` in USER CONFIG.
 
@@ -20,7 +22,7 @@ Domain prompts include shared observability/security/scale checklists plus domai
 
 ### Multi-layer or full-platform audit
 
-For **all 22 domain pairs** in one session, use [`audit/bootstrap/01_audit_all_domains.txt`](audit/bootstrap/01_audit_all_domains.txt) (Mode A) or [`audit/README.md`](audit/README.md) for other modes.
+For **all 22 domain pairs** in one session, use [`../bootstrap/01_audit_all_domains.txt`](../bootstrap/01_audit_all_domains.txt) (Mode A) or [`../audit/README.md`](../audit/README.md) for other modes.
 
 ### What to copy
 

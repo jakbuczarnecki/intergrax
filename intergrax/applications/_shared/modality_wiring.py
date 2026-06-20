@@ -44,5 +44,6 @@ def wire_modality_extras(
         ctx.extras[MODALITY_CELERY_BUNDLE_EXTRA_KEY] = celery_bundle
     ctx.extras[MODALITY_EXECUTION_PROFILE_EXTRA_KEY] = resolved_execution
     ctx.extras[MODALITY_EXECUTOR_EXTRA_KEY] = build_modality_inference_executor(resolved_execution)
-    ctx.extras[SPEECH_BACKEND_EXTRA_KEY] = resolved_speech.create_adapter()
+    if SPEECH_BACKEND_EXTRA_KEY not in ctx.extras and ctx.speech_provider is None:
+        ctx.extras[SPEECH_BACKEND_EXTRA_KEY] = resolved_speech.create_adapter()
     ctx.extras[MODEL_INFERENCE_REGISTRY_EXTRA_KEY] = resolved_vision.build_registry()

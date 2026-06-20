@@ -60,3 +60,11 @@ def test_bedrock_live_one_shot() -> None:
 )
 def test_vertex_gemini_live_one_shot() -> None:
     _one_shot(LLMProvider.VERTEX_GEMINI)
+
+
+def test_vllm_live_one_shot() -> None:
+    from testing_support.builder import require_vllm_reachable
+
+    require_vllm_reachable()
+    model = os.getenv("INTERGRAX_DEFAULT_VLLM_MODEL", "").strip() or None
+    _one_shot(LLMProvider.VLLM, model=model)

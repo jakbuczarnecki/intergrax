@@ -547,6 +547,11 @@ class HistoryLayer:
             generate_kwargs["max_tokens"] = max_summary_tokens
 
         try:
+            from intergrax.runtime.nexus.context.routing_snapshot_sync import (
+                sync_routing_before_llm_call,
+            )
+
+            sync_routing_before_llm_call(self._config, run_id=run_id)
             raw_response = adapter.generate_messages(
                 summary_prompt,
                 run_id=run_id,

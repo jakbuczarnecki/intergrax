@@ -13,6 +13,7 @@ from intergrax.llm_adapters.registry.failover_adapter import (
     FailoverLLMAdapter,
     LLMRoutingAttemptRecord,
 )
+from intergrax.llm_adapters.routing.evaluator import AllowlistViolationError
 from intergrax.runtime.nexus.tracing.trace_models import (
     DiagnosticPayload,
     TraceComponent,
@@ -21,6 +22,114 @@ from intergrax.runtime.nexus.tracing.trace_models import (
 
 if TYPE_CHECKING:
     from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+    from intergrax.llm_adapters.routing.contracts import RoutingContext, RoutingEvaluation
+
+TraceEmitFn = Callable[..., None]
+
+
+@dataclass(frozen=True)
+class LLMRoutingRuleDiagV1(DiagnosticPayload):
+    """PII-safe record of a declarative LLM routing rule evaluation (M-LLM-X.10.3)."""
+
+    matched_rule_id: str | None
+    routing_reason: str
+    profile_id: str
+    provider: str
+    model: str
+    policy_route_hint: str | None
+
+    def redact(self) -> LLMRoutingRuleDiagV1:
+        return self
+
+    @classmethod
+    def schema_id(cls) -> str:
+        return "intergrax.diag.engine.core_llm.routing_rule"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "matched_rule_id": self.matched_rule_id,
+            "routing_reason": self.routing_reason,
+            "profile_id": self.profile_id,
+            "provider": self.provider,
+            "model": self.model,
+            "policy_route_hint": self.policy_route_hint,
+        }
+
+
+def routing_evaluation_to_diag(evaluation: "RoutingEvaluation") -> LLMRoutingRuleDiagV1:
+    from intergrax.llm_adapters.routing.evaluator import profile_identity
+
+    profile = evaluation.selected_profile
+    return LLMRoutingRuleDiagV1(
+        matched_rule_id=evaluation.matched_rule_id,
+        routing_reason=evaluation.routing_reason,
+        profile_id=profile_identity(profile),
+        provider=profile.provider.value,
+        model=profile.model or "",
+        policy_route_hint=evaluation.policy_route_hint,
+    )
+
+
+def emit_llm_routing_rule_diag(
+    trace_event: TraceEmitFn,
+    evaluation: "RoutingEvaluation",
+) -> None:
+    payload = routing_evaluation_to_diag(evaluation)
+    trace_event(
+        component=TraceComponent.ENGINE,
+        step="llm_routing_rule",
+        message="LLM routing rule evaluation recorded.",
+        level=TraceLevel.INFO,
+        payload=payload,
+    )
+
+
+@dataclass(frozen=True)
+class LLMRoutingAllowlistViolationDiagV1(DiagnosticPayload):
+    """PII-safe record when routing resolves outside ``allowed_profiles`` (M-LLM-X.11.4)."""
+
+    rule_id: str | None
+    profile_id: str
+    tenant_id: str | None
+    agent_id: str | None
+    message: str
+
+    def redact(self) -> LLMRoutingAllowlistViolationDiagV1:
+        return self
+
+    @classmethod
+    def schema_id(cls) -> str:
+        return "intergrax.diag.engine.core_llm.routing_allowlist_violation"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "rule_id": self.rule_id,
+            "profile_id": self.profile_id,
+            "tenant_id": self.tenant_id,
+            "agent_id": self.agent_id,
+            "message": self.message,
+        }
+
+
+def emit_llm_routing_allowlist_violation_diag(
+    trace_event: TraceEmitFn,
+    error: AllowlistViolationError,
+    context: "RoutingContext",
+) -> None:
+    payload = LLMRoutingAllowlistViolationDiagV1(
+        rule_id=None,
+        profile_id="",
+        tenant_id=context.tenant_id,
+        agent_id=context.agent_id,
+        message=str(error),
+    )
+    trace_event(
+        component=TraceComponent.ENGINE,
+        step="llm_routing_allowlist_violation",
+        message="LLM routing allowlist violation.",
+        level=TraceLevel.ERROR,
+        payload=payload,
+    )
 
 
 @dataclass(frozen=True)
@@ -60,11 +169,8 @@ def routing_attempt_to_diag(record: LLMRoutingAttemptRecord) -> LLMRoutingAttemp
     )
 
 
-TraceEmitFn = Callable[..., None]
-
-
 def attach_failover_routing_trace_observer(
-    adapter: LLMAdapter,
+    adapter: "LLMAdapter",
     trace_event: TraceEmitFn,
 ) -> None:
     """

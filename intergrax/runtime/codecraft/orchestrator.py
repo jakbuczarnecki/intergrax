@@ -39,10 +39,17 @@ def resolve_codecraft_profile(ctx: ToolWiringContext) -> CodeCraftProfile | None
     if raw is None:
         return None
     if isinstance(raw, CodeCraftProfile):
-        return raw
-    if isinstance(raw, dict):
-        return CodeCraftProfile.model_validate(raw)
-    return None
+        profile = raw
+    elif isinstance(raw, dict):
+        profile = CodeCraftProfile.model_validate(raw)
+    else:
+        return None
+    task_meta = ctx.extras.get("task_metadata")
+    if isinstance(task_meta, dict):
+        mode_override = task_meta.get("codecraft_mode")
+        if isinstance(mode_override, str) and mode_override:
+            profile = profile.model_copy(update={"mode": mode_override})  # type: ignore[arg-type]
+    return profile
 
 
 class CodeCraftOrchestrator:

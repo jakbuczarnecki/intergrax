@@ -5,7 +5,7 @@
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 **Invariants:** [`guides/SYSTEM_INVARIANTS.md`](guides/SYSTEM_INVARIANTS.md) — cross-domain “never violate” index (P2-ARCH-01)
 **Layer completion:** [`guides/LAYER_COMPLETION_MODE.md`](guides/LAYER_COMPLETION_MODE.md) — deep domain layer closeout workflow
-**Audit:** [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) · **Domain audit prompts:** [`guides/audit/`](guides/audit/) · **Implementation journal:** [`guides/implementation-journal/`](guides/implementation-journal/README.md)
+**Audit:** [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) · **Idea intake (Mode I):** [`bootstrap/idea_audit.txt`](bootstrap/idea_audit.txt) · **Cursor bootstrap:** [`bootstrap/`](bootstrap/) · **Domain audit prompts:** [`audit/`](audit/) · **Architecture audit results:** [`audit_results/`](audit_results/README.md) · **Implementation journal:** [`implementation-journal/`](implementation-journal/README.md)
 **Authoring:** [`guides/`](guides/)
 
 ---
@@ -21,6 +21,22 @@ Tier-3  applications/       deployable hosts
 
 Stack: Integration → Tool → Skill → Agent
 Execution: [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md)
+
+---
+
+## Implementer quick start
+
+**Default queue:** [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) **§4.0** priority ladder — Band 1 gate maintenance on every PR; Band 3 product work is **frozen** unless leadership reprioritizes (§6.3).
+
+| Goal | Read first | Command |
+|------|------------|---------|
+| New agent | [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md) | `python -m intergrax.scaffold new-agent <name> --capability <cap>.<action>` |
+| New application host | [`guides/APPLICATION_CREATION_GUIDE.md`](guides/APPLICATION_CREATION_GUIDE.md) | `python -m intergrax.scaffold new-application <name>_application` |
+| Agent + app bundle | [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](plan/TIER3_APPLICATION_ENVIRONMENT.md) | `python -m intergrax.scaffold new-stack <name>` |
+| Extension / plugin | [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md) | `bootstrap_catalogs()` + entry points `intergrax.tools` / `intergrax.skills` / `intergrax.integrations` |
+| Harness health | [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) §6.1 | `uv run intergrax doctor --ci` · `uv run pytest -m gate -q` |
+
+**Work cycle:** strategy → architecture pair for your domain → smallest plan item → implement → gate green → update paired docs + journal if significant.
 
 ---
 
@@ -115,7 +131,7 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 
 **Author entry points:** [`applications/USAGE.md`](../applications/USAGE.md) · `HarnessApplication` (`intergrax/harness/app.py`) · scaffold `new-application` · [`guides/EXTENSION_AUTHOR_GUIDE.md`](guides/EXTENSION_AUTHOR_GUIDE.md) §0.
 
-**Implementation:** H-APP profile/wiring **Done**; APP-CON-1 host pipeline mount **Done**; budget reactions **Done** (ACP-TOK-1..3 · ACP-TOK-CI) + APP-PROD-1..9 gates; APP-EVOL-1..7 evolution **Done**; **APP-EVOL-8** hierarchical bundles **M1 Done** · M3 planned ([ADR-APP-003](adr/entries/2026-06-17/ADR-APP-003.md)); APP-OPS-1..4 platform ops **Done** — [TIER3 plan](plan/TIER3_APPLICATION_ENVIRONMENT.md#master-implementation-backlog-app-unified). **Maturity:** Architecturally Mature for reference hosts.
+**Implementation:** H-APP profile/wiring **Done**; APP-CON-1 host pipeline mount **Done**; budget reactions **Done** (ACP-TOK-1..3 · ACP-TOK-CI) + APP-PROD-1..9 gates; APP-EVOL-1..7 evolution **Done**; **APP-EVOL-8** hierarchical bundles **M1–M3 Done** ([ADR-APP-003](adr/entries/2026-06-17/ADR-APP-003.md)); APP-OPS-1..4 platform ops **Done** — [TIER3 plan](plan/TIER3_APPLICATION_ENVIRONMENT.md#master-implementation-backlog-app-unified). **Maturity:** Architecturally Mature for reference hosts; enterprise marketplace/distribution **P4**.
 
 **Observability spine evolution:** **OBS-EVOL-9** layered `event_kind` catalog **Done** (2026-06-17; OBS-EVOL-9.9 deferred post-publication) — [ADR-OBS-003](adr/entries/2026-06-17/ADR-OBS-003.md) · [OBS plan](plan/OBSERVABILITY.md#phase-obs-evol-9--layered-event-catalog-p1-arch-02).
 
@@ -184,7 +200,7 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 | 17–20 Prompt / assembly / registry / capability graph | `AGENT_CONTRACTS_AND_ASSEMBLY` |
 | 21 Observability | `OBSERVABILITY` |
 | 22 Reliability / HITL | `RELIABILITY_FAILURE_AND_HITL` + UAEP §42.10 |
-| 23–24 Security / cost | `UNIFIED_EXECUTION_RUNTIME` §42.45–47 |
+| 23–24 Security / cost | `UNIFIED_EXECUTION_RUNTIME` §42.45–§42.45.11 · §42.46 · [Phase SEC-PLANES](plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes--security--trust-planes-closed) · [Phase SEC-ENT](plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-ent--enterprise-production-closed) |
 | 25–27 Eval / CI / DX | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` + `CRITIC_VERIFICATION` |
 | 28 Tier-3 hosts | `TIER3_APPLICATION_ENVIRONMENT` |
 | 29 Modality | `MODALITY` |
@@ -192,7 +208,7 @@ The **application** is a **deployable composition shell** — not a cognitive ag
 | 31 Agent lifecycle | `AGENT_CONTRACTS_AND_ASSEMBLY` §20 |
 | 32 Doc governance loop | `PLATFORM_FOUNDATION` + `guides/` |
 
-Full audit procedure: [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md). **Domain audit prompts:** [`guides/audit/`](guides/audit/). **Completed implementation episodes:** [`guides/implementation-journal/INDEX.md`](guides/implementation-journal/INDEX.md).
+Full audit procedure: [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md). **New idea intake (Mode I):** [`bootstrap/idea_audit.txt`](bootstrap/idea_audit.txt) · [`audit/IDEA_AUDIT_ORCHESTRATOR.md`](audit/IDEA_AUDIT_ORCHESTRATOR.md). **Cursor paste files:** [`bootstrap/`](bootstrap/). **Domain audit prompts:** [`audit/`](audit/). **Completed implementation episodes:** [`implementation-journal/INDEX.md`](implementation-journal/INDEX.md).
 
 ---
 
@@ -211,11 +227,11 @@ Essential platform behaviours span multiple domain pairs — use this index befo
 | Autonomy slider (manual / ask / autonomous) | REL §35 + [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.10.2 | REL-ADV |
 | Sync / async execution postures | [`architecture/ORCHESTRATION.md`](architecture/ORCHESTRATION.md) §57 | ORCH-6 |
 | Interrupt anywhere / resume from checkpoint | [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) §28 + UAEP §42.8–§42.9 | FLOW-CTL |
-| Guardrails / policy enforcement (catalog) | [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.11.6 · §42.37 · vendor backends [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) §47 | GR-DOC · M.12 |
+| Guardrails / policy enforcement (catalog) | [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](architecture/UNIFIED_EXECUTION_RUNTIME.md) §42.11.6 · §42.45 (Security & Trust Planes) · vendor backends [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) §47 | GR-DOC · M.12 · SEC-PLANES |
 | RAG / retrieval engine | [`architecture/RAG.md`](architecture/RAG.md) · integration slugs [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) | M-RAG · M-RAG-DEPTH |
 | Context engineering engine | [`architecture/CONTEXT_ENGINEERING.md`](architecture/CONTEXT_ENGINEERING.md) | CE-EXT Done · CE-ALIGN Done · **CE-PROV-WIRE Planned** |
 | Ephemeral Code Craft (dynamic codegen loop) | [`architecture/CODE_CRAFT.md`](architecture/CODE_CRAFT.md) · substrate [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](architecture/RELIABILITY_FAILURE_AND_HITL.md) | ECC-0…ECC-6 |
-| LLM adapters (typed envelope + ModelCatalog) | [`architecture/LLM_ADAPTERS.md`](architecture/LLM_ADAPTERS.md) · [`intergrax/llm_adapters/USAGE.md`](../intergrax/llm_adapters/USAGE.md) | M-LLM-R **Done** · **M-LLM-X** (active) |
+| LLM adapters (typed envelope + ModelCatalog + routing L5 + enterprise domain) | [`architecture/LLM_ADAPTERS.md`](architecture/LLM_ADAPTERS.md) · [`intergrax/llm_adapters/USAGE.md`](../intergrax/llm_adapters/USAGE.md) | M-LLM-R **Done** · routing X-9…X-13 **Done** · **M-LLM-X.8 + X-14 Done** (L4 enterprise) |
 
 Platform docs do not replace `agents/*/ARCHITECTURE.md` or `applications/*/ARCHITECTURE.md`.
 
@@ -248,3 +264,4 @@ Platform docs do not replace `agents/*/ARCHITECTURE.md` or `applications/*/ARCHI
 | [`adr/entries/2026-06-11/ADR-AGENT-002.md`](adr/entries/2026-06-11/ADR-AGENT-002.md) | Author `Agent.run()` facade + per-agent environment binding |
 | [`adr/entries/2026-06-06/ADR-LLM-001.md`](adr/entries/2026-06-06/ADR-LLM-001.md) | Typed LLM adapter response envelope |
 | [`adr/entries/2026-06-14/ADR-LLM-002.md`](adr/entries/2026-06-14/ADR-LLM-002.md) | ModelCatalog + context window resolution |
+| [`adr/entries/2026-06-19/ADR-LLM-003.md`](adr/entries/2026-06-19/ADR-LLM-003.md) | LLM routing rules — Protocol contract + custom rule classes |

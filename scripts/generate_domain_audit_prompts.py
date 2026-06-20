@@ -1,12 +1,12 @@
 # © Artur Czarnecki. All rights reserved.
-"""Generate docs/guides/audit/<DOMAIN>.md prompt files. Idempotent."""
+"""Generate docs/audit/<DOMAIN>.md prompt files. Idempotent."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "docs" / "guides" / "audit"
+OUT = ROOT / "docs" / "audit"
 
 # Each domain: canon-aligned audit instruction. Regenerate after architecture/plan contract changes.
 DOMAINS: list[dict] = [
@@ -412,8 +412,8 @@ intergrax/runtime/nexus/tools/plan_context_invocation.py
 intergrax/tools/providers/rag/
 .github/workflows/rag-guard.yml · tests/fixtures/rag_golden/""",
         "key_symbols": "RagProfile · RagStack · RetrievalService · RetrievalRequest/RetrievalResult · RetrievalTrace · IngestPipeline · QueryRouter · MetadataFilter · DualIndexStrategy · HierarchicalRetriever",
-        "active_phases": "M-RAG.1–M-RAG.22 Done · **M-RAG-DEPTH active** (M-RAG.23–M-RAG.37 ← GAP-RAG-01..23)",
-        "known_gaps": "GAP-RAG-01/17/23 query_expansion unwired (P0) · GAP-RAG-02/03 DualIndex not default ingest · GAP-RAG-04 poisoning Nexus-only not catalog rag.retrieve · GAP-RAG-05/06 no stream/async ingest · GAP-RAG-07 vector bridges beta · GAP-RAG-08/09 OTel/metrics opt-in · GAP-RAG-10–12 no fallback chain · GAP-RAG-18 GraphRAG beta · GAP-RAG-20 tenant isolation partial · GAP-RAG-21 no load/soak gate",
+        "active_phases": "RAG-LC Done · M-RAG-DEPTH/M-RAG-GRAPH/M-RAG-BACKLOG Done · §6.1av RAG-MAINT queue",
+        "known_gaps": "GAP-RAG-01..40 **Closed** (LC) · GAP-RAG-15/34 Frozen · §6.1av RAG-MAINT **Done** · M-RAG.58 → AHI Frozen index",
         "dimensions": [
             "Single canonical path: RagProfile → RetrievalService → rag.retrieve catalog tool.",
             "Agents do not call vectorstore.query or vendor SDKs directly.",
@@ -674,7 +674,7 @@ applications/_shared/memory_wiring.py · memory_runtime_bridge.py
 EntityGraphMemoryStore · workspace_index_spike.py (RFC — CE owns production wiring)""",
         "key_symbols": "MemoryProfile · MemoryKind · MemoryWritePolicy · PolicyScopedMemoryView · MemoryConsolidationJob · MemoryView · SharedTaskContext",
         "active_phases": "MEM Done · MEM-DEPTH Done · MEM-OBS.1 · ADR-MEM-001",
-        "known_gaps": "Procedural memory minimal · org memory maturity · LangMem/Zep parity gaps on entity graph",
+        "known_gaps": "MEMORY-LC Done · MEM-DEPTH Done · §6.1av depth closed (procedural/org/temporal) · MEM-MAINT-03 LangMem/Zep entity graph parity **backlog** (not Mem0 SaaS; no Phase K)",
         "dimensions": [
             "Memory types separated: STM, task KV, session, user LTM, tenant, procedural, shared context.",
             "Agents do not write Redis/Postgres/vector DB directly.",
@@ -721,8 +721,8 @@ intergrax/context/ (target contracts + plugin registry)
 applications/_shared/context_runtime_bridge.py · context_wiring.py
 intergrax/runtime/events/context_skill_recording.py · payloads/canonical.py""",
         "key_symbols": "ContextEngine · ContextSourceProvider · ContextFragment · ContextAssemblyRequest · AssembledContext · ContextCompiler · ContextManager · AgentContextBundle · ContextBudgetPolicy · TaskContextAssemblyOptions · ContextDecisionProfile · ContextProfile · DegradationLadder",
-        "active_phases": "CTX Done · CE-DOC Done · CE-EXT Planned (CE-1..CE-12)",
-        "known_gaps": "No plugin catalog (GAP-CTX-01) · dual assembly paths (GAP-CTX-02) · not step-aware (GAP-CTX-04) · workspace provider spike only (GAP-CTX-06) · OTel spans partial (GAP-CTX-09)",
+        "active_phases": "CE-LC Done · CE-DEPTH Done · §6.1av CE-MAINT closed (OTel, cost, baselines)",
+        "known_gaps": "GAP-CTX-12 adaptive ranking **Frozen** → AHI-MAINT-04 · CE-LC register closed",
         "dimensions": [
             "ContextEngine.assemble() is the single target entry (CE-3) — no agent prompt concatenation.",
             "ContextSourceProvider plugin catalog with register_context_plugin (CE-2).",
@@ -815,7 +815,7 @@ intergrax/runtime/events/payload_registry.py · persistence_conformance.py
 scripts/check_observability_gates.py · check_event_catalog.py""",
         "key_symbols": "RuntimeEvent · event_kind · EventCategory · EventCatalog · emit_domain_signal · DiagnosticPayload · TraceComponent · ops filter hints",
         "active_phases": "OBS-BUS 0–7 Done · OBS-EVOL-9 Planned · ADR-OBS-001 · ADR-OBS-003",
-        "known_gaps": "OBS-EVOL-9 implementation · spine consolidation pre-release · product dashboards §6.3a",
+        "known_gaps": "OBS-LC Done · OBS-EVOL-9 M0–M3 Done · runtime_event.v2 preview registered · product dashboards §6.3a → Phase K",
         "dimensions": [
             "Single spine — no per-agent private trace SQLite DBs.",
             "Spine event_type frozen ~50 at publication; domain extends via event_kind.",
@@ -867,7 +867,7 @@ autonomy_middleware · CancellationCoordinator · ActiveTaskRegistry
 tests/acceptance/agent_os/ (04, 05, 05b HITL/checkpoint)""",
         "key_symbols": "RetryPolicy · RetryRecord · RetryHint · ResiliencePolicy · AutonomyLevel (MANUAL|ASK|AUTONOMOUS) · PauseRecord · RuntimeCheckpoint · HumanRequest · failure taxonomy (UserError, PolicyError, DependencyError, RuntimeError, QualityError)",
         "active_phases": "REL Done · REL-ADV Done · H-APP-WIRING.1 HTTP surfaces",
-        "known_gaps": "ResiliencePolicy HTTP exposure mostly lab · durable async queue opt-in · whole-run RetryCoordinator default max_run_retries=0",
+        "known_gaps": "REL-LC Done · §6.1av REL-MAINT Done · durable async queue → ORCH-MAINT-04 · LLM failover → LLM-MAINT-03",
         "dimensions": [
             "Three retry layers A/B/C not conflated (ORCH §52.1 cross-check).",
             "Agents emit RETRY hints — not internal adapter while-loops.",
@@ -919,7 +919,7 @@ intergrax/cli/apps.py · envs.py · doctor_health_app.py · doctor_diff_app.py
 docs/guides/APPLICATION_CREATION_GUIDE.md""",
         "key_symbols": "ApplicationEnvironmentProfile · HostMeta · CapabilityBundle · CognitionBundle · GovernanceBundle · DomainPolicyFragments · ProfileInvariantValidator · ApplicationManifest · EnvironmentSnapshot · bundle_normalized_payload",
         "active_phases": "H-APP Done · APP-CON-1..8 Done · APP-PROD-1..9 Done · APP-EVOL-1..7 Done · APP-EVOL-8 M1 Done · APP-OPS-1..4 Done · APP-CON-DX Done",
-        "known_gaps": "CFG-14 LKW hybrid incomplete · MCP optional uneven · queue worker not scaffold-default · policy_coverage health proxy (UC-A7 golden deferred) · multi-tenant registry store deferred",
+        "known_gaps": "T3-LC Done · §6.1av T3-MAINT Done · CFG-14 LKW → ORCH-MAINT-02 · marketplace UI §6.3 defer",
         "dimensions": [
             "ApplicationManifest + full profile on product hosts (§45 checklist).",
             "wire_application_environment() without getattr; package closure when conformance_check.",
@@ -986,7 +986,7 @@ scripts/phase_v_closeout_gate.py · phase_w_ops_evidence.py
 docs/guides/AGENT_CREATION_GUIDE.md · HARNESS_ENVIRONMENT.md""",
         "key_symbols": "EvaluationProfile · ExperimentSession · OnlineEvaluationRegistry · maturity gate evidence · TTFRun metric · shadow workspace bindings",
         "active_phases": "EVAL · CRIT-V cross-ref · MVP-EVOL · DX · AA · W-OPS · Phase V G5 Production PRR",
-        "known_gaps": "GOV-PROD.1 dashboard deferred · polished SaaS UI non-goal · MVP promotion CLI not Tier-3 router",
+        "known_gaps": "DX-LC Done · §6.1av DX-MAINT Done · GOV-PROD.1 dashboard backlog · polished SaaS UI explicit non-goal",
         "dimensions": [
             "Scaffold new-agent runnable through Nexus — not standalone script only.",
             "new-application emits profile+wiring+docker+ADR per Phase N.",
@@ -1036,7 +1036,7 @@ runtime_governance_bridge.py
 scripts/phase_w_adapt_report.py · scripts/phase_v_closeout_gate.py""",
         "key_symbols": "HarnessOutcomeSignal · AdaptiveLoopEnvelope · AdaptiveLoopKind · ProfileVersion · Utility U · AdaptationEngine · AdaptationExecutor · AdaptiveProfile · LLMCallSummary on signals",
         "active_phases": "W-ADAPT W0–W7 Done (70/70) · Phase V L4 evidence · L4 adaptive critic thresholds product-gated",
-        "known_gaps": "L4 adaptive thresholds deferred to product decision · P3 strategic agents out of Tier-1 scope · no foundation model training in scope",
+        "known_gaps": "AHI-LC Done · §6.1av AHI-MAINT Done · L4 auto-apply requires explicit product gate · live routing owner LLM-MAINT-02",
         "dimensions": [
             "Adaptations versioned with rollback pointer.",
             "PolicyEngine never bypassed by adaptive executor.",
@@ -1083,7 +1083,7 @@ applications/_shared/critic_runtime_bridge.py · critic_assembly_resolver.py
 eval/nexus_eval_runner.py""",
         "key_symbols": "CriticProfile · CriticRequest · CriticVerdict · L0Gateway · L1Gateway · EvaluatorLoopSpec · RubricSpec · ValidationResult · eval.judge · eval.trajectory · eval.record_observation",
         "active_phases": "CRIT-V 0–7 + FOLLOWUP Done · CVL-LC-1/2 layer completion (2026-06-13) · FAUDIT-EVAL.1 closed",
-        "known_gaps": "L4 adaptive critic thresholds deferred (AHIA) · FLOW-8 product host deferred · LLM trajectory judge optional (eval.trajectory_judge skill)",
+        "known_gaps": "CVL-LC Done · §6.1av CVL-MAINT Done · L4 thresholds Frozen → AHI · FLOW-8 host → §6.3",
         "dimensions": [
             "L0 static/rule gateway before L1 LLM judge always.",
             "Judge LLM ≠ producer LLM (separate profile/ref).",
@@ -1182,7 +1182,7 @@ target: intergrax/runtime/capacity/ (ECP-DEPTH ECP-1..8)
 docs/adr/entries/2026-06-08/ADR-SCALE-001.md · ADR-SCALE-002.md""",
         "key_symbols": "ScalingProfile (target) · ScalingPolicy · ScalingAction · ScalingSignal · CapacitySignalCollector · ScalingProvisioner · SIG_QUEUE_DEPTH · GRAPH_BACKPRESSURE",
         "active_phases": "ECP-DOC · ECP-DEPTH (ECP-1..8, ECP-OBS) · ADR-SCALE-001/002 · cross-ref W-OPS.4 SLIs · ORCH GRAPH_BACKPRESSURE",
-        "known_gaps": "ECP-DEPTH scaffold not production autoscaling · Collector not wired to live GRAPH_BACKPRESSURE · K8s default factory health-only · Celery provisioner stub · Scheduler HITL bypass risk · AUDIT-IDEAL-30.4 in-memory probes · ECP-PROD backlog",
+        "known_gaps": "ECP-LC Done · §6.1av ECP-MAINT Done · live K8s soak manual runbook · ingress slug → INT-MAINT-04",
         "dimensions": [
             "ECP control loop async outside Nexus hot path.",
             "Provisioning via integrations/tools — not Nexus importing K8s SDK.",
@@ -1328,7 +1328,7 @@ Perform a **rigorous, evidence-backed audit** of the **{title}** domain. You mus
 2. `docs/architecture/{did}.md` — architecture canon (incl. audit registers if present)
 3. `docs/plan/{did}.md` — implementation plan and gap IDs
 4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers {layers}
-5. `docs/guides/audit/README.md` — shared production Harness checklist (**mandatory**)
+5. `docs/audit/README.md` — shared production Harness checklist (**mandatory**)
 {appendix_block}
 ---
 
@@ -1368,7 +1368,7 @@ Confirm overrides are **wired in code**, not documentation-only:
 
 ## 6. Cross-cutting checklist (mandatory)
 
-Apply **every** section in `docs/guides/audit/README.md` §Shared production Harness checklist:
+Apply **every** section in `docs/audit/README.md` §Shared production Harness checklist:
 
 - Architecture & modularity
 - Configuration & strategy selection
@@ -1393,7 +1393,7 @@ State explicitly:
 | Matches L3 Production Harness OS | … |
 | L2 or below (name gaps with plan IDs) | … |
 | Intentional design boundary | … |
-| **niedoróbka** / missing wiring | … |
+| **incomplete_wiring** / missing wiring | … |
 
 ---
 

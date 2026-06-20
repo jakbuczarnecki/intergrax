@@ -165,6 +165,8 @@ class ContextAssemblyPayloadV2(RuntimeEventPayload):
     engine_id: str = ""
     step_index: int | None = None
     step_kind: str | None = None
+    fragment_token_cost: int = 0
+    estimated_cost_microusd: int = 0
 
 
 class TaskLifecyclePayloadV1(RuntimeEventPayload):

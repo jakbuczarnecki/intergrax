@@ -401,3 +401,87 @@ def test_profile_resolve_new_categories() -> None:
     profile = IntegrationProfile(feature_flag="unleash", ci_cd="github_actions")
     assert profile.slug_for_category(IntegrationCategory.FEATURE_FLAG) == "unleash"
     assert profile.slug_for_category(IntegrationCategory.CI_CD) == "github_actions"
+
+
+def _p4_shell_probe_targets() -> dict[str, object]:
+    from intergrax.integrations._shared.p3.clients import HttpNotificationChannel
+    from intergrax.integrations.providers.ci_cd.github_actions.bundle import create_github_actions_ci_cd
+    from intergrax.integrations.providers.cloud_platform.kubernetes.bundle import create_kubernetes_cloud_platform
+    from intergrax.integrations.providers.feature_flag.launchdarkly.bundle import create_launchdarkly_feature_flag
+    from intergrax.integrations.providers.feature_flag.unleash.bundle import create_unleash_feature_flag
+    from intergrax.integrations.providers.graph_store.falkordb.bundle import create_falkordb_graph_store
+    from intergrax.integrations.providers.graph_store.memgraph.bundle import create_memgraph_graph_store
+    from intergrax.integrations.providers.interaction_surface.mailgun.bundle import create_mailgun_interaction_surface
+    from intergrax.integrations.providers.interaction_surface.ollama.bundle import create_ollama_interaction_surface
+    from intergrax.integrations.providers.issue_tracker.asana.bundle import create_asana_issue_tracker
+    from intergrax.integrations.providers.issue_tracker.bitbucket.bundle import create_bitbucket_issue_tracker
+    from intergrax.integrations.providers.issue_tracker.servicenow.bundle import create_servicenow_issue_tracker
+    from intergrax.integrations.providers.message_bus.redpanda.bundle import create_redpanda_message_bus
+    from intergrax.integrations.providers.notification_channel.incident_io.bundle import create_incident_io_notification_channel
+    from intergrax.integrations.providers.notification_channel.sendgrid.bundle import create_sendgrid_notification_channel
+    from intergrax.integrations.providers.object_storage.cloudflare_r2.bundle import create_cloudflare_r2_object_storage
+    from intergrax.integrations.providers.object_storage.huggingface_hub.bundle import create_huggingface_hub_object_storage
+    from intergrax.integrations.providers.observability_backend.grafana.bundle import create_grafana_observability_backend
+    from intergrax.integrations.providers.observability_backend.influxdb.bundle import create_influxdb_observability_backend
+    from intergrax.integrations.providers.observability_backend.loki.bundle import create_loki_observability_backend
+    from intergrax.integrations.providers.observability_backend.mlflow.bundle import create_mlflow_observability_backend
+    from intergrax.integrations.providers.observability_backend.tempo.bundle import create_tempo_observability_backend
+    from intergrax.integrations.providers.relational_store.duckdb.bundle import create_duckdb_relational_store
+    from intergrax.integrations.providers.relational_store.timescaledb.bundle import create_timescaledb_relational_store
+    from intergrax.integrations.providers.secrets_store.aws_secrets_manager.bundle import create_aws_secrets_manager_secrets_store
+    from intergrax.integrations.providers.secrets_store.azure_key_vault.bundle import create_azure_key_vault_secrets_store
+    from intergrax.integrations.providers.secrets_store.doppler.bundle import create_doppler_secrets_store
+    from intergrax.integrations.providers.secrets_store.gcp_secret_manager.bundle import create_gcp_secret_manager_secrets_store
+    from intergrax.integrations.providers.vector_store.pgvector.bundle import create_pgvector_vector_store
+
+    class _K8s:
+        def health(self) -> bool:
+            return True
+
+    client = _FakeObsClient()
+    sent: list[Any] = []
+
+    def _sender(*, message: Any) -> None:
+        sent.append(message)
+
+    return {
+        "pgvector": create_pgvector_vector_store(),
+        "duckdb": create_duckdb_relational_store(connection=_FakeSqlConnection(), dsn=":memory:"),
+        "influxdb": create_influxdb_observability_backend(observability_backend=client),
+        "timescaledb": create_timescaledb_relational_store(connection=_FakeSqlConnection()),
+        "grafana": create_grafana_observability_backend(observability_backend=client),
+        "loki": create_loki_observability_backend(observability_backend=client),
+        "tempo": create_tempo_observability_backend(observability_backend=client),
+        "aws_secrets_manager": create_aws_secrets_manager_secrets_store(client=_FakeCloudSecretsClient()),
+        "azure_key_vault": create_azure_key_vault_secrets_store(client=_FakeCloudSecretsClient()),
+        "gcp_secret_manager": create_gcp_secret_manager_secrets_store(client=_FakeCloudSecretsClient()),
+        "doppler": create_doppler_secrets_store(client=_FakeSecretsClient()),
+        "unleash": create_unleash_feature_flag(client=_FakeFlagClient()),
+        "launchdarkly": create_launchdarkly_feature_flag(client=_FakeFlagClient()),
+        "github_actions": create_github_actions_ci_cd(client=_FakeCiClient()),
+        "redpanda": create_redpanda_message_bus(message_bus=_FakeMessageBus()),
+        "cloudflare_r2": create_cloudflare_r2_object_storage(client=_FakeObjectClient()),
+        "memgraph": create_memgraph_graph_store(client=_FakeGraphClient()),
+        "falkordb": create_falkordb_graph_store(client=_FakeGraphClient()),
+        "incident_io": create_incident_io_notification_channel(
+            notification_channel=HttpNotificationChannel(_sender, provider="incident_io"),
+        ),
+        "kubernetes": create_kubernetes_cloud_platform(client=_K8s()),
+        "servicenow": create_servicenow_issue_tracker(client=_FakeIssueClient()),
+        "bitbucket": create_bitbucket_issue_tracker(client=_FakeIssueClient()),
+        "asana": create_asana_issue_tracker(client=_FakeIssueClient()),
+        "sendgrid": create_sendgrid_notification_channel(sender=_sender),
+        "mailgun": create_mailgun_interaction_surface(),
+        "mlflow": create_mlflow_observability_backend(observability_backend=client),
+        "huggingface_hub": create_huggingface_hub_object_storage(client=_FakeObjectClient()),
+        "ollama": create_ollama_interaction_surface(client=_FakeOllamaClient()),
+    }
+
+
+@pytest.mark.parametrize("slug", M6_P4_SLUGS)
+def test_p4_shell_health_probe(slug: str) -> None:
+    from intergrax.integrations._shared.health import probe_client_health
+
+    instance = _p4_shell_probe_targets()[slug]
+    status = probe_client_health(instance, slug=slug)
+    assert status.healthy is True

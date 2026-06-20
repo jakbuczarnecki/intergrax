@@ -5,20 +5,28 @@ from __future__ import annotations
 import pytest
 
 from intergrax.applications._shared.notify_tool_wiring import wire_scheduled_notification_tool_binding
-from intergrax.integrations.registry.catalog_manifests import LOG
 from intergrax.tools.providers.notify.contracts import (
     NotifyCancelScheduledInput,
+    NotifyDispatchDueInput,
     NotifyListScheduledInput,
     NotifyScheduleInput,
 )
-from intergrax.tools.providers.notify.service import notify_cancel_scheduled, notify_list_scheduled, notify_schedule
+from intergrax.tools.providers.notify.service import (
+    notify_cancel_scheduled,
+    notify_dispatch_due,
+    notify_list_scheduled,
+    notify_schedule,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
+from tests.unit.tools.providers.notify.test_notify_send import FakeNotificationChannel
 
 pytestmark = pytest.mark.unit
 
 
 def test_notify_list_and_cancel_scheduled() -> None:
-    ctx = wire_scheduled_notification_tool_binding(ToolWiringContext(notification_channel=LOG))
+    ctx = wire_scheduled_notification_tool_binding(
+        ToolWiringContext(notification_channel=FakeNotificationChannel())
+    )
     scheduled = notify_schedule(
         ctx,
         NotifyScheduleInput(
@@ -43,11 +51,9 @@ def test_notify_list_and_cancel_scheduled() -> None:
 
 
 def test_notify_dispatch_due() -> None:
-    from intergrax.integrations.registry.catalog_manifests import LOG
-    from intergrax.tools.providers.notify.contracts import NotifyDispatchDueInput
-    from intergrax.tools.providers.notify.service import notify_dispatch_due
-
-    ctx = wire_scheduled_notification_tool_binding(ToolWiringContext(notification_channel=LOG))
+    ctx = wire_scheduled_notification_tool_binding(
+        ToolWiringContext(notification_channel=FakeNotificationChannel())
+    )
     notify_schedule(
         ctx,
         NotifyScheduleInput(

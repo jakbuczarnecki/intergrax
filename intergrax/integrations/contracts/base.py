@@ -56,6 +56,7 @@ class IntegrationMetadata:
     categories: tuple[IntegrationCategory, ...]
     status: IntegrationStatus = IntegrationStatus.STABLE
     env_prefix: str = ""
+    requires_local_container: bool = False
 
 
 IntegrationFactory = Callable[..., Any]
@@ -71,6 +72,7 @@ class IntegrationEntry:
     status: IntegrationStatus = IntegrationStatus.STABLE
     env_prefix: str = ""
     description: str = ""
+    requires_local_container: bool = False
 
     @property
     def metadata(self) -> IntegrationMetadata:
@@ -79,6 +81,7 @@ class IntegrationEntry:
             categories=self.categories,
             status=self.status,
             env_prefix=self.env_prefix,
+            requires_local_container=self.requires_local_container,
         )
 
 

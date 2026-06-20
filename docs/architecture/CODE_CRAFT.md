@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.6  
 **ADR:** [`adr/entries/2026-06-10/ADR-CODECRAFT-001.md`](../adr/entries/2026-06-10/ADR-CODECRAFT-001.md)  
 **Audit layer:** 11b (Ephemeral Code Craft)  
-**Audit instruction:** [`guides/audit/CODE_CRAFT.md`](../guides/audit/CODE_CRAFT.md)  
+**Audit instruction:** [`audit/CODE_CRAFT.md`](../audit/CODE_CRAFT.md)  
 **Implementation:** `intergrax/codecraft/` · `intergrax/runtime/codecraft/` · `intergrax/tools/providers/codecraft/`  
 **Last updated:** 2026-06-17 — **Full Harness LC** (re-validates 2026-06-13 closeout); **ECC-0…ECC-6 + S7–S11 Done (L3+)**
 
@@ -286,9 +286,10 @@ sequenceDiagram
 
 Correlation: `craft_id` ↔ `sandbox_session_id` ↔ `task_id` ↔ `run_id` ↔ `correlation_id`.
 
-### 10.2 Metrics (planned)
+### 10.2 Metrics (shipped — ECC-MAINT-04)
 
 - Iterations to success, static gate failure rate, exec vs generation time ratio, token cost per craft, HITL rate in supervised mode.
+- Emitted via ``codecraft.metrics_snapshot`` trace step and ``CodeCraftMetricsSnapshot.to_panel()`` (`runtime/codecraft/trace.py`).
 
 Canon cross-ref: [`OBSERVABILITY.md`](OBSERVABILITY.md) · [`TOOLS.md`](TOOLS.md) §Tool execution pipeline.
 
@@ -328,9 +329,9 @@ Canon cross-ref: [`OBSERVABILITY.md`](OBSERVABILITY.md) · [`TOOLS.md`](TOOLS.md
 | CODECRAFT trace events | **Done** — full §10.1 taxonomy | S8 |
 | Graph node | **Done** — optional `CodeCraftNode` | ECC-5 |
 | AHI adaptive trigger | **Done** — `adaptive_trigger.py` | ECC-6 |
-| Metrics dashboards | **Planned** | Iteration success rate, gate failure rate — §10.2 |
+| Metrics dashboards | **Done** — §10.2 trace panel via `codecraft.metrics_snapshot` | ECC-MAINT-04 |
 
-**Maturity:** **L3+** — ECC-0…ECC-6 + post-closeout S7–S10 (2026-06-13). Depth backlog: metrics §10.2, `container` tier, `codegen_llm_profile_ref` wiring.
+**Maturity:** **L3+** — ECC-0…ECC-6 + post-closeout S7–S10 (2026-06-13). Depth backlog closed: metrics §10.2, `container` tier, `codegen_llm_profile_ref` wiring (2026-06-18 MAINT).
 
 ---
 

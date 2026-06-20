@@ -159,7 +159,7 @@ def _settings_py(names: ScaffoldApplicationNames) -> str:
             include_mcp: bool = True
             mcp_mount_path: str = "/mcp"
             include_task_control: bool = True
-            include_queue_worker: bool = False
+            include_queue_worker: bool = True
             task_control_route_prefix: str = "/v1/tasks"
 
             @classmethod
@@ -193,8 +193,8 @@ def _settings_py(names: ScaffoldApplicationNames) -> str:
                     os.getenv("{env_prefix_value}INCLUDE_TASK_CONTROL") or "true"
                 ).strip().lower() not in {{"0", "false", "no"}}
                 include_queue_worker = (
-                    os.getenv("{env_prefix_value}INCLUDE_QUEUE_WORKER") or "false"
-                ).strip().lower() in {{"1", "true", "yes", "on"}}
+                    os.getenv("{env_prefix_value}INCLUDE_QUEUE_WORKER") or "true"
+                ).strip().lower() not in {{"0", "false", "no", "off"}}
                 task_control_prefix = (
                     os.getenv("{env_prefix_value}TASK_CONTROL_ROUTE_PREFIX") or "/v1/tasks"
                 ).strip() or "/v1/tasks"

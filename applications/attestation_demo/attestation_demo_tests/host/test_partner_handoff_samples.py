@@ -44,4 +44,5 @@ def test_partner_handoff_v2_failed_sample_dual_claims() -> None:
     assert_partner_failed_tool_dual_claims(
         payload["boundary_events"],
         run_id="run_sample_fail",
+        host_signed=False,
     )

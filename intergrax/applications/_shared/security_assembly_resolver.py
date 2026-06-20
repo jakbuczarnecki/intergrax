@@ -8,7 +8,12 @@ from dataclasses import dataclass
 from typing import Sequence
 
 from intergrax.applications._shared.security_wiring import ApplicationSecurityWiring
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+    ApplicationSecurityProfile,
+)
+from intergrax.applications._shared.security_runtime_bridge import SecurityWiringOptions
+from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 
@@ -59,16 +64,58 @@ def validate_security_wiring(
         errors.append("identity_profile.tenant_required requires tenant_security_verify_enabled")
 
     expected = frozenset(wiring.enabled_middleware)
-    if expected != frozenset(_expected_middleware_from_profile(profile)):
+    if expected != frozenset(_expected_middleware_from_profile(profile, wiring.options)):
         errors.append("enabled_middleware must match ApplicationSecurityProfile toggles")
+
+    if profile.require_secrets_store_for_encryption and not _secrets_store_configured(env):
+        errors.append(
+            "require_secrets_store_for_encryption requires integration_profile.secrets_store",
+        )
+
+    if (
+        profile.encryption_enforcement_enabled
+        and profile.require_secrets_store_for_encryption
+        and not _secrets_store_configured(env)
+        and env.execution_mode == ExecutionMode.STRICT
+    ):
+        errors.append("encryption enforcement requires secrets_store on strict hosts")
+
+    for plugin_id in profile.defense_plugin_ids:
+        if _resolve_defense_plugin(plugin_id) is None and env.execution_mode == ExecutionMode.STRICT:
+            errors.append(f"unknown security defense plugin id: {plugin_id}")
+
+    for bundle_id in profile.defense_bundle_ids:
+        if _resolve_defense_plugin(bundle_id) is None:
+            errors.append(f"unknown security defense bundle id: {bundle_id}")
 
     return SecurityAssemblyValidationResult(valid=not errors, errors=tuple(errors))
 
 
+def _secrets_store_configured(env: ApplicationEnvironmentProfile) -> bool:
+    from intergrax.applications._shared.security_runtime_bridge import (
+        _secrets_store_configured as _configured,
+    )
+
+    return _configured(env)
+
+
+def _resolve_defense_plugin(plugin_id: str):
+    from intergrax.runtime.security.defense_registry import get_security_defense_plugin
+
+    return get_security_defense_plugin(plugin_id)
+
+
 def _expected_middleware_from_profile(
     profile: ApplicationSecurityProfile,
+    options: SecurityWiringOptions | None = None,
 ) -> tuple[str, ...]:
+    if options is not None:
+        from intergrax.applications._shared.security_wiring import _enabled_middleware_names
+
+        return _enabled_middleware_names(options)
     names: list[str] = []
+    if profile.encryption_enforcement_enabled:
+        names.append("EncryptionEnforcementMiddleware")
     if profile.prompt_defense_enabled:
         names.append("PromptDefenseMiddleware")
     if profile.tool_injection_defense_enabled:

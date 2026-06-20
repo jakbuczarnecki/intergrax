@@ -14,11 +14,8 @@ wheels/
 temp_documents/
 api/chat/rag_app.db
 
-/bundles/
-
 # Documents
 TODO.txt
-LLM_INSTRUCTIONS.txt
 
 # Tests results cache
 .pytest_cache/

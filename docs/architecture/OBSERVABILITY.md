@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/OBSERVABILITY.md`](../plan/OBSERVABILITY.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 21, 30  
-**Audit instruction:** [`guides/audit/OBSERVABILITY.md`](../guides/audit/OBSERVABILITY.md)  
+**Audit instruction:** [`audit/OBSERVABILITY.md`](../audit/OBSERVABILITY.md)  
 **Last updated:** 2026-06-17 — **Full Harness LC** (re-validates OBS-EVOL-9); OBS-BUS + event catalog spine **Done**
 
 ---
@@ -429,7 +429,7 @@ with TraceScope(emitter, run_id=..., task_id=..., tenant_id=...) as scope:
 | RAG | RAG | `rag_summary` (`intergrax.diag.rag.summary`) | — (trace); CONTEXT_* (bus) |
 | Web search | WEBSEARCH | `websearch_summary` | — |
 | Tools | TOOLS | `tool_invocation_*` | TOOL_* |
-| LLM | ENGINE | `core_llm`, `core_llm_call_recorded` | LLM_CALL |
+| LLM | ENGINE | `core_llm`, `core_llm_call_recorded`, `llm_catalog_miss` (`resolution_tier`) | LLM_CALL |
 | Plan / replan | PLANNER | `engine_plan_produced`, `plan_source_*` | PLAN_* |
 | Memory | MEMORY | `user_longterm_memory_summary` | MEMORY_* |
 | Budget | POLICY | budget diagnostics | — |
@@ -491,10 +491,14 @@ Canonical payload families (canon §42.23.1):
 | Item | Notes |
 |------|-------|
 | Layered identity (`event_kind`, `EventCatalog`) | **OBS-EVOL-9** · ADR-OBS-003 · pre-release spine consolidation |
-| `RuntimeEvent.payload` Pydantic field | Migrate from `Dict[str, Any]` to discriminated union on the model itself |
-| Store retention policy | Platform-wide TTL / archival (future) |
-| OTLP protobuf push | Journal export ships OTLP-style JSON; vendor protobuf encoders remain optional integrations |
-| Legacy dual emit entry | `RuntimeState.trace_event()` coexists with `ObservabilityEmitter`; both route through the same bridge |
+| `runtime_event.v2` preview | **OBS-MAINT-01** — accepted via `PREVIEW_RUNTIME_SCHEMA_VERSIONS`; canonical wire format remains `runtime_event.v1` until migration |
+
+### Pre-release spine consolidation checklist (OBS-MAINT-04)
+
+1. `uv run python scripts/check_observability_gates.py` green  
+2. Payload registry includes all `RuntimeEventType` mappings  
+3. Tenant propagation on hot-path events (`check_runtime_event_tenant_propagation.py`)  
+4. Product dashboards deferred to [`plan/PLATFORM_FOUNDATION.md`](../plan/PLATFORM_FOUNDATION.md) §6.3a (Phase K) — **OBS-MAINT-02**
 
 ### 8.3 Extension rules for developers
 
@@ -718,8 +722,8 @@ uv run python scripts/check_observability_gates.py
 
 ## 18. Execution Boundary Export (EBE) — optional side channel
 
-**Status:** PoC v1 **Done** · PoC v2 (EBE-8 harness-step export) **Done** (partner AgentReceipt sandbox).  
-**Reference host:** `applications/attestation_demo/` · **ADR:** [ADR-OBS-002](../adr/entries/2026-06-13/ADR-OBS-002.md)
+**Status:** PoC v1 **Done** · PoC v2 (EBE-8) **Done** (partner validated) · **EBE-9 host signing Done** (BoundaryAttest PoC, optional profile flag).  
+**Reference host:** `applications/attestation_demo/` · **ADR:** [ADR-OBS-002](../adr/entries/2026-06-13/ADR-OBS-002.md) · [ADR-OBS-004](../adr/entries/2026-06-19/ADR-OBS-004.md)
 
 EBE is an **optional** export path for **unsigned, vendor-neutral** tool-boundary facts. It complements — does not replace — the Harness Observability Spine (HOS).
 
@@ -750,7 +754,21 @@ EBE is an **optional** export path for **unsigned, vendor-neutral** tool-boundar
 
 ### PoC v2 delivery (EBE-8)
 
-Synchronous API response (`boundary_events[]`) returns **two events per demo run** when `step_level_enabled=true`: `tool_execution` (seq 1) then `harness_step` (seq 2). Webhook sink and host signing remain **deferred**.
+Synchronous API response (`boundary_events[]`) returns **two events per demo run** when `step_level_enabled=true`: `tool_execution` (seq 1) then `harness_step` (seq 2). Webhook sink remains **deferred**.
+
+### PoC v3 delivery (EBE-9 host signing)
+
+When `host_signing_enabled=true`, each event includes `signed: true` and a `host_attestation` envelope. Intergrax:
+
+1. Canonicalizes the unsigned event → `signed_payload_hash`
+2. Signs canonical JSON host-attestation statement (`boundaryattest.host-attestation.v1`)
+3. Exposes `trust_model.recommended_receipt_role: host_attested`
+
+Unsigned v2 remains available when signing is disabled. Golden vector: `applications/attestation_demo/partner_handoff/ebe9_golden_vector.v1.json`. Spec: `EBE-9_HOST_SIGNING.md`.
+
+**Partner validation (2026-06):** External BoundaryAttest adapter confirmed one `client_observed` receipt per event, hash parity, independent verification, and intentional dual claims on the failed-tool fixture. Reference handoff: branch `agent_experiment_runtime` @ `106aee776fcc6053e8265b9c3656638d107d351d`.
+
+**Trace correlation scope:** `GET /debug/tasks/{run_id}/trace` supports run/task-level journal comparison (agent, capability, graph node, critic, task state). It does **not** expose EBE `event_id`, `step_id`, or `tool_id`; exact per-event correlation uses the live `boundary_events[]` from `POST /poc/run` (or buffered replay endpoint). Enriching HOS trace with EBE identifiers is optional future work, not a PoC v2 requirement.
 
 ### Non-goals
 

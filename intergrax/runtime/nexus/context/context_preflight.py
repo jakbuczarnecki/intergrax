@@ -20,11 +20,15 @@ def _default_count_tokens(text: str) -> int:
 def count_message_tokens(
     messages: Sequence[ChatMessage],
     *,
-    count_tokens: Callable[[str], int],
+    count_tokens: Callable[[str], int] | None = None,
+    adapter: LLMAdapter | None = None,
 ) -> int:
+    if adapter is not None and count_tokens is None:
+        return int(adapter.count_messages_tokens(messages))
+    counter = count_tokens or _default_count_tokens
     total = 0
     for message in messages:
-        total += count_tokens(message.content or "")
+        total += counter(message.content or "")
     return total
 
 

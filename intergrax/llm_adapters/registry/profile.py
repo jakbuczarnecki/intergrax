@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, Mapping, Optional
+from typing import TYPE_CHECKING, Any, Mapping, Optional, Union
 
 if TYPE_CHECKING:
     from intergrax.integrations.contracts.secrets_store import SecretsStore
@@ -38,7 +38,7 @@ class LLMProfile(BaseModel):
 
     model_config = ConfigDict(extra="forbid", use_enum_values=False)
 
-    provider: LLMProvider
+    provider: Union[LLMProvider, str]
     model: Optional[str] = None
     options: dict[str, Any] = Field(default_factory=dict)
     fallback_profiles: tuple[LLMProfile, ...] = Field(default_factory=tuple)
@@ -59,12 +59,29 @@ class LLMProfile(BaseModel):
 
     @field_validator("provider", mode="before")
     @classmethod
-    def _coerce_provider(cls, value: str | LLMProvider) -> LLMProvider:
+    def _coerce_provider(cls, value: str | LLMProvider) -> LLMProvider | str:
         if isinstance(value, LLMProvider):
             return value
         if isinstance(value, str) and value.strip():
-            return LLMProvider(value.strip().lower())
-        raise ValueError("provider must be a non-empty LLMProvider or string slug")
+            key = value.strip().lower()
+            try:
+                return LLMProvider(key)
+            except ValueError:
+                from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
+
+                registered = LLMAdapterRegistry.registered_providers()
+                if key not in registered:
+                    raise ValueError(
+                        f"unknown LLM provider slug {key!r}; register via LLMAdapterRegistry.register()"
+                    ) from None
+                return key
+        raise ValueError("provider must be a non-empty LLMProvider or registered string slug")
+
+    @classmethod
+    def _provider_slug(cls, provider: LLMProvider | str) -> str:
+        if isinstance(provider, LLMProvider):
+            return provider.value
+        return str(provider).strip().lower()
 
     def create_adapter(
         self,
@@ -131,8 +148,9 @@ class LLMProfile(BaseModel):
 
         merged = merge_secrets_into_options(self.provider, dict(self.options), secrets)
         if not merged.get("api_key"):
-            if self.provider.value not in {"ollama", "vllm", "llama_cpp"}:
-                warnings.append(f"no api_key in profile options or secrets for provider={self.provider.value}")
+            slug = self._provider_slug(self.provider)
+            if slug not in {"ollama", "vllm", "llama_cpp"}:
+                warnings.append(f"no api_key in profile options or secrets for provider={slug}")
         return warnings
 
     def with_secrets(self, secrets: Mapping[str, str]) -> LLMProfile:

@@ -57,6 +57,8 @@ def build_attestation_demo_environment() -> ApplicationEnvironmentProfile:
                 capture_mode="side_effects_only",
                 include_canonical_io=True,
                 step_level_enabled=True,
+                host_signing_enabled=True,
+                host_signing_public_key_id="attestation-demo-host-1",
             ),
         }
     )
@@ -77,7 +79,7 @@ def build_attestation_demo_manifest() -> ApplicationManifest:
                 capabilities=["attestation.demo"],
             ),
         ],
-        description="Partner PoC host — unsigned execution boundary events in API response",
+        description="Partner PoC host — execution boundary events with optional EBE-9 host signing",
     )
 
 

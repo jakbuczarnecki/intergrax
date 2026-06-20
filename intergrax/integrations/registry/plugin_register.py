@@ -28,6 +28,7 @@ def register_from_manifest(
             status=manifest.status,
             env_prefix=manifest.env_prefix,
             description=manifest.description,
+            requires_local_container=manifest.requires_local_container,
         ),
         override=override,
     )

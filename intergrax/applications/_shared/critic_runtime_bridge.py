@@ -52,9 +52,19 @@ def resolve_critic_wiring_options(profile: CriticProfile) -> CriticWiringOptions
 def apply_critic_profile_to_runtime_config(
     config: RuntimeConfig,
     profile: CriticProfile,
+    *,
+    env: ApplicationEnvironmentProfile | None = None,
 ) -> RuntimeConfig:
     """Record critic posture on runtime config for downstream Nexus steps."""
     config.critic_profile = profile
+    if env is not None and env.llm_routing_profile is not None:
+        config.metadata["critic_llm_routing_enabled"] = True
+        if profile.critic_llm_profile_ref:
+            config.metadata["critic_llm_profile_ref"] = profile.critic_llm_profile_ref
+        if profile.critic_llm_profile is not None:
+            config.metadata["critic_llm_routing_policy"] = "dedicated_profile"
+        else:
+            config.metadata["critic_llm_routing_policy"] = "inherit_core"
     return config
 
 
@@ -63,4 +73,4 @@ def apply_critic_profiles_from_environment(
     env: ApplicationEnvironmentProfile,
 ) -> RuntimeConfig:
     """Apply environment-declared critic profile."""
-    return apply_critic_profile_to_runtime_config(config, env.critic_profile)
+    return apply_critic_profile_to_runtime_config(config, env.critic_profile, env=env)

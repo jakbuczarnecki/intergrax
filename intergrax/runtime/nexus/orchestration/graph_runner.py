@@ -28,7 +28,11 @@ from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.nexus.response.final_response_composer import FinalResponseComposer
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.retry.coordinator import RetryCoordinator
-from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy, RetryRecord
+from intergrax.runtime.nexus.retry.retry_engine import (
+    RetryPolicy,
+    RetryRecord,
+    _resilience_policy_from_task,
+)
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
@@ -223,7 +227,11 @@ class NexusGraphRunner:
         elif len(executions) > 1 and not all(
             e.status == AgentExecutionStatus.COMPLETED for e in executions
         ):
-            lifecycle.transition(task, TaskState.PARTIALLY_COMPLETED)
+            policy = _resilience_policy_from_task(task)
+            if policy is not None and not policy.allow_partial_result:
+                lifecycle.transition(task, TaskState.FAILED)
+            else:
+                lifecycle.transition(task, TaskState.PARTIALLY_COMPLETED)
         elif task.runtime.orchestration.needs_more_information:
             lifecycle.transition(task, TaskState.NEEDS_MORE_INFORMATION)
         else:

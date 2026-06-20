@@ -4,14 +4,13 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 import logging
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from pydantic import BaseModel
 
+from intergrax.runtime.attestation.canonical_json import stable_payload_hash
 from intergrax.runtime.attestation.attestation_policy import (
     AttestationCaptureMode,
     should_emit_boundary_event,
@@ -31,12 +30,6 @@ if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 
 _LOG = logging.getLogger(__name__)
-
-
-def _stable_payload_hash(payload: dict[str, object]) -> str:
-    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
-    digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-    return f"sha256:{digest}"
 
 
 def _runtime_version() -> str:
@@ -109,8 +102,8 @@ class ExecutionBoundaryEmitter:
             if result.error is not None:
                 error_message = result.error.error_message
 
-        input_hash = _stable_payload_hash(input_payload) if input_payload else None
-        output_hash = _stable_payload_hash(output_payload) if output_payload else None
+        input_hash = stable_payload_hash(input_payload) if input_payload else None
+        output_hash = stable_payload_hash(output_payload) if output_payload else None
         if not export_settings.include_canonical_io:
             input_payload = {}
             output_payload = {}

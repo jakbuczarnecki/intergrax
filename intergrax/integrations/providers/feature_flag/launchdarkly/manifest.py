@@ -13,5 +13,6 @@ MANIFEST = IntegrationManifest(
     categories=(IntegrationCategory.FEATURE_FLAG,),
     status=IntegrationStatus.STABLE,
     env_prefix='INTERGRAX_LAUNCHDARKLY',
-    description='launchdarkly integration (Phase M.6 P4)',
+    description='SaaS-only feature flag backend (Phase M.6 P4)',
+    requires_local_container=False,
 )

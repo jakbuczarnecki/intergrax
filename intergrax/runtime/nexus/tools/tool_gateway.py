@@ -148,5 +148,5 @@ class RuntimeToolGateway:
         if name in {NEXUS_WEBSEARCH, "websearch", WEBSEARCH_QUERY_TOOL_ID}:
             return ToolInvocationPlan.from_tool_ids([WEBSEARCH_QUERY_TOOL_ID])
         if name in {NEXUS_TOOLS, "tools"}:
-            return ToolInvocationPlan(use_tools=True)
+            return ToolInvocationPlan.from_tool_ids([], use_tools=True)
         return ToolInvocationPlan()

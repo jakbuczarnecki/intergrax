@@ -105,6 +105,7 @@ class StepKernelContext:
     budget_reaction_hook: Any = None
     budget_threshold_emitted: set[str] = field(default_factory=set)
     budget_degrade_active: bool = False
+    routing_rule_evaluations: list[dict[str, Any]] = field(default_factory=list)
     execution_boundary_export: ExecutionBoundaryExportRuntimeSettings | None = None
     boundary_event_buffer: BoundaryEventBuffer | None = None
 
@@ -794,10 +795,16 @@ class HarnessKernel:
         from intergrax.agents.acp_budget_reactions import maybe_emit_budget_threshold
 
         await maybe_emit_budget_threshold(step_ctx, kernel_ctx)
-        kernel_ctx.run_trace.steps.append(record.step_record)
+        step_record = record.step_record
+        if kernel_ctx.routing_rule_evaluations:
+            diagnostics = dict(step_record.diagnostics)
+            diagnostics["llm_routing_evaluations"] = list(kernel_ctx.routing_rule_evaluations)
+            step_record = step_record.model_copy(update={"diagnostics": diagnostics})
+            kernel_ctx.routing_rule_evaluations.clear()
+        kernel_ctx.run_trace.steps.append(step_record)
         kernel_ctx.run_trace.total_steps = len(kernel_ctx.run_trace.steps)
         kernel_ctx.run_trace.total_llm_tokens += sum(
-            call.tokens_in + call.tokens_out for call in record.step_record.llm_calls
+            call.tokens_in + call.tokens_out for call in step_record.llm_calls
         )
-        kernel_ctx.run_trace.total_tool_calls += len(record.step_record.tool_calls)
-        kernel_ctx.run_trace.total_rag_calls += len(record.step_record.rag_calls)
+        kernel_ctx.run_trace.total_tool_calls += len(step_record.tool_calls)
+        kernel_ctx.run_trace.total_rag_calls += len(step_record.rag_calls)

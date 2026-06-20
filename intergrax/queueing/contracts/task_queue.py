@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional
 
+from intergrax.queueing.task_priority import TaskPriority
+
 
 class TaskStatus(str, Enum):
     """
@@ -37,6 +39,7 @@ class TaskRequest:
     task_name: str
     payload: bytes
     idempotency_key: Optional[str] = None
+    priority: TaskPriority = TaskPriority.NORMAL
 
 
 @dataclass(frozen=True)

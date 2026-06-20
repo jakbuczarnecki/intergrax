@@ -38,6 +38,8 @@ jobs:
           INTERGRAX_DEFAULT_BEDROCK_MODEL_ID: ${{ secrets.INTERGRAX_DEFAULT_BEDROCK_MODEL_ID }}
           INTERGRAX_VERTEX_PROJECT: ${{ secrets.INTERGRAX_VERTEX_PROJECT }}
           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+          INTERGRAX_DEFAULT_VLLM_BASE_URL: ${{ vars.INTERGRAX_DEFAULT_VLLM_BASE_URL }}
+          INTERGRAX_DEFAULT_VLLM_MODEL: ${{ vars.INTERGRAX_DEFAULT_VLLM_MODEL }}
         run: >-
           uv run pytest
           tests/unit/llm_adapters/test_network_smoke.py

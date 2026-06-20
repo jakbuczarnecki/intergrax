@@ -1,6 +1,6 @@
 # `knowledge.wiki_navigator`
 
-**Bundle:** `knowledge` · **Version:** 1.0.0 · **Risk:** `medium` · **Bundle status:** BETA
+**Bundle:** `knowledge` · **Version:** 1.0.0 · **Risk:** `medium` · **Bundle status:** STABLE
 
 ## Purpose
 

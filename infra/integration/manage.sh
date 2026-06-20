@@ -20,9 +20,9 @@ add_profiles() {
 resolve_profiles() {
   case "$PROFILE" in
     all)
-      add_profiles core queue rag data secrets observability cloud heavy all
+      add_profiles core queue rag data secrets observability cloud heavy vllm llama-cpp all
       ;;
-    core|queue|rag|data|secrets|observability|cloud|heavy)
+    core|queue|rag|data|secrets|observability|cloud|heavy|vllm|llama-cpp)
       add_profiles "$PROFILE"
       ;;
     p6)
@@ -37,7 +37,7 @@ resolve_profiles() {
     *)
       echo "Unknown profile: $PROFILE"
       echo "Usage: ./manage.sh {start|stop|status|build} [profile]"
-      echo "Profiles: default, minimal, core, queue, rag, data, secrets, observability, cloud, heavy, p6, all"
+      echo "Profiles: default, minimal, core, queue, rag, data, secrets, observability, cloud, heavy, vllm, llama-cpp, p6, all"
       exit 1
       ;;
   esac

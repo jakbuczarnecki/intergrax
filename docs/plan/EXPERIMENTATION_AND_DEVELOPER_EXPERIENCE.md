@@ -6,7 +6,25 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates DX + W-OPS + AUDIT-IDEAL-26/27 closeout).
+**Last updated:** 2026-06-19 — **DX-IDEA** Mode I idea intake discoverability + bootstrap gate.
+
+---
+
+## Phase DX-IDEA — Idea intake audit (Mode I)
+
+**Source:** Operator workflow for auditing a **single harness or product idea** before implementation.  
+**Bootstrap:** [`bootstrap/idea_audit.txt`](../bootstrap/idea_audit.txt) · **Orchestrator:** [`audit/IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md) · **Cursor rule:** `.cursor/rules/intergrax-idea-audit.mdc`  
+**Status:** **Done** — live chat audit; idea in operator message; durable record = architecture + plan update after operator approval (no sidecar files).
+
+| ID | Gap | Priority | Status |
+|----|-----|----------|--------|
+| DX-IDEA-01 | Mode I indexed in hub, audit map, bootstrap README; architecture §43.2 surface | P2 | **Done** |
+| DX-IDEA-02 | `scripts/check_idea_audit_bootstrap.py` — bootstrap ↔ orchestrator consistency gate | P3 | **Done** |
+| DX-IDEA-03 | Natural-language idea intake via Cursor rule; bootstrap without USER CONFIG placeholders | P2 | **Done** |
+
+**Delivery rule:** One **DX-IDEA-\*** ID per PR → update this table → `check_idea_audit_bootstrap.py` green.
+
+**no ADR needed** — documentation and DX workflow only; no runtime contract change.
 
 ---
 
@@ -1590,4 +1608,22 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 **Deferred P2–P4:** GOV-PROD.1 dashboard · polished SaaS UI non-goal · AUDIT-IDEAL-6.7 doctor hook (LLM)
 
+### 6.1av Harness implementation queue — Developer experience audit maintenance (planned)
+
+**Source:** Layer 21 audit (2026-06-18) — `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` · [`../audit_results/2026-06-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../audit_results/2026-06-18/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)  
+**Priority ladder:** **Band 1** (§6.1) — DX bundle + cross-refs; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **DX-MAINT-01** | Cross-ref | P2 | **Done** | AUDIT-IDEAL-6.7 doctor hook — cross-ref [`LLM-MAINT-01`](LLM_ADAPTERS.md#61av-harness-implementation-queue--llm-adapters-audit-maintenance-planned) | LLM owns implementation |
+| 2 | **DX-MAINT-02** | DX | P3 | **Done** | Expand `intergrax doctor check` — trace explorer + replay + simulator wiring subset | Doctor runs `check_audit_ideal_gates.py` subset |
+| 3 | **DX-MAINT-03** | Backlog | P3 | **Done** | GOV-PROD.1 dashboard — register row with scope boundary | Plan backlog row; not blocking L3 DX |
+| 4 | **DX-MAINT-04** | Docs | P4 | **Done** | Polished SaaS UI — explicit non-goal note in DX canon | Architecture non-goal note |
+
+**Suggested PR order:** DX-MAINT-02 → DX-MAINT-01 → DX-MAINT-03 → DX-MAINT-04.
+
+**Note:** AUDIT-IDEAL-27.2 replay wiring **Done** (2026-06-18 revalidation).
+
 ---
+
+*End of Experimentation and Developer Experience Implementation Plan.*

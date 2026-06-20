@@ -162,6 +162,9 @@ def _acp_agent_py(
         from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
         from typing import Optional, Sequence
 
+        # LLM / catalog (Tier-3 host): intergrax/llm_adapters/USAGE.md — LLMProfile, ModelCatalog,
+        # optional LLMRoutingProfile on ApplicationEnvironmentProfile; agents use stub LLM below only in tests.
+
 
         class _{ _pascal_name(slug) }StubLLM(LLMAdapter):
             provider = "{slug}"

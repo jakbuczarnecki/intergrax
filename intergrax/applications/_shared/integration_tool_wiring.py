@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from intergrax.integrations._shared.speech_integration_bridge import (
     IntegrationSpeechAdapter,
-    speech_provider_for_slug,
+    infer_speech_provider_slug,
 )
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -83,10 +83,14 @@ def wire_integration_tool_context(
 
     speech_slug = integration_profile.slug_for_category(IntegrationCategory.SPEECH_PROVIDER)
     if updated.speech_provider is not None:
-        provider_slug = speech_slug or "stub"
+        provider_slug = (
+            speech_slug
+            or infer_speech_provider_slug(updated.speech_provider)
+            or "stub"
+        )
         updated.extras[SPEECH_BACKEND_EXTRA_KEY] = IntegrationSpeechAdapter(
             updated.speech_provider,
-            provider=speech_provider_for_slug(provider_slug),
+            provider_slug=provider_slug,
         )
         updated.extras.pop(SPEECH_PROFILE_EXTRA_KEY, None)
 

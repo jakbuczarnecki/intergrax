@@ -15,6 +15,7 @@ from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.org_policy import OrganizationalPolicyEnvelope
 from intergrax.contracts.agent_budget import BudgetReactionProfile
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.llm_adapters.routing import LLMRoutingProfile
 from intergrax.runtime.adaptive.contracts import UtilityWeights
 from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
 from intergrax.runtime.capacity.contracts import ScalingPolicy
@@ -247,6 +248,30 @@ class ApplicationEnvironmentProfile(BaseModel):
             self,
             "capabilities",
             self.capabilities.model_copy(update={"llm": value}),
+        )
+
+    @property
+    def llm_routing_profile(self) -> LLMRoutingProfile | None:
+        return self.capabilities.llm_routing
+
+    @llm_routing_profile.setter
+    def llm_routing_profile(self, value: LLMRoutingProfile | None) -> None:
+        object.__setattr__(
+            self,
+            "capabilities",
+            self.capabilities.model_copy(update={"llm_routing": value}),
+        )
+
+    @property
+    def llm_routing_evaluating_secondary(self) -> bool:
+        return self.capabilities.llm_routing_evaluating_secondary
+
+    @llm_routing_evaluating_secondary.setter
+    def llm_routing_evaluating_secondary(self, value: bool) -> None:
+        object.__setattr__(
+            self,
+            "capabilities",
+            self.capabilities.model_copy(update={"llm_routing_evaluating_secondary": value}),
         )
 
     @property

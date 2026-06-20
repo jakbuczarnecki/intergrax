@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/MEMORY.md`](../plan/MEMORY.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layer:** 15 (Memory)  
-**Audit instruction:** [`guides/audit/MEMORY.md`](../guides/audit/MEMORY.md)  
+**Audit instruction:** [`audit/MEMORY.md`](../audit/MEMORY.md)  
 **Context assembly (Layer C):** [`architecture/CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md)  
 **Related:** [`architecture/RAG.md`](RAG.md) — Tier-0 retrieval engine; this doc covers **memory stores, lifecycle**, and the **Knowledge vs LTM** boundary.  
 **ADR:** [ADR-MEM-001](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler) · [ADR-MEM-002](../adr/entries/2026-06-14/ADR-MEM-002.md) (vector catalog)  

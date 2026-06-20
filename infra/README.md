@@ -39,6 +39,14 @@ cd infra/integration
 # RAG only
 ./manage.sh start rag
 
+# vLLM (production self-hosted LLM — requires NVIDIA GPU)
+./manage.sh start vllm
+# or standalone: cd ../docker && ./manage.sh vllm start
+
+# llama.cpp (CPU-friendly self-hosted LLM)
+./manage.sh start llama-cpp
+# or standalone: cd ../docker && ./manage.sh llama-cpp start
+
 # Build Docling image first (rag profile)
 ./manage.sh build rag
 ./manage.sh start rag
@@ -61,6 +69,8 @@ cd infra\integration
 | `core` | redis, postgresql |
 | `queue` | kafka, rabbitmq, nats |
 | `rag` | qdrant, chroma, weaviate, neo4j, milvus, ollama, docling |
+| `vllm` | vllm (NVIDIA GPU; opt-in — not in default stack) |
+| `llama-cpp` | llama-cpp, llama-cpp-embed (CPU-friendly; opt-in — not in default stack) |
 | `data` | mongodb, mysql, cassandra, minio, memcached |
 | `secrets` | vault |
 | `observability` | elasticsearch, prometheus, clickhouse, langfuse, phoenix, mailpit |
@@ -80,6 +90,10 @@ Start a **single** service (same images/ports as unified stack):
 cd infra/docker
 ./manage.sh redis start
 ./manage.sh neo4j start
+./manage.sh vllm start   # NVIDIA GPU required
+./manage.sh vllm-embed start
+./manage.sh llama-cpp start
+./manage.sh llama-cpp-embed start
 ./manage.ps1 weaviate start
 ```
 
@@ -90,7 +104,9 @@ Docling (custom build):
 ./manage.sh docling start
 ```
 
-Health: Docling `http://localhost:8081/health`
+Health: Docling `http://localhost:8081/health` · vLLM models `http://localhost:8100/v1/models` · llama.cpp models `http://localhost:8102/v1/models`
+
+**llama.cpp E2E verify (local only):** [`docker/llama-cpp/VERIFY_RUNBOOK.md`](docker/llama-cpp/VERIFY_RUNBOOK.md) · `./docker/llama-cpp/verify.sh`
 
 ---
 
@@ -116,6 +132,7 @@ Copy `infra/integration/.env.example` to `infra/integration/.env` to override cr
 | `tests/integration/queueing/*` (Kafka, RabbitMQ) | `queue` |
 | `tests/integration/rag/vectorstore/*` (Qdrant, Chroma) | `rag` |
 | `tests/integration/rag/embedding/test_ollama*` | `rag` (ollama) |
+| `tests/e2e/llama_cpp/*` | `llama-cpp` (local verify script; **not** PR CI) |
 | GraphRAG Neo4j | `rag` |
 | Harness conformance (Mongo, Cassandra, MinIO, Vault) | `data`, `secrets` |
 | Tools observability (ES, Prometheus) | `observability` |

@@ -38,44 +38,44 @@ Every finding in [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth 
 
 | GAP-RAG | Category | M-RAG | Wave |
 |---------|----------|-------|------|
-| GAP-RAG-01 | niedoróbka | M-RAG.23 | 1 |
-| GAP-RAG-17 | niedoróbka | M-RAG.23 | 1 |
-| GAP-RAG-23 | niedoróbka | M-RAG.23 | 1 |
-| GAP-RAG-04 | niegotowość | M-RAG.25 | 2 |
-| GAP-RAG-02 | niedoróbka | M-RAG.24 | 2 |
-| GAP-RAG-03 | niedoróbka | M-RAG.24 | 2 |
-| GAP-RAG-05 | niegotowość | M-RAG.26 | 2 |
-| GAP-RAG-06 | niegotowość | M-RAG.26 | 2 |
-| GAP-RAG-07 | niegotowość | M-RAG.30 | 2 |
-| GAP-RAG-18 | niegotowość | M-RAG.33 | 2 |
-| GAP-RAG-20 | niegotowość | M-RAG.35 | 2 |
-| GAP-RAG-08 | niedoróbka | M-RAG.27 **Done** | 3 |
-| GAP-RAG-09 | niska jakość | M-RAG.57 **Done** (metrics default follows OTel spine when env unset) | 3 |
-| GAP-RAG-10 | niedoróbka | M-RAG.28 **Done** | 3 |
-| GAP-RAG-11 | niska jakość | M-RAG.28 **Done** | 3 |
-| GAP-RAG-12 | niska jakość | M-RAG.28 **Done** | 3 |
-| GAP-RAG-13 | niedoróbka | M-RAG.29 **Done** | 3 |
-| GAP-RAG-14 | niedoróbka | M-RAG.31 **Done** | 3 |
-| GAP-RAG-16 | niska jakość | M-RAG.32 **Done** | 3 |
-| GAP-RAG-19 | niedoróbka | M-RAG.34 **Done** | 3 |
-| GAP-RAG-21 | niegotowość | M-RAG.36 **Done** | 3 |
-| GAP-RAG-22 | niska jakość | M-RAG.37 **Done** | 3 |
-| GAP-RAG-15 | ograniczenie | M-RAG.58 **Frozen** (Tier-3 + AHI) | — |
-| GAP-RAG-24 | niedoróbka | M-RAG.38 | G1 |
-| GAP-RAG-25 | niedoróbka | M-RAG.39 | G1 |
-| GAP-RAG-26 | niegotowość | M-RAG.40 | G1 |
-| GAP-RAG-27 | niegotowość | M-RAG.41 | G1 |
-| GAP-RAG-28 | niska jakość | M-RAG.42 | G2 |
-| GAP-RAG-29 | niedoróbka | M-RAG.43 **Done** · M-RAG.53 **Done** | G2 · G5 |
-| GAP-RAG-30 | niedoróbka | M-RAG.44 **Done** · M-RAG.54 **Done** | G2 · G5 |
-| GAP-RAG-31 | niegotowość | M-RAG.45 | G3 |
-| GAP-RAG-32 | niedoróbka | M-RAG.46 | G3 |
+| GAP-RAG-01 | incomplete_wiring | M-RAG.23 | 1 |
+| GAP-RAG-17 | incomplete_wiring | M-RAG.23 | 1 |
+| GAP-RAG-23 | incomplete_wiring | M-RAG.23 | 1 |
+| GAP-RAG-04 | prod_blocker | M-RAG.25 | 2 |
+| GAP-RAG-02 | incomplete_wiring | M-RAG.24 | 2 |
+| GAP-RAG-03 | incomplete_wiring | M-RAG.24 | 2 |
+| GAP-RAG-05 | prod_blocker | M-RAG.26 | 2 |
+| GAP-RAG-06 | prod_blocker | M-RAG.26 | 2 |
+| GAP-RAG-07 | prod_blocker | M-RAG.30 | 2 |
+| GAP-RAG-18 | prod_blocker | M-RAG.33 | 2 |
+| GAP-RAG-20 | prod_blocker | M-RAG.35 | 2 |
+| GAP-RAG-08 | incomplete_wiring | M-RAG.27 **Done** | 3 |
+| GAP-RAG-09 | below_prod_bar | M-RAG.57 **Done** (metrics default follows OTel spine when env unset) | 3 |
+| GAP-RAG-10 | incomplete_wiring | M-RAG.28 **Done** | 3 |
+| GAP-RAG-11 | below_prod_bar | M-RAG.28 **Done** | 3 |
+| GAP-RAG-12 | below_prod_bar | M-RAG.28 **Done** | 3 |
+| GAP-RAG-13 | incomplete_wiring | M-RAG.29 **Done** | 3 |
+| GAP-RAG-14 | incomplete_wiring | M-RAG.31 **Done** | 3 |
+| GAP-RAG-16 | below_prod_bar | M-RAG.32 **Done** | 3 |
+| GAP-RAG-19 | incomplete_wiring | M-RAG.34 **Done** | 3 |
+| GAP-RAG-21 | prod_blocker | M-RAG.36 **Done** | 3 |
+| GAP-RAG-22 | below_prod_bar | M-RAG.37 **Done** | 3 |
+| GAP-RAG-15 | design_boundary | M-RAG.58 **Frozen** (Tier-3 + AHI) | — |
+| GAP-RAG-24 | incomplete_wiring | M-RAG.38 | G1 |
+| GAP-RAG-25 | incomplete_wiring | M-RAG.39 | G1 |
+| GAP-RAG-26 | prod_blocker | M-RAG.40 | G1 |
+| GAP-RAG-27 | prod_blocker | M-RAG.41 | G1 |
+| GAP-RAG-28 | below_prod_bar | M-RAG.42 | G2 |
+| GAP-RAG-29 | incomplete_wiring | M-RAG.43 **Done** · M-RAG.53 **Done** | G2 · G5 |
+| GAP-RAG-30 | incomplete_wiring | M-RAG.44 **Done** · M-RAG.54 **Done** | G2 · G5 |
+| GAP-RAG-31 | prod_blocker | M-RAG.45 | G3 |
+| GAP-RAG-32 | incomplete_wiring | M-RAG.46 | G3 |
 | GAP-RAG-33 | gap | M-RAG.49–M-RAG.51 **Done** | G4 |
-| GAP-RAG-34 | ograniczenie | M-RAG.47 | G3 |
-| GAP-RAG-35 | niedoróbka | M-RAG.48 | G2 |
-| GAP-RAG-36 | niska jakość | M-RAG.52 | G2 |
-| GAP-RAG-39 | niedoróbka | M-RAG.60 **Done** | CONVERGE |
-| GAP-RAG-40 | niedoróbka | M-RAG.61 **Done** | CONVERGE |
+| GAP-RAG-34 | design_boundary | M-RAG.47 | G3 |
+| GAP-RAG-35 | incomplete_wiring | M-RAG.48 | G2 |
+| GAP-RAG-36 | below_prod_bar | M-RAG.52 | G2 |
+| GAP-RAG-39 | incomplete_wiring | M-RAG.60 **Done** | CONVERGE |
+| GAP-RAG-40 | incomplete_wiring | M-RAG.61 **Done** | CONVERGE |
 
 **Coverage (M-RAG-DEPTH):** 22 actionable gaps + 1 architectural boundary — **100% mapped** (complete 2026-06-10).
 
@@ -562,4 +562,56 @@ uv run pytest tests/unit/rag/ tests/unit/tools/providers/rag/ tests/unit/applica
 
 **Deferred P2–P4:** beta→stable manifest promotion · M-RAG.58 AHI adaptive routing (Frozen) · ops soak gates
 
+### 6.1av Harness implementation queue — RAG audit maintenance (planned)
+
+**Source:** Layer 12 audit (2026-06-18) — `RAG` layer 14 · [`../audit_results/2026-06-18/RAG.md`](../audit_results/2026-06-18/RAG.md)  
+**Priority ladder:** **Band 1** (§6.1) — ops honesty + prompt sync; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **RAG-MAINT-01** | CI/Ops | P2 | **Done** | Beta→stable RagProfile/manifest promotion criteria + gate | `scripts/check_rag_maturity_labels.py` in rag-guard; STABLE slugs ↔ manifest |
+| 2 | **RAG-MAINT-02** | CI | P3 | **Done** | Production SLO soak depth — nightly workflow extension beyond M-RAG.36 gate marker | `scripts/rag_load_soak_report.py` → `build/rag/load_soak_report.json` nightly |
+| 3 | **RAG-MAINT-03** | Docs | P3 | **Done** | Audit prompt sync — GAP-RAG register **Closed** in known gaps | `docs/audit/RAG.md` regenerated from LC closeout |
+| 4 | **RAG-MAINT-04** | Cross-ref | P4 | **Done** | M-RAG.58 AHI adaptive routing — document **Frozen** owner (AHI domain) | Owner: [`AHI-MAINT-04`](ADAPTIVE_HARNESS_INTELLIGENCE.md#61av-harness-implementation-queue--adaptive-harness-intelligence-audit-maintenance-planned) |
+
+**Suggested PR order:** RAG-MAINT-03 → RAG-MAINT-01 → RAG-MAINT-02 → RAG-MAINT-04.
+
+**Environment note:** Windows `pytest tests/unit/rag/` teardown crash (`-1073741819`) — track under DX if reproducible; not blocking L3 verdict.
+
+**Cross-domain:** INT-MAINT-01 — integration slug maturity · M-RAG.58 — [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md).
+
 ---
+
+### Phase RAG-MAINT-vllm — vLLM embedding provider (2026-06-19)
+
+**Source:** vLLM platform integration — RAG embeddings via OpenAI-compatible `/v1/embeddings`.  
+**Goal:** `VllmEmbeddingProvider` registered in default bootstrap; optional Docker `vllm-embed` on host **8101**.
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **RAG-MAINT-vllm-1** | Code | P2 | **Done** | `vllm_embedding_provider.py` + default registry | `provider_id=vllm` in `EmbeddingProviderRegistry` |
+| 2 | **RAG-MAINT-vllm-2** | Infra | P2 | **Done** | `infra/docker/vllm-embed` + integration profile `vllm` service | `INTERGRAX_DEFAULT_VLLM_EMBED_BASE_URL=http://127.0.0.1:8101/v1` |
+| 3 | **RAG-MAINT-vllm-3** | Tests | P2 | **Done** | Unit mocks + optional integration pipeline test | `tests/unit/rag/embedding/test_vllm_embedding_provider.py` green |
+
+**ADR:** no ADR needed — mirrors `OpenAIEmbeddingProvider` against self-hosted vLLM embed server.
+
+---
+
+### Phase RAG-MAINT-llama-cpp — llama.cpp embedding provider (2026-06-19)
+
+**Source:** llama.cpp platform integration — RAG embeddings via OpenAI-compatible `/v1/embeddings`.  
+**Goal:** `LlamaCppEmbeddingProvider` registered in default bootstrap; optional Docker `llama-cpp-embed` on host **8103**.
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **RAG-MAINT-llama-cpp-1** | Code | P2 | **Done** | `llama_cpp_embedding_provider.py` + default registry | `provider_id=llama_cpp` in `EmbeddingProviderRegistry` |
+| 2 | **RAG-MAINT-llama-cpp-2** | Infra | P2 | **Done** | `infra/docker/llama-cpp-embed` + integration profile `llama-cpp` service | `INTERGRAX_DEFAULT_LLAMA_CPP_EMBED_BASE_URL=http://127.0.0.1:8103/v1` |
+| 3 | **RAG-MAINT-llama-cpp-3** | Tests | P2 | **Done** | Unit mocks + E2E embed pipeline in `tests/e2e/llama_cpp/` (`no_ci`) | `test_llama_cpp_embedding_pipeline_documents` with live embed server |
+
+**Phase status:** **Done** (2026-06-19) — 3/3 Done.
+
+**ADR:** no ADR needed — mirrors `VllmEmbeddingProvider` against self-hosted llama.cpp embed server.
+
+---
+
+*End of RAG Implementation Plan.*

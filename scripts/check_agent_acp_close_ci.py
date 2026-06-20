@@ -28,6 +28,9 @@ def _run(script: str, *args: str) -> int:
 def main() -> int:
     violations: list[str] = []
 
+    if _run("check_agent_skill_resolution.py") != 0:
+        violations.append("check_agent_skill_resolution.py failed (ACP-MAINT-02)")
+
     if _run("audit_agent_fleet_legacy.py") != 0:
         violations.append("audit_agent_fleet_legacy.py failed")
 

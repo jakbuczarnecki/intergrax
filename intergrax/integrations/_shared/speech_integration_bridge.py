@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from intergrax.integrations.contracts.base import HealthStatus
 from intergrax.integrations.contracts.speech_provider import SpeechProviderBackend
 from intergrax.speech_adapters.contracts.io import (
     SpeechSynthesizeInput,
@@ -13,15 +14,18 @@ from intergrax.speech_adapters.contracts.io import (
     SpeechTranscribeOutput,
 )
 from intergrax.speech_adapters.contracts.speech_adapter import SpeechAdapter
-from intergrax.speech_adapters.contracts.speech_provider import SpeechProvider
 
 
 class IntegrationSpeechAdapter(SpeechAdapter):
     """Wrap catalog ``SpeechProviderBackend`` for Tier-0 speech tools."""
 
-    def __init__(self, backend: SpeechProviderBackend, *, provider: SpeechProvider) -> None:
+    def __init__(self, backend: SpeechProviderBackend, *, provider_slug: str) -> None:
         self._backend = backend
-        self.provider = provider
+        self._provider_slug = provider_slug.strip().lower()
+
+    @property
+    def provider_slug(self) -> str:
+        return self._provider_slug
 
     def synthesize(self, payload: SpeechSynthesizeInput) -> SpeechSynthesizeOutput:
         result = self._backend.synthesize(payload.text, voice_id=payload.voice_id)
@@ -38,8 +42,18 @@ class IntegrationSpeechAdapter(SpeechAdapter):
         )
 
 
-def speech_provider_for_slug(slug: str) -> SpeechProvider:
-    normalized = slug.strip().lower()
-    if normalized == "elevenlabs":
-        return SpeechProvider.ELEVENLABS
-    return SpeechProvider.STUB
+def infer_speech_provider_slug(backend: SpeechProviderBackend) -> str | None:
+    """Best-effort slug for pre-built ``SpeechProviderBackend`` instances."""
+    from intergrax.integrations._shared.p7.clients import HttpSpeechProviderBackend, SpeechAdapterBackend
+
+    if isinstance(backend, SpeechAdapterBackend):
+        return backend._slug
+    if isinstance(backend, HttpSpeechProviderBackend):
+        return backend._provider
+    try:
+        status = backend.health()
+    except Exception:
+        return None
+    if isinstance(status, HealthStatus):
+        return status.slug or None
+    return None

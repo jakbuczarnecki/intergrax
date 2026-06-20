@@ -11,11 +11,12 @@ from intergrax.speech_adapters.contracts.io import (
     SpeechTranscribeOutput,
 )
 from intergrax.speech_adapters.contracts.speech_adapter import SpeechAdapter
-from intergrax.speech_adapters.contracts.speech_provider import SpeechProvider
 
 
 class StubSpeechAdapter(SpeechAdapter):
-    provider = SpeechProvider.STUB
+    @property
+    def provider_slug(self) -> str:
+        return "stub"
 
     def synthesize(self, payload: SpeechSynthesizeInput) -> SpeechSynthesizeOutput:
         return SpeechSynthesizeOutput(

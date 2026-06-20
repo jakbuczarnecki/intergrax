@@ -11,6 +11,7 @@ from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.llm_adapters.providers.openai_compat_providers import (
     GroqChatAdapter,
+    LlamaCppChatAdapter,
     VllmChatAdapter,
 )
 
@@ -42,6 +43,19 @@ def test_vllm_adapter_mocked_chat() -> None:
     adapter = VllmChatAdapter(client=client, model="meta-llama/Llama-3.1-8B-Instruct")
     response = adapter.generate_messages([ChatMessage(role="user", content="ping")], run_id="v1")
     assert response.content == "local"
+
+
+def test_llama_cpp_adapter_mocked_chat() -> None:
+    client = MagicMock()
+    usage = MagicMock(prompt_tokens=2, completion_tokens=1)
+    msg = MagicMock(content="cpu-local", tool_calls=None)
+    choice = MagicMock(message=msg, finish_reason="stop")
+    res = MagicMock(usage=usage, choices=[choice])
+    client.chat.completions.create.return_value = res
+
+    adapter = LlamaCppChatAdapter(client=client, model="default")
+    response = adapter.generate_messages([ChatMessage(role="user", content="ping")], run_id="lc1")
+    assert response.content == "cpu-local"
 
 
 def test_registry_lazy_groq() -> None:

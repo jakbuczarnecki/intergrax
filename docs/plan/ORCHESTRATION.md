@@ -1564,6 +1564,36 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 
 **Explicitly excluded:** New queue transport; nested Nexus per async job.
 
+### 6.1av Harness implementation queue — Orchestration audit maintenance (closed)
+
+**Source:** Layer 3 audit (2026-06-18) — `ORCHESTRATION` layers 3, 9 · [`../audit_results/2026-06-18/ORCHESTRATION.md`](../audit_results/2026-06-18/ORCHESTRATION.md)  
+**Priority ladder:** **Band 1** (§6.1) — P3 harness depth + author DX; runs **in parallel** with gate maintenance; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **ORCH-MAINT-01** | Code/Docs | P3 | **Done** | Scaffold `lab_stack` preset: `INCLUDE_QUEUE_WORKER=true` by default | `new-application` lab preset wires `QueuedNexusExecutionAdapter` path; gate green |
+| 2 | **ORCH-MAINT-02** | Docs | P3 | **Done** | LKW hybrid daemon enablement runbook (CFG-14) in `local_workspace_application/ARCHITECTURE.md` | Operator can enable scheduler + interactions without reading source |
+| 3 | **ORCH-MAINT-03** | Code | P3 | **Done** | `TaskPriority` in `intergrax/queueing/` + broker adapter hook | Priority field on enqueue; unit test; no Nexus fork |
+| 4 | **ORCH-MAINT-04** | Code | P3 | **Done** | Durable `AsyncTaskIndex` via integration profile (Redis/SQLite slug) | `async_task_index_resolver.py` selects profile-backed index; lab may keep in-memory fallback |
+
+**Suggested PR order:** none — §6.1av queue closed (2026-06-18).
+
+**Explicitly excluded:** CFG-14 full LKW hybrid E2E (product §6.3); FLOW-8 product host; active-active L0 — [§6.3](../plan/PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only).
+
+### 6.1aw Harness implementation queue — Orchestration audit maintenance (2026-06-19)
+
+**Source:** Interactive layer audit (2026-06-19) — `ORCHESTRATION` layers 3, 9 · [`../audit_results/2026-06-19/ORCHESTRATION.md`](../audit_results/2026-06-19/ORCHESTRATION.md) · prior: [`../audit_results/2026-06-18/ORCHESTRATION.md`](../audit_results/2026-06-18/ORCHESTRATION.md)  
+**Priority ladder:** **Band 1** (§6.1) — doc sync + audit artifact; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **ORCH-MAINT-DOC-01** | Docs | P3 | **Done** | Sync architecture `ORCHESTRATION.md` §59.2 async-queue note + §59.4 `run_async` row with ORCH-MAINT-01/04 truth (lab scaffold `INCLUDE_QUEUE_WORKER=true`; `async_task_index_resolver` profile-backed index) | No stale “not scaffold-default” / lab-only in-memory wording; product hosts remain opt-in |
+| 2 | **ORCH-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `ORCHESTRATION.md` + `progress.json` updated; L3 verdict layers 3, 9 |
+
+**Suggested PR order:** none — §6.1aw queue closed (2026-06-19).
+
+**Explicitly excluded:** CFG-14 full LKW hybrid E2E (product §6.3); FLOW-8 product host; active-active L0; new queue transport — [§6.3](../plan/PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only).
+
 ---
 
 ### Phase B — Extended Nexus

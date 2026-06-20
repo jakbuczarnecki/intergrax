@@ -5,18 +5,16 @@
 from __future__ import annotations
 
 import importlib
-import os
 from typing import Any, Callable
 
 from intergrax.speech_adapters.contracts.speech_adapter import SpeechAdapter
-from intergrax.speech_adapters.contracts.speech_provider import SpeechProvider
 
 _BUILTIN_SPEECH_ADAPTERS: dict[str, tuple[str, str]] = {
-    SpeechProvider.STUB.value: (
+    "stub": (
         "intergrax.speech_adapters.providers.stub_speech",
         "StubSpeechAdapter",
     ),
-    SpeechProvider.ELEVENLABS.value: (
+    "elevenlabs": (
         "intergrax.speech_adapters.providers.elevenlabs_speech",
         "ElevenLabsSpeechAdapter",
     ),
@@ -24,17 +22,15 @@ _BUILTIN_SPEECH_ADAPTERS: dict[str, tuple[str, str]] = {
 
 
 class SpeechAdapterRegistry:
-    """Create speech adapters by provider slug (same pattern as ``LLMAdapterRegistry``)."""
+    """Create in-process speech adapters by provider slug."""
 
     _factories: dict[str, Callable[..., SpeechAdapter]] = {}
 
     @staticmethod
-    def _normalize_provider(provider: str | SpeechProvider) -> str:
-        if isinstance(provider, SpeechProvider):
-            return provider.value
-        if isinstance(provider, str) and provider.strip():
-            return provider.strip().lower()
-        raise ValueError("provider must be a non-empty SpeechProvider or string slug")
+    def _normalize_provider(provider_slug: str) -> str:
+        if isinstance(provider_slug, str) and provider_slug.strip():
+            return provider_slug.strip().lower()
+        raise ValueError("provider_slug must be a non-empty string")
 
     @classmethod
     def _ensure_builtin(cls, key: str) -> None:
@@ -55,26 +51,26 @@ class SpeechAdapterRegistry:
     @classmethod
     def register(
         cls,
-        provider: str | SpeechProvider,
+        provider_slug: str,
         factory: Callable[..., SpeechAdapter],
         *,
         override: bool = False,
     ) -> None:
-        key = cls._normalize_provider(provider)
+        key = cls._normalize_provider(provider_slug)
         if key in cls._factories and not override:
-            raise ValueError(f"Speech adapter already registered for provider='{key}'")
+            raise ValueError(f"Speech adapter already registered for provider_slug='{key}'")
         cls._factories[key] = factory
 
     @classmethod
-    def create(cls, provider: str | SpeechProvider, **kwargs: Any) -> SpeechAdapter:
-        key = cls._normalize_provider(provider)
+    def create(cls, provider_slug: str, **kwargs: Any) -> SpeechAdapter:
+        key = cls._normalize_provider(provider_slug)
         cls._ensure_builtin(key)
         if key not in cls._factories:
-            raise ValueError(f"Speech adapter not registered for provider='{key}'")
+            raise ValueError(f"Speech adapter not registered for provider_slug='{key}'")
         adapter = cls._factories[key](**kwargs)
         if not isinstance(adapter, SpeechAdapter):
             raise TypeError(
-                f"Factory for provider='{key}' returned {type(adapter)!r}, expected SpeechAdapter"
+                f"Factory for provider_slug='{key}' returned {type(adapter)!r}, expected SpeechAdapter"
             )
         adapter.validate()
         return adapter
@@ -83,3 +79,9 @@ class SpeechAdapterRegistry:
     def registered_providers(cls) -> list[str]:
         keys = set(cls._factories.keys()) | set(_BUILTIN_SPEECH_ADAPTERS.keys())
         return sorted(keys)
+
+    @classmethod
+    def is_registered(cls, provider_slug: str) -> bool:
+        key = cls._normalize_provider(provider_slug)
+        cls._ensure_builtin(key)
+        return key in cls._factories

@@ -117,11 +117,23 @@ Bundled catalog (implementation): `intergrax/llm_adapters/registry/model_catalog
 
 ### OpenRouter / gateways
 
-Enable optional metadata fetch (when implemented):
+Enable optional metadata fetch (M-LLM-X.14.2):
 
 ```python
-options={"fetch_gateway_metadata": True}
+options={
+    "fetch_gateway_metadata": True,
+    # Optional test/dev injection — no network in unit gate:
+    # "gateway_metadata_fetcher": lambda: [{"id": "vendor/model", "context_length": 128000}],
+}
 ```
+
+Gateway merge runs **after** bundled catalog exact/prefix matches and **before** legacy/provider defaults (ADR-LLM-002).
+When catalog resolves **without an exact `ModelRecord` match** (prefix rule, provider default, or global fallback), **`ModelCatalogMissDiagV1`** is emitted once per model/run with `resolution_tier` (`prefix_rule` | `provider_default` | `fallback_default`). Emission surfaces on Plane A trace (`step=llm_catalog_miss`), runtime bus (`LLM_CALL`), and Prometheus (`intergrax_llm_catalog_miss_total` when `INTERGRAX_LLM_METRICS_ENABLED=true`). Wired unconditionally via `RuntimeState.configure_llm_tracker()`.
+
+### Tokenizer accuracy (M-LLM-X.14.7)
+
+Non-OpenAI budgeting still uses tiktoken/heuristic estimates by default — do not treat counts as vendor-exact.
+Optional vendor plugins implement ``TokenizerPlugin`` (`intergrax/llm_adapters/contracts/tokenizer_plugin.py`).
 
 ---
 
@@ -213,6 +225,213 @@ INTERGRAX_LLM_TENANT_MAX_TOKENS=500000   # optional hard quota
 
 Scrape: `register_llm_metrics_routes(app)` → `GET /metrics/llm`.
 
+### Distributed rate limiting (LLM-MAINT-04)
+
+For multi-replica Tier-3 hosts, wire Redis-backed token buckets at process startup:
+
+```python
+from intergrax.integrations.providers.key_value_cache.redis import create_redis_rate_limiter
+from intergrax.llm_adapters._shared.resilience import set_llm_distributed_rate_limiter
+
+limiter = create_redis_rate_limiter(env.integration_profile.resolve_key_value_cache())
+set_llm_distributed_rate_limiter(limiter)
+```
+
+Requires `integration_profile.key_value_cache` slug `redis`. Cross-ref: [`docs/plan/ELASTIC_CAPACITY_AND_SCALING.md`](../../docs/plan/ELASTIC_CAPACITY_AND_SCALING.md) (platform scaling) · [`docs/plan/TIER3_APPLICATION_ENVIRONMENT.md`](../../docs/plan/TIER3_APPLICATION_ENVIRONMENT.md) (host wiring).
+
+**Failover profiles (LLM-MAINT-03):** set `LLMProfile.fallback_profiles` on `ApplicationEnvironmentProfile.capabilities.llm` — `resolve_llm_adapter(env)` builds `FailoverLLMAdapter` automatically when fallbacks or routing hints are present.
+
+---
+
+## LLM routing rules (M-LLM-X.9 · M-LLM-X.10)
+
+**ADR:** [`ADR-LLM-003`](../../docs/adr/entries/2026-06-19/ADR-LLM-003.md) · **Canon:** [`LLM_ADAPTERS.md`](../../docs/architecture/LLM_ADAPTERS.md) § LLM routing rules
+
+Tier-3 hosts configure dynamic model selection with **`LLMRoutingProfile`** on `ApplicationEnvironmentProfile`. Each rule implements **`LLMRoutingRule`** (`matches` + `resolve`).
+
+**Two authoring paths (both supported):**
+
+1. **Predefined catalog (Tier-0)** — platform ships production-ready parametric classes in `intergrax.llm_adapters.routing` (preferred for common cases; no boilerplate).
+2. **Custom rules (Tier-3)** — subclass **`LLMRoutingRuleBase`** or implement **`LLMRoutingRule`** directly when domain logic does not fit the catalog. Mix builtin and custom rules in the same `LLMRoutingProfile`.
+
+**Auto context (M-LLM-X.10.2):** Nexus / harness paths call `build_routing_context_from_runtime()` — authors do not pass `routing_context=` manually on default host wiring.
+
+### Predefined rule catalog
+
+| Class | Params | `matches` |
+|-------|--------|-----------|
+| `BudgetBelowRule` | `threshold`, `profile` or `hint` | `budget_remaining_ratio < threshold` |
+| `BudgetAboveRule` | `threshold`, `profile` or `hint` | `budget_remaining_ratio > threshold` |
+| `BudgetExceededDegradeRule` | — | `budget_degrade_active` → `CHEAPEST` |
+| `TaskClassInRule` | `classes`, `profile` or `hint` | `task_class in classes` |
+| `TaskClassNotInRule` | `classes`, `profile` or `hint` | `task_class not in classes` |
+| `TokenUsedAboveRule` | `threshold`, `hint` | `tokens_used > threshold` |
+| `TokenUsedBelowRule` | `threshold`, `profile` or `hint` | `tokens_used < threshold` |
+| `StepIndexAtLeastRule` | `min_step`, `profile` or `hint` | `step_index >= min_step` |
+| `StepIndexBelowRule` | `max_step`, `profile` or `hint` | `step_index < max_step` |
+| `AgentIdInRule` | `agent_ids`, `profile` or `hint` | `agent_id in agent_ids` |
+| `TenantIdInRule` | `tenant_ids`, `profile` or `hint` | `tenant_id in tenant_ids` |
+| `ModelHintPresentRule` | `profile` or `hint` | non-empty `model_hint` |
+| `PolicyHintRule` | `hint` | always (use low priority) |
+| `CompositeAllRule` | `rules`, `profile` or `hint` | all nested rules match |
+| `CompositeAnyRule` | `rules`, `profile` or `hint` | any nested rule matches |
+| `AlwaysRule` | `profile` or `hint`, `priority=-100` | unconditional fallback |
+
+Export: `BUILTIN_ROUTING_RULE_TYPES` from `intergrax.llm_adapters.routing`.
+
+```python
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.llm_adapters.routing import (
+    BudgetBelowRule,
+    CompositeAllRule,
+    LLMRoutingProfile,
+    TaskClassInRule,
+)
+
+primary = LLMProfile(provider=LLMProvider.OPENAI, model="gpt-4o-mini")
+local = LLMProfile(provider=LLMProvider.VLLM, model="meta-llama/Llama-3.1-8B")
+
+env = ApplicationEnvironmentProfile.lab_defaults()
+env.llm_profile = primary
+env.llm_routing_profile = LLMRoutingProfile(
+    default_profile=primary,
+    allowed_profiles=(primary, local),
+    rules=(
+        CompositeAllRule(
+            rules=(
+                TaskClassInRule(classes=("contract_review",)),
+                BudgetBelowRule(threshold=0.2, profile=local),
+            ),
+            profile=local,
+            priority=12,
+        ),
+        BudgetBelowRule(threshold=0.15, profile=local),
+    ),
+)
+
+adapter = resolve_llm_adapter(env)  # routing context auto-filled on Nexus path
+```
+
+### Custom rules (Tier-3)
+
+When catalog classes are insufficient, add app-specific rules alongside builtins:
+
+```python
+from intergrax.llm_adapters.routing import LLMRoutingRuleBase, RoutingContext, RoutingTarget
+
+class LegalLowBudgetRule(LLMRoutingRuleBase):
+    rule_id = "legal.low_budget"
+    priority = 10
+
+    def matches(self, context: RoutingContext) -> bool:
+        return self.budget_below(context, 0.2) and self.task_is(context, "contract_review")
+
+    def resolve(self, context: RoutingContext) -> RoutingTarget:
+        return RoutingTarget(profile=local, reason="legal_budget")
+
+env.llm_routing_profile = LLMRoutingProfile(
+    default_profile=primary,
+    allowed_profiles=(primary, local),
+    rules=(LegalLowBudgetRule(), BudgetBelowRule(threshold=0.15, profile=local)),
+)
+```
+
+**Per-step routing (agents):** ACP hosts with `llm_routing_profile` auto-wrap `StepLLMRouter` via `wrap_dynamic_llm_router()`.
+
+**Observability:** rule evaluations emit `LLMRoutingRuleDiagV1` (`intergrax.diag.engine.core_llm.routing_rule`) with `matched_rule_id`, `routing_reason`, `profile_id`.
+
+**Reference host (lab only):** `build_lab_environment_profile()` demonstrates the **predefined catalog** for CI (`check_llm_routing_rules.py`). Product hosts are not limited to builtins.
+
+**Enterprise checklist (M-LLM-X.10 — Done · start-of-run + ACP):**
+
+- [x] 12+ predefined parametric rule classes (Tier-0 catalog)
+- [x] Custom `LLMRoutingRule` subclasses supported (Tier-3)
+- [x] `build_routing_context_from_runtime()` on materialize path
+- [x] Trace `LLMRoutingRuleDiagV1` (initial evaluation)
+- [x] Lab reference host manifest
+- [x] Acceptance: budget rule switches profile (resolver-level)
+- [x] `DynamicLLMRouter` on ACP when profile set
+- [x] CI gate `python scripts/check_llm_routing_rules.py`
+
+**Enterprise hardening (M-LLM-X.11 — Done · mid-run Nexus):**
+
+- [x] `RoutingEvaluatingLLMAdapter` — live re-eval on each LLM call
+- [x] `refresh_llm_routing_context()` in Nexus / UAEP step loop
+- [x] All Tier-3 wiring uses `resolve_environment_llm_adapter()` or context provider
+- [x] Per-evaluation trace + `LLMRoutingAllowlistViolationDiagV1`
+- [x] Mid-run acceptance: budget threshold → model swap via evaluating adapter
+- [x] Harness host + `materialize_runtime_config` evaluating adapter parity
+- [x] CI gate `check_llm_routing_context_wiring.py`
+- [x] CI gate `check_llm_routing_tier_boundary.py`
+
+**Mid-run routing:** when `llm_routing_profile` is set, `resolve_llm_adapter()` wraps the core adapter in `RoutingEvaluatingLLMAdapter` (Tier-3). `RuntimeConfig.llm_routing_snapshot` is refreshed via `sync_llm_routing_snapshot_for_state()` before each UAEP step, and via `sync_routing_before_llm_call()` on graph/CE paths.
+
+**Post-L5 polish (M-LLM-X.13 — Done, LLM-AUDIT-20):**
+
+- [x] `runtime_state` tier bridge — `evaluating_hooks.py` duck-type Protocol (13.1)
+- [x] ACP Plane A `llm_routing_rule` via `acp_routing_trace_bridge.py` (13.2)
+- [x] Concurrent run isolation acceptance test (13.3)
+- [x] Tool planner / websearch / critic secondary LLM routing wiring (13.4–13.6)
+- [x] `nexus_plan_bridge` + `llm_task_classifier` snapshot sync (13.7)
+
+**Enterprise domain maturity (M-LLM-X.8 + X-14 — Done):**
+
+- [x] **X-8** domain closeout — audit register, AUDIT_IDEAL sync, journal (**LLM-AUDIT-21**)
+- [x] Catalog-driven capability flags (**14.1** · LLM-AUDIT-22)
+- [x] Dynamic gateway metadata merge (**14.2** · LLM-AUDIT-23)
+- [x] Enum-free plugin provider + example (**14.3** · LLM-AUDIT-26)
+- [x] ACP budget routing context bridge (**14.4** · LLM-AUDIT-24)
+- [x] Opt-in evaluating wrap on secondary LLM (**14.5** · `llm_routing_evaluating_secondary`)
+- [x] Multi-step routing production soak (**14.6**)
+- [x] Tokenizer accuracy doc + optional plugin spine (**14.7**)
+- [x] Scaffold USAGE pointer (**14.8**)
+
+**Strict L5 closeout (M-LLM-X.12 — Done):**
+
+- [x] Budget meter ↔ routing context accuracy
+- [x] Tier-clean evaluating factory (no `applications/` import from Tier-0 routing)
+- [x] Nexus-wide context sync (graph + CE paths)
+- [x] Per-call context refresh within a step
+- [x] ACP trace parity + production E2E without factory mocks on core path
+- [x] Closes **LLM-AUDIT-19**
+
+**Current maturity label:** **L5** (strict mid-run routing on core UAEP/Nexus/ACP paths).
+
+**Testing:** unit-test `rule.matches(fake_context)` and `rule.resolve(...)` without Nexus. CI gate: `python scripts/check_llm_routing_rules.py`.
+
+**HF models:** serve weights via **vLLM** or **llama.cpp** — use the model id on the local profile; HF Hub remains object storage only.
+
+---
+
+## Self-hosted Docker (Ollama / vLLM / llama.cpp)
+
+| Backend | Start | Base URL env |
+|---------|-------|--------------|
+| Ollama (dev / embeddings) | `cd infra/integration && ./manage.sh start rag` | `OLLAMA_HOST=http://127.0.0.1:11434` |
+| vLLM (production GPU) | `cd infra/integration && ./manage.sh start vllm` | `INTERGRAX_DEFAULT_VLLM_BASE_URL=http://127.0.0.1:8100/v1` |
+| llama.cpp (CPU-friendly) | `cd infra/integration && ./manage.sh start llama-cpp` | `INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL=http://127.0.0.1:8102/v1` |
+
+vLLM requires **NVIDIA GPU** + `nvidia-container-toolkit`. llama.cpp is **CPU-first** (optional CUDA). Host ports **8100** (vLLM) and **8102** (llama.cpp) avoid Chroma **8000** and Weaviate **8080** — see [`infra/PORTS.md`](../../infra/PORTS.md).
+
+On **WSL2**, set `VLLM_USE_V1=0` (default in compose) if the v1 engine fails to initialize.
+
+**RAG embeddings:** use `VllmEmbeddingProvider` (`provider_id=vllm`) or `LlamaCppEmbeddingProvider` (`provider_id=llama_cpp`) with a **separate** embed server — see `infra/docker/vllm-embed` (host **8101**) or `infra/docker/llama-cpp-embed` (host **8103**).
+
+```bash
+export INTERGRAX_LLM_PROVIDER=vllm
+export INTERGRAX_LLM_MODEL=meta-llama/Llama-3.1-8B-Instruct
+export INTERGRAX_DEFAULT_VLLM_BASE_URL=http://127.0.0.1:8100/v1
+```
+
+```bash
+export INTERGRAX_LLM_PROVIDER=llama_cpp
+export INTERGRAX_LLM_MODEL=default
+export INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL=http://127.0.0.1:8102/v1
+```
+
 ---
 
 ## Testing
@@ -222,6 +441,26 @@ from testing_support.builder import FakeLLMAdapter
 
 adapter = FakeLLMAdapter(fixed_text="ok")
 ```
+
+Optional live smoke (not PR gate) — **vLLM only** in GitHub `llm-network-smoke.yml`:
+
+```bash
+cd infra/integration && ./manage.sh start vllm
+export INTERGRAX_DEFAULT_VLLM_BASE_URL=http://127.0.0.1:8100/v1
+export INTERGRAX_DEFAULT_VLLM_MODEL=meta-llama/Llama-3.1-8B-Instruct
+uv run pytest tests/unit/llm_adapters/test_network_smoke.py::test_vllm_live_one_shot -m network -q
+```
+
+**llama.cpp — local E2E only (never GitHub CI):**
+
+```bash
+infra/docker/llama-cpp/verify.ps1   # Windows
+# infra/docker/llama-cpp/verify.sh  # Linux/macOS/Git Bash
+```
+
+See [`infra/docker/llama-cpp/VERIFY_RUNBOOK.md`](../../infra/docker/llama-cpp/VERIFY_RUNBOOK.md).
+
+Skips automatically when vLLM is unreachable or env is unset. Workflow: `.github/workflows/llm-network-smoke.yml`.
 
 Conformance helpers: `intergrax/llm_adapters/_shared/conformance.py`.
 

@@ -27,6 +27,17 @@ Tier-3 **wires** the Harness; Tier-2 **thinks**. Pick one recipe:
 
 **Never implement in Tier-3:** agent business steps, ad-hoc `NexusLoop(...)`, vendor SDK calls, `if org ==` branches.
 
+### Queue worker opt-in (T3-MAINT-02)
+
+`python -m intergrax.scaffold new-application` scaffolds with `include_queue_worker=False` by default. Enable durable async execution explicitly:
+
+```python
+# applications/<app>/host/factory.py — opt-in when ORCH-MAINT-01 applies
+from intergrax.queueing.nexus_task_worker import QueuedNexusExecutionAdapter
+```
+
+See [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md) §6.1av ORCH-MAINT-01/04 and [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) T3-MAINT-02.
+
 ### 1.1 Profile bundles (architecture §22.6 · P1-ARCH-01)
 
 `ApplicationEnvironmentProfile` remains the **single composition root**. Target structure groups **43 flat fields** into **seven bundles** — implementation `APP-EVOL-8` (M1–M3):
@@ -148,7 +159,7 @@ python scripts/check_harness_no_getattr.py
 | Scenario matrix / UC-A* | architecture §35 · §44 |
 | Evolution (snapshot, migrations, package) | architecture §49 |
 | Ops (health, registry, capability graph) | architecture §50 |
-| Domain audit | [`audit/TIER3_APPLICATION_ENVIRONMENT.md`](audit/TIER3_APPLICATION_ENVIRONMENT.md) |
+| Domain audit | [`../audit/TIER3_APPLICATION_ENVIRONMENT.md`](../audit/TIER3_APPLICATION_ENVIRONMENT.md) |
 
 ---
 

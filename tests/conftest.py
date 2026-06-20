@@ -16,9 +16,12 @@ if str(ROOT) not in sys.path:
 
 _REPO_ROOT = ROOT
 _FIXTURE_PKG = _REPO_ROOT / "tests" / "fixtures" / "plugin_packages" / "intergrax_catalog_fixture"
+_SECURITY_DEFENSE_FIXTURE_PKG = (
+    _REPO_ROOT / "tests" / "fixtures" / "plugin_packages" / "intergrax_security_defense_fixture"
+)
 
 
-def _install_catalog_fixture_package() -> None:
+def _install_editable_package(package_dir: Path, module_name: str) -> None:
     import importlib
     import shutil
 
@@ -26,21 +29,35 @@ def _install_catalog_fixture_package() -> None:
     uv = shutil.which("uv")
     if uv is not None:
         subprocess.check_call(
-            [uv, "pip", "install", str(_FIXTURE_PKG), "--python", python],
+            [uv, "pip", "install", str(package_dir), "--python", python],
             cwd=str(_REPO_ROOT),
         )
     else:
         subprocess.check_call(
-            [python, "-m", "pip", "install", str(_FIXTURE_PKG), "-q"],
+            [python, "-m", "pip", "install", str(package_dir), "-q"],
             cwd=str(_REPO_ROOT),
         )
-    importlib.import_module("intergrax_catalog_fixture")
+    importlib.import_module(module_name)
+
+
+def _install_catalog_fixture_package() -> None:
+    _install_editable_package(_FIXTURE_PKG, "intergrax_catalog_fixture")
+
+
+def _install_security_defense_fixture_package() -> None:
+    _install_editable_package(_SECURITY_DEFENSE_FIXTURE_PKG, "intergrax_security_defense_fixture")
 
 
 @pytest.fixture(scope="session")
 def catalog_fixture_installed() -> None:
     """Install catalog entry-point fixture package for pytest (Phase P-Ext.0.5)."""
     _install_catalog_fixture_package()
+
+
+@pytest.fixture(scope="session")
+def security_defense_fixture_installed() -> None:
+    """Install security defense EP fixture package for pytest (Phase SEC-EVOL-2)."""
+    _install_security_defense_fixture_package()
 
 
 @pytest.fixture(scope="session", autouse=True)

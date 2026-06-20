@@ -27,11 +27,10 @@ def test_capability_payload_to_tool_ids_maps_legacy_booleans() -> None:
     assert ids == (RAG_RETRIEVE_TOOL_ID,)
 
 
-def test_tool_invocation_plan_from_capability_payload_legacy_booleans_warns() -> None:
-    with pytest.warns(DeprecationWarning, match="use_rag without tool_ids"):
-        plan = tool_invocation_plan_from_capability_payload(
-            {"use_rag": True, "use_websearch": True, "use_tools": False},
-        )
+def test_tool_invocation_plan_from_capability_payload_maps_legacy_booleans() -> None:
+    plan = tool_invocation_plan_from_capability_payload(
+        {"use_rag": True, "use_websearch": True, "use_tools": False},
+    )
     assert RAG_RETRIEVE_TOOL_ID in plan.tool_ids
     assert WEBSEARCH_QUERY_TOOL_ID in plan.tool_ids
-    assert plan.uses_legacy_booleans_only() is False
+    assert plan.use_tools is False

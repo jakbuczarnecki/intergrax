@@ -22,12 +22,15 @@ from intergrax.runtime.nexus.nexus_loop import NexusLoop
 
 def _enabled_middleware_names(options: SecurityWiringOptions) -> tuple[str, ...]:
     names: list[str] = []
+    if options.encryption_enforcement_enabled:
+        names.append("EncryptionEnforcementMiddleware")
     if options.prompt_defense_enabled:
         names.append("PromptDefenseMiddleware")
     if options.tool_injection_defense_enabled:
         names.append("ToolInjectionDefenseMiddleware")
     if options.tenant_security_verify_enabled:
         names.append("TenantSecurityMiddleware")
+    names.extend(options.defense_middleware_names)
     return tuple(names)
 
 
@@ -45,7 +48,7 @@ def wire_application_security(
 ) -> ApplicationSecurityWiring:
     """Resolve security profile and expected middleware from environment."""
     profile = env.security_profile
-    options = resolve_security_wiring_options(profile)
+    options = resolve_security_wiring_options(profile, env=env)
     return ApplicationSecurityWiring(
         profile=profile,
         options=options,
@@ -56,6 +59,13 @@ def wire_application_security(
 def apply_application_security_wiring(
     nexus: NexusLoop,
     wiring: ApplicationSecurityWiring,
+    *,
+    env: ApplicationEnvironmentProfile | None = None,
 ) -> None:
     """Attach V-SEC middleware to ``NexusLoop`` from resolved wiring."""
-    register_application_security_hooks(nexus, wiring.profile)
+    register_application_security_hooks(
+        nexus,
+        wiring.profile,
+        options=wiring.options,
+        env=env,
+    )

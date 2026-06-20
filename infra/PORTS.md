@@ -15,6 +15,10 @@ All services bind to **localhost** unless noted. Use these ports in `INTERGRAX_*
 | Neo4j | 7474 (HTTP), 7687 (Bolt) | rag | `neo4j`, GraphRAG |
 | Milvus | 19530, 9091 | rag | `milvus` |
 | Ollama | 11434 | rag | RAG/LLM embeddings |
+| vLLM | **8100** → container 8000 | vllm | Self-hosted LLM (`LLMProvider.VLLM`); avoids Chroma **8000** |
+| vLLM embed | **8101** → container 8000 | vllm | RAG embeddings (`provider_id=vllm`); separate embed model |
+| llama.cpp | **8102** → container 8080 | llama-cpp | Self-hosted LLM (`LLMProvider.LLAMA_CPP`); avoids Weaviate **8080** |
+| llama.cpp embed | **8103** → container 8080 | llama-cpp | RAG embeddings (`provider_id=llama_cpp`); separate embed model |
 | Docling | 8081 → container 8080 | rag | `docling` server mode |
 | MongoDB | 27017 | data | `mongodb` |
 | MySQL | 3306 | data | `mysql` |
@@ -43,6 +47,8 @@ All services bind to **localhost** unless noted. Use these ports in `INTERGRAX_*
 | Conflict | Resolution |
 |----------|------------|
 | Chroma 8000 vs Weaviate | Weaviate **8080**, Chroma **8000** — different ports |
+| Chroma 8000 vs vLLM container | vLLM API on container **8000**; host mapped to **8100** |
+| Weaviate 8080 vs llama.cpp container | llama.cpp API on container **8080**; host mapped to **8102** |
 | MinIO 9000 vs ClickHouse native 9000 | ClickHouse native mapped to host **9002** |
 | Weaviate 8080 vs Vespa default 8080 | Vespa app on host **8089** |
 | Pub/Sub vs Weaviate | Emulator on **8085** |
@@ -55,6 +61,8 @@ All services bind to **localhost** unless noted. Use these ports in `INTERGRAX_*
 | `core` | redis, postgresql |
 | `queue` | kafka, rabbitmq, nats |
 | `rag` | qdrant, chroma, weaviate, neo4j, milvus, ollama, docling |
+| `vllm` | vllm, vllm-embed (NVIDIA GPU required; opt-in — not in `default`) |
+| `llama-cpp` | llama-cpp, llama-cpp-embed (CPU-friendly; opt-in — not in `default`) |
 | `data` | mongodb, mysql, cassandra, minio, memcached |
 | `secrets` | vault |
 | `observability` | elasticsearch, prometheus, clickhouse, langfuse, phoenix, mailpit |

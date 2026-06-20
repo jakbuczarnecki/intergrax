@@ -63,6 +63,21 @@ def _prune_messages_for_openai(messages: List[ChatMessage]) -> List[ChatMessage]
     return pruned
 
 
+def _sync_routing_before_tool_planner_llm(
+    routing_runtime_config: object | None,
+    *,
+    run_id: str | None,
+) -> None:
+    if routing_runtime_config is None:
+        return
+    from intergrax.runtime.nexus.config import RuntimeConfig
+    from intergrax.runtime.nexus.context.routing_snapshot_sync import sync_routing_before_llm_call
+
+    if not isinstance(routing_runtime_config, RuntimeConfig):
+        return
+    sync_routing_before_llm_call(routing_runtime_config, run_id=run_id)
+
+
 class ToolPlanningService:
     """Plans tool calls from an LLM + catalog registry (planner-only, no execution)."""
 
@@ -76,11 +91,16 @@ class ToolPlanningService:
         self.llm = llm
         self.tools = tools
         self.cfg = config or ToolPlanningConfig.default()
+        self._routing_runtime_config: object | None = None
         self._native_tools = False
         try:
             self._native_tools = bool(self.llm.supports_tools())
         except Exception:
             self._native_tools = False
+
+    def attach_routing_runtime_config(self, config: object) -> None:
+        """Wire live routing snapshot refresh before planner LLM calls (M-LLM-X.13.4)."""
+        self._routing_runtime_config = config
 
     def plan_tools(
         self,
@@ -160,6 +180,10 @@ class ToolPlanningService:
         else:
             messages = [plan_intro] + messages
 
+        _sync_routing_before_tool_planner_llm(
+            self._routing_runtime_config,
+            run_id=run_id,
+        )
         plan_response = self.llm.generate_messages(
             messages,
             temperature=self.cfg.temperature,
@@ -225,6 +249,10 @@ class ToolPlanningService:
         pruned = _prune_messages_for_openai(list(messages))
         effective_tool_choice = tool_choice if tool_choice is not None else "auto"
 
+        _sync_routing_before_tool_planner_llm(
+            self._routing_runtime_config,
+            run_id=run_id,
+        )
         result = self.llm.generate_with_tools(
             pruned,
             tools_schema,

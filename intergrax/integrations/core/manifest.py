@@ -27,6 +27,7 @@ class IntegrationManifest(BaseModel):
     status: IntegrationStatus = IntegrationStatus.STABLE
     env_prefix: str = ""
     description: str = ""
+    requires_local_container: bool = False
 
     @field_validator("slug")
     @classmethod

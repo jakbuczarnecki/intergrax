@@ -22,6 +22,8 @@ class ExecutionBoundaryExportRuntimeSettings:
     allowlist: frozenset[str]
     include_canonical_io: bool = True
     step_level_enabled: bool = False
+    host_signing_enabled: bool = False
+    host_signing_public_key_id: str = "attestation-demo-host-1"
 
 
 def resolve_execution_boundary_export_runtime(
@@ -40,4 +42,6 @@ def resolve_execution_boundary_export_runtime(
         allowlist=frozenset(profile.allowlist),
         include_canonical_io=profile.include_canonical_io,
         step_level_enabled=profile.step_level_enabled,
+        host_signing_enabled=profile.host_signing_enabled,
+        host_signing_public_key_id=profile.host_signing_public_key_id,
     )

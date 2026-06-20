@@ -191,19 +191,67 @@ class RuntimeState(RuntimeStateContract):
         )
 
 
-    def configure_llm_tracker(self) -> None:     
+    def configure_llm_tracker(self) -> None:
 
         if self.llm_usage_tracker is None:
-           self.llm_usage_tracker = LLMUsageTracker(run_id=self.run_id)            
-           
+           self.llm_usage_tracker = LLMUsageTracker(run_id=self.run_id)
+
+        from intergrax.runtime.nexus.tracing.adapters.model_catalog_miss import (
+            wire_catalog_miss_trace_sink,
+        )
+
+        wire_catalog_miss_trace_sink(self.trace_event)
+
         core_adapter = self.context.config.llm_adapter
         if core_adapter is not None:
+            from intergrax.applications._shared.llm_resolver import consume_routing_evaluation
+            from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+            from intergrax.llm_adapters.routing.evaluating_hooks import wire_routing_evaluating_hooks
+            from intergrax.llm_adapters.routing.metering import resolve_metering_adapter
             from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import (
                 attach_failover_routing_trace_observer,
+                emit_llm_routing_allowlist_violation_diag,
+                emit_llm_routing_rule_diag,
             )
 
-            attach_failover_routing_trace_observer(core_adapter, self.trace_event)
-        self.llm_usage_tracker.register_adapter(core_adapter, label="core_adapter")
+            def _on_evaluated(evaluation: object) -> None:
+                from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
+
+                assert isinstance(evaluation, RoutingEvaluation)
+                emit_llm_routing_rule_diag(self.trace_event, evaluation)
+
+            def _on_allowlist_violation(exc: object, context: object) -> None:
+                from intergrax.llm_adapters.routing.contracts import RoutingContext
+                from intergrax.llm_adapters.routing.evaluator import AllowlistViolationError
+
+                assert isinstance(exc, AllowlistViolationError)
+                assert isinstance(context, RoutingContext)
+                emit_llm_routing_allowlist_violation_diag(self.trace_event, exc, context)
+
+            def _on_inner_swapped(inner: LLMAdapter) -> None:
+                self.llm_usage_tracker.register_adapter(
+                    inner,
+                    label=f"core_inner_{id(inner)}",
+                )
+                attach_failover_routing_trace_observer(inner, self.trace_event)
+
+            meter_target = resolve_metering_adapter(core_adapter) or core_adapter
+
+            wire_routing_evaluating_hooks(
+                core_adapter,
+                on_evaluated=_on_evaluated,
+                on_allowlist_violation=_on_allowlist_violation,
+                on_inner_swapped=_on_inner_swapped,
+                attach_failover_observer=lambda adapter: attach_failover_routing_trace_observer(
+                    adapter,
+                    self.trace_event,
+                ),
+            )
+
+            routing_evaluation = consume_routing_evaluation()
+            if routing_evaluation is not None:
+                emit_llm_routing_rule_diag(self.trace_event, routing_evaluation)
+            self.llm_usage_tracker.register_adapter(meter_target, label="core_adapter")
 
         from intergrax.runtime.nexus.tools.tool_planner_trackable import ToolPlannerTrackable
 

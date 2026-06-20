@@ -11,6 +11,18 @@ from intergrax.websearch.schemas.web_search_result import WebSearchResult
 from intergrax.websearch.service.websearch_config import WebSearchConfig, WebSearchStrategyType
 
 
+def _sync_routing_before_websearch_llm(cfg: WebSearchConfig) -> None:
+    routing_config = cfg.routing_runtime_config
+    if routing_config is None:
+        return
+    from intergrax.runtime.nexus.config import RuntimeConfig
+    from intergrax.runtime.nexus.context.routing_snapshot_sync import sync_routing_before_llm_call
+
+    if not isinstance(routing_config, RuntimeConfig):
+        return
+    sync_routing_before_llm_call(routing_config, run_id=cfg.run_id)
+
+
 @dataclass
 class WebSearchContextResult:
     context_text: str
@@ -265,6 +277,7 @@ class MapReduceContextGenerator:
                 ChatMessage(role="user", content=map_user),
             ]
 
+            _sync_routing_before_websearch_llm(self._cfg)
             map_response = self._cfg.llm.map_adapter.generate_messages(
                 map_messages,
                 run_id=self._cfg.run_id,
@@ -319,6 +332,7 @@ class MapReduceContextGenerator:
             ChatMessage(role="user", content=reduce_user),
         ]
 
+        _sync_routing_before_websearch_llm(self._cfg)
         reduce_response = self._cfg.llm.reduce_adapter.generate_messages(
             reduce_messages,
             run_id=self._cfg.run_id,

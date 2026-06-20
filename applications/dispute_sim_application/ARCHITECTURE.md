@@ -47,11 +47,11 @@ Organizations accumulate dispute evidence across silos. Before engaging external
 
 | Question | Example |
 |----------|---------|
-| **What do we have?** | „Czy mamy podpisany aneks z terminem płatności?” |
-| **How strong are we?** | „Które klauzule wspierają naszą pozycję, a które są ryzykowne?” |
-| **What line to take?** | „Atak na opóźnienie vs obrona siły wyższej — co lepsze w tym sporze?” |
-| **What not to send?** | „Czy ten mail przyznaje winę lub ujawnia słaby argument?” |
-| **What if we go to court?** | „Scenariusz A: ugoda; B: nakaz zapłaty; C: pełne postępowanie — koszt/ryzyko?” |
+| **What do we have?** | "Do we have a signed annex with a payment deadline?" |
+| **How strong are we?** | "Which clauses support our position and which are risky?" |
+| **What line to take?** | "Attack on delay vs force majeure defense — which is better in this dispute?" |
+| **What not to send?** | "Does this email admit fault or reveal a weak argument?" |
+| **What if we go to court?** | "Scenario A: settlement; B: payment order; C: full proceedings — cost/risk?" |
 
 DSW answers these through **structured agent pipelines** on a **case-scoped RAG index**, with **human approval** before any outbound legal communication.
 
@@ -90,7 +90,7 @@ DSW answers these through **structured agent pipelines** on a **case-scoped RAG 
 
 | Layer | Requirement |
 |-------|-------------|
-| **UI / API response** | Persistent disclaimer: *„Materiał ma charakter pomocy decyzyjnej, nie stanowi porady prawnej.”* |
+| **UI / API response** | Persistent disclaimer: *"Material is decision support only; it does not constitute legal advice."* |
 | **Correspondence drafts** | HITL mandatory (`dispute.correspondence` skill path — DSW.4) |
 | **PII / retention** | Case data scoped per tenant; retention policy in host settings (DSW.6) |
 | **Audit** | Full Nexus trace + artifact hash for every strategy/scenario output |
@@ -170,7 +170,7 @@ DSW answers these through **structured agent pipelines** on a **case-scoped RAG 
 ## 8. Multi-agent pipeline (target graph)
 
 ```text
-User: "Nowy spór z podwykonawcą X — załączam umowę i maile"
+User: "New dispute with subcontractor X — attaching contract and emails"
   → dispute.intake (ingest + timeline)
   → dispute.analyze (matrix + gaps)
   → dispute.strategy (lines + emphasis)
@@ -187,7 +187,7 @@ Orchestration: Nexus capability graph — **no** custom loop in Tier-2. Graph sp
 
 | Trigger | Gate |
 |---------|------|
-| Draft email / wezwanie / pismo przedsądowe | L2 HITL — human approves or edits before export |
+| Draft email / demand letter / pre-litigation notice | L2 HITL — human approves or edits before export |
 | Strategy brief marked `external_share` | L1 + optional L2 |
 | Scenario with `binding_recommendation` flag | L2 mandatory |
 
@@ -203,7 +203,7 @@ Tier-3 host exposes standard Nexus HITL routes; agents emit `hitl_required` on c
 POST /v1/dispute_sim/run
 {
   "capability": "dispute.intake",
-  "input": "Zorganizuj materiały sporu z ACME — umowa i faktury w załączniku",
+  "input": "Organize dispute materials for ACME — contract and invoices attached",
   "metadata": {
     "case_id": "case-2024-acme",
     "source_paths": ["/data/disputes/acme/"]

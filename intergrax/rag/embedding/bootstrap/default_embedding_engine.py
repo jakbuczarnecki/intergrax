@@ -12,6 +12,8 @@ from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
 from intergrax.rag.embedding.providers.hf_embedding_provider import HFEmbeddingProvider
 from intergrax.rag.embedding.providers.ollama_embedding_provider import OllamaEmbeddingProvider
 from intergrax.rag.embedding.providers.openai_embedding_provider import OpenAIEmbeddingProvider
+from intergrax.rag.embedding.providers.llama_cpp_embedding_provider import LlamaCppEmbeddingProvider
+from intergrax.rag.embedding.providers.vllm_embedding_provider import VllmEmbeddingProvider
 from intergrax.rag.embedding.registry.embedding_provider_registry import EmbeddingProviderRegistry
 
 
@@ -20,6 +22,8 @@ def create_default_registry()-> EmbeddingProviderRegistry:
     registry.register(HFEmbeddingProvider())
     registry.register(OpenAIEmbeddingProvider())
     registry.register(OllamaEmbeddingProvider())
+    registry.register(VllmEmbeddingProvider())
+    registry.register(LlamaCppEmbeddingProvider())
     return registry
 
 

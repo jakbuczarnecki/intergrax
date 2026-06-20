@@ -65,6 +65,7 @@ if TYPE_CHECKING:
     from intergrax.runtime.critic.contracts import CriticVerdict
     from intergrax.runtime.critic.critic_wiring import CriticGraphHooks
     from intergrax.runtime.critic.trace import CriticTraceEmitter
+    from intergrax.runtime.nexus.config import RuntimeConfig
 
 ExecuteFn = Callable[[Agent, Task, ExecutionNode], Awaitable[AgentExecutionResult]]
 ValidateFn = Callable[[AgentExecutionResult, Agent, ExecutionNode], ValidationResult]
@@ -108,12 +109,15 @@ class GraphExecutor:
         compensation_queue_store: CompensationQueueStore | None = None,
         idempotency_store: IdempotencyStore | None = None,
         declarative_tool_invoker: DeclarativeToolInvoker | None = None,
+        runtime_config: Optional["RuntimeConfig"] = None,
     ) -> None:
         self._registry = registry
         self._agent_checkpoint_store = agent_checkpoint_store
         self._compensation_queue_store = compensation_queue_store
         self._idempotency_store = idempotency_store
         self._declarative_tool_invoker = declarative_tool_invoker
+        self._runtime_config = runtime_config
+        self._graph_routing_step = 0
         self._max_parallel_nodes = max_parallel_nodes
         self._max_inflight_nodes = max_inflight_nodes
         self._max_delegation_depth = max_delegation_depth
@@ -381,6 +385,15 @@ class GraphExecutor:
         node.status = ExecutionNodeStatus.RUNNING
         if on_node_start is not None:
             on_node_start(node)
+
+        from intergrax.runtime.nexus.context.routing_snapshot_sync import sync_routing_for_graph_task
+
+        sync_routing_for_graph_task(
+            task,
+            step_index=self._graph_routing_step,
+            runtime_config=self._runtime_config,
+        )
+        self._graph_routing_step += 1
 
         delegation_error = self._validate_delegation_constraints(graph, node)
         if delegation_error is not None:

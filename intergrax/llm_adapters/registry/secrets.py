@@ -36,12 +36,30 @@ _API_KEY_ENV: dict[LLMProvider, str] = {
 }
 
 
-def api_key_env_for_provider(provider: LLMProvider) -> Optional[str]:
-    return _API_KEY_ENV.get(provider)
+def _provider_slug(provider: LLMProvider | str) -> str:
+    if isinstance(provider, LLMProvider):
+        return provider.value
+    return str(provider or "").strip().lower()
+
+
+def _coerce_builtin_provider(provider: LLMProvider | str) -> LLMProvider | None:
+    if isinstance(provider, LLMProvider):
+        return provider
+    try:
+        return LLMProvider(_provider_slug(provider))
+    except ValueError:
+        return None
+
+
+def api_key_env_for_provider(provider: LLMProvider | str) -> Optional[str]:
+    builtin = _coerce_builtin_provider(provider)
+    if builtin is None:
+        return None
+    return _API_KEY_ENV.get(builtin)
 
 
 def resolve_api_key(
-    provider: LLMProvider,
+    provider: LLMProvider | str,
     secrets: Optional[Mapping[str, str]] = None,
 ) -> Optional[str]:
     """
@@ -49,7 +67,8 @@ def resolve_api_key(
     """
     if secrets and secrets.get("api_key"):
         return str(secrets["api_key"]).strip()
-    env_name = api_key_env_for_provider(provider)
+    builtin = _coerce_builtin_provider(provider)
+    env_name = api_key_env_for_provider(builtin) if builtin is not None else None
     if env_name:
         val = os.getenv(env_name)
         if val and val.strip():
@@ -57,14 +76,14 @@ def resolve_api_key(
     return None
 
 
-def default_secret_path_for_provider(provider: LLMProvider, *, prefix: str = "llm") -> str:
+def default_secret_path_for_provider(provider: LLMProvider | str, *, prefix: str = "llm") -> str:
     """Vault-style path: ``{prefix}/{provider}/api_key``."""
-    return f"{prefix.strip('/')}/{provider.value}/api_key"
+    return f"{prefix.strip('/')}/{_provider_slug(provider)}/api_key"
 
 
 def load_api_key_from_secrets_store(
     store: SecretsStore,
-    provider: LLMProvider,
+    provider: LLMProvider | str,
     *,
     path: Optional[str] = None,
 ) -> str:
@@ -72,12 +91,14 @@ def load_api_key_from_secrets_store(
     secret_path = path or default_secret_path_for_provider(provider)
     value = store.get_secret(secret_path)
     if not value or not str(value).strip():
-        raise RuntimeError(f"Empty secret at path='{secret_path}' for provider='{provider.value}'.")
+        raise RuntimeError(
+            f"Empty secret at path='{secret_path}' for provider='{_provider_slug(provider)}'."
+        )
     return str(value).strip()
 
 
 def merge_secrets_into_options(
-    provider: LLMProvider,
+    provider: LLMProvider | str,
     options: dict,
     secrets: Optional[Mapping[str, str]] = None,
 ) -> dict:

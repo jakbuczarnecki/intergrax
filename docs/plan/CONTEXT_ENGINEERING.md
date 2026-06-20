@@ -118,7 +118,7 @@
 | CE-DOC.1 | `architecture/CONTEXT_ENGINEERING.md` — full canon | **Done** |
 | CE-DOC.2 | `plan/CONTEXT_ENGINEERING.md` — this register | **Done** |
 | CE-DOC.3 | `ADR-CTX-001` domain split | **Done** |
-| CE-DOC.4 | Hub + audit map + `guides/audit/CONTEXT_ENGINEERING.md` | **Done** |
+| CE-DOC.4 | Hub + audit map + `audit/CONTEXT_ENGINEERING.md` | **Done** |
 | CE-DOC.5 | MEMORY canon cross-links (Layer C → CE) | **Done** |
 | CE-DOC.6 | `generate_domain_audit_prompts.py` MEMORY/CE split | **Done** |
 | CE-DOC.7 | FAUDIT layer 16 refresh — post-ACP as-built paths, GAP-CTX-13/14, module inventory, sprint register | **Done** (2026-06-12) |
@@ -586,6 +586,22 @@ One sprint = one coherent provider family or gate. One commit per sprint.
 | CE-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
 
 **Deferred P2–P4:** OTel SDK wiring · CE-9.5 cost attribution · CE-10.4 preset baselines · GAP-CTX-12 AHI adaptive ranking
+
+### 6.1av Harness implementation queue — Context engineering audit maintenance (planned)
+
+**Source:** Layer 14 audit (2026-06-18) — `CONTEXT_ENGINEERING` layer 16 · [`../audit_results/2026-06-18/CONTEXT_ENGINEERING.md`](../audit_results/2026-06-18/CONTEXT_ENGINEERING.md)  
+**Priority ladder:** **Band 1** (§6.1) — observability + quality depth; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **CE-MAINT-01** | Observability | P2 | **Done** | OTel SDK wiring — full spans on `ContextEngine.assemble()` hot path | `context_spans.py` OTel tracer; gate tests green |
+| 2 | **CE-MAINT-02** | Metrics | P2 | **Done** | CE-9.5 — cost attribution per fragment in trace/metrics | `CONTEXT_ASSEMBLED` payload `fragment_token_cost` + `estimated_cost_microusd` |
+| 3 | **CE-MAINT-03** | Test | P3 | **Done** | CE-10.4 — preset regression baselines (codebase, regulated_minimal) | `test_ce_preset_regression_baselines.py` |
+| 4 | **CE-MAINT-04** | Docs | P3 | **Done** | Audit prompt sync + cross-ref GAP-CTX-12 → AHI adaptive ranking (**Frozen**) | Prompt known gaps match LC; AHI owner link |
+
+**Suggested PR order:** CE-MAINT-04 → CE-MAINT-01 → CE-MAINT-02 → CE-MAINT-03.
+
+**Cross-domain:** OBSERVABILITY — OTel spine · AHI — GAP-CTX-12 adaptive context ranking.
 
 ---
 

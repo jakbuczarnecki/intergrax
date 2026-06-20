@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §26  
 **Audit layers:** 3, 28  
-**Audit instruction:** [`guides/audit/TIER3_APPLICATION_ENVIRONMENT.md`](../guides/audit/TIER3_APPLICATION_ENVIRONMENT.md)  
+**Audit instruction:** [`audit/TIER3_APPLICATION_ENVIRONMENT.md`](../audit/TIER3_APPLICATION_ENVIRONMENT.md)  
 **Agent cooperation:** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §30 · §35–§39 · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix H · AC  
 **Last updated:** 2026-06-17 — **Full Harness LC** (re-validates H-APP + APP-CON/EVOL/OPS)
 
@@ -161,6 +161,7 @@ Tier-3 hosts are configured through **`ApplicationEnvironmentProfile`** — a ty
 | `ToolProfile` / `SkillProfile` | Allowed catalogs |
 | `IntegrationProfile` | Provider stack — includes optional `llm_guardrail` slug (§47) |
 | `LLMProfile` / `ModalityProfile` | Model and modality posture |
+| `LLMRoutingProfile` (M-LLM-X.9) | Dynamic model routing — built-in + custom `LLMRoutingRule` classes · [ADR-LLM-003](../adr/entries/2026-06-19/ADR-LLM-003.md) |
 | `ContextProfile` / `MemoryProfile` / `ContextDecisionProfile` | Assembly and stores |
 | `PromptProfile` | YAML prompt catalog path |
 | `ReliabilityProfile` | Idempotency, circuit breaker, checkpoint |
@@ -237,7 +238,7 @@ Every Tier-3 application MUST:
 
 ## 22.6 Hierarchical profile bundles
 
-**Status:** Architecture **accepted** · **M1 Done** · **M2 partial** · **M3 Done** (`APP-EVOL-8.6`) · **ADR:** [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md) · **Code:** `intergrax/applications/contracts/environment_profile/`
+**Status:** Architecture **accepted** · **M1 Done** · **M2 Done** · **M3 Done** (`APP-EVOL-8.6`) · **ADR:** [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md) · **Code:** `intergrax/applications/contracts/environment_profile/`
 
 ### 22.6.1 Problem
 

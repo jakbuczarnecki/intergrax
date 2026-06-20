@@ -101,3 +101,5 @@ async def test_uaep_executor_runs_runtime_controlled_steps():
         RuntimeEventType.VALIDATION_PASSED,
         RuntimeEventType.VALIDATION_FAILED,
     }
+    assert all(event.tenant_id == "t1" for event in bus.history if event.tenant_id is not None)
+    assert any(event.tenant_id == "t1" for event in bus.history)

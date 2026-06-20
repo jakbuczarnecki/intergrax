@@ -21,7 +21,6 @@ from intergrax.integrations.registry.presets import harness_security_stack
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.sandbox.hosted_session import HostedSandboxSession
 from intergrax.speech_adapters.contracts.io import SpeechSynthesizeInput
-from intergrax.speech_adapters.contracts.speech_provider import SpeechProvider
 from intergrax.tools.providers.security.service import SECURITY_SCAN_TOOL_ID, security_scan
 from intergrax.tools.providers.security.contracts import SecurityScanInput
 from intergrax.tools.providers.speech.backends import SPEECH_BACKEND_EXTRA_KEY
@@ -162,9 +161,10 @@ def test_integration_speech_adapter_bridge() -> None:
     from intergrax.integrations.providers.speech_provider.deepgram.bundle import create_deepgram_speech_provider
 
     backend = create_deepgram_speech_provider(client=_FakeSpeech())
-    adapter = IntegrationSpeechAdapter(backend, provider=SpeechProvider.STUB)
+    adapter = IntegrationSpeechAdapter(backend, provider_slug="deepgram")
     output = adapter.synthesize(SpeechSynthesizeInput(text="hello"))
     assert output.audio_uri
+    assert adapter.provider_slug == "deepgram"
 
 
 def test_wire_integration_tool_context_speech_extra() -> None:
@@ -175,7 +175,19 @@ def test_wire_integration_tool_context_speech_extra() -> None:
         speech_provider=create_deepgram_speech_provider(client=_FakeSpeech()),
     )
     ctx = wire_integration_tool_context(ToolWiringContext(), profile)
-    assert isinstance(ctx.extras.get(SPEECH_BACKEND_EXTRA_KEY), IntegrationSpeechAdapter)
+    adapter = ctx.extras.get(SPEECH_BACKEND_EXTRA_KEY)
+    assert isinstance(adapter, IntegrationSpeechAdapter)
+    assert adapter.provider_slug == "deepgram"
+
+
+def test_wire_modality_extras_skips_speech_backend_when_integration_provider_set() -> None:
+    from intergrax.applications._shared.modality_wiring import wire_modality_extras
+    from intergrax.integrations.providers.speech_provider.deepgram.bundle import create_deepgram_speech_provider
+
+    backend = create_deepgram_speech_provider(client=_FakeSpeech())
+    ctx = ToolWiringContext(speech_provider=backend)
+    wire_modality_extras(ctx)
+    assert SPEECH_BACKEND_EXTRA_KEY not in ctx.extras
 
 
 def test_identity_provider_resolution_and_token_validation() -> None:

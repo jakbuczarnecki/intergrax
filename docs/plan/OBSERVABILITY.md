@@ -211,8 +211,8 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 | EBE-5 | Partner handoff (README + sample JSON) | **Done** | `partner_handoff/` | committed request/response fixtures |
 | EBE-6 | Domain doc + harness ADR (trust model) | **Done** | `architecture/OBSERVABILITY.md` §18, ADR-OBS-002 | doc pair + `check_harness_adr.py` |
 | EBE-7 | Webhook sink | Deferred | `sinks/webhook.py` | Phase 2 |
-| EBE-8 | HarnessKernel step-level events (`harness_step`, `event_sequence`) | **Done** | `harness_boundary_emitter.py`, `HarnessKernel._finish_step` | `tests/unit/runtime/attestation/`, `attestation_demo_tests` v2 |
-| EBE-9 | Host-side event signing | Deferred | optional seal | Phase 2 |
+| EBE-8 | HarnessKernel step-level events (`harness_step`, `event_sequence`) | **Done** (partner validated) | `harness_boundary_emitter.py`, `HarnessKernel._finish_step` | Live Docker @ `106aee77`; AgentReceipt 28/28 + live example |
+| EBE-9 | Host-side event signing (Ed25519 statement) | **Done** (PoC) | `host_attestation.py`, `canonical_json.py`, profile `host_signing_enabled` | golden vector + `test_partner_ebe9_host_signing.py`; [ADR-OBS-004](../adr/entries/2026-06-19/ADR-OBS-004.md) |
 
 ---
 
@@ -286,4 +286,22 @@ python scripts/check_harness_adr.py
 
 **Deferred P2–P4:** OBS-EVOL-9.9 `runtime_event.v2` · product dashboards §6.3a
 
+### 6.1av Harness implementation queue — Observability audit maintenance (planned)
+
+**Source:** Layer 16 audit (2026-06-18) — `OBSERVABILITY` layers 21, 30 · [`../audit_results/2026-06-18/OBSERVABILITY.md`](../audit_results/2026-06-18/OBSERVABILITY.md)  
+**Priority ladder:** **Band 1** (§6.1) — post-publication + prompt sync; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **OBS-MAINT-01** | Schema | P3 | **Done** | OBS-EVOL-9.9 — `runtime_event.v2` schema evolution (post-publication) | `PREVIEW_RUNTIME_SCHEMA_VERSIONS` + conformance tests |
+| 2 | **OBS-MAINT-02** | Cross-ref | P4 | **Done** | Product dashboards §6.3a — cross-ref [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) Phase K owner | Architecture cross-ref; no duplicate OBS product scope |
+| 3 | **OBS-MAINT-03** | Docs | P3 | **Done** | Audit prompt sync — OBS-EVOL-9 M0–M3 **Done** in known gaps | `docs/audit/OBSERVABILITY.md` regenerated |
+| 4 | **OBS-MAINT-04** | Docs | P3 | **Done** | Pre-release spine consolidation checklist — operator runbook row | Checklist in architecture §pre-release |
+
+**Suggested PR order:** OBS-MAINT-03 → OBS-MAINT-04 → OBS-MAINT-01 → OBS-MAINT-02.
+
+**Cross-domain:** CE-MAINT-01/02 — context assembly OTel/cost (OBS spine consumer).
+
 ---
+
+*End of Observability Implementation Plan.*

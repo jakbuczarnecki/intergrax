@@ -26,7 +26,20 @@ or `Authorization: Bearer <key>`. When the env var is unset (local dev default),
 3. **Create one receipt per boundary event** (not one composite receipt per run)
 4. Map each event → AgentReceipt `createSignedReceipt` with `receiptRole: "client_observed"`
 5. Persist via partner `LocalFileReceiptSink`; run `verify` / `chain`
-6. Optional journal compare: `GET /debug/tasks/{run_id}/trace` on the same host
+6. Optional journal compare: `GET /debug/tasks/{run_id}/trace` on the same host (run/task-level correlation only — see below)
+
+## Trace vs boundary correlation
+
+| Source | Correlates | Does not expose |
+|--------|------------|-----------------|
+| `boundary_events[]` from `POST /poc/run` | Per-event `event_id`, `event_sequence`, `boundary_type`, `tool_id`, `step_id`, hashes | Full HOS spine |
+| `GET /debug/tasks/{run_id}/trace` | Same `run_id`, agent, capability, graph node, critic, task state | EBE `event_id`, `step_id`, `tool_id` |
+
+Use **`boundary_events[]` as the authoritative per-event source** for receipt keys and tool/harness claims. Use trace for optional run-level journal comparison.
+
+**Partner validated:** commit `106aee776fcc6053e8265b9c3656638d107d351d` on branch `agent_experiment_runtime` (live Docker, BoundaryAttest adapter, 2026-06).
+
+**EBE-9 (host signing):** see [`EBE-9_HOST_SIGNING.md`](EBE-9_HOST_SIGNING.md) and golden vector [`ebe9_golden_vector.v1.json`](ebe9_golden_vector.v1.json). Default `attestation_demo` manifest enables signing; set `host_signing_enabled=false` for unsigned v2.
 
 ## PoC v2 event shape
 

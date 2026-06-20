@@ -253,6 +253,7 @@ class ContextManager:
                 },
                 engine_id=engine.engine_id,
                 step_kind=node.capability,
+                emit_assembled=False,
             )
         if self._middleware is not None:
             await self._middleware.run_after(

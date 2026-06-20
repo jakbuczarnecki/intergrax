@@ -27,6 +27,36 @@ CODECRAFT_STEP_ITERATION_VERDICT = "codecraft.iteration_verdict"
 CODECRAFT_STEP_HITL_REQUESTED = "codecraft.hitl_requested"
 CODECRAFT_STEP_PROMOTED = "codecraft.promoted"
 CODECRAFT_STEP_DISPOSED = "codecraft.disposed"
+CODECRAFT_STEP_METRICS = "codecraft.metrics_snapshot"
+
+
+@dataclass
+class CodeCraftMetricsSnapshot:
+    """§10.2 craft counters aggregated for trace panels."""
+
+    iterations: int = 0
+    static_gate_failures: int = 0
+    generation_events: int = 0
+    exec_ms: float = 0.0
+    hitl_requests: int = 0
+    promotions: int = 0
+
+    @property
+    def static_gate_failure_rate(self) -> float:
+        if self.iterations <= 0:
+            return 0.0
+        return self.static_gate_failures / self.iterations
+
+    def to_panel(self) -> dict[str, float | int]:
+        return {
+            "iterations": self.iterations,
+            "static_gate_failures": self.static_gate_failures,
+            "static_gate_failure_rate": round(self.static_gate_failure_rate, 4),
+            "generation_events": self.generation_events,
+            "exec_ms": round(self.exec_ms, 2),
+            "hitl_requests": self.hitl_requests,
+            "promotions": self.promotions,
+        }
 
 
 @dataclass(frozen=True)
@@ -88,6 +118,43 @@ class CodeCraftTraceEmitter:
         self._trace_writer = trace_writer
         self._event_bus = event_bus
         self.events: list[TraceEvent] = []
+        self._metrics = CodeCraftMetricsSnapshot()
+
+    def metrics_snapshot(self) -> CodeCraftMetricsSnapshot:
+        return self._metrics
+
+    def metrics_panel(self) -> dict[str, float | int]:
+        return self._metrics.to_panel()
+
+    def emit_metrics_snapshot(
+        self,
+        *,
+        craft_id: str,
+        mode: str,
+        tenant_id: str,
+        task_id: str,
+        agent_id: str = "",
+    ) -> TraceEvent:
+        panel = self.metrics_panel()
+        return self._emit(
+            step=CODECRAFT_STEP_METRICS,
+            message="codecraft metrics snapshot",
+            level=TraceLevel.INFO,
+            payload=CodeCraftDiagV1(
+                craft_id=craft_id,
+                event="CODECRAFT_METRICS_SNAPSHOT",
+                mode=mode,
+                passed=None,
+                iteration=int(panel["iterations"]),
+                verdict=str(panel),
+            ),
+            tags={
+                "tenant_id": tenant_id,
+                "task_id": task_id,
+                "agent_id": agent_id,
+                "craft_id": craft_id,
+            },
+        )
 
     def session_opened(
         self,
@@ -127,6 +194,7 @@ class CodeCraftTraceEmitter:
         task_id: str,
         agent_id: str = "",
     ) -> TraceEvent:
+        self._metrics.generation_events += 1
         return self._emit(
             step=CODECRAFT_STEP_GENERATION,
             message=f"codecraft generation iteration {iteration}",
@@ -158,6 +226,9 @@ class CodeCraftTraceEmitter:
         task_id: str,
         agent_id: str = "",
     ) -> TraceEvent:
+        self._metrics.iterations += 1
+        if not passed:
+            self._metrics.static_gate_failures += 1
         return self._emit(
             step=CODECRAFT_STEP_STATIC_GATE,
             message=f"codecraft static gate {'passed' if passed else 'failed'}",
@@ -190,6 +261,8 @@ class CodeCraftTraceEmitter:
         agent_id: str = "",
         duration_ms: float | None = None,
     ) -> TraceEvent:
+        if duration_ms is not None:
+            self._metrics.exec_ms += duration_ms
         return self._emit(
             step=CODECRAFT_STEP_EXEC,
             message=f"codecraft exec {'ok' if success else 'failed'}",
@@ -283,6 +356,7 @@ class CodeCraftTraceEmitter:
         task_id: str,
         agent_id: str = "",
     ) -> TraceEvent:
+        self._metrics.hitl_requests += 1
         return self._emit(
             step=CODECRAFT_STEP_HITL_REQUESTED,
             message=f"codecraft HITL requested ({reason})",
@@ -312,6 +386,7 @@ class CodeCraftTraceEmitter:
         task_id: str,
         agent_id: str = "",
     ) -> TraceEvent:
+        self._metrics.promotions += 1
         return self._emit(
             step=CODECRAFT_STEP_PROMOTED,
             message="codecraft result promoted",
@@ -340,6 +415,13 @@ class CodeCraftTraceEmitter:
         task_id: str,
         agent_id: str = "",
     ) -> TraceEvent:
+        self.emit_metrics_snapshot(
+            craft_id=craft_id,
+            mode=mode,
+            tenant_id=tenant_id,
+            task_id=task_id,
+            agent_id=agent_id,
+        )
         return self._emit(
             step=CODECRAFT_STEP_DISPOSED,
             message="codecraft session disposed",

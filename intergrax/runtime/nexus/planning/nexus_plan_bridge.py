@@ -106,6 +106,9 @@ def build_nexus_plan_unified(
     max_attempts = 1 + max(0, planner_parse_retries)
     raw = ""
     parsed: _LlmNexusPlanPayload | None = None
+    from intergrax.runtime.nexus.context.routing_snapshot_sync import sync_routing_for_task_llm_call
+
+    sync_routing_for_task_llm_call(task)
     for _ in range(max_attempts):
         response = llm_adapter.generate_messages(
             [ChatMessage(role="user", content=prompt_text)],

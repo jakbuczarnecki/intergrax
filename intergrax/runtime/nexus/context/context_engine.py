@@ -227,6 +227,22 @@ class DefaultNexusContextEngine:
             _record_validation_failed(event_bus, event_ctx, validation.errors, stage="assembled_validation")
             raise ValueError("; ".join(validation.errors))
 
+        if event_bus is not None:
+            from intergrax.runtime.events.context_skill_recording import (
+                record_context_assembled_from_engine,
+            )
+
+            record_context_assembled_from_engine(
+                event_bus,
+                assembled=assembled,
+                task_id=request.task_id,
+                run_id=request.run_id,
+                node_id=str(event_ctx.get("node_id") or request.graph_node_id or ""),
+                agent_id=event_ctx.get("agent_id") if isinstance(event_ctx.get("agent_id"), str) else None,
+                engine_id=self._engine_id,
+                step_kind=request.step_kind,
+            )
+
         return assembled
 
 

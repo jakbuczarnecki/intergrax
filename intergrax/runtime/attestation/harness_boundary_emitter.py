@@ -12,7 +12,8 @@ from intergrax.contracts.agent_run_trace import AgentStepStatus, PolicyCheckPhas
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.contracts.step_execution import StepExecutionRecord
-from intergrax.runtime.attestation.boundary_emitter import _runtime_version, _stable_payload_hash
+from intergrax.runtime.attestation.boundary_emitter import _runtime_version
+from intergrax.runtime.attestation.canonical_json import stable_payload_hash
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.runtime.attestation.execution_boundary_event import (
     ExecutionBoundaryEventV1,
@@ -152,8 +153,8 @@ class HarnessBoundaryEmitter:
         if action_status in {"failed", "denied"} and step_outcome.error_code:
             error_message = step_outcome.error_code
 
-        input_hash = _stable_payload_hash(input_payload)
-        output_hash = _stable_payload_hash(output_payload)
+        input_hash = stable_payload_hash(input_payload)
+        output_hash = stable_payload_hash(output_payload)
         if not export_settings.include_canonical_io:
             input_payload = {}
             output_payload = {}

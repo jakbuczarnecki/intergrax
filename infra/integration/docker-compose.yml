@@ -18,6 +18,18 @@ x-profiles-all: &profiles_all
     - observability
     - cloud
     - heavy
+    - vllm
+    - llama-cpp
+    - all
+
+x-profiles-vllm: &profiles_vllm
+  profiles:
+    - vllm
+    - all
+
+x-profiles-llama-cpp: &profiles_llama_cpp
+  profiles:
+    - llama-cpp
     - all
 
 services:
@@ -181,6 +193,117 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  vllm:
+    <<: *profiles_vllm
+    image: vllm/vllm-openai:latest
+    container_name: intergrax-vllm
+    ports:
+      - "8100:8000"
+    volumes:
+      - vllm_cache:/root/.cache/huggingface
+    environment:
+      HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
+      VLLM_USE_V1: ${VLLM_USE_V1:-0}
+    shm_size: "2gb"
+    command:
+      - ${VLLM_MODEL:-meta-llama/Llama-3.1-8B-Instruct}
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --enforce-eager
+      - --gpu-memory-utilization
+      - "0.85"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  vllm-embed:
+    <<: *profiles_vllm
+    image: vllm/vllm-openai:latest
+    container_name: intergrax-vllm-embed
+    ports:
+      - "8101:8000"
+    volumes:
+      - vllm_embed_cache:/root/.cache/huggingface
+    environment:
+      HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
+      VLLM_USE_V1: ${VLLM_USE_V1:-0}
+    shm_size: "2gb"
+    command:
+      - ${VLLM_EMBED_MODEL:-BAAI/bge-small-en-v1.5}
+      - --runner
+      - pooling
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --enforce-eager
+      - --gpu-memory-utilization
+      - "0.35"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  llama-cpp:
+    <<: *profiles_llama_cpp
+    image: ghcr.io/ggml-org/llama.cpp:server
+    container_name: intergrax-llama-cpp
+    ports:
+      - "8102:8080"
+    volumes:
+      - llama_cpp_cache:/root/.cache
+    environment:
+      HF_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
+    command:
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8080"
+      - -hf
+      - ${LLAMA_CPP_HF_REPO:-bartowski/Llama-3.2-1B-Instruct-GGUF}
+      - -hff
+      - ${LLAMA_CPP_HF_FILE:-Llama-3.2-1B-Instruct-Q4_K_M.gguf}
+      - -c
+      - "4096"
+      - -np
+      - "2"
+    restart: unless-stopped
+
+  llama-cpp-embed:
+    <<: *profiles_llama_cpp
+    image: ghcr.io/ggml-org/llama.cpp:server
+    container_name: intergrax-llama-cpp-embed
+    ports:
+      - "8103:8080"
+    volumes:
+      - llama_cpp_embed_cache:/root/.cache
+    environment:
+      HF_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
+    command:
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8080"
+      - --embeddings
+      - -hf
+      - ${LLAMA_CPP_EMBED_HF_REPO:-nomic-ai/nomic-embed-text-v1.5-GGUF}
+      - -hff
+      - ${LLAMA_CPP_EMBED_HF_FILE:-nomic-embed-text-v1.5.Q4_K_M.gguf}
+      - -np
+      - "2"
     restart: unless-stopped
 
   docling:
@@ -504,6 +627,10 @@ volumes:
   neo4j_data:
   milvus_data:
   ollama_data:
+  vllm_cache:
+  vllm_embed_cache:
+  llama_cpp_cache:
+  llama_cpp_embed_cache:
   docling_models:
   mongodb_data:
   mysql_data:

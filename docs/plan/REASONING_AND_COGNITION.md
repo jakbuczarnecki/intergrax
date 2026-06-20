@@ -309,6 +309,35 @@ These items implemented under FLOW/ORCH phases — **Done**; canon now owned by 
 | COG-LC-S5 | **CI bundle** — `check_reasoning_gates.py` in AGENTS.md + `check_audit_ideal_gates.py` | **Done** | Medium | `scripts/` | gate script green |
 | COG-LC-S6 | **LLM classifier registry prompt** — `nexus_task_classifier` prompt asset | **Done** | Medium | `prompts/nexus_task_classifier/`, `nexus_classifier_prompts.py` | `check_reasoning_gates.py` |
 
+### 6.1av Harness implementation queue — Reasoning audit maintenance (closed)
+
+**Source:** Layer 5 audit (2026-06-18) — `REASONING_AND_COGNITION` layer 7 · [`../audit_results/2026-06-18/REASONING_AND_COGNITION.md`](../audit_results/2026-06-18/REASONING_AND_COGNITION.md)  
+**Priority ladder:** **Band 1** (§6.1) — doc/gate hygiene; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **COG-MAINT-01** | Code/Docs | P2 | **Done** | Align §17 failure taxonomy with `ReasoningFailureKind` — canonical mapping table in architecture §17 | Trace payloads match §17 codes |
+| 2 | **COG-MAINT-02** | CI | P2 | **Done** | Extend `check_reasoning_gates.py` for SYS-INV-22 plane-separation import boundaries | Gate fails on forbidden cross-plane imports in hot paths |
+| 3 | **COG-MAINT-03** | Test | P3 | **Done** | Acceptance test: `allow_dynamic_replan` replan after policy interrupt on reference host | E2E replan boundary proven |
+
+**Suggested PR order:** none — §6.1av queue closed (2026-06-18).
+
+**Explicitly excluded:** L4 adaptive planner selection (AHI scope) — observe-only default in canon §21.
+
+### 6.1aw Harness implementation queue — Reasoning audit maintenance (2026-06-19)
+
+**Source:** Interactive layer audit (2026-06-19) — `REASONING_AND_COGNITION` layer 7 · [`../audit_results/2026-06-19/REASONING_AND_COGNITION.md`](../audit_results/2026-06-19/REASONING_AND_COGNITION.md) · prior: [`../audit_results/2026-06-18/REASONING_AND_COGNITION.md`](../audit_results/2026-06-18/REASONING_AND_COGNITION.md)  
+**Priority ladder:** **Band 1** (§6.1) — doc sync + audit artifact; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **COG-MAINT-DOC-01** | Docs | P3 | **Done** | Close §6.1av header; confirm architecture §17 mapping table current (COG-MAINT-01) | Plan §6.1av/§6.1aw consistent with Done maintenance rows |
+| 2 | **COG-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `REASONING_AND_COGNITION.md` + `progress.json`; L3 verdict layer 7 |
+
+**Suggested PR order:** none — §6.1aw queue closed (2026-06-19).
+
+**Explicitly excluded:** L4 adaptive planner selection (AHI scope) — observe-only default in canon §21.
+
 ---
 
 *End of Reasoning and Cognition Implementation Plan.*

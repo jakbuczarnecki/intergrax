@@ -5,9 +5,26 @@
 from __future__ import annotations
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.runtime.attestation.settings import resolve_execution_boundary_export_runtime
+from intergrax.runtime.attestation.settings import (
+    ExecutionBoundaryExportRuntimeSettings,
+    resolve_execution_boundary_export_runtime,
+)
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
+from intergrax.runtime.attestation.host_attestation import resolve_host_attestation_sealer_from_env
 from intergrax.runtime.nexus.config import RuntimeConfig
+
+
+def build_boundary_event_buffer(
+    profile: ApplicationEnvironmentProfile,
+) -> BoundaryEventBuffer | None:
+    export_profile = profile.execution_boundary_export_profile
+    if export_profile is None or not export_profile.enabled:
+        return None
+    sealer = resolve_host_attestation_sealer_from_env(
+        enabled=export_profile.host_signing_enabled,
+        public_key_id=export_profile.host_signing_public_key_id,
+    )
+    return BoundaryEventBuffer(host_attestation_sealer=sealer)
 
 
 def apply_attestation_profile_to_runtime_config(
