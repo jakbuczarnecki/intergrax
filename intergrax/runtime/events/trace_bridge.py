@@ -42,6 +42,9 @@ from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import (
     attach_failover_routing_trace_observer,
     emit_llm_routing_rule_diag,
 )
+from intergrax.runtime.nexus.tracing.adapters.model_catalog_miss import (
+    ModelCatalogMissTraceDiagV1,
+)
 from intergrax.runtime.nexus.tracing.trace_models import TraceEvent, TraceLevel
 from intergrax.runtime.task.task import Task, TaskState
 
@@ -71,6 +74,7 @@ _CORE_LLM_CALL_SCHEMA = CoreLLMCallRecordedDiagV1.schema_id()
 _CORE_LLM_RETURNED_SCHEMA = "intergrax.diag.engine.core_llm.adapter_returned"
 _CORE_LLM_ROUTING_ATTEMPT_SCHEMA = LLMRoutingAttemptDiagV1.schema_id()
 _CORE_LLM_ROUTING_RULE_SCHEMA = LLMRoutingRuleDiagV1.schema_id()
+_CORE_LLM_CATALOG_MISS_SCHEMA = ModelCatalogMissTraceDiagV1.schema_id()
 
 _TOOL_STEP_TO_EVENT: dict[str, RuntimeEventType] = {
     "tool_invocation_start": RuntimeEventType.TOOL_REQUESTED,
@@ -215,6 +219,7 @@ def _resolve_event_type_from_trace(
         _CORE_LLM_RETURNED_SCHEMA,
         _CORE_LLM_ROUTING_ATTEMPT_SCHEMA,
         _CORE_LLM_ROUTING_RULE_SCHEMA,
+        _CORE_LLM_CATALOG_MISS_SCHEMA,
     }:
         event_type = RuntimeEventType.LLM_CALL
     elif trace.step == "core_llm" and "finish_reason" in payload:
@@ -309,8 +314,9 @@ def _attach_typed_bridge_payload(
             promote_fields={"stage": step_name, "error_type": error_type},
         )
     if event_type == RuntimeEventType.LLM_CALL and extra_payload:
+        model = str(extra_payload.get("model") or extra_payload.get("model_id", ""))
         typed = LlmCallPayloadV1(
-            model=str(extra_payload.get("model", "")),
+            model=model,
             prompt_tokens=int(extra_payload.get("prompt_tokens", 0) or 0),
             completion_tokens=int(extra_payload.get("completion_tokens", 0) or 0),
             total_tokens=int(extra_payload.get("total_tokens", 0) or 0),

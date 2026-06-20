@@ -13,6 +13,9 @@ from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import (
     LLMRoutingAttemptDiagV1,
     LLMRoutingRuleDiagV1,
 )
+from intergrax.runtime.nexus.tracing.adapters.model_catalog_miss import (
+    ModelCatalogMissTraceDiagV1,
+)
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceEvent, TraceLevel
 from intergrax.runtime.task.task import Task, TaskState
 
@@ -185,3 +188,38 @@ def test_trace_bridge_maps_llm_routing_rule_schema() -> None:
     )
     assert event.event_type == RuntimeEventType.LLM_CALL
     assert event.payload["model"] == "meta-llama/Llama-3.1-8B"
+
+
+def test_trace_bridge_maps_llm_catalog_miss_schema() -> None:
+    task = Task(
+        task_id="t1",
+        tenant_id="tenant",
+        user_id="user",
+        agent_id="agent",
+        message="q",
+    )
+    trace = TraceEvent(
+        event_id="llm-miss-1",
+        run_id="r1",
+        seq=7,
+        ts_utc="2026-06-19T10:00:00Z",
+        level=TraceLevel.WARNING,
+        component=TraceComponent.ENGINE,
+        step="llm_catalog_miss",
+        message="Model catalog miss — conservative context window default applied.",
+        tags={"task_id": "t1"},
+    )
+    payload = {
+        "provider_slug": "openrouter",
+        "model_id": "vendor/unknown",
+        "resolved_tokens": 8192,
+        "run_id": "r1",
+    }
+    event = trace_event_to_runtime_event(
+        trace,
+        task,
+        payload_schema_id=ModelCatalogMissTraceDiagV1.schema_id(),
+        payload_dict=payload,
+    )
+    assert event.event_type == RuntimeEventType.LLM_CALL
+    assert event.payload["model"] == "vendor/unknown"

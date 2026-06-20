@@ -207,6 +207,11 @@ class RuntimeState(RuntimeStateContract):
                 emit_llm_routing_allowlist_violation_diag,
                 emit_llm_routing_rule_diag,
             )
+            from intergrax.runtime.nexus.tracing.adapters.model_catalog_miss import (
+                wire_catalog_miss_trace_sink,
+            )
+
+            wire_catalog_miss_trace_sink(self.trace_event)
 
             def _on_evaluated(evaluation: object) -> None:
                 from intergrax.llm_adapters.routing.contracts import RoutingEvaluation

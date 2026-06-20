@@ -88,7 +88,7 @@
 | **Goal** | Profile chain, Nexus hot path, ACP bridge |
 | **DoD** | `test_failover_adapter.py`, `test_model_router.py`, ACP adapter port test green |
 
-### Sprint LC-4 — Gateway metadata + DX closeout — **Partial** (static OpenRouter default Done; dynamic fetch → backlog)
+### Sprint LC-4 — Gateway metadata + DX closeout — **Done** (X-14.2 · gateway merge + catalog miss trace)
 
 ### Backlog (P2–P4 — does not block layer completion)
 
@@ -112,7 +112,7 @@
 |-------|------|-----|----------|--------|
 | 0 | X-0 | M-LLM-X.0.1–0.3 | **P0** | **Done** |
 | 1 | X-1 | M-LLM-X.1.1–1.6 | **P0** | **Done** |
-| 2 | X-2 | M-LLM-X.2.1–2.4 | P1 | **Backlog** (static catalog covers OpenRouter default) |
+| 2 | X-2 | M-LLM-X.2.1–2.4 | P1 | **Done** (X-14.2 bundle) |
 | 3 | X-3 | M-LLM-X.3.1–3.5 | **P0** | **Done** |
 | 4 | X-4 | M-LLM-X.4.1–4.5 | P1 | **Done** (4.5 via LLM-MAINT-03) |
 | 5 | X-5 | M-LLM-X.5.1–5.5 | P1 | **Done** |
@@ -132,7 +132,7 @@
 
 ### 6.2af Phase M-LLM-X execution order
 
-**Status:** **Planned**
+**Status:** **Done** (waves X-0…X-14 closed)
 
 ```text
 Wave M-LLM-X-0 (planning):     M-LLM-X.0.1 → 0.2 → 0.3
@@ -188,7 +188,7 @@ Wave M-LLM-X-14 (enterprise domain):  M-LLM-X.14.2 → 14.1 → 14.4 → 14.3 �
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
 | M-LLM-X.2.1 | **`OpenRouterModelMetadataClient`** — optional `/models` fetch, TTL cache | **Done** | High | `registry/gateway_metadata/` | **M-LLM-X.14.2** · LLM-AUDIT-23 |
-| M-LLM-X.2.2 | **Merge gateway metadata into catalog session cache** | **Planned** | High | `model_catalog.py` | context from API when present |
+| M-LLM-X.2.2 | **Merge gateway metadata into catalog session cache** | **Done** | High | `registry/gateway_metadata/session.py` | Opt-in `fetch_gateway_metadata` |
 | M-LLM-X.2.3 | **`LLMProfile.options["fetch_gateway_metadata"]=True`** opt-in | **Done** | Medium | `gateway_metadata/session.py` | Default false (no network in unit gate) |
 | M-LLM-X.2.4 | **Diagnostic `ModelCatalogMissDiagV1`** when fallback default used | **Done** | Medium | `catalog_miss_diag.py` | Once per model/run |
 
@@ -235,7 +235,7 @@ Wave M-LLM-X-14 (enterprise domain):  M-LLM-X.14.2 → 14.1 → 14.4 → 14.3 �
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
 | M-LLM-X.6.1 | **`LLMProfile` accepts `provider: str`** without enum (validated against registry) | **Done** | Medium | `profile.py` | **M-LLM-X.14.3** · LLM-AUDIT-26 |
-| M-LLM-X.6.2 | **Example custom gateway** in `tests/unit/llm_adapters/test_custom_provider_register.py` | **Planned** | Medium | tests | Conformance subset |
+| M-LLM-X.6.2 | **Example custom gateway** in `test_custom_provider_and_acp_usage.py` | **Done** | Medium | tests | Conformance subset |
 | M-LLM-X.6.3 | **Architecture §Extension** + AGENT_CREATION_GUIDE cross-link | **Done** | Low | docs | USAGE + canon §Extension |
 
 ---

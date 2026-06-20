@@ -4,10 +4,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, ClassVar
 
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+
+CatalogMissObserver = Callable[["ModelCatalogMissDiagV1"], None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,6 +34,8 @@ class ModelCatalogMissDiagV1:
 
 
 _emitted_keys: set[tuple[str, str, str]] = set()
+_pending: list[ModelCatalogMissDiagV1] = []
+_trace_observer: CatalogMissObserver | None = None
 
 
 def _provider_slug(provider: LLMProvider | str) -> str:
@@ -42,6 +47,21 @@ def _provider_slug(provider: LLMProvider | str) -> str:
 def reset_catalog_miss_diagnostics() -> None:
     """Clear dedupe state (tests)."""
     _emitted_keys.clear()
+    _pending.clear()
+    global _trace_observer
+    _trace_observer = None
+
+
+def register_catalog_miss_trace_observer(observer: CatalogMissObserver | None) -> None:
+    """Attach Plane A trace sink; flush any misses recorded before wiring."""
+    global _trace_observer
+    _trace_observer = observer
+    if observer is None:
+        return
+    pending = list(_pending)
+    _pending.clear()
+    for diag in pending:
+        observer(diag)
 
 
 def maybe_emit_catalog_miss(
@@ -58,9 +78,14 @@ def maybe_emit_catalog_miss(
     if key in _emitted_keys:
         return None
     _emitted_keys.add(key)
-    return ModelCatalogMissDiagV1(
+    diag = ModelCatalogMissDiagV1(
         provider_slug=slug,
         model_id=model_id,
         resolved_tokens=int(resolved_tokens),
         run_id=run_id,
     )
+    if _trace_observer is not None:
+        _trace_observer(diag)
+    else:
+        _pending.append(diag)
+    return diag

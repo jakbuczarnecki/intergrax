@@ -152,7 +152,7 @@ Re-validate per [`audit/LLM_ADAPTERS.md`](../audit/LLM_ADAPTERS.md) §3:
 | 11 | Tenant scope + hard quota | **Yes** | `llm_tenant_scope`; `INTERGRAX_LLM_TENANT_MAX_TOKENS` |
 | 12 | Metrics export on task complete | **Yes** | `runtime.llm_metrics_export` plugin; `/metrics/llm` |
 | 13 | Attachments respect `ModalityProfile.max_media_bytes` | **Yes** | §Modality attachments |
-| 14 | Capability flags default false (W-ML.1) | **Partial** | Per-provider overrides; catalog-driven flags: M-LLM-X.1.7 |
+| 14 | Capability flags from catalog when `ModelRecord` known | **Yes** | `CatalogCapabilityAdapter` + registry wire · M-LLM-X.14.1 |
 | 15 | Secrets via `llm/<provider>/api_key` | **Yes** | §Secrets; `create_adapter_from_secrets_store()` |
 | 16 | Replay bridge maps trace → adapter calls | **Yes** | §Trace and replay bridge |
 
@@ -186,14 +186,14 @@ Each declares `OpenAICompatProviderConfig` (API key env, base URL, default model
 from intergrax.llm_adapters import LLMAdapterRegistry
 
 LLMAdapterRegistry.register("my_gateway", my_factory, override=False)
-profile = LLMProfile(provider="my_gateway", model="vendor/model-id")  # str coercion target: M-LLM-X.6
+profile = LLMProfile(provider="my_gateway", model="vendor/model-id")
 ```
 
-Built-in enum extension still requires a harness PR for `_BUILTIN_ADAPTERS` + `LLMProvider` — **plugin entry point** (M-LLM-X.6) will allow string slugs without enum edits for external gateways.
+Custom provider slugs validate against `LLMAdapterRegistry.registered_providers()` — no enum edit required (**M-LLM-X.14.3**).
 
 ### When to use `openrouter`
 
-`openrouter` is the **multi-vendor escape hatch**: one provider slug, arbitrary upstream model strings (`anthropic/claude-opus-4`, …). Requires **ModelCatalog** or profile override for correct context windows (today: 32k fallback — incorrect for most models).
+`openrouter` is the **multi-vendor escape hatch**: one provider slug, arbitrary upstream model strings (`anthropic/claude-opus-4`, …). Context windows resolve via bundled **`ModelCatalog`**, optional **`fetch_gateway_metadata`** merge, or profile override. On catalog miss, **`ModelCatalogMissDiagV1`** is recorded on Plane A trace (`llm_catalog_miss`).
 
 ---
 
@@ -507,7 +507,7 @@ RoutingContext (snapshot from Nexus / budget meter / classifier)
 
 #### Enterprise domain maturity register (M-LLM-X-14 — Done)
 
-**Delivered (2026-06-19):** gateway metadata client + session merge; catalog capability wire verified; ACP usage token bridge; enum-free `LLMProfile.provider`; opt-in secondary evaluating wrap (`llm_routing_evaluating_secondary`); multi-step routing soak; tokenizer plugin stub + USAGE; scaffold comment.
+**Delivered (2026-06-19):** gateway metadata client + session merge; catalog capability wire verified; ACP usage token bridge; enum-free `LLMProfile.provider`; opt-in secondary evaluating wrap (`llm_routing_evaluating_secondary`); multi-step routing soak; tokenizer plugin stub + USAGE; scaffold comment; **`ModelCatalogMissDiagV1` Plane A trace** (`llm_catalog_miss`).
 
 | Gap | Severity | Task ID | Audit ID | Status |
 |-----|----------|---------|----------|--------|
@@ -807,7 +807,7 @@ Do not merge counters without explicit bridge code.
 | LLM-AUDIT-4 | `ModelRouter` not on Nexus hot path | **P1** | M-LLM-X.4–5 | **Done** |
 | LLM-AUDIT-5 | No provider failover chain | **P1** | M-LLM-X.4 | **Done** |
 | LLM-AUDIT-6 | ACP `StepLLMRouter` disconnected from `LLMAdapter` | **P1** | M-LLM-X.5 | **Done** |
-| LLM-AUDIT-7 | OpenRouter / gateway models default 32k context | **P1** | M-LLM-X.2 | **Done** — catalog `provider_defaults.openrouter: 128000`; dynamic fetch → backlog |
+| LLM-AUDIT-7 | OpenRouter / gateway models default 32k context | **P1** | M-LLM-X.2 | **Done** — catalog + gateway merge + miss diag trace |
 | LLM-AUDIT-8 | No `intergrax/llm_adapters/USAGE.md` | **P2** | M-LLM-X.7 | **Done** — USAGE + doctor hook (LLM-MAINT-01) |
 | LLM-AUDIT-9 | AUDIT-IDEAL-6.2 wiring ceremonial — no runtime swap | **P1** | M-LLM-X.5 | **Done** |
 | LLM-AUDIT-10 | Plugin provider story undocumented | **P2** | M-LLM-X.6 | **Done** — USAGE §Extension · enum-free profile **M-LLM-X.14.3** |
