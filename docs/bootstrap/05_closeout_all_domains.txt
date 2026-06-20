@@ -1,17 +1,18 @@
 SESSION: ONE_DOMAIN_ONE_CHAT — one domain closeout per new chat when possible.
-READ_BUDGET: plan hub + arch read-scope + one satellite max; max 1 full read >5k tok/session.
+READ_BUDGET: `@docs/guides/audit_slices/<DOMAIN>.md`; plan hub §6 + arch read-scope + one satellite max; grep SYS-INV IDs only; max 1 full read >5k tok/session.
 OUTPUT_BUDGET: terse default (≤12 lines); full report only on operator request or milestone — AGENT_INSTRUCTIONS § Operator communication.
+# WARNING — HIGH TOKEN: batches 22 domain closeouts in one thread. Prefer one domain per new chat (F3).
 Full Harness Layer Completion — all 22 domain pairs (sequential).
 This is NOT audit-only — it orchestrates full Layer Completion Mode on each pair.
 LCM canon: docs/guides/LAYER_COMPLETION_MODE.md — Steps 1 → 1A → 2 → 3 → 4 → 5 → 6 (Step 5 = real implementation when P0/P1).
 Orchestrator: docs/audit/LAYER_COMPLETION_ORCHESTRATOR.md
-Skim before each domain: docs/guides/SYSTEM_INVARIANTS.md
+Skim before each domain: grep SYS-INV IDs from audit slice — do not read full SYSTEM_INVARIANTS.md
 Progress: docs/audit_results/YYYY-MM-DD/progress.json (init: uv run python scripts/init_architecture_audit_run.py --date YYYY-MM-DD --mode layer_completion).
 Journal: docs/implementation-journal/entries/YYYY-MM-DD/ + INDEX.md
 Domain order: PLATFORM_FOUNDATION → UNIFIED_EXECUTION_RUNTIME → ORCHESTRATION → NEXUS_EXECUTION_FLOW → REASONING_AND_COGNITION → AGENT_CONTRACTS_AND_ASSEMBLY → LLM_ADAPTERS → TOOLS → CODE_CRAFT → SKILLS → INTEGRATIONS → RAG → MEMORY → CONTEXT_ENGINEERING → MODALITY → OBSERVABILITY → RELIABILITY_FAILURE_AND_HITL → CRITIC_VERIFICATION → ADAPTIVE_HARNESS_INTELLIGENCE → ELASTIC_CAPACITY_AND_SCALING → EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE → TIER3_APPLICATION_ENVIRONMENT.
 For pending/in_progress: audit (1) → proposals 1A (wait for acceptance if contract change) → docs (2) → classify P0–P4 (3) → sprint plan (4) → implement P0/P1 (5) → final audit (6). Do not advance with open P0/P1 in domain scope.
 For mature/frozen: short re-audit (Steps 1+6); if no new P0/P1 — next pair without full sprints.
-One domain pair per docs iteration — do not load other architecture/plan pairs.
+One domain pair per docs iteration — architecture read-scope + plan hub §6 only; do not load other pairs or full hub files.
 Rules: tier boundaries AGENTS.md; ADR when architecture changes; verification bundle after harness changes per AGENTS.md; commits only on operator request; do not declare entire platform permanently complete.
 After each pair: checkpoint (report + progress.json); continue without asking unless operator writes pause or stop.
 Repository artifacts: English.

@@ -85,6 +85,9 @@ Explicit `@` / `Read` only (reduces accidental index/search noise):
 - `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md`
 - `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md`
 - `docs/guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`
+- `docs/guides/SYSTEM_INVARIANTS.md` — grep `SYS-INV-*` IDs from audit slice; `@` full file only when cited
+- `docs/guides/MATURITY_TAXONOMY.md`
+- `docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`
 - `docs/plan/AUDIT_IDEAL_2026.md`
 
 ---

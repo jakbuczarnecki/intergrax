@@ -17,10 +17,11 @@ Implementation intent (`zaimplementuj`, `dodaj kod`, `zrób PR`) without audit i
 
 ## Context budget
 
-- Read **`docs/bootstrap/idea_audit.txt`** only (procedure). Orchestrator only if classification unclear.
-- **Scoped canon:** one domain pair from routing — not all 22.
+- Read **`docs/bootstrap/idea_audit.txt`** only (procedure). **`@docs/guides/audit_slices/<DOMAIN>.md`** when domain known.
+- **Scoped canon:** architecture read-scope + plan hub §6 — not full files, not all 22 domains.
 - Grep/code scan for duplicates — **path-filtered**, not whole-repo dumps.
-- **No** `docs/audit_results/`, **no** full plan files.
+- **No** `docs/audit_results/`, **no** full plan files, **no** IDEAL/AUDIT_MAP/SYSTEM_INVARIANTS whole.
+- **`IDEA_AUDIT_ORCHESTRATOR.md`** only if classification unclear.
 
 ## Procedure
 
