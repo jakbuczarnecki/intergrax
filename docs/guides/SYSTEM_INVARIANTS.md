@@ -3,7 +3,7 @@
 **Status:** Canonical index (2026-06-20)  
 **Audience:** Architects, reviewers, implementation agents, external auditors  
 **Audit ID:** P2-ARCH-01  
-**Related:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`MATURITY_TAXONOMY.md`](MATURITY_TAXONOMY.md) · [`AGENT_AUTHOR_MINIMAL_PATH.md`](AGENT_AUTHOR_MINIMAL_PATH.md) · [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md)
+**Related:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md) · [`MATURITY_TAXONOMY.md`](MATURITY_TAXONOMY.md) · [`AGENT_AUTHOR_MINIMAL_PATH.md`](AGENT_AUTHOR_MINIMAL_PATH.md) · [`TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md`](TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md) · [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](INTERGRAX_DEVELOPMENT_STRATEGY.md) · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](INTEGRAX_HARNESS_AUDIT_MAP.md)
 
 ---
 
@@ -348,5 +348,5 @@ REJECTED: Monolithic implementation plan files under plan/phases/
 2. [`MATURITY_TAXONOMY.md`](MATURITY_TAXONOMY.md) — four-axis maturity vocabulary  
 3. Hub [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 4. **One** domain pair for your task ([`AGENTS.md`](../../AGENTS.md) task routing)  
-5. Author guides when building: [`AGENT_AUTHOR_MINIMAL_PATH.md`](AGENT_AUTHOR_MINIMAL_PATH.md) · [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) · [`APPLICATION_CREATION_GUIDE.md`](APPLICATION_CREATION_GUIDE.md)
+5. Author guides when building: [`AGENT_AUTHOR_MINIMAL_PATH.md`](AGENT_AUTHOR_MINIMAL_PATH.md) · [`TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md`](TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md) · [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) · [`APPLICATION_CREATION_GUIDE.md`](APPLICATION_CREATION_GUIDE.md)
 6. Deep layer closeout (full domain): [`LAYER_COMPLETION_MODE.md`](LAYER_COMPLETION_MODE.md)
