@@ -45,7 +45,7 @@ Bootstraps encode `SESSION:` + `READ_BUDGET:` + `OUTPUT_BUDGET:` on lines 1–3.
 
 ## F4 — Architecture hub + `docs/architecture/arch/` satellites
 
-Split domains: all 21 architecture hubs (F4-C wave 2 complete).
+Split domains: all 22 architecture hubs (F4-C wave 2 complete).
 
 Satellites are in `.cursorignore` — load with explicit `Read` or `@` when read-scope or audit cites extended §.
 
