@@ -43,5 +43,4 @@ def wire_catalog_tool_planner_if_enabled(
     from intergrax.runtime.nexus.context.routing_snapshot_sync import (
         wire_secondary_llm_routing_surfaces,
     )
-
     wire_secondary_llm_routing_surfaces(config)

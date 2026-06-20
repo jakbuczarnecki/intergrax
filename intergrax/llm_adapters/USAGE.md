@@ -117,11 +117,23 @@ Bundled catalog (implementation): `intergrax/llm_adapters/registry/model_catalog
 
 ### OpenRouter / gateways
 
-Enable optional metadata fetch (when implemented):
+Enable optional metadata fetch (M-LLM-X.14.2):
 
 ```python
-options={"fetch_gateway_metadata": True}
+options={
+    "fetch_gateway_metadata": True,
+    # Optional test/dev injection — no network in unit gate:
+    # "gateway_metadata_fetcher": lambda: [{"id": "vendor/model", "context_length": 128000}],
+}
 ```
+
+Gateway merge runs **after** bundled catalog exact/prefix matches and **before** legacy/provider defaults (ADR-LLM-002).
+When catalog falls back to conservative default, **`ModelCatalogMissDiagV1`** is emitted once per model/run (`intergrax.diag.engine.core_llm.catalog_miss`).
+
+### Tokenizer accuracy (M-LLM-X.14.7)
+
+Non-OpenAI budgeting still uses tiktoken/heuristic estimates by default — do not treat counts as vendor-exact.
+Optional vendor plugins implement ``TokenizerPlugin`` (`intergrax/llm_adapters/contracts/tokenizer_plugin.py`).
 
 ---
 
@@ -365,17 +377,17 @@ env.llm_routing_profile = LLMRoutingProfile(
 - [x] Tool planner / websearch / critic secondary LLM routing wiring (13.4–13.6)
 - [x] `nexus_plan_bridge` + `llm_task_classifier` snapshot sync (13.7)
 
-**Enterprise domain maturity (M-LLM-X.8 + X-14 — Planned):**
+**Enterprise domain maturity (M-LLM-X.8 + X-14 — Done):**
 
-- [ ] **X-8** domain closeout — audit register, AUDIT_IDEAL sync, journal (**LLM-AUDIT-21**)
-- [ ] Catalog-driven capability flags (**14.1** · LLM-AUDIT-22)
-- [ ] Dynamic gateway metadata merge (**14.2** · LLM-AUDIT-23)
-- [ ] Enum-free plugin provider + example (**14.3** · LLM-AUDIT-26)
-- [ ] ACP budget routing context bridge (**14.4** · LLM-AUDIT-24)
-- [ ] Opt-in evaluating wrap on secondary LLM (**14.5** · LLM-AUDIT-25)
-- [ ] Multi-step routing production soak (**14.6**)
-- [ ] Tokenizer accuracy doc + optional plugin spine (**14.7**)
-- [ ] Scaffold USAGE pointer (**14.8**)
+- [x] **X-8** domain closeout — audit register, AUDIT_IDEAL sync, journal (**LLM-AUDIT-21**)
+- [x] Catalog-driven capability flags (**14.1** · LLM-AUDIT-22)
+- [x] Dynamic gateway metadata merge (**14.2** · LLM-AUDIT-23)
+- [x] Enum-free plugin provider + example (**14.3** · LLM-AUDIT-26)
+- [x] ACP budget routing context bridge (**14.4** · LLM-AUDIT-24)
+- [x] Opt-in evaluating wrap on secondary LLM (**14.5** · `llm_routing_evaluating_secondary`)
+- [x] Multi-step routing production soak (**14.6**)
+- [x] Tokenizer accuracy doc + optional plugin spine (**14.7**)
+- [x] Scaffold USAGE pointer (**14.8**)
 
 **Strict L5 closeout (M-LLM-X.12 — Done):**
 

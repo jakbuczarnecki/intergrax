@@ -11,12 +11,11 @@ from intergrax.contracts.acp_state import AcpInvocationUsageView
 from intergrax.contracts.agent_budget import ResolvedBudgetLimits
 from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
 from intergrax.llm_adapters.routing.contracts import RoutingContext
-from intergrax.runtime.kernel.step_kernel import StepKernelContext
 
 
 def make_acp_routing_context_provider(
     *,
-    kernel_ctx_holder: list[StepKernelContext],
+    kernel_ctx_holder: list[Any],
     step_ctx_holder: list[Any],
     tenant_id: str,
     agent_id: str,

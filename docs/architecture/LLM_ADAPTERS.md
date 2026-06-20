@@ -15,27 +15,27 @@
 
 Tier-0 **LLM adapter layer** is the Harness cognition entry point: one `LLMAdapter` contract, multi-vendor providers, typed completion envelopes, tenant metering, and Nexus context budgeting.
 
-| Dimension | Current (post X-13) | Enterprise target (X-8 + X-14) | Evidence |
-|-----------|---------------------|----------------------------------|----------|
+| Dimension | Current (post X-14) | Enterprise target | Evidence |
+|-----------|---------------------|-------------------|----------|
 | Typed completion envelope | **L3** | L3 (maintain) | M-LLM-R closed; CI guards |
-| Provider abstraction (19 slugs) | **L3** | **L3+** (enum-free plugin) | `LLMAdapterRegistry`; X-6.1 → **M-LLM-X.14.3** |
+| Provider abstraction (19 slugs + plugins) | **L3+** | L3+ (maintain) | `LLMProfile.provider: str` · **M-LLM-X.14.3** **Done** |
 | Model ID as free string | **L3** | L3 (maintain) | `LLMProfile.model: str` |
-| Model metadata / context window | **L3** | **L3+** (live gateway merge) | `ModelCatalog` **Done**; dynamic fetch → **M-LLM-X.14.2** |
+| Model metadata / context window | **L3+** | L3+ (maintain) | `ModelCatalog` + gateway merge · **M-LLM-X.14.2** **Done** |
 | Multi-model routing / failover | **L5** (strict core + UAEP + ACP) | L5 (maintain) | X-10…X-13 **Done** · LLM-AUDIT-17…20 **Done** |
-| Secondary LLM surfaces (planner, websearch, critic) | **L4** (snapshot sync) | **L4+** (opt-in evaluating wrap) | X-13.4–13.6 **Done**; full mid-run swap → **M-LLM-X.14.5** |
-| Token accounting consistency | **L3** | **L3+** (vendor tokenizer opt-in) | LC-2 **Done**; tiktoken caveat → **M-LLM-X.14.7** |
-| Developer experience | **L3** | **L3+** | USAGE + doctor **Done**; scaffold → **M-LLM-X.14.8** |
+| Secondary LLM surfaces (planner, websearch, critic) | **L4+** (opt-in evaluating wrap) | L4+ (maintain) | **M-LLM-X.14.5** · `llm_routing_evaluating_secondary` |
+| Token accounting consistency | **L3+** | L3+ (maintain) | LC-2 **Done**; `TokenizerPlugin` stub · **M-LLM-X.14.7** |
+| Developer experience | **L3+** | L3+ (maintain) | USAGE + doctor + scaffold comment · **M-LLM-X.14.8** |
 | Observability & governance | **L3** | L3 (maintain) | Prometheus, quota, replay bridge |
-| **Domain closeout** (audit register + journal) | **L4 partial** | **L4 enterprise** | **M-LLM-X.8** mandatory · **LLM-AUDIT-21** |
+| **Domain closeout** (audit register + journal) | **L4 enterprise** | L4 enterprise (maintain) | **M-LLM-X.8** **Done** · **LLM-AUDIT-21** |
 
 **Maturity labels (honest, 2026-06-19):**
 
 - **Routing hot path:** **L5 strict enterprise-ready** (core `llm_adapter`, UAEP, ACP dynamic router).
-- **Whole LLM_ADAPTERS domain:** **L4+** — routing and LC baseline are production-grade; **enterprise domain closeout** requires **M-LLM-X.8** then **M-LLM-X.14**.
+- **Whole LLM_ADAPTERS domain:** **L4 enterprise** — **M-LLM-X.8 + X-14 Done**; LLM-AUDIT-21…26 **Done**.
 
 **Strategic rule:** The Harness owns provider plumbing; agents and applications declare **profiles**, never vendor SDKs.
 
-Deep production audit (2026-06-14): foundation is **production-grade L3** on contract and ops. **Full Harness LC (2026-06-17):** no open P0/P1 on LC scope. **Post X-13:** open enterprise gaps tracked as **LLM-AUDIT-21…26** → [Wave M-LLM-X-14](../plan/LLM_ADAPTERS.md#phase-m-llm-x-14--enterprise-domain-maturity-2026-06-19).
+Deep production audit (2026-06-14): foundation is **production-grade L3** on contract and ops. **Full Harness LC (2026-06-17):** no open P0/P1 on LC scope. **Post X-14:** enterprise domain closeout complete — LLM-AUDIT-21…26 **Done**.
 
 ---
 
@@ -505,25 +505,23 @@ RoutingContext (snapshot from Nexus / budget meter / classifier)
 
 **Plan:** [Wave M-LLM-X-13](../plan/LLM_ADAPTERS.md#phase-m-llm-x-13--post-l5-routing-polish-2026-06-19)
 
-#### Enterprise domain maturity register (M-LLM-X-14 — Planned)
+#### Enterprise domain maturity register (M-LLM-X-14 — Done)
 
-**Source:** Post X-13 maturity assessment (2026-06-19). Routing **L5** does **not** imply whole-domain enterprise closeout.
+**Delivered (2026-06-19):** gateway metadata client + session merge; catalog capability wire verified; ACP usage token bridge; enum-free `LLMProfile.provider`; opt-in secondary evaluating wrap (`llm_routing_evaluating_secondary`); multi-step routing soak; tokenizer plugin stub + USAGE; scaffold comment.
 
-| Gap | Severity | Task ID | Audit ID |
-|-----|----------|---------|----------|
-| Domain audit register + journal not formally closed | **P1** | M-LLM-X.8.1–8.3 | **LLM-AUDIT-21** |
-| Capability flags not catalog-driven (`supports_vision`, tools, structured) | **P2** | M-LLM-X.14.1 | **LLM-AUDIT-22** |
-| OpenRouter / gateway live metadata not merged into catalog session | **P1** | M-LLM-X.14.2 | **LLM-AUDIT-23** |
-| ACP `make_acp_routing_context_provider` budget token bridge incomplete | **P2** | M-LLM-X.14.4 | **LLM-AUDIT-24** |
-| Secondary LLM surfaces: sync only — no opt-in evaluating wrap | **P2** | M-LLM-X.14.5 | **LLM-AUDIT-25** |
-| Plugin `LLMProfile.provider` still enum-coupled for extension authors | **P2** | M-LLM-X.14.3 | **LLM-AUDIT-26** |
-| Production multi-step routing soak (budget burn, no factory mocks) | **P2** | M-LLM-X.14.6 | — |
-| Vendor-native tokenizer plugins (non-OpenAI budget accuracy) | **P3** | M-LLM-X.14.7 | — |
-| Scaffold DX — agent template points to USAGE + catalog | **P3** | M-LLM-X.14.8 | — |
+| Gap | Severity | Task ID | Audit ID | Status |
+|-----|----------|---------|----------|--------|
+| Domain audit register + journal not formally closed | **P1** | M-LLM-X.8.1–8.3 | **LLM-AUDIT-21** | **Done** |
+| Capability flags not catalog-driven | **P2** | M-LLM-X.14.1 | **LLM-AUDIT-22** | **Done** |
+| OpenRouter / gateway live metadata not merged | **P1** | M-LLM-X.14.2 | **LLM-AUDIT-23** | **Done** |
+| ACP budget token bridge incomplete | **P2** | M-LLM-X.14.4 | **LLM-AUDIT-24** | **Done** |
+| Secondary LLM: sync only | **P2** | M-LLM-X.14.5 | **LLM-AUDIT-25** | **Done** |
+| Plugin provider enum coupling | **P2** | M-LLM-X.14.3 | **LLM-AUDIT-26** | **Done** |
+| Multi-step routing soak | **P2** | M-LLM-X.14.6 | — | **Done** |
+| Tokenizer accuracy doc + plugin stub | **P3** | M-LLM-X.14.7 | — | **Done** |
+| Scaffold DX | **P3** | M-LLM-X.14.8 | — | **Done** |
 
-**Suggested wave order:** **X-8** (closeout) → **14.2** → **14.1** → **14.4** → **14.3** → **14.5** → **14.6** → **14.7** → **14.8**.
-
-**Enterprise-grade domain DoD:** X-8 **Done** + X-14 **Done** + all **LLM-AUDIT-21…26** → **Done** + `tests/unit/llm_adapters/` + LLM CI gates green.
+**Enterprise-grade domain DoD:** **Met** — X-8 + X-14 **Done** · LLM-AUDIT-21…26 **Done** · LLM CI gates green.
 
 #### Routing strict enterprise closeout — audit register (historical gaps, closed)
 
@@ -812,23 +810,23 @@ Do not merge counters without explicit bridge code.
 | LLM-AUDIT-7 | OpenRouter / gateway models default 32k context | **P1** | M-LLM-X.2 | **Done** — catalog `provider_defaults.openrouter: 128000`; dynamic fetch → backlog |
 | LLM-AUDIT-8 | No `intergrax/llm_adapters/USAGE.md` | **P2** | M-LLM-X.7 | **Done** — USAGE + doctor hook (LLM-MAINT-01) |
 | LLM-AUDIT-9 | AUDIT-IDEAL-6.2 wiring ceremonial — no runtime swap | **P1** | M-LLM-X.5 | **Done** |
-| LLM-AUDIT-10 | Plugin provider story undocumented | **P2** | M-LLM-X.6 | **Partial** — USAGE §Extension; enum-free profile pending X.6.1 |
+| LLM-AUDIT-10 | Plugin provider story undocumented | **P2** | M-LLM-X.6 | **Done** — USAGE §Extension · enum-free profile **M-LLM-X.14.3** |
 | LLM-AUDIT-11 | `ContextBudgetPolicy` default 4k decoupled from adapter window | **P0** | M-LLM-X.3.3 | **Done** |
 | LLM-AUDIT-12 | Prefix context heuristics only on Bedrock (not Claude/OpenAI/Gemini) | **P0** | M-LLM-X.1.2–1.3 | **Done** |
 | LLM-AUDIT-13 | Cohere dual slug (`cohere` vs `cohere_native`) confuses developers | **P2** | M-LLM-X.7.5 | **Done** |
-| LLM-AUDIT-14 | Capability flags not catalog-driven (`supports_vision`, tools, structured) | **P2** | M-LLM-X.14.1 | **Planned** |
+| LLM-AUDIT-14 | Capability flags not catalog-driven (`supports_vision`, tools, structured) | **P2** | M-LLM-X.14.1 | **Done** |
 | LLM-AUDIT-15 | `engine_history_layer` token count inconsistent with preflight (chars/4) | **P0** | M-LLM-X.3.5 | **Done** — history already used adapter; preflight aligned in LC-2 |
 | LLM-AUDIT-16 | No unified LLM routing rule contract — static hints only; no custom author logic | **P1** | M-LLM-X.9 | **Done** — ADR-LLM-003 |
 | LLM-AUDIT-17 | Routing enterprise E2E — start-of-run + ACP (auto context, trace, reference host) | **P1** | M-LLM-X.10 | **Done** |
 | LLM-AUDIT-18 | Routing mid-run Nexus — live re-eval, context refresh, full trace loop, true E2E run | **P1** | M-LLM-X.11 | **Done** (X-11 scope) |
 | LLM-AUDIT-19 | Routing strict L5 — budget meter accuracy, all Nexus paths, tier boundary, production E2E, ACP trace parity | **P1** | M-LLM-X.12 | **Done** |
 | LLM-AUDIT-20 | Post-L5 polish — ACP Plane A trace, tier bridge, concurrent test, secondary LLM + auxiliary Nexus paths | **P2** | M-LLM-X.13 | **Done** |
-| LLM-AUDIT-21 | Domain closeout — audit register, AUDIT_IDEAL sync, implementation journal | **P1** | M-LLM-X.8 | **Planned** |
-| LLM-AUDIT-22 | Capability flags not catalog-driven | **P2** | M-LLM-X.14.1 | **Planned** |
-| LLM-AUDIT-23 | Dynamic gateway metadata (OpenRouter `/models`) not on catalog hot path | **P1** | M-LLM-X.14.2 | **Planned** |
-| LLM-AUDIT-24 | ACP mid-run budget routing — `AcpInvocationUsageView` not mapped to `RoutingContext` | **P2** | M-LLM-X.14.4 | **Planned** |
-| LLM-AUDIT-25 | Secondary LLM surfaces lack opt-in evaluating wrap (planner / websearch / critic) | **P2** | M-LLM-X.14.5 | **Planned** |
-| LLM-AUDIT-26 | Plugin provider story — `LLMProfile.provider` enum coupling | **P2** | M-LLM-X.14.3 | **Planned** |
+| LLM-AUDIT-21 | Domain closeout — audit register, AUDIT_IDEAL sync, implementation journal | **P1** | M-LLM-X.8 | **Done** |
+| LLM-AUDIT-22 | Capability flags not catalog-driven | **P2** | M-LLM-X.14.1 | **Done** |
+| LLM-AUDIT-23 | Dynamic gateway metadata (OpenRouter `/models`) not on catalog hot path | **P1** | M-LLM-X.14.2 | **Done** |
+| LLM-AUDIT-24 | ACP mid-run budget routing — `AcpInvocationUsageView` not mapped to `RoutingContext` | **P2** | M-LLM-X.14.4 | **Done** |
+| LLM-AUDIT-25 | Secondary LLM surfaces lack opt-in evaluating wrap (planner / websearch / critic) | **P2** | M-LLM-X.14.5 | **Done** |
+| LLM-AUDIT-26 | Plugin provider story — `LLMProfile.provider` enum coupling | **P2** | M-LLM-X.14.3 | **Done** |
 
 **Deferred (documented, no blocking X-phase task):** tiktoken OpenAI-centric token estimate for non-OpenAI models — **M-LLM-X.14.7** documents limitation and optional vendor tokenizer plugins; not blocking L5 routing.
 
@@ -840,7 +838,7 @@ Do not merge counters without explicit bridge code.
 
 **Closed baselines:** M-LLM (13/13), M-LLM-R (39/39), M-LLM-X LC-1…LC-3 **Done**; routing X-9…X-13 **Done**.
 
-**Audit revalidation (2026-06-19, post X-13):** routing **L5** (LLM-AUDIT-17…20 **Done**) · LC + MAINT queues closed · **enterprise domain** open: **LLM-AUDIT-21…26** → [M-LLM-X-8 + X-14](../plan/LLM_ADAPTERS.md#phase-m-llm-x-14--enterprise-domain-maturity-2026-06-19).
+**Audit revalidation (2026-06-19, post X-14):** routing **L5** · whole domain **L4 enterprise** · LLM-AUDIT-1…26 **Done** (except documented deferrals).
 
 ---
 
@@ -888,8 +886,8 @@ Workflows: `unit-tests.yml`, `llm-adapters-guard.yml`, optional `llm-network-smo
 | LLM routing enterprise hardening (mid-run Nexus) | M-LLM-X.11 · LLM-AUDIT-18 |
 | LLM routing strict enterprise closeout (L5 honest) | M-LLM-X.12 · LLM-AUDIT-19 **Done** |
 | LLM routing post-L5 polish (secondary surfaces, ACP Plane A) | M-LLM-X.13 · LLM-AUDIT-20 **Done** |
-| LLM enterprise domain maturity (catalog caps, gateway meta, ACP budget, plugin DX) | M-LLM-X.14 · LLM-AUDIT-22…26 |
-| LLM domain closeout (register + journal) | M-LLM-X.8 · LLM-AUDIT-21 |
+| LLM enterprise domain maturity (catalog caps, gateway meta, ACP budget, plugin DX) | M-LLM-X.14 · LLM-AUDIT-22…26 **Done** |
+| LLM domain closeout (register + journal) | M-LLM-X.8 · LLM-AUDIT-21 **Done** |
 | `BudgetReactionProfile.degrade_model` unification | AGENT_CONTRACTS + M-LLM-X.9.6 |
 | AHI `ProfileVersion` llm_routing persistence | AHI-MAINT-06 |
 | Product HTTP API DTOs | Tier-3 applications |

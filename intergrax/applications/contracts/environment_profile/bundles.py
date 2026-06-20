@@ -157,6 +157,7 @@ class CapabilityBundle(BaseModel):
     skills: SkillProfile = Field(default_factory=SkillProfile)
     llm: LLMProfile | None = None
     llm_routing: LLMRoutingProfile | None = None
+    llm_routing_evaluating_secondary: bool = False
     modality: ModalityProfile | None = None
     prompt: PromptProfile = Field(default_factory=PromptProfile)
     context: ContextProfile = Field(default_factory=ContextProfile)

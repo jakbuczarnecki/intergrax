@@ -50,7 +50,9 @@ def budget_remaining_ratio_from_limits(
 def tokens_used_from_usage(usage: AcpInvocationUsageView | None) -> int | None:
     if usage is None:
         return None
-    total = usage.total_tokens
+    total = usage.agent.tokens_total
+    if total <= 0:
+        total = usage.environment.tokens_total
     return total if total > 0 else None
 
 

@@ -17,6 +17,7 @@ from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 from intergrax.applications._shared.llm_routing_runtime_bridge import (
     init_llm_routing_on_config,
     make_config_routing_context_provider,
+    wire_secondary_llm_routing_evaluating,
 )
 from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
 from intergrax.applications._shared.rag_runtime_bridge import apply_rag_for_environment
@@ -220,6 +221,7 @@ def materialize_runtime_config(
     )
 
     wire_secondary_llm_routing_surfaces(config)
+    wire_secondary_llm_routing_evaluating(config, env)
     return apply_policy_bundle_to_runtime_config(config, policy_bundle)
 
 

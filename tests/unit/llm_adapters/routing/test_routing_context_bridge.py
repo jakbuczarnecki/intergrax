@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from intergrax.contracts.agent_budget import ResolvedBudgetLimits
+from intergrax.contracts.acp_state import AcpInvocationUsageView, AcpTokenUsage
 from intergrax.llm_adapters.routing.context_bridge import (
     budget_remaining_ratio_from_limits,
     build_routing_context_from_runtime,
@@ -43,6 +44,22 @@ def test_budget_remaining_ratio_from_limits_prefers_agent_slice() -> None:
         environment_tokens_remaining=900,
     )
     assert budget_remaining_ratio_from_limits(limits) == pytest.approx(0.2)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_build_routing_context_from_acp_invocation_usage() -> None:
+    from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
+
+    usage = AcpInvocationUsageView(
+        agent=AcpTokenUsage(tokens_total=512),
+        environment=AcpTokenUsage(tokens_total=9999),
+    )
+    context = build_routing_context_from_runtime(
+        tenant_id="tenant-a",
+        invocation_usage=usage,
+    )
+    assert context.tokens_used == 512
 
 
 @pytest.mark.unit

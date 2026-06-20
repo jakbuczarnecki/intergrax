@@ -7,6 +7,8 @@ from __future__ import annotations
 from typing import Any
 
 from intergrax.applications._shared.routing_evaluating_adapter import RoutingContextProvider
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.routing.context_bridge import (
     LLMRoutingRuntimeSnapshot,
     build_routing_context_from_runtime,
@@ -102,3 +104,68 @@ def _optional_str(value: Any) -> str | None:
     if isinstance(value, str) and value.strip():
         return value.strip()
     return None
+
+
+def maybe_wrap_secondary_routing_adapter(
+    adapter: LLMAdapter | None,
+    env: ApplicationEnvironmentProfile,
+    config: RuntimeConfig,
+) -> LLMAdapter | None:
+    """Opt-in evaluating wrap for secondary LLM surfaces (M-LLM-X.14.5)."""
+    if adapter is None:
+        return None
+    if not env.llm_routing_evaluating_secondary or env.llm_routing_profile is None:
+        return adapter
+    from intergrax.applications._shared.llm_resolver import create_adapter_for_routing_evaluation
+    from intergrax.applications._shared.routing_evaluating_adapter import (
+        RoutingEvaluatingLLMAdapter,
+        wrap_routing_evaluating_adapter,
+    )
+
+    if isinstance(adapter, RoutingEvaluatingLLMAdapter):
+        return adapter
+    provider = make_config_routing_context_provider(config)
+    return wrap_routing_evaluating_adapter(
+        adapter,
+        env,
+        context_provider=provider,
+        adapter_factory=lambda evaluation, ctx: create_adapter_for_routing_evaluation(
+            env,
+            evaluation,
+            ctx,
+        ),
+    )
+
+
+def wire_secondary_llm_routing_evaluating(
+    config: RuntimeConfig,
+    env: ApplicationEnvironmentProfile,
+) -> None:
+    """Wrap secondary LLM adapters when host opts into mid-run routing (M-LLM-X.14.5)."""
+    if not env.llm_routing_evaluating_secondary or env.llm_routing_profile is None:
+        return
+    if config.llm_routing_snapshot is None and config.llm_routing_context is None:
+        return
+
+    from intergrax.runtime.nexus.tools.catalog_tool_planner import CatalogToolPlanner
+
+    tool_planner = config.tool_planner
+    if isinstance(tool_planner, CatalogToolPlanner):
+        wrapped = maybe_wrap_secondary_routing_adapter(tool_planner.llm, env, config)
+        if wrapped is not None and wrapped is not tool_planner.llm:
+            tool_planner._service.llm = wrapped
+
+    websearch_config = config.websearch_config
+    if websearch_config is not None and websearch_config.llm is not None:
+        llm_cfg = websearch_config.llm
+        llm_cfg.map_adapter = maybe_wrap_secondary_routing_adapter(llm_cfg.map_adapter, env, config)
+        llm_cfg.reduce_adapter = maybe_wrap_secondary_routing_adapter(
+            llm_cfg.reduce_adapter,
+            env,
+            config,
+        )
+        llm_cfg.rerank_adapter = maybe_wrap_secondary_routing_adapter(
+            llm_cfg.rerank_adapter,
+            env,
+            config,
+        )

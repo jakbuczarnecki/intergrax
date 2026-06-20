@@ -263,6 +263,18 @@ class ApplicationEnvironmentProfile(BaseModel):
         )
 
     @property
+    def llm_routing_evaluating_secondary(self) -> bool:
+        return self.capabilities.llm_routing_evaluating_secondary
+
+    @llm_routing_evaluating_secondary.setter
+    def llm_routing_evaluating_secondary(self, value: bool) -> None:
+        object.__setattr__(
+            self,
+            "capabilities",
+            self.capabilities.model_copy(update={"llm_routing_evaluating_secondary": value}),
+        )
+
+    @property
     def modality_profile(self):
         return self.capabilities.modality
 
