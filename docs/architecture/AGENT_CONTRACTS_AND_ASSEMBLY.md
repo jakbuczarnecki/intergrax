@@ -8,6 +8,8 @@
 **Audit instruction:** [`audit/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../audit/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
 **ADR:** [`adr/entries/2026-06-11/ADR-AGENT-001.md`](../adr/entries/2026-06-11/ADR-AGENT-001.md) · [`adr/entries/2026-06-11/ADR-AGENT-002.md`](../adr/entries/2026-06-11/ADR-AGENT-002.md) · [`adr/entries/2026-06-11/ADR-AGENT-003.md`](../adr/entries/2026-06-11/ADR-AGENT-003.md) — ACP · `run()` · `on_next_step` · dual observability  
 
+> **Practical minimal authoring path:** [`guides/AGENT_AUTHOR_MINIMAL_PATH.md`](../guides/AGENT_AUTHOR_MINIMAL_PATH.md)
+
 ---
 
 ## Cursor read scope (token budget)
