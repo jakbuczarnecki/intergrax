@@ -1,5 +1,6 @@
 SESSION: ONE_DOMAIN_ONE_CHAT — one domain per new chat recommended.
 READ_BUDGET: plan hub + arch read-scope + one satellite max; max 1 full read >5k tok/session.
+OUTPUT_BUDGET: terse default (≤12 lines); full report only on operator request or milestone — AGENT_INSTRUCTIONS § Operator communication.
 Harness Architecture Audit — Mode B1 (implement open plan items, one domain).
 DOMAIN=PLATFORM_FOUNDATION
 Canonical orchestrator: docs/audit/IMPLEMENT_ORCHESTRATOR.md

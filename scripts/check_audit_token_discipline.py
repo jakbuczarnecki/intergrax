@@ -71,6 +71,8 @@ def main() -> int:
             errors.append(f"{name}: missing ONE_DOMAIN_ONE_CHAT")
         if "READ_BUDGET" not in text:
             errors.append(f"{name}: missing READ_BUDGET")
+        if "OUTPUT_BUDGET" not in text:
+            errors.append(f"{name}: missing OUTPUT_BUDGET")
 
     if errors:
         print("check_audit_token_discipline: FAILED", file=sys.stderr)

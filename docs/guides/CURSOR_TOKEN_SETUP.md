@@ -24,7 +24,22 @@ ONE DOMAIN = ONE NEW CHAT
 
 No Background Agents / Task subagents for layer audits unless operator opts in.
 
-Bootstraps encode `SESSION:` + `READ_BUDGET:` on line 1–2.
+Bootstraps encode `SESSION:` + `READ_BUDGET:` + `OUTPUT_BUDGET:` on lines 1–3.
+
+---
+
+## O1 — Terse operator replies (output token budget)
+
+| Always-on | ~tok |
+|-----------|------|
+| O1 block in `intergrax-iteration.mdc` | ~120 |
+| Full 12-point template | `AGENT_INSTRUCTIONS.md` § Operator communication — **not** auto-loaded |
+
+**Default:** terse (≤12 lines) — outcome, paths, tests, blockers. **No** diff recap or doc restatement.
+
+**Expand only when:** operator says `pełny raport` / `full report` / `iteration summary`, or milestone / closeout / journal.
+
+**Minimal:** `krótko` / `terse` → ≤6 lines.
 
 ---
 

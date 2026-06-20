@@ -16,6 +16,8 @@ ITERATION_RULE = ROOT / ".cursor" / "rules" / "intergrax-iteration.mdc"
 
 SESSION_MARKER = "ONE_DOMAIN_ONE_CHAT"
 READ_BUDGET_MARKER = "READ_BUDGET"
+OUTPUT_BUDGET_MARKER = "OUTPUT_BUDGET"
+O1_MARKER = "O1"
 STUB_MARKER = "AGENT_INSTRUCTIONS.md"
 STUB_MAX_LINES = 35
 FULL_MIN_LINES = 150
@@ -34,6 +36,8 @@ def main() -> int:
 
     if not CURSOR_SETUP.is_file():
         errors.append("missing docs/guides/CURSOR_TOKEN_SETUP.md")
+    elif "O1" not in CURSOR_SETUP.read_text(encoding="utf-8"):
+        errors.append("CURSOR_TOKEN_SETUP.md must document O1 terse output policy")
 
     if not SYMBOL_INDEX.is_file():
         errors.append("missing docs/guides/SYMBOL_INDEX.md")
@@ -42,6 +46,8 @@ def main() -> int:
         errors.append("missing docs/guides/AGENT_INSTRUCTIONS.md")
     elif len(AGENT_INSTRUCTIONS.read_text(encoding="utf-8").splitlines()) < FULL_MIN_LINES:
         errors.append(f"AGENT_INSTRUCTIONS.md must be full reference (>={FULL_MIN_LINES} lines)")
+    elif "Operator communication (O1" not in AGENT_INSTRUCTIONS.read_text(encoding="utf-8"):
+        errors.append("AGENT_INSTRUCTIONS.md must include Operator communication (O1) section")
 
     if not AGENTS_STUB.is_file():
         errors.append("missing root AGENTS.md stub")
@@ -52,6 +58,8 @@ def main() -> int:
             errors.append(f"AGENTS.md stub too large ({stub_lines} lines; max {STUB_MAX_LINES})")
         if STUB_MARKER not in stub:
             errors.append("AGENTS.md stub must link to AGENT_INSTRUCTIONS.md")
+        if "O1" not in stub and "terse" not in stub.lower():
+            errors.append("AGENTS.md stub must mention O1 terse output policy")
         if "## Task routing" in stub or "## Verification" in stub:
             errors.append("AGENTS.md stub must not contain full routing/verification sections")
 
@@ -62,6 +70,8 @@ def main() -> int:
         errors.append("intergrax-iteration.mdc must include F3 session protocol")
     if "SYMBOL_INDEX" not in iteration:
         errors.append("intergrax-iteration.mdc must reference SYMBOL_INDEX.md (F5)")
+    if O1_MARKER not in iteration or "terse default" not in iteration.lower():
+        errors.append("intergrax-iteration.mdc must include O1 terse output policy")
 
     agents_ref = ROOT / ".cursor" / "rules" / "intergrax-agents-reference.mdc"
     if agents_ref.is_file():
@@ -77,6 +87,8 @@ def main() -> int:
             errors.append(f"{name}: missing {SESSION_MARKER}")
         if READ_BUDGET_MARKER not in text:
             errors.append(f"{name}: missing {READ_BUDGET_MARKER}")
+        if OUTPUT_BUDGET_MARKER not in text:
+            errors.append(f"{name}: missing {OUTPUT_BUDGET_MARKER}")
 
     if errors:
         print("check_cursor_token_setup: FAILED", file=sys.stderr)

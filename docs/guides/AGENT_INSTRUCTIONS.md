@@ -25,7 +25,50 @@ Tier-3  applications/        Deployable product environments
 
 **Per-iteration reading rule:** when implementing a harness layer, read **only** the matching architecture + plan pair (e.g. `MEMORY.md` in both folders) plus `docs/guides/` as needed — do not load unrelated domain docs.
 
-**Cursor context budget:** respect `.cursorignore`. Plan hubs + [`../plan/plan/`](../plan/plan/) satellites. Audits: [`audit_slices/<DOMAIN>.md`](audit_slices/). **F2:** root `AGENTS.md` is a stub; full reference is this file — see [`CURSOR_TOKEN_SETUP.md`](CURSOR_TOKEN_SETUP.md). **F3:** one domain = one new chat.
+**Cursor context budget:** respect `.cursorignore`. Plan hubs + [`../plan/plan/`](../plan/plan/) satellites. Audits: [`audit_slices/<DOMAIN>.md`](audit_slices/). **F2:** root `AGENTS.md` is a stub; full reference is this file — see [`CURSOR_TOKEN_SETUP.md`](CURSOR_TOKEN_SETUP.md). **F3:** one domain = one new chat. **O1:** terse operator replies by default — see § Operator communication below.
+
+---
+
+## Operator communication (O1 — output token budget)
+
+**Minimize output tokens.** Do not dump architecture canon, repeat visible diffs, or end with unsolicited long “next steps” lists.
+
+### Response modes
+
+| Mode | When | Shape |
+|------|------|--------|
+| **Minimal** | Operator: `krótko`, `terse`; trivial yes/no | ≤6 lines |
+| **Terse** | Default — implement, fix, gate, routine audit checkpoint | ≤12 lines (~150 words) |
+| **Standard** | Operator: `wyjaśnij`, `explain`, design review | Short sections; link to docs instead of quoting |
+| **Full** | `pełny raport`, `full report`, `iteration summary`; milestone / LCM / journal entry | 12-point template below |
+
+Language: operator session language for chat; repository artifacts stay English.
+
+### Terse default (unless Full triggered)
+
+Include **only**:
+
+1. **Outcome** — done / blocked / partial (+ one-line why if not obvious)
+2. **Changed** — file paths (or count if >5); never narrate the diff
+3. **Tests** — command + pass/fail, or one line why skipped
+4. **Next** — one line max; omit if nothing needed
+
+**Skip:** preamble, restating the task, code blocks for unchanged context, tables duplicating CI output, Mode I–style long proposals when not in Mode I.
+
+### Full iteration summary (on request or milestone only)
+
+1. Completed implementation item  
+2. Domain pair (`architecture/<DOMAIN>.md` + `plan/<DOMAIN>.md`) and Harness layer  
+3. Changed files  
+4. Tests added or updated  
+5. Tests executed (commands + result)  
+6. Documentation updated (domain pair files)  
+7. Architectural impact  
+8. Remaining risks  
+9. Out-of-scope findings  
+10. Suggested next step (one line)  
+11. One-line commit message (English) — no commit unless operator asks  
+12. Journal — entry path **only if written**; else **"no journal needed"** + one-line rationale  
 
 ---
 

@@ -1,5 +1,6 @@
 SESSION: ONE_DOMAIN_ONE_CHAT — prefer new chat per domain; never load prior domain history when switching DOMAIN.
 READ_BUDGET: plan hub + arch read-scope + one satellite max; `@docs/guides/audit_slices/<DOMAIN>.md`; max 1 full read >5k tok/session; grep before semantic search.
+OUTPUT_BUDGET: terse default (≤12 lines); full report only on operator request or milestone — AGENT_INSTRUCTIONS § Operator communication.
 Harness Architecture Audit — Mode A1 (audit one domain pair, no implementation).
 DOMAIN=PLATFORM_FOUNDATION
 Canonical orchestrator: docs/audit/ORCHESTRATOR.md

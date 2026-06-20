@@ -30,4 +30,4 @@ Implementation intent (`zaimplementuj`, `dodaj kod`, `zrób PR`) without audit i
 
 ## Output
 
-Polish summary per `idea_audit.txt`. End with STOP and checkpoint questions.
+Polish summary per `idea_audit.txt` (Mode I **excepts** O1 terse — structured audit required). Operator `krótko`/`terse` → verdict + STOP only. End with STOP and checkpoint questions.

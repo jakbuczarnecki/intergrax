@@ -30,7 +30,7 @@ Write **only** when a **milestone trigger** in README applies:
 - ordinary PR that is not a milestone,
 - operator says **no journal**.
 
-When skipping: state **"no journal needed"** + one-line rationale in the chat summary. **Do not** create files or INDEX rows.
+When skipping: state **"no journal needed"** + one-line rationale in a **terse** chat line (O1). **Do not** create files or INDEX rows.
 
 ## Path layout (mandatory when writing)
 

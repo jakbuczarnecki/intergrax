@@ -2,7 +2,7 @@
 
 | File | alwaysApply | Purpose |
 |------|-------------|---------|
-| `intergrax-iteration.mdc` | **Yes** | Workflow, F3, context budget (~500 tok/turn) |
+| `intergrax-iteration.mdc` | **Yes** | Workflow, F3 read budget, O1 terse output (~620 tok/turn) |
 | `intergrax-idea-audit.mdc` | **No** | Mode I — idea audit on trigger |
 | `intergrax-implementation-journal.mdc` | **No** | Journal milestones only |
 

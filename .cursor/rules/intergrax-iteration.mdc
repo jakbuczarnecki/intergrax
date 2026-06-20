@@ -35,4 +35,16 @@ Default scope: gate maintenance `docs/plan/PLATFORM_FOUNDATION.md` hub. Phase K 
 
 Repository artifacts: English. Operator chat: session language. **Do not commit** unless asked.
 
-Verification / ADR / routing table: `@docs/guides/AGENT_INSTRUCTIONS.md` when needed.
+## O1 — output (terse default)
+
+**Default: terse** — outcome, changed paths, tests pass/fail, blockers; **no** diff recap, long tables, or doc canon restatement.
+
+| Mode | Trigger |
+|------|---------|
+| Minimal | `krótko` / `terse` → ≤6 lines |
+| Terse | default implement/fix/gate → ≤12 lines |
+| Full | `pełny raport` / `full report` / `iteration summary` / milestone·closeout·journal |
+
+Full 12-point template: `@docs/guides/AGENT_INSTRUCTIONS.md` § Operator communication (load only when Full).
+
+Verification / ADR / routing: `@docs/guides/AGENT_INSTRUCTIONS.md` when needed.
