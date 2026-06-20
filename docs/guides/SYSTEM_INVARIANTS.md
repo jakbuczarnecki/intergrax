@@ -83,9 +83,11 @@ Normative rules that **MUST** hold across Tier-0..3, Nexus, agents, tools, conte
 ## 4. Tool and integration invariants
 
 - ToolRuntime is the only side-effect gateway for agent-invokable actions.
+- Agent-invokable side effects **MUST** pass through ToolRuntime.
 - Agents and graph nodes **MUST NOT** call tool handlers or integrations directly.
 - Tools are agent-facing semantic operations.
-- Integrations are vendor/backend adapters and **MUST NOT** be agent-facing.
+- Integrations are backend/vendor-facing adapters and **MUST NOT** be agent-facing.
+- External intake adapters **MUST** hand tasks to Tier-3 intake / `UnifiedTaskRunner.run_task()`, not directly to agents.
 - Skills are declarative composition packs, not runtime loops.
 - Skills **MUST NOT** contain execution control flow.
 - Tool access **MUST** be resolved from AgentContract, SkillResolver, ToolProfile and RuntimePolicyBundle.

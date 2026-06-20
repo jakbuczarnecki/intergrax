@@ -235,4 +235,12 @@ Close **INT-SPEECH-ARCH.1** in the same PR wave as **MOD-SPEECH-ARCH.4** (wiring
 
 ---
 
+## Architecture doc alignment (P2-ARCH)
+
+| ID | Scope | Status |
+|----|-------|--------|
+| **P2-ARCH-06** | Clarify integration layer contract and access paths | **Done** (2026-06-20) |
+
+---
+
 *End of Integrations Implementation Plan.*
