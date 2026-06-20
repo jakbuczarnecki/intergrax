@@ -54,7 +54,7 @@ ECC-0…ECC-6 + S7–S11 **Done** (L3+, 2026-06-13) · ADR-CODECRAFT-001
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-codegen_llm_profile_ref wiring (GAP-ECC-20) · container isolation tier (GAP-ECC-21) · metrics dashboards §10.2 (GAP-ECC-22) · Task.metadata.codecraft_mode override (GAP-ECC-23) · local SandboxSession ≠ OS containment (accepted)
+GAP-ECC-20…23 **Closed** (ECC-MAINT-01..04, 2026-06-18) · local SandboxSession ≠ OS containment (accepted) · dedicated container runtime backend product opt-in beyond local fallback
 
 ---
 

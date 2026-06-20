@@ -527,7 +527,7 @@ intergrax/runtime/critic/ (CVL hooks)
 docs/architecture/CODE_CRAFT.md · docs/plan/CODE_CRAFT.md · ADR-CODECRAFT-001""",
         "key_symbols": "CodeCraftProfile · CodeCraftOrchestrator · CodeCraftSession · CraftResult · IterationRecord · StaticCodeGate · craft modes (disabled|dry_run|assist_only|supervised|autonomous) · EphemeralToolRegistry · wire_application_codecraft",
         "active_phases": "ECC-0…ECC-6 + S7–S11 **Done** (L3+, 2026-06-13) · ADR-CODECRAFT-001",
-        "known_gaps": "codegen_llm_profile_ref wiring (GAP-ECC-20) · container isolation tier (GAP-ECC-21) · metrics dashboards §10.2 (GAP-ECC-22) · Task.metadata.codecraft_mode override (GAP-ECC-23) · local SandboxSession ≠ OS containment (accepted)",
+        "known_gaps": "GAP-ECC-20…23 **Closed** (ECC-MAINT-01..04) · local SandboxSession ≠ OS containment (accepted) · dedicated container runtime backend product opt-in beyond local fallback",
         "dimensions": [
             "CodeCraft uses existing sandbox ToolRuntime path — no parallel execution stack.",
             "L0 StaticCodeGate before any execute in autonomous/supervised paths.",

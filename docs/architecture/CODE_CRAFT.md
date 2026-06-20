@@ -8,7 +8,7 @@
 **Audit layer:** 11b (Ephemeral Code Craft)  
 **Audit instruction:** [`audit/CODE_CRAFT.md`](../audit/CODE_CRAFT.md)  
 **Implementation:** `intergrax/codecraft/` · `intergrax/runtime/codecraft/` · `intergrax/tools/providers/codecraft/`  
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates 2026-06-13 closeout); **ECC-0…ECC-6 + S7–S11 Done (L3+)**
+**Last updated:** 2026-06-19 — interactive audit revalidation; **ECC-0…ECC-6 + S7–S11 + §6.1av Done (L3+)**
 
 ---
 
@@ -179,7 +179,7 @@ Wiring **Done** (ECC-3): `wire_application_codecraft()` → `RuntimeConfig` → 
 | `supervised` | yes | after approval | yes | after approval | **required** before exec |
 | `autonomous` | yes | auto | auto | auto if gates pass | on policy violation only |
 
-Override per task: `Task.metadata.codecraft_mode` (analogous to `metadata.sandbox`) — **depth backlog GAP-ECC-23**; host profile is the shipped default.
+Override per task: `Task.metadata.codecraft_mode` (analogous to `metadata.sandbox`) — **Done** (ECC-MAINT-01); host profile remains default when metadata absent.
 
 ---
 
@@ -331,7 +331,9 @@ Canon cross-ref: [`OBSERVABILITY.md`](OBSERVABILITY.md) · [`TOOLS.md`](TOOLS.md
 | AHI adaptive trigger | **Done** — `adaptive_trigger.py` | ECC-6 |
 | Metrics dashboards | **Done** — §10.2 trace panel via `codecraft.metrics_snapshot` | ECC-MAINT-04 |
 
-**Maturity:** **L3+** — ECC-0…ECC-6 + post-closeout S7–S10 (2026-06-13). Depth backlog closed: metrics §10.2, `container` tier, `codegen_llm_profile_ref` wiring (2026-06-18 MAINT).
+**Maturity:** **L3+** — ECC-0…ECC-6 + post-closeout S7–S11 (2026-06-13). Depth backlog GAP-ECC-20…23 **closed** (ECC-MAINT-01..04, 2026-06-18).
+
+**Audit revalidation (2026-06-19, ECC-MAINT-DOC-01):** §6.1av confirmed · 31 unit tests + `check_codecraft_layer.py` green · no open P0/P1.
 
 ---
 

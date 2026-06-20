@@ -9,8 +9,8 @@
   "started_at": "2026-06-19",
   "last_updated": "2026-06-19",
   "completed_at": null,
-  "current_domain": "TOOLS",
-  "notes": "Mode A2 — 8/22 domains complete; TOOL-MAINT-01b + TEST-01 + DOC-01 + AUDIT-01 implemented 2026-06-19",
+  "current_domain": "CODE_CRAFT",
+  "notes": "Mode A2 — 9/22 domains complete; ECC-MAINT-DOC-01 + ECC-MAINT-AUDIT-01 implemented 2026-06-19",
   "domain_order": [
     "PLATFORM_FOUNDATION",
     "UNIFIED_EXECUTION_RUNTIME",
@@ -162,6 +162,20 @@
         "TOOL-MAINT-TEST-01",
         "TOOL-MAINT-DOC-01",
         "TOOL-MAINT-AUDIT-01"
+      ]
+    },
+    "CODE_CRAFT": {
+      "status": "completed",
+      "verdict": "mature_revalidated",
+      "maturity": "L3+",
+      "p0_open": 0,
+      "p1_open": 0,
+      "result_md": "docs/audit_results/2026-06-19/CODE_CRAFT.md",
+      "plan_updated": true,
+      "completed_at": "2026-06-19",
+      "maint_ids": [
+        "ECC-MAINT-DOC-01",
+        "ECC-MAINT-AUDIT-01"
       ]
     }
   }

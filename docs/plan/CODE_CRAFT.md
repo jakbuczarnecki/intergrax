@@ -587,10 +587,10 @@ Each sprint = one PR-sized slice → gate green → plan row update → commit.
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **ECC-MAINT-DOC-01** | Docs | P3 | **Planned** | Close §6.1av; sync GAP-ECC-20..23 register; fix architecture §6.3; regenerate audit prompt known gaps | Canon matches ECC-MAINT-01..04 |
-| 2 | **ECC-MAINT-AUDIT-01** | Docs | P3 | **Planned** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `CODE_CRAFT.md` + `progress.json`; L3+ verdict layer 11b |
+| 1 | **ECC-MAINT-DOC-01** | Docs | P3 | **Done** | Close §6.1av; sync GAP-ECC-20..23 register; fix architecture §6.3; regenerate audit prompt known gaps | Canon matches ECC-MAINT-01..04 |
+| 2 | **ECC-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `CODE_CRAFT.md` + `progress.json`; L3+ verdict layer 11b |
 
-**Suggested PR order:** ECC-MAINT-DOC-01 → ECC-MAINT-AUDIT-01.
+**Suggested PR order:** none — §6.1aw queue closed (2026-06-19).
 
 ---
 
