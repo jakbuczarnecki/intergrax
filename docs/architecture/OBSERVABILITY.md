@@ -722,7 +722,7 @@ uv run python scripts/check_observability_gates.py
 
 ## 18. Execution Boundary Export (EBE) — optional side channel
 
-**Status:** PoC v1 **Done** · PoC v2 (EBE-8) **Done** (partner validated) · **EBE-9 host signing Done** (BoundaryAttest PoC, optional profile flag).  
+**Status:** PoC v1 **Done** · PoC v2 (EBE-8) **Done** (partner validated) · **EBE-9 host signing Done** (partner validated).  
 **Reference host:** `applications/attestation_demo/` · **ADR:** [ADR-OBS-002](../adr/entries/2026-06-13/ADR-OBS-002.md) · [ADR-OBS-004](../adr/entries/2026-06-19/ADR-OBS-004.md)
 
 EBE is an **optional** export path for **unsigned, vendor-neutral** tool-boundary facts. It complements — does not replace — the Harness Observability Spine (HOS).
@@ -734,7 +734,7 @@ EBE is an **optional** export path for **unsigned, vendor-neutral** tool-boundar
 | **Event-first, receipt-second** | Platform emits `execution_boundary_event.v1`; external products sign receipts |
 | **One event, one receipt** | Partner maps each `boundary_events[]` element to a separate `client_observed` receipt |
 | **Non-blocking** | Buffer/sink failures never fail tool invoke |
-| **Honest trust** | `signed: false` in PoC v1; no implied platform attestation |
+| **Honest trust** | Unsigned when signing off (`signed: false`); host-signed when EBE-9 enabled (`host_attested`); no implied `server_attested` |
 | **HOS unchanged** | Unified journal, trace bridge, middleware — no receipt logic |
 
 ### Schema
@@ -766,14 +766,15 @@ When `host_signing_enabled=true`, each event includes `signed: true` and a `host
 
 Unsigned v2 remains available when signing is disabled. Golden vector: `applications/attestation_demo/partner_handoff/ebe9_golden_vector.v1.json`. Spec: `EBE-9_HOST_SIGNING.md`.
 
-**Partner validation (2026-06):** External BoundaryAttest adapter confirmed one `client_observed` receipt per event, hash parity, independent verification, and intentional dual claims on the failed-tool fixture. Reference handoff: branch `agent_experiment_runtime` @ `106aee776fcc6053e8265b9c3656638d107d351d`.
+**Partner validation — EBE-8 (unsigned v2, 2026-06):** BoundaryAttest adapter confirmed one `client_observed` receipt per event, hash parity, independent verification, and intentional dual claims on the failed-tool fixture. Reference: `agent_experiment_runtime` @ `106aee776fcc6053e8265b9c3656638d107d351d`.
+
+**Partner validation — EBE-9 (host signing, 2026-06):** BoundaryAttest verifier @ `61be9918bc8f91fc8f160e0392d2914f38f3d4cb` passed golden vector byte-for-byte, 39/39 tests, live two-event response from Intergrax @ `96b7f997`, unsigned v2 regression, and negative tamper cases. Host signature verified separately; partner receipts remain `client_observed`. Handoff docs: `agent_experiment_runtime` @ `13102cfaff1a7a9d212c16cd16587477cc533dc0`.
 
 **Trace correlation scope:** `GET /debug/tasks/{run_id}/trace` supports run/task-level journal comparison (agent, capability, graph node, critic, task state). It does **not** expose EBE `event_id`, `step_id`, or `tool_id`; exact per-event correlation uses the live `boundary_events[]` from `POST /poc/run` (or buffered replay endpoint). Enriching HOS trace with EBE identifiers is optional future work, not a PoC v2 requirement.
 
 ### Non-goals
 
-- Intergrax receipt product or AgentReceipt embedding
-- Host-side Ed25519 signing (future phase)
+- Intergrax receipt product or BoundaryAttest embedding
 - Mandatory EBE on all hosts
 
 ---
