@@ -6,7 +6,7 @@
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 29  
 **Audit instruction:** [`audit/MODALITY.md`](../audit/MODALITY.md)  
-**Last updated:** 2026-06-19 — MOD-SPEECH-ARCH (speech slug identity; [ADR-MOD-001](../adr/entries/2026-06-19/ADR-MOD-001.md))
+**Last updated:** 2026-06-20 — Modality Production Boundary (plane-specific maturity; cross-layer disambiguation)
 
 ---
 
@@ -43,7 +43,27 @@ This file is the **modality index**: which plane owns what, how to extend it, an
 
 ---
 
-## Three modality planes (canonical)
+## Modality Production Boundary
+
+Modality in Intergrax is **not** a single monolithic capability. Support is split into **distinct planes** with separate owners, access paths, maturity claims, and production constraints.
+
+**Normative rule:** Modality support is split into distinct planes. A component **MUST NOT** be treated as production-ready for all modalities only because one modality plane is implemented or documented.
+
+Multimodal behavior **MUST NOT** be conflated with:
+
+- Integration Library adapters (storage, speech SaaS, remote inference hosts),
+- RAG ingest and knowledge indexing,
+- ToolRuntime side effects and agent-invokable tools,
+- LLM adapter routing and model profiles,
+- Dedicated inference without deployment/resource profiles.
+
+Agents and Tier-3 applications consume modality through **approved planes only** — not direct SDK calls, agent-local model code, or undifferentiated "modality is done" claims.
+
+**Cross-refs:** [`SYSTEM_INVARIANTS.md`](../guides/SYSTEM_INVARIANTS.md) · [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md) · [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) · [`INTEGRATIONS.md`](INTEGRATIONS.md) · [`RAG.md`](RAG.md) · [`TOOLS.md`](TOOLS.md) · [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`OBSERVABILITY.md`](OBSERVABILITY.md#observability-event-spine) · [`MEMORY.md`](MEMORY.md)
+
+---
+
+## Modality planes
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -71,7 +91,27 @@ This file is the **modality index**: which plane owns what, how to extend it, an
 
 ---
 
-## Plane A — Generative multimodal LLM
+### Plane A — Generative multimodal LLM
+
+**Purpose:** Model calls that accept or produce multimodal content through an approved LLM adapter/profile.
+
+**Owner:** LLM adapter layer + model routing/profile.
+
+**Allowed:**
+
+- image/audio/document inputs to multimodal models if supported by selected provider/model,
+- multimodal output where model/profile supports it,
+- model capability declarations,
+- token/cost/context controls.
+
+**Must not:**
+
+- bypass `LLMAdapter`,
+- be treated as OCR/RAG ingest,
+- own media storage,
+- own product workflow.
+
+**Implementation (as-built):**
 
 - **Module:** `intergrax/llm_adapters/` only.
 - **Capabilities (target contract):** `supports_vision`, `supports_audio_input`, `supports_audio_output` on `LLMAdapter`.
@@ -82,7 +122,30 @@ This file is the **modality index**: which plane owns what, how to extend it, an
 
 ---
 
-## Plane B — Media ingest (RAG path)
+### Plane B — Media/document ingest and indexing
+
+**Purpose:** Convert media/documents into normalized text, chunks, metadata, embeddings or retrieval artifacts.
+
+**Owner:** Document/media ingestion services, RAG ingest, parser integrations, approved tools.
+
+**Allowed:**
+
+- OCR,
+- document parsing,
+- audio transcription,
+- image metadata extraction,
+- media-to-text normalization,
+- chunking and indexing,
+- provenance preservation.
+
+**Must not:**
+
+- write directly to agent memory,
+- bypass RAG ingest or approved knowledge indexing,
+- bypass provenance and traceability,
+- be treated as a general CV reasoning engine.
+
+**Implementation (as-built):**
 
 Already shipped (see implementation plan M.6 / M-RAG):
 
@@ -98,11 +161,33 @@ Already shipped (see implementation plan M.6 / M-RAG):
 
 ---
 
-## Plane C — Dedicated vision & ML inference
+### Plane C — Dedicated inference / CV / classical ML
+
+**Purpose:** Specialized inference outside generic LLM calls, such as CV models, classifiers, detectors, rerankers, embedding models, custom ML models.
+
+**Owner:** Dedicated inference service / `model_inference` layer / approved integrations and tools.
+
+**Allowed:**
+
+- classifier inference,
+- object detection,
+- OCR models where configured as dedicated inference,
+- rerankers,
+- embedding generation,
+- custom model hosting,
+- GPU/remote inference hosts if configured.
+
+**Must not:**
+
+- run as hidden agent-local code,
+- bypass ToolRuntime when agent-invokable,
+- bypass deployment/resource profiles,
+- silently use heavy local models in production,
+- be described as production-ready without maturity/evidence.
 
 For **production CV** and **classical ML** where a multimodal LLM is the wrong tool (latency, cost, determinism, regulated bounding boxes).
 
-### C.1 Vision inference engine (extensible)
+#### C.1 Vision inference engine (extensible)
 
 **Target module:** `intergrax/model_inference/` (Tier-0, planned Phase W-ML).
 
@@ -135,7 +220,7 @@ VisionModelProfile  →  VisionInferenceRegistry  →  VisionInferenceAdapter
 - **Celery** — `ModalityExecutionMode.CELERY` + `CeleryModalityInferenceExecutor` dispatch serialized jobs (`intergrax.modality.run_job`) when `INTERGRAX_MODALITY_CELERY_BROKER_URL` (or `CELERY_BROKER_URL`) is set; falls back to thread pool when the broker is missing or dispatch fails. `wire_modality_extras()` registers the task on the shared `message_bus` Celery bundle when a broker is configured (`modality_celery_wiring.py`).
 - **Remote endpoint** — preferred at high scale; integration slug under `ml_inference_host` or `vision_serving`.
 
-### C.2 Classical ML (non-CV)
+#### C.2 Classical ML (non-CV)
 
 **Contract:** `ModelInferenceAdapter` — sklearn, XGBoost, ONNX classifiers, small torch models.
 
@@ -146,7 +231,7 @@ VisionModelProfile  →  VisionInferenceRegistry  →  VisionInferenceAdapter
 | Versioning | SemVer + immutable artifact URI (object storage) |
 | Eval | Reuse V-EVAL + braintrust/phoenix/wandb observability slugs |
 
-### C.3 Hugging Face — four roles (do not conflate)
+#### C.3 Hugging Face — four roles (do not conflate)
 
 | Role | Layer | Example |
 |------|-------|---------|
@@ -192,5 +277,70 @@ IntegrationManifest (slug) + factory
 | **Extension** | Third-party packages: `IntegrationPlugin` with category `speech_provider`; see [`INTEGRATIONS.md`](INTEGRATIONS.md) §Open catalog. |
 
 **Legacy removed (MOD-SPEECH-ARCH):** `SpeechProvider` enum, `speech_provider_for_slug()` hardcoded mapping, enum-only `SpeechProfile` coercion, parallel enum backend in `wire_modality_extras()` when integration slot is configured.
+
+---
+
+## Modality responsibility boundary
+
+| Concern | Owner |
+|---|---|
+| Multimodal model call | LLMAdapter / model profile |
+| Model capability declaration | Model catalog / LLM profile |
+| Document/media parsing | Parser integration / ingest service |
+| RAG indexing | RAG ingest / knowledge service |
+| Memory write | Memory service / policy |
+| Agent decision using media-derived context | Tier-2 agent |
+| Agent-invokable media processing | ToolRuntime + approved tool |
+| Dedicated CV/ML inference | Model inference service / approved integration |
+| Media artifact storage | Storage integration / application profile |
+| Provenance and traceability | RuntimeEvent / observability spine |
+| Product workflow | Tier-3 application + agents |
+
+---
+
+## Disallowed modality patterns
+
+Intergrax components **MUST NOT**:
+
+- treat all modality support as one layer with one maturity level,
+- call provider multimodal APIs directly from agents,
+- call OCR/CV libraries directly from agents in production,
+- store media-derived facts directly into long-term memory without policy and provenance,
+- mix RAG knowledge indexes with user/session memory indexes,
+- bypass ContextCompiler when adding media-derived context to LLM calls,
+- bypass ToolRuntime for agent-invokable media side effects,
+- run heavy local inference models in production without deployment/resource profile,
+- treat image/audio/document parsing as proof of semantic understanding,
+- describe modality as production-ready without plane-specific maturity/evidence,
+- use media artifacts without retention/privacy/access rules where required.
+
+---
+
+## Production readiness by plane
+
+Each modality plane **MUST** state maturity **separately** using [`MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md). A strong score on one plane does **not** imply readiness on another. Undifferentiated "modality is production-ready" claims are **invalid**.
+
+## Modality Maturity Statement
+
+- Plane A — Generative multimodal LLM:
+  - Architecture maturity: A4
+  - Implementation maturity: I3
+  - Production readiness: P2
+  - Evidence maturity: E3
+- Plane B — Media/document ingest:
+  - Architecture maturity: A4
+  - Implementation maturity: I3
+  - Production readiness: P2
+  - Evidence maturity: E3
+- Plane C — Dedicated inference / CV / ML:
+  - Architecture maturity: A4
+  - Implementation maturity: I2
+  - Production readiness: P1
+  - Evidence maturity: E2
+- Notes:
+  - Plane-specific maturity — not a single headline label for "modality."
+  - Plane B ingest paths (Whisper, parsers, embeddings) are lab-stable; production limits vary by parser slug and tenant policy.
+  - Plane C remote serving (`triton`, `huggingface_inference`) is wired; in-process heavy models require `ModalityExecutionProfile` and are not default production paths.
+  - Update this block when any plane changes; cross-ref [`plan/MODALITY.md`](../plan/MODALITY.md) for delivery evidence.
 
 ---
