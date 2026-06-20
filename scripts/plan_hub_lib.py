@@ -91,7 +91,7 @@ def satellite_index_rows(domain: str, files: dict[str, str]) -> list[str]:
     ]
     for fname in sorted(files):
         label = fname.replace(f"{domain}_", "").replace(".md", "").replace("_", " ")
-        rows.append(f"| [`plan/{fname}`](plan/{fname}) | {label} |")
+        rows.append(f"| [`plan/plan/{fname}`](plan/plan/{fname}) | {label} |")
     rows.extend(
         [
             "",

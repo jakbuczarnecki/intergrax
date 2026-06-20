@@ -1,5 +1,8 @@
 # Cursor session bootstrap (paste files)
 
+**F3 session rule:** `ONE DOMAIN = ONE NEW CHAT` — see [`../guides/CURSOR_TOKEN_SETUP.md`](../guides/CURSOR_TOKEN_SETUP.md).  
+**F2 setup:** remove `AGENTS.md` from always-on Project Rules; keep only `.cursor/rules/intergrax-iteration.mdc`.
+
 Copy **entire file** into a **new** Cursor agent chat as the first message.
 
 | File | Mode | Scope |

@@ -1,73 +1,71 @@
 ---
-description: Intergrax Harness AI — iteration workflow, context budget, architectural safety fuse
+description: Intergrax Harness AI — iteration workflow, context budget, session protocol (F3)
 alwaysApply: true
 ---
 
 # Intergrax — Iteration Instruction (Harness AI)
 
-Implement the **Intergrax Harness AI / Agent Operating System**. Full rules: **`AGENTS.md`** (hard constraints). This file adds workflow, **context budget**, and communication only.
+Implement the **Intergrax Harness AI / Agent Operating System**.
+
+**Rules source:** this file only (always-on). **`AGENTS.md` is NOT auto-loaded** — use `@AGENTS.md` on demand (see `docs/guides/CURSOR_TOKEN_SETUP.md` F2).
+
+## Session protocol (F3 — mandatory)
+
+```text
+ONE DOMAIN = ONE NEW CHAT
+```
+
+- **Audit / implement / closeout:** one domain pair per Cursor chat unless the operator explicitly batches.
+- **Next domain:** open a **new chat** — do not continue prior domain's history in the same thread.
+- **Resume:** new chat + bootstrap + `RESUME: docs/audit_results/YYYY-MM-DD/progress.json` only.
+- Multi-domain threads cause linear history bloat (1M+ tokens) — forbidden unless operator opts in.
 
 ## Strategic frame
 
 - **Harness is the product** — agents are replaceable; runtime is permanent.
-- Default scope: **gate maintenance** in `docs/plan/PLATFORM_FOUNDATION.md` §6.1 (hub only; satellites on demand under `docs/plan/plan/`).
+- Default scope: **gate maintenance** in `docs/plan/PLATFORM_FOUNDATION.md` §6.1 (hub only; satellites under `docs/plan/plan/`).
 - **Phase K** and **§6.3** require explicit operator reprioritization — never start silently.
 
 ## Context budget (mandatory — every session)
 
 **Quality = targeted evidence, not bulk loading.**
 
-- **One domain pair per session** unless the operator explicitly batches.
-- Read **only** the selected `docs/architecture/<DOMAIN>.md` + scoped sections of `docs/plan/<DOMAIN>.md` (see below).
-- **Never** load full multi-thousand-line plan files — hub + [`docs/plan/plan/`](docs/plan/plan/) satellites; audits: [`docs/guides/audit_slices/<DOMAIN>.md`](docs/guides/audit_slices/).
+- Read **only** the selected `docs/architecture/<DOMAIN>.md` (read-scope block) + plan **hub** + optional **one** satellite.
+- **Never** load full multi-thousand-line plans — hub + [`docs/plan/plan/`](docs/plan/plan/); audits: [`docs/guides/audit_slices/<DOMAIN>.md`](docs/guides/audit_slices/).
 - **Never** re-read the same file in one session unless it changed.
-- Prefer **grep with path filters** over repo-wide semantic search for known symbols.
-- Run **only** verification commands relevant to the current item (`AGENTS.md` §Verification).
-- Do **not** load `docs/audit_results/` unless RESUME/bootstrap says so.
-- Respect **`.cursorignore`** — excluded paths are out of scope unless the operator points to them.
+- Prefer **grep with path filters** over repo-wide semantic search.
+- Verification commands: read `@AGENTS.md` §Verification only when running harness gates.
+- Do **not** load `docs/audit_results/` unless RESUME says so.
+- Respect **`.cursorignore`**.
 
 ## Documentation model
 
 ```text
-docs/intergrax_runtime_architecture.md  ← hub (pair picker)
-docs/architecture/<DOMAIN>.md             ← canon
-docs/plan/<DOMAIN>.md                   ← plan (scoped reads)
-docs/guides/SYSTEM_INVARIANTS.md        ← skim cross-domain rules
+docs/intergrax_runtime_architecture.md  ← hub
+docs/architecture/<DOMAIN>.md             ← canon (scoped §)
+docs/plan/<DOMAIN>.md                   ← plan hub
+docs/guides/audit_slices/<DOMAIN>.md  ← audit compact slice
 ```
 
-22 paired domains — basename routing table in **`AGENTS.md` §Task routing**. Do **not** load unrelated pairs.
-
-**Per iteration:** hub → invariants (skim) → architecture → **scoped** plan → implement smallest plan item → update both pair files if contracts change.
-
-## Scope & work order
-
-- **One coherent item**, one domain, unless operator requests a batch.
-- Out-of-scope findings: report only — do not fix silently.
-- Cycle: ANALYSIS → ARCH REVIEW → PLAN REVIEW → (IMPROVEMENT PROPOSAL) → DOCS → IMPLEMENT → VERIFY → CONCLUSIONS.
-- **Safety fuse:** plan ↔ architecture ↔ ideal conflict → **STOP**, explain, propose doc fix before code.
+22 paired domains — routing table in **`AGENTS.md`** (on demand). Do **not** load unrelated pairs.
 
 ## Architecture (never violate)
 
 ```text
 Tier-0 intergrax/  ·  Tier-1 intergrax/runtime/  ·  Tier-2 agents/  ·  Tier-3 applications/
-
-intergrax/ ↛ agents/|applications/   agents/ ↛ applications/   applications/ → agents/ + intergrax/
+intergrax/ ↛ agents/|applications/   agents/ ↛ applications/
 ```
 
-**Always:** strengthen Harness; reuse Tier-0; smallest coherent diff; Python 3.12 + `uv`; copyright on new files.  
-**Never:** Tier-0 duplication; business logic in Nexus; agent-specific Nexus branches; vendor SDK in Tier-2; `getattr`/reflection where typed contracts exist; secrets in repo; whole-platform-complete claims; new docs without justification.
+**Always:** smallest coherent diff; reuse Tier-0. **Never:** Tier-0 duplication; business logic in Nexus; agent-specific Nexus branches; vendor SDK in Tier-2; whole-platform-complete claims.
 
-**New component gate:** existing mechanisms insufficient → STOP, explain alternatives, wait for operator.
+**Mode I:** `audyt pomysłu` / `idea audit` → `.cursor/rules/intergrax-idea-audit.mdc` (no code until approved).
 
-**Mode I (idea audit):** operator triggers (`audyt pomysłu`, `idea audit`, …) → read **`.cursor/rules/intergrax-idea-audit.mdc`** — no code until approved.
+**New component gate:** insufficient mechanisms → STOP, explain, wait for operator.
 
 ## Language
 
-| Context | Language |
-|---------|----------|
-| Repository artifacts | English |
-| Operator chat (summaries, conflicts, reports) | Primary language of the session |
+Repository artifacts: English. Operator chat: primary language of the session.
 
 ## Definition of Done
 
-Follow **`AGENTS.md`**: verification bundle, ADR rules, iteration summary template, journal rule (`.cursor/rules/intergrax-implementation-journal.mdc`). Do not mark complete without tests evidence. **Do not commit** unless the operator asks.
+Verification, ADR, iteration summary: **`@AGENTS.md`** when needed. **Do not commit** unless the operator asks.

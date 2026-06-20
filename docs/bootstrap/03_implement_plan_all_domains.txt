@@ -1,3 +1,4 @@
+SESSION: ONE_DOMAIN_ONE_CHAT — prefer new chat per domain between pairs; no bulk doc reload.
 Harness Architecture Audit — Mode B (implement open plan items, all 22 domain pairs).
 Canonical orchestrator: docs/audit/IMPLEMENT_ORCHESTRATOR.md
 Skim: docs/guides/SYSTEM_INVARIANTS.md

@@ -1,0 +1,17 @@
+---
+description: Full AGENTS.md reference — load on demand (@AGENTS.md), NOT always-on
+alwaysApply: false
+---
+
+# Intergrax — AGENTS.md (on-demand reference)
+
+**Do not assume this file is in context.** Read **`AGENTS.md`** only when you need:
+
+- Full task routing table (22 domain pairs)
+- Complete verification command bundle
+- ADR workflow details
+- Anti-patterns list
+
+Default session rules live in **`.cursor/rules/intergrax-iteration.mdc`** (~950 tokens) — sufficient for most iterations.
+
+Invoke: `@AGENTS.md` or explicit operator request.

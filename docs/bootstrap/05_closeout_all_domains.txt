@@ -1,3 +1,4 @@
+SESSION: ONE_DOMAIN_ONE_CHAT — one domain closeout per new chat when possible.
 Full Harness Layer Completion — all 22 domain pairs (sequential).
 This is NOT audit-only — it orchestrates full Layer Completion Mode on each pair.
 LCM canon: docs/guides/LAYER_COMPLETION_MODE.md — Steps 1 → 1A → 2 → 3 → 4 → 5 → 6 (Step 5 = real implementation when P0/P1).

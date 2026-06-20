@@ -1,3 +1,4 @@
+SESSION: ONE_DOMAIN_ONE_CHAT — run one domain per new chat when possible; do not re-read completed domains' docs in this thread.
 Harness Architecture Audit — Mode A (audit all 22 domain pairs, no implementation).
 Canonical orchestrator: docs/audit/ORCHESTRATOR.md
 Context budget: each docs/audit/<DOMAIN>.md §0 — scoped reads only; never load full plan files.

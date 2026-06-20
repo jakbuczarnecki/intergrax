@@ -1,3 +1,4 @@
+SESSION: ONE_DOMAIN_ONE_CHAT — one domain per new chat recommended.
 Harness Architecture Audit — Mode B1 (implement open plan items, one domain).
 DOMAIN=PLATFORM_FOUNDATION
 Canonical orchestrator: docs/audit/IMPLEMENT_ORCHESTRATOR.md

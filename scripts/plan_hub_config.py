@@ -191,6 +191,57 @@ EXP_DX = PlanSplitConfig(
     move_h2_appendix=True,
 )
 
+AGENT_CONTRACTS = PlanSplitConfig(
+    domain="AGENT_CONTRACTS_AND_ASSEMBLY",
+    keep_h2_prefixes=(
+        "Agent architecture completion — executive",
+        "Phase AUDIT-IDEAL",
+        "Phase ACP — Agent Cognitive",
+        "Phase ACP-CLOSE",
+        "Phase ACP-FINISH",
+    ),
+    move_h2_prefixes=(
+        "Phase ACP-DEPTH",
+        "Phase AS —",
+        "Phase PE —",
+        "Phase REG —",
+        "Phase CG —",
+        "Phase ACP-LC",
+    ),
+    move_h2_appendix=True,
+)
+
+LLM_ADAPTERS_CFG = PlanSplitConfig(
+    domain="LLM_ADAPTERS",
+    keep_h2_prefixes=(
+        "Phase AUDIT-IDEAL",
+        "Phase M-LLM-X",
+    ),
+    move_h2_prefixes=(
+        "Layer Completion Mode",
+        "Phase LLM-LC",
+    ),
+    move_h2_appendix=True,
+)
+
+TOOLS_CFG = PlanSplitConfig(
+    domain="TOOLS",
+    keep_h2_prefixes=(
+        "Phase AUDIT-IDEAL",
+        "Phase LEG —",
+        "Phase TS —",
+        "Phase TOOL-ENG-DOC —",
+    ),
+    move_h2_prefixes=(
+        "Layer completion audit",
+        "Layer completion final",
+        "Layer completion sprints",
+        "Phase TOOL-ENG —",
+        "Phase TOOLS-LC",
+    ),
+    move_h2_appendix=True,
+)
+
 CONFIGS: dict[str, PlanSplitConfig] = {
     c.domain: c
     for c in (
@@ -201,5 +252,8 @@ CONFIGS: dict[str, PlanSplitConfig] = {
         UAEP,
         INTEGRATIONS_CFG,
         EXP_DX,
+        AGENT_CONTRACTS,
+        LLM_ADAPTERS_CFG,
+        TOOLS_CFG,
     )
 }

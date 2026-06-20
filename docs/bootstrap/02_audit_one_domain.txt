@@ -1,3 +1,4 @@
+SESSION: ONE_DOMAIN_ONE_CHAT — prefer new chat per domain; never load prior domain history when switching DOMAIN.
 Harness Architecture Audit — Mode A1 (audit one domain pair, no implementation).
 DOMAIN=PLATFORM_FOUNDATION
 Canonical orchestrator: docs/audit/ORCHESTRATOR.md

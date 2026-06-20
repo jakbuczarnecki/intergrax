@@ -23,7 +23,7 @@ Tier-3  applications/        Deployable product environments
 
 **Per-iteration reading rule:** when implementing a harness layer, read **only** the matching architecture + plan pair (e.g. `MEMORY.md` in both folders) plus `docs/guides/` as needed — do not load unrelated domain docs.
 
-**Cursor context budget:** respect `.cursorignore`. For plan files >500 lines, read **§6 open queues and cited gap registers only** — not the full file. One domain per chat for audits. **`PLATFORM_FOUNDATION` hub:** [`docs/plan/PLATFORM_FOUNDATION.md`](docs/plan/PLATFORM_FOUNDATION.md) + [`docs/plan/plan/`](docs/plan/plan/) satellites on demand. Full audit discipline: `docs/audit/<DOMAIN>.md` §0.
+**Cursor context budget:** respect `.cursorignore`. Plan hubs + `docs/plan/plan/` satellites. Audits: `docs/guides/audit_slices/<DOMAIN>.md`. **F2:** do not add `AGENTS.md` as always-on Project Rule — see [`docs/guides/CURSOR_TOKEN_SETUP.md`](docs/guides/CURSOR_TOKEN_SETUP.md). **F3:** one domain = one new chat.
 
 ---
 
@@ -142,6 +142,7 @@ python scripts/check_reasoning_gates.py
 python scripts/check_implementation_journal.py
 python scripts/check_harness_adr.py
 python scripts/check_plan_hub_size.py
+python scripts/check_cursor_token_setup.py
 uv run python scripts/check_agent_acp_close_ci.py
 python scripts/check_production_capacity_adapters.py
 python scripts/check_harness_resilience_policy.py
