@@ -19,6 +19,14 @@ TODO.txt
 
 # Tests results cache
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# Generated build artifacts
+build/agent_fleet_inventory.json
 
 _external_apps/
 docs/_external/

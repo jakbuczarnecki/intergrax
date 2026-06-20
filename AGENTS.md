@@ -23,6 +23,8 @@ Tier-3  applications/        Deployable product environments
 
 **Per-iteration reading rule:** when implementing a harness layer, read **only** the matching architecture + plan pair (e.g. `MEMORY.md` in both folders) plus `docs/guides/` as needed — do not load unrelated domain docs.
 
+**Cursor context budget:** respect `.cursorignore`. For plan files >500 lines, read **§6 open queues and cited gap registers only** — not the full file. One domain per chat for audits. **`PLATFORM_FOUNDATION` hub:** [`docs/plan/PLATFORM_FOUNDATION.md`](docs/plan/PLATFORM_FOUNDATION.md) + [`docs/plan/plan/`](docs/plan/plan/) satellites on demand. Full audit discipline: `docs/audit/<DOMAIN>.md` §0.
+
 ---
 
 ## Before you write code

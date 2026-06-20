@@ -1,0 +1,55 @@
+﻿# Cursor indexing exclusions — reduce noise and token waste.
+# Agents can still Read/run paths explicitly when needed (tests, RESUME audit runs).
+
+# Python / build artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+build/
+dist/
+wheels/
+*.egg-info/
+
+# Virtual env & secrets
+.venv/
+.env
+.env.*
+
+# VCS / IDE
+.git/
+.idea/
+.vscode/
+
+# Large or generated runtime artifacts
+uv.lock
+build/agent_fleet_inventory.json
+**/node_modules/
+
+# Test caches and bulky fixtures
+tests/**/__snapshots__/
+tests/**/fixtures/**/*.jsonl
+tests/**/fixtures/**/*.parquet
+tests/**/fixtures/**/*.bin
+tests/**/fixtures/**/*.pdf
+tests/**/fixtures/**/*.zip
+tests/**/data/**/*.db
+tests/**/data/**/*.sqlite
+
+# External / temp content
+_external_apps/
+docs/_external/
+temp_documents/
+
+# Historical audit runs (use RESUME path explicitly)
+docs/audit_results/
+
+# Implementation journal archive
+docs/implementation-journal/entries/
+
+# LLM crawler maps (hub docs suffice)
+llms-full.txt

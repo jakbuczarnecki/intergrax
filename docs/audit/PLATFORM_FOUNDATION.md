@@ -58,12 +58,39 @@ Phase K / §6.3 deferred product work · long-term §50 marketplace/visual build
 
 ---
 
-## 1. Canonical reads (in order)
+## 0. Context budget (mandatory — quality without bulk loading)
 
-1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state
-2. `docs/architecture/PLATFORM_FOUNDATION.md` — architecture canon (incl. audit registers if present)
-3. `docs/plan/PLATFORM_FOUNDATION.md` — implementation plan and gap IDs
-4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 1–2, 32
+Deep audit = **targeted reads + code/gate evidence**, not loading entire plan files.
+
+### Session rules
+- **One domain per chat** unless the operator explicitly batches.
+- **Never** read a file >500 lines in full — grep section headers, then `Read` with offset/limit.
+- **Never** re-read the same file in one session unless it changed.
+- Prefer **grep with path filters** over repo-wide semantic search for known symbols.
+- Run **only** scripts in section 10 — no full-suite pytest unless this prompt lists a domain slice.
+- Do **not** load `docs/audit_results/` unless RESUME/bootstrap says so.
+- Respect **`.cursorignore`** — excluded paths are out of scope unless the operator points to them.
+
+### Scoped plan read (`docs/plan/{DOMAIN}.md`)
+Read **only**: **Hub only** (`docs/plan/PLATFORM_FOUNDATION.md`): §4 ladder · §6.1 maintenance · §6.3 deferred product · satellite index. **On demand:** [`plan/plan/PLATFORM_FOUNDATION_master_registers.md`](plan/plan/PLATFORM_FOUNDATION_master_registers.md) (gap IDs) · [`plan/plan/PLATFORM_FOUNDATION_06_closed_queues.md`](plan/plan/PLATFORM_FOUNDATION_06_closed_queues.md) (re-validate closed items only)
+
+### Scoped architecture read (`docs/architecture/{DOMAIN}.md`)
+Table of contents + sections for audit-map layers **1–2, 32** + registers tied to **Known open gaps**. Skip historical paydown logs unless a gap ID points there.
+
+### Scoped guide reads
+- `IDEAL_HARNESS_AI_ARCHITECTURE.md` — sections for layers **1–2, 32** only
+- `INTEGRAX_HARNESS_AUDIT_MAP.md` — layers **1–2, 32** + maturity §5 only
+- `SYSTEM_INVARIANTS.md` — skim invariant IDs referenced in section 3 dimensions only
+
+---
+
+
+## 1. Canonical reads (scoped — in order)
+
+1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — **layers 1–2, 32 only** (see §0)
+2. `docs/architecture/PLATFORM_FOUNDATION.md` — **scoped sections** (see §0)
+3. `docs/plan/PLATFORM_FOUNDATION.md` — **scoped sections only** (see §0) — do **not** load the full file
+4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — **layers 1–2, 32** + §5 maturity
 5. `docs/audit/README.md` — shared production Harness checklist (**mandatory**)
 
 ---

@@ -51,20 +51,47 @@ AgentContract · UAEPAgent · RuntimeExecutionContext · AgentDecision · Cognit
 
 ## Active plan phases (verify status vs code reality)
 
-ACP · ACP-CLOSE · ACP-FINISH Done (2026-06-13) · PE/REG/CG/AS closed · AUDIT-IDEAL-19.1/20.1/31.1 **Done**
+ACP · ACP-CLOSE · ACP-FINISH Done (2026-06-13) · PE/REG/CG/AS closed · AUDIT-IDEAL-19.1/20.1/31.1 parallel
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-GAP-ACP-36/37 Closed (ACP-TOK-*) · GAP register 37 Closed · 0 Open · AUDIT-IDEAL-19.1/20.1/31.1 **Done** · COST-1 RunBudget Partial (cross-domain deferred) · FAUDIT-REG.1 deferred
+GAP-ACP-36/37 Closed (ACP-TOK-*) · GAP register 37 Closed · 0 Open · AUDIT-IDEAL-19.1/20.1/31.1 Planned · COST-1 RunBudget Partial
 
 ---
 
-## 1. Canonical reads (in order)
+## 0. Context budget (mandatory — quality without bulk loading)
 
-1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state
-2. `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` — architecture canon (incl. audit registers if present)
-3. `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` — implementation plan and gap IDs
-4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 17–20, 31 · ACP §21
+Deep audit = **targeted reads + code/gate evidence**, not loading entire plan files.
+
+### Session rules
+- **One domain per chat** unless the operator explicitly batches.
+- **Never** read a file >500 lines in full — grep section headers, then `Read` with offset/limit.
+- **Never** re-read the same file in one session unless it changed.
+- Prefer **grep with path filters** over repo-wide semantic search for known symbols.
+- Run **only** scripts in section 10 — no full-suite pytest unless this prompt lists a domain slice.
+- Do **not** load `docs/audit_results/` unless RESUME/bootstrap says so.
+- Respect **`.cursorignore`** — excluded paths are out of scope unless the operator points to them.
+
+### Scoped plan read (`docs/plan/{DOMAIN}.md`)
+Read **only**: `## 6.` open queue rows only · gap/remediation registers tied to **Known open gaps** and **Active plan phases** · skip `(closed)`, `(complete)`, `Archived` unless re-validating a listed gap
+
+### Scoped architecture read (`docs/architecture/{DOMAIN}.md`)
+Table of contents + sections for audit-map layers **17–20, 31 · ACP §21** + registers tied to **Known open gaps**. Skip historical paydown logs unless a gap ID points there.
+
+### Scoped guide reads
+- `IDEAL_HARNESS_AI_ARCHITECTURE.md` — sections for layers **17–20, 31 · ACP §21** only
+- `INTEGRAX_HARNESS_AUDIT_MAP.md` — layers **17–20, 31 · ACP §21** + maturity §5 only
+- `SYSTEM_INVARIANTS.md` — skim invariant IDs referenced in section 3 dimensions only
+
+---
+
+
+## 1. Canonical reads (scoped — in order)
+
+1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — **layers 17–20, 31 · ACP §21 only** (see §0)
+2. `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` — **scoped sections** (see §0)
+3. `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` — **scoped sections only** (see §0) — do **not** load the full file
+4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — **layers 17–20, 31 · ACP §21** + §5 maturity
 5. `docs/audit/README.md` — shared production Harness checklist (**mandatory**)
 6. `docs/guides/AGENT_CREATION_GUIDE.md` **ADR-AGENT-001 · ADR-AGENT-002 · ADR-AGENT-003 · Appendix M/N/O/P · Appendix AC**
 

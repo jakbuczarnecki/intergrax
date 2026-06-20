@@ -30,8 +30,14 @@ from intergrax.applications._shared.migration_wiring import (
     validate_manifest_migration_coverage,
     validate_profile_migration,
 )
+from intergrax.integrations.registry.bootstrap import register_default_integrations
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+
+@pytest.fixture(autouse=True)
+def _integrations_catalog() -> None:
+    register_default_integrations(override=True)
 
 
 def _write_migration(app_root: Path, migration: ApplicationMigration) -> Path:

@@ -17,6 +17,8 @@
 
 3. Copy **entire file** → paste as first message:
 
+**Context budget:** each domain audit prompt (`docs/audit/<DOMAIN>.md`) includes **§0** — scoped plan reads, one domain per chat recommended. Prefer Mode **A1** or **A2** over Mode **A** for lower token use.
+
 | Goal | Paste this file |
 |------|-----------------|
 | **Audit a new idea** (integration, agent, app, harness change) before build | Natural language: `Zrób audyt pomysłu: …` (see [Idea intake](#idea-intake-before-implementation)) |

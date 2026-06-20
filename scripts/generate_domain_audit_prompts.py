@@ -32,6 +32,11 @@ Sample imports across intergrax/, agents/, applications/ for tier violations""",
         "key_symbols": "Four-tier model · IntegrationProfile/ToolProfile/SkillProfile/LLMProfile · ApplicationEnvironmentProfile · ApplicationManifest · RuntimePolicyBundle · AgentContract · plugin entry points (intergrax.tools, intergrax.skills, intergrax.integrations)",
         "active_phases": "§6.1 gate maintenance queue · Phase V architecture hardening · Phase K business agents (**deferred** — must not start silently) · §6.3 product backlog",
         "known_gaps": "Phase K / §6.3 deferred product work · long-term §50 marketplace/visual builder · codecraft/ incremental · unified tool model (legacy boolean flags deprecated)",
+        "plan_read_scope": (
+            "**Hub only** (`docs/plan/PLATFORM_FOUNDATION.md`): §4 ladder · §6.1 maintenance · §6.3 deferred product · satellite index. "
+            "**On demand:** [`plan/plan/PLATFORM_FOUNDATION_master_registers.md`](plan/plan/PLATFORM_FOUNDATION_master_registers.md) (gap IDs) · "
+            "[`plan/plan/PLATFORM_FOUNDATION_06_closed_queues.md`](plan/plan/PLATFORM_FOUNDATION_06_closed_queues.md) (re-validate closed items only)"
+        ),
         "dimensions": [
             "Harness treated as durable product — not single-agent optimization (§1 strategic frame).",
             "Tier-0 (`intergrax/`) contains only universal mechanisms — no business agent logic.",
@@ -1218,10 +1223,45 @@ docs/adr/entries/2026-06-08/ADR-SCALE-001.md · ADR-SCALE-002.md""",
 ]
 
 
+DEFAULT_PLAN_SCOPE = (
+    "`## 6.` open queue rows only · gap/remediation registers tied to **Known open gaps** "
+    "and **Active plan phases** · skip `(closed)`, `(complete)`, `Archived` unless re-validating a listed gap"
+)
+
+
 def _bullets(items: list[str], numbered: bool = False) -> str:
     if numbered:
         return "\n".join(f"{i + 1}. {x}" for i, x in enumerate(items))
     return "\n".join(f"- {x}" for x in items)
+
+
+def _context_budget_block(*, layers: str, plan_scope: str) -> str:
+    return f"""## 0. Context budget (mandatory — quality without bulk loading)
+
+Deep audit = **targeted reads + code/gate evidence**, not loading entire plan files.
+
+### Session rules
+- **One domain per chat** unless the operator explicitly batches.
+- **Never** read a file >500 lines in full — grep section headers, then `Read` with offset/limit.
+- **Never** re-read the same file in one session unless it changed.
+- Prefer **grep with path filters** over repo-wide semantic search for known symbols.
+- Run **only** scripts in section 10 — no full-suite pytest unless this prompt lists a domain slice.
+- Do **not** load `docs/audit_results/` unless RESUME/bootstrap says so.
+- Respect **`.cursorignore`** — excluded paths are out of scope unless the operator points to them.
+
+### Scoped plan read (`docs/plan/{{DOMAIN}}.md`)
+Read **only**: {plan_scope}
+
+### Scoped architecture read (`docs/architecture/{{DOMAIN}}.md`)
+Table of contents + sections for audit-map layers **{layers}** + registers tied to **Known open gaps**. Skip historical paydown logs unless a gap ID points there.
+
+### Scoped guide reads
+- `IDEAL_HARNESS_AI_ARCHITECTURE.md` — sections for layers **{layers}** only
+- `INTEGRAX_HARNESS_AUDIT_MAP.md` — layers **{layers}** + maturity §5 only
+- `SYSTEM_INVARIANTS.md` — skim invariant IDs referenced in section 3 dimensions only
+
+---
+"""
 
 
 def render(domain: dict) -> str:
@@ -1241,6 +1281,8 @@ def render(domain: dict) -> str:
     anti = domain["anti_patterns"]
     appendix = domain["appendix"]
     adr = domain.get("adr")
+    plan_scope = domain.get("plan_read_scope", DEFAULT_PLAN_SCOPE)
+    context_budget = _context_budget_block(layers=layers, plan_scope=plan_scope)
 
     appendix_block = ""
     if appendix != "N/A":
@@ -1322,12 +1364,14 @@ Perform a **rigorous, evidence-backed audit** of the **{title}** domain. You mus
 
 ---
 
-## 1. Canonical reads (in order)
+{context_budget}
 
-1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state
-2. `docs/architecture/{did}.md` — architecture canon (incl. audit registers if present)
-3. `docs/plan/{did}.md` — implementation plan and gap IDs
-4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers {layers}
+## 1. Canonical reads (scoped — in order)
+
+1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — **layers {layers} only** (see §0)
+2. `docs/architecture/{did}.md` — **scoped sections** (see §0)
+3. `docs/plan/{did}.md` — **scoped sections only** (see §0) — do **not** load the full file
+4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — **layers {layers}** + §5 maturity
 5. `docs/audit/README.md` — shared production Harness checklist (**mandatory**)
 {appendix_block}
 ---
