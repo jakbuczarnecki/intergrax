@@ -32,21 +32,23 @@ DOMAIN_ORDER: tuple[str, ...] = (
     "TIER3_APPLICATION_ENVIRONMENT",
 )
 
-RESULTS_ROOT = REPO_ROOT / "docs" / "guides" / "audit" / "results"
-AUDIT_GUIDES = REPO_ROOT / "docs" / "guides" / "audit"
+RESULTS_ROOT = REPO_ROOT / "docs" / "audit_results"
+AUDIT_GUIDES = REPO_ROOT / "docs" / "audit"
 
 ORCHESTRATOR_BY_MODE: dict[str, str] = {
-    "audit_only": "docs/guides/audit/ORCHESTRATOR.md",
-    "implement_plan": "docs/guides/audit/IMPLEMENT_ORCHESTRATOR.md",
-    "layer_completion": "docs/guides/audit/LAYER_COMPLETION_ORCHESTRATOR.md",
+    "audit_only": "docs/audit/ORCHESTRATOR.md",
+    "implement_plan": "docs/audit/IMPLEMENT_ORCHESTRATOR.md",
+    "layer_completion": "docs/audit/LAYER_COMPLETION_ORCHESTRATOR.md",
+    "idea_audit": "docs/audit/IDEA_AUDIT_ORCHESTRATOR.md",
 }
 
 BOOTSTRAP_BY_MODE: dict[str, str] = {
-    "audit_only": "docs/guides/audit/bootstrap/01_audit_all_domains.txt",
-    "audit_one": "docs/guides/audit/bootstrap/02_audit_one_domain.txt",
-    "implement_plan": "docs/guides/audit/bootstrap/03_implement_plan_all_domains.txt",
-    "implement_one": "docs/guides/audit/bootstrap/04_implement_plan_one_domain.txt",
-    "layer_completion": "docs/guides/audit/bootstrap/05_closeout_all_domains.txt",
+    "audit_only": "docs/bootstrap/01_audit_all_domains.txt",
+    "audit_one": "docs/bootstrap/02_audit_one_domain.txt",
+    "implement_plan": "docs/bootstrap/03_implement_plan_all_domains.txt",
+    "implement_one": "docs/bootstrap/04_implement_plan_one_domain.txt",
+    "layer_completion": "docs/bootstrap/05_closeout_all_domains.txt",
+    "idea_audit": "docs/bootstrap/idea_audit.txt",
 }
 
 
@@ -82,7 +84,7 @@ def build_progress_template(
     order = (single_domain,) if single_domain else DOMAIN_ORDER
     for domain in order:
         entry = default_domain_state()
-        entry["result_md"] = f"docs/guides/audit/results/{run_id}/{domain}.md"
+        entry["result_md"] = f"docs/audit_results/{run_id}/{domain}.md"
         domains[domain] = entry
 
     return {
@@ -93,7 +95,7 @@ def build_progress_template(
         "canonical": ORCHESTRATOR_BY_MODE.get(orchestrator_key, ORCHESTRATOR_BY_MODE["audit_only"]),
         "bootstrap": resolve_bootstrap(orchestrator_key, single_domain),
         "run_id": run_id,
-        "results_dir": f"docs/guides/audit/results/{run_id}",
+        "results_dir": f"docs/audit_results/{run_id}",
         "started_at": run_id,
         "last_updated": run_id,
         "completed_at": None,

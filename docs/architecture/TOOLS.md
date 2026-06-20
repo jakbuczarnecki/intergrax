@@ -5,14 +5,14 @@
 **Plan (1:1):** [`plan/TOOLS.md`](../plan/TOOLS.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 11  
-**Audit instruction:** [`guides/audit/TOOLS.md`](../guides/audit/TOOLS.md)  
+**Audit instruction:** [`audit/TOOLS.md`](../audit/TOOLS.md)  
 ---
 
 ---
 
 # Intergrax Tool Library
 
-**Last updated:** 2026-06-12 (layer completion audit) — **48 bundles** · **190 catalog tools** · selection modes: [§Production strategies](#tool-selection-modes-production-strategies) · invocation patterns: [§Invocation patterns](#tool-invocation-patterns-production-orchestration) · engine audit: [§Production posture](#tool-engine-production-posture-2026-06-10) · [§Execution surfaces](#execution-surfaces-matrix) · completion sprints: [`plan/TOOLS.md`](../plan/TOOLS.md#layer-completion-sprints-2026-06-12)
+**Last updated:** 2026-06-19 (interactive audit revalidation) — **48 bundles** · **200 catalog tools** · selection modes: [§Production strategies](#tool-selection-modes-production-strategies) · invocation patterns: [§Invocation patterns](#tool-invocation-patterns-production-orchestration) · engine audit: [§Production posture](#tool-engine-production-posture-2026-06-10) · [§Execution surfaces](#execution-surfaces-matrix) · completion sprints: [`plan/TOOLS.md`](../plan/TOOLS.md#layer-completion-sprints-2026-06-12)
 
 The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](architecture/INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
 
@@ -131,7 +131,7 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T14–T17 Done**
 | `RuntimeToolInvoker` | `intergrax/runtime/nexus/tools/invoker.py` | **Done** — validation, trace, error mapping |
 | `RuntimeToolGateway` | `intergrax/runtime/nexus/tools/tool_gateway.py` | **Done** — capability aliases + registered catalog `tool_id` via `catalog_dispatch` (TOOL-ENG-2) |
 | `catalog_dispatch` | `intergrax/runtime/nexus/tools/catalog_dispatch.py` | **Done** — per-id plan dispatch + gateway invoke (TOOL-ENG-1/2) |
-| `BoundToolGateway` | `intergrax/runtime/nexus/tools/uaep_tool_gateway.py` | **Partial** — sandbox + runtime-bound subset + delegates capability to `RuntimeToolGateway` |
+| `BoundToolGateway` | `intergrax/runtime/nexus/tools/uaep_tool_gateway.py` | **Done** — UAEP §42.12 facade: `sandbox.exec` + 18 runtime-bound ids; catalog `tool_id`s delegate to `RuntimeToolGateway` (ADR-TOOL-001 · TOOL-ENG-2) |
 | `CatalogToolPlanner` (LLM planner) | `intergrax/runtime/nexus/tools/catalog_tool_planner.py` | **Done** — OpenAI schema from registry via `ToolPlanningService` ([§Multi-tool execution](#multi-tool-execution-semantics)) |
 | `ToolPlanningService` | `intergrax/runtime/nexus/tools/tool_planning_service.py` | **Done** — native `generate_with_tools` or JSON fallback; `allowed_tool_ids` filter (TOOL-ENG-4) |
 | `tool_planner_input` | `intergrax/runtime/nexus/tools/tool_planner_input.py` | **Done** — `tools_context_scope` assembly (TOOL-ENG-11) |
@@ -257,7 +257,7 @@ ToolExecutionRequest(run_id, step_id, tool_id, input, idempotency_key)
     → ToolExecutionResult(success, output | error)
 ```
 
-`ToolRuntime.invoke_request(ToolRequest)` is the UAEP §42.12 surface; today it routes **capability aliases** and **runtime-bound** tools — not the full catalog (Phase LEG **Done** for boolean normalization; **TOOL-ENG** for catalog completion).
+`ToolRuntime.invoke_request(ToolRequest)` is the UAEP §42.12 surface; routes **sandbox**, **runtime-bound** ids, **capability aliases**, and **catalog `tool_id`s** via `BoundToolGateway` → `RuntimeToolGateway` (TOOL-ENG-2 **Done** · ADR-TOOL-001).
 
 ### Logging detail
 
@@ -297,7 +297,7 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 | **Standard selection** (full schema → LLM) | **Production** | `FullCatalogSelectionStrategy` + `ToolPlanningService` (TOOL-ENG-0/4/5) |
 | **Pre-filter selection** (keyword / skill / static) | **Production** | `ToolSelectionStrategy` — static, `skill_pack`, `retrieval_top_k` / `keyword_top_k` |
 | **Semantic tool index** | **Done** | `ToolCatalogEmbedder` + `SEMANTIC` mode (TOOL-ENG-13) |
-| **Hierarchical tool selection** | **Done v1** | Deterministic category→tool passes; LLM category pass deferred (ADR-TOOL-005) |
+| **Hierarchical tool selection** | **Done** | Deterministic category→tool passes; optional LLM category pass opt-in (`tool_selection_hierarchical_llm_pass`, TOOL-MAINT-01b) |
 | **`tool_ids` plan dispatch** | **Done** | `catalog_dispatch.invoke_catalog_tool_ids` (TOOL-ENG-1) |
 | **§42.12 gateway** | **Done** | Catalog `tool_id` → invoker (TOOL-ENG-2); runtime-bound + sandbox unchanged |
 | **`tool_scope_policy` wiring** | **Done** | `RuntimeToolInvoker` in `RuntimeContext.build()` (TOOL-ENG-3) |
@@ -745,7 +745,9 @@ Reuse Tier-0 `embedding_manager` — distinct from `rag.retrieve` document index
 
 **Definition:** Tools are organized in a **tree** (bundle → `category` → `tool_id`). The LLM traverses the tree in bounded passes: e.g. (1) pick `category=issue_tracker`, (2) receive schema for `jira.*` + `issues.*` only, (3) emit final `tool_call`.
 
-**Implementation today:** **Done v1** (TOOL-ENG-14 · ADR-TOOL-005). `ToolSelectionMode.HIERARCHICAL` → deterministic category rank → tool rank within branches (`hierarchical_tool_selector.py`). **LLM category schema pass** deferred to v2.
+**Implementation today:** **Done** (TOOL-ENG-14 · ADR-TOOL-005). `ToolSelectionMode.HIERARCHICAL` → deterministic category rank → tool rank within branches (`hierarchical_tool_selector.py`). **Optional LLM category pass (TOOL-MAINT-01b):** set `RuntimeConfig.tool_selection_hierarchical_llm_pass=True` — async resolver calls `rank_categories_with_llm` on Nexus hot path; default remains deterministic.
+
+**Audit revalidation (2026-06-19, TOOL-MAINT-DOC-01):** §6.1av TOOL-MAINT-01..04 confirmed · TOOL-MAINT-01b wired · catalog **200** tools · provider unit tests green · tool CI gates green.
 
 **Config:** `RuntimeConfig.tool_selection_max_hierarchy_passes` bounds category branches.
 
@@ -774,18 +776,18 @@ Reuse Tier-0 `embedding_manager` — distinct from `rag.retrieve` document index
 6. **Plan constraints** — `EnginePlan.tool_ids` intersected with strategy (TOOL-ENG-4 **Done**).
 7. **Reasoning prompts** — `tool_planner_prompt_id` via catalog bridge (TOOL-ENG-0 **Done**).
 
-### Scale roadmap (190-tool catalog)
+### Scale roadmap (200-tool catalog)
 
 | Capability | Status | Plan ID |
 |------------|--------|---------|
 | Keyword / skill pre-filter before LLM | **Done** | TOOL-ENG-5 |
 | Plan-constrained planner allow-list | **Done** | TOOL-ENG-4 |
 | Compact descriptions (`description_short`) | **Done** | Phase O |
-| Semantic tool vector index | **Planned** | TOOL-ENG-13 |
-| Hierarchical category traversal | **Planned** | TOOL-ENG-14 |
-| `retrieval_top_k` naming clarity (`keyword_top_k` alias) | **Planned** | TOOL-ENG-15 |
-| Selection strategy plugin registry | **Planned** | TOOL-ENG-26 |
-| Direct strategy instance on `RuntimeConfig` | **Planned** | TOOL-ENG-31 |
+| Semantic tool vector index | **Done** | TOOL-ENG-13 |
+| Hierarchical category traversal | **Done** | TOOL-ENG-14 · optional LLM pass TOOL-MAINT-01b |
+| `retrieval_top_k` naming clarity (`keyword_top_k` alias) | **Done** | TOOL-ENG-15 |
+| Selection strategy plugin registry | **Done** | TOOL-ENG-26 |
+| Direct strategy instance on `RuntimeConfig` | **Done** | TOOL-ENG-31 |
 | Risk-based routing (`ToolRiskLevel` → HITL) | **Done** | TOOL-ENG-7 — trace + enforce block |
 | AHI dynamic mode / subset | **Done** | TOOL-ENG-10 — `ToolEngineHook` + `recommend_tool_modes` |
 
@@ -1061,6 +1063,19 @@ ToolInvocationPlan(use_tools=True)            # ToolsStep → fresh LLM plan
 | Middleware after | `AFTER_TOOL_CALL` | Gateway |
 | HIGH+ verify gate | `run_post_tool_verify` | **Done** — trace + optional enforce block (**TOOL-ENG-7**) |
 | Semantic verify (L1 critic) | `eval.judge`, `eval.trajectory` | Adjacent CVL path — optional via `CriticProfile` |
+
+### Per-tool L1 critic trace contract (TOOL-MAINT-02)
+
+High-risk tool verification emits **`ToolVerifyRequiredDiagV1`** on trace step
+``tool_verify_required`` (`intergrax/runtime/nexus/tools/tool_verify_hooks.py`).
+Payload fields: ``tool_id``, ``risk_level``. This is the **L0/L1 boundary signal**
+before optional CVL semantic judges run on tool output.
+
+Cross-ref: [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) ·
+``CriticProfile.semantic_judge_enabled`` · ``eval.judge`` / ``eval.trajectory``.
+Gate scripts: ``check_tool_injection_defense.py`` · CVL gates in
+``check_reasoning_gates.py`` when critic hooks are enabled on the host.
+
 | Agent validate | `agent.validate` | UAEP final answer — not per-tool |
 
 ### `tools_mode=required`

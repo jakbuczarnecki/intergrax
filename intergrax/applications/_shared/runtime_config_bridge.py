@@ -14,6 +14,12 @@ from intergrax.applications._shared.integration_runtime_bridge import (
     apply_integration_profiles_from_environment,
 )
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+from intergrax.applications._shared.llm_routing_runtime_bridge import (
+    init_llm_routing_on_config,
+    make_config_routing_context_provider,
+    wire_secondary_llm_routing_evaluating,
+)
+from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
 from intergrax.applications._shared.rag_runtime_bridge import apply_rag_for_environment
 from intergrax.applications._shared.context_runtime_bridge import (
     apply_context_profiles_from_environment,
@@ -120,10 +126,14 @@ def materialize_runtime_config(
         if harness_ctx.integration_profile is not None:
             integration_profile = harness_ctx.integration_profile
 
-    resolved_llm = resolve_llm_adapter(env, agent_override=llm_adapter)
+    routing_context = build_routing_context_from_runtime(
+        tenant_id=request.tenant_id,
+        agent_id=str(request.metadata.get("agent_id", "")) or None,
+        metadata=request.metadata,
+    )
 
     config = RuntimeConfig(
-        llm_adapter=resolved_llm,
+        llm_adapter=None,
         enable_rag=ctx_profile.enable_rag,
         enable_websearch=ctx_profile.enable_websearch,
         production_mode=strict or env.execution_mode.value == "strict",
@@ -134,7 +144,18 @@ def materialize_runtime_config(
         tool_wiring_context=tool_wiring_context,
         runtime_policies=runtime_policies_for_execution_mode(env.execution_mode),
         integration_profile=integration_profile,
+        llm_routing_context=routing_context,
+        metadata={"run_id": str(request.metadata.get("run_id", request.session_id))},
     )
+    init_llm_routing_on_config(config, routing_context, request)
+    context_provider = make_config_routing_context_provider(config)
+    resolved_llm = resolve_llm_adapter(
+        env,
+        agent_override=llm_adapter,
+        routing_context=routing_context,
+        context_provider=context_provider,
+    )
+    config.llm_adapter = resolved_llm
     apply_memory_profile_to_runtime_config(config, env.memory_profile)
     apply_prompt_profiles_from_environment(config, env)
     apply_observability_profiles_from_environment(config, env)
@@ -195,6 +216,12 @@ def materialize_runtime_config(
     if isinstance(harness_ctx, ApplicationBuildContext) and harness_ctx.tool_wiring_context is not None:
         rag_wiring_context = harness_ctx.tool_wiring_context
     apply_rag_for_environment(config, env, tool_wiring_context=rag_wiring_context)
+    from intergrax.runtime.nexus.context.routing_snapshot_sync import (
+        wire_secondary_llm_routing_surfaces,
+    )
+
+    wire_secondary_llm_routing_surfaces(config)
+    wire_secondary_llm_routing_evaluating(config, env)
     return apply_policy_bundle_to_runtime_config(config, policy_bundle)
 
 

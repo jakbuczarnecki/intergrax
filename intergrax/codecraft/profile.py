@@ -9,6 +9,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from intergrax.llm_adapters.registry.profile import LLMProfile
+
 CraftMode = Literal["disabled", "dry_run", "assist_only", "supervised", "autonomous"]
 IsolationTier = Literal["local", "container", "cloud"]
 NetworkEgress = Literal["deny", "allowlist"]
@@ -46,6 +48,7 @@ class CodeCraftProfile(BaseModel):
     network_egress: NetworkEgress = "deny"
     promotion_schema_ref: str | None = None
     codegen_llm_profile_ref: str | None = None
+    codegen_llm_profile: LLMProfile | None = None
     require_hitl_before_exec: bool = False
     security_scan_before_exec: bool = False
 

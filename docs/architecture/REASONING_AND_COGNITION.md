@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_AND_COGNITION.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5  
 **Audit layers:** 7 (Reasoning, Planning and Cognition) · cross-ref 17 (Prompt Registry input)  
-**Audit instruction:** [`guides/audit/REASONING_AND_COGNITION.md`](../guides/audit/REASONING_AND_COGNITION.md)  
+**Audit instruction:** [`audit/REASONING_AND_COGNITION.md`](../audit/REASONING_AND_COGNITION.md)  
 ---
 
 ## Table of contents
@@ -589,6 +589,19 @@ Classify failures **before** orchestration retry logic conflates them:
 | **Decision record missing** | `COG-DECISION-GATE` | UAEP path skipped emit | Gate test fail | Fix AgentEngine path |
 
 **Shipped (COG-6.*):** `ReasoningFailureKind` enum on `plan_metadata`, task metadata, and `DECISION_EMITTED` payloads when planners fall back or policy blocks.
+
+**Canonical mapping (COG-MAINT-01)** — architecture §17 codes ↔ runtime enum:
+
+| §17 code | `ReasoningFailureKind` | Emit path |
+|----------|------------------------|-----------|
+| `COG-PLAN-PARSE` | `planner_parse_failed` | `nexus_plan_bridge.build_nexus_plan_unified` |
+| `COG-PLAN-VALID` | `planner_validation_failed` | `nexus_plan_bridge` agent roster validation |
+| `COG-POLICY-BLOCK` | `planner_policy_blocked` | `planning_runner` policy interrupt |
+| `COG-UNSUPPORTED` | `classifier_unsupported` | `RulesTaskClassifier` / rules path |
+| (classifier fallback) | `classifier_fallback` | `LlmTaskClassifier` parse fallback |
+| (generic planner fallback) | `planner_fallback` | engine planner → `TaskPlanner` |
+
+**Audit note (2026-06-19, COG-MAINT-DOC-01):** Mapping revalidated against `ReasoningFailureKind` enum; gates `check_reasoning_failure_taxonomy.py` and `check_reasoning_gates.py` (SYS-INV-22 plane separation) green; dynamic replan boundary proven in `tests/acceptance/agent_os/test_cog_maint_replan.py`.
 
 ---
 

@@ -17,6 +17,7 @@ from intergrax.codecraft.profile import CodeCraftProfile
 from intergrax.contracts.reasoning_profile import ReasoningProfile
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.llm_adapters.routing import LLMRoutingProfile
 from intergrax.runtime.modality.modality_profile import ModalityProfile
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry.profile import ToolProfile
@@ -120,9 +121,29 @@ class SecurityEnvelope(BaseModel):
                 retrieval_poisoning_defense_enabled=True,
                 tenant_security_verify_enabled=True,
                 immutable_audit_trail_enabled=True,
+                defense_bundle_ids=["harness.strict_injection"],
             ),
             compliance=ComplianceProfile(enabled=True),
             organizational_policy=org,
+        )
+
+    @classmethod
+    def production(
+        cls,
+        *,
+        org: OrganizationalPolicyEnvelope | None = None,
+    ) -> SecurityEnvelope:
+        """Production preset composing S1+S2+S3 security toggles (Phase SEC-BUNDLE-2)."""
+        base = cls.strict(org=org)
+        return base.model_copy(
+            update={
+                "application_security": base.application_security.model_copy(
+                    update={
+                        "encryption_enforcement_enabled": True,
+                        "require_secrets_store_for_encryption": True,
+                    },
+                ),
+            },
         )
 
 
@@ -135,6 +156,8 @@ class CapabilityBundle(BaseModel):
     tools: ToolProfile = Field(default_factory=ToolProfile)
     skills: SkillProfile = Field(default_factory=SkillProfile)
     llm: LLMProfile | None = None
+    llm_routing: LLMRoutingProfile | None = None
+    llm_routing_evaluating_secondary: bool = False
     modality: ModalityProfile | None = None
     prompt: PromptProfile = Field(default_factory=PromptProfile)
     context: ContextProfile = Field(default_factory=ContextProfile)

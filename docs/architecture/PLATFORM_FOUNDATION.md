@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/PLATFORM_FOUNDATION.md`](../plan/PLATFORM_FOUNDATION.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 1–2, 32  
-**Audit instruction:** [`guides/audit/PLATFORM_FOUNDATION.md`](../guides/audit/PLATFORM_FOUNDATION.md)  
+**Audit instruction:** [`audit/PLATFORM_FOUNDATION.md`](../audit/PLATFORM_FOUNDATION.md)  
 ---
 
 # 1.1 Documentation boundary (platform vs product)
@@ -1000,7 +1000,7 @@ Single source of truth: `ToolContract` in the catalog — not parallel schema de
 
 **Target architecture (Phase O.5+):** All agent-invokable platform capabilities — including today’s pipeline flags `use_rag`, `use_websearch`, and registered function tools — converge on **one mechanism**: named tools in `ToolRegistry`, invoked through `ToolRuntime`.
 
-**Current state (transitional):** Nexus still uses `ToolInvocationPlan` with boolean flags (`use_rag`, `use_websearch`, `use_tools`) that dispatch to dedicated pipeline steps (`rag.retrieve` (catalog), `websearch.query` (catalog), `run_bounded_tool_loop` / `ctx.invoke_tool`). This is **legacy dual-path** and MUST be migrated.
+**Current state (2026-06-19, PF-MAINT-LEG-02):** `ToolInvocationPlan` is **`tool_ids`-first** — legacy `use_rag` / `use_websearch` fields removed from the runtime bridge. Gateway payloads may still map deprecated boolean keys to catalog ids silently; `use_tools` remains for the bounded tool planner loop. Context steps (`run_rag_context`, `run_websearch_context`) dispatch when the corresponding catalog tool id is present in `tool_ids`.
 
 **Target state:**
 
@@ -1023,7 +1023,7 @@ Agent / planner
 **Migration rules:**
 
 1. **No new boolean capability flags** — new platform capabilities MUST ship as catalog tools with `ToolContract`.
-2. **`ToolInvocationPlan`** evolves to `planned_tools: Sequence[str]` (tool_ids) — boolean flags become deprecated aliases during transition.
+2. **`ToolInvocationPlan`** uses `tool_ids: Sequence[str]` as canonical — **Done** at runtime bridge (PF-MAINT-LEG-02); gateway payload booleans map to ids only.
 3. **`rag.retrieve` (catalog) / `websearch.query` (catalog)** become thin **compatibility shims** that delegate to `rag.retrieve` / `websearch.query` handlers until all callers migrate.
 4. **`LegalToolPlan` / engine plan models** replace `use_rag` / `use_websearch` with `tools: list[str]` (or structured `PlannedToolCall`).
 5. **Context injection tools:** `rag.retrieve` and `websearch.query` MAY declare `injects_context: true` so Nexus knows to merge results into LLM prompt context (replaces implicit step behavior) — see §22.1.

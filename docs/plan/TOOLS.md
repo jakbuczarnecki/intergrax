@@ -73,11 +73,11 @@ None detected in Tier-0 catalog handlers (no vendor SDK bypass). Tier-1 invoke p
 
 ## Layer completion final audit (2026-06-12)
 
-**Krok 5 — audyt końcowy** po S0–S8. Weryfikacja: dokumentacja ↔ implementacja ↔ plan ↔ CI.
+**Step 5 — final audit** after S0–S8. Verification: documentation ↔ implementation ↔ plan ↔ CI.
 
-### Wynik
+### Result
 
-| Obszar | Werdykt |
+| Area | Verdict |
 |--------|---------|
 | TOOL-ENG register (36/36) | **Closed** |
 | Tier-0 catalog (190 tools) | **L3 Production** |
@@ -85,18 +85,18 @@ None detected in Tier-0 catalog handlers (no vendor SDK bypass). Tier-1 invoke p
 | Tier-1 orchestration 2a | **L3** — 5 shipped patterns + chain + EP registry |
 | Tier-1 atomic invoke 2b | **L3** — dispatch, gateway, scope, idempotency |
 | Governance | **L3** — required-mode, HIGH+ block, tool_choice |
-| Dokumentacja architecture/plan | **Aligned** (post-final-audit sync) |
+| Architecture/plan documentation | **Aligned** (post-final-audit sync) |
 | Testy + CI | **Green** — see verification block below |
 
-### Świadomie odroczone (nie blokują zamknięcia warstwy)
+### Consciously deferred (does not block layer closeout)
 
-| Item | Uzasadnienie |
+| Item | Rationale |
 |------|--------------|
-| Hierarchical LLM category pass | ADR-TOOL-005 v1 — deterministic rank wystarcza na L3 |
-| L1 critic (`eval.judge`) per tool output | Osobny zakres CVL — opcjonalny via `CriticProfile` |
-| Pusta grupa EP w `pyproject.toml` | Loadery gotowe; host pakiety rejestrują strategie/wzorce |
+| Hierarchical LLM category pass | ADR-TOOL-005 v1 — deterministic rank sufficient for L3 |
+| L1 critic (`eval.judge`) per tool output | Separate CVL scope — optional via `CriticProfile` |
+| Empty EP group in `pyproject.toml` | Loaders ready; host packages register strategies/patterns |
 
-### Weryfikacja (2026-06-12)
+### Verification (2026-06-12)
 
 ```bash
 uv run pytest tests/unit/runtime/nexus/tools/ -q                    # 58 passed
@@ -108,7 +108,7 @@ python scripts/check_tool_injection_defense.py                     # OK
 python scripts/check_agent_registry_bypass.py                      # OK
 ```
 
-**Warstwa Tools:** **ukończona** wg Layer Completion Mode.
+**Tools layer:** **complete** per Layer Completion Mode.
 
 ---
 
@@ -955,6 +955,38 @@ TARGET (remaining TOOL-ENG):
 | TOOLS-LC-S3 | **Gate verification** | **Done** | High | 58 unit tests · 2 CI scripts |
 | TOOLS-LC-S4 | **Journal + progress tracker** | **Done** | High | `layer_completion_progress.json` mature |
 
-**Deferred P2–P4:** hierarchical LLM category pass · per-tool L1 critic (CVL) · host EP pattern packages
+**Deferred P2–P4:** per-tool L1 critic semantic judge (CVL optional) · cross-domain legacy planner cleanup (PF-MAINT-LEG-01 **Done**)
+
+### 6.1av Harness implementation queue — Tools audit maintenance (closed)
+
+**Source:** Layer 8 audit (2026-06-18) — `TOOLS` layer 11 · [`../audit_results/2026-06-18/TOOLS.md`](../audit_results/2026-06-18/TOOLS.md)  
+**Priority ladder:** **Band 1** (§6.1) — selection depth + DX hygiene; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **TOOL-MAINT-01** | Code | P2 | **Done** | ADR-TOOL-005 v2 — optional LLM category pass in `hierarchical_tool_selector.py` | Integration test; deterministic default preserved |
+| 2 | **TOOL-MAINT-02** | Docs/Trace | P2 | **Done** | Per-tool L1 critic output trace contract — cross-ref CVL; canon acceptance in TOOLS §critic hook | Trace payload documented; CVL gate references tool_id |
+| 3 | **TOOL-MAINT-03** | DX | P3 | **Done** | Host EP pattern packages — scaffold/docs for custom entry-point tool patterns | Scaffold or guide section; example host wiring |
+| 4 | **TOOL-MAINT-04** | DX | P3 | **Done** | Tool gate subset in `intergrax doctor` — `check_tool_injection_defense` + `check_legacy_tool_plan_booleans` | `intergrax doctor --ci` runs tool checks |
+
+**Suggested PR order:** none — §6.1av queue closed (2026-06-18).
+
+**Cross-domain (not TOOLS-owned):** PF-MAINT-LEG-01 — legacy `use_rag`/`use_websearch` planner schema — [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) **Done**.
+
+### 6.1aw Harness implementation queue — Tools audit maintenance (2026-06-19)
+
+**Source:** Interactive layer audit (2026-06-19) — `TOOLS` layer 11 · [`../audit_results/2026-06-19/TOOLS.md`](../audit_results/2026-06-19/TOOLS.md) (pending) · prior: [`../audit_results/2026-06-18/TOOLS.md`](../audit_results/2026-06-18/TOOLS.md)  
+**Priority ladder:** **Band 1** (§6.1) — wiring + test sync + doc hygiene; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **TOOL-MAINT-01b** | Code | P2 | **Done** | Wire `rank_categories_with_llm` opt-in on hierarchical hot path (`RuntimeConfig.tool_selection_hierarchical_llm_pass`) + async resolver + unit test | Mocked LLM test; deterministic default unchanged |
+| 2 | **TOOL-MAINT-TEST-01** | Test | P2 | **Done** | Sync catalog/bundle tests (200 tools, rag/notify/sandbox bundles) + codecraft cloud fallback + trace count | `pytest tests/unit/tools/providers/` green |
+| 3 | **TOOL-MAINT-DOC-01** | Docs | P3 | **Done** | Close §6.1av; sync architecture (200 tools, scale roadmap Done, LLM pass v2 note) | Canon matches code |
+| 4 | **TOOL-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `TOOLS.md` + `progress.json`; L3 verdict layer 11 |
+
+**Suggested PR order:** none — §6.1aw queue closed (2026-06-19).
 
 ---
+
+*End of Tools Implementation Plan.*

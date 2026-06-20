@@ -126,6 +126,10 @@ def build_runtime_bound_context(exec_ctx: RuntimeExecutionContext) -> ToolWiring
     budget: RunBudget | None = run_budget if isinstance(run_budget, RunBudget) else None
     cost_envelopes = exec_ctx.metadata.get("cost_envelopes", ())
     cost_quotas = exec_ctx.metadata.get("cost_quotas", ())
+    extras: dict[str, object] = {}
+    request = exec_ctx.request
+    if request is not None and request.metadata:
+        extras["task_metadata"] = dict(request.metadata)
     return ToolWiringContext(
         shadow_workspace=shadow,
         memory_view=exec_ctx.memory_view,
@@ -133,6 +137,7 @@ def build_runtime_bound_context(exec_ctx: RuntimeExecutionContext) -> ToolWiring
         run_budget=budget,
         cost_envelopes=tuple(cost_envelopes) if isinstance(cost_envelopes, (list, tuple)) else (),
         cost_quotas=tuple(cost_quotas) if isinstance(cost_quotas, (list, tuple)) else (),
+        extras=extras,
     )
 
 

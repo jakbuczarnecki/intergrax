@@ -185,6 +185,9 @@ jobs:
           && uv run python scripts/check_harness_security_wiring.py
           && uv run python scripts/check_harness_guardrail_wiring.py
           && uv run python scripts/check_harness_security_promote_gate.py
+          && uv run python scripts/check_harness_security_defense_plugins.py
+          && uv run python scripts/check_harness_encryption_policy.py
+          && uv run python scripts/check_harness_security_spine_signals.py
           && uv run python scripts/check_harness_cost_wiring.py
           && uv run python scripts/check_harness_evaluation_wiring.py
           && uv run intergrax doctor --ci
@@ -229,6 +232,9 @@ jobs:
 
       - name: Phase W-OPS operational evidence (nightly / full dispatch)
         run: uv run python scripts/phase_w_ops_evidence.py
+
+      - name: RAG load/soak nightly report (RAG-MAINT-02)
+        run: uv run python scripts/rag_load_soak_report.py
 
       - name: Export harness spec schemas
         run: uv run python scripts/export_harness_spec_schemas.py

@@ -1,0 +1,10 @@
+Harness Architecture Audit — Mode A1 (audit one domain pair, no implementation).
+DOMAIN=PLATFORM_FOUNDATION
+Canonical orchestrator: docs/audit/ORCHESTRATOR.md
+Skim: docs/guides/SYSTEM_INVARIANTS.md
+Progress: docs/audit_results/YYYY-MM-DD/progress.json (init: uv run python scripts/init_architecture_audit_run.py --date YYYY-MM-DD --mode audit_only --domain <DOMAIN>).
+Result: docs/audit_results/YYYY-MM-DD/<DOMAIN>.md from docs/audit/TEMPLATE_DOMAIN_RESULT.md
+Edit DOMAIN= line above to target basename (e.g. MEMORY, ORCHESTRATION).
+Per domain: read only docs/architecture/<DOMAIN>.md + docs/plan/<DOMAIN>.md + docs/audit/<DOMAIN>.md; execute audit prompt; classify P0–P4; write result file; sync P2–P4 to plan; P0/P1 rows only in plan — do not implement; update progress.json; report checkpoint.
+Rules: tier boundaries AGENTS.md; safety fuse on plan/architecture/ideal conflict; no code unless operator approves doc fix; commits only on request.
+Repository artifacts: English.

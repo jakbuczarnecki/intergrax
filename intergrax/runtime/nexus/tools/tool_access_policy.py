@@ -5,9 +5,13 @@ from __future__ import annotations
 
 from typing import Optional, Protocol, Sequence
 
-from intergrax.runtime.nexus.tools.tool_runtime import ToolInvocationPlan
-from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.runtime.modality.modality_profile import ModalityProfile, filter_tool_ids_by_modality_profile
+from intergrax.runtime.nexus.tools.tool_runtime import (
+    ToolInvocationPlan,
+    plan_includes_rag,
+    plan_includes_websearch,
+)
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.tools.unified.constants import (
     RAG_RETRIEVE_TOOL_ID,
     RAG_TOOL_ALIASES,
@@ -43,28 +47,30 @@ class ToolAccessPolicy:
         if allowed_tools is None:
             return normalized
 
-        allowed = set(allowed_tools)
-        use_rag = normalized.use_rag and ToolAccessPolicy._allows_rag(allowed)
-        use_websearch = normalized.use_websearch and ToolAccessPolicy._allows_websearch(allowed)
-        use_tools = normalized.use_tools and (len(allowed) > 0)
+        requested_rag = plan_includes_rag(normalized.tool_ids)
+        requested_websearch = plan_includes_websearch(normalized.tool_ids)
+        requested_tools = normalized.use_tools
 
         filtered_ids = tuple(
             tool_id
             for tool_id in normalized.tool_ids
             if ToolAccessPolicy.is_tool_allowed(tool_id, allowed_tools)
         )
+        filtered_has_rag = plan_includes_rag(filtered_ids)
+        filtered_has_websearch = plan_includes_websearch(filtered_ids)
+        use_tools = requested_tools and len(set(allowed_tools)) > 0
 
-        if normalized.use_rag and not use_rag:
+        if requested_rag and not filtered_has_rag:
             ToolAccessPolicy._emit_denied(
                 state,
                 message=f"RAG denied: {RAG_RETRIEVE_TOOL_ID!r} not in allowed_tools.",
             )
-        if normalized.use_websearch and not use_websearch:
+        if requested_websearch and not filtered_has_websearch:
             ToolAccessPolicy._emit_denied(
                 state,
                 message=f"Websearch denied: {WEBSEARCH_QUERY_TOOL_ID!r} not in allowed_tools.",
             )
-        if normalized.use_tools and not use_tools:
+        if requested_tools and not use_tools:
             ToolAccessPolicy._emit_denied(
                 state,
                 message="Tool invocation denied: agent allowed_tools is empty.",
@@ -77,8 +83,6 @@ class ToolAccessPolicy:
         }
         return ToolInvocationPlan(
             tool_ids=filtered_ids,
-            use_rag=use_rag,
-            use_websearch=use_websearch,
             use_tools=use_tools,
             tool_inputs=filtered_inputs,
         )
@@ -99,9 +103,7 @@ class ToolAccessPolicy:
         }
         return ToolInvocationPlan(
             tool_ids=filtered,
-            use_rag=normalized.use_rag and any(tool_id.startswith("rag.") for tool_id in filtered),
-            use_websearch=normalized.use_websearch,
-            use_tools=bool(filtered),
+            use_tools=normalized.use_tools,
             tool_inputs=filtered_inputs,
         )
 

@@ -124,4 +124,22 @@ def build_lab_environment_profile(
                 ),
             },
         )
+    from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+    from intergrax.llm_adapters.registry.profile import LLMProfile
+    from intergrax.llm_adapters.routing import (
+        BudgetBelowRule,
+        LLMRoutingProfile,
+        TaskClassInRule,
+    )
+
+    primary_llm = env.llm_profile or LLMProfile.lab()
+    local_llm = LLMProfile(provider=LLMProvider.VLLM, model="meta-llama/Llama-3.1-8B")
+    env.llm_routing_profile = LLMRoutingProfile(
+        default_profile=primary_llm,
+        allowed_profiles=(primary_llm, local_llm),
+        rules=(
+            TaskClassInRule(classes=("lab_routing",), profile=local_llm, priority=6),
+            BudgetBelowRule(threshold=0.25, profile=local_llm, priority=10),
+        ),
+    )
     return env

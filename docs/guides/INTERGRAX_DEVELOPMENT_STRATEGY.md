@@ -71,17 +71,17 @@ Intergrax is **not** a finished multi-tenant SaaS today (§4 canon). That remain
 Never implement automatically. Follow this order:
 
 ```text
-ANALIZA
-  → OCENA ARCHITEKTURY (zgodność z celem Harness AI)
-  → OCENA PLANU WDROŻENIA
-  → PROPOZYCJA USPRAWNIEŃ
-  → AKTUALIZACJA DOKUMENTACJI (strategia → kanon → plan)
-  → IMPLEMENTACJA
-  → WERYFIKACJA (gate + getattr audit where harness touched)
-  → WNIOSKI (+ implementation journal entry when a deliverable closed)
+ANALYSIS
+  → ARCHITECTURE REVIEW (Harness AI goal alignment)
+  → PLAN REVIEW
+  → IMPROVEMENT PROPOSAL
+  → DOCUMENTATION UPDATE (strategy → canon → plan)
+  → IMPLEMENTATION
+  → VERIFICATION (gate + getattr audit where harness touched)
+  → CONCLUSIONS (+ implementation journal entry when a deliverable closed)
 ```
 
-**WNIOSKI:** For completed implementations, record an English episode in [`guides/implementation-journal/`](implementation-journal/README.md) (prepend to `INDEX.md`; operator intent, `plan_ref`, impact) — narrative layer only; plan rows remain the status source of truth.
+**CONCLUSIONS:** For completed implementations, record an English episode in [`../implementation-journal/`](../implementation-journal/README.md) (prepend to `INDEX.md`; operator intent, `plan_ref`, impact) — narrative layer only; plan rows remain the status source of truth.
 
 Think as a **Harness AI architect** first, then as an engineer.
 

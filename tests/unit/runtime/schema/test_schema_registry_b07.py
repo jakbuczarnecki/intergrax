@@ -23,7 +23,12 @@ def test_runtime_schema_registry_contains_core_contracts():
 
 def test_validate_schema_version_accepts_known_versions():
     assert validate_schema_version("runtime_event", "runtime_event.v1") is True
-    assert validate_schema_version("runtime_event", "runtime_event.v2") is False
+    assert validate_schema_version("runtime_event", "runtime_event.v2") is True
+
+
+def test_runtime_event_v2_listed_as_preview_schema():
+    info = current_runtime_version()
+    assert "runtime_event.v2" in info.supported_schemas
 
 
 def test_current_runtime_version_lists_registered_schemas():

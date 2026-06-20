@@ -229,10 +229,50 @@ models:
     context_window_tokens: 32768
     provider_hints: [ollama]
 
-  # Self-hosted defaults
+  # Self-hosted defaults (vLLM / together / llama.cpp)
   - model_id: meta-llama/Llama-3.1-8B-Instruct
     context_window_tokens: 128000
+    supports_tools: true
     provider_hints: [vllm, together]
+  - model_id: meta-llama/Llama-3.1-70B-Instruct
+    context_window_tokens: 128000
+    supports_tools: true
+    provider_hints: [vllm, together]
+  - model_id: meta-llama/Llama-3.2-3B-Instruct
+    context_window_tokens: 128000
+    supports_tools: true
+    provider_hints: [vllm]
+  - model_id: meta-llama/Meta-Llama-3-8B-Instruct
+    context_window_tokens: 8192
+    supports_tools: true
+    provider_hints: [vllm]
+  - model_id: Qwen/Qwen2.5-7B-Instruct
+    context_window_tokens: 32768
+    supports_tools: true
+    provider_hints: [vllm]
+  - model_id: Qwen/Qwen2.5-0.5B-Instruct
+    context_window_tokens: 32768
+    supports_tools: true
+    provider_hints: [vllm]
+  - model_id: mistralai/Mistral-7B-Instruct-v0.3
+    context_window_tokens: 32768
+    supports_tools: true
+    provider_hints: [vllm]
+  - model_id: microsoft/Phi-3-mini-4k-instruct
+    context_window_tokens: 4096
+    supports_tools: true
+    provider_hints: [vllm]
+  - model_id: meta-llama/Llama-3.2-1B-Instruct
+    context_window_tokens: 128000
+    supports_tools: true
+    provider_hints: [llama_cpp, vllm]
+  - model_id: meta-llama/Llama-3.2-3B-Instruct
+    context_window_tokens: 128000
+    supports_tools: true
+    provider_hints: [llama_cpp, vllm]
+  - model_id: default
+    context_window_tokens: 8192
+    provider_hints: [llama_cpp, vllm]
   - model_id: gpt-3.5-turbo
     context_window_tokens: 16385
     provider_hints: [openai]

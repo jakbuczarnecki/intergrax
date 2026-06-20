@@ -22,7 +22,7 @@ from intergrax.applications._shared.security_wiring import (
     wire_application_security,
 )
 from intergrax.applications._shared.context_wiring import resolve_context_manager_from_environment
-from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
 from intergrax.applications._shared.orchestration_wiring import (
     OrchestrationWiringContext,
     resolve_nexus_task_classifier,
@@ -86,7 +86,7 @@ def build_nexus_loop_from_environment(
     if orch.retry_policy_name == "strict":
         retry_policy = RetryPolicy(max_retries=1)
 
-    producer_llm = resolve_llm_adapter(env, agent_override=llm_adapter)
+    producer_llm = resolve_environment_llm_adapter(env, agent_override=llm_adapter)
     planner_llm = resolve_planner_llm_adapter(env, producer_adapter=producer_llm)
     wiring_context = OrchestrationWiringContext(
         llm_adapter=producer_llm,
@@ -139,7 +139,7 @@ def build_nexus_loop_from_environment(
         planner_model_id=resolve_planner_model_id(env),
     )
     resolved_security = security_wiring or wire_application_security(env)
-    apply_application_security_wiring(loop, resolved_security)
+    apply_application_security_wiring(loop, resolved_security, env=env)
     resolved_guardrail = guardrail_wiring or wire_application_guardrail(env)
     apply_application_guardrail_wiring(loop, resolved_guardrail, env)
     if critic_wiring is not None:

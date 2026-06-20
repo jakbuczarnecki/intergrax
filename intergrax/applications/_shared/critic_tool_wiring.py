@@ -7,11 +7,12 @@ from __future__ import annotations
 from typing import Any
 
 from intergrax.applications._shared.critic_llm_resolver import resolve_critic_llm_adapter
-from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
 from intergrax.applications._shared.tool_wiring import ApplicationToolWiring
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.critic.eval_tool_client import CriticEvalToolClient
 from intergrax.runtime.critic.tool_registry_client import ToolRegistryCriticEvalClient
+from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 
@@ -26,10 +27,15 @@ def build_critic_tool_wiring_context(
     *,
     evaluation_registry: Any | None = None,
     trace_reader: Any | None = None,
+    runtime_config: RuntimeConfig | None = None,
 ) -> ToolWiringContext:
     """Clone tool wiring context with critic-specific LLM and eval bindings."""
-    producer = resolve_llm_adapter(env)
-    critic_llm = resolve_critic_llm_adapter(env, producer_adapter=producer)
+    producer = resolve_environment_llm_adapter(env)
+    critic_llm = resolve_critic_llm_adapter(
+        env,
+        producer_adapter=producer,
+        runtime_config=runtime_config,
+    )
     extras = dict(base_ctx.extras)
     extras["llm_adapter"] = critic_llm
     return ToolWiringContext(
@@ -90,6 +96,7 @@ def build_critic_eval_tool_client(
     *,
     evaluation_registry: Any | None = None,
     trace_reader: Any | None = None,
+    runtime_config: RuntimeConfig | None = None,
 ) -> CriticEvalToolClient | None:
     """Materialize L1 client when semantic or trajectory critics are enabled."""
     if not _critic_layers_enabled(env):
@@ -99,5 +106,6 @@ def build_critic_eval_tool_client(
         tool_wiring.wiring_context,
         evaluation_registry=evaluation_registry,
         trace_reader=trace_reader,
+        runtime_config=runtime_config,
     )
     return ToolRegistryCriticEvalClient(ctx)

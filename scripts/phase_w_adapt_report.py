@@ -245,7 +245,19 @@ def main() -> int:
         default=REPO_ROOT / "build" / "adaptive_harness" / "skill_stubs",
         help="Optional skill stub draft output directory",
     )
+    parser.add_argument(
+        "--fixture",
+        action="store_true",
+        help="Write CI fixture signal_trends.json with non-zero signals (AHI-MAINT-03)",
+    )
     args = parser.parse_args()
+
+    if args.fixture:
+        from intergrax.runtime.adaptive.signal_trends_fixture import export_signal_trends_fixture
+
+        out = export_signal_trends_fixture(args.output)
+        print(f"adaptive signal trends fixture written: {out}")
+        return 0
 
     if not args.skip_signals:
         db_path = args.db_path or default_signal_store_path(REPO_ROOT)

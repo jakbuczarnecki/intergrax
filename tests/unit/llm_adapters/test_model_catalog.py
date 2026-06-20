@@ -54,6 +54,20 @@ def test_resolve_prefix_rule() -> None:
     assert tokens == 200_000
 
 
+@pytest.mark.parametrize(
+    ("model_id", "expected_tokens"),
+    [
+        ("meta-llama/Llama-3.1-8B-Instruct", 128_000),
+        ("meta-llama/Llama-3.1-70B-Instruct", 128_000),
+        ("Qwen/Qwen2.5-7B-Instruct", 32_768),
+        ("mistralai/Mistral-7B-Instruct-v0.3", 32_768),
+    ],
+)
+def test_resolve_vllm_catalog_models(model_id: str, expected_tokens: int) -> None:
+    tokens = resolve_context_window_tokens(LLMProvider.VLLM, model_id)
+    assert tokens == expected_tokens
+
+
 def test_resolve_provider_default_for_unknown_openrouter_model() -> None:
     tokens = resolve_context_window_tokens(
         LLMProvider.OPENROUTER,

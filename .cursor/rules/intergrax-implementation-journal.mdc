@@ -1,25 +1,40 @@
 ---
-description: Persist completed implementation episodes to docs/guides/implementation-journal/
-globs: docs/guides/implementation-journal/**
+description: Milestone-only implementation journal — docs/implementation-journal/ (not every Cursor session)
+globs: docs/implementation-journal/**
 alwaysApply: false
 ---
 
 # Intergrax — Implementation Journal
 
-After every **completed implementation iteration** (Tier-0 `intergrax/`, Tier-1 `intergrax/runtime/`, Tier-2 `agents/`, Tier-3 `applications/`, shared `intergrax/applications/_shared/`), create a journal entry. Addition to chat summary — not a replacement for plan or architecture updates.
+**Milestone log only** — not a transcript of every completed iteration or Cursor chat.
 
-**Canon:** [`docs/guides/implementation-journal/README.md`](docs/guides/implementation-journal/README.md)  
-**Scaffold:** [`docs/guides/implementation-journal/entries/_TEMPLATE.md`](docs/guides/implementation-journal/entries/_TEMPLATE.md)
+**Canon:** [`docs/implementation-journal/README.md`](docs/implementation-journal/README.md)  
+**Scaffold:** [`docs/implementation-journal/entries/_TEMPLATE.md`](docs/implementation-journal/entries/_TEMPLATE.md)
 
 ## When to write
 
-Write when iteration is **complete** per `intergrax-iteration.mdc` (including journal in Completion criteria).
+Write **only** when a **milestone trigger** in README applies:
 
-**Skip:** brainstorming only, typos/formatting, audit-only with no delivery, operator says **no journal** (state skip rationale in chat).
+- layer / phase closeout (LCM, Full Harness LC, named phase **Done**),
+- ADR or significant architecture contract change,
+- cross-domain or program closeout (e.g. AUDIT-IDEAL band),
+- external validation (partner, production PoC, operational sign-off),
+- new harness or shipped agent/application capability,
+- operator explicitly requests a journal entry.
 
-## Path layout (mandatory)
+## Default skip (do not write)
 
-Full path: `docs/guides/implementation-journal/entries/YYYY-MM-DD/<scope>-<slug>.md`
+- routine single plan row (`*-MAINT-*`, gate fix, typo, docs-only),
+- plan registration after audit without code delivery,
+- Mode I idea audit,
+- ordinary PR that is not a milestone,
+- operator says **no journal**.
+
+When skipping: state **"no journal needed"** + one-line rationale in the chat summary. **Do not** create files or INDEX rows.
+
+## Path layout (mandatory when writing)
+
+Full path: `docs/implementation-journal/entries/YYYY-MM-DD/<scope>-<slug>.md`
 
 - **Date belongs in the folder**, not in the filename.
 - The only file allowed directly under `entries/` is `_TEMPLATE.md`.
@@ -32,19 +47,19 @@ Full path: `docs/guides/implementation-journal/entries/YYYY-MM-DD/<scope>-<slug>
 
 Do **not** mirror harness ADR filenames (`ADR-AREA-NNN.md` under a date folder) by prefixing journal slugs with `YYYY-MM-DD-`.
 
-## Required actions
+## Required actions (milestone only)
 
-1. Create day directory `entries/YYYY-MM-DD/` if missing; copy `_TEMPLATE.md` → `entries/YYYY-MM-DD/<scope>-<slug>.md` (date in folder only — **never** in the filename).
+1. Create day directory `entries/YYYY-MM-DD/` if missing; copy `_TEMPLATE.md` → `entries/YYYY-MM-DD/<scope>-<slug>.md`.
 2. **English only** in the journal file.
-3. Frontmatter: `id`, `date`, `tiers` (YAML list), `scope`, `plan_ref` (YAML list of formal IDs), `status: completed`, `commit`, `adr`.
+3. Frontmatter: `id`, `date`, `tiers`, `scope`, `plan_ref`, `status: completed`, `commit`, `adr`.
 4. Fill all sections; Operator request = **paraphrase**, not verbatim transcript.
-5. **Prepend** row to [`INDEX.md`](docs/guides/implementation-journal/INDEX.md) (newest first); link path `entries/YYYY-MM-DD/<scope>-<slug>.md`.
-6. Chat iteration summary: **Journal entry:** `entries/YYYY-MM-DD/<scope>-<slug>.md`.
-7. After the operator commits: set `commit:` in the entry frontmatter to the short hash (replace `pending`).
+5. **Prepend** row to [`INDEX.md`](docs/implementation-journal/INDEX.md) (newest first).
+6. Chat summary: **Journal entry:** `entries/YYYY-MM-DD/<scope>-<slug>.md`.
+7. After operator commits: set `commit:` to short hash (replace `pending`).
 
 ## ID assignment
 
-`IJ-YYYY-MM-DD-NNN` — `NNN` = max suffix for that date in INDEX + 1 (zero-padded, e.g. `008`).
+`IJ-YYYY-MM-DD-NNN` — `NNN` = max suffix for that date in INDEX + 1 (zero-padded).
 
 ## Scope → traceability
 
@@ -56,11 +71,9 @@ Do **not** mirror harness ADR filenames (`ADR-AREA-NNN.md` under a date folder) 
 | `applications/<pkg>/` | `tier-3` | `applications/<pkg>/ARCHITECTURE.md` |
 | `intergrax/applications/_shared/` | `tier-3` | Link shared module + consuming host(s) |
 
-Multi-tier PR: `tiers: [tier-2, tier-3]` — one entry.
-
 ## Content rules
 
 - Link plan rows, GAP-*, AUDIT-IDEAL-*, ADRs — **no** plan table duplication.
-- `plan_ref`: formal IDs only — row IDs (`M-RAG.23`, `TOOL-ENG-4`), `AUDIT-IDEAL-X.Y`, or named plan phases (`FAUDIT-32`, `M-RAG-DEPTH`); never free-text sentences.
+- `plan_ref`: formal IDs only.
 - `project impact` = capability gained, not file dump.
-- Run `python scripts/check_implementation_journal.py` before marking iteration complete.
+- Run `python scripts/check_implementation_journal.py` **only when** a new entry was added or INDEX was changed.

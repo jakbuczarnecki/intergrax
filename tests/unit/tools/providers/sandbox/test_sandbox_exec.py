@@ -66,7 +66,13 @@ def test_sandbox_exec_not_configured() -> None:
 def test_sandbox_tool_registered_in_catalog() -> None:
     register_default_tools()
     assert "sandbox.exec" in list_catalog_tool_ids()
-    assert get_bundle("sandbox").tool_ids == ("sandbox.exec",)
+    assert get_bundle("sandbox").tool_ids == (
+        "sandbox.exec",
+        "code.exec",
+        "script.run",
+        "browser.run",
+        "sandbox.list_operations",
+    )
 
 
 def test_sandbox_exec_via_runtime_invoker(sandbox_session: SandboxSession) -> None:

@@ -7,13 +7,17 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.runtime.nexus.config_types import ToolSelectionMode
 from intergrax.runtime.nexus.tools.catalog_dispatch import catalog_tool_ids
 from intergrax.runtime.nexus.tools.hierarchical_tool_selector import (
     rank_categories,
+    rank_categories_with_llm,
     select_tools_hierarchical,
 )
 from intergrax.runtime.nexus.tools.tool_catalog_embedder import ToolCatalogEmbedder
@@ -34,6 +38,8 @@ class ToolSelectionContext:
     top_k: int = 20
     max_hierarchy_passes: int = 2
     embedding_manager: BaseEmbeddingManager | None = None
+    hierarchical_llm_category_pass: bool = False
+    llm_adapter: LLMAdapter | None = None
 
 
 @runtime_checkable
@@ -126,6 +132,33 @@ class HierarchicalToolSelectionStrategy:
             top_k=ctx.top_k,
             max_category_passes=ctx.max_hierarchy_passes,
             allowed_tool_ids=ctx.plan_allowed_tool_ids,
+        )
+        self.last_tool_ids = selected
+        return selected
+
+    async def select_tool_ids_async(self, ctx: ToolSelectionContext) -> Sequence[str] | None:
+        """Optional LLM category pass when ``ctx.hierarchical_llm_category_pass`` is set."""
+        if ctx.hierarchical_llm_category_pass and ctx.llm_adapter is not None:
+            ranks = await rank_categories_with_llm(
+                ctx.registry,
+                ctx.query,
+                ctx.llm_adapter,
+                allowed_tool_ids=ctx.plan_allowed_tool_ids,
+            )
+        else:
+            ranks = rank_categories(
+                ctx.registry,
+                ctx.query,
+                allowed_tool_ids=ctx.plan_allowed_tool_ids,
+            )
+        self.last_categories = tuple(rank.category for rank in ranks[: ctx.max_hierarchy_passes])
+        selected = select_tools_hierarchical(
+            ctx.registry,
+            ctx.query,
+            top_k=ctx.top_k,
+            max_category_passes=ctx.max_hierarchy_passes,
+            allowed_tool_ids=ctx.plan_allowed_tool_ids,
+            category_ranks=ranks,
         )
         self.last_tool_ids = selected
         return selected
@@ -229,6 +262,35 @@ def resolve_planner_allowed_tool_ids(
         allowed = frozenset(strategy_ids)
         intersected = tuple(tool_id for tool_id in plan_ids if tool_id in allowed)
         return intersected
+
+    if plan_ids:
+        return plan_ids
+    return strategy_ids
+
+
+async def resolve_planner_allowed_tool_ids_async(
+    mode: ToolSelectionMode,
+    ctx: ToolSelectionContext,
+    *,
+    strategy_override: ToolSelectionStrategy | None = None,
+    entry_point_strategy_id: str | None = None,
+) -> Sequence[str] | None:
+    """Async resolver — enables optional hierarchical LLM category pass (TOOL-MAINT-01b)."""
+    strategy = resolve_selection_strategy(
+        mode,
+        ctx,
+        strategy_override=strategy_override,
+        entry_point_strategy_id=entry_point_strategy_id,
+    )
+    if isinstance(strategy, HierarchicalToolSelectionStrategy) and ctx.hierarchical_llm_category_pass:
+        strategy_ids = await strategy.select_tool_ids_async(ctx)
+    else:
+        strategy_ids = strategy.select_tool_ids(ctx)
+    plan_ids = tuple(catalog_tool_ids(ctx.plan_allowed_tool_ids or ()))
+
+    if plan_ids and strategy_ids is not None:
+        allowed = frozenset(strategy_ids)
+        return tuple(tool_id for tool_id in plan_ids if tool_id in allowed)
 
     if plan_ids:
         return plan_ids

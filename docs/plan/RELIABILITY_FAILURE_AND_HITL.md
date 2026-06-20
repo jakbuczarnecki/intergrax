@@ -143,4 +143,22 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 **Deferred P2–P4:** IDEAL-22.3–22.6 chaos/per-step retry · ResiliencePolicy HTTP product parity · durable async queue opt-in · M-LLM-X.4 failover (LLM domain)
 
+### 6.1av Harness implementation queue — Reliability audit maintenance (planned)
+
+**Source:** Layer 17 audit (2026-06-18) — `RELIABILITY_FAILURE_AND_HITL` layer 22 · [`../audit_results/2026-06-18/RELIABILITY_FAILURE_AND_HITL.md`](../audit_results/2026-06-18/RELIABILITY_FAILURE_AND_HITL.md)  
+**Priority ladder:** **Band 1** (§6.1) — IDEAL-L3 W2 depth + cross-domain wiring; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **REL-MAINT-01** | Code/Test | P2 | **Done** | IDEAL-22.3–22.6 — compensation + partial results + chaos harness + per-step retry depth | `test_rel_maint_depth.py`; cross-ref FLOW-MAINT-01 |
+| 2 | **REL-MAINT-02** | Code | P2 | **Done** | ResiliencePolicy HTTP surfaces on product hosts (beyond lab_stack) | `check_harness_resilience_policy.py` in verification bundle |
+| 3 | **REL-MAINT-03** | Cross-ref | P2 | **Done** | Durable async queue opt-in — cross-ref [`ORCH-MAINT-04`](ORCHESTRATION.md#61av-harness-implementation-queue--orchestration-audit-maintenance-planned) | REL architecture documents HITL/retry interaction |
+| 4 | **REL-MAINT-04** | Cross-ref | P2 | **Done** | M-LLM-X.4 profile failover — cross-ref [`LLM-MAINT-03`](LLM_ADAPTERS.md#61av-harness-implementation-queue--llm-adapters-audit-maintenance-planned) | Failover documented in REL architecture |
+
+**Suggested PR order:** REL-MAINT-01 → REL-MAINT-02 → REL-MAINT-03 → REL-MAINT-04.
+
+**Cross-domain:** FLOW-MAINT-01 · ORCH-MAINT-04 · LLM-MAINT-03.
+
 ---
+
+*End of Reliability, Failure Model, and HITL Implementation Plan.*

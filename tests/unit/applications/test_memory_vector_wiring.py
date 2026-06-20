@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock
+
 import pytest
 
 from intergrax.applications._shared.memory_vector_wiring import (
@@ -15,7 +17,8 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     MemoryProfile,
 )
-from intergrax.rag.bootstrap.rag_stack_bootstrap import create_default_rag_stack
+from intergrax.rag.bootstrap.rag_stack_bootstrap import RagStack
+from intergrax.rag.profiles.rag_profile import RagProfile
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -42,5 +45,12 @@ def test_assert_memory_vector_backend_unavailable_raises() -> None:
 def test_assert_memory_vector_backend_available_with_stack() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="mem.vec.ok")
     env.memory_profile = MemoryProfile(enable_long_term_memory=True)
-    stack = create_default_rag_stack()
+    stack = RagStack(
+        profile=RagProfile(),
+        vectorstore_manager=MagicMock(),
+        embedding_manager=MagicMock(),
+        retriever_manager=MagicMock(),
+        reranker_manager=MagicMock(),
+        retrieval_service=MagicMock(),
+    )
     assert_memory_vector_backend_available(env, stack)

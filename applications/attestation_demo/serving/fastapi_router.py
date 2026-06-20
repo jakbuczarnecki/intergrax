@@ -71,6 +71,17 @@ class AttestationPocRunService:
         result = await self.task_runner.run_task(task)
         resolved_run_id = result.run_id or run_id
         boundary_events = self.boundary_event_buffer.snapshot_for_run(resolved_run_id)
+        host_signed = any(event.get("signed") is True for event in boundary_events)
+        trust_model = {
+            "platform_signed": "true" if host_signed else "false",
+            "recommended_receipt_role": "host_attested" if host_signed else "client_observed",
+            "note": (
+                "Intergrax emits host-signed boundary facts when EBE-9 is enabled; "
+                "BoundaryAttest may add a separate client_observed wrapper after verification."
+                if host_signed
+                else "Intergrax emits unsigned boundary facts; partner signs receipts locally."
+            ),
+        }
         return AttestationPocRunResponseV1(
             task_id=result.task_id,
             run_id=resolved_run_id,
@@ -78,6 +89,7 @@ class AttestationPocRunService:
             answer=result.answer,
             agent_id=result.agent_id,
             boundary_events=boundary_events,
+            trust_model=trust_model,
             metadata=dict(result.metadata),
         )
 

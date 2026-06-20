@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/RELIABILITY_FAILURE_AND_HITL.md`](../plan/RELIABILITY_FAILURE_AND_HITL.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 22  
-**Audit instruction:** [`guides/audit/RELIABILITY_FAILURE_AND_HITL.md`](../guides/audit/RELIABILITY_FAILURE_AND_HITL.md)  
+**Audit instruction:** [`audit/RELIABILITY_FAILURE_AND_HITL.md`](../audit/RELIABILITY_FAILURE_AND_HITL.md)  
 **Last updated:** 2026-06-17 — **Full Harness LC** (re-validates REL-ADV); REL + HITL **Done**
 
 ---
@@ -201,6 +201,8 @@ ResiliencePolicy:
 ```
 
 **As-built (2026-06-09):** unified `ResiliencePolicy` on `ReliabilityProfile`; resolved via `policy_resolver` into `RetryEngine` and trace `RECOVERY_REBOOT`. **Tier-3 debt:** `apply_reliability_task_defaults` wired on **lab host only** — other hosts need profile enricher or H-APP-WIRING.1.
+
+**Cross-domain maintenance (§6.1av):** durable async queue opt-in — [`ORCH-MAINT-04`](../plan/ORCHESTRATION.md#61av-harness-implementation-queue--orchestration-audit-maintenance-planned) (REL-MAINT-03); LLM profile failover on retriable provider errors — [`LLM-MAINT-03`](../plan/LLM_ADAPTERS.md#61av-harness-implementation-queue--llm-adapters-audit-maintenance-planned) (REL-MAINT-04). Verification: `scripts/check_harness_resilience_policy.py`.
 
 ## 34.4 Recovery reboot semantics
 

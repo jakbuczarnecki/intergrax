@@ -812,7 +812,7 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 | **Scope** | Architecture §2 historical gaps + status; plan audit register; audit prompt regeneration |
 | **Goal** | Honest L3+ layer status — no false “open gap” list at doc open |
 | **DoD** | Architecture/plan/audit prompt aligned; closes GAP-CVL-10, CVL-BACKLOG-04 |
-| **Files** | `docs/architecture/CRITIC_VERIFICATION.md`, `docs/plan/CRITIC_VERIFICATION.md`, `scripts/generate_domain_audit_prompts.py`, `docs/guides/audit/CRITIC_VERIFICATION.md` |
+| **Files** | `docs/architecture/CRITIC_VERIFICATION.md`, `docs/plan/CRITIC_VERIFICATION.md`, `scripts/generate_domain_audit_prompts.py`, `docs/audit/CRITIC_VERIFICATION.md` |
 
 ## Sprint CVL-LC-2 — NexusEvalRunner semantic wiring (**Done** 2026-06-13)
 
@@ -859,9 +859,23 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 
 **Deferred P2–P4:** L4 adaptive critic thresholds (AHI) · FLOW-8 product host · LLM trajectory judge optional
 
----
+### 6.1av Harness implementation queue — Critic verification audit maintenance (planned)
 
-## 6. What to implement next
+**Source:** Layer 18 audit (2026-06-18) — `CRITIC_VERIFICATION` layer 25 · [`../audit_results/2026-06-18/CRITIC_VERIFICATION.md`](../audit_results/2026-06-18/CRITIC_VERIFICATION.md)  
+**Priority ladder:** **Band 1** (§6.1) — optional eval depth + cross-refs; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **CVL-MAINT-01** | Code | P3 | **Done** | Optional wire `eval.trajectory_judge` skill into default eval path (beyond heuristic `eval.trajectory`) | `trajectory_judge_path.py` + unit test; host/profile opt-in |
+| 2 | **CVL-MAINT-02** | Cross-ref | P4 | **Done** | L4 adaptive critic thresholds — cross-ref [`AHI-MAINT-*`](ADAPTIVE_HARNESS_INTELLIGENCE.md#61av-harness-implementation-queue--adaptive-harness-intelligence-audit-maintenance-planned) (**Frozen** until product gate) | AHI owns thresholds |
+| 3 | **CVL-MAINT-03** | Cross-ref | P4 | **Done** | FLOW-8 product reference host — cross-ref [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) §6.3 | No CVL-owned product host |
+| 4 | **CVL-MAINT-04** | Cross-ref | P2 | **Done** | Per-tool L1 critic output trace — cross-ref [`TOOL-MAINT-02`](TOOLS.md#61av-harness-implementation-queue--tools-audit-maintenance-planned) | Trace contract in TOOLS canon |
+
+**Suggested PR order:** CVL-MAINT-04 (doc cross-ref) → CVL-MAINT-01 → CVL-MAINT-02 → CVL-MAINT-03.
+
+**Note:** AUDIT-IDEAL-25.3 product release eval gate — **Done** (2026-06-18 revalidation).
+
+---
 
 **Default answer (infrastructure):** **[§6.1](#61-harness-platform-maintenance-default--band-1)** gate green on every PR — CRIT-V and OBS-BUS platform closeouts **Done**.
 

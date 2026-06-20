@@ -11,13 +11,14 @@ Introduce a Tier-0 **`ModelCatalog`** with deterministic **`resolve_context_wind
 ## Resolution order (deterministic)
 
 1. `LLMProfile.options["context_window_tokens"]` — operator override (wins always).
-2. `ModelCatalog` exact match on `model_id`.
-3. `ModelCatalog` prefix rules (`claude-*`, `gpt-*`, `gemini-*`, `anthropic.*`, `meta-llama/*`, …).
-4. Provider-family default from catalog (e.g. `claude_default: 200_000`).
-5. Safe conservative default per provider slug — emit **`ModelCatalogMissDiagV1`** once per model/run.
-6. **Deprecated (remove over M-LLM-X):** inline per-adapter `_CONTEXT_WINDOWS` dict lookups.
+2. `ModelCatalog` exact match on `model_id` — **no** catalog-miss diagnostic.
+3. `ModelCatalog` prefix rules (`claude-*`, `gpt-*`, `gemini-*`, `anthropic.*`, `meta-llama/*`, …) — emit **`ModelCatalogMissDiagV1`** with `resolution_tier=prefix_rule` once per model/run.
+4. Optional gateway metadata session merge when `fetch_gateway_metadata=True` — **no** miss when API returns a value; does not bypass steps 1–2.
+5. **Deprecated:** inline per-adapter `_CONTEXT_WINDOWS` dict lookups (legacy fallback only).
+6. Provider-family default from catalog (e.g. `openrouter: 128_000`) — emit miss with `resolution_tier=provider_default`.
+7. Global `fallback_default` from catalog YAML — emit miss with `resolution_tier=fallback_default`.
 
-Optional: gateway metadata fetch (OpenRouter `/models`) merges into session cache when `fetch_gateway_metadata=True` — does not bypass steps 1–2.
+**Amended (2026-06-19 · M-LLM-X.15):** catalog-miss diagnostics fire on **any non-exact** resolution tier (steps 3, 6, 7), not only on global fallback. Plane A trace step `llm_catalog_miss`, Prometheus `intergrax_llm_catalog_miss_total`, wired from `RuntimeState.configure_llm_tracker()` regardless of core adapter presence.
 
 ## ModelRecord (minimum)
 

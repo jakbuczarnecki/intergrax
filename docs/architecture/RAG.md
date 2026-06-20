@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/RAG.md`](../plan/RAG.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layer:** 14 (RAG and Retrieval)  
-**Audit instruction:** [`guides/audit/RAG.md`](../guides/audit/RAG.md)  
+**Audit instruction:** [`audit/RAG.md`](../audit/RAG.md)  
 **Related:** [`architecture/INTEGRATIONS.md`](INTEGRATIONS.md) (vector_store, document_parser, rerank_provider slugs) · [`architecture/MEMORY.md`](MEMORY.md) (Knowledge store vs LTM) · [`guides/AGENT_CREATION_GUIDE.md`](../guides/AGENT_CREATION_GUIDE.md) Appendix K §K.5  
 **Implementation:** `intergrax/rag/`  
 **Last architecture audit:** 2026-06-17 — **Full Harness LC** (re-validates M-RAG-ITERATION-III); **Architecturally Mature** · 2026-06-13 (iteration II Frozen) · 2026-06-12 (GraphRAG G1–G5)
@@ -70,50 +70,50 @@ Tier-3 IntegrationProfile + RagProfile
 
 ## Engine depth audit register (2026-06-10)
 
-Full findings from architecture + implementation review. **Category:** `gap` = missing capability · `niedoróbka` = implemented but incomplete · `niska jakość` = works but below prod bar · `niegotowość` = blocks prod class · `ograniczenie` = intentional design boundary.
+Full findings from architecture + implementation review. **Category:** `gap` = missing capability · `incomplete_wiring` = implemented but incomplete · `below_prod_bar` = works but below prod bar · `prod_blocker` = blocks prod class · `design_boundary` = intentional design boundary.
 
 | ID | Category | Finding | Severity | Plan | AUDIT-IDEAL |
 |----|----------|---------|----------|------|-------------|
-| GAP-RAG-01 | niedoróbka | ~~`RagProfile.query_expansion` / `INTERGRAX_RAG_QUERY_EXPANSION` not wired~~ — **closed M-RAG.23**: `query_expander_from_profile()` in bootstrap; deep tier → `multiquery` when `query_expansion != off` | **P0** | M-RAG.23 **Done** | 14.3 |
-| GAP-RAG-02 | niedoróbka | ~~`toc_vector_store` not passed in default bootstrap~~ — **closed M-RAG.24**: `hierarchical_bootstrap` + `RagStack.toc_vectorstore_manager` + retriever bootstrap | **P1** | M-RAG.24 **Done** | 14.4 |
-| GAP-RAG-03 | niedoróbka | ~~`IngestPipeline` bypasses `DualIndexStrategy`~~ — **closed M-RAG.24**: `IndexingManager` + `DualIndexStrategy` when `hierarchical_index_enabled` or `hierarchical` retriever | **P1** | M-RAG.24 **Done** | 14.4 |
-| GAP-RAG-04 | niegotowość | ~~Catalog `perform_rag_retrieve` had no poisoning filter~~ — **closed M-RAG.25**: mirrors `rag_step` when `security_profile.retrieval_poisoning_defense_enabled` | **P1** | M-RAG.25 **Done** | 14.5 |
-| GAP-RAG-05 | niegotowość | ~~Sync ingest loads full document into RAM with no size guard~~ — **closed M-RAG.26**: `sync_ingest_max_bytes` rejects oversized sync path; stream shard ingest remains workflow worker | **P1** | M-RAG.26 **Done** | 14.6 |
-| GAP-RAG-06 | niegotowość | ~~No Tier-0 async ingest job contract~~ — **closed M-RAG.26**: `rag.schedule_ingest_job` + idempotent `workflow_orchestrator` trigger | **P1** | M-RAG.26 **Done** | 14.6 |
-| GAP-RAG-07 | niedoróbka | ~~No soak gate or ops runbook~~ — **closed M-RAG.30**: `prod_slo.py` soak contract; gate unit tests; integration soak `-m vectorstore_soak`; INTEGRATIONS runbook; `pinecone`/`milvus`/`vespa` remain **beta** until ops soak passes | **P1** | M-RAG.30 **Done** | — |
-| GAP-RAG-08 | niedoróbka | ~~No OpenTelemetry spans on retrieve/ingest hot path~~ — **closed M-RAG.27**: `rag_spans.py` + `check_rag_otel_span_registry.py` | **P2** | M-RAG.27 **Done** | 14.7 |
-| GAP-RAG-09 | niska jakość | ~~RAG aggregated metrics opt-in~~ — **closed M-RAG.57**: metrics default follows OTel spine when env unset; explicit `INTERGRAX_RAG_METRICS_ENABLED=false` still disables | **P2** | M-RAG.57 **Done** | 14.7 |
-| GAP-RAG-10 | niedoróbka | ~~No retriever fallback chain~~ — **closed M-RAG.28**: `retriever_fallback_chain()` in `RetrieverEngine` | **P2** | M-RAG.28 **Done** | — |
-| GAP-RAG-11 | niska jakość | ~~No structured retrieval errors~~ — **closed M-RAG.28**: `RetrievalError` taxonomy + optional `RetrieverVectorCircuitBreaker` | **P2** | M-RAG.28 **Done** | — |
-| GAP-RAG-12 | niska jakość | ~~Asymmetric retry~~ — **closed M-RAG.28**: `RetrieverEngine.DEFAULT_MAX_RETRIES=2` | **P2** | M-RAG.28 **Done** | — |
-| GAP-RAG-13 | niedoróbka | ~~No formal `Citation` on engine output~~ — **closed M-RAG.29**: `retrieval/citation.py` + `RagCitationResult` | **P2** | M-RAG.29 **Done** | — |
-| GAP-RAG-14 | niedoróbka | ~~No embedding version policy~~ — **closed M-RAG.31**: warn on ingest, optional retrieve filter, reindex queue hook | **P2** | M-RAG.31 **Done** | — |
-| GAP-RAG-15 | ograniczenie | No autonomous MIME/size-based chunking or retriever selection — **Frozen** (M-RAG.58); owned by Tier-3 + [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md) | **P4** | M-RAG.58 **Frozen** | — |
-| GAP-RAG-16 | niska jakość | ~~Heuristic-only tier routing~~ — **closed M-RAG.32**: optional `llm_route_enabled` + `llm_tier_classifier.py` with heuristic fallback | **P2** | M-RAG.32 **Done** | — |
-| GAP-RAG-17 | niedoróbka | ~~`multiquery` not activated by `query_expansion`~~ — **closed M-RAG.23**: `effective_retriever(deep)` returns `multiquery` when expansion enabled | **P0** | M-RAG.23 **Done** | 14.3 |
-| GAP-RAG-18 | niegotowość | ~~No Tier-3 GraphRAG prod preset~~ — **closed M-RAG.33**: `production_graph_rag_profile()` requires `neo4j`; `production_rag_profile()` documented harness-only (in-memory graph) | **P1** | M-RAG.33 **Done** | — |
-| GAP-RAG-19 | niedoróbka | ~~No inter-iteration retriever switch or latency budget trace~~ — **closed M-RAG.34**: `agentic_iteration_retriever_ids`, `agentic_max_total_latency_ms`, per-iteration trace fields | **P2** | M-RAG.34 **Done** | — |
-| GAP-RAG-20 | niegotowość | ~~No cross-backend tenant isolation contract~~ — **closed M-RAG.35**: `tenant_isolation_contract.py` + gate tests per backend; live qdrant probe in integration soak | **P1** | M-RAG.35 **Done** | — |
-| GAP-RAG-21 | niegotowość | ~~No RAG load/soak gate~~ — **closed M-RAG.36**: `evaluation/load_soak.py` concurrent retrieve SLO + CI `rag-guard.yml` | **P2** | M-RAG.36 **Done** | — |
-| GAP-RAG-22 | niska jakość | ~~No semantic chunking ingest size guard~~ — **closed M-RAG.37**: `semantic_chunking_max_chars` + `semantic_chunking_size_exceeded` before chunk | **P2** | M-RAG.37 **Done** | — |
-| GAP-RAG-23 | niska jakość | ~~M-RAG.6 query expansion **Partial**~~ — **closed M-RAG.23**: M-RAG.6 **Done** | **P0** | M-RAG.23 **Done** | 14.3 |
-| GAP-RAG-24 | niedoróbka | ~~`create_rag_graph_store` hardcodes backends~~ — **closed M-RAG.38**: `RagGraphStoreBackend` registry in `graph/bootstrap/backend_registry.py` | **P0** | M-RAG.38 **Done** | — |
-| GAP-RAG-25 | niedoróbka | ~~memgraph/falkordb not wired~~ — **closed M-RAG.39**: `CypherRagGraphStore` + registry factories | **P1** | M-RAG.39 **Done** | — |
-| GAP-RAG-26 | niegotowość | ~~No graph lifecycle sync~~ — **closed M-RAG.40**: `unlink_chunks` / `purge_graph` + catalog delete/purge hooks | **P1** | M-RAG.40 **Done** | — |
-| GAP-RAG-27 | niegotowość | ~~No graph tenant isolation~~ — **closed M-RAG.41**: `graph/tenant/graph_isolation_contract.py` + tenant scope on stores | **P1** | M-RAG.41 **Done** | — |
-| GAP-RAG-28 | niska jakość | ~~`graph_rag` retriever beta~~ — **closed M-RAG.42**: metadata/chunk-linked entity seeds; **stable** | **P1** | M-RAG.42 **Done** | — |
-| GAP-RAG-29 | niedoróbka | ~~hybrid channel not fused~~ — **closed M-RAG.53**: vector+keyword+graph fusion via `graph_channel_fusion.py`; `channel_contributions` on trace | **P1** | M-RAG.53 **Done** | — |
-| GAP-RAG-30 | niedoróbka | ~~graph provenance not on trace~~ — **closed M-RAG.54**: `graph_provenance_records` + summary on `RetrievalTrace` | **P1** | M-RAG.54 **Done** | — |
-| GAP-RAG-31 | niegotowość | ~~No graph maintenance job~~ — **closed M-RAG.45**: `rag.schedule_graph_maintenance_job` + workflow contract | **P2** | M-RAG.45 **Done** | — |
-| GAP-RAG-32 | niedoróbka | ~~No GraphIndexer plugin registry~~ — **closed M-RAG.46**: `register_graph_indexer_plugin()` | **P2** | M-RAG.46 **Done** | — |
+| GAP-RAG-01 | incomplete_wiring | ~~`RagProfile.query_expansion` / `INTERGRAX_RAG_QUERY_EXPANSION` not wired~~ — **closed M-RAG.23**: `query_expander_from_profile()` in bootstrap; deep tier → `multiquery` when `query_expansion != off` | **P0** | M-RAG.23 **Done** | 14.3 |
+| GAP-RAG-02 | incomplete_wiring | ~~`toc_vector_store` not passed in default bootstrap~~ — **closed M-RAG.24**: `hierarchical_bootstrap` + `RagStack.toc_vectorstore_manager` + retriever bootstrap | **P1** | M-RAG.24 **Done** | 14.4 |
+| GAP-RAG-03 | incomplete_wiring | ~~`IngestPipeline` bypasses `DualIndexStrategy`~~ — **closed M-RAG.24**: `IndexingManager` + `DualIndexStrategy` when `hierarchical_index_enabled` or `hierarchical` retriever | **P1** | M-RAG.24 **Done** | 14.4 |
+| GAP-RAG-04 | prod_blocker | ~~Catalog `perform_rag_retrieve` had no poisoning filter~~ — **closed M-RAG.25**: mirrors `rag_step` when `security_profile.retrieval_poisoning_defense_enabled` | **P1** | M-RAG.25 **Done** | 14.5 |
+| GAP-RAG-05 | prod_blocker | ~~Sync ingest loads full document into RAM with no size guard~~ — **closed M-RAG.26**: `sync_ingest_max_bytes` rejects oversized sync path; stream shard ingest remains workflow worker | **P1** | M-RAG.26 **Done** | 14.6 |
+| GAP-RAG-06 | prod_blocker | ~~No Tier-0 async ingest job contract~~ — **closed M-RAG.26**: `rag.schedule_ingest_job` + idempotent `workflow_orchestrator` trigger | **P1** | M-RAG.26 **Done** | 14.6 |
+| GAP-RAG-07 | incomplete_wiring | ~~No soak gate or ops runbook~~ — **closed M-RAG.30**: `prod_slo.py` soak contract; gate unit tests; integration soak `-m vectorstore_soak`; INTEGRATIONS runbook; `pinecone`/`milvus`/`vespa` remain **beta** until ops soak passes | **P1** | M-RAG.30 **Done** | — |
+| GAP-RAG-08 | incomplete_wiring | ~~No OpenTelemetry spans on retrieve/ingest hot path~~ — **closed M-RAG.27**: `rag_spans.py` + `check_rag_otel_span_registry.py` | **P2** | M-RAG.27 **Done** | 14.7 |
+| GAP-RAG-09 | below_prod_bar | ~~RAG aggregated metrics opt-in~~ — **closed M-RAG.57**: metrics default follows OTel spine when env unset; explicit `INTERGRAX_RAG_METRICS_ENABLED=false` still disables | **P2** | M-RAG.57 **Done** | 14.7 |
+| GAP-RAG-10 | incomplete_wiring | ~~No retriever fallback chain~~ — **closed M-RAG.28**: `retriever_fallback_chain()` in `RetrieverEngine` | **P2** | M-RAG.28 **Done** | — |
+| GAP-RAG-11 | below_prod_bar | ~~No structured retrieval errors~~ — **closed M-RAG.28**: `RetrievalError` taxonomy + optional `RetrieverVectorCircuitBreaker` | **P2** | M-RAG.28 **Done** | — |
+| GAP-RAG-12 | below_prod_bar | ~~Asymmetric retry~~ — **closed M-RAG.28**: `RetrieverEngine.DEFAULT_MAX_RETRIES=2` | **P2** | M-RAG.28 **Done** | — |
+| GAP-RAG-13 | incomplete_wiring | ~~No formal `Citation` on engine output~~ — **closed M-RAG.29**: `retrieval/citation.py` + `RagCitationResult` | **P2** | M-RAG.29 **Done** | — |
+| GAP-RAG-14 | incomplete_wiring | ~~No embedding version policy~~ — **closed M-RAG.31**: warn on ingest, optional retrieve filter, reindex queue hook | **P2** | M-RAG.31 **Done** | — |
+| GAP-RAG-15 | design_boundary | No autonomous MIME/size-based chunking or retriever selection — **Frozen** (M-RAG.58); owner: [`AHI-MAINT-04`](../plan/ADAPTIVE_HARNESS_INTELLIGENCE.md#61av-harness-implementation-queue--adaptive-harness-intelligence-audit-maintenance-planned) | **P4** | M-RAG.58 **Frozen** | — |
+| GAP-RAG-16 | below_prod_bar | ~~Heuristic-only tier routing~~ — **closed M-RAG.32**: optional `llm_route_enabled` + `llm_tier_classifier.py` with heuristic fallback | **P2** | M-RAG.32 **Done** | — |
+| GAP-RAG-17 | incomplete_wiring | ~~`multiquery` not activated by `query_expansion`~~ — **closed M-RAG.23**: `effective_retriever(deep)` returns `multiquery` when expansion enabled | **P0** | M-RAG.23 **Done** | 14.3 |
+| GAP-RAG-18 | prod_blocker | ~~No Tier-3 GraphRAG prod preset~~ — **closed M-RAG.33**: `production_graph_rag_profile()` requires `neo4j`; `production_rag_profile()` documented harness-only (in-memory graph) | **P1** | M-RAG.33 **Done** | — |
+| GAP-RAG-19 | incomplete_wiring | ~~No inter-iteration retriever switch or latency budget trace~~ — **closed M-RAG.34**: `agentic_iteration_retriever_ids`, `agentic_max_total_latency_ms`, per-iteration trace fields | **P2** | M-RAG.34 **Done** | — |
+| GAP-RAG-20 | prod_blocker | ~~No cross-backend tenant isolation contract~~ — **closed M-RAG.35**: `tenant_isolation_contract.py` + gate tests per backend; live qdrant probe in integration soak | **P1** | M-RAG.35 **Done** | — |
+| GAP-RAG-21 | prod_blocker | ~~No RAG load/soak gate~~ — **closed M-RAG.36**: `evaluation/load_soak.py` concurrent retrieve SLO + CI `rag-guard.yml` | **P2** | M-RAG.36 **Done** | — |
+| GAP-RAG-22 | below_prod_bar | ~~No semantic chunking ingest size guard~~ — **closed M-RAG.37**: `semantic_chunking_max_chars` + `semantic_chunking_size_exceeded` before chunk | **P2** | M-RAG.37 **Done** | — |
+| GAP-RAG-23 | below_prod_bar | ~~M-RAG.6 query expansion **Partial**~~ — **closed M-RAG.23**: M-RAG.6 **Done** | **P0** | M-RAG.23 **Done** | 14.3 |
+| GAP-RAG-24 | incomplete_wiring | ~~`create_rag_graph_store` hardcodes backends~~ — **closed M-RAG.38**: `RagGraphStoreBackend` registry in `graph/bootstrap/backend_registry.py` | **P0** | M-RAG.38 **Done** | — |
+| GAP-RAG-25 | incomplete_wiring | ~~memgraph/falkordb not wired~~ — **closed M-RAG.39**: `CypherRagGraphStore` + registry factories | **P1** | M-RAG.39 **Done** | — |
+| GAP-RAG-26 | prod_blocker | ~~No graph lifecycle sync~~ — **closed M-RAG.40**: `unlink_chunks` / `purge_graph` + catalog delete/purge hooks | **P1** | M-RAG.40 **Done** | — |
+| GAP-RAG-27 | prod_blocker | ~~No graph tenant isolation~~ — **closed M-RAG.41**: `graph/tenant/graph_isolation_contract.py` + tenant scope on stores | **P1** | M-RAG.41 **Done** | — |
+| GAP-RAG-28 | below_prod_bar | ~~`graph_rag` retriever beta~~ — **closed M-RAG.42**: metadata/chunk-linked entity seeds; **stable** | **P1** | M-RAG.42 **Done** | — |
+| GAP-RAG-29 | incomplete_wiring | ~~hybrid channel not fused~~ — **closed M-RAG.53**: vector+keyword+graph fusion via `graph_channel_fusion.py`; `channel_contributions` on trace | **P1** | M-RAG.53 **Done** | — |
+| GAP-RAG-30 | incomplete_wiring | ~~graph provenance not on trace~~ — **closed M-RAG.54**: `graph_provenance_records` + summary on `RetrievalTrace` | **P1** | M-RAG.54 **Done** | — |
+| GAP-RAG-31 | prod_blocker | ~~No graph maintenance job~~ — **closed M-RAG.45**: `rag.schedule_graph_maintenance_job` + workflow contract | **P2** | M-RAG.45 **Done** | — |
+| GAP-RAG-32 | incomplete_wiring | ~~No GraphIndexer plugin registry~~ — **closed M-RAG.46**: `register_graph_indexer_plugin()` | **P2** | M-RAG.46 **Done** | — |
 | GAP-RAG-33 | gap | ~~`graph_store` catalog lacks Neptune, OrientDB, ArangoDB~~ — **closed M-RAG.49–51** (TigerGraph/JanusGraph out of scope) | **P3** | M-RAG.49–51 **Done** | — |
-| GAP-RAG-34 | ograniczenie | No Microsoft GraphRAG vendoring — optional harness-native `community_report` indexer (M-RAG.47 **Done**, default off) | — | M-RAG.47 **Done** | — |
-| GAP-RAG-35 | niedoróbka | ~~prod slug list neo4j-only~~ — **closed M-RAG.48/55**: `APPROVED_PRODUCTION_GRAPH_STORE_SLUGS` (`neo4j`, `memgraph`, `falkordb`) | **P2** | M-RAG.48/55 **Done** | — |
-| GAP-RAG-35b | niedoróbka | ~~`falkordb` absent from prod slug list~~ — **closed M-RAG.55**: graph soak gate + `falkordb` in `APPROVED_PRODUCTION_GRAPH_STORE_SLUGS` | **P2** | M-RAG.55 **Done** | — |
-| GAP-RAG-09b | niska jakość | ~~RAG metrics opt-in vs OTel default-on~~ — **closed M-RAG.57**: metrics default follows `INTERGRAX_RAG_OTEL_SPANS_ENABLED` when unset | **P2** | M-RAG.57 **Done** | 14.7 |
-| GAP-RAG-07b | niedoróbka | ~~Beta vector slugs lack harness soak gate~~ — **closed M-RAG.56**: `run_beta_adapter_soak` + gate for pinecone/milvus/vespa | **P2** | M-RAG.56 **Done** | — |
-| GAP-RAG-39 | niedoróbka | ~~`rag.retrieve` diagnostics omit graph trace fields~~ — **closed M-RAG.60**: `channel_contributions`, `graph_provenance_records` on tool diagnostics | **P2** | M-RAG.60 **Done** | — |
-| GAP-RAG-40 | niedoróbka | ~~`STABLE_PROD_SLO_SLUGS` omits `lancedb`/`typesense`~~ — **closed M-RAG.61**: tuple aligned with stable manifests | **P3** | M-RAG.61 **Done** | — |
+| GAP-RAG-34 | design_boundary | No Microsoft GraphRAG vendoring — optional harness-native `community_report` indexer (M-RAG.47 **Done**, default off) | — | M-RAG.47 **Done** | — |
+| GAP-RAG-35 | incomplete_wiring | ~~prod slug list neo4j-only~~ — **closed M-RAG.48/55**: `APPROVED_PRODUCTION_GRAPH_STORE_SLUGS` (`neo4j`, `memgraph`, `falkordb`) | **P2** | M-RAG.48/55 **Done** | — |
+| GAP-RAG-35b | incomplete_wiring | ~~`falkordb` absent from prod slug list~~ — **closed M-RAG.55**: graph soak gate + `falkordb` in `APPROVED_PRODUCTION_GRAPH_STORE_SLUGS` | **P2** | M-RAG.55 **Done** | — |
+| GAP-RAG-09b | below_prod_bar | ~~RAG metrics opt-in vs OTel default-on~~ — **closed M-RAG.57**: metrics default follows `INTERGRAX_RAG_OTEL_SPANS_ENABLED` when unset | **P2** | M-RAG.57 **Done** | 14.7 |
+| GAP-RAG-07b | incomplete_wiring | ~~Beta vector slugs lack harness soak gate~~ — **closed M-RAG.56**: `run_beta_adapter_soak` + gate for pinecone/milvus/vespa | **P2** | M-RAG.56 **Done** | — |
+| GAP-RAG-39 | incomplete_wiring | ~~`rag.retrieve` diagnostics omit graph trace fields~~ — **closed M-RAG.60**: `channel_contributions`, `graph_provenance_records` on tool diagnostics | **P2** | M-RAG.60 **Done** | — |
+| GAP-RAG-40 | incomplete_wiring | ~~`STABLE_PROD_SLO_SLUGS` omits `lancedb`/`typesense`~~ — **closed M-RAG.61**: tuple aligned with stable manifests | **P3** | M-RAG.61 **Done** | — |
 
 **Traceability rule:** no open GAP-RAG row without a **Planned** M-RAG.\* deliverable in [`plan/RAG.md`](../plan/RAG.md). **GAP-RAG-15** and **GAP-RAG-34** are explicit architectural boundaries, not harness defects.
 
@@ -158,7 +158,7 @@ RETRIEVE (rag.retrieve / RetrievalService)
 | Rerankers | `rerankers/` | Registry + integration slugs (`cohere_rerank`, `jina_rerank`) |
 | Chunking | `document_splitters/` | `recursive`, `langchain_recursive`, `semantic`, `parent_child`, `docling` |
 | Loaders | `document_loaders/` | Handler registry + `ParserPipeline`; parsers via Integration catalog |
-| Embeddings | `embedding/` | Provider registry, batched pipeline, retry |
+| Embeddings | `embedding/` | Provider registry (`hf`, `openai`, `ollama`, `vllm`, `llama_cpp`), batched pipeline, retry |
 | Vector store | `vectorstore/` | Manager + hybrid/sparse; backends via Integration bridges |
 | GraphRAG | `graph/` | RAG `GraphStore` ABC; bootstrap backends; indexers; adapters to Integration `graph_store` |
 | Agentic | `retrieval/agentic_loop.py`, `query_refiner.py` | Budgeted deep-tier loop |

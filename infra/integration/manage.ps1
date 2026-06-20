@@ -6,7 +6,7 @@ param (
     [string]$Action,
 
     [Parameter(Position = 1)]
-    [ValidateSet("default", "minimal", "core", "queue", "rag", "data", "secrets", "observability", "cloud", "heavy", "p6", "all")]
+    [ValidateSet("default", "minimal", "core", "queue", "rag", "data", "secrets", "observability", "cloud", "heavy", "vllm", "llama-cpp", "p6", "all")]
     [string]$Profile = "default"
 )
 
@@ -20,7 +20,7 @@ if (-Not (Test-Path $ComposeFile)) {
 function Get-ProfileFlags {
     param ([string]$Name)
     switch ($Name) {
-        "all" { return @("--profile", "core", "--profile", "queue", "--profile", "rag", "--profile", "data", "--profile", "secrets", "--profile", "observability", "--profile", "cloud", "--profile", "heavy", "--profile", "all") }
+        "all" { return @("--profile", "core", "--profile", "queue", "--profile", "rag", "--profile", "data", "--profile", "secrets", "--profile", "observability", "--profile", "cloud", "--profile", "heavy", "--profile", "vllm", "--profile", "llama-cpp", "--profile", "all") }
         "default" { return @("--profile", "core", "--profile", "queue", "--profile", "rag", "--profile", "data", "--profile", "secrets") }
         "minimal" { return @("--profile", "core") }
         "p6" { return @("--profile", "core", "--profile", "p6") }

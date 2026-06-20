@@ -76,6 +76,11 @@ def main() -> int:
         ("check_architecture_debt_burn_down.py", ()),
         ("check_compliance_profile_wiring.py", ()),
         ("check_live_model_routing_wiring.py", ()),
+        ("check_llm_routing_rules.py", ()),
+        ("check_llm_routing_context_wiring.py", ()),
+        ("check_llm_profile_runtime.py", ()),
+        ("check_rag_hierarchical_bootstrap.py", ()),
+        ("check_rag_catalog_poisoning_defense.py", ()),
         ("check_tenant_fairness_quotas.py", ()),
         ("check_architecture_boundary_chaos.py", ()),
         ("check_plan_scorecard_sync.py", ()),
@@ -104,8 +109,8 @@ def main() -> int:
         exit_code = exit_code or _run(script, *extra)
     test_path = REPO_ROOT / "tests" / "unit" / "runtime" / "architecture" / "test_audit_ideal_depth_gate.py"
     for cmd in (
-        ["uv", "run", "pytest", str(test_path), "-q", "-m", "gate"],
-        [PYTHON, "-m", "pytest", str(test_path), "-q", "-m", "gate"],
+        ["uv", "run", "pytest", str(test_path), "-q", "-m", "gate and no_ci"],
+        [PYTHON, "-m", "pytest", str(test_path), "-q", "-m", "gate and no_ci"],
     ):
         completed = subprocess.run(cmd, cwd=REPO_ROOT, check=False)
         if completed.returncode == 0:

@@ -1,0 +1,38 @@
+# vLLM OpenAI-compatible embedding server.
+# Separate from chat vLLM — pooling runner exposes /v1/embeddings (vLLM 0.23+).
+# Host port 8101; wire RAG: INTERGRAX_DEFAULT_VLLM_EMBED_BASE_URL=http://127.0.0.1:8101/v1
+
+services:
+  vllm-embed:
+    image: vllm/vllm-openai:latest
+    container_name: intergrax-vllm-embed
+    ports:
+      - "8101:8000"
+    volumes:
+      - vllm_embed_cache:/root/.cache/huggingface
+    environment:
+      HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
+      VLLM_USE_V1: ${VLLM_USE_V1:-0}
+    shm_size: "2gb"
+    command:
+      - ${VLLM_EMBED_MODEL:-BAAI/bge-small-en-v1.5}
+      - --runner
+      - pooling
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --enforce-eager
+      - --gpu-memory-utilization
+      - "0.35"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  vllm_embed_cache:

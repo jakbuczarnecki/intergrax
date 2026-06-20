@@ -33,7 +33,7 @@ docs/adr/
       ADR-{AREA}-{NNN}.md
 ```
 
-Day folders group ADRs by **creation date** (same convention as the [implementation journal](../guides/implementation-journal/README.md)).
+Day folders group ADRs by **creation date** (same convention as the [implementation journal](../implementation-journal/README.md)).
 
 ## Naming
 
@@ -60,6 +60,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-ADAPT-001](entries/2026-06-05/ADR-ADAPT-001.md) | Adaptive Harness Intelligence over classical RL | Accepted |
 | [ADR-LLM-001](entries/2026-06-06/ADR-LLM-001.md) | Typed LLM adapter response envelope | Accepted |
 | [ADR-LLM-002](entries/2026-06-14/ADR-LLM-002.md) | Central ModelCatalog and context window resolution | Accepted |
+| [ADR-LLM-003](entries/2026-06-19/ADR-LLM-003.md) | LLM routing rules — Protocol contract and custom rule classes | Accepted |
 | [ADR-FLOW-001](entries/2026-06-07/ADR-FLOW-001.md) | Declarative delegation (`DELEGATES_TO`) expansion | Accepted · implemented |
 | [ADR-FLOW-002](entries/2026-06-07/ADR-FLOW-002.md) | Reserved lifecycle states | Accepted |
 | [ADR-FLOW-003](entries/2026-06-07/ADR-FLOW-003.md) | `MODIFY_PLAN` decision semantics | Accepted |
@@ -85,7 +86,10 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-TOOL-004](entries/2026-06-12/ADR-TOOL-004.md) | Semantic tool catalog index vs RAG; selection boundary (TOOL-ENG-13) | Accepted |
 | [ADR-TOOL-005](entries/2026-06-12/ADR-TOOL-005.md) | Hierarchical selection v1; strategy plugin surfaces (TOOL-ENG-14,26,31) | Accepted |
 | [ADR-OBS-002](entries/2026-06-13/ADR-OBS-002.md) | Unsigned Execution Boundary Export (EBE) — partner PoC side channel | Accepted |
+| [ADR-OBS-004](entries/2026-06-19/ADR-OBS-004.md) | EBE-9 host-side boundary event signing (Ed25519 statement) | Accepted |
 | [ADR-OBS-003](entries/2026-06-17/ADR-OBS-003.md) | Layered runtime event identity — spine + event_kind + EventCatalog | Accepted |
+| [ADR-MOD-001](entries/2026-06-19/ADR-MOD-001.md) | Speech provider slug identity via Integration Library (no enum) | Accepted |
+| [ADR-SEC-001](entries/2026-06-19/ADR-SEC-001.md) | Security & Trust Planes — S1/S2/S3 discipline and `intergrax.security_defenses` EP | Accepted |
 
 ---
 

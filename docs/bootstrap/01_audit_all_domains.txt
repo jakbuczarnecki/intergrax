@@ -1,0 +1,10 @@
+Harness Architecture Audit — Mode A (audit all 22 domain pairs, no implementation).
+Canonical orchestrator: docs/audit/ORCHESTRATOR.md
+Skim once per session: docs/guides/SYSTEM_INVARIANTS.md
+Progress: docs/audit_results/YYYY-MM-DD/progress.json (create via scripts/init_architecture_audit_run.py --date YYYY-MM-DD --mode audit_only, or on first run).
+Results: docs/audit_results/YYYY-MM-DD/<DOMAIN>.md from docs/audit/TEMPLATE_DOMAIN_RESULT.md
+Domain order (do not reorder): PLATFORM_FOUNDATION → UNIFIED_EXECUTION_RUNTIME → ORCHESTRATION → NEXUS_EXECUTION_FLOW → REASONING_AND_COGNITION → AGENT_CONTRACTS_AND_ASSEMBLY → LLM_ADAPTERS → TOOLS → CODE_CRAFT → SKILLS → INTEGRATIONS → RAG → MEMORY → CONTEXT_ENGINEERING → MODALITY → OBSERVABILITY → RELIABILITY_FAILURE_AND_HITL → CRITIC_VERIFICATION → ADAPTIVE_HARNESS_INTELLIGENCE → ELASTIC_CAPACITY_AND_SCALING → EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE → TIER3_APPLICATION_ENVIRONMENT.
+Per domain: read only docs/architecture/<DOMAIN>.md + docs/plan/<DOMAIN>.md + docs/audit/<DOMAIN>.md; execute audit prompt (inspect code, tests, CI gates); classify P0–P4; write result file; sync P2–P4 rows to plan (P0/P1 rows only — do not implement); update progress.json (status completed, verdict, p0_open, p1_open, plan_updated); brief checkpoint; continue to next domain.
+Rules: one domain pair = one atomic unit — finish fully before next; no micro-pauses inside a domain; continue between domains unless operator writes pause or stop; tier boundaries per AGENTS.md; safety fuse — plan/architecture/ideal conflict → STOP, set domain blocked; no code changes unless operator approves P0 doc fix; no Phase K / §6.3 without explicit reprioritization; commits only on operator request.
+When all domains completed: rollup RUN_SUMMARY.md; set completed_at and current_domain null; run uv run python scripts/check_architecture_audit_run.py YYYY-MM-DD --require-complete.
+Repository artifacts: English.

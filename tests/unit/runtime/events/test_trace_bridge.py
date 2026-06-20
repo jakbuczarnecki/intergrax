@@ -9,7 +9,13 @@ from intergrax.runtime.events.phase_coverage import phase_for_event
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event
 from intergrax.runtime.nexus.tracing.adapters.core_llm_call_recorded import CoreLLMCallRecordedDiagV1
-from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import LLMRoutingAttemptDiagV1
+from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import (
+    LLMRoutingAttemptDiagV1,
+    LLMRoutingRuleDiagV1,
+)
+from intergrax.runtime.nexus.tracing.adapters.model_catalog_miss import (
+    ModelCatalogMissTraceDiagV1,
+)
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceEvent, TraceLevel
 from intergrax.runtime.task.task import Task, TaskState
 
@@ -145,3 +151,77 @@ def test_trace_bridge_maps_llm_routing_attempt_schema() -> None:
     )
     assert event.event_type == RuntimeEventType.LLM_CALL
     assert event.payload["model"] == "gpt-4o"
+
+
+def test_trace_bridge_maps_llm_routing_rule_schema() -> None:
+    task = Task(
+        task_id="t1",
+        tenant_id="tenant",
+        user_id="user",
+        agent_id="agent",
+        message="q",
+    )
+    trace = TraceEvent(
+        event_id="llm-rule-1",
+        run_id="r1",
+        seq=6,
+        ts_utc="2026-06-19T10:00:00Z",
+        level=TraceLevel.INFO,
+        component=TraceComponent.ENGINE,
+        step="llm_routing_rule",
+        message="LLM routing rule evaluation recorded.",
+        tags={"task_id": "t1"},
+    )
+    payload = {
+        "matched_rule_id": "builtin.budget_below",
+        "routing_reason": "rule:builtin.budget_below",
+        "profile_id": "vllm:meta-llama/Llama-3.1-8B",
+        "provider": "vllm",
+        "model": "meta-llama/Llama-3.1-8B",
+        "policy_route_hint": None,
+    }
+    event = trace_event_to_runtime_event(
+        trace,
+        task,
+        payload_schema_id=LLMRoutingRuleDiagV1.schema_id(),
+        payload_dict=payload,
+    )
+    assert event.event_type == RuntimeEventType.LLM_CALL
+    assert event.payload["model"] == "meta-llama/Llama-3.1-8B"
+
+
+def test_trace_bridge_maps_llm_catalog_miss_schema() -> None:
+    task = Task(
+        task_id="t1",
+        tenant_id="tenant",
+        user_id="user",
+        agent_id="agent",
+        message="q",
+    )
+    trace = TraceEvent(
+        event_id="llm-miss-1",
+        run_id="r1",
+        seq=7,
+        ts_utc="2026-06-19T10:00:00Z",
+        level=TraceLevel.WARNING,
+        component=TraceComponent.ENGINE,
+        step="llm_catalog_miss",
+        message="Model catalog miss — conservative context window default applied.",
+        tags={"task_id": "t1"},
+    )
+    payload = {
+        "provider_slug": "openrouter",
+        "model_id": "vendor/unknown",
+        "resolved_tokens": 8192,
+        "resolution_tier": "fallback_default",
+        "run_id": "r1",
+    }
+    event = trace_event_to_runtime_event(
+        trace,
+        task,
+        payload_schema_id=ModelCatalogMissTraceDiagV1.schema_id(),
+        payload_dict=payload,
+    )
+    assert event.event_type == RuntimeEventType.LLM_CALL
+    assert event.payload["model"] == "vendor/unknown"
+    assert event.payload["resolution_tier"] == "fallback_default"

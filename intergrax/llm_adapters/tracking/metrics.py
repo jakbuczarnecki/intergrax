@@ -49,12 +49,20 @@ class _Counter:
     errors: int = 0
 
 
+@dataclass
+class _CatalogMissCounter:
+    count: int = 0
+
+
 class LLMMetricsCollector:
     """Thread-safe aggregator keyed by (tenant_id, provider, model)."""
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._by_key: DefaultDict[Tuple[str, str, str], _Counter] = defaultdict(_Counter)
+        self._catalog_miss_by_key: DefaultDict[Tuple[str, str, str, str], _CatalogMissCounter] = (
+            defaultdict(_CatalogMissCounter)
+        )
 
     def record(
         self,
@@ -80,6 +88,24 @@ class LLMMetricsCollector:
             c.duration_ms += int(duration_ms or 0)
             if not success:
                 c.errors += 1
+
+    def record_catalog_miss(
+        self,
+        *,
+        provider: str,
+        model: str,
+        resolution_tier: str,
+        tenant_id: Optional[str] = None,
+    ) -> None:
+        tenant = (tenant_id or get_llm_tenant_id() or "_platform").strip() or "_platform"
+        key = (
+            tenant,
+            provider or "unknown",
+            model or "unknown",
+            resolution_tier or "unknown",
+        )
+        with self._lock:
+            self._catalog_miss_by_key[key].count += 1
 
     def tenant_total_tokens(self, tenant_id: str) -> int:
         """Sum input+output tokens for one tenant across all providers/models."""
@@ -133,6 +159,12 @@ class LLMMetricsCollector:
                 lines.append(f"intergrax_llm_output_tokens_total{{{labels}}} {c.output_tokens}")
                 lines.append(f"intergrax_llm_duration_ms_total{{{labels}}} {c.duration_ms}")
                 lines.append(f"intergrax_llm_errors_total{{{labels}}} {c.errors}")
+            for (tenant, provider, model, tier), c in self._catalog_miss_by_key.items():
+                labels = (
+                    f'tenant_id="{tenant}",provider="{provider}",model="{model}",'
+                    f'resolution_tier="{tier}"'
+                )
+                lines.append(f"intergrax_llm_catalog_miss_total{{{labels}}} {c.count}")
         return lines
 
     def otlp_resource_metrics(self) -> Dict[str, Any]:
@@ -163,6 +195,19 @@ class LLMMetricsCollector:
                             "attributes": attrs,
                         }
                     )
+            for (tenant, provider, model, tier), c in self._catalog_miss_by_key.items():
+                metrics.append(
+                    {
+                        "name": "llm.catalog_miss",
+                        "sum": {"asInt": int(c.count)},
+                        "attributes": {
+                            "tenant_id": tenant,
+                            "provider": provider,
+                            "model": model,
+                            "resolution_tier": tier,
+                        },
+                    }
+                )
         return {
             "resourceMetrics": [
                 {
@@ -179,6 +224,7 @@ class LLMMetricsCollector:
     def reset(self) -> None:
         with self._lock:
             self._by_key.clear()
+            self._catalog_miss_by_key.clear()
 
 
 _collector = LLMMetricsCollector()
@@ -210,4 +256,21 @@ def record_llm_call(
         duration_ms=duration_ms,
         success=success,
         error_type=error_type,
+    )
+
+
+def record_catalog_miss(
+    *,
+    provider: str,
+    model: str,
+    resolution_tier: str,
+    tenant_id: Optional[str] = None,
+) -> None:
+    if not is_metrics_enabled():
+        return
+    _collector.record_catalog_miss(
+        provider=provider,
+        model=model,
+        resolution_tier=resolution_tier,
+        tenant_id=tenant_id,
     )

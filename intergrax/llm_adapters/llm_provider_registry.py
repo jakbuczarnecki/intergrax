@@ -152,6 +152,19 @@ class LLMAdapterRegistry:
                 f"{type(adapter)!r}, expected LLMAdapter"
             )
 
+        from intergrax.llm_adapters.registry.catalog_capabilities import (
+            enrich_adapter_with_catalog_capabilities,
+        )
+
+        from intergrax.utils import attribute_access
+
+        model_id = kwargs.get("model") or attribute_access.optional(adapter, "model", None)
+        adapter = enrich_adapter_with_catalog_capabilities(
+            adapter,
+            provider=key,
+            model=str(model_id) if model_id else None,
+        )
+
         adapter.validate()
         return adapter
 

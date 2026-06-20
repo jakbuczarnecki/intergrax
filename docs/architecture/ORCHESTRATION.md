@@ -5,7 +5,7 @@
 **Plan (1:1):** [`plan/ORCHESTRATION.md`](../plan/ORCHESTRATION.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** 3, 9 · multi-agent patterns: audit layer 10 (cross-ref §50)  
-**Audit instruction:** [`guides/audit/ORCHESTRATION.md`](../guides/audit/ORCHESTRATION.md)  
+**Audit instruction:** [`audit/ORCHESTRATION.md`](../audit/ORCHESTRATION.md)  
 **Reasoning / planning canon:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) (audit layer 7)  
 **Elastic capacity:** [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) (infra replicas — not graph scheduling)  
 ---
@@ -1009,7 +1009,7 @@ Cells describe **valid** platform configuration. ✅ = harness-proven · ⚠️ 
 | `A3` | optional trigger | rare | notify-only common | ✅ required | ✅ |
 | `A4` | ✅ interactive | ✅ | ⚠️ | ✅ background | ✅ |
 
-**Platform gap (ORCH-CONFIG.4 / H-APP-WIRING):** scaffold emits optional interaction + scheduler flags (`INCLUDE_INTERACTIONS`, `INCLUDE_SCHEDULER`), but **host adoption is inconsistent** — see §59.2 host matrix. Queue consumer (`QueuedNexusExecutionAdapter`) is harness-tested, not default on product hosts.
+**Platform gap (ORCH-CONFIG.4 / H-APP-WIRING):** scaffold emits optional interaction + scheduler flags (`INCLUDE_INTERACTIONS`, `INCLUDE_SCHEDULER`), but **host adoption is inconsistent** — see §59.2 host matrix. Queue consumer (`QueuedNexusExecutionAdapter`) is **lab scaffold-default** (`INCLUDE_QUEUE_WORKER=true` on `new-application` lab preset); product hosts remain **opt-in**.
 
 ## 56.7 Configuration case register (CFG-*)
 
@@ -1287,7 +1287,7 @@ Nexus MUST NOT block the global event loop on agent-internal polling — async a
 
 ## 57.5 Implementation coverage note (sync/async)
 
-§57 catalog is **architecturally complete**. **Exposure gap:** only `lab_application` mounts `harness_task_routes` (`run-async`, task status). Other hosts use blocking `POST …/run` only unless they add a custom queue worker. **Durable async** requires `QueuedNexusExecutionAdapter` + external broker — see §59.2.
+§57 catalog is **architecturally complete**. **Exposure:** `mount_harness_task_routes` (`run-async`, cancel, autonomy, resume) is mounted on lab and reference product hosts when `INCLUDE_TASK_CONTROL` is on (default on most shipped hosts) — see §59.2 matrix. **Durable async** uses `QueuedNexusExecutionAdapter` + broker plus `resolve_async_task_index()` for profile-backed SQLite/Redis index — see §59.2.
 
 **Plan:** [Phase ORCH-6](plan/ORCHESTRATION.md) (runtime Done) · [Phase H-APP-WIRING](plan/TIER3_APPLICATION_ENVIRONMENT.md) (product surfaces).
 
@@ -1329,7 +1329,7 @@ Cross-cutting platform capabilities span multiple domain pairs. Use this index w
 | **S6** Hybrid daemon | §3.1 | ✅ partial | no product E2E | ⚠️ LKW §6.3 incomplete |
 | **S7** HITL pause/resume | §3.1 | ✅ | acceptance 04, 05, 05b | ✅ runtime; resume HTTP lab-only |
 
-## 59.2 Tier-3 host wiring matrix (as-built 2026-06-09)
+## 59.2 Tier-3 host wiring matrix (as-built 2026-06-19)
 
 Honest surface parity across shipped `applications/*/host/factory.py`. ✅ = wired when flag/default on · ⚠️ = optional/off · ❌ = not mounted.
 
@@ -1345,7 +1345,7 @@ Honest surface parity across shipped `applications/*/host/factory.py`. ✅ = wir
 
 **Note:** `mount_harness_task_routes` (async/cancel/autonomy/resume) is opt-in per host via `INCLUDE_TASK_CONTROL` (default **on** on reference product hosts). Lab remains the full debug surface; product hosts may still use sync `/run` when task control is disabled.
 
-**Async queue:** `QueuedNexusExecutionAdapter` + Celery path is integration-tested (`test_unified_execution_entry_j3.py`); not scaffold-default for product hosts. `run_async` uses `InMemoryAsyncTaskIndex` on lab — **not durable production queue**.
+**Async queue:** `QueuedNexusExecutionAdapter` + Celery path is integration-tested (`test_unified_execution_entry_j3.py`). **Lab scaffold** (`new-application` lab preset) defaults `INCLUDE_QUEUE_WORKER=true`; **product hosts** keep queue worker **opt-in** (`{ENV_PREFIX}INCLUDE_QUEUE_WORKER`, default off). `run_async` task status is resolved via `resolve_async_task_index()` (`async_task_index_resolver.py`): **SQLite** (or Redis slug) for `ApplicationProfile.PRODUCT`, strict execution mode, or `features.durable_async_index_default`; **in-memory** for lab/dev unless `INTERGRAX_DURABLE_QUEUE=memory` override or integration profile sets `async_task_index_slug`.
 
 ## 59.3 CFG register — remaining gaps (honest)
 
@@ -1365,7 +1365,7 @@ CFG-01–13, 15–16, 18–19: **runtime Done** at harness + reference-host leve
 | `AutonomyLevel` | `autonomy_middleware` | `POST …/tasks/{id}/autonomy` | Lab + `INCLUDE_TASK_CONTROL` hosts |
 | Cooperative cancel | `ActiveTaskRegistry`, UAEP | `POST …/tasks/{id}/cancel` | Lab + `INCLUDE_TASK_CONTROL` hosts |
 | Checkpoint resume | `resume_planner`, scheduler | `POST …/tasks/{id}/resume` | Lab + task-control hosts; scheduler opt-in |
-| `run_async` | `async_task_dispatch` | `POST …/tasks/run-async` | Lab + task-control hosts; in-memory index |
+| `run_async` | `async_task_dispatch`, `async_task_index_resolver` | `POST …/tasks/run-async` | Lab + task-control hosts; durable index per profile (SQLite/Redis) or in-memory lab fallback |
 | MVP promotion / replay | `mvp_evolution` CLI | CLI | No Tier-3 router |
 
 ## 59.5 Documentation ↔ code discrepancies (resolved here)
@@ -1377,6 +1377,7 @@ CFG-01–13, 15–16, 18–19: **runtime Done** at harness + reference-host leve
 | FLOW-CTL | "unified cancel API" | Routes on lab host | §28.5 + §59.2 |
 | FLOW §12.1 Production-ready | "Partial" without cause | Missing strict profile + host wiring | §12.1 footnotes in FLOW |
 | §56.7 CFG-13/14 | ⚠️ | Mechanism exists; wiring debt | Unchanged status; §59.3 |
+| ORCH-DRIFT-01 | §59.2 "not scaffold-default" / lab-only in-memory | ORCH-MAINT-01/04 **Done** | §59.2 + §59.4 synced (2026-06-19) |
 
 ## 59.6 Recommended paydown order (harness queue)
 

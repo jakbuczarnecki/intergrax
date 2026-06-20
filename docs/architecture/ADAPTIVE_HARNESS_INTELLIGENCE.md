@@ -5,8 +5,18 @@
 **Plan (1:1):** [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../plan/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
 **Audit layers:** L4 AHI  
-**Audit instruction:** [`guides/audit/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../guides/audit/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
+**Audit instruction:** [`audit/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../audit/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
 **Last updated:** 2026-06-17 — **Full Harness LC** (re-validates W-ADAPT); **70/70 Done**
+
+### L4 Frozen cross-domain index (AHI-MAINT-04)
+
+| Item | Owner domain | Plan row | Notes |
+|------|--------------|----------|-------|
+| GAP-CTX-12 adaptive context ranking | AHI (Frozen) | AHI-MAINT-04 | No CE-owned auto-ranking |
+| M-RAG.58 / GAP-RAG-15 adaptive retriever selection | AHI (Frozen) | [`RAG-MAINT-04`](../plan/RAG.md#61av-harness-implementation-queue--rag-audit-maintenance-planned) | No RAG-owned implementation |
+| CVL L4 adaptive critic thresholds | AHI (Frozen) | CVL-MAINT-02 | Product gate before auto-apply |
+
+**Product gate (AHI-MAINT-01):** L4 threshold auto-apply requires explicit product decision — evidence bundle via `phase_w_adapt_report.py`.
 
 ---
 
@@ -668,7 +678,7 @@ Maps 1:1 to existing `AdaptiveLoopKind` enum.
 | **Proposes** | Shift routing weights; RAG `route_mode` thresholds |
 | **Default authority** | `RECOMMEND` → tenant opt-in `AUTO_WITH_HUMAN_GATE` |
 | **Max delta** | 10% traffic shift per proposal |
-| **Existing hook** | `QueryRouter`, LLM adapter selection |
+| **Existing hook** | `LLMRoutingEvaluator` + `ModelRouter` + `FailoverLLMAdapter` — see [`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) § LLM routing rules · [ADR-LLM-003](../adr/entries/2026-06-19/ADR-LLM-003.md). Persistent profile versions → **AHI-MAINT-06** / **M-LLM-X.10**. |
 
 ### 11.2 EXECUTION_STRATEGY_TUNING
 

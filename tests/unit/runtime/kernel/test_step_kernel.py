@@ -376,3 +376,26 @@ async def test_kernel_policy_post_denies_empty_terminal_output() -> None:
     assert record.error_code == AgentRunErrorCode.POLICY_DENIED
     assert record.policy_post is not None
     assert record.policy_post.action == PolicyAction.DENY
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_kernel_emits_single_step_completed_per_step() -> None:
+    from intergrax.runtime.events.runtime_event import RuntimeEventType
+
+    step_ctx = AgentStepContext(step_index=0)
+    kernel_ctx = StepKernelContext(
+        agent_id="demo",
+        run_id="run-step-completed",
+        policy_engine=PolicyEngine(),
+    )
+    outcome = StepOutcome.continue_with({"phase": "execute"})
+    await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
+
+    completed = [
+        event
+        for event in kernel_ctx.events
+        if event.event_type == RuntimeEventType.STEP_COMPLETED
+    ]
+    assert len(completed) == 1
+    assert completed[0].payload.get("step_index") == 0
