@@ -2,7 +2,7 @@
 
 **The implementation map** for this Tier-3 partner PoC host — phases, status, and verification.
 
-Status: **Done** (PoC v1 — ready for partner sharing)
+Status: **Done** (PoC v2 + EBE-9 — partner validated on `agent_experiment_runtime`)
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 Application ADRs: [`adr/README.md`](adr/README.md)
@@ -33,7 +33,7 @@ Application ADRs: [`adr/README.md`](adr/README.md)
 | EBE-6 | Platform OBSERVABILITY pair + harness ADR + partner handoff | **Done** | High | ADR-OBS-002, `partner_handoff/` |
 | EBE-7 | Webhook sink | Deferred | Low | Phase 2 |
 | EBE-8 | HarnessKernel step-level events (`harness_step`, `event_sequence`) | **Done** | High | `step_level_enabled`, partner v2 contract tests |
-| EBE-9 | Host-side event signing | Deferred | Low | Phase 2 |
+| EBE-9 | Host-side event signing (EBE-9) | **Done** (partner validated) | High | BoundaryAttest `61be9918` 39/39; Intergrax live `96b7f997` |
 
 ---
 
