@@ -189,8 +189,8 @@ Wave M-LLM-X-14 (enterprise domain):  M-LLM-X.14.2 → 14.1 → 14.4 → 14.3 �
 |---|-------------|--------|----------|------------------|------------|
 | M-LLM-X.2.1 | **`OpenRouterModelMetadataClient`** — optional `/models` fetch, TTL cache | **Done** | High | `registry/gateway_metadata/` | **M-LLM-X.14.2** · LLM-AUDIT-23 |
 | M-LLM-X.2.2 | **Merge gateway metadata into catalog session cache** | **Planned** | High | `model_catalog.py` | context from API when present |
-| M-LLM-X.2.3 | **`LLMProfile.options["fetch_gateway_metadata"]=True`** opt-in | **Planned** | Medium | `profile.py` | Default false (no network in unit gate) |
-| M-LLM-X.2.4 | **Diagnostic `ModelCatalogMissDiagV1`** when fallback default used | **Planned** | Medium | tracing | Trace on first miss per model/run |
+| M-LLM-X.2.3 | **`LLMProfile.options["fetch_gateway_metadata"]=True`** opt-in | **Done** | Medium | `gateway_metadata/session.py` | Default false (no network in unit gate) |
+| M-LLM-X.2.4 | **Diagnostic `ModelCatalogMissDiagV1`** when fallback default used | **Done** | Medium | `catalog_miss_diag.py` | Once per model/run |
 
 ---
 

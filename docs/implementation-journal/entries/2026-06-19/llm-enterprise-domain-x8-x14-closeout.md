@@ -24,7 +24,7 @@ plan_ref:
   - LLM-AUDIT-25
   - LLM-AUDIT-26
 status: completed
-commit: pending
+commit: 757cef34
 adr: none — extends ADR-LLM-002 gateway merge and registry slug validation; no new ADR
 ---
 
