@@ -8,6 +8,19 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (ORCHESTRATION plan).
+
+- **Implement / audit default:** Active `### 6.1*` queues with open P0/P1 · Phase AUDIT-IDEAL **Planned** rows. Closed ORCH-* registers — satellite only when re-validating
+- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
+- **Architecture hub:** [`architecture/ORCHESTRATION.md`](../architecture/ORCHESTRATION.md) read-scope block only.
+- **Audit slice:** [`guides/audit_slices/ORCHESTRATION.md`](../guides/audit_slices/ORCHESTRATION.md).
+- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+
+---
+
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
 
 **Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.4 · baseline **32/32 L3**  

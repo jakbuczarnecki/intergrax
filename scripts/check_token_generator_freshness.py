@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 GENERATORS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("scripts/generate_audit_read_slices.py", ("docs/guides/audit_slices",)),
     ("scripts/generate_architecture_read_scopes.py", ("docs/architecture",)),
+    ("scripts/generate_plan_read_scopes.py", ("docs/plan",)),
     ("scripts/generate_domain_audit_prompts.py", ("docs/audit",)),
 )
 

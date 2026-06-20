@@ -10,6 +10,19 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (SKILLS plan).
+
+- **Implement / audit default:** Hub §6 · [`plan/plan/`](plan/plan/) satellites on demand. **On demand (one max):** [`plan/plan/SKILLS_audit_history.md`](plan/plan/SKILLS_audit_history.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
+- **Architecture hub:** [`architecture/SKILLS.md`](../architecture/SKILLS.md) read-scope block only.
+- **Audit slice:** [`guides/audit_slices/SKILLS.md`](../guides/audit_slices/SKILLS.md).
+- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+
+---
+
 ## Satellite registers (read on demand)
 
 Large historical registers moved out of the hub to reduce Cursor context use.
@@ -19,7 +32,7 @@ Load **only** the satellite matching your task or cited gap ID.
 |-----------|----------|
 | [`plan/plan/SKILLS_audit_history.md`](plan/plan/SKILLS_audit_history.md) | audit history |
 
-> **Cursor context budget:** read this hub + **at most one** satellite per session.
+> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
 
 ---

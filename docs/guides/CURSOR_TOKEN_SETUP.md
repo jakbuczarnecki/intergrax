@@ -65,7 +65,10 @@ Satellites (`docs/plan/plan/`) are in `.cursorignore` — same explicit-load rul
 ```bash
 uv run python scripts/split_domain_plan.py [DOMAIN ...]
 uv run python scripts/check_plan_hub_size.py
+uv run python scripts/generate_plan_read_scopes.py
 ```
+
+Plan hubs include **Cursor read scope (token budget)** blocks (~150 tok) — read §6 / open queues only; same explicit-load rule as F4 arch read-scopes.
 
 ---
 
@@ -108,6 +111,16 @@ uv run python scripts/check_audit_token_discipline.py
 ```bash
 uv run python scripts/generate_architecture_read_scopes.py
 ```
+
+---
+
+## G1-E2 — Plan read scopes (all domains)
+
+```bash
+uv run python scripts/generate_plan_read_scopes.py
+```
+
+Plan hub read-scope blocks mirror architecture E2 — §6 / open P0/P1 queues only; at most one `plan/plan/` satellite per session.
 
 ---
 

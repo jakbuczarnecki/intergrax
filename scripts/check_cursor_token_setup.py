@@ -29,6 +29,9 @@ AGENT_INSTRUCTIONS = ROOT / "docs" / "guides" / "AGENT_INSTRUCTIONS.md"
 SYMBOL_INDEX = ROOT / "docs" / "guides" / "SYMBOL_INDEX.md"
 AGENTS_STUB = ROOT / "AGENTS.md"
 ITERATION_RULE = ROOT / ".cursor" / "rules" / "intergrax-iteration.mdc"
+PLAN_READ_SCOPE_MARKER = "## Cursor read scope (token budget)"
+PLAN_DIR = ROOT / "docs" / "plan"
+SKIP_PLAN_HUBS = frozenset({"AUDIT_IDEAL_2026.md", "IDEAL_HARNESS_L3.md"})
 
 SESSION_MARKER = "ONE_DOMAIN_ONE_CHAT"
 READ_BUDGET_MARKER = "READ_BUDGET"
@@ -99,6 +102,16 @@ def main() -> int:
         errors.append("intergrax-iteration.mdc must reference SYMBOL_INDEX.md (F5)")
     if O1_MARKER not in iteration or "terse default" not in iteration.lower():
         errors.append("intergrax-iteration.mdc must include O1 terse output policy")
+
+    plan_gen = ROOT / "scripts" / "generate_plan_read_scopes.py"
+    if not plan_gen.is_file():
+        errors.append("missing scripts/generate_plan_read_scopes.py (G1-E2)")
+    else:
+        for path in sorted(PLAN_DIR.glob("*.md")):
+            if path.name in SKIP_PLAN_HUBS:
+                continue
+            if PLAN_READ_SCOPE_MARKER not in path.read_text(encoding="utf-8"):
+                errors.append(f"{path.relative_to(ROOT)}: missing plan read-scope block (G1-E2)")
 
     agents_ref = ROOT / ".cursor" / "rules" / "intergrax-agents-reference.mdc"
     if agents_ref.is_file():

@@ -10,6 +10,19 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (RELIABILITY_FAILURE_AND_HITL plan).
+
+- **Implement / audit default:** §6.1 REL / HITL maintenance · open retry/HITL rows · closed reliability LC — satellite only
+- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
+- **Architecture hub:** [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](../architecture/RELIABILITY_FAILURE_AND_HITL.md) read-scope block only.
+- **Audit slice:** [`guides/audit_slices/RELIABILITY_FAILURE_AND_HITL.md`](../guides/audit_slices/RELIABILITY_FAILURE_AND_HITL.md).
+- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+
+---
+
 ## Architecture documentation (P2)
 
 | ID | Task | Status |

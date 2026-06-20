@@ -17,7 +17,7 @@
 | `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | §12–§21 Agent / registry / ACP |
 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | §17–§20 · §31 |
 | `docs/guides/SYSTEM_INVARIANTS.md` | SYS-INV-ACP-* · SYS-INV-AGENT-* (grep IDs — do not read full file) |
-| `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` | **Hub:** §6 open · ACP closeout registers on demand |
+| `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` | **Read-scope:** §6 open · ACP closeout registers on demand |
 | `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` | §12–§21 hub · [`arch/`](../architecture/arch/) on demand |
 
 ## Code entry (grep first — F5-B)

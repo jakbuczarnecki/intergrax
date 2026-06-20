@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -143,3 +144,51 @@ def insert_satellite_index(hub_text: str, index_rows: list[str]) -> str:
         idx = hub_text.index(marker2)
         return hub_text[:idx] + "\n".join(index_rows) + "\n\n---\n\n" + hub_text[idx:]
     return "\n".join(index_rows) + "\n\n" + hub_text
+
+
+PLAN_READ_SCOPE_MARKER = "## Cursor read scope (token budget)"
+PLAN_SCOPE_BLOCK_RE = re.compile(
+    rf"{re.escape(PLAN_READ_SCOPE_MARKER)}.*?\n---\n",
+    re.DOTALL,
+)
+
+SKIP_PLAN_HUBS = frozenset({"AUDIT_IDEAL_2026.md", "IDEAL_HARNESS_L3.md"})
+
+
+def satellite_links(hub_text: str) -> list[str]:
+    marker = "## Satellite registers (read on demand)"
+    if marker not in hub_text:
+        return []
+    section = hub_text.split(marker, 1)[1].split("\n---\n", 1)[0]
+    return re.findall(r"\[`plan/plan/([^`]+)`\]", section)
+
+
+def render_plan_read_scope_block(domain: str, scope: str) -> str:
+    return (
+        f"{PLAN_READ_SCOPE_MARKER}\n\n"
+        f"**Do not read this entire file in one session** ({domain} plan).\n\n"
+        f"- **Implement / audit default:** {scope}\n"
+        f"- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.\n"
+        f"- **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.\n"
+        f"- **Architecture hub:** [`architecture/{domain}.md`](../architecture/{domain}.md) read-scope block only.\n"
+        f"- **Audit slice:** [`guides/audit_slices/{domain}.md`](../guides/audit_slices/{domain}.md).\n"
+        f"- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.\n\n"
+        f"---\n"
+    )
+
+
+def upsert_plan_read_scope(text: str, domain: str, scope: str) -> str:
+    new_block = render_plan_read_scope_block(domain, scope)
+    if PLAN_READ_SCOPE_MARKER in text:
+        return PLAN_SCOPE_BLOCK_RE.sub(new_block, text, count=1)
+    insert_at = text.find("\n---\n")
+    if insert_at == -1:
+        return text
+    insert_at += len("\n---\n")
+    return text[:insert_at] + "\n" + new_block + "\n" + text[insert_at:].lstrip("\n")
+
+
+def normalize_plan_satellite_budget_line(text: str) -> str:
+    old = "> **Cursor context budget:** read this hub + **at most one** satellite per session."
+    new = "> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session."
+    return text.replace(old, new)

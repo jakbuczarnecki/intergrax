@@ -17,7 +17,7 @@
 | `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | Sections matching audit-map layers 3, 28 |
 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | Layers 3, 28 · maturity §5 |
 | `docs/guides/SYSTEM_INVARIANTS.md` | Grep SYS-INV-* IDs from audit dimensions only (grep IDs — do not read full file) |
-| `docs/plan/TIER3_APPLICATION_ENVIRONMENT.md` | **Hub:** Hub §6 · [`plan/plan/`](../plan/plan/) satellites on demand |
+| `docs/plan/TIER3_APPLICATION_ENVIRONMENT.md` | **Read-scope:** Hub §6 · [`plan/plan/`](../plan/plan/) satellites on demand |
 | `docs/architecture/TIER3_APPLICATION_ENVIRONMENT.md` | Read-scope block + TOC sections for layers 3, 28 |
 
 ## Code entry (grep first — F5-B)

@@ -8,7 +8,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | [`plan/plan/CONTEXT_ENGINEERING_audit_history.md`](plan/plan/CONTEXT_ENGINEERING_audit_history.md) | audit history |
 | [`plan/plan/CONTEXT_ENGINEERING_embedded_detail.md`](plan/plan/CONTEXT_ENGINEERING_embedded_detail.md) | embedded detail |
 
-> **Cursor context budget:** read this hub + **at most one** satellite per session.
+> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
 
 # Context Engineering — Implementation Plan
@@ -19,6 +19,19 @@ Load **only** the satellite matching your task or cited gap ID.
 **ADR:** [`ADR-CTX-001`](../adr/entries/2026-06-12/ADR-CTX-001.md)
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/plan/` satellites on demand).
+
+---
+
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (CONTEXT_ENGINEERING plan).
+
+- **Implement / audit default:** Hub §6 · [`plan/plan/`](plan/plan/) satellites on demand. **On demand (one max):** [`plan/plan/CONTEXT_ENGINEERING_audit_history.md`](plan/plan/CONTEXT_ENGINEERING_audit_history.md) · [`plan/plan/CONTEXT_ENGINEERING_embedded_detail.md`](plan/plan/CONTEXT_ENGINEERING_embedded_detail.md). §6.1 maintenance queues — open P0/P1 only
+- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
+- **Architecture hub:** [`architecture/CONTEXT_ENGINEERING.md`](../architecture/CONTEXT_ENGINEERING.md) read-scope block only.
+- **Audit slice:** [`guides/audit_slices/CONTEXT_ENGINEERING.md`](../guides/audit_slices/CONTEXT_ENGINEERING.md).
+- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
 
 ---
 

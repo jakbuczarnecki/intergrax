@@ -8,6 +8,19 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (UNIFIED_EXECUTION_RUNTIME plan).
+
+- **Implement / audit default:** §6.1 UAEP maintenance · R-Policy / SEC / COST open rows · phase satellites on demand
+- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
+- **Architecture hub:** [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](../architecture/UNIFIED_EXECUTION_RUNTIME.md) read-scope block only.
+- **Audit slice:** [`guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md`](../guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md).
+- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+
+---
+
 ## Satellite registers (read on demand)
 
 Large historical registers moved out of the hub to reduce Cursor context use.
@@ -17,7 +30,7 @@ Load **only** the satellite matching your task or cited gap ID.
 |-----------|----------|
 | [`plan/UNIFIED_EXECUTION_RUNTIME_appendices.md`](plan/UNIFIED_EXECUTION_RUNTIME_appendices.md) | appendices |
 
-> **Cursor context budget:** read this hub + **at most one** satellite per session.
+> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
 
 ---
@@ -33,7 +46,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | [`plan/plan/UNIFIED_EXECUTION_RUNTIME_audit_history.md`](plan/plan/UNIFIED_EXECUTION_RUNTIME_audit_history.md) | audit history |
 | [`plan/plan/UNIFIED_EXECUTION_RUNTIME_embedded_detail.md`](plan/plan/UNIFIED_EXECUTION_RUNTIME_embedded_detail.md) | embedded detail |
 
-> **Cursor context budget:** read this hub + **at most one** satellite per session.
+> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
 
 ---

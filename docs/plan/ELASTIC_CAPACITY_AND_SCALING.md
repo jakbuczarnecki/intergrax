@@ -11,6 +11,19 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (ELASTIC_CAPACITY_AND_SCALING plan).
+
+- **Implement / audit default:** ECP phase registers · open P0/P1 capacity rows · skip closed scaling history unless cited
+- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
+- **Architecture hub:** [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../architecture/ELASTIC_CAPACITY_AND_SCALING.md) read-scope block only.
+- **Audit slice:** [`guides/audit_slices/ELASTIC_CAPACITY_AND_SCALING.md`](../guides/audit_slices/ELASTIC_CAPACITY_AND_SCALING.md).
+- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+
+---
+
 ## Satellite registers (read on demand)
 
 Large historical registers moved out of the hub to reduce Cursor context use.
@@ -21,7 +34,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | [`plan/plan/ELASTIC_CAPACITY_AND_SCALING_appendices.md`](plan/plan/ELASTIC_CAPACITY_AND_SCALING_appendices.md) | appendices |
 | [`plan/plan/ELASTIC_CAPACITY_AND_SCALING_audit_history.md`](plan/plan/ELASTIC_CAPACITY_AND_SCALING_audit_history.md) | audit history |
 
-> **Cursor context budget:** read this hub + **at most one** satellite per session.
+> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
 
 ---

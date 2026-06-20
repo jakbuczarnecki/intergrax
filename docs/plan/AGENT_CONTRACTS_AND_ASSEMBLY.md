@@ -8,6 +8,19 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (AGENT_CONTRACTS_AND_ASSEMBLY plan).
+
+- **Implement / audit default:** §6.1bc ACP-FINISH status · AUDIT-IDEAL §12–§20 table (**Done** skip unless cited) · [`plan/plan/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md`](plan/plan/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md) on demand
+- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
+- **Architecture hub:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) read-scope block only.
+- **Audit slice:** [`guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md).
+- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+
+---
+
 ## Agent architecture completion — executive summary (2026-06-11)
 
 **Phases ACP + ACP-CLOSE + ACP-FINISH + AUDIT-IDEAL (§12–§20):** **Done** (2026-06-13) — platform runtime, fleet migration, production gates, token budget depth, CI matrix, registry snapshot, cap-graph blast-radius, lifecycle on-call.  
@@ -35,7 +48,7 @@ Load **only** the satellite matching your task or cited gap ID.
 |-----------|----------|
 | [`plan/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md`](plan/AGENT_CONTRACTS_AND_ASSEMBLY_audit_history.md) | audit history |
 
-> **Cursor context budget:** read this hub + **at most one** satellite per session.
+> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
 
 ---

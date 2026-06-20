@@ -17,7 +17,7 @@
 | `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | §4 Identity · §5 Policy · §8 Execution runtime · §23 Security · §24 Cost |
 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | §4–§5 · §8 · §23–§24 |
 | `docs/guides/SYSTEM_INVARIANTS.md` | SYS-INV-POL-* · SYS-INV-UAEP-* (grep IDs — do not read full file) |
-| `docs/plan/UNIFIED_EXECUTION_RUNTIME.md` | **Hub:** §6.1av hub · phase satellites on demand |
+| `docs/plan/UNIFIED_EXECUTION_RUNTIME.md` | **Read-scope:** §6.1av hub · phase satellites on demand |
 | `docs/architecture/UNIFIED_EXECUTION_RUNTIME.md` | §42.1–§42.15 hub · [`arch/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md`](../architecture/arch/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md) on demand |
 
 ## Code entry (grep first — F5-B)

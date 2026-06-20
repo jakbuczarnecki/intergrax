@@ -8,6 +8,19 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (NEXUS_EXECUTION_FLOW plan).
+
+- **Implement / audit default:** §6.1 FLOW maintenance · open P0/P1 rows · Phase AUDIT-IDEAL gap table. Historical flow registers — [`plan/plan/`](plan/plan/) satellite on demand
+- **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
+- **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
+- **Architecture hub:** [`architecture/NEXUS_EXECUTION_FLOW.md`](../architecture/NEXUS_EXECUTION_FLOW.md) read-scope block only.
+- **Audit slice:** [`guides/audit_slices/NEXUS_EXECUTION_FLOW.md`](../guides/audit_slices/NEXUS_EXECUTION_FLOW.md).
+- **Satellites:** at most **one** `plan/plan/` file per session unless RESUME cites more.
+
+---
+
 ## Satellite registers (read on demand)
 
 Large historical registers moved out of the hub to reduce Cursor context use.
@@ -17,7 +30,7 @@ Load **only** the satellite matching your task or cited gap ID.
 |-----------|----------|
 | [`plan/NEXUS_EXECUTION_FLOW_appendices.md`](plan/NEXUS_EXECUTION_FLOW_appendices.md) | appendices |
 
-> **Cursor context budget:** read this hub + **at most one** satellite per session.
+> **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
 
 ---

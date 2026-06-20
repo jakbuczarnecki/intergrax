@@ -17,7 +17,7 @@
 | `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` | §8 Runtime · §9 Graph · §10 Subagents |
 | `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` | §8–§10 |
 | `docs/guides/SYSTEM_INVARIANTS.md` | SYS-INV-FLOW-* · SYS-INV-DELEG-* (grep IDs — do not read full file) |
-| `docs/plan/NEXUS_EXECUTION_FLOW.md` | **Hub:** Phase FLOW hub · satellites on demand |
+| `docs/plan/NEXUS_EXECUTION_FLOW.md` | **Read-scope:** Phase FLOW hub · satellites on demand |
 | `docs/architecture/NEXUS_EXECUTION_FLOW.md` | §1–§26 hub · [`arch/NEXUS_EXECUTION_FLOW_scenario_catalog.md`](../architecture/arch/NEXUS_EXECUTION_FLOW_scenario_catalog.md) on demand |
 
 ## Code entry (grep first — F5-B)
