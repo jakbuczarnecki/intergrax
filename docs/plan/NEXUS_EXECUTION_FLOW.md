@@ -102,6 +102,17 @@ Load **only** the satellite matching your task or cited gap ID.
 
 **Explicitly excluded:** UC-6 production research agents; FLOW-8 / FLOW-GAP-20 product hosts — [§6.3](../plan/PLATFORM_FOUNDATION.md#63-end-of-plan--deferred-product-work-only).
 
+### 6.1ax Harness implementation queue — Nexus scenario production status (closed)
+
+**Source:** Maturity taxonomy rollout — [`guides/MATURITY_TAXONOMY.md`](../guides/MATURITY_TAXONOMY.md) · architecture §12.2  
+**Priority ladder:** **Band 1** (§6.1) — docs only; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **P2-ARCH-04** | Docs | P2 | **Done** | Add Nexus scenario production status matrix (S1–S8) with four-axis A/I/P/E mapping | Architecture §12.2; cross-refs MATURITY_TAXONOMY + SYSTEM_INVARIANTS; legacy §12.1 labels preserved |
+
+**Suggested PR order:** none — §6.1ax queue closed (2026-06-20).
+
 ### 6.1ak Harness implementation queue — Critic & Verification Layer (closed)
 
 **Purpose:** Single ordered list for **Phase CRIT-V** (Band 2ak). **Closed 2026-06-08** — CRIT-V-0…7 + **CRIT-V-FOLLOWUP** closeout **Done**.
