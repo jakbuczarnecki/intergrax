@@ -213,6 +213,7 @@ def test_trace_bridge_maps_llm_catalog_miss_schema() -> None:
         "provider_slug": "openrouter",
         "model_id": "vendor/unknown",
         "resolved_tokens": 8192,
+        "resolution_tier": "fallback_default",
         "run_id": "r1",
     }
     event = trace_event_to_runtime_event(
@@ -223,3 +224,4 @@ def test_trace_bridge_maps_llm_catalog_miss_schema() -> None:
     )
     assert event.event_type == RuntimeEventType.LLM_CALL
     assert event.payload["model"] == "vendor/unknown"
+    assert event.payload["resolution_tier"] == "fallback_default"

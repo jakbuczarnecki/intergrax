@@ -125,7 +125,7 @@
 | 12 | X-12 | M-LLM-X.12.1–12.12 | **P1** | **Done** (2026-06-19) — routing strict enterprise closeout · LLM-AUDIT-19 |
 | 13 | X-13 | M-LLM-X.13.1–13.7 | P2 | **Done** — post-L5 routing polish · LLM-AUDIT-20 |
 | 14 | X-14 | M-LLM-X.14.1–14.8 | **P1** | **Done** — enterprise domain maturity · LLM-AUDIT-22…26 |
-| 15 | X-15 | M-LLM-X.15.1–15.6 | **P1** | **Planned** — catalog miss enterprise observability spine |
+| 15 | X-15 | M-LLM-X.15.1–15.6 | **P1** | **Done** — catalog miss enterprise observability spine |
 
 **Closeout gate:** Routing waves X-9…X-13 **Done** (LLM-AUDIT-17…20). **Enterprise domain grade:** **M-LLM-X.8** + **M-LLM-X.14** **Done** (LLM-AUDIT-21…26) · **M-LLM-X.15** closes catalog-miss observability gaps to **L4 enterprise**.
 
@@ -192,7 +192,7 @@ Wave M-LLM-X-15 (catalog miss ops):   M-LLM-X.15.1 → 15.2 → 15.3 → 15.4 �
 | M-LLM-X.2.1 | **`OpenRouterModelMetadataClient`** — optional `/models` fetch, TTL cache | **Done** | High | `registry/gateway_metadata/` | **M-LLM-X.14.2** · LLM-AUDIT-23 |
 | M-LLM-X.2.2 | **Merge gateway metadata into catalog session cache** | **Done** | High | `registry/gateway_metadata/session.py` | Opt-in `fetch_gateway_metadata` |
 | M-LLM-X.2.3 | **`LLMProfile.options["fetch_gateway_metadata"]=True`** opt-in | **Done** | Medium | `gateway_metadata/session.py` | Default false (no network in unit gate) |
-| M-LLM-X.2.4 | **Diagnostic `ModelCatalogMissDiagV1`** when fallback default used | **Done** | Medium | `catalog_miss_diag.py` | Once per model/run |
+| M-LLM-X.2.4 | **Diagnostic `ModelCatalogMissDiagV1`** when non-exact resolution used | **Done** | Medium | `catalog_miss_diag.py` | `resolution_tier` + once per model/run · **M-LLM-X.15.1** |
 
 ---
 
@@ -771,7 +771,7 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 | 2 | **LLM-MAINT-02** | CI | P2 | **Done** | M-LLM-X.7.3 — `scripts/check_model_catalog_coverage.py` warns on adapter default models missing from YAML | Gate registered in CI umbrella |
 | 3 | **LLM-MAINT-03** | Code | P2 | **Done** | M-LLM-X.4.5 — Tier-3 `ApplicationEnvironmentProfile` optional LLM failover list wiring | `LLMProfile.fallback_profiles` + `resolve_llm_adapter` |
 | 4 | **LLM-MAINT-04** | Docs | P3 | **Done** | Redis distributed rate limit bootstrap pattern — reference host wiring doc + cross-ref ECP/TIER3 | `intergrax/llm_adapters/USAGE.md` §Distributed rate limiting |
-| 5 | **LLM-MAINT-05** | CI | P2 | **Planned** | M-LLM-X.15.4 — `scripts/check_llm_catalog_miss_observability.py` (trace step + metrics + resolver tiers) | Gate green after X-15 |
+| 5 | **LLM-MAINT-05** | CI | P2 | **Done** | M-LLM-X.15.4 — `scripts/check_llm_catalog_miss_observability.py` (trace step + metrics + resolver tiers) | Gate green after X-15 |
 
 **Suggested PR order:** none — §6.1av queue closed (2026-06-18).
 
@@ -993,16 +993,16 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 **Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) § Catalog miss observability enterprise  
 **Prerequisites:** **M-LLM-X.14.2 Done** (baseline miss diag + trace wire)  
 **Goal:** **L4 enterprise** catalog-miss spine — honest miss semantics, unconditional trace wire, metrics, CI gate, acceptance E2E.  
-**Phase status:** **Planned** — 0/6
+**Phase status:** **Done** — 6/6
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **M-LLM-X.15.1** | Code | **P1** | **Planned** | Emit miss on `prefix_rule`, `provider_default`, `fallback_default` (non-exact tiers) with `resolution_tier` field | OpenRouter unknown model emits miss · `test_gateway_metadata.py` |
-| 2 | **M-LLM-X.15.2** | Wire | P2 | **Planned** | `wire_catalog_miss_trace_sink` at start of `configure_llm_tracker()` — not gated on `core_adapter` | Unit: wire without adapter |
-| 3 | **M-LLM-X.15.3** | Metrics | P2 | **Planned** | `intergrax_llm_catalog_miss_total{tenant_id,provider,model,resolution_tier}` in `LLMMetricsCollector` | `test_catalog_miss_metrics.py` gate |
-| 4 | **M-LLM-X.15.4** | CI | P2 | **Planned** | `scripts/check_llm_catalog_miss_observability.py` (**LLM-MAINT-05**) | Registered in plan §6.1aw |
-| 5 | **M-LLM-X.15.5** | E2E | P2 | **Planned** | Acceptance: resolver miss → Plane A trace → `trace_bridge` → `LLM_CALL` | `test_catalog_miss_trace_e2e.py` |
-| 6 | **M-LLM-X.15.6** | Docs | P3 | **Planned** | ADR-LLM-002 amendment + USAGE/OBSERVABILITY sync | ADR steps 1–7 aligned with code |
+| 1 | **M-LLM-X.15.1** | Code | **P1** | **Done** | Emit miss on `prefix_rule`, `provider_default`, `fallback_default` (non-exact tiers) with `resolution_tier` field | OpenRouter unknown model emits miss · `test_gateway_metadata.py` |
+| 2 | **M-LLM-X.15.2** | Wire | P2 | **Done** | `wire_catalog_miss_trace_sink` at start of `configure_llm_tracker()` — not gated on `core_adapter` | `test_catalog_miss_trace_e2e.py` |
+| 3 | **M-LLM-X.15.3** | Metrics | P2 | **Done** | `intergrax_llm_catalog_miss_total{tenant_id,provider,model,resolution_tier}` in `LLMMetricsCollector` | `test_catalog_miss_metrics.py` |
+| 4 | **M-LLM-X.15.4** | CI | P2 | **Done** | `scripts/check_llm_catalog_miss_observability.py` (**LLM-MAINT-05**) | Registered in plan §6.1aw |
+| 5 | **M-LLM-X.15.5** | E2E | P2 | **Done** | Acceptance: resolver miss → Plane A trace → `trace_bridge` → `LLM_CALL` | `test_catalog_miss_trace_e2e.py` |
+| 6 | **M-LLM-X.15.6** | Docs | P3 | **Done** | ADR-LLM-002 amendment + USAGE/OBSERVABILITY sync | ADR steps 1–7 aligned with code |
 
 **ADR:** amend [ADR-LLM-002](../adr/entries/2026-06-14/ADR-LLM-002.md) — extended miss tiers (no new ADR file).
 

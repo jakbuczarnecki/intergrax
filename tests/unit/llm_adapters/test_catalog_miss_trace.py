@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from intergrax.llm_adapters.registry.catalog_miss_diag import (
+    CatalogResolutionTier,
     ModelCatalogMissDiagV1,
     maybe_emit_catalog_miss,
     register_catalog_miss_trace_observer,
@@ -29,6 +30,7 @@ def test_emit_model_catalog_miss_diag_records_plane_a_step() -> None:
         provider_slug="openrouter",
         model_id="vendor/unknown",
         resolved_tokens=8192,
+        resolution_tier=CatalogResolutionTier.PROVIDER_DEFAULT.value,
         run_id="run-a",
     )
     emit_model_catalog_miss_diag(_trace_event, diag)
@@ -40,6 +42,7 @@ def test_emit_model_catalog_miss_diag_records_plane_a_step() -> None:
     payload = event["payload"]
     assert isinstance(payload, ModelCatalogMissTraceDiagV1)
     assert payload.schema_id() == "intergrax.diag.engine.core_llm.catalog_miss"
+    assert payload.resolution_tier == CatalogResolutionTier.PROVIDER_DEFAULT.value
 
 
 @pytest.mark.unit
@@ -48,13 +51,25 @@ def test_register_catalog_miss_trace_observer_flushes_pending() -> None:
     reset_catalog_miss_diagnostics()
     received: list[ModelCatalogMissDiagV1] = []
 
-    maybe_emit_catalog_miss("groq", "missing-model", 4096, run_id="run-a")
+    maybe_emit_catalog_miss(
+        "groq",
+        "missing-model",
+        4096,
+        resolution_tier=CatalogResolutionTier.FALLBACK_DEFAULT,
+        run_id="run-a",
+    )
     assert len(received) == 0
 
     register_catalog_miss_trace_observer(received.append)
     assert len(received) == 1
     assert received[0].model_id == "missing-model"
 
-    second = maybe_emit_catalog_miss("groq", "missing-model", 4096, run_id="run-a")
+    second = maybe_emit_catalog_miss(
+        "groq",
+        "missing-model",
+        4096,
+        resolution_tier=CatalogResolutionTier.FALLBACK_DEFAULT,
+        run_id="run-a",
+    )
     assert second is None
     assert len(received) == 1

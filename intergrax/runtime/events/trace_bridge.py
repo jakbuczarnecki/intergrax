@@ -323,16 +323,23 @@ def _attach_typed_bridge_payload(
             finish_reason=extra_payload.get("finish_reason"),
             label=str(extra_payload.get("label", "")),
         )
+        promote_fields: dict[str, Any] = {
+            "model": typed.model,
+            "prompt_tokens": typed.prompt_tokens,
+            "completion_tokens": typed.completion_tokens,
+            "total_tokens": typed.total_tokens,
+            "finish_reason": typed.finish_reason,
+        }
+        resolution_tier = extra_payload.get("resolution_tier")
+        if resolution_tier:
+            promote_fields["resolution_tier"] = str(resolution_tier)
+        resolved_tokens = extra_payload.get("resolved_tokens")
+        if resolved_tokens is not None:
+            promote_fields["resolved_tokens"] = int(resolved_tokens)
         return merge_payload_envelope(
             base,
             typed,
-            promote_fields={
-                "model": typed.model,
-                "prompt_tokens": typed.prompt_tokens,
-                "completion_tokens": typed.completion_tokens,
-                "total_tokens": typed.total_tokens,
-                "finish_reason": typed.finish_reason,
-            },
+            promote_fields=promote_fields,
         )
     if event_type in _TOOL_STATUS_BY_EVENT:
         tool_name = str(

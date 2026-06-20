@@ -196,6 +196,12 @@ class RuntimeState(RuntimeStateContract):
         if self.llm_usage_tracker is None:
            self.llm_usage_tracker = LLMUsageTracker(run_id=self.run_id)
 
+        from intergrax.runtime.nexus.tracing.adapters.model_catalog_miss import (
+            wire_catalog_miss_trace_sink,
+        )
+
+        wire_catalog_miss_trace_sink(self.trace_event)
+
         core_adapter = self.context.config.llm_adapter
         if core_adapter is not None:
             from intergrax.applications._shared.llm_resolver import consume_routing_evaluation
@@ -207,11 +213,6 @@ class RuntimeState(RuntimeStateContract):
                 emit_llm_routing_allowlist_violation_diag,
                 emit_llm_routing_rule_diag,
             )
-            from intergrax.runtime.nexus.tracing.adapters.model_catalog_miss import (
-                wire_catalog_miss_trace_sink,
-            )
-
-            wire_catalog_miss_trace_sink(self.trace_event)
 
             def _on_evaluated(evaluation: object) -> None:
                 from intergrax.llm_adapters.routing.contracts import RoutingEvaluation

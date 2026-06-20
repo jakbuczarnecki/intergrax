@@ -128,7 +128,7 @@ options={
 ```
 
 Gateway merge runs **after** bundled catalog exact/prefix matches and **before** legacy/provider defaults (ADR-LLM-002).
-When catalog falls back to conservative default, **`ModelCatalogMissDiagV1`** is emitted once per model/run on Plane A trace (`step=llm_catalog_miss`, schema `intergrax.diag.engine.core_llm.catalog_miss`). Wired via `RuntimeState.configure_llm_tracker()`.
+When catalog resolves **without an exact `ModelRecord` match** (prefix rule, provider default, or global fallback), **`ModelCatalogMissDiagV1`** is emitted once per model/run with `resolution_tier` (`prefix_rule` | `provider_default` | `fallback_default`). Emission surfaces on Plane A trace (`step=llm_catalog_miss`), runtime bus (`LLM_CALL`), and Prometheus (`intergrax_llm_catalog_miss_total` when `INTERGRAX_LLM_METRICS_ENABLED=true`). Wired unconditionally via `RuntimeState.configure_llm_tracker()`.
 
 ### Tokenizer accuracy (M-LLM-X.14.7)
 

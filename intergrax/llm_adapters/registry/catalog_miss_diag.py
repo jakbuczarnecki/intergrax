@@ -1,11 +1,12 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Model catalog miss diagnostic (M-LLM-X.14.2 · ADR-LLM-002 step 5)."""
+"""Model catalog miss diagnostic (M-LLM-X.14.2 · M-LLM-X.15.1 · ADR-LLM-002)."""
 
 from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any, ClassVar
 
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
@@ -13,13 +14,22 @@ from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 CatalogMissObserver = Callable[["ModelCatalogMissDiagV1"], None]
 
 
+class CatalogResolutionTier(str, Enum):
+    """Non-exact catalog resolution tier that triggers observability."""
+
+    PREFIX_RULE = "prefix_rule"
+    PROVIDER_DEFAULT = "provider_default"
+    FALLBACK_DEFAULT = "fallback_default"
+
+
 @dataclass(frozen=True, slots=True)
 class ModelCatalogMissDiagV1:
-    """Emitted once per model/run when catalog falls back to conservative default."""
+    """Emitted once per model/run when context window resolves without exact catalog hit."""
 
     provider_slug: str
     model_id: str
     resolved_tokens: int
+    resolution_tier: str
     run_id: str | None = None
 
     schema_id: ClassVar[str] = "intergrax.diag.engine.core_llm.catalog_miss"
@@ -29,6 +39,7 @@ class ModelCatalogMissDiagV1:
             "provider_slug": self.provider_slug,
             "model_id": self.model_id,
             "resolved_tokens": self.resolved_tokens,
+            "resolution_tier": self.resolution_tier,
             "run_id": self.run_id,
         }
 
@@ -69,11 +80,17 @@ def maybe_emit_catalog_miss(
     model: str,
     resolved_tokens: int,
     *,
+    resolution_tier: CatalogResolutionTier | str,
     run_id: str | None = None,
 ) -> ModelCatalogMissDiagV1 | None:
     """Return diagnostic payload on first miss per model/run; otherwise None."""
     slug = _provider_slug(provider)
     model_id = (model or "").strip()
+    tier = (
+        resolution_tier.value
+        if isinstance(resolution_tier, CatalogResolutionTier)
+        else str(resolution_tier or "").strip()
+    )
     key = (run_id or "", slug, model_id)
     if key in _emitted_keys:
         return None
@@ -82,6 +99,7 @@ def maybe_emit_catalog_miss(
         provider_slug=slug,
         model_id=model_id,
         resolved_tokens=int(resolved_tokens),
+        resolution_tier=tier,
         run_id=run_id,
     )
     if _trace_observer is not None:

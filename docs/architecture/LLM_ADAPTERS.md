@@ -529,14 +529,14 @@ RoutingContext (snapshot from Nexus / budget meter / classifier)
 
 | Gap | Severity | Task ID | Status |
 |-----|----------|---------|--------|
-| Miss only on `fallback_default` — OpenRouter `provider_default` silent | **P1** | M-LLM-X.15.1 | **Planned** |
-| Trace sink wired only when `core_adapter is not None` | **P2** | M-LLM-X.15.2 | **Planned** |
-| No Prometheus counter for catalog misses | **P2** | M-LLM-X.15.3 | **Planned** |
-| No CI observability gate for `llm_catalog_miss` spine | **P2** | M-LLM-X.15.4 | **Planned** |
-| No acceptance E2E trace → runtime bus | **P2** | M-LLM-X.15.5 | **Planned** |
-| ADR-LLM-002 resolution order drift vs code | **P3** | M-LLM-X.15.6 | **Planned** |
+| Miss only on `fallback_default` — OpenRouter `provider_default` silent | **P1** | M-LLM-X.15.1 | **Done** |
+| Trace sink wired only when `core_adapter is not None` | **P2** | M-LLM-X.15.2 | **Done** |
+| No Prometheus counter for catalog misses | **P2** | M-LLM-X.15.3 | **Done** |
+| No CI observability gate for `llm_catalog_miss` spine | **P2** | M-LLM-X.15.4 | **Done** — `check_llm_catalog_miss_observability.py` |
+| No acceptance E2E trace → runtime bus | **P2** | M-LLM-X.15.5 | **Done** |
+| ADR-LLM-002 resolution order drift vs code | **P3** | M-LLM-X.15.6 | **Done** |
 
-**Target maturity:** catalog-miss spine **L4 enterprise** (trace + bus + metrics + gate + E2E).  
+**Target maturity:** catalog-miss spine **L4 enterprise** — **Met** (2026-06-19).  
 **Plan:** [Phase M-LLM-X-15](../plan/LLM_ADAPTERS.md#phase-m-llm-x-15--catalog-miss-enterprise-observability-2026-06-19)
 
 #### Routing strict enterprise closeout — audit register (historical gaps, closed)

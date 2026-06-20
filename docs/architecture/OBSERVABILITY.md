@@ -429,7 +429,7 @@ with TraceScope(emitter, run_id=..., task_id=..., tenant_id=...) as scope:
 | RAG | RAG | `rag_summary` (`intergrax.diag.rag.summary`) | — (trace); CONTEXT_* (bus) |
 | Web search | WEBSEARCH | `websearch_summary` | — |
 | Tools | TOOLS | `tool_invocation_*` | TOOL_* |
-| LLM | ENGINE | `core_llm`, `core_llm_call_recorded`, `llm_catalog_miss` | LLM_CALL |
+| LLM | ENGINE | `core_llm`, `core_llm_call_recorded`, `llm_catalog_miss` (`resolution_tier`) | LLM_CALL |
 | Plan / replan | PLANNER | `engine_plan_produced`, `plan_source_*` | PLAN_* |
 | Memory | MEMORY | `user_longterm_memory_summary` | MEMORY_* |
 | Budget | POLICY | budget diagnostics | — |
