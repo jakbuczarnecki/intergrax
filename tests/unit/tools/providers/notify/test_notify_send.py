@@ -67,7 +67,16 @@ def test_notify_send_not_configured() -> None:
 def test_notify_tool_registered_in_catalog() -> None:
     register_default_tools()
     assert "notify.send" in list_catalog_tool_ids()
-    assert get_bundle("notify").tool_ids == ("notify.send", "notify.send_batch", "notify.schedule")
+    bundle = get_bundle("notify")
+    assert bundle is not None
+    assert bundle.tool_ids == (
+        "notify.send",
+        "notify.send_batch",
+        "notify.schedule",
+        "notify.list_scheduled",
+        "notify.cancel_scheduled",
+        "notify.dispatch_due",
+    )
 
 
 def test_build_registry_enables_notify_tool() -> None:

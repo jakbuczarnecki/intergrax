@@ -39,6 +39,4 @@ def resolve_craft_sandbox_session(
                 tenant_id=tenant_id,
                 task_id=task_id,
             )
-        if profile.isolation_tier == "cloud":
-            return None
     return resolve_sandbox_session(ctx)

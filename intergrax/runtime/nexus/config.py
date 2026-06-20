@@ -187,6 +187,8 @@ class RuntimeConfig:
     tool_selection_mode: ToolSelectionMode = ToolSelectionMode.STATIC
     tool_selection_top_k: int = 20
     tool_selection_max_hierarchy_passes: int = 2
+    # Opt-in LLM category pass for hierarchical selection (TOOL-MAINT-01b / ADR-TOOL-005 v2).
+    tool_selection_hierarchical_llm_pass: bool = False
     # Instance override — takes precedence over tool_selection_mode (TOOL-ENG-31).
     tool_selection_strategy: Optional[ToolSelectionStrategy] = None
     # Entry-point plugin id from intergrax.tool_selection_strategies (TOOL-ENG-26).

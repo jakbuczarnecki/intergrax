@@ -198,7 +198,7 @@ def test_trace_emitter_uses_codecraft_component() -> None:
         task_id="task",
     )
     assert disposed_evt.step == CODECRAFT_STEP_DISPOSED
-    assert len(emitter.events) == 4
+    assert len(emitter.events) == 5
 
 
 def test_register_codecraft_tools_on_registry(sandbox_session: SandboxSession) -> None:

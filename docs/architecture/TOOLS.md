@@ -12,7 +12,7 @@
 
 # Intergrax Tool Library
 
-**Last updated:** 2026-06-12 (layer completion audit) — **48 bundles** · **190 catalog tools** · selection modes: [§Production strategies](#tool-selection-modes-production-strategies) · invocation patterns: [§Invocation patterns](#tool-invocation-patterns-production-orchestration) · engine audit: [§Production posture](#tool-engine-production-posture-2026-06-10) · [§Execution surfaces](#execution-surfaces-matrix) · completion sprints: [`plan/TOOLS.md`](../plan/TOOLS.md#layer-completion-sprints-2026-06-12)
+**Last updated:** 2026-06-19 (interactive audit revalidation) — **48 bundles** · **200 catalog tools** · selection modes: [§Production strategies](#tool-selection-modes-production-strategies) · invocation patterns: [§Invocation patterns](#tool-invocation-patterns-production-orchestration) · engine audit: [§Production posture](#tool-engine-production-posture-2026-06-10) · [§Execution surfaces](#execution-surfaces-matrix) · completion sprints: [`plan/TOOLS.md`](../plan/TOOLS.md#layer-completion-sprints-2026-06-12)
 
 The **Tool Library** (`intergrax/tools/`) is Intergrax’s modular catalog of **LLM-facing, agent-invokable capabilities**. Tools sit between agents and the [Integration Library](architecture/INTEGRATIONS.md): they expose semantic operations (JSON schemas, descriptions, risk metadata) while composing integration contracts and platform modules underneath.
 
@@ -297,7 +297,7 @@ Full-stack audit of **Tier-0 catalog + Tier-1 tool engine** (selection → invok
 | **Standard selection** (full schema → LLM) | **Production** | `FullCatalogSelectionStrategy` + `ToolPlanningService` (TOOL-ENG-0/4/5) |
 | **Pre-filter selection** (keyword / skill / static) | **Production** | `ToolSelectionStrategy` — static, `skill_pack`, `retrieval_top_k` / `keyword_top_k` |
 | **Semantic tool index** | **Done** | `ToolCatalogEmbedder` + `SEMANTIC` mode (TOOL-ENG-13) |
-| **Hierarchical tool selection** | **Done v1** | Deterministic category→tool passes; LLM category pass deferred (ADR-TOOL-005) |
+| **Hierarchical tool selection** | **Done** | Deterministic category→tool passes; optional LLM category pass opt-in (`tool_selection_hierarchical_llm_pass`, TOOL-MAINT-01b) |
 | **`tool_ids` plan dispatch** | **Done** | `catalog_dispatch.invoke_catalog_tool_ids` (TOOL-ENG-1) |
 | **§42.12 gateway** | **Done** | Catalog `tool_id` → invoker (TOOL-ENG-2); runtime-bound + sandbox unchanged |
 | **`tool_scope_policy` wiring** | **Done** | `RuntimeToolInvoker` in `RuntimeContext.build()` (TOOL-ENG-3) |
@@ -745,7 +745,9 @@ Reuse Tier-0 `embedding_manager` — distinct from `rag.retrieve` document index
 
 **Definition:** Tools are organized in a **tree** (bundle → `category` → `tool_id`). The LLM traverses the tree in bounded passes: e.g. (1) pick `category=issue_tracker`, (2) receive schema for `jira.*` + `issues.*` only, (3) emit final `tool_call`.
 
-**Implementation today:** **Done v1** (TOOL-ENG-14 · ADR-TOOL-005). `ToolSelectionMode.HIERARCHICAL` → deterministic category rank → tool rank within branches (`hierarchical_tool_selector.py`). **LLM category schema pass** deferred to v2.
+**Implementation today:** **Done** (TOOL-ENG-14 · ADR-TOOL-005). `ToolSelectionMode.HIERARCHICAL` → deterministic category rank → tool rank within branches (`hierarchical_tool_selector.py`). **Optional LLM category pass (TOOL-MAINT-01b):** set `RuntimeConfig.tool_selection_hierarchical_llm_pass=True` — async resolver calls `rank_categories_with_llm` on Nexus hot path; default remains deterministic.
+
+**Audit revalidation (2026-06-19, TOOL-MAINT-DOC-01):** §6.1av TOOL-MAINT-01..04 confirmed · TOOL-MAINT-01b wired · catalog **200** tools · provider unit tests green · tool CI gates green.
 
 **Config:** `RuntimeConfig.tool_selection_max_hierarchy_passes` bounds category branches.
 
@@ -774,18 +776,18 @@ Reuse Tier-0 `embedding_manager` — distinct from `rag.retrieve` document index
 6. **Plan constraints** — `EnginePlan.tool_ids` intersected with strategy (TOOL-ENG-4 **Done**).
 7. **Reasoning prompts** — `tool_planner_prompt_id` via catalog bridge (TOOL-ENG-0 **Done**).
 
-### Scale roadmap (190-tool catalog)
+### Scale roadmap (200-tool catalog)
 
 | Capability | Status | Plan ID |
 |------------|--------|---------|
 | Keyword / skill pre-filter before LLM | **Done** | TOOL-ENG-5 |
 | Plan-constrained planner allow-list | **Done** | TOOL-ENG-4 |
 | Compact descriptions (`description_short`) | **Done** | Phase O |
-| Semantic tool vector index | **Planned** | TOOL-ENG-13 |
-| Hierarchical category traversal | **Planned** | TOOL-ENG-14 |
-| `retrieval_top_k` naming clarity (`keyword_top_k` alias) | **Planned** | TOOL-ENG-15 |
-| Selection strategy plugin registry | **Planned** | TOOL-ENG-26 |
-| Direct strategy instance on `RuntimeConfig` | **Planned** | TOOL-ENG-31 |
+| Semantic tool vector index | **Done** | TOOL-ENG-13 |
+| Hierarchical category traversal | **Done** | TOOL-ENG-14 · optional LLM pass TOOL-MAINT-01b |
+| `retrieval_top_k` naming clarity (`keyword_top_k` alias) | **Done** | TOOL-ENG-15 |
+| Selection strategy plugin registry | **Done** | TOOL-ENG-26 |
+| Direct strategy instance on `RuntimeConfig` | **Done** | TOOL-ENG-31 |
 | Risk-based routing (`ToolRiskLevel` → HITL) | **Done** | TOOL-ENG-7 — trace + enforce block |
 | AHI dynamic mode / subset | **Done** | TOOL-ENG-10 — `ToolEngineHook` + `recommend_tool_modes` |
 
