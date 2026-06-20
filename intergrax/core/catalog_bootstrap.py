@@ -53,6 +53,7 @@ class CatalogBootstrapResult:
     tool_plugins: int
     skill_plugins: int
     integration_preset: str
+    security_entry_point_plugins: int = 0
 
 
 def bootstrap_catalogs(
@@ -170,9 +171,13 @@ def bootstrap_catalogs(
         discover_entry_points=discover_entry_points,
         on_conflict=ep_policy,
     )
+    from intergrax.core.security_bootstrap import bootstrap_security_providers
+
+    security_result = bootstrap_security_providers(discover_entry_points=discover_entry_points)
     return CatalogBootstrapResult(
         integration_plugins=integration_count,
         tool_plugins=tool_count,
         skill_plugins=skill_count,
         integration_preset=integration_preset,
+        security_entry_point_plugins=security_result.entry_point_plugins,
     )

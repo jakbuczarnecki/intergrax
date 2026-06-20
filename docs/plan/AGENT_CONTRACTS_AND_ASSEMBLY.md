@@ -1045,9 +1045,9 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 
 **Deferred P2 (not blocking LC):** `boundary_demo` ReflexAgent migration · COST-1 graph RunBudget cap · FAUDIT-REG.1
 
-### 6.1av Harness implementation queue — Agent contracts audit maintenance (planned)
+### 6.1av Harness implementation queue — Agent contracts audit maintenance (closed)
 
-**Source:** Layer 6 audit (2026-06-18) — `AGENT_CONTRACTS_AND_ASSEMBLY` layers 17–20, 31 · E [`../audit_results/2026-06-18/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../audit_results/2026-06-18/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
+**Source:** Layer 6 audit (2026-06-18) — `AGENT_CONTRACTS_AND_ASSEMBLY` layers 17–20, 31 · [`../audit_results/2026-06-18/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../audit_results/2026-06-18/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
 **Priority ladder:** **Band 1** (§6.1) — fleet hygiene + CI bundle alignment; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
@@ -1056,9 +1056,24 @@ uv run pytest tests/acceptance/agent_os -m agent_os -q
 | 2 | **ACP-MAINT-02** | CI | P2 | **Done** | Include `check_agent_skill_resolution.py` in `check_agent_acp_close_ci.py` umbrella | ACP close CI fails on AS-3 violations fleet-wide |
 | 3 | **ACP-MAINT-03** | Docs | P3 | **Done** | Sync audit prompt known gaps — AUDIT-IDEAL-19.1/20.1/31.1 **Done** vs stale Planned wording | `docs/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` matches plan LC closeout |
 
-**Suggested PR order:** ACP-MAINT-01 → ACP-MAINT-02 → ACP-MAINT-03.
+**Suggested PR order:** none — §6.1av queue closed (2026-06-18).
 
 **Cross-domain (not ACP-owned):** COST-1 graph `RunBudget` cap — [`plan/UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · FAUDIT-REG.1 — [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md).
+
+### 6.1ay Harness implementation queue — Agent contracts audit maintenance (2026-06-19)
+
+**Source:** Interactive layer audit (2026-06-19) — `AGENT_CONTRACTS_AND_ASSEMBLY` layers 17–20, 31 · [`../audit_results/2026-06-19/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../audit_results/2026-06-19/AGENT_CONTRACTS_AND_ASSEMBLY.md) · prior: [`../audit_results/2026-06-18/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../audit_results/2026-06-18/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
+**Priority ladder:** **Band 1** (§6.1) — doc sync + audit artifact; **one ID per PR**
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **ACP-MAINT-DOC-01** | Docs | P3 | **Done** | Close §6.1av header; add architecture §28.3 revalidation note (fleet 17/17, ACP close CI) | Canon matches 2026-06-19 audit |
+| 2 | **ACP-MAINT-DOC-02** | Docs | P3 | **Done** | Sync `docs/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md` known gaps — AUDIT-IDEAL-19.1/20.1/31.1 **Done** | Lines 54/58 without stale „Planned” |
+| 3 | **ACP-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `AGENT_CONTRACTS_AND_ASSEMBLY.md` + `progress.json`; L3+ verdict |
+
+**Suggested PR order:** none — §6.1ay queue closed (2026-06-19).
+
+**Cross-domain (not ACP-owned):** COST-1 graph `RunBudget` cap · FAUDIT-REG.1 — unchanged deferred.
 
 ---
 

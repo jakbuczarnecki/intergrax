@@ -236,7 +236,7 @@ def _clean_catalog() -> None:
 def test_register_default_tools_expanded_catalog() -> None:
     register_default_tools()
     registered = frozenset(list_catalog_tool_ids())
-    assert len(registered) == 191
+    assert len(registered) == 200
     assert NEW_TOOL_IDS <= registered
     assert T4_NEW_TOOL_IDS <= registered
     assert T5_NEW_TOOL_IDS <= registered
@@ -283,7 +283,7 @@ def test_new_bundles_present_in_catalog() -> None:
         assert bundle.bundle_id == bundle_id
         assert bundle.tool_ids
 
-    assert len(get_bundle("rag").tool_ids) == 12
+    assert len(get_bundle("rag").tool_ids) == 13
     assert len(get_bundle("sandbox").tool_ids) == 5
     assert len(get_bundle("memory").tool_ids) == 6
     assert len(get_bundle("interaction").tool_ids) == 4
@@ -302,10 +302,9 @@ def test_new_bundles_present_in_catalog() -> None:
     assert len(get_bundle("harness").tool_ids) == 6
     assert len(get_bundle("websearch").tool_ids) == 4
     assert len(get_bundle("notify").tool_ids) == 6
-    assert len(get_bundle("health").tool_ids) == 11
+    assert len(get_bundle("health").tool_ids) == 12
     assert len(get_bundle("workspace").tool_ids) == 8
     assert len(get_bundle("storage").tool_ids) == 5
-    assert len(get_bundle("memory").tool_ids) == 5
     assert len(get_bundle("pagerduty").tool_ids) == 2
     assert len(get_bundle("collaboration").tool_ids) == 7
     assert len(get_bundle("cloud_platform").tool_ids) == 2

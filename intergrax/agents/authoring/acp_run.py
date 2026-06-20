@@ -204,11 +204,22 @@ async def run_acp_session(
             apply_context_profile_to_runtime_config,
         )
         from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+        from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
         from intergrax.runtime.nexus.config import RuntimeConfig
 
+        acp_routing_context = build_routing_context_from_runtime(
+            tenant_id=merged.tenant_id,
+            agent_id=merged.agent_id,
+            metadata=request.metadata,
+            budget_limits=merged.resolved_budget_limits,
+        )
         router_runtime_config = RuntimeConfig(
-            llm_adapter=resolve_llm_adapter(host.app_profile),
+            llm_adapter=resolve_llm_adapter(
+                host.app_profile,
+                routing_context=acp_routing_context,
+            ),
             production_mode=host.app_profile.execution_mode.value == "strict",
+            llm_routing_context=acp_routing_context,
         )
         apply_context_profile_to_runtime_config(
             router_runtime_config,
@@ -245,6 +256,32 @@ async def run_acp_session(
         ),
         degrade_provider=lambda: kernel_ctx_holder[0].budget_degrade_active,
     )
+    if host is not None and host.app_profile is not None and host.app_profile.llm_routing_profile is not None:
+        from intergrax.agents.authoring.dynamic_llm_router import wrap_dynamic_llm_router
+        from intergrax.agents.authoring.acp_routing_trace_bridge import (
+            record_acp_routing_rule_evaluation,
+        )
+        from intergrax.applications._shared.llm_routing_context_bridge import (
+            make_acp_routing_context_provider,
+        )
+        from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
+
+        def _on_routing_evaluated(evaluation: RoutingEvaluation) -> None:
+            record_acp_routing_rule_evaluation(kernel_ctx_holder[0], evaluation)
+
+        llm_router = wrap_dynamic_llm_router(
+            llm_router,
+            routing_profile=host.app_profile.llm_routing_profile,
+            context_provider=make_acp_routing_context_provider(
+                kernel_ctx_holder=kernel_ctx_holder,
+                step_ctx_holder=step_ctx_holder,
+                tenant_id=merged.tenant_id,
+                agent_id=merged.agent_id,
+                task_class=str(request.metadata.get("task_class", "")) or None,
+                metadata=request.metadata,
+            ),
+            on_evaluated=_on_routing_evaluated,
+        )
     shared_context = load_view(request.metadata) or view_from_task_metadata(
         request.metadata,
         task_id=task_id,

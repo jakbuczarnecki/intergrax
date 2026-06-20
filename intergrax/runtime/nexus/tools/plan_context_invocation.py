@@ -37,7 +37,7 @@ from intergrax.runtime.nexus.tools.adaptive_tool_mode_resolver import recommend_
 from intergrax.runtime.nexus.tools.tool_selection import (
     SemanticToolIndexSelectionStrategy,
     ToolSelectionContext,
-    resolve_planner_allowed_tool_ids,
+    resolve_planner_allowed_tool_ids_async,
     resolve_selection_strategy,
     strategy_trace_id,
 )
@@ -379,6 +379,8 @@ async def run_tools_context(state: RuntimeState) -> None:
                 top_k=state.context.config.tool_selection_top_k,
                 max_hierarchy_passes=state.context.config.tool_selection_max_hierarchy_passes,
                 embedding_manager=state.context.config.embedding_manager,
+                hierarchical_llm_category_pass=state.context.config.tool_selection_hierarchical_llm_pass,
+                llm_adapter=state.context.config.llm_adapter,
             )
             selection_strategy = resolve_selection_strategy(
                 tool_selection_mode,
@@ -386,7 +388,7 @@ async def run_tools_context(state: RuntimeState) -> None:
                 strategy_override=state.context.config.tool_selection_strategy,
                 entry_point_strategy_id=state.context.config.tool_selection_strategy_id,
             )
-            allowed_tool_ids = resolve_planner_allowed_tool_ids(
+            allowed_tool_ids = await resolve_planner_allowed_tool_ids_async(
                 tool_selection_mode,
                 selection_ctx,
                 strategy_override=selection_strategy,

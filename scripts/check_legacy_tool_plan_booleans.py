@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""Discourage legacy planner booleans and EnginePlan use_rag/use_websearch (PF-MAINT-LEG-01)."""
+"""Discourage legacy planner booleans and ToolInvocationPlan boolean shims (PF-MAINT-LEG-02)."""
 
 from __future__ import annotations
 
@@ -18,15 +18,17 @@ SCAN_ROOTS = (
 
 FORBIDDEN = (
     "ToolInvocationPlan.from_legacy(",
+    "uses_legacy_booleans_only(",
+    "ToolInvocationPlan(use_rag",
+    "ToolInvocationPlan(use_websearch",
     '"use_rag"',
     '"use_websearch"',
 )
 
 GRANDFATHER = (
-    "intergrax/runtime/nexus/tools/tool_runtime.py",
     "intergrax/runtime/nexus/tracing/plan/",
     "intergrax/runtime/nexus/context/context_builder.py",
-    "intergrax/runtime/nexus/tools/tool_access_policy.py",
+    "intergrax/runtime/nexus/tools/tool_runtime.py",
     "tests/",
 )
 

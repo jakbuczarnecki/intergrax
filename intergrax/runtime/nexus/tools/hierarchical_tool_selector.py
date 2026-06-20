@@ -83,6 +83,7 @@ def select_tools_hierarchical(
     top_k: int,
     max_category_passes: int = 2,
     allowed_tool_ids: Sequence[str] | None = None,
+    category_ranks: Sequence[CategoryRank] | None = None,
 ) -> tuple[str, ...]:
     """
     Two-pass hierarchical narrowing: category rank → tool rank within branches.
@@ -92,12 +93,16 @@ def select_tools_hierarchical(
     if top_k < 1:
         return ()
 
-    category_ranks = rank_categories(registry, query, allowed_tool_ids=allowed_tool_ids)
-    if not category_ranks:
+    ranks = (
+        category_ranks
+        if category_ranks is not None
+        else rank_categories(registry, query, allowed_tool_ids=allowed_tool_ids)
+    )
+    if not ranks:
         return ()
 
     pass_budget = max(1, max_category_passes)
-    selected_categories = category_ranks[:pass_budget]
+    selected_categories = ranks[:pass_budget]
     candidate_ids: list[str] = []
     for rank in selected_categories:
         candidate_ids.extend(rank.tool_ids)

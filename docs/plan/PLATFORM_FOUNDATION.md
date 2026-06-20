@@ -236,7 +236,7 @@ New agents integrate via **`AgentRegistry.register()`** — never by editing `Ne
 | **Evaluation closeout (Phase EVAL)** | **Done** (Band 2x) | No (harness-only) | EVAL-1–3 — [§6.1s](#61s-harness-implementation-queue--evaluation-closeout-closed) |
 | **Adaptive Harness Intelligence (Phase W-ADAPT)** | **Done** (Band 2y) | No (harness-only) | Wave 0–7 **Done** (70/70) · [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-closed) · AHIA |
 | **LLM completion envelope (Phase M-LLM-R)** | **Done** (Band 2z) | No (harness-only) | Audit 2026-06-06 — typed `LLMAdapterResponse`; **39/39** — [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed) · **Appendix L** |
-| Regression gate | **906 passed** | No | Must stay green after each harness PR (Phase FLOW closeout 2026-06-07) |
+| Regression gate | **1498 passed** | No | Must stay green after each harness PR (gate snapshot 2026-06-19; was 906 at FLOW closeout 2026-06-07) |
 | **Full architecture audit (FAUDIT-32)** | **Done** (2026-06-06) | No (harness-only) | 32-layer audit + **23/23 remediation** → [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-closed) |
 | **Nexus execution depth (Phase FLOW)** | **Done** (18/18 harness) | No (harness-only) | Band **2aj** — [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed) · FLOW-8 harness **Done**; product host **Deferred** §6.3 · source: [`architecture/NEXUS_EXECUTION_FLOW.md`](architecture/NEXUS_EXECUTION_FLOW.md) |
 | **Critic & Verification Layer (Phase CRIT-V)** | **Done** (24/24) | No (harness-only) | Band **2ak** — [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-closed) · [`architecture/CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md) |
@@ -437,6 +437,10 @@ Appendices: [`plan/`](plan/)
 | **2ay — LLM guardrail integrations (M.12 / GR-INT)** | `llm_guardrail` catalog + `LlmGuardrailMiddleware` + assembly/CI + E2E gate + `GUARDRAIL_BLOCKED` observability — **no** business agents | **Done** (2026-06-09) — **14/14 + M-P12.HARD** | [Phase M.12](plan/INTEGRATIONS.md) · [GR-DOC](plan/UNIFIED_EXECUTION_RUNTIME.md) · **§6.1an** · [ADR-GR-001](adr/entries/2026-06-09/ADR-GR-001.md) |
 | **2ax — Ideal Harness L3 depth (IDEAL-L3)** | L2→L3 uplift per 32-layer audit — identity, reliability, security, cost, prompts, gates — **no** business agents | **W2 Done** (2026-06-09) — **32/32 L3** | [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md) · **§6.1at** · Band **2ax** |
 | **2az — Ideal architecture gap (AUDIT-IDEAL)** | Post-L3 audit → full IDEAL architecture — memory org, ECP sync, registry durable, L4 evidence, DX HTTP — **no** business agents unless §6.3 | **Done** (2026-06-18) — **90/90 Done** · **0 Planned** | [Phase AUDIT-IDEAL](plan/AUDIT_IDEAL_2026.md) · **§6.1au** · Band **2az** |
+| **2ba — LLM developer excellence (M-LLM-X)** | ModelCatalog, routing, tokenizer preflight, ACP StepLLMRouter DX — **no** business agents | **Partial** — LC baseline Done; P2+ backlog | [Phase M-LLM-X](plan/LLM_ADAPTERS.md) · **§6.1ax** · Band **2ba** |
+| **2bb — Security & Trust Planes (SEC-PLANES)** | Modular S1/S2/S3 planes, `security_defenses` EP, shipped defense bundles, encryption bridge — **no** standalone Security tier | **Done** (2026-06-19) — **17/17** | [Phase SEC-PLANES](plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes--security--trust-planes-closed) · **§6.1aw** · canon §42.45 · [ADR-SEC-001](adr/entries/2026-06-19/ADR-SEC-001.md) |
+| **2bc — Security Planes enterprise hardening (SEC-PLANES-EVOL)** | Catalog bootstrap wiring, EP lab fixture, security spine signals, encrypt-via-adapter, defense inspection budget — **no** new Security tier | **Done** (2026-06-19) — **7/7** | [Phase SEC-PLANES-EVOL](plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-planes-evol--enterprise-hardening-closed) · **§6.1bc** · canon §42.45.10 |
+| **2bd — Security enterprise production (SEC-ENT)** | Live SecretsStore encryptor, typed spine payloads, tenant-scope defense guard, ops counters — **no** new Security tier | **Done** (2026-06-19) — **6/6** | [Phase SEC-ENT](plan/UNIFIED_EXECUTION_RUNTIME.md#phase-sec-ent--enterprise-production-closed) · **§6.1bd** · canon §42.45.11 |
 | **3 — END OF PLAN (product)** | Business agents, new product Tier-3 apps, domain skills, Legal live E2E | **Deferred** — **[§6.3](#63-end-of-plan--deferred-product-work-only)** | K.1, K.2, `applications/<product>/`, K.6, B.15, S-Ops.4 · FLOW-8 |
 
 **Hard rule:** Band 3 is **not** “next after harness.” It runs only after an **explicit product prioritization decision** (Appendix A for agents; separate decision for new applications). Until then, **do not** implement, extend, or schedule K.1/K.2 waves, new product hosts, or product-only E2E in implementation cadence (§6.1–§6.2).
@@ -1813,9 +1817,9 @@ Verify (every harness PR):
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
 
-### 6.1av Harness implementation queue — Platform Foundation audit maintenance (planned)
+### 6.1av Harness implementation queue — Platform Foundation audit maintenance
 
-**Source:** Layer 1 audit (2026-06-18) — `PLATFORM_FOUNDATION` layers 1, 2, 32 · [`../audit_results/2026-06-18/PLATFORM_FOUNDATION.md`](../audit_results/2026-06-18/PLATFORM_FOUNDATION.md)  
+**Source:** Interactive layer audit (2026-06-19) — `PLATFORM_FOUNDATION` layers 1, 2, 32 · [`../audit_results/2026-06-19/PLATFORM_FOUNDATION.md`](../audit_results/2026-06-19/PLATFORM_FOUNDATION.md) · prior: [`../audit_results/2026-06-18/PLATFORM_FOUNDATION.md`](../audit_results/2026-06-18/PLATFORM_FOUNDATION.md)  
 **Priority ladder:** **Band 1** (§6.1) — doc hygiene + optional legacy cleanup; runs **in parallel** with gate maintenance
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
@@ -1824,8 +1828,11 @@ Verify (every harness PR):
 | 2 | **PF-MAINT-DOC-02** | Docs | P2 | **Done** | Sync §6.1au + §4.0 Band 2az counter with `AUDIT_IDEAL_2026.md` | Plan shows **90/90 Done** · **0 Planned** |
 | 3 | **PF-MAINT-DX-01** | Docs | P3 | **Done** | Implementer quick-start in `intergrax_runtime_architecture.md` hub | §4.0 ladder + scaffold flow linked |
 | 4 | **PF-MAINT-LEG-01** | Code | P3 | **Done** | Remove `use_rag`/`use_websearch` from LLM planner schema (`EnginePlan`) | `check_legacy_tool_plan_booleans.py` green; `tool_ids` only |
+| 5 | **PF-MAINT-DOC-03** | Docs | P3 | **Done** | Sync §0.5 regression gate counter with live `pytest -m gate` snapshot | Plan §0.5 shows **1498 passed** (2026-06-19) |
+| 6 | **PF-MAINT-LEG-02** | Code | P3 | **Done** | Remove legacy `use_rag`/`use_websearch` shims from `ToolInvocationPlan` (`tool_runtime.py`) | Zero DeprecationWarning in gate; `tool_ids` only at runtime bridge |
+| 7 | **PF-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `PLATFORM_FOUNDATION.md` + `progress.json` present |
 
-**Suggested PR order:** PF-MAINT-DOC-01 → PF-MAINT-DOC-02 → PF-MAINT-DX-01 (single doc PR) → PF-MAINT-LEG-01 (separate breaking PR).
+**Suggested PR order:** none — §6.1av queue closed (2026-06-19).
 
 **Explicitly excluded:** Phase K, §50 marketplace, new Tier-0 mechanisms — [§6.3](#63-end-of-plan--deferred-product-work-only).
 
@@ -3930,9 +3937,9 @@ Verify (every harness PR):
 
 **Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
 
-### 6.1av Harness implementation queue — Platform Foundation audit maintenance (planned)
+### 6.1av Harness implementation queue — Platform Foundation audit maintenance
 
-**Source:** Layer 1 audit (2026-06-18) — `PLATFORM_FOUNDATION` layers 1, 2, 32 · [`../audit_results/2026-06-18/PLATFORM_FOUNDATION.md`](../audit_results/2026-06-18/PLATFORM_FOUNDATION.md)  
+**Source:** Interactive layer audit (2026-06-19) — `PLATFORM_FOUNDATION` layers 1, 2, 32 · [`../audit_results/2026-06-19/PLATFORM_FOUNDATION.md`](../audit_results/2026-06-19/PLATFORM_FOUNDATION.md) · prior: [`../audit_results/2026-06-18/PLATFORM_FOUNDATION.md`](../audit_results/2026-06-18/PLATFORM_FOUNDATION.md)  
 **Priority ladder:** **Band 1** (§6.1) — doc hygiene + optional legacy cleanup; runs **in parallel** with gate maintenance
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
@@ -3941,8 +3948,11 @@ Verify (every harness PR):
 | 2 | **PF-MAINT-DOC-02** | Docs | P2 | **Done** | Sync §6.1au + §4.0 Band 2az counter with `AUDIT_IDEAL_2026.md` | Plan shows **90/90 Done** · **0 Planned** |
 | 3 | **PF-MAINT-DX-01** | Docs | P3 | **Done** | Implementer quick-start in `intergrax_runtime_architecture.md` hub | §4.0 ladder + scaffold flow linked |
 | 4 | **PF-MAINT-LEG-01** | Code | P3 | **Done** | Remove `use_rag`/`use_websearch` from LLM planner schema (`EnginePlan`) | `check_legacy_tool_plan_booleans.py` green; `tool_ids` only |
+| 5 | **PF-MAINT-DOC-03** | Docs | P3 | **Done** | Sync §0.5 regression gate counter with live `pytest -m gate` snapshot | Plan §0.5 shows **1498 passed** (2026-06-19) |
+| 6 | **PF-MAINT-LEG-02** | Code | P3 | **Done** | Remove legacy `use_rag`/`use_websearch` shims from `ToolInvocationPlan` (`tool_runtime.py`) | Zero DeprecationWarning in gate; `tool_ids` only at runtime bridge |
+| 7 | **PF-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `PLATFORM_FOUNDATION.md` + `progress.json` present |
 
-**Suggested PR order:** PF-MAINT-DOC-01 → PF-MAINT-DOC-02 → PF-MAINT-DX-01 (single doc PR) → PF-MAINT-LEG-01 (separate breaking PR).
+**Suggested PR order:** none — §6.1av queue closed (2026-06-19).
 
 **Explicitly excluded:** Phase K, §50 marketplace, new Tier-0 mechanisms — [§6.3](#63-end-of-plan--deferred-product-work-only).
 

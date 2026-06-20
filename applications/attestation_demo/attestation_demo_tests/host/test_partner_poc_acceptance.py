@@ -5,7 +5,8 @@
 Validates:
 - execution-boundary events delivered in trigger API response (no webhook)
 - tool_execution + harness_step events with event_sequence ordering
-- unsigned events + honest trust_model (client_observed, not server attested)
+- unsigned events + honest trust_model when signing disabled (client_observed)
+- host-signed events + host_attested trust_model when EBE-9 enabled (default)
 - records.put tool boundary + HarnessKernel step boundary
 """
 
@@ -123,20 +124,27 @@ def test_partner_run_id_step_id_lineage_and_timestamp(poc_response: dict) -> Non
     assert harness_event.get("occurred_at")
 
 
-def test_partner_unsigned_event_no_platform_attestation(poc_response: dict) -> None:
+def test_partner_host_signed_events_with_honest_trust_model(poc_response: dict) -> None:
     for event in poc_response["boundary_events"]:
-        assert event["signed"] is False
+        assert event["signed"] is True
+        assert event["host_attestation"] is not None
     trust = poc_response.get("trust_model") or {}
-    assert trust.get("platform_signed") == "false"
-    assert trust.get("recommended_receipt_role") == "client_observed"
+    assert trust.get("platform_signed") == "true"
+    assert trust.get("recommended_receipt_role") == "host_attested"
     note = (trust.get("note") or "").lower()
-    assert "unsigned" in note or "partner signs" in note
+    assert "host-signed" in note or "client_observed" in note
     assert "server_attested" not in json.dumps(trust).lower()
 
 
 def test_partner_tool_and_harness_boundaries(poc_response: dict) -> None:
-    tool_event = assert_partner_tool_boundary_event(_tool_event(poc_response))
-    harness_event = assert_partner_harness_boundary_event(_harness_event(poc_response))
+    tool_event = assert_partner_tool_boundary_event(
+        _tool_event(poc_response),
+        host_signed=True,
+    )
+    harness_event = assert_partner_harness_boundary_event(
+        _harness_event(poc_response),
+        host_signed=True,
+    )
     assert tool_event.boundary_type == "tool_execution"
     assert harness_event.boundary_type == "harness_step"
     assert tool_event.side_effects is True

@@ -211,8 +211,8 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 | EBE-5 | Partner handoff (README + sample JSON) | **Done** | `partner_handoff/` | committed request/response fixtures |
 | EBE-6 | Domain doc + harness ADR (trust model) | **Done** | `architecture/OBSERVABILITY.md` §18, ADR-OBS-002 | doc pair + `check_harness_adr.py` |
 | EBE-7 | Webhook sink | Deferred | `sinks/webhook.py` | Phase 2 |
-| EBE-8 | HarnessKernel step-level events (`harness_step`, `event_sequence`) | **Done** (partner validated) | `harness_boundary_emitter.py`, `HarnessKernel._finish_step` | Live Docker @ `106aee77`; AgentReceipt 28/28 + live example; handoff `agent_experiment_runtime` |
-| EBE-9 | Host-side event signing | Deferred | optional seal | Phase 2 |
+| EBE-8 | HarnessKernel step-level events (`harness_step`, `event_sequence`) | **Done** (partner validated) | `harness_boundary_emitter.py`, `HarnessKernel._finish_step` | Live Docker @ `106aee77`; AgentReceipt 28/28 + live example |
+| EBE-9 | Host-side event signing (Ed25519 statement) | **Done** (PoC) | `host_attestation.py`, `canonical_json.py`, profile `host_signing_enabled` | golden vector + `test_partner_ebe9_host_signing.py`; [ADR-OBS-004](../adr/entries/2026-06-19/ADR-OBS-004.md) |
 
 ---
 

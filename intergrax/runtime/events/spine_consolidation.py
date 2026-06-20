@@ -35,6 +35,8 @@ LEGACY_SPINE_TO_PLATFORM_KIND: Final[dict[str, str]] = {
     "hook_blocked": "platform.hook.hook_blocked",
     "hook_error": "platform.hook.hook_error",
     "hook_timeout": "platform.hook.hook_timeout",
+    "defense_blocked": "platform.security.defense_blocked",
+    "encryption_denied": "platform.security.encryption_denied",
 }
 
 
@@ -164,6 +166,20 @@ PLATFORM_KIND_CATALOG: Final[dict[str, PlatformKindEntry]] = {
         phase=ExecutionPhase.STEP_EXECUTION,
         ops_hint="ops:alert",
         legacy_spine_value="hook_timeout",
+    ),
+    "platform.security.defense_blocked": PlatformKindEntry(
+        kind="platform.security.defense_blocked",
+        phase=ExecutionPhase.STEP_EXECUTION,
+        ops_hint="ops:alert",
+        legacy_spine_value="defense_blocked",
+        retention_class=RetentionClass.AUDIT,
+    ),
+    "platform.security.encryption_denied": PlatformKindEntry(
+        kind="platform.security.encryption_denied",
+        phase=ExecutionPhase.STEP_EXECUTION,
+        ops_hint="ops:alert",
+        legacy_spine_value="encryption_denied",
+        retention_class=RetentionClass.AUDIT,
     ),
 }
 

@@ -16,6 +16,7 @@ from intergrax.runtime.nexus.config_types import (
 
 if TYPE_CHECKING:
     from intergrax.integrations.registry.profile import IntegrationProfile
+    from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
     from intergrax.runtime.events.event_bus import RuntimeEventBus
     from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
     from intergrax.applications.contracts.environment_profile import (
@@ -39,6 +40,8 @@ from intergrax.runtime.nexus.config_sections import (
 )
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.routing.context_bridge import LLMRoutingRuntimeSnapshot
+from intergrax.llm_adapters.routing.contracts import RoutingContext
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
@@ -115,6 +118,8 @@ class RuntimeConfig:
 
     tenant_id: Optional[str] = None
     workspace_id: Optional[str] = None
+    llm_routing_context: Optional[RoutingContext] = None
+    llm_routing_snapshot: Optional[LLMRoutingRuntimeSnapshot] = None
 
     # ------------------------------------------------------------------
     # RAG CONFIGURATION
@@ -182,6 +187,8 @@ class RuntimeConfig:
     tool_selection_mode: ToolSelectionMode = ToolSelectionMode.STATIC
     tool_selection_top_k: int = 20
     tool_selection_max_hierarchy_passes: int = 2
+    # Opt-in LLM category pass for hierarchical selection (TOOL-MAINT-01b / ADR-TOOL-005 v2).
+    tool_selection_hierarchical_llm_pass: bool = False
     # Instance override — takes precedence over tool_selection_mode (TOOL-ENG-31).
     tool_selection_strategy: Optional[ToolSelectionStrategy] = None
     # Entry-point plugin id from intergrax.tool_selection_strategies (TOOL-ENG-26).
@@ -281,6 +288,7 @@ class RuntimeConfig:
     # DIAGNOSTICS
     # ------------------------------------------------------------------
     enable_llm_usage_collection: bool = True
+    llm_usage_tracker: Optional["LLMUsageTracker"] = None
 
 
     # ------------------------------------------------------------------

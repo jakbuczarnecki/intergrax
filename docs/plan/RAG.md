@@ -582,4 +582,36 @@ uv run pytest tests/unit/rag/ tests/unit/tools/providers/rag/ tests/unit/applica
 
 ---
 
+### Phase RAG-MAINT-vllm — vLLM embedding provider (2026-06-19)
+
+**Source:** vLLM platform integration — RAG embeddings via OpenAI-compatible `/v1/embeddings`.  
+**Goal:** `VllmEmbeddingProvider` registered in default bootstrap; optional Docker `vllm-embed` on host **8101**.
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **RAG-MAINT-vllm-1** | Code | P2 | **Done** | `vllm_embedding_provider.py` + default registry | `provider_id=vllm` in `EmbeddingProviderRegistry` |
+| 2 | **RAG-MAINT-vllm-2** | Infra | P2 | **Done** | `infra/docker/vllm-embed` + integration profile `vllm` service | `INTERGRAX_DEFAULT_VLLM_EMBED_BASE_URL=http://127.0.0.1:8101/v1` |
+| 3 | **RAG-MAINT-vllm-3** | Tests | P2 | **Done** | Unit mocks + optional integration pipeline test | `tests/unit/rag/embedding/test_vllm_embedding_provider.py` green |
+
+**ADR:** no ADR needed — mirrors `OpenAIEmbeddingProvider` against self-hosted vLLM embed server.
+
+---
+
+### Phase RAG-MAINT-llama-cpp — llama.cpp embedding provider (2026-06-19)
+
+**Source:** llama.cpp platform integration — RAG embeddings via OpenAI-compatible `/v1/embeddings`.  
+**Goal:** `LlamaCppEmbeddingProvider` registered in default bootstrap; optional Docker `llama-cpp-embed` on host **8103**.
+
+| Order | ID | Type | Priority | Status | Deliverable | Acceptance |
+|-------|-----|------|----------|--------|-------------|------------|
+| 1 | **RAG-MAINT-llama-cpp-1** | Code | P2 | **Done** | `llama_cpp_embedding_provider.py` + default registry | `provider_id=llama_cpp` in `EmbeddingProviderRegistry` |
+| 2 | **RAG-MAINT-llama-cpp-2** | Infra | P2 | **Done** | `infra/docker/llama-cpp-embed` + integration profile `llama-cpp` service | `INTERGRAX_DEFAULT_LLAMA_CPP_EMBED_BASE_URL=http://127.0.0.1:8103/v1` |
+| 3 | **RAG-MAINT-llama-cpp-3** | Tests | P2 | **Done** | Unit mocks + E2E embed pipeline in `tests/e2e/llama_cpp/` (`no_ci`) | `test_llama_cpp_embedding_pipeline_documents` with live embed server |
+
+**Phase status:** **Done** (2026-06-19) — 3/3 Done.
+
+**ADR:** no ADR needed — mirrors `VllmEmbeddingProvider` against self-hosted llama.cpp embed server.
+
+---
+
 *End of RAG Implementation Plan.*

@@ -110,8 +110,7 @@ async def test_tool_gateway_single_rag_capability():
 
     assert response.status == ToolResponseStatus.SUCCESS
     plan = invoke_mock.await_args.kwargs["plan"]
-    assert plan.use_rag is True
-    assert plan.use_websearch is False
+    assert plan.tool_ids == (RAG_RETRIEVE_TOOL_ID,)
     assert plan.use_tools is False
 
 
@@ -147,10 +146,8 @@ async def test_tool_gateway_capability_plan_prefers_tool_ids_without_legacy_flag
 
     assert response.status == ToolResponseStatus.SUCCESS
     plan = invoke_mock.await_args.kwargs["plan"]
-    assert plan.use_rag is True
-    assert plan.use_websearch is True
     assert RAG_RETRIEVE_TOOL_ID in plan.tool_ids
-    assert plan.uses_legacy_booleans_only() is False
+    assert WEBSEARCH_QUERY_TOOL_ID in plan.tool_ids
 
 
 class _GatewayIn(BaseModel):

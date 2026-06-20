@@ -351,3 +351,34 @@ Plugins **do not** publish directly to `RuntimeEventBus`. Emit through:
 - **Trace** — `DiagnosticPayload` for implementation detail.
 
 **Author map:** [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) [Appendix Q §Q.5](AGENT_CREATION_GUIDE.md#q5-domain-runtime-signals-event_kind--obs-evol-9) · [`APPLICATION_CREATION_GUIDE.md`](APPLICATION_CREATION_GUIDE.md) §8 (Tier-3 subscribe / adapters).
+
+---
+
+## 12. Security defense plugins (Phase SEC-PLANES)
+
+Entry point group: `intergrax.security_defenses`
+
+| Mechanism | Purpose |
+|-----------|---------|
+| `SecurityDefensePlugin` | S2 runtime inspection at declared `HookPoint`s |
+| `defense_bundle_ids` | Shipped bundles on `ApplicationSecurityProfile` (e.g. `harness.strict_injection`) |
+| `defense_plugin_ids` | Explicit EP plugin ids on profile |
+| `bootstrap_security_providers()` | Load shipped bundles + optional EP discovery |
+
+Bootstrap: `intergrax.core.security_bootstrap.bootstrap_security_providers(discover_entry_points=True)` — also invoked from `bootstrap_catalogs()`.
+
+**Composition:** plugins merge into `MiddlewarePipeline` via `security_runtime_bridge` — after native V-SEC middleware, before `ToolRuntime`. They **never** bypass `PolicyEngine`.
+
+**Author checklist:**
+
+| Rule | Detail |
+|------|--------|
+| Tenant scope | Read `tenant_id` from `HookContext.runtime_state`; do not exfiltrate cross-tenant data |
+| Hook coverage | Declare only `HookPoint`s you inspect — undeclared points are skipped |
+| Fail mode | Default `FAIL_CLOSED`; `FAIL_OPEN` requires explicit product justification |
+| Performance | Inspection runs under a wall-clock budget (default 100ms); slow plugins are blocked |
+| Observability | Blocks emit `platform.security.defense_blocked` on the runtime bus |
+
+**Lab fixture:** `tests/fixtures/plugin_packages/intergrax_security_defense_fixture/` — reference EP package for CI discovery tests.
+
+**Author map:** [Appendix H §H.3.1](guides/AGENT_CREATION_GUIDE.md#h31-security--trust-planes-operator-index) · canon [§42.45](architecture/UNIFIED_EXECUTION_RUNTIME.md#4245-security-and-data-governance) · [ADR-SEC-001](../adr/entries/2026-06-19/ADR-SEC-001.md).

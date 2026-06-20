@@ -265,6 +265,15 @@ class UAEPExecutor:
             request=request,
             run_id=run_id,
         )
+        from intergrax.applications._shared.llm_routing_runtime_bridge import (
+            sync_llm_routing_snapshot_for_state,
+            wire_llm_routing_observability_on_state,
+        )
+
+        runtime_state = exec_ctx.metadata["runtime_state"]
+        assert isinstance(runtime_state, RuntimeState)
+        wire_llm_routing_observability_on_state(runtime_state)
+        sync_llm_routing_snapshot_for_state(runtime_state)
         exec_ctx.tool_gateway = BoundToolGateway(
             exec_ctx,
             allowed_tools=list(contract.allowed_tools),
@@ -310,6 +319,15 @@ class UAEPExecutor:
             await self._guard_hook(
                 await self._middleware.run_before(HookPoint.BEFORE_STEP, hook_step)
             )
+
+            runtime_state = exec_ctx.metadata.get("runtime_state")
+            if isinstance(runtime_state, RuntimeState):
+                from intergrax.applications._shared.llm_routing_runtime_bridge import (
+                    sync_llm_routing_snapshot_for_state,
+                )
+
+                request.metadata["step_index"] = index
+                sync_llm_routing_snapshot_for_state(runtime_state)
 
             started = time.perf_counter()
             if should_skip_uaep_step(

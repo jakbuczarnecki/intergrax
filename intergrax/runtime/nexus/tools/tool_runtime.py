@@ -3,16 +3,34 @@
 
 from __future__ import annotations
 
-import warnings
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Optional, Protocol, Sequence, runtime_checkable
+from typing import TYPE_CHECKING, Any, Optional, Protocol, runtime_checkable
 
-from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID
+from intergrax.tools.unified.constants import (
+    RAG_RETRIEVE_TOOL_ID,
+    RAG_TOOL_ALIASES,
+    WEBSEARCH_QUERY_TOOL_ID,
+    WEBSEARCH_TOOL_ALIASES,
+)
 
 if TYPE_CHECKING:
     from intergrax.contracts.tool_request import ToolRequest, ToolResponse
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+
+
+def plan_includes_rag(tool_ids: Sequence[str]) -> bool:
+    return any(
+        tool_id in RAG_TOOL_ALIASES or tool_id.startswith("rag.")
+        for tool_id in tool_ids
+    )
+
+
+def plan_includes_websearch(tool_ids: Sequence[str]) -> bool:
+    return any(
+        tool_id in WEBSEARCH_TOOL_ALIASES or tool_id.startswith("websearch.")
+        for tool_id in tool_ids
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,77 +39,33 @@ class ToolInvocationPlan:
     Runtime-neutral plan for capability invocation.
 
     Canonical: ``tool_ids`` lists catalog tools (e.g. ``rag.retrieve``).
-    Legacy booleans (``use_rag``, ``use_websearch``, ``use_tools``) remain as
-    compatibility shims — normalized via :meth:`normalized`.
+    ``use_tools`` enables the bounded tool planner loop when configured.
     """
 
     tool_ids: tuple[str, ...] = ()
-    use_rag: bool = False
-    use_websearch: bool = False
     use_tools: bool = False
     tool_inputs: Mapping[str, Mapping[str, Any]] = field(default_factory=dict)
 
     def normalized(self) -> ToolInvocationPlan:
-        ids = list(self.tool_ids)
-        use_rag = self.use_rag
-        use_websearch = self.use_websearch
-
-        if use_rag and RAG_RETRIEVE_TOOL_ID not in ids:
-            ids.append(RAG_RETRIEVE_TOOL_ID)
-        if use_websearch and WEBSEARCH_QUERY_TOOL_ID not in ids:
-            ids.append(WEBSEARCH_QUERY_TOOL_ID)
-
-        if RAG_RETRIEVE_TOOL_ID in ids:
-            use_rag = True
-        if WEBSEARCH_QUERY_TOOL_ID in ids:
-            use_websearch = True
-
-        deduped = tuple(dict.fromkeys(ids))
+        deduped = tuple(dict.fromkeys(self.tool_ids))
+        if deduped == self.tool_ids:
+            return self
         return ToolInvocationPlan(
             tool_ids=deduped,
-            use_rag=use_rag,
-            use_websearch=use_websearch,
             use_tools=self.use_tools,
             tool_inputs=dict(self.tool_inputs),
         )
 
     @classmethod
-    def from_legacy(
-        cls,
-        *,
-        use_rag: bool = False,
-        use_websearch: bool = False,
-        use_tools: bool = False,
-        tool_ids: Sequence[str] = (),
-    ) -> ToolInvocationPlan:
-        if (use_rag or use_websearch) and not tool_ids:
-            warnings.warn(
-                "ToolInvocationPlan.from_legacy(use_rag/use_websearch) is deprecated; "
-                "pass explicit tool_ids (e.g. rag.retrieve, websearch.query)",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-        return cls(
-            use_rag=use_rag,
-            use_websearch=use_websearch,
-            use_tools=use_tools,
-            tool_ids=tuple(tool_ids),
-        ).normalized()
-
-    @classmethod
     def from_tool_ids(cls, tool_ids: Sequence[str], *, use_tools: bool = False) -> ToolInvocationPlan:
         return cls(tool_ids=tuple(tool_ids), use_tools=use_tools).normalized()
-
-    def uses_legacy_booleans_only(self) -> bool:
-        """True when plan was expressed via deprecated flags without explicit tool_ids."""
-        return (self.use_rag or self.use_websearch) and not self.tool_ids
 
 
 def capability_payload_to_tool_ids(payload: Mapping[str, Any]) -> tuple[str, ...]:
     """
     Resolve catalog tool ids from a capability-plan payload (Phase LEG-1).
 
-    Prefers explicit ``tool_ids``; otherwise maps deprecated boolean flags.
+    Prefers explicit ``tool_ids``; otherwise maps legacy boolean flags to catalog ids.
     """
     raw_ids = payload.get("tool_ids")
     if isinstance(raw_ids, (list, tuple)) and raw_ids:
@@ -99,20 +73,8 @@ def capability_payload_to_tool_ids(payload: Mapping[str, Any]) -> tuple[str, ...
 
     ids: list[str] = []
     if bool(payload.get("use_rag", False)):
-        if not payload.get("tool_ids"):
-            warnings.warn(
-                "capability payload use_rag without tool_ids is deprecated; use rag.retrieve",
-                DeprecationWarning,
-                stacklevel=2,
-            )
         ids.append(RAG_RETRIEVE_TOOL_ID)
     if bool(payload.get("use_websearch", False)):
-        if not payload.get("tool_ids"):
-            warnings.warn(
-                "capability payload use_websearch without tool_ids is deprecated; use websearch.query",
-                DeprecationWarning,
-                stacklevel=2,
-            )
         ids.append(WEBSEARCH_QUERY_TOOL_ID)
     return tuple(dict.fromkeys(ids))
 
@@ -129,7 +91,7 @@ def _tool_inputs_from_payload(payload: Mapping[str, Any]) -> dict[str, dict[str,
 
 
 def tool_invocation_plan_from_capability_payload(payload: Mapping[str, Any]) -> ToolInvocationPlan:
-    """Build a normalized plan from gateway/capability payload without ``from_legacy``."""
+    """Build a normalized plan from gateway/capability payload."""
     plan = ToolInvocationPlan.from_tool_ids(
         capability_payload_to_tool_ids(payload),
         use_tools=bool(payload.get("use_tools", False)),
@@ -139,8 +101,6 @@ def tool_invocation_plan_from_capability_payload(payload: Mapping[str, Any]) -> 
         return plan
     return ToolInvocationPlan(
         tool_ids=plan.tool_ids,
-        use_rag=plan.use_rag,
-        use_websearch=plan.use_websearch,
         use_tools=plan.use_tools,
         tool_inputs=tool_inputs,
     )
@@ -212,7 +172,6 @@ class ToolRuntime:
 
         cfg = state.context.config
         effective_allowed = resolve_allowed_tools_from_config(cfg, explicit=allowed_tools)
-        raw_plan = plan
         plan = ToolAccessPolicy.apply(
             plan.normalized(),
             allowed_tools=effective_allowed,
@@ -222,22 +181,11 @@ class ToolRuntime:
         if modality_profile is not None:
             plan = ToolAccessPolicy.apply_modality_profile(plan, profile=modality_profile)
 
-        if raw_plan.uses_legacy_booleans_only():
-            state.trace_event(
-                component=TraceComponent.PIPELINE,
-                step=trace_step,
-                message=(
-                    "Deprecated ToolInvocationPlan booleans (use_rag/use_websearch); "
-                    "prefer tool_ids e.g. ['rag.retrieve', 'websearch.query']."
-                ),
-                level=TraceLevel.WARNING,
-            )
-
         await run_longterm_memory_context(state)
         await run_session_semantic_recall_context(state)
         merge_provider_metadata_into_request(state)
 
-        if plan.use_rag:
+        if plan_includes_rag(plan.tool_ids):
             if cfg.enable_rag:
                 await run_rag_context(state)
             else:
@@ -248,7 +196,7 @@ class ToolRuntime:
                     level=TraceLevel.WARNING,
                 )
 
-        if plan.use_websearch:
+        if plan_includes_websearch(plan.tool_ids):
             if cfg.enable_websearch:
                 await run_websearch_context(state)
             else:

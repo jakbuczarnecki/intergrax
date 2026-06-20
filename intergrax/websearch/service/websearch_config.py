@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 
@@ -50,5 +50,8 @@ class WebSearchConfig:
     max_chunks_total: int = 10
 
     run_id: Optional[str] = None
+
+    # Set by Tier-3 bridge when live routing snapshot refresh is enabled (M-LLM-X.13.5).
+    routing_runtime_config: Any = None
 
     llm: WebSearchLLMConfig = field(default_factory=WebSearchLLMConfig)

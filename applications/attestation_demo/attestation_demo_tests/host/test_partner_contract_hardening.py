@@ -72,6 +72,10 @@ def test_partner_failed_tool_returns_dual_boundary_claims() -> None:
     assert response.status_code == 200, response.text
     payload = response.json()
     events = payload.get("boundary_events") or []
-    assert_partner_failed_tool_dual_claims(events, run_id=str(payload.get("run_id") or ""))
+    assert_partner_failed_tool_dual_claims(
+        events,
+        run_id=str(payload.get("run_id") or ""),
+        host_signed=True,
+    )
     trust = payload.get("trust_model") or {}
-    assert trust.get("recommended_receipt_role") == "client_observed"
+    assert trust.get("recommended_receipt_role") == "host_attested"

@@ -908,7 +908,7 @@ BudgetReactionProfile:
 |----------|---------------|---------------------------|
 | **abort** | `StepOutcome.fail` / run `status=failed`, `terminal_reason=budget_exceeded`, `AgentRunError(BUDGET_EXCEEDED)` | Error payload + trace; optional `user_message_template` |
 | **hitl** | `StepOutcome.pause_hitl` / Nexus HITL runner; resume after approval | HITL ticket + governance snapshot §29 |
-| **degrade_model** | Force `StepLLMRouter` to cheapest allowed model for subsequent steps | Trace warning; agent may observe lower `model_id` |
+| **degrade_model** | Force `StepLLMRouter` to cheapest allowed model for subsequent steps | Trace warning; agent may observe lower `model_id` — **target:** unify with `BudgetExceededDegradeRule` ([`LLM_ADAPTERS.md`](LLM_ADAPTERS.md) M-LLM-X.9.6 · [ADR-LLM-003](../adr/entries/2026-06-19/ADR-LLM-003.md)) |
 | **notify_only** | Run continues (advisory exceed) or soft-stop per binding; notifications fired | Webhook/Slack/email via integration slugs |
 | **custom_hook** | Host invokes registered `BudgetReactionHook` with structured payload | Application-defined (dashboard, billing, paging) |
 | **pause_graph** | Nexus pauses graph execution (environment exceed only) | ApplicationRunSummary + task status |
@@ -1238,6 +1238,8 @@ Developer code path:
 ## 28.3 Gap register (ACP)
 
 **Audit sync (2026-06-13 · ACP-LC 2026-06-17):** **37 Closed** · **0 Open** · ACP-FINISH complete; Full Harness LC closeout — no open P0/P1 in domain scope.
+
+**Audit revalidation (2026-06-19, ACP-MAINT-DOC-01):** Fleet **17/17** migrated · `check_agent_acp_close_ci.py` green (skill resolution in umbrella · production readiness mean 100%) · AS-3 `boundary_demo` migrated off author-time `allowed_tools`. Deferred cross-domain: COST-1 graph `RunBudget` cap · FAUDIT-REG.1.
 
 | ID | Gap | Priority | Plan row | Status |
 |----|-----|----------|----------|--------|

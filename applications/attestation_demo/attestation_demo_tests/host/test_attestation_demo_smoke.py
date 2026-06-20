@@ -40,13 +40,14 @@ def test_attestation_demo_poc_run_returns_boundary_events():
     assert len(events) >= 2
     tool_event = next(e for e in events if e.get("boundary_type") == "tool_execution")
     assert tool_event.get("schema_id") == "execution_boundary_event.v1"
-    assert tool_event.get("signed") is False
+    assert tool_event.get("signed") is True
+    assert tool_event.get("host_attestation") is not None
     assert tool_event.get("tool_id") == "records.put"
     assert tool_event.get("agent_id") == "boundary_demo_agent"
     assert tool_event.get("action_status") == "executed"
     assert tool_event.get("event_sequence") == 1
     assert tool_event.get("input", {}).get("partition_key") == "attestation_demo"
-    assert body.get("trust_model", {}).get("recommended_receipt_role") == "client_observed"
+    assert body.get("trust_model", {}).get("recommended_receipt_role") == "host_attested"
 
     run_id = body.get("run_id")
     assert run_id
@@ -80,7 +81,8 @@ def test_attestation_demo_poc_run_full_boundary_event_contract():
     assert tool_event["schema_id"] == "execution_boundary_event.v1"
     assert tool_event["boundary_type"] == "tool_execution"
     assert tool_event["event_sequence"] == 1
-    assert tool_event["signed"] is False
+    assert tool_event["signed"] is True
+    assert tool_event["host_attestation"] is not None
     assert tool_event["side_effects"] is True
     assert tool_event["risk_level"] == "medium"
     assert tool_event["step_id"] == "store_demo_record"
