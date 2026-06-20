@@ -466,7 +466,7 @@ tests/ · scripts/       # Gate tests and harness CI checks
 | Harness audit (32 layers) | [INTEGRAX_HARNESS_AUDIT_MAP.md](docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) |
 | Business backlog only | [plan/PLATFORM_FOUNDATION.md §6.3a](docs/plan/PLATFORM_FOUNDATION.md#63a-business-backlog-register-consolidated) |
 
-**AI context:** [llms.txt](llms.txt) · [llms-full.txt](llms-full.txt) · [AGENTS.md](AGENTS.md) · [CONTRIBUTING.md](CONTRIBUTING.md)
+**AI context:** [llms.txt](llms.txt) · [llms-full.txt](llms-full.txt) · [AGENTS.md](AGENTS.md) (stub) · [AGENT_INSTRUCTIONS.md](docs/guides/AGENT_INSTRUCTIONS.md) · [CONTRIBUTING.md](CONTRIBUTING.md)
 
 **One source of truth per topic.** Platform docs live in [`docs/`](docs/); product and agent docs live under `applications/{product}/` and `agents/{name}/`.
 
@@ -537,7 +537,8 @@ This repository is currently in private R&D stage. Commercial licensing and part
 | Resource | Purpose |
 |----------|---------|
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Development setup, work cycle, PR process |
-| [AGENTS.md](AGENTS.md) | Instructions for AI coding agents |
+| [AGENTS.md](AGENTS.md) | Cursor auto-load stub — tiers, boundaries, pointers |
+| [docs/guides/AGENT_INSTRUCTIONS.md](docs/guides/AGENT_INSTRUCTIONS.md) | Full instructions for AI coding agents |
 | [SECURITY.md](SECURITY.md) | Security policy |
 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community standards |
 | [CITATION.cff](CITATION.cff) | Citation metadata |

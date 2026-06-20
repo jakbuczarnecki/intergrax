@@ -4,20 +4,30 @@
 
 ---
 
-## F2 — Project Rules (operator setup, one-time)
+## F2 — AGENTS.md stub (repo + operator)
 
-In **Cursor → Settings → Rules** (Project):
+Cursor **auto-discovers** root `AGENTS.md` and loads it every session. You **cannot** disable it in Settings without **deleting the file** from the project.
 
-| Rule | alwaysApply | Action |
-|------|-------------|--------|
-| `.cursor/rules/intergrax-iteration.mdc` | **Yes** | Keep — ~950 tokens/tur |
-| `AGENTS.md` as Project Rule | **No — remove** | Duplicate of iteration + on-demand reference |
-| `.cursor/rules/intergrax-idea-audit.mdc` | **No** | Loads on trigger only |
-| `.cursor/rules/intergrax-agents-reference.mdc` | **No** | Pointer; use `@AGENTS.md` when needed |
+**Solution (Option A — configured in repo):**
 
-**Why:** `AGENTS.md` (~3.2k tokens) + `intergrax-iteration.mdc` (~1k) stacked = ~4k+ **per turn**. Removing `AGENTS.md` from always-on saves **~2.4k × number of turns** per session.
+| File | Role | Auto-loaded by Cursor |
+|------|------|------------------------|
+| [`AGENTS.md`](../../AGENTS.md) (root) | **Stub** (~350 tokens) — tiers, boundaries, pointers | **Yes** (unavoidable) |
+| [`AGENT_INSTRUCTIONS.md`](AGENT_INSTRUCTIONS.md) | **Full reference** — routing, verification, ADR, anti-patterns | **No** — `@docs/guides/AGENT_INSTRUCTIONS.md` on demand |
+| [`.cursor/rules/intergrax-iteration.mdc`](../../.cursor/rules/intergrax-iteration.mdc) | Workflow + F3 + context budget | **Yes** (`alwaysApply: true`) |
 
-**When agent needs full routing/verification:** `@AGENTS.md` in chat.
+**Project Rules (Settings → Rules):**
+
+| Rule | Action |
+|------|--------|
+| `intergrax-iteration.mdc` | Keep — always on (~950 tok/tur) |
+| Root **AGENTS** entry | **Keep the file** — do not delete via trash icon |
+| `intergrax-agents-reference.mdc` | Optional — applied intelligently; pointer only |
+| `intergrax-idea-audit.mdc` | On trigger only |
+
+**Savings vs monolithic AGENTS.md:** ~350 + ~950 ≈ **1.3k/tur** instead of ~3.2k + ~950 ≈ **4.2k/tur** (~**2.9k × turns**).
+
+**When agent needs full routing/verification:** `@docs/guides/AGENT_INSTRUCTIONS.md`
 
 ---
 
@@ -47,5 +57,6 @@ Bootstrap files encode this in the first lines (`SESSION: ONE_DOMAIN_ONE_CHAT`).
 - `docs/guides/audit_slices/<DOMAIN>.md` — compact audit context
 - Architecture **Cursor read scope** blocks
 - `scripts/check_plan_hub_size.py` — CI gate
+- `scripts/check_cursor_token_setup.py` — stub + F3 gate
 
 Regenerate after plan changes: `uv run python scripts/split_domain_plan.py [DOMAIN]`

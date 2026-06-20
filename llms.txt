@@ -12,4 +12,4 @@ Domains: PLATFORM_FOUNDATION · UNIFIED_EXECUTION_RUNTIME · ORCHESTRATION · NE
 
 **LLM developer guide:** intergrax/llm_adapters/USAGE.md · **Active uplift:** docs/plan/LLM_ADAPTERS.md Phase M-LLM-X
 
-**Agents:** AGENTS.md
+**Agents (stub):** AGENTS.md · **Full agent instructions:** docs/guides/AGENT_INSTRUCTIONS.md

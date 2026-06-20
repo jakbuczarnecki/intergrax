@@ -7,7 +7,7 @@ alwaysApply: true
 
 Implement the **Intergrax Harness AI / Agent Operating System**.
 
-**Rules source:** this file only (always-on). **`AGENTS.md` is NOT auto-loaded** — use `@AGENTS.md` on demand (see `docs/guides/CURSOR_TOKEN_SETUP.md` F2).
+**Rules source:** this file + root **`AGENTS.md` stub** (~350 tok, Cursor auto-load). Full reference: `@docs/guides/AGENT_INSTRUCTIONS.md` on demand (see `docs/guides/CURSOR_TOKEN_SETUP.md` F2).
 
 ## Session protocol (F3 — mandatory)
 
@@ -34,7 +34,7 @@ ONE DOMAIN = ONE NEW CHAT
 - **Never** load full multi-thousand-line plans — hub + [`docs/plan/plan/`](docs/plan/plan/); audits: [`docs/guides/audit_slices/<DOMAIN>.md`](docs/guides/audit_slices/).
 - **Never** re-read the same file in one session unless it changed.
 - Prefer **grep with path filters** over repo-wide semantic search.
-- Verification commands: read `@AGENTS.md` §Verification only when running harness gates.
+- Verification commands: read `@docs/guides/AGENT_INSTRUCTIONS.md` §Verification only when running harness gates.
 - Do **not** load `docs/audit_results/` unless RESUME says so.
 - Respect **`.cursorignore`**.
 
@@ -47,7 +47,7 @@ docs/plan/<DOMAIN>.md                   ← plan hub
 docs/guides/audit_slices/<DOMAIN>.md  ← audit compact slice
 ```
 
-22 paired domains — routing table in **`AGENTS.md`** (on demand). Do **not** load unrelated pairs.
+22 paired domains — routing table in **`docs/guides/AGENT_INSTRUCTIONS.md`** (on demand). Do **not** load unrelated pairs.
 
 ## Architecture (never violate)
 
@@ -68,4 +68,4 @@ Repository artifacts: English. Operator chat: primary language of the session.
 
 ## Definition of Done
 
-Verification, ADR, iteration summary: **`@AGENTS.md`** when needed. **Do not commit** unless the operator asks.
+Verification, ADR, iteration summary: **`@docs/guides/AGENT_INSTRUCTIONS.md`** when needed. **Do not commit** unless the operator asks.

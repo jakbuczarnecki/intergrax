@@ -26,7 +26,8 @@ The goal is not merely to implement existing architecture. The goal is to bring 
 | **This guide (Layer Completion Mode)** | Full domain layer → maturity | Deep layer closeout (journal: “Layer Completion Mode”) |
 | [audit/LAYER_COMPLETION_ORCHESTRATOR.md](../audit/LAYER_COMPLETION_ORCHESTRATOR.md) | All 22 pairs sequentially | Paste [`../bootstrap/05_closeout_all_domains.txt`](../bootstrap/05_closeout_all_domains.txt) |
 | [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) | Cross-domain never-violate rules | Skim **before every** Step 1 and Step 6 |
-| [AGENTS.md](../../AGENTS.md) | Hard repo rules, verification bundle | Always |
+| [AGENT_INSTRUCTIONS.md](AGENT_INSTRUCTIONS.md) | Hard repo rules, verification bundle | On demand (`@docs/guides/AGENT_INSTRUCTIONS.md`) |
+| [AGENTS.md](../../AGENTS.md) | Cursor auto-load stub (tiers, boundaries) | Always (Cursor) |
 
 **Operator paste:** canonical multi-domain bootstrap lives under [`../bootstrap/`](../bootstrap/README.md) (English). Personal PL notes may stay in `docs/_external/` (gitignored). **This file is the linkable canonical definition** for single-domain LCM steps.
 
@@ -43,7 +44,7 @@ Read **only** documents required for the designated layer — do **not** load al
 | 3 | [intergrax_runtime_architecture.md](../intergrax_runtime_architecture.md) | Hub — domain pair picker |
 | 4 | `docs/architecture/<DOMAIN>.md` + `docs/plan/<DOMAIN>.md` | Canon + plan for **this layer only** (1:1 basename) |
 | 5 | [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) | Audit layer → `<DOMAIN>` mapping |
-| 6 | [AGENTS.md](../../AGENTS.md) | Tier imports, scope, verification commands |
+| 6 | [AGENT_INSTRUCTIONS.md](AGENT_INSTRUCTIONS.md) | Tier imports, scope, verification commands |
 | 7 | [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) | North star for Step 1A strategic review |
 
 **Reading rule:** one `architecture/<DOMAIN>.md` ↔ `plan/<DOMAIN>.md` pair per iteration. No monolithic implementation plan file.
@@ -226,7 +227,7 @@ After each sprint:
 
 - update documentation (**affected domain pair only**),
 - update tests,
-- run verification (minimum: `uv run pytest -m "gate and not no_ci" -q` plus scripts from [AGENTS.md](../../AGENTS.md) and [SYSTEM_INVARIANTS.md §7](SYSTEM_INVARIANTS.md#7-ci-enforcement-map-selected) relevant to the layer),
+- run verification (minimum: `uv run pytest -m "gate and not no_ci" -q` plus scripts from [AGENT_INSTRUCTIONS.md](AGENT_INSTRUCTIONS.md) and [SYSTEM_INVARIANTS.md §7](SYSTEM_INVARIANTS.md#7-ci-enforcement-map-selected) relevant to the layer),
 - verify alignment with architecture **and** [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md),
 - commit **only when the operator explicitly requests**,
 - add an [implementation journal](../implementation-journal/README.md) entry when the **layer closeout milestone** completes (see journal README §milestone triggers; skip routine rows).

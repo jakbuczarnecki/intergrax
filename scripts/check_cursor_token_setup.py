@@ -1,5 +1,5 @@
 # © Artur Czarnecki. All rights reserved.
-"""Verify bootstrap files enforce ONE_DOMAIN_ONE_CHAT (F3) and CURSOR_TOKEN_SETUP exists (F2)."""
+"""Verify AGENTS stub split (F2), bootstrap F3 markers, and CURSOR_TOKEN_SETUP."""
 
 from __future__ import annotations
 
@@ -9,10 +9,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 BOOTSTRAP = ROOT / "docs" / "bootstrap"
 CURSOR_SETUP = ROOT / "docs" / "guides" / "CURSOR_TOKEN_SETUP.md"
+AGENT_INSTRUCTIONS = ROOT / "docs" / "guides" / "AGENT_INSTRUCTIONS.md"
+AGENTS_STUB = ROOT / "AGENTS.md"
 ITERATION_RULE = ROOT / ".cursor" / "rules" / "intergrax-iteration.mdc"
 AGENTS_REF_RULE = ROOT / ".cursor" / "rules" / "intergrax-agents-reference.mdc"
 
 SESSION_MARKER = "ONE_DOMAIN_ONE_CHAT"
+STUB_MARKER = "AGENT_INSTRUCTIONS.md"
+STUB_MAX_LINES = 35
+FULL_MIN_LINES = 150
 AUDIT_BOOTSTRAPS = (
     "01_audit_all_domains.txt",
     "02_audit_one_domain.txt",
@@ -29,21 +34,38 @@ def main() -> int:
     if not CURSOR_SETUP.is_file():
         errors.append("missing docs/guides/CURSOR_TOKEN_SETUP.md")
 
+    if not AGENT_INSTRUCTIONS.is_file():
+        errors.append("missing docs/guides/AGENT_INSTRUCTIONS.md")
+    elif len(AGENT_INSTRUCTIONS.read_text(encoding="utf-8").splitlines()) < FULL_MIN_LINES:
+        errors.append(f"AGENT_INSTRUCTIONS.md must be full reference (>={FULL_MIN_LINES} lines)")
+
+    if not AGENTS_STUB.is_file():
+        errors.append("missing root AGENTS.md stub")
+    else:
+        stub = AGENTS_STUB.read_text(encoding="utf-8")
+        stub_lines = len(stub.splitlines())
+        if stub_lines > STUB_MAX_LINES:
+            errors.append(f"AGENTS.md stub too large ({stub_lines} lines; max {STUB_MAX_LINES})")
+        if STUB_MARKER not in stub:
+            errors.append("AGENTS.md stub must link to AGENT_INSTRUCTIONS.md")
+        if "## Task routing" in stub or "## Verification" in stub:
+            errors.append("AGENTS.md stub must not contain full routing/verification sections")
+
     if not AGENTS_REF_RULE.is_file():
         errors.append("missing .cursor/rules/intergrax-agents-reference.mdc")
 
     iteration = ITERATION_RULE.read_text(encoding="utf-8")
-    if "AGENTS.md is NOT auto-loaded" not in iteration and "NOT auto-loaded" not in iteration:
-        errors.append("intergrax-iteration.mdc must state AGENTS.md is not auto-loaded (F2)")
+    if "AGENT_INSTRUCTIONS.md" not in iteration:
+        errors.append("intergrax-iteration.mdc must reference AGENT_INSTRUCTIONS.md (F2 stub split)")
     if SESSION_MARKER not in iteration and "ONE DOMAIN = ONE NEW CHAT" not in iteration:
         errors.append("intergrax-iteration.mdc must include F3 session protocol")
 
     agents_ref = AGENTS_REF_RULE.read_text(encoding="utf-8")
-    if "alwaysApply: false" not in Path(AGENTS_REF_RULE).read_text(encoding="utf-8"):
-        pass  # frontmatter checked below
     if agents_ref.startswith("---"):
         if "alwaysApply: false" not in agents_ref.split("---", 2)[1]:
             errors.append("intergrax-agents-reference.mdc must have alwaysApply: false")
+    if "AGENT_INSTRUCTIONS.md" not in agents_ref:
+        errors.append("intergrax-agents-reference.mdc must point to AGENT_INSTRUCTIONS.md")
 
     for name in AUDIT_BOOTSTRAPS:
         path = BOOTSTRAP / name
