@@ -21,6 +21,9 @@ from intergrax.runtime.events.trace_bridge import (
     trace_event_to_runtime_event,
 )
 from intergrax.runtime.nexus.agent_router import AgentRouter
+from intergrax.runtime.nexus.tracing.adapters.model_catalog_miss import (
+    ModelCatalogMissTraceDiagV1,
+)
 from intergrax.runtime.nexus.tracing.graph_node_diag import GRAPH_NODE_STEP_START, GraphNodeDiagV1
 from intergrax.runtime.nexus.tracing.steps.step_failed import RuntimeStepFailedDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceEvent, TraceLevel
@@ -129,6 +132,32 @@ def test_trace_bridge_catalog_includes_evaluator_loop() -> None:
     assert _CRITIC_STEP_EVALUATOR_LOOP in _CRITIC_STEP_TO_EVENT
     assert RuntimeStepFailedDiagV1.schema_id() in _RUNTIME_STEP_SCHEMA_TO_EVENT
     assert GRAPH_NODE_STEP_START in _GRAPH_STEP_TO_EVENT
+
+
+def test_trace_bridge_maps_llm_catalog_miss_schema() -> None:
+    task = Task(tenant_id="t1", user_id="u1", message="x")
+    trace = TraceEvent(
+        event_id="llm-miss-cov",
+        run_id="run-1",
+        seq=8,
+        ts_utc="2026-06-19T12:00:00+00:00",
+        level=TraceLevel.WARNING,
+        component=TraceComponent.ENGINE,
+        step="llm_catalog_miss",
+        message="Model catalog miss — context window resolved without exact catalog entry.",
+        tags={"tenant_id": "t1", "task_id": "task-1"},
+        payload=ModelCatalogMissTraceDiagV1(
+            provider_slug="openrouter",
+            model_id="vendor/obs-cov",
+            resolved_tokens=128_000,
+            resolution_tier="provider_default",
+            run_id="run-1",
+        ),
+    )
+    runtime = trace_event_to_runtime_event(trace, task)
+    assert runtime.event_type == RuntimeEventType.LLM_CALL
+    assert runtime.payload["model"] == "vendor/obs-cov"
+    assert runtime.payload["resolution_tier"] == "provider_default"
 
 
 def test_agent_router_source_records_agent_selected_constant() -> None:

@@ -438,6 +438,22 @@ with TraceScope(emitter, run_id=..., task_id=..., tenant_id=...) as scope:
 | Graph | PLANNER | `graph node start/complete` (string today) | STEP_* |
 | Adaptive L4 | RUNTIME | adaptive signals | ADAPTIVE_* |
 
+#### 7.1.1 LLM catalog miss SLO (M-LLM-X.16)
+
+**Signal:** Plane A `step=llm_catalog_miss` · bus `LLM_CALL` · metric `intergrax_llm_catalog_miss_total{tenant_id,provider,model,resolution_tier}`.
+
+| `resolution_tier` | Trace level | Suggested response | SLO posture |
+|-------------------|-------------|-------------------|-------------|
+| `fallback_default` | WARNING | Treat as **incident** for production tenants — wrong context budget | **Zero tolerance** in steady state; page on first sustained occurrence |
+| `provider_default` | WARNING | Track rate by provider; common for new OpenRouter ids | **Low rate** acceptable short-term; alert if >5 misses / 30 min / provider (tune per tenant) |
+| `prefix_rule` | WARNING | Informational unless volume high | Monitor weekly; bulk-add exact entries when same prefix repeats |
+
+**Escalation:** `fallback_default` → on-call + catalog YAML patch or profile override within SLA; `provider_default` spike → platform ops + catalog/gateway metadata review; `prefix_rule` bulk → catalog hygiene backlog.
+
+**Operator runbook:** [`intergrax/llm_adapters/USAGE.md`](../../intergrax/llm_adapters/USAGE.md) § Catalog miss operator runbook.
+
+**CI gates:** `scripts/check_llm_catalog_miss_observability.py` (**LLM-MAINT-05**) · registered in `check_observability_gates.py` and `check_audit_ideal_gates.py` (**LLM-MAINT-06**).
+
 ### 7.2 UAEP executor signals
 
 `intergrax/agents/uaep.py` emits directly to the bus: `CONTEXT_BUILT`, `DECISION_EMITTED`, `VALIDATION_PASSED/FAILED`, `POLICY_DECISION`, `INTERRUPT_REQUESTED`, `HUMAN_APPROVAL_REQUESTED`.

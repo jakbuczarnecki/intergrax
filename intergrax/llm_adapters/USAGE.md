@@ -128,9 +128,64 @@ options={
 ```
 
 Gateway merge runs **after** bundled catalog exact/prefix matches and **before** legacy/provider defaults (ADR-LLM-002).
-When catalog resolves **without an exact `ModelRecord` match** (prefix rule, provider default, or global fallback), **`ModelCatalogMissDiagV1`** is emitted once per model/run with `resolution_tier` (`prefix_rule` | `provider_default` | `fallback_default`). Emission surfaces on Plane A trace (`step=llm_catalog_miss`), runtime bus (`LLM_CALL`), and Prometheus (`intergrax_llm_catalog_miss_total` when `INTERGRAX_LLM_METRICS_ENABLED=true`). Wired unconditionally via `RuntimeState.configure_llm_tracker()`.
+When catalog resolves **without an exact `ModelRecord` match** (prefix rule, provider default, or global fallback), **`ModelCatalogMissDiagV1`** is emitted once per model/run with `resolution_tier` (`prefix_rule` | `provider_default` | `fallback_default`). Emission surfaces on Plane A trace (`step=llm_catalog_miss`), runtime bus (`LLM_CALL`), and Prometheus (`intergrax_llm_catalog_miss_total` when `INTERGRAX_LLM_METRICS_ENABLED=true`). Wired unconditionally via `RuntimeState.configure_llm_tracker()` with run-scoped dedupe (**M-LLM-X.16.4**).
 
-### Tokenizer accuracy (M-LLM-X.14.7)
+---
+
+## Catalog miss operator runbook (M-LLM-X.16)
+
+**Trace step:** `llm_catalog_miss` · **Severity:** `WARNING` · **Schema:** `intergrax.diag.engine.core_llm.catalog_miss`
+
+### Triage by `resolution_tier`
+
+| Tier | Meaning | Typical risk | Remediation (pick one) |
+|------|---------|--------------|------------------------|
+| `prefix_rule` | No exact entry; family prefix matched (e.g. `claude-*`) | Low–medium — heuristic window | Add exact `model_id` to `model_catalog.yaml` or operator overlay (`INTERGRAX_LLM_MODEL_CATALOG_PATH`) |
+| `provider_default` | No exact/prefix/gateway hit; used provider slug default (e.g. OpenRouter `128000`) | Medium — unknown gateway models | Add exact entry **or** enable `fetch_gateway_metadata=True` **or** set `context_window_tokens` on profile |
+| `fallback_default` | Exhausted catalog tiers; global YAML `fallback_default` (often `32000`) | **High** — likely wrong budget | **Immediate:** profile override `context_window_tokens`; ** durable:** catalog entry + verify with `validate_runtime()` |
+
+### Operator checklist
+
+1. Confirm `model_id` string in trace matches deployed profile (typos are common on gateways).
+2. For OpenRouter / custom gateways: prefer bundled catalog entry → overlay YAML → opt-in gateway fetch.
+3. Re-run `intergrax doctor check` / `check_model_catalog_coverage.py` after catalog updates.
+4. Watch `intergrax_llm_catalog_miss_total` — sustained `provider_default` or any `fallback_default` warrants catalog hygiene.
+
+### Prometheus alerting (reference)
+
+Requires `INTERGRAX_LLM_METRICS_ENABLED=true` and scrape of `GET /metrics/llm`.
+
+```yaml
+# Reference only — tune thresholds per tenant/environment.
+groups:
+  - name: intergrax_llm_catalog_miss
+    rules:
+      - alert: IntergraxLLMCatalogMissFallback
+        expr: increase(intergrax_llm_catalog_miss_total{resolution_tier="fallback_default"}[15m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "LLM catalog miss used global fallback ({{ $labels.provider }}/{{ $labels.model }})"
+      - alert: IntergraxLLMCatalogMissProviderDefaultSpike
+        expr: sum by (tenant_id, provider) (rate(intergrax_llm_catalog_miss_total{resolution_tier="provider_default"}[30m])) > 0.05
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Elevated OpenRouter/gateway catalog misses for {{ $labels.provider }}"
+      - alert: IntergraxLLMCatalogMissPrefixHeuristic
+        expr: increase(intergrax_llm_catalog_miss_total{resolution_tier="prefix_rule"}[1h]) > 10
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: "Many prefix-heuristic context windows — consider exact catalog entries"
+```
+
+Cross-ref: [`OBSERVABILITY.md` §7.1.1](../../docs/architecture/OBSERVABILITY.md#711-llm-catalog-miss-slo-m-llm-x-16) for SLO guidance.
+
+---
 
 Non-OpenAI budgeting still uses tiktoken/heuristic estimates by default — do not treat counts as vendor-exact.
 Optional vendor plugins implement ``TokenizerPlugin`` (`intergrax/llm_adapters/contracts/tokenizer_plugin.py`).
@@ -397,6 +452,14 @@ env.llm_routing_profile = LLMRoutingProfile(
 - [x] Per-call context refresh within a step
 - [x] ACP trace parity + production E2E without factory mocks on core path
 - [x] Closes **LLM-AUDIT-19**
+
+**Catalog miss L5 ops (M-LLM-X.16 — Done):**
+
+- [x] Operator runbook + Prometheus alert reference (**16.1–16.2**)
+- [x] Platform CI umbrella registration (**16.3** · LLM-MAINT-06)
+- [x] Run-scoped dedupe + concurrent isolation test (**16.4**)
+- [x] OBS-BUS emission coverage (**16.5**)
+- [x] SLO canon in OBSERVABILITY §7.1.1 (**16.6**)
 
 **Current maturity label:** **L5** (strict mid-run routing on core UAEP/Nexus/ACP paths).
 

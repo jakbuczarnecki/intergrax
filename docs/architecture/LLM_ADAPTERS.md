@@ -21,7 +21,7 @@ Tier-0 **LLM adapter layer** is the Harness cognition entry point: one `LLMAdapt
 | Provider abstraction (19 slugs + plugins) | **L3+** | L3+ (maintain) | `LLMProfile.provider: str` · **M-LLM-X.14.3** **Done** |
 | Model ID as free string | **L3** | L3 (maintain) | `LLMProfile.model: str` |
 | Model metadata / context window | **L3+** | L3+ (maintain) | `ModelCatalog` + gateway merge · **M-LLM-X.14.2** **Done** |
-| **Catalog miss observability** | **L4+** (trace + bus + metrics + gate + E2E) | **L5 ops** (alerts, runbook, umbrella CI, run isolation) | **M-LLM-X.15 Done** · backlog **M-LLM-X.16** |
+| **Catalog miss observability** | **L5 ops** (trace + bus + metrics + gate + E2E + runbook + alerts) | **L5 ops** (maintain) | **M-LLM-X.15 + X-16 Done** |
 | Multi-model routing / failover | **L5** (strict core + UAEP + ACP) | L5 (maintain) | X-10…X-13 **Done** · LLM-AUDIT-17…20 **Done** |
 | Secondary LLM surfaces (planner, websearch, critic) | **L4+** (opt-in evaluating wrap) | L4+ (maintain) | **M-LLM-X.14.5** · `llm_routing_evaluating_secondary` |
 | Token accounting consistency | **L3+** | L3+ (maintain) | LC-2 **Done**; `TokenizerPlugin` stub · **M-LLM-X.14.7** |
@@ -32,7 +32,7 @@ Tier-0 **LLM adapter layer** is the Harness cognition entry point: one `LLMAdapt
 **Maturity labels (honest, 2026-06-19):**
 
 - **Routing hot path:** **L5 strict enterprise-ready** (core `llm_adapter`, UAEP, ACP dynamic router).
-- **Catalog miss spine:** **L4+ enterprise** — Plane A + runtime bus + Prometheus + CI gate + acceptance E2E (**M-LLM-X.15 Done**). **L5 ops** (alerting, runbook, platform umbrella, run-scoped dedupe) → **M-LLM-X.16** backlog.
+- **Catalog miss spine:** **L5 enterprise ops** — **M-LLM-X.15 + X-16 Done** (trace, bus, metrics, CI umbrella, runbook, alerts, run isolation).
 - **Whole LLM_ADAPTERS domain:** **L4 enterprise** — **M-LLM-X.8 + X-14 + X-15 Done**; LLM-AUDIT-21…26 **Done**.
 
 **Strategic rule:** The Harness owns provider plumbing; agents and applications declare **profiles**, never vendor SDKs.
@@ -538,33 +538,26 @@ RoutingContext (snapshot from Nexus / budget meter / classifier)
 | No acceptance E2E trace → runtime bus | **P2** | M-LLM-X.15.5 | **Done** |
 | ADR-LLM-002 resolution order drift vs code | **P3** | M-LLM-X.15.6 | **Done** |
 
-**Target maturity:** catalog-miss spine **L4 enterprise** — **Met** (2026-06-19).  
-**Plan:** [Phase M-LLM-X-15](../plan/LLM_ADAPTERS.md#phase-m-llm-x-15--catalog-miss-enterprise-observability-2026-06-19)
+**Target maturity:** catalog-miss spine **L4 enterprise** — **Met** (2026-06-19).
 
-#### Catalog miss L5 enterprise ops backlog (M-LLM-X-16)
+#### Catalog miss L5 enterprise ops (M-LLM-X-16 — Done)
 
-**Source:** Post X-15 maturity assessment (2026-06-19) — spine **L4+**; remaining gaps block **L5 ops** label (parity with routing strict closeout).
+**Source:** Post X-15 assessment — spine **L4+**; ops gaps (runbook, alerts, umbrella CI, run isolation, OBS-BUS, SLO canon).
 
 | Gap | Severity | Task ID | Status |
 |-----|----------|---------|--------|
-| No operator runbook — triage `resolution_tier`, when to patch YAML vs enable `fetch_gateway_metadata` | **P2** | M-LLM-X.16.1 | **Planned** |
-| No reference Prometheus alert rules / recording rules for `intergrax_llm_catalog_miss_total` | **P2** | M-LLM-X.16.2 | **Planned** |
-| `check_llm_catalog_miss_observability.py` (**LLM-MAINT-05**) not in platform OBS/audit CI umbrella | **P2** | M-LLM-X.16.3 | **Planned** — **LLM-MAINT-06** |
-| Module-global dedupe (`_emitted_keys`, `_pending`) — no run-start reset; weak concurrent-worker isolation | **P2** | M-LLM-X.16.4 | **Planned** |
-| `llm_catalog_miss` absent from OBS-BUS emission coverage gate | **P3** | M-LLM-X.16.5 | **Planned** |
-| No SLO / severity guidance in observability canon (WARNING tier, suggested thresholds by `resolution_tier`) | **P3** | M-LLM-X.16.6 | **Planned** |
+| No operator runbook | **P2** | M-LLM-X.16.1 | **Done** — USAGE § Catalog miss operator runbook |
+| No reference Prometheus alert rules | **P2** | M-LLM-X.16.2 | **Done** — USAGE § Alerting |
+| LLM-MAINT-05 not in platform CI umbrella | **P2** | M-LLM-X.16.3 | **Done** — **LLM-MAINT-06** |
+| Module-global dedupe / pending without run scope | **P2** | M-LLM-X.16.4 | **Done** — `begin_catalog_miss_run` + run observers |
+| `llm_catalog_miss` absent from OBS-BUS emission coverage | **P3** | M-LLM-X.16.5 | **Done** |
+| No SLO / severity guidance in observability canon | **P3** | M-LLM-X.16.6 | **Done** — OBSERVABILITY §7.1.1 |
 
-**L5 ops criteria (checklist — all must pass before L5 label on catalog miss):**
-
-1. Operator runbook documents triage for `prefix_rule`, `provider_default`, `fallback_default` and remediation paths (catalog entry, overlay YAML, gateway fetch opt-in).
-2. Reference alert rules exist for miss rate / spike (Prometheus or equivalent) keyed by `provider`, `model`, `resolution_tier`.
-3. **LLM-MAINT-05** registered in platform CI umbrella (`check_observability_gates.py` or `check_audit_ideal_gates.py`).
-4. Dedupe state is run-scoped or reset on Nexus run start; concurrent-run isolation test green.
-5. OBS-BUS emission coverage includes `llm_catalog_miss` schema → `LLM_CALL` bridge path.
-6. [`OBSERVABILITY.md`](OBSERVABILITY.md) documents SLO guidance and escalation for catalog misses.
-
-**Target maturity:** catalog-miss **L5 enterprise ops** — **Not met** (backlog **M-LLM-X.16**).  
+**L5 ops criteria:** all six items **Done** (2026-06-19).  
+**Target maturity:** catalog-miss **L5 enterprise ops** — **Met**.  
 **Plan:** [Phase M-LLM-X-16](../plan/LLM_ADAPTERS.md#phase-m-llm-x-16--catalog-miss-l5-enterprise-ops-2026-06-19)
+
+**Plan (X-15):** [Phase M-LLM-X-15](../plan/LLM_ADAPTERS.md#phase-m-llm-x-15--catalog-miss-enterprise-observability-2026-06-19)
 
 #### Routing strict enterprise closeout — audit register (historical gaps, closed)
 
@@ -881,7 +874,7 @@ Do not merge counters without explicit bridge code.
 
 **Closed baselines:** M-LLM (13/13), M-LLM-R (39/39), M-LLM-X LC-1…LC-3 **Done**; routing X-9…X-13 **Done**.
 
-**Audit revalidation (2026-06-19, post X-15):** routing **L5** · catalog miss **L4+** · whole domain **L4 enterprise** · LLM-AUDIT-1…26 **Done** · catalog miss **L5 ops** → **M-LLM-X.16** backlog.
+**Audit revalidation (2026-06-19, post X-16):** routing **L5** · catalog miss **L5 ops** · whole domain **L4 enterprise** · LLM-AUDIT-1…26 **Done**.
 
 ---
 
@@ -931,7 +924,7 @@ Workflows: `unit-tests.yml`, `llm-adapters-guard.yml`, optional `llm-network-smo
 | LLM routing post-L5 polish (secondary surfaces, ACP Plane A) | M-LLM-X.13 · LLM-AUDIT-20 **Done** |
 | LLM enterprise domain maturity (catalog caps, gateway meta, ACP budget, plugin DX) | M-LLM-X.14 · LLM-AUDIT-22…26 **Done** |
 | LLM catalog miss observability spine (L4) | M-LLM-X.15 **Done** |
-| LLM catalog miss L5 ops (alerts, runbook, umbrella CI) | M-LLM-X.16 · backlog |
+| LLM catalog miss L5 ops (alerts, runbook, umbrella CI) | M-LLM-X.16 **Done** |
 | LLM domain closeout (register + journal) | M-LLM-X.8 · LLM-AUDIT-21 **Done** |
 | `BudgetReactionProfile.degrade_model` unification | AGENT_CONTRACTS + M-LLM-X.9.6 |
 | AHI `ProfileVersion` llm_routing persistence | AHI-MAINT-06 |

@@ -200,7 +200,7 @@ class RuntimeState(RuntimeStateContract):
             wire_catalog_miss_trace_sink,
         )
 
-        wire_catalog_miss_trace_sink(self.trace_event)
+        wire_catalog_miss_trace_sink(self.trace_event, run_id=self.run_id)
 
         core_adapter = self.context.config.llm_adapter
         if core_adapter is not None:

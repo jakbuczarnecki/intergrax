@@ -126,15 +126,15 @@
 | 13 | X-13 | M-LLM-X.13.1–13.7 | P2 | **Done** — post-L5 routing polish · LLM-AUDIT-20 |
 | 14 | X-14 | M-LLM-X.14.1–14.8 | **P1** | **Done** — enterprise domain maturity · LLM-AUDIT-22…26 |
 | 15 | X-15 | M-LLM-X.15.1–15.6 | **P1** | **Done** — catalog miss enterprise observability spine |
-| 16 | X-16 | M-LLM-X.16.1–16.6 | P2 | **Planned** — catalog miss L5 enterprise ops |
+| 16 | X-16 | M-LLM-X.16.1–16.6 | P2 | **Done** — catalog miss L5 enterprise ops |
 
-**Closeout gate:** Routing waves X-9…X-13 **Done** (LLM-AUDIT-17…20). **Enterprise domain grade:** **M-LLM-X.8** + **M-LLM-X.14** + **M-LLM-X.15** **Done** · catalog miss **L5 ops** → **M-LLM-X.16** backlog.
+**Closeout gate:** Routing waves X-9…X-13 **Done**. **Catalog miss:** **M-LLM-X.15 + X-16 Done** (**L5 ops**). **Enterprise domain grade:** **M-LLM-X.8 + X-14** **Done** (LLM-AUDIT-21…26).
 
 ---
 
 ### 6.2af Phase M-LLM-X execution order
 
-**Status:** **Done** (waves X-0…X-15 closed) · **X-16** backlog (L5 ops)
+**Status:** **Done** (waves X-0…X-16 closed)
 
 ```text
 Wave M-LLM-X-0 (planning):     M-LLM-X.0.1 → 0.2 → 0.3
@@ -774,7 +774,7 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 | 3 | **LLM-MAINT-03** | Code | P2 | **Done** | M-LLM-X.4.5 — Tier-3 `ApplicationEnvironmentProfile` optional LLM failover list wiring | `LLMProfile.fallback_profiles` + `resolve_llm_adapter` |
 | 4 | **LLM-MAINT-04** | Docs | P3 | **Done** | Redis distributed rate limit bootstrap pattern — reference host wiring doc + cross-ref ECP/TIER3 | `intergrax/llm_adapters/USAGE.md` §Distributed rate limiting |
 | 5 | **LLM-MAINT-05** | CI | P2 | **Done** | M-LLM-X.15.4 — `scripts/check_llm_catalog_miss_observability.py` (trace step + metrics + resolver tiers) | Gate green after X-15 |
-| 6 | **LLM-MAINT-06** | CI | P2 | **Planned** | M-LLM-X.16.3 — register **LLM-MAINT-05** in platform OBS/audit CI umbrella | `check_observability_gates.py` or `check_audit_ideal_gates.py` |
+| 6 | **LLM-MAINT-06** | CI | P2 | **Done** | M-LLM-X.16.3 — register **LLM-MAINT-05** in platform OBS/audit CI umbrella | `check_observability_gates.py` + `check_audit_ideal_gates.py` |
 
 **Suggested PR order:** none — §6.1av queue closed (2026-06-18).
 
@@ -1017,16 +1017,16 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 **Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) § Catalog miss L5 enterprise ops backlog  
 **Prerequisites:** **M-LLM-X.15 Done** (L4 spine)  
 **Goal:** Honest **L5 enterprise ops** label for catalog miss — operator playbook, alerting, CI umbrella, OBS-BUS coverage, run-scoped dedupe.  
-**Phase status:** **Planned** — 0/6
+**Phase status:** **Done** — 6/6
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
-| 1 | **M-LLM-X.16.1** | Docs | P2 | **Planned** | Operator runbook — triage `resolution_tier`; remediation: catalog YAML, overlay, `fetch_gateway_metadata` | Section in `USAGE.md` or ops guide; linked from architecture |
-| 2 | **M-LLM-X.16.2** | Ops | P2 | **Planned** | Reference Prometheus alert rules for `intergrax_llm_catalog_miss_total` (rate/spike by tier) | Example rules in `USAGE.md` §Alerting or `infra/` reference |
-| 3 | **M-LLM-X.16.3** | CI | P2 | **Planned** | Register **LLM-MAINT-05** in platform CI umbrella (**LLM-MAINT-06**) | `check_observability_gates.py` or `check_audit_ideal_gates.py` green |
-| 4 | **M-LLM-X.16.4** | Code | P2 | **Planned** | Run-scoped catalog miss dedupe or Nexus run-start reset; concurrent-run isolation test | No cross-run dedupe leak in worker; unit/acceptance test |
-| 5 | **M-LLM-X.16.5** | CI | P3 | **Planned** | Add `llm_catalog_miss` to OBS-BUS emission coverage gate | `test_observability_emission_coverage.py` green |
-| 6 | **M-LLM-X.16.6** | Docs | P3 | **Planned** | SLO / severity guidance in [`OBSERVABILITY.md`](../architecture/OBSERVABILITY.md) | WARNING tier, suggested thresholds by `resolution_tier` |
+| 1 | **M-LLM-X.16.1** | Docs | P2 | **Done** | Operator runbook — triage `resolution_tier`; remediation paths | USAGE § Catalog miss operator runbook |
+| 2 | **M-LLM-X.16.2** | Ops | P2 | **Done** | Reference Prometheus alert rules for `intergrax_llm_catalog_miss_total` | USAGE § Alerting YAML |
+| 3 | **M-LLM-X.16.3** | CI | P2 | **Done** | Register **LLM-MAINT-05** in platform CI umbrella (**LLM-MAINT-06**) | OBS + AUDIT-IDEAL umbrellas |
+| 4 | **M-LLM-X.16.4** | Code | P2 | **Done** | Run-scoped dedupe + `begin_catalog_miss_run`; concurrent isolation test | `test_concurrent_catalog_miss_run_isolation.py` |
+| 5 | **M-LLM-X.16.5** | CI | P3 | **Done** | OBS-BUS emission coverage for `llm_catalog_miss` | `test_observability_emission_coverage.py` |
+| 6 | **M-LLM-X.16.6** | Docs | P3 | **Done** | SLO / severity guidance in OBSERVABILITY canon | §7.1.1 |
 
 **L5 ops DoD:** architecture § Catalog miss L5 checklist (6 items) all **Done**.  
 **ADR:** no ADR needed — ops and CI wiring only; semantics unchanged from ADR-LLM-002 amendment.
