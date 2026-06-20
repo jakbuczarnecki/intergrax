@@ -32,7 +32,7 @@ The goal is the same depth as a live pair-programming architecture review: compa
 - The **Harness is the product**; agents are replaceable; the runtime is permanent.
 - Ideal target: fully **modular**, **plugin-native**, **scalable**, **easy for developers to learn and deploy**.
 - Scoped ideal + audit-map context: `docs/guides/audit_slices/<DOMAIN>.md` (not full IDEAL or AUDIT_MAP).
-- Layer index (grep only): `docs/intergrax_runtime_architecture.md` hub — do not load `INTEGRAX_HARNESS_AUDIT_MAP.md`.
+- Layer index (grep only): domain list in bootstrap 01/06 or `@docs/intergrax_runtime_architecture.md` — do not load `INTEGRAX_HARNESS_AUDIT_MAP.md` or full runtime hub unless cited.
 - Tier boundaries: AGENTS.md — safety fuse on plan/architecture/ideal conflict → STOP and report in operator language.
 
 ## Domain order (22 pairs — one stop per domain)
@@ -65,7 +65,7 @@ The goal is the same depth as a live pair-programming architecture review: compa
 Optional init:
   uv run python scripts/init_architecture_audit_run.py --date YYYY-MM-DD --mode audit_only --domain <START_DOMAIN>
 
-Skim once per session: docs/guides/SYSTEM_INVARIANTS.md (invariant IDs from audit dimensions only — grep IDs, do not read full file).
+Skim once per session: grep SYS-INV IDs from audit slice — do not read full SYSTEM_INVARIANTS.md
 
 ## Per-domain work cycle (mandatory — do not skip steps)
 

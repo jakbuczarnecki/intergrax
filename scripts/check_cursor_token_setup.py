@@ -23,6 +23,7 @@ H2_IGNORE_PATHS = (
     "docs/guides/SYSTEM_INVARIANTS.md",
     "docs/guides/MATURITY_TAXONOMY.md",
     "docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md",
+    "docs/intergrax_runtime_architecture.md",
     "docs/plan/AUDIT_IDEAL_2026.md",
 )
 AGENT_INSTRUCTIONS = ROOT / "docs" / "guides" / "AGENT_INSTRUCTIONS.md"
