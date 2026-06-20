@@ -11,6 +11,7 @@ Copy **entire file** into a **new** Cursor agent chat as the first message.
 | [`05_closeout_all_domains.txt`](05_closeout_all_domains.txt) | C — layer completion | All 22 (LCM 1–6) |
 | [`06_interactive_layer_by_layer_audit.txt`](06_interactive_layer_by_layer_audit.txt) | **A2 — interactive audit** | One domain per stop; operator confirms before next |
 | [`idea_audit.txt`](idea_audit.txt) | **I — idea intake audit** | Single idea in chat — live audit; Cursor rule auto-triggers; on approval update architecture + plan |
+| [`07_ci_preflight.txt`](07_ci_preflight.txt) | **CI — preflight before push/merge** | Run local parity with `.github/workflows/unit-tests.yml` (`--profile all`) |
 
 **Mode I (idea audit):** Write the idea in natural language in a new chat (e.g. `Zrób audyt pomysłu: …`). Rule: `.cursor/rules/intergrax-idea-audit.mdc` → procedure [`idea_audit.txt`](idea_audit.txt). **No** file editing, **no** `init_architecture_audit_run.py`, **no** `audit_results/`. See [`IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md).
 

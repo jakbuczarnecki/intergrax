@@ -59,5 +59,5 @@ Documentation-only closeout; partner ran live Docker + AgentReceipt CI externall
 
 ## Risks and follow-ups
 
-- EBE-7 webhook and EBE-9 host signing remain deferred.
+- EBE-7 webhook remains deferred.
 - Optional future: enrich HOS trace with `event_id` / `tool_id` for journal-side per-event correlation (not required for PoC v2).
