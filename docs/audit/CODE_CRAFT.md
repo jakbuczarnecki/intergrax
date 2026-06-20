@@ -2,7 +2,7 @@
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
 **Domain pair:** [`architecture/CODE_CRAFT.md`](../architecture/CODE_CRAFT.md) · [`plan/CODE_CRAFT.md`](../plan/CODE_CRAFT.md)  
-**Audit map layers:** 11b · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HARNESS_AUDIT_MAP.md)  
+**Audit map layers:** 11b · compact slice: [`audit_slices/CODE_CRAFT.md`](../guides/audit_slices/CODE_CRAFT.md)  
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -54,22 +54,34 @@ ECC-0…ECC-6 + S7–S11 **Done** (L3+, 2026-06-13) · ADR-CODECRAFT-001
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-codegen_llm_profile_ref wiring (GAP-ECC-20) · container isolation tier (GAP-ECC-21) · metrics dashboards §10.2 (GAP-ECC-22) · Task.metadata.codecraft_mode override (GAP-ECC-23) · local SandboxSession ≠ OS containment (accepted)
+GAP-ECC-20…23 **Closed** (ECC-MAINT-01..04) · local SandboxSession ≠ OS containment (accepted) · dedicated container runtime backend product opt-in beyond local fallback
 
 ---
 
-## 1. Canonical reads (in order)
+## 0. Context budget (mandatory)
 
-1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state
-2. `docs/architecture/CODE_CRAFT.md` — architecture canon (incl. audit registers if present)
-3. `docs/plan/CODE_CRAFT.md` — implementation plan and gap IDs
-4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 11b
-5. `docs/audit/README.md` — shared production Harness checklist (**mandatory**)
-6. `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix J (tool surfaces)**
+**Load first:** [`docs/guides/audit_slices/CODE_CRAFT.md`](../guides/audit_slices/CODE_CRAFT.md) — compact slice (layers **11b**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
+
+- One domain per chat · grep with path filters · respect `.cursorignore`
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/plan/` or `architecture/arch/`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
 
-## 2. Code and test paths (inspect — search repo, do not assume)
+
+## 1. Canonical reads (order)
+
+1. **`docs/guides/audit_slices/CODE_CRAFT.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
+2. `docs/architecture/CODE_CRAFT.md` — hub read-scope + one `architecture/arch/` satellite max
+3. `docs/plan/CODE_CRAFT.md` — hub + one `plan/plan/` satellite max
+4. `docs/audit/README.md` — shared production Harness checklist
+5. `@docs/guides/AGENT_CREATION_GUIDE.md` **Appendix J (tool surfaces)** — on demand
+**Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
+---
+
+## 2. Code entry (grep first)
+
+See **Code entry** in `docs/guides/audit_slices/CODE_CRAFT.md` — then inspect:
 
 ```text
 intergrax/codecraft/ · intergrax/runtime/codecraft/
@@ -80,7 +92,7 @@ intergrax/runtime/critic/ (CVL hooks)
 docs/architecture/CODE_CRAFT.md · docs/plan/CODE_CRAFT.md · ADR-CODECRAFT-001
 ```
 
-Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
+Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 
@@ -184,11 +196,10 @@ Add any domain-specific scripts you discover. If a command fails, state why.
 
 ## 11. Output and mode rules
 
-- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7 Audit Result template.
-- End with §8 Completion Summary.
+- **O1 terse** checkpoint unless operator requests full report.
+- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7–§8 for final write-up.
 - **`audit-only`:** no file edits.
-- **`audit-and-fix`:** update `docs/plan/CODE_CRAFT.md` gap rows + `docs/architecture/CODE_CRAFT.md` audit register; map findings to plan phase IDs; **no code** unless user requests separately.
-- Out-of-scope findings → suggest next `audit/<DOMAIN>.md`.
+- **`audit-and-fix`:** update plan/arch gap rows; **no code** unless operator requests separately.
 
 Begin the audit now.
 

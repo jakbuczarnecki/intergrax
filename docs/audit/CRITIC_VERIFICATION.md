@@ -2,7 +2,7 @@
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
 **Domain pair:** [`architecture/CRITIC_VERIFICATION.md`](../architecture/CRITIC_VERIFICATION.md) · [`plan/CRITIC_VERIFICATION.md`](../plan/CRITIC_VERIFICATION.md)  
-**Audit map layers:** 25 (depth) · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HARNESS_AUDIT_MAP.md)  
+**Audit map layers:** 25 (depth) · compact slice: [`audit_slices/CRITIC_VERIFICATION.md`](../guides/audit_slices/CRITIC_VERIFICATION.md)  
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -58,17 +58,29 @@ CVL-LC Done · §6.1av CVL-MAINT Done · L4 thresholds Frozen → AHI · FLOW-8 
 
 ---
 
-## 1. Canonical reads (in order)
+## 0. Context budget (mandatory)
 
-1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state
-2. `docs/architecture/CRITIC_VERIFICATION.md` — architecture canon (incl. audit registers if present)
-3. `docs/plan/CRITIC_VERIFICATION.md` — implementation plan and gap IDs
-4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 25 (depth)
-5. `docs/audit/README.md` — shared production Harness checklist (**mandatory**)
+**Load first:** [`docs/guides/audit_slices/CRITIC_VERIFICATION.md`](../guides/audit_slices/CRITIC_VERIFICATION.md) — compact slice (layers **25 (depth)**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
+
+- One domain per chat · grep with path filters · respect `.cursorignore`
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/plan/` or `architecture/arch/`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
 
-## 2. Code and test paths (inspect — search repo, do not assume)
+
+## 1. Canonical reads (order)
+
+1. **`docs/guides/audit_slices/CRITIC_VERIFICATION.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
+2. `docs/architecture/CRITIC_VERIFICATION.md` — hub read-scope + one `architecture/arch/` satellite max
+3. `docs/plan/CRITIC_VERIFICATION.md` — hub + one `plan/plan/` satellite max
+4. `docs/audit/README.md` — shared production Harness checklist
+**Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
+---
+
+## 2. Code entry (grep first)
+
+See **Code entry** in `docs/guides/audit_slices/CRITIC_VERIFICATION.md` — then inspect:
 
 ```text
 intergrax/runtime/critic/critic_orchestrator.py · contracts.py · policy_bridge.py
@@ -79,7 +91,7 @@ applications/_shared/critic_runtime_bridge.py · critic_assembly_resolver.py
 eval/nexus_eval_runner.py
 ```
 
-Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
+Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 
@@ -180,11 +192,10 @@ Add any domain-specific scripts you discover. If a command fails, state why.
 
 ## 11. Output and mode rules
 
-- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7 Audit Result template.
-- End with §8 Completion Summary.
+- **O1 terse** checkpoint unless operator requests full report.
+- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7–§8 for final write-up.
 - **`audit-only`:** no file edits.
-- **`audit-and-fix`:** update `docs/plan/CRITIC_VERIFICATION.md` gap rows + `docs/architecture/CRITIC_VERIFICATION.md` audit register; map findings to plan phase IDs; **no code** unless user requests separately.
-- Out-of-scope findings → suggest next `audit/<DOMAIN>.md`.
+- **`audit-and-fix`:** update plan/arch gap rows; **no code** unless operator requests separately.
 
 Begin the audit now.
 

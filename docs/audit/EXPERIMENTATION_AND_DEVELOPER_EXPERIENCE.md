@@ -2,7 +2,7 @@
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
 **Domain pair:** [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) · [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)  
-**Audit map layers:** 25–27, 30 · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HARNESS_AUDIT_MAP.md)  
+**Audit map layers:** 25–27, 30 · compact slice: [`audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)  
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -58,18 +58,30 @@ DX-LC Done · §6.1av DX-MAINT Done · GOV-PROD.1 dashboard backlog · polished 
 
 ---
 
-## 1. Canonical reads (in order)
+## 0. Context budget (mandatory)
 
-1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state
-2. `docs/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — architecture canon (incl. audit registers if present)
-3. `docs/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — implementation plan and gap IDs
-4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 25–27, 30
-5. `docs/audit/README.md` — shared production Harness checklist (**mandatory**)
-6. `docs/guides/AGENT_CREATION_GUIDE.md` **EXTENSION_AUTHOR_GUIDE**
+**Load first:** [`docs/guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) — compact slice (layers **25–27, 30**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
+
+- One domain per chat · grep with path filters · respect `.cursorignore`
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/plan/` or `architecture/arch/`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
 
-## 2. Code and test paths (inspect — search repo, do not assume)
+
+## 1. Canonical reads (order)
+
+1. **`docs/guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
+2. `docs/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — hub read-scope + one `architecture/arch/` satellite max
+3. `docs/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — hub + one `plan/plan/` satellite max
+4. `docs/audit/README.md` — shared production Harness checklist
+5. `@docs/guides/AGENT_CREATION_GUIDE.md` **EXTENSION_AUTHOR_GUIDE** — on demand
+**Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
+---
+
+## 2. Code entry (grep first)
+
+See **Code entry** in `docs/guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` — then inspect:
 
 ```text
 intergrax/scaffold/
@@ -80,7 +92,7 @@ scripts/phase_v_closeout_gate.py · phase_w_ops_evidence.py
 docs/guides/AGENT_CREATION_GUIDE.md · HARNESS_ENVIRONMENT.md
 ```
 
-Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
+Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 
@@ -185,11 +197,10 @@ Add any domain-specific scripts you discover. If a command fails, state why.
 
 ## 11. Output and mode rules
 
-- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7 Audit Result template.
-- End with §8 Completion Summary.
+- **O1 terse** checkpoint unless operator requests full report.
+- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7–§8 for final write-up.
 - **`audit-only`:** no file edits.
-- **`audit-and-fix`:** update `docs/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` gap rows + `docs/architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md` audit register; map findings to plan phase IDs; **no code** unless user requests separately.
-- Out-of-scope findings → suggest next `audit/<DOMAIN>.md`.
+- **`audit-and-fix`:** update plan/arch gap rows; **no code** unless operator requests separately.
 
 Begin the audit now.
 

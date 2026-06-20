@@ -1,0 +1,69 @@
+﻿# Cursor indexing exclusions — reduce noise and token waste.
+# Agents can still Read/run paths explicitly when needed (tests, RESUME audit runs).
+
+# Python / build artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+build/
+dist/
+wheels/
+*.egg-info/
+
+# Virtual env & secrets
+.venv/
+.env
+.env.*
+
+# VCS / IDE
+.git/
+.idea/
+.vscode/
+
+# Large or generated runtime artifacts
+uv.lock
+build/agent_fleet_inventory.json
+**/node_modules/
+
+# Test caches and bulky fixtures
+tests/**/__snapshots__/
+tests/**/fixtures/**/*.jsonl
+tests/**/fixtures/**/*.parquet
+tests/**/fixtures/**/*.bin
+tests/**/fixtures/**/*.pdf
+tests/**/fixtures/**/*.zip
+tests/**/data/**/*.db
+tests/**/data/**/*.sqlite
+
+# External / temp content
+_external_apps/
+docs/_external/
+temp_documents/
+
+# Historical audit runs (use RESUME path explicitly)
+docs/audit_results/
+
+# ADR archive (load cited ADR only)
+docs/adr/entries/
+
+# Implementation journal archive
+docs/implementation-journal/entries/
+
+# Bulky agent test fixtures
+agents/**/tests/fixtures/**
+agents/**/tests/**/snapshots/
+
+# LLM crawler maps (hub docs suffice)
+llms-full.txt
+
+# Bulky guides — load with explicit @ only (H2)
+docs/guides/AGENT_CREATION_GUIDE.md
+docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md
+docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md
+docs/guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md
+docs/plan/AUDIT_IDEAL_2026.md

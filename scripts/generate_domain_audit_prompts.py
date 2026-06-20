@@ -32,6 +32,11 @@ Sample imports across intergrax/, agents/, applications/ for tier violations""",
         "key_symbols": "Four-tier model · IntegrationProfile/ToolProfile/SkillProfile/LLMProfile · ApplicationEnvironmentProfile · ApplicationManifest · RuntimePolicyBundle · AgentContract · plugin entry points (intergrax.tools, intergrax.skills, intergrax.integrations)",
         "active_phases": "§6.1 gate maintenance queue · Phase V architecture hardening · Phase K business agents (**deferred** — must not start silently) · §6.3 product backlog",
         "known_gaps": "Phase K / §6.3 deferred product work · long-term §50 marketplace/visual builder · codecraft/ incremental · unified tool model (legacy boolean flags deprecated)",
+        "plan_read_scope": (
+            "**Hub only** (`docs/plan/PLATFORM_FOUNDATION.md`): §4 ladder · §6.1 maintenance · §6.3 deferred product · satellite index. "
+            "**On demand:** [`plan/plan/PLATFORM_FOUNDATION_master_registers.md`](plan/plan/PLATFORM_FOUNDATION_master_registers.md) (gap IDs) · "
+            "[`plan/plan/PLATFORM_FOUNDATION_06_closed_queues.md`](plan/plan/PLATFORM_FOUNDATION_06_closed_queues.md) (re-validate closed items only)"
+        ),
         "dimensions": [
             "Harness treated as durable product — not single-agent optimization (§1 strategic frame).",
             "Tier-0 (`intergrax/`) contains only universal mechanisms — no business agent logic.",
@@ -527,7 +532,7 @@ intergrax/runtime/critic/ (CVL hooks)
 docs/architecture/CODE_CRAFT.md · docs/plan/CODE_CRAFT.md · ADR-CODECRAFT-001""",
         "key_symbols": "CodeCraftProfile · CodeCraftOrchestrator · CodeCraftSession · CraftResult · IterationRecord · StaticCodeGate · craft modes (disabled|dry_run|assist_only|supervised|autonomous) · EphemeralToolRegistry · wire_application_codecraft",
         "active_phases": "ECC-0…ECC-6 + S7–S11 **Done** (L3+, 2026-06-13) · ADR-CODECRAFT-001",
-        "known_gaps": "codegen_llm_profile_ref wiring (GAP-ECC-20) · container isolation tier (GAP-ECC-21) · metrics dashboards §10.2 (GAP-ECC-22) · Task.metadata.codecraft_mode override (GAP-ECC-23) · local SandboxSession ≠ OS containment (accepted)",
+        "known_gaps": "GAP-ECC-20…23 **Closed** (ECC-MAINT-01..04) · local SandboxSession ≠ OS containment (accepted) · dedicated container runtime backend product opt-in beyond local fallback",
         "dimensions": [
             "CodeCraft uses existing sandbox ToolRuntime path — no parallel execution stack.",
             "L0 StaticCodeGate before any execute in autonomous/supervised paths.",
@@ -1218,10 +1223,29 @@ docs/adr/entries/2026-06-08/ADR-SCALE-001.md · ADR-SCALE-002.md""",
 ]
 
 
+DEFAULT_PLAN_SCOPE = (
+    "`## 6.` open queue rows only · gap/remediation registers tied to **Known open gaps** "
+    "and **Active plan phases** · skip `(closed)`, `(complete)`, `Archived` unless re-validating a listed gap"
+)
+
+
 def _bullets(items: list[str], numbered: bool = False) -> str:
     if numbered:
         return "\n".join(f"{i + 1}. {x}" for i, x in enumerate(items))
     return "\n".join(f"- {x}" for x in items)
+
+
+def _context_budget_block(*, did: str, layers: str) -> str:
+    return f"""## 0. Context budget (mandatory)
+
+**Load first:** [`docs/guides/audit_slices/{did}.md`](../guides/audit_slices/{did}.md) — compact slice (layers **{layers}**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
+
+- One domain per chat · grep with path filters · respect `.cursorignore`
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/plan/` or `architecture/arch/`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
+
+---
+"""
 
 
 def render(domain: dict) -> str:
@@ -1234,6 +1258,11 @@ def render(domain: dict) -> str:
     active_phases = domain["active_phases"]
     known_gaps = domain["known_gaps"]
     dims = domain["dimensions"]
+    if len(dims) > 22:
+        extra = len(dims) - 20
+        dims = dims[:20] + [
+            f"… plus {extra} more rows — grep `architecture/{did}.md` §21–§40 and plan hub §6.1 (do not load full arch)"
+        ]
     scale = domain["scale_probes"]
     overrides = domain["overrides"]
     ci = domain["ci_scripts"]
@@ -1241,16 +1270,14 @@ def render(domain: dict) -> str:
     anti = domain["anti_patterns"]
     appendix = domain["appendix"]
     adr = domain.get("adr")
+    context_budget = _context_budget_block(did=did, layers=layers)
 
     appendix_block = ""
     if appendix != "N/A":
         if "APPLICATION_CREATION_GUIDE" in appendix:
-            appendix_block = (
-                "6. `docs/guides/APPLICATION_CREATION_GUIDE.md`\n"
-                "7. `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix F · Appendix H**\n"
-            )
+            appendix_block = "5. `@docs/guides/APPLICATION_CREATION_GUIDE.md` — on demand only (`.cursorignore`)\n"
         else:
-            appendix_block = f"6. `docs/guides/AGENT_CREATION_GUIDE.md` **{appendix}**\n"
+            appendix_block = f"5. `@docs/guides/AGENT_CREATION_GUIDE.md` **{appendix}** — on demand\n"
 
     adr_block = ""
     if adr:
@@ -1266,7 +1293,7 @@ def render(domain: dict) -> str:
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
 **Domain pair:** [`architecture/{did}.md`](../architecture/{did}.md) · [`plan/{did}.md`](../plan/{did}.md)  
-**Audit map layers:** {layers} · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HARNESS_AUDIT_MAP.md)  
+**Audit map layers:** {layers} · compact slice: [`audit_slices/{did}.md`](../guides/audit_slices/{did}.md)  
 {adr_block}**Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -1322,23 +1349,26 @@ Perform a **rigorous, evidence-backed audit** of the **{title}** domain. You mus
 
 ---
 
-## 1. Canonical reads (in order)
+{context_budget}
 
-1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state
-2. `docs/architecture/{did}.md` — architecture canon (incl. audit registers if present)
-3. `docs/plan/{did}.md` — implementation plan and gap IDs
-4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers {layers}
-5. `docs/audit/README.md` — shared production Harness checklist (**mandatory**)
-{appendix_block}
+## 1. Canonical reads (order)
+
+1. **`docs/guides/audit_slices/{did}.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
+2. `docs/architecture/{did}.md` — hub read-scope + one `architecture/arch/` satellite max
+3. `docs/plan/{did}.md` — hub + one `plan/plan/` satellite max
+4. `docs/audit/README.md` — shared production Harness checklist
+{appendix_block}**Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
 ---
 
-## 2. Code and test paths (inspect — search repo, do not assume)
+## 2. Code entry (grep first)
+
+See **Code entry** in `docs/guides/audit_slices/{did}.md` — then inspect:
 
 ```text
 {code}
 ```
 
-Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
+Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 
@@ -1423,11 +1453,10 @@ Add any domain-specific scripts you discover. If a command fails, state why.
 
 ## 11. Output and mode rules
 
-- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7 Audit Result template.
-- End with §8 Completion Summary.
+- **O1 terse** checkpoint unless operator requests full report.
+- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7–§8 for final write-up.
 - **`audit-only`:** no file edits.
-- **`audit-and-fix`:** update `docs/plan/{did}.md` gap rows + `docs/architecture/{did}.md` audit register; map findings to plan phase IDs; **no code** unless user requests separately.
-- Out-of-scope findings → suggest next `audit/<DOMAIN>.md`.
+- **`audit-and-fix`:** update plan/arch gap rows; **no code** unless operator requests separately.
 
 Begin the audit now.
 

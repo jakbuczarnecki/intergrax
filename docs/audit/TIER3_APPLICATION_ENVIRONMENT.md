@@ -2,7 +2,7 @@
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
 **Domain pair:** [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../architecture/TIER3_APPLICATION_ENVIRONMENT.md) · [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md)  
-**Audit map layers:** 3, 28 · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HARNESS_AUDIT_MAP.md)  
+**Audit map layers:** 3, 28 · compact slice: [`audit_slices/TIER3_APPLICATION_ENVIRONMENT.md`](../guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md)  
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -58,19 +58,30 @@ T3-LC Done · §6.1av T3-MAINT Done · CFG-14 LKW → ORCH-MAINT-02 · marketpla
 
 ---
 
-## 1. Canonical reads (in order)
+## 0. Context budget (mandatory)
 
-1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state
-2. `docs/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — architecture canon (incl. audit registers if present)
-3. `docs/plan/TIER3_APPLICATION_ENVIRONMENT.md` — implementation plan and gap IDs
-4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 3, 28
-5. `docs/audit/README.md` — shared production Harness checklist (**mandatory**)
-6. `docs/guides/APPLICATION_CREATION_GUIDE.md`
-7. `docs/guides/AGENT_CREATION_GUIDE.md` **Appendix F · Appendix H**
+**Load first:** [`docs/guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md`](../guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md) — compact slice (layers **3, 28**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
+
+- One domain per chat · grep with path filters · respect `.cursorignore`
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/plan/` or `architecture/arch/`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
 
-## 2. Code and test paths (inspect — search repo, do not assume)
+
+## 1. Canonical reads (order)
+
+1. **`docs/guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
+2. `docs/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — hub read-scope + one `architecture/arch/` satellite max
+3. `docs/plan/TIER3_APPLICATION_ENVIRONMENT.md` — hub + one `plan/plan/` satellite max
+4. `docs/audit/README.md` — shared production Harness checklist
+5. `@docs/guides/APPLICATION_CREATION_GUIDE.md` — on demand only (`.cursorignore`)
+**Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
+---
+
+## 2. Code entry (grep first)
+
+See **Code entry** in `docs/guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md` — then inspect:
 
 ```text
 applications/*/host/factory.py
@@ -83,7 +94,7 @@ intergrax/cli/apps.py · envs.py · doctor_health_app.py · doctor_diff_app.py
 docs/guides/APPLICATION_CREATION_GUIDE.md
 ```
 
-Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
+Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 
@@ -111,15 +122,7 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 18. bundle_normalized_payload on EnvironmentSnapshot digests (APP-EVOL-8.3).
 19. ProfileInvariantValidator cross-bundle checks (APP-EVOL-8).
 20. check_environment_profile_bundle_schema.py (APP-EVOL-8.7).
-21. STRICT capability graph deploy gate + blast radius (APP-OPS-1).
-22. ApplicationOperationalOwnership on product manifests (APP-OPS-2).
-23. EnvironmentHealthScore + doctor health-app (APP-OPS-3).
-24. ApplicationRegistry + EnvironmentRegistry + apps/envs CLI (APP-OPS-4).
-25. check_application_production_gates.py aggregates APP-PROD + APP-CON + APP-EVOL + APP-OPS.
-26. Roster ⊆ skill/tool profiles (EnvironmentSkillToolConsistencyCheck).
-27. IdentityProfile + budget enforcement on STRICT product hosts.
-28. Deploy triad present on scaffolded standard hosts.
-29. APPLICATION_CREATION_GUIDE.md aligns with §31 · §45 · §47.
+21. … plus 9 more rows — grep `architecture/TIER3_APPLICATION_ENVIRONMENT.md` §21–§40 and plan hub §6.1 (do not load full arch)
 
 ---
 
@@ -204,11 +207,10 @@ Add any domain-specific scripts you discover. If a command fails, state why.
 
 ## 11. Output and mode rules
 
-- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7 Audit Result template.
-- End with §8 Completion Summary.
+- **O1 terse** checkpoint unless operator requests full report.
+- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7–§8 for final write-up.
 - **`audit-only`:** no file edits.
-- **`audit-and-fix`:** update `docs/plan/TIER3_APPLICATION_ENVIRONMENT.md` gap rows + `docs/architecture/TIER3_APPLICATION_ENVIRONMENT.md` audit register; map findings to plan phase IDs; **no code** unless user requests separately.
-- Out-of-scope findings → suggest next `audit/<DOMAIN>.md`.
+- **`audit-and-fix`:** update plan/arch gap rows; **no code** unless operator requests separately.
 
 Begin the audit now.
 

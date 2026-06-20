@@ -176,7 +176,7 @@ Not every invariant has a dedicated gate — some are architectural review oblig
 | LLM adapter response typing | `scripts/check_agents_llm_adapter_response.py` |
 | Reasoning plane gates | `scripts/check_reasoning_gates.py` |
 
-**Regression bundle** (after harness changes): see [`AGENTS.md`](../../AGENTS.md) Verification section.
+**Regression bundle** (after harness changes): see [`AGENT_INSTRUCTIONS.md`](AGENT_INSTRUCTIONS.md) Verification section.
 
 ---
 

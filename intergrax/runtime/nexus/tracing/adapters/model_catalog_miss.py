@@ -75,14 +75,16 @@ def emit_model_catalog_miss_diag(
     )
 
 
-def wire_catalog_miss_trace_sink(trace_event: TraceEmitFn) -> None:
+def wire_catalog_miss_trace_sink(trace_event: TraceEmitFn, *, run_id: str) -> None:
     """Register Plane A emission for Tier-0 catalog miss diagnostics."""
 
     def _emit(diag: ModelCatalogMissDiagV1) -> None:
         emit_model_catalog_miss_diag(trace_event, diag)
 
     from intergrax.llm_adapters.registry.catalog_miss_diag import (
-        register_catalog_miss_trace_observer,
+        begin_catalog_miss_run,
+        bind_catalog_miss_run_observer,
     )
 
-    register_catalog_miss_trace_observer(_emit)
+    begin_catalog_miss_run(run_id)
+    bind_catalog_miss_run_observer(run_id, _emit)

@@ -2,7 +2,7 @@
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
 **Domain pair:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
-**Audit map layers:** 17–20, 31 · ACP §21 · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../INTEGRAX_HARNESS_AUDIT_MAP.md)  
+**Audit map layers:** 17–20, 31 · ACP §21 · compact slice: [`audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
 **ADR:** [`ADR-AGENT-001`](../../adr/ADR-AGENT-001.md) · [`ADR-AGENT-002`](../../adr/ADR-AGENT-002.md) · [`ADR-AGENT-003`](../../adr/ADR-AGENT-003.md)  
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
@@ -51,26 +51,38 @@ AgentContract · UAEPAgent · RuntimeExecutionContext · AgentDecision · Cognit
 
 ## Active plan phases (verify status vs code reality)
 
-ACP · ACP-CLOSE · ACP-FINISH Done (2026-06-13) · PE/REG/CG/AS closed · AUDIT-IDEAL-19.1/20.1/31.1 **Done**
+ACP · ACP-CLOSE · ACP-FINISH Done (2026-06-13) · PE/REG/CG/AS closed · AUDIT-IDEAL-19.1/20.1/31.1 parallel
 
 ## Known open gaps — re-validate every item (closed / still open / partial)
 
-GAP-ACP-36/37 Closed (ACP-TOK-*) · GAP register 37 Closed · 0 Open · AUDIT-IDEAL-19.1/20.1/31.1 **Done** · COST-1 RunBudget Partial (cross-domain deferred) · FAUDIT-REG.1 deferred
+GAP-ACP-36/37 Closed (ACP-TOK-*) · GAP register 37 Closed · 0 Open · AUDIT-IDEAL-19.1/20.1/31.1 Planned · COST-1 RunBudget Partial
 
 ---
 
-## 1. Canonical reads (in order)
+## 0. Context budget (mandatory)
 
-1. `docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md` — target state
-2. `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` — architecture canon (incl. audit registers if present)
-3. `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` — implementation plan and gap IDs
-4. `docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md` — layers 17–20, 31 · ACP §21
-5. `docs/audit/README.md` — shared production Harness checklist (**mandatory**)
-6. `docs/guides/AGENT_CREATION_GUIDE.md` **ADR-AGENT-001 · ADR-AGENT-002 · ADR-AGENT-003 · Appendix M/N/O/P · Appendix AC**
+**Load first:** [`docs/guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md) — compact slice (layers **17–20, 31 · ACP §21**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
+
+- One domain per chat · grep with path filters · respect `.cursorignore`
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/plan/` or `architecture/arch/`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
 
 ---
 
-## 2. Code and test paths (inspect — search repo, do not assume)
+
+## 1. Canonical reads (order)
+
+1. **`docs/guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
+2. `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` — hub read-scope + one `architecture/arch/` satellite max
+3. `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` — hub + one `plan/plan/` satellite max
+4. `docs/audit/README.md` — shared production Harness checklist
+5. `@docs/guides/AGENT_CREATION_GUIDE.md` **ADR-AGENT-001 · ADR-AGENT-002 · ADR-AGENT-003 · Appendix M/N/O/P · Appendix AC** — on demand
+**Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
+---
+
+## 2. Code entry (grep first)
+
+See **Code entry** in `docs/guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md` — then inspect:
 
 ```text
 intergrax/contracts/agent_contract_meta.py · runtime_execution_context.py
@@ -87,7 +99,7 @@ agents/ (Tier-2 roster) · applications/_shared/prompt_wiring.py
 scripts/check_agents_lifecycle_metadata.py · check_agents_vendor_imports.py
 ```
 
-Also grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
+Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 
 ---
 
@@ -115,40 +127,7 @@ For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol
 18. Deprecated/retired agents rejected in strict production_mode.
 19. Agent checklist §45 + ACP pattern selection (§26.1).
 20. Forbidden §42.41 patterns absent (vendor SDK, direct integrations).
-21. skill_ids → allowed_tools resolution audited.
-22. scaffold --pattern when ACP-8 Done.
-23. check_agent_pattern_conformance.py when ACP-13 Done.
-24. acceptance agent_os covers UAEP path for reference agents.
-25. AgentRunRequest/Result and merge_environment per §29–§30 (ACP-DX).
-26. Per-agent memory_namespace and rag_collection — not global store.
-27. Application metadata → environment_overrides wired in hosts.
-28. on_next_step / StepOutcome author API per §32 (ACP-STEP-1).
-29. execute_next_step harness-only — authors cannot override (ACP-STEP-2).
-30. HarnessKernel.execute_step deterministic primitive — no agent planning §38 (ACP-STEP-2b).
-31. NexusLoop vs HarnessKernel separation §38 — not nexus.run() as agent brain.
-32. AgentRunTrace on AgentRunResult with tool/RAG/LLM step records §31 (ACP-OBS-1).
-33. ApplicationRunSummary for Task orchestration §31 (ACP-OBS-2).
-34. StepLLMRouter per-step model within LLMProfile §33 (ACP-LLM-1).
-35. SharedContextView for multi-agent handoffs §34 (ACP-STATE-1).
-36. Use-case catalog UC-1..10 supported without agent rewrite §35.
-37. AgentRunErrorCode and TerminalReason enums per §37.4–§37.5 (ACP-CON-1).
-38. state_delta JSON merge-patch + _version + resume conflict §37.2 (ACP-CON-2).
-39. Side-effect mode immediate vs declarative — no mix per step §32.8 (ACP-CON-3).
-40. Capability routing by token not class name §37.6 (ACP-CON-6).
-41. Security guards STRICT tool/memory/RAG §37.7 (ACP-CON-7).
-42. OrganizationalPolicyEnvelope constrains agents without code fork §39 (ACP-ORG).
-43. PolicyVerdictRecord on steps for compliance measurement §39.5 (ACP-ORG-4).
-44. Checkpoint/resume/replay semantics §40.1 (ACP-PROD-1).
-45. Side-effect idempotency keys and dedupe §40.2 (ACP-PROD-2).
-46. ToolExecutionProfile mutability/compensation §40.3 (ACP-PROD-3).
-47. SharedContextView CAS concurrency §40.5 (ACP-PROD-5).
-48. ArtifactRef typed contract §40.6 (ACP-PROD-6).
-49. Agent threat model mitigations §40.7 (ACP-PROD-7).
-50. Privacy/redaction on trace/memory §40.8 (ACP-PROD-8).
-51. Release eval gates before production_mode §40.9 (ACP-PROD-9).
-52. CI conformance matrix §40.10 (ACP-PROD-10).
-53. Contract schema_version migration §40.11 (ACP-PROD-11).
-54. RequestIdentity tenant_id/user_id and memory_scope user vs org §30.9 (ACP-DX-1/2).
+21. … plus 34 more rows — grep `architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §21–§40 and plan hub §6.1 (do not load full arch)
 
 ---
 
@@ -235,11 +214,10 @@ Add any domain-specific scripts you discover. If a command fails, state why.
 
 ## 11. Output and mode rules
 
-- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7 Audit Result template.
-- End with §8 Completion Summary.
+- **O1 terse** checkpoint unless operator requests full report.
+- Use `HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md` §7–§8 for final write-up.
 - **`audit-only`:** no file edits.
-- **`audit-and-fix`:** update `docs/plan/AGENT_CONTRACTS_AND_ASSEMBLY.md` gap rows + `docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` audit register; map findings to plan phase IDs; **no code** unless user requests separately.
-- Out-of-scope findings → suggest next `audit/<DOMAIN>.md`.
+- **`audit-and-fix`:** update plan/arch gap rows; **no code** unless operator requests separately.
 
 Begin the audit now.
 

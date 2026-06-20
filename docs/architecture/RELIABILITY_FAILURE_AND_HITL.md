@@ -10,6 +10,19 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (RELIABILITY_FAILURE_AND_HITL canon).
+
+- **Implement / audit default:** retry/HITL contracts. Skip failure taxonomy appendices unless cited.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/RELIABILITY_FAILURE_AND_HITL.md`](../plan/RELIABILITY_FAILURE_AND_HITL.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/RELIABILITY_FAILURE_AND_HITL.md`](../guides/audit_slices/RELIABILITY_FAILURE_AND_HITL.md).
+- **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
+
+---
+
+
 ---
 
 # 30. Failure Model

@@ -19,6 +19,7 @@ def main() -> int:
         "tests/unit/llm_adapters/test_catalog_miss_trace.py",
         "tests/unit/llm_adapters/test_catalog_miss_metrics.py",
         "tests/acceptance/llm_routing/test_catalog_miss_trace_e2e.py",
+        "tests/acceptance/llm_routing/test_concurrent_catalog_miss_run_isolation.py",
         "-m",
         "gate and not no_ci",
         "-q",
@@ -29,10 +30,11 @@ def main() -> int:
 
     required_snippets = (
         ("intergrax/llm_adapters/registry/catalog_miss_diag.py", "CatalogResolutionTier"),
+        ("intergrax/llm_adapters/registry/catalog_miss_diag.py", "begin_catalog_miss_run"),
         ("intergrax/llm_adapters/tracking/metrics.py", "intergrax_llm_catalog_miss_total"),
         (
             "intergrax/runtime/nexus/engine/runtime_state.py",
-            "wire_catalog_miss_trace_sink(self.trace_event)",
+            "wire_catalog_miss_trace_sink(self.trace_event, run_id=self.run_id)",
         ),
         ("intergrax/runtime/events/trace_bridge.py", "_CORE_LLM_CATALOG_MISS_SCHEMA"),
     )

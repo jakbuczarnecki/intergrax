@@ -10,6 +10,19 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE canon).
+
+- **Implement / audit default:** DX gates + eval harness. Skip W-OPS history unless DX task.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../guides/audit_slices/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md).
+- **Max reads:** at most **one** file >5k tokens per session unless RESUME cites more.
+
+---
+
+
 ---
 
 # 39. Implementation Rules For Cursor AI

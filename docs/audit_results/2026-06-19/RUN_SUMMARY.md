@@ -1,10 +1,10 @@
 # Interactive layer-by-layer audit run — 2026-06-19
 
-**Mode:** audit_only + implement (Mode A2) · **Scope:** 8/22 domains
+**Mode:** audit_only + implement (Mode A2) · **Scope:** 9/22 domains
 
 ## Status
 
-**In progress** — 8/22 domains completed.
+**In progress** — 9/22 domains completed.
 
 ## Completed domains
 
@@ -18,27 +18,24 @@
 | `AGENT_CONTRACTS_AND_ASSEMBLY` | mature_revalidated | L3+ | 0/0 | [AGENT_CONTRACTS_AND_ASSEMBLY.md](AGENT_CONTRACTS_AND_ASSEMBLY.md) |
 | `LLM_ADAPTERS` | mature_revalidated | L4 enterprise | 0/0 | [LLM_ADAPTERS.md](LLM_ADAPTERS.md) |
 | `TOOLS` | mature_revalidated | L3 | 0/0 | [TOOLS.md](TOOLS.md) |
+| `CODE_CRAFT` | mature_revalidated | L3+ | 0/0 | [CODE_CRAFT.md](CODE_CRAFT.md) |
 
 ## Maintenance implemented (2026-06-19)
 
 | ID | Domain | Status | Notes |
 |----|--------|--------|-------|
-| TOOL-MAINT-01b | TOOLS | **Done** | Hierarchical LLM category pass opt-in wiring |
-| TOOL-MAINT-TEST-01 | TOOLS | **Done** | Catalog/bundle test sync (200 tools) |
-| TOOL-MAINT-DOC-01 | TOOLS | **Done** | Architecture revalidation + §6.1av closed |
-| TOOL-MAINT-AUDIT-01 | TOOLS | **Done** | Audit result + progress tracker |
+| ECC-MAINT-DOC-01 | CODE_CRAFT | **Done** | GAP register sync + architecture §6.3 + audit prompt |
+| ECC-MAINT-AUDIT-01 | CODE_CRAFT | **Done** | Audit result + progress tracker |
 
 ## Gate verification
 
 ```bash
-uv run pytest tests/unit/tools/providers/ tests/unit/runtime/nexus/tools/ -q
-uv run python scripts/check_tool_injection_defense.py
-uv run python scripts/check_legacy_tool_plan_booleans.py
-uv run python scripts/check_agent_registry_bypass.py
+uv run pytest tests/unit/codecraft/ tests/unit/runtime/codecraft/ tests/unit/tools/providers/codecraft/ -q
+uv run python scripts/check_codecraft_layer.py
 ```
 
-Tool gates OK · 267 unit tests passed (2026-06-19).
+Code Craft gates OK · 31 unit tests passed (2026-06-19).
 
 ## Next domain
 
-`CODE_CRAFT` — pending operator confirmation.
+`SKILLS` — pending operator confirmation.
