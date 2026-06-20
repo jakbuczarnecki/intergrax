@@ -33,6 +33,7 @@ This document is the **single cross-layer maturity vocabulary**. It defines **fo
 |-------|------|
 | [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) | What **must never** break (independent of maturity level) |
 | **This file** | How to **describe** how mature a subsystem is on each axis |
+| [ADAPTIVE_HARNESS_INTELLIGENCE.md](../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md#governance-boundary) | AHI governance boundary, risk classes, production auto-apply rule |
 | [LAYER_COMPLETION_MODE.md](LAYER_COMPLETION_MODE.md) | Workflow for closing a domain layer; convergence scores must map to four axes |
 | [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) | Audit layers and evidence expectations |
 

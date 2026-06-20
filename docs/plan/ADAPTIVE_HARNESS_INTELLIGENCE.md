@@ -6,7 +6,17 @@
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/plan/` satellites on demand).
 
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates W-ADAPT 70/70 closeout).
+**Last updated:** 2026-06-20 — **P2-ARCH-10** AHI governance boundary.
+
+---
+
+## Architecture doc alignment (P2-ARCH)
+
+| ID | Task | Status |
+|----|------|--------|
+| **P2-ARCH-10** | Clarify AHI governance boundary and production auto-apply rule | **Done** (2026-06-20) |
+
+Architecture: [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md#governance-boundary).
 
 ---
 

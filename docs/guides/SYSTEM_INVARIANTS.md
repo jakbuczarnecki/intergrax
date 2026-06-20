@@ -157,12 +157,13 @@ Normative rules that **MUST** hold across Tier-0..3, Nexus, agents, tools, conte
 ## 9. Adaptive and scaling invariants
 
 - Adaptive Harness Intelligence may observe, propose and evaluate changes.
-- Production auto-apply of adaptive changes requires explicit product/governance decision.
-- AHI **MUST NOT** silently mutate prompts, routing, policies or profiles in production.
+- AHI must not silently mutate production prompts, routing, policies, profiles, retrievers, critic thresholds, tools or HITL boundaries.
+- Production auto-apply is disabled by default unless explicitly enabled by governance.
+- AHI recommendations must be traceable and evidence-backed.
 - Elastic Capacity Plane scales infrastructure capacity only.
 - ECP **MUST NOT** decide agent topology or domain execution strategy.
 
-**Canon:** [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) · [`ELASTIC_CAPACITY_AND_SCALING.md`](../architecture/ELASTIC_CAPACITY_AND_SCALING.md)
+**Canon:** [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md#governance-boundary) · [`ELASTIC_CAPACITY_AND_SCALING.md`](../architecture/ELASTIC_CAPACITY_AND_SCALING.md)
 
 ## 10. Documentation authority invariants
 
