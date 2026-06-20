@@ -71,7 +71,7 @@ curl -s -X POST http://127.0.0.1:8097/v1/attestation_demo/poc/run \
   }'
 ```
 
-Response includes `boundary_events[]` (unsigned) and `trust_model`.
+Response includes `boundary_events[]` (host-signed by default, EBE-9) and `trust_model`.
 
 MCP is **disabled** by default for this host (`ATTESTATION_DEMO_INCLUDE_MCP=false`).
 
@@ -84,15 +84,15 @@ Handoff package: [`partner_handoff/README.md`](partner_handoff/README.md)
 | Deliverable | Path |
 |-------------|------|
 | Sample request | `partner_handoff/poc_run_request.v1.json` |
-| Sample response shape | `partner_handoff/poc_run_response.v1.json` |
-| Integration guide | `partner_handoff/README.md` |
+| Sample response shape | `partner_handoff/poc_run_response.v2.json` (unsigned ref) · `partner_handoff/ebe9_golden_vector.v1.json` (signed) |
+| Integration guide | `partner_handoff/README.md` · `partner_handoff/EBE-9_HOST_SIGNING.md` |
 
 ### Recommended production posture
 
 1. Set `INTERGRAX_HARNESS_API_KEY` in `.env` (or container env).
 2. Expose port **8097** (or reverse-proxy to `/v1/attestation_demo/poc/run`).
 3. Share base URL + API key with partner adapter repo.
-4. Partner calls `POST /v1/attestation_demo/poc/run` → maps `boundary_events[]` → `createSignedReceipt` (`client_observed`).
+4. Partner calls `POST /v1/attestation_demo/poc/run` → verifies `host_attestation` per event → maps `boundary_events[]` → `createSignedReceipt` (`client_observed` wrapper).
 
 ```bash
 curl -s -X POST "https://<host>/v1/attestation_demo/poc/run" \
