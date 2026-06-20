@@ -19,7 +19,7 @@ Implement the **Intergrax Harness AI / Agent Operating System**. Full rules: **`
 
 - **One domain pair per session** unless the operator explicitly batches.
 - Read **only** the selected `docs/architecture/<DOMAIN>.md` + scoped sections of `docs/plan/<DOMAIN>.md` (see below).
-- **Never** load full plan files >500 lines — grep/open **§6**, open gap registers, and rows cited by the task only. Skip `(closed)`, `(complete)`, `Archived` unless re-validating a listed gap.
+- **Never** load full multi-thousand-line plan files — hub + [`docs/plan/plan/`](docs/plan/plan/) satellites; audits: [`docs/guides/audit_slices/<DOMAIN>.md`](docs/guides/audit_slices/).
 - **Never** re-read the same file in one session unless it changed.
 - Prefer **grep with path filters** over repo-wide semantic search for known symbols.
 - Run **only** verification commands relevant to the current item (`AGENTS.md` §Verification).

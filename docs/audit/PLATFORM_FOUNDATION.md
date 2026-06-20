@@ -78,7 +78,8 @@ Read **only**: **Hub only** (`docs/plan/PLATFORM_FOUNDATION.md`): §4 ladder · 
 Table of contents + sections for audit-map layers **1–2, 32** + registers tied to **Known open gaps**. Skip historical paydown logs unless a gap ID points there.
 
 ### Scoped guide reads
-- `IDEAL_HARNESS_AI_ARCHITECTURE.md` — sections for layers **1–2, 32** only
+- **Prefer** [`docs/guides/audit_slices/{DOMAIN}.md`](../guides/audit_slices/{DOMAIN}.md) — compact slice for this domain (replaces bulk IDEAL + AUDIT_MAP load)
+- Otherwise: `IDEAL_HARNESS_AI_ARCHITECTURE.md` — sections for layers **1–2, 32** only
 - `INTEGRAX_HARNESS_AUDIT_MAP.md` — layers **1–2, 32** + maturity §5 only
 - `SYSTEM_INVARIANTS.md` — skim invariant IDs referenced in section 3 dimensions only
 

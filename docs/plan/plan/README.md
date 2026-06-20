@@ -1,15 +1,20 @@
-# Platform Foundation — plan satellites
+# Plan hub satellites
 
-**Parent hub:** [`../PLATFORM_FOUNDATION.md`](../PLATFORM_FOUNDATION.md)
+**Parent directory:** [`../`](../) — domain plan hubs (`<DOMAIN>.md`)
 
-Load **one** satellite per session when a task or audit gap ID requires it. Do not bulk-read all files.
+Load **one** satellite per session when a task or audit gap ID requires it.
 
-| File | When to load |
-|------|----------------|
-| [`PLATFORM_FOUNDATION_06_closed_queues.md`](PLATFORM_FOUNDATION_06_closed_queues.md) | Re-validating a **closed** §6.1/§6.2 queue cited in audit |
-| [`PLATFORM_FOUNDATION_master_registers.md`](PLATFORM_FOUNDATION_master_registers.md) | Gap ID points to ORCH/FLOW/TS/… master register |
-| [`PLATFORM_FOUNDATION_06_phase_detail.md`](PLATFORM_FOUNDATION_06_phase_detail.md) | Appendix L/M/N detail, §6.4 historical milestones |
-| [`PLATFORM_FOUNDATION_phase_closeout.md`](PLATFORM_FOUNDATION_phase_closeout.md) | Phase V-REM, FAUDIT-32 closeout narrative |
-| [`PLATFORM_FOUNDATION_appendices.md`](PLATFORM_FOUNDATION_appendices.md) | Appendices B–M traceability |
+| Pattern | When to load |
+|---------|----------------|
+| `<DOMAIN>_06_closed_queues.md` | Re-validating closed §6.1/§6.2 queues |
+| `<DOMAIN>_master_registers.md` | Gap ID in ORCH/FLOW/TS/… master register |
+| `<DOMAIN>_audit_history.md` | LC closeout / historical audit narrative |
+| `<DOMAIN>_phase_closeout.md` | Phase V-REM, FAUDIT-32, INT closeout bodies |
+| `<DOMAIN>_appendices.md` | Appendix traceability B–N |
+| `PLATFORM_FOUNDATION_*` | Platform-wide registers (shared canonical source) |
 
-Regenerate hub split: `uv run python scripts/split_platform_foundation_plan.py` (after hub edits that add closed queues/registers).
+**Regenerate splits:** `uv run python scripts/split_domain_plan.py [DOMAIN ...]`
+
+**CI gate:** `uv run python scripts/check_plan_hub_size.py`
+
+**Audit compact context:** [`../guides/audit_slices/`](../guides/audit_slices/)

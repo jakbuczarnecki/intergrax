@@ -1256,7 +1256,8 @@ Read **only**: {plan_scope}
 Table of contents + sections for audit-map layers **{layers}** + registers tied to **Known open gaps**. Skip historical paydown logs unless a gap ID points there.
 
 ### Scoped guide reads
-- `IDEAL_HARNESS_AI_ARCHITECTURE.md` — sections for layers **{layers}** only
+- **Prefer** [`docs/guides/audit_slices/{{DOMAIN}}.md`](../guides/audit_slices/{{DOMAIN}}.md) — compact slice for this domain (replaces bulk IDEAL + AUDIT_MAP load)
+- Otherwise: `IDEAL_HARNESS_AI_ARCHITECTURE.md` — sections for layers **{layers}** only
 - `INTEGRAX_HARNESS_AUDIT_MAP.md` — layers **{layers}** + maturity §5 only
 - `SYSTEM_INVARIANTS.md` — skim invariant IDs referenced in section 3 dimensions only
 

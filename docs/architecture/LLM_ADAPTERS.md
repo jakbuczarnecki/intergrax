@@ -11,6 +11,17 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (LLM_ADAPTERS canon).
+
+- **Implement / audit default:** Read TOC sections matching current task only; skip appendices and paydown logs.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/LLM_ADAPTERS.md`](../plan/LLM_ADAPTERS.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/LLM_ADAPTERS.md`](../guides/audit_slices/LLM_ADAPTERS.md).
+
+---
+
 ## Purpose and maturity
 
 Tier-0 **LLM adapter layer** is the Harness cognition entry point: one `LLMAdapter` contract, multi-vendor providers, typed completion envelopes, tenant metering, and Nexus context budgeting.

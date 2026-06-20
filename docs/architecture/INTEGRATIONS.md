@@ -8,6 +8,17 @@
 **Audit instruction:** [`audit/INTEGRATIONS.md`](../audit/INTEGRATIONS.md)  
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (INTEGRATIONS canon).
+
+- **Implement / audit default:** Default: manifest registration + IntegrationProfile. Skip slug inventory — use catalog grep.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/INTEGRATIONS.md`](../plan/INTEGRATIONS.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/INTEGRATIONS.md`](../guides/audit_slices/INTEGRATIONS.md).
+
+---
+
 # 18. Slack / Teams / Communication Integration Philosophy
 
 Intergrax should support Slack and Teams as interaction surfaces.

@@ -8,6 +8,17 @@
 **Audit instruction:** [`audit/TOOLS.md`](../audit/TOOLS.md)  
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (TOOLS canon).
+
+- **Implement / audit default:** Default: ToolRuntime path + plugin model + policy invoke. Skip full catalog tables — use `intergrax/tools/` registry grep.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/TOOLS.md`](../plan/TOOLS.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/TOOLS.md`](../guides/audit_slices/TOOLS.md).
+
+---
+
 ---
 
 # Intergrax Tool Library

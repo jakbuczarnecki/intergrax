@@ -10,6 +10,17 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (AGENT_CONTRACTS_AND_ASSEMBLY canon).
+
+- **Implement / audit default:** Default: §12–§21 (contract, registry, capability, ACP). Implementation audit: add §37 routing. Skip §40+ production gate history unless cited.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plan/AGENT_CONTRACTS_AND_ASSEMBLY.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md).
+
+---
+
 ## Table of contents
 
 | § | Topic |

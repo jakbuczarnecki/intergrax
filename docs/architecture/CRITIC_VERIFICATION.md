@@ -9,6 +9,17 @@
 **Last updated:** 2026-06-17 — **Full Harness LC** (re-validates CVL-LC); **CRIT-V-0…7 + FOLLOWUP + CVL-LC-1…4 Done (L3+)**
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (CRITIC_VERIFICATION canon).
+
+- **Implement / audit default:** Default: CVL contracts + orchestrator + wiring. Skip historical LC narrative unless cited.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/CRITIC_VERIFICATION.md`](../plan/CRITIC_VERIFICATION.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/CRITIC_VERIFICATION.md`](../guides/audit_slices/CRITIC_VERIFICATION.md).
+
+---
+
 ## 1. Purpose
 
 Define the **Critic & Verification Layer (CVL)** — the Harness AI subsystem that answers:

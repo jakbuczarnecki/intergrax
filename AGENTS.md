@@ -141,6 +141,7 @@ python scripts/check_idea_audit_bootstrap.py
 python scripts/check_reasoning_gates.py
 python scripts/check_implementation_journal.py
 python scripts/check_harness_adr.py
+python scripts/check_plan_hub_size.py
 uv run python scripts/check_agent_acp_close_ci.py
 python scripts/check_production_capacity_adapters.py
 python scripts/check_harness_resilience_policy.py

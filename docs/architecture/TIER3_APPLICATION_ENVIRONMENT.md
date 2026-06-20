@@ -11,6 +11,17 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (TIER3_APPLICATION_ENVIRONMENT canon).
+
+- **Implement / audit default:** Default: §1–§15 host profile + manifest wiring. Skip per-product deployment appendices unless Tier-3 task.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plan/TIER3_APPLICATION_ENVIRONMENT.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md`](../guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md).
+
+---
+
 ## Table of contents
 
 | § | Topic |

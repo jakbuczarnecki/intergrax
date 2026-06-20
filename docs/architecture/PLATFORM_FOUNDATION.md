@@ -8,6 +8,17 @@
 **Audit instruction:** [`audit/PLATFORM_FOUNDATION.md`](../audit/PLATFORM_FOUNDATION.md)  
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (PLATFORM_FOUNDATION canon).
+
+- **Implement / audit default:** Default: §1–§5 + §5.2 reuse + §5.3 terminology. Skip historical audit registers unless gap ID cites them.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/PLATFORM_FOUNDATION.md`](../plan/PLATFORM_FOUNDATION.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/PLATFORM_FOUNDATION.md`](../guides/audit_slices/PLATFORM_FOUNDATION.md).
+
+---
+
 # 1.1 Documentation boundary (platform vs product)
 
 **In scope for this document and for [`plan/PLATFORM_FOUNDATION.md):**

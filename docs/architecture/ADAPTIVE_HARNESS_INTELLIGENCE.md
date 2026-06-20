@@ -20,6 +20,17 @@
 
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (ADAPTIVE_HARNESS_INTELLIGENCE canon).
+
+- **Implement / audit default:** Read TOC sections matching current task only; skip appendices and paydown logs.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../plan/ADAPTIVE_HARNESS_INTELLIGENCE.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../guides/audit_slices/ADAPTIVE_HARNESS_INTELLIGENCE.md).
+
+---
+
 ## Table of contents
 
 1. [Executive summary](#1-executive-summary)

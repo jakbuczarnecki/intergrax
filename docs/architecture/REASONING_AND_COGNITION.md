@@ -8,6 +8,17 @@
 **Audit instruction:** [`audit/REASONING_AND_COGNITION.md`](../audit/REASONING_AND_COGNITION.md)  
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (REASONING_AND_COGNITION canon).
+
+- **Implement / audit default:** Read TOC sections matching current task only; skip appendices and paydown logs.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_AND_COGNITION.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/REASONING_AND_COGNITION.md`](../guides/audit_slices/REASONING_AND_COGNITION.md).
+
+---
+
 ## Table of contents
 
 1. [Purpose](#1-purpose)

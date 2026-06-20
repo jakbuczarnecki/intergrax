@@ -9,6 +9,17 @@
 **Last updated:** 2026-06-19 — SEC-PLANES-EVOL follow-on register (enterprise hardening backlog)  
 ---
 
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session** (UNIFIED_EXECUTION_RUNTIME canon).
+
+- **Implement / audit default:** Default: UAEP + PolicyEngine + RuntimeEvent spine. Skip §42 long narrative unless governance task.
+- **Use** table of contents below — `Read` with offset/limit per §.
+- **Plan hub:** [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../plan/UNIFIED_EXECUTION_RUNTIME.md) (scoped §6 only).
+- **Audit slice:** [`guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md`](../guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md).
+
+---
+
 ## 42.1 Runtime Event Model
 
 Every meaningful runtime transition MUST emit a `RuntimeEvent`.
